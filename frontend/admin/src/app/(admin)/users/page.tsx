@@ -412,10 +412,22 @@ export default function UsersPage() {
     }
   };
 
+  // CSV formula-injection + delimiter safety: neutralise a leading
+  // = + - @ (or tab/CR) that spreadsheets execute as a formula, and always
+  // quote so a comma/quote/newline in a name or email can't break columns.
+  const csvCell = (value: unknown): string => {
+    let s = value == null ? '' : String(value);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+
   const exportCsv = () => {
     const headers = ['ID', 'Name', 'Email', 'Balance', 'Equity', 'Group', 'KYC', 'Status'];
-    const rows = sorted.map(u => [u.id, u.name, u.email, u.balance, u.equity, u.group, u.kyc_status, u.status].join(','));
-    const blob = new Blob([[headers.join(','), ...rows].join('\n')], { type: 'text/csv' });
+    const rows = sorted.map(u =>
+      [u.id, u.name, u.email, u.balance, u.equity, u.group, u.kyc_status, u.status]
+        .map(csvCell).join(','),
+    );
+    const blob = new Blob([[headers.map(csvCell).join(','), ...rows].join('\r\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = 'users-export.csv'; a.click();

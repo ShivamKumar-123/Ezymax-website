@@ -21,6 +21,8 @@ from packages.common.src.models import (
 from packages.common.src.notify import create_notification
 from packages.common.src import corecen_trade_client
 from packages.common.src.engine_lock import engine_lock
+from packages.common.src.config import get_settings
+from packages.common.src.instrument_pricing import resolve_user_quote
 from ..services import wallet_service
 
 logger = logging.getLogger("gateway.sltp")
@@ -68,7 +70,10 @@ class SLTPEngine:
     async def _load_prices(self):
         """Load latest prices directly from Redis keys instead of pubsub."""
         try:
-            keys = await redis_client.keys("tick:*")
+            # Phase 3: SCAN, not KEYS. KEYS is O(N) over the entire keyspace and
+            # blocks the single-threaded Redis for every SL/TP tick; scan_iter
+            # walks the keyspace in small cursored batches without blocking.
+            keys = [k async for k in redis_client.scan_iter(match="tick:*", count=500)]
             if not keys:
                 return
             values = await redis_client.mget(keys)
@@ -129,6 +134,23 @@ class SLTPEngine:
                 bid = Decimal(str(tick["bid"]))
                 ask = Decimal(str(tick["ask"]))
                 side = _side_val(pos.side)
+
+                # H-TRADE-8: when per-user execution spread is on, the SL/TP
+                # trigger must be evaluated against the SAME per-user quote the
+                # fill/close uses — otherwise a position triggers on the raw
+                # broadcast bid/ask its owner would never actually have crossed.
+                if get_settings().USER_SPREAD_AT_EXECUTION and pos.instrument:
+                    acct = await db.get(TradingAccount, pos.account_id)
+                    if acct:
+                        try:
+                            bid, ask = await resolve_user_quote(
+                                db, pos.instrument, bid, ask,
+                                user_id=acct.user_id,
+                                account_group_id=acct.account_group_id,
+                                trading_account_id=acct.id,
+                            )
+                        except Exception:
+                            pass  # fall back to broadcast quote on any resolver error
 
                 triggered = None
 

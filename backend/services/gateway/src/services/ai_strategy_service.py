@@ -8,6 +8,7 @@ trading_service paths (see engines/ai_strategy_engine.py).
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import math
 from datetime import datetime, timedelta, timezone
@@ -451,6 +452,16 @@ def _downsample(curve: list[dict], max_points: int) -> list[dict]:
     return sampled
 
 
+# H-TRADE-5: backtests are CPU-bound pure-python loops. Guard against them
+# (a) blocking the event loop, (b) running unbounded, and (c) being launched in
+# parallel by one user to exhaust the worker. Bars are hard-capped, the compute
+# runs in a worker thread under a wall-time limit, and each user may have at most
+# one backtest in flight at a time.
+_BACKTEST_MAX_BARS = 20000
+_BACKTEST_WALL_SECONDS = 30.0
+_backtest_locks: dict[str, asyncio.Lock] = {}
+
+
 async def backtest_strategy(
     strategy_id: UUID, user_id: UUID, db: AsyncSession,
     days: int = 90, commission_per_lot: float = 0.0,
@@ -460,37 +471,57 @@ async def backtest_strategy(
     if not 0 <= commission_per_lot <= 1000:
         raise HTTPException(status_code=400, detail="commission_per_lot out of range")
 
-    s = await _get_owned(strategy_id, user_id, db)
-    dsl = parse_dsl(s.dsl)
-    inst = await _validate_symbol(db, dsl.symbol)
-
-    tf_seconds = TF_SECONDS[dsl.timeframe]
-    now = int(datetime.now(timezone.utc).timestamp())
-    from_ts = now - days * 86400
-    want = days * 86400 // tf_seconds + dsl.warmup_bars() + 10
-    raw_bars = await read_bars(
-        db, dsl.symbol, dsl.timeframe,
-        from_ts=from_ts, to_ts=now, limit=min(want, 25000),
-    )
-    if len(raw_bars) < dsl.warmup_bars() + 10:
+    # Per-user concurrency of 1 — reject rather than queue, so a user can't pile
+    # up expensive runs.
+    lock = _backtest_locks.setdefault(str(user_id), asyncio.Lock())
+    if lock.locked():
         raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Not enough {dsl.timeframe} history for {dsl.symbol} "
-                f"({len(raw_bars)} bars stored). Open the chart on this "
-                f"symbol/timeframe once to backfill history, or pick a "
-                f"shorter-period strategy."
-            ),
+            status_code=429,
+            detail="A backtest is already running for your account. Wait for it to finish.",
         )
 
-    try:
-        result = run_backtest(
-            dsl, raw_bars,
-            contract_size=float(inst.contract_size or 100000),
-            commission_per_lot=commission_per_lot,
+    async with lock:
+        s = await _get_owned(strategy_id, user_id, db)
+        dsl = parse_dsl(s.dsl)
+        inst = await _validate_symbol(db, dsl.symbol)
+
+        tf_seconds = TF_SECONDS[dsl.timeframe]
+        now = int(datetime.now(timezone.utc).timestamp())
+        from_ts = now - days * 86400
+        want = days * 86400 // tf_seconds + dsl.warmup_bars() + 10
+        raw_bars = await read_bars(
+            db, dsl.symbol, dsl.timeframe,
+            from_ts=from_ts, to_ts=now, limit=min(want, _BACKTEST_MAX_BARS),
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        if len(raw_bars) < dsl.warmup_bars() + 10:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Not enough {dsl.timeframe} history for {dsl.symbol} "
+                    f"({len(raw_bars)} bars stored). Open the chart on this "
+                    f"symbol/timeframe once to backfill history, or pick a "
+                    f"shorter-period strategy."
+                ),
+            )
+
+        try:
+            # Offload the CPU-bound loop to a thread and cap wall time.
+            result = await asyncio.wait_for(
+                asyncio.to_thread(
+                    run_backtest,
+                    dsl, raw_bars,
+                    contract_size=float(inst.contract_size or 100000),
+                    commission_per_lot=commission_per_lot,
+                ),
+                timeout=_BACKTEST_WALL_SECONDS,
+            )
+        except asyncio.TimeoutError:
+            raise HTTPException(
+                status_code=408,
+                detail="Backtest timed out. Try a shorter period or a simpler strategy.",
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     curve = _downsample(result.equity_curve, EQUITY_CURVE_MAX_POINTS)
     trades = result.trades[-BACKTEST_TRADES_MAX:]

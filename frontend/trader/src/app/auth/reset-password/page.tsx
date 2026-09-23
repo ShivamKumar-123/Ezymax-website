@@ -30,6 +30,10 @@ function ResetPasswordForm() {
   // Email now sends a 6-digit code (no magic link). Pre-fill from a legacy
   // ?token= link if present, otherwise the user types the code.
   const [code, setCode] = useState(searchParams.get('token') || '');
+  // C-AUTH-1: the reset code is now bound to the account, so the e-mail is
+  // required. Pre-fill it from the forgot-password redirect (?email=) when
+  // present; otherwise the user types the address they requested the code for.
+  const [email, setEmail] = useState(searchParams.get('email') || '');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -39,6 +43,10 @@ function ResetPasswordForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) {
+      toast.error('Enter the email you requested the code for');
+      return;
+    }
     if (code.trim().length < 6) {
       toast.error('Enter the 6-digit code from your email');
       return;
@@ -54,6 +62,7 @@ function ResetPasswordForm() {
     setLoading(true);
     try {
       const res = await api.post<{ message: string }>('/auth/reset-password', {
+        email: email.trim(),
         token: code.trim(),
         new_password: password,
       });
@@ -87,6 +96,14 @@ function ResetPasswordForm() {
           <h1 className="text-xl font-bold text-text-primary mb-2">Reset password</h1>
           <p className="text-xs text-text-tertiary mb-6">Enter the 6-digit code we emailed you, then choose a new password.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              placeholder="you@example.com"
+            />
             <Input
               label="Reset code"
               type="text"

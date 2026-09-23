@@ -70,6 +70,16 @@ public:
     static Config  load();       // load from disk (defaults if missing)
     bool           save() const; // write to disk; returns success
 
+    // H-INF-6: the terminal must refuse plaintext endpoints (http:// / ws://)
+    // so credentials never cross an unencrypted link. A dev may opt out with the
+    // --allow-insecure CLI flag (main() calls setAllowInsecure(true)). When
+    // insecure is NOT allowed, a non-https restBase / non-wss wsUrl loaded from
+    // the config file is rejected and the secure default is kept.
+    static void setAllowInsecure(bool v);
+    static bool allowInsecure();
+    static bool isSecureRest(const QString& url);  // https:// (or allowed)
+    static bool isSecureWs(const QString& url);    // wss:// (or allowed)
+
     // There is deliberately NO migration from the TuskaEx build
     // this terminal was white-labelled from — see the note in Config.cpp before
     // adding one back.

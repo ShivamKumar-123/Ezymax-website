@@ -9,8 +9,12 @@
  * terminal's chart so changes to one never affect the other. The APK's WebView
  * points here (CHART_URL = .../app-chart).
  *
- * The WebView has no session cookie, so auth comes from query params:
- *   ?token=<jwt>     Bearer token (SecureStore) — used for API + WS
+ * The WebView has no session cookie, so auth comes from the URL. The bearer
+ * token is passed in the URL *hash* (never sent to the server / logs / Referer):
+ *   #token=<jwt>     Bearer token (SecureStore) — used for API + WS.
+ *                    A legacy ?token= query is still accepted; either way the
+ *                    token is stripped from the URL right after it's read.
+ * The remaining, non-sensitive params stay in the query string:
  *   ?account=<id>    active trading account (positions / orders)
  *   ?symbol=EURUSD   active symbol
  *   ?interval=60     TradingView resolution (1|5|15|30|60|240|1D)
@@ -49,6 +53,37 @@ function param(name: string, fallback = ''): string {
   return new URLSearchParams(window.location.search).get(name) || fallback;
 }
 
+// H-FE-1: the bearer token must NOT ride in the query string — query params land
+// in server access logs, proxy logs, browser history and the Referer header. The
+// URL *hash* is never sent to the server, so the app passes the token there
+// (#token=<jwt>); we still accept a legacy ?token= for older builds. Whichever
+// it is, we strip it from the URL immediately after reading (below) so it does
+// not persist in history or leak via Referer on the next navigation.
+function paramFromHash(name: string, fallback = ''): string {
+  if (typeof window === 'undefined') return fallback;
+  const raw = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+  return new URLSearchParams(raw).get(name) || fallback;
+}
+
+function readToken(): string {
+  return paramFromHash('token') || param('token');
+}
+
+// Remove the token from the visible/loggable URL once captured, keeping the
+// non-sensitive params (symbol/interval/theme) in the address bar.
+function stripTokenFromUrl(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const search = new URLSearchParams(window.location.search);
+    search.delete('token');
+    const qs = search.toString();
+    const clean = window.location.pathname + (qs ? `?${qs}` : '');
+    window.history.replaceState(null, '', clean);
+  } catch {
+    /* history API unavailable — nothing else we can do */
+  }
+}
+
 const TradingViewChart = dynamic(() => import('@/components/charts/AppChart'), {
   ssr: false,
   // Spinner matches the requested theme so a dark-mode app never flashes a
@@ -64,12 +99,15 @@ export default function ChartPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const token = param('token');
+    const token = readToken();
     const symbol = (param('symbol', 'EURUSD')).toUpperCase();
     const accountId = param('account');
 
     // Token auth for API (Bearer) — the WebView has no session cookie.
     if (token) api.setToken(token);
+    // H-FE-1: drop the token from the URL as soon as it's in memory so it can't
+    // leak via history / Referer / logs.
+    stripTokenFromUrl();
 
     const store = useTradingStore.getState();
     store.setSelectedSymbol(symbol);

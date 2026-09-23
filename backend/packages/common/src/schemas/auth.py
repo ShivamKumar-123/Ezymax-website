@@ -34,6 +34,9 @@ class ForgotPasswordRequest(BaseModel):
 
 
 class ResetPasswordRequest(BaseModel):
+    # C-AUTH-1: the reset request now carries the e-mail so the code is bound
+    # to a single user (a 6-digit code guessed against ONE account, not all).
+    email: EmailStr
     # Accepts the 6-digit reset code (app) or a longer token (legacy link).
     token: str = Field(min_length=6, max_length=512)
     new_password: str = Field(min_length=8, max_length=128)
@@ -55,6 +58,9 @@ class GoogleAuthRequest(BaseModel):
 
     id_token: str = Field(min_length=20, max_length=8192)
     referral_code: Optional[str] = None
+    # M: when the account has 2FA enabled, Google sign-in must also present the
+    # TOTP / backup code (the client retries with this after a "2FA code required").
+    totp_code: Optional[str] = None
 
 
 # ─── Wallet (SIWE / EIP-4361) sign-in ────────────────────────────────

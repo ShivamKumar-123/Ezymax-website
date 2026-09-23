@@ -91,3 +91,26 @@ export function formatTime(d: Date | string | number | null | undefined): string
   if (!Number.isFinite(date.getTime())) return '—';
   return date.toLocaleTimeString('en-US', { timeStyle: 'short' });
 }
+
+/**
+ * H-FE-ADMIN-1: <input type="datetime-local"> works in the browser's LOCAL
+ * timezone, while the API stores/returns UTC ISO strings. Converting with
+ * `new Date(iso).toISOString().slice(0,16)` mislabels a UTC instant as local,
+ * so reading the field back and re-serialising shifted the time by the tz
+ * offset — a "save with no edit" silently moved the timestamp. These two
+ * helpers round-trip correctly: populate with utcIsoToLocalInput, read back
+ * with localInputToUtcIso, and an untouched value serialises to the same UTC.
+ */
+export function utcIsoToLocalInput(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  const localMs = d.getTime() - d.getTimezoneOffset() * 60000;
+  return new Date(localMs).toISOString().slice(0, 16);
+}
+
+export function localInputToUtcIso(local: string | null | undefined): string {
+  if (!local) return '';
+  const d = new Date(local); // a datetime-local string is parsed as local time
+  return Number.isFinite(d.getTime()) ? d.toISOString() : '';
+}

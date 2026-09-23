@@ -54,11 +54,31 @@ Config Config::load() {
         for (const QJsonValue& v : o.value("chartSymbols").toArray())
             c.chartSymbols << v.toString();
     }
-    if (o.contains("restBase") && !o.value("restBase").toString().isEmpty())
-        c.restBase = o.value("restBase").toString();
-    if (o.contains("wsUrl") && !o.value("wsUrl").toString().isEmpty())
-        c.wsUrl = o.value("wsUrl").toString();
+    // H-INF-6: only accept a file-supplied endpoint if it uses TLS (https/wss),
+    // unless --allow-insecure was passed. A plaintext override is ignored so the
+    // secure default stands, never silently downgrading the connection.
+    if (o.contains("restBase") && !o.value("restBase").toString().isEmpty()) {
+        const QString v = o.value("restBase").toString();
+        if (isSecureRest(v)) c.restBase = v;
+    }
+    if (o.contains("wsUrl") && !o.value("wsUrl").toString().isEmpty()) {
+        const QString v = o.value("wsUrl").toString();
+        if (isSecureWs(v)) c.wsUrl = v;
+    }
     return c;
+}
+
+namespace { bool g_allowInsecure = false; }
+
+void Config::setAllowInsecure(bool v) { g_allowInsecure = v; }
+bool Config::allowInsecure() { return g_allowInsecure; }
+
+bool Config::isSecureRest(const QString& url) {
+    return g_allowInsecure || url.startsWith("https://", Qt::CaseInsensitive);
+}
+
+bool Config::isSecureWs(const QString& url) {
+    return g_allowInsecure || url.startsWith("wss://", Qt::CaseInsensitive);
 }
 
 bool Config::save() const {

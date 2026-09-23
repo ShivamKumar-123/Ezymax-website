@@ -54,7 +54,7 @@ class ModifyOrderRequest(BaseModel):
     stop_loss: Optional[Decimal] = None
     take_profit: Optional[Decimal] = None
     price: Optional[Decimal] = None
-    lots: Optional[Decimal] = None
+    lots: Optional[Decimal] = Field(None, gt=0, le=100)
 
 
 class OrderResponse(BaseModel):
@@ -98,7 +98,7 @@ class PositionResponse(BaseModel):
 
 
 class ClosePositionRequest(BaseModel):
-    lots: Optional[Decimal] = None
+    lots: Optional[Decimal] = Field(None, gt=0, le=100)
 
 
 class ModifyPositionRequest(BaseModel):

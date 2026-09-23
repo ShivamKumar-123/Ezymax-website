@@ -1010,6 +1010,12 @@ async def close_position(
         raise HTTPException(status_code=400, detail="No price available")
 
     tick = json.loads(tick_data)
+    # C-TRADE-5: refuse to settle a close against a stale quote (market closed
+    # or feed frozen). get_current_price() and modify_position() already guard
+    # this; close_position read the cache directly and could realise P&L at an
+    # old price. Same is_tick_stale() check keeps every execution path aligned.
+    if is_tick_stale(tick):
+        raise HTTPException(status_code=400, detail="Price feed is stale; try again shortly")
     sv = side_val(pos.side)
     c_bid = Decimal(str(tick["bid"]))
     c_ask = Decimal(str(tick["ask"]))
@@ -1029,6 +1035,14 @@ async def close_position(
     close_price = c_bid if sv == "buy" else c_ask
     contract_size = pos.instrument.contract_size if pos.instrument else Decimal("100000")
 
+    # C-TRADE-2: the schema bounds lots to 0 < lots <= 100; reject an explicit
+    # request to close MORE than the open size (previously silently clamped,
+    # which masked client bugs). None = close the whole position.
+    if req.lots is not None and Decimal(str(req.lots)) > pos.lots:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot close {req.lots} lots; position holds {pos.lots}.",
+        )
     close_lots = Decimal(str(req.lots)) if req.lots and Decimal(str(req.lots)) < pos.lots else pos.lots
     is_partial = close_lots < pos.lots
 

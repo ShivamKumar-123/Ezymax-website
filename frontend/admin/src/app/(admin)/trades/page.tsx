@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { adminApi } from '@/lib/api';
 import { closeReasonInfo, CLOSE_REASON_CLASS, CLOSE_REASON_CLASS_BORDERED } from '@/lib/closeReason';
+import { utcIsoToLocalInput, localInputToUtcIso } from '@/lib/formatters';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import {
@@ -403,7 +404,7 @@ export default function TradesPage() {
     setModifyLots(pos.lots ? String(pos.lots) : '');
     setModifyCommission(pos.commission ? String(pos.commission) : '');
     setModifySwap(pos.swap ? String(pos.swap) : '');
-    setModifyOpenTime(pos.created_at ? new Date(pos.created_at).toISOString().slice(0, 16) : '');
+    setModifyOpenTime(utcIsoToLocalInput(pos.created_at));
     setModifySide((pos.side?.toLowerCase() === 'sell' ? 'sell' : 'buy'));
     // Seed the close-at-price controls too — the Edit modal carries a
     // separate "Close at price" section so admin can set close price / spread
@@ -489,7 +490,7 @@ export default function TradesPage() {
       if (modifyLots) body.lots = parseFloat(modifyLots);
       if (modifyCommission) body.commission = parseFloat(modifyCommission);
       if (modifySwap) body.swap = parseFloat(modifySwap);
-      if (modifyOpenTime) body.open_time = new Date(modifyOpenTime).toISOString();
+      if (modifyOpenTime) body.open_time = localInputToUtcIso(modifyOpenTime);
       // Only send side if admin actually flipped it — saves a write
       // on every save where the toggle wasn't touched and keeps the
       // audit log clean.
@@ -567,8 +568,8 @@ export default function TradesPage() {
     setEhCommission(t.commission != null ? String(t.commission) : '');
     setEhSwap(t.swap != null ? String(t.swap) : '');
     setEhSide((t.side || '').toLowerCase() === 'sell' ? 'sell' : 'buy');
-    setEhOpenedAt(t.opened_at ? new Date(t.opened_at).toISOString().slice(0, 16) : '');
-    setEhClosedAt(t.closed_at ? new Date(t.closed_at).toISOString().slice(0, 16) : '');
+    setEhOpenedAt(utcIsoToLocalInput(t.opened_at));
+    setEhClosedAt(utcIsoToLocalInput(t.closed_at));
     setEhReason('');
   };
 
@@ -602,8 +603,8 @@ export default function TradesPage() {
       if (ehCommission !== '') body.commission = parseFloat(ehCommission);
       if (ehSwap !== '') body.swap = parseFloat(ehSwap);
       if (ehSide !== (editHist.side || '').toLowerCase()) body.side = ehSide;
-      if (ehOpenedAt) body.opened_at = new Date(ehOpenedAt).toISOString();
-      if (ehClosedAt) body.closed_at = new Date(ehClosedAt).toISOString();
+      if (ehOpenedAt) body.opened_at = localInputToUtcIso(ehOpenedAt);
+      if (ehClosedAt) body.closed_at = localInputToUtcIso(ehClosedAt);
       const r = await adminApi.put<{ profit: number; balance_delta: number }>(
         `/trades/history/${editHist.id}/modify`, body);
       toast.success(`Saved — P&L ${r.profit >= 0 ? '+' : ''}${formatMoney(r.profit)}, balance Δ ${r.balance_delta >= 0 ? '+' : ''}${formatMoney(r.balance_delta)}`);

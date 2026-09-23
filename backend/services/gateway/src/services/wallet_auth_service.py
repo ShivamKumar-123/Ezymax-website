@@ -347,6 +347,17 @@ async def login_or_register_with_wallet(
     )
     user, created = await resolve_or_create_user(siwe_address, db)
 
+    # Phase 3: wallet sign-in must enforce the SAME account-status and staff
+    # guards as password / Google login — previously it issued a session without
+    # any status check, so a banned/blocked user (or a staff account) could sign
+    # in through the wallet flow.
+    if user.status == "banned":
+        raise AuthServiceError("Account has been banned", 403)
+    if user.status == "blocked":
+        raise AuthServiceError("Account has been blocked", 403)
+    if user.role in ("admin", "super_admin", "employee", "manager", "support", "broker"):
+        raise AuthServiceError("Staff accounts must sign in via the admin portal.", 403)
+
     if created and referral_code:
         try:
             await _consume_referral(db, user.id, referral_code)

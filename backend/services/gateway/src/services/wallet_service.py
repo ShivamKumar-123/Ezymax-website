@@ -22,7 +22,7 @@ canonical reference (Deposit → User → tagged TradingAccount, all with
 import logging
 import uuid as uuid_lib
 from pathlib import Path
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from uuid import UUID
 from datetime import datetime
 
@@ -38,6 +38,8 @@ from packages.common.src.notify import create_notification
 from packages.common.src.config import get_settings
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
 from packages.common.src.email_branding import apply_email_brand
+from packages.common.src.withdrawal_limits import available_to_withdraw
+from packages.common.src.bonus_service import apply_deposit_bonus
 from . import oxapay_service, razorpay_service
 
 logger = logging.getLogger("wallet_service")
@@ -287,6 +289,28 @@ def _send_deposit_failed_email(
         logger.warning("deposit failed email send failed: %s", _e)
 
 
+def _safe_stored_upload(stored: str | None) -> str | None:
+    """C-ADMIN-1 (write-time): only persist a screenshot/proof path we can
+    confine to the uploads tree. The generic create_deposit accepts a
+    client-supplied screenshot_url; a crafted absolute or ``..`` value would
+    later be handed to the admin download endpoint. Drop anything we can't
+    confine (server-written upload paths always pass)."""
+    if not stored:
+        return None
+    raw = get_settings().WALLET_UPLOAD_ROOT.strip() or "uploads/wallet"
+    base = Path(raw)
+    if not base.is_absolute():
+        base = Path.cwd() / base
+    base = base.resolve().parent
+    try:
+        p = Path(stored)
+        rel = p.resolve().relative_to(base) if p.is_absolute() else Path(stored)
+        safe_join_under_base(base, *rel.parts)
+    except (ValueError, PathTraversalError):
+        return None
+    return stored
+
+
 def _wallet_upload_root() -> Path:
     raw = get_settings().WALLET_UPLOAD_ROOT.strip() or "uploads/wallet"
     p = Path(raw)
@@ -377,7 +401,7 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
         amount=req.amount,
         method=db_method,
         transaction_id=req.transaction_id,
-        screenshot_url=req.screenshot_url,
+        screenshot_url=_safe_stored_upload(req.screenshot_url),
         crypto_tx_hash=getattr(req, "crypto_tx_hash", None),
         crypto_address=getattr(req, "crypto_address", None),
         bank_account_id=bank.id if bank else None,
@@ -603,6 +627,32 @@ async def handle_oxapay_webhook(
         return
 
     if oxapay_status == "paid":
+        # Phase 3 (OxaPay amount binding): the credited amount is always the
+        # recorded deposit.amount, never a client value. As a tamper check, if
+        # the callback echoes a USD invoice amount that does NOT match our
+        # record, do not auto-credit — route to manual review. (OxaPay only
+        # sends 'paid' on full settlement; underpayment arrives as a different
+        # status and is not credited here.)
+        _cb_amount = None
+        for _k in ("amount", "price_amount", "priceAmount"):
+            if payload.get(_k) is not None:
+                try:
+                    _cb_amount = Decimal(str(payload.get(_k)))
+                    break
+                except (InvalidOperation, ValueError, TypeError):
+                    continue
+        if _cb_amount is not None and abs(_cb_amount - (deposit.amount or Decimal("0"))) > Decimal("0.01"):
+            deposit.status = "manual_review"
+            deposit.rejection_reason = (
+                f"oxapay_amount_mismatch callback={_cb_amount} expected={deposit.amount}"
+            )
+            await db.commit()
+            logger.error(
+                "OxaPay webhook: amount mismatch deposit=%s callback=%s expected=%s → manual_review",
+                order_id, _cb_amount, deposit.amount,
+            )
+            return
+
         deposit.status = "auto_approved"
         deposit.approved_at = datetime.utcnow()
 
@@ -648,42 +698,11 @@ async def handle_oxapay_webhook(
                 description="Deposit to main wallet - oxapay (auto)",
             ))
 
-        # Apply bonus offers (mirrors admin approve_deposit logic)
-        bonus_msg = ""
-        applied_bonuses: list[tuple[str, Decimal]] = []
-        now = datetime.utcnow()
-        offers_q = await db.execute(
-            select(BonusOffer).where(
-                BonusOffer.is_active == True,
-                BonusOffer.bonus_type.in_(["deposit", "welcome"]),
-                BonusOffer.min_deposit <= deposit.amount,
-            )
+        # H-MONEY-2: single, dedup-guarded bonus application (was an inline copy).
+        applied_bonuses = await apply_deposit_bonus(db, user_row, deposit)
+        bonus_msg = "".join(
+            f" + ${float(a):.2f} bonus ({n})" for n, a in applied_bonuses
         )
-        for offer in offers_q.scalars().all():
-            if offer.starts_at and offer.starts_at > now:
-                continue
-            if offer.expires_at and offer.expires_at < now:
-                continue
-            if offer.percentage and offer.percentage > 0:
-                bonus_amount = deposit.amount * offer.percentage / Decimal("100")
-            elif offer.fixed_amount and offer.fixed_amount > 0:
-                bonus_amount = offer.fixed_amount
-            else:
-                continue
-            if offer.max_bonus and bonus_amount > offer.max_bonus:
-                bonus_amount = offer.max_bonus
-
-            user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + bonus_amount
-            db.add(Transaction(
-                user_id=deposit.user_id,
-                account_id=None,
-                type="bonus",
-                amount=bonus_amount,
-                balance_after=user_row.main_wallet_balance,
-                description=f"Bonus: {offer.name} ({offer.percentage or 0}%)",
-            ))
-            bonus_msg = f" + ${float(bonus_amount):.2f} bonus ({offer.name})"
-            applied_bonuses.append((offer.name, bonus_amount))
 
         await create_notification(
             db, deposit.user_id,
@@ -1203,43 +1222,11 @@ async def _credit_razorpay_deposit_locked(
             description="Deposit to main wallet - razorpay (auto)",
         ))
 
-    # Apply active bonus offers — mirrors the OxaPay/NOWPayments path so promo
-    # behaviour is identical regardless of provider.
-    bonus_msg = ""
-    applied_bonuses: list[tuple[str, Decimal]] = []
-    now = datetime.utcnow()
-    offers_q = await db.execute(
-        select(BonusOffer).where(
-            BonusOffer.is_active == True,
-            BonusOffer.bonus_type.in_(["deposit", "welcome"]),
-            BonusOffer.min_deposit <= deposit.amount,
-        )
+    # H-MONEY-2: single, dedup-guarded bonus application (was an inline copy).
+    applied_bonuses = await apply_deposit_bonus(db, user_row, deposit)
+    bonus_msg = "".join(
+        f" + ${float(a):.2f} bonus ({n})" for n, a in applied_bonuses
     )
-    for offer in offers_q.scalars().all():
-        if offer.starts_at and offer.starts_at > now:
-            continue
-        if offer.expires_at and offer.expires_at < now:
-            continue
-        if offer.percentage and offer.percentage > 0:
-            bonus_amount = deposit.amount * offer.percentage / Decimal("100")
-        elif offer.fixed_amount and offer.fixed_amount > 0:
-            bonus_amount = offer.fixed_amount
-        else:
-            continue
-        if offer.max_bonus and bonus_amount > offer.max_bonus:
-            bonus_amount = offer.max_bonus
-
-        user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + bonus_amount
-        db.add(Transaction(
-            user_id=deposit.user_id,
-            account_id=None,
-            type="bonus",
-            amount=bonus_amount,
-            balance_after=user_row.main_wallet_balance,
-            description=f"Bonus: {offer.name} ({offer.percentage or 0}%)",
-        ))
-        bonus_msg = f" + ${float(bonus_amount):.2f} bonus ({offer.name})"
-        applied_bonuses.append((offer.name, bonus_amount))
 
     await create_notification(
         db, deposit.user_id,
@@ -1475,10 +1462,22 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
     # main_wallet). Balance check uses whichever source is authoritative.
     pref = getattr(req, "source", None)
     source_kind, source_row = await _resolve_debit_source(db, user_id, preference=pref)
+    # C-MONEY-3 / H-MONEY-1: for a trading account, only funds NOT backing open
+    # positions are withdrawable — never the raw balance (which includes margin
+    # locked in live trades). Routed through the shared helper so every
+    # withdrawal path agrees.
     if source_kind == "trading":
-        available = source_row.balance or Decimal("0")
+        available = available_to_withdraw(
+            "trading",
+            balance=source_row.balance,
+            margin_used=source_row.margin_used,
+            free_margin=source_row.free_margin,
+        )
     else:
-        available = source_row.main_wallet_balance if source_row else Decimal("0")
+        available = available_to_withdraw(
+            "main",
+            main_wallet_balance=source_row.main_wallet_balance if source_row else None,
+        )
     if available < req.amount:
         if source_kind == "trading":
             detail = (
@@ -1616,10 +1615,20 @@ async def create_manual_withdrawal(
 
     # Resolve debit source — same logic as create_withdrawal.
     source_kind, source_row = await _resolve_debit_source(db, user_id)
+    # C-MONEY-3 / H-MONEY-1: trading-account withdrawals exclude margin-backed
+    # funds via the shared helper (see create_withdrawal).
     if source_kind == "trading":
-        available = source_row.balance or Decimal("0")
+        available = available_to_withdraw(
+            "trading",
+            balance=source_row.balance,
+            margin_used=source_row.margin_used,
+            free_margin=source_row.free_margin,
+        )
     else:
-        available = source_row.main_wallet_balance if source_row else Decimal("0")
+        available = available_to_withdraw(
+            "main",
+            main_wallet_balance=source_row.main_wallet_balance if source_row else None,
+        )
     if available < amount:
         if source_kind == "trading":
             raise HTTPException(

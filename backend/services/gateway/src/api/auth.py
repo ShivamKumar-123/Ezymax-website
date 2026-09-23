@@ -54,13 +54,14 @@ async def platform_status():
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(req: RegisterRequest, request: Request, db: AsyncSession = Depends(get_db)):
-    """Legacy one-shot registration. Kept for back-compat (older mobile
-    builds, scripts) but the trader web frontend now uses the
-    register/start + register/verify pair so the `users` row isn't
-    created until the email is OTP-verified."""
+    """Registration entry point. H-AUTH-4: this now delegates to the pending
+    (OTP-first) flow instead of the legacy `register_user`, which reclaimed an
+    unverified stub in place and issued session cookies before the email was
+    verified. No `users` row is created and no session is issued until the OTP
+    is confirmed via /auth/register/verify."""
     try:
-        return await register_user(
-            email=req.email, password=req.password,
+        return await pending_registration_service.start_pending_registration(
+            email=str(req.email), password=req.password,
             first_name=req.first_name, last_name=req.last_name,
             phone=req.phone, country=req.country,
             referral_code=req.referral_code,
@@ -179,6 +180,7 @@ async def google_auth(req: GoogleAuthRequest, request: Request, db: AsyncSession
             referral_code=req.referral_code,
             request=request,
             db=db,
+            totp_code=req.totp_code,
         )
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
@@ -332,7 +334,7 @@ async def forgot_password(req: ForgotPasswordRequest, request: Request, db: Asyn
 @router.post("/reset-password", response_model=MessageResponse)
 async def reset_password(req: ResetPasswordRequest, request: Request, db: AsyncSession = Depends(get_db)):
     try:
-        result = await _reset_password(token=req.token, new_password=req.new_password, request=request, db=db)
+        result = await _reset_password(email=req.email, token=req.token, new_password=req.new_password, request=request, db=db)
         return MessageResponse(**result)
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
@@ -354,9 +356,18 @@ async def setup_2fa(current_user: dict = Depends(get_current_user), db: AsyncSes
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 
+class _Verify2faRequest(BaseModel):
+    code: str
+
+
+class _ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+
 @router.post("/2fa/verify")
 async def verify_2fa(
-    code: str,
+    body: _Verify2faRequest,
     request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -372,7 +383,7 @@ async def verify_2fa(
     from ..services.auth_service import rate_limit_http
     rate_limit_http(request, "2fa-verify", 5, 600.0)
     try:
-        return await _verify_2fa(user_id=current_user["user_id"], code=code, db=db)
+        return await _verify_2fa(user_id=current_user["user_id"], code=body.code, db=db)
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
@@ -390,13 +401,15 @@ async def regenerate_2fa_backup_codes(
 
 @router.post("/password/change")
 async def change_password(
-    old_password: str, new_password: str,
+    body: _ChangePasswordRequest,
     current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db),
 ):
+    # Phase 3: credentials arrive in the JSON body, not query params (which land
+    # in access logs / browser history / Referer).
     try:
         return await _change_password(
             user_id=current_user["user_id"],
-            old_password=old_password, new_password=new_password, db=db,
+            old_password=body.old_password, new_password=body.new_password, db=db,
         )
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

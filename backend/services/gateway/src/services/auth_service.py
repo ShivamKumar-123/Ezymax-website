@@ -10,7 +10,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from packages.common.src.config import get_settings
 from packages.common.src.models import (
@@ -20,10 +20,11 @@ from packages.common.src.models import (
 from packages.common.src.schemas import TokenResponse
 from packages.common.src.auth import (
     hash_password, verify_password, create_access_token,
-    hash_token, decode_token,
+    hash_token, decode_token, invalidate_session_cache,
 )
 
 from packages.common.src.email_branding import apply_email_brand
+from packages.common.src.redis_client import redis_client
 
 logger = logging.getLogger("auth_service")
 
@@ -334,6 +335,14 @@ async def apply_tenant_attribution(
 
 # ─── Core: issue auth response ───────────────────────────────────────────
 
+def _include_json_access_token(legacy_flag: bool, json_delivery: bool) -> bool:
+    """H-AUTH-3: the access token is echoed in the JSON body ONLY when a
+    cookie-less client explicitly opts in (x-token-delivery: json) or the legacy
+    flag is enabled. Cookie (web) clients get an empty token — they authenticate
+    via the HttpOnly cookie, so echoing it only widens XSS reach."""
+    return bool(legacy_flag or json_delivery)
+
+
 async def issue_auth_json_response(
     user: User,
     request: Request,
@@ -348,8 +357,15 @@ async def issue_auth_json_response(
     All inserts (session, refresh, optional audit log) are flushed together and
     committed atomically. Any exception raised before this commit leaves the
     transaction open for the route handler to roll back."""
-    token, expires = create_access_token(str(user.id), user.role)
+    # H-AUTH-3: bind the token to its user_sessions row via a sid claim (set the
+    # session id explicitly so no extra flush is needed) and record how the
+    # session was established (amr) — a real login vs a derived/bootstrap session.
+    sid = uuid4()
+    _login_actions = {"LOGIN", "WALLET_LOGIN", "OAUTH_GOOGLE_LOGIN", "OAUTH_GOOGLE_REGISTER", "REGISTER", "DEMO_LOGIN"}
+    amr = "login" if (user_audit_action in _login_actions) else "derived"
+    token, expires = create_access_token(str(user.id), user.role, sid=str(sid), amr=amr)
     new_session = UserSession(
+        id=sid,
         user_id=user.id,
         token_hash=hash_token(token),
         ip_address=client_ip_for_inet(request),
@@ -416,7 +432,7 @@ async def issue_auth_json_response(
     # explicit request header. Web clients never send it, so browser responses
     # keep the cookie-only contract (no refresh token in JSON).
     json_delivery = (request.headers.get("x-token-delivery") or "").strip().lower() == "json"
-    display_token = token if (st.JWT_INCLUDE_LEGACY_JSON_TOKEN or json_delivery) else ""
+    display_token = token if _include_json_access_token(st.JWT_INCLUDE_LEGACY_JSON_TOKEN, json_delivery) else ""
     body = TokenResponse(
         access_token=display_token,
         user_id=str(user.id),
@@ -465,42 +481,27 @@ async def register_user(
         select(User).where(func.lower(User.email) == email.lower())
     )
     existing_user = existing.scalar_one_or_none()
-    if existing_user is not None and existing_user.email_verified:
+    if existing_user is not None:
+        # H-AUTH-4: no "reclaim" of an existing account — verified or not.
+        # Overwriting an unverified stub in place let anyone reset another
+        # in-progress signup's credentials/profile. Registration goes through
+        # the OTP-first pending flow (start/verify); this legacy helper is no
+        # longer wired to /auth/register and refuses any existing address.
         raise AuthServiceError("Email already registered")
 
-    if existing_user is not None:
-        # The address belongs to an account that never completed email
-        # verification. Those stubs can't log in and are hidden from the
-        # admin user list, so we let a fresh signup reclaim the email:
-        # overwrite the old credentials/profile in place (same row, so any
-        # FK children stay valid) and re-issue the OTP via the normal auth
-        # response below. This is safe because nobody ever proved ownership
-        # of an unverified address.
-        user = existing_user
-        user.email = email
-        user.password_hash = hash_password(password)
-        user.first_name = first_name
-        user.last_name = last_name
-        user.phone = phone
-        user.country = country
-        user.role = "user"
-        user.status = "active"
-        user.kyc_status = "pending"
-        await db.flush()
-    else:
-        user = User(
-            email=email,
-            password_hash=hash_password(password),
-            first_name=first_name,
-            last_name=last_name,
-            phone=phone,
-            country=country,
-            role="user",
-            status="active",
-            kyc_status="pending",
-        )
-        db.add(user)
-        await db.flush()
+    user = User(
+        email=email,
+        password_hash=hash_password(password),
+        first_name=first_name,
+        last_name=last_name,
+        phone=phone,
+        country=country,
+        role="user",
+        status="active",
+        kyc_status="pending",
+    )
+    db.add(user)
+    await db.flush()
 
     if referral_code:
         await _consume_referral(db, user.id, referral_code)
@@ -517,6 +518,28 @@ async def register_user(
 
 
 # ─── Login ────────────────────────────────────────────────────────────────
+
+async def _enforce_2fa(user, totp_code: str | None, db: AsyncSession) -> None:
+    """Verify the user's second factor when 2FA is enabled. Shared by password
+    login AND Google login (M: Google sign-in previously skipped 2FA entirely,
+    letting a stolen Google session bypass the user's TOTP). Accepts a 6-digit
+    TOTP or a one-time backup code."""
+    if not getattr(user, "two_factor_enabled", False):
+        return
+    secret = (user.two_factor_secret or "").strip()
+    if not secret:
+        raise AuthServiceError(
+            "Two-factor authentication is misconfigured for this account. Contact support.", 403
+        )
+    if not totp_code:
+        raise AuthServiceError("2FA code required")
+    totp = pyotp.TOTP(secret)
+    ok = totp.verify(totp_code)
+    if not ok:
+        ok = await consume_2fa_backup_code(user.id, totp_code, db)
+    if not ok:
+        raise AuthServiceError("Invalid 2FA code", 401)
+
 
 async def login_user(
     email: str,
@@ -601,25 +624,7 @@ async def login_user(
                 "Platform is under maintenance. Please try again later.", 503
             )
 
-    if user.two_factor_enabled:
-        secret = (user.two_factor_secret or "").strip()
-        if not secret:
-            raise AuthServiceError(
-                "Two-factor authentication is misconfigured for this account. Contact support.", 403
-            )
-        if not totp_code:
-            raise AuthServiceError("2FA code required")
-        totp = pyotp.TOTP(secret)
-        # Accept either a 6-digit TOTP from the authenticator OR a
-        # one-time backup code (XXXXX-XXXXX). Backup codes are a
-        # legitimate self-service recovery path so a lost phone doesn't
-        # require a support-ticket account-recovery (the social-
-        # engineering attack surface — audit H2).
-        ok = totp.verify(totp_code)
-        if not ok:
-            ok = await consume_2fa_backup_code(user.id, totp_code, db)
-        if not ok:
-            raise AuthServiceError("Invalid 2FA code", 401)
+    await _enforce_2fa(user, totp_code, db)
 
     return await issue_auth_json_response(user, request, db, user_audit_action="LOGIN")
 
@@ -704,6 +709,7 @@ async def google_oauth(
     referral_code: str | None,
     request: Request,
     db: AsyncSession,
+    totp_code: str | None = None,
 ) -> JSONResponse:
     """Verify a Google id_token and sign the user in. Creates a new user, links to an
     existing email-based account, or returns the existing google-linked user."""
@@ -821,6 +827,9 @@ async def google_oauth(
     if user.status == "blocked":
         raise AuthServiceError("Account has been blocked", 403)
 
+    # M: enforce 2FA on Google sign-in too (was password-login only).
+    await _enforce_2fa(user, totp_code, db)
+
     # Same staff-only block as login_user(): if a staff user happens to
     # have the trader Google flow hit their existing email, refuse to
     # mint a trader session for them. New OAuth signups always default
@@ -882,6 +891,15 @@ async def refresh_token(request: Request, db: AsyncSession) -> JSONResponse:
     user = await db.get(User, row.user_id)
     if not user or user.status in ("banned", "blocked"):
         raise AuthServiceError("Not authenticated", 401)
+    # H-AUTH-4: a session must not be renewable while the email is unverified —
+    # otherwise a pre-verification session (or one issued by an older build)
+    # could be refreshed indefinitely. Demo and wallet-placeholder accounts have
+    # no e-mail to verify and are exempt.
+    _is_wallet_placeholder = (user.email or "").lower().endswith("@wallet.swisscresta.local")
+    if not getattr(user, "email_verified", False) and not getattr(user, "is_demo", False) and not _is_wallet_placeholder:
+        row.revoked = True
+        await db.flush()
+        raise AuthServiceError("Please verify your email to continue.", 403)
     # If a staff role somehow still holds a trader refresh token (e.g.
     # issued before the login-side block was added), refuse to renew it.
     # The session will die on next refresh instead of cycling forever.
@@ -981,26 +999,80 @@ async def forgot_password(email: str, request: Request, db: AsyncSession) -> dic
     return msg
 
 
-async def reset_password(token: str, new_password: str, request: Request, db: AsyncSession) -> dict:
+async def reset_password(
+    token: str, new_password: str, request: Request, db: AsyncSession,
+    email: str | None = None,
+) -> dict:
     await assert_same_origin_or_tenant(request, db)
     rate_limit_http(request, "reset-password", 20, 600.0)
     token_hash = hash_token(token.strip())
     now = datetime.now(timezone.utc)
-    result = await db.execute(
-        select(PasswordResetToken).where(
-            PasswordResetToken.token_hash == token_hash,
-            PasswordResetToken.used.is_(False),
-            PasswordResetToken.expires_at > now,
-        )
+
+    # C-AUTH-1: bind the code to a user and cap attempts in Redis, independent
+    # of IP. With the e-mail, the token lookup is scoped to that user, so a
+    # 6-digit code can only be brute-forced against ONE account, and only
+    # 10 attempts / 15 min are allowed.
+    user = None
+    if email:
+        user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+        if user is not None:
+            try:
+                key = f"pwreset_attempts_user:{user.id}"
+                n = await redis_client.incr(key)
+                if n == 1:
+                    await redis_client.expire(key, 900)
+                if n > 10:
+                    raise AuthServiceError("Too many reset attempts. Please try again later.")
+            except AuthServiceError:
+                raise
+            except Exception:
+                pass  # Redis unavailable → fall back to DB + HTTP rate limits.
+
+    q = select(PasswordResetToken).where(
+        PasswordResetToken.token_hash == token_hash,
+        PasswordResetToken.used.is_(False),
+        PasswordResetToken.expires_at > now,
     )
-    row = result.scalar_one_or_none()
+    if user is not None:
+        q = q.where(PasswordResetToken.user_id == user.id)
+    row = (await db.execute(q)).scalar_one_or_none()
     if not row:
-        raise AuthServiceError("Invalid or expired reset link")
-    user = await db.get(User, row.user_id)
-    if not user:
-        raise AuthServiceError("Invalid or expired reset link")
-    user.password_hash = hash_password(new_password)
+        raise AuthServiceError("Invalid or expired reset code")
+
+    # Per-token attempt cap (5).
+    try:
+        tkey = f"pwreset_attempts_token:{row.id}"
+        tn = await redis_client.incr(tkey)
+        if tn == 1:
+            await redis_client.expire(tkey, 900)
+        if tn > 5:
+            row.used = True
+            await db.commit()
+            raise AuthServiceError("Too many attempts on this code. Request a new one.")
+    except AuthServiceError:
+        raise
+    except Exception:
+        pass
+
+    resolved = user or await db.get(User, row.user_id)
+    if not resolved:
+        raise AuthServiceError("Invalid or expired reset code")
+
+    resolved.password_hash = hash_password(new_password)
     row.used = True
+
+    # C-AUTH-1: a successful reset revokes every existing session and refresh
+    # token for the user, so a prior attacker session is invalidated.
+    await db.execute(
+        update(UserRefreshToken)
+        .where(UserRefreshToken.user_id == resolved.id, UserRefreshToken.revoked.is_(False))
+        .values(revoked=True)
+    )
+    await db.execute(
+        update(UserSession)
+        .where(UserSession.user_id == resolved.id, UserSession.is_active.is_(True))
+        .values(is_active=False)
+    )
     await db.commit()
     return {"message": "Password has been reset. You can sign in now."}
 
@@ -1253,6 +1325,7 @@ async def logout_user(user_id: UUID, request: Request, db: AsyncSession) -> JSON
     )
     for s in result.scalars().all():
         s.is_active = False
+        await invalidate_session_cache(s.id)  # H-AUTH-3: make revocation instant
     await db.commit()
 
     resp = JSONResponse(content={"message": "Logged out"})

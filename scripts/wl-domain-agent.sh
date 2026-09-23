@@ -40,6 +40,11 @@ ADMIN_UP="$(env_get BRANDING_ADMIN_UPSTREAM 127.0.0.1:3013)"
 CERTBOT="$(env_get BRANDING_CERTBOT_BIN /usr/bin/certbot)"
 NGINX="$(env_get BRANDING_NGINX_BIN /usr/sbin/nginx)"
 CERTBOT_EMAIL="$(env_get BRANDING_CERTBOT_EMAIL "")"
+# Phase 3: per-domain certbot cooldown (seconds). Let's Encrypt rate-limits
+# failed authorisations (5/hour/account) and issued certs (50/domain/week), so
+# never re-attempt the same domain more often than this even if it keeps getting
+# re-queued (rapid Verify clicks, a stuck 'provisioning' row).
+CERTBOT_COOLDOWN="$(env_get BRANDING_CERTBOT_COOLDOWN_SECS 600)"
 POSTGRES_USER="$(env_get POSTGRES_USER swisscresta)"
 POSTGRES_DB="$(env_get POSTGRES_DB swisscresta)"
 
@@ -55,6 +60,18 @@ psql_q() {
 }
 
 log() { echo "[$(date '+%F %T')] $*"; }
+
+# H-INF-1: CERTBOT / NGINX come from .env and are executed (often as root), so a
+# writable .env would otherwise be arbitrary code execution. Only run a binary
+# from a fixed allow-list of expected system paths.
+case "$CERTBOT" in
+  /usr/bin/certbot|/usr/local/bin/certbot) ;;
+  *) log "FATAL: BRANDING_CERTBOT_BIN not allow-listed: $CERTBOT"; exit 1 ;;
+esac
+case "$NGINX" in
+  /usr/sbin/nginx|/usr/bin/nginx) ;;
+  *) log "FATAL: BRANDING_NGINX_BIN not allow-listed: $NGINX"; exit 1 ;;
+esac
 
 write_block() {  # $1 domain  $2 app_subdomain
   local domain="$1" sub="$2" names admin_host certname
@@ -139,6 +156,19 @@ for row in $pending; do
     psql_q "UPDATE broker_profiles SET custom_domain_status='failed', custom_domain_last_error='nginx config test failed — see /var/log/swisscresta-wl-agent.log' WHERE custom_domain='${domain}';" >/dev/null
     continue
   fi
+
+  # Throttle: skip certbot for this domain if we attempted it within the
+  # cooldown window, so a re-queued domain can't burn the Let's Encrypt
+  # failed-authorisation budget.
+  _cb_marker="/var/lock/swisscresta-certbot-$(printf '%s' "$domain" | tr -c 'a-z0-9.-' '_')"
+  if [[ -f "$_cb_marker" ]]; then
+    _cb_age=$(( $(date +%s) - $(stat -c %Y "$_cb_marker" 2>/dev/null || echo 0) ))
+    if (( _cb_age < CERTBOT_COOLDOWN )); then
+      log "THROTTLE ${domain}: cert attempted ${_cb_age}s ago (< ${CERTBOT_COOLDOWN}s) — skipping this tick"
+      continue
+    fi
+  fi
+  : > "$_cb_marker"
 
   cert_args=(-d "admin.${domain}")
   if [[ -n "$sub" ]]; then

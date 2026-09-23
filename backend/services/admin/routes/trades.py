@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from dependencies import require_permission, broker_scope_ids, assert_broker_scope
-from packages.common.src.models import Position, TradingAccount
+from packages.common.src.models import Position, TradingAccount, TradeHistory, Employee
 from packages.common.src.models import User
 from packages.common.src.admin_schemas import ModifyPositionRequest, ClosePositionRequest, CreateTradeRequest, BulkCreateTradeRequest, ModifyHistoryRequest
 from services import trade_service
@@ -31,6 +31,36 @@ async def _assert_position_scope(admin: User, position_id: uuid.UUID, db: AsyncS
     if uid is None:
         raise HTTPException(status_code=404, detail="Position not found")
     await assert_broker_scope(admin, uid, db)
+
+
+async def _assert_history_scope(admin: User, history_id: uuid.UUID, db: AsyncSession) -> None:
+    """H-ADMIN-3: broker actors may only edit closed trades of users in their
+    own pool. Platform admins pass through."""
+    if admin.role != "broker":
+        return
+    uid = (
+        await db.execute(
+            select(TradingAccount.user_id)
+            .join(TradeHistory, TradeHistory.account_id == TradingAccount.id)
+            .where(TradeHistory.id == history_id)
+        )
+    ).scalar_one_or_none()
+    if uid is None:
+        raise HTTPException(status_code=404, detail="Trade history record not found")
+    await assert_broker_scope(admin, uid, db)
+
+
+async def _assert_modify_history_role(admin: User, db: AsyncSession) -> None:
+    """H-ADMIN-3 (DECISION): editing a closed trade's P&L rewrites realised
+    balances, so restrict it to super_admin and risk_manager."""
+    if admin.role == "super_admin":
+        return
+    emp = (await db.execute(
+        select(Employee).where(Employee.user_id == admin.id, Employee.is_active == True)  # noqa: E712
+    )).scalar_one_or_none()
+    if emp is not None and emp.role == "risk_manager":
+        return
+    raise HTTPException(status_code=403, detail="Only super_admin or risk_manager may edit closed trades.")
 
 
 
@@ -120,9 +150,10 @@ async def modify_trade_history(
     admin: User = Depends(require_permission("trades.modify")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Edit a closed trade. Any P&L change is reconciled to the account
-    balance as a delta (no wallet Transaction row — invisible to the trader,
-    same as a normal close)."""
+    """Edit a closed trade. Any P&L change is reconciled to the account balance
+    as a delta and recorded as an adjustment Transaction (H-ADMIN-3)."""
+    await _assert_modify_history_role(admin, db)
+    await _assert_history_scope(admin, history_id, db)
     return await trade_service.modify_trade_history(
         history_id=history_id, body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,

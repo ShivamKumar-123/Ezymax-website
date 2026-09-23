@@ -53,6 +53,32 @@ async def _claim_webhook(
         return False
 
 
+async def _release_webhook_claim(
+    db: AsyncSession, *, provider: str, external_id: str, status: str,
+) -> None:
+    """Phase 3 (commit ordering): the claim row is committed BEFORE the webhook
+    is processed (so concurrent re-deliveries dedupe). If processing then fails,
+    delete the claim so the provider's retry is NOT suppressed and the deposit
+    isn't silently lost. Best-effort — a failure here just means the retry is
+    deduped, which is the pre-fix behaviour."""
+    from sqlalchemy import delete as _delete
+    try:
+        await db.rollback()  # clear any failed-transaction state first
+        await db.execute(
+            _delete(WebhookEvent).where(
+                WebhookEvent.provider == provider,
+                WebhookEvent.external_id == external_id,
+                WebhookEvent.status == status,
+            )
+        )
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.exception(
+            "failed to release webhook claim provider=%s external_id=%s", provider, external_id,
+        )
+
+
 @router.post("/oxapay")
 async def oxapay_webhook(
     request: Request,
@@ -87,13 +113,21 @@ async def oxapay_webhook(
     ):
         return {"status": "duplicate"}
 
-    await wallet_service.handle_oxapay_webhook(
-        order_id=order_id,
-        oxapay_status=status,
-        track_id=track_id,
-        payload=payload,
-        db=db,
-    )
+    try:
+        await wallet_service.handle_oxapay_webhook(
+            order_id=order_id,
+            oxapay_status=status,
+            track_id=track_id,
+            payload=payload,
+            db=db,
+        )
+    except Exception:
+        # Processing failed after the claim was committed — release the claim so
+        # the provider's retry re-processes instead of being deduped away.
+        await _release_webhook_claim(
+            db, provider="oxapay", external_id=str(order_id), status=str(status),
+        )
+        raise
 
     return {"status": "ok"}
 
@@ -157,10 +191,16 @@ async def razorpay_webhook(
     ):
         return {"ok": True}
 
-    await wallet_service.handle_razorpay_webhook(
-        order_id=str(order_id),
-        payment_id=str(payment_id),
-        db=db,
-    )
+    try:
+        await wallet_service.handle_razorpay_webhook(
+            order_id=str(order_id),
+            payment_id=str(payment_id),
+            db=db,
+        )
+    except Exception:
+        await _release_webhook_claim(
+            db, provider="razorpay", external_id=str(payment_id), status="captured",
+        )
+        raise
 
     return {"ok": True}

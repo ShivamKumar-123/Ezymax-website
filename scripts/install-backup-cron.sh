@@ -16,10 +16,11 @@ LOG="/var/log/swisscresta-backup.log"
 [[ -x "$SCRIPT" ]] || { echo "[install] $SCRIPT not executable — chmod +x scripts/*.sh"; exit 1; }
 [[ -f "$COMPOSE_DIR/.env" ]] || { echo "[install] $COMPOSE_DIR/.env missing"; exit 1; }
 
-# 03:00 server time, daily. Source .env so BACKUP_* + POSTGRES_USER are
-# visible to the script. Append output to a rotated log so cron failures
-# are diagnosable.
-LINE="0 3 * * * set -a; source $COMPOSE_DIR/.env; set +a; $SCRIPT >> $LOG 2>&1"
+# 03:00 server time, daily. H-INF-2: the cron line no longer `source`s .env
+# (which would execute any command substitution in a value). backup.sh now loads
+# .env itself with a strict KEY=VALUE parser. Append output to a rotated log so
+# cron failures are diagnosable.
+LINE="0 3 * * * $SCRIPT >> $LOG 2>&1"
 
 # Strip any prior swisscresta line, then append the new one.
 ( crontab -l 2>/dev/null | grep -v -F "$SCRIPT"; echo "$LINE" ) | crontab -

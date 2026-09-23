@@ -621,11 +621,22 @@ async def modify_trade_history(
     )
     acc = acc_q.scalar_one_or_none()
     if acc and delta != 0:
-        # Balance delta ONLY — no Transaction row, exactly like the original
-        # close, so nothing surfaces in the trader's wallet history.
         acc.balance = (acc.balance or Decimal("0")) + delta
         acc.equity = (acc.balance or Decimal("0")) + (acc.credit or Decimal("0"))
         acc.free_margin = acc.equity - (acc.margin_used or Decimal("0"))
+        # H-ADMIN-3: any balance change from editing a closed trade must leave a
+        # ledger trail (previously silent), so the delta reconciles in reports
+        # and the trader's history.
+        db.add(Transaction(
+            user_id=acc.user_id,
+            account_id=acc.id,
+            type="adjustment",
+            amount=delta,
+            balance_after=acc.balance,
+            description=f"Admin edit of closed trade {history_id}"
+                        + (f": {body.reason}" if getattr(body, "reason", None) else ""),
+            created_by=admin_id,
+        ))
 
     await write_audit_log(
         db, admin_id, "modify_trade_history", "trade_history", history_id,

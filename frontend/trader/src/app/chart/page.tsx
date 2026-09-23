@@ -6,8 +6,12 @@
  * here). Same widget + on-chart SL/TP (draggable, confirm dialog) + Buy/Sell
  * quick-trade as the web terminal, via the shared TradingViewChart component.
  *
- * The WebView has no session cookie, so auth comes from query params:
- *   ?token=<jwt>     Bearer token (SecureStore) — used for API + WS
+ * The WebView has no session cookie, so auth comes from the URL. The bearer
+ * token is passed in the URL *hash* (never sent to the server / logs / Referer):
+ *   #token=<jwt>     Bearer token (SecureStore) — used for API + WS.
+ *                    A legacy ?token= query is still accepted; either way the
+ *                    token is stripped from the URL right after it's read.
+ * The remaining, non-sensitive params stay in the query string:
  *   ?account=<id>    active trading account (positions / orders)
  *   ?symbol=EURUSD   active symbol
  *   ?interval=60     TradingView resolution (1|5|15|30|60|240|1D)
@@ -46,6 +50,31 @@ function param(name: string, fallback = ''): string {
   return new URLSearchParams(window.location.search).get(name) || fallback;
 }
 
+// H-FE-1: read the bearer token from the URL hash (never sent to the server /
+// logs / Referer), falling back to a legacy ?token= query, then strip it from
+// the URL so it can't leak via history or Referer. See app-chart/page.tsx.
+function paramFromHash(name: string, fallback = ''): string {
+  if (typeof window === 'undefined') return fallback;
+  const raw = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+  return new URLSearchParams(raw).get(name) || fallback;
+}
+
+function readToken(): string {
+  return paramFromHash('token') || param('token');
+}
+
+function stripTokenFromUrl(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const search = new URLSearchParams(window.location.search);
+    search.delete('token');
+    const qs = search.toString();
+    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : ''));
+  } catch {
+    /* history API unavailable */
+  }
+}
+
 const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), {
   ssr: false,
   // Spinner matches the requested theme so a dark-mode app never flashes a
@@ -61,12 +90,14 @@ export default function ChartPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const token = param('token');
+    const token = readToken();
     const symbol = (param('symbol', 'EURUSD')).toUpperCase();
     const accountId = param('account');
 
     // Token auth for API (Bearer) — the WebView has no session cookie.
     if (token) api.setToken(token);
+    // H-FE-1: drop the token from the URL as soon as it's in memory.
+    stripTokenFromUrl();
 
     const store = useTradingStore.getState();
     store.setSelectedSymbol(symbol);

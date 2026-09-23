@@ -322,6 +322,7 @@ class CopyTradeEngine:
                     master_account,
                     total_pool,
                     db,
+                    catch_up=True,
                 )
             seeded.add(alloc_key)
             if current_master_pos_ids:
@@ -407,6 +408,7 @@ class CopyTradeEngine:
         master_account: TradingAccount,
         total_pool: float,
         db: AsyncSession,
+        catch_up: bool = False,
     ):
         instrument = master_pos.instrument
         if not instrument:
@@ -503,9 +505,29 @@ class CopyTradeEngine:
         if investor.max_lot_override and copy_lots > float(investor.max_lot_override):
             copy_lots = float(investor.max_lot_override)
 
+        # C-TRADE-3: a follower joining while the master position is ALREADY
+        # open (catch-up seeding) must enter at the CURRENT market price, not
+        # the master's original entry — otherwise they instantly inherit the
+        # master's accrued unrealised P&L (a phantom gain/loss). A real-time
+        # mirror (catch_up=False) uses the master's open price, which is ~now.
+        open_price = master_pos.open_price
+        if catch_up:
+            tick_data = await price_cache.get(instrument.symbol)
+            if tick_data:
+                try:
+                    tick = json.loads(tick_data)
+                    open_price = Decimal(str(tick["ask"])) if side_val == "buy" else Decimal(str(tick["bid"]))
+                except (json.JSONDecodeError, KeyError, ValueError):
+                    open_price = master_pos.open_price
+            else:
+                logger.warning(
+                    "Catch-up copy open for %s: no live tick, falling back to master open_price",
+                    instrument.symbol,
+                )
+
         contract_size = float(instrument.contract_size or 100000)
         required_margin = Decimal(
-            str(copy_lots * contract_size * float(master_pos.open_price) / investor_account.leverage)
+            str(copy_lots * contract_size * float(open_price) / investor_account.leverage)
         )
 
         if required_margin > (investor_account.free_margin or Decimal("0")):
@@ -528,7 +550,7 @@ class CopyTradeEngine:
             side=side_val,
             status="filled",
             lots=Decimal(str(copy_lots)),
-            filled_price=master_pos.open_price,
+            filled_price=open_price,
             filled_at=datetime.now(timezone.utc),
             commission=Decimal("0"),
             comment=comment,
@@ -543,7 +565,7 @@ class CopyTradeEngine:
             side=side_val,
             status=PositionStatus.OPEN.value,
             lots=Decimal(str(copy_lots)),
-            open_price=master_pos.open_price,
+            open_price=open_price,
             stop_loss=master_pos.stop_loss,
             take_profit=master_pos.take_profit,
             comment=comment,
@@ -601,7 +623,7 @@ class CopyTradeEngine:
                 "symbol": instrument.symbol,
                 "side": side_val,
                 "lots": str(copy_lots),
-                "open_price": str(master_pos.open_price),
+                "open_price": str(open_price),
             }),
         ))
 

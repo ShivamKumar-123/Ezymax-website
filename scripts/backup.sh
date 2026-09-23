@@ -17,6 +17,28 @@ set -euo pipefail
 
 # ─── Config (overridable via env or .env) ─────────────────────────────
 COMPOSE_DIR="${SWISSCRESTA_DIR:-/opt/swisscresta}"
+
+# H-INF-2: load .env WITHOUT `source` — sourcing executes any command
+# substitution / backticks embedded in a value (arbitrary code as whoever runs
+# cron). Parse strict KEY=VALUE lines only; ignore everything else.
+load_env_file() {
+  local f="$1"; [[ -f "$f" ]] || return 0
+  local line key val
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+    line="${line#"${line%%[![:space:]]*}"}"      # ltrim
+    [[ "$line" == export\ * ]] && line="${line#export }"
+    key="${line%%=*}"; val="${line#*=}"
+    key="${key//[[:space:]]/}"
+    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+    val="${val%\"}"; val="${val#\"}"; val="${val%\'}"; val="${val#\'}"
+    export "$key=$val"
+  done < "$f"
+}
+load_env_file "$COMPOSE_DIR/.env"
+
 DEST="${BACKUP_LOCAL_DIR:-${COMPOSE_DIR}/backups}"
 RETAIN_DAYS="${BACKUP_RETENTION_DAYS:-14}"
 # rclone remote — empty = local-only (NOT recommended for prod). Example: "b2:swisscresta-backups"
@@ -28,6 +50,16 @@ RCLONE_REMOTE="${BACKUP_RCLONE_REMOTE:-}"
 # and store in a password manager — never the same file as the data.
 GPG_PASSPHRASE="${BACKUP_GPG_PASSPHRASE:-}"
 STAMP="$(date +%Y-%m-%d_%H%M)"
+
+# H-INF-4: in production, refuse to run without encryption. KYC docs, password
+# hashes and PII must never be written to disk / the offsite remote in
+# plaintext. Fail loudly at the top rather than silently producing an
+# unencrypted dump.
+if [[ "${ENVIRONMENT:-}" == "production" && -z "$GPG_PASSPHRASE" ]]; then
+  echo "[backup] FATAL: ENVIRONMENT=production but BACKUP_GPG_PASSPHRASE is unset." >&2
+  echo "[backup] Set a strong passphrase (openssl rand -hex 32) before backing up." >&2
+  exit 1
+fi
 
 # Colour-free, parsable log lines so cron output is easy to grep.
 log() { printf '[backup %s] %s\n' "$(date +%H:%M:%S)" "$*"; }

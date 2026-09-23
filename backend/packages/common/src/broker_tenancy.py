@@ -75,6 +75,17 @@ def platform_hosts() -> set[str]:
     return {h.strip().lower() for h in s.PLATFORM_HOSTS.split(",") if h.strip()}
 
 
+def is_platform_domain(domain: str) -> bool:
+    """A broker must not claim a platform host OR any subdomain of one — e.g.
+    api.swisscresta.com / admin.swisscresta.com would hijack the platform's own
+    API / admin routing. Blocks exact matches and any `*.that-host` subdomain."""
+    d = (domain or "").strip().lower().strip(".")
+    for h in platform_hosts():
+        if d == h or d.endswith("." + h):
+            return True
+    return False
+
+
 def is_platform_host(host: str | None) -> bool:
     if not host:
         return True

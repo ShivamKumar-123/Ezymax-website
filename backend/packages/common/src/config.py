@@ -29,8 +29,12 @@ class Settings(BaseSettings):
     # Max-Age (access ~JWT_ACCESS_EXPIRY_MINUTES, refresh JWT_REFRESH_EXPIRY_DAYS) so login
     # survives browser restarts.
     JWT_REFRESH_SESSION_COOKIE: bool = True
-    # Still return access_token in login/register JSON (phase out when all clients use cookies only).
-    JWT_INCLUDE_LEGACY_JSON_TOKEN: bool = True
+    # H-AUTH-3: do NOT echo the access token in the login/register JSON body when
+    # cookie auth is in use — it needlessly exposes the token to page JS (XSS
+    # reach) while the web app already authenticates via the HttpOnly cookie.
+    # Mobile/cookie-less clients still opt in per-request with the
+    # `x-token-delivery: json` header, so this default does not affect them.
+    JWT_INCLUDE_LEGACY_JSON_TOKEN: bool = False
 
     # HttpOnly auth cookies (trader web). Secure derived from request HTTPS unless overridden.
     ACCESS_TOKEN_COOKIE_NAME: str = "pt_access"
@@ -75,7 +79,9 @@ class Settings(BaseSettings):
     # Hostnames that are the PLATFORM's own (comma-separated, no scheme).
     # A login/signup arriving from one of these hosts is never attributed
     # to a tenant, and tenant login-isolation fails OPEN for them.
-    PLATFORM_HOSTS: str = "swisscresta.com,www.swisscresta.com,trade.swisscresta.com,localhost,127.0.0.1"
+    # Phase 3: api. and admin. are reserved so a broker can't claim them as a
+    # custom domain (is_platform_domain also blocks any *.swisscresta.com).
+    PLATFORM_HOSTS: str = "swisscresta.com,www.swisscresta.com,trade.swisscresta.com,api.swisscresta.com,admin.swisscresta.com,localhost,127.0.0.1"
     # The origin IP tenants must point their A record at (shown in the
     # domain-connect wizard and checked by DNS verification).
     PLATFORM_PUBLIC_IP: str = ""
@@ -209,6 +215,14 @@ class Settings(BaseSettings):
     # Deposit proof screenshots + user payout QR for manual withdrawals (gateway). Mount same path in admin for review.
     WALLET_UPLOAD_ROOT: str = "uploads/wallet"
 
+    # H-AUTH-1: comma-separated CIDRs of proxies we operate (nginx, docker
+    # bridge, load balancers). client_ip_for_inet walks X-Forwarded-For from the
+    # right and returns the last hop NOT in one of these ranges — the real
+    # client — so a spoofed leftmost XFF entry can't bypass per-IP limits.
+    # DECISION default covers loopback + the RFC1918 ranges our nginx/docker
+    # network uses; tighten to the exact proxy IPs in production if desired.
+    TRUSTED_PROXY_CIDRS: str = "127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+
     class Config:
         env_file = ".env"
         # The root .env legitimately carries vars for other consumers
@@ -245,6 +259,14 @@ _KNOWN_WEAK_ADMIN_PASSWORDS = {
     "",
 }
 
+# H-INF-9: default DB passwords baked into docker-compose fallbacks and the
+# config defaults. A production deploy that never overrode POSTGRES_PASSWORD /
+# TIMESCALE_PASSWORD ships with a publicly-known DB password — treat it like a
+# default JWT secret and refuse to boot. Matched as a substring of the DSN.
+_WEAK_DB_PASSWORDS = {
+    "swisscresta_dev",
+}
+
 
 def _assert_production_secrets(s: Settings) -> None:
     """Refuse to start in production with default secrets baked into the
@@ -274,6 +296,13 @@ def _assert_production_secrets(s: Settings) -> None:
                 "for local dev; production deploys MUST set a strong password "
                 "(e.g. `openssl rand -base64 24`)."
             )
+        if any(f":{pw}@" in (getattr(s, n, "") or "")
+               for n in ("DATABASE_URL", "TIMESCALE_URL") for pw in _WEAK_DB_PASSWORDS):
+            log.warning(
+                "Using the DEFAULT dev DB password (swisscresta_dev). Acceptable "
+                "for local dev; production deploys MUST set POSTGRES_PASSWORD / "
+                "TIMESCALE_PASSWORD to strong values."
+            )
         return
     bad: list[str] = []
     for name in ("JWT_SECRET", "ADMIN_JWT_SECRET", "USER_JWT_SECRET"):
@@ -282,6 +311,11 @@ def _assert_production_secrets(s: Settings) -> None:
             bad.append(name)
     if s.ADMIN_PASSWORD in _KNOWN_WEAK_ADMIN_PASSWORDS:
         bad.append("ADMIN_PASSWORD")
+    # H-INF-9: refuse a default DB password in either DSN.
+    for name in ("DATABASE_URL", "TIMESCALE_URL"):
+        dsn = getattr(s, name, "") or ""
+        if any(f":{pw}@" in dsn for pw in _WEAK_DB_PASSWORDS):
+            bad.append(name)
     if bad:
         raise RuntimeError(
             "Refusing to start: ENVIRONMENT=production but the following "

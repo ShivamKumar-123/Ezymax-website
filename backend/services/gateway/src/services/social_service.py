@@ -16,6 +16,7 @@ from packages.common.src.models import (
     Referral, AccountGroup, Instrument,
 )
 from packages.common.src.copy_fees import apply_hwm_fee
+from packages.common.src.row_locks import lock_user, lock_account
 from packages.common.src.redis_client import redis_client
 from packages.common.src.price_cache import price_cache
 from packages.common.src.trading_service import calc_position_pnl, cross_rate_for
@@ -41,6 +42,27 @@ async def _live_open_pnl(pos, instrument) -> float:
     except Exception:
         pass
     return float(pos.profit or 0)
+
+
+async def _pool_value_with_floating(db: AsyncSession, pool_account) -> Decimal:
+    """H-TRADE-2: value a PAMM pool at balance PLUS the live floating P&L of its
+    open positions, so NAV for subscribe/redeem reflects true value. Using bare
+    balance let a joiner buy units cheaply during an unrealised gain (or dear
+    during a loss), diluting existing holders."""
+    base = pool_account.balance or Decimal("0")
+    pos_rows = (await db.execute(
+        select(Position).where(
+            Position.account_id == pool_account.id,
+            Position.status == PositionStatus.OPEN,
+        )
+    )).scalars().all()
+    floating = Decimal("0")
+    for pos in pos_rows:
+        inst = pos.instrument
+        if not inst:
+            continue
+        floating += Decimal(str(await _live_open_pnl(pos, inst)))
+    return base + floating
 
 
 def _gen_investor_account_number(copy_type: str = "signal") -> str:
@@ -372,8 +394,9 @@ async def start_copy(
     if investor_count.scalar() >= master.max_investors:
         raise HTTPException(status_code=400, detail="Provider has reached maximum investors")
 
-    user_result = await db.execute(select(User).where(User.id == user_id))
-    user = user_result.scalar_one_or_none()
+    # C-TRADE-4 / H-TRADE-1: lock the user row (canonical: user before account)
+    # so two concurrent subscriptions can't both spend the same wallet balance.
+    user = await lock_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -390,10 +413,9 @@ async def start_copy(
     investor_account: TradingAccount
     if account_id is not None:
         # ── Existing-account path ──
-        acc_q = await db.execute(
-            select(TradingAccount).where(TradingAccount.id == account_id)
-        )
-        acc = acc_q.scalar_one_or_none()
+        # Lock the account (after the user — canonical order) before checking
+        # its balance against the allocation.
+        acc = await lock_account(db, account_id)
         if not acc or acc.user_id != user_id:
             raise HTTPException(status_code=400, detail="Account not found or not yours")
         if acc.is_demo:
@@ -700,6 +722,11 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
     if allocation.status != "active":
         raise HTTPException(status_code=400, detail="Subscription already inactive")
 
+    # C-TRADE-4 / H-TRADE-1: acquire the balance-mutation locks up front in the
+    # canonical order (user, then account) so the refund can't race a concurrent
+    # transfer/subscribe on the same wallet or CF account.
+    user = await lock_user(db, user_id)
+
     # Close open copied positions and calculate PnL
     from packages.common.src.redis_client import PriceChannel
     open_copies_q = await db.execute(
@@ -715,6 +742,16 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
         select(MasterAccount).where(MasterAccount.id == allocation.master_id)
     )
     master = master_result.scalar_one_or_none()
+
+    # C-TRADE-1: the follower's capital lives in their own CF account. Realise
+    # P&L into THAT account and later refund its real balance — the old code
+    # credited allocation_amount + P&L to the wallet without ever zeroing the CF
+    # account, so deleting the account afterwards swept the same funds a second
+    # time (double refund).
+    inv_acct = (
+        await lock_account(db, allocation.investor_account_id)
+        if allocation.investor_account_id else None
+    )
 
     for copy in open_copies:
         investor_pos = await db.get(Position, copy.investor_position_id)
@@ -758,6 +795,9 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
             )
         net = gross - perf_fee
         total_pnl += net
+        # Realise this position's P&L onto the CF account balance.
+        if inv_acct is not None:
+            inv_acct.balance = (inv_acct.balance or Decimal("0")) + net
 
         investor_pos.status = PositionStatus.CLOSED.value
         investor_pos.close_price = close_price
@@ -779,13 +819,24 @@ async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dic
     # No master-pool deduct: signal/copy trade keeps follower funds in the follower's
     # own CF account throughout. Master never held this money.
 
-    # Return capital + PnL to main wallet
-    user_result = await db.execute(select(User).where(User.id == user_id))
-    user = user_result.scalar_one_or_none()
-
-    return_amount = (allocation.allocation_amount or Decimal("0")) + total_pnl
-    if return_amount < 0:
-        return_amount = Decimal("0")
+    # Return capital + PnL to main wallet (user row already locked above).
+    # C-TRADE-1: refund the CF account's REAL balance (capital with realised P&L
+    # already applied above), then zero the account so it can't be swept again.
+    # Fall back to the reconstructed figure only for legacy allocations that
+    # never had a dedicated CF account.
+    if inv_acct is not None:
+        return_amount = inv_acct.balance or Decimal("0")
+        if return_amount < 0:
+            return_amount = Decimal("0")
+        inv_acct.balance = Decimal("0")
+        inv_acct.equity = Decimal("0")
+        inv_acct.free_margin = Decimal("0")
+        inv_acct.margin_used = Decimal("0")
+        inv_acct.is_active = False
+    else:
+        return_amount = (allocation.allocation_amount or Decimal("0")) + total_pnl
+        if return_amount < 0:
+            return_amount = Decimal("0")
 
     if user:
         user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + return_amount
@@ -867,7 +918,9 @@ async def withdraw_managed_account(
         total_units = Decimal(str(total_units_q.scalar() or 0))
         my_units = allocation.units or Decimal("0")
         alloc_amt = allocation.allocation_amount or Decimal("0")  # cost basis
-        pool_balance = pool_account.balance or Decimal("0")
+        # H-TRADE-2: value the pool at equity (balance + floating P&L of open
+        # positions), not bare balance, so the redeem NAV is fair.
+        pool_balance = await _pool_value_with_floating(db, pool_account)
 
         # Investor share = their units valued at the current NAV
         # (NAV = pool_balance / total_units). Redeeming the full share removes
@@ -890,7 +943,9 @@ async def withdraw_managed_account(
         # The FULL share leaves the pool. The performance fee does NOT linger in
         # the pool (that would inflate the remaining investors' NAV) — it is
         # paid out to the master's own wallet below.
-        pool_account.balance = max(Decimal("0"), pool_balance - share_value)
+        # H-TRADE-2: reduce the REAL settled balance by the cash paid out, not the
+        # equity figure used for NAV (pool_balance now includes floating P&L).
+        pool_account.balance = max(Decimal("0"), (pool_account.balance or Decimal("0")) - share_value)
         pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
         pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))
 
@@ -1656,7 +1711,8 @@ async def invest_managed_account(
     # first investor (or an empty pool). MAM is unaffected (units stays 0).
     pamm_new_units = Decimal("0")
     if master.master_type == "pamm" and pool_account is not None:
-        pool_value_before = pool_account.balance or Decimal("0")
+        # H-TRADE-2: NAV uses pool equity (balance + floating P&L), not balance.
+        pool_value_before = await _pool_value_with_floating(db, pool_account)
         tot_units_q = await db.execute(
             select(func.coalesce(func.sum(InvestorAllocation.units), 0)).where(
                 InvestorAllocation.master_id == master_id,
@@ -1672,7 +1728,11 @@ async def invest_managed_account(
         )
         pamm_new_units = amount / nav
 
-    if pool_account:
+    # H-TRADE-3: credit exactly ONE destination. PAMM is a pooled fund → the
+    # pool account. MAM mirrors into the investor's own sub-account → credited
+    # below. Previously the pool was credited for BOTH types AND the MAM
+    # sub-account too, double-crediting every MAM investment.
+    if master.master_type == "pamm" and pool_account:
         pool_account.balance = (pool_account.balance or Decimal("0")) + amount
         pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
         pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))

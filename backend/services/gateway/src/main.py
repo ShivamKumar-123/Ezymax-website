@@ -422,6 +422,35 @@ def _normalize_origin(raw: str) -> str:
 _NORMALIZED_ALLOWED_ORIGINS = {_normalize_origin(o) for o in _cors_origins}
 
 
+# Phase 3: cap the number of concurrent WebSocket connections a single user may
+# hold, so one client (or a bug / abuse) can't open unbounded streams and
+# exhaust the worker's sockets/memory. Per-worker in-process counter — good
+# enough as a guard-rail; a multi-worker deploy multiplies the cap by worker
+# count, which is acceptable for a resource ceiling.
+_WS_MAX_PER_USER = 10
+_ws_user_conn_counts: dict[str, int] = {}
+
+
+def _ws_try_acquire(user_id: str | None) -> bool:
+    if not user_id:
+        return True  # anonymous streams are already tightly scoped
+    n = _ws_user_conn_counts.get(user_id, 0)
+    if n >= _WS_MAX_PER_USER:
+        return False
+    _ws_user_conn_counts[user_id] = n + 1
+    return True
+
+
+def _ws_release(user_id: str | None) -> None:
+    if not user_id:
+        return
+    n = _ws_user_conn_counts.get(user_id, 0) - 1
+    if n <= 0:
+        _ws_user_conn_counts.pop(user_id, None)
+    else:
+        _ws_user_conn_counts[user_id] = n
+
+
 def _check_ws_origin(websocket: WebSocket) -> bool:
     """Reject WebSocket handshakes whose Origin header isn't on our
     allow-list. Browsers send cookies on cross-origin WS handshakes
@@ -583,6 +612,9 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
             return
         user_id = str(user.get("user_id") or "") or None
 
+    if not _ws_try_acquire(user_id):
+        await websocket.close(code=4008, reason="Too many concurrent connections")
+        return
     await websocket.accept()
     pubsub = redis_client.pubsub()
     await pubsub.subscribe(PriceChannel.PRICE_CHANNEL)
@@ -664,6 +696,7 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
     except WebSocketDisconnect:
         pass
     finally:
+        _ws_release(user_id)
         await pubsub.unsubscribe(PriceChannel.PRICE_CHANNEL)
         await pubsub.close()
 
@@ -690,13 +723,18 @@ async def bars_stream(websocket: WebSocket, token: str | None = Query(default=No
     if not _check_ws_origin(websocket):
         await websocket.close(code=4003, reason="Origin not allowed")
         return
+    user_id: str | None = None
     effective = _ws_token_from_websocket(websocket, token)
     if effective:
         user = _verify_ws_token(effective)
         if not user:
             await websocket.close(code=4001, reason="Invalid token")
             return
+        user_id = str(user.get("user_id") or "") or None
 
+    if not _ws_try_acquire(user_id):
+        await websocket.close(code=4008, reason="Too many concurrent connections")
+        return
     await websocket.accept()
     pubsub = redis_client.pubsub()
     await pubsub.subscribe(BARS_UPDATES_CHANNEL)
@@ -778,6 +816,7 @@ async def bars_stream(websocket: WebSocket, token: str | None = Query(default=No
     except WebSocketDisconnect:
         pass
     finally:
+        _ws_release(user_id)
         await pubsub.unsubscribe(BARS_UPDATES_CHANNEL)
         await pubsub.close()
 
@@ -811,6 +850,10 @@ async def trade_stream(websocket: WebSocket, account_id: str, token: str | None 
             await websocket.close(code=4003, reason="Account not found or access denied")
             return
 
+    _uid = str(user.get("user_id") or "") or None
+    if not _ws_try_acquire(_uid):
+        await websocket.close(code=4008, reason="Too many concurrent connections")
+        return
     await websocket.accept()
     manager = websocket_manager.ConnectionManager()
     await manager.connect(account_id, websocket)
@@ -849,6 +892,7 @@ async def trade_stream(websocket: WebSocket, account_id: str, token: str | None 
     except WebSocketDisconnect:
         manager.disconnect(account_id)
     finally:
+        _ws_release(_uid)
         await pubsub.unsubscribe(channel)
         await pubsub.close()
 

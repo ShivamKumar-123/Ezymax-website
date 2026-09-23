@@ -37,9 +37,26 @@ from packages.common.src.admin_schemas import (
     FundRequest, CreditRequest,
 )
 from packages.common.src.kyc_identifiers import mask_aadhaar
-from dependencies import write_audit_log
+from dependencies import write_audit_log, assert_broker_scope
 
 settings = get_settings()
+
+# H-ADMIN-2: destructive / funding actions must never target privileged accounts
+# unless the actor is a super_admin, and never target the actor themselves.
+_PRIVILEGED_ROLES = {"super_admin", "admin", "broker"}
+
+
+async def _assert_can_target(db: AsyncSession, admin_id: uuid.UUID, target_user) -> None:
+    if target_user is None:
+        return
+    if str(getattr(target_user, "id", "")) == str(admin_id):
+        raise HTTPException(status_code=403, detail="You cannot perform this action on your own account.")
+    actor = (await db.execute(select(User).where(User.id == admin_id))).scalar_one_or_none()
+    if getattr(target_user, "role", None) in _PRIVILEGED_ROLES and getattr(actor, "role", None) != "super_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Only a super admin may perform this action on an admin, broker, or super-admin account.",
+        )
 
 
 def _user_to_out(u: User) -> dict:
@@ -270,6 +287,7 @@ async def add_fund(
     user_row = user_result.scalar_one_or_none()
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
+    await _assert_can_target(db, admin_id, user_row)  # H-ADMIN-2
 
     old_balance = user_row.main_wallet_balance or Decimal("0")
     user_row.main_wallet_balance = old_balance + amt
@@ -351,6 +369,7 @@ async def deduct_fund(
     user_row = user_result.scalar_one_or_none()
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
+    await _assert_can_target(db, admin_id, user_row)  # H-ADMIN-2
 
     main_bal = user_row.main_wallet_balance or Decimal("0")
 
@@ -492,6 +511,8 @@ async def give_credit(
     account = account_result.scalar_one_or_none()
     if not account:
         raise HTTPException(status_code=404, detail="Trading account not found")
+    target = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    await _assert_can_target(db, admin_id, target)  # H-ADMIN-2
 
     old_credit = float(account.credit or 0)
     account.credit = Decimal(str(old_credit)) + Decimal(str(body.amount))
@@ -534,6 +555,8 @@ async def take_credit(
     account = account_result.scalar_one_or_none()
     if not account:
         raise HTTPException(status_code=404, detail="Trading account not found")
+    target = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    await _assert_can_target(db, admin_id, target)  # H-ADMIN-2
 
     old_credit = float(account.credit or 0)
     if old_credit < body.amount:
@@ -570,6 +593,7 @@ async def ban_user(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    await _assert_can_target(db, admin_id, user)  # H-ADMIN-2
 
     old_status = user.status
     user.status = "banned"
@@ -591,6 +615,7 @@ async def unban_user(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    await _assert_can_target(db, admin_id, user)  # H-ADMIN-2
 
     old_status = user.status
     user.status = "active"
@@ -612,6 +637,7 @@ async def block_trading(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    await _assert_can_target(db, admin_id, user)  # H-ADMIN-2
 
     far_future = datetime.utcnow() + timedelta(days=36500)
     user.trading_blocked_until = far_future
@@ -632,6 +658,7 @@ async def kill_switch(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    await _assert_can_target(db, admin_id, user)  # H-ADMIN-2
 
     accounts_q = await db.execute(
         select(TradingAccount).where(TradingAccount.user_id == user_id)
@@ -696,6 +723,14 @@ async def login_as_user(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    await _assert_can_target(db, admin_id, user)  # H-ADMIN-2
+
+    # Phase 3 (impersonation scope): a broker actor may only impersonate a user
+    # in their own pool. Platform admins pass through. Load the actor row and
+    # enforce broker scope before minting an impersonation token.
+    actor = (await db.execute(select(User).where(User.id == admin_id))).scalar_one_or_none()
+    if actor is not None:
+        await assert_broker_scope(actor, user_id, db)
 
     # Privilege guard (audit H5). Even if a non-super-admin somehow holds
     # the `users.impersonate` permission (via Employee.extra_permissions
@@ -764,6 +799,7 @@ async def delete_user(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    await _assert_can_target(db, admin_id, user)  # H-ADMIN-2
 
     if user.role in ("super_admin",):
         raise HTTPException(status_code=403, detail="Cannot delete super_admin user")
