@@ -228,6 +228,7 @@ export default function OrderPanel({
   const handleSubmit = async () => {
     unlockAudio();
     if (!activeAccount) return;
+    if (submitting) return;  // in-flight guard: a double-click must not fire two orders
     markRecentlyClicked();
     if (orderTab === 'market' && !marketStatus.isOpen) {
       toast.error(marketStatus.reason || 'Market is closed');
@@ -332,6 +333,7 @@ export default function OrderPanel({
       rollback = () => setPositions(prev);
     }
 
+    setSubmitting(true);  // in-flight guard — reset in .then/.catch below
     api.post<{
       id: string;
       position_id: string | null;
@@ -394,6 +396,8 @@ export default function OrderPanel({
     }).catch((e: any) => {
       if (rollback) rollback();
       toast.error(e.message || 'Order failed');
+    }).finally(() => {
+      setSubmitting(false);
     });
 
     // Order is on its way (optimistic, same as the sound above) — let the
@@ -710,7 +714,7 @@ export default function OrderPanel({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!recentlyClicked && (!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid || triggerOutOfBounds)}
+            disabled={submitting || (!recentlyClicked && (!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid || triggerOutOfBounds))}
             className={clsx(
               'w-full rounded-xl py-2.5 text-[15px] font-semibold text-white transition-[transform,opacity] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45',
               side === 'buy' ? 'bg-[#1E66F5] hover:bg-[#1a58d6]' : 'bg-[#E5484D] hover:bg-[#d23b40]',
