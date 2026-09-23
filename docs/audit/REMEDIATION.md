@@ -138,9 +138,10 @@ them load the module by file path via `importlib` (see `test_upload_path_safety.
 - **H-AUTH-2** — step-up wired into wallet disconnect (the withdrawal-address
   change choke point). The finding also lists 2FA-disable and email-change; those
   have no self-service trader endpoint in this codebase.
-- **fx_admin Secure cookie** — the backend already derives `Secure` from
-  `X-Forwarded-Proto` (`_request_is_https`). Ensure the admin Next proxy / nginx
-  forwards `X-Forwarded-Proto` in production (OPS).
+- **fx_admin Secure cookie** — DONE (commit c4a8d989): the admin Next proxy now
+  forwards `X-Forwarded-Proto` so `_request_is_https` marks the cookie `Secure`
+  in production. (If an nginx sits in front of the Next app, confirm it also sets
+  `X-Forwarded-Proto $scheme` — standard config.)
 
 **Phase 3 remaining (OPS-only):**
 - **Redis `requirepass`** — Redis has no host port (Docker-network only), so this
@@ -164,8 +165,8 @@ them load the module by file path via `importlib` (see `test_upload_path_safety.
    production (default covers loopback + RFC1918).
 5. **H-INF-9** — set strong `POSTGRES_PASSWORD` / `TIMESCALE_PASSWORD` (production
    now refuses to boot with the default `swisscresta_dev`).
-6. **fx_admin** — confirm the admin proxy/nginx forwards `X-Forwarded-Proto` so
-   the admin cookie is marked `Secure` in production.
+6. **fx_admin** — done in code (proxy forwards `X-Forwarded-Proto`); if an nginx
+   fronts the Next app, confirm it sets `X-Forwarded-Proto $scheme` (standard).
 7. **Redis requirepass** — add `--requirepass $REDIS_PASSWORD` to the redis
    service and update every service's `REDIS_URL` to
    `redis://:$REDIS_PASSWORD@redis:6379/N` in the same deploy.
