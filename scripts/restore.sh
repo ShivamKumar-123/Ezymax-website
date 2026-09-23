@@ -67,6 +67,12 @@ for i in $(seq 1 30); do
   sleep 1
 done
 
+# H-INF: initialise ALL temp paths before the trap. Previously the EXIT trap
+# referenced $TMP_TS / $TMP_UP which are only assigned later (and conditionally),
+# so under `set -u` the trap itself failed with "unbound variable" whenever the
+# script exited before the timescale/uploads sections.
+TMP_TS=""
+TMP_UP=""
 TMP_PG=$(mktemp --suffix=.sql.gz)
 trap 'rm -f "$TMP_PG" "$TMP_TS" "$TMP_UP"' EXIT
 decrypt_to "$DUMP" "$TMP_PG"
