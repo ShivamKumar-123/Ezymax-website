@@ -29,8 +29,12 @@ class Settings(BaseSettings):
     # Max-Age (access ~JWT_ACCESS_EXPIRY_MINUTES, refresh JWT_REFRESH_EXPIRY_DAYS) so login
     # survives browser restarts.
     JWT_REFRESH_SESSION_COOKIE: bool = True
-    # Still return access_token in login/register JSON (phase out when all clients use cookies only).
-    JWT_INCLUDE_LEGACY_JSON_TOKEN: bool = True
+    # H-AUTH-3: do NOT echo the access token in the login/register JSON body when
+    # cookie auth is in use — it needlessly exposes the token to page JS (XSS
+    # reach) while the web app already authenticates via the HttpOnly cookie.
+    # Mobile/cookie-less clients still opt in per-request with the
+    # `x-token-delivery: json` header, so this default does not affect them.
+    JWT_INCLUDE_LEGACY_JSON_TOKEN: bool = False
 
     # HttpOnly auth cookies (trader web). Secure derived from request HTTPS unless overridden.
     ACCESS_TOKEN_COOKIE_NAME: str = "pt_access"

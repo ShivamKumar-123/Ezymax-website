@@ -335,6 +335,14 @@ async def apply_tenant_attribution(
 
 # ─── Core: issue auth response ───────────────────────────────────────────
 
+def _include_json_access_token(legacy_flag: bool, json_delivery: bool) -> bool:
+    """H-AUTH-3: the access token is echoed in the JSON body ONLY when a
+    cookie-less client explicitly opts in (x-token-delivery: json) or the legacy
+    flag is enabled. Cookie (web) clients get an empty token — they authenticate
+    via the HttpOnly cookie, so echoing it only widens XSS reach."""
+    return bool(legacy_flag or json_delivery)
+
+
 async def issue_auth_json_response(
     user: User,
     request: Request,
@@ -417,7 +425,7 @@ async def issue_auth_json_response(
     # explicit request header. Web clients never send it, so browser responses
     # keep the cookie-only contract (no refresh token in JSON).
     json_delivery = (request.headers.get("x-token-delivery") or "").strip().lower() == "json"
-    display_token = token if (st.JWT_INCLUDE_LEGACY_JSON_TOKEN or json_delivery) else ""
+    display_token = token if _include_json_access_token(st.JWT_INCLUDE_LEGACY_JSON_TOKEN, json_delivery) else ""
     body = TokenResponse(
         access_token=display_token,
         user_id=str(user.id),
