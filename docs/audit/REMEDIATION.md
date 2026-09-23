@@ -12,7 +12,7 @@ documented OPS follow-up) · Phase 3 (Medium) — highest-value backend/data ite
 done, the remainder itemised under Open items.
 
 **Verification (latest run):**
-- `python -m pytest backend/tests -q` → **136 passed**.
+- `python -m pytest backend/tests -q` → **151 passed**.
 - AST parse of all backend `*.py` → 0 errors.
 - `npx tsc --noEmit` in `frontend/trader` and `frontend/admin` → 0 errors each.
 - `git grep -n 'verify_exp": False'` → no matches.
@@ -83,7 +83,7 @@ them load the module by file path via `importlib` (see `test_upload_path_safety.
 | H-INF-2/4 | 246f8ecb | backup.sh safe `.env` KEY=VALUE parser (no `source`), mandatory GPG in prod; restore.sh EXIT-trap fix. | bash -n |
 | H-INF-6 | 789b93ee | desktop terminal refuses non-https/wss endpoints unless `--allow-insecure`. | review (no C++ toolchain) |
 
-## Phase 3 — Medium (done so far)
+## Phase 3 — Medium (done)
 
 | Finding | Commit | Change | Test |
 |---|---|---|---|
@@ -92,6 +92,18 @@ them load the module by file path via `importlib` (see `test_upload_path_safety.
 | OxaPay amount binding + reject_deposit lock | 0db5492b | mismatched OxaPay callback → manual_review; `reject_deposit` locks the row. | test_oxapay_amount_binding |
 | secrets in query params | 95ddf8b2 | `/auth/2fa/verify` + `/auth/password/change` take secrets in the JSON body. | test_auth_body_not_query |
 | root .dockerignore | a99fcf79 | exclude env/keys/.git/caches from image build contexts. | build config |
+| SL/TP KEYS→SCAN | 68ec0be1 | price load uses `scan_iter`, not the O(N) blocking `KEYS`. | AST + review |
+| Google-login 2FA | c9ab1dfa | shared `_enforce_2fa` on Google sign-in too (was password-only). | test_google_2fa |
+| employees.extra_permissions | 05540a23 | migration 0070 adds the column the model + auth already use. | AST |
+| WebSocket connection caps | 92126729 | per-user in-process WS connection cap (prices/bars/trades). | test_ws_connection_cap |
+| webhook dedup ordering | 8182fe6a | release the dedup claim if processing fails so the retry re-processes. | test_webhook_claim_release |
+| TradingAccount.positions | 8671ba73 | relationship `lazy=noload` (was selectin — eager-loaded all positions). | pytest suite |
+| terminal order double-submit | 161ea0b7 | in-flight guard on the Buy/Sell button (submitting state actually set). | tsc |
+| admin money double-submit | e44df7a3 | guard at the top of the deposit/withdrawal action handler. | tsc |
+| custom-domain uniqueness/PLATFORM_HOSTS | a94ee154 | `is_platform_domain` blocks platform hosts + any `*.host` subdomain (api./admin.). | test_platform_domain_reserved |
+| impersonation scope | 93f5883a | broker actor can only impersonate a user in their pool (audit row already existed). | AST + review |
+| certbot throttling | 95ad9f1e | per-domain cooldown marker before certbot in the white-label agent. | bash -n |
+| XAG contract size | (already on main) | FE prefers DB `contract_size`; fallback corrected to 5000. | — |
 
 ## Open items / deviations (need a decision or a follow-up pass)
 
@@ -130,12 +142,12 @@ them load the module by file path via `importlib` (see `test_upload_path_safety.
   `X-Forwarded-Proto` (`_request_is_https`). Ensure the admin Next proxy / nginx
   forwards `X-Forwarded-Proto` in production (OPS).
 
-**Phase 3 not yet started:** webhook dedup commit ordering, impersonation audit
-rows/scope, custom-domain uniqueness + PLATFORM_HOSTS, certbot throttling,
-in-flight guards on admin money buttons + terminal market-order button (FE), XAG
-contract-size single source, Redis `requirepass` (OPS),
-`employees.extra_permissions` alembic revision, SL/TP engine `KEYS`→`SCAN`,
-WebSocket connection caps, `TradingAccount.positions` lazy loading.
+**Phase 3 remaining (OPS-only):**
+- **Redis `requirepass`** — Redis has no host port (Docker-network only), so this
+  is defence-in-depth. Applying it means adding `--requirepass $REDIS_PASSWORD`
+  to the redis service AND putting the password in every service's `REDIS_URL`
+  in lock-step; a mismatch is a full outage, so it's left as a coordinated
+  operator change rather than a half-applied config here.
 
 ## OPS steps for an operator (host-side, apply by hand)
 
@@ -154,3 +166,10 @@ WebSocket connection caps, `TradingAccount.positions` lazy loading.
    now refuses to boot with the default `swisscresta_dev`).
 6. **fx_admin** — confirm the admin proxy/nginx forwards `X-Forwarded-Proto` so
    the admin cookie is marked `Secure` in production.
+7. **Redis requirepass** — add `--requirepass $REDIS_PASSWORD` to the redis
+   service and update every service's `REDIS_URL` to
+   `redis://:$REDIS_PASSWORD@redis:6379/N` in the same deploy.
+8. **H-INF-1 / H-INF-2..5 / H-INF-6** — relocate cron target scripts to a
+   root-owned dir at install time; decide the single backup path + custom-format
+   `pg_restore`; add Qt-keychain token storage + algo-key revoke to the desktop
+   terminal build.
