@@ -769,7 +769,10 @@ class CopyTradeEngine:
                 )
 
         if performance_fee > 0:
-            master_account = await db.get(TradingAccount, master.account_id)
+            # C-TRADE-4: lock the master pool row before crediting its
+            # performance-fee share (mirrors the investor-side lock above), so it
+            # can't race a concurrent close / transfer / withdrawal on that account.
+            master_account = await lock_account(db, master.account_id)
             if master_account:
                 master_share = performance_fee - admin_fee
                 master_account.balance = (master_account.balance or Decimal("0")) + master_share
