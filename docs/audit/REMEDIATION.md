@@ -144,11 +144,22 @@ them load the module by file path via `importlib` (see `test_upload_path_safety.
   `X-Forwarded-Proto $scheme` — standard config.)
 
 **Phase 3 remaining (OPS-only):**
-- **Redis `requirepass`** — Redis has no host port (Docker-network only), so this
-  is defence-in-depth. Applying it means adding `--requirepass $REDIS_PASSWORD`
-  to the redis service AND putting the password in every service's `REDIS_URL`
-  in lock-step; a mismatch is a full outage, so it's left as a coordinated
-  operator change rather than a half-applied config here.
+- **Redis `requirepass`** — DONE + LIVE (commit 6d9f3bdf): prod override runs
+  `redis-server --requirepass $REDIS_PASSWORD` with an auth-aware healthcheck;
+  `REDIS_PASSWORD` set in `/opt/swisscresta/.env` and embedded in
+  `REDIS_URL`/`ADMIN_REDIS_URL`. Verified in prod: no-auth `redis-cli ping` →
+  `NOAUTH Authentication required`; all services healthy, api/trade/admin 200.
+- **Cron script relocation** (H-INF-1 second half) — copy cron target scripts to
+  a root-owned `/usr/local/lib/swisscresta/` at install time so a repo-writer
+  can't alter what root's cron runs. Install-procedure change (operator re-runs
+  install-*-cron.sh as root).
+- **Backup path consolidation + custom-format `pg_restore`** — DR-critical; the
+  current scripts are hardened + working, and switching the on-disk dump format
+  should be validated with a full backup→restore cycle on the host before it's
+  trusted.
+- **Desktop terminal Qt keychain** — OS-keychain token storage + algo-key
+  revoke; needs the Qt keychain lib + a desktop build (https/wss enforcement is
+  done).
 
 ## OPS steps for an operator (host-side, apply by hand)
 
