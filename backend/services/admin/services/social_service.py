@@ -13,6 +13,7 @@ from packages.common.src.models import (
 )
 from dependencies import write_audit_log
 from packages.common.src.admin_fees import credit_admin_fee
+from packages.common.src.row_locks import lock_account
 
 
 def _generate_pool_account_number(prefix: str = "PM") -> str:
@@ -162,6 +163,11 @@ async def distribute_pamm_profit(
         admin_fee = perf_fee * admin_commission_pct / 100
         net_profit = new_gross - perf_fee
 
+        # C-TRADE-4 (Medium): lock the investor account before crediting the
+        # settlement so it can't race a concurrent close / transfer / withdrawal.
+        investor_account = await lock_account(db, alloc.investor_account_id)
+        if investor_account is None:
+            continue
         investor_account.balance = (investor_account.balance or Decimal("0")) + Decimal(str(round(net_profit, 8)))
         investor_account.equity = investor_account.balance + (investor_account.credit or Decimal("0"))
         alloc.total_profit = (alloc.total_profit or Decimal("0")) + Decimal(str(round(net_profit, 8)))
@@ -188,10 +194,8 @@ async def distribute_pamm_profit(
 
     master_cut = total_perf_fee - total_admin_fee
     if master_cut > 0:
-        master_acct_result = await db.execute(
-            select(TradingAccount).where(TradingAccount.id == master.account_id)
-        )
-        master_acct = master_acct_result.scalar_one_or_none()
+        # C-TRADE-4 (Medium): lock the master pool before crediting its cut.
+        master_acct = await lock_account(db, master.account_id)
         if master_acct:
             master_acct.balance = (master_acct.balance or Decimal("0")) + Decimal(str(round(master_cut, 8)))
             master_acct.equity = master_acct.balance + (master_acct.credit or Decimal("0"))
