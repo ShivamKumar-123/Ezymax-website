@@ -1728,7 +1728,11 @@ async def invest_managed_account(
         )
         pamm_new_units = amount / nav
 
-    if pool_account:
+    # H-TRADE-3: credit exactly ONE destination. PAMM is a pooled fund → the
+    # pool account. MAM mirrors into the investor's own sub-account → credited
+    # below. Previously the pool was credited for BOTH types AND the MAM
+    # sub-account too, double-crediting every MAM investment.
+    if master.master_type == "pamm" and pool_account:
         pool_account.balance = (pool_account.balance or Decimal("0")) + amount
         pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
         pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))
