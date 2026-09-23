@@ -1,13 +1,25 @@
 # Security Audit Remediation — branch `fix/audit-2026-09`
 
 Remediation of the findings in `docs/audit/2026-09-22-security-audit.md`.
-Work is on branch `fix/audit-2026-09` (off `main`); not pushed, not deployed.
+Work is on branch `fix/audit-2026-09` (off `main`); **not pushed, not deployed**.
 One commit per finding. Every money/auth fix has a pure-unit pytest under
 `backend/tests/` (DB-free: fake-session / SimpleNamespace mocks + `asyncio.run`,
 matching the existing test style — no live Postgres fixture exists).
 
-**Status:** Phase 1 (Critical) complete. Phase 2 (High) in progress. Phase 3
-(Medium) not yet started. **100 backend tests pass.**
+**Status:** Phase 1 (Critical) complete · Phase 2 (High) substantially complete
+(large session-revocation + spread-consistency + host-OPS items deferred, see
+Open items) · Phase 3 (Medium) — highest-value backend/data items done, the
+remainder itemised under Open items.
+
+**Verification (this run):**
+- `python -m pytest backend/tests -q` → **132 passed**.
+- AST parse of all 328 backend `*.py` → 0 errors.
+- `npx tsc --noEmit` in `frontend/trader` and `frontend/admin` → 0 errors each.
+- `git grep -n 'verify_exp": False'` → no matches.
+- `git diff --stat main..fix/audit-2026-09` → 73 files, +3495 / −423.
+- Alembic up/down and `docker compose config` require Postgres/Docker — run in CI
+  (the new backend-tests + migrations jobs) / on the host; migrations 0068 & 0069
+  both ship a working `downgrade()`.
 
 ## How to run the tests
 
@@ -21,74 +33,120 @@ env PYTHONPATH=. DATABASE_URL=postgresql+asyncpg://u:p@localhost/db \
   python -m pytest tests/ -q
 ```
 
-Admin-service modules use bare `from dependencies import ...`; the tests that
-touch them load the module by file path via `importlib` (see
-`test_upload_path_safety.py`).
+Admin-service modules use bare `from dependencies import …`; tests that touch
+them load the module by file path via `importlib` (see `test_upload_path_safety.py`).
 
 ## Phase 1 — Critical (all done)
 
-| Finding | Commit | What changed | Test / verification |
+| Finding | Commit | Change | Test |
 |---|---|---|---|
-| C-INF-1 / H-INF-7 | 7c8a8528 | `docker-compose.prod.yml`: `ports: !override` on admin-api/gateway/both frontends so only `127.0.0.1` host bindings survive the merge; `--proxy-headers --forwarded-allow-ips "*"` on both uvicorn commands. | `docker compose … config` shows only loopback host bindings (OPS: run on host). |
-| C-ADMIN-2 | b7f65120 | `admin/dependencies.py` `require_permission`: removed the legacy "role=admin ⇒ full admin" fallthrough; an admin with no ACTIVE employees row now gets 403. | `test_admin_permission.py` |
-| C-TRADE-2 | e7b4a41f | `schemas/trading.py`: close/modify `lots` → `Field(None, gt=0, le=100)`; `trading_service.close_position` rejects closing more than the open size. | `test_close_lots_bound.py` |
-| C-AUTH-1 | f98ed443 | Reset request carries the email; token lookup scoped to that user; per-user (10/15 min) + per-token (5) Redis attempt caps; all refresh tokens + sessions revoked on reset; FE reset form collects email. | `test_password_reset.py` |
-| C-TRADE-5 | 767f7322 | `close_position` bails on `is_tick_stale` (aligned with `get_current_price`/`modify_position`) instead of settling at a frozen price. | `test_close_stale_tick.py` |
-| C-MONEY-3 / H-MONEY-1 | b941ea59 | New `withdrawal_limits.available_to_withdraw` ((balance − margin_used) capped by free_margin); routed main-wallet, manual-UPI and on-chain withdrawal paths through it. | `test_withdrawal_limits.py` |
-| C-MONEY-2 | 3ec7acd9 | `onchain_deposit_service.normalize_tx_hash` (EVM 0x-lowercase / Tron bare hex); store canonical; migration **0068** lowercases existing rows + partial unique index on `(network, lower(crypto_tx_hash))`; IntegrityError → 409. | `test_tx_hash_normalize.py`; migration up/down (OPS). |
-| C-MONEY-1 | a237a9d6, 3a3aa506 | `delete_trading_account`: writes a `credit_removed` Transaction instead of silently zeroing bonus credit; refuses close while open positions **or** pending orders exist (409). | `test_delete_account_credit_removed.py` |
-| C-TRADE-1 | 878487b6 | `stop_copy` realises P&L onto the CF account, refunds its **real** balance, and zeroes + deactivates it (was crediting `allocation_amount + pnl` and leaving the account funded → double refund on later delete). | `test_stop_copy_real_balance.py` |
-| C-TRADE-4 / H-TRADE-1 | 04daa0a0 | New `row_locks.lock_user`/`lock_account` (SELECT … FOR UPDATE, canonical order user→account); applied to copy-subscribe, stop_copy, open_live_account. | `test_row_locks.py`, `test_stop_copy_real_balance.py` |
-| C-TRADE-3 | fba5c9b5 | `copy_engine._open_copy(catch_up=…)`: catch-up seeding opens follower copies at the current tick, not the master's historical open_price. | `test_copy_catchup_price.py` |
-| C-ADMIN-1 | babc7560 | Admin download endpoints route through `path_safety.safe_join_under_base`, restrict to an image/PDF allow-list, serve the real media type; gateway drops a client-supplied `screenshot_url` it can't confine (write-time). | `test_upload_path_safety.py` |
-| H-FE-1 | d5dccbdc | Chart pages read the bearer token from the URL **hash** (never sent to the server), still accept a legacy `?token=`, and strip it from the URL immediately. | `tsc --noEmit` clean. (Full one-time-code exchange is an open item — see below.) |
+| C-INF-1 / H-INF-7 | 7c8a8528 | compose `ports: !override` (loopback-only) + uvicorn `--proxy-headers --forwarded-allow-ips`. | compose config (OPS) |
+| C-ADMIN-2 | b7f65120 | drop legacy full-admin fallthrough in `require_permission`. | test_admin_permission |
+| C-TRADE-2 | e7b4a41f | bound close/modify lots `(0<lots≤100)` + reject over-close. | test_close_lots_bound |
+| C-AUTH-1 | f98ed443 | reset bound to user, per-user/per-token Redis caps, revoke sessions+refresh on reset, FE email field. | test_password_reset |
+| C-TRADE-5 | 767f7322 | `close_position` rejects a stale-tick settle. | test_close_stale_tick |
+| C-MONEY-3/H-MONEY-1 | b941ea59 | `available_to_withdraw` helper across all withdrawal paths. | test_withdrawal_limits |
+| C-MONEY-2 | 3ec7acd9 | canonical tx-hash + partial unique index (migration 0068); dup → 409. | test_tx_hash_normalize |
+| C-MONEY-1 | a237a9d6, 3a3aa506 | `credit_removed` Transaction on close; refuse close with open positions **or** pending orders. | test_delete_account_credit_removed |
+| C-TRADE-1 | 878487b6 | `stop_copy` refunds real CF balance and zeroes the account. | test_stop_copy_real_balance |
+| C-TRADE-4/H-TRADE-1 | 04daa0a0 | `row_locks.lock_user/lock_account` on copy-subscribe/stop/open-account. | test_row_locks |
+| C-TRADE-3 | fba5c9b5 | catch-up copies open at current tick, not master open_price. | test_copy_catchup_price |
+| C-ADMIN-1 | babc7560 | confine served uploads (safe_join + media allow-list); drop unconfinable stored path at write. | test_upload_path_safety |
+| H-FE-1 | d5dccbdc | chart token via URL hash + stripped from URL. | tsc |
 
-## Phase 2 — High (in progress)
+## Phase 2 — High
 
-| Finding | Commit | What changed | Test |
+| Finding | Commit | Change | Test |
 |---|---|---|---|
-| H-AUTH-1 / H-INF-7 | a39666fb | `rate_limit.client_ip_for_inet` walks X-Forwarded-For right→left skipping `TRUSTED_PROXY_CIDRS` (new config) and returns the first non-trusted hop; CF-Connecting-IP still wins; returns a single INET-safe IP. | `test_client_ip_trusted_proxy.py` |
-| H-ADMIN-1 | 45ab4a37 | `admin_refresh` decodes with `verify_exp=True` (was False → an expired token could be refreshed forever). | `test_admin_refresh_verify_exp.py` |
-| H-ADMIN-2 | 746183d7 | `_assert_can_target` on ban/unban/block/kill-switch/login-as/delete/add_fund/deduct_fund/give_credit/take_credit: no self-target; only super_admin may act on admin/broker/super_admin accounts. | `test_admin_target_guard.py` |
-| H-ADMIN-3 | 2000a61b | `PUT /trades/history/{id}/modify`: broker tenant-scope guard, super_admin/risk_manager only (DECISION), and an `adjustment` Transaction for any balance delta. | `test_modify_history_txn.py` |
-| H-TRADE-9 | d8e81a1f | b-book pending-order monitor selects with `FOR UPDATE SKIP LOCKED` and re-checks `status == PENDING` before filling (multi-worker double-fill). | AST + review (engine-locking change). |
-| H-MONEY-4 | c7cfe566 | `open_live_account` funds a new live account only by an explicit main-wallet transfer; no cross-account sweep; refuses when the wallet is short. | `test_open_live_no_sweep.py` |
+| H-AUTH-1/H-INF-7 | a39666fb | client IP via trusted-proxy XFF walk (`TRUSTED_PROXY_CIDRS`). | test_client_ip_trusted_proxy |
+| H-ADMIN-1 | 45ab4a37 | admin refresh verifies token expiry (`verify_exp=True`). | test_admin_refresh_verify_exp |
+| H-ADMIN-2 | 746183d7 | privileged-target + self-target guard on all admin user actions. | test_admin_target_guard |
+| H-ADMIN-3 | 2000a61b | closed-trade edit: broker scope + super_admin/risk_manager + adjustment Transaction. | test_modify_history_txn |
+| H-TRADE-9 | d8e81a1f | b-book pending orders `FOR UPDATE SKIP LOCKED` + status recheck. | AST + review |
+| H-MONEY-4 | c7cfe566 | new live account funded from main wallet only (no cross-account sweep). | test_open_live_no_sweep |
+| H-INF-9 | f4851e5f | production boot refuses default DB password `swisscresta_dev`. | test_weak_db_password_guard |
+| H-TRADE-7 | 88a8e75e | `/instruments/{symbol}/bars`: auth + symbol validation + per-user rate-limit. | test_bars_auth_validation |
+| H-TRADE-5 | 61bc0422 | AI backtest in worker thread, ≤20k bars, 30s wall-time, per-user concurrency 1. | test_backtest_concurrency |
+| H-MONEY-2 | 64d93847 | one bonus per offer per user + single `bonus_service` (migration 0069). | test_bonus_once_per_offer |
+| H-AUTH-4 | b94d4850 | register → OTP-first flow (no reclaim, no pre-verify cookie); refresh gated on email_verified. | test_register_and_refresh_gates |
+| H-TRADE-6 | 7bd8d3e5 | scope the trade-history relabel UPDATE to the user's accounts. | AST + review |
+| H-TRADE-2 | ec5e2461 | PAMM NAV valued at equity (incl floating P&L) for subscribe/redeem. | test_pamm_nav_floating |
+| H-TRADE-3 | 552bd323 | managed investment credits exactly one destination (PAMM pool / MAM sub-account). | test_managed_invest_one_destination |
+| H-FE-2/H-FE-3 | 563d8ce2 | public routes derived from `(landing)` segments + middleware auth guard. | tsc |
+| H-FE-ADMIN-1 | 56b78d25 | datetime-local ↔ UTC round-trip helpers (no-op save). | tsc |
+| H-AUTH-2 | f8b4dae0 | step-up required to disconnect wallet (withdrawal-address change). | test_stepup_wallet_unlink |
+| H-AUTH-3 (partial) | 1a445410 | stop echoing access token in cookie-auth JSON body (`JWT_INCLUDE_LEGACY_JSON_TOKEN=False`). | test_json_token_gate |
+| H-INF-8 | c014ab77 | CI: pytest job (Postgres+Redis), admin lint hard gate, migration admin creds. | ci.yml |
+| H-FE-ADMIN-2 | 1f1d6c4c | Book/LP settings: don't overwrite secret with masked/empty submit; expose `has_*` flags. | test_lp_secret_masking |
 
-## Open items / deviations from spec (need a decision or a follow-up pass)
+## Phase 3 — Medium (done so far)
 
-- **C-MONEY-3**: `available_to_withdraw` uses `(balance − margin_used)` capped by
-  `free_margin` rather than a live-equity helper, and is applied to the three
-  user-facing withdrawal paths. Admin `approve_withdrawal` and
-  `transfer_trading_to_main` already lock and check `balance − margin_used`; they
-  were left as-is. Consider routing them through the helper too for one source of truth.
-- **C-MONEY-2**: the on-chain `from`/`to` address verification the spec mentions
-  already lives on `main` (added in earlier ad-hoc work) — the sender check is in
-  the chain verifiers; this pass added only hash normalisation + the unique index.
-- **H-ADMIN-1**: implemented as `verify_exp=True` (sliding refresh within the 8h
-  token window). A full **admin refresh-token table with rotation** is the fuller
-  fix and is **not** done — deferred.
-- **H-FE-1**: token moved to the URL hash + stripped, which removes the
-  server-log/Referer/history leak. The spec's **one-time `POST /auth/chart-session`
-  code exchange for a cookie** is **not** implemented — deferred.
+| Finding | Commit | Change | Test |
+|---|---|---|---|
+| CSV formula escaping | 0c153758 | users CSV export: neutralise `= + - @` prefixes, quote/escape all cells. | tsc |
+| wallet-login status bypass | 4b20e5f7 | wallet sign-in enforces banned/blocked + staff-portal guards. | test_wallet_login_status |
+| OxaPay amount binding + reject_deposit lock | 0db5492b | mismatched OxaPay callback → manual_review; `reject_deposit` locks the row. | test_oxapay_amount_binding |
+| secrets in query params | 95ddf8b2 | `/auth/2fa/verify` + `/auth/password/change` take secrets in the JSON body. | test_auth_body_not_query |
+| root .dockerignore | a99fcf79 | exclude env/keys/.git/caches from image build contexts. | build config |
 
-## Not yet started
+## Open items / deviations (need a decision or a follow-up pass)
 
-- **Phase 2 remaining**: H-AUTH-2 (sensitive-action step-up), H-AUTH-3 (revocable
-  sessions / `sid` claim), H-AUTH-4 (register reclaim + email_verified gating),
-  H-MONEY-2 (one-bonus-per-offer + single `bonus_service`), H-TRADE-2/3/5/6/7/8,
-  H-FE-2/3 (public allow-list + middleware), H-FE-ADMIN-1/2, H-INF-1/2–5/6/8/9
-  (cron/backups/desktop-terminal/CI/weak-secret — several are OPS + non-Python).
-- **Phase 3 (Medium)**: full list in the audit report §4.
+**Deferred (large / higher-risk, deliberately not attempted this pass):**
+- **H-AUTH-3 (full)** — per-request session revocation via a `sid` claim +
+  Redis-cached `user_sessions` check, with revoke on logout/ban/role-change. This
+  is a hot-path change touching every authenticated request; done wrong it logs
+  everyone out. Mitigations already in place: `get_current_user` enforces account
+  status per request, sessions+refresh tokens are revoked on password reset
+  (C-AUTH-1), refresh is gated on email_verified (H-AUTH-4), and the access token
+  is no longer echoed to JS (done above). The `sid` enforcement remains open.
+- **H-TRADE-8** — per-user quote consistency across SL/TP / risk / copy engines
+  when `USER_SPREAD_AT_EXECUTION=true`. Off by default; making the engines
+  resolve per-user quotes per tick is a large change with performance impact.
+- **H-INF-1** — move cron target scripts to a root-owned dir + allow-list
+  `BRANDING_*_BIN` (host shell / install scripts — OPS).
+- **H-INF-2..5** — backup script hardening (safe `.env` parser, back up
+  `backend/uploads`, mandatory GPG, `restore.sh` trap + `pg_restore`, single
+  backup path). Shell scripts run on the host — OPS, not unit-testable here.
+- **H-INF-6** — desktop terminal (C++/Qt) token storage in the OS keychain +
+  https/wss enforcement. Separate native codebase.
+
+**Spec deviations to note:**
+- **C-MONEY-3** — `available_to_withdraw` uses `(balance − margin_used)` capped by
+  `free_margin` and is applied to the three user-facing withdrawal paths. Admin
+  `approve_withdrawal` / `transfer_trading_to_main` already lock + check
+  `balance − margin_used`; consider routing them through the helper too.
+- **H-ADMIN-1** — implemented as `verify_exp=True` (sliding refresh within the 8h
+  window). A full admin refresh-token table with rotation is not done.
+- **H-MONEY-2** — bonus still credits `main_wallet_balance`; a non-withdrawable
+  bonus bucket + wagering release is deferred (DECISION in `bonus_service.py`).
+- **H-AUTH-2** — step-up wired into wallet disconnect (the withdrawal-address
+  change choke point). The finding also lists 2FA-disable and email-change; those
+  have no self-service trader endpoint in this codebase.
+- **fx_admin Secure cookie** — the backend already derives `Secure` from
+  `X-Forwarded-Proto` (`_request_is_https`). Ensure the admin Next proxy / nginx
+  forwards `X-Forwarded-Proto` in production (OPS).
+
+**Phase 3 not yet started:** webhook dedup commit ordering, impersonation audit
+rows/scope, custom-domain uniqueness + PLATFORM_HOSTS, certbot throttling,
+in-flight guards on admin money buttons + terminal market-order button (FE), XAG
+contract-size single source, Redis `requirepass` (OPS),
+`employees.extra_permissions` alembic revision, SL/TP engine `KEYS`→`SCAN`,
+WebSocket connection caps, `TradingAccount.positions` lazy loading.
 
 ## OPS steps for an operator (host-side, apply by hand)
 
 1. **C-ADMIN-2** — find admins with no active employees row (they now get 403):
    `SELECT id,email FROM users WHERE role='admin' AND id NOT IN (SELECT user_id FROM employees WHERE is_active);`
-   Create an employees row (with the intended role) for each legitimate admin.
-2. **C-MONEY-2** — run migrations to head so the tx-hash unique index is created:
-   `alembic -c backend/infra/migrations/alembic.ini upgrade head`. If it fails on a
-   duplicate, reconcile the duplicate deposit rows first (they indicate a prior double-submit).
+   Add an employees row (with the intended role) for each legitimate admin.
+2. **C-MONEY-2 / H-MONEY-2** — run migrations to head so the new unique indexes
+   are created: `alembic -c backend/infra/migrations/alembic.ini upgrade head`.
+   If a `CREATE UNIQUE INDEX` fails on a duplicate, reconcile the duplicate rows
+   first (they indicate a prior double-submit / double-grant).
 3. **C-INF-1** — verify on the host:
-   `docker compose -f docker-compose.yml -f docker-compose.prod.yml config | grep -A3 ports:` — only `127.0.0.1` bindings should appear.
-4. **H-AUTH-1** — set `TRUSTED_PROXY_CIDRS` to the exact nginx / load-balancer
-   addresses in production (the default covers loopback + RFC1918).
+   `docker compose -f docker-compose.yml -f docker-compose.prod.yml config | grep -A3 ports:` → only `127.0.0.1` bindings.
+4. **H-AUTH-1** — set `TRUSTED_PROXY_CIDRS` to the exact nginx / LB addresses in
+   production (default covers loopback + RFC1918).
+5. **H-INF-9** — set strong `POSTGRES_PASSWORD` / `TIMESCALE_PASSWORD` (production
+   now refuses to boot with the default `swisscresta_dev`).
+6. **fx_admin** — confirm the admin proxy/nginx forwards `X-Forwarded-Proto` so
+   the admin cookie is marked `Secure` in production.
