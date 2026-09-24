@@ -144,6 +144,9 @@ async def list_openable_account_groups(db: AsyncSession, user_id: UUID) -> dict:
             "commission_per_lot": float(g.commission_default or 0),
             "commission_pct": float(g.commission_pct) if g.commission_pct is not None else None,
             "swap_free": bool(g.swap_free),
+            "swap_free_available": bool(g.swap_free_available),
+            "margin_call_level": float(g.margin_call_level) if g.margin_call_level is not None else None,
+            "stop_out_level": float(g.stop_out_level) if g.stop_out_level is not None else None,
         })
     return {"items": items, "user_is_islamic": bool(getattr(user, "is_islamic", False))}
 
@@ -452,6 +455,9 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
                 "commission_pct": float(g.commission_pct) if g.commission_pct is not None else None,
                 "minimum_deposit": float(g.minimum_deposit or 0),
                 "swap_free": bool(g.swap_free),
+                "swap_free_available": bool(g.swap_free_available),
+                "margin_call_level": float(g.margin_call_level) if g.margin_call_level is not None else None,
+                "stop_out_level": float(g.stop_out_level) if g.stop_out_level is not None else None,
                 "leverage_default": int(g.leverage_default or 100),
                 "max_leverage": int(g.max_leverage or g.leverage_default or 100),
             }

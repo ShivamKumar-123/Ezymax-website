@@ -10,10 +10,15 @@ interface AccountType {
   name: string;
   description?: string | null;
   leverage_default: number;
+  max_leverage?: number | null;
   spread_markup_default: string | number;
   commission_default: string | number;
+  commission_pct?: string | number | null;
   minimum_deposit: string | number;
   swap_free: boolean;
+  swap_free_available?: boolean;
+  margin_call_level?: string | number | null;
+  stop_out_level?: string | number | null;
   is_demo: boolean;
   is_active: boolean;
 }
@@ -22,12 +27,26 @@ const EMPTY = {
   name: '',
   description: '',
   leverage_default: '100',
+  max_leverage: '',
   spread_markup_default: '0',
   commission_default: '0',
+  commission_pct: '',
   minimum_deposit: '0',
   swap_free: false,
+  swap_free_available: false,
+  // Blank is not zero: it means this tier follows the platform-wide level.
+  margin_call_level: '',
+  stop_out_level: '',
   is_demo: false,
   is_active: true,
+};
+
+/** An empty box means "unset", which the API reads as null — not as 0. */
+const num = (v: string): number | null => {
+  const t = String(v ?? '').trim();
+  if (!t) return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
 };
 
 export default function AccountTypesPage() {
@@ -67,10 +86,15 @@ export default function AccountTypesPage() {
       name: r.name,
       description: r.description ?? '',
       leverage_default: String(r.leverage_default),
+      max_leverage: r.max_leverage == null ? '' : String(r.max_leverage),
       spread_markup_default: String(r.spread_markup_default),
       commission_default: String(r.commission_default),
+      commission_pct: r.commission_pct == null ? '' : String(r.commission_pct),
       minimum_deposit: String(r.minimum_deposit ?? 0),
       swap_free: r.swap_free,
+      swap_free_available: !!r.swap_free_available,
+      margin_call_level: r.margin_call_level == null ? '' : String(r.margin_call_level),
+      stop_out_level: r.stop_out_level == null ? '' : String(r.stop_out_level),
       is_demo: r.is_demo,
       is_active: r.is_active,
     });
@@ -88,10 +112,15 @@ export default function AccountTypesPage() {
         name: form.name.trim(),
         description: form.description.trim() || null,
         leverage_default: parseInt(form.leverage_default, 10) || 100,
+        max_leverage: num(form.max_leverage),
         spread_markup_default: parseFloat(String(form.spread_markup_default)) || 0,
         commission_default: parseFloat(String(form.commission_default)) || 0,
+        commission_pct: num(form.commission_pct),
         minimum_deposit: parseFloat(String(form.minimum_deposit)) || 0,
         swap_free: form.swap_free,
+        swap_free_available: form.swap_free_available,
+        margin_call_level: num(form.margin_call_level),
+        stop_out_level: num(form.stop_out_level),
         is_demo: form.is_demo,
         is_active: form.is_active,
       };
@@ -173,6 +202,7 @@ export default function AccountTypesPage() {
                 <th className="p-2 font-medium">Spread +</th>
                 <th className="p-2 font-medium">Comm / lot</th>
                 <th className="p-2 font-medium">Min dep.</th>
+                <th className="p-2 font-medium">MC / SO</th>
                 <th className="p-2 font-medium">Flags</th>
                 <th className="p-2 font-medium w-24" />
               </tr>
@@ -190,9 +220,14 @@ export default function AccountTypesPage() {
                   <td className="p-2 font-mono tabular-nums">{r.spread_markup_default}</td>
                   <td className="p-2 font-mono tabular-nums">{r.commission_default}</td>
                   <td className="p-2 font-mono tabular-nums">{r.minimum_deposit}</td>
+                  <td className="p-2 font-mono tabular-nums text-text-secondary">
+                    {r.margin_call_level == null ? '-' : r.margin_call_level + '%'} /{' '}
+                    {r.stop_out_level == null ? '-' : r.stop_out_level + '%'}
+                  </td>
                   <td className="p-2 text-xxs text-text-secondary">
                     {r.is_demo ? 'demo ' : ''}
                     {r.swap_free ? 'swap-free ' : ''}
+                    {r.swap_free_available && !r.swap_free ? 'swap-free on request ' : ''}
                   </td>
                   <td className="p-2">
                     <div className="flex gap-1 justify-end">
@@ -279,7 +314,7 @@ export default function AccountTypesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xxs text-text-tertiary mb-1">Commission / lot</label>
+                  <label className="block text-xxs text-text-tertiary mb-1">Commission / lot / side (USD)</label>
                   <input
                     type="number"
                     step="0.00001"
@@ -289,9 +324,64 @@ export default function AccountTypesPage() {
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xxs text-text-tertiary mb-1">Max leverage (1:N)</label>
+                  <input
+                    type="number"
+                    value={form.max_leverage}
+                    onChange={(e) => u('max_leverage', e.target.value)}
+                    placeholder="same as default"
+                    className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs text-text-tertiary mb-1">Commission % of notional</label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={form.commission_pct}
+                    onChange={(e) => u('commission_pct', e.target.value)}
+                    placeholder="blank = none"
+                    className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xxs text-text-tertiary mb-1">Margin call %</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.margin_call_level}
+                    onChange={(e) => u('margin_call_level', e.target.value)}
+                    placeholder="blank = platform level"
+                    className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xxs text-text-tertiary mb-1">Stop out %</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.stop_out_level}
+                    onChange={(e) => u('stop_out_level', e.target.value)}
+                    placeholder="blank = platform level"
+                    className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md"
+                  />
+                </div>
+              </div>
               <label className="flex items-center gap-2 text-xs text-text-secondary">
                 <input type="checkbox" checked={form.swap_free} onChange={(e) => u('swap_free', e.target.checked)} />
-                Swap-free
+                Swap-free (whole tier)
+              </label>
+              <label className="flex items-center gap-2 text-xs text-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={form.swap_free_available}
+                  onChange={(e) => u('swap_free_available', e.target.checked)}
+                />
+                Swap-free available on request
               </label>
               <label className="flex items-center gap-2 text-xs text-text-secondary">
                 <input type="checkbox" checked={form.is_demo} onChange={(e) => u('is_demo', e.target.checked)} />

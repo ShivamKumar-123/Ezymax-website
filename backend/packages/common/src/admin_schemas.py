@@ -73,10 +73,22 @@ class AccountTypeIn(BaseModel):
     name: str
     description: Optional[str] = None
     leverage_default: int = 100
+    # Ceiling a trader may raise their own leverage to. Defaults to the tier's
+    # own leverage when the caller leaves it out.
+    max_leverage: Optional[int] = None
+    # Extra spread in PIPS added to the fill, split across bid and ask.
     spread_markup_default: Decimal = Decimal("0")
+    # Flat commission per lot PER SIDE. Beats commission_pct when non-zero.
     commission_default: Decimal = Decimal("0")
+    # Commission as a fraction of notional (0.0005 = 0.05%), used when the tier
+    # has no per-lot rate. None means the tier charges no commission at all.
+    commission_pct: Optional[Decimal] = None
     minimum_deposit: Decimal = Decimal("0")
     swap_free: bool = False
+    swap_free_available: bool = False
+    # Percent. None keeps the platform-wide levels.
+    margin_call_level: Optional[Decimal] = None
+    stop_out_level: Optional[Decimal] = None
     is_demo: bool = False
     is_active: bool = True
 
@@ -86,10 +98,15 @@ class AccountTypeOut(BaseModel):
     name: str
     description: Optional[str] = None
     leverage_default: int
+    max_leverage: Optional[int] = None
     spread_markup_default: Decimal
     commission_default: Decimal
+    commission_pct: Optional[Decimal] = None
     minimum_deposit: Decimal
     swap_free: bool
+    swap_free_available: bool = False
+    margin_call_level: Optional[Decimal] = None
+    stop_out_level: Optional[Decimal] = None
     is_demo: bool
     is_active: bool
     created_at: Optional[datetime] = None

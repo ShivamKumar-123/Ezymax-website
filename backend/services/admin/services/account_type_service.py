@@ -20,10 +20,15 @@ async def list_account_types(db: AsyncSession) -> dict:
                 name=g.name,
                 description=g.description,
                 leverage_default=g.leverage_default or 100,
+                max_leverage=g.max_leverage,
                 spread_markup_default=g.spread_markup_default or 0,
                 commission_default=g.commission_default or 0,
+                commission_pct=g.commission_pct,
                 minimum_deposit=g.minimum_deposit or 0,
                 swap_free=bool(g.swap_free),
+                swap_free_available=bool(g.swap_free_available),
+                margin_call_level=g.margin_call_level,
+                stop_out_level=g.stop_out_level,
                 is_demo=bool(g.is_demo),
                 is_active=bool(g.is_active),
                 created_at=g.created_at,
@@ -43,10 +48,15 @@ async def create_account_type(
         name=body.name.strip(),
         description=body.description,
         leverage_default=body.leverage_default,
+        max_leverage=body.max_leverage or body.leverage_default,
         spread_markup_default=body.spread_markup_default,
         commission_default=body.commission_default,
+        commission_pct=body.commission_pct,
         minimum_deposit=body.minimum_deposit,
         swap_free=body.swap_free,
+        swap_free_available=body.swap_free_available,
+        margin_call_level=body.margin_call_level,
+        stop_out_level=body.stop_out_level,
         is_demo=body.is_demo,
         is_active=body.is_active,
     )
@@ -76,10 +86,15 @@ async def update_account_type(
     g.name = body.name.strip()
     g.description = body.description
     g.leverage_default = body.leverage_default
+    g.max_leverage = body.max_leverage or body.leverage_default
     g.spread_markup_default = body.spread_markup_default
     g.commission_default = body.commission_default
+    g.commission_pct = body.commission_pct
     g.minimum_deposit = body.minimum_deposit
     g.swap_free = body.swap_free
+    g.swap_free_available = body.swap_free_available
+    g.margin_call_level = body.margin_call_level
+    g.stop_out_level = body.stop_out_level
     g.is_demo = body.is_demo
     g.is_active = body.is_active
 

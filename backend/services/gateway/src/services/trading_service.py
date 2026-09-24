@@ -17,6 +17,7 @@ from packages.common.src.models import (
     TradeHistory, Transaction, CopyTrade, UserAuditLog, User,
 )
 from packages.common.src.instrument_pricing import resolve_commission
+from packages.common.src.lot_limits import session_max_lots, session_window_label
 from packages.common.src.pnl_settlement import apply_realized_pnl
 from packages.common.src.insurance.claims import maybe_pay as insurance_maybe_pay
 from packages.common.src.insurance.shield import settle_shield_on_close as insurance_shield_settle
@@ -190,8 +191,9 @@ async def place_order(
             detail=f"Lot size below platform minimum ({global_min_lot})",
         )
 
+    segment_name = instrument.segment.name if instrument.segment else ""
+
     if req.order_type == "market":
-        segment_name = instrument.segment.name if instrument.segment else ""
         market_open, closed_reason = is_market_open(
             instrument.symbol, segment_name, instrument.trading_hours
         )
@@ -211,8 +213,21 @@ async def place_order(
     if ic and ic.is_enabled is False:
         raise HTTPException(status_code=400, detail=f"Trading disabled for {instrument.symbol}")
 
+    # Overnight liquidity is thinner, so a position is capped harder between
+    # 21:00 and 06:59 GMT (20 lots on crypto/indices/thin metals, 30 on gold,
+    # 60 on the rest). The smallest of platform, instrument and session wins.
+    session_cap = session_max_lots(instrument.symbol, segment_name)
+    if session_cap < max_lot:
+        max_lot = session_cap
+
     if req.lots < min_lot or req.lots > max_lot:
-        raise HTTPException(status_code=400, detail=f"Lot size must be between {min_lot} and {max_lot}")
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Lot size must be between {min_lot} and {max_lot} "
+                f"for {instrument.symbol} during {session_window_label()}"
+            ),
+        )
 
     bid, ask = await get_current_price(instrument.symbol)
 
@@ -236,10 +251,16 @@ async def place_order(
         # without an override fill at the normal feed price.
         from packages.common.src.instrument_pricing import (
             apply_user_spread_quote, apply_level_spread_discount,
+            apply_group_spread_quote,
         )
         u_bid, u_ask = await apply_user_spread_quote(db, user_id, instrument, bid, ask)
         # XP-level loyalty perk: narrow the quote the trader actually fills on.
         u_bid, u_ask = await apply_level_spread_discount(db, user_id, instrument, u_bid, u_ask)
+        # The account tier's own spread (0.3 pips on Standard, 0.0 on Prime)
+        # goes on last — it is what the tier was sold on.
+        u_bid, u_ask = await apply_group_spread_quote(
+            db, account.account_group_id, instrument, u_bid, u_ask
+        )
         fill_price = u_ask if req.side == "buy" else u_bid
 
         if req.stop_loss:

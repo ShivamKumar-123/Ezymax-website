@@ -31,7 +31,13 @@ export interface AvailableAccountGroup {
   commission_per_lot: number;
   /** Percentage brokerage fee (e.g. 0.0006 = 0.06%) from migration 0020. May be null on legacy rows. */
   commission_pct?: number | null;
+  /** Every account in the tier is swap-free. */
   swap_free: boolean;
+  /** The tier may ask for swap-free — not the same promise as swap_free. */
+  swap_free_available?: boolean;
+  /** Percent. Null means the tier follows the platform-wide level. */
+  margin_call_level?: number | null;
+  stop_out_level?: number | null;
 }
 
 const fmtMoney = (n: number, currency = 'USD') =>
@@ -276,17 +282,15 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                       )}
                     </div>
 
-                    <CardRow label={`Spread from ${(g.spread_markup || 0.6).toFixed(1)} pips`}
-                             sub="Floating spread, markup" />
+                    {/* `?? 0`, not `|| 0.6`: a raw-spread tier really does charge
+                        0.0 pips, and the old fallback advertised 0.6 instead. */}
+                    <CardRow
+                      label={`Spread from ${(g.spread_markup ?? 0).toFixed(1)} pips`}
+                      sub={costLine(g)}
+                    />
                     <CardRow
                       label={`Min deposit ${fmtMoney(g.minimum_deposit || 0)}`}
-                      sub={
-                        g.swap_free
-                          ? 'Swap-free, Islamic-friendly'
-                          : g.commission_pct != null
-                            ? `Brokerage ${(g.commission_pct * 100).toFixed(2)}% · Up to 1:${groupMaxLeverage(g)}`
-                            : `Commission ${fmtMoney(g.commission_per_lot || 0)} / lot · Up to 1:${groupMaxLeverage(g)}`
-                      }
+                      sub={`Up to 1:${groupMaxLeverage(g)}${swapLine(g)}${riskLine(g)}`}
                       last
                     />
                   </motion.button>
@@ -391,6 +395,27 @@ function Badge({ color, children }: { color: string; children: React.ReactNode }
       {children}
     </span>
   );
+}
+
+/** What this tier charges to trade: a flat per-lot fee, a percentage, or nothing. */
+function costLine(g: AvailableAccountGroup): string {
+  if ((g.commission_per_lot || 0) > 0) {
+    return `Commission ${fmtMoney(g.commission_per_lot)} per lot, each side`;
+  }
+  if (g.commission_pct != null && g.commission_pct > 0) {
+    return `Brokerage ${(g.commission_pct * 100).toFixed(2)}% of notional`;
+  }
+  return 'No commission';
+}
+
+function swapLine(g: AvailableAccountGroup): string {
+  if (g.swap_free) return ' · Swap-free';
+  if (g.swap_free_available) return ' · Swap-free on request';
+  return '';
+}
+
+function riskLine(g: AvailableAccountGroup): string {
+  return g.margin_call_level != null ? ` · Margin call ${g.margin_call_level}%` : '';
 }
 
 function CardRow({ label, sub, last }: { label: string; sub: string; last?: boolean }) {

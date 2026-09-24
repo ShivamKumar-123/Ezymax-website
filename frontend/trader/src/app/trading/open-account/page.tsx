@@ -137,7 +137,7 @@ function OpenAccountPageInner() {
                         Leverage <span className="text-text-primary font-mono">1:{g.leverage_default}</span>
                       </div>
                       <div>
-                        Commission / lot{' '}
+                        Commission / lot / side{' '}
                         <span className="text-text-primary font-mono">{g.commission_per_lot}</span>
                       </div>
                     </div>

@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.pnl_settlement import apply_realized_pnl
 from packages.common.src.models import (
-    Position, PositionStatus, TradingAccount, Instrument,
+    Position, PositionStatus, TradingAccount, Instrument, AccountGroup,
     OrderSide, SwapConfig, Notification, Transaction, User,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
@@ -37,6 +37,28 @@ except Exception:
     pass
 
 settings = get_settings()
+
+
+async def _levels_for(account, db) -> tuple[float, float]:
+    """(stop-out, margin-call) percentages that apply to this account.
+
+    Account tiers are sold on their own levels — margin call at 100% on the
+    entry tiers, 80% on Pro and Prime — so the tier's numbers win where it has
+    them. A tier that sets neither falls back to the platform-wide settings,
+    which is what every account used before tiers could differ.
+    """
+    from packages.common.src.settings_store import get_float_setting
+    stop_out = await get_float_setting("stop_out_level", settings.STOP_OUT_LEVEL)
+    margin_call = await get_float_setting("margin_call_level", settings.MARGIN_CALL_LEVEL)
+    group_id = getattr(account, "account_group_id", None)
+    if group_id is not None:
+        grp = await db.get(AccountGroup, group_id)
+        if grp is not None:
+            if grp.stop_out_level is not None:
+                stop_out = float(grp.stop_out_level)
+            if grp.margin_call_level is not None:
+                margin_call = float(grp.margin_call_level)
+    return stop_out, margin_call
 
 
 class RiskEngine:
@@ -119,9 +141,7 @@ class RiskEngine:
                         account.free_margin = equity - account.margin_used
                         account.margin_level = margin_level
 
-                        from packages.common.src.settings_store import get_float_setting
-                        stop_out = await get_float_setting("stop_out_level", settings.STOP_OUT_LEVEL)
-                        margin_call = await get_float_setting("margin_call_level", settings.MARGIN_CALL_LEVEL)
+                        stop_out, margin_call = await _levels_for(account, db)
 
                         if margin_level <= Decimal(str(stop_out)):
                             await self._execute_stop_out(account, positions, db)
@@ -245,8 +265,7 @@ class RiskEngine:
             asyncio.create_task(_forward_stopout())
 
             margin_level = (account.equity / account.margin_used * 100) if account.margin_used > 0 else Decimal("9999")
-            from packages.common.src.settings_store import get_float_setting as _gfs
-            _so = await _gfs("stop_out_level", settings.STOP_OUT_LEVEL)
+            _so, _ = await _levels_for(account, db)
             if margin_level > Decimal(str(_so)):
                 break
 

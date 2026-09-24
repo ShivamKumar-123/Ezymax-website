@@ -454,6 +454,35 @@ async def apply_user_spread_quote(
     return (mid - half).quantize(q), (mid + half).quantize(q)
 
 
+async def apply_group_spread_quote(
+    db: AsyncSession, account_group_id: Optional[UUID], instrument: Instrument,
+    bid: Decimal, ask: Decimal,
+) -> Tuple[Decimal, Decimal]:
+    """Widen an executable quote by the account tier's spread markup.
+
+    Each tier is sold a spread — 0.3 pips on Standard down to 0.0 on Prime —
+    but the published tick is built per SYMBOL, before anyone's identity is
+    known, so the tier's share has to go on at execution time: mid stays put
+    and each side moves out by half the markup.
+
+    Run it AFTER the per-user override and the XP discount: those two decide
+    what the trader's own quote is, and this is the tier's cut on top.
+    """
+    if account_group_id is None:
+        return bid, ask
+    ag = (await db.execute(
+        select(AccountGroup).where(AccountGroup.id == account_group_id)
+    )).scalar_one_or_none()
+    markup = Decimal(str((ag.spread_markup_default if ag is not None else 0) or 0))
+    if markup <= 0:
+        return bid, ask
+    pip = Decimal(str(getattr(instrument, "pip_size", None) or "0.0001"))
+    half = (markup * pip) / Decimal("2")
+    digits = int(getattr(instrument, "digits", None) or 5)
+    q = Decimal("1") / (Decimal(10) ** max(digits, 0))
+    return (Decimal(str(bid)) - half).quantize(q), (Decimal(str(ask)) + half).quantize(q)
+
+
 async def apply_level_spread_discount(
     db: AsyncSession, user_id: Optional[UUID], instrument: Instrument,
     bid: Decimal, ask: Decimal,
@@ -649,13 +678,21 @@ async def resolve_commission(
                 break
 
     # Smart-fee fallback: when no admin ChargeConfig matches, charge the
-    # account-tier's commission_pct on the trade notional.
+    # account tier's own rate — a flat figure per lot if the tier has one
+    # (Prime), otherwise its percentage of notional.
     if base_commission is None and account_group_id is not None:
         ag = (await db.execute(
             select(AccountGroup).where(AccountGroup.id == account_group_id)
         )).scalar_one_or_none()
-        if ag is not None and ag.commission_pct is not None:
-            base_commission = notional * Decimal(str(ag.commission_pct))
+        if ag is not None:
+            per_lot = Decimal(str(ag.commission_default or 0))
+            if per_lot > 0:
+                # The tier quotes this PER SIDE, and a position pays on the way
+                # in and on the way out. The platform charges a position once,
+                # at close, so the round turn is billed here in one go.
+                base_commission = per_lot * lots * 2
+            elif ag.commission_pct is not None:
+                base_commission = notional * Decimal(str(ag.commission_pct))
 
     if base_commission is None:
         return Decimal("0")

@@ -210,7 +210,7 @@ export default function TradingAccountPickerPage() {
                           <>
                             <div className="rounded-lg border border-border-glass/50 bg-bg-primary/40 px-3 py-2.5 min-h-[4.25rem]">
                               <div className="text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
-                                Spread markup
+                                Spread (pips)
                               </div>
                               <div className="mt-1 text-base font-mono text-text-primary">
                                 {g.spread_markup}
@@ -218,7 +218,7 @@ export default function TradingAccountPickerPage() {
                             </div>
                             <div className="rounded-lg border border-border-glass/50 bg-bg-primary/40 px-3 py-2.5 min-h-[4.25rem]">
                               <div className="text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
-                                Commission / lot
+                                Commission / lot / side
                               </div>
                               <div className="mt-1 text-base font-mono text-text-primary">
                                 {g.commission_per_lot}

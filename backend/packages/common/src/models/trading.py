@@ -26,14 +26,29 @@ class AccountGroup(Base):
     # leverage_default for legacy callers; the picker + order-placement guard
     # always enforce the smaller of (max_leverage, leverage_default).
     max_leverage = Column(Integer, nullable=True)
+    # Extra spread this tier pays, in PIPS, added on top of the feed quote at
+    # fill time (0.3 on Standard, 0.0 on Prime). Half goes on each side, so the
+    # trader sees the advertised spread widen by exactly this much.
     spread_markup_default = Column(Numeric(10, 5), default=0)
+    # Fixed commission in account currency per lot PER SIDE (Prime: 3.5). A
+    # round turn therefore costs twice this. Takes precedence over
+    # commission_pct when set, and both lose to an admin ChargeConfig row.
     commission_default = Column(Numeric(10, 5), default=0)
     # Percentage brokerage fee (e.g. 0.0006 = 0.06%) per Trading_Mechanism.docx.
     # Used by the order pipeline once Phase 4 wires the smart-fee engine; until
     # then it's surfaced in the picker as the headline rate.
     commission_pct = Column(Numeric(6, 4), nullable=True)
     minimum_deposit = Column(Numeric(18, 8), default=0)
+    # swap_free: every account in the tier is swap-free, no asking.
+    # swap_free_available: the tier may REQUEST swap-free (the spec's
+    # "available" vs "not available") — the two are not the same promise.
     swap_free = Column(Boolean, default=False)
+    swap_free_available = Column(Boolean, default=False)
+    # Margin-call / stop-out levels for this tier, in percent. NULL falls back
+    # to the platform-wide system_settings values, which is what every tier did
+    # before tiers could differ.
+    margin_call_level = Column(Numeric(6, 2), nullable=True)
+    stop_out_level = Column(Numeric(6, 2), nullable=True)
     is_demo = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)

@@ -20,9 +20,11 @@ from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.pnl_settlement import apply_realized_pnl
 from packages.common.src.models import (
     Order, OrderType, OrderSide, OrderStatus,
-    Position, PositionStatus, TradingAccount, Instrument,
+    Position, PositionStatus, TradingAccount, Instrument, InstrumentSegment,
     SpreadConfig, ChargeConfig, Transaction, TradeHistory, User,
 )
+from packages.common.src.lot_limits import session_max_lots, session_window_label
+from packages.common.src.instrument_pricing import resolve_commission
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src import corecen_trade_client
@@ -82,43 +84,24 @@ class MatchingEngine:
 
         return Decimal("0")
 
-    async def _get_commission(self, instrument_id, user_id, segment_id, lots: Decimal, db: AsyncSession) -> Decimal:
-        """Resolve commission using config hierarchy: User > Instrument > Segment > Default."""
-        candidates = [
-            {"scope": "user",       "user_id": user_id,   "instrument_id": instrument_id, "segment_id": None},
-            {"scope": "user",       "user_id": user_id,   "instrument_id": None,          "segment_id": None},
-            {"scope": "instrument", "user_id": None,      "instrument_id": instrument_id, "segment_id": None},
-            {"scope": "segment",    "user_id": None,      "instrument_id": None,          "segment_id": segment_id},
-            {"scope": "default",    "user_id": None,      "instrument_id": None,          "segment_id": None},
-        ]
-        for c in candidates:
-            if c["scope"] == "user" and not c["user_id"]:
-                continue
-            if c["scope"] == "instrument" and not c["instrument_id"]:
-                continue
-            if c["scope"] == "segment" and not c["segment_id"]:
-                continue
-            query = select(ChargeConfig).where(
-                ChargeConfig.scope == c["scope"],
-                ChargeConfig.is_enabled == True,
-                ChargeConfig.user_id == c["user_id"] if c["user_id"] else ChargeConfig.user_id.is_(None),
-                ChargeConfig.instrument_id == c["instrument_id"] if c["instrument_id"] else ChargeConfig.instrument_id.is_(None),
-                ChargeConfig.segment_id == c["segment_id"] if c["segment_id"] else ChargeConfig.segment_id.is_(None),
-            ).limit(1)
-            result = await db.execute(query)
-            config = result.scalar_one_or_none()
-            if config:
-                ct = (config.charge_type or "").lower()
-                v = Decimal(str(config.value or 0))
-                if ct in ("commission_per_lot", "per_lot"):
-                    return v * lots
-                if ct in ("commission_per_trade", "per_trade"):
-                    return v
-                if ct == "spread_percentage":
-                    return Decimal("0")
-                return v * lots
+    async def _get_commission(self, instrument_id, user_id, segment_id, lots: Decimal,
+                              fill_price: Decimal, db: AsyncSession,
+                              account_group_id=None) -> Decimal:
+        """Commission for a pending fill — the same resolver market orders use.
 
-        return Decimal("0")
+        This used to walk the ChargeConfig hierarchy on its own, which meant it
+        never saw the account tier's rate: a Prime order that filled from the
+        pending book paid nothing, while the identical market order paid the
+        tier's per-lot commission.
+        """
+        instrument = await db.get(Instrument, instrument_id)
+        if instrument is None:
+            return Decimal("0")
+        return await resolve_commission(
+            db, instrument, lots, fill_price,
+            user_id=user_id,
+            account_group_id=account_group_id,
+        )
 
     async def _monitor_pending_orders(self):
         """Monitor and trigger pending orders when price conditions are met."""
@@ -187,11 +170,30 @@ class MatchingEngine:
         # user's spread.
         from packages.common.src.instrument_pricing import (
             apply_user_spread_quote, apply_level_spread_discount,
+            apply_group_spread_quote,
         )
         bid, ask = await apply_user_spread_quote(db, account.user_id, instrument, bid, ask)
         # XP-level loyalty perk: narrow the quote the trader actually fills on.
         bid, ask = await apply_level_spread_discount(db, account.user_id, instrument, bid, ask)
+        # ...and the account tier's own spread, as on a market order.
+        bid, ask = await apply_group_spread_quote(
+            db, account.account_group_id, instrument, bid, ask
+        )
         fill_price = ask if order.side == OrderSide.BUY else bid
+
+        # The session lot ceiling is checked when the order is placed, but a
+        # pending order can sit through to the thin overnight session, where
+        # its size may no longer be allowed. Reject rather than fill it.
+        segment = await db.get(InstrumentSegment, instrument.segment_id) if instrument.segment_id else None
+        cap = session_max_lots(instrument.symbol, segment.name if segment else None)
+        if order.lots > cap:
+            order.status = OrderStatus.REJECTED
+            order.comment = (
+                f"Rejected: {order.lots} lots exceeds the {cap}-lot maximum for "
+                f"{instrument.symbol} during {session_window_label()}"
+            )
+            logger.info("Pending order %s rejected on session lot cap (%s > %s)", order.id, order.lots, cap)
+            return
         margin = (order.lots * instrument.contract_size * fill_price) / Decimal(str(account.leverage))
 
         if margin > account.free_margin:
@@ -203,7 +205,9 @@ class MatchingEngine:
             user_id=account.user_id,
             segment_id=instrument.segment_id,
             lots=order.lots,
+            fill_price=fill_price,
             db=db,
+            account_group_id=account.account_group_id,
         )
 
         order.status = OrderStatus.FILLED
