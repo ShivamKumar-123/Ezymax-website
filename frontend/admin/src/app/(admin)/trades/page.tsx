@@ -37,6 +37,10 @@ interface Position {
    *  the per-symbol hardcoded fallbacks below are only used when this
    *  field is missing (legacy data / API rollback). */
   contract_size?: number;
+  /** Instrument pip_size + digits from DB — used to show the spread in points
+   *  and the price at the right precision, matching the trader terminal. */
+  pip_size?: number;
+  digits?: number;
   comment?: string;
   is_admin_modified: boolean;
   created_at: string;
@@ -285,7 +289,7 @@ export default function TradesPage() {
   const [createSymbol, setCreateSymbol] = useState('');
   const [createInstrumentId, setCreateInstrumentId] = useState('');
   const [instrumentSearch, setInstrumentSearch] = useState('');
-  const [instruments, setInstruments] = useState<{ id: string; symbol: string; display_name: string; segment: string }[]>([]);
+  const [instruments, setInstruments] = useState<{ id: string; symbol: string; display_name: string; segment: string; pip_size?: number; digits?: number }[]>([]);
   const [showInstrumentDropdown, setShowInstrumentDropdown] = useState(false);
   const [createSide, setCreateSide] = useState<'buy' | 'sell'>('buy');
   const [createType, setCreateType] = useState('market');
@@ -509,9 +513,9 @@ export default function TradesPage() {
 
   // Effective close price the Close modal will book. Base is the admin's
   // typed price, or live market for the side when the field is empty; an
-  // optional spread (in points, same 1/100000 convention as the Spread column)
-  // then shifts it AGAINST the user — a buy closes lower, a sell higher.
-  // Returns null when there is nothing usable to close at.
+  // optional spread (in POINTS — the instrument's pip_size, same convention as
+  // the Spread column) then shifts it AGAINST the user — a buy closes lower, a
+  // sell higher. Returns null when there is nothing usable to close at.
   const effectiveClosePrice = (
     pos: Position, priceStr: string, spreadStr: string,
   ): number | null => {
@@ -524,7 +528,8 @@ export default function TradesPage() {
     if (!Number.isFinite(base)) return null;
     const sp = parseFloat(spreadStr);
     if (Number.isFinite(sp) && sp !== 0) {
-      const shift = Math.abs(sp) / 100000;
+      const pipSize = pos.pip_size ?? ((pos.digits ?? 5) >= 4 ? 0.0001 : 0.01);
+      const shift = Math.abs(sp) * pipSize;
       base = isBuy ? base - shift : base + shift;
     }
     return base;
@@ -850,7 +855,14 @@ export default function TradesPage() {
                       const tick = p.instrument_symbol ? pricesRef.current[p.instrument_symbol] : null;
                       const isBuy = p.side?.toLowerCase() === 'buy';
                       const currentPrice = tick ? (isBuy ? tick.bid : tick.ask) : null;
-                      const spread = tick ? ((tick.ask - tick.bid) * 100000).toFixed(1) : '—';
+                      // Spread in POINTS + price precision from the instrument's
+                      // own pip_size/digits (surfaced by the API), matching the
+                      // trader terminal. The old ×100000 / toFixed(5) assumed a
+                      // 5-digit FX pair, so it inflated gold's spread 1000×
+                      // (XAUUSD 150 pts shown as 150000) and over-padded price.
+                      const digits = p.digits ?? 5;
+                      const pipSize = p.pip_size ?? (digits >= 4 ? 0.0001 : 0.01);
+                      const spread = tick ? Math.round((tick.ask - tick.bid) / pipSize).toString() : '—';
                       // Authoritative value from the API (admin's
                       // trade_service.list_positions surfaces the DB
                       // contract_size). Fallback table is for legacy
@@ -874,7 +886,7 @@ export default function TradesPage() {
                         <td className="px-3 py-2"><span className={cn('text-xs font-bold', isBuy ? 'text-buy' : 'text-sell')}>{p.side?.toUpperCase()}</span></td>
                         <td className="px-3 py-2 text-xs text-text-primary font-mono tabular-nums">{p.lots}</td>
                         <td className="px-3 py-2 text-xs text-text-secondary font-mono tabular-nums">{p.open_price}</td>
-                        <td className="px-3 py-2 text-xs text-text-primary font-mono tabular-nums font-medium">{currentPrice?.toFixed(5) || '—'}</td>
+                        <td className="px-3 py-2 text-xs text-text-primary font-mono tabular-nums font-medium">{currentPrice != null ? currentPrice.toFixed(digits) : '—'}</td>
                         <td className="px-3 py-2 text-xxs text-text-tertiary font-mono tabular-nums">{spread}</td>
                         <td className={cn('px-3 py-2 text-xs font-mono tabular-nums font-bold', livePnl >= 0 ? 'text-success' : 'text-danger')}>
                           {livePnl >= 0 ? '+' : ''}{formatMoney(livePnl)}
@@ -1089,15 +1101,17 @@ export default function TradesPage() {
             const tick = selectedPosition.instrument_symbol ? pricesRef.current[selectedPosition.instrument_symbol] : null;
             const isBuy = selectedPosition.side?.toLowerCase() === 'buy';
             const cp = tick ? (isBuy ? tick.bid : tick.ask) : null;
-            // Live spread in points (same 1/100000 convention as the trades
-            // table). Shown here because the edit modal never surfaced it,
-            // even though the table and the create modal both do.
-            const spread = tick ? ((tick.ask - tick.bid) * 100000).toFixed(1) : '—';
+            // Live spread in POINTS (instrument pip_size, same convention as the
+            // trades table and the trader terminal). Shown here because the edit
+            // modal never surfaced it, even though the table and create modal do.
+            const digits = selectedPosition.digits ?? 5;
+            const pipSize = selectedPosition.pip_size ?? (digits >= 4 ? 0.0001 : 0.01);
+            const spread = tick ? Math.round((tick.ask - tick.bid) / pipSize).toString() : '—';
             return (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-bg-tertiary/50 border border-border-primary rounded-md text-xs">
                 <div><p className="text-xxs text-text-tertiary">User</p><p className="text-text-primary truncate">{selectedPosition.user_email}</p></div>
                 <div><p className="text-xxs text-text-tertiary">Side</p><p className={cn('font-bold', isBuy ? 'text-buy' : 'text-sell')}>{selectedPosition.side?.toUpperCase()}</p></div>
-                <div><p className="text-xxs text-text-tertiary">Current Price</p><p className="text-text-primary font-mono">{cp?.toFixed(5) || '—'}</p></div>
+                <div><p className="text-xxs text-text-tertiary">Current Price</p><p className="text-text-primary font-mono">{cp != null ? cp.toFixed(digits) : '—'}</p></div>
                 <div><p className="text-xxs text-text-tertiary">Spread</p><p className="text-text-primary font-mono">{spread}</p></div>
               </div>
             );
@@ -1211,6 +1225,7 @@ export default function TradesPage() {
                 const eff = effectiveClosePrice(selectedPosition, closePriceInput, closeSpread);
                 if (eff == null) return null;
                 const isBuy = (selectedPosition.side || '').toLowerCase() === 'buy';
+                const effDigits = selectedPosition.digits ?? 5;
                 const contractSize = selectedPosition.contract_size
                   ?? (selectedPosition.instrument_symbol?.match(/BTC|ETH/) ? 1
                     : selectedPosition.instrument_symbol?.match(/XAU/) ? 100
@@ -1223,7 +1238,7 @@ export default function TradesPage() {
                 return (
                   <div className="flex items-center justify-between px-3 py-2 rounded-md bg-bg-tertiary/50 border border-border-primary text-xs">
                     <span className="text-text-tertiary">Effective close</span>
-                    <span className="font-mono tabular-nums text-text-primary">{eff.toFixed(5)}</span>
+                    <span className="font-mono tabular-nums text-text-primary">{eff.toFixed(effDigits)}</span>
                     <span className="text-text-tertiary">Booked P&amp;L</span>
                     <span className={cn('font-mono tabular-nums font-bold', pnl >= 0 ? 'text-success' : 'text-danger')}>
                       {pnl >= 0 ? '+' : ''}{formatMoney(pnl)}
@@ -1248,6 +1263,7 @@ export default function TradesPage() {
             const tick = selectedPosition.instrument_symbol ? pricesRef.current[selectedPosition.instrument_symbol] : null;
             const isBuy = selectedPosition.side?.toLowerCase() === 'buy';
             const cp = tick ? (isBuy ? tick.bid : tick.ask) : null;
+            const digits = selectedPosition.digits ?? 5;
             const contractSize = selectedPosition.instrument_symbol?.match(/BTC|ETH/) ? 1
               : selectedPosition.instrument_symbol?.match(/XAU/) ? 100
               : selectedPosition.instrument_symbol?.match(/XAG/) ? 50
@@ -1260,7 +1276,7 @@ export default function TradesPage() {
               <div><p className="text-xxs text-text-tertiary">Side</p><p className={cn('font-bold', isBuy ? 'text-buy' : 'text-sell')}>{selectedPosition.side?.toUpperCase()}</p></div>
               <div><p className="text-xxs text-text-tertiary">Lots</p><p className="text-text-primary font-mono">{selectedPosition.lots}</p></div>
               <div><p className="text-xxs text-text-tertiary">Open</p><p className="text-text-primary font-mono">{selectedPosition.open_price}</p></div>
-              <div><p className="text-xxs text-text-tertiary">Current</p><p className="text-text-primary font-mono">{cp?.toFixed(5) || '—'}</p></div>
+              <div><p className="text-xxs text-text-tertiary">Current</p><p className="text-text-primary font-mono">{cp != null ? cp.toFixed(digits) : '—'}</p></div>
               <div><p className="text-xxs text-text-tertiary">P&L</p><p className={cn('font-mono font-bold', livePnl >= 0 ? 'text-success' : 'text-danger')}>{livePnl >= 0 ? '+' : ''}{formatMoney(livePnl)}</p></div>
               <div><p className="text-xxs text-text-tertiary">User</p><p className="text-text-primary truncate">{selectedPosition.user_email}</p></div>
               <div><p className="text-xxs text-text-tertiary">SL</p><p className="text-sell font-mono">{selectedPosition.stop_loss != null ? selectedPosition.stop_loss : '—'}</p></div>
@@ -1294,6 +1310,7 @@ export default function TradesPage() {
             const eff = effectiveClosePrice(selectedPosition, closePriceInput, closeSpread);
             if (eff == null) return null;
             const isBuy = (selectedPosition.side || '').toLowerCase() === 'buy';
+            const effDigits = selectedPosition.digits ?? 5;
             const contractSize = selectedPosition.contract_size
               ?? (selectedPosition.instrument_symbol?.match(/BTC|ETH/) ? 1
                 : selectedPosition.instrument_symbol?.match(/XAU/) ? 100
@@ -1306,7 +1323,7 @@ export default function TradesPage() {
             return (
               <div className="flex items-center justify-between px-3 py-2 rounded-md bg-bg-tertiary/50 border border-border-primary text-xs">
                 <span className="text-text-tertiary">Effective close</span>
-                <span className="font-mono tabular-nums text-text-primary">{eff.toFixed(5)}</span>
+                <span className="font-mono tabular-nums text-text-primary">{eff.toFixed(effDigits)}</span>
                 <span className="text-text-tertiary">Booked P&amp;L</span>
                 <span className={cn('font-mono tabular-nums font-bold', pnl >= 0 ? 'text-success' : 'text-danger')}>
                   {pnl >= 0 ? '+' : ''}{formatMoney(pnl)}
@@ -1458,12 +1475,18 @@ export default function TradesPage() {
                 </div>
               );
             }
-            const spread = ((tick.ask - tick.bid) * 100000).toFixed(1);
+            // Spread in POINTS + price precision from the picked instrument's
+            // pip_size/digits, matching the trader terminal (not a ×100000 /
+            // toFixed(5) that would inflate gold and over-pad its price).
+            const cInst = instruments.find(i => i.symbol === createSymbol);
+            const cDigits = cInst?.digits ?? 5;
+            const cPip = cInst?.pip_size ?? (cDigits >= 4 ? 0.0001 : 0.01);
+            const spread = Math.round((tick.ask - tick.bid) / cPip).toString();
             return (
               <div className="grid grid-cols-3 gap-2 px-3 py-2 rounded-md border border-border-primary bg-bg-tertiary/40 text-center">
                 <div>
                   <p className="text-[10px] uppercase tracking-wide text-text-tertiary">Bid</p>
-                  <p className="text-xs font-mono tabular-nums font-semibold text-sell">{tick.bid.toFixed(5)}</p>
+                  <p className="text-xs font-mono tabular-nums font-semibold text-sell">{tick.bid.toFixed(cDigits)}</p>
                 </div>
                 <div>
                   <p className="text-[10px] uppercase tracking-wide text-text-tertiary">Spread</p>
@@ -1471,7 +1494,7 @@ export default function TradesPage() {
                 </div>
                 <div>
                   <p className="text-[10px] uppercase tracking-wide text-text-tertiary">Ask</p>
-                  <p className="text-xs font-mono tabular-nums font-semibold text-buy">{tick.ask.toFixed(5)}</p>
+                  <p className="text-xs font-mono tabular-nums font-semibold text-buy">{tick.ask.toFixed(cDigits)}</p>
                 </div>
               </div>
             );

@@ -193,6 +193,13 @@ class PositionOut(BaseModel):
     # per-symbol hardcoded fallback that produced 100× mismatches on
     # silver (XAGUSD: hardcoded 50 vs DB 5000).
     contract_size: Optional[float] = None
+    # Instrument pip_size + digits. Surfaced so the admin trades page shows
+    # the spread in POINTS and the price at the right precision using the SAME
+    # convention as the trader terminal, instead of a hardcoded ×100000 /
+    # toFixed(5) that inflated gold's spread 1000× (XAUUSD: 150 pts shown as
+    # 150000) and over-padded its price.
+    pip_size: Optional[float] = None
+    digits: Optional[int] = None
 
     class Config:
         from_attributes = True

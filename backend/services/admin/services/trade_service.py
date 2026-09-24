@@ -129,6 +129,8 @@ async def list_positions(
             commission=float(pos.commission or 0),
             profit=round(profit, 2),
             contract_size=float(inst.contract_size) if inst and inst.contract_size is not None else None,
+            pip_size=float(inst.pip_size) if inst and inst.pip_size is not None else None,
+            digits=int(inst.digits) if inst and inst.digits is not None else None,
             comment=pos.comment,
             is_admin_modified=pos.is_admin_modified or False,
             created_at=pos.created_at,
@@ -678,6 +680,8 @@ async def list_instruments(search: str | None, db: AsyncSession) -> dict:
                 "symbol": i.symbol,
                 "display_name": i.display_name,
                 "segment": i.segment.name if i.segment else None,
+                "pip_size": float(i.pip_size) if i.pip_size is not None else None,
+                "digits": int(i.digits) if i.digits is not None else None,
             }
             for i in instruments
         ]
