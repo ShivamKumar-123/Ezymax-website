@@ -105,7 +105,17 @@ class RiskEngine:
                             # dead-feed prices.
                             if is_tick_stale(tick):
                                 continue
-                            current_price = Decimal(str(tick["bid"])) if pos.side == OrderSide.BUY else Decimal(str(tick["ask"]))
+                            # Value the float on the MID, not the spread-adjusted
+                            # bid/ask. bid/ask move with the platform spread, so a
+                            # spread change — including an admin widening it while
+                            # the market never moved — would drop the float and
+                            # margin level and could force a stop-out the real
+                            # market never warranted. The mid ties the stop-out
+                            # decision to genuine price movement only. (An actual
+                            # stop-out still books at the real bid/ask in
+                            # _execute_stop_out — the user pays the spread on a
+                            # forced close; it just cannot be TRIGGERED by spread.)
+                            current_price = (Decimal(str(tick["bid"])) + Decimal(str(tick["ask"]))) / Decimal("2")
 
                             if pos.side == OrderSide.BUY:
                                 pnl = (current_price - pos.open_price) * pos.lots * pos.instrument.contract_size
