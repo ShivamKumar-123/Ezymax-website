@@ -230,9 +230,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         h = response.headers
+        # Only the three the nginx blocks were missing on the api host —
+        # X-Frame-Options / X-Content-Type-Options are already set by nginx
+        # everywhere, so setting them here too would just duplicate the header.
         h.setdefault("Strict-Transport-Security", "max-age=15552000; includeSubDomains")
-        h.setdefault("X-Content-Type-Options", "nosniff")
-        h.setdefault("X-Frame-Options", "DENY")
         h.setdefault("Referrer-Policy", "no-referrer")
         h.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
         return response
