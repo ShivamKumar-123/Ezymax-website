@@ -125,6 +125,7 @@ class PartialCloseRemainingTests(unittest.TestCase):
             account_id=acct_id, instrument_id=uuid4(), instrument=inst,
             stop_loss=None, take_profit=None, close_price=None,
             profit=None, closed_at=None,
+            spread_override=None, spread_override_type=None,
         )
         account = SimpleNamespace(
             id=acct_id, user_id=uid, balance=Decimal("1000"),

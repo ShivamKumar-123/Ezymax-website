@@ -17,7 +17,7 @@ from packages.common.src.redis_client import redis_client, PriceChannel, BARS_UP
 from packages.common.src.price_cache import price_cache
 from packages.common.src.kafka_client import close_producer
 from packages.common.src.auth import decode_token, require_onboarded
-from packages.common.src.models import TradingAccount, SpreadConfig, Instrument
+from packages.common.src.models import TradingAccount, SpreadConfig, Instrument, Position
 from packages.common.src.instrument_pricing import symmetric_quote_from_mid
 from packages.common.src.instrumentation import init_sentry, add_middleware_stack
 
@@ -546,6 +546,7 @@ async def _load_user_spread_overrides(
                     )
                 ).scalar_one_or_none()
 
+            # ── Config-based per-symbol spread (user + tier priority chain) ──
             conds = [
                 and_(func.lower(SpreadConfig.scope) == "user", SpreadConfig.user_id == uid)
             ]
@@ -562,63 +563,111 @@ async def _load_user_spread_overrides(
                     )
                 )
             ).scalars().all()
-            if not rows:
-                return {}
 
-            # Resolve the four candidate slots. rank encodes account-pinned > user
-            # -wide within the user scope; user always beats group (handled by the
-            # per-instrument fallback order below).
-            user_inst: dict = {}          # instrument_id -> (val, type, rank)
-            user_blanket: tuple | None = None
-            group_inst: dict = {}         # instrument_id -> (val, type)
-            group_blanket: tuple | None = None
-            for cfg in rows:
-                val = Decimal(str(cfg.value or 0))
-                if val <= 0:
-                    continue
-                st = (cfg.spread_type or "pips").lower()
-                scope = (cfg.scope or "").lower()
-                if scope == "user":
-                    is_pinned = cfg.trading_account_id is not None
-                    if is_pinned and (acct_uuid is None or cfg.trading_account_id != acct_uuid):
-                        continue  # pinned to a different account — ignore
-                    rank = 2 if is_pinned else 1
-                    if cfg.instrument_id is None:
-                        if user_blanket is None or rank > user_blanket[2]:
-                            user_blanket = (val, st, rank)
-                    else:
-                        ex = user_inst.get(cfg.instrument_id)
-                        if ex is None or rank > ex[2]:
-                            user_inst[cfg.instrument_id] = (val, st, rank)
-                elif scope == "account_group":
-                    if cfg.instrument_id is None:
-                        if group_blanket is None:
-                            group_blanket = (val, st)
-                    else:
-                        group_inst.setdefault(cfg.instrument_id, (val, st))
-
-            if not (user_inst or user_blanket or group_inst or group_blanket):
-                return {}
-
+            # Active instruments (pip/digits) — loaded unconditionally because the
+            # per-position override path below needs them even when the user has
+            # no config spread rows at all.
             insts = (
                 await db.execute(select(Instrument).where(Instrument.is_active == True))  # noqa: E712
             ).scalars().all()
-            for inst in insts:
-                sym = (inst.symbol or "").strip().upper()
-                if not sym:
-                    continue
-                # Priority: user+inst → user+blanket → group+inst → group+blanket.
-                eff = (
-                    user_inst.get(inst.id)
-                    or user_blanket
-                    or group_inst.get(inst.id)
-                    or group_blanket
-                )
-                if eff is None:
-                    continue
-                pip = Decimal(str(inst.pip_size or "0.0001"))
-                digits = int(inst.digits or 5)
-                out[sym] = (eff[0], eff[1], pip, digits)
+
+            if rows:
+                # Resolve the four candidate slots. rank encodes account-pinned >
+                # user-wide within the user scope; user always beats group
+                # (handled by the per-instrument fallback order below).
+                user_inst: dict = {}          # instrument_id -> (val, type, rank)
+                user_blanket: tuple | None = None
+                group_inst: dict = {}         # instrument_id -> (val, type)
+                group_blanket: tuple | None = None
+                for cfg in rows:
+                    val = Decimal(str(cfg.value or 0))
+                    if val <= 0:
+                        continue
+                    st = (cfg.spread_type or "pips").lower()
+                    scope = (cfg.scope or "").lower()
+                    if scope == "user":
+                        is_pinned = cfg.trading_account_id is not None
+                        if is_pinned and (acct_uuid is None or cfg.trading_account_id != acct_uuid):
+                            continue  # pinned to a different account — ignore
+                        rank = 2 if is_pinned else 1
+                        if cfg.instrument_id is None:
+                            if user_blanket is None or rank > user_blanket[2]:
+                                user_blanket = (val, st, rank)
+                        else:
+                            ex = user_inst.get(cfg.instrument_id)
+                            if ex is None or rank > ex[2]:
+                                user_inst[cfg.instrument_id] = (val, st, rank)
+                    elif scope == "account_group":
+                        if cfg.instrument_id is None:
+                            if group_blanket is None:
+                                group_blanket = (val, st)
+                        else:
+                            group_inst.setdefault(cfg.instrument_id, (val, st))
+
+                for inst in insts:
+                    sym = (inst.symbol or "").strip().upper()
+                    if not sym:
+                        continue
+                    # Priority: user+inst → user+blanket → group+inst → group+blanket.
+                    eff = (
+                        user_inst.get(inst.id)
+                        or user_blanket
+                        or group_inst.get(inst.id)
+                        or group_blanket
+                    )
+                    if eff is None:
+                        continue
+                    pip = Decimal(str(inst.pip_size or "0.0001"))
+                    digits = int(inst.digits or 5)
+                    out[sym] = (eff[0], eff[1], pip, digits)
+
+            # ── Per-position spread override (TEMPORARY, highest priority) ──
+            # An admin can set a spread on a RUNNING trade. While that position is
+            # OPEN it drives THIS user's live quote for that instrument (price +
+            # chart + P&L), above any config spread. The moment the position
+            # closes it is no longer open, so it drops out here and the config
+            # spreads resume — it never permanently overrides the account-group /
+            # instrument / user config. (Stop-out / SL/TP are mid-based, so this
+            # override changes what the user SEES/realises, never force-closes.)
+            if acct_uuid is not None:
+                acct_ids = [acct_uuid]
+            else:
+                acct_ids = (
+                    await db.execute(
+                        select(TradingAccount.id).where(TradingAccount.user_id == uid)
+                    )
+                ).scalars().all()
+            if acct_ids:
+                inst_by_id = {i.id: i for i in insts}
+                ov_rows = (
+                    await db.execute(
+                        select(
+                            Position.instrument_id,
+                            Position.spread_override,
+                            Position.spread_override_type,
+                        ).where(
+                            Position.status == "open",
+                            Position.spread_override.isnot(None),
+                            Position.account_id.in_(acct_ids),
+                        ).order_by(Position.created_at.asc())  # latest override wins
+                    )
+                ).all()
+                for inst_id, ov_val, ov_type in ov_rows:
+                    inst = inst_by_id.get(inst_id)
+                    if inst is None:
+                        continue
+                    try:
+                        v = Decimal(str(ov_val))
+                    except (ValueError, TypeError):
+                        continue
+                    if v < 0:
+                        continue
+                    sym = (inst.symbol or "").strip().upper()
+                    if not sym:
+                        continue
+                    pip = Decimal(str(inst.pip_size or "0.0001"))
+                    digits = int(inst.digits or 5)
+                    out[sym] = (v, (ov_type or "pips").lower(), pip, digits)
     except Exception as exc:
         logger.warning("user spread override load failed for %s: %s", user_id, exc)
     return out

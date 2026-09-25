@@ -41,6 +41,9 @@ interface Position {
    *  and the price at the right precision, matching the trader terminal. */
   pip_size?: number;
   digits?: number;
+  /** Temporary per-trade spread override (points). Null = none (config spread). */
+  spread_override?: number | null;
+  spread_override_type?: string | null;
   comment?: string;
   is_admin_modified: boolean;
   created_at: string;
@@ -265,6 +268,9 @@ export default function TradesPage() {
   const [modifyLots, setModifyLots] = useState('');
   const [modifyCommission, setModifyCommission] = useState('');
   const [modifySwap, setModifySwap] = useState('');
+  // Temporary per-trade spread override (in points). Empty = no override
+  // (fall back to config spread). Applies live while this trade is open.
+  const [modifySpread, setModifySpread] = useState('');
   const [modifyOpenTime, setModifyOpenTime] = useState('');
   // Admin can flip Buy ↔ Sell on an open position as a correction.
   // Initialized from the position's current side; only sent in the
@@ -408,6 +414,7 @@ export default function TradesPage() {
     setModifyLots(pos.lots ? String(pos.lots) : '');
     setModifyCommission(pos.commission ? String(pos.commission) : '');
     setModifySwap(pos.swap ? String(pos.swap) : '');
+    setModifySpread(pos.spread_override != null ? String(pos.spread_override) : '');
     setModifyOpenTime(utcIsoToLocalInput(pos.created_at));
     setModifySide((pos.side?.toLowerCase() === 'sell' ? 'sell' : 'buy'));
     // Seed the close-at-price controls too — the Edit modal carries a
@@ -494,6 +501,11 @@ export default function TradesPage() {
       if (modifyLots) body.lots = parseFloat(modifyLots);
       if (modifyCommission) body.commission = parseFloat(modifyCommission);
       if (modifySwap) body.swap = parseFloat(modifySwap);
+      // Per-trade spread override: always send so clearing the input (empty)
+      // removes the override; a value sets it in points (pips convention).
+      const spTrim = modifySpread.trim();
+      body.spread_override = spTrim === '' ? null : parseFloat(spTrim);
+      body.spread_override_type = 'pips';
       if (modifyOpenTime) body.open_time = localInputToUtcIso(modifyOpenTime);
       // Only send side if admin actually flipped it — saves a write
       // on every save where the toggle wasn't touched and keeps the
@@ -1186,6 +1198,11 @@ export default function TradesPage() {
               <label className="block text-xxs text-text-tertiary mb-1">Swap</label>
               <input type="number" step="any" value={modifySwap} onChange={e => setModifySwap(e.target.value)} placeholder="0" className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums placeholder:text-text-tertiary focus:border-buy transition-fast" />
             </div>
+          </div>
+          <div>
+            <label className="block text-xxs text-text-tertiary mb-1">Spread override (points)</label>
+            <input type="number" step="any" min="0" value={modifySpread} onChange={e => setModifySpread(e.target.value)} placeholder="None — uses config spread" className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md font-mono tabular-nums placeholder:text-text-tertiary focus:border-buy transition-fast" />
+            <p className="text-[10px] text-text-tertiary mt-1">Applies only while this trade is open (price + chart + P&amp;L). Clear to revert to the account/instrument/user config spread. Leave empty for no override.</p>
           </div>
           <div>
             <label className="block text-xxs text-text-tertiary mb-1">Open Time</label>

@@ -21,6 +21,7 @@ from packages.common.src.admin_schemas import (
 )
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.instrument_pricing import resolve_commission
+from packages.common.src.redis_client import publish_instrument_config_reload
 from dependencies import write_audit_log
 
 # Admin uses Redis db 1, but market ticks are on db 0 (gateway).
@@ -131,6 +132,8 @@ async def list_positions(
             contract_size=float(inst.contract_size) if inst and inst.contract_size is not None else None,
             pip_size=float(inst.pip_size) if inst and inst.pip_size is not None else None,
             digits=int(inst.digits) if inst and inst.digits is not None else None,
+            spread_override=float(pos.spread_override) if pos.spread_override is not None else None,
+            spread_override_type=pos.spread_override_type,
             comment=pos.comment,
             is_admin_modified=pos.is_admin_modified or False,
             created_at=pos.created_at,
@@ -358,6 +361,19 @@ async def modify_position(
     if body.open_time is not None:
         pos.created_at = body.open_time
 
+    # Temporary per-trade spread override. Omitted-vs-null: present + null clears
+    # it (revert to config spread). Setting it makes THIS trade's live quote use
+    # this spread while it stays open; it drops the moment the trade closes.
+    spread_override_changed = False
+    if "spread_override" in fields_set:
+        if body.spread_override is not None:
+            pos.spread_override = Decimal(str(body.spread_override))
+            pos.spread_override_type = (body.spread_override_type or "pips").lower()
+        else:
+            pos.spread_override = None
+            pos.spread_override_type = None
+        spread_override_changed = True
+
     # Side flip — buy ↔ sell. The position object stores an enum so we
     # coerce the string from the body into OrderSide. We do NOT touch
     # the unrealized P&L here: it's computed from side + current price
@@ -422,6 +438,13 @@ async def modify_position(
         ip_address=ip_address,
     )
     await db.commit()
+    # An admin spread override on a running trade must show LIVE on the owner's
+    # /ws/prices stream (price + chart + P&L) at once, not on the 30s poll.
+    if spread_override_changed:
+        try:
+            await publish_instrument_config_reload()
+        except Exception:
+            pass
     return {"message": f"Position modified successfully. {updated_copies} copy trades updated."}
 
 

@@ -200,6 +200,10 @@ class PositionOut(BaseModel):
     # 150000) and over-padded its price.
     pip_size: Optional[float] = None
     digits: Optional[int] = None
+    # Temporary per-trade spread override (NULL = none). Surfaced so the admin
+    # Edit modal shows the current override and the trader UI could badge it.
+    spread_override: Optional[float] = None
+    spread_override_type: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -274,6 +278,11 @@ class ModifyPositionRequest(BaseModel):
     # P&L is computed from side + current price each time.
     side: Optional[str] = None  # "buy" or "sell"
     open_time: Optional[datetime] = None
+    # Temporary per-trade spread override. Present + a number sets it (applies to
+    # THIS running trade's live quote + close while open); present + null clears
+    # it (revert to config spread). Omitted = leave unchanged.
+    spread_override: Optional[float] = None
+    spread_override_type: Optional[str] = None  # "pips" (default) | "percentage"
     reason: Optional[str] = None
 
 

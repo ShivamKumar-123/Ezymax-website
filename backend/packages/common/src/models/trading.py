@@ -135,6 +135,15 @@ class Position(Base):
     # so the overnight fee engine charges $0 swap. The account's
     # default leverage is irrelevant for this position.
     is_fully_funded = Column(Boolean, nullable=False, default=False, server_default="false")
+    # TEMPORARY per-trade spread override set by an admin on a RUNNING trade.
+    # While this position is OPEN it drives the owner's live quote for this
+    # instrument (price + chart + P&L, top priority above config spreads) and
+    # its own close fill; once closed it stops applying, so config spreads
+    # (account-group / instrument / user) resume — it never permanently
+    # overrides them. NULL = no override, fall back to config. Value is in
+    # `spread_override_type` units ('pips' | 'percentage'), same as SpreadConfig.
+    spread_override = Column(Numeric(18, 8), nullable=True)
+    spread_override_type = Column(String(20), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 

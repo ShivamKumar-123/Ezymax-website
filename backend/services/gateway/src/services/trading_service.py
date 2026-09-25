@@ -16,11 +16,11 @@ from packages.common.src.models import (
     TradingAccount, Instrument, InstrumentConfig,
     TradeHistory, Transaction, CopyTrade, UserAuditLog, User,
 )
-from packages.common.src.instrument_pricing import resolve_commission, resolve_user_quote
+from packages.common.src.instrument_pricing import resolve_commission, resolve_user_quote, symmetric_quote_from_mid
 from packages.common.src.config import get_settings as _get_settings
 from . import wallet_service
 from packages.common.src.database import AsyncSessionLocal
-from packages.common.src.redis_client import redis_client, PriceChannel, is_tick_stale
+from packages.common.src.redis_client import redis_client, PriceChannel, is_tick_stale, publish_instrument_config_reload
 from packages.common.src.price_cache import price_cache
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src.notify import create_notification
@@ -1019,10 +1019,23 @@ async def close_position(
     sv = side_val(pos.side)
     c_bid = Decimal(str(tick["bid"]))
     c_ask = Decimal(str(tick["ask"]))
-    # Per-user execution spread (opt-in) — mirror the open fill so the spread is
-    # crossed exactly once per round trip at the user's own rate. Off by default
-    # → close uses the global broadcast bid/ask.
-    if _get_settings().USER_SPREAD_AT_EXECUTION and pos.instrument:
+    had_spread_override = pos.spread_override is not None
+    if had_spread_override and pos.instrument:
+        # Per-trade override: close at the SAME spread the trader saw live while
+        # this position was open (admin set it on the running trade), re-centered
+        # around the current mid. Takes precedence over the per-user config
+        # spread so what they saw is what they realise.
+        mid = (c_bid + c_ask) / Decimal("2")
+        pip = Decimal(str(pos.instrument.pip_size or "0.0001"))
+        digits = int(pos.instrument.digits or 5)
+        c_bid, c_ask = symmetric_quote_from_mid(
+            mid, Decimal(str(pos.spread_override)),
+            (pos.spread_override_type or "pips"), pip, digits, Decimal("0"),
+        )
+    elif _get_settings().USER_SPREAD_AT_EXECUTION and pos.instrument:
+        # Per-user execution spread (opt-in) — mirror the open fill so the spread
+        # is crossed exactly once per round trip at the user's own rate. Off by
+        # default → close uses the global broadcast bid/ask.
         try:
             c_bid, c_ask = await resolve_user_quote(
                 db, pos.instrument, c_bid, c_ask,
@@ -1173,6 +1186,16 @@ async def close_position(
         logger.debug("bonus release after close failed: %s", _bonus_exc)
 
     await db.commit()
+
+    # A fully-closed trade that carried a per-trade spread override no longer
+    # drives the owner's live quote — revert it instantly (the override is
+    # keyed on OPEN positions). A partial close keeps the position open, so its
+    # override stays in force and we must NOT revert.
+    if had_spread_override and not is_partial:
+        try:
+            await publish_instrument_config_reload()
+        except Exception:
+            pass
 
     # Fire-and-forget: notification, Kafka event, Redis publish — don't block response
     _pos_symbol = pos.instrument.symbol if pos.instrument else ""
