@@ -14,6 +14,7 @@ from packages.common.src.notify import create_notification
 from packages.common.src.email_branding import apply_email_brand
 from packages.common.src.admin_schemas import DepositOut, WithdrawalOut, PaginatedResponse
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
+from packages.common.src.withdrawal_limits import available_to_withdraw
 from dependencies import write_audit_log
 
 # C-ADMIN-1: only proof/QR image + PDF uploads may ever be served back, and each
@@ -546,8 +547,23 @@ async def approve_withdrawal(
         account = acc_q.scalar_one_or_none()
         if account:
             if not already_debited:
-                if (account.balance or Decimal("0")) < withdrawal.amount:
-                    raise HTTPException(status_code=400, detail="Insufficient account balance")
+                # C-MONEY-3: withdrawable = balance − margin_used (capped by
+                # free_margin), NOT the raw balance — otherwise an admin approval
+                # could pull out funds collateralising open positions and push the
+                # account into a margin deficit. Same rule as the user-facing
+                # withdrawal paths (account row is locked above, so this is
+                # consistent with the debit).
+                avail = available_to_withdraw(
+                    "trading",
+                    balance=account.balance,
+                    margin_used=account.margin_used,
+                    free_margin=account.free_margin,
+                )
+                if avail < withdrawal.amount:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Insufficient withdrawable balance — funds backing open positions cannot be withdrawn",
+                    )
                 account.balance = (account.balance or Decimal("0")) - withdrawal.amount
                 account.equity = account.balance + (account.credit or Decimal("0"))
                 account.free_margin = account.equity - (account.margin_used or Decimal("0"))
