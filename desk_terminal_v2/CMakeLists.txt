@@ -187,3 +187,9 @@ target_link_libraries(terminal PRIVATE
     Qt6::WebChannel
     Qt6::Svg
 )
+
+# DPAPI (CryptProtectData / CryptUnprotectData) — encrypts the stored session
+# token, refresh token and API key/secret at rest (src/core/Config.cpp).
+if(WIN32)
+    target_link_libraries(terminal PRIVATE Crypt32)
+endif()

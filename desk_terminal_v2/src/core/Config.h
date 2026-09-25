@@ -3,8 +3,9 @@
 #include <QStringList>
 
 // Persists connection settings (API key/secret + endpoints) to a JSON file
-// in the user's app-config directory. Plaintext — this is a local desktop
-// terminal; keep the file private.
+// in the user's app-config directory. The secrets (token, refreshToken,
+// apiKey, apiSecret) are encrypted at rest with DPAPI on Windows, and the
+// file is written owner-read/write only on every platform (see Config.cpp).
 class Config {
 public:
     // Terminal login (email/password → JWT). Preferred.

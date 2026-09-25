@@ -932,6 +932,11 @@ void MainWindow::logout() {
     m_accountTimer->stop();
     m_stream->stop();
 
+    // Kill the server-side credentials (algo key + session) while we still hold
+    // the token — clearing them locally alone left both live on the server.
+    m_api->setConfig(m_cfg);
+    m_api->revokeSessionOnServer();
+
     m_cfg.token.clear();
     m_cfg.accountId.clear();
     m_cfg.userName.clear();

@@ -376,6 +376,33 @@ void ApiClient::modifyBracket(const QString& positionId, const QString& kind, do
 // The refresh cookie is sent by hand rather than through a cookie jar: the
 // terminal's managers are per-widget and none of them outlives a restart, so
 // the credential has to travel in Config, not in QNetworkAccessManager.
+void ApiClient::revokeSessionOnServer() {
+    if (m_cfg.token.trimmed().isEmpty()) return;   // nothing to authenticate with
+
+    // Build both requests NOW, from the pre-logout config, so they still carry
+    // the bearer token after the caller clears it.
+    const QNetworkRequest logoutReq = v1Request("/auth/logout");
+    auto sendLogout = [this, logoutReq]() {
+        QNetworkReply* r = m_net->post(logoutReq, QByteArray("{}"));
+        connect(r, &QNetworkReply::finished, r, &QObject::deleteLater);
+    };
+
+    // Revoke the API key FIRST: /auth/logout kills the session, and a key
+    // revoke sent in parallel could then arrive with an already-dead token.
+    if (!m_cfg.apiKey.trimmed().isEmpty()) {
+        QJsonObject body;
+        body["api_key"] = m_cfg.apiKey.trimmed();
+        QNetworkReply* r = m_net->post(v1Request("/algo/revoke"),
+                                       QJsonDocument(body).toJson(QJsonDocument::Compact));
+        connect(r, &QNetworkReply::finished, this, [r, sendLogout]() {
+            r->deleteLater();
+            sendLogout();   // regardless of the revoke result
+        });
+    } else {
+        sendLogout();
+    }
+}
+
 void ApiClient::refreshSession() {
     if (m_cfg.refreshToken.trimmed().isEmpty()) {
         emit sessionRefreshFailed(tr("No stored session to refresh."));

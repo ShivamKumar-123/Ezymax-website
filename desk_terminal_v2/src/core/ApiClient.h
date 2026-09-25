@@ -62,6 +62,10 @@ public:
     // SL/TP, the wallet — dies with it, so this has to run on a timer rather
     // than waiting for a user to hit "Invalid token" mid-trade.
     void refreshSession();
+    // Best-effort, fire-and-forget: revoke THIS terminal's algo API key and its
+    // server-side session (called on log out, before local state is cleared), so
+    // a copied config file is useless afterwards. Uses the current token.
+    void revokeSessionOnServer();
 
     void modifyBracket(const QString& positionId, const QString& kind, double level);
     // lots <= 0 (or >= the position's size) closes it fully; a smaller value is
