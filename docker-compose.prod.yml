@@ -69,6 +69,12 @@ services:
       # needs gateway access). Until that's done we keep parity with
       # the pre-audit allow-list.
       CORS_ORIGINS: https://swisscresta.com,https://trade.swisscresta.com,https://admin.swisscresta.com
+      # C1 fix: credentialed cross-origin REST (CORSMiddleware) is limited to the
+      # app hosts. CORS_ORIGINS above still drives the login CSRF Origin check and
+      # the WS allow-list, so apex login + apex live prices keep working, but the
+      # marketing apex can no longer READ credentialed gateway responses
+      # cross-origin. Browsers use the same-origin /api/v1 proxy anyway.
+      API_CORS_ORIGINS: https://trade.swisscresta.com,https://admin.swisscresta.com
       COOKIE_DOMAIN: .swisscresta.com
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       # Fills use the same per-user spread the /ws/prices stream shows.

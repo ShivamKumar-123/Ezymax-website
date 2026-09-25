@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Optional
 
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings
@@ -66,6 +67,13 @@ class Settings(BaseSettings):
     USER_JWT_ALGORITHM: str = "HS256"
 
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
+    # Origins allowed CREDENTIALED cross-origin REST calls to the gateway. Kept
+    # separate from CORS_ORIGINS (which also drives the WebSocket origin
+    # allow-list) so browser hosts that only need the live price socket — e.g.
+    # the marketing apex — don't also get credentialed API access. Browsers in
+    # prod reach REST via the same-origin /api/v1 proxy, so this can be narrow.
+    # None = fall back to CORS_ORIGINS (backward compatible).
+    API_CORS_ORIGINS: Optional[str] = None
     CORS_ALLOW_METHODS: str = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
     CORS_ALLOW_HEADERS: str = "Authorization,Content-Type,X-Requested-With,Accept,X-Api-Key,X-Api-Secret"
 

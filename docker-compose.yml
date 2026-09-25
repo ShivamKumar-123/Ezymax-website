@@ -76,7 +76,7 @@ services:
       context: .
       dockerfile: backend/services/admin/Dockerfile
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     env_file:
       - path: ./.env
         required: false
@@ -107,7 +107,7 @@ services:
       context: .
       dockerfile: backend/services/gateway/Dockerfile
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     env_file:
       - path: ./.env
         required: false
@@ -202,7 +202,7 @@ services:
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
     ports:
       # Host 3010 if 3000 is already taken (local Next/other apps)
-      - "3010:3000"
+      - "127.0.0.1:3010:3000"
     environment:
       # Do NOT set NEXT_PUBLIC_* http/ws here — browsers on https:// will hit mixed-content blocks.
       # App route src/app/api/v1/[...path]/route.ts proxies using INTERNAL_API_URL or TRADER_API_PROXY_TARGET.
@@ -217,7 +217,7 @@ services:
       context: ./frontend/admin
       dockerfile: Dockerfile
     ports:
-      - "3011:3001"
+      - "127.0.0.1:3011:3001"
     environment:
       # Server-side proxy /admin-api → admin-api (browser must not use docker hostname admin-api)
       ADMIN_API_PROXY_TARGET: http://admin-api:8001

@@ -48,6 +48,14 @@ init_sentry("gateway")
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 if not _cors_origins:
     _cors_origins = ["http://localhost:3000", "http://localhost:3001"]
+# Credentialed REST CORS is narrower than the WS origin allow-list (which keeps
+# using _cors_origins): hosts that only need the live price socket (marketing
+# apex/www) must not also get credentialed cross-origin API access. Falls back
+# to CORS_ORIGINS when API_CORS_ORIGINS is unset.
+if settings.API_CORS_ORIGINS is not None:
+    _api_cors_origins = [o.strip() for o in settings.API_CORS_ORIGINS.split(",") if o.strip()]
+else:
+    _api_cors_origins = list(_cors_origins)
 _cors_methods = [m.strip() for m in settings.CORS_ALLOW_METHODS.split(",") if m.strip()]
 _cors_headers = [h.strip() for h in settings.CORS_ALLOW_HEADERS.split(",") if h.strip()]
 
@@ -282,7 +290,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins,
+    allow_origins=_api_cors_origins,
     allow_credentials=True,
     allow_methods=_cors_methods,
     allow_headers=_cors_headers,

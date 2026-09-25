@@ -145,17 +145,79 @@ def add_rate_limit_handler(app):
 # ---------------------------------------------------------------------------
 # 3. Request Body Size Limit Middleware
 # ---------------------------------------------------------------------------
-class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
-    """Reject requests whose Content-Length exceeds MAX_REQUEST_SIZE."""
+class _BodyTooLarge(Exception):
+    pass
 
-    async def dispatch(self, request: Request, call_next):
-        content_length = request.headers.get("content-length")
-        if content_length and int(content_length) > settings.MAX_REQUEST_SIZE:
-            return JSONResponse(
-                status_code=413,
-                content={"detail": f"Request body too large. Max {settings.MAX_REQUEST_SIZE // (1024*1024)} MB."},
-            )
-        return await call_next(request)
+
+class RequestSizeLimitMiddleware:
+    """Reject request bodies larger than MAX_REQUEST_SIZE.
+
+    Pure ASGI (not BaseHTTPMiddleware) so it can count the bytes ACTUALLY
+    streamed: the old version only trusted the Content-Length header, so a
+    chunked (Transfer-Encoding) upload with no Content-Length bypassed the cap
+    entirely, and a malformed Content-Length crashed with a 500. Now:
+      * declared Content-Length over the cap → 413 before reading anything;
+      * non-numeric Content-Length → 400;
+      * streamed body that grows past the cap (chunked) → 413.
+    """
+
+    def __init__(self, app, max_size: int | None = None):
+        self.app = app
+        self.max_size = max_size or settings.MAX_REQUEST_SIZE
+
+    async def _reply(self, send, status_code: int, detail: str) -> None:
+        resp = JSONResponse(status_code=status_code, content={"detail": detail})
+        await send({
+            "type": "http.response.start",
+            "status": resp.status_code,
+            "headers": resp.raw_headers,
+        })
+        await send({"type": "http.response.body", "body": resp.body})
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") != "http":
+            await self.app(scope, receive, send)
+            return
+
+        too_large = f"Request body too large. Max {self.max_size // (1024 * 1024)} MB."
+        for name, value in scope.get("headers") or []:
+            if name == b"content-length":
+                try:
+                    declared = int(value)
+                except (ValueError, TypeError):
+                    await self._reply(send, 400, "Invalid Content-Length header.")
+                    return
+                if declared < 0:
+                    await self._reply(send, 400, "Invalid Content-Length header.")
+                    return
+                if declared > self.max_size:
+                    await self._reply(send, 413, too_large)
+                    return
+                break
+
+        received = 0
+        response_started = False
+
+        async def limited_receive():
+            nonlocal received
+            message = await receive()
+            if message.get("type") == "http.request":
+                received += len(message.get("body", b"") or b"")
+                if received > self.max_size:
+                    raise _BodyTooLarge()
+            return message
+
+        async def tracking_send(message):
+            nonlocal response_started
+            if message.get("type") == "http.response.start":
+                response_started = True
+            await send(message)
+
+        try:
+            await self.app(scope, limited_receive, tracking_send)
+        except _BodyTooLarge:
+            if not response_started:
+                await self._reply(send, 413, too_large)
 
 
 # ---------------------------------------------------------------------------
