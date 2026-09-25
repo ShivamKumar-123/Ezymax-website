@@ -1,16 +1,19 @@
 """Admin Auth Service — login, refresh, me."""
 import logging
 from datetime import datetime, timedelta, timezone
+from uuid import UUID, uuid4
 
 import jwt
 from fastapi import HTTPException, status
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update as sql_update
 from sqlalchemy.exc import DBAPIError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from packages.common.src.auth import verify_password
+from packages.common.src.auth import (
+    verify_password, hash_token, _session_is_active, invalidate_session_cache,
+)
 from packages.common.src.config import get_settings
-from packages.common.src.models import User, Employee
+from packages.common.src.models import User, Employee, UserSession
 from packages.common.src.admin_schemas import AdminLoginRequest, AdminLoginResponse, AdminRefreshRequest
 from dependencies import EMPLOYEE_ROLE_PERMISSIONS
 
@@ -18,7 +21,7 @@ logger = logging.getLogger("uvicorn.error")
 settings = get_settings()
 
 
-def create_admin_token(admin_id: str, role: str) -> str:
+def create_admin_token(admin_id: str, role: str, sid: str | None = None) -> str:
     now = datetime.now(timezone.utc)
     expire = now + timedelta(hours=settings.ADMIN_JWT_EXPIRY_HOURS)
     payload = {
@@ -28,6 +31,10 @@ def create_admin_token(admin_id: str, role: str) -> str:
         "exp": expire,
         "iat": now,
     }
+    # H-ADMIN-1: bind the token to a revocable user_sessions row so logout /
+    # password-change can kill it server-side (see get_current_admin).
+    if sid is not None:
+        payload["sid"] = sid
     try:
         return jwt.encode(payload, settings.ADMIN_JWT_SECRET, algorithm=settings.ADMIN_JWT_ALGORITHM)
     except jwt.PyJWTError as e:
@@ -150,7 +157,17 @@ async def admin_login(
     # White-label host isolation (tenant admin domains vs platform host).
     await _enforce_admin_host_isolation(admin, host, db)
 
-    token = create_admin_token(str(admin.id), admin.role)
+    # Mint a revocable session: sid → user_sessions row, so logout / password
+    # change can kill this token server-side (H-ADMIN-1).
+    sid = uuid4()
+    token = create_admin_token(str(admin.id), admin.role, sid=str(sid))
+    db.add(UserSession(
+        id=sid,
+        user_id=admin.id,
+        token_hash=hash_token(token),
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=settings.ADMIN_JWT_EXPIRY_HOURS),
+    ))
+    await db.commit()
 
     return AdminLoginResponse(
         access_token=token,
@@ -181,6 +198,7 @@ async def admin_refresh(body: AdminRefreshRequest, db: AsyncSession) -> AdminLog
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
 
         admin_id = payload.get("admin_id")
+        old_sid = payload.get("sid")
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired, please sign in again")
     except jwt.PyJWTError:
@@ -197,7 +215,32 @@ async def admin_refresh(body: AdminRefreshRequest, db: AsyncSession) -> AdminLog
     if admin is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin not found")
 
-    token = create_admin_token(str(admin.id), admin.role)
+    new_exp = datetime.now(timezone.utc) + timedelta(hours=settings.ADMIN_JWT_EXPIRY_HOURS)
+    if old_sid:
+        # A revoked session must NOT be refreshable — a logged-out / stolen token
+        # cannot be resurrected. Fail OPEN only on an infra error, never lock out.
+        try:
+            still_active = await _session_is_active(old_sid)
+        except Exception:
+            still_active = True
+        if not still_active:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session revoked, please sign in again")
+        token = create_admin_token(str(admin.id), admin.role, sid=old_sid)
+        await db.execute(
+            sql_update(UserSession).where(UserSession.id == UUID(str(old_sid)))
+            .values(token_hash=hash_token(token), expires_at=new_exp)
+        )
+        await db.commit()
+        await invalidate_session_cache(old_sid)
+    else:
+        # Grandfathered token (minted before sessions existed) — upgrade it to a
+        # revocable session on refresh so it becomes killable going forward.
+        sid = uuid4()
+        token = create_admin_token(str(admin.id), admin.role, sid=str(sid))
+        db.add(UserSession(
+            id=sid, user_id=admin.id, token_hash=hash_token(token), expires_at=new_exp,
+        ))
+        await db.commit()
     return AdminLoginResponse(
         access_token=token,
         admin_id=str(admin.id),
@@ -214,7 +257,19 @@ async def change_admin_password(admin: User, current_password: str, new_password
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be at least 8 characters")
     from packages.common.src.auth import hash_password
     admin.password_hash = hash_password(new_password)
+    # Kill every existing session for this admin so a changed password
+    # invalidates any outstanding (possibly stolen) token immediately.
+    sids = (await db.execute(
+        select(UserSession.id).where(
+            UserSession.user_id == admin.id, UserSession.is_active == True,  # noqa: E712
+        )
+    )).scalars().all()
+    await db.execute(
+        sql_update(UserSession).where(UserSession.user_id == admin.id).values(is_active=False)
+    )
     await db.commit()
+    for _sid in sids:
+        await invalidate_session_cache(str(_sid))
     return {"message": "Password changed successfully"}
 
 

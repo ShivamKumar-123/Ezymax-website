@@ -93,6 +93,20 @@ async def get_current_admin(
     except jwt.PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
+    # H-ADMIN-1: reject a token whose admin session was revoked (logout /
+    # password change). Tokens minted before sessions existed carry no sid and
+    # are grandfathered (they lapse within the 8h lifetime). Fail OPEN on an
+    # infra error so a Redis/DB blip can never lock every admin out.
+    sid = payload.get("sid")
+    if sid:
+        from packages.common.src.auth import _session_is_active
+        try:
+            _sess_ok = await _session_is_active(sid)
+        except Exception:
+            _sess_ok = True
+        if not _sess_ok:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session revoked, please sign in again")
+
     result = await db.execute(
         select(User).where(
             User.id == uuid.UUID(admin_id),

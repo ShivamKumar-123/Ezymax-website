@@ -90,8 +90,39 @@ async def admin_refresh(
 
 
 @router.post("/logout")
-async def admin_logout(response: Response):
-    """Clear the admin cookie. Idempotent — safe to call when not signed in."""
+async def admin_logout(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
+    """Clear the admin cookie AND revoke the server-side session so the token
+    can't be replayed if it was captured. Idempotent — safe when not signed in."""
+    token = request.cookies.get(ADMIN_COOKIE_NAME)
+    if not token:
+        auth = request.headers.get("authorization") or ""
+        if auth.lower().startswith("bearer "):
+            token = auth[7:].strip()
+    if token:
+        try:
+            import jwt as _jwt
+            import uuid as _uuid
+            from sqlalchemy import update as _upd
+            from packages.common.src.models import UserSession
+            from packages.common.src.auth import invalidate_session_cache
+            payload = _jwt.decode(
+                token, _settings.ADMIN_JWT_SECRET,
+                algorithms=[_settings.ADMIN_JWT_ALGORITHM],
+                options={"verify_exp": False},  # let an expired token still log out cleanly
+            )
+            sid = payload.get("sid")
+            if sid:
+                await db.execute(
+                    _upd(UserSession).where(UserSession.id == _uuid.UUID(str(sid))).values(is_active=False)
+                )
+                await db.commit()
+                await invalidate_session_cache(str(sid))
+        except Exception:
+            pass  # never let a logout error block clearing the cookie
     response.delete_cookie(key=ADMIN_COOKIE_NAME, path="/")
     return {"message": "Signed out"}
 
