@@ -12,7 +12,7 @@ from packages.common.src.schemas import (
     GoogleAuthRequest,
     WalletNonceRequest, WalletNonceResponse, WalletVerifyRequest,
 )
-from packages.common.src.auth import get_current_user
+from packages.common.src.auth import get_current_user, require_full_session
 from ..services.auth_service import (
     AuthServiceError,
     register_user, login_user, demo_login as _demo_login,
@@ -245,16 +245,11 @@ async def auth_refresh(request: Request, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 
-@router.post("/bootstrap-session")
-async def bootstrap_session(
-    req: BootstrapSessionRequest, request: Request, db: AsyncSession = Depends(get_db),
-):
-    try:
-        return await _bootstrap_session(
-            access_token=req.access_token, request=request, db=db,
-        )
-    except AuthServiceError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
+# NOTE: the public POST /auth/bootstrap-session route was removed. It let any
+# holder of an access token mint a fresh session + refresh token (and resurrect
+# logged-out tokens). The only legitimate use — admin impersonation — now goes
+# exclusively through the single-use code at /auth/impersonate/redeem, which
+# calls the bootstrap service function internally.
 
 
 class _ImpersonateRedeemRequest(BaseModel):
@@ -349,7 +344,7 @@ async def get_me(current_user: dict = Depends(get_current_user), db: AsyncSessio
 
 
 @router.post("/2fa/setup")
-async def setup_2fa(current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def setup_2fa(current_user: dict = Depends(require_full_session), db: AsyncSession = Depends(get_db)):
     try:
         return await _setup_2fa(user_id=current_user["user_id"], db=db)
     except AuthServiceError as e:
@@ -369,7 +364,7 @@ class _ChangePasswordRequest(BaseModel):
 async def verify_2fa(
     body: _Verify2faRequest,
     request: Request,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
     """Confirms the freshly-set TOTP secret and returns 8 one-time backup
@@ -390,11 +385,16 @@ async def verify_2fa(
 
 @router.post("/2fa/regenerate-backup-codes")
 async def regenerate_2fa_backup_codes(
-    current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    body: _Verify2faRequest,
+    request: Request,
+    current_user: dict = Depends(require_full_session), db: AsyncSession = Depends(get_db),
 ):
-    from ..services.auth_service import regenerate_2fa_backup_codes as _regen
+    """Mint a fresh backup-code sheet. Requires a current authenticator code
+    (backup codes bypass 2FA at login, so a bare session must not harvest them)."""
+    from ..services.auth_service import regenerate_2fa_backup_codes as _regen, rate_limit_http
+    rate_limit_http(request, "2fa-regen", 5, 600.0)
     try:
-        return await _regen(user_id=current_user["user_id"], db=db)
+        return await _regen(user_id=current_user["user_id"], code=body.code, db=db)
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
@@ -402,7 +402,7 @@ async def regenerate_2fa_backup_codes(
 @router.post("/password/change")
 async def change_password(
     body: _ChangePasswordRequest,
-    current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_full_session), db: AsyncSession = Depends(get_db),
 ):
     # Phase 3: credentials arrive in the JSON body, not query params (which land
     # in access logs / browser history / Referer).
@@ -410,6 +410,7 @@ async def change_password(
         return await _change_password(
             user_id=current_user["user_id"],
             old_password=body.old_password, new_password=body.new_password, db=db,
+            keep_sid=current_user.get("sid"),
         )
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

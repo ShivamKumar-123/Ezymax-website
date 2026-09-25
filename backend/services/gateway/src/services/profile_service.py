@@ -205,6 +205,7 @@ async def update_profile(
 
 async def change_password(
     user_id: UUID, current_password: str, new_password: str, db: AsyncSession,
+    keep_sid=None,
 ) -> dict:
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -218,9 +219,16 @@ async def change_password(
         raise HTTPException(status_code=400, detail="New password must be different")
 
     user.password_hash = hash_password(new_password)
+    # Sign out every OTHER device + revoke refresh tokens and algo keys (same
+    # rule as /auth/password/change) so a changed password evicts an attacker.
+    from .auth_service import revoke_user_credentials
+    from packages.common.src.auth import invalidate_session_cache
+    revoked_sids = await revoke_user_credentials(db, user.id, keep_sid=keep_sid)
     await db.commit()
+    for _sid in revoked_sids:
+        await invalidate_session_cache(_sid)
 
-    return {"message": "Password changed successfully"}
+    return {"message": "Password changed successfully. Other devices have been signed out."}
 
 
 # ─── Sessions ─────────────────────────────────────────────────────────────

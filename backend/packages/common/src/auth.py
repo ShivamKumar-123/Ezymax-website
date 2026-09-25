@@ -190,6 +190,11 @@ async def get_current_user(
     sid = payload.get("sid")
     if sid and not await _session_is_active(sid):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session ended. Please sign in again.")
+    # The raw admin-impersonation token (impersonated_by, no sid) is only valid as
+    # input to /auth/impersonate/redeem → bootstrap. Used directly as a Bearer it
+    # would be a 2h, un-revocable, un-flagged session — refuse it.
+    if payload.get("impersonated_by") and not sid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     # Mark the user as online for ~5 minutes after this request. The admin
     # users list reads these keys to render an online/offline indicator.
     # 5 minutes is generous enough that brief idle stretches (reading a
@@ -206,7 +211,30 @@ async def get_current_user(
     return {
         "user_id": user_id,
         "role": payload["role"],
+        # How this session was established: "login", "derived" (refresh),
+        # "impersonation" (admin support), or None (legacy token).
+        "amr": payload.get("amr"),
+        # This request's session id (None for legacy tokens) — lets "sign out
+        # other devices" style actions keep the caller's own session.
+        "sid": sid,
     }
+
+
+# Sessions that must NOT perform money-out / account-security actions. An admin
+# impersonating a user for support can view and trade-support, but must never
+# withdraw, change the payout wallet, touch 2FA/password, or mint API keys.
+_RESTRICTED_AMR = {"impersonation"}
+
+
+async def require_full_session(current_user: dict = Depends(get_current_user)) -> dict:
+    """Like get_current_user, but refuses restricted (impersonation) sessions.
+    Use on withdrawal / wallet-link / 2FA / password / API-key endpoints."""
+    if current_user.get("amr") in _RESTRICTED_AMR:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This action is not allowed in an impersonation session.",
+        )
+    return current_user
 
 
 async def require_admin(current_user: dict = Depends(get_current_user)) -> dict:

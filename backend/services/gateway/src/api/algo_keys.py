@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from packages.common.src.database import get_db
-from packages.common.src.auth import get_current_user
+from packages.common.src.auth import get_current_user, require_full_session
 from packages.common.src.models import AlgoApiKey, TradingAccount, MasterAccount, InvestorAllocation
 
 logger = logging.getLogger("algo_keys")
@@ -39,7 +39,11 @@ class GenerateKeyRequest(BaseModel):
 
 
 class RevokeKeyRequest(BaseModel):
-    key_id: UUID
+    # Identify the key by id (web UI) OR by its public api_key string (the
+    # desktop terminal, which only keeps the key it was issued). Either way the
+    # key must belong to the caller.
+    key_id: UUID | None = None
+    api_key: str | None = None
 
 
 @router.get("/keys")
@@ -157,7 +161,7 @@ async def list_accounts_with_keys(
 @router.post("/generate")
 async def generate_key(
     body: GenerateKeyRequest,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
     """Generate a new API key + secret for a trading account. Returns secret ONCE."""
@@ -217,15 +221,16 @@ async def revoke_key(
     user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Revoke an algo API key."""
+    """Revoke an algo API key (by key_id or api_key; owner-checked)."""
     uid = user["user_id"]
-    key_q = await db.execute(
-        select(AlgoApiKey).where(
-            AlgoApiKey.id == body.key_id,
-            AlgoApiKey.user_id == uid,
-        )
-    )
-    key_row = key_q.scalar_one_or_none()
+    if body.key_id is None and not (body.api_key or "").strip():
+        raise HTTPException(status_code=400, detail="key_id or api_key required")
+    q = select(AlgoApiKey).where(AlgoApiKey.user_id == uid)
+    if body.key_id is not None:
+        q = q.where(AlgoApiKey.id == body.key_id)
+    else:
+        q = q.where(AlgoApiKey.api_key == body.api_key.strip())
+    key_row = (await db.execute(q)).scalar_one_or_none()
     if not key_row:
         raise HTTPException(status_code=404, detail="Key not found")
 
@@ -233,4 +238,4 @@ async def revoke_key(
     await db.commit()
 
     logger.info("[ALGO] Key revoked: %s", key_row.api_key[:12])
-    return {"status": "revoked", "key_id": str(body.key_id)}
+    return {"status": "revoked", "key_id": str(key_row.id)}

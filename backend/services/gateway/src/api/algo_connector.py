@@ -16,6 +16,7 @@ release, no cross-rate P&L conversion, and no A-book forwarding. Any future
 the canonical functions, never as a parallel implementation.
 """
 import hashlib
+import hmac
 import json
 import logging
 from datetime import datetime, timezone
@@ -72,8 +73,16 @@ async def _authenticate(x_api_key: str, x_api_secret: str, db) -> tuple[AlgoApiK
         )
     )
     key_row = result.scalar_one_or_none()
-    if not key_row or key_row.secret_hash != secret_hash:
+    # Constant-time compare so response timing can't leak how much of the hash matched.
+    if not key_row or not hmac.compare_digest(str(key_row.secret_hash or ""), secret_hash):
         raise HTTPException(status_code=401, detail="Invalid API credentials")
+    # A banned / blocked / suspended owner must not keep trading through a bot
+    # key — web sessions already enforce this per request (get_current_user), the
+    # API-key path never did.
+    from packages.common.src.auth import _get_user_status, _BLOCKED_USER_STATUSES
+    owner_status = await _get_user_status(key_row.user_id)
+    if owner_status is None or owner_status in _BLOCKED_USER_STATUSES:
+        raise HTTPException(status_code=403, detail="Account is disabled")
     account = await db.get(TradingAccount, key_row.account_id)
     if not account or not account.is_active:
         raise HTTPException(status_code=403, detail="Trading account is inactive")

@@ -22,6 +22,12 @@ class _Result:
     def scalar_one_or_none(self):
         return self._val
 
+    def scalars(self):
+        return self
+
+    def all(self):
+        return list(self._val) if isinstance(self._val, (list, tuple)) else []
+
 
 class _FakeDB:
     """Returns queued values from execute() in order; records commits."""
@@ -97,14 +103,16 @@ class PasswordResetTests(unittest.TestCase):
         auth_service.redis_client = _FakeRedis()
         user = SimpleNamespace(id="u1", email="a@x.com", password_hash="old")
         row = SimpleNamespace(id="t1", user_id="u1", used=False)
-        # execute order: select user, select token, update refresh, update session
-        db = _FakeDB([user, row, None, None])
+        # execute order: select user, select token, then revoke_user_credentials:
+        # update refresh, select active session ids, update those sessions,
+        # update algo keys.
+        db = _FakeDB([user, row, None, ["s1", "s2"], None, None])
         out = asyncio.run(reset_password("123456", "NewPass123!", request=None, db=db, email="a@x.com"))
         self.assertEqual(user.password_hash, "bcrypt$NewPass123!")
         self.assertTrue(row.used)
         self.assertTrue(db.committed)
-        # two update() executes (refresh + session) ran after the two selects.
-        self.assertGreaterEqual(db.execute_calls, 4)
+        # refresh + session-select + session-update + algo-key update ran after the two selects.
+        self.assertGreaterEqual(db.execute_calls, 6)
         self.assertIn("message", out)
 
 

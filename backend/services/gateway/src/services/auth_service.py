@@ -156,7 +156,7 @@ def attach_auth_cookies(
     *,
     access_token: str,
     access_expires_at: datetime,
-    raw_refresh: str,
+    raw_refresh: str | None,
 ) -> None:
     st = get_settings()
     secure = _cookie_secure_flag(request)
@@ -180,6 +180,14 @@ def attach_auth_cookies(
     if not st.JWT_REFRESH_SESSION_COOKIE:
         access_kw["max_age"] = max_age_access
     response.set_cookie(**access_kw)
+    if raw_refresh is None:
+        # Session issued WITHOUT a refresh token (e.g. admin impersonation):
+        # clear any refresh cookie already in this browser so a later
+        # /auth/refresh can't silently resurrect a different identity.
+        if domain:
+            response.delete_cookie(st.REFRESH_TOKEN_COOKIE_NAME, path="/", domain=domain)
+        response.delete_cookie(st.REFRESH_TOKEN_COOKIE_NAME, path="/")
+        return
     refresh_kw: dict = {
         "key": st.REFRESH_TOKEN_COOKIE_NAME,
         "value": raw_refresh,
@@ -351,18 +359,24 @@ async def issue_auth_json_response(
     status_code: int = 200,
     user_audit_action: str | None = None,
     audit_metadata: dict | None = None,
+    amr_override: str | None = None,
+    issue_refresh: bool = True,
 ) -> JSONResponse:
     """Create user_session + refresh row, commit, return JSON (+ HttpOnly cookies).
 
     All inserts (session, refresh, optional audit log) are flushed together and
     committed atomically. Any exception raised before this commit leaves the
-    transaction open for the route handler to roll back."""
+    transaction open for the route handler to roll back.
+
+    amr_override: force the session's amr (e.g. "impersonation").
+    issue_refresh: False → no refresh token (session dies with the access
+    token; used for admin impersonation so it can't outlive its window)."""
     # H-AUTH-3: bind the token to its user_sessions row via a sid claim (set the
     # session id explicitly so no extra flush is needed) and record how the
     # session was established (amr) — a real login vs a derived/bootstrap session.
     sid = uuid4()
     _login_actions = {"LOGIN", "WALLET_LOGIN", "OAUTH_GOOGLE_LOGIN", "OAUTH_GOOGLE_REGISTER", "REGISTER", "DEMO_LOGIN"}
-    amr = "login" if (user_audit_action in _login_actions) else "derived"
+    amr = amr_override or ("login" if (user_audit_action in _login_actions) else "derived")
     token, expires = create_access_token(str(user.id), user.role, sid=str(sid), amr=amr)
     new_session = UserSession(
         id=sid,
@@ -374,16 +388,18 @@ async def issue_auth_json_response(
     )
     db.add(new_session)
     st = get_settings()
-    raw_refresh = secrets.token_urlsafe(48)
+    raw_refresh: str | None = None
     ref_exp = datetime.now(timezone.utc) + timedelta(days=st.JWT_REFRESH_EXPIRY_DAYS)
-    db.add(
-        UserRefreshToken(
-            user_id=user.id,
-            token_hash=hash_token(raw_refresh),
-            expires_at=ref_exp,
-            revoked=False,
+    if issue_refresh:
+        raw_refresh = secrets.token_urlsafe(48)
+        db.add(
+            UserRefreshToken(
+                user_id=user.id,
+                token_hash=hash_token(raw_refresh),
+                expires_at=ref_exp,
+                revoked=False,
+            )
         )
-    )
     if user_audit_action:
         ua = (request.headers.get("user-agent") or "").strip()
         # device_info is plain Text; embed structured audit metadata (e.g. Google sub/email)
@@ -440,7 +456,7 @@ async def issue_auth_json_response(
         expires_at=expires,
     )
     content = body.model_dump(mode="json")
-    if json_delivery:
+    if json_delivery and raw_refresh is not None:
         content["refresh_token"] = raw_refresh
         content["refresh_expires_at"] = ref_exp.isoformat()
     resp = JSONResponse(content=content, status_code=status_code)
@@ -915,10 +931,25 @@ async def refresh_token(request: Request, db: AsyncSession) -> JSONResponse:
 # ─── Bootstrap session ────────────────────────────────────────────────────
 
 async def bootstrap_session(access_token: str, request: Request, db: AsyncSession) -> JSONResponse:
+    """Turn an ADMIN-IMPERSONATION token into a browser session.
+
+    Previously this accepted ANY valid access token and minted a fresh session +
+    7-day refresh token — without even checking whether that token's session had
+    been revoked. So a stolen ~45-minute access token became a 7-day foothold,
+    and a logged-out token could be resurrected, defeating logout.
+
+    Now it only accepts the purpose-built impersonation token (carries
+    `impersonated_by`, no `sid`). Ordinary session tokens (which carry a `sid`)
+    are rejected — they already HAVE a session. The resulting session is marked
+    amr="impersonation" (sensitive money/security actions are refused for it)
+    and gets NO refresh token, so it ends with the access token instead of
+    outliving the admin's short impersonation window."""
     rate_limit_http(request, "bootstrap-session", 30, 3600.0)
     try:
         payload = decode_token(access_token.strip())
     except Exception:
+        raise AuthServiceError("Invalid token", 401)
+    if payload.get("sid") or not payload.get("impersonated_by"):
         raise AuthServiceError("Invalid token", 401)
     try:
         uid = UUID(str(payload["sub"]))
@@ -931,7 +962,9 @@ async def bootstrap_session(access_token: str, request: Request, db: AsyncSessio
         raise AuthServiceError("Account has been banned", 403)
     if user.status == "blocked":
         raise AuthServiceError("Account has been blocked", 403)
-    return await issue_auth_json_response(user, request, db)
+    return await issue_auth_json_response(
+        user, request, db, amr_override="impersonation", issue_refresh=False,
+    )
 
 
 # ─── Forgot / Reset password ─────────────────────────────────────────────
@@ -1061,20 +1094,47 @@ async def reset_password(
     resolved.password_hash = hash_password(new_password)
     row.used = True
 
-    # C-AUTH-1: a successful reset revokes every existing session and refresh
-    # token for the user, so a prior attacker session is invalidated.
+    # C-AUTH-1: a successful reset revokes every existing session, refresh
+    # token AND algo API key for the user, so a prior attacker's foothold dies.
+    revoked_sids = await revoke_user_credentials(db, resolved.id)
+    await db.commit()
+    for _sid in revoked_sids:
+        await invalidate_session_cache(_sid)
+    return {"message": "Password has been reset. You can sign in now."}
+
+
+async def revoke_user_credentials(db: AsyncSession, user_id: UUID, *, keep_sid=None) -> list:
+    """Kill every credential an attacker could be holding for this user:
+    all refresh tokens, all sessions except `keep_sid` (the caller's own), and
+    all algo API keys (long-lived bot keys that otherwise survive a password
+    change — a persistence vector). Returns the revoked session ids so the
+    caller can bust the session cache AFTER committing. Caller commits."""
+    from packages.common.src.models import AlgoApiKey
+
     await db.execute(
         update(UserRefreshToken)
-        .where(UserRefreshToken.user_id == resolved.id, UserRefreshToken.revoked.is_(False))
+        .where(UserRefreshToken.user_id == user_id, UserRefreshToken.revoked.is_(False))
         .values(revoked=True)
     )
+    q = select(UserSession.id).where(
+        UserSession.user_id == user_id, UserSession.is_active.is_(True),
+    )
+    if keep_sid:
+        try:
+            q = q.where(UserSession.id != UUID(str(keep_sid)))
+        except (ValueError, TypeError):
+            pass
+    sids = list((await db.execute(q)).scalars().all())
+    if sids:
+        await db.execute(
+            update(UserSession).where(UserSession.id.in_(sids)).values(is_active=False)
+        )
     await db.execute(
-        update(UserSession)
-        .where(UserSession.user_id == resolved.id, UserSession.is_active.is_(True))
+        update(AlgoApiKey)
+        .where(AlgoApiKey.user_id == user_id, AlgoApiKey.is_active.is_(True))
         .values(is_active=False)
     )
-    await db.commit()
-    return {"message": "Password has been reset. You can sign in now."}
+    return sids
 
 
 # ─── 2FA ──────────────────────────────────────────────────────────────────
@@ -1082,12 +1142,22 @@ async def reset_password(
 async def setup_2fa(user_id: UUID, db: AsyncSession) -> dict:
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
+    if user is None:
+        raise AuthServiceError("Not authenticated", 401)
+    # Never overwrite a LIVE 2FA secret. Previously this replaced the secret even
+    # when 2FA was already enabled, with no re-auth — so anyone holding a session
+    # (stolen token, impersonation) could call setup → verify with THEIR
+    # authenticator and take over the account's 2FA, while the real owner's app
+    # silently stopped working. Re-enrolment must go through a verified disable.
+    if user.two_factor_enabled:
+        raise AuthServiceError("Two-factor authentication is already enabled", 409)
     secret = pyotp.random_base32()
     totp = pyotp.TOTP(secret)
     provisioning_uri = totp.provisioning_uri(name=user.email, issuer_name="SwissCresta")
     user.two_factor_secret = secret
     await db.commit()
-    return {"secret": secret, "qr_uri": provisioning_uri}
+    # `otp_uri` is what the trader profile UI reads; `qr_uri` kept for older clients.
+    return {"secret": secret, "qr_uri": provisioning_uri, "otp_uri": provisioning_uri}
 
 
 async def verify_2fa(user_id: UUID, code: str, db: AsyncSession) -> dict:
@@ -1166,15 +1236,21 @@ async def consume_2fa_backup_code(user_id: UUID, code: str, db: AsyncSession) ->
     return True
 
 
-async def regenerate_2fa_backup_codes(user_id: UUID, db: AsyncSession) -> dict:
+async def regenerate_2fa_backup_codes(user_id: UUID, code: str, db: AsyncSession) -> dict:
     """User-initiated rotation. Burns all existing codes and issues a
-    fresh batch — used when the printed sheet is suspected lost."""
+    fresh batch — used when the printed sheet is suspected lost.
+
+    Requires a CURRENT authenticator code: backup codes bypass 2FA at login,
+    so minting them must prove possession of the second factor — a session
+    alone (stolen token / impersonation) must not be able to harvest them."""
     from packages.common.src.models import TwoFactorBackupCode
     from sqlalchemy import delete as sql_delete
 
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user or not user.two_factor_enabled:
         raise AuthServiceError("2FA is not enabled")
+    if not user.two_factor_secret or not pyotp.TOTP(user.two_factor_secret).verify((code or "").strip()):
+        raise AuthServiceError("Invalid authenticator code", 401)
 
     await db.execute(
         sql_delete(TwoFactorBackupCode).where(TwoFactorBackupCode.user_id == user_id)
@@ -1193,14 +1269,23 @@ async def regenerate_2fa_backup_codes(user_id: UUID, db: AsyncSession) -> dict:
 
 # ─── Password change ─────────────────────────────────────────────────────
 
-async def change_password(user_id: UUID, old_password: str, new_password: str, db: AsyncSession) -> dict:
+async def change_password(
+    user_id: UUID, old_password: str, new_password: str, db: AsyncSession, keep_sid=None,
+) -> dict:
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not verify_password(old_password, user.password_hash):
         raise AuthServiceError("Current password is incorrect")
     user.password_hash = hash_password(new_password)
+    # Changing the password is what a user does when they suspect compromise —
+    # so sign out every OTHER device and revoke refresh tokens + algo keys.
+    # (Previously only the forgot-password reset did this; a normal change left
+    # an attacker's session fully alive.) The caller's own session is kept.
+    revoked_sids = await revoke_user_credentials(db, user.id, keep_sid=keep_sid)
     await db.commit()
-    return {"message": "Password changed successfully"}
+    for _sid in revoked_sids:
+        await invalidate_session_cache(_sid)
+    return {"message": "Password changed successfully. Other devices have been signed out."}
 
 
 # ─── Get current user profile ─────────────────────────────────────────────

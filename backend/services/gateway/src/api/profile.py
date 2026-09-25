@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
-from packages.common.src.auth import get_current_user
+from packages.common.src.auth import get_current_user, require_full_session
 from packages.common.src.models import (
     TradingAccount,
     Transaction,
@@ -112,7 +112,7 @@ async def update_profile(
 @router.put("/password")
 async def change_password(
     req: ChangePasswordRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
     return await profile_service.change_password(
@@ -120,6 +120,7 @@ async def change_password(
         current_password=req.current_password,
         new_password=req.new_password,
         db=db,
+        keep_sid=current_user.get("sid"),
     )
 
 
@@ -225,7 +226,7 @@ async def link_wallet_nonce(
 @router.post("/wallet/link")
 async def link_wallet(
     req: WalletVerifyRequest, request: Request,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
     """Verify a SIWE signature for the authenticated user and persist the
@@ -331,7 +332,7 @@ async def link_wallet(
 async def unlink_wallet(
     request: Request,
     challenge_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
     """Remove the linked wallet from the authenticated user's account.

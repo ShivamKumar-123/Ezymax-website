@@ -19,7 +19,7 @@ from packages.common.src.schemas import (
     TxHashSaveRequest,
     WithdrawalRequest,
 )
-from packages.common.src.auth import get_current_user
+from packages.common.src.auth import get_current_user, require_full_session
 from ..services import wallet_service, onchain_deposit_service, onchain_withdraw_service
 
 router = APIRouter()
@@ -102,7 +102,7 @@ async def create_manual_withdrawal(
     upi_id: str = Form(""),
     payout_notes: str = Form(""),
     file: UploadFile | None = File(None),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
     """Manual UPI / QR-payout withdrawal: user submits UPI ID and/or a QR
@@ -357,7 +357,7 @@ async def get_onchain_deposit_status(
 async def create_withdrawal(
     req: WithdrawalRequest,
     request: Request,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
     # 10/min cap on withdrawals — even legitimate users don't withdraw
@@ -376,7 +376,7 @@ async def create_withdrawal(
 async def create_onchain_withdrawal(
     req: OnchainWithdrawRequest,
     request: Request,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
     """User initiates a wallet-connect withdrawal: pick chain + paste their
