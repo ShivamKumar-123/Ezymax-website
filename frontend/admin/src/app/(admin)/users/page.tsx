@@ -417,7 +417,7 @@ export default function UsersPage() {
   // quote so a comma/quote/newline in a name or email can't break columns.
   const csvCell = (value: unknown): string => {
     let s = value == null ? '' : String(value);
-    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    if (/^[=+\-@\t\r]/.test(s) && !/^[-+]?\d+(\.\d+)?$/.test(s)) s = "'" + s;
     return '"' + s.replace(/"/g, '""') + '"';
   };
 

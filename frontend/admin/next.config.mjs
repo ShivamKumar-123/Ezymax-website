@@ -81,7 +81,9 @@ const nextConfig = {
       "style-src 'self' 'unsafe-inline'",
       // data:/blob: for inline previews (KYC docs / deposit proofs fetched
       // via the same-origin API and rendered as object URLs).
-      "img-src 'self' data: blob:",
+      // https: for tenant branding logos / banner images that may be hosted
+      // on an absolute URL (branding logo_url, banner image_url).
+      "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       // wss: for the live price feed (NEXT_PUBLIC_WS_URL may be cross-origin).
       "connect-src 'self' wss:",
@@ -113,8 +115,11 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           // The admin uses no powerful browser features — lock them all down.
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
-          // CSP in monitoring mode. See comment above for promotion path.
-          { key: 'Content-Security-Policy-Report-Only', value: cspDirectives },
+          // CSP ENFORCED (promoted from Report-Only). The admin panel controls all
+          // funds; a report-only policy stops nothing. Verified the panel loads
+          // only same-origin assets/API (/admin-api proxy), wss: for the price
+          // feed, and https: images for tenant logos.
+          { key: 'Content-Security-Policy', value: cspDirectives },
         ],
       },
       {

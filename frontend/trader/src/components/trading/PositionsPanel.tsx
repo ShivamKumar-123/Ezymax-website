@@ -70,7 +70,11 @@ const closeReasonBadge = closeReasonLabel;
 
 function downloadCsv(filename: string, rows: (string | number)[][]) {
   const esc = (c: string | number) => {
-    const s = String(c);
+    let s = String(c);
+    // Formula-injection guard: text cells starting with = + - @ (or tab/CR) run
+    // as formulas in Excel/Sheets; prefix with ' so they stay inert. Numbers
+    // (incl. negative P&L) are left as numbers.
+    if (typeof c !== 'number' && /^[=+\-@\t\r]/.test(s) && !/^[-+]?\d+(\.\d+)?$/.test(s)) s = "'" + s;
     return `"${s.replace(/"/g, '""')}"`;
   };
   const body = rows.map((r) => r.map(esc).join(',')).join('\n');

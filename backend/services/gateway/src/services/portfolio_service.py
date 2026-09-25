@@ -434,6 +434,13 @@ async def export_trades(
     )
     trades = result.scalars().all()
 
+    def _txt(v) -> str:
+        # CSV/formula-injection guard for text cells (defense in depth — the
+        # symbol is admin-controlled today, but never let a spreadsheet run
+        # a cell starting with = + - @ / tab / CR as a formula).
+        s = "" if v is None else str(v)
+        return ("'" + s) if s[:1] in ("=", "+", "-", "@", "\t", "\r") else s
+
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
@@ -442,7 +449,7 @@ async def export_trades(
     ])
     for t in trades:
         writer.writerow([
-            str(t.id), t.instrument.symbol if t.instrument else "",
+            str(t.id), _txt(t.instrument.symbol if t.instrument else ""),
             t.side.value, float(t.lots), float(t.open_price), float(t.close_price),
             float(t.swap), float(t.commission), float(t.profit),
             t.opened_at.isoformat() if t.opened_at else "",

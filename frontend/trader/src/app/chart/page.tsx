@@ -50,26 +50,24 @@ function param(name: string, fallback = ''): string {
   return new URLSearchParams(window.location.search).get(name) || fallback;
 }
 
-// H-FE-1: read the bearer token from the URL hash (never sent to the server /
-// logs / Referer), falling back to a legacy ?token= query, then strip it from
-// the URL so it can't leak via history or Referer. See app-chart/page.tsx.
-function paramFromHash(name: string, fallback = ''): string {
-  if (typeof window === 'undefined') return fallback;
-  const raw = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
-  return new URLSearchParams(raw).get(name) || fallback;
-}
-
-function readToken(): string {
-  return paramFromHash('token') || param('token');
-}
-
+// H-FE-1: this page NEVER accepts an auth token from the URL (query or hash) —
+// a JWT in a URL leaks via logs / history / Referer and can be phished. Auth is
+// the HttpOnly session cookie. Any legacy ?token= / #token= from an old app
+// build is ignored and scrubbed from the address bar. See app-chart/page.tsx.
 function stripTokenFromUrl(): void {
   if (typeof window === 'undefined') return;
   try {
     const search = new URLSearchParams(window.location.search);
+    const hadQueryToken = search.has('token');
     search.delete('token');
+    const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+    const hashParams = new URLSearchParams(hash);
+    const hadHashToken = hashParams.has('token');
+    hashParams.delete('token');
+    if (!hadQueryToken && !hadHashToken) return;
     const qs = search.toString();
-    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : ''));
+    const hs = hashParams.toString();
+    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : '') + (hs ? `#${hs}` : ''));
   } catch {
     /* history API unavailable */
   }
@@ -90,13 +88,11 @@ export default function ChartPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const token = readToken();
     const symbol = (param('symbol', 'EURUSD')).toUpperCase();
     const accountId = param('account');
 
-    // Token auth for API (Bearer) — the WebView has no session cookie.
-    if (token) api.setToken(token);
-    // H-FE-1: drop the token from the URL as soon as it's in memory.
+    // H-FE-1: never take auth from the URL (cookie session only); just scrub any
+    // legacy ?token= / #token= an old app build may have appended.
     stripTokenFromUrl();
 
     const store = useTradingStore.getState();

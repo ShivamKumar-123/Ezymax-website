@@ -53,31 +53,28 @@ function param(name: string, fallback = ''): string {
   return new URLSearchParams(window.location.search).get(name) || fallback;
 }
 
-// H-FE-1: the bearer token must NOT ride in the query string — query params land
-// in server access logs, proxy logs, browser history and the Referer header. The
-// URL *hash* is never sent to the server, so the app passes the token there
-// (#token=<jwt>); we still accept a legacy ?token= for older builds. Whichever
-// it is, we strip it from the URL immediately after reading (below) so it does
-// not persist in history or leak via Referer on the next navigation.
-function paramFromHash(name: string, fallback = ''): string {
-  if (typeof window === 'undefined') return fallback;
-  const raw = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
-  return new URLSearchParams(raw).get(name) || fallback;
-}
-
-function readToken(): string {
-  return paramFromHash('token') || param('token');
-}
-
-// Remove the token from the visible/loggable URL once captured, keeping the
-// non-sensitive params (symbol/interval/theme) in the address bar.
+// H-FE-1: this page NEVER accepts an auth token from the URL. A bearer JWT in a
+// URL (query OR hash) is a credential-in-URL leak — query params land in server
+// / proxy access logs, and both forms persist in history and can leak via the
+// Referer header or be phished into a crafted link. The current app no longer
+// passes one (its chart runs over a native bridge and the token never enters the
+// WebView); auth here is the normal HttpOnly session cookie. Old app builds that
+// still append ?token= / #token= are simply ignored — and we scrub it from the
+// address bar immediately so it doesn't persist in history.
 function stripTokenFromUrl(): void {
   if (typeof window === 'undefined') return;
   try {
     const search = new URLSearchParams(window.location.search);
+    const hadQueryToken = search.has('token');
     search.delete('token');
+    const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+    const hashParams = new URLSearchParams(hash);
+    const hadHashToken = hashParams.has('token');
+    hashParams.delete('token');
+    if (!hadQueryToken && !hadHashToken) return;
     const qs = search.toString();
-    const clean = window.location.pathname + (qs ? `?${qs}` : '');
+    const hs = hashParams.toString();
+    const clean = window.location.pathname + (qs ? `?${qs}` : '') + (hs ? `#${hs}` : '');
     window.history.replaceState(null, '', clean);
   } catch {
     /* history API unavailable — nothing else we can do */
@@ -99,14 +96,11 @@ export default function ChartPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const token = readToken();
     const symbol = (param('symbol', 'EURUSD')).toUpperCase();
     const accountId = param('account');
 
-    // Token auth for API (Bearer) — the WebView has no session cookie.
-    if (token) api.setToken(token);
-    // H-FE-1: drop the token from the URL as soon as it's in memory so it can't
-    // leak via history / Referer / logs.
+    // H-FE-1: never take auth from the URL (cookie session only); just scrub any
+    // legacy ?token= / #token= an old app build may have appended.
     stripTokenFromUrl();
 
     const store = useTradingStore.getState();
