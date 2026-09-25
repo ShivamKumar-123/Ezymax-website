@@ -21,6 +21,7 @@ from packages.common.src.models import (
 from packages.common.src.notify import create_notification
 from packages.common.src import corecen_trade_client
 from packages.common.src.engine_lock import engine_lock
+from packages.common.src.row_locks import lock_account
 from ..services import wallet_service
 
 logger = logging.getLogger("gateway.sltp")
@@ -230,10 +231,10 @@ class SLTPEngine:
         pos.closed_at = datetime.utcnow()
         pos.comment = f"Auto-closed by {reason.upper()}"
 
-        acct_result = await db.execute(
-            select(TradingAccount).where(TradingAccount.id == pos.account_id)
-        )
-        account = acct_result.scalar_one_or_none()
+        # Lock the account row (FOR UPDATE) before mutating balance — otherwise a
+        # concurrent close on the same account (manual close, another SL/TP, or a
+        # stop-out) can lose-update the balance. Position is already locked above.
+        account = await lock_account(db, pos.account_id)
         if account:
             margin_release = (pos.lots * contract_size * pos.open_price) / Decimal(str(account.leverage))
             account.balance += profit

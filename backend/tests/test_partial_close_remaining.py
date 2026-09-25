@@ -133,7 +133,15 @@ class PartialCloseRemainingTests(unittest.TestCase):
             is_demo=True, account_group_id=None, equity=Decimal("0"),
             free_margin=Decimal("0"),
         )
-        db = _DB([_Res(scalar=pos), _Res(scalar=account), _Res(items=[pos])])
+        # execute() call order in close_position: load Position, load account
+        # (ownership), lock_account (FOR UPDATE), then re-load remaining open
+        # positions for the margin self-heal.
+        db = _DB([
+            _Res(scalar=pos),
+            _Res(scalar=account),
+            _Res(scalar=account),   # lock_account FOR UPDATE
+            _Res(items=[pos]),
+        ])
         req = SimpleNamespace(lots=close_lots)
         result = asyncio.run(ts.close_position(pos.id, req, uid, db))
         history = [o for o in db.added if isinstance(o, TradeHistory)]

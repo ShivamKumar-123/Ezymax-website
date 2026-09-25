@@ -17,6 +17,7 @@ from packages.common.src.models import (
     TradeHistory, Transaction, CopyTrade, UserAuditLog, User,
 )
 from packages.common.src.instrument_pricing import resolve_commission, resolve_user_quote, symmetric_quote_from_mid
+from packages.common.src.row_locks import lock_account
 from packages.common.src.config import get_settings as _get_settings
 from . import wallet_service
 from packages.common.src.database import AsyncSessionLocal
@@ -998,6 +999,17 @@ async def close_position(
     locked_status = pos.status.value if hasattr(pos.status, "value") else str(pos.status)
     if locked_status != "open":
         raise HTTPException(status_code=409, detail="Position is already being closed")
+
+    # Lock the ACCOUNT row before any balance read/mutate below. place_order
+    # locks the account FOR UPDATE, but close_position previously only locked the
+    # Position row — so two concurrent closes on the SAME account both read the
+    # pre-close balance under MVCC and the last commit overwrote the first (lost
+    # update). A trader could close a winning + losing hedge at once and have the
+    # loss erased, manufacturing funds. Lock position→account (matches the SL/TP
+    # and stop-out engines; place_order locks only the account, so no deadlock).
+    account = await lock_account(db, pos.account_id, user_id=user_id)
+    if account is None:
+        raise HTTPException(status_code=403, detail="Not your position")
 
     # MAM gives followers independent control of their own allocated account:
     # a follower CAN close their mirrored position (it lives on the follower's

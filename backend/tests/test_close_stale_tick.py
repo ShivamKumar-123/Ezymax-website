@@ -60,7 +60,8 @@ class CloseStaleTickTests(unittest.TestCase):
         account = SimpleNamespace(id=pos.account_id, user_id=uid, account_group_id=uuid4())
         # explicit stale marker → is_tick_stale() returns True
         trading_service.price_cache = _FakeCache(json.dumps({"bid": 1.0, "ask": 1.1, "stale": True}))
-        db = _FakeDB([pos, account])
+        # execute order: load Position, load account (ownership), lock_account.
+        db = _FakeDB([pos, account, account])
         req = SimpleNamespace(lots=None)
         with self.assertRaises(HTTPException) as ctx:
             asyncio.run(close_position(pos.id, req, uid, db))

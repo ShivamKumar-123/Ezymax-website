@@ -28,6 +28,7 @@ from packages.common.src.models import (
     OrderSide, Notification, Transaction, TradeHistory, User,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel, is_tick_stale
+from packages.common.src.row_locks import lock_account
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src.config import get_settings
 from packages.common.src import corecen_trade_client
@@ -187,6 +188,13 @@ class RiskEngine:
     async def _execute_stop_out(self, account: TradingAccount, positions: list[Position], db: AsyncSession):
         """Close positions until margin level is restored above stop-out."""
         logger.warning(f"Stop-out triggered for account {account.account_number}")
+
+        # Lock the account row FOR UPDATE before mutating balance — otherwise a
+        # concurrent close (manual, SL/TP) on the same account can lose-update the
+        # balance. Same session, so this locks the row the loaded object maps to.
+        locked_account = await lock_account(db, account.id)
+        if locked_account is not None:
+            account = locked_account
 
         closed_count = 0
         realized_pnl = Decimal("0")
