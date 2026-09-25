@@ -1950,12 +1950,19 @@ async def get_provider_followers(provider_id: UUID, db: AsyncSession) -> dict:
         if allocation.allocation_amount and allocation.allocation_amount > 0:
             profit_pct = (float(allocation.total_profit or 0) / float(allocation.allocation_amount)) * 100
 
-        # Public view: hide sensitive info like account numbers
+        # Public view — ANY authenticated user can enumerate masters (via the
+        # leaderboard) and call this, so it must NOT expose other investors'
+        # real names or exact capital. Mask the name to first-name + last
+        # initial and drop absolute dollar amounts; the relative profit % and
+        # trade count are safe social-proof and reveal no one's capital.
+        fn = (user.first_name or "").strip()
+        ln = (user.last_name or "").strip()
+        masked_name = (f"{fn} {ln[0]}." if fn and ln else fn) or "Anonymous"
         followers.append({
             "id": str(allocation.id),
-            "user_name": f"{user.first_name or ''} {user.last_name or ''}".strip() or "Anonymous",
-            "allocation_amount": float(allocation.allocation_amount or 0),
-            "total_profit": float(allocation.total_profit or 0),
+            "user_name": masked_name,
+            "allocation_amount": 0.0,   # hidden — do not expose other users' capital
+            "total_profit": 0.0,        # hidden — absolute $ is private
             "profit_pct": round(profit_pct, 2),
             "total_copied_trades": total_copied_trades,
             "joined_at": allocation.created_at.isoformat() if allocation.created_at else None,
@@ -1964,7 +1971,7 @@ async def get_provider_followers(provider_id: UUID, db: AsyncSession) -> dict:
     return {
         "provider_id": str(master.id),
         "total_followers": len(followers),
-        "total_aum": sum(f["allocation_amount"] for f in followers),
+        "total_aum": 0.0,               # hidden — aggregate capital is private
         "followers": followers,
     }
 

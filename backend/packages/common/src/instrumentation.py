@@ -201,18 +201,43 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
 
 
 def add_metrics_endpoint(app):
-    """Add /metrics endpoint for Prometheus scraping."""
+    """Add /metrics endpoint for Prometheus scraping — internal scrapers only."""
     if not _PROM_AVAILABLE:
         return
 
     @app.get("/metrics", include_in_schema=False)
-    async def metrics():
+    async def metrics(request: Request):
+        # Only INTERNAL scrapers may read metrics. Every request that reached
+        # this app through the public edge carries an X-Forwarded-* header
+        # (nginx/Cloudflare add it); a Prometheus scraper hitting the container
+        # directly on the internal network / loopback does not. Deny the
+        # forwarded ones so the full route inventory + traffic stats aren't
+        # exposed publicly on api.swisscresta.com/metrics. (The gateway binds
+        # 127.0.0.1 in prod, so non-forwarded requests are internal-only.)
+        if request.headers.get("x-forwarded-for") or request.headers.get("x-forwarded-host"):
+            return Response(status_code=404)
         return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 # ---------------------------------------------------------------------------
 # 5. Structured Request Logging Middleware
 # ---------------------------------------------------------------------------
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Assert baseline security headers on every API response. The nginx blocks
+    for the trader/admin hosts already set these, but the api.swisscresta.com
+    JSON host was missing HSTS / Referrer-Policy / Permissions-Policy — set them
+    at the app so they hold regardless of the (host-managed) proxy config."""
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        h = response.headers
+        h.setdefault("Strict-Transport-Security", "max-age=15552000; includeSubDomains")
+        h.setdefault("X-Content-Type-Options", "nosniff")
+        h.setdefault("X-Frame-Options", "DENY")
+        h.setdefault("Referrer-Policy", "no-referrer")
+        h.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
+        return response
+
+
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start = time.perf_counter()
@@ -245,6 +270,7 @@ def add_middleware_stack(app, *, include_rate_limit: bool = False):
     still have per-bucket rate_limit_http() guards where needed.
     """
     app.add_middleware(RequestLoggingMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(PrometheusMiddleware)
     app.add_middleware(RequestSizeLimitMiddleware)
     add_metrics_endpoint(app)

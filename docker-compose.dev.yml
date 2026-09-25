@@ -1,4 +1,10 @@
-# Local dev override (auto-loaded by `docker compose`).
+# Local dev override — LOAD EXPLICITLY for local dev only:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Renamed from docker-compose.override.yml so it is NOT auto-loaded: a bare
+# `docker compose up` on the server used to silently pull in these insecure dev
+# settings (gateway on 0.0.0.0:8002, COOKIE_SECURE=false, localhost CORS),
+# bypassing prod hardening. Prod deploy uses `-f docker-compose.yml -f
+# docker-compose.prod.yml` and never touches this file.
 # Host port 8000 is occupied by an unrelated project (ems-backend),
 # so the gateway is exposed on 8002 here instead. Inter-container
 # traffic is unaffected — frontends still reach it at http://gateway:8000.
