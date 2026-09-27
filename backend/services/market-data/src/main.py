@@ -47,7 +47,11 @@ STALE_REFRESH_INTERVAL_SEC = 30.0
 # deliver ~700 frames/s; publishing each one meant three Redis round trips per
 # frame, and the gateway already coalesces to 50 ms per symbol, so the extra
 # frames never reached a screen. Candles still see every tick.
-PUBLISH_INTERVAL_SEC = 0.1
+# 50 ms, matching the gateway's own flush so the two stages do not each add a
+# window of their own. At 100 ms a symbol could only ever show ten prices a
+# second, and on crypto — where the exchange moves the price three or four
+# times a second — that was enough to swallow a third of the moves.
+PUBLISH_INTERVAL_SEC = 0.05
 MAX_TICKS_PER_CYCLE = 50_000
 
 # --- Durable-write watchdog ---------------------------------------------------
