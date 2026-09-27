@@ -35,6 +35,12 @@ CRYPTO_BINANCE_PAIRS: Dict[str, str] = {
     "LTCUSD": "ltcusdt",
     "XRPUSD": "xrpusdt",
     "SOLUSD": "solusdt",
+    # Added with the rest of the crypto list — without a pair here the symbol
+    # is left on the primary feed, so half the crypto board would have come
+    # from one source and half from another.
+    "ADAUSD": "adausdt",
+    "BNBUSD": "bnbusdt",
+    "DOGEUSD": "dogeusdt",
 }
 
 # Data-silence watchdog: a healthy TCP socket can keep a dead subscription
