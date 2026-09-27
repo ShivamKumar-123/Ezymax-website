@@ -79,6 +79,8 @@ class BinanceCryptoFeed:
         # the market-spread signal steady instead of blinking to nothing
         # every time a trade lands between two book updates.
         self._half_spread: Dict[str, float] = {}
+        # Last book top actually emitted, per symbol — see _emit.
+        self._last_book: Dict[str, tuple] = {}
         self._tick_queue: asyncio.Queue = asyncio.Queue(maxsize=50_000)
         self._running = False
         self._tasks: List[asyncio.Task] = []
@@ -143,6 +145,16 @@ class BinanceCryptoFeed:
             ask = bid
 
         self._half_spread[symbol] = (ask - bid) / 2.0
+
+        # bookTicker fires on every change to the best quote INCLUDING size, so
+        # most frames repeat the same prices — around 12 a second on BTCUSDT
+        # while the price itself moves once a minute. Those carry no new price,
+        # and market-data keeps only the last tick per symbol per publish
+        # window: a size-only update landing after a trade would overwrite the
+        # trade and hide the move. Only emit when the top actually moved.
+        if self._last_book.get(symbol) == (bid, ask):
+            return
+        self._last_book[symbol] = (bid, ask)
 
         decimals = int(self._instruments[symbol]["decimals"])
         self._enqueue({
