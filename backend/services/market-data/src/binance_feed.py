@@ -184,12 +184,19 @@ class BinanceCryptoFeed:
         if price <= 0:
             return
 
-        half = self._half_spread.get(symbol, 0.0)
+        # The trade price IS the mid — emit it on both sides rather than
+        # rebuilding a book around it. Half a cent either way lands exactly on
+        # a rounding boundary, and `round` breaks those ties in whichever
+        # direction the float happens to sit, which quietly merged neighbouring
+        # trade prices into one and put the freeze back. market-data reads the
+        # mid and applies the platform spread itself; the book ticks above
+        # still carry the real market width.
         decimals = int(self._instruments[symbol]["decimals"])
+        px = round(price, decimals)
         self._enqueue({
             "symbol": symbol,
-            "bid": round(price - half, decimals),
-            "ask": round(price + half, decimals),
+            "bid": px,
+            "ask": px,
             "timestamp": _stamp(),
             "volume": 1,
         })
