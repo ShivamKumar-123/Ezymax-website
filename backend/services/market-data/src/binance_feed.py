@@ -4,8 +4,13 @@ Used in production so crypto quotes come from Binance's deep, real liquidity
 instead of the general primary feed (whose crypto book can be thin / lagging).
 Public market-data streams are FREE and UNAUTHENTICATED — no API key. We use
 `@bookTicker` (best bid / best ask, pushed on every change) so the platform has
-a real spread signal; market-data main still recomputes the published quote from
-the mid via spread_cache.widen(), exactly like every other feed.
+a real spread signal, AND `@aggTrade`, because on a deep pair the book top can
+sit unchanged for a minute at a time while trades keep printing inside it —
+measured on a quiet Sunday, BTCUSDT's best bid/ask moved once in 60s while its
+trades moved the price 77 times. Book alone makes the chart look frozen and
+then jump; the trade prints are what make it run. market-data main still
+recomputes the published quote from the mid via spread_cache.widen(), exactly
+like every other feed.
 
 Same interface as InfowayFeed (`start` / `stop` / `get_tick`) so main can drain
 it through the same tick pipeline.
@@ -48,6 +53,12 @@ CRYPTO_BINANCE_PAIRS: Dict[str, str] = {
 SILENT_RECONNECT_SEC = 120.0
 
 
+def _stamp() -> str:
+    """Now, in the millisecond ISO form the tick pipeline expects."""
+    ts = datetime.now(timezone.utc)
+    return ts.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ts.microsecond // 1000:03d}Z"
+
+
 def covered_symbols(instruments: Dict[str, dict]) -> List[str]:
     """Platform crypto symbols we can actually source from Binance."""
     return [
@@ -63,6 +74,11 @@ class BinanceCryptoFeed:
         self._pair_to_platform: Dict[str, str] = {
             CRYPTO_BINANCE_PAIRS[s].upper(): s for s in covered_symbols(instruments)
         }
+        # Last half-spread seen on the book, per symbol. A trade print carries
+        # one price, so the quote around it is rebuilt with this — that keeps
+        # the market-spread signal steady instead of blinking to nothing
+        # every time a trade lands between two book updates.
+        self._half_spread: Dict[str, float] = {}
         self._tick_queue: asyncio.Queue = asyncio.Queue(maxsize=50_000)
         self._running = False
         self._tasks: List[asyncio.Task] = []
@@ -126,24 +142,55 @@ class BinanceCryptoFeed:
         if ask < bid:
             ask = bid
 
+        self._half_spread[symbol] = (ask - bid) / 2.0
+
         decimals = int(self._instruments[symbol]["decimals"])
-        ts = datetime.now(timezone.utc)
-        timestamp = ts.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ts.microsecond // 1000:03d}Z"
         self._enqueue({
             "symbol": symbol,
             "bid": round(bid, decimals),
             "ask": round(ask, decimals),
-            "timestamp": timestamp,
+            "timestamp": _stamp(),
+            "volume": 1,
+        })
+
+    def _emit_trade(self, data: dict) -> None:
+        """A trade print, treated as the new mid.
+
+        Between two book updates the traded price is the only thing that moves,
+        and it is what the exchange's own chart draws. Rebuild the quote around
+        it using the last half-spread from the book so the published bid/ask
+        stays the same shape as a book tick.
+        """
+        raw_sym = str(data.get("s") or "").upper()
+        symbol = self._pair_to_platform.get(raw_sym)
+        if not symbol:
+            return
+        try:
+            price = float(data["p"])
+        except (KeyError, TypeError, ValueError):
+            return
+        if price <= 0:
+            return
+
+        half = self._half_spread.get(symbol, 0.0)
+        decimals = int(self._instruments[symbol]["decimals"])
+        self._enqueue({
+            "symbol": symbol,
+            "bid": round(price - half, decimals),
+            "ask": round(price + half, decimals),
+            "timestamp": _stamp(),
             "volume": 1,
         })
 
     async def _run_socket(self, pairs: List[str]) -> None:
-        streams = "/".join(f"{p}@bookTicker" for p in pairs)
+        streams = "/".join(
+            part for p in pairs for part in (f"{p}@bookTicker", f"{p}@aggTrade")
+        )
         url = f"{BINANCE_WS_BASE}?streams={streams}"
         attempts = 0
         while self._running:
             try:
-                logger.info("Binance connecting… (%d streams)", len(pairs))
+                logger.info("Binance connecting… (%d symbols, book + trades)", len(pairs))
                 async with websockets.connect(
                     url, ping_interval=20, ping_timeout=20, close_timeout=10,
                 ) as ws:
@@ -158,9 +205,15 @@ class BinanceCryptoFeed:
                             msg = json.loads(raw)
                         except json.JSONDecodeError:
                             continue
-                        payload = msg.get("data") if isinstance(msg, dict) else None
-                        if payload:
-                            self._last_data_ts = time.time()
+                        if not isinstance(msg, dict):
+                            continue
+                        payload = msg.get("data")
+                        if not payload:
+                            continue
+                        self._last_data_ts = time.time()
+                        if str(msg.get("stream") or "").endswith("@aggTrade"):
+                            self._emit_trade(payload)
+                        else:
                             self._emit(payload)
             except asyncio.CancelledError:
                 break
