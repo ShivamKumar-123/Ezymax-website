@@ -14,9 +14,11 @@ export function LiveExam({ phase }: { phase: string }) {
   const [answers, setAnswers] = React.useState<(number | null)[]>([]);
   const [result, setResult] = React.useState<ExamReply | null>(null);
   const [busy, setBusy] = React.useState(false);
+  // reset answers when the exam itself changes, not when attempts are refreshed after a retake
+  const examKey = data ? `${data.phase.slug}:${data.exam.questions.length}` : "";
   React.useEffect(() => {
-    if (data) setAnswers(data.exam.questions.map(() => null));
-  }, [data]);
+    if (examKey) setAnswers(Array.from({ length: Number(examKey.split(":")[1]) }, () => null));
+  }, [examKey]);
 
   if (error) return <AcademyUnavailable error={error} onRetry={reload} />;
   if (!data) return <PageSkeleton />;
