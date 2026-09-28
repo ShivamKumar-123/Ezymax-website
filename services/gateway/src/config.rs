@@ -20,6 +20,11 @@ pub struct Config {
     pub smtp_user: String,
     pub smtp_password: String,
     pub smtp_from: String,
+    /// Public URLs and support address used in emails.
+    pub site_url: String,
+    pub app_url: String,
+    pub trade_url: String,
+    pub support_email: String,
     pub super_admin_email: String,
     pub super_admin_password: String,
     pub super_admin_name: String,
@@ -57,6 +62,9 @@ impl fmt::Debug for Config {
             .field("smtp_user", &self.smtp_user)
             .field("smtp_password", &redact(&self.smtp_password))
             .field("smtp_from", &self.smtp_from)
+            .field("site_url", &self.site_url)
+            .field("app_url", &self.app_url)
+            .field("trade_url", &self.trade_url)
             .field("super_admin_email", &self.super_admin_email)
             .field("super_admin_password", &redact(&self.super_admin_password))
             .finish()
@@ -90,6 +98,10 @@ impl Config {
             smtp_user: var("SMTP_USER", ""),
             smtp_password: var("SMTP_PASSWORD", ""),
             smtp_from: var("SMTP_FROM", "Kalks <no-reply@kalkstrade.com>"),
+            site_url: var("PUBLIC_SITE_URL", "https://kalkstrade.com"),
+            app_url: var("PUBLIC_APP_URL", "https://app.kalkstrade.com"),
+            trade_url: var("PUBLIC_TRADE_URL", "https://trade.kalkstrade.com"),
+            support_email: var("SUPPORT_EMAIL", "support@kalkstrade.com"),
             super_admin_email: var("SUPER_ADMIN_EMAIL", "").to_lowercase(),
             super_admin_password: var("SUPER_ADMIN_PASSWORD", ""),
             super_admin_name: var("SUPER_ADMIN_NAME", "Kalks Admin"),

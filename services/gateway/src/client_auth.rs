@@ -220,7 +220,21 @@ pub async fn verify_email(State(st): State<AppState>, ctx: Ctx, req: Result<Json
     let v = identity::verify_otp(&st, K, &r.challenge, &r.code).await?;
     match v.purpose {
         Purpose::VerifyEmail => {
-            sqlx::query("UPDATE users SET email_verified_at = COALESCE(email_verified_at, now()), updated_at = now() WHERE id = $1").bind(v.subject_id).execute(&st.pool).await?;
+            // Only the first verification returns a row, so the welcome email is sent once.
+            let first = sqlx::query(
+                "UPDATE users SET email_verified_at = now(), updated_at = now() WHERE id = $1 AND email_verified_at IS NULL RETURNING email, first_name",
+            )
+            .bind(v.subject_id)
+            .fetch_optional(&st.pool)
+            .await?;
+            if let (Some(row), Some(mailer)) = (first, st.mailer.clone()) {
+                let (email, first_name): (String, String) = (row.get("email"), row.get("first_name"));
+                tokio::spawn(async move {
+                    if let Err(e) = mailer.send_welcome(&email, &first_name).await {
+                        tracing::error!(error = %e, "welcome email could not be sent");
+                    }
+                });
+            }
             audit::record(&st.pool, &ctx, Entry { tenant_id: v.tenant_id, actor_kind: "user", actor_id: Some(v.subject_id), action: "user.email_verified", target: Some(("user", v.subject_id)), meta: json!({}) }).await;
         }
         Purpose::Login => {}

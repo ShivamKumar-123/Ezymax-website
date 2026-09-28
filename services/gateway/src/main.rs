@@ -61,6 +61,11 @@ async fn main() -> anyhow::Result<()> {
             user: &cfg.smtp_user,
             password: &cfg.smtp_password,
             from: &cfg.smtp_from,
+        }, mailer::Links {
+            site: cfg.site_url.clone(),
+            app: cfg.app_url.clone(),
+            trade: cfg.trade_url.clone(),
+            support_email: cfg.support_email.clone(),
         })?;
         match m.test_connection().await {
             Ok(true) => tracing::info!(host = %cfg.smtp_host, "SMTP login ok"),
@@ -71,6 +76,18 @@ async fn main() -> anyhow::Result<()> {
     } else {
         None
     };
+    // `gateway send-test-emails <address>`: sends one of every email template, then exits.
+    let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some("send-test-emails") {
+        let to = args.get(2).ok_or_else(|| anyhow::anyhow!("usage: gateway send-test-emails <address>"))?;
+        let m = mailer.as_ref().ok_or_else(|| anyhow::anyhow!("SMTP is not configured"))?;
+        m.send_welcome(to, "Shivam").await?;
+        for p in [identity::Purpose::VerifyEmail, identity::Purpose::Login, identity::Purpose::ResetPassword] {
+            m.send_code(to, p, "482915", 10).await?;
+        }
+        println!("sent 4 test emails to {to}");
+        return Ok(());
+    }
     let st = AppState { pool, keys: crypto::Keys::new(&cfg.session_secret), cfg: Arc::new(cfg), limiter: Default::default(), mailer };
 
     // keep the limiter bounded; purge long-dead sessions and codes
