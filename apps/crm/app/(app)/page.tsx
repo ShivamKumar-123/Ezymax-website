@@ -65,6 +65,7 @@ import type { SeriesPoint } from "@kalks/ui";
 import { AccountRow } from "@/components/account-row";
 import { useSession } from "@/components/session";
 import { LiveDashboard } from "@/components/dashboard/live-dashboard";
+import { TERMINAL_URL } from "@/lib/live";
 
 function greeting() {
   const h = new Date().getHours();
@@ -282,7 +283,7 @@ function MoverRow({ symbol, name, range, q }: { symbol: string; name: string; ra
   const ch = range === "1D" ? q.change : real ? ((px - real[0]!) / real[0]!) * 100 : sim ? q.change * (range === "1W" ? 2.4 : 5.1) : null;
   const data = React.useMemo(() => real ?? (sim ? sparkline(symbol + range, 24, (ch ?? 0) / 100 / 24) : null), [real, sim, symbol, range, ch]);
   return (
-    <ListRow target="_blank" href={`/trade?symbol=${symbol}`} className="py-2.5">
+    <ListRow target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${symbol}`} className="py-2.5">
       <SymbolAvatar symbol={symbol} size={26} />
       <div className="min-w-0 flex-1">
         <div className="text-[13.5px] font-medium">{symbol}</div>

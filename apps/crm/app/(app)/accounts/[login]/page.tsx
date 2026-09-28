@@ -13,6 +13,8 @@ import { AccountBadge, AccountMenu, accountTitle } from "@/components/account-ro
 import { OverviewTab, PortfolioTab, curOf, multOf } from "@/components/accounts/detail-overview";
 import { ChargesTab, HistoryTab, LedgerTab, PositionsTab } from "@/components/accounts/detail-activity";
 import { CredentialsTab, SettingsTab } from "@/components/accounts/detail-manage";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveAccountDetail } from "@/components/trading/account-detail";
 
 const TAB_KEYS = ["overview", "portfolio", "positions", "history", "charges", "ledger", "credentials", "settings"] as const;
 type TabKey = (typeof TAB_KEYS)[number];
@@ -197,10 +199,15 @@ function Detail() {
   );
 }
 
-export default function AccountDetailPage() {
+function DemoAccountDetailPage() {
   return (
     <React.Suspense fallback={null}>
       <Detail />
     </React.Suspense>
   );
+}
+
+/** Live builds: real accounts from the trading engine (via /api/trading). Demo builds: mock data. */
+export default function AccountDetailPage() {
+  return DEMO_BUILD ? <DemoAccountDetailPage /> : <LiveAccountDetail />;
 }

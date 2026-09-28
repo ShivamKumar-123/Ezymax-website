@@ -5,6 +5,8 @@ import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, BadgePercent, Candles
 import { Button, Card, Chip, DataTable, Menu, Money, PageHeader, Reveal, Segmented, cn, type ChipTone, type Column } from "@kalks/ui";
 import { LEDGER, LEDGER_TYPE_LABEL, LIVE_ACCOUNTS, PORTFOLIO_NOW, type LedgerEntry, type LedgerType } from "@kalks/mock/portfolio-extra";
 import { downloadCsv, serverTime } from "@/components/portfolio/export";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveLedgerPage } from "@/components/trading/portfolio";
 
 const TYPE_META: Record<LedgerType, { tone: ChipTone; icon: React.ReactNode }> = {
   deposit: { tone: "up", icon: <ArrowDownToLine /> },
@@ -41,7 +43,7 @@ const WITH_TOTAL: Row[] = (() => {
   return asc.reverse();
 })();
 
-export default function LedgerPage() {
+function DemoLedgerPage() {
   const [account, setAccount] = React.useState("all");
   const [group, setGroup] = React.useState("all");
   const [preset, setPreset] = React.useState<(typeof PRESETS)[number]>("30D");
@@ -171,4 +173,9 @@ export default function LedgerPage() {
       </Reveal>
     </div>
   );
+}
+
+/** Live builds: real accounts from the trading engine (via /api/trading). Demo builds: mock data. */
+export default function LedgerPage() {
+  return DEMO_BUILD ? <DemoLedgerPage /> : <LiveLedgerPage />;
 }

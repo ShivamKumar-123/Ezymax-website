@@ -6,6 +6,8 @@ import { Check, Download, Eye, FileSpreadsheet, FileText, Mail, Printer, Sheet }
 import { Button, Card, CardHeader, Chip, Dialog, Field, Icon3D, Input, Money, PageHeader, Reveal, Segmented, Toggle, cn } from "@kalks/ui";
 import { LIVE_ACCOUNTS, MONTHLY_STATEMENTS, type MonthlyStatement } from "@kalks/mock/portfolio-extra";
 import { StatementPreview } from "@/components/portfolio/statement-preview";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveStatementsPage } from "@/components/trading/portfolio";
 
 type Period = "day" | "month" | "year" | "custom";
 type Format = "pdf" | "csv" | "xlsx";
@@ -29,7 +31,7 @@ function periodRange(p: Period, day: string, month: string, year: string, from: 
   return { label: `${from} → ${to}`, from: d(from), to: d(to) + 86400_000 - 1 };
 }
 
-export default function StatementsPage() {
+function DemoStatementsPage() {
   const [accounts, setAccounts] = React.useState<string[]>([LIVE_ACCOUNTS[0]!.login]);
   const [period, setPeriod] = React.useState<Period>("month");
   const [day, setDay] = React.useState("2026-09-24");
@@ -327,4 +329,9 @@ export default function StatementsPage() {
       </Dialog>
     </div>
   );
+}
+
+/** Live builds: real accounts from the trading engine (via /api/trading). Demo builds: mock data. */
+export default function StatementsPage() {
+  return DEMO_BUILD ? <DemoStatementsPage /> : <LiveStatementsPage />;
 }

@@ -11,6 +11,8 @@ import { ACCOUNT_GROUPS } from "@kalks/mock";
 import { DEMO_RULES } from "@kalks/mock/accounts-extra";
 import { GroupCard } from "@/components/accounts/group-card";
 import { CredentialField, PasswordInput, PasswordStrength, generatePassword, isPasswordValid } from "@/components/accounts/security";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveOpenAccount } from "@/components/trading/open-account";
 
 const STEPS = ["Account", "Type", "Configure", "Password", "Done"];
 type Kind = "live" | "demo";
@@ -419,7 +421,7 @@ function Wizard() {
   );
 }
 
-export default function NewAccountPage() {
+function DemoNewAccountPage() {
   return (
     <React.Suspense fallback={null}>
       <Wizard />
@@ -427,3 +429,7 @@ export default function NewAccountPage() {
   );
 }
 
+/** Live builds: real accounts from the trading engine (via /api/trading). Demo builds: mock data. */
+export default function NewAccountPage() {
+  return DEMO_BUILD ? <DemoNewAccountPage /> : <LiveOpenAccount />;
+}

@@ -7,6 +7,8 @@ import { Button, Card, Chip, DataTable, Menu, Money, PageHeader, Reveal, Segment
 import { HISTORY, getInstrument, type ClosedTrade } from "@kalks/mock";
 import { LIVE_ACCOUNTS, PORTFOLIO_NOW } from "@kalks/mock/portfolio-extra";
 import { downloadCsv, serverTime } from "@/components/portfolio/export";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveHistoryPage } from "@/components/trading/portfolio";
 
 const PRESETS = ["Today", "7D", "30D", "90D", "All"] as const;
 type Preset = (typeof PRESETS)[number];
@@ -24,7 +26,7 @@ const SOURCE: Record<ClosedTrade["source"], { label: string; tone: "neutral" | "
   strategy: { label: "Strategy", tone: "ember", icon: <Workflow className="size-3" /> },
 };
 
-export default function TradeHistoryPage() {
+function DemoTradeHistoryPage() {
   const [account, setAccount] = React.useState("all");
   const [preset, setPreset] = React.useState<Preset>("30D");
   const [q, setQ] = React.useState("");
@@ -208,4 +210,9 @@ export default function TradeHistoryPage() {
       </Reveal>
     </div>
   );
+}
+
+/** Live builds: real accounts from the trading engine (via /api/trading). Demo builds: mock data. */
+export default function TradeHistoryPage() {
+  return DEMO_BUILD ? <DemoTradeHistoryPage /> : <LiveHistoryPage />;
 }

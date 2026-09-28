@@ -3,12 +3,15 @@
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowUpRight, BadgeCheck, CandlestickChart, Check, ChevronRight, Copy, IdCard, Layers, LifeBuoy, Mail, UserRound, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, MarketSessions, PageHeader, Progress, Reveal, cn, useQuotes } from "@kalks/ui";
+import { ArrowUpRight, BadgeCheck, CandlestickChart, Check, ChevronRight, Copy, IdCard, Layers, LifeBuoy, Mail, Plus, UserRound, Wallet } from "lucide-react";
+import { Button, Card, CardHeader, Chip, MarketSessions, PageHeader, Progress, Reveal, Skeleton, cn, useQuotes } from "@kalks/ui";
 import { INSTRUMENTS, isMarketOpen } from "@kalks/mock";
 import { KYC_CHIP, useSession, type SessionUser } from "@/components/session";
 import { FeedGuard } from "@/components/feed-guard";
 import { SUPPORT_EMAIL, TERMINAL_URL } from "@/lib/live";
+import { useAccounts, type EngineAccount } from "@/components/trading/api";
+import { liveTotals } from "@/components/trading/accounts-page";
+import { LiveAccountRow } from "@/components/trading/ui";
 
 function greeting() {
   const h = new Date().getHours();
@@ -31,7 +34,10 @@ function fmtDate(iso: string) {
 type StepState = "done" | "todo" | "review" | "rejected" | "soon";
 type Step = { key: string; icon: React.ReactNode; title: string; text: string; state: StepState; href?: string };
 
-function steps(me: SessionUser): Step[] {
+function steps(me: SessionUser, accounts: EngineAccount[] | null): Step[] {
+  const live = accounts?.filter((a) => a.type === "live").length ?? 0;
+  const demo = accounts?.filter((a) => a.type === "demo").length ?? 0;
+  const opened = live + demo > 0;
   const kyc: Record<SessionUser["kyc_status"], { state: StepState; text: string }> = {
     verified: { state: "done", text: "Your identity is verified." },
     pending: { state: "review", text: "Your documents are being reviewed." },
@@ -48,8 +54,15 @@ function steps(me: SessionUser): Step[] {
       state: me.email_verified ? "done" : "todo",
     },
     { key: "kyc", icon: <IdCard />, title: "Verify your identity", ...kyc[me.kyc_status], href: "/profile/verification" },
+    {
+      key: "account-open",
+      icon: <Layers />,
+      title: "Open a trading account",
+      text: opened ? `${live} live and ${demo} demo account${live + demo === 1 ? "" : "s"} open.` : "Open a live or demo account; your login is issued instantly.",
+      state: opened ? "done" : "todo",
+      href: opened ? "/accounts" : "/accounts/new",
+    },
     { key: "wallet", icon: <Wallet />, title: "Fund your wallet", text: "USDT deposits on TRC20 are being connected.", state: "soon", href: "/wallet" },
-    { key: "account-open", icon: <Layers />, title: "Open a trading account", text: "Live and demo accounts open once funding is live.", state: "soon", href: "/accounts" },
   ];
 }
 
@@ -91,9 +104,9 @@ function StepRow({ s, n }: { s: Step; n: number }) {
   );
 }
 
-function GettingStarted() {
+function GettingStarted({ accounts }: { accounts: EngineAccount[] | null }) {
   const me = useSession();
-  const list = steps(me);
+  const list = steps(me, accounts);
   const done = list.filter((s) => s.state === "done").length;
   return (
     <Card className="flex h-full flex-col">
@@ -116,6 +129,86 @@ function GettingStarted() {
         {list.map((s, i) => (
           <StepRow key={s.key} s={s} n={i + 1} />
         ))}
+      </div>
+    </Card>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Trading accounts: real accounts from the trading engine             */
+/* ------------------------------------------------------------------ */
+
+function TradingAccountsCard({ accounts, failed, reload }: { accounts: EngineAccount[] | null; failed: boolean; reload: () => void }) {
+  const t = liveTotals(accounts ?? []);
+  const shown = [...t.live, ...t.demo].slice(0, 3);
+  const more = (accounts?.length ?? 0) - shown.length;
+  return (
+    <Card>
+      <CardHeader
+        title="Trading accounts"
+        subtitle={
+          accounts && accounts.length > 0 ? (
+            <span>
+              Live equity <span className="k-num font-medium text-fg">${t.equity.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> · {t.live.length} live · {t.demo.length} demo · {t.positions} open positions
+            </span>
+          ) : (
+            "Your live and demo accounts"
+          )
+        }
+        action={
+          <>
+            {accounts && accounts.length > 0 && (
+              <Link href="/accounts" className="hidden sm:block">
+                <Button size="sm" variant="surface">
+                  All accounts
+                </Button>
+              </Link>
+            )}
+            <Link href="/accounts/new">
+              <Button size="sm" variant="ember">
+                <Plus /> Open account
+              </Button>
+            </Link>
+          </>
+        }
+      />
+      <div className="mt-4 space-y-3 px-4 pb-5 sm:px-6">
+        {accounts === null && !failed && <Skeleton className="h-[138px] w-full rounded-[18px]" />}
+        {accounts === null && failed && (
+          <div className="k-row flex flex-wrap items-center gap-3 px-4 py-4 text-[13px] text-fg-2">
+            <span className="flex-1">Trading accounts are unavailable right now. Your balances are safe.</span>
+            <Button size="sm" variant="surface" onClick={reload}>
+              Try again
+            </Button>
+          </div>
+        )}
+        {accounts && accounts.length === 0 && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {[
+              { type: "live", title: "Open a live account", text: "Real markets. Starts at a zero balance; funding opens with the wallet." },
+              { type: "demo", title: "Open a demo account", text: "Virtual funds on real-time prices, refillable every day." },
+            ].map((o) => (
+              <Link key={o.type} href={`/accounts/new?type=${o.type}`} className="k-row flex items-start gap-3 p-4 transition-colors hover:border-[var(--k-border-top)]">
+                <Chip size="sm" tone={o.type === "live" ? "ember" : "gold"} className="font-semibold tracking-wider">
+                  {o.type.toUpperCase()}
+                </Chip>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-medium">{o.title}</span>
+                  <span className="mt-0.5 block text-[12.5px] text-fg-3">{o.text}</span>
+                </span>
+                <ChevronRight className="mt-0.5 size-4 shrink-0 text-fg-3" />
+              </Link>
+            ))}
+          </div>
+        )}
+        {shown.map((a) => (
+          <LiveAccountRow key={a.login} a={a} compact onChanged={reload} />
+        ))}
+        {more > 0 && (
+          <Link href="/accounts" className="block text-center text-[12.5px] text-fg-3 hover:text-ember">
+            {more} more account{more === 1 ? "" : "s"}
+          </Link>
+        )}
       </div>
     </Card>
   );
@@ -288,6 +381,8 @@ function SupportCard() {
 /** Live builds: only data that is real for this client — their record, live prices, real links. */
 export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
   const me = useSession();
+  const acc = useAccounts(10000);
+  const accounts = acc.data?.accounts ?? null;
   const [hour, setHour] = React.useState<string>("Welcome");
   React.useEffect(() => setHour(greeting()), []);
   const verified = me.kyc_status === "verified";
@@ -320,7 +415,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal className="xl:col-span-8">
-          <GettingStarted />
+          <GettingStarted accounts={accounts} />
         </Reveal>
         <div className="flex flex-col gap-4 xl:col-span-4">
           <Reveal delay={0.05}>
@@ -331,6 +426,10 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
           </Reveal>
         </div>
       </div>
+
+      <Reveal delay={0.05} className="mt-4 block">
+        <TradingAccountsCard accounts={accounts} failed={!!acc.error} reload={acc.reload} />
+      </Reveal>
 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal delay={0.05} className="xl:col-span-4">

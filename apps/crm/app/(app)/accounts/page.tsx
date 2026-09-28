@@ -9,6 +9,8 @@ import { ACCOUNTS, ACCOUNT_GROUPS, POSITIONS, accountUsd, freeMargin, type Tradi
 import { ARCHIVED_ACCOUNTS } from "@kalks/mock/accounts-extra";
 import { AccountBadge, AccountRow, accountTitle } from "@/components/account-row";
 import { GroupCard } from "@/components/accounts/group-card";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveAccountsPage } from "@/components/trading/accounts-page";
 
 const live = ACCOUNTS.filter((a) => a.type === "live");
 const demo = ACCOUNTS.filter((a) => a.type === "demo");
@@ -116,7 +118,7 @@ function PlatformCard() {
   );
 }
 
-export default function AccountsPage() {
+function DemoAccountsPage() {
   const [tab, setTab] = React.useState<"live" | "demo" | "archived">("live");
   const totalEquity = live.reduce((s, a) => s + accountUsd(a, "equity"), 0);
   const totalFree = live.reduce((s, a) => s + usd(a, freeMargin(a)), 0);
@@ -266,4 +268,9 @@ export default function AccountsPage() {
       </Reveal>
     </div>
   );
+}
+
+/** Live builds: real accounts from the trading engine (via /api/trading). Demo builds: mock data. */
+export default function AccountsPage() {
+  return DEMO_BUILD ? <DemoAccountsPage /> : <LiveAccountsPage />;
 }

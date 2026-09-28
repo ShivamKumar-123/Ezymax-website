@@ -40,6 +40,8 @@ import {
   PAMM_INVESTMENTS,
   PORTFOLIO_TOTALS as T,
 } from "@kalks/mock/portfolio-extra";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LivePortfolio } from "@/components/trading/portfolio";
 
 const SOURCES = [
   { key: "live", label: "Live accounts", value: T.live, color: CHART_COLORS[0]!, icon: "bar_chart", href: "/accounts", sub: `${LIVE_ACCOUNTS.length} accounts` },
@@ -427,7 +429,7 @@ function SourcesStrip() {
   );
 }
 
-export default function PortfolioPage() {
+function DemoPortfolioPage() {
   return (
     <div className="pb-24">
       <PageHeader
@@ -493,4 +495,9 @@ export default function PortfolioPage() {
       </Reveal>
     </div>
   );
+}
+
+/** Live builds: real accounts from the trading engine (via /api/trading). Demo builds: mock data. */
+export default function PortfolioPage() {
+  return DEMO_BUILD ? <DemoPortfolioPage /> : <LivePortfolio />;
 }
