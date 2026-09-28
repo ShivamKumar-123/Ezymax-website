@@ -13,11 +13,11 @@ import { AiTraderTab, useAi } from "./ai-trader";
 import { ShareControls } from "@/components/share/share-dialogs";
 import { GuestNotice } from "@/components/shell/guest";
 
-/** Guest mode: account-only tabs explain what they will show once trading accounts open. */
+/** Guest mode: account-only tabs explain what they show once a trading account is logged in. */
 const GUEST_TABS: Partial<Record<ToolboxTab, { icon: React.ReactNode; text: string }>> = {
-  trade: { icon: <BarChart3 />, text: "Open positions, pending orders, balance, equity and margin appear here once you trade from a Kalks account. Charts, quotes and alerts work now." },
-  history: { icon: <History />, text: "Your closed trades, deposits and performance stats will be listed here once your trading account is live." },
-  exposure: { icon: <PieChart />, text: "Net exposure by currency and asset is calculated from your open positions once trading accounts open." },
+  trade: { icon: <BarChart3 />, text: "Open positions, pending orders, balance, equity and margin appear here once you log in to a trading account. Charts, quotes and alerts work now." },
+  history: { icon: <History />, text: "Your closed trades and performance stats are listed here once you log in to a trading account." },
+  exposure: { icon: <PieChart />, text: "Net exposure by currency and asset is calculated from your open positions once you log in to a trading account." },
 };
 
 export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: () => void; onMaximize?: () => void; maximized?: boolean }) {
@@ -29,7 +29,7 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
     { value: "history", label: "History" },
     { value: "exposure", label: "Exposure" },
     // news and calendar are sample content: shown in demo builds only
-    ...(T.guest ? [] : ([{ value: "news", label: "News", count: 3 }, { value: "calendar", label: "Calendar" }] as const)),
+    ...(T.live ? [] : ([{ value: "news", label: "News", count: 3 }, { value: "calendar", label: "Calendar" }] as const)),
     { value: "alerts", label: "Alerts", count: T.alerts.filter((a) => a.active).length },
     { value: "journal", label: "Journal" },
     { value: "ai", label: "AI Trader", count: ai.records.filter((r) => r.status === "active").length },
@@ -72,7 +72,7 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
         {T.guest && GUEST_TABS[tab] ? (
           <GuestNotice icon={GUEST_TABS[tab]!.icon} text={GUEST_TABS[tab]!.text} />
         ) : (
-          <ToolboxBody tab={T.guest && (tab === "news" || tab === "calendar") ? "journal" : tab} />
+          <ToolboxBody tab={T.live && (tab === "news" || tab === "calendar") ? "journal" : tab} />
         )}
       </div>
     </section>

@@ -2,20 +2,21 @@ import { toast } from "@/lib/notify";
 import { IS_LIVE, type TradingAccount } from "@kalks/mock";
 
 /**
- * Guest mode (live builds): real market data only. Trading accounts are served by the trading engine,
- * which isn't connected yet, so the terminal runs without any account: charts, quotes, symbol specs,
- * indicators, drawings, alerts and the AI Trader composer work; every trade action explains why not.
+ * Live builds (`GUEST_MODE`): accounts, orders and positions come from the trading engine. Until a
+ * trading account is logged in, the terminal runs in guest mode: charts, quotes, symbol specs,
+ * indicators, drawings, alerts and the AI Trader composer work; every trade action explains how to log in.
  * Demo builds keep the full mock-account showcase.
  */
 export const GUEST_MODE = IS_LIVE;
+export const LOGIN_URL = "/login";
 
 export const CLIENT_AREA = process.env.NEXT_PUBLIC_CLIENT_AREA_URL ?? "http://localhost:3000";
 export const REGISTER_URL = `${CLIENT_AREA}/register`;
 export const SIGNIN_URL = `${CLIENT_AREA}/login`;
 
 export const GUEST_LOGIN = "guest";
-export const GUEST_TITLE = "Trading accounts are opening soon";
-export const GUEST_TEXT = "Trading accounts are opening soon — create your Kalks account to be first";
+export const GUEST_TITLE = "Log in to a trading account";
+export const GUEST_TEXT = "Log in to a trading account to trade, or open one in the Client Area";
 
 /**
  * Placeholder the store hands out as `account` while in guest mode, so account-shaped code never has
@@ -53,7 +54,7 @@ export function guestNotice(what?: string) {
   lastNotice = now;
   toast(GUEST_TITLE, {
     id: "kalks-guest",
-    description: `${what ? `${what} needs a trading account. ` : ""}Create your Kalks account to be first.`,
-    action: { label: "Open account", onClick: openRegister },
+    description: `${what ? `${what} needs a trading account. ` : ""}Log in, or open an account in the Client Area.`,
+    action: { label: "Log in", onClick: () => window.location.assign(LOGIN_URL) },
   });
 }

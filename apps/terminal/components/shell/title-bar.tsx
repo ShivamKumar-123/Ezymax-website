@@ -83,13 +83,14 @@ function useMenus(): { label: string; items: MenuItem[] }[] {
         "sep",
         ...(T.guest
           ? ([
+              { label: "Login to Trade Account…", icon: <LogIn />, onSelect: () => T.openLogin() },
               { label: "Open account", icon: <UserPlus />, onSelect: openRegister },
-              { label: "Sign in", icon: <LogIn />, onSelect: openSignIn },
+              { label: "Sign in to Client Area", icon: <UserRound />, onSelect: openSignIn },
               "sep",
               { label: "Client Area", icon: <ArrowUpRight />, onSelect: () => window.open(CLIENT_AREA, "_blank") },
             ] as MenuItem[])
           : ([
-              { label: "Login to Trade Account…", icon: <UserRound />, onSelect: () => T.logout() },
+              { label: "Login to Trade Account…", icon: <UserRound />, onSelect: () => (T.engine ? T.openLogin() : T.logout()) },
               { label: "Open an Account", icon: <ArrowUpRight />, onSelect: () => window.open(`${CLIENT_AREA}/accounts`, "_blank") },
               ...(T.account.type === "demo" ? [{ label: `Refill demo balance (${T.refillsLeft} left)`, icon: <RefreshCw />, onSelect: () => T.refillDemo() } as MenuItem] : []),
               "sep",
@@ -284,12 +285,22 @@ function AccountSwitcher() {
     >
       {(close) => (
         <div>
-          <div className="border-b border-line px-3 py-2 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">Trading accounts · {ME.name}</div>
+          <div className="border-b border-line px-3 py-2 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">{T.engine ? "Trading accounts · logged in on this device" : `Trading accounts · ${ME.name}`}</div>
           <div className="space-y-0.5 p-1">
             {T.accounts.map((x) => (
               <AccountRow key={x.login} login={x.login} active={x.login === a.login} onPick={() => (T.switchAccount(x.login), close())} />
             ))}
           </div>
+          {T.engine && (
+            <div className="flex items-center justify-between border-t border-line px-3 py-2 text-[11.5px]">
+              <button onClick={() => (T.openLogin(), close())} className="flex items-center gap-1.5 text-fg-2 hover:text-fg">
+                <LogIn className="size-3" /> Log in to another account
+              </button>
+              <button onClick={() => (T.logout(), close())} className="flex items-center gap-1.5 text-fg-3 hover:text-down">
+                <LogOut className="size-3" /> Log out of {a.login}
+              </button>
+            </div>
+          )}
           <div className="flex items-center justify-between border-t border-line px-3 py-2 text-[11.5px]">
             {a.type === "demo" ? (
               <button onClick={() => (T.refillDemo(), close())} className="flex items-center gap-1.5 text-gold hover:underline">
@@ -398,7 +409,7 @@ export function TitleBar() {
           align="end"
           width={240}
           items={[
-            { header: `${ME.name} · ${ME.email}` },
+            { header: T.engine ? `${a.nickname ? `${a.nickname} · ` : ""}${a.login} · ${a.type}` : `${ME.name} · ${ME.email}` },
             { label: `Connected to ${a.server}`, icon: <UserRound />, disabled: true },
             { label: "Client Area", icon: <ArrowUpRight />, onSelect: () => window.open(CLIENT_AREA, "_blank") },
             { label: "Profile & security", onSelect: () => window.open(`${CLIENT_AREA}/profile`, "_blank") },
@@ -408,7 +419,13 @@ export function TitleBar() {
           ]}
           trigger={({ toggle }) => (
             <button onClick={toggle} className="ml-0.5 rounded-full ring-1 ring-line transition hover:ring-ember/50" aria-label="Account menu">
-              <Avatar src={ME.photo} name={ME.name} size={28} />
+              {T.engine ? (
+                <span className="grid size-7 place-items-center rounded-full bg-surface-3 text-fg-2">
+                  <UserRound className="size-4" />
+                </span>
+              ) : (
+                <Avatar src={ME.photo} name={ME.name} size={28} />
+              )}
             </button>
           )}
         />

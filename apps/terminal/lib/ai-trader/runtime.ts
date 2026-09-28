@@ -1,9 +1,9 @@
 /**
  * AI Trader runtime. Holds the current account's strategies (persisted in localStorage), runs the
  * active ones on closed bars and routes orders through the terminal store (the same path as manual
- * orders, tagged source "ai"). SL / TP / trailing of live orders are executed by the store's
- * server-side-style engine; this runtime adds breakeven, rule exits, session close-outs, daily limits
- * and a paper (dry-run) mode with virtual positions.
+ * orders, tagged source "ai"; in live builds they go to the trading engine). SL / TP / trailing of live
+ * orders are executed server-side by the engine; this runtime adds breakeven, rule exits, session
+ * close-outs, daily limits and a paper (dry-run) mode with virtual positions.
  *
  * It runs inside the browser tab: strategies only execute while the terminal is open.
  */
@@ -27,10 +27,11 @@ export interface TradingApi {
   positions: () => TPosition[];
   history: () => TClosed[];
   balance: () => number;
-  placeOrder: (o: OrderRequest) => boolean;
-  modifyPosition: (ticket: string, patch: { sl?: number | null; tp?: number | null; trailing?: number | null }) => boolean;
+  /** Resolves when the trade server answered; `ticket` = the opened position (market) when known. */
+  placeOrder: (o: OrderRequest) => Promise<{ ok: boolean; ticket?: string }>;
+  modifyPosition: (ticket: string, patch: { sl?: number | null; tp?: number | null; trailing?: number | null }) => Promise<boolean>;
   /** False when the close was rejected (e.g. the symbol's market is closed). */
-  closePosition: (ticket: string, reason: string) => boolean;
+  closePosition: (ticket: string, reason: string) => Promise<boolean>;
   log: (src: JournalLine["src"], text: string, level?: JournalLine["level"]) => void;
 }
 
@@ -153,6 +154,7 @@ class Engine {
   private lastIntrabar = 0;
   private knownSl = new Map<string, number | undefined>();
   private lastTrailLog = new Map<string, number>();
+  private closing = false;
 
   constructor(
     private rt: AiTraderRuntime,
@@ -211,9 +213,10 @@ class Engine {
     }
     if (rec.mode === "live") this.rt.syncLive(this.id);
     // close outside session
-    if (rec.spec.closeOutsideSession && rec.status === "active" && !inSession(rec.spec) && this.openCount() > 0) {
+    if (rec.spec.closeOutsideSession && rec.status === "active" && !inSession(rec.spec) && this.openCount() > 0 && !this.closing) {
       this.rt.logFor(this.id, "close", "Outside trading window: closing open positions");
-      this.rt.closeAllOf(this.id, "ai session end");
+      this.closing = true;
+      void this.rt.closeAllOf(this.id, "ai session end").finally(() => (this.closing = false));
     }
   }
 
@@ -251,7 +254,7 @@ class Engine {
     const wantSell = !!S?.ok;
     if (!wantBuy && !wantSell) return;
     if (wantBuy && wantSell) return this.rt.logFor(this.id, "signal", "Buy and sell rules both true on the same bar: skipped", "warn");
-    this.enter(wantBuy ? "buy" : "sell", bars);
+    void this.enter(wantBuy ? "buy" : "sell", bars);
   }
 
   private exitSide(side: "buy" | "sell", why: string) {
@@ -263,13 +266,16 @@ class Engine {
       if (!api) return;
       for (const p of api.positions().filter((x) => rec.openTickets.includes(x.ticket) && x.side === side)) {
         this.rt.logFor(this.id, "close", `${why}: closing #${p.ticket} ${p.side} ${fmtVol(p.volume)} ${p.symbol}`);
-        if (!api.closePosition(p.ticket, "ai exit")) this.rt.logFor(this.id, "error", `Could not close #${p.ticket} ${p.symbol}: market closed; position left open with its SL/TP`, "warn");
+        void api.closePosition(p.ticket, "ai exit").then((ok) => {
+          if (!ok) this.rt.logFor(this.id, "error", `Could not close #${p.ticket} ${p.symbol} (see Journal for the reason); position left open with its SL/TP`, "warn");
+          this.rt.syncLive(this.id);
+        });
       }
       this.rt.syncLive(this.id);
     }
   }
 
-  private enter(side: "buy" | "sell", bars: Candle[]) {
+  private async enter(side: "buy" | "sell", bars: Candle[]) {
     const rt = this.rt;
     const rec = this.rec;
     const spec = rec.spec;
@@ -358,12 +364,14 @@ class Engine {
     rt.logFor(this.id, "signal", `${side.toUpperCase()} signal: sending market order ${desc}`);
     const comment = aiComment(rec);
     const before = new Set(api.positions().map((p) => `${p.ticket}|${p.volume}`));
-    const ok = api.placeOrder({ symbol: spec.symbol, side, type: "market", volume: vol, sl, tp, trailing: trail, comment, source: "ai" });
-    if (!ok) return rt.logFor(this.id, "error", `Order rejected: ${desc} (see Journal for the reason)`, "error");
-    const pos = api.positions().find((p) => p.login === api.login && isAiOf(p, rec.id) && !before.has(`${p.ticket}|${p.volume}`));
-    rt.patch(this.id, (r) => ({ tradesToday: r.tradesToday + 1, openTickets: pos && !r.openTickets.includes(pos.ticket) ? [...r.openTickets, pos.ticket] : r.openTickets }));
+    const res = await api.placeOrder({ symbol: spec.symbol, side, type: "market", volume: vol, sl, tp, trailing: trail, comment, source: "ai" });
+    if (!res.ok) return rt.logFor(this.id, "error", `Order rejected: ${desc} (see Journal for the reason)`, "error");
+    // the trade server names the new position; the stream may deliver it a moment after the answer
+    const pos = api.positions().find((p) => (res.ticket ? p.ticket === res.ticket : p.login === api.login && isAiOf(p, rec.id) && !before.has(`${p.ticket}|${p.volume}`)));
+    const ticket = pos?.ticket ?? res.ticket;
+    rt.patch(this.id, (r) => ({ tradesToday: r.tradesToday + 1, openTickets: ticket && !r.openTickets.includes(ticket) ? [...r.openTickets, ticket] : r.openTickets }));
     if (pos) this.knownSl.set(pos.ticket, pos.sl);
-    rt.logFor(this.id, "order", pos ? `Filled #${pos.ticket} ${pos.side} ${fmtVol(pos.volume)} ${pos.symbol} at ${fmtPrice(pos.symbol, pos.openPrice)}${pos.sl !== undefined ? ` SL ${fmtPrice(pos.symbol, pos.sl)}` : ""}${pos.tp !== undefined ? ` TP ${fmtPrice(pos.symbol, pos.tp)}` : ""}` : "Order accepted");
+    rt.logFor(this.id, "order", pos ? `Filled #${pos.ticket} ${pos.side} ${fmtVol(pos.volume)} ${pos.symbol} at ${fmtPrice(pos.symbol, pos.openPrice)}${pos.sl !== undefined ? ` SL ${fmtPrice(pos.symbol, pos.sl)}` : ""}${pos.tp !== undefined ? ` TP ${fmtPrice(pos.symbol, pos.tp)}` : ""}` : ticket ? `Filled #${ticket}` : "Order accepted");
   }
 
   /* ------------------------------ ticks ------------------------------ */
@@ -420,9 +428,8 @@ class Engine {
           this.rt.patch(this.id, (r) => ({ beDone: [...r.beDone.slice(-200), p.ticket] }));
           const cand = roundPrice(spec.symbol, p.openPrice + (p.side === "buy" ? 1 : -1) * spec.trailing.breakevenOffset * pt);
           if (p.sl === undefined || (p.side === "buy" ? cand > p.sl : cand < p.sl)) {
-            const ok = api.modifyPosition(p.ticket, { sl: cand });
             this.knownSl.set(p.ticket, cand);
-            this.rt.logFor(this.id, ok ? "manage" : "error", ok ? `Breakeven: #${p.ticket} SL moved to ${fmtPrice(spec.symbol, cand)}` : `Breakeven modify of #${p.ticket} rejected`, ok ? "info" : "error");
+            void api.modifyPosition(p.ticket, { sl: cand }).then((ok) => this.rt.logFor(this.id, ok ? "manage" : "error", ok ? `Breakeven: #${p.ticket} SL moved to ${fmtPrice(spec.symbol, cand)}` : `Breakeven modify of #${p.ticket} rejected`, ok ? "info" : "error"));
             continue; // `p` is the pre-modify snapshot
           }
         }
@@ -639,7 +646,7 @@ export class AiTraderRuntime {
   stop(id: string, closePositions: boolean) {
     const r = this.get(id);
     if (!r) return;
-    if (closePositions) this.closeAllOf(id, "ai stop");
+    if (closePositions) void this.closeAllOf(id, "ai stop");
     this.stopEngine(id);
     this.patch(id, { status: "stopped", paper: [] });
     this.logFor(id, "info", `Stopped${closePositions ? " and closed its positions" : r.openTickets.length ? `; ${r.openTickets.length} position(s) left open with their SL/TP` : ""}`, "warn");
@@ -659,14 +666,14 @@ export class AiTraderRuntime {
   }
 
   /** Kill switch: stop every AI strategy on this account and close every AI position. */
-  killAll(): { strategies: number; positions: number; blocked: number } {
+  async killAll(): Promise<{ strategies: number; positions: number; blocked: number }> {
     const api = this.api;
     let strategies = 0;
     const aiOpen = api ? api.positions().filter((x) => x.login === api.login && x.source === "ai").length : 0;
     for (const r of this.records) {
       if (r.status === "active" || r.status === "paused") {
         strategies++;
-        this.closeAllOf(r.id, "ai kill");
+        await this.closeAllOf(r.id, "ai kill");
         this.stopEngine(r.id);
         this.patch(r.id, { status: "stopped", paper: [] });
         this.logFor(r.id, "info", "Stopped by kill switch", "warn");
@@ -676,8 +683,10 @@ export class AiTraderRuntime {
     let blocked = 0;
     if (api && !api.investor) {
       // anything still open with source "ai" (strategy positions were closed above)
-      for (const p of api.positions().filter((x) => x.login === api.login && x.source === "ai")) api.closePosition(p.ticket, "ai kill");
-      const left = api.positions().filter((x) => x.login === api.login && x.source === "ai");
+      const rest = api.positions().filter((x) => x.login === api.login && x.source === "ai");
+      const closed = await Promise.all(rest.map((p) => api.closePosition(p.ticket, "ai kill")));
+      const failed = new Set(rest.filter((_, i) => !closed[i]).map((p) => p.ticket));
+      const left = api.positions().filter((x) => x.login === api.login && x.source === "ai" && (failed.has(x.ticket) || !rest.some((r) => r.ticket === x.ticket)));
       positions = aiOpen - left.length;
       for (const r of this.records) if (r.openTickets.length) this.syncLive(r.id);
       api.log("Experts", `AI kill switch: ${strategies} strategies stopped, ${positions} AI positions closed`, "warn");
@@ -690,15 +699,20 @@ export class AiTraderRuntime {
     return { strategies, positions, blocked };
   }
 
-  closeAllOf(id: string, reason: string) {
+  async closeAllOf(id: string, reason: string) {
     const r = this.get(id);
     if (!r) return;
     for (const p of r.paper) this.closePaper(id, p.id, undefined, reason);
     const api = this.api;
     if (api && !api.investor) {
-      for (const p of api.positions().filter((x) => r.openTickets.includes(x.ticket))) {
-        if (!api.closePosition(p.ticket, reason)) this.logFor(id, "error", `Could not close #${p.ticket} ${p.symbol} (${reason}): market closed; position left open with its SL/TP`, "warn");
-      }
+      await Promise.all(
+        api
+          .positions()
+          .filter((x) => r.openTickets.includes(x.ticket))
+          .map(async (p) => {
+            if (!(await api.closePosition(p.ticket, reason))) this.logFor(id, "error", `Could not close #${p.ticket} ${p.symbol} (${reason}): rejected (see Journal); position left open with its SL/TP`, "warn");
+          }),
+      );
       this.syncLive(id);
     }
   }

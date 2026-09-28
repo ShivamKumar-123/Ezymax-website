@@ -72,6 +72,7 @@ export function OrderTicket({
   const [riskMode, setRiskMode] = React.useState<"pct" | "usd">("pct");
   const [risk, setRisk] = React.useState("1");
   const [riskPips, setRiskPips] = React.useState("25");
+  const [busy, setBusy] = React.useState(false);
 
   const first = React.useRef(true);
   React.useEffect(() => {
@@ -138,14 +139,15 @@ export function OrderTicket({
     return Math.abs(st - entryFor(side)) * vol * inst.contractSize * (pv / (pip * inst.contractSize));
   };
 
-  const submit = (side: "buy" | "sell") => {
-    if (!marketOpen) return;
+  const submit = async (side: "buy" | "sell") => {
+    if (!marketOpen || busy) return;
     if (pending && !price) {
       toast.error("Enter a price for the pending order");
       return;
     }
     const st = stopsFor(side);
-    const ok = T.placeOrder({
+    setBusy(true);
+    const ok = await T.placeOrder({
       symbol,
       side,
       type,
@@ -160,6 +162,7 @@ export function OrderTicket({
       comment: comment || undefined,
       ocoPrice: pending && oco && type !== "stop-limit" && ocoPrice ? parseFloat(ocoPrice) : undefined,
     });
+    setBusy(false);
     if (ok) {
       T.setWs({ lot: vol });
       onDone?.();
@@ -383,11 +386,11 @@ export function OrderTicket({
 
       {/* sell / buy */}
       <div className="relative grid grid-cols-2 gap-1.5">
-        <button onClick={() => submit("sell")} disabled={!marketOpen} title={marketOpen ? undefined : "Market closed"} aria-label={pending ? `Place sell ${type} order` : "Place sell order"} className={cn("group rounded-[7px] bg-down px-2.5 py-1.5 text-left text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100 [&:disabled_span]:!text-fg-3", prefill?.side === "sell" && "ring-2 ring-down/40 ring-offset-1 ring-offset-panel")}>
+        <button onClick={() => void submit("sell")} disabled={!marketOpen || busy} title={marketOpen ? undefined : "Market closed"} aria-label={pending ? `Place sell ${type} order` : "Place sell order"} className={cn("group rounded-[7px] bg-down px-2.5 py-1.5 text-left text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100 [&:disabled_span]:!text-fg-3", prefill?.side === "sell" && "ring-2 ring-down/40 ring-offset-1 ring-offset-panel")}>
           <div className="text-[10px] font-semibold uppercase tracking-[0.1em] opacity-85">{pending ? `Sell ${type === "stop-limit" ? "stop limit" : type}` : "Sell"}</div>
           <PriceText symbol={symbol} value={pending && price ? parseFloat(price) || q.bid : q.bid} dir={pending ? 0 : q.dir} className="text-[16px] [&_span]:!text-white" />
         </button>
-        <button onClick={() => submit("buy")} disabled={!marketOpen} title={marketOpen ? undefined : "Market closed"} aria-label={pending ? `Place buy ${type} order` : "Place buy order"} className={cn("rounded-[7px] bg-up px-2.5 py-1.5 text-right text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100 [&:disabled_span]:!text-fg-3", prefill?.side === "buy" && "ring-2 ring-up/40 ring-offset-1 ring-offset-panel")}>
+        <button onClick={() => void submit("buy")} disabled={!marketOpen || busy} title={marketOpen ? undefined : "Market closed"} aria-label={pending ? `Place buy ${type} order` : "Place buy order"} className={cn("rounded-[7px] bg-up px-2.5 py-1.5 text-right text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100 [&:disabled_span]:!text-fg-3", prefill?.side === "buy" && "ring-2 ring-up/40 ring-offset-1 ring-offset-panel")}>
           <div className="text-[10px] font-semibold uppercase tracking-[0.1em] opacity-85">{pending ? `Buy ${type === "stop-limit" ? "stop limit" : type}` : "Buy"}</div>
           <PriceText symbol={symbol} value={pending && price ? parseFloat(price) || q.ask : q.ask} dir={pending ? 0 : q.dir} className="justify-end text-[16px] [&_span]:!text-white" />
         </button>
@@ -443,7 +446,7 @@ function GuestTicket({ symbol }: { symbol: string }) {
           <Lock className="size-3.5" />
         </div>
         <div className="text-[12.5px] font-semibold text-fg">{GUEST_TITLE}</div>
-        <p className="mt-1 text-[11.5px] leading-relaxed text-fg-3">Create your Kalks account to be first. Market, limit and stop orders, SL/TP and one-click trading unlock here when accounts open.</p>
+        <p className="mt-1 text-[11.5px] leading-relaxed text-fg-3">Market, limit and stop orders, SL/TP, trailing stops and one-click trading work here once you log in to a trading account.</p>
         <GuestActions className="mt-2.5" />
       </div>
     </div>

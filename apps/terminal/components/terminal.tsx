@@ -4,8 +4,12 @@ import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ACCOUNTS, INSTRUMENTS, priceFeed } from "@kalks/mock";
 import { LogoMark } from "@kalks/ui";
-import { TerminalProvider, guestSession, readSession, useTerminal, writeSession, type Session } from "@/lib/store";
+import { toast } from "@/lib/notify";
+import { TerminalProvider, engineSession, guestSession, readActive, readSession, useTerminal, writeActive, writeSession, type Session } from "@/lib/store";
 import { GUEST_MODE } from "@/lib/guest";
+import { engineApi } from "@/lib/engine/client";
+import type { SessionInfo } from "@/lib/engine/types";
+import { LoginDialog } from "./dialogs/login-dialog";
 import { startMarket } from "@/lib/market";
 import { DesktopTerminal } from "./shell/desktop";
 import { useHotkeys } from "./shell/hotkeys";
@@ -28,7 +32,7 @@ function useIsMobile() {
   return m;
 }
 
-export function Splash({ text = GUEST_MODE ? "Connecting to Kalks market data…" : "Connecting to Kalks-Live01…" }: { text?: string }) {
+export function Splash({ text = GUEST_MODE ? "Connecting to Kalks…" : "Connecting to Kalks-Live01…" }: { text?: string }) {
   return (
     <div className="grid h-dvh place-items-center bg-page">
       <div className="flex flex-col items-center gap-3">
@@ -48,21 +52,69 @@ export function Splash({ text = GUEST_MODE ? "Connecting to Kalks market data…
 }
 
 /**
- * Entry: SSO via `?account=` (from the Client Area), else a saved session, else /login.
- * Live builds have no trading accounts yet: every entry (with or without `?account=`) opens guest mode.
+ * Live builds pick the session from the trading engine: `?sso=<token>` (Client Area Trade button) is
+ * redeemed by the BFF first; then every login this browser holds (HttpOnly cookie) is listed and the
+ * active one is `?account=`, else the last one shown, else the newest. No login → guest chart mode.
+ */
+async function liveEntry(sp: URLSearchParams): Promise<{ session: Session; sessions: SessionInfo[] }> {
+  const sso = sp.get("sso");
+  let prefer = sp.get("account");
+  let via: Session["via"] = "login";
+  if (sso) {
+    // drop the one-time token from the address bar (and history) before anything else
+    window.history.replaceState(null, "", "/");
+    const r = await engineApi.sso(sso);
+    if (r.ok) {
+      prefer = r.data.login;
+      via = "sso";
+    } else toast.error("Sign-in link not accepted", { description: r.err.message });
+  }
+  const list = await engineApi.sessions();
+  const sessions = list.ok ? list.data.sessions : [];
+  if (!list.ok) toast.error("Trade server unavailable", { description: "Showing charts only. Your trading session will reconnect when you reload." });
+  const pick = sessions.find((x) => x.login === prefer) ?? sessions.find((x) => x.login === readActive()) ?? sessions[0];
+  if (!pick) {
+    if (prefer && !sso) window.location.replace(`/login?login=${encodeURIComponent(prefer)}`);
+    return { session: guestSession(), sessions: [] };
+  }
+  writeActive(pick.login);
+  return { session: engineSession(pick, via), sessions };
+}
+
+/**
+ * Entry. Live builds: see liveEntry(). Demo builds: SSO via `?account=` (from the Client Area), else a
+ * saved session, else /login.
  * `?symbol=` opens that symbol in the active chart; `?side=buy|sell` opens a prefilled order.
  */
 export function Terminal() {
   const sp = useSearchParams();
   const router = useRouter();
   const [session, setSession] = React.useState<Session | null>(null);
+  const [sessions, setSessions] = React.useState<SessionInfo[]>([]);
   const [intent] = React.useState(() => ({ symbol: sp.get("symbol")?.toUpperCase() ?? null, side: sp.get("side") }));
 
   React.useEffect(() => {
     const acc = sp.get("account");
     let s: Session | null = null;
-    if (GUEST_MODE) s = guestSession();
-    else if (acc) {
+    if (GUEST_MODE) {
+      let alive = true;
+      const feed = priceFeed();
+      feed.markHydrated();
+      void liveEntry(new URLSearchParams(sp.toString())).then(async (r) => {
+        if (!alive) return;
+        if (window.location.search) window.history.replaceState(null, "", "/");
+        const g = r.sessions.find((x) => x.login === r.session.login)?.account?.spreadGroup;
+        if (g) feed.setGroup(g); // quotes carry the account group's spread (what the engine fills at)
+        await feed.ready;
+        if (!alive) return;
+        startMarket();
+        setSessions(r.sessions);
+        setSession(r.session);
+      });
+      return () => {
+        alive = false;
+      };
+    } else if (acc) {
       const a = ACCOUNTS.find((x) => x.login === acc);
       if (!a) {
         router.replace(`/login?error=unknown&login=${encodeURIComponent(acc)}`);
@@ -97,7 +149,7 @@ export function Terminal() {
 
   if (!session) return <Splash />;
   return (
-    <TerminalProvider initialSession={session} onLogout={() => router.replace(GUEST_MODE ? "/login" : "/login?logout=1")}>
+    <TerminalProvider initialSession={session} engineSessions={sessions} onLogout={(to) => (GUEST_MODE ? window.location.replace(to ?? "/login?logout=1") : router.replace("/login?logout=1"))}>
       <Shell intent={intent} />
     </TerminalProvider>
   );
@@ -125,6 +177,7 @@ function Shell({ intent }: { intent: { symbol: string | null; side: string | nul
       <AboutDialog />
       <IndicatorDialogs />
       <ShareLayer />
+      {T.live && <LoginDialog />}
     </>
   );
 }

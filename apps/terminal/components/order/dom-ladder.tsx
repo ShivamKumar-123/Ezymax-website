@@ -14,9 +14,13 @@ function levelSize(symbol: string, px: number, t: number, i: number) {
   return +(0.3 + base * 8 + (i < 2 ? 2.5 : 0)).toFixed(2);
 }
 
-/** Synthetic depth-of-market ladder with click-to-trade (limit at the clicked level). */
+/**
+ * Depth-of-market ladder with click-to-trade (limit at the clicked level). Demo builds show synthetic
+ * volumes; live builds have no depth feed, so the ladder is prices + one-click orders only.
+ */
 export function DomLadder({ symbol }: { symbol: string }) {
   const T = useTerminal();
+  const synth = !T.live;
   const q = useQuote(symbol);
   const marketOpen = useMarketOpen(symbol);
   const inst = getInstrument(symbol);
@@ -63,7 +67,7 @@ export function DomLadder({ symbol }: { symbol: string }) {
           title={side === "bid" ? `Buy limit ${fmtVol(v)} at ${key}` : undefined}
           className={cn("relative h-full pr-2 text-right", side === "bid" ? "hover:bg-up/15" : "cursor-default")}
         >
-          {side === "bid" && (
+          {side === "bid" && synth && (
             <>
               <span className="absolute inset-y-[3px] right-0 rounded-l-[2px] bg-up/15 transition-[width] duration-300" style={{ width: `${(size / max) * 100}%` }} />
               <span className="k-num relative text-fg-2">{size.toFixed(2)}</span>
@@ -81,7 +85,7 @@ export function DomLadder({ symbol }: { symbol: string }) {
           title={side === "ask" ? `Sell limit ${fmtVol(v)} at ${key}` : undefined}
           className={cn("relative h-full pl-2 text-left", side === "ask" ? "hover:bg-down/15" : "cursor-default")}
         >
-          {side === "ask" && (
+          {side === "ask" && synth && (
             <>
               <span className="absolute inset-y-[3px] left-0 rounded-r-[2px] bg-down/15 transition-[width] duration-300" style={{ width: `${(size / max) * 100}%` }} />
               <span className="k-num relative text-fg-2">{size.toFixed(2)}</span>
@@ -95,9 +99,9 @@ export function DomLadder({ symbol }: { symbol: string }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="grid h-6 shrink-0 grid-cols-[1fr_88px_1fr] items-center border-b border-line bg-panel-2 text-[9.5px] font-medium uppercase tracking-[0.06em] text-fg-3">
-        <span className="pr-2 text-right">Bid vol</span>
+        <span className="pr-2 text-right">{synth ? "Bid vol" : "Buy limit"}</span>
         <span className="text-center">Price</span>
-        <span className="pl-2">Ask vol</span>
+        <span className="pl-2">{synth ? "Ask vol" : "Sell limit"}</span>
       </div>
       <div className="t-scroll min-h-0 flex-1 overflow-y-auto py-0.5">
         {asks.map((a, i) => (
@@ -113,7 +117,7 @@ export function DomLadder({ symbol }: { symbol: string }) {
         ))}
       </div>
       <div className="shrink-0 space-y-2 border-t border-line p-2">
-        <div>
+        {synth && <div>
           <div className="mb-1 flex justify-between text-[10px]">
             <span className="k-num text-up">Bids {bidPct.toFixed(0)}%</span>
             <span className="text-fg-3">Synthetic depth · lots</span>
@@ -123,7 +127,7 @@ export function DomLadder({ symbol }: { symbol: string }) {
             <span className="h-full bg-up transition-[width] duration-300" style={{ width: `${bidPct}%` }} />
             <span className="h-full flex-1 bg-down" />
           </div>
-        </div>
+        </div>}
         {!T.readOnly && (
           <div className="grid grid-cols-[1fr_84px_1fr] gap-1.5">
             <button onClick={() => trade("sell", q.bid, true)} disabled={!marketOpen} title={marketOpen ? undefined : "Market closed"} aria-label="DOM sell market" className="h-7 rounded-[6px] bg-down text-[11.5px] font-semibold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100">

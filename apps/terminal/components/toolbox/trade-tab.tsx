@@ -5,8 +5,8 @@ import { toast } from "@/lib/notify";
 import { ArrowLeftRight, Edit3, Layers, Scissors, Share2, X, XCircle } from "lucide-react";
 import { getInstrument } from "@kalks/mock";
 import { SymbolAvatar, cn, useQuote } from "@kalks/ui";
-import { useMetrics, useTerminal } from "@/lib/store";
-import { PENDING_LABEL, SOURCE_LABEL, accCcy, accMoney, fmtPrice, fmtServer, fmtVol, profitUsd, type PendingOrder, type TPosition } from "@/lib/trading";
+import { useMetrics, usePositionProfit, useTerminal } from "@/lib/store";
+import { PENDING_LABEL, SOURCE_LABEL, accCcy, accMoney, fmtPrice, fmtServer, fmtVol, type PendingOrder, type TPosition } from "@/lib/trading";
 import { Td, Th } from "@/components/ui/panel";
 import { Pnl, LiveMoney } from "@/components/ui/primitives";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
@@ -171,7 +171,7 @@ const PositionRow = React.memo(function PositionRow({ p, picking, selected, onSe
   const q = useQuote(p.symbol);
   const a = T.account;
   const cur = p.side === "buy" ? q.bid : q.ask;
-  const pr = profitUsd(p, q.bid, q.ask);
+  const pr = usePositionProfit(p);
   const digits = getInstrument(p.symbol).digits;
   return (
     <tr onClick={picking ? () => shareUi.toggle(p.ticket) : onSelect} onDoubleClick={onOpen} onContextMenu={onContext} className={cn("group cursor-default", selected ? "bg-ember-soft/50" : "hover:bg-surface-2/70")}>

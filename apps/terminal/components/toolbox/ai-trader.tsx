@@ -68,7 +68,7 @@ export function AiTraderTab() {
         </div>
         <div className="t-scroll min-h-0 flex-1 overflow-auto">
           {ai.records.length === 0 ? (
-            <Empty icon={<Bot />} title="No AI strategies yet" sub={T.guest ? "Describe entry and exit conditions on the left. The AI turns them into a strategy card you can review now and activate once trading accounts open." : "Describe entry and exit conditions on the left. The AI turns them into a strategy card you review and activate."} />
+            <Empty icon={<Bot />} title="No AI strategies yet" sub={T.guest ? "Describe entry and exit conditions on the left. The AI turns them into a strategy card you can review now and activate once you log in to a trading account." : "Describe entry and exit conditions on the left. The AI turns them into a strategy card you review and activate."} />
           ) : (
             <table className="w-full min-w-[640px] border-separate border-spacing-0">
               <thead>
@@ -110,9 +110,9 @@ export function AiTraderTab() {
             </TButton>
             <TButton
               variant="sell"
-              onClick={() => {
-                const r = aiTrader.killAll();
+              onClick={async () => {
                 setKillOpen(false);
+                const r = await aiTrader.killAll();
                 const desc = `${r.strategies} strateg${r.strategies === 1 ? "y" : "ies"} stopped · ${r.positions} AI position${r.positions === 1 ? "" : "s"} closed`;
                 if (r.blocked) toast.warning("AI trading stopped", { description: `${desc} · ${r.blocked} left open, market closed (see Journal)` });
                 else toast.success("AI trading stopped", { description: desc });
@@ -229,7 +229,7 @@ function Composer({ onCreated }: { onCreated: (id: string) => void }) {
             {busy ? "Converting…" : "Build strategy"}
           </TButton>
         </div>
-        <div className="text-[10.5px] leading-[14px] text-fg-3">{T.guest ? `Preview: build and review strategy cards on live market data. ${GUEST_TITLE}; activation unlocks then.` : "Nothing trades until you review the card and activate it. First activation runs in Paper mode (signals only)."}</div>
+        <div className="text-[10.5px] leading-[14px] text-fg-3">{T.guest ? `Preview: build and review strategy cards on live market data. ${GUEST_TITLE} to activate them.` : "Nothing trades until you review the card and activate it. First activation runs in Paper mode (signals only)."}</div>
       </div>
     </div>
   );

@@ -1,85 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { tradePips } from "./share-stats";
-import { type PendingOrder, type TClosed, type TPosition, type TradeSource } from "./trading";
+import { type PendingOrder, type TClosed, type TPosition } from "./trading";
 
-/* ------------------------------------------------------------------ */
-/* Snapshot rows (same shape the gateway validates)                    */
-/* ------------------------------------------------------------------ */
-
-export type ShareStatus = "open" | "closed" | "pending" | "cancelled";
-
-export interface ShareTrade {
-  ticket: string;
-  order?: string;
-  symbol: string;
-  side: "buy" | "sell";
-  volume: number;
-  openPrice: number;
-  openTime: string;
-  sl?: number;
-  tp?: number;
-  closePrice?: number;
-  closeTime?: string;
-  profit?: number;
-  pips?: number;
-  status: ShareStatus;
-  source: TradeSource;
-  orderType?: "market" | "limit" | "stop" | "stop-limit";
-  reason?: string;
-}
-
-/** Public payload of GET /v1/public/shares/:code. */
-export interface PublicShare {
-  code: string;
-  title: string;
-  alias: string;
-  account: string | null;
-  broker: string;
-  show_amounts: boolean;
-  views: number;
-  created_at: string;
-  updated_at: string;
-  expires_at: string | null;
-  trades: ShareTrade[];
-}
-
-export const MAX_SHARE_TRADES = 100;
-
-const pipsOf = tradePips;
-
-const r2 = (v: number) => Math.round(v * 100) / 100;
-const iso = (s: string) => new Date(s).toISOString();
-
-export function closedRow(h: TClosed): ShareTrade {
-  return {
-    ticket: h.ticket,
-    symbol: h.symbol,
-    side: h.side,
-    volume: h.volume,
-    openPrice: h.openPrice,
-    openTime: iso(h.openTime),
-    sl: h.sl,
-    tp: h.tp,
-    closePrice: h.closePrice,
-    closeTime: iso(h.closeTime),
-    profit: r2(h.profit),
-    pips: r2(pipsOf(h, h.closePrice)),
-    status: "closed",
-    source: h.source,
-    reason: h.reason && /^[\w -]{1,20}$/.test(h.reason) ? h.reason : undefined,
-  };
-}
-
-/** Open rows carry no P&L: viewers compute it live from the feed, so the snapshot only changes on real events. */
-export function openRow(p: TPosition, order?: string): ShareTrade {
-  return { ticket: p.ticket, order, symbol: p.symbol, side: p.side, volume: p.volume, openPrice: p.openPrice, openTime: iso(p.openTime), sl: p.sl, tp: p.tp, status: "open", source: p.source, orderType: "market" };
-}
-
-export function pendingRow(o: PendingOrder): ShareTrade {
-  return { ticket: o.ticket, symbol: o.symbol, side: o.side, volume: o.volume, openPrice: o.price, openTime: iso(o.placed), sl: o.sl, tp: o.tp, status: "pending", source: o.source, orderType: o.type };
-}
+export * from "./share-rows";
+import { MAX_SHARE_TRADES, closedRow, openRow, pendingRow, type ShareTrade } from "./share-rows";
 
 export interface TradeBook {
   positions: TPosition[];
@@ -231,7 +156,7 @@ export function useShareUi() {
 type ApiErr = { error?: { code?: string; message?: string; field?: string } };
 
 async function call<T>(path: string, init: RequestInit & { key?: string } = {}): Promise<{ ok: boolean; status: number; data: T & ApiErr }> {
-  const headers: Record<string, string> = { "content-type": "application/json" };
+  const headers: Record<string, string> = { "content-type": "application/json", ...(init.headers as Record<string, string> | undefined) };
   if (init.key) headers["x-share-key"] = init.key;
   try {
     const res = await fetch(path, { ...init, headers, cache: "no-store" });
@@ -245,7 +170,8 @@ async function call<T>(path: string, init: RequestInit & { key?: string } = {}):
 export const shareApi = {
   create: (body: { login: string; title: string; accountLabel?: string; showAmounts: boolean; expiresInHours: number | null; trades: ShareTrade[] }) =>
     call<{ code: string; key: string; created_at: string; expires_at: string | null }>("/api/shares", { method: "POST", body: JSON.stringify(body) }),
-  update: (code: string, key: string, trades: ShareTrade[]) => call<{ status: string }>(`/api/shares/${code}/trades`, { method: "PATCH", key, body: JSON.stringify({ trades }) }),
+  update: (code: string, key: string, trades: ShareTrade[], login?: string) =>
+    call<{ status: string }>(`/api/shares/${code}/trades`, { method: "PATCH", key, body: JSON.stringify({ trades }), headers: login ? { "x-kalks-login": login } : undefined }),
   revoke: (code: string, key: string) => call<{ status: string }>(`/api/shares/${code}/revoke`, { method: "POST", key }),
   lookup: (items: { code: string; key: string }[]) =>
     call<{ items: { code: string; title: string; views: number; revoked: boolean; expired: boolean; trades: number; expires_at: string | null }[] }>("/api/shares/lookup", {
@@ -276,7 +202,7 @@ export function useShareSync(login: string, book: TradeBook) {
         const sig = snapshotSig(rows);
         if (sig === l.sig || !rows.length || inflight.current.has(l.code)) continue;
         inflight.current.add(l.code);
-        void shareApi.update(l.code, l.key, rows).then((r) => {
+        void shareApi.update(l.code, l.key, rows, l.login).then((r) => {
           inflight.current.delete(l.code);
           if (r.ok) shareLinks.patch(l.code, { last: rows, sig, fills });
           else if (r.status === 404) shareLinks.patch(l.code, { status: "revoked" });

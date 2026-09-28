@@ -16,6 +16,7 @@ import { IndicatorLegendRow } from "./indicators/legend";
 import { addIndicator, openIndicatorList, openIndicatorSettings, removeIndicator, toggleIndicator } from "./indicators/state";
 import { useMarketOpen } from "@/lib/market-hours";
 import { GUEST_TITLE, openRegister } from "@/lib/guest";
+import { liveStore } from "@/lib/engine/live";
 
 /* ------------------------------------------------------------------ */
 /* Trade lines                                                         */
@@ -156,6 +157,14 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
   const [drag, setDrag] = React.useState<{ id: string; price: number } | null>(null);
   const dragRef = React.useRef(drag);
   dragRef.current = drag;
+  // a dropped SL / TP / pending line stays where it was dropped until the trade server has answered
+  const [hold, setHold] = React.useState<{ id: string; price: number } | null>(null);
+  const holdRef = React.useRef(hold);
+  holdRef.current = hold;
+  const settle = (id: string, price: number, p: Promise<boolean>) => {
+    setHold({ id, price });
+    void p.finally(() => setHold((h) => (h?.id === id && h.price === price ? null : h)));
+  };
   const priceLines = React.useRef<{ owner: unknown; map: Map<string, IPriceLine> }>({ owner: null, map: new Map() });
 
   // sync price lines (axis labels + lines drawn by the chart)
@@ -179,13 +188,13 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
       }
     }
     for (const [id, w] of want) {
-      const price = dragRef.current?.id === id ? dragRef.current.price : w.price;
+      const price = dragRef.current?.id === id ? dragRef.current.price : holdRef.current?.id === id ? holdRef.current.price : w.price;
       const opts = { price, color: w.color, lineWidth: w.width, lineStyle: w.style, axisLabelVisible: true, title: w.title, axisLabelColor: w.color, axisLabelTextColor: id.startsWith("hl:") ? (c.dark ? "#0a0a0d" : "#fff") : "#fff" };
       const ex = map.get(id);
       if (ex) ex.applyOptions(opts);
       else map.set(id, engine.main.createPriceLine(opts));
     }
-  }, [engine, lines, tab.drawings, T.selectedDrawing, drag]);
+  }, [engine, lines, tab.drawings, T.selectedDrawing, drag, hold]);
 
   /* ---------------- geometry loop for HTML overlays ---------------- */
   const [geo, setGeo] = React.useState<{ ys: Record<string, number | null>; psw: number; w: number; h: number; dr: Record<string, number[] | null>; pt: number[] }>({ ys: {}, psw: 68, w: 0, h: 0, dr: {}, pt: [] });
@@ -204,7 +213,8 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
       if (!engine.alive.current) return;
       const ys: Record<string, number | null> = {};
       const d = dragRef.current;
-      for (const l of linesRef.current) ys[l.id] = engine.main.priceToCoordinate(d?.id === l.id ? d.price : l.price);
+      const hd = holdRef.current;
+      for (const l of linesRef.current) ys[l.id] = engine.main.priceToCoordinate(d?.id === l.id ? d.price : hd?.id === l.id ? hd.price : l.price);
       const ts = engine.chart.timeScale();
       const dr: Record<string, number[] | null> = {};
       const all: (Drawing | { id: string; kind: "trend" | "rect" | "fib"; a: Anchor; b: Anchor })[] = [...drawingsRef.current];
@@ -318,9 +328,9 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
     const l = linesRef.current.find((x) => x.id === id);
     if (!l) return;
     if (Math.abs(price - l.price) < 1 / 10 ** inst.digits) return;
-    if (kind === "sl") T.modifyPosition(ref, { sl: price });
-    else if (kind === "tp") T.modifyPosition(ref, { tp: price });
-    else if (kind === "pnd") T.modifyPending(ref, { price });
+    if (kind === "sl") settle(id, price, T.modifyPosition(ref, { sl: price }));
+    else if (kind === "tp") settle(id, price, T.modifyPosition(ref, { tp: price }));
+    else if (kind === "pnd") settle(id, price, T.modifyPending(ref, { price }));
     else if (kind === "alr") T.updateAlert(ref, { price });
     else if (kind === "pos") {
       const p = T.positions.find((x) => x.ticket === ref);
@@ -563,13 +573,13 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
           const y = geo.ys[l.id];
           if (y == null || y < 4 || y > geo.h - 4) return null;
           const isDrag = drag?.id === l.id;
-          const price = isDrag ? drag.price : l.price;
+          const price = isDrag ? drag.price : hold?.id === l.id ? hold.price : l.price;
           let pnlText = "";
           let pnl = 0;
           if (l.kind === "pos") {
             const p = T.positions.find((x) => x.ticket === l.ref);
             if (p) {
-              pnl = profitUsd(p, q.bid, q.ask);
+              pnl = T.engine ? (liveStore.equity(p.login)?.positions.get(p.ticket)?.profit ?? (p as { profit?: number }).profit ?? 0) : profitUsd(p, q.bid, q.ask);
               pnlText = `${accMoney(acc, pnl, { signed: true })}`;
             }
           } else if (l.kind === "sl" || l.kind === "tp") {

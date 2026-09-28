@@ -6,9 +6,9 @@ import { toast } from "@/lib/notify";
 import { ArrowUpRight, BarChart2, CandlestickChart, History, List, LogOut, Moon, RefreshCw, Search, Sun, UserRound, Wallet, X, Zap } from "lucide-react";
 import { INSTRUMENTS, getInstrument } from "@kalks/mock";
 import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
-import { useMetrics, useTerminal } from "@/lib/store";
+import { useMetrics, usePositionProfit, useTerminal } from "@/lib/store";
 import { useMarketOpen } from "@/lib/market-hours";
-import { PENDING_LABEL, TIMEFRAMES, accCcy, accMoney, fmtPrice, fmtServer, fmtVol, profitUsd } from "@/lib/trading";
+import { PENDING_LABEL, TIMEFRAMES, accCcy, accMoney, fmtPrice, fmtServer, fmtVol } from "@/lib/trading";
 import { Badge, LiveMoney, MiniSwitch, Pnl, Stepper } from "@/components/ui/primitives";
 import { ChartView } from "@/components/chart/chart-view";
 import { CLIENT_AREA } from "@/components/shell/title-bar";
@@ -83,7 +83,7 @@ export function MobileTerminal() {
         {tab === "watch" && <MWatch onPick={() => setTab("chart")} />}
         {tab === "chart" && <MChart />}
         {tab === "trade" && (T.guest ? <GuestNotice icon={<BarChart2 />} text="Positions, orders, balance and margin appear here once you trade from a Kalks account. Charts and quotes work now." /> : <MTrade />)}
-        {tab === "history" && (T.guest ? <GuestNotice icon={<History />} text="Your closed trades will be listed here once your trading account is live." /> : <MHistory />)}
+        {tab === "history" && (T.guest ? <GuestNotice icon={<History />} text="Your closed trades are listed here once you log in to a trading account." /> : <MHistory />)}
         {tab === "account" && (T.guest ? <MGuestAccount /> : <MAccount />)}
       </main>
       <nav className="grid h-[58px] shrink-0 grid-cols-5 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)]">
@@ -258,7 +258,7 @@ function MPosition({ ticket }: { ticket: string }) {
   const T = useTerminal();
   const p = T.positions.find((x) => x.ticket === ticket)!;
   const q = useQuote(p.symbol);
-  const pr = profitUsd(p, q.bid, q.ask);
+  const pr = usePositionProfit(p);
   return (
     <div className="flex items-center gap-2.5 border-b border-line/60 px-3 py-2" onClick={() => !T.readOnly && T.setUi({ positionDialog: p.ticket })}>
       <SymbolAvatar symbol={p.symbol} size={20} />
@@ -349,7 +349,7 @@ function MGuestAccount() {
       <div className="rounded-[8px] border border-line bg-panel px-4 py-4 text-center">
         <Badge>Guest</Badge>
         <div className="mt-2 text-[13.5px] font-semibold">{GUEST_TITLE}</div>
-        <p className="mt-1 text-[12px] leading-relaxed text-fg-3">Create your Kalks account to be first. Charts, indicators, drawings and alerts run on live Kalks market data now.</p>
+        <p className="mt-1 text-[12px] leading-relaxed text-fg-3">Log in to a trading account to trade. Charts, indicators, drawings and alerts run on live Kalks market data now.</p>
         <GuestActions size="md" className="mt-3" />
       </div>
       <div className="overflow-hidden rounded-[8px] border border-line bg-panel">

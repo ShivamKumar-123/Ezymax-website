@@ -4,7 +4,7 @@ import * as React from "react";
 import { ArrowLeftRight, Edit3, Scissors, X } from "lucide-react";
 import { getInstrument } from "@kalks/mock";
 import { PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
-import { useTerminal } from "@/lib/store";
+import { usePositionProfit, useTerminal } from "@/lib/store";
 import { PENDING_LABEL, accCcy, accMoney, fmtPrice, fmtServer, fmtVol, pipSize, profitAt, profitUsd } from "@/lib/trading";
 import { Badge, Pnl, Stepper, TButton, TDialog, TSelect } from "@/components/ui/primitives";
 import { TickSpark } from "@/components/order/right-panel";
@@ -37,7 +37,7 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
   const initialTrail = p.trailing ? String(Math.round(p.trailing / pip)) : "none";
   const [trail, setTrail] = React.useState<string>(TRAIL_OPTIONS.includes(initialTrail as never) ? initialTrail : "custom");
   const [trailCustom, setTrailCustom] = React.useState(p.trailing ? String(Math.round(p.trailing / pip)) : "25");
-  const pr = profitUsd(p, q.bid, q.ask);
+  const pr = usePositionProfit(p);
   const cur = p.side === "buy" ? q.bid : q.ask;
   const v = Math.min(p.volume, Math.max(0.01, parseFloat(vol) || 0));
   const partial = v < p.volume - 1e-9;
@@ -51,8 +51,8 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
 
   const pipsFrom = (price: number) => ((p.side === "buy" ? price - p.openPrice : p.openPrice - price) / pip).toFixed(1);
 
-  const modify = () => {
-    const ok = T.modifyPosition(p.ticket, { sl: sl ? slN : null, tp: tp ? tpN : null, trailing: trailPips ? trailPips * pip : null });
+  const modify = async () => {
+    const ok = await T.modifyPosition(p.ticket, { sl: sl ? slN : null, tp: tp ? tpN : null, trailing: trailPips ? trailPips * pip : null });
     if (ok) onClose();
   };
   const nudge = (which: "sl" | "tp", pips: number) => {
@@ -262,7 +262,7 @@ function PendingBody({ ticket, onClose }: { ticket: string; onClose: () => void 
           <TButton variant="ghost" onClick={onClose}>
             Cancel
           </TButton>
-          <TButton variant="ember" onClick={() => T.modifyPending(o.ticket, { price: parseFloat(price), sl: sl ? parseFloat(sl) : null, tp: tp ? parseFloat(tp) : null }) && onClose()}>
+          <TButton variant="ember" onClick={() => void T.modifyPending(o.ticket, { price: parseFloat(price), sl: sl ? parseFloat(sl) : null, tp: tp ? parseFloat(tp) : null }).then((ok) => ok && onClose())}>
             Modify
           </TButton>
         </>

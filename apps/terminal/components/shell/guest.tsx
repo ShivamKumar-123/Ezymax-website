@@ -4,20 +4,20 @@ import * as React from "react";
 import { ArrowUpRight, ChevronDown, Keyboard, Lock, LogIn, UserPlus, UserRound } from "lucide-react";
 import { cn } from "@kalks/ui";
 import { useTerminal } from "@/lib/store";
-import { CLIENT_AREA, GUEST_TITLE, REGISTER_URL, SIGNIN_URL } from "@/lib/guest";
+import { CLIENT_AREA, GUEST_TITLE, LOGIN_URL, REGISTER_URL } from "@/lib/guest";
 import { DropMenu } from "@/components/ui/menu";
 import { Badge } from "@/components/ui/primitives";
 
-/** Open account / Sign in pair, used by every guest notice. */
+/** Log in / Open account pair, used by every guest notice. */
 export function GuestActions({ size = "sm", className }: { size?: "sm" | "md"; className?: string }) {
   const h = size === "md" ? "h-9 px-3.5 text-[13px]" : "h-7 px-2.5 text-[12px]";
   return (
     <div className={cn("flex flex-wrap items-center justify-center gap-1.5", className)}>
-      <a href={REGISTER_URL} target="_blank" rel="noreferrer" className={cn("inline-flex items-center gap-1.5 rounded-[7px] bg-ember font-semibold text-white transition hover:brightness-110 [&_svg]:size-3.5", h)}>
-        <UserPlus /> Open account
+      <a href={LOGIN_URL} className={cn("inline-flex items-center gap-1.5 rounded-[7px] bg-ember font-semibold text-white transition hover:brightness-110 [&_svg]:size-3.5", h)}>
+        <LogIn /> Log in
       </a>
-      <a href={SIGNIN_URL} target="_blank" rel="noreferrer" className={cn("inline-flex items-center gap-1.5 rounded-[7px] border border-line font-medium text-fg-2 transition-colors hover:border-fg-3/50 hover:text-fg [&_svg]:size-3.5", h)}>
-        <LogIn /> Sign in
+      <a href={REGISTER_URL} target="_blank" rel="noreferrer" className={cn("inline-flex items-center gap-1.5 rounded-[7px] border border-line font-medium text-fg-2 transition-colors hover:border-fg-3/50 hover:text-fg [&_svg]:size-3.5", h)}>
+        <UserPlus /> Open account
       </a>
     </div>
   );
@@ -65,7 +65,7 @@ function GuestCard() {
       <div className="border-b border-line px-3 py-2 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">Guest · charts and quotes</div>
       <div className="space-y-2 px-3 py-3">
         <div className="text-[12.5px] font-medium text-fg">{GUEST_TITLE}</div>
-        <p className="text-[11.5px] leading-relaxed text-fg-3">Charts, indicators, drawings, alerts and symbol specs run on live Kalks market data. Create your Kalks account to be first when trading opens.</p>
+        <p className="text-[11.5px] leading-relaxed text-fg-3">Charts, indicators, drawings, alerts and symbol specs run on live Kalks market data. Log in with your trading account to trade, or open one in the Client Area.</p>
         <GuestActions className="justify-start pt-1" />
       </div>
       <div className="flex items-center justify-end border-t border-line px-3 py-2 text-[11.5px]">
@@ -86,8 +86,8 @@ export function GuestUserMenu() {
       width={220}
       items={[
         { header: "Guest" },
+        { label: "Log in to trade account", icon: <LogIn />, onSelect: () => window.location.assign(LOGIN_URL) },
         { label: "Open account", icon: <UserPlus />, onSelect: () => window.open(REGISTER_URL, "_blank", "noopener") },
-        { label: "Sign in", icon: <LogIn />, onSelect: () => window.open(SIGNIN_URL, "_blank", "noopener") },
         "sep",
         { label: "Keyboard shortcuts", icon: <Keyboard />, hint: "F1", onSelect: () => T.setUi({ shortcuts: true }) },
       ]}

@@ -182,12 +182,17 @@ export function HistoryTab() {
                   <span>
                     <span className="font-sans text-fg-3">Credit:</span> {accMoney(a, a.cent ? a.credit / 100 : a.credit)}
                   </span>
-                  <span>
-                    <span className="font-sans text-fg-3">Deposit:</span> {accMoney(a, a.cent ? a.balance / 100 : a.balance)}
-                  </span>
-                  <span>
-                    <span className="font-sans text-fg-3">Withdrawal:</span> 0.00
-                  </span>
+                  {/* deposits / withdrawals live in the Client Area ledger; the engine history here is trades only */}
+                  {!T.engine && (
+                    <>
+                      <span>
+                        <span className="font-sans text-fg-3">Deposit:</span> {accMoney(a, a.cent ? a.balance / 100 : a.balance)}
+                      </span>
+                      <span>
+                        <span className="font-sans text-fg-3">Withdrawal:</span> 0.00
+                      </span>
+                    </>
+                  )}
                   <span>
                     <span className="font-sans text-fg-3">Balance:</span> <span className="text-fg">{accMoney(a, T.balances[a.login] ?? 0)} {accCcy(a)}</span>
                   </span>

@@ -8,7 +8,8 @@ import { Pnl } from "@/components/ui/primitives";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { useQps } from "@/lib/market";
 import { accCcy, accMoney, serverTime } from "@/lib/trading";
-import { GUEST_TEXT, openRegister } from "@/lib/guest";
+import { GUEST_TEXT, LOGIN_URL } from "@/lib/guest";
+import { useStreamStatus } from "@/lib/engine/live";
 
 function useTicker(ms: number) {
   const [n, setN] = React.useState(0);
@@ -51,13 +52,14 @@ export function StatusBar() {
       <Cell title="Quotes per second">
         <span className="k-num w-[46px] text-fg-2">{qps} q/s</span>
       </Cell>
+      {T.engine && <TradeServerCell />}
       {T.guest ? (
         <Cell title={GUEST_TEXT}>
           <span className="font-sans text-fg-2">Guest</span>
           <span className="font-sans">· no trading account ·</span>
-          <button onClick={openRegister} className="font-sans text-ember hover:underline">
-            Open account
-          </button>
+          <a href={LOGIN_URL} className="font-sans text-ember hover:underline">
+            Log in
+          </a>
         </Cell>
       ) : (
         <>
@@ -87,7 +89,7 @@ export function StatusBar() {
           </span>
           <span>GMT+3</span>
         </Cell>
-        {!T.guest && (
+        {!T.live && (
         <Cell title="Terminal load">
           <Cpu className="size-3" />
           <span className="flex h-2 w-12 items-end gap-px">
@@ -103,6 +105,20 @@ export function StatusBar() {
         </button>
       </div>
     </footer>
+  );
+}
+
+/** Live builds: the account stream to the trading engine (positions, orders, equity). */
+function TradeServerCell() {
+  const T = useTerminal();
+  const st = useStreamStatus();
+  const up = st.s === "open";
+  const text = up ? "Trade server" : st.s === "reconnecting" ? `Reconnecting${st.attempt > 1 ? ` (${st.attempt})` : ""}` : st.s === "connecting" ? "Connecting" : "Trade server offline";
+  return (
+    <Cell title={up ? `Account stream connected · ${T.account.login} on ${T.account.server}` : "Account stream down: orders still work, positions refresh after each request; reconnecting automatically"}>
+      <span className={cn("size-1.5 rounded-full", up ? "bg-up" : "bg-warn")} />
+      <span className={cn("font-sans", up ? "text-fg-2" : "text-warn")}>{text}</span>
+    </Cell>
   );
 }
 

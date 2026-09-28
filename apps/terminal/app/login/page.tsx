@@ -3,14 +3,15 @@
 import * as React from "react";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, ArrowUpRight, CandlestickChart, Eye, EyeOff, KeyRound, Loader2, Lock, LogIn, Server, ShieldCheck, Trash2, UserPlus, UserRound } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CandlestickChart, Eye, EyeOff, KeyRound, Loader2, Lock, Server, ShieldCheck, Trash2, UserPlus, UserRound } from "lucide-react";
 import { toast } from "@/lib/notify";
 import { ACCOUNTS, INSTRUMENTS, ME } from "@kalks/mock";
 import { LivePrice, LogoMark, SymbolAvatar, ThemeToggle, cn, useQuote } from "@kalks/ui";
-import { SAVED_KEY, writeSession } from "@/lib/store";
+import { SAVED_KEY, writeActive, writeSession } from "@/lib/store";
 import { SERVERS } from "@/lib/trading";
 import { Badge, Check } from "@/components/ui/primitives";
-import { GUEST_MODE, GUEST_TITLE, REGISTER_URL, SIGNIN_URL } from "@/lib/guest";
+import { GUEST_MODE } from "@/lib/guest";
+import { EngineLoginForm, readSavedLogins, writeSavedLogins, type SavedLogin } from "@/components/account/login-form";
 
 interface Saved {
   login: string;
@@ -21,6 +22,7 @@ interface Saved {
 }
 
 const CLIENT_AREA = process.env.NEXT_PUBLIC_CLIENT_AREA_URL ?? "http://localhost:3000";
+const REGISTER_URL = `${CLIENT_AREA}/register`;
 
 function readSaved(): Saved[] {
   try {
@@ -277,43 +279,106 @@ function Ticker({ symbol }: { symbol: string }) {
   );
 }
 
+const LIVE_NOTICE: Record<string, string> = {
+  sso_expired: "That sign-in link has expired or was already used. Open Kalks Trader again from the Client Area, or log in below.",
+  sso_failed: "Signing in from the Client Area failed. Log in below.",
+};
+
 /**
- * Live builds: trading accounts are served by the trading engine, which isn't connected yet. Instead of
- * a login form for accounts that don't exist, explain and offer the Client Area or guest charts.
+ * Live builds: MT5-style login to a trading account (trading-engine session in an HttpOnly cookie).
+ * Without an account the terminal still opens in guest chart mode.
  */
-function AccountsSoon() {
+function LiveLogin() {
   const router = useRouter();
+  const sp = useSearchParams();
+  const [saved, setSaved] = React.useState<SavedLogin[]>([]);
+  const [login, setLogin] = React.useState(sp.get("login") ?? "");
+  React.useEffect(() => setSaved(readSavedLogins()), []);
+  React.useEffect(() => {
+    if (sp.get("logout")) toast("You have been logged out", { description: "Your workspace is kept on this device." });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const notice = sp.get("expired") ? `Your session${sp.get("login") ? ` for ${sp.get("login")}` : ""} has expired. Log in again.` : LIVE_NOTICE[sp.get("error") ?? ""];
   return (
     <div className="relative flex min-h-dvh overflow-y-auto bg-page lg:h-dvh lg:overflow-hidden">
-      <Brand
-        text="Multi-chart layouts, 30 indicators, drawing tools, price alerts and live quotes from the Kalks market-data service. Trading accounts are next."
-      />
+      <Brand text="Multi-chart layouts, one-click execution, server-side SL/TP and trailing stops, depth of market and a full toolbox. Hedging, netting, cent and demo accounts." />
       <main className="relative flex flex-1 flex-col">
         <TopBar />
-        <div className="relative mx-auto flex w-full max-w-[460px] flex-1 flex-col justify-center px-4 pb-10 lg:justify-start lg:pt-[12vh]">
-          <section className="w-full rounded-[12px] border border-line bg-panel shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]" aria-label="Trading accounts">
+        <div className="relative mx-auto flex w-full max-w-[860px] flex-1 flex-col items-center justify-center gap-5 px-4 pb-10 lg:flex-row lg:items-start lg:pt-[8vh]">
+          <section className="w-full max-w-[400px] rounded-[12px] border border-line bg-panel shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]" aria-label="Login to trade account">
             <div className="border-b border-line px-5 py-4">
               <div className="flex items-center gap-2 text-[15px] font-semibold">
-                <Lock className="size-4 text-ember" /> {GUEST_TITLE}
+                <KeyRound className="size-4 text-ember" /> Login to trade account
               </div>
-              <p className="mt-1.5 text-[12.5px] leading-relaxed text-fg-3">Create your Kalks account to be first. Your trading accounts will appear here as soon as they open, and every Trade button in the Client Area will sign you in automatically.</p>
+              <p className="mt-1 text-[12px] text-fg-3">Use the login and password of your trading account. You find them in the Client Area under Accounts.</p>
             </div>
-            <div className="space-y-2.5 px-5 py-4">
-              <a href={REGISTER_URL} className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] bg-ember text-[13.5px] font-semibold text-white shadow-[0_10px_28px_-10px_rgba(255,90,31,0.8)] transition hover:brightness-110">
-                <UserPlus className="size-4" /> Open account
+            <div className="px-5 py-4">
+              {notice && <div className="mb-3.5 rounded-[7px] border border-warn/30 bg-warn-soft px-3 py-2 text-[12px] text-warn">{notice}</div>}
+              <EngineLoginForm
+                initialLogin={login}
+                autoFocus
+                onSuccess={(r) => {
+                  writeActive(r.login);
+                  writeSession(null);
+                  router.replace("/");
+                }}
+                footer={
+                  <div className="flex items-center justify-between text-[11.5px] text-fg-3">
+                    <a href={`${CLIENT_AREA}/accounts`} className="hover:text-fg">
+                      Forgot password?
+                    </a>
+                    <a href={`${CLIENT_AREA}/accounts`} className="flex items-center gap-1 hover:text-fg">
+                      Open an account <ArrowUpRight className="size-3" />
+                    </a>
+                  </div>
+                }
+              />
+            </div>
+          </section>
+
+          <section className="w-full max-w-[400px] rounded-[12px] border border-line bg-panel lg:max-w-[340px]" aria-label="Saved logins">
+            <div className="flex items-center justify-between border-b border-line px-4 py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-2">Saved logins</div>
+              <span className="text-[11px] text-fg-3">this device</span>
+            </div>
+            <div className="p-1.5">
+              {saved.length === 0 && <div className="px-2.5 py-3 text-[12px] text-fg-3">Logins you save appear here. Passwords are never stored.</div>}
+              {saved.map((s) => (
+                <div key={s.login} className={cn("group flex items-center gap-2.5 rounded-[8px] px-2.5 py-2 transition-colors", login === s.login ? "bg-ember-soft/60" : "hover:bg-surface-2")}>
+                  <button type="button" onClick={() => setLogin(s.login)} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
+                    <Badge tone={s.server === "Kalks-Live" ? "ember" : "gold"} className="w-11 justify-center">
+                      {s.server === "Kalks-Live" ? "live" : "demo"}
+                    </Badge>
+                    <span className="min-w-0">
+                      <span className="block font-mono text-[12.5px] text-fg">{s.login}</span>
+                      <span className="block truncate text-[11px] text-fg-3">{s.server}</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Forget ${s.login}`}
+                    onClick={() => {
+                      const next = saved.filter((x) => x.login !== s.login);
+                      setSaved(next);
+                      writeSavedLogins(next);
+                    }}
+                    className="grid size-6 place-items-center rounded-[5px] text-fg-3 opacity-0 hover:bg-surface-3 hover:text-down focus:opacity-100 group-hover:opacity-100"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2.5 border-t border-line px-4 py-3">
+              <p className="text-[11.5px] leading-relaxed text-fg-3">
+                Coming from the Client Area? Every <span className="text-fg-2">Trade</span> button signs you in automatically, no password needed.
+              </p>
+              <a href={REGISTER_URL} className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] border border-line bg-surface-2 text-[12.5px] font-medium text-fg transition-colors hover:bg-surface-3">
+                <UserPlus className="size-4" /> Open an account
               </a>
-              <a href={SIGNIN_URL} className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border border-line bg-surface-2 text-[13.5px] font-medium text-fg transition-colors hover:bg-surface-3">
-                <LogIn className="size-4" /> Sign in to Client Area
-              </a>
-              <div className="flex items-center gap-3 py-1 text-[11px] text-fg-3">
-                <span className="h-px flex-1 bg-line" />
-                or
-                <span className="h-px flex-1 bg-line" />
-              </div>
-              <button type="button" onClick={() => router.replace("/")} className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border border-line text-[13.5px] font-medium text-fg-2 transition-colors hover:border-fg-3/50 hover:text-fg">
-                <CandlestickChart className="size-4" /> Continue to charts <ArrowRight className="size-3.5" />
+              <button type="button" onClick={() => router.replace("/")} className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] text-[12.5px] font-medium text-fg-2 transition-colors hover:bg-surface-2 hover:text-fg">
+                <CandlestickChart className="size-4" /> Continue to charts without logging in <ArrowRight className="size-3.5" />
               </button>
-              <p className="text-center text-[11.5px] leading-relaxed text-fg-3">Charts, indicators, drawings, alerts and symbol specs work without an account.</p>
             </div>
           </section>
         </div>
@@ -380,5 +445,5 @@ function TopBar() {
 }
 
 export default function LoginPage() {
-  return <Suspense fallback={null}>{GUEST_MODE ? <AccountsSoon /> : <LoginForm />}</Suspense>;
+  return <Suspense fallback={null}>{GUEST_MODE ? <LiveLogin /> : <LoginForm />}</Suspense>;
 }

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { toast } from "@/lib/notify";
-import { ACCOUNTS, HISTORY, INSTRUMENTS, POSITIONS, getInstrument, isMarketOpen, priceFeed, rebaseTrades, type Quote, type TradingAccount } from "@kalks/mock";
+import { ACCOUNTS, HISTORY, INSTRUMENTS, IS_LIVE, POSITIONS, getInstrument, isMarketOpen, priceFeed, rebaseTrades, type Quote, type TradingAccount } from "@kalks/mock";
 import { useQuotes } from "@kalks/ui";
 import {
   DEFAULT_SYMBOLS,
@@ -32,6 +32,12 @@ import { beep } from "./sound";
 import { aiTrader } from "./ai-trader/runtime";
 import { migrateIndicators, type IndicatorInstance } from "./indicators";
 import { GUEST_ACCOUNT, GUEST_LOGIN, guestNotice } from "./guest";
+import { engineApi } from "./engine/client";
+import { engineActions } from "./engine/actions";
+import { AccountStream } from "./engine/stream";
+import { liveStore, useLiveEquity, useLivePosition } from "./engine/live";
+import { mapAccount, mapHistory, mapOrder, mapPosition, rejectReason, serverName, type EngineTradingAccount } from "./engine/map";
+import type { EngAccount, EngDeal, EngState, SessionInfo, StreamFrame } from "./engine/types";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -45,6 +51,31 @@ export interface Session {
   at: number;
   /** Live builds: no trading account (real market data only, trade actions explain + link to sign-up). */
   guest?: boolean;
+  /** Live builds: a trading-engine session (real account, orders go to the engine). */
+  engine?: boolean;
+}
+
+/** The trading account the terminal last showed (live builds, several logins on one browser). */
+export const ACTIVE_KEY = "kalks.terminal.active";
+export function readActive(): string | null {
+  try {
+    return localStorage.getItem(ACTIVE_KEY);
+  } catch {
+    return null;
+  }
+}
+export function writeActive(login: string | null) {
+  try {
+    if (login) localStorage.setItem(ACTIVE_KEY, login);
+    else localStorage.removeItem(ACTIVE_KEY);
+  } catch {
+    /* storage blocked */
+  }
+}
+
+/** Session for an engine login (live builds). */
+export function engineSession(s: { login: string; readOnly: boolean; account: EngAccount | null }, via: Session["via"] = "login"): Session {
+  return { login: s.login, investor: s.readOnly, server: serverName(s.account?.type ?? (s.login.startsWith("5") ? "demo" : "live")), via, at: Date.now(), engine: true };
 }
 
 /** The session a live build always starts with until the trading engine serves real accounts. */
@@ -202,8 +233,9 @@ export function defaultWorkspace(): Workspace {
 
 /** Guest mode has no synthetic depth ladder and no mock news/calendar: fall back to real panels. */
 function guestSafe(w: Workspace, guest: boolean): Workspace {
-  if (!guest) return w;
-  return { ...w, rightTab: w.rightTab === "depth" ? "info" : w.rightTab, toolboxTab: w.toolboxTab === "news" || w.toolboxTab === "calendar" ? "trade" : w.toolboxTab };
+  // news and calendar are sample content (demo builds only); guests have no order panel for the DOM
+  const toolboxTab = IS_LIVE && (w.toolboxTab === "news" || w.toolboxTab === "calendar") ? "trade" : w.toolboxTab;
+  return { ...w, rightTab: guest && w.rightTab === "depth" ? "info" : w.rightTab, toolboxTab };
 }
 
 function loadWorkspace(guest: boolean): Workspace {
@@ -337,12 +369,20 @@ interface UiState {
   spec: string | null;
   about: boolean;
   alertDialog: { symbol: string; price?: number } | null;
+  /** live builds: log in to another trading account (kept in the account switcher) */
+  loginDialog: boolean;
 }
 
 interface Ctx {
   session: Session;
   /** Live build without a trading account: no positions/orders/history/balances; trade actions explain. */
   guest: boolean;
+  /** Live build (real services only: no sample news, calendar or synthetic depth). */
+  live: boolean;
+  /** Connected to the trading engine: account, orders and positions are real. */
+  engine: boolean;
+  /** Engine mode: the account state has been loaded at least once. */
+  synced: boolean;
   account: TradingAccount;
   accounts: TradingAccount[];
   readOnly: boolean;
@@ -376,14 +416,14 @@ interface Ctx {
   // ui
   setUi: (patch: Partial<UiState>) => void;
   openNewOrder: (p?: Partial<NewOrderPrefill>) => void;
-  // trading
-  placeOrder: (o: OrderRequest) => boolean;
+  // trading (live builds: every action is a request to the trading engine; resolves when it answered)
+  placeOrder: (o: OrderRequest) => Promise<boolean>;
   quickTrade: (symbol: string, side: "buy" | "sell", volume?: number) => void;
-  closePosition: (ticket: string, volume?: number, reason?: string) => void;
-  modifyPosition: (ticket: string, patch: { sl?: number | null; tp?: number | null; trailing?: number | null }) => boolean;
+  closePosition: (ticket: string, volume?: number, reason?: string) => Promise<boolean>;
+  modifyPosition: (ticket: string, patch: { sl?: number | null; tp?: number | null; trailing?: number | null }) => Promise<boolean>;
   closeBy: (a: string, b: string) => void;
   cancelPending: (ticket: string) => void;
-  modifyPending: (ticket: string, patch: { price?: number; sl?: number | null; tp?: number | null }) => boolean;
+  modifyPending: (ticket: string, patch: { price?: number; sl?: number | null; tp?: number | null }) => Promise<boolean>;
   bulkClose: (kind: "all" | "profit" | "loss" | "symbol" | "buys" | "sells", symbol?: string) => void;
   cancelAllPendings: () => void;
   // alerts & journal
@@ -396,6 +436,10 @@ interface Ctx {
   switchAccount: (login: string) => void;
   refillDemo: () => void;
   logout: () => void;
+  /** live builds: open the "log in to another account" dialog */
+  openLogin: () => void;
+  /** live builds: a login just succeeded in this browser (dialog): add it to the switcher and show it */
+  accountAdded: (login: string) => Promise<void>;
 }
 
 const TerminalCtx = React.createContext<Ctx | null>(null);
@@ -410,27 +454,56 @@ export function useTerminal() {
 export function useMetrics(login?: string): Metrics & { account: TradingAccount } {
   const t = useTerminal();
   const l = login ?? t.account.login;
-  const acc = accountOf(l);
+  const live = useLiveEquity(t.engine ? l : null);
   const pos = t.allPositions.filter((p) => p.login === l);
   const qs = useQuotes(pos.length ? [...new Set(pos.map((p) => p.symbol))] : ["EURUSD"]);
+  if (t.engine) {
+    // the engine's numbers (equity frames ≤ 4/s, else the last account view); cent accounts USC → USD
+    const acc = (t.accounts.find((a) => a.login === l) ?? t.account) as EngineTradingAccount;
+    if (live) return { balance: live.balance, credit: live.credit, equity: live.equity, margin: live.margin, free: live.freeMargin, level: live.marginLevel ?? Infinity, floating: live.profit + live.swap, account: acc };
+    const k = acc.cent ? 100 : 1;
+    const e = acc.engine;
+    return { balance: acc.balance / k, credit: acc.credit / k, equity: acc.equity / k, margin: acc.margin / k, free: (e?.freeMargin ?? acc.equity - acc.margin) / k, level: e?.marginLevel ?? Infinity, floating: ((e?.profit ?? 0) + (e?.swap ?? 0)) / k, account: acc };
+  }
+  const acc = accountOf(l);
   return { ...computeMetrics(acc, t.balances[l] ?? 0, pos, qs), account: acc };
+}
+
+/** Floating profit (USD) of an open position: the engine's value in live builds, else computed from quotes. */
+export function usePositionProfit(p: TPosition): number {
+  const t = useTerminal();
+  const q = useQuotes([p.symbol])[p.symbol];
+  const live = useLivePosition(t.engine ? p.login : null, p.ticket);
+  if (live) return live.profit;
+  if (t.engine) return (p as TPosition & { profit?: number }).profit ?? 0;
+  return q ? profitUsd(p, q.bid, q.ask) : 0;
 }
 
 /* ------------------------------------------------------------------ */
 /* Provider                                                            */
 /* ------------------------------------------------------------------ */
 
-export function TerminalProvider({ initialSession, children, onLogout }: { initialSession: Session; children: React.ReactNode; onLogout: () => void }) {
+export function TerminalProvider({ initialSession, engineSessions, children, onLogout }: { initialSession: Session; engineSessions?: SessionInfo[]; children: React.ReactNode; onLogout: (to?: string) => void }) {
   const [session, setSession] = React.useState(initialSession);
   const guest = !!initialSession.guest;
-  const [core, setCore] = React.useState<Core>(() => (guest ? emptyCore() : initialCore()));
+  const engine = !!initialSession.engine;
+  const [core, setCore] = React.useState<Core>(() => (guest || engine ? emptyCore() : initialCore()));
+  // engine mode: every login held by this browser (account switcher) and its last account view
+  const [engSessions, setEngSessions] = React.useState<{ login: string; readOnly: boolean }[]>(() => (engineSessions ?? []).map((x) => ({ login: x.login, readOnly: x.readOnly })));
+  const [engAccounts, setEngAccounts] = React.useState<Record<string, EngineTradingAccount>>(() => Object.fromEntries((engineSessions ?? []).flatMap((x) => (x.account ? [[x.login, mapAccount(x.account)]] : []))));
+  const engSessionsRef = React.useRef(engSessions);
+  engSessionsRef.current = engSessions;
+  const engAccRef = React.useRef(engAccounts);
+  engAccRef.current = engAccounts;
+  const [synced, setSynced] = React.useState(!engine);
+  const streamRef = React.useRef<AccountStream | null>(null);
   const coreRef = React.useRef(core);
   const [ws, setWsState] = React.useState<Workspace>(() => loadWorkspace(guest));
   const wsRef = React.useRef(ws);
   wsRef.current = ws;
   const sessionRef = React.useRef(session);
   sessionRef.current = session;
-  const [ui, setUiState] = React.useState<UiState>({ newOrder: null, positionDialog: null, pendingDialog: null, search: false, shortcuts: false, spec: null, about: false, alertDialog: null });
+  const [ui, setUiState] = React.useState<UiState>({ newOrder: null, positionDialog: null, pendingDialog: null, search: false, shortcuts: false, spec: null, about: false, alertDialog: null, loginDialog: false });
   const [drawTool, setDrawTool] = React.useState<DrawTool>("cursor");
   const [selectedDrawing, selectDrawing] = React.useState<string | null>(null);
   const jid = React.useRef(0);
@@ -450,7 +523,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     [commit],
   );
 
-  const account = accountOf(session.login);
+  const account: TradingAccount = engine ? (engAccounts[session.login] ?? { ...GUEST_ACCOUNT, login: session.login, server: session.server, type: session.server === "Kalks-Demo" ? "demo" : "live" }) : accountOf(session.login);
   const readOnly = session.investor;
 
   const notify = React.useCallback((kind: "fill" | "close" | "alert" | "error") => {
@@ -486,6 +559,10 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
       log("Terminal", "guest mode: charts and quotes only, no trading account connected");
       report();
       return () => void off();
+    }
+    if (engine) {
+      log("Terminal", `Kalks Trader started · ${navigator.platform || "Web"}, ${INSTRUMENTS.length - priceFeed().unavailable.size} symbols, GMT+3 server time`);
+      return;
     }
     const a = accountOf(initialSession.login);
     const n = coreRef.current.positions.filter((p) => p.login === a.login).length;
@@ -590,7 +667,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     return false;
   };
 
-  const placeOrder = React.useCallback(
+  const placeOrderMock = React.useCallback(
     (o: OrderRequest): boolean => {
       const s = sessionRef.current;
       if (s.guest) {
@@ -676,13 +753,6 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     [commit, log, notify],
   );
 
-  const quickTrade = React.useCallback(
-    (symbol: string, side: "buy" | "sell", volume?: number) => {
-      placeOrder({ symbol, side, type: "market", volume: volume ?? wsRef.current.lot });
-    },
-    [placeOrder],
-  );
-
   const closeInternal = (ticket: string, volume: number | undefined, reason: string, at?: number, silent = false) => {
     const c = coreRef.current;
     const p = c.positions.find((x) => x.ticket === ticket);
@@ -707,7 +777,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     }
   };
 
-  const closePosition = React.useCallback(
+  const closePositionMock = React.useCallback(
     (ticket: string, volume?: number, reason = "manual") => {
       if (sessionRef.current.guest) return;
       if (sessionRef.current.investor) return void toast.error("Read-only session");
@@ -719,7 +789,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     [],
   );
 
-  const modifyPosition = React.useCallback(
+  const modifyPositionMock = React.useCallback(
     (ticket: string, patch: { sl?: number | null; tp?: number | null; trailing?: number | null }) => {
       if (sessionRef.current.investor) return false;
       const p = coreRef.current.positions.find((x) => x.ticket === ticket);
@@ -740,7 +810,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     [commit, log],
   );
 
-  const closeBy = React.useCallback(
+  const closeByMock = React.useCallback(
     (a: string, b: string) => {
       const c = coreRef.current;
       const pa = c.positions.find((x) => x.ticket === a);
@@ -761,7 +831,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     [log, notify],
   );
 
-  const cancelPending = React.useCallback(
+  const cancelPendingMock = React.useCallback(
     (ticket: string) => {
       if (sessionRef.current.investor) return;
       const o = coreRef.current.pendings.find((x) => x.ticket === ticket);
@@ -773,7 +843,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     [commit, log],
   );
 
-  const modifyPending = React.useCallback(
+  const modifyPendingMock = React.useCallback(
     (ticket: string, patch: { price?: number; sl?: number | null; tp?: number | null }) => {
       if (sessionRef.current.investor) return false;
       const o = coreRef.current.pendings.find((x) => x.ticket === ticket);
@@ -797,7 +867,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     [commit, log],
   );
 
-  const bulkClose = React.useCallback(
+  const bulkCloseMock = React.useCallback(
     (kind: "all" | "profit" | "loss" | "symbol" | "buys" | "sells", symbol?: string) => {
       if (sessionRef.current.investor) return;
       const login = sessionRef.current.login;
@@ -836,7 +906,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     [log, notify],
   );
 
-  const cancelAllPendings = React.useCallback(() => {
+  const cancelAllPendingsMock = React.useCallback(() => {
     if (sessionRef.current.investor) return;
     const login = sessionRef.current.login;
     const n = coreRef.current.pendings.filter((p) => p.login === login).length;
@@ -846,6 +916,287 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     toast(`Cancelled ${n} pending order${n > 1 ? "s" : ""}`);
   }, [commit, log]);
 
+  /* ------------------------------ trading engine (live builds) ------------------------------ */
+
+  const expiredRef = React.useRef<(login: string) => void>(() => {});
+
+  /** Replace the active account's book with an engine state (initial load, reconnect, stream `resync`). */
+  const applyState = React.useCallback(
+    (login: string, st: EngState) => {
+      const acc = mapAccount(st.account);
+      setEngAccounts((m) => ({ ...m, [login]: acc }));
+      liveStore.setAccount(login, st.account);
+      commit((c) => ({
+        ...c,
+        positions: st.positions.map((p) => mapPosition(p, acc.cent)),
+        pendings: st.orders.map(mapOrder),
+        history: mapHistory(st.history.deals, acc.cent),
+      }));
+      if (sessionRef.current.login === login && sessionRef.current.investor !== st.readOnly) setSession((s) => ({ ...s, investor: st.readOnly }));
+    },
+    [commit],
+  );
+
+  const loadState = React.useCallback(
+    async (login: string) => {
+      const r = await engineApi.state(login, 300);
+      if (sessionRef.current.login !== login) return false;
+      if (!r.ok) {
+        if (r.err.status === 401) expiredRef.current(login);
+        else log("Network", `'${login}': synchronization with ${sessionRef.current.server} failed [${rejectReason(r.err)}]`, "error");
+        return false;
+      }
+      applyState(login, r.data);
+      return r.data;
+    },
+    [applyState, log],
+  );
+
+  /** Stream notifications: server-side events (SL/TP, pending fills, margin call, stop out…) become toasts. */
+  const onNotice = React.useCallback(
+    (login: string, kind: string, message: string) => {
+      const who = `'${login}': `;
+      switch (kind) {
+        case "fill":
+        case "close":
+        case "close_by":
+          return; // this terminal's own requests are journaled by the action; deals arrive as frames
+        case "sl":
+        case "tp":
+          log("Trade", `${who}${message}`);
+          (kind === "tp" ? toast.success : toast.error)(kind === "sl" ? "Stop loss triggered" : "Take profit triggered", { description: message });
+          return notify("close");
+        case "order_triggered":
+        case "order_filled":
+          log("Trade", `${who}${message}`);
+          toast.success(kind === "order_filled" ? "Pending order filled" : "Pending order triggered", { description: message });
+          return notify("fill");
+        case "order_rejected":
+        case "order_expired":
+          log("Trade", `${who}${message}`, "warn");
+          toast.warning(kind === "order_expired" ? "Pending order expired" : "Pending order rejected", { description: message });
+          return notify("error");
+        case "margin_call":
+          log("Account", `${who}${message}`, "warn");
+          toast.warning("Margin call", { description: message, duration: 12_000 });
+          return notify("alert");
+        case "stop_out":
+          log("Account", `${who}${message}`, "error");
+          toast.error("Stop out", { description: message, duration: 15_000 });
+          return notify("error");
+        case "balance":
+          log("Account", `${who}${message}`);
+          return void toast(`Balance operation`, { description: message });
+        default:
+          log(kind === "order_cancelled" ? "Trade" : "Account", `${who}${message}`);
+      }
+    },
+    [log, notify],
+  );
+
+  const onFrame = React.useCallback(
+    (login: string, f: StreamFrame, reconnected: boolean) => {
+      if (sessionRef.current.login !== login) return;
+      const cent = engAccRef.current[login]?.cent ?? false;
+      switch (f.type) {
+        case "snapshot": {
+          const acc = mapAccount(f.account);
+          setEngAccounts((m) => ({ ...m, [login]: acc }));
+          liveStore.setAccount(login, f.account);
+          commit((c) => ({ ...c, positions: f.positions.map((p) => mapPosition(p, acc.cent)), pendings: f.orders.map(mapOrder) }));
+          if (sessionRef.current.investor !== f.readOnly) setSession((s) => ({ ...s, investor: f.readOnly }));
+          // deals closed while the socket was down only come with the full state
+          if (reconnected) void loadState(login);
+          return;
+        }
+        case "position": {
+          if (f.op === "remove") return commit((c) => ({ ...c, positions: c.positions.filter((p) => p.ticket !== String(f.ticket)) }));
+          const p = mapPosition(f.position, cent);
+          return commit((c) => (c.positions.some((x) => x.ticket === p.ticket) ? { ...c, positions: c.positions.map((x) => (x.ticket === p.ticket ? p : x)) } : { ...c, positions: [...c.positions, p] }));
+        }
+        case "order": {
+          if (f.op === "remove") return commit((c) => ({ ...c, pendings: c.pendings.filter((o) => o.ticket !== String(f.ticket)) }));
+          const o = mapOrder(f.order);
+          return commit((c) => (c.pendings.some((x) => x.ticket === o.ticket) ? { ...c, pendings: c.pendings.map((x) => (x.ticket === o.ticket ? o : x)) } : { ...c, pendings: [...c.pendings, o] }));
+        }
+        case "deal": {
+          const d = f.deal;
+          if (d.entry === "in") return;
+          // the position (still at its pre-close volume) carries the entry commission for the share
+          const pos = coreRef.current.positions.find((p) => p.ticket === String(d.positionTicket));
+          const entry: EngDeal[] = pos ? [{ ...d, id: -1, entry: "in", volume: pos.volume, commission: pos.commission * (cent ? 100 : 1), swap: 0, profit: 0 }] : [];
+          const rows = mapHistory([d, ...entry], cent);
+          return commit((c) => ({ ...c, history: [...rows, ...c.history.filter((h) => (h as { deal?: string }).deal !== String(d.id))] }));
+        }
+        case "account": {
+          const acc = mapAccount(f.account);
+          setEngAccounts((m) => ({ ...m, [login]: acc }));
+          return liveStore.setAccount(login, f.account);
+        }
+        case "equity":
+          return liveStore.setEquity(login, f, cent);
+        case "notification":
+          return onNotice(login, f.kind, f.message);
+        case "ledger":
+          if (!["trade_pnl", "commission", "swap"].includes(f.txn.kind)) log("Account", `'${login}': ${f.txn.kind.replace(/_/g, " ")} ${f.txn.amount >= 0 ? "+" : ""}${(cent ? f.txn.amount / 100 : f.txn.amount).toFixed(2)}`);
+          return;
+        case "resync":
+          log("Network", `'${login}': terminal fell behind the account stream, resynchronizing`, "warn");
+          void loadState(login);
+          return streamRef.current?.reconnect();
+      }
+    },
+    [commit, loadState, log, onNotice],
+  );
+
+  // active login: load the state, then keep it live over the account stream
+  React.useEffect(() => {
+    if (!engine) return;
+    const login = session.login;
+    setSynced(false);
+    commit((c) => ({ ...c, positions: [], pendings: [], history: [] }));
+    const g = engAccRef.current[login]?.engine.spreadGroup;
+    if (g) priceFeed().setGroup(g); // quotes carry this account group's spread (the prices the engine fills at)
+    let snaps = 0;
+    let lost = false;
+    void loadState(login).then((st) => {
+      if (!st) return;
+      setSynced(true);
+      const a = mapAccount(st.account);
+      priceFeed().setGroup(a.engine.spreadGroup);
+      log("Network", `'${login}': authorized on ${a.server}${st.readOnly ? ", investor mode (read-only)" : ""}`);
+      log("Network", `'${login}': terminal synchronized with Kalks: ${st.positions.length} positions, ${st.orders.length} orders, ${st.history.deals.length} recent deals`);
+      log("Trade", `'${login}': ${a.mode} account, ${a.group}, leverage 1:${a.leverage}, ${a.currency}`);
+    });
+    const stream = new AccountStream(login, {
+      onFrame: (f) => {
+        if (f.type === "snapshot") snaps++;
+        onFrame(login, f, f.type === "snapshot" && snaps > 1);
+      },
+      onStatus: (st, info) => {
+        liveStore.setStatus(st, info?.attempt ?? 0, info?.delayMs);
+        if (st === "open") {
+          log("Network", `'${login}': ${lost ? "connection to the trade server restored" : `account stream connected (${sessionRef.current.server})`}`);
+          lost = false;
+        } else if (st === "reconnecting" && !lost) {
+          lost = true;
+          log("Network", `'${login}': connection to the trade server lost${info?.reason ? ` (${info.reason})` : ""}, reconnecting`, "warn");
+        }
+      },
+      onUnauthorized: () => expiredRef.current(login),
+    });
+    streamRef.current = stream;
+    // dev-only handle for the E2E reconnect test (window.__kalksStream.kill())
+    if (process.env.NODE_ENV !== "production") (window as unknown as { __kalksStream?: AccountStream }).__kalksStream = stream;
+    return () => {
+      stream.stop();
+      if (streamRef.current === stream) streamRef.current = null;
+      liveStore.clear(login);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engine, session.login]);
+
+  const eng = React.useMemo(
+    () =>
+      engineActions({
+        login: () => sessionRef.current.login,
+        account: () => engAccRef.current[sessionRef.current.login],
+        positions: () => coreRef.current.positions,
+        pendings: () => coreRef.current.pendings,
+        log,
+        sound: notify,
+        refreshIfStale: () => {
+          if (streamRef.current?.status !== "open") void loadState(sessionRef.current.login);
+        },
+        expired: (login) => expiredRef.current(login),
+      }),
+    [log, notify, loadState],
+  );
+
+  /** Guest / investor gate shared by every trade action. */
+  const blocked = (what: string, source?: string) => {
+    const s = sessionRef.current;
+    if (s.guest) {
+      if (source !== "ai") guestNotice(what);
+      return true;
+    }
+    if (s.investor) {
+      if (source !== "ai") toast.error("Trading is disabled", { description: "You are connected with the investor (read-only) password." });
+      return true;
+    }
+    return false;
+  };
+
+  const placeOrder = React.useCallback(
+    async (o: OrderRequest): Promise<boolean> => {
+      if (!engine) return placeOrderMock(o);
+      if (blocked(o.type === "market" ? `${o.side === "buy" ? "Buying" : "Selling"} ${o.symbol}` : `A ${o.side} ${o.type} order`, o.source)) return false;
+      return (await eng.placeOrder(o)).ok;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [eng, placeOrderMock],
+  );
+  const quickTrade = React.useCallback(
+    (symbol: string, side: "buy" | "sell", volume?: number) => void placeOrder({ symbol, side, type: "market", volume: volume ?? wsRef.current.lot }),
+    [placeOrder],
+  );
+  const closePosition = React.useCallback(
+    async (ticket: string, volume?: number, reason = "manual"): Promise<boolean> => {
+      if (!engine) return (closePositionMock(ticket, volume, reason), true);
+      if (blocked("Closing a position")) return false;
+      return eng.closePosition(ticket, volume, reason);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [eng, closePositionMock],
+  );
+  const modifyPosition = React.useCallback(
+    async (ticket: string, patch: { sl?: number | null; tp?: number | null; trailing?: number | null }): Promise<boolean> => {
+      if (!engine) return modifyPositionMock(ticket, patch);
+      if (blocked("Modifying a position")) return false;
+      return eng.modifyPosition(ticket, patch);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [eng, modifyPositionMock],
+  );
+  const closeBy = React.useCallback(
+    (a: string, b: string) => {
+      if (!engine) return closeByMock(a, b);
+      if (!blocked("Close By")) void eng.closeBy(a, b);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [eng, closeByMock],
+  );
+  const cancelPending = React.useCallback(
+    (ticket: string) => {
+      if (!engine) return cancelPendingMock(ticket);
+      if (!blocked("Deleting an order")) void eng.cancelPending(ticket);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [eng, cancelPendingMock],
+  );
+  const modifyPending = React.useCallback(
+    async (ticket: string, patch: { price?: number; sl?: number | null; tp?: number | null }): Promise<boolean> => {
+      if (!engine) return modifyPendingMock(ticket, patch);
+      if (blocked("Modifying an order")) return false;
+      return eng.modifyPending(ticket, patch);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [eng, modifyPendingMock],
+  );
+  const bulkClose = React.useCallback(
+    (kind: "all" | "profit" | "loss" | "symbol" | "buys" | "sells", symbol?: string) => {
+      if (!engine) return bulkCloseMock(kind, symbol);
+      if (!blocked("Closing positions")) void eng.bulkClose(kind, symbol);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [eng, bulkCloseMock],
+  );
+  const cancelAllPendings = React.useCallback(() => {
+    if (!engine) return cancelAllPendingsMock();
+    if (!blocked("Deleting orders")) void eng.cancelAllPendings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eng, cancelAllPendingsMock]);
+
   /* ------------------------------ tick engine ------------------------------ */
 
   React.useEffect(() => {
@@ -854,8 +1205,9 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
       INSTRUMENTS.map((i) => i.symbol),
       (q) => {
         const c = coreRef.current;
-        // SL / TP / trailing
-        for (const p of c.positions) {
+        // SL / TP / trailing / pending fills run in this tab only for the demo build's sample accounts;
+        // live builds leave all of it to the trading engine (server-side)
+        for (const p of engine ? [] : c.positions) {
           if (p.symbol !== q.symbol) continue;
           const px = p.side === "buy" ? q.bid : q.ask;
           if (p.sl !== undefined && (p.side === "buy" ? px <= p.sl : px >= p.sl)) {
@@ -877,7 +1229,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
           }
         }
         // pending orders
-        for (const o of coreRef.current.pendings) {
+        for (const o of engine ? [] : coreRef.current.pendings) {
           if (o.symbol !== q.symbol) continue;
           const ref = o.side === "buy" ? q.ask : q.bid;
           const hit = o.type === "limit" ? (o.side === "buy" ? ref <= o.price : ref >= o.price) : o.side === "buy" ? ref >= o.price : ref <= o.price;
@@ -929,11 +1281,32 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
         positions: () => [],
         history: () => [],
         balance: () => 0,
-        placeOrder: () => false,
-        modifyPosition: () => false,
-        closePosition: () => false,
+        placeOrder: async () => ({ ok: false }),
+        modifyPosition: async () => false,
+        closePosition: async () => false,
         log,
       });
+    if (engine) {
+      // live: AI orders go to the engine like manual ones, tagged source "ai"
+      const login = session.login;
+      const a = engAccRef.current[login] ?? account;
+      return aiTrader.attach({
+        login,
+        accountType: a.type,
+        accountMode: a.mode,
+        investor: session.investor,
+        positions: () => coreRef.current.positions,
+        history: () => coreRef.current.history,
+        balance: () => {
+          const x = engAccRef.current[login];
+          return x ? x.balance / (x.cent ? 100 : 1) : 0;
+        },
+        placeOrder: (o) => (sessionRef.current.investor ? Promise.resolve({ ok: false }) : eng.placeOrder(o)),
+        modifyPosition: (t, p) => eng.modifyPosition(t, p),
+        closePosition: (t, reason) => eng.closePosition(t, undefined, reason),
+        log,
+      });
+    }
     const a = accountOf(session.login);
     return aiTrader.attach({
       login: a.login,
@@ -943,9 +1316,9 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
       positions: () => coreRef.current.positions.filter((p) => p.login === a.login),
       history: () => coreRef.current.history.filter((p) => p.login === a.login),
       balance: () => coreRef.current.balances[a.login] ?? 0,
-      placeOrder,
-      modifyPosition,
-      closePosition: (ticket, reason) => {
+      placeOrder: async (o) => ({ ok: await placeOrder(o) }),
+      modifyPosition: (t, p) => modifyPosition(t, p),
+      closePosition: async (ticket, reason) => {
         const p = coreRef.current.positions.find((x) => x.ticket === ticket);
         if (!p) return false;
         if (!isMarketOpen(p.symbol)) return marketClosed(`'${p.login}': ${reason}: close #${ticket} ${p.side} ${fmtVol(p.volume)} ${p.symbol}`, true);
@@ -955,7 +1328,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
       log,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session.login, session.investor]);
+  }, [session.login, session.investor, !!engAccounts[session.login]]);
 
   /* ------------------------------ workspace ------------------------------ */
 
@@ -1064,7 +1437,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
 
   /* ------------------------------ account ------------------------------ */
 
-  const switchAccount = React.useCallback(
+  const switchAccountMock = React.useCallback(
     (login: string) => {
       if (sessionRef.current.guest) return;
       const a = ACCOUNTS.find((x) => x.login === login);
@@ -1080,7 +1453,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     [log],
   );
 
-  const refillDemo = React.useCallback(() => {
+  const refillDemoMock = React.useCallback(() => {
     if (sessionRef.current.guest) return;
     const a = accountOf(sessionRef.current.login);
     if (a.type !== "demo") return void toast.error("Refill is available on demo accounts only");
@@ -1092,26 +1465,121 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     toast.success("Demo balance refilled", { description: `${accMoney(a, target)} ${accCcy(a)} · ${left - 1} refills left` });
   }, [commit, log]);
 
-  const logout = React.useCallback(() => {
+  const logoutMock = React.useCallback(() => {
     writeSession(null);
     onLogout();
   }, [onLogout]);
 
+  // ---- engine accounts (live builds): several logins, each with its own engine session
+
+  const showAccount = React.useCallback(
+    (login: string, quiet = false) => {
+      const e = engSessionsRef.current.find((x) => x.login === login);
+      if (!e || login === sessionRef.current.login) return;
+      const a = engAccRef.current[login];
+      const s: Session = { login, investor: e.readOnly, server: a?.server ?? serverName(login.startsWith("5") ? "demo" : "live"), via: sessionRef.current.via, at: Date.now(), engine: true };
+      if (a) priceFeed().setGroup(a.engine.spreadGroup);
+      liveStore.clear(sessionRef.current.login);
+      sessionRef.current = s;
+      setSession(s);
+      writeActive(login);
+      if (!quiet) toast.success(`Switched to ${a?.type === "demo" ? "demo" : "live"} account ${login}`, { description: a ? `${a.group} · ${a.mode} · ${a.server}${e.readOnly ? " · read-only" : ""}` : undefined });
+    },
+    [],
+  );
+
+  const dropSession = React.useCallback(
+    (login: string, to?: string) => {
+      const rest = engSessionsRef.current.filter((x) => x.login !== login);
+      engSessionsRef.current = rest;
+      setEngSessions(rest);
+      setEngAccounts((m) => {
+        const { [login]: _gone, ...keep } = m;
+        return keep;
+      });
+      if (sessionRef.current.login !== login) return;
+      if (rest[0]) return showAccount(rest[0].login, true);
+      writeActive(null);
+      writeSession(null);
+      onLogout(to);
+    },
+    [onLogout, showAccount],
+  );
+
+  expiredRef.current = (login: string) => {
+    if (!engSessionsRef.current.some((x) => x.login === login)) return;
+    log("Network", `'${login}': session expired, log in again`, "error");
+    toast.error("Session expired", { id: `expired-${login}`, description: `Your session for ${login} has ended. Log in again to trade.` });
+    dropSession(login, `/login?expired=1&login=${login}`);
+  };
+
+  const switchAccount = React.useCallback((login: string) => (engine ? showAccount(login) : switchAccountMock(login)), [engine, showAccount, switchAccountMock]);
+
+  const refillDemo = React.useCallback(() => {
+    if (!engine) return refillDemoMock();
+    if (blocked("Refilling the demo balance")) return;
+    if (engAccRef.current[sessionRef.current.login]?.type !== "demo") return void toast.error("Refill is available on demo accounts only");
+    void eng.refillDemo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engine, eng, refillDemoMock]);
+
+  const logout = React.useCallback(() => {
+    if (!engine) return logoutMock();
+    const login = sessionRef.current.login;
+    void engineApi.logout(login).then(() => {
+      log("Network", `'${login}': logged out`);
+      if (engSessionsRef.current.length > 1) toast(`Logged out of ${login}`);
+      dropSession(login, "/login?logout=1");
+    });
+  }, [engine, logoutMock, log, dropSession]);
+
+  const openLogin = React.useCallback(() => setUiState((u) => ({ ...u, loginDialog: true })), []);
+
+  const accountAdded = React.useCallback(
+    async (login: string) => {
+      const r = await engineApi.sessions();
+      if (r.ok) {
+        const list = r.data.sessions.map((x) => ({ login: x.login, readOnly: x.readOnly }));
+        engSessionsRef.current = list;
+        setEngSessions(list);
+        const accs: Record<string, EngineTradingAccount> = {};
+        for (const x of r.data.sessions) if (x.account) accs[x.login] = mapAccount(x.account);
+        engAccRef.current = { ...engAccRef.current, ...accs };
+        setEngAccounts((m) => ({ ...m, ...accs }));
+      }
+      if (login === sessionRef.current.login) {
+        // same account again (e.g. investor → master password): reload with the new session
+        const e = engSessionsRef.current.find((x) => x.login === login);
+        if (e) setSession((s) => ({ ...s, investor: e.readOnly }));
+        streamRef.current?.reconnect();
+        void loadState(login);
+        return;
+      }
+      showAccount(login);
+    },
+    [loadState, showAccount],
+  );
+
   /* ------------------------------ derived ------------------------------ */
 
   const activeTab = ws.tabs.find((t) => t.id === ws.activeId) ?? ws.tabs[0]!;
+  const engList = React.useMemo(() => engSessions.map((x) => engAccRef.current[x.login] ?? engAccounts[x.login]).filter(Boolean) as TradingAccount[], [engSessions, engAccounts]);
+  const engBalances = React.useMemo(() => Object.fromEntries(Object.values(engAccounts).map((a) => [a.login, a.balance / (a.cent ? 100 : 1)])), [engAccounts]);
   const value: Ctx = {
     session,
     guest,
+    live: IS_LIVE,
+    engine,
+    synced,
     account,
-    accounts: guest ? [] : ACCOUNTS,
+    accounts: guest ? [] : engine ? engList : ACCOUNTS,
     readOnly,
-    positions: core.positions.filter((p) => p.login === session.login),
-    pendings: core.pendings.filter((p) => p.login === session.login),
-    history: core.history.filter((p) => p.login === session.login),
+    positions: engine ? core.positions : core.positions.filter((p) => p.login === session.login),
+    pendings: engine ? core.pendings : core.pendings.filter((p) => p.login === session.login),
+    history: engine ? core.history : core.history.filter((p) => p.login === session.login),
     allPositions: core.positions,
-    balances: core.balances,
-    refillsLeft: core.refills[session.login] ?? 0,
+    balances: engine ? engBalances : core.balances,
+    refillsLeft: engine ? (account.refillsLeft ?? 0) : (core.refills[session.login] ?? 0),
     alerts: core.alerts,
     journal: core.journal,
     ws,
@@ -1151,6 +1619,8 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     switchAccount,
     refillDemo,
     logout,
+    openLogin,
+    accountAdded,
   };
   return <TerminalCtx.Provider value={value}>{children}</TerminalCtx.Provider>;
 }
