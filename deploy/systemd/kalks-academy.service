@@ -1,0 +1,24 @@
+[Unit]
+Description=Kalks Academy (:8098)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=kalks
+WorkingDirectory=/home/kalks/kalks/services/academy
+EnvironmentFile=/home/kalks/kalks/.env.local
+Environment=RUST_LOG=info
+Environment=ACADEMY_ENV=production
+Environment=ACADEMY_BIND=127.0.0.1:8098
+# course content is versioned in the repo and re-seeded (idempotent upsert) on every start
+Environment=ACADEMY_CONTENT_DIR=/home/kalks/kalks/content/academy
+ExecStart=/home/kalks/kalks/target/release/academy
+Restart=always
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=10
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

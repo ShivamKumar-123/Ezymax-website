@@ -8,6 +8,7 @@ export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 NODE_OPTIONS=--max-old-space-size=6144
 git pull --ff-only
 pnpm install --frozen-lockfile
 cargo build --release -p market-data -p gateway -p trading -p ib
+cargo build --release -p academy
 
 # trading engine secrets are generated on the server on first deploy (never committed, never printed)
 touch .env.local
@@ -28,6 +29,34 @@ for app in apps/crm apps/admin; do
   grep -q '^IB_URL=' "$f" || printf 'IB_URL=http://127.0.0.1:8096\n' >> "$f"
   grep -q '^IB_INTERNAL_TOKEN=' "$f" || printf 'IB_INTERNAL_TOKEN=%s\n' "$(grep '^IB_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
 done
+# Academy secrets: internal token generated once, database kalks_academy, public URL printed on certificates;
+# the Client Area and Back Office BFFs reach the service with the same token
+grep -q '^ACADEMY_INTERNAL_TOKEN=' .env.local || printf 'ACADEMY_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
+if ! grep -q '^ACADEMY_DATABASE_URL=' .env.local && grep -q '^GATEWAY_DATABASE_URL=' .env.local; then
+  printf 'ACADEMY_DATABASE_URL=%s\n' "$(grep '^GATEWAY_DATABASE_URL=' .env.local | cut -d= -f2- | sed -E 's#/[^/?]+([?].*)?$#/kalks_academy\1#')" >> .env.local
+fi
+grep -q '^ACADEMY_VERIFY_URL=' .env.local || printf 'ACADEMY_VERIFY_URL=https://app.kalkstrade.com\n' >> .env.local
+for f in apps/crm/.env.production.local apps/admin/.env.production.local; do
+  touch "$f"
+  grep -q '^ACADEMY_URL=' "$f" || printf 'ACADEMY_URL=http://127.0.0.1:8098\n' >> "$f"
+  grep -q '^ACADEMY_INTERNAL_TOKEN=' "$f" || printf 'ACADEMY_INTERNAL_TOKEN=%s\n' "$(grep '^ACADEMY_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
+done
+# ALGO service secrets: internal token and API-key HMAC master generated once (never printed), database
+# kalks_algo. The AI assistant's Claude key is read from .env.claude (copied from the terminal's env if missing).
+grep -q '^ALGO_INTERNAL_TOKEN=' .env.local || printf 'ALGO_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
+grep -q '^ALGO_KEY_SECRET=' .env.local || printf 'ALGO_KEY_SECRET=%s\n' "$(openssl rand -hex 32)" >> .env.local
+if ! grep -q '^ALGO_DATABASE_URL=' .env.local && grep -q '^GATEWAY_DATABASE_URL=' .env.local; then
+  printf 'ALGO_DATABASE_URL=%s\n' "$(grep '^GATEWAY_DATABASE_URL=' .env.local | cut -d= -f2- | sed -E 's#/[^/?]+([?].*)?$#/kalks_algo\1#')" >> .env.local
+fi
+if ! grep -q '^ANTHROPIC_API_KEY=' .env.claude 2>/dev/null && grep -q '^ANTHROPIC_API_KEY=' apps/terminal/.env.production.local 2>/dev/null; then
+  (umask 077; grep '^ANTHROPIC_API_KEY=' apps/terminal/.env.production.local > .env.claude)
+fi
+# the Client Area and Back Office BFFs reach the ALGO service with the same token
+for app in apps/crm apps/admin; do
+  f="$app/.env.production.local"; touch "$f"
+  grep -q '^ALGO_URL=' "$f" || printf 'ALGO_URL=http://127.0.0.1:8099\n' >> "$f"
+  grep -q '^ALGO_INTERNAL_TOKEN=' "$f" || printf 'ALGO_INTERNAL_TOKEN=%s\n' "$(grep '^ALGO_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
+done
 pnpm turbo run build --filter=@kalks/crm --filter=@kalks/admin --filter=@kalks/terminal --concurrency=1
 
 # service units + edge config (idempotent)
@@ -36,8 +65,10 @@ sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
 sudo systemctl daemon-reload
 sudo systemctl enable kalks-market-data kalks-gateway kalks-trading kalks-ib kalks-crm kalks-admin kalks-terminal >/dev/null
 sudo systemctl restart kalks-market-data kalks-gateway kalks-trading kalks-ib kalks-crm kalks-admin kalks-terminal
+sudo systemctl enable kalks-academy >/dev/null && sudo systemctl restart kalks-academy
 sudo systemctl reload caddy
 sleep 5
 for u in 127.0.0.1:8081/health 127.0.0.1:8080/health 127.0.0.1:8090/health 127.0.0.1:8096/health 127.0.0.1:3000/login 127.0.0.1:3001/login 127.0.0.1:3002/login; do
   printf "%-26s %s\n" "$u" "$(curl -s -o /dev/null -w '%{http_code}' "http://$u")"
 done
+printf "%-26s %s\n" 127.0.0.1:8098/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8098/health)"
