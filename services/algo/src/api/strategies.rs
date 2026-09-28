@@ -134,6 +134,14 @@ fn payload(st: &AppState, v: &Value) -> Result<crate::strategy::Built, ApiError>
     Ok(b)
 }
 
+/// The strategy's display name: a code program's own name("…") wins over the editor's name field.
+fn display_name(v: &Value, b: &crate::strategy::Built) -> Option<String> {
+    if b.kind == "code" && b.source.as_deref().is_some_and(|src| src.contains("name(")) {
+        return Some(b.spec.name.clone());
+    }
+    s(v, "name").map(|n| n.chars().take(60).collect::<String>())
+}
+
 pub async fn validate(State(st): State<AppState>, _u: User, Body(v): Body<Value>) -> Res {
     Ok(Json(payload(&st, &v)?.view()))
 }
@@ -180,7 +188,7 @@ pub async fn create(State(st): State<AppState>, u: User, Body(v): Body<Value>) -
         return Err(ApiError::conflict("limit", format!("You can keep up to {MAX_STRATEGIES} strategies. Archive one first.")));
     }
     let b = payload(&st, &v)?;
-    let name = s(&v, "name").map(|n| n.chars().take(60).collect::<String>()).unwrap_or_else(|| b.spec.name.clone());
+    let name = display_name(&v, &b).unwrap_or_else(|| b.spec.name.clone());
     let origin = match s(&v, "origin") {
         Some("ai") => "ai",
         Some("template") => "template",
@@ -253,7 +261,7 @@ pub async fn new_version(State(st): State<AppState>, u: User, Path(id): Path<i64
         .bind(&b.spec.symbol)
         .bind(&b.spec.timeframe)
         .bind(b.kind)
-        .bind(s(&v, "name").map(|n| n.chars().take(60).collect::<String>()))
+        .bind(display_name(&v, &b))
         .fetch_one(&mut *tx)
         .await?;
     if next > 500 {
