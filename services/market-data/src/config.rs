@@ -24,6 +24,20 @@ pub struct Config {
 }
 
 /// Shows whether a secret is set without printing it.
+/// Masks the password in a connection URL (`postgres://user:secret@host` → `postgres://user:***@host`).
+fn redact_url(url: &str) -> String {
+    match (url.find("://"), url.rfind('@')) {
+        (Some(s), Some(at)) if at > s + 3 => {
+            let creds = &url[s + 3..at];
+            match creds.find(':') {
+                Some(c) => format!("{}{}:***{}", &url[..s + 3], &creds[..c], &url[at..]),
+                None => url.to_string(),
+            }
+        }
+        _ => url.to_string(),
+    }
+}
+
 fn redact(v: &str) -> &'static str {
     if v.is_empty() {
         "<empty>"
@@ -35,7 +49,7 @@ fn redact(v: &str) -> &'static str {
 impl fmt::Debug for Config {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Config")
-            .field("database_url", &self.database_url)
+            .field("database_url", &redact_url(&self.database_url))
             .field("bind", &self.bind)
             .field("infoway_key", &redact(&self.infoway_key))
             .field("infoway_rest", &self.infoway_rest)

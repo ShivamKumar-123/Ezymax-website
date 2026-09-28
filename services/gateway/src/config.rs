@@ -20,6 +20,20 @@ pub struct Config {
     pub super_admin_name: String,
 }
 
+/// Masks the password in a connection URL (`postgres://user:secret@host` → `postgres://user:***@host`).
+fn redact_url(url: &str) -> String {
+    match (url.find("://"), url.rfind('@')) {
+        (Some(s), Some(at)) if at > s + 3 => {
+            let creds = &url[s + 3..at];
+            match creds.find(':') {
+                Some(c) => format!("{}{}:***{}", &url[..s + 3], &creds[..c], &url[at..]),
+                None => url.to_string(),
+            }
+        }
+        _ => url.to_string(),
+    }
+}
+
 fn redact(v: &str) -> &'static str {
     if v.is_empty() { "<empty>" } else { "<redacted>" }
 }
@@ -28,7 +42,7 @@ impl fmt::Debug for Config {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Config")
             .field("bind", &self.bind)
-            .field("database_url", &self.database_url)
+            .field("database_url", &redact_url(&self.database_url))
             .field("session_secret", &redact(&self.session_secret))
             .field("internal_token", &redact(&self.internal_token))
             .field("dev_mode", &self.dev_mode)
@@ -65,5 +79,16 @@ impl Config {
             super_admin_password: var("SUPER_ADMIN_PASSWORD", ""),
             super_admin_name: var("SUPER_ADMIN_NAME", "Kalks Admin"),
         })
+    }
+}
+
+#[cfg(test)]
+mod redact_tests {
+    use super::redact_url;
+
+    #[test]
+    fn masks_database_password() {
+        assert_eq!(redact_url("postgres://kalks:s3cret@127.0.0.1:5432/kalks_core"), "postgres://kalks:***@127.0.0.1:5432/kalks_core");
+        assert_eq!(redact_url("postgres://postgres@127.0.0.1:5433/kalks"), "postgres://postgres@127.0.0.1:5433/kalks");
     }
 }
