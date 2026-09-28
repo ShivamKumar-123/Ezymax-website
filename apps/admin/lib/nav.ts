@@ -116,6 +116,8 @@ export const ADMIN_NAV: NavModule[] = [
       { href: "/partners/levels", label: "Levels" },
       { href: "/partners/sub-brokers", label: "Sub-brokers" },
       { href: "/partners/fraud", label: "Fraud flags" },
+      { href: "/partners/commissions", label: "Commissions" },
+      { href: "/partners/payouts", label: "Payout batches" },
     ],
   },
   {

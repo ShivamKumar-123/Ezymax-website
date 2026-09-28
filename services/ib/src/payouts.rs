@@ -96,7 +96,7 @@ pub async fn approve(st: &AppState, tenant: &str, id: i64, actor: &Actor, note: 
         Some("pending_approval") => {}
         Some(s) => return Err(ApiError::Conflict { code: "invalid_state", message: format!("This batch is {s}.") }),
     }
-    sqlx::query("UPDATE payout_batches SET status = 'approved', decided_by = $2, decided_at = now(), decision_note = $3 WHERE id = $1").bind(id).bind(&actor.id).bind(note).execute(&mut *tx).await?;
+    sqlx::query("UPDATE payout_batches SET status = 'approved', decided_by = $2, decided_at = now(), decision_note = $3 WHERE id = $1").bind(id).bind(actor.label()).bind(note).execute(&mut *tx).await?;
     sqlx::query("UPDATE payouts SET status = 'transfer_pending', next_attempt_at = now() WHERE batch_id = $1 AND status = 'pending_approval'").bind(id).execute(&mut *tx).await?;
     sqlx::query("UPDATE commissions SET status = 'approved', updated_at = now() WHERE batch_id = $1 AND status = 'pending'").bind(id).execute(&mut *tx).await?;
     audit::record(&mut *tx, tenant, actor, "batch.approve", Some(format!("batch:{id}")), Some(json!({"status": "pending_approval"})), Some(json!({"status": "approved"})), note).await?;
@@ -115,7 +115,7 @@ pub async fn reject(st: &AppState, tenant: &str, id: i64, actor: &Actor, note: &
         Some("pending_approval") => {}
         Some(s) => return Err(ApiError::Conflict { code: "invalid_state", message: format!("This batch is {s}.") }),
     }
-    sqlx::query("UPDATE payout_batches SET status = 'rejected', decided_by = $2, decided_at = now(), decision_note = $3 WHERE id = $1").bind(id).bind(&actor.id).bind(note).execute(&mut *tx).await?;
+    sqlx::query("UPDATE payout_batches SET status = 'rejected', decided_by = $2, decided_at = now(), decision_note = $3 WHERE id = $1").bind(id).bind(actor.label()).bind(note).execute(&mut *tx).await?;
     sqlx::query("UPDATE payouts SET status = 'rejected' WHERE batch_id = $1").bind(id).execute(&mut *tx).await?;
     let released = sqlx::query("UPDATE commissions SET batch_id = NULL, payout_id = NULL, updated_at = now() WHERE batch_id = $1 AND status = 'pending'").bind(id).execute(&mut *tx).await?.rows_affected();
     audit::record(&mut *tx, tenant, actor, "batch.reject", Some(format!("batch:{id}")), Some(json!({"status": "pending_approval"})), Some(json!({"status": "rejected", "released": released})), Some(note)).await?;

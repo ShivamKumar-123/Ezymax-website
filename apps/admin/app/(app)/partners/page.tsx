@@ -9,6 +9,8 @@ import { COMMISSION_MONTHS, FRAUD_FLAGS, FRAUD_LABEL, IB_KPIS, LEVELS, PARTNERS,
 import { ColumnChart, FunnelBars, MiniStat } from "@/components/config/kit";
 import { LEVEL_COLOR, LevelChip, ago, fmtInt, fmtLots, fmtUsdK } from "@/components/partners/common";
 import { BatchLinesDialog, PendingBatchCard } from "@/components/partners/payout-batch";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePartnersOverview } from "@/components/partners-live/overview";
 
 function CommissionsCard() {
   const [by, setBy] = React.useState<"tier" | "product" | "cpa">("tier");
@@ -196,7 +198,7 @@ function FraudWatchCard() {
   );
 }
 
-export default function PartnersOverviewPage() {
+function DemoPartnersOverview() {
   return (
     <div className="pb-16">
       <PageHeader
@@ -280,4 +282,8 @@ export default function PartnersOverviewPage() {
       </div>
     </div>
   );
+}
+
+export default function PartnersOverviewPage() {
+  return IS_DEMO ? <DemoPartnersOverview /> : <LivePartnersOverview />;
 }

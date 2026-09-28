@@ -8,6 +8,8 @@ import { FRAUD_FLAGS, FRAUD_LABEL, type FraudFlag, type FraudType } from "@kalks
 import { RiskScore } from "@/components/config/kit";
 import { ago, fmtUsdK } from "@/components/partners/common";
 import { FRAUD_STATUS, FraudDrawer, SEV_TONE } from "@/components/partners/fraud-drawer";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveFraudFlags } from "@/components/partners-live/fraud";
 
 const TYPES: { type: FraudType; icon: string; desc: string }[] = [
   { type: "wash", icon: "chart_decreasing", desc: "Opposing trades, same symbol & size, < 1s apart" },
@@ -15,7 +17,7 @@ const TYPES: { type: FraudType; icon: string; desc: string }[] = [
   { type: "selfref", icon: "identification_card", desc: "Partner and client share device, IP or wallet" },
 ];
 
-export default function FraudPage() {
+function DemoFraudFlags() {
   const [rows, setRows] = React.useState(FRAUD_FLAGS);
   const [sel, setSel] = React.useState<string | null>(null);
   const [type, setType] = React.useState<"all" | FraudType>("all");
@@ -118,4 +120,8 @@ export default function FraudPage() {
       <FraudDrawer flag={flag} open={!!flag} onOpenChange={(o) => !o && setSel(null)} onChange={(n) => setRows((rs) => rs.map((r) => (r.id === n.id ? n : r)))} />
     </div>
   );
+}
+
+export default function FraudPage() {
+  return IS_DEMO ? <DemoFraudFlags /> : <LiveFraudFlags />;
 }

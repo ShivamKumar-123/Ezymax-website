@@ -8,6 +8,8 @@ import { LEVELS, PARTNERS, type LevelKey, type PartnerLevel } from "@kalks/mock/
 import { NumInput, Select, SettingRow, auditToast, useReason } from "@/components/config/kit";
 import { LEVEL_COLOR, LevelChip, fmtInt } from "@/components/partners/common";
 import { LevelEditDialog } from "@/components/partners/level-dialog";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveLevels } from "@/components/partners-live/levels";
 
 function LevelCard({ l, idx, total, onEdit }: { l: PartnerLevel; idx: number; total: number; onEdit: () => void }) {
   const top = l.key === "diamond";
@@ -179,7 +181,7 @@ function UpcomingCard() {
   );
 }
 
-export default function LevelsPage() {
+function DemoLevels() {
   const [levels, setLevels] = React.useState(LEVELS);
   const [edit, setEdit] = React.useState<PartnerLevel | null>(null);
   const total = levels.reduce((s, l) => s + l.partners, 0);
@@ -217,4 +219,8 @@ export default function LevelsPage() {
       <LevelEditDialog level={edit} open={!!edit} onOpenChange={(o) => !o && setEdit(null)} onSave={(l) => setLevels((ls) => ls.map((x) => (x.key === l.key ? l : x)))} />
     </div>
   );
+}
+
+export default function LevelsPage() {
+  return IS_DEMO ? <DemoLevels /> : <LiveLevels />;
 }

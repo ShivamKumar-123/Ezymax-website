@@ -332,7 +332,13 @@ pub async fn partner(State(st): State<AppState>, s: StaffCtx, Path(id): Path<i64
     .await?;
     let pays = sqlx::query("SELECT id, batch_id, amount, status, paid_at, created_at, last_error FROM payouts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20").bind(id).fetch_all(&st.pool).await?;
     let flags = sqlx::query("SELECT id, kind, severity, status, client_id, ib_id, details, created_at FROM fraud_flags WHERE ib_id = $1 OR client_id = $1 ORDER BY created_at DESC LIMIT 20").bind(id).fetch_all(&st.pool).await?;
-    let moves = sqlx::query("SELECT from_parent, to_parent, staff, reason, at FROM reassignments WHERE user_id = $1 ORDER BY at DESC").bind(id).fetch_all(&st.pool).await?;
+    let moves = sqlx::query(
+        "SELECT r.from_parent, r.to_parent, r.staff, r.reason, r.at, f.first_name || ' ' || f.last_name AS from_name, t.first_name || ' ' || t.last_name AS to_name
+         FROM reassignments r LEFT JOIN members f ON f.user_id = r.from_parent LEFT JOIN members t ON t.user_id = r.to_parent WHERE r.user_id = $1 ORDER BY r.at DESC",
+    )
+    .bind(id)
+    .fetch_all(&st.pool)
+    .await?;
     let lh = sqlx::query("SELECT from_key, to_key, reason, month, active_clients, lots, at FROM level_history WHERE user_id = $1 ORDER BY at DESC LIMIT 20").bind(id).fetch_all(&st.pool).await?;
     Ok(Json(json!({
         "partner": partner,
@@ -356,6 +362,7 @@ pub async fn partner(State(st): State<AppState>, s: StaffCtx, Path(id): Path<i64
         "flags": flags.iter().map(flag_json_min).collect::<Vec<_>>(),
         "reassignments": moves.iter().map(|x| json!({
             "fromParent": x.get::<Option<i64>, _>("from_parent"), "toParent": x.get::<Option<i64>, _>("to_parent"), "staff": x.get::<String, _>("staff"),
+            "fromName": x.get::<Option<String>, _>("from_name"), "toName": x.get::<Option<String>, _>("to_name"),
             "reason": x.get::<String, _>("reason"), "at": x.get::<DateTime<Utc>, _>("at"),
         })).collect::<Vec<_>>(),
         "levelHistory": lh.iter().map(|x| json!({
@@ -704,6 +711,8 @@ pub async fn retry_batch(State(st): State<AppState>, s: StaffCtx, Path(id): Path
 #[derive(Deserialize)]
 pub struct FlagsQ {
     status: Option<String>,
+    kind: Option<String>,
+    id: Option<i64>,
     page: Option<i64>,
     limit: Option<i64>,
 }
@@ -714,12 +723,15 @@ pub async fn flags(State(st): State<AppState>, s: StaffCtx, Query(q): Query<Flag
         "SELECT f.*, c.first_name AS c_first, c.last_name AS c_last, c.email AS c_email, i.first_name AS i_first, i.last_name AS i_last, i.referral_code AS i_code,
                 count(*) OVER () AS total
          FROM fraud_flags f LEFT JOIN members c ON c.user_id = f.client_id LEFT JOIN members i ON i.user_id = f.ib_id
-         WHERE f.tenant = $1 AND ($2::text IS NULL OR f.status = $2) ORDER BY (f.status = 'open') DESC, f.created_at DESC LIMIT $3 OFFSET $4",
+         WHERE f.tenant = $1 AND ($2::text IS NULL OR f.status = $2) AND ($5::text IS NULL OR f.kind LIKE $5 || '%') AND ($6::bigint IS NULL OR f.id = $6)
+         ORDER BY (f.status = 'open') DESC, f.created_at DESC LIMIT $3 OFFSET $4",
     )
     .bind(&s.tenant)
     .bind(q.status.as_deref().filter(|x| *x != "all"))
     .bind(limit)
     .bind(offset)
+    .bind(q.kind.as_deref().filter(|x| *x != "all" && x.len() <= 40))
+    .bind(q.id)
     .fetch_all(&st.pool)
     .await?;
     let total = rows.first().map(|r| r.get::<i64, _>("total")).unwrap_or(0);

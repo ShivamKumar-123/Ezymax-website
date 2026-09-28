@@ -8,6 +8,8 @@ import { LEVELS, PARTNERS, PLANS, SUB_BROKER_NAMES, type LevelKey, type Partner 
 import { MiniField, MiniStat, PersonCell, Select, TextInput } from "@/components/config/kit";
 import { LevelChip, fmtInt, fmtLots } from "@/components/partners/common";
 import { PartnerDrawer } from "@/components/partners/partner-drawer";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePartnersList } from "@/components/partners-live/partners";
 
 function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [name, setName] = React.useState("");
@@ -51,7 +53,7 @@ function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
   );
 }
 
-export default function PartnersListPage() {
+function DemoPartnersList() {
   const [rows, setRows] = React.useState<Partner[]>(PARTNERS);
   const [sel, setSel] = React.useState<string | null>(null);
   const [status, setStatus] = React.useState<"all" | Partner["status"]>("all");
@@ -138,4 +140,8 @@ export default function PartnersListPage() {
       <InviteDialog open={invite} onOpenChange={setInvite} />
     </div>
   );
+}
+
+export default function PartnersListPage() {
+  return IS_DEMO ? <DemoPartnersList /> : <LivePartnersList />;
 }

@@ -8,6 +8,8 @@ import { PLANS, type CommissionPlan } from "@kalks/mock/admin-partners";
 import { auditToast, useReason } from "@/components/config/kit";
 import { fmtDT, fmtInt } from "@/components/partners/common";
 import { CpaCard, RateMatrix, TiersCard } from "@/components/partners/plan-editor";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveProgrammeSettings } from "@/components/partners-live/settings";
 
 const KIND: Record<CommissionPlan["kind"], { label: string; tone: "ember" | "gold" | "info"; icon: string }> = {
   ib: { label: "Rebate", tone: "ember", icon: "handshake" },
@@ -15,7 +17,7 @@ const KIND: Record<CommissionPlan["kind"], { label: string; tone: "ember" | "gol
   cpa: { label: "CPA", tone: "info", icon: "money_bag" },
 };
 
-export default function CommissionPlansPage() {
+function DemoCommissionPlans() {
   const [published, setPublished] = React.useState<CommissionPlan[]>(PLANS);
   const [drafts, setDrafts] = React.useState<CommissionPlan[]>(PLANS);
   const [sel, setSel] = React.useState(PLANS[0]!.id);
@@ -111,4 +113,8 @@ export default function CommissionPlansPage() {
       {reason.node}
     </div>
   );
+}
+
+export default function CommissionPlansPage() {
+  return IS_DEMO ? <DemoCommissionPlans /> : <LiveProgrammeSettings />;
 }

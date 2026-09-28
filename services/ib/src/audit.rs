@@ -9,6 +9,14 @@ pub struct Actor {
 }
 
 impl Actor {
+    /// "Name (staff:1)" for display columns.
+    pub fn label(&self) -> String {
+        match &self.name {
+            Some(n) => format!("{n} ({})", self.id),
+            None => self.id.clone(),
+        }
+    }
+
     pub fn system() -> Self {
         Actor { id: "system".into(), name: Some("IB service".into()) }
     }

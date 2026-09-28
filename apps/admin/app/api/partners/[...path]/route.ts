@@ -24,7 +24,7 @@ const ROUTES: Route[] = [
   { method: "POST", re: new RegExp(`^commissions/${ID}/reject$`), perm: "partners.approve" },
 ];
 
-const QUERY_KEYS = ["q", "level", "scope", "status", "kind", "ib", "client", "batch", "from", "to", "page", "limit", "before", "target"];
+const QUERY_KEYS = ["q", "level", "scope", "status", "kind", "ib", "client", "batch", "from", "to", "page", "limit", "before", "target", "id"];
 
 async function handle(req: NextRequest, parts: string[], method: Method) {
   const path = parts.map((p) => decodeURIComponent(p)).join("/");
