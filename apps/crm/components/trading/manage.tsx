@@ -5,7 +5,9 @@ import { Eye, Globe, Lock, Pencil, RefreshCcw, TriangleAlert, Users } from "luci
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, Field, KeyValue, Money, Reveal, cn } from "@kalks/ui";
 import { PasswordInput } from "@/components/accounts/security";
-import { STATUS_LABEL, curOf, errorToast, fmtDate, modeLabel, serverOf, tradingApi, type EngineAccount } from "./api";
+import { FormError } from "@/components/auth";
+import { STEPUP_CODES, StepUpCode, StepUpDialog, useStepUp } from "@/components/stepup";
+import { ApiError, STATUS_LABEL, curOf, errorToast, fmtDate, modeLabel, serverOf, tradingApi, type EngineAccount } from "./api";
 import { PasswordRules, SecretField, TradeButton, demoTarget, livePasswordOk, refillsLeft, useRefill } from "./ui";
 
 /* ------------------------------------------------------------------ */
@@ -16,27 +18,49 @@ function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: EngineAccoun
   const [pw, setPw] = React.useState("");
   const [confirm, setConfirm] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [phase, setPhase] = React.useState<"form" | "code" | "done">("form");
+  const [formErr, setFormErr] = React.useState<string | null>(null);
   const [done, setDone] = React.useState<{ password: string; revoked: number } | null>(null);
+  const s = useStepUp(kind === "trading" ? "trading_password" : "investor_password", String(a.login));
+  const { reset } = s;
   React.useEffect(() => {
     if (!open) {
       setPw("");
       setConfirm("");
       setDone(null);
+      setPhase("form");
+      setFormErr(null);
+      reset();
     }
-  }, [open]);
+  }, [open, reset]);
   const ok = livePasswordOk(pw) && pw === confirm;
   const label = kind === "trading" ? "Trading password" : "Investor password";
 
-  const submit = async () => {
+  // step 1: email a confirmation code (D20)
+  const requestCode = async () => {
+    setFormErr(null);
+    if (await s.start()) setPhase("code");
+  };
+
+  // step 2: code -> step-up token -> change
+  const submit = async (c?: string) => {
+    if (busy) return;
+    const token = await s.verify(c);
+    if (!token) return;
     setBusy(true);
     try {
-      const r = await tradingApi<{ sessionsRevoked: number }>(`accounts/${a.login}/passwords`, { body: { kind, password: pw } });
+      const r = await tradingApi<{ sessionsRevoked: number }>(`accounts/${a.login}/passwords`, { body: { kind, password: pw, stepup_token: token } });
       setDone({ password: pw, revoked: r.sessionsRevoked ?? 0 });
+      setPhase("done");
       setPw("");
       setConfirm("");
       toast.success(`${label} changed`, { description: `#${a.login}${r.sessionsRevoked ? ` · ${r.sessionsRevoked} open session${r.sessionsRevoked === 1 ? "" : "s"} signed out` : ""}` });
     } catch (e) {
-      errorToast(`Couldn't change the ${label.toLowerCase()}`, e);
+      // the confirmation is spent either way: back to the form, a new code is sent on the next try
+      s.reset();
+      setPhase("form");
+      if (e instanceof ApiError && (e.status === 422 || STEPUP_CODES.has(e.code))) setFormErr(e.message);
+      else errorToast(`Couldn't change the ${label.toLowerCase()}`, e);
     } finally {
       setBusy(false);
     }
@@ -48,29 +72,46 @@ function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: EngineAccoun
       onOpenChange={onOpenChange}
       title={kind === "trading" ? "Change trading password" : "Change investor password"}
       description={
-        kind === "trading"
-          ? `Full-access password for #${a.login}. Kalks Trader sessions signed in with the old password are signed out.`
-          : `Read-only password for #${a.login}. Share it to let someone view the account without trading. Sessions using the old one are signed out.`
+        phase === "code"
+          ? "Confirm with the code we emailed you."
+          : kind === "trading"
+            ? `Full-access password for #${a.login}. Kalks Trader sessions signed in with the old password are signed out.`
+            : `Read-only password for #${a.login}. Share it to let someone view the account without trading. Sessions using the old one are signed out.`
       }
       width={520}
       footer={
-        done ? (
+        phase === "done" ? (
           <Button variant="ember" onClick={() => onOpenChange(false)}>
             Done
           </Button>
+        ) : phase === "code" ? (
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                s.reset();
+                setPhase("form");
+              }}
+            >
+              Back
+            </Button>
+            <Button variant="ember" disabled={s.code.length !== 6 || s.verifying || busy} onClick={() => void submit()}>
+              {s.verifying ? "Checking…" : busy ? "Saving…" : "Confirm & set password"}
+            </Button>
+          </>
         ) : (
           <>
             <Button variant="ghost" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button variant="ember" disabled={!ok || busy} onClick={submit}>
-              {busy ? "Saving…" : "Set new password"}
+            <Button variant="ember" disabled={!ok || s.sending} onClick={requestCode}>
+              {s.sending ? "Sending code…" : "Continue"}
             </Button>
           </>
         )
       }
     >
-      {done ? (
+      {phase === "done" && done ? (
         <div className="space-y-4">
           <SecretField label={`New ${label.toLowerCase()}`} value={done.password} secret />
           <div className="flex items-start gap-2 rounded-[14px] border border-warn/25 bg-warn-soft px-3.5 py-3 text-[12.5px] text-fg-2">
@@ -78,8 +119,11 @@ function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: EngineAccoun
             Shown once. Copy it now; Kalks never displays or emails existing passwords.
           </div>
         </div>
+      ) : phase === "code" ? (
+        <StepUpCode s={s} what={`set the new ${label.toLowerCase()} for #${a.login}`} onSubmit={(c) => void submit(c)} />
       ) : (
         <div className="space-y-4">
+          <FormError>{formErr ?? (s.err && !s.challenge ? s.err.message : null)}</FormError>
           <Field label="New password">
             <PasswordInput value={pw} onChange={setPw} generate />
           </Field>
@@ -87,7 +131,7 @@ function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: EngineAccoun
           <Field label="Confirm new password" error={confirm && confirm !== pw ? "Passwords don't match" : undefined}>
             <PasswordInput value={confirm} onChange={setConfirm} placeholder="Repeat password" />
           </Field>
-          <p className="text-[12px] text-fg-3">The trading and investor passwords must be different.</p>
+          <p className="text-[12px] text-fg-3">The trading and investor passwords must be different. We&apos;ll email you a code to confirm the change.</p>
         </div>
       )}
     </Dialog>
@@ -184,19 +228,18 @@ export function CredentialsPanel({ a }: { a: EngineAccount }) {
 
 function LeverageCard({ a, onChanged }: { a: EngineAccount; onChanged: () => void }) {
   const [lev, setLev] = React.useState(a.leverage);
-  const [busy, setBusy] = React.useState(false);
+  const [confirming, setConfirming] = React.useState(false);
   React.useEffect(() => setLev(a.leverage), [a.leverage]);
   const locked = a.positions > 0;
-  const apply = async () => {
-    setBusy(true);
+  const fmt = (l: number) => `1:${l.toLocaleString("en-US")}`;
+  // runs after the emailed code is confirmed (D20)
+  const apply = async (token: string) => {
     try {
-      const r = await tradingApi<{ from: number; leverage: number }>(`accounts/${a.login}/leverage`, { body: { leverage: lev } });
-      toast.success("Leverage changed", { description: `#${a.login}: 1:${r.from.toLocaleString("en-US")} → 1:${r.leverage.toLocaleString("en-US")}` });
+      const r = await tradingApi<{ from: number; leverage: number }>(`accounts/${a.login}/leverage`, { body: { leverage: lev, stepup_token: token } });
+      toast.success("Leverage changed", { description: `#${a.login}: ${fmt(r.from)} → ${fmt(r.leverage)}` });
       onChanged();
     } catch (e) {
       errorToast("Couldn't change the leverage", e);
-    } finally {
-      setBusy(false);
     }
   };
   return (
@@ -230,11 +273,24 @@ function LeverageCard({ a, onChanged }: { a: EngineAccount; onChanged: () => voi
         </div>
         <div className="mt-4 flex items-center justify-between gap-3">
           <span className="text-[12.5px] text-fg-3">Higher leverage lowers the margin required per trade and increases risk.</span>
-          <Button size="sm" variant="ember" disabled={locked || lev === a.leverage || busy} onClick={apply}>
-            {busy ? "Applying…" : "Apply"}
+          <Button size="sm" variant="ember" disabled={locked || lev === a.leverage || confirming} onClick={() => setConfirming(true)}>
+            Apply
           </Button>
         </div>
       </div>
+      {confirming && (
+        <StepUpDialog
+          open={confirming}
+          onOpenChange={setConfirming}
+          action="leverage"
+          target={String(a.login)}
+          title="Confirm leverage change"
+          description={`#${a.login}: ${fmt(a.leverage)} → ${fmt(lev)}`}
+          what={`change the leverage of #${a.login} to ${fmt(lev)}`}
+          confirmLabel="Confirm & apply"
+          onConfirmed={apply}
+        />
+      )}
     </Card>
   );
 }

@@ -12,7 +12,15 @@ const POST_ACTIONS: Record<string, string> = {
   forgot: "/v1/auth/forgot",
   reset: "/v1/auth/reset",
   logout: "/v1/auth/logout",
+  // signed-in only: step-up confirmation (D20) and the Client Area password change
+  stepup: "/v1/auth/stepup",
+  "stepup-resend": "/v1/auth/stepup/resend",
+  "stepup-verify": "/v1/auth/stepup/verify",
+  password: "/v1/auth/password",
 };
+
+/** Actions that act on the current session, so the session token is forwarded. */
+const SESSION_ACTIONS = new Set(["logout", "stepup", "stepup-resend", "stepup-verify", "password"]);
 
 type Session = { token: string; expires_at: string };
 
@@ -40,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ act
     ip: clientIp(req.headers),
     userAgent: req.headers.get("user-agent"),
     device,
-    token: action === "logout" ? token : undefined,
+    token: SESSION_ACTIONS.has(action) ? token : undefined,
   });
 
   const { session, ...data } = r.data;

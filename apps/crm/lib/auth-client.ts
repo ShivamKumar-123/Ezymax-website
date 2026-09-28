@@ -5,10 +5,13 @@ export type ApiError = { code: string; message: string; field?: string; retry_af
 export type OtpChallenge = {
   status: "otp_required";
   challenge: string;
-  purpose: "verify_email" | "login" | "reset_password";
+  purpose: "verify_email" | "login" | "reset_password" | "confirm";
   email_masked: string;
   expires_in: number;
   resend_in: number;
+  /** Step-up codes (purpose "confirm") only: the change being confirmed. */
+  action?: string;
+  target?: string;
   /** Development only: SMTP is not configured, so the gateway returns the code for the dev hint. */
   dev_code?: string;
 };

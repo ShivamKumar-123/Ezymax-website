@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { CalendarDays, ChevronRight, IdCard, KeyRound, Lock, Mail, Phone, ShieldCheck, UserRound } from "lucide-react";
 import { Avatar, Button, Card, CardHeader, Chip, Flag, PageHeader, Reveal } from "@kalks/ui";
+import { ChangePasswordCard } from "@/components/profile/change-password";
 import { KYC_CHIP, useSession } from "@/components/session";
 import { SUPPORT_EMAIL } from "@/lib/live";
 
@@ -23,7 +24,7 @@ function fmtDate(iso: string, opts: Intl.DateTimeFormatOptions = { day: "numeric
   return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-GB", opts);
 }
 
-/** Signs out and opens the real password-reset flow (there is no in-session password change yet). */
+/** Signs out and opens the password-reset flow (for clients who don't know their current password). */
 async function resetPassword() {
   await fetch("/api/auth/logout", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }).catch(() => {});
   window.location.assign("/forgot");
@@ -96,46 +97,56 @@ export function LiveProfile() {
       </Reveal>
 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <Reveal delay={0.05} className="xl:col-span-2">
-          <Card className="h-full">
-            <CardHeader
-              title="Personal information"
-              subtitle="Details can't be edited online yet. To correct them, write to support from your registered email."
-              icon={<UserRound />}
-              action={
-                <a href={correction}>
-                  <Button size="sm" variant="surface">
-                    <Mail /> Request a correction
-                  </Button>
-                </a>
-              }
+        <div className="space-y-4 xl:col-span-2">
+          <Reveal delay={0.05}>
+            <Card>
+              <CardHeader
+                title="Personal information"
+                subtitle="Details can't be edited online yet. To correct them, write to support from your registered email."
+                icon={<UserRound />}
+                action={
+                  <a href={correction}>
+                    <Button size="sm" variant="surface">
+                      <Mail /> Request a correction
+                    </Button>
+                  </a>
+                }
+              />
+              <div className="grid grid-cols-1 gap-x-10 px-6 pb-4 pt-2 md:grid-cols-2">
+                <div>
+                  <Row label="First name">{me.first_name || "—"}</Row>
+                  <Row label="Last name">{me.last_name || "—"}</Row>
+                  <Row label="Date of birth">{fmtDate(me.date_of_birth)}</Row>
+                  <Row label="Country of residence">
+                    <span className="inline-flex items-center gap-2">
+                      {me.country && <Flag country={me.country.toLowerCase()} className="size-4" />}
+                      {countryName(me.country)}
+                    </span>
+                  </Row>
+                </div>
+                <div>
+                  <Row label="Email">{me.email}</Row>
+                  <Row label="Phone">{phone || "—"}</Row>
+                  <Row label="Client ID">
+                    <span className="font-mono">{id}</span>
+                  </Row>
+                  <Row label="Registered">{fmtDate(me.created_at)}</Row>
+                </div>
+              </div>
+              <div className="mx-6 mb-6 flex items-center gap-2 rounded-xl border border-line bg-surface-2 px-4 py-2.5 text-[12px] text-fg-3">
+                <Lock className="size-3.5 shrink-0" /> Name and date of birth must match your identity documents when verification opens.
+              </div>
+            </Card>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <ChangePasswordCard
+              onForgot={() => {
+                toast("Signing you out to reset your password…");
+                void resetPassword();
+              }}
             />
-            <div className="grid grid-cols-1 gap-x-10 px-6 pb-4 pt-2 md:grid-cols-2">
-              <div>
-                <Row label="First name">{me.first_name || "—"}</Row>
-                <Row label="Last name">{me.last_name || "—"}</Row>
-                <Row label="Date of birth">{fmtDate(me.date_of_birth)}</Row>
-                <Row label="Country of residence">
-                  <span className="inline-flex items-center gap-2">
-                    {me.country && <Flag country={me.country.toLowerCase()} className="size-4" />}
-                    {countryName(me.country)}
-                  </span>
-                </Row>
-              </div>
-              <div>
-                <Row label="Email">{me.email}</Row>
-                <Row label="Phone">{phone || "—"}</Row>
-                <Row label="Client ID">
-                  <span className="font-mono">{id}</span>
-                </Row>
-                <Row label="Registered">{fmtDate(me.created_at)}</Row>
-              </div>
-            </div>
-            <div className="mx-6 mb-6 flex items-center gap-2 rounded-xl border border-line bg-surface-2 px-4 py-2.5 text-[12px] text-fg-3">
-              <Lock className="size-3.5 shrink-0" /> Name and date of birth must match your identity documents when verification opens.
-            </div>
-          </Card>
-        </Reveal>
+          </Reveal>
+        </div>
 
         <div className="space-y-4">
           <Reveal delay={0.1}>
@@ -155,6 +166,7 @@ export function LiveProfile() {
                 </Row>
                 <Row label="Sign-in">Password</Row>
                 <Row label="New devices">Email code required</Row>
+                <Row label="Sensitive changes">Email code required</Row>
               </div>
               <div className="px-6 pb-6">
                 <Button
@@ -167,7 +179,7 @@ export function LiveProfile() {
                 >
                   <KeyRound /> Reset password
                 </Button>
-                <p className="mt-2 text-[11.5px] text-fg-3">You'll be signed out and we'll email you a reset code.</p>
+                <p className="mt-2 text-[11.5px] text-fg-3">Forgot your password? You'll be signed out and we'll email you a reset code.</p>
               </div>
             </Card>
           </Reveal>

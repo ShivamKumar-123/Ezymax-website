@@ -101,3 +101,23 @@ export function setSessionCookie(res: NextResponse, session: { token: string; ex
   const maxAge = Math.max(60, Math.floor((new Date(session.expires_at).getTime() - Date.now()) / 1000));
   res.cookies.set(SESSION_COOKIE, session.token, { httpOnly: true, secure: PROD, sameSite: "lax", path: "/", maxAge });
 }
+
+/** Step-up actions (D20): sensitive changes confirmed with an emailed code even inside a session. */
+export type StepupAction = "trading_password" | "investor_password" | "leverage" | "withdrawal" | "account_password" | "profile_email" | "profile_phone";
+
+/** The step-up token the browser got from /api/auth/stepup-verify: body field `stepup_token` or header `X-Kalks-Stepup`. */
+export function stepupTokenOf(h: Headers, body?: Record<string, unknown> | null): string {
+  const b = body?.stepup_token;
+  const v = typeof b === "string" && b ? b : (h.get("x-kalks-stepup") ?? "");
+  return v.trim().slice(0, 128);
+}
+
+/**
+ * Redeems a step-up token with the gateway right before performing the change. Single use, bound to
+ * user + action + target. Returns null when the change may go ahead, else the error to send back.
+ */
+export async function consumeStepup(userId: number, h: Headers, action: StepupAction, target: string, token: string): Promise<GatewayResult | null> {
+  if (!token) return { status: 403, data: { error: { code: "stepup_required", message: "Confirm this change with the code we email you." } } };
+  const r = await gateway("/v1/auth/stepup/consume", { body: { token, user_id: userId, action, target }, ip: clientIp(h), userAgent: h.get("user-agent") });
+  return r.status === 200 ? null : r;
+}

@@ -18,8 +18,19 @@ Next.js app on http://localhost:3000. Live builds (default) show real data only.
 | `GET accounts/{login}` | `GET /v1/accounts/{login}` |
 | `GET accounts/{login}/history`, `…/ledger` (`from`, `to`, `page`, `limit`) | same paths |
 | `GET accounts/{login}/export?kind=history\|ledger&from&to` | CSV statement built from the paged engine routes |
-| `POST accounts/{login}/demo-refill`, `…/passwords`, `…/leverage` | same paths |
+| `POST accounts/{login}/demo-refill` | same path |
+| `POST accounts/{login}/passwords`, `…/leverage` (need `stepup_token`, see below) | same paths |
 | `POST accounts/{login}/sso` | `POST /v1/accounts/{login}/sso`, returns `{url, expiresAt}` |
+
+### Email-code confirmation (D20)
+
+Trading and investor password changes, leverage changes and the Client Area password change need a 6-digit code emailed to the client, even inside a session:
+
+1. `POST /api/auth/stepup {action, target}` emails the code (`action`: `trading_password`, `investor_password`, `leverage`, `account_password`, `withdrawal`, …; `target`: the account login where it applies). Resend with `POST /api/auth/stepup-resend {challenge}`.
+2. `POST /api/auth/stepup-verify {challenge, code, action, target}` returns `stepup_token`: single use, valid for 5 minutes, bound to the client, the action and the target.
+3. The change request carries `stepup_token` (body field, or the `X-Kalks-Stepup` header). The trading BFF checks the request against the account first, then redeems the token with the gateway (`POST /v1/auth/stepup/consume`, server to server only) and only then calls the engine. Without a valid token it answers 403 `stepup_required` / `stepup_invalid`.
+
+The Client Area password is changed with `POST /api/auth/password {current, new, stepup_token, sign_out_others}` (gateway `POST /v1/auth/password`). UI: `components/stepup.tsx` (`useStepUp`, `StepUpCode`, `StepUpDialog`).
 
 ### Kalks Trader SSO
 

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import type { GatewayUser } from "@/lib/gateway";
+import { consumeStepup, stepupTokenOf, type GatewayUser, type StepupAction } from "@/lib/gateway";
 import { TERMINAL_BASE, clientAccount, clientDeal, clientOrder, clientPosition, engine, sameOrigin, sessionUser } from "@/lib/trading";
 
 // Client Area trading BFF. Browser -> /api/trading/<route> (same origin) -> trading engine /v1/…
@@ -15,8 +15,13 @@ import { TERMINAL_BASE, clientAccount, clientDeal, clientOrder, clientPosition, 
 //   GET  accounts/{login}/ledger?from&to&page&limit
 //   GET  accounts/{login}/export?kind=history|ledger&from&to   CSV download (times in UTC)
 //   POST accounts/{login}/demo-refill
-//   POST accounts/{login}/passwords          {kind: trading|investor, password}
-//   POST accounts/{login}/leverage           {leverage}
+//   POST accounts/{login}/passwords          {kind: trading|investor, password, stepup_token}
+//   POST accounts/{login}/leverage           {leverage, stepup_token}
+//
+// Passwords and leverage need an emailed-code confirmation (D20): the browser gets a step-up token from
+// /api/auth/stepup-verify (action trading_password | investor_password | leverage, target = login) and sends it
+// as `stepup_token` (or X-Kalks-Stepup). It is checked against the account first, then redeemed once with the
+// gateway, and only then does the engine make the change.
 //   POST accounts/{login}/sso                {url, expiresAt}: url = NEXT_PUBLIC_TERMINAL_URL + "/?sso=<token>"
 
 type Obj = Record<string, unknown>;
@@ -151,12 +156,28 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     }
     case "passwords": {
       if (body.kind !== "trading" && body.kind !== "investor") return error(422, "validation", "Choose the trading or investor password.");
-      if (typeof body.password !== "string" || body.password.length > 64) return error(422, "validation", "Invalid password.");
-      const r = await engine(`/v1/accounts/${login}/passwords`, { user, req, body: { kind: body.kind, password: body.password } });
+      const pw = body.password;
+      // same rules as the engine, checked before the one-time confirmation is spent
+      if (typeof pw !== "string" || pw.length < 8 || pw.length > 64 || !/\p{L}/u.test(pw) || !/\d/.test(pw)) {
+        return error(422, "validation", "Use 8 to 64 characters with letters and digits.");
+      }
+      const own = await ownAccount(req, user, login);
+      if (own) return own;
+      const denied = await stepup(req, user, body, body.kind === "trading" ? "trading_password" : "investor_password", login);
+      if (denied) return denied;
+      const r = await engine(`/v1/accounts/${login}/passwords`, { user, req, body: { kind: body.kind, password: pw } });
       return reply(r.status, r.data);
     }
     case "leverage": {
       if (!Number.isInteger(body.leverage)) return error(422, "validation", "Invalid leverage.");
+      const acct = await engine<{ account?: { leverage?: number; leverages?: number[]; positions?: number } }>(`/v1/accounts/${login}`, { user, req });
+      if (acct.status !== 200 || !acct.data.account) return reply(acct.status === 200 ? 404 : acct.status, acct.data);
+      const a = acct.data.account;
+      if (Array.isArray(a.leverages) && !a.leverages.includes(body.leverage as number)) return error(422, "invalid_leverage", "This leverage isn't available for the account's group.");
+      if ((a.positions ?? 0) > 0) return error(409, "positions_open", "Close all open positions before changing leverage.");
+      if (a.leverage === body.leverage) return error(422, "validation", "The account already uses this leverage.");
+      const denied = await stepup(req, user, body, "leverage", login);
+      if (denied) return denied;
       const r = await engine(`/v1/accounts/${login}/leverage`, { user, req, body: { leverage: body.leverage } });
       return reply(r.status, r.data);
     }
@@ -167,6 +188,19 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     }
   }
   return error(404, "not_found", "Not found.");
+}
+
+/** 404 unless the account exists and belongs to the client (the engine checks ownership). */
+async function ownAccount(req: NextRequest, user: GatewayUser, login: string): Promise<NextResponse | null> {
+  const r = await engine<{ account?: unknown }>(`/v1/accounts/${login}`, { user, req });
+  if (r.status === 200 && r.data.account) return null;
+  return reply(r.status === 200 ? 404 : r.status, r.data);
+}
+
+/** Redeems the client's step-up token (D20) for this change; null = go ahead. */
+async function stepup(req: NextRequest, user: GatewayUser, body: Obj, action: StepupAction, login: string): Promise<NextResponse | null> {
+  const denied = await consumeStepup(user.id, req.headers, action, login, stepupTokenOf(req.headers, body));
+  return denied ? reply(denied.status, denied.data) : null;
 }
 
 /* ------------------------------------------------------------------ */
