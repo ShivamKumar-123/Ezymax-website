@@ -183,6 +183,10 @@ impl Plan {
         if self.group.is_empty() || self.group.len() > 40 {
             return bad("group", "Engine group is required");
         }
+        // The wallet refuses transfers for groups named prop*; prop accounts must stay in such a group.
+        if !self.group.to_ascii_lowercase().starts_with("prop") {
+            return bad("group", "Prop plans must use an engine group whose code starts with \"prop\" (e.g. prop, prop-funded)");
+        }
         if self.sizes.is_empty() || self.sizes.len() > 20 {
             return bad("sizes", "Add 1–20 account sizes");
         }

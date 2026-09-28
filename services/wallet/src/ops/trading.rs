@@ -89,6 +89,10 @@ pub async fn start(st: &AppState, ctx: &Ctx, user_id: i64, dir: Dir, login: i64,
     if acct.kind != "live" {
         return Err(ApiError::unprocessable("not_own_account", "Transfers are only possible to and from live accounts"));
     }
+    // Prop challenge / funded accounts hold simulated firm capital: never movable to or from the wallet.
+    if is_blocked_group(&acct.group) {
+        return Err(ApiError::unprocessable("prop_account", "Prop challenge accounts can't send or receive wallet transfers. Payouts are requested from the Prop section."));
+    }
 
     let mut tx = st.pool.begin().await?;
     let id: i64 = sqlx::query_scalar("SELECT nextval(pg_get_serial_sequence('trading_transfers', 'id'))").fetch_one(&mut *tx).await?;
@@ -267,4 +271,32 @@ pub async fn recover(st: &AppState, min_age_secs: i64) -> anyhow::Result<usize> 
         settle_pending(st, *id).await;
     }
     Ok(ids.len())
+}
+
+/// Account groups whose balances must never move through the wallet: every group starting with "prop",
+/// plus any listed in WALLET_BLOCKED_GROUPS (comma-separated).
+pub fn is_blocked_group(group: &str) -> bool {
+    let g = group.trim().to_ascii_lowercase();
+    if g.starts_with("prop") {
+        return true;
+    }
+    std::env::var("WALLET_BLOCKED_GROUPS")
+        .unwrap_or_default()
+        .split(',')
+        .map(|x| x.trim().to_ascii_lowercase())
+        .any(|x| !x.is_empty() && x == g)
+}
+
+#[cfg(test)]
+mod blocked_group_tests {
+    use super::is_blocked_group;
+
+    #[test]
+    fn prop_groups_are_blocked() {
+        assert!(is_blocked_group("prop"));
+        assert!(is_blocked_group("prop-funded"));
+        assert!(is_blocked_group("PROP_2step"));
+        assert!(!is_blocked_group("standard"));
+        assert!(!is_blocked_group("ecn"));
+    }
 }

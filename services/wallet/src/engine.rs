@@ -16,6 +16,8 @@ pub struct EngineAccount {
     pub status: String,
     pub currency: String,
     pub cent: bool,
+    /// Engine group code (e.g. "standard", "prop").
+    pub group: String,
 }
 
 #[derive(Debug, Clone)]
@@ -96,6 +98,7 @@ impl Engine for HttpEngine {
                             status: x.get("status").and_then(Value::as_str).unwrap_or("active").to_string(),
                             currency: x.get("currency").and_then(Value::as_str).unwrap_or("USD").to_string(),
                             cent: x.get("cent").and_then(Value::as_bool).unwrap_or(false),
+                            group: x.get("group").and_then(Value::as_str).unwrap_or("").to_string(),
                         })
                     })
                     .collect()
@@ -140,7 +143,7 @@ pub struct MockEngine {
 
 impl MockEngine {
     pub fn with_account(self, user_id: i64, login: i64, kind: &str) -> Self {
-        self.accounts.lock().unwrap().entry(user_id).or_default().push(EngineAccount { login, kind: kind.into(), status: "active".into(), currency: "USD".into(), cent: false });
+        self.accounts.lock().unwrap().entry(user_id).or_default().push(EngineAccount { login, kind: kind.into(), status: "active".into(), currency: "USD".into(), cent: false, group: "standard".into() });
         self
     }
     pub fn set_mode(&self, m: &str) {
