@@ -31,6 +31,17 @@ export async function authPost<T = Record<string, unknown>>(action: string, body
   }
 }
 
+export async function authGet<T = Record<string, unknown>>(action: string): Promise<AuthResult<T>> {
+  try {
+    const res = await fetch(`/api/auth/${action}`, { credentials: "same-origin", cache: "no-store" });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) return { ok: true, data: data as T };
+    return { ok: false, error: (data?.error as ApiError) ?? { code: "unknown", message: "Something went wrong. Please try again." } };
+  } catch {
+    return { ok: false, error: { code: "network", message: "Can't reach Kalks. Check your connection and try again." } };
+  }
+}
+
 /** Where to go after sign-in: the ?next= page if it is a safe same-app path, else the dashboard. */
 export function nextPath(): string {
   if (typeof window === "undefined") return "/";

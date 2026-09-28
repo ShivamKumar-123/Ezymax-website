@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { Button, Field, Input } from "@kalks/ui";
 import { IS_DEMO } from "@kalks/mock/mode";
-import { DemoEntry, DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, OrDivider, OtpInput, ResendLink } from "@/components/auth";
+import { DemoEntry, DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, useGoogleError, OrDivider, OtpInput, ResendLink } from "@/components/auth";
 import { authPost, nextPath, type ApiError, type OtpChallenge } from "@/lib/auth-client";
 
 export default function LoginPage() {
@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [err, setErr] = React.useState<ApiError | null>(null);
+  const googleErr = useGoogleError();
   const [otp, setOtp] = React.useState<OtpChallenge | null>(null);
   const [otpKey, setOtpKey] = React.useState(0);
   const [code, setCode] = React.useState("");
@@ -65,8 +66,9 @@ export default function LoginPage() {
           {IS_DEMO && <DemoEntry />}
           {GOOGLE_LOGIN && (
             <>
-              <div className="mt-8">
-                <GoogleButton />
+              <div className="mt-8 space-y-4">
+                <FormError>{googleErr}</FormError>
+                <GoogleButton mode="login" />
               </div>
               <OrDivider />
             </>

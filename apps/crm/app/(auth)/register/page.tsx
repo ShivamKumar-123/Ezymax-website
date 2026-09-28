@@ -7,43 +7,12 @@ import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { Button, Field, Input, Stepper, Flag, Icon3D } from "@kalks/ui";
 import { IS_DEMO } from "@kalks/mock/mode";
-import { DemoEntry, DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, OrDivider, OtpInput, PasswordStrength, ResendLink } from "@/components/auth";
+import { DemoEntry, DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, useGoogleError, OrDivider, OtpInput, PasswordStrength, ResendLink } from "@/components/auth";
 import { authPost, type ApiError, type OtpChallenge } from "@/lib/auth-client";
-
-const COUNTRIES = [
-  ["in", "India", "+91"],
-  ["ae", "United Arab Emirates", "+971"],
-  ["sa", "Saudi Arabia", "+966"],
-  ["qa", "Qatar", "+974"],
-  ["kw", "Kuwait", "+965"],
-  ["om", "Oman", "+968"],
-  ["bh", "Bahrain", "+973"],
-  ["eg", "Egypt", "+20"],
-  ["tr", "Turkey", "+90"],
-  ["vn", "Vietnam", "+84"],
-  ["my", "Malaysia", "+60"],
-  ["id", "Indonesia", "+62"],
-  ["th", "Thailand", "+66"],
-  ["ph", "Philippines", "+63"],
-  ["sg", "Singapore", "+65"],
-  ["bd", "Bangladesh", "+880"],
-  ["lk", "Sri Lanka", "+94"],
-  ["np", "Nepal", "+977"],
-  ["ng", "Nigeria", "+234"],
-  ["ke", "Kenya", "+254"],
-  ["za", "South Africa", "+27"],
-  ["br", "Brazil", "+55"],
-  ["mx", "Mexico", "+52"],
-  ["gb", "United Kingdom", "+44"],
-] as const;
+import { COUNTRIES, maxDob } from "@/lib/countries";
 
 type Form = { first_name: string; last_name: string; email: string; country: string; phone: string; date_of_birth: string; referral_code: string; password: string };
 
-function maxDob() {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 18);
-  return d.toISOString().slice(0, 10);
-}
 
 export default function RegisterPage() {
   const [step, setStep] = React.useState(0);
@@ -52,6 +21,7 @@ export default function RegisterPage() {
   const [show, setShow] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [err, setErr] = React.useState<ApiError | null>(null);
+  const googleErr = useGoogleError();
   const [otp, setOtp] = React.useState<OtpChallenge | null>(null);
   const [otpKey, setOtpKey] = React.useState(0);
   const [code, setCode] = React.useState("");
@@ -102,8 +72,9 @@ export default function RegisterPage() {
             {IS_DEMO && <DemoEntry />}
             {GOOGLE_LOGIN && (
               <>
-                <div className="mt-6">
-                  <GoogleButton label="Sign up with Google" />
+                <div className="mt-6 space-y-4">
+                  <FormError>{googleErr}</FormError>
+                  <GoogleButton mode="register" label="Sign up with Google" />
                 </div>
                 <OrDivider />
               </>
