@@ -65,7 +65,8 @@ async function handle(req: NextRequest, ctx: Ctx, method: "GET" | "POST" | "PUT"
   }
   const target = `/v1/ib/me${path ? `/${path}` : ""}${method === "GET" && q.size ? `?${q}` : ""}`;
   const r = await ib<Record<string, unknown>>(target, { method, body, ...ibFor(user) });
-  const data = path === "" && r.status === 200 ? { ...r.data, linkBase: publicOrigin(req) } : r.data;
+  const withLinks = path === "" || path === "campaigns" || path === "clients";
+  const data = withLinks && r.status === 200 ? { ...r.data, linkBase: publicOrigin(req) } : r.data;
   return NextResponse.json(data, { status: r.status, headers: NO_STORE });
 }
 

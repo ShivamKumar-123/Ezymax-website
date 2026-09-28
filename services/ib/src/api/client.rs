@@ -388,7 +388,7 @@ pub async fn clients(State(st): State<AppState>, u: UserCtx, Query(q): Query<Cli
                 (SELECT count(*) FROM members x WHERE x.parent_id = m.user_id) AS referrals,
                 (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = m.user_id AND x.qualified AND NOT x.reversed AND x.close_time >= $4) AS lots_month,
                 (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = m.user_id AND x.qualified AND NOT x.reversed) AS lots_total,
-                (SELECT max(x.close_time) FROM deals x WHERE x.user_id = m.user_id) AS last_trade,
+                (SELECT max(x.close_time) FROM deals x WHERE x.user_id = m.user_id AND x.tenant = $1 AND x.qualified) AS last_trade,
                 (SELECT coalesce(sum(k.amount), 0) FROM commissions k WHERE k.beneficiary_id = $2 AND k.client_id = m.user_id AND k.status NOT IN ('void','rejected')) AS earned
          FROM down d JOIN members m ON m.user_id = d.user_id LEFT JOIN campaigns c ON c.id = m.campaign_id
          WHERE ($5::int IS NULL OR d.tier = $5)

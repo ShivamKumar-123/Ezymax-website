@@ -57,6 +57,17 @@ cargo test -p trading
 
 Its settings (`TRADING_*`) live in `.env.local` at the repo root. API, architecture and integration guide: [services/trading/README.md](services/trading/README.md).
 
+## IB / referral programme
+
+Every client is also an IB (partner). The Rust IB service mirrors the referral tree from the gateway, reads closed live deals from the trading engine, and computes multi-tier per-lot commissions, CPA bonuses, level upgrades, campaign funnels and payout batches that the Back Office approves into client wallets. It uses PostgreSQL on port 5433 (database `kalks_ib`, created and migrated on first start).
+
+```bash
+cargo run -p ib                    # http://127.0.0.1:8096 (BFFs and internal services only)
+cargo test -p ib
+```
+
+Its settings (`IB_*`) live in `.env.local` at the repo root; the Client Area and Back Office need `IB_URL` / `IB_INTERNAL_TOKEN` in their `.env.local`. Partner links are `/r/CODE[/campaign]` on the Client Area. Rules, API and integration guide: [services/ib/README.md](services/ib/README.md).
+
 ## Layout
 
 ```
@@ -68,6 +79,7 @@ packages/mock   Mock data + price feed client (live from market-data, simulator 
 services/market-data  Rust market-data service (prices, candles, spreads) — :8081
 services/gateway      Rust sign-in service (clients, staff, sessions, audit log) — :8080
 services/trading      Rust trading engine (accounts, orders, margin, ledger, dealing) — :8090
+services/ib           Rust IB / referral programme (tree, commissions, payouts) — :8096
 config/         Instrument catalogue + trading contract specs
 brand/          Logo sources
 scripts/        Asset sync

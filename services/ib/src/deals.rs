@@ -115,11 +115,13 @@ pub async fn ingest(st: &AppState, d: &DealInput) -> anyhow::Result<Outcome> {
     };
     let lots = calc::std_lots(&facts, &settings);
     let group = model::symbol_group(&d.symbol, &settings, &st.instruments);
-    let member = sqlx::query("SELECT parent_id, self_referral, abuse_cleared FROM members WHERE user_id = $1 AND tenant = $2").bind(d.user_id).bind(&d.tenant).fetch_optional(&st.pool).await?;
+    let member = sqlx::query("SELECT parent_id, self_referral, abuse_cleared, joined_at FROM members WHERE user_id = $1 AND tenant = $2").bind(d.user_id).bind(&d.tenant).fetch_optional(&st.pool).await?;
     let parent: Option<i64> = member.as_ref().and_then(|m| m.get("parent_id"));
     let reason: Option<&str> = calc::disqualify(&facts, &settings)
         .or_else(|| member.is_none().then_some("unknown_client"))
         .or_else(|| parent.is_none().then_some("no_referrer"))
+        // an engine account older than the client (e.g. a re-used id in a rebuilt environment) never earns
+        .or_else(|| member.as_ref().is_some_and(|m| d.open_time < m.get::<DateTime<Utc>, _>("joined_at")).then_some("before_signup"))
         .or_else(|| member.as_ref().and_then(|m| m.get::<Option<String>, _>("self_referral")).map(|_| "self_referral"))
         .or_else(|| group.is_none().then_some("no_symbol_group"));
     let qualified = reason.is_none();
@@ -310,10 +312,12 @@ pub async fn ensure_first_deposit(st: &AppState, tenant: &str, client: i64) -> a
 
 async fn scan_deposits(st: &AppState, tenant: &str, client: i64) -> anyhow::Result<()> {
     let accounts = clients::live_accounts_of(st, tenant, client).await?;
+    let joined: Option<DateTime<Utc>> = sqlx::query_scalar("SELECT joined_at FROM members WHERE user_id = $1").bind(client).fetch_optional(&st.pool).await?;
     let mut first: Option<(DateTime<Utc>, D)> = None;
     for a in &accounts {
         cache_account(st, tenant, a).await?;
         if let Some((at, amt)) = clients::first_deposit(st, tenant, a.login, client).await?
+            && joined.is_none_or(|j| at >= j)
             && first.as_ref().is_none_or(|f| at < f.0)
         {
             first = Some((at, amt));

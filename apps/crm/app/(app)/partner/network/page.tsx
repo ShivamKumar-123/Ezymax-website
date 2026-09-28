@@ -9,6 +9,8 @@ import { Avatar, Button, Card, CardHeader, Chip, Donut, Flag, Icon3D, Money, Pag
 import { ME } from "@kalks/mock";
 import { PARTNER, REFERRED_CLIENTS, TIERS, type ReferredClient } from "@kalks/mock/partner";
 import { TierChip } from "@/components/partner/partner-bits";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePartnerNetwork } from "@/components/partner/live/network";
 
 /* ------------------------------------------------------------------ */
 /* Tree helpers                                                        */
@@ -229,7 +231,7 @@ function TierCard({ tier, delay }: { tier: (typeof TIERS)[number]; delay: number
   );
 }
 
-export default function PartnerNetworkPage() {
+function DemoPartnerNetworkPage() {
   const [open, setOpen] = React.useState<OpenMap>({ [directIbs[0]!.id]: true, [REFERRED_CLIENTS.find((c) => c.name === "Priya Nair")!.id]: true });
   const toggle = React.useCallback((id: string) => setOpen((o) => ({ ...o, [id]: !o[id] })), []);
   const expandAll = () => {
@@ -375,4 +377,8 @@ export default function PartnerNetworkPage() {
       </div>
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <DemoPartnerNetworkPage /> : <LivePartnerNetwork />;
 }

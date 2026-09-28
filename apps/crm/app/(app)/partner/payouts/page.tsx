@@ -26,6 +26,8 @@ import {
 import { WALLET } from "@kalks/mock";
 import { PARTNER, PAYOUT_BATCHES, PAYOUT_SCHEDULE, type PayoutBatch } from "@kalks/mock/partner";
 import { fmtDT } from "@/components/partner/partner-bits";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePartnerPayouts } from "@/components/partner/live/payouts";
 
 function useCountdown(target: string) {
   const [left, setLeft] = React.useState<number | null>(null);
@@ -218,7 +220,7 @@ function HistoryChart() {
   );
 }
 
-export default function PartnerPayoutsPage() {
+function DemoPartnerPayoutsPage() {
   const paid = PAYOUT_BATCHES.filter((b) => b.status === "completed");
   const last = paid[0]!;
   const avg = paid.slice(0, 12).reduce((s, b) => s + b.amount, 0) / 12;
@@ -306,4 +308,8 @@ export default function PartnerPayoutsPage() {
       </Reveal>
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <DemoPartnerPayoutsPage /> : <LivePartnerPayouts />;
 }

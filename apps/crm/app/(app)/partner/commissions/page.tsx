@@ -38,6 +38,8 @@ import {
 } from "@kalks/mock/partner";
 import { RangeSlider } from "@/components/social/controls";
 import { ClientCell, CommissionStatusChip, TierChip, fmtDT } from "@/components/partner/partner-bits";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePartnerCommissions } from "@/components/partner/live/commissions";
 
 /* ------------------------------------------------------------------ */
 
@@ -396,7 +398,7 @@ function LedgerCard() {
 
 /* ------------------------------------------------------------------ */
 
-export default function PartnerCommissionsPage() {
+function DemoPartnerCommissionsPage() {
   return (
     <div className="pb-24">
       <PageHeader
@@ -435,4 +437,8 @@ export default function PartnerCommissionsPage() {
       </Reveal>
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <DemoPartnerCommissionsPage /> : <LivePartnerCommissions />;
 }

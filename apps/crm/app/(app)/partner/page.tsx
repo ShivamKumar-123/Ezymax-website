@@ -43,6 +43,8 @@ import {
 } from "@kalks/mock/partner";
 import { ClientCell, CommissionStatusChip, TierChip, relTime } from "@/components/partner/partner-bits";
 import { ShareButtons } from "@/components/partner/share-buttons";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePartnerDashboard } from "@/components/partner/live/dashboard";
 
 /* ------------------------------------------------------------------ */
 
@@ -436,7 +438,7 @@ function CpaCard() {
 
 /* ------------------------------------------------------------------ */
 
-export default function PartnerDashboardPage() {
+function DemoPartnerDashboardPage() {
   const netLots = PARTNER.monthlyLots;
   return (
     <div className="pb-24">
@@ -499,4 +501,8 @@ export default function PartnerDashboardPage() {
       </div>
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <DemoPartnerDashboardPage /> : <LivePartnerDashboard />;
 }

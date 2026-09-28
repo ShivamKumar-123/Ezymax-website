@@ -27,6 +27,8 @@ import {
 import { ME } from "@kalks/mock";
 import { CPA_RULES, REFERRED_CLIENTS, clientActivity, clientTrades, type KycStatus, type ReferredClient } from "@kalks/mock/partner";
 import { ClientCell, TierChip, fmtDate, relTime, subIbName } from "@/components/partner/partner-bits";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePartnerClients } from "@/components/partner/live/clients";
 
 type TierF = "all" | "1" | "2" | "3";
 type StatusF = "all" | "active" | "dormant" | "registered";
@@ -201,7 +203,7 @@ function ClientDrawer({ c, onClose }: { c: ReferredClient | null; onClose: () =>
 
 /* ------------------------------------------------------------------ */
 
-export default function PartnerClientsPage() {
+function DemoPartnerClientsPage() {
   const [tier, setTier] = React.useState<TierF>("all");
   const [status, setStatus] = React.useState<StatusF>("all");
   const [kyc, setKyc] = React.useState<KycF>("all");
@@ -367,4 +369,8 @@ export default function PartnerClientsPage() {
       <ClientDrawer c={sel} onClose={() => setSel(null)} />
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <DemoPartnerClientsPage /> : <LivePartnerClients />;
 }

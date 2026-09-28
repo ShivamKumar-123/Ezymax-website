@@ -30,6 +30,8 @@ import {
 } from "@kalks/ui";
 import { ME } from "@kalks/mock";
 import { BANNERS, BANNER_SIZES, CAMPAIGNS, LANDING_PAGES, type Campaign } from "@kalks/mock/partner";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePartnerLinks } from "@/components/partner/live/links";
 
 const BASE = ME.referralLink; // https://kalks.com/r/ARJUN24
 const linkFor = (c: Pick<Campaign, "slug">) => `${BASE}/${c.slug}`;
@@ -279,7 +281,7 @@ function QrCard({ campaigns }: { campaigns: Campaign[] }) {
 
 /* ------------------------------------------------------------------ */
 
-export default function PartnerLinksPage() {
+function DemoPartnerLinksPage() {
   const [campaigns, setCampaigns] = React.useState<Campaign[]>(CAMPAIGNS);
   const [create, setCreate] = React.useState(false);
   const [paused, setPaused] = React.useState<Record<string, boolean>>({});
@@ -454,4 +456,8 @@ export default function PartnerLinksPage() {
       <CreateLinkDialog open={create} onOpenChange={setCreate} onCreate={(c) => setCampaigns((x) => [c, ...x])} />
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <DemoPartnerLinksPage /> : <LivePartnerLinks />;
 }
