@@ -8,6 +8,8 @@ import { Avatar, Button, Card, Chip, Icon3D, PageHeader, Reveal, Starfield, cn }
 import { PEOPLE } from "@kalks/mock";
 import { CONTINUE_LEARNING, COURSES } from "@kalks/mock/academy";
 import { CourseGrid, Glossary, LEVEL_TONE, LearningPaths, QuizCard } from "@/components/academy/learn";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveAcademyHome } from "@/components/academy/live/home";
 
 function ContinueHero() {
   const c = COURSES.find((x) => x.id === CONTINUE_LEARNING.courseId)!;
@@ -169,6 +171,8 @@ function CoachTeaser() {
 }
 
 export default function AcademyPage() {
+  // live builds: the real Academy (services/academy); demo builds keep the showcase below
+  if (!IS_DEMO) return <LiveAcademyHome />;
   return (
     <div className="pb-16">
       <PageHeader

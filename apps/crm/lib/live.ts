@@ -3,10 +3,10 @@
 // (see components/live-gate.tsx). Demo builds (NEXT_PUBLIC_KALKS_MODE=demo) render everything.
 
 /** Path prefixes rendered in live builds ("/" matches only the dashboard itself). */
-export const LIVE_PAGES = ["/", "/markets", "/profile", "/support", "/accounts", "/portfolio"] as const;
+export const LIVE_PAGES = ["/", "/markets", "/profile", "/support", "/accounts", "/portfolio", "/academy"] as const;
 
 /** Sub-pages of a live prefix that are still mock-only and stay gated in live builds. */
-export const LIVE_GATED = ["/profile/security", "/profile/verification", "/profile/viewers", "/profile/preferences", "/portfolio/analytics"] as const;
+export const LIVE_GATED = ["/profile/security", "/profile/verification", "/profile/viewers", "/profile/preferences", "/portfolio/analytics", "/academy/coach"] as const;
 
 /** Modules that are next on the roadmap: listed in live navigation with a "Soon" chip. */
 export type SoonModule = { prefix: string; title: string; text: string };

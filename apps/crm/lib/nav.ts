@@ -40,6 +40,7 @@ import {
   Workflow,
   FlaskConical,
   Store,
+  Award,
   BookOpen,
   Bot,
   ShieldCheck,
@@ -180,6 +181,8 @@ export const CRM_NAV: NavModule[] = [
     section: "learn",
     sub: [
       { href: "/academy", label: "Courses", icon: GraduationCap },
+      { href: "/academy/glossary", label: "Glossary", icon: BookOpen },
+      { href: "/academy/progress", label: "My progress", icon: Award },
       { href: "/academy/coach", label: "AI Coach", icon: Bot },
     ],
   },
