@@ -181,7 +181,7 @@ export function LiveProfile() {
                   <div className="flex items-center gap-2 text-[14px] font-medium">
                     Identity verification
                     <Chip size="sm" tone={kyc.tone} dot>
-                      {me.kyc_status === "unverified" ? "Soon" : kyc.label}
+                      {me.kyc_status === "unverified" ? "Not started" : kyc.label}
                     </Chip>
                   </div>
                   <div className="mt-0.5 text-[12.5px] text-fg-3">Online document upload opens with the next release.</div>

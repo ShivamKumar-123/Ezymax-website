@@ -122,9 +122,8 @@ export function LiveOrg() {
                 <RefreshCw /> Refresh
               </Button>
             )}
-            <Button variant="ember" onClick={() => toast("Staff invitations are coming soon", { description: "Until then, new staff accounts are created by the Platform Owner." })}>
+            <Button variant="ember" onClick={() => toast("Staff invitations aren't enabled yet", { description: "New staff accounts are created by the Platform Owner." })}>
               <UserPlus /> Invite staff
-              <span className="rounded-full bg-black/20 px-1.5 text-[10px] font-semibold">Soon</span>
             </Button>
           </>
         }

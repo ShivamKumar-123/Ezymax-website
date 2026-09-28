@@ -12,8 +12,8 @@ export function SoonPage({ pathname }: { pathname: string }) {
   const soon = soonFor(pathname);
   return (
     <ComingSoon
-      title={soon?.title ?? "Coming soon"}
-      text={soon?.text ?? "This part of the Kalks Client Area is not available yet. Everything you see elsewhere is live."}
+      title={soon?.title ?? "Not enabled for your account yet"}
+      text={soon?.text ?? "This section isn't enabled for your account yet. Contact support@kalkstrade.com if you need access."}
       action={
         <div className="flex flex-wrap items-center justify-center gap-2">
           <Link href="/">

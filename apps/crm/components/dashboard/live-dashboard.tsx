@@ -58,7 +58,7 @@ const STATE_CHIP: Record<StepState, { tone: "up" | "warn" | "down" | "neutral" |
   todo: { tone: "ember", label: "To do" },
   review: { tone: "warn", label: "In review" },
   rejected: { tone: "down", label: "Rejected" },
-  soon: { tone: "neutral", label: "Soon" },
+  soon: { tone: "neutral", label: "Not started" },
 };
 
 function StepRow({ s, n }: { s: Step; n: number }) {

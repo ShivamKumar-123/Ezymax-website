@@ -14,18 +14,18 @@ export type SoonModule = { prefix: string; title: string; text: string };
 export const SOON_MODULES: SoonModule[] = [
   {
     prefix: "/wallet",
-    title: "Wallet is coming soon",
-    text: "Deposits and withdrawals in USDT on the TRC20 network are being connected. Your wallet will appear here as soon as it is live.",
+    title: "Wallet",
+    text: "USDT (TRC20) deposits and withdrawals open here once your wallet is enabled. We will email you when it is ready.",
   },
   {
     prefix: "/accounts",
-    title: "Trading accounts are coming soon",
-    text: "You will be able to open live and demo trading accounts here once funding is live. Until then, follow live prices in Kalks Trader.",
+    title: "Trading accounts",
+    text: "Live and demo trading accounts open here once they are enabled for your profile. Meanwhile, follow live prices in Kalks Trader.",
   },
   {
     prefix: "/profile/verification",
-    title: "Identity verification is coming soon",
-    text: "Online identity verification (KYC) opens with the next release. We will email you as soon as you can upload your documents.",
+    title: "Identity verification",
+    text: "Document upload opens here once verification is enabled for your profile. We will email you when you can start.",
   },
 ];
 

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Activity, ArrowUpRight, Download, KeyRound, MailCheck, RefreshCw, ShieldAlert, UserPlus, Users } from "lucide-react";
+import { Activity, ArrowUpRight, Download, MailCheck, RefreshCw, ShieldAlert, UserPlus, Users } from "lucide-react";
 import { Avatar, Button, Card, CardHeader, Chip, EmptyState, Flag, KpiCard, PageHeader, Reveal, Skeleton, cn } from "@kalks/ui";
 import { useServerClock } from "@/components/command/kit";
 import { ColumnChart } from "@/components/config/kit";
@@ -164,32 +164,6 @@ function NewestClients() {
   );
 }
 
-function NextRelease() {
-  const items = [
-    { label: "Deposits", sub: "USDT on TRC20, auto-credited after confirmations", href: "/finance" },
-    { label: "Withdrawals", sub: "Review, approval and on-chain payout", href: "/finance/withdrawals" },
-    { label: "KYC review", sub: "Document checks and the review queue", href: "/clients/kyc" },
-  ];
-  return (
-    <Card>
-      <CardHeader title="Next release" subtitle="Wallet and KYC modules being connected" icon={<KeyRound />} />
-      <div className="grid grid-cols-1 gap-2.5 px-4 pb-5 pt-4 sm:grid-cols-3 sm:px-6">
-        {items.map((x) => (
-          <Link key={x.href} href={x.href} className="k-row flex items-start justify-between gap-3 px-4 py-3 hover:bg-surface-2">
-            <div className="min-w-0">
-              <div className="text-[13.5px] font-medium">{x.label}</div>
-              <div className="mt-0.5 text-[12px] text-fg-3">{x.sub}</div>
-            </div>
-            <Chip size="sm" tone="ember">
-              Soon
-            </Chip>
-          </Link>
-        ))}
-      </div>
-    </Card>
-  );
-}
-
 export function LiveCommandCenter() {
   const clock = useServerClock();
   const canAudit = useCan("audit.read");
@@ -312,9 +286,6 @@ export function LiveCommandCenter() {
         )}
       </div>
 
-      <Reveal delay={0.1} className="mt-4 block">
-        <NextRelease />
-      </Reveal>
     </div>
   );
 }

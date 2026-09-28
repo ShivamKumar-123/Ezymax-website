@@ -48,9 +48,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import type { NavModule } from "@kalks/ui";
-import { IS_DEMO, pathAllowed } from "@kalks/mock/mode";
-import { soonIcon } from "@/lib/soon-icon";
-import { LIVE_GATED, LIVE_PAGES } from "@/lib/live";
+import { IS_DEMO } from "@kalks/mock/mode";
 
 export const CRM_NAV: NavModule[] = [
   {
@@ -202,30 +200,20 @@ export const CRM_NAV: NavModule[] = [
   { key: "support", label: "Support", icon: LifeBuoy, href: "/support", section: "account" },
 ];
 
-const SOON = "Soon";
-
-const isLivePath = (href: string) => pathAllowed(href, LIVE_PAGES) && !pathAllowed(href, LIVE_GATED);
-
-/**
- * Live builds list every module, like the demo. Pages not backed by real data yet carry a "Soon" tag and
- * open a "being built" page (components/live-gate.tsx) — they are never shown with mock data.
- */
-export const LIVE_NAV: NavModule[] = CRM_NAV.map((m) => {
-  const subs = m.sub?.map((s) => (isLivePath(s.href) ? s : { ...s, badge: s.badge ?? SOON }));
-  const anyLive = m.sub ? m.sub.some((s) => isLivePath(s.href)) : isLivePath(m.href);
-  return { ...m, icon: anyLive ? m.icon : soonIcon(m.icon), sub: subs };
-});
+/** Live builds list every module, like the demo, without the demo's mock count badges. */
+export const LIVE_NAV: NavModule[] = CRM_NAV.map((m) => ({
+  ...m,
+  badge: undefined, // demo badges are mock counts
+  sub: m.sub?.map((s) => ({ ...s, badge: undefined })),
+}));
 
 /** Navigation for this build. */
 export const NAV: NavModule[] = IS_DEMO ? CRM_NAV : LIVE_NAV;
 
-/** Hrefs that open a "being built" page in live builds. */
-const SOON_HREFS = new Set(CRM_NAV.flatMap((m) => (m.sub ?? [{ href: m.href }]).map((s) => s.href)).filter((h) => !isLivePath(h)));
-
 /** Flattened entries for the ⌘K palette ("Soon" modules are grouped as Coming soon in live builds). */
 export const CRM_COMMANDS = NAV.flatMap((m) =>
   (m.sub ?? [{ href: m.href, label: m.label, icon: m.icon }]).map((s) => ({
-    group: !IS_DEMO && SOON_HREFS.has(s.href) ? "Coming soon" : m.label,
+    group: m.label,
     label: s.label,
     href: s.href,
     Icon: s.icon ?? m.icon,

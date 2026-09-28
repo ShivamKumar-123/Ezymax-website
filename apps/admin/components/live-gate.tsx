@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { Chip, ComingSoon, ModeGate, buttonVariants } from "@kalks/ui";
+import { ComingSoon, ModeGate, buttonVariants } from "@kalks/ui";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { LIVE_PAGES, isLivePath, soonFor } from "@/lib/live";
 
@@ -12,16 +12,9 @@ function LiveFallback() {
   const soon = soonFor(pathname);
   return (
     <div>
-      {soon && (
-        <div className="flex justify-center pt-8">
-          <Chip tone="ember" dot>
-            Next release
-          </Chip>
-        </div>
-      )}
       <ComingSoon
-        title={soon?.title ?? "Not available yet"}
-        text={soon?.text ?? "This part of the Back Office isn't connected to live data yet."}
+        title={soon?.title ?? "Not enabled yet"}
+        text={soon?.text ?? "This section isn't enabled for this workspace yet."}
         action={
           <Link href="/" className={buttonVariants({ variant: "surface" })}>
             <ArrowLeft /> Back to Command Center
