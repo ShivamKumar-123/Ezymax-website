@@ -4,12 +4,13 @@ import * as React from "react";
 import { ArrowRight, GitBranch, History, Undo2 } from "lucide-react";
 import { Button, Chip, Dialog, DialogClose, Field, Input, PriceText, Segmented, SymbolCell, Tabs, Toggle, cn, formatNumber, useQuote } from "@kalks/ui";
 import { getInstrument } from "@kalks/mock";
-import { getClient } from "@kalks/mock/admin-clients";
 import {
   REASON_ERROR_CORRECTION,
   ago,
   bookAttribution,
-  closePriceOf,
+  clientName,
+  currentPriceOf,
+  groupLabel,
   positionPnl,
   roundVol,
   serverStamp,
@@ -21,7 +22,7 @@ import {
 } from "@/lib/trading-desk";
 import { SideChip, SourceTag } from "@/components/trading/shared";
 import { AuditNotice, BookChip, ErrorBanner, MetaTile, ReasonFields, Stepper, parseNum, reportResult, signedMoney, useReason } from "./kit";
-import { ACTION_LABEL } from "./labels";
+import { actionText } from "./labels";
 
 type Tab = "modify" | "close" | "book" | "adjust" | "timeline";
 type AdjustMode = "add" | "charges" | "price" | "void";
@@ -101,12 +102,14 @@ export function PositionDrawer({ ticket, onOpenChange, onSelectTicket }: { ticke
   const q = useQuote(p?.symbol ?? "EURUSD");
   if (!p) return null;
   const inst = getInstrument(p.symbol);
-  const client = getClient(p.clientId);
+  const client = { name: clientName(p.clientId, p.login) };
   const pnl = positionPnl(p, q);
   const attr = bookAttribution(p, q);
-  const cur = closePriceOf(p.side, q);
+  const cur = currentPriceOf(p, q);
   const other = p.route === "A" ? "B" : "A";
   const fmt = (v: number) => formatNumber(v, inst.digits);
+  // price corrections (close at price, open-price correction) and voids need a note (engine rule)
+  const noteMissing = (priceCorrectionPath || (tab === "adjust" && adjust === "void")) && !r.note.trim();
 
   const run = async <T,>(fn: () => Promise<DeskResult<T>>, msg: string | ((d: T) => string)) => {
     setBusy(true);
@@ -170,17 +173,17 @@ export function PositionDrawer({ ticket, onOpenChange, onSelectTicket }: { ticke
           {p.priceCorrected && <Chip tone="gold" size="sm">Price corrected</Chip>}
         </span>
       }
-      description={`${client.name} · ${p.login} · ${p.group}`}
+      description={`${client.name} · ${p.login} · ${groupLabel(p.group)}`}
       footer={
         <>
-          <span className="mr-auto max-w-[220px] truncate text-[11.5px] text-fg-3">{action && r.error ? r.error : null}</span>
+          <span className="mr-auto max-w-[220px] truncate text-[11.5px] text-fg-3">{action && (r.error ?? (noteMissing ? "A note is required" : null))}</span>
           <DialogClose asChild>
             <Button variant="ghost" size="sm">
               Done
             </Button>
           </DialogClose>
           {action && (
-            <Button variant={action.variant} size="sm" disabled={!!r.error || busy} onClick={() => void action.go()}>
+            <Button variant={action.variant} size="sm" disabled={!!r.error || noteMissing || busy} onClick={() => void action.go()}>
               {busy ? "Working…" : action.label}
             </Button>
           )}
@@ -425,7 +428,7 @@ function Timeline({ ticket, parent, audit, p, deals, onReopen, reasonReady, busy
             <li key={a.id} className="relative">
               <span className={cn("absolute -left-[21px] top-1.5 size-2.5 rounded-full border-2 border-surface", a.flags?.includes("price correction") ? "bg-gold" : a.action === "trade.rejected" ? "bg-down" : a.action.startsWith("book") ? "bg-info" : "bg-ember")} />
               <div className="flex flex-wrap items-center gap-x-2 text-[12.5px]">
-                <span className="font-medium text-fg">{ACTION_LABEL[a.action]}</span>
+                <span className="font-medium text-fg">{actionText(a.action)}</span>
                 {a.tickets.length > 1 && <span className="font-mono text-[11px] text-fg-3">{a.tickets.map((t) => `#${t}`).join(" · ")}</span>}
                 {a.flags?.map((f) => (
                   <Chip key={f} size="sm" tone={f === "price correction" ? "gold" : f === "rejected" ? "down" : "neutral"}>
@@ -454,9 +457,11 @@ function Timeline({ ticket, parent, audit, p, deals, onReopen, reasonReady, busy
 }
 
 export function ChangeLine({ before, after }: { before?: Readonly<Record<string, unknown>> | null; after?: Readonly<Record<string, unknown>> | null }) {
-  const keys = Array.from(new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})]));
+  const same = (k: string) => !!before && !!after && k in before && k in after && JSON.stringify(before[k]) === JSON.stringify(after[k]);
+  // full-object snapshots (e.g. a group update) list only what changed
+  const keys = Array.from(new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})])).filter((k) => !same(k));
   if (!keys.length) return null;
-  const f = (v: unknown) => (v === null || v === undefined ? "—" : typeof v === "number" ? String(+v.toFixed(5)) : String(v));
+  const f = (v: unknown) => (v === null || v === undefined ? "—" : typeof v === "number" ? String(+v.toFixed(5)) : typeof v === "object" ? JSON.stringify(v).slice(0, 60) : String(v));
   return (
     <div className="mt-1 flex flex-wrap gap-1">
       {keys.slice(0, 6).map((k) => {

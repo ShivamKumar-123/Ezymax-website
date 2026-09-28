@@ -4,11 +4,12 @@ import * as React from "react";
 import { AlertTriangle, Ban, CirclePause, CirclePlay, SlidersHorizontal } from "lucide-react";
 import { Button, Card, CardHeader, Chip, DataTable, Field, Input, Menu, Segmented, SymbolCell, Toggle, Tooltip, cn, formatNumber, type Column } from "@kalks/ui";
 import { INSTRUMENTS } from "@kalks/mock";
-import { TRADING_GROUPS, type TradingGroup } from "@kalks/mock/admin-trading";
-import { getClient } from "@kalks/mock/admin-clients";
+import { IS_DEMO } from "@kalks/mock/mode";
+import type { TradingGroup } from "@kalks/mock/admin-trading";
 import { MiniClient } from "@/components/trading/shared";
-import { ago, useDesk, type AccountControl, type ControlMode } from "@/lib/trading-desk";
+import { ago, clientName, groupLabel, groupOptions, useDesk, useLiveDirectory, type AccountControl, type ControlMode } from "@/lib/trading-desk";
 import { AccountPicker, DeskDialog, MetaTile } from "./kit";
+import { useCan } from "@/components/staff-session";
 
 /* ------------------------------------------------------------------ */
 /* Account controls (D115)                                             */
@@ -38,8 +39,8 @@ export function AccountControls({ addOpen, onAddOpenChange }: { addOpen: boolean
   const delayOn = state.tenant.execDelayEnabled;
 
   const cols: Column<AccountControl>[] = [
-    { key: "c", header: "Client", cell: (r) => <MiniClient clientId={r.clientId} login={r.login} />, csv: (r) => `${getClient(r.clientId).name} (${r.login})` },
-    { key: "g", header: "Group", cell: (r) => <Chip size="sm" tone={r.group === "VIP" ? "gold" : "neutral"}>{r.group}</Chip>, csv: (r) => r.group },
+    { key: "c", header: "Client", cell: (r) => <MiniClient clientId={r.clientId} login={r.login} />, csv: (r) => `${clientName(r.clientId, r.login)} (${r.login})` },
+    { key: "g", header: "Group", cell: (r) => <Chip size="sm" tone={/^vip$/i.test(r.group) ? "gold" : "neutral"}>{groupLabel(r.group)}</Chip>, csv: (r) => r.group },
     {
       key: "m",
       header: "Markup (pips)",
@@ -66,7 +67,7 @@ export function AccountControls({ addOpen, onAddOpenChange }: { addOpen: boolean
           <Menu
             width={140}
             items={[1, 2, 5, 10, 20, 50, 100].map((v) => ({ label: <span className="font-mono">{v} lots</span>, onSelect: () => setPending({ login: r.login, patch: { maxLot: v }, label: `Max lot → ${v}` }) }))}
-            trigger={<button className="k-num rounded-full border border-line px-2.5 py-0.5 font-mono text-[12.5px] hover:border-fg-3">{r.maxLot}</button>}
+            trigger={<button className="k-num rounded-full border border-line px-2.5 py-0.5 font-mono text-[12.5px] hover:border-fg-3">{r.maxLot || "—"}</button>}
           />
         </span>
       ),
@@ -126,14 +127,14 @@ export function AccountControls({ addOpen, onAddOpenChange }: { addOpen: boolean
         pageSize={12}
         rowKey={(r) => r.login}
         exportName="dealer-account-controls"
-        search={(r) => `${r.login} ${getClient(r.clientId).name} ${r.reason}`}
+        search={(r) => `${r.login} ${clientName(r.clientId, r.login)} ${r.reason}`}
         toolbar={<Segmented size="sm" value={filter} onChange={setFilter} options={[{ value: "all", label: "All controls" }, { value: "delay", label: "With delay" }, { value: "disabled", label: "Disabled / close-only" }]} />}
       />
       <DeskDialog
         open={!!pending}
         onOpenChange={(o) => !o && setPending(null)}
         title={pending?.label ?? ""}
-        description={pending ? `${getClient(state.accountControls.find((r) => r.login === pending.login)?.clientId ?? "").name} · ${pending.login}` : ""}
+        description={pending ? `${clientName(state.accountControls.find((r) => r.login === pending.login)?.clientId ?? "", pending.login)} · ${pending.login}` : ""}
         confirmLabel="Apply control"
         onConfirm={(r) => api.setAccountControl(pending!.login, pending!.patch, r)}
         success="Account control applied"
@@ -175,11 +176,12 @@ export function AccountControls({ addOpen, onAddOpenChange }: { addOpen: boolean
 
 export function TenantDelayCard() {
   const { state, api } = useDesk();
+  const canPolicy = useCan("dealing.policy");
   const [confirm, setConfirm] = React.useState(false);
   const on = state.tenant.execDelayEnabled;
   return (
     <Card className={cn("h-full", on && "border-warn/30")}>
-      <CardHeader title="Execution delay (tenant policy · D115)" subtitle="Per-tenant switch for all per-account delays" icon={<SlidersHorizontal />} action={<Toggle checked={on} onChange={() => setConfirm(true)} label="Allow execution delay" />} />
+      <CardHeader title="Execution delay (tenant policy · D115)" subtitle="Per-tenant switch for all per-account delays" icon={<SlidersHorizontal />} action={canPolicy ? <Toggle checked={on} onChange={() => setConfirm(true)} label="Allow execution delay" /> : <Chip size="sm" tone={on ? "warn" : "up"}>{on ? "Allowed" : "Blocked"}</Chip>} />
       <div className="px-6 pb-6 pt-4">
         <div className="flex items-start gap-3 rounded-[14px] border border-warn/30 bg-warn-soft px-4 py-3">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn" />
@@ -213,6 +215,7 @@ export function TenantDelayCard() {
 
 export function SymbolControls() {
   const { state, api } = useDesk();
+  const dir = useLiveDirectory();
   const [scope, setScope] = React.useState<TradingGroup | "all">("all");
   const [pending, setPending] = React.useState<{ symbol: string; mode: ControlMode | null } | null>(null);
   const [q, setQ] = React.useState("");
@@ -231,7 +234,8 @@ export function SymbolControls() {
     }
     return m;
   }, [state.positions, state.orders]);
-  const symbols = INSTRUMENTS.map((i) => i.symbol)
+  const universe = IS_DEMO || !dir.symbols.size ? INSTRUMENTS.map((i) => i.symbol) : [...dir.symbols.keys()];
+  const symbols = universe
     .filter((s) => !q || s.includes(q.toUpperCase()))
     .sort((a, b) => (counts.get(b)?.pos ?? 0) - (counts.get(a)?.pos ?? 0));
   const ctl = (s: string) => state.symbolControls.find((c) => c.symbol === s && c.group === scope);
@@ -245,14 +249,14 @@ export function SymbolControls() {
             <span key={c.id} className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[12px]", c.mode === "halt" ? "border-down/30 bg-down-soft" : "border-warn/30 bg-warn-soft")}>
               <span className="font-mono font-medium">{c.symbol}</span>
               <span className={c.mode === "halt" ? "text-down" : "text-warn"}>{c.mode === "halt" ? "Halted" : "Close-only"}</span>
-              <span className="text-fg-3">· {c.group === "all" ? "all groups" : c.group} · {c.staff} · {ago(c.at)}</span>
+              <span className="text-fg-3">· {c.group === "all" ? "all groups" : groupLabel(c.group)} · {c.staff} · {ago(c.at)}</span>
             </span>
           ))}
         </div>
       )}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-[12.5px] font-medium text-fg-2">Scope</span>
-        <Segmented size="sm" value={scope} onChange={setScope} options={[{ value: "all", label: "All groups" }, ...TRADING_GROUPS.map((g) => ({ value: g, label: g }))]} />
+        <Segmented size="sm" value={scope} onChange={setScope} options={[{ value: "all", label: "All groups" }, ...groupOptions().map((g) => ({ value: g.value as TradingGroup, label: g.label }))]} />
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Symbol" aria-label="Filter symbols" className="ml-auto h-8 w-32 rounded-full font-mono text-[12.5px]" />
       </div>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2 2xl:grid-cols-3">
@@ -299,7 +303,7 @@ export function SymbolControls() {
       <DeskDialog
         open={!!pending}
         onOpenChange={(o) => !o && setPending(null)}
-        title={pending ? `${pending.mode === "halt" ? "Halt" : pending.mode === "close-only" ? "Set close-only on" : "Resume"} ${pending.symbol}${scope === "all" ? "" : ` for ${scope}`}` : ""}
+        title={pending ? `${pending.mode === "halt" ? "Halt" : pending.mode === "close-only" ? "Set close-only on" : "Resume"} ${pending.symbol}${scope === "all" ? "" : ` for ${groupLabel(scope)}`}` : ""}
         description={
           pending?.mode === "halt"
             ? "No new trades, pending orders or closes (dealer force-close still works). Takes effect on the next order."

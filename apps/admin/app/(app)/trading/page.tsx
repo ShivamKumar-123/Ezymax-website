@@ -5,11 +5,11 @@ import Link from "next/link";
 import { Activity, ArrowLeftRight, ChevronDown, Coins, Crosshair, GitBranch, Layers, MoreHorizontal, Plus, Scale, ScrollText, Scissors, TrendingUp, XCircle } from "lucide-react";
 import { Button, Card, Chip, DataTable, Input, KpiCard, Menu, PageHeader, PriceText, Reveal, Segmented, SymbolCell, cn, formatNumber, useQuotes, type Column } from "@kalks/ui";
 import { priceFeed } from "@kalks/mock";
-import { TRADING_GROUPS } from "@kalks/mock/admin-trading";
-import { getClient } from "@kalks/mock/admin-clients";
 import { PnlText, usdCompact } from "@/components/command/kit";
 import { MiniClient, SOURCE_LABEL, SideChip, SourceTag, fmtPrice } from "@/components/trading/shared";
-import { ago, bookAttribution, closePriceOf, notionalUsd, positionPnl, serverStamp, useDesk, type DeskPosition, type OrderSource } from "@/lib/trading-desk";
+import { ago, bookAttribution, clientName, currentPriceOf, groupLabel, groupOptions, notionalUsd, positionPnl, serverStamp, useDesk, useLiveDirectory, type DeskPosition, type OrderSource } from "@/lib/trading-desk";
+import { DeskStatusChip } from "@/components/trading-desk/status";
+import { useCan } from "@/components/staff-session";
 import { BookChip, Checkbox } from "@/components/trading-desk/kit";
 import { BulkBar } from "@/components/trading-desk/bulk";
 import { CreateTradeDrawer } from "@/components/trading-desk/create-trade";
@@ -17,6 +17,8 @@ import { PositionDrawer } from "@/components/trading-desk/position-drawer";
 
 export default function PositionsPage() {
   const { state } = useDesk();
+  useLiveDirectory();
+  const canDeal = useCan("dealing.write");
   const positions = state.positions;
   const [symbol, setSymbol] = React.useState<string>("all");
   const [group, setGroup] = React.useState<string>("all");
@@ -111,7 +113,7 @@ export default function PositionsPage() {
       ),
       sort: (r) => r.ticket,
     },
-    { key: "c", header: "Client", cell: (r) => <MiniClient clientId={r.clientId} login={r.login} />, csv: (r) => `${getClient(r.clientId).name} (${r.login})` },
+    { key: "c", header: "Client", cell: (r) => <MiniClient clientId={r.clientId} login={r.login} />, csv: (r) => `${clientName(r.clientId, r.login)} (${r.login})` },
     { key: "s", header: "Symbol", cell: (r) => <SymbolCell symbol={r.symbol} size={22} sub={<SideChip side={r.side} />} />, sort: (r) => r.symbol, csv: (r) => `${r.symbol} ${r.side}` },
     { key: "v", header: "Volume", align: "right", cell: (r) => <span className="k-num font-mono">{formatNumber(r.volume, 2)}</span>, sort: (r) => r.volume },
     { key: "o", header: "Open", align: "right", cell: (r) => <span className="k-num font-mono text-[12px] text-fg-2">{fmtPrice(r.symbol, r.openPrice)}</span>, csv: (r) => r.openPrice },
@@ -121,14 +123,14 @@ export default function PositionsPage() {
       align: "right",
       cell: (r) => {
         const q = quote(r.symbol);
-        return <PriceText symbol={r.symbol} value={closePriceOf(r.side, q)} dir={q.dir} className="text-[12px]" />;
+        return <PriceText symbol={r.symbol} value={currentPriceOf(r, q)} dir={q.dir} className="text-[12px]" />;
       },
-      csv: (r) => closePriceOf(r.side, quote(r.symbol)),
+      csv: (r) => currentPriceOf(r, quote(r.symbol)),
     },
     { key: "sltp", header: "S/L · T/P", align: "right", hideOn: "lg", cell: (r) => <span className="k-num whitespace-nowrap font-mono text-[11px] text-fg-3">{r.sl ? fmtPrice(r.symbol, r.sl) : "—"} · {r.tp ? fmtPrice(r.symbol, r.tp) : "—"}</span>, csv: (r) => `${r.sl ?? ""} / ${r.tp ?? ""}` },
     { key: "pnl", header: "P&L", align: "right", cell: (r) => <PnlText value={pnlOf(r)} className="font-mono text-[12.5px]" />, sort: (r) => pnlOf(r), csv: (r) => pnlOf(r).toFixed(2) },
     { key: "src", header: "Source", cell: (r) => <SourceTag source={r.source} platform={r.platform} />, csv: (r) => SOURCE_LABEL[r.source] },
-    { key: "g", header: "Group", hideOn: "xl", cell: (r) => <Chip size="sm" tone={r.group === "VIP" ? "gold" : r.group === "Prop" ? "ember" : "neutral"}>{r.group}</Chip>, csv: (r) => r.group },
+    { key: "g", header: "Group", hideOn: "xl", cell: (r) => <Chip size="sm" tone={/^vip$/i.test(r.group) ? "gold" : /^prop$/i.test(r.group) ? "ember" : "neutral"}>{groupLabel(r.group)}</Chip>, csv: (r) => r.group },
     {
       key: "r",
       header: "Book",
@@ -186,7 +188,7 @@ export default function PositionsPage() {
     <div className="pb-10">
       <PageHeader
         title="Open positions"
-        subtitle="All client positions — live P&L, A/B book and dealer actions, every change reason-coded and audited."
+        subtitle={<span className="inline-flex flex-wrap items-center gap-2">All client positions — live P&L, A/B book and dealer actions, every change reason-coded and audited. <DeskStatusChip /></span>}
         actions={
           <>
             <Link href="/trading/dealer?tab=audit">
@@ -194,9 +196,11 @@ export default function PositionsPage() {
                 <ScrollText /> Audit trail
               </Button>
             </Link>
-            <Button variant="ember" size="lg" onClick={() => setCreate(true)}>
-              <Plus /> Create trade
-            </Button>
+            {canDeal && (
+              <Button variant="ember" size="lg" onClick={() => setCreate(true)}>
+                <Plus /> Create trade
+              </Button>
+            )}
           </>
         }
       />
@@ -219,13 +223,13 @@ export default function PositionsPage() {
             rowKey={(r) => r.ticket}
             onRowClick={(r) => setOpen(r.ticket)}
             exportName="open-positions"
-            search={(r) => `${r.ticket} ${r.login} ${r.symbol} ${getClient(r.clientId).name} ${r.parentTicket ?? ""}`}
+            search={(r) => `${r.ticket} ${r.login} ${r.symbol} ${clientName(r.clientId, r.login)} ${r.parentTicket ?? ""}`}
             searchPlaceholder="Ticket, client…"
             toolbar={
               <div className="flex flex-wrap items-center gap-2">
                 <Segmented size="sm" value={book} onChange={setBook} options={[{ value: "all", label: "A + B" }, { value: "A", label: "A-book" }, { value: "B", label: "B-book" }]} />
                 {filterMenu("symbols", symbol, setSymbol, symbols.map((s) => ({ value: s, label: s, hint: String(positions.filter((x) => x.symbol === s).length) })))}
-                {filterMenu("groups", group, setGroup, TRADING_GROUPS.map((g) => ({ value: g, label: g })))}
+                {filterMenu("groups", group, setGroup, groupOptions())}
                 {filterMenu("sources", source, setSource, sources.map((s) => ({ value: s, label: SOURCE_LABEL[s], hint: String(positions.filter((x) => x.source === s).length) })))}
                 <Input value={login} onChange={(e) => setLogin(e.target.value.replace(/\D/g, ""))} placeholder="Login" aria-label="Filter by login" className="h-8 w-28 rounded-full font-mono text-[12.5px]" />
               </div>

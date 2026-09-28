@@ -9,12 +9,15 @@ import { CreateTradeDrawer } from "@/components/trading-desk/create-trade";
 import { AccountControls, SymbolControls, TenantDelayCard } from "@/components/trading-desk/controls";
 import { MarginMonitor } from "@/components/trading-desk/monitor";
 import { AuditTrail } from "@/components/trading-desk/audit";
+import { DeskStatusChip } from "@/components/trading-desk/status";
+import { useCan } from "@/components/staff-session";
 
 type Tab = "accounts" | "symbols" | "margin" | "audit";
 const TABS: Tab[] = ["accounts", "symbols", "margin", "audit"];
 
 export default function DealerDeskPage() {
   const { state } = useDesk();
+  const canDeal = useCan("dealing.write");
   const [tab, setTab] = React.useState<Tab>("accounts");
   const [trade, setTrade] = React.useState(false);
   const [add, setAdd] = React.useState(false);
@@ -45,8 +48,9 @@ export default function DealerDeskPage() {
     <div className="pb-10">
       <PageHeader
         title="Dealer desk"
-        subtitle="Account and symbol controls, margin monitor and the dealing audit trail — all reason-coded."
+        subtitle={<span className="inline-flex flex-wrap items-center gap-2">Account and symbol controls, margin monitor and the dealing audit trail — all reason-coded. <DeskStatusChip /></span>}
         actions={
+          canDeal && (
           <>
             <Button
               variant="surface"
@@ -62,6 +66,7 @@ export default function DealerDeskPage() {
               <CandlestickChart /> Create trade
             </Button>
           </>
+          )
         }
       />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">

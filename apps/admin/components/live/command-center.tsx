@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Activity, ArrowUpRight, Download, KeyRound, MailCheck, RefreshCw, ShieldAlert, UserPlus, Users } from "lucide-react";
+import { Activity, ArrowUpRight, CandlestickChart, Download, KeyRound, Layers, MailCheck, Receipt, RefreshCw, Scale, ShieldAlert, UserPlus, Users, Wallet } from "lucide-react";
 import { Avatar, Button, Card, CardHeader, Chip, EmptyState, Flag, KpiCard, PageHeader, Reveal, Skeleton, cn } from "@kalks/ui";
 import { useServerClock } from "@/components/command/kit";
 import { ColumnChart } from "@/components/config/kit";
@@ -34,7 +34,7 @@ function HealthCard({ health, loading, onRefresh }: { health: HealthResp | null;
       />
       <div className="space-y-2.5 px-4 pb-5 pt-4 sm:px-6">
         {!health &&
-          Array.from({ length: 2 }).map((_, i) => (
+          Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-[92px] w-full rounded-[16px]" />
           ))}
         {health?.services.map((s) => (
@@ -67,6 +67,42 @@ function HealthCard({ health, loading, onRefresh }: { health: HealthResp | null;
         ))}
       </div>
     </Card>
+  );
+}
+
+type TradingSummary = {
+  accounts: { live: number; demo: number };
+  positions: { total: number; demo: number; A: { positions: number; lots: number; floating: number }; B: { positions: number; lots: number; floating: number } };
+  deals: { today: number; clientRealised: number; brokerBRealised: number; since: string };
+};
+
+const usd0 = (v: number) => `${v < 0 ? "−" : v > 0 ? "+" : ""}$${Math.abs(v).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+
+/** Trading engine KPIs: accounts, open positions, floating P&L by book, today's closing deals. */
+function TradingKpis() {
+  const { data: t, error, reload } = useApi<TradingSummary>("/api/trading/summary", { refreshMs: 10_000 });
+  if (error)
+    return (
+      <Card className="mt-4">
+        <ErrorState error={error} onRetry={reload} className="py-6" />
+      </Card>
+    );
+  const brokerB = t ? -t.positions.B.floating : 0;
+  return (
+    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <KpiCard label="Trading accounts" icon={<Wallet />} value={<Num v={t?.accounts.live} />} chip={t ? `${t.accounts.demo.toLocaleString("en-US")} demo` : "—"} chipTone="info" href="/trading/accounts" />
+      <KpiCard label="Open positions" icon={<Layers />} value={<Num v={t?.positions.total} />} chip={t ? `${t.positions.A.positions} A · ${t.positions.B.positions} B · ${t.positions.demo} demo` : "—"} href="/trading" delay={0.04} />
+      <KpiCard
+        label="Client floating"
+        icon={<CandlestickChart />}
+        value={t ? <span className={cn("k-num", t.positions.A.floating + t.positions.B.floating >= 0 ? "text-up" : "text-down")}>{usd0(t.positions.A.floating + t.positions.B.floating)}</span> : <Skeleton className="h-8 w-20" />}
+        chip={t ? `A ${usd0(t.positions.A.floating)} · B ${usd0(t.positions.B.floating)}` : "—"}
+        href="/trading"
+        delay={0.08}
+      />
+      <KpiCard label="Broker B-book floating" icon={<Scale />} value={t ? <span className={cn("k-num", brokerB >= 0 ? "text-up" : "text-down")}>{usd0(brokerB)}</span> : <Skeleton className="h-8 w-20" />} chip={t ? `${t.positions.B.lots.toLocaleString("en-US", { maximumFractionDigits: 2 })} lots on B` : "—"} chipTone="ember" href="/trading/exposure" delay={0.12} hot />
+      <KpiCard label="Deals today" icon={<Receipt />} value={<Num v={t?.deals.today} />} chip={t ? `B-book realised ${usd0(t.deals.brokerBRealised)}` : "—"} href="/trading/dealer?tab=audit" className="sm:col-span-2 xl:col-span-1" delay={0.16} />
+    </div>
   );
 }
 
@@ -168,6 +204,7 @@ export function LiveCommandCenter() {
   const clock = useServerClock();
   const canAudit = useCan("audit.read");
   const canClients = useCan("clients.read");
+  const canTrading = useCan("dealing.read");
   const { data: s, error, reload } = useApi<Stats>("/api/admin/stats", { refreshMs: 30_000 });
   const health = useApi<HealthResp>("/api/admin/health", { refreshMs: 30_000 });
   const c = s?.clients;
@@ -260,6 +297,8 @@ export function LiveCommandCenter() {
           />
         </div>
       )}
+
+      {canTrading && <TradingKpis />}
 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal delay={0.05} className="xl:col-span-8">

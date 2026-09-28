@@ -8,6 +8,8 @@ import { Button, Card, CardHeader, Chip, IconButton, KpiCard, Menu, Money, PageH
 import { ADMIN_GROUPS, type AdminGroup } from "@kalks/mock/admin-config";
 import { GroupEditor, ROUTE_LABEL, CHARGE_LABEL, blankGroup } from "@/components/config/group-editor";
 import { auditToast, useReason } from "@/components/config/kit";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveGroupsPage } from "@/components/trading-live/groups";
 
 const ROUTE_TONE: Record<AdminGroup["route"], ChipTone> = { A: "info", B: "neutral", auto: "ember" };
 const ACCENT: Record<AdminGroup["tone"], string> = {
@@ -166,6 +168,10 @@ function CompareTable({ groups, onEdit }: { groups: AdminGroup[]; onEdit: (g: Ad
 }
 
 export default function AccountGroupsPage() {
+  return IS_DEMO ? <DemoGroupsPage /> : <LiveGroupsPage />;
+}
+
+function DemoGroupsPage() {
   const [groups, setGroups] = React.useState<AdminGroup[]>(ADMIN_GROUPS);
   const [editing, setEditing] = React.useState<AdminGroup | null>(null);
   const [open, setOpen] = React.useState(false);

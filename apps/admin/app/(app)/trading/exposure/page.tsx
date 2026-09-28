@@ -9,6 +9,8 @@ import { EXPOSURE_GRID, RISK_GROUPS } from "@kalks/mock/admin-ops";
 import { ASSET_CLASS_EXPOSURE, EXPOSURE_LIMITS, type ExposureLimit } from "@kalks/mock/admin-trading";
 import { PnlText, usdCompact } from "@/components/command/kit";
 import { useLiveExposure, usageTone } from "@/components/command/overview";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveExposurePage } from "@/components/trading-live/exposure";
 
 const CLS_COLORS = ["#e9b949", "#ff5a1f", "#22c55e", "#38bdf8", "#a1a1aa", "#ff8a3d"];
 
@@ -26,6 +28,10 @@ function NumCell({ value, onChange, suffix, w = "w-24" }: { value: number; onCha
 }
 
 export default function ExposurePage() {
+  return IS_DEMO ? <DemoExposurePage /> : <LiveExposurePage />;
+}
+
+function DemoExposurePage() {
   const rows = useLiveExposure();
   const [view, setView] = React.useState<"usd" | "lots">("usd");
   const [limits, setLimits] = React.useState<ExposureLimit[]>(EXPOSURE_LIMITS);

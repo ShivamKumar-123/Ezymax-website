@@ -4,12 +4,11 @@ import * as React from "react";
 import { Clock, Crosshair, ListOrdered, MoreHorizontal, Pencil, Plus, Trash2, XCircle, Zap } from "lucide-react";
 import { Button, Card, Chip, DataTable, Field, Input, KpiCard, Menu, PageHeader, PriceText, Reveal, Segmented, SymbolCell, cn, formatNumber, useQuotes, type Column } from "@kalks/ui";
 import { getInstrument, priceFeed } from "@kalks/mock";
-import { TRADING_GROUPS } from "@kalks/mock/admin-trading";
-import { getClient } from "@kalks/mock/admin-clients";
 import { MiniClient, SourceTag, fmtPrice } from "@/components/trading/shared";
-import { ago, serverStamp, useDesk, type DeskOrder } from "@/lib/trading-desk";
+import { ago, clientName, digitsOf, groupLabel, groupOptions, serverStamp, useDesk, useLiveDirectory, type DeskOrder } from "@/lib/trading-desk";
 import { BookChip, Checkbox, DeskDialog, MetaTile, parseNum } from "@/components/trading-desk/kit";
 import { CreateTradeDrawer } from "@/components/trading-desk/create-trade";
+import { DeskStatusChip } from "@/components/trading-desk/status";
 
 const tone = (t: DeskOrder["type"]) => (t.startsWith("Buy") ? "up" : "down");
 
@@ -17,6 +16,7 @@ type Act = { k: "cancel" | "modify" | "fill"; o: DeskOrder } | { k: "cancelMany"
 
 export default function OrdersPage() {
   const { state, api } = useDesk();
+  useLiveDirectory();
   const orders = state.orders;
   const [kind, setKind] = React.useState<"all" | "limit" | "stop">("all");
   const [group, setGroup] = React.useState<string>("all");
@@ -39,13 +39,13 @@ export default function OrdersPage() {
   const dist = (o: DeskOrder) => {
     const q = qs[o.symbol] ?? priceFeed().quote(o.symbol);
     const mkt = o.type.startsWith("Buy") ? q.ask : q.bid;
-    const inst = getInstrument(o.symbol);
-    const pip = inst.digits >= 4 ? 0.0001 : inst.digits === 3 ? 0.01 : inst.digits === 2 ? 0.1 : 1;
+    const digits = digitsOf(o.symbol);
+    const pip = digits >= 4 ? 0.0001 : digits === 3 ? 0.01 : digits === 2 ? 0.1 : 1;
     return { pct: mkt ? ((o.price - mkt) / mkt) * 100 : 0, pips: (o.price - mkt) / pip, mkt, dir: q.dir };
   };
 
   const openModify = (o: DeskOrder) => {
-    const d = getInstrument(o.symbol).digits;
+    const d = digitsOf(o.symbol);
     setEdit({ price: o.price.toFixed(d), stopLimit: o.stopLimit ? o.stopLimit.toFixed(d) : "", volume: String(o.volume), sl: o.sl ? o.sl.toFixed(d) : "", tp: o.tp ? o.tp.toFixed(d) : "", expiry: o.expiry });
     setAct({ k: "modify", o });
   };
@@ -74,8 +74,8 @@ export default function OrdersPage() {
       width: "36px",
     },
     { key: "t", header: "Ticket", cell: (r) => <span className="font-mono text-[12px]">{r.ticket}</span>, sort: (r) => r.ticket },
-    { key: "c", header: "Client", cell: (r) => <MiniClient clientId={r.clientId} login={r.login} />, csv: (r) => `${getClient(r.clientId).name} (${r.login})` },
-    { key: "s", header: "Symbol", cell: (r) => <SymbolCell symbol={r.symbol} size={22} sub={r.group} />, sort: (r) => r.symbol },
+    { key: "c", header: "Client", cell: (r) => <MiniClient clientId={r.clientId} login={r.login} />, csv: (r) => `${clientName(r.clientId, r.login)} (${r.login})` },
+    { key: "s", header: "Symbol", cell: (r) => <SymbolCell symbol={r.symbol} size={22} sub={groupLabel(r.group)} />, sort: (r) => r.symbol },
     { key: "ty", header: "Type", cell: (r) => <Chip size="sm" tone={tone(r.type)}>{r.type}</Chip>, csv: (r) => r.type },
     { key: "v", header: "Volume", align: "right", cell: (r) => <span className="k-num font-mono">{formatNumber(r.volume, 2)}</span>, sort: (r) => r.volume },
     {
@@ -110,7 +110,7 @@ export default function OrdersPage() {
     },
     { key: "sltp", header: "S/L · T/P", align: "right", hideOn: "lg", cell: (r) => <span className="whitespace-nowrap font-mono text-[11px] text-fg-3">{r.sl ? fmtPrice(r.symbol, r.sl) : "—"} · {r.tp ? fmtPrice(r.symbol, r.tp) : "—"}</span>, csv: (r) => `${r.sl ?? ""} / ${r.tp ?? ""}` },
     { key: "src", header: "Source", hideOn: "xl", cell: (r) => <span className="inline-flex items-center gap-1.5"><SourceTag source={r.source ?? "manual"} />{r.book && <BookChip book={r.book} />}</span>, csv: (r) => r.source ?? "manual" },
-    { key: "e", header: "Expiry", cell: (r) => <span className="whitespace-nowrap text-[12px] text-fg-2">{r.expiry.startsWith("20") ? new Date(`${r.expiry}T12:00:00Z`).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : r.expiry}</span>, csv: (r) => r.expiry },
+    { key: "e", header: "Expiry", cell: (r) => <span className="whitespace-nowrap text-[12px] text-fg-2">{r.expiry.startsWith("20") ? new Date(r.expiry.length > 10 ? r.expiry : `${r.expiry}T12:00:00Z`).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : r.expiry}</span>, csv: (r) => r.expiry },
     { key: "pl", header: "Placed", align: "right", cell: (r) => <span className="whitespace-nowrap text-[11.5px] text-fg-3" title={serverStamp(r.placed)}>{ago(r.placed)}</span>, sort: (r) => r.placed },
     {
       key: "a",
@@ -144,7 +144,7 @@ export default function OrdersPage() {
     <div className="pb-10">
       <PageHeader
         title="Pending orders"
-        subtitle="Limit, stop and stop-limit orders with live distance to market."
+        subtitle={<span className="inline-flex flex-wrap items-center gap-2">Limit, stop and stop-limit orders with live distance to market. <DeskStatusChip /></span>}
         actions={
           <>
             <Button variant="down-outline" size="lg" disabled={!rows.length} onClick={() => setAct({ k: "cancelMany", tickets: sel.length ? sel.map((s) => s.ticket) : rows.map((r) => r.ticket) })}>
@@ -172,11 +172,11 @@ export default function OrdersPage() {
             rowKey={(r) => r.ticket}
             onRowClick={openModify}
             exportName="pending-orders"
-            search={(r) => `${r.ticket} ${r.login} ${r.symbol} ${getClient(r.clientId).name}`}
+            search={(r) => `${r.ticket} ${r.login} ${r.symbol} ${clientName(r.clientId, r.login)}`}
             toolbar={
               <div className="flex flex-wrap gap-2">
                 <Segmented size="sm" value={kind} onChange={setKind} options={[{ value: "all", label: "All types" }, { value: "limit", label: "Limit" }, { value: "stop", label: "Stop" }]} />
-                <Segmented size="sm" value={group} onChange={setGroup} options={[{ value: "all", label: "All groups" }, ...TRADING_GROUPS.map((g) => ({ value: g, label: g }))]} />
+                <Segmented size="sm" value={group} onChange={setGroup} options={[{ value: "all", label: "All groups" }, ...groupOptions()]} />
               </div>
             }
           />
@@ -191,7 +191,7 @@ export default function OrdersPage() {
             open={act?.k === "cancel"}
             onOpenChange={close}
             title={`Cancel order #${o.ticket}`}
-            description={`${o.type} ${o.volume} ${o.symbol} @ ${fmtPrice(o.symbol, o.price)} · ${getClient(o.clientId).name}`}
+            description={`${o.type} ${o.volume} ${o.symbol} @ ${fmtPrice(o.symbol, o.price)} · ${clientName(o.clientId, o.login)}`}
             confirmLabel="Cancel order"
             confirmVariant="sell"
             onConfirm={(r) => api.cancelOrders([o.ticket], r)}
@@ -201,7 +201,7 @@ export default function OrdersPage() {
             open={act?.k === "fill"}
             onOpenChange={close}
             title={`Fill order #${o.ticket} at market`}
-            description={`${o.type} ${o.volume} ${o.symbol} · ${getClient(o.clientId).name}. Opens a position at the live price; account, symbol and margin controls apply.`}
+            description={`${o.type} ${o.volume} ${o.symbol} · ${clientName(o.clientId, o.login)}. Opens a position at the live price; account, symbol and margin controls apply.`}
             confirmLabel="Fill now"
             confirmVariant={o.type.startsWith("Buy") ? "buy" : "sell"}
             onConfirm={(r) => api.fillOrder(o.ticket, r)}
@@ -216,7 +216,7 @@ export default function OrdersPage() {
             open={act?.k === "modify"}
             onOpenChange={close}
             title={`Modify order #${o.ticket}`}
-            description={`${o.type} ${o.symbol} · ${getClient(o.clientId).name} · ${o.login}`}
+            description={`${o.type} ${o.symbol} · ${clientName(o.clientId, o.login)} · ${o.login}`}
             confirmLabel="Apply changes"
             onConfirm={(r) =>
               api.modifyOrder(

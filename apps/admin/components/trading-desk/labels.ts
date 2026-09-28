@@ -24,4 +24,15 @@ export const ACTION_LABEL: Record<AuditAction, string> = {
   "routing.rule": "Routing change",
   "trade.rejected": "Rejected",
   "desk.reset": "Desk data reset",
+  "account.balance": "Balance adjusted",
+  "account.credit": "Credit / bonus adjusted",
+  "account.status": "Account status",
+  "account.group": "Group changed",
+  "account.leverage": "Leverage changed",
+  "account.rejected": "Account change rejected",
+  "group.create": "Group created",
+  "group.update": "Group updated",
 };
+
+/** Label for any audit action (the engine may add actions this build doesn't know yet). */
+export const actionText = (a: string) => (ACTION_LABEL as Record<string, string>)[a] ?? a;

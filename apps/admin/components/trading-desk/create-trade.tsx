@@ -4,9 +4,9 @@ import * as React from "react";
 import { AlertTriangle, Route as RouteIcon } from "lucide-react";
 import { Button, Chip, Dialog, DialogClose, Field, Input, PriceText, Segmented, Toggle, cn, formatNumber, useQuote } from "@kalks/ui";
 import { getInstrument, priceFeed } from "@kalks/mock";
-import { getClient } from "@kalks/mock/admin-clients";
 import {
   accountMetrics,
+  clientName,
   getAccount,
   marginFor,
   notionalUsd,
@@ -77,7 +77,7 @@ export function CreateTradeDrawer({ open, onOpenChange, initialLogin, initialSym
   }, [symbol, spec.min]);
 
   const acc = login ? getAccount(login) : undefined;
-  const client = acc ? getClient(acc.clientId) : null;
+  const client = acc ? { name: clientName(acc.clientId, acc.login) } : null;
   const volume = Number(vol) || 0;
   const ctl = login ? state.accountControls.find((c) => c.login === login) : undefined;
   const volErr = volumeError(symbol, volume, ctl?.maxLot);
@@ -196,7 +196,7 @@ export function CreateTradeDrawer({ open, onOpenChange, initialLogin, initialSym
         <div className="grid grid-cols-2 gap-3">
           <div>
             <div className="mb-1.5 flex items-center justify-between text-[12.5px] font-medium text-fg-2">
-              Volume <span className="font-normal text-fg-3">{spec.min}–{ctl ? Math.min(ctl.maxLot, spec.max) : spec.max} · step {spec.step}</span>
+              Volume <span className="font-normal text-fg-3">{spec.min}–{ctl?.maxLot ? Math.min(ctl.maxLot, spec.max) : spec.max} · step {spec.step}</span>
             </div>
             <Stepper value={vol} onChange={setVol} step={spec.step} min={spec.min} digits={spec.step >= 1 ? 0 : spec.step >= 0.1 ? 1 : 2} suffix="lots" ariaLabel="Volume" />
             {volErr && vol && <div className="mt-1 text-[11.5px] text-down">{volErr}</div>}

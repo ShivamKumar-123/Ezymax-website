@@ -5,7 +5,10 @@ import { Bot, Code2, Copy as CopyIcon, Hand, Headset, Network, Sparkles, Users2,
 import { Avatar, Chip, SymbolAvatar, Tooltip, cn, formatNumber } from "@kalks/ui";
 import { getInstrument } from "@kalks/mock";
 import { getClient } from "@kalks/mock/admin-clients";
+import { IS_DEMO } from "@kalks/mock/mode";
 import type { OrderSource } from "@kalks/mock/admin-trading";
+import { digitsOf } from "@/lib/trading-desk/calc";
+import { liveClientName, useLiveDirectory } from "@/lib/trading-desk/directory";
 
 export function RouteChip({ route }: { route: "A" | "B" }) {
   return (
@@ -32,7 +35,23 @@ export function SourceTag({ source, platform }: { source: OrderSource; platform?
   );
 }
 
+/** Live builds: the gateway user behind a trading account (name from the live directory). */
+function LiveMiniClient({ clientId, login }: { clientId: string; login: string }) {
+  useLiveDirectory();
+  const name = liveClientName(clientId, login.split(" ")[0]);
+  return (
+    <a href={`/clients/${clientId}`} onClick={(e) => e.stopPropagation()} className="group/mc flex min-w-0 items-center gap-2">
+      <Avatar name={name} size={24} />
+      <span className="min-w-0 leading-tight">
+        <span className="block truncate text-[12.5px] group-hover/mc:text-ember">{name}</span>
+        <span className="block font-mono text-[10.5px] text-fg-3">{login}</span>
+      </span>
+    </a>
+  );
+}
+
 export function MiniClient({ clientId, login }: { clientId: string; login: string }) {
+  if (!IS_DEMO) return <LiveMiniClient clientId={clientId} login={login} />;
   const c = getClient(clientId);
   return (
     <a href={`/clients/${c.id}`} onClick={(e) => e.stopPropagation()} className="group/mc flex min-w-0 items-center gap-2">
@@ -55,7 +74,7 @@ export function SymbolMini({ symbol }: { symbol: string }) {
 }
 
 export function fmtPrice(symbol: string, v: number) {
-  return formatNumber(v, getInstrument(symbol).digits);
+  return formatNumber(v, IS_DEMO ? getInstrument(symbol).digits : digitsOf(symbol));
 }
 
 export function SideChip({ side, volume }: { side: "buy" | "sell"; volume?: number }) {

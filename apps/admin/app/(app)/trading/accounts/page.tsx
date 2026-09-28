@@ -11,6 +11,8 @@ import { MiniClient } from "@/components/trading/shared";
 import { resolveRoute, useDesk, type Book } from "@/lib/trading-desk";
 import { BookChip, DeskDialog } from "@/components/trading-desk/kit";
 import { CreateTradeDrawer } from "@/components/trading-desk/create-trade";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveAccountsPage } from "@/components/trading-live/accounts";
 
 const usd = (a: AdminAccountRow, v: number) => (a.currency === "USC" ? v / 100 : v);
 const ml = (a: AdminAccountRow) => (a.margin > 0 ? (a.equity / a.margin) * 100 : Infinity);
@@ -32,6 +34,10 @@ function MlCell({ a }: { a: AdminAccountRow }) {
 type Act = { k: "leverage" | "group" | "disable" | "closeOnly" | "password"; a: AdminAccountRow } | { k: "route"; a: AdminAccountRow; book: Book | null } | { k: "trade"; a: AdminAccountRow } | null;
 
 export default function AccountsPage() {
+  return IS_DEMO ? <DemoAccountsPage /> : <LiveAccountsPage />;
+}
+
+function DemoAccountsPage() {
   const { state, api } = useDesk();
   const [base, setAccounts] = React.useState(ADMIN_ACCOUNTS);
   // dealer controls (desk store) override the account status; routing shows where new trades go

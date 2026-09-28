@@ -42,6 +42,13 @@ export interface DeskPosition extends AdminPosition {
   priceCorrected?: boolean;
   /** seeded demo row still at mock reference levels — re-based onto live prices once the feed is live */
   refLevel?: boolean;
+  /* Live desk (trading engine) only: the engine's own close price and price P&L (account currency),
+     refreshed every second by the dealing stream. Demo positions leave them unset. */
+  currentPrice?: number | null;
+  profit?: number | null;
+  trailingPoints?: number | null;
+  currency?: "USD" | "USC";
+  groupName?: string;
 }
 
 export type DealKind = "close" | "partial" | "force" | "stop-out" | "price-correction";
@@ -67,6 +74,12 @@ export interface DeskDeal {
   reversed?: boolean;
   staff: string;
   reasonCode: string;
+  /* live desk only: price P&L, swap and commission share of the deal, engine close reason, account currency */
+  priceProfit?: number;
+  swap?: number;
+  commission?: number;
+  reason?: string;
+  currency?: "USD" | "USC";
   /** the position as it was (with the closed volume) — used to reopen */
   snapshot: DeskPosition;
 }
@@ -134,7 +147,16 @@ export type AuditAction =
   | "control.tenant"
   | "routing.rule"
   | "trade.rejected"
-  | "desk.reset";
+  | "desk.reset"
+  // trading engine account ops (live desk)
+  | "account.balance"
+  | "account.credit"
+  | "account.status"
+  | "account.group"
+  | "account.leverage"
+  | "account.rejected"
+  | "group.create"
+  | "group.update";
 
 export interface AuditEntry {
   readonly id: string;

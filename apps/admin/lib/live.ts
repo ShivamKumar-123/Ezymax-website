@@ -8,10 +8,31 @@ import { ADMIN_NAV } from "@/lib/nav";
  */
 
 /** Pages (path prefixes) that run on real data in live builds. */
-export const LIVE_PAGES = ["/", "/clients", "/security", "/org", "/config/spreads"] as const;
+export const LIVE_PAGES = ["/", "/clients", "/security", "/org", "/trading", "/config"] as const;
 
 /** Sub-pages under a live prefix that are not live yet. */
-export const LIVE_EXCLUDED = ["/clients/leads", "/clients/kyc", "/clients/aml", "/clients/duplicates", "/clients/segments", "/security/users", "/security/ip", "/org/roles", "/org/desks", "/org/kpis"] as const;
+export const LIVE_EXCLUDED = [
+  "/clients/leads",
+  "/clients/kyc",
+  "/clients/aml",
+  "/clients/duplicates",
+  "/clients/segments",
+  "/security/users",
+  "/security/ip",
+  "/org/roles",
+  "/org/desks",
+  "/org/kpis",
+  // trading: everything runs on the trading engine except these two
+  "/trading/rollovers",
+  "/trading/corporate-actions",
+  // config: account groups (/config, /config/groups) and spreads are live
+  "/config/symbols",
+  "/config/charges",
+  "/config/swaps",
+  "/config/margin",
+  "/config/sessions",
+  "/config/demo",
+] as const;
 
 /** Next milestone: shown in the live nav with a "Soon" chip and a Coming soon page. */
 export const SOON_PAGES: Record<string, { title: string; text: string }> = {
@@ -19,7 +40,6 @@ export const SOON_PAGES: Record<string, { title: string; text: string }> = {
   "/finance/wallets": { title: "Wallets", text: "USDT (TRC20) wallet balances and deposit addresses are enabled with the USDT wallet." },
   "/finance": { title: "Deposits", text: "USDT (TRC20) deposits, confirmations and crediting are enabled with the USDT wallet." },
   "/clients/kyc": { title: "KYC review", text: "The document review queue is enabled with client verification. Each client's KYC status is already shown on their profile." },
-  "/trading": { title: "Trading desk", text: "Positions, orders and dealing controls are enabled with the trading engine. There are no client trades yet." },
 };
 
 export function isLivePath(pathname: string): boolean {

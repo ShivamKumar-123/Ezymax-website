@@ -2,15 +2,16 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ChevronDown, RotateCcw } from "lucide-react";
+import { ChevronDown, History, RotateCcw } from "lucide-react";
 import { Button, Chip, DataTable, EmptyState, Input, Menu, cn, type Column } from "@kalks/ui";
-import { serverStamp, useDesk, type AuditAction, type AuditEntry } from "@/lib/trading-desk";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { serverStamp, useDesk, useRestDesk, type AuditAction, type AuditEntry } from "@/lib/trading-desk";
 import { ChangeLine } from "./position-drawer";
 import { DeskDialog } from "./kit";
-import { ACTION_LABEL } from "./labels";
+import { actionText } from "./labels";
 
 const tone = (a: AuditEntry) =>
-  a.action === "trade.rejected" ? "down" : a.flags?.includes("price correction") ? "gold" : a.action.startsWith("book") || a.action === "routing.rule" ? "info" : a.action.startsWith("control") ? "warn" : a.action.includes("close") || a.action === "position.stop_out" || a.action === "position.void" ? "ember" : "neutral";
+  a.action === "trade.rejected" || a.action === "account.rejected" ? "down" : a.action.startsWith("account.") || a.action.startsWith("group.") ? "gold" : a.flags?.includes("price correction") ? "gold" : a.action.startsWith("book") || a.action === "routing.rule" ? "info" : a.action.startsWith("control") ? "warn" : a.action.includes("close") || a.action === "position.stop_out" || a.action === "position.void" ? "ember" : "neutral";
 
 export function AuditTrail() {
   const { state, api } = useDesk();
@@ -18,6 +19,8 @@ export function AuditTrail() {
   const [action, setAction] = React.useState<AuditAction | "all">("all");
   const [ticket, setTicket] = React.useState("");
   const [reset, setReset] = React.useState(false);
+  const rest = useRestDesk();
+  const [older, setOlder] = React.useState<"idle" | "busy" | "done">("idle");
   const staffList = Array.from(new Set(state.audit.map((a) => a.staff.name)));
   const actions = Array.from(new Set(state.audit.map((a) => a.action)));
   const rows = state.audit.filter((a) => (staff === "all" || a.staff.name === staff) && (action === "all" || a.action === action) && (!ticket.trim() || a.tickets.some((t) => t.includes(ticket.trim()))));
@@ -31,7 +34,7 @@ export function AuditTrail() {
       header: "Action",
       cell: (r) => (
         <span className="flex flex-wrap items-center gap-1">
-          <Chip size="sm" tone={tone(r)}>{ACTION_LABEL[r.action]}</Chip>
+          <Chip size="sm" tone={tone(r)}>{actionText(r.action)}</Chip>
           {r.flags?.filter((f) => f !== "rejected").map((f) => (
             <Chip key={f} size="sm" tone={f === "price correction" ? "gold" : "neutral"}>{f}</Chip>
           ))}
@@ -87,11 +90,28 @@ export function AuditTrail() {
         toolbar={
           <div className="flex flex-wrap items-center gap-2">
             {menu("staff", staff, setStaff, staffList.map((s) => ({ value: s, label: s })))}
-            {menu("actions", action, setAction, actions.map((a) => ({ value: a, label: ACTION_LABEL[a] })))}
+            {menu("actions", action, setAction, actions.map((a) => ({ value: a, label: actionText(a) })))}
             <Input value={ticket} onChange={(e) => setTicket(e.target.value.replace(/\D/g, ""))} placeholder="Ticket" aria-label="Filter by ticket" className="h-8 w-28 rounded-full font-mono text-[12.5px]" />
-            <Button size="sm" variant="ghost" onClick={() => setReset(true)}>
-              <RotateCcw /> Reset demo data
-            </Button>
+            {IS_DEMO ? (
+              <Button size="sm" variant="ghost" onClick={() => setReset(true)}>
+                <RotateCcw /> Reset demo data
+              </Button>
+            ) : (
+              rest && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={older !== "idle" || !state.audit.length}
+                  onClick={async () => {
+                    setOlder("busy");
+                    const n = await rest.loadOlderAudit();
+                    setOlder(n < 500 ? "done" : "idle");
+                  }}
+                >
+                  <History /> {older === "busy" ? "Loading…" : older === "done" ? "All entries loaded" : "Load older entries"}
+                </Button>
+              )
+            )}
           </div>
         }
       />

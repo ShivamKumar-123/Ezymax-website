@@ -1,7 +1,14 @@
 import { getInstrument, priceFeed, type AssetClass } from "@kalks/mock";
-import { ADMIN_ACCOUNTS, ADMIN_POSITIONS, type AdminAccountRow, type RoutingRule } from "@kalks/mock/admin-trading";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { ADMIN_ACCOUNTS, ADMIN_POSITIONS, TRADING_GROUPS, type AdminAccountRow, type RoutingRule } from "@kalks/mock/admin-trading";
 import { getClient } from "@kalks/mock/admin-clients";
+import { liveAccount, liveClientName, liveGroups, liveSymbol, type LiveAccount } from "./directory";
 import type { Book, DeskPosition, DeskState, Side } from "./types";
+
+/*
+ * Live builds: every helper below prefers the trading engine's data (contract specs, accounts, metrics, P&L)
+ * from the live directory (directory.ts); demo builds keep using the mock data exactly as before.
+ */
 
 /* ------------------------------------------------------------------ */
 /* Reason codes (D117)                                                 */
@@ -19,7 +26,7 @@ export const DESK_REASONS = [
 export const REASON_ERROR_CORRECTION = DESK_REASONS[1];
 export const REASON_STOP_OUT = DESK_REASONS[3];
 /** Reasons that need a free-text note. */
-export const noteRequired = (code: string) => code.startsWith("DLR-99");
+export const noteRequired = (code: string) => /^[A-Z]{3}-99\b/.test(code);
 
 /* ------------------------------------------------------------------ */
 /* Symbol specification (lots)                                         */
@@ -43,7 +50,20 @@ const SPEC: Record<AssetClass, SymbolSpec> = {
 } as Record<AssetClass, SymbolSpec>;
 
 export function symbolSpec(symbol: string): SymbolSpec {
+  const l = IS_DEMO ? undefined : liveSymbol(symbol);
+  if (l) return { min: l.lotMin, max: l.lotMax, step: l.lotStep, levCap: l.maxLeverage };
   return SPEC[getInstrument(symbol).assetClass] ?? SPEC.forex;
+}
+
+/** Price digits of a symbol (engine spec in live builds). */
+export function digitsOf(symbol: string): number {
+  const l = IS_DEMO ? undefined : liveSymbol(symbol);
+  if (l) return l.digits;
+  try {
+    return getInstrument(symbol).digits;
+  } catch {
+    return 5;
+  }
 }
 
 export function volumeError(symbol: string, v: number, maxLot?: number): string | null {
@@ -62,7 +82,7 @@ export const roundVol = (symbol: string, v: number) => {
   return +(Math.round(v / s) * s).toFixed(s >= 1 ? 0 : s >= 0.1 ? 1 : 2);
 };
 
-export const roundPrice = (symbol: string, v: number) => +v.toFixed(getInstrument(symbol).digits);
+export const roundPrice = (symbol: string, v: number) => +v.toFixed(digitsOf(symbol));
 
 /* ------------------------------------------------------------------ */
 /* P&L, notional, margin                                               */
@@ -77,15 +97,24 @@ export const openPriceOf = (side: Side, q: { bid: number; ask: number }) => (sid
 
 /** Price-only client P&L in USD for `volume` lots between two prices. */
 export function pricePnl(symbol: string, side: Side, volume: number, from: number, to: number) {
-  const inst = getInstrument(symbol);
+  const contract = (IS_DEMO ? undefined : liveSymbol(symbol))?.contractSize ?? getInstrument(symbol).contractSize;
   const diff = side === "buy" ? to - from : from - to;
-  let v = diff * volume * inst.contractSize;
+  let v = diff * volume * contract;
   if (symbol.endsWith("JPY") && to > 0) v /= to;
   return v;
 }
 
-/** Full client P&L of a position (price + swap − commission). */
+/** Account-currency amount in USD (cent accounts report USC = USD × 100). */
+export const toUsdOf = (v: number, ccy?: string) => (ccy === "USC" ? v / 100 : v);
+
+/** Price at which a position would close now: the engine's own price on the live desk, else the quote. */
+export function currentPriceOf(p: DeskPosition, q: { bid: number; ask: number }) {
+  return p.currentPrice ?? closePriceOf(p.side, q);
+}
+
+/** Full client P&L of a position (price + swap − commission), USD. Live desk: the engine's P&L (streamed every second). */
 export function positionPnl(p: DeskPosition, q: { bid: number; ask: number }) {
+  if (p.profit !== undefined && p.profit !== null) return toUsdOf(p.profit + p.swap - p.commission, p.currency);
   const px = closePriceOf(p.side, q);
   if (!px) return p.swap - p.commission;
   return pricePnl(p.symbol, p.side, p.volume, p.openPrice, px) + p.swap - p.commission;
@@ -93,7 +122,7 @@ export function positionPnl(p: DeskPosition, q: { bid: number; ask: number }) {
 
 /** Client price P&L attributed to each book (earlier segments + current segment since the last transfer). */
 export function bookAttribution(p: DeskPosition, q: { bid: number; ask: number }) {
-  const px = closePriceOf(p.side, q);
+  const px = currentPriceOf(p, q);
   const since = px ? pricePnl(p.symbol, p.side, p.volume, p.bookPrice, px) : 0;
   return { A: p.bookCarry.A + (p.route === "A" ? since : 0), B: p.bookCarry.B + (p.route === "B" ? since : 0), since };
 }
@@ -101,13 +130,14 @@ export function bookAttribution(p: DeskPosition, q: { bid: number; ask: number }
 let usdJpy = 149.382;
 export function notionalUsd(symbol: string, lots: number, price: number, quote?: QuoteFn) {
   const inst = getInstrument(symbol);
-  if (inst.assetClass === "forex" && symbol.startsWith("USD")) return lots * inst.contractSize;
+  const contract = (IS_DEMO ? undefined : liveSymbol(symbol))?.contractSize ?? inst.contractSize;
+  if (inst.assetClass === "forex" && symbol.startsWith("USD")) return lots * contract;
   if (symbol.endsWith("JPY")) {
     const j = quote?.("USDJPY");
     if (j && j.bid) usdJpy = (j.bid + j.ask) / 2;
-    return (lots * inst.contractSize * price) / usdJpy;
+    return (lots * contract * price) / usdJpy;
   }
-  return lots * inst.contractSize * price;
+  return lots * contract * price;
 }
 
 export function effectiveLeverage(symbol: string, accountLeverage: number) {
@@ -123,7 +153,52 @@ export function marginFor(symbol: string, lots: number, price: number, leverage:
 /* ------------------------------------------------------------------ */
 
 const ACC = new Map<string, AdminAccountRow>(ADMIN_ACCOUNTS.map((a) => [a.login, a]));
-export const getAccount = (login: string) => ACC.get(login);
+
+/** Engine account → the Back Office account row shape (amounts stay in the account currency, like the mock). */
+function liveRow(a: LiveAccount): AdminAccountRow {
+  return {
+    login: a.login,
+    clientId: a.userId,
+    group: a.group,
+    type: a.type,
+    leverage: a.leverage,
+    currency: a.currency,
+    balance: a.balance,
+    equity: a.equity,
+    credit: a.credit,
+    margin: a.margin,
+    route: a.route,
+    server: a.type === "demo" ? "Kalks-Demo" : "Kalks-Live",
+    openPositions: a.positions,
+    created: a.createdAt,
+    status: a.status === "active" ? "active" : a.status === "close_only" || a.status === "read_only" ? "read-only" : "disabled",
+  };
+}
+
+export const getAccount = (login: string): AdminAccountRow | undefined => {
+  if (!IS_DEMO) {
+    const a = liveAccount(login);
+    return a ? liveRow(a) : undefined;
+  }
+  return ACC.get(login);
+};
+
+/** Client display name for a desk row (mock client in demo, gateway user / account name live). */
+export function clientName(clientId: string, login?: string): string {
+  return IS_DEMO ? getClient(clientId).name : liveClientName(clientId, login);
+}
+
+/** Group filter options: mock groups in demo, the engine's groups (code → name) live. */
+export function groupOptions(): { value: string; label: string }[] {
+  if (IS_DEMO) return TRADING_GROUPS.map((g) => ({ value: g, label: g }));
+  return liveGroups().map((g) => ({ value: g.code, label: g.name }));
+}
+
+/** Group display name (live: engine group name from its code). */
+export function groupLabel(code: string): string {
+  if (IS_DEMO) return code;
+  return liveGroups().find((g) => g.code === code)?.name ?? code;
+}
 const toUsd = (a: AdminAccountRow, v: number) => (a.currency === "USC" ? v / 100 : v);
 
 export interface AccountMetrics {
@@ -166,6 +241,19 @@ function baseBalance(a: AdminAccountRow): number {
 }
 
 export function accountMetrics(state: DeskState, login: string, quote: QuoteFn, extra?: { margin?: number }): AccountMetrics | null {
+  if (!IS_DEMO) {
+    const l = liveAccount(login);
+    if (!l) return null;
+    const positions = state.positions.filter((p) => p.login === login);
+    const u = (v: number) => toUsdOf(v, l.currency);
+    // engine metrics (refreshed every 5 s), floating from the streamed position P&L
+    const floating = positions.reduce((s, p) => s + positionPnl(p, quote(p.symbol)), 0);
+    const balance = u(l.balance);
+    const credit = u(l.credit + l.bonus);
+    const equity = balance + credit + floating;
+    const margin = u(l.margin) + (extra?.margin ?? 0);
+    return { login, balance, credit, floating, equity, margin, freeMargin: equity - margin, level: margin > 0 ? (equity / margin) * 100 : Infinity, positions };
+  }
   const a = ACC.get(login);
   if (!a) return null;
   const positions = state.positions.filter((p) => p.login === login);
@@ -213,14 +301,16 @@ function condMatch(c: RoutingRule["conditions"][number], ctx: { login: string; g
 }
 
 export function resolveRoute(rules: RoutingRule[], ctx: { login: string; group: string; symbol: string; volume: number; clientId?: string }): RouteDecision {
-  const risk = ctx.clientId ? getClient(ctx.clientId).risk : 0;
+  const risk = IS_DEMO && ctx.clientId ? getClient(ctx.clientId).risk : 0;
   const c = { ...ctx, risk };
   for (const r of rules) {
     if (!r.enabled || !r.conditions.length) continue;
     const ok = r.join === "AND" ? r.conditions.every((x) => condMatch(x, c)) : r.conditions.some((x) => condMatch(x, c));
     if (ok) return { book: r.action.pct >= 50 ? r.action.book : r.action.book === "A" ? "B" : "A", pct: r.action.pct, rule: r };
   }
-  return { book: "B", pct: 100, rule: null };
+  // live: the account default (dealer override or group route) decides when no rule matches
+  const fallback: Book = IS_DEMO ? "B" : (liveAccount(ctx.login)?.route ?? "B");
+  return { book: fallback, pct: 100, rule: null };
 }
 
 /* ------------------------------------------------------------------ */

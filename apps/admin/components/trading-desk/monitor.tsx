@@ -5,9 +5,8 @@ import Link from "next/link";
 import { ExternalLink, TrendingDown } from "lucide-react";
 import { Button, Chip, DataTable, Segmented, SymbolAvatar, cn, formatNumber, useQuotes, type Column } from "@kalks/ui";
 import { priceFeed } from "@kalks/mock";
-import { getClient } from "@kalks/mock/admin-clients";
 import { MiniClient } from "@/components/trading/shared";
-import { REASON_STOP_OUT, accountMetrics, getAccount, positionPnl, useDesk, type AccountMetrics, type DeskPosition } from "@/lib/trading-desk";
+import { REASON_STOP_OUT, accountMetrics, clientName, getAccount, groupLabel, positionPnl, useDesk, type AccountMetrics, type DeskPosition } from "@/lib/trading-desk";
 import { DeskDialog, MetaTile, money, signedMoney } from "./kit";
 
 type Row = AccountMetrics & { clientId: string; group: string; leverage: number; loser: DeskPosition | null; loserPnl: number };
@@ -47,7 +46,7 @@ export function MarginMonitor() {
   const status = (l: number) => (l < stopOutPct ? { t: "Stop-out", tone: "down" as const } : l < marginCallPct ? { t: "Margin call", tone: "warn" as const } : l < 200 ? { t: "Watch", tone: "gold" as const } : { t: "Healthy", tone: "up" as const });
 
   const cols: Column<Row>[] = [
-    { key: "c", header: "Account", cell: (r) => <MiniClient clientId={r.clientId} login={`${r.login} · ${r.group} 1:${r.leverage}`} />, csv: (r) => `${getClient(r.clientId).name} (${r.login}, ${r.group})` },
+    { key: "c", header: "Account", cell: (r) => <MiniClient clientId={r.clientId} login={`${r.login} · ${groupLabel(r.group)} 1:${r.leverage}`} />, csv: (r) => `${clientName(r.clientId, r.login)} (${r.login}, ${r.group})` },
     { key: "b", header: "Balance", align: "right", cell: (r) => <span className="k-num font-mono text-[12px] text-fg-2">{money(r.balance, 0)}</span>, sort: (r) => r.balance },
     { key: "e", header: "Equity", align: "right", cell: (r) => <span className="k-num font-mono text-[12.5px]">{money(r.equity, 0)}</span>, sort: (r) => r.equity },
     { key: "f", header: "Floating", align: "right", cell: (r) => <span className={cn("k-num font-mono text-[12px]", r.floating >= 0 ? "text-up" : "text-down")}>{signedMoney(r.floating, 0)}</span>, sort: (r) => r.floating },
@@ -120,7 +119,7 @@ export function MarginMonitor() {
         pageSize={12}
         rowKey={(r) => r.login}
         exportName="margin-monitor"
-        search={(r) => `${r.login} ${getClient(r.clientId).name}`}
+        search={(r) => `${r.login} ${clientName(r.clientId, r.login)}`}
         searchPlaceholder="Login, client…"
         toolbar={<Segmented size="sm" value={view} onChange={setView} options={[{ value: "risk", label: "Level < 300%" }, { value: "all", label: "All accounts" }]} />}
       />

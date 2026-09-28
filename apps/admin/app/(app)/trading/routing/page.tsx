@@ -23,9 +23,11 @@ import {
   formatMoney,
   formatNumber,
 } from "@kalks/ui";
-import { LP_CONNECTIONS, ROUTING_DEFAULT, TRADING_GROUPS, type RoutingCondition, type RoutingRule } from "@kalks/mock/admin-trading";
-import { getClient } from "@kalks/mock/admin-clients";
-import { getAccount, useDesk, type Book } from "@/lib/trading-desk";
+import { LP_CONNECTIONS, ROUTING_DEFAULT, type RoutingCondition, type RoutingRule } from "@kalks/mock/admin-trading";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { clientName, currentPriceOf, getAccount, groupOptions, notionalUsd as deskNotional, positionPnl, useDesk, useLiveDirectory, type Book } from "@/lib/trading-desk";
+import { DeskStatusChip } from "@/components/trading-desk/status";
+import { useCan } from "@/components/staff-session";
 import { AccountPicker, BookChip, DeskDialog } from "@/components/trading-desk/kit";
 import { EXPOSURE, notionalUsd } from "@kalks/mock/admin-ops";
 import { getInstrument } from "@kalks/mock";
@@ -190,9 +192,12 @@ function ConnectLp() {
 
 export default function RoutingPage() {
   const { state } = useDesk();
-  const rules = state.routingRules;
+  const canDeal = useCan("dealing.write");
+  const rules = state.routingRules.filter((r) => IS_DEMO || !r.id.startsWith("RQ-"));
   const [pending, setPending] = React.useState<{ rules: RoutingRule[]; summary: string } | null>(null);
-  const propose = (next: RoutingRule[], summary: string) => setPending({ rules: next, summary });
+  // live: quick routes (RQ-…) are edited in their own card and kept ahead of the rule set on every publish
+  const quick = IS_DEMO ? [] : state.routingRules.filter((r) => r.id.startsWith("RQ-"));
+  const propose = (next: RoutingRule[], summary: string) => setPending({ rules: [...quick, ...next], summary });
   const [edit, setEdit] = React.useState<RoutingRule | null>(null);
   const [dragId, setDragId] = React.useState<string | null>(null);
   const [overId, setOverId] = React.useState<string | null>(null);
@@ -222,11 +227,13 @@ export default function RoutingPage() {
     <div className="pb-10">
       <PageHeader
         title="Book & routing"
-        subtitle="Hybrid A/B book. Orders are matched against these rules top-down; the first match decides the route."
+        subtitle={<span className="inline-flex flex-wrap items-center gap-2">Hybrid A/B book. Orders are matched against these rules top-down; the first match decides the route. <DeskStatusChip /></span>}
         actions={
-          <Button variant="ember" size="lg" onClick={() => setEdit({ id: "new", name: "New rule", conditions: [{ field: "Risk score", op: "≥", value: "7" }], join: "AND", action: { book: "A", pct: 50, lp: "Primary LP" }, enabled: true, hits24h: 0, lots24h: 0 })}>
-            <Plus /> New rule
-          </Button>
+          canDeal && (
+            <Button variant="ember" size="lg" onClick={() => setEdit({ id: "new", name: "New rule", conditions: IS_DEMO ? [{ field: "Risk score", op: "≥", value: "7" }] : [{ field: "Lot size", op: "≥", value: "10" }], join: "AND", action: { book: "A", pct: 100, ...(IS_DEMO ? { lp: "Primary LP" } : {}) }, enabled: true, hits24h: 0, lots24h: 0 })}>
+              <Plus /> New rule
+            </Button>
+          )
         }
       />
 
@@ -315,12 +322,14 @@ export default function RoutingPage() {
                 <span className="grid size-6 place-items-center rounded-full bg-surface-3 font-mono text-[10px] text-fg-3">∞</span>
                 <span className="flex-1 text-[13px]">
                   <span className="font-mono text-[10.5px] font-semibold text-fg-3">DEFAULT</span> <ArrowRight className="mx-1 inline size-3.5 text-fg-3" />
-                  <Chip>B-book {ROUTING_DEFAULT.pct}%</Chip>
+                  {IS_DEMO ? <Chip>B-book {ROUTING_DEFAULT.pct}%</Chip> : <Chip>Account route → group default route</Chip>}
                 </span>
-                <div className="text-right">
-                  <div className="k-num font-mono text-[13px]">{formatNumber(ROUTING_DEFAULT.hits24h, 0)}</div>
-                  <div className="text-[10.5px] text-fg-3">{formatNumber(ROUTING_DEFAULT.lots24h, 1)} lots · 24h</div>
-                </div>
+                {IS_DEMO && (
+                  <div className="text-right">
+                    <div className="k-num font-mono text-[13px]">{formatNumber(ROUTING_DEFAULT.hits24h, 0)}</div>
+                    <div className="text-[10.5px] text-fg-3">{formatNumber(ROUTING_DEFAULT.lots24h, 1)} lots · 24h</div>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -330,6 +339,12 @@ export default function RoutingPage() {
           <Reveal delay={0.08}>
             <QuickRoutes />
           </Reveal>
+          {!IS_DEMO && (
+            <Reveal delay={0.1}>
+              <LiveBookSplit />
+            </Reveal>
+          )}
+          {IS_DEMO && (
           <Reveal delay={0.1}>
             <Card>
               <CardHeader title="Simulated impact" subtitle="Last 24h flow replayed through current rules" />
@@ -382,6 +397,7 @@ export default function RoutingPage() {
               </div>
             </Card>
           </Reveal>
+          )}
           <Reveal delay={0.15}>
             <Card>
               <CardHeader title="LP connections" subtitle="A-book execution venues" icon={<Cable />} />
@@ -400,9 +416,15 @@ export default function RoutingPage() {
                     </Chip>
                   </div>
                 ))}
-                <div className="pt-2">
-                  <ConnectLp />
-                </div>
+                {IS_DEMO ? (
+                  <div className="pt-2">
+                    <ConnectLp />
+                  </div>
+                ) : (
+                  <div className="rounded-[14px] border border-line bg-surface-2/60 px-3.5 py-2.5 text-[12px] leading-relaxed text-fg-3">
+                    The engine records the A/B decision on every ticket and calls the LP adapter for A-book fills. No LP adapter is connected yet, so A-book trades are executed internally and flagged for manual hedging.
+                  </div>
+                )}
               </div>
             </Card>
           </Reveal>
@@ -443,6 +465,8 @@ function PublishRules({ pending, onClose }: { pending: { rules: RoutingRule[]; s
 /** Per-group / per-account "route new trades to A/B" overrides (rules RQ-G… / RQ-L…, evaluated first). */
 function QuickRoutes() {
   const { state, api } = useDesk();
+  useLiveDirectory();
+  const canDeal = useCan("dealing.write");
   const [login, setLogin] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState<{ scope: { login: string } | { group: string }; book: Book | null; label: string } | null>(null);
   const quick = state.routingRules.filter((r) => r.id.startsWith("RQ-"));
@@ -453,15 +477,15 @@ function QuickRoutes() {
       <CardHeader title="Quick routes" subtitle="New trades only · by group or account" icon={<RouteIcon />} />
       <div className="space-y-4 px-6 pb-6 pt-4">
         <div className="space-y-1.5">
-          {TRADING_GROUPS.map((g) => {
+          {groupOptions().map(({ value: g, label }) => {
             const b = groupBook(g);
             return (
               <div key={g} className="flex items-center gap-2 text-[12.5px]">
-                <span className="w-16">{g}</span>
+                <span className="w-24 truncate">{label}</span>
                 <Segmented
                   size="xs"
                   value={b ?? "rules"}
-                  onChange={(v) => setPending({ scope: { group: g }, book: v === "rules" ? null : (v as Book), label: `${g}: ${v === "rules" ? "follow rules" : `route new trades to ${v}-book`}` })}
+                  onChange={(v) => canDeal && setPending({ scope: { group: g }, book: v === "rules" ? null : (v as Book), label: `${label}: ${v === "rules" ? "follow rules" : `route new trades to ${v}-book`}` })}
                   options={[{ value: "rules", label: "Rules" }, { value: "A", label: "A-book" }, { value: "B", label: "B-book" }]}
                 />
               </div>
@@ -472,7 +496,7 @@ function QuickRoutes() {
           <AccountPicker value={login} onChange={setLogin} />
           <div className="mt-2 flex gap-2">
             {(["A", "B"] as const).map((b) => (
-              <Button key={b} size="xs" variant="surface" disabled={!login} onClick={() => login && setPending({ scope: { login }, book: b, label: `${login}: route new trades to ${b}-book` })}>
+              <Button key={b} size="xs" variant="surface" disabled={!login || !canDeal} onClick={() => login && setPending({ scope: { login }, book: b, label: `${login}: route new trades to ${b}-book` })}>
                 Route to {b}-book
               </Button>
             ))}
@@ -485,7 +509,7 @@ function QuickRoutes() {
                 return (
                   <div key={r.id} className="k-row flex items-center gap-2 px-3 py-1.5 text-[12px]">
                     <span className="font-mono">{l}</span>
-                    <span className="flex-1 truncate text-fg-3">{acc ? getClient(acc.clientId).name : ""}</span>
+                    <span className="flex-1 truncate text-fg-3">{acc ? clientName(acc.clientId, acc.login) : ""}</span>
                     <BookChip book={r.action.book} />
                     <button type="button" onClick={() => setPending({ scope: { login: l }, book: null, label: `${l}: remove account route` })} className="grid size-6 place-items-center rounded-full text-fg-3 hover:bg-surface-3 hover:text-down" aria-label={`Remove route for ${l}`}>
                       <X className="size-3.5" />
@@ -506,6 +530,70 @@ function QuickRoutes() {
         onConfirm={(r) => api.quickRoute(pending!.scope, pending!.book, r)}
         success={pending?.label ?? "Route updated"}
       />
+    </Card>
+  );
+}
+
+/** Live: where the open risk sits right now (engine positions), A vs B, with the largest net A-book symbols. */
+function LiveBookSplit() {
+  const { state } = useDesk();
+  const q0 = { bid: 0, ask: 0 };
+  const by = { A: { n: 0, lots: 0, pnl: 0 }, B: { n: 0, lots: 0, pnl: 0 } };
+  const netA = new Map<string, number>();
+  for (const p of state.positions) {
+    const b = by[p.route];
+    b.n++;
+    b.lots += p.volume;
+    b.pnl += positionPnl(p, q0);
+    if (p.route === "A") {
+      const px = currentPriceOf(p, q0) || p.openPrice;
+      netA.set(p.symbol, (netA.get(p.symbol) ?? 0) + (p.side === "buy" ? 1 : -1) * deskNotional(p.symbol, p.volume, px));
+    }
+  }
+  const total = by.A.lots + by.B.lots;
+  const aPct = total ? (by.A.lots / total) * 100 : 0;
+  const top = [...netA.entries()].sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 6);
+  return (
+    <Card>
+      <CardHeader title="Open book split" subtitle="Open positions by book · live from the engine" />
+      <div className="px-6 pb-6 pt-4">
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="text-[11px] uppercase tracking-wider text-info">A-book</div>
+            <div className="k-num text-[26px] font-semibold">{aPct.toFixed(1)}%</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[11px] uppercase tracking-wider text-fg-2">B-book</div>
+            <div className="k-num text-[26px] font-semibold">{total ? (100 - aPct).toFixed(1) : "0.0"}%</div>
+          </div>
+        </div>
+        <ShareBar className="mt-3" height={10} parts={[{ value: aPct, className: "bg-info" }, { value: total ? 100 - aPct : 100, className: "bg-gradient-to-r from-ember to-[#ff8a3d]" }]} />
+        <div className="k-num mt-2 flex justify-between font-mono text-[11.5px] text-fg-3">
+          <span>{by.A.n} pos · {formatNumber(by.A.lots, 2)} lots</span>
+          <span>{by.B.n} pos · {formatNumber(by.B.lots, 2)} lots</span>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="k-row px-3 py-2.5">
+            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Client floating on A</div>
+            <div className={cn("k-num font-mono text-[14px]", by.A.pnl >= 0 ? "text-up" : "text-down")}>{formatMoney(by.A.pnl, "USD", 0)}</div>
+          </div>
+          <div className="k-row px-3 py-2.5">
+            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Broker B-book floating</div>
+            <div className={cn("k-num font-mono text-[14px]", -by.B.pnl >= 0 ? "text-up" : "text-down")}>{formatMoney(-by.B.pnl, "USD", 0)}</div>
+          </div>
+        </div>
+        <div className="mt-4 text-[11px] uppercase tracking-wider text-fg-3">Net A-book exposure by symbol</div>
+        <div className="mt-2 space-y-2">
+          {top.length === 0 && <div className="text-[12px] text-fg-3">No A-book positions open.</div>}
+          {top.map(([sym, v]) => (
+            <div key={sym} className="flex items-center gap-2.5 text-[12px]">
+              <SymbolAvatar symbol={sym} size={18} />
+              <span className="w-16">{sym}</span>
+              <span className={cn("k-num flex-1 text-right font-mono", v >= 0 ? "text-up" : "text-down")}>{usdCompact(v, 1)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </Card>
   );
 }

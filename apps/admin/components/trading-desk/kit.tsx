@@ -7,13 +7,14 @@ import { Avatar, Button, Dialog, DialogClose, SymbolAvatar, Tooltip, cn, formatM
 import { INSTRUMENTS, getInstrument } from "@kalks/mock";
 import { ADMIN_ACCOUNTS } from "@kalks/mock/admin-trading";
 import { getClient } from "@kalks/mock/admin-clients";
-import { DESK_REASONS, noteRequired, type Book, type DeskResult, type Reason } from "@/lib/trading-desk";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { DESK_REASONS, liveClientEmail, liveClientName, noteRequired, toUsdOf, useLiveDirectory, type Book, type DeskResult, type Reason } from "@/lib/trading-desk";
 
 /* ------------------------------------------------------------------ */
 /* Reason code + note (D117)                                           */
 /* ------------------------------------------------------------------ */
 
-export function useReason(initial?: string) {
+export function useReason(initial?: string, mustNote = false) {
   const [code, setCode] = React.useState<string>(initial ?? "");
   const [note, setNote] = React.useState("");
   const reset = React.useCallback(() => {
@@ -21,7 +22,7 @@ export function useReason(initial?: string) {
     setNote("");
   }, [initial]);
   const reason: Reason = { code, note };
-  const error = !code ? "Select a reason code" : noteRequired(code) && !note.trim() ? "Add a note for “Other”" : null;
+  const error = !code ? "Select a reason code" : noteRequired(code) && !note.trim() ? "Add a note for “Other”" : mustNote && !note.trim() ? "Add a note for the audit log" : null;
   return { code, setCode, note, setNote, reason, error, reset };
 }
 
@@ -132,6 +133,7 @@ export function DeskDialog<T>({
   codes,
   defaultCode,
   noteRequiredHint,
+  requireNote,
   confirmLabel,
   confirmVariant = "ember",
   disabled,
@@ -148,6 +150,8 @@ export function DeskDialog<T>({
   codes?: readonly string[];
   defaultCode?: string;
   noteRequiredHint?: boolean;
+  /** the note is mandatory (e.g. balance adjustments) */
+  requireNote?: boolean;
   confirmLabel: string;
   confirmVariant?: "ember" | "sell" | "buy" | "gold" | "surface";
   disabled?: boolean | string;
@@ -155,7 +159,7 @@ export function DeskDialog<T>({
   success: string | ((d: T) => string);
   children?: React.ReactNode;
 }) {
-  const r = useReason(defaultCode);
+  const r = useReason(defaultCode, requireNote);
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const { reset } = r;
@@ -208,7 +212,7 @@ export function DeskDialog<T>({
     >
       <div className="space-y-5">
         {children}
-        <ReasonFields r={r} codes={codes} noteRequiredHint={noteRequiredHint} />
+        <ReasonFields r={r} codes={codes} noteRequiredHint={noteRequiredHint || requireNote} />
         <ErrorBanner error={error} />
         <AuditNotice />
       </div>
@@ -292,14 +296,35 @@ const ACCOUNT_INDEX = ADMIN_ACCOUNTS.map((a) => {
   return { a, c, hay: `${a.login} ${c.name} ${c.id} ${c.email}`.toLowerCase() };
 });
 
+type PickRow = { a: { login: string; group: string; leverage: number; currency: string; status: string; equity: number; type?: string }; c: { name: string; photo?: string }; hay: string };
+
+/** Live builds: accounts from the trading engine (live directory). */
+function useLiveAccountIndex(): PickRow[] {
+  const dir = useLiveDirectory();
+  return React.useMemo(
+    () =>
+      [...dir.accounts.values()].map((a) => {
+        const name = liveClientName(a.userId, a.login);
+        return {
+          a: { login: a.login, group: a.groupName || a.group, leverage: a.leverage, currency: a.currency, status: a.status === "active" ? "active" : a.status.replace("_", "-"), equity: a.equity, type: a.type },
+          c: { name },
+          hay: `${a.login} ${name} ${a.userId} ${liveClientEmail(a.userId)} ${a.name}`.toLowerCase(),
+        };
+      }),
+    [dir],
+  );
+}
+
 export function AccountPicker({ value, onChange }: { value: string | null; onChange: (login: string) => void }) {
   const [q, setQ] = React.useState("");
   const [open, setOpen] = React.useState(false);
+  const live = useLiveAccountIndex();
+  const index: PickRow[] = IS_DEMO ? ACCOUNT_INDEX : live;
   const list = React.useMemo(() => {
     const s = q.trim().toLowerCase();
-    return (s ? ACCOUNT_INDEX.filter((x) => x.hay.includes(s)) : ACCOUNT_INDEX).slice(0, 7);
-  }, [q]);
-  const sel = value ? ACCOUNT_INDEX.find((x) => x.a.login === value) : null;
+    return (s ? index.filter((x) => x.hay.includes(s)) : index).slice(0, 7);
+  }, [q, index]);
+  const sel = value ? index.find((x) => x.a.login === value) : null;
   return (
     <div className="relative">
       <div className="mb-1.5 text-[12.5px] font-medium text-fg-2">Client / account</div>
@@ -338,13 +363,14 @@ export function AccountPicker({ value, onChange }: { value: string | null; onCha
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13px]">{c.name}</span>
                 <span className="block text-[11px] text-fg-3">
+                  {a.type === "demo" && <span className="text-info">Demo · </span>}
                   {a.group} · 1:{a.leverage} · {a.currency}
                   {a.status !== "active" && <span className="text-down"> · {a.status}</span>}
                 </span>
               </span>
               <span className="text-right">
                 <span className="block font-mono text-[11.5px] text-fg-2">{a.login}</span>
-                <span className="k-num block font-mono text-[10.5px] text-fg-3">{formatMoney(a.currency === "USC" ? a.equity / 100 : a.equity, "USD", 0)}</span>
+                <span className="k-num block font-mono text-[10.5px] text-fg-3">{formatMoney(toUsdOf(a.equity, a.currency), "USD", 0)}</span>
               </span>
             </button>
           ))}
@@ -359,8 +385,11 @@ const QUICK = ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "NAS100", "US30", "BTCUSD
 export function SymbolPicker({ value, onChange }: { value: string; onChange: (s: string) => void }) {
   const [q, setQ] = React.useState("");
   const [open, setOpen] = React.useState(false);
+  const dir = useLiveDirectory();
   const s = q.trim().toUpperCase();
-  const list = s ? INSTRUMENTS.filter((i) => i.symbol.includes(s) || i.name.toUpperCase().includes(s)).slice(0, 8) : [];
+  // live: only symbols the engine has a contract spec for
+  const universe = IS_DEMO || !dir.symbols.size ? INSTRUMENTS : INSTRUMENTS.filter((i) => dir.symbols.has(i.symbol));
+  const list = s ? universe.filter((i) => i.symbol.includes(s) || i.name.toUpperCase().includes(s)).slice(0, 8) : [];
   return (
     <div className="relative">
       <div className="mb-1.5 text-[12.5px] font-medium text-fg-2">Symbol</div>
