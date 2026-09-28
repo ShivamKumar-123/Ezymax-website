@@ -1,0 +1,41 @@
+"use client";
+
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { Card, EmptyState, PageHeader, Reveal, buttonVariants } from "@kalks/ui";
+import { ClientDetailView, ClientHeader } from "./client-detail";
+import { useApi } from "./kit";
+import type { ClientDetail } from "./types";
+
+export function LiveClientPage() {
+  const params = useParams<{ id: string }>();
+  const id = /^\d{1,18}$/.test(params.id ?? "") ? Number(params.id) : null;
+  const { data } = useApi<ClientDetail>(id ? `/api/admin/users/${id}` : null);
+  const back = (
+    <Link href="/clients" className={buttonVariants({ variant: "surface" })}>
+      <ArrowLeft /> All clients
+    </Link>
+  );
+  if (!id)
+    return (
+      <Card className="mt-6">
+        <EmptyState title="Client not found" text="Check the client ID and try again." illustration="magnifying_glass_tilted_left" action={back} />
+      </Card>
+    );
+  return (
+    <div className="pb-10">
+      <PageHeader title="Client profile" subtitle={data ? `Client #${id} · ${data.user.email}` : `Client #${id}`} actions={back} />
+      {data && (
+        <Reveal>
+          <Card className="mb-4 px-6 py-5">
+            <ClientHeader d={data} />
+          </Card>
+        </Reveal>
+      )}
+      <Reveal delay={0.05}>
+        <ClientDetailView id={id} />
+      </Reveal>
+    </div>
+  );
+}

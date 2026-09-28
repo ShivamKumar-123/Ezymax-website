@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveClientPage } from "@/components/live/client-page";
+
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -32,7 +35,7 @@ import { AccountsTab, AuditTab, IbTab, KycTab, LoginsTab, OverviewTab, TradesTab
 type Tab = "overview" | "accounts" | "trades" | "transactions" | "kyc" | "ib" | "logins" | "audit";
 type Act = "impersonate" | "adjust" | "group" | "block" | "email" | null;
 
-export default function ClientProfilePage() {
+function DemoClientProfilePage() {
   const params = useParams<{ id: string }>();
   const c = getClient(params.id);
   const agent = staff(c.agentId);
@@ -273,4 +276,9 @@ export default function ClientProfilePage() {
       </Dialog>
     </div>
   );
+}
+
+/** Live builds: real data from the gateway / market-data. Demo builds: the mock showcase above. */
+export default function Page() {
+  return IS_DEMO ? <DemoClientProfilePage /> : <LiveClientPage />;
 }

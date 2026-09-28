@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { ArrowLeftRight, Edit3, Layers, Scissors, Share2, X, XCircle } from "lucide-react";
 import { getInstrument } from "@kalks/mock";
 import { SymbolAvatar, cn, useQuote } from "@kalks/ui";

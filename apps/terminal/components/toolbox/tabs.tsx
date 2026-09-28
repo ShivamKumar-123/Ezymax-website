@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Bell, BellOff, Copy, Newspaper, Pencil, Plus, Trash2 } from "lucide-react";
 import { CALENDAR, INSTRUMENTS, NEWS, getInstrument, priceFeed } from "@kalks/mock";
 import { Flag, SymbolAvatar, cn, useQuote, useQuotes } from "@kalks/ui";
@@ -420,7 +420,7 @@ export function AlertsTab() {
             </TButton>
           )}
         </div>
-        <p className="text-[10.5px] leading-snug text-fg-3">Alerts are evaluated server-side on every tick and play a sound + toast when triggered. Right-click a chart to set one at a price.</p>
+        <p className="text-[10.5px] leading-snug text-fg-3">{T.guest ? "Alerts are checked in this browser on every live tick while the terminal is open, with a sound + notification when triggered." : "Alerts are evaluated server-side on every tick and play a sound + toast when triggered."} Right-click a chart to set one at a price.</p>
       </div>
       <div className="t-scroll min-h-0 flex-1 overflow-auto">
         <table className="w-full min-w-[600px] border-separate border-spacing-0">

@@ -44,6 +44,33 @@ function useViewportWidth() {
   }, []);
   return w;
 }
+/**
+ * Toasts sit at the top-right of the chart area: below the chart tabs + toolbar and left of the
+ * order panel, so they never cover the chart header or the ticket (see providers.tsx).
+ */
+function useToastPlacement(ref: React.RefObject<HTMLDivElement | null>) {
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const root = document.documentElement.style;
+    const place = () => {
+      const r = el.getBoundingClientRect();
+      root.setProperty("--t-toast-top", `${Math.round(r.top + 74)}px`);
+      root.setProperty("--t-toast-right", `${Math.round(window.innerWidth - r.right + 76)}px`);
+    };
+    place();
+    const ro = new ResizeObserver(place);
+    ro.observe(el);
+    window.addEventListener("resize", place);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", place);
+      root.removeProperty("--t-toast-top");
+      root.removeProperty("--t-toast-right");
+    };
+  }, [ref]);
+}
+
 const pct = (px: number, w: number) => Math.min(45, Math.ceil((px / Math.max(w, 1)) * 100));
 
 export function DesktopTerminal() {
@@ -61,6 +88,8 @@ export function DesktopTerminal() {
   const leftMin = pct(230, vw);
   const rightMin = pct(268, vw);
   const toolboxRef = React.useRef<ImperativePanelHandle>(null);
+  const center = React.useRef<HTMLDivElement>(null);
+  useToastPlacement(center);
   const [maxed, setMaxed] = React.useState(false);
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-page">
@@ -98,7 +127,9 @@ export function DesktopTerminal() {
                   </>
                 )}
                 <Panel id="center" order={2} minSize={30}>
-                  <ChartWorkspace />
+                  <div ref={center} className="h-full min-h-0 min-w-0">
+                    <ChartWorkspace />
+                  </div>
                 </Panel>
                 {p.right && (
                   <>
@@ -111,7 +142,7 @@ export function DesktopTerminal() {
                   </>
                 )}
               </PanelGroup>
-              {!p.right && <Rail label="Order · DOM" side="right" onClick={() => T.togglePanel("right", true)} />}
+              {!p.right && <Rail label={T.guest ? "Order · Info" : "Order · DOM"} side="right" onClick={() => T.togglePanel("right", true)} />}
             </div>
           </Panel>
           {p.toolbox && (

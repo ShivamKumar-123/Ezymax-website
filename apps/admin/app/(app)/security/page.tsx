@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveAudit } from "@/components/live/audit";
+
 import * as React from "react";
 import { toast } from "sonner";
 import { Activity, BadgeDollarSign, Download, FileDown, Settings2, SlidersHorizontal } from "lucide-react";
@@ -73,7 +76,7 @@ function ModuleMix() {
   );
 }
 
-export default function AuditPage() {
+function DemoAuditPage() {
   const exportRef = React.useRef<(() => void) | null>(null);
   return (
     <div className="pb-16">
@@ -136,5 +139,16 @@ function PageHeaderBlock({ onExport }: { onExport: () => void }) {
         </>
       }
     />
+  );
+}
+
+/** Live builds: real data from the gateway / market-data. Demo builds: the mock showcase above. */
+export default function Page() {
+  return IS_DEMO ? (
+    <DemoAuditPage />
+  ) : (
+    <React.Suspense>
+      <LiveAudit />
+    </React.Suspense>
   );
 }

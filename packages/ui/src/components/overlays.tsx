@@ -90,8 +90,10 @@ export function Menu({
         <Dropdown.Content
           align={align}
           sideOffset={8}
-          className="k-card z-50 overflow-hidden rounded-2xl bg-surface p-1.5 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)]"
-          style={{ width }}
+          collisionPadding={12}
+          className="k-card z-50 overflow-y-auto overscroll-contain rounded-2xl bg-surface p-1.5 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)]"
+          // stay inside the viewport: flip/shift is automatic; cap size to the space Radix reports
+          style={{ width, maxWidth: "calc(100vw - 24px)", maxHeight: "var(--radix-dropdown-menu-content-available-height)" }}
         >
           {header && <div className="border-b border-line px-3 pb-3 pt-2">{header}</div>}
           {items.map((it, i) =>
@@ -153,7 +155,13 @@ export function Popover({ trigger, children, align = "end", width = 360 }: { tri
     <PopoverPrimitive.Root>
       <PopoverPrimitive.Trigger asChild>{trigger}</PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
-        <PopoverPrimitive.Content align={align} sideOffset={10} className="k-card z-50 rounded-2xl bg-surface shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)] outline-none" style={{ width }}>
+        <PopoverPrimitive.Content
+          align={align}
+          sideOffset={10}
+          collisionPadding={12}
+          className="k-card z-50 overflow-y-auto overscroll-contain rounded-2xl bg-surface shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)] outline-none"
+          style={{ width, maxWidth: "calc(100vw - 24px)", maxHeight: "var(--radix-popover-content-available-height)" }}
+        >
           {children}
         </PopoverPrimitive.Content>
       </PopoverPrimitive.Portal>

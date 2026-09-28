@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import {
   ArrowUpRight,
   BarChart2,
@@ -13,6 +13,8 @@ import {
   Expand,
   Grid2x2,
   Keyboard,
+  Lock,
+  LogIn,
   LogOut,
   Moon,
   RefreshCw,
@@ -21,6 +23,7 @@ import {
   ShoppingCart,
   Square,
   Sun,
+  UserPlus,
   UserRound,
   Wallet,
   Zap,
@@ -30,13 +33,16 @@ import { Avatar, LogoMark, cn } from "@kalks/ui";
 import { useMetrics, useTerminal, type Layout, type Workspace } from "@/lib/store";
 import { CHART_TYPES, TIMEFRAMES, accCcy, accMoney } from "@/lib/trading";
 import { INDICATOR_CATEGORIES, INDICATOR_LIST } from "@/lib/indicators";
-import { DropMenu, Floating, MenuList, type MenuItem } from "@/components/ui/menu";
+import { DropMenu, Floating, MenuList, type Anchor, type MenuItem } from "@/components/ui/menu";
 import { Badge, LiveMoney } from "@/components/ui/primitives";
 import { chartRegistry } from "@/components/chart/engine";
 import { BUILTIN_TEMPLATES, addIndicator, applyTemplate, openIndicatorList, openSaveTemplate, useUserTemplates } from "@/components/chart/indicators/state";
 import { Kbd } from "@/components/dialogs/kbd";
+import { CLIENT_AREA, GUEST_TEXT, openRegister, openSignIn } from "@/lib/guest";
+import { GuestAccountChip, GuestUserMenu } from "./guest";
+import { NotificationBell } from "./notifications";
 
-export const CLIENT_AREA = process.env.NEXT_PUBLIC_CLIENT_AREA_URL ?? "http://localhost:3000";
+export { CLIENT_AREA };
 
 export function toggleFullscreen() {
   try {
@@ -75,12 +81,21 @@ function useMenus(): { label: string; items: MenuItem[] }[] {
         { label: "Profiles", items: [{ label: "Default", checked: T.ws.profile === "Default", onSelect: () => T.setWs({ profile: "Default" }) }, { label: "Scalping", checked: T.ws.profile === "Scalping", onSelect: () => (T.setWs({ profile: "Scalping" }), applyPreset(PRESETS[3]!)) }, { label: "Analysis", checked: T.ws.profile === "Analysis", onSelect: () => (T.setWs({ profile: "Analysis" }), applyPreset(PRESETS[2]!)) }] },
         { label: "Save as Picture", icon: <Camera />, onSelect: () => chartRegistry.get(tab.id)?.screenshot() },
         "sep",
-        { label: "Login to Trade Account…", icon: <UserRound />, onSelect: () => T.logout() },
-        { label: "Open an Account", icon: <ArrowUpRight />, onSelect: () => window.open(`${CLIENT_AREA}/accounts`, "_blank") },
-        ...(T.account.type === "demo" ? [{ label: `Refill demo balance (${T.refillsLeft} left)`, icon: <RefreshCw />, onSelect: () => T.refillDemo() } as MenuItem] : []),
-        "sep",
-        { label: "Client Area", icon: <ArrowUpRight />, onSelect: () => window.open(CLIENT_AREA, "_blank") },
-        { label: "Log out", icon: <LogOut />, danger: true, onSelect: () => T.logout() },
+        ...(T.guest
+          ? ([
+              { label: "Open account", icon: <UserPlus />, onSelect: openRegister },
+              { label: "Sign in", icon: <LogIn />, onSelect: openSignIn },
+              "sep",
+              { label: "Client Area", icon: <ArrowUpRight />, onSelect: () => window.open(CLIENT_AREA, "_blank") },
+            ] as MenuItem[])
+          : ([
+              { label: "Login to Trade Account…", icon: <UserRound />, onSelect: () => T.logout() },
+              { label: "Open an Account", icon: <ArrowUpRight />, onSelect: () => window.open(`${CLIENT_AREA}/accounts`, "_blank") },
+              ...(T.account.type === "demo" ? [{ label: `Refill demo balance (${T.refillsLeft} left)`, icon: <RefreshCw />, onSelect: () => T.refillDemo() } as MenuItem] : []),
+              "sep",
+              { label: "Client Area", icon: <ArrowUpRight />, onSelect: () => window.open(CLIENT_AREA, "_blank") },
+              { label: "Log out", icon: <LogOut />, danger: true, onSelect: () => T.logout() },
+            ] as MenuItem[])),
       ],
     },
     {
@@ -88,7 +103,7 @@ function useMenus(): { label: string; items: MenuItem[] }[] {
       items: [
         { label: "Market Watch", checked: T.ws.panels.watch, hint: "Ctrl+M", onSelect: () => T.togglePanel("watch") },
         { label: "Navigator", checked: T.ws.panels.navigator, hint: "Ctrl+N", onSelect: () => (T.togglePanel("navigator"), !T.ws.panels.watch && T.togglePanel("watch", true)) },
-        { label: "Order / DOM", checked: T.ws.panels.right, hint: "Ctrl+D", onSelect: () => T.togglePanel("right") },
+        { label: T.guest ? "Order / Info" : "Order / DOM", checked: T.ws.panels.right, hint: "Ctrl+D", onSelect: () => T.togglePanel("right") },
         { label: "Toolbox", checked: T.ws.panels.toolbox, hint: "Ctrl+T", onSelect: () => T.togglePanel("toolbox") },
         "sep",
         { label: "Layout presets", items: PRESETS.map((p) => ({ label: p.name, hint: p.hint, onSelect: () => applyPreset(p) })) },
@@ -151,15 +166,18 @@ function useMenus(): { label: string; items: MenuItem[] }[] {
       label: "Tools",
       items: [
         { label: "New Order", icon: <ShoppingCart />, hint: "F9", disabled: T.readOnly, onSelect: () => T.openNewOrder() },
-        { label: "One-Click Trading", icon: <Zap />, hint: "F10", checked: T.ws.oneClick, disabled: T.readOnly, onSelect: () => T.setWs({ oneClick: !T.ws.oneClick }) },
-        { label: "Sound on fills", checked: T.ws.sound, onSelect: () => (T.setWs({ sound: !T.ws.sound }), toast(`Sounds ${T.ws.sound ? "off" : "on"}`)) },
-        { label: `Max deviation · ${T.ws.deviation} pts`, items: [0, 3, 5, 10, 20, 50, 100].map((d) => ({ label: `${d} points`, checked: T.ws.deviation === d, onSelect: () => (T.setWs({ deviation: d }), T.log("Terminal", `max deviation set to ${d} points`)) })) },
+        ...(T.guest
+          ? []
+          : ([
+              { label: "One-Click Trading", icon: <Zap />, hint: "F10", checked: T.ws.oneClick, disabled: T.readOnly, onSelect: () => T.setWs({ oneClick: !T.ws.oneClick }) },
+              { label: "Sound on fills", checked: T.ws.sound, onSelect: () => (T.setWs({ sound: !T.ws.sound }), toast(`Sounds ${T.ws.sound ? "off" : "on"}`)) },
+              { label: `Max deviation · ${T.ws.deviation} pts`, items: [0, 3, 5, 10, 20, 50, 100].map((d) => ({ label: `${d} points`, checked: T.ws.deviation === d, onSelect: () => (T.setWs({ deviation: d }), T.log("Terminal", `max deviation set to ${d} points`)) })) },
+            ] as MenuItem[])),
         "sep",
         { label: "Price Alerts", icon: <Bell />, onSelect: () => (T.setWs({ toolboxTab: "alerts" }), T.togglePanel("toolbox", true)) },
         { label: "History", onSelect: () => (T.setWs({ toolboxTab: "history" }), T.togglePanel("toolbox", true)) },
         { label: "Journal", onSelect: () => (T.setWs({ toolboxTab: "journal" }), T.togglePanel("toolbox", true)) },
-        "sep",
-        { label: "Options…", onSelect: () => toast("Options", { description: "Server Kalks-Live01 · proxy off · news on · sounds " + (T.ws.sound ? "on" : "off") }) },
+        ...(T.guest ? [] : (["sep", { label: "Options…", onSelect: () => toast("Options", { description: "Server Kalks-Live01 · proxy off · news on · sounds " + (T.ws.sound ? "on" : "off") }) }] as MenuItem[])),
       ],
     },
     {
@@ -178,11 +196,11 @@ function useMenus(): { label: string; items: MenuItem[] }[] {
 function MenuBar() {
   const menus = useMenus();
   const [open, setOpen] = React.useState<number | null>(null);
-  const [at, setAt] = React.useState({ x: 0, y: 0 });
+  const [at, setAt] = React.useState<{ x: number; y: number; anchor?: Anchor }>({ x: 0, y: 0 });
   const refs = React.useRef<(HTMLButtonElement | null)[]>([]);
   const show = (i: number) => {
     const r = refs.current[i]?.getBoundingClientRect();
-    if (r) setAt({ x: r.left, y: r.bottom + 3 });
+    if (r) setAt({ x: r.left, y: r.bottom + 3, anchor: { left: r.left, top: r.top, right: r.left + 244, bottom: r.bottom } });
     setOpen(i);
   };
   const close = React.useCallback(() => setOpen(null), []);
@@ -206,7 +224,7 @@ function MenuBar() {
         </button>
       ))}
       {open !== null && (
-        <Floating x={at.x} y={at.y} onClose={close}>
+        <Floating x={at.x} y={at.y} anchor={at.anchor} onClose={close}>
           <MenuList items={menus[open]!.items} onClose={close} width={244} />
         </Floating>
       )}
@@ -321,7 +339,7 @@ export function TitleBar() {
       <div className="ml-auto flex min-w-0 items-center gap-1.5">
         {a.cent && <Badge tone="info">Cent · USC</Badge>}
         {T.readOnly && <Badge tone="warn">Read-only</Badge>}
-        <AccountSwitcher />
+        {T.guest ? <GuestAccountChip /> : <AccountSwitcher />}
         <button onClick={() => T.setUi({ search: true })} className="hidden h-8 w-[180px] items-center gap-2 rounded-[7px] border border-line bg-surface-2 px-2.5 text-[12px] text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg-2 xl:flex" aria-label="Search symbols">
           <Search className="size-3.5" />
           Search symbol
@@ -332,9 +350,15 @@ export function TitleBar() {
         <button onClick={() => T.setUi({ search: true })} className="grid size-8 place-items-center rounded-[7px] text-fg-2 hover:bg-surface-3 xl:hidden" aria-label="Search symbols">
           <Search className="size-4" />
         </button>
-        {!T.readOnly && (
+        {T.guest && (
+          <button onClick={() => T.openNewOrder()} title={GUEST_TEXT} className="flex h-8 items-center gap-1.5 rounded-[7px] border border-line bg-surface-2 px-3 text-[12px] font-semibold text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg-2">
+            <Lock className="size-3.5" />
+            New Order
+          </button>
+        )}
+        {!T.readOnly && !T.guest && (
           <>
-            <button onClick={() => T.openNewOrder()} className="flex h-8 items-center gap-1.5 rounded-[7px] bg-ember px-3 text-[12px] font-semibold text-white shadow-[0_6px_18px_-8px_rgba(255,90,31,0.8)] transition hover:brightness-110">
+            <button onClick={() => T.openNewOrder()} className="flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[7px] bg-ember px-3 text-[12px] font-semibold text-white shadow-[0_6px_18px_-8px_rgba(255,90,31,0.8)] transition hover:brightness-110">
               <ShoppingCart className="size-3.5" />
               New Order
               <span className="rounded-[3px] bg-white/20 px-1 font-mono text-[9.5px]">F9</span>
@@ -357,15 +381,19 @@ export function TitleBar() {
             </button>
           ))}
         </div>
+        <NotificationBell />
         <button onClick={() => setTheme(dark ? "light" : "dark")} className="grid size-8 place-items-center rounded-[7px] text-fg-2 hover:bg-surface-3 hover:text-fg" aria-label="Toggle theme" title="Theme">
           {dark ? <Moon className="size-4" /> : <Sun className="size-4" />}
         </button>
         <button onClick={toggleFullscreen} className="grid size-8 place-items-center rounded-[7px] text-fg-2 hover:bg-surface-3 hover:text-fg" aria-label="Fullscreen" title="Fullscreen (F11)">
           <Expand className="size-4" />
         </button>
-        <a href={CLIENT_AREA} target="_blank" rel="noreferrer" className="hidden h-8 items-center gap-1 rounded-[7px] px-2 text-[12px] text-fg-2 hover:bg-surface-3 hover:text-fg xl:flex">
+        <a href={CLIENT_AREA} target="_blank" rel="noreferrer" className="hidden h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-[7px] px-2 text-[12px] text-fg-2 hover:bg-surface-3 hover:text-fg 2xl:flex">
           Client Area <ArrowUpRight className="size-3.5" />
         </a>
+        {T.guest ? (
+          <GuestUserMenu />
+        ) : (
         <DropMenu
           align="end"
           width={240}
@@ -384,6 +412,7 @@ export function TitleBar() {
             </button>
           )}
         />
+        )}
       </div>
     </header>
   );

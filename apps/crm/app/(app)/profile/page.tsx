@@ -5,7 +5,8 @@ import Link from "next/link";
 import { BadgeCheck, CalendarDays, Camera, Globe2, Lock, Mail, MapPin, Phone, UserRound, Building2, Download, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, Dialog, Field, Flag, Icon3D, Input, KeyValue, PageHeader, Reveal, Starfield } from "@kalks/ui";
-import { ACCOUNTS, ME } from "@kalks/mock";
+import { ACCOUNTS, IS_DEMO, ME } from "@kalks/mock";
+import { LiveProfile } from "@/components/profile/live-profile";
 import { KYC_CHIP, useSession } from "@/components/session";
 
 function countryName(code: string) {
@@ -16,7 +17,7 @@ function countryName(code: string) {
   }
 }
 
-export default function ProfilePage() {
+function DemoProfile() {
   const me = useSession();
   const kyc = KYC_CHIP[me.kyc_status];
   const since = new Date(me.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
@@ -193,4 +194,9 @@ export default function ProfilePage() {
       </div>
     </div>
   );
+}
+
+/** Demo builds: the full sample profile. Live builds: the client's real record, read-only. */
+export default function ProfilePage() {
+  return IS_DEMO ? <DemoProfile /> : <LiveProfile />;
 }

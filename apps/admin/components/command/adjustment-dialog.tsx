@@ -46,7 +46,7 @@ export function AdjustmentDialog({
             <Input leading={<Search />} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, client ID, login or email…" />
           </Field>
           {matches.length > 0 && (
-            <div className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-[14px] border border-line bg-surface p-1 shadow-2xl">
+            <div className="absolute inset-x-0 top-full z-10 mt-1 max-h-[min(18rem,40vh)] overflow-y-auto overscroll-contain rounded-[14px] border border-line bg-surface p-1 shadow-2xl">
               {matches.map((c) => (
                 <button
                   key={c.id}

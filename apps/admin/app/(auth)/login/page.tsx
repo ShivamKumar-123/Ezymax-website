@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, Check, Eye, EyeOff, Lock, Mail, MailCheck, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Field, Input, cn } from "@kalks/ui";
+import { IS_DEMO } from "@kalks/mock/mode";
 
 function OtpInput({ length = 6, onComplete }: { length?: number; onComplete?: (code: string) => void }) {
   const [vals, setVals] = React.useState<string[]>(Array(length).fill(""));
@@ -91,7 +92,31 @@ function AuditNotice() {
   );
 }
 
+/** Demo builds: no staff sign-in, one click into the mock showcase. */
+function DemoEntry() {
+  return (
+    <div>
+      <span className="inline-flex items-center gap-2 rounded-full border border-ember/30 bg-ember-soft px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-ember">
+        <ShieldCheck className="size-3.5" /> DEMO
+      </span>
+      <h1 className="mt-5 text-[30px] font-medium tracking-[-0.02em]">Back Office demo</h1>
+      <p className="mt-2 text-[14.5px] text-fg-2">Explore the full Kalks Back Office on sample data: dealing, risk, compliance, finance, partners and more.</p>
+      <div className="mt-7 flex items-center gap-3 rounded-[14px] border border-line bg-surface-2 px-4 py-3 text-[13px] text-fg-2">
+        <Lock className="size-4 shrink-0 text-fg-3" />
+        No sign-in needed. Clients, balances and trades are sample data; changes you make stay in your browser.
+      </div>
+      <Button variant="ember" size="xl" className="mt-6 w-full" shimmer onClick={() => window.location.assign(nextPath())}>
+        Enter demo <ArrowRight />
+      </Button>
+    </div>
+  );
+}
+
 export default function AdminLoginPage() {
+  return IS_DEMO ? <DemoEntry /> : <StaffLogin />;
+}
+
+function StaffLogin() {
   const [show, setShow] = React.useState(false);
   const [step, setStep] = React.useState<"creds" | "otp">("creds");
   const [loading, setLoading] = React.useState(false);

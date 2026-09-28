@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
-import { Bot, CirclePause, CirclePlay, CircleStop, OctagonX, Trash2 } from "lucide-react";
+import { toast } from "@/lib/notify";
+import { Bot, CirclePause, CirclePlay, CircleStop, Lock, OctagonX, Trash2 } from "lucide-react";
 import { priceFeed } from "@kalks/mock";
 import { SymbolAvatar, cn } from "@kalks/ui";
 import { journalTime, useTerminal } from "@/lib/store";
@@ -15,6 +15,7 @@ import { validateSpec, type ParseResult, type StrategySpec } from "@/lib/ai-trad
 import { EXAMPLE_PROMPTS, parseLocal } from "@/lib/ai-trader/parser";
 import { describeSide } from "@/lib/ai-trader/describe";
 import { SpecSummary, StrategyCard } from "./ai-trader-card";
+import { GUEST_TITLE, guestNotice, openRegister } from "@/lib/guest";
 
 const EMPTY: AiSnapshot = { login: null, records: [], attached: false };
 export function useAi() {
@@ -37,6 +38,8 @@ export function AiTraderTab() {
   const selected = ai.records.find((r) => r.id === sel) ?? ai.records[0] ?? null;
   const running = ai.records.filter((r) => r.status === "active" || r.status === "paused");
   const aiPositions = T.positions.filter((p) => p.source === "ai");
+  // guest: strategy cards can be built and reviewed; activation needs a trading account
+  const activate = (id: string, mode: RunMode) => (T.guest ? guestNotice("Activating an AI strategy") : setActivating({ id, mode }));
 
   return (
     <div className="flex h-full min-h-0">
@@ -46,16 +49,26 @@ export function AiTraderTab() {
       <div className="flex min-w-0 flex-1 flex-col border-r border-line">
         <div className="flex h-8 shrink-0 items-center gap-3 border-b border-line px-2.5">
           <span className="text-[10.5px] font-semibold uppercase tracking-[0.09em] text-fg-2">Strategies</span>
-          <span className="font-mono text-[11px] text-fg-3">
+          <span className={cn("font-mono text-[11px] text-fg-3", T.guest && "hidden")}>
             {running.length} running · {aiPositions.length} AI position{aiPositions.length === 1 ? "" : "s"}
           </span>
+          {T.guest ? (
+            <span className="ml-auto flex min-w-0 items-center gap-1.5 truncate text-[11px] text-fg-3">
+              <Lock className="size-3 shrink-0" />
+              <span className="truncate">Preview · activation opens with trading accounts</span>
+              <button onClick={openRegister} className="shrink-0 text-ember hover:underline">
+                Open account
+              </button>
+            </span>
+          ) : (
           <TButton size="xs" variant="outline" className="ml-auto border-down/40 text-down hover:border-down hover:text-down" disabled={T.readOnly || (!running.length && !aiPositions.length)} onClick={() => setKillOpen(true)}>
             <OctagonX /> Stop all AI + close AI positions
           </TButton>
+          )}
         </div>
         <div className="t-scroll min-h-0 flex-1 overflow-auto">
           {ai.records.length === 0 ? (
-            <Empty icon={<Bot />} title="No AI strategies yet" sub="Describe entry and exit conditions on the left. The AI turns them into a strategy card you review and activate." />
+            <Empty icon={<Bot />} title="No AI strategies yet" sub={T.guest ? "Describe entry and exit conditions on the left. The AI turns them into a strategy card you can review now and activate once trading accounts open." : "Describe entry and exit conditions on the left. The AI turns them into a strategy card you review and activate."} />
           ) : (
             <table className="w-full min-w-[640px] border-separate border-spacing-0">
               <thead>
@@ -72,7 +85,7 @@ export function AiTraderTab() {
               </thead>
               <tbody>
                 {ai.records.map((r) => (
-                  <StrategyRow key={r.id} r={r} selected={selected?.id === r.id} onSelect={() => setSel(r.id)} onActivate={(mode) => setActivating({ id: r.id, mode })} />
+                  <StrategyRow key={r.id} r={r} selected={selected?.id === r.id} onSelect={() => setSel(r.id)} onActivate={(mode) => activate(r.id, mode)} />
                 ))}
               </tbody>
             </table>
@@ -81,7 +94,7 @@ export function AiTraderTab() {
       </div>
 
       {/* detail */}
-      {selected ? <Detail key={selected.id} r={selected} onActivate={(mode) => setActivating({ id: selected.id, mode })} /> : <div className="hidden w-[460px] shrink-0 xl:block" />}
+      {selected ? <Detail key={selected.id} r={selected} onActivate={(mode) => activate(selected.id, mode)} /> : <div className="hidden w-[460px] shrink-0 xl:block" />}
 
       {activating && <ActivateDialog id={activating.id} initialMode={activating.mode} onClose={() => setActivating(null)} />}
       <TDialog
@@ -216,7 +229,7 @@ function Composer({ onCreated }: { onCreated: (id: string) => void }) {
             {busy ? "Converting…" : "Build strategy"}
           </TButton>
         </div>
-        <div className="text-[10.5px] leading-[14px] text-fg-3">Nothing trades until you review the card and activate it. First activation runs in Paper mode (signals only).</div>
+        <div className="text-[10.5px] leading-[14px] text-fg-3">{T.guest ? `Preview: build and review strategy cards on live market data. ${GUEST_TITLE}; activation unlocks then.` : "Nothing trades until you review the card and activate it. First activation runs in Paper mode (signals only)."}</div>
       </div>
     </div>
   );
@@ -375,7 +388,8 @@ function Detail({ r, onActivate }: { r: StrategyRecord; onActivate: (m: RunMode)
             </>
           )}
           {editable && (
-            <TButton size="xs" variant="ember" disabled={dirty || v.errors.length > 0} title={dirty ? "Save changes first" : v.errors[0]} onClick={() => onActivate("paper")}>
+            <TButton size="xs" variant={T.guest ? "surface" : "ember"} disabled={dirty || v.errors.length > 0} title={dirty ? "Save changes first" : (v.errors[0] ?? (T.guest ? GUEST_TITLE : undefined))} onClick={() => onActivate("paper")}>
+              {T.guest && <Lock />}
               Activate…
             </TButton>
           )}

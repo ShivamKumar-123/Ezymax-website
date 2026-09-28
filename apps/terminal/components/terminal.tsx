@@ -4,7 +4,8 @@ import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ACCOUNTS, INSTRUMENTS, priceFeed } from "@kalks/mock";
 import { LogoMark } from "@kalks/ui";
-import { TerminalProvider, readSession, useTerminal, writeSession, type Session } from "@/lib/store";
+import { TerminalProvider, guestSession, readSession, useTerminal, writeSession, type Session } from "@/lib/store";
+import { GUEST_MODE } from "@/lib/guest";
 import { startMarket } from "@/lib/market";
 import { DesktopTerminal } from "./shell/desktop";
 import { useHotkeys } from "./shell/hotkeys";
@@ -27,7 +28,7 @@ function useIsMobile() {
   return m;
 }
 
-export function Splash({ text = "Connecting to Kalks-Live01…" }: { text?: string }) {
+export function Splash({ text = GUEST_MODE ? "Connecting to Kalks market data…" : "Connecting to Kalks-Live01…" }: { text?: string }) {
   return (
     <div className="grid h-dvh place-items-center bg-page">
       <div className="flex flex-col items-center gap-3">
@@ -48,6 +49,7 @@ export function Splash({ text = "Connecting to Kalks-Live01…" }: { text?: stri
 
 /**
  * Entry: SSO via `?account=` (from the Client Area), else a saved session, else /login.
+ * Live builds have no trading accounts yet: every entry (with or without `?account=`) opens guest mode.
  * `?symbol=` opens that symbol in the active chart; `?side=buy|sell` opens a prefilled order.
  */
 export function Terminal() {
@@ -59,7 +61,8 @@ export function Terminal() {
   React.useEffect(() => {
     const acc = sp.get("account");
     let s: Session | null = null;
-    if (acc) {
+    if (GUEST_MODE) s = guestSession();
+    else if (acc) {
       const a = ACCOUNTS.find((x) => x.login === acc);
       if (!a) {
         router.replace(`/login?error=unknown&login=${encodeURIComponent(acc)}`);
@@ -78,7 +81,8 @@ export function Terminal() {
     // live prices (with this account group's spread) before the terminal mounts
     const feed = priceFeed();
     feed.markHydrated();
-    feed.setGroup(ACCOUNTS.find((x) => x.login === s!.login)!.group);
+    const group = ACCOUNTS.find((x) => x.login === s!.login)?.group;
+    if (group) feed.setGroup(group); // guest: the default (standard) spread
     let alive = true;
     void feed.ready.then(() => {
       if (!alive) return;
@@ -93,7 +97,7 @@ export function Terminal() {
 
   if (!session) return <Splash />;
   return (
-    <TerminalProvider initialSession={session} onLogout={() => router.replace("/login?logout=1")}>
+    <TerminalProvider initialSession={session} onLogout={() => router.replace(GUEST_MODE ? "/login" : "/login?logout=1")}>
       <Shell intent={intent} />
     </TerminalProvider>
   );

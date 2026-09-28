@@ -181,7 +181,7 @@ export default function EmailTemplatesPage() {
                 {langOpen && (
                   <>
                     <div className="fixed inset-0 z-30" onClick={() => setLangOpen(false)} />
-                    <div className="k-card absolute right-0 z-40 mt-2 w-[250px] overflow-hidden rounded-2xl bg-surface p-1.5 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)]">
+                    <div className="k-card z-40 max-h-[min(420px,60vh)] w-[250px] max-w-[calc(100vw-24px)] overflow-y-auto overscroll-contain rounded-2xl bg-surface p-1.5 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)] max-sm:fixed max-sm:inset-x-3 max-sm:bottom-3 max-sm:w-auto max-sm:max-w-none sm:absolute sm:right-0 sm:mt-2">
                       {EML_LANGS.map((l) => {
                         const has = !!tpl.content[l.code];
                         return (

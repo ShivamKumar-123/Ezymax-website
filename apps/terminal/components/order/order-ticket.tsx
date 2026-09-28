@@ -2,13 +2,15 @@
 
 import * as React from "react";
 import { Calculator, ChevronDown, ChevronUp, Lock, Zap } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { INSTRUMENTS, getInstrument } from "@kalks/mock";
 import { PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { useMarketOpen } from "@/lib/market-hours";
 import { accCcy, accMoney, fmtPrice, marginRequired, pipSize, pipValuePerLot, splitSymbol, type Expiry, type OrderType } from "@/lib/trading";
 import { Check, MiniSwitch, Stepper, TInput, TSelect } from "@/components/ui/primitives";
+import { GuestActions } from "@/components/shell/guest";
+import { GUEST_TITLE } from "@/lib/guest";
 
 const TYPES: { value: OrderType; label: string }[] = [
   { value: "market", label: "Market" },
@@ -86,6 +88,8 @@ export function OrderTicket({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbol]);
+
+  if (T.guest) return <GuestTicket symbol={symbol} />;
 
   if (T.readOnly) {
     return (
@@ -399,6 +403,48 @@ export function OrderTicket({
           <Zap className={cn("size-3", T.ws.oneClick ? "text-ember" : "")} /> One-click trading
         </span>
         <MiniSwitch checked={T.ws.oneClick} onChange={(v) => T.setWs({ oneClick: v })} label="One-click trading" />
+      </div>
+    </div>
+  );
+}
+
+/** Guest mode: live prices for the symbol, trade buttons that explain instead of trading. */
+function GuestTicket({ symbol }: { symbol: string }) {
+  const T = useTerminal();
+  const q = useQuote(symbol);
+  const inst = getInstrument(symbol);
+  const spreadPts = Math.round((q.ask - q.bid) * 10 ** inst.digits);
+  return (
+    <div className="space-y-3 p-2.5">
+      <div className="flex items-center gap-2.5">
+        <SymbolAvatar symbol={symbol} size={24} />
+        <div className="min-w-0">
+          <div className="text-[13px] font-semibold">{symbol}</div>
+          <div className="truncate text-[11px] text-fg-3">{inst.name}</div>
+        </div>
+        <span className="ml-auto font-mono text-[10.5px] text-fg-3">spread {spreadPts}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-1.5">
+        <button onClick={() => T.quickTrade(symbol, "sell")} title={GUEST_TITLE} aria-label={`Sell ${symbol} (needs a trading account)`} className="rounded-[7px] border border-line bg-surface-2 px-2.5 py-1.5 text-left transition-colors hover:bg-surface-3">
+          <span className="flex items-center gap-1 text-[9.5px] font-semibold uppercase tracking-[0.1em] text-down">
+            Sell <Lock className="size-2.5 text-fg-3" />
+          </span>
+          <PriceText symbol={symbol} value={q.bid} dir={q.dir} className="text-[15px]" />
+        </button>
+        <button onClick={() => T.quickTrade(symbol, "buy")} title={GUEST_TITLE} aria-label={`Buy ${symbol} (needs a trading account)`} className="rounded-[7px] border border-line bg-surface-2 px-2.5 py-1.5 text-right transition-colors hover:bg-surface-3">
+          <span className="flex items-center justify-end gap-1 text-[9.5px] font-semibold uppercase tracking-[0.1em] text-up">
+            <Lock className="size-2.5 text-fg-3" /> Buy
+          </span>
+          <PriceText symbol={symbol} value={q.ask} dir={q.dir} className="justify-end text-[15px]" />
+        </button>
+      </div>
+      <div className="rounded-[8px] border border-ember/25 bg-ember-soft/40 px-3 py-3 text-center">
+        <div className="mx-auto mb-2 grid size-8 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember">
+          <Lock className="size-3.5" />
+        </div>
+        <div className="text-[12.5px] font-semibold text-fg">{GUEST_TITLE}</div>
+        <p className="mt-1 text-[11.5px] leading-relaxed text-fg-3">Create your Kalks account to be first. Market, limit and stop orders, SL/TP and one-click trading unlock here when accounts open.</p>
+        <GuestActions className="mt-2.5" />
       </div>
     </div>
   );

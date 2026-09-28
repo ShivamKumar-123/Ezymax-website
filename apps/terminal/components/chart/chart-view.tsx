@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useTheme } from "next-themes";
 import { LineStyle, type IPriceLine } from "lightweight-charts";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { ArrowDownRight, ArrowUpRight, Bell, Camera, CandlestickChart, Crosshair, Layers, Minus, Plus, ShoppingCart, SlidersHorizontal, X } from "lucide-react";
 import { getInstrument, isMarketOpen, priceFeed } from "@kalks/mock";
 import { PriceText, cn, useQuote } from "@kalks/ui";
@@ -15,6 +15,7 @@ import { chartRegistry, useChartEngine, type LegendData } from "./engine";
 import { IndicatorLegendRow } from "./indicators/legend";
 import { addIndicator, openIndicatorList, openIndicatorSettings, removeIndicator, toggleIndicator } from "./indicators/state";
 import { useMarketOpen } from "@/lib/market-hours";
+import { GUEST_TITLE, openRegister } from "@/lib/guest";
 
 /* ------------------------------------------------------------------ */
 /* Trade lines                                                         */
@@ -388,7 +389,12 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
       if (T.ws.oneClick) T.placeOrder({ symbol: tab.symbol, side, type, volume: T.ws.lot, price: p });
       else T.openNewOrder({ symbol: tab.symbol, side, type, price: p });
     };
-    const trade: MenuItem[] = ro
+    const trade: MenuItem[] = T.guest
+      ? [
+          { header: GUEST_TITLE },
+          { label: "Open account to trade", icon: <ShoppingCart />, onSelect: openRegister },
+        ]
+      : ro
       ? [{ header: "Read-only session" }]
       : [
           { label: `Buy Limit ${fmtVol(T.ws.lot)} at ${ps}`, icon: <ArrowUpRight />, tone: "up", disabled: !below, onSelect: () => place("buy", "limit") },
@@ -720,6 +726,7 @@ export function OneClickPanel({ symbol, bid, ask, dir, spread, compact, top, lef
   const open = useMarketOpen(symbol);
   const go = (side: "buy" | "sell") => {
     if (!open) return;
+    if (T.guest) return void T.quickTrade(symbol, side, vol); // explains: no trading account yet
     if (T.ws.oneClick) T.quickTrade(symbol, side, vol);
     else T.openNewOrder({ symbol, side, type: "market" });
   };
@@ -751,7 +758,7 @@ export function OneClickPanel({ symbol, bid, ask, dir, spread, compact, top, lef
     );
   return (
     <div className="absolute left-2 z-[6] flex items-stretch overflow-hidden rounded-[6px] border border-line-top bg-panel-2/95 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)] backdrop-blur" style={{ top, left }} onPointerDown={(e) => e.stopPropagation()} onContextMenu={(e) => e.stopPropagation()}>
-      <button onClick={() => go("sell")} disabled={!open} title={open ? undefined : "Market closed"} className={cn("group flex flex-col items-start bg-down/12 px-2 py-1 text-left transition-colors hover:bg-down/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={`Sell ${symbol}${open ? "" : " (market closed)"}`}>
+      <button onClick={() => go("sell")} disabled={!open} title={open ? (T.guest ? GUEST_TITLE : undefined) : "Market closed"} className={cn("group flex flex-col items-start bg-down/12 px-2 py-1 text-left transition-colors hover:bg-down/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={`Sell ${symbol}${open ? "" : " (market closed)"}`}>
         <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-down">Sell</span>
         <PriceText symbol={symbol} value={bid} dir={dir} className={compact ? "text-[12px]" : "text-[14px]"} />
       </button>
@@ -775,7 +782,7 @@ export function OneClickPanel({ symbol, bid, ask, dir, spread, compact, top, lef
         </div>
         {open ? <span className="font-mono text-[9px] text-fg-3">{spread}</span> : <span className="whitespace-nowrap text-[9px] font-semibold uppercase tracking-[0.06em] text-warn">Market closed</span>}
       </div>
-      <button onClick={() => go("buy")} disabled={!open} title={open ? undefined : "Market closed"} className={cn("flex flex-col items-end bg-up/12 px-2 py-1 text-right transition-colors hover:bg-up/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={`Buy ${symbol}${open ? "" : " (market closed)"}`}>
+      <button onClick={() => go("buy")} disabled={!open} title={open ? (T.guest ? GUEST_TITLE : undefined) : "Market closed"} className={cn("flex flex-col items-end bg-up/12 px-2 py-1 text-right transition-colors hover:bg-up/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={`Buy ${symbol}${open ? "" : " (market closed)"}`}>
         <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-up">Buy</span>
         <PriceText symbol={symbol} value={ask} dir={dir} className={cn("justify-end", compact ? "text-[12px]" : "text-[14px]")} />
       </button>

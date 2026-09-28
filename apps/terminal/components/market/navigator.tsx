@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Bot, ChevronDown, ChevronRight, Compass, FileCode2, Spline, UserRound } from "lucide-react";
 import { MY_STRATEGIES } from "@kalks/mock/algo";
 import { cn } from "@kalks/ui";
@@ -10,6 +10,7 @@ import { INDICATOR_CATEGORIES, INDICATOR_LIST } from "@/lib/indicators";
 import { addIndicator } from "@/components/chart/indicators/state";
 import { PanelHeader } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/primitives";
+import { GUEST_TITLE, openRegister, openSignIn } from "@/lib/guest";
 
 function Group({ icon, title, count, children, defaultOpen = true }: { icon: React.ReactNode; title: string; count?: number; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = React.useState(defaultOpen);
@@ -50,6 +51,20 @@ export function Navigator() {
       <PanelHeader icon={<Compass />} title="Navigator" />
       <div className="t-scroll min-h-0 flex-1 overflow-y-auto py-1">
         <Group icon={<UserRound />} title="Accounts" count={T.accounts.length}>
+          {T.guest && (
+            <>
+              <Leaf title={GUEST_TITLE}>
+                <Badge className="h-[15px] px-1 text-[8.5px]">guest</Badge>
+                <span className="truncate text-fg-3">No trading account yet</span>
+              </Leaf>
+              <Leaf onClick={openRegister} title="Create your Kalks account (opens the Client Area)">
+                <span className="text-ember">Open account</span>
+              </Leaf>
+              <Leaf onClick={openSignIn} title="Sign in to the Client Area">
+                <span>Sign in</span>
+              </Leaf>
+            </>
+          )}
           {T.accounts.map((a) => (
             <Leaf key={a.login} active={a.login === T.account.login} onDoubleClick={() => T.switchAccount(a.login)} onClick={() => a.login !== T.account.login && T.switchAccount(a.login)} title={`${a.server} · ${a.group} · ${a.mode}`}>
               <Badge tone={a.type === "live" ? "ember" : "gold"} className="h-[15px] px-1 text-[8.5px]">
@@ -80,6 +95,8 @@ export function Navigator() {
             </div>
           ))}
         </Group>
+        {!T.guest && (
+        <>
         <Group icon={<Bot />} title="Strategies" count={MY_STRATEGIES.length}>
           {MY_STRATEGIES.map((s) => (
             <Leaf
@@ -118,6 +135,8 @@ export function Navigator() {
             </Leaf>
           ))}
         </Group>
+        </>
+        )}
       </div>
     </div>
   );

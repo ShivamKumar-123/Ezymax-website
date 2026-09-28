@@ -48,6 +48,8 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import type { NavModule } from "@kalks/ui";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { soonIcon } from "@/lib/soon-icon";
 
 export const CRM_NAV: NavModule[] = [
   {
@@ -199,7 +201,53 @@ export const CRM_NAV: NavModule[] = [
   { key: "support", label: "Support", icon: LifeBuoy, href: "/support", section: "account" },
 ];
 
-/** Flattened entries for the ⌘K palette. */
-export const CRM_COMMANDS = CRM_NAV.flatMap((m) =>
-  (m.sub ?? [{ href: m.href, label: m.label, icon: m.icon }]).map((s) => ({ group: m.label, label: s.label, href: s.href, Icon: s.icon ?? m.icon })),
+const SOON = "Soon";
+
+/**
+ * Live builds: only the modules backed by real data, plus the next ones on the roadmap (Accounts,
+ * Wallet, Verification) marked "Soon" — they open a Coming soon page. Nothing else is listed.
+ */
+export const LIVE_NAV: NavModule[] = [
+  {
+    key: "dashboard",
+    label: "Dashboard",
+    icon: LayoutGrid,
+    href: "/",
+    match: ["/", "/markets"],
+    section: "main",
+    sub: [
+      { href: "/", label: "Overview", icon: LayoutGrid },
+      { href: "/markets", label: "Markets", icon: Globe2 },
+    ],
+  },
+  { key: "accounts", label: "Accounts", icon: soonIcon(Layers), href: "/accounts", section: "main" },
+  { key: "wallet", label: "Wallet", icon: soonIcon(Wallet), href: "/wallet", section: "main" },
+  {
+    key: "profile",
+    label: "Profile",
+    icon: UserRound,
+    href: "/profile",
+    section: "account",
+    sub: [
+      { href: "/profile", label: "Profile", icon: UserRound },
+      { href: "/profile/verification", label: "Verification", icon: BadgeCheck, badge: SOON },
+    ],
+  },
+  { key: "support", label: "Support", icon: LifeBuoy, href: "/support", section: "account" },
+];
+
+/** Navigation for this build: the full showcase in demo builds, live modules only otherwise. */
+export const NAV: NavModule[] = IS_DEMO ? CRM_NAV : LIVE_NAV;
+
+/** Hrefs that open a Coming soon page in live builds. */
+const SOON_HREFS = new Set(["/accounts", "/wallet", "/profile/verification"]);
+
+/** Flattened entries for the ⌘K palette ("Soon" modules are grouped as Coming soon in live builds). */
+export const CRM_COMMANDS = NAV.flatMap((m) =>
+  (m.sub ?? [{ href: m.href, label: m.label, icon: m.icon }]).map((s) => ({
+    group: !IS_DEMO && SOON_HREFS.has(s.href) ? "Coming soon" : m.label,
+    label: s.label,
+    href: s.href,
+    Icon: s.icon ?? m.icon,
+  })),
 );

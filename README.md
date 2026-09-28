@@ -1,7 +1,7 @@
 # Kalks
 
 White-label multi-asset trading platform: three Next.js apps (Client Area CRM, Back Office admin, Kalks Trader terminal) plus a Rust market-data service for live prices, candles and spreads.
-The apps run on realistic mock data where no backend service exists yet.
+Live builds (default) show only real data; `NEXT_PUBLIC_KALKS_MODE=demo` builds show the full mock showcase (see `packages/mock/src/mode.ts`).
 
 ## Run locally
 
@@ -38,7 +38,7 @@ The Rust gateway handles client and staff sign-in, sessions and the audit log. I
 cargo run -p gateway                # http://127.0.0.1:8080 (only the apps call it, never the browser)
 ```
 
-Its settings (`GATEWAY_*`, `SESSION_SECRET`, `SUPER_ADMIN_*`) live in `.env.local` at the repo root, and each app's `.env.local` holds `GATEWAY_URL` and `GATEWAY_INTERNAL_TOKEN`. The super-admin account is created once on first start. Email sending is not configured yet, so in development the sign-in codes appear on screen and in the gateway log.
+Its settings (`GATEWAY_*`, `SESSION_SECRET`, `SUPER_ADMIN_*`) live in `.env.local` at the repo root, and each app's `.env.local` holds `GATEWAY_URL` and `GATEWAY_INTERNAL_TOKEN`. The super-admin account is created once on first start. The Back Office reads clients, the audit log, staff and sessions through the gateway's staff-authenticated `/v1/admin/*` endpoints (`services/gateway/src/admin.rs`), and edits spread markups through market-data with `MARKET_DATA_URL` / `MARKET_DATA_ADMIN_TOKEN` in `apps/admin/.env.local` (same token as `MARKET_DATA_ADMIN_TOKEN` in the root `.env.local`; see `apps/admin/.env.example`). Email sending is not configured yet, so in development the sign-in codes appear on screen and in the gateway log.
 
 ## Layout
 

@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveClients } from "@/components/live/clients";
+
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
@@ -149,7 +152,7 @@ function BulkDialogs({ bulk, setBulk, count, onDone }: { bulk: Bulk; setBulk: (b
   );
 }
 
-export default function UsersPage() {
+function DemoUsersPage() {
   const router = useRouter();
   const [filter, setFilter] = React.useState<Filter>("all");
   const [sel, setSel] = React.useState<Set<string>>(new Set());
@@ -300,5 +303,16 @@ export default function UsersPage() {
       </Reveal>
       <BulkDialogs bulk={bulk} setBulk={setBulk} count={sel.size} onDone={() => setSel(new Set())} />
     </div>
+  );
+}
+
+/** Live builds: real data from the gateway / market-data. Demo builds: the mock showcase above. */
+export default function Page() {
+  return IS_DEMO ? (
+    <DemoUsersPage />
+  ) : (
+    <React.Suspense>
+      <LiveClients />
+    </React.Suspense>
   );
 }

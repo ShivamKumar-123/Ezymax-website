@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Copy, ExternalLink, Link2, Loader2, Share2, Trash2, X } from "lucide-react";
 import { getInstrument } from "@kalks/mock";
 import { SymbolAvatar, cn } from "@kalks/ui";
@@ -26,8 +26,13 @@ async function copy(text: string) {
   }
 }
 
-/** Mounted once in the terminal shell: sync + dialogs + the selection bar. */
+/** Mounted once in the terminal shell: sync + dialogs + the selection bar. Guest mode has nothing to share. */
 export function ShareLayer() {
+  const T = useTerminal();
+  return T.guest ? null : <AccountShareLayer />;
+}
+
+function AccountShareLayer() {
   const T = useTerminal();
   useShareSync(T.account.login, { positions: T.positions, pendings: T.pendings, history: T.history });
   const ui = useShareUi();

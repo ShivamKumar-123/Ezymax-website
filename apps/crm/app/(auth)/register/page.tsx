@@ -6,7 +6,8 @@ import { ArrowRight, CalendarDays, Gift, Lock, Mail, UserRound, CheckCircle2, Ey
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { Button, Field, Input, Stepper, Flag, Icon3D } from "@kalks/ui";
-import { DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, OrDivider, OtpInput, PasswordStrength, ResendLink } from "@/components/auth";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { DemoEntry, DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, OrDivider, OtpInput, PasswordStrength, ResendLink } from "@/components/auth";
 import { authPost, type ApiError, type OtpChallenge } from "@/lib/auth-client";
 
 const COUNTRIES = [
@@ -97,7 +98,8 @@ export default function RegisterPage() {
         {step === 0 && (
           <motion.div key="s0" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
             <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">Create your Kalks account</h1>
-            <p className="mt-2 text-[14px] text-fg-2">Open a free demo instantly. Go live whenever you&apos;re ready.</p>
+            <p className="mt-2 text-[14px] text-fg-2">{IS_DEMO ? "Open a free demo instantly. Go live whenever you're ready." : "Sign up in a minute and follow live markets straight away."}</p>
+            {IS_DEMO && <DemoEntry />}
             {GOOGLE_LOGIN && (
               <>
                 <div className="mt-6">
@@ -241,7 +243,7 @@ export default function RegisterPage() {
               <CheckCircle2 className="size-7" />
             </span>
             <h1 className="mt-4 text-3xl font-medium tracking-tight sm:text-4xl">Welcome to Kalks, {form.first_name.trim()}</h1>
-            <p className="mt-2 text-[14px] text-fg-2">Your email is verified and your account is ready. Open a demo account now, or verify your identity to go live.</p>
+            <p className="mt-2 text-[14px] text-fg-2">{IS_DEMO ? "Your email is verified and your account is ready. Open a demo account now, or verify your identity to go live." : "Your email is verified and your account is ready. Follow live markets now; funding and trading accounts are coming soon."}</p>
             <Button variant="ember" size="xl" className="mt-8 w-full" onClick={() => window.location.assign("/")}>
               Open client area <ArrowRight />
             </Button>

@@ -5,9 +5,10 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowUpRight, CandlestickChart, Search, Star, X } from "lucide-react";
 import { Button, Card, CardHeader, Chip, DataTable, Delta, PageHeader, PriceText, Reveal, Segmented, Sparkline, SymbolCell, Tooltip, cn, formatNumber, useFeedMode, useQuotes, type Column } from "@kalks/ui";
-import { ASSET_CLASS_LABEL, INSTRUMENTS, fetchCandles, isMarketOpen, sparkline, type AssetClass, type Instrument } from "@kalks/mock";
+import { ASSET_CLASS_LABEL, INSTRUMENTS, IS_DEMO, fetchCandles, isMarketOpen, sparkline, type AssetClass, type Instrument } from "@kalks/mock";
 import { CONTRACT_SPECS, DEFAULT_FAVOURITES } from "@kalks/mock/markets-extra";
 import { InstrumentDrawer } from "@/components/markets/instrument-drawer";
+import { FeedGuard } from "@/components/feed-guard";
 
 type Tab = "all" | "fav" | AssetClass;
 const CLASSES: AssetClass[] = ["forex", "metals", "indices", "energies", "crypto", "stocks"];
@@ -209,17 +210,21 @@ export default function MarketsPage() {
             title="Market heatmap"
             subtitle="Today's move, sorted from best to worst · hollow dot: market closed, last session shown"
             action={
-              <div className="hidden items-center gap-2 sm:flex">
-                <Chip tone="up">{breadth} up</Chip>
-                <Chip tone="down">{INSTRUMENTS.length - breadth} down</Chip>
-              </div>
+              IS_DEMO || mode === "live" ? (
+                <div className="hidden items-center gap-2 sm:flex">
+                  <Chip tone="up">{breadth} up</Chip>
+                  <Chip tone="down">{INSTRUMENTS.length - breadth} down</Chip>
+                </div>
+              ) : undefined
             }
           />
-          <div className="grid grid-cols-3 gap-2 px-4 pb-5 pt-4 sm:grid-cols-5 sm:px-6 md:grid-cols-7 xl:grid-cols-14">
-            {sorted.map((i) => (
-              <HeatTile key={i.symbol} inst={i} change={qs[i.symbol]!.change} onClick={() => setOpen(i.symbol)} />
-            ))}
-          </div>
+          <FeedGuard minHeight={160}>
+            <div className="grid grid-cols-3 gap-2 px-4 pb-5 pt-4 sm:grid-cols-5 sm:px-6 md:grid-cols-7 xl:grid-cols-14">
+              {sorted.map((i) => (
+                <HeatTile key={i.symbol} inst={i} change={qs[i.symbol]!.change} onClick={() => setOpen(i.symbol)} />
+              ))}
+            </div>
+          </FeedGuard>
         </Card>
       </Reveal>
 
@@ -254,7 +259,9 @@ export default function MarketsPage() {
               )}
             </div>
           </div>
-          <DataTable columns={cols} rows={rows} pageSize={30} rowKey={(i) => i.symbol} onRowClick={(i) => setOpen(i.symbol)} />
+          <FeedGuard minHeight={320}>
+            <DataTable columns={cols} rows={rows} pageSize={30} rowKey={(i) => i.symbol} onRowClick={(i) => setOpen(i.symbol)} />
+          </FeedGuard>
           <div className="mt-3 flex items-center gap-2 text-[11.5px] text-fg-3">
             <Tooltip content="Quotes stream from the Kalks price feed">
               <span className="flex items-center gap-1.5">

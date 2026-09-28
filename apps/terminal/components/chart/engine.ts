@@ -11,7 +11,6 @@ import {
   LineSeries,
   LineStyle,
   createChart,
-  createTextWatermark,
   type IChartApi,
   type IPriceLine,
   type ISeriesApi,
@@ -22,6 +21,7 @@ import { candles, fetchCandles, getInstrument, priceFeed, serverOffset, type Can
 import type { IndicatorInstance } from "@/lib/indicators";
 import { TF_SECONDS, TIMEFRAMES, type ChartType, type Timeframe } from "@/lib/trading";
 import { createIndicatorLayer, type IndLegendRow, type IndicatorLayer } from "./indicators/layer";
+import { BrandWatermark } from "./brand-watermark";
 
 /**
  * Charts are drawn in broker server time like MT5: GMT+3 while US daylight saving is active, GMT+2 otherwise
@@ -239,14 +239,9 @@ export function useChartEngine(
     const vol = chart.addSeries(HistogramSeries, { priceScaleId: "vol", priceLineVisible: false, lastValueVisible: false, priceFormat: { type: "volume" } });
     chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.86, bottom: 0 } });
 
-    const watermark = createTextWatermark(chart.panes()[0]!, {
-      horzAlign: "center",
-      vertAlign: "center",
-      lines: [
-        { text: `${symbol}, ${tf}`, color: c.dark ? "rgba(255,255,255,0.035)" : "rgba(15,15,20,0.045)", fontSize: 44, fontStyle: "600" },
-        { text: inst.name, color: c.dark ? "rgba(255,255,255,0.03)" : "rgba(15,15,20,0.04)", fontSize: 15 },
-      ],
-    });
+    // Kalks mark + "SYMBOL, TF" + instrument name: one faint broker watermark, drawn on the canvas (in screenshots too)
+    const watermark = new BrandWatermark({ symbol, tf, name: inst.name, dark: c.dark, font: readVar(document.body, "--font-geist-sans", "system-ui").replace(/"/g, "'") + ", system-ui, sans-serif" });
+    chart.panes()[0]!.attachPrimitive(watermark);
 
     const live = history !== "sim";
     const data = history === "sim" ? buildHistory(symbol, tf) : history.map((d) => ({ ...d }));
@@ -428,12 +423,7 @@ export function useChartEngine(
       indicators.setPalette(c);
       askLine.applyOptions({ color: c.down, axisLabelColor: c.down });
       bidLine.applyOptions({ color: c.fg2, axisLabelColor: c.fg2, axisLabelTextColor: c.dark ? "#0a0a0d" : "#fff" });
-      watermark.applyOptions({
-        lines: [
-          { text: `${symbol}, ${tf}`, color: c.dark ? "rgba(255,255,255,0.035)" : "rgba(15,15,20,0.045)", fontSize: 44, fontStyle: "600" },
-          { text: inst.name, color: c.dark ? "rgba(255,255,255,0.03)" : "rgba(15,15,20,0.04)", fontSize: 15 },
-        ],
-      });
+      watermark.applyOptions({ dark: c.dark });
       legendRef.current(legendAt(hovering >= 0 ? hovering : data.length - 1));
       setEngine((e) => (e && e.chart === chart ? { ...e, palette: c } : e));
     };

@@ -4,6 +4,7 @@ import * as React from "react";
 import { motion } from "motion/react";
 import { Activity, Lock, ShieldCheck } from "lucide-react";
 import { Logo, Starfield, ThemeToggle } from "@kalks/ui";
+import { IS_DEMO } from "@kalks/mock/mode";
 
 function StatusCard({ icon, title, sub, className }: { icon: React.ReactNode; title: string; sub: string; className?: string }) {
   return (
@@ -36,9 +37,13 @@ export default function AdminAuthLayout({ children }: { children: React.ReactNod
           </div>
           <div>
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-9 flex flex-col gap-3">
-              <StatusCard icon={<Activity />} title="All systems operational" sub="14 services · p99 gateway 18ms" className="self-start" />
+              {IS_DEMO ? (
+                <StatusCard icon={<Activity />} title="Demo environment" sub="Sample data · nothing here is real" className="self-start" />
+              ) : (
+                <StatusCard icon={<Activity />} title="Staff-only console" sub="HttpOnly sessions · 2h idle timeout" className="self-start" />
+              )}
               <StatusCard icon={<ShieldCheck />} title="Every action is audited" sub="Reason codes · immutable log · GMT+3" className="ml-16 self-start" />
-              <StatusCard icon={<Lock />} title="Device-bound staff access" sub="Email OTP on every new device" className="ml-6 self-start" />
+              <StatusCard icon={<Lock />} title="Email code on sign-in" sub="One-time code sent to your work email" className="ml-6 self-start" />
             </motion.div>
             <h2 className="max-w-md text-[40px] font-medium leading-[1.08] tracking-[-0.03em] text-white">Run the whole brokerage from one console.</h2>
             <p className="mt-4 max-w-md text-[15px] text-white/70">Dealing, risk, compliance, finance and partners — live exposure, queues and alerts for Kalks Markets and every white-label tenant.</p>
@@ -63,7 +68,7 @@ export default function AdminAuthLayout({ children }: { children: React.ReactNod
             {children}
           </motion.div>
         </div>
-        <div className="relative px-6 pb-6 text-center text-[11.5px] text-fg-3">Kalks Markets · Staff console v2.14 · Server time GMT+3</div>
+        <div className="relative px-6 pb-6 text-center text-[11.5px] text-fg-3">Kalks Markets · Staff console · Server time GMT+3</div>
       </div>
     </div>
   );

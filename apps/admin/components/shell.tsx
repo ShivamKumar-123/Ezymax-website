@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AppShell, Avatar, Tooltip } from "@kalks/ui";
-import { ADMIN_NAV } from "@/lib/nav";
+import { NAV } from "@/lib/live";
 import { AdminTopRight } from "@/components/topbar";
 import { signOut, useStaff } from "@/components/staff-session";
 
@@ -22,7 +22,7 @@ export function BackOfficeShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="contents" onClickCapture={onRailSignOut}>
       <AppShell
-        modules={ADMIN_NAV}
+        modules={NAV}
         pillVariant="text"
         brandSuffix={<span className="hidden whitespace-nowrap rounded-md border border-line px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-fg-2 sm:inline">BACK OFFICE</span>}
         railFooter={

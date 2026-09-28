@@ -13,12 +13,25 @@ export type GatewayStaff = {
   name: string;
   role: string;
   role_label: string;
+  /** Back Office permissions of the role, e.g. "clients.read", "spreads.write" (see services/gateway/src/admin.rs). */
+  permissions?: string[];
   tenant: { slug: string; name: string };
+};
+
+/** Demo builds (NEXT_PUBLIC_KALKS_MODE=demo) skip staff sign-in and browse the mock showcase as this staff member. */
+export const DEMO_STAFF: GatewayStaff = {
+  id: 0,
+  email: "demo@kalkstrade.com",
+  name: "Demo Admin",
+  role: "platform_owner",
+  role_label: "Platform Owner",
+  permissions: [],
+  tenant: { slug: "kalks", name: "Kalks Markets" },
 };
 
 type Forward = { ip?: string | null; userAgent?: string | null; device?: string | null; token?: string | null };
 
-export async function gateway<T = Record<string, unknown>>(path: string, init: { method?: "GET" | "POST"; body?: unknown } & Forward = {}): Promise<{ status: number; data: T }> {
+export async function gateway<T = Record<string, unknown>>(path: string, init: { method?: "GET" | "POST" | "PUT"; body?: unknown } & Forward = {}): Promise<{ status: number; data: T }> {
   const headers: Record<string, string> = { "x-kalks-internal": INTERNAL_TOKEN, "x-kalks-tenant": "kalks" };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   if (init.ip) headers["x-forwarded-for"] = init.ip;

@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@kalks/ui";
+import { ArrowRight } from "lucide-react";
+import { Button, cn } from "@kalks/ui";
 
 /** "Sign in with Google" is shown only once Google OAuth is configured (NEXT_PUBLIC_GOOGLE_LOGIN=1). */
 export const GOOGLE_LOGIN = process.env.NEXT_PUBLIC_GOOGLE_LOGIN === "1";
@@ -137,5 +138,20 @@ export function ResendLink({ seconds, onResend }: { seconds: number; onResend: (
     >
       {left > 0 ? `Resend in 0:${String(left).padStart(2, "0")}` : busy ? "Sending…" : "Resend code"}
     </button>
+  );
+}
+
+/** Demo builds only: skip sign-in and browse the Client Area as the sample client. */
+export function DemoEntry() {
+  return (
+    <div className="mt-8 rounded-[18px] border border-ember/30 bg-ember-soft px-5 py-4">
+      <div className="text-[14px] font-medium text-fg">This is the Kalks demo</div>
+      <p className="mt-1 text-[13px] text-fg-2">No account needed. Every screen runs on sample data.</p>
+      <a href="/" className="mt-3 block">
+        <Button type="button" variant="ember" size="lg" className="w-full">
+          Enter demo <ArrowRight />
+        </Button>
+      </a>
+    </div>
   );
 }

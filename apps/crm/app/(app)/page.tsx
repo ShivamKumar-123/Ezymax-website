@@ -50,6 +50,7 @@ import {
   CALENDAR,
   DASHBOARD,
   INSTRUMENTS,
+  IS_DEMO,
   NEWS,
   ONBOARDING,
   POSITIONS,
@@ -63,6 +64,7 @@ import {
 import type { SeriesPoint } from "@kalks/ui";
 import { AccountRow } from "@/components/account-row";
 import { useSession } from "@/components/session";
+import { LiveDashboard } from "@/components/dashboard/live-dashboard";
 
 function greeting() {
   const h = new Date().getHours();
@@ -521,7 +523,7 @@ function PositionsCard() {
 
 /* ------------------------------------------------------------------ */
 
-export default function DashboardPage() {
+function DemoDashboard() {
   const me = useSession();
   const [hour, setHour] = React.useState<string>("Good evening");
   React.useEffect(() => setHour(greeting()), []);
@@ -678,4 +680,11 @@ export default function DashboardPage() {
       />
     </div>
   );
+}
+
+/* ------------------------------------------------------------------ */
+
+/** Demo builds: the full showcase on sample data. Live builds: only what is real for this client. */
+export default function DashboardPage() {
+  return IS_DEMO ? <DemoDashboard /> : <LiveDashboard movers={<MoversCard />} />;
 }

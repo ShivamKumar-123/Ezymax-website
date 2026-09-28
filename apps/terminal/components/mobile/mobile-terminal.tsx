@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { ArrowUpRight, BarChart2, CandlestickChart, History, List, LogOut, Moon, RefreshCw, Search, Sun, UserRound, Wallet, X, Zap } from "lucide-react";
 import { INSTRUMENTS, getInstrument } from "@kalks/mock";
 import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
@@ -12,6 +12,10 @@ import { PENDING_LABEL, TIMEFRAMES, accCcy, accMoney, fmtPrice, fmtServer, fmtVo
 import { Badge, LiveMoney, MiniSwitch, Pnl, Stepper } from "@/components/ui/primitives";
 import { ChartView } from "@/components/chart/chart-view";
 import { CLIENT_AREA } from "@/components/shell/title-bar";
+import { GuestActions, GuestNotice } from "@/components/shell/guest";
+import { SegmentChips, inSegment } from "@/components/market/segments";
+import { NotificationBell } from "@/components/shell/notifications";
+import { GUEST_TITLE, REGISTER_URL } from "@/lib/guest";
 
 type MTab = "watch" | "chart" | "trade" | "history" | "account";
 
@@ -19,6 +23,12 @@ type MTab = "watch" | "chart" | "trade" | "history" | "account";
 export function MobileTerminal() {
   const T = useTerminal();
   const [tab, setTab] = React.useState<MTab>("chart");
+  // toasts: below the header and the chart's symbol/timeframe strip (see providers.tsx)
+  React.useEffect(() => {
+    const root = document.documentElement.style;
+    root.setProperty("--t-toast-top-m", "92px");
+    return () => void root.removeProperty("--t-toast-top-m");
+  }, []);
   const a = T.account;
   const m = useMetrics();
   const tabs: { id: MTab; label: string; icon: React.ReactNode }[] = [
@@ -34,6 +44,21 @@ export function MobileTerminal() {
         <span className="grid size-7 place-items-center rounded-[7px] border border-line-top bg-surface-3">
           <LogoMark size={12} className="text-fg" />
         </span>
+        {T.guest ? (
+          <>
+            <div className="min-w-0 leading-tight">
+              <div className="flex items-center gap-1.5 text-[12.5px] font-semibold">
+                Kalks Trader <Badge>Guest</Badge>
+              </div>
+              <div className="truncate text-[10.5px] text-fg-3">Live market data · no trading account</div>
+            </div>
+            <NotificationBell className="ml-auto" size="sm" />
+            <a href={REGISTER_URL} target="_blank" rel="noreferrer" className="flex h-8 shrink-0 items-center rounded-[7px] bg-ember px-3 text-[12px] font-semibold text-white">
+              Open account
+            </a>
+          </>
+        ) : (
+          <>
         <div className="min-w-0 leading-tight">
           <div className="flex items-center gap-1.5 text-[12.5px] font-semibold">
             <span className="font-mono">{a.login}</span>
@@ -50,13 +75,16 @@ export function MobileTerminal() {
             <Pnl value={m.floating} text={accMoney(a, m.floating, { signed: true })} format={(v) => accMoney(a, v, { signed: true })} /> <span className="text-fg-3">{accCcy(a)}</span>
           </div>
         </div>
+        <NotificationBell size="sm" className="-mr-1" />
+          </>
+        )}
       </header>
       <main className="min-h-0 flex-1 overflow-hidden">
         {tab === "watch" && <MWatch onPick={() => setTab("chart")} />}
         {tab === "chart" && <MChart />}
-        {tab === "trade" && <MTrade />}
-        {tab === "history" && <MHistory />}
-        {tab === "account" && <MAccount />}
+        {tab === "trade" && (T.guest ? <GuestNotice icon={<BarChart2 />} text="Positions, orders, balance and margin appear here once you trade from a Kalks account. Charts and quotes work now." /> : <MTrade />)}
+        {tab === "history" && (T.guest ? <GuestNotice icon={<History />} text="Your closed trades will be listed here once your trading account is live." /> : <MHistory />)}
+        {tab === "account" && (T.guest ? <MGuestAccount /> : <MAccount />)}
       </main>
       <nav className="grid h-[58px] shrink-0 grid-cols-5 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)]">
         {tabs.map((t) => (
@@ -75,10 +103,12 @@ export function MobileTerminal() {
 function MWatch({ onPick }: { onPick: () => void }) {
   const T = useTerminal();
   const [q, setQ] = React.useState("");
-  const list = INSTRUMENTS.filter((i) => !q || i.symbol.toLowerCase().includes(q.toLowerCase()) || i.name.toLowerCase().includes(q.toLowerCase()));
+  const seg = T.ws.mwSegment;
+  const list = INSTRUMENTS.filter((i) => inSegment(i, seg, T.ws.favourites)).filter((i) => !q || i.symbol.toLowerCase().includes(q.toLowerCase()) || i.name.toLowerCase().includes(q.toLowerCase()));
   return (
     <div className="flex h-full flex-col">
-      <div className="p-2">
+      <div className="space-y-1.5 p-2">
+        <SegmentChips instruments={INSTRUMENTS} value={seg} onChange={(s) => T.setWs({ mwSegment: s })} favourites={T.ws.favourites} size="md" label="Watchlist segment" />
         <label className="flex h-9 items-center gap-2 rounded-[8px] border border-line bg-surface-2 px-3">
           <Search className="size-4 text-fg-3" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search symbols" className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-fg-3" />
@@ -88,6 +118,7 @@ function MWatch({ onPick }: { onPick: () => void }) {
         {list.map((i) => (
           <MWatchRow key={i.symbol} symbol={i.symbol} active={T.activeSymbol === i.symbol} onPick={() => (T.openSymbol(i.symbol), onPick())} />
         ))}
+        {!list.length && <div className="p-6 text-center text-[12.5px] text-fg-3">{seg === "favourites" && !q ? "No favourites yet." : "No symbols match."}</div>}
       </div>
     </div>
   );
@@ -127,6 +158,7 @@ function MChart() {
   const marketOpen = useMarketOpen(tab.symbol);
   const trade = (side: "buy" | "sell") => {
     if (!marketOpen) return;
+    if (T.guest) return void T.quickTrade(tab.symbol, side, v); // explains: no trading account yet
     if (T.ws.oneClick) T.quickTrade(tab.symbol, side, v);
     else T.openNewOrder({ symbol: tab.symbol, side, type: "market" });
   };
@@ -148,17 +180,17 @@ function MChart() {
       </div>
       {!T.readOnly && (
         <div className="grid shrink-0 grid-cols-[1fr_110px_1fr] gap-1.5 border-t border-line bg-panel p-2">
-          <button onClick={() => trade("sell")} disabled={!marketOpen} className="rounded-[8px] bg-down px-2 py-1.5 text-left text-white disabled:bg-surface-3 disabled:text-fg-3 [&:disabled_span]:!text-fg-3">
+          <button onClick={() => trade("sell")} disabled={!marketOpen} title={T.guest ? GUEST_TITLE : undefined} className={cn("rounded-[8px] bg-down px-2 py-1.5 text-left text-white disabled:bg-surface-3 disabled:text-fg-3 [&:disabled_span]:!text-fg-3", T.guest && "border border-down/40 bg-down/15 text-down")}>
             <div className="text-[9.5px] font-semibold uppercase tracking-[0.1em] opacity-85">Sell</div>
-            <PriceText symbol={tab.symbol} value={q.bid} dir={q.dir} className="text-[15px] [&_span]:!text-white" />
+            <PriceText symbol={tab.symbol} value={q.bid} dir={q.dir} className={cn("text-[15px]", !T.guest && "[&_span]:!text-white")} />
           </button>
           <div className="flex flex-col justify-center gap-1">
             <Stepper ariaLabel="Volume" value={vol} onChange={setVol} step={0.01} min={0.01} decimals={2} className="h-8" />
-            <div className={cn("text-center font-mono text-[9.5px]", marketOpen ? "text-fg-3" : "text-warn")}>{!marketOpen ? "market closed" : T.ws.oneClick ? "one-click" : "confirm"}</div>
+            <div className={cn("text-center font-mono text-[9.5px]", marketOpen ? "text-fg-3" : "text-warn")}>{!marketOpen ? "market closed" : T.guest ? "needs account" : T.ws.oneClick ? "one-click" : "confirm"}</div>
           </div>
-          <button onClick={() => trade("buy")} disabled={!marketOpen} className="rounded-[8px] bg-up px-2 py-1.5 text-right text-white disabled:bg-surface-3 disabled:text-fg-3 [&:disabled_span]:!text-fg-3">
+          <button onClick={() => trade("buy")} disabled={!marketOpen} title={T.guest ? GUEST_TITLE : undefined} className={cn("rounded-[8px] bg-up px-2 py-1.5 text-right text-white disabled:bg-surface-3 disabled:text-fg-3 [&:disabled_span]:!text-fg-3", T.guest && "border border-up/40 bg-up/15 text-up")}>
             <div className="text-[9.5px] font-semibold uppercase tracking-[0.1em] opacity-85">Buy</div>
-            <PriceText symbol={tab.symbol} value={q.ask} dir={q.dir} className="justify-end text-[15px] [&_span]:!text-white" />
+            <PriceText symbol={tab.symbol} value={q.ask} dir={q.dir} className={cn("justify-end text-[15px]", !T.guest && "[&_span]:!text-white")} />
           </button>
         </div>
       )}
@@ -306,6 +338,28 @@ function MAccount() {
       <button onClick={() => (toast("Logged out"), T.logout())} className="flex h-10 w-full items-center justify-center gap-1.5 rounded-[8px] border border-down/30 bg-down-soft text-[13px] text-down">
         <LogOut className="size-4" /> Log out
       </button>
+    </div>
+  );
+}
+
+function MGuestAccount() {
+  const { resolvedTheme, setTheme } = useTheme();
+  return (
+    <div className="t-scroll h-full space-y-3 overflow-y-auto p-3">
+      <div className="rounded-[8px] border border-line bg-panel px-4 py-4 text-center">
+        <Badge>Guest</Badge>
+        <div className="mt-2 text-[13.5px] font-semibold">{GUEST_TITLE}</div>
+        <p className="mt-1 text-[12px] leading-relaxed text-fg-3">Create your Kalks account to be first. Charts, indicators, drawings and alerts run on live Kalks market data now.</p>
+        <GuestActions size="md" className="mt-3" />
+      </div>
+      <div className="overflow-hidden rounded-[8px] border border-line bg-panel">
+        <Row label="Dark theme" icon={resolvedTheme === "light" ? <Sun /> : <Moon />}>
+          <MiniSwitch checked={resolvedTheme !== "light"} onChange={(v) => setTheme(v ? "dark" : "light")} label="Theme" />
+        </Row>
+      </div>
+      <a href={CLIENT_AREA} target="_blank" rel="noreferrer" className="flex h-10 items-center justify-center gap-1.5 rounded-[8px] border border-line bg-panel text-[13px]">
+        <Wallet className="size-4" /> Client Area <ArrowUpRight className="size-3.5" />
+      </a>
     </div>
   );
 }

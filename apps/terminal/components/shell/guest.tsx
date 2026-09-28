@@ -1,0 +1,101 @@
+"use client";
+
+import * as React from "react";
+import { ArrowUpRight, ChevronDown, Keyboard, Lock, LogIn, UserPlus, UserRound } from "lucide-react";
+import { cn } from "@kalks/ui";
+import { useTerminal } from "@/lib/store";
+import { CLIENT_AREA, GUEST_TITLE, REGISTER_URL, SIGNIN_URL } from "@/lib/guest";
+import { DropMenu } from "@/components/ui/menu";
+import { Badge } from "@/components/ui/primitives";
+
+/** Open account / Sign in pair, used by every guest notice. */
+export function GuestActions({ size = "sm", className }: { size?: "sm" | "md"; className?: string }) {
+  const h = size === "md" ? "h-9 px-3.5 text-[13px]" : "h-7 px-2.5 text-[12px]";
+  return (
+    <div className={cn("flex flex-wrap items-center justify-center gap-1.5", className)}>
+      <a href={REGISTER_URL} target="_blank" rel="noreferrer" className={cn("inline-flex items-center gap-1.5 rounded-[7px] bg-ember font-semibold text-white transition hover:brightness-110 [&_svg]:size-3.5", h)}>
+        <UserPlus /> Open account
+      </a>
+      <a href={SIGNIN_URL} target="_blank" rel="noreferrer" className={cn("inline-flex items-center gap-1.5 rounded-[7px] border border-line font-medium text-fg-2 transition-colors hover:border-fg-3/50 hover:text-fg [&_svg]:size-3.5", h)}>
+        <LogIn /> Sign in
+      </a>
+    </div>
+  );
+}
+
+/** Centered explainer: replaces account-only panels (order ticket, trade/history/exposure tabs). */
+export function GuestNotice({ icon = <Lock />, title = GUEST_TITLE, text, className }: { icon?: React.ReactNode; title?: string; text: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn("grid h-full place-items-center p-5 text-center", className)}>
+      <div className="max-w-[380px]">
+        <div className="mx-auto mb-2.5 grid size-9 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember [&>svg]:size-4">{icon}</div>
+        <div className="text-[13px] font-semibold text-fg">{title}</div>
+        <p className="mt-1 text-[12px] leading-relaxed text-fg-3">{text}</p>
+        <GuestActions className="mt-3" />
+      </div>
+    </div>
+  );
+}
+
+/** Title-bar chip in place of the account switcher. */
+export function GuestAccountChip() {
+  return (
+    <DropMenu
+      width={300}
+      align="end"
+      trigger={({ toggle, open }) => (
+        <button onClick={toggle} className={cn("flex h-8 items-center gap-2 rounded-[7px] border border-line bg-surface-2 pl-1.5 pr-2 text-left transition-colors hover:bg-surface-3", open && "bg-surface-3")} aria-label="Guest session">
+          <Badge>Guest</Badge>
+          <span className="leading-none">
+            <span className="block text-[12px] text-fg">No trading account</span>
+            <span className="block text-[10px] text-fg-3">Live market data</span>
+          </span>
+          <ChevronDown className="size-3.5 text-fg-3" />
+        </button>
+      )}
+    >
+      {() => <GuestCard />}
+    </DropMenu>
+  );
+}
+
+function GuestCard() {
+  return (
+    <div>
+      <div className="border-b border-line px-3 py-2 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">Guest · charts and quotes</div>
+      <div className="space-y-2 px-3 py-3">
+        <div className="text-[12.5px] font-medium text-fg">{GUEST_TITLE}</div>
+        <p className="text-[11.5px] leading-relaxed text-fg-3">Charts, indicators, drawings, alerts and symbol specs run on live Kalks market data. Create your Kalks account to be first when trading opens.</p>
+        <GuestActions className="justify-start pt-1" />
+      </div>
+      <div className="flex items-center justify-end border-t border-line px-3 py-2 text-[11.5px]">
+        <a href={CLIENT_AREA} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-fg-2 hover:text-fg">
+          Client Area <ArrowUpRight className="size-3" />
+        </a>
+      </div>
+    </div>
+  );
+}
+
+/** Title-bar user menu in place of the (mock) profile avatar. */
+export function GuestUserMenu() {
+  const T = useTerminal();
+  return (
+    <DropMenu
+      align="end"
+      width={220}
+      items={[
+        { header: "Guest" },
+        { label: "Open account", icon: <UserPlus />, onSelect: () => window.open(REGISTER_URL, "_blank", "noopener") },
+        { label: "Sign in", icon: <LogIn />, onSelect: () => window.open(SIGNIN_URL, "_blank", "noopener") },
+        "sep",
+        { label: "Keyboard shortcuts", icon: <Keyboard />, hint: "F1", onSelect: () => T.setUi({ shortcuts: true }) },
+      ]}
+      trigger={({ toggle }) => (
+        <button onClick={toggle} className="ml-0.5 grid size-7 place-items-center rounded-full bg-surface-3 text-fg-2 ring-1 ring-line transition hover:text-fg hover:ring-ember/50" aria-label="Account menu">
+          <UserRound className="size-4" />
+        </button>
+      )}
+    />
+  );
+}

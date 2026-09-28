@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDownToLine, Bell, CheckCircle2, Coins, IdCard, LogOut, Settings, ShieldCheck, TriangleAlert, UserRound } from "lucide-react";
+import { ArrowDownToLine, ArrowUpRight, IdCard, LogOut, Settings, ShieldCheck, UserRound } from "lucide-react";
 import {
   AppShell,
   Avatar,
@@ -10,22 +10,16 @@ import {
   LanguageMenu,
   MarketBoundary,
   Menu,
-  NotificationsPopover,
   ThemeToggle,
   Tooltip,
   Chip,
 } from "@kalks/ui";
-import { NOTIFICATIONS } from "@kalks/mock";
-import { CRM_COMMANDS, CRM_NAV } from "@/lib/nav";
+import { IS_DEMO } from "@kalks/mock";
+import { CRM_COMMANDS, NAV } from "@/lib/nav";
+import { TERMINAL_URL } from "@/lib/live";
+import { LiveGate } from "@/components/live-gate";
+import { NotificationsBell } from "@/components/notifications";
 import { KYC_CHIP, logout, useSession } from "@/components/session";
-
-const NOTIF_ICON: Record<string, React.ReactNode> = {
-  fill: <CheckCircle2 />,
-  deposit: <ArrowDownToLine />,
-  kyc: <IdCard />,
-  ib: <Coins />,
-  margin: <TriangleAlert />,
-};
 
 /** The shared rail's sign-out icon is a plain link to /login; turn it into a real sign-out. */
 function onRailSignOut(e: React.MouseEvent) {
@@ -37,6 +31,18 @@ function onRailSignOut(e: React.MouseEvent) {
   }
 }
 
+const ACCOUNT_MENU_DEMO = [
+  { label: "Profile", icon: <UserRound />, href: "/profile" },
+  { label: "Security", icon: <ShieldCheck />, href: "/profile/security" },
+  { label: "Verification", icon: <IdCard />, href: "/profile/verification" },
+  { label: "Preferences", icon: <Settings />, href: "/profile/preferences" },
+];
+
+const ACCOUNT_MENU_LIVE = [
+  { label: "Profile", icon: <UserRound />, href: "/profile" },
+  { label: "Verification", icon: <IdCard />, href: "/profile/verification", hint: <span className="text-[11px] text-ember">Soon</span> },
+];
+
 /** Client Area chrome (rail, top bar, account menu) for the signed-in client. */
 export function ClientShell({ children }: { children: React.ReactNode }) {
   const me = useSession();
@@ -45,7 +51,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="contents" onClickCapture={onRailSignOut}>
       <AppShell
-        modules={CRM_NAV}
+        modules={NAV}
         railFooter={
           <Tooltip content="Profile" side="right">
             <Link href="/profile" className="mb-1">
@@ -58,12 +64,20 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
             <CommandPalette items={CRM_COMMANDS.map((c) => ({ group: c.group, label: c.label, href: c.href, icon: <c.Icon /> }))} />
             <LanguageMenu />
             <ThemeToggle />
-            <NotificationsPopover items={NOTIFICATIONS.map((n) => ({ ...n, icon: NOTIF_ICON[n.kind] ?? <Bell /> }))} />
-            <Link href="/wallet/deposit" className="hidden sm:block">
-              <Button variant="ember" shimmer>
-                <ArrowDownToLine /> Deposit
-              </Button>
-            </Link>
+            <NotificationsBell userKey={String(me.id)} />
+            {IS_DEMO ? (
+              <Link href="/wallet/deposit" className="hidden sm:block">
+                <Button variant="ember" shimmer>
+                  <ArrowDownToLine /> Deposit
+                </Button>
+              </Link>
+            ) : (
+              <a href={TERMINAL_URL} target="_blank" rel="noopener" className="hidden sm:block">
+                <Button variant="ember">
+                  Kalks Trader <ArrowUpRight />
+                </Button>
+              </a>
+            )}
             <Menu
               width={260}
               header={
@@ -79,10 +93,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
                 </div>
               }
               items={[
-                { label: "Profile", icon: <UserRound />, href: "/profile" },
-                { label: "Security", icon: <ShieldCheck />, href: "/profile/security" },
-                { label: "Verification", icon: <IdCard />, href: "/profile/verification" },
-                { label: "Preferences", icon: <Settings />, href: "/profile/preferences" },
+                ...(IS_DEMO ? ACCOUNT_MENU_DEMO : ACCOUNT_MENU_LIVE),
                 "sep",
                 { label: "Log out", icon: <LogOut />, onSelect: () => void logout(), danger: true },
               ]}
@@ -95,7 +106,9 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           </>
         }
       >
-        <MarketBoundary>{children}</MarketBoundary>
+        <MarketBoundary>
+          <LiveGate>{children}</LiveGate>
+        </MarketBoundary>
       </AppShell>
     </div>
   );

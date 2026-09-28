@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveSessions } from "@/components/live/sessions";
+
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
@@ -177,7 +180,7 @@ function SessionRow({ s, onKill }: { s: SecSession; onKill: () => void }) {
   );
 }
 
-export default function SessionsPage() {
+function DemoSessionsPage() {
   const [list, setList] = React.useState(SEC_SESSIONS);
   const [filter, setFilter] = React.useState<"all" | "mine" | "risk">("all");
   const [idle, setIdle] = React.useState<"15" | "30" | "60">("30");
@@ -372,4 +375,9 @@ export default function SessionsPage() {
       </div>
     </div>
   );
+}
+
+/** Live builds: real data from the gateway / market-data. Demo builds: the mock showcase above. */
+export default function Page() {
+  return IS_DEMO ? <DemoSessionsPage /> : <LiveSessions />;
 }

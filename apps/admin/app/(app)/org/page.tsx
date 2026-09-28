@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveOrg } from "@/components/live/org";
+
 import * as React from "react";
 import { toast } from "sonner";
 import {
@@ -40,7 +43,7 @@ const ROLE_COLORS: Record<OrgRoleKey, string> = {
   custom: "var(--k-fg-3)",
 };
 
-export default function EmployeesPage() {
+function DemoEmployeesPage() {
   const [list, setList] = React.useState<OrgEmployee[]>(ORG_EMPLOYEES);
   const [status, setStatus] = React.useState<StatusFilter>("all");
   const [role, setRole] = React.useState<OrgRoleKey | null>(null);
@@ -312,4 +315,9 @@ export default function EmployeesPage() {
       </div>
     </div>
   );
+}
+
+/** Live builds: real data from the gateway / market-data. Demo builds: the mock showcase above. */
+export default function Page() {
+  return IS_DEMO ? <DemoEmployeesPage /> : <LiveOrg />;
 }

@@ -1,14 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { IS_DEMO } from "@kalks/mock/mode";
 import { SESSION_COOKIE, clientIp, gateway, safeNext } from "@/lib/gateway";
 
 // Route protection for the Client Area.
 // - Signed-out visitors on any app page -> /login?next=<page>
 // - Signed-in users on /login, /register, /forgot -> ?next or the dashboard
 // The (app) layout re-validates the session with the gateway on every full render.
+// Demo builds (NEXT_PUBLIC_KALKS_MODE=demo) have no sign-in gate: everything is open, and the
+// login / register pages offer "Enter demo".
 
 const AUTH_PAGES = ["/login", "/register", "/forgot"];
 
 export async function proxy(req: NextRequest) {
+  if (IS_DEMO) return NextResponse.next();
   const { pathname, search } = req.nextUrl;
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const isAuthPage = AUTH_PAGES.some((p) => pathname === p || pathname.startsWith(`${p}/`));

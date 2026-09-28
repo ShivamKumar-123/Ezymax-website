@@ -3,13 +3,14 @@
 import * as React from "react";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowUpRight, Eye, EyeOff, KeyRound, Loader2, Lock, Server, ShieldCheck, Trash2, UserRound } from "lucide-react";
-import { toast } from "sonner";
+import { ArrowRight, ArrowUpRight, CandlestickChart, Eye, EyeOff, KeyRound, Loader2, Lock, LogIn, Server, ShieldCheck, Trash2, UserPlus, UserRound } from "lucide-react";
+import { toast } from "@/lib/notify";
 import { ACCOUNTS, INSTRUMENTS, ME } from "@kalks/mock";
 import { LivePrice, LogoMark, SymbolAvatar, ThemeToggle, cn, useQuote } from "@kalks/ui";
 import { SAVED_KEY, writeSession } from "@/lib/store";
 import { SERVERS } from "@/lib/trading";
 import { Badge, Check } from "@/components/ui/primitives";
+import { GUEST_MODE, GUEST_TITLE, REGISTER_URL, SIGNIN_URL } from "@/lib/guest";
 
 interface Saved {
   login: string;
@@ -276,10 +277,108 @@ function Ticker({ symbol }: { symbol: string }) {
   );
 }
 
-export default function LoginPage() {
+/**
+ * Live builds: trading accounts are served by the trading engine, which isn't connected yet. Instead of
+ * a login form for accounts that don't exist, explain and offer the Client Area or guest charts.
+ */
+function AccountsSoon() {
+  const router = useRouter();
   return (
-    <Suspense fallback={null}>
-      <LoginForm />
-    </Suspense>
+    <div className="relative flex min-h-dvh overflow-y-auto bg-page lg:h-dvh lg:overflow-hidden">
+      <Brand
+        text="Multi-chart layouts, 30 indicators, drawing tools, price alerts and live quotes from the Kalks market-data service. Trading accounts are next."
+      />
+      <main className="relative flex flex-1 flex-col">
+        <TopBar />
+        <div className="relative mx-auto flex w-full max-w-[460px] flex-1 flex-col justify-center px-4 pb-10 lg:justify-start lg:pt-[12vh]">
+          <section className="w-full rounded-[12px] border border-line bg-panel shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]" aria-label="Trading accounts">
+            <div className="border-b border-line px-5 py-4">
+              <div className="flex items-center gap-2 text-[15px] font-semibold">
+                <Lock className="size-4 text-ember" /> {GUEST_TITLE}
+              </div>
+              <p className="mt-1.5 text-[12.5px] leading-relaxed text-fg-3">Create your Kalks account to be first. Your trading accounts will appear here as soon as they open, and every Trade button in the Client Area will sign you in automatically.</p>
+            </div>
+            <div className="space-y-2.5 px-5 py-4">
+              <a href={REGISTER_URL} className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] bg-ember text-[13.5px] font-semibold text-white shadow-[0_10px_28px_-10px_rgba(255,90,31,0.8)] transition hover:brightness-110">
+                <UserPlus className="size-4" /> Open account
+              </a>
+              <a href={SIGNIN_URL} className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border border-line bg-surface-2 text-[13.5px] font-medium text-fg transition-colors hover:bg-surface-3">
+                <LogIn className="size-4" /> Sign in to Client Area
+              </a>
+              <div className="flex items-center gap-3 py-1 text-[11px] text-fg-3">
+                <span className="h-px flex-1 bg-line" />
+                or
+                <span className="h-px flex-1 bg-line" />
+              </div>
+              <button type="button" onClick={() => router.replace("/")} className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border border-line text-[13.5px] font-medium text-fg-2 transition-colors hover:border-fg-3/50 hover:text-fg">
+                <CandlestickChart className="size-4" /> Continue to charts <ArrowRight className="size-3.5" />
+              </button>
+              <p className="text-center text-[11.5px] leading-relaxed text-fg-3">Charts, indicators, drawings, alerts and symbol specs work without an account.</p>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
   );
+}
+
+function Brand({ text }: { text: string }) {
+  return (
+    <aside className="relative hidden w-[46%] max-w-[720px] overflow-hidden border-r border-line lg:block">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/assets/photos/trading-screen.jpg" alt="" className="absolute inset-0 size-full object-cover opacity-45" />
+      <div className="absolute inset-0 bg-[linear-gradient(160deg,rgba(7,7,10,0.35),rgba(7,7,10,0.92)_62%),radial-gradient(700px_320px_at_20%_-80px,rgba(255,90,31,0.45),transparent_70%)]" />
+      <div className="relative flex h-full flex-col p-10 text-white">
+        <div className="flex items-center gap-2.5">
+          <span className="grid size-9 place-items-center rounded-[9px] border border-white/15 bg-white/10 backdrop-blur">
+            <LogoMark size={16} className="text-white" />
+          </span>
+          <span className="text-[16px] font-semibold tracking-tight">
+            Kalks <span className="font-normal text-white/70">Trader</span>
+          </span>
+        </div>
+        <div className="mt-auto max-w-[460px]">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ff8a3d]">Professional trading room</div>
+          <h1 className="mt-3 text-[34px] font-medium leading-[1.12] tracking-tight">Every market. One workstation.</h1>
+          <p className="mt-3 text-[14px] leading-relaxed text-white/65">{text}</p>
+          <div className="mt-7 grid grid-cols-2 gap-2">
+            {["XAUUSD", "EURUSD", "NAS100", "BTCUSD"].map((s) => (
+              <Ticker key={s} symbol={s} />
+            ))}
+          </div>
+          <div className="mt-7 flex items-center gap-4 text-[11.5px] text-white/50">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="size-3.5" /> TLS 1.3
+            </span>
+            <span>Server time GMT+3</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function TopBar() {
+  return (
+    <div className="relative flex items-center justify-between px-5 py-4 sm:px-8">
+      <span className="flex items-center gap-2 lg:invisible">
+        <span className="grid size-8 place-items-center rounded-[8px] border border-line-top bg-surface-3">
+          <LogoMark size={14} className="text-fg" />
+        </span>
+        <span className="text-[14px] font-semibold">
+          Kalks <span className="font-normal text-fg-2">Trader</span>
+        </span>
+      </span>
+      <div className="flex items-center gap-2">
+        <a href={CLIENT_AREA} className="flex h-9 items-center gap-1 rounded-full border border-line px-3.5 text-[12.5px] text-fg-2 hover:bg-surface-3 hover:text-fg">
+          Client Area <ArrowUpRight className="size-3.5" />
+        </a>
+        <ThemeToggle />
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return <Suspense fallback={null}>{GUEST_MODE ? <AccountsSoon /> : <LoginForm />}</Suspense>;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { Eye, EyeOff, FileStack, Plus, Search, Settings2, SlidersHorizontal, Spline, Star, Trash2, X } from "lucide-react";
 import { cn } from "@kalks/ui";
 import { useTerminal } from "@/lib/store";

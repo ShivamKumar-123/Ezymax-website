@@ -6,6 +6,8 @@ import { ArrowUpRight, ChevronRight, Clock3, Eye, Mail, MessageCircle, Phone, Se
 import { Card, CardHeader, Chip, Dialog, Icon3D, Input, PageHeader, Reveal, Button, cn } from "@kalks/ui";
 import { HELP_CATEGORIES, POPULAR_ARTICLES, SUPPORT_AGENT } from "@kalks/mock/support-extra";
 import { ChatPanel } from "@/components/support/chat-panel";
+import { LiveSupport } from "@/components/support/live-support";
+import { IS_DEMO } from "@kalks/mock";
 
 const CONTACTS = [
   { key: "email", icon: <Mail />, title: "Email", value: "support@kalks.com", hours: "Reply within 2 hours · 24/7", action: "Copy", copy: "support@kalks.com" },
@@ -13,7 +15,7 @@ const CONTACTS = [
   { key: "phone", icon: <Phone />, title: "Phone", value: "+44 20 3808 4412", hours: "Mon–Fri 09:00–21:00 GMT+3", action: "Call", copy: "" },
 ];
 
-export default function SupportPage() {
+function DemoSupport() {
   const [q, setQ] = React.useState("");
   const [article, setArticle] = React.useState<(typeof POPULAR_ARTICLES)[number] | null>(null);
   const qq = q.trim().toLowerCase();
@@ -169,4 +171,9 @@ export default function SupportPage() {
       </Dialog>
     </div>
   );
+}
+
+/** Demo builds: AI chat and help centre on sample data. Live builds: the real email channel. */
+export default function SupportPage() {
+  return IS_DEMO ? <DemoSupport /> : <LiveSupport />;
 }

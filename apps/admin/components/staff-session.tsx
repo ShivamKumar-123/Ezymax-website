@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { IS_DEMO } from "@kalks/mock/mode";
 import type { GatewayStaff } from "@/lib/gateway";
 
 export type StaffUser = GatewayStaff;
@@ -11,6 +12,12 @@ export function StaffProvider({ staff, children }: { staff: StaffUser; children:
   return <StaffContext.Provider value={staff}>{children}</StaffContext.Provider>;
 }
 
+/** Whether the signed-in staff member's role holds a Back Office permission (demo builds: everything). */
+export function useCan(perm: string): boolean {
+  const s = useStaff();
+  return IS_DEMO || (s.permissions?.includes(perm) ?? false);
+}
+
 /** The signed-in staff member. Only usable inside the (app) layout. */
 export function useStaff(): StaffUser {
   const s = React.useContext(StaffContext);
@@ -19,6 +26,7 @@ export function useStaff(): StaffUser {
 }
 
 export async function signOut() {
+  if (IS_DEMO) return window.location.assign("/login");
   await fetch("/api/auth/logout", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }).catch(() => {});
   window.location.assign("/login");
 }

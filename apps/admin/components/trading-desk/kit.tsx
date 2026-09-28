@@ -380,7 +380,7 @@ export function SymbolPicker({ value, onChange }: { value: string; onChange: (s:
         />
       </div>
       {open && list.length > 0 && (
-        <div className="absolute inset-x-0 top-full z-20 mt-1 rounded-[14px] border border-line bg-surface p-1 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)]" role="listbox">
+        <div className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto overscroll-contain rounded-[14px] border border-line bg-surface p-1 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)]" role="listbox">
           {list.map((i) => (
             <button
               key={i.symbol}

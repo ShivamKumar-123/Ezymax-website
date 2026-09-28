@@ -48,6 +48,7 @@ async fn staff_json(st: &AppState, id: i64) -> ApiResult<Value> {
         "name": r.get::<String, _>("name"),
         "role": role,
         "role_label": role_label(&role),
+        "permissions": crate::admin::permissions(&role),
         "tenant": { "slug": r.get::<String, _>("slug"), "name": r.get::<String, _>("tenant_name") },
     }))
 }

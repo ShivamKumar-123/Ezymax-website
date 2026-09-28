@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveSpreads } from "@/components/live/spreads";
+
 import * as React from "react";
 import { Info, RotateCcw, Save, Wand2 } from "lucide-react";
 import { toast } from "sonner";
@@ -108,7 +111,7 @@ function BulkDialog({ open, onOpenChange, onApply }: { open: boolean; onOpenChan
   );
 }
 
-export default function SpreadsPage() {
+function DemoSpreadsPage() {
   const [saved, setSaved] = React.useState<Matrix>(SPREAD_MARKUPS);
   const [m, setM] = React.useState<Matrix>(SPREAD_MARKUPS);
   const [floors, setFloors] = React.useState<Record<string, number>>(SPREAD_FLOORS);
@@ -287,4 +290,9 @@ export default function SpreadsPage() {
       />
     </div>
   );
+}
+
+/** Live builds: real data from the gateway / market-data. Demo builds: the mock showcase above. */
+export default function Page() {
+  return IS_DEMO ? <DemoSpreadsPage /> : <LiveSpreads />;
 }

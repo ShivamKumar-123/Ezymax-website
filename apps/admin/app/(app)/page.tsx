@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveCommandCenter } from "@/components/live/command-center";
+
 import * as React from "react";
 import { ArrowDownLeft, ArrowUpRight, Download, FileSpreadsheet, FileText, Plus, Scale, TrendingUp, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -23,7 +26,7 @@ function Num({ v, className }: { v: number; className?: string }) {
   return <span className={cn("k-num", className)}>{v.toLocaleString("en-US")}</span>;
 }
 
-export default function CommandCenterPage() {
+function DemoCommandCenterPage() {
   const clock = useServerClock();
   const k = OPS_KPIS;
   return (
@@ -123,4 +126,9 @@ export default function CommandCenterPage() {
       </div>
     </div>
   );
+}
+
+/** Live builds: real data from the gateway / market-data. Demo builds: the mock showcase above. */
+export default function Page() {
+  return IS_DEMO ? <DemoCommandCenterPage /> : <LiveCommandCenter />;
 }

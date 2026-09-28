@@ -2,14 +2,16 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { BarChart2, CornerDownLeft, Info, Keyboard, Search, ShoppingCart, Star } from "lucide-react";
-import { ASSET_CLASS_LABEL, INSTRUMENTS, type AssetClass } from "@kalks/mock";
+import { ASSET_CLASS_LABEL, INSTRUMENTS } from "@kalks/mock";
 import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { useTerminal } from "@/lib/store";
 import { Kbd } from "./kbd";
 import { TDialog } from "@/components/ui/primitives";
 import { SymbolInfo } from "@/components/order/right-panel";
+import { SegmentChips, inSegment } from "@/components/market/segments";
+import type { Segment } from "@/lib/store";
 
 /* ------------------------------------------------------------------ */
 /* Symbol search (Ctrl/⌘ K)                                            */
@@ -19,7 +21,8 @@ export function SymbolSearch() {
   const T = useTerminal();
   const open = T.ui.search;
   const [q, setQ] = React.useState("");
-  const [cls, setCls] = React.useState<"all" | AssetClass>("all");
+  const cls = T.ws.searchSegment;
+  const setCls = (s: Segment) => T.setWs({ searchSegment: s });
   const [idx, setIdx] = React.useState(0);
   const input = React.useRef<HTMLInputElement>(null);
   const close = React.useCallback(() => T.setUi({ search: false }), [T]);
@@ -31,7 +34,7 @@ export function SymbolSearch() {
     }
   }, [open]);
   if (!open || typeof document === "undefined") return null;
-  const list = INSTRUMENTS.filter((i) => (cls === "all" || i.assetClass === cls) && (!q || i.symbol.toLowerCase().includes(q.toLowerCase()) || i.name.toLowerCase().includes(q.toLowerCase())));
+  const list = INSTRUMENTS.filter((i) => inSegment(i, cls, T.ws.favourites) && (!q || i.symbol.toLowerCase().includes(q.toLowerCase()) || i.name.toLowerCase().includes(q.toLowerCase())));
   const pick = (s: string, mode: "chart" | "tab" | "trade" = "chart") => {
     if (mode === "trade") T.openNewOrder({ symbol: s });
     else T.openSymbol(s, mode === "tab");
@@ -55,18 +58,14 @@ export function SymbolSearch() {
           <input ref={input} value={q} onChange={(e) => (setQ(e.target.value), setIdx(0))} placeholder="Search symbols, e.g. XAU, EUR, Nasdaq…" className="h-full flex-1 bg-transparent text-[14px] outline-none placeholder:text-fg-3" aria-label="Search symbols" />
           <Kbd>Esc</Kbd>
         </div>
-        <div className="flex gap-1 overflow-x-auto border-b border-line px-2 py-1.5 [scrollbar-width:none]">
-          {(["all", "forex", "metals", "indices", "energies", "crypto", "stocks"] as const).map((c) => (
-            <button key={c} onClick={() => (setCls(c), setIdx(0))} className={cn("h-6 shrink-0 rounded-[5px] px-2 text-[11.5px]", cls === c ? "bg-ember-soft text-ember" : "text-fg-3 hover:bg-surface-3 hover:text-fg-2")}>
-              {c === "all" ? "All" : ASSET_CLASS_LABEL[c]}
-            </button>
-          ))}
+        <div className="border-b border-line px-2 py-1.5">
+          <SegmentChips instruments={INSTRUMENTS} value={cls} onChange={(s) => (setCls(s), setIdx(0))} favourites={T.ws.favourites} size="md" label="Symbol search segment" />
         </div>
         <div className="t-scroll max-h-[48vh] overflow-y-auto p-1">
           {list.map((i, n) => (
             <SearchRow key={i.symbol} symbol={i.symbol} active={n === idx} fav={T.ws.favourites.includes(i.symbol)} onHover={() => setIdx(n)} onPick={(m) => pick(i.symbol, m)} />
           ))}
-          {!list.length && <div className="p-6 text-center text-[12.5px] text-fg-3">No symbols match “{q}”</div>}
+          {!list.length && <div className="p-6 text-center text-[12.5px] text-fg-3">{q ? <>No symbols match “{q}”</> : cls === "favourites" ? "No favourites yet. Right-click a symbol in Market Watch to add it." : "No symbols in this segment."}</div>}
         </div>
         <div className="flex items-center gap-3 border-t border-line bg-panel-2 px-3.5 py-2 text-[10.5px] text-fg-3">
           <span className="flex items-center gap-1">

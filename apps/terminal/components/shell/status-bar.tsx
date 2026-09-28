@@ -8,6 +8,7 @@ import { Pnl } from "@/components/ui/primitives";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { useQps } from "@/lib/market";
 import { accCcy, accMoney, serverTime } from "@/lib/trading";
+import { GUEST_TEXT, openRegister } from "@/lib/guest";
 
 function useTicker(ms: number) {
   const [n, setN] = React.useState(0);
@@ -50,19 +51,31 @@ export function StatusBar() {
       <Cell title="Quotes per second">
         <span className="k-num w-[46px] text-fg-2">{qps} q/s</span>
       </Cell>
-      <Cell title="Account currency">
-        <span className="text-fg-2">{accCcy(a)}</span>
-        <span>· 1:{a.leverage}</span>
-      </Cell>
-      <Cell className="hidden lg:flex" title="Floating P&L">
-        <span className="font-sans">P&L</span>
-        <Pnl value={m.floating} text={accMoney(a, m.floating, { signed: true })} format={(v) => accMoney(a, v, { signed: true })} className="px-0.5" />
-      </Cell>
-      <Cell className="hidden xl:flex" title="Margin level">
-        <Gauge className="size-3" />
-        <span className={cn("k-num", lvl !== null && lvl < 200 ? "text-warn" : "text-fg-2")}>{lvl === null ? "—" : `${lvl.toFixed(0)}%`}</span>
-      </Cell>
-      {T.ws.oneClick && !T.readOnly && (
+      {T.guest ? (
+        <Cell title={GUEST_TEXT}>
+          <span className="font-sans text-fg-2">Guest</span>
+          <span className="font-sans">· no trading account ·</span>
+          <button onClick={openRegister} className="font-sans text-ember hover:underline">
+            Open account
+          </button>
+        </Cell>
+      ) : (
+        <>
+          <Cell title="Account currency">
+            <span className="text-fg-2">{accCcy(a)}</span>
+            <span>· 1:{a.leverage}</span>
+          </Cell>
+          <Cell className="hidden lg:flex" title="Floating P&L">
+            <span className="font-sans">P&L</span>
+            <Pnl value={m.floating} text={accMoney(a, m.floating, { signed: true })} format={(v) => accMoney(a, v, { signed: true })} className="px-0.5" />
+          </Cell>
+          <Cell className="hidden xl:flex" title="Margin level">
+            <Gauge className="size-3" />
+            <span className={cn("k-num", lvl !== null && lvl < 200 ? "text-warn" : "text-fg-2")}>{lvl === null ? "—" : `${lvl.toFixed(0)}%`}</span>
+          </Cell>
+        </>
+      )}
+      {T.ws.oneClick && !T.readOnly && !T.guest && (
         <Cell className="hidden xl:flex">
           <span className="font-sans text-ember">One-click ON</span>
         </Cell>
@@ -74,6 +87,7 @@ export function StatusBar() {
           </span>
           <span>GMT+3</span>
         </Cell>
+        {!T.guest && (
         <Cell title="Terminal load">
           <Cpu className="size-3" />
           <span className="flex h-2 w-12 items-end gap-px">
@@ -83,6 +97,7 @@ export function StatusBar() {
           </span>
           <span className="k-num w-6 text-fg-2">{cpu}%</span>
         </Cell>
+        )}
         <button onClick={() => T.setUi({ shortcuts: true })} className="flex h-[26px] items-center gap-1 px-2 font-sans hover:text-fg">
           <HelpCircle className="size-3" /> Help: F1
         </button>

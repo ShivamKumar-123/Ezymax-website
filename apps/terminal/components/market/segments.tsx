@@ -1,0 +1,133 @@
+"use client";
+
+import * as React from "react";
+import { Star } from "lucide-react";
+import { ASSET_CLASS_LABEL, type Instrument } from "@kalks/mock";
+import { cn } from "@kalks/ui";
+import type { Segment } from "@/lib/store";
+
+export type { Segment };
+
+export const SEGMENTS: readonly Segment[] = ["all", "forex", "metals", "indices", "energies", "crypto", "stocks", "favourites"];
+
+export function segmentLabel(s: Segment) {
+  return s === "all" ? "All" : s === "favourites" ? "Favourites" : ASSET_CLASS_LABEL[s];
+}
+
+export function inSegment(i: Instrument, s: Segment, favourites: readonly string[]) {
+  return s === "all" || (s === "favourites" ? favourites.includes(i.symbol) : i.assetClass === s);
+}
+
+/**
+ * Asset-class filter chips with counts (MT5 "Symbols" groups, cTrader watchlist tabs). A horizontally
+ * scrollable tablist so it fits the narrow Market Watch; ←/→/Home/End move between segments.
+ * Empty asset classes are left out; All and Favourites always show.
+ */
+export function SegmentChips({
+  instruments,
+  value,
+  onChange,
+  favourites,
+  withFavourites = true,
+  size = "sm",
+  className,
+  label = "Asset class",
+}: {
+  instruments: readonly Instrument[];
+  value: Segment;
+  onChange: (s: Segment) => void;
+  favourites: readonly string[];
+  withFavourites?: boolean;
+  size?: "sm" | "md";
+  className?: string;
+  label?: string;
+}) {
+  const counts = React.useMemo(() => {
+    const m = new Map<Segment, number>();
+    for (const s of SEGMENTS) m.set(s, instruments.filter((i) => inSegment(i, s, favourites)).length);
+    return m;
+  }, [instruments, favourites]);
+  const shown = SEGMENTS.filter((s) => (s === "favourites" ? withFavourites : s === "all" || (counts.get(s) ?? 0) > 0 || s === value));
+  const refs = React.useRef(new Map<Segment, HTMLButtonElement>());
+  // fade the edge(s) that hide more chips, so a narrow panel shows it scrolls
+  const box = React.useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = React.useState({ l: false, r: false });
+  const measure = React.useCallback(() => {
+    const el = box.current;
+    if (!el) return;
+    const l = el.scrollLeft > 2;
+    const r = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+    setEdge((e) => (e.l === l && e.r === r ? e : { l, r }));
+  }, []);
+  React.useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measure]);
+  const current = shown.includes(value) ? value : "all";
+
+  // keep the selected chip visible in the scroller
+  React.useEffect(() => {
+    const el = box.current;
+    const chip = refs.current.get(current);
+    if (el && chip) {
+      const left = chip.offsetLeft - el.offsetLeft;
+      if (left < el.scrollLeft) el.scrollLeft = left - 8;
+      else if (left + chip.offsetWidth > el.scrollLeft + el.clientWidth) el.scrollLeft = left + chip.offsetWidth - el.clientWidth + 8;
+    }
+    measure();
+  }, [current, measure]);
+
+  const move = (e: React.KeyboardEvent) => {
+    const i = shown.indexOf(current);
+    const next = e.key === "ArrowRight" ? shown[(i + 1) % shown.length] : e.key === "ArrowLeft" ? shown[(i - 1 + shown.length) % shown.length] : e.key === "Home" ? shown[0] : e.key === "End" ? shown[shown.length - 1] : undefined;
+    if (!next) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onChange(next);
+    refs.current.get(next)?.focus();
+  };
+
+  return (
+    <div
+      ref={box}
+      role="tablist"
+      aria-label={label}
+      onKeyDown={move}
+      onScroll={measure}
+      style={edge.l || edge.r ? { maskImage: `linear-gradient(to right, ${edge.l ? "transparent, black 18px" : "black"}, ${edge.r ? "black calc(100% - 22px), transparent" : "black"})` } : undefined}
+      className={cn("flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", className)}
+    >
+      {shown.map((s) => {
+        const on = s === current;
+        const n = counts.get(s) ?? 0;
+        return (
+          <button
+            key={s}
+            ref={(el) => {
+              if (el) refs.current.set(s, el);
+              else refs.current.delete(s);
+            }}
+            role="tab"
+            aria-selected={on}
+            tabIndex={on ? 0 : -1}
+            onClick={() => onChange(s)}
+            title={`${segmentLabel(s)} · ${n} symbol${n === 1 ? "" : "s"}`}
+            className={cn(
+              "flex shrink-0 items-center gap-1 whitespace-nowrap rounded-[5px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ember/40",
+              size === "md" ? "h-7 px-2.5 text-[12px]" : "h-[22px] px-1.5 text-[11px]",
+              on ? "bg-ember-soft text-ember" : "text-fg-3 hover:bg-surface-3 hover:text-fg-2",
+            )}
+          >
+            {s === "favourites" ? <Star className={cn("size-3", on && "fill-ember")} aria-hidden /> : segmentLabel(s)}
+            {s === "favourites" && <span className="sr-only">Favourites</span>}
+            <span className={cn("k-num font-mono text-[9.5px]", on ? "text-ember/80" : "text-fg-3/80")}>{n}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}

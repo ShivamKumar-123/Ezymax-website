@@ -4,6 +4,7 @@
 //! route handlers, which keep the opaque session token in a first-party HttpOnly cookie and forward it here
 //! as a bearer token together with `X-Kalks-Internal`.
 
+mod admin;
 mod audit;
 mod client_auth;
 mod config;
@@ -131,6 +132,14 @@ fn router(st: AppState) -> Router {
         .route("/v1/admin/auth/resend", post(staff_auth::resend))
         .route("/v1/admin/auth/logout", post(staff_auth::logout))
         .route("/v1/admin/auth/me", get(staff_auth::me))
+        .route("/v1/admin/stats", get(admin::stats))
+        .route("/v1/admin/users", get(admin::users))
+        .route("/v1/admin/users/{id}", get(admin::user_detail))
+        .route("/v1/admin/audit", get(admin::audit_log))
+        .route("/v1/admin/audit/record", post(admin::record))
+        .route("/v1/admin/staff", get(admin::staff_list))
+        .route("/v1/admin/sessions", get(admin::sessions))
+        .route("/v1/admin/sessions/{id}/revoke", post(admin::revoke_session))
         .route("/v1/shares", post(shares::create))
         .route("/v1/shares/lookup", post(shares::lookup))
         .route("/v1/shares/{code}/trades", patch(shares::update_trades))

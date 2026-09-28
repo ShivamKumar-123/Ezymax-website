@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, ChevronsDown, Layers, Maximize2, Minimize2 } from "lucide-react";
+import { BarChart3, ChevronDown, ChevronsDown, History, Layers, Maximize2, Minimize2, PieChart } from "lucide-react";
 import { cn } from "@kalks/ui";
 import { useTerminal, type ToolboxTab } from "@/lib/store";
 import { PanelTabs } from "@/components/ui/panel";
@@ -11,6 +11,14 @@ import { TradeTab, bulkMenu } from "./trade-tab";
 import { AlertsTab, CalendarTab, ExposureTab, HistoryTab, JournalTab, NewsTab } from "./tabs";
 import { AiTraderTab, useAi } from "./ai-trader";
 import { ShareControls } from "@/components/share/share-dialogs";
+import { GuestNotice } from "@/components/shell/guest";
+
+/** Guest mode: account-only tabs explain what they will show once trading accounts open. */
+const GUEST_TABS: Partial<Record<ToolboxTab, { icon: React.ReactNode; text: string }>> = {
+  trade: { icon: <BarChart3 />, text: "Open positions, pending orders, balance, equity and margin appear here once you trade from a Kalks account. Charts, quotes and alerts work now." },
+  history: { icon: <History />, text: "Your closed trades, deposits and performance stats will be listed here once your trading account is live." },
+  exposure: { icon: <PieChart />, text: "Net exposure by currency and asset is calculated from your open positions once trading accounts open." },
+};
 
 export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: () => void; onMaximize?: () => void; maximized?: boolean }) {
   const T = useTerminal();
@@ -20,8 +28,8 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
     { value: "trade", label: "Trade", count: T.positions.length + T.pendings.length },
     { value: "history", label: "History" },
     { value: "exposure", label: "Exposure" },
-    { value: "news", label: "News", count: 3 },
-    { value: "calendar", label: "Calendar" },
+    // news and calendar are sample content: shown in demo builds only
+    ...(T.guest ? [] : ([{ value: "news", label: "News", count: 3 }, { value: "calendar", label: "Calendar" }] as const)),
     { value: "alerts", label: "Alerts", count: T.alerts.filter((a) => a.active).length },
     { value: "journal", label: "Journal" },
     { value: "ai", label: "AI Trader", count: ai.records.filter((r) => r.status === "active").length },
@@ -35,8 +43,8 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
         </span>
         <PanelTabs value={tab} onChange={(v) => T.setWs({ toolboxTab: v })} tabs={tabs} className="min-w-0 flex-1" />
         <div className="flex shrink-0 items-center gap-0.5">
-          {(tab === "trade" || tab === "history") && <ShareControls />}
-          {!T.readOnly && tab === "trade" && (
+          {!T.guest && (tab === "trade" || tab === "history") && <ShareControls />}
+          {!T.readOnly && !T.guest && tab === "trade" && (
             <DropMenu
               align="end"
               width={230}
@@ -61,6 +69,19 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
         </div>
       </header>
       <div className="min-h-0 flex-1">
+        {T.guest && GUEST_TABS[tab] ? (
+          <GuestNotice icon={GUEST_TABS[tab]!.icon} text={GUEST_TABS[tab]!.text} />
+        ) : (
+          <ToolboxBody tab={T.guest && (tab === "news" || tab === "calendar") ? "journal" : tab} />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ToolboxBody({ tab }: { tab: ToolboxTab }) {
+  return (
+    <>
         {tab === "trade" && <TradeTab />}
         {tab === "history" && <HistoryTab />}
         {tab === "exposure" && <ExposureTab />}
@@ -69,7 +90,6 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
         {tab === "alerts" && <AlertsTab />}
         {tab === "journal" && <JournalTab />}
         {tab === "ai" && <AiTraderTab />}
-      </div>
-    </section>
+    </>
   );
 }

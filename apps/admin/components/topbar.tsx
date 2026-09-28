@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Check, ChevronDown, LogOut, ShieldCheck, UserRound, KeyRound, Bell } from "lucide-react";
-import { Avatar, Chip, CommandPalette, Menu, NotificationsPopover, ThemeToggle, cn } from "@kalks/ui";
-import { ADMIN_COMMANDS } from "@/lib/nav";
+import { Check, ChevronDown, LogOut, ShieldCheck, UserRound, KeyRound } from "lucide-react";
+import { Avatar, Chip, CommandPalette, Menu, ThemeToggle, cn } from "@kalks/ui";
+import { NotificationBell } from "@/components/notifications";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { NAV_COMMANDS } from "@/lib/live";
 import { signOut, useStaff } from "@/components/staff-session";
 
 const TENANTS = [
@@ -80,6 +82,35 @@ function FeedPill() {
   );
 }
 
+type HealthService = { key: string; name: string; ok: boolean; latency_ms: number };
+
+/** Live builds: real market-data status from /api/admin/health (polled every 30s). */
+function LiveFeedPill() {
+  const [md, setMd] = React.useState<HealthService | null>(null);
+  React.useEffect(() => {
+    let alive = true;
+    const load = () =>
+      fetch("/api/admin/health", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: { services?: HealthService[] } | null) => alive && setMd(d?.services?.find((s) => s.key === "market-data") ?? null))
+        .catch(() => alive && setMd(null));
+    void load();
+    const t = setInterval(load, 30_000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, []);
+  const ok = md?.ok ?? false;
+  return (
+    <Link href="/" className="hidden h-10 items-center gap-2 whitespace-nowrap rounded-full border border-line bg-surface/70 px-3.5 text-[12.5px] text-fg-2 shadow-[inset_0_1px_0_var(--k-border-top)] hover:text-fg 2xl:flex">
+      <span className={cn("size-2 rounded-full", md ? (ok ? "bg-up" : "bg-down") : "bg-fg-3")} />
+      Market data · {md ? (ok ? "live" : "degraded") : "checking"}
+      {md && <span className="k-num font-mono text-fg">{md.latency_ms}ms</span>}
+    </Link>
+  );
+}
+
 function QueueChips() {
   const q = [
     { label: "KYC", n: 12, href: "/clients/kyc" },
@@ -102,19 +133,13 @@ export function AdminTopRight() {
   const staff = useStaff();
   return (
     <>
-      <TenantSwitcher />
-      <FeedPill />
+      {IS_DEMO && <TenantSwitcher />}
+      {IS_DEMO ? <FeedPill /> : <LiveFeedPill />}
       <ServerClock />
-      <QueueChips />
-      <CommandPalette placeholder="Search user, account #, tx hash, page…" items={ADMIN_COMMANDS.map((c) => ({ group: c.group, label: c.label, href: c.href, icon: <c.Icon /> }))} />
+      {IS_DEMO && <QueueChips />}
+      <CommandPalette placeholder={IS_DEMO ? "Search user, account #, tx hash, page…" : "Jump to a page…"} items={NAV_COMMANDS.map((c) => ({ group: c.group, label: c.label, href: c.href, icon: <c.Icon /> }))} />
       <ThemeToggle />
-      <NotificationsPopover
-        items={[
-          { id: "a1", title: "USOIL feed stale for 4.2s — trading auto-paused", time: "1m", unread: true, icon: <Bell /> },
-          { id: "a2", title: "Large withdrawal 48,000 USDT flagged for review", time: "6m", unread: true, icon: <Bell /> },
-          { id: "a3", title: "XAUUSD net exposure at 86% of limit", time: "9m", unread: true, icon: <Bell /> },
-        ]}
-      />
+      <NotificationBell />
       <Menu
         width={250}
         header={
@@ -131,8 +156,8 @@ export function AdminTopRight() {
         }
         items={[
           { label: "My profile", icon: <UserRound />, href: "/org" },
-          { label: "Change password", icon: <KeyRound /> },
-          { label: "My audit trail", icon: <ShieldCheck />, href: "/security" },
+          ...(IS_DEMO ? [{ label: "Change password", icon: <KeyRound /> }] : []),
+          { label: "My audit trail", icon: <ShieldCheck />, href: IS_DEMO ? "/security" : `/security?actor=staff:${staff.id}` },
           "sep",
           { label: "Sign out", icon: <LogOut />, danger: true, onSelect: () => void signOut() },
         ]}

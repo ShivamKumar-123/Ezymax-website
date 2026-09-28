@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { useTerminal, type Layout } from "@/lib/store";
 import { chartRegistry } from "@/components/chart/engine";
 import { toggleFullscreen } from "./title-bar";
 import { openIndicatorList } from "@/components/chart/indicators/state";
+import { guestNotice } from "@/lib/guest";
 
 /** Global terminal keyboard shortcuts (MT5-compatible where possible). */
 export function useHotkeys() {
@@ -36,6 +37,7 @@ export function useHotkeys() {
       if (e.key === "F10") {
         e.preventDefault();
         if (t.readOnly) return;
+        if (t.guest) return void guestNotice("One-click trading");
         const v = !t.ws.oneClick;
         t.setWs({ oneClick: v });
         toast(v ? "One-click trading enabled" : "One-click trading disabled", { description: v ? "Chart and DOM orders execute instantly." : "Chart and DOM buttons open the order window." });

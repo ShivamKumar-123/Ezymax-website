@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { BarChart2, ChevronsLeft, Eye, EyeOff, FileText, Info, Search, ShoppingCart, Star, TrendingUp } from "lucide-react";
 import { INSTRUMENTS, getInstrument, type AssetClass } from "@kalks/mock";
 import { PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
@@ -12,6 +12,7 @@ import { fmtPrice, serverTime } from "@/lib/trading";
 import { PanelHeader, PanelTabs } from "@/components/ui/panel";
 import { TIcon } from "@/components/ui/primitives";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
+import { SegmentChips, inSegment } from "./segments";
 
 const ORDER: AssetClass[] = ["forex", "metals", "indices", "energies", "crypto", "stocks"];
 
@@ -34,8 +35,11 @@ export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
   const cm = useContextMenu(220);
   const [hover, setHover] = React.useState<{ symbol: string; rect: DOMRect } | null>(null);
 
-  const list = INSTRUMENTS.filter((i) => !T.ws.hidden.includes(i.symbol))
-    .filter((i) => (tab === "favourites" ? T.ws.favourites.includes(i.symbol) : true))
+  // segment counts are taken before the text search so they stay stable while typing
+  const base = INSTRUMENTS.filter((i) => !T.ws.hidden.includes(i.symbol)).filter((i) => (tab === "favourites" ? T.ws.favourites.includes(i.symbol) : true));
+  const seg = tab === "favourites" && T.ws.mwSegment === "favourites" ? "all" : T.ws.mwSegment;
+  const list = base
+    .filter((i) => inSegment(i, seg, T.ws.favourites))
     .filter((i) => !q || i.symbol.toLowerCase().includes(q.toLowerCase()) || i.name.toLowerCase().includes(q.toLowerCase()))
     .sort((a, b) => ORDER.indexOf(a.assetClass) - ORDER.indexOf(b.assetClass));
 
@@ -45,7 +49,7 @@ export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
       { label: "New Order", icon: <ShoppingCart />, hint: "F9", disabled: T.readOnly, onSelect: () => T.openNewOrder({ symbol }) },
       { label: "Chart Window", icon: <BarChart2 />, onSelect: () => T.addTab(symbol) },
       { label: "Open in active chart", icon: <TrendingUp />, onSelect: () => T.openSymbol(symbol) },
-      { label: "Depth of Market", icon: <FileText />, hint: "Alt+B", onSelect: () => (T.openSymbol(symbol), T.setWs({ rightTab: "depth" }), T.togglePanel("right", true)) },
+      ...(T.guest ? [] : ([{ label: "Depth of Market", icon: <FileText />, hint: "Alt+B", onSelect: () => (T.openSymbol(symbol), T.setWs({ rightTab: "depth" }), T.togglePanel("right", true)) }] as MenuItem[])),
       "sep",
       { label: "Specification", icon: <Info />, onSelect: () => T.setUi({ spec: symbol }) },
       { label: fav ? "Remove from Favourites" : "Add to Favourites", icon: <Star />, onSelect: () => T.setWs((w) => ({ favourites: fav ? w.favourites.filter((s) => s !== symbol) : [...w.favourites, symbol] })) },
@@ -83,7 +87,8 @@ export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
           ]}
         />
       </div>
-      <div className="shrink-0 border-b border-line p-1.5">
+      <div className="shrink-0 space-y-1 border-b border-line p-1.5">
+        <SegmentChips instruments={base} value={seg} onChange={(s) => T.setWs({ mwSegment: s })} favourites={T.ws.favourites} withFavourites={tab !== "favourites"} label="Market Watch segment" />
         <label className="flex h-7 items-center gap-1.5 rounded-[6px] border border-line bg-surface-2 px-2 focus-within:border-ember/50">
           <Search className="size-3.5 text-fg-3" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search symbol" className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-fg-3" aria-label="Search Market Watch" />
@@ -137,7 +142,7 @@ export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
               ))}
             </tbody>
           </table>
-          {list.length === 0 && <div className="p-4 text-center text-[12px] text-fg-3">{tab === "favourites" ? "No favourites yet. Right-click a symbol to add it." : "No symbols match."}</div>}
+          {list.length === 0 && <div className="p-4 text-center text-[12px] text-fg-3">{(tab === "favourites" || seg === "favourites") && !T.ws.favourites.length ? "No favourites yet. Right-click a symbol to add it." : "No symbols match."}</div>}
         </div>
       )}
       <div className="flex h-6 shrink-0 items-center justify-between border-t border-line px-2 font-mono text-[10px] text-fg-3">
@@ -208,7 +213,7 @@ function RangeTip({ symbol, rect }: { symbol: string; rect: DOMRect }) {
   const spread = Math.round((q.ask - q.bid) * 10 ** inst.digits);
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div className="pointer-events-none fixed z-[60] w-[228px] rounded-[8px] border border-line-top bg-panel-2 p-2.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] t-pop" style={{ left: rect.right + 8, top: Math.min(rect.top - 6, window.innerHeight - 120) }}>
+    <div className="pointer-events-none fixed z-[60] w-[228px] rounded-[8px] border border-line-top bg-panel-2 p-2.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] t-pop" style={{ left: rect.right + 8 + 228 > window.innerWidth - 12 ? Math.max(12, rect.left - 236) : rect.right + 8, top: Math.max(12, Math.min(rect.top - 6, window.innerHeight - 132)) }}>
       <div className="flex items-center justify-between text-[11.5px]">
         <span className="flex items-center gap-1.5 font-medium text-fg">
           <SymbolAvatar symbol={symbol} size={14} /> {symbol}

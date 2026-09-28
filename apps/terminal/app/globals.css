@@ -31,10 +31,12 @@
 @keyframes t-fade { from { opacity: 0; } }
 @keyframes t-pop { from { opacity: 0; transform: translateY(6px) scale(0.985); } }
 @keyframes t-blink { 50% { opacity: 0.35; } }
+@keyframes t-sheet { from { transform: translateY(24px); opacity: 0; } }
 
 @layer components {
   .t-pop { animation: t-pop 0.14s cubic-bezier(0.16, 1, 0.3, 1); }
   .t-menu { animation: t-fade 0.08s ease-out; }
+  .t-sheet { animation: t-sheet 0.18s cubic-bezier(0.16, 1, 0.3, 1); }
   .t-select {
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' fill='none' stroke='%2363636e' stroke-width='1.4'/%3E%3C/svg%3E");

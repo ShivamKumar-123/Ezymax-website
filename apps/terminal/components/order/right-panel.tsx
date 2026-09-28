@@ -15,6 +15,8 @@ import { DomLadder } from "./dom-ladder";
 export function RightPanel({ onCollapse }: { onCollapse?: () => void }) {
   const T = useTerminal();
   const symbol = T.activeSymbol;
+  // the depth ladder is synthetic (no real order book): demo builds only
+  const tab = T.guest && T.ws.rightTab === "depth" ? "info" : T.ws.rightTab;
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PanelHeader
@@ -34,19 +36,15 @@ export function RightPanel({ onCollapse }: { onCollapse?: () => void }) {
       </PanelHeader>
       <div className="flex h-8 shrink-0 items-stretch border-b border-line px-1">
         <PanelTabs
-          value={T.ws.rightTab}
+          value={tab}
           onChange={(v) => T.setWs({ rightTab: v })}
-          tabs={[
-            { value: "order", label: "Order" },
-            { value: "depth", label: "Depth" },
-            { value: "info", label: "Info" },
-          ]}
+          tabs={[{ value: "order", label: "Order" }, ...(T.guest ? [] : [{ value: "depth" as const, label: "Depth" }]), { value: "info", label: "Info" }]}
         />
       </div>
       <div className="t-scroll min-h-0 flex-1 overflow-y-auto">
-        {T.ws.rightTab === "order" && <OrderTicket key={symbol} symbol={symbol} />}
-        {T.ws.rightTab === "depth" && <DomLadder symbol={symbol} />}
-        {T.ws.rightTab === "info" && <SymbolInfo symbol={symbol} />}
+        {tab === "order" && <OrderTicket key={symbol} symbol={symbol} />}
+        {tab === "depth" && <DomLadder symbol={symbol} />}
+        {tab === "info" && <SymbolInfo symbol={symbol} />}
       </div>
     </div>
   );

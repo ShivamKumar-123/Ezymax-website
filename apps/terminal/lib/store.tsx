@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notify";
 import { ACCOUNTS, HISTORY, INSTRUMENTS, POSITIONS, getInstrument, isMarketOpen, priceFeed, rebaseTrades, type Quote, type TradingAccount } from "@kalks/mock";
 import { useQuotes } from "@kalks/ui";
 import {
@@ -31,6 +31,7 @@ import {
 import { beep } from "./sound";
 import { aiTrader } from "./ai-trader/runtime";
 import { migrateIndicators, type IndicatorInstance } from "./indicators";
+import { GUEST_ACCOUNT, GUEST_LOGIN, guestNotice } from "./guest";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -40,9 +41,18 @@ export interface Session {
   login: string;
   investor: boolean;
   server: string;
-  via: "sso" | "login";
+  via: "sso" | "login" | "guest";
   at: number;
+  /** Live builds: no trading account (real market data only, trade actions explain + link to sign-up). */
+  guest?: boolean;
 }
+
+/** The session a live build always starts with until the trading engine serves real accounts. */
+export function guestSession(): Session {
+  return { login: GUEST_LOGIN, investor: false, server: GUEST_ACCOUNT.server, via: "guest", at: Date.now(), guest: true };
+}
+
+const accountOf = (login: string): TradingAccount => ACCOUNTS.find((a) => a.login === login) ?? GUEST_ACCOUNT;
 
 export interface Anchor {
   l: number; // logical bar index
@@ -69,6 +79,8 @@ export const LAYOUT_COUNT: Record<Layout, number> = { "1": 1, "2h": 2, "2v": 2, 
 export type ToolboxTab = "trade" | "history" | "exposure" | "news" | "calendar" | "alerts" | "journal" | "ai";
 export type RightTab = "order" | "depth" | "info";
 export type MwTab = "symbols" | "details" | "favourites";
+/** Instrument list filter: an asset class, everything, or favourites (Market Watch, symbol search). */
+export type Segment = "all" | "forex" | "metals" | "indices" | "energies" | "crypto" | "stocks" | "favourites";
 /** Which chart engine renders chart tiles. "kalks" = the original lightweight-charts engine. */
 
 export interface Workspace {
@@ -80,6 +92,10 @@ export interface Workspace {
   rightTab: RightTab;
   toolboxTab: ToolboxTab;
   mwTab: MwTab;
+  /** Market Watch / mobile watchlist segment */
+  mwSegment: Segment;
+  /** symbol search (Ctrl+K) segment */
+  searchSegment: Segment;
   favourites: string[];
   hidden: string[];
   oneClick: boolean;
@@ -172,6 +188,8 @@ export function defaultWorkspace(): Workspace {
     rightTab: "order",
     toolboxTab: "trade",
     mwTab: "symbols",
+    mwSegment: "all",
+    searchSegment: "all",
     favourites: ["XAUUSD", "EURUSD", "NAS100", "BTCUSD", "GBPUSD"],
     hidden: [],
     oneClick: true,
@@ -182,7 +200,17 @@ export function defaultWorkspace(): Workspace {
   };
 }
 
-function loadWorkspace(): Workspace {
+/** Guest mode has no synthetic depth ladder and no mock news/calendar: fall back to real panels. */
+function guestSafe(w: Workspace, guest: boolean): Workspace {
+  if (!guest) return w;
+  return { ...w, rightTab: w.rightTab === "depth" ? "info" : w.rightTab, toolboxTab: w.toolboxTab === "news" || w.toolboxTab === "calendar" ? "trade" : w.toolboxTab };
+}
+
+function loadWorkspace(guest: boolean): Workspace {
+  return guestSafe(readWorkspace(), guest);
+}
+
+function readWorkspace(): Workspace {
   const d = defaultWorkspace();
   try {
     const raw = localStorage.getItem(WS_KEY);
@@ -223,6 +251,10 @@ function fitSlots(w: Workspace): Workspace {
   }
   const activeId = slots.includes(w.activeId) ? w.activeId : slots[0]!;
   return { ...w, tabs, slots, activeId };
+}
+
+function emptyCore(): Core {
+  return { positions: [], pendings: [], history: [], balances: {}, refills: {}, alerts: [], journal: [] };
 }
 
 function initialCore(): Core {
@@ -309,6 +341,8 @@ interface UiState {
 
 interface Ctx {
   session: Session;
+  /** Live build without a trading account: no positions/orders/history/balances; trade actions explain. */
+  guest: boolean;
   account: TradingAccount;
   accounts: TradingAccount[];
   readOnly: boolean;
@@ -376,7 +410,7 @@ export function useTerminal() {
 export function useMetrics(login?: string): Metrics & { account: TradingAccount } {
   const t = useTerminal();
   const l = login ?? t.account.login;
-  const acc = ACCOUNTS.find((a) => a.login === l)!;
+  const acc = accountOf(l);
   const pos = t.allPositions.filter((p) => p.login === l);
   const qs = useQuotes(pos.length ? [...new Set(pos.map((p) => p.symbol))] : ["EURUSD"]);
   return { ...computeMetrics(acc, t.balances[l] ?? 0, pos, qs), account: acc };
@@ -388,9 +422,10 @@ export function useMetrics(login?: string): Metrics & { account: TradingAccount 
 
 export function TerminalProvider({ initialSession, children, onLogout }: { initialSession: Session; children: React.ReactNode; onLogout: () => void }) {
   const [session, setSession] = React.useState(initialSession);
-  const [core, setCore] = React.useState<Core>(initialCore);
+  const guest = !!initialSession.guest;
+  const [core, setCore] = React.useState<Core>(() => (guest ? emptyCore() : initialCore()));
   const coreRef = React.useRef(core);
-  const [ws, setWsState] = React.useState<Workspace>(loadWorkspace);
+  const [ws, setWsState] = React.useState<Workspace>(() => loadWorkspace(guest));
   const wsRef = React.useRef(ws);
   wsRef.current = ws;
   const sessionRef = React.useRef(session);
@@ -399,6 +434,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
   const [drawTool, setDrawTool] = React.useState<DrawTool>("cursor");
   const [selectedDrawing, selectDrawing] = React.useState<string | null>(null);
   const jid = React.useRef(0);
+  const guestBooted = React.useRef(false);
 
   const commit = React.useCallback((fn: (c: Core) => Core) => {
     const next = fn(coreRef.current);
@@ -414,7 +450,6 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
     [commit],
   );
 
-  const accountOf = (login: string) => ACCOUNTS.find((a) => a.login === login)!;
   const account = accountOf(session.login);
   const readOnly = session.investor;
 
@@ -433,6 +468,25 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
 
   // boot journal
   React.useEffect(() => {
+    if (guest) {
+      // guest: only what really happened in this terminal (startup + market-data connection)
+      const feed = priceFeed();
+      let last = feed.mode;
+      const report = () => {
+        if (feed.mode === "live") log("Network", "market data: connected to the Kalks market-data stream");
+        else if (feed.mode === "sim") log("Network", "market data: service unreachable, showing reference prices until it reconnects", "warn");
+      };
+      const off = feed.onMode(() => {
+        if (feed.mode !== last) report();
+        last = feed.mode;
+      });
+      if (guestBooted.current) return () => void off();
+      guestBooted.current = true;
+      log("Terminal", `Kalks Trader started · ${navigator.platform || "Web"}, ${INSTRUMENTS.length - feed.unavailable.size} symbols`);
+      log("Terminal", "guest mode: charts and quotes only, no trading account connected");
+      report();
+      return () => void off();
+    }
     const a = accountOf(initialSession.login);
     const n = coreRef.current.positions.filter((p) => p.login === a.login).length;
     const o = coreRef.current.pendings.filter((p) => p.login === a.login).length;
@@ -539,6 +593,10 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
   const placeOrder = React.useCallback(
     (o: OrderRequest): boolean => {
       const s = sessionRef.current;
+      if (s.guest) {
+        if (o.source !== "ai") guestNotice(o.type === "market" ? `${o.side === "buy" ? "Buying" : "Selling"} ${o.symbol}` : `A ${o.side} ${o.type} order`);
+        return false;
+      }
       if (s.investor) {
         toast.error("Trading is disabled", { description: "You are connected with the investor (read-only) password." });
         return false;
@@ -651,6 +709,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
 
   const closePosition = React.useCallback(
     (ticket: string, volume?: number, reason = "manual") => {
+      if (sessionRef.current.guest) return;
       if (sessionRef.current.investor) return void toast.error("Read-only session");
       const p = coreRef.current.positions.find((x) => x.ticket === ticket);
       if (p && !isMarketOpen(p.symbol)) return void marketClosed(`'${p.login}': close #${ticket} ${p.side} ${fmtVol(volume ?? p.volume)} ${p.symbol}`);
@@ -859,7 +918,22 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
   /* ------------------------------ AI Trader ------------------------------ */
 
   // Runs this account's AI strategies; orders take the same path as manual ones (placeOrder, source "ai").
+  // Guest: drafts can be composed and previewed (stored under "guest"), nothing can trade.
   React.useEffect(() => {
+    if (guest)
+      return aiTrader.attach({
+        login: GUEST_LOGIN,
+        accountType: "live",
+        accountMode: "hedging",
+        investor: true,
+        positions: () => [],
+        history: () => [],
+        balance: () => 0,
+        placeOrder: () => false,
+        modifyPosition: () => false,
+        closePosition: () => false,
+        log,
+      });
     const a = accountOf(session.login);
     return aiTrader.attach({
       login: a.login,
@@ -959,6 +1033,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
   const setUi = React.useCallback((patch: Partial<UiState>) => setUiState((u) => ({ ...u, ...patch })), []);
   const openNewOrder = React.useCallback(
     (p?: Partial<NewOrderPrefill>) => {
+      if (sessionRef.current.guest) return void guestNotice("Placing an order");
       if (sessionRef.current.investor) return void toast.error("Read-only session", { description: "Log in with the master password to trade." });
       const w = wsRef.current;
       const sym = p?.symbol ?? w.tabs.find((t) => t.id === w.activeId)?.symbol ?? "EURUSD";
@@ -991,7 +1066,8 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
 
   const switchAccount = React.useCallback(
     (login: string) => {
-      const a = accountOf(login);
+      if (sessionRef.current.guest) return;
+      const a = ACCOUNTS.find((x) => x.login === login);
       if (!a || login === sessionRef.current.login) return;
       const s: Session = { login, investor: false, server: a.server, via: sessionRef.current.via, at: Date.now() };
       priceFeed().setGroup(a.group); // quotes carry this account group's spread
@@ -1005,6 +1081,7 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
   );
 
   const refillDemo = React.useCallback(() => {
+    if (sessionRef.current.guest) return;
     const a = accountOf(sessionRef.current.login);
     if (a.type !== "demo") return void toast.error("Refill is available on demo accounts only");
     const left = coreRef.current.refills[a.login] ?? 0;
@@ -1025,8 +1102,9 @@ export function TerminalProvider({ initialSession, children, onLogout }: { initi
   const activeTab = ws.tabs.find((t) => t.id === ws.activeId) ?? ws.tabs[0]!;
   const value: Ctx = {
     session,
+    guest,
     account,
-    accounts: ACCOUNTS,
+    accounts: guest ? [] : ACCOUNTS,
     readOnly,
     positions: core.positions.filter((p) => p.login === session.login),
     pendings: core.pendings.filter((p) => p.login === session.login),
