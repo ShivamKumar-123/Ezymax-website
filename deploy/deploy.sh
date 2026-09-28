@@ -5,7 +5,12 @@ cd "$(dirname "$0")/.."
 source ~/.cargo/env
 export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 NODE_OPTIONS=--max-old-space-size=6144
 
-git pull --ff-only
+# Pull first, then run the freshly pulled copy of this script (bash reads scripts while running, so
+# steps added by the pull would otherwise be skipped).
+if [ -z "${KALKS_DEPLOY_PULLED:-}" ]; then
+  git pull --ff-only
+  KALKS_DEPLOY_PULLED=1 exec "$0" "$@"
+fi
 pnpm install --frozen-lockfile
 cargo build --release -p market-data -p gateway -p trading -p ib
 cargo build --release -p academy
