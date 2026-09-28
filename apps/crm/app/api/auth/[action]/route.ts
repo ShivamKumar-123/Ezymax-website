@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { DEVICE_COOKIE, SESSION_COOKIE, clientIp, gateway, newDeviceId, safeNext, sameOrigin, setDeviceCookie, setSessionCookie } from "@/lib/gateway";
+import { withCampaign } from "@/lib/ib";
 
 // Client Area auth BFF. Browser -> /api/auth/<action> (same origin) -> gateway /v1/auth/<action>.
 // CSRF: cookies are SameSite=Lax, POSTs must be JSON and carry a same-origin Origin header.
@@ -37,6 +38,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ act
 
   const body = action === "logout" ? {} : await req.json().catch(() => null);
   if (body === null || typeof body !== "object") return error(400, "bad_request", "Invalid request body.");
+  // partner campaign (IB programme) from the referral link the visitor arrived with
+  if (action === "register") withCampaign(body as Record<string, unknown>, req);
 
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   let device = req.cookies.get(DEVICE_COOKIE)?.value;

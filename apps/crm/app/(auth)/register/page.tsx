@@ -30,7 +30,9 @@ export default function RegisterPage() {
 
   React.useEffect(() => {
     setDobMax(maxDob());
-    const ref = new URLSearchParams(window.location.search).get("ref");
+    // partner link: ?ref= on the page, else the referral cookie set when the visitor arrived (IB programme)
+    const cookieRef = document.cookie.split("; ").find((c) => c.startsWith("kalks_ref="))?.slice(10);
+    const ref = new URLSearchParams(window.location.search).get("ref") ?? (cookieRef ? decodeURIComponent(cookieRef).split(":")[0] : null);
     if (ref) setForm((f) => ({ ...f, referral_code: ref.slice(0, 24) }));
   }, []);
 

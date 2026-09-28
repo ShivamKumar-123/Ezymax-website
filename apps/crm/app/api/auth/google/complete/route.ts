@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { withCampaign } from "@/lib/ib";
 import { DEVICE_COOKIE, clientIp, gateway, newDeviceId, sameOrigin, setDeviceCookie, setSessionCookie } from "@/lib/gateway";
 import { TICKET_COOKIE, publicOrigin } from "@/lib/google-oauth";
 
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
   if (!raw || typeof raw !== "object") return NextResponse.json({ error: { code: "bad_request", message: "Invalid request body." } }, { status: 400 });
   const body: Record<string, unknown> = { ticket };
   for (const k of FIELDS) if (k in raw) body[k] = raw[k];
+  withCampaign(body, req);
 
   let device = req.cookies.get(DEVICE_COOKIE)?.value;
   const mintDevice = !device;
