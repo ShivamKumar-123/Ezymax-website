@@ -72,8 +72,9 @@ export async function POST(req: Request) {
       thinking: { type: "adaptive" },
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
-      system: SYSTEM,
-      output_config: { format: { type: "json_schema", schema: PARSE_RESULT_JSON_SCHEMA } },
+      // The strategy schema is too large for constrained decoding, so the model is given the schema and
+      // asked for plain JSON; the reply is then checked by validateSpec below like any other input.
+      system: `${SYSTEM}\n\nReply with a single JSON object only (no prose, no code fences) that matches this JSON Schema:\n${JSON.stringify(PARSE_RESULT_JSON_SCHEMA)}`,
       messages: [
         {
           role: "user",
@@ -84,9 +85,10 @@ export async function POST(req: Request) {
     if (msg.stop_reason === "refusal") return Response.json({ configured: true, error: "The model declined this request." }, { status: 422 });
     if (msg.stop_reason === "max_tokens") return Response.json({ configured: true, error: "The model response was cut off. Shorten the prompt and try again." }, { status: 502 });
     const text = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("");
+    const json = text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
     let raw: Partial<ParseResult>;
     try {
-      raw = JSON.parse(text) as Partial<ParseResult>;
+      raw = JSON.parse(json) as Partial<ParseResult>;
     } catch {
       return Response.json({ configured: true, error: "The model returned invalid JSON." }, { status: 502 });
     }
