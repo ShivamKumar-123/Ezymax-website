@@ -19,16 +19,28 @@ app.kalkstrade.com {
 	reverse_proxy 127.0.0.1:3000
 }
 
-# Kalks Trader
+# Kalks Trader. /engine/stream = trading-engine account stream (one-time ticket from the terminal BFF).
 trade.kalkstrade.com {
 	import common
-	reverse_proxy 127.0.0.1:3002
+	handle /engine/stream {
+		rewrite * /v1/terminal/stream?{query}
+		reverse_proxy 127.0.0.1:8090
+	}
+	handle {
+		reverse_proxy 127.0.0.1:3002
+	}
 }
 
-# Back Office
+# Back Office. /engine/stream = trading-engine dealing stream (one-time ticket from the admin BFF).
 admin.kalkstrade.com {
 	import common
-	reverse_proxy 127.0.0.1:3001
+	handle /engine/stream {
+		rewrite * /v1/dealing/stream?{query}
+		reverse_proxy 127.0.0.1:8090
+	}
+	handle {
+		reverse_proxy 127.0.0.1:3001
+	}
 }
 
 # Public market data (quotes, candles, WebSocket stream). Admin endpoints are never exposed.

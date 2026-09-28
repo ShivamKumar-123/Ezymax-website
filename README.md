@@ -40,6 +40,17 @@ cargo run -p gateway                # http://127.0.0.1:8080 (only the apps call 
 
 Its settings (`GATEWAY_*`, `SESSION_SECRET`, `SUPER_ADMIN_*`) live in `.env.local` at the repo root, and each app's `.env.local` holds `GATEWAY_URL` and `GATEWAY_INTERNAL_TOKEN`. The super-admin account is created once on first start. The Back Office reads clients, the audit log, staff and sessions through the gateway's staff-authenticated `/v1/admin/*` endpoints (`services/gateway/src/admin.rs`), and edits spread markups through market-data with `MARKET_DATA_URL` / `MARKET_DATA_ADMIN_TOKEN` in `apps/admin/.env.local` (same token as `MARKET_DATA_ADMIN_TOKEN` in the root `.env.local`; see `apps/admin/.env.example`). Email sending is not configured yet, so in development the sign-in codes appear on screen and in the gateway log.
 
+## Trading engine
+
+The Rust trading engine runs accounts, orders, positions, margin, swaps, the double-entry ledger and the dealing desk. It uses PostgreSQL on port 5433 (database `kalks_trading`, created and migrated on first start) and takes prices from market-data.
+
+```bash
+cargo run -p trading                # http://127.0.0.1:8090 (BFFs and internal services only)
+cargo test -p trading
+```
+
+Its settings (`TRADING_*`) live in `.env.local` at the repo root. API, architecture and integration guide: [services/trading/README.md](services/trading/README.md).
+
 ## Layout
 
 ```
@@ -50,7 +61,8 @@ packages/ui     Design system: tokens, shell, charts, tables, effects
 packages/mock   Mock data + price feed client (live from market-data, simulator fallback)
 services/market-data  Rust market-data service (prices, candles, spreads) — :8081
 services/gateway      Rust sign-in service (clients, staff, sessions, audit log) — :8080
-config/         Instrument catalogue
+services/trading      Rust trading engine (accounts, orders, margin, ledger, dealing) — :8090
+config/         Instrument catalogue + trading contract specs
 brand/          Logo sources
 scripts/        Asset sync
 assets/         Shared assets: app, brand, coins, stocks, people, photos
