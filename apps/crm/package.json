@@ -6,13 +6,15 @@
     "dev": "next dev --turbopack -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/"
   },
   "dependencies": {
     "@kalks/mock": "workspace:*",
     "@kalks/ui": "workspace:*",
     "@paper-design/shaders-react": "^0.0.81",
     "geist": "1.7.2",
+    "jose": "6.2.12",
     "lucide-react": "1.48.0",
     "motion": "13.4.2",
     "next": "16.3.6",

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { DEVICE_COOKIE, SESSION_COOKIE, clientIp, gateway, safeNext } from "@/lib/gateway";
+import { DEVICE_COOKIE, SESSION_COOKIE, clientIp, gateway, newDeviceId, safeNext, sameOrigin, setDeviceCookie, setSessionCookie } from "@/lib/gateway";
 
 // Client Area auth BFF. Browser -> /api/auth/<action> (same origin) -> gateway /v1/auth/<action>.
 // CSRF: cookies are SameSite=Lax, POSTs must be JSON and carry a same-origin Origin header.
@@ -14,37 +14,17 @@ const POST_ACTIONS: Record<string, string> = {
   logout: "/v1/auth/logout",
 };
 
-const PROD = process.env.NODE_ENV === "production";
-const DEVICE_MAX_AGE = 400 * 24 * 3600;
-
 type Session = { token: string; expires_at: string };
 
 function error(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
 }
 
-function sameOrigin(req: NextRequest): boolean {
-  const origin = req.headers.get("origin");
-  if (!origin) return req.headers.get("sec-fetch-site") === "same-origin";
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
-  try {
-    return new URL(origin).host === host;
-  } catch {
-    return false;
-  }
-}
-
-function newDeviceId(): string {
-  const b = new Uint8Array(24);
-  crypto.getRandomValues(b);
-  return Buffer.from(b).toString("base64url");
-}
-
 export async function POST(req: NextRequest, { params }: { params: Promise<{ action: string }> }) {
   const { action } = await params;
   const path = POST_ACTIONS[action];
   if (!path) return error(404, "not_found", "Not found.");
-  if (!sameOrigin(req)) return error(403, "forbidden", "Cross-site request blocked.");
+  if (!sameOrigin(req.headers)) return error(403, "forbidden", "Cross-site request blocked.");
   if (!req.headers.get("content-type")?.includes("application/json")) return error(415, "bad_request", "Expected JSON.");
 
   const body = action === "logout" ? {} : await req.json().catch(() => null);
@@ -65,13 +45,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ act
 
   const { session, ...data } = r.data;
   const res = NextResponse.json(data, { status: r.status, headers: { "cache-control": "no-store" } });
-  if (mintDevice) {
-    res.cookies.set(DEVICE_COOKIE, device, { httpOnly: true, secure: PROD, sameSite: "lax", path: "/", maxAge: DEVICE_MAX_AGE });
-  }
-  if (session?.token) {
-    const maxAge = Math.max(60, Math.floor((new Date(session.expires_at).getTime() - Date.now()) / 1000));
-    res.cookies.set(SESSION_COOKIE, session.token, { httpOnly: true, secure: PROD, sameSite: "lax", path: "/", maxAge });
-  }
+  if (mintDevice) setDeviceCookie(res, device);
+  if (session?.token) setSessionCookie(res, session);
   if (action === "logout" || action === "reset") res.cookies.delete(SESSION_COOKIE);
   return res;
 }

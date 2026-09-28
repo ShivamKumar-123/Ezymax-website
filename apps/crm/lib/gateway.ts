@@ -2,8 +2,13 @@
 // The browser never sees the gateway or the raw session token: route handlers under /api/auth
 // keep the token in an HttpOnly first-party cookie and forward it here as a bearer token.
 
+import type { NextResponse } from "next/server";
+
 export const SESSION_COOKIE = "kalks_session";
 export const DEVICE_COOKIE = "kalks_did";
+
+const PROD = process.env.NODE_ENV === "production";
+const DEVICE_MAX_AGE = 400 * 24 * 3600;
 
 const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://127.0.0.1:8080";
 const INTERNAL_TOKEN = process.env.GATEWAY_INTERNAL_TOKEN ?? "";
@@ -20,6 +25,8 @@ export type GatewayUser = {
   date_of_birth: string;
   kyc_status: "unverified" | "pending" | "verified" | "rejected";
   email_verified: boolean;
+  /** Signs in with Google (account linked to a Google account). */
+  google_linked?: boolean;
   referral_code: string;
   created_at: string;
   tenant: { slug: string; name: string };
@@ -66,4 +73,31 @@ export async function fetchMe(token: string, h: Headers): Promise<GatewayUser | 
   if (r.status === 200 && r.data.user) return r.data.user;
   if (r.status === 401) return null;
   return "unavailable";
+}
+
+/** CSRF check for state-changing requests: the Origin (or Sec-Fetch-Site) must be this app. */
+export function sameOrigin(h: Headers): boolean {
+  const origin = h.get("origin");
+  if (!origin) return h.get("sec-fetch-site") === "same-origin";
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
+export function newDeviceId(): string {
+  const b = new Uint8Array(24);
+  crypto.getRandomValues(b);
+  return Buffer.from(b).toString("base64url");
+}
+
+export function setDeviceCookie(res: NextResponse, device: string) {
+  res.cookies.set(DEVICE_COOKIE, device, { httpOnly: true, secure: PROD, sameSite: "lax", path: "/", maxAge: DEVICE_MAX_AGE });
+}
+
+export function setSessionCookie(res: NextResponse, session: { token: string; expires_at: string }) {
+  const maxAge = Math.max(60, Math.floor((new Date(session.expires_at).getTime() - Date.now()) / 1000));
+  res.cookies.set(SESSION_COOKIE, session.token, { httpOnly: true, secure: PROD, sameSite: "lax", path: "/", maxAge });
 }
