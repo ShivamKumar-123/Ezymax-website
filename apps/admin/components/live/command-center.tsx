@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Activity, ArrowUpRight, Download, MailCheck, RefreshCw, ShieldAlert, UserPlus, Users } from "lucide-react";
+import { Activity, ArrowUpRight, Download, KeyRound, MailCheck, RefreshCw, ShieldAlert, UserPlus, Users } from "lucide-react";
 import { Avatar, Button, Card, CardHeader, Chip, EmptyState, Flag, KpiCard, PageHeader, Reveal, Skeleton, cn } from "@kalks/ui";
 import { useServerClock } from "@/components/command/kit";
 import { ColumnChart } from "@/components/config/kit";
