@@ -50,6 +50,7 @@ pub fn on_tick(tx: &mut Tx, env: &Env, symbol: &str) {
 
     // 2. positions: trailing stop, then SL / TP
     let tickets: Vec<i64> = tx.st.positions.values().filter(|p| p.symbol == symbol).map(|p| p.ticket).collect();
+    let mut closed_any = false;
     for t in tickets {
         let Some(p) = tx.st.positions.get(&t).cloned() else { continue };
         let p = trail(tx, env, p, &q);
@@ -65,11 +66,15 @@ pub fn on_tick(tx: &mut Tx, env: &Env, symbol: &str) {
         };
         let meta = CloseMeta { comment: format!("[{}]", if reason == DealReason::Sl { "sl" } else { "tp" }), ..CloseMeta::system(reason) };
         if let Ok((deal, profit)) = close_part(tx, env, t, p.volume, px, meta) {
+            closed_any = true;
             let what = if reason == DealReason::Sl { "Stop loss" } else { "Take profit" };
             tx.note(if reason == DealReason::Sl { "sl" } else { "tp" }, format!("{what} hit on #{t} {} {} at {}", p.side.as_str(), p.symbol, px.normalize()), json!({"ticket": t, "dealId": deal, "profit": num(profit)}));
         }
     }
-    apply_nbp(tx, env);
+    // NBP only for losses realised by trading (not for a staff adjustment that made the balance negative)
+    if closed_any {
+        apply_nbp(tx, env);
+    }
 
     // 3. margin
     check_margin(tx, env);
@@ -78,7 +83,11 @@ pub fn on_tick(tx: &mut Tx, env: &Env, symbol: &str) {
 fn trigger_fill(tx: &mut Tx, env: &Env, ticket: i64, q: &Quote) {
     let Some(o) = tx.st.orders.get(&ticket).cloned() else { return };
     let price = q.open_price(o.side);
-    let res = gate(env, &tx.st, &o.symbol, super::trade::is_opening(&tx.st, &o.symbol, o.side, o.volume), o.volume, None).and_then(|_| {
+    // halted symbol, disabled / close-only account: the order stays pending until trading is allowed again
+    if gate(env, &tx.st, &o.symbol, super::trade::is_opening(&tx.st, &o.symbol, o.side, o.volume), o.volume, None).is_err() {
+        return;
+    }
+    let res = {
         fill(
             tx,
             env,
@@ -102,7 +111,7 @@ fn trigger_fill(tx: &mut Tx, env: &Env, ticket: i64, q: &Quote) {
                 check_margin: true,
             },
         )
-    });
+    };
     match res {
         Ok(out) => {
             tx.emit(Event::OrderRemoved { ticket, status: OrderStatus::Filled, reason: "triggered".into(), at: env.now, fill_price: Some(price), position_ticket: out.position_ticket });

@@ -505,6 +505,27 @@ fn gates_halt_close_only_max_lot_disabled() {
 }
 
 #[test]
+fn pending_order_waits_while_symbol_is_halted() {
+    let mut kit = Kit::new();
+    kit.quote("EURUSD", "1.10000", "1.10010");
+    let mut h = Harness::live(&kit, "hedge", "100000");
+    let PlaceResult::Pending { ticket, .. } = place(&mut h, &kit, OrderReq { kind: OrderType::Limit, price: Some(d("1.09900")), ..buy("EURUSD", "1") }) else { panic!() };
+    kit.tenant.symbol_controls.push(crate::rules::SymbolControl { id: "SC-1".into(), symbol: "EURUSD".into(), group: "all".into(), mode: crate::rules::ControlMode::Halt, reason_code: "x".into(), note: None, staff: "s".into(), at: kit.now });
+    kit.quote("EURUSD", "1.09800", "1.09810");
+    h.tick(&kit, "EURUSD");
+    assert!(h.st.orders.contains_key(&ticket), "halted: the order must stay pending");
+    kit.tenant.symbol_controls.clear();
+    h.tick(&kit, "EURUSD");
+    assert!(h.st.positions.contains_key(&ticket));
+    // a staff adjustment that makes a flat balance negative is not written off by NBP on the next tick
+    let mut g = Harness::live(&kit, "hedge", "100");
+    g.run(&kit, |tx, env| funds::adjust(tx, env, AdjustKind::Adjustment, d("-150"), "adj", "FIN", "clawback").map(|_| ())).unwrap();
+    g.run(&kit, |tx, env| trade::place_order(tx, env, OrderReq { kind: OrderType::Limit, price: Some(d("1.0")), ..buy("EURUSD", "0.01") }).map(|_| ())).ok();
+    g.tick(&kit, "EURUSD");
+    assert_eq!(g.st.balance, d("-50.00"));
+}
+
+#[test]
 fn duplicate_client_order_id_is_not_executed_twice() {
     let kit = Kit::new();
     kit.quote("EURUSD", "1.1", "1.1");
