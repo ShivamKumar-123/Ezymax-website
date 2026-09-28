@@ -62,6 +62,7 @@ pub fn add_volume(tx: &mut Tx, env: &Env, ticket: i64, volume: D, dealer: &Deale
         reason_code: Some(dealer.reason_code.clone()),
         snapshot: None,
         client_order_id: None,
+        partial: false,
     };
     tx.emit(Event::PositionUpdated { position: np, change: "volume_added".into(), deal: Some(deal) });
     Ok((json!({"volume": num(p.volume), "openPrice": num(p.open_price)}), json!({"volume": num(total), "openPrice": num(avg), "addedAt": num(px), "added": num(volume)})))
@@ -236,4 +237,45 @@ pub fn transfer_book(tx: &mut Tx, env: &Env, ticket: i64, to: Book, mv: BookMove
     after.insert("transferPrice".into(), num(px));
     after.insert("openPrice".into(), num(p.open_price));
     Ok((Some(child_ticket), json!({"ticket": ticket.to_string(), "book": from.as_str(), "volume": num(p.volume)}), Value::Object(after), true))
+}
+
+/// Dealer fill of a pending order at the current market price.
+pub fn fill_order(tx: &mut Tx, env: &Env, ticket: i64, dealer: &DealerCtx) -> Result<(Option<i64>, D, Book), Reject> {
+    use super::trade::{Fill, fill, is_opening};
+    let o = tx.st.orders.get(&ticket).cloned().ok_or_else(|| Reject::new("not_found", format!("Order #{ticket} not found")))?;
+    let spec = env.spec(&o.symbol)?.clone();
+    gate(env, &tx.st, &o.symbol, is_opening(&tx.st, &o.symbol, o.side, o.volume), o.volume, Some(dealer))?;
+    market_open(env, &spec)?;
+    let q = env.live_quote(&tx.st.account, &o.symbol)?;
+    let price = q.open_price(o.side);
+    let out = fill(
+        tx,
+        env,
+        Fill {
+            symbol: o.symbol.clone(),
+            side: o.side,
+            volume: o.volume,
+            price,
+            sl: o.sl,
+            tp: o.tp,
+            trailing: o.trailing.clone(),
+            source: o.source,
+            platform: o.platform.clone(),
+            comment: format!("Filled from order #{ticket}"),
+            order_ticket: o.ticket,
+            book: o.book,
+            client_order_id: None,
+            reason: DealReason::Dealer,
+            staff: Some(dealer.staff.clone()),
+            reason_code: Some(dealer.reason_code.clone()),
+            check_margin: true,
+        },
+    )?;
+    tx.emit(Event::OrderRemoved { ticket, status: crate::model::OrderStatus::Filled, reason: format!("dealer fill by {}", dealer.staff), at: env.now, fill_price: Some(price), position_ticket: out.position_ticket });
+    if let Some(partner) = o.oco
+        && tx.st.orders.contains_key(&partner)
+    {
+        tx.emit(Event::OrderRemoved { ticket: partner, status: crate::model::OrderStatus::Cancelled, reason: format!("OCO: #{ticket} filled"), at: env.now, fill_price: None, position_ticket: None });
+    }
+    Ok((out.position_ticket, price, out.book))
 }

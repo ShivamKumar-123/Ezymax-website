@@ -1,9 +1,16 @@
 //! Kalks trading engine (see README.md): accounts, orders, positions, margin, swaps, double-entry ledger,
 //! dealing desk. Single writer per account shard, event-sourced to PostgreSQL.
 
+pub mod api;
+pub mod auth;
+pub mod config;
 pub mod engine;
+pub mod feed;
 pub mod model;
 pub mod money;
+pub mod persist;
 pub mod rules;
+pub mod shard;
 pub mod specs;
 pub mod state;
+pub mod views;

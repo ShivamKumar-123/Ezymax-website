@@ -12,6 +12,7 @@ use crate::money::D;
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Group {
+    #[serde(default)]
     pub tenant_id: i64,
     /// Stable code, e.g. `standard`, `pro-netting`.
     pub code: String,

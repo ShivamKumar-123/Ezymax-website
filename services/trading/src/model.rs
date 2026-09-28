@@ -451,6 +451,9 @@ pub struct Deal {
     pub snapshot: Option<Box<Position>>,
     /// Client-supplied id of the order that produced this deal (duplicate-submission guard).
     pub client_order_id: Option<String>,
+    /// Exit deal that left part of the position open.
+    #[serde(default)]
+    pub partial: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

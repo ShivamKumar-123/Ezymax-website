@@ -513,6 +513,7 @@ fn entry_deal(env: &Env, st: &AccountState, id: i64, p: &Position, f: &Fill, vol
         reason_code: f.reason_code.clone(),
         snapshot: None,
         client_order_id: f.client_order_id.clone(),
+        partial: false,
     }
 }
 
@@ -632,6 +633,7 @@ pub fn close_part(tx: &mut Tx, env: &Env, ticket: i64, volume: D, price: D, meta
         reason_code: meta.reason_code,
         snapshot: Some(Box::new(snapshot)),
         client_order_id: meta.client_order_id,
+        partial: !full,
     };
     let rest = if full {
         None
