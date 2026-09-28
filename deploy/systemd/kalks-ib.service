@@ -1,0 +1,21 @@
+[Unit]
+Description=Kalks IB / referral programme (:8096)
+After=network-online.target postgresql.service kalks-gateway.service kalks-trading.service
+Wants=network-online.target
+
+[Service]
+User=kalks
+WorkingDirectory=/home/kalks/kalks/services/ib
+EnvironmentFile=/home/kalks/kalks/.env.local
+Environment=RUST_LOG=info
+Environment=IB_ENV=production
+Environment=IB_BIND=127.0.0.1:8096
+ExecStart=/home/kalks/kalks/target/release/ib
+Restart=always
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=20
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

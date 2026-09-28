@@ -11,6 +11,7 @@ One Ubuntu VPS runs everything. Only Caddy (ports 80/443) and SSH are reachable 
 | kalkstrade.com | website (repo kalks-markets/kalks-website, `deploy-website.sh`) | 3010 |
 | (internal only) | gateway / auth | 8080 |
 | (internal only) | trading engine (`/engine/stream` on trade./admin. proxies its ticket-authenticated WebSockets) | 8090 |
+| (internal only) | IB / referral programme (referral tree, commissions, payout batches → wallet; reached only by the app BFFs) | 8096 |
 | (internal only) | PostgreSQL | 5432 |
 
 - `deploy.sh` pulls `main`, builds, installs the units in `systemd/` and the `Caddyfile`, restarts, and checks health.
