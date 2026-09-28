@@ -20,6 +20,8 @@ import { ColumnChart, PersonCell, TxHash, auditToast } from "@/components/config
 import { ChainRulesCard, ChainRulesDialog } from "@/components/finance/chain-rules";
 import { UnmatchedDialog, type ResolveAction } from "@/components/finance/unmatched-dialog";
 import { CoinAmount, ConfProgress, LiveDot, NetworkChip, fmtDuration, usd } from "@/components/finance/shared";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveDepositsPage } from "@/components/finance-live/deposits";
 
 type Dep = Omit<FinDeposit, "status"> & { status: FinDeposit["status"] | "refunded" | "held" };
 type Filter = "all" | "confirming" | "unmatched" | "credited";
@@ -38,7 +40,7 @@ function chainOf(d: Dep) {
   return d.network === "BTC" ? "btc" : d.network === "TRC20" ? "tron" : "eth";
 }
 
-export default function DepositsPage() {
+function DemoDepositsPage() {
   const [deps, setDeps] = React.useState<Dep[]>(FIN_DEPOSITS);
   const [filter, setFilter] = React.useState<Filter>("all");
   const [resolving, setResolving] = React.useState<FinDeposit | null>(null);
@@ -289,4 +291,9 @@ export default function DepositsPage() {
       <ChainRulesDialog open={rulesOpen} onOpenChange={setRulesOpen} chains={chains} onSave={setChains} />
     </div>
   );
+}
+
+/** Live builds: the wallet service (services/wallet). Demo builds: the mock showcase above. */
+export default function DepositsPage() {
+  return IS_DEMO ? <DemoDepositsPage /> : <LiveDepositsPage />;
 }

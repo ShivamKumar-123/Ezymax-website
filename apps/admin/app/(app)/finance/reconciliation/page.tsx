@@ -7,6 +7,8 @@ import { Button, Card, CardHeader, Chip, DataTable, Dialog, Money, PageHeader, R
 import { FIN_MISMATCHES, FIN_RECON_REASONS, FIN_RECON_RUNS, type FinMismatch, type FinReconRun } from "@kalks/mock/admin-finance";
 import { ColumnChart, PersonCell, TxHash, auditToast, useReason } from "@/components/config/kit";
 import { Line, fmtDuration, usd } from "@/components/finance/shared";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveReconciliationPage } from "@/components/finance-live/reconciliation";
 
 const STEPS = ["Fetch TRON / BTC / EVM balances", "Replay wallet ledger", "Pull MT5 balances & credit", "Match transactions", "Build report"];
 
@@ -23,7 +25,7 @@ function Total({ icon, label, value, sub, tone }: { icon: React.ReactNode; label
   );
 }
 
-export default function ReconciliationPage() {
+function DemoReconciliationPage() {
   const [runs, setRuns] = React.useState<FinReconRun[]>(FIN_RECON_RUNS);
   const [mm, setMm] = React.useState<FinMismatch[]>(FIN_MISMATCHES);
   const [selId, setSelId] = React.useState(FIN_RECON_RUNS[0]!.id);
@@ -302,4 +304,9 @@ export default function ReconciliationPage() {
       {reason.node}
     </div>
   );
+}
+
+/** Live builds: the wallet service (services/wallet). Demo builds: the mock showcase above. */
+export default function ReconciliationPage() {
+  return IS_DEMO ? <DemoReconciliationPage /> : <LiveReconciliationPage />;
 }

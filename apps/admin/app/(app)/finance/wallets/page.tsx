@@ -9,11 +9,13 @@ import { FIN_COLD_WALLETS, FIN_HD, FIN_HOT_WALLET, FIN_SWEEP_HISTORY, FIN_SWEEP_
 import { Addr, Checkbox, PersonCell, TxHash, auditToast } from "@/components/config/kit";
 import { ColdWalletsCard, HdCard, HotWalletCard, TopUpGasDialog, type HotState } from "@/components/finance/wallet-cards";
 import { Line, num, usd } from "@/components/finance/shared";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveWalletsPage } from "@/components/finance-live/wallets";
 
 type SweepRow = (typeof FIN_SWEEP_HISTORY)[number];
 const SWEEP_MIN = 50;
 
-export default function WalletsPage() {
+function DemoWalletsPage() {
   const [hot, setHot] = React.useState<HotState>({ usdt: FIN_HOT_WALLET.usdt, trx: FIN_HOT_WALLET.trx, energy: FIN_HOT_WALLET.energy });
   const [queue, setQueue] = React.useState<FinSweepItem[]>(FIN_SWEEP_QUEUE);
   const [history, setHistory] = React.useState<SweepRow[]>(FIN_SWEEP_HISTORY);
@@ -238,4 +240,9 @@ export default function WalletsPage() {
       </Dialog>
     </div>
   );
+}
+
+/** Live builds: the wallet service (services/wallet). Demo builds: the mock showcase above. */
+export default function WalletsPage() {
+  return IS_DEMO ? <DemoWalletsPage /> : <LiveWalletsPage />;
 }

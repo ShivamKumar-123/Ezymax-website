@@ -376,6 +376,11 @@ pub async fn request_withdrawal(State(st): State<AppState>, ctx: Ctx, Body(b): B
     Ok(ok(json!({"withdrawal": w})))
 }
 
+pub async fn quote_withdrawal(State(st): State<AppState>, ctx: Ctx, Body(b): Body<WithdrawBody>) -> ApiResult<Json<Value>> {
+    let q = withdrawals::quote(&st, &ctx, withdrawals::RequestIn { user_id: b.user_id, amount: b.amount, chain: b.chain, to_address: b.to_address, idempotency_key: None }).await?;
+    Ok(ok(json!({"quote": q})))
+}
+
 pub async fn list_withdrawals(State(st): State<AppState>, ctx: Ctx, Q(q): Q<PageQ>) -> ApiResult<Json<Value>> {
     let user_id = uid(q.user_id.unwrap_or(0))?;
     let (page, limit, offset) = paging(q.page, q.limit, 25, 200);

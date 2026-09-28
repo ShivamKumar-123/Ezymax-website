@@ -103,6 +103,16 @@ pub struct RequestIn {
 }
 
 pub async fn request(st: &AppState, ctx: &Ctx, r: RequestIn) -> ApiResult<Value> {
+    check_or_request(st, ctx, r, false).await
+}
+
+/// Runs every check of a withdrawal request (KYC, limits, cooldown, balance) without locking anything and
+/// returns the fee / net amount: the CRM calls it before asking for the step-up code.
+pub async fn quote(st: &AppState, ctx: &Ctx, r: RequestIn) -> ApiResult<Value> {
+    check_or_request(st, ctx, r, true).await
+}
+
+async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool) -> ApiResult<Value> {
     let tenant_id = ctx.tenant.id;
     if r.user_id <= 0 {
         return Err(ApiError::validation("user_id", "user_id is required"));
@@ -116,7 +126,7 @@ pub async fn request(st: &AppState, ctx: &Ctx, r: RequestIn) -> ApiResult<Value>
     })?;
     let amount = check_amount(r.amount, ENGINE_DP).map_err(|m| ApiError::validation("amount", m))?;
     let key = r.idempotency_key.as_deref().map(str::trim).filter(|k| !k.is_empty()).map(str::to_string);
-    if let Some(k) = &key {
+    if let Some(k) = key.as_ref().filter(|_| !dry_run) {
         if k.len() > 128 {
             return Err(ApiError::validation("idempotency_key", "idempotency_key must be at most 128 characters"));
         }
@@ -161,6 +171,20 @@ pub async fn request(st: &AppState, ctx: &Ctx, r: RequestIn) -> ApiResult<Value>
         return Err(ApiError::unprocessable("deposit_cooldown", format!("Withdrawals open {} hours after your last deposit, at {} UTC", limits.deposit_cooldown_hours, until.format("%Y-%m-%d %H:%M"))));
     }
 
+    if dry_run {
+        let used = used_today(&st.pool, tenant_id, r.user_id).await?;
+        if used + amount > limits.withdraw_daily_max {
+            return Err(ApiError::unprocessable("daily_limit", format!("This exceeds your daily withdrawal limit ({} of {} USDT used today)", s(used), s(limits.withdraw_daily_max))));
+        }
+        let available = ledger::balances(&st.pool, tenant_id, r.user_id).await?.into_iter().find(|b| b.0 == "USDT").map(|b| b.1).unwrap_or_default();
+        if available < amount {
+            return Err(ApiError::insufficient());
+        }
+        return Ok(json!({
+            "chain": chain.as_str(), "network": chain.network(), "to_address": to, "amount": s(amount), "fee": s(fee), "net_amount": s(net),
+            "used_today": s(used), "daily_max": s(limits.withdraw_daily_max), "available": s(available),
+        }));
+    }
     let mut tx = st.pool.begin().await?;
     // serialise this user's requests (daily limit + balance) on the balance row
     sqlx::query("SELECT 1 FROM wallet_balances WHERE tenant_id = $1 AND user_id = $2 AND currency = 'USDT' FOR UPDATE").bind(tenant_id).bind(r.user_id).execute(&mut *tx).await?;

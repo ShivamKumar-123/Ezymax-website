@@ -4,6 +4,7 @@ import * as React from "react";
 import { IS_DEMO } from "@kalks/mock/mode";
 import type { GatewayStaff } from "@/lib/gateway";
 import { isTradingPerm, tradingAllows } from "@/lib/trading-perms";
+import { isWalletPerm, walletAllows } from "@/lib/wallet-perms";
 
 export type StaffUser = GatewayStaff;
 
@@ -14,11 +15,13 @@ export function StaffProvider({ staff, children }: { staff: StaffUser; children:
 }
 
 /** Whether the signed-in staff member's role holds a Back Office permission (demo builds: everything).
- *  Trading permissions (dealing.*, accounts.*, finance.adjust, groups.write) come from lib/trading-perms.ts. */
+ *  Trading permissions (dealing.*, accounts.*, finance.adjust, groups.write) come from lib/trading-perms.ts,
+ *  wallet permissions (finance.read / write / approve / settings) from lib/wallet-perms.ts. */
 export function useCan(perm: string): boolean {
   const s = useStaff();
   if (IS_DEMO) return true;
   if (isTradingPerm(perm)) return tradingAllows(s, perm);
+  if (isWalletPerm(perm)) return walletAllows(s, perm);
   return s.permissions?.includes(perm) ?? false;
 }
 

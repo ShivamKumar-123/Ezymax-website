@@ -8,6 +8,8 @@ import { Button, Card, DataTable, KpiCard, Money, PageHeader, Reveal, Segmented,
 import { WALLET_TXS, type WalletTx } from "@kalks/mock";
 import { TX_TYPE_LABEL, fullHash, txDirection } from "@kalks/mock/wallet-extra";
 import { HashLink, TxAmount, TxDetailDrawer, TxIcon, txCounterparty } from "@/components/wallet/wallet-ui";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveHistoryPage } from "@/components/wallet-live/history-page";
 
 type TypeF = "all" | "deposit" | "withdrawal" | "transfer" | "other";
 type StatusF = "all" | "completed" | "pending" | "rejected";
@@ -29,7 +31,7 @@ function downloadCsv(rows: WalletTx[]) {
   toast.success("CSV exported", { description: `${rows.length} transactions` });
 }
 
-export default function WalletHistoryPage() {
+function DemoWalletHistoryPage() {
   const [type, setType] = React.useState<TypeF>("all");
   const [status, setStatus] = React.useState<StatusF>("all");
   const [range, setRange] = React.useState<RangeF>("30D");
@@ -156,4 +158,9 @@ export default function WalletHistoryPage() {
       <TxDetailDrawer tx={tx} onOpenChange={(o) => !o && setTx(null)} />
     </div>
   );
+}
+
+/** Live builds: the real wallet (services/wallet). Demo builds: the mock showcase above. */
+export default function WalletHistoryPage() {
+  return IS_DEMO ? <DemoWalletHistoryPage /> : <LiveHistoryPage />;
 }

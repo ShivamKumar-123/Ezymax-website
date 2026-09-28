@@ -97,6 +97,7 @@ export const ADMIN_NAV: NavModule[] = [
       { href: "/finance/withdrawals", label: "Withdrawals", badge: 7 },
       { href: "/finance/wallets", label: "Wallets" },
       { href: "/finance/reconciliation", label: "Reconciliation" },
+      { href: "/finance/settings", label: "Wallet settings" },
       { href: "/finance/transactions", label: "Transactions" },
       { href: "/finance/adjustments", label: "Adjustments" },
       { href: "/finance/payouts", label: "Payouts", badge: 3 },

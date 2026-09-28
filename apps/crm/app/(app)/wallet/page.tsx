@@ -8,6 +8,8 @@ import { Button, Card, CardHeader, Chip, CoinIcon, Delta, Icon3D, Money, PageHea
 import { ME, WALLET, WALLET_TXS, accountUsd, type WalletTx } from "@kalks/mock";
 import { PENDING_WITHDRAWALS, liveAccounts, walletAvailableUsdt, walletTotalUsd } from "@kalks/mock/wallet-extra";
 import { DepositAddressCard, KycBanner, LimitsCard, TxDetailDrawer, TxRow } from "@/components/wallet/wallet-ui";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveWalletPage } from "@/components/wallet-live/wallet-page";
 
 const COIN_COLOR: Record<string, string> = { usdt: "#26a17b", trx: "#ff5a1f", btc: "#e9b949" };
 const NAMES: Record<string, string> = { USDT: "Tether USD", TRX: "TRON", BTC: "Bitcoin" };
@@ -132,7 +134,7 @@ function FundAccounts() {
   );
 }
 
-export default function WalletPage() {
+function DemoWalletPage() {
   const [tx, setTx] = React.useState<WalletTx | null>(null);
   return (
     <div className="pb-16">
@@ -206,4 +208,9 @@ export default function WalletPage() {
       <TxDetailDrawer tx={tx} onOpenChange={(o) => !o && setTx(null)} />
     </div>
   );
+}
+
+/** Live builds: the real wallet (services/wallet). Demo builds: the mock showcase above. */
+export default function WalletPage() {
+  return IS_DEMO ? <DemoWalletPage /> : <LiveWalletPage />;
 }

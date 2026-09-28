@@ -12,6 +12,8 @@ import { Addr, Checkbox, PersonCell, RiskScore, TxHash, auditToast, useReason } 
 import { BatchSendDialog } from "@/components/finance/batch-send";
 import { WithdrawalReview } from "@/components/finance/withdrawal-review";
 import { CheckRow, num, usd } from "@/components/finance/shared";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveWithdrawalsPage } from "@/components/finance-live/withdrawals";
 
 type RiskFilter = "all" | "high" | "clean";
 const ME = "Priya Nair";
@@ -24,7 +26,7 @@ const RULES = [
   { label: "Block address shared across accounts", hint: "Auto-flag, manual override allowed", on: false },
 ];
 
-export default function WithdrawalsPage() {
+function DemoWithdrawalsPage() {
   const [rows, setRows] = React.useState<FinWithdrawal[]>(FIN_WITHDRAWALS);
   const [tab, setTab] = React.useState<FinWithdrawalStatus>("pending");
   const [risk, setRisk] = React.useState<RiskFilter>("all");
@@ -334,4 +336,9 @@ export default function WithdrawalsPage() {
       {reason.node}
     </div>
   );
+}
+
+/** Live builds: the wallet service (services/wallet). Demo builds: the mock showcase above. */
+export default function WithdrawalsPage() {
+  return IS_DEMO ? <DemoWithdrawalsPage /> : <LiveWithdrawalsPage />;
 }

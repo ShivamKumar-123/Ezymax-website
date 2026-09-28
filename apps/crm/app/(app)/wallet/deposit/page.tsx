@@ -9,6 +9,8 @@ import { Button, Card, CardHeader, Chip, CoinIcon, PageHeader, Reveal, Starfield
 import { WALLET } from "@kalks/mock";
 import { DEPOSIT_FAQ, DEPOSIT_NETWORKS, INCOMING_DEPOSIT } from "@kalks/mock/wallet-extra";
 import { AddressBox, AddressQr, tronscan } from "@/components/wallet/wallet-ui";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveDepositPage } from "@/components/wallet-live/deposit-page";
 
 const CHAIN: Record<string, string> = { TRC20: "trx", ERC20: "eth", BEP20: "bnb" };
 
@@ -191,7 +193,7 @@ function Faq() {
   );
 }
 
-export default function DepositPage() {
+function DemoDepositPage() {
   const net = DEPOSIT_NETWORKS[0]!;
   return (
     <div className="pb-16">
@@ -294,4 +296,9 @@ export default function DepositPage() {
       </div>
     </div>
   );
+}
+
+/** Live builds: the real wallet (services/wallet). Demo builds: the mock showcase above. */
+export default function DepositPage() {
+  return IS_DEMO ? <DemoDepositPage /> : <LiveDepositPage />;
 }

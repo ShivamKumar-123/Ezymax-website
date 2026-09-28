@@ -8,7 +8,7 @@ import { ADMIN_NAV } from "@/lib/nav";
  */
 
 /** Pages (path prefixes) that run on real data in live builds. */
-export const LIVE_PAGES = ["/", "/clients", "/security", "/org", "/trading", "/config", "/content/academy", "/partners"] as const;
+export const LIVE_PAGES = ["/", "/clients", "/security", "/org", "/trading", "/config", "/content/academy", "/partners", "/finance"] as const;
 
 /** Sub-pages under a live prefix that are not live yet. */
 export const LIVE_EXCLUDED = [
@@ -32,13 +32,15 @@ export const LIVE_EXCLUDED = [
   "/config/sessions",
   "/config/demo",
   "/partners/sub-brokers",
+  // finance: deposits, withdrawals, wallets, reconciliation and wallet settings run on the wallet service
+  "/finance/transactions",
+  "/finance/adjustments",
+  "/finance/payouts",
+  "/finance/conversion",
 ] as const;
 
 /** Next milestone: shown in the live nav with a "Soon" chip and a Coming soon page. */
 export const SOON_PAGES: Record<string, { title: string; text: string }> = {
-  "/finance/withdrawals": { title: "Withdrawals", text: "The withdrawal queue with review, approval and on-chain payout is enabled with the USDT wallet." },
-  "/finance/wallets": { title: "Wallets", text: "USDT (TRC20) wallet balances and deposit addresses are enabled with the USDT wallet." },
-  "/finance": { title: "Deposits", text: "USDT (TRC20) deposits, confirmations and crediting are enabled with the USDT wallet." },
 };
 
 export function isLivePath(pathname: string): boolean {

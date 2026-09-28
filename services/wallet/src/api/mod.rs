@@ -37,6 +37,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/deposits", get(client::list_deposits))
         .route("/v1/deposits/{id}", get(client::get_deposit))
         .route("/v1/withdrawals", post(client::request_withdrawal).get(client::list_withdrawals))
+        .route("/v1/withdrawals/quote", post(client::quote_withdrawal))
         .route("/v1/withdrawals/{id}", get(client::get_withdrawal))
         .route("/v1/withdrawals/{id}/cancel", post(client::cancel_withdrawal))
         // Back Office

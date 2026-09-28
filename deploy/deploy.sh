@@ -15,6 +15,7 @@ pnpm install --frozen-lockfile
 cargo build --release -p market-data -p gateway -p trading -p ib
 cargo build --release -p academy
 cargo build --release -p algo
+cargo build --release -p wallet
 
 # trading engine secrets are generated on the server on first deploy (never committed, never printed)
 touch .env.local
@@ -84,6 +85,24 @@ for app in apps/crm apps/admin; do
   grep -q '^ALGO_URL=' "$f" || printf 'ALGO_URL=http://127.0.0.1:8099\n' >> "$f"
   grep -q '^ALGO_INTERNAL_TOKEN=' "$f" || printf 'ALGO_INTERNAL_TOKEN=%s\n' "$(grep '^ALGO_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
 done
+# wallet secrets (never printed): internal token generated once, database kalks_wallet next to the gateway's.
+# Receiving addresses are seeded from WALLET_BSC_ADDRESS / WALLET_TRON_ADDRESS on the first start only; after
+# that they are an audited Back Office setting. TRONGRID_API_KEY comes from .env.tron when present.
+grep -q '^WALLET_INTERNAL_TOKEN=' .env.local || printf 'WALLET_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
+if ! grep -q '^WALLET_DATABASE_URL=' .env.local && grep -q '^GATEWAY_DATABASE_URL=' .env.local; then
+  printf 'WALLET_DATABASE_URL=%s\n' "$(grep '^GATEWAY_DATABASE_URL=' .env.local | cut -d= -f2- | sed -E 's#/[^/?]+([?].*)?$#/kalks_wallet\1#')" >> .env.local
+fi
+grep -q '^WALLET_BSC_ADDRESS=' .env.local || printf 'WALLET_BSC_ADDRESS=0x11e9373d598703F83582e34378E086EbEEC5da11\n' >> .env.local
+grep -q '^WALLET_TRON_ADDRESS=' .env.local || printf 'WALLET_TRON_ADDRESS=TU7PHUS22Hw632YsnAyjxNh4gu3u8PzcHZ\n' >> .env.local
+if ! grep -q '^TRONGRID_API_KEY=' .env.local && [ -f .env.tron ] && grep -q '^TRONGRID_API_KEY=' .env.tron; then
+  grep '^TRONGRID_API_KEY=' .env.tron >> .env.local
+fi
+# the Client Area and Back Office BFFs reach the wallet with the same token
+for app in apps/crm apps/admin; do
+  f="$app/.env.production.local"; touch "$f"
+  grep -q '^WALLET_URL=' "$f" || printf 'WALLET_URL=http://127.0.0.1:8095\n' >> "$f"
+  grep -q '^WALLET_INTERNAL_TOKEN=' "$f" || printf 'WALLET_INTERNAL_TOKEN=%s\n' "$(grep '^WALLET_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
+done
 pnpm turbo run build --filter=@kalks/crm --filter=@kalks/admin --filter=@kalks/terminal --concurrency=1
 
 # service units + edge config (idempotent)
@@ -94,10 +113,12 @@ sudo systemctl enable kalks-market-data kalks-gateway kalks-trading kalks-ib kal
 sudo systemctl restart kalks-market-data kalks-gateway kalks-trading kalks-ib kalks-crm kalks-admin kalks-terminal
 sudo systemctl enable kalks-academy >/dev/null && sudo systemctl restart kalks-academy
 sudo systemctl enable kalks-algo >/dev/null && sudo systemctl restart kalks-algo
+sudo systemctl enable kalks-wallet >/dev/null && sudo systemctl restart kalks-wallet
 sudo systemctl reload caddy
 sleep 5
 for u in 127.0.0.1:8081/health 127.0.0.1:8080/health 127.0.0.1:8090/health 127.0.0.1:8096/health 127.0.0.1:3000/login 127.0.0.1:3001/login 127.0.0.1:3002/login; do
   printf "%-26s %s\n" "$u" "$(curl -s -o /dev/null -w '%{http_code}' "http://$u")"
 done
 printf "%-26s %s\n" 127.0.0.1:8098/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8098/health)"
+printf "%-26s %s\n" 127.0.0.1:8095/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8095/health)"
 printf "%-26s %s\n" 127.0.0.1:8099/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/health)"

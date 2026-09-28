@@ -371,6 +371,10 @@ async fn withdrawals_lifecycle() {
     let (s, v) = t.post("/v1/withdrawals", req("600", "w-max")).await;
     assert_eq!((s, v["error"]["code"].as_str()), (422, Some("insufficient_funds")), "{v}");
 
+    // quote: every check, nothing locked
+    let (s, v) = t.post("/v1/withdrawals/quote", req("100", "q")).await;
+    assert_eq!((s, v["quote"]["net_amount"].as_str()), (200, Some("99")), "{v}");
+    assert_eq!(t.balance(7).await, ("500".into(), "0".into()));
     // request → locked; idempotent
     let (s, v) = t.post("/v1/withdrawals", req("100", "w1")).await;
     assert_eq!(s, 200, "{v}");

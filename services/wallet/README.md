@@ -122,6 +122,7 @@ The CRM BFF resolves the user from the session cookie and passes `user_id`. For 
 | `GET /v1/deposits/intents/{id}?user_id=` | – | `{intent, deposit?}` |
 | `POST /v1/deposits/submit` | `{user_id, intent_id, tx_hash, from_address?}` | `{deposit}` (409 `tx_already_used`) |
 | `GET /v1/deposits/{id}?user_id=` | – | `{deposit}` with `confirmations`, `required_confirmations`, `status` |
+| `POST /v1/withdrawals/quote` | `{user_id, amount, chain, to_address}` | `{quote:{amount, fee, net_amount, used_today, daily_max, available}}`: every check of a request, nothing locked (call it before the step-up code) |
 | `POST /v1/withdrawals` | `{user_id, amount, chain, to_address, idempotency_key?}` | `{withdrawal}` |
 | `GET /v1/withdrawals?user_id=` | – | `{items}` |
 | `POST /v1/withdrawals/{id}/cancel` | `{user_id}` | `{withdrawal}` (only while `requested`) |

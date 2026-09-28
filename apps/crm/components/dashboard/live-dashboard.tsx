@@ -12,6 +12,7 @@ import { SUPPORT_EMAIL, TERMINAL_URL } from "@/lib/live";
 import { useAccounts, type EngineAccount } from "@/components/trading/api";
 import { liveTotals } from "@/components/trading/accounts-page";
 import { LiveAccountRow } from "@/components/trading/ui";
+import { useWalletFunded, walletStep } from "@/components/wallet-live/onboarding";
 
 function greeting() {
   const h = new Date().getHours();
@@ -123,7 +124,8 @@ function StepRow({ s, n }: { s: Step; n: number }) {
 
 function GettingStarted({ accounts }: { accounts: EngineAccount[] | null }) {
   const me = useSession();
-  const list = steps(me, accounts);
+  const wallet = useWalletFunded();
+  const list = steps(me, accounts).map((s) => (s.key === "wallet" ? walletStep(wallet) : s));
   const done = list.filter((s) => s.state === "done").length;
   return (
     <Card className="flex h-full flex-col">

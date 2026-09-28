@@ -3,7 +3,7 @@
 // (see components/live-gate.tsx). Demo builds (NEXT_PUBLIC_KALKS_MODE=demo) render everything.
 
 /** Path prefixes rendered in live builds ("/" matches only the dashboard itself). */
-export const LIVE_PAGES = ["/", "/markets", "/profile", "/support", "/accounts", "/portfolio", "/academy", "/partner"] as const;
+export const LIVE_PAGES = ["/", "/markets", "/profile", "/support", "/accounts", "/portfolio", "/academy", "/partner", "/wallet"] as const;
 
 /** Sub-pages of a live prefix that are still mock-only and stay gated in live builds. */
 export const LIVE_GATED = ["/profile/security", "/profile/viewers", "/profile/preferences", "/portfolio/analytics", "/academy/coach"] as const;
@@ -12,11 +12,6 @@ export const LIVE_GATED = ["/profile/security", "/profile/viewers", "/profile/pr
 export type SoonModule = { prefix: string; title: string; text: string };
 
 export const SOON_MODULES: SoonModule[] = [
-  {
-    prefix: "/wallet",
-    title: "Wallet",
-    text: "USDT (TRC20) deposits and withdrawals open here once your wallet is enabled. We will email you when it is ready.",
-  },
   {
     prefix: "/portfolio/analytics",
     title: "Portfolio analytics",

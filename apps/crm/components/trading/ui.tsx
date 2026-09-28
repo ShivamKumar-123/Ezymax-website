@@ -64,9 +64,14 @@ export function FundDialog({ a, open, onOpenChange }: { a: Pick<EngineAccount, "
       description={`${a.groupName}${a.cent ? " · cent account (USC)" : ""}`}
       width={480}
       footer={
-        <Button variant="ember" onClick={() => onOpenChange(false)}>
-          Got it
-        </Button>
+        <>
+          <Link href="/wallet/deposit">
+            <Button variant="surface">Deposit USDT</Button>
+          </Link>
+          <Link href={`/wallet/transfer?to=${a.login}`}>
+            <Button variant="ember">Transfer from wallet</Button>
+          </Link>
+        </>
       }
     >
       <div className="space-y-3 text-[13.5px] text-fg-2">
@@ -75,13 +80,12 @@ export function FundDialog({ a, open, onOpenChange }: { a: Pick<EngineAccount, "
             <Wallet className="size-4" />
           </span>
           <div>
-            <div className="font-medium text-fg">Deposits open with the Kalks wallet</div>
+            <div className="font-medium text-fg">Funded from your Kalks wallet</div>
             <p className="mt-0.5 text-[12.5px] text-fg-3">
-              Live accounts are funded by a transfer from your wallet (USDT on TRC20, credited 1:1 in USD{a.cent ? ", shown ×100 in USC on a cent account" : ""}). The wallet is being connected; we will email you as soon as deposits are enabled for your profile.
+              Deposit USDT on BNB Chain or TRON to your wallet, then transfer it to this account instantly. USDT is credited 1:1 in USD{a.cent ? ", shown ×100 in USC on a cent account" : ""}.
             </p>
           </div>
         </div>
-        <p className="text-[12.5px] text-fg-3">Until then this account stays at a zero balance. You can already log in to Kalks Trader with it, and practise on a demo account in the meantime.</p>
       </div>
     </Dialog>
   );

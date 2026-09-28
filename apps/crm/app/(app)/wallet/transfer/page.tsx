@@ -11,6 +11,8 @@ import { WALLET, WALLET_TXS, freeMargin, type TradingAccount, type WalletTx } fr
 import { CONVERSION, WALLET_LIMITS, liveAccounts, walletAvailableUsdt } from "@kalks/mock/wallet-extra";
 import { AccountBadge, accountTitle } from "@/components/account-row";
 import { TxDetailDrawer, TxRow } from "@/components/wallet/wallet-ui";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveTransferPage } from "@/components/wallet-live/transfer-page";
 
 type Asset = "USDT" | "TRX" | "BTC";
 const ACCS = liveAccounts();
@@ -419,7 +421,7 @@ function Transfer() {
   );
 }
 
-export default function TransferPage() {
+function DemoTransferPage() {
   return (
     <React.Suspense fallback={null}>
       <Transfer />
@@ -427,3 +429,7 @@ export default function TransferPage() {
   );
 }
 
+/** Live builds: the real wallet (services/wallet). Demo builds: the mock showcase above. */
+export default function TransferPage() {
+  return IS_DEMO ? <DemoTransferPage /> : <LiveTransferPage />;
+}

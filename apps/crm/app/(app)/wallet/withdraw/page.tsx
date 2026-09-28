@@ -12,6 +12,8 @@ import { ADDRESS_BOOK, PENDING_WITHDRAWALS, WALLET_LIMITS, walletAvailableUsdt, 
 import { KycBanner } from "@/components/wallet/wallet-ui";
 import { EmailOtp } from "@/components/accounts/security";
 import { AccountBadge, accountTitle } from "@/components/account-row";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveWithdrawPage } from "@/components/wallet-live/withdraw-page";
 
 const L = WALLET_LIMITS.withdraw;
 const TIMELINE = ["Requested", "Email verified", "Admin approval", "Broadcast on TRON", "Completed"];
@@ -418,10 +420,15 @@ function Withdraw() {
   );
 }
 
-export default function WithdrawPage() {
+function DemoWithdrawPage() {
   return (
     <React.Suspense fallback={null}>
       <Withdraw />
     </React.Suspense>
   );
+}
+
+/** Live builds: the real wallet (services/wallet). Demo builds: the mock showcase above. */
+export default function WithdrawPage() {
+  return IS_DEMO ? <DemoWithdrawPage /> : <LiveWithdrawPage />;
 }
