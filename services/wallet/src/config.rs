@@ -1,0 +1,167 @@
+use std::env;
+use std::fmt;
+
+/// Runtime configuration (env vars; the repo-root `.env.local` and `.env.tron` are loaded in development).
+/// `Debug` is implemented by hand so secrets never reach logs.
+#[derive(Clone)]
+pub struct Config {
+    pub bind: String,
+    pub database_url: String,
+    /// Shared secret the BFFs / internal services send in `X-Kalks-Internal`. Empty = check disabled (dev only).
+    pub internal_token: String,
+    pub dev_mode: bool,
+    pub json_logs: bool,
+    /// Run the watcher / scanner / recovery loops (exactly one instance in production).
+    pub workers: bool,
+    pub poll_secs: u64,
+    pub scan_secs: u64,
+    pub bsc_rpc_urls: Vec<String>,
+    pub trongrid_url: String,
+    pub trongrid_api_key: String,
+    /// Seed values for chain_settings (first start only; afterwards the audited admin setting wins).
+    pub bsc_address: String,
+    pub tron_address: String,
+    pub bsc_confirmations: i32,
+    pub tron_confirmations: i32,
+    pub trading_url: String,
+    pub trading_token: String,
+    pub gateway_url: String,
+    pub gateway_token: String,
+}
+
+/// Masks the password in a connection URL (`postgres://user:secret@host` → `postgres://user:***@host`).
+pub fn redact_url(url: &str) -> String {
+    match (url.find("://"), url.rfind('@')) {
+        (Some(s), Some(at)) if at > s + 3 => {
+            let creds = &url[s + 3..at];
+            match creds.find(':') {
+                Some(c) => format!("{}{}:***{}", &url[..s + 3], &creds[..c], &url[at..]),
+                None => url.to_string(),
+            }
+        }
+        _ => url.to_string(),
+    }
+}
+
+/// Hides API keys that some RPC providers put into the URL path or query.
+fn redact_rpc(url: &str) -> String {
+    let base = redact_url(url);
+    match base.find('?') {
+        Some(q) => format!("{}?***", &base[..q]),
+        None => {
+            // https://host/<long key> → https://host/***
+            let parts: Vec<&str> = base.splitn(4, '/').collect();
+            if parts.len() == 4 && parts[3].len() >= 20 { format!("{}//{}/***", parts[0], parts[2]) } else { base }
+        }
+    }
+}
+
+fn redact(v: &str) -> &'static str {
+    if v.is_empty() { "<empty>" } else { "<redacted>" }
+}
+
+impl fmt::Debug for Config {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Config")
+            .field("bind", &self.bind)
+            .field("database_url", &redact_url(&self.database_url))
+            .field("internal_token", &redact(&self.internal_token))
+            .field("dev_mode", &self.dev_mode)
+            .field("json_logs", &self.json_logs)
+            .field("workers", &self.workers)
+            .field("poll_secs", &self.poll_secs)
+            .field("scan_secs", &self.scan_secs)
+            .field("bsc_rpc_urls", &self.bsc_rpc_urls.iter().map(|u| redact_rpc(u)).collect::<Vec<_>>())
+            .field("trongrid_url", &redact_rpc(&self.trongrid_url))
+            .field("trongrid_api_key", &redact(&self.trongrid_api_key))
+            .field("bsc_address", &self.bsc_address)
+            .field("tron_address", &self.tron_address)
+            .field("bsc_confirmations", &self.bsc_confirmations)
+            .field("tron_confirmations", &self.tron_confirmations)
+            .field("trading_url", &self.trading_url)
+            .field("trading_token", &redact(&self.trading_token))
+            .field("gateway_url", &self.gateway_url)
+            .field("gateway_token", &redact(&self.gateway_token))
+            .finish()
+    }
+}
+
+fn var(key: &str, default: &str) -> String {
+    env::var(key).ok().filter(|v| !v.trim().is_empty()).map(|v| v.trim().to_string()).unwrap_or_else(|| default.to_string())
+}
+
+pub const DEFAULT_BSC_RPCS: &str = "https://bsc-rpc.publicnode.com,https://bsc-dataseed.binance.org,https://bsc-dataseed1.defibit.io";
+
+impl Config {
+    pub fn from_env() -> anyhow::Result<Self> {
+        let dev_mode = var("WALLET_ENV", "development") != "production";
+        let internal_token = var("WALLET_INTERNAL_TOKEN", "");
+        if internal_token.is_empty() && !dev_mode {
+            anyhow::bail!("WALLET_INTERNAL_TOKEN is required in production");
+        }
+        Ok(Self {
+            bind: var("WALLET_BIND", "127.0.0.1:8095"),
+            database_url: var("WALLET_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/kalks_wallet"),
+            internal_token,
+            dev_mode,
+            json_logs: var("WALLET_LOG_FORMAT", "json") == "json",
+            workers: var("WALLET_WORKERS", "true") != "false",
+            poll_secs: var("WALLET_POLL_SECS", "10").parse().unwrap_or(10u64).clamp(2, 600),
+            scan_secs: var("WALLET_SCAN_SECS", "60").parse().unwrap_or(60u64).clamp(10, 3600),
+            bsc_rpc_urls: var("WALLET_BSC_RPC_URLS", DEFAULT_BSC_RPCS).split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect(),
+            trongrid_url: var("WALLET_TRONGRID_URL", "https://api.trongrid.io").trim_end_matches('/').to_string(),
+            trongrid_api_key: var("TRONGRID_API_KEY", ""),
+            bsc_address: var("WALLET_BSC_ADDRESS", ""),
+            tron_address: var("WALLET_TRON_ADDRESS", ""),
+            bsc_confirmations: var("WALLET_BSC_CONFIRMATIONS", "15").parse().unwrap_or(15).clamp(1, 500),
+            tron_confirmations: var("WALLET_TRON_CONFIRMATIONS", "20").parse().unwrap_or(20).clamp(1, 500),
+            trading_url: var("TRADING_URL", "http://127.0.0.1:8090").trim_end_matches('/').to_string(),
+            trading_token: var("TRADING_INTERNAL_TOKEN", ""),
+            gateway_url: var("GATEWAY_URL", "http://127.0.0.1:8080").trim_end_matches('/').to_string(),
+            gateway_token: var("GATEWAY_INTERNAL_TOKEN", ""),
+        })
+    }
+
+    /// A config for tests (no network, no secrets).
+    pub fn for_tests(database_url: &str) -> Self {
+        Self {
+            bind: "127.0.0.1:0".into(),
+            database_url: database_url.into(),
+            internal_token: "test-internal-token".into(),
+            dev_mode: true,
+            json_logs: false,
+            workers: false,
+            poll_secs: 2,
+            scan_secs: 10,
+            bsc_rpc_urls: vec![],
+            trongrid_url: String::new(),
+            trongrid_api_key: String::new(),
+            bsc_address: "0x11e9373d598703F83582e34378E086EbEEC5da11".into(),
+            tron_address: "TU7PHUS22Hw632YsnAyjxNh4gu3u8PzcHZ".into(),
+            bsc_confirmations: 15,
+            tron_confirmations: 20,
+            trading_url: String::new(),
+            trading_token: String::new(),
+            gateway_url: String::new(),
+            gateway_token: String::new(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn masks_secrets() {
+        assert_eq!(redact_url("postgres://kalks:s3cret@127.0.0.1:5432/kalks_wallet"), "postgres://kalks:***@127.0.0.1:5432/kalks_wallet");
+        assert_eq!(redact_url("postgres://postgres@127.0.0.1:5433/kalks_wallet"), "postgres://postgres@127.0.0.1:5433/kalks_wallet");
+        assert_eq!(redact_rpc("https://bsc.example.com/v1/?apikey=abc"), "https://bsc.example.com/v1/?***");
+        assert_eq!(redact_rpc("https://rpc.example.com/0123456789abcdef0123456789"), "https://rpc.example.com/***");
+        assert_eq!(redact_rpc("https://bsc-dataseed.binance.org"), "https://bsc-dataseed.binance.org");
+        let mut c = Config::for_tests("postgres://u:pw@h/db");
+        c.trongrid_api_key = "secret-key".into();
+        let dbg = format!("{c:?}");
+        assert!(!dbg.contains("pw@") && !dbg.contains("secret-key") && !dbg.contains("test-internal-token"));
+    }
+}

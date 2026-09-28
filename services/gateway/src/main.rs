@@ -23,6 +23,7 @@ mod state;
 mod stepup;
 #[cfg(test)]
 mod testdb;
+mod users_internal;
 mod validate;
 
 use axum::extract::{Request, State};
@@ -161,6 +162,7 @@ fn router(st: AppState) -> Router {
         .route("/v1/shares/{code}/revoke", post(shares::revoke))
         .route("/v1/public/shares/{code}", get(shares::public))
         .route("/v1/internal/referrals/users", get(internal::referral_users))
+        .route("/v1/internal/users/{id}", get(users_internal::user))
         .layer(DefaultBodyLimit::max(256 * 1024))
         .layer(middleware::from_fn_with_state(st.clone(), internal_only));
     Router::new()
