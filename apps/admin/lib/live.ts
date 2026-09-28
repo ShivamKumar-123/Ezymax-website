@@ -35,26 +35,16 @@ export function soonFor(pathname: string): { title: string; text: string } | nul
 }
 
 const SOON = "Soon";
-const mod = (key: string) => ADMIN_NAV.find((m) => m.key === key)!;
 
-/** Navigation for live builds: live pages, plus upcoming modules marked "Soon". */
-export const LIVE_NAV: NavModule[] = [
-  { ...mod("command"), href: "/", match: ["/"], sub: [{ href: "/", label: "Overview" }] },
-  { ...mod("clients"), badge: undefined, sub: [{ href: "/clients", label: "Clients" }, { href: "/clients/kyc", label: "KYC queue", badge: SOON }] },
-  { ...mod("trading"), sub: [{ href: "/trading", label: "Trading desk", badge: SOON }] },
-  { ...mod("config"), href: "/config/spreads", match: ["/config"], sub: [{ href: "/config/spreads", label: "Spreads" }] },
-  {
-    ...mod("finance"),
-    badge: undefined,
-    sub: [
-      { href: "/finance", label: "Deposits", badge: SOON },
-      { href: "/finance/withdrawals", label: "Withdrawals", badge: SOON },
-      { href: "/finance/wallets", label: "Wallets", badge: SOON },
-    ],
-  },
-  { ...mod("security"), sub: [{ href: "/security", label: "Audit log" }, { href: "/security/sessions", label: "Sessions" }] },
-  { ...mod("org"), sub: [{ href: "/org", label: "Staff" }] },
-];
+/**
+ * Navigation for live builds: every module, like the demo. Pages not backed by real data yet carry a
+ * "Soon" tag and open a "being built" page (components/live-gate.tsx) — never mock data.
+ */
+export const LIVE_NAV: NavModule[] = ADMIN_NAV.map((m) => {
+  const sub = m.sub?.map((s) => (isLivePath(s.href) ? s : { ...s, badge: SOON }));
+  const anyLive = m.sub ? m.sub.some((s) => isLivePath(s.href)) : isLivePath(m.href);
+  return { ...m, badge: anyLive ? undefined : SOON, sub };
+});
 
 export const NAV = IS_DEMO ? ADMIN_NAV : LIVE_NAV;
 
