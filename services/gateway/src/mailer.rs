@@ -1,5 +1,6 @@
 //! Transactional email over SMTP (sign-in and verification codes).
-//! Port 465 uses implicit TLS, any other port STARTTLS. Sending runs in the background so request
+//! Port 465 uses implicit TLS, any other port STARTTLS. Without SMTP_USER no login is sent
+//! (IP-authenticated relay such as smtp-relay.gmail.com). Sending runs in the background so request
 //! latency (and therefore timing) does not depend on the mail server.
 
 use lettre::message::{header::ContentType, Mailbox, MultiPart, SinglePart};
@@ -29,11 +30,12 @@ impl Mailer {
         } else {
             AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(s.host)?
         };
-        let transport = builder
-            .port(s.port)
-            .credentials(Credentials::new(s.user.to_string(), s.password.to_string()))
-            .timeout(Some(std::time::Duration::from_secs(20)))
-            .build();
+        let mut builder = builder.port(s.port).timeout(Some(std::time::Duration::from_secs(20)));
+        // No user = relay trusted by the server's IP (e.g. Google Workspace SMTP relay); no password is stored.
+        if !s.user.is_empty() {
+            builder = builder.credentials(Credentials::new(s.user.to_string(), s.password.to_string()));
+        }
+        let transport = builder.build();
         Ok(Self { transport, from: s.from.parse()? })
     }
 
