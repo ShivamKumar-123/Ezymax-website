@@ -14,6 +14,7 @@ mod error;
 mod flows;
 mod google_auth;
 mod identity;
+mod internal;
 mod mailer;
 mod ratelimit;
 mod shares;
@@ -159,6 +160,7 @@ fn router(st: AppState) -> Router {
         .route("/v1/shares/{code}/trades", patch(shares::update_trades))
         .route("/v1/shares/{code}/revoke", post(shares::revoke))
         .route("/v1/public/shares/{code}", get(shares::public))
+        .route("/v1/internal/referrals/users", get(internal::referral_users))
         .layer(DefaultBodyLimit::max(256 * 1024))
         .layer(middleware::from_fn_with_state(st.clone(), internal_only));
     Router::new()

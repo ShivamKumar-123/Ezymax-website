@@ -277,6 +277,8 @@ pub struct CompleteReq {
     #[serde(default)]
     date_of_birth: String,
     referral_code: Option<String>,
+    /// Partner campaign slug (IB programme), kept only when the referral code resolves to a client.
+    referral_campaign: Option<String>,
     #[serde(default)]
     accept_terms: bool,
 }
@@ -294,6 +296,7 @@ pub async fn complete(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Com
     let phone = validate::phone(&r.phone).map_err(field("phone"))?;
     let dob = validate::date_of_birth(&r.date_of_birth, Utc::now().date_naive()).map_err(field("date_of_birth"))?;
     let referral = validate::referral(r.referral_code.as_deref()).map_err(field("referral_code"))?;
+    let campaign = validate::campaign(r.referral_campaign.as_deref());
     if !r.accept_terms {
         return Err(ApiError::Validation { field: "accept_terms", message: "Please confirm you are over 18 and accept the terms." });
     }
@@ -313,6 +316,7 @@ pub async fn complete(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Com
         date_of_birth: dob,
         referred_by,
         referral_raw: referral.as_deref(),
+        referral_campaign: campaign.as_deref(),
         google: Some((&t.sub, t.picture.as_deref())),
     })
     .await?
@@ -331,7 +335,7 @@ pub async fn complete(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Com
         actor_id: Some(user_id),
         action: "user.register",
         target: Some(("user", user_id)),
-        meta: json!({"method": "google", "country": country, "referral_code": referral, "referred_by": referred_by}),
+        meta: json!({"method": "google", "country": country, "referral_code": referral, "referred_by": referred_by, "referral_campaign": campaign}),
     })
     .await;
     tracing::info!(user_id, "client registered with google");

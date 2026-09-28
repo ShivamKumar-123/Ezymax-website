@@ -98,6 +98,7 @@ fn creq(ticket: &str, dob: &str) -> CompleteReq {
         country: "IN".into(),
         date_of_birth: dob.into(),
         referral_code: None,
+        referral_campaign: None,
         accept_terms: true,
     }
 }

@@ -122,6 +122,13 @@ pub fn referral(raw: Option<&str>) -> Check<Option<String>> {
     }
 }
 
+/// Optional partner campaign slug (from the `c` query parameter / first-party cookie): 1–40 of
+/// `a-z 0-9 - _`, lower-cased. Anything else is dropped (never an error: it comes from a link, not a form).
+pub fn campaign(raw: Option<&str>) -> Option<String> {
+    let v = raw.map(str::trim).filter(|v| !v.is_empty())?.to_lowercase();
+    ((1..=40).contains(&v.len()) && v.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')).then_some(v)
+}
+
 /// `a•••••@mail.com`
 pub fn mask_email(e: &str) -> String {
     match e.split_once('@') {
@@ -176,6 +183,9 @@ mod tests {
         assert_eq!(referral(Some(" arjun24 ")).unwrap(), Some("ARJUN24".into()));
         assert_eq!(referral(Some("")).unwrap(), None);
         assert!(referral(Some("no spaces")).is_err());
+        assert_eq!(campaign(Some(" YouTube-Gold_1 ")), Some("youtube-gold_1".into()));
+        assert_eq!(campaign(Some("bad slug!")), None);
+        assert_eq!(campaign(Some("")), None);
     }
 
     #[test]

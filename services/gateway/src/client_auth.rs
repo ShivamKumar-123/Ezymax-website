@@ -91,6 +91,8 @@ pub struct RegisterReq {
     #[serde(default)]
     date_of_birth: String,
     referral_code: Option<String>,
+    /// Partner campaign slug (IB programme), kept only when the referral code resolves to a client.
+    referral_campaign: Option<String>,
     #[serde(default)]
     password: String,
     #[serde(default)]
@@ -115,6 +117,8 @@ pub(crate) struct NewUser<'a> {
     pub date_of_birth: NaiveDate,
     pub referred_by: Option<i64>,
     pub referral_raw: Option<&'a str>,
+    /// Partner campaign slug; stored only together with `referred_by`.
+    pub referral_campaign: Option<&'a str>,
     /// Google sign-up: (sub, picture). The email counts as verified (Google verified it).
     pub google: Option<(&'a str, Option<&'a str>)>,
 }
@@ -132,10 +136,10 @@ pub(crate) async fn insert_user(st: &AppState, u: NewUser<'_>) -> ApiResult<Opti
         let res = sqlx::query_scalar::<_, i64>(
             "INSERT INTO users (tenant_id, email, password_hash, first_name, last_name, phone_dial, phone, country, date_of_birth,
                                 referral_code, referred_by, referred_code_raw, terms_accepted_at,
-                                google_sub, google_linked_at, avatar_url, email_verified_at)
+                                google_sub, google_linked_at, avatar_url, email_verified_at, referral_campaign)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, now(),
                      $13, CASE WHEN $13::text IS NULL THEN NULL ELSE now() END, $14,
-                     CASE WHEN $13::text IS NULL THEN NULL ELSE now() END)
+                     CASE WHEN $13::text IS NULL THEN NULL ELSE now() END, $15)
              ON CONFLICT DO NOTHING RETURNING id",
         )
         .bind(u.tenant_id)
@@ -152,6 +156,7 @@ pub(crate) async fn insert_user(st: &AppState, u: NewUser<'_>) -> ApiResult<Opti
         .bind(u.referral_raw)
         .bind(google_sub)
         .bind(avatar)
+        .bind(u.referred_by.and(u.referral_campaign))
         .fetch_optional(&st.pool)
         .await?;
         if let Some(id) = res {
@@ -191,6 +196,7 @@ pub async fn register(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Reg
     let phone = validate::phone(&r.phone).map_err(field("phone"))?;
     let dob = validate::date_of_birth(&r.date_of_birth, Utc::now().date_naive()).map_err(field("date_of_birth"))?;
     let referral = validate::referral(r.referral_code.as_deref()).map_err(field("referral_code"))?;
+    let campaign = validate::campaign(r.referral_campaign.as_deref());
     validate::password(&r.password).map_err(field("password"))?;
     if !r.accept_terms {
         return Err(ApiError::Validation { field: "accept_terms", message: "Please confirm you are over 18 and accept the terms." });
@@ -216,6 +222,7 @@ pub async fn register(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Reg
         date_of_birth: dob,
         referred_by,
         referral_raw: referral.as_deref(),
+        referral_campaign: campaign.as_deref(),
         google: None,
     })
     .await?
@@ -227,7 +234,7 @@ pub async fn register(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Reg
         actor_id: Some(user_id),
         action: "user.register",
         target: Some(("user", user_id)),
-        meta: json!({"country": country, "referral_code": referral, "referred_by": referred_by}),
+        meta: json!({"country": country, "referral_code": referral, "referred_by": referred_by, "referral_campaign": campaign}),
     })
     .await;
     tracing::info!(user_id, "client registered");
