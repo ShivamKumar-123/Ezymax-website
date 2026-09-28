@@ -8,6 +8,8 @@ import { CNT_COURSES, CNT_LANGS } from "@kalks/mock/admin-growth-content";
 import { PEOPLE } from "@kalks/mock";
 import { CourseEditor, type CourseState } from "@/components/content/course-editor";
 import { RingPct } from "@/components/marketing/kit";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveAcademyCms } from "@/components/academy-live/cms";
 
 const LEVEL_TONE: Record<string, ChipTone> = { Beginner: "up", Intermediate: "gold", Advanced: "ember" };
 const STATUS_TONE: Record<string, ChipTone> = { published: "up", draft: "neutral", scheduled: "info" };
@@ -18,6 +20,11 @@ const INIT: CourseState[] = CNT_COURSES.map((c) => ({ ...c, langs: LANG_PRIORITY
 type Filter = "all" | "published" | "scheduled" | "draft";
 
 export default function AcademyPage() {
+  // live builds: the real Academy CMS (services/academy); demo builds keep the showcase below
+  return IS_DEMO ? <DemoAcademyPage /> : <LiveAcademyCms />;
+}
+
+function DemoAcademyPage() {
   const [courses, setCourses] = React.useState<CourseState[]>(INIT);
   const [filter, setFilter] = React.useState<Filter>("all");
   const [q, setQ] = React.useState("");
