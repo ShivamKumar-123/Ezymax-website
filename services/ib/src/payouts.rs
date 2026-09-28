@@ -140,9 +140,13 @@ pub async fn retry(st: &AppState, tenant: &str, id: i64, actor: &Actor) -> ApiRe
 
 /// Sends due payouts to the wallet. Returns (paid, still pending, failed).
 pub async fn transfer_tick(st: &AppState) -> anyhow::Result<(usize, usize, usize)> {
+    // lease due payouts (a concurrent tick skips them), so each one is sent by one caller at a time
     let due = sqlx::query(
-        "SELECT p.id, p.tenant, p.batch_id, p.user_id, p.amount, p.idempotency_key, p.attempts, b.period_end FROM payouts p JOIN payout_batches b ON b.id = p.batch_id
-         WHERE p.status = 'transfer_pending' AND (p.next_attempt_at IS NULL OR p.next_attempt_at <= now()) ORDER BY p.id LIMIT 100",
+        "UPDATE payouts p SET next_attempt_at = now() + interval '5 minutes' FROM payout_batches b
+         WHERE b.id = p.batch_id AND p.id IN (
+             SELECT id FROM payouts WHERE status = 'transfer_pending' AND (next_attempt_at IS NULL OR next_attempt_at <= now())
+             ORDER BY id LIMIT 100 FOR UPDATE SKIP LOCKED)
+         RETURNING p.id, p.tenant, p.batch_id, p.user_id, p.amount, p.idempotency_key, p.attempts, b.period_end",
     )
     .fetch_all(&st.pool)
     .await?;
@@ -158,7 +162,15 @@ pub async fn transfer_tick(st: &AppState) -> anyhow::Result<(usize, usize, usize
         match clients::wallet_credit(st, &tenant, &key, user, amount, &format!("ib-batch-{batch}"), &note).await {
             WalletOutcome::Credited { txn } => {
                 let mut tx = st.pool.begin().await?;
-                sqlx::query("UPDATE payouts SET status = 'paid', paid_at = now(), wallet_txn = $2, attempts = attempts + 1, last_error = NULL WHERE id = $1").bind(id).bind(&txn).execute(&mut *tx).await?;
+                let n = sqlx::query("UPDATE payouts SET status = 'paid', paid_at = now(), wallet_txn = $2, attempts = attempts + 1, last_error = NULL WHERE id = $1 AND status = 'transfer_pending'")
+                    .bind(id)
+                    .bind(&txn)
+                    .execute(&mut *tx)
+                    .await?
+                    .rows_affected();
+                if n == 0 {
+                    continue;
+                }
                 sqlx::query("UPDATE commissions SET status = 'paid', updated_at = now() WHERE payout_id = $1 AND status = 'approved'").bind(id).execute(&mut *tx).await?;
                 audit::record(&mut *tx, &tenant, &Actor::system(), "payout.paid", Some(format!("payout:{id}")), None, Some(json!({"user": user, "amount": amount.to_string(), "walletTxn": txn})), None).await?;
                 tx.commit().await?;
