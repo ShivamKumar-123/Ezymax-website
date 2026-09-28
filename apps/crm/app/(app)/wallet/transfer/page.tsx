@@ -1,0 +1,429 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { motion } from "motion/react";
+import { ArrowDownUp, ArrowLeft, ArrowRight, Check, ChevronDown, CircleAlert, Info, ShieldCheck, Wallet, Zap } from "lucide-react";
+import { toast } from "sonner";
+import { Button, Card, CardHeader, Chip, CoinIcon, Dialog, Input, KeyValue, Menu, PageHeader, Reveal, Segmented, cn, formatNumber, useQuote } from "@kalks/ui";
+import { WALLET, WALLET_TXS, freeMargin, type TradingAccount, type WalletTx } from "@kalks/mock";
+import { CONVERSION, WALLET_LIMITS, liveAccounts, walletAvailableUsdt } from "@kalks/mock/wallet-extra";
+import { AccountBadge, accountTitle } from "@/components/account-row";
+import { TxDetailDrawer, TxRow } from "@/components/wallet/wallet-ui";
+
+type Asset = "USDT" | "TRX" | "BTC";
+const ACCS = liveAccounts();
+const WALLET_ID = "wallet";
+
+function accCur(a: TradingAccount) {
+  return a.cent ? "USC" : "USD";
+}
+
+function EndpointCard({ label, value, onPick, lockedWallet, asset, onAsset }: { label: string; value: string; onPick: (v: string) => void; lockedWallet?: boolean; asset: Asset; onAsset?: (a: Asset) => void }) {
+  const acc = ACCS.find((a) => a.login === value);
+  const walletAsset = WALLET.assets.find((x) => x.asset === asset)!;
+  const trigger = (
+    <button type="button" className="k-row flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:border-[var(--k-border-top)] hover:bg-surface-3/60">
+      {acc ? (
+        <span className="grid size-10 shrink-0 place-items-center rounded-full border border-ember/30 bg-ember-soft font-mono text-[11px] font-semibold text-ember">{acc.group.slice(0, 3).toUpperCase()}</span>
+      ) : (
+        <span className="grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface-3 text-fg">
+          <Wallet className="size-[18px]" />
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 text-[14.5px] font-medium">
+          {acc ? (
+            <>
+              {accountTitle(acc)} <span className="font-mono text-[12px] text-fg-3">#{acc.login}</span>
+            </>
+          ) : (
+            "Kalks Wallet"
+          )}
+        </div>
+        <div className="k-num truncate text-[12px] text-fg-3">
+          {acc ? (
+            <>
+              Balance {acc.cent ? "USC " : "$"}
+              {formatNumber(acc.balance)} · Free margin {acc.cent ? "USC " : "$"}
+              {formatNumber(freeMargin(acc))}
+            </>
+          ) : (
+            <>
+              {formatNumber(asset === "USDT" ? walletAvailableUsdt() : walletAsset.balance, asset === "BTC" ? 4 : 2)} {asset} available · {walletAsset.network}
+            </>
+          )}
+        </div>
+      </div>
+      <ChevronDown className="size-4 text-fg-3" />
+    </button>
+  );
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <span className="k-label">{label}</span>
+        {!acc && onAsset && (
+          <Segmented
+            size="xs"
+            value={asset}
+            onChange={onAsset}
+            options={WALLET.assets.map((x) => ({ value: x.asset as Asset, label: <><CoinIcon coin={x.icon} size={14} />{x.asset}</> }))}
+          />
+        )}
+      </div>
+      <Menu
+        width={340}
+        align="start"
+        trigger={trigger}
+        items={[
+          { label: <span className="flex items-center justify-between gap-2">Kalks Wallet <span className="k-num text-[12px] text-fg-3">${formatNumber(walletAvailableUsdt())}</span></span>, icon: <Wallet />, onSelect: () => onPick(WALLET_ID), hint: value === WALLET_ID ? <Check className="size-3.5 text-ember" /> : undefined },
+          "sep",
+          ...ACCS.map((a) => ({
+            label: (
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate">
+                  {accountTitle(a)} <span className="font-mono text-[11.5px] text-fg-3">#{a.login}</span>
+                </span>
+                <span className="k-num text-[11.5px] text-fg-3">
+                  {a.cent ? "USC " : "$"}
+                  {formatNumber(a.balance)}
+                </span>
+              </span>
+            ),
+            icon: <span className="grid size-4 place-items-center rounded-full bg-ember-soft text-[8px] font-bold text-ember">{a.group[0]}</span>,
+            onSelect: () => onPick(a.login),
+            hint: value === a.login ? <Check className="size-3.5 text-ember" /> : undefined,
+          })),
+        ]}
+      />
+      {lockedWallet && <div className="mt-1.5 text-[11.5px] text-fg-3">Transfers always go through your wallet.</div>}
+    </div>
+  );
+}
+
+function Transfer() {
+  const sp = useSearchParams();
+  const qTo = ACCS.find((a) => a.login === sp.get("to"))?.login;
+  const qFrom = ACCS.find((a) => a.login === sp.get("from"))?.login;
+  const [from, setFrom] = React.useState<string>(qFrom ?? WALLET_ID);
+  const [to, setTo] = React.useState<string>(qFrom ? WALLET_ID : (qTo ?? ACCS[0]!.login));
+  const [asset, setAsset] = React.useState<Asset>("USDT");
+  const [amount, setAmount] = React.useState("");
+  const [confirm, setConfirm] = React.useState(false);
+  const [spin, setSpin] = React.useState(0);
+  const [recent, setRecent] = React.useState<WalletTx[]>(() => WALLET_TXS.filter((t) => t.type === "transfer").slice(0, 5));
+  const [tx, setTx] = React.useState<WalletTx | null>(null);
+  const btc = useQuote("BTCUSD");
+
+  const fromAcc = ACCS.find((a) => a.login === from);
+  const toAcc = ACCS.find((a) => a.login === to);
+  const srcAsset: Asset = fromAcc ? "USDT" : asset;
+  const amt = parseFloat(amount) || 0;
+
+  const pickFrom = (v: string) => {
+    setFrom(v);
+    if (v === WALLET_ID) {
+      if (to === WALLET_ID) setTo(ACCS[0]!.login);
+    } else {
+      setTo(WALLET_ID);
+    }
+    setAmount("");
+  };
+  const pickTo = (v: string) => {
+    setTo(v);
+    if (v === WALLET_ID) {
+      if (from === WALLET_ID) setFrom(ACCS[0]!.login);
+    } else {
+      setFrom(WALLET_ID);
+    }
+    setAmount("");
+  };
+  const swap = () => {
+    setSpin((s) => s + 180);
+    setFrom(to);
+    setTo(from);
+    setAmount("");
+  };
+
+  // Conversion
+  const rate = srcAsset === "USDT" ? 1 : srcAsset === "BTC" ? btc.bid : CONVERSION.rates.TRX!;
+  const markup = srcAsset === "USDT" ? 0 : CONVERSION.markupPct;
+  let usd = 0;
+  let receive = 0;
+  let receiveCur = "USD";
+  let available = 0;
+  let srcCur = "USDT";
+  if (fromAcc) {
+    srcCur = accCur(fromAcc);
+    available = Math.max(0, Math.min(fromAcc.balance, freeMargin(fromAcc)));
+    usd = fromAcc.cent ? amt / 100 : amt;
+    receive = usd;
+    receiveCur = "USDT";
+  } else {
+    srcCur = srcAsset;
+    available = srcAsset === "USDT" ? walletAvailableUsdt() : WALLET.assets.find((x) => x.asset === srcAsset)!.balance;
+    usd = amt * rate * (1 - markup / 100);
+    receive = toAcc?.cent ? usd * 100 : usd;
+    receiveCur = toAcc ? accCur(toAcc) : "USD";
+  }
+  const dec = srcAsset === "BTC" && !fromAcc ? 6 : 2;
+  const newLevel = fromAcc && fromAcc.margin > 0 ? ((fromAcc.equity - amt) / fromAcc.margin) * 100 : Infinity;
+  const err = !amount
+    ? null
+    : amt <= 0
+      ? "Enter an amount"
+      : usd < WALLET_LIMITS.transfer.min
+        ? `Minimum transfer is $${WALLET_LIMITS.transfer.min}`
+        : fromAcc && amt > freeMargin(fromAcc)
+          ? `Exceeds free margin (${fromAcc.cent ? "USC " : "$"}${formatNumber(freeMargin(fromAcc))}) — close positions or reduce the amount`
+          : fromAcc && amt > fromAcc.balance
+            ? "Exceeds account balance (credit can't be withdrawn)"
+            : amt > available
+              ? "Insufficient wallet balance"
+              : usd > WALLET_LIMITS.transfer.maxPerTx
+                ? "Exceeds max per transfer"
+                : null;
+  const warn = !err && fromAcc && Number.isFinite(newLevel) && newLevel < 300;
+
+  const doTransfer = () => {
+    const t: WalletTx = {
+      id: `TX${904500 + Math.floor(Math.random() * 99)}`,
+      type: "transfer",
+      status: "completed",
+      amount: +usd.toFixed(2),
+      asset: "USDT",
+      from: fromAcc ? `Account ${fromAcc.login}` : "Wallet",
+      to: toAcc ? `Account ${toAcc.login}` : "Wallet",
+      fee: 0,
+      createdAt: new Date().toISOString(),
+    };
+    setRecent((r) => [t, ...r].slice(0, 6));
+    setConfirm(false);
+    setAmount("");
+    toast.success("Transfer completed", {
+      description: `${formatNumber(amt, dec)} ${srcCur} → ${formatNumber(receive)} ${receiveCur} ${toAcc ? `into #${toAcc.login}` : "into your wallet"}`,
+    });
+  };
+
+  const summaryRows: [React.ReactNode, React.ReactNode][] = [
+    ["Exchange rate", srcAsset === "USDT" && !toAcc?.cent && !fromAcc?.cent ? "1 USDT = 1 USD" : fromAcc?.cent ? "100 USC = 1 USDT" : srcAsset === "USDT" ? "1 USDT = 100 USC" : `1 ${srcAsset} = $${formatNumber(rate, srcAsset === "BTC" ? 2 : 4)}`],
+    ["Conversion markup", markup ? `${markup}%` : <Chip key="m" size="sm" tone="up">None · 1:1</Chip>],
+    ...(toAcc?.cent && !fromAcc ? ([["Cent conversion", `$${formatNumber(usd)} × 100 → USC`]] as [React.ReactNode, React.ReactNode][]) : []),
+    ["Fee", "Free"],
+    ["Arrives", <span key="a" className="inline-flex items-center gap-1"><Zap className="size-3.5 text-gold" /> Instantly</span>],
+  ];
+
+  return (
+    <div className="pb-16">
+      <PageHeader
+        title="Transfer funds"
+        subtitle="Move money between your wallet and your own trading accounts — instant and free."
+        actions={
+          <Link href="/wallet">
+            <Button variant="surface">
+              <ArrowLeft /> Wallet
+            </Button>
+          </Link>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <Reveal className="xl:col-span-7">
+          <Card>
+            <CardHeader title="New transfer" subtitle="Wallet ↔ own live accounts only" />
+            <div className="px-4 pb-6 pt-5 sm:px-6">
+              <EndpointCard label="From" value={from} onPick={pickFrom} asset={asset} onAsset={(a) => { setAsset(a); setAmount(""); }} />
+              <div className="relative my-3 flex items-center justify-center">
+                <span className="absolute inset-x-0 top-1/2 h-px bg-line" />
+                <motion.button type="button" onClick={swap} animate={{ rotate: spin }} transition={{ type: "spring", bounce: 0.3 }} className="relative grid size-10 place-items-center rounded-full border border-line bg-surface-2 text-fg-2 shadow-[inset_0_1px_0_var(--k-border-top)] hover:border-ember/40 hover:text-ember" aria-label="Swap direction">
+                  <ArrowDownUp className="size-4" />
+                </motion.button>
+              </div>
+              <EndpointCard label="To" value={to} onPick={pickTo} asset="USDT" />
+
+              <div className="mt-6">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="k-label">Amount</span>
+                  <span className="k-num text-[12px] text-fg-3">
+                    {fromAcc ? "Transferable" : "Available"} {formatNumber(available, dec)} {srcCur}
+                  </span>
+                </div>
+                <Input
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
+                  placeholder="0.00"
+                  className={cn("h-16", err && "border-down/50")}
+                  inputClassName="k-num text-[24px] font-semibold"
+                  leading={fromAcc ? <span className="text-[13px] font-semibold text-fg-2">{srcCur}</span> : <CoinIcon coin={WALLET.assets.find((x) => x.asset === srcAsset)!.icon} size={24} />}
+                  trailing={
+                    <>
+                      <span className="text-[13px]">{srcCur}</span>
+                      <button type="button" className="rounded-full border border-ember/30 bg-ember-soft px-2.5 py-1 text-[11.5px] font-semibold text-ember hover:bg-ember/20" onClick={() => setAmount(available.toFixed(dec))}>
+                        Max
+                      </button>
+                    </>
+                  }
+                />
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {[25, 50, 75].map((p) => (
+                    <button key={p} type="button" onClick={() => setAmount(((available * p) / 100).toFixed(dec))} className="k-num rounded-full border border-line bg-surface-2 px-3 py-1 text-[12px] text-fg-2 hover:text-fg">
+                      {p}%
+                    </button>
+                  ))}
+                  {!fromAcc && srcAsset === "USDT" && [100, 500, 1000].map((v) => (
+                    <button key={v} type="button" onClick={() => setAmount(String(v))} className="k-num rounded-full border border-line bg-surface-2 px-3 py-1 text-[12px] text-fg-2 hover:text-fg">
+                      ${v}
+                    </button>
+                  ))}
+                </div>
+                {err && (
+                  <div className="mt-3 flex items-start gap-2 text-[12.5px] text-down">
+                    <CircleAlert className="mt-0.5 size-3.5 shrink-0" /> {err}
+                  </div>
+                )}
+                {warn && (
+                  <div className="mt-3 flex items-start gap-2 rounded-[14px] border border-warn/25 bg-warn-soft px-3 py-2.5 text-[12.5px] text-fg-2">
+                    <CircleAlert className="mt-0.5 size-3.5 shrink-0 text-warn" /> Margin level on #{fromAcc!.login} would drop to <span className="k-num font-semibold text-warn">{Math.round(newLevel)}%</span>. Margin call at 50%, stop out at 20%.
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <Button variant="ember" size="lg" disabled={!amt || !!err} onClick={() => setConfirm(true)}>
+                  Review transfer <ArrowRight />
+                </Button>
+              </div>
+            </div>
+          </Card>
+          <Card className="mt-4">
+            <CardHeader title="How transfers work" />
+            <div className="grid grid-cols-1 gap-2 px-4 pb-5 pt-4 sm:grid-cols-2 sm:px-6">
+              {[
+                ["Own accounts only", "Funds move between your wallet and your own live accounts. Account-to-account goes via the wallet."],
+                ["USDT is 1:1", "1 USDT = 1 USD in your account. TRX and BTC convert at the live rate plus a 0.5% markup."],
+                ["Cent accounts in USC", "Moving $100 into a Cent account credits USC 10,000. Lot sizes are unchanged."],
+                ["Free margin protected", "You can only move out what your free margin allows, so open trades stay safe."],
+              ].map(([t, d]) => (
+                <div key={t} className="k-row px-4 py-3">
+                  <div className="flex items-center gap-2 text-[13.5px] font-medium">
+                    <Check className="size-3.5 text-up" /> {t}
+                  </div>
+                  <div className="mt-1 text-[12px] leading-snug text-fg-3">{d}</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </Reveal>
+
+        <div className="space-y-4 xl:col-span-5">
+          <Reveal delay={0.05}>
+            <Card hot className="overflow-hidden">
+              <div className="relative p-6">
+                <div className="k-label">You receive</div>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <motion.span key={receiveCur + Math.round(receive * 100)} initial={{ opacity: 0.4, y: 4 }} animate={{ opacity: 1, y: 0 }} className={cn("k-num text-[36px] font-semibold leading-none tracking-tight", err && "text-fg-3 line-through decoration-down/60")}>
+                    {formatNumber(receive)}
+                  </motion.span>
+                  <span className="text-[15px] font-medium text-fg-2">{receiveCur}</span>
+                </div>
+                <div className="mt-1 text-[12.5px] text-fg-3">
+                  {toAcc ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      into <AccountBadge a={toAcc} /> #{toAcc.login}
+                    </span>
+                  ) : (
+                    "into your Kalks Wallet"
+                  )}
+                </div>
+                <div className="mt-5 rounded-[14px] border border-white/10 bg-black/20 light:border-black/5 light:bg-white/70 px-4">
+                  <KeyValue rows={summaryRows} />
+                </div>
+                {fromAcc && (
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <div className="rounded-[14px] border border-white/10 bg-black/20 light:border-black/5 light:bg-white/70 px-3 py-2.5">
+                      <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Free margin after</div>
+                      <div className={cn("k-num mt-0.5 text-[14px] font-semibold", err ? "text-down" : "text-fg")}>
+                        {fromAcc.cent ? "USC " : "$"}
+                        {formatNumber(Math.max(0, freeMargin(fromAcc) - amt))}
+                      </div>
+                    </div>
+                    <div className="rounded-[14px] border border-white/10 bg-black/20 light:border-black/5 light:bg-white/70 px-3 py-2.5">
+                      <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Margin level after</div>
+                      <div className={cn("k-num mt-0.5 text-[14px] font-semibold", newLevel < 300 ? "text-warn" : "text-up")}>{Number.isFinite(newLevel) ? `${Math.round(Math.max(0, newLevel)).toLocaleString()}%` : "—"}</div>
+                    </div>
+                  </div>
+                )}
+                {!fromAcc && srcAsset !== "USDT" && (
+                  <div className="mt-4 flex items-start gap-2 text-[12px] text-fg-3">
+                    <Info className="mt-0.5 size-3.5 shrink-0" /> {srcAsset} is converted to USD at the live rate minus {CONVERSION.markupPct}% markup. Rate refreshes every tick until you confirm.
+                  </div>
+                )}
+              </div>
+            </Card>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <Card>
+              <CardHeader title="Recent transfers" action={<Link href="/wallet/history"><Button size="xs" variant="surface">History</Button></Link>} />
+              <div className="k-fade-bottom mt-4 space-y-2 px-4 pb-5 sm:px-6">
+                {recent.map((t) => (
+                  <TxRow key={t.id} tx={t} onClick={() => setTx(t)} />
+                ))}
+              </div>
+            </Card>
+          </Reveal>
+        </div>
+      </div>
+
+      <Dialog
+        open={confirm}
+        onOpenChange={setConfirm}
+        title="Confirm transfer"
+        description="Transfers between your own wallet and accounts are processed instantly."
+        width={460}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="ember" onClick={doTransfer}>
+              <ShieldCheck /> Confirm transfer
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div className="k-row flex items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] uppercase tracking-wider text-fg-3">From</div>
+              <div className="truncate text-[13.5px] font-medium">{fromAcc ? `#${fromAcc.login}` : "Kalks Wallet"}</div>
+              <div className="k-num text-[15px] font-semibold">
+                {formatNumber(amt, dec)} {srcCur}
+              </div>
+            </div>
+            <ArrowRight className="size-4 text-ember" />
+            <div className="min-w-0 flex-1 text-right">
+              <div className="text-[11px] uppercase tracking-wider text-fg-3">To</div>
+              <div className="truncate text-[13.5px] font-medium">{toAcc ? `#${toAcc.login}` : "Kalks Wallet"}</div>
+              <div className="k-num text-[15px] font-semibold text-up">
+                {formatNumber(receive)} {receiveCur}
+              </div>
+            </div>
+          </div>
+          <KeyValue rows={summaryRows} />
+        </div>
+      </Dialog>
+      <TxDetailDrawer tx={tx} onOpenChange={(o) => !o && setTx(null)} />
+    </div>
+  );
+}
+
+export default function TransferPage() {
+  return (
+    <React.Suspense fallback={null}>
+      <Transfer />
+    </React.Suspense>
+  );
+}
+

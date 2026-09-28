@@ -1,0 +1,287 @@
+[
+  {
+    "symbol": "EURUSD",
+    "asset_class": "forex",
+    "digits": 5,
+    "base_spread": 8e-05,
+    "provider": {
+      "market": "common",
+      "code": "EURUSD"
+    }
+  },
+  {
+    "symbol": "GBPUSD",
+    "asset_class": "forex",
+    "digits": 5,
+    "base_spread": 0.0001,
+    "provider": {
+      "market": "common",
+      "code": "GBPUSD"
+    }
+  },
+  {
+    "symbol": "USDJPY",
+    "asset_class": "forex",
+    "digits": 3,
+    "base_spread": 0.012,
+    "provider": {
+      "market": "common",
+      "code": "USDJPY"
+    }
+  },
+  {
+    "symbol": "AUDUSD",
+    "asset_class": "forex",
+    "digits": 5,
+    "base_spread": 0.0001,
+    "provider": {
+      "market": "common",
+      "code": "AUDUSD"
+    }
+  },
+  {
+    "symbol": "USDCAD",
+    "asset_class": "forex",
+    "digits": 5,
+    "base_spread": 0.00012,
+    "provider": {
+      "market": "common",
+      "code": "USDCAD"
+    }
+  },
+  {
+    "symbol": "USDCHF",
+    "asset_class": "forex",
+    "digits": 5,
+    "base_spread": 0.00012,
+    "provider": {
+      "market": "common",
+      "code": "USDCHF"
+    }
+  },
+  {
+    "symbol": "GBPJPY",
+    "asset_class": "forex",
+    "digits": 3,
+    "base_spread": 0.02,
+    "provider": {
+      "market": "common",
+      "code": "GBPJPY"
+    }
+  },
+  {
+    "symbol": "EURJPY",
+    "asset_class": "forex",
+    "digits": 3,
+    "base_spread": 0.018,
+    "provider": {
+      "market": "common",
+      "code": "EURJPY"
+    }
+  },
+  {
+    "symbol": "USDINR",
+    "asset_class": "forex",
+    "digits": 4,
+    "base_spread": 0.0035,
+    "provider": {
+      "market": "common",
+      "code": "USDINR"
+    }
+  },
+  {
+    "symbol": "XAUUSD",
+    "asset_class": "metals",
+    "digits": 2,
+    "base_spread": 0.18,
+    "provider": {
+      "market": "common",
+      "code": "XAUUSD"
+    }
+  },
+  {
+    "symbol": "XAGUSD",
+    "asset_class": "metals",
+    "digits": 3,
+    "base_spread": 0.02,
+    "provider": {
+      "market": "common",
+      "code": "XAGUSD"
+    }
+  },
+  {
+    "symbol": "US30",
+    "asset_class": "indices",
+    "digits": 1,
+    "base_spread": 1.8,
+    "provider": {
+      "market": "common",
+      "code": "US30"
+    }
+  },
+  {
+    "symbol": "NAS100",
+    "asset_class": "indices",
+    "digits": 1,
+    "base_spread": 1.2,
+    "provider": {
+      "market": "common",
+      "code": "NAS100"
+    }
+  },
+  {
+    "symbol": "SPX500",
+    "asset_class": "indices",
+    "digits": 1,
+    "base_spread": 0.5,
+    "provider": {
+      "market": "common",
+      "code": "US500"
+    }
+  },
+  {
+    "symbol": "GER40",
+    "asset_class": "indices",
+    "digits": 1,
+    "base_spread": 1.4,
+    "provider": {
+      "market": "common",
+      "code": "GER40"
+    }
+  },
+  {
+    "symbol": "UK100",
+    "asset_class": "indices",
+    "digits": 1,
+    "base_spread": 1.1,
+    "provider": {
+      "market": "common",
+      "code": "UK100"
+    }
+  },
+  {
+    "symbol": "JP225",
+    "asset_class": "indices",
+    "digits": 0,
+    "base_spread": 8,
+    "provider": {
+      "market": "common",
+      "code": "JPN225"
+    }
+  },
+  {
+    "symbol": "USOIL",
+    "asset_class": "energies",
+    "digits": 2,
+    "base_spread": 0.03,
+    "provider": {
+      "market": "common",
+      "code": "USOIL"
+    }
+  },
+  {
+    "symbol": "UKOIL",
+    "asset_class": "energies",
+    "digits": 2,
+    "base_spread": 0.03,
+    "provider": {
+      "market": "common",
+      "code": "UKOIL"
+    }
+  },
+  {
+    "symbol": "BTCUSD",
+    "asset_class": "crypto",
+    "digits": 2,
+    "base_spread": 18,
+    "provider": {
+      "market": "crypto",
+      "code": "BTCUSDT"
+    }
+  },
+  {
+    "symbol": "ETHUSD",
+    "asset_class": "crypto",
+    "digits": 2,
+    "base_spread": 1.6,
+    "provider": {
+      "market": "crypto",
+      "code": "ETHUSDT"
+    }
+  },
+  {
+    "symbol": "SOLUSD",
+    "asset_class": "crypto",
+    "digits": 3,
+    "base_spread": 0.12,
+    "provider": {
+      "market": "crypto",
+      "code": "SOLUSDT"
+    }
+  },
+  {
+    "symbol": "XRPUSD",
+    "asset_class": "crypto",
+    "digits": 4,
+    "base_spread": 0.0012,
+    "provider": {
+      "market": "crypto",
+      "code": "XRPUSDT"
+    }
+  },
+  {
+    "symbol": "AAPL",
+    "asset_class": "stocks",
+    "digits": 2,
+    "base_spread": 0.06,
+    "provider": {
+      "market": "stock",
+      "code": "AAPL.US"
+    },
+    "session": "us_equity"
+  },
+  {
+    "symbol": "TSLA",
+    "asset_class": "stocks",
+    "digits": 2,
+    "base_spread": 0.08,
+    "provider": {
+      "market": "stock",
+      "code": "TSLA.US"
+    },
+    "session": "us_equity"
+  },
+  {
+    "symbol": "NVDA",
+    "asset_class": "stocks",
+    "digits": 2,
+    "base_spread": 0.05,
+    "provider": {
+      "market": "stock",
+      "code": "NVDA.US"
+    },
+    "session": "us_equity"
+  },
+  {
+    "symbol": "META",
+    "asset_class": "stocks",
+    "digits": 2,
+    "base_spread": 0.12,
+    "provider": {
+      "market": "stock",
+      "code": "META.US"
+    },
+    "session": "us_equity"
+  },
+  {
+    "symbol": "NFLX",
+    "asset_class": "stocks",
+    "digits": 2,
+    "base_spread": 0.2,
+    "provider": {
+      "market": "stock",
+      "code": "NFLX.US"
+    },
+    "session": "us_equity"
+  }
+]

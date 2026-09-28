@@ -1,0 +1,24 @@
+# dependencies & builds
+node_modules/
+.next/
+.turbo/
+dist/
+target/
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets (only .env.example is committed)
+.env*
+!.env.example
+
+# generated per app by scripts/sync-assets.mjs
+apps/*/public/assets/
+
+# OS / editor / logs / archives
+.DS_Store
+*.log
+*.zip
+*.tgz
+
+# design scratch
+.superdesign/tmp/

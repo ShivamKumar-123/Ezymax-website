@@ -1,0 +1,35 @@
+import {
+  Bot,
+  Brain,
+  CandlestickChart,
+  Code2,
+  Copy,
+  GraduationCap,
+  Handshake,
+  Landmark,
+  PieChart,
+  ScanFace,
+  Smartphone,
+  Trophy,
+  Wallet,
+  Target,
+  type LucideIcon,
+} from "lucide-react";
+import type { BrkModuleKey } from "@kalks/mock/admin-platform-brokers";
+
+export const MODULE_ICON: Record<BrkModuleKey, LucideIcon> = {
+  trading: CandlestickChart,
+  wallet: Wallet,
+  ib: Handshake,
+  copy: Copy,
+  pamm: PieChart,
+  prop: Target,
+  contests: Trophy,
+  academy: GraduationCap,
+  ai_coach: Brain,
+  api: Code2,
+  strategy: Bot,
+  stocks: Landmark,
+  mobile: Smartphone,
+  kyc_auto: ScanFace,
+};

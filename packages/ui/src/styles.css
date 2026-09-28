@@ -1,0 +1,211 @@
+/* Kalks design tokens — see .superdesign/design-system.md */
+@import "flag-icons/css/flag-icons.min.css" layer(base);
+
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant light (&:where(.light, .light *));
+
+:root,
+.dark {
+  --k-bg: #07070a;
+  --k-surface: #111114;
+  --k-surface-2: #17171c;
+  --k-surface-3: #1e1e24;
+  --k-border: rgba(255, 255, 255, 0.07);
+  --k-border-top: rgba(255, 255, 255, 0.14);
+  --k-fg: #f5f5f7;
+  --k-fg-2: #a1a1aa;
+  --k-fg-3: #63636e;
+  --k-ember: #ff5a1f;
+  --k-ember-2: #ff8a3d;
+  --k-ember-soft: rgba(255, 90, 31, 0.12);
+  --k-gold: #e9b949;
+  --k-gold-soft: rgba(233, 185, 73, 0.12);
+  --k-up: #22c55e;
+  --k-up-soft: rgba(34, 197, 94, 0.12);
+  --k-down: #f04438;
+  --k-down-soft: rgba(240, 68, 56, 0.12);
+  --k-warn: #f59e0b;
+  --k-warn-soft: rgba(245, 158, 11, 0.12);
+  --k-info: #38bdf8;
+  --k-info-soft: rgba(56, 189, 248, 0.12);
+  --k-card-grad: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.008));
+  --k-glow-strength: 1;
+  --k-shadow-card: none;
+  color-scheme: dark;
+}
+
+.light {
+  --k-bg: #f6f4f1;
+  --k-surface: #ffffff;
+  --k-surface-2: #faf8f5;
+  --k-surface-3: #f1eee9;
+  --k-border: rgba(15, 15, 20, 0.08);
+  --k-border-top: rgba(15, 15, 20, 0.1);
+  --k-fg: #0e0e12;
+  --k-fg-2: #55555f;
+  --k-fg-3: #9a9aa3;
+  --k-gold: #c9971f;
+  --k-gold-soft: rgba(201, 151, 31, 0.12);
+  --k-up: #16a34a;
+  --k-down: #dc2626;
+  --k-card-grad: linear-gradient(180deg, #ffffff, #ffffff);
+  --k-glow-strength: 0.28;
+  --k-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px -12px rgba(0, 0, 0, 0.08);
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-bg: var(--k-bg);
+  --color-surface: var(--k-surface);
+  --color-surface-2: var(--k-surface-2);
+  --color-surface-3: var(--k-surface-3);
+  --color-line: var(--k-border);
+  --color-line-top: var(--k-border-top);
+  --color-fg: var(--k-fg);
+  --color-fg-2: var(--k-fg-2);
+  --color-fg-3: var(--k-fg-3);
+  --color-ember: var(--k-ember);
+  --color-ember-2: var(--k-ember-2);
+  --color-ember-soft: var(--k-ember-soft);
+  --color-gold: var(--k-gold);
+  --color-gold-soft: var(--k-gold-soft);
+  --color-up: var(--k-up);
+  --color-up-soft: var(--k-up-soft);
+  --color-down: var(--k-down);
+  --color-down-soft: var(--k-down-soft);
+  --color-warn: var(--k-warn);
+  --color-warn-soft: var(--k-warn-soft);
+  --color-info: var(--k-info);
+  --color-info-soft: var(--k-info-soft);
+  --font-sans: var(--font-geist-sans), Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  --radius-card: 20px;
+  --radius-row: 14px;
+  --animate-breathe: breathe 8s ease-in-out infinite;
+  --animate-shimmer: shimmer 6s ease-in-out infinite;
+  --animate-pulse-dot: pulse-dot 1.8s ease-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: calc(0.85 * var(--k-glow-strength)); }
+  50% { opacity: var(--k-glow-strength); }
+}
+@keyframes shimmer {
+  0%, 80% { transform: translateX(-120%) skewX(-20deg); }
+  100% { transform: translateX(220%) skewX(-20deg); }
+}
+@keyframes pulse-dot {
+  0% { box-shadow: 0 0 0 0 currentColor; }
+  100% { box-shadow: 0 0 0 6px transparent; }
+}
+@keyframes flash-up { from { color: var(--k-up); text-shadow: 0 0 10px var(--k-up-soft); } }
+@keyframes flash-down { from { color: var(--k-down); text-shadow: 0 0 10px var(--k-down-soft); } }
+@keyframes tick-bg-up { from { background-color: color-mix(in oklab, var(--k-up) 30%, transparent); } to { background-color: transparent; } }
+@keyframes tick-bg-down { from { background-color: color-mix(in oklab, var(--k-down) 30%, transparent); } to { background-color: transparent; } }
+@keyframes tick-nudge-up { from { transform: translateY(3px); opacity: 0.4; } }
+@keyframes tick-nudge-down { from { transform: translateY(-3px); opacity: 0.4; } }
+
+@layer base {
+  html { background: var(--k-bg); }
+  body {
+    background: var(--k-bg);
+    color: var(--k-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  * { border-color: var(--k-border); }
+  ::selection { background: var(--k-ember-soft); color: var(--k-fg); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--k-surface-3); border-radius: 999px; border: 3px solid var(--k-bg); }
+  ::-webkit-scrollbar-track { background: transparent; }
+}
+
+@layer components {
+  /* Ambient ember glow painted behind every page */
+  .k-glow {
+    pointer-events: none;
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 560px;
+    background:
+      radial-gradient(900px 380px at 50% -140px, rgba(255, 92, 31, 0.55), rgba(196, 52, 20, 0.22) 45%, transparent 72%),
+      radial-gradient(520px 260px at 88% -80px, rgba(233, 150, 60, 0.25), transparent 70%);
+    animation: var(--animate-breathe);
+  }
+  .k-noise {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
+  .k-card {
+    position: relative;
+    border-radius: var(--radius-card);
+    background: var(--k-card-grad), var(--k-surface);
+    border: 1px solid var(--k-border);
+    box-shadow: inset 0 1px 0 var(--k-border-top), var(--k-shadow-card);
+  }
+  .k-row {
+    border-radius: var(--radius-row);
+    background: var(--k-surface-2);
+    border: 1px solid var(--k-border);
+  }
+  .k-pill-group {
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--k-surface) 80%, transparent);
+    border: 1px solid var(--k-border);
+    box-shadow: inset 0 1px 0 var(--k-border-top);
+    backdrop-filter: blur(16px);
+  }
+  .k-ember-btn {
+    background: linear-gradient(135deg, #ff7a2f, #e8431a);
+    color: #fff;
+    box-shadow: 0 8px 24px -8px rgba(255, 90, 31, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+  .k-hot-card {
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgba(255, 90, 31, 0.35), transparent 60%),
+      linear-gradient(160deg, #2a130b, #120b09 60%, var(--k-surface));
+    border: 1px solid rgba(255, 120, 60, 0.25);
+    box-shadow: inset 0 1px 0 rgba(255, 170, 120, 0.25);
+  }
+  .light .k-hot-card {
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgba(255, 90, 31, 0.18), transparent 60%),
+      linear-gradient(160deg, #fff4ee, #ffffff);
+  }
+  .k-dotgrid {
+    background-image: radial-gradient(color-mix(in oklab, var(--k-fg) 14%, transparent) 1px, transparent 1px);
+    background-size: 14px 14px;
+  }
+  .k-fade-bottom { mask-image: linear-gradient(to bottom, #000 70%, transparent); }
+  .k-label { font-size: 11px; line-height: 14px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; color: var(--k-fg-2); }
+  .k-num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  /* live ticks: changed digits flash + slide in; cells pulse; ~MT5 speed */
+  .flash-up { animation: flash-up 0.38s ease-out; }
+  .flash-down { animation: flash-down 0.38s ease-out; }
+  .digit-up { display: inline-block; animation: flash-up 0.38s ease-out, tick-nudge-up 0.16s ease-out; }
+  .digit-down { display: inline-block; animation: flash-down 0.38s ease-out, tick-nudge-down 0.16s ease-out; }
+  .tick-bg-up { animation: tick-bg-up 0.45s ease-out; }
+  .tick-bg-down { animation: tick-bg-down 0.45s ease-out; }
+  .fi.fis { border-radius: 999px; }
+}
+
+/* ---------------- Kalks icon tiles (AnimIcon) — static, crisp, no blur or motion ---------------- */
+@layer components {
+  .anim-icon {
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: var(--ai-c);
+    background: color-mix(in oklab, var(--ai-c) 9%, var(--k-surface-2));
+    border: 1px solid color-mix(in oklab, var(--ai-c) 22%, var(--k-border));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}

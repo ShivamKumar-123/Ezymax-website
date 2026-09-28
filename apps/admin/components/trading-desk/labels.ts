@@ -1,0 +1,27 @@
+import type { AuditAction } from "@/lib/trading-desk";
+
+export const ACTION_LABEL: Record<AuditAction, string> = {
+  "position.open": "Trade created",
+  "position.modify": "SL / TP modified",
+  "position.partial_close": "Partially closed",
+  "position.close": "Closed",
+  "position.force_close": "Force closed",
+  "position.stop_out": "Stopped out",
+  "position.add_volume": "Volume added",
+  "position.price_correction": "Price correction",
+  "position.adjust_charges": "Swap / commission adjusted",
+  "position.void": "Trade voided",
+  "deal.reopen": "Deal reopened",
+  "book.transfer": "Book transfer",
+  "book.split": "Partial book transfer (split)",
+  "order.place": "Pending order placed",
+  "order.modify": "Order modified",
+  "order.cancel": "Order cancelled",
+  "order.fill": "Order filled by dealer",
+  "control.symbol": "Symbol control",
+  "control.account": "Account control",
+  "control.tenant": "Tenant policy",
+  "routing.rule": "Routing change",
+  "trade.rejected": "Rejected",
+  "desk.reset": "Desk data reset",
+};

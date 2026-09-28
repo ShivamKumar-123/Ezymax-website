@@ -1,0 +1,22 @@
+{
+  "name": "kalks",
+  "private": true,
+  "packageManager": "pnpm@12.6.0",
+  "scripts": {
+    "dev": "node scripts/sync-assets.mjs && turbo run dev --parallel",
+    "dev:crm": "pnpm --filter @kalks/crm dev",
+    "dev:admin": "pnpm --filter @kalks/admin dev",
+    "dev:terminal": "pnpm --filter @kalks/terminal dev",
+    "dev:gateway": "cargo run -p gateway",
+    "dev:market-data": "cargo run -p market-data",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "postinstall": "node scripts/sync-assets.mjs",
+    "sync-assets": "node scripts/sync-assets.mjs"
+  },
+  "devDependencies": {
+    "turbo": "2.11.3",
+    "typescript": "5.9.3"
+  }
+}

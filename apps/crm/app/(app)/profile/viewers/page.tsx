@@ -1,0 +1,172 @@
+"use client";
+
+import * as React from "react";
+import { Eye, EyeOff, Plus, ShieldOff, UserRound, CalendarDays } from "lucide-react";
+import { toast } from "sonner";
+import { Avatar, Button, Card, CardHeader, Chip, CopyButton, Dialog, Field, Icon3D, Input, PageHeader, Reveal, StatusChip, Toggle } from "@kalks/ui";
+import { ACCOUNTS, PEOPLE } from "@kalks/mock";
+
+const SECTIONS = ["Dashboard", "Accounts & positions", "Trade history", "Portfolio & analytics", "Wallet (balances only)", "Partner dashboard"];
+
+const VIEWERS = [
+  { id: "v1", name: "Rahul Verma", note: "Accountant", login: "view-arjun-rv", person: PEOPLE[13]!, accounts: ["80412337", "80412512"], sections: 4, expires: "31 Dec 2026", lastSeen: "2h ago", status: "active" },
+  { id: "v2", name: "Investor preview", note: "Shared with prospective investors", login: "view-arjun-inv", person: undefined, accounts: ["80412337"], sections: 2, expires: "15 Oct 2026", lastSeen: "5d ago", status: "active" },
+  { id: "v3", name: "Mentor access", note: "Trading mentor review", login: "view-arjun-mnt", person: PEOPLE[9]!, accounts: ["80412512"], sections: 3, expires: "Expired 01 Sep", lastSeen: "28d ago", status: "expired" },
+];
+
+const ACTIVITY = [
+  { who: "Rahul Verma", what: "Viewed trade history · #80412337", when: "Today 19:02" },
+  { who: "Rahul Verma", what: "Downloaded statement · Aug 2026", when: "Today 18:57" },
+  { who: "Investor preview", what: "Viewed dashboard", when: "19 Sep 11:20" },
+  { who: "Mentor access", what: "Login blocked — access expired", when: "02 Sep 09:14" },
+];
+
+export default function ViewersPage() {
+  const [show, setShow] = React.useState<Record<string, boolean>>({});
+  const live = ACCOUNTS.filter((a) => a.type === "live");
+  return (
+    <div>
+      <PageHeader
+        title="View-only access"
+        subtitle="Create read-only logins for accountants, investors or mentors. Viewers can see what you choose — they can never trade, transfer or change settings."
+        actions={
+          <Dialog
+            title="Create view-only login"
+            description="The viewer signs in at app.kalks.com with these credentials."
+            trigger={
+              <Button variant="ember">
+                <Plus /> New viewer
+              </Button>
+            }
+            footer={<Button variant="ember" onClick={() => toast.success("Viewer created", { description: "Credentials were copied to your clipboard." })}>Create viewer</Button>}
+          >
+            <div className="space-y-4">
+              <Field label="Label">
+                <Input leading={<UserRound />} placeholder="e.g. My accountant" />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Username">
+                  <Input defaultValue="view-arjun-04" className="font-mono" />
+                </Field>
+                <Field label="Expires on">
+                  <Input type="date" leading={<CalendarDays />} defaultValue="2026-12-31" />
+                </Field>
+              </div>
+              <Field label="Accounts they can see">
+                <div className="flex flex-wrap gap-2">
+                  {live.map((a) => (
+                    <label key={a.login} className="k-row flex cursor-pointer items-center gap-2 px-3 py-2 text-[13px]">
+                      <input type="checkbox" defaultChecked className="accent-[var(--k-ember)]" />
+                      <span className="font-mono">#{a.login}</span>
+                      <span className="text-fg-3">{a.group}</span>
+                    </label>
+                  ))}
+                </div>
+              </Field>
+              <Field label="Sections">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {SECTIONS.map((s, i) => (
+                    <label key={s} className="k-row flex cursor-pointer items-center gap-2 px-3 py-2 text-[13px]">
+                      <input type="checkbox" defaultChecked={i < 3} className="accent-[var(--k-ember)]" />
+                      {s}
+                    </label>
+                  ))}
+                </div>
+              </Field>
+            </div>
+          </Dialog>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {VIEWERS.map((v, i) => (
+          <Reveal key={v.id} delay={i * 0.05}>
+            <Card className="h-full p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  {v.person ? <Avatar src={v.person.photo} name={v.name} size={44} /> : <span className="grid size-11 place-items-center rounded-full bg-surface-3"><Eye className="size-5 text-fg-2" /></span>}
+                  <div>
+                    <div className="font-medium">{v.name}</div>
+                    <div className="text-xs text-fg-3">{v.note}</div>
+                  </div>
+                </div>
+                <StatusChip status={v.status} />
+              </div>
+              <div className="mt-5 space-y-2 text-[13px]">
+                <div className="k-row flex items-center justify-between px-3 py-2">
+                  <span className="text-fg-3">Username</span>
+                  <span className="flex items-center gap-1 font-mono">
+                    {v.login}
+                    <CopyButton value={v.login} />
+                  </span>
+                </div>
+                <div className="k-row flex items-center justify-between px-3 py-2">
+                  <span className="text-fg-3">Password</span>
+                  <span className="flex items-center gap-1 font-mono">
+                    {show[v.id] ? "Vw#7qL2x!9" : "••••••••••"}
+                    <button onClick={() => setShow((s) => ({ ...s, [v.id]: !s[v.id] }))} className="grid size-6 place-items-center text-fg-3 hover:text-fg" aria-label="Toggle password">
+                      {show[v.id] ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                    </button>
+                  </span>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {v.accounts.map((a) => (
+                  <Chip key={a} size="sm" className="font-mono">
+                    #{a}
+                  </Chip>
+                ))}
+                <Chip size="sm">{v.sections} sections</Chip>
+              </div>
+              <div className="mt-4 flex items-center justify-between border-t border-line pt-4 text-xs text-fg-3">
+                <span>{v.expires}</span>
+                <span>Last seen {v.lastSeen}</span>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button size="sm" variant="surface" className="flex-1" onClick={() => toast("Edit viewer permissions")}>
+                  Edit
+                </Button>
+                <Button size="sm" variant="down-outline" className="flex-1" onClick={() => toast.success(`${v.name} access revoked`)}>
+                  <ShieldOff /> Revoke
+                </Button>
+              </div>
+            </Card>
+          </Reveal>
+        ))}
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Reveal className="lg:col-span-2">
+          <Card>
+            <CardHeader title="Viewer activity" subtitle="Everything viewers do is logged" />
+            <div className="space-y-2 p-6 pt-4">
+              {ACTIVITY.map((a, i) => (
+                <div key={i} className="k-row flex items-center gap-3 px-4 py-3 text-[13.5px]">
+                  <span className="size-2 rounded-full bg-ember" />
+                  <span className="font-medium">{a.who}</span>
+                  <span className="flex-1 text-fg-2">{a.what}</span>
+                  <span className="k-num text-xs text-fg-3">{a.when}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </Reveal>
+        <Reveal delay={0.05}>
+          <Card hot className="h-full p-6">
+            <Icon3D name="key" size={64} />
+            <h3 className="mt-4 text-lg font-medium">Investor passwords</h3>
+            <p className="mt-1 text-sm text-fg-2">Each trading account also has an MT5-style investor password for read-only terminal access.</p>
+            <div className="mt-4 space-y-2">
+              {live.map((a) => (
+                <div key={a.login} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[13px]">
+                  <span className="font-mono">#{a.login}</span>
+                  <Toggle checked={a.login !== "80413001"} onChange={() => toast.success("Investor access updated")} label={`Investor access ${a.login}`} />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </Reveal>
+      </div>
+    </div>
+  );
+}

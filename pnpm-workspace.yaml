@@ -1,0 +1,8 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+minimumReleaseAgeExclude:
+  - framer-motion@13.4.2
+  - lucide-react@1.48.0
+  - motion-dom@13.4.2
+  - motion@13.4.2
