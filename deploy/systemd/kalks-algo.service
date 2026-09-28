@@ -1,0 +1,25 @@
+[Unit]
+Description=Kalks ALGO service (:8099) - strategies, backtests, 24/7 strategy runtime, webhooks, public API, marketplace
+After=network-online.target postgresql.service kalks-market-data.service kalks-trading.service
+Wants=network-online.target
+
+[Service]
+User=kalks
+WorkingDirectory=/home/kalks/kalks/services/algo
+EnvironmentFile=/home/kalks/kalks/.env.local
+EnvironmentFile=-/home/kalks/kalks/.env.claude
+Environment=RUST_LOG=info
+Environment=ALGO_ENV=production
+Environment=ALGO_BIND=127.0.0.1:8099
+Environment=ALGO_PUBLIC_URL=https://api.kalkstrade.com/algo
+ExecStart=/home/kalks/kalks/target/release/algo
+Restart=always
+RestartSec=3
+# running backtests are re-queued and deployments resume from their last evaluated bar after a restart
+KillSignal=SIGINT
+TimeoutStopSec=20
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

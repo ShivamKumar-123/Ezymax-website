@@ -46,6 +46,17 @@ admin.kalkstrade.com {
 # Public market data (quotes, candles, WebSocket stream). Admin endpoints are never exposed.
 api.kalkstrade.com {
 	import common
+	# ALGO public surface only: webhook alerts and the API-key REST API (everything else needs the internal token)
+	handle_path /algo/* {
+		@algoPublic path /hooks/* /public/v1/*
+		handle @algoPublic {
+			request_body {
+				max_size 64KB
+			}
+			reverse_proxy 127.0.0.1:8099
+		}
+		respond 404
+	}
 	@admin path /v1/admin*
 	respond @admin 404
 	reverse_proxy 127.0.0.1:8081
