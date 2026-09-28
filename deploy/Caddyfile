@@ -60,3 +60,24 @@ kalkstrade.com {
 www.kalkstrade.com {
 	redir https://kalkstrade.com{uri} permanent
 }
+
+# ---- Demo showcase (mock data, no sign-in). Not indexed by search engines. ----
+(demo) {
+	import common
+	header X-Robots-Tag "noindex, nofollow"
+}
+
+demo.kalkstrade.com {
+	import demo
+	reverse_proxy 127.0.0.1:4000
+}
+
+demo-admin.kalkstrade.com {
+	import demo
+	reverse_proxy 127.0.0.1:4001
+}
+
+demo-trade.kalkstrade.com {
+	import demo
+	reverse_proxy 127.0.0.1:4002
+}
