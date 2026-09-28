@@ -40,6 +40,8 @@ cargo run -p gateway                # http://127.0.0.1:8080 (only the apps call 
 
 Its settings (`GATEWAY_*`, `SESSION_SECRET`, `SUPER_ADMIN_*`) live in `.env.local` at the repo root, and each app's `.env.local` holds `GATEWAY_URL` and `GATEWAY_INTERNAL_TOKEN`. The super-admin account is created once on first start. The Back Office reads clients, the audit log, staff and sessions through the gateway's staff-authenticated `/v1/admin/*` endpoints (`services/gateway/src/admin.rs`), and edits spread markups through market-data with `MARKET_DATA_URL` / `MARKET_DATA_ADMIN_TOKEN` in `apps/admin/.env.local` (same token as `MARKET_DATA_ADMIN_TOKEN` in the root `.env.local`; see `apps/admin/.env.example`). Email sending is not configured yet, so in development the sign-in codes appear on screen and in the gateway log.
 
+"Continue with Google" runs in the Client Area's route handlers (`apps/crm/app/api/auth/google/*`, `apps/crm/lib/google-oauth.ts`): state + PKCE + nonce, server-side code exchange, ID-token verification against Google's keys, then the gateway's `/v1/auth/google` endpoints. It needs `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `NEXT_PUBLIC_GOOGLE_LOGIN=1` in `apps/crm/.env.local` (see `apps/crm/.env.example`), and the Google client must list `<origin>/api/auth/google/callback` as a redirect URI (`http://localhost:3000/...` for local testing). Tests: `cargo test -p gateway` and `pnpm --filter ./apps/crm test`.
+
 ## Trading engine
 
 The Rust trading engine runs accounts, orders, positions, margin, swaps, the double-entry ledger and the dealing desk. It uses PostgreSQL on port 5433 (database `kalks_trading`, created and migrated on first start) and takes prices from market-data.

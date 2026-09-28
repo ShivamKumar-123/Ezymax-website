@@ -188,13 +188,17 @@ Browser/PWA notifications for price alerts, margin calls and deposit confirmatio
 **Where to get it:** no external account is needed. Generate the keys on the card or with `npx web-push generate-vapid-keys`.
 
 ## 11. Google sign-in · Optional
+"Continue with Google" on the Client Area sign-in and sign-up pages (D27). New Google users finish a short profile step (country, phone, date of birth, referral code, terms) before the account is created; their email counts as verified.
+
 | Field | Example / notes |
 |---|---|
-| Client ID | `…apps.googleusercontent.com` |
-| Client secret (secret) | `GOCSPX-…` |
-| Redirect URL (read-only) | Add `https://app.kalks.com/auth/callback/google` to the Google client |
+| Client ID | `…apps.googleusercontent.com` → `GOOGLE_CLIENT_ID` in `apps/crm/.env.production.local` |
+| Client secret (secret) | `GOCSPX-…` → `GOOGLE_CLIENT_SECRET` in `apps/crm/.env.production.local` |
+| Show the button | `NEXT_PUBLIC_GOOGLE_LOGIN=1` in the same file (read at build time, so rebuild after changing it) |
+| Authorised redirect URI | `https://app.kalkstrade.com/api/auth/google/callback` (add `http://localhost:3000/api/auth/google/callback` too if you want to test locally) |
+| Authorised JavaScript origin | not needed (the flow is server-side) |
 
-**Where to get it:** Google Cloud console → APIs & Services → Credentials → OAuth client ID (Web application).
+**Where to get it:** Google Cloud console → APIs & Services → Credentials → OAuth client ID (Web application). On the OAuth consent screen, use the scopes `openid`, `email` and `profile` only, add the app name, logo, support email, and the privacy policy and terms links, then publish the app ("In production"). While it is in "Testing", only the listed test users can sign in.
 
 ## 12. Web analytics & pixels · Optional
 Sends sign-up, KYC and FTD conversions with UTM parameters. This feeds **Marketing → Campaigns** attribution.
