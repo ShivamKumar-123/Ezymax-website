@@ -1,15 +1,6 @@
 # Kalks production edge (Caddy). HTTPS certificates are issued and renewed automatically.
-# Env (from /etc/caddy/kalks.env): SITE_LOCK_USER, SITE_LOCK_HASH (bcrypt, `caddy hash-password`).
 {
 	email admin@kalkstrade.com
-}
-
-# Pre-launch lock: one shared login in front of the sites. Remove the `import sitelock`
-# lines once SMTP is live and the gateway runs with GATEWAY_ENV=production.
-(sitelock) {
-	basic_auth {
-		{$SITE_LOCK_USER} {$SITE_LOCK_HASH}
-	}
 }
 
 (common) {
@@ -25,21 +16,18 @@
 # Client Area (CRM)
 app.kalkstrade.com {
 	import common
-	import sitelock
 	reverse_proxy 127.0.0.1:3000
 }
 
 # Kalks Trader
 trade.kalkstrade.com {
 	import common
-	import sitelock
 	reverse_proxy 127.0.0.1:3002
 }
 
 # Back Office
 admin.kalkstrade.com {
 	import common
-	import sitelock
 	reverse_proxy 127.0.0.1:3001
 }
 
@@ -54,7 +42,6 @@ api.kalkstrade.com {
 # Website (deployed separately from the website repo on :3010)
 kalkstrade.com {
 	import common
-	import sitelock
 	reverse_proxy 127.0.0.1:3010
 }
 
