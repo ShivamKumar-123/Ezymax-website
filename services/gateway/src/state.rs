@@ -14,6 +14,8 @@ pub struct AppState {
     pub cfg: Arc<Config>,
     pub keys: Keys,
     pub limiter: Limiter,
+    /// Present when SMTP is configured.
+    pub mailer: Option<crate::mailer::Mailer>,
 }
 
 /// Request context forwarded by the Next.js BFF route handlers.

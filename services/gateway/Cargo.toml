@@ -12,6 +12,7 @@ chrono = { version = "0.4.45", features = ["serde"] }
 dotenvy = "0.15.7"
 getrandom = "0.4.3"
 hmac = "0.13.0"
+lettre = { version = "0.11.23", default-features = false, features = ["tokio1", "tokio1-rustls", "smtp-transport", "builder", "hostname", "webpki-roots", "ring"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sha2 = "0.11.0"

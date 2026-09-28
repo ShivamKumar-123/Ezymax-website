@@ -12,6 +12,7 @@ mod db;
 mod error;
 mod flows;
 mod identity;
+mod mailer;
 mod ratelimit;
 mod shares;
 mod staff_auth;
@@ -53,7 +54,24 @@ async fn main() -> anyhow::Result<()> {
     db::seed_super_admin(&pool, &cfg).await?;
     let _ = crypto::dummy_hash();
 
-    let st = AppState { pool, keys: crypto::Keys::new(&cfg.session_secret), cfg: Arc::new(cfg), limiter: Default::default() };
+    let mailer = if cfg.smtp_configured {
+        let m = mailer::Mailer::new(mailer::SmtpSettings {
+            host: &cfg.smtp_host,
+            port: cfg.smtp_port,
+            user: &cfg.smtp_user,
+            password: &cfg.smtp_password,
+            from: &cfg.smtp_from,
+        })?;
+        match m.test_connection().await {
+            Ok(true) => tracing::info!(host = %cfg.smtp_host, "SMTP login ok"),
+            Ok(false) => tracing::error!(host = %cfg.smtp_host, "SMTP server did not accept the connection"),
+            Err(e) => tracing::error!(host = %cfg.smtp_host, error = %e, "SMTP connection failed"),
+        }
+        Some(m)
+    } else {
+        None
+    };
+    let st = AppState { pool, keys: crypto::Keys::new(&cfg.session_secret), cfg: Arc::new(cfg), limiter: Default::default(), mailer };
 
     // keep the limiter bounded; purge long-dead sessions and codes
     {

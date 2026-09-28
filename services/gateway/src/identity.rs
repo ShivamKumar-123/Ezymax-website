@@ -328,15 +328,21 @@ pub async fn send_otp(st: &AppState, ctx: &Ctx, kind: Kind, tenant_id: i64, subj
     .bind(&challenge)
     .execute(&st.pool)
     .await?;
-    deliver(st, email, purpose, &code);
+    deliver(st, email, purpose, &code, policy(kind).otp_ttl.num_minutes());
     Ok((challenge, code))
 }
 
-/// Email delivery. SMTP is not configured yet: in development the code goes to the service log.
-fn deliver(st: &AppState, email: &str, purpose: Purpose, code: &str) {
-    if st.cfg.smtp_configured {
-        // TODO(smtp): send through the transactional mail provider once SMTP_* is configured.
-        tracing::warn!(to = %mask_email(email), purpose = purpose.as_str(), "SMTP configured but mail sender not implemented yet");
+/// Email delivery. With SMTP configured the code is emailed in the background (never logged);
+/// without it, development mode writes the code to the service log.
+fn deliver(st: &AppState, email: &str, purpose: Purpose, code: &str, ttl_minutes: i64) {
+    if let Some(mailer) = st.mailer.clone() {
+        let (to, code) = (email.to_string(), code.to_string());
+        tokio::spawn(async move {
+            match mailer.send_code(&to, purpose, &code, ttl_minutes).await {
+                Ok(()) => tracing::info!(to = %mask_email(&to), purpose = purpose.as_str(), "email code sent"),
+                Err(e) => tracing::error!(to = %mask_email(&to), purpose = purpose.as_str(), error = %e, "email code could not be sent"),
+            }
+        });
     } else if st.cfg.dev_mode {
         tracing::info!(target: "otp", to = %email, purpose = purpose.as_str(), %code, "DEV email OTP (SMTP not configured)");
     } else {
@@ -424,7 +430,7 @@ pub async fn resend_otp(st: &AppState, kind: Kind, challenge: &str) -> ApiResult
     .bind(Utc::now() + policy(kind).otp_ttl)
     .execute(&st.pool)
     .await?;
-    deliver(st, &email, purpose, &code);
+    deliver(st, &email, purpose, &code, policy(kind).otp_ttl.num_minutes());
     Ok(challenge_json(st, challenge, &email, purpose, kind, Some(&code)))
 }
 

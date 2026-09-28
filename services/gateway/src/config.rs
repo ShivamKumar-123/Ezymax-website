@@ -13,8 +13,13 @@ pub struct Config {
     pub internal_token: String,
     /// `development` exposes OTP codes in API responses (`dev_code`) and logs them; `production` never does.
     pub dev_mode: bool,
-    /// SMTP is not wired yet; when false, OTP codes are written to the service log in dev mode.
+    /// True when SMTP_HOST is set: codes go out by email and are never shown in API responses.
     pub smtp_configured: bool,
+    pub smtp_host: String,
+    pub smtp_port: u16,
+    pub smtp_user: String,
+    pub smtp_password: String,
+    pub smtp_from: String,
     pub super_admin_email: String,
     pub super_admin_password: String,
     pub super_admin_name: String,
@@ -47,6 +52,11 @@ impl fmt::Debug for Config {
             .field("internal_token", &redact(&self.internal_token))
             .field("dev_mode", &self.dev_mode)
             .field("smtp_configured", &self.smtp_configured)
+            .field("smtp_host", &self.smtp_host)
+            .field("smtp_port", &self.smtp_port)
+            .field("smtp_user", &self.smtp_user)
+            .field("smtp_password", &redact(&self.smtp_password))
+            .field("smtp_from", &self.smtp_from)
             .field("super_admin_email", &self.super_admin_email)
             .field("super_admin_password", &redact(&self.super_admin_password))
             .finish()
@@ -75,6 +85,11 @@ impl Config {
             internal_token,
             dev_mode,
             smtp_configured: !var("SMTP_HOST", "").is_empty(),
+            smtp_host: var("SMTP_HOST", ""),
+            smtp_port: var("SMTP_PORT", "465").parse().unwrap_or(465),
+            smtp_user: var("SMTP_USER", ""),
+            smtp_password: var("SMTP_PASSWORD", ""),
+            smtp_from: var("SMTP_FROM", "Kalks <no-reply@kalkstrade.com>"),
             super_admin_email: var("SUPER_ADMIN_EMAIL", "").to_lowercase(),
             super_admin_password: var("SUPER_ADMIN_PASSWORD", ""),
             super_admin_name: var("SUPER_ADMIN_NAME", "Kalks Admin"),
