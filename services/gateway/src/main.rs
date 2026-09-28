@@ -12,6 +12,7 @@ mod crypto;
 mod db;
 mod error;
 mod flows;
+mod google_auth;
 mod identity;
 mod mailer;
 mod ratelimit;
@@ -127,6 +128,9 @@ fn router(st: AppState) -> Router {
         .route("/v1/auth/reset", post(client_auth::reset))
         .route("/v1/auth/verify-email", post(client_auth::verify_email))
         .route("/v1/auth/resend", post(client_auth::resend))
+        .route("/v1/auth/google", post(google_auth::google))
+        .route("/v1/auth/google/ticket", post(google_auth::ticket))
+        .route("/v1/auth/google/complete", post(google_auth::complete))
         .route("/v1/admin/auth/login", post(staff_auth::login))
         .route("/v1/admin/auth/verify-otp", post(staff_auth::verify_otp))
         .route("/v1/admin/auth/resend", post(staff_auth::resend))

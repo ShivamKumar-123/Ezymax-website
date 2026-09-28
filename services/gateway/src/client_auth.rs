@@ -26,7 +26,7 @@ pub fn body<T>(r: Result<Json<T>, JsonRejection>) -> ApiResult<T> {
 pub async fn user_json(st: &AppState, id: i64) -> ApiResult<Value> {
     let r = sqlx::query(
         "SELECT u.id, u.email, u.first_name, u.last_name, u.phone_dial, u.phone, u.country, u.date_of_birth, u.kyc_status,
-                u.email_verified_at IS NOT NULL AS email_verified, u.referral_code, u.created_at, t.slug, t.name AS tenant_name
+                u.email_verified_at IS NOT NULL AS email_verified, u.google_sub IS NOT NULL AS google_linked, u.referral_code, u.created_at, t.slug, t.name AS tenant_name
          FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.id = $1",
     )
     .bind(id)
@@ -47,17 +47,29 @@ pub async fn user_json(st: &AppState, id: i64) -> ApiResult<Value> {
         "date_of_birth": r.get::<NaiveDate, _>("date_of_birth"),
         "kyc_status": r.get::<String, _>("kyc_status"),
         "email_verified": r.get::<bool, _>("email_verified"),
+        "google_linked": r.get::<bool, _>("google_linked"),
         "referral_code": r.get::<String, _>("referral_code"),
         "created_at": r.get::<chrono::DateTime<Utc>, _>("created_at"),
         "tenant": { "slug": r.get::<String, _>("slug"), "name": r.get::<String, _>("tenant_name") },
     }))
 }
 
-async fn signed_in(st: &AppState, ctx: &Ctx, tenant_id: i64, user_id: i64, via: &str) -> ApiResult<Value> {
+pub(crate) async fn signed_in(st: &AppState, ctx: &Ctx, tenant_id: i64, user_id: i64, via: &str) -> ApiResult<Value> {
     identity::mark_login(&st.pool, K, user_id).await?;
     let s = identity::create_session(st, ctx, K, tenant_id, user_id).await?;
     audit::record(&st.pool, ctx, Entry { tenant_id, actor_kind: "user", actor_id: Some(user_id), action: "user.login", target: None, meta: json!({"via": via}) }).await;
     Ok(json!({ "status": "ok", "session": { "token": s.token, "expires_at": s.expires_at }, "user": user_json(st, user_id).await? }))
+}
+
+/// Welcome email, sent in the background once per account (right after its email address is verified).
+pub(crate) fn send_welcome(st: &AppState, email: String, first_name: String) {
+    if let Some(mailer) = st.mailer.clone() {
+        tokio::spawn(async move {
+            if let Err(e) = mailer.send_welcome(&email, &first_name).await {
+                tracing::error!(error = %e, "welcome email could not be sent");
+            }
+        });
+    }
 }
 
 // ---------- register ----------
@@ -85,9 +97,86 @@ pub struct RegisterReq {
     accept_terms: bool,
 }
 
-fn referral_prefix(first: &str) -> String {
+pub(crate) fn referral_prefix(first: &str) -> String {
     let p: String = first.chars().filter(|c| c.is_ascii_alphabetic()).take(6).collect::<String>().to_uppercase();
     if p.len() >= 2 { p } else { "KALKS".into() }
+}
+
+/// A client account about to be created (email sign-up or Google sign-up).
+pub(crate) struct NewUser<'a> {
+    pub tenant_id: i64,
+    pub email: &'a str,
+    pub password_hash: &'a str,
+    pub first_name: &'a str,
+    pub last_name: &'a str,
+    pub phone_dial: &'a str,
+    pub phone: &'a str,
+    pub country: &'a str,
+    pub date_of_birth: NaiveDate,
+    pub referred_by: Option<i64>,
+    pub referral_raw: Option<&'a str>,
+    /// Google sign-up: (sub, picture). The email counts as verified (Google verified it).
+    pub google: Option<(&'a str, Option<&'a str>)>,
+}
+
+/// Inserts a user with a fresh referral code. `Ok(None)` when the email (or Google account) is already taken.
+pub(crate) async fn insert_user(st: &AppState, u: NewUser<'_>) -> ApiResult<Option<i64>> {
+    let prefix = referral_prefix(u.first_name);
+    let (google_sub, avatar) = match u.google {
+        Some((sub, pic)) => (Some(sub), pic),
+        None => (None, None),
+    };
+    for _ in 0..6 {
+        let n = u32::from_le_bytes(crypto::random_bytes::<4>()) % 9000 + 1000;
+        let code = format!("{prefix}{n}");
+        let res = sqlx::query_scalar::<_, i64>(
+            "INSERT INTO users (tenant_id, email, password_hash, first_name, last_name, phone_dial, phone, country, date_of_birth,
+                                referral_code, referred_by, referred_code_raw, terms_accepted_at,
+                                google_sub, google_linked_at, avatar_url, email_verified_at)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, now(),
+                     $13, CASE WHEN $13::text IS NULL THEN NULL ELSE now() END, $14,
+                     CASE WHEN $13::text IS NULL THEN NULL ELSE now() END)
+             ON CONFLICT DO NOTHING RETURNING id",
+        )
+        .bind(u.tenant_id)
+        .bind(u.email)
+        .bind(u.password_hash)
+        .bind(u.first_name)
+        .bind(u.last_name)
+        .bind(u.phone_dial)
+        .bind(u.phone)
+        .bind(u.country)
+        .bind(u.date_of_birth)
+        .bind(&code)
+        .bind(u.referred_by)
+        .bind(u.referral_raw)
+        .bind(google_sub)
+        .bind(avatar)
+        .fetch_optional(&st.pool)
+        .await?;
+        if let Some(id) = res {
+            return Ok(Some(id));
+        }
+        // conflict: the email (or Google account) raced in, or the referral code collided
+        let taken: Option<i64> = sqlx::query_scalar("SELECT id FROM users WHERE tenant_id = $1 AND (email = $2 OR google_sub = $3)")
+            .bind(u.tenant_id)
+            .bind(u.email)
+            .bind(google_sub)
+            .fetch_optional(&st.pool)
+            .await?;
+        if taken.is_some() {
+            return Ok(None);
+        }
+    }
+    Err(anyhow::anyhow!("could not allocate referral code").into())
+}
+
+/// Resolves a referral code to the referring client (unknown codes are kept raw, not rejected).
+pub(crate) async fn referrer(st: &AppState, tenant_id: i64, code: Option<&str>) -> ApiResult<Option<i64>> {
+    Ok(match code {
+        Some(code) => sqlx::query_scalar("SELECT id FROM users WHERE tenant_id = $1 AND referral_code = $2").bind(tenant_id).bind(code).fetch_optional(&st.pool).await?,
+        None => None,
+    })
 }
 
 pub async fn register(State(st): State<AppState>, ctx: Ctx, req: Result<Json<RegisterReq>, JsonRejection>) -> ApiResult<(StatusCode, Json<Value>)> {
@@ -112,48 +201,25 @@ pub async fn register(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Reg
     if exists.is_some() {
         return Err(ApiError::EmailTaken);
     }
-    let referred_by: Option<i64> = match &referral {
-        Some(code) => sqlx::query_scalar("SELECT id FROM users WHERE tenant_id = $1 AND referral_code = $2").bind(tenant_id).bind(code).fetch_optional(&st.pool).await?,
-        None => None,
-    };
+    let referred_by = referrer(&st, tenant_id, referral.as_deref()).await?;
     let hash = identity::hash_password_blocking(r.password).await?;
 
-    let prefix = referral_prefix(&first);
-    let mut user_id: Option<i64> = None;
-    for _ in 0..6 {
-        let n = u32::from_le_bytes(crypto::random_bytes::<4>()) % 9000 + 1000;
-        let code = format!("{prefix}{n}");
-        let res = sqlx::query_scalar::<_, i64>(
-            "INSERT INTO users (tenant_id, email, password_hash, first_name, last_name, phone_dial, phone, country, date_of_birth,
-                                referral_code, referred_by, referred_code_raw, terms_accepted_at)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, now())
-             ON CONFLICT DO NOTHING RETURNING id",
-        )
-        .bind(tenant_id)
-        .bind(&email)
-        .bind(&hash)
-        .bind(&first)
-        .bind(&last)
-        .bind(&dial)
-        .bind(&phone)
-        .bind(&country)
-        .bind(dob)
-        .bind(&code)
-        .bind(referred_by)
-        .bind(&referral)
-        .fetch_optional(&st.pool)
-        .await?;
-        if let Some(id) = res {
-            user_id = Some(id);
-            break;
-        }
-        // conflict: either the email raced in, or the referral code collided
-        let taken: Option<i64> = sqlx::query_scalar("SELECT id FROM users WHERE tenant_id = $1 AND email = $2").bind(tenant_id).bind(&email).fetch_optional(&st.pool).await?;
-        if taken.is_some() {
-            return Err(ApiError::EmailTaken);
-        }
-    }
-    let user_id = user_id.ok_or_else(|| anyhow::anyhow!("could not allocate referral code"))?;
+    let user_id = insert_user(&st, NewUser {
+        tenant_id,
+        email: &email,
+        password_hash: &hash,
+        first_name: &first,
+        last_name: &last,
+        phone_dial: &dial,
+        phone: &phone,
+        country: &country,
+        date_of_birth: dob,
+        referred_by,
+        referral_raw: referral.as_deref(),
+        google: None,
+    })
+    .await?
+    .ok_or(ApiError::EmailTaken)?;
 
     audit::record(&st.pool, &ctx, Entry {
         tenant_id,
@@ -227,13 +293,8 @@ pub async fn verify_email(State(st): State<AppState>, ctx: Ctx, req: Result<Json
             .bind(v.subject_id)
             .fetch_optional(&st.pool)
             .await?;
-            if let (Some(row), Some(mailer)) = (first, st.mailer.clone()) {
-                let (email, first_name): (String, String) = (row.get("email"), row.get("first_name"));
-                tokio::spawn(async move {
-                    if let Err(e) = mailer.send_welcome(&email, &first_name).await {
-                        tracing::error!(error = %e, "welcome email could not be sent");
-                    }
-                });
+            if let Some(row) = first {
+                send_welcome(&st, row.get("email"), row.get("first_name"));
             }
             audit::record(&st.pool, &ctx, Entry { tenant_id: v.tenant_id, actor_kind: "user", actor_id: Some(v.subject_id), action: "user.email_verified", target: Some(("user", v.subject_id)), meta: json!({}) }).await;
         }

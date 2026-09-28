@@ -18,6 +18,8 @@ pub enum ApiError {
     Unauthorized,
     Forbidden,
     NotFound,
+    /// A specific, client-facing failure with its own machine code (e.g. Google sign-in outcomes).
+    Coded { status: StatusCode, code: &'static str, message: &'static str },
     Internal(anyhow::Error),
 }
 
@@ -71,6 +73,7 @@ impl IntoResponse for ApiError {
             ApiError::Unauthorized => (StatusCode::UNAUTHORIZED, json!({"code": "unauthorized", "message": "Please sign in."}), None),
             ApiError::Forbidden => (StatusCode::FORBIDDEN, json!({"code": "forbidden", "message": "Not allowed."}), None),
             ApiError::NotFound => (StatusCode::NOT_FOUND, json!({"code": "not_found", "message": "Not found."}), None),
+            ApiError::Coded { status, code, message } => (status, json!({"code": code, "message": message}), None),
             ApiError::Internal(e) => {
                 tracing::error!(error = ?e, "internal error");
                 (StatusCode::INTERNAL_SERVER_ERROR, json!({"code": "internal", "message": "Something went wrong. Please try again."}), None)
