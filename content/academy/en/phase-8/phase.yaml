@@ -1,0 +1,14 @@
+slug: "phase-8"
+order: 8
+title: "Macro regimes and professional trading"
+level: "Professional"
+summary: "Identify the macro regime you are trading in, build scenario-based views on long-term themes, and run a portfolio of strategies with professional execution, prop-firm discipline and a structured review process."
+sections:
+  - slug: "p8-fundamental"
+    track: "fundamental"
+    title: "Macro regimes and long-term themes"
+    summary: "Business cycles, inflation and monetary regimes, commodity shocks, structural themes and how to turn them into a scenario-based macro view."
+  - slug: "p8-technical"
+    track: "technical"
+    title: "Professional trading"
+    summary: "Multi-timeframe systems, strategy portfolios, execution quality, scaling, prop-firm rules, copy trading and PAMM, and professional routines."

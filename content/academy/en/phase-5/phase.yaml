@@ -1,0 +1,14 @@
+slug: "phase-5"
+order: 5
+title: "Intermarket analysis and risk control"
+level: "Intermediate"
+summary: "Read how bonds, the dollar, commodities, equities, gold and oil influence one another, and size every trade so that no single loss, losing streak or cluster of correlated positions can seriously damage your account."
+sections:
+  - slug: "p5-fundamental"
+    track: "fundamental"
+    title: "Intermarket analysis"
+    summary: "How yields, the yield curve, the US dollar, commodities, equities, gold and oil connect, and how to use those links as context for FX, metals and index trades."
+  - slug: "p5-technical"
+    track: "technical"
+    title: "Risk management and position sizing"
+    summary: "Risk per trade, exact position-size formulas for every asset class, R-multiples and expectancy, stop placement, drawdown maths, correlated exposure and leverage discipline."

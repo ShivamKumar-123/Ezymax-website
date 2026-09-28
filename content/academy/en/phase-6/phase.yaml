@@ -1,0 +1,14 @@
+slug: "phase-6"
+order: 6
+title: "Sentiment, positioning and systems"
+level: "Advanced"
+summary: "Read what other market participants are doing and feeling, and turn your own trading ideas into written, testable strategies that you backtest honestly and forward-test on demo before risking real money."
+sections:
+  - slug: "p6-fundamental"
+    track: "fundamental"
+    title: "Sentiment and positioning"
+    summary: "Risk appetite, the COT report, retail sentiment, volatility regimes, the carry trade, recurring flows and options-market signals."
+  - slug: "p6-technical"
+    track: "technical"
+    title: "Strategy design and backtesting"
+    summary: "Define a trading system, build it in the Kalks strategy builder, backtest it properly, avoid overfitting, judge the metrics and forward-test on demo."

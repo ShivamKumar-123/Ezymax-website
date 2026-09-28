@@ -1,0 +1,14 @@
+slug: "phase-7"
+order: 7
+title: "Asset classes and the trader's mind"
+level: "Advanced"
+summary: "Understand what really drives each asset class traded on Kalks, and build the plan, routine, journal and review process that turn a strategy into consistent execution."
+sections:
+  - slug: "p7-fundamental"
+    track: "fundamental"
+    title: "Asset-class deep dives"
+    summary: "How FX majors and crosses, precious metals, crude oil, equity indices, crypto and single stocks behave, and what moves each of them."
+  - slug: "p7-technical"
+    track: "technical"
+    title: "Trading psychology and performance review"
+    summary: "Recognise cognitive biases, write and follow a trading plan, keep a journal, review your statistics and manage drawdowns without tilting."

@@ -1,0 +1,77 @@
+pass_mark: 70
+questions:
+  - question: "The Japanese 2-year yield is unchanged while the US 2-year yield falls by 0.40% after weak US data. What is the typical pressure on USDJPY?"
+    options: ["Upward, because Japan's yields are now relatively lower", "None, because only 10-year yields matter for FX", "Downward, because the US yield advantage over Japan has narrowed", "Upward, because falling yields always strengthen the dollar"]
+    answer: 2
+    explanation: "A narrower US-Japan yield gap reduces the incentive to hold dollars over yen, so USDJPY tends to fall. Falling US yields do not automatically strengthen the dollar."
+    chapter: "p5-f-bonds-and-yields"
+  - question: "In one month the US 10-year yield rises 0.35% and the 2-year yield rises only 0.05%, driven by concerns about heavy government borrowing. What is this curve move called?"
+    options: ["Bull flattener", "Bull steepener", "Bear flattener", "Bear steepener"]
+    answer: 3
+    explanation: "Yields rose (bear) and the long end rose more, widening the 2s10s spread (steepener)."
+    chapter: "p5-f-the-yield-curve"
+  - question: "Why is the dollar index (DXY) often described as largely an inverted EURUSD chart?"
+    options: ["Because the euro makes up about 57.6% of the index", "Because the index is calculated only from EURUSD", "Because the index is quoted in euros", "Because the European Central Bank publishes it"]
+    answer: 0
+    explanation: "With the euro weighted at about 57.6%, EURUSD moves dominate the index, so the two usually move in opposite directions. The other five currencies still count, so it is not calculated from EURUSD alone."
+    chapter: "p5-f-us-dollar-and-dollar-index"
+  - question: "Iron ore prices jump 10% after China announces a large infrastructure stimulus package. Which pair is most directly affected and in which direction?"
+    options: ["USDCAD, higher", "USDCHF, higher", "EURUSD, lower", "AUDUSD, higher"]
+    answer: 3
+    explanation: "Australia is the largest iron ore exporter and China its largest customer, so higher iron ore prices and stronger Chinese demand tend to support AUD."
+    chapter: "p5-f-commodities-and-commodity-currencies"
+  - question: "A sharp sell-off in global equities is accompanied by falling US yields and a falling USDJPY. How is this move best described?"
+    options: ["An inflation shock", "A risk-off move with safe-haven demand for bonds and the yen", "A commodity supply shock", "A risk-on rally"]
+    answer: 1
+    explanation: "Stocks down, yields down and the yen up is the classic risk-off pattern. In an inflation shock yields would typically rise, not fall."
+    chapter: "p5-f-equities-and-risk-appetite"
+  - question: "The US 10-year nominal yield falls from 4.40% to 4.20% while 10-year breakeven inflation rises from 2.30% to 2.40%. By how much has the approximate real yield changed?"
+    options: ["Fallen by 0.30%", "Fallen by 0.20%", "Risen by 0.10%", "Unchanged"]
+    answer: 0
+    explanation: "Real yield moves from 4.40 - 2.30 = 2.10% to 4.20 - 2.40 = 1.80%, a fall of 0.30%, which is usually supportive for gold."
+    chapter: "p5-f-gold-and-real-yields"
+  - question: "Oil spikes on a supply disruption in a major shipping lane. Which reaction is most typical?"
+    options: ["Stocks up, yields down and the yen stronger", "Oil down and CAD weaker", "Inflation expectations up, with oil importers' currencies such as JPY and INR under pressure", "No effect on other markets"]
+    answer: 2
+    explanation: "A supply-driven oil spike raises inflation expectations and worsens the trade balance of energy importers such as Japan and India, pressuring their currencies."
+    chapter: "p5-f-oil-and-energy"
+  - question: "Your equity is $12,000 and you risk 0.75% per trade. What is your risk amount?"
+    options: ["$75", "$120", "$900", "$90"]
+    answer: 3
+    explanation: "0.0075 x 12,000 = $90. $900 would be 7.5%, ten times the intended risk."
+    chapter: "p5-t-risk-per-trade"
+  - question: "You want to risk $150 on GBPUSD with a 30-pip stop. What is the correct position size?"
+    options: ["0.30 lots", "0.45 lots", "0.50 lots", "1.50 lots"]
+    answer: 2
+    explanation: "GBPUSD is quoted in USD, so one pip on one lot is $10. 30 pips cost $300 per lot, and $150 / $300 = 0.50 lots."
+    chapter: "p5-t-position-size-formulas"
+  - question: "You want to risk $120 on XAUUSD (100 oz contract) with a $15.00 stop. What should you trade?"
+    options: ["0.08 lots", "0.12 lots", "0.80 lots", "0.10 lots"]
+    answer: 0
+    explanation: "A $15.00 move on one lot is 15 x 100 = $1,500. $120 / $1,500 = 0.08 lots, exactly within the risk limit. 0.10 lots would risk $150."
+    chapter: "p5-t-position-size-formulas"
+  - question: "A strategy has a 50% win rate, an average win of 1.5R and an average loss of 1R. What is its expectancy, and what is the expected result of 200 trades at $50 per R?"
+    options: ["+0.50R; $5,000", "+0.25R; $2,500", "+0.25R; $50", "+0.75R; $7,500"]
+    answer: 1
+    explanation: "(0.50 x 1.5) - (0.50 x 1) = 0.25R. Over 200 trades that is 50R, and 50 x $50 = $2,500 on average; actual results will vary and are not guaranteed."
+    chapter: "p5-t-r-multiples-and-expectancy"
+  - question: "You are short USDJPY with a stop 3 pips above a swing high. The typical spread is 1.5 pips but widens to 6 pips at rollover. What is the main risk?"
+    options: ["The trade will be converted to a long", "The swap will be credited twice", "The position size will be changed automatically", "The stop may be triggered by the wider ask price even if the bid never reaches the level"]
+    answer: 3
+    explanation: "Short positions are closed at the ask. If the spread widens beyond your buffer, the ask can hit your stop while the charted bid stays below it."
+    chapter: "p5-t-stop-placement"
+  - question: "An account is in a 25% drawdown. What percentage gain is needed to return to the previous peak?"
+    options: ["25.0%", "30.0%", "33.3%", "50.0%"]
+    answer: 2
+    explanation: "Required gain = D / (1 - D) = 0.25 / 0.75 = 33.3%."
+    chapter: "p5-t-drawdown-and-risk-of-ruin"
+  - question: "You hold long XAUUSD, long EURUSD and short USDCAD, each at 1% risk, and your single-theme limit is 2%. What is the best assessment?"
+    options: ["Within limits, because they are three different asset classes", "Fully hedged, because gold offsets the currency pairs", "Over the limit, because all three lose from a broadly stronger US dollar, giving about 3% on one theme", "Within limits, because only margin matters"]
+    answer: 2
+    explanation: "Gold priced in dollars, long EURUSD and short USDCAD all lose when the dollar strengthens broadly, so they share one driver and together exceed a 2% theme cap."
+    chapter: "p5-t-correlation-and-total-exposure"
+  - question: "With $20,000 equity you hold 0.50 lots EURUSD at 1.0850 and 0.10 lots XAUUSD at 2,350.40. What is your approximate total effective leverage?"
+    options: ["About 1.2x", "About 3.9x", "About 5.4x", "1:500"]
+    answer: 1
+    explanation: "EURUSD notional = 0.50 x 100,000 x 1.0850 = $54,250. Gold notional = 0.10 x 100 x 2,350.40 = $23,504. Total $77,754 / $20,000 = about 3.9x."
+    chapter: "p5-t-leverage-discipline"

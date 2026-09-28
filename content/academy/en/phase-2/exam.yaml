@@ -1,0 +1,77 @@
+pass_mark: 70
+questions:
+  - question: "What is the pip value in USD of a 0.50 lot USDJPY position when USDJPY is at 155.00?"
+    options: ["5.00 USD", "500 USD", "0.32 USD", "3.23 USD"]
+    answer: 3
+    explanation: "0.50 lot is 50,000 units, and 50,000 x 0.01 = 500 JPY per pip. Converted at 155.00: 500 / 155.00 = 3.23 USD. 5.00 USD would only apply to a pair quoted in USD."
+    chapter: "p2-f-pips-and-points"
+  - question: "What is the notional value in USD of 0.40 lot GBPUSD at 1.2700?"
+    options: ["50,800 USD", "40,000 USD", "5,080 USD", "508 USD"]
+    answer: 0
+    explanation: "0.40 lot is 40,000 GBP. 40,000 x 1.2700 = 50,800 USD. 40,000 is the amount in pounds, not dollars."
+    chapter: "p2-f-lots-and-contract-size"
+  - question: "What margin is required for 0.10 lot XAUUSD at 2,350.40 with 1:200 leverage?"
+    options: ["235.04 USD", "1,175.20 USD", "117.52 USD", "11.75 USD"]
+    answer: 2
+    explanation: "0.10 lot is 10 oz, so notional is 10 x 2,350.40 = 23,504 USD. 23,504 / 200 = 117.52 USD. 235.04 USD would be the margin at 1:100."
+    chapter: "p2-f-leverage-and-margin"
+  - question: "An account has a 2,000 USD balance, no floating result yet and 800 USD of used margin. Stop-out is at 50%. How large a floating loss can it take before stop-out is reached?"
+    options: ["1,200 USD", "800 USD", "2,000 USD", "1,600 USD"]
+    answer: 3
+    explanation: "Stop-out equity is 50% x 800 = 400 USD. From 2,000 USD, the account can lose 2,000 - 400 = 1,600 USD. 1,200 USD is the loss that brings it to the 100% margin call."
+    chapter: "p2-f-margin-level-and-stop-out"
+  - question: "XAUUSD is quoted 2,350.40 / 2,350.70. What is the spread cost of a 0.50 lot trade?"
+    options: ["1.50 USD", "15.00 USD", "150.00 USD", "30.00 USD"]
+    answer: 1
+    explanation: "The spread is 0.30 and 0.50 lot is 50 oz, so the cost is 0.30 x 50 = 15.00 USD."
+    chapter: "p2-f-spreads-commissions-and-swaps"
+  - question: "On which night is the triple swap normally applied to a US30 index position?"
+    options: ["Wednesday", "Every night", "Friday", "Monday"]
+    answer: 2
+    explanation: "Indices, energies and stocks take the triple swap on Friday night. Wednesday is the triple night for FX and metals, and crypto is charged every night."
+    chapter: "p2-f-spreads-commissions-and-swaps"
+  - question: "You sell 0.30 lot GBPUSD at 1.2700 and buy it back at 1.2655. What is the gross result?"
+    options: ["+135 USD", "-135 USD", "+13.50 USD", "+1,350 USD"]
+    answer: 0
+    explanation: "For a short, profit is open minus close: (1.2700 - 1.2655) x 30,000 = 0.0045 x 30,000 = +135 USD, or 45 pips x 3 USD."
+    chapter: "p2-f-profit-and-loss-maths"
+  - question: "A cent account shows a balance of 12,500 USC. What is it worth in US dollars?"
+    options: ["12,500 USD", "1,250 USD", "125 USD", "12.50 USD"]
+    answer: 2
+    explanation: "1 USD = 100 USC, so 12,500 / 100 = 125 USD."
+    chapter: "p2-f-account-types"
+  - question: "At which price is a short EURUSD position closed with a market order?"
+    options: ["The bid", "The ask", "The mid price", "The last candle close"]
+    answer: 1
+    explanation: "Closing a short means buying, and buys are filled at the ask."
+    chapter: "p2-t-market-orders"
+  - question: "Gold trades at 2,350.40. You want to open a short only if price rallies to 2,365.00. Which order fits?"
+    options: ["Sell stop at 2,365.00", "Buy limit at 2,365.00", "Buy stop at 2,365.00", "Sell limit at 2,365.00"]
+    answer: 3
+    explanation: "Selling above the current price is a sell limit. A sell stop must be placed below the market."
+    chapter: "p2-t-pending-orders"
+  - question: "You short XAUUSD at 2,350.40 with a 5.00 trailing stop. The ask falls to 2,331.00 and then rises to 2,334.00. Where is the stop now?"
+    options: ["2,336.00", "2,339.00", "2,355.40", "2,331.00"]
+    answer: 0
+    explanation: "For a short the stop trails 5.00 above the lowest ask: 2,331.00 + 5.00 = 2,336.00. It does not move back up when price rises, and 2,334.00 has not reached it yet."
+    chapter: "p2-t-stop-loss-take-profit-trailing"
+  - question: "An OCO pair contains a buy limit at 1.0820 and a buy stop at 1.0880. The buy limit fills. What happens to the buy stop?"
+    options: ["Both stay active", "It becomes a buy limit", "It is cancelled", "It is moved to the fill price"]
+    answer: 2
+    explanation: "In an OCO pair, the fill of one order cancels the other, so you end up with one long position, not two."
+    chapter: "p2-t-oco-and-partial-close"
+  - question: "On a netting account you are long 0.60 lot EURUSD at 1.0850 and sell 0.20 lot at 1.0880. What is the outcome?"
+    options: ["Long 0.60 lot and short 0.20 lot as separate positions", "Long 0.40 lot at 1.0860 with nothing realised", "Short 0.20 lot at 1.0880", "Long 0.40 lot at 1.0850 and +60 USD realised"]
+    answer: 3
+    explanation: "Netting reduces the existing position. The closed 0.20 lot realises (1.0880 - 1.0850) x 20,000 = 60 USD, and 0.40 lot stays open at the original 1.0850. Separate positions would only occur in hedging mode."
+    chapter: "p2-t-netting-vs-hedging"
+  - question: "A sell stop sits at 1.0800. EURUSD closes Friday at 1.0830 and opens Monday at 1.0770. Where is the order most likely filled?"
+    options: ["At 1.0800 exactly", "Around 1.0770, the first available price", "It is cancelled", "At Friday's close of 1.0830"]
+    answer: 1
+    explanation: "No trading took place at 1.0800. The stop is triggered by the first price after the gap and becomes a market order, filled around 1.0770."
+    chapter: "p2-t-execution-slippage-gaps"
+  - question: "You plan to risk 60 USD on XAUUSD with a stop 6.00 away from entry. What position size fits?"
+    options: ["1.00 lot", "0.01 lot", "0.60 lot", "0.10 lot"]
+    answer: 3
+    explanation: "You need 60 / 6.00 = 10 USD per 1.00 move. One gold lot is 100 oz, worth 100 USD per 1.00, so 10 / 100 = 0.10 lot."
+    chapter: "p2-t-first-demo-trade"

@@ -1,0 +1,1286 @@
+terms:
+  - slug: "account-group"
+    term: "Account group"
+    category: "Platform"
+    definition: "A configuration set that defines the trading conditions for a set of accounts, including spreads, commission, maximum leverage, swap rules and margin call and stop-out levels. Two clients with different account groups can see different conditions on the same symbol."
+    related: ["leverage", "spread", "stop-out-level"]
+  - slug: "actual-consensus-previous"
+    term: "Actual, consensus and previous"
+    category: "Fundamental analysis"
+    definition: "The three figures shown for each economic calendar release: the newly published value, the average forecast of economists before the release, and the prior period's value (sometimes revised). Markets react mainly to the gap between actual and consensus, not to the absolute number."
+    related: ["economic-calendar", "market-surprise", "consensus-forecast"]
+  - slug: "analysis-paralysis"
+    term: "Analysis paralysis"
+    category: "Psychology"
+    definition: "Being unable to act because of too many indicators, timeframes or opinions that never fully agree. It usually leads to missed valid setups followed by impulsive late entries. A written trading plan with a short checklist of required conditions is the practical remedy."
+    related: ["trading-plan", "confluence", "fomo"]
+  - slug: "anchoring-bias"
+    term: "Anchoring bias"
+    category: "Psychology"
+    definition: "Relying too heavily on the first number you saw, such as your entry price or a recent high. A trader who bought XAUUSD at 2,380 may refuse to exit at 2,340 because the market \"should\" return to the entry, even though price has no memory of that level."
+    related: ["confirmation-bias", "sunk-cost-fallacy"]
+  - slug: "ascending-triangle"
+    term: "Ascending triangle"
+    category: "Technical analysis"
+    definition: "A chart pattern with a flat resistance line and rising lows beneath it, showing buyers stepping in at higher prices each time. It is commonly read as a bullish continuation pattern, confirmed only when price closes above the flat resistance. Failed breakouts back into the triangle are common."
+    related: ["triangle-pattern", "breakout", "resistance"]
+  - slug: "ask-price"
+    term: "Ask price"
+    category: "Trading mechanics"
+    definition: "The price at which you can buy an instrument right now; it is always the higher of the two quoted prices. If EURUSD is quoted 1.0850 / 1.0851, a market buy order is filled at the ask of 1.0851, subject to any slippage."
+    related: ["bid-price", "spread", "market-order"]
+  - slug: "asset-class"
+    term: "Asset class"
+    category: "Markets"
+    definition: "A group of instruments that share similar characteristics and respond to similar drivers. On Kalks the main asset classes are forex, metals, stock indices, energies, cryptocurrencies and US stocks, all traded as CFDs. Each class has its own trading hours, volatility and cost profile."
+    related: ["cfd", "commodity", "stock-index", "cryptocurrency"]
+  - slug: "atr"
+    term: "Average True Range (ATR)"
+    category: "Technical analysis"
+    definition: "An indicator that measures average price range per candle over a set period, usually 14, including gaps between candles. An ATR of 18.00 on the daily XAUUSD chart means gold has recently moved about $18 per day. Traders use it to size stops to current volatility rather than using fixed distances."
+    related: ["volatility", "stop-loss", "bollinger-bands"]
+  - slug: "backtesting"
+    term: "Backtesting"
+    category: "Technical analysis"
+    definition: "Testing a set of trading rules on historical price data to see how they would have performed. In Kalks, strategies built under Client Area, Developer, Strategies can be tested in Developer, Backtests. Past results never guarantee future performance and must account for spreads, commission and swaps."
+    related: ["overfitting", "walk-forward-analysis", "forward-testing", "trading-system"]
+  - slug: "balance"
+    term: "Balance"
+    category: "Trading mechanics"
+    definition: "The account value from deposits, withdrawals and closed trades only, ignoring open positions. If you deposit $5,000 and close a trade for a $150 profit, your balance is $5,150 whatever your open trades are currently showing."
+    related: ["equity", "floating-pnl", "realized-pnl"]
+  - slug: "bar-chart"
+    term: "Bar chart"
+    category: "Technical analysis"
+    definition: "A chart where each period is drawn as a vertical line from high to low, with a small tick on the left for the open and on the right for the close. It carries the same OHLC information as a candlestick chart but without the coloured body."
+    related: ["ohlc", "candlestick", "line-chart"]
+  - slug: "base-currency"
+    term: "Base currency"
+    category: "Markets"
+    definition: "The first currency in a pair and the one you are buying or selling. In EURUSD the base is the euro, so buying one standard lot means buying 100,000 euros and paying for them in US dollars at the current ask."
+    related: ["quote-currency", "currency-pair", "lot"]
+  - slug: "bear-market"
+    term: "Bear market"
+    category: "Markets"
+    definition: "A prolonged period of falling prices, commonly defined for stock indices as a decline of 20% or more from a recent peak. Bear markets are usually accompanied by weak sentiment, rising volatility and sharp but temporary counter-trend rallies."
+    related: ["bull-market", "downtrend", "risk-off"]
+  - slug: "bearish-engulfing"
+    term: "Bearish engulfing"
+    category: "Technical analysis"
+    definition: "A two-candle reversal pattern in which a large bearish candle's body completely covers the previous bullish candle's body. It suggests sellers have overwhelmed buyers and is most meaningful near resistance or after an extended rise, not in the middle of a range."
+    related: ["bullish-engulfing", "candlestick", "resistance"]
+  - slug: "bid-price"
+    term: "Bid price"
+    category: "Trading mechanics"
+    definition: "The price at which you can sell an instrument right now; it is always the lower of the two quoted prices. Long positions are closed at the bid, which is why a new buy trade immediately shows a small loss equal to the spread."
+    related: ["ask-price", "spread", "short-position"]
+  - slug: "bollinger-bands"
+    term: "Bollinger Bands"
+    category: "Technical analysis"
+    definition: "An indicator made of a moving average, usually 20 periods, with bands a set number of standard deviations above and below it, usually two. Bands widen when volatility rises and contract when it falls; a tight \"squeeze\" often comes before a larger move in either direction."
+    related: ["atr", "moving-average", "volatility"]
+  - slug: "bond-yield"
+    term: "Bond yield"
+    category: "Fundamental analysis"
+    definition: "The annual return an investor earns from holding a bond at its current price, which moves inversely to that price. Rising US Treasury yields tend to support the dollar and weigh on gold, because they raise the return available on cash-like assets."
+    related: ["interest-rate", "yield-curve", "real-yield"]
+  - slug: "break-of-structure"
+    term: "Break of structure"
+    category: "Technical analysis"
+    definition: "A move that takes out a significant prior swing point in the direction of the trend, confirming it continues. In an uptrend, a close above the last swing high is a break of structure; a close below the last higher low suggests the structure may be changing."
+    related: ["market-structure", "swing-high", "higher-highs-higher-lows"]
+  - slug: "break-even-stop"
+    term: "Break-even stop"
+    category: "Trading mechanics"
+    definition: "Moving a stop loss to the entry price once a trade has moved sufficiently in your favour, so the worst outcome becomes roughly zero before costs. Moving it too early often gets the trade stopped out by normal fluctuations before the planned move develops."
+    related: ["stop-loss", "trailing-stop", "risk-reward-ratio"]
+  - slug: "breakout"
+    term: "Breakout"
+    category: "Technical analysis"
+    definition: "A decisive move through a support, resistance or pattern boundary, ideally with a candle close beyond the level and rising momentum. Breakout traders aim to join the new move early, accepting that many breakouts fail and reverse back into the range."
+    related: ["false-breakout", "resistance", "consolidation"]
+  - slug: "bull-market"
+    term: "Bull market"
+    category: "Markets"
+    definition: "A sustained period of rising prices, often defined for stock indices as a gain of 20% or more from a recent low. Bull markets come with improving sentiment and buyers who treat pullbacks as opportunities, but they still contain sharp corrections."
+    related: ["bear-market", "uptrend", "risk-on"]
+  - slug: "bullish-engulfing"
+    term: "Bullish engulfing"
+    category: "Technical analysis"
+    definition: "A two-candle reversal pattern in which a large bullish candle's body fully covers the previous bearish candle's body. It signals buyers taking control and carries more weight at a support level or after a clear decline than in a sideways, choppy market."
+    related: ["bearish-engulfing", "candlestick", "support"]
+  - slug: "business-cycle"
+    term: "Business cycle"
+    category: "Fundamental analysis"
+    definition: "The recurring pattern of expansion, peak, contraction and recovery in economic activity. Each phase tends to favour different assets: equities and commodity currencies in expansion, bonds and safe havens in contraction. Cycles vary greatly in length and are only clearly identified in hindsight."
+    related: ["gdp", "recession", "monetary-policy"]
+  - slug: "buy-limit"
+    term: "Buy limit"
+    category: "Trading mechanics"
+    definition: "A pending order to buy at a price below the current market. With EURUSD at 1.0870, a buy limit at 1.0840 is filled only if the ask falls to 1.0840 or lower. It is used to buy pullbacks into support."
+    related: ["limit-order", "sell-limit", "pending-order"]
+  - slug: "buy-stop"
+    term: "Buy stop"
+    category: "Trading mechanics"
+    definition: "A pending order to buy at a price above the current market, triggered when the ask reaches that level. With XAUUSD at 2,350.40, a buy stop at 2,365.00 enters only if gold rallies through that price, which suits breakout entries."
+    related: ["stop-order", "sell-stop", "breakout"]
+  - slug: "candlestick"
+    term: "Candlestick"
+    category: "Technical analysis"
+    definition: "A chart element showing the open, high, low and close of one period. The body spans open to close and is coloured by direction; the wicks show the extremes. On a one-hour chart, each candle summarises sixty minutes of trading."
+    related: ["ohlc", "doji", "timeframe"]
+  - slug: "carry-trade"
+    term: "Carry trade"
+    category: "Fundamental analysis"
+    definition: "A strategy of buying a higher-yielding currency against a lower-yielding one to earn the interest differential through positive swaps. With Australian rates at 4.35% and Japanese rates at 0.10%, long AUDJPY earns carry, but sharp exchange-rate losses in risk-off episodes can erase months of interest quickly."
+    related: ["interest-rate", "swap", "risk-off"]
+  - slug: "cent-account"
+    term: "Cent account"
+    category: "Platform"
+    definition: "An account type whose balance is displayed in US cents (USC), where 1 USD equals 100 USC. A $100 deposit appears as 10,000 USC. It lets newer traders trade live with very small real amounts, although the risk and leverage mechanics are the same as a standard account."
+    related: ["standard-account", "demo-account", "lot"]
+  - slug: "central-bank"
+    term: "Central bank"
+    category: "Fundamental analysis"
+    definition: "The institution that sets a country's monetary policy, manages its currency and supervises parts of the banking system, such as the Federal Reserve, ECB, Bank of England or Bank of Japan. Its interest-rate decisions and guidance are among the strongest long-term drivers of currency values."
+    related: ["monetary-policy", "interest-rate", "fomc"]
+  - slug: "channel"
+    term: "Channel"
+    category: "Technical analysis"
+    definition: "Two parallel trendlines enclosing price, one connecting swing highs and the other swing lows. An ascending channel slopes up, a descending one slopes down. Traders buy near the lower line in an up-channel and watch for a close outside the channel as a sign the trend is changing."
+    related: ["trendline", "support", "resistance"]
+  - slug: "chasing-price"
+    term: "Chasing price"
+    category: "Psychology"
+    definition: "Entering late after a large move because you fear missing more. It usually results in poor risk-reward, with the stop far away. It is often a symptom of FOMO and is often followed by a pullback that hits the stop."
+    related: ["fomo", "risk-reward-ratio", "stop-loss"]
+  - slug: "client-area"
+    term: "Client Area"
+    category: "Platform"
+    definition: "The Kalks web portal where clients manage their accounts and funds and access tools outside the trading terminal. Modules include Accounts, Portfolio for trade history and statements, Markets, Economic calendar, News, Developer for strategies and backtests, copy trading and PAMM, Prop challenges and the Academy."
+    related: ["kalks-trader", "account-group", "economic-calendar"]
+  - slug: "close-by"
+    term: "Close By"
+    category: "Platform"
+    definition: "A function on hedging accounts that closes two opposite positions on the same symbol against each other. Closing a 1.00 lot buy and a 1.00 lot sell with Close By avoids paying the spread a second time, as would happen if each were closed separately at market."
+    related: ["hedging-account", "spread", "netting-account"]
+  - slug: "commission"
+    term: "Commission"
+    category: "Trading mechanics"
+    definition: "A fixed fee charged per lot traded on some account types, usually alongside tighter raw spreads. If commission is $7 per lot round turn, opening and closing a 2.00 lot trade costs $14 in total. Always include commission when judging the true cost of a strategy."
+    related: ["spread", "round-turn", "account-group"]
+  - slug: "cot-report"
+    term: "Commitments of Traders (COT) report"
+    category: "Fundamental analysis"
+    definition: "A weekly CFTC report showing the futures positions of commercial hedgers, large speculators and others as of Tuesday, published on Friday. Traders use it to judge whether speculative positioning in currencies, gold or oil has become stretched."
+    related: ["retail-sentiment", "market-sentiment", "carry-trade"]
+  - slug: "commodity"
+    term: "Commodity"
+    category: "Markets"
+    definition: "A raw material traded in standardised form, such as gold, silver, crude oil or natural gas. Commodity prices react to supply, demand, the US dollar and geopolitics. On Kalks, metals such as XAUUSD and energies such as USOIL and UKOIL are traded as CFDs."
+    related: ["precious-metals", "crude-oil", "commodity-currency"]
+  - slug: "commodity-currency"
+    term: "Commodity currency"
+    category: "Fundamental analysis"
+    definition: "A currency whose value is closely tied to the country's commodity exports, such as the Australian dollar with iron ore and metals, the Canadian dollar with crude oil, and the New Zealand dollar with dairy. These currencies tend to rise with global growth and risk appetite."
+    related: ["commodity", "risk-on", "currency-pair"]
+  - slug: "confirmation-bias"
+    term: "Confirmation bias"
+    category: "Psychology"
+    definition: "The tendency to notice evidence that supports an existing view while dismissing evidence against it. A trader long on NAS100 may read every news item as bullish and ignore a broken support level. Writing down in advance what would prove the idea wrong helps counter it."
+    related: ["anchoring-bias", "overconfidence", "trading-journal"]
+  - slug: "confluence"
+    term: "Confluence"
+    category: "Technical analysis"
+    definition: "The overlap of several independent reasons pointing to the same price area, such as a prior support, a 61.8% Fibonacci level and the 200-period moving average. Confluence can raise confidence in a level, but stacking many correlated indicators adds little real information."
+    related: ["support", "fibonacci-retracement", "multi-timeframe-analysis"]
+  - slug: "consensus-forecast"
+    term: "Consensus forecast"
+    category: "Fundamental analysis"
+    definition: "The median or average expectation of surveyed economists for a data release, shown in the economic calendar. Prices usually already reflect the consensus before the release, so a CPI print of 3.2% against a 3.2% consensus often causes less movement than a smaller miss would."
+    related: ["actual-consensus-previous", "market-surprise", "economic-calendar"]
+  - slug: "consolidation"
+    term: "Consolidation"
+    category: "Technical analysis"
+    definition: "A period in which price moves sideways in a relatively narrow band as buyers and sellers reach balance, often after a strong move. Consolidations are usually followed by either a continuation of the prior move or a reversal, so traders watch the boundaries for a breakout."
+    related: ["range", "breakout", "volatility"]
+  - slug: "cpi"
+    term: "Consumer Price Index (CPI)"
+    category: "Fundamental analysis"
+    definition: "A monthly measure of the change in prices of a basket of consumer goods and services. Headline CPI includes food and energy; core CPI excludes them. A US CPI print above consensus usually lifts the dollar and Treasury yields because it raises expectations of tighter Fed policy."
+    related: ["inflation", "pce", "central-bank"]
+  - slug: "cfd"
+    term: "Contract for difference (CFD)"
+    category: "Markets"
+    definition: "A derivative contract in which you exchange the difference in an asset's price between opening and closing the trade, without owning the asset itself. CFDs allow long and short trading with leverage. Because they are leveraged, losses can build quickly and can exceed what you expected to risk."
+    related: ["leverage", "underlying-asset", "margin"]
+  - slug: "contract-size"
+    term: "Contract size"
+    category: "Trading mechanics"
+    definition: "The amount of the underlying asset represented by one lot. For forex it is 100,000 units of the base currency and for XAUUSD it is 100 troy ounces. Index, oil, crypto and stock sizes vary, so check the contract specification in Kalks Trader for each symbol."
+    related: ["lot", "notional-value", "contract-specification"]
+  - slug: "contract-specification"
+    term: "Contract specification"
+    category: "Platform"
+    definition: "The reference sheet for a symbol in Kalks Trader listing contract size, minimum and maximum lot, lot step, digits, margin percentage, swap rates, commission and trading hours. Reading it before trading a new instrument prevents sizing errors, especially on indices, energies and crypto where sizes differ."
+    related: ["contract-size", "swap", "trading-hours"]
+  - slug: "copy-trading"
+    term: "Copy trading"
+    category: "Platform"
+    definition: "A service in which your account automatically replicates the trades of a chosen strategy provider in proportion to your allocation. Kalks offers it under Social in the Client Area. You keep control of your account, but past performance does not guarantee future results and you bear the losses of copied trades."
+    related: ["pamm", "drawdown", "risk-per-trade"]
+  - slug: "correlation"
+    term: "Correlation"
+    category: "Risk management"
+    definition: "A statistical measure from -1 to +1 of how closely two instruments move together. EURUSD and GBPUSD are often strongly positively correlated, so buying both roughly doubles a single dollar bet rather than spreading risk. Correlations change over time and can break down in crises."
+    related: ["exposure", "diversification", "dollar-index"]
+  - slug: "credit-rating"
+    term: "Credit rating"
+    category: "Fundamental analysis"
+    definition: "An assessment by an agency such as S&P, Moody's or Fitch of a borrower's ability to repay debt. A sovereign downgrade can raise borrowing costs and weaken the currency, although reactions for major economies are often short-lived."
+    related: ["government-debt", "bond-yield", "risk-off"]
+  - slug: "crude-oil"
+    term: "Crude oil"
+    category: "Markets"
+    definition: "Unrefined petroleum, traded mainly as WTI (USOIL on Kalks) and Brent (UKOIL). Prices respond to OPEC+ supply decisions, inventories, global growth and geopolitical risk. Oil moves feed into inflation data and into currencies of exporters such as the Canadian dollar."
+    related: ["commodity", "commodity-currency", "inflation"]
+  - slug: "cryptocurrency"
+    term: "Cryptocurrency"
+    category: "Markets"
+    definition: "A digital asset secured by cryptography and recorded on a blockchain, such as Bitcoin or Ether. On Kalks, BTCUSD, ETHUSD, SOLUSD and XRPUSD trade as CFDs 24/7, with swaps charged every night. Crypto is typically far more volatile than major currency pairs."
+    related: ["asset-class", "volatility", "weekend-gap"]
+  - slug: "currency-pair"
+    term: "Currency pair"
+    category: "Markets"
+    definition: "The quotation of one currency against another, such as EURUSD at 1.0850, meaning one euro costs 1.0850 US dollars. Forex trading always involves buying one currency of the pair and selling the other at the same time."
+    related: ["base-currency", "quote-currency", "major-pairs"]
+  - slug: "current-account"
+    term: "Current account"
+    category: "Fundamental analysis"
+    definition: "A broad measure of a country's transactions with the rest of the world, covering trade in goods and services, income flows and transfers. Persistent deficits mean a country relies on foreign capital, which can leave its currency vulnerable when global risk appetite fades."
+    related: ["trade-balance", "gdp", "fiscal-policy"]
+  - slug: "daily-loss-limit"
+    term: "Daily loss limit"
+    category: "Platform"
+    definition: "A rule, common in prop challenges, capping how much an account may lose within one trading day, often measured from the day's starting balance or equity. With a 5% limit on a $100,000 account, losses beyond $5,000 in a day breach the rule. Check each challenge's exact definition."
+    related: ["prop-challenge", "maximum-drawdown", "risk-per-trade"]
+  - slug: "day-trading"
+    term: "Day trading"
+    category: "Trading mechanics"
+    definition: "A style in which positions are opened and closed within the same trading day, avoiding overnight swap charges and weekend gap risk. Day traders typically use charts from one minute to one hour and must account for spreads and commission, which weigh more heavily on short holding periods."
+    related: ["scalping", "swing-trading", "swap"]
+  - slug: "demo-account"
+    term: "Demo account"
+    category: "Platform"
+    definition: "A free practice account funded with virtual money that uses live prices in Kalks Trader. It is the right place to learn the platform, test order types and trial a strategy. Demo fills can differ from live ones, and trading without real money feels psychologically different."
+    related: ["live-account", "kalks-trader", "cent-account"]
+  - slug: "descending-triangle"
+    term: "Descending triangle"
+    category: "Technical analysis"
+    definition: "A chart pattern with flat support and a series of lower highs pressing down on it, showing sellers becoming more aggressive. It is usually treated as bearish, confirmed by a close below the flat support, though upside breaks do occur."
+    related: ["triangle-pattern", "support", "breakout"]
+  - slug: "discipline"
+    term: "Discipline"
+    category: "Psychology"
+    definition: "Consistently following your trading plan's rules for entry, exit, sizing and stopping, including when recent results make you want to deviate. Discipline turns a strategy with positive expectancy into actual results; without it, even good rules produce random outcomes."
+    related: ["trading-plan", "routine", "overtrading"]
+  - slug: "disposition-effect"
+    term: "Disposition effect"
+    category: "Psychology"
+    definition: "The habit of closing winning trades too early while holding losing trades too long in the hope they recover. It creates small average wins and large average losses, which can make a strategy with a decent win rate unprofitable over time."
+    related: ["loss-aversion", "take-profit", "stop-loss"]
+  - slug: "divergence"
+    term: "Divergence"
+    category: "Technical analysis"
+    definition: "A disagreement between price and a momentum indicator. Bearish divergence occurs when price makes a higher high but RSI or MACD makes a lower high, suggesting weakening momentum. Divergence can persist for a long time, so it is a warning rather than a timing signal on its own."
+    related: ["rsi", "macd", "momentum"]
+  - slug: "diversification"
+    term: "Diversification"
+    category: "Risk management"
+    definition: "Spreading risk across instruments, strategies or timeframes whose returns are not closely correlated, so a single adverse move has less impact. Trading EURUSD, GBPUSD and EURGBP simultaneously is not true diversification, as all depend heavily on the same currencies."
+    related: ["correlation", "exposure", "portfolio-of-strategies"]
+  - slug: "dividend-adjustment"
+    term: "Dividend adjustment"
+    category: "Trading mechanics"
+    definition: "A cash adjustment made to CFD positions when an underlying stock or index constituent goes ex-dividend. Long positions typically receive an adjustment and short positions pay one, reflecting the drop in the underlying price."
+    related: ["stock-cfd", "stock-index", "swap"]
+  - slug: "doji"
+    term: "Doji"
+    category: "Technical analysis"
+    definition: "A candle whose open and close are equal or very close, producing a tiny body with wicks on one or both sides. It reflects indecision between buyers and sellers. After a strong trend or at a key level it can hint at a pause or reversal, but it needs confirmation."
+    related: ["candlestick", "indecision", "hammer"]
+  - slug: "double-bottom"
+    term: "Double bottom"
+    category: "Technical analysis"
+    definition: "A reversal pattern where price makes two lows at roughly the same level, separated by a rally. It is confirmed when price closes above the high between the two lows. A common target projects the pattern's height upward from the breakout point."
+    related: ["double-top", "support", "neckline"]
+  - slug: "double-top"
+    term: "Double top"
+    category: "Technical analysis"
+    definition: "A reversal pattern where price reaches roughly the same high twice and fails, with a pullback in between. Confirmation comes from a close below the intervening low. If US30 tops twice near 39,200 with the low at 38,800, the measured target is around 38,400."
+    related: ["double-bottom", "resistance", "neckline"]
+  - slug: "dovish"
+    term: "Dovish"
+    category: "Fundamental analysis"
+    definition: "Describes a central bank or official leaning towards looser policy: lower interest rates, more stimulus or tolerance of inflation to support growth and jobs. Dovish surprises usually weaken the currency concerned and can support stock indices."
+    related: ["hawkish", "monetary-policy", "interest-rate"]
+  - slug: "downtrend"
+    term: "Downtrend"
+    category: "Technical analysis"
+    definition: "A market making a sequence of lower highs and lower lows, showing sellers are in control. Rallies within a downtrend tend to be sold. The trend is questioned when price breaks above the last lower high."
+    related: ["uptrend", "lower-highs-lower-lows", "trend"]
+  - slug: "drawdown"
+    term: "Drawdown"
+    category: "Risk management"
+    definition: "The decline in account equity from a peak to a subsequent low, expressed in money or percentage. Losses require larger gains to recover: a 20% drawdown needs a 25% gain to get back to the peak, and a 50% drawdown needs 100%."
+    related: ["maximum-drawdown", "risk-of-ruin", "equity"]
+  - slug: "eps"
+    term: "Earnings per share (EPS)"
+    category: "Fundamental analysis"
+    definition: "A company's profit divided by its number of shares, the headline figure in earnings reports. Prices react to EPS and revenue relative to analyst expectations and, often even more, to guidance for future quarters."
+    related: ["earnings-season", "consensus-forecast", "stock-cfd"]
+  - slug: "earnings-season"
+    term: "Earnings season"
+    category: "Fundamental analysis"
+    definition: "The weeks each quarter when most listed companies report results. Single-stock CFDs such as NVDA or META can gap sharply on reports released outside regular hours, and major index moves often follow heavyweight results."
+    related: ["stock-cfd", "eps", "volatility"]
+  - slug: "economic-calendar"
+    term: "Economic calendar"
+    category: "Fundamental analysis"
+    definition: "A schedule of upcoming data releases, central-bank decisions and events, showing time, impact level, consensus and previous values. Kalks provides one in the Client Area. Checking it before trading helps you avoid being caught by high-impact news with a position you did not plan for."
+    related: ["actual-consensus-previous", "nfp", "cpi"]
+  - slug: "effective-leverage"
+    term: "Effective leverage"
+    category: "Risk management"
+    definition: "The total notional value of your open positions divided by your equity, which measures the leverage you are actually using rather than the maximum the account allows. Holding $50,000 of notional exposure on $10,000 of equity is effective leverage of 5:1, even on a 1:500 account."
+    related: ["leverage", "notional-value", "exposure"]
+  - slug: "equity"
+    term: "Equity"
+    category: "Trading mechanics"
+    definition: "Your balance plus or minus the floating profit or loss on all open positions, so it changes with every tick. With a $5,000 balance and an open trade showing -$300, equity is $4,700. Margin level and stop-out are calculated from equity, not balance."
+    related: ["balance", "floating-pnl", "margin-level"]
+  - slug: "exotic-pair"
+    term: "Exotic pair"
+    category: "Markets"
+    definition: "A currency pair combining a major currency with that of a smaller or emerging economy, such as USDINR or USDTRY. Exotics typically have wider spreads, larger swaps and thinner liquidity, and can move sharply on local political or policy news."
+    related: ["major-pairs", "minor-pairs", "spread"]
+  - slug: "expectancy"
+    term: "Expectancy"
+    category: "Risk management"
+    definition: "The average amount a strategy expects to win or lose per trade over many trades. With a 40% win rate, average win of 2R and average loss of 1R, expectancy is 0.4 x 2 minus 0.6 x 1, which equals +0.2R per trade before costs."
+    related: ["win-rate", "r-multiple", "profit-factor"]
+  - slug: "ema"
+    term: "Exponential moving average (EMA)"
+    category: "Technical analysis"
+    definition: "A moving average that gives greater weight to recent prices, so it reacts faster than a simple moving average of the same length. The 20 EMA and 50 EMA are common trend references; faster reaction also means more false signals in choppy markets."
+    related: ["sma", "moving-average", "macd"]
+  - slug: "exposure"
+    term: "Exposure"
+    category: "Risk management"
+    definition: "The total amount of risk you carry to a market factor across all open positions. Long EURUSD, long GBPUSD and short USDCHF are three trades but one large short-dollar exposure. Measuring combined exposure prevents unintended concentration of risk."
+    related: ["correlation", "risk-per-trade", "notional-value"]
+  - slug: "false-breakout"
+    term: "False breakout"
+    category: "Technical analysis"
+    definition: "A move through a key level that fails to hold and quickly reverses back into the previous range. False breaks often occur around news or thin liquidity and trap breakout traders. Waiting for a candle close beyond the level reduces, but does not eliminate, the risk."
+    related: ["breakout", "support", "resistance"]
+  - slug: "fomo"
+    term: "Fear of missing out (FOMO)"
+    category: "Psychology"
+    definition: "The urge to enter a trade because price is moving fast and you fear missing the move. FOMO entries are usually late, far from a logical stop, and taken without plan conditions. Accepting that other opportunities will come is the most effective antidote."
+    related: ["overtrading", "trading-plan", "chasing-price"]
+  - slug: "fibonacci-extension"
+    term: "Fibonacci extension"
+    category: "Technical analysis"
+    definition: "A tool projecting possible targets beyond a prior swing using ratios such as 127.2%, 161.8% and 261.8%. If gold rallies from 2,300 to 2,400, the 161.8% extension of that move from the swing low lies at 2,461.80. Treat these as reference zones, not certainties."
+    related: ["fibonacci-retracement", "take-profit", "swing-high"]
+  - slug: "fibonacci-retracement"
+    term: "Fibonacci retracement"
+    category: "Technical analysis"
+    definition: "Horizontal levels drawn between a swing low and high at ratios such as 38.2%, 50% and 61.8% to highlight possible pullback areas. For a gold move from 2,300 to 2,400, the 50% level is 2,350 and the 61.8% level is 2,338.20."
+    related: ["fibonacci-extension", "pullback", "confluence"]
+  - slug: "fill"
+    term: "Fill"
+    category: "Trading mechanics"
+    definition: "The execution of an order at a specific price and volume. A buy market order for 1.00 lot EURUSD filled at 1.0851 means the position was opened at that price. The fill price can differ from the price on screen when the market moves quickly."
+    related: ["market-order", "slippage", "partial-fill"]
+  - slug: "fiscal-policy"
+    term: "Fiscal policy"
+    category: "Fundamental analysis"
+    definition: "A government's decisions on spending and taxation. Expansionary fiscal policy, such as tax cuts or infrastructure spending, can boost growth and inflation and push bond yields higher; austerity tends to do the opposite. It works alongside, and sometimes against, central-bank policy."
+    related: ["monetary-policy", "government-debt", "gdp"]
+  - slug: "floating-pnl"
+    term: "Floating P&L"
+    category: "Trading mechanics"
+    definition: "The unrealised profit or loss on open positions at current prices. If you buy 1.00 lot EURUSD at 1.0850 and the bid is now 1.0880, floating profit is 30 pips x $10, or $300. It becomes realised only when the position is closed."
+    related: ["realized-pnl", "equity", "balance"]
+  - slug: "fomc"
+    term: "FOMC"
+    category: "Fundamental analysis"
+    definition: "The Federal Open Market Committee, the Federal Reserve body that sets US interest rates at eight scheduled meetings a year. The rate decision, statement, projections and press conference often move the dollar, gold, Treasury yields and US indices sharply within minutes."
+    related: ["central-bank", "interest-rate", "forward-guidance"]
+  - slug: "forward-guidance"
+    term: "Forward guidance"
+    category: "Fundamental analysis"
+    definition: "A central bank's communication about the likely path of future policy, such as signalling that rates will stay high for an extended period. Markets often react more to changes in guidance than to the rate decision itself, which is usually already priced in."
+    related: ["central-bank", "hawkish", "dovish"]
+  - slug: "forward-testing"
+    term: "Forward testing"
+    category: "Technical analysis"
+    definition: "Running a strategy in real time on new, unseen market data, typically on a demo account, after backtesting. It reveals execution issues, costs and behavioural problems that historical tests miss. A few months of forward testing is a sensible step before committing real capital."
+    related: ["backtesting", "demo-account", "walk-forward-analysis"]
+  - slug: "free-margin"
+    term: "Free margin"
+    category: "Trading mechanics"
+    definition: "Equity minus used margin: the funds available to open new positions or absorb losses. With equity of $5,000 and used margin of $1,085, free margin is $3,915. When floating losses reduce equity, free margin shrinks, and at zero you cannot open new trades."
+    related: ["used-margin", "equity", "margin-level"]
+  - slug: "gamblers-fallacy"
+    term: "Gambler's fallacy"
+    category: "Psychology"
+    definition: "The false belief that past independent outcomes change the odds of the next one, such as thinking a win is \"due\" after five losses. Each trade in a series is largely independent, so increasing size to recover losses after a losing streak is dangerous."
+    related: ["recency-bias", "win-rate", "position-sizing"]
+  - slug: "gap"
+    term: "Gap"
+    category: "Trading mechanics"
+    definition: "A jump in price between one quote and the next with no trading in between, often after news or at the weekly open. Stops inside a gap are filled at the next available price, which can be much worse than the stop level."
+    related: ["weekend-gap", "slippage", "stop-loss"]
+  - slug: "golden-cross"
+    term: "Golden cross and death cross"
+    category: "Technical analysis"
+    definition: "A golden cross occurs when a shorter moving average, commonly the 50-day, crosses above a longer one such as the 200-day, and is read as bullish. A death cross is the opposite. Both lag price considerably and generate frequent whipsaws in ranging markets."
+    related: ["moving-average", "sma", "trend"]
+  - slug: "good-till-cancelled"
+    term: "Good till cancelled (GTC)"
+    category: "Trading mechanics"
+    definition: "An expiry setting for pending orders that keeps the order active until it is filled or you cancel it. In Kalks Trader you can instead choose Today or a specific date. Forgotten GTC orders can trigger unexpectedly weeks later, so review them regularly."
+    related: ["order-expiry", "pending-order", "limit-order"]
+  - slug: "government-debt"
+    term: "Government debt"
+    category: "Fundamental analysis"
+    definition: "The total amount a government owes, financed by issuing bonds. Rising debt levels and large deficits can push yields higher as investors demand more compensation, and can weaken a currency if confidence in public finances deteriorates."
+    related: ["fiscal-policy", "bond-yield", "credit-rating"]
+  - slug: "gdp"
+    term: "Gross domestic product (GDP)"
+    category: "Fundamental analysis"
+    definition: "The total value of goods and services produced by an economy over a period, usually reported quarterly and annualised. Strong GDP growth supports a currency via expectations of higher rates, though markets often react more to timelier data such as PMIs."
+    related: ["business-cycle", "recession", "pmi"]
+  - slug: "hammer"
+    term: "Hammer"
+    category: "Technical analysis"
+    definition: "A single-candle pattern with a small body near the top and a long lower wick at least twice the body's length, appearing after a decline. It shows sellers pushed price down but buyers drove it back up. It is more reliable at support."
+    related: ["shooting-star", "pin-bar", "support"]
+  - slug: "hawkish"
+    term: "Hawkish"
+    category: "Fundamental analysis"
+    definition: "Describes a central bank or official favouring tighter policy, such as higher interest rates or reduced stimulus, to control inflation. A more hawkish tone than expected usually strengthens the currency concerned and can weigh on equity indices and gold."
+    related: ["dovish", "monetary-policy", "inflation"]
+  - slug: "head-and-shoulders"
+    term: "Head and shoulders"
+    category: "Technical analysis"
+    definition: "A reversal pattern with three peaks: a higher middle peak (the head) between two lower peaks (the shoulders), all resting on a line called the neckline. A close below the neckline confirms it, and the head-to-neckline height is often projected as a target."
+    related: ["neckline", "double-top", "reversal"]
+  - slug: "hedging"
+    term: "Hedging"
+    category: "Risk management"
+    definition: "Opening a position intended to offset the risk of another, such as selling GBPUSD to protect a long GBPJPY exposure against pound weakness. Hedging reduces risk but also limits profit and adds costs like spread and swap. It is not the same as a hedging account mode."
+    related: ["hedging-account", "correlation", "exposure"]
+  - slug: "hedging-account"
+    term: "Hedging account"
+    category: "Platform"
+    definition: "An account mode in which each fill opens its own separate position, so you can hold a buy and a sell on the same symbol at once. Positions are closed individually, or opposite ones can be closed together with Close By. Compare with netting mode."
+    related: ["netting-account", "close-by", "position"]
+  - slug: "higher-highs-higher-lows"
+    term: "Higher highs and higher lows"
+    category: "Technical analysis"
+    definition: "The defining structure of an uptrend: each rally exceeds the previous peak and each pullback stops above the previous trough. As long as higher lows hold, the uptrend is intact; a break below the last higher low is an early warning."
+    related: ["uptrend", "market-structure", "swing-low"]
+  - slug: "hindsight-bias"
+    term: "Hindsight bias"
+    category: "Psychology"
+    definition: "The feeling, after an event, that it was obvious and predictable. Looking at a completed chart, every move seems clear, which leads traders to overestimate their skill. Journaling your reasoning before a trade gives a truthful record to compare against."
+    related: ["outcome-bias", "trading-journal", "overconfidence"]
+  - slug: "indecision"
+    term: "Indecision"
+    category: "Technical analysis"
+    definition: "A market state where neither buyers nor sellers are in control, shown by small-bodied candles, overlapping bars and narrow ranges. Indecision at a key level is often followed by a larger move once one side prevails, but the direction is not known in advance."
+    related: ["doji", "consolidation", "candlestick"]
+  - slug: "inflation"
+    term: "Inflation"
+    category: "Fundamental analysis"
+    definition: "The rate at which the general price level rises, reducing the purchasing power of money. Central banks typically target around 2% a year. Inflation above target tends to prompt higher rates, which affects currencies, bond yields, gold and stock valuations."
+    related: ["cpi", "pce", "real-yield"]
+  - slug: "inside-bar"
+    term: "Inside bar"
+    category: "Technical analysis"
+    definition: "A candle whose high and low lie entirely within the previous candle's range, showing a pause or contraction in volatility. Traders often place pending orders beyond both ends of the parent candle to catch the eventual breakout."
+    related: ["candlestick", "consolidation", "breakout"]
+  - slug: "interest-rate"
+    term: "Interest rate"
+    category: "Fundamental analysis"
+    definition: "The cost of borrowing money, with the policy rate set by the central bank. Higher rates relative to other countries tend to attract capital and support a currency. Interest-rate differentials also determine the swap you pay or earn on overnight positions."
+    related: ["central-bank", "carry-trade", "bond-yield"]
+  - slug: "interest-rate-differential"
+    term: "Interest-rate differential"
+    category: "Fundamental analysis"
+    definition: "The gap between the interest rates of two currencies in a pair. It drives the direction and size of the overnight swap and is a long-term influence on exchange rates. A widening differential in favour of the US typically supports USDJPY."
+    related: ["carry-trade", "swap", "interest-rate"]
+  - slug: "kalks-trader"
+    term: "Kalks Trader"
+    category: "Platform"
+    definition: "The Kalks web trading terminal where you view charts and quotes, place and manage orders and monitor positions, margin and account history. It supports market and pending orders, stop loss, take profit, trailing stops, OCO pairs, partial close and Close By on hedging accounts."
+    related: ["client-area", "demo-account", "contract-specification"]
+  - slug: "leverage"
+    term: "Leverage"
+    category: "Trading mechanics"
+    definition: "The ratio between a position's notional size and the margin required to open it. At 1:100, $1,000 of margin controls a $100,000 position. Leverage magnifies both profits and losses equally; it does not change the direction of your risk, only its speed."
+    related: ["margin", "notional-value", "margin-level"]
+  - slug: "leverage-change"
+    term: "Leverage change rule"
+    category: "Platform"
+    definition: "On Kalks, leverage options typically range from 1:50 to 1:1000 depending on account group and symbol, and some symbols have lower caps. Account leverage can only be changed when there are no open positions. Choosing a lower setting reduces the chance of an early stop-out."
+    related: ["leverage", "account-group", "margin"]
+  - slug: "limit-order"
+    term: "Limit order"
+    category: "Trading mechanics"
+    definition: "A pending order to buy below or sell above the current price, filled at the specified level or better. Limit orders are used to enter on pullbacks or to take profit. They may never be filled if price does not reach the level."
+    related: ["buy-limit", "sell-limit", "stop-order"]
+  - slug: "line-chart"
+    term: "Line chart"
+    category: "Technical analysis"
+    definition: "A chart that connects closing prices with a single line, hiding the open, high and low. It gives a clean view of the overall trend and key levels but omits intraperiod volatility, which matters for stop placement."
+    related: ["candlestick", "bar-chart", "timeframe"]
+  - slug: "liquidity"
+    term: "Liquidity"
+    category: "Markets"
+    definition: "How easily an instrument can be bought or sold without moving its price. High liquidity, as in EURUSD during the London and New York overlap, means tight spreads and reliable fills. Thin liquidity, as around the daily rollover, widens spreads and increases slippage."
+    related: ["spread", "slippage", "trading-session"]
+  - slug: "liquidity-provider"
+    term: "Liquidity provider"
+    category: "Markets"
+    definition: "A bank, non-bank market maker or other institution that supplies bid and ask prices to a broker. The broker aggregates quotes from several providers to form the prices seen in the terminal, which is why spreads can change as provider quotes change."
+    related: ["market-maker", "spread", "liquidity"]
+  - slug: "live-account"
+    term: "Live account"
+    category: "Platform"
+    definition: "An account funded with real money where trades have real financial consequences. Execution, costs and emotions differ from demo trading. Start with sizes small enough that a string of losses would not affect your finances or your judgement."
+    related: ["demo-account", "cent-account", "standard-account"]
+  - slug: "long-position"
+    term: "Long position"
+    category: "Trading mechanics"
+    definition: "A position that profits when price rises, opened by buying. A long 1.00 lot EURUSD opened at 1.0851 gains about $10 for every pip the bid rises above the entry and loses the same for every pip it falls."
+    related: ["short-position", "ask-price", "position"]
+  - slug: "loss-aversion"
+    term: "Loss aversion"
+    category: "Psychology"
+    definition: "The finding that losses feel roughly twice as painful as equal gains feel pleasant. In trading it shows up as moving or removing stop losses to avoid taking a loss, which turns small, planned losses into large, unplanned ones."
+    related: ["disposition-effect", "stop-loss", "sunk-cost-fallacy"]
+  - slug: "lot"
+    term: "Lot"
+    category: "Trading mechanics"
+    definition: "The unit used to express trade size in the terminal. One lot equals one contract size, so 1.00 lot of EURUSD is 100,000 euros and 1.00 lot of XAUUSD is 100 ounces. On Kalks the minimum trade is 0.01 lot."
+    related: ["standard-lot", "contract-size", "mini-lot"]
+  - slug: "lower-highs-lower-lows"
+    term: "Lower highs and lower lows"
+    category: "Technical analysis"
+    definition: "The defining structure of a downtrend: each decline breaks the previous low and each rally fails below the previous high. A close above the most recent lower high is the first sign the downtrend may be ending."
+    related: ["downtrend", "market-structure", "swing-high"]
+  - slug: "macd"
+    term: "MACD"
+    category: "Technical analysis"
+    definition: "Moving Average Convergence Divergence, an indicator plotting the difference between two EMAs, usually 12 and 26 periods, together with a 9-period signal line. Crossovers and the histogram measure momentum shifts; divergence with price can warn of a weakening trend."
+    related: ["ema", "divergence", "momentum"]
+  - slug: "major-pairs"
+    term: "Major pairs"
+    category: "Markets"
+    definition: "The most traded currency pairs, each including the US dollar: EURUSD, GBPUSD, USDJPY, USDCHF, AUDUSD, USDCAD and NZDUSD. They offer the deepest liquidity and usually the tightest spreads, which makes them the natural starting point for new traders."
+    related: ["minor-pairs", "exotic-pair", "currency-pair"]
+  - slug: "margin"
+    term: "Margin"
+    category: "Trading mechanics"
+    definition: "The collateral required to open and hold a leveraged position. On Kalks it is notional value divided by leverage, adjusted by any symbol margin percentage. One lot of EURUSD at 1.0850 is $108,500 notional, so at 1:100 the margin required is $1,085."
+    related: ["leverage", "used-margin", "margin-level"]
+  - slug: "margin-call"
+    term: "Margin call"
+    category: "Trading mechanics"
+    definition: "A warning that your margin level has fallen to a threshold, typically 100%, meaning equity equals used margin. At that point you usually cannot open new positions. It is a signal to reduce exposure or add funds before the stop-out level is reached."
+    related: ["margin-level", "stop-out", "free-margin"]
+  - slug: "margin-level"
+    term: "Margin level"
+    category: "Trading mechanics"
+    definition: "Equity divided by used margin, multiplied by 100%. With equity of $2,000 and used margin of $1,000, margin level is 200%. It falls as floating losses rise, and the broker's margin call and stop-out rules are triggered by this figure."
+    related: ["margin-call", "stop-out", "equity"]
+  - slug: "market-maker"
+    term: "Market maker"
+    category: "Markets"
+    definition: "A firm that continuously quotes both buy and sell prices, earning the spread while providing liquidity to others. Market makers adjust quotes as risk and volatility change, which is one reason spreads widen around major news or during quiet hours."
+    related: ["liquidity-provider", "spread", "liquidity"]
+  - slug: "market-order"
+    term: "Market order"
+    category: "Trading mechanics"
+    definition: "An instruction to buy or sell immediately at the best available price, buying at the ask and selling at the bid. Market orders guarantee execution in normal conditions but not the exact price, especially in fast-moving markets."
+    related: ["pending-order", "slippage", "fill"]
+  - slug: "market-sentiment"
+    term: "Market sentiment"
+    category: "Fundamental analysis"
+    definition: "The overall mood or attitude of participants towards a market or risk in general. Sentiment can drive prices away from fundamentals for extended periods. It is gauged through tools such as the VIX, positioning data and how safe havens behave."
+    related: ["risk-on", "risk-off", "retail-sentiment"]
+  - slug: "market-structure"
+    term: "Market structure"
+    category: "Technical analysis"
+    definition: "The sequence of swing highs and lows that shows whether a market is trending up, down or ranging. Reading structure on a higher timeframe first gives context to entries on lower timeframes and avoids trading against the dominant flow."
+    related: ["higher-highs-higher-lows", "break-of-structure", "swing-high"]
+  - slug: "market-surprise"
+    term: "Market surprise"
+    category: "Fundamental analysis"
+    definition: "The difference between an actual data release and the consensus forecast. If US non-farm payrolls come in at 250,000 against 180,000 expected, the 70,000 upside surprise typically lifts the dollar. Large surprises cause fast moves with wider spreads and slippage."
+    related: ["consensus-forecast", "volatility", "slippage"]
+  - slug: "maximum-drawdown"
+    term: "Maximum drawdown"
+    category: "Risk management"
+    definition: "The largest peak-to-trough decline in equity over a period. A strategy's historical maximum drawdown helps estimate how much pain to expect, but future drawdowns can be deeper. Many prop challenges set a maximum drawdown limit, such as 10% of starting balance."
+    related: ["drawdown", "risk-of-ruin", "daily-loss-limit"]
+  - slug: "micro-lot"
+    term: "Micro lot"
+    category: "Trading mechanics"
+    definition: "A trade size of 0.01 lot, equal to 1,000 units of base currency in forex. On EURUSD a micro lot is worth about $0.10 per pip. It is the smallest size on Kalks and suits careful practice with real money."
+    related: ["mini-lot", "standard-lot", "pip-value"]
+  - slug: "mini-lot"
+    term: "Mini lot"
+    category: "Trading mechanics"
+    definition: "A trade size of 0.10 lot, equal to 10,000 units of base currency in forex. On EURUSD each pip is worth about $1 per mini lot, so a 25-pip stop risks about $25 before costs."
+    related: ["micro-lot", "standard-lot", "lot"]
+  - slug: "minor-pairs"
+    term: "Minor pairs"
+    category: "Markets"
+    definition: "Currency pairs made of two major currencies that do not include the US dollar, such as EURJPY, GBPJPY and EURGBP, also called crosses. They are liquid but usually carry slightly wider spreads than majors and can be more volatile."
+    related: ["major-pairs", "exotic-pair", "currency-pair"]
+  - slug: "momentum"
+    term: "Momentum"
+    category: "Technical analysis"
+    definition: "The speed and strength of a price move. Strong momentum often indicates continuation, while fading momentum near a key level may signal exhaustion. Oscillators such as RSI and MACD quantify momentum, but price structure remains the final judge."
+    related: ["rsi", "macd", "trend"]
+  - slug: "monetary-policy"
+    term: "Monetary policy"
+    category: "Fundamental analysis"
+    definition: "The actions a central bank takes to control money supply and borrowing costs, mainly through policy rates, asset purchases and guidance. Tightening supports a currency and weighs on risk assets; easing does the opposite, though surprises matter more than the policy itself."
+    related: ["central-bank", "quantitative-easing", "interest-rate"]
+  - slug: "moving-average"
+    term: "Moving average"
+    category: "Technical analysis"
+    definition: "An indicator showing the average closing price over a set number of periods, smoothing out noise to reveal direction. Price above a rising 200-day average suggests a long-term uptrend. Moving averages lag price and work poorly in sideways markets."
+    related: ["sma", "ema", "golden-cross"]
+  - slug: "multi-timeframe-analysis"
+    term: "Multi-timeframe analysis"
+    category: "Technical analysis"
+    definition: "Studying the same instrument on several timeframes, typically a higher one for trend and levels, a middle one for setups and a lower one for entry timing. It helps avoid buying a one-hour breakout straight into daily resistance."
+    related: ["timeframe", "market-structure", "confluence"]
+  - slug: "neckline"
+    term: "Neckline"
+    category: "Technical analysis"
+    definition: "The support or resistance line that confirms a reversal pattern such as a head and shoulders or double top. A candle close beyond the neckline completes the pattern; price often retests the broken neckline from the other side before continuing."
+    related: ["head-and-shoulders", "double-top", "double-bottom"]
+  - slug: "negative-balance-protection"
+    term: "Negative balance protection"
+    category: "Platform"
+    definition: "A policy under which the broker resets an account to zero if losses exceed the balance, for example after a large gap, so the client does not owe money. Whether it applies depends on the broker and regulation, so check the client agreement."
+    related: ["stop-out", "gap", "leverage"]
+  - slug: "netting-account"
+    term: "Netting account"
+    category: "Platform"
+    definition: "An account mode that allows only one position per symbol. New trades in the same direction add to it; opposite trades reduce, close or reverse it. Long 1.00 lot EURUSD plus a 0.40 sell leaves long 0.60; a further 1.50 sell would reverse the position to short 0.90."
+    related: ["hedging-account", "position", "partial-close"]
+  - slug: "ny-close"
+    term: "New York close"
+    category: "Platform"
+    definition: "17:00 New York time, the conventional end of the forex trading day, equal to 00:00 Kalks server time. Daily candles open and close here, giving five daily candles per week for FX, and swaps are charged at this moment."
+    related: ["server-time", "swap", "timeframe"]
+  - slug: "news-trading"
+    term: "News trading"
+    category: "Fundamental analysis"
+    definition: "Trading around scheduled high-impact releases such as NFP, CPI or central-bank decisions. Price can move tens of pips in seconds, spreads widen and stops can slip. Risk note: leveraged positions around news can lose far more than planned, so size smaller or stay flat."
+    related: ["market-surprise", "economic-calendar", "slippage"]
+  - slug: "nfp"
+    term: "Non-farm payrolls (NFP)"
+    category: "Fundamental analysis"
+    definition: "The monthly US employment report of jobs added outside the farming sector, usually released on the first Friday of the month at 08:30 New York time. It is among the most market-moving releases for the dollar, gold and US indices."
+    related: ["unemployment-rate", "market-surprise", "economic-calendar"]
+  - slug: "notional-value"
+    term: "Notional value"
+    category: "Trading mechanics"
+    definition: "The full market value of a position: contract size times lots times price, converted into the account currency. A 0.50 lot GBPUSD trade at 1.2700 has a notional value of 50,000 x 1.2700, or $63,500, even if the margin is a small fraction."
+    related: ["contract-size", "leverage", "margin"]
+  - slug: "ohlc"
+    term: "OHLC"
+    category: "Technical analysis"
+    definition: "Short for open, high, low and close, the four prices that summarise a period of trading. Candlestick and bar charts are drawn from OHLC data. On Kalks, daily OHLC values run from one New York close to the next."
+    related: ["candlestick", "bar-chart", "timeframe"]
+  - slug: "oco"
+    term: "One-cancels-other (OCO)"
+    category: "Platform"
+    definition: "A linked pair of pending orders where filling one automatically cancels the other. A trader expecting a breakout from a gold range between 2,340 and 2,360 could place a buy stop above and a sell stop below as an OCO pair."
+    related: ["pending-order", "buy-stop", "sell-stop"]
+  - slug: "order-expiry"
+    term: "Order expiry"
+    category: "Trading mechanics"
+    definition: "The setting that determines how long a pending order stays active. Kalks Trader offers GTC, Today (cancelled at the end of the trading day) and a specified date. Using expiry prevents stale orders from triggering after the reasons behind them have changed."
+    related: ["good-till-cancelled", "pending-order", "limit-order"]
+  - slug: "outcome-bias"
+    term: "Outcome bias"
+    category: "Psychology"
+    definition: "Judging a decision only by its result rather than by the quality of the reasoning at the time. A reckless oversized trade that happened to profit is still a bad trade; a disciplined trade that hit its stop may have been a good one."
+    related: ["hindsight-bias", "trading-journal", "process-over-outcome"]
+  - slug: "overbought"
+    term: "Overbought"
+    category: "Technical analysis"
+    definition: "A condition where an oscillator such as RSI is above a threshold, typically 70, after a strong rise. It suggests the move is stretched, not that it must reverse; strong trends can stay overbought for long periods while continuing higher."
+    related: ["oversold", "rsi", "stochastic"]
+  - slug: "overconfidence"
+    term: "Overconfidence"
+    category: "Psychology"
+    definition: "Overestimating your skill or the accuracy of your forecasts, often after a winning streak. It leads to larger positions, looser rules and ignored warning signs. Keeping position size fixed as a percentage of equity guards against it."
+    related: ["confirmation-bias", "overtrading", "risk-per-trade"]
+  - slug: "overfitting"
+    term: "Overfitting"
+    category: "Technical analysis"
+    definition: "Tuning a strategy so closely to past data that it captures random noise instead of a durable pattern. An overfitted backtest looks excellent but fails on new data. Fewer parameters, out-of-sample testing and walk-forward analysis help reduce it."
+    related: ["backtesting", "walk-forward-analysis", "trading-system"]
+  - slug: "oversold"
+    term: "Oversold"
+    category: "Technical analysis"
+    definition: "A condition where an oscillator such as RSI is below a threshold, typically 30, after a sharp decline. It warns that selling may be stretched, but in strong downtrends prices can stay oversold and keep falling."
+    related: ["overbought", "rsi", "stochastic"]
+  - slug: "overtrading"
+    term: "Overtrading"
+    category: "Psychology"
+    definition: "Taking more trades, or larger ones, than your plan justifies, often from boredom, excitement or a wish to recover losses. It multiplies costs and exposure to low-quality setups. A maximum number of trades per day is a simple guard."
+    related: ["fomo", "revenge-trading", "discipline"]
+  - slug: "pamm"
+    term: "PAMM"
+    category: "Platform"
+    definition: "Percentage Allocation Management Module: a structure where investors allocate funds to a manager's pooled account and profits and losses are shared in proportion to each allocation. Available under Social in the Kalks Client Area. Investors carry the manager's losses and should review drawdown history carefully."
+    related: ["copy-trading", "drawdown", "maximum-drawdown"]
+  - slug: "partial-close"
+    term: "Partial close"
+    category: "Trading mechanics"
+    definition: "Closing only part of an open position while leaving the rest running. A trader holding 1.00 lot could close 0.50 at the first target to lock in profit and let the remaining 0.50 aim for a further target, often with the stop moved to break even."
+    related: ["position", "take-profit", "netting-account"]
+  - slug: "partial-fill"
+    term: "Partial fill"
+    category: "Trading mechanics"
+    definition: "An execution where only part of the requested volume is filled at the requested price, with the remainder filled at a different price or left open. It is more likely with large orders or in thin markets and should be checked in trade history."
+    related: ["fill", "liquidity", "limit-order"]
+  - slug: "pce"
+    term: "PCE price index"
+    category: "Fundamental analysis"
+    definition: "The Personal Consumption Expenditures price index, the US inflation measure preferred by the Federal Reserve. Core PCE, excluding food and energy, is closely watched for signs of underlying inflation. It is usually released after CPI, so surprises tend to be smaller."
+    related: ["cpi", "inflation", "fomc"]
+  - slug: "pending-order"
+    term: "Pending order"
+    category: "Trading mechanics"
+    definition: "An order to open a position only when price reaches a specified level. The four main types are buy limit, sell limit, buy stop and sell stop, with stop-limit orders adding a limit price after the trigger. Pending orders let you plan entries without watching the screen."
+    related: ["limit-order", "stop-order", "order-expiry"]
+  - slug: "pin-bar"
+    term: "Pin bar"
+    category: "Technical analysis"
+    definition: "A candle with a small body and one long wick, showing that price was firmly rejected from a level. A pin bar with a long lower wick at support suggests buyers defended the area. Context and location matter far more than the candle alone."
+    related: ["hammer", "shooting-star", "support"]
+  - slug: "pip"
+    term: "Pip"
+    category: "Trading mechanics"
+    definition: "The standard unit of price movement in forex: 0.0001 for most pairs and 0.01 for JPY pairs. EURUSD moving from 1.0850 to 1.0875 is a 25-pip move; USDJPY moving from 150.00 to 150.40 is 40 pips."
+    related: ["pipette", "pip-value", "point"]
+  - slug: "pip-value"
+    term: "Pip value"
+    category: "Trading mechanics"
+    definition: "The money gained or lost per one-pip move for a given trade size. For pairs quoted in USD, such as EURUSD, one standard lot is worth $10 per pip. For USDJPY at 150.00, one lot is 1,000 yen per pip, or about $6.67."
+    related: ["pip", "lot", "position-sizing"]
+  - slug: "pipette"
+    term: "Pipette"
+    category: "Trading mechanics"
+    definition: "A fractional pip, the fifth decimal place for most pairs or the third for JPY pairs. A quote of 1.08505 includes pipettes. A spread of 8 pipettes equals 0.8 pip."
+    related: ["pip", "point", "spread"]
+  - slug: "pivot-points"
+    term: "Pivot points"
+    category: "Technical analysis"
+    definition: "Levels calculated from the previous period's high, low and close, with the main pivot equal to their average. If yesterday's EURUSD high, low and close were 1.0900, 1.0800 and 1.0870, the pivot is about 1.0857. Intraday traders treat pivots as reference support and resistance."
+    related: ["support", "resistance", "confluence"]
+  - slug: "point"
+    term: "Point"
+    category: "Trading mechanics"
+    definition: "The smallest price increment for a symbol, or on indices the conventional one-unit move. If US30 rises from 39,200 to 39,250, it has moved 50 points; on a 1-unit-per-point contract, 1.00 lot would gain $50. Check the contract specification for each symbol."
+    related: ["pip", "tick-size", "contract-size"]
+  - slug: "portfolio-of-strategies"
+    term: "Portfolio of strategies"
+    category: "Risk management"
+    definition: "Running several strategies with different logic, instruments or timeframes and allocating capital between them. When their returns are weakly correlated, combined drawdowns tend to be smaller than any single strategy's, smoothing the overall equity curve."
+    related: ["diversification", "correlation", "maximum-drawdown"]
+  - slug: "position"
+    term: "Position"
+    category: "Trading mechanics"
+    definition: "An open trade that exposes you to price changes in an instrument until it is closed. A position is described by symbol, direction, size, open price and any stop loss or take profit attached to it."
+    related: ["long-position", "short-position", "netting-account"]
+  - slug: "position-sizing"
+    term: "Position sizing"
+    category: "Risk management"
+    definition: "Choosing trade size so that a stop-out costs a planned amount. Size equals money at risk divided by stop distance times value per unit. Risking $100 with a 25-pip EURUSD stop at $10 per pip per lot gives 100 / (25 x 10) = 0.40 lot."
+    related: ["risk-per-trade", "pip-value", "stop-loss"]
+  - slug: "precious-metals"
+    term: "Precious metals"
+    category: "Markets"
+    definition: "Rare metals such as gold and silver, traded on Kalks as XAUUSD and XAGUSD. Gold is sensitive to real interest rates, the dollar and safe-haven demand. One lot of XAUUSD is 100 ounces, so a $1 move is worth $100 per lot."
+    related: ["commodity", "safe-haven", "real-yield"]
+  - slug: "process-over-outcome"
+    term: "Process over outcome"
+    category: "Psychology"
+    definition: "Evaluating trading performance by whether you followed a sound process, rather than by the result of individual trades. Over a large sample, good process produces results; over a handful of trades, randomness dominates. Journaling adherence to rules makes this measurable."
+    related: ["outcome-bias", "trading-journal", "discipline"]
+  - slug: "profit-factor"
+    term: "Profit factor"
+    category: "Risk management"
+    definition: "Gross profit divided by gross loss over a set of trades. If winners earned $6,000 and losers lost $4,000, profit factor is 1.5. Above 1.0 means the strategy was profitable in that sample; very high values in small samples usually do not last."
+    related: ["expectancy", "win-rate", "backtesting"]
+  - slug: "prop-challenge"
+    term: "Prop challenge"
+    category: "Platform"
+    definition: "An evaluation in which a trader must reach a profit target within set risk rules, such as a daily loss limit and a maximum drawdown, to qualify for a funded account. Available under Prop challenges in the Client Area. Rules differ by challenge, so read the terms first."
+    related: ["daily-loss-limit", "maximum-drawdown", "risk-per-trade"]
+  - slug: "pullback"
+    term: "Pullback"
+    category: "Technical analysis"
+    definition: "A temporary move against the prevailing trend before it resumes, such as gold dipping from 2,400 to 2,360 in an uptrend. Trend traders often use pullbacks to enter at better prices, but a pullback can become a reversal."
+    related: ["retracement", "fibonacci-retracement", "trend"]
+  - slug: "pmi"
+    term: "Purchasing Managers' Index (PMI)"
+    category: "Fundamental analysis"
+    definition: "A monthly survey-based indicator of business activity in manufacturing or services. A reading above 50 indicates expansion and below 50 contraction. Because PMIs arrive early and are forward-looking, they often move currencies more than GDP."
+    related: ["gdp", "business-cycle", "economic-calendar"]
+  - slug: "quantitative-easing"
+    term: "Quantitative easing (QE)"
+    category: "Fundamental analysis"
+    definition: "A policy in which a central bank buys large amounts of bonds to push down long-term yields and increase liquidity, usually when rates are already near zero. QE tends to weaken the currency and support equities and gold."
+    related: ["quantitative-tightening", "monetary-policy", "bond-yield"]
+  - slug: "quantitative-tightening"
+    term: "Quantitative tightening (QT)"
+    category: "Fundamental analysis"
+    definition: "The reverse of QE: a central bank shrinks its balance sheet by selling bonds or letting them mature without reinvesting. QT removes liquidity and can push long-term yields higher, typically a headwind for risk assets."
+    related: ["quantitative-easing", "monetary-policy", "bond-yield"]
+  - slug: "quote-currency"
+    term: "Quote currency"
+    category: "Markets"
+    definition: "The second currency in a pair, in which the price is expressed. In USDJPY at 150.00 the quote currency is the yen, and profits are first calculated in yen before conversion to the account currency."
+    related: ["base-currency", "currency-pair", "pip-value"]
+  - slug: "r-multiple"
+    term: "R-multiple"
+    category: "Risk management"
+    definition: "A trade's result expressed as a multiple of the amount risked, called R. If you risk $100 and make $250, the trade returned 2.5R; a full stop-loss is -1R. Measuring in R makes results comparable across instruments and account sizes."
+    related: ["expectancy", "risk-reward-ratio", "risk-per-trade"]
+  - slug: "range"
+    term: "Range"
+    category: "Technical analysis"
+    definition: "A market moving sideways between fairly clear support and resistance without a sustained trend. Range traders buy near support and sell near resistance, while trend-following methods tend to struggle and generate false signals."
+    related: ["consolidation", "support", "resistance"]
+  - slug: "real-yield"
+    term: "Real yield"
+    category: "Fundamental analysis"
+    definition: "A bond's nominal yield minus expected inflation. A 10-year Treasury yield of 4.3% with inflation expectations at 2.3% gives a real yield of about 2.0%. Rising real yields raise the opportunity cost of holding gold and have often weighed on its price."
+    related: ["bond-yield", "inflation", "precious-metals"]
+  - slug: "realized-pnl"
+    term: "Realised P&L"
+    category: "Trading mechanics"
+    definition: "The profit or loss locked in when a position, or part of it, is closed, including costs such as commission and swaps. Realised P&L changes your balance, whereas floating P&L affects only equity."
+    related: ["floating-pnl", "balance", "swap"]
+  - slug: "recency-bias"
+    term: "Recency bias"
+    category: "Psychology"
+    definition: "Giving too much weight to the most recent events, such as abandoning a sound strategy after three losses or doubling size after three wins. A performance review based on a large sample of trades is the counterweight."
+    related: ["gamblers-fallacy", "overconfidence", "trading-journal"]
+  - slug: "recession"
+    term: "Recession"
+    category: "Fundamental analysis"
+    definition: "A significant, broad decline in economic activity, often described as two consecutive quarters of negative GDP growth. Recessions typically bring rate cuts, falling equities and rising demand for safe havens such as government bonds and the Japanese yen."
+    related: ["gdp", "business-cycle", "unemployment-rate"]
+  - slug: "rsi"
+    term: "Relative Strength Index (RSI)"
+    category: "Technical analysis"
+    definition: "A momentum oscillator, usually calculated over 14 periods, that compares the size of recent gains with recent losses on a scale of 0 to 100. Readings above 70 are called overbought and below 30 oversold. In strong trends RSI can stay at extremes, so divergence and context matter more than the thresholds."
+    related: ["overbought", "oversold", "divergence", "momentum"]
+  - slug: "requote"
+    term: "Requote"
+    category: "Trading mechanics"
+    definition: "A situation in which the broker cannot fill an order at the requested price and offers a new price instead, which the trader may accept or reject. Requotes are associated with instant execution models and most often occur in fast markets."
+    related: ["slippage", "market-order", "fill"]
+  - slug: "resistance"
+    term: "Resistance"
+    category: "Technical analysis"
+    definition: "A price area where selling has previously halted rallies, forming a ceiling. The more clearly a level has turned price, the more attention it gets. Once broken decisively, resistance often becomes support on a retest."
+    related: ["support", "breakout", "double-top"]
+  - slug: "retail-sentiment"
+    term: "Retail sentiment"
+    category: "Fundamental analysis"
+    definition: "The positioning of individual traders, often shown as the percentage of clients long or short a market. It is frequently used as a contrarian indicator, since crowded retail positions can fuel sharp moves when stops are triggered."
+    related: ["market-sentiment", "cot-report", "risk-on"]
+  - slug: "retracement"
+    term: "Retracement"
+    category: "Technical analysis"
+    definition: "A partial move back against the previous swing, usually measured as a percentage of that swing. A retracement to 38.2% suggests a shallow correction in a strong trend; one beyond 78.6% makes the trend less convincing."
+    related: ["pullback", "fibonacci-retracement", "trend"]
+  - slug: "revenge-trading"
+    term: "Revenge trading"
+    category: "Psychology"
+    definition: "Placing impulsive trades, often larger than normal, to win back money after a loss. It abandons the trading plan when judgement is at its weakest. A daily loss limit and a rule to stop after two consecutive losses help prevent it."
+    related: ["tilt", "overtrading", "daily-loss-limit"]
+  - slug: "reversal"
+    term: "Reversal"
+    category: "Technical analysis"
+    definition: "A change in the direction of the prevailing trend, from up to down or vice versa. A reversal is confirmed by changing market structure, such as a downtrend printing a higher low and then a higher high. Many apparent reversals are only pullbacks."
+    related: ["trend", "head-and-shoulders", "double-top"]
+  - slug: "risk-of-ruin"
+    term: "Risk of ruin"
+    category: "Risk management"
+    definition: "The probability that a series of losses reduces an account to a point from which it cannot recover or trading must stop. It rises sharply with larger risk per trade. Even a positive-expectancy strategy can fail if each trade risks too much."
+    related: ["risk-per-trade", "drawdown", "expectancy"]
+  - slug: "risk-per-trade"
+    term: "Risk per trade"
+    category: "Risk management"
+    definition: "The amount you are prepared to lose if a trade hits its stop, usually a fixed percentage of equity. At 1% on a $10,000 account, each trade risks $100. Keeping it small, commonly 0.5% to 2%, allows you to survive inevitable losing streaks."
+    related: ["position-sizing", "r-multiple", "risk-of-ruin"]
+  - slug: "risk-off"
+    term: "Risk-off"
+    category: "Fundamental analysis"
+    definition: "A market mood in which investors reduce exposure to risky assets and move to safety. Equity indices and commodity currencies usually fall, while the US dollar, Japanese yen, Swiss franc, gold and government bonds tend to gain."
+    related: ["risk-on", "safe-haven", "market-sentiment"]
+  - slug: "risk-on"
+    term: "Risk-on"
+    category: "Fundamental analysis"
+    definition: "A market mood in which investors are willing to take risk because of optimism about growth or policy. Stock indices, commodity currencies such as AUD and high-yielding assets tend to rise, while safe havens tend to lag."
+    related: ["risk-off", "commodity-currency", "market-sentiment"]
+  - slug: "risk-reward-ratio"
+    term: "Risk-reward ratio"
+    category: "Risk management"
+    definition: "The relationship between potential loss and potential gain on a trade. A 20-pip stop with a 50-pip target gives 1:2.5. Higher ratios need a lower win rate to break even: at 1:2 the break-even win rate before costs is about 33.3%."
+    related: ["r-multiple", "take-profit", "win-rate"]
+  - slug: "rollover"
+    term: "Rollover"
+    category: "Trading mechanics"
+    definition: "The process of carrying an open position from one trading day to the next at the New York close, when overnight financing is applied. Spreads often widen briefly around rollover because liquidity is thin as banks roll their books."
+    related: ["swap", "ny-close", "triple-swap"]
+  - slug: "round-turn"
+    term: "Round turn"
+    category: "Trading mechanics"
+    definition: "A complete trade cycle of opening and closing a position. Commissions are often quoted per lot round turn, so a quoted $7 per lot covers both sides. Always check whether a commission figure is per side or round turn."
+    related: ["commission", "spread", "lot"]
+  - slug: "safe-haven"
+    term: "Safe haven"
+    category: "Fundamental analysis"
+    definition: "An asset expected to hold or gain value during market stress, such as gold, US Treasuries, the Japanese yen and the Swiss franc. Safe-haven status is not guaranteed; in liquidity crunches, even gold can fall as investors sell to raise cash."
+    related: ["risk-off", "precious-metals", "dollar-index"]
+  - slug: "scalping"
+    term: "Scalping"
+    category: "Trading mechanics"
+    definition: "A very short-term trading style that aims to capture small price moves, often a few pips, many times a day. Because profits per trade are small, spreads, commission and slippage take a large share, so scalpers need low costs and fast execution."
+    related: ["day-trading", "spread", "commission"]
+  - slug: "sell-limit"
+    term: "Sell limit"
+    category: "Trading mechanics"
+    definition: "A pending order to sell at a price above the current market. With GBPUSD at 1.2700, a sell limit at 1.2740 is triggered only if the bid rises to that level. It is used to sell into rallies towards resistance."
+    related: ["limit-order", "buy-limit", "resistance"]
+  - slug: "sell-stop"
+    term: "Sell stop"
+    category: "Trading mechanics"
+    definition: "A pending order to sell at a price below the current market, triggered when the bid falls to that level. With US30 at 39,200, a sell stop at 39,000 enters short only if the index breaks lower."
+    related: ["stop-order", "buy-stop", "support"]
+  - slug: "server-time"
+    term: "Server time"
+    category: "Platform"
+    definition: "The clock used by the Kalks trading server: GMT+2 in winter and GMT+3 during US daylight saving time, so that 00:00 server time always equals 17:00 New York. Candle times, trading hours, swaps and trade history timestamps all use it."
+    related: ["ny-close", "swap", "trading-hours"]
+  - slug: "session-overlap"
+    term: "Session overlap"
+    category: "Markets"
+    definition: "The hours when two major sessions are open at the same time, especially London and New York, roughly 08:00 to 12:00 New York time. This overlap usually brings the highest forex liquidity, tightest spreads and many of the day's biggest moves."
+    related: ["trading-session", "liquidity", "volatility"]
+  - slug: "sharpe-ratio"
+    term: "Sharpe ratio"
+    category: "Risk management"
+    definition: "A measure of return per unit of volatility: return minus the risk-free rate, divided by the standard deviation of returns. A 12% annual return with a 4% risk-free rate and 10% volatility gives a Sharpe ratio of 0.8."
+    related: ["maximum-drawdown", "profit-factor", "volatility"]
+  - slug: "shooting-star"
+    term: "Shooting star"
+    category: "Technical analysis"
+    definition: "A candle with a small body near the low and a long upper wick, appearing after a rise. It shows buyers pushed price up but sellers drove it back down. It carries more weight at resistance and should be confirmed by the next candle."
+    related: ["hammer", "pin-bar", "resistance"]
+  - slug: "short-position"
+    term: "Short position"
+    category: "Trading mechanics"
+    definition: "A position that profits when price falls, opened by selling an instrument you do not own. CFDs make shorting straightforward. A short opened at the bid is closed by buying back at the ask, and a short's potential loss is theoretically unlimited."
+    related: ["long-position", "bid-price", "swap"]
+  - slug: "sma"
+    term: "Simple moving average (SMA)"
+    category: "Technical analysis"
+    definition: "A moving average that weights every price in the period equally. The 50-day SMA is the average of the last 50 daily closes. It is smoother but slower to react than an EMA of the same length."
+    related: ["ema", "moving-average", "golden-cross"]
+  - slug: "slippage"
+    term: "Slippage"
+    category: "Trading mechanics"
+    definition: "The difference between the expected price of an order and the actual fill. If you buy at 1.0851 but are filled at 1.0853, slippage is 2 pips against you. It is most common during news and low liquidity, and can occasionally be positive."
+    related: ["market-order", "gap", "liquidity"]
+  - slug: "spread"
+    term: "Spread"
+    category: "Trading mechanics"
+    definition: "The difference between the bid and ask price and the main built-in cost of a trade. With EURUSD at 1.0850 / 1.0851 the spread is 1 pip, or $10 per standard lot. On XAUUSD at 2,350.40 / 2,350.70, the $0.30 spread costs $30 per lot."
+    related: ["ask-price", "bid-price", "commission"]
+  - slug: "stagflation"
+    term: "Stagflation"
+    category: "Fundamental analysis"
+    definition: "A combination of weak or falling growth, high unemployment and high inflation. It is difficult for central banks because cutting rates risks more inflation while raising them deepens the slowdown. Historically it has tended to favour commodities and gold over equities."
+    related: ["inflation", "recession", "central-bank"]
+  - slug: "standard-account"
+    term: "Standard account"
+    category: "Platform"
+    definition: "A live account type with balances in the base currency, typically US dollars, and standard contract sizes. Costs are usually built into the spread, although some account types instead offer lower spreads with commission. Compare conditions in the account group details."
+    related: ["cent-account", "account-group", "spread"]
+  - slug: "standard-lot"
+    term: "Standard lot"
+    category: "Trading mechanics"
+    definition: "A trade size of 1.00 lot, equal to 100,000 units of base currency in forex. On EURUSD, a standard lot moves about $10 per pip, so a 50-pip move equals roughly $500 of profit or loss."
+    related: ["lot", "mini-lot", "micro-lot"]
+  - slug: "stochastic"
+    term: "Stochastic oscillator"
+    category: "Technical analysis"
+    definition: "A momentum indicator comparing the closing price with the high-low range over a period, usually 14, plotted from 0 to 100. Readings above 80 are considered overbought and below 20 oversold. Crossovers of its two lines are used for timing in ranging markets."
+    related: ["rsi", "overbought", "oversold"]
+  - slug: "stock-cfd"
+    term: "Stock CFD"
+    category: "Markets"
+    definition: "A CFD on shares of a single listed company, such as AAPL, TSLA or NVDA. It lets you trade long or short with leverage without owning the shares or voting rights. On Kalks, US stock CFDs trade from 09:30 to 16:00 New York time."
+    related: ["cfd", "earnings-season", "dividend-adjustment"]
+  - slug: "stock-index"
+    term: "Stock index"
+    category: "Markets"
+    definition: "A measure of the combined value of a group of stocks, such as the Dow Jones (US30), Nasdaq 100 (NAS100), S&P 500 (SPX500) or DAX (GER40). Index CFDs let you trade a broad market view with a single position."
+    related: ["asset-class", "dividend-adjustment", "risk-on"]
+  - slug: "stop-loss"
+    term: "Stop loss"
+    category: "Trading mechanics"
+    definition: "An order that closes a position automatically at a predefined loss level. Buying EURUSD at 1.0851 with a stop at 1.0826 limits the planned loss to 25 pips. In gaps and fast markets the stop can be filled at a worse price."
+    related: ["take-profit", "trailing-stop", "risk-per-trade"]
+  - slug: "stop-order"
+    term: "Stop order"
+    category: "Trading mechanics"
+    definition: "A pending order to buy above or sell below the current price, which becomes a market order once the level is reached. Stop orders suit breakout entries and are also how stop losses are executed."
+    related: ["buy-stop", "sell-stop", "stop-limit-order"]
+  - slug: "stop-limit-order"
+    term: "Stop-limit order"
+    category: "Trading mechanics"
+    definition: "A pending order that, once the stop price is reached, places a limit order at a specified price instead of a market order. It protects against excessive slippage, but the order may not fill at all if price jumps past the limit."
+    related: ["stop-order", "limit-order", "slippage"]
+  - slug: "stop-out"
+    term: "Stop-out"
+    category: "Platform"
+    definition: "The automatic closing of positions by the broker when margin level falls to the stop-out threshold. On Kalks, the largest losing position is closed first, and the process repeats until margin level recovers above the threshold."
+    related: ["stop-out-level", "margin-level", "margin-call"]
+  - slug: "stop-out-level"
+    term: "Stop-out level"
+    category: "Platform"
+    definition: "The margin level at which forced closing begins, typically 50% on Kalks depending on account group. With used margin of $1,000, stop-out begins when equity falls to $500. It is a last-resort safety mechanism, not a risk plan."
+    related: ["stop-out", "margin-call", "account-group"]
+  - slug: "strategy-builder"
+    term: "Strategy builder"
+    category: "Platform"
+    definition: "A Kalks Client Area tool, under Developer, Strategies, for defining trading rules such as entry conditions, exits and filters without writing code. Strategies can then be tested in Developer, Backtests. Results are hypothetical and exclude real-world emotions."
+    related: ["backtesting", "trading-system", "client-area"]
+  - slug: "sunk-cost-fallacy"
+    term: "Sunk-cost fallacy"
+    category: "Psychology"
+    definition: "Continuing with a losing decision because of what you have already put into it. Holding a losing position because it has already cost $400 ignores the only relevant question: would you open this trade now at the current price?"
+    related: ["loss-aversion", "anchoring-bias", "disposition-effect"]
+  - slug: "supply-demand-zone"
+    term: "Supply and demand zone"
+    category: "Technical analysis"
+    definition: "An area from which price previously left sharply, suggesting unfilled orders remain there. A demand zone sits below price where buying was strong; a supply zone sits above where selling dominated. Zones weaken each time they are tested."
+    related: ["support", "resistance", "breakout"]
+  - slug: "support"
+    term: "Support"
+    category: "Technical analysis"
+    definition: "A price area where buying has previously halted declines, forming a floor. It is best seen as a zone rather than an exact price. Once broken decisively, support often becomes resistance on a later retest."
+    related: ["resistance", "double-bottom", "pullback"]
+  - slug: "swap"
+    term: "Swap"
+    category: "Trading mechanics"
+    definition: "The overnight financing charged or credited on positions held past 00:00 server time. Its size depends on the interest-rate differential and the broker's fee, and it can be positive or negative. Crypto swaps are charged every night."
+    related: ["rollover", "triple-swap", "swap-free-account"]
+  - slug: "swap-free-account"
+    term: "Swap-free account"
+    category: "Platform"
+    definition: "An account type on which overnight swaps are not charged or credited, often used by traders who cannot pay or receive interest for religious reasons. Other fees, such as an administration charge on positions held for several days, may apply depending on conditions."
+    related: ["swap", "triple-swap", "account-group"]
+  - slug: "swing-high"
+    term: "Swing high"
+    category: "Technical analysis"
+    definition: "A peak on the chart where price is higher than the surrounding candles on both sides. Swing highs mark where sellers took control and are used to define structure, draw trendlines and place stops for short trades."
+    related: ["swing-low", "market-structure", "resistance"]
+  - slug: "swing-low"
+    term: "Swing low"
+    category: "Technical analysis"
+    definition: "A trough on the chart where price is lower than the surrounding candles on both sides. Swing lows show where buyers stepped in and are common reference points for stop losses on long trades and for trendlines."
+    related: ["swing-high", "market-structure", "support"]
+  - slug: "swing-trading"
+    term: "Swing trading"
+    category: "Trading mechanics"
+    definition: "A style holding positions for several days to a few weeks to capture a single market swing, typically using four-hour and daily charts. Swing traders pay or earn swaps and face weekend gap risk, so position sizes are usually smaller."
+    related: ["day-trading", "swap", "weekend-gap"]
+  - slug: "take-profit"
+    term: "Take profit"
+    category: "Trading mechanics"
+    definition: "An order that closes a position automatically once a target is reached, locking in gains. Buying XAUUSD at 2,350.40 with a take profit at 2,370.40 closes the trade after a $20 rise, worth $2,000 on 1.00 lot."
+    related: ["stop-loss", "limit-order", "risk-reward-ratio"]
+  - slug: "tick"
+    term: "Tick"
+    category: "Trading mechanics"
+    definition: "Any change in the bid or ask price. Busy markets can produce many ticks per second, quiet markets few. Tick counts are also used as a proxy for volume in forex, where no central exchange volume exists."
+    related: ["tick-size", "volume", "spread"]
+  - slug: "tick-size"
+    term: "Tick size"
+    category: "Trading mechanics"
+    definition: "The minimum price increment for a symbol. For five-digit forex quotes it is 0.00001, for XAUUSD commonly 0.01. Tick size and contract size together determine tick value, the money gained or lost per minimum move."
+    related: ["tick", "point", "pipette"]
+  - slug: "tilt"
+    term: "Tilt"
+    category: "Psychology"
+    definition: "An emotional state, usually after losses or a frustrating trade, in which decisions become impulsive and rules are ignored. Recognising your own signs, such as rising size or skipped checklists, and stopping for the day is the most effective response."
+    related: ["revenge-trading", "overtrading", "discipline"]
+  - slug: "timeframe"
+    term: "Timeframe"
+    category: "Technical analysis"
+    definition: "The period each candle or bar represents, such as one minute (M1), one hour (H1), four hours (H4) or one day (D1). Higher timeframes show the broader trend and more reliable levels; lower timeframes show detail and more noise."
+    related: ["candlestick", "multi-timeframe-analysis", "ny-close"]
+  - slug: "trade-balance"
+    term: "Trade balance"
+    category: "Fundamental analysis"
+    definition: "The difference between a country's exports and imports of goods and services. A surplus means more exports than imports and creates demand for the currency; a deficit implies the opposite, although capital flows often matter more in the short term."
+    related: ["current-account", "gdp", "commodity-currency"]
+  - slug: "trading-hours"
+    term: "Trading hours"
+    category: "Platform"
+    definition: "The times a symbol can be traded, shown in server time in the contract specification. On Kalks, crypto trades 24/7, forex, metals, indices and energies close at the weekend, and US stock CFDs trade 09:30 to 16:00 New York time."
+    related: ["server-time", "weekend-gap", "trading-session"]
+  - slug: "trading-journal"
+    term: "Trading journal"
+    category: "Psychology"
+    definition: "A record of each trade including setup, entry, exit, size, reasoning, emotions and screenshots. Reviewing a journal reveals patterns, such as losses clustering at particular times or after rule breaks. Trade history in the Client Area Portfolio can form its factual base."
+    related: ["trading-plan", "process-over-outcome", "routine"]
+  - slug: "trading-plan"
+    term: "Trading plan"
+    category: "Psychology"
+    definition: "A written document that defines what, when and how you trade: markets, setups, entry and exit rules, risk per trade, daily limits and review routine. It turns trading decisions into rules decided calmly in advance, rather than under pressure."
+    related: ["trading-journal", "discipline", "risk-per-trade"]
+  - slug: "routine"
+    term: "Trading routine"
+    category: "Psychology"
+    definition: "A fixed set of steps performed before, during and after each session, such as checking the calendar, marking levels, reviewing open positions and journaling. A routine reduces decision fatigue and makes behaviour consistent."
+    related: ["trading-plan", "discipline", "economic-calendar"]
+  - slug: "trading-session"
+    term: "Trading session"
+    category: "Markets"
+    definition: "A period when a major financial centre is active, usually grouped as the Asian (Tokyo/Sydney), London and New York sessions. Liquidity, volatility and spreads change across sessions; GBP pairs, for example, are typically most active during London hours."
+    related: ["session-overlap", "liquidity", "server-time"]
+  - slug: "trading-system"
+    term: "Trading system"
+    category: "Technical analysis"
+    definition: "A complete set of objective rules for which markets to trade, entry and exit conditions, filters and position sizing. Because the rules are fixed, a system can be tested and measured; its value lies in positive expectancy over many trades, not in any single result."
+    related: ["backtesting", "trading-plan", "expectancy"]
+  - slug: "trailing-stop"
+    term: "Trailing stop"
+    category: "Trading mechanics"
+    definition: "A stop loss that automatically follows price as a trade moves in your favour by a set distance, but never moves back. On Kalks it is managed server-side. A 20-pip trailing stop on a long from 1.0850 would sit at 1.0860 once the bid reaches 1.0880."
+    related: ["stop-loss", "break-even-stop", "trend"]
+  - slug: "trend"
+    term: "Trend"
+    category: "Technical analysis"
+    definition: "The general direction of price over a period, identified by swing structure, moving averages or trendlines. Trends exist on every timeframe and can conflict: the daily trend may be up while the hourly chart is falling."
+    related: ["uptrend", "downtrend", "market-structure"]
+  - slug: "trendline"
+    term: "Trendline"
+    category: "Technical analysis"
+    definition: "A diagonal line drawn across at least two swing lows in an uptrend or two swing highs in a downtrend. It shows the trend's slope and possible reaction points. Trendlines are subjective, so line placement should be consistent."
+    related: ["channel", "support", "resistance"]
+  - slug: "triangle-pattern"
+    term: "Triangle pattern"
+    category: "Technical analysis"
+    definition: "A consolidation pattern in which price swings narrow between converging trendlines. Symmetrical triangles show balance, while ascending and descending versions lean bullish and bearish. A close outside the pattern signals the likely direction of the next move."
+    related: ["ascending-triangle", "descending-triangle", "breakout"]
+  - slug: "triple-swap"
+    term: "Triple swap"
+    category: "Trading mechanics"
+    definition: "The three-day swap charge applied once a week to cover the weekend. On Kalks, forex and metals incur triple swap on Wednesday night, while indices, energies and stocks incur it on Friday night. Crypto is charged every night."
+    related: ["swap", "rollover", "server-time"]
+  - slug: "underlying-asset"
+    term: "Underlying asset"
+    category: "Markets"
+    definition: "The market whose price a derivative such as a CFD follows, such as the euro-dollar exchange rate for EURUSD or Apple shares for AAPL. You gain or lose as the underlying moves, without owning it."
+    related: ["cfd", "notional-value", "stock-cfd"]
+  - slug: "unemployment-rate"
+    term: "Unemployment rate"
+    category: "Fundamental analysis"
+    definition: "The share of the labour force that is out of work and actively looking for a job. Rising unemployment tends to push central banks towards easing, which weakens the currency; very low unemployment can fuel wage-driven inflation."
+    related: ["nfp", "recession", "monetary-policy"]
+  - slug: "uptrend"
+    term: "Uptrend"
+    category: "Technical analysis"
+    definition: "A market making a series of higher highs and higher lows, showing buyers are in control. Pullbacks in an uptrend tend to be bought. The trend is called into question when price closes below the most recent higher low."
+    related: ["downtrend", "higher-highs-higher-lows", "trend"]
+  - slug: "dollar-index"
+    term: "US Dollar Index (DXY)"
+    category: "Fundamental analysis"
+    definition: "An index measuring the US dollar against a basket of six major currencies, with the euro making up over half the weight. A rising DXY usually coincides with a falling EURUSD and often pressure on gold and commodities priced in dollars."
+    related: ["correlation", "safe-haven", "bond-yield"]
+  - slug: "used-margin"
+    term: "Used margin"
+    category: "Trading mechanics"
+    definition: "The total margin currently locked to support all open positions. Opening 1.00 lot EURUSD at 1.0850 with 1:100 leverage uses $1,085. Used margin rises as you add positions and is released when they are closed."
+    related: ["margin", "free-margin", "margin-level"]
+  - slug: "vix"
+    term: "VIX"
+    category: "Fundamental analysis"
+    definition: "The Cboe Volatility Index, derived from S&P 500 option prices and showing expected 30-day US equity volatility. Readings below about 15 reflect calm markets; spikes above 30 usually accompany sharp sell-offs and risk-off moves across assets."
+    related: ["volatility", "risk-off", "market-sentiment"]
+  - slug: "volatility"
+    term: "Volatility"
+    category: "Markets"
+    definition: "How much and how quickly a price changes. High volatility means larger moves, wider stops and bigger potential gains and losses. XAUUSD and BTCUSD are typically more volatile than EURUSD, so the same lot size carries more risk."
+    related: ["atr", "vix", "bollinger-bands"]
+  - slug: "volume"
+    term: "Volume"
+    category: "Technical analysis"
+    definition: "The amount traded over a period. Exchange-traded instruments report actual volume; in decentralised forex, platforms show tick volume. Rising volume on a breakout tends to support its validity."
+    related: ["tick", "vwap", "breakout"]
+  - slug: "vwap"
+    term: "VWAP"
+    category: "Technical analysis"
+    definition: "Volume-Weighted Average Price, the average price of an instrument through the session weighted by volume traded at each price. It resets each session and is used intraday as a fair-value reference, particularly on stock and index CFDs."
+    related: ["volume", "moving-average", "day-trading"]
+  - slug: "walk-forward-analysis"
+    term: "Walk-forward analysis"
+    category: "Technical analysis"
+    definition: "A testing method that optimises a strategy on one segment of data, tests it on the following unseen segment, then rolls both windows forward repeatedly. Consistent out-of-sample results give far more confidence than a single optimised backtest."
+    related: ["backtesting", "overfitting", "forward-testing"]
+  - slug: "wedge"
+    term: "Wedge"
+    category: "Technical analysis"
+    definition: "A pattern with two converging trendlines both sloping in the same direction. A rising wedge in an uptrend often signals weakening momentum and possible reversal lower; a falling wedge often resolves higher. Confirmation requires a close beyond the pattern."
+    related: ["triangle-pattern", "channel", "reversal"]
+  - slug: "weekend-gap"
+    term: "Weekend gap"
+    category: "Trading mechanics"
+    definition: "A price jump between Friday's close and the market reopening, caused by news while markets were closed. If EURUSD closes at 1.0850 and reopens at 1.0800, a long stop at 1.0830 fills near 1.0800. Crypto trades 24/7 and does not have this gap."
+    related: ["gap", "stop-loss", "trading-hours"]
+  - slug: "win-rate"
+    term: "Win rate"
+    category: "Risk management"
+    definition: "The percentage of trades that close in profit. Forty-five winners from 100 trades is a 45% win rate. Win rate means little alone: a 35% win rate can be profitable with large winners, while an 80% win rate can lose with large losers."
+    related: ["expectancy", "risk-reward-ratio", "profit-factor"]
+  - slug: "yield-curve"
+    term: "Yield curve"
+    category: "Fundamental analysis"
+    definition: "A chart of government bond yields across maturities. Normally longer maturities yield more. When short yields exceed long ones, such as a 2-year at 4.8% and a 10-year at 4.2%, the curve is inverted, which has often preceded recessions."
+    related: ["bond-yield", "recession", "interest-rate"]

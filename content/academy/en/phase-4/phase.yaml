@@ -1,0 +1,14 @@
+slug: "phase-4"
+order: 4
+title: "News and indicators"
+level: "Intermediate"
+summary: "Read the economic calendar like a professional, plan around high-impact releases and their execution risks, and apply the core technical indicators and chart patterns with correct formulas and realistic expectations."
+sections:
+  - slug: "p4-fundamental"
+    track: "fundamental"
+    title: "Economic calendar and news trading"
+    summary: "How scheduled data and central-bank events move prices, and how to manage the spreads, slippage and gaps that come with them."
+  - slug: "p4-technical"
+    track: "technical"
+    title: "Indicators and chart patterns"
+    summary: "Moving averages, oscillators, volatility tools, Fibonacci and classic patterns, and how to combine them without drowning in signals."

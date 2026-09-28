@@ -1,0 +1,77 @@
+pass_mark: 70
+questions:
+  - question: "USDJPY is quoted 155.20 / 155.22. You sell. At which price is your market order normally filled?"
+    options: ["155.22, the ask", "155.21, the mid price", "155.20, the bid", "The previous close"]
+    answer: 2
+    explanation: "Sell orders fill at the bid, the lower of the two prices. Buy orders fill at the ask."
+    chapter: "p1-f-how-financial-markets-work"
+  - question: "Which participant mainly trades currencies to settle real business payments rather than to speculate?"
+    options: ["A multinational corporation paying foreign suppliers", "A hedge fund", "A proprietary trading firm", "A retail scalper"]
+    answer: 0
+    explanation: "Corporations buy and sell currencies to pay for goods, repatriate profits and hedge costs. Their flows are commercial."
+    chapter: "p1-f-how-financial-markets-work"
+  - question: "You buy AUDUSD. Which statement describes your exposure?"
+    options: ["Short AUD, long USD", "Long AUD, short USD", "Long both currencies", "Exposure to the spread only"]
+    answer: 1
+    explanation: "Buying a pair means buying the base currency (AUD) and selling the quote currency (USD)."
+    chapter: "p1-f-fx-market-structure-sessions"
+  - question: "You sell 0.20 lot of XAUUSD (20 oz) at 2,350.40 and buy it back at 2,358.90. What is the result before costs?"
+    options: ["+170 USD", "-85 USD", "+85 USD", "-170 USD"]
+    answer: 3
+    explanation: "A short loses when price rises. The move is 2,358.90 - 2,350.40 = 8.50 USD per ounce, and 8.50 x 20 oz = 170 USD lost."
+    chapter: "p1-f-what-is-a-cfd"
+  - question: "Which Kalks instrument is most likely to gap sharply at the open after a company reports quarterly results overnight?"
+    options: ["EURUSD", "NVDA", "USDCHF", "XAGUSD"]
+    answer: 1
+    explanation: "Single-share CFDs follow their exchange session and often gap on earnings released outside trading hours."
+    chapter: "p1-f-asset-classes"
+  - question: "US employment data comes in far weaker than the consensus forecast. What is the most typical first reaction?"
+    options: ["USD weakens, so EURUSD tends to rise", "USD strengthens, so EURUSD tends to fall", "Oil always rises", "No instrument reacts to a data surprise"]
+    answer: 0
+    explanation: "A negative surprise lowers expectations for US interest rates, which usually weakens the dollar. Tendencies can be overridden by other drivers."
+    chapter: "p1-f-what-moves-prices"
+  - question: "Account X charges a 0.9-pip EURUSD spread with no commission. Account Y charges 0.1 pip plus 6 USD per lot round turn. What is the cost difference for 1 lot?"
+    options: ["Y is 1 USD cheaper", "X is 2 USD cheaper", "They cost the same", "Y is 2 USD cheaper"]
+    answer: 3
+    explanation: "X costs 0.9 x 10 = 9 USD. Y costs 0.1 x 10 + 6 = 7 USD. So Y is 9 - 7 = 2 USD cheaper per lot round trip."
+    chapter: "p1-f-how-a-broker-works"
+  - question: "A 2,000 USD account on 1:200 leverage buys 1 lot of EURUSD. How much does changing the leverage to 1:500 change the loss per pip?"
+    options: ["It reduces the loss per pip by 60%", "It increases the loss per pip 2.5 times", "It does not change it; the loss per pip is still 10 USD", "It removes the risk of stop-out"]
+    answer: 2
+    explanation: "Leverage changes the margin required, not the value of a pip. One lot of EURUSD is worth 10 USD per pip at any leverage."
+    chapter: "p1-f-risks-of-leveraged-products"
+  - question: "An M30 candle has open 1.2710, high 1.2735, low 1.2702 and close 1.2729. How long is its lower wick?"
+    options: ["8 pips", "6 pips", "19 pips", "33 pips"]
+    answer: 0
+    explanation: "The candle is bullish, so the bottom of the body is the open, 1.2710. Lower wick = 1.2710 - 1.2702 = 0.0008, or 8 pips. 6 pips is the upper wick and 33 pips the range."
+    chapter: "p1-t-candlestick-anatomy"
+  - question: "Why can a buy stop order trigger before the plotted candle high reaches its level?"
+    options: ["Because charts show the ask price", "Because charts are normally drawn from the bid, while buy orders trigger on the ask", "Because stop orders trigger randomly", "Because the chart uses the previous day's prices"]
+    answer: 1
+    explanation: "The plotted price is the bid. The ask is higher by the spread, so a buy order can be triggered when the ask reaches the level even if the bid never does."
+    chapter: "p1-t-reading-a-price-chart"
+  - question: "Which chart type is best suited to a quick, uncluttered view of the long-term direction?"
+    options: ["M1 candlesticks", "OHLC bars on M5", "Tick volume", "A line chart of closing prices on a high timeframe"]
+    answer: 3
+    explanation: "A line chart joins closes and removes intra-period noise, which makes the big picture easy to see, especially on D1 or W1."
+    chapter: "p1-t-reading-a-price-chart"
+  - question: "On Kalks Trader, at what server times do H4 candles open?"
+    options: ["01:00, 05:00, 09:00, 13:00, 17:00, 21:00", "00:00, 04:00, 08:00, 12:00, 16:00, 20:00", "Only during the London session", "At random times set by volume"]
+    answer: 1
+    explanation: "H4 candles are aligned with the server day that starts at 00:00, the New York close, so six H4 candles make one D1 candle."
+    chapter: "p1-t-timeframes-server-time"
+  - question: "A market's last swing highs are 1.2950, 1.2905, 1.2870 and its swing lows are 1.2880, 1.2830, 1.2795. What is the state?"
+    options: ["Downtrend", "Uptrend", "Range", "It cannot be a trend because the numbers are too close"]
+    answer: 0
+    explanation: "Each high is lower than the one before and each low is lower too: lower highs and lower lows define a downtrend."
+    chapter: "p1-t-trend-vs-range"
+  - question: "NAS100 averages a 240-point daily range at 18,000. What is that in percentage terms?"
+    options: ["About 0.13%", "About 2.4%", "About 13.3%", "About 1.3%"]
+    answer: 3
+    explanation: "240 / 18,000 = 0.0133, or about 1.3% of the price."
+    chapter: "p1-t-volatility-volume-basics"
+  - question: "What is the main benefit of setting an alert at a key level in Kalks Trader?"
+    options: ["It automatically opens a trade at that level", "It reduces your spread", "It notifies you when price reaches the level without placing any order", "It prevents stop-out"]
+    answer: 2
+    explanation: "An alert is a notification only. It lets you prepare for a level without watching the screen and without committing to a trade."
+    chapter: "p1-t-navigating-charts-kalks-trader"

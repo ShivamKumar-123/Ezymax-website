@@ -1,0 +1,14 @@
+slug: "phase-3"
+order: 3
+title: "Economics and price action"
+level: "Intermediate"
+summary: "Understand the economic forces that drive currencies, indices and metals, and read raw price action with confidence: structure, levels, candles and timeframes."
+sections:
+  - slug: "p3-fundamental"
+    track: "fundamental"
+    title: "Economic foundations"
+    summary: "Central banks, interest rates, inflation, growth, jobs, fiscal policy and trade flows, and how each one moves the markets you trade."
+  - slug: "p3-technical"
+    track: "technical"
+    title: "Chart reading and price action"
+    summary: "Support and resistance, market structure, trendlines, candlestick patterns, breakouts, supply and demand zones and multi-timeframe reading."

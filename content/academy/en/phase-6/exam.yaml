@@ -1,0 +1,77 @@
+pass_mark: 70
+questions:
+  - question: "Which combination of moves most clearly confirms a risk-off regime?"
+    options: ["EURUSD up 0.2% while everything else is flat", "NAS100 up, AUDUSD up, USDJPY up and the VIX down", "BTCUSD up 3% on its own news with equities unchanged", "NAS100 down, AUDUSD down, USDJPY down and the VIX up above 20"]
+    answer: 3
+    explanation: "Risk-off shows up across assets at once: equities and commodity currencies fall, the yen strengthens (USDJPY falls) and implied volatility rises. The second option describes risk-on, and single-market moves do not define a regime."
+    chapter: "p6-f-risk-on-risk-off"
+  - question: "Managed money is net long 25,000 COMEX gold contracts of 100 oz each. With XAUUSD at 2,350, what is the approximate dollar value of the net position?"
+    options: ["About 5.9 billion USD", "About 58.8 million USD", "About 2.5 million USD", "About 587 billion USD"]
+    answer: 0
+    explanation: "25,000 x 100 oz = 2,500,000 oz. 2,500,000 x 2,350 = 5,875,000,000 USD, or about 5.9 billion."
+    chapter: "p6-f-cot-report"
+  - question: "USDJPY has been falling for weeks. The share of retail traders long drops sharply from 76% to 55% in a few days as price breaks lower. How is this change best read?"
+    options: ["The crowd is adding to longs, so the downtrend is just starting", "The data is meaningless because it changed quickly", "Retail longs are capitulating, which often happens closer to the later stages of a move", "Institutions must now be long"]
+    answer: 2
+    explanation: "A sharp fall in the long share while price drops means stops are being hit and longs are giving up. Capitulation tends to occur later in a move, not at its start. It is context, not a timing signal."
+    chapter: "p6-f-retail-sentiment"
+  - question: "SPX500 trades at 5,000 and the VIX is at 20. What is the approximate one-standard-deviation move implied over one month?"
+    options: ["About 20 points", "About 63 points", "About 289 points", "About 1,000 points"]
+    answer: 2
+    explanation: "Monthly move is about VIX / sqrt(12) = 20% / 3.46 = 5.78%. 5.78% of 5,000 is about 289 points. 63 points is the daily figure (20 / 15.9 = 1.26%), and 1,000 points is the annual figure."
+    chapter: "p6-f-vix-volatility-regimes"
+  - question: "You hold short 1 lot USDJPY and the short swap is -20 USD per night. What swap is charged for holding the position through Wednesday's rollover?"
+    options: ["-20 USD", "0 USD, because swaps are not charged midweek", "+60 USD", "-60 USD"]
+    answer: 3
+    explanation: "FX and metals carry a triple swap on Wednesday night to cover the weekend, so the charge is 3 x -20 = -60 USD. A short in a positive-carry pair pays swap rather than receiving it."
+    chapter: "p6-f-carry-trade"
+  - question: "For most of the year, at what Kalks server time does the 4pm London FX fix fall?"
+    options: ["16:00", "18:00", "00:00", "10:00"]
+    answer: 1
+    explanation: "Server time is GMT+2 in winter and GMT+3 in US summer time, while London is GMT or GMT+1, so 16:00 London is usually 18:00 server time. The exception is the short period when US and UK clock changes do not coincide."
+    chapter: "p6-f-flows-fixings-rebalancing"
+  - question: "XAUUSD trades at 2,350 and one-month implied volatility is 15%. What is the approximate one-standard-deviation move expected over the month?"
+    options: ["About 102 USD", "About 35 USD", "About 352 USD", "About 1,020 USD"]
+    answer: 0
+    explanation: "Monthly volatility = 15% / sqrt(12) = 15% / 3.46 = 4.33%. 4.33% of 2,350 is about 102 USD. 352 USD would be the full annual 15%."
+    chapter: "p6-f-options-market-signals"
+  - question: "Commentary estimates that dealers are heavily long gamma in index options ahead of expiry. What market behaviour is this most associated with?"
+    options: ["Accelerating trends as dealers chase price", "Guaranteed gaps at the next open", "Dampened moves and tighter ranges, as dealers sell rallies and buy dips to stay hedged", "No effect, because options do not influence the underlying"]
+    answer: 2
+    explanation: "Long-gamma hedging is counter-cyclical, which tends to calm the market. Short gamma is the case that amplifies moves. Such estimates are models, not certainties."
+    chapter: "p6-f-options-market-signals"
+  - question: "In a written system, the rule \"only take trades when ATR(14) is above its 100-period average\" is best classified as:"
+    options: ["A filter", "An entry trigger", "A take-profit rule", "A position-sizing rule"]
+    answer: 0
+    explanation: "It decides whether conditions are suitable for trading at all, which is the job of a filter. The trigger defines the exact moment of entry."
+    chapter: "p6-t-what-is-a-trading-system"
+  - question: "A XAUUSD breakout rule places the stop 8.00 below entry. The account risk per trade is 200 USD. With 1 lot = 100 oz, what is the correct position size?"
+    options: ["0.08 lots", "2.50 lots", "0.50 lots", "0.25 lots"]
+    answer: 3
+    explanation: "Risk per lot = 8.00 x 100 oz = 800 USD. Size = 200 / 800 = 0.25 lots."
+    chapter: "p6-t-entry-exit-filter-rules"
+  - question: "In the strategy builder, an entry condition was set as \"RSI(14) is above 50\" when the written rule said \"RSI(14) crosses above 50\". What is the likely effect?"
+    options: ["No effect at all", "Fewer trades, because the condition is stricter", "Repeated or earlier-than-intended entries, because the condition stays true on every candle above 50", "The strategy will only trade short"]
+    answer: 2
+    explanation: "\"Is above\" remains true for as long as RSI stays over 50, while \"crosses above\" is true only on the candle of the cross. The mix-up changes both the number and timing of trades, which is why signals should be checked by hand before testing."
+    chapter: "p6-t-building-in-the-strategy-builder"
+  - question: "An account charges 6 USD commission per lot round turn. On EURUSD, how many pips per trade does this cost?"
+    options: ["6.0 pips", "0.6 pips", "0.06 pips", "1.2 pips"]
+    answer: 1
+    explanation: "One pip on one standard lot of EURUSD is worth 10 USD, so 6 USD equals 0.6 pips per trade, regardless of lot size."
+    chapter: "p6-t-backtesting-method"
+  - question: "An optimisation of a stop multiplier shows similar good results from 1.4 to 2.2 x ATR. Which value is the most sensible choice?"
+    options: ["About 1.8, near the middle of the plateau", "1.4, the edge with the most trades", "Whichever single value shows the highest net profit, even if at the edge", "A value outside the plateau, to avoid overfitting"]
+    answer: 0
+    explanation: "Choosing near the middle of a plateau means small changes in market behaviour are less likely to push the strategy into a poor region. The single best value is often the most fitted to noise."
+    chapter: "p6-t-overfitting-and-walk-forward"
+  - question: "A strategy wins 55% of trades with an average win of 1.2R and an average loss of 1.0R. What is its expectancy per trade?"
+    options: ["+0.55R", "+1.20R", "-0.21R", "+0.21R"]
+    answer: 3
+    explanation: "Expectancy = 0.55 x 1.2 - 0.45 x 1.0 = 0.66 - 0.45 = +0.21R per trade, before any costs not already included."
+    chapter: "p6-t-performance-metrics"
+  - question: "A strategy has passed backtesting and a four-month demo forward test. What is the most prudent way to move to live trading?"
+    options: ["Go live immediately at twice the tested risk to make up for lost time", "Go live at the full intended risk, since the demo proved the strategy", "Start live with a fraction of the intended risk per trade and increase only after live results also match", "Skip live trading and keep changing the rules on demo"]
+    answer: 2
+    explanation: "Live execution and emotions add costs a demo does not fully capture, and no test guarantees future profits. Starting small limits the damage if live results differ and lets you confirm the edge before scaling."
+    chapter: "p6-t-forward-testing-on-demo"

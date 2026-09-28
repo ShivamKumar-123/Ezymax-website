@@ -1,0 +1,14 @@
+slug: "phase-1"
+order: 1
+title: "Markets and instruments"
+level: "Beginner"
+summary: "Understand how financial markets and CFD brokers work, which instruments you can trade on Kalks and what moves their prices, and read a price chart with confidence in Kalks Trader."
+sections:
+  - slug: "p1-fundamental"
+    track: "fundamental"
+    title: "How financial markets work"
+    summary: "Who trades, where prices come from, what a CFD is, the asset classes on Kalks and the real risks of leveraged trading."
+  - slug: "p1-technical"
+    track: "technical"
+    title: "Price charts from zero"
+    summary: "Read line, bar and candlestick charts, understand timeframes and server time, and take a first look at trend, range, volatility and volume."

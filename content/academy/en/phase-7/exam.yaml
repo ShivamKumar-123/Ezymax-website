@@ -1,0 +1,77 @@
+pass_mark: 70
+questions:
+  - question: "EURUSD is 1.0850 and GBPUSD is 1.2700. Approximately where should EURGBP trade?"
+    options: ["1.3779", "0.8543", "1.1705", "2.3550"]
+    answer: 1
+    explanation: "EURGBP = EURUSD / GBPUSD = 1.0850 / 1.2700 = 0.8543. Multiplying the two rates is the method for crosses such as EURJPY, not EURGBP."
+    chapter: "p7-f-fx-majors-and-crosses"
+  - question: "A trader risks 127.20 USD with a 40-pip stop on GBPJPY when USDJPY is 157.20. What lot size is being traded?"
+    options: ["0.32 lot", "1.00 lot", "0.20 lot", "0.50 lot"]
+    answer: 3
+    explanation: "One pip on 1.00 lot GBPJPY is 1,000 JPY = 6.36 USD. 40 x 6.36 = 254.40 USD per lot, and 127.20 / 254.40 = 0.50 lot."
+    chapter: "p7-f-fx-majors-and-crosses"
+  - question: "Balance is 8,000 USD and the trader risks 1% on XAUUSD with a stop 16.00 USD from entry. What is the largest lot size, rounded down, on a 100 oz contract?"
+    options: ["0.05 lot", "0.50 lot", "0.08 lot", "0.16 lot"]
+    answer: 0
+    explanation: "Risk = 80 USD. Risk per 1.00 lot = 16.00 x 100 = 1,600 USD. 80 / 1,600 = 0.05 lot."
+    chapter: "p7-f-gold-and-silver"
+  - question: "Gold is rallying strongly while the gold/silver ratio climbs sharply. What does that most likely indicate?"
+    options: ["Strong industrial demand is lifting both metals equally", "Silver is outperforming gold", "The rally is defensive, with gold outperforming silver", "The ratio must fall back to a fixed level soon"]
+    answer: 2
+    explanation: "A rising ratio means gold is outperforming silver, typical of safe-haven rather than growth-driven buying. The ratio has no reliable fixed level to return to."
+    chapter: "p7-f-gold-and-silver"
+  - question: "Which market condition usually accompanies backwardation in crude oil futures?"
+    options: ["A tight market where buyers pay a premium for immediate supply", "Plentiful supply and full storage", "The market being closed for rollover", "A stronger Japanese yen"]
+    answer: 0
+    explanation: "Backwardation, with the front month above later months, reflects tight near-term supply. Plentiful supply and high storage costs are associated with contango."
+    chapter: "p7-f-crude-oil"
+  - question: "Why does a hot US CPI release often hit NAS100 harder than US30?"
+    options: ["NAS100 is price-weighted", "US30 does not trade during US data", "NAS100 companies do not report earnings", "Growth-heavy NAS100 is more sensitive to the higher yields that an inflation surprise implies"]
+    answer: 3
+    explanation: "Higher expected yields reduce the present value of distant earnings, which make up more of the value of growth stocks. It is US30 and JP225 that are price-weighted."
+    chapter: "p7-f-equity-indices"
+  - question: "On an example contract of 10 SOL per lot, a trader is short 0.40 lot SOLUSD at 150.00 and SOL rises 12% before the stop is filled. What is the loss?"
+    options: ["18 USD", "7.20 USD", "72 USD", "60 USD"]
+    answer: 2
+    explanation: "A 12% rise from 150.00 is 18.00 USD per SOL. 0.40 lot is 4 SOL, so the loss is 18.00 x 4 = 72 USD. 7.20 USD forgets the 10-unit contract size."
+    chapter: "p7-f-crypto-markets"
+  - question: "A stock CFD position of 30 shares at 900.00 undergoes a 3-for-1 split. What does the position look like afterwards?"
+    options: ["30 shares at 300.00", "90 shares at 300.00", "90 shares at 900.00", "10 shares at 2,700.00"]
+    answer: 1
+    explanation: "In a 3-for-1 split, quantity is multiplied by 3 and price divided by 3, so value stays 27,000 USD: 90 x 300.00. The other options change the position's value."
+    chapter: "p7-f-single-stocks-and-earnings"
+  - question: "A trader keeps saying they will close a losing EURUSD trade 'once it gets back to my entry price'. Which bias is this?"
+    options: ["Anchoring", "Recency bias", "Hindsight bias", "Fear of missing out"]
+    answer: 0
+    explanation: "The entry price has become an anchor that has nothing to do with whether the trade is still valid. The market does not know or care about your entry."
+    chapter: "p7-t-cognitive-biases"
+  - question: "Which statement belongs in the risk section of a trading plan?"
+    options: ["Trade carefully on volatile days", "Try not to lose too much this week", "Aim for 10% a month", "Maximum open risk across all positions is 3% of balance"]
+    answer: 3
+    explanation: "Risk rules must be numeric and checkable. Profit targets and vague intentions cannot be enforced."
+    chapter: "p7-t-the-trading-plan"
+  - question: "Outside US daylight saving time, the server runs at GMT+2 and New York at GMT-5. At what server time do the US cash equity indices open?"
+    options: ["15:30", "14:30", "16:30", "17:30"]
+    answer: 2
+    explanation: "The difference is seven hours in both seasons because the server shifts with US daylight saving, so 09:30 New York is 16:30 server time all year."
+    chapter: "p7-t-routine-and-discipline"
+  - question: "A EURUSD trade risked 80 USD and was closed for a loss of 40 USD after the setup was invalidated. How should it be recorded in R?"
+    options: ["-2.0R", "-0.5R", "-1.0R", "+0.5R"]
+    answer: 1
+    explanation: "R = result / initial risk = -40 / 80 = -0.5R. Recording it as -1R would overstate the loss and distort the statistics."
+    chapter: "p7-t-trading-journal"
+  - question: "A strategy wins 80% of trades with an average win of +0.2R and loses 20% with an average loss of -1.5R. What is its expectancy?"
+    options: ["+0.16R", "+0.46R", "-0.30R", "-0.14R"]
+    answer: 3
+    explanation: "Expectancy = 0.80 x 0.2 - 0.20 x 1.5 = 0.16 - 0.30 = -0.14R. A high win rate does not guarantee a positive edge."
+    chapter: "p7-t-performance-review"
+  - question: "An account falls 30% from its peak. What gain is needed to recover to the peak?"
+    options: ["About 42.9%", "30%", "33.3%", "60%"]
+    answer: 0
+    explanation: "70 remains from 100, so the required gain is 30 / 70 = 42.9%. Recovery always needs a larger percentage than the loss."
+    chapter: "p7-t-drawdowns-and-tilt"
+  - question: "A trader moving from demo to live wants to follow a sustainable scaling path. Which approach fits?"
+    options: ["Go live at triple the demo size to make up for lost time", "Start live at a fraction of normal risk and increase only after a written number of trades within the plan", "Increase risk after every profitable week", "Use maximum leverage to shorten the testing period"]
+    answer: 1
+    explanation: "Gradual, rule-based scaling lets real emotions and execution be tested at low cost. Sizing up on excitement or short-term results is how sound strategies fail."
+    chapter: "p7-t-sustainable-habits"

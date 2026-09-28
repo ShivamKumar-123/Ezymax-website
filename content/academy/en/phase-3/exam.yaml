@@ -1,0 +1,77 @@
+pass_mark: 70
+questions:
+  - question: "Which inflation measure does the US Federal Reserve use to define its 2% target?"
+    options: ["CPI", "The PCE price index", "Average hourly earnings", "The ISM prices-paid index"]
+    answer: 1
+    explanation: "The Fed defines its goal using PCE inflation. CPI is more widely quoted in the press, but it is not the official target measure."
+    chapter: "p3-f-inflation-cpi-pce"
+  - question: "Markets fully expect the Bank of England to hold rates. It holds, but two members unexpectedly vote for a cut. What is the likely effect on GBPUSD?"
+    options: ["It tends to rise, because rates were unchanged", "No effect, because the decision matched expectations", "It tends to fall, because the vote split is more dovish than expected", "It only affects UK100"]
+    answer: 2
+    explanation: "The decision was priced in; the dovish vote split is new information that lowers expected future UK rates, which tends to weigh on sterling."
+    chapter: "p3-f-central-banks-monetary-policy"
+  - question: "US policy rates are 4.50% with 3.00% inflation; Japanese rates are 0.50% with 2.50% inflation. What are the approximate real rates?"
+    options: ["US 1.50%, Japan -2.00%", "US 7.50%, Japan 3.00%", "US 4.50%, Japan 0.50%", "US -1.50%, Japan 2.00%"]
+    answer: 0
+    explanation: "Real rate is roughly nominal minus inflation: US 4.50 - 3.00 = 1.50%, Japan 0.50 - 2.50 = -2.00%. The real differential of about 3.5 points favours the dollar."
+    chapter: "p3-f-interest-rates-and-currencies"
+  - question: "US GDP is reported at 2.4% and UK GDP at 0.6% for the same quarter. What is the correct comparison?"
+    options: ["The US grew four times faster", "The UK grew faster", "Neither figure can be compared", "They are similar, since the US figure is annualised and 0.6% per quarter is about 2.4% annualised"]
+    answer: 3
+    explanation: "The US reports annualised growth while the UK headlines quarter on quarter. 1.006 to the power 4 is about 1.024, so both describe roughly the same pace."
+    chapter: "p3-f-growth-gdp-pmi"
+  - question: "The ISM manufacturing index rises from 47.0 to 49.0. What does this indicate?"
+    options: ["Manufacturing is expanding strongly", "Manufacturing is still contracting, but at a slower pace", "Manufacturing output grew 49% year on year", "The index has no relation to economic activity"]
+    answer: 1
+    explanation: "Below 50 still means contraction. The move towards 50 shows fewer firms reporting deterioration, so the decline is easing."
+    chapter: "p3-f-growth-gdp-pmi"
+  - question: "Nonfarm payrolls beat consensus, but average hourly earnings rise only 0.1% and unemployment ticks up. Which statement is most accurate?"
+    options: ["The report is unambiguously strong for the dollar", "Only the headline matters, so buy USD", "The report is mixed; softer wages and higher unemployment can offset the headline beat", "Jobs data does not affect currencies"]
+    answer: 2
+    explanation: "Markets read the full report. Weak wage growth and a rising unemployment rate point to a cooling labour market, which can outweigh a payroll beat."
+    chapter: "p3-f-labour-market-nfp"
+  - question: "A country's 10-year yield jumps 0.6 percentage points in a week while its currency falls sharply. What is the most likely explanation?"
+    options: ["Investors are demanding a risk premium over fiscal or credibility concerns", "The central bank has surprised with a hawkish hike", "Inflation expectations have collapsed", "Its trade surplus has increased"]
+    answer: 0
+    explanation: "Higher yields normally support a currency. When yields rise and the currency falls together, investors are usually selling the country's assets because of fiscal worries."
+    chapter: "p3-f-fiscal-policy-government-debt"
+  - question: "Crude oil prices rise steadily for three months. Which pair would you most expect to drift lower over that period, all else equal?"
+    options: ["EURUSD", "XAUUSD", "USDJPY", "USDCAD"]
+    answer: 3
+    explanation: "Canada is a large oil exporter, so higher oil prices improve its terms of trade and tend to support CAD, pushing USDCAD lower. The link is loose intraday but visible over months."
+    chapter: "p3-f-trade-and-current-account"
+  - question: "EURUSD support at 1.0800 has been tested five times in two days, with each bounce smaller than the last. What does this most likely suggest?"
+    options: ["The level is becoming stronger with every test", "Buying interest at the level is being used up and a break is becoming more likely", "The level has turned into resistance", "Support levels cannot break after five touches"]
+    answer: 1
+    explanation: "Each test absorbs waiting buy orders. Weaker bounces show buyers are running out, so repeated tests often precede a break."
+    chapter: "p3-t-support-and-resistance"
+  - question: "In a downtrend the last lower high is 1.2750 and the last lower low is 1.2620. Which event is a change of character?"
+    options: ["A close below 1.2620", "A pullback to 1.2700", "A close above 1.2750", "A doji at 1.2650"]
+    answer: 2
+    explanation: "Closing above the most recent lower high breaks the sequence of lower highs, the first objective sign the downtrend may be ending. A close below 1.2620 is continuation."
+    chapter: "p3-t-market-structure"
+  - question: "A downtrend line connects highs at 2,400 (bar 0) and 2,370 (bar 6) on XAUUSD. Where does the line project at bar 12?"
+    options: ["2,340", "2,355", "2,370", "2,310"]
+    answer: 0
+    explanation: "The line falls 30 dollars in 6 bars, or 5 per bar. At bar 12: 2,400 - 12 × 5 = 2,340."
+    chapter: "p3-t-trendlines-and-channels"
+  - question: "An evening star pattern consists of which sequence?"
+    options: ["Three bearish candles of equal size", "A small bearish candle inside a large bullish one", "A long lower wick followed by a bullish candle", "A strong bullish candle, a small-bodied candle, then a strong bearish candle closing well into the first body"]
+    answer: 3
+    explanation: "The evening star shows buying momentum stalling (small middle candle) and sellers taking control (strong third candle), usually at a top."
+    chapter: "p3-t-candlestick-patterns"
+  - question: "GER40 breaks above a range high at 18,500 during a thin, late-evening session with a long upper wick on the breakout candle. How should this be judged?"
+    options: ["A high-quality breakout because it happened quickly", "A higher risk of a false break, given thin liquidity and rejection shown by the wick", "A confirmed break of structure", "A supply zone that must be bought"]
+    answer: 1
+    explanation: "Breakouts during thin liquidity with long rejection wicks lack acceptance. These are the classic conditions for a failed breakout."
+    chapter: "p3-t-breakouts-and-false-breaks"
+  - question: "A supply zone on BTCUSD formed at 64,800-65,200 before a sharp drop that broke a prior swing low. It has not been revisited. Where is a logical stop for a short from 64,750?"
+    options: ["At 64,900, inside the zone", "At 64,000, below entry", "Just above 65,200, beyond the distal line of the zone", "No stop is needed at a fresh zone"]
+    answer: 2
+    explanation: "For a supply zone, the distal line is the top of the base. A stop a little beyond it marks where the zone has clearly failed."
+    chapter: "p3-t-supply-and-demand-zones"
+  - question: "An intraday trader uses H4 for direction. Which pair of timeframes best completes a three-timeframe framework?"
+    options: ["H1 for setups and M15 for triggers", "Daily for setups and weekly for triggers", "H4 for setups and H4 for triggers", "M1 for setups and tick charts for triggers"]
+    answer: 0
+    explanation: "Moving down by a factor of about four each step, H4 to H1 to M15, keeps each view distinct while staying connected."
+    chapter: "p3-t-multi-timeframe-basics"

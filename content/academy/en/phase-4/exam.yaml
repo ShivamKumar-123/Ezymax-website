@@ -1,0 +1,77 @@
+pass_mark: 70
+questions:
+  - question: "UK CPI y/y: previous 3.2%, consensus 3.0%, actual 3.3%. What is the most likely initial reaction in GBPUSD?"
+    options: ["It falls, because inflation is high", "It rises, because inflation beat expectations and supports tighter policy", "No reaction, because 3.3% is close to the previous figure", "It falls, because the previous figure was higher than consensus"]
+    answer: 1
+    explanation: "The market compares actual with consensus. A 0.3 percentage point upside surprise points to tighter Bank of England policy, which usually supports the pound."
+    chapter: "p4-f-reading-the-economic-calendar"
+  - question: "A German release is published at 10:00 Frankfurt time in winter (GMT+1). What is that in Kalks server time, which is GMT+2 in winter?"
+    options: ["09:00", "10:00", "11:00", "12:00"]
+    answer: 2
+    explanation: "10:00 at GMT+1 is 09:00 GMT, which is 11:00 at GMT+2."
+    chapter: "p4-f-reading-the-economic-calendar"
+  - question: "Retail sales consensus is 0.5%, actual is 0.2%, and the standard deviation of past surprises is 0.6 pp. What is the standardised surprise?"
+    options: ["-0.5", "-0.3", "0.5", "-1.5"]
+    answer: 0
+    explanation: "(0.2 - 0.5) / 0.6 = -0.3 / 0.6 = -0.5. A half-standard-deviation miss is a modest surprise."
+    chapter: "p4-f-expectations-and-surprises"
+  - question: "A central bank holds rates as fully expected, but the statement drops a phrase about further tightening. What is this usually called, and what is the likely currency reaction?"
+    options: ["A hawkish hold; the currency rises", "A dovish hold; the currency falls", "A neutral hold; no reaction", "A surprise hike; the currency rises"]
+    answer: 1
+    explanation: "Removing a tightening bias signals fewer hikes than expected, which is dovish. The currency tends to weaken even though the rate itself was unchanged."
+    chapter: "p4-f-central-bank-decision-days"
+  - question: "You are long 0.40 lots of EURUSD. NFP beats strongly and EURUSD drops 35 pips. What is the loss, ignoring costs?"
+    options: ["35 USD", "140 USD", "350 USD", "1,400 USD"]
+    answer: 1
+    explanation: "0.40 lots is worth 4 USD per pip. 35 x 4 = 140 USD."
+    chapter: "p4-f-nfp-and-cpi-playbook"
+  - question: "A buy stop at 2,360.00 on XAUUSD is triggered during CPI and filled at 2,366.50. The position is 0.20 lots. How much did the slippage cost?"
+    options: ["6.50 USD", "65 USD", "130 USD", "1,300 USD"]
+    answer: 2
+    explanation: "Slippage = 6.50 USD per oz. 0.20 lots = 20 oz. 6.50 x 20 = 130 USD."
+    chapter: "p4-f-spreads-slippage-and-gaps"
+  - question: "What is the most effective way to control the risk of holding a stock CFD through an earnings report?"
+    options: ["A tighter stop loss", "A trailing stop", "A smaller position size, sized for a possible gap", "A take-profit order"]
+    answer: 2
+    explanation: "Stops cannot fill inside a gap, so they do not cap the loss when the stock opens far away. Only a smaller position limits the damage from a large gap."
+    chapter: "p4-f-earnings-season"
+  - question: "With a 200 USD risk budget, a 25-pip EURUSD stop and a 1.6x allowance for news slippage, what is the maximum size?"
+    options: ["0.80 lots", "0.50 lots", "0.40 lots", "0.60 lots"]
+    answer: 1
+    explanation: "Worst-case distance = 25 x 1.6 = 40 pips. At 10 USD per pip per lot: 200 / (40 x 10) = 0.50 lots."
+    chapter: "p4-f-news-trading-risk-and-planning"
+  - question: "Yesterday's 20 EMA was 1.2650 and today's close is 1.2692. What is today's 20 EMA, to four decimals?"
+    options: ["1.2654", "1.2671", "1.2692", "1.2652"]
+    answer: 0
+    explanation: "k = 2 / 21 = 0.0952. EMA = 1.2650 + 0.0952 x 0.0042 = 1.2650 + 0.0004 = 1.2654."
+    chapter: "p4-t-moving-averages"
+  - question: "The RSI average gain is 2.00 and the average loss is 2.00. What is the RSI?"
+    options: ["0", "100", "66.7", "50"]
+    answer: 3
+    explanation: "RS = 2.00 / 2.00 = 1. RSI = 100 - 100 / 2 = 50, the neutral midpoint."
+    chapter: "p4-t-rsi-and-stochastic"
+  - question: "MACD is -12.0 on US30 and its signal line is -18.0. Which statement is correct?"
+    options: ["The 12 EMA is above the 26 EMA", "The histogram is +6.0 and downside momentum is easing", "The histogram is -30.0", "MACD is oversold because it is below -10"]
+    answer: 1
+    explanation: "Histogram = MACD - signal = -12.0 - (-18.0) = +6.0. MACD is still below zero, so the 12 EMA is below the 26 EMA, but it has risen above its signal, showing easing downside momentum. MACD has no fixed oversold level."
+    chapter: "p4-t-macd"
+  - question: "ATR(14) is 20.00. Today's true range is 34.00. What is the new ATR using Wilder's smoothing?"
+    options: ["27.00", "21.00", "20.50", "34.00"]
+    answer: 1
+    explanation: "New ATR = (20.00 x 13 + 34.00) / 14 = (260.00 + 34.00) / 14 = 294.00 / 14 = 21.00."
+    chapter: "p4-t-bollinger-bands-and-atr"
+  - question: "XAUUSD falls from 2,400.00 to 2,300.00. Where is the 38.2% retracement of that down-swing?"
+    options: ["2,361.80", "2,338.20", "2,350.00", "2,323.60"]
+    answer: 1
+    explanation: "Range = 100.00. In a down-swing the retracement is measured up from the low: 2,300.00 + 0.382 x 100.00 = 2,338.20."
+    chapter: "p4-t-fibonacci-retracements"
+  - question: "A double bottom on USDCAD has lows at 1.3500 and 1.3505 and a peak between them at 1.3620. What confirms the pattern and what is the measured target?"
+    options: ["A close above 1.3620; target 1.3740", "A touch of 1.3505; target 1.3620", "A close above 1.3620; target 1.3700", "A close below 1.3500; target 1.3380"]
+    answer: 0
+    explanation: "The pattern is confirmed by a close above the intervening peak. Height = 1.3620 - 1.3500 = 0.0120, projected up from 1.3620 gives 1.3740."
+    chapter: "p4-t-classic-chart-patterns"
+  - question: "Which toolkit gives the most independent pieces of evidence?"
+    options: ["RSI, stochastic and CCI", "Three moving averages of different lengths", "200 EMA for trend, a support zone for location and a rejection candle as trigger", "MACD, MACD histogram and a MACD signal crossover"]
+    answer: 2
+    explanation: "Each tool answers a different question: trend, location and trigger. The other options repeat the same momentum or trend calculation in several forms."
+    chapter: "p4-t-divergence-and-combining-tools"
