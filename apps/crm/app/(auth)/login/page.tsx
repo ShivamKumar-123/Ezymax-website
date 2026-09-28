@@ -6,7 +6,7 @@ import { Eye, EyeOff, Lock, Mail, ArrowRight, ShieldCheck } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { Button, Field, Input } from "@kalks/ui";
-import { DevCodeHint, FormError, GoogleButton, OrDivider, OtpInput, ResendLink } from "@/components/auth";
+import { DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, OrDivider, OtpInput, ResendLink } from "@/components/auth";
 import { authPost, nextPath, type ApiError, type OtpChallenge } from "@/lib/auth-client";
 
 export default function LoginPage() {
@@ -61,11 +61,15 @@ export default function LoginPage() {
         <motion.div key="creds" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
           <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">Welcome back</h1>
           <p className="mt-2 text-[14.5px] text-fg-2">Sign in to your Kalks client area.</p>
-          <div className="mt-8">
-            <GoogleButton />
-          </div>
-          <OrDivider />
-          <form className="space-y-4" onSubmit={signIn} noValidate>
+          {GOOGLE_LOGIN && (
+            <>
+              <div className="mt-8">
+                <GoogleButton />
+              </div>
+              <OrDivider />
+            </>
+          )}
+          <form className={GOOGLE_LOGIN ? "space-y-4" : "mt-8 space-y-4"} onSubmit={signIn} noValidate>
             <FormError>{formErr}</FormError>
             <Field label="Email" error={fieldErr("email")}>
               <Input leading={<Mail />} type="email" name="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />

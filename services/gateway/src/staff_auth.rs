@@ -69,7 +69,8 @@ pub async fn login(State(st): State<AppState>, ctx: Ctx, req: Result<Json<LoginR
     identity::limit(&st, format!("staff-login:email:{email}"), 10, 15 * 60)?;
     let tenant_id = identity::tenant_id(&st.pool, &ctx.tenant_slug).await?;
     let p = flows::check_password(&st, &ctx, K, tenant_id, &email, &r.password).await?;
-    if !identity::device_trusted(&st, &ctx, K, p.id).await? {
+    // Back Office: an emailed code on every sign-in (STAFF_OTP_EVERY_LOGIN=false falls back to new devices only).
+    if st.cfg.staff_otp_every_login || !identity::device_trusted(&st, &ctx, K, p.id).await? {
         let (challenge, code) = identity::send_otp(&st, &ctx, K, tenant_id, p.id, &p.email, Purpose::Login).await?;
         return Ok(Json(identity::challenge_json(&st, &challenge, &p.email, Purpose::Login, K, Some(&code))));
     }

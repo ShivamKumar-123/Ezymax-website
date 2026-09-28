@@ -3,6 +3,9 @@
 import * as React from "react";
 import { cn } from "@kalks/ui";
 
+/** "Sign in with Google" is shown only once Google OAuth is configured (NEXT_PUBLIC_GOOGLE_LOGIN=1). */
+export const GOOGLE_LOGIN = process.env.NEXT_PUBLIC_GOOGLE_LOGIN === "1";
+
 export function GoogleButton({ label = "Continue with Google" }: { label?: string }) {
   return (
     <button type="button" className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-line bg-surface-2 text-[14px] font-medium text-fg shadow-[inset_0_1px_0_var(--k-border-top)] transition-colors hover:bg-surface-3">

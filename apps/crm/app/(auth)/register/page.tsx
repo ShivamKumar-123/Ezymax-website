@@ -6,7 +6,7 @@ import { ArrowRight, CalendarDays, Gift, Lock, Mail, UserRound, CheckCircle2, Ey
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { Button, Field, Input, Stepper, Flag, Icon3D } from "@kalks/ui";
-import { DevCodeHint, FormError, GoogleButton, OrDivider, OtpInput, PasswordStrength, ResendLink } from "@/components/auth";
+import { DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, OrDivider, OtpInput, PasswordStrength, ResendLink } from "@/components/auth";
 import { authPost, type ApiError, type OtpChallenge } from "@/lib/auth-client";
 
 const COUNTRIES = [
@@ -98,11 +98,15 @@ export default function RegisterPage() {
           <motion.div key="s0" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
             <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">Create your Kalks account</h1>
             <p className="mt-2 text-[14px] text-fg-2">Open a free demo instantly. Go live whenever you&apos;re ready.</p>
-            <div className="mt-6">
-              <GoogleButton label="Sign up with Google" />
-            </div>
-            <OrDivider />
-            <form className="space-y-3.5" onSubmit={submit} noValidate>
+            {GOOGLE_LOGIN && (
+              <>
+                <div className="mt-6">
+                  <GoogleButton label="Sign up with Google" />
+                </div>
+                <OrDivider />
+              </>
+            )}
+            <form className={GOOGLE_LOGIN ? "space-y-3.5" : "mt-6 space-y-3.5"} onSubmit={submit} noValidate>
               <FormError>{err && !err.field ? err.message : null}</FormError>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="First name" error={fieldErr("first_name")}>

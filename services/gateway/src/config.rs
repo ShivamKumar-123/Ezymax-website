@@ -25,6 +25,8 @@ pub struct Config {
     pub app_url: String,
     pub trade_url: String,
     pub support_email: String,
+    /// Staff must enter an emailed code on every sign-in (default), not only on new devices.
+    pub staff_otp_every_login: bool,
     pub super_admin_email: String,
     pub super_admin_password: String,
     pub super_admin_name: String,
@@ -56,6 +58,7 @@ impl fmt::Debug for Config {
             .field("session_secret", &redact(&self.session_secret))
             .field("internal_token", &redact(&self.internal_token))
             .field("dev_mode", &self.dev_mode)
+            .field("staff_otp_every_login", &self.staff_otp_every_login)
             .field("smtp_configured", &self.smtp_configured)
             .field("smtp_host", &self.smtp_host)
             .field("smtp_port", &self.smtp_port)
@@ -102,6 +105,7 @@ impl Config {
             app_url: var("PUBLIC_APP_URL", "https://app.kalkstrade.com"),
             trade_url: var("PUBLIC_TRADE_URL", "https://trade.kalkstrade.com"),
             support_email: var("SUPPORT_EMAIL", "support@kalkstrade.com"),
+            staff_otp_every_login: var("STAFF_OTP_EVERY_LOGIN", "true") != "false",
             super_admin_email: var("SUPER_ADMIN_EMAIL", "").to_lowercase(),
             super_admin_password: var("SUPER_ADMIN_PASSWORD", ""),
             super_admin_name: var("SUPER_ADMIN_NAME", "Kalks Admin"),
