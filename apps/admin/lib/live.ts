@@ -13,7 +13,6 @@ export const LIVE_PAGES = ["/", "/clients", "/security", "/org", "/trading", "/c
 /** Sub-pages under a live prefix that are not live yet. */
 export const LIVE_EXCLUDED = [
   "/clients/leads",
-  "/clients/kyc",
   "/clients/aml",
   "/clients/duplicates",
   "/clients/segments",
@@ -39,7 +38,6 @@ export const SOON_PAGES: Record<string, { title: string; text: string }> = {
   "/finance/withdrawals": { title: "Withdrawals", text: "The withdrawal queue with review, approval and on-chain payout is enabled with the USDT wallet." },
   "/finance/wallets": { title: "Wallets", text: "USDT (TRC20) wallet balances and deposit addresses are enabled with the USDT wallet." },
   "/finance": { title: "Deposits", text: "USDT (TRC20) deposits, confirmations and crediting are enabled with the USDT wallet." },
-  "/clients/kyc": { title: "KYC review", text: "The document review queue is enabled with client verification. Each client's KYC status is already shown on their profile." },
 };
 
 export function isLivePath(pathname: string): boolean {

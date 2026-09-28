@@ -14,6 +14,7 @@ mod error;
 mod flows;
 mod google_auth;
 mod identity;
+mod kyc;
 mod internal;
 mod mailer;
 mod ratelimit;
@@ -60,6 +61,7 @@ async fn main() -> anyhow::Result<()> {
     let pool = db::connect(&cfg.database_url).await?;
     db::seed_super_admin(&pool, &cfg).await?;
     let _ = crypto::dummy_hash();
+    kyc::init();
 
     let mailer = if cfg.smtp_configured {
         let m = mailer::Mailer::new(mailer::SmtpSettings {
@@ -93,7 +95,23 @@ async fn main() -> anyhow::Result<()> {
             m.send_code(to, p, "482915", 10, None).await?;
         }
         m.send_code(to, identity::Purpose::Confirm, "482915", 10, Some(&stepup::describe("trading_password", "10000123"))).await?;
-        println!("sent 5 test emails to {to}");
+        let reference = "KYC-000042".to_string();
+        for mail in [
+            mailer::KycMail::Submitted { reference: reference.clone(), hours: 4 },
+            mailer::KycMail::MoreInfo { reference: reference.clone(), items: vec!["Proof of address".into()], message: Some("The bank statement is older than 3 months.".into()) },
+            mailer::KycMail::Rejected { reference: reference.clone(), reason: "The identity document has expired".into(), message: None, can_resubmit: true },
+            mailer::KycMail::Approved { reference },
+        ] {
+            m.send_kyc(to, "Shivam", &mail).await?;
+        }
+        println!("sent 9 test emails to {to}");
+        return Ok(());
+    }
+    // `gateway kyc-erase-user <user_id>`: removes a client's KYC documents (files + rows), then exits.
+    if args.get(1).map(String::as_str) == Some("kyc-erase-user") {
+        let id: i64 = args.get(2).and_then(|v| v.parse().ok()).ok_or_else(|| anyhow::anyhow!("usage: gateway kyc-erase-user <user_id>"))?;
+        let n = kyc::erase_user(&pool, id).await?;
+        println!("erased {n} KYC file(s) of user {id}");
         return Ok(());
     }
     let st = AppState { pool, keys: crypto::Keys::new(&cfg.session_secret), cfg: Arc::new(cfg), limiter: Default::default(), mailer };
@@ -156,6 +174,19 @@ fn router(st: AppState) -> Router {
         .route("/v1/admin/staff", get(admin::staff_list))
         .route("/v1/admin/sessions", get(admin::sessions))
         .route("/v1/admin/sessions/{id}/revoke", post(admin::revoke_session))
+        .route("/v1/kyc", get(kyc::get))
+        .route("/v1/kyc/start", post(kyc::start))
+        .route("/v1/kyc/details", post(kyc::details))
+        .route("/v1/kyc/documents", post(kyc::upload).layer(DefaultBodyLimit::max(kyc::UPLOAD_BODY_LIMIT)))
+        .route("/v1/kyc/submit", post(kyc::submit))
+        .route("/v1/admin/kyc/cases", get(kyc::staff::queue))
+        .route("/v1/admin/kyc/cases/{id}", get(kyc::staff::case_detail))
+        .route("/v1/admin/kyc/cases/{id}/claim", post(kyc::staff::claim))
+        .route("/v1/admin/kyc/cases/{id}/approve", post(kyc::staff::approve))
+        .route("/v1/admin/kyc/cases/{id}/reject", post(kyc::staff::reject))
+        .route("/v1/admin/kyc/cases/{id}/request-info", post(kyc::staff::request_info))
+        .route("/v1/admin/kyc/cases/{id}/notes", post(kyc::staff::note))
+        .route("/v1/admin/kyc/documents/{id}/file", get(kyc::staff::file))
         .route("/v1/shares", post(shares::create))
         .route("/v1/shares/lookup", post(shares::lookup))
         .route("/v1/shares/{code}/trades", patch(shares::update_trades))

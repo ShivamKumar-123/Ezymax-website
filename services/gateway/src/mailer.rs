@@ -162,6 +162,53 @@ impl Mailer {
         self.send(to, "Welcome to Kalks", "Your account is ready. Here's how to get started.", &text, &body).await
     }
 
+    /// Identity verification (KYC) status emails: submitted, approved, rejected (with reason), more information needed.
+    pub async fn send_kyc(&self, to: &str, first_name: &str, mail: &KycMail) -> anyhow::Result<()> {
+        let c = kyc_content(mail, first_name, &self.links.app);
+        let name = html_escape(first_name);
+        let paras: String = c
+            .paragraphs
+            .iter()
+            .map(|p| format!(r#"<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:{FG2}">{}</p>"#, html_escape(p)))
+            .collect();
+        let list = if c.items.is_empty() {
+            String::new()
+        } else {
+            let rows: String = c
+                .items
+                .iter()
+                .map(|i| format!(r#"<tr><td style="padding:8px 12px;border-top:1px solid {LINE};font-size:14px;color:{FG}">{}</td></tr>"#, html_escape(i)))
+                .collect();
+            format!(r#"<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG};border:1px solid {LINE};border-radius:12px;margin:4px 0 18px;border-collapse:separate;overflow:hidden"><tr><td style="padding:10px 12px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:{FG3}">{}</td></tr>{rows}</table>"#, html_escape(c.items_title))
+        };
+        let note = c
+            .note
+            .as_deref()
+            .map(|n| format!(r#"<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px"><tr><td style="background:{BG};border:1px solid {LINE};border-left:3px solid {GOLD};border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.6;color:{FG}">{}</td></tr></table>"#, html_escape(n)))
+            .unwrap_or_default();
+        let (title, reference) = (html_escape(&c.title), html_escape(&c.reference));
+        let body = format!(
+            r#"<h1 style="margin:0 0 10px;font-size:22px;line-height:1.3;font-weight:700;color:{FG}">{title}</h1>
+<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:{FG2}">Hi {name},</p>
+{paras}{list}{note}
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 6px"><tr>
+<td style="border-radius:10px;background:{EMBER}"><a href="{href}" style="display:inline-block;padding:13px 22px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px">{button}</a></td>
+</tr></table>
+<p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:{FG3}">Reference {reference}. Questions? Just reply to this email.</p>"#,
+            href = c.href,
+            button = html_escape(c.button),
+        );
+        let mut text = format!("{}\n\nHi {first_name},\n\n{}\n", c.title, c.paragraphs.join("\n\n"));
+        if !c.items.is_empty() {
+            text.push_str(&format!("\n{}:\n{}\n", c.items_title, c.items.iter().map(|i| format!("- {i}")).collect::<Vec<_>>().join("\n")));
+        }
+        if let Some(n) = &c.note {
+            text.push_str(&format!("\n{n}\n"));
+        }
+        text.push_str(&format!("\n{}: {}\n\nReference {}.\n\n{}", c.button, c.href, c.reference, self.text_footer()));
+        self.send(to, &c.subject, &c.preheader, &text, &body).await
+    }
+
     async fn send(&self, to: &str, subject: &str, preheader: &str, text: &str, body_html: &str) -> anyhow::Result<()> {
         let html = self.layout(preheader, body_html);
         let logo = Attachment::new_inline(LOGO_CID.to_string()).body(LOGO_PNG.to_vec(), "image/png".parse()?);
@@ -218,4 +265,97 @@ You received this email because of activity on your Kalks account.<br><br>
 
 fn html_escape(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;").replace('\'', "&#39;")
+}
+
+// ---------- KYC emails ----------
+
+/// A KYC decision or status change the client is told about by email.
+#[derive(Clone, Debug)]
+pub enum KycMail {
+    Submitted { reference: String, hours: i64 },
+    Approved { reference: String },
+    Rejected { reference: String, reason: String, message: Option<String>, can_resubmit: bool },
+    MoreInfo { reference: String, items: Vec<String>, message: Option<String> },
+}
+
+/// Rendered wording of a KYC email (shared by the SMTP mailer and the development log).
+pub struct KycContent {
+    pub subject: String,
+    pub preheader: String,
+    pub title: String,
+    pub paragraphs: Vec<String>,
+    pub items_title: &'static str,
+    pub items: Vec<String>,
+    pub note: Option<String>,
+    pub button: &'static str,
+    pub href: String,
+    pub reference: String,
+}
+
+pub fn kyc_content(mail: &KycMail, _first_name: &str, app: &str) -> KycContent {
+    let href = format!("{app}/profile/verification");
+    match mail {
+        KycMail::Submitted { reference, hours } => KycContent {
+            subject: "We've received your verification documents".into(),
+            preheader: format!("Usually reviewed within {hours} hours."),
+            title: "Your documents are with our team".into(),
+            paragraphs: vec![
+                "Thanks for verifying your identity. Your documents passed our automatic checks and are now with our verification team.".into(),
+                format!("Most reviews finish within {hours} hours. We'll email you as soon as there's a decision, and you can follow the status in your Client Area."),
+                "You can keep trading and depositing in the meantime. Withdrawals unlock once your identity is verified.".into(),
+            ],
+            items_title: "",
+            items: vec![],
+            note: None,
+            button: "Track verification",
+            href,
+            reference: reference.clone(),
+        },
+        KycMail::Approved { reference } => KycContent {
+            subject: "Your identity is verified".into(),
+            preheader: "Withdrawals are now unlocked on your Kalks account.".into(),
+            title: "You're verified".into(),
+            paragraphs: vec![
+                "Good news: we've verified your identity. Withdrawals, partner payouts and higher limits are now unlocked on your account.".into(),
+                "Your name and date of birth are now locked to your verified documents. If they ever need to change, contact support.".into(),
+            ],
+            items_title: "",
+            items: vec![],
+            note: None,
+            button: "Go to your Client Area",
+            href: app.to_string(),
+            reference: reference.clone(),
+        },
+        KycMail::Rejected { reference, reason, message, can_resubmit } => KycContent {
+            subject: "We couldn't verify your identity".into(),
+            preheader: format!("Reason: {reason}"),
+            title: "We couldn't verify your identity".into(),
+            paragraphs: vec![
+                format!("We reviewed your documents but couldn't approve them. Reason: {reason}."),
+                if *can_resubmit {
+                    "You can start a new verification with updated documents at any time from your Client Area.".into()
+                } else {
+                    "Please contact our support team if you have questions about this decision.".into()
+                },
+            ],
+            items_title: "",
+            items: vec![],
+            note: message.clone(),
+            button: if *can_resubmit { "Start again" } else { "View details" },
+            href,
+            reference: reference.clone(),
+        },
+        KycMail::MoreInfo { reference, items, message } => KycContent {
+            subject: "We need one more thing to verify your identity".into(),
+            preheader: "Upload the requested documents to finish verification.".into(),
+            title: "We need a little more from you".into(),
+            paragraphs: vec!["Our verification team reviewed your documents and needs the following before they can finish. You only need to upload these; everything else is kept.".into()],
+            items_title: "Please upload",
+            items: items.clone(),
+            note: message.clone(),
+            button: "Upload documents",
+            href,
+            reference: reference.clone(),
+        },
+    }
 }

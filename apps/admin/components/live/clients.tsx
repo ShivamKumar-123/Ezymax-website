@@ -110,7 +110,7 @@ export function LiveClients() {
             { label: "Registered", value: s?.total, sub: `${s?.registered_30d ?? "—"} in the last 30 days`, icon: <Users /> },
             { label: "New · 7 days", value: s?.registered_7d, sub: `${s?.registered_today ?? "—"} today (GMT+3)`, icon: <UserPlus /> },
             { label: "Verified emails", value: s?.email_verified, sub: s && s.total ? `${Math.round((s.email_verified / s.total) * 100)}% of clients` : "—", icon: <MailCheck /> },
-            { label: "KYC verified", value: s?.kyc_verified, sub: "KYC review opens with the next release", icon: <Users /> },
+            { label: "KYC verified", value: s?.kyc_verified, sub: `${s?.kyc_pending ?? "—"} awaiting review`, icon: <Users /> },
           ].map((x) => (
             <div key={x.label} className="k-row flex items-start justify-between gap-3 px-4 py-3">
               <div className="min-w-0">

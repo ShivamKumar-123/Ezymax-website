@@ -26,7 +26,9 @@ pub fn body<T>(r: Result<Json<T>, JsonRejection>) -> ApiResult<T> {
 pub async fn user_json(st: &AppState, id: i64) -> ApiResult<Value> {
     let r = sqlx::query(
         "SELECT u.id, u.email, u.first_name, u.last_name, u.phone_dial, u.phone, u.country, u.date_of_birth, u.kyc_status,
-                u.email_verified_at IS NOT NULL AS email_verified, u.google_sub IS NOT NULL AS google_linked, u.referral_code, u.created_at, t.slug, t.name AS tenant_name
+                u.email_verified_at IS NOT NULL AS email_verified, u.google_sub IS NOT NULL AS google_linked, u.referral_code, u.created_at, t.slug, t.name AS tenant_name,
+                u.identity_locked_at IS NOT NULL AS identity_locked,
+                (SELECT k.status FROM kyc_cases k WHERE k.user_id = u.id ORDER BY k.id DESC LIMIT 1) AS kyc_case_status
          FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.id = $1",
     )
     .bind(id)
@@ -46,6 +48,10 @@ pub async fn user_json(st: &AppState, id: i64) -> ApiResult<Value> {
         "country": r.get::<String, _>("country"),
         "date_of_birth": r.get::<NaiveDate, _>("date_of_birth"),
         "kyc_status": r.get::<String, _>("kyc_status"),
+        // latest KYC case status (draft | submitted | in_review | more_info | approved | rejected), null before any case
+        "kyc_case_status": r.get::<Option<String>, _>("kyc_case_status"),
+        // D92: name and date of birth can no longer change (set when KYC is approved)
+        "identity_locked": r.get::<bool, _>("identity_locked"),
         "email_verified": r.get::<bool, _>("email_verified"),
         "google_linked": r.get::<bool, _>("google_linked"),
         "referral_code": r.get::<String, _>("referral_code"),

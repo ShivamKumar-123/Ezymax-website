@@ -32,10 +32,14 @@ pub enum Perm {
     StaffRead,
     SpreadsRead,
     SpreadsWrite,
+    /// KYC queue, case files and documents (read).
+    KycRead,
+    /// KYC decisions: approve, reject, request more information, notes.
+    KycReview,
 }
 
 impl Perm {
-    pub const ALL: [Perm; 8] = [
+    pub const ALL: [Perm; 10] = [
         Perm::StatsRead,
         Perm::ClientsRead,
         Perm::AuditRead,
@@ -44,6 +48,8 @@ impl Perm {
         Perm::StaffRead,
         Perm::SpreadsRead,
         Perm::SpreadsWrite,
+        Perm::KycRead,
+        Perm::KycReview,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -56,6 +62,8 @@ impl Perm {
             Perm::StaffRead => "staff.read",
             Perm::SpreadsRead => "spreads.read",
             Perm::SpreadsWrite => "spreads.write",
+            Perm::KycRead => "kyc.read",
+            Perm::KycReview => "kyc.review",
         }
     }
 }
@@ -65,7 +73,7 @@ pub fn role_allows(role: &str, p: Perm) -> bool {
     use Perm::*;
     match role {
         "platform_owner" | "super_admin" | "admin" => true,
-        "compliance" => matches!(p, StatsRead | ClientsRead | AuditRead | SessionsRead | SpreadsRead),
+        "compliance" => matches!(p, StatsRead | ClientsRead | AuditRead | SessionsRead | SpreadsRead | KycRead | KycReview),
         "dealer" | "risk_manager" => matches!(p, StatsRead | ClientsRead | SpreadsRead | SpreadsWrite),
         "finance" | "support" | "partner_manager" => matches!(p, StatsRead | ClientsRead),
         "marketing" => matches!(p, StatsRead),
@@ -788,6 +796,9 @@ mod tests {
         assert!(role_allows("dealer", Perm::SpreadsWrite));
         assert!(!role_allows("viewer", Perm::SpreadsWrite));
         assert!(!role_allows("marketing", Perm::ClientsRead));
+        assert!(role_allows("compliance", Perm::KycReview));
+        assert!(!role_allows("support", Perm::KycRead));
+        assert!(!role_allows("dealer", Perm::KycReview));
         assert!(!role_allows("nonsense", Perm::StatsRead));
         assert_eq!(permissions("marketing"), vec!["stats.read"]);
     }

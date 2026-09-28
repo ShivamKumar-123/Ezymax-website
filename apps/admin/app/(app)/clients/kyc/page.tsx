@@ -26,6 +26,8 @@ import {
 import { CORPORATE_KYC, KYC_QUEUE, REASON_CODES, getClient, timeAgo, type KycApplication, type KycCheck } from "@kalks/mock/admin-clients";
 import { ClientCell, KycChip, ReasonDialog, SlaTimer } from "@/components/command/kit";
 import { IdCard } from "@/components/clients/profile-tabs";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { KycQueue } from "@/components/kyc/queue";
 
 const STATUS_TONE = { pending: "warn", review: "info", resubmit: "neutral", approved: "up", rejected: "down" } as const;
 
@@ -371,10 +373,15 @@ function KycQueueInner() {
   );
 }
 
-export default function KycQueuePage() {
+function DemoKycQueuePage() {
   return (
     <React.Suspense fallback={null}>
       <KycQueueInner />
     </React.Suspense>
   );
+}
+
+/** Live builds: the real review queue (gateway /v1/admin/kyc via /api/admin/kyc). Demo builds keep the showcase. */
+export default function KycQueuePage() {
+  return IS_DEMO ? <DemoKycQueuePage /> : <KycQueue />;
 }

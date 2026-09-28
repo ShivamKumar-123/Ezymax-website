@@ -16,6 +16,11 @@
 # Client Area (CRM)
 app.kalkstrade.com {
 	import common
+	# KYC uploads: 10 MB files (+ multipart overhead); the gateway enforces the exact limit and sniffs the type
+	@kycUpload path /api/kyc/documents
+	request_body @kycUpload {
+		max_size 12MB
+	}
 	reverse_proxy 127.0.0.1:3000
 }
 

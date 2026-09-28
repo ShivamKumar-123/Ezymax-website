@@ -5,6 +5,8 @@ import { Camera, CheckCircle2, Clock, FileText, IdCard, Lock, ScanFace, Upload, 
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Icon3D, PageHeader, Progress, Reveal, Segmented, Stepper, cn } from "@kalks/ui";
+import { IS_DEMO } from "@kalks/mock";
+import { LiveVerification } from "@/components/verification/live-verification";
 
 const LEVELS = [
   { level: 0, name: "Registered", unlocks: ["Demo accounts", "Platform & tools"], done: true },
@@ -59,7 +61,7 @@ function UploadBox({ label, hint, done, onDone }: { label: string; hint: string;
   );
 }
 
-export default function VerificationPage() {
+function DemoVerificationPage() {
   const [step, setStep] = React.useState(0);
   const [doc, setDoc] = React.useState<"passport" | "id" | "license">("passport");
   const [uploaded, setUploaded] = React.useState<Record<string, boolean>>({});
@@ -244,4 +246,9 @@ export default function VerificationPage() {
       </div>
     </div>
   );
+}
+
+/** Live builds: the real KYC flow (gateway /v1/kyc via /api/kyc). Demo builds keep the showcase above. */
+export default function VerificationPage() {
+  return IS_DEMO ? <DemoVerificationPage /> : <LiveVerification />;
 }

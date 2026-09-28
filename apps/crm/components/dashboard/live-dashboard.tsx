@@ -38,12 +38,29 @@ function steps(me: SessionUser, accounts: EngineAccount[] | null): Step[] {
   const live = accounts?.filter((a) => a.type === "live").length ?? 0;
   const demo = accounts?.filter((a) => a.type === "demo").length ?? 0;
   const opened = live + demo > 0;
-  const kyc: Record<SessionUser["kyc_status"], { state: StepState; text: string }> = {
-    verified: { state: "done", text: "Your identity is verified." },
-    pending: { state: "review", text: "Your documents are being reviewed." },
-    rejected: { state: "rejected", text: "Your documents were rejected. Contact support to resubmit." },
-    unverified: { state: "soon", text: "Online verification opens with the next release. We will email you." },
-  };
+  return baseSteps(me, live, demo, opened, kycStep(me));
+}
+
+/** The "Verify your identity" step from the real KYC status (users.kyc_status + the latest case). */
+function kycStep(me: SessionUser): { state: StepState; text: string } {
+  if (me.kyc_status === "verified") return { state: "done", text: "Your identity is verified. Withdrawals are unlocked." };
+  switch (me.kyc_case_status) {
+    case "more_info":
+      return { state: "todo", text: "Our team needs one more document from you." };
+    case "submitted":
+    case "in_review":
+      return { state: "review", text: "Your documents are with our verification team." };
+    case "draft":
+      return { state: "todo", text: "Continue where you left off. Takes about 3 minutes." };
+    case "rejected":
+      return { state: "rejected", text: "We couldn't verify your documents. You can start again." };
+  }
+  if (me.kyc_status === "pending") return { state: "review", text: "Your documents are with our verification team." };
+  if (me.kyc_status === "rejected") return { state: "rejected", text: "We couldn't verify your documents. You can start again." };
+  return { state: "todo", text: "Takes about 3 minutes. Unlocks withdrawals." };
+}
+
+function baseSteps(me: SessionUser, live: number, demo: number, opened: boolean, kyc: { state: StepState; text: string }): Step[] {
   return [
     { key: "account", icon: <UserRound />, title: "Create your account", text: `Registered on ${fmtDate(me.created_at)}.`, state: "done" },
     {
@@ -53,7 +70,7 @@ function steps(me: SessionUser, accounts: EngineAccount[] | null): Step[] {
       text: me.email_verified ? `${me.email} is verified.` : `Confirm ${me.email} with the code we sent you.`,
       state: me.email_verified ? "done" : "todo",
     },
-    { key: "kyc", icon: <IdCard />, title: "Verify your identity", ...kyc[me.kyc_status], href: "/profile/verification" },
+    { key: "kyc", icon: <IdCard />, title: "Verify your identity", ...kyc, href: "/profile/verification" },
     {
       key: "account-open",
       icon: <Layers />,

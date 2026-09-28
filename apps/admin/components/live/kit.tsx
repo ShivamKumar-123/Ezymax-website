@@ -155,7 +155,8 @@ export function device(ua: string | null | undefined) {
 export function actionTone(action: string): ChipTone {
   if (/failed|locked|rejected|blocked/.test(action)) return "down";
   if (/revoked|reset|logout/.test(action)) return "warn";
-  if (/login|verified|register|seeded/.test(action)) return "up";
+  if (/login|verified|register|seeded|approved/.test(action)) return "up";
+  if (/more_info/.test(action)) return "warn";
   if (/^spreads\./.test(action)) return "ember";
   return "neutral";
 }
@@ -180,6 +181,17 @@ export function actionLabel(action: string) {
     "spreads.update": "Spread markup changed",
     "share.created": "Trade share link created",
     "share.revoked": "Trade share link revoked",
+    "kyc.started": "KYC started",
+    "kyc.document_uploaded": "KYC document uploaded",
+    "kyc.submitted": "KYC submitted",
+    "kyc.resubmitted": "KYC documents resubmitted",
+    "kyc.review_started": "KYC review started",
+    "kyc.more_info_requested": "KYC: more information requested",
+    "kyc.approved": "KYC approved",
+    "kyc.rejected": "KYC rejected",
+    "kyc.note_added": "KYC note added",
+    "kyc.document_viewed": "KYC document viewed",
+    "user.identity_corrected": "Client corrected name / date of birth",
   };
   return map[action] ?? action;
 }

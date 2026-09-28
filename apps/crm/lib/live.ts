@@ -6,7 +6,7 @@
 export const LIVE_PAGES = ["/", "/markets", "/profile", "/support", "/accounts", "/portfolio", "/academy"] as const;
 
 /** Sub-pages of a live prefix that are still mock-only and stay gated in live builds. */
-export const LIVE_GATED = ["/profile/security", "/profile/verification", "/profile/viewers", "/profile/preferences", "/portfolio/analytics", "/academy/coach"] as const;
+export const LIVE_GATED = ["/profile/security", "/profile/viewers", "/profile/preferences", "/portfolio/analytics", "/academy/coach"] as const;
 
 /** Modules that are next on the roadmap: listed in live navigation with a "Soon" chip. */
 export type SoonModule = { prefix: string; title: string; text: string };
@@ -21,11 +21,6 @@ export const SOON_MODULES: SoonModule[] = [
     prefix: "/portfolio/analytics",
     title: "Portfolio analytics",
     text: "Performance analytics across your accounts are being connected. Your trades, ledger and statements are already under Portfolio.",
-  },
-  {
-    prefix: "/profile/verification",
-    title: "Identity verification",
-    text: "Document upload opens here once verification is enabled for your profile. We will email you when you can start.",
   },
 ];
 

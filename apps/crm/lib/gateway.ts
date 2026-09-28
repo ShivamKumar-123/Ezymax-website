@@ -24,6 +24,10 @@ export type GatewayUser = {
   country: string;
   date_of_birth: string;
   kyc_status: "unverified" | "pending" | "verified" | "rejected";
+  /** Latest KYC case status (gateway /v1/kyc); null before verification is started. */
+  kyc_case_status?: "draft" | "submitted" | "in_review" | "more_info" | "approved" | "rejected" | null;
+  /** D92: name and date of birth are locked after identity verification. */
+  identity_locked?: boolean;
   email_verified: boolean;
   /** Signs in with Google (account linked to a Google account). */
   google_linked?: boolean;

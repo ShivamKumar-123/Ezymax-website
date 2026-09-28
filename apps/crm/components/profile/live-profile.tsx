@@ -134,7 +134,8 @@ export function LiveProfile() {
                 </div>
               </div>
               <div className="mx-6 mb-6 flex items-center gap-2 rounded-xl border border-line bg-surface-2 px-4 py-2.5 text-[12px] text-fg-3">
-                <Lock className="size-3.5 shrink-0" /> Name and date of birth must match your identity documents when verification opens.
+                <Lock className="size-3.5 shrink-0" />
+                {me.identity_locked ? "Name and date of birth are locked to your verified identity documents. Contact support to change them." : "Name and date of birth must match your identity document. You can correct them during verification."}
               </div>
             </Card>
           </Reveal>
@@ -192,11 +193,19 @@ export function LiveProfile() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-[14px] font-medium">
                     Identity verification
-                    <Chip size="sm" tone={kyc.tone} dot>
-                      {me.kyc_status === "unverified" ? "Not started" : kyc.label}
+                    <Chip size="sm" tone={me.kyc_case_status === "more_info" ? "warn" : kyc.tone} dot>
+                      {me.kyc_case_status === "more_info" ? "Action needed" : me.kyc_status === "unverified" ? (me.kyc_case_status === "draft" ? "In progress" : "Not started") : kyc.label}
                     </Chip>
                   </div>
-                  <div className="mt-0.5 text-[12.5px] text-fg-3">Online document upload opens with the next release.</div>
+                  <div className="mt-0.5 text-[12.5px] text-fg-3">
+                    {me.kyc_status === "verified"
+                      ? "Withdrawals and higher limits are unlocked."
+                      : me.kyc_case_status === "more_info"
+                        ? "Our team asked for another document."
+                        : me.kyc_status === "pending"
+                          ? "Your documents are with our verification team."
+                          : "Verify online in about 3 minutes to unlock withdrawals."}
+                  </div>
                 </div>
                 <ChevronRight className="size-4 text-fg-3" />
               </Card>

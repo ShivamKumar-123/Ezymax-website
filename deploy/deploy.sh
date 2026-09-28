@@ -19,6 +19,11 @@ if ! grep -q '^TRADING_DATABASE_URL=' .env.local && grep -q '^GATEWAY_DATABASE_U
   # same server and credentials as the gateway, database kalks_trading (created on first start)
   printf 'TRADING_DATABASE_URL=%s\n' "$(grep '^GATEWAY_DATABASE_URL=' .env.local | cut -d= -f2- | sed -E 's#/[^/?]+([?].*)?$#/kalks_trading\1#')" >> .env.local
 fi
+# KYC documents (gateway): AES-256-GCM data key generated once and never printed. BACK IT UP: without it the
+# stored documents can't be decrypted. Files live outside every web root, 0700 / 0600.
+grep -q '^KYC_ENCRYPTION_KEY=' .env.local || printf 'KYC_ENCRYPTION_KEY=%s\n' "$(openssl rand -hex 32)" >> .env.local
+grep -q '^KYC_STORAGE_DIR=' .env.local || printf 'KYC_STORAGE_DIR=%s\n' "$HOME/.kalks-data/kyc" >> .env.local
+install -d -m 700 "$(grep '^KYC_STORAGE_DIR=' .env.local | cut -d= -f2-)"
 # IB service secrets (same rules as the engine): internal token generated once, database kalks_ib
 grep -q '^IB_INTERNAL_TOKEN=' .env.local || printf 'IB_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
 if ! grep -q '^IB_DATABASE_URL=' .env.local && grep -q '^GATEWAY_DATABASE_URL=' .env.local; then
