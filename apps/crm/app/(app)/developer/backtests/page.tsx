@@ -10,6 +10,8 @@ import { hashString } from "@kalks/mock";
 import { BACKTEST_STRATEGIES, COST_MODELS, DEFAULT_BACKTEST, PAST_RUNS, formatDateLabel, runBacktest, serverTime, type BacktestParams, type BacktestResult, type PastRun } from "@kalks/mock/algo";
 import { BacktestForm, PastRuns } from "@/components/developer/backtest-form";
 import { BacktestKpis, DrawdownChart, MonteCarloCard, MonthlyReturns, ReturnDistribution, TradeStats, TradesTable } from "@/components/developer/backtest-report";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveBacktestsPage } from "@/components/algo/backtests-page";
 
 const STAGES: [number, string][] = [
   [0, "Loading M1 history…"],
@@ -64,7 +66,7 @@ function EquityCard({ r }: { r: BacktestResult }) {
   );
 }
 
-export default function BacktestsPage() {
+function DemoBacktestsPage() {
   const [runs, setRuns] = React.useState<PastRun[]>(PAST_RUNS);
   const [activeId, setActiveId] = React.useState(PAST_RUNS[0]!.id);
   const [params, setParams] = React.useState<BacktestParams>(DEFAULT_BACKTEST);
@@ -231,4 +233,8 @@ export default function BacktestsPage() {
       </div>
     </>
   );
+}
+
+export default function BacktestsPage() {
+  return DEMO_BUILD ? <DemoBacktestsPage /> : <React.Suspense fallback={null}><LiveBacktestsPage /></React.Suspense>;
 }

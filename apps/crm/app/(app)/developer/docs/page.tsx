@@ -8,6 +8,8 @@ import { Button, Card, Chip, CopyButton, PageHeader, Reveal, cn } from "@kalks/u
 import { API_BASE, API_ENDPOINTS, API_ERRORS, FIX_SESSION, RATE_LIMITS } from "@kalks/mock/developer";
 import { CodeBlock, toJson } from "@/components/developer/code-block";
 import { DocSection, DocTable, DocsLangContext, DocsNav, EndpointCard, MethodBadge, SampleBlock, useScrollSpy, type SampleLang } from "@/components/developer/docs";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveDocsPage } from "@/components/algo/docs-page";
 
 const NAV = [
   { id: "authentication", label: "Authentication", icon: <KeyRound /> },
@@ -120,7 +122,7 @@ const FIX_LOGON = `# Logon (35=A) — password = API secret
 # Execution Report (35=8) — filled
 8=FIX.4.4|9=198|35=8|49=${FIX_SESSION.targetCompId}|56=${FIX_SESSION.senderCompId}|34=2|37=51298844|11=gold-bo-0924-01|17=E0924-88121|150=F|39=2|55=XAUUSD|54=1|38=50|32=50|31=2654.48|14=50|6=2654.48|10=231|`;
 
-export default function DocsPage() {
+function DemoDocsPage() {
   const [lang, setLang] = React.useState<SampleLang>("curl");
   const active = useScrollSpy(IDS);
   const ctx = React.useMemo(() => ({ lang, setLang }), [lang]);
@@ -402,4 +404,8 @@ export default function DocsPage() {
       </div>
     </DocsLangContext.Provider>
   );
+}
+
+export default function DocsPage() {
+  return DEMO_BUILD ? <DemoDocsPage /> : <React.Suspense fallback={null}><LiveDocsPage /></React.Suspense>;
 }

@@ -18,6 +18,8 @@ import {
   type Delivery,
 } from "@/components/developer/webhooks";
 import { ago } from "@/components/developer/api-keys";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveWebhooksPage } from "@/components/algo/webhooks-page";
 
 function SignalActivity({ log }: { log: Delivery[] }) {
   const end = Date.parse("2026-09-24T15:00:00Z");
@@ -56,7 +58,7 @@ function SignalActivity({ log }: { log: Delivery[] }) {
   );
 }
 
-export default function WebhooksPage() {
+function DemoWebhooksPage() {
   const [hooks, setHooks] = React.useState<SignalWebhook[]>(WEBHOOKS);
   const [sel, setSel] = React.useState(WEBHOOKS[0]!.id);
   const [log, setLog] = React.useState<Delivery[]>(WEBHOOK_DELIVERIES);
@@ -301,4 +303,8 @@ export default function WebhooksPage() {
       />
     </div>
   );
+}
+
+export default function WebhooksPage() {
+  return DEMO_BUILD ? <DemoWebhooksPage /> : <React.Suspense fallback={null}><LiveWebhooksPage /></React.Suspense>;
 }

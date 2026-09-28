@@ -24,6 +24,8 @@ import {
 import { MARKETPLACE_TERMS, MARKET_STRATEGIES, MY_PUBLISHING, type MarketStrategy } from "@kalks/mock/developer";
 import type { AssetClass } from "@kalks/mock";
 import { Stars, StrategyCard, SubscribeDialog, SymbolStack } from "@/components/developer/marketplace";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveMarketplacePage } from "@/components/algo/marketplace-page";
 
 const CLASSES: { value: AssetClass | "all"; label: string }[] = [
   { value: "all", label: "All assets" },
@@ -207,7 +209,7 @@ function PublishCta() {
   );
 }
 
-export default function MarketplacePage() {
+function DemoMarketplacePage() {
   const [price, setPrice] = React.useState<"all" | "free" | "paid">("all");
   const [cls, setCls] = React.useState<AssetClass | "all">("all");
   const [sort, setSort] = React.useState<SortKey>("return");
@@ -332,4 +334,8 @@ export default function MarketplacePage() {
       <SubscribeDialog s={open} onOpenChange={(o) => !o && setOpen(null)} onDone={(id) => setSubscribed((x) => [...x, id])} />
     </div>
   );
+}
+
+export default function MarketplacePage() {
+  return DEMO_BUILD ? <DemoMarketplacePage /> : <React.Suspense fallback={null}><LiveMarketplacePage /></React.Suspense>;
 }

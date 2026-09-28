@@ -169,6 +169,7 @@ export const CRM_NAV: NavModule[] = [
       { href: "/developer", label: "API keys", icon: KeyRound },
       { href: "/developer/webhooks", label: "Webhooks", icon: Webhook },
       { href: "/developer/strategies", label: "Strategy builder", icon: Workflow },
+      { href: "/developer/deployments", label: "Running strategies", icon: Bot },
       { href: "/developer/backtests", label: "Backtests", icon: FlaskConical },
       { href: "/developer/marketplace", label: "Marketplace", icon: Store },
       { href: "/developer/docs", label: "Docs", icon: BookOpen },

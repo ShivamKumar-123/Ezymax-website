@@ -6,8 +6,10 @@ import { Activity, AlertCircle, BookOpen, Gauge as GaugeIcon, KeyRound, Plus } f
 import { Button, Chip, KpiCard, MiniBars, PageHeader, Reveal, formatNumber } from "@kalks/ui";
 import { API_KEYS, API_STATS, apiUsage, type ApiKey } from "@kalks/mock/developer";
 import { CreateKeyDialog, KeysTable, KillSwitchCard, OrderSourcesCard, SdkQuickstart, SecurityChecklist, UsageCard } from "@/components/developer/api-keys";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveKeysPage } from "@/components/algo/keys-page";
 
-export default function ApiKeysPage() {
+function DemoApiKeysPage() {
   const [keys, setKeys] = React.useState<ApiKey[]>(API_KEYS);
   const [creating, setCreating] = React.useState(false);
   const [halted, setHalted] = React.useState(false);
@@ -125,4 +127,8 @@ export default function ApiKeysPage() {
       <CreateKeyDialog open={creating} onOpenChange={setCreating} onCreated={(k) => setKeys((ks) => [k, ...ks])} />
     </div>
   );
+}
+
+export default function ApiKeysPage() {
+  return DEMO_BUILD ? <DemoApiKeysPage /> : <React.Suspense fallback={null}><LiveKeysPage /></React.Suspense>;
 }

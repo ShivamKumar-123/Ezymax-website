@@ -13,6 +13,8 @@ import { CodeEditor } from "@/components/developer/strategy-code";
 import { ExecutionFilters, SignalPreview } from "@/components/developer/strategy-preview";
 import { AiAssistant } from "@/components/developer/strategy-ai";
 import { AlgoStatsStrip, DeployCard, MyStrategiesCard, SignalsCard, TemplatesCard } from "@/components/developer/strategy-panels";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveStrategiesPage } from "@/components/algo/strategies-page";
 
 type Mode = "visual" | "code";
 
@@ -60,7 +62,7 @@ function QuickEstimate({ rules, templateId }: { rules: StrategyRules; templateId
   );
 }
 
-export default function StrategyBuilderPage() {
+function DemoStrategyBuilderPage() {
   const first = MY_STRATEGIES[0]!;
   const [active, setActive] = React.useState<string>(first.id);
   const [baseTpl, setBaseTpl] = React.useState(first.templateId);
@@ -238,4 +240,8 @@ export default function StrategyBuilderPage() {
       </div>
     </>
   );
+}
+
+export default function StrategyBuilderPage() {
+  return DEMO_BUILD ? <DemoStrategyBuilderPage /> : <React.Suspense fallback={null}><LiveStrategiesPage /></React.Suspense>;
 }
