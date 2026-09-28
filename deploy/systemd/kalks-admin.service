@@ -1,0 +1,17 @@
+[Unit]
+Description=Kalks Back Office (:3001)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=kalks
+WorkingDirectory=/home/kalks/kalks/apps/admin
+Environment=NODE_ENV=production
+ExecStart=/home/kalks/kalks/apps/admin/node_modules/.bin/next start -p 3001 -H 127.0.0.1
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

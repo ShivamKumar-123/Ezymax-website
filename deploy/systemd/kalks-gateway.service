@@ -1,0 +1,18 @@
+[Unit]
+Description=Kalks gateway / auth (:8080)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=kalks
+WorkingDirectory=/home/kalks/kalks/services/gateway
+EnvironmentFile=/home/kalks/kalks/.env.local
+Environment=RUST_LOG=info
+ExecStart=/home/kalks/kalks/target/release/gateway
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
