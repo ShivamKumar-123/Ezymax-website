@@ -73,7 +73,9 @@ impl Mailer {
         Ok(self.transport.test_connection().await?)
     }
 
-    pub async fn send_code(&self, to: &str, purpose: Purpose, code: &str, ttl_minutes: i64) -> anyhow::Result<()> {
+    /// `detail` names the change being confirmed (step-up codes only).
+    pub async fn send_code(&self, to: &str, purpose: Purpose, code: &str, ttl_minutes: i64, detail: Option<&str>) -> anyhow::Result<()> {
+        let confirm_lead;
         let (subject, title, lead) = match purpose {
             Purpose::VerifyEmail => (
                 "Your Kalks verification code",
@@ -90,21 +92,34 @@ impl Mailer {
                 "Reset your password",
                 "Enter this code to set a new password for your Kalks account.",
             ),
+            Purpose::Confirm => {
+                confirm_lead = format!(
+                    "You asked to {} in the Kalks Client Area. Enter this code to confirm it.",
+                    detail.unwrap_or("make a change to your account")
+                );
+                ("Confirm a change on your Kalks account", "Confirm this change on your Kalks account", confirm_lead.as_str())
+            }
+        };
+        let lead_html = html_escape(lead);
+        let warn = if purpose == Purpose::Confirm {
+            "If you didn't ask for this change, don't share the code: someone may have access to your signed-in session. Change your Client Area password and contact support. Kalks will never ask you for this code by phone, chat or email."
+        } else {
+            "If you didn't request this code, you can ignore this email. Your account stays safe, but we recommend changing your password. Kalks will never ask you for this code by phone, chat or email."
         };
         let spaced: String = code.chars().map(|c| c.to_string()).collect::<Vec<_>>().join(" ");
         let text = format!(
-            "{title}\n\n{lead}\n\nYour code: {code}\n\nIt expires in {ttl_minutes} minutes. If you didn't request it, ignore this email and consider changing your password. Kalks will never ask you for this code by phone, chat or email.\n\n{footer}",
+            "{title}\n\n{lead}\n\nYour code: {code}\n\nIt expires in {ttl_minutes} minutes. {warn}\n\n{footer}",
             footer = self.text_footer()
         );
         let body = format!(
             r#"<h1 style="margin:0 0 10px;font-size:22px;line-height:1.3;font-weight:700;color:{FG}">{title}</h1>
-<p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:{FG2}">{lead}</p>
+<p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:{FG2}">{lead_html}</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="background:{BG};border:1px solid {LINE};border-radius:12px;padding:20px 12px">
 <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:{FG3};margin-bottom:8px">Your code</div>
 <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:34px;font-weight:700;letter-spacing:6px;color:{EMBER}">{spaced}</div>
 <div style="font-size:12px;color:{FG3};margin-top:10px">Expires in {ttl_minutes} minutes</div>
 </td></tr></table>
-<p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:{FG3}">If you didn't request this code, you can ignore this email. Your account stays safe, but we recommend changing your password. Kalks will never ask you for this code by phone, chat or email.</p>"#
+<p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:{FG3}">{warn}</p>"#
         );
         self.send(to, subject, &format!("{title}: {code}"), &text, &body).await
     }

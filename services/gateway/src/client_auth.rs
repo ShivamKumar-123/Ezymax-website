@@ -300,6 +300,8 @@ pub async fn verify_email(State(st): State<AppState>, ctx: Ctx, req: Result<Json
         }
         Purpose::Login => {}
         Purpose::ResetPassword => return Err(ApiError::BadRequest("Use the reset form for this code.")),
+        // step-up codes confirm a change inside a session; they never sign anyone in
+        Purpose::Confirm => return Err(ApiError::CodeExpired),
     }
     identity::trust_device(&st, &ctx, K, v.tenant_id, v.subject_id, v.device_hash).await?;
     Ok(Json(signed_in(&st, &ctx, v.tenant_id, v.subject_id, v.purpose.as_str()).await?))

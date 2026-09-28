@@ -19,6 +19,9 @@ mod ratelimit;
 mod shares;
 mod staff_auth;
 mod state;
+mod stepup;
+#[cfg(test)]
+mod testdb;
 mod validate;
 
 use axum::extract::{Request, State};
@@ -85,9 +88,10 @@ async fn main() -> anyhow::Result<()> {
         let m = mailer.as_ref().ok_or_else(|| anyhow::anyhow!("SMTP is not configured"))?;
         m.send_welcome(to, "Shivam").await?;
         for p in [identity::Purpose::VerifyEmail, identity::Purpose::Login, identity::Purpose::ResetPassword] {
-            m.send_code(to, p, "482915", 10).await?;
+            m.send_code(to, p, "482915", 10, None).await?;
         }
-        println!("sent 4 test emails to {to}");
+        m.send_code(to, identity::Purpose::Confirm, "482915", 10, Some(&stepup::describe("trading_password", "10000123"))).await?;
+        println!("sent 5 test emails to {to}");
         return Ok(());
     }
     let st = AppState { pool, keys: crypto::Keys::new(&cfg.session_secret), cfg: Arc::new(cfg), limiter: Default::default(), mailer };
@@ -101,6 +105,7 @@ async fn main() -> anyhow::Result<()> {
                 tick.tick().await;
                 st.limiter.sweep(Duration::from_secs(3600));
                 let _ = sqlx::query("DELETE FROM email_otps WHERE expires_at < now() - interval '1 day'").execute(&st.pool).await;
+                let _ = sqlx::query("DELETE FROM stepup_tokens WHERE expires_at < now() - interval '1 day'").execute(&st.pool).await;
                 let _ = sqlx::query("DELETE FROM sessions WHERE expires_at < now() - interval '30 days'").execute(&st.pool).await;
             }
         });
@@ -128,6 +133,11 @@ fn router(st: AppState) -> Router {
         .route("/v1/auth/reset", post(client_auth::reset))
         .route("/v1/auth/verify-email", post(client_auth::verify_email))
         .route("/v1/auth/resend", post(client_auth::resend))
+        .route("/v1/auth/password", post(stepup::change_password))
+        .route("/v1/auth/stepup", post(stepup::request))
+        .route("/v1/auth/stepup/resend", post(stepup::resend))
+        .route("/v1/auth/stepup/verify", post(stepup::verify))
+        .route("/v1/auth/stepup/consume", post(stepup::consume))
         .route("/v1/auth/google", post(google_auth::google))
         .route("/v1/auth/google/ticket", post(google_auth::ticket))
         .route("/v1/auth/google/complete", post(google_auth::complete))

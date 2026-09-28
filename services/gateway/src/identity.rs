@@ -263,6 +263,8 @@ pub enum Purpose {
     VerifyEmail,
     Login,
     ResetPassword,
+    /// Step-up confirmation of a sensitive change by a signed-in client (D20); see `stepup`.
+    Confirm,
 }
 
 impl Purpose {
@@ -271,6 +273,7 @@ impl Purpose {
             Purpose::VerifyEmail => "verify_email",
             Purpose::Login => "login",
             Purpose::ResetPassword => "reset_password",
+            Purpose::Confirm => "confirm",
         }
     }
     fn parse(s: &str) -> Option<Self> {
@@ -278,6 +281,7 @@ impl Purpose {
             "verify_email" => Some(Purpose::VerifyEmail),
             "login" => Some(Purpose::Login),
             "reset_password" => Some(Purpose::ResetPassword),
+            "confirm" => Some(Purpose::Confirm),
             _ => None,
         }
     }
@@ -302,11 +306,31 @@ pub fn challenge_json(st: &AppState, challenge: &str, email: &str, purpose: Purp
 }
 
 pub async fn send_otp(st: &AppState, ctx: &Ctx, kind: Kind, tenant_id: i64, subject_id: i64, email: &str, purpose: Purpose) -> ApiResult<(String, String)> {
+    send_otp_scoped(st, ctx, kind, tenant_id, subject_id, email, purpose, None).await
+}
+
+/// `scope` = (action, target) for step-up codes: stored with the code, named in the email, and older pending
+/// codes are only superseded within the same action.
+#[allow(clippy::too_many_arguments)]
+pub async fn send_otp_scoped(
+    st: &AppState,
+    ctx: &Ctx,
+    kind: Kind,
+    tenant_id: i64,
+    subject_id: i64,
+    email: &str,
+    purpose: Purpose,
+    scope: Option<(&str, &str)>,
+) -> ApiResult<(String, String)> {
     let challenge = crypto::random_token(24);
     let code = crypto::otp_code();
+    let (action, target) = match scope {
+        Some((a, t)) => (Some(a), Some(t)),
+        None => (None, None),
+    };
     sqlx::query(
-        "INSERT INTO email_otps (id, tenant_id, subject_kind, subject_id, purpose, code_hash, device_hash, expires_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+        "INSERT INTO email_otps (id, tenant_id, subject_kind, subject_id, purpose, code_hash, device_hash, expires_at, action, target)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
     )
     .bind(&challenge)
     .bind(tenant_id)
@@ -316,29 +340,35 @@ pub async fn send_otp(st: &AppState, ctx: &Ctx, kind: Kind, tenant_id: i64, subj
     .bind(st.keys.hash("otp", &format!("{challenge}:{code}")))
     .bind(device_hash(st, ctx))
     .bind(Utc::now() + policy(kind).otp_ttl)
+    .bind(action)
+    .bind(target)
     .execute(&st.pool)
     .await?;
-    // invalidate older unconsumed codes for the same purpose
+    // invalidate older unconsumed codes for the same purpose (and, for step-up codes, the same action)
     sqlx::query(
-        "UPDATE email_otps SET consumed_at = now() WHERE subject_kind = $1 AND subject_id = $2 AND purpose = $3 AND id <> $4 AND consumed_at IS NULL",
+        "UPDATE email_otps SET consumed_at = now()
+         WHERE subject_kind = $1 AND subject_id = $2 AND purpose = $3 AND id <> $4 AND consumed_at IS NULL
+           AND action IS NOT DISTINCT FROM $5",
     )
     .bind(kind.as_str())
     .bind(subject_id)
     .bind(purpose.as_str())
     .bind(&challenge)
+    .bind(action)
     .execute(&st.pool)
     .await?;
-    deliver(st, email, purpose, &code, policy(kind).otp_ttl.num_minutes());
+    let detail = scope.map(|(a, t)| crate::stepup::describe(a, t));
+    deliver(st, email, purpose, &code, policy(kind).otp_ttl.num_minutes(), detail);
     Ok((challenge, code))
 }
 
 /// Email delivery. With SMTP configured the code is emailed in the background (never logged);
 /// without it, development mode writes the code to the service log.
-fn deliver(st: &AppState, email: &str, purpose: Purpose, code: &str, ttl_minutes: i64) {
+fn deliver(st: &AppState, email: &str, purpose: Purpose, code: &str, ttl_minutes: i64, detail: Option<String>) {
     if let Some(mailer) = st.mailer.clone() {
         let (to, code) = (email.to_string(), code.to_string());
         tokio::spawn(async move {
-            match mailer.send_code(&to, purpose, &code, ttl_minutes).await {
+            match mailer.send_code(&to, purpose, &code, ttl_minutes, detail.as_deref()).await {
                 Ok(()) => tracing::info!(to = %mask_email(&to), purpose = purpose.as_str(), "email code sent"),
                 Err(e) => tracing::error!(to = %mask_email(&to), purpose = purpose.as_str(), error = %e, "email code could not be sent"),
             }
@@ -397,7 +427,7 @@ pub async fn verify_otp(st: &AppState, kind: Kind, challenge: &str, code: &str) 
 pub async fn resend_otp(st: &AppState, kind: Kind, challenge: &str) -> ApiResult<serde_json::Value> {
     let row = sqlx::query(
         "SELECT o.subject_id, o.purpose, o.sent_count, o.last_sent_at, o.consumed_at IS NOT NULL AS consumed,
-                COALESCE(u.email, s.email) AS email
+                o.action, o.target, COALESCE(u.email, s.email) AS email
          FROM email_otps o
          LEFT JOIN users u ON o.subject_kind = 'user' AND u.id = o.subject_id
          LEFT JOIN staff s ON o.subject_kind = 'staff' AND s.id = o.subject_id
@@ -415,10 +445,16 @@ pub async fn resend_otp(st: &AppState, kind: Kind, challenge: &str) -> ApiResult
     if since < OTP_RESEND_AFTER_SECS {
         return Err(ApiError::RateLimited { retry_after: (OTP_RESEND_AFTER_SECS - since).max(1) as u64 });
     }
-    if row.get::<i32, _>("sent_count") >= MAX_OTP_SENDS {
-        return Err(ApiError::BadRequest("Too many codes sent. Start again from the sign-in page."));
-    }
     let purpose = Purpose::parse(row.get::<&str, _>("purpose")).ok_or(ApiError::CodeExpired)?;
+    if row.get::<i32, _>("sent_count") >= MAX_OTP_SENDS {
+        return Err(ApiError::BadRequest(if purpose == Purpose::Confirm {
+            "Too many codes sent. Close this window and start again."
+        } else {
+            "Too many codes sent. Start again from the sign-in page."
+        }));
+    }
+    let action: Option<String> = row.get("action");
+    let target: Option<String> = row.get("target");
     let email: Option<String> = row.get("email");
     let email = email.ok_or(ApiError::CodeExpired)?;
     let code = crypto::otp_code();
@@ -430,8 +466,13 @@ pub async fn resend_otp(st: &AppState, kind: Kind, challenge: &str) -> ApiResult
     .bind(Utc::now() + policy(kind).otp_ttl)
     .execute(&st.pool)
     .await?;
-    deliver(st, &email, purpose, &code, policy(kind).otp_ttl.num_minutes());
-    Ok(challenge_json(st, challenge, &email, purpose, kind, Some(&code)))
+    let detail = action.as_deref().map(|a| crate::stepup::describe(a, target.as_deref().unwrap_or("")));
+    deliver(st, &email, purpose, &code, policy(kind).otp_ttl.num_minutes(), detail);
+    let mut v = challenge_json(st, challenge, &email, purpose, kind, Some(&code));
+    if let Some(a) = action {
+        v["action"] = serde_json::Value::String(a);
+    }
+    Ok(v)
 }
 
 #[cfg(test)]
