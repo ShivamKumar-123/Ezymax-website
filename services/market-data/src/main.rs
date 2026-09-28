@@ -37,7 +37,11 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!(instruments = market.cat.list.len(), "market-data starting (last prices restored)");
 
     ingest::spawn_all(&cfg, market.clone());
-    backfill::spawn(&cfg, market.clone());
+    if cfg.upstream.is_empty() {
+        backfill::spawn(&cfg, market.clone());
+    } else {
+        tracing::info!(upstream = %cfg.upstream, "relay mode: provider backfill and reconciliation are off");
+    }
 
     // persist forming bars + ticks every second; log throughput every minute
     {

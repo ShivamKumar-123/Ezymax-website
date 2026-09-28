@@ -20,6 +20,11 @@ fn num(v: &Value) -> Option<f64> {
 }
 
 pub fn spawn_all(cfg: &Config, market: Arc<Market>) {
+    if !cfg.upstream.is_empty() {
+        let (url, mk) = (cfg.upstream.clone(), market.clone());
+        tokio::spawn(async move { relay(url, mk).await });
+        return;
+    }
     for m in market.cat.markets() {
         let codes = market.cat.codes_for(&m);
         if codes.is_empty() {
@@ -151,4 +156,45 @@ fn handle(business: &str, text: &str, market: &Arc<Market>) -> bool {
         }
     }
     false
+}
+
+/// Relay mode: mirror quotes from another Kalks market-data stream (`{"type":"quote","s","b","a","l","t"}`).
+async fn relay(url: String, market: Arc<Market>) {
+    let mut backoff = 1u64;
+    loop {
+        let symbols: Vec<String> = market.cat.list.iter().map(|i| i.symbol.clone()).collect();
+        let res: anyhow::Result<()> = async {
+            let (ws, _) = tokio::time::timeout(Duration::from_secs(15), connect_async(&url)).await??;
+            let (mut tx, mut rx) = ws.split();
+            tx.send(Message::text(json!({"op": "subscribe", "symbols": symbols}).to_string())).await?;
+            market.set_connected("relay", true);
+            tracing::info!(%url, "relay connected");
+            backoff = 1;
+            loop {
+                let msg = tokio::time::timeout(Duration::from_secs(30), rx.next()).await?;
+                let Some(msg) = msg else { return Ok(()) };
+                match msg? {
+                    Message::Text(t) => {
+                        let Ok(v) = serde_json::from_str::<Value>(&t) else { continue };
+                        if v["type"] != "quote" { continue }
+                        let (Some(s), Some(b), Some(a)) = (v["s"].as_str(), num(&v["b"]), num(&v["a"])) else { continue };
+                        let t = v["t"].as_i64().unwrap_or_else(|| chrono::Utc::now().timestamp_millis());
+                        let last = num(&v["l"]).unwrap_or((b + a) / 2.0);
+                        market.on_book(s, b, a, t);
+                        market.on_trade(s, last, 0.0, t);
+                    }
+                    Message::Ping(p) => tx.send(Message::Pong(p)).await?,
+                    Message::Close(_) => return Ok(()),
+                    _ => {}
+                }
+            }
+        }
+        .await;
+        market.set_connected("relay", false);
+        if let Err(e) = res {
+            tracing::warn!(error = %e, "relay stream error; reconnecting in {backoff}s");
+        }
+        tokio::time::sleep(Duration::from_secs(backoff)).await;
+        backoff = (backoff * 2).min(15);
+    }
 }
