@@ -18,6 +18,9 @@ use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Several TLS backends are compiled into the workspace; pick one explicitly so TLS clients
+    // (provider WebSocket, HTTPS history) never fail to find a crypto provider.
+    let _ = rustls::crypto::ring::default_provider().install_default();
     // repo-root .env.local in development; real env vars win in production
     let _ = dotenvy::from_path(concat!(env!("CARGO_MANIFEST_DIR"), "/../../.env.local"));
     tracing_subscriber::fmt()

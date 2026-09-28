@@ -38,8 +38,18 @@ async fn run(business: String, url: String, codes: Vec<String>, market: Arc<Mark
     let mut backoff = 1u64;
     loop {
         let started = Instant::now();
-        let mut subscribed = false;
-        let res = session(&business, &url, &codes, &market, &mut subscribed).await;
+        // run each session in its own task so a panic inside it becomes a reconnect, never a silent stop
+        let (b, u, c, m) = (business.clone(), url.clone(), codes.clone(), market.clone());
+        let joined = tokio::spawn(async move {
+            let mut subscribed = false;
+            let r = session(&b, &u, &c, &m, &mut subscribed).await;
+            (r, subscribed)
+        })
+        .await;
+        let (res, subscribed) = match joined {
+            Ok(v) => v,
+            Err(e) => (Err(anyhow::anyhow!("provider session task crashed: {e}")), false),
+        };
         // a session that subscribed and stayed up was healthy: the next drop starts over at 1s
         if subscribed && started.elapsed() >= HEALTHY_SESSION {
             backoff = 1;
