@@ -7,12 +7,18 @@ import { Button, Card, CardHeader, Chip, DataTable, IconButton, KpiCard, Money, 
 import { Checkbox, ColumnChart, PersonCell, auditToast, useReason } from "@/components/config/kit";
 import { MONTHLY, PAYOUTS, TODAY, fmtAgo, fmtDate, type PayoutRequest } from "@/components/prop/data";
 import { CheckIcons, PayoutDrawer, payoutTotal } from "@/components/prop/payout-parts";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePayoutsPage } from "@/components/prop-live/payouts";
+
+export default function PayoutsPage() {
+  return IS_DEMO ? <DemoPayoutsPage /> : <LivePayoutsPage />;
+}
 
 const APPROVE_REASONS = ["All checks passed", "Manual review cleared", "Consistency exception approved", "VIP / retention"];
 const REJECT_REASONS = ["Consistency rule not met", "Open violation", "KYC incomplete / expired", "Banned strategy detected", "IP / device mismatch", "Duplicate request"];
 const $ = (v: number) => `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export default function PayoutsPage() {
+function DemoPayoutsPage() {
   const [rows, setRows] = React.useState<PayoutRequest[]>(PAYOUTS);
   const [tab, setTab] = React.useState<"pending" | "history">("pending");
   const [picked, setPicked] = React.useState<Set<string>>(new Set());

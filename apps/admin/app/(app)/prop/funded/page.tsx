@@ -9,10 +9,16 @@ import { PersonCell, SegBar, auditToast, useReason } from "@/components/config/k
 import { FUNDED, PLANS, type FundedAccount } from "@/components/prop/data";
 import { FUNDED_STATUS, FundedDrawer, eligibility } from "@/components/prop/funded-drawer";
 import { FilterPills } from "@/components/prop/rules";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveFundedPage } from "@/components/prop-live/funded";
+
+export default function FundedPage() {
+  return IS_DEMO ? <DemoFundedPage /> : <LiveFundedPage />;
+}
 
 type F = "all" | "eligible" | "scaling" | "review" | "paused";
 
-export default function FundedPage() {
+function DemoFundedPage() {
   const [rows, setRows] = React.useState<FundedAccount[]>(FUNDED);
   const [f, setF] = React.useState<F>("all");
   const [selId, setSelId] = React.useState<string | null>(null);

@@ -27,6 +27,8 @@ import { WALLET } from "@kalks/mock";
 import { BANNED_STRATEGIES, PROP_FAQ, PROP_MODELS, PROP_SIZES, PROP_STATS, RECENT_PAYOUTS, type PropModelId, type PropSize } from "@kalks/mock/prop";
 import { BuyChallengeDialog } from "@/components/prop/buy-dialog";
 import { Accordion, CountUp } from "@/components/prop/prop-ui";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LivePropStore } from "@/components/prop-live/catalogue";
 
 const MODEL_ICON: Record<PropModelId, React.ReactNode> = {
   "1-step": <Target className="size-3.5" />,
@@ -432,7 +434,7 @@ function RulesEngineCard() {
 
 /* ------------------------------------------------------------------ */
 
-export default function PropStorePage() {
+function DemoPropStorePage() {
   const [modelId, setModelId] = React.useState<PropModelId>("2-step");
   const [size, setSize] = React.useState<PropSize>(50000);
   return (
@@ -524,4 +526,9 @@ export default function PropStorePage() {
       </Reveal>
     </div>
   );
+}
+
+/** Live builds: plans, challenges and payouts from the prop service (via /api/prop). Demo builds: mock data. */
+export default function PropStorePage() {
+  return DEMO_BUILD ? <DemoPropStorePage /> : <LivePropStore />;
 }

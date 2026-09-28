@@ -149,6 +149,8 @@ export const ADMIN_NAV: NavModule[] = [
       { href: "/prop/funded", label: "Funded traders" },
       { href: "/prop/payouts", label: "Payouts" },
       { href: "/prop/violations", label: "Violations" },
+      { href: "/prop/certificates", label: "Certificates" },
+      { href: "/prop/news", label: "News calendar" },
     ],
   },
   {

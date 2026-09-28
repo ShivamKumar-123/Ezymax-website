@@ -7,11 +7,17 @@ import { Button, Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Reveal,
 import { PersonCell, auditToast, useReason } from "@/components/config/kit";
 import { BANNED_TYPES, VIOLATIONS, VIOLATION_LABEL, fmtAgo, type Violation, type ViolationType } from "@/components/prop/data";
 import { SEVERITY_TONE, ViolationDrawer } from "@/components/prop/violation-drawer";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveViolationsPage } from "@/components/prop-live/violations";
+
+export default function ViolationsPage() {
+  return IS_DEMO ? <DemoViolationsPage /> : <LiveViolationsPage />;
+}
 
 const CONFIRM_REASONS = ["Rule breach verified", "Banned strategy evidence conclusive", "Repeat offender", "Linked-account abuse"];
 const OVERTURN_REASONS = ["Platform / feed issue at time of breach", "Slippage caused by LP gap", "False positive — normal trading", "Goodwill exception"];
 
-export default function ViolationsPage() {
+function DemoViolationsPage() {
   const [rows, setRows] = React.useState<Violation[]>(VIOLATIONS);
   const [tab, setTab] = React.useState<"open" | "confirmed" | "overturned">("open");
   const [kind, setKind] = React.useState<"all" | "rules" | "banned">("all");

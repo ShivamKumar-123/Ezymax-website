@@ -9,10 +9,16 @@ import { PLANS, type PropPlan } from "@/components/prop/data";
 import { PlanCard } from "@/components/prop/plan-card";
 import { FundedTermsCard, ModelCard, RiskCard, SizesCard, TradingRulesCard, defaultPhases } from "@/components/prop/plan-editor";
 import { ChangeSummary, PlanPreview, diffPlan } from "@/components/prop/plan-preview";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePlanBuilder } from "@/components/prop-live/plans";
+
+export default function PlanBuilderPage() {
+  return IS_DEMO ? <DemoPlanBuilderPage /> : <LivePlanBuilder />;
+}
 
 const clone = (p: PropPlan): PropPlan => JSON.parse(JSON.stringify(p));
 
-export default function PlanBuilderPage() {
+function DemoPlanBuilderPage() {
   const [plans, setPlans] = React.useState<PropPlan[]>(() => PLANS.map(clone));
   const [selId, setSelId] = React.useState(PLANS[0].id);
   const [drafts, setDrafts] = React.useState<Record<string, PropPlan>>({});

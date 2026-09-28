@@ -8,11 +8,17 @@ import { PersonCell, auditToast, useReason } from "@/components/config/kit";
 import { CHALLENGES, challengeRules, type Challenge, type ChallengeStatus } from "@/components/prop/data";
 import { ChallengeDrawer, CH_STATUS } from "@/components/prop/challenge-drawer";
 import { FilterPills, PlanTypeChip, RuleStatusBar, TargetProgress } from "@/components/prop/rules";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveChallengesPage } from "@/components/prop-live/challenges";
+
+export default function ChallengesPage() {
+  return IS_DEMO ? <DemoChallengesPage /> : <LiveChallengesPage />;
+}
 
 type PhaseF = "all" | "Phase 1" | "Phase 2" | "Evaluation";
 type StatusF = "all" | ChallengeStatus | "at-risk";
 
-export default function ChallengesPage() {
+function DemoChallengesPage() {
   const [rows, setRows] = React.useState<Challenge[]>(CHALLENGES);
   const [phase, setPhase] = React.useState<PhaseF>("all");
   const [status, setStatus] = React.useState<StatusF>("all");

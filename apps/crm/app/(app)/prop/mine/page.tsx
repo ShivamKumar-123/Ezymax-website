@@ -56,6 +56,8 @@ import { ME, getInstrument } from "@kalks/mock";
 import { MY_CHALLENGES, OPEN_PROP_POSITION, PROP_MODELS, propEquityPath, propTrades, type MyChallenge, type PropTrade, type RuleState } from "@kalks/mock/prop";
 import { CountUp, CredentialField, ResetCountdown, RuleCard, RuleRow } from "@/components/prop/prop-ui";
 import { PropEquityChart, type PropLine } from "@/components/prop/prop-equity-chart";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LivePropMine } from "@/components/prop-live/mine";
 
 const k = (n: number) => `$${n / 1000}k`;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
@@ -647,7 +649,7 @@ function History({ c }: { c: MyChallenge }) {
 
 /* ------------------------------------------------------------------ */
 
-export default function MyChallengesPage() {
+function DemoMyChallengesPage() {
   const [id, setId] = React.useState(MY_CHALLENGES[0]!.id);
   const c = MY_CHALLENGES.find((x) => x.id === id)!;
   const today = c.equity - c.dayStart;
@@ -722,4 +724,9 @@ export default function MyChallengesPage() {
       </AnimatePresence>
     </div>
   );
+}
+
+/** Live builds: plans, challenges and payouts from the prop service (via /api/prop). Demo builds: mock data. */
+export default function MyChallengesPage() {
+  return DEMO_BUILD ? <DemoMyChallengesPage /> : <LivePropMine />;
 }

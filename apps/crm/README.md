@@ -36,6 +36,24 @@ The Client Area password is changed with `POST /api/auth/password {current, new,
 
 The Trade button opens `NEXT_PUBLIC_TERMINAL_URL + "/?sso=<token>"`. The token is one-time and valid for 60 s. Kalks Trader redeems it through its own BFF with `POST /v1/terminal/sso {token}`, stores the resulting session and removes `sso` from the URL.
 
+## Prop challenges (live builds)
+
+`/prop` (catalogue and checkout), `/prop/mine` (live rule dashboard, polled every 2 s while the tab is visible), `/prop/payouts` and `/prop/certificates` read from the prop service (`services/prop`, see its README). Components: `components/prop-live/*`; demo builds keep the mock pages. BFF: `app/api/prop/[...path]/route.ts` (server helper `lib/prop.ts`), same session, CSRF and 401 handling as the trading BFF. It forwards `X-Kalks-User-Id`, `X-Kalks-User-Name` (percent-encoded, used on certificates), `X-Kalks-User-Kyc` and `X-Kalks-Tenant`.
+
+| BFF route | Prop service |
+|---|---|
+| `GET plans` | `GET /v1/plans` |
+| `GET challenges` | `GET /v1/challenges` |
+| `POST challenges` `{planId, size, idempotencyKey}` | `POST /v1/challenges` (fee from the USDT wallet; trading passwords returned once, never stored) |
+| `GET challenges/{id}` | `GET /v1/challenges/{id}` (live rules, payout quote, events, certificates) |
+| `GET challenges/{id}/equity?phase&limit`, `…/events?limit`, `…/trades?phase` | same paths |
+| `POST challenges/{id}/payouts` | same path |
+| `GET payouts`, `GET certificates`, `GET notifications`, `POST notifications/read` | same paths |
+
+The checkout keeps one `idempotencyKey` per dialog session, so a retry after a network error or `payment_pending` never charges twice. The Trade button uses the trading BFF's SSO (`POST /api/trading/accounts/{login}/sso`).
+
+Public certificate verification (no sign-in, outside the `(app)` shell; `proxy.ts` lets `/verify/**` through): `/verify/<code>` reads `GET /v1/public/certificates/{code}` server-side and `/verify/<code>/image` renders the 1200 × 675 PNG with `next/og` (`?download=1` for an attachment). Share links are built from the Client Area origin.
+
 ## Environment
 
 These go in `apps/crm/.env.local` for local runs, or `apps/crm/.env.production.local` in production:
@@ -46,3 +64,4 @@ These go in `apps/crm/.env.local` for local runs, or `apps/crm/.env.production.l
 | `TRADING_URL` | trading engine, default `http://127.0.0.1:8090` |
 | `TRADING_INTERNAL_TOKEN` | same value as the engine's `TRADING_INTERNAL_TOKEN` (repo-root `.env.local` / server env) |
 | `NEXT_PUBLIC_TERMINAL_URL` | Kalks Trader origin, for example `https://trade.kalkstrade.com` (build time) |
+| `PROP_URL`, `PROP_INTERNAL_TOKEN` | prop service, default `http://127.0.0.1:8097`; token = the service's `PROP_INTERNAL_TOKEN` |

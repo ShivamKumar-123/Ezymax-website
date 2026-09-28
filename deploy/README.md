@@ -13,6 +13,7 @@ One Ubuntu VPS runs everything. Only Caddy (ports 80/443) and SSH are reachable 
 | (internal only) | trading engine (`/engine/stream` on trade./admin. proxies its ticket-authenticated WebSockets) | 8090 |
 | (internal only) | wallet (USDT deposits / withdrawals, wallet ↔ trading; reached only by the app BFFs and internal services) | 8095 |
 | (internal only) | IB / referral programme (referral tree, commissions, payout batches → wallet; reached only by the app BFFs) | 8096 |
+| (internal only) | prop firm service (rule evaluator, challenges, payouts; reached only by the app BFFs) | 8097 |
 | (internal only) | PostgreSQL | 5432 |
 
 - `deploy.sh` pulls `main`, builds, installs the units in `systemd/` and the `Caddyfile`, restarts, and checks health.

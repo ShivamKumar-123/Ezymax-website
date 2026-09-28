@@ -144,6 +144,7 @@ export const CRM_NAV: NavModule[] = [
       { href: "/prop", label: "Challenges", icon: Target },
       { href: "/prop/mine", label: "My challenges", icon: Trophy },
       { href: "/prop/payouts", label: "Payouts", icon: Banknote },
+      { href: "/prop/certificates", label: "Certificates", icon: Award },
     ],
   },
   {

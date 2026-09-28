@@ -7,8 +7,14 @@ import { Button, Chip, KpiCard, Money, PageHeader, Reveal } from "@kalks/ui";
 import { auditToast } from "@/components/config/kit";
 import { OVERVIEW } from "@/components/prop/data";
 import { ActivityCard, BreachReasonsCard, FeesPayoutsCard, FunnelCard, PlanMixCard, PlanPerformanceStrip } from "@/components/prop/overview";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePropOverview } from "@/components/prop-live/overview";
 
 export default function PropOverviewPage() {
+  return IS_DEMO ? <DemoPropOverviewPage /> : <LivePropOverview />;
+}
+
+function DemoPropOverviewPage() {
   const net = OVERVIEW.feesMonth - OVERVIEW.payoutsMonth;
   return (
     <div className="pb-24">

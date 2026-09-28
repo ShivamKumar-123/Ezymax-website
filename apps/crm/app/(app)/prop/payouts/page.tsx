@@ -31,6 +31,8 @@ import { FUNDED, FUNDED_SHARE, PROP_CERTIFICATES, PROP_PAYOUTS, SCALING, type Pr
 import { RequestPayoutDialog } from "@/components/prop/payout-dialog";
 import { CertificateCard } from "@/components/prop/certificate-card";
 import { CountUp } from "@/components/prop/prop-ui";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LivePropPayouts } from "@/components/prop-live/payouts";
 
 /* ------------------------------------------------------------------ */
 
@@ -275,7 +277,7 @@ function History({ rows }: { rows: PropPayout[] }) {
 
 /* ------------------------------------------------------------------ */
 
-export default function PropPayoutsPage() {
+function DemoPropPayoutsPage() {
   const [available, setAvailable] = React.useState(FUNDED_SHARE);
   const [rows, setRows] = React.useState<PropPayout[]>(PROP_PAYOUTS);
   const pending = rows.filter((r) => r.status === "pending").reduce((s, r) => s + r.share, 0);
@@ -402,4 +404,9 @@ export default function PropPayoutsPage() {
       </Reveal>
     </div>
   );
+}
+
+/** Live builds: plans, challenges and payouts from the prop service (via /api/prop). Demo builds: mock data. */
+export default function PropPayoutsPage() {
+  return DEMO_BUILD ? <DemoPropPayoutsPage /> : <LivePropPayouts />;
 }
