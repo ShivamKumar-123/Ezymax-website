@@ -5,6 +5,7 @@
 
 use lettre::message::{header::ContentType, Mailbox, MultiPart, SinglePart};
 use lettre::transport::smtp::authentication::Credentials;
+use lettre::transport::smtp::extension::ClientId;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
 use crate::identity::Purpose;
@@ -30,13 +31,16 @@ impl Mailer {
         } else {
             AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(s.host)?
         };
-        let mut builder = builder.port(s.port).timeout(Some(std::time::Duration::from_secs(20)));
+        let from: Mailbox = s.from.parse()?;
+        // Greet the relay with our sending domain (Google's IP relay expects a domain of the Workspace).
+        let hello = ClientId::Domain(from.email.domain().to_string());
+        let mut builder = builder.port(s.port).hello_name(hello).timeout(Some(std::time::Duration::from_secs(20)));
         // No user = relay trusted by the server's IP (e.g. Google Workspace SMTP relay); no password is stored.
         if !s.user.is_empty() {
             builder = builder.credentials(Credentials::new(s.user.to_string(), s.password.to_string()));
         }
         let transport = builder.build();
-        Ok(Self { transport, from: s.from.parse()? })
+        Ok(Self { transport, from })
     }
 
     /// Checks the SMTP login (used once at startup so a bad password shows up in the log immediately).
