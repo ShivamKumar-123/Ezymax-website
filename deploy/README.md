@@ -8,7 +8,7 @@ One Ubuntu VPS runs everything. Only Caddy (ports 80/443) and SSH are reachable 
 | admin.kalkstrade.com | Back Office | 3001 |
 | trade.kalkstrade.com | Kalks Trader | 3002 |
 | api.kalkstrade.com | market-data (public quotes, candles, stream; `/v1/admin*` blocked) | 8081 |
-| kalkstrade.com | website (separate repo) | 3010 |
+| kalkstrade.com | website (repo kalks-markets/kalks-website, `deploy-website.sh`) | 3010 |
 | (internal only) | gateway / auth | 8080 |
 | (internal only) | PostgreSQL | 5432 |
 

@@ -1,0 +1,17 @@
+[Unit]
+Description=Kalks website (:3010, repo kalks-markets/kalks-website)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=kalks
+WorkingDirectory=/home/kalks/kalks-website/apps/trader
+Environment=NODE_ENV=production
+ExecStart=/home/kalks/kalks-website/apps/trader/node_modules/.bin/next start -p 3010 -H 127.0.0.1
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
