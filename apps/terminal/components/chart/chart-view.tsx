@@ -608,9 +608,11 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
 
       {/* trade line chips */}
       <div className="pointer-events-none absolute inset-0 z-[4]">
-        {lines.map((l) => {
-          const y = geo.ys[l.id];
-          if (y == null || y < 4 || y > geo.h - 4) return null;
+        {chipRows(lines, geo.ys, geo.h).map((row) => (
+          // chips closer than a chip's height (two positions opened at the same price, SL next to a pending
+          // order…) share one row, side by side from the price scale leftwards, instead of covering each other
+          <div key={row.lines[0]!.id} className="absolute flex -translate-y-1/2 flex-row-reverse items-center gap-1" style={{ top: row.y, right: chipRight }}>
+        {row.lines.map((l) => {
           const isDrag = drag?.id === l.id;
           const price = isDrag ? drag.price : hold?.id === l.id ? hold.price : l.price;
           let pnlText = "";
@@ -628,8 +630,8 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
           return (
             <div
               key={l.id}
-              className={cn("pointer-events-auto absolute flex h-[18px] -translate-y-1/2 items-center overflow-hidden rounded-[4px] border font-mono text-[10.5px] font-medium leading-none shadow-[0_2px_8px_rgba(0,0,0,0.35)]", tone, l.draggable && "cursor-ns-resize")}
-              style={{ top: y, right: chipRight + (l.kind === "pos" ? 0 : 0) }}
+              className={cn("pointer-events-auto flex h-[18px] shrink-0 items-center overflow-hidden rounded-[4px] border font-mono text-[10.5px] font-medium leading-none shadow-[0_2px_8px_rgba(0,0,0,0.35)]", tone, l.draggable && "cursor-ns-resize")}
+              style={row.lines.length > 1 ? { transform: `translateY(${(geo.ys[l.id] ?? row.y) - row.y}px)` } : undefined}
               onPointerDown={(e) => {
                 if (!l.draggable || e.button !== 0) return;
                 e.stopPropagation();
@@ -666,6 +668,8 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
             </div>
           );
         })}
+          </div>
+        ))}
         {/* ghost while dragging a position line → projected SL/TP */}
         {drag && dragLine?.kind === "pos" && dragPos && geo.ys[drag.id] != null && (
           (() => {
@@ -738,6 +742,23 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
       {cm.node}
     </div>
   );
+}
+
+/** Visible trade-line chips grouped into rows: lines less than one chip height apart share a row. */
+function chipRows(lines: TLine[], ys: Record<string, number | null>, h: number) {
+  const vis = lines.filter((l) => {
+    const y = ys[l.id];
+    return y != null && y >= 4 && y <= h - 4;
+  });
+  vis.sort((a, b) => ys[a.id]! - ys[b.id]!);
+  const rows: { y: number; lines: TLine[] }[] = [];
+  for (const l of vis) {
+    const y = ys[l.id]!;
+    const last = rows[rows.length - 1];
+    if (last && y - last.y < 19) last.lines.push(l);
+    else rows.push({ y, lines: [l] });
+  }
+  return rows;
 }
 
 /* ------------------------------------------------------------------ */
