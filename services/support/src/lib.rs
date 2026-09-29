@@ -13,6 +13,7 @@ pub mod error;
 pub mod kb;
 pub mod mailer;
 pub mod notify;
+pub mod push;
 pub mod state;
 pub mod stats;
 pub mod upstream;

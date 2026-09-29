@@ -129,6 +129,9 @@ fi
 grep -q '^SUPPORT_STORAGE_DIR=' .env.local || printf 'SUPPORT_STORAGE_DIR=%s\n' "$HOME/.kalks-data/support" >> .env.local
 grep -q '^SUPPORT_APP_URL=' .env.local || printf 'SUPPORT_APP_URL=https://app.kalkstrade.com\n' >> .env.local
 install -d -m 700 "$(grep '^SUPPORT_STORAGE_DIR=' .env.local | cut -d= -f2-)"
+# mobile push through the Expo push service (services/support src/push.rs): on in production. SUPPORT_EXPO_ACCESS_TOKEN
+# is only needed when the Expo project turns on "enhanced push security"; add it to .env.local by hand.
+grep -q '^SUPPORT_PUSH_ENABLED=' .env.local || printf 'SUPPORT_PUSH_ENABLED=true\n' >> .env.local
 # the Client Area, Back Office and Kalks Trader BFFs reach the support service with the same token; browsers
 # open the realtime stream at wss://<host>/support/stream (Caddy). Wallet, prop and IB push notifications with it too.
 for app in apps/crm apps/admin apps/terminal; do

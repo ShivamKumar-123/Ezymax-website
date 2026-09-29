@@ -149,6 +149,8 @@ pub struct AppState {
     pub mailer: Option<Mailer>,
     /// Wakes the email sender when something was queued.
     pub wake_mail: Arc<Notify>,
+    /// Wakes the push sender when something was queued.
+    pub wake_push: Arc<Notify>,
     /// One bot answer at a time per conversation.
     pub bot_locks: Arc<Mutex<HashMap<i64, Arc<tokio::sync::Mutex<()>>>>>,
 }
@@ -175,6 +177,6 @@ impl AppState {
                 }
             }
         };
-        Self { pool, cfg: Arc::new(cfg), http, hub: Hub::default(), limiter: Limiter::default(), mailer, wake_mail: Arc::new(Notify::new()), bot_locks: Default::default() }
+        Self { pool, cfg: Arc::new(cfg), http, hub: Hub::default(), limiter: Limiter::default(), mailer, wake_mail: Arc::new(Notify::new()), wake_push: Arc::new(Notify::new()), bot_locks: Default::default() }
     }
 }

@@ -1,6 +1,6 @@
-//! Background loops: the email outbox, SLA breach sweeps and the polling adapters.
+//! Background loops: the email outbox, mobile pushes (when enabled), SLA breach sweeps and the polling adapters.
 
-use crate::{adapters, chat, notify};
+use crate::{adapters, chat, notify, push};
 use crate::state::AppState;
 use std::time::Duration;
 
@@ -19,6 +19,9 @@ pub fn spawn(st: &AppState) {
             }
         }
     });
+    if st.cfg.push_enabled {
+        spawn_push(st);
+    }
     let s = st.clone();
     tokio::spawn(async move {
         loop {
@@ -43,6 +46,60 @@ pub fn spawn(st: &AppState) {
             }
         });
     }
+}
+
+/// Mobile push (push.rs): the sender (woken when a push is queued, else every 5 s for retries that fell due),
+/// the receipt check every minute and the clean-up every 10 minutes.
+fn spawn_push(st: &AppState) {
+    let s = st.clone();
+    tokio::spawn(async move {
+        loop {
+            match push::flush(&s).await {
+                Ok(n) if n > 0 => continue,
+                Ok(_) => {}
+                Err(e) => tracing::warn!(error = %e, "push sender"),
+            }
+            tokio::select! {
+                _ = s.wake_push.notified() => {}
+                _ = tokio::time::sleep(Duration::from_secs(5)) => {}
+            }
+        }
+    });
+    let s = st.clone();
+    tokio::spawn(async move {
+        let mut tick: u64 = 0;
+        let mut failing = false;
+        loop {
+            tokio::time::sleep(Duration::from_secs(60)).await;
+            // a full page means more may be waiting: a few more pages, then the next minute
+            for _ in 0..5 {
+                match push::receipts(&s).await {
+                    Ok(n) => {
+                        if failing {
+                            tracing::info!("push receipts recovered");
+                            failing = false;
+                        }
+                        if n < push::RECEIPT_BATCH {
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        if !failing {
+                            tracing::warn!(error = %e, "push receipts (will retry)");
+                            failing = true;
+                        }
+                        break;
+                    }
+                }
+            }
+            tick += 1;
+            if tick % 10 == 0
+                && let Err(e) = push::sweep(&s).await
+            {
+                tracing::warn!(error = %e, "push clean-up");
+            }
+        }
+    });
 }
 
 /// Logs an adapter failure once until it recovers (upstream services may simply not be running locally).
