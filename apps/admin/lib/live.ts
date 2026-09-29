@@ -60,12 +60,17 @@ export function soonFor(pathname: string): { title: string; text: string } | nul
 }
 
 
-/** Navigation for live builds: every module, like the demo, without the demo's mock count badges. */
-export const LIVE_NAV: NavModule[] = ADMIN_NAV.map((m) => ({
-  ...m,
-  badge: undefined, // demo badges are mock counts
-  sub: m.sub?.map((s) => ({ ...s, badge: undefined })),
-}));
+/**
+ * Navigation for live builds: only pages backed by real services (a module goes when none of its pages is live),
+ * without the demo's mock count badges. Pages that aren't live yet stay reachable by URL and say so.
+ */
+export const LIVE_NAV: NavModule[] = ADMIN_NAV.flatMap((m) => {
+  const sub = m.sub?.filter((s) => isLivePath(s.href)).map((s) => ({ ...s, badge: undefined })); // demo badges are mock counts
+  if (m.sub ? !sub?.length : !isLivePath(m.href)) return [];
+  // the rail lights the module on any of its pages (its landing page may move to the first live one)
+  const match = m.match ?? [...new Set([m.href, ...(sub ?? []).map((s) => s.href)])];
+  return [{ ...m, badge: undefined, match, href: sub?.length ? sub[0]!.href : m.href, sub }];
+});
 
 export const NAV = IS_DEMO ? ADMIN_NAV : LIVE_NAV;
 
