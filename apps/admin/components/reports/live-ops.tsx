@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, DataTable, Dialog, Field, IconButton, Input, KpiCard, PageHeader, Reveal, Segmented, Toggle, cn, formatDateTime, type Column } from "@kalks/ui";
 import { useCan } from "@/components/staff-session";
 import { ReportFailed, ReportLoading, download, reportsApi, useReport } from "./common";
+import { useConfirm } from "@/components/confirm";
 
 const SELECT = "h-11 w-full rounded-[14px] border border-line bg-surface-2 px-3 text-sm text-fg outline-none transition-colors focus:border-ember/50";
 
@@ -269,6 +270,7 @@ function ScheduleForm({ draft, reports, onClose, onSaved }: { draft: Draft; repo
 }
 
 export function LiveScheduled() {
+  const [ask, confirmDialog] = useConfirm();
   const can = useCan("reports.export");
   const { data, error, loading, reload } = useReport<SchedulesR>("schedules");
   const [editing, setEditing] = React.useState<Draft | null>(null);
@@ -336,7 +338,7 @@ export function LiveScheduled() {
             <Toggle checked={s.enabled} onChange={() => act(s, "toggle")} label="Enabled" />
             <IconButton aria-label="Send now" disabled={busy === s.id} onClick={() => act(s, "run")}><Play /></IconButton>
             <IconButton aria-label="Edit" onClick={() => setEditing({ id: s.id, name: s.name, report: s.report, format: s.format, frequency: s.frequency, weekday: s.weekday, monthDay: s.monthDay, hour: s.hour, recipients: s.recipients, enabled: s.enabled })}><Pencil /></IconButton>
-            <IconButton aria-label="Delete" disabled={busy === s.id} onClick={() => confirm(`Delete "${s.name}"?`) && act(s, "delete")}><Trash2 /></IconButton>
+            <IconButton aria-label="Delete" disabled={busy === s.id} onClick={() => void ask({ title: `Delete “${s.name}”?`, text: "The schedule stops and its history stays.", confirm: "Delete", tone: "danger" }).then((ok) => { if (ok) void act(s, "delete"); })}><Trash2 /></IconButton>
           </div>
         ) : null,
     },
@@ -351,6 +353,7 @@ export function LiveScheduled() {
   ];
   return (
     <div className="pb-16">
+      {confirmDialog}
       <PageHeader
         title="Scheduled reports"
         subtitle="Daily, weekly and monthly reports emailed to staff as Excel or CSV · times in server time"

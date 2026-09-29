@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { FilePlus2, Loader2, Save, Search, Sparkles, Trash2 } from "lucide-react";
 import { Button, Card, CardHeader, Chip, Field, Input, KpiCard, PageHeader, Segmented, cn } from "@kalks/ui";
 import { Rich, errMsg, sapi, usePerms } from "./common";
+import { useConfirm } from "@/components/confirm";
 
 type Article = { id: number; slug: string; title: string; category: string; body: string; tags: string[]; status: "published" | "draft"; source: "seed" | "glossary" | "staff"; usedCount: number; updatedBy: string; updatedAt: string };
 type ListResp = { items: Article[]; categories: { category: string; count: number }[]; totals: { published: number; drafts: number; used: number } };
@@ -14,6 +15,7 @@ const EMPTY: Omit<Article, "id" | "slug" | "usedCount" | "updatedBy" | "updatedA
 
 /** AI knowledge base: the articles the support bot answers from (help articles + Academy glossary + staff articles). */
 export function LiveKnowledge() {
+  const [ask, confirmDialog] = useConfirm();
   const { can } = usePerms();
   const [data, setData] = React.useState<ListResp | null>(null);
   const [source, setSource] = React.useState<"help" | "glossary">("help");
@@ -51,7 +53,7 @@ export function LiveKnowledge() {
     void load();
   };
   const remove = async () => {
-    if (!edit?.id || !confirm(`Delete “${edit.title}”? The assistant stops using it.`)) return;
+    if (!edit?.id || !(await ask({ title: `Delete “${edit.title}”?`, text: "The assistant stops using it.", confirm: "Delete", tone: "danger" }))) return;
     const r = await sapi(`kb/${edit.id}`, { method: "DELETE" });
     if (!r.ok) return toast.error("Not deleted", { description: errMsg(r.data) });
     setEdit(null);
@@ -68,6 +70,7 @@ export function LiveKnowledge() {
 
   return (
     <div>
+      {confirmDialog}
       <PageHeader title="AI knowledge base" subtitle="Articles the support assistant answers from. It hands over to an agent when these don't cover a question." actions={can("support.write") ? <Button variant="ember" onClick={() => open(null)}><FilePlus2 /> New article</Button> : undefined} />
       <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiCard label="Published" value={String(data?.totals.published ?? "–")} />

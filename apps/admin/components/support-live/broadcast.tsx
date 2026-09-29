@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Loader2, Megaphone, SendHorizontal, Users } from "lucide-react";
 import { Button, Card, CardHeader, Chip, EmptyState, Field, Input, PageHeader, Segmented, Toggle } from "@kalks/ui";
 import { errMsg, sapi, usePerms } from "./common";
+import { useConfirm } from "@/components/confirm";
 
 type Broadcast = { id: number; title: string; body: string; link: string | null; type: string; segment: { kind: string; countries?: string[]; userIds?: number[] }; inApp: boolean; email: boolean; status: "sending" | "sent" | "failed"; recipients: number; emailed: number; read: number | null; error: string | null; createdBy: string | null; createdAt: string };
 type SegKind = "all" | "kyc_verified" | "kyc_unverified" | "countries" | "users";
@@ -13,6 +14,7 @@ const SEG_LABEL: Record<SegKind, string> = { all: "All clients", kyc_verified: "
 
 /** Notifications composer: broadcast an announcement to a client segment in-app and / or by email (audited). */
 export function LiveBroadcasts() {
+  const [ask, confirmDialog] = useConfirm();
   const { can, loaded } = usePerms();
   const [items, setItems] = React.useState<Broadcast[] | null>(null);
   const [title, setTitle] = React.useState("");
@@ -24,6 +26,8 @@ export function LiveBroadcasts() {
   const [inApp, setInApp] = React.useState(true);
   const [email, setEmail] = React.useState(false);
   const [count, setCount] = React.useState<number | null>(null);
+  // why the audience can't be counted (e.g. no client ids yet); sending waits for a valid audience
+  const [countErr, setCountErr] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
 
   const segment = React.useMemo(() => {
@@ -48,15 +52,19 @@ export function LiveBroadcasts() {
   }, [items, load]);
   React.useEffect(() => {
     setCount(null);
+    setCountErr(null);
     if (!can("notifications.write")) return;
     const t = setTimeout(() => {
-      void sapi<{ recipients: number }>("broadcasts/preview", { body: { segment } }).then((r) => setCount(r.ok ? r.data.recipients : null));
+      void sapi<{ recipients: number }>("broadcasts/preview", { body: { segment } }).then((r) => {
+        setCount(r.ok ? r.data.recipients : null);
+        setCountErr(r.ok ? null : errMsg(r.data));
+      });
     }, 400);
     return () => clearTimeout(t);
   }, [segment, can]);
 
   const send = async () => {
-    if (!confirm(`Send “${title}” to ${count ?? "the selected"} clients${email ? " (with email)" : ""}? This can't be undone.`)) return;
+    if (!(await ask({ title: `Send “${title}”?`, text: `It goes to ${count ?? "the selected"} clients${email ? " in-app and by email" : ""} and can't be undone.`, confirm: "Send broadcast" }))) return;
     setBusy(true);
     const r = await sapi<{ item: Broadcast }>("broadcasts", { body: { title, body, link: link || undefined, category, segment, inApp, email } });
     setBusy(false);
@@ -78,6 +86,7 @@ export function LiveBroadcasts() {
 
   return (
     <div>
+      {confirmDialog}
       <PageHeader title="Notifications" subtitle="Send announcements to clients' notification bell and email. Clients' notification preferences are respected; every broadcast is audited." />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Card className="h-fit xl:col-span-5">
@@ -100,14 +109,15 @@ export function LiveBroadcasts() {
               <Field label={kind === "countries" ? "Country codes (e.g. ae, in, gb)" : "Client IDs"}><Input value={list} onChange={(e) => setList(e.target.value)} /></Field>
             )}
             <div className="flex items-center gap-2 text-[12.5px] text-fg-2">
-              <Users className="size-4 text-fg-3" /> {count === null ? <Loader2 className="size-3.5 animate-spin" /> : <span className="k-num">{count}</span>} recipients
+              <Users className="size-4 text-fg-3" />{" "}
+              {countErr ? <span className="text-warn">{countErr}</span> : count === null ? <><Loader2 className="size-3.5 animate-spin" /> recipients</> : <><span className="k-num">{count}</span> recipients</>}
             </div>
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 text-[13px]"><Toggle checked={inApp} onChange={setInApp} label="In-app" /> In-app bell</label>
               <label className="flex items-center gap-2 text-[13px]"><Toggle checked={email} onChange={setEmail} label="Email" /> Email</label>
             </div>
             <div className="flex justify-end">
-              <Button variant="ember" disabled={busy || !title.trim() || !body.trim() || (!inApp && !email) || count === 0} onClick={() => void send()}>
+              <Button variant="ember" disabled={busy || !title.trim() || !body.trim() || (!inApp && !email) || !count} onClick={() => void send()}>
                 {busy ? <Loader2 className="animate-spin" /> : <SendHorizontal />} Send broadcast
               </Button>
             </div>

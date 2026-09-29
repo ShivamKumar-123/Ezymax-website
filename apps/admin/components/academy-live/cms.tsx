@@ -9,6 +9,7 @@ import { contentAllows } from "@/lib/academy";
 import { CmsError, LEVELS, cms, fmtWhen, useCms, type AuditRow, type Kind, type NodeData, type NodeFull, type QuizQ, type Stats, type Tree, type TreePhase } from "./api";
 import { Markdown } from "./markdown";
 import { QuizEditor, inputCls } from "./quiz-editor";
+import { useConfirm } from "@/components/confirm";
 
 type Sel = { kind: Kind; slug: string };
 
@@ -137,6 +138,7 @@ function CourseTree({ tree, sel, onSelect, canWrite, onReordered }: { tree: Tree
 type Draft = { data: NodeData; published: boolean };
 
 function Editor({ sel, lang, canWrite, onSaved }: { sel: Sel; lang: string; canWrite: boolean; onSaved: () => void }) {
+  const [ask, confirmDialog] = useConfirm();
   const { data, error, reload } = useCms<{ node: NodeFull }>(`nodes/${sel.kind}/${sel.slug}?lang=${lang}`);
   const [draft, setDraft] = React.useState<Draft | null>(null);
   const [view, setView] = React.useState<"write" | "preview" | "split">("split");
@@ -184,7 +186,7 @@ function Editor({ sel, lang, canWrite, onSaved }: { sel: Sel; lang: string; canW
   };
   const togglePublish = () => put({ published: !node.published, ...(dirty ? { data: draft.data } : {}) }, node.published ? "Unpublished" : "Published");
   const reset = async () => {
-    if (!window.confirm("Discard this tenant's changes and restore the platform version?")) return;
+    if (!(await ask({ title: "Restore the platform version?", text: "Your changes to this page are discarded.", confirm: "Restore", tone: "danger" }))) return;
     setBusy(true);
     try {
       await cms(`nodes/${sel.kind}/${sel.slug}?lang=${lang}`, { method: "DELETE" });
@@ -201,6 +203,7 @@ function Editor({ sel, lang, canWrite, onSaved }: { sel: Sel; lang: string; canW
   const title = sel.kind === "exam" ? "Final exam" : d.title || "Untitled";
   return (
     <Card className="overflow-hidden" data-testid="cms-editor">
+      {confirmDialog}
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-6 py-5">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">

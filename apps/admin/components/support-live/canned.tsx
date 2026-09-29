@@ -5,11 +5,13 @@ import { toast } from "sonner";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { Button, Card, CardHeader, Field, Input, PageHeader } from "@kalks/ui";
 import { errMsg, sapi, usePerms } from "./common";
+import { useConfirm } from "@/components/confirm";
 
 type Canned = { id: number; shortcut: string; title: string; body: string; tags: string[]; useCount: number; createdBy: string; updatedAt: string };
 
 /** Canned replies for agents; {{first_name}}, {{agent_name}} and {{client_id}} fill in from the conversation. */
 export function LiveCanned() {
+  const [ask, confirmDialog] = useConfirm();
   const { can } = usePerms();
   const [items, setItems] = React.useState<Canned[] | null>(null);
   const [edit, setEdit] = React.useState<{ id?: number; shortcut: string; title: string; body: string } | null>(null);
@@ -27,7 +29,7 @@ export function LiveCanned() {
     void load();
   };
   const remove = async (c: Canned) => {
-    if (!confirm(`Delete ${c.shortcut}?`)) return;
+    if (!(await ask({ title: `Delete ${c.shortcut}?`, text: "Agents can no longer insert this reply.", confirm: "Delete", tone: "danger" }))) return;
     const r = await sapi(`canned/${c.id}`, { method: "DELETE" });
     if (!r.ok) return toast.error("Not deleted", { description: errMsg(r.data) });
     void load();
@@ -35,6 +37,7 @@ export function LiveCanned() {
   const w = can("support.write");
   return (
     <div>
+      {confirmDialog}
       <PageHeader title="Canned replies" subtitle="Saved answers agents insert from the inbox composer. Variables: {{first_name}}, {{agent_name}}, {{client_id}}." actions={w ? <Button variant="ember" onClick={() => setEdit({ shortcut: "/", title: "", body: "" })}><Plus /> New reply</Button> : undefined} />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Card className="xl:col-span-7">
