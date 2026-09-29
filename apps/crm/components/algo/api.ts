@@ -4,6 +4,7 @@
 
 import * as React from "react";
 import { toast } from "sonner";
+import { tr } from "@kalks/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Strategy spec (visual builder)                                      */
@@ -67,7 +68,7 @@ export const operand = (p: Partial<Operand> & { kind: OperandKind }): Operand =>
 
 export function defaultSpec(symbol = "EURUSD", timeframe = "H1"): StrategySpec {
   return {
-    name: `${symbol} ${timeframe} strategy`,
+    name: tr("developer.spec.defaultName", { symbol, timeframe }),
     symbol,
     timeframe,
     long: emptyRuleSet(),
@@ -381,20 +382,20 @@ export async function algoApi<T>(path: string, init?: { method?: Method; body?: 
     });
   } catch (e) {
     if ((e as Error).name === "AbortError") throw e;
-    throw new AlgoError(0, "network", "Network error. Check your connection and try again.");
+    throw new AlgoError(0, "network", tr("common.networkError"));
   }
   const data = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string; field?: string } };
   if (!res.ok) {
     if (res.status === 401 && typeof window !== "undefined") {
       window.location.assign(`/api/auth/expired?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
     }
-    throw new AlgoError(res.status, data.error?.code ?? "error", data.error?.message ?? "Something went wrong. Please try again.", data.error?.field);
+    throw new AlgoError(res.status, data.error?.code ?? "error", data.error?.message ?? tr("common.errorRetry"), data.error?.field);
   }
   return data as T;
 }
 
 export function algoError(title: string, e: unknown) {
-  toast.error(title, { description: e instanceof Error ? e.message : "Something went wrong. Please try again." });
+  toast.error(title, { description: e instanceof Error ? e.message : tr("common.errorRetry") });
 }
 
 /** Polls `path` every `ms` (0 = once) while the tab is visible. */
@@ -418,7 +419,7 @@ export function useAlgo<T>(path: string | null, ms = 0) {
           setError(null);
         } catch (e) {
           if (stop || (e as Error).name === "AbortError") return;
-          setError(e instanceof AlgoError ? e : new AlgoError(0, "error", "Something went wrong."));
+          setError(e instanceof AlgoError ? e : new AlgoError(0, "error", tr("common.errorRetry")));
         }
       }
       if (!stop && ms > 0) timer = setTimeout(run, ms);
@@ -462,13 +463,14 @@ export const fmtDateTime = (iso: string | number | null | undefined) => {
   return `${d.toISOString().slice(0, 10)} ${d.toISOString().slice(11, 16)}`;
 };
 export function ago(iso: string | null | undefined) {
-  if (!iso) return "never";
+  if (!iso) return tr("developer.ago.never");
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return `${Math.round(s)}s ago`;
-  if (s < 3600) return `${Math.round(s / 60)}m ago`;
-  if (s < 86400) return `${Math.round(s / 3600)}h ago`;
-  return `${Math.round(s / 86400)}d ago`;
+  if (s < 60) return tr("developer.ago.seconds", { n: Math.round(s) });
+  if (s < 3600) return tr("developer.ago.minutes", { n: Math.round(s / 60) });
+  if (s < 86400) return tr("developer.ago.hours", { n: Math.round(s / 3600) });
+  return tr("developer.ago.days", { n: Math.round(s / 86400) });
 }
 
-export const SIGNAL_LABEL: Record<string, string> = { buy: "Buy", sell: "Sell", exit_buy: "Exit buy", exit_sell: "Exit sell" };
+/** Translation keys for the signal names; call t(SIGNAL_LABEL[k]) at render. */
+export const SIGNAL_LABEL: Record<string, "developer.signal.buy" | "developer.signal.sell" | "developer.signal.exitBuy" | "developer.signal.exitSell"> = { buy: "developer.signal.buy", sell: "developer.signal.sell", exit_buy: "developer.signal.exitBuy", exit_sell: "developer.signal.exitSell" };
 export const DEP_TONE: Record<Deployment["status"], "ember" | "neutral" | "down" | "warn"> = { running: "ember", paused: "neutral", stopped: "neutral", killed: "down", error: "down" };

@@ -10,6 +10,7 @@ import { AlertTriangle, Archive, Code2, FlaskConical, LayoutGrid, Loader2, Play,
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Menu, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, cn } from "@kalks/ui";
 import { MoreHorizontal } from "lucide-react";
+import { tr, useT } from "@kalks/i18n/react";
 import { AiAssistant } from "./ai-chat";
 import { SettingsEditor, SymbolPicker, VisualEditor, NumInput } from "./builder";
 import { CodeEditor, DslReference } from "./code-editor";
@@ -33,14 +34,15 @@ import {
 
 type Mode = "visual" | "code";
 
-const TEMPLATES: { id: string; name: string; text: string; make: () => StrategySpec }[] = [
+type TplKey = "ema" | "rsi" | "breakout" | "macd";
+const TEMPLATES: { id: TplKey; name: `developer.tpl.${TplKey}.name`; text: `developer.tpl.${TplKey}.text`; make: () => StrategySpec }[] = [
   {
     id: "ema",
-    name: "EMA crossover",
-    text: "Trend following on EMA 20 / 50 crosses",
+    name: "developer.tpl.ema.name",
+    text: "developer.tpl.ema.text",
     make: () => ({
       ...defaultSpec("EURUSD", "H1"),
-      name: "EMA crossover",
+      name: tr("developer.tpl.ema.name"),
       long: { logic: "all", groups: [{ logic: "all", conditions: [{ left: operand({ kind: "indicator", indicator: "ema", period: 20 }), op: "crosses_above", right: operand({ kind: "indicator", indicator: "ema", period: 50 }), timeframe: "same" }] }] },
       short: { logic: "all", groups: [{ logic: "all", conditions: [{ left: operand({ kind: "indicator", indicator: "ema", period: 20 }), op: "crosses_below", right: operand({ kind: "indicator", indicator: "ema", period: 50 }), timeframe: "same" }] }] },
       sl: { mode: "atr", value: 2, atrPeriod: 14 },
@@ -49,11 +51,11 @@ const TEMPLATES: { id: string; name: string; text: string; make: () => StrategyS
   },
   {
     id: "rsi",
-    name: "RSI reversion",
-    text: "Buy oversold / sell overbought above / below SMA 200",
+    name: "developer.tpl.rsi.name",
+    text: "developer.tpl.rsi.text",
     make: () => ({
       ...defaultSpec("EURUSD", "M15"),
-      name: "RSI reversion",
+      name: tr("developer.tpl.rsi.name"),
       long: { logic: "all", groups: [{ logic: "all", conditions: [
         { left: operand({ kind: "indicator", indicator: "rsi", period: 14 }), op: "crosses_above", right: operand({ kind: "value", value: 30 }), timeframe: "same" },
         { left: operand({ kind: "price", field: "close" }), op: "gt", right: operand({ kind: "indicator", indicator: "sma", period: 200 }), timeframe: "same" },
@@ -69,11 +71,11 @@ const TEMPLATES: { id: string; name: string; text: string; make: () => StrategyS
   },
   {
     id: "breakout",
-    name: "Donchian breakout",
-    text: "Close breaks the 20-bar high / low, ATR stop",
+    name: "developer.tpl.breakout.name",
+    text: "developer.tpl.breakout.text",
     make: () => ({
       ...defaultSpec("XAUUSD", "H1"),
-      name: "Donchian breakout",
+      name: tr("developer.tpl.breakout.name"),
       long: { logic: "all", groups: [{ logic: "all", conditions: [{ left: operand({ kind: "price", field: "close" }), op: "crosses_above", right: operand({ kind: "indicator", indicator: "highest", period: 20 }), timeframe: "same" }] }] },
       short: { logic: "all", groups: [{ logic: "all", conditions: [{ left: operand({ kind: "price", field: "close" }), op: "crosses_below", right: operand({ kind: "indicator", indicator: "lowest", period: 20 }), timeframe: "same" }] }] },
       sizing: { mode: "lots", lots: 0.05, riskPct: 1 },
@@ -85,11 +87,11 @@ const TEMPLATES: { id: string; name: string; text: string; make: () => StrategyS
   },
   {
     id: "macd",
-    name: "MACD + H4 trend",
-    text: "MACD signal crosses filtered by the H4 EMA 50",
+    name: "developer.tpl.macd.name",
+    text: "developer.tpl.macd.text",
     make: () => ({
       ...defaultSpec("GBPUSD", "H1"),
-      name: "MACD + H4 trend",
+      name: tr("developer.tpl.macd.name"),
       long: { logic: "all", groups: [{ logic: "all", conditions: [
         { left: operand({ kind: "indicator", indicator: "macd", period: 12, period2: 26, period3: 9 }), op: "crosses_above", right: operand({ kind: "indicator", indicator: "macd_signal", period: 12, period2: 26, period3: 9 }), timeframe: "same" },
         { left: operand({ kind: "price", field: "close" }), op: "gt", right: operand({ kind: "indicator", indicator: "ema", period: 50 }), timeframe: "H4" },
@@ -115,14 +117,15 @@ function useDebounced<T>(v: T, ms: number) {
 }
 
 function Summary({ built }: { built: Built | null }) {
+  const t = useT();
   if (!built) return <Skeleton className="h-10 w-full" />;
   const entries = Object.entries(built.summary);
   return (
     <div className="space-y-1">
-      {entries.length === 0 && <div className="text-[12.5px] text-fg-3">No signal yet: add a buy or sell rule.</div>}
+      {entries.length === 0 && <div className="text-[12.5px] text-fg-3">{t("developer.strat.noSignal")}</div>}
       {entries.map(([k, v]) => (
         <div key={k} className="flex gap-3 text-[12.5px]">
-          <span className={cn("w-16 shrink-0 text-[11px] font-semibold uppercase tracking-wide", k === "buy" ? "text-up" : k === "sell" ? "text-down" : "text-gold")}>{SIGNAL_LABEL[k]}</span>
+          <span className={cn("w-16 shrink-0 text-[11px] font-semibold uppercase tracking-wide", k === "buy" ? "text-up" : k === "sell" ? "text-down" : "text-gold")}>{SIGNAL_LABEL[k] ? t(SIGNAL_LABEL[k]) : k}</span>
           <code className="min-w-0 break-words font-mono text-[12px] text-fg-2">{v}</code>
         </div>
       ))}
@@ -131,6 +134,7 @@ function Summary({ built }: { built: Built | null }) {
 }
 
 function DeployCard({ strategy, onDeployed }: { strategy: StrategyDetail | null; onDeployed: () => void }) {
+  const t = useT();
   const accounts = useAlgo<{ items: TradingAccount[] }>("accounts");
   const [login, setLogin] = React.useState<number | null>(null);
   const [mult, setMult] = React.useState(1);
@@ -152,75 +156,75 @@ function DeployCard({ strategy, onDeployed }: { strategy: StrategyDetail | null;
       if (maxOpen > 0) risk.maxOpenPositions = maxOpen;
       if (maxLoss > 0) risk.maxDailyLoss = maxLoss;
       const r = await algoApi<{ id: number }>("deployments", { body: { strategyId: strategy.id, versionId: strategy.current.id, login, risk } });
-      toast.success(`v${strategy.current.version} is running on #${login}`, { description: "It evaluates every closed bar on our servers, 24/7. The first bar is a warm-up." });
+      toast.success(t("developer.strat.runningOn", { version: strategy.current.version, login }), { description: t("developer.strat.runningText") });
       onDeployed();
       void r;
     } catch (e) {
-      algoError("Couldn't deploy the strategy", e);
+      algoError(t("developer.strat.deployFailed"), e);
     } finally {
       setBusy(false);
     }
   };
   return (
     <Card id="deploy">
-      <CardHeader icon={<Rocket />} title="Deploy 24/7" subtitle="Runs on our servers, not in your browser" />
+      <CardHeader icon={<Rocket />} title={t("developer.strat.deployTitle")} subtitle={t("developer.strat.deploySub")} />
       <div className="space-y-3 px-5 pb-5 pt-4">
         {accounts.loading ? (
           <Skeleton className="h-10" />
         ) : list.length === 0 ? (
           <div className="text-[12.5px] text-fg-3">
-            Open a demo or live account first. <Link href="/accounts/new" className="text-ember hover:underline">Open account</Link>
+            {t("developer.strat.openAccountFirst")} <Link href="/accounts/new" className="text-ember hover:underline">{t("developer.strat.openAccount")}</Link>
           </div>
         ) : (
           <Menu
             align="start"
             width={300}
             trigger={
-              <button type="button" aria-label="Account" className="flex w-full items-center gap-2 rounded-[12px] border border-line bg-surface-2 px-3 py-2 text-left text-[13px]">
-                {acct && <Chip size="sm" tone={acct.type === "live" ? "ember" : "gold"}>{acct.type.toUpperCase()}</Chip>}
+              <button type="button" aria-label={t("common.account")} className="flex w-full items-center gap-2 rounded-[12px] border border-line bg-surface-2 px-3 py-2 text-start text-[13px]">
+                {acct && <Chip size="sm" tone={acct.type === "live" ? "ember" : "gold"}>{(acct.type === "live" ? t("common.live") : t("common.demo")).toUpperCase()}</Chip>}
                 <span className="font-mono">#{acct?.login}</span>
                 <span className="truncate text-fg-3">{acct?.groupName}</span>
-                <span className="ml-auto k-num text-fg-2">{acct ? `$${acct.equity.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : ""}</span>
+                <span className="ms-auto k-num tabular-nums text-fg-2">{acct ? `$${acct.equity.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : ""}</span>
               </button>
             }
-            items={list.map((a) => ({ label: `${a.type === "live" ? "Live" : "Demo"} #${a.login} · ${a.groupName}`, hint: `$${a.equity.toLocaleString("en-US", { maximumFractionDigits: 0 })}`, onSelect: () => setLogin(a.login) }))}
+            items={list.map((a) => ({ label: `${a.type === "live" ? t("common.live") : t("common.demo")} #${a.login} · ${a.groupName}`, hint: `$${a.equity.toLocaleString("en-US", { maximumFractionDigits: 0 })}`, onSelect: () => setLogin(a.login) }))}
           />
         )}
         <div className="grid grid-cols-3 gap-2 text-[11.5px] text-fg-3">
           <label className="rounded-[10px] bg-surface-2/60 px-2.5 py-2">
-            Lot ×
+            {t("developer.strat.lotX")}
             <div className="mt-1 text-fg">
-              <NumInput label="Lot multiplier" value={mult} step={0.1} min={0.01} onChange={setMult} />
+              <NumInput label={t("developer.dep.lotMultiplier")} value={mult} step={0.1} min={0.01} onChange={setMult} />
             </div>
           </label>
           <label className="rounded-[10px] bg-surface-2/60 px-2.5 py-2">
-            Max open
+            {t("developer.strat.maxOpen")}
             <div className="mt-1 text-fg">
-              <NumInput label="Max open positions" value={maxOpen} min={0} onChange={(v) => setMaxOpen(Math.round(v))} />
+              <NumInput label={t("developer.dep.maxOpenPositions")} value={maxOpen} min={0} onChange={(v) => setMaxOpen(Math.round(v))} />
             </div>
           </label>
           <label className="rounded-[10px] bg-surface-2/60 px-2.5 py-2">
-            Day loss $
+            {t("developer.strat.dayLoss")}
             <div className="mt-1 text-fg">
-              <NumInput label="Max daily loss" value={maxLoss} min={0} onChange={setMaxLoss} />
+              <NumInput label={t("developer.builder.maxDailyLoss")} value={maxLoss} min={0} onChange={setMaxLoss} />
             </div>
           </label>
         </div>
-        {acct?.type === "live" && <div className="flex items-start gap-2 rounded-[10px] border border-warn/30 bg-warn-soft px-3 py-2 text-[12px] text-warn"><AlertTriangle className="mt-0.5 size-3.5 shrink-0" /> Live account: the strategy trades real money. Backtest it and run it on demo first.</div>}
+        {acct?.type === "live" && <div className="flex items-start gap-2 rounded-[10px] border border-warn/30 bg-warn-soft px-3 py-2 text-[12px] text-warn"><AlertTriangle className="mt-0.5 size-3.5 shrink-0" /> {t("developer.strat.liveWarning")}</div>}
         <Button variant="ember" className="w-full" disabled={!strategy || !valid || !login || busy} onClick={deploy}>
-          {busy ? <Loader2 className="animate-spin" /> : <Play />} {strategy ? `Deploy v${strategy.current.version}` : "Save the strategy first"}
+          {busy ? <Loader2 className="animate-spin" /> : <Play />} {strategy ? t("developer.strat.deployVersion", { version: strategy.current.version }) : t("developer.strat.saveFirst")}
         </Button>
-        {strategy && !valid && <p className="text-[11.5px] text-down">Fix the errors and save before deploying.</p>}
+        {strategy && !valid && <p className="text-[11.5px] text-down">{t("developer.strat.fixBeforeDeploy")}</p>}
         {strategy && strategy.deployments.length > 0 && (
           <div className="space-y-1.5 border-t border-line pt-3">
             {strategy.deployments.slice(0, 5).map((d) => (
               <Link key={d.id} href={`/developer/deployments?id=${d.id}`} className="flex items-center gap-2 rounded-[10px] px-2 py-1.5 text-[12.5px] hover:bg-surface-2">
                 <Chip size="sm" tone={DEP_TONE[d.status]} dot>
-                  {d.status}
+                  {t.dyn(`developer.depStatus.${d.status}`, d.status)}
                 </Chip>
                 <span className="font-mono text-fg-2">#{d.login}</span>
                 <span className="text-fg-3">v{d.version}</span>
-                <span className="ml-auto k-num text-fg-2">{(d.stats.trades ?? 0) + " trades"}</span>
+                <span className="ms-auto k-num tabular-nums text-fg-2">{t("developer.market.nTrades", { count: d.stats.trades ?? 0 })}</span>
               </Link>
             ))}
           </div>
@@ -231,6 +235,7 @@ function DeployCard({ strategy, onDeployed }: { strategy: StrategyDetail | null;
 }
 
 export function LiveStrategiesPage() {
+  const t = useT();
   const router = useRouter();
   const params = useSearchParams();
   const meta = useMeta();
@@ -242,7 +247,7 @@ export function LiveStrategiesPage() {
   const [spec, setSpec] = React.useState<StrategySpec>(() => TEMPLATES[0]!.make());
   const [code, setCode] = React.useState<string>("");
   const [codeEdited, setCodeEdited] = React.useState(false);
-  const [name, setName] = React.useState("EMA crossover");
+  const [name, setName] = React.useState(() => t("developer.tpl.ema.name"));
   const [built, setBuilt] = React.useState<Built | null>(null);
   const [validating, setValidating] = React.useState(false);
   const [dirty, setDirty] = React.useState(false);
@@ -278,7 +283,7 @@ export function LiveStrategiesPage() {
       setDirty(false);
       setPrompt(null);
     } catch (e) {
-      algoError("Couldn't open the strategy", e);
+      algoError(t("developer.strat.openFailed"), e);
     }
   }, []);
 
@@ -324,16 +329,16 @@ export function LiveStrategiesPage() {
       setMode("code");
       return;
     }
-    if (codeEdited && detail?.current.kind === "code") return toast.error("Code strategies stay in code", { description: "Visual rules can become code, but hand-written code can't be turned back into rules." });
+    if (codeEdited && detail?.current.kind === "code") return toast.error(t("developer.strat.codeStays"), { description: t("developer.strat.codeStaysText") });
     if (codeEdited) {
-      toast("Code edits discarded", { description: "Back to the visual rules." });
+      toast(t("developer.strat.codeDiscarded"), { description: t("developer.strat.codeDiscardedText") });
       setCodeEdited(false);
     }
     setMode("visual");
   };
 
-  const newFrom = (t: (typeof TEMPLATES)[number] | null) => {
-    const s = t ? t.make() : { ...defaultSpec(spec.symbol, spec.timeframe), name: "Untitled strategy" };
+  const newFrom = (tpl: (typeof TEMPLATES)[number] | null) => {
+    const s = tpl ? tpl.make() : { ...defaultSpec(spec.symbol, spec.timeframe), name: t("developer.strat.untitled") };
     setSelected("new");
     setDetail(null);
     setSpec(s);
@@ -341,7 +346,7 @@ export function LiveStrategiesPage() {
     setMode("visual");
     setCodeEdited(false);
     setDirty(true);
-    setOrigin(t ? "template" : "manual");
+    setOrigin(tpl ? "template" : "manual");
     setPrompt(null);
     router.replace("/developer/strategies");
   };
@@ -351,14 +356,14 @@ export function LiveStrategiesPage() {
     try {
       const body = { ...payload, name, note: dirty ? undefined : "resave", origin, prompt: prompt ?? undefined };
       const r = detail ? await algoApi<{ id: number; version: number; valid: boolean }>(`strategies/${detail.id}/versions`, { body }) : await algoApi<{ id: number; version: number; valid: boolean }>("strategies", { body });
-      toast.success(detail ? `Saved as v${r.version}` : `“${name}” saved`, { description: r.valid ? "Ready to backtest and deploy." : "Saved as a draft: fix the errors before backtesting or deploying." });
+      toast.success(detail ? t("developer.strat.savedAs", { version: r.version }) : t("developer.strat.saved", { name }), { description: r.valid ? t("developer.strat.readyText") : t("developer.strat.draftText") });
       setDirty(false);
       list.reload();
       router.replace(`/developer/strategies?id=${r.id}`);
       setSelected(r.id);
       await load(r.id);
     } catch (e) {
-      algoError("Couldn't save the strategy", e);
+      algoError(t("developer.strat.saveFailed"), e);
     } finally {
       setSaving(false);
     }
@@ -368,11 +373,11 @@ export function LiveStrategiesPage() {
     if (!detail) return;
     try {
       await algoApi(`strategies/${detail.id}`, { method: "PATCH", body: { status: "archived" } });
-      toast.success(`“${detail.name}” archived`);
+      toast.success(t("developer.strat.archived", { name: detail.name }));
       list.reload();
       newFrom(TEMPLATES[0]!);
     } catch (e) {
-      algoError("Couldn't archive the strategy", e);
+      algoError(t("developer.strat.archiveFailed"), e);
     }
   };
 
@@ -391,7 +396,7 @@ export function LiveStrategiesPage() {
     }
     setName(b.spec.name);
     setDirty(true);
-    toast.success("Applied to the editor", { description: "Review it, save it, then backtest." });
+    toast.success(t("developer.strat.applied"), { description: t("developer.strat.appliedText") });
   };
 
   const items = list.data?.items ?? [];
@@ -400,22 +405,22 @@ export function LiveStrategiesPage() {
   return (
     <>
       <PageHeader
-        title="Strategy builder"
-        subtitle="Build rules visually or in code, or describe them to the AI assistant. Backtest, then run them 24/7 on our servers."
+        title={t("developer.bt.strategyBuilder")}
+        subtitle={t("developer.strat.subtitle")}
         actions={
           <>
             <Link href="/developer/deployments">
               <Button variant="surface">
-                <Workflow /> Running strategies
+                <Workflow /> {t("developer.dep.title")}
               </Button>
             </Link>
             <Link href={detail ? `/developer/backtests?strategy=${detail.id}` : "/developer/backtests"}>
               <Button variant="surface">
-                <FlaskConical /> Backtest
+                <FlaskConical /> {t("developer.strat.backtest")}
               </Button>
             </Link>
             <Button variant="ember" onClick={() => newFrom(null)}>
-              <Plus /> New strategy
+              <Plus /> {t("developer.strat.new")}
             </Button>
           </>
         }
@@ -423,37 +428,37 @@ export function LiveStrategiesPage() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[264px_minmax(0,1fr)] xl:grid-cols-[264px_minmax(0,1fr)_360px]">
         <Reveal className="order-2 space-y-5 lg:order-1">
           <Card>
-            <CardHeader title="My strategies" subtitle={`${items.length} saved`} />
+            <CardHeader title={t("developer.strat.mine")} subtitle={t("developer.strat.nSaved", { count: items.length })} />
             <div className="space-y-1 px-3 pb-4 pt-3">
               {list.loading && <Skeleton className="h-24" />}
-              {!list.loading && items.length === 0 && <p className="px-2 text-[12.5px] text-fg-3">Nothing saved yet. Start from a template or ask the AI assistant.</p>}
+              {!list.loading && items.length === 0 && <p className="px-2 text-[12.5px] text-fg-3">{t("developer.strat.none")}</p>}
               {items.map((s) => (
-                <button key={s.id} type="button" onClick={() => (router.replace(`/developer/strategies?id=${s.id}`), setSelected(s.id))} className={cn("w-full rounded-[12px] px-3 py-2 text-left transition", selected === s.id ? "bg-surface-3" : "hover:bg-surface-2")}>
+                <button key={s.id} type="button" onClick={() => (router.replace(`/developer/strategies?id=${s.id}`), setSelected(s.id))} className={cn("w-full rounded-[12px] px-3 py-2 text-start transition", selected === s.id ? "bg-surface-3" : "hover:bg-surface-2")}>
                   <div className="flex items-center gap-2">
                     <SymbolAvatar symbol={s.symbol} size={16} />
                     <span className="truncate text-[13px] font-medium text-fg">{s.name}</span>
-                    {s.running > 0 && <span className="ml-auto size-1.5 shrink-0 rounded-full bg-ember" title="Running" />}
+                    {s.running > 0 && <span className="ms-auto size-1.5 shrink-0 rounded-full bg-ember" title={t("developer.bt.running")} />}
                   </div>
-                  <div className="mt-0.5 flex items-center gap-1.5 pl-6 text-[11px] text-fg-3">
-                    <span className="font-mono">
+                  <div className="mt-0.5 flex items-center gap-1.5 ps-6 text-[11px] text-fg-3">
+                    <span className="font-mono" dir="ltr">
                       {s.symbol} · {s.timeframe}
                     </span>
                     <span>· v{s.version}</span>
                     {s.kind === "code" && <Code2 className="size-3" />}
-                    {!s.valid && <span className="text-down">· draft</span>}
-                    {s.lastBacktest && <span className={cn("ml-auto k-num", s.lastBacktest.returnPct >= 0 ? "text-up" : "text-down")}>{fmtPct(s.lastBacktest.returnPct)}</span>}
+                    {!s.valid && <span className="text-down">· {t("developer.draft")}</span>}
+                    {s.lastBacktest && <span className={cn("ms-auto k-num tabular-nums", s.lastBacktest.returnPct >= 0 ? "text-up" : "text-down")}>{fmtPct(s.lastBacktest.returnPct)}</span>}
                   </div>
                 </button>
               ))}
             </div>
           </Card>
           <Card>
-            <CardHeader title="Templates" subtitle="Start from a proven structure" />
+            <CardHeader title={t("developer.strat.templates")} subtitle={t("developer.strat.templatesSub")} />
             <div className="space-y-1 px-3 pb-4 pt-3">
-              {TEMPLATES.map((t) => (
-                <button key={t.id} type="button" onClick={() => newFrom(t)} className="w-full rounded-[12px] px-3 py-2 text-left transition hover:bg-surface-2">
-                  <div className="text-[13px] font-medium text-fg">{t.name}</div>
-                  <div className="text-[11.5px] text-fg-3">{t.text}</div>
+              {TEMPLATES.map((tpl) => (
+                <button key={tpl.id} type="button" onClick={() => newFrom(tpl)} className="w-full rounded-[12px] px-3 py-2 text-start transition hover:bg-surface-2">
+                  <div className="text-[13px] font-medium text-fg">{t(tpl.name)}</div>
+                  <div className="text-[11.5px] text-fg-3">{t(tpl.text)}</div>
                 </button>
               ))}
             </div>
@@ -467,34 +472,34 @@ export function LiveStrategiesPage() {
                 <input
                   value={name}
                   onChange={(e) => (setName(e.target.value.slice(0, 60)), setDirty(true))}
-                  aria-label="Strategy name"
+                  aria-label={t("developer.strat.nameAria")}
                   className="w-full min-w-0 rounded-lg bg-transparent py-0.5 text-[20px] font-medium tracking-tight text-fg outline-none transition focus:bg-surface-2 focus:px-2"
                 />
                 <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[12px] text-fg-3">
-                  {detail ? <Chip size="sm">v{detail.current.version}{dirty ? " · edited" : ""}</Chip> : <Chip size="sm" tone="gold">New</Chip>}
-                  {built && (built.valid ? <Chip size="sm" tone="up">Valid</Chip> : <Chip size="sm" tone="down">{built.errors.length} error{built.errors.length === 1 ? "" : "s"}</Chip>)}
+                  {detail ? <Chip size="sm">v{detail.current.version}{dirty ? ` · ${t("developer.strat.edited")}` : ""}</Chip> : <Chip size="sm" tone="gold">{t("common.new")}</Chip>}
+                  {built && (built.valid ? <Chip size="sm" tone="up">{t("developer.strat.valid")}</Chip> : <Chip size="sm" tone="down">{t("developer.code.errors", { count: built.errors.length })}</Chip>)}
                   {detail?.deployments.some((d) => d.status === "running") && (
                     <Chip size="sm" tone="ember" dot>
-                      Running
+                      {t("developer.bt.running")}
                     </Chip>
                   )}
-                  {detail && <span>saved {ago(detail.current.createdAt)}</span>}
+                  {detail && <span>{t("developer.strat.savedAgo", { ago: ago(detail.current.createdAt) })}</span>}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Segmented size="sm" value={mode} onChange={switchMode} options={[{ value: "visual", label: <><LayoutGrid className="size-3.5" /> Visual</> }, { value: "code", label: <><Code2 className="size-3.5" /> Code</> }]} />
+                <Segmented size="sm" value={mode} onChange={switchMode} options={[{ value: "visual", label: <><LayoutGrid className="size-3.5" /> {t("developer.strat.visual")}</> }, { value: "code", label: <><Code2 className="size-3.5" /> {t("developer.mode.code")}</> }]} />
                 {detail && (
                   <Menu
                     trigger={
-                      <button type="button" aria-label="More" className="grid size-8 place-items-center rounded-full border border-line text-fg-2 hover:bg-surface-3">
+                      <button type="button" aria-label={t("common.more")} className="grid size-8 place-items-center rounded-full border border-line text-fg-2 hover:bg-surface-3">
                         <MoreHorizontal className="size-4" />
                       </button>
                     }
-                    items={[{ label: "Archive strategy", icon: <Archive />, danger: true, onSelect: archive }]}
+                    items={[{ label: t("developer.strat.archive"), icon: <Archive />, danger: true, onSelect: archive }]}
                   />
                 )}
                 <Button variant="ember" size="sm" disabled={saving || (!dirty && !!detail)} onClick={save}>
-                  {saving ? <Loader2 className="animate-spin" /> : <Save />} {detail ? "Save version" : "Save"}
+                  {saving ? <Loader2 className="animate-spin" /> : <Save />} {detail ? t("developer.strat.saveVersion") : t("common.save")}
                 </Button>
               </div>
             </div>
@@ -522,7 +527,7 @@ export function LiveStrategiesPage() {
                     )}
                     {(built?.warnings.length ?? 0) > 0 && <div className="mt-2 text-[11.5px] text-warn">{built!.warnings.join(" · ")}</div>}
                     <div className="mt-5">
-                      <div className="k-label mb-1">Risk and session</div>
+                      <div className="k-label mb-1">{t("developer.strat.riskSession")}</div>
                       <SettingsEditor spec={spec} onChange={editSpec} meta={meta} />
                     </div>
                   </>
@@ -547,13 +552,13 @@ export function LiveStrategiesPage() {
           <DeployCard strategy={dirty ? null : detail} onDeployed={() => detail && load(detail.id)} />
           {detail && detail.backtests.length > 0 && (
             <Card>
-              <CardHeader icon={<FlaskConical />} title="Recent backtests" />
+              <CardHeader icon={<FlaskConical />} title={t("developer.strat.recentBacktests")} />
               <div className="space-y-1 px-3 pb-4 pt-3">
                 {detail.backtests.slice(0, 4).map((b) => (
                   <Link key={b.id} href={`/developer/backtests?id=${b.id}`} className="flex items-center gap-2 rounded-[10px] px-2 py-1.5 text-[12.5px] hover:bg-surface-2">
                     <span className="font-mono text-fg-3">#{b.id}</span>
-                    <span className="text-fg-2">{b.status}</span>
-                    {b.summary && <span className={cn("ml-auto k-num", b.summary.returnPct >= 0 ? "text-up" : "text-down")}>{fmtPct(b.summary.returnPct)}</span>}
+                    <span className="text-fg-2">{t.dyn(`developer.btStatus.${b.status}`, b.status)}</span>
+                    {b.summary && <span className={cn("ms-auto k-num tabular-nums", b.summary.returnPct >= 0 ? "text-up" : "text-down")}>{fmtPct(b.summary.returnPct)}</span>}
                   </Link>
                 ))}
               </div>

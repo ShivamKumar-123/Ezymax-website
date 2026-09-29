@@ -6,6 +6,7 @@
 import * as React from "react";
 import { Check, ChevronDown, Plus, Repeat2, Trash2, X } from "lucide-react";
 import { Menu, Segmented, SymbolAvatar, Toggle, cn } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 import { operand, type Condition, type Meta, type Operand, type RuleSet, type StrategySpec } from "./api";
 
 type Tone = "ember" | "gold" | "up" | "down" | "info" | "neutral";
@@ -46,7 +47,7 @@ export function NumInput({ value, onChange, step = 1, min, label, className, suf
         style={{ width: width ? `${width}px` : `${Math.max(2, txt.length) + 1.5}ch` }}
         className="k-num h-6 rounded-md bg-black/25 px-1 text-center text-[12.5px] text-fg outline-none focus:ring-1 focus:ring-current"
       />
-      {suffix && <span className="ml-1 opacity-80">{suffix}</span>}
+      {suffix && <span className="ms-1 opacity-80">{suffix}</span>}
     </span>
   );
 }
@@ -72,12 +73,18 @@ const OP_LABEL: Record<string, string> = { gt: ">", lt: "<", gte: "≥", lte: "�
 const FIELD_LABEL: Record<string, string> = { close: "Close", open: "Open", high: "High", low: "Low", hl2: "HL/2", hlc3: "HLC/3", ohlc4: "OHLC/4" };
 const PATTERN_LABEL = (p: string) => p.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 const TWO_PERIODS: Record<string, string> = { macd: "slow", macd_signal: "slow", macd_hist: "slow", stoch_k: "%D", stoch_d: "%D", adx: "smooth", plus_di: "smooth", minus_di: "smooth" };
+type Tr = ReturnType<typeof useT>;
+// Enum labels: translated when a catalog key exists, otherwise the symbol / English fallback above.
+const opLabel = (t: Tr, o: string) => t.dyn(`developer.op.${o}`, OP_LABEL[o] ?? o);
+const fieldLabel = (t: Tr, f: string) => t.dyn(`developer.field.${f}`, FIELD_LABEL[f] ?? f);
+const patternLabel = (t: Tr, p: string) => t.dyn(`developer.pattern.${p}`, PATTERN_LABEL(p));
 const NO_SOURCE = ["atr", "stoch_k", "stoch_d", "highest", "lowest", "willr", "adx", "plus_di", "minus_di"];
 
 function OperandChip({ o, onChange, tone, meta, side }: { o: Operand; onChange: (o: Operand) => void; tone: Tone; meta: Meta; side: "left" | "right" }) {
+  const t = useT();
   const ind = meta.indicators.find((i) => i.key === o.indicator);
   const kindItems = [
-    ...meta.priceFields.map((f) => ({ label: `Price · ${FIELD_LABEL[f] ?? f}`, hint: o.kind === "price" && o.field === f ? <Check className="size-3.5 text-ember" /> : undefined, onSelect: () => onChange(operand({ kind: "price", field: f })) })),
+    ...meta.priceFields.map((f) => ({ label: `${t("developer.builder.price")} · ${fieldLabel(t, f)}`, hint: o.kind === "price" && o.field === f ? <Check className="size-3.5 text-ember" /> : undefined, onSelect: () => onChange(operand({ kind: "price", field: f })) })),
     "sep" as const,
     ...meta.indicators.map((d) => ({
       label: d.label,
@@ -85,85 +92,86 @@ function OperandChip({ o, onChange, tone, meta, side }: { o: Operand; onChange: 
       onSelect: () => onChange(operand({ kind: "indicator", indicator: d.key, period: d.period, period2: d.period2, period3: d.period3, mult: d.mult })),
     })),
     "sep" as const,
-    { label: "Value", hint: o.kind === "value" ? <Check className="size-3.5 text-ember" /> : undefined, onSelect: () => onChange(operand({ kind: "value", value: o.kind === "value" ? o.value : 50 })) },
-    ...(side === "left" ? meta.patterns.map((p) => ({ label: `Candle · ${PATTERN_LABEL(p)}`, hint: o.kind === "candle" && o.pattern === p ? <Check className="size-3.5 text-ember" /> : undefined, onSelect: () => onChange(operand({ kind: "candle", pattern: p })) })) : []),
+    { label: t("developer.builder.value"), hint: o.kind === "value" ? <Check className="size-3.5 text-ember" /> : undefined, onSelect: () => onChange(operand({ kind: "value", value: o.kind === "value" ? o.value : 50 })) },
+    ...(side === "left" ? meta.patterns.map((p) => ({ label: `${t("developer.builder.candle")} · ${patternLabel(t, p)}`, hint: o.kind === "candle" && o.pattern === p ? <Check className="size-3.5 text-ember" /> : undefined, onSelect: () => onChange(operand({ kind: "candle", pattern: p })) })) : []),
   ];
-  const title = o.kind === "value" ? "Value" : o.kind === "price" ? FIELD_LABEL[o.field] ?? o.field : o.kind === "candle" ? PATTERN_LABEL(o.pattern) : ind?.label ?? o.indicator;
+  const title = o.kind === "value" ? t("developer.builder.value") : o.kind === "price" ? fieldLabel(t, o.field) : o.kind === "candle" ? patternLabel(t, o.pattern) : ind?.label ?? o.indicator;
   return (
-    <span className={cn(chipBase, TONE[tone].chip, "gap-0 pr-1.5")}>
+    <span className={cn(chipBase, TONE[tone].chip, "gap-0 pe-1.5")}>
       <Menu
         align="start"
         width={260}
         trigger={
-          <button type="button" className="inline-flex h-full items-center gap-1 outline-none" aria-label={`${side} operand`}>
+          <button type="button" className="inline-flex h-full items-center gap-1 outline-none" aria-label={side === "left" ? t("developer.builder.leftOperand") : t("developer.builder.rightOperand")}>
             {title}
             <ChevronDown className="size-3 opacity-60" />
           </button>
         }
         items={kindItems}
       />
-      {o.kind === "value" && <NumInput className="ml-1" label="Constant" value={o.value} step={Math.abs(o.value) < 5 ? 0.0001 : 1} onChange={(v) => onChange({ ...o, value: v })} />}
+      {o.kind === "value" && <NumInput className="ms-1" label={t("developer.builder.constant")} value={o.value} step={Math.abs(o.value) < 5 ? 0.0001 : 1} onChange={(v) => onChange({ ...o, value: v })} />}
       {o.kind === "indicator" && (
-        <span className="ml-0.5 inline-flex items-center gap-0.5">
-          (<NumInput label="Period" value={o.period} min={1} onChange={(v) => onChange({ ...o, period: Math.max(1, Math.round(v)) })} />
+        <span className="ms-0.5 inline-flex items-center gap-0.5" dir="ltr">
+          (<NumInput label={t("developer.builder.period")} value={o.period} min={1} onChange={(v) => onChange({ ...o, period: Math.max(1, Math.round(v)) })} />
           {TWO_PERIODS[o.indicator] && (
             <>
-              ,<NumInput label={TWO_PERIODS[o.indicator]!} value={o.period2} min={1} onChange={(v) => onChange({ ...o, period2: Math.max(1, Math.round(v)) })} />
+              ,<NumInput label={t.dyn(`developer.period2.${TWO_PERIODS[o.indicator]}`, TWO_PERIODS[o.indicator])} value={o.period2} min={1} onChange={(v) => onChange({ ...o, period2: Math.max(1, Math.round(v)) })} />
             </>
           )}
           {o.indicator.startsWith("macd") && (
             <>
-              ,<NumInput label="Signal" value={o.period3} min={1} onChange={(v) => onChange({ ...o, period3: Math.max(1, Math.round(v)) })} />
+              ,<NumInput label={t("developer.builder.signal")} value={o.period3} min={1} onChange={(v) => onChange({ ...o, period3: Math.max(1, Math.round(v)) })} />
             </>
           )}
           {o.indicator.startsWith("bb_") && (
             <>
-              ,<NumInput label="Deviations" value={o.mult} step={0.1} min={0.1} onChange={(v) => onChange({ ...o, mult: v })} />
+              ,<NumInput label={t("developer.builder.deviations")} value={o.mult} step={0.1} min={0.1} onChange={(v) => onChange({ ...o, mult: v })} />
             </>
           )}
           )
-          {!NO_SOURCE.includes(o.indicator) && o.field !== "close" && <span className="ml-1 text-[11px] opacity-70">of {FIELD_LABEL[o.field]}</span>}
+          {!NO_SOURCE.includes(o.indicator) && o.field !== "close" && <span className="ms-1 text-[11px] opacity-70">{t("developer.builder.ofField", { field: fieldLabel(t, o.field) })}</span>}
         </span>
       )}
     </span>
   );
 }
 
-const PRESETS: { label: string; make: () => Condition }[] = [
-  { label: "EMA(20) crosses above EMA(50)", make: () => ({ left: operand({ kind: "indicator", indicator: "ema", period: 20 }), op: "crosses_above", right: operand({ kind: "indicator", indicator: "ema", period: 50 }), timeframe: "same" }) },
+const PRESETS: { label: string; key?: "developer.preset.emaCross" | "developer.preset.closeSma" | "developer.preset.macdCross" | "developer.preset.breakHigh" | "developer.preset.bbLower" | "developer.preset.engulfing"; make: () => Condition }[] = [
+  { label: "EMA(20) crosses above EMA(50)", key: "developer.preset.emaCross", make: () => ({ left: operand({ kind: "indicator", indicator: "ema", period: 20 }), op: "crosses_above", right: operand({ kind: "indicator", indicator: "ema", period: 50 }), timeframe: "same" }) },
   { label: "RSI(14) < 30", make: () => ({ left: operand({ kind: "indicator", indicator: "rsi", period: 14 }), op: "lt", right: operand({ kind: "value", value: 30 }), timeframe: "same" }) },
-  { label: "Close > SMA(200)", make: () => ({ left: operand({ kind: "price", field: "close" }), op: "gt", right: operand({ kind: "indicator", indicator: "sma", period: 200 }), timeframe: "same" }) },
-  { label: "MACD crosses above signal", make: () => ({ left: operand({ kind: "indicator", indicator: "macd", period: 12, period2: 26, period3: 9 }), op: "crosses_above", right: operand({ kind: "indicator", indicator: "macd_signal", period: 12, period2: 26, period3: 9 }), timeframe: "same" }) },
-  { label: "Close breaks 20-bar high", make: () => ({ left: operand({ kind: "price", field: "close" }), op: "crosses_above", right: operand({ kind: "indicator", indicator: "highest", period: 20 }), timeframe: "same" }) },
-  { label: "Close < Bollinger lower", make: () => ({ left: operand({ kind: "price", field: "close" }), op: "lt", right: operand({ kind: "indicator", indicator: "bb_lower", period: 20, mult: 2 }), timeframe: "same" }) },
+  { label: "Close > SMA(200)", key: "developer.preset.closeSma", make: () => ({ left: operand({ kind: "price", field: "close" }), op: "gt", right: operand({ kind: "indicator", indicator: "sma", period: 200 }), timeframe: "same" }) },
+  { label: "MACD crosses above signal", key: "developer.preset.macdCross", make: () => ({ left: operand({ kind: "indicator", indicator: "macd", period: 12, period2: 26, period3: 9 }), op: "crosses_above", right: operand({ kind: "indicator", indicator: "macd_signal", period: 12, period2: 26, period3: 9 }), timeframe: "same" }) },
+  { label: "Close breaks 20-bar high", key: "developer.preset.breakHigh", make: () => ({ left: operand({ kind: "price", field: "close" }), op: "crosses_above", right: operand({ kind: "indicator", indicator: "highest", period: 20 }), timeframe: "same" }) },
+  { label: "Close < Bollinger lower", key: "developer.preset.bbLower", make: () => ({ left: operand({ kind: "price", field: "close" }), op: "lt", right: operand({ kind: "indicator", indicator: "bb_lower", period: 20, mult: 2 }), timeframe: "same" }) },
   { label: "ADX(14) > 25", make: () => ({ left: operand({ kind: "indicator", indicator: "adx", period: 14, period2: 14 }), op: "gt", right: operand({ kind: "value", value: 25 }), timeframe: "same" }) },
-  { label: "Bullish engulfing candle", make: () => ({ left: operand({ kind: "candle", pattern: "bullish_engulfing" }), op: "gte", right: operand({ kind: "value", value: 1 }), timeframe: "same" }) },
+  { label: "Bullish engulfing candle", key: "developer.preset.engulfing", make: () => ({ left: operand({ kind: "candle", pattern: "bullish_engulfing" }), op: "gte", right: operand({ kind: "value", value: 1 }), timeframe: "same" }) },
 ];
 
 function ConditionRow({ c, onChange, onRemove, tone, meta, baseTf }: { c: Condition; onChange: (c: Condition) => void; onRemove: () => void; tone: Tone; meta: Meta; baseTf: string }) {
+  const t = useT();
   const higher = meta.timeframes.slice(meta.timeframes.indexOf(baseTf) + 1);
   return (
     <div className="group flex flex-wrap items-center gap-1.5 rounded-[12px] px-1 py-1 text-[13px] text-fg-3 hover:bg-surface-2/60">
       <OperandChip o={c.left} onChange={(left) => onChange({ ...c, left })} tone={tone} meta={meta} side="left" />
       {c.left.kind === "candle" ? (
-        <span className="px-1 text-fg-3">is present</span>
+        <span className="px-1 text-fg-3">{t("developer.builder.isPresent")}</span>
       ) : (
         <>
-          <Pick label="Operator" value={c.op} onChange={(op) => onChange({ ...c, op })} options={meta.operators.map((o) => ({ value: o, label: OP_LABEL[o] ?? o }))} width={180} />
+          <Pick label={t("developer.builder.operator")} value={c.op} onChange={(op) => onChange({ ...c, op })} options={meta.operators.map((o) => ({ value: o, label: opLabel(t, o) }))} width={180} />
           <OperandChip o={c.right} onChange={(right) => onChange({ ...c, right })} tone="neutral" meta={meta} side="right" />
         </>
       )}
       <Pick
-        label="Timeframe"
+        label={t("developer.builder.timeframe")}
         value={c.timeframe}
         onChange={(timeframe) => onChange({ ...c, timeframe })}
         tone={c.timeframe === "same" ? "neutral" : "info"}
         width={170}
-        options={[{ value: "same", label: `This timeframe (${baseTf})` }, ...higher.map((t) => ({ value: t, label: `On ${t}`, hint: "higher timeframe" }))]}
+        options={[{ value: "same", label: t("developer.builder.thisTimeframe", { tf: baseTf }) }, ...higher.map((tf) => ({ value: tf, label: t("developer.builder.onTimeframe", { tf }), hint: t("developer.builder.higherTimeframe") }))]}
       >
         <span className="font-mono text-[11.5px]">{c.timeframe === "same" ? baseTf : c.timeframe}</span>
       </Pick>
-      <button type="button" onClick={onRemove} className="ml-auto grid size-7 shrink-0 place-items-center rounded-full text-fg-3 opacity-60 transition hover:bg-down-soft hover:text-down group-hover:opacity-100" aria-label="Remove condition">
+      <button type="button" onClick={onRemove} className="ms-auto grid size-7 shrink-0 place-items-center rounded-full text-fg-3 opacity-60 transition hover:bg-down-soft hover:text-down group-hover:opacity-100" aria-label={t("developer.builder.removeCondition")}>
         <Trash2 className="size-3.5" />
       </button>
     </div>
@@ -171,6 +179,7 @@ function ConditionRow({ c, onChange, onRemove, tone, meta, baseTf }: { c: Condit
 }
 
 export function RuleSetEditor({ title, sub, tone, rs, onChange, meta, baseTf }: { title: string; sub: string; tone: Tone; rs: RuleSet; onChange: (r: RuleSet) => void; meta: Meta; baseTf: string }) {
+  const t = useT();
   const setGroup = (gi: number, patch: Partial<RuleSet["groups"][number]>) => onChange({ ...rs, groups: rs.groups.map((g, i) => (i === gi ? { ...g, ...patch } : g)) });
   const add = (gi: number | null, c: Condition) => {
     if (gi === null || !rs.groups[gi]) onChange({ ...rs, groups: [...rs.groups, { logic: "all", conditions: [c] }] });
@@ -185,25 +194,25 @@ export function RuleSetEditor({ title, sub, tone, rs, onChange, meta, baseTf }: 
           <Plus className="size-3.5" /> {label}
         </button>
       }
-      items={PRESETS.map((p) => ({ label: p.label, onSelect: () => add(gi, p.make()) }))}
+      items={PRESETS.map((p) => ({ label: p.key ? t(p.key) : p.label, onSelect: () => add(gi, p.make()) }))}
     />
   );
   return (
-    <div className="k-row relative overflow-hidden py-3 pl-5 pr-3">
-      <span className={cn("absolute inset-y-0 left-0 w-[3px]", TONE[tone].bar)} />
+    <div className="k-row relative overflow-hidden py-3 ps-5 pe-3">
+      <span className={cn("absolute inset-y-0 start-0 w-[3px]", TONE[tone].bar)} />
       <div className="flex flex-wrap items-center gap-2">
         <div className={cn("text-[11.5px] font-semibold uppercase tracking-[0.08em]", TONE[tone].label)}>{title}</div>
         <div className="text-[11px] text-fg-3">{sub}</div>
         {rs.groups.length > 1 && (
-          <button type="button" onClick={() => onChange({ ...rs, logic: rs.logic === "all" ? "any" : "all" })} className="ml-auto inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 px-2 py-0.5 font-mono text-[10px] font-semibold tracking-wider text-fg-2 hover:border-gold/50 hover:text-gold">
-            GROUPS: {rs.logic === "all" ? "ALL" : "ANY"} <Repeat2 className="size-3" />
+          <button type="button" onClick={() => onChange({ ...rs, logic: rs.logic === "all" ? "any" : "all" })} className="ms-auto inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 px-2 py-0.5 font-mono text-[10px] font-semibold tracking-wider text-fg-2 hover:border-gold/50 hover:text-gold">
+            {rs.logic === "all" ? t("developer.builder.groupsAll") : t("developer.builder.groupsAny")} <Repeat2 className="size-3" />
           </button>
         )}
       </div>
       {rs.groups.length === 0 ? (
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-fg-3">
-          <span>No rule.</span>
-          {addMenu(null, "Add condition")}
+          <span>{t("developer.builder.noRule")}</span>
+          {addMenu(null, t("developer.builder.addCondition"))}
         </div>
       ) : (
         <div className="mt-2 space-y-2">
@@ -211,8 +220,8 @@ export function RuleSetEditor({ title, sub, tone, rs, onChange, meta, baseTf }: 
             <div key={gi} className="rounded-[12px] border border-line/70 bg-surface-2/30 p-2">
               {rs.groups.length > 1 && (
                 <div className="mb-1 flex items-center gap-2 px-1 text-[10.5px] uppercase tracking-wider text-fg-3">
-                  Group {gi + 1}
-                  <button type="button" className="ml-auto grid size-6 place-items-center rounded-full hover:bg-down-soft hover:text-down" aria-label="Remove group" onClick={() => onChange({ ...rs, groups: rs.groups.filter((_, i) => i !== gi) })}>
+                  {t("developer.builder.group", { n: gi + 1 })}
+                  <button type="button" className="ms-auto grid size-6 place-items-center rounded-full hover:bg-down-soft hover:text-down" aria-label={t("developer.builder.removeGroup")} onClick={() => onChange({ ...rs, groups: rs.groups.filter((_, i) => i !== gi) })}>
                     <X className="size-3" />
                   </button>
                 </div>
@@ -220,8 +229,8 @@ export function RuleSetEditor({ title, sub, tone, rs, onChange, meta, baseTf }: 
               {g.conditions.map((c, ci) => (
                 <React.Fragment key={ci}>
                   {ci > 0 && (
-                    <button type="button" onClick={() => setGroup(gi, { logic: g.logic === "all" ? "any" : "all" })} className="ml-3 inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 px-2 py-0.5 font-mono text-[10px] font-semibold tracking-wider text-fg-2 transition hover:border-gold/50 hover:text-gold">
-                      {g.logic === "all" ? "AND" : "OR"} <Repeat2 className="size-3" />
+                    <button type="button" onClick={() => setGroup(gi, { logic: g.logic === "all" ? "any" : "all" })} className="ms-3 inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 px-2 py-0.5 font-mono text-[10px] font-semibold tracking-wider text-fg-2 transition hover:border-gold/50 hover:text-gold">
+                      {g.logic === "all" ? t("developer.builder.and") : t("developer.builder.or")} <Repeat2 className="size-3" />
                     </button>
                   )}
                   <ConditionRow
@@ -238,10 +247,10 @@ export function RuleSetEditor({ title, sub, tone, rs, onChange, meta, baseTf }: 
                   />
                 </React.Fragment>
               ))}
-              <div className="mt-1 px-1">{addMenu(gi, g.logic === "all" ? "And…" : "Or…")}</div>
+              <div className="mt-1 px-1">{addMenu(gi, g.logic === "all" ? t("developer.builder.andMore") : t("developer.builder.orMore"))}</div>
             </div>
           ))}
-          <div>{addMenu(null, "Add OR group")}</div>
+          <div>{addMenu(null, t("developer.builder.addOrGroup"))}</div>
         </div>
       )}
     </div>
@@ -254,7 +263,7 @@ export function RuleSetEditor({ title, sub, tone, rs, onChange, meta, baseTf }: 
 
 const DIST_LABEL: Record<string, string> = { none: "Off", points: "Points", pips: "Pips", price: "Price distance", percent: "% of entry", atr: "× ATR", level: "Fixed level", rr: "× stop (R)" };
 const TRAIL_LABEL: Record<string, string> = { none: "Off", points: "Points", pips: "Pips", atr: "× ATR" };
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAYS = ["developer.day.sun", "developer.day.mon", "developer.day.tue", "developer.day.wed", "developer.day.thu", "developer.day.fri", "developer.day.sat"] as const;
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -269,82 +278,83 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
 }
 
 export function SettingsEditor({ spec, onChange, meta }: { spec: StrategySpec; onChange: (s: StrategySpec) => void; meta: Meta }) {
+  const t = useT();
   const set = (p: Partial<StrategySpec>) => onChange({ ...spec, ...p });
   const dist = (key: "sl" | "tp") => {
     const d = spec[key];
     const modes = meta.distanceModes.filter((m) => key === "tp" || m !== "rr");
     return (
       <>
-        <Pick label={key === "sl" ? "Stop loss mode" : "Take profit mode"} value={d.mode} onChange={(mode) => set({ [key]: { ...d, mode } } as Partial<StrategySpec>)} options={modes.map((m) => ({ value: m, label: DIST_LABEL[m] ?? m }))} width={180} tone={d.mode === "none" ? "neutral" : key === "sl" ? "down" : "up"} />
-        {d.mode !== "none" && <NumInput label={`${key} value`} value={d.value} min={0} step={d.mode === "price" || d.mode === "level" ? 0.0001 : d.mode === "rr" || d.mode === "atr" ? 0.1 : 1} onChange={(value) => set({ [key]: { ...d, value } } as Partial<StrategySpec>)} />}
-        {d.mode === "atr" && <NumInput label="ATR period" value={d.atrPeriod} min={1} onChange={(atrPeriod) => set({ [key]: { ...d, atrPeriod: Math.round(atrPeriod) } } as Partial<StrategySpec>)} suffix="bars" />}
+        <Pick label={key === "sl" ? t("developer.builder.slMode") : t("developer.builder.tpMode")} value={d.mode} onChange={(mode) => set({ [key]: { ...d, mode } } as Partial<StrategySpec>)} options={modes.map((m) => ({ value: m, label: t.dyn(`developer.dist.${m}`, DIST_LABEL[m] ?? m) }))} width={180} tone={d.mode === "none" ? "neutral" : key === "sl" ? "down" : "up"} />
+        {d.mode !== "none" && <NumInput label={key === "sl" ? t("developer.builder.slValue") : t("developer.builder.tpValue")} value={d.value} min={0} step={d.mode === "price" || d.mode === "level" ? 0.0001 : d.mode === "rr" || d.mode === "atr" ? 0.1 : 1} onChange={(value) => set({ [key]: { ...d, value } } as Partial<StrategySpec>)} />}
+        {d.mode === "atr" && <NumInput label={t("developer.builder.atrPeriod")} value={d.atrPeriod} min={1} onChange={(atrPeriod) => set({ [key]: { ...d, atrPeriod: Math.round(atrPeriod) } } as Partial<StrategySpec>)} suffix={t("developer.unit.bars")} />}
       </>
     );
   };
   return (
     <div className="grid grid-cols-1 gap-x-8 lg:grid-cols-2">
       <div>
-        <Row label="Position size" hint={spec.sizing.mode === "risk" ? "% of balance risked per trade (needs a stop)" : "Fixed lots per order"}>
-          <Segmented size="sm" value={spec.sizing.mode} onChange={(mode) => set({ sizing: { ...spec.sizing, mode } })} options={[{ value: "lots", label: "Lots" }, { value: "risk", label: "Risk %" }]} />
+        <Row label={t("developer.builder.positionSize")} hint={spec.sizing.mode === "risk" ? t("developer.builder.riskHint") : t("developer.builder.lotsHint")}>
+          <Segmented size="sm" value={spec.sizing.mode} onChange={(mode) => set({ sizing: { ...spec.sizing, mode } })} options={[{ value: "lots", label: t("developer.builder.lots") }, { value: "risk", label: t("developer.builder.riskPct") }]} />
           {spec.sizing.mode === "lots" ? (
-            <NumInput label="Lots" value={spec.sizing.lots} step={0.01} min={0} onChange={(lots) => set({ sizing: { ...spec.sizing, lots } })} suffix="lot" />
+            <NumInput label={t("developer.builder.lots")} value={spec.sizing.lots} step={0.01} min={0} onChange={(lots) => set({ sizing: { ...spec.sizing, lots } })} suffix={t("developer.unit.lot")} />
           ) : (
-            <NumInput label="Risk %" value={spec.sizing.riskPct} step={0.1} min={0} onChange={(riskPct) => set({ sizing: { ...spec.sizing, riskPct } })} suffix="%" />
+            <NumInput label={t("developer.builder.riskPct")} value={spec.sizing.riskPct} step={0.1} min={0} onChange={(riskPct) => set({ sizing: { ...spec.sizing, riskPct } })} suffix="%" />
           )}
         </Row>
-        <Row label="Max lots per order" hint="Hard cap after sizing">
-          <NumInput label="Max lots" value={spec.maxLots} step={0.01} min={0} onChange={(maxLots) => set({ maxLots })} suffix="lot" />
+        <Row label={t("developer.builder.maxLotsPerOrder")} hint={t("developer.builder.maxLotsHint")}>
+          <NumInput label={t("developer.builder.maxLots")} value={spec.maxLots} step={0.01} min={0} onChange={(maxLots) => set({ maxLots })} suffix={t("developer.unit.lot")} />
         </Row>
-        <Row label="Stop loss">{dist("sl")}</Row>
-        <Row label="Take profit">{dist("tp")}</Row>
-        <Row label="Trailing stop" hint="Starts once the trade is that far in profit">
-          <Pick label="Trailing mode" value={spec.trailing.mode} onChange={(mode) => set({ trailing: { ...spec.trailing, mode } })} options={meta.trailModes.map((m) => ({ value: m, label: TRAIL_LABEL[m] ?? m }))} width={160} tone={spec.trailing.mode === "none" ? "neutral" : "gold"} />
-          {spec.trailing.mode !== "none" && <NumInput label="Trailing distance" value={spec.trailing.value} min={0} step={spec.trailing.mode === "atr" ? 0.1 : 1} onChange={(value) => set({ trailing: { ...spec.trailing, value } })} />}
+        <Row label={t("developer.builder.stopLoss")}>{dist("sl")}</Row>
+        <Row label={t("developer.builder.takeProfit")}>{dist("tp")}</Row>
+        <Row label={t("developer.builder.trailingStop")} hint={t("developer.builder.trailingHint")}>
+          <Pick label={t("developer.builder.trailingMode")} value={spec.trailing.mode} onChange={(mode) => set({ trailing: { ...spec.trailing, mode } })} options={meta.trailModes.map((m) => ({ value: m, label: t.dyn(`developer.dist.${m}`, TRAIL_LABEL[m] ?? m) }))} width={160} tone={spec.trailing.mode === "none" ? "neutral" : "gold"} />
+          {spec.trailing.mode !== "none" && <NumInput label={t("developer.builder.trailingDistance")} value={spec.trailing.value} min={0} step={spec.trailing.mode === "atr" ? 0.1 : 1} onChange={(value) => set({ trailing: { ...spec.trailing, value } })} />}
         </Row>
-        <Row label="Breakeven" hint="Move the stop to entry after N points of profit">
-          <NumInput label="Breakeven trigger" value={spec.trailing.breakevenTrigger} min={0} onChange={(breakevenTrigger) => set({ trailing: { ...spec.trailing, breakevenTrigger } })} suffix="pts" />
+        <Row label={t("developer.builder.breakeven")} hint={t("developer.builder.breakevenHint")}>
+          <NumInput label={t("developer.builder.breakevenTrigger")} value={spec.trailing.breakevenTrigger} min={0} onChange={(breakevenTrigger) => set({ trailing: { ...spec.trailing, breakevenTrigger } })} suffix={t("developer.unit.pts")} />
           <span>+</span>
-          <NumInput label="Breakeven offset" value={spec.trailing.breakevenOffset} onChange={(breakevenOffset) => set({ trailing: { ...spec.trailing, breakevenOffset } })} suffix="pts" />
+          <NumInput label={t("developer.builder.breakevenOffset")} value={spec.trailing.breakevenOffset} onChange={(breakevenOffset) => set({ trailing: { ...spec.trailing, breakevenOffset } })} suffix={t("developer.unit.pts")} />
         </Row>
       </div>
       <div>
-        <Row label="Trading window" hint="Server time (GMT+2 / GMT+3); empty = all day">
+        <Row label={t("developer.builder.tradingWindow")} hint={t("developer.builder.tradingWindowHint")}>
           {spec.sessions.map((w, i) => (
-            <span key={i} className="inline-flex items-center gap-1 rounded-[10px] border border-line bg-surface-2 px-2 py-1 font-mono text-[12px] text-fg-2">
-              <input aria-label="Session start" value={w.start} onChange={(e) => set({ sessions: spec.sessions.map((x, j) => (j === i ? { ...x, start: e.target.value } : x)) })} className="w-[5ch] bg-transparent text-center outline-none" />–
-              <input aria-label="Session end" value={w.end} onChange={(e) => set({ sessions: spec.sessions.map((x, j) => (j === i ? { ...x, end: e.target.value } : x)) })} className="w-[5ch] bg-transparent text-center outline-none" />
-              <button type="button" aria-label="Remove window" onClick={() => set({ sessions: spec.sessions.filter((_, j) => j !== i) })} className="text-fg-3 hover:text-down">
+            <span key={i} className="inline-flex items-center gap-1 rounded-[10px] border border-line bg-surface-2 px-2 py-1 font-mono text-[12px] text-fg-2" dir="ltr">
+              <input aria-label={t("developer.builder.sessionStart")} value={w.start} onChange={(e) => set({ sessions: spec.sessions.map((x, j) => (j === i ? { ...x, start: e.target.value } : x)) })} className="w-[5ch] bg-transparent text-center outline-none" />–
+              <input aria-label={t("developer.builder.sessionEnd")} value={w.end} onChange={(e) => set({ sessions: spec.sessions.map((x, j) => (j === i ? { ...x, end: e.target.value } : x)) })} className="w-[5ch] bg-transparent text-center outline-none" />
+              <button type="button" aria-label={t("developer.builder.removeWindow")} onClick={() => set({ sessions: spec.sessions.filter((_, j) => j !== i) })} className="text-fg-3 hover:text-down">
                 <X className="size-3" />
               </button>
             </span>
           ))}
           {spec.sessions.length < 4 && (
             <button type="button" onClick={() => set({ sessions: [...spec.sessions, { start: "08:00", end: "17:00" }] })} className="inline-flex h-7 items-center gap-1 rounded-full border border-dashed border-line px-2.5 text-[12px] text-fg-2 hover:border-ember/50 hover:text-ember">
-              <Plus className="size-3.5" /> Window
+              <Plus className="size-3.5" /> {t("developer.builder.window")}
             </button>
           )}
         </Row>
-        <Row label="Days" hint="Empty = every day">
+        <Row label={t("developer.builder.days")} hint={t("developer.builder.daysHint")}>
           {DAYS.map((d, i) => {
             const on = spec.days.includes(i);
             return (
               <button key={d} type="button" aria-pressed={on} onClick={() => set({ days: on ? spec.days.filter((x) => x !== i) : [...spec.days, i].sort() })} className={cn("h-7 rounded-full border px-2 text-[11.5px] transition", on ? "border-ember/40 bg-ember-soft text-ember" : "border-line text-fg-3 hover:text-fg")}>
-                {d}
+                {t(d)}
               </button>
             );
           })}
         </Row>
-        <Row label="Close outside the window">
-          <Toggle checked={spec.closeOutsideSession} onChange={(closeOutsideSession) => set({ closeOutsideSession })} label="Close outside the trading window" />
+        <Row label={t("developer.builder.closeOutside")}>
+          <Toggle checked={spec.closeOutsideSession} onChange={(closeOutsideSession) => set({ closeOutsideSession })} label={t("developer.builder.closeOutsideAria")} />
         </Row>
-        <Row label="Max trades per day" hint="0 = unlimited">
-          <NumInput label="Max trades per day" value={spec.maxTradesPerDay} min={0} onChange={(v) => set({ maxTradesPerDay: Math.round(v) })} />
+        <Row label={t("developer.builder.maxTradesPerDay")} hint={t("developer.builder.maxTradesHint")}>
+          <NumInput label={t("developer.builder.maxTradesPerDay")} value={spec.maxTradesPerDay} min={0} onChange={(v) => set({ maxTradesPerDay: Math.round(v) })} />
         </Row>
-        <Row label="Max daily loss" hint="USD, realized + floating; 0 = off">
-          <NumInput label="Max daily loss" value={spec.maxDailyLoss} min={0} onChange={(maxDailyLoss) => set({ maxDailyLoss })} suffix="USD" />
+        <Row label={t("developer.builder.maxDailyLoss")} hint={t("developer.builder.maxDailyLossHint")}>
+          <NumInput label={t("developer.builder.maxDailyLoss")} value={spec.maxDailyLoss} min={0} onChange={(maxDailyLoss) => set({ maxDailyLoss })} suffix="USD" />
         </Row>
-        <Row label="One position at a time">
-          <Toggle checked={spec.oneAtATime} onChange={(oneAtATime) => set({ oneAtATime })} label="One position at a time" />
+        <Row label={t("developer.builder.oneAtATime")}>
+          <Toggle checked={spec.oneAtATime} onChange={(oneAtATime) => set({ oneAtATime })} label={t("developer.builder.oneAtATime")} />
         </Row>
       </div>
     </div>
@@ -352,6 +362,7 @@ export function SettingsEditor({ spec, onChange, meta }: { spec: StrategySpec; o
 }
 
 export function SymbolPicker({ spec, onChange, meta }: { spec: StrategySpec; onChange: (s: StrategySpec) => void; meta: Meta }) {
+  const t = useT();
   const groups = ["forex", "metals", "indices", "energies", "crypto", "stocks"];
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -359,7 +370,7 @@ export function SymbolPicker({ spec, onChange, meta }: { spec: StrategySpec; onC
         align="start"
         width={240}
         trigger={
-          <button type="button" aria-label="Symbol" className={cn(chipBase, TONE.neutral.chip, "h-9 gap-2 px-3")}>
+          <button type="button" aria-label={t("developer.builder.symbol")} className={cn(chipBase, TONE.neutral.chip, "h-9 gap-2 px-3")}>
             <SymbolAvatar symbol={spec.symbol} size={18} />
             <span className="font-mono">{spec.symbol}</span>
             <ChevronDown className="size-3 opacity-60" />
@@ -367,23 +378,24 @@ export function SymbolPicker({ spec, onChange, meta }: { spec: StrategySpec; onC
         }
         items={groups.flatMap((g, gi) => [
           ...(gi > 0 ? (["sep"] as const) : []),
-          ...meta.symbols.filter((s) => s.assetClass === g).map((s) => ({ label: s.symbol, hint: s.symbol === spec.symbol ? <Check className="size-3.5 text-ember" /> : g, onSelect: () => onChange({ ...spec, symbol: s.symbol }) })),
+          ...meta.symbols.filter((s) => s.assetClass === g).map((s) => ({ label: s.symbol, hint: s.symbol === spec.symbol ? <Check className="size-3.5 text-ember" /> : t.dyn(`developer.assetClass.${g}`, g), onSelect: () => onChange({ ...spec, symbol: s.symbol }) })),
         ])}
       />
-      <Segmented size="sm" value={spec.timeframe} onChange={(timeframe) => onChange({ ...spec, timeframe })} options={meta.timeframes.filter((t) => t !== "MN").map((t) => ({ value: t, label: t }))} />
+      <Segmented size="sm" value={spec.timeframe} onChange={(timeframe) => onChange({ ...spec, timeframe })} options={meta.timeframes.filter((tf) => tf !== "MN").map((tf) => ({ value: tf, label: tf }))} />
     </div>
   );
 }
 
 export function VisualEditor({ spec, onChange, meta }: { spec: StrategySpec; onChange: (s: StrategySpec) => void; meta: Meta }) {
+  const t = useT();
   const set = (p: Partial<StrategySpec>) => onChange({ ...spec, ...p });
   return (
     <div className="space-y-3">
-      <RuleSetEditor title="Buy when" sub="entry · long" tone="up" rs={spec.long} onChange={(long) => set({ long })} meta={meta} baseTf={spec.timeframe} />
-      <RuleSetEditor title="Sell when" sub="entry · short" tone="down" rs={spec.short} onChange={(short) => set({ short })} meta={meta} baseTf={spec.timeframe} />
+      <RuleSetEditor title={t("developer.builder.buyWhen")} sub={t("developer.builder.entryLong")} tone="up" rs={spec.long} onChange={(long) => set({ long })} meta={meta} baseTf={spec.timeframe} />
+      <RuleSetEditor title={t("developer.builder.sellWhen")} sub={t("developer.builder.entryShort")} tone="down" rs={spec.short} onChange={(short) => set({ short })} meta={meta} baseTf={spec.timeframe} />
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-        <RuleSetEditor title="Exit buys" sub="besides SL / TP" tone="gold" rs={spec.exitLong} onChange={(exitLong) => set({ exitLong })} meta={meta} baseTf={spec.timeframe} />
-        <RuleSetEditor title="Exit sells" sub="besides SL / TP" tone="gold" rs={spec.exitShort} onChange={(exitShort) => set({ exitShort })} meta={meta} baseTf={spec.timeframe} />
+        <RuleSetEditor title={t("developer.builder.exitBuys")} sub={t("developer.builder.besidesSlTp")} tone="gold" rs={spec.exitLong} onChange={(exitLong) => set({ exitLong })} meta={meta} baseTf={spec.timeframe} />
+        <RuleSetEditor title={t("developer.builder.exitSells")} sub={t("developer.builder.besidesSlTp")} tone="gold" rs={spec.exitShort} onChange={(exitShort) => set({ exitShort })} meta={meta} baseTf={spec.timeframe} />
       </div>
     </div>
   );

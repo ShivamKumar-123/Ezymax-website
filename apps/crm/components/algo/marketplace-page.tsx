@@ -7,6 +7,7 @@ import * as React from "react";
 import { BadgeCheck, Building2, Loader2, Plus, Search, Star, Store, Upload, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, EmptyState, EquityChart, PageHeader, Reveal, Segmented, Skeleton, Sparkline, SymbolAvatar, Tabs, Toggle, cn } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 import { NumInput } from "./builder";
 import { algoApi, algoError, fmtDateTime, fmtMoney, fmtPct, useAlgo, type Deployment, type StrategyItem, type TradingAccount } from "./api";
 
@@ -62,36 +63,36 @@ interface ListingDetail extends Listing {
   backtest?: HouseBacktest | null;
 }
 
-const HOUSE_NOTE = "House strategy operated by Kalks: a broker-owned live account running this strategy. The track record is only its own live trades since it started; nothing is simulated or backfilled.";
-
 function HouseChip() {
+  const t = useT();
   return (
     <Chip size="sm" tone="info">
-      <Building2 className="size-3" /> House strategy · Operated by Kalks
+      <Building2 className="size-3" /> {t("developer.market.houseChip")}
     </Chip>
   );
 }
 
 function BacktestBlock({ b }: { b: HouseBacktest }) {
+  const t = useT();
   const s = b.summary ?? {};
   const data = b.curve.map((p) => ({ time: p.t, value: p.equity })).filter((p) => Number.isFinite(p.time));
-  const range = s.firstBar && s.lastBar ? `${new Date(s.firstBar * 1000).toISOString().slice(0, 10)} to ${new Date(s.lastBar * 1000).toISOString().slice(0, 10)}` : null;
+  const range = s.firstBar && s.lastBar ? t("developer.market.range", { from: new Date(s.firstBar * 1000).toISOString().slice(0, 10), to: new Date(s.lastBar * 1000).toISOString().slice(0, 10) }) : null;
   return (
     <div className="rounded-[12px] border border-warn/30 bg-warn-soft p-3" data-testid="house-backtest">
       <div className="flex flex-wrap items-center gap-2">
         <Chip size="sm" tone="warn">
-          Backtest · simulated
+          {t("developer.market.backtestSimulated")}
         </Chip>
         {range && <span className="text-[11.5px] text-fg-3">{range}</span>}
       </div>
-      <p className="mt-1.5 text-[11.5px] text-fg-2">{b.label}. It shows how the rules would have traded historical prices with this account type&apos;s costs; it is not part of the live track record above.</p>
+      <p className="mt-1.5 text-[11.5px] text-fg-2">{b.label}. {t("developer.market.backtestNote")}</p>
       <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {(
           [
-            ["Return", s.returnPct !== undefined ? fmtPct(s.returnPct, 2) : "—"],
-            ["Win rate", s.winRate !== undefined ? `${s.winRate.toFixed(1)}%` : "—"],
-            ["Max DD", s.maxDrawdownPct !== undefined ? `${s.maxDrawdownPct.toFixed(2)}%` : "—"],
-            ["Trades", s.trades !== undefined ? String(s.trades) : "—"],
+            [t("developer.market.return"), s.returnPct !== undefined ? fmtPct(s.returnPct, 2) : "—"],
+            [t("developer.dep.winRate"), s.winRate !== undefined ? `${s.winRate.toFixed(1)}%` : "—"],
+            [t("developer.market.maxDd"), s.maxDrawdownPct !== undefined ? `${s.maxDrawdownPct.toFixed(2)}%` : "—"],
+            [t("developer.market.trades"), s.trades !== undefined ? String(s.trades) : "—"],
           ] as const
         ).map(([k, v]) => (
           <div key={k} className="rounded-[10px] bg-surface/60 px-2.5 py-1.5">
@@ -120,15 +121,16 @@ function Stars({ v, size = 12 }: { v: number; size?: number }) {
 }
 
 function ListingCard({ l, subscribed, onOpen }: { l: Listing; subscribed: boolean; onOpen: () => void }) {
+  const t = useT();
   const curve = (l.track.curve ?? []) as number[];
   return (
-    <button type="button" onClick={onOpen} className="k-card group flex flex-col p-5 text-left transition hover:border-[var(--k-border-top)]" data-testid={`listing-${l.id}`}>
+    <button type="button" onClick={onOpen} className="k-card group flex flex-col p-5 text-start transition hover:border-[var(--k-border-top)]" data-testid={`listing-${l.id}`}>
       <div className="flex items-start gap-3">
         <SymbolAvatar symbol={l.symbol} size={28} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[15px] font-medium text-fg">{l.title}</div>
           <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-fg-3">
-            <span>by {l.author}</span>·<span className="font-mono">{l.symbol} {l.timeframe}</span>
+            <span>{t("developer.market.by", { author: l.author })}</span>·<span className="font-mono" dir="ltr">{l.symbol} {l.timeframe}</span>
           </div>
           {l.house && (
             <div className="mt-1.5">
@@ -136,37 +138,37 @@ function ListingCard({ l, subscribed, onOpen }: { l: Listing; subscribed: boolea
             </div>
           )}
         </div>
-        <Chip size="sm" tone={l.priceMonthly > 0 ? "gold" : "up"}>{l.priceMonthly > 0 ? `${l.priceMonthly} USDT/mo` : "Free"}</Chip>
+        <Chip size="sm" tone={l.priceMonthly > 0 ? "gold" : "up"}>{l.priceMonthly > 0 ? t("developer.market.pricePerMo", { price: l.priceMonthly }) : t("developer.market.free")}</Chip>
       </div>
       <div className="mt-4 flex items-end justify-between gap-3">
         <div>
           <div className={cn("k-num text-[24px] font-semibold", l.track.returnPct >= 0 ? "text-up" : "text-down")}>{fmtPct(l.track.returnPct, 2)}</div>
           <div className="text-[11px] text-fg-3">
-            verified {l.track.accountType} · {l.track.days.toFixed(1)} days
+            {t("developer.market.verifiedDays", { type: t.dyn(`developer.acctType.${l.track.accountType}`, l.track.accountType), days: l.track.days.toFixed(1) })}
           </div>
         </div>
         {curve.length > 1 && <Sparkline data={curve} width={120} height={36} tone={l.track.returnPct >= 0 ? "gold" : "down"} />}
       </div>
       <div className="mt-4 grid grid-cols-3 gap-2 text-[11px]">
         <div className="rounded-[10px] bg-surface-2/60 px-2.5 py-1.5">
-          <div className="text-fg-3">Win rate</div>
+          <div className="text-fg-3">{t("developer.dep.winRate")}</div>
           <div className="k-num text-[13px] text-fg">{l.track.winRate.toFixed(1)}%</div>
         </div>
         <div className="rounded-[10px] bg-surface-2/60 px-2.5 py-1.5">
-          <div className="text-fg-3">Max DD</div>
+          <div className="text-fg-3">{t("developer.market.maxDd")}</div>
           <div className="k-num text-[13px] text-down">{l.track.maxDrawdownPct.toFixed(1)}%</div>
         </div>
         <div className="rounded-[10px] bg-surface-2/60 px-2.5 py-1.5">
-          <div className="text-fg-3">Trades</div>
+          <div className="text-fg-3">{t("developer.market.trades")}</div>
           <div className="k-num text-[13px] text-fg">{l.track.trades}</div>
         </div>
       </div>
       <div className="mt-3 flex items-center gap-2 text-[11.5px] text-fg-3">
         <Stars v={l.rating} /> <span>({l.ratings})</span>
-        <Users className="ml-2 size-3.5" /> {l.subscribers}
+        <Users className="ms-2 size-3.5" /> {l.subscribers}
         {subscribed && (
-          <Chip size="sm" tone="ember" className="ml-auto">
-            Subscribed
+          <Chip size="sm" tone="ember" className="ms-auto">
+            {t("developer.market.subscribed")}
           </Chip>
         )}
       </div>
@@ -175,6 +177,7 @@ function ListingCard({ l, subscribed, onOpen }: { l: Listing; subscribed: boolea
 }
 
 function ListingDialog({ id, onClose, accounts, onChanged }: { id: number | null; onClose: () => void; accounts: TradingAccount[]; onChanged: () => void }) {
+  const t = useT();
   const d = useAlgo<ListingDetail>(id ? `market/listings/${id}` : null);
   const [mode, setMode] = React.useState<"copy" | "clone">("copy");
   const [login, setLogin] = React.useState<number | null>(null);
@@ -191,11 +194,11 @@ function ListingDialog({ id, onClose, accounts, onChanged }: { id: number | null
     setBusy(true);
     try {
       const r = await algoApi<{ deploymentId: number | null; clonedStrategyId: number | null; charged: number }>(`market/listings/${l.id}/subscribe`, { body: { mode, login: mode === "copy" ? login : undefined, risk: mult !== 1 ? { lotMultiplier: mult } : undefined } });
-      toast.success(mode === "copy" ? `Copying “${l.title}” on #${login}` : `“${l.title}” cloned to your strategies`, { description: r.charged ? `${r.charged} USDT charged from your wallet` : "Free subscription" });
+      toast.success(mode === "copy" ? t("developer.market.copyingToast", { title: l.title, login: login ?? "" }) : t("developer.market.clonedToast", { title: l.title }), { description: r.charged ? t("developer.market.charged", { amount: r.charged }) : t("developer.market.freeSubscription") });
       d.reload();
       onChanged();
     } catch (e) {
-      algoError("Couldn't subscribe", e);
+      algoError(t("developer.market.subscribeFailed"), e);
     } finally {
       setBusy(false);
     }
@@ -204,29 +207,29 @@ function ListingDialog({ id, onClose, accounts, onChanged }: { id: number | null
     if (!l?.subscription) return;
     try {
       const r = await algoApi<{ status: string }>(`market/subscriptions/${l.subscription.id}/cancel`, { body: {} });
-      toast.success(`Subscription ${r.status}`);
+      toast.success(t("developer.market.subscriptionStatus", { status: t.dyn(`developer.subStatus.${r.status}`, r.status) }));
       d.reload();
       onChanged();
     } catch (e) {
-      algoError("Couldn't cancel", e);
+      algoError(t("developer.bt.cancelFailed"), e);
     }
   };
   const review = async () => {
     if (!l) return;
     try {
       await algoApi(`market/listings/${l.id}/reviews`, { body: { rating, comment } });
-      toast.success("Review saved");
+      toast.success(t("developer.market.reviewSaved"));
       setComment("");
       d.reload();
       onChanged();
     } catch (e) {
-      algoError("Couldn't save the review", e);
+      algoError(t("developer.market.reviewFailed"), e);
     }
   };
   const curve = Array.isArray(l?.track.curve) ? (l!.track.curve as { day: string; equity: number }[]).filter((p) => typeof p === "object").map((p) => ({ time: Math.floor(new Date(p.day).getTime() / 1000), value: p.equity })) : [];
   const active = l?.subscription?.status === "active";
   return (
-    <Dialog open={id !== null} onOpenChange={(o) => !o && onClose()} title={l?.title ?? "Strategy"} description={l ? `by ${l.author} · ${l.symbol} ${l.timeframe}` : undefined} side="right">
+    <Dialog open={id !== null} onOpenChange={(o) => !o && onClose()} title={l?.title ?? t("developer.bt.strategy")} description={l ? `${t("developer.market.by", { author: l.author })} · ${l.symbol} ${l.timeframe}` : undefined} side="right">
       {!l ? (
         <Skeleton className="h-96" />
       ) : (
@@ -234,39 +237,43 @@ function ListingDialog({ id, onClose, accounts, onChanged }: { id: number | null
           <div className="flex flex-wrap items-center gap-2">
             {l.house && <HouseChip />}
             <Chip tone="up">
-              <BadgeCheck className="size-3.5" /> Verified {l.track.accountType} track record
+              <BadgeCheck className="size-3.5" /> {t("developer.market.verifiedTrack", { type: t.dyn(`developer.acctType.${l.track.accountType}`, l.track.accountType) })}
             </Chip>
-            <Chip tone={l.priceMonthly > 0 ? "gold" : "up"}>{l.priceMonthly > 0 ? `${l.priceMonthly} USDT / month` : "Free"}</Chip>
-            {l.status !== "approved" && <Chip tone="warn">{l.status}</Chip>}
+            <Chip tone={l.priceMonthly > 0 ? "gold" : "up"}>{l.priceMonthly > 0 ? t("developer.market.pricePerMonth", { price: l.priceMonthly }) : t("developer.market.free")}</Chip>
+            {l.status !== "approved" && <Chip tone="warn">{t.dyn(`developer.listingStatus.${l.status}`, l.status)}</Chip>}
           </div>
           <p className="whitespace-pre-line text-fg-2">{l.description}</p>
-          {l.house && <div className="rounded-[12px] border border-line bg-surface-2/60 px-3 py-2 text-[12px] text-fg-2">{HOUSE_NOTE}</div>}
+          {l.house && <div className="rounded-[12px] border border-line bg-surface-2/60 px-3 py-2 text-[12px] text-fg-2">{t("developer.market.houseNote")}</div>}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {(
               [
-                ["Return", fmtPct(l.track.returnPct, 2), l.track.returnPct >= 0 ? "text-up" : "text-down"],
-                ["Win rate", `${l.track.winRate.toFixed(1)}%`, "text-fg"],
-                ["Max DD", `${l.track.maxDrawdownPct.toFixed(2)}%`, "text-down"],
-                ["Trades", String(l.track.trades), "text-fg"],
+                [t("developer.market.return"), fmtPct(l.track.returnPct, 2), l.track.returnPct >= 0 ? "text-up" : "text-down"],
+                [t("developer.dep.winRate"), `${l.track.winRate.toFixed(1)}%`, "text-fg"],
+                [t("developer.market.maxDd"), `${l.track.maxDrawdownPct.toFixed(2)}%`, "text-down"],
+                [t("developer.market.trades"), String(l.track.trades), "text-fg"],
               ] as const
-            ).map(([k, v, t]) => (
+            ).map(([k, v, tone]) => (
               <div key={k} className="rounded-[12px] bg-surface-2/60 px-3 py-2">
                 <div className="text-[10.5px] uppercase text-fg-3">{k}</div>
-                <div className={cn("k-num text-[16px] font-semibold", t)}>{v}</div>
+                <div className={cn("k-num text-[16px] font-semibold", tone)}>{v}</div>
               </div>
             ))}
           </div>
           {curve.length > 1 && <EquityChart data={curve} height={150} showVolume={false} color="gold" />}
           <div className="text-[11.5px] text-fg-3">
-            Track record from the author's own deployment on Kalks since {fmtDateTime(l.track.since ?? null).slice(0, 10)}: {l.track.days.toFixed(1)} days, net {fmtMoney(l.track.netProfit ?? 0)}. Computed from closed deals on the trading engine, not entered by the author.
+            {t("developer.market.trackNote", { since: fmtDateTime(l.track.since ?? null).slice(0, 10), days: l.track.days.toFixed(1), net: fmtMoney(l.track.netProfit ?? 0) })}
           </div>
           {l.house && l.backtest && <BacktestBlock b={l.backtest} />}
           {l.risk && (
             <div className="rounded-[12px] border border-line p-3 text-[12.5px] text-fg-2">
-              <div className="k-label mb-1.5">Risk settings</div>
-              Size {l.risk.sizing?.mode === "risk" ? `${l.risk.sizing.riskPct}% risk` : `${l.risk.sizing?.lots} lot`} · stop {l.risk.sl?.mode === "none" ? "none" : `${l.risk.sl?.value} ${l.risk.sl?.mode}`} · target {l.risk.tp?.mode === "none" ? "none" : `${l.risk.tp?.value} ${l.risk.tp?.mode}`}
+              <div className="k-label mb-1.5">{t("developer.market.riskSettings")}</div>
+              {t("developer.market.riskLine", {
+                size: l.risk.sizing?.mode === "risk" ? t("developer.market.riskPct", { pct: l.risk.sizing.riskPct }) : t("developer.market.lotSize", { lots: l.risk.sizing?.lots }),
+                stop: l.risk.sl?.mode === "none" ? t("developer.market.none") : `${l.risk.sl?.value} ${t.dyn(`developer.dist.${l.risk.sl?.mode}`, l.risk.sl?.mode ?? "")}`,
+                target: l.risk.tp?.mode === "none" ? t("developer.market.none") : `${l.risk.tp?.value} ${t.dyn(`developer.dist.${l.risk.tp?.mode}`, l.risk.tp?.mode ?? "")}`,
+              })}
               {l.summary ? (
-                <div className="mt-2 space-y-1 font-mono text-[11.5px]">
+                <div className="mt-2 space-y-1 font-mono text-[11.5px]" dir="ltr">
                   {Object.entries(l.summary).map(([k, v]) => (
                     <div key={k}>
                       <span className="text-fg-3">{k} = </span>
@@ -275,7 +282,7 @@ function ListingDialog({ id, onClose, accounts, onChanged }: { id: number | null
                   ))}
                 </div>
               ) : (
-                <div className="mt-1 text-[11.5px] text-fg-3">Rules are private: copy it to run it on your account.</div>
+                <div className="mt-1 text-[11.5px] text-fg-3">{t("developer.market.rulesPrivate")}</div>
               )}
             </div>
           )}
@@ -284,70 +291,70 @@ function ListingDialog({ id, onClose, accounts, onChanged }: { id: number | null
               {active ? (
                 <div className="space-y-2">
                   <div className="font-medium text-fg">
-                    Subscribed · {l.subscription!.mode === "copy" ? `copying on #${l.subscription!.login}` : "cloned to your strategies"}
+                    {t("developer.market.subscribed")} · {l.subscription!.mode === "copy" ? t("developer.market.copyingOn", { login: l.subscription!.login ?? "" }) : t("developer.market.clonedToStrategies")}
                   </div>
-                  {l.subscription!.periodEnd && <div className="text-[12px] text-fg-3">{l.subscription!.autoRenew ? "Renews" : "Ends"} {fmtDateTime(l.subscription!.periodEnd).slice(0, 10)}</div>}
+                  {l.subscription!.periodEnd && <div className="text-[12px] text-fg-3">{l.subscription!.autoRenew ? t("developer.market.renewsOn", { date: fmtDateTime(l.subscription!.periodEnd).slice(0, 10) }) : t("developer.market.endsOn", { date: fmtDateTime(l.subscription!.periodEnd).slice(0, 10) })}</div>}
                   <div className="flex gap-2">
                     {l.subscription!.deploymentId && (
                       <a href={`/developer/deployments?id=${l.subscription!.deploymentId}`}>
                         <Button size="sm" variant="surface">
-                          Open deployment
+                          {t("developer.market.openDeployment")}
                         </Button>
                       </a>
                     )}
                     {l.subscription!.clonedStrategyId && (
                       <a href={`/developer/strategies?id=${l.subscription!.clonedStrategyId}`}>
                         <Button size="sm" variant="surface">
-                          Open strategy
+                          {t("developer.market.openStrategy")}
                         </Button>
                       </a>
                     )}
                     {l.subscription!.autoRenew && (
                       <Button size="sm" variant="ghost" onClick={cancel}>
-                        Cancel subscription
+                        {t("developer.market.cancelSubscription")}
                       </Button>
                     )}
                   </div>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <Segmented size="sm" value={mode} onChange={setMode} options={[{ value: "copy", label: "Copy to my account" }, ...(l.allowClone ? [{ value: "clone" as const, label: "Clone the rules" }] : [])]} />
+                  <Segmented size="sm" value={mode} onChange={setMode} options={[{ value: "copy", label: t("developer.market.copyToAccount") }, ...(l.allowClone ? [{ value: "clone" as const, label: t("developer.market.cloneRules") }] : [])]} />
                   {mode === "copy" && (
                     <>
                       <div className="flex flex-wrap gap-1.5">
                         {accounts.map((a) => (
                           <button key={a.login} type="button" onClick={() => setLogin(a.login)} className={cn("h-8 rounded-full border px-3 text-[12px]", login === a.login ? "border-ember/40 bg-ember-soft text-ember" : "border-line text-fg-2")}>
-                            {a.type === "live" ? "Live" : "Demo"} #{a.login}
+                            {a.type === "live" ? t("common.live") : t("common.demo")} #{a.login}
                           </button>
                         ))}
                       </div>
                       <div className="flex items-center gap-2 text-[12px] text-fg-3">
-                        Lot multiplier <NumInput label="Lot multiplier" value={mult} step={0.1} min={0.01} onChange={setMult} suffix="×" />
+                        {t("developer.dep.lotMultiplier")} <NumInput label={t("developer.dep.lotMultiplier")} value={mult} step={0.1} min={0.01} onChange={setMult} suffix="×" />
                       </div>
                     </>
                   )}
                   <Button variant="ember" className="w-full" disabled={busy || (mode === "copy" && !login)} onClick={subscribe}>
-                    {busy ? <Loader2 className="animate-spin" /> : null} {l.priceMonthly > 0 ? `Subscribe · ${l.priceMonthly} USDT / month` : "Subscribe for free"}
+                    {busy ? <Loader2 className="animate-spin" /> : null} {l.priceMonthly > 0 ? t("developer.market.subscribePaid", { price: l.priceMonthly }) : t("developer.market.subscribeFree")}
                   </Button>
-                  {l.priceMonthly > 0 && <p className="text-[11px] text-fg-3">Paid from your Kalks wallet (USDT). Renews every 30 days; cancel any time.</p>}
+                  {l.priceMonthly > 0 && <p className="text-[11px] text-fg-3">{t("developer.market.paidNote")}</p>}
                 </div>
               )}
             </div>
           )}
           <div>
-            <div className="k-label mb-2">Reviews ({l.ratings})</div>
+            <div className="k-label mb-2">{t("developer.market.reviews", { n: l.ratings })}</div>
             {l.subscription && !l.isAuthor && (
               <div className="mb-3 space-y-2 rounded-[12px] border border-line p-3">
                 <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <button key={i} type="button" aria-label={`${i} stars`} onClick={() => setRating(i)}>
+                    <button key={i} type="button" aria-label={t("developer.market.stars", { count: i })} onClick={() => setRating(i)}>
                       <Star className={cn("size-4", i <= rating ? "fill-gold text-gold" : "text-fg-3")} />
                     </button>
                   ))}
                 </div>
-                <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} placeholder="How did it trade for you?" className="w-full rounded-[10px] border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-fg outline-none" />
+                <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} placeholder={t("developer.market.reviewPlaceholder")} className="w-full rounded-[10px] border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-fg outline-none" />
                 <Button size="xs" variant="surface" onClick={review}>
-                  Post review
+                  {t("developer.market.postReview")}
                 </Button>
               </div>
             )}
@@ -355,12 +362,12 @@ function ListingDialog({ id, onClose, accounts, onChanged }: { id: number | null
               <div key={r.id} className="border-b border-line/60 py-2">
                 <div className="flex items-center gap-2">
                   <Stars v={r.rating} /> <span className="text-[12px] text-fg-2">{r.user}</span>
-                  <span className="ml-auto text-[11px] text-fg-3">{fmtDateTime(r.createdAt).slice(0, 10)}</span>
+                  <span className="ms-auto text-[11px] text-fg-3">{fmtDateTime(r.createdAt).slice(0, 10)}</span>
                 </div>
                 {r.comment && <p className="mt-1 text-[12.5px] text-fg-2">{r.comment}</p>}
               </div>
             ))}
-            {l.reviews.length === 0 && <p className="text-[12px] text-fg-3">No reviews yet.</p>}
+            {l.reviews.length === 0 && <p className="text-[12px] text-fg-3">{t("developer.market.noReviews")}</p>}
           </div>
         </div>
       )}
@@ -369,6 +376,7 @@ function ListingDialog({ id, onClose, accounts, onChanged }: { id: number | null
 }
 
 function PublishDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenChange: (o: boolean) => void; onDone: () => void }) {
+  const t = useT();
   const strategies = useAlgo<{ items: StrategyItem[] }>(open ? "strategies" : null);
   const deps = useAlgo<{ items: Deployment[] }>(open ? "deployments" : null);
   const [sid, setSid] = React.useState<number | null>(null);
@@ -389,11 +397,11 @@ function PublishDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenCh
     setBusy(true);
     try {
       await algoApi("market/listings", { body: { strategyId: sid, deploymentId: dep, title, description: desc, priceMonthly: price, allowClone: clone } });
-      toast.success("Submitted for review", { description: "It appears in the marketplace once a moderator approves it." });
+      toast.success(t("developer.market.submitted"), { description: t("developer.market.submittedText") });
       onOpenChange(false);
       onDone();
     } catch (e) {
-      algoError("Couldn't publish", e);
+      algoError(t("developer.market.publishFailed"), e);
     } finally {
       setBusy(false);
     }
@@ -402,23 +410,23 @@ function PublishDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenCh
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Publish a strategy"
-      description="Listings show a verified track record from one of your own deployments, never numbers you type."
+      title={t("developer.market.publish")}
+      description={t("developer.market.publishText")}
       width={600}
       footer={
         <>
           <Button variant="surface" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button variant="ember" disabled={busy || !sid || !dep || desc.trim().length < 20} onClick={publish}>
-            {busy ? <Loader2 className="animate-spin" /> : <Upload />} Submit for review
+            {busy ? <Loader2 className="animate-spin" /> : <Upload />} {t("developer.market.submit")}
           </Button>
         </>
       }
     >
       <div className="space-y-4 text-[13px]">
         <div>
-          <div className="text-fg-3">Strategy</div>
+          <div className="text-fg-3">{t("developer.bt.strategy")}</div>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {(strategies.data?.items ?? []).filter((s) => s.valid).map((s) => (
               <button key={s.id} type="button" onClick={() => setSid(s.id)} className={cn("h-8 rounded-full border px-3 text-[12px]", sid === s.id ? "border-ember/40 bg-ember-soft text-ember" : "border-line text-fg-2")}>
@@ -429,14 +437,14 @@ function PublishDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenCh
         </div>
         {sid && (
           <div>
-            <div className="text-fg-3">Track record from</div>
+            <div className="text-fg-3">{t("developer.market.trackFrom")}</div>
             {mine.length === 0 ? (
-              <p className="mt-1 text-[12px] text-warn">Deploy this strategy on one of your accounts first; its closed trades become the verified track record.</p>
+              <p className="mt-1 text-[12px] text-warn">{t("developer.market.deployFirst")}</p>
             ) : (
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {mine.map((d) => (
                   <button key={d.id} type="button" onClick={() => setDep(d.id)} className={cn("h-8 rounded-full border px-3 text-[12px]", dep === d.id ? "border-ember/40 bg-ember-soft text-ember" : "border-line text-fg-2")}>
-                    #{d.login} · {d.accountType} · {d.stats.trades ?? 0} trades
+                    #{d.login} · {t.dyn(`developer.acctType.${d.accountType}`, d.accountType)} · {t("developer.market.nTrades", { count: d.stats.trades ?? 0 })}
                   </button>
                 ))}
               </div>
@@ -444,21 +452,21 @@ function PublishDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenCh
           </div>
         )}
         <label className="block">
-          <span className="text-fg-3">Title</span>
+          <span className="text-fg-3">{t("developer.market.titleLabel")}</span>
           <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} className="mt-1 h-10 w-full rounded-[12px] border border-line bg-surface-2 px-3 text-fg outline-none focus:border-ember/50" />
         </label>
         <label className="block">
-          <span className="text-fg-3">Description (idea, markets, risk; at least 20 characters)</span>
+          <span className="text-fg-3">{t("developer.market.descLabel")}</span>
           <textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={4} maxLength={4000} className="mt-1 w-full rounded-[12px] border border-line bg-surface-2 px-3 py-2 text-fg outline-none focus:border-ember/50" />
         </label>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-fg-3">Price</span>
-            <NumInput label="Monthly price" value={price} min={0} step={5} onChange={setPrice} suffix="USDT / month" />
-            <span className="text-[11.5px] text-fg-3">{price > 0 ? "" : "free"}</span>
+            <span className="text-fg-3">{t("developer.market.price")}</span>
+            <NumInput label={t("developer.market.monthlyPrice")} value={price} min={0} step={5} onChange={setPrice} suffix={t("developer.market.usdtPerMonth")} />
+            <span className="text-[11.5px] text-fg-3">{price > 0 ? "" : t("developer.market.freeLower")}</span>
           </div>
           <label className="flex items-center gap-2 text-fg-2">
-            Allow cloning the rules <Toggle checked={clone} onChange={setClone} label="Allow cloning" />
+            {t("developer.market.allowCloning")} <Toggle checked={clone} onChange={setClone} label={t("developer.market.allowCloningAria")} />
           </label>
         </div>
       </div>
@@ -467,6 +475,7 @@ function PublishDialog({ open, onOpenChange, onDone }: { open: boolean; onOpenCh
 }
 
 export function LiveMarketplacePage() {
+  const t = useT();
   const [q, setQ] = React.useState("");
   const [price, setPrice] = React.useState<"" | "free" | "paid">("");
   const [sort, setSort] = React.useState("updated");
@@ -482,24 +491,24 @@ export function LiveMarketplacePage() {
   return (
     <>
       <PageHeader
-        title="Strategy marketplace"
-        subtitle="Strategies with verified track records from Kalks accounts. Copy one onto your account, or publish your own and earn from subscriptions."
+        title={t("developer.market.title")}
+        subtitle={t("developer.market.subtitle")}
         actions={
           <Button variant="ember" onClick={() => setPublishing(true)}>
-            <Upload /> Publish a strategy
+            <Upload /> {t("developer.market.publish")}
           </Button>
         }
       />
-      <Tabs value={tab} onChange={setTab} tabs={[{ value: "browse", label: "Browse", count: items.length }, { value: "subs", label: "My subscriptions" }, { value: "mine", label: "My listings" }]} className="mb-5" />
+      <Tabs value={tab} onChange={setTab} tabs={[{ value: "browse", label: t("developer.market.browse"), count: items.length }, { value: "subs", label: t("developer.market.mySubs") }, { value: "mine", label: t("developer.market.myListings") }]} className="mb-5" />
       {tab === "browse" && (
         <>
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <div className="flex h-10 min-w-[240px] flex-1 items-center gap-2 rounded-full border border-line bg-surface-2 px-4">
               <Search className="size-4 text-fg-3" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search strategies, authors…" aria-label="Search" className="w-full bg-transparent text-[13.5px] text-fg outline-none placeholder:text-fg-3" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("developer.market.searchPlaceholder")} aria-label={t("common.search")} className="w-full bg-transparent text-[13.5px] text-fg outline-none placeholder:text-fg-3" />
             </div>
-            <Segmented size="sm" value={price || "all"} onChange={(v) => setPrice(v === "all" ? "" : (v as "free" | "paid"))} options={[{ value: "all", label: "All" }, { value: "free", label: "Free" }, { value: "paid", label: "Paid" }]} />
-            <Segmented size="sm" value={sort} onChange={setSort} options={[{ value: "updated", label: "Newest" }, { value: "rating", label: "Top rated" }, { value: "subscribers", label: "Popular" }]} />
+            <Segmented size="sm" value={price || "all"} onChange={(v) => setPrice(v === "all" ? "" : (v as "free" | "paid"))} options={[{ value: "all", label: t("common.all") }, { value: "free", label: t("developer.market.free") }, { value: "paid", label: t("developer.market.paid") }]} />
+            <Segmented size="sm" value={sort} onChange={setSort} options={[{ value: "updated", label: t("developer.market.newest") }, { value: "rating", label: t("developer.market.topRated") }, { value: "subscribers", label: t("developer.market.popular") }]} />
           </div>
           {browse.loading ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -509,7 +518,7 @@ export function LiveMarketplacePage() {
             </div>
           ) : items.length === 0 ? (
             <Card className="grid min-h-[300px] place-items-center">
-              <EmptyState title="No strategies listed yet" text="Be the first: deploy a strategy on a demo account, then publish it with its verified track record." />
+              <EmptyState title={t("developer.market.emptyTitle")} text={t("developer.market.emptyText")} />
             </Card>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -518,21 +527,21 @@ export function LiveMarketplacePage() {
               ))}
             </div>
           )}
-          <p className="mt-4 text-[11.5px] text-fg-3">Past performance does not guarantee future results. Track records come from live or demo accounts on Kalks and are labelled accordingly. Platform fee on paid subscriptions: {browse.data?.platformCutPct ?? 20}%.</p>
+          <p className="mt-4 text-[11.5px] text-fg-3">{t("developer.market.disclaimer", { pct: browse.data?.platformCutPct ?? 20 })}</p>
         </>
       )}
       {tab === "subs" && (
         <Card>
-          <CardHeader icon={<Store />} title="My subscriptions" />
+          <CardHeader icon={<Store />} title={t("developer.market.mySubs")} />
           <div className="overflow-x-auto px-6 pb-6 pt-4">
             <table className="w-full min-w-[640px] text-[13px]">
               <thead className="text-fg-3">
                 <tr>
-                  <th className="py-1.5 text-left font-medium">Strategy</th>
-                  <th className="py-1.5 text-left font-medium">Mode</th>
-                  <th className="py-1.5 text-left font-medium">Status</th>
-                  <th className="py-1.5 text-right font-medium">Price</th>
-                  <th className="py-1.5 text-right font-medium">Renews</th>
+                  <th className="py-1.5 text-start font-medium">{t("developer.bt.strategy")}</th>
+                  <th className="py-1.5 text-start font-medium">{t("developer.market.mode")}</th>
+                  <th className="py-1.5 text-start font-medium">{t("common.status")}</th>
+                  <th className="py-1.5 text-end font-medium">{t("developer.market.price")}</th>
+                  <th className="py-1.5 text-end font-medium">{t("developer.market.renews")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -541,24 +550,24 @@ export function LiveMarketplacePage() {
                     <td className="py-2">
                       <div className="text-fg">{s.title}</div>
                       <div className="font-mono text-[11px] text-fg-3">
-                        {s.symbol} {s.timeframe} · by {s.author}
+                        {s.symbol} {s.timeframe} · {t("developer.market.by", { author: s.author })}
                       </div>
                     </td>
-                    <td className="text-fg-2">{s.mode === "copy" ? `copy on #${s.login}` : "clone"}</td>
+                    <td className="text-fg-2">{s.mode === "copy" ? t("developer.market.copyOn", { login: s.login ?? "" }) : t("developer.market.clone")}</td>
                     <td>
                       <Chip size="sm" tone={s.status === "active" ? "up" : "neutral"}>
-                        {s.status}
+                        {t.dyn(`developer.subStatus.${s.status}`, s.status)}
                       </Chip>
-                      {s.deploymentStatus && <span className="ml-2 text-[11px] text-fg-3">{s.deploymentStatus}</span>}
+                      {s.deploymentStatus && <span className="ms-2 text-[11px] text-fg-3">{t.dyn(`developer.depStatus.${s.deploymentStatus}`, s.deploymentStatus)}</span>}
                     </td>
-                    <td className="k-num text-right">{s.price > 0 ? `${s.price} USDT` : "Free"}</td>
-                    <td className="text-right text-[12px] text-fg-3">{s.periodEnd ? (s.autoRenew ? fmtDateTime(s.periodEnd).slice(0, 10) : `ends ${fmtDateTime(s.periodEnd).slice(0, 10)}`) : "–"}</td>
+                    <td className="k-num text-end tabular-nums">{s.price > 0 ? `${s.price} USDT` : t("developer.market.free")}</td>
+                    <td className="text-end text-[12px] text-fg-3">{s.periodEnd ? (s.autoRenew ? fmtDateTime(s.periodEnd).slice(0, 10) : t("developer.market.endsLower", { date: fmtDateTime(s.periodEnd).slice(0, 10) })) : "–"}</td>
                   </tr>
                 ))}
                 {subs.data && subs.data.items.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-fg-3">
-                      No subscriptions yet
+                      {t("developer.market.noSubs")}
                     </td>
                   </tr>
                 )}
@@ -572,9 +581,9 @@ export function LiveMarketplacePage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {(
               [
-                ["Earned", `${(mine.data?.earned ?? 0).toFixed(2)} USDT`],
-                ["Platform fees", `${(mine.data?.platformFees ?? 0).toFixed(2)} USDT`],
-                ["Payments", String(mine.data?.payments ?? 0)],
+                [t("developer.market.earned"), `${(mine.data?.earned ?? 0).toFixed(2)} USDT`],
+                [t("developer.market.platformFees"), `${(mine.data?.platformFees ?? 0).toFixed(2)} USDT`],
+                [t("developer.market.payments"), String(mine.data?.payments ?? 0)],
               ] as const
             ).map(([k, v]) => (
               <Card key={k} className="px-5 py-4">
@@ -584,24 +593,24 @@ export function LiveMarketplacePage() {
             ))}
           </div>
           <Card>
-            <CardHeader title="My listings" action={<Button size="sm" variant="surface" onClick={() => setPublishing(true)}><Plus /> Publish</Button>} />
+            <CardHeader title={t("developer.market.myListings")} action={<Button size="sm" variant="surface" onClick={() => setPublishing(true)}><Plus /> {t("developer.market.publishShort")}</Button>} />
             <div className="space-y-2 px-6 pb-6 pt-4">
               {(mine.data?.items ?? []).map((l) => (
-                <button key={l.id} type="button" onClick={() => setOpen(l.id)} className="flex w-full items-center gap-3 rounded-[12px] border border-line px-4 py-3 text-left hover:bg-surface-2/50">
+                <button key={l.id} type="button" onClick={() => setOpen(l.id)} className="flex w-full items-center gap-3 rounded-[12px] border border-line px-4 py-3 text-start hover:bg-surface-2/50">
                   <SymbolAvatar symbol={l.symbol} size={20} />
                   <div className="min-w-0">
                     <div className="truncate text-fg">{l.title}</div>
                     <div className="text-[11.5px] text-fg-3">
-                      {l.subscribers} subscribers · {l.priceMonthly > 0 ? `${l.priceMonthly} USDT / month` : "free"}
-                      {l.moderationNote ? ` · moderator: ${l.moderationNote}` : ""}
+                      {t("developer.market.subscribers", { count: l.subscribers })} · {l.priceMonthly > 0 ? t("developer.market.pricePerMonth", { price: l.priceMonthly }) : t("developer.market.freeLower")}
+                      {l.moderationNote ? ` · ${t("developer.market.moderator", { note: l.moderationNote })}` : ""}
                     </div>
                   </div>
-                  <Chip size="sm" tone={l.status === "approved" ? "up" : l.status === "pending" ? "warn" : "down"} className="ml-auto">
-                    {l.status}
+                  <Chip size="sm" tone={l.status === "approved" ? "up" : l.status === "pending" ? "warn" : "down"} className="ms-auto">
+                    {t.dyn(`developer.listingStatus.${l.status}`, l.status)}
                   </Chip>
                 </button>
               ))}
-              {mine.data && mine.data.items.length === 0 && <p className="text-[12.5px] text-fg-3">You haven't published a strategy yet.</p>}
+              {mine.data && mine.data.items.length === 0 && <p className="text-[12.5px] text-fg-3">{t("developer.market.noListings")}</p>}
             </div>
           </Card>
         </div>

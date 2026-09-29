@@ -7,42 +7,46 @@ import * as React from "react";
 import Link from "next/link";
 import { BookOpen, KeyRound, Webhook, Workflow } from "lucide-react";
 import { Button, Card, CardHeader, Chip, CopyButton, PageHeader, Reveal, Segmented, cn } from "@kalks/ui";
+import { Trans, useFormat, useT } from "@kalks/i18n/react";
 import { useMeta } from "./api";
 
-const ENDPOINTS: { m: string; p: string; scope: string; text: string; body?: string }[] = [
-  { m: "GET", p: "/account", scope: "read", text: "Balance, equity, margin, free margin, margin level" },
-  { m: "GET", p: "/positions", scope: "read", text: "Open positions with current price, profit, swap, source" },
-  { m: "GET", p: "/orders", scope: "read", text: "Pending orders" },
-  { m: "GET", p: "/history?from=2026-09-01&to=2026-10-01&page=1&limit=100", scope: "read", text: "Closed deals and totals" },
-  { m: "GET", p: "/quotes?symbols=EURUSD,XAUUSD", scope: "read", text: "Bid / ask with your account's spread" },
-  { m: "POST", p: "/orders", scope: "trade", text: "Market, limit, stop or stop-limit order", body: `{"symbol":"EURUSD","side":"buy","type":"market","volume":0.1,"sl":1.0850,"tp":1.0950,"clientOrderId":"my-id-1"}` },
-  { m: "PATCH", p: "/positions/{ticket}", scope: "trade", text: "Change SL / TP / trailing (null clears)", body: `{"sl":1.0880,"tp":null}` },
-  { m: "POST", p: "/positions/{ticket}/close", scope: "trade", text: "Close fully, or partially with volume", body: `{"volume":0.05}` },
-  { m: "DELETE", p: "/orders/{ticket}", scope: "trade", text: "Cancel a pending order" },
+const ENDPOINTS: { m: string; p: string; scope: string; text: `developer.docs.ep.${string}`; body?: string }[] = [
+  { m: "GET", p: "/account", scope: "read", text: "developer.docs.ep.account" },
+  { m: "GET", p: "/positions", scope: "read", text: "developer.docs.ep.positions" },
+  { m: "GET", p: "/orders", scope: "read", text: "developer.docs.ep.orders" },
+  { m: "GET", p: "/history?from=2026-09-01&to=2026-10-01&page=1&limit=100", scope: "read", text: "developer.docs.ep.history" },
+  { m: "GET", p: "/quotes?symbols=EURUSD,XAUUSD", scope: "read", text: "developer.docs.ep.quotes" },
+  { m: "POST", p: "/orders", scope: "trade", text: "developer.docs.ep.placeOrder", body: `{"symbol":"EURUSD","side":"buy","type":"market","volume":0.1,"sl":1.0850,"tp":1.0950,"clientOrderId":"my-id-1"}` },
+  { m: "PATCH", p: "/positions/{ticket}", scope: "trade", text: "developer.docs.ep.modify", body: `{"sl":1.0880,"tp":null}` },
+  { m: "POST", p: "/positions/{ticket}/close", scope: "trade", text: "developer.docs.ep.close", body: `{"volume":0.05}` },
+  { m: "DELETE", p: "/orders/{ticket}", scope: "trade", text: "developer.docs.ep.cancel" },
 ];
 
-const ERRORS: [string, string, string][] = [
-  ["401", "unauthorized", "Missing, wrong, revoked or expired key; bad or reused signature; timestamp outside 30 s"],
-  ["403", "forbidden", "Scope missing (read / trade) or the IP is not on the key's whitelist"],
-  ["409", "halted / requote", "Your kill switch or the platform's is on; price moved beyond deviationPoints"],
-  ["422", "market_closed · no_money · invalid_volume · invalid_sl · max_lot · validation", "The trading engine refused the order (same checks as manual trading)"],
-  ["429", "rate_limited", "Per-key limit (60 / min by default); wait Retry-After seconds"],
-  ["503", "unavailable", "A service is briefly unavailable; retry with the same clientOrderId"],
+const ERRORS: [string, string, `developer.docs.err.${string}`][] = [
+  ["401", "unauthorized", "developer.docs.err.401"],
+  ["403", "forbidden", "developer.docs.err.403"],
+  ["409", "halted / requote", "developer.docs.err.409"],
+  ["422", "market_closed · no_money · invalid_volume · invalid_sl · max_lot · validation", "developer.docs.err.422"],
+  ["429", "rate_limited", "developer.docs.err.429"],
+  ["503", "unavailable", "developer.docs.err.503"],
 ];
 
 function Code({ children, lang }: { children: string; lang?: string }) {
+  const t = useT();
   return (
-    <div className="relative">
+    <div className="relative" dir="ltr">
       <pre className="overflow-x-auto rounded-[12px] border border-line bg-black/30 p-4 font-mono text-[12px] leading-[18px] text-fg-2">{children}</pre>
       <div className="absolute right-2 top-2 flex items-center gap-2">
         {lang && <span className="text-[10.5px] uppercase text-fg-3">{lang}</span>}
-        <CopyButton value={children} label="Code" />
+        <CopyButton value={children} label={t("developer.docs.code")} />
       </div>
     </div>
   );
 }
 
 export function LiveDocsPage() {
+  const t = useT();
+  const f = useFormat();
   const meta = useMeta();
   const root = meta?.publicUrl ?? "https://api.kalkstrade.com/algo";
   const base = `${root}/public/v1`;
@@ -91,8 +95,8 @@ console.log(await call("GET", "/positions"));`,
   return (
     <>
       <PageHeader
-        title="API docs"
-        subtitle="REST API for your trading accounts, webhook alerts and the strategy language."
+        title={t("developer.docs.title")}
+        subtitle={t("developer.docs.subtitle")}
         actions={
           <>
             <a href={`${base}/openapi.json`} target="_blank" rel="noopener">
@@ -102,7 +106,7 @@ console.log(await call("GET", "/positions"));`,
             </a>
             <Link href="/developer">
               <Button variant="ember">
-                <KeyRound /> API keys
+                <KeyRound /> {t("developer.keys.title")}
               </Button>
             </Link>
           </>
@@ -112,11 +116,11 @@ console.log(await call("GET", "/positions"));`,
         <nav className="hidden xl:block">
           <div className="sticky top-24 space-y-1 text-[13px]">
             {[
-              ["#auth", "Authentication"],
-              ["#endpoints", "Endpoints"],
-              ["#errors", "Errors and limits"],
-              ["#webhooks", "Webhook alerts"],
-              ["#strategies", "Strategy language"],
+              ["#auth", t("developer.docs.auth")],
+              ["#endpoints", t("developer.docs.endpoints")],
+              ["#errors", t("developer.docs.errors")],
+              ["#webhooks", t("developer.docs.webhooks")],
+              ["#strategies", t("developer.docs.strategies")],
             ].map(([h, l]) => (
               <a key={h} href={h} className="block rounded-[10px] px-3 py-1.5 text-fg-2 hover:bg-surface-2 hover:text-fg">
                 {l}
@@ -127,52 +131,59 @@ console.log(await call("GET", "/positions"));`,
         <div className="min-w-0 space-y-5">
           <Reveal>
             <Card id="auth">
-              <CardHeader icon={<KeyRound />} title="Authentication" subtitle={base} />
+              <CardHeader icon={<KeyRound />} title={t("developer.docs.auth")} subtitle={base} />
               <div className="space-y-4 px-6 pb-6 pt-4 text-[13.5px] text-fg-2">
                 <p>
-                  Create a key under <Link href="/developer" className="text-ember hover:underline">API keys</Link>. Each key belongs to one trading account and has the <Chip size="sm" tone="up">read</Chip> and optionally the <Chip size="sm" tone="ember">trade</Chip> scope. The secret is shown once.
+                  <Trans
+                    k="developer.docs.authIntro"
+                    tags={{
+                      link: (c) => <Link href="/developer" className="text-ember hover:underline">{c}</Link>,
+                      read: (c) => <Chip size="sm" tone="up">{c}</Chip>,
+                      trade: (c) => <Chip size="sm" tone="ember">{c}</Chip>,
+                    }}
+                  />
                 </p>
-                <div className="k-label">Bearer (simplest)</div>
+                <div className="k-label">{t("developer.docs.bearer")}</div>
                 <Code lang="curl">{`curl ${base}/account -H "Authorization: Bearer $KEY_ID:$SECRET"`}</Code>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="k-label">HMAC signature (recommended for bots)</div>
+                  <div className="k-label">{t("developer.docs.hmac")}</div>
                   <Segmented size="xs" value={lang} onChange={setLang} options={[{ value: "curl", label: "curl" }, { value: "python", label: "Python" }, { value: "node", label: "Node.js" }]} />
                 </div>
                 <p className="text-[12.5px] text-fg-3">
-                  Signature = hex(HMAC-SHA256(secret, timestamp + METHOD + path with query + body)), sent with <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (unix ms, ±30 s) and <code>X-Kalks-Signature</code>. The path is signed as <code>/public/v1/…</code>. Each signature is accepted once.
+                  <Trans k="developer.docs.signature" tags={{ code: (c) => <code>{c}</code> }} />
                 </p>
                 <Code lang={lang}>{sign}</Code>
               </div>
             </Card>
           </Reveal>
           <Card id="endpoints">
-            <CardHeader title="Endpoints" subtitle="JSON in and out. Every order carries source “api”; a repeated clientOrderId returns status duplicate." />
+            <CardHeader title={t("developer.docs.endpoints")} subtitle={t("developer.docs.endpointsSub")} />
             <div className="space-y-3 px-6 pb-6 pt-4">
               {ENDPOINTS.map((e) => (
                 <div key={e.m + e.p} className="rounded-[12px] border border-line px-4 py-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={cn("w-16 rounded-md py-0.5 text-center font-mono text-[11px] font-semibold", e.m === "GET" ? "bg-up-soft text-up" : e.m === "DELETE" ? "bg-down-soft text-down" : "bg-ember-soft text-ember")}>{e.m}</span>
-                    <code className="font-mono text-[12.5px] text-fg">{e.p}</code>
-                    <Chip size="sm" tone={e.scope === "trade" ? "ember" : "up"} className="ml-auto">
-                      {e.scope}
+                    <code className="font-mono text-[12.5px] text-fg" dir="ltr">{e.p}</code>
+                    <Chip size="sm" tone={e.scope === "trade" ? "ember" : "up"} className="ms-auto">
+                      {t.dyn(`developer.scope.${e.scope}`, e.scope)}
                     </Chip>
                   </div>
-                  <div className="mt-1 text-[12.5px] text-fg-3">{e.text}</div>
-                  {e.body && <pre className="mt-2 overflow-x-auto rounded-[10px] bg-black/30 px-3 py-2 font-mono text-[11.5px] text-fg-2">{e.body}</pre>}
+                  <div className="mt-1 text-[12.5px] text-fg-3">{t.dyn(e.text)}</div>
+                  {e.body && <pre dir="ltr" className="mt-2 overflow-x-auto rounded-[10px] bg-black/30 px-3 py-2 font-mono text-[11.5px] text-fg-2">{e.body}</pre>}
                 </div>
               ))}
             </div>
           </Card>
           <Card id="errors">
-            <CardHeader title="Errors and limits" subtitle={`Errors are {"error": {"code", "message"}}`} />
+            <CardHeader title={t("developer.docs.errors")} subtitle={t("developer.docs.errorsSub", { shape: `{"error": {"code", "message"}}` })} />
             <div className="overflow-x-auto px-6 pb-6 pt-4">
               <table className="w-full min-w-[640px] text-[12.5px]">
                 <tbody>
-                  {ERRORS.map(([s, c, t]) => (
+                  {ERRORS.map(([s, c, k]) => (
                     <tr key={s} className="border-b border-line/60 align-top">
-                      <td className="py-2 pr-3 font-mono text-fg">{s}</td>
-                      <td className="py-2 pr-3 font-mono text-ember">{c}</td>
-                      <td className="py-2 text-fg-2">{t}</td>
+                      <td className="py-2 pe-3 font-mono text-fg">{s}</td>
+                      <td className="py-2 pe-3 font-mono text-ember" dir="ltr">{c}</td>
+                      <td className="py-2 text-fg-2">{t.dyn(k)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -180,31 +191,31 @@ console.log(await call("GET", "/positions"));`,
             </div>
           </Card>
           <Card id="webhooks">
-            <CardHeader icon={<Webhook />} title="Webhook alerts" subtitle={`POST ${root}/hooks/<your secret token>`} />
+            <CardHeader icon={<Webhook />} title={t("developer.docs.webhooks")} subtitle={`POST ${root}/hooks/<${t("developer.docs.secretToken")}>`} />
             <div className="space-y-3 px-6 pb-6 pt-4 text-[13px] text-fg-2">
               <p>
-                Create a webhook under <Link href="/developer/webhooks" className="text-ember hover:underline">Webhooks</Link>, choose the accounts it trades and the size on each, then paste the URL into a TradingView alert with this message:
+                <Trans k="developer.docs.webhookIntro" tags={{ link: (c) => <Link href="/developer/webhooks" className="text-ember hover:underline">{c}</Link> }} />
               </p>
               <Code lang="json">{`{"passphrase":"…","action":"{{strategy.order.action}}","symbol":"{{ticker}}","volume":{{strategy.order.contracts}},"sl_pips":20,"id":"{{strategy.order.id}}-{{timenow}}","timestamp":"{{timenow}}"}`}</Code>
               <p className="text-[12.5px] text-fg-3">
-                action: buy · sell · close · close_buy · close_sell. Stops as prices (sl, tp), pips (sl_pips, tp_pips) or points (sl_points, tp_points). An id is accepted once; a timestamp must be within 5 minutes. Limit: 30 alerts a minute per URL.
+                {t("developer.docs.webhookFields")}
               </p>
             </div>
           </Card>
           <Card id="strategies">
-            <CardHeader icon={<Workflow />} title="Strategy language" subtitle="Python-like expressions, run on our servers on every closed bar" />
+            <CardHeader icon={<Workflow />} title={t("developer.docs.strategies")} subtitle={t("developer.docs.strategiesSub")} />
             <div className="space-y-3 px-6 pb-6 pt-4 text-[13px] text-fg-2">
               <Code lang="kst">{meta?.dsl.example ?? "…"}</Code>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                {(meta?.dsl.functions ?? []).map((f) => (
-                  <div key={f.syntax} className="rounded-[10px] bg-surface-2/50 px-3 py-2">
-                    <code className="font-mono text-[11.5px] text-[#38bdf8]">{f.syntax}</code>
-                    <div className="text-[11.5px] text-fg-3">{f.text}</div>
+                {(meta?.dsl.functions ?? []).map((fn) => (
+                  <div key={fn.syntax} className="rounded-[10px] bg-surface-2/50 px-3 py-2">
+                    <code className="font-mono text-[11.5px] text-[#38bdf8]">{fn.syntax}</code>
+                    <div className="text-[11.5px] text-fg-3">{fn.text}</div>
                   </div>
                 ))}
               </div>
               <p className="text-[12.5px] text-fg-3">
-                Sandbox: expressions only (no loops, functions, imports or I/O), at most {meta?.dsl.limits.sourceChars?.toLocaleString("en-US") ?? "20,000"} characters and {meta?.dsl.limits.nodes?.toLocaleString("en-US") ?? "4,000"} expression nodes, periods up to {meta?.dsl.limits.period ?? 1000}, with a time budget per bar.
+                {t("developer.docs.sandbox", { chars: f.number(meta?.dsl.limits.sourceChars ?? 20000, 0), nodes: f.number(meta?.dsl.limits.nodes ?? 4000, 0), period: meta?.dsl.limits.period ?? 1000 })}
               </p>
             </div>
           </Card>

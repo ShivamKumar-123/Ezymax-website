@@ -6,6 +6,7 @@
 import * as React from "react";
 import { AlertTriangle, BookOpen, CircleCheck, Loader2 } from "lucide-react";
 import { cn } from "@kalks/ui";
+import { Trans, useT, useFormat } from "@kalks/i18n/react";
 import type { BuildError } from "./api";
 
 const KEYWORDS = new Set(["and", "or", "not", "if", "else", "True", "False", "true", "false"]);
@@ -44,6 +45,7 @@ function tokenize(line: string): Tok[] {
 }
 
 export function CodeEditor({ value, onChange, errors, warnings, validating, readOnly, height = 460 }: { value: string; onChange: (v: string) => void; errors: BuildError[]; warnings: string[]; validating: boolean; readOnly?: boolean; height?: number }) {
+  const t = useT();
   const ta = React.useRef<HTMLTextAreaElement>(null);
   const hl = React.useRef<HTMLDivElement>(null);
   const gutter = React.useRef<HTMLDivElement>(null);
@@ -75,24 +77,24 @@ export function CodeEditor({ value, onChange, errors, warnings, validating, read
     <div className="overflow-hidden rounded-[14px] border border-line bg-[#0b0b0d]">
       <div className="flex items-center gap-2 border-b border-line/70 px-3 py-2 text-[11.5px]">
         <span className="font-mono text-fg-3">strategy.kst</span>
-        <span className="text-fg-3">· Kalks strategy language</span>
-        <span className="ml-auto inline-flex items-center gap-1.5">
+        <span className="text-fg-3">· {t("developer.code.language")}</span>
+        <span className="ms-auto inline-flex items-center gap-1.5">
           {validating ? (
             <>
-              <Loader2 className="size-3.5 animate-spin text-fg-3" /> <span className="text-fg-3">Checking…</span>
+              <Loader2 className="size-3.5 animate-spin text-fg-3" /> <span className="text-fg-3">{t("developer.code.checking")}</span>
             </>
           ) : errors.length ? (
             <>
-              <AlertTriangle className="size-3.5 text-down" /> <span className="text-down">{errors.length} error{errors.length > 1 ? "s" : ""}</span>
+              <AlertTriangle className="size-3.5 text-down" /> <span className="text-down">{t("developer.code.errors", { count: errors.length })}</span>
             </>
           ) : (
             <>
-              <CircleCheck className="size-3.5 text-up" /> <span className="text-up">Compiles</span>
+              <CircleCheck className="size-3.5 text-up" /> <span className="text-up">{t("developer.code.compiles")}</span>
             </>
           )}
         </span>
       </div>
-      <div className="relative flex font-mono text-[12.5px] leading-[20px]" style={{ height }}>
+      <div dir="ltr" className="relative flex font-mono text-[12.5px] leading-[20px]" style={{ height }}>
         <div ref={gutter} aria-hidden className="w-11 shrink-0 overflow-hidden border-r border-line/60 bg-black/20 py-3 text-right text-fg-3">
           {lines.map((_, i) => (
             <div key={i} title={errLines.get(i + 1)} className={cn("pr-2", errLines.has(i + 1) && "bg-down-soft text-down")}>
@@ -104,7 +106,7 @@ export function CodeEditor({ value, onChange, errors, warnings, validating, read
           <div ref={hl} aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre px-3 py-3">
             {lines.map((l, i) => (
               <div key={i} className={cn(errLines.has(i + 1) && "underline decoration-down decoration-wavy underline-offset-4")}>
-                {l ? tokenize(l).map((t, j) => <span key={j} className={t.c}>{t.t}</span>) : "​"}
+                {l ? tokenize(l).map((tk, j) => <span key={j} className={tk.c}>{tk.t}</span>) : "​"}
               </div>
             ))}
           </div>
@@ -115,7 +117,7 @@ export function CodeEditor({ value, onChange, errors, warnings, validating, read
             spellCheck={false}
             autoCapitalize="off"
             autoCorrect="off"
-            aria-label="Strategy code"
+            aria-label={t("developer.code.aria")}
             onChange={(e) => onChange(e.target.value)}
             onScroll={sync}
             onKeyDown={onKey}
@@ -129,7 +131,7 @@ export function CodeEditor({ value, onChange, errors, warnings, validating, read
             <button
               key={`e${i}`}
               type="button"
-              className="flex w-full items-start gap-2 text-left text-down hover:underline"
+              className="flex w-full items-start gap-2 text-start text-down hover:underline"
               onClick={() => {
                 if (!e.line || !ta.current) return;
                 const idx = lines.slice(0, e.line - 1).join("\n").length + (e.line > 1 ? 1 : 0) + Math.max(0, (e.col ?? 1) - 1);
@@ -139,7 +141,7 @@ export function CodeEditor({ value, onChange, errors, warnings, validating, read
             >
               <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
               <span>
-                {e.line ? <span className="font-mono">line {e.line}:{e.col ?? 1} · </span> : null}
+                {e.line ? <span className="font-mono">{t("developer.code.line", { line: e.line, col: e.col ?? 1 })} · </span> : null}
                 {e.message}
               </span>
             </button>
@@ -157,15 +159,17 @@ export function CodeEditor({ value, onChange, errors, warnings, validating, read
 }
 
 export function DslReference({ functions, settings, limits }: { functions: { syntax: string; text: string }[]; settings: { syntax: string; text: string }[]; limits: Record<string, number> }) {
+  const t = useT();
+  const f = useFormat();
   return (
     <details className="group rounded-[14px] border border-line bg-surface-2/40 px-4 py-3 text-[12.5px]">
       <summary className="flex cursor-pointer list-none items-center gap-2 text-fg-2">
-        <BookOpen className="size-4" /> Language reference
-        <span className="ml-auto text-[11px] text-fg-3 group-open:hidden">Show</span>
+        <BookOpen className="size-4" /> {t("developer.code.reference")}
+        <span className="ms-auto text-[11px] text-fg-3 group-open:hidden">{t("developer.code.show")}</span>
       </summary>
       <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <div className="k-label mb-1.5">Settings</div>
+          <div className="k-label mb-1.5">{t("developer.code.settings")}</div>
           {settings.map((s) => (
             <div key={s.syntax} className="py-1">
               <code className="font-mono text-[11.5px] text-[#c084fc]">{s.syntax}</code>
@@ -174,7 +178,7 @@ export function DslReference({ functions, settings, limits }: { functions: { syn
           ))}
         </div>
         <div>
-          <div className="k-label mb-1.5">Functions and fields</div>
+          <div className="k-label mb-1.5">{t("developer.code.functions")}</div>
           {functions.map((s) => (
             <div key={s.syntax} className="py-1">
               <code className="font-mono text-[11.5px] text-[#38bdf8]">{s.syntax}</code>
@@ -184,8 +188,11 @@ export function DslReference({ functions, settings, limits }: { functions: { syn
         </div>
       </div>
       <p className="mt-3 text-[11.5px] text-fg-3">
-        Signals: assign <code className="text-ember">buy</code>, <code className="text-ember">sell</code>, <code className="text-ember">exit_buy</code>, <code className="text-ember">exit_sell</code>. Evaluated on each closed bar; orders go out at the next
-        bar. Sandbox: expressions only (no loops, functions, imports), {limits.sourceChars?.toLocaleString("en-US")} characters, {limits.statements} statements, {limits.nodes?.toLocaleString("en-US")} expression nodes, periods up to {limits.period}.
+        <Trans
+          k="developer.code.signalsNote"
+          tags={{ code: (c) => <code className="text-ember">{c}</code> }}
+          vars={{ chars: limits.sourceChars !== undefined ? f.number(limits.sourceChars, 0) : "", statements: limits.statements, nodes: limits.nodes !== undefined ? f.number(limits.nodes, 0) : "", period: limits.period }}
+        />
       </p>
     </details>
   );

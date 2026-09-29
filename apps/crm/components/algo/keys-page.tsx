@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Activity, AlertCircle, BookOpen, Gauge as GaugeIcon, KeyRound, Loader2, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, KpiCard, MiniBars, PageHeader, Reveal, type Column } from "@kalks/ui";
+import { Trans, useFormat, useT } from "@kalks/i18n/react";
 import { algoApi, algoError, ago, fmtDateTime, useAlgo, type TradingAccount } from "./api";
 
 interface Key {
@@ -32,7 +33,8 @@ interface KeysResp {
 }
 
 function CreateKeyDialog({ open, onOpenChange, accounts, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; accounts: TradingAccount[]; onCreated: (k: { keyId: string; secret: string; name: string }) => void }) {
-  const [name, setName] = React.useState("Trading bot");
+  const t = useT();
+  const [name, setName] = React.useState(() => t("developer.keys.defaultName"));
   const [login, setLogin] = React.useState<number | null>(null);
   const [trade, setTrade] = React.useState(true);
   const [ips, setIps] = React.useState("");
@@ -51,7 +53,7 @@ function CreateKeyDialog({ open, onOpenChange, accounts, onCreated }: { open: bo
       onCreated(r);
       onOpenChange(false);
     } catch (e) {
-      algoError("Couldn't create the key", e);
+      algoError(t("developer.keys.createFailed"), e);
     } finally {
       setBusy(false);
     }
@@ -60,56 +62,56 @@ function CreateKeyDialog({ open, onOpenChange, accounts, onCreated }: { open: bo
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Create API key"
-      description="A key works on one trading account. Withdrawals are never possible through the API."
+      title={t("developer.keys.create")}
+      description={t("developer.keys.createText")}
       width={560}
       footer={
         <>
           <Button variant="surface" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button variant="ember" disabled={busy || !login} onClick={create}>
-            {busy ? <Loader2 className="animate-spin" /> : <KeyRound />} Create key
+            {busy ? <Loader2 className="animate-spin" /> : <KeyRound />} {t("developer.keys.createKey")}
           </Button>
         </>
       }
     >
       <div className="space-y-4 text-[13px]">
         <label className="block">
-          <span className="text-fg-3">Name</span>
+          <span className="text-fg-3">{t("common.name")}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 h-10 w-full rounded-[12px] border border-line bg-surface-2 px-3 text-fg outline-none focus:border-ember/50" />
         </label>
         <div>
-          <div className="text-fg-3">Trading account</div>
+          <div className="text-fg-3">{t("developer.tradingAccount")}</div>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {accounts.map((a) => (
               <button key={a.login} type="button" onClick={() => setLogin(a.login)} className={`h-8 rounded-full border px-3 text-[12px] ${login === a.login ? "border-ember/40 bg-ember-soft text-ember" : "border-line text-fg-2"}`}>
-                {a.type === "live" ? "Live" : "Demo"} #{a.login}
+                {a.type === "live" ? t("common.live") : t("common.demo")} #{a.login}
               </button>
             ))}
           </div>
         </div>
         <div>
-          <div className="text-fg-3">Scopes</div>
+          <div className="text-fg-3">{t("developer.keys.scopes")}</div>
           <div className="mt-1 flex gap-2">
-            <Chip tone="up">read</Chip>
+            <Chip tone="up">{t("developer.scope.read")}</Chip>
             <button type="button" onClick={() => setTrade(!trade)} aria-pressed={trade}>
-              <Chip tone={trade ? "ember" : "neutral"}>{trade ? "trade" : "+ trade"}</Chip>
+              <Chip tone={trade ? "ember" : "neutral"}>{trade ? t("developer.scope.trade") : `+ ${t("developer.scope.trade")}`}</Chip>
             </button>
           </div>
         </div>
         <label className="block">
-          <span className="text-fg-3">IP whitelist {acct?.type === "live" && trade ? <span className="text-warn">(required for live trading keys)</span> : "(optional)"}</span>
-          <textarea value={ips} onChange={(e) => setIps(e.target.value)} rows={2} placeholder="203.0.113.10, 198.51.100.0/24" className="mt-1 w-full rounded-[12px] border border-line bg-surface-2 px-3 py-2 font-mono text-[12.5px] text-fg outline-none focus:border-ember/50" />
+          <span className="text-fg-3">{t("developer.keys.ipWhitelist")} {acct?.type === "live" && trade ? <span className="text-warn">{t("developer.keys.ipRequired")}</span> : t("developer.keys.ipOptional")}</span>
+          <textarea value={ips} onChange={(e) => setIps(e.target.value)} rows={2} dir="ltr" placeholder="203.0.113.10, 198.51.100.0/24" className="mt-1 w-full rounded-[12px] border border-line bg-surface-2 px-3 py-2 font-mono text-[12.5px] text-fg outline-none focus:border-ember/50" />
         </label>
         <div>
-          <div className="text-fg-3">Expires</div>
+          <div className="text-fg-3">{t("developer.keys.expires")}</div>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {[
-              [30, "30 days"],
-              [90, "90 days"],
-              [365, "1 year"],
-              [0, "Never"],
+              [30, t("developer.keys.days30")],
+              [90, t("developer.keys.days90")],
+              [365, t("developer.keys.year1")],
+              [0, t("developer.keys.never")],
             ].map(([d, l]) => (
               <button key={l} type="button" onClick={() => setDays(d as number)} className={`h-8 rounded-full border px-3 text-[12px] ${days === d ? "border-ember/40 bg-ember-soft text-ember" : "border-line text-fg-2"}`}>
                 {l}
@@ -123,10 +125,11 @@ function CreateKeyDialog({ open, onOpenChange, accounts, onCreated }: { open: bo
 }
 
 function Activity24({ keyId, open, onOpenChange }: { keyId: number | null; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const t = useT();
   const a = useAlgo<{ items: { at: string; method: string; path: string; status: number; ip: string | null; ms: number }[] }>(open && keyId ? `keys/${keyId}/activity` : null);
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title="Key activity" description="The last 200 requests" side="right">
-      <div className="space-y-1 font-mono text-[11.5px]">
+    <Dialog open={open} onOpenChange={onOpenChange} title={t("developer.keys.activityTitle")} description={t("developer.keys.activityText")} side="right">
+      <div className="space-y-1 font-mono text-[11.5px]" dir="ltr">
         {(a.data?.items ?? []).map((r, i) => (
           <div key={i} className="flex gap-3 border-b border-line/60 py-1.5">
             <span className="text-fg-3">{fmtDateTime(r.at)}</span>
@@ -136,13 +139,15 @@ function Activity24({ keyId, open, onOpenChange }: { keyId: number | null; open:
             <span className="text-fg-3">{r.ms}ms</span>
           </div>
         ))}
-        {a.data && a.data.items.length === 0 && <div className="py-8 text-center text-fg-3">No requests yet</div>}
+        {a.data && a.data.items.length === 0 && <div className="py-8 text-center text-fg-3" dir="auto">{t("developer.keys.noRequests")}</div>}
       </div>
     </Dialog>
   );
 }
 
 export function LiveKeysPage() {
+  const t = useT();
+  const f = useFormat();
   const keys = useAlgo<KeysResp>("keys", 10000);
   const accounts = useAlgo<{ items: TradingAccount[] }>("accounts");
   const [creating, setCreating] = React.useState(false);
@@ -154,24 +159,24 @@ export function LiveKeysPage() {
   const active = items.filter((k) => k.status === "active").length;
 
   const revoke = async (k: Key) => {
-    if (!window.confirm(`Revoke “${k.name}”? Requests with it fail at once.`)) return;
+    if (!window.confirm(t("developer.keys.revokeConfirm", { name: k.name }))) return;
     try {
       await algoApi(`keys/${k.id}/revoke`, { body: {} });
-      toast.success("Key revoked");
+      toast.success(t("developer.keys.revoked"));
       keys.reload();
     } catch (e) {
-      algoError("Couldn't revoke the key", e);
+      algoError(t("developer.keys.revokeFailed"), e);
     }
   };
 
   const cols: Column<Key>[] = [
-    { key: "name", header: "Key", cell: (k) => <div><div className="font-medium text-fg">{k.name}</div><div className="font-mono text-[11.5px] text-fg-3">{k.keyId}</div></div>, sort: (k) => k.name },
-    { key: "acct", header: "Account", cell: (k) => <span className="font-mono text-fg-2">{k.accountType === "live" ? "Live" : "Demo"} #{k.login}</span>, sort: (k) => k.login },
-    { key: "scopes", header: "Scopes", cell: (k) => <div className="flex gap-1">{k.scopes.map((s) => <Chip key={s} size="sm" tone={s === "trade" ? "ember" : "up"}>{s}</Chip>)}</div> },
-    { key: "ips", header: "IP whitelist", cell: (k) => <span className="text-[12px] text-fg-3">{k.ipWhitelist.length ? k.ipWhitelist.join(", ") : "any IP"}</span>, hideOn: "lg" },
-    { key: "exp", header: "Expires", cell: (k) => <span className="text-[12px] text-fg-3">{k.expiresAt ? fmtDateTime(k.expiresAt).slice(0, 10) : "never"}</span>, hideOn: "md" },
-    { key: "used", header: "Last used", cell: (k) => <span className="text-[12px] text-fg-3">{ago(k.lastUsedAt)}{k.lastIp ? ` · ${k.lastIp}` : ""}</span>, sort: (k) => k.lastUsedAt ?? "" },
-    { key: "status", header: "Status", cell: (k) => <Chip size="sm" tone={k.status === "active" ? "up" : "neutral"} dot={k.status === "active"}>{k.status}</Chip>, sort: (k) => k.status },
+    { key: "name", header: t("developer.keys.colKey"), cell: (k) => <div><div className="font-medium text-fg">{k.name}</div><div className="font-mono text-[11.5px] text-fg-3">{k.keyId}</div></div>, sort: (k) => k.name },
+    { key: "acct", header: t("common.account"), cell: (k) => <span className="font-mono text-fg-2">{k.accountType === "live" ? t("common.live") : t("common.demo")} #{k.login}</span>, sort: (k) => k.login },
+    { key: "scopes", header: t("developer.keys.scopes"), cell: (k) => <div className="flex gap-1">{k.scopes.map((s) => <Chip key={s} size="sm" tone={s === "trade" ? "ember" : "up"}>{t.dyn(`developer.scope.${s}`, s)}</Chip>)}</div> },
+    { key: "ips", header: t("developer.keys.ipWhitelist"), cell: (k) => <span className="text-[12px] text-fg-3">{k.ipWhitelist.length ? <span dir="ltr">{k.ipWhitelist.join(", ")}</span> : t("developer.keys.anyIp")}</span>, hideOn: "lg" },
+    { key: "exp", header: t("developer.keys.expires"), cell: (k) => <span className="text-[12px] text-fg-3">{k.expiresAt ? fmtDateTime(k.expiresAt).slice(0, 10) : t("developer.ago.never")}</span>, hideOn: "md" },
+    { key: "used", header: t("developer.keys.lastUsed"), cell: (k) => <span className="text-[12px] text-fg-3">{ago(k.lastUsedAt)}{k.lastIp ? ` · ${k.lastIp}` : ""}</span>, sort: (k) => k.lastUsedAt ?? "" },
+    { key: "status", header: t("common.status"), cell: (k) => <Chip size="sm" tone={k.status === "active" ? "up" : "neutral"} dot={k.status === "active"}>{t.dyn(`developer.keyStatus.${k.status}`, k.status)}</Chip>, sort: (k) => k.status },
     {
       key: "act",
       header: "",
@@ -179,11 +184,11 @@ export function LiveKeysPage() {
       cell: (k) => (
         <div className="flex justify-end gap-1.5">
           <Button size="xs" variant="ghost" onClick={() => setActivity(k.id)}>
-            Activity
+            {t("developer.keys.activity")}
           </Button>
           {k.status === "active" && (
             <Button size="xs" variant="down-outline" onClick={() => revoke(k)}>
-              Revoke
+              {t("developer.keys.revoke")}
             </Button>
           )}
         </div>
@@ -198,47 +203,47 @@ export function LiveKeysPage() {
   return (
     <div className="pb-24">
       <PageHeader
-        title="API & Algo"
-        subtitle="REST access to your trading accounts: scoped keys, IP-locked, rate-limited, every order tagged “api”."
+        title={t("developer.keys.pageTitle")}
+        subtitle={t("developer.keys.pageSubtitle")}
         actions={
           <>
             <Link href="/developer/docs">
               <Button variant="surface" size="lg">
-                <BookOpen /> API docs
+                <BookOpen /> {t("developer.docs.title")}
               </Button>
             </Link>
             <Button variant="ember" size="lg" onClick={() => setCreating(true)} disabled={!accounts.data?.items.length}>
-              <Plus /> Create API key
+              <Plus /> {t("developer.keys.create")}
             </Button>
           </>
         }
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Requests · 24h" icon={<Activity />} value={<span className="k-num">{(u?.requests24h ?? 0).toLocaleString("en-US")}</span>} footer={<div className="flex w-full items-center justify-between gap-3"><Chip>{u?.writes24h ?? 0} orders / closes</Chip><MiniBars data={(u?.hourly ?? []).map((h) => h.n)} className="h-6" /></div>} />
-        <KpiCard label="Errors · 24h" icon={<AlertCircle />} value={<span className="k-num">{u?.errors24h ?? 0}</span>} chip={`${u?.rateLimited24h ?? 0} rate-limited`} delay={0.05} />
-        <KpiCard label="Latency p50" icon={<GaugeIcon />} value={<span className="k-num">{Math.round(u?.p50 ?? 0)}<span className="text-[20px] text-fg-3"> ms</span></span>} chip={`p99 ${Math.round(u?.p99 ?? 0)} ms`} delay={0.1} />
-        <KpiCard label="Active keys" icon={<KeyRound />} hot value={<span className="k-num">{active}<span className="text-fg-3">/{items.length}</span></span>} chip="max 20" delay={0.15} />
+        <KpiCard label={t("developer.keys.requests24h")} icon={<Activity />} value={<span className="k-num">{f.number(u?.requests24h ?? 0, 0)}</span>} footer={<div className="flex w-full items-center justify-between gap-3"><Chip>{t("developer.keys.ordersCloses", { n: u?.writes24h ?? 0 })}</Chip><MiniBars data={(u?.hourly ?? []).map((h) => h.n)} className="h-6" /></div>} />
+        <KpiCard label={t("developer.keys.errors24h")} icon={<AlertCircle />} value={<span className="k-num">{u?.errors24h ?? 0}</span>} chip={t("developer.keys.rateLimited", { n: u?.rateLimited24h ?? 0 })} delay={0.05} />
+        <KpiCard label={t("developer.keys.latencyP50")} icon={<GaugeIcon />} value={<span className="k-num">{Math.round(u?.p50 ?? 0)}<span className="text-[20px] text-fg-3"> {t("developer.unit.ms")}</span></span>} chip={`p99 ${Math.round(u?.p99 ?? 0)} ${t("developer.unit.ms")}`} delay={0.1} />
+        <KpiCard label={t("developer.keys.activeKeys")} icon={<KeyRound />} hot value={<span className="k-num">{active}<span className="text-fg-3">/{items.length}</span></span>} chip={t("developer.keys.max", { n: 20 })} delay={0.15} />
       </div>
       {secret && (
         <Reveal className="mt-4">
           <Card className="border-ember/40">
-            <CardHeader icon={<ShieldCheck />} title={`“${secret.name}” created`} subtitle="Copy the secret now: it is shown once and never stored in readable form." />
+            <CardHeader icon={<ShieldCheck />} title={t("developer.keys.created", { name: secret.name })} subtitle={t("developer.keys.createdText")} />
             <div className="space-y-3 px-6 pb-5 pt-4">
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 <div className="flex items-center gap-2 rounded-[12px] bg-black/30 px-3 py-2">
-                  <span className="text-[11px] uppercase text-fg-3">Key ID</span>
-                  <code className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-fg" data-testid="key-id">{secret.keyId}</code>
-                  <CopyButton value={secret.keyId} label="Key ID" />
+                  <span className="text-[11px] uppercase text-fg-3">{t("developer.keys.keyId")}</span>
+                  <code className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-fg" dir="ltr" data-testid="key-id">{secret.keyId}</code>
+                  <CopyButton value={secret.keyId} label={t("developer.keys.keyId")} />
                 </div>
                 <div className="flex items-center gap-2 rounded-[12px] bg-black/30 px-3 py-2">
-                  <span className="text-[11px] uppercase text-fg-3">Secret</span>
-                  <code className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ember" data-testid="key-secret">{secret.secret}</code>
-                  <CopyButton value={secret.secret} label="Secret" />
+                  <span className="text-[11px] uppercase text-fg-3">{t("developer.keys.secret")}</span>
+                  <code className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ember" dir="ltr" data-testid="key-secret">{secret.secret}</code>
+                  <CopyButton value={secret.secret} label={t("developer.keys.secret")} />
                 </div>
               </div>
-              <pre className="overflow-x-auto rounded-[12px] bg-black/30 p-3 font-mono text-[11.5px] leading-[17px] text-fg-2">{curl}</pre>
+              <pre dir="ltr" className="overflow-x-auto rounded-[12px] bg-black/30 p-3 font-mono text-[11.5px] leading-[17px] text-fg-2">{curl}</pre>
               <Button size="sm" variant="surface" onClick={() => setSecret(null)}>
-                I stored it
+                {t("developer.keys.stored")}
               </Button>
             </div>
           </Card>
@@ -246,16 +251,16 @@ export function LiveKeysPage() {
       )}
       <Reveal delay={0.05} className="mt-4">
         <Card>
-          <CardHeader title="API keys" subtitle="One key per account and purpose. Revoke a key the moment it may have leaked." />
+          <CardHeader title={t("developer.keys.title")} subtitle={t("developer.keys.subtitle")} />
           <div className="px-6 pb-6 pt-4">
-            <DataTable columns={cols} rows={items} pageSize={10} rowKey={(k) => String(k.id)} empty={<div className="py-8 text-center text-fg-3">No API keys yet</div>} />
+            <DataTable columns={cols} rows={items} pageSize={10} rowKey={(k) => String(k.id)} empty={<div className="py-8 text-center text-fg-3">{t("developer.keys.none")}</div>} />
           </div>
         </Card>
       </Reveal>
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card>
-          <CardHeader title="Quickstart" subtitle={base} />
-          <pre className="mx-6 mb-6 mt-4 overflow-x-auto rounded-[12px] bg-black/30 p-3 font-mono text-[11.5px] leading-[17px] text-fg-2">{`# read the account
+          <CardHeader title={t("developer.keys.quickstart")} subtitle={base} />
+          <pre dir="ltr" className="mx-6 mb-6 mt-4 overflow-x-auto rounded-[12px] bg-black/30 p-3 font-mono text-[11.5px] leading-[17px] text-fg-2">{`# read the account
 curl ${base}/account -H "Authorization: Bearer $KEY_ID:$SECRET"
 
 # market order with stop and target (scope: trade)
@@ -267,21 +272,21 @@ curl -X POST ${base}/orders -H "Authorization: Bearer $KEY_ID:$SECRET" \\
 curl -X POST ${base}/positions/1000123/close -H "Authorization: Bearer $KEY_ID:$SECRET"`}</pre>
         </Card>
         <Card>
-          <CardHeader title="Safety" subtitle="Applied to every request" />
+          <CardHeader title={t("developer.keys.safety")} subtitle={t("developer.keys.safetySub")} />
           <div className="space-y-2 px-6 pb-6 pt-4 text-[13px] text-fg-2">
             {[
-              "Scopes: read, or read + trade. Withdrawals and transfers are never possible through the API.",
-              "IP whitelist per key (exact IPs or IPv4 ranges); required for trading keys on live accounts.",
-              "Rate limit per key (60 requests a minute by default); 429 with Retry-After when exceeded.",
-              "HMAC signing option: a timestamp within 30 s, each signature accepted once.",
-              "Every order carries source “api” on your account and statements.",
-            ].map((t) => (
-              <div key={t} className="flex gap-2">
-                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-up" /> {t}
+              t("developer.keys.safety1"),
+              t("developer.keys.safety2"),
+              t("developer.keys.safety3"),
+              t("developer.keys.safety4"),
+              t("developer.keys.safety5"),
+            ].map((line) => (
+              <div key={line} className="flex gap-2">
+                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-up" /> {line}
               </div>
             ))}
             <p className="pt-2 text-[12.5px] text-fg-3">
-              Need to stop everything at once? Use the kill switch on <Link href="/developer/deployments" className="text-ember hover:underline">Running strategies</Link>: it blocks API and webhook orders and stops every strategy.
+              <Trans k="developer.keys.killHint" tags={{ link: (c) => <Link href="/developer/deployments" className="text-ember hover:underline">{c}</Link> }} />
             </p>
           </div>
         </Card>
