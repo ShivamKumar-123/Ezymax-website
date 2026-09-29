@@ -50,6 +50,9 @@ export const PriceCell = React.memo(function PriceCell({ symbol, side, digits, b
     let raf = 0;
     let last = feed.quote(symbol)?.[side];
     let dir = 0;
+    // recycled list cells get a new symbol: show its price at once, without a flash
+    flash.value = 0;
+    setText(last !== undefined ? fmtPrice(last, digits) : "—");
     const flush = () => {
       raf = 0;
       const q = feed.quote(symbol);
@@ -100,8 +103,9 @@ export const PriceCell = React.memo(function PriceCell({ symbol, side, digits, b
 export const ChangeText = React.memo(function ChangeText({ symbol, size = 12.5 }: { symbol: string; size?: number }) {
   const q = useLiveQuote(symbol);
   const v = q && q.open > 0 ? ((q.last - q.open) / q.open) * 100 : undefined;
+  const flat = v === undefined || Math.abs(v) < 0.005;
   return (
-    <Mono size={size} weight="medium" tone={v === undefined || v === 0 ? "tertiary" : v > 0 ? "up" : "down"}>
+    <Mono size={size} weight="medium" tone={flat ? "tertiary" : v! > 0 ? "up" : "down"}>
       {fmtPct(v)}
     </Mono>
   );

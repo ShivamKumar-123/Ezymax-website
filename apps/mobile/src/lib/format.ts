@@ -11,6 +11,7 @@ export function fmtPrice(v: number | null | undefined, digits: number): string {
 export function fmtMoney(v: number | null | undefined, opts: { decimals?: number; signed?: boolean; currency?: string } = {}): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return "—";
   const d = opts.decimals ?? 2;
+  if (Math.abs(v) < 0.5 / 10 ** d) v = 0; // no "-0.00"
   const abs = Math.abs(v);
   const [int, frac] = abs.toFixed(d).split(".");
   const grouped = int!.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -23,6 +24,7 @@ export function fmtMoney(v: number | null | undefined, opts: { decimals?: number
 
 export function fmtPct(v: number | null | undefined, decimals = 2, signed = true): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return "—";
+  if (Math.abs(v) < 0.5 / 10 ** decimals) v = 0; // no "-0.00%"
   const s = Math.abs(v).toFixed(decimals);
   return `${v < 0 ? "−" : signed && v > 0 ? "+" : ""}${s}%`;
 }
