@@ -9,12 +9,14 @@ import { ACCOUNT_GROUPS, type TradingAccount } from "@kalks/mock";
 import { DEMO_RULES } from "@kalks/mock/accounts-extra";
 import { CredentialField, EmailOtp, PasswordInput, PasswordStrength, isPasswordValid } from "./security";
 import { curOf } from "./detail-overview";
+import { Trans, useFormat, useT } from "@kalks/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Change password dialog                                              */
 /* ------------------------------------------------------------------ */
 
 function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: TradingAccount; kind: "trading" | "investor"; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const t = useT();
   const [pw, setPw] = React.useState("");
   const [confirm, setConfirm] = React.useState("");
   const [code, setCode] = React.useState("");
@@ -31,15 +33,15 @@ function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: TradingAccou
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title={kind === "trading" ? "Change trading password" : "Change investor password"}
+      title={kind === "trading" ? t("accountDetail.pw.changeTitle.trading") : t("accountDetail.pw.changeTitle.investor")}
       description={
-        kind === "trading" ? `Master password for #${a.login}. Open terminal sessions will be logged out.` : `Read-only access for #${a.login} — share it with a coach or investor to let them view, not trade.`
+        kind === "trading" ? t("accountDetail.pw.descTradingDemo", { login: a.login }) : t("accountDetail.pw.descInvestorDemo", { login: a.login })
       }
       width={520}
       footer={
         <>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="ember"
@@ -49,24 +51,24 @@ function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: TradingAccou
               setTimeout(() => {
                 setBusy(false);
                 onOpenChange(false);
-                toast.success(`${kind === "trading" ? "Trading" : "Investor"} password updated`, { description: `#${a.login} · ${a.server}` });
+                toast.success(kind === "trading" ? t("accountDetail.pw.updated.trading") : t("accountDetail.pw.updated.investor"), { description: `#${a.login} · ${a.server}` });
               }, 700);
             }}
           >
-            {busy ? "Updating…" : "Update password"}
+            {busy ? t("accountDetail.pw.updating") : t("accountDetail.pw.update")}
           </Button>
         </>
       }
     >
       <div className="space-y-4">
-        <Field label="New password">
+        <Field label={t("accountDetail.pw.new")}>
           <PasswordInput value={pw} onChange={setPw} generate />
         </Field>
         <PasswordStrength password={pw} />
-        <Field label="Confirm new password" error={confirm && confirm !== pw ? "Passwords don't match" : undefined}>
-          <PasswordInput value={confirm} onChange={setConfirm} placeholder="Repeat password" />
+        <Field label={t("accountDetail.pw.confirmNew")} error={confirm && confirm !== pw ? t("accountDetail.pw.mismatch") : undefined}>
+          <PasswordInput value={confirm} onChange={setConfirm} placeholder={t("accountDetail.pw.repeat")} />
         </Field>
-        <EmailOtp code={code} onCode={setCode} purpose="confirm the password change" />
+        <EmailOtp code={code} onCode={setCode} purpose={t("accountDetail.pw.otpPurpose")} />
       </div>
     </Dialog>
   );
@@ -77,16 +79,17 @@ function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: TradingAccou
 /* ------------------------------------------------------------------ */
 
 export function CredentialsTab({ a }: { a: TradingAccount }) {
+  const t = useT();
   const [dlg, setDlg] = React.useState<"trading" | "investor" | null>(null);
   const archived = a.balance === 0 && a.equity === 0;
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
       <Reveal className="xl:col-span-7">
         <Card className="h-full">
-          <CardHeader title="MT5 credentials" subtitle="Use these to log in to the Kalks terminal or any MetaTrader 5 app." icon={<KeyRound />} />
+          <CardHeader title={t("accountDetail.creds.mt5Title")} subtitle={t("accountDetail.creds.mt5Subtitle")} icon={<KeyRound />} />
           <div className="grid grid-cols-1 gap-4 px-4 pb-6 pt-5 sm:grid-cols-2 sm:px-6">
-            <CredentialField label="Login" value={a.login} />
-            <CredentialField label="Server" value={a.server} hint="GMT+3" />
+            <CredentialField label={t("accountDetail.info.login")} value={a.login} />
+            <CredentialField label={t("accountDetail.info.server")} value={a.server} hint="GMT+3" />
             <div className="sm:col-span-2">
               <div className="k-row flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember">
@@ -94,12 +97,12 @@ export function CredentialsTab({ a }: { a: TradingAccount }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-[14px] font-medium">
-                    Trading password <Chip size="sm">Master</Chip>
+                    {t("accountDetail.pw.trading")} <Chip size="sm">{t("accountDetail.creds.master")}</Chip>
                   </div>
-                  <div className="text-[12.5px] text-fg-3">Full access — open, modify and close trades. Last changed 12 Feb 2026.</div>
+                  <div className="text-[12.5px] text-fg-3">{t("accountDetail.creds.tradingDescDemo")}</div>
                 </div>
                 <Button size="sm" variant="surface" disabled={archived} onClick={() => setDlg("trading")}>
-                  <Pencil /> Change
+                  <Pencil /> {t("accountDetail.creds.change")}
                 </Button>
               </div>
             </div>
@@ -110,30 +113,30 @@ export function CredentialsTab({ a }: { a: TradingAccount }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-[14px] font-medium">
-                    Investor password <Chip size="sm" tone="info">Read-only</Chip>
+                    {t("accountDetail.pw.investor")} <Chip size="sm" tone="info">{t("accountDetail.creds.readOnly")}</Chip>
                   </div>
-                  <div className="text-[12.5px] text-fg-3">View-only access for coaches, auditors and investors. Cannot place trades.</div>
+                  <div className="text-[12.5px] text-fg-3">{t("accountDetail.creds.investorDescDemo")}</div>
                 </div>
                 <Button size="sm" variant="surface" disabled={archived} onClick={() => setDlg("investor")}>
-                  <Pencil /> Change
+                  <Pencil /> {t("accountDetail.creds.change")}
                 </Button>
               </div>
             </div>
             <div className="flex items-start gap-2 text-[12px] text-fg-3 sm:col-span-2">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-warn" />
-              For your security, Kalks never displays or emails existing passwords. Changing either password requires a one-time code sent to your email.
+              {t("accountDetail.creds.securityNoteDemo")}
             </div>
           </div>
         </Card>
       </Reveal>
       <Reveal delay={0.05} className="xl:col-span-5">
         <Card className="h-full">
-          <CardHeader title="Connect a platform" subtitle="Same login works everywhere" />
+          <CardHeader title={t("accountDetail.platforms.title")} subtitle={t("accountDetail.platforms.subtitle")} />
           <div className="space-y-2 px-4 pb-6 pt-4 sm:px-6">
             {[
-              { icon: <Globe />, name: "Kalks WebTerminal", sub: "No download · any browser", action: <Link target="_blank" rel="noopener" href={`/trade?account=${a.login}`}><Button size="sm" variant="ember">Launch</Button></Link> },
-              { icon: <Monitor />, name: "MetaTrader 5 · Windows / macOS", sub: "kalks5setup · 24.1 MB", action: <Button size="sm" variant="surface" onClick={() => toast.success("Download started", { description: "kalks5setup.exe" })}><Download /> Get</Button> },
-              { icon: <Smartphone />, name: "MetaTrader 5 · iOS / Android", sub: `Search server “${a.server}”`, action: <Button size="sm" variant="surface" onClick={() => toast("Store links sent to your email")}>Send link</Button> },
+              { icon: <Globe />, name: "Kalks WebTerminal", sub: t("accountDetail.platforms.webSub"), action: <Link target="_blank" rel="noopener" href={`/trade?account=${a.login}`}><Button size="sm" variant="ember">{t("accountDetail.platforms.launch")}</Button></Link> },
+              { icon: <Monitor />, name: "MetaTrader 5 · Windows / macOS", sub: "kalks5setup · 24.1 MB", action: <Button size="sm" variant="surface" onClick={() => toast.success(t("accountDetail.platforms.downloadStarted"), { description: "kalks5setup.exe" })}><Download /> {t("accountDetail.platforms.get")}</Button> },
+              { icon: <Smartphone />, name: "MetaTrader 5 · iOS / Android", sub: t("accountDetail.platforms.mobileSub", { server: a.server }), action: <Button size="sm" variant="surface" onClick={() => toast(t("accountDetail.platforms.storeLinksSent"))}>{t("accountDetail.platforms.sendLink")}</Button> },
             ].map((p) => (
               <div key={p.name} className="k-row flex items-center gap-3 px-4 py-3">
                 <span className="grid size-9 shrink-0 place-items-center rounded-full border border-line bg-surface-3 text-fg-2 [&_svg]:size-4">{p.icon}</span>
@@ -146,7 +149,7 @@ export function CredentialsTab({ a }: { a: TradingAccount }) {
             ))}
             <div className="flex items-center gap-3 pt-3">
               <Icon3D name="locked" size={40} />
-              <p className="text-[12px] text-fg-3">Enable 2FA on your Kalks profile to protect withdrawals and credential changes.</p>
+              <p className="text-[12px] text-fg-3">{t("accountDetail.platforms.twoFaHint")}</p>
             </div>
           </div>
         </Card>
@@ -177,6 +180,8 @@ function useCountdown(to?: string) {
 }
 
 export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount; openPositions: number; onRename: (n: string) => void }) {
+  const t = useT();
+  const f = useFormat();
   const g = ACCOUNT_GROUPS.find((x) => x.name === a.group)!;
   const [lev, setLev] = React.useState(a.leverage);
   const [savedLev, setSavedLev] = React.useState(a.leverage);
@@ -194,15 +199,15 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
       <div className="space-y-4 xl:col-span-7">
         <Reveal>
           <Card>
-            <CardHeader title="Leverage" subtitle={`Allowed on ${g.name}: ${g.leverage.map((l) => `1:${l}`).join(" · ")}`} action={<Chip tone="ember">Current 1:{savedLev.toLocaleString()}</Chip>} />
+            <CardHeader title={t("accountDetail.leverage.title")} subtitle={t("accountDetail.leverage.allowed", { group: g.name, list: g.leverage.map((l) => `1:${l}`).join(" · ") })} action={<Chip tone="ember">{t("accountDetail.leverage.current", { value: `1:${savedLev.toLocaleString()}` })}</Chip>} />
             <div className="px-4 pb-6 pt-4 sm:px-6">
               {locked && (
                 <div className="mb-4 flex items-start gap-3 rounded-[14px] border border-warn/25 bg-warn-soft px-4 py-3 text-[13px]">
                   <Lock className="mt-0.5 size-4 shrink-0 text-warn" />
                   <div>
-                    <div className="font-medium text-warn">Leverage is locked while positions are open</div>
+                    <div className="font-medium text-warn">{t("accountDetail.leverage.lockedTitle")}</div>
                     <div className="mt-0.5 text-fg-2">
-                      Close your {openPositions} open position{openPositions > 1 ? "s" : ""} to change leverage. This prevents sudden margin changes on running trades.
+                      {t("accountDetail.leverage.lockedText", { count: openPositions })}
                     </div>
                   </div>
                 </div>
@@ -221,17 +226,17 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
                 ))}
               </div>
               <div className="mt-4 flex items-center justify-between gap-3">
-                <span className="text-[12.5px] text-fg-3">Margin required on 1 lot EURUSD: <span className="k-num text-fg-2">${Math.round(108456 / lev).toLocaleString()}</span></span>
+                <span className="text-[12.5px] text-fg-3"><Trans k="accountDetail.leverage.marginRequired" vars={{ amount: `$${Math.round(108456 / lev).toLocaleString()}` }} tags={{ v: (c) => <span className="k-num text-fg-2">{c}</span> }} /></span>
                 <Button
                   size="sm"
                   variant="ember"
                   disabled={locked || lev === savedLev}
                   onClick={() => {
                     setSavedLev(lev);
-                    toast.success("Leverage updated", { description: `#${a.login} is now 1:${lev.toLocaleString()}` });
+                    toast.success(t("accountDetail.leverage.updated"), { description: t("accountDetail.leverage.nowDesc", { login: a.login, value: `1:${lev.toLocaleString()}` }) });
                   }}
                 >
-                  Apply
+                  {t("common.apply")}
                 </Button>
               </div>
             </div>
@@ -240,7 +245,7 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
 
         <Reveal delay={0.05}>
           <Card>
-            <CardHeader title="Account name" subtitle="Only visible to you" />
+            <CardHeader title={t("accountDetail.name.title")} subtitle={t("accountDetail.name.subtitle")} />
             <div className="flex flex-col gap-3 px-4 pb-6 pt-4 sm:flex-row sm:px-6">
               <Input className="flex-1" value={name} maxLength={24} onChange={(e) => setName(e.target.value)} placeholder={`${a.group} · ${a.mode}`} leading={<Pencil />} trailing={<span className="k-num text-[11px]">{name.length}/24</span>} />
               <Button
@@ -249,10 +254,10 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
                 disabled={name === (a.nickname ?? "")}
                 onClick={() => {
                   onRename(name);
-                  toast.success("Account renamed", { description: name || "Nickname removed" });
+                  toast.success(t("accountDetail.name.renamed"), { description: name || t("accountDetail.name.removed") });
                 }}
               >
-                Save
+                {t("common.save")}
               </Button>
             </div>
           </Card>
@@ -260,22 +265,22 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
 
         <Reveal delay={0.1}>
           <Card>
-            <CardHeader title="Swap-free (Islamic)" subtitle="No overnight swap charges; admin fee may apply after 5 nights" />
+            <CardHeader title={t("accountDetail.swapFree.title")} subtitle={t("accountDetail.swapFree.subtitle")} />
             <div className="flex items-center gap-4 px-4 pb-6 pt-4 sm:px-6">
               <span className="grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface-3 text-gold">
                 <Moon className="size-4" />
               </span>
               <div className="flex-1 text-[13px] text-fg-2">
-                {a.swapFree ? "This account is swap-free." : swapReq ? "Request submitted — compliance usually responds within 24 hours." : "Switching requires a quick compliance review."}
+                {a.swapFree ? t("accountDetail.swapFree.isOn") : swapReq ? t("accountDetail.swapFree.requested") : t("accountDetail.swapFree.needsReview")}
               </div>
               <Toggle
                 checked={a.swapFree || swapReq}
                 onChange={(v) => {
-                  if (a.swapFree) return toast("Contact support to switch off swap-free status");
+                  if (a.swapFree) return toast(t("accountDetail.swapFree.contactSupport"));
                   setSwapReq(v);
-                  toast[v ? "success" : "info"](v ? "Swap-free request submitted" : "Request withdrawn");
+                  toast[v ? "success" : "info"](v ? t("accountDetail.swapFree.requestSubmitted") : t("accountDetail.swapFree.requestWithdrawn"));
                 }}
-                label="Swap-free"
+                label={t("accountDetail.header.swapFree")}
               />
             </div>
           </Card>
@@ -289,20 +294,20 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
               <div className="relative px-6 pb-6 pt-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="k-label">Demo funds</div>
+                    <div className="k-label">{t("accountDetail.demoFunds.title")}</div>
                     <Money value={a.balance} currency={cur} className="mt-2 block text-[28px] font-semibold" />
                   </div>
                   <Icon3D name="hourglass_not_done" size={56} />
                 </div>
                 <div className="mt-4">
-                  <div className="mb-2 text-[11.5px] uppercase tracking-wider text-fg-3">Expires in</div>
+                  <div className="mb-2 text-[11.5px] uppercase tracking-wider text-fg-3">{t("accountDetail.demoFunds.expiresIn")}</div>
                   <div className="flex gap-2">
                     {cd
                       ? [
-                          [cd.d, "days"],
-                          [cd.h, "hrs"],
-                          [cd.m, "min"],
-                          [cd.s, "sec"],
+                          [cd.d, t("accountDetail.countdown.days")],
+                          [cd.h, t("accountDetail.countdown.hrs")],
+                          [cd.m, t("accountDetail.countdown.min")],
+                          [cd.s, t("accountDetail.countdown.sec")],
                         ].map(([v, l]) => (
                           <div key={l as string} className="flex-1 rounded-[14px] border border-line bg-black/25 light:bg-white/70 py-2 text-center">
                             <div className="k-num font-mono text-[22px] font-semibold">{pad(v as number)}</div>
@@ -314,7 +319,7 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
                 </div>
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <div className="text-[12.5px] text-fg-2">
-                    <span className="k-num font-semibold text-fg">{refills}</span> of {DEMO_RULES.refillsPerDay} refills left today
+                    <Trans k="accountDetail.demoFunds.refillsLeft" vars={{ left: refills, total: DEMO_RULES.refillsPerDay }} tags={{ n: (c) => <span className="k-num font-semibold text-fg">{c}</span> }} />
                     <div className="mt-1.5 flex gap-1">
                       {Array.from({ length: DEMO_RULES.refillsPerDay }, (_, i) => (
                         <span key={i} className={cn("h-1.5 w-8 rounded-full", i < refills ? "bg-gold" : "bg-surface-3")} />
@@ -326,10 +331,10 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
                     disabled={refills === 0}
                     onClick={() => {
                       setRefills((r) => r - 1);
-                      toast.success("Demo balance refilled", { description: `#${a.login} reset to ${cur}${a.balance.toLocaleString()} · ${refills - 1} left today` });
+                      toast.success(t("accountDetail.demoFunds.refilled"), { description: t("accountDetail.demoFunds.refilledDesc", { login: a.login, amount: `${cur}${a.balance.toLocaleString()}`, left: refills - 1 }) });
                     }}
                   >
-                    <RefreshCcw /> Refill
+                    <RefreshCcw /> {t("accountDetail.header.refill")}
                   </Button>
                 </div>
               </div>
@@ -339,15 +344,15 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
 
         <Reveal delay={0.05}>
           <Card>
-            <CardHeader title="Account details" />
+            <CardHeader title={t("accountDetail.details.title")} />
             <div className="px-6 pb-4 pt-1">
               <KeyValue
                 rows={[
-                  ["Login", <span key="l" className="font-mono">{a.login}</span>],
-                  ["Group", `${a.group} · ${a.mode === "hedging" ? "Hedging" : "Netting"}`],
-                  ["Currency", a.currency],
-                  ["Margin call / stop out", "50% / 20%"],
-                  ["Opened", new Date(a.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })],
+                  [t("accountDetail.info.login"), <span key="l" className="font-mono">{a.login}</span>],
+                  [t("accountDetail.info.group"), `${a.group} · ${a.mode === "hedging" ? t("accountDetail.info.hedging") : t("accountDetail.info.netting")}`],
+                  [t("common.currency"), a.currency],
+                  [t("accountDetail.info.marginCallStopOut"), "50% / 20%"],
+                  [t("accountDetail.info.opened"), f.date(a.createdAt, { day: "2-digit", month: "short", year: "numeric" })],
                 ]}
               />
             </div>
@@ -356,13 +361,13 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
 
         <Reveal delay={0.1}>
           <Card className="border-down/25">
-            <CardHeader title="Archive account" subtitle="Hide it from your list and disable trading" />
+            <CardHeader title={t("accountDetail.archive.title")} subtitle={t("accountDetail.archive.subtitle")} />
             <div className="px-4 pb-6 pt-4 sm:px-6">
               <p className="text-[13px] text-fg-2">
-                {a.type === "live" ? "Archiving requires no open positions. Move any remaining balance to your wallet first — you can restore a live account later." : "Archived demo accounts can’t be restored."}
+                {a.type === "live" ? t("accountDetail.archive.liveNote") : t("accountDetail.archive.demoNote")}
               </p>
               <Button className="mt-4" variant="down-outline" onClick={() => setArchiveOpen(true)}>
-                <Archive /> Archive account
+                <Archive /> {t("accountDetail.archive.title")}
               </Button>
             </div>
           </Card>
@@ -372,23 +377,23 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
       <Dialog
         open={archiveOpen}
         onOpenChange={setArchiveOpen}
-        title={`Archive #${a.login}?`}
-        description={`${a.group} · ${a.mode === "hedging" ? "Hedging" : "Netting"} · ${a.server}`}
+        title={t("accountDetail.archive.confirmTitle", { login: a.login })}
+        description={`${a.group} · ${a.mode === "hedging" ? t("accountDetail.info.hedging") : t("accountDetail.info.netting")} · ${a.server}`}
         width={460}
         footer={
           <>
             <Button variant="ghost" onClick={() => setArchiveOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               variant="sell"
               disabled={locked}
               onClick={() => {
                 setArchiveOpen(false);
-                toast.success("Account archived", { description: `#${a.login} moved to Archived` });
+                toast.success(t("accountDetail.archive.done"), { description: t("accountDetail.archive.doneDesc", { login: a.login }) });
               }}
             >
-              Archive
+              {t("accountDetail.archive.confirm")}
             </Button>
           </>
         }
@@ -396,16 +401,16 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
         {locked ? (
           <div className="flex items-start gap-3 rounded-[14px] border border-warn/25 bg-warn-soft px-4 py-3 text-[13px] text-fg-2">
             <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" />
-            Close all {openPositions} open positions before archiving this account.
+            {t("accountDetail.archive.closeFirst", { count: openPositions })}
           </div>
         ) : (
           <div className="space-y-3 text-[13px] text-fg-2">
-            <p>Trading will be disabled and the account will move to your Archived tab.</p>
+            <p>{t("accountDetail.archive.disabledNote")}</p>
             {a.type === "live" && a.balance > 0 && (
               <div className="k-row flex items-center justify-between px-4 py-3">
-                <span>Remaining balance</span>
+                <span>{t("accountDetail.archive.remaining")}</span>
                 <Link href={`/wallet/transfer?from=${a.login}`} className="font-medium text-ember hover:underline">
-                  <Money value={a.balance} currency={cur} countUp={false} /> → Move to wallet
+                  <Money value={a.balance} currency={cur} countUp={false} /> → {t("accountDetail.archive.moveToWallet")}
                 </Link>
               </div>
             )}

@@ -28,6 +28,8 @@ import {
 import { getInstrument, positionProfit, type ClosedTrade, type Position, type TradingAccount } from "@kalks/mock";
 import { accountLedger, spreadCost, type LedgerEntry } from "@kalks/mock/accounts-extra";
 import { curOf, multOf } from "./detail-overview";
+import { Trans, useT } from "@kalks/i18n/react";
+import type { MessageKey } from "@kalks/i18n";
 
 const signed = (v: number, cur: string) => `${v > 0 ? "+" : v < 0 ? "-" : ""}${cur}${formatNumber(Math.abs(v))}`;
 
@@ -36,6 +38,7 @@ const signed = (v: number, cur: string) => `${v > 0 ? "+" : v < 0 ? "-" : ""}${c
 /* ------------------------------------------------------------------ */
 
 export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; positions: Position[]; onClose: (tickets: string[]) => void }) {
+  const t = useT();
   const cur = curOf(a);
   const mult = multOf(a);
   const qs = useQuotes(positions.length ? positions.map((p) => p.symbol) : ["EURUSD"]);
@@ -50,12 +53,12 @@ export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; pos
       <Card>
         <EmptyState
           illustration="chart_increasing"
-          title="No open positions"
-          text="Open a trade from the terminal — live P&L will stream here tick by tick."
+          title={t("accountDetail.positions.noneTitle")}
+          text={t("accountDetail.positions.noneText")}
           action={
             <Link target="_blank" rel="noopener" href={`/trade?account=${a.login}`}>
               <Button variant="ember">
-                <CandlestickChart /> Open terminal
+                <CandlestickChart /> {t("accountDetail.positions.openTerminal")}
               </Button>
             </Link>
           }
@@ -68,7 +71,7 @@ export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; pos
     const list = confirm === "all" ? positions : [confirm];
     const pnl = list.reduce((s, p) => s + positionProfit(p, qs[p.symbol]!.bid, qs[p.symbol]!.ask) * mult, 0);
     onClose(list.map((p) => p.ticket));
-    toast.success(confirm === "all" ? `Closed ${list.length} positions` : `Closed #${confirm.ticket} ${confirm.symbol}`, { description: `Realised ${signed(pnl, cur)}` });
+    toast.success(confirm === "all" ? t("accountDetail.close.toastAll", { count: list.length }) : t("accountDetail.close.toastOne", { ticket: confirm.ticket, symbol: confirm.symbol }), { description: t("accountDetail.close.realised", { amount: signed(pnl, cur) }) });
     setConfirm(null);
   };
 
@@ -76,17 +79,17 @@ export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; pos
     <Reveal>
       <Card>
         <CardHeader
-          title="Open positions"
+          title={t("accountDetail.overview.openPositions")}
           subtitle={
             <span>
-              {positions.length} open · floating <span className={cn("k-num font-medium", total >= 0 ? "text-up" : "text-down")}>{signed(total, cur)}</span>
+              <Trans k="accountDetail.positions.subtitle" vars={{ count: positions.length, amount: signed(total, cur) }} tags={{ pnl: (c) => <span className={cn("k-num font-medium", total >= 0 ? "text-up" : "text-down")}>{c}</span> }} />
             </span>
           }
           action={
             <>
-              <Segmented size="xs" value={filter} onChange={setFilter} options={[{ value: "all", label: "All" }, { value: "profit", label: "Profit" }, { value: "loss", label: "Loss" }]} />
+              <Segmented size="xs" value={filter} onChange={setFilter} options={[{ value: "all", label: t("common.all") }, { value: "profit", label: t("common.profit") }, { value: "loss", label: t("common.loss") }]} />
               <Button size="sm" variant="down-outline" onClick={() => setConfirm("all")}>
-                Close all
+                {t("accountDetail.close.all")}
               </Button>
             </>
           }
@@ -95,14 +98,14 @@ export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; pos
           <table className="w-full min-w-[860px] border-separate border-spacing-y-2 text-[13.5px]">
             <thead>
               <tr className="text-[11px] uppercase tracking-wider text-fg-3">
-                <th className="px-4 text-left font-medium">Symbol</th>
-                <th className="px-3 text-left font-medium">Ticket</th>
-                <th className="px-3 text-right font-medium">Volume</th>
-                <th className="px-3 text-right font-medium">Open</th>
-                <th className="px-3 text-right font-medium">Current</th>
-                <th className="px-3 text-right font-medium">SL / TP</th>
-                <th className="px-3 text-right font-medium">Swap</th>
-                <th className="px-3 text-right font-medium">P&L</th>
+                <th className="px-4 text-start font-medium">{t("accountDetail.col.symbol")}</th>
+                <th className="px-3 text-start font-medium">{t("accountDetail.col.ticket")}</th>
+                <th className="px-3 text-end font-medium">{t("accountDetail.col.volume")}</th>
+                <th className="px-3 text-end font-medium">{t("accountDetail.col.open")}</th>
+                <th className="px-3 text-end font-medium">{t("accountDetail.col.current")}</th>
+                <th className="px-3 text-end font-medium">{t("accountDetail.col.slTp")}</th>
+                <th className="px-3 text-end font-medium">{t("accountDetail.col.swap")}</th>
+                <th className="px-3 text-end font-medium">{t("accountDetail.col.pnl")}</th>
                 <th className="px-4" />
               </tr>
             </thead>
@@ -113,14 +116,14 @@ export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; pos
                   const inst = getInstrument(p.symbol);
                   return (
                     <motion.tr key={p.ticket} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: 30 }} className="bg-surface-2">
-                      <td className="rounded-l-[14px] border-y border-l border-line px-4 py-3">
+                      <td className="rounded-s-[14px] border-y border-s border-line px-4 py-3">
                         <div className="flex items-center gap-3">
                           <SymbolAvatar symbol={p.symbol} size={26} />
                           <div>
                             <div className="flex items-center gap-2 font-medium">
                               {p.symbol}
                               <Chip size="sm" tone={p.side === "buy" ? "up" : "down"}>
-                                {p.side.toUpperCase()}
+                                {p.side === "buy" ? t("accountDetail.side.buy") : t("accountDetail.side.sell")}
                               </Chip>
                             </div>
                             <div className="text-[11px] text-fg-3">
@@ -130,19 +133,19 @@ export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; pos
                         </div>
                       </td>
                       <td className="border-y border-line px-3 font-mono text-[12px] text-fg-3">#{p.ticket}</td>
-                      <td className="k-num border-y border-line px-3 text-right">{p.volume.toFixed(2)}</td>
-                      <td className="k-num border-y border-line px-3 text-right font-mono text-fg-2">{formatNumber(p.openPrice, inst.digits)}</td>
-                      <td className="border-y border-line px-3 text-right">
+                      <td className="k-num border-y border-line px-3 text-end">{p.volume.toFixed(2)}</td>
+                      <td className="k-num border-y border-line px-3 text-end font-mono text-fg-2">{formatNumber(p.openPrice, inst.digits)}</td>
+                      <td className="border-y border-line px-3 text-end">
                         <PriceText symbol={p.symbol} value={p.side === "buy" ? q.bid : q.ask} dir={q.dir} className="text-[13px]" />
                       </td>
-                      <td className="k-num border-y border-line px-3 text-right font-mono text-[12px] text-fg-3">
+                      <td className="k-num border-y border-line px-3 text-end font-mono text-[12px] text-fg-3">
                         <span className="text-down/80">{p.sl ? formatNumber(p.sl, inst.digits) : "—"}</span> / <span className="text-up/80">{p.tp ? formatNumber(p.tp, inst.digits) : "—"}</span>
                       </td>
-                      <td className={cn("k-num border-y border-line px-3 text-right text-[12.5px]", p.swap < 0 ? "text-down" : "text-fg-2")}>{formatNumber(p.swap * mult)}</td>
-                      <td className={cn("k-num border-y border-line px-3 text-right text-[14px] font-semibold", pnl >= 0 ? "text-up" : "text-down")}>{signed(pnl, cur)}</td>
-                      <td className="rounded-r-[14px] border-y border-r border-line px-4 text-right">
+                      <td className={cn("k-num border-y border-line px-3 text-end text-[12.5px]", p.swap < 0 ? "text-down" : "text-fg-2")}>{formatNumber(p.swap * mult)}</td>
+                      <td className={cn("k-num border-y border-line px-3 text-end text-[14px] font-semibold", pnl >= 0 ? "text-up" : "text-down")}>{signed(pnl, cur)}</td>
+                      <td className="rounded-e-[14px] border-y border-e border-line px-4 text-end">
                         <Button size="xs" variant="surface" onClick={() => setConfirm(p)}>
-                          <X /> Close
+                          <X /> {t("common.close")}
                         </Button>
                       </td>
                     </motion.tr>
@@ -156,16 +159,16 @@ export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; pos
       <Dialog
         open={!!confirm}
         onOpenChange={(o) => !o && setConfirm(null)}
-        title={confirm === "all" ? `Close all ${positions.length} positions?` : confirm ? `Close ${confirm.symbol} #${confirm.ticket}?` : ""}
-        description="Positions close at the current market price. Slippage may apply in fast markets."
+        title={confirm === "all" ? t("accountDetail.close.confirmAll", { count: positions.length }) : confirm ? t("accountDetail.close.confirmOne", { symbol: confirm.symbol, ticket: confirm.ticket }) : ""}
+        description={t("accountDetail.close.description")}
         width={440}
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirm(null)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="sell" onClick={doClose}>
-              Close at market
+              {t("accountDetail.close.atMarket")}
             </Button>
           </>
         }
@@ -179,7 +182,7 @@ export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; pos
                 <div key={p.ticket} className="k-row flex items-center gap-3 px-4 py-2.5">
                   <SymbolAvatar symbol={p.symbol} size={22} />
                   <div className="flex-1 text-[13px] font-medium">
-                    {p.symbol} <span className="text-fg-3">{p.side.toUpperCase()} {p.volume}</span>
+                    {p.symbol} <span className="text-fg-3">{p.side === "buy" ? t("accountDetail.side.buy") : t("accountDetail.side.sell")} {p.volume}</span>
                   </div>
                   <span className={cn("k-num text-[13px] font-semibold", pnl >= 0 ? "text-up" : "text-down")}>{signed(pnl, cur)}</span>
                 </div>
@@ -197,26 +200,27 @@ export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; pos
 /* ------------------------------------------------------------------ */
 
 export function HistoryTab({ a, trades }: { a: TradingAccount; trades: ClosedTrade[] }) {
+  const tt = useT();
   const cur = curOf(a);
   const mult = multOf(a);
   const [side, setSide] = React.useState<"all" | "buy" | "sell">("all");
   const rows = trades.filter((t) => side === "all" || t.side === side);
   const cols: Column<ClosedTrade>[] = [
-    { key: "sym", header: "Symbol", cell: (t) => <SymbolCell symbol={t.symbol} size={24} sub={<span className="font-mono">#{t.ticket}</span>} />, sort: (t) => t.symbol },
-    { key: "side", header: "Side", cell: (t) => <Chip size="sm" tone={t.side === "buy" ? "up" : "down"}>{t.side.toUpperCase()}</Chip> },
-    { key: "vol", header: "Volume", align: "right", cell: (t) => <span className="k-num">{t.volume.toFixed(2)}</span>, sort: (t) => t.volume },
-    { key: "open", header: "Open", align: "right", hideOn: "md", cell: (t) => <span className="k-num font-mono text-fg-2">{formatNumber(t.openPrice, getInstrument(t.symbol).digits)}</span> },
-    { key: "close", header: "Close", align: "right", hideOn: "md", cell: (t) => <span className="k-num font-mono">{formatNumber(t.closePrice, getInstrument(t.symbol).digits)}</span> },
-    { key: "time", header: "Closed", hideOn: "lg", cell: (t) => <span className="k-num text-[12.5px] text-fg-2">{formatDateTime(t.closeTime)}</span>, sort: (t) => t.closeTime },
-    { key: "swap", header: "Swap", align: "right", hideOn: "lg", cell: (t) => <span className="k-num text-[12.5px] text-fg-3">{formatNumber(t.swap * mult)}</span> },
-    { key: "comm", header: "Comm.", align: "right", hideOn: "lg", cell: (t) => <span className="k-num text-[12.5px] text-fg-3">{formatNumber(-t.commission * mult)}</span> },
-    { key: "pnl", header: "Profit", align: "right", cell: (t) => <span className={cn("k-num font-semibold", t.profit >= 0 ? "text-up" : "text-down")}>{signed(t.profit * mult, cur)}</span>, sort: (t) => t.profit },
+    { key: "sym", header: tt("accountDetail.col.symbol"), cell: (t) => <SymbolCell symbol={t.symbol} size={24} sub={<span className="font-mono">#{t.ticket}</span>} />, sort: (t) => t.symbol },
+    { key: "side", header: tt("accountDetail.col.side"), cell: (t) => <Chip size="sm" tone={t.side === "buy" ? "up" : "down"}>{t.side === "buy" ? tt("accountDetail.side.buy") : tt("accountDetail.side.sell")}</Chip> },
+    { key: "vol", header: tt("accountDetail.col.volume"), align: "right", cell: (t) => <span className="k-num">{t.volume.toFixed(2)}</span>, sort: (t) => t.volume },
+    { key: "open", header: tt("accountDetail.col.open"), align: "right", hideOn: "md", cell: (t) => <span className="k-num font-mono text-fg-2">{formatNumber(t.openPrice, getInstrument(t.symbol).digits)}</span> },
+    { key: "close", header: tt("accountDetail.col.close"), align: "right", hideOn: "md", cell: (t) => <span className="k-num font-mono">{formatNumber(t.closePrice, getInstrument(t.symbol).digits)}</span> },
+    { key: "time", header: tt("accountDetail.col.closed"), hideOn: "lg", cell: (t) => <span className="k-num text-[12.5px] text-fg-2">{formatDateTime(t.closeTime)}</span>, sort: (t) => t.closeTime },
+    { key: "swap", header: tt("accountDetail.col.swap"), align: "right", hideOn: "lg", cell: (t) => <span className="k-num text-[12.5px] text-fg-3">{formatNumber(t.swap * mult)}</span> },
+    { key: "comm", header: tt("accountDetail.col.comm"), align: "right", hideOn: "lg", cell: (t) => <span className="k-num text-[12.5px] text-fg-3">{formatNumber(-t.commission * mult)}</span> },
+    { key: "pnl", header: tt("common.profit"), align: "right", cell: (t) => <span className={cn("k-num font-semibold", t.profit >= 0 ? "text-up" : "text-down")}>{signed(t.profit * mult, cur)}</span>, sort: (t) => t.profit },
   ];
   const net = rows.reduce((s, t) => s + t.profit, 0) * mult;
   return (
     <Reveal>
       <Card>
-        <CardHeader title="Trade history" subtitle={<span>{rows.length} closed trades · net <span className={cn("k-num font-medium", net >= 0 ? "text-up" : "text-down")}>{signed(net, cur)}</span></span>} />
+        <CardHeader title={tt("accountDetail.history.title")} subtitle={<span><Trans k="accountDetail.history.closedSummary" vars={{ count: rows.length, amount: signed(net, cur) }} tags={{ net: (c) => <span className={cn("k-num font-medium", net >= 0 ? "text-up" : "text-down")}>{c}</span> }} /></span>} />
         <div className="px-4 pb-5 pt-4 sm:px-6">
           <DataTable
             columns={cols}
@@ -224,9 +228,9 @@ export function HistoryTab({ a, trades }: { a: TradingAccount; trades: ClosedTra
             rowKey={(t) => t.ticket}
             pageSize={12}
             search={(t) => `${t.symbol} ${t.ticket}`}
-            searchPlaceholder="Symbol or ticket"
+            searchPlaceholder={tt("accountDetail.history.searchPlaceholder")}
             exportName={`kalks-${a.login}-history`}
-            toolbar={<Segmented size="xs" value={side} onChange={setSide} options={[{ value: "all", label: "All" }, { value: "buy", label: "Buy" }, { value: "sell", label: "Sell" }]} />}
+            toolbar={<Segmented size="xs" value={side} onChange={setSide} options={[{ value: "all", label: tt("common.all") }, { value: "buy", label: tt("common.buy") }, { value: "sell", label: tt("common.sell") }]} />}
           />
         </div>
       </Card>
@@ -239,6 +243,7 @@ export function HistoryTab({ a, trades }: { a: TradingAccount; trades: ClosedTra
 /* ------------------------------------------------------------------ */
 
 export function ChargesTab({ a, trades }: { a: TradingAccount; trades: ClosedTrade[] }) {
+  const tt = useT();
   const cur = curOf(a);
   const mult = multOf(a);
   const rows = trades.map((t) => ({ t, spread: spreadCost(t) * mult, comm: t.commission * mult, swap: -t.swap * mult }));
@@ -252,19 +257,19 @@ export function ChargesTab({ a, trades }: { a: TradingAccount; trades: ClosedTra
   }, [rows]);
   const maxSym = bySym[0]?.[1] ?? 1;
   const tiles = [
-    { label: "Commission", v: tot.comm, icon: <Receipt />, note: a.group === "ECN" ? "$3.5 / lot / side" : "On raw-priced symbols" },
-    { label: "Swap", v: tot.swap, icon: <Moon />, note: a.swapFree ? "Swap-free account" : "Overnight financing" },
-    { label: "Spread cost", v: tot.spread, icon: <Ruler />, note: "Estimated at entry" },
-    { label: "Fees", v: fees, icon: <Coins />, note: "No inactivity or account fees" },
+    { label: tt("accountDetail.col.commission"), v: tot.comm, icon: <Receipt />, note: a.group === "ECN" ? tt("accountDetail.charges.ecnNote") : tt("accountDetail.charges.rawNote") },
+    { label: tt("accountDetail.col.swap"), v: tot.swap, icon: <Moon />, note: a.swapFree ? tt("accountDetail.charges.swapFreeNote") : tt("accountDetail.charges.overnight") },
+    { label: tt("accountDetail.charges.spreadCost"), v: tot.spread, icon: <Ruler />, note: tt("accountDetail.charges.estimated") },
+    { label: tt("accountDetail.charges.fees"), v: fees, icon: <Coins />, note: tt("accountDetail.charges.noFees") },
   ];
   const cols: Column<(typeof rows)[number]>[] = [
-    { key: "sym", header: "Trade", cell: (r) => <SymbolCell symbol={r.t.symbol} size={22} sub={<span className="font-mono">#{r.t.ticket}</span>} /> },
-    { key: "time", header: "Closed", hideOn: "md", cell: (r) => <span className="k-num text-[12.5px] text-fg-2">{formatDateTime(r.t.closeTime)}</span> },
-    { key: "vol", header: "Lots", align: "right", cell: (r) => <span className="k-num">{r.t.volume.toFixed(2)}</span> },
-    { key: "spread", header: "Spread", align: "right", cell: (r) => <span className="k-num text-fg-2">{formatNumber(r.spread)}</span>, sort: (r) => r.spread },
-    { key: "comm", header: "Commission", align: "right", cell: (r) => <span className="k-num text-fg-2">{formatNumber(r.comm)}</span>, sort: (r) => r.comm },
-    { key: "swap", header: "Swap", align: "right", cell: (r) => <span className={cn("k-num", r.swap < 0 ? "text-up" : "text-fg-2")}>{formatNumber(r.swap)}</span>, sort: (r) => r.swap },
-    { key: "tot", header: "Total cost", align: "right", cell: (r) => <span className="k-num font-semibold">{cur}{formatNumber(r.spread + r.comm + r.swap)}</span>, sort: (r) => r.spread + r.comm + r.swap },
+    { key: "sym", header: tt("accountDetail.col.trade"), cell: (r) => <SymbolCell symbol={r.t.symbol} size={22} sub={<span className="font-mono">#{r.t.ticket}</span>} /> },
+    { key: "time", header: tt("accountDetail.col.closed"), hideOn: "md", cell: (r) => <span className="k-num text-[12.5px] text-fg-2">{formatDateTime(r.t.closeTime)}</span> },
+    { key: "vol", header: tt("accountDetail.col.lots"), align: "right", cell: (r) => <span className="k-num">{r.t.volume.toFixed(2)}</span> },
+    { key: "spread", header: tt("accountDetail.col.spread"), align: "right", cell: (r) => <span className="k-num text-fg-2">{formatNumber(r.spread)}</span>, sort: (r) => r.spread },
+    { key: "comm", header: tt("accountDetail.col.commission"), align: "right", cell: (r) => <span className="k-num text-fg-2">{formatNumber(r.comm)}</span>, sort: (r) => r.comm },
+    { key: "swap", header: tt("accountDetail.col.swap"), align: "right", cell: (r) => <span className={cn("k-num", r.swap < 0 ? "text-up" : "text-fg-2")}>{formatNumber(r.swap)}</span>, sort: (r) => r.swap },
+    { key: "tot", header: tt("accountDetail.col.totalCost"), align: "right", cell: (r) => <span className="k-num font-semibold">{cur}{formatNumber(r.spread + r.comm + r.swap)}</span>, sort: (r) => r.spread + r.comm + r.swap },
   ];
   return (
     <div className="space-y-4">
@@ -288,7 +293,7 @@ export function ChargesTab({ a, trades }: { a: TradingAccount; trades: ClosedTra
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal delay={0.1} className="xl:col-span-4">
           <Card className="h-full">
-            <CardHeader title="Cost by symbol" subtitle={<span>Total trading cost <span className="k-num font-medium text-fg">{cur}{formatNumber(all)}</span></span>} />
+            <CardHeader title={tt("accountDetail.charges.bySymbol")} subtitle={<span><Trans k="accountDetail.charges.totalCost" vars={{ amount: `${cur}${formatNumber(all)}` }} tags={{ v: (c) => <span className="k-num font-medium text-fg">{c}</span> }} /></span>} />
             <div className="space-y-3 px-6 pb-6 pt-5">
               {bySym.map(([s, v]) => (
                 <div key={s}>
@@ -303,16 +308,16 @@ export function ChargesTab({ a, trades }: { a: TradingAccount; trades: ClosedTra
                 </div>
               ))}
               <div className="k-row mt-4 px-4 py-3 text-[12.5px] text-fg-3">
-                Cost per lot <span className="k-num float-right font-medium text-fg">{cur}{formatNumber(all / (trades.reduce((s, t) => s + t.volume, 0) || 1))}</span>
+                {tt("accountDetail.charges.costPerLot")} <span className="k-num float-end font-medium text-fg">{cur}{formatNumber(all / (trades.reduce((s, t) => s + t.volume, 0) || 1))}</span>
               </div>
             </div>
           </Card>
         </Reveal>
         <Reveal delay={0.15} className="xl:col-span-8">
           <Card className="h-full">
-            <CardHeader title="Charges per trade" subtitle="Swap shown as a cost (negative = credited to you)" />
+            <CardHeader title={tt("accountDetail.charges.perTrade")} subtitle={tt("accountDetail.charges.perTradeSub")} />
             <div className="px-4 pb-5 pt-4 sm:px-6">
-              <DataTable columns={cols} rows={rows} rowKey={(r) => r.t.ticket} pageSize={7} exportName={`kalks-${a.login}-charges`} search={(r) => r.t.symbol} searchPlaceholder="Symbol" />
+              <DataTable columns={cols} rows={rows} rowKey={(r) => r.t.ticket} pageSize={7} exportName={`kalks-${a.login}-charges`} search={(r) => r.t.symbol} searchPlaceholder={tt("accountDetail.col.symbol")} />
             </div>
           </Card>
         </Reveal>
@@ -325,19 +330,20 @@ export function ChargesTab({ a, trades }: { a: TradingAccount; trades: ClosedTra
 /* Ledger                                                              */
 /* ------------------------------------------------------------------ */
 
-const LEDGER_KIND: Record<LedgerEntry["kind"], { label: string; tone: "up" | "down" | "ember" | "gold" | "info" | "neutral" }> = {
-  deposit: { label: "Deposit", tone: "up" },
-  withdrawal: { label: "Withdrawal", tone: "down" },
-  "transfer-in": { label: "Transfer in", tone: "up" },
-  "transfer-out": { label: "Transfer out", tone: "down" },
-  trade: { label: "Trading", tone: "ember" },
-  swap: { label: "Swap", tone: "neutral" },
-  commission: { label: "Commission", tone: "neutral" },
-  credit: { label: "Credit", tone: "gold" },
-  refill: { label: "Demo funds", tone: "gold" },
-};
+const LEDGER_KIND = {
+  deposit: { label: "accountDetail.ledgerKind.deposit", tone: "up" },
+  withdrawal: { label: "accountDetail.ledgerKind.withdrawal", tone: "down" },
+  "transfer-in": { label: "accountDetail.ledgerKind.transferIn", tone: "up" },
+  "transfer-out": { label: "accountDetail.ledgerKind.transferOut", tone: "down" },
+  trade: { label: "accountDetail.ledgerKind.trade", tone: "ember" },
+  swap: { label: "accountDetail.ledgerKind.swap", tone: "neutral" },
+  commission: { label: "accountDetail.ledgerKind.commission", tone: "neutral" },
+  credit: { label: "accountDetail.ledgerKind.credit", tone: "gold" },
+  refill: { label: "accountDetail.ledgerKind.refill", tone: "gold" },
+} as const satisfies Record<LedgerEntry["kind"], { label: MessageKey; tone: "up" | "down" | "ember" | "gold" | "info" | "neutral" }>;
 
 export function LedgerTab({ a }: { a: TradingAccount }) {
+  const t = useT();
   const cur = curOf(a);
   const entries = React.useMemo(() => accountLedger(a), [a]);
   const [kind, setKind] = React.useState<"all" | "funding" | "trading">("all");
@@ -346,12 +352,12 @@ export function LedgerTab({ a }: { a: TradingAccount }) {
   const outflow = entries.filter((e) => ["withdrawal", "transfer-out"].includes(e.kind)).reduce((s, e) => s + e.amount, 0);
   const trading = entries.filter((e) => ["trade", "swap", "commission"].includes(e.kind)).reduce((s, e) => s + e.amount, 0);
   const cols: Column<LedgerEntry>[] = [
-    { key: "time", header: "Date", cell: (e) => <span className="k-num text-[12.5px] text-fg-2">{formatDateTime(e.time, { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>, sort: (e) => e.time },
-    { key: "kind", header: "Type", cell: (e) => <Chip size="sm" tone={LEDGER_KIND[e.kind].tone}>{LEDGER_KIND[e.kind].label}</Chip> },
-    { key: "desc", header: "Description", hideOn: "md", cell: (e) => <span className="text-fg-2">{e.description}</span> },
+    { key: "time", header: t("common.date"), cell: (e) => <span className="k-num text-[12.5px] text-fg-2">{formatDateTime(e.time, { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>, sort: (e) => e.time },
+    { key: "kind", header: t("common.type"), cell: (e) => <Chip size="sm" tone={LEDGER_KIND[e.kind].tone}>{t(LEDGER_KIND[e.kind].label)}</Chip> },
+    { key: "desc", header: t("accountDetail.col.description"), hideOn: "md", cell: (e) => <span className="text-fg-2">{e.description}</span> },
     {
       key: "amt",
-      header: "Amount",
+      header: t("common.amount"),
       align: "right",
       cell: (e) => (
         <span className={cn("k-num inline-flex items-center gap-1 font-medium", e.amount > 0 ? "text-up" : e.amount < 0 ? "text-down" : "text-fg-3")}>
@@ -361,15 +367,15 @@ export function LedgerTab({ a }: { a: TradingAccount }) {
       ),
       sort: (e) => e.amount,
     },
-    { key: "bal", header: "Balance", align: "right", cell: (e) => <span className="k-num font-semibold">{cur}{formatNumber(e.balance)}</span> },
+    { key: "bal", header: t("common.balance"), align: "right", cell: (e) => <span className="k-num font-semibold">{cur}{formatNumber(e.balance)}</span> },
   ];
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
-          { l: "Funds in", v: inflow, tone: "up" as const },
-          { l: "Funds out", v: outflow, tone: "down" as const },
-          { l: "Trading result", v: trading, tone: trading >= 0 ? ("up" as const) : ("down" as const) },
+          { l: t("accountDetail.ledger.fundsIn"), v: inflow, tone: "up" as const },
+          { l: t("accountDetail.ledger.fundsOut"), v: outflow, tone: "down" as const },
+          { l: t("accountDetail.ledger.tradingResult"), v: trading, tone: trading >= 0 ? ("up" as const) : ("down" as const) },
         ].map((x, i) => (
           <Reveal key={x.l} delay={i * 0.05}>
             <Card className="px-5 py-4">
@@ -381,7 +387,7 @@ export function LedgerTab({ a }: { a: TradingAccount }) {
       </div>
       <Reveal delay={0.1}>
         <Card>
-          <CardHeader title="Balance ledger" subtitle={<span>Running balance · current <span className="k-num font-medium text-fg">{cur}{formatNumber(a.balance)}</span></span>} />
+          <CardHeader title={t("accountDetail.ledger.title")} subtitle={<span><Trans k="accountDetail.ledger.runningBalance" vars={{ balance: `${cur}${formatNumber(a.balance)}` }} tags={{ bal: (c) => <span className="k-num font-medium text-fg">{c}</span> }} /></span>} />
           <div className="px-4 pb-5 pt-4 sm:px-6">
             <DataTable
               columns={cols}
@@ -390,8 +396,8 @@ export function LedgerTab({ a }: { a: TradingAccount }) {
               pageSize={12}
               dense
               exportName={`kalks-${a.login}-ledger`}
-              search={(e) => `${e.description} ${LEDGER_KIND[e.kind].label}`}
-              toolbar={<Segmented size="xs" value={kind} onChange={setKind} options={[{ value: "all", label: "All" }, { value: "funding", label: "Funding" }, { value: "trading", label: "Trading" }]} />}
+              search={(e) => `${e.description} ${t(LEDGER_KIND[e.kind].label)}`}
+              toolbar={<Segmented size="xs" value={kind} onChange={setKind} options={[{ value: "all", label: t("common.all") }, { value: "funding", label: t("accountDetail.ledger.funding") }, { value: "trading", label: t("accountDetail.ledger.trading") }]} />}
             />
           </div>
         </Card>

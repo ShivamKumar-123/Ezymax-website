@@ -15,6 +15,7 @@ import { ChargesTab, HistoryTab, LedgerTab, PositionsTab } from "@/components/ac
 import { CredentialsTab, SettingsTab } from "@/components/accounts/detail-manage";
 import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
 import { LiveAccountDetail } from "@/components/trading/account-detail";
+import { useT } from "@kalks/i18n/react";
 
 const TAB_KEYS = ["overview", "portfolio", "positions", "history", "charges", "ledger", "credentials", "settings"] as const;
 type TabKey = (typeof TAB_KEYS)[number];
@@ -23,6 +24,7 @@ function Detail() {
   const { login } = useParams<{ login: string }>();
   const sp = useSearchParams();
   const router = useRouter();
+  const t = useT();
   const base = findAccount(login);
   const initial = (TAB_KEYS as readonly string[]).includes(sp.get("tab") ?? "") ? (sp.get("tab") as TabKey) : "overview";
   const [tab, setTabState] = React.useState<TabKey>(initial);
@@ -32,9 +34,9 @@ function Detail() {
   const trades = React.useMemo(() => (base ? accountTrades(base.login) : []), [base]);
   const qs = useQuotes(positions.length ? positions.map((p) => p.symbol) : ["EURUSD"]);
 
-  const setTab = (t: string) => {
-    setTabState(t as TabKey);
-    router.replace(`/accounts/${login}${t === "overview" ? "" : `?tab=${t}`}`, { scroll: false });
+  const setTab = (k: string) => {
+    setTabState(k as TabKey);
+    router.replace(`/accounts/${login}${k === "overview" ? "" : `?tab=${k}`}`, { scroll: false });
   };
 
   if (!base)
@@ -43,17 +45,17 @@ function Detail() {
         <Card className="mt-10">
           <EmptyState
             illustration="magnifying_glass_tilted_left"
-            title={`Account #${login} not found`}
-            text="It may belong to another profile, or it was deleted. Check the login number and try again."
+            title={t("accountDetail.notFound.title", { login })}
+            text={t("accountDetail.notFound.textDeleted")}
             action={
               <div className="flex gap-2">
                 <Link href="/accounts">
                   <Button variant="surface">
-                    <ArrowLeft /> My accounts
+                    <ArrowLeft className="rtl:-scale-x-100" /> {t("accountDetail.notFound.myAccounts")}
                   </Button>
                 </Link>
                 <Link href="/accounts/new">
-                  <Button variant="ember">Open account</Button>
+                  <Button variant="ember">{t("accountDetail.notFound.openAccount")}</Button>
                 </Link>
               </div>
             }
@@ -74,7 +76,7 @@ function Detail() {
     <div className="pb-16">
       <div className="mb-4 flex items-center gap-2 text-[13px] text-fg-3">
         <Link href="/accounts" className="inline-flex items-center gap-1.5 hover:text-fg">
-          <ArrowLeft className="size-3.5" /> Accounts
+          <ArrowLeft className="size-3.5 rtl:-scale-x-100" /> {t("accountDetail.breadcrumb.accounts")}
         </Link>
         <span>/</span>
         <span className="font-mono text-fg-2">#{a.login}</span>
@@ -91,15 +93,15 @@ function Detail() {
                 {a.nickname && <span className="text-[14px] text-fg-3">“{a.nickname}”</span>}
                 {a.swapFree && (
                   <Chip size="sm" tone="info">
-                    Swap-free
+                    {t("accountDetail.header.swapFree")}
                   </Chip>
                 )}
-                {archived && <Chip size="sm">Archived</Chip>}
+                {archived && <Chip size="sm">{t("accountDetail.header.archived")}</Chip>}
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-fg-2">
                 <span className="inline-flex items-center gap-1 font-mono">
                   #{a.login}
-                  <CopyButton value={a.login} label="Login" />
+                  <CopyButton value={a.login} label={t("accountDetail.info.login")} />
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Server className="size-3.5 text-fg-3" />
@@ -108,28 +110,27 @@ function Detail() {
                 <Chip size="sm">1:{a.leverage.toLocaleString()}</Chip>
                 <span className="text-fg-3">{a.currency}</span>
               </div>
-              <div className="mt-5 k-label">Equity</div>
+              <div className="mt-5 k-label">{t("common.equity")}</div>
               <div className="mt-1 flex flex-wrap items-baseline gap-3">
                 <Money value={a.equity} currency={cur} className="text-[40px] font-semibold leading-none tracking-[-0.02em] sm:text-[48px]" />
                 {!archived && (
                   <Chip tone="up">
-                    +{cur}
-                    {formatNumber(dayChange)} today
+                    {t("accountDetail.header.today", { amount: `+${cur}${formatNumber(dayChange)}` })}
                   </Chip>
                 )}
               </div>
               <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-[13px]">
                 <span className="text-fg-3">
-                  Balance <Money value={a.balance} currency={cur} countUp={false} className="ml-1 font-medium text-fg" />
+                  {t("common.balance")} <Money value={a.balance} currency={cur} countUp={false} className="ms-1 font-medium text-fg" />
                 </span>
                 <span className="text-fg-3">
-                  Free margin <Money value={freeMargin(a)} currency={cur} countUp={false} className="ml-1 font-medium text-fg" />
+                  {t("accountDetail.stat.freeMargin")} <Money value={freeMargin(a)} currency={cur} countUp={false} className="ms-1 font-medium text-fg" />
                 </span>
                 <span className="text-fg-3">
-                  Margin level <span className={cn("k-num ml-1 font-medium", ml > 500 ? "text-up" : ml > 200 ? "text-warn" : "text-down")}>{Number.isFinite(ml) ? `${Math.round(ml).toLocaleString()}%` : "—"}</span>
+                  {t("accountDetail.stat.marginLevel")} <span className={cn("k-num ms-1 font-medium", ml > 500 ? "text-up" : ml > 200 ? "text-warn" : "text-down")}>{Number.isFinite(ml) ? `${Math.round(ml).toLocaleString()}%` : "—"}</span>
                 </span>
                 <span className="text-fg-3">
-                  Open P&L <span className={cn("k-num ml-1 font-medium", openPnl >= 0 ? "text-up" : "text-down")}>{openPnl >= 0 ? "+" : "-"}{cur}{formatNumber(Math.abs(openPnl))}</span>
+                  {t("accountDetail.stat.openPnl")} <span className={cn("k-num ms-1 font-medium", openPnl >= 0 ? "text-up" : "text-down")}>{openPnl >= 0 ? "+" : "-"}{cur}{formatNumber(Math.abs(openPnl))}</span>
                 </span>
               </div>
             </div>
@@ -139,23 +140,23 @@ function Detail() {
                 <>
                   <Link href={`/wallet/withdraw?from=${a.login}`}>
                     <Button variant="surface" disabled={archived}>
-                      <ArrowUpFromLine /> Withdraw
+                      <ArrowUpFromLine /> {t("common.withdraw")}
                     </Button>
                   </Link>
                   <Link href={`/wallet/transfer?to=${a.login}`}>
                     <Button variant="surface" disabled={archived}>
-                      <ArrowDownToLine /> Deposit
+                      <ArrowDownToLine /> {t("common.deposit")}
                     </Button>
                   </Link>
                 </>
               ) : (
                 <Button variant="surface" disabled={archived} onClick={() => setTab("settings")}>
-                  <RefreshCcw /> Refill
+                  <RefreshCcw /> {t("accountDetail.header.refill")}
                 </Button>
               )}
               <Link target="_blank" rel="noopener" href={`/trade?account=${a.login}`}>
-                <Button variant="ember" size="lg" shimmer disabled={archived} onClick={() => archived && toast("This account is archived")}>
-                  <CandlestickChart /> Trade
+                <Button variant="ember" size="lg" shimmer disabled={archived} onClick={() => archived && toast(t("accountDetail.toast.archived"))}>
+                  <CandlestickChart /> {t("accountDetail.header.trade")}
                 </Button>
               </Link>
             </div>
@@ -169,14 +170,14 @@ function Detail() {
           value={tab}
           onChange={setTab}
           tabs={[
-            { value: "overview", label: "Overview" },
-            { value: "portfolio", label: "Portfolio" },
-            { value: "positions", label: "Positions", count: positions.length },
-            { value: "history", label: "History", count: trades.length },
-            { value: "charges", label: "Charges" },
-            { value: "ledger", label: "Ledger" },
-            { value: "credentials", label: "Credentials" },
-            { value: "settings", label: "Settings" },
+            { value: "overview", label: t("accountDetail.tab.overview") },
+            { value: "portfolio", label: t("accountDetail.tab.portfolio") },
+            { value: "positions", label: t("accountDetail.tab.positions"), count: positions.length },
+            { value: "history", label: t("accountDetail.tab.history"), count: trades.length },
+            { value: "charges", label: t("accountDetail.tab.charges") },
+            { value: "ledger", label: t("accountDetail.tab.ledger") },
+            { value: "credentials", label: t("accountDetail.tab.credentials") },
+            { value: "settings", label: t("accountDetail.tab.settings") },
           ]}
         />
       </div>

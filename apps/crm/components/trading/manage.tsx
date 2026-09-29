@@ -9,12 +9,14 @@ import { FormError } from "@/components/auth";
 import { STEPUP_CODES, StepUpCode, StepUpDialog, useStepUp } from "@/components/stepup";
 import { ApiError, STATUS_LABEL, curOf, errorToast, fmtDate, modeLabel, serverOf, tradingApi, type EngineAccount } from "./api";
 import { PasswordRules, SecretField, TradeButton, demoTarget, livePasswordOk, refillsLeft, useRefill } from "./ui";
+import { Trans, useT } from "@kalks/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Change password (D4, D90)                                           */
 /* ------------------------------------------------------------------ */
 
 function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: EngineAccount; kind: "trading" | "investor"; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const t = useT();
   const [pw, setPw] = React.useState("");
   const [confirm, setConfirm] = React.useState("");
   const [busy, setBusy] = React.useState(false);
@@ -34,7 +36,6 @@ function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: EngineAccoun
     }
   }, [open, reset]);
   const ok = livePasswordOk(pw) && pw === confirm;
-  const label = kind === "trading" ? "Trading password" : "Investor password";
 
   // step 1: email a confirmation code (D20)
   const requestCode = async () => {
@@ -54,13 +55,13 @@ function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: EngineAccoun
       setPhase("done");
       setPw("");
       setConfirm("");
-      toast.success(`${label} changed`, { description: `#${a.login}${r.sessionsRevoked ? ` · ${r.sessionsRevoked} open session${r.sessionsRevoked === 1 ? "" : "s"} signed out` : ""}` });
+      toast.success(t(kind === "trading" ? "accountDetail.pw.changed.trading" : "accountDetail.pw.changed.investor"), { description: `#${a.login}${r.sessionsRevoked ? ` · ${t("accountDetail.pw.sessionsSignedOut", { count: r.sessionsRevoked })}` : ""}` });
     } catch (e) {
       // the confirmation is spent either way: back to the form, a new code is sent on the next try
       s.reset();
       setPhase("form");
       if (e instanceof ApiError && (e.status === 422 || STEPUP_CODES.has(e.code))) setFormErr(e.message);
-      else errorToast(`Couldn't change the ${label.toLowerCase()}`, e);
+      else errorToast(t(kind === "trading" ? "accountDetail.pw.changeError.trading" : "accountDetail.pw.changeError.investor"), e);
     } finally {
       setBusy(false);
     }
@@ -70,19 +71,19 @@ function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: EngineAccoun
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title={kind === "trading" ? "Change trading password" : "Change investor password"}
+      title={kind === "trading" ? t("accountDetail.pw.changeTitle.trading") : t("accountDetail.pw.changeTitle.investor")}
       description={
         phase === "code"
-          ? "Confirm with the code we emailed you."
+          ? t("accountDetail.pw.confirmWithCode")
           : kind === "trading"
-            ? `Full-access password for #${a.login}. Kalks Trader sessions signed in with the old password are signed out.`
-            : `Read-only password for #${a.login}. Share it to let someone view the account without trading. Sessions using the old one are signed out.`
+            ? t("accountDetail.pw.descTrading", { login: a.login })
+            : t("accountDetail.pw.descInvestor", { login: a.login })
       }
       width={520}
       footer={
         phase === "done" ? (
           <Button variant="ember" onClick={() => onOpenChange(false)}>
-            Done
+            {t("common.done")}
           </Button>
         ) : phase === "code" ? (
           <>
@@ -93,19 +94,19 @@ function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: EngineAccoun
                 setPhase("form");
               }}
             >
-              Back
+              {t("common.back")}
             </Button>
             <Button variant="ember" disabled={s.code.length !== 6 || s.verifying || busy} onClick={() => void submit()}>
-              {s.verifying ? "Checking…" : busy ? "Saving…" : "Confirm & set password"}
+              {s.verifying ? t("accountDetail.pw.checking") : busy ? t("accountDetail.pw.saving") : t("accountDetail.pw.confirmSet")}
             </Button>
           </>
         ) : (
           <>
             <Button variant="ghost" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="ember" disabled={!ok || s.sending} onClick={requestCode}>
-              {s.sending ? "Sending code…" : "Continue"}
+              {s.sending ? t("accountDetail.pw.sendingCode") : t("common.continue")}
             </Button>
           </>
         )
@@ -113,25 +114,25 @@ function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: EngineAccoun
     >
       {phase === "done" && done ? (
         <div className="space-y-4">
-          <SecretField label={`New ${label.toLowerCase()}`} value={done.password} secret />
+          <SecretField label={t(kind === "trading" ? "accountDetail.pw.newLabel.trading" : "accountDetail.pw.newLabel.investor")} value={done.password} secret />
           <div className="flex items-start gap-2 rounded-[14px] border border-warn/25 bg-warn-soft px-3.5 py-3 text-[12.5px] text-fg-2">
             <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" />
-            Shown once. Copy it now; Kalks never displays or emails existing passwords.
+            {t("accountDetail.pw.shownOnce")}
           </div>
         </div>
       ) : phase === "code" ? (
-        <StepUpCode s={s} what={`set the new ${label.toLowerCase()} for #${a.login}`} onSubmit={(c) => void submit(c)} />
+        <StepUpCode s={s} what={t(kind === "trading" ? "accountDetail.pw.stepUpWhat.trading" : "accountDetail.pw.stepUpWhat.investor", { login: a.login })} onSubmit={(c) => void submit(c)} />
       ) : (
         <div className="space-y-4">
           <FormError>{formErr ?? (s.err && !s.challenge ? s.err.message : null)}</FormError>
-          <Field label="New password">
+          <Field label={t("accountDetail.pw.new")}>
             <PasswordInput value={pw} onChange={setPw} generate />
           </Field>
           <PasswordRules password={pw} />
-          <Field label="Confirm new password" error={confirm && confirm !== pw ? "Passwords don't match" : undefined}>
-            <PasswordInput value={confirm} onChange={setConfirm} placeholder="Repeat password" />
+          <Field label={t("accountDetail.pw.confirmNew")} error={confirm && confirm !== pw ? t("accountDetail.pw.mismatch") : undefined}>
+            <PasswordInput value={confirm} onChange={setConfirm} placeholder={t("accountDetail.pw.repeat")} />
           </Field>
-          <p className="text-[12px] text-fg-3">The trading and investor passwords must be different. We&apos;ll email you a code to confirm the change.</p>
+          <p className="text-[12px] text-fg-3">{t("accountDetail.pw.differentHint")}</p>
         </div>
       )}
     </Dialog>
@@ -139,15 +140,16 @@ function ChangePasswordDialog({ a, kind, open, onOpenChange }: { a: EngineAccoun
 }
 
 export function CredentialsPanel({ a }: { a: EngineAccount }) {
+  const t = useT();
   const [dlg, setDlg] = React.useState<"trading" | "investor" | null>(null);
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
       <Reveal className="xl:col-span-7">
         <Card className="h-full">
-          <CardHeader title="Login credentials" subtitle="Use these to sign in to Kalks Trader." icon={<Lock />} />
+          <CardHeader title={t("accountDetail.creds.title")} subtitle={t("accountDetail.creds.subtitle")} icon={<Lock />} />
           <div className="grid grid-cols-1 gap-4 px-4 pb-6 pt-5 sm:grid-cols-2 sm:px-6">
-            <SecretField label="Login" value={String(a.login)} />
-            <SecretField label="Server" value={serverOf(a)} hint="GMT+3 / GMT+2" />
+            <SecretField label={t("accountDetail.info.login")} value={String(a.login)} />
+            <SecretField label={t("accountDetail.info.server")} value={serverOf(a)} hint="GMT+3 / GMT+2" />
             <div className="sm:col-span-2">
               <div className="k-row flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember">
@@ -155,12 +157,12 @@ export function CredentialsPanel({ a }: { a: EngineAccount }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-[14px] font-medium">
-                    Trading password <Chip size="sm">Full access</Chip>
+                    {t("accountDetail.pw.trading")} <Chip size="sm">{t("accountDetail.creds.fullAccess")}</Chip>
                   </div>
-                  <div className="text-[12.5px] text-fg-3">Open, modify and close trades.</div>
+                  <div className="text-[12.5px] text-fg-3">{t("accountDetail.creds.tradingDesc")}</div>
                 </div>
                 <Button size="sm" variant="surface" onClick={() => setDlg("trading")}>
-                  <Pencil /> Change
+                  <Pencil /> {t("accountDetail.creds.change")}
                 </Button>
               </div>
             </div>
@@ -171,36 +173,36 @@ export function CredentialsPanel({ a }: { a: EngineAccount }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-[14px] font-medium">
-                    Investor password <Chip size="sm" tone="info">Read-only</Chip>
+                    {t("accountDetail.pw.investor")} <Chip size="sm" tone="info">{t("accountDetail.creds.readOnly")}</Chip>
                   </div>
-                  <div className="text-[12.5px] text-fg-3">View positions and history without being able to trade.</div>
+                  <div className="text-[12.5px] text-fg-3">{t("accountDetail.creds.investorDesc")}</div>
                 </div>
                 <Button size="sm" variant="surface" onClick={() => setDlg("investor")}>
-                  <Pencil /> Change
+                  <Pencil /> {t("accountDetail.creds.change")}
                 </Button>
               </div>
             </div>
             <div className="flex items-start gap-2 text-[12px] text-fg-3 sm:col-span-2">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-warn" />
-              For your security, Kalks never displays or emails existing passwords. If you lose one, set a new one here.
+              {t("accountDetail.creds.securityNote")}
             </div>
           </div>
         </Card>
       </Reveal>
       <Reveal delay={0.05} className="xl:col-span-5">
         <Card className="h-full">
-          <CardHeader title="Investor access" subtitle="Let a coach, auditor or investor watch this account" icon={<Users />} />
+          <CardHeader title={t("accountDetail.investor.title")} subtitle={t("accountDetail.investor.subtitle")} icon={<Users />} />
           <div className="space-y-3 px-4 pb-6 pt-4 sm:px-6">
             <ol className="space-y-2.5 text-[13px] text-fg-2">
               {[
-                "Set an investor password you are happy to share.",
-                `Share the login ${a.login}, the server ${serverOf(a)} and that password.`,
-                "They sign in to Kalks Trader with it and see live positions and history, read-only.",
-                "Change the investor password anytime to revoke access; their session ends at once.",
-              ].map((t, i) => (
-                <li key={t} className="flex items-start gap-3">
+                t("accountDetail.investor.step1"),
+                t("accountDetail.investor.step2", { login: a.login, server: serverOf(a) }),
+                t("accountDetail.investor.step3"),
+                t("accountDetail.investor.step4"),
+              ].map((step, i) => (
+                <li key={step} className="flex items-start gap-3">
                   <span className="k-num grid size-6 shrink-0 place-items-center rounded-full border border-line bg-surface-3 text-[11.5px] text-fg-2">{i + 1}</span>
-                  <span className="pt-0.5">{t}</span>
+                  <span className="pt-0.5">{step}</span>
                 </li>
               ))}
             </ol>
@@ -210,9 +212,9 @@ export function CredentialsPanel({ a }: { a: EngineAccount }) {
               </span>
               <div className="min-w-0 flex-1">
                 <div className="text-[13.5px] font-medium">Kalks Trader</div>
-                <div className="text-[11.5px] text-fg-3">Web terminal · no download</div>
+                <div className="text-[11.5px] text-fg-3">{t("accountDetail.investor.webTerminal")}</div>
               </div>
-              <TradeButton a={a} label="Open" />
+              <TradeButton a={a} label={t("common.open")} />
             </div>
           </div>
         </Card>
@@ -227,6 +229,7 @@ export function CredentialsPanel({ a }: { a: EngineAccount }) {
 /* ------------------------------------------------------------------ */
 
 function LeverageCard({ a, onChanged }: { a: EngineAccount; onChanged: () => void }) {
+  const t = useT();
   const [lev, setLev] = React.useState(a.leverage);
   const [confirming, setConfirming] = React.useState(false);
   React.useEffect(() => setLev(a.leverage), [a.leverage]);
@@ -236,23 +239,23 @@ function LeverageCard({ a, onChanged }: { a: EngineAccount; onChanged: () => voi
   const apply = async (token: string) => {
     try {
       const r = await tradingApi<{ from: number; leverage: number }>(`accounts/${a.login}/leverage`, { body: { leverage: lev, stepup_token: token } });
-      toast.success("Leverage changed", { description: `#${a.login}: ${fmt(r.from)} → ${fmt(r.leverage)}` });
+      toast.success(t("accountDetail.leverage.changed"), { description: `#${a.login}: ${fmt(r.from)} → ${fmt(r.leverage)}` });
       onChanged();
     } catch (e) {
-      errorToast("Couldn't change the leverage", e);
+      errorToast(t("accountDetail.leverage.changeError"), e);
     }
   };
   return (
     <Card>
-      <CardHeader title="Leverage" subtitle={`Available on ${a.groupName}: ${a.leverages.map((l) => `1:${l.toLocaleString("en-US")}`).join(" · ")}`} action={<Chip tone="ember">Current 1:{a.leverage.toLocaleString("en-US")}</Chip>} />
+      <CardHeader title={t("accountDetail.leverage.title")} subtitle={t("accountDetail.leverage.available", { group: a.groupName, list: a.leverages.map((l) => `1:${l.toLocaleString("en-US")}`).join(" · ") })} action={<Chip tone="ember">{t("accountDetail.leverage.current", { value: `1:${a.leverage.toLocaleString("en-US")}` })}</Chip>} />
       <div className="px-4 pb-6 pt-4 sm:px-6">
         {locked && (
           <div className="mb-4 flex items-start gap-3 rounded-[14px] border border-warn/25 bg-warn-soft px-4 py-3 text-[13px]">
             <Lock className="mt-0.5 size-4 shrink-0 text-warn" />
             <div>
-              <div className="font-medium text-warn">Leverage is locked while positions are open</div>
+              <div className="font-medium text-warn">{t("accountDetail.leverage.lockedTitle")}</div>
               <div className="mt-0.5 text-fg-2">
-                Close your {a.positions} open position{a.positions > 1 ? "s" : ""} in Kalks Trader to change leverage. This prevents sudden margin changes on running trades.
+                {t("accountDetail.leverage.lockedTextTrader", { count: a.positions })}
               </div>
             </div>
           </div>
@@ -272,9 +275,9 @@ function LeverageCard({ a, onChanged }: { a: EngineAccount; onChanged: () => voi
           ))}
         </div>
         <div className="mt-4 flex items-center justify-between gap-3">
-          <span className="text-[12.5px] text-fg-3">Higher leverage lowers the margin required per trade and increases risk.</span>
+          <span className="text-[12.5px] text-fg-3">{t("accountDetail.leverage.hint")}</span>
           <Button size="sm" variant="ember" disabled={locked || lev === a.leverage || confirming} onClick={() => setConfirming(true)}>
-            Apply
+            {t("common.apply")}
           </Button>
         </div>
       </div>
@@ -284,10 +287,10 @@ function LeverageCard({ a, onChanged }: { a: EngineAccount; onChanged: () => voi
           onOpenChange={setConfirming}
           action="leverage"
           target={String(a.login)}
-          title="Confirm leverage change"
+          title={t("accountDetail.leverage.confirmTitle")}
           description={`#${a.login}: ${fmt(a.leverage)} → ${fmt(lev)}`}
-          what={`change the leverage of #${a.login} to ${fmt(lev)}`}
-          confirmLabel="Confirm & apply"
+          what={t("accountDetail.leverage.stepUpWhat", { login: a.login, value: fmt(lev) })}
+          confirmLabel={t("accountDetail.leverage.confirmApply")}
           onConfirmed={apply}
         />
       )}
@@ -296,6 +299,7 @@ function LeverageCard({ a, onChanged }: { a: EngineAccount; onChanged: () => voi
 }
 
 function DemoFundsCard({ a, onChanged }: { a: EngineAccount; onChanged: () => void }) {
+  const t = useT();
   const cur = curOf(a);
   const { busy, run } = useRefill(a, onChanged);
   const left = refillsLeft(a);
@@ -304,12 +308,12 @@ function DemoFundsCard({ a, onChanged }: { a: EngineAccount; onChanged: () => vo
   if (!a.demo) return null;
   return (
     <Card>
-      <CardHeader title="Demo funds" subtitle={`Refill tops the balance back to ${cur}${target.toLocaleString("en-US")}`} />
+      <CardHeader title={t("accountDetail.demoFunds.title")} subtitle={t("accountDetail.demoFunds.subtitle", { amount: `${cur}${target.toLocaleString("en-US")}` })} />
       <div className="px-6 pb-6 pt-3">
         <Money value={a.balance} currency={cur} countUp={false} className="block text-[28px] font-semibold" />
         <div className="mt-5 flex items-end justify-between gap-3">
           <div className="text-[12.5px] text-fg-2">
-            <span className="k-num font-semibold text-fg">{left}</span> of {a.demo.refillsPerDay} refills left today
+            <Trans k="accountDetail.demoFunds.refillsLeft" vars={{ left, total: a.demo.refillsPerDay }} tags={{ n: (c) => <span className="k-num font-semibold text-fg">{c}</span> }} />
             <div className="mt-1.5 flex gap-1">
               {Array.from({ length: a.demo.refillsPerDay }, (_, i) => (
                 <span key={i} className={cn("h-1.5 w-8 rounded-full", i < left ? "bg-gold" : "bg-surface-3")} />
@@ -317,11 +321,12 @@ function DemoFundsCard({ a, onChanged }: { a: EngineAccount; onChanged: () => vo
             </div>
           </div>
           <Button variant="gold" disabled={busy || left === 0 || full || a.status === "expired"} onClick={run}>
-            <RefreshCcw /> Refill
+            <RefreshCcw /> {t("accountDetail.header.refill")}
           </Button>
         </div>
         <p className="mt-4 text-[12px] text-fg-3">
-          {full ? "The balance is at its starting amount, so there is nothing to refill. " : ""}Refills reset at 00:00 server time. The account expires after {a.demo.expiryDays} days without a Kalks Trader login.
+          {full ? `${t("accountDetail.demoFunds.full")} ` : ""}
+          {t("accountDetail.demoFunds.resetNote", { days: a.demo.expiryDays })}
         </p>
       </div>
     </Card>
@@ -329,6 +334,7 @@ function DemoFundsCard({ a, onChanged }: { a: EngineAccount; onChanged: () => vo
 }
 
 export function SettingsPanel({ a, onChanged }: { a: EngineAccount; onChanged: () => void }) {
+  const t = useT();
   const st = STATUS_LABEL[a.status];
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
@@ -345,17 +351,17 @@ export function SettingsPanel({ a, onChanged }: { a: EngineAccount; onChanged: (
         )}
         <Reveal delay={0.05}>
           <Card>
-            <CardHeader title="Account details" />
+            <CardHeader title={t("accountDetail.details.title")} />
             <div className="px-6 pb-4 pt-1">
               <KeyValue
                 rows={[
-                  ["Login", <span key="l" className="font-mono">{a.login}</span>],
-                  ["Type", `${a.type === "live" ? "Live" : "Demo"} · ${a.groupName}`],
-                  ["Position mode", modeLabel(a.mode)],
-                  ["Currency", a.cent ? "USC (US cents)" : a.currency],
-                  ["Margin call / stop out", `${a.marginCallLevel}% / ${a.stopOutLevel}%`],
-                  ["Status", <Chip key="s" size="sm" tone={st.tone}>{st.label}</Chip>],
-                  ["Opened", fmtDate(a.createdAt)],
+                  [t("accountDetail.info.login"), <span key="l" className="font-mono">{a.login}</span>],
+                  [t("common.type"), `${a.type === "live" ? t("common.live") : t("common.demo")} · ${a.groupName}`],
+                  [t("accountDetail.info.positionMode"), modeLabel(a.mode)],
+                  [t("common.currency"), a.cent ? t("accountDetail.info.uscCents") : a.currency],
+                  [t("accountDetail.info.marginCallStopOut"), `${a.marginCallLevel}% / ${a.stopOutLevel}%`],
+                  [t("common.status"), <Chip key="s" size="sm" tone={st.tone}>{st.label}</Chip>],
+                  [t("accountDetail.info.opened"), fmtDate(a.createdAt)],
                 ]}
               />
             </div>
