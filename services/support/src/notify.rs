@@ -28,6 +28,7 @@ pub const PREF_KEYS: &[PrefKey] = &[
     PrefKey { key: "security", label: "Security", hint: "Sign-ins from new devices, password and email changes", in_app: true, email: true, locked: true, audience: &["user", "staff"] },
     PrefKey { key: "trading_alerts", label: "Margin call and stop-out", hint: "When an account reaches its margin call or stop-out level", in_app: true, email: true, locked: false, audience: &["user"] },
     PrefKey { key: "trading_fills", label: "Order fills and closes", hint: "Stop loss, take profit and dealer closes", in_app: true, email: false, locked: false, audience: &["user"] },
+    PrefKey { key: "price_alerts", label: "Price alerts", hint: "When a price alert you set is triggered", in_app: true, email: true, locked: false, audience: &["user"] },
     PrefKey { key: "wallet", label: "Deposits and withdrawals", hint: "Deposits credited, withdrawals approved, rejected or paid", in_app: true, email: true, locked: false, audience: &["user"] },
     PrefKey { key: "kyc", label: "Identity verification", hint: "Verification decisions and requests for documents", in_app: true, email: true, locked: false, audience: &["user"] },
     PrefKey { key: "ib", label: "Partner commissions", hint: "IB commissions, payouts and level changes", in_app: true, email: false, locked: false, audience: &["user"] },
@@ -45,6 +46,7 @@ pub fn pref_key(kind: &str) -> &'static str {
         "security" => "security",
         "trading" if matches!(ev, "margin_call" | "stop_out") => "trading_alerts",
         "trading" => "trading_fills",
+        "alerts" => "price_alerts",
         "wallet" => "wallet",
         "kyc" => "kyc",
         "ib" => "ib",
@@ -415,6 +417,7 @@ mod tests {
         assert_eq!(pref_key("trading.stop_out"), "trading_alerts");
         assert_eq!(pref_key("trading.margin_call"), "trading_alerts");
         assert_eq!(pref_key("trading.sl"), "trading_fills");
+        assert_eq!(pref_key("alerts.price"), "price_alerts");
         assert_eq!(pref_key("wallet.deposit_credited"), "wallet");
         assert_eq!(pref_key("pamm.fee"), "copy");
         assert_eq!(pref_key("security.new_device"), "security");
