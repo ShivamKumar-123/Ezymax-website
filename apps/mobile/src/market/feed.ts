@@ -14,6 +14,9 @@ import { instruments, loadInstruments } from "./instruments";
 
 export type Quote = { symbol: string; bid: number; ask: number; last: number; open: number; high: number; low: number; t: number; dir: -1 | 0 | 1 };
 export type LiveBar = { t: number; o: number; h: number; l: number; c: number; v: number };
+/** Depth of market with the account group's spread (levels best first, [price, lots]); `indicative` = built from
+ *  the live bid / ask (no provider book for the symbol), `feed` = the provider's book. */
+export type DepthBook = { symbol: string; src: "feed" | "indicative"; t: number; bids: [number, number][]; asks: [number, number][] };
 
 export type QuoteValues = {
   bid: SharedValue<number>;
@@ -35,6 +38,8 @@ class QuoteFeed {
   private values = new Map<string, QuoteValues>();
   private listeners = new Map<string, Set<(q: Quote) => void>>();
   private barListeners = new Map<string, Set<(b: LiveBar) => void>>();
+  private depthListeners = new Map<string, Set<(d: DepthBook) => void>>();
+  private depthLevels = 10;
   private anyListeners = new Set<() => void>();
   private ws: WebSocket | null = null;
   private cfg: MarketConfig | null = null;
@@ -101,6 +106,24 @@ class QuoteFeed {
       if (!set!.size) {
         this.barListeners.delete(key);
         this.send({ op: "unbars", symbol, tf });
+      }
+    };
+  }
+
+  /** Depth of market of `symbol` on every quote change (a frame right after subscribing, again after reconnects). */
+  subscribeDepth(symbol: string, fn: (d: DepthBook) => void, levels = 10): () => void {
+    let set = this.depthListeners.get(symbol);
+    if (!set) {
+      this.depthListeners.set(symbol, (set = new Set()));
+      this.depthLevels = levels;
+      this.send({ op: "depth", symbols: [symbol], levels });
+    }
+    set.add(fn);
+    return () => {
+      set!.delete(fn);
+      if (!set!.size) {
+        this.depthListeners.delete(symbol);
+        this.send({ op: "undepth", symbols: [symbol] });
       }
     };
   }
@@ -239,6 +262,7 @@ class QuoteFeed {
         const [symbol, tf] = key.split("|");
         ws.send(JSON.stringify({ op: "bars", symbol, tf }));
       }
+      if (this.depthListeners.size) ws.send(JSON.stringify({ op: "depth", symbols: [...this.depthListeners.keys()], levels: this.depthLevels }));
       feedStatus.set((s) => ({ ...s, status: "live" }));
     };
     ws.onmessage = (e) => {
@@ -261,6 +285,13 @@ class QuoteFeed {
       } else if (m.type === "bar" && m.s && m.tf) {
         const bar = { t: m.t!, o: m.o!, h: m.h!, l: m.l!, c: m.c!, v: m.v ?? 0 };
         this.barListeners.get(`${m.s}|${m.tf}`)?.forEach((fn) => fn(bar));
+      } else if (m.type === "depth" && m.s) {
+        const set = this.depthListeners.get(m.s);
+        const d = m as unknown as { src?: string; t?: number; b?: [number, number][]; a?: [number, number][] };
+        if (set && Array.isArray(d.b) && Array.isArray(d.a)) {
+          const book: DepthBook = { symbol: m.s, src: d.src === "feed" ? "feed" : "indicative", t: d.t ?? now, bids: d.b, asks: d.a };
+          set.forEach((fn) => fn(book));
+        }
       }
     };
     ws.onclose = () => {
