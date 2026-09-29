@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpRight, Download, MailCheck, RefreshCw, Search, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, DataTable, Dialog, EmptyState, Flag, PageHeader, Reveal, Segmented, buttonVariants, type Column } from "@kalks/ui";
+import { useCan } from "@/components/staff-session";
 import { ClientDetailView } from "./client-detail";
 import { EmailChip, ErrorState, KycChip, Mono, Pager, TableSkeleton, ago, countryName, day, downloadCsv, qs, useApi, useDebounced, useNow, when } from "./kit";
 import type { Client, Stats, UsersPage } from "./types";
@@ -34,11 +35,12 @@ export function LiveClients() {
   const { data, error, loading, reload } = useApi<UsersPage>(`/api/admin/users${qs({ q: dq, kyc, verified, page, per_page: PER })}`);
   const stats = useApi<Stats>("/api/admin/stats");
   const s = stats.data?.clients;
+  const canExport = useCan("clients.export");
 
   async function exportAll() {
     const rows: Client[] = [];
     for (let p = 1; p <= 50; p++) {
-      const r = await fetch(`/api/admin/users${qs({ q: dq, kyc, verified, page: p, per_page: 200 })}`, { cache: "no-store" });
+      const r = await fetch(`/api/admin/users${qs({ q: dq, kyc, verified, page: p, per_page: 200, export: true })}`, { cache: "no-store" });
       if (!r.ok) return toast.error("Export failed", { description: "Couldn't load clients. Try again." });
       const d = (await r.json()) as UsersPage;
       rows.push(...d.items);
@@ -97,9 +99,11 @@ export function LiveClients() {
             <Button variant="surface" onClick={reload}>
               <RefreshCw /> Refresh
             </Button>
-            <Button variant="ember" onClick={exportAll} disabled={!data || data.total === 0}>
-              <Download /> Export CSV
-            </Button>
+            {canExport && (
+              <Button variant="ember" onClick={exportAll} disabled={!data || data.total === 0}>
+                <Download /> Export CSV
+              </Button>
+            )}
           </>
         }
       />

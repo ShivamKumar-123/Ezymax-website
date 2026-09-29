@@ -204,6 +204,8 @@ export function actionLabel(action: string) {
     "viewer.page_view": "Viewer opened a page",
     "settings.client_idle_updated": "Client idle sign-out changed",
     "spreads.update": "Spread markup changed",
+    "clients.exported": "Client list exported",
+    "audit.exported": "Audit log exported",
     "share.created": "Trade share link created",
     "share.revoked": "Trade share link revoked",
     "kyc.started": "KYC started",

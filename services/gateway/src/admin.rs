@@ -334,6 +334,13 @@ pub struct UsersQuery {
     pub status: Option<String>,
     pub page: Option<i64>,
     pub per_page: Option<i64>,
+    /// Bulk export (CSV): needs `clients.export`, allows 200 rows a page and is audited once per export (page 1).
+    pub export: Option<bool>,
+}
+
+/// Page size cap for the client list: browsing reads at most 100 rows a page; exports (`clients.export`) 200.
+pub fn users_page_cap(export: bool) -> i64 {
+    if export { 200 } else { 100 }
 }
 
 const USER_COLS: &str = "u.id, u.email, u.first_name, u.last_name, u.phone_dial, u.phone, u.country, u.date_of_birth, u.referral_code,
@@ -341,8 +348,9 @@ const USER_COLS: &str = "u.id, u.email, u.first_name, u.last_name, u.phone_dial,
 
 pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQuery>, QueryRejection>) -> ApiResult<Json<Value>> {
     let Query(q) = q.map_err(q_err)?;
-    let me = require(&st, &ctx, Perm::ClientsRead).await?;
-    let (page, per, offset) = paging(q.page, q.per_page, 25, 200);
+    let export = q.export.unwrap_or(false);
+    let me = require_key(&st, &ctx, if export { "clients.export" } else { Perm::ClientsRead.as_str() }).await?;
+    let (page, per, offset) = paging(q.page, q.per_page, 25, users_page_cap(export));
     let kyc = clean(&q.kyc).filter(|k| *k != "all");
     if let Some(k) = kyc
         && !matches!(k, "unverified" | "pending" | "verified" | "rejected")
@@ -396,6 +404,10 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
         .await?;
     tx.commit().await?;
     let total = rows.first().map(|r| r.get::<i64, _>("total")).unwrap_or(0);
+    if export && page == 1 {
+        let meta = json!({"q": term, "kyc": kyc, "verified": verified, "status": status, "rows": total});
+        audit::record(&st.pool, &ctx, Entry { tenant_id: me.tenant_id, actor_kind: "staff", actor_id: Some(me.id), action: "clients.exported", target: None, meta }).await;
+    }
     Ok(Json(json!({ "items": rows.iter().map(user_row).collect::<Vec<_>>(), "total": total, "page": page, "per_page": per })))
 }
 
@@ -525,12 +537,15 @@ pub struct AuditQuery {
     pub to: Option<String>,
     pub page: Option<i64>,
     pub per_page: Option<i64>,
+    /// Bulk export (CSV): needs `audit.export`, allows 1000 rows a page and is itself audited (page 1).
+    pub export: Option<bool>,
 }
 
 pub async fn audit_log(State(st): State<AppState>, ctx: Ctx, q: Result<Query<AuditQuery>, QueryRejection>) -> ApiResult<Json<Value>> {
     let Query(q) = q.map_err(q_err)?;
-    let me = require(&st, &ctx, Perm::AuditRead).await?;
-    let (page, per, offset) = paging(q.page, q.per_page, 50, 1000);
+    let export = q.export.unwrap_or(false);
+    let me = require_key(&st, &ctx, if export { "audit.export" } else { Perm::AuditRead.as_str() }).await?;
+    let (page, per, offset) = paging(q.page, q.per_page, 50, if export { 1000 } else { 200 });
     let (actor_kind, actor_id) = parse_actor(q.actor.as_deref().unwrap_or("")).map_err(ApiError::BadRequest)?;
     let action = match clean(&q.action) {
         None => None,
@@ -607,6 +622,10 @@ pub async fn audit_log(State(st): State<AppState>, ctx: Ctx, q: Result<Query<Aud
         .bind(me.tenant_id)
         .fetch_all(&st.pool)
         .await?;
+    if export && page == 1 {
+        let meta = json!({"actor": q.actor, "action": q.action, "q": q.q, "from": q.from, "to": q.to, "rows": total});
+        audit::record(&st.pool, &ctx, Entry { tenant_id: me.tenant_id, actor_kind: "staff", actor_id: Some(me.id), action: "audit.exported", target: None, meta }).await;
+    }
     Ok(Json(json!({ "items": items, "total": total, "page": page, "per_page": per, "actions": actions })))
 }
 
@@ -1018,6 +1037,21 @@ mod db_tests {
         let Json(v) = users(State(st.clone()), ctx(Some(&owner_tok)), Ok(Query(UsersQuery { q: Some("%".into()), ..Default::default() }))).await.unwrap();
         assert_eq!(v["total"], 0, "LIKE wildcards are escaped");
 
+        // browsing is capped at 100 a page; bulk export needs clients.export (support has only clients.read) and is audited
+        let Json(v) = users(State(st.clone()), ctx(Some(&support_tok)), Ok(Query(UsersQuery { per_page: Some(500), ..Default::default() }))).await.unwrap();
+        assert_eq!(v["per_page"], 100);
+        let export = || Ok(Query(UsersQuery { per_page: Some(500), export: Some(true), ..Default::default() }));
+        assert!(matches!(users(State(st.clone()), ctx(Some(&support_tok)), export()).await, Err(ApiError::Forbidden)));
+        let Json(v) = users(State(st.clone()), ctx(Some(&owner_tok)), export()).await.unwrap();
+        assert_eq!((v["per_page"].as_i64(), v["total"].as_i64()), (Some(200), Some(2)));
+        let exported: i64 = sqlx::query_scalar("SELECT count(*) FROM audit_log WHERE tenant_id = $1 AND action = 'clients.exported' AND actor_id = $2")
+            .bind(t1)
+            .bind(owner)
+            .fetch_one(&st.pool)
+            .await
+            .unwrap();
+        assert_eq!(exported, 1);
+
         // user detail: referral + last login + sessions
         let Json(v) = user_detail(State(st.clone()), ctx(Some(&owner_tok)), Path(bob)).await.unwrap();
         assert_eq!(v["referrer"]["id"], alice);
@@ -1053,6 +1087,13 @@ mod db_tests {
         ));
         let _ = revoke_session(State(st.clone()), ctx(Some(&owner_tok)), Path(sid), Ok(Json(RevokeReq { reason: Some("suspicious".into()) }))).await.unwrap();
         assert!(identity::resolve_session(&st, &ctx(Some(&bob_tok)), Kind::User).await.is_err());
+        // browsing is capped at 200 a page; the CSV export needs audit.export and is recorded
+        let Json(v) = audit_log(State(st.clone()), ctx(Some(&owner_tok)), Ok(Query(AuditQuery { per_page: Some(5000), ..Default::default() }))).await.unwrap();
+        assert_eq!(v["per_page"], 200);
+        let Json(v) = audit_log(State(st.clone()), ctx(Some(&owner_tok)), Ok(Query(AuditQuery { per_page: Some(5000), export: Some(true), ..Default::default() }))).await.unwrap();
+        assert_eq!(v["per_page"], 1000);
+        let n: i64 = sqlx::query_scalar("SELECT count(*) FROM audit_log WHERE tenant_id = $1 AND action = 'audit.exported'").bind(t1).fetch_one(&st.pool).await.unwrap();
+        assert_eq!(n, 1);
         let Json(v) = audit_log(State(st.clone()), ctx(Some(&owner_tok)), Ok(Query(AuditQuery { action: Some("admin.*".into()), ..Default::default() }))).await.unwrap();
         assert_eq!(v["total"], 1);
         assert_eq!(v["items"][0]["action"], "admin.session_revoked");

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, EmptyState, KeyValue, PageHeader, Reveal, Segmented, type Column } from "@kalks/ui";
 import { ErrorState, FilterSelect, Mono, Pager, TableSkeleton, actionLabel, actionTone, ago, device, downloadCsv, qs, useApi, useDebounced, useNow, when } from "./kit";
 import type { AuditEvent, AuditPage, Stats } from "./types";
+import { useCan } from "@/components/staff-session";
 
 type ActorKind = "all" | "staff" | "user" | "system" | "anonymous";
 const PER = 50;
@@ -63,11 +64,12 @@ export function LiveAudit() {
   const { data, error, loading, reload } = useApi<AuditPage>(`/api/admin/audit${qs({ ...filters, page, per_page: PER })}`, { refreshMs: 30_000 });
   const stats = useApi<Stats>("/api/admin/stats", { refreshMs: 30_000 });
   const sec = stats.data?.security;
+  const canExport = useCan("audit.export");
 
   async function exportCsv() {
     const rows: AuditEvent[] = [];
     for (let p = 1; p <= 20; p++) {
-      const r = await fetch(`/api/admin/audit${qs({ ...filters, page: p, per_page: 1000 })}`, { cache: "no-store" });
+      const r = await fetch(`/api/admin/audit${qs({ ...filters, page: p, per_page: 1000, export: true })}`, { cache: "no-store" });
       if (!r.ok) return toast.error("Export failed", { description: "Couldn't load the audit log. Try again." });
       const d = (await r.json()) as AuditPage;
       rows.push(...d.items);
@@ -124,9 +126,11 @@ export function LiveAudit() {
             <Button variant="surface" onClick={reload}>
               <RefreshCw /> Refresh
             </Button>
-            <Button variant="ember" onClick={exportCsv} disabled={!data || data.total === 0}>
-              <Download /> Export CSV
-            </Button>
+            {canExport && (
+              <Button variant="ember" onClick={exportCsv} disabled={!data || data.total === 0}>
+                <Download /> Export CSV
+              </Button>
+            )}
           </>
         }
       />
