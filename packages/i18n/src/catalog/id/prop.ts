@@ -502,5 +502,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "Buka",
   "trades.close": "Tutup",
   "trades.duration": "Durasi",
+  "checkout.walletBalance": "Saldo dompet: {balance} USDT",
+  "checkout.short": "Dompet Anda berisi {balance} USDT. Deposit setidaknya {missing} USDT lagi untuk membeli tantangan ini.",
+  "checkout.deposit": "Deposit",
 };
 export default prop;

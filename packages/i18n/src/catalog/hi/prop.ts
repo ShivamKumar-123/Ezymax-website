@@ -502,5 +502,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "ओपन",
   "trades.close": "क्लोज़",
   "trades.duration": "अवधि",
+  "checkout.walletBalance": "वॉलेट बैलेंस: {balance} USDT",
+  "checkout.short": "आपके वॉलेट में {balance} USDT है। यह चैलेंज खरीदने के लिए कम से कम {missing} USDT और जमा करें।",
+  "checkout.deposit": "जमा करें",
 };
 export default prop;

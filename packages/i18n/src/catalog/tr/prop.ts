@@ -502,5 +502,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "Açılış",
   "trades.close": "Kapanış",
   "trades.duration": "Süre",
+  "checkout.walletBalance": "Cüzdan bakiyesi: {balance} USDT",
+  "checkout.short": "Cüzdanınızda {balance} USDT var. Bu challenge'ı satın almak için en az {missing} USDT daha yatırın.",
+  "checkout.deposit": "Para yatır",
 };
 export default prop;

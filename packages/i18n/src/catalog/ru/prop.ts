@@ -525,5 +525,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "Открытие",
   "trades.close": "Закрытие",
   "trades.duration": "Длительность",
+  "checkout.walletBalance": "Баланс кошелька: {balance} USDT",
+  "checkout.short": "На кошельке {balance} USDT. Пополните его ещё минимум на {missing} USDT, чтобы купить этот челлендж.",
+  "checkout.deposit": "Пополнить",
 };
 export default prop;

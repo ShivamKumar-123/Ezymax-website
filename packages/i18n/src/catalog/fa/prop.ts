@@ -502,5 +502,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "باز شدن",
   "trades.close": "بسته شدن",
   "trades.duration": "مدت",
+  "checkout.walletBalance": "موجودی کیف پول: {balance} USDT",
+  "checkout.short": "کیف پول شما {balance} USDT دارد. برای خرید این چالش دست‌کم {missing} USDT دیگر واریز کنید.",
+  "checkout.deposit": "واریز",
 };
 export default prop;

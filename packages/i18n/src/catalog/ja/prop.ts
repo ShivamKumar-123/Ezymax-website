@@ -502,5 +502,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "約定価格",
   "trades.close": "決済価格",
   "trades.duration": "保有期間",
+  "checkout.walletBalance": "ウォレット残高：{balance} USDT",
+  "checkout.short": "ウォレット残高は {balance} USDT です。このチャレンジを購入するには、あと {missing} USDT 以上を入金してください。",
+  "checkout.deposit": "入金",
 };
 export default prop;

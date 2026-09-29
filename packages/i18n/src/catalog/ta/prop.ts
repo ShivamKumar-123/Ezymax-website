@@ -502,5 +502,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "திறப்பு",
   "trades.close": "மூடல்",
   "trades.duration": "கால அளவு",
+  "checkout.walletBalance": "வாலெட் இருப்பு: {balance} USDT",
+  "checkout.short": "உங்கள் வாலெட்டில் {balance} USDT உள்ளது. இந்த சேலஞ்சை வாங்க குறைந்தது {missing} USDT கூடுதலாக டெபாசிட் செய்யுங்கள்.",
+  "checkout.deposit": "டெபாசிட்",
 };
 export default prop;

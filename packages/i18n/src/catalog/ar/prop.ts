@@ -552,5 +552,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "الفتح",
   "trades.close": "الإغلاق",
   "trades.duration": "المدة",
+  "checkout.walletBalance": "رصيد المحفظة: {balance} USDT",
+  "checkout.short": "رصيد محفظتك {balance} USDT. أودِع {missing} USDT إضافية على الأقل لشراء هذا التحدي.",
+  "checkout.deposit": "إيداع",
 };
 export default prop;

@@ -502,5 +502,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "Abertura",
   "trades.close": "Fechamento",
   "trades.duration": "Duração",
+  "checkout.walletBalance": "Saldo da carteira: {balance} USDT",
+  "checkout.short": "A sua carteira tem {balance} USDT. Deposite pelo menos mais {missing} USDT para comprar este desafio.",
+  "checkout.deposit": "Depositar",
 };
 export default prop;

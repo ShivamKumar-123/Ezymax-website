@@ -21,6 +21,7 @@ import {
   type PurchaseResult,
 } from "./api";
 import { CredentialField, ErrorNote, LoadError, PropTradeButton } from "./ui";
+import { fmt as fmtUsdt, usdtAvailable, useWallet, type Overview } from "@/components/wallet-live/api";
 
 const TYPE_ORDER: PlanType[] = ["1-step", "2-step", "instant"];
 const TYPE_ICON: Record<PlanType, React.ReactNode> = {
@@ -358,6 +359,10 @@ function newKey() {
 export function CheckoutDialog({ plan, size, open, onOpenChange, onBought }: { plan: Plan; size: PlanSize; open: boolean; onOpenChange: (o: boolean) => void; onBought?: () => void }) {
   const t = useT();
   const [agree, setAgree] = React.useState(false);
+  // the fee is charged from the USDT wallet: say so before the client ticks the rules, not after a failed payment
+  const wallet = useWallet<Overview>(open ? "overview" : null);
+  const available = wallet.data ? Number(usdtAvailable(wallet.data).available) : null;
+  const short = available !== null && available < size.fee;
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<unknown>(null);
   const [done, setDone] = React.useState<PurchaseResult | null>(null);
@@ -453,7 +458,7 @@ export function CheckoutDialog({ plan, size, open, onOpenChange, onBought }: { p
           <Button variant="surface" disabled={busy} onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
-          <Button variant="ember" disabled={!agree || busy} onClick={pay}>
+          <Button variant="ember" disabled={!agree || busy || short} onClick={pay}>
             {busy ? <Loader2 className="animate-spin" /> : <Wallet />} {err ? t("prop.checkout.retry", { fee }) : t("prop.checkout.pay", { fee })}
           </Button>
         </>
@@ -472,6 +477,20 @@ export function CheckoutDialog({ plan, size, open, onOpenChange, onBought }: { p
           </div>
           <span className="k-num text-[18px] font-semibold">{fee}</span>
         </div>
+        {available !== null && (
+          short ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-warn/30 bg-warn-soft px-4 py-3 text-[12.5px] text-fg" data-testid="prop-checkout-short">
+              <span>{t("prop.checkout.short", { balance: fmtUsdt(available), missing: fmtUsdt(size.fee - available) })}</span>
+              <Link href="/wallet/deposit">
+                <Button size="sm" variant="surface">
+                  {t("prop.checkout.deposit")} <ArrowRight className="rtl:-scale-x-100" />
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="-mt-2 px-1 text-[12px] text-fg-3">{t("prop.checkout.walletBalance", { balance: fmtUsdt(available) })}</div>
+          )
+        )}
 
         <div>
           <div className="k-label mb-2">{t("prop.checkout.rulesTitle")}</div>

@@ -499,5 +499,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "진입가",
   "trades.close": "청산가",
   "trades.duration": "보유 기간",
+  "checkout.walletBalance": "지갑 잔액: {balance} USDT",
+  "checkout.short": "지갑 잔액은 {balance} USDT입니다. 이 챌린지를 구매하려면 최소 {missing} USDT를 더 입금하세요.",
+  "checkout.deposit": "입금",
 };
 export default prop;

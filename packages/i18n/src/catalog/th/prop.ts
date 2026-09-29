@@ -503,5 +503,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "เปิด",
   "trades.close": "ปิด",
   "trades.duration": "ระยะเวลา",
+  "checkout.walletBalance": "ยอดเงินในกระเป๋าเงิน: {balance} USDT",
+  "checkout.short": "กระเป๋าเงินของคุณมี {balance} USDT ฝากเพิ่มอย่างน้อย {missing} USDT เพื่อซื้อชาเลนจ์นี้",
+  "checkout.deposit": "ฝากเงิน",
 };
 export default prop;

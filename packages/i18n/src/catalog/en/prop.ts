@@ -502,5 +502,8 @@ const prop = {
   "trades.open": "Open",
   "trades.close": "Close",
   "trades.duration": "Duration",
+  "checkout.walletBalance": "Wallet balance: {balance} USDT",
+  "checkout.short": "Your wallet has {balance} USDT. Deposit at least {missing} USDT more to buy this challenge.",
+  "checkout.deposit": "Deposit",
 };
 export default prop;

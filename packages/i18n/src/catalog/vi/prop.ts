@@ -503,5 +503,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "Giá mở",
   "trades.close": "Giá đóng",
   "trades.duration": "Thời lượng",
+  "checkout.walletBalance": "Số dư ví: {balance} USDT",
+  "checkout.short": "Ví của bạn có {balance} USDT. Hãy nạp thêm ít nhất {missing} USDT để mua thử thách này.",
+  "checkout.deposit": "Nạp tiền",
 };
 export default prop;

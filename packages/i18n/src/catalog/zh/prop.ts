@@ -502,5 +502,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "开仓",
   "trades.close": "平仓",
   "trades.duration": "持续时间",
+  "checkout.walletBalance": "钱包余额：{balance} USDT",
+  "checkout.short": "您的钱包余额为 {balance} USDT。请至少再入金 {missing} USDT 以购买此挑战。",
+  "checkout.deposit": "入金",
 };
 export default prop;

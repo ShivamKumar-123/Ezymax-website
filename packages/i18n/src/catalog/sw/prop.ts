@@ -503,5 +503,8 @@ const prop: NsMessages<"prop"> = {
   "trades.open": "Kufungua",
   "trades.close": "Kufunga",
   "trades.duration": "Muda",
+  "checkout.walletBalance": "Salio la pochi: {balance} USDT",
+  "checkout.short": "Pochi yako ina {balance} USDT. Weka angalau {missing} USDT zaidi ili ununue changamoto hii.",
+  "checkout.deposit": "Weka pesa",
 };
 export default prop;
