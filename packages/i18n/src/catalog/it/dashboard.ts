@@ -47,7 +47,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "Apri conto",
   "accounts.unavailable": "I conti di trading non sono disponibili al momento. I tuoi saldi sono al sicuro.",
   "accounts.openLive.title": "Apri un conto reale",
-  "accounts.openLive.text": "Mercati reali. Parte con saldo zero; i depositi si attivano con il wallet.",
+  "accounts.openLive.text": "Mercati reali. Parte con saldo zero; finanzialo dal tuo wallet.",
   "accounts.openDemo.title": "Apri un conto demo",
   "accounts.openDemo.text": "Fondi virtuali su prezzi in tempo reale, ricaricabili ogni giorno.",
   "accounts.more": { one: "Ancora {count} conto", other: "Altri {count} conti" },

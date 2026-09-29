@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Buka akaun pertama anda untuk mula berdagang.",
   "empty.noLive": "Belum ada akaun sebenar",
   "empty.noDemo": "Belum ada akaun demo",
-  "empty.liveText": "Buka akaun sebenar sekarang dan dapatkan log masuk serta kata laluan anda dengan segera. Pendanaan dibuka bersama dompet Kalks.",
+  "empty.liveText": "Buka akaun sebenar sekarang dan dapatkan log masuk serta kata laluan anda dengan segera. Danai akaun daripada dompet Kalks anda.",
   "empty.demoText": "Akaun demo disertakan dengan dana maya pada harga masa nyata, supaya anda boleh berlatih tanpa risiko.",
   "error.unavailableTitle": "Akaun dagangan tidak tersedia",
   "error.unavailableText": "Kami tidak dapat menghubungi perkhidmatan dagangan. Akaun dan baki anda selamat; sila cuba lagi sebentar nanti.",
@@ -260,7 +260,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.ownPassword": "Kata laluan dagangan anda telah ditetapkan; kata laluan pelabur (baca sahaja) dijana.",
   "wizard.review.generated": "Kata laluan dagangan dan pelabur dijana dan dipaparkan sekali sahaja pada skrin seterusnya.",
   "wizard.review.zeroBalance": "Akaun dibuka dengan baki sifar.",
-  "wizard.review.minDeposit": "Deposit pertama sekurang-kurangnya {amount} terpakai sebaik sahaja pendanaan dompet dibuka.",
+  "wizard.review.minDeposit": "Deposit pertama sekurang-kurangnya {amount} terpakai bagi jenis akaun ini.",
   "wizard.review.fixed": "Mod posisi ({mode}) dan mata wang ({currency}) tidak boleh ditukar selepas dibuka.",
   "wizard.agreeLive": "Saya memahami bahawa CFD ialah instrumen yang kompleks dan membawa risiko tinggi kehilangan wang dengan cepat disebabkan leveraj.",
   "wizard.agreeDemo": "Saya memahami bahawa keputusan demo menggunakan dana maya dan tidak menjamin keputusan sebenar.",
@@ -302,7 +302,7 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "Akaun anda sudah sedia",
-  "created.liveText": "Ia bermula dengan baki sifar. Deposit dibuka bersama dompet Kalks; sementara itu anda boleh log masuk ke Kalks Trader dengan kelayakan ini.",
+  "created.liveText": "Ia bermula dengan baki sifar. Danai akaun daripada dompet Kalks anda, kemudian log masuk ke Kalks Trader dengan kelayakan ini.",
   "created.demoText": "Dimuatkan dengan {amount} dalam dana maya.",
   "created.demoExpires": "Tamat tempoh selepas {days} hari tanpa log masuk terminal.",
   "created.liveTextMock": "Dana dari dompet USDT anda dan mula berdagang dalam beberapa saat.",

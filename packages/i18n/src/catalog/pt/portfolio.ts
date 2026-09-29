@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} demo",
   "alloc.title": "Alocação do patrimônio",
   "alloc.subtitle": "Contas reais, equivalente em USD",
-  "alloc.noEquity": "Suas contas reais ainda não têm patrimônio. Os depósitos começam pela carteira Kalks.",
+  "alloc.noEquity": "Suas contas reais ainda não têm patrimônio. Deposite nelas pela sua carteira Kalks.",
   "alloc.noLive": "Abra uma conta real para ver aqui a divisão do seu patrimônio.",
   "accounts.subtitle": "Patrimônio e margem por conta",
   "accounts.manage": "Gerenciar",

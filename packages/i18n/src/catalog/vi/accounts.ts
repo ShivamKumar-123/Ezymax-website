@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Mở tài khoản đầu tiên để bắt đầu giao dịch.",
   "empty.noLive": "Chưa có tài khoản thực",
   "empty.noDemo": "Chưa có tài khoản demo",
-  "empty.liveText": "Mở tài khoản thực ngay và nhận thông tin đăng nhập cùng mật khẩu tức thì. Tính năng nạp tiền được mở cùng với ví Kalks.",
+  "empty.liveText": "Mở tài khoản thực ngay và nhận thông tin đăng nhập cùng mật khẩu tức thì. Nạp tiền vào tài khoản từ ví Kalks của bạn.",
   "empty.demoText": "Tài khoản demo đi kèm tiền ảo trên giá thời gian thực, giúp bạn luyện tập mà không gặp rủi ro.",
   "error.unavailableTitle": "Tài khoản giao dịch không khả dụng",
   "error.unavailableText": "Chúng tôi không thể kết nối với dịch vụ giao dịch. Tài khoản và số dư của bạn vẫn an toàn; vui lòng thử lại sau giây lát.",
@@ -259,7 +259,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.ownPassword": "Mật khẩu giao dịch của bạn đã được đặt; mật khẩu nhà đầu tư (chỉ xem) được tạo tự động.",
   "wizard.review.generated": "Mật khẩu giao dịch và nhà đầu tư được tạo và chỉ hiển thị một lần ở màn hình tiếp theo.",
   "wizard.review.zeroBalance": "Tài khoản được mở với số dư bằng 0.",
-  "wizard.review.minDeposit": "Áp dụng khoản nạp đầu tiên tối thiểu {amount} khi tính năng nạp qua ví được mở.",
+  "wizard.review.minDeposit": "Loại tài khoản này yêu cầu khoản nạp đầu tiên tối thiểu {amount}.",
   "wizard.review.fixed": "Không thể thay đổi chế độ vị thế ({mode}) và tiền tệ ({currency}) sau khi mở.",
   "wizard.agreeLive": "Tôi hiểu rằng CFD là công cụ phức tạp và có rủi ro cao mất tiền nhanh chóng do đòn bẩy.",
   "wizard.agreeDemo": "Tôi hiểu rằng kết quả demo dùng tiền ảo và không đảm bảo kết quả trên tài khoản thực.",
@@ -301,7 +301,7 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "Tài khoản của bạn đã sẵn sàng",
-  "created.liveText": "Tài khoản bắt đầu với số dư bằng 0. Tính năng nạp tiền được mở cùng với ví Kalks; trong lúc đó bạn có thể đăng nhập Kalks Trader bằng thông tin này.",
+  "created.liveText": "Tài khoản bắt đầu với số dư bằng 0. Nạp tiền từ ví Kalks của bạn, sau đó đăng nhập Kalks Trader bằng thông tin này.",
   "created.demoText": "Đã nạp {amount} tiền ảo.",
   "created.demoExpires": "Hết hạn sau {days} ngày không đăng nhập nền tảng.",
   "created.liveTextMock": "Nạp tiền từ ví USDT và bắt đầu giao dịch trong vài giây.",

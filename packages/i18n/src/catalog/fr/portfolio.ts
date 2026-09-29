@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} démo",
   "alloc.title": "Répartition des fonds propres",
   "alloc.subtitle": "Comptes réels, équivalent USD",
-  "alloc.noEquity": "Vos comptes réels n'ont pas encore de fonds propres. Les dépôts se font via le portefeuille Kalks.",
+  "alloc.noEquity": "Vos comptes réels n'ont pas encore de fonds propres. Approvisionnez-les depuis votre portefeuille Kalks.",
   "alloc.noLive": "Ouvrez un compte réel pour voir ici la répartition de vos fonds propres.",
   "accounts.subtitle": "Fonds propres et marge par compte",
   "accounts.manage": "Gérer",

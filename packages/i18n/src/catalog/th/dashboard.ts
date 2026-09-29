@@ -47,7 +47,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "เปิดบัญชี",
   "accounts.unavailable": "ขณะนี้ไม่สามารถเข้าถึงบัญชีเทรดได้ ยอดเงินของคุณยังปลอดภัย",
   "accounts.openLive.title": "เปิดบัญชีจริง",
-  "accounts.openLive.text": "ตลาดจริง เริ่มต้นด้วยยอดคงเหลือเป็นศูนย์ การฝากเงินจะเปิดพร้อมกับวอลเล็ต",
+  "accounts.openLive.text": "ตลาดจริง เริ่มต้นด้วยยอดคงเหลือเป็นศูนย์ เติมเงินได้จากวอลเล็ตของคุณ",
   "accounts.openDemo.title": "เปิดบัญชีทดลอง",
   "accounts.openDemo.text": "เงินเสมือนบนราคาเรียลไทม์ เติมใหม่ได้ทุกวัน",
   "accounts.more": { other: "อีก {count} บัญชี" },

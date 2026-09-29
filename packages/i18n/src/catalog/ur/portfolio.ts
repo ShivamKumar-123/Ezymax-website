@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} ڈیمو",
   "alloc.title": "ایکویٹی کی تقسیم",
   "alloc.subtitle": "لائیو اکاؤنٹس، USD کے برابر",
-  "alloc.noEquity": "آپ کے لائیو اکاؤنٹس میں ابھی ایکویٹی نہیں ہے۔ ڈپازٹس Kalks والیٹ سے ہوتے ہیں۔",
+  "alloc.noEquity": "آپ کے لائیو اکاؤنٹس میں ابھی ایکویٹی نہیں ہے۔ اپنے Kalks والیٹ سے انہیں فنڈ کریں۔",
   "alloc.noLive": "اپنی ایکویٹی کی تقسیم یہاں دیکھنے کے لیے لائیو اکاؤنٹ کھولیں۔",
   "accounts.subtitle": "ہر اکاؤنٹ کی ایکویٹی اور مارجن",
   "accounts.manage": "مینیج کریں",

@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "İşleme başlamak için ilk hesabınızı açın.",
   "empty.noLive": "Henüz gerçek hesap yok",
   "empty.noDemo": "Henüz demo hesap yok",
-  "empty.liveText": "Şimdi gerçek hesap açın; giriş bilgileriniz ve şifreleriniz anında oluşturulsun. Fonlama Kalks cüzdanıyla açılır.",
+  "empty.liveText": "Şimdi gerçek hesap açın; giriş bilgileriniz ve şifreleriniz anında oluşturulsun. Hesabınıza Kalks cüzdanınızdan para yatırın.",
   "empty.demoText": "Demo hesap, gerçek zamanlı fiyatlarla sanal fonlar sunar; böylece risksiz pratik yapabilirsiniz.",
   "error.unavailableTitle": "İşlem hesapları kullanılamıyor",
   "error.unavailableText": "İşlem hizmetine ulaşamadık. Hesaplarınız ve bakiyeleriniz güvende; lütfen biraz sonra tekrar deneyin.",
@@ -261,7 +261,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.ownPassword": "İşlem şifreniz belirlendi; bir yatırımcı (salt okunur) şifresi oluşturulur.",
   "wizard.review.generated": "İşlem ve yatırımcı şifreleri oluşturulur ve sonraki ekranda bir kez gösterilir.",
   "wizard.review.zeroBalance": "Hesap sıfır bakiyeyle açılır.",
-  "wizard.review.minDeposit": "Cüzdan fonlaması açıldığında en az {amount} tutarında ilk yatırım gerekir.",
+  "wizard.review.minDeposit": "Bu hesap türü için en az {amount} tutarında ilk yatırım gerekir.",
   "wizard.review.fixed": "Pozisyon modu ({mode}) ve para birimi ({currency}) hesap açıldıktan sonra değiştirilemez.",
   "wizard.agreeLive": "CFD'lerin karmaşık araçlar olduğunu ve kaldıraç nedeniyle hızla para kaybetme riskinin yüksek olduğunu anlıyorum.",
   "wizard.agreeDemo": "Demo sonuçlarının sanal fonlarla elde edildiğini ve gerçek sonuçları garanti etmediğini anlıyorum.",
@@ -303,7 +303,7 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "Hesabınız hazır",
-  "created.liveText": "Sıfır bakiyeyle başlar. Para yatırma Kalks cüzdanıyla açılır; bu arada bu bilgilerle Kalks Trader'a giriş yapabilirsiniz.",
+  "created.liveText": "Sıfır bakiyeyle başlar. Kalks cüzdanınızdan para yatırın, ardından bu bilgilerle Kalks Trader'a giriş yapın.",
   "created.demoText": "{amount} sanal fon yüklendi.",
   "created.demoExpires": "Terminale {days} gün giriş yapılmazsa süresi dolar.",
   "created.liveTextMock": "USDT cüzdanınızdan fonlayın ve saniyeler içinde işleme başlayın.",

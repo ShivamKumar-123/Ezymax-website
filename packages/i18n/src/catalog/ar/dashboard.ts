@@ -51,7 +51,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "فتح حساب",
   "accounts.unavailable": "حسابات التداول غير متاحة حاليًا. أرصدتك في أمان.",
   "accounts.openLive.title": "افتح حسابًا حقيقيًا",
-  "accounts.openLive.text": "أسواق حقيقية. يبدأ برصيد صفري؛ يُتاح التمويل مع إطلاق المحفظة.",
+  "accounts.openLive.text": "أسواق حقيقية. يبدأ برصيد صفري؛ موّله من محفظتك.",
   "accounts.openDemo.title": "افتح حسابًا تجريبيًا",
   "accounts.openDemo.text": "أموال افتراضية بأسعار لحظية، قابلة لإعادة التعبئة يوميًا.",
   "accounts.more": {

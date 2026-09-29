@@ -91,7 +91,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Eröffnen Sie Ihr erstes Konto, um mit dem Handel zu beginnen.",
   "empty.noLive": "Noch keine Live-Konten",
   "empty.noDemo": "Noch keine Demokonten",
-  "empty.liveText": "Eröffnen Sie jetzt ein Live-Konto und erhalten Sie Login und Passwörter sofort. Einzahlungen werden mit der Kalks Wallet freigeschaltet.",
+  "empty.liveText": "Eröffnen Sie jetzt ein Live-Konto und erhalten Sie Login und Passwörter sofort. Laden Sie es über Ihre Kalks Wallet auf.",
   "empty.demoText": "Ein Demokonto enthält virtuelles Guthaben zu Echtzeitkursen, damit Sie ohne Risiko üben können.",
   "error.unavailableTitle": "Handelskonten sind nicht verfügbar",
   "error.unavailableText": "Der Handelsdienst ist nicht erreichbar. Ihre Konten und Guthaben sind sicher; bitte versuchen Sie es gleich erneut.",
@@ -265,7 +265,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.ownPassword": "Ihr Handelspasswort ist festgelegt; ein Investorpasswort (nur lesen) wird erzeugt.",
   "wizard.review.generated": "Handels- und Investorpasswort werden erzeugt und auf dem nächsten Bildschirm einmalig angezeigt.",
   "wizard.review.zeroBalance": "Das Konto startet mit einem Kontostand von null.",
-  "wizard.review.minDeposit": "Sobald Wallet-Einzahlungen möglich sind, gilt eine Ersteinzahlung von mindestens {amount}.",
+  "wizard.review.minDeposit": "Für diesen Kontotyp gilt eine Ersteinzahlung von mindestens {amount}.",
   "wizard.review.fixed": "Positionsmodus ({mode}) und Währung ({currency}) können nach der Eröffnung nicht geändert werden.",
   "wizard.agreeLive": "Ich verstehe, dass CFDs komplexe Instrumente sind und wegen der Hebelwirkung ein hohes Risiko bergen, schnell Geld zu verlieren.",
   "wizard.agreeDemo": "Ich verstehe, dass Demo-Ergebnisse auf virtuellem Guthaben beruhen und keine Live-Ergebnisse garantieren.",
@@ -307,7 +307,7 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "Ihr Konto ist bereit",
-  "created.liveText": "Es startet mit einem Kontostand von null. Einzahlungen werden mit der Kalks Wallet freigeschaltet; bis dahin können Sie sich mit diesen Zugangsdaten bei Kalks Trader anmelden.",
+  "created.liveText": "Es startet mit einem Kontostand von null. Laden Sie es über Ihre Kalks Wallet auf und melden Sie sich dann mit diesen Zugangsdaten bei Kalks Trader an.",
   "created.demoText": "Mit {amount} virtuellem Guthaben aufgeladen.",
   "created.demoExpires": "Läuft nach {days} Tagen ohne Terminal-Login ab.",
   "created.liveTextMock": "Laden Sie es aus Ihrer USDT-Wallet auf und beginnen Sie in Sekunden zu handeln.",

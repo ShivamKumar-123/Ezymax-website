@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "デモ {count}",
   "alloc.title": "有効証拠金の配分",
   "alloc.subtitle": "リアル口座、USD換算",
-  "alloc.noEquity": "リアル口座にはまだ有効証拠金がありません。入金はKalksウォレットから行えます。",
+  "alloc.noEquity": "リアル口座にはまだ有効証拠金がありません。Kalksウォレットから入金してください。",
   "alloc.noLive": "リアル口座を開設すると、有効証拠金の配分がここに表示されます。",
   "accounts.subtitle": "口座ごとの有効証拠金と証拠金",
   "accounts.manage": "管理",

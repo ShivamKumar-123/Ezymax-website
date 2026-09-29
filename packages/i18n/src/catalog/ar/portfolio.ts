@@ -93,7 +93,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} تجريبي",
   "alloc.title": "توزيع حقوق الملكية",
   "alloc.subtitle": "الحسابات الحقيقية، بما يعادل USD",
-  "alloc.noEquity": "لا توجد حقوق ملكية في حساباتك الحقيقية بعد. تتم الإيداعات عبر محفظة Kalks.",
+  "alloc.noEquity": "لا توجد حقوق ملكية في حساباتك الحقيقية بعد. موّلها من محفظة Kalks الخاصة بك.",
   "alloc.noLive": "افتح حسابًا حقيقيًا لرؤية توزيع حقوق الملكية هنا.",
   "accounts.subtitle": "حقوق الملكية والهامش لكل حساب",
   "accounts.manage": "إدارة",

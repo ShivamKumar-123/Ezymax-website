@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "첫 계좌를 개설하고 거래를 시작하세요.",
   "empty.noLive": "아직 실계좌가 없습니다",
   "empty.noDemo": "아직 데모 계좌가 없습니다",
-  "empty.liveText": "지금 실계좌를 개설하면 로그인 정보와 비밀번호가 즉시 발급됩니다. 입금은 Kalks 지갑과 함께 열립니다.",
+  "empty.liveText": "지금 실계좌를 개설하면 로그인 정보와 비밀번호가 즉시 발급됩니다. Kalks 지갑에서 입금하세요.",
   "empty.demoText": "데모 계좌는 실시간 가격의 가상 자금을 제공하므로 위험 없이 연습할 수 있습니다.",
   "error.unavailableTitle": "거래 계좌를 불러올 수 없습니다",
   "error.unavailableText": "거래 서비스에 연결하지 못했습니다. 계좌와 잔고는 안전합니다. 잠시 후 다시 시도해 주세요.",
@@ -259,7 +259,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.ownPassword": "거래 비밀번호가 설정되었으며, 투자자(읽기 전용) 비밀번호가 생성됩니다.",
   "wizard.review.generated": "거래 및 투자자 비밀번호가 생성되어 다음 화면에서 한 번만 표시됩니다.",
   "wizard.review.zeroBalance": "계좌는 잔고 0으로 개설됩니다.",
-  "wizard.review.minDeposit": "지갑 입금이 열리면 최소 {amount}의 첫 입금이 필요합니다.",
+  "wizard.review.minDeposit": "이 계좌 유형은 최소 {amount}의 첫 입금이 필요합니다.",
   "wizard.review.fixed": "포지션 모드({mode})와 통화({currency})는 개설 후 변경할 수 없습니다.",
   "wizard.agreeLive": "CFD는 복잡한 상품이며 레버리지로 인해 빠르게 자금을 잃을 위험이 높다는 것을 이해합니다.",
   "wizard.agreeDemo": "데모 결과는 가상 자금을 사용하며 실거래 결과를 보장하지 않는다는 것을 이해합니다.",
@@ -301,7 +301,7 @@ const accounts: NsMessages<"accounts"> = {
 
   // 계좌 생성 완료
   "created.title": "계좌가 준비되었습니다",
-  "created.liveText": "잔고 0에서 시작합니다. 입금은 Kalks 지갑과 함께 열리며, 그동안 이 자격 증명으로 Kalks Trader에 로그인할 수 있습니다.",
+  "created.liveText": "잔고 0에서 시작합니다. Kalks 지갑에서 입금한 후 이 자격 증명으로 Kalks Trader에 로그인하세요.",
   "created.demoText": "가상 자금 {amount}이(가) 충전되었습니다.",
   "created.demoExpires": "터미널 로그인 없이 {days}일이 지나면 만료됩니다.",
   "created.liveTextMock": "USDT 지갑에서 입금하고 몇 초 만에 거래를 시작하세요.",

@@ -47,7 +47,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "Buka akaun",
   "accounts.unavailable": "Akaun dagangan tidak tersedia buat masa ini. Baki anda selamat.",
   "accounts.openLive.title": "Buka akaun sebenar",
-  "accounts.openLive.text": "Pasaran sebenar. Bermula dengan baki sifar; pendanaan dibuka bersama dompet.",
+  "accounts.openLive.text": "Pasaran sebenar. Bermula dengan baki sifar; danai akaun daripada dompet anda.",
   "accounts.openDemo.title": "Buka akaun demo",
   "accounts.openDemo.text": "Dana maya pada harga masa nyata, boleh diisi semula setiap hari.",
   "accounts.more": { other: "{count} akaun lagi" },

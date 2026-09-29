@@ -94,7 +94,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Abra su primera cuenta para empezar a operar.",
   "empty.noLive": "Aún no tiene cuentas reales",
   "empty.noDemo": "Aún no tiene cuentas demo",
-  "empty.liveText": "Abra ahora una cuenta real y reciba al instante su login y contraseñas. La financiación se habilita con la billetera de Kalks.",
+  "empty.liveText": "Abra ahora una cuenta real y reciba al instante su login y contraseñas. Fondéela desde su billetera de Kalks.",
   "empty.demoText": "Una cuenta demo incluye fondos virtuales con precios en tiempo real, para practicar sin riesgo.",
   "error.unavailableTitle": "Las cuentas de trading no están disponibles",
   "error.unavailableText": "No pudimos conectar con el servicio de trading. Sus cuentas y saldos están seguros; inténtelo de nuevo en un momento.",
@@ -280,7 +280,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.ownPassword": "Su contraseña de trading está establecida; se genera una contraseña de inversor (solo lectura).",
   "wizard.review.generated": "Las contraseñas de trading y de inversor se generan y se muestran una sola vez en la siguiente pantalla.",
   "wizard.review.zeroBalance": "La cuenta se abre con saldo cero.",
-  "wizard.review.minDeposit": "Se aplica un primer depósito mínimo de {amount} cuando se habilite la financiación desde la billetera.",
+  "wizard.review.minDeposit": "Para este tipo de cuenta se aplica un primer depósito mínimo de {amount}.",
   "wizard.review.fixed": "El modo de posición ({mode}) y la divisa ({currency}) no se pueden cambiar tras la apertura.",
   "wizard.agreeLive": "Entiendo que los CFD son instrumentos complejos y conllevan un alto riesgo de perder dinero rápidamente debido al apalancamiento.",
   "wizard.agreeDemo": "Entiendo que los resultados demo usan fondos virtuales y no garantizan resultados reales.",
@@ -322,7 +322,7 @@ const accounts: NsMessages<"accounts"> = {
 
   // Cuenta creada
   "created.title": "Su cuenta está lista",
-  "created.liveText": "Empieza con saldo cero. Los depósitos se habilitan con la billetera de Kalks; mientras tanto, puede conectarse a Kalks Trader con estas credenciales.",
+  "created.liveText": "Empieza con saldo cero. Fondéela desde su billetera de Kalks y luego conéctese a Kalks Trader con estas credenciales.",
   "created.demoText": "Cargada con {amount} en fondos virtuales.",
   "created.demoExpires": "Caduca tras {days} días sin conectarse al terminal.",
   "created.liveTextMock": "Fináncela desde su billetera USDT y empiece a operar en segundos.",

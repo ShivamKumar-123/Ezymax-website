@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "最初の口座を開設して取引を始めましょう。",
   "empty.noLive": "リアル口座はまだありません",
   "empty.noDemo": "デモ口座はまだありません",
-  "empty.liveText": "今すぐリアル口座を開設すると、ログインIDとパスワードがすぐに発行されます。入金はKalksウォレットの開始とともに可能になります。",
+  "empty.liveText": "今すぐリアル口座を開設すると、ログインIDとパスワードがすぐに発行されます。Kalksウォレットから入金してください。",
   "empty.demoText": "デモ口座ではリアルタイム価格で仮想資金を使えるため、リスクなしで練習できます。",
   "error.unavailableTitle": "取引口座をご利用いただけません",
   "error.unavailableText": "取引サービスに接続できませんでした。口座と残高は安全です。しばらくしてからもう一度お試しください。",
@@ -259,7 +259,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.ownPassword": "取引パスワードは設定済みです。投資家（閲覧専用）パスワードは自動生成されます。",
   "wizard.review.generated": "取引パスワードと投資家パスワードが生成され、次の画面で1回だけ表示されます。",
   "wizard.review.zeroBalance": "口座は残高ゼロで開設されます。",
-  "wizard.review.minDeposit": "ウォレットでの入金開始後、初回入金は{amount}以上が必要です。",
+  "wizard.review.minDeposit": "この口座タイプでは、初回入金は{amount}以上が必要です。",
   "wizard.review.fixed": "ポジションモード（{mode}）と通貨（{currency}）は開設後に変更できません。",
   "wizard.agreeLive": "CFDは複雑な金融商品であり、レバレッジにより短期間で資金を失うリスクが高いことを理解しています。",
   "wizard.agreeDemo": "デモの結果は仮想資金によるものであり、リアル口座での結果を保証するものではないことを理解しています。",
@@ -301,7 +301,7 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "口座の準備ができました",
-  "created.liveText": "残高ゼロから開始します。入金はKalksウォレットの開始とともに可能になります。それまでの間、この認証情報でKalks Traderにログインできます。",
+  "created.liveText": "残高ゼロから開始します。Kalksウォレットから入金し、この認証情報でKalks Traderにログインしてください。",
   "created.demoText": "{amount}の仮想資金が入金されています。",
   "created.demoExpires": "ターミナルへのログインがないまま{days}日経過すると期限切れになります。",
   "created.liveTextMock": "USDTウォレットから入金して、数秒で取引を開始できます。",

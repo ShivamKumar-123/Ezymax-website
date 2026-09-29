@@ -48,7 +48,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "Buka akun",
   "accounts.unavailable": "Akun trading sedang tidak tersedia. Saldo Anda aman.",
   "accounts.openLive.title": "Buka akun live",
-  "accounts.openLive.text": "Pasar nyata. Dimulai dengan saldo nol; pendanaan dibuka bersama dompet.",
+  "accounts.openLive.text": "Pasar nyata. Dimulai dengan saldo nol; danai akun dari dompet Anda.",
   "accounts.openDemo.title": "Buka akun demo",
   "accounts.openDemo.text": "Dana virtual dengan harga real-time, dapat diisi ulang setiap hari.",
   "accounts.more": { other: "{count} akun lainnya" },

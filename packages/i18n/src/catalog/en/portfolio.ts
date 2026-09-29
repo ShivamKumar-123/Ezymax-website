@@ -71,7 +71,7 @@ const portfolio = {
   "kpi.demo": "{count} demo",
   "alloc.title": "Equity allocation",
   "alloc.subtitle": "Live accounts, USD equivalent",
-  "alloc.noEquity": "Your live accounts have no equity yet. Deposits open with the Kalks wallet.",
+  "alloc.noEquity": "Your live accounts have no equity yet. Fund them from your Kalks wallet.",
   "alloc.noLive": "Open a live account to see your equity split here.",
   "accounts.subtitle": "Equity and margin per account",
   "accounts.manage": "Manage",

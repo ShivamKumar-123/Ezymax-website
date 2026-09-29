@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Apri il tuo primo conto per iniziare a fare trading.",
   "empty.noLive": "Ancora nessun conto reale",
   "empty.noDemo": "Ancora nessun conto demo",
-  "empty.liveText": "Apri subito un conto reale e ricevi login e password all'istante. I depositi si attivano con il wallet Kalks.",
+  "empty.liveText": "Apri subito un conto reale e ricevi login e password all'istante. Finanzialo dal tuo wallet Kalks.",
   "empty.demoText": "Un conto demo include fondi virtuali su prezzi in tempo reale, per esercitarti senza rischi.",
   "error.unavailableTitle": "I conti di trading non sono disponibili",
   "error.unavailableText": "Non è stato possibile raggiungere il servizio di trading. I tuoi conti e saldi sono al sicuro; riprova tra un momento.",
@@ -259,7 +259,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.ownPassword": "La tua password di trading è impostata; viene generata una password investitore (sola lettura).",
   "wizard.review.generated": "Le password di trading e investitore vengono generate e mostrate una sola volta nella schermata successiva.",
   "wizard.review.zeroBalance": "Il conto viene aperto con saldo zero.",
-  "wizard.review.minDeposit": "Quando si attivano i depositi dal wallet, si applica un primo deposito di almeno {amount}.",
+  "wizard.review.minDeposit": "Per questo tipo di conto si applica un primo deposito di almeno {amount}.",
   "wizard.review.fixed": "Modalità posizioni ({mode}) e valuta ({currency}) non possono essere modificate dopo l'apertura.",
   "wizard.agreeLive": "Comprendo che i CFD sono strumenti complessi e comportano un elevato rischio di perdere rapidamente denaro a causa della leva finanziaria.",
   "wizard.agreeDemo": "Comprendo che i risultati demo usano fondi virtuali e non garantiscono risultati reali.",
@@ -301,7 +301,7 @@ const accounts: NsMessages<"accounts"> = {
 
   // Conto creato
   "created.title": "Il tuo conto è pronto",
-  "created.liveText": "Parte con saldo zero. I depositi si attivano con il wallet Kalks; nel frattempo puoi accedere a Kalks Trader con queste credenziali.",
+  "created.liveText": "Parte con saldo zero. Finanzialo dal tuo wallet Kalks, poi accedi a Kalks Trader con queste credenziali.",
   "created.demoText": "Caricato con {amount} in fondi virtuali.",
   "created.demoExpires": "Scade dopo {days} giorni senza accesso al terminale.",
   "created.liveTextMock": "Finanzialo dal tuo wallet USDT e inizia a fare trading in pochi secondi.",

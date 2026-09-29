@@ -47,7 +47,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "Hesap aç",
   "accounts.unavailable": "İşlem hesapları şu anda kullanılamıyor. Bakiyeleriniz güvende.",
   "accounts.openLive.title": "Gerçek hesap açın",
-  "accounts.openLive.text": "Gerçek piyasalar. Sıfır bakiyeyle başlar; fonlama cüzdanla birlikte açılır.",
+  "accounts.openLive.text": "Gerçek piyasalar. Sıfır bakiyeyle başlar; cüzdanınızdan para yatırın.",
   "accounts.openDemo.title": "Demo hesap açın",
   "accounts.openDemo.text": "Gerçek zamanlı fiyatlarla sanal fonlar, her gün yenilenebilir.",
   "accounts.more": { other: "{count} hesap daha" },

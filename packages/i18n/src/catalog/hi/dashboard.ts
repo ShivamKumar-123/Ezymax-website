@@ -48,7 +48,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "अकाउंट खोलें",
   "accounts.unavailable": "ट्रेडिंग अकाउंट अभी उपलब्ध नहीं हैं। आपके बैलेंस सुरक्षित हैं।",
   "accounts.openLive.title": "लाइव अकाउंट खोलें",
-  "accounts.openLive.text": "असली मार्केट। शून्य बैलेंस से शुरू होता है; वॉलेट के साथ फ़ंडिंग शुरू होगी।",
+  "accounts.openLive.text": "असली मार्केट। शून्य बैलेंस से शुरू होता है; इसे अपने वॉलेट से फ़ंड करें।",
   "accounts.openDemo.title": "डेमो अकाउंट खोलें",
   "accounts.openDemo.text": "रियल-टाइम कीमतों पर वर्चुअल फ़ंड, हर दिन रीफ़िल किए जा सकते हैं।",
   "accounts.more": { one: "{count} और अकाउंट", other: "{count} और अकाउंट" },

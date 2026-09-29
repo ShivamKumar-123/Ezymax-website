@@ -52,7 +52,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "Открыть счёт",
   "accounts.unavailable": "Торговые счета сейчас недоступны. Ваши средства в безопасности.",
   "accounts.openLive.title": "Открыть реальный счёт",
-  "accounts.openLive.text": "Реальные рынки. Счёт открывается с нулевым балансом; пополнение станет доступно вместе с кошельком.",
+  "accounts.openLive.text": "Реальные рынки. Счёт открывается с нулевым балансом; пополните его из кошелька.",
   "accounts.openDemo.title": "Открыть демо-счёт",
   "accounts.openDemo.text": "Виртуальные средства на реальных котировках, пополнение каждый день.",
   "accounts.more": {

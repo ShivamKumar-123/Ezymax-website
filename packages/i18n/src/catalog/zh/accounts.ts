@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "开立您的第一个账户，开始交易。",
   "empty.noLive": "暂无真实账户",
   "empty.noDemo": "暂无模拟账户",
-  "empty.liveText": "立即开立真实账户，即时获取账号和密码。Kalks 钱包上线后即可入金。",
+  "empty.liveText": "立即开立真实账户，即时获取账号和密码。请通过您的 Kalks 钱包为其入金。",
   "empty.demoText": "模拟账户提供虚拟资金并使用实时价格，让您无风险地练习。",
   "error.unavailableTitle": "交易账户不可用",
   "error.unavailableText": "无法连接到交易服务。您的账户和余额是安全的，请稍后重试。",
@@ -259,7 +259,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.ownPassword": "您的交易密码已设置；系统将生成投资者（只读）密码。",
   "wizard.review.generated": "交易密码和投资者密码将自动生成，并在下一页仅显示一次。",
   "wizard.review.zeroBalance": "账户开立时余额为零。",
-  "wizard.review.minDeposit": "钱包入金开放后，首次入金至少为 {amount}。",
+  "wizard.review.minDeposit": "此账户类型的首次入金至少为 {amount}。",
   "wizard.review.fixed": "开户后无法更改持仓模式（{mode}）和货币（{currency}）。",
   "wizard.agreeLive": "我了解差价合约是复杂的金融工具，由于杠杆作用，存在快速亏损资金的高风险。",
   "wizard.agreeDemo": "我了解模拟交易结果基于虚拟资金，不代表真实交易结果。",
@@ -301,7 +301,7 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "您的账户已准备就绪",
-  "created.liveText": "账户初始余额为零。Kalks 钱包上线后即可入金；在此期间，您可以使用这些凭据登录 Kalks Trader。",
+  "created.liveText": "账户初始余额为零。请通过您的 Kalks 钱包为其入金，然后使用这些凭据登录 Kalks Trader。",
   "created.demoText": "已存入 {amount} 虚拟资金。",
   "created.demoExpires": "连续 {days} 天未登录终端将过期。",
   "created.liveTextMock": "从您的 USDT 钱包入金，几秒钟内即可开始交易。",

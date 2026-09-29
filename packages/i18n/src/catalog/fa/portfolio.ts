@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} دمو",
   "alloc.title": "تخصیص اکوئیتی",
   "alloc.subtitle": "حساب‌های واقعی، معادل USD",
-  "alloc.noEquity": "حساب‌های واقعی شما هنوز اکوئیتی ندارند. واریز از طریق کیف پول Kalks انجام می‌شود.",
+  "alloc.noEquity": "حساب‌های واقعی شما هنوز اکوئیتی ندارند. از کیف پول Kalks خود به آن‌ها واریز کنید.",
   "alloc.noLive": "یک حساب واقعی باز کنید تا توزیع اکوئیتی خود را اینجا ببینید.",
   "accounts.subtitle": "اکوئیتی و مارجین هر حساب",
   "accounts.manage": "مدیریت",

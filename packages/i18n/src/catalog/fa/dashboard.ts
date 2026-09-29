@@ -48,7 +48,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "افتتاح حساب",
   "accounts.unavailable": "حساب‌های معاملاتی در حال حاضر در دسترس نیستند. موجودی شما امن است.",
   "accounts.openLive.title": "افتتاح حساب واقعی",
-  "accounts.openLive.text": "بازارهای واقعی. با موجودی صفر شروع می‌شود؛ واریز با فعال شدن کیف پول ممکن می‌شود.",
+  "accounts.openLive.text": "بازارهای واقعی. با موجودی صفر شروع می‌شود؛ از کیف پول خود به آن واریز کنید.",
   "accounts.openDemo.title": "افتتاح حساب دمو",
   "accounts.openDemo.text": "وجوه مجازی با قیمت‌های لحظه‌ای، قابل شارژ مجدد در هر روز.",
   "accounts.more": { one: "{count} حساب دیگر", other: "{count} حساب دیگر" },

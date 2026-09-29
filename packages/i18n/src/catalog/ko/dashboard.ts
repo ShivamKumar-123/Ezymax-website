@@ -47,7 +47,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "계좌 개설",
   "accounts.unavailable": "지금은 거래 계좌 정보를 불러올 수 없습니다. 잔고는 안전하게 보관되어 있습니다.",
   "accounts.openLive.title": "실계좌 개설",
-  "accounts.openLive.text": "실제 시장에서 거래합니다. 잔고 0에서 시작하며, 지갑 기능과 함께 입금이 열립니다.",
+  "accounts.openLive.text": "실제 시장에서 거래합니다. 잔고 0에서 시작하며, 지갑에서 입금할 수 있습니다.",
   "accounts.openDemo.title": "데모 계좌 개설",
   "accounts.openDemo.text": "실시간 가격으로 가상 자금을 운용하며, 매일 충전할 수 있습니다.",
   "accounts.more": { other: "계좌 {count}개 더 보기" },

@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} 个模拟",
   "alloc.title": "净值分布",
   "alloc.subtitle": "真实账户，折合 USD",
-  "alloc.noEquity": "您的真实账户尚无净值。可通过 Kalks 钱包入金。",
+  "alloc.noEquity": "您的真实账户尚无净值。请通过您的 Kalks 钱包为其入金。",
   "alloc.noLive": "开立真实账户后，即可在此查看您的净值分布。",
   "accounts.subtitle": "各账户的净值和预付款",
   "accounts.manage": "管理",

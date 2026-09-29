@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} demo",
   "alloc.title": "Mgawanyo wa equity",
   "alloc.subtitle": "Akaunti halisi, sawa na USD",
-  "alloc.noEquity": "Akaunti zako halisi bado hazina equity. Uwekaji huanzia kwenye pochi ya Kalks.",
+  "alloc.noEquity": "Akaunti zako halisi bado hazina equity. Ziwekee pesa kutoka kwenye pochi yako ya Kalks.",
   "alloc.noLive": "Fungua akaunti halisi ili kuona mgawanyo wa equity yako hapa.",
   "accounts.subtitle": "Equity na margin kwa kila akaunti",
   "accounts.manage": "Dhibiti",

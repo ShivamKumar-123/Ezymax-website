@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Fungua akaunti yako ya kwanza ili uanze biashara.",
   "empty.noLive": "Bado hakuna akaunti halisi",
   "empty.noDemo": "Bado hakuna akaunti za demo",
-  "empty.liveText": "Fungua akaunti halisi sasa na upate login na manenosiri yako papo hapo. Ufadhili unafunguliwa pamoja na pochi ya Kalks.",
+  "empty.liveText": "Fungua akaunti halisi sasa na upate login na manenosiri yako papo hapo. Iwekee pesa kutoka kwenye pochi yako ya Kalks.",
   "empty.demoText": "Akaunti ya demo huja na fedha za mtandaoni kwa bei za wakati halisi, ili ujizoeze bila hatari.",
   "error.unavailableTitle": "Akaunti za biashara hazipatikani",
   "error.unavailableText": "Hatukuweza kufikia huduma ya biashara. Akaunti zako na salio lako viko salama; tafadhali jaribu tena baada ya muda mfupi.",
@@ -259,7 +259,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.ownPassword": "Nenosiri lako la biashara limewekwa; nenosiri la mwekezaji (kusoma tu) limeundwa.",
   "wizard.review.generated": "Manenosiri ya biashara na mwekezaji yanaundwa na kuonyeshwa mara moja kwenye skrini inayofuata.",
   "wizard.review.zeroBalance": "Akaunti inafunguliwa na salio sifuri.",
-  "wizard.review.minDeposit": "Uwekaji wa kwanza wa angalau {amount} unahitajika mara ufadhili wa pochi utakapofunguliwa.",
+  "wizard.review.minDeposit": "Uwekaji wa kwanza wa angalau {amount} unahitajika kwa aina hii ya akaunti.",
   "wizard.review.fixed": "Hali ya nafasi ({mode}) na sarafu ({currency}) haziwezi kubadilishwa baada ya kufungua.",
   "wizard.agreeLive": "Ninaelewa kuwa CFD ni bidhaa changamano na zina hatari kubwa ya kupoteza pesa haraka kutokana na leverage.",
   "wizard.agreeDemo": "Ninaelewa kuwa matokeo ya demo hutumia fedha za mtandaoni na hayahakikishi matokeo halisi.",
@@ -301,7 +301,7 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "Akaunti yako iko tayari",
-  "created.liveText": "Inaanza na salio sifuri. Kuweka pesa kunafunguliwa pamoja na pochi ya Kalks; kwa sasa unaweza kuingia kwenye Kalks Trader kwa vitambulisho hivi.",
+  "created.liveText": "Inaanza na salio sifuri. Iwekee pesa kutoka kwenye pochi yako ya Kalks, kisha uingie kwenye Kalks Trader kwa vitambulisho hivi.",
   "created.demoText": "Imejazwa {amount} za fedha za mtandaoni.",
   "created.demoExpires": "Inaisha muda baada ya siku {days} bila kuingia kwenye terminal.",
   "created.liveTextMock": "Ifadhili kutoka pochi yako ya USDT na uanze biashara kwa sekunde chache.",

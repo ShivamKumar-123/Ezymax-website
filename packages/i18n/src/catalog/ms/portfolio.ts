@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} demo",
   "alloc.title": "Peruntukan ekuiti",
   "alloc.subtitle": "Akaun sebenar, setara USD",
-  "alloc.noEquity": "Akaun sebenar anda belum mempunyai ekuiti. Deposit dibuat melalui dompet Kalks.",
+  "alloc.noEquity": "Akaun sebenar anda belum mempunyai ekuiti. Danai akaun tersebut daripada dompet Kalks anda.",
   "alloc.noLive": "Buka akaun sebenar untuk melihat pecahan ekuiti anda di sini.",
   "accounts.subtitle": "Ekuiti dan margin bagi setiap akaun",
   "accounts.manage": "Urus",

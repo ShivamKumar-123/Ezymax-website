@@ -47,7 +47,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "கணக்கைத் திற",
   "accounts.unavailable": "டிரேடிங் கணக்குகள் தற்போது கிடைக்கவில்லை. உங்கள் பேலன்ஸ்கள் பாதுகாப்பாக உள்ளன.",
   "accounts.openLive.title": "லைவ் கணக்கைத் திறங்கள்",
-  "accounts.openLive.text": "உண்மையான சந்தைகள். பூஜ்ஜிய பேலன்ஸில் தொடங்கும்; வாலட்டுடன் நிதியளிப்பு திறக்கும்.",
+  "accounts.openLive.text": "உண்மையான சந்தைகள். பூஜ்ஜிய பேலன்ஸில் தொடங்கும்; உங்கள் வாலட்டிலிருந்து நிதியளியுங்கள்.",
   "accounts.openDemo.title": "டெமோ கணக்கைத் திறங்கள்",
   "accounts.openDemo.text": "நிகழ்நேர விலைகளில் மெய்நிகர் நிதி, தினமும் நிரப்பலாம்.",
   "accounts.more": { one: "மேலும் {count} கணக்கு", other: "மேலும் {count} கணக்குகள்" },

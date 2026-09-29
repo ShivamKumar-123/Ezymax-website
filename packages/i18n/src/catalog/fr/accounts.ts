@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Ouvrez votre premier compte pour commencer à trader.",
   "empty.noLive": "Aucun compte réel pour le moment",
   "empty.noDemo": "Aucun compte démo pour le moment",
-  "empty.liveText": "Ouvrez un compte réel maintenant et recevez instantanément votre identifiant et vos mots de passe. Le financement s'ouvre avec le portefeuille Kalks.",
+  "empty.liveText": "Ouvrez un compte réel maintenant et recevez instantanément votre identifiant et vos mots de passe. Approvisionnez-le depuis votre portefeuille Kalks.",
   "empty.demoText": "Un compte démo est doté de fonds virtuels sur des prix en temps réel, pour vous entraîner sans risque.",
   "error.unavailableTitle": "Les comptes de trading sont indisponibles",
   "error.unavailableText": "Nous n'avons pas pu joindre le service de trading. Vos comptes et soldes sont en sécurité ; veuillez réessayer dans un instant.",
@@ -260,7 +260,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.ownPassword": "Votre mot de passe de trading est défini ; un mot de passe investisseur (lecture seule) est généré.",
   "wizard.review.generated": "Les mots de passe de trading et investisseur sont générés et affichés une seule fois à l'écran suivant.",
   "wizard.review.zeroBalance": "Le compte s'ouvre avec un solde nul.",
-  "wizard.review.minDeposit": "Un premier dépôt d'au moins {amount} s'appliquera à l'ouverture du financement par portefeuille.",
+  "wizard.review.minDeposit": "Un premier dépôt d'au moins {amount} s'applique à ce type de compte.",
   "wizard.review.fixed": "Le mode de position ({mode}) et la devise ({currency}) ne peuvent pas être modifiés après l'ouverture.",
   "wizard.agreeLive": "Je comprends que les CFD sont des instruments complexes qui comportent un risque élevé de perte rapide en capital en raison de l'effet de levier.",
   "wizard.agreeDemo": "Je comprends que les résultats démo reposent sur des fonds virtuels et ne garantissent pas les résultats en réel.",
@@ -302,7 +302,7 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "Votre compte est prêt",
-  "created.liveText": "Il démarre avec un solde nul. Les dépôts s'ouvrent avec le portefeuille Kalks ; en attendant, vous pouvez vous connecter à Kalks Trader avec ces identifiants.",
+  "created.liveText": "Il démarre avec un solde nul. Approvisionnez-le depuis votre portefeuille Kalks, puis connectez-vous à Kalks Trader avec ces identifiants.",
   "created.demoText": "Crédité de {amount} en fonds virtuels.",
   "created.demoExpires": "Expire après {days} jours sans connexion au terminal.",
   "created.liveTextMock": "Alimentez-le depuis votre portefeuille USDT et commencez à trader en quelques secondes.",

@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} डेमो",
   "alloc.title": "इक्विटी आवंटन",
   "alloc.subtitle": "लाइव अकाउंट, USD के बराबर",
-  "alloc.noEquity": "आपके लाइव अकाउंट में अभी कोई इक्विटी नहीं है। जमा Kalks वॉलेट के साथ शुरू होगी।",
+  "alloc.noEquity": "आपके लाइव अकाउंट में अभी कोई इक्विटी नहीं है। उन्हें अपने Kalks वॉलेट से फ़ंड करें।",
   "alloc.noLive": "अपनी इक्विटी का बँटवारा यहाँ देखने के लिए लाइव अकाउंट खोलें।",
   "accounts.subtitle": "हर अकाउंट की इक्विटी और मार्जिन",
   "accounts.manage": "मैनेज करें",

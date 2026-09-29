@@ -48,7 +48,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "Konto eröffnen",
   "accounts.unavailable": "Handelskonten sind derzeit nicht verfügbar. Ihre Guthaben sind sicher.",
   "accounts.openLive.title": "Live-Konto eröffnen",
-  "accounts.openLive.text": "Echte Märkte. Startet mit Kontostand null; Einzahlungen werden mit der Wallet freigeschaltet.",
+  "accounts.openLive.text": "Echte Märkte. Startet mit Kontostand null; laden Sie es über Ihre Wallet auf.",
   "accounts.openDemo.title": "Demokonto eröffnen",
   "accounts.openDemo.text": "Virtuelles Guthaben mit Echtzeitkursen, täglich aufladbar.",
   "accounts.more": { one: "{count} weiteres Konto", other: "{count} weitere Konten" },

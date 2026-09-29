@@ -47,7 +47,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "اکاؤنٹ کھولیں",
   "accounts.unavailable": "ٹریڈنگ اکاؤنٹس اس وقت دستیاب نہیں ہیں۔ آپ کے بیلنس محفوظ ہیں۔",
   "accounts.openLive.title": "لائیو اکاؤنٹ کھولیں",
-  "accounts.openLive.text": "حقیقی مارکیٹس۔ صفر بیلنس سے شروع ہوتا ہے؛ فنڈنگ والیٹ کے ساتھ کھلے گی۔",
+  "accounts.openLive.text": "حقیقی مارکیٹس۔ صفر بیلنس سے شروع ہوتا ہے؛ اپنے والیٹ سے اسے فنڈ کریں۔",
   "accounts.openDemo.title": "ڈیمو اکاؤنٹ کھولیں",
   "accounts.openDemo.text": "ریئل ٹائم قیمتوں پر ورچوئل فنڈز، ہر روز دوبارہ بھرے جا سکتے ہیں۔",
   "accounts.more": { one: "{count} مزید اکاؤنٹ", other: "{count} مزید اکاؤنٹس" },

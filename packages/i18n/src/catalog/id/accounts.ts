@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Buka akun pertama Anda untuk mulai trading.",
   "empty.noLive": "Belum ada akun live",
   "empty.noDemo": "Belum ada akun demo",
-  "empty.liveText": "Buka akun live sekarang dan dapatkan login serta kata sandi Anda secara instan. Pendanaan dibuka bersama dompet Kalks.",
+  "empty.liveText": "Buka akun live sekarang dan dapatkan login serta kata sandi Anda secara instan. Danai akun dari dompet Kalks Anda.",
   "empty.demoText": "Akun demo dilengkapi dana virtual dengan harga real-time, sehingga Anda dapat berlatih tanpa risiko.",
   "error.unavailableTitle": "Akun trading tidak tersedia",
   "error.unavailableText": "Kami tidak dapat terhubung ke layanan trading. Akun dan saldo Anda aman; silakan coba lagi sebentar lagi.",
@@ -261,7 +261,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.ownPassword": "Kata sandi trading Anda sudah ditetapkan; kata sandi investor (hanya baca) dibuat otomatis.",
   "wizard.review.generated": "Kata sandi trading dan investor dibuat otomatis dan ditampilkan sekali di layar berikutnya.",
   "wizard.review.zeroBalance": "Akun dibuka dengan saldo nol.",
-  "wizard.review.minDeposit": "Deposit pertama minimal {amount} berlaku setelah pendanaan dompet dibuka.",
+  "wizard.review.minDeposit": "Deposit pertama minimal {amount} berlaku untuk jenis akun ini.",
   "wizard.review.fixed": "Mode posisi ({mode}) dan mata uang ({currency}) tidak dapat diubah setelah akun dibuka.",
   "wizard.agreeLive": "Saya memahami bahwa CFD adalah instrumen yang kompleks dan memiliki risiko tinggi kehilangan uang dengan cepat karena leverage.",
   "wizard.agreeDemo": "Saya memahami bahwa hasil demo menggunakan dana virtual dan tidak menjamin hasil live.",
@@ -303,7 +303,7 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "Akun Anda sudah siap",
-  "created.liveText": "Akun dimulai dengan saldo nol. Deposit dibuka bersama dompet Kalks; sementara itu Anda dapat masuk ke Kalks Trader dengan kredensial ini.",
+  "created.liveText": "Akun dimulai dengan saldo nol. Danai akun dari dompet Kalks Anda, lalu masuk ke Kalks Trader dengan kredensial ini.",
   "created.demoText": "Terisi {amount} dana virtual.",
   "created.demoExpires": "Kedaluwarsa setelah {days} hari tanpa login terminal.",
   "created.liveTextMock": "Danai dari dompet USDT Anda dan mulai trading dalam hitungan detik.",

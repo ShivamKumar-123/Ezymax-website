@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} demo",
   "alloc.title": "Verteilung des Eigenkapitals",
   "alloc.subtitle": "Live-Konten, USD-Gegenwert",
-  "alloc.noEquity": "Ihre Live-Konten haben noch kein Eigenkapital. Einzahlungen erfolgen über die Kalks Wallet.",
+  "alloc.noEquity": "Ihre Live-Konten haben noch kein Eigenkapital. Laden Sie sie über Ihre Kalks Wallet auf.",
   "alloc.noLive": "Eröffnen Sie ein Live-Konto, um hier die Verteilung Ihres Eigenkapitals zu sehen.",
   "accounts.subtitle": "Eigenkapital und Margin pro Konto",
   "accounts.manage": "Verwalten",

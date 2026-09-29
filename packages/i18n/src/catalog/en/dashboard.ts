@@ -47,7 +47,7 @@ const dashboard = {
   "accounts.open": "Open account",
   "accounts.unavailable": "Trading accounts are unavailable right now. Your balances are safe.",
   "accounts.openLive.title": "Open a live account",
-  "accounts.openLive.text": "Real markets. Starts at a zero balance; funding opens with the wallet.",
+  "accounts.openLive.text": "Real markets. Starts at a zero balance; fund it from your wallet.",
   "accounts.openDemo.title": "Open a demo account",
   "accounts.openDemo.text": "Virtual funds on real-time prices, refillable every day.",
   "accounts.more": { one: "{count} more account", other: "{count} more accounts" },

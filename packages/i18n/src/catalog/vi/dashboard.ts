@@ -47,7 +47,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "Mở tài khoản",
   "accounts.unavailable": "Tài khoản giao dịch hiện không khả dụng. Số dư của bạn vẫn an toàn.",
   "accounts.openLive.title": "Mở tài khoản thực",
-  "accounts.openLive.text": "Thị trường thực. Bắt đầu với số dư bằng 0; nạp tiền được mở cùng với ví.",
+  "accounts.openLive.text": "Thị trường thực. Bắt đầu với số dư bằng 0; nạp tiền từ ví của bạn.",
   "accounts.openDemo.title": "Mở tài khoản demo",
   "accounts.openDemo.text": "Tiền ảo trên giá thời gian thực, có thể nạp lại mỗi ngày.",
   "accounts.more": { other: "Thêm {count} tài khoản" },

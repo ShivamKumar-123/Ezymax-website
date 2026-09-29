@@ -47,7 +47,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "开立账户",
   "accounts.unavailable": "交易账户暂时不可用。您的资金是安全的。",
   "accounts.openLive.title": "开立真实账户",
-  "accounts.openLive.text": "真实市场。初始余额为零；钱包上线后即可入金。",
+  "accounts.openLive.text": "真实市场。初始余额为零；可通过钱包入金。",
   "accounts.openDemo.title": "开立模拟账户",
   "accounts.openDemo.text": "使用虚拟资金按实时价格交易，每天均可充值。",
   "accounts.more": { other: "另有 {count} 个账户" },

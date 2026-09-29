@@ -47,7 +47,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "Fungua akaunti",
   "accounts.unavailable": "Akaunti za biashara hazipatikani kwa sasa. Salio lako liko salama.",
   "accounts.openLive.title": "Fungua akaunti halisi",
-  "accounts.openLive.text": "Masoko halisi. Inaanza na salio sifuri; ufadhili unafunguliwa pamoja na pochi.",
+  "accounts.openLive.text": "Masoko halisi. Inaanza na salio sifuri; iwekee pesa kutoka kwenye pochi yako.",
   "accounts.openDemo.title": "Fungua akaunti ya demo",
   "accounts.openDemo.text": "Fedha za mtandaoni kwa bei za wakati halisi, zinazoweza kujazwa upya kila siku.",
   "accounts.more": { one: "Akaunti {count} zaidi", other: "Akaunti {count} zaidi" },

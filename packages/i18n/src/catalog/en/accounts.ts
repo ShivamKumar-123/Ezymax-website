@@ -90,7 +90,7 @@ const accounts = {
   "empty.openFirst": "Open your first account to start trading.",
   "empty.noLive": "No live accounts yet",
   "empty.noDemo": "No demo accounts yet",
-  "empty.liveText": "Open a live account now and get your login and passwords instantly. Funding opens with the Kalks wallet.",
+  "empty.liveText": "Open a live account now and get your login and passwords instantly. Fund it from your Kalks wallet.",
   "empty.demoText": "A demo account comes with virtual funds on real-time prices, so you can practise without risk.",
   "error.unavailableTitle": "Trading accounts are unavailable",
   "error.unavailableText": "We couldn't reach the trading service. Your accounts and balances are safe; please try again in a moment.",
@@ -264,7 +264,7 @@ const accounts = {
   "wizard.review.ownPassword": "Your trading password is set; an investor (read-only) password is generated.",
   "wizard.review.generated": "Trading and investor passwords are generated and shown once on the next screen.",
   "wizard.review.zeroBalance": "The account opens at a zero balance.",
-  "wizard.review.minDeposit": "A first deposit of at least {amount} applies once wallet funding opens.",
+  "wizard.review.minDeposit": "A first deposit of at least {amount} applies to this account type.",
   "wizard.review.fixed": "Position mode ({mode}) and currency ({currency}) can't be changed after opening.",
   "wizard.agreeLive": "I understand that CFDs are complex instruments and carry a high risk of losing money rapidly due to leverage.",
   "wizard.agreeDemo": "I understand that demo results use virtual funds and don't guarantee live results.",
@@ -306,7 +306,7 @@ const accounts = {
 
   // Open account wizard: account created
   "created.title": "Your account is ready",
-  "created.liveText": "It starts at a zero balance. Deposits open with the Kalks wallet; meanwhile you can log in to Kalks Trader with these credentials.",
+  "created.liveText": "It starts at a zero balance. Fund it from your Kalks wallet, then log in to Kalks Trader with these credentials.",
   "created.demoText": "Loaded with {amount} in virtual funds.",
   "created.demoExpires": "Expires after {days} days without a terminal login.",
   "created.liveTextMock": "Fund it from your USDT wallet and start trading in seconds.",

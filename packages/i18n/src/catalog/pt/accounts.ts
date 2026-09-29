@@ -90,7 +90,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Abra sua primeira conta para começar a negociar.",
   "empty.noLive": "Nenhuma conta real ainda",
   "empty.noDemo": "Nenhuma conta demo ainda",
-  "empty.liveText": "Abra uma conta real agora e receba seu login e senhas na hora. Os depósitos são liberados com a carteira Kalks.",
+  "empty.liveText": "Abra uma conta real agora e receba seu login e senhas na hora. Deposite nela pela sua carteira Kalks.",
   "empty.demoText": "Uma conta demo vem com fundos virtuais em preços em tempo real, para você praticar sem risco.",
   "error.unavailableTitle": "As contas de negociação estão indisponíveis",
   "error.unavailableText": "Não foi possível acessar o serviço de negociação. Suas contas e saldos estão seguros; tente novamente em instantes.",
@@ -264,7 +264,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.ownPassword": "Sua senha de negociação foi definida; uma senha de investidor (somente leitura) é gerada.",
   "wizard.review.generated": "As senhas de negociação e de investidor são geradas e mostradas uma única vez na próxima tela.",
   "wizard.review.zeroBalance": "A conta é aberta com saldo zero.",
-  "wizard.review.minDeposit": "Um primeiro depósito de pelo menos {amount} se aplica quando os depósitos pela carteira forem liberados.",
+  "wizard.review.minDeposit": "Um primeiro depósito de pelo menos {amount} se aplica a este tipo de conta.",
   "wizard.review.fixed": "O modo de posição ({mode}) e a moeda ({currency}) não podem ser alterados após a abertura.",
   "wizard.agreeLive": "Entendo que CFDs são instrumentos complexos e apresentam alto risco de perda rápida de dinheiro devido à alavancagem.",
   "wizard.agreeDemo": "Entendo que os resultados demo usam fundos virtuais e não garantem resultados reais.",
@@ -306,7 +306,7 @@ const accounts: NsMessages<"accounts"> = {
 
   // Conta criada
   "created.title": "Sua conta está pronta",
-  "created.liveText": "Ela começa com saldo zero. Os depósitos são liberados com a carteira Kalks; enquanto isso, você pode entrar no Kalks Trader com estas credenciais.",
+  "created.liveText": "Ela começa com saldo zero. Deposite nela pela sua carteira Kalks e depois entre no Kalks Trader com estas credenciais.",
   "created.demoText": "Carregada com {amount} em fundos virtuais.",
   "created.demoExpires": "Expira após {days} dias sem login no terminal.",
   "created.liveTextMock": "Deposite a partir da sua carteira USDT e comece a negociar em segundos.",

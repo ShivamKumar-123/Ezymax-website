@@ -47,7 +47,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "accounts.open": "口座開設",
   "accounts.unavailable": "現在、取引口座をご利用いただけません。残高は安全に保管されています。",
   "accounts.openLive.title": "リアル口座を開設",
-  "accounts.openLive.text": "実際の市場で取引。残高ゼロから開始し、ウォレットの開始とともに入金が可能になります。",
+  "accounts.openLive.text": "実際の市場で取引。残高ゼロから開始し、ウォレットから入金できます。",
   "accounts.openDemo.title": "デモ口座を開設",
   "accounts.openDemo.text": "リアルタイム価格で仮想資金を使用。毎日補充できます。",
   "accounts.more": { other: "他{count}口座" },
