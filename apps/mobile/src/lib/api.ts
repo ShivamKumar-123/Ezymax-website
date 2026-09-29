@@ -117,3 +117,50 @@ export async function apiFile(path: string, opts: { timeoutMs?: number; signal?:
     opts.signal?.removeEventListener("abort", abort);
   }
 }
+
+/**
+ * Multipart upload (KYC documents, attachments) with progress: the same headers, bearer session and error handling
+ * as api(). XMLHttpRequest, because fetch has no upload progress. The file part is `{ uri, name, type }` on the
+ * phone and a Blob on the web preview.
+ */
+export async function apiUpload<T = Record<string, unknown>>(path: string, form: FormData, opts: { onProgress?: (pct: number) => void; timeoutMs?: number; signal?: AbortSignal } = {}): Promise<ApiResult<T>> {
+  const url = `${API_BASE}/api/mobile/${path.replace(/^\/+/, "")}`;
+  const headers: Record<string, string> = { accept: "application/json", "x-kalks-device": await deviceId(), "x-kalks-locale": i18n.locale, "x-kalks-platform": PLATFORM, "x-kalks-app-version": APP_VERSION };
+  const withAuth = !!sessionToken;
+  if (withAuth) headers.authorization = `Bearer ${sessionToken}`;
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    let settled = false;
+    const abort = () => xhr.abort();
+    const done = (r: ApiResult<T>) => {
+      if (settled) return;
+      settled = true;
+      opts.signal?.removeEventListener("abort", abort);
+      resolve(r);
+    };
+    const fail = () => done({ ok: false, status: 0, error: localizeError({ code: opts.signal?.aborted ? "aborted" : "network", message: i18n.t("auth.apiError.network") }) });
+    xhr.open("POST", url);
+    for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
+    xhr.timeout = opts.timeoutMs ?? 120_000;
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && e.total > 0) opts.onProgress?.(Math.min(100, Math.round((e.loaded / e.total) * 100)));
+    };
+    xhr.onload = () => {
+      let data: unknown = {};
+      try {
+        data = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+      } catch {
+        data = {};
+      }
+      if (xhr.status >= 200 && xhr.status < 300) return done({ ok: true, status: xhr.status, data: data as T });
+      const raw = (data as { error?: ApiError }).error ?? { code: xhr.status === 503 ? "unavailable" : "unknown", message: i18n.t("common.errorRetry") };
+      if (xhr.status === 401 && withAuth) unauthorized?.();
+      done({ ok: false, status: xhr.status, error: localizeError({ ...raw, status: xhr.status }) });
+    };
+    xhr.onerror = fail;
+    xhr.ontimeout = fail;
+    xhr.onabort = fail;
+    opts.signal?.addEventListener("abort", abort);
+    xhr.send(form);
+  });
+}

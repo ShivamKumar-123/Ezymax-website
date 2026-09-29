@@ -4,6 +4,7 @@
 // - RTL (ar / ur / fa): the root view gets `direction: "rtl"` (see RtlRoot), so rows and start/end spacing flip
 //   without an app restart. Use `start` / `end` (marginStart, paddingEnd…), never left / right, in layouts.
 import * as React from "react";
+import { I18nManager, Platform } from "react-native";
 import { getLocales } from "expo-localization";
 import { createT, type MessageKey, type PartialCatalog, type T, type Vars } from "@kalks/i18n/core";
 import { createFormatter, type Formatter } from "@kalks/i18n/format";
@@ -51,9 +52,18 @@ async function loadCatalog(locale: Locale): Promise<PartialCatalog> {
   return Object.fromEntries(entries.filter(([, v]) => v)) as PartialCatalog;
 }
 
+/** Native RTL (swipe-back edge, system screens) follows the language from the next start; the app's own layout
+ *  flips at once. The Language screen offers a restart right after a switch (src/features/profile/rtl.ts). */
+function keepNativeDirection(rtl: boolean) {
+  if (Platform.OS === "web" || I18nManager.isRTL === rtl) return;
+  I18nManager.allowRTL(rtl);
+  I18nManager.forceRTL(rtl);
+}
+
 /** Loads the starting language (called once before the splash screen hides). */
 export async function initI18n() {
   const locale = initialLocale();
+  keepNativeDirection(isRtl(locale));
   if (locale === DEFAULT_LOCALE) return;
   i18nStore.set(make(locale, await loadCatalog(locale)));
 }

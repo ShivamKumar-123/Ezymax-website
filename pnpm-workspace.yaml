@@ -14,3 +14,5 @@ minimumReleaseAgeExclude:
   - expo-modules-core@57.0.20
   - expo-router@57.0.24
   - expo@57.0.26
+  - expo-camera@57.0.6
+  - expo-document-picker@57.0.3

@@ -46,7 +46,24 @@
           "resizeMode": "contain"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Kalks uses the camera to photograph your identity documents and take your verification selfie.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Kalks lets you choose a photo of your identity documents for verification.",
+          "cameraPermission": "Kalks uses the camera to photograph your identity documents and take your verification selfie.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false
