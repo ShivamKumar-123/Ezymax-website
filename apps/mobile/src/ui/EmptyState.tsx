@@ -38,8 +38,8 @@ export function EmptyState({
           {body}
         </Text>
       ) : null}
-      {action && onAction ? <Button label={action} onPress={onAction} full={false} size="md" style={{ marginTop: space[3] }} /> : null}
-      {secondary && onSecondary ? <Button label={secondary} onPress={onSecondary} full={false} size="md" variant="ghost" /> : null}
+      {action && onAction ? <Button label={action} onPress={onAction} full={false} size="md" style={{ marginTop: space[3], alignSelf: "center" }} /> : null}
+      {secondary && onSecondary ? <Button label={secondary} onPress={onSecondary} full={false} size="md" variant="ghost" style={{ alignSelf: "center" }} /> : null}
     </View>
   );
 }
