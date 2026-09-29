@@ -1,10 +1,9 @@
 // Social trading stack (copy trading, PAMM, MAM). Forms that move money or grant authority open as modals
-// (a card sheet on iOS, swipe down to dismiss); everything else is pushed. Opening a deep link such as
-// /social/masters/3 keeps the hub underneath, so Back always lands in Social.
+// (a card sheet on iOS, swipe down to dismiss); everything else is pushed. Entering at /social/pamm or /social/mam
+// (More tab) starts the stack there, so Back returns to where the user came from; a screen opened with nothing
+// underneath (deep link) goes back to the hub (useBack).
 import { Stack } from "expo-router";
 import { colors } from "@/theme/tokens";
-
-export const unstable_settings = { initialRouteName: "index" };
 
 const modal = { presentation: "modal", gestureEnabled: true, fullScreenGestureEnabled: false } as const;
 
