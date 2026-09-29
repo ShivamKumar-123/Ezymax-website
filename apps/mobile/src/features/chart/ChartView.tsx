@@ -9,7 +9,7 @@ import { useQuery } from "@/lib/query";
 import { useOnline } from "@/lib/net";
 import { feed } from "@/market/feed";
 import { useT } from "@/i18n";
-import { Button, Skeleton, Text } from "@/ui";
+import { EmptyState, Skeleton } from "@/ui";
 import { colors, space } from "@/theme/tokens";
 import { useTrade } from "../trading/live";
 import { candlesKey, fetchCandles, serverOffset, TF_SECONDS, toChartTime, type Candle, type Timeframe } from "./data";
@@ -188,12 +188,7 @@ export function ChartView({ symbol, tf, digits, type, indicators }: ChartViewPro
           onNeedOlder={onNeedOlder}
         />
       ) : q.error && !q.fetching ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: space[3], padding: space[6] }}>
-          <Text tone="secondary" align="center">
-            {online ? t("mobile.state.error.body") : t("mobile.state.offline.body")}
-          </Text>
-          <Button label={t("mobile.action.retry")} variant="secondary" size="md" full={false} onPress={() => void q.refresh()} />
-        </View>
+        <EmptyState illustration="connectionLost" size={170} title={online ? t("mobile.state.error.title") : t("mobile.state.offline.title")} body={online ? t("mobile.state.error.body") : t("mobile.state.offline.body")} action={t("mobile.action.retry")} onAction={() => void q.refresh()} style={{ flex: 1, justifyContent: "center", paddingVertical: space[4] }} />
       ) : (
         <ChartSkeleton />
       )}

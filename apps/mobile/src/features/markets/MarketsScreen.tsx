@@ -1,7 +1,7 @@
 // Markets: segments (favourites, forex, metals, indices, energies, crypto, stocks), search, live Bid / Ask with a
 // tick flash. Tap opens the chart (candles are prefetched on press-in); press and hold toggles a favourite.
 import * as React from "react";
-import { TextInput, View } from "react-native";
+import { RefreshControl, TextInput, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import { Search, X } from "lucide-react-native";
@@ -81,6 +81,14 @@ export function MarketsScreen() {
     [t],
   );
 
+  const [refreshing, setRefreshing] = React.useState(false);
+  const refresh = React.useCallback(async () => {
+    haptic.select();
+    setRefreshing(true);
+    await feed.snapshot();
+    setRefreshing(false);
+  }, []);
+
   const items = React.useMemo(() => (["favourites", ...SEGMENTS] as Seg[]).map((k) => ({ key: k, label: t(SEG_KEYS[k]) })), [t]);
   const loading = all.length === 0;
 
@@ -131,7 +139,9 @@ export function MarketsScreen() {
   return (
     <Screen scroll={false}>
       {header}
-      {loading ? (
+      {loading && !online ? (
+        <EmptyState illustration="connectionLost" title={t("mobile.state.offline.title")} body={t("mobile.state.offline.body")} />
+      ) : loading ? (
         <SkeletonRows rows={9} height={ROW_HEIGHT} />
       ) : data.length === 0 ? (
         q ? (
@@ -148,6 +158,7 @@ export function MarketsScreen() {
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.text3} colors={[colors.ember]} progressBackgroundColor={colors.surface} />}
         />
       )}
     </Screen>

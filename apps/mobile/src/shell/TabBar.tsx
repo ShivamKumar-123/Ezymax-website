@@ -1,7 +1,7 @@
 // Floating pill tab bar: solid surface (no blur), the active tab is a cream capsule with its label; the others
 // are icons. The capsule moves with a spring (functional motion only). 64 pt tall, 44 pt+ targets.
 import * as React from "react";
-import { View } from "react-native";
+import { InteractionManager, View } from "react-native";
 import Animated, { LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "expo-router/tabs";
@@ -19,9 +19,26 @@ const TABS: Record<string, { icon: typeof House; label: MessageKey }> = {
   more: { icon: LayoutGrid, label: "mobile.tab.more" },
 };
 
+/** Tabs rendered in the background once the first screen is on screen, so a switch shows content at once. */
+const PREWARM = ["markets", "trade"];
+
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const t = useT();
   const insets = useSafeAreaInsets();
+  React.useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const task = InteractionManager.runAfterInteractions(() => {
+      timer = setTimeout(() => {
+        for (const name of PREWARM) if (state.routes.some((r) => r.name === name)) navigation.preload(name);
+      }, 700);
+    });
+    return () => {
+      task.cancel();
+      if (timer) clearTimeout(timer);
+    };
+    // once per mount of the tab navigator
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <View pointerEvents="box-none" style={{ position: "absolute", start: 0, end: 0, bottom: Math.max(insets.bottom - 8, 0) + TAB_BAR.margin, alignItems: "center" }}>
       <View
