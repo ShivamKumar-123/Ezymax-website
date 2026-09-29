@@ -89,6 +89,7 @@ A dev build (`development` profile) is only needed for phase-2 native modules (p
   - `config` gives the public service URLs.
   - `trade/*` covers trading-engine sessions, obtained through the same SSO token as Kalks Trader.
   - `accounts/options` tells the open-account wizard whether the broker allows new demo accounts (Back Office › Settings › Features).
+  - `menu` gives the More tab the broker's modules (a module switched off is hidden), support email and legal page links.
 - Tests: `node --test apps/crm/tests/mobile.test.mjs`.
 
 ## Conventions (for everyone adding a feature)

@@ -28,7 +28,7 @@ const REWRITES = new Set(["trading", "wallet", "news", "notifications", "kyc", "
 /** Auth routes that are plain cookie routes (no session in the body), used through a rewrite. */
 const AUTH_REWRITES = new Set(["heartbeat", "impersonation", "marketing"]);
 /** Native mobile route families (apps/crm/app/api/mobile/<family>/...). Feature agents add theirs here. */
-const NATIVE = new Set(["auth", "trade", "config", "accounts"]);
+const NATIVE = new Set(["auth", "trade", "config", "accounts", "menu"]);
 
 export type MobileRoute = {
   /** rewrite: served by the cookie route at `target`; native: served by app/api/mobile/... itself. */
