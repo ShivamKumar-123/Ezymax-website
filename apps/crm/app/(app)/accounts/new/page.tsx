@@ -14,6 +14,7 @@ import { GroupCard } from "@/components/accounts/group-card";
 import { CredentialField, PasswordInput, PasswordStrength, generatePassword, isPasswordValid } from "@/components/accounts/security";
 import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
 import { LiveOpenAccount } from "@/components/trading/open-account";
+import { TERMINAL_URL } from "@/lib/live";
 
 const STEPS = ["accounts.wizard.step.account", "accounts.wizard.step.type", "accounts.wizard.step.configure", "accounts.wizard.step.password", "accounts.wizard.step.done"] as const;
 type Kind = "live" | "demo";
@@ -372,7 +373,7 @@ function Wizard() {
                             </Button>
                           </Link>
                         )}
-                        <Link target="_blank" rel="noopener" href={`/trade?account=${created.login}`}>
+                        <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?account=${created.login}`}>
                           <Button variant="surface" size="lg">
                             <CandlestickChart /> {t("accounts.created.openTerminal")}
                           </Button>

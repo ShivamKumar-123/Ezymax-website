@@ -8,6 +8,7 @@ import { Button, Chip, Delta, Dialog, EquityChart, IconButton, PriceText, Segmen
 import { ASSET_CLASS_LABEL, IS_DEMO, candles, fetchCandles, getInstrument, isMarketOpen, priceFeed, serverOffset, type Candle, type Instrument } from "@kalks/mock";
 import { CONTRACT_SPECS } from "@kalks/mock/markets-extra";
 import { tr, useT } from "@kalks/i18n/react";
+import { TERMINAL_URL } from "@/lib/live";
 
 const RANGES = { "1M": 30, "3M": 90, "6M": 180 } as const;
 
@@ -75,11 +76,11 @@ function Body({ symbol, fav, onFav }: { symbol: string; fav: boolean; onFav: () 
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Link target="_blank" rel="noopener" href={`/trade?symbol=${symbol}&side=sell`} className="k-row group px-4 py-3 transition-colors hover:border-down/40">
+        <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${symbol}&side=sell`} className="k-row group px-4 py-3 transition-colors hover:border-down/40">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-down">{t("news.instrument.sellBid")}</div>
           <PriceText symbol={symbol} value={q.bid} dir={q.dir} size="lg" className="mt-1 text-[22px]" />
         </Link>
-        <Link target="_blank" rel="noopener" href={`/trade?symbol=${symbol}&side=buy`} className="k-row group px-4 py-3 text-end transition-colors hover:border-up/40">
+        <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${symbol}&side=buy`} className="k-row group px-4 py-3 text-end transition-colors hover:border-up/40">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-up">{t("news.instrument.buyAsk")}</div>
           <PriceText symbol={symbol} value={q.ask} dir={q.dir} size="lg" className="mt-1 text-[22px]" />
         </Link>
@@ -169,13 +170,13 @@ export function InstrumentDrawer({ symbol, onClose, fav, onFav }: { symbol: stri
       footer={
         symbol ? (
           <>
-            <Link target="_blank" rel="noopener" href={`/trade?symbol=${symbol}&side=sell`}>
+            <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${symbol}&side=sell`}>
               <Button variant="down-outline">{t("common.sell")}</Button>
             </Link>
-            <Link target="_blank" rel="noopener" href={`/trade?symbol=${symbol}&side=buy`}>
+            <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${symbol}&side=buy`}>
               <Button variant="up-outline">{t("common.buy")}</Button>
             </Link>
-            <Link target="_blank" rel="noopener" href={`/trade?symbol=${symbol}`}>
+            <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${symbol}`}>
               <Button variant="ember">
                 <CandlestickChart /> {t("news.instrument.trade", { symbol })}
               </Button>

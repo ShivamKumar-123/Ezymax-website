@@ -9,6 +9,7 @@ import { ASSET_CLASS_LABEL, INSTRUMENT_MAP, type AssetClass } from "@kalks/mock"
 import { AI_BRIEF, NEWS_STORIES, type NewsStory } from "@kalks/mock/news-extra";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { LiveNewsPage } from "@/components/news-live/news-page";
+import { TERMINAL_URL } from "@/lib/live";
 
 type Sentiment = NewsStory["sentiment"];
 const SENT: Record<Sentiment, { tone: "up" | "down" | "neutral"; icon: React.ReactNode; label: string }> = {
@@ -24,7 +25,7 @@ function SymbolPill({ s }: { s: string }) {
   if (!INSTRUMENT_MAP[s])
     return <span className="rounded-full border border-line bg-surface-3 px-2 py-0.5 font-mono text-[10.5px] text-fg-2">{s}</span>;
   return (
-    <Link target="_blank" rel="noopener" href={`/trade?symbol=${s}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 rounded-full border border-line bg-surface-3 py-0.5 pl-0.5 pr-2 font-mono text-[10.5px] text-fg-2 transition-colors hover:border-ember/40 hover:text-ember">
+    <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${s}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 rounded-full border border-line bg-surface-3 py-0.5 pl-0.5 pr-2 font-mono text-[10.5px] text-fg-2 transition-colors hover:border-ember/40 hover:text-ember">
       <SymbolAvatar symbol={s} size={14} />
       {s}
     </Link>
@@ -142,7 +143,7 @@ function DemoNewsPage() {
               </ul>
               <div className="mt-4 grid grid-cols-2 gap-2">
                 {AI_BRIEF.watch.map((s) => (
-                  <Link key={s} target="_blank" rel="noopener" href={`/trade?symbol=${s}`} className="flex items-center gap-2 rounded-xl border border-line bg-surface/60 px-2.5 py-2 transition-colors hover:border-ember/40">
+                  <Link key={s} target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${s}`} className="flex items-center gap-2 rounded-xl border border-line bg-surface/60 px-2.5 py-2 transition-colors hover:border-ember/40">
                     <SymbolAvatar symbol={s} size={18} />
                     <span className="text-[12px] font-medium">{s}</span>
                     <Delta value={watchQs[s]!.change} className="ml-auto text-[11px]" />
@@ -185,7 +186,7 @@ function DemoNewsPage() {
               <CardHeader title="Most mentioned" subtitle="Symbols in today's headlines" />
               <div className="space-y-1.5 px-4 pb-5 pt-3 sm:px-6">
                 {["XAUUSD", "EURUSD", "NAS100", "BTCUSD", "USOIL"].map((s, i) => (
-                  <Link key={s} target="_blank" rel="noopener" href={`/trade?symbol=${s}`} className="k-row flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-surface-3/60">
+                  <Link key={s} target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${s}`} className="k-row flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-surface-3/60">
                     <span className="k-num w-4 text-[12px] text-fg-3">{i + 1}</span>
                     <SymbolAvatar symbol={s} size={22} />
                     <span className="flex-1 text-[13px] font-medium">{s}</span>
@@ -312,7 +313,7 @@ function DemoNewsPage() {
                 <Share2 /> Share
               </Button>
               {INSTRUMENT_MAP[open.symbols[0]!] && (
-                <Link target="_blank" rel="noopener" href={`/trade?symbol=${open.symbols[0]}`}>
+                <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${open.symbols[0]}`}>
                   <Button variant="ember">Trade {open.symbols[0]}</Button>
                 </Link>
               )}

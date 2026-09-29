@@ -9,6 +9,7 @@ import { INSTRUMENT_MAP } from "@kalks/mock";
 import { useNewsApi, type Brief, type Feed, type NewsItem, type NewsMap, type Sentiment } from "./api";
 import { COUNTRY_NAME, Flag, SENT, SentimentChip, SymbolPill, ago, categoryLabel, countryName, coverFor, heatOf, useNow } from "./shared";
 import { tr, useFormat, useT } from "@kalks/i18n/react";
+import { TERMINAL_URL } from "@/lib/live";
 
 const CATS = ["all", "macro", "forex", "metals", "indices", "energies", "crypto", "stocks"] as const;
 type Cat = (typeof CATS)[number];
@@ -91,7 +92,7 @@ function BriefCard() {
             {watch.length > 0 && (
               <div className="mt-4 grid grid-cols-2 gap-2">
                 {watch.map((s) => (
-                  <Link key={s} target="_blank" rel="noopener" href={`/trade?symbol=${s}`} className="flex items-center gap-2 rounded-xl border border-line bg-surface/60 px-2.5 py-2 transition-colors hover:border-ember/40">
+                  <Link key={s} target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${s}`} className="flex items-center gap-2 rounded-xl border border-line bg-surface/60 px-2.5 py-2 transition-colors hover:border-ember/40">
                     <SymbolAvatar symbol={s} size={18} />
                     <span className="text-[12px] font-medium">{s}</span>
                     {qs[s] && <Delta value={qs[s]!.change} className="ms-auto text-[11px]" />}
@@ -215,7 +216,7 @@ export function StoryDialog({ open, onClose, saved, onSave }: { open: NewsItem |
               </Button>
             )}
             {tradable && (
-              <Link target="_blank" rel="noopener" href={`/trade?symbol=${tradable}`}>
+              <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${tradable}`}>
                 <Button variant="ember">{t("news.story.trade", { symbol: tradable })}</Button>
               </Link>
             )}
@@ -379,7 +380,7 @@ export function LiveNewsPage() {
             <CardHeader title={t("news.mentions.title")} subtitle={t("news.mentions.subtitle")} />
             <div className="space-y-1.5 px-4 pb-5 pt-3 sm:px-6">
               {(map.data?.mentions ?? []).slice(0, 5).map((m, i) => (
-                <Link key={m.symbol} target="_blank" rel="noopener" href={`/trade?symbol=${m.symbol}`} className="k-row flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-surface-3/60">
+                <Link key={m.symbol} target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${m.symbol}`} className="k-row flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-surface-3/60">
                   <span className="k-num w-4 text-[12px] text-fg-3">{i + 1}</span>
                   <SymbolAvatar symbol={m.symbol} size={22} />
                   <span className="flex-1 text-[13px] font-medium">{m.symbol}</span>

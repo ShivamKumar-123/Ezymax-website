@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, Delta, Dialog, DialogClose, Flag, Icon3D, KeyValue, Money, Segmented, Sparkline, Starfield, cn, formatMoney } from "@kalks/ui";
 import { ACTIVE_CONTEST, LEADERBOARD, PAST_CONTESTS, UPCOMING_CONTESTS, type Contest, type LeaderRow } from "@kalks/mock/rewards";
 import { Countdown } from "./countdown";
+import { TERMINAL_URL } from "@/lib/live";
 
 const fmtDate = (iso: string) => new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", timeZone: "Europe/Istanbul" }).format(new Date(iso));
 
@@ -117,7 +118,7 @@ export function ContestHero() {
                 Join contest <ArrowUpRight />
               </Button>
             )}
-            <Link target="_blank" rel="noopener" href="/trade?account=70220418">
+            <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?account=70220418`}>
               <Button variant="surface" size="lg">
                 Trade contest account
               </Button>

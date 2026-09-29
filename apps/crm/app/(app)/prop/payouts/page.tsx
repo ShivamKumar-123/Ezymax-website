@@ -33,6 +33,7 @@ import { CertificateCard } from "@/components/prop/certificate-card";
 import { CountUp } from "@/components/prop/prop-ui";
 import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
 import { LivePropPayouts } from "@/components/prop-live/payouts";
+import { TERMINAL_URL } from "@/lib/live";
 
 /* ------------------------------------------------------------------ */
 
@@ -76,7 +77,7 @@ function FundedCard() {
               Rules dashboard <ArrowUpRight />
             </Button>
           </Link>
-          <Link target="_blank" rel="noopener" href={`/trade?login=${FUNDED.login}`}>
+          <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?login=${FUNDED.login}`}>
             <Button size="sm" variant="ghost">
               Trade
             </Button>

@@ -11,6 +11,7 @@ import { CAL_COUNTRIES, TODAY_INDEX, WEEK_DAYS, WEEK_EVENTS, surprise, type Week
 import { ColumnBars } from "@/components/portfolio/charts";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { LiveCalendarPage } from "@/components/news-live/calendar-page";
+import { TERMINAL_URL } from "@/lib/live";
 
 const NOW_HHMM = "18:40"; // server time GMT+3 (mock clock)
 
@@ -96,7 +97,7 @@ function Detail({ e }: { e: WeekEvent }) {
           <div className="k-label mb-2">Affected symbols</div>
           <div className="space-y-1.5">
             {syms.map((s) => (
-              <Link key={s} target="_blank" rel="noopener" href={`/trade?symbol=${s}`} className="k-row flex items-center gap-2.5 bg-surface px-3 py-2 transition-colors hover:border-ember/40">
+              <Link key={s} target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${s}`} className="k-row flex items-center gap-2.5 bg-surface px-3 py-2 transition-colors hover:border-ember/40">
                 <SymbolAvatar symbol={s} size={20} />
                 <span className="flex-1 text-[12.5px] font-medium">{s}</span>
                 <PriceText symbol={s} value={qs[s]!.bid} dir={qs[s]!.dir} className="text-[12px]" />
@@ -181,7 +182,7 @@ function DemoCalendarPage() {
             <div className="k-label">Affects your positions</div>
             <div className="mt-3 flex flex-wrap gap-2">
               {Array.from(new Set(POSITIONS.map((p) => p.symbol))).map((s) => (
-                <Link key={s} target="_blank" rel="noopener" href={`/trade?symbol=${s}`} className="flex items-center gap-1.5 rounded-full border border-line bg-surface-2 py-1 pl-1 pr-2.5 text-[12px] font-medium hover:border-ember/40">
+                <Link key={s} target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${s}`} className="flex items-center gap-1.5 rounded-full border border-line bg-surface-2 py-1 pl-1 pr-2.5 text-[12px] font-medium hover:border-ember/40">
                   <SymbolAvatar symbol={s} size={18} />
                   {s}
                   <span className="k-num text-fg-3">{WEEK_EVENTS.filter((e) => e.symbols.includes(s)).length}</span>

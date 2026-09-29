@@ -11,6 +11,7 @@ import { ColumnBars } from "@/components/portfolio/charts";
 import { NewsError, newsApi, useNewsApi, type CalDetail, type CalEvent, type CalendarWeek, type MyCalendar } from "./api";
 import { ActualValue, Flag, ImpactBars, countdown, gmt, localTime, useNow } from "./shared";
 import { tr, useFormat, useT } from "@kalks/i18n/react";
+import { TERMINAL_URL } from "@/lib/live";
 type Formatter = ReturnType<typeof useFormat>;
 
 const CCYS = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "CNY"] as const;
@@ -112,7 +113,7 @@ function Detail({ e, zone, offset, reminded, onRemind }: { e: CalEvent; zone: Zo
           <div className="k-label mb-2">{t("news.cal.toWatch")}</div>
           <div className="space-y-1.5">
             {syms.map((s) => (
-              <Link key={s} target="_blank" rel="noopener" href={`/trade?symbol=${s}`} className="k-row flex items-center gap-2.5 bg-surface px-3 py-2 transition-colors hover:border-ember/40">
+              <Link key={s} target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${s}`} className="k-row flex items-center gap-2.5 bg-surface px-3 py-2 transition-colors hover:border-ember/40">
                 <SymbolAvatar symbol={s} size={20} />
                 <span className="flex-1 text-[12.5px] font-medium">{s}</span>
                 {qs[s] && <PriceText symbol={s} value={qs[s]!.bid} dir={qs[s]!.dir} className="text-[12px]" />}

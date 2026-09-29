@@ -10,6 +10,7 @@ import { DEMO_RULES } from "@kalks/mock/accounts-extra";
 import { CredentialField, EmailOtp, PasswordInput, PasswordStrength, isPasswordValid } from "./security";
 import { curOf } from "./detail-overview";
 import { Trans, useFormat, useT } from "@kalks/i18n/react";
+import { TERMINAL_URL } from "@/lib/live";
 
 /* ------------------------------------------------------------------ */
 /* Change password dialog                                              */
@@ -134,7 +135,7 @@ export function CredentialsTab({ a }: { a: TradingAccount }) {
           <CardHeader title={t("accountDetail.platforms.title")} subtitle={t("accountDetail.platforms.subtitle")} />
           <div className="space-y-2 px-4 pb-6 pt-4 sm:px-6">
             {[
-              { icon: <Globe />, name: "Kalks WebTerminal", sub: t("accountDetail.platforms.webSub"), action: <Link target="_blank" rel="noopener" href={`/trade?account=${a.login}`}><Button size="sm" variant="ember">{t("accountDetail.platforms.launch")}</Button></Link> },
+              { icon: <Globe />, name: "Kalks WebTerminal", sub: t("accountDetail.platforms.webSub"), action: <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?account=${a.login}`}><Button size="sm" variant="ember">{t("accountDetail.platforms.launch")}</Button></Link> },
               { icon: <Monitor />, name: "MetaTrader 5 · Windows / macOS", sub: "kalks5setup · 24.1 MB", action: <Button size="sm" variant="surface" onClick={() => toast.success(t("accountDetail.platforms.downloadStarted"), { description: "kalks5setup.exe" })}><Download /> {t("accountDetail.platforms.get")}</Button> },
               { icon: <Smartphone />, name: "MetaTrader 5 · iOS / Android", sub: t("accountDetail.platforms.mobileSub", { server: a.server }), action: <Button size="sm" variant="surface" onClick={() => toast(t("accountDetail.platforms.storeLinksSent"))}>{t("accountDetail.platforms.sendLink")}</Button> },
             ].map((p) => (

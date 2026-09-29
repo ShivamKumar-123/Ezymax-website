@@ -498,7 +498,7 @@ function PositionsCard() {
           </span>
         }
         action={
-          <Link target="_blank" rel="noopener" href="/trade">
+          <Link target="_blank" rel="noopener" href={TERMINAL_URL}>
             <Button size="sm" variant="surface">
               <CandlestickChart /> {t("dashboard.positions.terminal")}
             </Button>
@@ -549,7 +549,7 @@ function DemoDashboard() {
         title={t.dyn(`dashboard.greeting.${hour}`, undefined, { name: me.first_name })}
         subtitle={t("dashboard.subtitle.demo")}
         actions={
-          <Link target="_blank" rel="noopener" href="/trade">
+          <Link target="_blank" rel="noopener" href={TERMINAL_URL}>
             <Button variant="ember" size="lg" shimmer>
               {t("dashboard.openTerminal")} <ArrowUpRight />
             </Button>

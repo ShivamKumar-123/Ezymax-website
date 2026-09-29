@@ -12,6 +12,7 @@ import { AccountBadge, AccountRow, accountTitle } from "@/components/account-row
 import { GroupCard } from "@/components/accounts/group-card";
 import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
 import { LiveAccountsPage } from "@/components/trading/accounts-page";
+import { TERMINAL_URL } from "@/lib/live";
 
 const live = ACCOUNTS.filter((a) => a.type === "live");
 const demo = ACCOUNTS.filter((a) => a.type === "demo");
@@ -108,7 +109,7 @@ function PlatformCard() {
         <h3 className="mt-3 text-[17px] font-medium tracking-tight">{t("accounts.platform.title")}</h3>
         <p className="mt-1 text-[13px] text-fg-2">{t("accounts.platform.text")}</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link target="_blank" rel="noopener" href="/trade">
+          <Link target="_blank" rel="noopener" href={TERMINAL_URL}>
             <Button size="sm" variant="ember">
               WebTerminal <ArrowUpRight />
             </Button>

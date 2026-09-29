@@ -39,6 +39,7 @@ import {
 import { ColumnBars, DrawdownChart, HourHeatmap, MultiLineChart, PnlBars, Waterfall } from "@/components/portfolio/charts";
 import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
 import { LiveAnalyticsPage } from "@/components/reports/live-analytics";
+import { TERMINAL_URL } from "@/lib/live";
 
 const PERIODS = ["7D", "30D", "90D", "ALL"] as const;
 const PERIOD_DAYS: Record<(typeof PERIODS)[number], number> = { "7D": 7, "30D": 30, "90D": 90, ALL: 100000 };
@@ -244,7 +245,7 @@ function DemoAnalyticsPage() {
                   value: g.pnl,
                   sub: `${g.trades} tr · ${Math.round((g.wins / g.trades) * 100)}%`,
                   label: (
-                    <Link target="_blank" rel="noopener" href={`/trade?symbol=${g.key}`} className="flex items-center gap-2 hover:text-ember">
+                    <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${g.key}`} className="flex items-center gap-2 hover:text-ember">
                       <SymbolAvatar symbol={g.key} size={20} />
                       <span className="truncate text-[13px] font-medium">{g.key}</span>
                     </Link>

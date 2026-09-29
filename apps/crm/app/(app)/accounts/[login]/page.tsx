@@ -16,6 +16,7 @@ import { CredentialsTab, SettingsTab } from "@/components/accounts/detail-manage
 import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
 import { LiveAccountDetail } from "@/components/trading/account-detail";
 import { useT } from "@kalks/i18n/react";
+import { TERMINAL_URL } from "@/lib/live";
 
 const TAB_KEYS = ["overview", "portfolio", "positions", "history", "charges", "ledger", "credentials", "settings"] as const;
 type TabKey = (typeof TAB_KEYS)[number];
@@ -154,7 +155,7 @@ function Detail() {
                   <RefreshCcw /> {t("accountDetail.header.refill")}
                 </Button>
               )}
-              <Link target="_blank" rel="noopener" href={`/trade?account=${a.login}`}>
+              <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?account=${a.login}`}>
                 <Button variant="ember" size="lg" shimmer disabled={archived} onClick={() => archived && toast(t("accountDetail.toast.archived"))}>
                   <CandlestickChart /> {t("accountDetail.header.trade")}
                 </Button>

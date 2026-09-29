@@ -10,6 +10,7 @@ import { CONTRACT_SPECS, DEFAULT_FAVOURITES } from "@kalks/mock/markets-extra";
 import { InstrumentDrawer } from "@/components/markets/instrument-drawer";
 import { FeedGuard } from "@/components/feed-guard";
 import { useT } from "@kalks/i18n/react";
+import { TERMINAL_URL } from "@/lib/live";
 
 type Tab = "all" | "fav" | AssetClass;
 const CLASSES: AssetClass[] = ["forex", "metals", "indices", "energies", "crypto", "stocks"];
@@ -184,7 +185,7 @@ export default function MarketsPage() {
       header: "",
       align: "right",
       cell: (i) => (
-        <Link target="_blank" rel="noopener" href={`/trade?symbol=${i.symbol}`} onClick={(e) => e.stopPropagation()}>
+        <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${i.symbol}`} onClick={(e) => e.stopPropagation()}>
           <Button size="xs" variant="surface" className="group-hover:border-ember/40 group-hover:text-ember">
             {t("news.markets.trade")} <ArrowUpRight className="rtl:-scale-x-100" />
           </Button>
@@ -199,7 +200,7 @@ export default function MarketsPage() {
         title={t("news.markets.title")}
         subtitle={t("news.markets.subtitle", { count: INSTRUMENTS.length })}
         actions={
-          <Link target="_blank" rel="noopener" href="/trade">
+          <Link target="_blank" rel="noopener" href={TERMINAL_URL}>
             <Button variant="ember" shimmer>
               <CandlestickChart /> {t("news.markets.openTerminal")}
             </Button>

@@ -58,6 +58,7 @@ import { CountUp, CredentialField, ResetCountdown, RuleCard, RuleRow } from "@/c
 import { PropEquityChart, type PropLine } from "@/components/prop/prop-equity-chart";
 import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
 import { LivePropMine } from "@/components/prop-live/mine";
+import { TERMINAL_URL } from "@/lib/live";
 
 const k = (n: number) => `$${n / 1000}k`;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
@@ -203,7 +204,7 @@ function Overview({ c }: { c: MyChallenge }) {
             <CredentialField label="Master password" value={c.masterPassword} secret />
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link target="_blank" rel="noopener" href={`/trade?login=${c.login}`}>
+            <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?login=${c.login}`}>
               <Button size="sm" variant="ember">
                 <CandlestickChart /> Open WebTrader
               </Button>

@@ -30,6 +30,7 @@ import { accountLedger, spreadCost, type LedgerEntry } from "@kalks/mock/account
 import { curOf, multOf } from "./detail-overview";
 import { Trans, useT } from "@kalks/i18n/react";
 import type { MessageKey } from "@kalks/i18n";
+import { TERMINAL_URL } from "@/lib/live";
 
 const signed = (v: number, cur: string) => `${v > 0 ? "+" : v < 0 ? "-" : ""}${cur}${formatNumber(Math.abs(v))}`;
 
@@ -56,7 +57,7 @@ export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; pos
           title={t("accountDetail.positions.noneTitle")}
           text={t("accountDetail.positions.noneText")}
           action={
-            <Link target="_blank" rel="noopener" href={`/trade?account=${a.login}`}>
+            <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?account=${a.login}`}>
               <Button variant="ember">
                 <CandlestickChart /> {t("accountDetail.positions.openTerminal")}
               </Button>

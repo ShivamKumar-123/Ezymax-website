@@ -7,6 +7,7 @@ import { Chip, SymbolAvatar, cn } from "@kalks/ui";
 import { INSTRUMENT_MAP } from "@kalks/mock";
 import type { CalEvent, NewsItem, Sentiment } from "./api";
 import { tr, useT } from "@kalks/i18n/react";
+import { TERMINAL_URL } from "@/lib/live";
 
 export const SENT: Record<Sentiment, { tone: "up" | "down" | "neutral"; icon: React.ReactNode; labelKey: "news.sentiment.bullish" | "news.sentiment.bearish" | "news.sentiment.neutral" }> = {
   bullish: { tone: "up", icon: <TrendingUp className="size-3" />, labelKey: "news.sentiment.bullish" },
@@ -65,7 +66,7 @@ export function Flag({ country, className }: { country: string; className?: stri
 export function SymbolPill({ s, href }: { s: string; href?: string }) {
   if (!INSTRUMENT_MAP[s]) return <span className="rounded-full border border-line bg-surface-3 px-2 py-0.5 font-mono text-[10.5px] text-fg-2">{s}</span>;
   return (
-    <Link target="_blank" rel="noopener" href={href ?? `/trade?symbol=${s}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 rounded-full border border-line bg-surface-3 py-0.5 ps-0.5 pe-2 font-mono text-[10.5px] text-fg-2 transition-colors hover:border-ember/40 hover:text-ember">
+    <Link target="_blank" rel="noopener" href={href ?? `${TERMINAL_URL}/?symbol=${s}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 rounded-full border border-line bg-surface-3 py-0.5 ps-0.5 pe-2 font-mono text-[10.5px] text-fg-2 transition-colors hover:border-ember/40 hover:text-ember">
       <SymbolAvatar symbol={s} size={14} />
       {s}
     </Link>

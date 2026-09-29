@@ -7,6 +7,7 @@ import { Button, Chip, CopyButton, IconButton, Menu, Money, cn } from "@kalks/ui
 import { freeMargin, marginLevel, type TradingAccount } from "@kalks/mock";
 import { useT } from "@kalks/i18n/react";
 import type { T } from "@kalks/i18n";
+import { TERMINAL_URL } from "@/lib/live";
 
 export function AccountBadge({ a }: { a: TradingAccount }) {
   const t = useT();
@@ -114,7 +115,7 @@ export function AccountRow({ a, compact }: { a: TradingAccount; compact?: boolea
               <RefreshCcw /> {t("accounts.row.refill")}
             </Button>
           )}
-          <Link target="_blank" rel="noopener" href={`/trade?account=${a.login}`}>
+          <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?account=${a.login}`}>
             <Button size="sm" variant="ember">
               <CandlestickChart /> {t("accounts.row.trade")}
             </Button>

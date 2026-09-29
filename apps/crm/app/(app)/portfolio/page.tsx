@@ -42,6 +42,7 @@ import {
 } from "@kalks/mock/portfolio-extra";
 import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
 import { LivePortfolio } from "@/components/trading/portfolio";
+import { TERMINAL_URL } from "@/lib/live";
 
 const SOURCES = [
   { key: "live", label: "Live accounts", value: T.live, color: CHART_COLORS[0]!, icon: "bar_chart", href: "/accounts", sub: `${LIVE_ACCOUNTS.length} accounts` },
@@ -205,7 +206,7 @@ function ExposureCard() {
       </div>
       <div className="mt-2 flex-1 space-y-1 px-4 pb-5 sm:px-6">
         {rows.map((r) => (
-          <Link key={r.symbol} target="_blank" rel="noopener" href={`/trade?symbol=${r.symbol}`} className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-surface-2">
+          <Link key={r.symbol} target="_blank" rel="noopener" href={`${TERMINAL_URL}/?symbol=${r.symbol}`} className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-surface-2">
             <SymbolAvatar symbol={r.symbol} size={22} />
             <span className="w-16 shrink-0 text-[13px] font-medium">{r.symbol}</span>
             <DivergingBar value={r.net} max={max} className="flex-1" />
