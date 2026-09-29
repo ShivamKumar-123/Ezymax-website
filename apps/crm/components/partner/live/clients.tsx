@@ -36,6 +36,7 @@ import {
   type NetworkClient,
   type PartnerApiError,
 } from "./api";
+import { tr, useT } from "@kalks/i18n/react";
 import {
   CardEmpty,
   ClientStatusChip,
@@ -60,17 +61,19 @@ const KYC: Record<
   rejected: { label: "Rejected", tone: "down" },
   unverified: { label: "Not started", tone: "neutral" },
 };
-const kyc = (k: string) =>
-  KYC[k] ?? { label: k.replace(/_/g, " "), tone: "neutral" as const };
+const kyc = (k: string) => {
+  const m = KYC[k] ?? { label: k.replace(/_/g, " "), tone: "neutral" as const };
+  return { ...m, label: tr.dyn(`partner.kyc.${k}`, m.label) };
+};
 
 function fmtDuration(ms: number) {
   const s = Math.max(0, Math.round(ms / 1000));
-  if (s < 60) return `${s}s`;
-  if (s < 3600) return `${Math.round(s / 60)}m`;
+  if (s < 60) return tr("partner.dur.s", { s });
+  if (s < 3600) return tr("partner.dur.m", { m: Math.round(s / 60) });
   const h = Math.floor(s / 3600);
   return h < 24
-    ? `${h}h ${Math.round((s % 3600) / 60)}m`
-    : `${Math.floor(h / 24)}d ${h % 24}h`;
+    ? tr("partner.dur.hm", { h, m: Math.round((s % 3600) / 60) })
+    : tr("partner.dur.dh", { d: Math.floor(h / 24), h: h % 24 });
 }
 
 const NOT_QUALIFIED: Record<string, string> = {
@@ -87,7 +90,9 @@ const NOT_QUALIFIED: Record<string, string> = {
   no_referrer: "No referrer",
 };
 const reasonLabel = (r: string | null) =>
-  r ? (NOT_QUALIFIED[r] ?? r.replace(/_/g, " ")) : "Not eligible";
+  r
+    ? tr.dyn(`partner.reason.${r}`, NOT_QUALIFIED[r] ?? r.replace(/_/g, " "))
+    : tr("partner.reason.notEligible");
 
 /* ------------------------------------------------------------------ */
 
@@ -98,6 +103,7 @@ function TradesList({
   id: number;
   minSeconds: number | null;
 }) {
+  const t = useT();
   const [state, setState] = React.useState<{
     items: ClientTrade[] | null;
     error: PartnerApiError | null;
@@ -119,9 +125,12 @@ function TradesList({
 
   if (state.error)
     return state.error.status === 403 ? (
-      <CardEmpty title="Trades aren't shared" text={state.error.message} />
+      <CardEmpty
+        title={t("partner.clients.tradesNotShared")}
+        text={state.error.message}
+      />
     ) : (
-      <LoadProblem error={state.error} onRetry={() => setTick((t) => t + 1)} />
+      <LoadProblem error={state.error} onRetry={() => setTick((n) => n + 1)} />
     );
   if (!state.items)
     return (
@@ -134,54 +143,65 @@ function TradesList({
   if (state.items.length === 0)
     return (
       <CardEmpty
-        title="No closed trades yet"
-        text="Trades show here once this client closes a position on a live account."
+        title={t("partner.clients.noTrades")}
+        text={t("partner.clients.noTradesText")}
       />
     );
   return (
     <div className="space-y-1.5">
-      {state.items.map((t) => {
-        const ok = t.qualified && !t.reversed;
+      {state.items.map((x) => {
+        const ok = x.qualified && !x.reversed;
         return (
           <div
-            key={`${t.source}-${t.dealId}`}
+            key={`${x.source}-${x.dealId}`}
             className={cn(
               "k-row flex items-center gap-3 px-3 py-2",
               !ok && "opacity-75",
             )}
           >
-            <SymbolAvatar symbol={t.symbol} size={22} />
+            <SymbolAvatar symbol={x.symbol} size={22} />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium">
-                {t.symbol}
-                <Chip size="sm" tone={t.side === "buy" ? "up" : "down"}>
-                  {t.side.toUpperCase()} {fmtLots(t.lots)}
+                {x.symbol}
+                <Chip size="sm" tone={x.side === "buy" ? "up" : "down"}>
+                  {x.side === "buy"
+                    ? t("common.buy").toUpperCase()
+                    : x.side === "sell"
+                      ? t("common.sell").toUpperCase()
+                      : x.side.toUpperCase()}{" "}
+                  {fmtLots(x.lots)}
                 </Chip>
-                {t.source !== "engine" && (
+                {x.source !== "engine" && (
                   <Chip size="sm">
-                    {t.source === "pamm"
+                    {x.source === "pamm"
                       ? "PAMM"
-                      : t.source === "copy"
-                        ? "Copy"
-                        : t.source}
+                      : x.source === "copy"
+                        ? t("partner.clients.copy")
+                        : x.source}
                   </Chip>
                 )}
               </div>
               <div className="truncate font-mono text-[10.5px] text-fg-3">
-                #{t.dealId} · held{" "}
-                {fmtDuration(Date.parse(t.closeTime) - Date.parse(t.openTime))}{" "}
-                · {relTime(t.closeTime)}
+                #{x.dealId} ·{" "}
+                {t("partner.clients.held", {
+                  duration: fmtDuration(
+                    Date.parse(x.closeTime) - Date.parse(x.openTime),
+                  ),
+                })}{" "}
+                · {relTime(x.closeTime)}
               </div>
             </div>
-            <div className="shrink-0 text-right text-[12px]">
-              {t.reversed ? (
-                <span className="text-fg-3">Reversed</span>
+            <div className="shrink-0 text-end text-[12px]">
+              {x.reversed ? (
+                <span className="text-fg-3">{t("partner.reason.reversed")}</span>
               ) : ok ? (
                 <span className="k-num font-medium text-up">
-                  +{formatMoney(t.earned)} to you
+                  {t("partner.clients.toYou", {
+                    amount: `+${formatMoney(x.earned)}`,
+                  })}
                 </span>
               ) : (
-                <span className="text-down">{reasonLabel(t.reason)}</span>
+                <span className="text-down">{reasonLabel(x.reason)}</span>
               )}
             </div>
           </div>
@@ -189,11 +209,12 @@ function TradesList({
       })}
       {minSeconds !== null && (
         <p className="pt-1 text-[11.5px] text-fg-3">
-          Trades held under{" "}
-          {minSeconds >= 60
-            ? `${Math.round(minSeconds / 60)} min`
-            : `${minSeconds}s`}{" "}
-          don&apos;t earn commission. Last 200 trades.
+          {t("partner.clients.minHoldNote", {
+            duration:
+              minSeconds >= 60
+                ? t("partner.unit.min", { n: Math.round(minSeconds / 60) })
+                : t("partner.unit.sec", { n: minSeconds }),
+          })}
         </p>
       )}
     </div>
@@ -211,15 +232,16 @@ function ClientDialog({
   onClose: () => void;
   minSeconds: number | null;
 }) {
+  const t = useT();
   return (
     <Dialog
       open={!!c}
       onOpenChange={(o) => !o && onClose()}
       side="right"
-      title="Client details"
+      title={t("partner.clients.details")}
       description={
         c
-          ? `Joined ${fmtDate(c.joinedAt)} · ${c.tier === 1 ? "your direct client" : via ? `via ${via}` : `tier ${c.tier}`}`
+          ? `${t("partner.clients.joinedOn", { date: fmtDate(c.joinedAt) })} · ${c.tier === 1 ? t("partner.clients.yourDirect") : via ? t("partner.clients.via", { name: via }) : t("partner.clients.tierN", { n: c.tier })}`
           : undefined
       }
     >
@@ -237,7 +259,7 @@ function ClientDialog({
             <div className="k-row flex items-center gap-3 px-3.5 py-2.5 text-[13px]">
               <Mail className="size-4 shrink-0 text-fg-3" />
               <span className="min-w-0 flex-1 truncate">{c.email}</span>
-              <CopyButton value={c.email} label="Email" />
+              <CopyButton value={c.email} label={t("common.email")} />
             </div>
           )}
 
@@ -251,7 +273,7 @@ function ClientDialog({
                   </Chip>,
                 ],
                 [
-                  "First deposit",
+                  t("partner.clients.firstDeposit"),
                   c.firstDepositAt ? (
                     c.firstDepositAmount !== null ? (
                       <Money
@@ -263,27 +285,29 @@ function ClientDialog({
                       fmtDate(c.firstDepositAt)
                     )
                   ) : (
-                    "Not yet"
+                    t("partner.clients.notYet")
                   ),
                 ],
                 [
-                  "First trade",
-                  c.firstTradeAt ? fmtDate(c.firstTradeAt) : "Not yet",
+                  t("partner.clients.firstTrade"),
+                  c.firstTradeAt
+                    ? fmtDate(c.firstTradeAt)
+                    : t("partner.clients.notYet"),
                 ],
                 [
-                  "Lots · this month",
+                  t("partner.lotsThisMonth"),
                   <span key="l" className="k-num">
                     {fmtLots(c.lotsMonth)}
                   </span>,
                 ],
                 [
-                  "Lots · lifetime",
+                  t("partner.clients.lotsLifetime"),
                   <span key="lt" className="k-num">
                     {fmtLots(c.lotsTotal)}
                   </span>,
                 ],
                 [
-                  "Your commission",
+                  t("partner.clients.yourCommission"),
                   <Money
                     key="c"
                     value={c.earned}
@@ -291,14 +315,17 @@ function ClientDialog({
                     className="text-up"
                   />,
                 ],
-                ["Source", c.campaign ?? "Referral link"],
                 [
-                  "Their referrals",
+                  t("partner.clients.source"),
+                  c.campaign ?? t("partner.referralLink"),
+                ],
+                [
+                  t("partner.clients.theirReferrals"),
                   <span key="r" className="k-num">
                     {c.referrals}
                   </span>,
                 ],
-                ["Last trade", relTime(c.lastTradeAt)],
+                [t("partner.clients.lastTrade"), relTime(c.lastTradeAt)],
               ] as [string, React.ReactNode][]
             ).map(([k, v]) => (
               <div key={k} className="k-row min-w-0 px-3.5 py-2.5">
@@ -313,7 +340,9 @@ function ClientDialog({
           </div>
 
           <div>
-            <h4 className="mb-2 text-[14px] font-medium">Closed trades</h4>
+            <h4 className="mb-2 text-[14px] font-medium">
+              {t("partner.clients.closedTrades")}
+            </h4>
             <TradesList id={c.id} minSeconds={minSeconds} />
           </div>
         </div>
@@ -324,9 +353,9 @@ function ClientDialog({
 
 /* ------------------------------------------------------------------ */
 
-const TITLE = "Referred clients";
-
 export function LivePartnerClients() {
+  const t = useT();
+  const TITLE = t("partner.clients.title");
   const { data, error, reload } = usePartner<ClientsResp>("clients");
   const { data: camp } = usePartner<CampaignsResp>("campaigns");
   const { data: prog } = usePartner<{ minTradeSeconds: number }>("programme");
@@ -346,7 +375,7 @@ export function LivePartnerClients() {
     [all, tier, status],
   );
   const tiers = data?.tiers ?? 3;
-  const subtitle = `Everyone attributed to you across ${tiers} tier${tiers === 1 ? "" : "s"}. Attribution is permanent.`;
+  const subtitle = t("partner.clients.subtitle", { count: tiers });
 
   if (!data)
     return (
@@ -380,7 +409,7 @@ export function LivePartnerClients() {
   const columns: Column<NetworkClient>[] = [
     {
       key: "name",
-      header: "Client",
+      header: t("partner.client"),
       cell: (c) => (
         <PersonCell
           name={c.name}
@@ -395,13 +424,13 @@ export function LivePartnerClients() {
     },
     {
       key: "tier",
-      header: "Tier",
+      header: t("partner.tier"),
       cell: (c) => (
         <span className="flex flex-col items-start gap-0.5">
           <TierChip tier={c.tier} />
           {c.tier > 1 && viaName(c) && (
             <span className="max-w-[110px] truncate text-[10.5px] text-fg-3">
-              via {viaName(c)}
+              {t("partner.clients.via", { name: viaName(c) ?? "" })}
             </span>
           )}
         </span>
@@ -410,7 +439,7 @@ export function LivePartnerClients() {
     },
     {
       key: "joined",
-      header: "Joined",
+      header: t("partner.clients.joined"),
       cell: (c) => (
         <span className="k-num text-fg-2">{fmtDate(c.joinedAt)}</span>
       ),
@@ -419,10 +448,10 @@ export function LivePartnerClients() {
     },
     {
       key: "campaign",
-      header: "Source",
+      header: t("partner.clients.source"),
       cell: (c) => (
         <span className="block max-w-[140px] truncate text-fg-2">
-          {c.campaign ?? "Referral link"}
+          {c.campaign ?? t("partner.referralLink")}
         </span>
       ),
       sort: (c) => c.campaign ?? "",
@@ -430,7 +459,7 @@ export function LivePartnerClients() {
     },
     {
       key: "lots",
-      header: "Lots · month",
+      header: t("partner.lotsMonth"),
       align: "right",
       cell: (c) => (
         <span className="block">
@@ -438,7 +467,7 @@ export function LivePartnerClients() {
             {c.lotsMonth ? fmtLots(c.lotsMonth) : "—"}
           </span>
           <span className="k-num block text-[11px] text-fg-3">
-            {fmtLots(c.lotsTotal, 1)} total
+            {t("partner.clients.lotsTotal", { lots: fmtLots(c.lotsTotal, 1) })}
           </span>
         </span>
       ),
@@ -447,7 +476,7 @@ export function LivePartnerClients() {
     },
     {
       key: "earned",
-      header: "Earned",
+      header: t("partner.clients.earned"),
       align: "right",
       cell: (c) =>
         c.earned ? (
@@ -463,13 +492,13 @@ export function LivePartnerClients() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t("common.status"),
       align: "right",
       cell: (c) => (
         <span className="flex flex-col items-end gap-0.5">
           <ClientStatusChip status={c.status} />
           <span className="k-num text-[11px] text-fg-3">
-            {c.lastTradeAt ? relTime(c.lastTradeAt) : "No trades"}
+            {c.lastTradeAt ? relTime(c.lastTradeAt) : t("partner.noTrades")}
           </span>
         </span>
       ),
@@ -490,12 +519,12 @@ export function LivePartnerClients() {
               size="lg"
               onClick={() => {
                 navigator.clipboard?.writeText(link).catch(() => {});
-                toast.success("Referral link copied", {
+                toast.success(t("partner.toast.linkCopied"), {
                   description: shortUrl(link),
                 });
               }}
             >
-              <UserPlus /> Invite a client
+              <UserPlus /> {t("partner.clients.invite")}
             </Button>
           ) : undefined
         }
@@ -504,34 +533,39 @@ export function LivePartnerClients() {
       <Reveal>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <MiniStat
-            label="Referred"
+            label={t("partner.clients.referred")}
             value={all.length}
-            sub={`${direct} direct · ${all.length - direct} via sub-IBs`}
+            sub={t("partner.clients.directVia", {
+              direct,
+              via: all.length - direct,
+            })}
           />
           <MiniStat
-            label="Active · this month"
+            label={t("partner.clients.activeMonth")}
             value={all.filter((c) => c.status === "active").length}
-            sub="Traded this month"
+            sub={t("partner.tradedThisMonth")}
           />
           <MiniStat
-            label="Funded"
+            label={t("partner.clientStatus.funded")}
             value={funded}
             sub={
               all.length
-                ? `${Math.round((funded / all.length) * 100)}% of referrals`
-                : "First deposit made"
+                ? t("partner.clients.pctOfReferrals", {
+                    pct: Math.round((funded / all.length) * 100),
+                  })
+                : t("partner.clients.firstDepositMade")
             }
           />
           <MiniStat
-            label="Lots · this month"
+            label={t("partner.lotsThisMonth")}
             value={fmtLots(lotsMonth, 1)}
-            sub={`${subIbs} sub-IB${subIbs === 1 ? "" : "s"}`}
+            sub={t("partner.subIbCount", { count: subIbs })}
           />
           <div className="col-span-2 lg:col-span-1">
             <MiniStat
-              label="Earned from clients"
+              label={t("partner.clients.earnedFrom")}
               value={<Money value={earned} countUp={false} />}
-              sub="Lifetime, all tiers"
+              sub={t("partner.clients.lifetimeAllTiers")}
             />
           </div>
         </div>
@@ -542,8 +576,7 @@ export function LivePartnerClients() {
           <div className="mt-4 flex items-start gap-3 rounded-[16px] border border-line bg-surface-2 px-4 py-3 text-[12.5px] text-fg-2">
             <EyeOff className="mt-0.5 size-4 shrink-0 text-fg-3" />
             <span>
-              The broker shares initials and totals only. Client names, emails,
-              deposits and individual trades stay private.
+              {t("partner.clients.privacyNote")}
             </span>
           </div>
         </Reveal>
@@ -561,15 +594,17 @@ export function LivePartnerClients() {
               `${c.name} ${c.email ?? ""} ${c.country} ${c.campaign ?? ""}`
             }
             searchPlaceholder={
-              full ? "Search name, email…" : "Search initials, country…"
+              full
+                ? t("partner.clients.searchFull")
+                : t("partner.clients.searchLimited")
             }
             exportName={all.length ? "kalks-referred-clients" : undefined}
             empty={
               all.length === 0 ? (
                 <div className="py-6">
                   <CardEmpty
-                    title="No referred clients yet"
-                    text="Share your referral link. Everyone who signs up with it appears here with their tier, activity and your commission."
+                    title={t("partner.clients.emptyTitle")}
+                    text={t("partner.clients.emptyText")}
                   >
                     {link && (
                       <Button
@@ -577,12 +612,12 @@ export function LivePartnerClients() {
                         variant="surface"
                         onClick={() => {
                           navigator.clipboard?.writeText(link).catch(() => {});
-                          toast.success("Referral link copied", {
+                          toast.success(t("partner.toast.linkCopied"), {
                             description: shortUrl(link),
                           });
                         }}
                       >
-                        Copy referral link
+                        {t("partner.copyReferralLink")}
                       </Button>
                     )}
                   </CardEmpty>
@@ -590,8 +625,8 @@ export function LivePartnerClients() {
               ) : (
                 <div className="py-6">
                   <CardEmpty
-                    title="No clients match"
-                    text="Try another tier or status filter."
+                    title={t("partner.clients.noMatch")}
+                    text={t("partner.clients.noMatchText")}
                   />
                 </div>
               )
@@ -603,7 +638,7 @@ export function LivePartnerClients() {
                   value={tier}
                   onChange={setTier}
                   options={[
-                    { value: "all" as TierF, label: "All tiers" },
+                    { value: "all" as TierF, label: t("partner.allTiers") },
                     ...Array.from({ length: Math.min(tiers, 3) }, (_, i) => ({
                       value: String(i + 1) as TierF,
                       label: `L${i + 1}`,
@@ -615,10 +650,13 @@ export function LivePartnerClients() {
                   value={status}
                   onChange={setStatus}
                   options={[
-                    { value: "all", label: "All" },
-                    { value: "active", label: "Active" },
-                    { value: "funded", label: "Funded" },
-                    { value: "registered", label: "Registered" },
+                    { value: "all", label: t("common.all") },
+                    { value: "active", label: t("partner.clientStatus.active") },
+                    { value: "funded", label: t("partner.clientStatus.funded") },
+                    {
+                      value: "registered",
+                      label: t("partner.clientStatus.registered"),
+                    },
                   ]}
                 />
                 {(tier !== "all" || status !== "all") && (
@@ -630,19 +668,18 @@ export function LivePartnerClients() {
                       setStatus("all");
                     }}
                   >
-                    <Filter /> Clear
+                    <Filter /> {t("partner.clear")}
                   </Button>
                 )}
                 <span className="k-num text-[12px] text-fg-3">
-                  {rows.length} {rows.length === 1 ? "client" : "clients"}
+                  {t("partner.clients.count", { count: rows.length })}
                 </span>
               </div>
             }
           />
           <div className="mt-3 text-[11.5px] text-fg-3">
-            Active: closed a qualifying live trade this month. Funded: made a
-            first deposit. Registered: signed up, no deposit yet.
-            {full ? " Select a client to see their trades." : ""}
+            {t("partner.clients.legend")}
+            {full ? ` ${t("partner.clients.selectHint")}` : ""}
           </div>
         </Card>
       </Reveal>

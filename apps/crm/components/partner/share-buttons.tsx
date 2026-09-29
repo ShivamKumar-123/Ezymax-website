@@ -4,6 +4,7 @@ import * as React from "react";
 import { Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip, cn } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 
 const WA = (
   <svg viewBox="0 0 24 24" className="size-4 fill-current">
@@ -21,23 +22,25 @@ const XL = (
   </svg>
 );
 
-export function ShareButtons({ url, text = "Trade gold, FX, indices and crypto with Kalks — open your account with my link:", className }: { url: string; text?: string; className?: string }) {
+export function ShareButtons({ url, text: textProp, className }: { url: string; text?: string; className?: string }) {
+  const t = useT();
+  const text = textProp ?? t("partner.share.defaultText");
   const enc = encodeURIComponent;
   const items = [
     { key: "wa", label: "WhatsApp", icon: WA, href: `https://wa.me/?text=${enc(`${text} ${url}`)}` },
     { key: "tg", label: "Telegram", icon: TG, href: `https://t.me/share/url?url=${enc(url)}&text=${enc(text)}` },
     { key: "x", label: "X", icon: XL, href: `https://x.com/intent/tweet?text=${enc(text)}&url=${enc(url)}` },
-    { key: "mail", label: "Email", icon: <Mail className="size-4" />, href: `mailto:?subject=${enc("Join me on Kalks")}&body=${enc(`${text} ${url}`)}` },
+    { key: "mail", label: t("common.email"), icon: <Mail className="size-4" />, href: `mailto:?subject=${enc(t("partner.share.emailSubject"))}&body=${enc(`${text} ${url}`)}` },
   ];
   return (
     <div className={cn("grid grid-cols-4 gap-2", className)}>
       {items.map((it) => (
-        <Tooltip key={it.key} content={`Share on ${it.label}`}>
+        <Tooltip key={it.key} content={t("partner.share.shareOn", { name: it.label })}>
           <a
             href={it.href}
             target="_blank"
             rel="noreferrer"
-            onClick={() => toast.success(`Opening ${it.label}`, { description: "Your referral link is pre-filled." })}
+            onClick={() => toast.success(t("partner.share.opening", { name: it.label }), { description: t("partner.share.prefilled") })}
             className="flex h-10 items-center justify-center gap-2 rounded-full border border-line bg-surface-2 text-[12.5px] font-medium text-fg-2 shadow-[inset_0_1px_0_var(--k-border-top)] transition-colors hover:bg-surface-3 hover:text-fg"
           >
             {it.icon}

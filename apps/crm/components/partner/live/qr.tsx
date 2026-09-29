@@ -5,6 +5,7 @@ import { QRCodeCanvas, QRCodeSVG } from "qrcode.react";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, cn } from "@kalks/ui";
+import { tr, useT } from "@kalks/i18n/react";
 import { shortUrl } from "./api";
 
 export type QrTheme = "light" | "dark";
@@ -86,7 +87,7 @@ export function useQrCode({
     );
     save(url, `${fileBase}.svg`);
     setTimeout(() => URL.revokeObjectURL(url), 2000);
-    toast.success("QR code saved", { description: `${fileBase}.svg` });
+    toast.success(tr("partner.qr.saved"), { description: `${fileBase}.svg` });
   }, [fileBase]);
 
   const downloadPng = React.useCallback(() => {
@@ -94,12 +95,12 @@ export function useQrCode({
     if (!canvas) return;
     try {
       save(canvas.toDataURL("image/png"), `${fileBase}.png`);
-      toast.success("QR code saved", {
+      toast.success(tr("partner.qr.saved"), {
         description: `${fileBase}.png · ${EXPORT_PX}×${EXPORT_PX}`,
       });
     } catch {
-      toast.error("Couldn't create the PNG", {
-        description: "Try the SVG download instead.",
+      toast.error(tr("partner.qr.pngFailed"), {
+        description: tr("partner.qr.pngFailedHint"),
       });
     }
   }, [fileBase]);
@@ -164,13 +165,14 @@ export function QrDialog({
   title: string;
   fileBase: string;
 }) {
+  const t = useT();
   return (
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
       width={400}
       title={title}
-      description="For flyers, events and screens. Scans open your tracked link."
+      description={t("partner.qr.dialogDescription")}
     >
       {open ? <QrDialogBody value={value} fileBase={fileBase} /> : <div />}
     </Dialog>

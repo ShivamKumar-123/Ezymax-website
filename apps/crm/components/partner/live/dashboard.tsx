@@ -40,6 +40,8 @@ import {
   formatMoney,
 } from "@kalks/ui";
 import type { SeriesPoint } from "@kalks/ui";
+import { tr, useFormat, useT } from "@kalks/i18n/react";
+import { intlTag } from "@kalks/i18n/locales";
 import { ShareButtons } from "@/components/partner/share-buttons";
 import {
   fmtDate,
@@ -54,6 +56,7 @@ import {
   scheduleLabel,
   shortUrl,
   usePartner,
+  utcDay,
   type CommissionRow,
   type Dashboard,
   type Level,
@@ -74,6 +77,8 @@ const DAY = 86400;
 /* ------------------------------------------------------------------ */
 
 function LevelHero({ d }: { d: Dashboard }) {
+  const t = useT();
+  const f = useFormat();
   const levels = [...d.progress.levels].sort((a, b) => a.rank - b.rank);
   const cur = d.member.level ?? levels[0] ?? null;
   const curIdx = Math.max(
@@ -109,16 +114,19 @@ function LevelHero({ d }: { d: Dashboard }) {
             <Icon3D name={cur?.icon ?? "coin"} size={60} className="shrink-0" />
             <div className="min-w-0">
               <div className="k-label text-ember">
-                Partner level · {curIdx + 1} of {levels.length || 1}
+                {t("partner.dash.levelOf", {
+                  n: curIdx + 1,
+                  total: levels.length || 1,
+                })}
               </div>
               <h2 className="mt-1 text-[28px] font-semibold leading-none tracking-tight sm:text-[30px]">
-                {cur?.name ?? "Partner"}
+                {cur?.name ?? t("partner.dash.partnerFallback")}
               </h2>
               <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-fg-2">
-                <span>Partner since {fmtMonth(d.member.joinedAt)}</span>
+                <span>{t("partner.dash.since", { date: fmtMonth(d.member.joinedAt) })}</span>
                 <span className="text-fg-3">·</span>
                 <span>
-                  Code{" "}
+                  {t("partner.dash.code")}{" "}
                   <span className="font-mono text-fg">{d.member.code}</span>
                 </span>
               </div>
@@ -127,16 +135,19 @@ function LevelHero({ d }: { d: Dashboard }) {
           <div className="flex items-center gap-2">
             {suspended ? (
               <Chip tone="down" dot>
-                Suspended
+                {t("partner.dash.suspended")}
               </Chip>
             ) : (
               <Chip tone="gold">
-                {scheduleLabel(d.programme.payout.schedule)} payouts
+                {t("partner.schedulePayouts", {
+                  schedule: scheduleLabel(d.programme.payout.schedule),
+                })}
               </Chip>
             )}
             <Link href="/partner/commissions">
               <Button size="sm" variant="surface">
-                Rate card <ChevronRight />
+                {t("partner.dash.rateCard")}{" "}
+                <ChevronRight className="rtl:-scale-x-100" />
               </Button>
             </Link>
           </div>
@@ -144,15 +155,14 @@ function LevelHero({ d }: { d: Dashboard }) {
 
         {suspended && (
           <div className="rounded-[14px] border border-down/30 bg-down/10 px-4 py-3 text-[12.5px] text-fg-2">
-            Your partner account is suspended, so new commission is paused.
-            Contact support for details.
+            {t("partner.dash.suspendedNote")}
           </div>
         )}
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <ProgressBlock
             icon={<Users className="size-4" />}
-            label="Active clients"
+            label={t("partner.dash.activeClients")}
             value={activeClients}
             target={next?.minActiveClients ?? null}
             pct={clientsPct}
@@ -160,15 +170,17 @@ function LevelHero({ d }: { d: Dashboard }) {
             hint={
               next
                 ? next.minActiveClients > activeClients
-                  ? `${next.minActiveClients - activeClients} more clients trading this month`
-                  : "Target met this month"
-                : "Clients who traded this month"
+                  ? t("partner.dash.moreClients", {
+                      count: next.minActiveClients - activeClients,
+                    })
+                  : t("partner.dash.targetMetMonth")
+                : t("partner.dash.clientsTraded")
             }
             fmt={(v) => String(v)}
           />
           <ProgressBlock
             icon={<Layers className="size-4" />}
-            label="Monthly network lots"
+            label={t("partner.dash.monthlyLots")}
             value={monthlyLots}
             target={next?.minMonthlyLots ?? null}
             pct={lotsPct}
@@ -176,11 +188,16 @@ function LevelHero({ d }: { d: Dashboard }) {
             hint={
               next
                 ? next.minMonthlyLots > monthlyLots
-                  ? `${fmtLots(next.minMonthlyLots - monthlyLots, 1)} lots to go · resets ${resets}`
-                  : `Target met · resets ${resets}`
-                : `All tiers · resets ${resets}`
+                  ? t("partner.dash.lotsToGo", {
+                      lots: fmtLots(next.minMonthlyLots - monthlyLots, 1),
+                      date: resets,
+                    })
+                  : t("partner.dash.targetMetResets", { date: resets })
+                : t("partner.dash.allTiersResets", { date: resets })
             }
-            fmt={(v) => v.toLocaleString("en-US", { maximumFractionDigits: 1 })}
+            fmt={(v) =>
+              v.toLocaleString(intlTag(f.locale), { maximumFractionDigits: 1 })
+            }
           />
         </div>
 
@@ -195,14 +212,14 @@ function LevelHero({ d }: { d: Dashboard }) {
               <div
                 className="absolute top-[19px] h-px bg-white/10"
                 style={{
-                  left: `${50 / levels.length}%`,
-                  right: `${50 / levels.length}%`,
+                  insetInlineStart: `${50 / levels.length}%`,
+                  insetInlineEnd: `${50 / levels.length}%`,
                 }}
               />
               <div
-                className="absolute top-[19px] h-px bg-gradient-to-r from-ember to-gold"
+                className="absolute top-[19px] h-px bg-gradient-to-r from-ember to-gold rtl:bg-gradient-to-l"
                 style={{
-                  left: `${50 / levels.length}%`,
+                  insetInlineStart: `${50 / levels.length}%`,
                   width: `${(Math.min(100, ladderPct) / 100) * (100 - 100 / levels.length)}%`,
                 }}
               />
@@ -214,8 +231,12 @@ function LevelHero({ d }: { d: Dashboard }) {
                     key={l.key}
                     content={
                       l.rank === 1
-                        ? `${l.name}: starting level`
-                        : `${l.name}: ${l.minActiveClients} active clients · ${l.minMonthlyLots.toLocaleString("en-US")} lots a month`
+                        ? t("partner.dash.levelStarting", { name: l.name })
+                        : t("partner.dash.levelNeeds", {
+                            name: l.name,
+                            clients: l.minActiveClients,
+                            lots: l.minMonthlyLots.toLocaleString(intlTag(f.locale)),
+                          })
                     }
                   >
                     <div className="relative flex flex-col items-center gap-1.5 text-center">
@@ -247,7 +268,9 @@ function LevelHero({ d }: { d: Dashboard }) {
             <div className="mt-4 flex flex-wrap items-center gap-2 rounded-[14px] border border-line bg-surface-2/60 px-4 py-2.5 text-[12.5px]">
               {next ? (
                 <>
-                  <span className="text-fg-2">At {next.name}:</span>
+                  <span className="text-fg-2">
+                    {t("partner.dash.atLevel", { name: next.name })}
+                  </span>
                   {next.perks.length ? (
                     next.perks.map((p) => (
                       <Chip key={p} size="sm" tone="gold">
@@ -256,13 +279,13 @@ function LevelHero({ d }: { d: Dashboard }) {
                     ))
                   ) : (
                     <span className="text-fg-3">
-                      higher rates on every symbol group
+                      {t("partner.dash.higherRates")}
                     </span>
                   )}
                 </>
               ) : (
                 <>
-                  <span className="text-fg-2">Top level reached.</span>
+                  <span className="text-fg-2">{t("partner.dash.topReached")}</span>
                   {cur?.perks.map((p) => (
                     <Chip key={p} size="sm" tone="gold">
                       {p}
@@ -297,6 +320,7 @@ function ProgressBlock({
   hint: string;
   fmt: (v: number) => string;
 }) {
+  const t = useT();
   return (
     <div className="rounded-[16px] border border-line bg-surface-2/60 px-4 py-3.5">
       <div className="flex items-center justify-between gap-2 text-[12.5px]">
@@ -306,7 +330,10 @@ function ProgressBlock({
         </span>
         {target !== null && nextName && (
           <span className="k-num text-fg-3">
-            {Math.min(100, Math.floor(pct))}% to {nextName}
+            {t("partner.dash.pctTo", {
+              pct: Math.min(100, Math.floor(pct)),
+              name: nextName,
+            })}
           </span>
         )}
       </div>
@@ -335,23 +362,28 @@ function ProgressBlock({
 /* ------------------------------------------------------------------ */
 
 function ReferralCard({ d }: { d: Dashboard }) {
+  const t = useT();
+  const f = useFormat();
   const [qr, setQr] = React.useState(false);
   const link = referralLink(d.linkBase, d.member.code);
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Your referral link"
-        subtitle="Clients stay linked to you"
+        title={t("partner.dash.referralTitle")}
+        subtitle={t("partner.dash.referralSubtitle")}
         icon={<Link2 />}
       />
       <div className="flex flex-1 flex-col gap-4 px-4 pb-5 pt-4 sm:px-6">
-        <div className="flex items-center gap-2 rounded-[14px] border border-ember/30 bg-ember-soft/60 py-1.5 pl-4 pr-1.5">
-          <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-fg">
+        <div className="flex items-center gap-2 rounded-[14px] border border-ember/30 bg-ember-soft/60 py-1.5 ps-4 pe-1.5">
+          <span
+            dir="ltr"
+            className="min-w-0 flex-1 truncate text-start font-mono text-[13px] text-fg"
+          >
             {shortUrl(link)}
           </span>
           <CopyButton
             value={link}
-            label="Referral link"
+            label={t("partner.referralLink")}
             className="size-8 shrink-0 rounded-full"
           />
           <Button
@@ -366,31 +398,31 @@ function ReferralCard({ d }: { d: Dashboard }) {
         <div className="flex items-center justify-between rounded-[14px] border border-line bg-surface-2 px-4 py-2.5">
           <div>
             <div className="text-[11px] uppercase tracking-wider text-fg-3">
-              Referral code
+              {t("partner.referralCode")}
             </div>
             <div className="font-mono text-[15px] font-semibold tracking-wider">
               {d.member.code}
             </div>
           </div>
-          <CopyButton value={d.member.code} label="Referral code" />
+          <CopyButton value={d.member.code} label={t("partner.referralCode")} />
         </div>
         <div>
-          <div className="mb-2 text-[12px] text-fg-3">Share</div>
+          <div className="mb-2 text-[12px] text-fg-3">{t("partner.dash.share")}</div>
           <ShareButtons
             url={link}
-            text="Open a trading account with Kalks using my link:"
+            text={t("partner.dash.shareText")}
           />
         </div>
         <div className="mt-auto grid grid-cols-3 gap-2">
           {[
-            ["Clicks", d.funnel.clicks],
-            ["Sign-ups", d.funnel.signups],
-            ["First deposits", d.funnel.ftds],
+            [t("partner.clicks"), d.funnel.clicks],
+            [t("partner.signups"), d.funnel.signups],
+            [t("partner.firstDeposits"), d.funnel.ftds],
           ].map(([k, v]) => (
             <div key={k as string} className="k-row min-w-0 px-3 py-2.5">
               <div className="truncate text-[11px] text-fg-3">{k}</div>
               <div className="k-num text-[15px] font-medium">
-                {(v as number).toLocaleString("en-US")}
+                {f.number(v as number, 0)}
               </div>
             </div>
           ))}
@@ -399,14 +431,15 @@ function ReferralCard({ d }: { d: Dashboard }) {
           href="/partner/links"
           className="flex items-center justify-between text-[12.5px] text-fg-2 hover:text-fg"
         >
-          Campaign links and QR codes <ArrowUpRight className="size-4" />
+          {t("partner.dash.campaignLinks")}{" "}
+          <ArrowUpRight className="size-4 rtl:-scale-x-100" />
         </Link>
       </div>
       <QrDialog
         open={qr}
         onOpenChange={setQr}
         value={link}
-        title="Referral QR code"
+        title={t("partner.dash.referralQr")}
         fileBase={`kalks-${d.member.code}-qr`}
       />
     </Card>
@@ -439,6 +472,7 @@ function dailySeries(d: Dashboard): SeriesPoint[] {
 }
 
 function EarningsCard({ d }: { d: Dashboard }) {
+  const t = useT();
   const all = React.useMemo(() => dailySeries(d), [d]);
   const [range, setRange] = React.useState<Range>("3M");
   const data = React.useMemo(() => all.slice(-RANGES[range]), [all, range]);
@@ -451,7 +485,7 @@ function EarningsCard({ d }: { d: Dashboard }) {
     <Card className="h-full">
       <div className="flex flex-col gap-4 px-5 pt-6 sm:flex-row sm:items-start sm:justify-between sm:px-6">
         <div>
-          <div className="k-label">Lifetime commission</div>
+          <div className="k-label">{t("partner.dash.lifetime")}</div>
           <div className="mt-2 flex flex-wrap items-baseline gap-3">
             <Money
               value={shown.value}
@@ -460,19 +494,23 @@ function EarningsCard({ d }: { d: Dashboard }) {
             />
             {!empty && (
               <Chip tone={earned > 0 ? "up" : "neutral"}>
-                {earned >= 0 ? "+" : ""}
-                {formatMoney(earned)} in {range}
+                {t("partner.dash.earnedIn", {
+                  amount: `${earned >= 0 ? "+" : ""}${formatMoney(earned)}`,
+                  range,
+                })}
               </Chip>
             )}
           </div>
           <div className="mt-1 text-xs text-fg-3">
             {hover ? (
               <>
-                {fmtDate(new Date(hover.time * 1000).toISOString())} · earned{" "}
-                {formatMoney(hover.volume ?? 0)}
+                {t("partner.dash.hoverEarned", {
+                  date: fmtDate(new Date(hover.time * 1000).toISOString()),
+                  amount: formatMoney(hover.volume ?? 0),
+                })}
               </>
             ) : (
-              "Pending, approved and paid · bars show daily commission"
+              t("partner.dash.lifetimeHint")
             )}
           </div>
         </div>
@@ -490,8 +528,8 @@ function EarningsCard({ d }: { d: Dashboard }) {
           <div className="px-2 pb-2 pt-4 sm:px-3">
             <CardEmpty
               className="h-[248px]"
-              title="No commission yet"
-              text="Your earnings chart starts with the first qualifying live trade from a client you referred."
+              title={t("partner.noCommission")}
+              text={t("partner.dash.earningsEmpty")}
             />
           </div>
         ) : (
@@ -501,21 +539,6 @@ function EarningsCard({ d }: { d: Dashboard }) {
     </Card>
   );
 }
-
-const MON = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
 
 /** The last `n` weeks (Monday UTC starts), zero-filled. */
 function weeks(d: Dashboard, n: number) {
@@ -527,16 +550,16 @@ function weeks(d: Dashboard, n: number) {
     byWeek.set(Math.floor(Date.parse(w.week) / 1000 / DAY) * DAY, w.amount);
   return Array.from({ length: n }, (_, i) => {
     const t = monday - (n - 1 - i) * 7 * DAY;
-    const dt = new Date(t * 1000);
     return {
       t,
-      label: `${dt.getUTCDate()} ${MON[dt.getUTCMonth()]}`,
+      label: utcDay(t * 1000),
       value: byWeek.get(t) ?? 0,
     };
   });
 }
 
 function WeeklyCard({ d }: { d: Dashboard }) {
+  const t = useT();
   const data = weeks(d, 8);
   const last = data[data.length - 1]!;
   const prev = data[data.length - 2]!;
@@ -546,13 +569,14 @@ function WeeklyCard({ d }: { d: Dashboard }) {
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Commission by week"
-        subtitle="Closed live trades · all tiers"
+        title={t("partner.dash.byWeek")}
+        subtitle={t("partner.dash.byWeekSubtitle")}
         action={
           ch !== null ? (
             <Chip tone={ch >= 0 ? "up" : "down"}>
-              {ch >= 0 ? "+" : ""}
-              {ch.toFixed(1)}% w/w
+              {t("partner.dash.wow", {
+                pct: `${ch >= 0 ? "+" : ""}${ch.toFixed(1)}`,
+              })}
             </Chip>
           ) : undefined
         }
@@ -564,8 +588,10 @@ function WeeklyCard({ d }: { d: Dashboard }) {
           className="text-[26px] font-semibold"
         />
         <div className="text-[12px] text-fg-3">
-          Week of {last.label} · batch closes{" "}
-          {fmtDay(d.programme.payout.nextClose)}
+          {t("partner.dash.weekOf", {
+            week: last.label,
+            date: fmtDay(d.programme.payout.nextClose),
+          })}
         </div>
       </div>
       <div className="flex-1 px-4 pb-5 pt-6 sm:px-6">
@@ -582,8 +608,8 @@ function WeeklyCard({ d }: { d: Dashboard }) {
         ) : (
           <CardEmpty
             className="h-[200px]"
-            title="Nothing earned in the last 8 weeks"
-            text="Weekly totals show here once commission starts to accrue."
+            title={t("partner.dash.weeklyEmpty")}
+            text={t("partner.dash.weeklyEmptyText")}
           />
         )}
       </div>
@@ -596,17 +622,20 @@ function WeeklyCard({ d }: { d: Dashboard }) {
 /* ------------------------------------------------------------------ */
 
 function TopClientsCard({ d }: { d: Dashboard }) {
+  const t = useT();
   const top = d.topClients;
   const max = Math.max(...top.map((c) => c.lotsMonth), 0.0001);
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Top clients"
-        subtitle={`Direct clients · lots in ${monthName(d.progress.month)}`}
+        title={t("partner.dash.topClients")}
+        subtitle={t("partner.dash.topClientsSubtitle", {
+          month: monthName(d.progress.month),
+        })}
         action={
           <Link href="/partner/clients">
             <Button size="sm" variant="surface">
-              All clients
+              {t("partner.dash.allClients")}
             </Button>
           </Link>
         }
@@ -614,8 +643,8 @@ function TopClientsCard({ d }: { d: Dashboard }) {
       <div className="mt-4 flex-1 space-y-2 px-4 pb-5 sm:px-6">
         {top.length === 0 ? (
           <CardEmpty
-            title="No trading this month yet"
-            text="Clients you referred show here, ranked by the lots they trade this month."
+            title={t("partner.dash.topEmpty")}
+            text={t("partner.dash.topEmptyText")}
           />
         ) : (
           top.map((c, i) => (
@@ -626,9 +655,9 @@ function TopClientsCard({ d }: { d: Dashboard }) {
               <div className="min-w-0 flex-1">
                 <PersonCell name={c.name} country={c.country} size={32} />
               </div>
-              <div className="w-24 shrink-0 text-right">
+              <div className="w-24 shrink-0 text-end">
                 <div className="k-num text-[13px] font-medium">
-                  {fmtLots(c.lotsMonth)} lots
+                  {t("partner.lotsN", { lots: fmtLots(c.lotsMonth) })}
                 </div>
                 <div className="mt-1 h-1 overflow-hidden rounded-full bg-surface-3">
                   <div
@@ -646,27 +675,29 @@ function TopClientsCard({ d }: { d: Dashboard }) {
 }
 
 export function commissionLine(e: CommissionRow) {
-  if (e.kind === "cpa") return "CPA bonus · first deposit and trade";
+  if (e.kind === "cpa") return tr("partner.line.cpa");
+  const lot = (v: number) => tr("partner.line.lot", { lots: fmtLots(v) });
   if (e.kind === "lot")
-    return `${e.symbol ?? "Trade"} · ${fmtLots(e.lots)} lot · L${e.tier}`;
+    return `${e.symbol ?? tr("partner.line.trade")} · ${lot(e.lots)} · L${e.tier}`;
   if (e.kind === "split")
-    return `Sub-IB split${e.symbol ? ` · ${e.symbol}` : ""} · L${e.tier}`;
+    return `${kindLabel("split")}${e.symbol ? ` · ${e.symbol}` : ""} · L${e.tier}`;
   if (e.kind === "rebate")
-    return `Rebate${e.symbol ? ` · ${e.symbol}` : ""}${e.lots ? ` · ${fmtLots(e.lots)} lot` : ""}`;
+    return `${kindLabel("rebate")}${e.symbol ? ` · ${e.symbol}` : ""}${e.lots ? ` · ${lot(e.lots)}` : ""}`;
   return e.note ? `${kindLabel(e.kind)} · ${e.note}` : kindLabel(e.kind);
 }
 
 function RecentCard({ d }: { d: Dashboard }) {
+  const t = useT();
   const events = d.recent.slice(0, 7);
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Recent commission"
-        subtitle="Latest entries in your ledger"
+        title={t("partner.dash.recent")}
+        subtitle={t("partner.dash.recentSubtitle")}
         action={
           <Link href="/partner/commissions">
             <Button size="sm" variant="surface">
-              Ledger
+              {t("partner.dash.ledger")}
             </Button>
           </Link>
         }
@@ -674,8 +705,8 @@ function RecentCard({ d }: { d: Dashboard }) {
       <div className="mt-4 flex-1 space-y-2 px-4 pb-5 sm:px-6">
         {events.length === 0 ? (
           <CardEmpty
-            title="No commission yet"
-            text="Each qualifying live trade by a client in your network adds an entry here."
+            title={t("partner.noCommission")}
+            text={t("partner.dash.recentEmptyText")}
           />
         ) : (
           events.map((e) => (
@@ -712,6 +743,7 @@ function RecentCard({ d }: { d: Dashboard }) {
 }
 
 function CpaCard({ d }: { d: Dashboard }) {
+  const t = useT();
   const { cpa } = d.programme;
   const cur = d.member.level;
   const better = [...d.progress.levels]
@@ -721,31 +753,40 @@ function CpaCard({ d }: { d: Dashboard }) {
   const rules: [React.ReactNode, string][] = [
     [
       <Target key="t" className="size-3.5" />,
-      `First live deposit of at least ${formatMoney(cpa.minFirstDeposit, "USD", 0)}`,
+      t("partner.cpa.ruleDeposit", {
+        amount: formatMoney(cpa.minFirstDeposit, "USD", 0),
+      }),
     ],
     ...(cpa.requireFirstTrade
       ? ([
           [
             <Timer key="u" className="size-3.5" />,
-            `First qualifying live trade (held ${mins >= 1 ? `${mins} min` : `${d.programme.minTradeSeconds}s`} or more)`,
+            t("partner.cpa.ruleTrade", {
+              duration:
+                mins >= 1
+                  ? t("partner.unit.min", { n: mins })
+                  : t("partner.unit.sec", { n: d.programme.minTradeSeconds }),
+            }),
           ],
         ] as [React.ReactNode, string][])
       : []),
     [
       <Hourglass key="h" className="size-3.5" />,
-      `Payable ${cpa.holdDays} days after it is earned`,
+      t("partner.cpa.ruleHold", { count: cpa.holdDays }),
     ],
   ];
   return (
     <Card className="flex h-full flex-col overflow-hidden">
       <CardHeader
-        title="CPA bonus"
-        subtitle="One-time bonus per qualified client"
+        title={t("partner.cpa.title")}
+        subtitle={t("partner.cpa.subtitleDash")}
         action={
           cpa.enabled ? (
-            <Chip tone="gold">{d.earnings.cpaCount} earned</Chip>
+            <Chip tone="gold">
+              {t("partner.cpa.earnedCount", { n: d.earnings.cpaCount })}
+            </Chip>
           ) : (
-            <Chip>Not offered</Chip>
+            <Chip>{t("partner.cpa.notOffered")}</Chip>
           )
         }
       />
@@ -757,22 +798,28 @@ function CpaCard({ d }: { d: Dashboard }) {
         />
         <div className="text-[12px] text-fg-3">
           {d.earnings.cpaWaiting > 0
-            ? `${d.earnings.cpaWaiting} funded client${d.earnings.cpaWaiting === 1 ? "" : "s"} not yet qualified`
-            : "Earned from clients who qualified"}
+            ? t("partner.cpa.waiting", { count: d.earnings.cpaWaiting })
+            : t("partner.cpa.earnedFrom")}
         </div>
       </div>
       {cpa.enabled ? (
         <div className="mt-4 space-y-2 px-4 sm:px-6">
           <div className="k-row flex items-center justify-between px-3.5 py-2.5 text-[12.5px]">
             <span className="text-fg-2">
-              Per client at {cur?.name ?? "your level"}
+              {t("partner.cpa.perClientAt", {
+                name: cur?.name ?? t("partner.yourLevel"),
+              })}
             </span>
             <span className="k-num font-semibold">
               {formatMoney(cur?.cpaAmount ?? 0, "USD", 0)}
               {better && (
                 <span className="font-normal text-fg-3">
                   {" "}
-                  · {formatMoney(better.cpaAmount, "USD", 0)} at {better.name}
+                  ·{" "}
+                  {t("partner.cpa.amountAt", {
+                    amount: formatMoney(better.cpaAmount, "USD", 0),
+                    name: better.name,
+                  })}
                 </span>
               )}
             </span>
@@ -791,15 +838,14 @@ function CpaCard({ d }: { d: Dashboard }) {
         </div>
       ) : (
         <div className="mt-4 px-4 text-[12.5px] text-fg-3 sm:px-6">
-          The broker doesn&apos;t pay CPA at the moment. You still earn per-lot
-          commission on every qualifying trade.
+          {t("partner.cpa.offText")}
         </div>
       )}
       <div className="mt-auto px-4 pb-5 pt-5 sm:px-6">
         <div className="k-row flex items-center justify-between px-4 py-3">
           <div>
             <div className="text-[11px] uppercase tracking-wider text-fg-3">
-              Client rebate · sub-IB split
+              {t("partner.dash.rebateSplit")}
             </div>
             <div className="k-num mt-0.5 text-[14px] font-medium">
               {fmtPct(d.member.rebatePct)} <span className="text-fg-3">·</span>{" "}
@@ -808,7 +854,7 @@ function CpaCard({ d }: { d: Dashboard }) {
           </div>
           <Link href="/partner/commissions#rebates">
             <Button size="xs" variant="surface">
-              Adjust
+              {t("partner.dash.adjust")}
             </Button>
           </Link>
         </div>
@@ -819,11 +865,11 @@ function CpaCard({ d }: { d: Dashboard }) {
 
 /* ------------------------------------------------------------------ */
 
-const TITLE = "Partner dashboard";
-const SUBTITLE =
-  "Earn on every lot your network trades, paid into your wallet.";
-
 export function LivePartnerDashboard() {
+  const t = useT();
+  const f = useFormat();
+  const TITLE = t("partner.dash.title");
+  const SUBTITLE = t("partner.dash.subtitle");
   const { data: d, error, reload } = usePartner<Dashboard>("", 60_000);
 
   if (!d)
@@ -866,7 +912,7 @@ export function LivePartnerDashboard() {
           <>
             <Link href="/partner/payouts">
               <Button variant="surface" size="lg">
-                <Banknote /> Payouts
+                <Banknote /> {t("partner.payouts.title")}
               </Button>
             </Link>
             <Button
@@ -874,12 +920,12 @@ export function LivePartnerDashboard() {
               size="lg"
               onClick={() => {
                 navigator.clipboard?.writeText(link).catch(() => {});
-                toast.success("Referral link copied", {
+                toast.success(t("partner.toast.linkCopied"), {
                   description: shortUrl(link),
                 });
               }}
             >
-              <Copy /> Copy referral link
+              <Copy /> {t("partner.copyReferralLink")}
             </Button>
           </>
         }
@@ -896,65 +942,73 @@ export function LivePartnerDashboard() {
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard
-          label="Total referrals"
+          label={t("partner.dash.totalReferrals")}
           icon={<UserPlus />}
           value={
-            <span className="k-num">
-              {d.counts.referrals.toLocaleString("en-US")}
-            </span>
+            <span className="k-num">{f.number(d.counts.referrals, 0)}</span>
           }
-          chip={`+${d.counts.referralsThisMonth} this month`}
+          chip={t("partner.dash.plusThisMonth", {
+            n: d.counts.referralsThisMonth,
+          })}
           chipTone={d.counts.referralsThisMonth > 0 ? "up" : "neutral"}
           href="/partner/clients"
         />
         <KpiCard
-          label="Active clients"
+          label={t("partner.dash.activeClients")}
           icon={<Users />}
           value={<span className="k-num">{d.progress.activeClients}</span>}
           chip={
             next
-              ? `${next.minActiveClients} needed for ${next.name}`
-              : "Top level"
+              ? t("partner.dash.neededFor", {
+                  n: next.minActiveClients,
+                  name: next.name,
+                })
+              : t("partner.dash.topLevel")
           }
           chipTone="gold"
           href="/partner/network"
           delay={0.04}
         />
         <KpiCard
-          label={`Network lots · ${mon}`}
+          label={t("partner.dash.networkLots", { month: mon })}
           icon={<Layers />}
           value={
             <span className="k-num">
-              {d.progress.monthlyLots.toLocaleString("en-US", {
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 1,
-              })}
+              {f.number(d.progress.monthlyLots, 1)}
             </span>
           }
           chip={
             lotsCh !== null
-              ? `${lotsCh >= 0 ? "+" : ""}${lotsCh.toFixed(1)}% vs ${prevMon}`
-              : `${fmtLots(d.progress.prevMonthLots, 1)} in ${prevMon}`
+              ? t("partner.dash.vsMonth", {
+                  pct: `${lotsCh >= 0 ? "+" : ""}${lotsCh.toFixed(1)}`,
+                  month: prevMon,
+                })
+              : t("partner.dash.lotsInMonth", {
+                  lots: fmtLots(d.progress.prevMonthLots, 1),
+                  month: prevMon,
+                })
           }
           chipTone={lotsCh === null ? "neutral" : lotsCh >= 0 ? "up" : "down"}
           href="/partner/network"
           delay={0.08}
         />
         <KpiCard
-          label="Pending commission"
+          label={t("partner.pendingCommission")}
           icon={<Coins />}
           value={<Money value={due} countUp={false} />}
           hot
-          chip={`Batch closes ${fmtDay(d.programme.payout.nextClose)}`}
+          chip={t("partner.batchCloses", {
+            date: fmtDay(d.programme.payout.nextClose),
+          })}
           chipTone="ember"
           href="/partner/payouts"
           delay={0.12}
         />
         <KpiCard
-          label="Paid all-time"
+          label={t("partner.paidAllTime")}
           icon={<Banknote />}
           value={<Money value={d.earnings.paid} countUp={false} />}
-          chip="Into your wallet"
+          chip={t("partner.dash.intoWallet")}
           href="/partner/payouts"
           delay={0.16}
           className="sm:col-span-2 lg:col-span-1"

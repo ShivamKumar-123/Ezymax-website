@@ -34,6 +34,7 @@ import {
   type NetworkResp,
   type Programme,
 } from "./api";
+import { useT } from "@kalks/i18n/react";
 import { CardEmpty, PageFallback, SkeletonGrid, TierChip } from "./ui";
 
 const TIER_COLORS = ["#ff5a1f", "#e9b949", "#22c55e", "#38bdf8", "#a1a1aa"];
@@ -81,17 +82,17 @@ function Branch({
   last: boolean;
 }) {
   return (
-    <li className="relative pl-4 sm:pl-9">
+    <li className="relative ps-4 sm:ps-9">
       <span
         aria-hidden
         className={cn(
-          "absolute left-0 top-0 w-px bg-fg-3/30",
+          "absolute start-0 top-0 w-px bg-fg-3/30",
           last ? "h-[30px]" : "h-full",
         )}
       />
       <span
         aria-hidden
-        className="absolute left-0 top-[30px] h-px w-4 bg-fg-3/40 sm:w-9"
+        className="absolute start-0 top-[30px] h-px w-4 bg-fg-3/40 sm:w-9"
       />
       <div className="pb-2.5">{children}</div>
     </li>
@@ -126,7 +127,7 @@ function NodeStats({ items }: { items: [string, React.ReactNode][] }) {
   return (
     <div className="hidden items-center gap-5 md:flex">
       {items.map(([k, v]) => (
-        <div key={k} className="text-right">
+        <div key={k} className="text-end">
           <div className="text-[10.5px] uppercase tracking-wider text-fg-3">
             {k}
           </div>
@@ -141,6 +142,7 @@ const initials = (name: string) =>
   name.replace(/[^\p{L}\s]/gu, "").trim() || "?";
 
 function PartnerNode({ c }: { c: NetworkNode }) {
+  const t = useT();
   const { open, toggle, tree } = React.useContext(Ctx);
   const kids = sortKids(tree, tree.kids.get(c.id) ?? []);
   const isOpen = !!open[c.id];
@@ -173,7 +175,7 @@ function PartnerNode({ c }: { c: NetworkNode }) {
           {c.country && (
             <Flag
               country={c.country.toLowerCase()}
-              className="absolute -bottom-0.5 -right-1 size-3.5 ring-2 ring-surface-2"
+              className="absolute -bottom-0.5 -end-1 size-3.5 ring-2 ring-surface-2"
             />
           )}
         </span>
@@ -183,21 +185,28 @@ function PartnerNode({ c }: { c: NetworkNode }) {
             <TierChip tier={c.tier} />
             {hasKids && (
               <Chip size="sm" tone="gold">
-                Sub-IB
+                {t("partner.network.subIb")}
               </Chip>
             )}
           </div>
           <div className="mt-0.5 truncate text-[11.5px] text-fg-3">
             {hasKids
-              ? `${net.length} in their network · ${fmtLots(lots, 1)} lots this month`
-              : `${c.lotsMonth ? `${fmtLots(c.lotsMonth)} lots` : "No trades"} this month`}
+              ? t("partner.network.inTheirNetwork", {
+                  n: net.length,
+                  lots: fmtLots(lots, 1),
+                })
+              : c.lotsMonth
+                ? t("partner.network.lotsThisMonth", {
+                    lots: fmtLots(c.lotsMonth),
+                  })
+                : t("partner.network.noTradesThisMonth")}
           </div>
         </div>
         <NodeStats
           items={[
-            ["Lots · month", fmtLots(lots)],
+            [t("partner.lotsMonth"), fmtLots(lots)],
             [
-              "To you · month",
+              t("partner.network.toYouMonth"),
               <span key="c" className={earned ? "text-up" : "text-fg-3"}>
                 {formatMoney(earned)}
               </span>,
@@ -217,7 +226,7 @@ function PartnerNode({ c }: { c: NetworkNode }) {
       </div>
       {hasKids && (
         <Collapsible open={isOpen}>
-          <ul className="ml-3 mt-2.5 sm:ml-5">
+          <ul className="ms-3 mt-2.5 sm:ms-5">
             {kids.map((k, i) => (
               <Branch key={k.id} last={i === kids.length - 1}>
                 <PartnerNode c={k} />
@@ -231,6 +240,7 @@ function PartnerNode({ c }: { c: NetworkNode }) {
 }
 
 function DirectGroupNode({ list }: { list: NetworkNode[] }) {
+  const t = useT();
   const { open, toggle } = React.useContext(Ctx);
   const [all, setAll] = React.useState(false);
   const isOpen = !!open.direct;
@@ -255,18 +265,18 @@ function DirectGroupNode({ list }: { list: NetworkNode[] }) {
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 text-[13.5px] font-medium">
-            {list.length} direct client{list.length === 1 ? "" : "s"}{" "}
+            {t("partner.network.directClients", { count: list.length })}{" "}
             <TierChip tier={1} />
           </div>
           <div className="truncate text-[11.5px] text-fg-3">
-            {active} traded this month · signed up with your link
+            {t("partner.network.directGroupHint", { n: active })}
           </div>
         </div>
         <NodeStats
           items={[
-            ["Lots · month", fmtLots(lots)],
+            [t("partner.lotsMonth"), fmtLots(lots)],
             [
-              "To you · month",
+              t("partner.network.toYouMonth"),
               <span key="c" className={earned ? "text-up" : "text-fg-3"}>
                 {formatMoney(earned)}
               </span>,
@@ -283,7 +293,7 @@ function DirectGroupNode({ list }: { list: NetworkNode[] }) {
         </span>
       </div>
       <Collapsible open={isOpen}>
-        <div className="ml-3 border-l border-fg-3/30 pb-1 pl-4 pt-2.5 sm:ml-5 sm:pl-9">
+        <div className="ms-3 border-s border-fg-3/30 pb-1 ps-4 pt-2.5 sm:ms-5 sm:ps-9">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 2xl:grid-cols-3">
             {shown.map((c) => (
               <Link
@@ -304,8 +314,8 @@ function DirectGroupNode({ list }: { list: NetworkNode[] }) {
                   </div>
                   <div className="text-[11px] text-fg-3">
                     {c.lotsMonth > 0
-                      ? "Traded this month"
-                      : "No trades this month"}
+                      ? t("partner.tradedThisMonth")
+                      : t("partner.network.noTradesThisMonth")}
                   </div>
                 </div>
                 <span
@@ -314,7 +324,9 @@ function DirectGroupNode({ list }: { list: NetworkNode[] }) {
                     c.lotsMonth ? "text-fg" : "text-fg-3",
                   )}
                 >
-                  {c.lotsMonth ? `${fmtLots(c.lotsMonth, 1)} lots` : "—"}
+                  {c.lotsMonth
+                    ? t("partner.lotsN", { lots: fmtLots(c.lotsMonth, 1) })
+                    : "—"}
                 </span>
               </Link>
             ))}
@@ -326,7 +338,9 @@ function DirectGroupNode({ list }: { list: NetworkNode[] }) {
               className="mt-2"
               onClick={() => setAll((v) => !v)}
             >
-              {all ? "Show fewer" : `Show all ${list.length}`}
+              {all
+                ? t("partner.network.showFewer")
+                : t("partner.network.showAll", { n: list.length })}
             </Button>
           )}
         </div>
@@ -335,11 +349,6 @@ function DirectGroupNode({ list }: { list: NetworkNode[] }) {
   );
 }
 
-const TIER_TEXT: Record<number, [string, string]> = {
-  1: ["Direct clients", "Signed up with your link"],
-  2: ["Sub-IB clients", "Referred by your direct clients"],
-  3: ["Second level", "Referred by your sub-IBs' clients"],
-};
 
 function TierCard({
   tier,
@@ -354,14 +363,21 @@ function TierCard({
   total: number;
   delay: number;
 }) {
+  const t = useT();
   const list = nodes.filter((c) => c.tier === tier);
   const lots = list.reduce((s, c) => s + c.lotsMonth, 0);
   const share = total > 0 ? (lots / total) * 100 : 0;
   const earned = list.reduce((s, c) => s + c.earnedMonth, 0);
-  const [title, note] = TIER_TEXT[tier] ?? [
-    `Tier ${tier}`,
-    `${tier - 1} levels below you`,
-  ];
+  const [title, note] =
+    tier >= 1 && tier <= 3
+      ? [
+          t.dyn(`partner.network.tier${tier}Title`),
+          t.dyn(`partner.network.tier${tier}Note`),
+        ]
+      : [
+          t("partner.tierN", { n: tier }),
+          t("partner.levelsBelow", { n: tier - 1 }),
+        ];
   return (
     <Reveal delay={delay} className="min-w-0">
       <Card className="h-full px-5 py-5">
@@ -375,14 +391,14 @@ function TierCard({
           </div>
           {pct !== null && (
             <Chip tone={tier === 1 ? "ember" : tier === 2 ? "gold" : "neutral"}>
-              {fmtPct(pct)} of rate
+              {t("partner.ofRate", { pct: fmtPct(pct) })}
             </Chip>
           )}
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
           <div>
             <div className="text-[11px] uppercase tracking-wider text-fg-3">
-              People
+              {t("partner.network.people")}
             </div>
             <div className="k-num mt-0.5 text-[20px] font-semibold">
               {list.length}
@@ -390,18 +406,20 @@ function TierCard({
           </div>
           <div>
             <div className="text-[11px] uppercase tracking-wider text-fg-3">
-              Lots
+              {t("partner.lots")}
             </div>
             <div className="k-num mt-0.5 text-[20px] font-semibold">
               {fmtLots(lots, 1)}
             </div>
             <div className="k-num text-[11px] text-fg-3">
-              {total > 0 ? `${share.toFixed(1)}% of network` : "this month"}
+              {total > 0
+                ? t("partner.network.pctOfNetwork", { pct: share.toFixed(1) })
+                : t("partner.network.thisMonth")}
             </div>
           </div>
           <div className="min-w-0">
             <div className="text-[11px] uppercase tracking-wider text-fg-3">
-              To you
+              {t("partner.network.toYou")}
             </div>
             <Money
               value={earned}
@@ -412,7 +430,9 @@ function TierCard({
                 earned ? "text-up" : "text-fg",
               )}
             />
-            <div className="text-[11px] text-fg-3">this month</div>
+            <div className="text-[11px] text-fg-3">
+              {t("partner.network.thisMonth")}
+            </div>
           </div>
         </div>
         <Progress
@@ -427,11 +447,10 @@ function TierCard({
 
 /* ------------------------------------------------------------------ */
 
-const TITLE = "Network";
-const SUBTITLE =
-  "You, your sub-IBs and their clients. Every qualifying lot in your tree earns you commission.";
-
 export function LivePartnerNetwork() {
+  const t = useT();
+  const TITLE = t("partner.network.title");
+  const SUBTITLE = t("partner.network.subtitle");
   const { data, error, reload } = usePartner<NetworkResp>("network");
   const { data: prog } = usePartner<Programme>("programme");
   const tree = React.useMemo(
@@ -503,10 +522,10 @@ export function LivePartnerNetwork() {
           data.nodes.length > 0 ? (
             <>
               <Button variant="surface" onClick={() => setOpen({})}>
-                <ChevronsDownUp /> Collapse all
+                <ChevronsDownUp /> {t("partner.network.collapseAll")}
               </Button>
               <Button variant="surface" onClick={expandAll}>
-                <ChevronsUpDown /> Expand all
+                <ChevronsUpDown /> {t("partner.network.expandAll")}
               </Button>
             </>
           ) : undefined
@@ -535,18 +554,19 @@ export function LivePartnerNetwork() {
         <Reveal delay={0.1} className="min-w-0 xl:col-span-8">
           <Card className="h-full">
             <CardHeader
-              title="Network tree"
+              title={t("partner.network.tree")}
               subtitle={
                 allIbs.length
-                  ? "Select a sub-IB to expand their clients"
-                  : "Your direct clients and anyone they refer"
+                  ? t("partner.network.treeHintIbs")
+                  : t("partner.network.treeHint")
               }
               icon={<Network />}
               action={
                 <Chip tone="ember" dot>
-                  {data.nodes.length}{" "}
-                  {data.nodes.length === 1 ? "person" : "people"} · {data.tiers}{" "}
-                  tiers
+                  {t("partner.network.peopleCount", {
+                    count: data.nodes.length,
+                  })}{" "}
+                  · {t("partner.network.tiersCount", { n: data.tiers })}
                 </Chip>
               }
             />
@@ -557,18 +577,21 @@ export function LivePartnerNetwork() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate text-[15px] font-medium">
-                        You · {data.root.name}
+                        {t("partner.network.you", { name: data.root.name })}
                       </span>
                       <Chip size="sm" tone="gold">
                         {levelName}
                       </Chip>
                     </div>
                     <div className="mt-0.5 text-[12px] text-fg-2">
-                      {directIbs.length} sub-IB
-                      {directIbs.length === 1 ? "" : "s"} ·{" "}
-                      {directClients.length} direct client
-                      {directClients.length === 1 ? "" : "s"} ·{" "}
-                      {fmtLots(total, 1)} network lots this month
+                      {t("partner.subIbCount", { count: directIbs.length })} ·{" "}
+                      {t("partner.network.directClients", {
+                        count: directClients.length,
+                      })}{" "}
+                      ·{" "}
+                      {t("partner.network.networkLotsMonth", {
+                        lots: fmtLots(total, 1),
+                      })}
                     </div>
                   </div>
                   <span className="hidden font-mono text-[12px] text-fg-2 sm:block">
@@ -578,17 +601,17 @@ export function LivePartnerNetwork() {
                 {data.nodes.length === 0 ? (
                   <CardEmpty
                     className="mt-4"
-                    title="Your tree is empty"
-                    text="When someone signs up with your link they appear here. If they invite others, those clients show up under them as tier 2 and tier 3."
+                    title={t("partner.network.emptyTitle")}
+                    text={t("partner.network.emptyText")}
                   >
                     <Link href="/partner/links">
                       <Button size="sm" variant="surface">
-                        Get your links
+                        {t("partner.network.getLinks")}
                       </Button>
                     </Link>
                   </CardEmpty>
                 ) : (
-                  <ul className="ml-3 mt-2.5 sm:ml-6">
+                  <ul className="ms-3 mt-2.5 sm:ms-6">
                     {directIbs.map((c, i) => (
                       <Branch
                         key={c.id}
@@ -616,8 +639,10 @@ export function LivePartnerNetwork() {
           <Reveal delay={0.12}>
             <Card>
               <CardHeader
-                title="Lots by tier"
-                subtitle={`This month · ${fmtLots(total, 1)} lots`}
+                title={t("partner.network.lotsByTier")}
+                subtitle={t("partner.network.lotsByTierSubtitle", {
+                  lots: fmtLots(total, 1),
+                })}
               />
               <div className="px-5 pb-6 pt-4 sm:px-6">
                 {total > 0 ? (
@@ -635,7 +660,9 @@ export function LivePartnerNetwork() {
                           <div className="k-num text-[20px] font-semibold">
                             {total.toFixed(total >= 100 ? 0 : 1)}
                           </div>
-                          <div className="text-[11px] text-fg-3">lots</div>
+                          <div className="text-[11px] text-fg-3">
+                            {t("partner.network.lotsUnit")}
+                          </div>
                         </div>
                       }
                     />
@@ -655,7 +682,7 @@ export function LivePartnerNetwork() {
                       pct={tierPct}
                     />
                     <p className="mt-3 text-[12px] text-fg-3">
-                      No lots traded in your network this month yet.
+                      {t("partner.network.noLots")}
                     </p>
                   </>
                 )}
@@ -666,8 +693,8 @@ export function LivePartnerNetwork() {
             <Reveal delay={0.16}>
               <Card>
                 <CardHeader
-                  title="Sub-IB leaderboard"
-                  subtitle="Network lots this month"
+                  title={t("partner.network.leaderboard")}
+                  subtitle={t("partner.network.leaderboardSubtitle")}
                   icon={<Users />}
                 />
                 <div className="space-y-2 px-4 pb-5 pt-4 sm:px-6">
@@ -684,7 +711,7 @@ export function LivePartnerNetwork() {
                         }
                         setOpen((o) => ({ ...o, ...m }));
                       }}
-                      className="k-row flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-surface-3/60"
+                      className="k-row flex w-full items-center gap-3 px-3.5 py-2.5 text-start transition-colors hover:bg-surface-3/60"
                     >
                       <span className="w-4 font-mono text-[11px] text-fg-3">
                         {i + 1}
@@ -696,7 +723,7 @@ export function LivePartnerNetwork() {
                           <TierChip tier={c.tier} />
                         </div>
                         <div className="text-[11px] text-fg-3">
-                          {n} {n === 1 ? "person" : "people"}
+                          {t("partner.network.peopleCount", { count: n })}
                         </div>
                       </div>
                       <span className="k-num text-[13px] font-medium">
@@ -715,12 +742,10 @@ export function LivePartnerNetwork() {
               </span>
               <div>
                 <div className="text-[14px] font-medium">
-                  Attribution is permanent
+                  {t("partner.network.permanentTitle")}
                 </div>
                 <p className="mt-1 text-[12.5px] leading-relaxed text-fg-3">
-                  Clients stay in your tree for good. Lots they trade through
-                  PAMM funds and copy trading count toward your commission and
-                  level, the same as their own trades.
+                  {t("partner.network.permanentText")}
                 </p>
               </div>
             </Card>
@@ -742,6 +767,7 @@ function TierLegend({
   total: number;
   pct: (t: number) => number | null;
 }) {
+  const tt = useT();
   return (
     <div className="w-full flex-1 space-y-2">
       {tiers.map((t, i) => (
@@ -751,15 +777,18 @@ function TierLegend({
             style={{ background: TIER_COLORS[i % TIER_COLORS.length] }}
           />
           <span className="flex-1 text-[12.5px]">
-            Tier {t}
+            {tt("partner.tierN", { n: t })}
             {pct(t) !== null && (
-              <span className="text-fg-3"> · {fmtPct(pct(t)!)} of rate</span>
+              <span className="text-fg-3">
+                {" "}
+                · {tt("partner.ofRate", { pct: fmtPct(pct(t)!) })}
+              </span>
             )}
           </span>
           <span className="k-num text-[12.5px] font-medium">
             {fmtLots(lots[i]!, 1)}
           </span>
-          <span className="k-num w-12 text-right text-[11.5px] text-fg-3">
+          <span className="k-num w-12 text-end text-[11.5px] text-fg-3">
             {total > 0 ? `${((lots[i]! / total) * 100).toFixed(1)}%` : "—"}
           </span>
         </div>

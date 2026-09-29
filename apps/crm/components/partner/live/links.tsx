@@ -54,6 +54,7 @@ import {
   type Campaign,
   type CampaignsResp,
 } from "./api";
+import { Trans, useFormat, useT } from "@kalks/i18n/react";
 import { CardEmpty, PageFallback, SkeletonGrid } from "./ui";
 import { QrDialog, useQrCode, type QrTheme } from "./qr";
 
@@ -65,10 +66,11 @@ function copy(text: string, title: string) {
 }
 
 function Funnel({ c }: { c: Campaign }) {
+  const t = useT();
   const steps = [
-    { label: "Clicks", v: c.uniqueClicks, cls: "bg-fg-3" },
-    { label: "Sign-ups", v: c.signups, cls: "bg-gold" },
-    { label: "FTDs", v: c.ftds, cls: "bg-ember" },
+    { label: "clicks", v: c.uniqueClicks, cls: "bg-fg-3" },
+    { label: "signups", v: c.signups, cls: "bg-gold" },
+    { label: "ftds", v: c.ftds, cls: "bg-ember" },
   ];
   const top = Math.max(c.uniqueClicks, c.signups, 1);
   return (
@@ -84,7 +86,7 @@ function Funnel({ c }: { c: Campaign }) {
                 }}
               />
             </div>
-            <span className="k-num w-10 text-right text-[11px] text-fg-2">
+            <span className="k-num w-10 text-end text-[11px] text-fg-2">
               {formatCompact(s.v)}
             </span>
           </div>
@@ -93,7 +95,7 @@ function Funnel({ c }: { c: Campaign }) {
       <div className="k-num mt-1 flex gap-2 text-[10.5px] text-fg-3">
         {c.uniqueClicks > 0 && (
           <span>
-            Sign-up{" "}
+            {t("partner.links.signupRate")}{" "}
             <span className="text-gold">
               {((c.signups / c.uniqueClicks) * 100).toFixed(1)}%
             </span>
@@ -101,7 +103,7 @@ function Funnel({ c }: { c: Campaign }) {
         )}
         {c.signups > 0 && (
           <span>
-            FTD{" "}
+            {t("partner.links.ftdRate")}{" "}
             <span className="text-ember">
               {((c.ftds / c.signups) * 100).toFixed(1)}%
             </span>
@@ -136,6 +138,7 @@ function CreateLinkDialog({
   base: string;
   onCreated: () => void;
 }) {
+  const t = useT();
   const [name, setName] = React.useState("");
   const [slug, setSlug] = React.useState("");
   const [src, setSrc] = React.useState("");
@@ -182,7 +185,9 @@ function CreateLinkDialog({
       );
       const link = campaignLink(base, code, r.slug);
       navigator.clipboard?.writeText(link).catch(() => {});
-      toast.success("Link created and copied", { description: shortUrl(link) });
+      toast.success(t("partner.links.createdToast"), {
+        description: shortUrl(link),
+      });
       onCreated();
       onOpenChange(false);
     } catch (e) {
@@ -194,7 +199,7 @@ function CreateLinkDialog({
           field: e.field ?? (e.code === "exists" ? "slug" : undefined),
           message: e.message,
         });
-      else errorToast("Couldn't create the link", e);
+      else errorToast(t("partner.links.createFailed"), e);
     } finally {
       setBusy(false);
     }
@@ -205,12 +210,12 @@ function CreateLinkDialog({
       open={open}
       onOpenChange={onOpenChange}
       width={560}
-      title="Create campaign link"
-      description="Track clicks, sign-ups and first deposits for each place you share your link."
+      title={t("partner.links.createTitle")}
+      description={t("partner.links.createDescription")}
       footer={
         <>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="ember"
@@ -218,7 +223,8 @@ function CreateLinkDialog({
             disabled={!name.trim() || !effSlug || !slugOk || busy}
             onClick={submit}
           >
-            <Plus /> {busy ? "Creating…" : "Create link"}
+            <Plus />{" "}
+            {busy ? t("partner.links.creating") : t("partner.links.create")}
           </Button>
         </>
       }
@@ -230,27 +236,27 @@ function CreateLinkDialog({
           if (name.trim() && effSlug && slugOk && !busy) submit();
         }}
       >
-        <Field label="Name" error={fieldErr("name")}>
+        <Field label={t("common.name")} error={fieldErr("name")}>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. YouTube gold webinar"
+            placeholder={t("partner.links.namePlaceholder")}
             maxLength={60}
             autoFocus
           />
         </Field>
         <Field
-          label="Link ending"
-          hint="optional"
+          label={t("partner.links.slugLabel")}
+          hint={t("partner.optional")}
           error={
             fieldErr("slug") ??
-            (slugOk ? undefined : "Use 1–40 letters, digits, - or _.")
+            (slugOk ? undefined : t("partner.links.slugInvalid"))
           }
         >
           <Input
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
-            placeholder={slugPreview(name) || "made from the name"}
+            placeholder={slugPreview(name) || t("partner.links.slugPlaceholder")}
             maxLength={40}
             inputClassName="font-mono"
           />
@@ -258,7 +264,7 @@ function CreateLinkDialog({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field
             label="utm_source"
-            hint="optional"
+            hint={t("partner.optional")}
             error={fieldErr("utmSource")}
           >
             <Input
@@ -270,7 +276,7 @@ function CreateLinkDialog({
           </Field>
           <Field
             label="utm_medium"
-            hint="optional"
+            hint={t("partner.optional")}
             error={fieldErr("utmMedium")}
           >
             <Input
@@ -282,7 +288,7 @@ function CreateLinkDialog({
           </Field>
           <Field
             label="utm_campaign"
-            hint="optional"
+            hint={t("partner.optional")}
             error={fieldErr("utmCampaign")}
           >
             <Input
@@ -298,14 +304,16 @@ function CreateLinkDialog({
         )}
         <div className="rounded-[14px] border border-line bg-surface-2 px-4 py-3">
           <div className="text-[11px] uppercase tracking-wider text-fg-3">
-            Your link
+            {t("partner.links.yourLink")}
           </div>
-          <div className="mt-1 break-all font-mono text-[12.5px] text-fg">
-            {url ? shortUrl(url) : "Enter a name"}
+          <div
+            dir={url ? "ltr" : undefined}
+            className="mt-1 break-all text-start font-mono text-[12.5px] text-fg"
+          >
+            {url ? shortUrl(url) : t("partner.links.enterName")}
           </div>
           <div className="mt-1 text-[11.5px] text-fg-3">
-            Opens the sign-up page. UTM tags are saved with the link for your
-            reports.
+            {t("partner.links.yourLinkHint")}
           </div>
         </div>
         <button type="submit" className="hidden" aria-hidden tabIndex={-1} />
@@ -329,6 +337,7 @@ function QrCard({
   selected: string;
   onSelect: (k: string) => void;
 }) {
+  const t = useT();
   const [theme, setTheme] = React.useState<QrTheme>("light");
   const [size, setSize] = React.useState<"S" | "M" | "L">("M");
   const [logo, setLogo] = React.useState(true);
@@ -345,8 +354,8 @@ function QrCard({
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="QR code"
-        subtitle="For flyers, events and screens"
+        title={t("partner.links.qrCode")}
+        subtitle={t("partner.links.qrSubtitle")}
         icon={<QrCode />}
       />
       <div className="flex flex-1 flex-col gap-4 px-4 pb-5 pt-4 sm:px-6">
@@ -354,7 +363,7 @@ function QrCard({
           align="start"
           width={300}
           trigger={
-            <button className="flex h-11 w-full items-center gap-2 rounded-[14px] border border-line bg-surface-2 px-3.5 text-left text-[13px] hover:bg-surface-3/60">
+            <button className="flex h-11 w-full items-center gap-2 rounded-[14px] border border-line bg-surface-2 px-3.5 text-start text-[13px] hover:bg-surface-3/60">
               <Link2 className="size-4 shrink-0 text-fg-3" />
               <span className="min-w-0 flex-1 truncate">{c.name}</span>
               <ChevronDown className="size-4 shrink-0 text-fg-3" />
@@ -363,12 +372,15 @@ function QrCard({
           items={campaigns.map((x) => ({
             label: x.name,
             onSelect: () => onSelect(keyOf(x)),
-            hint: keyOf(x) === keyOf(c) ? "Selected" : undefined,
+            hint: keyOf(x) === keyOf(c) ? t("partner.links.selected") : undefined,
           }))}
         />
         <div className="grid place-items-center rounded-[18px] border border-line bg-surface-2/50 py-6">
           <div className="grid min-h-[248px] place-items-center">{qr.view}</div>
-          <div className="mt-3 max-w-full truncate px-4 font-mono text-[11.5px] text-fg-2">
+          <div
+            dir="ltr"
+            className="mt-3 max-w-full truncate px-4 font-mono text-[11.5px] text-fg-2"
+          >
             {shortUrl(link)}
           </div>
         </div>
@@ -378,8 +390,8 @@ function QrCard({
             value={theme}
             onChange={setTheme}
             options={[
-              { value: "light", label: "Light" },
-              { value: "dark", label: "Dark" },
+              { value: "light", label: t("partner.links.light") },
+              { value: "dark", label: t("partner.links.dark") },
             ]}
             className="w-full justify-between"
           />
@@ -392,8 +404,12 @@ function QrCard({
           />
         </div>
         <div className="flex items-center justify-between text-[13px] text-fg-2">
-          Kalks mark in the centre
-          <Toggle checked={logo} onChange={setLogo} label="Logo" />
+          {t("partner.links.markInCentre")}
+          <Toggle
+            checked={logo}
+            onChange={setLogo}
+            label={t("partner.links.logo")}
+          />
         </div>
         <div className="mt-auto grid grid-cols-2 gap-2">
           <Button variant="surface" size="sm" onClick={qr.downloadSvg}>
@@ -429,11 +445,14 @@ function SnippetCard({
   selected: string;
   onSelect: (k: string) => void;
 }) {
-  const [text, setText] = React.useState("Open a trading account with Kalks");
+  const t = useT();
+  const [text, setText] = React.useState(() =>
+    t("partner.links.snippetDefault"),
+  );
   const [style, setStyle] = React.useState<"link" | "button">("button");
   const c = campaigns.find((x) => keyOf(x) === selected) ?? campaigns[0]!;
   const link = campaignLink(base, code, c.slug);
-  const label = text.trim() || "Open an account";
+  const label = text.trim() || t("partner.links.snippetFallback");
   const html =
     style === "link"
       ? `<a href="${esc(link)}" target="_blank" rel="noopener">${esc(label)}</a>`
@@ -441,18 +460,18 @@ function SnippetCard({
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Website snippet"
-        subtitle="Paste into your site, blog or newsletter"
+        title={t("partner.links.snippetTitle")}
+        subtitle={t("partner.links.snippetSubtitle")}
         icon={<Code2 />}
       />
       <div className="flex flex-1 flex-col gap-4 px-4 pb-5 pt-4 sm:px-6">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Link">
+          <Field label={t("partner.links.link")}>
             <Menu
               align="start"
               width={300}
               trigger={
-                <button className="flex h-11 w-full items-center gap-2 rounded-[14px] border border-line bg-surface-2 px-3.5 text-left text-[13px] hover:bg-surface-3/60">
+                <button className="flex h-11 w-full items-center gap-2 rounded-[14px] border border-line bg-surface-2 px-3.5 text-start text-[13px] hover:bg-surface-3/60">
                   <span className="min-w-0 flex-1 truncate">{c.name}</span>
                   <ChevronDown className="size-4 shrink-0 text-fg-3" />
                 </button>
@@ -460,11 +479,11 @@ function SnippetCard({
               items={campaigns.map((x) => ({
                 label: x.name,
                 onSelect: () => onSelect(keyOf(x)),
-                hint: keyOf(x) === keyOf(c) ? "Selected" : undefined,
+                hint: keyOf(x) === keyOf(c) ? t("partner.links.selected") : undefined,
               }))}
             />
           </Field>
-          <Field label="Text">
+          <Field label={t("partner.links.text")}>
             <Input
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -478,11 +497,13 @@ function SnippetCard({
             value={style}
             onChange={setStyle}
             options={[
-              { value: "button", label: "Button" },
-              { value: "link", label: "Text link" },
+              { value: "button", label: t("partner.links.button") },
+              { value: "link", label: t("partner.links.textLink") },
             ]}
           />
-          <span className="text-[11.5px] text-fg-3">Preview</span>
+          <span className="text-[11.5px] text-fg-3">
+            {t("partner.links.preview")}
+          </span>
         </div>
         <div className="grid min-h-[84px] place-items-center rounded-[16px] border border-line bg-white px-4 py-5">
           {/* static preview of the snippet (not a live link, so previews don't count as clicks) */}
@@ -497,13 +518,16 @@ function SnippetCard({
           )}
         </div>
         <div className="relative rounded-[14px] border border-line bg-surface-2">
-          <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all px-4 py-3 pr-12 font-mono text-[11.5px] leading-relaxed text-fg-2">
+          <pre
+            dir="ltr"
+            className="max-h-40 overflow-auto whitespace-pre-wrap break-all px-4 py-3 pe-12 text-start font-mono text-[11.5px] leading-relaxed text-fg-2"
+          >
             {html}
           </pre>
           <CopyButton
             value={html}
-            label="HTML snippet"
-            className="absolute right-2 top-2 size-8"
+            label={t("partner.links.htmlSnippet")}
+            className="absolute end-2 top-2 size-8"
           />
         </div>
       </div>
@@ -513,11 +537,11 @@ function SnippetCard({
 
 /* ------------------------------------------------------------------ */
 
-const TITLE = "Links and materials";
-const SUBTITLE =
-  "Tracked campaign links, QR codes and a snippet for your website.";
-
 export function LivePartnerLinks() {
+  const t = useT();
+  const f = useFormat();
+  const TITLE = t("partner.links.title");
+  const SUBTITLE = t("partner.links.subtitle");
   const { data, error, reload, setData } =
     usePartner<CampaignsResp>("campaigns");
   const [create, setCreate] = React.useState(false);
@@ -572,14 +596,19 @@ export function LivePartnerLinks() {
           x.id === c.id ? { ...x, active: !c.active } : x,
         ),
       });
-      toast.success(c.active ? "Link paused" : "Link resumed", {
-        description: c.active
-          ? "New clicks on this link are no longer tracked for this campaign. Clients who already signed up stay yours."
-          : "Clicks on this link are tracked again.",
-      });
+      toast.success(
+        c.active ? t("partner.links.pausedToast") : t("partner.links.resumedToast"),
+        {
+          description: c.active
+            ? t("partner.links.pausedToastText")
+            : t("partner.links.resumedToastText"),
+        },
+      );
     } catch (e) {
       errorToast(
-        c.active ? "Couldn't pause the link" : "Couldn't resume the link",
+        c.active
+          ? t("partner.links.pauseFailed")
+          : t("partner.links.resumeFailed"),
         e,
       );
     } finally {
@@ -590,27 +619,29 @@ export function LivePartnerLinks() {
   const columns: Column<Campaign>[] = [
     {
       key: "name",
-      header: "Link",
+      header: t("partner.links.link"),
       cell: (c) => {
         const link = campaignLink(base, code, c.slug);
         return (
           <span className="block min-w-0">
             <span className="flex flex-wrap items-center gap-2 text-[13.5px] font-medium">
               {c.name}
-              {c.id === null && <Chip size="sm">Default</Chip>}
+              {c.id === null && (
+                <Chip size="sm">{t("partner.links.default")}</Chip>
+              )}
               {!c.active && (
                 <Chip size="sm" tone="warn">
-                  Paused
+                  {t("partner.links.paused")}
                 </Chip>
               )}
             </span>
             <span className="mt-0.5 flex items-center gap-1 font-mono text-[11.5px] text-fg-3">
-              <span className="min-w-0 max-w-[260px] truncate">
+              <span dir="ltr" className="min-w-0 max-w-[260px] truncate">
                 {shortUrl(link)}
               </span>
               <CopyButton
                 value={link}
-                label="Link"
+                label={t("partner.links.link")}
                 className="size-5 shrink-0"
               />
             </span>
@@ -623,7 +654,7 @@ export function LivePartnerLinks() {
     },
     {
       key: "utm",
-      header: "UTM · created",
+      header: t("partner.links.colUtm"),
       cell: (c) => (
         <span className="block">
           <span className="block max-w-[160px] truncate font-mono text-[11.5px] text-fg-2">
@@ -632,7 +663,7 @@ export function LivePartnerLinks() {
               .join(" / ") || "—"}
           </span>
           <span className="block text-[11px] text-fg-3">
-            {c.createdAt ? fmtDate(c.createdAt) : "Always on"}
+            {c.createdAt ? fmtDate(c.createdAt) : t("partner.links.alwaysOn")}
           </span>
         </span>
       ),
@@ -640,19 +671,21 @@ export function LivePartnerLinks() {
     },
     {
       key: "funnel",
-      header: "Clicks → sign-ups → FTDs",
+      header: t("partner.links.colFunnel"),
       cell: (c) =>
         c.uniqueClicks || c.signups ? (
           <Funnel c={c} />
         ) : (
-          <span className="text-[12px] text-fg-3">No clicks yet</span>
+          <span className="text-[12px] text-fg-3">
+            {t("partner.links.noClicks")}
+          </span>
         ),
       sort: (c) => c.signups,
       csv: (c) => `${c.uniqueClicks}/${c.signups}/${c.ftds}`,
     },
     {
       key: "dep",
-      header: "First deposits",
+      header: t("partner.firstDeposits"),
       align: "right",
       cell: (c) => (
         <span className="k-num">
@@ -664,7 +697,7 @@ export function LivePartnerLinks() {
     },
     {
       key: "lots",
-      header: "Lots",
+      header: t("partner.lots"),
       align: "right",
       cell: (c) => (
         <span className="k-num">{c.lots ? fmtLots(c.lots, 1) : "—"}</span>
@@ -674,7 +707,7 @@ export function LivePartnerLinks() {
     },
     {
       key: "trend",
-      header: "30d clicks",
+      header: t("partner.links.col30d"),
       align: "right",
       cell: (c) =>
         c.trend.some((v) => v > 0) ? (
@@ -682,7 +715,7 @@ export function LivePartnerLinks() {
             data={c.trend}
             width={72}
             height={24}
-            className="ml-auto"
+            className="ms-auto"
           />
         ) : (
           <span className="text-fg-3">—</span>
@@ -700,7 +733,7 @@ export function LivePartnerLinks() {
             trigger={
               <IconButton
                 size="sm"
-                aria-label="Link actions"
+                aria-label={t("partner.links.actions")}
                 disabled={busy[keyOf(c)]}
               >
                 <MoreHorizontal />
@@ -708,12 +741,12 @@ export function LivePartnerLinks() {
             }
             items={[
               {
-                label: "Copy link",
+                label: t("partner.links.copyLink"),
                 icon: <Copy />,
-                onSelect: () => copy(link, "Link copied"),
+                onSelect: () => copy(link, t("partner.links.copied")),
               },
               {
-                label: "QR code",
+                label: t("partner.links.qrCode"),
                 icon: <QrCode />,
                 onSelect: () => setQrFor(c),
               },
@@ -721,7 +754,9 @@ export function LivePartnerLinks() {
                 ? [
                     "sep" as const,
                     {
-                      label: c.active ? "Pause link" : "Resume link",
+                      label: c.active
+                        ? t("partner.links.pause")
+                        : t("partner.links.resume"),
                       icon: c.active ? <Pause /> : <Play />,
                       onSelect: () => toggleActive(c),
                     },
@@ -741,56 +776,60 @@ export function LivePartnerLinks() {
         subtitle={SUBTITLE}
         actions={
           <Button variant="ember" size="lg" onClick={() => setCreate(true)}>
-            <Plus /> Create link
+            <Plus /> {t("partner.links.create")}
           </Button>
         }
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label="Clicks"
+          label={t("partner.clicks")}
           icon={<MousePointerClick />}
-          value={
-            <span className="k-num">{clicks.toLocaleString("en-US")}</span>
-          }
-          chip={`Unique visitors · ${rawClicks.toLocaleString("en-US")} with repeats`}
+          value={<span className="k-num">{f.number(clicks, 0)}</span>}
+          chip={t("partner.links.uniqueVisitors", {
+            n: f.number(rawClicks, 0),
+          })}
         />
         <KpiCard
-          label="Sign-ups"
+          label={t("partner.signups")}
           icon={<UserPlus />}
-          value={
-            <span className="k-num">{signups.toLocaleString("en-US")}</span>
-          }
+          value={<span className="k-num">{f.number(signups, 0)}</span>}
           chip={
             clicks
-              ? `${((signups / clicks) * 100).toFixed(1)}% of clicks`
-              : "From your links"
+              ? t("partner.links.pctOfClicks", {
+                  pct: ((signups / clicks) * 100).toFixed(1),
+                })
+              : t("partner.links.fromLinks")
           }
           chipTone="gold"
           delay={0.04}
         />
         <KpiCard
-          label="First deposits"
+          label={t("partner.firstDeposits")}
           icon={<Wallet />}
-          value={<span className="k-num">{ftds.toLocaleString("en-US")}</span>}
+          value={<span className="k-num">{f.number(ftds, 0)}</span>}
           chip={
             signups
-              ? `${((ftds / signups) * 100).toFixed(1)}% of sign-ups`
-              : "Clients who funded"
+              ? t("partner.links.pctOfSignups", {
+                  pct: ((ftds / signups) * 100).toFixed(1),
+                })
+              : t("partner.links.clientsFunded")
           }
           chipTone="ember"
           delay={0.08}
         />
         <KpiCard
-          label="First-deposit volume"
+          label={t("partner.links.ftdVolume")}
           icon={<Banknote />}
           value={
             <span className="k-num">{formatMoney(deposits, "USD", 0)}</span>
           }
           chip={
             ftds
-              ? `${formatMoney(deposits / ftds, "USD", 0)} average`
-              : "Sum of first deposits"
+              ? t("partner.links.average", {
+                  amount: formatMoney(deposits / ftds, "USD", 0),
+                })
+              : t("partner.links.sumFtd")
           }
           chipTone="up"
           delay={0.12}
@@ -800,16 +839,22 @@ export function LivePartnerLinks() {
       <Reveal delay={0.08} className="mt-4 block">
         <Card>
           <CardHeader
-            title="Your links"
+            title={t("partner.links.yourLinks")}
             subtitle={
-              <>
-                Every link carries your code{" "}
-                <span className="font-mono text-fg-2">{code}</span> plus its own
-                tracking
-              </>
+              <Trans
+                k="partner.links.yourLinksSubtitle"
+                vars={{ code }}
+                tags={{
+                  code: (ch) => (
+                    <span className="font-mono text-fg-2">{ch}</span>
+                  ),
+                }}
+              />
             }
             icon={<Link2 />}
-            action={<Chip>{own} of 100 campaign links</Chip>}
+            action={
+              <Chip>{t("partner.links.ofLimit", { n: own, max: 100 })}</Chip>
+            }
           />
           <div className="px-4 pb-5 pt-4 sm:px-6">
             <DataTable
@@ -823,21 +868,21 @@ export function LivePartnerLinks() {
                       `${c.name} ${c.slug} ${c.utmSource ?? ""} ${c.utmCampaign ?? ""}`
                   : undefined
               }
-              searchPlaceholder="Search links…"
+              searchPlaceholder={t("partner.links.search")}
               exportName={own ? "kalks-campaign-links" : undefined}
             />
             {own === 0 && (
               <CardEmpty
                 className="mt-4"
-                title="Track where your clients come from"
-                text="Create a separate link for each channel, such as YouTube, Telegram or a flyer, and compare clicks, sign-ups and first deposits."
+                title={t("partner.links.emptyTitle")}
+                text={t("partner.links.emptyText")}
               >
                 <Button
                   size="sm"
                   variant="surface"
                   onClick={() => setCreate(true)}
                 >
-                  <Plus /> Create link
+                  <Plus /> {t("partner.links.create")}
                 </Button>
               </CardEmpty>
             )}
@@ -877,7 +922,11 @@ export function LivePartnerLinks() {
         open={!!qrFor}
         onOpenChange={(o) => !o && setQrFor(null)}
         value={qrFor ? campaignLink(base, code, qrFor.slug) : ""}
-        title={qrFor ? `QR code · ${qrFor.name}` : "QR code"}
+        title={
+          qrFor
+            ? `${t("partner.links.qrCode")} · ${qrFor.name}`
+            : t("partner.links.qrCode")
+        }
         fileBase={
           qrFor
             ? `kalks-${code}${qrFor.slug ? `-${qrFor.slug}` : ""}-qr`

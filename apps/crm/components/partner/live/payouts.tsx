@@ -30,34 +30,19 @@ import {
 import {
   fmtDateTime,
   fmtDay,
+  fmtTime,
   scheduleLabel,
   usePartner,
+  utcDay,
   type Payout,
   type PayoutsResp,
 } from "./api";
+import { useT } from "@kalks/i18n/react";
 import { CardEmpty, PageFallback, PayoutStatusChip, SkeletonGrid } from "./ui";
 
-const MON = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
 const DAY_MS = 86400_000;
 
-/** Period boundaries are UTC midnights; the end is exclusive. */
-function utcDay(ms: number, withYear = false) {
-  const d = new Date(ms);
-  return `${d.getUTCDate()} ${MON[d.getUTCMonth()]}${withYear ? ` ${d.getUTCFullYear()}` : ""}`;
-}
+/** Period boundaries are UTC midnights; the end is exclusive (utcDay formats them). */
 
 function periodOf(schedule: string, endIso: string, startIso?: string | null) {
   const end = Date.parse(endIso);
@@ -71,11 +56,6 @@ function periodOf(schedule: string, endIso: string, startIso?: string | null) {
     : `${utcDay(start)} – ${utcDay(last, true)}`;
 }
 
-const PERIOD_WORD: Record<string, string> = {
-  daily: "day",
-  weekly: "week",
-  monthly: "month",
-};
 
 function useCountdown(target: string) {
   const [left, setLeft] = React.useState<number | null>(null);
@@ -90,6 +70,7 @@ function useCountdown(target: string) {
 }
 
 function Countdown({ target }: { target: string }) {
+  const t = useT();
   const left = useCountdown(target);
   const parts =
     left === null
@@ -100,7 +81,7 @@ function Countdown({ target }: { target: string }) {
           Math.floor(left / 60_000) % 60,
         ].map((v) => String(v).padStart(2, "0"));
   return (
-    <div className="flex items-center gap-1.5">
+    <div dir="ltr" className="flex items-center gap-1.5">
       {parts.map((p, i) => (
         <React.Fragment key={i}>
           <div className="flex flex-col items-center">
@@ -108,7 +89,9 @@ function Countdown({ target }: { target: string }) {
               {p}
             </span>
             <span className="mt-1 text-[10px] uppercase tracking-wider text-fg-3">
-              {["days", "hrs", "min"][i]}
+              {t(
+                (["partner.pay.days", "partner.pay.hrs", "partner.pay.min"] as const)[i]!,
+              )}
             </span>
           </div>
           {i < 2 && <span className="-mt-4 font-mono text-fg-3">:</span>}
@@ -119,6 +102,7 @@ function Countdown({ target }: { target: string }) {
 }
 
 function Hero({ d }: { d: PayoutsResp }) {
+  const t = useT();
   const current = periodOf(d.schedule, d.nextClose);
   const below = d.unbatched > 0 && d.unbatched < d.minAmount;
   return (
@@ -126,31 +110,43 @@ function Hero({ d }: { d: PayoutsResp }) {
       <div className="relative flex h-full flex-col gap-6 p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="k-label text-ember">Accruing now · {current}</div>
+            <div className="k-label text-ember">
+              {t("partner.pay.accruingNow", { period: current })}
+            </div>
             <Money
               value={d.unbatched}
               countUp={false}
               className="mt-2 block text-[40px] font-semibold leading-none tracking-tight"
             />
             <div className="mt-2 text-[13px] text-fg-2">
-              Pending commission not yet in a payout batch
+              {t("partner.pay.accruingHint")}
             </div>
           </div>
-          <Chip tone="gold">{scheduleLabel(d.schedule)} payouts</Chip>
+          <Chip tone="gold">
+            {t("partner.schedulePayouts", {
+              schedule: scheduleLabel(d.schedule),
+            })}
+          </Chip>
         </div>
 
         <div className="mt-auto flex flex-wrap items-end gap-x-8 gap-y-4">
           <div>
             <div className="mb-2 flex items-center gap-2 text-[12.5px] text-fg-2">
-              <CalendarClock className="size-4 text-ember" /> Batch closes{" "}
-              {fmtDay(d.nextClose)}, {fmtDateTime(d.nextClose).split(", ")[1]}
+              <CalendarClock className="size-4 text-ember" />{" "}
+              {t("partner.batchCloses", {
+                date: `${fmtDay(d.nextClose)}, ${fmtTime(d.nextClose)}`,
+              })}
             </div>
             <Countdown target={d.nextClose} />
           </div>
           <div className="max-w-sm text-[12px] leading-snug text-fg-3">
             {below
-              ? `Below the ${formatMoney(d.minAmount, "USD", 0)} minimum for now. It rolls into the next batch until it reaches the minimum.`
-              : `Minimum payout ${formatMoney(d.minAmount, "USD", 0)}. Smaller balances roll into the next batch.`}
+              ? t("partner.pay.belowMin", {
+                  amount: formatMoney(d.minAmount, "USD", 0),
+                })
+              : t("partner.pay.minNote", {
+                  amount: formatMoney(d.minAmount, "USD", 0),
+                })}
           </div>
         </div>
       </div>
@@ -159,11 +155,12 @@ function Hero({ d }: { d: PayoutsResp }) {
 }
 
 function WalletNote() {
+  const t = useT();
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Where payouts go"
-        subtitle="Your Kalks wallet, in USDT"
+        title={t("partner.pay.whereTitle")}
+        subtitle={t("partner.pay.whereSubtitle")}
         icon={<Wallet />}
       />
       <div className="flex flex-1 flex-col gap-4 px-4 pb-5 pt-4 sm:px-6">
@@ -171,18 +168,18 @@ function WalletNote() {
           {[
             {
               icon: <Layers />,
-              t: "Commission accrues",
-              s: "Every qualifying trade adds a pending line",
+              t: t("partner.pay.accrues"),
+              s: t("partner.pay.accruesText"),
             },
             {
               icon: <Gavel />,
-              t: "Batch closes and is reviewed",
-              s: "The broker approves each batch",
+              t: t("partner.pay.closesReviewed"),
+              s: t("partner.pay.closesReviewedText"),
             },
             {
               icon: <Banknote />,
-              t: "Credited to your wallet",
-              s: "Paid in USDT to your Kalks wallet",
+              t: t("partner.pay.creditedYour"),
+              s: t("partner.pay.creditedYourText"),
             },
           ].map((x, i) => (
             <li key={i} className="flex items-start gap-3">
@@ -199,7 +196,7 @@ function WalletNote() {
         <div className="mt-auto">
           <Link href="/wallet">
             <Button variant="surface" size="sm" className="w-full">
-              <Wallet /> Open wallet
+              <Wallet /> {t("partner.pay.openWallet")}
             </Button>
           </Link>
         </div>
@@ -215,6 +212,7 @@ function HistoryChart({
   items: Payout[];
   schedule: string;
 }) {
+  const t = useT();
   const data = items
     .filter((p) => p.status !== "rejected")
     .slice(0, 12)
@@ -230,11 +228,15 @@ function HistoryChart({
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Recent payouts"
+        title={t("partner.pay.recent")}
         subtitle={
           data.length
-            ? `Average ${formatMoney(avg)} per ${PERIOD_WORD[schedule] ?? "batch"}`
-            : "Last 12 batches"
+            ? t.dyn(
+                `partner.pay.avgPer.${schedule}`,
+                t("partner.pay.avgPer.batch", { amount: formatMoney(avg) }),
+                { amount: formatMoney(avg) },
+              )
+            : t("partner.pay.last12")
         }
       />
       <div className="flex-1 px-4 pb-5 pt-8 sm:px-6">
@@ -251,8 +253,10 @@ function HistoryChart({
         ) : (
           <CardEmpty
             className="h-[200px]"
-            title={data.length ? "One payout so far" : "No payouts yet"}
-            text="Your payout history builds up here, one bar per batch."
+            title={
+              data.length ? t("partner.pay.onePayout") : t("partner.pay.noPayouts")
+            }
+            text={t("partner.pay.historyEmptyText")}
           />
         )}
       </div>
@@ -262,13 +266,19 @@ function HistoryChart({
 
 /* ------------------------------------------------------------------ */
 
-const TITLE = "Payouts";
-
 export function LivePartnerPayouts() {
+  const t = useT();
+  const TITLE = t("partner.payouts.title");
   const { data, error, reload } = usePartner<PayoutsResp>("payouts", 60_000);
   const subtitle = data
-    ? `Commission is paid ${data.schedule === "daily" ? "daily" : data.schedule === "monthly" ? "monthly" : "weekly"} in batches, after approval, into your wallet.`
-    : "Commission is paid in batches, after approval, into your wallet.";
+    ? t(
+        data.schedule === "daily"
+          ? "partner.pay.subtitle.daily"
+          : data.schedule === "monthly"
+            ? "partner.pay.subtitle.monthly"
+            : "partner.pay.subtitle.weekly",
+      )
+    : t("partner.pay.subtitle.none");
 
   if (!data)
     return (
@@ -300,7 +310,7 @@ export function LivePartnerPayouts() {
   const columns: Column<Payout>[] = [
     {
       key: "batch",
-      header: "Batch",
+      header: t("partner.pay.batch"),
       cell: (p) => (
         <span className="block">
           <span className="font-mono text-[12.5px]">#{p.batchId}</span>
@@ -314,7 +324,7 @@ export function LivePartnerPayouts() {
     },
     {
       key: "lines",
-      header: "Lines",
+      header: t("partner.pay.lines"),
       align: "right",
       cell: (p) => <span className="k-num text-fg-2">{p.lines}</span>,
       sort: (p) => p.lines,
@@ -322,7 +332,7 @@ export function LivePartnerPayouts() {
     },
     {
       key: "amount",
-      header: "Amount",
+      header: t("common.amount"),
       align: "right",
       cell: (p) => (
         <Money value={p.amount} countUp={false} className="font-semibold" />
@@ -331,13 +341,13 @@ export function LivePartnerPayouts() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t("common.status"),
       cell: (p) => <PayoutStatusChip status={p.status} />,
       csv: (p) => p.status,
     },
     {
       key: "paid",
-      header: "Paid",
+      header: t("partner.commissionStatus.paid"),
       cell: (p) => (
         <span className="k-num whitespace-nowrap text-fg-2">
           {p.paidAt ? fmtDateTime(p.paidAt) : "—"}
@@ -348,7 +358,7 @@ export function LivePartnerPayouts() {
     },
     {
       key: "dest",
-      header: "Destination",
+      header: t("partner.pay.destination"),
       align: "right",
       cell: (p) => (
         <span className="whitespace-nowrap text-fg-2">{p.destination}</span>
@@ -373,41 +383,45 @@ export function LivePartnerPayouts() {
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label="Paid all-time"
+          label={t("partner.paidAllTime")}
           icon={<CircleDollarSign />}
           value={<Money value={paidTotal} countUp={false} />}
           chip={
             lastPaid?.paidAt
-              ? `Last ${fmtDay(lastPaid.paidAt)}`
-              : "No payouts yet"
+              ? t("partner.pay.lastOn", { date: fmtDay(lastPaid.paidAt) })
+              : t("partner.pay.noPayouts")
           }
           chipTone={lastPaid ? "up" : "neutral"}
         />
         <KpiCard
-          label="Next batch closes"
+          label={t("partner.pay.nextCloses")}
           icon={<CalendarClock />}
           value={
             <span className="text-[26px] sm:text-[28px]">
               {fmtDay(data.nextClose)}
             </span>
           }
-          chip={`${scheduleLabel(data.schedule)} schedule`}
+          chip={t("partner.pay.scheduleChip", {
+            schedule: scheduleLabel(data.schedule),
+          })}
           chipTone="ember"
           delay={0.04}
         />
         <KpiCard
-          label="Not yet batched"
+          label={t("partner.pay.notBatched")}
           icon={<Hourglass />}
           value={<Money value={data.unbatched} countUp={false} />}
-          chip="Pending commission"
+          chip={t("partner.pendingCommission")}
           chipTone="warn"
           delay={0.08}
         />
         <KpiCard
-          label="In review"
+          label={t("partner.pay.inReview")}
           icon={<Clock />}
           value={<Money value={inFlight} countUp={false} />}
-          chip={`Minimum payout ${formatMoney(data.minAmount, "USD", 0)}`}
+          chip={t("partner.pay.minPayout", {
+            amount: formatMoney(data.minAmount, "USD", 0),
+          })}
           delay={0.12}
         />
       </div>
@@ -424,8 +438,8 @@ export function LivePartnerPayouts() {
       <Reveal delay={0.1} className="mt-4 block">
         <Card>
           <CardHeader
-            title="Payout history"
-            subtitle="Every batch and where it was credited"
+            title={t("partner.pay.history")}
+            subtitle={t("partner.pay.historySubtitle")}
           />
           <div className="px-4 pb-5 pt-4 sm:px-6">
             <DataTable
@@ -437,8 +451,10 @@ export function LivePartnerPayouts() {
               empty={
                 <div className="py-6">
                   <CardEmpty
-                    title="No payouts yet"
-                    text={`Once a batch closes with at least ${formatMoney(data.minAmount, "USD", 0)} of approved commission, it shows here with its status.`}
+                    title={t("partner.pay.noPayouts")}
+                    text={t("partner.pay.tableEmptyText", {
+                      amount: formatMoney(data.minAmount, "USD", 0),
+                    })}
                   />
                 </div>
               }
@@ -451,45 +467,52 @@ export function LivePartnerPayouts() {
 }
 
 function ScheduleCard({ d }: { d: PayoutsResp }) {
-  const word = PERIOD_WORD[d.schedule] ?? "period";
+  const tt = useT();
+  const period = periodOf(d.schedule, d.nextClose);
   const steps = [
     {
       icon: <Layers />,
-      t: "Commission accrues",
-      s: `Through the ${word}: ${periodOf(d.schedule, d.nextClose)}`,
+      t: tt("partner.pay.accrues"),
+      s: tt.dyn(
+        `partner.pay.through.${d.schedule}`,
+        tt("partner.pay.through.period", { period }),
+        { period },
+      ),
       state: "current" as const,
     },
     {
       icon: <Clock />,
-      t: "Batch closes",
-      s: `${fmtDay(d.nextClose)}, ${fmtDateTime(d.nextClose).split(", ")[1]}`,
+      t: tt("partner.pay.batchCloses"),
+      s: `${fmtDay(d.nextClose)}, ${fmtTime(d.nextClose)}`,
       state: "next" as const,
     },
     {
       icon: <Gavel />,
-      t: "Broker approval",
-      s: "Each batch is reviewed before payment",
+      t: tt("partner.pay.brokerApproval"),
+      s: tt("partner.pay.brokerApprovalText"),
       state: "next" as const,
     },
     {
       icon: <Wallet />,
-      t: "Credited to wallet",
-      s: "USDT, to your Kalks wallet",
+      t: tt("partner.pay.creditedWallet"),
+      s: tt("partner.pay.creditedWalletText"),
       state: "next" as const,
     },
   ];
   return (
     <Card className="h-full">
       <CardHeader
-        title="Payout schedule"
-        subtitle={`${scheduleLabel(d.schedule)} · after approval`}
+        title={tt("partner.pay.scheduleTitle")}
+        subtitle={tt("partner.pay.scheduleSubtitle", {
+          schedule: scheduleLabel(d.schedule),
+        })}
         icon={<CalendarClock />}
       />
       <ol className="relative px-6 pb-6 pt-5">
         {steps.map((st, i) => (
           <li key={st.t} className="relative flex gap-4 pb-5 last:pb-0">
             {i < steps.length - 1 && (
-              <span className="absolute left-[17px] top-9 h-[calc(100%-28px)] w-px bg-line" />
+              <span className="absolute start-[17px] top-9 h-[calc(100%-28px)] w-px bg-line" />
             )}
             <span
               className={cn(
@@ -506,7 +529,7 @@ function ScheduleCard({ d }: { d: PayoutsResp }) {
                 {st.t}
                 {st.state === "current" && (
                   <Chip size="sm" tone="ember">
-                    Now
+                    {tt("partner.pay.now")}
                   </Chip>
                 )}
               </div>

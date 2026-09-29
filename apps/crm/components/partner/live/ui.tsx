@@ -13,6 +13,7 @@ import {
   Skeleton,
   cn,
 } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 import type { ClientStatus, PartnerApiError } from "./api";
 
 /* ------------------------------------------------------------------ */
@@ -21,6 +22,7 @@ import type { ClientStatus, PartnerApiError } from "./api";
 
 /** The partner profile is created from the sign-up a few seconds after registration (409 not_ready). */
 export function SettingUp({ onRetry }: { onRetry: () => void }) {
+  const t = useT();
   // retry quietly a few times; the button stays for impatient users
   React.useEffect(() => {
     let n = 0;
@@ -35,11 +37,11 @@ export function SettingUp({ onRetry }: { onRetry: () => void }) {
     <Card>
       <EmptyState
         illustration="handshake"
-        title="Setting up your partner profile"
-        text="Your referral code and partner account are being created. This usually takes a few seconds."
+        title={t("partner.load.settingUpTitle")}
+        text={t("partner.load.settingUpText")}
         action={
           <Button variant="surface" onClick={onRetry}>
-            <RotateCw /> Check again
+            <RotateCw /> {t("partner.load.checkAgain")}
           </Button>
         }
       />
@@ -54,18 +56,16 @@ export function LoadError({
   error: PartnerApiError;
   onRetry: () => void;
 }) {
+  const t = useT();
   return (
     <Card>
       <EmptyState
         illustration="satellite_antenna"
-        title="Partner data is unavailable"
-        text={
-          error.message ||
-          "We couldn't reach the partner service. Please try again in a moment."
-        }
+        title={t("partner.load.errorTitle")}
+        text={error.message || t("partner.load.errorText")}
         action={
           <Button variant="surface" onClick={onRetry}>
-            <RotateCw /> Try again
+            <RotateCw /> {t("common.retry")}
           </Button>
         }
       />
@@ -161,13 +161,14 @@ const COMMISSION_STATUS: Record<
 };
 
 export function CommissionStatusChip({ status }: { status: string }) {
+  const t = useT();
   const m = COMMISSION_STATUS[status] ?? {
     label: status,
     tone: "neutral" as const,
   };
   return (
     <Chip size="sm" dot tone={m.tone}>
-      {m.label}
+      {t.dyn(`partner.commissionStatus.${status}`, m.label)}
     </Chip>
   );
 }
@@ -183,13 +184,14 @@ const PAYOUT_STATUS: Record<
 };
 
 export function PayoutStatusChip({ status }: { status: string }) {
+  const t = useT();
   const m = PAYOUT_STATUS[status] ?? {
     label: status.replace(/_/g, " "),
     tone: "neutral" as const,
   };
   return (
     <Chip size="sm" dot tone={m.tone}>
-      {m.label}
+      {t.dyn(`partner.payoutStatus.${status}`, m.label)}
     </Chip>
   );
 }
@@ -204,13 +206,14 @@ export const CLIENT_STATUS: Record<
 };
 
 export function ClientStatusChip({ status }: { status: ClientStatus }) {
+  const t = useT();
   const m = CLIENT_STATUS[status] ?? {
     label: status,
     tone: "neutral" as const,
   };
   return (
     <Chip size="sm" tone={m.tone}>
-      {m.label}
+      {t.dyn(`partner.clientStatus.${status}`, m.label)}
     </Chip>
   );
 }
@@ -235,7 +238,7 @@ export function PersonCell({
         {country && (
           <Flag
             country={country.toLowerCase()}
-            className="absolute -bottom-0.5 -right-1 size-3.5 ring-2 ring-surface"
+            className="absolute -bottom-0.5 -end-1 size-3.5 ring-2 ring-surface"
           />
         )}
       </span>

@@ -6,6 +6,8 @@
 
 import * as React from "react";
 import { toast } from "sonner";
+import { tr } from "@kalks/i18n/react";
+import { intlTag } from "@kalks/i18n/locales";
 
 /* ------------------------------------------------------------------ */
 /* Shapes                                                              */
@@ -296,7 +298,7 @@ export async function partnerApi<T>(
     throw new PartnerApiError(
       0,
       "network",
-      "Network error. Check your connection and try again.",
+      tr("common.networkError"),
     );
   }
   const data = (await res.json().catch(() => ({}))) as {
@@ -311,8 +313,8 @@ export async function partnerApi<T>(
     const code = data.error?.code ?? "error";
     const msg =
       code === "unavailable" || res.status >= 500
-        ? "The partner service is unavailable. Please try again shortly."
-        : (data.error?.message ?? "Something went wrong. Please try again.");
+        ? tr("partner.error.unavailable")
+        : (data.error?.message ?? tr("common.errorRetry"));
     throw new PartnerApiError(res.status, code, msg, data.error?.field);
   }
   return data as T;
@@ -323,7 +325,7 @@ export function errorToast(title: string, e: unknown) {
     description:
       e instanceof Error
         ? e.message
-        : "Something went wrong. Please try again.",
+        : tr("common.errorRetry"),
   });
 }
 
@@ -355,7 +357,7 @@ export function usePartner<T>(path: string | null, ms = 0) {
           setError(
             e instanceof PartnerApiError
               ? e
-              : new PartnerApiError(0, "error", "Something went wrong."),
+              : new PartnerApiError(0, "error", tr("partner.error.generic")),
           );
         }
       }
@@ -414,11 +416,22 @@ const MON = [
 ];
 const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// English keeps the hand-built formats below; other languages use Intl in the reader's language.
+const isEn = () => tr.locale === "en";
+const intlDate = (d: Date, o: Intl.DateTimeFormatOptions) =>
+  new Intl.DateTimeFormat(intlTag(tr.locale), o).format(d);
+
 /** "28 Sep 2026" (local time). */
 export function fmtDate(iso: string | null | undefined, withYear = true) {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
+  if (!isEn())
+    return intlDate(d, {
+      day: "2-digit",
+      month: "short",
+      ...(withYear ? { year: "numeric" } : {}),
+    });
   return `${String(d.getDate()).padStart(2, "0")} ${MON[d.getMonth()]}${withYear ? ` ${d.getFullYear()}` : ""}`;
 }
 
@@ -427,7 +440,30 @@ export function fmtDateTime(iso: string | null | undefined) {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return `${fmtDate(iso, false)}, ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${fmtDate(iso, false)}, ${fmtTime(iso)}`;
+}
+
+/** "14:03" (local time, 24h). */
+export function fmtTime(iso: string | null | undefined) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  if (!isEn())
+    return intlDate(d, { hour: "2-digit", minute: "2-digit", hour12: false });
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/** "5 Oct" / "5 Oct 2026" for a UTC midnight (period boundaries, week starts). */
+export function utcDay(ms: number, withYear = false) {
+  const d = new Date(ms);
+  if (!isEn())
+    return intlDate(d, {
+      timeZone: "UTC",
+      day: "numeric",
+      month: "short",
+      ...(withYear ? { year: "numeric" } : {}),
+    });
+  return `${d.getUTCDate()} ${MON[d.getUTCMonth()]}${withYear ? ` ${d.getUTCFullYear()}` : ""}`;
 }
 
 /** "Mon 5 Oct" (local time). */
@@ -435,6 +471,8 @@ export function fmtDay(iso: string | null | undefined) {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
+  if (!isEn())
+    return intlDate(d, { weekday: "short", day: "numeric", month: "short" });
   return `${WD[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`;
 }
 
@@ -442,16 +480,18 @@ export function fmtDay(iso: string | null | undefined) {
 export function fmtMonth(iso: string | null | undefined) {
   if (!iso) return "—";
   const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? "—"
-    : `${MON[d.getMonth()]} ${d.getFullYear()}`;
+  if (Number.isNaN(d.getTime())) return "—";
+  if (!isEn()) return intlDate(d, { month: "short", year: "numeric" });
+  return `${MON[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 /** Month name for a "YYYY-MM" key, e.g. "Sep". */
 export function monthName(key: string, offset = 0) {
   const [y, m] = key.split("-").map(Number);
   if (!y || !m) return "";
-  return MON[(((m - 1 + offset) % 12) + 12) % 12]!;
+  const i = (((m - 1 + offset) % 12) + 12) % 12;
+  if (!isEn()) return intlDate(new Date(2000, i, 15), { month: "short" });
+  return MON[i]!;
 }
 
 export function relTime(iso: string | null | undefined, now = Date.now()) {
@@ -459,17 +499,17 @@ export function relTime(iso: string | null | undefined, now = Date.now()) {
   const t = Date.parse(iso);
   if (Number.isNaN(t)) return "—";
   const m = Math.round((now - t) / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
+  if (m < 1) return tr("partner.time.justNow");
+  if (m < 60) return tr("partner.time.minutesAgo", { n: m });
   const h = Math.round(m / 60);
-  if (h < 24) return `${h}h ago`;
+  if (h < 24) return tr("partner.time.hoursAgo", { n: h });
   const d = Math.round(h / 24);
-  if (d < 45) return `${d}d ago`;
-  return `${Math.round(d / 30)}mo ago`;
+  if (d < 45) return tr("partner.time.daysAgo", { n: d });
+  return tr("partner.time.monthsAgo", { n: Math.round(d / 30) });
 }
 
 export function fmtLots(v: number, digits = 2) {
-  return v.toLocaleString("en-US", {
+  return v.toLocaleString(intlTag(tr.locale), {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   });
@@ -490,7 +530,8 @@ export const SCHEDULE_LABEL: Record<string, string> = {
   weekly: "Weekly",
   monthly: "Monthly",
 };
-export const scheduleLabel = (s: string) => SCHEDULE_LABEL[s] ?? s;
+export const scheduleLabel = (s: string) =>
+  tr.dyn(`partner.schedule.${s}`, SCHEDULE_LABEL[s] ?? s);
 
 export const KIND_LABEL: Record<string, string> = {
   lot: "Lot commission",
@@ -500,7 +541,8 @@ export const KIND_LABEL: Record<string, string> = {
   clawback: "Clawback",
   adjustment: "Adjustment",
 };
-export const kindLabel = (k: string) => KIND_LABEL[k] ?? k.replace(/_/g, " ");
+export const kindLabel = (k: string) =>
+  tr.dyn(`partner.kind.${k}`, KIND_LABEL[k] ?? k.replace(/_/g, " "));
 
 export const SOURCE_LABEL: Record<string, string> = {
   engine: "",
