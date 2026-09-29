@@ -16,40 +16,35 @@ use crate::validate;
 
 const K: Kind = Kind::Staff;
 
-pub fn role_label(role: &str) -> &'static str {
-    match role {
-        "platform_owner" => "Platform Owner",
-        "super_admin" => "Super Admin",
-        "admin" => "Administrator",
-        "dealer" => "Dealer",
-        "risk_manager" => "Risk Manager",
-        "compliance" => "Compliance Officer",
-        "finance" => "Finance",
-        "support" => "Support Agent",
-        "marketing" => "Marketing",
-        "partner_manager" => "Partner Manager",
-        _ => "Viewer",
-    }
-}
-
+/// The staff member as the apps see them. `permissions` is the full, authoritative list (`rbac: true`); `role`
+/// is the built-in role name downstream services understand (see `rbac::service_role`).
 async fn staff_json(st: &AppState, id: i64) -> ApiResult<Value> {
     let r = sqlx::query(
-        "SELECT s.id, s.email, s.name, s.role, s.last_login_at, t.slug, t.name AS tenant_name
-         FROM staff s JOIN tenants t ON t.id = s.tenant_id WHERE s.id = $1 AND s.status = 'active'",
+        "SELECT s.id, s.email, s.name, s.role, s.last_login_at, t.id AS tenant_id, t.slug, t.name AS tenant_name,
+                r.id AS role_id, COALESCE(r.key, s.role) AS rkey, COALESCE(r.name, s.role) AS rname, COALESCE(r.kind, 'preset') AS rkind,
+                COALESCE(r.customised, false) AS rc, COALESCE(r.permissions, '{}') AS rp
+         FROM staff s JOIN tenants t ON t.id = s.tenant_id LEFT JOIN roles r ON r.id = s.role_id
+         WHERE s.id = $1 AND s.status = 'active'",
     )
     .bind(id)
     .fetch_optional(&st.pool)
     .await?
     .ok_or(ApiError::Unauthorized)?;
-    let role: String = r.get("role");
+    let key: String = r.get("rkey");
+    let perms = crate::rbac::effective(r.get("rkind"), &key, r.get("rc"), &r.get::<Vec<String>, _>("rp"));
+    let owner = perms.iter().any(|p| crate::rbac::is_owner_perm(p));
     Ok(json!({
         "id": r.get::<i64, _>("id"),
         "email": r.get::<String, _>("email"),
         "name": r.get::<String, _>("name"),
-        "role": role,
-        "role_label": role_label(&role),
-        "permissions": crate::admin::permissions(&role),
-        "tenant": { "slug": r.get::<String, _>("slug"), "name": r.get::<String, _>("tenant_name") },
+        "role": crate::rbac::service_role(&key, &perms),
+        "role_key": key,
+        "role_id": r.get::<Option<i64>, _>("role_id"),
+        "role_label": r.get::<String, _>("rname"),
+        "permissions": perms,
+        "rbac": true,
+        "is_owner": owner,
+        "tenant": { "id": r.get::<i64, _>("tenant_id"), "slug": r.get::<String, _>("slug"), "name": r.get::<String, _>("tenant_name") },
     }))
 }
 
@@ -69,6 +64,7 @@ pub async fn login(State(st): State<AppState>, ctx: Ctx, req: Result<Json<LoginR
     identity::limit(&st, format!("staff-login:ip:{}", ctx.ip), 20, 5 * 60)?;
     identity::limit(&st, format!("staff-login:email:{email}"), 10, 15 * 60)?;
     let tenant_id = identity::tenant_id(&st.pool, &ctx.tenant_slug).await?;
+    crate::staff_admin::login_ip_check(&st, &ctx, tenant_id, crate::staff_admin::Who::Email(&email)).await?;
     let p = flows::check_password(&st, &ctx, K, tenant_id, &email, &r.password).await?;
     // Back Office: an emailed code on every sign-in (STAFF_OTP_EVERY_LOGIN=false falls back to new devices only).
     if st.cfg.staff_otp_every_login || !identity::device_trusted(&st, &ctx, K, p.id).await? {
@@ -86,6 +82,7 @@ pub async fn verify_otp(State(st): State<AppState>, ctx: Ctx, req: Result<Json<V
     if v.purpose != Purpose::Login {
         return Err(ApiError::CodeExpired);
     }
+    crate::staff_admin::login_ip_check(&st, &ctx, v.tenant_id, crate::staff_admin::Who::Id(v.subject_id)).await?;
     identity::trust_device(&st, &ctx, K, v.tenant_id, v.subject_id, v.device_hash).await?;
     Ok(Json(signed_in(&st, &ctx, v.tenant_id, v.subject_id, "email_otp").await?))
 }
@@ -107,5 +104,7 @@ pub async fn logout(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Valu
 
 pub async fn me(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value>> {
     let s = identity::resolve_session(&st, &ctx, K).await?;
-    Ok(Json(json!({ "staff": staff_json(&st, s.subject_id).await?, "session": { "expires_at": s.expires_at } })))
+    // session-level checks (tenant active, IP allow-list); the session itself was resolved above
+    let me = crate::admin::current(&st, &ctx).await?;
+    Ok(Json(json!({ "staff": staff_json(&st, me.id).await?, "session": { "expires_at": s.expires_at } })))
 }

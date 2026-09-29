@@ -204,7 +204,7 @@ pub async fn queue(State(st): State<AppState>, ctx: Ctx, q: Result<Query<QueueQu
         },
         "sla_hours": settings().sla_hours,
         "typical_hours": typical_hours(&st, me.tenant_id).await?,
-        "can_review": crate::admin::role_allows(&me.role, Perm::KycReview),
+        "can_review": me.can(Perm::KycReview.as_str()),
     })))
 }
 
@@ -353,7 +353,7 @@ pub async fn case_detail(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i6
         "history": history,
         "checklist": checklist_keys(&c.kind).iter().map(|(k, l)| json!({ "key": k, "label": l })).collect::<Vec<_>>(),
         "reasons": REASONS.iter().map(|(c, l)| json!({ "code": c, "label": l })).collect::<Vec<_>>(),
-        "can_review": crate::admin::role_allows(&me.role, Perm::KycReview),
+        "can_review": me.can(Perm::KycReview.as_str()),
     })))
 }
 

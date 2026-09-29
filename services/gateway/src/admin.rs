@@ -17,7 +17,6 @@ use crate::audit::{self, Entry};
 use crate::client_auth::body;
 use crate::error::{ApiError, ApiResult};
 use crate::identity::{self, Kind};
-use crate::staff_auth::role_label;
 use crate::state::{AppState, Ctx};
 
 // ---------- permissions ----------
@@ -30,6 +29,7 @@ pub enum Perm {
     SessionsRead,
     SessionsRevoke,
     StaffRead,
+    #[allow(dead_code)]
     SpreadsRead,
     SpreadsWrite,
     /// KYC queue, case files and documents (read).
@@ -39,19 +39,6 @@ pub enum Perm {
 }
 
 impl Perm {
-    pub const ALL: [Perm; 10] = [
-        Perm::StatsRead,
-        Perm::ClientsRead,
-        Perm::AuditRead,
-        Perm::SessionsRead,
-        Perm::SessionsRevoke,
-        Perm::StaffRead,
-        Perm::SpreadsRead,
-        Perm::SpreadsWrite,
-        Perm::KycRead,
-        Perm::KycReview,
-    ];
-
     pub fn as_str(self) -> &'static str {
         match self {
             Perm::StatsRead => "stats.read",
@@ -68,46 +55,77 @@ impl Perm {
     }
 }
 
-/// Role → permission matrix for the Back Office.
+/// Whether a built-in role holds a permission by default (see `rbac::preset_perms`). Live checks use the staff
+/// member's stored role (`Staff::can`), which a tenant may have customised.
+#[cfg(test)]
 pub fn role_allows(role: &str, p: Perm) -> bool {
-    use Perm::*;
-    match role {
-        "platform_owner" | "super_admin" | "admin" => true,
-        "compliance" => matches!(p, StatsRead | ClientsRead | AuditRead | SessionsRead | SpreadsRead | KycRead | KycReview),
-        "dealer" | "risk_manager" => matches!(p, StatsRead | ClientsRead | SpreadsRead | SpreadsWrite),
-        "finance" | "support" | "partner_manager" => matches!(p, StatsRead | ClientsRead),
-        "marketing" => matches!(p, StatsRead),
-        "viewer" => matches!(p, StatsRead | SpreadsRead),
-        _ => false,
-    }
-}
-
-pub fn permissions(role: &str) -> Vec<&'static str> {
-    Perm::ALL.iter().filter(|p| role_allows(role, **p)).map(|p| p.as_str()).collect()
+    crate::rbac::preset_perms(role).is_some_and(|v| v.contains(&p.as_str()))
 }
 
 /// The staff member behind the request.
 pub struct Staff {
     pub id: i64,
     pub tenant_id: i64,
+    /// Role key (built-in key such as `dealer`, or a custom role key).
     pub role: String,
     pub session_id: i64,
+    /// Effective permission keys of the role.
+    pub perms: Vec<String>,
+}
+
+impl Staff {
+    pub fn can(&self, key: &str) -> bool {
+        self.perms.iter().any(|p| p == key)
+    }
+    pub fn is_owner(&self) -> bool {
+        self.perms.iter().any(|p| crate::rbac::is_owner_perm(p))
+    }
+}
+
+/// Resolves the live staff session: active staff, active tenant, role permissions, IP allow-list (D111).
+/// 401 without a live session, 403 `ip_not_allowed` / `tenant_suspended` when blocked.
+pub async fn current(st: &AppState, ctx: &Ctx) -> ApiResult<Staff> {
+    let s = identity::resolve_session(st, ctx, Kind::Staff).await?;
+    let row = sqlx::query(
+        "SELECT s.status, s.role, COALESCE(r.id, 0) AS role_id, COALESCE(r.key, s.role) AS rkey, COALESCE(r.name, s.role) AS rname,
+                COALESCE(r.kind, 'preset') AS rkind, COALESCE(r.customised, false) AS rcustom, COALESCE(r.permissions, '{}') AS rperms,
+                t.status AS tstatus, t.ip_allowlist_enabled, t.ip_owner_bypass
+         FROM staff s JOIN tenants t ON t.id = s.tenant_id LEFT JOIN roles r ON r.id = s.role_id
+         WHERE s.id = $1 AND s.tenant_id = $2",
+    )
+    .bind(s.subject_id)
+    .bind(s.tenant_id)
+    .fetch_optional(&st.pool)
+    .await?
+    .ok_or(ApiError::Unauthorized)?;
+    if row.get::<String, _>("status") != "active" {
+        return Err(ApiError::Unauthorized);
+    }
+    if row.get::<String, _>("tstatus") != "active" {
+        return Err(crate::staff_admin::tenant_suspended());
+    }
+    let role: String = row.get("rkey");
+    let kind: String = row.get("rkind");
+    let perms = crate::rbac::effective(&kind, &role, row.get("rcustom"), &row.get::<Vec<String>, _>("rperms"));
+    let me = Staff { id: s.subject_id, tenant_id: s.tenant_id, role, session_id: s.session_id, perms };
+    if row.get::<bool, _>("ip_allowlist_enabled") && !(row.get::<bool, _>("ip_owner_bypass") && me.is_owner()) {
+        crate::staff_admin::session_ip_check(st, ctx, &me).await?;
+    }
+    Ok(me)
 }
 
 /// Resolves the staff session and checks `perm`. 401 without a live session, 403 without the permission.
 pub async fn require(st: &AppState, ctx: &Ctx, perm: Perm) -> ApiResult<Staff> {
-    let s = identity::resolve_session(st, ctx, Kind::Staff).await?;
-    let row = sqlx::query("SELECT role FROM staff WHERE id = $1 AND tenant_id = $2 AND status = 'active'")
-        .bind(s.subject_id)
-        .bind(s.tenant_id)
-        .fetch_optional(&st.pool)
-        .await?
-        .ok_or(ApiError::Unauthorized)?;
-    let role: String = row.get("role");
-    if !role_allows(&role, perm) {
+    require_key(st, ctx, perm.as_str()).await
+}
+
+/// Same as `require`, by permission key (see `rbac::PERMS`).
+pub async fn require_key(st: &AppState, ctx: &Ctx, key: &str) -> ApiResult<Staff> {
+    let me = current(st, ctx).await?;
+    if !me.can(key) {
         return Err(ApiError::Forbidden);
     }
-    Ok(Staff { id: s.subject_id, tenant_id: s.tenant_id, role, session_id: s.session_id })
+    Ok(me)
 }
 
 // ---------- helpers ----------
@@ -513,12 +531,13 @@ pub async fn audit_log(State(st): State<AppState>, ctx: Ctx, q: Result<Query<Aud
     let rows = sqlx::query(
         "SELECT a.id, a.actor_kind, a.actor_id, a.action, a.target_kind, a.target_id, a.ip, a.user_agent, a.meta, a.created_at,
                 COALESCE(au.first_name || ' ' || au.last_name, ast.name) AS actor_name, COALESCE(au.email, ast.email) AS actor_email,
-                ast.role AS actor_role,
+                COALESCE(ar.name, ast.role) AS actor_role,
                 COALESCE(tu.first_name || ' ' || tu.last_name, tst.name) AS target_name, COALESCE(tu.email, tst.email) AS target_email,
                 count(*) OVER () AS total
          FROM audit_log a
          LEFT JOIN users au ON a.actor_kind = 'user' AND au.id = a.actor_id
          LEFT JOIN staff ast ON a.actor_kind = 'staff' AND ast.id = a.actor_id
+         LEFT JOIN roles ar ON ar.id = ast.role_id
          LEFT JOIN users tu ON a.target_kind = 'user' AND tu.id = a.target_id
          LEFT JOIN staff tst ON a.target_kind = 'staff' AND tst.id = a.target_id
          WHERE a.tenant_id = $1
@@ -556,7 +575,7 @@ pub async fn audit_log(State(st): State<AppState>, ctx: Ctx, q: Result<Query<Aud
                     "id": x.get::<Option<i64>, _>("actor_id"),
                     "name": x.get::<Option<String>, _>("actor_name"),
                     "email": x.get::<Option<String>, _>("actor_email"),
-                    "role_label": role.as_deref().map(role_label),
+                    "role_label": role.map(|r| crate::rbac::builtin(&r).map(|b| b.name.to_string()).unwrap_or(r)),
                 },
                 "action": x.get::<String, _>("action"),
                 "target": {
@@ -584,11 +603,13 @@ pub async fn audit_log(State(st): State<AppState>, ctx: Ctx, q: Result<Query<Aud
 pub async fn staff_list(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value>> {
     let me = require(&st, &ctx, Perm::StaffRead).await?;
     let rows = sqlx::query(sqlx::AssertSqlSafe(live_sql(
-        "SELECT s.id, s.email, s.name, s.role, s.status, s.locked_until, s.last_login_at, s.created_at,
+        "SELECT s.id, s.email, s.name, s.role, s.status, s.locked_until, s.last_login_at, s.created_at, s.invited_at, s.disabled_at,
+            s.disabled_reason, r.id AS role_id, COALESCE(r.name, s.role) AS role_name, COALESCE(r.kind, 'preset') AS role_kind,
             (SELECT count(*) FROM sessions se WHERE se.subject_kind = 'staff' AND se.subject_id = s.id AND {LIVE}) AS active_sessions,
             (SELECT count(*) FROM trusted_devices td WHERE td.subject_kind = 'staff' AND td.subject_id = s.id) AS trusted_devices,
-            (SELECT max(created_at) FROM audit_log a WHERE a.actor_kind = 'staff' AND a.actor_id = s.id) AS last_activity_at
-         FROM staff s WHERE s.tenant_id = $1
+            (SELECT max(created_at) FROM audit_log a WHERE a.actor_kind = 'staff' AND a.actor_id = s.id) AS last_activity_at,
+            (SELECT max(expires_at) FROM staff_invites i WHERE i.staff_id = s.id AND i.accepted_at IS NULL AND i.revoked_at IS NULL) AS invite_expires_at
+         FROM staff s LEFT JOIN roles r ON r.id = s.role_id WHERE s.tenant_id = $1
          ORDER BY CASE s.role WHEN 'platform_owner' THEN 0 WHEN 'super_admin' THEN 1 WHEN 'admin' THEN 2 ELSE 3 END, s.name",
         2,
     )))
@@ -607,8 +628,14 @@ pub async fn staff_list(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<
                 "email": x.get::<String, _>("email"),
                 "name": x.get::<String, _>("name"),
                 "role": role,
-                "role_label": role_label(&role),
+                "role_id": x.get::<Option<i64>, _>("role_id"),
+                "role_label": x.get::<String, _>("role_name"),
+                "role_kind": x.get::<String, _>("role_kind"),
                 "status": x.get::<String, _>("status"),
+                "invited_at": ts(x, "invited_at"),
+                "invite_expires_at": ts(x, "invite_expires_at"),
+                "disabled_at": ts(x, "disabled_at"),
+                "disabled_reason": x.get::<Option<String>, _>("disabled_reason"),
                 "locked": locked_until.is_some_and(|t| t > Utc::now()),
                 "last_login_at": ts(x, "last_login_at"),
                 "last_activity_at": ts(x, "last_activity_at"),
@@ -646,11 +673,12 @@ pub async fn sessions(State(st): State<AppState>, ctx: Ctx, q: Result<Query<Sess
     let (page, per, offset) = paging(q.page, q.per_page, 50, 200);
     let rows = sqlx::query(sqlx::AssertSqlSafe(live_sql(
         "SELECT se.id, se.subject_kind, se.subject_id, se.token_hash, se.ip, se.user_agent, se.created_at, se.last_seen_at, se.expires_at,
-                COALESCE(u.first_name || ' ' || u.last_name, s.name) AS name, COALESCE(u.email, s.email) AS email, s.role,
+                COALESCE(u.first_name || ' ' || u.last_name, s.name) AS name, COALESCE(u.email, s.email) AS email, COALESCE(sr.name, s.role) AS role,
                 count(*) OVER () AS total
          FROM sessions se
          LEFT JOIN users u ON se.subject_kind = 'user' AND u.id = se.subject_id
          LEFT JOIN staff s ON se.subject_kind = 'staff' AND s.id = se.subject_id
+         LEFT JOIN roles sr ON sr.id = s.role_id
          WHERE se.tenant_id = $1 AND ($2::text IS NULL OR se.subject_kind = $2) AND ($3::bigint IS NULL OR se.subject_id = $3) AND {LIVE}
          ORDER BY se.last_seen_at DESC
          LIMIT $4 OFFSET $5",
@@ -679,7 +707,7 @@ pub async fn sessions(State(st): State<AppState>, ctx: Ctx, q: Result<Query<Sess
                     "id": x.get::<i64, _>("subject_id"),
                     "name": x.get::<Option<String>, _>("name"),
                     "email": x.get::<Option<String>, _>("email"),
-                    "role_label": role.as_deref().map(role_label),
+                    "role_label": role.map(|r| crate::rbac::builtin(&r).map(|b| b.name.to_string()).unwrap_or(r)),
                 },
                 "ip": x.get::<Option<String>, _>("ip"),
                 "user_agent": x.get::<Option<String>, _>("user_agent"),
@@ -721,7 +749,7 @@ pub async fn revoke_session(State(st): State<AppState>, ctx: Ctx, Path(id): Path
     .ok_or(ApiError::NotFound)?;
     let kind: String = target.get("subject_kind");
     let subject_id: i64 = target.get("subject_id");
-    if target.get::<Option<String>, _>("role").as_deref() == Some("platform_owner") && me.role != "platform_owner" {
+    if target.get::<Option<String>, _>("role").as_deref() == Some("platform_owner") && !me.is_owner() {
         return Err(ApiError::Forbidden);
     }
     if target.get::<bool, _>("revoked") {
@@ -785,7 +813,7 @@ mod tests {
 
     #[test]
     fn permission_matrix() {
-        for p in Perm::ALL {
+        for p in [Perm::StatsRead, Perm::AuditRead, Perm::SessionsRevoke, Perm::KycReview, Perm::SpreadsWrite] {
             assert!(role_allows("platform_owner", p));
             assert!(role_allows("super_admin", p));
         }
@@ -800,7 +828,6 @@ mod tests {
         assert!(!role_allows("support", Perm::KycRead));
         assert!(!role_allows("dealer", Perm::KycReview));
         assert!(!role_allows("nonsense", Perm::StatsRead));
-        assert_eq!(permissions("marketing"), vec!["stats.read"]);
     }
 
     #[test]

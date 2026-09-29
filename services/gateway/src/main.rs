@@ -17,10 +17,14 @@ mod identity;
 mod kyc;
 mod internal;
 mod mailer;
+mod owner;
 mod ratelimit;
+mod rbac;
 mod shares;
+mod staff_admin;
 mod staff_auth;
 mod state;
+mod tenancy;
 mod stepup;
 #[cfg(test)]
 mod testdb;
@@ -31,7 +35,7 @@ use axum::extract::{Request, State};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::extract::DefaultBodyLimit;
-use axum::routing::{get, patch, post};
+use axum::routing::{delete, get, patch, post, put};
 use axum::{Json, Router};
 use std::sync::Arc;
 use std::time::Duration;
@@ -127,6 +131,7 @@ async fn main() -> anyhow::Result<()> {
                 let _ = sqlx::query("DELETE FROM email_otps WHERE expires_at < now() - interval '1 day'").execute(&st.pool).await;
                 let _ = sqlx::query("DELETE FROM stepup_tokens WHERE expires_at < now() - interval '1 day'").execute(&st.pool).await;
                 let _ = sqlx::query("DELETE FROM sessions WHERE expires_at < now() - interval '30 days'").execute(&st.pool).await;
+                let _ = owner::mark_overdue(&st.pool).await;
             }
         });
     }
@@ -174,6 +179,41 @@ fn router(st: AppState) -> Router {
         .route("/v1/admin/staff", get(admin::staff_list))
         .route("/v1/admin/sessions", get(admin::sessions))
         .route("/v1/admin/sessions/{id}/revoke", post(admin::revoke_session))
+        // staff, roles, security, tenant settings (staff_admin.rs, tenancy.rs)
+        .route("/v1/admin/auth/invite", get(staff_admin::invite_info))
+        .route("/v1/admin/auth/invite/accept", post(staff_admin::invite_accept))
+        .route("/v1/admin/permissions", get(staff_admin::permissions_catalogue))
+        .route("/v1/admin/staff/invite", post(staff_admin::invite))
+        .route("/v1/admin/staff/{id}", get(staff_admin::detail).patch(staff_admin::update))
+        .route("/v1/admin/staff/{id}/resend-invite", post(staff_admin::resend_invite))
+        .route("/v1/admin/staff/{id}/disable", post(staff_admin::disable))
+        .route("/v1/admin/staff/{id}/enable", post(staff_admin::enable))
+        .route("/v1/admin/staff/{id}/reset-2fa", post(staff_admin::reset_2fa))
+        .route("/v1/admin/staff/{id}/sign-out", post(staff_admin::sign_out))
+        .route("/v1/admin/roles", get(staff_admin::roles).post(staff_admin::create_role))
+        .route("/v1/admin/roles/{id}", patch(staff_admin::update_role).delete(staff_admin::delete_role))
+        .route("/v1/admin/roles/{id}/reset", post(staff_admin::reset_role))
+        .route("/v1/admin/security/ip", get(staff_admin::ip_list).post(staff_admin::ip_add))
+        .route("/v1/admin/security/ip/settings", put(staff_admin::ip_settings))
+        .route("/v1/admin/security/ip/{id}", delete(staff_admin::ip_remove))
+        .route("/v1/admin/settings/maintenance", get(tenancy::get_maintenance).put(tenancy::set_maintenance))
+        .route("/v1/admin/settings/features", get(tenancy::get_features))
+        .route("/v1/admin/settings/features/{key}", put(tenancy::set_feature))
+        .route("/v1/public/tenant-config", get(tenancy::public_config))
+        // Platform Owner (owner.rs)
+        .route("/v1/owner/dashboard", get(owner::dashboard))
+        .route("/v1/owner/tenants", get(owner::tenants).post(owner::create_tenant))
+        .route("/v1/owner/tenants/{id}", get(owner::tenant_detail).patch(owner::update_tenant))
+        .route("/v1/owner/tenants/{id}/suspend", post(owner::suspend_tenant))
+        .route("/v1/owner/tenants/{id}/activate", post(owner::activate_tenant))
+        .route("/v1/owner/tenants/{id}/features", put(owner::set_tenant_features))
+        .route("/v1/owner/tenants/{id}/invite-admin", post(owner::invite_admin))
+        .route("/v1/owner/tenants/{id}/billing", put(owner::set_billing))
+        .route("/v1/owner/features", get(owner::feature_catalogue).post(owner::create_flag))
+        .route("/v1/owner/features/{key}", patch(owner::update_flag).delete(owner::delete_flag))
+        .route("/v1/owner/billing", get(owner::billing_overview))
+        .route("/v1/owner/invoices", get(owner::invoices).post(owner::create_invoice))
+        .route("/v1/owner/invoices/{id}/status", post(owner::invoice_status))
         .route("/v1/kyc", get(kyc::get))
         .route("/v1/kyc/start", post(kyc::start))
         .route("/v1/kyc/details", post(kyc::details))

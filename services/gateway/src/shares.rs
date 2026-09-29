@@ -261,6 +261,7 @@ pub struct CreateReq {
 pub async fn create(State(st): State<AppState>, ctx: Ctx, req: Result<Json<CreateReq>, JsonRejection>) -> ApiResult<Json<Value>> {
     let r = body(req)?;
     let tenant_id = identity::tenant_id(&st.pool, &ctx.tenant_slug).await?;
+    crate::tenancy::require_feature(&st, tenant_id, "trade_sharing").await?;
     let login = r.login.trim().to_string();
     if !(5..=12).contains(&login.len()) || !login.bytes().all(|b| b.is_ascii_digit()) {
         return Err(ApiError::Validation { field: "login", message: "Invalid trading account." });

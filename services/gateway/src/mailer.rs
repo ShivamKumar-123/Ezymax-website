@@ -209,6 +209,25 @@ impl Mailer {
         self.send(to, &c.subject, &c.preheader, &text, &body).await
     }
 
+    /// Back Office invite: a one-time link to set a password (the first sign-in then asks for an emailed code).
+    #[allow(clippy::too_many_arguments)]
+    pub async fn send_staff_invite(&self, to: &str, name: &str, inviter: &str, tenant: &str, role: &str, url: &str, hours: i64) -> anyhow::Result<()> {
+        let (n, i, t, r) = (html_escape(name), html_escape(inviter), html_escape(tenant), html_escape(role));
+        let text = format!(
+            "Hi {name},\n\n{inviter} invited you to the {tenant} Back Office as {role}.\n\nSet your password: {url}\n\nThe link works once and expires in {hours} hours. Each sign-in also asks for a one-time code sent to this address.\n\n{footer}",
+            footer = self.text_footer()
+        );
+        let body = format!(
+            r#"<h1 style="margin:0 0 10px;font-size:22px;line-height:1.3;font-weight:700;color:{FG}">You're invited to the {t} Back Office</h1>
+<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:{FG2}">Hi {n}, {i} added you as <strong style="color:{FG}">{r}</strong>. Set a password to activate your account.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 6px"><tr>
+<td style="border-radius:10px;background:{EMBER}"><a href="{url}" style="display:inline-block;padding:13px 22px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px">Set your password</a></td>
+</tr></table>
+<p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:{FG3}">The link works once and expires in {hours} hours. Every sign-in also asks for a one-time code sent to this address. If you weren't expecting this, ignore this email.</p>"#
+        );
+        self.send(to, &format!("Your invite to the {tenant} Back Office"), "Set your password to activate your staff account.", &text, &body).await
+    }
+
     async fn send(&self, to: &str, subject: &str, preheader: &str, text: &str, body_html: &str) -> anyhow::Result<()> {
         let html = self.layout(preheader, body_html);
         let logo = Attachment::new_inline(LOGO_CID.to_string()).body(LOGO_PNG.to_vec(), "image/png".parse()?);

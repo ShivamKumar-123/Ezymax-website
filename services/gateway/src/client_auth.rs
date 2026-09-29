@@ -209,6 +209,8 @@ pub async fn register(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Reg
     }
 
     let tenant_id = identity::tenant_id(&st.pool, &ctx.tenant_slug).await?;
+    crate::tenancy::client_gate(&st, tenant_id).await?;
+    crate::tenancy::require_feature(&st, tenant_id, "client_registration").await?;
     let exists: Option<i64> = sqlx::query_scalar("SELECT id FROM users WHERE tenant_id = $1 AND email = $2").bind(tenant_id).bind(&email).fetch_optional(&st.pool).await?;
     if exists.is_some() {
         return Err(ApiError::EmailTaken);
@@ -269,6 +271,7 @@ pub async fn login(State(st): State<AppState>, ctx: Ctx, req: Result<Json<LoginR
     identity::limit(&st, format!("login:email:{email}"), 15, 15 * 60)?;
 
     let tenant_id = identity::tenant_id(&st.pool, &ctx.tenant_slug).await?;
+    crate::tenancy::client_gate(&st, tenant_id).await?;
     let p = flows::check_password(&st, &ctx, K, tenant_id, &email, &r.password).await?;
 
     if !p.email_verified {

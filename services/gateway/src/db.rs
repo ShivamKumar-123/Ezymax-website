@@ -20,6 +20,7 @@ pub async fn connect(url: &str) -> anyhow::Result<PgPool> {
     drop(conn);
     let pool = PgPoolOptions::new().max_connections(16).connect_with(opts).await?;
     sqlx::migrate!("./migrations").run(&pool).await?;
+    crate::rbac::ensure_roles(&pool).await?;
     Ok(pool)
 }
 
@@ -51,6 +52,7 @@ pub async fn seed_super_admin(pool: &PgPool, cfg: &Config) -> anyhow::Result<()>
     .fetch_optional(pool)
     .await?;
     if let Some(id) = id {
+        sqlx::query("UPDATE staff s SET role_id = r.id FROM roles r WHERE s.id = $1 AND r.tenant_id = s.tenant_id AND r.key = 'platform_owner'").bind(id).execute(pool).await?;
         sqlx::query("INSERT INTO audit_log (tenant_id, actor_kind, action, target_kind, target_id, meta) VALUES ($1,'system','staff.seeded','staff',$2,$3)")
             .bind(tenant_id)
             .bind(id)

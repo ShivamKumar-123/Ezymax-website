@@ -146,6 +146,8 @@ pub async fn google(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Googl
     }
     let picture = clean_picture(r.picture.as_deref());
     let tenant_id = identity::tenant_id(&st.pool, &ctx.tenant_slug).await?;
+    crate::tenancy::client_gate(&st, tenant_id).await?;
+    crate::tenancy::require_feature(&st, tenant_id, "google_login").await?;
 
     // 1. Google account already linked.
     let linked = sqlx::query("SELECT id, status = 'active' AS active FROM users WHERE tenant_id = $1 AND google_sub = $2")
@@ -287,6 +289,8 @@ pub async fn complete(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Com
     let r = body(req)?;
     identity::limit(&st, format!("google_complete:ip:{}", ctx.ip), 10, 15 * 60)?;
     let tenant_id = identity::tenant_id(&st.pool, &ctx.tenant_slug).await?;
+    crate::tenancy::client_gate(&st, tenant_id).await?;
+    crate::tenancy::require_feature(&st, tenant_id, "client_registration").await?;
     let t = open(&st.keys, &r.ticket, tenant_id, Utc::now().timestamp()).ok_or(EXPIRED)?;
 
     let first = validate::name(r.first_name.as_deref().unwrap_or(&t.first_name), "Enter your first name.").map_err(field("first_name"))?;
