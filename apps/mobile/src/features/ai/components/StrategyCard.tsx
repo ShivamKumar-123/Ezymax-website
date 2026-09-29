@@ -2,7 +2,7 @@
 // size, hours and limits, the service's notes, the assistant's questions and assumptions, and the actions. Only the
 // newest draft is live (Edit / Backtest / Deploy); earlier drafts collapse to one line so the thread stays short.
 import * as React from "react";
-import { View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
 import { ChevronDown, CircleAlert, Pencil, Play, Rocket } from "lucide-react-native";
 import { useFormat, useT } from "@/i18n";
 import { fmtMoney } from "@/lib/format";
@@ -70,6 +70,7 @@ export const StrategyCard = React.memo(function StrategyCard({ m, latest, busy, 
   const fmt = useFormat();
   const [showAssumptions, setShowAssumptions] = React.useState(false);
   const [showCode, setShowCode] = React.useState(false);
+  const narrow = useWindowDimensions().width < 360;
   const s = m.built.spec;
 
   if (!latest) {
@@ -205,8 +206,8 @@ export const StrategyCard = React.memo(function StrategyCard({ m, latest, busy, 
 
       <View style={{ flexDirection: "row", gap: space[2] }}>
         <BlockButton label={t("common.edit")} iconOnly tone="outline" icon={<Pencil size={18} color={colors.ink} strokeWidth={2.2} />} onPress={() => onEdit(m.id)} disabled={!!busy} testID="ai-edit" />
-        <BlockButton label={t("mobileAi.card.backtest")} tone="ink" icon={<Play size={15} color={colors.cream} fill={colors.cream} strokeWidth={2} />} onPress={() => onBacktest(m.id)} disabled={!valid || !!busy} loading={busy === "backtest"} testID="ai-backtest" style={{ flex: 1 }} />
-        <BlockButton label={t("mobileAi.card.deploy")} tone="ember" icon={<Rocket size={16} color={colors.ink} strokeWidth={2.2} />} onPress={() => onDeploy(m.id)} onPressIn={onWarmDeploy} disabled={!valid || !!busy} loading={busy === "deploy"} testID="ai-deploy" style={{ flex: 1 }} />
+        <BlockButton label={t("mobileAi.card.backtest")} tone="ink" icon={narrow ? undefined : <Play size={15} color={colors.cream} fill={colors.cream} strokeWidth={2} />} onPress={() => onBacktest(m.id)} disabled={!valid || !!busy} loading={busy === "backtest"} testID="ai-backtest" style={{ flex: 1 }} />
+        <BlockButton label={t("mobileAi.card.deploy")} tone="ember" icon={narrow ? undefined : <Rocket size={16} color={colors.ink} strokeWidth={2.2} />} onPress={() => onDeploy(m.id)} onPressIn={onWarmDeploy} disabled={!valid || !!busy} loading={busy === "deploy"} testID="ai-deploy" style={{ flex: 1 }} />
       </View>
     </ColorBlock>
   );

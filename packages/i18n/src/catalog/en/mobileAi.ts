@@ -67,6 +67,7 @@ const mobileAi = {
   "error.unavailable": "The assistant is unavailable right now. Please try again shortly.",
   "error.invalid": "Fix the strategy's problems first.",
   "unavailable.title": "AI Trader is resting",
+  "unavailable.moduleTitle": "Not available",
   "unavailable.body": "The assistant isn't switched on for this broker right now. You can still build strategies yourself in Algo.",
 
   // Strategy card
@@ -299,6 +300,8 @@ const mobileAi = {
   "support.writeTeam": "Write to our support team…",
   "support.options": "Chat options",
   "support.historyHint": "Earlier conversations and their transcripts",
+  // Email subject; {id} is the client ID, e.g. KL-000195
+  "support.emailSubject": "Support request · {id}",
   "support.botTyping": "Writing an answer…",
   // {name} is the agent's first name
   "support.typing": "{name} is typing…",

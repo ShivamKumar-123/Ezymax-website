@@ -3,11 +3,11 @@
 // agent's replies and typing arrive live. Photos and PDFs can be attached. A finished chat can be rated, and past
 // conversations are one tap away. Opens at once on the last conversation (cached), then refreshes.
 import * as React from "react";
-import { KeyboardAvoidingView, Platform, RefreshControl, View } from "react-native";
+import { KeyboardAvoidingView, Linking, Platform, RefreshControl, View } from "react-native";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { useIsFocused, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FileText, History, Image as ImageIcon, MoreHorizontal, RotateCcw, UserRound, XCircle } from "lucide-react-native";
+import { FileText, History, Image as ImageIcon, Mail, MoreHorizontal, RotateCcw, UserRound, XCircle } from "lucide-react-native";
 import { useT, type MessageKey } from "@/i18n";
 import { haptic } from "@/lib/haptics";
 import { useOnline } from "@/lib/net";
@@ -23,6 +23,7 @@ import { Composer, type ComposerHandle } from "@/features/chat/Composer";
 import { InitialsAvatar, MascotAvatar } from "@/features/chat/MascotAvatar";
 import { Rich } from "@/features/chat/Rich";
 import { Suggestions, type Suggestion } from "@/features/chat/Suggestions";
+import { fetchMenu, QK as PROFILE_QK } from "@/features/profile/api";
 import { fetchHistory, fetchHome, HISTORY_KEY, HOME_KEY, uploadAttachment, type Home, type Message } from "../api";
 import { agentTyping, botStream, endChat, handover, markRead, send, startNew, typing, useSupportStream } from "../chat";
 import { pickFile, pickPhoto, prepare } from "../files";
@@ -83,6 +84,9 @@ export function SupportScreen() {
   const viewer = useSession((s) => !!s.viewer);
   useSupportStream();
   const q = useQuery(HOME_KEY, fetchHome, { persist: true, staleMs: 10_000, enabled: !viewer });
+  // the broker's support email (the More tab's cached menu), for the "write to us" option
+  const menuQ = useQuery(PROFILE_QK.menu, fetchMenu, { persist: true, staleMs: 60_000, enabled: !viewer });
+  const supportEmail = menuQ.data?.brand.support_email;
   const home = q.data;
   const conv = home?.conversation ?? null;
   const settings = home?.settings;
@@ -254,6 +258,20 @@ export function SupportScreen() {
     ...(conv && !resolved ? [{ key: "end", label: t("support.menu.endChat"), icon: <XCircle size={18} color={colors.text} />, onPress: () => void end() }] : []),
     ...(resolved ? [{ key: "new", label: t("support.menu.newChat"), icon: <RotateCcw size={18} color={colors.text} />, onPress: startNew }] : []),
     { key: "history", label: t("support.history.title"), hint: t("mobileAi.support.historyHint"), icon: <History size={18} color={colors.text} />, onPress: () => router.push("/support/history") },
+    ...(supportEmail
+      ? [
+          {
+            key: "email",
+            label: t("support.email.write"),
+            hint: supportEmail,
+            icon: <Mail size={18} color={colors.text} />,
+            onPress: () => {
+              const id = `KL-${String(me?.id ?? 0).padStart(6, "0")}`;
+              void Linking.openURL(`mailto:${supportEmail}?subject=${encodeURIComponent(t("mobileAi.support.emailSubject", { id }))}`).catch(() => toast.show({ title: supportEmail }));
+            },
+          },
+        ]
+      : []),
   ];
 
   const agentsOnline = settings?.agentsOnline ?? 0;

@@ -60,15 +60,15 @@ export function TranscriptScreen() {
   const subtitle = conv ? `${fmt.date(conv.createdAt, { day: "numeric", month: "short", year: "numeric", timeZone: undefined })} · ${t.dyn(`support.status.${status}`, status ?? "")}` : undefined;
 
   let body: React.ReactNode;
-  if (viewer || id === null) body = <EmptyState illustration="security" title={t("mobile.viewOnly")} body={t("mobileAi.support.viewOnly")} />;
-  else if (!q.data && q.error)
+  if (viewer) body = <EmptyState illustration="security" title={t("mobile.viewOnly")} body={t("mobileAi.support.viewOnly")} />;
+  else if (id === null || (!q.data && q.error))
     body =
-      q.error.status === 404 ? (
-        <EmptyState illustration="emptyHistory" title={t("mobileAi.support.notFound")} action={t("mobile.a11y.back")} onAction={() => router.back()} />
+      id === null || q.error?.status === 404 ? (
+        <EmptyState illustration="emptyHistory" title={t("mobileAi.support.notFound")} action={t("mobile.a11y.back")} onAction={() => (router.canGoBack() ? router.back() : router.replace("/support"))} />
       ) : !online ? (
         <EmptyState illustration="connectionLost" title={t("mobile.state.offline.title")} body={t("mobile.state.offline.body")} action={t("mobile.action.retry")} onAction={() => void q.refresh()} />
       ) : (
-        <EmptyState illustration="maintenance" title={t("mobile.state.error.title")} body={q.error.message} action={t("mobile.action.retry")} onAction={() => void q.refresh()} />
+        <EmptyState illustration="maintenance" title={t("mobile.state.error.title")} body={q.error?.message} action={t("mobile.action.retry")} onAction={() => void q.refresh()} />
       );
   else if (!q.data)
     body = (

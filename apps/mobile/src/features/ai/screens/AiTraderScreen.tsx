@@ -9,7 +9,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RotateCcw } from "lucide-react-native";
 import { useFormat, useT, type MessageKey } from "@/i18n";
-import { prefetch } from "@/lib/query";
+import { prefetch, useQuery } from "@/lib/query";
 import { useStore } from "@/lib/store";
 import { useMe, useSession } from "@/session";
 import { EmptyState, IconButton, Text, type SheetRef } from "@/ui";
@@ -24,6 +24,7 @@ import { Suggestions, type Suggestion } from "@/features/chat/Suggestions";
 import { clock } from "@/features/chat/time";
 import { ACCOUNTS_KEY, fetchAccounts } from "@/features/trading/accounts";
 import { useTradeSymbol } from "@/features/trade/symbol";
+import { fetchMenu, QK as PROFILE_QK } from "@/features/profile/api";
 import { useMeta } from "../api";
 import { BacktestCard } from "../components/BacktestCard";
 import { BacktestSheet } from "../components/BacktestSheet";
@@ -75,6 +76,8 @@ export function AiTraderScreen() {
   const me = useMe();
   const viewer = useSession((s) => !!s.viewer);
   const meta = useMeta();
+  // the broker's module switches (the More tab's cached menu): AI Trader belongs to the algo module
+  const menu = useQuery(PROFILE_QK.menu, fetchMenu, { persist: true, staleMs: 60_000, enabled: !viewer });
   const chartSymbol = useTradeSymbol();
   // this user's conversation, loaded before the first frame (a synchronous read of the phone's storage)
   React.useState(hydrateThread);
@@ -211,7 +214,7 @@ export function AiTraderScreen() {
   const intro = React.useMemo(() => <Intro />, []);
   const suggestions: Suggestion[] = pending ? [] : latest ? REFINE.map((r) => ({ key: r.key, label: t(r.label) })) : EXAMPLES.map((e) => ({ key: e.key, label: t(e.label) }));
 
-  const unavailable = viewer ? "viewer" : meta.data && !meta.data.ai.configured ? "ai" : null;
+  const unavailable = viewer ? "viewer" : menu.data?.modules.algo === false ? "module" : meta.data && !meta.data.ai.configured ? "ai" : null;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
@@ -224,7 +227,7 @@ export function AiTraderScreen() {
           dot={pending ? "gold" : "periwinkle"}
           right={
             <>
-              {viewer ? null : <HeaderPill label={t("mobileAi.algo")} onPress={() => router.push("/algo")} testID="ai-open-algo" />}
+              {unavailable === "viewer" || unavailable === "module" ? null : <HeaderPill label={t("mobileAi.algo")} onPress={() => router.push("/algo")} testID="ai-open-algo" />}
               {messages.length ? <IconButton tone="ghost" accessibilityLabel={t("mobileAi.newStrategy")} icon={<RotateCcw size={20} color={colors.text2} strokeWidth={1.9} />} onPress={() => confirmNew.current?.present()} /> : null}
             </>
           }
@@ -233,10 +236,10 @@ export function AiTraderScreen() {
           <View style={{ flex: 1, justifyContent: "center" }}>
             <EmptyState
               illustration={unavailable === "viewer" ? "security" : "maintenance"}
-              title={unavailable === "viewer" ? t("mobile.viewOnly") : t("mobileAi.unavailable.title")}
-              body={unavailable === "viewer" ? t("mobileAi.error.viewOnly") : t("mobileAi.unavailable.body")}
-              action={unavailable === "viewer" ? undefined : t("mobileAi.openAlgo")}
-              onAction={unavailable === "viewer" ? undefined : () => router.push("/algo")}
+              title={unavailable === "viewer" ? t("mobile.viewOnly") : unavailable === "module" ? t("mobileAi.unavailable.moduleTitle") : t("mobileAi.unavailable.title")}
+              body={unavailable === "viewer" ? t("mobileAi.error.viewOnly") : unavailable === "module" ? t("mobileAi.error.module") : t("mobileAi.unavailable.body")}
+              action={unavailable === "ai" ? t("mobileAi.openAlgo") : undefined}
+              onAction={unavailable === "ai" ? () => router.push("/algo") : undefined}
             />
           </View>
         ) : (
