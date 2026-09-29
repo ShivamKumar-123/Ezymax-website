@@ -9,6 +9,7 @@ import { LogOut, MoreHorizontal } from "lucide-react";
 import { cn } from "../lib/cn";
 import { Logo, LogoMark } from "./logo";
 import { Tooltip, TooltipProvider, Menu } from "../components/overlays";
+import { useLocale, useT } from "@kalks/i18n/react";
 
 export interface SubNavItem {
   href: string;
@@ -46,11 +47,17 @@ function subActive(pathname: string, s: SubNavItem, all: SubNavItem[]) {
 /* Icon rail                                                           */
 /* ------------------------------------------------------------------ */
 
-function IconRail({ modules, footer }: { modules: NavModule[]; footer?: React.ReactNode }) {
+/** Tooltips point away from the rail: right in left-to-right layouts, left in right-to-left ones. */
+function useRailSide(): "left" | "right" {
+  return useLocale().dir === "rtl" ? "left" : "right";
+}
+
+function IconRail({ modules, footer, side = "right" }: { modules: NavModule[]; footer?: React.ReactNode; side?: "left" | "right" }) {
+  const railSide = side;
   const pathname = usePathname();
   let lastSection: string | undefined;
   return (
-    <aside className="fixed inset-y-3 left-3 z-40 hidden w-[76px] flex-col items-center rounded-[24px] border border-line bg-surface/85 py-4 shadow-[inset_0_1px_0_var(--k-border-top)] backdrop-blur-xl lg:flex">
+    <aside className="fixed inset-y-3 start-3 z-40 hidden w-[76px] flex-col items-center rounded-[24px] border border-line bg-surface/85 py-4 shadow-[inset_0_1px_0_var(--k-border-top)] backdrop-blur-xl lg:flex">
       <Link href="/" className="grid size-11 place-items-center rounded-2xl border border-line bg-surface-3 shadow-[0_0_24px_-6px_rgba(255,90,31,0.55),inset_0_1px_0_var(--k-border-top)]">
         <LogoMark size={20} className="text-fg" />
       </Link>
@@ -63,7 +70,7 @@ function IconRail({ modules, footer }: { modules: NavModule[]; footer?: React.Re
           return (
             <React.Fragment key={m.key}>
               {sep && <span className="my-1.5 h-px w-8 bg-line" />}
-              <Tooltip content={m.label} side="right">
+              <Tooltip content={m.label} side={railSide}>
                 <Link
                   href={m.href}
                   target={m.external ? "_blank" : undefined}
@@ -72,11 +79,11 @@ function IconRail({ modules, footer }: { modules: NavModule[]; footer?: React.Re
                   {active && (
                     <>
                       <motion.span layoutId="rail-active" className="absolute inset-0 rounded-full border border-ember/25 bg-ember-soft" transition={{ type: "spring", bounce: 0.2, duration: 0.5 }} />
-                      <motion.span layoutId="rail-bar" className="absolute -left-2 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-ember shadow-[0_0_12px_var(--k-ember)]" />
+                      <motion.span layoutId="rail-bar" className="absolute -start-2 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-ember shadow-[0_0_12px_var(--k-ember)]" />
                     </>
                   )}
                   <Icon className="relative size-[19px]" strokeWidth={1.7} />
-                  {m.badge !== undefined && <span className="absolute right-0.5 top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 text-[9px] font-bold text-white ring-2 ring-surface">{m.badge}</span>}
+                  {m.badge !== undefined && <span className="absolute end-0.5 top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 text-[9px] font-bold text-white ring-2 ring-surface">{m.badge}</span>}
                 </Link>
               </Tooltip>
             </React.Fragment>
@@ -93,6 +100,7 @@ function IconRail({ modules, footer }: { modules: NavModule[]; footer?: React.Re
 /* ------------------------------------------------------------------ */
 
 function PillNav({ items, variant, fit = false }: { items: SubNavItem[]; variant: "icons" | "text"; fit?: boolean }) {
+  const t = useT();
   const pathname = usePathname();
   const MAX = variant === "text" ? 7 : 8;
   const activeIdx = items.findIndex((s) => subActive(pathname, s, items));
@@ -178,7 +186,7 @@ function PillNav({ items, variant, fit = false }: { items: SubNavItem[]; variant
               );
             })}
             <span className={moreBtnClass}>
-              More <MoreHorizontal className="size-4" />
+              {t("shell.more")} <MoreHorizontal className="size-4" />
             </span>
           </div>
         )}
@@ -209,7 +217,7 @@ function PillNav({ items, variant, fit = false }: { items: SubNavItem[]; variant
           <Menu
             trigger={
               <button className={moreBtnClass}>
-                More <MoreHorizontal className="size-4" />
+                {t("shell.more")} <MoreHorizontal className="size-4" />
               </button>
             }
             items={overflow.map((o) => ({ label: o.label, href: o.href, icon: o.icon ? <o.icon /> : undefined, hint: o.badge !== undefined ? <span className="k-num text-[11px] text-ember">{o.badge}</span> : undefined }))}
@@ -225,6 +233,7 @@ function PillNav({ items, variant, fit = false }: { items: SubNavItem[]; variant
 /* ------------------------------------------------------------------ */
 
 function MobileBar({ modules }: { modules: NavModule[] }) {
+  const t = useT();
   const pathname = usePathname();
   const primary = modules.slice(0, 4);
   const rest = modules.slice(4);
@@ -244,7 +253,7 @@ function MobileBar({ modules }: { modules: NavModule[] }) {
         trigger={
           <button className="flex flex-1 flex-col items-center gap-1 py-2 text-[10.5px] font-medium text-fg-3">
             <MoreHorizontal className="size-5" />
-            More
+            {t("shell.more")}
           </button>
         }
         items={rest.map((m) => ({ label: m.label, href: m.href, icon: <m.icon /> }))}
@@ -272,8 +281,10 @@ export function AppShell({
   pillVariant?: "icons" | "text";
   children: React.ReactNode;
 }) {
+  const t = useT();
   const pathname = usePathname();
   const current = modules.find((m) => isActive(pathname, m));
+  const railSide = useRailSide();
   return (
     <TooltipProvider>
       <div className="relative min-h-dvh overflow-x-clip">
@@ -281,10 +292,11 @@ export function AppShell({
         <div className="k-noise" />
         <IconRail
           modules={modules}
+          side={railSide}
           footer={
             <>
               {railFooter}
-              <Tooltip content="Log out" side="right">
+              <Tooltip content={t("shell.logOut")} side={railSide}>
                 <Link href="/login" className="grid size-10 place-items-center rounded-full text-fg-3 hover:bg-surface-3 hover:text-fg">
                   <LogOut className="size-[18px]" strokeWidth={1.7} />
                 </Link>
@@ -292,7 +304,7 @@ export function AppShell({
             </>
           }
         />
-        <div className="relative lg:pl-[100px]">
+        <div className="relative lg:ps-[100px]">
           <header className="sticky top-0 z-30 px-4 pt-3 sm:px-6 lg:px-8">
             <div className="flex h-16 items-center gap-4">
               <Link href="/" className="flex shrink-0 items-center gap-3">
@@ -300,7 +312,7 @@ export function AppShell({
                 {brandSuffix}
               </Link>
               <div className="hidden min-w-0 flex-1 justify-center xl:flex">{current?.sub && current.sub.length > 1 && <PillNav items={current.sub} variant={pillVariant} fit />}</div>
-              <div className="ml-auto flex shrink-0 items-center gap-2 xl:ml-0">{topRight}</div>
+              <div className="ms-auto flex shrink-0 items-center gap-2 xl:ms-0">{topRight}</div>
             </div>
             {current?.sub && current.sub.length > 1 && (
               <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] xl:hidden">

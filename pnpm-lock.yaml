@@ -175,6 +175,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@kalks/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@kalks/mock':
         specifier: workspace:*
         version: link:../../packages/mock
@@ -224,6 +227,9 @@ importers:
 
   apps/crm:
     dependencies:
+      '@kalks/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@kalks/mock':
         specifier: workspace:*
         version: link:../../packages/mock
@@ -288,6 +294,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: 0.128.0
         version: 0.128.0
+      '@kalks/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@kalks/mock':
         specifier: workspace:*
         version: link:../../packages/mock
@@ -341,6 +350,22 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
+  packages/i18n:
+    dependencies:
+      next:
+        specifier: ^16
+        version: 16.3.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.13.6)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react:
+        specifier: ^19
+        version: 19.3.0
+    devDependencies:
+      '@types/react':
+        specifier: ^19
+        version: 19.3.0
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
   packages/mock:
     devDependencies:
       typescript:
@@ -349,6 +374,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@kalks/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@kalks/mock':
         specifier: workspace:*
         version: link:../mock

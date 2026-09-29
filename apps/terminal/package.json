@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.128.0",
+    "@kalks/i18n": "workspace:*",
     "@kalks/mock": "workspace:*",
     "@kalks/ui": "workspace:*",
     "geist": "1.7.2",

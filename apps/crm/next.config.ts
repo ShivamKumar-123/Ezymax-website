@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const TERMINAL_URL = process.env.NEXT_PUBLIC_TERMINAL_URL ?? "http://localhost:3002";
 
 const config: NextConfig = {
-  transpilePackages: ["@kalks/ui", "@kalks/mock"],
+  transpilePackages: ["@kalks/ui", "@kalks/mock", "@kalks/i18n"],
   devIndicators: false,
   agentRules: false,
   images: { unoptimized: true },

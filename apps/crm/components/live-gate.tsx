@@ -5,25 +5,27 @@ import { usePathname } from "next/navigation";
 import { ArrowUpRight, LayoutGrid } from "lucide-react";
 import { Button, ComingSoon, ModeGate } from "@kalks/ui";
 import { IS_LIVE, pathAllowed } from "@kalks/mock";
-import { LIVE_GATED, LIVE_PAGES, TERMINAL_URL, soonFor } from "@/lib/live";
+import { LIVE_GATED, LIVE_PAGES, SUPPORT_EMAIL, TERMINAL_URL, soonFor } from "@/lib/live";
+import { useT } from "@kalks/i18n/react";
 
 /** "Coming soon" page for a path that isn't backed by real data yet (live builds only). */
 export function SoonPage({ pathname }: { pathname: string }) {
+  const t = useT();
   const soon = soonFor(pathname);
   return (
     <ComingSoon
-      title={soon?.title ?? "Not enabled for your account yet"}
-      text={soon?.text ?? "This section isn't enabled for your account yet. Contact support@kalkstrade.com if you need access."}
+      title={soon?.title ?? t("shell.gate.title")}
+      text={soon?.text ?? t("shell.gate.text", { email: SUPPORT_EMAIL })}
       action={
         <div className="flex flex-wrap items-center justify-center gap-2">
           <Link href="/">
             <Button variant="surface">
-              <LayoutGrid /> Back to dashboard
+              <LayoutGrid /> {t("shell.gate.backToDashboard")}
             </Button>
           </Link>
           <a href={TERMINAL_URL} target="_blank" rel="noopener">
             <Button variant="ember">
-              Launch Kalks Trader <ArrowUpRight />
+              {t("shell.gate.launchTrader")} <ArrowUpRight />
             </Button>
           </a>
         </div>

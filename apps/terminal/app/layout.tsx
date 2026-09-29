@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { getI18n } from "@kalks/i18n/server";
 import { TerminalProviders } from "./providers";
 import "./globals.css";
 
@@ -12,11 +13,13 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#07070a", width: "device-width", initialScale: 1, maximumScale: 1 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // same language cookie as the Client Area (kalks_locale), else the browser's Accept-Language
+  const { locale, dir, messages } = await getI18n();
   return (
-    <html lang="en" dir="ltr" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang={locale} dir={dir} suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="overflow-hidden">
-        <TerminalProviders>{children}</TerminalProviders>
+        <TerminalProviders locale={locale} messages={messages}>{children}</TerminalProviders>
       </body>
     </html>
   );

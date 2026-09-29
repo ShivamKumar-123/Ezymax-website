@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@kalks/i18n": "workspace:*",
     "@kalks/mock": "workspace:*",
     "@kalks/ui": "workspace:*",
     "geist": "1.7.2",

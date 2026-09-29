@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const config: NextConfig = {
-  transpilePackages: ["@kalks/ui", "@kalks/mock"],
+  transpilePackages: ["@kalks/ui", "@kalks/mock", "@kalks/i18n"],
   devIndicators: false,
   agentRules: false,
   images: { unoptimized: true },
