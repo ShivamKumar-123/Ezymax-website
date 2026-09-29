@@ -3,6 +3,8 @@
 // Browser side of the KYC BFF (app/api/kyc/[[...path]]/route.ts). Shapes mirror services/gateway/src/kyc.rs.
 
 import * as React from "react";
+import { tr } from "@kalks/i18n/react";
+import type { MessageKey } from "@kalks/i18n";
 
 export type CaseStatus = "draft" | "submitted" | "in_review" | "more_info" | "approved" | "rejected";
 export type IdType = "passport" | "national_id" | "driving_licence";
@@ -104,10 +106,10 @@ async function parse<T>(res: Response): Promise<Result<T>> {
   const body = await res.json().catch(() => ({}));
   if (res.status === 401) {
     expired();
-    return { ok: false, status: 401, error: { code: "unauthorized", message: "Your session has ended." } };
+    return { ok: false, status: 401, error: { code: "unauthorized", message: tr("kyc.error.sessionEnded") } };
   }
   if (res.ok) return { ok: true, data: body as T };
-  return { ok: false, status: res.status, error: (body as { error?: ApiError }).error ?? { code: "unknown", message: "Something went wrong. Please try again." } };
+  return { ok: false, status: res.status, error: (body as { error?: ApiError }).error ?? { code: "unknown", message: tr("kyc.error.generic") } };
 }
 
 export async function kycPost<T = KycState>(action: "start" | "details" | "submit", body: unknown): Promise<Result<T>> {
@@ -115,7 +117,7 @@ export async function kycPost<T = KycState>(action: "start" | "details" | "submi
     const res = await fetch(`/api/kyc/${action}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), credentials: "same-origin" });
     return parse<T>(res);
   } catch {
-    return { ok: false, status: 0, error: { code: "network", message: "Can't reach Kalks. Check your connection and try again." } };
+    return { ok: false, status: 0, error: { code: "network", message: tr("kyc.error.network") } };
   }
 }
 
@@ -149,12 +151,12 @@ export function uploadDocument(
       }
       if (xhr.status === 401) {
         expired();
-        return resolve({ ok: false, status: 401, error: { code: "unauthorized", message: "Your session has ended." } });
+        return resolve({ ok: false, status: 401, error: { code: "unauthorized", message: tr("kyc.error.sessionEnded") } });
       }
       if (xhr.status >= 200 && xhr.status < 300) return resolve({ ok: true, data: body as UploadResult });
-      resolve({ ok: false, status: xhr.status, error: (body as { error?: ApiError }).error ?? { code: "unknown", message: "Upload failed. Please try again." } });
+      resolve({ ok: false, status: xhr.status, error: (body as { error?: ApiError }).error ?? { code: "unknown", message: tr("kyc.error.uploadFailed") } });
     };
-    xhr.onerror = () => resolve({ ok: false, status: 0, error: { code: "network", message: "Upload interrupted. Check your connection and try again." } });
+    xhr.onerror = () => resolve({ ok: false, status: 0, error: { code: "network", message: tr("kyc.error.uploadInterrupted") } });
     xhr.send(fd);
   });
 }
@@ -175,7 +177,7 @@ export function useKyc(pollMs?: number) {
           setError(null);
         } else setError(r.error);
       })
-      .catch(() => alive && setError({ code: "network", message: "Can't reach Kalks. Check your connection and try again." }));
+      .catch(() => alive && setError({ code: "network", message: tr("kyc.error.network") }));
     return () => {
       alive = false;
     };
@@ -189,10 +191,11 @@ export function useKyc(pollMs?: number) {
   return { data, setData, error, reload };
 }
 
-export const ID_TYPES: { value: IdType; label: string; hint: string }[] = [
-  { value: "passport", label: "Passport", hint: "Photo page only" },
-  { value: "national_id", label: "National ID", hint: "Front and back" },
-  { value: "driving_licence", label: "Driving licence", hint: "Front and back" },
+/** Labels are message keys: translate at render with t(). */
+export const ID_TYPES: { value: IdType; label: MessageKey; hint: MessageKey }[] = [
+  { value: "passport", label: "kyc.idType.passport", hint: "kyc.idType.passportHint" },
+  { value: "national_id", label: "kyc.idType.nationalId", hint: "kyc.idType.frontAndBack" },
+  { value: "driving_licence", label: "kyc.idType.drivingLicence", hint: "kyc.idType.frontAndBack" },
 ];
 
 export function sameSlot(a: Slot, b: Slot) {

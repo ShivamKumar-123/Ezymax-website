@@ -7,6 +7,7 @@
 // otherwise a brightness / contrast heuristic inside the oval). Results travel with the upload so the reviewer
 // sees what the client saw. The gateway re-checks type, size and resolution on its side.
 
+import { tr } from "@kalks/i18n/react";
 import type { ClientChecks } from "./api";
 
 export type Purpose = "id" | "poa" | "selfie" | "doc";
@@ -219,15 +220,15 @@ export async function analyze(source: CanvasImageSource, sw: number, sh: number,
 
 /** Cheap live sample of the camera (320 px) for on-screen guidance. */
 export function liveSample(video: HTMLVideoElement, purpose: Purpose): { hint: string; good: boolean } {
-  if (!video.videoWidth) return { hint: "Starting camera…", good: false };
+  if (!video.videoWidth) return { hint: tr("kyc.camera.starting"), good: false };
   const { gray: gi } = gray(video, video.videoWidth, video.videoHeight, 320);
   const { variance } = laplacian(gi);
   const s = stats(gi.g);
-  if (s.mean < 50) return { hint: "Too dark. Find more light.", good: false };
-  if (s.mean > 238) return { hint: "Too bright. Move away from direct light.", good: false };
-  if ((purpose === "id" || purpose === "selfie") && s.clipped > 0.08) return { hint: "Glare detected. Tilt away from the light.", good: false };
-  if (variance < (purpose === "selfie" ? 10 : 30)) return { hint: "Hold steady…", good: false };
-  return { hint: purpose === "selfie" ? "Looks good. Keep still." : "Looks good. Hold still and capture.", good: true };
+  if (s.mean < 50) return { hint: tr("kyc.camera.live.tooDark"), good: false };
+  if (s.mean > 238) return { hint: tr("kyc.camera.live.tooBright"), good: false };
+  if ((purpose === "id" || purpose === "selfie") && s.clipped > 0.08) return { hint: tr("kyc.camera.live.glare"), good: false };
+  if (variance < (purpose === "selfie" ? 10 : 30)) return { hint: tr("kyc.camera.live.holdSteady"), good: false };
+  return { hint: purpose === "selfie" ? tr("kyc.camera.live.goodSelfie") : tr("kyc.camera.live.goodDoc"), good: true };
 }
 
 /** Decodes an image file for analysis (JPEG / PNG / WebP; HEIC decodes only where the browser supports it). */
@@ -247,41 +248,49 @@ export function ageDays(iso: string): number {
   return Math.round((t.getTime() - d.getTime()) / 86_400_000);
 }
 
+// `skipped` is stored with the upload in English (the reviewer reads it); it is translated only for display.
+const SKIPPED_KEYS = {
+  "This image format is checked by our team after upload.": "kyc.check.skipped.format",
+  "PDF documents are checked by our team after upload.": "kyc.check.skipped.pdf",
+  "HEIC photos are checked by our team after upload.": "kyc.check.skipped.heic",
+} as const;
+
 export type CheckRow = { key: string; label: string; state: "ok" | "warn" | "fail" | "info"; detail: string };
 
 /** Human rows for a check result (shown instantly, before upload). `fail` blocks the upload. */
 export function checkRows(c: ClientChecks, purpose: Purpose, opts: { passport?: boolean } = {}): CheckRow[] {
   const rows: CheckRow[] = [];
   if (c.skipped) {
-    rows.push({ key: "skipped", label: "Quality checks", state: "info", detail: c.skipped });
+    const sk = SKIPPED_KEYS[c.skipped as keyof typeof SKIPPED_KEYS];
+    rows.push({ key: "skipped", label: tr("kyc.check.quality"), state: "info", detail: sk ? tr(sk) : c.skipped });
     return rows;
   }
   if (c.resolution)
     rows.push({
       key: "resolution",
-      label: "Resolution",
+      label: tr("kyc.check.resolution"),
       state: c.resolution.ok ? "ok" : "fail",
-      detail: c.resolution.ok ? `${c.width} × ${c.height} px` : `Too low (${Math.min(c.width ?? 0, c.height ?? 0)} px). Use your camera's full resolution.`,
+      detail: c.resolution.ok ? `${c.width} × ${c.height} px` : tr("kyc.check.resolutionLow", { px: Math.min(c.width ?? 0, c.height ?? 0) }),
     });
-  if (c.blur) rows.push({ key: "blur", label: "Sharpness", state: c.blur.ok ? "ok" : "warn", detail: c.blur.ok ? "Sharp and in focus" : "Looks blurry. Hold steady and tap to focus." });
-  if (c.glare) rows.push({ key: "glare", label: "Glare", state: c.glare.ok ? "ok" : "warn", detail: c.glare.ok ? "No glare" : "Bright reflections detected. Tilt away from the light." });
+  if (c.blur) rows.push({ key: "blur", label: tr("kyc.check.sharpness"), state: c.blur.ok ? "ok" : "warn", detail: c.blur.ok ? tr("kyc.check.sharp") : tr("kyc.check.blurry") });
+  if (c.glare) rows.push({ key: "glare", label: tr("kyc.check.glare"), state: c.glare.ok ? "ok" : "warn", detail: c.glare.ok ? tr("kyc.check.noGlare") : tr("kyc.check.glareFound") });
   if (c.brightness)
     rows.push({
       key: "brightness",
-      label: "Lighting",
+      label: tr("kyc.check.lighting"),
       state: c.brightness.ok ? "ok" : "warn",
-      detail: c.brightness.ok ? "Well lit" : c.brightness.mean < 55 ? "Too dark. Find more light." : "Over-exposed. Avoid direct light.",
+      detail: c.brightness.ok ? tr("kyc.check.wellLit") : c.brightness.mean < 55 ? tr("kyc.check.tooDark") : tr("kyc.check.overExposed"),
     });
-  if (c.fill) rows.push({ key: "fill", label: "Framing", state: c.fill.ok ? "ok" : "warn", detail: c.fill.ok ? "Document fills the frame" : "Move closer so the document fills the frame." });
+  if (c.fill) rows.push({ key: "fill", label: tr("kyc.check.framing"), state: c.fill.ok ? "ok" : "warn", detail: c.fill.ok ? tr("kyc.check.fills") : tr("kyc.check.moveCloser") });
   if (purpose === "id" && opts.passport && c.mrz)
-    rows.push({ key: "mrz", label: "Machine-readable zone", state: c.mrz.found ? "ok" : "warn", detail: c.mrz.found ? "Both lines at the bottom are readable" : "Make sure the two lines at the bottom are visible." });
+    rows.push({ key: "mrz", label: tr("kyc.check.mrz"), state: c.mrz.found ? "ok" : "warn", detail: c.mrz.found ? tr("kyc.check.mrzOk") : tr("kyc.check.mrzMissing") });
   if (c.face)
     rows.push({
       key: "face",
-      label: "Face",
+      label: tr("kyc.check.face"),
       state: c.face.found ? "ok" : "warn",
-      detail: c.face.found ? (c.face.method === "face_detector" ? "Face detected" : "Face in the oval") : "We couldn't see your face clearly. Centre it in the oval.",
+      detail: c.face.found ? (c.face.method === "face_detector" ? tr("kyc.check.faceDetected") : tr("kyc.check.faceInOval")) : tr("kyc.check.faceMissing"),
     });
-  if (c.issue_date) rows.push({ key: "issue_date", label: "Issue date", state: c.issue_date.ok ? "ok" : "fail", detail: c.issue_date.ok ? `Issued ${c.issue_date.age_days} days ago` : "Must be issued within the last 3 months." });
+  if (c.issue_date) rows.push({ key: "issue_date", label: tr("kyc.check.issueDate"), state: c.issue_date.ok ? "ok" : "fail", detail: c.issue_date.ok ? tr("kyc.check.issuedDaysAgo", { count: c.issue_date.age_days }) : tr("kyc.check.issueTooOld") });
   return rows;
 }

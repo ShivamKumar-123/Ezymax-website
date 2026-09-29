@@ -4,16 +4,18 @@ import * as React from "react";
 import { AlertTriangle, BadgeCheck, Check, Clock, FileSearch, Lock, Mail, RotateCcw, ShieldCheck, UserCheck, X } from "lucide-react";
 import { motion } from "motion/react";
 import { Button, Chip, cn } from "@kalks/ui";
+import { tr, useT } from "@kalks/i18n/react";
+import type { T } from "@kalks/i18n";
 import type { KycDocument, KycState, TimelineEvent } from "./api";
 
 function fmt(iso: string | null | undefined, withTime = true) {
   if (!iso) return "";
   const d = new Date(iso);
-  return d.toLocaleString("en-GB", { day: "numeric", month: "short", ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}) });
+  return d.toLocaleString(tr.locale === "en" ? "en-GB" : tr.locale, { day: "numeric", month: "short", ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}) });
 }
 
 export function hoursLabel(h: number) {
-  return h <= 1 ? "1 hour" : `${h} hours`;
+  return tr("kyc.hours", { count: h <= 1 ? 1 : h });
 }
 
 /* ------------------------------------------------------------------ */
@@ -29,20 +31,21 @@ export function submissionChecks(state: KycState): CheckStep[] {
   const all = <K extends keyof NonNullable<KycDocument["checks"]["client"]>>(k: K, pred: (v: NonNullable<NonNullable<KycDocument["checks"]["client"]>[K]>) => boolean) =>
     client.filter((c) => c[k] !== undefined).every((c) => pred(c[k] as never));
   const steps: CheckStep[] = [
-    { key: "received", label: "Documents received", detail: `${docs.length} file${docs.length === 1 ? "" : "s"}, type and size verified` },
-    { key: "quality", label: "Image quality", detail: all("blur", (b) => b.ok) && all("brightness", (b) => b.ok) ? "Sharp and well lit" : "Some photos flagged for a closer look", warn: !(all("blur", (b) => b.ok) && all("brightness", (b) => b.ok)) },
-    { key: "resolution", label: "Resolution", detail: docs.every((d) => d.checks.resolution?.ok !== false) ? "Every image meets the minimum" : "Low resolution flagged", warn: docs.some((d) => d.checks.resolution?.ok === false) },
+    { key: "received", label: tr("kyc.checking.received"), detail: tr("kyc.checking.receivedDetail", { count: docs.length }) },
+    { key: "quality", label: tr("kyc.checking.quality"), detail: all("blur", (b) => b.ok) && all("brightness", (b) => b.ok) ? tr("kyc.checking.qualityOk") : tr("kyc.checking.qualityWarn"), warn: !(all("blur", (b) => b.ok) && all("brightness", (b) => b.ok)) },
+    { key: "resolution", label: tr("kyc.checking.resolution"), detail: docs.every((d) => d.checks.resolution?.ok !== false) ? tr("kyc.checking.resolutionOk") : tr("kyc.checking.resolutionWarn"), warn: docs.some((d) => d.checks.resolution?.ok === false) },
   ];
-  if (client.some((c) => c.glare)) steps.push({ key: "glare", label: "Glare and reflections", detail: all("glare", (g) => g.ok) ? "No glare on your ID" : "Reflections flagged for review", warn: !all("glare", (g) => g.ok) });
-  if (client.some((c) => c.fill)) steps.push({ key: "framing", label: "Document framing", detail: all("fill", (f) => f.ok) ? "Documents fill the frame" : "Framing flagged for review", warn: !all("fill", (f) => f.ok) });
-  if (client.some((c) => c.mrz)) steps.push({ key: "mrz", label: "Passport machine-readable zone", detail: all("mrz", (m) => m.found) ? "Both MRZ lines found" : "MRZ flagged for review", warn: !all("mrz", (m) => m.found) });
-  if (docs.some((d) => d.kind === "proof_of_address" || d.kind === "company_address")) steps.push({ key: "poa", label: "Proof of address date", detail: "Issued within the last 3 months" });
-  if (client.some((c) => c.face)) steps.push({ key: "face", label: "Face in selfie", detail: all("face", (f) => f.found) ? "Face detected" : "Selfie flagged for review", warn: !all("face", (f) => f.found) });
-  steps.push({ key: "send", label: "Sending to our verification team", detail: "Encrypted end to end" });
+  if (client.some((c) => c.glare)) steps.push({ key: "glare", label: tr("kyc.checking.glare"), detail: all("glare", (g) => g.ok) ? tr("kyc.checking.glareOk") : tr("kyc.checking.glareWarn"), warn: !all("glare", (g) => g.ok) });
+  if (client.some((c) => c.fill)) steps.push({ key: "framing", label: tr("kyc.checking.framing"), detail: all("fill", (f) => f.ok) ? tr("kyc.checking.framingOk") : tr("kyc.checking.framingWarn"), warn: !all("fill", (f) => f.ok) });
+  if (client.some((c) => c.mrz)) steps.push({ key: "mrz", label: tr("kyc.checking.mrz"), detail: all("mrz", (m) => m.found) ? tr("kyc.checking.mrzOk") : tr("kyc.checking.mrzWarn"), warn: !all("mrz", (m) => m.found) });
+  if (docs.some((d) => d.kind === "proof_of_address" || d.kind === "company_address")) steps.push({ key: "poa", label: tr("kyc.checking.poa"), detail: tr("kyc.checking.poaDetail") });
+  if (client.some((c) => c.face)) steps.push({ key: "face", label: tr("kyc.checking.face"), detail: all("face", (f) => f.found) ? tr("kyc.checking.faceOk") : tr("kyc.checking.faceWarn"), warn: !all("face", (f) => f.found) });
+  steps.push({ key: "send", label: tr("kyc.checking.send"), detail: tr("kyc.checking.sendDetail") });
   return steps;
 }
 
 export function CheckingSequence({ steps, serverDone, onFinish }: { steps: CheckStep[]; serverDone: boolean; onFinish: () => void }) {
+  const t = useT();
   const [n, setN] = React.useState(0);
   const last = steps.length - 1;
   React.useEffect(() => {
@@ -67,8 +70,8 @@ export function CheckingSequence({ steps, serverDone, onFinish }: { steps: Check
         <span className="mx-auto grid size-14 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember">
           <FileSearch className="size-6" />
         </span>
-        <h3 className="mt-4 text-xl font-medium tracking-tight">Checking your documents…</h3>
-        <p className="mt-1 text-[13px] text-fg-3">This takes a few seconds. Please keep this page open.</p>
+        <h3 className="mt-4 text-xl font-medium tracking-tight">{t("kyc.checking.title")}</h3>
+        <p className="mt-1 text-[13px] text-fg-3">{t("kyc.checking.text")}</p>
       </div>
       <ul className="mt-6 space-y-2">
         {steps.map((s, i) => {
@@ -94,7 +97,7 @@ export function CheckingSequence({ steps, serverDone, onFinish }: { steps: Check
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[13.5px] font-medium">{s.label}</span>
-                <span className="block truncate text-[12px] text-fg-3">{done ? s.detail : active ? "Checking…" : "Waiting"}</span>
+                <span className="block truncate text-[12px] text-fg-3">{done ? s.detail : active ? t("kyc.checking.active") : t("kyc.checking.waiting")}</span>
               </span>
             </motion.li>
           );
@@ -110,27 +113,27 @@ export function CheckingSequence({ steps, serverDone, onFinish }: { steps: Check
 
 type Stage = { key: string; icon: React.ReactNode; title: string; text: string; state: "done" | "current" | "todo" | "failed" | "action" };
 
-function stages(s: KycState): Stage[] {
+function stages(s: KycState, t: T): Stage[] {
   const c = s.case!;
   const typical = hoursLabel(s.review.typical_hours);
   const reviewing = c.status === "in_review";
   const decided = c.status === "approved" || c.status === "rejected";
   const firstSubmit = s.timeline.find((e) => e.kind === "submitted")?.at ?? c.submitted_at;
   return [
-    { key: "submitted", icon: <Check />, title: "Documents submitted", text: fmt(firstSubmit) + (c.submissions > 1 ? ` · resubmitted ${fmt(c.submitted_at)}` : ""), state: "done" },
-    { key: "auto", icon: <ShieldCheck />, title: "Automatic checks", text: "Format, quality and dates passed", state: "done" },
+    { key: "submitted", icon: <Check />, title: t("kyc.tracker.stage.submitted"), text: fmt(firstSubmit) + (c.submissions > 1 ? t("kyc.tracker.stage.resubmitted", { date: fmt(c.submitted_at) }) : ""), state: "done" },
+    { key: "auto", icon: <ShieldCheck />, title: t("kyc.tracker.stage.auto"), text: t("kyc.tracker.stage.autoDetail"), state: "done" },
     {
       key: "review",
       icon: <UserCheck />,
-      title: "Review by our verification team",
-      text: decided ? `Completed ${fmt(c.decided_at)}` : c.status === "more_info" ? "Waiting for your documents" : reviewing ? `In review since ${fmt(c.review_started_at)}` : `Usually within ${typical}`,
+      title: t("kyc.tracker.stage.review"),
+      text: decided ? t("kyc.tracker.stage.completed", { date: fmt(c.decided_at) }) : c.status === "more_info" ? t("kyc.tracker.stage.waitingDocs") : reviewing ? t("kyc.tracker.stage.inReviewSince", { date: fmt(c.review_started_at) }) : t("kyc.tracker.stage.usuallyWithin", { hours: typical }),
       state: decided ? "done" : c.status === "more_info" ? "action" : "current",
     },
     {
       key: "decision",
       icon: c.status === "rejected" ? <X /> : <BadgeCheck />,
-      title: c.status === "approved" ? "Identity verified" : c.status === "rejected" ? "Not approved" : "Decision",
-      text: c.status === "approved" ? "Withdrawals are unlocked" : c.status === "rejected" ? (c.decision?.label ?? "See the reason above") : "We'll email you the result",
+      title: c.status === "approved" ? t("kyc.tracker.stage.verified") : c.status === "rejected" ? t("kyc.tracker.stage.notApproved") : t("kyc.tracker.stage.decision"),
+      text: c.status === "approved" ? t("kyc.tracker.stage.unlocked") : c.status === "rejected" ? (c.decision?.label ?? t("kyc.tracker.stage.seeReason")) : t("kyc.tracker.stage.emailResult"),
       state: c.status === "approved" ? "done" : c.status === "rejected" ? "failed" : "todo",
     },
   ];
@@ -144,38 +147,23 @@ const STAGE_TONE: Record<Stage["state"], string> = {
   todo: "border-line text-fg-3",
 };
 
-function eventLabel(e: TimelineEvent) {
-  switch (e.kind) {
-    case "started":
-      return "Verification started";
-    case "submitted":
-      return "Documents submitted";
-    case "resubmitted":
-      return "Requested documents submitted";
-    case "review_started":
-      return "Review started";
-    case "more_info_requested":
-      return "More information requested";
-    case "approved":
-      return "Identity verified";
-    case "rejected":
-      return "Verification not approved";
-    default:
-      return e.kind.replace(/_/g, " ");
-  }
+function eventLabel(e: TimelineEvent, t: T) {
+  // known kinds have kyc.event.* keys; anything else falls back to the raw kind
+  return t.dyn(`kyc.event.${e.kind}`, e.kind.replace(/_/g, " "));
 }
 
 export function StatusTracker({ state, justSubmitted, onRestart }: { state: KycState; justSubmitted?: boolean; onRestart?: () => void }) {
+  const t = useT();
   const c = state.case!;
   const typical = hoursLabel(state.review.typical_hours);
   const head =
     c.status === "approved"
-      ? { icon: <BadgeCheck className="size-7" />, tone: "border-up/30 bg-up-soft text-up", title: "You're verified", text: "Your identity is confirmed. Withdrawals, partner payouts and higher limits are unlocked." }
+      ? { icon: <BadgeCheck className="size-7" />, tone: "border-up/30 bg-up-soft text-up", title: t("kyc.tracker.approved.title"), text: t("kyc.tracker.approved.text") }
       : c.status === "rejected"
-        ? { icon: <AlertTriangle className="size-7" />, tone: "border-down/30 bg-down-soft text-down", title: "We couldn't verify your identity", text: c.decision?.label ? `${c.decision.label}.` : "Your documents could not be approved." }
+        ? { icon: <AlertTriangle className="size-7" />, tone: "border-down/30 bg-down-soft text-down", title: t("kyc.tracker.rejected.title"), text: c.decision?.label ? `${c.decision.label}.` : t("kyc.tracker.rejected.text") }
         : c.status === "in_review"
-          ? { icon: <UserCheck className="size-7" />, tone: "border-ember/30 bg-ember-soft text-ember", title: "Your documents are being reviewed", text: `A member of our verification team is looking at your documents now. Most reviews finish within ${typical}.` }
-          : { icon: <Clock className="size-7" />, tone: "border-ember/30 bg-ember-soft text-ember", title: justSubmitted ? `Submitted: usually reviewed within ${typical}` : `In the queue: usually reviewed within ${typical}`, text: "Your documents passed our automatic checks and are with our verification team. You can keep trading and depositing meanwhile." };
+          ? { icon: <UserCheck className="size-7" />, tone: "border-ember/30 bg-ember-soft text-ember", title: t("kyc.tracker.inReview.title"), text: t("kyc.tracker.inReview.text", { hours: typical }) }
+          : { icon: <Clock className="size-7" />, tone: "border-ember/30 bg-ember-soft text-ember", title: justSubmitted ? t("kyc.tracker.submitted.title", { hours: typical }) : t("kyc.tracker.queued.title", { hours: typical }), text: t("kyc.tracker.queued.text") };
   return (
     <div data-testid="tracker" data-status={c.status}>
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
@@ -187,23 +175,23 @@ export function StatusTracker({ state, justSubmitted, onRestart }: { state: KycS
       </div>
 
       {c.status === "rejected" && c.decision?.message && (
-        <div className="mt-4 rounded-[14px] border border-line border-l-[3px] border-l-gold bg-surface-2 px-4 py-3 text-[13px] text-fg-2">
-          <div className="mb-0.5 text-[11px] font-medium uppercase tracking-wider text-fg-3">Note from our team</div>
+        <div className="mt-4 rounded-[14px] border border-line border-s-[3px] border-s-gold bg-surface-2 px-4 py-3 text-[13px] text-fg-2">
+          <div className="mb-0.5 text-[11px] font-medium uppercase tracking-wider text-fg-3">{t("kyc.wizard.noteFromTeam")}</div>
           {c.decision.message}
         </div>
       )}
 
-      <ol className="mt-6 space-y-0" aria-label="Verification progress">
-        {stages(state).map((s, i, all) => (
+      <ol className="mt-6 space-y-0" aria-label={t("kyc.tracker.progressAria")}>
+        {stages(state, t).map((s, i, all) => (
           <li key={s.key} className="relative flex gap-4 pb-5 last:pb-0" data-stage={s.key} data-state={s.state}>
-            {i < all.length - 1 && <span className={cn("absolute left-[17px] top-9 h-[calc(100%-28px)] w-px", s.state === "done" ? "bg-up/40" : "bg-line")} />}
+            {i < all.length - 1 && <span className={cn("absolute start-[17px] top-9 h-[calc(100%-28px)] w-px", s.state === "done" ? "bg-up/40" : "bg-line")} />}
             <span className={cn("relative grid size-9 shrink-0 place-items-center rounded-full border [&_svg]:size-4", STAGE_TONE[s.state])}>{s.state === "done" ? <Check strokeWidth={2.5} /> : s.icon}</span>
             <div className="min-w-0 pt-1.5">
               <div className="flex flex-wrap items-center gap-2 text-[14px] font-medium">
                 {s.title}
                 {s.state === "current" && (
                   <Chip size="sm" tone="ember" dot>
-                    In progress
+                    {t("kyc.tracker.inProgress")}
                   </Chip>
                 )}
               </div>
@@ -216,7 +204,7 @@ export function StatusTracker({ state, justSubmitted, onRestart }: { state: KycS
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-line bg-surface-2 px-4 py-3 text-[12.5px] text-fg-3">
         <span className="inline-flex items-center gap-2">
           <Mail className="size-4" />{" "}
-          {c.status === "approved" || c.status === "rejected" ? `We emailed the decision to ${state.profile.email}.` : `We'll email ${state.profile.email} when there's a decision.`}
+          {c.status === "approved" || c.status === "rejected" ? t("kyc.tracker.emailedDecision", { email: state.profile.email }) : t("kyc.tracker.willEmail", { email: state.profile.email })}
         </span>
         <span className="font-mono">{c.reference}</span>
       </div>
@@ -224,26 +212,26 @@ export function StatusTracker({ state, justSubmitted, onRestart }: { state: KycS
       {c.status === "rejected" && state.can_start && onRestart && (
         <div className="mt-5 flex justify-end">
           <Button variant="ember" onClick={onRestart}>
-            <RotateCcw /> Start again
+            <RotateCcw /> {t("kyc.tracker.startAgain")}
           </Button>
         </div>
       )}
       {c.status === "approved" && (
         <div className="mt-4 flex items-center gap-2 text-[12.5px] text-fg-3">
-          <Lock className="size-3.5" /> Your name and date of birth are now locked to your verified documents.
+          <Lock className="size-3.5" /> {t("kyc.tracker.locked")}
         </div>
       )}
 
       {state.timeline.length > 1 && (
         <details className="mt-5 text-[12.5px]">
-          <summary className="cursor-pointer text-fg-3 hover:text-fg">Activity</summary>
+          <summary className="cursor-pointer text-fg-3 hover:text-fg">{t("kyc.tracker.activity")}</summary>
           <ul className="mt-2 space-y-1.5">
             {state.timeline
               .slice()
               .reverse()
               .map((e) => (
                 <li key={e.id} className="flex justify-between gap-3 text-fg-2">
-                  <span>{eventLabel(e)}</span>
+                  <span>{eventLabel(e, t)}</span>
                   <span className="shrink-0 text-fg-3">{fmt(e.at)}</span>
                 </li>
               ))}
