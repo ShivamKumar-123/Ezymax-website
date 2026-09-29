@@ -45,20 +45,22 @@ export function Tag({ label, tone = "neutral", style }: { label: string; tone?: 
   );
 }
 
-/** Label on the start side, value (tabular) on the end side. */
+/**
+ * Label on the start side, value on the end side. Wrapped values align to the end: "right" is the end in both
+ * directions, since React Native swaps left / right under a right-to-left layout (I18nManager).
+ */
 export function KV({ label, value, tone, ink, last, mono = true }: { label: string; value: React.ReactNode; tone?: "up" | "down" | "ember" | "gold" | "mint"; ink?: boolean; last?: boolean; mono?: boolean }) {
-  const { rtl } = useLocale();
   return (
     <View style={{ minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[4], paddingVertical: space[2], borderBottomWidth: last ? 0 : 1, borderBottomColor: ink ? "rgba(14,14,16,0.12)" : colors.line }}>
       <Text variant="callout" color={ink ? colors.ink2 : colors.text3} style={{ flexShrink: 1, maxWidth: "48%" }}>
         {label}
       </Text>
       {typeof value === "string" && mono ? (
-        <Mono size={14} weight="medium" tone={ink ? "ink" : tone ?? "primary"} align={rtl ? "left" : "right"} style={{ flexShrink: 1 }}>
+        <Mono size={14} weight="medium" tone={ink ? "ink" : tone ?? "primary"} align="right" style={{ flexShrink: 1 }}>
           {value}
         </Mono>
       ) : typeof value === "string" ? (
-        <Text variant="callout" weight="600" tone={ink ? "ink" : tone ?? "primary"} align={rtl ? "left" : "right"} style={{ flexShrink: 1 }}>
+        <Text variant="callout" weight="600" tone={ink ? "ink" : tone ?? "primary"} align="right" style={{ flexShrink: 1 }}>
           {value}
         </Text>
       ) : (
