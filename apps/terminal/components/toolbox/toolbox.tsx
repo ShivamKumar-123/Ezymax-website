@@ -10,6 +10,7 @@ import { DropMenu } from "@/components/ui/menu";
 import { TradeTab, bulkMenu } from "./trade-tab";
 import { AlertsTab, CalendarTab, ExposureTab, HistoryTab, JournalTab, NewsTab } from "./tabs";
 import { AiTraderTab, useAi } from "./ai-trader";
+import { LiveCalendarTab, LiveNewsTab } from "./news-live";
 import { ShareControls } from "@/components/share/share-dialogs";
 import { GuestNotice } from "@/components/shell/guest";
 
@@ -28,8 +29,8 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
     { value: "trade", label: "Trade", count: T.positions.length + T.pendings.length },
     { value: "history", label: "History" },
     { value: "exposure", label: "Exposure" },
-    // news and calendar are sample content: shown in demo builds only
-    ...(T.live ? [] : ([{ value: "news", label: "News", count: 3 }, { value: "calendar", label: "Calendar" }] as const)),
+    // live builds: real headlines and calendar (services/news); demo builds: sample content
+    ...(T.live ? ([{ value: "news", label: "News" }, { value: "calendar", label: "Calendar" }] as const) : ([{ value: "news", label: "News", count: 3 }, { value: "calendar", label: "Calendar" }] as const)),
     { value: "alerts", label: "Alerts", count: T.alerts.filter((a) => a.active).length },
     { value: "journal", label: "Journal" },
     { value: "ai", label: "AI Trader", count: ai.records.filter((r) => r.status === "active").length },
@@ -72,21 +73,21 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
         {T.guest && GUEST_TABS[tab] ? (
           <GuestNotice icon={GUEST_TABS[tab]!.icon} text={GUEST_TABS[tab]!.text} />
         ) : (
-          <ToolboxBody tab={T.live && (tab === "news" || tab === "calendar") ? "journal" : tab} />
+          <ToolboxBody tab={tab} live={T.live} />
         )}
       </div>
     </section>
   );
 }
 
-function ToolboxBody({ tab }: { tab: ToolboxTab }) {
+function ToolboxBody({ tab, live }: { tab: ToolboxTab; live: boolean }) {
   return (
     <>
         {tab === "trade" && <TradeTab />}
         {tab === "history" && <HistoryTab />}
         {tab === "exposure" && <ExposureTab />}
-        {tab === "news" && <NewsTab />}
-        {tab === "calendar" && <CalendarTab />}
+        {tab === "news" && (live ? <LiveNewsTab /> : <NewsTab />)}
+        {tab === "calendar" && (live ? <LiveCalendarTab /> : <CalendarTab />)}
         {tab === "alerts" && <AlertsTab />}
         {tab === "journal" && <JournalTab />}
         {tab === "ai" && <AiTraderTab />}

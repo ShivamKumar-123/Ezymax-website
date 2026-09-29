@@ -9,6 +9,8 @@ import { Button, Card, Chip, Delta, Icon3D, PageHeader, PriceText, Reveal, Symbo
 import { POSITIONS } from "@kalks/mock";
 import { CAL_COUNTRIES, TODAY_INDEX, WEEK_DAYS, WEEK_EVENTS, surprise, type WeekEvent } from "@kalks/mock/calendar-extra";
 import { ColumnBars } from "@/components/portfolio/charts";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveCalendarPage } from "@/components/news-live/calendar-page";
 
 const NOW_HHMM = "18:40"; // server time GMT+3 (mock clock)
 
@@ -116,7 +118,7 @@ function Detail({ e }: { e: WeekEvent }) {
 
 /* ------------------------------------------------------------------ */
 
-export default function CalendarPage() {
+function DemoCalendarPage() {
   const [day, setDay] = React.useState(TODAY_INDEX);
   const [impacts, setImpacts] = React.useState<number[]>([1, 2, 3]);
   const [countries, setCountries] = React.useState<string[]>([]);
@@ -330,4 +332,9 @@ export default function CalendarPage() {
       </Reveal>
     </div>
   );
+}
+
+export default function CalendarPage() {
+  // live builds: real headlines / calendar (services/news); demo builds keep the showcase above
+  return IS_DEMO ? <DemoCalendarPage /> : <LiveCalendarPage />;
 }

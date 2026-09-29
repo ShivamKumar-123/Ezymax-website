@@ -231,11 +231,10 @@ export function defaultWorkspace(): Workspace {
   };
 }
 
-/** Guest mode has no synthetic depth ladder and no mock news/calendar: fall back to real panels. */
+/** Guest mode has no synthetic depth ladder: fall back to real panels. */
 function guestSafe(w: Workspace, guest: boolean): Workspace {
-  // news and calendar are sample content (demo builds only); guests have no order panel for the DOM
-  const toolboxTab = IS_LIVE && (w.toolboxTab === "news" || w.toolboxTab === "calendar") ? "trade" : w.toolboxTab;
-  return { ...w, rightTab: guest && w.rightTab === "depth" ? "info" : w.rightTab, toolboxTab };
+  // news and calendar are live in every build (services/news); guests have no order panel for the DOM
+  return { ...w, rightTab: guest && w.rightTab === "depth" ? "info" : w.rightTab };
 }
 
 function loadWorkspace(guest: boolean): Workspace {

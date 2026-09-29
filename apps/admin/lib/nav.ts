@@ -205,10 +205,11 @@ export const ADMIN_NAV: NavModule[] = [
     key: "content",
     label: "Content",
     icon: FileText,
-    href: "/content",
+    href: "/content/news",
     section: "growth",
     sub: [
-      { href: "/content", label: "News" },
+      { href: "/content/news", label: "News" },
+      { href: "/content/calendar", label: "Economic calendar" },
       { href: "/content/legal", label: "Legal documents" },
       { href: "/content/emails", label: "Email templates" },
       { href: "/content/notifications", label: "Notifications" },

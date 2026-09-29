@@ -14,6 +14,7 @@ import { liveTotals } from "@/components/trading/accounts-page";
 import { LiveAccountRow } from "@/components/trading/ui";
 import { useWalletFunded, walletStep } from "@/components/wallet-live/onboarding";
 import { BannerSlot } from "@/components/growth/banner-slot";
+import { LiveCalendarCard, LiveNewsCard, LiveWorldCard } from "@/components/news-live/dashboard";
 
 function greeting() {
   const h = new Date().getHours();
@@ -462,6 +463,18 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
           <FeedGuard title="Market heatmap" minHeight={320}>
             <HeatmapCard />
           </FeedGuard>
+        </Reveal>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+        <Reveal delay={0.05}>
+          <LiveCalendarCard />
+        </Reveal>
+        <Reveal delay={0.1}>
+          <LiveNewsCard />
+        </Reveal>
+        <Reveal delay={0.15} className="lg:col-span-2 xl:col-span-1">
+          <LiveWorldCard />
         </Reveal>
       </div>
 

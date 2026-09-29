@@ -19,6 +19,7 @@ cargo build --release -p wallet
 cargo build --release -p support
 cargo build --release -p growth
 cargo build --release -p reports
+cargo build --release -p news
 
 # trading engine secrets are generated on the server on first deploy (never committed, never printed)
 touch .env.local
@@ -156,6 +157,18 @@ for app in apps/crm apps/admin; do
   grep -q '^REPORTS_URL=' "$f" || printf 'REPORTS_URL=http://127.0.0.1:8102\n' >> "$f"
   grep -q '^REPORTS_INTERNAL_TOKEN=' "$f" || printf 'REPORTS_INTERNAL_TOKEN=%s\n' "$(grep '^REPORTS_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
 done
+# news + economic calendar service: internal token generated once (never printed), database kalks_news next to
+# the gateway's. Calendar reminders go through the support service (SUPPORT_INTERNAL_TOKEN); the daily AI brief
+# reads the Claude key from .env.claude. The Client Area, Back Office and Kalks Trader BFFs use the same token.
+grep -q '^NEWS_INTERNAL_TOKEN=' .env.local || printf 'NEWS_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
+if ! grep -q '^NEWS_DATABASE_URL=' .env.local && grep -q '^GATEWAY_DATABASE_URL=' .env.local; then
+  printf 'NEWS_DATABASE_URL=%s\n' "$(grep '^GATEWAY_DATABASE_URL=' .env.local | cut -d= -f2- | sed -E 's#/[^/?]+([?].*)?$#/kalks_news\1#')" >> .env.local
+fi
+for app in apps/crm apps/admin apps/terminal; do
+  f="$app/.env.production.local"; touch "$f"
+  grep -q '^NEWS_URL=' "$f" || printf 'NEWS_URL=http://127.0.0.1:8103\n' >> "$f"
+  grep -q '^NEWS_INTERNAL_TOKEN=' "$f" || printf 'NEWS_INTERNAL_TOKEN=%s\n' "$(grep '^NEWS_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
+done
 pnpm turbo run build --filter=@kalks/crm --filter=@kalks/admin --filter=@kalks/terminal --concurrency=1
 
 # service units + edge config (idempotent)
@@ -170,6 +183,7 @@ sudo systemctl enable kalks-wallet >/dev/null && sudo systemctl restart kalks-wa
 sudo systemctl enable kalks-support >/dev/null && sudo systemctl restart kalks-support
 sudo systemctl enable kalks-growth >/dev/null && sudo systemctl restart kalks-growth
 sudo systemctl enable kalks-reports >/dev/null && sudo systemctl restart kalks-reports
+sudo systemctl enable kalks-news >/dev/null && sudo systemctl restart kalks-news
 sudo systemctl reload caddy
 sleep 5
 for u in 127.0.0.1:8081/health 127.0.0.1:8080/health 127.0.0.1:8090/health 127.0.0.1:8096/health 127.0.0.1:8097/health 127.0.0.1:3000/login 127.0.0.1:3001/login 127.0.0.1:3002/login; do
@@ -181,3 +195,4 @@ printf "%-26s %s\n" 127.0.0.1:8099/health "$(curl -s -o /dev/null -w '%{http_cod
 printf "%-26s %s\n" 127.0.0.1:8100/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8100/health)"
 printf "%-26s %s\n" 127.0.0.1:8101/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8101/health)"
 printf "%-26s %s\n" 127.0.0.1:8102/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8102/health)"
+printf "%-26s %s\n" 127.0.0.1:8103/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8103/health)"

@@ -7,6 +7,8 @@ import { Bookmark, Clock3, ExternalLink, Share2, Sparkles, TrendingDown, Trendin
 import { Button, Card, CardHeader, Chip, Delta, Dialog, MarketSessions, PageHeader, Reveal, Segmented, Starfield, SymbolAvatar, WorldMap, cn, useQuotes, type MapPin } from "@kalks/ui";
 import { ASSET_CLASS_LABEL, INSTRUMENT_MAP, type AssetClass } from "@kalks/mock";
 import { AI_BRIEF, NEWS_STORIES, type NewsStory } from "@kalks/mock/news-extra";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveNewsPage } from "@/components/news-live/news-page";
 
 type Sentiment = NewsStory["sentiment"];
 const SENT: Record<Sentiment, { tone: "up" | "down" | "neutral"; icon: React.ReactNode; label: string }> = {
@@ -40,7 +42,7 @@ function SentimentChip({ s, className }: { s: Sentiment; className?: string }) {
 
 /* ------------------------------------------------------------------ */
 
-export default function NewsPage() {
+function DemoNewsPage() {
   const [cls, setCls] = React.useState<"all" | AssetClass>("all");
   const [sent, setSent] = React.useState<Sentiment[]>([]);
   const [country, setCountry] = React.useState<string | null>(null);
@@ -352,4 +354,9 @@ export default function NewsPage() {
       </Dialog>
     </div>
   );
+}
+
+export default function NewsPage() {
+  // live builds: real headlines / calendar (services/news); demo builds keep the showcase above
+  return IS_DEMO ? <DemoNewsPage /> : <LiveNewsPage />;
 }
