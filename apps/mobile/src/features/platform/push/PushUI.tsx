@@ -11,7 +11,6 @@ import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTi
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BellRing, LifeBuoy, Siren, Wallet, X } from "lucide-react-native";
 import { i18n, useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { kv } from "@/lib/kv";
 import { createStore, useStore } from "@/lib/store";
 import { Button, ColorBlock, Display, KalksMark, PressableScale, Sheet, Text, toast, type SheetRef } from "@/ui";
@@ -49,7 +48,6 @@ export async function turnOnPush(): Promise<boolean> {
   const t = i18n.t;
   const state = await withSystemDialog(() => requestPermission());
   if (state === "granted") {
-    haptic.success();
     toast.show({ title: t("mobilePlatform.push.enabled"), tone: "success" });
     return true;
   }

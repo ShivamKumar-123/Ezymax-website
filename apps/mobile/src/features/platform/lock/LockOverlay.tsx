@@ -10,7 +10,6 @@ import Animated, { cancelAnimation, runOnJS, useAnimatedStyle, useSharedValue, w
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fingerprint, Lock, ScanFace, type LucideIcon } from "lucide-react-native";
 import { useLocale, useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { signOut, useMe } from "@/session";
 import { Button, ColorBlock, Display, Illustration, KalksMark, PressableScale, Text } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
@@ -84,9 +83,7 @@ export function LockScreen() {
     setMessage(null);
     const r = await unlock();
     setBusy(false);
-    if (r === "ok") return haptic.success();
-    if (r === "cancel") return;
-    haptic.error();
+    if (r === "ok" || r === "cancel") return;
     setMessage(r === "lockout" ? t("mobilePlatform.lock.lockout") : r === "unavailable" ? t("mobilePlatform.lock.noScreenLock") : t("mobilePlatform.lock.failed"));
   }, [t]);
 

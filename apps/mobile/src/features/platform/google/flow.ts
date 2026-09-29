@@ -14,7 +14,6 @@ import { authPost, type SessionAnswer } from "@/features/auth/api";
 import { i18n } from "@/i18n";
 import type { ApiError } from "@/lib/api";
 import { randomId } from "@/lib/device";
-import { haptic } from "@/lib/haptics";
 import { completeSignIn } from "@/session";
 import { APP_ID, GOOGLE_CLIENT_ID } from "./config";
 
@@ -100,12 +99,8 @@ export async function continueWithGoogle(ref?: string | null): Promise<GoogleOut
     const code = result.params.code;
     if (!code || !request.codeVerifier) return { kind: "error", ...googleError("google_failed") };
     const r = await authPost<SessionAnswer | ProfileAnswer>("google", { code, code_verifier: request.codeVerifier, redirect_uri: uri, nonce, ref: ref || undefined });
-    if (!r.ok) {
-      haptic.error();
-      return { kind: "error", ...googleError(r.error) };
-    }
+    if (!r.ok) return { kind: "error", ...googleError(r.error) };
     if (r.data.status === "ok" && r.data.session?.token) {
-      haptic.success();
       await completeSignIn(r.data.session, r.data.user);
       return { kind: "signedIn" };
     }
@@ -132,7 +127,6 @@ export async function completeGoogleProfile(form: ProfileForm): Promise<{ ok: tr
   }
   if (!r.data.session?.token) return { ok: false, error: { code: "google_failed", message: googleError("google_failed").message } };
   pending = null;
-  haptic.success();
   await completeSignIn(r.data.session, r.data.user);
   return { ok: true };
 }

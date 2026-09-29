@@ -55,7 +55,6 @@ export function GoogleProfileScreen() {
     });
     setLoading(false);
     if (r.ok) return;
-    haptic.error();
     setErr(r.error);
     if (r.error.code === "google_expired" || r.error.code === "google_account_exists") setExpired(true);
   }
