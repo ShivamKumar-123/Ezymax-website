@@ -221,7 +221,7 @@ export function DataTable<T>({
                   key={c.key}
                   style={{ width: c.width }}
                   className={cn(
-                    "bg-surface-2 px-4 py-3 text-[11.5px] font-medium uppercase tracking-[0.05em] text-fg-3 first:rounded-l-[14px] last:rounded-r-[14px] border-y border-line first:border-l last:border-r",
+                    "whitespace-nowrap bg-surface-2 px-4 py-3 text-[11.5px] font-medium uppercase tracking-[0.05em] text-fg-3 first:rounded-l-[14px] last:rounded-r-[14px] border-y border-line first:border-l last:border-r",
                     c.align === "right" ? "text-right" : c.align === "center" ? "text-center" : "text-left",
                     hide(c.hideOn),
                     i === 0 && "pl-5",

@@ -79,12 +79,12 @@ export function LiveClients() {
       ),
       hideOn: "sm",
     },
-    { key: "phone", header: "Phone", cell: (u) => <Mono className="text-fg-2">{u.phone_dial} {u.phone}</Mono>, hideOn: "xl" },
+    { key: "phone", header: "Phone", className: "whitespace-nowrap", cell: (u) => <Mono className="text-fg-2">{u.phone_dial} {u.phone}</Mono>, hideOn: "xl" },
     { key: "email", header: "Email", cell: (u) => <EmailChip verified={u.email_verified} />, hideOn: "md" },
     { key: "kyc", header: "KYC", cell: (u) => <KycChip status={u.kyc_status} />, hideOn: "md" },
-    { key: "ref", header: "Referral", cell: (u) => (u.referred_by ? <Link href={`/clients/${u.referred_by}`} onClick={(e) => e.stopPropagation()} className="text-[12.5px] text-ember hover:underline">Referred · #{u.referred_by}</Link> : <span className="text-[12.5px] text-fg-3">Direct</span>), hideOn: "xl" },
-    { key: "login", header: "Last sign-in", cell: (u) => <span className="text-fg-2" title={when(u.last_login_at)}>{ago(u.last_login_at, now)}</span>, hideOn: "lg" },
-    { key: "created", header: "Registered", align: "right", cell: (u) => <span className="text-fg-2" title={when(u.created_at)}>{day(u.created_at)}</span> },
+    { key: "ref", header: "Referral", className: "whitespace-nowrap", cell: (u) => (u.referred_by ? <Link href={`/clients/${u.referred_by}`} onClick={(e) => e.stopPropagation()} className="text-[12.5px] text-ember hover:underline">Referred · #{u.referred_by}</Link> : <span className="text-[12.5px] text-fg-3">Direct</span>), hideOn: "xl" },
+    { key: "login", header: "Last sign-in", className: "whitespace-nowrap", cell: (u) => <span className="text-fg-2" title={when(u.last_login_at)}>{ago(u.last_login_at, now)}</span>, hideOn: "lg" },
+    { key: "created", header: "Registered", align: "right", className: "whitespace-nowrap", cell: (u) => <span className="text-fg-2" title={when(u.created_at)}>{day(u.created_at)}</span> },
   ];
 
   const filtered = !!dq || kyc !== "all" || verified !== "all";
