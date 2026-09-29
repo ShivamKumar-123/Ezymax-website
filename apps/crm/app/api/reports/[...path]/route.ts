@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { sessionUser } from "@/lib/trading";
 import { reportsFetch } from "@/lib/reports";
+import { VIEWER_OUT_OF_SCOPE, viewerHasAccount } from "@/lib/viewer";
 
 // Client Area reports BFF. Browser -> /api/reports/<route> (same origin) -> reports service /v1/me/…
 // The client comes from the HttpOnly gateway session cookie; the service returns 404 for accounts the user
@@ -43,12 +44,29 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   if (user === "unavailable") return error(503, "unavailable", "Sign-in service is unavailable. Please try again shortly.");
   if (!user) return error(401, "unauthorized", "Please sign in.");
 
+  // a view-only login (D90) reads only the accounts it was given; "all accounts" means all of those
+  if (user.viewer) {
+    const login = path[0] === "accounts" ? path[1] : req.nextUrl.searchParams.get("login");
+    if (!login || login === "all" ? user.viewer.accounts.length === 0 : !viewerHasAccount(user.viewer, login)) {
+      return NextResponse.json({ error: VIEWER_OUT_OF_SCOPE }, { status: 403, headers: NO_STORE });
+    }
+    if (path[0] === "analytics" && (!login || login === "all") && user.viewer.accounts.length !== 1) {
+      return NextResponse.json({ error: { ...VIEWER_OUT_OF_SCOPE, message: "Choose one of the accounts shared with you." } }, { status: 403, headers: NO_STORE });
+    }
+  }
+
   let target: string | null = null;
   let file = false;
   if (path.length === 1 && path[0] === "analytics") {
     const q = query(req, ["login", "from", "to"]);
     if (q instanceof NextResponse) return q;
     target = `/v1/me/analytics${q}`;
+    // a viewer with a single account: "all" is that account
+    if (user.viewer && user.viewer.accounts.length === 1 && !/[?&]login=\d/.test(target)) {
+      const sp = new URLSearchParams(q.replace(/^\?/, ""));
+      sp.set("login", user.viewer.accounts[0]!);
+      target = `/v1/me/analytics?${sp}`;
+    }
   } else if (path.length === 3 && path[0] === "accounts" && LOGIN_RE.test(path[1]!) && path[2] === "months") {
     target = `/v1/me/accounts/${path[1]}/months`;
   } else if (path.length === 3 && path[0] === "accounts" && LOGIN_RE.test(path[1]!) && path[2] === "statement") {

@@ -34,7 +34,7 @@ const K: Kind = Kind::User;
 pub const TOKEN_TTL_SECS: i64 = 300;
 
 /// Actions that need a step-up code. Unknown actions are rejected so the email always names a real change.
-pub const ACTIONS: &[&str] = &["trading_password", "investor_password", "leverage", "withdrawal", "account_password", "profile_email", "profile_phone"];
+pub const ACTIONS: &[&str] = &["trading_password", "investor_password", "leverage", "withdrawal", "account_password", "profile_email", "profile_phone", "viewer_access"];
 
 pub fn parse_action(raw: &str) -> Option<&'static str> {
     ACTIONS.iter().copied().find(|a| *a == raw.trim())
@@ -61,6 +61,7 @@ pub fn describe(action: &str, target: &str) -> String {
         "account_password" => "change your Client Area password".into(),
         "profile_email" => "change the email address of your Kalks account".into(),
         "profile_phone" => "change the phone number of your Kalks account".into(),
+        "viewer_access" => "create a view-only login or set a new password for one".into(),
         _ => "make a change to your Kalks account".into(),
     }
 }

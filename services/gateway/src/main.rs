@@ -7,6 +7,7 @@
 mod admin;
 mod audit;
 mod client_auth;
+mod client_security;
 mod config;
 mod crypto;
 mod db;
@@ -167,6 +168,25 @@ fn router(st: AppState) -> Router {
         .route("/v1/auth/stepup/resend", post(stepup::resend))
         .route("/v1/auth/stepup/verify", post(stepup::verify))
         .route("/v1/auth/stepup/consume", post(stepup::consume))
+        // Client Area security: sessions, login history, view-only logins, closure / export (client_security.rs)
+        .route("/v1/auth/sessions", get(client_security::sessions))
+        .route("/v1/auth/sessions/revoke-others", post(client_security::revoke_others))
+        .route("/v1/auth/sessions/{id}/revoke", post(client_security::revoke_session))
+        .route("/v1/auth/logins", get(client_security::logins))
+        .route("/v1/auth/viewers", get(client_security::viewers).post(client_security::create_viewer))
+        .route("/v1/auth/viewers/{id}", patch(client_security::update_viewer))
+        .route("/v1/auth/viewers/{id}/password", post(client_security::viewer_password))
+        .route("/v1/auth/viewers/{id}/revoke", post(client_security::revoke_viewer))
+        .route("/v1/auth/viewer/activity", post(client_security::viewer_activity))
+        .route("/v1/auth/requests", get(client_security::requests).post(client_security::create_request))
+        .route("/v1/auth/requests/{id}/cancel", post(client_security::cancel_request))
+        .route("/v1/auth/requests/{id}/export", get(client_security::export))
+        .route("/v1/admin/users/{id}/security", get(client_security::admin_user_security))
+        .route("/v1/admin/users/{id}/sessions/revoke-all", post(client_security::admin_revoke_all))
+        .route("/v1/admin/users/{id}/viewers/{vid}/revoke", post(client_security::admin_revoke_viewer))
+        .route("/v1/admin/requests", get(client_security::admin_requests))
+        .route("/v1/admin/requests/{id}", post(client_security::admin_process_request))
+        .route("/v1/admin/settings/sessions", get(client_security::get_session_settings).put(client_security::set_session_settings))
         .route("/v1/auth/google", post(google_auth::google))
         .route("/v1/auth/google/ticket", post(google_auth::ticket))
         .route("/v1/auth/google/complete", post(google_auth::complete))
@@ -247,6 +267,7 @@ fn router(st: AppState) -> Router {
         .route("/v1/public/unsubscribe", post(marketing::unsubscribe))
         .route("/v1/auth/marketing", get(marketing::get_consent).put(marketing::put_consent).post(marketing::put_consent))
         .layer(DefaultBodyLimit::max(256 * 1024))
+        .layer(middleware::from_fn(edge_country))
         .layer(middleware::from_fn(mail_i18n::locale_layer))
         .layer(middleware::from_fn_with_state(st.clone(), internal_only));
     Router::new()
@@ -273,4 +294,11 @@ async fn internal_only(State(st): State<AppState>, req: Request, next: Next) -> 
         }
     }
     next.run(req).await
+}
+
+/// Approximate location of the caller (`X-Kalks-Country`, from the edge's CF-IPCountry via the apps), available to
+/// session creation for the request's lifetime.
+async fn edge_country(req: Request, next: Next) -> Response {
+    let c = identity::clean_country(req.headers().get("x-kalks-country").and_then(|v| v.to_str().ok()));
+    identity::COUNTRY.scope(c, next.run(req)).await
 }

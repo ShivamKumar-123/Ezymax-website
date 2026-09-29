@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveSecurity } from "@/components/security/live-security";
 import { KeyRound, Laptop, LogOut, Mail, MonitorSmartphone, ShieldCheck, Smartphone, Globe2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, DataTable, Dialog, Field, Flag, Icon3D, Input, PageHeader, Reveal, Toggle, type Column } from "@kalks/ui";
@@ -23,7 +25,7 @@ const LOGINS: LoginRow[] = [
   { time: "15 Sep, 08:30", ip: "49.36.112.5", location: "Pune", country: "in", device: "Safari · iOS", result: "success" },
 ];
 
-export default function SecurityPage() {
+function DemoSecurityPage() {
   const t = useT();
   const ago = (m: number) => (m === 0 ? t("profile.security.activeNow") : m < 1440 ? t("profile.security.minAgo", { count: m }) : t("profile.security.daysAgo", { count: Math.floor(m / 1440) }));
   const [pw, setPw] = React.useState("");
@@ -171,4 +173,8 @@ export default function SecurityPage() {
       </Reveal>
     </div>
   );
+}
+
+export default function SecurityPage() {
+  return DEMO_BUILD ? <DemoSecurityPage /> : <LiveSecurity />;
 }

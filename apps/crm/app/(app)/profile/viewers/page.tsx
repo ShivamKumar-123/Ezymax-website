@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveViewers } from "@/components/security/live-viewers";
 import { Eye, EyeOff, Plus, ShieldOff, UserRound, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, CopyButton, Dialog, Field, Icon3D, Input, PageHeader, Reveal, StatusChip, Toggle } from "@kalks/ui";
@@ -22,7 +24,7 @@ const ACTIVITY = [
   { who: "Mentor access", what: "Login blocked — access expired", when: "02 Sep 09:14" },
 ];
 
-export default function ViewersPage() {
+function DemoViewersPage() {
   const t = useT();
   const [show, setShow] = React.useState<Record<string, boolean>>({});
   const live = ACCOUNTS.filter((a) => a.type === "live");
@@ -171,4 +173,8 @@ export default function ViewersPage() {
       </div>
     </div>
   );
+}
+
+export default function ViewersPage() {
+  return DEMO_BUILD ? <DemoViewersPage /> : <LiveViewers />;
 }

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { consumeStepup, stepupTokenOf, type GatewayUser, type StepupAction } from "@/lib/gateway";
 import { TERMINAL_BASE, clientAccount, clientDeal, clientOrder, clientPosition, engine, sameOrigin, sessionUser } from "@/lib/trading";
+import { viewerHasAccount } from "@/lib/viewer";
 
 // Client Area trading BFF. Browser -> /api/trading/<route> (same origin) -> trading engine /v1/…
 // The client is resolved from the HttpOnly gateway session cookie (gateway /v1/auth/me); the engine gets
@@ -83,11 +84,15 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   if (path.length === 1 && path[0] === "accounts") {
     const r = await engine<{ accounts?: unknown[] }>("/v1/accounts", { user, req });
     if (r.status !== 200) return reply(r.status, r.data);
-    return reply(200, { accounts: (r.data.accounts ?? []).map(clientAccount).filter(Boolean) });
+    let accounts = (r.data.accounts ?? []).map(clientAccount).filter(Boolean) as Obj[];
+    // a view-only login (D90) sees only the accounts it was given
+    if (user.viewer) accounts = accounts.filter((a) => viewerHasAccount(user.viewer!, String(a.login)));
+    return reply(200, { accounts });
   }
 
   const login = path[1];
   if (path[0] !== "accounts" || !login || !LOGIN_RE.test(login)) return error(404, "not_found", "Not found.");
+  if (user.viewer && !viewerHasAccount(user.viewer, login)) return error(404, "not_found", "Account not found.");
 
   if (path.length === 2) {
     const r = await engine<{ account?: unknown; positions?: unknown[]; orders?: unknown[] }>(`/v1/accounts/${login}`, { user, req });

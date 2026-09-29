@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { DEVICE_COOKIE, SESSION_COOKIE, clientIp, gateway, newDeviceId, safeNext, sameOrigin, setDeviceCookie, setSessionCookie } from "@/lib/gateway";
+import { DEVICE_COOKIE, SESSION_COOKIE, clientIp, edgeCountry, gateway, newDeviceId, safeNext, sameOrigin, setDeviceCookie, setSessionCookie } from "@/lib/gateway";
 import { withCampaign } from "@/lib/ib";
 import { withAttribution } from "@/lib/attribution";
 
@@ -55,6 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ act
     userAgent: req.headers.get("user-agent"),
     device,
     token: SESSION_ACTIONS.has(action) ? token : undefined,
+    country: edgeCountry(req.headers),
   });
 
   const { session, ...data } = r.data;

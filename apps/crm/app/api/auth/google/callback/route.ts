@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { DEVICE_COOKIE, clientIp, gateway, newDeviceId, setDeviceCookie, setSessionCookie } from "@/lib/gateway";
+import { DEVICE_COOKIE, clientIp, edgeCountry, gateway, newDeviceId, setDeviceCookie, setSessionCookie } from "@/lib/gateway";
 import { STATE_COOKIE, TICKET_COOKIE, exchangeCode, googleConfig, googleJwks, handleCallback, publicOrigin } from "@/lib/google-oauth";
 
 // GET /api/auth/google/callback?code&state (Google redirects here after consent).
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     exchange: (code, verifier, redirectUri) => exchangeCode(code, verifier, redirectUri, cfg),
     jwks: googleJwks(),
     signIn: (identity) =>
-      gateway("/v1/auth/google", { body: identity, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent"), device }),
+      gateway("/v1/auth/google", { body: identity, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent"), device, country: edgeCountry(req.headers) }),
     log: (m) => console.warn(m),
   });
 

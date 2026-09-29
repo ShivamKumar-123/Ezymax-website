@@ -6,6 +6,7 @@ import { ArrowDownToLine, CandlestickChart, Check, KeyRound, Loader2, MoreHorizo
 import { toast } from "sonner";
 import { Button, Chip, CopyButton, Dialog, IconButton, Menu, Money, cn, type ButtonProps } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
+import { useReadOnly } from "@/components/session";
 import { STATUS_LABEL, curOf, errorToast, fmtLevel, levelTone, openTerminal, serverOf, tradingApi, type EngineAccount } from "./api";
 
 export function KindBadge({ type }: { type: "live" | "demo" }) {
@@ -180,6 +181,7 @@ export function LiveAccountRow({ a, onChanged, compact }: { a: EngineAccount; on
   const t = useT();
   const cur = curOf(a);
   const tone = levelTone(a.marginLevel);
+  const readOnly = useReadOnly();
   return (
     <div className="k-row group relative overflow-hidden p-4 transition-colors hover:border-[var(--k-border-top)] sm:p-5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -222,11 +224,13 @@ export function LiveAccountRow({ a, onChanged, compact }: { a: EngineAccount; on
           <div className="whitespace-nowrap text-[11px] uppercase tracking-wider text-fg-3">{t("accounts.label.marginLevel")}</div>
           <div className={cn("k-num mt-1 text-[17px] font-semibold", tone === "up" && "text-up", tone === "warn" && "text-warn", tone === "down" && "text-down")}>{fmtLevel(a.marginLevel)}</div>
         </div>
-        <div className="col-span-full flex flex-wrap items-center justify-end gap-2 xl:col-span-1">
-          <AccountActions a={a} />
-          {a.type === "live" ? <FundButton a={a} /> : <RefillButton a={a} onDone={onChanged} />}
-          <TradeButton a={a} />
-        </div>
+        {!readOnly && (
+          <div className="col-span-full flex flex-wrap items-center justify-end gap-2 xl:col-span-1">
+            <AccountActions a={a} />
+            {a.type === "live" ? <FundButton a={a} /> : <RefillButton a={a} onDone={onChanged} />}
+            <TradeButton a={a} />
+          </div>
+        )}
       </div>
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-fg-3">
         {a.positions > 0 || a.orders > 0 ? (

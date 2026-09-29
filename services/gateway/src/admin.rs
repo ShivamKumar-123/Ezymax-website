@@ -240,9 +240,13 @@ fn user_row(r: &PgRow) -> Value {
     })
 }
 
-/// Idle windows (seconds) that make a session count as active, per kind.
+/// Idle windows (seconds) that make a session count as active, per kind. Client sessions are further limited
+/// by their tenant's `client_idle_minutes` (see `live_sql`), so the user bound here is the longest allowed window.
 fn idle_secs(kind: Kind) -> f64 {
-    identity::policy(kind).session_idle.num_seconds() as f64
+    match kind {
+        Kind::Staff => identity::policy(kind).session_idle.num_seconds() as f64,
+        Kind::User => (10080 * 60) as f64,
+    }
 }
 
 /// Replaces `{LIVE}` in `sql` with a "session `se` is live" predicate whose idle windows (staff, user) are bound
@@ -250,7 +254,8 @@ fn idle_secs(kind: Kind) -> f64 {
 fn live_sql(sql: &str, n: usize) -> String {
     let live = format!(
         "se.revoked_at IS NULL AND se.expires_at > now()
-         AND se.last_seen_at > now() - make_interval(secs => CASE WHEN se.subject_kind = 'staff' THEN ${}::float8 ELSE ${}::float8 END)",
+         AND se.last_seen_at > now() - make_interval(secs => CASE WHEN se.subject_kind = 'staff' THEN ${}::float8
+             ELSE LEAST(${}::float8, (SELECT tt.client_idle_minutes * 60 FROM tenants tt WHERE tt.id = se.tenant_id)::float8) END)",
         n,
         n + 1
     );
@@ -680,9 +685,11 @@ pub async fn sessions(State(st): State<AppState>, ctx: Ctx, q: Result<Query<Sess
     let (page, per, offset) = paging(q.page, q.per_page, 50, 200);
     let rows = sqlx::query(sqlx::AssertSqlSafe(live_sql(
         "SELECT se.id, se.subject_kind, se.subject_id, se.token_hash, se.ip, se.user_agent, se.created_at, se.last_seen_at, se.expires_at,
+                se.country, se.viewer_id, cv.label AS viewer_label,
                 COALESCE(u.first_name || ' ' || u.last_name, s.name) AS name, COALESCE(u.email, s.email) AS email, COALESCE(sr.name, s.role) AS role,
                 count(*) OVER () AS total
          FROM sessions se
+         LEFT JOIN client_viewers cv ON cv.id = se.viewer_id
          LEFT JOIN users u ON se.subject_kind = 'user' AND u.id = se.subject_id
          LEFT JOIN staff s ON se.subject_kind = 'staff' AND s.id = se.subject_id
          LEFT JOIN roles sr ON sr.id = s.role_id
@@ -717,10 +724,12 @@ pub async fn sessions(State(st): State<AppState>, ctx: Ctx, q: Result<Query<Sess
                     "role_label": role.map(|r| crate::rbac::builtin(&r).map(|b| b.name.to_string()).unwrap_or(r)),
                 },
                 "ip": x.get::<Option<String>, _>("ip"),
+                "country": x.get::<Option<String>, _>("country"),
                 "user_agent": x.get::<Option<String>, _>("user_agent"),
                 "created_at": x.get::<DateTime<Utc>, _>("created_at"),
                 "last_seen_at": x.get::<DateTime<Utc>, _>("last_seen_at"),
                 "expires_at": x.get::<DateTime<Utc>, _>("expires_at"),
+                "viewer": x.get::<Option<i64>, _>("viewer_id").map(|v| json!({ "id": v, "label": x.get::<Option<String>, _>("viewer_label") })),
                 "current": sid == me.session_id,
             })
         })

@@ -9,6 +9,7 @@ import { useT } from "@kalks/i18n/react";
 import { toUsd, useAccounts, useGroups, type EngineAccount } from "./api";
 import { EngineGroupCard } from "./group-card";
 import { LiveAccountRow, refillsLeft } from "./ui";
+import { useReadOnly } from "@/components/session";
 
 export function AccountsError({ onRetry, message }: { onRetry: () => void; message?: string }) {
   const tt = useT();
@@ -70,6 +71,7 @@ function Inner() {
   };
   const list = active === "live" ? t.live : t.demo;
   const refills = t.demo.reduce((s, a) => s + refillsLeft(a), 0);
+  const readOnly = useReadOnly();
 
   return (
     <div className="pb-16">
@@ -77,7 +79,7 @@ function Inner() {
         title={tt("accounts.list.title")}
         subtitle={tt("accounts.list.subtitle")}
         actions={
-          <Link href={`/accounts/new${active === "demo" ? "?type=demo" : ""}`}>
+          !readOnly && <Link href={`/accounts/new${active === "demo" ? "?type=demo" : ""}`}>
             <Button variant="ember" size="lg">
               <Plus /> {tt("accounts.list.openAccount")}
             </Button>
@@ -165,19 +167,19 @@ function Inner() {
                 {list.map((a) => (
                   <LiveAccountRow key={a.login} a={a} onChanged={reload} />
                 ))}
-                <Link
+                {!readOnly && <Link
                   href={`/accounts/new?type=${active}`}
                   className="flex items-center justify-center gap-2 rounded-[14px] border border-dashed border-line py-4 text-[13.5px] text-fg-3 transition-colors hover:border-ember/40 hover:bg-ember-soft hover:text-ember"
                 >
                   <Plus className="size-4" /> {active === "demo" ? tt("accounts.list.openNewDemo") : tt("accounts.list.openNewLive")}
-                </Link>
+                </Link>}
               </div>
             </Card>
           )}
         </Reveal>
       </div>
 
-      {groups.data && groups.data.groups.length > 0 && (
+      {!readOnly && groups.data && groups.data.groups.length > 0 && (
         <Reveal delay={0.1} className="mt-4 block">
           <Card>
             <CardHeader

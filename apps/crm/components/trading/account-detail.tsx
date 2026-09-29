@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useReadOnly } from "@/components/session";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
@@ -313,6 +314,7 @@ function Detail() {
   const sp = useSearchParams();
   const router = useRouter();
   const t = useT();
+  const readOnly = useReadOnly();
   const valid = /^\d{8}$/.test(login ?? "");
   const { data, error, loading, reload } = usePoll<AccountDetail>(valid ? `accounts/${login}` : null, 3000);
   const initial = (TAB_KEYS as readonly string[]).includes(sp.get("tab") ?? "") ? (sp.get("tab") as TabKey) : "overview";
@@ -431,10 +433,12 @@ function Detail() {
                 </span>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {a.type === "live" ? <FundButton a={a} size="md" /> : <RefillButton a={a} onDone={reload} size="md" />}
-              <TradeButton a={a} size="lg" />
-            </div>
+            {!readOnly && (
+              <div className="flex flex-wrap items-center gap-2">
+                {a.type === "live" ? <FundButton a={a} size="md" /> : <RefillButton a={a} onDone={reload} size="md" />}
+                <TradeButton a={a} size="lg" />
+              </div>
+            )}
           </div>
         </Card>
       </motion.div>
@@ -450,8 +454,8 @@ function Detail() {
             { value: "history", label: t("accountDetail.tab.history") },
             { value: "ledger", label: t("accountDetail.tab.ledger") },
             { value: "analytics", label: t("accountDetail.tab.analytics") },
-            { value: "credentials", label: t("accountDetail.tab.credentials") },
-            { value: "settings", label: t("accountDetail.tab.settings") },
+            // a view-only login (D90) never sees credentials or settings
+            ...(readOnly ? [] : [{ value: "credentials" as const, label: t("accountDetail.tab.credentials") }, { value: "settings" as const, label: t("accountDetail.tab.settings") }]),
           ]}
         />
       </div>
@@ -464,8 +468,8 @@ function Detail() {
             {tab === "history" && <HistoryPanel a={a} />}
             {tab === "ledger" && <LedgerPanel a={a} />}
             {tab === "analytics" && <AccountAnalyticsPanel login={a.login} />}
-            {tab === "credentials" && <CredentialsPanel a={a} />}
-            {tab === "settings" && <SettingsPanel a={a} onChanged={reload} />}
+            {tab === "credentials" && !readOnly && <CredentialsPanel a={a} />}
+            {tab === "settings" && !readOnly && <SettingsPanel a={a} onChanged={reload} />}
           </motion.div>
         </AnimatePresence>
       </div>

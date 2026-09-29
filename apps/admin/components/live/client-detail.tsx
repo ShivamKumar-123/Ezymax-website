@@ -7,6 +7,7 @@ import { Avatar, Card, CardHeader, Chip, CopyButton, DataTable, EmptyState, Flag
 import { useCan } from "@/components/staff-session";
 import { EmailChip, ErrorState, KycChip, Mono, actionLabel, actionTone, ago, countryName, day, device, useApi, useNow, when } from "./kit";
 import { RevokeDialog, sessionColumns } from "./sessions";
+import { ClientSecurityCard } from "./client-security";
 import { ClientKycCard } from "@/components/kyc/client-kyc-card";
 import type { ClientDetail, Session, SessionsPage } from "./types";
 
@@ -237,6 +238,7 @@ export function ClientDetailView({ id, compact = false }: { id: number; compact?
           <ClientKycCard userId={u.id} kycStatus={u.kyc_status} />
           {security}
           {sessionsCard}
+          <ClientSecurityCard userId={u.id} onChanged={() => (sessions.reload(), reload())} />
           {referral}
           {activity}
         </>
@@ -249,6 +251,7 @@ export function ClientDetailView({ id, compact = false }: { id: number; compact?
           </div>
           <div className="space-y-4 xl:col-span-5">
             {security}
+            <ClientSecurityCard userId={u.id} onChanged={() => (sessions.reload(), reload())} />
             <ClientKycCard userId={u.id} kycStatus={u.kyc_status} />
             {referral}
             <Card className="px-6 py-5">

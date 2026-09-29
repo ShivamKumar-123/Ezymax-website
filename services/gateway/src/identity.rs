@@ -149,11 +149,44 @@ pub struct NewSession {
 }
 
 pub async fn create_session(st: &AppState, ctx: &Ctx, kind: Kind, tenant_id: i64, subject_id: i64) -> ApiResult<NewSession> {
-    let token = crypto::random_token(32);
-    let expires_at = Utc::now() + policy(kind).session_ttl;
+    create_session_as(st, ctx, kind, tenant_id, subject_id, None).await
+}
+
+/// Prefix of view-only session tokens (D90). base64url never contains '.', so the prefix can't collide with a
+/// normal token; the Client Area proxy uses it to hold viewer sessions to read-only requests before any lookup.
+/// The gateway itself never trusts the prefix: `sessions.viewer_id` decides.
+pub const VIEWER_TOKEN_PREFIX: &str = "v.";
+
+/// Viewer sessions end sooner than the owner's.
+pub const VIEWER_SESSION_TTL_HOURS: i64 = 12;
+
+tokio::task_local! {
+    /// ISO country of the caller from the edge (`X-Kalks-Country`, set by the apps from CF-IPCountry), for the
+    /// approximate location of new sessions. Set per request by the router middleware.
+    pub static COUNTRY: Option<String>;
+}
+
+/// Two lowercase letters or nothing ("XX" / "T1" from Cloudflare mean unknown / Tor).
+pub fn clean_country(raw: Option<&str>) -> Option<String> {
+    let c = raw?.trim().to_ascii_lowercase();
+    (c.len() == 2 && c.chars().all(|x| x.is_ascii_lowercase()) && c != "xx").then_some(c)
+}
+
+fn request_country() -> Option<String> {
+    COUNTRY.try_with(|c| c.clone()).ok().flatten()
+}
+
+/// Creates a session; `viewer` = the view-only login it was opened with (the subject is then the owning client).
+pub async fn create_session_as(st: &AppState, ctx: &Ctx, kind: Kind, tenant_id: i64, subject_id: i64, viewer: Option<i64>) -> ApiResult<NewSession> {
+    let token = match viewer {
+        Some(_) => format!("{VIEWER_TOKEN_PREFIX}{}", crypto::random_token(32)),
+        None => crypto::random_token(32),
+    };
+    let ttl = if viewer.is_some() { Duration::hours(VIEWER_SESSION_TTL_HOURS) } else { policy(kind).session_ttl };
+    let expires_at = Utc::now() + ttl;
     sqlx::query(
-        "INSERT INTO sessions (tenant_id, subject_kind, subject_id, token_hash, ip, user_agent, expires_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)",
+        "INSERT INTO sessions (tenant_id, subject_kind, subject_id, token_hash, ip, user_agent, expires_at, viewer_id, country)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
     )
     .bind(tenant_id)
     .bind(kind.as_str())
@@ -162,6 +195,8 @@ pub async fn create_session(st: &AppState, ctx: &Ctx, kind: Kind, tenant_id: i64
     .bind(&ctx.ip)
     .bind(&ctx.user_agent)
     .bind(expires_at)
+    .bind(viewer)
+    .bind(request_country())
     .execute(&st.pool)
     .await?;
     Ok(NewSession { token, expires_at })
@@ -172,14 +207,45 @@ pub struct SessionRef {
     pub subject_id: i64,
     pub tenant_id: i64,
     pub expires_at: DateTime<Utc>,
+    /// Set for a view-only session (D90): the subject is the owning client, but nothing may be changed.
+    pub viewer_id: Option<i64>,
 }
 
-/// Resolves a bearer token to a live session of `kind`, sliding `last_seen_at` forward (at most once a minute).
+/// 403 for any change attempted with a view-only session.
+pub fn viewer_read_only() -> ApiError {
+    ApiError::Coded {
+        status: axum::http::StatusCode::FORBIDDEN,
+        code: "viewer_read_only",
+        message: "This is a view-only login. Viewers can't make changes.",
+    }
+}
+
+/// Resolves a bearer token to a live session of `kind` that may make changes: view-only sessions are refused
+/// with 403 `viewer_read_only`. Every client write goes through here.
 pub async fn resolve_session(st: &AppState, ctx: &Ctx, kind: Kind) -> ApiResult<SessionRef> {
+    let s = resolve_session_any(st, ctx, kind).await?;
+    if s.viewer_id.is_some() {
+        return Err(viewer_read_only());
+    }
+    Ok(s)
+}
+
+/// Idle window of a session: staff use the fixed policy; clients use the tenant's setting (Back Office).
+pub fn idle_window(kind: Kind, client_idle_minutes: i32) -> Duration {
+    match kind {
+        Kind::Staff => policy(kind).session_idle,
+        Kind::User => Duration::minutes(client_idle_minutes.clamp(5, 10080) as i64),
+    }
+}
+
+/// Resolves a bearer token to a live session of `kind` (view-only sessions included), sliding `last_seen_at`
+/// forward (at most once a minute). Only read paths (`/v1/auth/me`, lists) use this directly.
+pub async fn resolve_session_any(st: &AppState, ctx: &Ctx, kind: Kind) -> ApiResult<SessionRef> {
     let token = ctx.bearer.as_deref().ok_or(ApiError::Unauthorized)?;
     let row = sqlx::query(
-        "SELECT id, subject_id, tenant_id, expires_at, last_seen_at, revoked_at IS NOT NULL AS revoked
-         FROM sessions WHERE token_hash = $1 AND subject_kind = $2",
+        "SELECT s.id, s.subject_id, s.tenant_id, s.expires_at, s.last_seen_at, s.revoked_at IS NOT NULL AS revoked, s.viewer_id,
+                t.client_idle_minutes
+         FROM sessions s JOIN tenants t ON t.id = s.tenant_id WHERE s.token_hash = $1 AND s.subject_kind = $2",
     )
     .bind(st.keys.hash("session", token))
     .bind(kind.as_str())
@@ -189,14 +255,25 @@ pub async fn resolve_session(st: &AppState, ctx: &Ctx, kind: Kind) -> ApiResult<
     let now = Utc::now();
     let expires_at: DateTime<Utc> = row.get("expires_at");
     let last_seen: DateTime<Utc> = row.get("last_seen_at");
-    if !session_live(now, expires_at, last_seen, policy(kind).session_idle, row.get("revoked")) {
+    if !session_live(now, expires_at, last_seen, idle_window(kind, row.get("client_idle_minutes")), row.get("revoked")) {
         return Err(ApiError::Unauthorized);
     }
     let session_id: i64 = row.get("id");
+    let viewer_id: Option<i64> = row.get("viewer_id");
+    if let Some(v) = viewer_id {
+        // a revoked, expired or re-keyed viewer login ends its sessions at once
+        let ok: Option<bool> = sqlx::query_scalar("SELECT revoked_at IS NULL AND (expires_at IS NULL OR expires_at > now()) FROM client_viewers WHERE id = $1")
+            .bind(v)
+            .fetch_optional(&st.pool)
+            .await?;
+        if ok != Some(true) {
+            return Err(ApiError::Unauthorized);
+        }
+    }
     if now - last_seen > Duration::seconds(60) {
         sqlx::query("UPDATE sessions SET last_seen_at = now() WHERE id = $1").bind(session_id).execute(&st.pool).await?;
     }
-    Ok(SessionRef { session_id, subject_id: row.get("subject_id"), tenant_id: row.get("tenant_id"), expires_at })
+    Ok(SessionRef { session_id, subject_id: row.get("subject_id"), tenant_id: row.get("tenant_id"), expires_at, viewer_id })
 }
 
 pub async fn revoke_token(st: &AppState, token: &str, kind: Kind) -> ApiResult<Option<(i64, i64)>> {

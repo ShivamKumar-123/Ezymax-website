@@ -3,6 +3,7 @@
 // keep the token in an HttpOnly first-party cookie and forward it here as a bearer token.
 
 import type { NextResponse } from "next/server";
+import type { ViewerScope } from "@/lib/viewer";
 import { cookies } from "next/headers";
 import { LOCALE_COOKIE, isLocale } from "@kalks/i18n/locales";
 import { requestHost } from "@/lib/tenant-host";
@@ -37,19 +38,24 @@ export type GatewayUser = {
   referral_code: string;
   created_at: string;
   tenant: { slug: string; name: string };
+  /** Set when this is a view-only session (D90): the owner's reduced record, read-only, limited to the scope. */
+  viewer?: ViewerScope | null;
+  /** The current session: id and the broker's idle sign-out time (minutes). */
+  session?: { id: number; idle_minutes: number; expires_at: string };
 };
 
 export type GatewayResult<T = Record<string, unknown>> = { status: number; data: T };
 
-type Forward = { ip?: string | null; userAgent?: string | null; device?: string | null; token?: string | null; host?: string | null };
+type Forward = { ip?: string | null; userAgent?: string | null; device?: string | null; token?: string | null; country?: string | null; host?: string | null };
 
-export async function gateway<T = Record<string, unknown>>(path: string, init: { method?: "GET" | "POST"; body?: unknown } & Forward = {}): Promise<GatewayResult<T>> {
+export async function gateway<T = Record<string, unknown>>(path: string, init: { method?: "GET" | "POST" | "PATCH"; body?: unknown } & Forward = {}): Promise<GatewayResult<T>> {
   const headers: Record<string, string> = { "x-kalks-internal": INTERNAL_TOKEN, "x-kalks-tenant": "kalks" };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   if (init.ip) headers["x-forwarded-for"] = init.ip;
   if (init.userAgent) headers["user-agent"] = init.userAgent;
   if (init.device) headers["x-kalks-device"] = init.device;
   if (init.token) headers.authorization = `Bearer ${init.token}`;
+  if (init.country) headers["x-kalks-country"] = init.country;
   // the broker (tenant) is resolved by the gateway from the visitor's host (tenant_domains)
   const host = init.host ?? (await requestHost());
   if (host) headers["x-kalks-host"] = host;
@@ -91,9 +97,15 @@ export function safeNext(next: string | null | undefined, fallback = "/"): strin
   return next;
 }
 
+/** Approximate location of the visitor from the edge (Cloudflare CF-IPCountry), for new sessions. */
+export function edgeCountry(h: Headers): string | null {
+  const c = h.get("cf-ipcountry")?.trim();
+  return c && /^[A-Za-z]{2}$/.test(c) ? c : null;
+}
+
 export async function fetchMe(token: string, h: Headers): Promise<GatewayUser | null | "unavailable"> {
-  const r = await gateway<{ user?: GatewayUser }>("/v1/auth/me", { token, ip: clientIp(h), userAgent: h.get("user-agent") });
-  if (r.status === 200 && r.data.user) return r.data.user;
+  const r = await gateway<{ user?: GatewayUser; viewer?: ViewerScope | null; session?: GatewayUser["session"] }>("/v1/auth/me", { token, ip: clientIp(h), userAgent: h.get("user-agent") });
+  if (r.status === 200 && r.data.user) return { ...r.data.user, viewer: r.data.viewer ?? null, session: r.data.session };
   if (r.status === 401) return null;
   return "unavailable";
 }
@@ -126,7 +138,7 @@ export function setSessionCookie(res: NextResponse, session: { token: string; ex
 }
 
 /** Step-up actions (D20): sensitive changes confirmed with an emailed code even inside a session. */
-export type StepupAction = "trading_password" | "investor_password" | "leverage" | "withdrawal" | "account_password" | "profile_email" | "profile_phone";
+export type StepupAction = "trading_password" | "investor_password" | "leverage" | "withdrawal" | "account_password" | "profile_email" | "profile_phone" | "viewer_access";
 
 /** The step-up token the browser got from /api/auth/stepup-verify: body field `stepup_token` or header `X-Kalks-Stepup`. */
 export function stepupTokenOf(h: Headers, body?: Record<string, unknown> | null): string {

@@ -63,7 +63,8 @@ pub async fn user_json(st: &AppState, id: i64) -> ApiResult<Value> {
 pub(crate) async fn signed_in(st: &AppState, ctx: &Ctx, tenant_id: i64, user_id: i64, via: &str) -> ApiResult<Value> {
     identity::mark_login(&st.pool, K, user_id).await?;
     let s = identity::create_session(st, ctx, K, tenant_id, user_id).await?;
-    audit::record(&st.pool, ctx, Entry { tenant_id, actor_kind: "user", actor_id: Some(user_id), action: "user.login", target: None, meta: json!({"via": via}) }).await;
+    let country = identity::COUNTRY.try_with(|c| c.clone()).ok().flatten();
+    audit::record(&st.pool, ctx, Entry { tenant_id, actor_kind: "user", actor_id: Some(user_id), action: "user.login", target: None, meta: json!({"via": via, "country": country}) }).await;
     Ok(json!({ "status": "ok", "session": { "token": s.token, "expires_at": s.expires_at }, "user": user_json(st, user_id).await? }))
 }
 
@@ -272,10 +273,17 @@ pub struct LoginReq {
 
 pub async fn login(State(st): State<AppState>, ctx: Ctx, req: Result<Json<LoginReq>, JsonRejection>) -> ApiResult<Json<Value>> {
     let r = body(req)?;
-    let email = validate::email(&r.email).map_err(field("email"))?;
     if r.password.is_empty() || r.password.len() > 256 {
         return Err(ApiError::Validation { field: "password", message: "Enter your password." });
     }
+    // view-only logins (D90) sign in with an id that is never an email address
+    if !r.email.contains('@') && !r.email.trim().is_empty() {
+        identity::limit(&st, format!("login:ip:{}", ctx.ip), 30, 5 * 60)?;
+        let tenant_id = identity::tenant_id(&st.pool, &ctx.tenant_slug).await?;
+        crate::tenancy::client_gate(&st, tenant_id).await?;
+        return Ok(Json(crate::client_security::viewer_login(&st, &ctx, tenant_id, &r.email, &r.password).await?));
+    }
+    let email = validate::email(&r.email).map_err(field("email"))?;
     identity::limit(&st, format!("login:ip:{}", ctx.ip), 30, 5 * 60)?;
     identity::limit(&st, format!("login:email:{email}"), 15, 15 * 60)?;
 
@@ -289,6 +297,7 @@ pub async fn login(State(st): State<AppState>, ctx: Ctx, req: Result<Json<LoginR
     }
     if !identity::device_trusted(&st, &ctx, K, p.id).await? {
         let (challenge, code) = identity::send_otp(&st, &ctx, K, tenant_id, p.id, &p.email, Purpose::Login).await?;
+        audit::record(&st.pool, &ctx, Entry { tenant_id, actor_kind: "user", actor_id: Some(p.id), action: "user.login_challenge", target: None, meta: json!({"reason": "new_device"}) }).await;
         return Ok(Json(identity::challenge_json(&st, &challenge, &p.email, Purpose::Login, K, Some(&code))));
     }
     st.limiter.clear(&format!("login:email:{email}"));
@@ -350,15 +359,31 @@ pub async fn logout(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Valu
     if let Some(token) = ctx.bearer.as_deref()
         && let Some((tenant_id, user_id)) = identity::revoke_token(&st, token, K).await?
     {
-        audit::record(&st.pool, &ctx, Entry { tenant_id, actor_kind: "user", actor_id: Some(user_id), action: "user.logout", target: None, meta: json!({}) }).await;
+        let entry = if token.starts_with(identity::VIEWER_TOKEN_PREFIX) {
+            let vid: Option<i64> = sqlx::query_scalar("SELECT viewer_id FROM sessions WHERE token_hash = $1").bind(st.keys.hash("session", token)).fetch_optional(&st.pool).await?.flatten();
+            Entry { tenant_id, actor_kind: "viewer", actor_id: vid, action: "viewer.logout", target: Some(("user", user_id)), meta: json!({}) }
+        } else {
+            Entry { tenant_id, actor_kind: "user", actor_id: Some(user_id), action: "user.logout", target: None, meta: json!({}) }
+        };
+        audit::record(&st.pool, &ctx, entry).await;
     }
     Ok(Json(json!({ "status": "ok" })))
 }
 
+/// The signed-in client. View-only sessions (D90) get the owner's reduced record plus `viewer` (label, accounts,
+/// sections, expiry); the apps use it to render a read-only Client Area.
 pub async fn me(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value>> {
-    let s = identity::resolve_session(&st, &ctx, K).await?;
-    let _ = s.session_id;
-    Ok(Json(json!({ "user": user_json(&st, s.subject_id).await?, "session": { "expires_at": s.expires_at, "tenant_id": s.tenant_id } })))
+    let s = identity::resolve_session_any(&st, &ctx, K).await?;
+    let idle: i32 = sqlx::query_scalar("SELECT client_idle_minutes FROM tenants WHERE id = $1").bind(s.tenant_id).fetch_one(&st.pool).await?;
+    let session = json!({ "id": s.session_id, "expires_at": s.expires_at, "tenant_id": s.tenant_id, "idle_minutes": idle });
+    match s.viewer_id {
+        Some(v) => Ok(Json(json!({
+            "user": crate::client_security::viewer_user_json(&st, s.subject_id).await?,
+            "viewer": crate::client_security::viewer_scope(&st, v).await?,
+            "session": session,
+        }))),
+        None => Ok(Json(json!({ "user": user_json(&st, s.subject_id).await?, "viewer": null, "session": session }))),
+    }
 }
 
 // ---------- password reset ----------

@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { LogOut, Monitor, RefreshCw, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, PageHeader, Reveal, Tabs, type Column } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Flag, PageHeader, Reveal, Segmented, Tabs, type Column } from "@kalks/ui";
 import { TextArea } from "@/components/config/kit";
 import { useCan } from "@/components/staff-session";
 import { ErrorState, Mono, Pager, TableSkeleton, ago, device, qs, sendJson, useApi, useNow, when } from "./kit";
@@ -105,8 +105,31 @@ export function sessionColumns({ now, canRevoke, onRevoke, showSubject }: { now:
       },
     });
   cols.push(
-    { key: "device", header: "Device", cell: (s) => <span className="flex items-center gap-2 whitespace-nowrap text-fg-2"><Monitor className="size-3.5 text-fg-3" />{device(s.user_agent)}</span> },
-    { key: "ip", header: "IP", cell: (s) => <Mono>{s.ip ?? "—"}</Mono> },
+    {
+      key: "device",
+      header: "Device",
+      cell: (s) => (
+        <span className="flex items-center gap-2 whitespace-nowrap text-fg-2">
+          <Monitor className="size-3.5 text-fg-3" />
+          {device(s.user_agent)}
+          {s.viewer && (
+            <Chip size="sm" tone="info">
+              View-only · {s.viewer.label ?? "viewer"}
+            </Chip>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "ip",
+      header: "IP",
+      cell: (s) => (
+        <span className="inline-flex items-center gap-1.5">
+          {s.country && <Flag country={s.country} className="size-3.5" />}
+          <Mono>{s.ip ?? "—"}</Mono>
+        </span>
+      ),
+    },
     { key: "fp", header: "Session", cell: (s) => <Mono className="text-fg-3">{s.fingerprint}</Mono>, hideOn: "lg" },
     { key: "started", header: "Started", cell: (s) => <span className="whitespace-nowrap" title={when(s.created_at)}>{ago(s.created_at, now)}</span>, hideOn: "md" },
     { key: "seen", header: "Last active", cell: (s) => <span className="whitespace-nowrap" title={when(s.last_seen_at)}>{ago(s.last_seen_at, now)}</span> },
@@ -134,6 +157,72 @@ export function sessionColumns({ now, canRevoke, onRevoke, showSubject }: { now:
         ),
     });
   return cols;
+}
+
+const IDLE_OPTIONS = [
+  { value: "15", label: "15m" },
+  { value: "30", label: "30m" },
+  { value: "60", label: "1h" },
+  { value: "240", label: "4h" },
+  { value: "720", label: "12h" },
+  { value: "1440", label: "24h" },
+];
+
+function idleText(min: number) {
+  return min % 60 === 0 ? `${min / 60}h` : `${min}m`;
+}
+
+/** Client Area idle sign-out (tenant setting, D32): shown with the client count, editable with settings.write. */
+function ClientIdle() {
+  const cfg = useApi<{ client_idle_minutes: number; client_max_days: number; can_edit: boolean }>("/api/admin/settings/sessions");
+  const [open, setOpen] = React.useState(false);
+  const [value, setValue] = React.useState("1440");
+  const [busy, setBusy] = React.useState(false);
+  const d = cfg.data;
+  const save = async () => {
+    setBusy(true);
+    const r = await sendJson(`/api/admin/settings/sessions`, { client_idle_minutes: Number(value) }, "PUT");
+    setBusy(false);
+    if (!r.ok) return toast.error("Couldn't save", { description: r.error.message });
+    toast.success(`Clients are signed out after ${idleText(Number(value))} idle`, { description: "Applies to every Client Area session now. Logged to the audit trail." });
+    setOpen(false);
+    cfg.reload();
+  };
+  return (
+    <div className="flex items-center gap-2 text-[11.5px] text-fg-3">
+      <span>{d ? `${idleText(d.client_idle_minutes)} idle timeout · ${d.client_max_days} days max` : "Idle timeout · 7 days max"}</span>
+      {d?.can_edit && (
+        <button
+          className="text-ember hover:underline"
+          onClick={() => {
+            setValue(IDLE_OPTIONS.some((o) => o.value === String(d.client_idle_minutes)) ? String(d.client_idle_minutes) : "1440");
+            setOpen(true);
+          }}
+        >
+          Change
+        </button>
+      )}
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Client idle sign-out"
+        description="Client Area sessions end after this long without activity. Clients see a one-minute warning first."
+        width={460}
+        footer={
+          <>
+            <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" variant="ember" disabled={busy} onClick={() => void save()}>
+              {busy ? "Saving…" : "Save"}
+            </Button>
+          </>
+        }
+      >
+        <Segmented size="sm" value={value} onChange={setValue} options={IDLE_OPTIONS} />
+      </Dialog>
+    </div>
+  );
 }
 
 export function LiveSessions() {
@@ -169,7 +258,7 @@ export function LiveSessions() {
           <div className="k-row px-4 py-3">
             <div className="text-[11px] uppercase tracking-wider text-fg-3">Clients signed in</div>
             <div className="k-num mt-1 text-[20px] font-medium">{users.data?.total ?? "—"}</div>
-            <div className="text-[11.5px] text-fg-3">24h idle timeout · 7 days max</div>
+            <ClientIdle />
           </div>
           <div className="k-row px-4 py-3">
             <div className="text-[11px] uppercase tracking-wider text-fg-3">Revoking</div>

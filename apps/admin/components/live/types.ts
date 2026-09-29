@@ -76,11 +76,15 @@ export type Session = {
   fingerprint: string;
   subject: { kind: "user" | "staff"; id: number; name: string | null; email: string | null; role_label: string | null };
   ip: string | null;
+  /** Approximate location (ISO country, lowercase) from the edge, when known. */
+  country?: string | null;
   user_agent: string | null;
   created_at: string;
   last_seen_at: string;
   expires_at: string;
   current: boolean;
+  /** A client's view-only login (D90) signed in on the client's account. */
+  viewer?: { id: number; label: string | null } | null;
 };
 export type SessionsPage = Paged<Session>;
 

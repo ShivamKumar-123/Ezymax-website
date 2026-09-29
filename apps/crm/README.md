@@ -65,3 +65,12 @@ These go in `apps/crm/.env.local` for local runs, or `apps/crm/.env.production.l
 | `TRADING_INTERNAL_TOKEN` | same value as the engine's `TRADING_INTERNAL_TOKEN` (repo-root `.env.local` / server env) |
 | `NEXT_PUBLIC_TERMINAL_URL` | Kalks Trader origin, for example `https://trade.kalkstrade.com` (build time) |
 | `PROP_URL`, `PROP_INTERNAL_TOKEN` | prop service, default `http://127.0.0.1:8097`; token = the service's `PROP_INTERNAL_TOKEN` |
+
+## Security, sessions and view-only access (live builds)
+
+`/profile/security` and `/profile/viewers` go through the security BFF `app/api/security/[...path]/route.ts` (gateway `/v1/auth/*`, `services/gateway/src/client_security.rs`):
+
+- Sessions: `GET sessions` (live sessions, current marked, approximate country from `CF-IPCountry`), `POST sessions/{id}/revoke`, `POST sessions/revoke-others`; `GET logins` (90-day sign-in history). The shell's `SessionGuard` checks the session every 30 s and on focus, so a signed-out device leaves at once, and signs out after the broker's idle time (Back Office → Sessions) with a one-minute warning.
+- View-only logins (D90/D93): `GET/POST viewers`, `PATCH viewers/{id}`, `POST viewers/{id}/password`, `POST viewers/{id}/revoke`. Creating one or setting a new password needs an emailed code (step-up action `viewer_access`); the password is shown once. Viewers sign in on `/login` with their viewer ID (no `@`). Their session token starts with `v.`: the proxy holds such sessions to GET requests of their sections (`lib/viewer.ts`) and refuses everything else with 403 `viewer_read_only`; `sessionUser` refuses viewer writes again, and the gateway refuses every change made with a viewer session. The trading and reports BFFs return only the accounts the viewer was given.
+- Closure / data export (D94): `GET/POST requests`, `POST requests/{id}/cancel`, `GET requests/{id}/export` (JSON download once staff complete it). Staff process requests on the Back Office client page.
+

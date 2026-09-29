@@ -48,7 +48,11 @@ export async function engine<T = Record<string, unknown>>(
 export async function sessionUser(req: NextRequest): Promise<GatewayUser | null | "unavailable"> {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  return fetchMe(token, req.headers);
+  const user = await fetchMe(token, req.headers);
+  // Defence in depth: a view-only session (D90) never acts through a BFF. The proxy already refuses its
+  // non-GET requests with 403 viewer_read_only; should one get here anyway, it is treated as signed out.
+  if (user && user !== "unavailable" && user.viewer && req.method !== "GET" && req.method !== "HEAD") return null;
+  return user;
 }
 
 /** Same-origin check for state-changing requests (cookies are SameSite=Lax; POSTs must be JSON too). */

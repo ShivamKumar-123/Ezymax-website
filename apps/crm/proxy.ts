@@ -5,6 +5,7 @@ import { REF_COOKIE, cleanRef, trackClick } from "@/lib/ib";
 import { captureAttribution } from "@/lib/attribution";
 import { moduleFor, tenantConfig } from "@/lib/tenant-config";
 import { hostOf } from "@/lib/tenant-host";
+import { VIEWER_OUT_OF_SCOPE, VIEWER_READ_ONLY, isViewerToken, viewerApiAllowed, viewerHome, viewerPageAllowed, type ViewerScope } from "@/lib/viewer";
 
 // Route protection for the Client Area.
 // - Signed-out visitors on any app page -> /login?next=<page>
@@ -45,9 +46,35 @@ export async function proxy(req: NextRequest) {
       return NextResponse.rewrite(new URL("/unavailable", req.url));
     }
   }
+  if (api && !open) {
+    const held = await viewerApi(req);
+    if (held) return held;
+  }
   if (api || open) return NextResponse.next();
   // first-touch UTM / referrer attribution for sign-up (lib/attribution.ts)
   return captureAttribution(req, await routes(req));
+}
+
+/** The scope of a view-only session (D90), or null for a normal session / no session. */
+async function viewerScope(req: NextRequest): Promise<ViewerScope | null> {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  if (!isViewerToken(token)) return null;
+  const r = await gateway<{ viewer?: ViewerScope | null }>("/v1/auth/me", { token, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });
+  return r.status === 200 ? (r.data.viewer ?? null) : null;
+}
+
+/**
+ * View-only sessions are held to read requests of their sections before any BFF runs: every change is refused
+ * here (and again by the BFFs and the gateway). A dead viewer session falls through to the normal 401 handling.
+ */
+async function viewerApi(req: NextRequest): Promise<NextResponse | null> {
+  if (!isViewerToken(req.cookies.get(SESSION_COOKIE)?.value)) return null;
+  const scope = await viewerScope(req);
+  if (!scope) return null;
+  const { pathname } = req.nextUrl;
+  if (viewerApiAllowed(scope, req.method, pathname)) return null;
+  const readOnly = req.method !== "GET" && req.method !== "HEAD";
+  return NextResponse.json({ error: readOnly ? VIEWER_READ_ONLY : VIEWER_OUT_OF_SCOPE }, { status: 403, headers: { "cache-control": "no-store" } });
 }
 
 async function routes(req: NextRequest) {
@@ -100,6 +127,14 @@ async function gate(req: NextRequest): Promise<NextResponse> {
     const url = new URL("/login", req.url);
     if (pathname !== "/") url.searchParams.set("next", pathname + search);
     return NextResponse.redirect(url);
+  }
+  // view-only sessions only see the sections they were given
+  if (isViewerToken(token)) {
+    const scope = await viewerScope(req);
+    if (scope && !viewerPageAllowed(scope, pathname)) {
+      const home = viewerHome(scope);
+      if (home !== pathname) return NextResponse.redirect(new URL(home, req.url));
+    }
   }
   // let the layout know which page was requested (for ?next= if the session turns out to be dead)
   const headers = new Headers(req.headers);

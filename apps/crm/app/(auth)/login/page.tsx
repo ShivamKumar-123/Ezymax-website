@@ -77,8 +77,8 @@ export default function LoginPage() {
           )}
           <form className={GOOGLE_LOGIN ? "space-y-4" : "mt-8 space-y-4"} onSubmit={signIn} noValidate>
             <FormError>{formErr}</FormError>
-            <Field label={t("auth.field.email")} error={fieldErr("email")}>
-              <Input leading={<Mail />} type="email" name="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.placeholder.email")} required />
+            <Field label={t("auth.field.emailOrViewer")} error={fieldErr("email")}>
+              <Input leading={<Mail />} type="text" inputMode="email" autoCapitalize="none" spellCheck={false} name="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.placeholder.email")} required />
             </Field>
             <Field label={t("auth.field.password")} error={fieldErr("password")} hint={<Link href="/forgot" className="text-ember hover:underline">{t("auth.login.forgot")}</Link>}>
               <Input
