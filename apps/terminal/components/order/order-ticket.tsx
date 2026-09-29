@@ -10,7 +10,6 @@ import { useMarketOpen } from "@/lib/market-hours";
 import { accCcy, accMoney, fmtPrice, marginRequired, pendingLabelKey, pipSize, pipValuePerLot, splitSymbol, type Expiry, type OrderType, type PendingOrder } from "@/lib/trading";
 import { Check, MiniSwitch, Stepper, TInput, TSelect } from "@/components/ui/primitives";
 import { GuestActions } from "@/components/shell/guest";
-import { GUEST_TITLE } from "@/lib/guest";
 import { useT } from "@kalks/i18n/react";
 
 const TYPES = [
@@ -431,13 +430,13 @@ function GuestTicket({ symbol }: { symbol: string }) {
         <span className="ms-auto font-mono text-[10.5px] text-fg-3">{t("order.guest.spread", { pts: spreadPts })}</span>
       </div>
       <div className="grid grid-cols-2 gap-1.5">
-        <button onClick={() => T.quickTrade(symbol, "sell")} title={GUEST_TITLE} aria-label={t("order.guest.sellAria", { symbol })} className="rounded-[7px] border border-line bg-surface-2 px-2.5 py-1.5 text-start transition-colors hover:bg-surface-3">
+        <button onClick={() => T.quickTrade(symbol, "sell")} title={t("trader.guest.title")} aria-label={t("order.guest.sellAria", { symbol })} className="rounded-[7px] border border-line bg-surface-2 px-2.5 py-1.5 text-start transition-colors hover:bg-surface-3">
           <span className="flex items-center gap-1 text-[9.5px] font-semibold uppercase tracking-[0.1em] text-down">
             {t("common.sell")} <Lock className="size-2.5 text-fg-3" />
           </span>
           <PriceText symbol={symbol} value={q.bid} dir={q.dir} className="text-[15px]" />
         </button>
-        <button onClick={() => T.quickTrade(symbol, "buy")} title={GUEST_TITLE} aria-label={t("order.guest.buyAria", { symbol })} className="rounded-[7px] border border-line bg-surface-2 px-2.5 py-1.5 text-end transition-colors hover:bg-surface-3">
+        <button onClick={() => T.quickTrade(symbol, "buy")} title={t("trader.guest.title")} aria-label={t("order.guest.buyAria", { symbol })} className="rounded-[7px] border border-line bg-surface-2 px-2.5 py-1.5 text-end transition-colors hover:bg-surface-3">
           <span className="flex items-center justify-end gap-1 text-[9.5px] font-semibold uppercase tracking-[0.1em] text-up">
             <Lock className="size-2.5 text-fg-3" /> {t("common.buy")}
           </span>
@@ -448,7 +447,7 @@ function GuestTicket({ symbol }: { symbol: string }) {
         <div className="mx-auto mb-2 grid size-8 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember">
           <Lock className="size-3.5" />
         </div>
-        <div className="text-[12.5px] font-semibold text-fg">{GUEST_TITLE}</div>
+        <div className="text-[12.5px] font-semibold text-fg">{t("trader.guest.title")}</div>
         <p className="mt-1 text-[11.5px] leading-relaxed text-fg-3">{t("order.guest.text")}</p>
         <GuestActions className="mt-2.5" />
       </div>

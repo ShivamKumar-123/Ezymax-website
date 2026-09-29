@@ -10,7 +10,7 @@ import { INDICATOR_CATEGORIES, INDICATOR_LIST } from "@/lib/indicators";
 import { addIndicator } from "@/components/chart/indicators/state";
 import { PanelHeader } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/primitives";
-import { GUEST_TITLE, openRegister, openSignIn } from "@/lib/guest";
+import { openRegister, openSignIn } from "@/lib/guest";
 import { useT } from "@kalks/i18n/react";
 
 function Group({ icon, title, count, children, defaultOpen = true }: { icon: React.ReactNode; title: string; count?: number; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -55,7 +55,7 @@ export function Navigator() {
         <Group icon={<UserRound />} title={t("common.accounts")} count={T.accounts.length}>
           {T.guest && (
             <>
-              <Leaf title={GUEST_TITLE}>
+              <Leaf title={t("trader.guest.title")}>
                 <Badge className="h-[15px] px-1 text-[8.5px]">{t("market.nav.guest")}</Badge>
                 <span className="truncate text-fg-3">{t("market.nav.noAccount")}</span>
               </Leaf>
