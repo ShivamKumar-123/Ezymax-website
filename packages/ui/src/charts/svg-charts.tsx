@@ -82,26 +82,10 @@ export function Gauge({
             <stop offset="0.6" stopColor="#ff5a1f" />
             <stop offset="1" stopColor="#d9261c" />
           </linearGradient>
-          <filter id={`f${id}`} x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation={stroke * 0.55} />
-          </filter>
         </defs>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--k-surface-3)" strokeWidth={stroke} strokeDasharray={`${c * arc} ${c}`} strokeLinecap="round" />
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={`url(#g${id})`}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          filter={`url(#f${id})`}
-          opacity={0.7}
-          initial={{ strokeDasharray: `0 ${c}` }}
-          animate={{ strokeDasharray: `${c * arc * pct} ${c}` }}
-          transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
-        />
-        <motion.circle
+        {/* no value arc at 0: a round cap on an empty dash would still paint a dot */}
+        {pct > 0 && <motion.circle
           cx={size / 2}
           cy={size / 2}
           r={r}
@@ -112,7 +96,7 @@ export function Gauge({
           initial={{ strokeDasharray: `0 ${c}` }}
           animate={{ strokeDasharray: `${c * arc * pct} ${c}` }}
           transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
-        />
+        />}
       </svg>
       <div className="absolute rounded-full bg-[radial-gradient(circle_at_50%_35%,var(--k-surface-3),var(--k-surface)_70%)] shadow-[inset_0_1px_0_var(--k-border-top),0_20px_40px_-20px_rgba(0,0,0,0.6)]" style={{ inset: stroke + 18 }} />
       <div className="relative flex flex-col items-center text-center">
