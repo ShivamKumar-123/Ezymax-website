@@ -10,11 +10,11 @@ type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 const ID = "\\d{1,18}";
 const FLAG = "[a-z][a-z0-9_]{1,47}";
 const PATHS: Record<Method, RegExp[]> = {
-  GET: [/^dashboard$/, /^tenants$/, new RegExp(`^tenants/${ID}$`), /^features$/, /^billing$/, /^invoices$/],
-  POST: [/^tenants$/, new RegExp(`^tenants/${ID}/(suspend|activate|invite-admin)$`), /^features$/, /^invoices$/, new RegExp(`^invoices/${ID}/status$`)],
-  PATCH: [new RegExp(`^tenants/${ID}$`), new RegExp(`^features/${FLAG}$`)],
+  GET: [/^dashboard$/, /^tenants$/, new RegExp(`^tenants/${ID}$`), new RegExp(`^tenants/${ID}/domains$`), /^features$/, /^billing$/, /^invoices$/],
+  POST: [/^tenants$/, new RegExp(`^tenants/${ID}/(suspend|activate|invite-admin|domains)$`), new RegExp(`^tenants/${ID}/domains/${ID}/check$`), /^features$/, /^invoices$/, new RegExp(`^invoices/${ID}/status$`)],
+  PATCH: [new RegExp(`^tenants/${ID}$`), new RegExp(`^tenants/${ID}/domains/${ID}$`), new RegExp(`^features/${FLAG}$`)],
   PUT: [new RegExp(`^tenants/${ID}/(features|billing)$`)],
-  DELETE: [new RegExp(`^features/${FLAG}$`)],
+  DELETE: [new RegExp(`^tenants/${ID}/domains/${ID}$`), new RegExp(`^features/${FLAG}$`)],
 };
 
 async function forward(req: NextRequest, parts: string[], method: Method) {

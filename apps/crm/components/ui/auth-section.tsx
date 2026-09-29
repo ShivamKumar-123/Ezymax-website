@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { FlutedGlass } from "@paper-design/shaders-react";
 import { motion } from "motion/react";
 import { useT } from "@kalks/i18n/react";
-import { Delta, LanguageMenu, Logo, PriceText, SymbolAvatar, ThemeToggle, useQuote } from "@kalks/ui";
+import { Delta, LanguageMenu, Logo, PriceText, SymbolAvatar, ThemeToggle, useBrand, useQuote } from "@kalks/ui";
 
 /**
  * Split auth layout (adapted from "auth-section-3"): the form card on the left,
@@ -49,11 +49,12 @@ export function AuthSection({ children }: { children: ReactNode }) {
 }
 
 function BrandPanel() {
+  const brand = useBrand();
   const t = useT();
   return (
     <div className="relative hidden min-h-[720px] flex-col overflow-hidden rounded-md bg-linear-to-b from-black via-[#140906] to-bg p-8 text-white sm:p-12 lg:flex lg:min-h-0 lg:p-16">
       {/* ember glow + fluted glass shader */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_520px_at_15%_-10%,rgba(255,90,31,0.42),transparent_62%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_520px_at_15%_-10%,color-mix(in_oklab,var(--k-ember)_42%,transparent),transparent_62%)]" />
       <div className="pointer-events-none absolute inset-0 z-0">
         <FlutedGlass
           size={0.89}
@@ -110,26 +111,28 @@ function BrandPanel() {
           </motion.div>
         </div>
 
-        {/* Tilted live product preview */}
-        <div className="mt-10 w-full overflow-hidden rounded-2xl border border-white/15 bg-black/70 p-2 shadow-[0_30px_90px_rgba(0,0,0,0.5)] backdrop-blur-xl lg:absolute lg:-bottom-28 lg:left-[12%] lg:mt-0 lg:w-[105%] lg:max-w-none lg:origin-bottom-left lg:-rotate-3 xl:-bottom-[150px] xl:left-[14%] xl:w-[108%] 2xl:-bottom-[170px] 2xl:w-[112%]">
-          <motion.div
-            initial={{ opacity: 0, y: 72, filter: "blur(10px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 1, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="overflow-hidden rounded-xl border border-white/10 bg-black"
-          >
-            <div className="flex select-none items-center gap-1.5 border-b border-white/10 bg-black/40 px-4 py-3">
-              <div className="size-2 rounded-full bg-white/35" />
-              <div className="size-2 rounded-full bg-white/25" />
-              <div className="size-2 rounded-full bg-white/15" />
-              <span className="ml-4 font-mono text-[9px] tracking-wider text-white/40">app.kalks.com/dashboard</span>
-            </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/app/dashboard-dark.jpg" alt={t("auth.brand.previewAlt")} className="h-auto w-full object-cover object-top opacity-95 light:hidden" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/app/dashboard-light.jpg" alt={t("auth.brand.previewAlt")} className="hidden h-auto w-full object-cover object-top light:block" />
-          </motion.div>
-        </div>
+        {/* Tilted live product preview (Kalks' own product shots: not shown for a white-label broker) */}
+        {!brand && (
+          <div className="mt-10 w-full overflow-hidden rounded-2xl border border-white/15 bg-black/70 p-2 shadow-[0_30px_90px_rgba(0,0,0,0.5)] backdrop-blur-xl lg:absolute lg:-bottom-28 lg:left-[12%] lg:mt-0 lg:w-[105%] lg:max-w-none lg:origin-bottom-left lg:-rotate-3 xl:-bottom-[150px] xl:left-[14%] xl:w-[108%] 2xl:-bottom-[170px] 2xl:w-[112%]">
+            <motion.div
+              initial={{ opacity: 0, y: 72, filter: "blur(10px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 1, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden rounded-xl border border-white/10 bg-black"
+            >
+              <div className="flex select-none items-center gap-1.5 border-b border-white/10 bg-black/40 px-4 py-3">
+                <div className="size-2 rounded-full bg-white/35" />
+                <div className="size-2 rounded-full bg-white/25" />
+                <div className="size-2 rounded-full bg-white/15" />
+                <span className="ml-4 font-mono text-[9px] tracking-wider text-white/40">app.kalks.com/dashboard</span>
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/assets/app/dashboard-dark.jpg" alt={t("auth.brand.previewAlt")} className="h-auto w-full object-cover object-top opacity-95 light:hidden" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/assets/app/dashboard-light.jpg" alt={t("auth.brand.previewAlt")} className="hidden h-auto w-full object-cover object-top light:block" />
+            </motion.div>
+          </div>
+        )}
       </div>
     </div>
   );

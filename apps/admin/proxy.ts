@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { STAFF_COOKIE, clientIp, gateway, safeNext } from "@/lib/gateway";
+import { hostOf } from "@/lib/tenant-host";
 
 // Route protection for the Back Office: every page needs a staff session except /login.
 // The (app) layout re-validates the session with the gateway on every full render.
@@ -16,7 +17,7 @@ export async function proxy(req: NextRequest) {
 
   if (pathname === "/login") {
     if (!token) return NextResponse.next();
-    const r = await gateway("/v1/admin/auth/me", { token, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });
+    const r = await gateway("/v1/admin/auth/me", { token, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent"), host: hostOf(req.headers) });
     if (r.status === 200) return NextResponse.redirect(new URL(safeNext(req.nextUrl.searchParams.get("next")), req.url));
     const res = NextResponse.next();
     if (r.status === 401) res.cookies.delete(STAFF_COOKIE);

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { Activity, Lock, ShieldCheck } from "lucide-react";
-import { Logo, Starfield, ThemeToggle } from "@kalks/ui";
+import { BrandName, Logo, Starfield, ThemeToggle, useBrand } from "@kalks/ui";
 import { IS_DEMO } from "@kalks/mock/mode";
 
 function StatusCard({ icon, title, sub, className }: { icon: React.ReactNode; title: string; sub: string; className?: string }) {
@@ -21,13 +21,14 @@ function StatusCard({ icon, title, sub, className }: { icon: React.ReactNode; ti
 }
 
 export default function AdminAuthLayout({ children }: { children: React.ReactNode }) {
+  const brand = useBrand();
   return (
     <div className="relative grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
       <div className="relative hidden overflow-hidden lg:block">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/assets/photos/skyscrapers.jpg" alt="" className="absolute inset-0 size-full scale-105 object-cover" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,7,10,0.72),rgba(7,7,10,0.55)_40%,rgba(7,7,10,0.97))]" />
-        <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_15%_-10%,rgba(255,90,31,0.5),transparent_60%)] mix-blend-screen" />
+        <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_15%_-10%,color-mix(in_oklab,var(--k-ember)_50%,transparent),transparent_60%)] mix-blend-screen" />
         <div className="absolute inset-0 bg-[radial-gradient(600px_400px_at_90%_110%,rgba(255,120,50,0.18),transparent_70%)]" />
         <Starfield density={45} />
         <div className="relative flex h-full flex-col justify-between p-12">
@@ -46,7 +47,7 @@ export default function AdminAuthLayout({ children }: { children: React.ReactNod
               <StatusCard icon={<Lock />} title="Email code on sign-in" sub="One-time code sent to your work email" className="ml-6 self-start" />
             </motion.div>
             <h2 className="max-w-md text-[40px] font-medium leading-[1.08] tracking-[-0.03em] text-white">Run the whole brokerage from one console.</h2>
-            <p className="mt-4 max-w-md text-[15px] text-white/70">Dealing, risk, compliance, finance and partners — live exposure, queues and alerts for Kalks Markets and every white-label tenant.</p>
+            <p className="mt-4 max-w-md text-[15px] text-white/70">Dealing, risk, compliance, finance and partners — live exposure, queues and alerts for {brand ? brand.name : "Kalks Markets and every white-label tenant"}.</p>
             <p className="mt-10 max-w-lg text-[11px] leading-relaxed text-white/45">
               Authorised staff only. Access is logged and monitored. Unauthorised use of this system is prohibited and may be subject to criminal and civil penalties.
             </p>
@@ -68,7 +69,7 @@ export default function AdminAuthLayout({ children }: { children: React.ReactNod
             {children}
           </motion.div>
         </div>
-        <div className="relative px-6 pb-6 text-center text-[11.5px] text-fg-3">Kalks Markets · Staff console · Server time GMT+3</div>
+        <div className="relative px-6 pb-6 text-center text-[11.5px] text-fg-3"><BrandName fallback="Kalks Markets" /> · Staff console · Server time GMT+3</div>
       </div>
     </div>
   );

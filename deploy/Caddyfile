@@ -111,3 +111,66 @@ demo-trade.kalkstrade.com {
 	import demo
 	reverse_proxy 127.0.0.1:4002
 }
+
+# ---- White-label broker domains (on-demand TLS) — NOT ENABLED ----
+# Brokers' own hosts (tenant_domains, managed in Owner → Brokers → Domains) get certificates on their first
+# visit. Caddy asks the gateway before issuing: /v1/public/domain-check answers 200 only for an active domain
+# of an active broker, and only to loopback callers, so random hostnames pointed at the server get nothing.
+# The explicit kalkstrade.com blocks above keep precedence (Caddy prefers the most specific host match).
+# To enable: move the `on_demand_tls` option into the global block at the top, uncomment the site block,
+# `caddy validate`, reload. Routing is by the first label (the Owner panel suggests the same kinds):
+# app./my./client./portal. → Client Area, trade./trader./webtrader. → Trader, admin./backoffice./bo. → Back
+# Office; anything else (the broker's apex / www) redirects to its Client Area. The gateway maps each host to
+# its broker (X-Kalks-Host from the app BFFs), so one app process serves every broker.
+#
+# {
+# 	on_demand_tls {
+# 		ask http://127.0.0.1:8080/v1/public/domain-check
+# 	}
+# }
+#
+# https:// {
+# 	import common
+# 	tls {
+# 		on_demand
+# 	}
+# 	@app header_regexp Host ^(app|my|client|portal)\.
+# 	@trade header_regexp Host ^(trade|trader|webtrader)\.
+# 	@admin header_regexp Host ^(admin|backoffice|bo)\.
+# 	handle @app {
+# 		handle /support/stream {
+# 			rewrite * /v1/stream?{query}
+# 			reverse_proxy 127.0.0.1:8100
+# 		}
+# 		@kycUpload path /api/kyc/documents
+# 		request_body @kycUpload {
+# 			max_size 12MB
+# 		}
+# 		reverse_proxy 127.0.0.1:3000
+# 	}
+# 	handle @trade {
+# 		handle /engine/stream {
+# 			rewrite * /v1/terminal/stream?{query}
+# 			reverse_proxy 127.0.0.1:8090
+# 		}
+# 		reverse_proxy 127.0.0.1:3002
+# 	}
+# 	handle @admin {
+# 		handle /support/stream {
+# 			rewrite * /v1/stream?{query}
+# 			reverse_proxy 127.0.0.1:8100
+# 		}
+# 		handle /engine/stream {
+# 			rewrite * /v1/dealing/stream?{query}
+# 			reverse_proxy 127.0.0.1:8090
+# 		}
+# 		reverse_proxy 127.0.0.1:3001
+# 	}
+# 	@www header_regexp www Host ^www\.(.+)$
+# 	handle @www {
+# 		redir https://app.{re.www.1}{uri} temporary
+# 	}
+# 	handle {
+# 		redir https://app.{host}{uri} temporary
+# 	}
+# }

@@ -1,6 +1,7 @@
 // Server-only helpers for the Kalks gateway (services/gateway). The browser never talks to the gateway:
 // route handlers under /api/shares and the public share page call it with the internal token.
 import { NextResponse, type NextRequest } from "next/server";
+import { requestHost } from "@/lib/tenant-host";
 
 const GATEWAY_URL = process.env.GATEWAY_URL || "http://127.0.0.1:8080";
 const INTERNAL_TOKEN = process.env.GATEWAY_INTERNAL_TOKEN ?? "";
@@ -9,13 +10,16 @@ export type GatewayResult<T = Record<string, unknown>> = { status: number; data:
 
 export async function gateway<T = Record<string, unknown>>(
   path: string,
-  init: { method?: "GET" | "POST" | "PATCH"; body?: unknown; ip?: string | null; userAgent?: string | null; shareKey?: string | null } = {},
+  init: { method?: "GET" | "POST" | "PATCH"; body?: unknown; ip?: string | null; userAgent?: string | null; shareKey?: string | null; host?: string | null } = {},
 ): Promise<GatewayResult<T>> {
   const headers: Record<string, string> = { "x-kalks-internal": INTERNAL_TOKEN, "x-kalks-tenant": "kalks" };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   if (init.ip) headers["x-forwarded-for"] = init.ip;
   if (init.userAgent) headers["user-agent"] = init.userAgent.slice(0, 400);
   if (init.shareKey) headers["x-share-key"] = init.shareKey;
+  // the broker (tenant) is resolved by the gateway from the visitor's host (tenant_domains)
+  const host = init.host ?? (await requestHost());
+  if (host) headers["x-kalks-host"] = host;
   try {
     const res = await fetch(`${GATEWAY_URL}${path}`, {
       method: init.method ?? (init.body !== undefined ? "POST" : "GET"),

@@ -2,19 +2,20 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, Ban, Building2, Mail, Play, Save } from "lucide-react";
+import { ArrowLeft, Ban, Building2, Globe, Mail, Play, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, EmptyState, Field, Input, KeyValue, KpiCard, PageHeader, Toggle, formatNumber } from "@kalks/ui";
 import { ErrorState, TableSkeleton, ago, day, useApi, useNow } from "@/components/live/kit";
 import { InviteLink, STATUS_TONE, act, call, cap, money, pct } from "@/components/rbac/kit";
 import { TenantMark } from "./tenants";
 import { BillingForm, InvoiceTable } from "./billing";
+import { TenantDomains } from "./domains";
 import type { TenantDetail } from "./types";
 
 export function LiveTenantDetail({ id }: { id: string }) {
   const now = useNow();
   const { data, error, reload } = useApi<TenantDetail>(`/api/owner/tenants/${id}`);
-  const [edit, setEdit] = React.useState({ name: "", domains: "", primary: "", accent: "", max_clients: "", max_staff: "" });
+  const [edit, setEdit] = React.useState({ name: "", logo_url: "", contact_email: "", primary: "", accent: "", max_clients: "", max_staff: "" });
   const [suspend, setSuspend] = React.useState(false);
   const [reason, setReason] = React.useState("");
   const [invite, setInvite] = React.useState({ email: "", name: "" });
@@ -22,7 +23,7 @@ export function LiveTenantDetail({ id }: { id: string }) {
   React.useEffect(() => {
     if (data) {
       const t = data.tenant;
-      setEdit({ name: t.name, domains: t.domains.join(", "), primary: t.brand.primary ?? "", accent: t.brand.accent ?? "", max_clients: String(t.limits.max_clients ?? 0), max_staff: String(t.limits.max_staff ?? 0) });
+      setEdit({ name: t.name, logo_url: t.brand.logo_url ?? "", contact_email: t.contact_email ?? "", primary: t.brand.primary ?? "", accent: t.brand.accent ?? "", max_clients: String(t.limits.max_clients ?? 0), max_staff: String(t.limits.max_staff ?? 0) });
     }
   }, [data]);
   if (error) return <ErrorState error={error} onRetry={reload} />;
@@ -74,13 +75,23 @@ export function LiveTenantDetail({ id }: { id: string }) {
       </div>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Card className="xl:col-span-7">
-          <CardHeader title="Profile, domains & branding" />
+          <CardHeader title="Profile & branding" subtitle="Shown on this broker's sign-in pages and app shells" />
           <div className="grid gap-4 px-4 pb-5 pt-4 sm:grid-cols-2 sm:px-6">
             <Field label="Brand name">
               <Input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} />
             </Field>
-            <Field label="Domains">
-              <Input value={edit.domains} onChange={(e) => setEdit({ ...edit, domains: e.target.value })} />
+            <Field label="Support email">
+              <Input value={edit.contact_email} onChange={(e) => setEdit({ ...edit, contact_email: e.target.value })} placeholder="support@broker.com" />
+            </Field>
+            <Field label="Logo URL (https, SVG or PNG)" className="sm:col-span-2">
+              <Input
+                value={edit.logo_url}
+                onChange={(e) => setEdit({ ...edit, logo_url: e.target.value })}
+                placeholder="https://cdn.broker.com/logo.svg"
+                className="font-mono"
+                // eslint-disable-next-line @next/next/no-img-element
+                leading={edit.logo_url.startsWith("https://") ? <img src={edit.logo_url} alt="" className="h-4 w-auto max-w-10 object-contain" /> : undefined}
+              />
             </Field>
             <Field label="Primary colour">
               <Input value={edit.primary} onChange={(e) => setEdit({ ...edit, primary: e.target.value })} className="font-mono" leading={<span className="size-4 rounded" style={{ background: edit.primary }} />} />
@@ -103,8 +114,8 @@ export function LiveTenantDetail({ id }: { id: string }) {
                     `/api/owner/tenants/${t.id}`,
                     {
                       name: edit.name,
-                      domains: edit.domains.split(/[\s,]+/).filter(Boolean),
-                      brand: { primary: edit.primary, accent: edit.accent, logo_url: t.brand.logo_url },
+                      contact_email: edit.contact_email.trim(),
+                      brand: { primary: edit.primary, accent: edit.accent, logo_url: edit.logo_url.trim() },
                       limits: { ...t.limits, max_clients: Number(edit.max_clients) || 0, max_staff: Number(edit.max_staff) || 0 },
                     },
                     "Tenant saved",
@@ -130,6 +141,12 @@ export function LiveTenantDetail({ id }: { id: string }) {
                 </span>
               </div>
             ))}
+          </div>
+        </Card>
+        <Card className="xl:col-span-12">
+          <CardHeader title="Domains" subtitle="Each host serves one app; the broker is recognised from the host its clients and staff open" icon={<Globe />} />
+          <div className="px-4 pb-5 pt-3 sm:px-6">
+            <TenantDomains tenantId={t.id} records={t.domain_records ?? []} onChanged={reload} />
           </div>
         </Card>
         <Card className="xl:col-span-7">

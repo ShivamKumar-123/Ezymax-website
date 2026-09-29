@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, ArrowUpRight, CandlestickChart, Eye, EyeOff, KeyRound, Loader2, Lock, Server, ShieldCheck, Trash2, UserPlus, UserRound } from "lucide-react";
 import { toast } from "@/lib/notify";
 import { ACCOUNTS, INSTRUMENTS, ME } from "@kalks/mock";
-import { LivePrice, LogoMark, SymbolAvatar, ThemeToggle, cn, useQuote } from "@kalks/ui";
+import { BrandName, LivePrice, LogoMark, SymbolAvatar, ThemeToggle, cn, useQuote } from "@kalks/ui";
 import { SAVED_KEY, writeActive, writeSession } from "@/lib/store";
 import { SERVERS } from "@/lib/trading";
 import { Badge, Check } from "@/components/ui/primitives";
@@ -95,7 +95,7 @@ function LoginForm() {
               <LogoMark size={16} className="text-white" />
             </span>
             <span className="text-[16px] font-semibold tracking-tight">
-              Kalks <span className="font-normal text-white/70">Trader</span>
+              <BrandName /> <span className="font-normal text-white/70">Trader</span>
             </span>
           </div>
           <div className="mt-auto max-w-[460px]">
@@ -127,7 +127,7 @@ function LoginForm() {
               <LogoMark size={14} className="text-fg" />
             </span>
             <span className="text-[14px] font-semibold">
-              Kalks <span className="font-normal text-fg-2">Trader</span>
+              <BrandName /> <span className="font-normal text-fg-2">Trader</span>
             </span>
           </span>
           <div className="flex items-center gap-2">
@@ -399,7 +399,7 @@ function Brand({ text }: { text: string }) {
             <LogoMark size={16} className="text-white" />
           </span>
           <span className="text-[16px] font-semibold tracking-tight">
-            Kalks <span className="font-normal text-white/70">Trader</span>
+            <BrandName /> <span className="font-normal text-white/70">Trader</span>
           </span>
         </div>
         <div className="mt-auto max-w-[460px]">
@@ -431,7 +431,7 @@ function TopBar() {
           <LogoMark size={14} className="text-fg" />
         </span>
         <span className="text-[14px] font-semibold">
-          Kalks <span className="font-normal text-fg-2">Trader</span>
+          <BrandName /> <span className="font-normal text-fg-2">Trader</span>
         </span>
       </span>
       <div className="flex items-center gap-2">

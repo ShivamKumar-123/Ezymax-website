@@ -21,6 +21,19 @@ export type TenantRow = {
   modules_total: number;
 };
 
+export type DomainKind = "website" | "app" | "trade" | "admin";
+
+export type DomainRecord = {
+  id: number;
+  domain: string;
+  kind: DomainKind;
+  status: "active" | "disabled";
+  verified_at: string | null;
+  dns_checked_at: string | null;
+  dns_addresses: string[];
+  created_at: string;
+};
+
 export type Billing = {
   currency: string;
   setup_fee_cents: number;
@@ -56,7 +69,7 @@ export type Invoice = {
 };
 
 export type TenantDetail = {
-  tenant: TenantRow & { clients_30d: number; kyc_verified: number; maintenance: boolean; ip_allowlist: boolean; is_owner_tenant: boolean };
+  tenant: TenantRow & { clients_30d: number; kyc_verified: number; maintenance: boolean; ip_allowlist: boolean; is_owner_tenant: boolean; domain_records?: DomainRecord[] };
   modules: { key: string; name: string; description: string; enabled: boolean; overridden: boolean; default: boolean }[];
   flags: { key: string; name: string; enabled: boolean; overridden: boolean }[];
   billing: Billing;

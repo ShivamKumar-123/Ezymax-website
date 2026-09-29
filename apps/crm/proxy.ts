@@ -3,6 +3,7 @@ import { IS_DEMO } from "@kalks/mock/mode";
 import { SESSION_COOKIE, clientIp, gateway, safeNext } from "@/lib/gateway";
 import { REF_COOKIE, cleanRef, trackClick } from "@/lib/ib";
 import { moduleFor, tenantConfig } from "@/lib/tenant-config";
+import { hostOf } from "@/lib/tenant-host";
 
 // Route protection for the Client Area.
 // - Signed-out visitors on any app page -> /login?next=<page>
@@ -32,7 +33,7 @@ export async function proxy(req: NextRequest) {
   const open = ALWAYS_OPEN.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const api = pathname.startsWith("/api/");
   if (!open) {
-    const cfg = await tenantConfig();
+    const cfg = await tenantConfig(hostOf(req.headers) ?? "");
     if (cfg?.maintenance.active && pathname !== "/api/auth/logout") {
       if (api) return NextResponse.json({ error: { code: "maintenance", message: "The Client Area is under maintenance. Please try again shortly." } }, { status: 503, headers: { "retry-after": "60" } });
       return NextResponse.rewrite(new URL("/maintenance", req.url));
@@ -86,7 +87,7 @@ async function gate(req: NextRequest): Promise<NextResponse> {
 
   if (isAuthPage) {
     if (!token) return NextResponse.next();
-    const r = await gateway("/v1/auth/me", { token, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });
+    const r = await gateway("/v1/auth/me", { token, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent"), host: hostOf(req.headers) });
     if (r.status === 200) return NextResponse.redirect(new URL(safeNext(req.nextUrl.searchParams.get("next")), req.url));
     const res = NextResponse.next();
     if (r.status === 401) res.cookies.delete(SESSION_COOKIE);

@@ -14,6 +14,8 @@ export * from "./charts/svg-charts";
 export * from "./charts/equity-chart";
 export * from "./effects/effects";
 export * from "./shell/logo";
+export * from "./shell/brand";
+export * from "./shell/brand-vars";
 export * from "./shell/app-shell";
 export * from "./shell/topbar-widgets";
 export * from "./shell/providers";

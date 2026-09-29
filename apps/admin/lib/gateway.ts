@@ -1,6 +1,8 @@
 // Server-only helpers for talking to the Kalks gateway (services/gateway), staff side.
 // Staff sessions use their own cookie names, separate from Client Area sessions.
 
+import { requestHost } from "@/lib/tenant-host";
+
 export const STAFF_COOKIE = "kalks_staff";
 export const STAFF_DEVICE_COOKIE = "kalks_staff_did";
 
@@ -45,7 +47,7 @@ export const DEMO_STAFF: GatewayStaff = {
   tenant: { slug: "kalks", name: "Kalks Markets" },
 };
 
-type Forward = { ip?: string | null; userAgent?: string | null; device?: string | null; token?: string | null };
+type Forward = { ip?: string | null; userAgent?: string | null; device?: string | null; token?: string | null; host?: string | null };
 
 export async function gateway<T = Record<string, unknown>>(path: string, init: { method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; body?: unknown } & Forward = {}): Promise<{ status: number; data: T }> {
   const headers: Record<string, string> = { "x-kalks-internal": INTERNAL_TOKEN, "x-kalks-tenant": "kalks" };
@@ -54,6 +56,9 @@ export async function gateway<T = Record<string, unknown>>(path: string, init: {
   if (init.userAgent) headers["user-agent"] = init.userAgent;
   if (init.device) headers["x-kalks-device"] = init.device;
   if (init.token) headers.authorization = `Bearer ${init.token}`;
+  // the broker (tenant) is resolved by the gateway from the visitor's host (tenant_domains)
+  const host = init.host ?? (await requestHost());
+  if (host) headers["x-kalks-host"] = host;
   try {
     const res = await fetch(`${GATEWAY_URL}${path}`, {
       method: init.method ?? (init.body !== undefined ? "POST" : "GET"),

@@ -5,6 +5,7 @@
 import type { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { LOCALE_COOKIE, isLocale } from "@kalks/i18n/locales";
+import { requestHost } from "@/lib/tenant-host";
 
 export const SESSION_COOKIE = "kalks_session";
 export const DEVICE_COOKIE = "kalks_did";
@@ -40,7 +41,7 @@ export type GatewayUser = {
 
 export type GatewayResult<T = Record<string, unknown>> = { status: number; data: T };
 
-type Forward = { ip?: string | null; userAgent?: string | null; device?: string | null; token?: string | null };
+type Forward = { ip?: string | null; userAgent?: string | null; device?: string | null; token?: string | null; host?: string | null };
 
 export async function gateway<T = Record<string, unknown>>(path: string, init: { method?: "GET" | "POST"; body?: unknown } & Forward = {}): Promise<GatewayResult<T>> {
   const headers: Record<string, string> = { "x-kalks-internal": INTERNAL_TOKEN, "x-kalks-tenant": "kalks" };
@@ -49,6 +50,9 @@ export async function gateway<T = Record<string, unknown>>(path: string, init: {
   if (init.userAgent) headers["user-agent"] = init.userAgent;
   if (init.device) headers["x-kalks-device"] = init.device;
   if (init.token) headers.authorization = `Bearer ${init.token}`;
+  // the broker (tenant) is resolved by the gateway from the visitor's host (tenant_domains)
+  const host = init.host ?? (await requestHost());
+  if (host) headers["x-kalks-host"] = host;
   // the reader's language (Client Area switcher cookie): the gateway writes code and welcome emails in it
   const locale = await requestLocale();
   if (locale) headers["x-kalks-locale"] = locale;
