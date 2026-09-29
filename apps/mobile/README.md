@@ -196,6 +196,7 @@ Tokens: 4 / 8 pt spacing (`space`), `GUTTER` 20, radii `card` 28 / `block` 32, t
 | Portfolio | `src/features/portfolio` | Live summary; positions with swipe to close, partial close and SL / TP; orders with edit and cancel; history; Statements link. |
 | Trading core | `src/features/trading` | Engine session (SSO), account stream, live money, actions, contract specs, accounts controller, account switcher. |
 | Accounts | `src/features/accounts` | Live / demo list with USD totals, open-account wizard (the Client Area's rules, credentials shown once), account screen: live figures for the active account, demo refill with the daily cap, leverage and trading / investor passwords confirmed with an emailed code, Trade on this account, transfer and statement shortcuts. Reusable: `useStepUp` / `StepUpCode` (`stepup.tsx`), and `SheetTextField` / `SheetOtpInput` for typing inside bottom sheets (a sheet only rises above the keyboard for its own inputs). |
+| Social | `src/features/social` | Copy trading, PAMM and MAM on the social BFF: leaderboard with filters and house disclosure, master profile (Skia growth curve with scrub, monthly returns, fee terms, delayed trades), follow wizard, my copies (pause, settings, stop: close all or keep the positions), PAMM funds / my investments (invest and redeem queued to the rollover, stop-loss, cancel), MAM programmes (terms-hash consent, limits, revoke: close or keep). Master and MAM-manager dashboards: summary plus "Manage on the web". Details: `src/features/social/README.md`. |
 
 ### Trading and chart building blocks (for other modules)
 
@@ -252,7 +253,7 @@ On a phone, confirm the numbers with Expo Go's **Performance Monitor**: shake th
 
 | Area | Scope |
 |---|---|
-| Investing | Copy trading, PAMM and MAM; prop challenges; Academy; AI Trader |
+| Investing | Prop challenges; Academy; AI Trader |
 | Partners | IB / partner dashboard; rewards |
 | Device features | Push notifications (expo-notifications plus the server side in services/support); biometric unlock; Google sign-in (needs the OAuth client for iOS / Android) |
 | Trading tools | Depth of market; price alerts |
