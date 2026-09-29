@@ -4,6 +4,8 @@ import * as React from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { INSTRUMENTS } from "@kalks/mock";
 import { cn } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
+import type { T as Tr } from "@kalks/i18n";
 import { TIMEFRAMES, type Timeframe } from "@/lib/trading";
 import { Check, TInput, TSelect } from "@/components/ui/primitives";
 import {
@@ -50,7 +52,7 @@ export function NumIn({ value, onChange, disabled, className, ariaLabel, step }:
         if (t !== "" && Number.isFinite(+t)) onChange(+t);
       }}
       onBlur={() => setTxt(trimNum(value))}
-      className={cn("k-num h-6 px-1.5 text-right font-mono text-[11.5px] disabled:opacity-60", className)}
+      className={cn("k-num h-6 px-1.5 text-end font-mono text-[11.5px] disabled:opacity-60", className)}
     />
   );
 }
@@ -71,7 +73,7 @@ function Section({ title, children, right }: { title: string; children: React.Re
     <div className="border-b border-line/70 px-3 py-2">
       <div className="mb-1 flex items-center">
         <span className="text-[10px] font-semibold uppercase tracking-[0.09em] text-fg-3">{title}</span>
-        <span className="ml-auto">{right}</span>
+        <span className="ms-auto">{right}</span>
       </div>
       {children}
     </div>
@@ -85,6 +87,7 @@ const sel = "h-6 text-[11.5px]";
 /* ------------------------------------------------------------------ */
 
 function OperandEdit({ o, onChange, disabled }: { o: Operand; onChange: (o: Operand) => void; disabled: boolean }) {
+  const t = useT();
   if (disabled) return <span className="font-mono text-[11.5px] text-fg">{describeOperand(o)}</span>;
   return (
     <span className="flex min-w-0 items-center gap-1">
@@ -98,10 +101,10 @@ function OperandEdit({ o, onChange, disabled }: { o: Operand; onChange: (o: Oper
           else onChange(ind(v as Operand["indicator"], 0));
         }}
         options={[
-          ...PRICE_FIELDS.map((f) => ({ value: `price:${f}`, label: f === "close" ? "Close" : f.toUpperCase() })),
+          ...PRICE_FIELDS.map((f) => ({ value: `price:${f}`, label: f === "close" ? t("aiTrader.card.operand.close") : f.toUpperCase() })),
           ...INDICATOR_NAMES.filter((n) => n !== "none").map((n) => ({ value: n, label: describeOperand(ind(n, 0)).replace(/\(.*\)/, "") })),
-          { value: "value", label: "Value" },
-          { value: "candle", label: "Candle" },
+          { value: "value", label: t("aiTrader.card.operand.value") },
+          { value: "candle", label: t("aiTrader.card.operand.candle") },
         ]}
         className={cn(sel, "w-[96px]")}
       />
@@ -126,6 +129,7 @@ function OperandEdit({ o, onChange, disabled }: { o: Operand; onChange: (o: Oper
 }
 
 function RuleEdit({ title, rs, onChange, disabled, tone }: { title: string; rs: RuleSet; onChange: (r: RuleSet) => void; disabled: boolean; tone: "up" | "down" | "fg" }) {
+  const t = useT();
   const setCond = (gi: number, ci: number, c: Condition | null) =>
     onChange({
       ...rs,
@@ -143,19 +147,19 @@ function RuleEdit({ title, rs, onChange, disabled, tone }: { title: string; rs: 
       right={
         !disabled && (
           <button onClick={add} className="flex items-center gap-1 text-[11px] text-fg-3 hover:text-fg">
-            <Plus className="size-3" /> Condition
+            <Plus className="size-3" /> {t("aiTrader.card.condition")}
           </button>
         )
       }
     >
-      {!rs.groups.length && <div className="text-[11.5px] text-fg-3">None</div>}
+      {!rs.groups.length && <div className="text-[11.5px] text-fg-3">{t("aiTrader.card.none")}</div>}
       {rs.groups.map((g, gi) => (
         <div key={gi} className={cn(gi > 0 && "mt-1 border-t border-dashed border-line pt-1")}>
-          {gi > 0 && <div className="mb-0.5 text-[10px] font-semibold uppercase text-gold">{rs.logic === "any" ? "or" : "and"}</div>}
+          {gi > 0 && <div className="mb-0.5 text-[10px] font-semibold uppercase text-gold">{t(rs.logic === "any" ? "aiTrader.card.or" : "aiTrader.card.and")}</div>}
           {g.conditions.map((c, ci) => (
             <div key={ci} className="flex min-w-0 flex-wrap items-center gap-1 py-[2px]">
-              {ci > 0 && <span className="w-7 text-[10px] font-semibold uppercase text-fg-3">{g.logic === "all" ? "and" : "or"}</span>}
-              <span className={cn("mr-0.5 h-3 w-[2px] rounded-full", tone === "up" ? "bg-up" : tone === "down" ? "bg-down" : "bg-fg-3")} />
+              {ci > 0 && <span className="w-7 text-[10px] font-semibold uppercase text-fg-3">{t(g.logic === "all" ? "aiTrader.card.and" : "aiTrader.card.or")}</span>}
+              <span className={cn("me-0.5 h-3 w-[2px] rounded-full", tone === "up" ? "bg-up" : tone === "down" ? "bg-down" : "bg-fg-3")} />
               <OperandEdit o={c.left} disabled={disabled} onChange={(o) => setCond(gi, ci, { ...c, left: o })} />
               {disabled ? (
                 <span className="text-[11.5px] text-gold">{OP_LABEL[c.op]}</span>
@@ -166,10 +170,10 @@ function RuleEdit({ title, rs, onChange, disabled, tone }: { title: string; rs: 
               {disabled ? (
                 c.timeframe !== "same" && <span className="rounded-[3px] bg-surface-3 px-1 font-mono text-[10px] text-fg-2">{c.timeframe}</span>
               ) : (
-                <TSelect ariaLabel="Condition timeframe" value={c.timeframe} onChange={(v) => setCond(gi, ci, { ...c, timeframe: v })} options={[{ value: "same", label: "Same TF" }, ...TIMEFRAMES.map((t) => ({ value: t, label: t }))]} className={cn(sel, "w-[78px]")} />
+                <TSelect ariaLabel="Condition timeframe" value={c.timeframe} onChange={(v) => setCond(gi, ci, { ...c, timeframe: v })} options={[{ value: "same", label: t("aiTrader.card.sameTf") }, ...TIMEFRAMES.map((t) => ({ value: t, label: t }))]} className={cn(sel, "w-[78px]")} />
               )}
               {!disabled && (
-                <button aria-label="Remove condition" onClick={() => setCond(gi, ci, null)} className="ml-auto grid size-5 place-items-center rounded-[4px] text-fg-3 hover:bg-down-soft hover:text-down">
+                <button aria-label={t("aiTrader.card.removeCondition")} onClick={() => setCond(gi, ci, null)} className="ms-auto grid size-5 place-items-center rounded-[4px] text-fg-3 hover:bg-down-soft hover:text-down">
                   <Trash2 className="size-3" />
                 </button>
               )}
@@ -182,10 +186,11 @@ function RuleEdit({ title, rs, onChange, disabled, tone }: { title: string; rs: 
 }
 
 function DistanceEdit({ d, onChange, disabled, kind }: { d: Distance; onChange: (d: Distance) => void; disabled: boolean; kind: "sl" | "tp" }) {
+  const t = useT();
   if (disabled) return <span className="font-mono text-[11.5px] text-fg">{describeDistance(d, kind)}</span>;
   return (
     <>
-      <TSelect ariaLabel={`${kind} mode`} value={d.mode} onChange={(v) => onChange({ ...d, mode: v })} options={DISTANCE_MODES.filter((m) => kind === "tp" || m !== "rr").map((m) => ({ value: m, label: m === "rr" ? "R multiple" : m === "atr" ? "ATR x" : m === "level" ? "Price level" : m === "price" ? "Price distance" : m[0]!.toUpperCase() + m.slice(1) }))} className={cn(sel, "w-[112px]")} />
+      <TSelect ariaLabel={`${kind} mode`} value={d.mode} onChange={(v) => onChange({ ...d, mode: v })} options={DISTANCE_MODES.filter((m) => kind === "tp" || m !== "rr").map((m) => ({ value: m, label: modeLabel(t, m) }))} className={cn(sel, "w-[112px]")} />
       {d.mode !== "none" && <NumIn ariaLabel={`${kind} value`} value={d.value} onChange={(v) => onChange({ ...d, value: Math.abs(v) })} className="w-[80px]" />}
       {d.mode === "atr" && (
         <>
@@ -199,11 +204,16 @@ function DistanceEdit({ d, onChange, disabled, kind }: { d: Distance; onChange: 
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+function modeLabel(t: Tr, m: string) {
+  return t.dyn(`aiTrader.card.mode.${m}`, m);
+}
+
 /* ------------------------------------------------------------------ */
 /* Card                                                                */
 /* ------------------------------------------------------------------ */
 
 export function StrategyCard({ spec, onChange, editable }: { spec: StrategySpec; onChange: (s: StrategySpec) => void; editable: boolean }) {
+  const t = useT();
   const set = (p: Partial<StrategySpec>) => onChange({ ...spec, ...p });
   const dis = !editable;
   const [sessTxt, setSessTxt] = React.useState(spec.sessions.map((s) => `${s.start}-${s.end}`).join(", "));
@@ -212,9 +222,9 @@ export function StrategyCard({ spec, onChange, editable }: { spec: StrategySpec;
   const sells = spec.short.groups.length > 0;
   return (
     <div className="text-[12px]">
-      <Section title="Instrument">
-        <Row label="Name">{dis ? <span className="truncate text-fg">{spec.name}</span> : <TInput aria-label="Strategy name" value={spec.name} onChange={(e) => set({ name: e.target.value.slice(0, 48) })} className="h-6 text-[11.5px]" />}</Row>
-        <Row label="Symbol / TF">
+      <Section title={t("aiTrader.card.instrument")}>
+        <Row label={t("aiTrader.card.name")}>{dis ? <span className="truncate text-fg">{spec.name}</span> : <TInput aria-label={t("aiTrader.card.nameAria")} value={spec.name} onChange={(e) => set({ name: e.target.value.slice(0, 48) })} className="h-6 text-[11.5px]" />}</Row>
+        <Row label={t("aiTrader.card.symbolTf")}>
           {dis ? (
             <span className="font-mono text-fg">
               {spec.symbol} · {spec.timeframe}
@@ -226,71 +236,71 @@ export function StrategyCard({ spec, onChange, editable }: { spec: StrategySpec;
             </>
           )}
         </Row>
-        <Row label="Direction">
-          <span className={cn("font-medium", buys && sells ? "text-gold" : sells ? "text-down" : "text-up")}>{buys && sells ? "Buy & Sell" : sells ? "Sell only" : "Buy only"}</span>
-          <span className="text-[11px] text-fg-3">· evaluated on each closed {spec.timeframe} bar</span>
+        <Row label={t("aiTrader.card.direction")}>
+          <span className={cn("font-medium", buys && sells ? "text-gold" : sells ? "text-down" : "text-up")}>{t(buys && sells ? "aiTrader.card.buyAndSell" : sells ? "aiTrader.card.sellOnly" : "aiTrader.card.buyOnly")}</span>
+          <span className="text-[11px] text-fg-3">{t("aiTrader.card.evaluated", { tf: spec.timeframe })}</span>
         </Row>
       </Section>
 
-      <RuleEdit title="Buy when" rs={spec.long} onChange={(long) => set({ long })} disabled={dis} tone="up" />
-      <RuleEdit title="Sell when" rs={spec.short} onChange={(short) => set({ short })} disabled={dis} tone="down" />
-      {(buys || !dis) && <RuleEdit title="Close buys when" rs={spec.exitLong} onChange={(exitLong) => set({ exitLong })} disabled={dis} tone="fg" />}
-      {(sells || !dis) && <RuleEdit title="Close sells when" rs={spec.exitShort} onChange={(exitShort) => set({ exitShort })} disabled={dis} tone="fg" />}
+      <RuleEdit title={t("aiTrader.card.buyWhen")} rs={spec.long} onChange={(long) => set({ long })} disabled={dis} tone="up" />
+      <RuleEdit title={t("aiTrader.card.sellWhen")} rs={spec.short} onChange={(short) => set({ short })} disabled={dis} tone="down" />
+      {(buys || !dis) && <RuleEdit title={t("aiTrader.card.closeBuysWhen")} rs={spec.exitLong} onChange={(exitLong) => set({ exitLong })} disabled={dis} tone="fg" />}
+      {(sells || !dis) && <RuleEdit title={t("aiTrader.card.closeSellsWhen")} rs={spec.exitShort} onChange={(exitShort) => set({ exitShort })} disabled={dis} tone="fg" />}
 
-      <Section title="Size and protection">
-        <Row label="Volume">
+      <Section title={t("aiTrader.card.sizeProtection")}>
+        <Row label={t("aiTrader.card.volume")}>
           {dis ? (
             <span className="font-mono text-fg">
-              {describeSizing(spec)} · cap {spec.maxLots.toFixed(2)} lot
+              {describeSizing(spec)} · {t("aiTrader.card.capLots", { lots: spec.maxLots.toFixed(2) })}
             </span>
           ) : (
             <>
-              <TSelect ariaLabel="Sizing mode" value={spec.sizing.mode} onChange={(v) => set({ sizing: { ...spec.sizing, mode: v } })} options={[{ value: "lots", label: "Fixed lots" }, { value: "risk", label: "Risk % balance" }]} className={cn(sel, "w-[112px]")} />
+              <TSelect ariaLabel="Sizing mode" value={spec.sizing.mode} onChange={(v) => set({ sizing: { ...spec.sizing, mode: v } })} options={[{ value: "lots", label: t("aiTrader.card.fixedLots") }, { value: "risk", label: t("aiTrader.card.riskPct") }]} className={cn(sel, "w-[112px]")} />
               {spec.sizing.mode === "lots" ? (
                 <NumIn ariaLabel="Lots" value={spec.sizing.lots} onChange={(v) => set({ sizing: { ...spec.sizing, lots: Math.abs(v) } })} className="w-[64px]" />
               ) : (
                 <NumIn ariaLabel="Risk percent" value={spec.sizing.riskPct} onChange={(v) => set({ sizing: { ...spec.sizing, riskPct: Math.abs(v) } })} className="w-[56px]" />
               )}
-              <span className="text-[11px] text-fg-3">cap</span>
+              <span className="text-[11px] text-fg-3">{t("aiTrader.card.cap")}</span>
               <NumIn ariaLabel="Max lots per order" value={spec.maxLots} onChange={(v) => set({ maxLots: Math.abs(v) })} className="w-[56px]" />
             </>
           )}
         </Row>
-        <Row label="Stop loss">
+        <Row label={t("aiTrader.card.stopLoss")}>
           <DistanceEdit d={spec.sl} kind="sl" disabled={dis} onChange={(sl) => set({ sl })} />
         </Row>
-        <Row label="Take profit">
+        <Row label={t("aiTrader.card.takeProfit")}>
           <DistanceEdit d={spec.tp} kind="tp" disabled={dis} onChange={(tp) => set({ tp })} />
         </Row>
-        <Row label="Trailing">
+        <Row label={t("aiTrader.card.trailing")}>
           {dis ? (
             <span className="font-mono text-[11.5px] text-fg">{describeTrailing(spec.trailing)}</span>
           ) : (
             <>
-              <TSelect ariaLabel="Trailing mode" value={spec.trailing.mode} onChange={(v) => set({ trailing: { ...spec.trailing, mode: v } })} options={TRAIL_MODES.map((m) => ({ value: m, label: m === "atr" ? "ATR x" : m[0]!.toUpperCase() + m.slice(1) }))} className={cn(sel, "w-[82px]")} />
+              <TSelect ariaLabel="Trailing mode" value={spec.trailing.mode} onChange={(v) => set({ trailing: { ...spec.trailing, mode: v } })} options={TRAIL_MODES.map((m) => ({ value: m, label: modeLabel(t, m) }))} className={cn(sel, "w-[82px]")} />
               {spec.trailing.mode !== "none" && <NumIn ariaLabel="Trailing distance" value={spec.trailing.value} onChange={(v) => set({ trailing: { ...spec.trailing, value: Math.abs(v) } })} className="w-[70px]" />}
             </>
           )}
         </Row>
         {!dis && (
-          <Row label="Breakeven" hint="Move SL to entry (+ offset) once profit reaches the trigger, in points">
-            <span className="text-[11px] text-fg-3">at +</span>
+          <Row label={t("aiTrader.card.breakeven")} hint={t("aiTrader.card.breakevenHint")}>
+            <span className="text-[11px] text-fg-3">{t("aiTrader.card.at")}</span>
             <NumIn ariaLabel="Breakeven trigger points" value={spec.trailing.breakevenTrigger} onChange={(v) => set({ trailing: { ...spec.trailing, breakevenTrigger: Math.abs(v) } })} className="w-[64px]" />
-            <span className="text-[11px] text-fg-3">pts, lock</span>
+            <span className="text-[11px] text-fg-3">{t("aiTrader.card.ptsLock")}</span>
             <NumIn ariaLabel="Breakeven offset points" value={spec.trailing.breakevenOffset} onChange={(v) => set({ trailing: { ...spec.trailing, breakevenOffset: v } })} className="w-[52px]" />
-            <span className="text-[11px] text-fg-3">pts</span>
+            <span className="text-[11px] text-fg-3">{t("aiTrader.card.pts")}</span>
           </Row>
         )}
       </Section>
 
-      <Section title="Schedule and limits">
-        <Row label="Window">
+      <Section title={t("aiTrader.card.scheduleLimits")}>
+        <Row label={t("aiTrader.card.window")}>
           {dis ? (
             <span className="text-fg">{describeSchedule(spec)}</span>
           ) : (
             <TInput
               aria-label="Trading windows"
-              placeholder="All day  ·  e.g. 08:00-17:00, 20:00-22:00"
+              placeholder={t("aiTrader.card.windowPlaceholder")}
               value={sessTxt}
               onChange={(e) => setSessTxt(e.target.value)}
               onBlur={() => {
@@ -306,7 +316,7 @@ export function StrategyCard({ spec, onChange, editable }: { spec: StrategySpec;
           )}
         </Row>
         {!dis && (
-          <Row label="Days">
+          <Row label={t("aiTrader.card.days")}>
             {DAYS.map((d, i) => {
               const on = spec.days.length === 0 || spec.days.includes(i);
               return (
@@ -319,35 +329,35 @@ export function StrategyCard({ spec, onChange, editable }: { spec: StrategySpec;
                   }}
                   className={cn("h-6 rounded-[5px] px-1.5 text-[10.5px]", on ? "bg-surface-3 text-fg" : "text-fg-3 hover:text-fg-2")}
                 >
-                  {d}
+                  {t(`aiTrader.day.${i}` as "aiTrader.day.0")}
                 </button>
               );
             })}
           </Row>
         )}
-        <Row label="Limits">
+        <Row label={t("aiTrader.card.limits")}>
           {dis ? (
             <span className="text-fg">
-              {spec.maxTradesPerDay ? `${spec.maxTradesPerDay} trades/day` : "No trade limit"} · {spec.maxDailyLoss ? `max daily loss ${spec.maxDailyLoss}` : "no daily loss limit"} · {spec.oneAtATime ? "one position at a time" : "multiple positions"}
+              {spec.maxTradesPerDay ? t("aiTrader.card.tradesPerDay", { count: spec.maxTradesPerDay }) : t("aiTrader.card.noTradeLimit")} · {spec.maxDailyLoss ? t("aiTrader.card.maxDailyLoss", { value: spec.maxDailyLoss }) : t("aiTrader.card.noDailyLoss")} · {t(spec.oneAtATime ? "aiTrader.card.onePosition" : "aiTrader.card.multiplePositions")}
             </span>
           ) : (
             <>
               <NumIn ariaLabel="Max trades per day" value={spec.maxTradesPerDay} onChange={(v) => set({ maxTradesPerDay: Math.max(0, Math.round(v)) })} className="w-[44px]" />
-              <span className="text-[11px] text-fg-3">trades/day · max loss</span>
+              <span className="text-[11px] text-fg-3">{t("aiTrader.card.tradesDayMaxLoss")}</span>
               <NumIn ariaLabel="Max daily loss" value={spec.maxDailyLoss} onChange={(v) => set({ maxDailyLoss: Math.abs(v) })} className="w-[64px]" />
             </>
           )}
         </Row>
         {!dis && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1">
-            <Check checked={spec.oneAtATime} onChange={(v) => set({ oneAtATime: v })} label="One position at a time" className="text-[11.5px]" />
-            <Check checked={spec.closeOutsideSession} onChange={(v) => set({ closeOutsideSession: v })} label="Close outside window" className="text-[11.5px]" />
-            <Check checked={spec.exitIntrabar} onChange={(v) => set({ exitIntrabar: v })} label="Check exits intrabar" className="text-[11.5px]" />
+            <Check checked={spec.oneAtATime} onChange={(v) => set({ oneAtATime: v })} label={t("aiTrader.card.oneAtATime")} className="text-[11.5px]" />
+            <Check checked={spec.closeOutsideSession} onChange={(v) => set({ closeOutsideSession: v })} label={t("aiTrader.card.closeOutside")} className="text-[11.5px]" />
+            <Check checked={spec.exitIntrabar} onChange={(v) => set({ exitIntrabar: v })} label={t("aiTrader.card.exitIntrabar")} className="text-[11.5px]" />
           </div>
         )}
         {dis && (spec.closeOutsideSession || spec.exitIntrabar) && (
           <div className="pt-1 text-[11px] text-fg-3">
-            {[spec.closeOutsideSession && "Closes positions outside the window", spec.exitIntrabar && "Exit rules checked intrabar"].filter(Boolean).join(" · ")}
+            {[spec.closeOutsideSession && t("aiTrader.card.closesOutside"), spec.exitIntrabar && t("aiTrader.card.exitsIntrabar")].filter(Boolean).join(" · ")}
           </div>
         )}
       </Section>
@@ -357,18 +367,19 @@ export function StrategyCard({ spec, onChange, editable }: { spec: StrategySpec;
 
 /** One-paragraph summary used in the activation confirmation. */
 export function SpecSummary({ spec }: { spec: StrategySpec }) {
+  const t = useT();
   const rows: [string, string][] = [
-    ["Instrument", `${spec.symbol} · ${spec.timeframe} (closed bars)`],
-    ["Buy when", describeRuleSet(spec.long)],
-    ["Sell when", describeRuleSet(spec.short)],
-    ["Close buys", describeRuleSet(spec.exitLong)],
-    ["Close sells", describeRuleSet(spec.exitShort)],
-    ["Volume", `${describeSizing(spec)} per order, capped at ${spec.maxLots.toFixed(2)} lot`],
-    ["Stop loss", describeDistance(spec.sl, "sl")],
-    ["Take profit", describeDistance(spec.tp, "tp")],
-    ["Trailing", describeTrailing(spec.trailing)],
-    ["Window", describeSchedule(spec)],
-    ["Limits", `${spec.maxTradesPerDay ? `${spec.maxTradesPerDay} trades/day` : "no trade limit"} · ${spec.maxDailyLoss ? `stop after ${spec.maxDailyLoss} daily loss` : "no daily loss limit"} · ${spec.oneAtATime ? "one position at a time" : "multiple positions"}`],
+    [t("aiTrader.sum.instrument"), t("aiTrader.sum.instrumentValue", { symbol: spec.symbol, tf: spec.timeframe })],
+    [t("aiTrader.card.buyWhen"), describeRuleSet(spec.long)],
+    [t("aiTrader.card.sellWhen"), describeRuleSet(spec.short)],
+    [t("aiTrader.sum.closeBuys"), describeRuleSet(spec.exitLong)],
+    [t("aiTrader.sum.closeSells"), describeRuleSet(spec.exitShort)],
+    [t("aiTrader.card.volume"), t("aiTrader.sum.volumeValue", { sizing: describeSizing(spec), lots: spec.maxLots.toFixed(2) })],
+    [t("aiTrader.card.stopLoss"), describeDistance(spec.sl, "sl")],
+    [t("aiTrader.card.takeProfit"), describeDistance(spec.tp, "tp")],
+    [t("aiTrader.card.trailing"), describeTrailing(spec.trailing)],
+    [t("aiTrader.card.window"), describeSchedule(spec)],
+    [t("aiTrader.card.limits"), `${spec.maxTradesPerDay ? t("aiTrader.card.tradesPerDay", { count: spec.maxTradesPerDay }) : t("aiTrader.card.noTradeLimit")} · ${spec.maxDailyLoss ? t("aiTrader.sum.stopAfter", { value: spec.maxDailyLoss }) : t("aiTrader.card.noDailyLoss")} · ${t(spec.oneAtATime ? "aiTrader.card.onePosition" : "aiTrader.card.multiplePositions")}`],
   ];
   return (
     <div className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-1 text-[12px]">

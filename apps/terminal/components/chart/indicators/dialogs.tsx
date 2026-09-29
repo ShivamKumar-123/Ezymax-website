@@ -4,6 +4,8 @@ import * as React from "react";
 import { toast } from "@/lib/notify";
 import { Eye, EyeOff, FileStack, Plus, Search, Settings2, SlidersHorizontal, Spline, Star, Trash2, X } from "lucide-react";
 import { cn } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
+import type { T as Tr } from "@kalks/i18n";
 import { useTerminal } from "@/lib/store";
 import {
   COLOR_TOKENS,
@@ -51,7 +53,8 @@ function toHex(c: string): string {
   return m ? `#${[m[1], m[2], m[3]].map((x) => Number(x).toString(16).padStart(2, "0")).join("")}` : "#e9b949";
 }
 
-const paneLabel = (d: IndicatorDef) => (d.pane === "overlay" ? "Overlay" : "Sub-window");
+const paneLabel = (t: Tr, d: IndicatorDef) => (d.pane === "overlay" ? t("chart.ind.overlay") : t("chart.ind.subWindow"));
+const catLabel = (t: Tr, c: string) => t.dyn(`market.nav.category.${c.replace(/\s+/g, "").replace(/^./, (x) => x.toLowerCase())}`, c);
 
 /** Mounted once by the terminal shell. */
 export function IndicatorDialogs() {
@@ -72,9 +75,10 @@ type View = "all" | "fav" | "chart" | IndicatorCategory;
 
 function IndicatorsDialog() {
   const T = useTerminal();
+  const t = useT();
   const s = useIndUi();
   const favs = useIndicatorFavourites();
-  const tab = T.ws.tabs.find((t) => t.id === s.list) ?? null;
+  const tab = T.ws.tabs.find((x) => x.id === s.list) ?? null;
   const [q, setQ] = React.useState("");
   const [view, setView] = React.useState<View>("all");
   const [idx, setIdx] = React.useState(0);
@@ -121,9 +125,9 @@ function IndicatorsDialog() {
   };
 
   const nav: { id: View; label: string; n: number }[] = [
-    { id: "all", label: "All indicators", n: INDICATOR_LIST.length },
-    { id: "fav", label: "Favourites", n: favs.length },
-    ...INDICATOR_CATEGORIES.map((c) => ({ id: c as View, label: c, n: INDICATOR_LIST.filter((d) => d.category === c).length })),
+    { id: "all", label: t("chart.ind.all"), n: INDICATOR_LIST.length },
+    { id: "fav", label: t("chart.ind.favourites"), n: favs.length },
+    ...INDICATOR_CATEGORIES.map((c) => ({ id: c as View, label: catLabel(t, c), n: INDICATOR_LIST.filter((d) => d.category === c).length })),
   ];
 
   return (
@@ -132,19 +136,19 @@ function IndicatorsDialog() {
       onClose={close}
       width={760}
       icon={<Spline />}
-      title="Indicators"
+      title={t("chart.ind.title")}
       subtitle={`${tab.symbol}, ${tab.tf}`}
       footer={
         <>
-          <div className="mr-auto hidden items-center gap-3 text-[10.5px] text-fg-3 sm:flex">
+          <div className="me-auto hidden items-center gap-3 text-[10.5px] text-fg-3 sm:flex">
             <span className="flex items-center gap-1">
-              <Kbd>↑↓</Kbd> navigate
+              <Kbd>↑↓</Kbd> {t("chart.ind.navigate")}
             </span>
             <span className="flex items-center gap-1">
-              <Kbd>↵</Kbd> add
+              <Kbd>↵</Kbd> {t("chart.ind.add")}
             </span>
             <span className="flex items-center gap-1">
-              <Kbd>⇧ ↵</Kbd> add &amp; configure
+              <Kbd>⇧ ↵</Kbd> {t("chart.ind.addConfigure")}
             </span>
           </div>
           {tab.indicators.length > 0 && (
@@ -154,25 +158,25 @@ function IndicatorsDialog() {
               onClick={() => {
                 const n = tab.indicators.length;
                 T.updateTab(tab.id, { indicators: [] });
-                toast(`Removed ${n} indicator${n > 1 ? "s" : ""}`, { description: `${tab.symbol}, ${tab.tf}` });
+                toast(t("chart.ind.removed", { count: n }), { description: `${tab.symbol}, ${tab.tf}` });
               }}
             >
-              <Trash2 /> Remove all
+              <Trash2 /> {t("chart.ind.removeAll")}
             </TButton>
           )}
           <TButton variant="ember" onClick={close}>
-            Done
+            {t("chart.ind.done")}
           </TButton>
         </>
       }
     >
       <div className="flex h-[min(520px,70dvh)] min-h-0" onKeyDown={onKey}>
-        <nav className="hidden w-[176px] shrink-0 flex-col gap-0.5 border-r border-line bg-panel-2/60 p-1.5 sm:flex" aria-label="Indicator categories">
+        <nav className="hidden w-[176px] shrink-0 flex-col gap-0.5 border-e border-line bg-panel-2/60 p-1.5 sm:flex" aria-label={t("chart.ind.categoriesAria")}>
           {nav.map((n) => (
             <NavBtn key={n.id} on={view === n.id} onClick={() => (setView(n.id), setIdx(0))} label={n.label} n={n.n} star={n.id === "fav"} />
           ))}
           <div className="mx-1 my-1.5 h-px bg-line" />
-          <NavBtn on={view === "chart"} onClick={() => setView("chart")} label="On this chart" n={tab.indicators.length} />
+          <NavBtn on={view === "chart"} onClick={() => setView("chart")} label={t("chart.ind.onChart")} n={tab.indicators.length} />
         </nav>
         <div className="flex min-w-0 flex-1 flex-col">
           {view !== "chart" && (
@@ -182,24 +186,24 @@ function IndicatorsDialog() {
                 ref={input}
                 value={q}
                 onChange={(e) => (setQ(e.target.value), setIdx(0))}
-                placeholder="Search 35 indicators: RSI, bands, volume…"
-                aria-label="Search indicators"
+                placeholder={t("chart.ind.search", { count: INDICATOR_LIST.length })}
+                aria-label={t("chart.ind.searchAria")}
                 aria-controls="ind-list"
                 aria-activedescendant={cur ? `ind-opt-${cur.type}` : undefined}
                 className="h-full min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-fg-3"
               />
               <select
-                aria-label="Category"
+                aria-label={t("chart.ind.categoryAria")}
                 value={view}
                 onChange={(e) => (setView(e.target.value as View), setIdx(0))}
-                className="t-select h-6 rounded-[5px] border border-line bg-surface-2 pl-1.5 pr-5 text-[11px] text-fg-2 sm:hidden"
+                className="t-select h-6 rounded-[5px] border border-line bg-surface-2 ps-1.5 pe-5 text-[11px] text-fg-2 sm:hidden"
               >
                 {nav.map((n) => (
                   <option key={n.id} value={n.id}>
                     {n.label}
                   </option>
                 ))}
-                <option value="chart">On this chart</option>
+                <option value="chart">{t("chart.ind.onChart")}</option>
               </select>
             </div>
           )}
@@ -207,7 +211,7 @@ function IndicatorsDialog() {
             <OnChart tabId={tab.id} list={tab.indicators} />
           ) : (
             <>
-              <div ref={listRef} id="ind-list" role="listbox" aria-label="Indicators" className="t-scroll min-h-0 flex-1 overflow-y-auto p-1">
+              <div ref={listRef} id="ind-list" role="listbox" aria-label={t("chart.ind.title")} className="t-scroll min-h-0 flex-1 overflow-y-auto p-1">
                 {list.map((d, n) => (
                   <IndRow
                     key={d.type}
@@ -224,7 +228,7 @@ function IndicatorsDialog() {
                   />
                 ))}
                 {!list.length && (
-                  <div className="p-8 text-center text-[12.5px] text-fg-3">{view === "fav" && !needle ? "No favourites yet. Star an indicator to pin it here." : `No indicators match “${q}”`}</div>
+                  <div className="p-8 text-center text-[12.5px] text-fg-3">{view === "fav" && !needle ? t("chart.ind.noFavourites") : t("chart.ind.noMatch", { query: q })}</div>
                 )}
               </div>
               {cur && (
@@ -245,7 +249,7 @@ function NavBtn({ on, onClick, label, n, star }: { on: boolean; onClick: () => v
     <button
       onClick={onClick}
       aria-pressed={on}
-      className={cn("flex h-7 items-center gap-1.5 rounded-[5px] px-2 text-left text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-ember/40", on ? "bg-ember-soft text-ember" : "text-fg-2 hover:bg-surface-3 hover:text-fg")}
+      className={cn("flex h-7 items-center gap-1.5 rounded-[5px] px-2 text-start text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-ember/40", on ? "bg-ember-soft text-ember" : "text-fg-2 hover:bg-surface-3 hover:text-fg")}
     >
       {star && <Star className={cn("size-3", on ? "fill-ember" : "fill-gold text-gold")} />}
       <span className="min-w-0 flex-1 truncate">{label}</span>
@@ -255,6 +259,7 @@ function NavBtn({ on, onClick, label, n, star }: { on: boolean; onClick: () => v
 }
 
 function IndRow({ def, active, fav, count, showCat, onHover, onAdd }: { def: IndicatorDef; active: boolean; fav: boolean; count: number; showCat: boolean; onHover: () => void; onAdd: (configure: boolean) => void }) {
+  const t = useT();
   const ref = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     if (active) ref.current?.scrollIntoView({ block: "nearest" });
@@ -270,8 +275,8 @@ function IndRow({ def, active, fav, count, showCat, onHover, onAdd }: { def: Ind
       className={cn("group flex h-8 cursor-default items-center gap-2 rounded-[6px] px-2", active ? "bg-surface-3" : "hover:bg-surface-2")}
     >
       <button
-        aria-label={fav ? `Remove ${def.name} from favourites` : `Add ${def.name} to favourites`}
-        title={fav ? "Remove from favourites" : "Add to favourites"}
+        aria-label={t(fav ? "chart.ind.favRemoveAria" : "chart.ind.favAddAria", { name: def.name })}
+        title={t(fav ? "chart.ind.favRemove" : "chart.ind.favAdd")}
         onClick={(e) => {
           e.stopPropagation();
           toggleFavourite(def.type);
@@ -282,14 +287,14 @@ function IndRow({ def, active, fav, count, showCat, onHover, onAdd }: { def: Ind
       </button>
       <span className="min-w-0 flex-1 truncate text-[12.5px] text-fg">
         {def.name}
-        <span className="ml-2 font-mono text-[10.5px] text-fg-3">{def.short}</span>
+        <span className="ms-2 font-mono text-[10.5px] text-fg-3">{def.short}</span>
       </span>
-      {count > 0 && <span className="k-num rounded-[3px] bg-ember-soft px-1 font-mono text-[10px] text-ember">{count} on chart</span>}
-      {showCat && <span className="hidden w-[84px] shrink-0 text-right text-[10.5px] text-fg-3 md:inline">{def.category}</span>}
-      <span className="w-[62px] shrink-0 text-right text-[10.5px] text-fg-3">{paneLabel(def)}</span>
+      {count > 0 && <span className="k-num rounded-[3px] bg-ember-soft px-1 font-mono text-[10px] text-ember">{t("chart.ind.countOnChart", { count })}</span>}
+      {showCat && <span className="hidden w-[84px] shrink-0 text-end text-[10.5px] text-fg-3 md:inline">{catLabel(t, def.category)}</span>}
+      <span className="w-[62px] shrink-0 text-end text-[10.5px] text-fg-3">{paneLabel(t, def)}</span>
       <button
-        aria-label={`Add ${def.name} and configure`}
-        title="Add and configure (Shift+Enter)"
+        aria-label={t("chart.ind.addConfigureAria", { name: def.name })}
+        title={t("chart.ind.addConfigureTitle")}
         onClick={(e) => {
           e.stopPropagation();
           onAdd(true);
@@ -305,13 +310,14 @@ function IndRow({ def, active, fav, count, showCat, onHover, onAdd }: { def: Ind
 
 function OnChart({ tabId, list }: { tabId: string; list: IndicatorInstance[] }) {
   const T = useTerminal();
+  const t = useT();
   if (!list.length)
     return (
       <div className="grid flex-1 place-items-center p-8 text-center">
         <div>
           <SlidersHorizontal className="mx-auto mb-2 size-5 text-fg-3" />
-          <div className="text-[12.5px] text-fg-2">No indicators on this chart</div>
-          <div className="mt-0.5 text-[11.5px] text-fg-3">Pick one from the categories on the left.</div>
+          <div className="text-[12.5px] text-fg-2">{t("chart.ind.noneOnChart")}</div>
+          <div className="mt-0.5 text-[11.5px] text-fg-3">{t("chart.ind.noneOnChartHint")}</div>
         </div>
       </div>
     );
@@ -324,14 +330,14 @@ function OnChart({ tabId, list }: { tabId: string; list: IndicatorInstance[] }) 
           <div key={inst.uid} className="group flex h-8 items-center gap-2 rounded-[6px] px-2 hover:bg-surface-2">
             <span className="h-0.5 w-3 shrink-0 rounded-full" style={{ background: cssColor(col) }} />
             <span className={cn("min-w-0 flex-1 truncate font-mono text-[12px]", inst.visible ? "text-fg" : "text-fg-3")}>{indicatorLabel(inst.type, normalizeParams(inst.type, inst.params))}</span>
-            <span className="w-[62px] text-right text-[10.5px] text-fg-3">{paneLabel(def)}</span>
-            <RowIcon label={inst.visible ? "Hide" : "Show"} onClick={() => toggleIndicator(T, tabId, inst)}>
+            <span className="w-[62px] text-end text-[10.5px] text-fg-3">{paneLabel(t, def)}</span>
+            <RowIcon label={t(inst.visible ? "chart.ind.hide" : "chart.ind.show")} onClick={() => toggleIndicator(T, tabId, inst)}>
               {inst.visible ? <Eye /> : <EyeOff />}
             </RowIcon>
-            <RowIcon label="Settings" onClick={() => (closeIndUi("list"), openIndicatorSettings(tabId, inst.uid))}>
+            <RowIcon label={t("chart.ind.settings")} onClick={() => (closeIndUi("list"), openIndicatorSettings(tabId, inst.uid))}>
               <Settings2 />
             </RowIcon>
-            <RowIcon label="Remove" danger onClick={() => removeIndicator(T, tabId, inst.uid)}>
+            <RowIcon label={t("chart.ind.remove")} danger onClick={() => removeIndicator(T, tabId, inst.uid)}>
               <X />
             </RowIcon>
           </div>
@@ -365,7 +371,7 @@ const draftOf = (inst: IndicatorInstance, def: IndicatorDef): Draft => ({
 function IndicatorSettingsDialog() {
   const T = useTerminal();
   const s = useIndUi();
-  const tab = s.settings ? T.ws.tabs.find((t) => t.id === s.settings!.tabId) : undefined;
+  const tab = s.settings ? T.ws.tabs.find((x) => x.id === s.settings!.tabId) : undefined;
   const inst = tab?.indicators.find((x) => x.uid === s.settings?.uid);
   const close = React.useCallback(() => closeIndUi("settings"), []);
   if (!tab || !inst) return null;
@@ -374,6 +380,7 @@ function IndicatorSettingsDialog() {
 
 function SettingsBody({ tabId, title, inst, onClose }: { tabId: string; title: string; inst: IndicatorInstance; onClose: () => void }) {
   const T = useTerminal();
+  const t = useT();
   const def = INDICATOR_DEFS[inst.type];
   const [d, setD] = React.useState<Draft>(() => draftOf(inst, def));
   const hasLevels = def.pane === "separate";
@@ -396,8 +403,8 @@ function SettingsBody({ tabId, title, inst, onClose }: { tabId: string; title: s
     const lv = d.levels.map(Number);
     const defLv = def.levels?.(params) ?? [];
     const levels = hasLevels && JSON.stringify(lv) !== JSON.stringify(defLv) ? lv : undefined;
-    T.updateTab(tabId, (t) => ({
-      indicators: t.indicators.map((x) => {
+    T.updateTab(tabId, (tb) => ({
+      indicators: tb.indicators.map((x) => {
         if (x.uid !== inst.uid) return x;
         const next: IndicatorInstance = { uid: x.uid, type: x.type, params, visible: d.visible };
         if (Object.keys(style).length) next.style = style;
@@ -405,14 +412,14 @@ function SettingsBody({ tabId, title, inst, onClose }: { tabId: string; title: s
         return next;
       }),
     }));
-    toast.success(`${indicatorLabel(inst.type, params)} updated`, { description: title });
+    toast.success(t("chart.ind.updated", { label: indicatorLabel(inst.type, params) }), { description: title });
     onClose();
   };
 
   const reset = () => setD({ params: Object.fromEntries(def.params.map((p) => [p.key, String(p.def)])), style: Object.fromEntries(def.outputs.map((o) => [o.key, {}])), levels: (def.levels?.(normalizeParams(inst.type, {})) ?? []).map(String), visible: true });
   const setStyle = (k: string, patch: OutputStyle) => setD((x) => ({ ...x, style: { ...x.style, [k]: { ...x.style[k], ...patch } } }));
 
-  const tabs: { id: typeof pane; label: string }[] = [...(def.params.length ? [{ id: "inputs" as const, label: "Inputs" }] : []), { id: "style", label: "Style" }, ...(hasLevels ? [{ id: "levels" as const, label: "Levels" }] : [])];
+  const tabs: { id: typeof pane; label: string }[] = [...(def.params.length ? [{ id: "inputs" as const, label: t("chart.ind.tabInputs") }] : []), { id: "style", label: t("chart.ind.tabStyle") }, ...(hasLevels ? [{ id: "levels" as const, label: t("chart.ind.tabLevels") }] : [])];
 
   return (
     <TDialog
@@ -424,17 +431,17 @@ function SettingsBody({ tabId, title, inst, onClose }: { tabId: string; title: s
       subtitle={title}
       footer={
         <>
-          <TButton variant="ghost" className="mr-auto text-down hover:text-down" onClick={() => (removeIndicator(T, tabId, inst.uid), onClose())}>
-            <Trash2 /> Remove
+          <TButton variant="ghost" className="me-auto text-down hover:text-down" onClick={() => (removeIndicator(T, tabId, inst.uid), onClose())}>
+            <Trash2 /> {t("chart.ind.remove")}
           </TButton>
           <TButton variant="ghost" onClick={reset}>
-            Defaults
+            {t("chart.ind.defaults")}
           </TButton>
           <TButton variant="surface" onClick={onClose}>
-            Cancel
+            {t("chart.ind.cancel")}
           </TButton>
           <TButton variant="ember" onClick={commit} disabled={!ok}>
-            OK
+            {t("chart.ind.ok")}
           </TButton>
         </>
       }
@@ -446,22 +453,22 @@ function SettingsBody({ tabId, title, inst, onClose }: { tabId: string; title: s
         }}
       >
         <div role="tablist" className="flex h-9 items-stretch gap-3 border-b border-line px-3.5">
-          {tabs.map((t) => (
+          {tabs.map((tb) => (
             <button
-              key={t.id}
+              key={tb.id}
               type="button"
               role="tab"
-              aria-selected={pane === t.id}
-              onClick={() => setPane(t.id)}
-              className={cn("relative text-[12px] outline-none focus-visible:text-fg", pane === t.id ? "text-fg" : "text-fg-3 hover:text-fg-2")}
+              aria-selected={pane === tb.id}
+              onClick={() => setPane(tb.id)}
+              className={cn("relative text-[12px] outline-none focus-visible:text-fg", pane === tb.id ? "text-fg" : "text-fg-3 hover:text-fg-2")}
             >
-              {t.label}
-              {pane === t.id && <span className="absolute inset-x-0 bottom-[-1px] h-[2px] bg-ember" />}
+              {tb.label}
+              {pane === tb.id && <span className="absolute inset-x-0 bottom-[-1px] h-[2px] bg-ember" />}
             </button>
           ))}
-          <label className="ml-auto flex items-center gap-2 text-[11.5px] text-fg-3">
-            Visible
-            <MiniSwitch checked={d.visible} onChange={(v) => setD((x) => ({ ...x, visible: v }))} label="Visible on chart" />
+          <label className="ms-auto flex items-center gap-2 text-[11.5px] text-fg-3">
+            {t("chart.ind.visible")}
+            <MiniSwitch checked={d.visible} onChange={(v) => setD((x) => ({ ...x, visible: v }))} label={t("chart.ind.visibleOnChart")} />
           </label>
         </div>
 
@@ -482,7 +489,7 @@ function SettingsBody({ tabId, title, inst, onClose }: { tabId: string; title: s
                 return (
                   <div key={o.key} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-[6px] border border-line bg-surface-2/50 px-2.5 py-2">
                     <Check checked={st.visible !== false} onChange={(v) => setStyle(o.key, { visible: v })} label={<span className="inline-block w-[74px] truncate text-fg">{o.label}</span>} />
-                    <div className="flex items-center gap-1" role="radiogroup" aria-label={`${o.label} colour`}>
+                    <div className="flex items-center gap-1" role="radiogroup" aria-label={t("chart.ind.colourAria", { label: o.label })}>
                       {COLOR_TOKENS.map((c) => (
                         <button
                           key={c}
@@ -496,21 +503,21 @@ function SettingsBody({ tabId, title, inst, onClose }: { tabId: string; title: s
                           style={{ background: cssColor(c) }}
                         />
                       ))}
-                      <label className={cn("relative size-4 cursor-pointer overflow-hidden rounded-[3px] border border-line", !TOKEN_VAR[color] && "ring-2 ring-fg/70 ring-offset-1 ring-offset-panel")} title="Custom colour" style={{ background: TOKEN_VAR[color] ? "conic-gradient(var(--k-down),var(--k-gold),var(--k-up),var(--k-info),var(--k-down))" : color }}>
-                        <input type="color" aria-label={`${o.label} custom colour`} value={toHex(color)} onChange={(e) => setStyle(o.key, { color: e.target.value })} className="absolute inset-0 cursor-pointer opacity-0" />
+                      <label className={cn("relative size-4 cursor-pointer overflow-hidden rounded-[3px] border border-line", !TOKEN_VAR[color] && "ring-2 ring-fg/70 ring-offset-1 ring-offset-panel")} title={t("chart.ind.customColour")} style={{ background: TOKEN_VAR[color] ? "conic-gradient(var(--k-down),var(--k-gold),var(--k-up),var(--k-info),var(--k-down))" : color }}>
+                        <input type="color" aria-label={t("chart.ind.customColourAria", { label: o.label })} value={toHex(color)} onChange={(e) => setStyle(o.key, { color: e.target.value })} className="absolute inset-0 cursor-pointer opacity-0" />
                       </label>
                     </div>
                     {o.kind !== "hist" && o.kind !== "markers" && (
-                      <div className="ml-auto w-[92px]">
+                      <div className="ms-auto w-[92px]">
                         <TSelect
-                          ariaLabel={`${o.label} ${o.kind === "dots" ? "size" : "width"}`}
+                          ariaLabel={t(o.kind === "dots" ? "chart.ind.sizeAria" : "chart.ind.widthAria", { label: o.label })}
                           value={String(st.width ?? o.width ?? 1) as "1" | "2" | "3" | "4"}
                           onChange={(v) => setStyle(o.key, { width: Number(v) })}
-                          options={(["1", "2", "3", "4"] as const).map((w) => ({ value: w, label: `${o.kind === "dots" ? "Size" : "Width"} ${w}` }))}
+                          options={(["1", "2", "3", "4"] as const).map((w) => ({ value: w, label: t(o.kind === "dots" ? "chart.ind.size" : "chart.ind.width", { value: w }) }))}
                         />
                       </div>
                     )}
-                    {o.kind === "hist" && <span className="ml-auto text-[10.5px] text-fg-3">{o.histColor === "sign" ? "Up/down by sign" : o.histColor === "trend" ? "Up/down vs previous bar" : "Histogram"}</span>}
+                    {o.kind === "hist" && <span className="ms-auto text-[10.5px] text-fg-3">{t(o.histColor === "sign" ? "chart.ind.histSign" : o.histColor === "trend" ? "chart.ind.histTrend" : "chart.ind.histogram")}</span>}
                   </div>
                 );
               })}
@@ -521,29 +528,29 @@ function SettingsBody({ tabId, title, inst, onClose }: { tabId: string; title: s
             <div className="space-y-1.5">
               {d.levels.map((l, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <span className="w-14 text-[11.5px] text-fg-3">Level {i + 1}</span>
+                  <span className="w-14 text-[11.5px] text-fg-3">{t("chart.ind.level", { n: i + 1 })}</span>
                   <TInput
-                    aria-label={`Level ${i + 1}`}
+                    aria-label={t("chart.ind.level", { n: i + 1 })}
                     inputMode="decimal"
                     value={l}
                     onChange={(e) => setD((x) => ({ ...x, levels: x.levels.map((y, k) => (k === i ? e.target.value.replace(/[^0-9.\-]/g, "") : y)) }))}
                     className={cn("k-num w-32 font-mono", (l.trim() === "" || !Number.isFinite(Number(l))) && "border-down/70")}
                   />
-                  <button type="button" aria-label={`Remove level ${i + 1}`} onClick={() => setD((x) => ({ ...x, levels: x.levels.filter((_, k) => k !== i) }))} className="grid size-6 place-items-center rounded-[5px] text-fg-3 hover:bg-down-soft hover:text-down">
+                  <button type="button" aria-label={t("chart.ind.removeLevel", { n: i + 1 })} onClick={() => setD((x) => ({ ...x, levels: x.levels.filter((_, k) => k !== i) }))} className="grid size-6 place-items-center rounded-[5px] text-fg-3 hover:bg-down-soft hover:text-down">
                     <X className="size-3.5" />
                   </button>
                 </div>
               ))}
-              {!d.levels.length && <div className="py-2 text-[11.5px] text-fg-3">No horizontal levels.</div>}
+              {!d.levels.length && <div className="py-2 text-[11.5px] text-fg-3">{t("chart.ind.noLevels")}</div>}
               <TButton type="button" size="xs" variant="surface" onClick={() => setD((x) => ({ ...x, levels: [...x.levels, "0"] }))} disabled={d.levels.length >= 8}>
-                <Plus /> Add level
+                <Plus /> {t("chart.ind.addLevel")}
               </TButton>
             </div>
           )}
         </div>
         {(errors.length > 0 || levelErr) && (
           <div className="border-t border-line bg-down-soft px-3.5 py-1.5 text-[11.5px] text-down" role="alert">
-            {errors.length ? errors[0]![1] : "Levels must be numbers"}
+            {errors.length ? errors[0]![1] : t("chart.ind.levelsNumbers")}
           </div>
         )}
         <button type="submit" hidden />
@@ -558,7 +565,7 @@ function ParamField({ p, value, error, onChange }: { p: ParamDef; value: string;
       <label className="text-[12px] text-fg-2" htmlFor={`ip-${p.key}`}>
         {p.label}
         {(p.kind === "int" || p.kind === "float") && (
-          <span className="ml-1.5 font-mono text-[10px] text-fg-3">
+          <span className="ms-1.5 font-mono text-[10px] text-fg-3">
             {p.min}–{p.max}
           </span>
         )}
@@ -580,8 +587,9 @@ function ParamField({ p, value, error, onChange }: { p: ParamDef; value: string;
 
 function SaveTemplateDialog() {
   const T = useTerminal();
+  const t = useT();
   const s = useIndUi();
-  const tab = T.ws.tabs.find((t) => t.id === s.saveTemplate) ?? null;
+  const tab = T.ws.tabs.find((x) => x.id === s.saveTemplate) ?? null;
   const [name, setName] = React.useState("");
   const ref = React.useRef<HTMLInputElement>(null);
   const close = React.useCallback(() => closeIndUi("saveTemplate"), []);
@@ -604,15 +612,15 @@ function SaveTemplateDialog() {
       onClose={close}
       width={420}
       icon={<FileStack />}
-      title="Save template"
+      title={t("chart.tpl.title")}
       subtitle={`${tab.symbol}, ${tab.tf}`}
       footer={
         <>
           <TButton variant="surface" onClick={close}>
-            Cancel
+            {t("chart.ind.cancel")}
           </TButton>
           <TButton variant="ember" onClick={save} disabled={!valid}>
-            {templateExists(name) ? "Replace" : "Save"}
+            {templateExists(name) ? t("chart.tpl.replace") : t("chart.tpl.save")}
           </TButton>
         </>
       }
@@ -625,13 +633,13 @@ function SaveTemplateDialog() {
         }}
       >
         <label className="block space-y-1">
-          <span className="text-[11.5px] text-fg-3">Template name</span>
-          <input ref={ref} value={name} maxLength={48} onChange={(e) => setName(e.target.value)} aria-label="Template name" className="h-7 w-full min-w-0 rounded-[6px] border border-line bg-surface-2 px-2 text-[12px] text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-ember/60" />
+          <span className="text-[11.5px] text-fg-3">{t("chart.tpl.name")}</span>
+          <input ref={ref} value={name} maxLength={48} onChange={(e) => setName(e.target.value)} aria-label={t("chart.tpl.name")} className="h-7 w-full min-w-0 rounded-[6px] border border-line bg-surface-2 px-2 text-[12px] text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-ember/60" />
         </label>
-        {templateExists(name) && <div className="text-[11.5px] text-warn">A template with this name exists and will be replaced.</div>}
+        {templateExists(name) && <div className="text-[11.5px] text-warn">{t("chart.tpl.exists")}</div>}
         <div>
           <div className="mb-1 text-[11.5px] text-fg-3">
-            Saves the chart type ({tab.type}) and {tab.indicators.length} indicator{tab.indicators.length === 1 ? "" : "s"} with their settings
+            {t("chart.tpl.saves", { type: t(`trader.chartType.${tab.type}`), count: tab.indicators.length })}
           </div>
           <div className="flex flex-wrap gap-1">
             {tab.indicators.map((i) => (

@@ -15,7 +15,9 @@ import { chartRegistry, useChartEngine, type LegendData } from "./engine";
 import { IndicatorLegendRow } from "./indicators/legend";
 import { addIndicator, openIndicatorList, openIndicatorSettings, removeIndicator, toggleIndicator } from "./indicators/state";
 import { useMarketOpen } from "@/lib/market-hours";
-import { GUEST_TITLE, openRegister } from "@/lib/guest";
+import { openRegister } from "@/lib/guest";
+import { useT } from "@kalks/i18n/react";
+import type { MessageKey } from "@kalks/i18n";
 
 /* ------------------------------------------------------------------ */
 /* Trade lines                                                         */
@@ -42,21 +44,31 @@ export function useTradeLines(symbol: string): TLine[] {
   const pendings = T.pendings.filter((p) => p.symbol === symbol);
   const alerts = T.alerts.filter((a) => a.symbol === symbol && a.active);
   const ro = T.readOnly;
+  const t = useT();
   return React.useMemo(() => {
     const out: TLine[] = [];
     for (const p of positions) {
-      out.push({ id: `pos:${p.ticket}`, kind: "pos", price: p.openPrice, ref: p.ticket, side: p.side, label: `${p.side === "buy" ? "BUY" : "SELL"} ${fmtVol(p.volume)}`, draggable: !ro, closable: !ro });
+      out.push({ id: `pos:${p.ticket}`, kind: "pos", price: p.openPrice, ref: p.ticket, side: p.side, label: t(p.side === "buy" ? "chart.line.buy" : "chart.line.sell", { lot: fmtVol(p.volume) }), draggable: !ro, closable: !ro });
       if (p.sl !== undefined) out.push({ id: `sl:${p.ticket}`, kind: "sl", price: p.sl, ref: p.ticket, side: p.side, label: "SL", draggable: !ro, closable: !ro });
       if (p.tp !== undefined) out.push({ id: `tp:${p.ticket}`, kind: "tp", price: p.tp, ref: p.ticket, side: p.side, label: "TP", draggable: !ro, closable: !ro });
     }
     for (const o of pendings) {
-      out.push({ id: `pnd:${o.ticket}`, kind: "pending", price: o.price, ref: o.ticket, side: o.side, label: `${o.side === "buy" ? "BUY" : "SELL"} ${o.type === "stop-limit" ? "STOP LMT" : o.type.toUpperCase()} ${fmtVol(o.volume)}`, draggable: !ro, closable: !ro });
+      out.push({ id: `pnd:${o.ticket}`, kind: "pending", price: o.price, ref: o.ticket, side: o.side, label: t(PENDING_LABEL[`${o.side}:${o.type}`] ?? "chart.line.buyLimit", { lot: fmtVol(o.volume) }), draggable: !ro, closable: !ro });
     }
-    for (const a of alerts) out.push({ id: `alr:${a.id}`, kind: "alert", price: a.price, ref: a.id, label: "ALERT", draggable: true, closable: true });
+    for (const a of alerts) out.push({ id: `alr:${a.id}`, kind: "alert", price: a.price, ref: a.id, label: t("chart.line.alert"), draggable: true, closable: true });
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(positions.map((p) => [p.ticket, p.openPrice, p.sl, p.tp, p.volume, p.side])), JSON.stringify(pendings.map((p) => [p.ticket, p.price, p.volume])), JSON.stringify(alerts.map((a) => [a.id, a.price])), ro]);
+  }, [JSON.stringify(positions.map((p) => [p.ticket, p.openPrice, p.sl, p.tp, p.volume, p.side])), JSON.stringify(pendings.map((p) => [p.ticket, p.price, p.volume])), JSON.stringify(alerts.map((a) => [a.id, a.price])), ro, t]);
 }
+
+const PENDING_LABEL: Record<string, MessageKey> = {
+  "buy:limit": "chart.line.buyLimit",
+  "sell:limit": "chart.line.sellLimit",
+  "buy:stop": "chart.line.buyStop",
+  "sell:stop": "chart.line.sellStop",
+  "buy:stop-limit": "chart.line.buyStopLimit",
+  "sell:stop-limit": "chart.line.sellStopLimit",
+};
 
 /** Commit a dragged trade line to the store (SL/TP/pending/alert; dragging a position sets SL or TP by direction). */
 export function commitLineDrag(T: ReturnType<typeof useTerminal>, symbol: string, line: TLine, price: number) {
@@ -95,6 +107,7 @@ export interface ChartViewProps {
 
 export function ChartView({ tab, active, onActivate, compact, hideOneClick }: ChartViewProps) {
   const T = useTerminal();
+  const t = useT();
   const { resolvedTheme } = useTheme();
   const wrap = React.useRef<HTMLDivElement>(null);
   const el = React.useRef<HTMLDivElement>(null);
@@ -153,13 +166,13 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
           a.click();
           setTimeout(() => URL.revokeObjectURL(a.href), 2000);
         });
-        toast.success("Screenshot saved", { description: `${tab.symbol}, ${tab.tf} · ${canvas.width}×${canvas.height} PNG` });
+        toast.success(t("chart.screenshot.saved"), { description: `${tab.symbol}, ${tab.tf} · ${canvas.width}×${canvas.height} PNG` });
       },
     });
     return () => {
       chartRegistry.delete(tab.id);
     };
-  }, [engine, tab.id, tab.symbol, tab.tf]);
+  }, [engine, tab.id, tab.symbol, tab.tf, t]);
 
   /* ---------------- lines from store ---------------- */
   const ro = T.readOnly;
@@ -382,7 +395,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
       T.updateTab(tab.id, (t) => ({ drawings: [...t.drawings, { id, kind: "hline", price: roundPrice(tab.symbol, a.p) }] }));
       T.setDrawTool("cursor");
       T.selectDrawing(id);
-      toast.success("Horizontal line added", { description: `${tab.symbol} at ${fmtPrice(tab.symbol, a.p)} · Delete removes it` });
+      toast.success(t("chart.draw.hlineAdded"), { description: t("chart.draw.hlineAddedText", { symbol: tab.symbol, price: fmtPrice(tab.symbol, a.p) }) });
       return;
     }
     if (draft?.clickMode) {
@@ -430,27 +443,27 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
     };
     const trade: MenuItem[] = T.guest
       ? [
-          { header: GUEST_TITLE },
-          { label: "Open account to trade", icon: <ShoppingCart />, onSelect: openRegister },
+          { header: t("trader.guest.title") },
+          { label: t("chart.menu.openAccount"), icon: <ShoppingCart />, onSelect: openRegister },
         ]
       : ro
-      ? [{ header: "Read-only session" }]
+      ? [{ header: t("chart.menu.readOnly") }]
       : [
-          { label: `Buy Limit ${fmtVol(T.ws.lot)} at ${ps}`, icon: <ArrowUpRight />, tone: "up", disabled: !below, onSelect: () => place("buy", "limit") },
-          { label: `Sell Limit ${fmtVol(T.ws.lot)} at ${ps}`, icon: <ArrowDownRight />, tone: "down", disabled: below, onSelect: () => place("sell", "limit") },
-          { label: `Buy Stop ${fmtVol(T.ws.lot)} at ${ps}`, icon: <ArrowUpRight />, tone: "up", disabled: below, onSelect: () => place("buy", "stop") },
-          { label: `Sell Stop ${fmtVol(T.ws.lot)} at ${ps}`, icon: <ArrowDownRight />, tone: "down", disabled: !below, onSelect: () => place("sell", "stop") },
+          { label: t("chart.menu.buyLimitAt", { lot: fmtVol(T.ws.lot), price: ps }), icon: <ArrowUpRight />, tone: "up", disabled: !below, onSelect: () => place("buy", "limit") },
+          { label: t("chart.menu.sellLimitAt", { lot: fmtVol(T.ws.lot), price: ps }), icon: <ArrowDownRight />, tone: "down", disabled: below, onSelect: () => place("sell", "limit") },
+          { label: t("chart.menu.buyStopAt", { lot: fmtVol(T.ws.lot), price: ps }), icon: <ArrowUpRight />, tone: "up", disabled: below, onSelect: () => place("buy", "stop") },
+          { label: t("chart.menu.sellStopAt", { lot: fmtVol(T.ws.lot), price: ps }), icon: <ArrowDownRight />, tone: "down", disabled: !below, onSelect: () => place("sell", "stop") },
           "sep",
-          { label: "New Order…", icon: <ShoppingCart />, hint: "F9", onSelect: () => T.openNewOrder({ symbol: tab.symbol }) },
+          { label: t("chart.menu.newOrder"), icon: <ShoppingCart />, hint: "F9", onSelect: () => T.openNewOrder({ symbol: tab.symbol }) },
         ];
     cm.open(
       e,
       [
         ...trade,
         "sep",
-        { label: `Set alert at ${ps}`, icon: <Bell />, onSelect: () => T.addAlert({ symbol: tab.symbol, cond: p >= q.bid ? "above" : "below", price: p }) },
+        { label: t("chart.menu.alertAt", { price: ps }), icon: <Bell />, onSelect: () => T.addAlert({ symbol: tab.symbol, cond: p >= q.bid ? "above" : "below", price: p }) },
         {
-          label: "Add horizontal line",
+          label: t("chart.menu.addHline"),
           icon: <Minus />,
           onSelect: () => {
             const id = uid();
@@ -459,28 +472,28 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
           },
         },
         "sep",
-        { label: "Timeframes", icon: <CandlestickChart />, items: TIMEFRAMES.map((tf) => ({ label: tf, checked: tab.tf === tf, onSelect: () => T.updateTab(tab.id, { tf, drawings: [] }) })) },
-        { label: "Chart type", icon: <Layers />, items: CHART_TYPES.map((ct) => ({ label: ct[0]!.toUpperCase() + ct.slice(1), checked: tab.type === ct, onSelect: () => T.updateTab(tab.id, { type: ct }) })) },
+        { label: t("chart.menu.timeframes"), icon: <CandlestickChart />, items: TIMEFRAMES.map((tf) => ({ label: tf, checked: tab.tf === tf, onSelect: () => T.updateTab(tab.id, { tf, drawings: [] }) })) },
+        { label: t("chart.menu.chartType"), icon: <Layers />, items: CHART_TYPES.map((ct) => ({ label: t(`trader.chartType.${ct}`), checked: tab.type === ct, onSelect: () => T.updateTab(tab.id, { type: ct }) })) },
         {
-          label: "Indicators",
+          label: t("chart.menu.indicators"),
           icon: <SlidersHorizontal />,
           items: [
-            { label: "Indicators list…", hint: "Ctrl+I", onSelect: () => openIndicatorList(tab.id) },
+            { label: t("chart.menu.indicatorsList"), hint: "Ctrl+I", onSelect: () => openIndicatorList(tab.id) },
             "sep",
             ...INDICATOR_CATEGORIES.map((cat) => ({
-              label: cat,
+              label: t.dyn(`market.nav.category.${cat.replace(/\s+/g, "").replace(/^./, (c) => c.toLowerCase())}`, cat),
               items: INDICATOR_LIST.filter((d) => d.category === cat).map((d) => ({ label: d.name, onSelect: () => addIndicator(T, tab.id, d.type) })),
             })),
             "sep",
-            { label: "Remove all indicators", danger: true, disabled: !tab.indicators.length, onSelect: () => T.updateTab(tab.id, { indicators: [] }) },
+            { label: t("chart.menu.removeAllIndicators"), danger: true, disabled: !tab.indicators.length, onSelect: () => T.updateTab(tab.id, { indicators: [] }) },
           ],
         },
-        { label: "Crosshair", icon: <Crosshair />, hint: "Ctrl+F", onSelect: () => T.setDrawTool(T.drawTool === "crosshair" ? "cursor" : "crosshair") },
+        { label: t("chart.menu.crosshair"), icon: <Crosshair />, hint: "Ctrl+F", onSelect: () => T.setDrawTool(T.drawTool === "crosshair" ? "cursor" : "crosshair") },
         "sep",
-        { label: "Zoom in", icon: <Plus />, hint: "+", onSelect: () => chartRegistry.get(tab.id)?.zoom(1) },
-        { label: "Zoom out", icon: <Minus />, hint: "−", onSelect: () => chartRegistry.get(tab.id)?.zoom(-1) },
-        { label: "Save as picture", icon: <Camera />, onSelect: () => chartRegistry.get(tab.id)?.screenshot() },
-        { label: "Delete all objects", danger: true, icon: <X />, disabled: !tab.drawings.length, onSelect: () => T.updateTab(tab.id, { drawings: [] }) },
+        { label: t("chart.menu.zoomIn"), icon: <Plus />, hint: "+", onSelect: () => chartRegistry.get(tab.id)?.zoom(1) },
+        { label: t("chart.menu.zoomOut"), icon: <Minus />, hint: "−", onSelect: () => chartRegistry.get(tab.id)?.zoom(-1) },
+        { label: t("chart.menu.saveAsPicture"), icon: <Camera />, onSelect: () => chartRegistry.get(tab.id)?.screenshot() },
+        { label: t("chart.menu.deleteAllObjects"), danger: true, icon: <X />, disabled: !tab.drawings.length, onSelect: () => T.updateTab(tab.id, { drawings: [] }) },
       ],
       <span>
         {tab.symbol}, {tab.tf} · <span className="text-fg-2">{ps}</span>
@@ -625,7 +638,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
                 startDrag(l.id);
               }}
               onDoubleClick={() => l.kind === "pos" && T.setUi({ positionDialog: l.ref })}
-              title={l.kind === "pos" ? "Drag to set SL/TP · double-click to modify" : l.draggable ? "Drag to move" : undefined}
+              title={l.kind === "pos" ? t("chart.line.posTitle") : l.draggable ? t("chart.line.dragTitle") : undefined}
             >
               <span className="px-1.5">
                 {l.label}
@@ -635,7 +648,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
               {pnlText && <span className="k-num border-l border-white/25 px-1.5">{pnlText}</span>}
               {l.closable && (
                 <button
-                  aria-label={`Remove ${l.label}`}
+                  aria-label={t("chart.line.remove", { label: l.label })}
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -693,7 +706,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
                 className="pointer-events-auto h-4 rounded-[3px] px-0.5 font-mono text-[10px] leading-4 text-fg-3 hover:text-fg"
                 aria-expanded={legendOpen}
               >
-                {legendOpen ? "Show less" : `+${allMainRows.length - mainRows.length} more`}
+                {legendOpen ? t("chart.legend.showLess") : t("chart.legend.more", { count: allMainRows.length - mainRows.length })}
               </button>
             )}
           </div>
@@ -719,7 +732,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
 
       {drawing && active && (
         <div className="pointer-events-none absolute left-1/2 top-2 z-[6] -translate-x-1/2 rounded-[5px] border border-ember/40 bg-panel-2/95 px-2 py-0.5 text-[10.5px] text-fg-2">
-          {tool === "hline" ? "Click to place a horizontal line" : draft?.clickMode ? "Click the second point" : `Drag to draw ${tool === "fib" ? "Fibonacci retracement" : tool === "rect" ? "a rectangle" : "a trend line"} · Esc cancels`}
+          {tool === "hline" ? t("chart.draw.hline") : draft?.clickMode ? t("chart.draw.secondPoint") : t(tool === "fib" ? "chart.draw.fib" : tool === "rect" ? "chart.draw.rect" : "chart.draw.trend")}
         </div>
       )}
       {cm.node}
@@ -800,20 +813,21 @@ function PositionChipPnl({ p }: { p: TPosition }) {
 /** Bid / Ask / Spread / Last strip at the bottom-left of a chart. */
 function QuoteTag({ symbol, compact }: { symbol: string; compact?: boolean }) {
   const q = useQuote(symbol);
+  const t = useT();
   const inst = getInstrument(symbol);
   const spreadPts = Math.round((q.ask - q.bid) * 10 ** inst.digits);
   return (
     <div className="pointer-events-none absolute bottom-7 left-2 z-[5] flex items-center gap-2 font-mono text-[10px] text-fg-3">
       <span>
-        Bid <span className="text-fg-2">{fmtPrice(symbol, q.bid)}</span>
+        {t("chart.quote.bid")} <span className="text-fg-2">{fmtPrice(symbol, q.bid)}</span>
       </span>
       <span>
-        Ask <span className="text-down">{fmtPrice(symbol, q.ask)}</span>
+        {t("chart.quote.ask")} <span className="text-down">{fmtPrice(symbol, q.ask)}</span>
       </span>
-      {!compact && <span>Spread {spreadPts}</span>}
+      {!compact && <span>{t("chart.quote.spread")} {spreadPts}</span>}
       {/* candles = raw last trade price (same for every account); Bid/Ask lines = this account's spread */}
-      {!compact && q.last !== undefined && <span>Last {fmtPrice(symbol, q.last)}</span>}
-      {!compact && !isMarketOpen(symbol) && <span className="text-fg-2">Market closed</span>}
+      {!compact && q.last !== undefined && <span>{t("chart.quote.last")} {fmtPrice(symbol, q.last)}</span>}
+      {!compact && !isMarketOpen(symbol) && <span className="text-fg-2">{t("chart.quote.marketClosed")}</span>}
     </div>
   );
 }
@@ -824,6 +838,7 @@ function QuoteTag({ symbol, compact }: { symbol: string; compact?: boolean }) {
 
 export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; compact?: boolean; top: number; left?: number }) {
   const T = useTerminal();
+  const t = useT();
   const { bid, ask, dir } = useQuote(symbol);
   const spread = Math.round((ask - bid) * 10 ** getInstrument(symbol).digits);
   const [lot, setLot] = React.useState(String(T.ws.lot.toFixed(2)));
@@ -855,24 +870,24 @@ export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; 
         style={{ top, left }}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={() => setCollapsed(false)}
-        aria-label="Show one-click trading"
+        aria-label={t("chart.oneClick.show")}
       >
         <span className="size-1.5 rounded-full bg-up" />
         <span className="size-1.5 rounded-full bg-down" />
-        One-click
+        {t("chart.oneClick.collapsed")}
       </button>
     );
   return (
     <div className="absolute left-2 z-[6] flex items-stretch overflow-hidden rounded-[6px] border border-line-top bg-panel-2 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)]" style={{ top, left }} onPointerDown={(e) => e.stopPropagation()} onContextMenu={(e) => e.stopPropagation()}>
-      <button onClick={() => go("sell")} disabled={!open} title={open ? (T.guest ? GUEST_TITLE : undefined) : "Market closed"} className={cn("group flex flex-col items-start bg-down/12 px-2 py-1 text-left transition-colors hover:bg-down/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={`Sell ${symbol}${open ? "" : " (market closed)"}`}>
-        <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-down">Sell</span>
+      <button onClick={() => go("sell")} disabled={!open} title={open ? (T.guest ? t("trader.guest.title") : undefined) : t("chart.oneClick.marketClosed")} className={cn("group flex flex-col items-start bg-down/12 px-2 py-1 text-left transition-colors hover:bg-down/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={t(open ? "chart.oneClick.sellAria" : "chart.oneClick.sellClosedAria", { symbol })}>
+        <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-down">{t("chart.oneClick.sell")}</span>
         <PriceText symbol={symbol} value={bid} dir={dir} className={compact ? "text-[12px]" : "text-[14px]"} />
       </button>
       <div className="flex w-[84px] flex-col items-center justify-center border-x border-line bg-panel px-0.5">
         <div className="flex w-full items-center">
-        <button onClick={() => step(-1)} className="grid size-5 shrink-0 place-items-center rounded text-[13px] leading-none text-fg-3 hover:bg-surface-3 hover:text-fg" aria-label="Decrease lot">−</button>
+        <button onClick={() => step(-1)} className="grid size-5 shrink-0 place-items-center rounded text-[13px] leading-none text-fg-3 hover:bg-surface-3 hover:text-fg" aria-label={t("chart.oneClick.decrease")}>−</button>
         <input
-          aria-label="One-click lot"
+          aria-label={t("chart.oneClick.lot")}
           value={lot}
           onChange={(e) => setLot(e.target.value.replace(/[^0-9.]/g, ""))}
           onBlur={commitLot}
@@ -884,15 +899,15 @@ export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; 
           }}
           className="k-num w-full min-w-0 bg-transparent text-center font-mono text-[12px] font-medium text-fg outline-none"
         />
-        <button onClick={() => step(1)} className="grid size-5 shrink-0 place-items-center rounded text-[13px] leading-none text-fg-3 hover:bg-surface-3 hover:text-fg" aria-label="Increase lot">+</button>
+        <button onClick={() => step(1)} className="grid size-5 shrink-0 place-items-center rounded text-[13px] leading-none text-fg-3 hover:bg-surface-3 hover:text-fg" aria-label={t("chart.oneClick.increase")}>+</button>
         </div>
-        {open ? <span className="font-mono text-[9px] text-fg-3">{spread}</span> : <span className="whitespace-nowrap text-[9px] font-semibold uppercase tracking-[0.06em] text-warn">Market closed</span>}
+        {open ? <span className="font-mono text-[9px] text-fg-3">{spread}</span> : <span className="whitespace-nowrap text-[9px] font-semibold uppercase tracking-[0.06em] text-warn">{t("chart.oneClick.marketClosed")}</span>}
       </div>
-      <button onClick={() => go("buy")} disabled={!open} title={open ? (T.guest ? GUEST_TITLE : undefined) : "Market closed"} className={cn("flex flex-col items-end bg-up/12 px-2 py-1 text-right transition-colors hover:bg-up/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={`Buy ${symbol}${open ? "" : " (market closed)"}`}>
-        <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-up">Buy</span>
+      <button onClick={() => go("buy")} disabled={!open} title={open ? (T.guest ? t("trader.guest.title") : undefined) : t("chart.oneClick.marketClosed")} className={cn("flex flex-col items-end bg-up/12 px-2 py-1 text-right transition-colors hover:bg-up/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={t(open ? "chart.oneClick.buyAria" : "chart.oneClick.buyClosedAria", { symbol })}>
+        <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-up">{t("chart.oneClick.buy")}</span>
         <PriceText symbol={symbol} value={ask} dir={dir} className={cn("justify-end", compact ? "text-[12px]" : "text-[14px]")} />
       </button>
-      <button onClick={() => setCollapsed(true)} className="grid w-5 place-items-center border-l border-line bg-panel text-[10px] text-fg-3 hover:text-fg" aria-label="Hide one-click trading" title="Hide">
+      <button onClick={() => setCollapsed(true)} className="grid w-5 place-items-center border-l border-line bg-panel text-[10px] text-fg-3 hover:text-fg" aria-label={t("chart.oneClick.hide")} title={t("chart.oneClick.hideShort")}>
         ⌃
       </button>
     </div>

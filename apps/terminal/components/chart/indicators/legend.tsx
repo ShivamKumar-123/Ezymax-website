@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Eye, EyeOff, Settings2, X } from "lucide-react";
 import { cn } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 import type { IndLegendRow } from "./layer";
 
 /**
@@ -10,6 +11,7 @@ import type { IndLegendRow } from "./layer";
  * (revealed on hover or keyboard focus; double-click opens settings).
  */
 export function IndicatorLegendRow({ row, onToggle, onSettings, onRemove, readOnlyValues }: { row: IndLegendRow; onToggle: () => void; onSettings: () => void; onRemove: () => void; readOnlyValues?: boolean }) {
+  const t = useT();
   return (
     <div
       className="group pointer-events-auto flex h-4 max-w-full items-center gap-x-1.5 font-mono text-[10px] leading-4"
@@ -20,7 +22,7 @@ export function IndicatorLegendRow({ row, onToggle, onSettings, onRemove, readOn
       onPointerDown={(e) => e.stopPropagation()}
       onContextMenu={(e) => e.stopPropagation()}
     >
-      <span className={cn("shrink-0 cursor-default truncate", row.visible ? "text-fg-2" : "text-fg-3 line-through decoration-fg-3/60")} title={`${row.label} · double-click for settings`}>
+      <span className={cn("shrink-0 cursor-default truncate", row.visible ? "text-fg-2" : "text-fg-3 line-through decoration-fg-3/60")} title={t("chart.legend.settingsHint", { label: row.label })}>
         {row.label}
       </span>
       {!readOnlyValues &&
@@ -30,13 +32,13 @@ export function IndicatorLegendRow({ row, onToggle, onSettings, onRemove, readOn
           </span>
         ))}
       <span className="flex shrink-0 items-center opacity-0 transition-opacity duration-100 focus-within:opacity-100 group-hover:opacity-100">
-        <LegendBtn label={row.visible ? `Hide ${row.label}` : `Show ${row.label}`} onClick={onToggle}>
+        <LegendBtn label={t(row.visible ? "chart.legend.hide" : "chart.legend.show", { label: row.label })} onClick={onToggle}>
           {row.visible ? <Eye /> : <EyeOff />}
         </LegendBtn>
-        <LegendBtn label={`${row.label} settings`} onClick={onSettings}>
+        <LegendBtn label={t("chart.legend.settings", { label: row.label })} onClick={onSettings}>
           <Settings2 />
         </LegendBtn>
-        <LegendBtn label={`Remove ${row.label}`} onClick={onRemove} danger>
+        <LegendBtn label={t("chart.legend.remove", { label: row.label })} onClick={onRemove} danger>
           <X />
         </LegendBtn>
       </span>
