@@ -23,6 +23,7 @@ export default function CompleteProfilePage() {
   const [profile, setProfile] = React.useState<Profile | null>(null);
   const [form, setForm] = React.useState<Form>({ first_name: "", last_name: "", country: "in", phone: "", date_of_birth: "", referral_code: "" });
   const [agree, setAgree] = React.useState(false);
+  const [marketing, setMarketing] = React.useState(true);
   const [loading, setLoading] = React.useState(false);
   const [err, setErr] = React.useState<ApiError | null>(null);
   const [dobMax, setDobMax] = React.useState<string>();
@@ -50,7 +51,7 @@ export default function CompleteProfilePage() {
     e.preventDefault();
     setErr(null);
     setLoading(true);
-    const r = await authPost("google/complete", { ...form, phone_dial: dial, referral_code: form.referral_code || null, accept_terms: agree });
+    const r = await authPost("google/complete", { ...form, phone_dial: dial, referral_code: form.referral_code || null, accept_terms: agree, marketing_consent: marketing });
     setLoading(false);
     if (r.ok) return setStage("done");
     setErr(r.error);
@@ -169,6 +170,10 @@ export default function CompleteProfilePage() {
                 </span>
               </label>
               {fieldErr("accept_terms") && <p className="text-xs text-down">{fieldErr("accept_terms")}</p>}
+              <label className="flex items-start gap-3 text-[12.5px] leading-relaxed text-fg-2">
+                <input type="checkbox" name="marketing" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} className="mt-0.5 size-4 accent-[var(--k-ember)]" data-testid="register-marketing" />
+                <span>{t.dyn("auth.register.marketing", "Email me trading tips, product news and offers. Unsubscribe any time.")}</span>
+              </label>
               <Button type="submit" variant="ember" size="xl" className="w-full" disabled={!agree || loading} shimmer>
                 {loading ? t("auth.register.creating") : t("auth.register.create")} <ArrowRight className="rtl:-scale-x-100" />
               </Button>

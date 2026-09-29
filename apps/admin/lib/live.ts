@@ -40,10 +40,7 @@ export const LIVE_EXCLUDED = [
   "/finance/adjustments",
   "/finance/payouts",
   "/finance/conversion",
-  // marketing: bonuses, promo codes, banners, contests, rewards, cashback and reports run on the growth service;
-  // UTM campaign attribution and trigger journeys are not live yet
-  "/marketing/automation",
-  "/marketing/campaigns",
+  // marketing: everything runs on the growth service (journeys included); UTM campaigns on the reports service
 ] as const;
 
 /** Next milestone: shown in the live nav with a "Soon" chip and a Coming soon page. */

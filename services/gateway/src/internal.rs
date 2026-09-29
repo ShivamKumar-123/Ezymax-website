@@ -59,7 +59,6 @@ pub async fn referral_users(State(st): State<AppState>, q: Result<Query<Referral
                    ARRAY(SELECT d.device_hash FROM trusted_devices d WHERE d.subject_kind = 'user' AND d.subject_id = u.id
                          ORDER BY d.last_seen_at DESC LIMIT 20) AS devices
             FROM users u JOIN tenants t ON t.id = u.tenant_id
-            WHERE NOT u.is_house
          ) z
          WHERE (z.changed_at, z.id) > ($1, $2)
          ORDER BY z.changed_at, z.id

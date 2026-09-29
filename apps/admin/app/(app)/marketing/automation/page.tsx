@@ -8,8 +8,16 @@ import { Avatar, Button, Card, Chip, KpiCard, PageHeader, Reveal, StatusChip, To
 import { MKT_JOURNEYS, type MktJourney } from "@kalks/mock/admin-growth-marketing";
 import { JourneyCanvas } from "@/components/marketing/journey-canvas";
 import { fmtDateTime, fmtInt } from "@/components/marketing/kit";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveJourneys } from "@/components/marketing/live/journeys";
 
+/** Live workspaces run journeys on the growth service; the demo showcase keeps the mock canvas. */
 export default function AutomationPage() {
+  if (!IS_DEMO) return <LiveJourneys />;
+  return <DemoAutomation />;
+}
+
+function DemoAutomation() {
   const [selId, setSelId] = React.useState(MKT_JOURNEYS[0]!.id);
   const [enabled, setEnabled] = React.useState<Record<string, boolean>>(Object.fromEntries(MKT_JOURNEYS.map((j) => [j.id, j.enabled])));
   const sel = MKT_JOURNEYS.find((j) => j.id === selId)!;

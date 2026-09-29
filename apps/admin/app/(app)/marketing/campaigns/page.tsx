@@ -26,6 +26,8 @@ import { FunnelViz } from "@/components/analytics/funnel";
 import { ComboChart } from "@/components/marketing/charts";
 import { MiniStat, fmtK } from "@/components/marketing/kit";
 import { UtmBuilderDialog } from "@/components/marketing/utm-builder-dialog";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveCampaigns } from "@/components/marketing/live/campaigns";
 
 const SRC_COLOR: Record<string, string> = {
   google: "#ff5a1f",
@@ -55,7 +57,13 @@ function SourceDot({ source }: { source: string }) {
   );
 }
 
+/** Live workspaces read UTM attribution from the reports service; the demo showcase keeps the mock. */
 export default function CampaignsPage() {
+  if (!IS_DEMO) return <LiveCampaigns />;
+  return <DemoCampaigns />;
+}
+
+function DemoCampaigns() {
   const [rows, setRows] = React.useState<MktCampaign[]>(MKT_CAMPAIGNS);
   const [src, setSrc] = React.useState<string>("all");
   const [metric, setMetric] = React.useState<"ftds" | "spend" | "deposits">("ftds");

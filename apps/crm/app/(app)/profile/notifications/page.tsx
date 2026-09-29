@@ -24,6 +24,8 @@ export default function NotificationPreferencesPage() {
   const [catalog, setCatalog] = React.useState<Cat[] | null>(IS_DEMO ? DEMO_CATALOG : null);
   const [prefs, setPrefs] = React.useState<Prefs>(() => (IS_DEMO ? Object.fromEntries(DEMO_CATALOG.map((c) => [c.key, { inApp: true, email: true }])) : {}));
   const [error, setError] = React.useState<string | null>(null);
+  // marketing emails follow the account-level consent (gateway), which the unsubscribe link also clears
+  const [consent, setConsent] = React.useState<boolean | null>(IS_DEMO ? true : null);
 
   React.useEffect(() => {
     if (IS_DEMO) return;
@@ -35,7 +37,23 @@ export default function NotificationPreferencesPage() {
         setPrefs(d.prefs ?? {});
       })
       .catch((e: Error) => setError(e.message));
+    fetch("/api/auth/marketing", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { marketing_consent?: boolean } | null) => typeof d?.marketing_consent === "boolean" && setConsent(d.marketing_consent))
+      .catch(() => undefined);
   }, []);
+
+  const changeConsent = async (value: boolean) => {
+    const prev = consent;
+    setConsent(value);
+    if (IS_DEMO) return;
+    const r = await fetch("/api/auth/marketing", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ consent: value }) }).catch(() => null);
+    if (!r?.ok) {
+      setConsent(prev);
+      return toast.error(t("profile.notifications.notSaved"), { description: t("profile.notifications.tryAgain") });
+    }
+    toast.success(t("profile.notifications.saved"));
+  };
 
   const change = async (key: string, channel: "inApp" | "email", value: boolean) => {
     const prev = prefs;
@@ -88,7 +106,13 @@ export default function NotificationPreferencesPage() {
                     {c.locked ? <span className="text-[12px] text-fg-3">{t("profile.notifications.always")}</span> : <Toggle checked={p.inApp} onChange={(v) => void change(c.key, "inApp", v)} label={t("profile.notifications.toggleInApp", { label })} />}
                   </div>
                   <div className="flex justify-center" title={c.locked ? t("profile.notifications.alwaysOn") : t("common.email")}>
-                    {c.locked ? <span className="text-[12px] text-fg-3">{t("profile.notifications.always")}</span> : <Toggle checked={p.email} onChange={(v) => void change(c.key, "email", v)} label={t("profile.notifications.toggleEmail", { label })} />}
+                    {c.locked ? (
+                      <span className="text-[12px] text-fg-3">{t("profile.notifications.always")}</span>
+                    ) : c.key === "marketing" ? (
+                      consent === null ? <span className="text-[12px] text-fg-3">…</span> : <Toggle checked={consent} onChange={(v) => void changeConsent(v)} label={t("profile.notifications.toggleEmail", { label })} />
+                    ) : (
+                      <Toggle checked={p.email} onChange={(v) => void change(c.key, "email", v)} label={t("profile.notifications.toggleEmail", { label })} />
+                    )}
                   </div>
                 </div>
               );

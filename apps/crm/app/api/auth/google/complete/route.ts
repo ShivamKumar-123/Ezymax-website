@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { withCampaign } from "@/lib/ib";
+import { withAttribution } from "@/lib/attribution";
 import { DEVICE_COOKIE, clientIp, gateway, newDeviceId, sameOrigin, setDeviceCookie, setSessionCookie } from "@/lib/gateway";
 import { TICKET_COOKIE, publicOrigin } from "@/lib/google-oauth";
 
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
   return res;
 }
 
-const FIELDS = ["first_name", "last_name", "phone_dial", "phone", "country", "date_of_birth", "referral_code", "accept_terms"] as const;
+const FIELDS = ["first_name", "last_name", "phone_dial", "phone", "country", "date_of_birth", "referral_code", "accept_terms", "marketing_consent"] as const;
 
 export async function POST(req: NextRequest) {
   if (!sameOrigin(req.headers)) return NextResponse.json({ error: { code: "forbidden", message: "Cross-site request blocked." } }, { status: 403 });
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
   const body: Record<string, unknown> = { ticket };
   for (const k of FIELDS) if (k in raw) body[k] = raw[k];
   withCampaign(body, req);
+  withAttribution(body, req);
 
   let device = req.cookies.get(DEVICE_COOKIE)?.value;
   const mintDevice = !device;

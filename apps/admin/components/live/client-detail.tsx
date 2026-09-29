@@ -10,6 +10,31 @@ import { RevokeDialog, sessionColumns } from "./sessions";
 import { ClientKycCard } from "@/components/kyc/client-kyc-card";
 import type { ClientDetail, Session, SessionsPage } from "./types";
 
+/** UTM source / medium / campaign, landing page, referrer and marketing-email consent. */
+function attributionRows(a: ClientDetail["attribution"]): [string, React.ReactNode][] {
+  if (!a) return [];
+  const utm = [a.utm_source, a.utm_medium].filter(Boolean).join(" / ");
+  return [
+    ["UTM source / medium", utm ? <Mono key="us">{utm}</Mono> : <span key="us" className="text-fg-3">None (direct or organic)</span>],
+    ["UTM campaign", a.utm_campaign ? <Mono key="uc">{a.utm_campaign}</Mono> : "—"],
+    ...(a.utm_term || a.utm_content ? ([["Term / content", <Mono key="ut">{[a.utm_term, a.utm_content].filter(Boolean).join(" · ")}</Mono>]] as [string, React.ReactNode][]) : []),
+    ...(a.partner_campaign ? ([["Partner campaign", <Mono key="pc">{a.partner_campaign}</Mono>]] as [string, React.ReactNode][]) : []),
+    ["Landing page", a.landing_page ? <Mono key="lp" className="break-all">{a.landing_page}</Mono> : "—"],
+    ["Referring site", a.referrer ? <Mono key="rf">{a.referrer}</Mono> : "—"],
+    [
+      "Marketing emails",
+      a.marketing_consent ? (
+        <Chip key="mc" size="sm" tone="up">Allowed</Chip>
+      ) : (
+        <span key="mc" className="inline-flex items-center gap-2">
+          <Chip size="sm" tone="warn">Unsubscribed</Chip>
+          {a.marketing_unsubscribed_at && <span className="text-[11.5px] text-fg-3">{when(a.marketing_unsubscribed_at)}</span>}
+        </span>
+      ),
+    ],
+  ];
+}
+
 const DOT: Record<string, string> = { up: "bg-up", down: "bg-down", warn: "bg-warn", ember: "bg-ember" };
 
 function age(dob: string) {
@@ -124,7 +149,7 @@ export function ClientDetailView({ id, compact = false }: { id: number; compact?
   );
 
   const referral = (
-    <Section title="Referral" icon={<Gift />}>
+    <Section title="Referral & attribution" icon={<Gift />}>
       <KeyValue
         rows={[
           ["Own referral code", <span key="rc" className="inline-flex items-center gap-1"><Mono>{u.referral_code}</Mono><CopyButton value={u.referral_code} label="Referral code" /></span>],
@@ -141,6 +166,7 @@ export function ClientDetailView({ id, compact = false }: { id: number; compact?
             ),
           ],
           ["Clients referred", d.referrals.total],
+          ...attributionRows(d.attribution),
         ]}
       />
       {d.referrals.items.length > 0 && (

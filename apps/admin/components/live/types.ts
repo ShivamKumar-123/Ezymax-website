@@ -54,6 +54,20 @@ export type ClientDetail = {
   sessions: { active: number; total: number };
   trusted_devices: number;
   last_login: { at: string; ip: string | null; user_agent: string | null; via: string | null } | null;
+  /** First-touch marketing attribution and marketing-email consent (gateway marketing.rs). */
+  attribution?: {
+    utm_source: string | null;
+    utm_medium: string | null;
+    utm_campaign: string | null;
+    utm_term: string | null;
+    utm_content: string | null;
+    landing_page: string | null;
+    referrer: string | null;
+    partner_campaign: string | null;
+    marketing_consent: boolean;
+    marketing_consent_at: string | null;
+    marketing_unsubscribed_at: string | null;
+  };
   events: AuditEvent[];
 };
 

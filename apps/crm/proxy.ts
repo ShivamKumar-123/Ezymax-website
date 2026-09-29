@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { SESSION_COOKIE, clientIp, gateway, safeNext } from "@/lib/gateway";
 import { REF_COOKIE, cleanRef, trackClick } from "@/lib/ib";
+import { captureAttribution } from "@/lib/attribution";
 import { moduleFor, tenantConfig } from "@/lib/tenant-config";
 import { hostOf } from "@/lib/tenant-host";
 
@@ -22,7 +23,7 @@ const PUBLIC_PAGES = ["/certificate", "/verify", "/s"];
 const REF_SEEN = "kalks_ref_seen";
 
 /** Pages and APIs that stay reachable in maintenance mode and without a session. */
-const ALWAYS_OPEN = ["/status", "/maintenance", "/unavailable", "/api/status"];
+const ALWAYS_OPEN = ["/status", "/maintenance", "/unavailable", "/api/status", "/unsubscribe", "/api/unsubscribe"];
 
 // Broker runtime config (gateway tenant config): maintenance mode holds clients on /maintenance (their API
 // calls answer 503); a module the Platform Owner switched off (D112) is hidden from the nav and its pages and
@@ -45,7 +46,8 @@ export async function proxy(req: NextRequest) {
     }
   }
   if (api || open) return NextResponse.next();
-  return routes(req);
+  // first-touch UTM / referrer attribution for sign-up (lib/attribution.ts)
+  return captureAttribution(req, await routes(req));
 }
 
 async function routes(req: NextRequest) {
