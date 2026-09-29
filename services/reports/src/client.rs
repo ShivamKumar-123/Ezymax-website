@@ -263,6 +263,7 @@ pub async fn analytics(app: &App, tenant: &str, user_id: i64, login: Option<i64>
         "short": stats(&ss),
         "bySymbol": group_json(&by_symbol),
         "byWeekday": group_json(&by_weekday),
+        "byDay": group_json(&metrics::by_close_day(&trades)),
         "bySession": metrics::SESSIONS.iter().map(|(name, hours)| {
             let g = by_session.iter().find(|x| x.key == *name);
             json!({"session": name, "hours": hours, "trades": g.map(|x| x.trades).unwrap_or(0), "net": round2(g.map(|x| x.net).unwrap_or(0.0)), "winRate": round2(g.map(|x| x.win_rate).unwrap_or(0.0))})

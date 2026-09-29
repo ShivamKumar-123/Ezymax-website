@@ -256,6 +256,11 @@ pub fn group_by<F: Fn(&Trade) -> String>(trades: &[Trade], key: F) -> Vec<Group>
         .collect()
 }
 
+/// Net P&L per server day of the close (the P&L calendar), oldest first (`key` = `YYYY-MM-DD`).
+pub fn by_close_day(trades: &[Trade]) -> Vec<Group> {
+    group_by(trades, |t| time::server_day(t.close_time).to_string())
+}
+
 /// Trading session of an open time (UTC hours): Asia 22–07, London 07–12, London/New York overlap 12–16,
 /// New York 16–21, late 21–22.
 pub fn session_of(t: DateTime<Utc>) -> &'static str {
@@ -611,6 +616,30 @@ mod tests {
         let bh = behaviour(&trades);
         assert_eq!(bh.overtrading_days, 1);
         assert!((bh.overtrading_net + 50.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn pnl_calendar_groups_by_server_day_of_the_close() {
+        // server time is GMT+3 in September: a close at 22:30 UTC on 1 Sep is already 2 Sep on the server
+        let at = |d: u32, h: u32, m: u32| Utc.with_ymd_and_hms(2026, 9, d, h, m, 0).unwrap();
+        let mut a = t(1, 40.0, 0, 30);
+        a.close_time = at(1, 20, 0);
+        let mut b = t(2, -15.0, 0, 30);
+        b.close_time = at(1, 22, 30);
+        let mut c = t(3, 5.0, 0, 30);
+        c.close_time = at(2, 9, 0);
+        let mut e = t(4, 12.5, 0, 30);
+        e.close_time = at(10, 12, 0);
+        let days = by_close_day(&[e, c, b, a]);
+        let keys: Vec<&str> = days.iter().map(|g| g.key.as_str()).collect();
+        assert_eq!(keys, vec!["2026-09-01", "2026-09-02", "2026-09-10"]);
+        assert_eq!((days[0].trades, days[0].wins), (1, 1));
+        assert!((days[0].net - 40.0).abs() < 1e-9);
+        assert_eq!((days[1].trades, days[1].wins), (2, 1));
+        assert!((days[1].net + 10.0).abs() < 1e-9);
+        assert!((days[1].win_rate - 50.0).abs() < 1e-9);
+        assert!((days[2].net - 12.5).abs() < 1e-9);
+        assert!(by_close_day(&[]).is_empty());
     }
 
     #[test]

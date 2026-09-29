@@ -62,7 +62,7 @@ Server time is GMT+3 during US DST and GMT+2 otherwise (MT5 convention). Periods
 **Analytics (per account or all live accounts, USD).**
 - Trade = exit deal, net = profit + swap − commission share. Win rate = wins ÷ trades (net = 0 counts as neither win nor loss). Profit factor = gross profit ÷ gross loss (`null` = no losses). Expectancy = net ÷ trades. Reward:risk = average win ÷ average loss. Holding time = exit − entry time.
 - Return index (flows removed): `I₀ = 1`, `I_t = I_{t−1} × (E_t − F_t) ÷ E_{t−1}`, where `F_t` is the day's net deposits. Drawdown = `I_t ÷ max I − 1`. Sharpe = mean ÷ sample stdev of daily index returns × √252; Sortino uses downside deviation. Deposits and withdrawals never look like gains or drawdowns.
-- Groupings: symbol, weekday and hour of the close (server time), session of the open (UTC: Asia 22–07, London 07–12, London/New York 12–16, New York 16–21).
+- Groupings: symbol, weekday and hour of the close (server time), server day of the close (`byDay`, the P&L calendar), session of the open (UTC: Asia 22–07, London 07–12, London/New York 12–16, New York 16–21).
 - Behaviour: overtrading days (more than max(2 × median, median + 3) trades), revenge trades (opened ≤ 15 min after a losing close on the same account at the same size or larger), risk per losing trade (loss ÷ balance before the close), losers held > 1.5× longer than winners, stop-outs, share closed by SL / TP, best session.
 
 **Broker reports (live accounts, prop groups excluded, USD).**
@@ -82,7 +82,7 @@ Every route except `GET /health` needs `X-Kalks-Internal: $REPORTS_INTERNAL_TOKE
 
 | Method & path | Query | Response |
 |---|---|---|
-| `GET /v1/me/analytics` | `login=all\|<login>`, `from`, `to` (default 90 days) | `{accounts, curve:{points[{day, balance, equity, flow, index, drawdown}], maxDrawdown, currentDrawdown, returnPct, sharpe, sortino, volatility}, stats, long, short, bySymbol, byWeekday, bySession, hourHeatmap[7][24], moneyFlow, charges, behaviour:{…, insights[{id, tone, title, stat, text, tip}]}}` |
+| `GET /v1/me/analytics` | `login=all\|<login>`, `from`, `to` (default 90 days) | `{accounts, curve:{points[{day, balance, equity, flow, index, drawdown}], maxDrawdown, currentDrawdown, returnPct, sharpe, sortino, volatility}, stats, long, short, bySymbol, byWeekday, byDay[{key: YYYY-MM-DD, trades, wins, winRate, net, lots}], bySession, hourHeatmap[7][24], moneyFlow, charges, behaviour:{…, insights[{id, tone, title, stat, text, tip}]}}` |
 | `GET /v1/me/accounts/{login}/months` | – | `{login, currency, months:[{month, from, to, net, deposits, withdrawals, trades}]}` newest first |
 | `GET /v1/me/accounts/{login}/statement` | `from`, `to` (default 30 days), `format=pdf\|csv\|xlsx\|json`, `open=0`, `charges=0`, `deals=0` to leave sections out | the file (`Content-Disposition: attachment`) or the statement JSON |
 
@@ -142,7 +142,7 @@ Production runs `deploy/systemd/kalks-reports.service`; `deploy/deploy.sh` build
 
 `cargo test -p reports`:
 
-- **Metrics**: win rate, gross profit / loss, profit factor (and infinite PF), expectancy, reward:risk, average holding time (all / winners / losers), best / worst, streaks; drawdown and return with deposits and withdrawals removed; Sharpe, Sortino and volatility against a hand computation; carry-forward of missing days; revenge trades, risk per trade, overtrading; sessions.
+- **Metrics**: win rate, gross profit / loss, profit factor (and infinite PF), expectancy, reward:risk, average holding time (all / winners / losers), best / worst, streaks; drawdown and return with deposits and withdrawals removed; Sharpe, Sortino and volatility against a hand computation; carry-forward of missing days; revenge trades, risk per trade, overtrading; sessions; the P&L calendar's server days.
 - **Statements**: summary totals and running balance reconcile with the ledger (deposits, trade results, commission, performance fees, bonus), charges, deal ↔ ledger checks, a missing trade result is detected, cent → USD conversion.
 - **Files**: CSV quoting and formula-injection guard, XLSX container, PDF structure (every xref offset points at its object), Helvetica metrics and truncation, the logo paths.
 - **Time and schedules**: DST offsets and server-day starts, next run times and report periods, recipient validation.
