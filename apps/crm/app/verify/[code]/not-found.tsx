@@ -1,5 +1,5 @@
 import { SearchX } from "lucide-react";
-import { Card } from "@kalks/ui";
+import { Card } from "@kalks/ui/primitives";
 import { getT } from "@kalks/i18n/server";
 import { VerifyShell } from "@/components/prop-live/verify-shell";
 

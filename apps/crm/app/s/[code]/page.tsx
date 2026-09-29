@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { ArrowUpRight, ImageOff } from "lucide-react";
-import { Logo } from "@kalks/ui";
+import { Logo } from "@kalks/ui/logo";
 import { publicShare, type PublicShare } from "@/lib/growth";
 import type { T } from "@kalks/i18n";
 import { intlTag } from "@kalks/i18n/locales";

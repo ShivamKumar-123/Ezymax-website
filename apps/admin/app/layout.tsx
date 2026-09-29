@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import { BrandProvider, Providers, brandCss, isCustomBrand } from "@kalks/ui";
+// subpath imports: a server layout importing the "@kalks/ui" barrel ships every client module of it on every page
+import { BrandProvider } from "@kalks/ui/brand";
+import { brandCss, isCustomBrand } from "@kalks/ui/brand-vars";
+import { Providers } from "@kalks/ui/providers";
 import { NotificationRecorder } from "@/components/notifications";
 import { tenantBrand } from "@/lib/tenant-brand";
 import "./globals.css";

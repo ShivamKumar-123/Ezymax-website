@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { BadgeCheck, ShieldX } from "lucide-react";
-import { Card, Chip } from "@kalks/ui";
+import { Card, Chip } from "@kalks/ui/primitives";
 import { getFormatter, getT } from "@kalks/i18n/server";
 import { certBig, certDate, certHeadline, certMoney, publicCertificate } from "@/lib/prop";
 import { VerifyActions } from "@/components/prop-live/verify-actions";

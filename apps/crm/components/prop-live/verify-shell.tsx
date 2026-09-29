@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Logo } from "@kalks/ui";
+import { Logo } from "@kalks/ui/logo";
 import { getT } from "@kalks/i18n/server";
 
 /** Standalone branded frame for the public certificate pages (no Client Area shell, no sign-in). */

@@ -3,9 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "sideEffects": ["*.css"],
   "exports": {
     ".": "./src/index.ts",
     "./styles.css": "./src/styles.css",
+    "./brand": "./src/shell/brand.tsx",
+    "./brand-vars": "./src/shell/brand-vars.ts",
+    "./providers": "./src/shell/providers.tsx",
+    "./logo": "./src/shell/logo.tsx",
+    "./primitives": "./src/components/primitives.tsx",
     "./*": "./src/*"
   },
   "scripts": {

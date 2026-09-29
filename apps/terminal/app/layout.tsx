@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { getI18n } from "@kalks/i18n/server";
-import { BrandProvider, brandCss, isCustomBrand } from "@kalks/ui";
+// subpath imports: a server layout importing the "@kalks/ui" barrel ships every client module of it on every page
+import { BrandProvider } from "@kalks/ui/brand";
+import { brandCss, isCustomBrand } from "@kalks/ui/brand-vars";
 import { tenantBrand } from "@/lib/tenant-brand";
 import { TerminalProviders } from "./providers";
 import "./globals.css";
