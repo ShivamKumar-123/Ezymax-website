@@ -59,7 +59,7 @@ impl IntoResponse for ApiError {
             ),
             ApiError::InvalidCode { attempts_left } => (
                 StatusCode::BAD_REQUEST,
-                json!({"code": "invalid_code", "message": if attempts_left > 0 { format!("That code is incorrect. {attempts_left} attempt(s) left.") } else { "Too many incorrect codes. Request a new one.".to_string() }, "attempts_left": attempts_left}),
+                json!({"code": "invalid_code", "message": if attempts_left > 0 { format!("That code is incorrect. {attempts_left} attempt{} left.", if attempts_left == 1 { "" } else { "s" }) } else { "Too many incorrect codes. Request a new one.".to_string() }, "attempts_left": attempts_left}),
                 None,
             ),
             ApiError::CodeExpired => {
@@ -91,4 +91,22 @@ impl IntoResponse for ApiError {
 
 pub fn field(field: &'static str) -> impl Fn(&'static str) -> ApiError {
     move |message| ApiError::Validation { field, message }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    async fn message(e: ApiError) -> String {
+        let body = axum::body::to_bytes(e.into_response().into_body(), 1 << 16).await.unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        v["error"]["message"].as_str().unwrap().to_string()
+    }
+
+    #[tokio::test]
+    async fn invalid_code_counts_attempts_in_plain_english() {
+        assert_eq!(message(ApiError::InvalidCode { attempts_left: 1 }).await, "That code is incorrect. 1 attempt left.");
+        assert_eq!(message(ApiError::InvalidCode { attempts_left: 4 }).await, "That code is incorrect. 4 attempts left.");
+        assert_eq!(message(ApiError::InvalidCode { attempts_left: 0 }).await, "Too many incorrect codes. Request a new one.");
+    }
 }
