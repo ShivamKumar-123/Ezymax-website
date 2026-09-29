@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { consumeStepup, stepupTokenOf, type GatewayUser, type StepupAction } from "@/lib/gateway";
 import { TERMINAL_BASE, clientAccount, clientDeal, clientOrder, clientPosition, engine, sameOrigin, sessionUser } from "@/lib/trading";
 import { viewerHasAccount } from "@/lib/viewer";
+import { tenantConfig } from "@/lib/tenant-config";
 
 // Client Area trading BFF. Browser -> /api/trading/<route> (same origin) -> trading engine /v1/…
 // The client is resolved from the HttpOnly gateway session cookie (gateway /v1/auth/me); the engine gets
@@ -137,6 +138,8 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     if (type !== "live" && type !== "demo") return error(422, "validation", "Choose a live or demo account.");
     if (typeof body.group !== "string" || !/^[a-z0-9_-]{1,40}$/i.test(body.group)) return error(422, "validation", "Choose an account type.");
     if (isPropGroup(body.group)) return error(422, "validation", "Prop accounts are opened by buying a prop challenge.");
+    // Back Office › Settings › Features: "Demo accounts" off stops new demo accounts (existing ones keep working)
+    if (type === "demo" && (await tenantConfig())?.flags.demo_accounts === false) return error(403, "feature_disabled", "Demo accounts aren't available right now.");
     const open: Obj = { type, group: body.group };
     if (body.leverage !== undefined) {
       if (!Number.isInteger(body.leverage)) return error(422, "validation", "Invalid leverage.");

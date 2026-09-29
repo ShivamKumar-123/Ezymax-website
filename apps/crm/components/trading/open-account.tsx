@@ -12,6 +12,7 @@ import { PasswordInput } from "@/components/accounts/security";
 import { ApiError, modeLabel, serverOf, tradingApi, useAccounts, useGroups, type AccountKind, type EngineAccount, type EngineGroup, type OpenResult } from "./api";
 import { EngineGroupCard, commissionText, groupPhoto, spreadType } from "./group-card";
 import { FundButton, PasswordRules, SecretField, TradeButton, livePasswordOk } from "./ui";
+import { useFeatures } from "@/components/tenant-config";
 
 const STEPS = ["accounts.wizard.step.account", "accounts.wizard.step.type", "accounts.wizard.step.configure", "accounts.wizard.step.confirm", "accounts.wizard.step.done"] as const;
 const DEMO_BALANCES = [1000, 5000, 10000, 25000, 50000, 100000];
@@ -197,10 +198,12 @@ function Wizard() {
   const groups = React.useMemo(() => groupsQ.data?.groups ?? [], [groupsQ.data]);
   const accounts = accountsQ.data?.accounts ?? [];
 
+  // the broker can switch new demo accounts off (Back Office › Settings › Features); the BFF refuses them too
+  const demoOn = useFeatures()?.flags.demo_accounts !== false;
   const [step, setStep] = React.useState(0);
   const [dir, setDir] = React.useState(1);
   const [cfg, setCfg] = React.useState<Cfg>({
-    kind: sp.get("type") === "demo" ? "demo" : "live",
+    kind: demoOn && sp.get("type") === "demo" ? "demo" : "live",
     group: sp.get("group") ?? "",
     leverage: 0,
     nickname: "",
@@ -336,7 +339,7 @@ function Wizard() {
                     <CardHeader title={t("accounts.wizard.chooseTitle")} subtitle={t("accounts.wizard.chooseSubtitle")} />
                     <div className="grid grid-cols-1 gap-4 px-4 pb-6 pt-4 sm:grid-cols-2 sm:px-6">
                       <KindCard kind="live" selected={cfg.kind === "live"} onSelect={() => set("kind", "live")} />
-                      <KindCard kind="demo" selected={cfg.kind === "demo"} onSelect={() => set("kind", "demo")} demoGroup={demoRef} />
+                      {demoOn && <KindCard kind="demo" selected={cfg.kind === "demo"} onSelect={() => set("kind", "demo")} demoGroup={demoRef} />}
                     </div>
                   </Card>
                 )}
