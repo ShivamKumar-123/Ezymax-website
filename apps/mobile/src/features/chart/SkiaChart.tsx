@@ -73,7 +73,9 @@ function timeText(t: number, step: number): string {
   "worklet";
   const d = new Date(t * 1000);
   if (step >= 86400) return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}${step >= 2592000 ? ` ${d.getUTCFullYear()}` : ""}`;
-  return `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`;
+  const hm = `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`;
+  // hourly bars span days: show the day too (the same hour repeats every day)
+  return step >= 3600 ? `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${hm}` : hm;
 }
 
 export function SkiaChart(p: ChartProps) {
@@ -262,7 +264,7 @@ export function SkiaChart(p: ChartProps) {
     const v = vp.value;
     const out: { x: number; text: string }[] = [];
     if (v.n === 0) return out;
-    const every = Math.max(1, Math.ceil(96 / v.w));
+    const every = Math.max(1, Math.ceil((step >= 3600 && step < 86400 ? 120 : 96) / v.w));
     const b = bars.value;
     const start = Math.ceil(v.iMin / every) * every;
     for (let i = start; i <= v.iMax && out.length < 6; i += every) {
@@ -274,6 +276,18 @@ export function SkiaChart(p: ChartProps) {
   });
 
   /* ---- live bid / ask ---- */
+  const rsiLabelY = useDerivedValue(() => (vp.value.rsiH > 0 ? vp.value.rsiTop + 11 : -50));
+  const rsi70Y = useDerivedValue(() => (vp.value.rsiH > 0 ? vp.value.rsiTop + vp.value.rsiH * 0.3 + 3.5 : -50));
+  const rsi30Y = useDerivedValue(() => (vp.value.rsiH > 0 ? vp.value.rsiTop + vp.value.rsiH * 0.7 + 3.5 : -50));
+  const rsiText = useDerivedValue(() => {
+    const v = vp.value;
+    if (v.rsiH <= 0 || v.n === 0) return "";
+    const lv = live.value;
+    const s = series.value;
+    const tail = lv.length === 5 ? tailValues(closes.value, s, lv[4]!) : null;
+    const r = tail ? tail.rsi : s.rsi[v.n - 1];
+    return r === undefined || r !== r ? "RSI 14" : `RSI 14  ${r.toFixed(1)}`;
+  });
   const bidY = useDerivedValue(() => yOf(bid.value, vp.value));
   const askY = useDerivedValue(() => yOf(ask.value, vp.value));
   const bidText = useDerivedValue(() => (bid.value > 0 ? bid.value.toFixed(digits) : ""));
@@ -423,6 +437,7 @@ export function SkiaChart(p: ChartProps) {
             <Path path={emaPath} color={colors.mint} style="stroke" strokeWidth={1.4} />
             {/* RSI sub-pane */}
             <Path path={rsiPath} color={colors.periwinkle} style="stroke" strokeWidth={1.4} />
+            {small ? <SkText x={8} y={rsiLabelY} text={rsiText} font={small} color={colors.text3} /> : null}
             {/* position / order lines */}
             <PositionLines lines={lines} vp={vp} yOf={yOf} font={small} digits={digits} />
             {/* ask + bid */}
@@ -435,6 +450,8 @@ export function SkiaChart(p: ChartProps) {
             {/* axes */}
             <Rect x={axisX} y={0} width={AXIS_W} height={size.h} color={colors.bg} />
             {font ? <PriceAxis levels={priceLevels} font={font} x={axisTextX} /> : null}
+            {small ? <SkText x={axisTextX} y={rsi70Y} text={p.indicators.includes("rsi") ? "70" : ""} font={small} color={colors.text3} /> : null}
+            {small ? <SkText x={axisTextX} y={rsi30Y} text={p.indicators.includes("rsi") ? "30" : ""} font={small} color={colors.text3} /> : null}
             {font ? <TimeAxis levels={timeLevels} font={font} y={size.h - 6} /> : null}
             <RoundedRect x={axisX} y={bidTagY} width={AXIS_W - 6} height={18} r={4} color={colors.cream} />
             {font ? <SkText x={axisTextX} y={bidTextY} text={bidText} font={font} color={colors.ink} /> : null}

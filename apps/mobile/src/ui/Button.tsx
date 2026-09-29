@@ -56,7 +56,7 @@ export function Button({ label, onPress, variant = "primary", size = "lg", loadi
       ) : (
         <>
           {icon ? <View>{icon}</View> : null}
-          <Text variant={size === "sm" ? "callout" : "headline"} color={FG[variant]} weight="700">
+          <Text variant={size === "sm" ? "callout" : "headline"} color={FG[variant]} weight="700" numberOfLines={1} style={{ flexShrink: 1 }}>
             {label}
           </Text>
           {trailing ? <View>{trailing}</View> : null}

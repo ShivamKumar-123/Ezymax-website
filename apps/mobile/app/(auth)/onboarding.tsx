@@ -38,6 +38,7 @@ export default function Onboarding() {
     haptic.select();
     if (page >= SLIDES.length - 1) return finish("/sign-up");
     ref.current?.scrollTo({ x: (page + 1) * width, animated: true });
+    setPage(page + 1);
   };
   const blockH = Math.min(height * 0.46, width * 1.05);
 

@@ -183,6 +183,64 @@ Tokens: 4 / 8 pt spacing (`space`), `GUTTER` 20, radii `card` 28 / `block` 32, t
 - **Output:** @1x / @2x / @3x WebP, plus `src/ui/illustrations.generated.ts` (names and aspect ratios).
 - **Placeholders:** images the founder is regenerating keep a clean placeholder: copy trading, empty watchlist, PAMM funds, prop challenge, prop passed, rewards, partner IB, market closed. When a source file changes, re-running the script picks it up automatically (`scripts/illustrations.manifest.json` keeps the old hashes).
 
+## What phase 1 contains (core modules)
+
+| Area | Where | Notes |
+|---|---|---|
+| Onboarding, sign in, sign up, reset | `app/(auth)`, `src/features/auth` | The gateway flows through `/api/mobile/auth/*`: email code on new devices and unverified emails, rate limits, blocked sign-in, referral code (`kalks://sign-up?ref=CODE`). The dev code hint appears only when a server has no SMTP. |
+| Home | `src/features/home` | Equity block (live), closed today and open P&L, account switcher, quick actions, top movers, headlines, bell. |
+| Markets | `src/features/markets` | Segments, search, favourites, live Bid / Ask with a tick flash; prefetches candles on press-in. |
+| Trade | `src/features/trade`, `src/features/chart` | Skia chart, one-tap Sell / Buy bar, order ticket sheet (market / limit / stop, SL / TP, margin and pip-value preview), Depth and Alert entry points. |
+| Portfolio | `src/features/portfolio` | Live summary; positions with swipe to close, partial close and SL / TP; orders with edit and cancel; history; Statements link. |
+| Trading core | `src/features/trading` | Engine session (SSO), account stream, live money, actions, contract specs, accounts controller, account switcher. |
+
+### Trading and chart building blocks (for other modules)
+
+- `useActiveLogin()` / `setActiveLogin()` (`@/session/activeAccount`) pick the account.
+  - `useTradingController()` (mounted in `app/(app)/_layout.tsx`) opens that account's engine stream and sets the quote group.
+  - `useActiveAccount()` / `useAccounts()` (`@/features/trading/accounts`) read the account list, which is the shared `"trading/accounts"` cache.
+- **Live structure:** `useTrade(select)` gives positions, orders, recent deals and stream status. It changes only on fills, closes and modifications.
+- **Live money:** `useAccountLive()` / `usePositionLive(ticket)` update from equity frames (at most 4 a second). Use them only in small leaf components.
+- **Actions:** `placeOrder`, `closePosition`, `modifyPosition`, `modifyOrder`, `cancelOrder` (`@/features/trading/actions`). They return `{ ok }` or `{ ok: false, reason }`, where `reason` is already localized. Haptics and toasts are included.
+- **Raw engine calls:** `tradeApi(login, path, init)` (`@/features/trading/session`) goes to `/api/mobile/trade/*` and renews a stale terminal session once.
+- **Contract maths:** `useSpec(symbol)`, `marginFor`, `pipValue`, `profitAt`, `clampLots` (`@/features/trading/specs`) use the same formulas as the engine.
+- **Quotes:**
+  - `feed.quote(symbol)` / `feed.on(symbol, fn)` from JS;
+  - `feed.sv(symbol)` shared values on the UI thread;
+  - `useLiveQuote(symbol)`, `PriceCell`, `ChangeText`, `LivePrice` in React.
+- **Chart:**
+  - `<ChartLazy symbol tf digits type indicators fallback />` (`@/features/chart/ChartLazy`);
+  - candles with `fetchCandles` / `prefetchCandles` (`@/features/chart/data`);
+  - the Trade tab's symbol with `setTradeSymbol(symbol)` + `router.navigate("/trade")`.
+
+## Performance (measured)
+
+There is no Xcode or Android emulator on the build Mac, so these numbers come from the react-native-web build in headless Chromium, iPhone-size viewport, against the local stack, measured on 2026-09-30 with a Playwright probe:
+
+- commits counted through a React DevTools hook;
+- tick-to-screen timed from WebSocket frame arrival to the DOM text change;
+- fps taken from `requestAnimationFrame` intervals.
+
+| What | Result |
+|---|---|
+| Cold start with a saved session, reload to Home content on screen (warm HTTP cache) | median **121 ms** (runs 209 / 108 / 121) |
+| First load of the web preview to onboarding (cold cache) | 288 ms |
+| Markets: tick to screen (WebSocket frame to price text changed) | p50 **6 ms**, p95 **17.8 ms** (96 screen updates in 20 s) |
+| Markets: work per tick | 24 React commits in 20 s, p50 **32** / max 64 fibers rendered per commit (a full Markets tree is about 900). Only the ticking price leaves render, never the rows or the list. |
+| Fast watchlist scroll while prices tick | **59.3 fps**, p95 frame 18.6 ms, 1 dropped frame in 185 |
+| Chart pan | **59.9 fps**, p95 frame 18.6 ms, **0 React commits** during the pan |
+| Chart pinch zoom (two-finger CDP touch) | **59.4 fps**, **0 React commits** during the pinch |
+| iOS Hermes bundle (`expo export --platform ios`) | 10 MB .hbc. About 4 MB of that is the 21 translated languages for the app's namespaces, loaded lazily per language. |
+
+On a phone, confirm the numbers with Expo Go's **Performance Monitor**: shake the phone, open the dev menu, and check that the UI and JS threads stay at 60 / 120 fps while scrolling Markets and panning the chart.
+
+## Known gaps (phase 1)
+
+- Translations for the new `mobile*` namespaces are English only for now; a dedicated pass translates them into the other 21 languages. Existing keys (`auth.*`, `order.*`, `market.*`, …) are already translated.
+- Google sign-in, biometrics, push notifications, depth of market and price alerts are phase 2. The Trade header already links to `/depth/[symbol]` and `/alerts?symbol=`.
+- On a phone, native smoothness has not been measured yet: this build Mac has no simulator. Use the Performance Monitor steps above.
+- Local market-data runs in relay mode, so local candle history can have gaps. Production history is complete.
+
 ## Phase 2 (not in this build)
 
 | Area | Scope |

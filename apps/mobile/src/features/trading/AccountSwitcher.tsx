@@ -80,25 +80,23 @@ export const AccountSheet = React.forwardRef<SheetRef>(function AccountSheet(_, 
           );
         })}
       </View>
-      <View style={{ flexDirection: "row", gap: space[3], marginTop: space[5] }}>
-        <Button
-          label={t("mobileTrade.account.manage")}
-          variant="secondary"
-          size="md"
-          style={{ flex: 1 }}
-          onPress={() => {
-            dismiss();
-            router.push("/accounts");
-          }}
-        />
+      <View style={{ gap: space[2], marginTop: space[5] }}>
         <Button
           label={t("mobileTrade.account.open")}
           variant="cream"
           size="md"
-          style={{ flex: 1 }}
           onPress={() => {
             dismiss();
             router.push("/accounts/new");
+          }}
+        />
+        <Button
+          label={t("mobileTrade.account.manage")}
+          variant="ghost"
+          size="md"
+          onPress={() => {
+            dismiss();
+            router.push("/accounts");
           }}
         />
       </View>
