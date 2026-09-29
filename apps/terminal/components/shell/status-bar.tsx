@@ -42,7 +42,7 @@ export function StatusBar() {
   return (
     <footer className="flex h-[26px] shrink-0 items-center gap-0 overflow-hidden border-t border-line bg-panel px-1 font-mono text-[10.5px] text-fg-3">
       <Cell>
-        <span className={cn("size-1.5 rounded-full", ok ? "t-live-dot bg-up" : "bg-warn")} />
+        <span className={cn("size-1.5 rounded-full", ok ? "bg-up" : "bg-warn")} />
         <span className="font-sans text-fg-2">{mode === "live" ? t("trader.status.connected") : mode === "sim" ? t("trader.status.feedSimulated") : t("trader.status.connecting")}</span>
         <span>· {a.server} ·</span>
         <span title={t("trader.status.latencyTitle")} className={cn("k-num w-[38px]", ok ? "text-fg-2" : "text-warn")}>{ping === null ? "—" : `${ping} ms`}</span>

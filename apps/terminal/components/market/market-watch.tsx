@@ -113,10 +113,10 @@ export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
           <table className="w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               <col />
-              <col className="w-[68px]" />
-              <col className="w-[68px]" />
-              <col className="w-[26px]" />
-              <col className="w-[44px]" />
+              <col className="w-[62px]" />
+              <col className="w-[62px]" />
+              <col className="w-[22px]" />
+              <col className="w-[40px]" />
             </colgroup>
             <thead>
               <tr>
@@ -186,10 +186,10 @@ const MwRow = React.memo(function MwRow({
       className={cn("group h-[28px] cursor-default text-[12px]", active ? "bg-ember-soft/60" : "hover:bg-surface-2")}
       title={t("market.row.title", { name: inst.name, spread })}
     >
-      <td className={cn("border-b border-line/50 ps-2", active && "shadow-[inset_2px_0_0_var(--k-ember)]")}>
-        <span className="flex min-w-0 items-center gap-1.5">
+      <td className={cn("border-b border-line/50 ps-1.5", active && "shadow-[inset_2px_0_0_var(--k-ember)]")}>
+        <span className="flex min-w-0 items-center gap-1">
           <SymbolAvatar symbol={symbol} size={12} />
-          <span className={cn("truncate text-[11.5px] font-medium", active ? "text-fg" : "text-fg-2 group-hover:text-fg")}>{symbol}</span>
+          <span className={cn("truncate text-[11.5px] font-medium tracking-[-0.01em]", active ? "text-fg" : "text-fg-2 group-hover:text-fg")}>{symbol}</span>
         </span>
       </td>
       <td className="border-b border-line/50 pe-1.5 text-end">

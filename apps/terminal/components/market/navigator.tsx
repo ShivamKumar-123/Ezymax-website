@@ -109,7 +109,7 @@ export function Navigator() {
                 toast(s.status === "running" ? t("market.nav.strategyRunning", { name: s.name }) : t("market.nav.strategyAttached", { name: s.name }), { description: t("market.nav.strategyDesc", { login: s.login, server: s.server, pnl: `${s.pnlToday >= 0 ? "+" : ""}${s.pnlToday.toFixed(2)}` }) });
               }}
             >
-              <span className={cn("size-1.5 shrink-0 rounded-full", s.status === "running" ? "t-live-dot bg-up" : "bg-fg-3/50")} />
+              <span className={cn("size-1.5 shrink-0 rounded-full", s.status === "running" ? "bg-up" : "bg-fg-3/50")} />
               <span className="min-w-0 flex-1 truncate">{s.name}</span>
               <span dir="ltr" className={cn("k-num font-mono text-[10px]", s.pnlToday > 0 ? "text-up" : s.pnlToday < 0 ? "text-down" : "text-fg-3")}>{s.pnlToday === 0 ? "—" : `${s.pnlToday > 0 ? "+" : ""}${s.pnlToday.toFixed(0)}`}</span>
             </Leaf>

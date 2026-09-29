@@ -45,7 +45,7 @@ export function SymbolSearch() {
   };
   return createPortal(
     <div className="fixed inset-0 z-[75] flex items-start justify-center p-3 pt-[12vh]" role="dialog" aria-modal aria-label={t("order.search.aria")}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onMouseDown={close} />
+      <div className="absolute inset-0 bg-black/50" onMouseDown={close} />
       <div
         className="t-pop relative w-full max-w-[600px] overflow-hidden rounded-[10px] border border-line-top bg-panel shadow-[0_30px_80px_-20px_rgba(0,0,0,0.75)]"
         onKeyDown={(e) => {

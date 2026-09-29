@@ -48,7 +48,7 @@ export function TDialog({
   // Arabic/Urdu/Persian too (see desktop.tsx); translated text still shapes correctly inside.
   return createPortal(
     <div className="fixed inset-0 z-[70] grid place-items-center p-3" role="dialog" aria-modal dir="ltr">
-      <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px] animate-[t-fade_.12s_ease-out]" onMouseDown={onClose} />
+      <div className="absolute inset-0 bg-black/55 animate-[t-fade_.12s_ease-out]" onMouseDown={onClose} />
       <div
         className={cn("t-pop relative flex max-h-[calc(100dvh-24px)] w-full flex-col overflow-hidden rounded-[10px] border border-line-top bg-panel shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]", className)}
         style={{ maxWidth: width }}
@@ -205,7 +205,7 @@ export function TSelect<T extends string>({ value, onChange, options, className,
       aria-label={ariaLabel}
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
-      className={cn("t-select h-7 w-full min-w-0 rounded-[6px] border border-line bg-surface-2 pl-2 pr-6 text-[12px] text-fg outline-none focus:border-ember/60", className)}
+      className={cn("t-select h-7 w-full min-w-0 rounded-[6px] border border-line bg-surface-2 ps-2 pe-6 text-[12px] text-fg outline-none focus:border-ember/60", className)}
     >
       {options.map((o) => {
         const v = typeof o === "string" ? o : o.value;

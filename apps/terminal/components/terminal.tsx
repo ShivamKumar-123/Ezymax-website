@@ -46,7 +46,7 @@ export function Splash({ text }: { text?: string }) {
           Kalks <span className="font-normal text-fg-2">Trader</span>
         </div>
         <div className="flex items-center gap-2 font-mono text-[11px] text-fg-3">
-          <span className="t-live-dot size-1.5 rounded-full bg-ember" />
+          <span className="size-1.5 rounded-full bg-ember" />
           {label}
         </div>
       </div>

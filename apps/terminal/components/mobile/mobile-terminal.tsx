@@ -46,7 +46,7 @@ export function MobileTerminal() {
   // their positions in Arabic/Urdu/Persian; only the text is translated.
   return (
     <div dir="ltr" className="flex h-dvh flex-col overflow-hidden bg-page">
-      <header className="t-titlebar-glow flex h-12 shrink-0 items-center gap-2 border-b border-line bg-panel px-3">
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-line bg-panel px-3">
         <span className="grid size-7 place-items-center rounded-[7px] border border-line-top bg-surface-3">
           <LogoMark size={12} className="text-fg" />
         </span>
