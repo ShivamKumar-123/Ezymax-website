@@ -7,9 +7,11 @@ import { colors, radius, space } from "@/theme/tokens";
 
 export type SheetRef = BottomSheetModal;
 
-type Props = Omit<BottomSheetModalProps, "children" | "backdropComponent"> & { children: React.ReactNode; padded?: boolean };
+/** `scroll`: the child is itself a sheet scrollable (BottomSheetFlatList / BottomSheetScrollView from
+ *  @gorhom/bottom-sheet) and is rendered as is, so the list and the sheet share the drag gesture. */
+type Props = Omit<BottomSheetModalProps, "children" | "backdropComponent"> & { children: React.ReactNode; padded?: boolean; scroll?: boolean };
 
-export const Sheet = React.forwardRef<BottomSheetModal, Props>(function Sheet({ children, padded = true, ...rest }, ref) {
+export const Sheet = React.forwardRef<BottomSheetModal, Props>(function Sheet({ children, padded = true, scroll = false, ...rest }, ref) {
   const insets = useSafeAreaInsets();
   const backdrop = React.useCallback((p: BottomSheetBackdropProps) => <BottomSheetBackdrop {...p} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.6} pressBehavior="close" />, []);
   return (
@@ -24,7 +26,7 @@ export const Sheet = React.forwardRef<BottomSheetModal, Props>(function Sheet({ 
       android_keyboardInputMode="adjustResize"
       {...rest}
     >
-      <BottomSheetView style={{ paddingHorizontal: padded ? space[5] : 0, paddingBottom: Math.max(insets.bottom, space[4]) + space[2] }}>{children}</BottomSheetView>
+      {scroll ? children : <BottomSheetView style={{ paddingHorizontal: padded ? space[5] : 0, paddingBottom: Math.max(insets.bottom, space[4]) + space[2] }}>{children}</BottomSheetView>}
     </BottomSheetModal>
   );
 });

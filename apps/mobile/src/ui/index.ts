@@ -17,4 +17,6 @@ export * from "./Banner";
 export * from "./Row";
 export * from "./Trans";
 export * from "./KalksMark";
+export * from "./Toast";
+export * from "./Checkbox";
 export { ICON } from "./icons";

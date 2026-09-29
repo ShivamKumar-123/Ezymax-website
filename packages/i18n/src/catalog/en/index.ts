@@ -24,7 +24,8 @@ import portfolio from "./portfolio";
 import chart from "./chart";
 import aiTrader from "./aiTrader";
 import mobile from "./mobile";
+import mobileAuth from "./mobileAuth";
 
 /** English: the source language and the fallback for every missing translation. */
-export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, mobile };
+export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, mobile, mobileAuth };
 export type EnCatalog = typeof en;

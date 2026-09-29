@@ -16,9 +16,13 @@ export type PressableScaleProps = Omit<PressableProps, "style"> & {
 
 export function PressableScale({ style, scaleTo = motion.pressScale, haptics = "none", onPressIn, onPressOut, onPress, disabled, children, ...rest }: PressableScaleProps) {
   const pressed = useSharedValue(0);
+  const dim = useSharedValue(disabled ? 0.45 : 1);
+  React.useEffect(() => {
+    dim.value = withTiming(disabled ? 0.45 : 1, { duration: 120 });
+  }, [disabled, dim]);
   const anim = useAnimatedStyle(() => ({
     transform: [{ scale: 1 - (1 - scaleTo) * pressed.value }],
-    opacity: scaleTo === 1 ? 1 - 0.35 * pressed.value : 1,
+    opacity: (scaleTo === 1 ? 1 - 0.35 * pressed.value : 1) * dim.value,
   }));
   return (
     <APressable
@@ -40,7 +44,7 @@ export function PressableScale({ style, scaleTo = motion.pressScale, haptics = "
         else if (haptics === "tap") haptic.tap();
         onPress?.(e);
       }}
-      style={[style, anim, disabled ? { opacity: 0.45 } : null]}
+      style={[style, anim]}
     >
       {children}
     </APressable>

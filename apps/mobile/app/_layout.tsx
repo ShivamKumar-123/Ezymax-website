@@ -18,6 +18,7 @@ import { startNetWatch } from "@/lib/net";
 import { feed } from "@/market/feed";
 import { bootSession, useSession } from "@/session";
 import { OfflineBanner } from "@/shell/OfflineBanner";
+import { Toaster } from "@/ui";
 import { colors } from "@/theme/tokens";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -59,6 +60,7 @@ export default function RootLayout() {
               </Stack.Protected>
             </Stack>
             <OfflineBanner />
+            <Toaster />
           </BottomSheetModalProvider>
         </View>
       </SafeAreaProvider>

@@ -90,6 +90,31 @@ function backgroundMask(data, w, h) {
     if (y > 0) push(x, y - 1);
     if (y < h - 1) push(x, y + 1);
   }
+  // Second pass: checkerboard pockets enclosed by the drawing (between legs, inside handles). A light region that
+  // doesn't touch the border counts as background only when it shows the checkerboard's two tones (white squares
+  // >= 251 and grey squares 236..246), so white or cream parts of the art (shirts, paper) are never cut out.
+  const seen = new Uint8Array(w * h);
+  for (let start = 0; start < w * h; start++) {
+    if (bg[start] || seen[start] || !light(start)) continue;
+    const region = [start];
+    seen[start] = 1;
+    let white = 0, grey = 0;
+    for (let k = 0; k < region.length; k++) {
+      const i = region[k];
+      const mn = Math.min(data[i * 4], data[i * 4 + 1], data[i * 4 + 2]);
+      if (mn >= 251) white++;
+      else if (mn >= 236 && mn <= 246) grey++;
+      const x = i % w, y = (i / w) | 0;
+      for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1]) {
+        if (j >= 0 && !seen[j] && !bg[j] && light(j)) {
+          seen[j] = 1;
+          region.push(j);
+        }
+      }
+    }
+    const n = region.length;
+    if (n >= 300 && white / n >= 0.2 && grey / n >= 0.2) for (const i of region) bg[i] = 1;
+  }
   return bg;
 }
 
