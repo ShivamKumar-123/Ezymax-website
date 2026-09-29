@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Lock, Mail, Smartphone } from "lucide-react";
 import { Card, CardHeader, PageHeader, Reveal, Toggle } from "@kalks/ui";
 import { IS_DEMO } from "@kalks/mock";
+import { tr, useT } from "@kalks/i18n/react";
 
 type Cat = { key: string; label: string; hint: string; locked: boolean };
 type Prefs = Record<string, { inApp: boolean; email: boolean }>;
@@ -19,6 +20,7 @@ const DEMO_CATALOG: Cat[] = [
 
 /** Profile -> Notifications: in-app and email per category (services/support preferences). */
 export default function NotificationPreferencesPage() {
+  const t = useT();
   const [catalog, setCatalog] = React.useState<Cat[] | null>(IS_DEMO ? DEMO_CATALOG : null);
   const [prefs, setPrefs] = React.useState<Prefs>(() => (IS_DEMO ? Object.fromEntries(DEMO_CATALOG.map((c) => [c.key, { inApp: true, email: true }])) : {}));
   const [error, setError] = React.useState<string | null>(null);
@@ -28,7 +30,7 @@ export default function NotificationPreferencesPage() {
     fetch("/api/notifications/prefs", { cache: "no-store" })
       .then(async (r) => {
         const d = (await r.json().catch(() => ({}))) as { catalog?: Cat[]; prefs?: Prefs; error?: { message?: string } };
-        if (!r.ok || !d.catalog) throw new Error(d.error?.message ?? "Couldn't load your notification settings.");
+        if (!r.ok || !d.catalog) throw new Error(d.error?.message ?? tr("profile.notifications.loadError"));
         setCatalog(d.catalog);
         setPrefs(d.prefs ?? {});
       })
@@ -43,49 +45,50 @@ export default function NotificationPreferencesPage() {
     const d = r ? ((await r.json().catch(() => ({}))) as { prefs?: Prefs; error?: { message?: string } }) : {};
     if (!r?.ok || !d.prefs) {
       setPrefs(prev);
-      return toast.error("Not saved", { description: d.error?.message ?? "Please try again." });
+      return toast.error(t("profile.notifications.notSaved"), { description: d.error?.message ?? t("profile.notifications.tryAgain") });
     }
     setPrefs(d.prefs);
-    toast.success("Notification settings saved");
+    toast.success(t("profile.notifications.saved"));
   };
 
   return (
     <div className="pb-16">
       <Link href="/profile" className="mb-3 inline-flex items-center gap-1.5 text-[13px] text-fg-3 hover:text-fg">
-        <ArrowLeft className="size-3.5" /> Profile
+        <ArrowLeft className="size-3.5 rtl:-scale-x-100" /> {t("profile.title")}
       </Link>
-      <PageHeader title="Notifications" subtitle="Choose what reaches you in the Client Area bell and by email." />
+      <PageHeader title={t("profile.notifications.title")} subtitle={t("profile.notifications.subtitle")} />
       <Reveal>
         <Card className="max-w-3xl">
-          <CardHeader title="Channels per topic" subtitle="Security notices are always sent." />
+          <CardHeader title={t("profile.notifications.channels")} subtitle={t("profile.notifications.channelsHint")} />
           <div className="px-4 pb-4 pt-2 sm:px-6">
             <div className="hidden grid-cols-[1fr_88px_88px] items-center gap-3 border-b border-line pb-2 text-[11px] uppercase tracking-wider text-fg-3 sm:grid">
-              <span>Topic</span>
+              <span>{t("profile.notifications.topic")}</span>
               <span className="flex items-center justify-center gap-1">
-                <Smartphone className="size-3" /> In-app
+                <Smartphone className="size-3" /> {t("profile.notifications.inApp")}
               </span>
               <span className="flex items-center justify-center gap-1">
-                <Mail className="size-3" /> Email
+                <Mail className="size-3" /> {t("common.email")}
               </span>
             </div>
             {error && <div className="py-8 text-center text-[13px] text-down">{error}</div>}
-            {!catalog && !error && <div className="py-8 text-center text-[13px] text-fg-3">Loading…</div>}
+            {!catalog && !error && <div className="py-8 text-center text-[13px] text-fg-3">{t("common.loading")}</div>}
             {catalog?.map((c) => {
               const p = prefs[c.key] ?? { inApp: true, email: false };
+              const label = t.dyn(`profile.notifications.cat.${c.key}`, c.label);
               return (
                 <div key={c.key} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-line py-3.5 last:border-b-0 sm:grid-cols-[1fr_88px_88px]" data-testid={`pref-${c.key}`}>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 text-[14px] font-medium">
-                      {c.label}
+                      {label}
                       {c.locked && <Lock className="size-3 text-fg-3" />}
                     </div>
-                    <div className="mt-0.5 text-[12.5px] text-fg-3">{c.hint}</div>
+                    <div className="mt-0.5 text-[12.5px] text-fg-3">{t.dyn(`profile.notifications.cat.${c.key}.hint`, c.hint)}</div>
                   </div>
-                  <div className="flex justify-center" title={c.locked ? "Always on" : "In-app"}>
-                    {c.locked ? <span className="text-[12px] text-fg-3">Always</span> : <Toggle checked={p.inApp} onChange={(v) => void change(c.key, "inApp", v)} label={`${c.label} in-app`} />}
+                  <div className="flex justify-center" title={c.locked ? t("profile.notifications.alwaysOn") : t("profile.notifications.inApp")}>
+                    {c.locked ? <span className="text-[12px] text-fg-3">{t("profile.notifications.always")}</span> : <Toggle checked={p.inApp} onChange={(v) => void change(c.key, "inApp", v)} label={t("profile.notifications.toggleInApp", { label })} />}
                   </div>
-                  <div className="flex justify-center" title={c.locked ? "Always on" : "Email"}>
-                    {c.locked ? <span className="text-[12px] text-fg-3">Always</span> : <Toggle checked={p.email} onChange={(v) => void change(c.key, "email", v)} label={`${c.label} email`} />}
+                  <div className="flex justify-center" title={c.locked ? t("profile.notifications.alwaysOn") : t("common.email")}>
+                    {c.locked ? <span className="text-[12px] text-fg-3">{t("profile.notifications.always")}</span> : <Toggle checked={p.email} onChange={(v) => void change(c.key, "email", v)} label={t("profile.notifications.toggleEmail", { label })} />}
                   </div>
                 </div>
               );

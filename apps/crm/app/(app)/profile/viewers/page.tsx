@@ -5,8 +5,9 @@ import { Eye, EyeOff, Plus, ShieldOff, UserRound, CalendarDays } from "lucide-re
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, CopyButton, Dialog, Field, Icon3D, Input, PageHeader, Reveal, StatusChip, Toggle } from "@kalks/ui";
 import { ACCOUNTS, PEOPLE } from "@kalks/mock";
+import { useT } from "@kalks/i18n/react";
 
-const SECTIONS = ["Dashboard", "Accounts & positions", "Trade history", "Portfolio & analytics", "Wallet (balances only)", "Partner dashboard"];
+const SECTIONS = ["profile.viewers.section.dashboard", "profile.viewers.section.accounts", "profile.viewers.section.history", "profile.viewers.section.portfolio", "profile.viewers.section.wallet", "profile.viewers.section.partner"] as const;
 
 const VIEWERS = [
   { id: "v1", name: "Rahul Verma", note: "Accountant", login: "view-arjun-rv", person: PEOPLE[13]!, accounts: ["80412337", "80412512"], sections: 4, expires: "31 Dec 2026", lastSeen: "2h ago", status: "active" },
@@ -22,37 +23,38 @@ const ACTIVITY = [
 ];
 
 export default function ViewersPage() {
+  const t = useT();
   const [show, setShow] = React.useState<Record<string, boolean>>({});
   const live = ACCOUNTS.filter((a) => a.type === "live");
   return (
     <div>
       <PageHeader
-        title="View-only access"
-        subtitle="Create read-only logins for accountants, investors or mentors. Viewers can see what you choose — they can never trade, transfer or change settings."
+        title={t("profile.viewers.title")}
+        subtitle={t("profile.viewers.subtitle")}
         actions={
           <Dialog
-            title="Create view-only login"
-            description="The viewer signs in at app.kalks.com with these credentials."
+            title={t("profile.viewers.createTitle")}
+            description={t("profile.viewers.createDescription", { host: "app.kalks.com" })}
             trigger={
               <Button variant="ember">
-                <Plus /> New viewer
+                <Plus /> {t("profile.viewers.new")}
               </Button>
             }
-            footer={<Button variant="ember" onClick={() => toast.success("Viewer created", { description: "Credentials were copied to your clipboard." })}>Create viewer</Button>}
+            footer={<Button variant="ember" onClick={() => toast.success(t("profile.viewers.created"), { description: t("profile.viewers.createdHint") })}>{t("profile.viewers.create")}</Button>}
           >
             <div className="space-y-4">
-              <Field label="Label">
-                <Input leading={<UserRound />} placeholder="e.g. My accountant" />
+              <Field label={t("profile.viewers.label")}>
+                <Input leading={<UserRound />} placeholder={t("profile.viewers.labelPlaceholder")} />
               </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Username">
+                <Field label={t("profile.viewers.username")}>
                   <Input defaultValue="view-arjun-04" className="font-mono" />
                 </Field>
-                <Field label="Expires on">
+                <Field label={t("profile.viewers.expiresOn")}>
                   <Input type="date" leading={<CalendarDays />} defaultValue="2026-12-31" />
                 </Field>
               </div>
-              <Field label="Accounts they can see">
+              <Field label={t("profile.viewers.accounts")}>
                 <div className="flex flex-wrap gap-2">
                   {live.map((a) => (
                     <label key={a.login} className="k-row flex cursor-pointer items-center gap-2 px-3 py-2 text-[13px]">
@@ -63,12 +65,12 @@ export default function ViewersPage() {
                   ))}
                 </div>
               </Field>
-              <Field label="Sections">
+              <Field label={t("profile.viewers.sections")}>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {SECTIONS.map((s, i) => (
                     <label key={s} className="k-row flex cursor-pointer items-center gap-2 px-3 py-2 text-[13px]">
                       <input type="checkbox" defaultChecked={i < 3} className="accent-[var(--k-ember)]" />
-                      {s}
+                      {t(s)}
                     </label>
                   ))}
                 </div>
@@ -94,17 +96,17 @@ export default function ViewersPage() {
               </div>
               <div className="mt-5 space-y-2 text-[13px]">
                 <div className="k-row flex items-center justify-between px-3 py-2">
-                  <span className="text-fg-3">Username</span>
+                  <span className="text-fg-3">{t("profile.viewers.username")}</span>
                   <span className="flex items-center gap-1 font-mono">
                     {v.login}
                     <CopyButton value={v.login} />
                   </span>
                 </div>
                 <div className="k-row flex items-center justify-between px-3 py-2">
-                  <span className="text-fg-3">Password</span>
+                  <span className="text-fg-3">{t("common.password")}</span>
                   <span className="flex items-center gap-1 font-mono">
                     {show[v.id] ? "Vw#7qL2x!9" : "••••••••••"}
-                    <button onClick={() => setShow((s) => ({ ...s, [v.id]: !s[v.id] }))} className="grid size-6 place-items-center text-fg-3 hover:text-fg" aria-label="Toggle password">
+                    <button onClick={() => setShow((s) => ({ ...s, [v.id]: !s[v.id] }))} className="grid size-6 place-items-center text-fg-3 hover:text-fg" aria-label={t("profile.viewers.togglePassword")}>
                       {show[v.id] ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                     </button>
                   </span>
@@ -116,18 +118,18 @@ export default function ViewersPage() {
                     #{a}
                   </Chip>
                 ))}
-                <Chip size="sm">{v.sections} sections</Chip>
+                <Chip size="sm">{t("profile.viewers.sectionCount", { count: v.sections })}</Chip>
               </div>
               <div className="mt-4 flex items-center justify-between border-t border-line pt-4 text-xs text-fg-3">
                 <span>{v.expires}</span>
-                <span>Last seen {v.lastSeen}</span>
+                <span>{t("profile.viewers.lastSeen", { when: v.lastSeen })}</span>
               </div>
               <div className="mt-4 flex gap-2">
-                <Button size="sm" variant="surface" className="flex-1" onClick={() => toast("Edit viewer permissions")}>
-                  Edit
+                <Button size="sm" variant="surface" className="flex-1" onClick={() => toast(t("profile.viewers.editToast"))}>
+                  {t("common.edit")}
                 </Button>
-                <Button size="sm" variant="down-outline" className="flex-1" onClick={() => toast.success(`${v.name} access revoked`)}>
-                  <ShieldOff /> Revoke
+                <Button size="sm" variant="down-outline" className="flex-1" onClick={() => toast.success(t("profile.viewers.revoked", { name: v.name }))}>
+                  <ShieldOff /> {t("profile.viewers.revoke")}
                 </Button>
               </div>
             </Card>
@@ -138,7 +140,7 @@ export default function ViewersPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Reveal className="lg:col-span-2">
           <Card>
-            <CardHeader title="Viewer activity" subtitle="Everything viewers do is logged" />
+            <CardHeader title={t("profile.viewers.activity")} subtitle={t("profile.viewers.activityHint")} />
             <div className="space-y-2 p-6 pt-4">
               {ACTIVITY.map((a, i) => (
                 <div key={i} className="k-row flex items-center gap-3 px-4 py-3 text-[13.5px]">
@@ -154,13 +156,13 @@ export default function ViewersPage() {
         <Reveal delay={0.05}>
           <Card hot className="h-full p-6">
             <Icon3D name="key" size={64} />
-            <h3 className="mt-4 text-lg font-medium">Investor passwords</h3>
-            <p className="mt-1 text-sm text-fg-2">Each trading account also has an MT5-style investor password for read-only terminal access.</p>
+            <h3 className="mt-4 text-lg font-medium">{t("profile.viewers.investorTitle")}</h3>
+            <p className="mt-1 text-sm text-fg-2">{t("profile.viewers.investorHint")}</p>
             <div className="mt-4 space-y-2">
               {live.map((a) => (
                 <div key={a.login} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[13px]">
                   <span className="font-mono">#{a.login}</span>
-                  <Toggle checked={a.login !== "80413001"} onChange={() => toast.success("Investor access updated")} label={`Investor access ${a.login}`} />
+                  <Toggle checked={a.login !== "80413001"} onChange={() => toast.success(t("profile.viewers.investorUpdated"))} label={t("profile.viewers.investorToggle", { login: a.login })} />
                 </div>
               ))}
             </div>
