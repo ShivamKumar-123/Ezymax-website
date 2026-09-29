@@ -281,6 +281,7 @@ function Bars({ c, a, v, active }: Props) {
           <BarRow
             label={t("mobileProp.rule.consistency")}
             value={v.consistencyLimit ? `${usd(v.bestDay ?? 0, 0)} / ${usd(v.consistencyLimit, 0)}` : t("mobileProp.consistency.noProfit")}
+            text={!v.consistencyLimit}
             sub={t("mobileProp.consistency.rule", { pct: c.plan.consistency })}
             share={v.consistencyLimit ? clamp01(Math.max(0, v.bestDay ?? 0) / v.consistencyLimit) : 0}
             color={colors.mint}
