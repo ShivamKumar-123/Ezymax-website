@@ -396,6 +396,15 @@ fn copy_guard(st: &AppState, s: &Session, opening: bool) -> ApiResult<()> {
     }
 }
 
+/// MAM: trades a manager placed on a linked client account are managed by the manager; the client sees them
+/// (source `mam`) but cannot change or close them one by one (see social::mam).
+async fn mam_guard(st: &AppState, s: &Session, tickets: Vec<i64>, bulk: bool) -> ApiResult<()> {
+    match st.social.mam_terminal_guard(s.login, tickets, bulk).await {
+        Some((code, message)) => Err(ApiError::Status { status: 422, code, message }),
+        None => Ok(()),
+    }
+}
+
 async fn run(st: &AppState, s: &Session, op: Op) -> ApiResult<Value> {
     let done = st.hub.exec(s.login, "client", None, "", "", None, op).await?;
     Ok(with_notes(done.value, &done.notes))
@@ -406,6 +415,9 @@ pub async fn place(State(st): State<AppState>, ctx: Ctx, Body(b): Body<OrderBody
     s.writable()?;
     copy_guard(&st, &s, true)?;
     let mut req = order_req(&b, Source::Manual)?;
+    if let Some(t) = req.oco_with {
+        mam_guard(&st, &s, vec![t], false).await?;
+    }
     if st.social.is_fund(s.login) {
         req.source = Source::Pamm; // D84: trades on a PAMM fund account carry the pamm source tag
     }
@@ -459,6 +471,7 @@ pub async fn modify_order(State(st): State<AppState>, ctx: Ctx, Path(ticket): Pa
     s.writable()?;
     copy_guard(&st, &s, false)?;
     let ticket = parse_ticket(&ticket)?;
+    mam_guard(&st, &s, vec![ticket], false).await?;
     let patch = order_patch(&b)?;
     let op: Op = Box::new(move |tx, env| trade::modify_order(tx, env, ticket, patch, None).map(|(_, o)| json!({"order": views::order_json(&o)})));
     Ok(Json(run(&st, &s, op).await?))
@@ -469,6 +482,7 @@ pub async fn cancel_order(State(st): State<AppState>, ctx: Ctx, Path(ticket): Pa
     s.writable()?;
     copy_guard(&st, &s, false)?;
     let ticket = parse_ticket(&ticket)?;
+    mam_guard(&st, &s, vec![ticket], false).await?;
     let op: Op = Box::new(move |tx, env| trade::cancel_order(tx, env, ticket, "cancelled by client").map(|o| json!({"status": "cancelled", "ticket": o.ticket})));
     Ok(Json(run(&st, &s, op).await?))
 }
@@ -493,6 +507,7 @@ pub async fn close_position(State(st): State<AppState>, ctx: Ctx, Path(ticket): 
     s.writable()?;
     copy_guard(&st, &s, false)?;
     let ticket = parse_ticket(&ticket)?;
+    mam_guard(&st, &s, vec![ticket], false).await?;
     let b = body.map(|b| b.0).unwrap_or_default();
     let delay = exec_delay(&st, &ctx.tenant, s.login).await;
     let req = CloseReq { volume: b.volume, deviation_points: b.deviation_points, requested_price: b.requested_price, ..Default::default() };
@@ -520,6 +535,7 @@ pub async fn modify_position(State(st): State<AppState>, ctx: Ctx, Path(ticket):
     s.writable()?;
     copy_guard(&st, &s, false)?;
     let ticket = parse_ticket(&ticket)?;
+    mam_guard(&st, &s, vec![ticket], false).await?;
     let patch = PositionPatch { sl: b.sl, tp: b.tp, trailing_points: b.trailing_points };
     let op: Op = Box::new(move |tx, env| trade::modify_position(tx, env, ticket, patch, None).map(|(_, p)| json!({"position": views::position_json(env, &tx.st, &p)})));
     Ok(Json(run(&st, &s, op).await?))
@@ -535,6 +551,7 @@ pub async fn close_by(State(st): State<AppState>, ctx: Ctx, Body(b): Body<CloseB
     let s = session(&st, &ctx).await?;
     s.writable()?;
     copy_guard(&st, &s, false)?;
+    mam_guard(&st, &s, vec![b.ticket, b.by], false).await?;
     let op: Op = Box::new(move |tx, env| trade::close_by(tx, env, b.ticket, b.by).map(|deals| json!({"status": "closed", "deals": deals})));
     Ok(Json(run(&st, &s, op).await?))
 }
@@ -550,6 +567,7 @@ pub async fn bulk_close(State(st): State<AppState>, ctx: Ctx, Body(b): Body<Bulk
     let s = session(&st, &ctx).await?;
     s.writable()?;
     copy_guard(&st, &s, false)?;
+    mam_guard(&st, &s, vec![], true).await?;
     let filter = match b.filter.as_str() {
         "all" => BulkFilter::All,
         "profitable" => BulkFilter::Profitable,

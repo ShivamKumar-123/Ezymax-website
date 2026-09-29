@@ -15,6 +15,7 @@ The engine executes B-book only. A/B routing is decided and recorded on every ti
 - [Dealing desk API](#dealing-desk-api)
 - [Admin account API](#admin-account-api)
 - [Copy trading and PAMM](#copy-trading-and-pamm)
+- [MAM (multi-account manager)](#mam-multi-account-manager)
 - [Streams](#streams)
 - [How the apps integrate](#how-the-apps-integrate)
 - [Environment](#environment)
@@ -545,6 +546,65 @@ Same conventions as the rest of the engine: the internal token, `X-Kalks-Tenant`
 
 Errors use the standard shape. Social codes: `not_master`, `master_status`, `requirements`, `fee_out_of_range`, `own_subscription`, `min_allocation`, `wallet_unavailable`, `wallet_rejected`, `fund_frozen`, `min_investment`, `locked`, `insufficient_units`, `request_done`, `copy_managed`, `copy_account`, `pamm_account`.
 
+## MAM (multi-account manager)
+
+A MAM manager is an approved social master (same application, KYC and review as copy / PAMM) who runs a **MAM programme**: one dedicated **MAM master account** and any number of **linked client accounts**. Code: `src/social/mam.rs` (lifecycle, allocation, fees, guard, views), `src/social/allocation.rs` (pure maths), `src/api/mam.rs` (routes), `migrations/20260929190000_mam.sql`.
+
+- **Master account.** Opening a programme opens a live account for the manager in the system group `mam` (hedging, not offered in the open-account wizard), optionally funded from the manager's wallet. The manager trades it in Kalks Trader like any account. Every **opening** trade on it is a **block**: a market fill, a pending order, or volume added. The master account needs its own margin for the block (decision: it is a real, funded account, so the manager has capital at risk and the whole existing execution path is reused; a virtual block account would need a second execution model).
+- **Linking (consent).** A client links one of their **own live hedging accounts** in the Client Area. They must send the SHA-256 `termsHash` of the programme's current terms and `accept: true`; the engine refuses a stale hash (`terms_changed`). The link stores the full consent text (terms + account + user + time), the hash, IP and user agent, and the fee terms the client accepted (later programme changes apply to new links only). Netting accounts, demo accounts, system accounts (`copy`, `copy-netting`, `pamm`, `mam`), copy-trading master accounts and accounts already managed cannot be linked. The programme's `minEquity` applies. A manager cannot link to their own programme.
+- **Authority.** The manager has trading authority only. No MAM route moves money, and the engine's free-margin rule keeps every withdrawal above the margin of open positions. The client keeps trading their own positions next to the MAM trades.
+- **Allocation.** The copier taps the master account's committed events (the same tap as copy trading). For each block it reads every active link's equity and balance, computes the split with `allocation::allocate`, then mirrors the whole master transaction into each linked account's shard (`mirror::mirror` with `MirrorCfg::mam`: key prefixes `mp`/`mo`/`mx`, source `mam`, platform `MAM`). The methods are:
+
+  | Method | Lots for account *i* |
+  |---|---|
+  | `equity` | block × equity*ᵢ* ÷ Σ equity (accounts with equity ≤ 0 get nothing and are left out of the sum) |
+  | `balance` | block × balance*ᵢ* ÷ Σ balance |
+  | `multiplier` | block × the link's multiplier (0.01–100, set by the manager per account) |
+  | `percent` | block × the link's percent ÷ 100 (0.01–1000, set by the manager per account) |
+
+  Every result is capped at the link's max lot and the symbol's max lot and rounded **down** to the lot step. Below the symbol's minimum lot the account is skipped for that block. For `equity` / `balance` the rounding remainder is reported as `unallocated` and not redistributed (no account ever gets more than its share). Closes, partial closes (same fraction of each account's own position, `math::close_volume`), SL/TP / trailing changes, pending-order price / expiry changes and cancels follow exactly as in copy trading. The volume of an allocated pending order is not changed when the manager changes the master order's volume. A link created after a master event gets nothing from it.
+- **Audit.** Each block writes one `mam_allocations` row: action, master ticket, symbol, side, block, method, executed volume, and per account `{linkId, login, equity, balance, value, maxLot, basis, raw, volume, reason, status, ticket, message}`. Every step on every linked account is in `mam_log`. Both tables are append-only.
+- **Terminal guard.** On a linked account, a terminal close / modify / cancel of a MAM position or order, a Close By involving one, an OCO with one, and a bulk close while MAM trades are open are refused with 422 `mam_managed` and a readable message naming the programme. Once the link has ended, the leftover MAM trades are ordinary trades again.
+- **Risk.** Each link has a max lot per trade and an equity stop. The guard loop (every 2 s) closes the link's MAM trades and stops the link (`stopped`, `equity_stop`) when equity ≤ the stop. Client trades are never touched. **Emergency stop** (Back Office) freezes a programme: no new blocks are allocated (closes on the master still close the MAM trades), optionally closing every MAM trade on every linked account now.
+- **Revoke.** The client revokes at any time. The per-link flag is cleared first, so an allocation already queued behind it does nothing. The client chooses to close the MAM trades at market or keep them, and the fees due up to that moment are settled.
+- **Fees** (per link, on the terms the client accepted, settled by the scheduler at the period end at 00:00 server time, and on revoke / stop):
+  - performance fee = pct × max(0, R − HWM), where R is the cumulative **MAM result** of the account since the link: closed MAM deals (price P&L + swap − commission) plus floating P&L of open MAM positions (USD). Then HWM = max(HWM, R). The fee is not a MAM trade, so it does not lower R: the next period pays only on new gains. The client's own trades never count.
+  - management fee = pct a year × equity × elapsed seconds ÷ (365 days), from the last settlement.
+  - The total is capped at the account's free margin (withdrawable). The cap is applied to the performance fee first; the HWM still moves to R.
+  - Both are debited from the client account (`perf_fee` ledger kind, `house:perf_fees` / `house:mgmt_fees`) and recorded in `social_fees` with `source='mam'`, `link_id`, `perf_amount`, `mgmt_amount`. They go through the same approval as copy / PAMM fees: approve pays the manager's wallet (wallet kind `mam_fee`) minus the platform cut; reject refunds the client's wallet.
+- **IB.** The IB service never pays commission on group `mam` (reason `mam_master`, hard-coded in `services/ib/src/calc.rs`). The block traded on the master account is traded again on the linked client accounts, and those deals are what IBs are paid on. Counting both would pay the same volume twice.
+
+**Client Area routes** (`X-Kalks-User-Id` from the BFF):
+
+| Method & path | Body | Response |
+|---|---|---|
+| `GET /v1/social/mam/managers` | – | `{items: ManagerView[]}` (active, visible programmes; `track` = the master's own track record) |
+| `GET /v1/social/mam/managers/{id}` | – | `{manager, terms:{text, hash}, accounts: Candidate[], own}` |
+| `GET /v1/social/mam/links` | – | `{items: LinkView[], accounts: Candidate[]}` (the caller's links) |
+| `POST /v1/social/mam/links` | `{managerId, login, termsHash, accept:true, maxLot?, equityStop?}` | `{link}`; `terms_changed`, `not_eligible`, `own_programme`, `manager_status` |
+| `GET /v1/social/mam/links/{id}` | – | `{link, positions, orders, deals, log, fees, terms}` (MAM trades only; `terms` = the consent text) |
+| `PATCH /v1/social/mam/links/{id}` | `{maxLot?, equityStop?}` (`null` clears) | `{link}` |
+| `POST /v1/social/mam/links/{id}/revoke` | `{closePositions?}` | `{closed, failed, fee, link}` |
+| `GET /v1/social/mam/manager` | – | `{master, settings, manager, totals, links (logins masked), allocations, fees, terms}` |
+| `POST /v1/social/mam/manager` | `{name, description?, method, perfFeePct, mgmtFeePct?, feePeriod, minEquity?, seed?}` | `{manager, credentials:{login, password, investorPassword, funding}}` |
+| `PATCH /v1/social/mam/manager` | `{name?, description?, method?, perfFeePct?, mgmtFeePct?, feePeriod?, minEquity?}` | `{manager}` (method only while no account is linked) |
+| `PATCH /v1/social/mam/manager/links/{id}` | `{value}` | `{link}` (multiplier / percent programmes; audited `social.mam.value`) |
+| `GET /v1/social/mam/manager/preview?symbol&volume` | – | `{symbol, block, method, lotStep, lotMin, allocated, unallocated, rows[]}` |
+| `GET /v1/social/mam/manager/allocations?limit` | – | `{items: Allocation[]}` |
+| `GET /v1/terminal/mam?symbol&volume` (terminal session) | – | `{role:"manager", manager, accounts, equity, preview, recent}` \| `{role:"client", link, manager}` \| `{role:null}` |
+
+**Back Office routes** (staff headers; writes need `ROLES_SOCIAL_WRITE` and a `note`, audited as `social.mam.*`):
+
+| Method & path | Body | Response |
+|---|---|---|
+| `GET /v1/social/admin/mam/managers` | – | `{items: ManagerView + {login, userId, totals}[], feesPending}` |
+| `GET /v1/social/admin/mam/links?managerId&status&limit` | – | `{items: LinkView + {userId, consent:{ip, userAgent, hash, at}}[]}` |
+| `GET /v1/social/admin/mam/allocations?managerId&limit` | – | `{items: Allocation[]}` (full logins) |
+| `POST /v1/social/admin/mam/managers/{id}/emergency` | `{freeze, closePositions?, note}` | `{manager, result:{closed, failed}}` |
+| `POST /v1/social/admin/mam/links/{id}/stop` | `{closePositions?, note}` | `{link, result}` |
+
+MAM fees appear in `GET /v1/social/admin/fees` (`source:"mam"`, `linkId`, `perfAmount`, `mgmtAmount`) and are approved with `POST /v1/social/admin/fees/{id}/review`. Client consent and revocation are also written to `audit_log` (`social.mam.link`, `social.mam.revoke`, actor `user:<id>`).
+
 ## Streams
 
 Browsers connect directly with a one-time ticket, so the internal token never reaches the browser. The flow is:
@@ -628,6 +688,8 @@ cargo test -p trading
 - **Social tests.**
   - `social::math`: sizing modes, proportional adds and partial closes, HWM copy fee with deposits and withdrawals, NAV / units, the rollover plan (fee as units, NAV unchanged, blended HWM, master share, deferred redemptions), return index, drawdown, monthly returns, risk score anchors.
   - `social::tests`: a master and a follower through the real engine: opens with SL/TP, SL change, partial close, full close, pending place / modify / cancel / fill both ways, netting add and reversal, exclusions, pause, fixed-lot and multiplier with max lot, idempotency (the same master event twice executes once), equity stop / drawdown and close-all, and follower replay + ledger.
+  - `social::allocation`: equity / balance share, rounding down to the lot step with the remainder reported, the minimum lot, accounts without equity, account and symbol max lot, multiplier and percent, the MAM performance fee above the HWM and the pro-rata management fee.
+  - `tests/mam.rs` (PostgreSQL): a MAM programme through the real shards, tap and copier. Stale consent refused; a 0.50 block split 0.30 / 0.20 by equity with the allocation audit row; the terminal guard refuses MAM tickets and a bulk close but allows the client's own trade; partial and full close follow; exact performance fee (20 % of +300 = 60) with the balance after the debit; revoke settles the other link's fee and the next block goes only to the remaining account; the equity stop closes the MAM trade and stops the link; replay of every account and balanced ledger.
   - `tests/social.rs` (PostgreSQL): shards + tap + copier + a mock wallet. It covers mirroring with the right size, partial close, the fee above HWM, stop and return of funds, a PAMM seed → invest → rollover → profit → fee + redemption with exact figures, units = Σ unit ledger, and replay of every account from `events`.
 - **Integration test** (`tests/replay.rs`). This runs against a throw-away database `kalks_trading_test_<pid>` on the local Postgres; it is skipped when Postgres is unreachable. It runs trades, reversal, pending fills, a partial close, a book split, swaps, a demo refill and credit through the shards. It then checks that `replay_all` from the `events` table equals the live state. It also checks the database guarantees: a reused ledger idempotency key is refused, an unbalanced transaction cannot commit, and `events` / `ledger_postings` are append-only.
 
@@ -639,6 +701,12 @@ cargo test -p trading
   - Book splits of a master position (A/B transfer of part of a ticket) are not mirrored.
   - A PAMM rollover posts its ledger in the fund's shard, then writes the unit ledger in a second database transaction. If the engine stops between the two, that rollover must be reconciled by hand. The error is logged with the plan.
   - Master KYC comes from the CRM BFF (`X-Kalks-Kyc`), not from a call to the gateway.
+- **MAM.**
+  - Linked accounts must be hedging accounts. A netting account would net the manager's trades with the client's own on the same symbol.
+  - Allocation reads each linked account's equity once per block, one account after another, and executes the accounts one after another (like copy trading). The shares therefore come from a snapshot taken a few milliseconds before execution.
+  - The rounding remainder of `equity` / `balance` allocations is not redistributed (reported as `unallocated`).
+  - The MAM result counts MAM positions opened after the link started. MAM trades left open after an earlier link to another manager are not part of the new link's result.
+  - Changing the volume of a master pending order does not resize the allocated pending orders.
 
 - **A-book.** A-book routing is recorded and the LP adapter is called, but the only adapter is `NullLp` (not connected), so every trade is executed internally.
 - **Routing conditions.** Rules on risk score, hold time, win rate, news window, country or equity never match yet.

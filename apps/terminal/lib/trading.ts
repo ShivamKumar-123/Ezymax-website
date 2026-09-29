@@ -157,7 +157,7 @@ export interface PendingOrder {
 }
 
 /** Who opened a trade. "ai" = the terminal's AI Trader. */
-export type TradeSource = Position["source"] | "ai" | "pamm";
+export type TradeSource = Position["source"] | "ai" | "pamm" | "mam";
 
 export interface TPosition extends Omit<Position, "source"> {
   source: TradeSource;
@@ -192,7 +192,7 @@ export const SEED_POSITIONS_EXTRA: TPosition[] = [
   { ticket: "49434440", login: "90022904", symbol: "USDJPY", side: "buy", volume: 0.5, openPrice: 149.118, sl: 148.4, tp: 150.2, swap: 1.2, commission: 3.5, openTime: "2026-09-24T06:31:02Z", source: "api" },
 ];
 
-export const SOURCE_LABEL: Record<TradeSource, string> = { manual: "Manual", copy: "Copy", api: "API", strategy: "Strategy", ai: "AI", pamm: "PAMM" };
+export const SOURCE_LABEL: Record<TradeSource, string> = { manual: "Manual", copy: "Copy", api: "API", strategy: "Strategy", ai: "AI", pamm: "PAMM", mam: "MAM" };
 
 export const SERVERS = ["Kalks-Live01", "Kalks-Live02", "Kalks-Demo", "Kalks-Prop01"] as const;
 

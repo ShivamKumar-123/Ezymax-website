@@ -52,6 +52,7 @@ impl Social {
             let reg = self.reg.read().unwrap();
             let mut v: Vec<(i64, i64)> = reg.masters.values().filter(|m| m.live() && !reg.subs_of(m.id).is_empty()).map(|m| (m.login, m.tenant_id)).collect();
             v.extend(reg.subs.values().filter(|s| s.copying()).map(|s| (s.login, s.tenant_id)));
+            v.extend(reg.mam_watched());
             v
         };
         for (login, tenant) in logins {
@@ -121,6 +122,8 @@ impl Social {
                 self.mirror_into(&s, &m.nickname, m.status == "approved", &c, catch_up).await;
             }
         }
+        // MAM master account: allocate onto every linked client account
+        self.mam_on_commit(&c, catch_up).await;
         self.set_cursor(c.tenant_id, c.login, last).await;
     }
 
@@ -138,6 +141,7 @@ impl Social {
             opens: s.status == "active" && master_ok,
             catch_up,
             master_equity_usd: c.equity_usd,
+            mam: None,
         };
         let flag = self.flag(s.id);
         let at = c.at;
@@ -339,6 +343,7 @@ impl Social {
             let _ = sqlx::query("UPDATE copy_subscriptions SET peak_equity = $2 WHERE id = $1 AND peak_equity < $2").bind(id).bind(p).execute(&self.pool).await;
         }
         self.guard_funds().await;
+        self.mam_guard().await;
     }
 
     /* ---------------- scheduler ---------------- */
@@ -381,7 +386,8 @@ impl Social {
                 Err(e) => tracing::error!(fund = id, error = %e, "PAMM rollover failed"),
             }
         }
-        (nfunds, nsubs, fees)
+        let (nlinks, mam_fees) = self.mam_run_due(now, force).await;
+        (nfunds, nsubs + nlinks, fees + mam_fees)
     }
 
     /* ---------------- subscribe ---------------- */

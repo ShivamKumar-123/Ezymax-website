@@ -27,9 +27,17 @@ pub fn std_lots(f: &DealFacts, s: &Settings) -> D {
 
 /// Why a deal does not earn commission, or `None` when it qualifies on its own facts.
 /// (Client-side checks — referrer, self-referral — are done by the caller.)
+/// Trading-engine system groups whose deals never earn commission, whatever the settings say: `mam` is the
+/// MAM master account of a multi-account manager. Its block trades are allocated onto the linked client
+/// accounts and those deals are counted for the clients; counting the block as well would pay the volume twice.
+pub const SYSTEM_EXCLUDED_GROUPS: &[&str] = &["mam"];
+
 pub fn disqualify(f: &DealFacts, s: &Settings) -> Option<&'static str> {
     if f.account_kind != "live" {
         return Some("demo");
+    }
+    if SYSTEM_EXCLUDED_GROUPS.iter().any(|g| g.eq_ignore_ascii_case(&f.group)) {
+        return Some("mam_master");
     }
     if s.excluded_groups.iter().any(|g| g.eq_ignore_ascii_case(&f.group)) {
         return Some("excluded_group");
@@ -321,6 +329,9 @@ mod tests {
         let mut f = facts("live", 600);
         f.group = "PROP".into();
         assert_eq!(disqualify(&f, &s), Some("excluded_group"));
+        // a MAM master account never earns: its volume is counted on the linked client accounts
+        let mam = DealFacts { group: "mam".into(), ..f.clone() };
+        assert_eq!(disqualify(&mam, &s), Some("mam_master"));
         let mut f = facts("live", 600);
         f.reversed = true;
         assert_eq!(disqualify(&f, &s), Some("reversed"));

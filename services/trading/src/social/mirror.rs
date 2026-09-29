@@ -8,10 +8,15 @@
 //! pending orders) and every mirrored exit a step key (`cx<sub>:<master event version>`). The follower state
 //! remembers these ids (the engine's duplicate-submission guard), so the links replay with the follower's own
 //! event stream and a repeated master event is never executed twice.
+//!
+//! MAM (multi-account manager) reuses the same follower logic on the client's own account: `MirrorCfg::mam`
+//! switches the key prefixes (`mp`, `mo`, `mx`), the source tag (`mam`) and takes the volume of every open
+//! from the allocation the copier computed across all linked accounts for that master event.
 
 use chrono::{DateTime, Duration, Utc};
 use serde::Serialize;
 use serde_json::json;
+use std::collections::HashMap;
 
 use super::math::{self, Sizing};
 use crate::engine::trade::{self, CloseMeta, DealerCtx, OrderPatch, OrderReq, PlaceResult, PositionPatch, apply_nbp, close_part, gate, market_open};
@@ -38,6 +43,70 @@ pub struct MirrorCfg {
     pub catch_up: bool,
     /// Master equity (USD) when the master's transaction committed.
     pub master_equity_usd: D,
+    /// MAM link instead of a copy subscription (`sub_id` is then the link id).
+    pub mam: Option<MamCfg>,
+}
+
+/// MAM: the volume of each opening master event (by its stream version), already allocated across the
+/// linked accounts; Err = skipped for this account with the reason.
+#[derive(Clone, Debug, Default)]
+pub struct MamCfg {
+    pub volumes: HashMap<i64, Result<D, String>>,
+}
+
+impl MirrorCfg {
+    fn keys(&self) -> Keys {
+        if self.mam.is_some() { MAM_KEYS } else { COPY_KEYS }
+    }
+    fn source(&self) -> Source {
+        if self.mam.is_some() { Source::Mam } else { Source::Copy }
+    }
+    fn label(&self) -> &'static str {
+        if self.mam.is_some() { "mam" } else { "copy" }
+    }
+    fn platform(&self) -> &'static str {
+        if self.mam.is_some() { "MAM" } else { "Copy" }
+    }
+    fn paused(&self) -> &'static str {
+        if self.mam.is_some() { "the manager's account is frozen" } else { "copying is paused" }
+    }
+    /// Volume of a new open / pending order: the MAM allocation, or the copy sizing.
+    fn open_size(&self, version: i64, master_vol: D, follower_eq: D, spec: &crate::specs::Spec) -> Result<D, String> {
+        match &self.mam {
+            Some(m) => m.volumes.get(&version).cloned().unwrap_or_else(|| Err("no allocation for this trade".into())),
+            None => math::open_volume(&self.sizing, master_vol, self.master_equity_usd, follower_eq, spec, self.max_lot).ok_or_else(|| "below the minimum lot for your sizing".to_string()),
+        }
+    }
+}
+
+/// Client order id prefixes of mirrored opens, pending orders and exits.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Keys {
+    pub open: &'static str,
+    pub order: &'static str,
+    pub step: &'static str,
+}
+pub const COPY_KEYS: Keys = Keys { open: "cp", order: "co", step: "cx" };
+pub const MAM_KEYS: Keys = Keys { open: "mp", order: "mo", step: "mx" };
+
+impl Keys {
+    pub fn open(&self, sub: i64, t: i64) -> String {
+        format!("{}{sub}:{t}", self.open)
+    }
+    pub fn order(&self, sub: i64, t: i64) -> String {
+        format!("{}{sub}:{t}", self.order)
+    }
+    pub fn step(&self, sub: i64, version: i64) -> String {
+        format!("{}{sub}:{version}", self.step)
+    }
+    /// The follower position following master position `t`.
+    pub fn linked_position(&self, st: &AccountState, sub: i64, t: i64) -> Option<i64> {
+        [self.open(sub, t), self.order(sub, t)].iter().filter_map(|k| st.client_ids.get(k)).find(|f| st.positions.contains_key(f)).copied()
+    }
+    /// The follower pending order following master order `t`.
+    pub fn linked_order(&self, st: &AccountState, sub: i64, t: i64) -> Option<i64> {
+        st.client_ids.get(&self.order(sub, t)).filter(|f| st.orders.contains_key(f)).copied()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -61,24 +130,24 @@ impl LogEntry {
 }
 
 pub fn open_key(sub: i64, master_ticket: i64) -> String {
-    format!("cp{sub}:{master_ticket}")
+    COPY_KEYS.open(sub, master_ticket)
 }
 pub fn order_key(sub: i64, master_ticket: i64) -> String {
-    format!("co{sub}:{master_ticket}")
+    COPY_KEYS.order(sub, master_ticket)
 }
 /// Key of the (at most one) exit a master event causes; `version` is the master event's stream version.
 pub fn step_key(sub: i64, version: i64) -> String {
-    format!("cx{sub}:{version}")
+    COPY_KEYS.step(sub, version)
 }
 
 /// The follower position copying master position `t`.
 pub fn linked_position(st: &AccountState, sub: i64, t: i64) -> Option<i64> {
-    [open_key(sub, t), order_key(sub, t)].iter().filter_map(|k| st.client_ids.get(k)).find(|f| st.positions.contains_key(f)).copied()
+    COPY_KEYS.linked_position(st, sub, t)
 }
 
 /// The follower pending order copying master order `t`.
 pub fn linked_order(st: &AccountState, sub: i64, t: i64) -> Option<i64> {
-    st.client_ids.get(&order_key(sub, t)).filter(|f| st.orders.contains_key(f)).copied()
+    COPY_KEYS.linked_order(st, sub, t)
 }
 
 /// Runs `f` on a copy of the transaction and keeps its events only if it succeeds.
@@ -103,29 +172,34 @@ fn sltp_reject(e: &Reject) -> bool {
 
 /// Market close of `volume` lots of a follower position, source `copy`, with an idempotency key on the deal.
 pub fn copy_close(tx: &mut Tx, env: &Env, ticket: i64, volume: D, key: String, comment: String) -> Result<(i64, D), Reject> {
+    close_as(tx, env, ticket, volume, key, comment, Source::Copy)
+}
+
+/// Market close of `volume` lots of a follower position with the given source tag (`copy` or `mam`).
+pub fn close_as(tx: &mut Tx, env: &Env, ticket: i64, volume: D, key: String, comment: String, source: Source) -> Result<(i64, D), Reject> {
     let p = tx.st.positions.get(&ticket).cloned().ok_or_else(|| Reject::new("not_found", format!("Position #{ticket} not found")))?;
     let spec = env.spec(&p.symbol)?.clone();
     gate(env, &tx.st, &p.symbol, false, ZERO, None)?;
     market_open(env, &spec)?;
     let q = env.live_quote(&tx.st.account, &p.symbol)?;
     let px = q.close_price(p.side);
-    let meta = CloseMeta { reason: DealReason::Client, entry: DealEntry::Out, source: Source::Copy, comment, staff: None, reason_code: None, price_correction: false, order_ticket: None, client_order_id: Some(key) };
+    let meta = CloseMeta { reason: DealReason::Client, entry: DealEntry::Out, source, comment, staff: None, reason_code: None, price_correction: false, order_ticket: None, client_order_id: Some(key) };
     let out = close_part(tx, env, ticket, volume.min(p.volume), px, meta)?;
     let what = if volume < p.volume { "partially closed" } else { "closed" };
-    tx.note("close", format!("#{ticket} {} {} {} {what} at {} (copy)", p.side.as_str(), volume.min(p.volume).normalize(), p.symbol, px.normalize()), json!({"ticket": ticket, "dealId": out.0, "profit": crate::money::num(out.1)}));
+    tx.note("close", format!("#{ticket} {} {} {} {what} at {} ({})", p.side.as_str(), volume.min(p.volume).normalize(), p.symbol, px.normalize(), source.as_str()), json!({"ticket": ticket, "dealId": out.0, "profit": crate::money::num(out.1)}));
     apply_nbp(tx, env);
     Ok(out)
 }
 
 #[allow(clippy::too_many_arguments)]
-fn copy_open(tx: &mut Tx, env: &Env, key: String, master_ticket: i64, symbol: &str, side: crate::model::Side, volume: D, sl: Option<D>, tp: Option<D>, trailing: Option<i64>) -> LogEntry {
+fn copy_open(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, key: String, master_ticket: i64, symbol: &str, side: crate::model::Side, volume: D, sl: Option<D>, tp: Option<D>, trailing: Option<i64>) -> LogEntry {
     let mut req = OrderReq::market(symbol, side, volume);
     req.sl = sl;
     req.tp = tp;
     req.trailing_points = trailing;
-    req.source = Source::Copy;
-    req.platform = "Copy".into();
-    req.comment = format!("copy #{master_ticket}");
+    req.source = cfg.source();
+    req.platform = cfg.platform().into();
+    req.comment = format!("{} #{master_ticket}", cfg.label());
     req.client_order_id = Some(key);
     let first = attempt(tx, |t| trade::place_order(t, env, req.clone()));
     let (res, note) = match first {
@@ -147,8 +221,9 @@ fn close_linked(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, f: i64, volume: D, key:
     if tx.st.client_ids.contains_key(&key) {
         return LogEntry { follower_ticket: Some(f), ..LogEntry::new(action, Some(master_ticket), "skipped", "already done") };
     }
-    let comment = format!("copy #{master_ticket} {}", cfg.master).chars().take(64).collect();
-    match attempt(tx, |t| copy_close(t, env, f, volume, key, comment)) {
+    let comment = format!("{} #{master_ticket} {}", cfg.label(), cfg.master).chars().take(64).collect();
+    let source = cfg.source();
+    match attempt(tx, |t| close_as(t, env, f, volume, key, comment, source)) {
         Ok((_, profit)) => LogEntry::done(action, master_ticket, Some(f), Some(volume), format!("profit {}", profit.normalize())),
         Err(e) => LogEntry { follower_ticket: Some(f), volume: Some(volume), ..LogEntry::new(action, Some(master_ticket), "failed", format!("{}: {}", e.code, e.message)) },
     }
@@ -157,21 +232,22 @@ fn close_linked(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, f: i64, volume: D, key:
 /// Mirrors one master event (`version` = its stream version, `at` = its commit time) onto the follower.
 pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTime<Utc>, ev: &Event) -> Vec<LogEntry> {
     let sub = cfg.sub_id;
+    let k = cfg.keys();
     let stale = cfg.catch_up && env.now - at > Duration::seconds(STALE_OPEN_SECS);
     let excluded = |sym: &str| cfg.excluded.iter().any(|s| s.eq_ignore_ascii_case(sym));
     let mut out = Vec::new();
     match ev {
         /* ---------- opens (market fills and pending fills) ---------- */
         Event::PositionOpened { position: p, deal: Some(d) } => {
-            if tx.st.client_ids.contains_key(&open_key(sub, p.ticket)) {
+            if tx.st.client_ids.contains_key(&k.open(sub, p.ticket)) {
                 return out; // already copied
             }
             // the master's pending order filled: replace a still-pending copy of it by a market fill
             if let Some(ot) = d.order_ticket
-                && let Some(&f) = tx.st.client_ids.get(&order_key(sub, ot))
+                && let Some(&f) = tx.st.client_ids.get(&k.order(sub, ot))
             {
                 if tx.st.orders.contains_key(&f) {
-                    match attempt(tx, |t| trade::cancel_order(t, env, f, "copy: master order filled")) {
+                    match attempt(tx, |t| trade::cancel_order(t, env, f, &format!("{}: master order filled", cfg.label()))) {
                         Ok(_) => out.push(LogEntry { follower_ticket: Some(f), ..LogEntry::new("cancel", Some(ot), "done", "pending copy replaced by a market fill") }),
                         Err(e) => out.push(LogEntry::new("cancel", Some(ot), "failed", e.message)),
                     }
@@ -185,7 +261,7 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
                 return out;
             }
             if !cfg.opens {
-                out.push(LogEntry::new("open", Some(p.ticket), "skipped", "copying is paused"));
+                out.push(LogEntry::new("open", Some(p.ticket), "skipped", cfg.paused()));
                 return out;
             }
             if stale {
@@ -194,10 +270,10 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
             }
             let Ok(spec) = env.spec(&p.symbol).cloned() else { return out };
             let fe = equity_usd(tx, env);
-            match math::open_volume(&cfg.sizing, p.volume, cfg.master_equity_usd, fe, &spec, cfg.max_lot) {
-                None => out.push(LogEntry::new("open", Some(p.ticket), "skipped", "below the minimum lot for your sizing")),
-                Some(v) => {
-                    let e = copy_open(tx, env, open_key(sub, p.ticket), p.ticket, &p.symbol, p.side, v, p.sl, p.tp, p.trailing.as_ref().map(|t| t.distance_points));
+            match cfg.open_size(version, p.volume, fe, &spec) {
+                Err(why) => out.push(LogEntry::new("open", Some(p.ticket), "skipped", why)),
+                Ok(v) => {
+                    let e = copy_open(tx, env, cfg, k.open(sub, p.ticket), p.ticket, &p.symbol, p.side, v, p.sl, p.tp, p.trailing.as_ref().map(|t| t.distance_points));
                     out.push(e);
                 }
             }
@@ -209,12 +285,12 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
             if excluded(&np.symbol) {
                 return out;
             }
-            let key = step_key(sub, version);
+            let key = k.step(sub, version);
             if tx.st.client_ids.contains_key(&key) {
                 return out;
             }
             if !cfg.opens {
-                out.push(LogEntry::new("add", Some(np.ticket), "skipped", "copying is paused"));
+                out.push(LogEntry::new("add", Some(np.ticket), "skipped", cfg.paused()));
                 return out;
             }
             if stale {
@@ -223,29 +299,34 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
             }
             let Ok(spec) = env.spec(&np.symbol).cloned() else { return out };
             let fe = equity_usd(tx, env);
-            match linked_position(&tx.st, sub, np.ticket) {
+            match k.linked_position(&tx.st, sub, np.ticket) {
                 None => {
                     // not copied yet (e.g. the first open was below the minimum lot): follow the whole position
-                    match math::open_volume(&cfg.sizing, np.volume, cfg.master_equity_usd, fe, &spec, cfg.max_lot) {
-                        None => out.push(LogEntry::new("add", Some(np.ticket), "skipped", "below the minimum lot for your sizing")),
-                        Some(v) => out.push(copy_open(tx, env, open_key(sub, np.ticket), np.ticket, &np.symbol, np.side, v, np.sl, np.tp, None)),
+                    // (MAM: the allocation of this event covers the added volume)
+                    match cfg.open_size(version, np.volume, fe, &spec) {
+                        Err(why) => out.push(LogEntry::new("add", Some(np.ticket), "skipped", why)),
+                        Ok(v) => out.push(copy_open(tx, env, cfg, k.open(sub, np.ticket), np.ticket, &np.symbol, np.side, v, np.sl, np.tp, None)),
                     }
                 }
                 Some(f) => {
                     let fv = tx.st.positions[&f].volume;
-                    let Some(v) = math::add_volume(&cfg.sizing, d.volume, np.volume - d.volume, fv, cfg.master_equity_usd, fe, &spec, cfg.max_lot) else {
+                    let size = match &cfg.mam {
+                        Some(_) => cfg.open_size(version, d.volume, fe, &spec).ok(),
+                        None => math::add_volume(&cfg.sizing, d.volume, np.volume - d.volume, fv, cfg.master_equity_usd, fe, &spec, cfg.max_lot),
+                    };
+                    let Some(v) = size else {
                         out.push(LogEntry::new("add", Some(np.ticket), "skipped", "below the minimum lot for your sizing"));
                         return out;
                     };
                     let res = if tx.st.account.mode == Mode::Netting {
                         let mut req = OrderReq::market(&np.symbol, np.side, v);
-                        req.source = Source::Copy;
-                        req.platform = "Copy".into();
-                        req.comment = format!("copy add #{}", np.ticket);
+                        req.source = cfg.source();
+                        req.platform = cfg.platform().into();
+                        req.comment = format!("{} add #{}", cfg.label(), np.ticket);
                         req.client_order_id = Some(key);
                         attempt(tx, |t| trade::place_order(t, env, req)).map(|_| ())
                     } else {
-                        let dealer = DealerCtx { staff: "Copy trading".into(), reason_code: "COPY".into(), force: false };
+                        let dealer = if cfg.mam.is_some() { DealerCtx { staff: "MAM".into(), reason_code: "MAM".into(), force: false } } else { DealerCtx { staff: "Copy trading".into(), reason_code: "COPY".into(), force: false } };
                         attempt(tx, |t| dealing::add_volume(t, env, f, v, &dealer)).map(|_| ())
                     };
                     out.push(match res {
@@ -258,7 +339,7 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
 
         /* ---------- SL / TP / trailing ---------- */
         Event::PositionUpdated { position: np, deal: None, change } if change == "modified" => {
-            let Some(f) = linked_position(&tx.st, sub, np.ticket) else { return out };
+            let Some(f) = k.linked_position(&tx.st, sub, np.ticket) else { return out };
             let fp = &tx.st.positions[&f];
             let tr = np.trailing.as_ref().map(|t| t.distance_points);
             if fp.sl == np.sl && fp.tp == np.tp && fp.trailing.as_ref().map(|t| t.distance_points) == tr {
@@ -274,7 +355,7 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
 
         /* ---------- closes ---------- */
         Event::PositionClosed { deal: d, position: rest } => {
-            let Some(f) = linked_position(&tx.st, sub, d.position_ticket) else { return out };
+            let Some(f) = k.linked_position(&tx.st, sub, d.position_ticket) else { return out };
             let fv = tx.st.positions[&f].volume;
             let Ok(spec) = env.spec(&d.symbol).cloned() else { return out };
             let (vol, action) = match rest {
@@ -283,19 +364,19 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
             };
             match vol {
                 None => out.push(LogEntry { follower_ticket: Some(f), ..LogEntry::new("partial_close", Some(d.position_ticket), "skipped", "the closed share rounds to less than one lot step") }),
-                Some(v) => out.push(close_linked(tx, env, cfg, f, v, step_key(sub, version), d.position_ticket, if v >= fv { "close" } else { action })),
+                Some(v) => out.push(close_linked(tx, env, cfg, f, v, k.step(sub, version), d.position_ticket, if v >= fv { "close" } else { action })),
             }
         }
         Event::PositionRemoved { ticket, .. } => {
-            if let Some(f) = linked_position(&tx.st, sub, *ticket) {
+            if let Some(f) = k.linked_position(&tx.st, sub, *ticket) {
                 let fv = tx.st.positions[&f].volume;
-                out.push(close_linked(tx, env, cfg, f, fv, step_key(sub, version), *ticket, "close"));
+                out.push(close_linked(tx, env, cfg, f, fv, k.step(sub, version), *ticket, "close"));
             }
         }
 
         /* ---------- pending orders ---------- */
         Event::OrderPlaced { order: o } => {
-            let key = order_key(sub, o.ticket);
+            let key = k.order(sub, o.ticket);
             if tx.st.client_ids.contains_key(&key) {
                 return out;
             }
@@ -304,7 +385,7 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
                 return out;
             }
             if !cfg.opens {
-                out.push(LogEntry::new("order", Some(o.ticket), "skipped", "copying is paused"));
+                out.push(LogEntry::new("order", Some(o.ticket), "skipped", cfg.paused()));
                 return out;
             }
             if stale {
@@ -313,9 +394,12 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
             }
             let Ok(spec) = env.spec(&o.symbol).cloned() else { return out };
             let fe = equity_usd(tx, env);
-            let Some(v) = math::open_volume(&cfg.sizing, o.volume, cfg.master_equity_usd, fe, &spec, cfg.max_lot) else {
-                out.push(LogEntry::new("order", Some(o.ticket), "skipped", "below the minimum lot for your sizing"));
-                return out;
+            let v = match cfg.open_size(version, o.volume, fe, &spec) {
+                Ok(v) => v,
+                Err(why) => {
+                    out.push(LogEntry::new("order", Some(o.ticket), "skipped", why));
+                    return out;
+                }
             };
             let req = OrderReq {
                 symbol: o.symbol.clone(),
@@ -331,10 +415,10 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
                 expiry_at: o.expiry_at,
                 deviation_points: None,
                 requested_price: None,
-                oco_with: o.oco.and_then(|p| linked_order(&tx.st, sub, p)),
-                source: Source::Copy,
-                platform: "Copy".into(),
-                comment: format!("copy #{}", o.ticket),
+                oco_with: o.oco.and_then(|p| k.linked_order(&tx.st, sub, p)),
+                source: cfg.source(),
+                platform: cfg.platform().into(),
+                comment: format!("{} #{}", cfg.label(), o.ticket),
                 client_order_id: Some(key),
                 book: None,
                 dealer: None,
@@ -352,10 +436,11 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
             });
         }
         Event::OrderUpdated { order: o, change } if change == "modified" => {
-            let Some(f) = linked_order(&tx.st, sub, o.ticket) else { return out };
+            let Some(f) = k.linked_order(&tx.st, sub, o.ticket) else { return out };
             let fo = tx.st.orders[&f].clone();
             let Ok(spec) = env.spec(&o.symbol).cloned() else { return out };
-            let volume = if cfg.sizing.mode == math::SizingMode::FixedLot {
+            // MAM: the allocated volume of a pending order is kept (price, SL/TP and expiry follow)
+            let volume = if cfg.mam.is_some() || cfg.sizing.mode == math::SizingMode::FixedLot {
                 None
             } else {
                 math::open_volume(&cfg.sizing, o.volume, cfg.master_equity_usd, equity_usd(tx, env), &spec, cfg.max_lot).filter(|v| *v != fo.volume)
@@ -377,17 +462,17 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
             });
         }
         Event::OrderRemoved { ticket, status, .. } if *status != OrderStatus::Filled => {
-            if let Some(f) = linked_order(&tx.st, sub, *ticket) {
-                out.push(match attempt(tx, |t| trade::cancel_order(t, env, f, "copy: master order removed")) {
+            if let Some(f) = k.linked_order(&tx.st, sub, *ticket) {
+                out.push(match attempt(tx, |t| trade::cancel_order(t, env, f, &format!("{}: master order removed", cfg.label()))) {
                     Ok(_) => LogEntry::done("cancel", *ticket, Some(f), None, format!("master order {}", status.as_str())),
                     Err(e) => LogEntry { follower_ticket: Some(f), ..LogEntry::new("cancel", Some(*ticket), "failed", e.message) },
                 });
-            } else if let Some(&f) = tx.st.client_ids.get(&order_key(sub, *ticket))
+            } else if let Some(&f) = tx.st.client_ids.get(&k.order(sub, *ticket))
                 && tx.st.positions.contains_key(&f)
             {
                 // the copy filled on its own but the master's order never did: close it to stay in line
                 let fv = tx.st.positions[&f].volume;
-                out.push(close_linked(tx, env, cfg, f, fv, step_key(sub, version), *ticket, "close"));
+                out.push(close_linked(tx, env, cfg, f, fv, k.step(sub, version), *ticket, "close"));
             }
         }
         _ => {}
@@ -411,6 +496,29 @@ pub fn close_all(tx: &mut Tx, env: &Env, sub: i64, reason: &str) -> (Vec<i64>, V
     for (t, v) in positions {
         let key = format!("cs{sub}:{t}:{}", tx.st.version);
         match attempt(tx, |x| copy_close(x, env, t, v, key, format!("copy stopped: {reason}").chars().take(64).collect())) {
+            Ok(_) => done.push(t),
+            Err(e) => failed.push((t, e.message)),
+        }
+    }
+    (done, failed)
+}
+
+/// Cancels the pending orders and closes the positions a MAM link placed on a client account (source `mam`);
+/// the client's own trades are never touched. Returns (closed tickets, failures).
+pub fn close_mam(tx: &mut Tx, env: &Env, link: i64, reason: &str) -> (Vec<i64>, Vec<(i64, String)>) {
+    let mut done = Vec::new();
+    let mut failed = Vec::new();
+    let orders: Vec<i64> = tx.st.orders.values().filter(|o| o.source == Source::Mam).map(|o| o.ticket).collect();
+    for t in orders {
+        match attempt(tx, |x| trade::cancel_order(x, env, t, reason)) {
+            Ok(_) => done.push(t),
+            Err(e) => failed.push((t, e.message)),
+        }
+    }
+    let positions: Vec<(i64, D)> = tx.st.positions.values().filter(|p| p.source == Source::Mam).map(|p| (p.ticket, p.volume)).collect();
+    for (t, v) in positions {
+        let key = format!("ms{link}:{t}:{}", tx.st.version);
+        match attempt(tx, |x| close_as(x, env, t, v, key, format!("mam stopped: {reason}").chars().take(64).collect(), Source::Mam)) {
             Ok(_) => done.push(t),
             Err(e) => failed.push((t, e.message)),
         }

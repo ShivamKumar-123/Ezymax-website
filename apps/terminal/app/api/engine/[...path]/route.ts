@@ -17,6 +17,7 @@ import { clientAccount, csrf, engine, error, readSessions, reply, sessionFor, so
 //   POST   bulk-close                       {filter: all|profitable|losing|pending|buys|sells, symbol?}
 //   POST   stream-ticket                    {ticket, expiresIn, url}: one-time WebSocket ticket (30 s)
 //   POST   demo-refill                      demo accounts: top the balance back up (Client Area API, owner resolved here)
+//   GET    mam?symbol&volume                MAM role of the account + allocation summary (manager) / managing programme (client)
 
 type Ctx = { params: Promise<{ path: string[] }> };
 
@@ -130,6 +131,14 @@ async function handle(req: NextRequest, { params }: Ctx, method: "GET" | "POST" 
     const n = Number(req.nextUrl.searchParams.get("historyLimit") ?? 100);
     const limit = Number.isInteger(n) && n >= 0 && n <= 500 ? n : 100;
     return done(await forward(req, s, `/v1/terminal/state?historyLimit=${limit}`), async (d) => ({ ...(scrub(d) as Obj), account: await clientAccount(d.account) }));
+  }
+  if (method === "GET" && a === "mam" && path.length === 1) {
+    const sp = req.nextUrl.searchParams;
+    const symbol = sp.get("symbol");
+    const volume = sp.get("volume") ?? "1";
+    if (symbol !== null && !SYMBOL_RE.test(symbol)) return error(400, "bad_request", "Invalid symbol.");
+    if (!/^\d{1,4}(\.\d{1,2})?$/.test(volume) || Number(volume) <= 0) return error(400, "bad_request", "Invalid volume.");
+    return done(await forward(req, s, `/v1/terminal/mam${symbol ? `?symbol=${symbol}&volume=${volume}` : ""}`));
   }
   if (method === "GET" && a === "history" && path.length === 1) {
     const q = pageQuery(req);

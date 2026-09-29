@@ -10,6 +10,7 @@ import { DropMenu } from "@/components/ui/menu";
 import { TradeTab, bulkMenu } from "./trade-tab";
 import { AlertsTab, CalendarTab, ExposureTab, HistoryTab, JournalTab, NewsTab } from "./tabs";
 import { AiTraderTab, useAi } from "./ai-trader";
+import { MamTab, useMam } from "./mam-tab";
 import { LiveCalendarTab, LiveNewsTab } from "./news-live";
 import { ShareControls } from "@/components/share/share-dialogs";
 import { GuestNotice } from "@/components/shell/guest";
@@ -27,6 +28,7 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
   const t = useT();
   const tab = T.ws.toolboxTab;
   const ai = useAi();
+  const mam = useMam();
   const tabs: { value: ToolboxTab; label: string; count?: number }[] = [
     { value: "trade", label: t("toolbox.tab.trade"), count: T.positions.length + T.pendings.length },
     { value: "history", label: t("toolbox.tab.history") },
@@ -36,6 +38,8 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
     { value: "alerts", label: t("toolbox.tab.alerts"), count: T.alerts.filter((a) => a.active).length },
     { value: "journal", label: t("toolbox.tab.journal") },
     { value: "ai", label: t("toolbox.tab.ai"), count: ai.records.filter((r) => r.status === "active").length },
+    // MAM master account or linked client account (live engine only)
+    ...(mam?.role ? [{ value: "mam" as const, label: "MAM", count: mam.role === "manager" ? mam.accounts : undefined }] : []),
   ];
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-line bg-panel">
@@ -93,6 +97,7 @@ function ToolboxBody({ tab, live }: { tab: ToolboxTab; live: boolean }) {
         {tab === "alerts" && <AlertsTab />}
         {tab === "journal" && <JournalTab />}
         {tab === "ai" && <AiTraderTab />}
+        {tab === "mam" && <MamTab />}
     </>
   );
 }

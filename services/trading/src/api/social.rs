@@ -348,7 +348,8 @@ pub async fn fee_rows(st: &AppState, where_: &str, arg: i64) -> ApiResult<Vec<Va
 pub fn fee_json(r: &sqlx::postgres::PgRow) -> Value {
     json!({
         "id": r.get::<i64, _>("id"), "source": r.get::<String, _>("source"), "masterId": r.get::<i64, _>("master_id"), "master": r.get::<String, _>("nickname"),
-        "subscriptionId": r.get::<Option<i64>, _>("sub_id"), "fundId": r.get::<Option<i64>, _>("fund_id"), "payerUserId": r.get::<i64, _>("payer_user_id"), "login": r.get::<i64, _>("login"),
+        "subscriptionId": r.get::<Option<i64>, _>("sub_id"), "fundId": r.get::<Option<i64>, _>("fund_id"), "linkId": r.try_get::<Option<i64>, _>("link_id").ok().flatten(),
+        "perfAmount": crate::money::num_opt(r.try_get::<Option<D>, _>("perf_amount").ok().flatten()), "mgmtAmount": crate::money::num_opt(r.try_get::<Option<D>, _>("mgmt_amount").ok().flatten()), "payerUserId": r.get::<i64, _>("payer_user_id"), "login": r.get::<i64, _>("login"),
         "amount": num(r.get::<D, _>("amount")), "platformCut": num(r.get::<D, _>("platform_cut")), "masterAmount": num(r.get::<D, _>("master_amount")),
         "periodStart": r.get::<Option<chrono::DateTime<Utc>>, _>("period_start"), "periodEnd": r.get::<chrono::DateTime<Utc>, _>("period_end"),
         "hwmBefore": num(r.get::<D, _>("hwm_before")), "hwmAfter": num(r.get::<D, _>("hwm_after")), "equity": num(r.get::<D, _>("equity")),

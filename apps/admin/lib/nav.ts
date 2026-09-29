@@ -131,6 +131,7 @@ export const ADMIN_NAV: NavModule[] = [
     sub: [
       { href: "/social", label: "Masters" },
       { href: "/social/pamm", label: "PAMM funds" },
+      { href: "/social/mam", label: "MAM" },
       { href: "/social/applications", label: "Applications" },
       { href: "/social/payouts", label: "Fee payouts" },
       { href: "/social/marketplace", label: "Marketplace" },

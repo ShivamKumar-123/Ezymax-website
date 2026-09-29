@@ -32,6 +32,8 @@ import {
   Landmark,
   LineChart,
   Crown,
+  Briefcase,
+  UsersRound,
   Target,
   Medal,
   Percent,
@@ -133,7 +135,9 @@ export const CRM_NAV: NavModule[] = [
       { href: "/social/copy", label: "Copy trading", icon: Repeat },
       { href: "/social/pamm", label: "PAMM funds", icon: Landmark },
       { href: "/social/investments", label: "My investments", icon: LineChart },
+      { href: "/social/managed", label: "Managed accounts", icon: UsersRound },
       { href: "/social/master", label: "Become a master", icon: Crown },
+      { href: "/social/mam", label: "MAM manager", icon: Briefcase },
     ],
   },
   {

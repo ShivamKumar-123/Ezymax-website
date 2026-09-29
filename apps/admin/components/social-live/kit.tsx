@@ -135,11 +135,12 @@ export type FundView = {
 
 export type FeeView = {
   id: number;
-  source: "copy" | "pamm";
+  source: "copy" | "pamm" | "mam";
   masterId: number;
   master: string;
   subscriptionId: number | null;
   fundId: number | null;
+  linkId?: number | null;
   payerUserId: number | string;
   login: number | string;
   amount: number;

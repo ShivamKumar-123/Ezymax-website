@@ -6,6 +6,7 @@ pub mod accounts;
 pub mod admin;
 pub mod dealing;
 pub mod ledger;
+pub mod mam;
 pub mod social;
 pub mod social_admin;
 pub mod stream;
@@ -66,6 +67,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/terminal/positions/{ticket}/close", post(terminal::close_position))
         .route("/v1/terminal/bulk-close", post(terminal::bulk_close))
         .route("/v1/terminal/stream-ticket", post(terminal::stream_ticket))
+        .route("/v1/terminal/mam", get(mam::terminal))
         // Client Area (CRM BFF, with the gateway user id)
         .route("/v1/accounts", post(accounts::open).get(accounts::list))
         .route("/v1/accounts/{login}", get(accounts::detail))
@@ -147,6 +149,21 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/social/admin/rollover", post(social_admin::rollover_all))
         .route("/v1/social/admin/snapshots", post(social_admin::snapshots))
         .route("/v1/social/admin/settings", get(social_admin::settings).put(social_admin::save_settings))
+        // MAM (multi-account manager): Client Area, manager, Back Office
+        .route("/v1/social/mam/managers", get(mam::managers))
+        .route("/v1/social/mam/managers/{id}", get(mam::manager_detail))
+        .route("/v1/social/mam/links", get(mam::links).post(mam::create_link))
+        .route("/v1/social/mam/links/{id}", get(mam::link).patch(mam::update_link))
+        .route("/v1/social/mam/links/{id}/revoke", post(mam::revoke_link))
+        .route("/v1/social/mam/manager", get(mam::manager_me).post(mam::create_manager).patch(mam::update_manager))
+        .route("/v1/social/mam/manager/links/{id}", patch(mam::set_link_value))
+        .route("/v1/social/mam/manager/preview", get(mam::preview))
+        .route("/v1/social/mam/manager/allocations", get(mam::manager_allocations))
+        .route("/v1/social/admin/mam/managers", get(mam::admin_managers))
+        .route("/v1/social/admin/mam/managers/{id}/emergency", post(mam::admin_emergency))
+        .route("/v1/social/admin/mam/links", get(mam::admin_links))
+        .route("/v1/social/admin/mam/links/{id}/stop", post(mam::admin_stop_link))
+        .route("/v1/social/admin/mam/allocations", get(mam::admin_allocations))
         .route("/v1/social/admin/fees", get(social_admin::fees))
         .route("/v1/social/admin/fees/{id}/review", post(social_admin::review_fee))
         .route("/v1/social/admin/audit", get(social_admin::audit))

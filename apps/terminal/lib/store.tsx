@@ -109,7 +109,7 @@ export interface ChartTab {
 export type Layout = "1" | "2h" | "2v" | "4";
 export const LAYOUT_COUNT: Record<Layout, number> = { "1": 1, "2h": 2, "2v": 2, "4": 4 };
 
-export type ToolboxTab = "trade" | "history" | "exposure" | "news" | "calendar" | "alerts" | "journal" | "ai";
+export type ToolboxTab = "trade" | "history" | "exposure" | "news" | "calendar" | "alerts" | "journal" | "ai" | "mam";
 export type RightTab = "order" | "depth" | "info";
 export type MwTab = "symbols" | "details" | "favourites";
 /** Instrument list filter: an asset class, everything, or favourites (Market Watch, symbol search). */

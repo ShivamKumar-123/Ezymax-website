@@ -156,6 +156,8 @@ pub enum Source {
     Strategy,
     Copy,
     Pamm,
+    /// Allocated by a MAM manager's block trade onto a linked client account.
+    Mam,
     Ai,
     Dealer,
     /// Engine-initiated (SL/TP, stop-out, expiry, rollover).
@@ -172,6 +174,7 @@ impl Source {
             Source::Strategy => "strategy",
             Source::Copy => "copy",
             Source::Pamm => "pamm",
+            Source::Mam => "mam",
             Source::Ai => "ai",
             Source::Dealer => "dealer",
             Source::System => "system",

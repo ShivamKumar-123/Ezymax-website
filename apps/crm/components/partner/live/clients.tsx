@@ -76,6 +76,7 @@ function fmtDuration(ms: number) {
 const NOT_QUALIFIED: Record<string, string> = {
   short_duration: "Held too briefly",
   excluded_group: "Excluded account group",
+  mam_master: "MAM master account (counted on the managed accounts)",
   self_referral: "Self-referral check",
   demo: "Not a live account",
   reversed: "Reversed",

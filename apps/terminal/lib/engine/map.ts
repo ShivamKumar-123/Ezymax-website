@@ -8,7 +8,7 @@ import type { EngAccount, EngDeal, EngOrder, EngPosition } from "./types";
 
 export const serverName = (type: "live" | "demo") => (type === "demo" ? "Kalks-Demo" : "Kalks-Live");
 
-const SOURCES: Record<string, TradeSource> = { manual: "manual", ai: "ai", api: "api", fix: "api", webhook: "api", strategy: "strategy", copy: "copy", pamm: "pamm" };
+const SOURCES: Record<string, TradeSource> = { manual: "manual", ai: "ai", api: "api", fix: "api", webhook: "api", strategy: "strategy", copy: "copy", pamm: "pamm", mam: "mam" };
 export const mapSource = (s: string): TradeSource => SOURCES[s] ?? "manual";
 
 const opt = (v: number | null | undefined) => (v === null || v === undefined ? undefined : v);

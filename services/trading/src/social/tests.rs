@@ -36,7 +36,7 @@ impl Pair {
         let m = live(kit, 10_000_001, group, master);
         let f = live(kit, 10_000_002, group, follower);
         let seen = m.log.len();
-        let cfg = MirrorCfg { sub_id: 7, sizing, max_lot: None, excluded: vec![], master: "Gold Swing".into(), opens: true, catch_up: false, master_equity_usd: D::ZERO };
+        let cfg = MirrorCfg { sub_id: 7, sizing, max_lot: None, excluded: vec![], master: "Gold Swing".into(), opens: true, catch_up: false, master_equity_usd: D::ZERO, mam: None };
         Pair { m, f, seen, cfg }
     }
 

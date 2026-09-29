@@ -41,8 +41,8 @@ export function LivePayoutsPage() {
     });
 
   const cols: Column<FeeView>[] = [
-    { key: "id", header: "Fee", sort: (f) => f.id, csv: (f) => f.id, cell: (f) => <span className="font-mono text-[12px]">#{f.id}<span className="block text-[11px] text-fg-3">{f.source === "pamm" ? "PAMM" : "Copy"}</span></span> },
-    { key: "m", header: "Master", sort: (f) => f.master, csv: (f) => f.master, cell: (f) => <span className="text-[13px] font-medium">{f.master}<span className="block text-[11px] font-normal text-fg-3">#{f.masterId}{f.fundId ? ` · fund #${f.fundId}` : f.subscriptionId ? ` · sub #${f.subscriptionId}` : ""}</span></span> },
+    { key: "id", header: "Fee", sort: (f) => f.id, csv: (f) => f.id, cell: (f) => <span className="font-mono text-[12px]">#{f.id}<span className="block text-[11px] text-fg-3">{f.source === "pamm" ? "PAMM" : f.source === "mam" ? "MAM" : "Copy"}</span></span> },
+    { key: "m", header: "Master", sort: (f) => f.master, csv: (f) => f.master, cell: (f) => <span className="text-[13px] font-medium">{f.master}<span className="block text-[11px] font-normal text-fg-3">#{f.masterId}{f.fundId ? ` · fund #${f.fundId}` : f.subscriptionId ? ` · sub #${f.subscriptionId}` : f.linkId ? ` · MAM link #${f.linkId}` : ""}</span></span> },
     { key: "p", header: "Payer", csv: (f) => `${f.payerUserId} ${f.login}`, cell: (f) => <span className="font-mono text-[12px]">#{f.payerUserId}<span className="block text-[11px] text-fg-3">{f.login}</span></span> },
     { key: "per", header: "Period", hideOn: "lg", sort: (f) => Date.parse(f.periodEnd ?? f.createdAt), cell: (f) => <span className="whitespace-nowrap text-[12px] text-fg-2">{f.periodStart ? day(f.periodStart) : "—"} → {f.periodEnd ? day(f.periodEnd) : "—"}</span> },
     { key: "hwm", header: "HWM", align: "right", hideOn: "xl", cell: (f) => <span className="k-num whitespace-nowrap text-[12px] text-fg-3">{f.hwmBefore !== null ? usd(f.hwmBefore) : "—"} → {f.hwmAfter !== null ? usd(f.hwmAfter) : "—"}</span> },
@@ -81,7 +81,7 @@ export function LivePayoutsPage() {
     <div className="pb-16">
       <PageHeader
         title="Fee payouts"
-        subtitle="Performance fees charged to followers and PAMM investors. Approving pays the master's wallet; the platform cut stays with the house."
+        subtitle="Performance fees charged to followers, PAMM investors and MAM accounts. Approving pays the master's wallet; the platform cut stays with the house."
         actions={
           <>
             {!canApprove && <ReadOnlyNote what="approve payouts" />}

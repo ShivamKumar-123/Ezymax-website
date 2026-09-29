@@ -88,4 +88,29 @@ export const engineApi = {
     call<{ done: number[]; failed: { ticket: number; error: { code: string; message: string } | string }[]; profit: number }>("POST", "/api/engine/bulk-close", { login, body: { filter, symbol }, timeoutMs: 30_000 }),
   streamTicket: (login: string) => call<{ ticket: string; expiresIn: number; url: string }>("POST", "/api/engine/stream-ticket", { login }),
   demoRefill: (login: string) => call<{ status: string; amount: number; balance: number }>("POST", "/api/engine/demo-refill", { login }),
+  /** MAM role of the account (manager's master account / linked client account) and the allocation summary. */
+  mam: (login: string, symbol?: string, volume?: number) => call<MamInfo>("GET", `/api/engine/mam${symbol ? `?symbol=${encodeURIComponent(symbol)}&volume=${volume ?? 1}` : ""}`, { login }),
 };
+
+export interface MamPreviewRow {
+  linkId: number;
+  account: string;
+  equity: number;
+  balance: number;
+  value: number;
+  maxLot: number | null;
+  basis: number;
+  raw: number;
+  volume: number | null;
+  reason: string | null;
+}
+
+export interface MamInfo {
+  role: "manager" | "client" | null;
+  manager?: { name: string; nickname?: string | null; method: "equity" | "balance" | "multiplier" | "percent"; status: string; perfFeePct?: number; mgmtFeePct?: number; accounts?: number };
+  accounts?: number;
+  equity?: number;
+  preview?: { symbol: string; block: number; allocated: number; unallocated: number; lotStep: number; lotMin: number; rows: MamPreviewRow[] } | null;
+  recent?: { id: number; masterTicket: number | null; action: string; symbol: string; side: "buy" | "sell"; block: number; allocated: number; accounts: number; at: string; details: unknown[] }[];
+  link?: { id: number; since: string; maxLot: number | null; equityStop: number | null };
+}

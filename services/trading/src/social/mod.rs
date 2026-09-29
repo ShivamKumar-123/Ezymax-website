@@ -11,7 +11,9 @@
 //! Social configuration and state live in their own tables (migrations/0002_social.sql); every trade and
 //! every money movement on a trading account still goes through the account's shard as ordinary events.
 
+pub mod allocation;
 pub mod copier;
+pub mod mam;
 pub mod math;
 pub mod mirror;
 pub mod pamm;
@@ -193,6 +195,11 @@ pub struct Reg {
     /// Per-subscription "still copying" flag, checked inside the follower's shard right before a mirrored
     /// action runs (so a stop that is already queued ahead of it always wins).
     pub flags: HashMap<i64, Arc<AtomicBool>>,
+    /// MAM managers and links (see `mam`).
+    pub managers: BTreeMap<i64, mam::Manager>,
+    pub links: BTreeMap<i64, mam::Link>,
+    /// Per-link "still active" flag (same role as `flags` for subscriptions).
+    pub link_flags: HashMap<i64, Arc<AtomicBool>>,
 }
 
 impl Reg {
@@ -375,6 +382,7 @@ pub async fn load(pool: &PgPool) -> anyhow::Result<Reg> {
         let f = fund_from(&r);
         reg.funds.insert(f.id, f);
     }
+    mam::load_into(pool, &mut reg).await?;
     Ok(reg)
 }
 
@@ -408,6 +416,13 @@ impl Social {
                 streams.watch(s.login);
             } else {
                 streams.unwatch(s.login);
+            }
+        }
+        for m in reg.managers.values() {
+            if m.status != "closed" && reg.links_of(m.id).next().is_some() {
+                streams.watch(m.login);
+            } else if reg.master_by_login(m.login).is_none() {
+                streams.unwatch(m.login);
             }
         }
     }

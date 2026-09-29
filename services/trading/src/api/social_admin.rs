@@ -368,7 +368,8 @@ pub async fn review_fee(State(st): State<AppState>, s: StaffCtx, Path(id): Path<
     if approve {
         let amt: D = r.get("master_amount");
         if amt > ZERO {
-            crate::social::wallet::enqueue(&mut *t, tenant, &format!("fee:{id}"), master_user, amt, crate::social::wallet::CREDIT, "copy_fee", &format!("fee:{id}"), "Performance fee payout").await?;
+            let (kind, memo) = if r.get::<String, _>("source") == "mam" { ("mam_fee", "MAM fee payout") } else { ("copy_fee", "Performance fee payout") };
+            crate::social::wallet::enqueue(&mut *t, tenant, &format!("fee:{id}"), master_user, amt, crate::social::wallet::CREDIT, kind, &format!("fee:{id}"), memo).await?;
         } else {
             sqlx::query("UPDATE social_fees SET status = 'paid', paid_at = now() WHERE id = $1").bind(id).execute(&mut *t).await?;
         }

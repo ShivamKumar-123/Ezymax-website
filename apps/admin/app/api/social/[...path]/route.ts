@@ -16,6 +16,7 @@ const ID = "(\\d{1,18})";
 const ROUTES: Route[] = [
   // reads
   { method: "GET", re: /^admin\/(overview|masters|subscriptions|funds|settings|fees|audit)$/, perm: "social.read" },
+  { method: "GET", re: /^admin\/mam\/(managers|links|allocations)$/, perm: "social.read" },
   { method: "GET", re: /^leaderboard$/, perm: "social.read" },
   { method: "GET", re: new RegExp(`^masters/${ID}$`), perm: "social.read" },
   { method: "GET", re: new RegExp(`^funds/${ID}$`), perm: "social.read" },
@@ -27,6 +28,8 @@ const ROUTES: Route[] = [
   { method: "POST", re: new RegExp(`^admin/subscriptions/${ID}/stop$`), perm: "social.write" },
   { method: "POST", re: new RegExp(`^admin/funds/${ID}/(freeze|rollover)$`), perm: "social.write" },
   { method: "POST", re: /^admin\/(rollover|snapshots)$/, perm: "social.write" },
+  { method: "POST", re: new RegExp(`^admin/mam/managers/${ID}/emergency$`), perm: "social.write" },
+  { method: "POST", re: new RegExp(`^admin/mam/links/${ID}/stop$`), perm: "social.write" },
   { method: "PUT", re: /^admin\/settings$/, perm: "social.write" },
 ];
 

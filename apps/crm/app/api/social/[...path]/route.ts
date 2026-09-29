@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { GatewayUser } from "@/lib/gateway";
 import { clientOrder, clientPosition, sameOrigin, sessionUser } from "@/lib/trading";
 import { socialEngine } from "@/lib/social";
+import { mamGet, mamPatch, mamPost } from "@/lib/mam-bff";
 
 // Client Area social BFF (copy trading and PAMM). Browser -> /api/social/<route> (same origin) -> engine /v1/social/…
 // The client is resolved from the HttpOnly gateway session cookie; the engine gets that user id in X-Kalks-User-Id and
@@ -26,6 +27,7 @@ import { socialEngine } from "@/lib/social";
 //   GET   investments
 //   PATCH investments/{fundId}                {stopLossPct: number|null}
 //   GET   symbols                             {symbols:[{symbol, assetClass}]} (for the follower's symbol exclusions)
+//   *     mam/…                               MAM (multi-account manager): see lib/mam-bff.ts
 
 type Obj = Record<string, unknown>;
 type Ctx = { params: Promise<{ path: string[] }> };
@@ -211,6 +213,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   if (user instanceof NextResponse) return user;
   const [a, b, c] = path;
   const n = path.length;
+  if (a === "mam") return mamGet(req, path, user);
 
   if (n === 1 && a === "leaderboard") {
     const sp = req.nextUrl.searchParams;
@@ -303,6 +306,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   if (user instanceof NextResponse) return user;
   const [a, b, c] = path;
   const n = path.length;
+  if (a === "mam") return mamPost(req, path, body, user);
 
   try {
     if (n === 2 && a === "master" && b === "apply") {
@@ -373,6 +377,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (user instanceof NextResponse) return user;
   const [a, b] = path;
   const n = path.length;
+  if (a === "mam") return mamPatch(req, path, body, user);
 
   try {
     if (n === 2 && a === "master" && b === "me") {
