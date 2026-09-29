@@ -367,8 +367,10 @@ pub async fn send_otp_scoped(
 fn deliver(st: &AppState, email: &str, purpose: Purpose, code: &str, ttl_minutes: i64, detail: Option<String>) {
     if let Some(mailer) = st.mailer.clone() {
         let (to, code) = (email.to_string(), code.to_string());
+        // read before spawning: the task-local does not cross into the new task
+        let locale = crate::mail_i18n::current();
         tokio::spawn(async move {
-            match mailer.send_code(&to, purpose, &code, ttl_minutes, detail.as_deref()).await {
+            match mailer.send_code_in(&locale, &to, purpose, &code, ttl_minutes, detail.as_deref()).await {
                 Ok(()) => tracing::info!(to = %mask_email(&to), purpose = purpose.as_str(), "email code sent"),
                 Err(e) => tracing::error!(to = %mask_email(&to), purpose = purpose.as_str(), error = %e, "email code could not be sent"),
             }

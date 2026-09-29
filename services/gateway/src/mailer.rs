@@ -12,6 +12,7 @@ use lettre::transport::smtp::extension::ClientId;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
 use crate::identity::Purpose;
+use crate::mail_i18n;
 
 const LOGO_PNG: &[u8] = include_bytes!("../assets/email-logo.png");
 const LOGO_CID: &str = "kalks-logo";
@@ -75,63 +76,80 @@ impl Mailer {
 
     /// `detail` names the change being confirmed (step-up codes only).
     pub async fn send_code(&self, to: &str, purpose: Purpose, code: &str, ttl_minutes: i64, detail: Option<&str>) -> anyhow::Result<()> {
+        self.send_code_in("en", to, purpose, code, ttl_minutes, detail).await
+    }
+
+    /// `send_code` in the client's language (`mail_i18n`). The step-up `detail` is English-only, so other
+    /// languages use a generic confirmation sentence.
+    pub async fn send_code_in(&self, locale: &str, to: &str, purpose: Purpose, code: &str, ttl_minutes: i64, detail: Option<&str>) -> anyhow::Result<()> {
+        let lang = mail_i18n::normalize(locale);
+        let t = mail_i18n::texts(lang);
         let confirm_lead;
         let (subject, title, lead) = match purpose {
-            Purpose::VerifyEmail => (
-                "Your Kalks verification code",
-                "Verify your email",
-                "Enter this code to confirm your email address and finish creating your Kalks account.",
-            ),
-            Purpose::Login => (
-                "Your Kalks sign-in code",
-                "Confirm it's you",
-                "We noticed a sign-in to your Kalks account from a new device. Enter this code to continue.",
-            ),
-            Purpose::ResetPassword => (
-                "Reset your Kalks password",
-                "Reset your password",
-                "Enter this code to set a new password for your Kalks account.",
-            ),
+            Purpose::VerifyEmail => (t.verify_subject, t.verify_title, t.verify_lead),
+            Purpose::Login => (t.login_subject, t.login_title, t.login_lead),
+            Purpose::ResetPassword => (t.reset_subject, t.reset_title, t.reset_lead),
             Purpose::Confirm => {
-                confirm_lead = format!(
-                    "You asked to {} in the Kalks Client Area. Enter this code to confirm it.",
-                    detail.unwrap_or("make a change to your account")
-                );
-                ("Confirm a change on your Kalks account", "Confirm this change on your Kalks account", confirm_lead.as_str())
+                let lead = if lang == "en" {
+                    confirm_lead = format!(
+                        "You asked to {} in the Kalks Client Area. Enter this code to confirm it.",
+                        detail.unwrap_or("make a change to your account")
+                    );
+                    confirm_lead.as_str()
+                } else {
+                    t.confirm_lead
+                };
+                (t.confirm_subject, t.confirm_title, lead)
             }
         };
         let lead_html = html_escape(lead);
-        let warn = if purpose == Purpose::Confirm {
-            "If you didn't ask for this change, don't share the code: someone may have access to your signed-in session. Change your Client Area password and contact support. Kalks will never ask you for this code by phone, chat or email."
-        } else {
-            "If you didn't request this code, you can ignore this email. Your account stays safe, but we recommend changing your password. Kalks will never ask you for this code by phone, chat or email."
-        };
+        let warn = if purpose == Purpose::Confirm { t.warn_confirm } else { t.warn_code };
         let spaced: String = code.chars().map(|c| c.to_string()).collect::<Vec<_>>().join(" ");
+        let ttl = ttl_minutes.to_string();
         let text = format!(
-            "{title}\n\n{lead}\n\nYour code: {code}\n\nIt expires in {ttl_minutes} minutes. {warn}\n\n{footer}",
-            footer = self.text_footer()
+            "{title}\n\n{lead}\n\n{your_code}: {code}\n\n{expires} {warn}\n\n{footer}",
+            your_code = t.your_code,
+            expires = t.text_expires.replace("{minutes}", &ttl),
+            footer = self.text_footer_in(lang)
         );
+        let your_code = t.your_code;
+        let expires_html = t.expires_in.replace("{minutes}", &ttl);
+        // digits separated by spaces would be reordered inside right-to-left text
+        let code_dir = if mail_i18n::is_rtl(lang) { r#" dir="ltr""# } else { "" };
         let body = format!(
             r#"<h1 style="margin:0 0 10px;font-size:22px;line-height:1.3;font-weight:700;color:{FG}">{title}</h1>
 <p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:{FG2}">{lead_html}</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="background:{BG};border:1px solid {LINE};border-radius:12px;padding:20px 12px">
-<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:{FG3};margin-bottom:8px">Your code</div>
-<div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:34px;font-weight:700;letter-spacing:6px;color:{EMBER}">{spaced}</div>
-<div style="font-size:12px;color:{FG3};margin-top:10px">Expires in {ttl_minutes} minutes</div>
+<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:{FG3};margin-bottom:8px">{your_code}</div>
+<div{code_dir} style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:34px;font-weight:700;letter-spacing:6px;color:{EMBER}">{spaced}</div>
+<div style="font-size:12px;color:{FG3};margin-top:10px">{expires_html}</div>
 </td></tr></table>
 <p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:{FG3}">{warn}</p>"#
         );
-        self.send(to, subject, &format!("{title}: {code}"), &text, &body).await
+        self.send_in(lang, to, subject, &format!("{title}: {code}"), &text, &body).await
     }
 
     /// Sent once, right after a client verifies their email address.
     pub async fn send_welcome(&self, to: &str, first_name: &str) -> anyhow::Result<()> {
+        self.send_welcome_in("en", to, first_name).await
+    }
+
+    /// `send_welcome` in the client's language (`mail_i18n`).
+    pub async fn send_welcome_in(&self, locale: &str, to: &str, first_name: &str) -> anyhow::Result<()> {
+        let lang = mail_i18n::normalize(locale);
+        let t = mail_i18n::texts(lang);
         let name = html_escape(first_name);
         let Links { app, trade, .. } = &self.links;
         let text = format!(
-            "Welcome to Kalks, {first_name}!\n\nYour account is ready. Here's how to get started:\n\n1. Verify your identity: {app}/profile/verification\n2. Fund your wallet (USDT): {app}/wallet/deposit\n3. Open a trading account: {app}/accounts/new\n4. Start trading in Kalks Trader: {trade}\n\nNeed help? Reply to this email or write to {support}.\n\n{footer}",
-            support = self.links.support_email,
-            footer = self.text_footer()
+            "{heading}\n\n{intro}\n\n1. {s1}: {app}/profile/verification\n2. {s2}: {app}/wallet/deposit\n3. {s3}: {app}/accounts/new\n4. {s4}: {trade}\n\n{help}\n\n{footer}",
+            heading = t.welcome_text_heading.replace("{name}", first_name),
+            intro = t.welcome_text_intro,
+            s1 = t.step1_title,
+            s2 = t.text_step2,
+            s3 = t.step3_title,
+            s4 = t.text_step4,
+            help = t.text_help.replace("{support}", &self.links.support_email),
+            footer = self.text_footer_in(lang)
         );
         let step = |n: &str, title: &str, desc: &str| {
             format!(
@@ -142,24 +160,26 @@ impl Mailer {
             )
         };
         let steps = [
-            step("1", "Verify your identity", "A quick ID check unlocks withdrawals and higher limits."),
-            step("2", "Fund your wallet", "Deposit USDT (TRC20) to your Kalks wallet in minutes."),
-            step("3", "Open a trading account", "Choose Standard, Pro, ECN or Cent, with leverage up to your group's limit."),
-            step("4", "Trade in Kalks Trader", "Live charts, one-click trading, 35 indicators and the AI Trader."),
+            step("1", t.step1_title, t.step1_desc),
+            step("2", t.step2_title, t.step2_desc),
+            step("3", t.step3_title, t.step3_desc),
+            step("4", t.step4_title, t.step4_desc),
         ]
         .concat();
+        let heading = t.welcome_heading.replace("{name}", &name);
+        let (intro, open_account, launch_trader, questions) = (t.welcome_intro, t.open_account_button, t.launch_trader_button, t.questions);
         let body = format!(
-            r#"<h1 style="margin:0 0 10px;font-size:24px;line-height:1.3;font-weight:700;color:{FG}">Welcome to Kalks, {name}</h1>
-<p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:{FG2}">Your account is ready. You now have access to forex, metals, indices, energies, crypto and stock CFDs, all from one wallet and one Client Area. Here's how to get started:</p>
+            r#"<h1 style="margin:0 0 10px;font-size:24px;line-height:1.3;font-weight:700;color:{FG}">{heading}</h1>
+<p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:{FG2}">{intro}</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">{steps}</table>
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:10px 0 6px"><tr>
-<td style="border-radius:10px;background:{EMBER}"><a href="{app}/accounts/new" style="display:inline-block;padding:13px 22px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px">Open trading account</a></td>
+<td style="border-radius:10px;background:{EMBER}"><a href="{app}/accounts/new" style="display:inline-block;padding:13px 22px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px">{open_account}</a></td>
 <td width="10"></td>
-<td style="border-radius:10px;border:1px solid {LINE};background:{BG}"><a href="{trade}" style="display:inline-block;padding:12px 20px;font-size:15px;font-weight:600;color:{FG};text-decoration:none;border-radius:10px">Launch Kalks Trader</a></td>
+<td style="border-radius:10px;border:1px solid {LINE};background:{BG}"><a href="{trade}" style="display:inline-block;padding:12px 20px;font-size:15px;font-weight:600;color:{FG};text-decoration:none;border-radius:10px">{launch_trader}</a></td>
 </tr></table>
-<p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:{FG3}">Questions? Just reply to this email. Our support team is here to help.</p>"#
+<p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:{FG3}">{questions}</p>"#
         );
-        self.send(to, "Welcome to Kalks", "Your account is ready. Here's how to get started.", &text, &body).await
+        self.send_in(lang, to, t.welcome_subject, t.welcome_preheader, &text, &body).await
     }
 
     /// Identity verification (KYC) status emails: submitted, approved, rejected (with reason), more information needed.
@@ -229,7 +249,12 @@ impl Mailer {
     }
 
     async fn send(&self, to: &str, subject: &str, preheader: &str, text: &str, body_html: &str) -> anyhow::Result<()> {
-        let html = self.layout(preheader, body_html);
+        self.send_in("en", to, subject, preheader, text, body_html).await
+    }
+
+    /// `lang` sets the layout's language, text direction and footer copy (`mail_i18n`).
+    async fn send_in(&self, lang: &str, to: &str, subject: &str, preheader: &str, text: &str, body_html: &str) -> anyhow::Result<()> {
+        let html = self.layout(lang, preheader, body_html);
         let logo = Attachment::new_inline(LOGO_CID.to_string()).body(LOGO_PNG.to_vec(), "image/png".parse()?);
         let reply_to: Mailbox = format!("Kalks Support <{}>", self.links.support_email).parse()?;
         let msg = Message::builder()
@@ -250,12 +275,16 @@ impl Mailer {
         Ok(())
     }
 
-    fn layout(&self, preheader: &str, body: &str) -> String {
+    fn layout(&self, lang: &str, preheader: &str, body: &str) -> String {
         let Links { site, support_email, .. } = &self.links;
         let site_host = site.trim_start_matches("https://").trim_start_matches("http://");
         let preheader = html_escape(preheader);
+        let lang = mail_i18n::normalize(lang);
+        let t = mail_i18n::texts(lang);
+        let (footer_reason, risk_warning) = (t.footer_reason, t.risk_warning);
+        let dir = if mail_i18n::is_rtl(lang) { r#" dir="rtl""# } else { "" };
         format!(
-            r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><title>Kalks</title></head>
+            r#"<!doctype html><html lang="{lang}"{dir}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><title>Kalks</title></head>
 <body style="margin:0;padding:0;background:{BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:{FG}">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:{BG}">{preheader}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG}"><tr><td align="center" style="padding:32px 14px">
@@ -263,22 +292,23 @@ impl Mailer {
 <tr><td style="padding:0 4px 18px"><img src="cid:{LOGO_CID}" width="120" height="40" alt="Kalks" style="display:block;border:0;outline:none;width:120px;height:40px"></td></tr>
 <tr><td style="background:{CARD};border:1px solid {LINE};border-radius:16px;overflow:hidden">
 <div style="height:3px;background:{EMBER};background-image:linear-gradient(90deg,{EMBER},{GOLD})"></div>
-<div style="padding:30px 28px 28px">{body}</div>
+<div{dir} style="padding:30px 28px 28px">{body}</div>
 </td></tr>
-<tr><td style="padding:20px 6px 0;font-size:12px;line-height:1.6;color:{FG3}">
+<tr><td{dir} style="padding:20px 6px 0;font-size:12px;line-height:1.6;color:{FG3}">
 <a href="{site}" style="color:{FG2};text-decoration:none">{site_host}</a> · <a href="mailto:{support_email}" style="color:{FG2};text-decoration:none">{support_email}</a><br>
-You received this email because of activity on your Kalks account.<br><br>
-<span style="color:#6b6b75">Risk warning: CFDs are complex instruments and come with a high risk of losing money rapidly due to leverage. Only trade with money you can afford to lose.</span>
+{footer_reason}<br><br>
+<span style="color:#6b6b75">{risk_warning}</span>
 </td></tr>
 </table></td></tr></table></body></html>"#
         )
     }
 
     fn text_footer(&self) -> String {
-        format!(
-            "Kalks · {} · {}\nRisk warning: CFDs are complex instruments and come with a high risk of losing money rapidly due to leverage.",
-            self.links.site, self.links.support_email
-        )
+        self.text_footer_in("en")
+    }
+
+    fn text_footer_in(&self, lang: &str) -> String {
+        format!("Kalks · {} · {}\n{}", self.links.site, self.links.support_email, mail_i18n::texts(lang).risk_warning_text)
     }
 }
 

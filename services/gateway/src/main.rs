@@ -16,6 +16,7 @@ mod google_auth;
 mod identity;
 mod kyc;
 mod internal;
+mod mail_i18n;
 mod mailer;
 mod owner;
 mod ratelimit;
@@ -235,6 +236,7 @@ fn router(st: AppState) -> Router {
         .route("/v1/internal/referrals/users", get(internal::referral_users))
         .route("/v1/internal/users/{id}", get(users_internal::user))
         .layer(DefaultBodyLimit::max(256 * 1024))
+        .layer(middleware::from_fn(mail_i18n::locale_layer))
         .layer(middleware::from_fn_with_state(st.clone(), internal_only));
     Router::new()
         .route("/health", get(health))

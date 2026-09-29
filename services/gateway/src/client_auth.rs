@@ -70,8 +70,9 @@ pub(crate) async fn signed_in(st: &AppState, ctx: &Ctx, tenant_id: i64, user_id:
 /// Welcome email, sent in the background once per account (right after its email address is verified).
 pub(crate) fn send_welcome(st: &AppState, email: String, first_name: String) {
     if let Some(mailer) = st.mailer.clone() {
+        let locale = crate::mail_i18n::current();
         tokio::spawn(async move {
-            if let Err(e) = mailer.send_welcome(&email, &first_name).await {
+            if let Err(e) = mailer.send_welcome_in(&locale, &email, &first_name).await {
                 tracing::error!(error = %e, "welcome email could not be sent");
             }
         });
