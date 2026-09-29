@@ -20,7 +20,6 @@ import { navForFeatures, pageModule, useFeatures } from "@/components/tenant-con
 import { TERMINAL_URL } from "@/lib/live";
 import { LiveGate } from "@/components/live-gate";
 import { NotificationsBell } from "@/components/notifications";
-import { SupportLauncher } from "@/components/support/launcher";
 import { KYC_CHIP, logout, useSession } from "@/components/session";
 
 /** The shared rail's sign-out icon is a plain link to /login; turn it into a real sign-out. */
@@ -115,7 +114,6 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           <LiveGate>{children}</LiveGate>
         </MarketBoundary>
       </AppShell>
-      <SupportLauncher />
     </div>
   );
 }
