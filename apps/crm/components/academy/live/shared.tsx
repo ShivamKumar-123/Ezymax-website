@@ -6,26 +6,28 @@ import { ArrowUpRight, Check, ChevronLeft, Lock, RotateCw } from "lucide-react";
 import { Button, Card, EmptyState, Skeleton, cn } from "@kalks/ui";
 import { useAccounts, openTerminal } from "@/components/trading/api";
 import { TERMINAL_URL } from "@/lib/live";
+import { useT } from "@kalks/i18n/react";
 import type { AcademyError } from "./api";
 
 export function AcademyUnavailable({ error, onRetry, notFound: nf }: { error: AcademyError | null; onRetry: () => void; notFound?: boolean }) {
+  const t = useT();
   const notFound = nf || error?.status === 404;
   return (
     <Card>
       <EmptyState
         illustration={notFound ? "magnifying_glass_tilted_left" : "satellite_antenna"}
-        title={notFound ? "Not found" : "The Academy is unavailable"}
-        text={notFound ? "This lesson isn't available. It may have been moved or unpublished." : (error?.message ?? "We couldn't load the Academy. Please try again in a moment.")}
+        title={notFound ? t("academy.unavailable.notFoundTitle") : t("academy.unavailable.title")}
+        text={notFound ? t("academy.unavailable.notFoundText") : (error?.message ?? t("academy.unavailable.text"))}
         action={
           notFound ? (
             <Link href="/academy">
               <Button variant="surface">
-                <ChevronLeft /> Back to the Academy
+                <ChevronLeft className="rtl:-scale-x-100" /> {t("academy.backToAcademy")}
               </Button>
             </Link>
           ) : (
             <Button variant="surface" onClick={onRetry}>
-              <RotateCw /> Try again
+              <RotateCw /> {t("common.retry")}
             </Button>
           )
         }
@@ -54,7 +56,7 @@ export function PageSkeleton() {
 export function BackLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Link href={href} className="mb-4 inline-flex items-center gap-1 text-[13px] text-fg-3 transition-colors hover:text-fg">
-      <ChevronLeft className="size-4" /> {children}
+      <ChevronLeft className="size-4 rtl:-scale-x-100" /> {children}
     </Link>
   );
 }
@@ -87,14 +89,16 @@ export function StatusDot({ state, n }: { state: "done" | "open" | "locked"; n?:
  * "Practise in Kalks Trader": opens the learner's demo account in the terminal (one-time SSO), or sends them to
  * open a free demo account first.
  */
-export function PracticeButton({ size = "md", label = "Practise on demo" }: { size?: "sm" | "md"; label?: string }) {
+export function PracticeButton({ size = "md", label: labelProp }: { size?: "sm" | "md"; label?: string }) {
+  const t = useT();
+  const label = labelProp ?? t("academy.practice.demo");
   const { data } = useAccounts(0);
   const demo = data?.accounts.find((a) => a.type === "demo" && a.status === "active");
   if (!data) {
     return (
       <a href={TERMINAL_URL} target="_blank" rel="noopener">
         <Button variant="surface" size={size}>
-          {label} <ArrowUpRight />
+          {label} <ArrowUpRight className="rtl:-scale-x-100" />
         </Button>
       </a>
     );
@@ -103,17 +107,17 @@ export function PracticeButton({ size = "md", label = "Practise on demo" }: { si
     return (
       <Link href="/accounts/new?type=demo">
         <Button variant="surface" size={size}>
-          Open a free demo account <ArrowUpRight />
+          {t("academy.practice.openFreeDemo")} <ArrowUpRight className="rtl:-scale-x-100" />
         </Button>
       </Link>
     );
   }
   return (
     <Button variant="surface" size={size} onClick={() => openTerminal(demo.login)}>
-      {label} <span className="k-num text-fg-3">#{demo.login}</span> <ArrowUpRight />
+      {label} <span className="k-num text-fg-3">#{demo.login}</span> <ArrowUpRight className="rtl:-scale-x-100" />
     </Button>
   );
 }
 
-export const RISK_NOTE =
-  "Educational content only, not investment advice. CFDs are complex, leveraged instruments and carry a high risk of losing money rapidly. Practise on a demo account before trading live.";
+/** Translation key of the risk note shown under Academy pages: render with t(RISK_NOTE). */
+export const RISK_NOTE = "academy.riskNote" as const;

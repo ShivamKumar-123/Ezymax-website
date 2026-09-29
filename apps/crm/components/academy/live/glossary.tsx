@@ -4,10 +4,12 @@ import * as React from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { Card, Chip, PageHeader, cn } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 import { useAcademy, type Glossary } from "./api";
 import { AcademyUnavailable, BackLink, PageSkeleton } from "./shared";
 
 export function LiveGlossary() {
+  const t = useT();
   const sp = useSearchParams();
   const { data, error, reload } = useAcademy<Glossary>("glossary");
   const [q, setQ] = React.useState(sp.get("q") ?? "");
@@ -16,16 +18,16 @@ export function LiveGlossary() {
 
   const list = React.useMemo(() => {
     const n = q.trim().toLowerCase();
-    return (data?.terms ?? []).filter((t) => (!cat || t.category === cat) && (!n || t.term.toLowerCase().includes(n) || t.definition.toLowerCase().includes(n)));
+    return (data?.terms ?? []).filter((x) => (!cat || x.category === cat) && (!n || x.term.toLowerCase().includes(n) || x.definition.toLowerCase().includes(n)));
   }, [data, q, cat]);
   // exact / prefix matches first when searching
   const sorted = React.useMemo(() => {
     const n = q.trim().toLowerCase();
     if (!n) return list;
-    const rank = (t: string) => (t.toLowerCase() === n ? 0 : t.toLowerCase().startsWith(n) ? 1 : t.toLowerCase().includes(n) ? 2 : 3);
+    const rank = (x: string) => (x.toLowerCase() === n ? 0 : x.toLowerCase().startsWith(n) ? 1 : x.toLowerCase().includes(n) ? 2 : 3);
     return [...list].sort((a, b) => rank(a.term) - rank(b.term) || a.term.localeCompare(b.term));
   }, [list, q]);
-  const letters = React.useMemo(() => Array.from(new Set((data?.terms ?? []).map((t) => t.term[0]!.toUpperCase()))).sort(), [data]);
+  const letters = React.useMemo(() => Array.from(new Set((data?.terms ?? []).map((x) => x.term[0]!.toUpperCase()))).sort(), [data]);
 
   if (error) return <AcademyUnavailable error={error} onRetry={reload} />;
   if (!data) return <PageSkeleton />;
@@ -40,22 +42,22 @@ export function LiveGlossary() {
 
   return (
     <div className="pb-16">
-      <BackLink href="/academy">Academy</BackLink>
-      <PageHeader title="Glossary" subtitle={`${data.total} trading terms, from ask price to yield curve, in plain language.`} />
+      <BackLink href="/academy">{t("academy.title")}</BackLink>
+      <PageHeader title={t("academy.home.glossary")} subtitle={t("academy.glossary.subtitle", { count: data.total })} />
       <Card className="sticky top-20 z-10 p-3 sm:p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="flex h-10 flex-1 items-center gap-2 rounded-full border border-line bg-surface-2 px-3.5">
             <Search className="size-4 text-fg-3" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search terms and definitions" aria-label="Search terms" data-testid="glossary-search" className="w-full bg-transparent text-[13.5px] outline-none placeholder:text-fg-3" autoFocus={!!sp.get("q")} />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("academy.glossary.placeholder")} aria-label={t("academy.glossary.searchAria")} data-testid="glossary-search" className="w-full bg-transparent text-[13.5px] outline-none placeholder:text-fg-3" autoFocus={!!sp.get("q")} />
             {q && (
-              <button type="button" onClick={() => setQ("")} aria-label="Clear search" className="text-fg-3 hover:text-fg">
+              <button type="button" onClick={() => setQ("")} aria-label={t("academy.glossary.clear")} className="text-fg-3 hover:text-fg">
                 <X className="size-4" />
               </button>
             )}
           </div>
           <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
             <button type="button" onClick={() => setCat("")} className={cn("h-8 shrink-0 rounded-full border px-3 text-[12px]", !cat ? "border-ember/40 bg-ember-soft text-fg" : "border-line bg-surface-2 text-fg-3 hover:text-fg")}>
-              All
+              {t("common.all")}
             </button>
             {data.categories.map((c) => (
               <button key={c.name} type="button" onClick={() => setCat(cat === c.name ? "" : c.name)} className={cn("h-8 shrink-0 rounded-full border px-3 text-[12px]", cat === c.name ? "border-ember/40 bg-ember-soft text-fg" : "border-line bg-surface-2 text-fg-3 hover:text-fg")}>
@@ -76,26 +78,26 @@ export function LiveGlossary() {
       </Card>
 
       <div className="k-num mb-3 mt-5 text-[12.5px] text-fg-3" data-testid="glossary-count">
-        {sorted.length} {sorted.length === 1 ? "term" : "terms"}
+        {t("academy.glossary.count", { count: sorted.length })}
       </div>
       {sorted.length === 0 ? (
-        <Card className="py-14 text-center text-[13.5px] text-fg-3">No terms match “{q}”. Try a shorter word.</Card>
+        <Card className="py-14 text-center text-[13.5px] text-fg-3">{t("academy.glossary.noMatch", { q })}</Card>
       ) : (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {sorted.map((t, i) => {
-            const first = !q && !cat && (i === 0 || sorted[i - 1]!.term[0]!.toUpperCase() !== t.term[0]!.toUpperCase());
+          {sorted.map((term, i) => {
+            const first = !q && !cat && (i === 0 || sorted[i - 1]!.term[0]!.toUpperCase() !== term.term[0]!.toUpperCase());
             return (
-              <Card key={t.slug} id={`term-${t.slug}`} className={cn("scroll-mt-40 p-5 transition-colors", flash === t.slug && "border-ember/60")} data-testid="glossary-term">
-                {first && <span id={`letter-${t.term[0]!.toUpperCase()}`} className="block scroll-mt-44" />}
+              <Card key={term.slug} id={`term-${term.slug}`} className={cn("scroll-mt-40 p-5 transition-colors", flash === term.slug && "border-ember/60")} data-testid="glossary-term">
+                {first && <span id={`letter-${term.term[0]!.toUpperCase()}`} className="block scroll-mt-44" />}
                 <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-[15.5px] font-medium tracking-tight">{t.term}</h3>
-                  <Chip size="sm">{t.category}</Chip>
+                  <h3 className="text-[15.5px] font-medium tracking-tight">{term.term}</h3>
+                  <Chip size="sm">{term.category}</Chip>
                 </div>
-                <p className="mt-1.5 text-[13.5px] leading-relaxed text-fg-2">{t.definition}</p>
-                {t.related.length > 0 && (
+                <p className="mt-1.5 text-[13.5px] leading-relaxed text-fg-2">{term.definition}</p>
+                {term.related.length > 0 && (
                   <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[12px]">
-                    <span className="text-fg-3">Related:</span>
-                    {t.related.map((r) => (
+                    <span className="text-fg-3">{t("academy.glossary.related")}</span>
+                    {term.related.map((r) => (
                       <button key={r.slug} type="button" onClick={() => jump(r.slug)} className="rounded-full border border-line bg-surface-2 px-2 py-0.5 text-fg-2 hover:text-fg">
                         {r.term}
                       </button>

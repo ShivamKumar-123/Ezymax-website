@@ -6,6 +6,8 @@
 
 import * as React from "react";
 import { cn } from "@kalks/ui";
+import type { MessageKey } from "@kalks/i18n";
+import { useT } from "@kalks/i18n/react";
 
 export type Heading = { id: string; text: string; level: 2 | 3 };
 
@@ -150,22 +152,25 @@ export function Inline({ text }: { text: string }) {
   return <>{parts}</>;
 }
 
-const CALLOUT: Record<string, { cls: string; label: string }> = {
-  "risk warning": { cls: "border-down/30 bg-down-soft [&_.lbl]:text-down", label: "Risk warning" },
-  warning: { cls: "border-down/30 bg-down-soft [&_.lbl]:text-down", label: "Warning" },
-  example: { cls: "border-info/25 bg-info-soft [&_.lbl]:text-info", label: "Example" },
-  tip: { cls: "border-up/25 bg-up-soft [&_.lbl]:text-up", label: "Tip" },
-  note: { cls: "border-line bg-surface-2 [&_.lbl]:text-fg-2", label: "Note" },
-  "in kalks trader": { cls: "border-ember/30 bg-ember-soft [&_.lbl]:text-ember", label: "In Kalks Trader" },
+// label = translation key of the chrome label shown above the callout
+const CALLOUT: Record<string, { cls: string; label: MessageKey }> = {
+  "risk warning": { cls: "border-down/30 bg-down-soft [&_.lbl]:text-down", label: "academy.callout.riskWarning" },
+  warning: { cls: "border-down/30 bg-down-soft [&_.lbl]:text-down", label: "academy.callout.warning" },
+  example: { cls: "border-info/25 bg-info-soft [&_.lbl]:text-info", label: "academy.callout.example" },
+  tip: { cls: "border-up/25 bg-up-soft [&_.lbl]:text-up", label: "academy.callout.tip" },
+  note: { cls: "border-line bg-surface-2 [&_.lbl]:text-fg-2", label: "academy.callout.note" },
+  "in kalks trader": { cls: "border-ember/30 bg-ember-soft [&_.lbl]:text-ember", label: "academy.callout.inKalksTrader" },
 };
 
 function Callout({ text }: { text: string }) {
+  const t = useT();
   const m = /^\*\*([^*:]+):?\*\*:?\s*(.*)$/.exec(text);
   const key = m?.[1]?.trim().toLowerCase() ?? "";
-  const kind = CALLOUT[key] ?? (m ? { cls: "border-line bg-surface-2 [&_.lbl]:text-fg-2", label: m[1]!.trim() } : null);
+  const known = CALLOUT[key];
+  const kind = known ? { cls: known.cls, label: t(known.label) } : m ? { cls: "border-line bg-surface-2 [&_.lbl]:text-fg-2", label: m[1]!.trim() } : null;
   if (!kind || !m) {
     return (
-      <blockquote className="my-5 border-l-2 border-line pl-4 text-fg-2">
+      <blockquote className="my-5 border-s-2 border-line ps-4 text-fg-2">
         <Inline text={text} />
       </blockquote>
     );
@@ -179,8 +184,9 @@ function Callout({ text }: { text: string }) {
 }
 
 function Diagram({ svg }: { svg: string }) {
+  const t = useT();
   const src = React.useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.trim())}`, [svg]);
-  const title = /<text[^>]*>([^<]{4,80})<\/text>/.exec(svg)?.[1] ?? "Diagram";
+  const title = /<text[^>]*>([^<]{4,80})<\/text>/.exec(svg)?.[1] ?? t("academy.diagram");
   return (
     <figure className="my-6 overflow-hidden rounded-[16px] border border-line bg-[#121216]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -213,7 +219,7 @@ export function Markdown({ src, className }: { src: string; className?: string }
             );
           case "ul":
             return (
-              <ul key={i} className="my-4 space-y-2 pl-1">
+              <ul key={i} className="my-4 space-y-2 ps-1">
                 {b.items.map((it, j) => (
                   <li key={j} className="flex gap-3">
                     <span className="mt-[11px] size-1.5 shrink-0 rounded-full bg-ember/80" />
@@ -226,7 +232,7 @@ export function Markdown({ src, className }: { src: string; className?: string }
             );
           case "ol":
             return (
-              <ol key={i} className="my-4 space-y-2 pl-1">
+              <ol key={i} className="my-4 space-y-2 ps-1">
                 {b.items.map((it, j) => (
                   <li key={j} className="flex gap-3">
                     <span className="k-num mt-[3px] grid size-6 shrink-0 place-items-center rounded-full border border-line bg-surface-2 text-[11.5px] font-medium text-fg-2">{b.start + j}</span>
@@ -253,7 +259,7 @@ export function Markdown({ src, className }: { src: string; className?: string }
                   <thead>
                     <tr className="bg-surface-2">
                       {b.head.map((c, j) => (
-                        <th key={j} className="border-b border-line px-3.5 py-2.5 text-left text-[12px] font-medium uppercase tracking-wider text-fg-3">
+                        <th key={j} className="border-b border-line px-3.5 py-2.5 text-start text-[12px] font-medium uppercase tracking-wider text-fg-3">
                           <Inline text={c} />
                         </th>
                       ))}

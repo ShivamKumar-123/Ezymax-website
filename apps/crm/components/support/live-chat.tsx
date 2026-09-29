@@ -7,6 +7,8 @@ import { FileText, Loader2, MoreHorizontal, Paperclip, RotateCcw, SendHorizontal
 import { Avatar, Button, Chip, IconButton, Menu, cn } from "@kalks/ui";
 import { useSession } from "@/components/session";
 import { realtime, type Frame } from "@/lib/realtime";
+import { intlTag } from "@kalks/i18n/locales";
+import { tr, useT } from "@kalks/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Types (services/support client API)                                  */
@@ -54,14 +56,14 @@ async function api<T>(path: string, init?: { method?: string; body?: unknown }):
   }
 }
 
-export function errMsg(d: unknown, fallback = "Something went wrong. Please try again.") {
+export function errMsg(d: unknown, fallback?: string) {
   const e = (d as { error?: { message?: string } })?.error;
-  return e?.message || fallback;
+  return e?.message || fallback || tr("common.errorRetry");
 }
 
 export function hhmm(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString(intlTag(tr.locale), { hour: "2-digit", minute: "2-digit" });
 }
 
 /* ------------------------------------------------------------------ */
@@ -88,7 +90,7 @@ export function Rich({ text }: { text: string }) {
         const list = lines.every((l) => /^\s*[-•]\s+/.test(l) || !l.trim());
         if (list)
           return (
-            <ul key={bi} className={cn("list-disc space-y-0.5 pl-4", bi > 0 && "mt-2")}>
+            <ul key={bi} className={cn("list-disc space-y-0.5 ps-4", bi > 0 && "mt-2")}>
               {lines.filter((l) => l.trim()).map((l, li) => (
                 <li key={li}>{inline(l.replace(/^\s*[-•]\s+/, ""), `${bi}-${li}`)}</li>
               ))}
@@ -118,6 +120,7 @@ export function BotAvatar({ size = 32 }: { size?: number }) {
 }
 
 function AttachmentView({ a, mine }: { a: Attachment; mine: boolean }) {
+  const t = useT();
   const url = `/api/support/attachments/${a.id}`;
   if (a.mime.startsWith("image/"))
     return (
@@ -127,13 +130,13 @@ function AttachmentView({ a, mine }: { a: Attachment; mine: boolean }) {
       </a>
     );
   return (
-    <a href={url} target="_blank" rel="noopener" className={cn("mt-1 inline-flex items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left", mine ? "border-ember/30 bg-ember-soft" : "border-line bg-surface-2")}>
+    <a href={url} target="_blank" rel="noopener" className={cn("mt-1 inline-flex items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-start", mine ? "border-ember/30 bg-ember-soft" : "border-line bg-surface-2")}>
       <span className="grid size-9 place-items-center rounded-xl bg-surface-3 text-ember">
         <FileText className="size-4" />
       </span>
       <span>
         <span className="block max-w-[180px] truncate text-[13px] font-medium text-fg">{a.name}</span>
-        <span className="block text-[11px] text-fg-3">{Math.max(1, Math.round(a.size / 1024))} KB · PDF</span>
+        <span className="block text-[11px] text-fg-3">{t("support.attachmentSize", { size: Math.max(1, Math.round(a.size / 1024)) })}</span>
       </span>
     </a>
   );
@@ -150,12 +153,13 @@ function Dots() {
 }
 
 export function MessageRow({ m, botName, meName }: { m: Message; botName: string; meName: string }) {
+  const t = useT();
   if (m.author === "system") {
     if (m.meta.kind === "join")
       return (
         <div className="flex justify-center">
-          <div className="flex items-center gap-2 rounded-full border border-up/25 bg-up-soft py-1 pl-1 pr-3.5 text-[12px] text-fg-2">
-            <Avatar name={m.meta.agentName ?? "Agent"} size={22} />
+          <div className="flex items-center gap-2 rounded-full border border-up/25 bg-up-soft py-1 ps-1 pe-3.5 text-[12px] text-fg-2">
+            <Avatar name={m.meta.agentName ?? t("support.agent")} size={22} />
             <span>{m.body}</span>
             <span className="font-mono text-[10.5px] text-fg-3">{hhmm(m.createdAt)}</span>
           </div>
@@ -168,13 +172,13 @@ export function MessageRow({ m, botName, meName }: { m: Message; botName: string
     );
   }
   const mine = m.author === "client";
-  const name = mine ? "You" : m.author === "bot" ? botName : (m.authorName ?? "Support");
+  const name = mine ? t("support.you") : m.author === "bot" ? botName : (m.authorName ?? t("support.supportName"));
   return (
     <div className={cn("flex items-end gap-2.5", mine && "flex-row-reverse")}>
       {m.author === "bot" && <BotAvatar size={28} />}
-      {m.author === "agent" && <Avatar name={m.authorName ?? "Agent"} size={28} />}
+      {m.author === "agent" && <Avatar name={m.authorName ?? t("support.agent")} size={28} />}
       {mine && <Avatar name={meName} size={28} />}
-      <div className={cn("max-w-[80%]", mine && "text-right")}>
+      <div className={cn("max-w-[80%]", mine && "text-end")}>
         <div className={cn("mb-1 flex items-center gap-2 text-[11px] text-fg-3", mine && "justify-end")}>
           <span className="font-medium text-fg-2">{name}</span>
           <span className="font-mono">{hhmm(m.createdAt)}</span>
@@ -182,8 +186,8 @@ export function MessageRow({ m, botName, meName }: { m: Message; botName: string
         {m.body && (
           <div
             className={cn(
-              "inline-block rounded-2xl px-4 py-2.5 text-left text-[13.5px] leading-relaxed",
-              mine ? "rounded-br-md bg-ember text-white [&_strong]:text-white" : m.author === "bot" ? "rounded-bl-md border border-ember/20 bg-surface-2 text-fg-2" : "rounded-bl-md border border-line bg-surface-3 text-fg",
+              "inline-block rounded-2xl px-4 py-2.5 text-start text-[13.5px] leading-relaxed",
+              mine ? "rounded-ee-md bg-ember text-white [&_strong]:text-white" : m.author === "bot" ? "rounded-es-md border border-ember/20 bg-surface-2 text-fg-2" : "rounded-es-md border border-line bg-surface-3 text-fg",
             )}
           >
             <Rich text={m.body} />
@@ -208,13 +212,15 @@ export function MessageRow({ m, botName, meName }: { m: Message; botName: string
 /* Live chat                                                            */
 /* ------------------------------------------------------------------ */
 
-const QUICK = ["How do I verify my identity?", "How do I deposit USDT?", "When will my withdrawal arrive?", "What is a stop-out?"];
+// suggested first questions (translation keys; the translated text is sent as the message)
+const QUICK = ["support.quick.verify", "support.quick.deposit", "support.quick.withdrawal", "support.quick.stopOut"] as const;
 
 /**
  * Live support chat: the AI bot answers first (streamed), hands over to a human agent on request or when unsure,
  * agents reply live, attachments (images / PDF), end the chat and rate it. Used by /support and the floating widget.
  */
 export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "page" | "widget"; onClose?: () => void; onUnread?: (n: number) => void }) {
+  const t = useT();
   const me = useSession();
   const widget = variant === "widget";
   const [home, setHome] = React.useState<Home | null>(null);
@@ -325,7 +331,7 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
     const r = await api<{ conversation: Conversation; message: Message }>("messages", { body: { body: text, attachmentId } });
     setSending(false);
     if (!r.ok) {
-      toast.error("Message not sent", { description: errMsg(r.data) });
+      toast.error(t("support.toast.notSent"), { description: errMsg(r.data) });
       if (raw === undefined) setInput(text);
       return;
     }
@@ -336,7 +342,7 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
 
   const handover = async () => {
     const r = await api<{ conversation: Conversation }>("handover", { body: {} });
-    if (!r.ok) return toast.error("Couldn't reach the team", { description: errMsg(r.data) });
+    if (!r.ok) return toast.error(t("support.toast.teamUnreachable"), { description: errMsg(r.data) });
     setConv(r.data.conversation);
     if (!convRef.current) void load();
   };
@@ -344,16 +350,16 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
   const endChat = async () => {
     if (!conv) return;
     const r = await api<{ conversation: Conversation }>(`conversations/${conv.id}/resolve`, { body: {} });
-    if (!r.ok) return toast.error("Couldn't end the chat", { description: errMsg(r.data) });
+    if (!r.ok) return toast.error(t("support.toast.endFailed"), { description: errMsg(r.data) });
     setConv(r.data.conversation);
   };
 
   const rate = async () => {
     if (!conv || !rating) return;
     const r = await api<{ conversation: Conversation }>(`conversations/${conv.id}/rate`, { body: { rating, comment } });
-    if (!r.ok) return toast.error("Rating not saved", { description: errMsg(r.data) });
+    if (!r.ok) return toast.error(t("support.toast.rateFailed"), { description: errMsg(r.data) });
     setConv(r.data.conversation);
-    toast.success("Thanks for your feedback");
+    toast.success(t("support.toast.thanks"));
   };
 
   const newChat = () => {
@@ -369,17 +375,17 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
     e.target.value = "";
     if (!f) return;
     const max = (settings?.maxAttachmentMb ?? 10) * 1024 * 1024;
-    if (f.size > max) return toast.error("File too large", { description: `Files can be up to ${settings?.maxAttachmentMb ?? 10} MB.` });
-    if (!/^image\/(png|jpe?g|gif|webp)$/.test(f.type) && f.type !== "application/pdf") return toast.error("Unsupported file", { description: "Attach an image (PNG, JPG, GIF, WEBP) or a PDF." });
+    if (f.size > max) return toast.error(t("support.toast.fileTooLarge"), { description: t("support.toast.fileTooLargeText", { mb: settings?.maxAttachmentMb ?? 10 }) });
+    if (!/^image\/(png|jpe?g|gif|webp)$/.test(f.type) && f.type !== "application/pdf") return toast.error(t("support.toast.unsupported"), { description: t("support.toast.unsupportedText") });
     setUploading(true);
     try {
       const r = await fetch("/api/support/attachments", { method: "POST", headers: { "content-type": f.type, "x-file-name": encodeURIComponent(f.name) }, body: f });
       const d = (await r.json().catch(() => ({}))) as { attachment?: Attachment };
-      if (!r.ok || !d.attachment) throw new Error(errMsg(d, "Upload failed."));
+      if (!r.ok || !d.attachment) throw new Error(errMsg(d, t("support.error.uploadFailed")));
       await send(input.trim(), d.attachment.id);
       setInput("");
     } catch (err) {
-      toast.error("Upload failed", { description: (err as Error).message });
+      toast.error(t("support.toast.uploadFailed"), { description: (err as Error).message });
     } finally {
       setUploading(false);
     }
@@ -394,9 +400,9 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
   };
 
   const agentName = conv?.assigneeName;
-  const headerName = status === "assigned" && agentName ? agentName : status === "waiting" ? "Support team" : botName;
+  const headerName = status === "assigned" && agentName ? agentName : status === "waiting" ? t("support.header.supportTeam") : botName;
   const headerSub =
-    status === "assigned" ? "Client Support · Kalks" : status === "waiting" ? (settings?.agentsOnline ? "Connecting you with an agent…" : "Our team will reply here soon") : settings?.ai === false ? "Help centre answers · a person can join anytime" : "Answers instantly · a person can join anytime";
+    status === "assigned" ? t("support.header.agentSub") : status === "waiting" ? (settings?.agentsOnline ? t("support.header.connecting") : t("support.header.replySoon")) : settings?.ai === false ? t("support.header.helpCentre") : t("support.header.instant");
   const showGreeting = !conv || msgs.length === 0;
   const canRate = resolved && !conv?.csat && msgs.some((m) => m.author === "agent" || m.author === "bot");
 
@@ -407,7 +413,7 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
         {status === "assigned" && agentName ? (
           <div className="relative flex items-center">
             <BotAvatar size={28} />
-            <Avatar name={agentName} size={36} online className="-ml-2.5 rounded-full ring-2 ring-surface" />
+            <Avatar name={agentName} size={36} online className="-ms-2.5 rounded-full ring-2 ring-surface" />
           </div>
         ) : (
           <BotAvatar size={36} />
@@ -416,26 +422,26 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
           <div className="flex items-center gap-2 text-[15px] font-medium">
             <span className="truncate">{headerName}</span>
             <Chip size="sm" tone={status === "assigned" ? "up" : status === "waiting" ? "warn" : resolved ? "neutral" : "ember"} dot>
-              {status === "assigned" ? "Live agent" : status === "waiting" ? "In queue" : resolved ? "Ended" : "AI assistant"}
+              {status === "assigned" ? t("support.chip.liveAgent") : status === "waiting" ? t("support.status.waiting") : resolved ? t("support.status.resolved") : t("support.status.bot")}
             </Chip>
           </div>
           <div className="truncate text-[12px] text-fg-3">{headerSub}</div>
         </div>
         <Menu
           trigger={
-            <IconButton size="sm" aria-label="Chat options">
+            <IconButton size="sm" aria-label={t("support.menu.aria")}>
               <MoreHorizontal />
             </IconButton>
           }
           items={[
-            { label: "Talk to a person", icon: <UserRound />, onSelect: () => (human ? toast.info(status === "assigned" ? `You're chatting with ${agentName}` : "You're in the queue for an agent") : void handover()) },
-            ...(conv && !resolved ? [{ label: "End chat", icon: <XCircle />, onSelect: () => void endChat() }] : []),
+            { label: t("support.menu.talkToPerson"), icon: <UserRound />, onSelect: () => (human ? toast.info(status === "assigned" ? t("support.toast.chattingWith", { name: agentName }) : t("support.toast.inQueue")) : void handover()) },
+            ...(conv && !resolved ? [{ label: t("support.menu.endChat"), icon: <XCircle />, onSelect: () => void endChat() }] : []),
             "sep" as const,
-            { label: "Start new chat", icon: <RotateCcw />, onSelect: newChat },
+            { label: t("support.menu.newChat"), icon: <RotateCcw />, onSelect: newChat },
           ]}
         />
         {widget && onClose && (
-          <IconButton size="sm" aria-label="Close chat" onClick={onClose}>
+          <IconButton size="sm" aria-label={t("support.closeChat")} onClick={onClose}>
             <X />
           </IconButton>
         )}
@@ -451,9 +457,9 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
           )}
           {failed && (
             <div className="py-10 text-center text-[13px] text-fg-3">
-              Chat is unavailable right now.{" "}
+              {t("support.unavailable")}{" "}
               <button className="text-ember hover:underline" onClick={() => void load()}>
-                Try again
+                {t("common.retry")}
               </button>
             </div>
           )}
@@ -462,8 +468,8 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
               <BotAvatar size={28} />
               <div className="max-w-[80%]">
                 <div className="mb-1 text-[11px] font-medium text-fg-2">{botName}</div>
-                <div className="inline-block rounded-2xl rounded-bl-md border border-ember/20 bg-surface-2 px-4 py-2.5 text-[13.5px] leading-relaxed text-fg-2">
-                  Hi {me.first_name}. {settings?.greeting.replace(/^Hi[^.]*\.\s*/, "")}
+                <div className="inline-block rounded-2xl rounded-es-md border border-ember/20 bg-surface-2 px-4 py-2.5 text-[13.5px] leading-relaxed text-fg-2">
+                  {t("support.greeting", { name: me.first_name })} {settings?.greeting.replace(/^Hi[^.]*\.\s*/, "")}
                 </div>
               </div>
             </div>
@@ -480,33 +486,33 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
               <BotAvatar size={28} />
               <div className="max-w-[80%]">
                 <div className="mb-1 text-[11px] font-medium text-fg-2">{botName}</div>
-                <div className="inline-block rounded-2xl rounded-bl-md border border-ember/20 bg-surface-2 px-4 py-2.5 text-[13.5px] leading-relaxed text-fg-2">{stream.text ? <Rich text={stream.text} /> : <Dots />}</div>
+                <div className="inline-block rounded-2xl rounded-es-md border border-ember/20 bg-surface-2 px-4 py-2.5 text-[13.5px] leading-relaxed text-fg-2">{stream.text ? <Rich text={stream.text} /> : <Dots />}</div>
               </div>
             </div>
           )}
           {agentTyping && status === "assigned" && (
             <div className="flex items-end gap-2.5">
-              <Avatar name={agentName ?? "Agent"} size={28} />
-              <div className="rounded-2xl rounded-bl-md border border-line bg-surface-3 px-3 py-2">
+              <Avatar name={agentName ?? t("support.agent")} size={28} />
+              <div className="rounded-2xl rounded-es-md border border-line bg-surface-3 px-3 py-2">
                 <Dots />
               </div>
             </div>
           )}
           {canRate && (
             <div className="mx-auto max-w-xs rounded-2xl border border-line bg-surface-2 px-4 py-3 text-center" data-testid="csat">
-              <div className="text-[12.5px] text-fg-2">How was this chat?</div>
+              <div className="text-[12.5px] text-fg-2">{t("support.csat.question")}</div>
               <div className="mt-1.5 flex justify-center gap-1">
                 {[1, 2, 3, 4, 5].map((n) => (
-                  <button key={n} aria-label={`${n} stars`} onClick={() => setRating(n)} className={cn("transition-colors", n <= rating ? "text-gold" : "text-fg-3 hover:text-gold")}>
+                  <button key={n} aria-label={t("support.csat.stars", { count: n })} onClick={() => setRating(n)} className={cn("transition-colors", n <= rating ? "text-gold" : "text-fg-3 hover:text-gold")}>
                     <Star className={cn("size-5", n <= rating && "fill-current")} />
                   </button>
                 ))}
               </div>
               {rating > 0 && (
                 <div className="mt-2 space-y-2">
-                  <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} maxLength={1000} placeholder="Anything to add? (optional)" className="w-full resize-none rounded-xl border border-line bg-surface px-3 py-2 text-[12.5px] outline-none focus:border-ember/50" />
+                  <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} maxLength={1000} placeholder={t("support.csat.placeholder")} className="w-full resize-none rounded-xl border border-line bg-surface px-3 py-2 text-[12.5px] outline-none focus:border-ember/50" />
                   <Button size="xs" variant="ember" onClick={() => void rate()}>
-                    Send rating
+                    {t("support.csat.send")}
                   </Button>
                 </div>
               )}
@@ -515,7 +521,7 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
           {resolved && conv?.csat && (
             <div className="flex justify-center">
               <span className="flex items-center gap-1 rounded-full bg-surface-2 px-3 py-1 text-[11.5px] text-fg-3">
-                You rated this chat {conv.csat.rating}/5 <Star className="size-3 fill-current text-gold" />
+                {t("support.csat.rated", { rating: conv.csat.rating })} <Star className="size-3 fill-current text-gold" />
               </span>
             </div>
           )}
@@ -527,13 +533,13 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
         {(showGreeting || (status === "bot" && msgs.length < 3)) && (
           <div className="mb-3 flex gap-1.5 overflow-x-auto pb-0.5">
             {QUICK.map((q) => (
-              <button key={q} onClick={() => void send(q)} disabled={sending || !home} className="shrink-0 rounded-full border border-line bg-surface-2 px-3 py-1.5 text-[12px] text-fg-2 transition-colors hover:border-ember/40 hover:text-fg disabled:opacity-50">
-                {q}
+              <button key={q} onClick={() => void send(t(q))} disabled={sending || !home} className="shrink-0 rounded-full border border-line bg-surface-2 px-3 py-1.5 text-[12px] text-fg-2 transition-colors hover:border-ember/40 hover:text-fg disabled:opacity-50">
+                {t(q)}
               </button>
             ))}
             {!human && (
               <button onClick={() => void handover()} disabled={!home} className="shrink-0 rounded-full border border-line bg-surface-2 px-3 py-1.5 text-[12px] text-fg-2 transition-colors hover:border-ember/40 hover:text-fg">
-                Talk to a person
+                {t("support.menu.talkToPerson")}
               </button>
             )}
           </div>
@@ -543,25 +549,25 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
             e.preventDefault();
             void send();
           }}
-          className="flex items-center gap-2 rounded-[18px] border border-line bg-surface-2 p-1.5 pl-2 transition-colors focus-within:border-ember/50"
+          className="flex items-center gap-2 rounded-[18px] border border-line bg-surface-2 p-1.5 ps-2 transition-colors focus-within:border-ember/50"
         >
           <input ref={fileRef} type="file" className="hidden" onChange={onFile} accept="image/png,image/jpeg,image/gif,image/webp,application/pdf" />
-          <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading || !home} aria-label="Attach file" className="grid size-9 shrink-0 place-items-center rounded-full text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg disabled:opacity-50">
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading || !home} aria-label={t("support.composer.attach")} className="grid size-9 shrink-0 place-items-center rounded-full text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg disabled:opacity-50">
             {uploading ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
           </button>
           <input
             value={input}
             onChange={(e) => onType(e.target.value)}
             maxLength={4000}
-            placeholder={status === "assigned" && agentName ? `Message ${agentName.split(" ")[0]}…` : resolved ? "Start a new chat…" : `Ask ${botName} anything…`}
-            aria-label="Message"
+            placeholder={status === "assigned" && agentName ? t("support.composer.messageTo", { name: agentName.split(" ")[0] }) : resolved ? t("support.composer.newChat") : t("support.composer.ask", { name: botName })}
+            aria-label={t("support.composer.aria")}
             className="h-9 min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-fg-3"
           />
-          <button type="submit" disabled={!input.trim() || sending || !home} aria-label="Send" className="k-ember-btn grid size-9 shrink-0 place-items-center rounded-full transition-opacity disabled:opacity-40">
-            {sending ? <Loader2 className="size-4 animate-spin" /> : <SendHorizontal className="size-4" />}
+          <button type="submit" disabled={!input.trim() || sending || !home} aria-label={t("common.send")} className="k-ember-btn grid size-9 shrink-0 place-items-center rounded-full transition-opacity disabled:opacity-40">
+            {sending ? <Loader2 className="size-4 animate-spin" /> : <SendHorizontal className="size-4 rtl:-scale-x-100" />}
           </button>
         </form>
-        <div className="mt-2 text-center text-[10.5px] text-fg-3">{botName} can make mistakes and never gives investment advice. Chats are recorded for quality.</div>
+        <div className="mt-2 text-center text-[10.5px] text-fg-3">{t("support.disclaimer", { name: botName })}</div>
       </div>
     </div>
   );

@@ -4,7 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, BarChart3, BookOpen, CheckCircle2, Clock, GraduationCap, Landmark, Lightbulb, MonitorPlay } from "lucide-react";
 import { Button, Card, Chip, cn } from "@kalks/ui";
-import { LEVEL_TONE, TRACK_LABEL, academyApi, useAcademy, type ChapterView, type QuizReply } from "./api";
+import { useT } from "@kalks/i18n/react";
+import { LEVEL_TONE, TRACK_LABEL, academyApi, levelLabel, useAcademy, type ChapterView, type QuizReply } from "./api";
 import { Markdown, headingsOf } from "./markdown";
 import { ChapterQuiz } from "./quiz";
 import { AcademyUnavailable, BackLink, PracticeButton, RISK_NOTE, StatusDot } from "./shared";
@@ -69,6 +70,7 @@ function useReadingProgress(slug: string, articleRef: React.RefObject<HTMLElemen
 }
 
 function Toc({ body }: { body: string }) {
+  const t = useT();
   const hs = React.useMemo(() => headingsOf(body).filter((h) => h.level === 2), [body]);
   const [active, setActive] = React.useState<string | null>(null);
   React.useEffect(() => {
@@ -86,19 +88,19 @@ function Toc({ body }: { body: string }) {
   }, [hs]);
   if (hs.length < 2) return null;
   return (
-    <nav aria-label="On this page" className="text-[12.5px]">
-      <div className="k-label mb-2.5">On this page</div>
-      <ul className="space-y-1.5 border-l border-line">
+    <nav aria-label={t("academy.reader.onThisPage")} className="text-[12.5px]">
+      <div className="k-label mb-2.5">{t("academy.reader.onThisPage")}</div>
+      <ul className="space-y-1.5 border-s border-line">
         {hs.map((h) => (
           <li key={h.id}>
-            <a href={`#${h.id}`} className={cn("-ml-px block border-l py-0.5 pl-3 transition-colors", active === h.id ? "border-ember text-fg" : "border-transparent text-fg-3 hover:text-fg-2")}>
+            <a href={`#${h.id}`} className={cn("-ms-px block border-s py-0.5 ps-3 transition-colors", active === h.id ? "border-ember text-fg" : "border-transparent text-fg-3 hover:text-fg-2")}>
               {h.text}
             </a>
           </li>
         ))}
         <li>
-          <a href="#quiz" className="-ml-px block border-l border-transparent py-0.5 pl-3 text-fg-3 hover:text-fg-2">
-            Chapter quiz
+          <a href="#quiz" className="-ms-px block border-s border-transparent py-0.5 ps-3 text-fg-3 hover:text-fg-2">
+            {t("academy.quiz.title")}
           </a>
         </li>
       </ul>
@@ -107,6 +109,7 @@ function Toc({ body }: { body: string }) {
 }
 
 function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) => void }) {
+  const t = useT();
   const { chapter: c, phase, section } = view;
   const ref = React.useRef<HTMLElement | null>(null);
   const read = useReadingProgress(c.slug, ref, view.progress.read_pct);
@@ -120,12 +123,12 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
         <div className="h-full bg-ember transition-[width] duration-300" style={{ width: `${read}%` }} data-testid="read-progress" />
       </div>
       <BackLink href={`/academy/phase/${phase.slug}`}>
-        Phase {phase.order} · {phase.title}
+        {t("academy.phaseTitle", { n: phase.order, title: phase.title })}
       </BackLink>
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[240px_minmax(0,1fr)_200px]">
         <aside className="hidden xl:block">
           <div className="sticky top-24">
-            <div className="k-label mb-1">{TRACK_LABEL[section.track]}</div>
+            <div className="k-label mb-1">{t(TRACK_LABEL[section.track])}</div>
             <div className="mb-3 text-[13.5px] font-medium">{section.title}</div>
             <ol className="space-y-1">
               {chapters.map((x, i) => (
@@ -144,12 +147,12 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
           <div className="flex flex-wrap items-center gap-2">
             <Chip tone={section.track === "fundamental" ? "info" : "ember"}>
               {section.track === "fundamental" ? <Landmark className="size-3" /> : <BarChart3 className="size-3" />}
-              {TRACK_LABEL[section.track]}
+              {t(TRACK_LABEL[section.track])}
             </Chip>
-            <Chip tone={LEVEL_TONE[phase.level]}>{phase.level}</Chip>
+            <Chip tone={LEVEL_TONE[phase.level]}>{levelLabel(phase.level)}</Chip>
             {completed && (
               <Chip tone="up" dot>
-                Completed
+                {t("common.completed")}
               </Chip>
             )}
           </div>
@@ -157,13 +160,13 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
           <p className="mt-2 text-[15px] leading-relaxed text-fg-2">{c.summary}</p>
           <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-line pb-5 text-[12.5px] text-fg-3">
             <span className="inline-flex items-center gap-1.5">
-              <BookOpen className="size-3.5" /> Chapter {section.index} of {section.count}
+              <BookOpen className="size-3.5" /> {t("academy.reader.chapterOf", { n: section.index, total: section.count })}
             </span>
             <span className="k-num inline-flex items-center gap-1.5">
-              <Clock className="size-3.5" /> {c.minutes} min read
+              <Clock className="size-3.5" /> {t("academy.reader.minRead", { count: c.minutes })}
             </span>
             <span className="k-num inline-flex items-center gap-1.5">
-              <GraduationCap className="size-3.5" /> {c.quiz.length}-question quiz
+              <GraduationCap className="size-3.5" /> {t("academy.reader.quizLength", { count: c.quiz.length })}
             </span>
           </div>
 
@@ -173,13 +176,13 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
             <Card className="mt-10 p-5 sm:p-6" data-testid="takeaways">
               <div className="flex items-center gap-2">
                 <Lightbulb className="size-4 text-gold" />
-                <h2 className="text-[16px] font-medium tracking-tight">Key takeaways</h2>
+                <h2 className="text-[16px] font-medium tracking-tight">{t("academy.reader.takeaways")}</h2>
               </div>
               <ul className="mt-3 space-y-2.5">
-                {c.takeaways.map((t, i) => (
+                {c.takeaways.map((tk, i) => (
                   <li key={i} className="flex gap-3 text-[14px] leading-relaxed text-fg-2">
                     <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-up" />
-                    <span>{t}</span>
+                    <span>{tk}</span>
                   </li>
                 ))}
               </ul>
@@ -193,12 +196,12 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
                   <MonitorPlay className="size-4" />
                 </span>
                 <div>
-                  <div className="k-label">Practise in Kalks Trader{c.practice.symbol ? ` · ${c.practice.symbol}` : ""}</div>
+                  <div className="k-label">{t("academy.practice.inTrader")}{c.practice.symbol ? ` · ${c.practice.symbol}` : ""}</div>
                   <p className="mt-1 text-[14px] leading-relaxed text-fg-2">{c.practice.label}</p>
                 </div>
               </div>
               <div className="shrink-0">
-                <PracticeButton size="sm" label="Open demo" />
+                <PracticeButton size="sm" label={t("academy.practice.openDemo")} />
               </div>
             </Card>
           )}
@@ -219,9 +222,9 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {view.prev ? (
               <Link href={`/academy/chapter/${view.prev.slug}`} className="k-row flex items-center gap-3 px-4 py-3.5" data-testid="prev-chapter">
-                <ArrowLeft className="size-4 shrink-0 text-fg-3" />
+                <ArrowLeft className="size-4 shrink-0 text-fg-3 rtl:-scale-x-100" />
                 <div className="min-w-0">
-                  <div className="text-[11px] uppercase tracking-wider text-fg-3">Previous</div>
+                  <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("academy.reader.previous")}</div>
                   <div className="truncate text-[13.5px] font-medium">{view.prev.title}</div>
                 </div>
               </Link>
@@ -229,27 +232,27 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
               <span className="hidden sm:block" />
             )}
             {view.next ? (
-              <Link href={`/academy/chapter/${view.next.slug}`} className="k-row flex items-center justify-end gap-3 px-4 py-3.5 text-right" data-testid="next-chapter">
+              <Link href={`/academy/chapter/${view.next.slug}`} className="k-row flex items-center justify-end gap-3 px-4 py-3.5 text-end" data-testid="next-chapter">
                 <div className="min-w-0">
-                  <div className="text-[11px] uppercase tracking-wider text-fg-3">Next</div>
+                  <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("common.next")}</div>
                   <div className="truncate text-[13.5px] font-medium">{view.next.title}</div>
                 </div>
-                <ArrowRight className="size-4 shrink-0 text-fg-3" />
+                <ArrowRight className="size-4 shrink-0 text-fg-3 rtl:-scale-x-100" />
               </Link>
             ) : (
-              <Link href="/academy/progress" className="k-row flex items-center justify-end gap-3 px-4 py-3.5 text-right">
-                <div className="text-[13.5px] font-medium">You reached the end: see your progress</div>
-                <ArrowRight className="size-4 shrink-0 text-fg-3" />
+              <Link href="/academy/progress" className="k-row flex items-center justify-end gap-3 px-4 py-3.5 text-end">
+                <div className="text-[13.5px] font-medium">{t("academy.reader.end")}</div>
+                <ArrowRight className="size-4 shrink-0 text-fg-3 rtl:-scale-x-100" />
               </Link>
             )}
           </div>
-          <p className="mt-8 text-[11.5px] leading-relaxed text-fg-3">{RISK_NOTE}</p>
+          <p className="mt-8 text-[11.5px] leading-relaxed text-fg-3">{t(RISK_NOTE)}</p>
         </article>
 
         <aside className="hidden xl:block">
           <div className="sticky top-24 space-y-6">
             <div>
-              <div className="k-label mb-2">Reading</div>
+              <div className="k-label mb-2">{t("academy.reader.reading")}</div>
               <div className="k-num text-[22px] font-semibold">{read}%</div>
               <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-surface-3">
                 <div className="h-full bg-ember" style={{ width: `${read}%` }} />
@@ -258,7 +261,7 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
             <Toc body={c.body} />
             <Link href="#quiz">
               <Button size="sm" variant="surface" className="w-full">
-                <GraduationCap /> Go to quiz
+                <GraduationCap /> {t("academy.reader.goToQuiz")}
               </Button>
             </Link>
           </div>

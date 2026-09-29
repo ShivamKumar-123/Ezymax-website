@@ -3,6 +3,8 @@
 // Browser client for the Academy BFF (/api/academy/*, see app/api/academy/[...path]/route.ts).
 
 import * as React from "react";
+import { createFormatter } from "@kalks/i18n";
+import { tr } from "@kalks/i18n/react";
 
 export type Level = "Beginner" | "Intermediate" | "Advanced" | "Professional";
 export type Track = "fundamental" | "technical";
@@ -97,14 +99,14 @@ export async function academyApi<T>(path: string, init?: { body?: unknown; signa
     });
   } catch (e) {
     if ((e as Error).name === "AbortError") throw e;
-    throw new AcademyError(0, "network", "Network error. Check your connection and try again.");
+    throw new AcademyError(0, "network", tr("common.networkError"));
   }
   const data = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string } };
   if (!res.ok) {
     if (res.status === 401 && typeof window !== "undefined") {
       window.location.assign(`/api/auth/expired?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
     }
-    throw new AcademyError(res.status, data.error?.code ?? "error", data.error?.message ?? "Something went wrong. Please try again.");
+    throw new AcademyError(res.status, data.error?.code ?? "error", data.error?.message ?? tr("common.errorRetry"));
   }
   return data as T;
 }
@@ -125,7 +127,7 @@ export function useAcademy<T>(path: string | null) {
       })
       .catch((e) => {
         if ((e as Error).name === "AbortError") return;
-        setError(e instanceof AcademyError ? e : new AcademyError(0, "error", "Something went wrong."));
+        setError(e instanceof AcademyError ? e : new AcademyError(0, "error", tr("common.errorRetry")));
       });
     return () => ctl.abort();
   }, [path, tick]);
@@ -133,13 +135,17 @@ export function useAcademy<T>(path: string | null) {
 }
 
 export const LEVEL_TONE: Record<Level, "up" | "gold" | "ember" | "info"> = { Beginner: "up", Intermediate: "gold", Advanced: "ember", Professional: "info" };
-export const TRACK_LABEL: Record<Track, string> = { fundamental: "Fundamental analysis", technical: "Technical analysis" };
-export const TRACK_SHORT: Record<Track, string> = { fundamental: "Fundamental", technical: "Technical" };
+// translation keys; render with t(TRACK_LABEL[track])
+export const TRACK_LABEL = { fundamental: "academy.track.fundamental", technical: "academy.track.technical" } as const satisfies Record<Track, string>;
+export const TRACK_SHORT = { fundamental: "academy.trackShort.fundamental", technical: "academy.trackShort.technical" } as const satisfies Record<Track, string>;
+/** Translated level label (levels are English enums from the service). */
+export const levelLabel = (l: Level) => tr.dyn(`academy.level.${l.toLowerCase()}`, l);
 
 /** Cover photo per phase (by order). */
 export const PHASE_COVER = ["/assets/photos/finance.jpg", "/assets/photos/trading-screen.jpg", "/assets/photos/charts.jpg", "/assets/photos/nyc.jpg", "/assets/photos/analytics.jpg", "/assets/photos/dashboard.jpg", "/assets/photos/gold.jpg", "/assets/photos/skyscrapers.jpg"];
 export const coverOf = (order: number) => PHASE_COVER[(order - 1 + PHASE_COVER.length) % PHASE_COVER.length]!;
 
-export const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60 ? `${m % 60}m` : ""}`.trim() : `${m} min`);
-export const fmtDay = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+// evaluated at render time, so they follow the current language
+export const fmtMin = (m: number) => (m >= 60 ? (m % 60 ? tr("academy.duration.hoursMin", { h: Math.floor(m / 60), m: m % 60 }) : tr("academy.duration.hours", { h: Math.floor(m / 60) })) : tr("academy.duration.min", { count: m }));
+export const fmtDay = (iso: string) => createFormatter(tr.locale).date(iso);
 export const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0);

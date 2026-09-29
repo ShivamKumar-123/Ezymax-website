@@ -5,11 +5,13 @@ import Link from "next/link";
 import { Award, Download, GraduationCap, Lock, RotateCcw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, Chip, Progress, cn } from "@kalks/ui";
-import { LEVEL_TONE, academyApi, fmtDay, pct, useAcademy, type ExamReply, type ExamView } from "./api";
+import { tr, useT } from "@kalks/i18n/react";
+import { LEVEL_TONE, academyApi, fmtDay, levelLabel, pct, useAcademy, type ExamReply, type ExamView } from "./api";
 import { LETTERS, OptionButton } from "./quiz";
 import { AcademyUnavailable, BackLink, PageSkeleton, RISK_NOTE } from "./shared";
 
 export function LiveExam({ phase }: { phase: string }) {
+  const t = useT();
   const { data, error, reload } = useAcademy<ExamView>(`exams/${phase}`);
   const [answers, setAnswers] = React.useState<(number | null)[]>([]);
   const [result, setResult] = React.useState<ExamReply | null>(null);
@@ -33,9 +35,9 @@ export function LiveExam({ phase }: { phase: string }) {
       const r = await academyApi<ExamReply>(`exams/${phase}`, { body: { answers } });
       setResult(r);
       window.scrollTo({ top: 0, behavior: "smooth" });
-      if (r.certificate_issued) toast.success("Certificate issued", { description: `Phase ${p.order} · ${p.title}` });
+      if (r.certificate_issued) toast.success(tr("academy.toast.certIssued"), { description: tr("academy.phaseTitle", { n: p.order, title: p.title }) });
     } catch (e) {
-      toast.error("Couldn't submit the exam", { description: e instanceof Error ? e.message : undefined });
+      toast.error(tr("academy.toast.examFailed"), { description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -50,17 +52,17 @@ export function LiveExam({ phase }: { phase: string }) {
   return (
     <div className="mx-auto max-w-[820px] pb-16">
       <BackLink href={`/academy/phase/${p.slug}`}>
-        Phase {p.order} · {p.title}
+        {t("academy.phaseTitle", { n: p.order, title: p.title })}
       </BackLink>
       <div className="flex flex-wrap items-center gap-2">
-        <Chip tone="ember">Final exam</Chip>
-        <Chip tone={LEVEL_TONE[p.level]}>{p.level}</Chip>
+        <Chip tone="ember">{t("academy.exam.final")}</Chip>
+        <Chip tone={LEVEL_TONE[p.level]}>{levelLabel(p.level)}</Chip>
       </div>
       <h1 className="mt-3 text-[28px] font-medium leading-tight tracking-[-0.02em] sm:text-[32px]">
-        Phase {p.order} exam: {p.title}
+        {t("academy.exam.pageTitle", { n: p.order, title: p.title })}
       </h1>
       <p className="mt-2 text-[14px] text-fg-2">
-        {total} questions across both tracks · pass mark {data.exam.pass_mark}% · take your time, there is no timer.
+        {t("academy.exam.intro", { count: total, pass: data.exam.pass_mark })}
       </p>
 
       {!data.unlocked ? (
@@ -70,13 +72,13 @@ export function LiveExam({ phase }: { phase: string }) {
               <Lock className="size-5" />
             </span>
             <div className="flex-1">
-              <h2 className="text-[17px] font-medium">The exam unlocks when every chapter is complete</h2>
+              <h2 className="text-[17px] font-medium">{t("academy.exam.lockedTitle")}</h2>
               <p className="mt-1 text-[13.5px] text-fg-3">
-                You have completed {data.chapters_done} of {data.chapters_total} chapters in this phase. Pass each chapter quiz to complete it.
+                {t("academy.exam.lockedBody", { done: data.chapters_done, total: data.chapters_total })}
               </p>
               <Progress value={pct(data.chapters_done, data.chapters_total)} className="mt-4 max-w-sm" />
               <Link href={`/academy/phase/${p.slug}`} className="mt-5 inline-block">
-                <Button variant="ember">Back to the chapters</Button>
+                <Button variant="ember">{t("academy.exam.backToChapters")}</Button>
               </Link>
             </div>
           </div>
@@ -93,39 +95,39 @@ export function LiveExam({ phase }: { phase: string }) {
                   <div>
                     <div className="k-num text-[28px] font-semibold leading-none">{result.pct}%</div>
                     <div className="mt-1 text-[13px] text-fg-2">
-                      {result.score} of {result.total} correct · {result.passed ? "Passed" : `Pass mark ${result.pass_mark}%`}
+                      {t("academy.exam.resultLine", { score: result.score, total: result.total })} · {result.passed ? t("academy.exam.passed") : t("academy.exam.passMarkPct", { pct: result.pass_mark })}
                     </div>
                   </div>
                 </div>
                 <Button variant="surface" onClick={retake}>
-                  <RotateCcw /> Retake exam
+                  <RotateCcw /> {t("academy.exam.retake")}
                 </Button>
               </div>
               {result.certificate ? (
                 <div className="mt-5 flex flex-col gap-4 rounded-[16px] border border-line bg-surface-2 p-4 sm:flex-row sm:items-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`/api/academy/certificates/${result.certificate.code}/image`} alt="Certificate" className="aspect-[1600/1131] w-full rounded-[10px] border border-line bg-[#0b0b0e] sm:w-56" />
+                  <img src={`/api/academy/certificates/${result.certificate.code}/image`} alt={t("academy.cert.title")} className="aspect-[1600/1131] w-full rounded-[10px] border border-line bg-[#0b0b0e] sm:w-56" />
                   <div className="flex-1">
-                    <div className="text-[15px] font-medium">Your Phase {p.order} certificate</div>
+                    <div className="text-[15px] font-medium">{t("academy.cert.yours", { n: p.order })}</div>
                     <div className="k-num mt-0.5 text-[12.5px] text-fg-3">
-                      {result.certificate.code} · issued {fmtDay(result.certificate.issued_at)}
+                      {t("academy.cert.codeIssued", { code: result.certificate.code, date: fmtDay(result.certificate.issued_at) })}
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <a href={`/api/academy/certificates/${result.certificate.code}/image?download=1`}>
                         <Button size="sm" variant="surface">
-                          <Download /> Download
+                          <Download /> {t("common.download")}
                         </Button>
                       </a>
                       <Link href={`/certificate/${result.certificate.code}`} target="_blank">
                         <Button size="sm" variant="ghost">
-                          <ShieldCheck /> Verify page
+                          <ShieldCheck /> {t("academy.cert.verifyPage")}
                         </Button>
                       </Link>
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="mt-4 text-[13px] text-fg-3">Review the explanations below, revisit the chapters they come from, then try again.</p>
+                <p className="mt-4 text-[13px] text-fg-3">{t("academy.exam.reviewText")}</p>
               )}
             </Card>
           )}
@@ -162,23 +164,23 @@ export function LiveExam({ phase }: { phase: string }) {
           </div>
 
           {!result && (
-            <div className="sticky bottom-4 mt-6 flex items-center justify-between gap-3 rounded-[18px] border border-line bg-surface/95 p-3 pl-5 shadow-lg backdrop-blur">
+            <div className="sticky bottom-4 mt-6 flex items-center justify-between gap-3 rounded-[18px] border border-line bg-surface/95 p-3 ps-5 shadow-lg backdrop-blur">
               <span className="k-num text-[13px] text-fg-2">
-                {answered} of {total} answered
+                {t("academy.answered", { answered, total })}
               </span>
               <Button variant="ember" disabled={answered < total || busy} onClick={submit} data-testid="exam-submit">
-                <GraduationCap /> {busy ? "Submitting…" : "Submit exam"}
+                <GraduationCap /> {busy ? t("academy.exam.submitting") : t("academy.exam.submit")}
               </Button>
             </div>
           )}
           {data.attempts.length > 0 && !result && (
             <p className="k-num mt-4 text-[12px] text-fg-3">
-              Previous attempts: {data.attempts.map((a) => `${a.pct}%${a.passed ? " (passed)" : ""}`).join(" · ")}
+              {t("academy.exam.previousAttempts", { list: data.attempts.map((a) => (a.passed ? t("academy.exam.attemptPassed", { pct: a.pct }) : `${a.pct}%`)).join(" · ") })}
             </p>
           )}
         </>
       )}
-      <p className="mt-8 text-[11.5px] leading-relaxed text-fg-3">{RISK_NOTE}</p>
+      <p className="mt-8 text-[11.5px] leading-relaxed text-fg-3">{t(RISK_NOTE)}</p>
     </div>
   );
 }

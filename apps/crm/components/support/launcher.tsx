@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { MessageCircle, X } from "lucide-react";
 import { IS_DEMO } from "@kalks/mock";
 import { cn } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 import { ChatPanel } from "@/components/support/chat-panel";
 import { LiveChat } from "@/components/support/live-chat";
 import { realtime } from "@/lib/realtime";
@@ -15,6 +16,7 @@ import { realtime } from "@/lib/realtime";
  * Opens the same live chat as the Support page in a compact panel; shows a dot when an agent replied.
  */
 export function SupportLauncher() {
+  const t = useT();
   const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
   const [unread, setUnread] = React.useState(0);
@@ -30,7 +32,7 @@ export function SupportLauncher() {
   }, []);
   if (pathname === "/support" || pathname.startsWith("/support/")) return null;
   return (
-    <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3 print:hidden">
+    <div className="fixed bottom-5 end-5 z-40 flex flex-col items-end gap-3 print:hidden">
       <AnimatePresence>
         {open && (
           <motion.div
@@ -50,12 +52,12 @@ export function SupportLauncher() {
           setOpen((o) => !o);
           setUnread(0);
         }}
-        aria-label={open ? "Close support chat" : "Open support chat"}
+        aria-label={open ? t("support.launcher.close") : t("support.launcher.open")}
         data-testid="support-launcher"
         className={cn("k-ember-btn relative grid size-14 place-items-center rounded-full shadow-[0_12px_30px_-12px_rgba(0,0,0,0.6)] transition-transform hover:scale-[1.03]")}
       >
         {open ? <X className="size-5" /> : <MessageCircle className="size-5" />}
-        {!open && unread > 0 && <span className="k-num absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-fg px-1 text-[10.5px] font-semibold text-bg ring-2 ring-bg">{unread}</span>}
+        {!open && unread > 0 && <span className="k-num absolute -end-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-fg px-1 text-[10.5px] font-semibold text-bg ring-2 ring-bg">{unread}</span>}
       </button>
     </div>
   );
