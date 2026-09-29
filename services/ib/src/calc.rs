@@ -30,14 +30,16 @@ pub fn std_lots(f: &DealFacts, s: &Settings) -> D {
 /// Trading-engine system groups whose deals never earn commission, whatever the settings say: `mam` is the
 /// MAM master account of a multi-account manager. Its block trades are allocated onto the linked client
 /// accounts and those deals are counted for the clients; counting the block as well would pay the volume twice.
-pub const SYSTEM_EXCLUDED_GROUPS: &[&str] = &["mam"];
+/// `pamm` is a PAMM fund account: the engine pushes each closed fund deal split by unit share per investor
+/// (source `pamm`), so the fund account's own deal is not counted either.
+pub const SYSTEM_EXCLUDED_GROUPS: &[&str] = &["mam", "pamm"];
 
 pub fn disqualify(f: &DealFacts, s: &Settings) -> Option<&'static str> {
     if f.account_kind != "live" {
         return Some("demo");
     }
     if SYSTEM_EXCLUDED_GROUPS.iter().any(|g| g.eq_ignore_ascii_case(&f.group)) {
-        return Some("mam_master");
+        return Some(if f.group.eq_ignore_ascii_case("pamm") { "pamm_fund" } else { "mam_master" });
     }
     if s.excluded_groups.iter().any(|g| g.eq_ignore_ascii_case(&f.group)) {
         return Some("excluded_group");
@@ -332,6 +334,9 @@ mod tests {
         // a MAM master account never earns: its volume is counted on the linked client accounts
         let mam = DealFacts { group: "mam".into(), ..f.clone() };
         assert_eq!(disqualify(&mam, &s), Some("mam_master"));
+        // a PAMM fund account never earns on its own deals: the engine pushes them per investor
+        let fund = DealFacts { group: "pamm".into(), ..f.clone() };
+        assert_eq!(disqualify(&fund, &s), Some("pamm_fund"));
         let mut f = facts("live", 600);
         f.reversed = true;
         assert_eq!(disqualify(&f, &s), Some("reversed"));
