@@ -90,8 +90,29 @@ export function I18nProvider({
   }, []);
 
   const value = React.useMemo<Ctx>(() => ({ ...state, setLocale, pending }), [state, setLocale, pending]);
+  if (typeof window !== "undefined" && (active.locale !== state.locale || activeMessages !== state.messages)) {
+    active = createT(state.locale, state.messages);
+    activeMessages = state.messages;
+  }
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
+
+// Browser-side translator for code outside React (stores, action helpers, toasts fired from callbacks).
+// The provider keeps it in step with the current language; on the server it stays English.
+let active: T = createT(DEFAULT_LOCALE, {});
+let activeMessages: PartialCatalog | null = null;
+
+/**
+ * Translate outside components (event handlers in plain modules, stores). Prefer useT() inside components.
+ * Client-side only: during server rendering this returns English.
+ */
+export const tr: T = Object.assign((key: MessageKey, vars?: Vars) => active(key, vars), {
+  dyn: (key: string, fallback?: string, vars?: Vars) => active.dyn(key, fallback, vars),
+  has: (key: string) => active.has(key),
+  get locale() {
+    return active.locale;
+  },
+}) as T;
 
 /** Translator for the current language. */
 export function useT(): T {
