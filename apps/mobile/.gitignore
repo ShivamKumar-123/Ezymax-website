@@ -9,3 +9,4 @@ android/
 *.p12
 *.key
 *.mobileprovision
+dist-web-*/
