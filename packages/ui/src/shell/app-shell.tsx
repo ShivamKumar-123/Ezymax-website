@@ -288,7 +288,6 @@ export function AppShell({
   return (
     <TooltipProvider>
       <div className="relative min-h-dvh overflow-x-clip">
-        <div className="k-glow" />
         <div className="k-noise" />
         <IconRail
           modules={modules}

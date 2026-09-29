@@ -36,19 +36,17 @@ export const buttonVariants = cva(
 );
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+  /** Accepted for compatibility; renders nothing (the UI has no decorative looping motion). */
   shimmer?: boolean;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { className, variant, size, shimmer, children, ...props },
+  { className, variant, size, shimmer: _shimmer, children, ...props },
   ref,
 ) {
   return (
     <button ref={ref} className={cn(buttonVariants({ variant, size }), className)} {...props}>
       {children}
-      {shimmer && variant === "ember" && (
-        <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-1/3 animate-shimmer bg-gradient-to-r from-transparent via-white/35 to-transparent" />
-      )}
     </button>
   );
 });

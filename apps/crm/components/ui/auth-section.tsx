@@ -18,7 +18,6 @@ export function AuthSection({ children }: { children: ReactNode }) {
       <div className="grid min-h-[calc(100dvh-1.5rem)] gap-3 lg:grid-cols-[0.94fr_1.06fr]">
         {/* Left — form */}
         <div className="relative flex flex-col overflow-hidden rounded-md border border-line bg-surface">
-          <div className="k-glow opacity-40" />
           <header className="relative flex items-center justify-between px-6 pt-6 lg:px-10">
             <Logo height={20} className="lg:invisible" />
             <div className="flex items-center gap-2">
