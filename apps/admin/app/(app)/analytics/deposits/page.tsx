@@ -32,6 +32,8 @@ import { ANL_DEP_CAMPAIGNS, ANL_DEP_COUNTRIES, ANL_DEP_DAILY, ANL_DEP_IBS, ANL_D
 import { StackedBars, compactMoney } from "@/components/analytics/stacked-bars";
 import { ExportActions, dayLabel, weekday } from "@/components/analytics/common";
 import { Meter } from "@/components/analytics/meter";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveDeposits } from "@/components/reports/live-growth";
 
 const RANGES = ["7D", "30D", "90D"] as const;
 type R = (typeof RANGES)[number];
@@ -161,7 +163,7 @@ function MethodsCard({ total }: { total: number }) {
   );
 }
 
-export default function DepositsAnalyticsPage() {
+function DemoDepositsAnalyticsPage() {
   const [range, setRange] = React.useState<R>("30D");
   const n = DAYS[range];
   const rows = ANL_DEP_DAILY.slice(-n);
@@ -271,4 +273,9 @@ export default function DepositsAnalyticsPage() {
       </div>
     </div>
   );
+}
+
+/** Live builds: the reports service (/api/reports). Demo builds: mock data. */
+export default function DepositsAnalyticsPage() {
+  return IS_DEMO ? <DemoDepositsAnalyticsPage /> : <LiveDeposits />;
 }

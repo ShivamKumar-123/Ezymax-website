@@ -26,6 +26,8 @@ import {
 import { PEOPLE } from "@kalks/mock";
 import { ANL_DELIVERY_LOG, ANL_SCHEDULES, anlStaffEmail, type AnlDelivery, type AnlSchedule } from "@kalks/mock/admin-growth-analytics";
 import { ScheduleDialog, type ScheduleDraft } from "@/components/analytics/schedule-dialog";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveScheduled } from "@/components/reports/live-ops";
 
 const PHOTO_BY_EMAIL = Object.fromEntries(PEOPLE.map((p) => [anlStaffEmail(p), p]));
 const FREQ_TONE = { daily: "ember", weekly: "gold", monthly: "info" } as const;
@@ -85,7 +87,7 @@ function Recipients({ list }: { list: string[] }) {
 
 const CH_ICON = { Email: <Mail className="size-3.5" />, SFTP: <Server className="size-3.5" />, Slack: <MessageSquare className="size-3.5" /> };
 
-export default function ScheduledReportsPage() {
+function DemoScheduledReportsPage() {
   const [rows, setRows] = React.useState<AnlSchedule[]>(ANL_SCHEDULES);
   const [log, setLog] = React.useState<AnlDelivery[]>(ANL_DELIVERY_LOG);
   const [open, setOpen] = React.useState(false);
@@ -354,4 +356,9 @@ export default function ScheduledReportsPage() {
       <ScheduleDialog open={open} onOpenChange={setOpen} initial={editing} onSave={save} />
     </div>
   );
+}
+
+/** Live builds: the reports service (/api/reports). Demo builds: mock data. */
+export default function ScheduledReportsPage() {
+  return IS_DEMO ? <DemoScheduledReportsPage /> : <LiveScheduled />;
 }

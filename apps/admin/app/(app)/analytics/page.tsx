@@ -30,6 +30,8 @@ import { ANL_BOOK_SPLIT, ANL_CLIENT_PNL, ANL_PNL_DAILY, ANL_PNL_GROUPS, ANL_PNL_
 import { StackedBars, compactMoney } from "@/components/analytics/stacked-bars";
 import { ExportActions, RANGE_DAYS, RANGES, dayLabel, weekday, type Range } from "@/components/analytics/common";
 import { Meter, MiniStat, SplitMeter } from "@/components/analytics/meter";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveBrokerPnl } from "@/components/reports/live-pnl";
 
 type Totals = { spread: number; commission: number; swap: number; bbook: number; ibCost: number; net: number; lots: number };
 const sum = (rows: typeof ANL_PNL_DAILY): Totals =>
@@ -310,7 +312,7 @@ function ClientsTable() {
 
 /* ------------------------------------------------------------------ */
 
-export default function BrokerPnlPage() {
+function DemoBrokerPnlPage() {
   const [range, setRange] = React.useState<Range>("30D");
   const days = RANGE_DAYS[range];
   const rows = React.useMemo(() => ANL_PNL_DAILY.slice(-days), [days]);
@@ -396,4 +398,9 @@ export default function BrokerPnlPage() {
       </Reveal>
     </div>
   );
+}
+
+/** Live builds: the reports service (/api/reports). Demo builds: mock data. */
+export default function BrokerPnlPage() {
+  return IS_DEMO ? <DemoBrokerPnlPage /> : <LiveBrokerPnl />;
 }

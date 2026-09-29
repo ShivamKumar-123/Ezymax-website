@@ -26,10 +26,12 @@ import {
 import { PEOPLE } from "@kalks/mock";
 import { ANL_REG_HISTORY, ANL_REG_REPORTS, anlHash, type AnlRegHistory } from "@kalks/mock/admin-growth-analytics";
 import { RegReportCard, type GeneratedExport } from "@/components/analytics/reg-report-card";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveRegulatory } from "@/components/reports/live-ops";
 
 const FMT_TONE = { CSV: "neutral", XML: "info", XLSX: "up" } as const;
 
-export default function RegulatoryPage() {
+function DemoRegulatoryPage() {
   const [history, setHistory] = React.useState<AnlRegHistory[]>(ANL_REG_HISTORY);
   const seq = React.useRef(0);
 
@@ -162,4 +164,9 @@ export default function RegulatoryPage() {
       </Reveal>
     </div>
   );
+}
+
+/** Live builds: the reports service (/api/reports). Demo builds: mock data. */
+export default function RegulatoryPage() {
+  return IS_DEMO ? <DemoRegulatoryPage /> : <LiveRegulatory />;
 }

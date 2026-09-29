@@ -8,7 +8,7 @@ import { ADMIN_NAV } from "@/lib/nav";
  */
 
 /** Pages (path prefixes) that run on real data in live builds. */
-export const LIVE_PAGES = ["/", "/clients", "/security", "/org", "/trading", "/config", "/social", "/content/academy", "/content/news", "/content/calendar", "/partners", "/finance", "/prop", "/algo", "/brokers", "/settings/maintenance", "/settings/features", "/marketing", "/support", "/content/notifications"] as const;
+export const LIVE_PAGES = ["/", "/clients", "/security", "/org", "/trading", "/config", "/social", "/content/academy", "/content/news", "/content/calendar", "/partners", "/finance", "/prop", "/algo", "/brokers", "/settings/maintenance", "/settings/features", "/marketing", "/support", "/content/notifications", "/analytics"] as const;
 
 /** Sub-pages under a live prefix that are not live yet. */
 export const LIVE_EXCLUDED = [

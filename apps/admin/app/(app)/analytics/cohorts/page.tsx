@@ -9,6 +9,8 @@ import { CohortHeatmap } from "@/components/analytics/cohort-heatmap";
 import { LineChart } from "@/components/analytics/line-chart";
 import { ExportActions } from "@/components/analytics/common";
 import { Meter } from "@/components/analytics/meter";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveCohorts } from "@/components/reports/live-growth";
 
 const MONTHS = 12;
 
@@ -29,7 +31,7 @@ const ARPU = (AVG_LTV[5]! - AVG_LTV[4]!) / (weighted((m, c) => c.retention[m]!)[
 
 const RAMP = (i: number) => `color-mix(in oklab, var(--k-gold) ${Math.round((i / 11) * 100)}%, var(--k-ember))`;
 
-export default function CohortsPage() {
+function DemoCohortsPage() {
   const [mode, setMode] = React.useState<"retention" | "ltv">("retention");
   const [lines, setLines] = React.useState<"all" | "quarters">("quarters");
   const labels = Array.from({ length: MONTHS }, (_, m) => `M${m}`);
@@ -148,4 +150,9 @@ export default function CohortsPage() {
       </div>
     </div>
   );
+}
+
+/** Live builds: the reports service (/api/reports). Demo builds: mock data. */
+export default function CohortsPage() {
+  return IS_DEMO ? <DemoCohortsPage /> : <LiveCohorts />;
 }

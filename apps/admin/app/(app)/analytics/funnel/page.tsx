@@ -10,6 +10,8 @@ import { FunnelViz } from "@/components/analytics/funnel";
 import { LineChart } from "@/components/analytics/line-chart";
 import { ExportActions, dayLabel } from "@/components/analytics/common";
 import { Meter, heat } from "@/components/analytics/meter";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveFunnel } from "@/components/reports/live-growth";
 
 const RANGES = ["7D", "30D", "90D"] as const;
 type R = (typeof RANGES)[number];
@@ -174,7 +176,7 @@ function TimeToFtd({ scale }: { scale: number }) {
   );
 }
 
-export default function FunnelPage() {
+function DemoFunnelPage() {
   const [range, setRange] = React.useState<R>("30D");
   const k = SCALE[range];
   const cur = ANL_FUNNEL_30D;
@@ -253,4 +255,9 @@ export default function FunnelPage() {
       </div>
     </div>
   );
+}
+
+/** Live builds: the reports service (/api/reports). Demo builds: mock data. */
+export default function FunnelPage() {
+  return IS_DEMO ? <DemoFunnelPage /> : <LiveFunnel />;
 }

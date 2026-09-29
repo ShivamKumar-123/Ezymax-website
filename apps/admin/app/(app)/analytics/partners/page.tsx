@@ -29,6 +29,8 @@ import { ANL_IB_MONTHLY, ANL_IB_TIERS, ANL_PARTNERS, type AnlPartner, type AnlTi
 import { StackedBars, compactMoney } from "@/components/analytics/stacked-bars";
 import { ExportActions } from "@/components/analytics/common";
 import { Meter } from "@/components/analytics/meter";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePartners } from "@/components/reports/live-growth";
 
 const TIER_TONE: Record<AnlTier, "ember" | "gold" | "up" | "info" | "neutral"> = { Elite: "ember", Platinum: "gold", Gold: "up", Silver: "info", Starter: "neutral" };
 
@@ -59,7 +61,7 @@ function Podium() {
   );
 }
 
-export default function PartnerReportsPage() {
+function DemoPartnerReportsPage() {
   const [period, setPeriod] = React.useState<"12M" | "6M">("12M");
   const months = period === "12M" ? ANL_IB_MONTHLY : ANL_IB_MONTHLY.slice(-6);
   const commission = months.reduce((s, m) => s + m.commission + m.cpa, 0);
@@ -230,4 +232,9 @@ export default function PartnerReportsPage() {
       </Reveal>
     </div>
   );
+}
+
+/** Live builds: the reports service (/api/reports). Demo builds: mock data. */
+export default function PartnerReportsPage() {
+  return IS_DEMO ? <DemoPartnerReportsPage /> : <LivePartners />;
 }
