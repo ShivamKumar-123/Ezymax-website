@@ -5,9 +5,10 @@ import { ArrowLeftRight, Edit3, Scissors, X } from "lucide-react";
 import { getInstrument } from "@kalks/mock";
 import { PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { usePositionProfit, useTerminal } from "@/lib/store";
-import { PENDING_LABEL, accCcy, accMoney, fmtPrice, fmtServer, fmtVol, pipSize, profitAt, profitUsd } from "@/lib/trading";
+import { accCcy, accMoney, fmtPrice, fmtServer, fmtVol, pendingLabelKey, pipSize, profitAt, profitUsd } from "@/lib/trading";
 import { Badge, Pnl, Stepper, TButton, TDialog, TSelect } from "@/components/ui/primitives";
 import { TickSpark } from "@/components/order/right-panel";
+import { Trans, useT } from "@kalks/i18n/react";
 
 const TRAIL_OPTIONS = ["none", "15", "20", "30", "50", "100", "custom"] as const;
 
@@ -26,6 +27,7 @@ export function PositionDialog() {
 
 function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () => void }) {
   const T = useTerminal();
+  const t = useT();
   const p = T.positions.find((x) => x.ticket === ticket)!;
   const q = useQuote(p.symbol);
   const inst = getInstrument(p.symbol);
@@ -71,40 +73,40 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
       icon={<Edit3 />}
       title={
         <span>
-          Position #{p.ticket} <span className={p.side === "buy" ? "text-up" : "text-down"}>{p.side}</span> {fmtVol(p.volume)} {p.symbol}
+          <Trans k="order.position.title" vars={{ ticket: p.ticket, side: t(`order.side.${p.side}`), volume: fmtVol(p.volume), symbol: p.symbol }} tags={{ side: (c) => <span className={p.side === "buy" ? "text-up" : "text-down"}>{c}</span> }} />
         </span>
       }
-      subtitle={`${a.login} · ${a.mode}`}
+      subtitle={`${a.login} · ${t.dyn(`order.mode.${a.mode}`, a.mode)}`}
     >
       <div className="grid md:grid-cols-[260px_1fr]">
         {/* left: position summary */}
-        <div className="space-y-3 border-b border-line p-3.5 md:border-b-0 md:border-r">
+        <div className="space-y-3 border-b border-line p-3.5 md:border-b-0 md:border-e">
           <div className="flex items-center gap-2.5">
             <SymbolAvatar symbol={p.symbol} size={24} />
             <div className="min-w-0">
               <div className="text-[13px] font-semibold">{p.symbol}</div>
               <div className="truncate text-[11px] text-fg-3">{inst.name}</div>
             </div>
-            <Badge tone={p.side === "buy" ? "up" : "down"} className="ml-auto">
-              {p.side}
+            <Badge tone={p.side === "buy" ? "up" : "down"} className="ms-auto">
+              {t(`order.side.${p.side}`)}
             </Badge>
           </div>
           <div className="rounded-[7px] border border-line bg-surface-2/50 p-2.5">
-            <div className="text-[10px] uppercase tracking-[0.08em] text-fg-3">Floating profit</div>
+            <div className="text-[10px] uppercase tracking-[0.08em] text-fg-3">{t("order.position.floatingProfit")}</div>
             <div className="mt-0.5 text-[22px] font-semibold leading-tight">
               <Pnl value={pr} text={accMoney(a, pr, { signed: true })} />
-              <span className="ml-1.5 text-[11px] font-normal text-fg-3">{accCcy(a)}</span>
+              <span className="ms-1.5 text-[11px] font-normal text-fg-3">{accCcy(a)}</span>
             </div>
-            <div className="mt-0.5 font-mono text-[11px] text-fg-3">{pipsFrom(cur)} pips</div>
+            <div className="mt-0.5 font-mono text-[11px] text-fg-3">{t("order.unit.pips", { n: pipsFrom(cur) })}</div>
             <TickSpark symbol={p.symbol} height={40} />
           </div>
           <div className="space-y-1 font-mono text-[11.5px]">
             {[
-              ["Open price", fmtPrice(p.symbol, p.openPrice)],
-              ["Current", <PriceText key="c" symbol={p.symbol} value={cur} dir={q.dir} />],
-              ["Opened", fmtServer(p.openTime)],
-              ["Swap · commission", `${accMoney(a, p.swap)} · ${accMoney(a, -p.commission)}`],
-              ["Source", p.source],
+              [t("order.position.openPrice"), fmtPrice(p.symbol, p.openPrice)],
+              [t("order.position.current"), <PriceText key="c" symbol={p.symbol} value={cur} dir={q.dir} />],
+              [t("order.position.opened"), <span key="o" dir="ltr">{fmtServer(p.openTime)}</span>],
+              [t("order.position.swapCommission"), `${accMoney(a, p.swap)} · ${accMoney(a, -p.commission)}`],
+              [t("order.position.source"), t.dyn(`order.source.${p.source}`, p.source)],
             ].map(([k, val]) => (
               <div key={String(k)} className="flex justify-between gap-2">
                 <span className="font-sans text-fg-3">{k}</span>
@@ -118,10 +120,10 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
         <div className="space-y-4 p-3.5">
           <section>
             <div className="mb-2 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">
-              <Scissors className="size-3" /> Close {partial ? "partially" : "position"}
+              <Scissors className="size-3" /> {partial ? t("order.position.closePartially") : t("order.position.closePosition")}
             </div>
             <div className="flex items-center gap-2">
-              <Stepper ariaLabel="Close volume" value={vol} onChange={setVol} step={0.01} min={0.01} decimals={2} className="w-[130px]" />
+              <Stepper ariaLabel={t("order.position.closeVolume")} value={vol} onChange={setVol} step={0.01} min={0.01} decimals={2} className="w-[130px]" />
               <div className="flex gap-0.5">
                 {[0.25, 0.5, 1].map((f) => (
                   <button key={f} onClick={() => setVol(fmtVol(Math.max(0.01, Math.floor(p.volume * f * 100) / 100)))} className="h-6 rounded-[5px] border border-line px-1.5 font-mono text-[10.5px] text-fg-2 hover:bg-surface-3">
@@ -139,7 +141,7 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
               className={cn("mt-2 flex h-9 w-full items-center justify-between rounded-[7px] px-3 text-[12.5px] font-semibold text-white hover:brightness-110", p.side === "buy" ? "bg-down" : "bg-up")}
             >
               <span>
-                Close #{p.ticket} {p.side} {fmtVol(v)} {p.symbol} at {fmtPrice(p.symbol, cur)}
+                {t("order.position.closeButton", { ticket: p.ticket, side: t(`order.side.${p.side}`), volume: fmtVol(v), symbol: p.symbol, price: fmtPrice(p.symbol, cur) })}
               </span>
               <span className="font-mono text-[11.5px] opacity-90">{accMoney(a, profitAt({ ...p, volume: v }, cur), { signed: true })}</span>
             </button>
@@ -147,7 +149,7 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
 
           <section>
             <div className="mb-2 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">
-              <Edit3 className="size-3" /> Modify
+              <Edit3 className="size-3" /> {t("order.position.modify")}
             </div>
             <div className="grid grid-cols-2 gap-2.5">
               {(["sl", "tp"] as const).map((k) => {
@@ -157,23 +159,23 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
                 return (
                   <div key={k}>
                     <div className={cn("mb-1 flex items-center justify-between text-[10.5px]", k === "sl" ? "text-down/90" : "text-up/90")}>
-                      <span>{k === "sl" ? "Stop Loss" : "Take Profit"}</span>
+                      <span>{k === "sl" ? t("order.position.stopLoss") : t("order.position.takeProfit")}</span>
                       <span className="flex gap-0.5">
                         {[10, 25, 50].map((n) => (
                           <button key={n} onClick={() => nudge(k, n)} className="rounded-[3px] px-1 font-mono text-[9.5px] text-fg-3 hover:bg-surface-3 hover:text-fg">
-                            {n}p
+                            {t("order.unit.pipsShort", { n })}
                           </button>
                         ))}
                         {val && (
                           <button onClick={() => set("")} className="rounded-[3px] px-1 text-[9.5px] text-fg-3 hover:bg-surface-3 hover:text-fg">
-                            clear
+                            {t("order.position.clear")}
                           </button>
                         )}
                       </span>
                     </div>
-                    <Stepper ariaLabel={k === "sl" ? "Stop loss" : "Take profit"} tone={k === "sl" ? "down" : "up"} value={val} onChange={set} step={pip} placeholder="Not set" decimals={inst.digits} />
+                    <Stepper ariaLabel={k === "sl" ? t("order.ticket.stopLoss") : t("order.ticket.takeProfit")} tone={k === "sl" ? "down" : "up"} value={val} onChange={set} step={pip} placeholder={t("order.ticket.notSet")} decimals={inst.digits} />
                     <div className="mt-1 flex justify-between font-mono text-[10px] text-fg-3">
-                      <span>{val ? `${pipsFrom(parseFloat(val))} pips` : "—"}</span>
+                      <span>{val ? t("order.unit.pips", { n: pipsFrom(parseFloat(val)) }) : "—"}</span>
                       {usd !== null && <span className={usd >= 0 ? "text-up" : "text-down"}>{accMoney(a, usd + p.swap - p.commission, { signed: true })}</span>}
                     </div>
                   </div>
@@ -182,39 +184,39 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
             </div>
             <div className="mt-2.5 grid grid-cols-[1fr_auto] items-end gap-2">
               <div>
-                <div className="mb-1 text-[10.5px] text-fg-3">Trailing stop (server-side)</div>
+                <div className="mb-1 text-[10.5px] text-fg-3">{t("order.position.trailing")}</div>
                 <div className="flex gap-1.5">
-                  <TSelect ariaLabel="Trailing stop" value={trail} onChange={setTrail} options={TRAIL_OPTIONS.map((o) => ({ value: o, label: o === "none" ? "None" : o === "custom" ? "Custom…" : `${o} pips` }))} className="w-[130px]" />
-                  {trail === "custom" && <Stepper ariaLabel="Custom trailing pips" value={trailCustom} onChange={setTrailCustom} step={1} decimals={0} className="w-[110px]" />}
+                  <TSelect ariaLabel={t("order.position.trailingAria")} value={trail} onChange={setTrail} options={TRAIL_OPTIONS.map((o) => ({ value: o, label: o === "none" ? t("order.position.trailNone") : o === "custom" ? t("order.position.trailCustom") : t("order.unit.pips", { n: o }) }))} className="w-[130px]" />
+                  {trail === "custom" && <Stepper ariaLabel={t("order.position.trailCustomAria")} value={trailCustom} onChange={setTrailCustom} step={1} decimals={0} className="w-[110px]" />}
                 </div>
               </div>
               <TButton variant="ember" size="md" onClick={modify}>
-                Modify
+                {t("order.position.modify")}
               </TButton>
             </div>
             <button onClick={() => setSl(fmtPrice(p.symbol, p.openPrice))} className="mt-1.5 text-[11px] text-fg-3 underline-offset-2 hover:text-fg hover:underline">
-              Move SL to breakeven ({fmtPrice(p.symbol, p.openPrice)})
+              {t("order.position.breakeven", { price: fmtPrice(p.symbol, p.openPrice) })}
             </button>
           </section>
 
           {hedging && (
             <section>
               <div className="mb-2 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">
-                <ArrowLeftRight className="size-3" /> Close By
+                <ArrowLeftRight className="size-3" /> {t("order.position.closeBy")}
               </div>
               {opp.length === 0 ? (
-                <div className="rounded-[6px] border border-dashed border-line px-3 py-2 text-[11.5px] text-fg-3">No opposite {p.side === "buy" ? "sell" : "buy"} position on {p.symbol} to close by.</div>
+                <div className="rounded-[6px] border border-dashed border-line px-3 py-2 text-[11.5px] text-fg-3">{p.side === "buy" ? t("order.position.noOppositeSell", { symbol: p.symbol }) : t("order.position.noOppositeBuy", { symbol: p.symbol })}</div>
               ) : (
                 <div className="space-y-1">
                   {opp.map((o) => (
                     <div key={o.ticket} className="flex items-center gap-2 rounded-[6px] border border-line bg-surface-2/40 px-2.5 py-1.5 font-mono text-[11.5px]">
-                      <span className={o.side === "buy" ? "text-up" : "text-down"}>{o.side}</span>
+                      <span className={o.side === "buy" ? "text-up" : "text-down"}>{t(`order.side.${o.side}`)}</span>
                       <span>#{o.ticket}</span>
                       <span className="text-fg-2">
-                        {fmtVol(o.volume)} at {fmtPrice(o.symbol, o.openPrice)}
+                        {t("order.position.volumeAt", { volume: fmtVol(o.volume), price: fmtPrice(o.symbol, o.openPrice) })}
                       </span>
-                      <TButton size="xs" variant="surface" className="ml-auto" onClick={() => (T.closeBy(p.ticket, o.ticket), onClose())}>
-                        Close by #{o.ticket}
+                      <TButton size="xs" variant="surface" className="ms-auto" onClick={() => (T.closeBy(p.ticket, o.ticket), onClose())}>
+                        {t("order.position.closeByTicket", { ticket: o.ticket })}
                       </TButton>
                     </div>
                   ))}
@@ -240,6 +242,7 @@ export function PendingDialog() {
 
 function PendingBody({ ticket, onClose }: { ticket: string; onClose: () => void }) {
   const T = useTerminal();
+  const t = useT();
   const o = T.pendings.find((x) => x.ticket === ticket)!;
   const q = useQuote(o.symbol);
   const inst = getInstrument(o.symbol);
@@ -253,17 +256,17 @@ function PendingBody({ ticket, onClose }: { ticket: string; onClose: () => void 
       onClose={onClose}
       width={440}
       icon={<Edit3 />}
-      title={`Order #${o.ticket} · ${PENDING_LABEL(o)} ${fmtVol(o.volume)} ${o.symbol}`}
+      title={t("order.pendingDialog.title", { ticket: o.ticket, label: t(pendingLabelKey(o)), volume: fmtVol(o.volume), symbol: o.symbol })}
       footer={
         <>
-          <TButton variant="ghost" className="mr-auto text-down hover:text-down" onClick={() => (T.cancelPending(o.ticket), onClose())}>
-            <X /> Delete order
+          <TButton variant="ghost" className="me-auto text-down hover:text-down" onClick={() => (T.cancelPending(o.ticket), onClose())}>
+            <X /> {t("order.pendingDialog.delete")}
           </TButton>
           <TButton variant="ghost" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </TButton>
           <TButton variant="ember" onClick={() => void T.modifyPending(o.ticket, { price: parseFloat(price), sl: sl ? parseFloat(sl) : null, tp: tp ? parseFloat(tp) : null }).then((ok) => ok && onClose())}>
-            Modify
+            {t("order.pendingDialog.modify")}
           </TButton>
         </>
       }
@@ -274,25 +277,25 @@ function PendingBody({ ticket, onClose }: { ticket: string; onClose: () => void 
             <SymbolAvatar symbol={o.symbol} size={18} /> {o.symbol}
           </span>
           <span className="text-fg-3">
-            Bid <span className="text-fg">{fmtPrice(o.symbol, q.bid)}</span> · Ask <span className="text-fg">{fmtPrice(o.symbol, q.ask)}</span>
+            <Trans k="order.pendingDialog.bidAsk" vars={{ bid: fmtPrice(o.symbol, q.bid), ask: fmtPrice(o.symbol, q.ask) }} tags={{ b: (c) => <span className="text-fg">{c}</span>, a: (c) => <span className="text-fg">{c}</span> }} />
           </span>
         </div>
         <div>
-          <div className="mb-1 text-[10.5px] text-fg-3">Price</div>
-          <Stepper ariaLabel="Order price" value={price} onChange={setPrice} step={pip / 10 >= 1 / 10 ** inst.digits ? pip / 10 : 1 / 10 ** inst.digits} decimals={inst.digits} />
+          <div className="mb-1 text-[10.5px] text-fg-3">{t("order.pendingDialog.price")}</div>
+          <Stepper ariaLabel={t("order.ticket.orderPrice")} value={price} onChange={setPrice} step={pip / 10 >= 1 / 10 ** inst.digits ? pip / 10 : 1 / 10 ** inst.digits} decimals={inst.digits} />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <div className="mb-1 text-[10.5px] text-down/90">Stop Loss</div>
-            <Stepper ariaLabel="Stop loss" tone="down" value={sl} onChange={setSl} step={pip} placeholder="Not set" decimals={inst.digits} />
+            <div className="mb-1 text-[10.5px] text-down/90">{t("order.position.stopLoss")}</div>
+            <Stepper ariaLabel={t("order.ticket.stopLoss")} tone="down" value={sl} onChange={setSl} step={pip} placeholder={t("order.ticket.notSet")} decimals={inst.digits} />
           </div>
           <div>
-            <div className="mb-1 text-[10.5px] text-up/90">Take Profit</div>
-            <Stepper ariaLabel="Take profit" tone="up" value={tp} onChange={setTp} step={pip} placeholder="Not set" decimals={inst.digits} />
+            <div className="mb-1 text-[10.5px] text-up/90">{t("order.position.takeProfit")}</div>
+            <Stepper ariaLabel={t("order.ticket.takeProfit")} tone="up" value={tp} onChange={setTp} step={pip} placeholder={t("order.ticket.notSet")} decimals={inst.digits} />
           </div>
         </div>
         <div className="font-mono text-[11px] text-fg-3">
-          Expiry {o.expiry === "Date" ? o.expiryDate : o.expiry} · placed {fmtServer(o.placed)} {o.oco && "· OCO linked"}
+          {t("order.pendingDialog.meta", { expiry: o.expiry === "Date" ? o.expiryDate : o.expiry === "GTC" ? t("order.expiry.gtc") : t("order.expiry.today"), placed: fmtServer(o.placed) })} {o.oco && t("order.pendingDialog.ocoLinked")}
         </div>
       </div>
     </TDialog>

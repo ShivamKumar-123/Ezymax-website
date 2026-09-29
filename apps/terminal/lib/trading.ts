@@ -173,6 +173,8 @@ export interface TClosed extends TPosition {
 }
 
 export const PENDING_LABEL = (o: Pick<PendingOrder, "side" | "type">) => `${o.side} ${o.type === "stop-limit" ? "stop limit" : o.type}`;
+/** Translation key of the pending label ("buy limit"…) for UI text; PENDING_LABEL stays English for the journal. */
+export const pendingLabelKey = (o: Pick<PendingOrder, "side" | "type">) => `order.pending.${o.side}.${o.type}` as const;
 
 export const SEED_PENDING: PendingOrder[] = [
   { ticket: "49434302", login: "80412337", symbol: "XAUUSD", side: "buy", type: "limit", volume: 0.3, price: 2628.5, sl: 2612, tp: 2672, expiry: "GTC", placed: "2026-09-24T10:22:00Z", source: "manual" },

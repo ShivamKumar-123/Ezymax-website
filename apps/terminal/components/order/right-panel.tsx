@@ -11,9 +11,11 @@ import { PanelHeader, PanelTabs } from "@/components/ui/panel";
 import { KV, TIcon } from "@/components/ui/primitives";
 import { OrderTicket } from "./order-ticket";
 import { DomLadder } from "./dom-ladder";
+import { useT } from "@kalks/i18n/react";
 
 export function RightPanel({ onCollapse }: { onCollapse?: () => void }) {
   const T = useTerminal();
+  const t = useT();
   const symbol = T.activeSymbol;
   // the depth ladder is synthetic (no real order book): demo builds only
   const tab = T.guest && T.ws.rightTab === "depth" ? "info" : T.ws.rightTab;
@@ -23,14 +25,14 @@ export function RightPanel({ onCollapse }: { onCollapse?: () => void }) {
         icon={<ShoppingCart />}
         title={
           <span className="flex items-center gap-1.5">
-            Order
+            {t("order.panel.order")}
             <span className="font-normal normal-case tracking-normal text-fg-3">· {symbol}</span>
           </span>
         }
       >
         {onCollapse && (
-          <TIcon label="Collapse" onClick={onCollapse}>
-            <ChevronsRight />
+          <TIcon label={t("order.panel.collapse")} onClick={onCollapse}>
+            <ChevronsRight className="rtl:-scale-x-100" />
           </TIcon>
         )}
       </PanelHeader>
@@ -38,7 +40,7 @@ export function RightPanel({ onCollapse }: { onCollapse?: () => void }) {
         <PanelTabs
           value={tab}
           onChange={(v) => T.setWs({ rightTab: v })}
-          tabs={[{ value: "order", label: "Order" }, ...(T.guest ? [] : [{ value: "depth" as const, label: "Depth" }]), { value: "info", label: "Info" }]}
+          tabs={[{ value: "order", label: t("order.panel.tabOrder") }, ...(T.guest ? [] : [{ value: "depth" as const, label: t("order.panel.tabDepth") }]), { value: "info", label: t("order.panel.tabInfo") }]}
         />
       </div>
       <div className="t-scroll min-h-0 flex-1 overflow-y-auto">
@@ -52,6 +54,7 @@ export function RightPanel({ onCollapse }: { onCollapse?: () => void }) {
 
 export function SymbolInfo({ symbol }: { symbol: string }) {
   useMarketClock();
+  const t = useT();
   const q = useQuote(symbol);
   const inst = getInstrument(symbol);
   const spec = contractSpec(symbol);
@@ -65,53 +68,53 @@ export function SymbolInfo({ symbol }: { symbol: string }) {
         <div className="min-w-0">
           <div className="text-[13.5px] font-semibold">{symbol}</div>
           <div className="truncate text-[11px] text-fg-3">
-            {inst.name} · {inst.assetClass}
+            {inst.name} · {t.dyn(`order.assetClass.${inst.assetClass}`, inst.assetClass)}
           </div>
         </div>
-        <div className="ml-auto text-right">
+        <div className="ms-auto text-end">
           <PriceText symbol={symbol} value={q.bid} dir={q.dir} className="text-[15px]" />
-          <div className={cn("k-num font-mono text-[10.5px]", q.change >= 0 ? "text-up" : "text-down")}>
+          <div className={cn("k-num font-mono text-[10.5px]", q.change >= 0 ? "text-up" : "text-down")} dir="ltr">
             {q.change >= 0 ? "+" : ""}
             {q.change.toFixed(2)}%
           </div>
         </div>
       </div>
 
-      <Section icon={<Clock />} title="Today">
+      <Section icon={<Clock />} title={t("order.info.today")}>
         <div className="mb-1.5 flex justify-between font-mono text-[10.5px] text-fg-3">
           <span>
-            Low <span className="text-down">{fmtPrice(symbol, r.low)}</span>
+            {t("order.tick.low")} <span className="text-down">{fmtPrice(symbol, r.low)}</span>
           </span>
           <span>
-            High <span className="text-up">{fmtPrice(symbol, r.high)}</span>
+            {t("order.tick.high")} <span className="text-up">{fmtPrice(symbol, r.high)}</span>
           </span>
         </div>
         <div className="relative h-1.5 rounded-full bg-gradient-to-r from-down/50 via-surface-3 to-up/50">
           <span className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-panel bg-fg" style={{ left: `${pct}%` }} />
         </div>
-        <KV k="Open" v={fmtPrice(symbol, r.open)} className="mt-1.5" />
-        <KV k="Range" v={`${((r.high - r.low) / pip).toFixed(1)} pips`} />
-        <KV k="Spread" v={`${Math.round((q.ask - q.bid) * 10 ** inst.digits)} pts`} />
+        <KV k={t("order.info.open")} v={fmtPrice(symbol, r.open)} className="mt-1.5" />
+        <KV k={t("order.info.range")} v={t("order.unit.pips", { n: ((r.high - r.low) / pip).toFixed(1) })} />
+        <KV k={t("order.tick.spread")} v={t("order.unit.pts", { n: Math.round((q.ask - q.bid) * 10 ** inst.digits) })} />
         <TickSpark symbol={symbol} />
       </Section>
 
-      <Section icon={<Layers3 />} title="Contract">
-        <KV k="Contract size" v={spec.contractSize.toLocaleString("en-US")} />
-        <KV k="Digits · pip" v={`${spec.digits} · ${spec.pip}`} />
-        <KV k="Tick size" v={spec.tickSize} />
-        <KV k="Volume min / max / step" v={`${spec.minVolume} / ${spec.maxVolume} / ${spec.step}`} />
-        <KV k="Margin · profit ccy" v={`${spec.marginCcy} · ${spec.profitCcy}`} />
-        <KV k="Stops level" v={`${spec.stopsLevel} pts`} />
-        <KV k="Execution" v={spec.execution} />
-        <KV k="Expiration" v="GTC · Today · Date" />
+      <Section icon={<Layers3 />} title={t("order.info.contract")}>
+        <KV k={t("order.info.contractSize")} v={spec.contractSize.toLocaleString("en-US")} />
+        <KV k={t("order.info.digitsPip")} v={`${spec.digits} · ${spec.pip}`} />
+        <KV k={t("order.info.tickSize")} v={spec.tickSize} />
+        <KV k={t("order.info.volumeMinMaxStep")} v={<span dir="ltr">{`${spec.minVolume} / ${spec.maxVolume} / ${spec.step}`}</span>} />
+        <KV k={t("order.info.marginProfitCcy")} v={`${spec.marginCcy} · ${spec.profitCcy}`} />
+        <KV k={t("order.info.stopsLevel")} v={t("order.unit.pts", { n: spec.stopsLevel })} />
+        <KV k={t("order.info.execution")} v={spec.execution === "Market" ? t("order.info.executionMarket") : spec.execution} />
+        <KV k={t("order.info.expiration")} v={t("order.info.expirationValue")} />
       </Section>
 
-      <Section icon={<Info />} title="Swaps & sessions">
-        <KV k="Swap long" v={<span className="text-down">{spec.swapLong.toFixed(2)} pts</span>} />
-        <KV k="Swap short" v={<span className={spec.swapShort >= 0 ? "text-up" : "text-down"}>{spec.swapShort.toFixed(2)} pts</span>} />
-        <KV k="3-day swap" v={spec.tripleSwap} />
-        <KV k="Trading session" v={<span className="whitespace-normal text-[11px]">{spec.sessions}</span>} />
-        <KV k="Server time" v="GMT+3" />
+      <Section icon={<Info />} title={t("order.info.swapsSessions")}>
+        <KV k={t("order.info.swapLong")} v={<span className="text-down">{t("order.unit.pts", { n: spec.swapLong.toFixed(2) })}</span>} />
+        <KV k={t("order.info.swapShort")} v={<span className={spec.swapShort >= 0 ? "text-up" : "text-down"}>{t("order.unit.pts", { n: spec.swapShort.toFixed(2) })}</span>} />
+        <KV k={t("order.info.tripleSwap")} v={t.dyn(`order.info.tripleSwapDay.${spec.tripleSwap}`, spec.tripleSwap)} />
+        <KV k={t("order.info.tradingSession")} v={<span className="whitespace-normal text-[11px]" dir="ltr">{spec.sessions}</span>} />
+        <KV k={t("order.info.serverTime")} v={<span dir="ltr">GMT+3</span>} />
       </Section>
     </div>
   );

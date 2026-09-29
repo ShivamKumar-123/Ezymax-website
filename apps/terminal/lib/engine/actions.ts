@@ -4,8 +4,9 @@
 // positions or orders locally; the account stream (or a state reload when the stream is down) brings the
 // result in. Each action writes MT5-style journal lines and a toast; rejections carry the engine's reason.
 import { toast } from "@/lib/notify";
+import { tr, tr as trT } from "@kalks/i18n/react"; // trT: placeOrder has a local `tr` (OCO twin result)
 import { priceFeed } from "@kalks/mock";
-import { PENDING_LABEL, accCcy, accMoney, fmtPrice, fmtVol, pointSize, roundPrice, type PendingOrder, type TPosition } from "../trading";
+import { PENDING_LABEL, accCcy, accMoney, fmtPrice, fmtVol, pendingLabelKey, pointSize, roundPrice, type PendingOrder, type TPosition } from "../trading";
 import type { JournalLine, OrderRequest } from "../store";
 import { engineApi, type OrderBody, type Result } from "./client";
 import { rejectReason, type EngineErr, type EngineTradingAccount } from "./map";
@@ -24,6 +25,11 @@ export interface EngineDeps {
 
 export type PlaceResult = { ok: boolean; ticket?: string };
 
+/** Pending label for toasts ("buy limit"…) in the reader's language; the journal keeps PENDING_LABEL. */
+const pendingText = (o: Pick<PendingOrder, "side" | "type">) => tr(pendingLabelKey(o));
+const capFirst = (s: string) => s.charAt(0).toLocaleUpperCase() + s.slice(1);
+const expiryText = (o: Pick<OrderRequest, "expiry" | "expiryDate">) => (o.expiry === "Date" ? (o.expiryDate ?? "") : o.expiry === "Today" ? tr("order.expiry.today") : tr("order.expiry.gtc"));
+
 const cid = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
 export function engineActions(d: EngineDeps) {
@@ -41,7 +47,8 @@ export function engineActions(d: EngineDeps) {
     if (quiet) return;
     // the engine's own sentence adds the detail ("Stop loss must be below 83235.95")
     const detail = e.message && e.message !== reason && !/^HTTP \d+$/.test(e.message) ? e.message : "";
-    toast.error(reason, { description: [desc, detail].filter(Boolean).join(" · ") + extra });
+    // title in the reader's language (client-side mapping of the engine code); desc/detail stay as the journal/engine wrote them
+    toast.error(tr.dyn(`order.reject.${e.code}`, reason), { description: [desc, detail].filter(Boolean).join(" · ") + extra });
     d.sound("error");
   };
 
@@ -102,7 +109,8 @@ export function engineActions(d: EngineDeps) {
     if (res.status === "filled") {
       const deal = res.deals?.[0];
       d.log("Trade", `'${login}': ${deal ? `deal #${deal} ` : ""}${o.side} ${fmtVol(vol)} ${o.symbol} at ${fmtPrice(o.symbol, res.price)} done (based on order #${res.orderTicket})${res.delayMs ? `, execution ${res.delayMs} ms` : ""}`);
-      toast.success(`${o.source === "ai" ? "AI Trader · " : ""}${o.side === "buy" ? "Buy" : "Sell"} ${fmtVol(vol)} ${o.symbol} filled`, { description: `#${res.positionTicket} at ${fmtPrice(o.symbol, res.price)} · ${d.account()?.mode ?? ""}` });
+      const mode = d.account()?.mode ?? "";
+      toast.success(`${o.source === "ai" ? "AI Trader · " : ""}${tr(o.side === "buy" ? "order.toast.buyFilled" : "order.toast.sellFilled", { volume: fmtVol(vol), symbol: o.symbol })}`, { description: tr("order.toast.filledDesc", { ticket: res.positionTicket, price: fmtPrice(o.symbol, res.price), mode: mode ? tr.dyn(`order.mode.${mode}`, mode) : "" }) });
       d.sound("fill");
       return { ok: true, ticket: String(res.positionTicket) };
     }
@@ -118,10 +126,10 @@ export function engineActions(d: EngineDeps) {
       const tr = await run(login, tdesc, engineApi.placeOrder(login, toBody({ ...t, volume: vol }, { ocoWith: Number(res.ticket) })));
       if (tr && tr.status === "placed") {
         d.log("Trade", `'${login}': accepted ${PENDING_LABEL({ side: twinSide, type: o.type as PendingOrder["type"] })} ${fmtVol(vol)} ${o.symbol} at ${fmtPrice(o.symbol, tr.price)} #${tr.ticket} [OCO with #${res.ticket}]`);
-        twin = ` + OCO ${twinSide} at ${fmtPrice(o.symbol, tr.price)}`;
+        twin = trT("order.toast.ocoTwin", { side: trT(`order.side.${twinSide}`), price: fmtPrice(o.symbol, tr.price) });
       }
     }
-    if (o.source !== "ai") toast.success(`${label.replace(/^\w/, (x) => x.toUpperCase())} placed`, { description: `#${res.ticket} · ${fmtVol(vol)} ${o.symbol} at ${fmtPrice(o.symbol, res.price)}${twin} · ${o.expiry === "Date" ? o.expiryDate : (o.expiry ?? "GTC")}` });
+    if (o.source !== "ai") toast.success(tr("order.toast.pendingPlaced", { label: capFirst(pendingText({ side: o.side, type: o.type as PendingOrder["type"] })) }), { description: tr("order.toast.pendingPlacedTicketDesc", { ticket: res.ticket, volume: fmtVol(vol), symbol: o.symbol, price: fmtPrice(o.symbol, res.price), oco: twin, expiry: expiryText(o) }) });
     d.sound("fill");
     return { ok: true, ticket: String(res.ticket) };
   }
@@ -138,8 +146,12 @@ export function engineActions(d: EngineDeps) {
     d.log("Trade", `'${login}': ${reason !== "manual" ? `${reason}: ` : ""}deal #${res.dealId} ${p ? `${p.side === "buy" ? "sell" : "buy"} ${fmtVol(vol ?? p.volume)} ${p.symbol} ` : ""}done (close #${ticket}${partial ? `, partial ${fmtVol(vol!)} of ${fmtVol(p!.volume)}` : ""}), profit ${money(d.account()?.cent ? res.profit / 100 : res.profit)}`);
     if (!quiet) {
       const profit = d.account()?.cent ? res.profit / 100 : res.profit;
-      (profit >= 0 ? toast.success : toast.error)(`Closed #${ticket}${partial ? ` (partial ${fmtVol(vol!)})` : ""}`, {
-        description: p ? `${p.side.toUpperCase()} ${fmtVol(vol ?? p.volume)} ${p.symbol}${q ? ` at ~${fmtPrice(p.symbol, p.side === "buy" ? q.bid : q.ask)}` : ""} · ${money(profit)}` : money(profit),
+      (profit >= 0 ? toast.success : toast.error)(partial ? tr("order.toast.closedPartial", { ticket, volume: fmtVol(vol!) }) : tr("order.toast.closed", { ticket }), {
+        description: p
+          ? q
+            ? tr("order.toast.closedDescApprox", { side: tr(`order.side.${p.side}`).toLocaleUpperCase(), volume: fmtVol(vol ?? p.volume), symbol: p.symbol, price: fmtPrice(p.symbol, p.side === "buy" ? q.bid : q.ask), profit: money(profit) })
+            : tr("order.toast.closedDescNoPrice", { side: tr(`order.side.${p.side}`).toLocaleUpperCase(), volume: fmtVol(vol ?? p.volume), symbol: p.symbol, profit: money(profit) })
+          : money(profit),
       });
       d.sound("close");
     }
@@ -161,7 +173,7 @@ export function engineActions(d: EngineDeps) {
     const res = await run(login, desc, engineApi.modifyPosition(login, ticket, body));
     if (!res) return false;
     d.log("Trade", `'${login}': ${desc} done`);
-    toast.success(`Position #${ticket} modified`, { description: `S/L ${sl ? fmtPrice(p.symbol, sl) : "—"} · T/P ${tp ? fmtPrice(p.symbol, tp) : "—"}${body.trailingPoints ? ` · trailing ${body.trailingPoints} pts` : ""}` });
+    toast.success(tr("order.toast.positionModified", { ticket }), { description: `${tr("order.toast.slTp", { sl: sl ? fmtPrice(p.symbol, sl) : "—", tp: tp ? fmtPrice(p.symbol, tp) : "—" })}${body.trailingPoints ? tr("order.toast.trailingPts", { n: body.trailingPoints }) : ""}` });
     return true;
   }
 
@@ -173,7 +185,7 @@ export function engineActions(d: EngineDeps) {
     const res = await run(login, desc, engineApi.closeBy(login, a, b));
     if (!res) return;
     d.log("Trade", `'${login}': ${desc} done (deals ${res.deals.map((x) => `#${x}`).join(", ")})`);
-    toast.success(`Closed #${a} by #${b}`, { description: pa ? `${fmtVol(Math.min(pa.volume, pb?.volume ?? pa.volume))} ${pa.symbol} · spread saved` : undefined });
+    toast.success(tr("order.toast.closedBy", { a, b }), { description: pa ? tr("order.toast.closedByDesc", { volume: fmtVol(Math.min(pa.volume, pb?.volume ?? pa.volume)), symbol: pa.symbol }) : undefined });
     d.sound("close");
   }
 
@@ -184,7 +196,7 @@ export function engineActions(d: EngineDeps) {
     const res = await run(login, desc, engineApi.cancelOrder(login, ticket), quiet);
     if (!res) return false;
     d.log("Trade", `'${login}': ${desc} done`);
-    if (!quiet) toast(`Order #${ticket} cancelled`, { description: o ? `${PENDING_LABEL(o)} ${fmtVol(o.volume)} ${o.symbol}` : undefined });
+    if (!quiet) toast(tr("order.toast.orderCancelled", { ticket }), { description: o ? tr("order.toast.orderDesc", { label: pendingText(o), volume: fmtVol(o.volume), symbol: o.symbol }) : undefined });
     return true;
   }
 
@@ -202,7 +214,7 @@ export function engineActions(d: EngineDeps) {
     const res = await run(login, desc, engineApi.modifyOrder(login, ticket, body));
     if (!res) return false;
     d.log("Trade", `'${login}': ${desc} done`);
-    toast.success(`Order #${ticket} modified`, { description: `${PENDING_LABEL(o)} at ${fmtPrice(o.symbol, price)}` });
+    toast.success(tr("order.toast.orderModified", { ticket }), { description: tr("order.toast.orderAtDesc", { label: pendingText(o), price: fmtPrice(o.symbol, price) }) });
     return true;
   }
 
@@ -211,20 +223,22 @@ export function engineActions(d: EngineDeps) {
     const filter = kind === "profit" ? "profitable" : kind === "loss" ? "losing" : kind === "symbol" ? "all" : kind;
     const scope = `${kind}${symbol ? ` ${symbol}` : ""}`;
     const n = d.positions().filter((p) => (kind !== "symbol" || p.symbol === symbol) && (kind !== "buys" || p.side === "buy") && (kind !== "sells" || p.side === "sell")).length;
-    if (!n) return void toast("Nothing to close", { description: "No positions match that filter." });
+    if (!n) return void toast(tr("order.toast.nothingToClose"), { description: tr("order.toast.noPositionsMatch") });
     const res = await run(login, `bulk close (${scope})`, engineApi.bulkClose(login, filter, kind === "symbol" ? symbol : undefined));
     if (!res) return;
     const profit = d.account()?.cent ? res.profit / 100 : res.profit;
     const reasons = res.failed.map((f) => (typeof f.error === "string" ? f.error : rejectReason({ status: 422, code: f.error.code, message: f.error.message })));
+    // same reasons in the reader's language for the toast (the journal keeps the English ones)
+    const shown = res.failed.map((f, i) => (typeof f.error === "string" ? f.error : tr.dyn(`order.reject.${f.error.code}`, reasons[i])));
     d.log("Trade", `'${login}': bulk close (${scope}): ${res.done.length} positions closed, profit ${money(profit)}${res.failed.length ? `, ${res.failed.length} failed` : ""}`);
     res.failed.forEach((f, i) => d.log("Trade", `'${login}': close #${f.ticket} failed [${reasons[i]}]`, "error"));
     if (!res.done.length && res.failed.length) {
-      toast.error(reasons[0] ?? "Close failed", { description: `${res.failed.length} position${res.failed.length > 1 ? "s" : ""} could not be closed` });
+      toast.error(shown[0] ?? tr("order.toast.closeFailed"), { description: tr("order.toast.couldNotClose", { count: res.failed.length }) });
       return void d.sound("error");
     }
-    if (!res.done.length) return void toast("Nothing to close", { description: "No positions match that filter." });
-    (profit >= 0 ? toast.success : toast.error)(`Closed ${res.done.length} position${res.done.length > 1 ? "s" : ""}`, {
-      description: `Realised ${money(profit)}${res.failed.length ? ` · ${res.failed.length} not closed (${[...new Set(reasons)].join(", ")})` : ""}`,
+    if (!res.done.length) return void toast(tr("order.toast.nothingToClose"), { description: tr("order.toast.noPositionsMatch") });
+    (profit >= 0 ? toast.success : toast.error)(tr("order.toast.closedCount", { count: res.done.length }), {
+      description: `${tr("order.toast.realised", { amount: money(profit) })}${res.failed.length ? tr("order.toast.notClosed", { count: res.failed.length, reasons: [...new Set(shown)].join(", ") }) : ""}`,
     });
     d.sound("close");
   }
@@ -232,11 +246,11 @@ export function engineActions(d: EngineDeps) {
   async function cancelAllPendings() {
     const login = d.login();
     const n = d.pendings().length;
-    if (!n) return void toast("No pending orders");
+    if (!n) return void toast(tr("order.toast.noPendingOrders"));
     const res = await run(login, "cancel all pending orders", engineApi.bulkClose(login, "pending"));
     if (!res) return;
     d.log("Trade", `'${login}': ${res.done.length} pending orders cancelled${res.failed.length ? `, ${res.failed.length} failed` : ""}`);
-    toast(`Cancelled ${res.done.length} pending order${res.done.length === 1 ? "" : "s"}`);
+    toast(tr("order.toast.cancelledPending", { count: res.done.length }));
   }
 
   async function refillDemo() {
@@ -246,7 +260,7 @@ export function engineActions(d: EngineDeps) {
     const a = d.account();
     const bal = a?.cent ? res.balance / 100 : res.balance;
     d.log("Account", `'${login}': demo balance refilled to ${a ? `${accMoney(a, bal)} ${accCcy(a)}` : bal}`);
-    toast.success("Demo balance refilled", { description: a ? `${accMoney(a, bal)} ${accCcy(a)}` : undefined });
+    toast.success(tr("order.toast.demoRefilled"), { description: a ? `${accMoney(a, bal)} ${accCcy(a)}` : undefined });
   }
 
   return { placeOrder, closePosition, modifyPosition, closeBy, cancelPending, modifyPending, bulkClose, cancelAllPendings, refillDemo, fail };

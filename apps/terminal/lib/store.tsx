@@ -2,11 +2,13 @@
 
 import * as React from "react";
 import { toast } from "@/lib/notify";
+import { tr } from "@kalks/i18n/react";
 import { ACCOUNTS, HISTORY, INSTRUMENTS, IS_LIVE, POSITIONS, getInstrument, isMarketOpen, priceFeed, rebaseTrades, type Quote, type TradingAccount } from "@kalks/mock";
 import { useQuotes } from "@kalks/ui";
 import {
   DEFAULT_SYMBOLS,
   PENDING_LABEL,
+  pendingLabelKey,
   SEED_PENDING,
   SEED_POSITIONS_EXTRA,
   accCcy,
@@ -649,9 +651,11 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
     return (sl === undefined || sl > ref) && (tp === undefined || tp < ref);
   };
 
+  // client-side reject reasons -> translation keys (the journal keeps the English reason)
+  const REJECT_KEY: Record<string, string> = { "Invalid volume": "invalid_volume", "Not enough money": "no_money", "Invalid stops": "invalid_sl", "Invalid price": "invalid_price", "Invalid stop-limit price": "invalid_stop_limit", "Invalid OCO price": "invalid_oco_price" };
   const fail = (text: string, reason: string) => {
     log("Trade", `${text} failed [${reason}]`, "error");
-    toast.error(reason, { description: text });
+    toast.error(REJECT_KEY[reason] ? tr.dyn(`order.reject.${REJECT_KEY[reason]}`, reason) : reason, { description: text });
     notify("error");
     return false;
   };
@@ -660,7 +664,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const marketClosed = (text: string, quiet = false) => {
     log("Trade", `${text} failed [Market closed]`, "error");
     if (!quiet) {
-      toast.error("Market is closed", { description: text });
+      toast.error(tr("order.toast.marketIsClosed"), { description: text });
       notify("error");
     }
     return false;
@@ -670,11 +674,11 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
     (o: OrderRequest): boolean => {
       const s = sessionRef.current;
       if (s.guest) {
-        if (o.source !== "ai") guestNotice(o.type === "market" ? `${o.side === "buy" ? "Buying" : "Selling"} ${o.symbol}` : `A ${o.side} ${o.type} order`);
+        if (o.source !== "ai") guestNotice(o.type === "market" ? tr(o.side === "buy" ? "order.guest.buying" : "order.guest.selling", { symbol: o.symbol }) : tr("order.guest.pendingOrder", { label: tr(pendingLabelKey({ side: o.side, type: o.type as PendingOrder["type"] })) }));
         return false;
       }
       if (s.investor) {
-        toast.error("Trading is disabled", { description: "You are connected with the investor (read-only) password." });
+        toast.error(tr("order.toast.tradingDisabled"), { description: tr("order.toast.investorPassword") });
         return false;
       }
       const acc = accountOf(s.login);
@@ -700,7 +704,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
         commit(() => core);
         log("Trade", `'${acc.login}': market ${o.side} ${fmtVol(vol)} ${o.symbol}${o.sl ? ` sl: ${fmtPrice(o.symbol, o.sl)}` : ""}${o.tp ? ` tp: ${fmtPrice(o.symbol, o.tp)}` : ""} (deviation ${dev})`);
         log("Trade", `'${acc.login}': deal #${ticket} ${o.side} ${fmtVol(vol)} ${o.symbol} at ${fmtPrice(o.symbol, px)} done (based on order #${ticket})`);
-        toast.success(`${o.side === "buy" ? "Buy" : "Sell"} ${fmtVol(vol)} ${o.symbol} filled`, { description: `#${ticket} at ${fmtPrice(o.symbol, px)} · ${acc.mode}${slipPts ? ` · slippage ${slipPts} pt` : ""}` });
+        toast.success(tr(o.side === "buy" ? "order.toast.buyFilled" : "order.toast.sellFilled", { volume: fmtVol(vol), symbol: o.symbol }), { description: `${tr("order.toast.filledDesc", { ticket, price: fmtPrice(o.symbol, px), mode: tr.dyn(`order.mode.${acc.mode}`, acc.mode) })}${slipPts ? tr("order.toast.slippage", { n: slipPts }) : ""}` });
         notify("fill");
         return true;
       }
@@ -743,7 +747,16 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       }
       commit((c) => ({ ...c, pendings: [...c.pendings, ...list] }));
       for (const p of list) log("Trade", `'${acc.login}': accepted ${PENDING_LABEL(p)} ${fmtVol(p.volume)} ${p.symbol} at ${fmtPrice(p.symbol, p.price)}${p.oco ? " [OCO]" : ""} #${p.ticket}`);
-      toast.success(`${PENDING_LABEL(base).replace(/^\w/, (x) => x.toUpperCase())} placed`, { description: `${fmtVol(vol)} ${o.symbol} at ${fmtPrice(o.symbol, price)}${list.length > 1 ? ` + OCO ${list[1]!.side} at ${fmtPrice(o.symbol, list[1]!.price)}` : ""} · ${base.expiry === "Date" ? base.expiryDate : base.expiry}` });
+      const placedLabel = tr(pendingLabelKey(base));
+      toast.success(tr("order.toast.pendingPlaced", { label: placedLabel.charAt(0).toLocaleUpperCase() + placedLabel.slice(1) }), {
+        description: tr("order.toast.pendingPlacedDesc", {
+          volume: fmtVol(vol),
+          symbol: o.symbol,
+          price: fmtPrice(o.symbol, price),
+          oco: list.length > 1 ? tr("order.toast.ocoTwin", { side: tr(`order.side.${list[1]!.side}`), price: fmtPrice(o.symbol, list[1]!.price) }) : "",
+          expiry: base.expiry === "Date" ? base.expiryDate : base.expiry === "Today" ? tr("order.expiry.today") : tr("order.expiry.gtc"),
+        }),
+      });
       notify("fill");
       void inst;
       return true;
@@ -770,8 +783,8 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
     const acc = accountOf(p.login);
     log("Trade", `'${p.login}': ${reason === "manual" ? "" : `${reason} triggered, `}deal #${nextTicket()} ${p.side === "buy" ? "sell" : "buy"} ${fmtVol(vol)} ${p.symbol} at ${fmtPrice(p.symbol, price)} done (close #${ticket}${remaining > 0 ? `, partial ${fmtVol(vol)} of ${fmtVol(p.volume)}` : ""}), profit ${accMoney(acc, profit, { signed: true })}`);
     if (!silent && p.login === sessionRef.current.login) {
-      const title = reason === "sl" ? `Stop loss hit · ${p.symbol}` : reason === "tp" ? `Take profit hit · ${p.symbol}` : `Closed #${ticket}${remaining > 0 ? ` (partial ${fmtVol(vol)})` : ""}`;
-      (profit >= 0 ? toast.success : toast.error)(title, { description: `${p.side.toUpperCase()} ${fmtVol(vol)} ${p.symbol} at ${fmtPrice(p.symbol, price)} · ${accMoney(acc, profit, { signed: true })} ${accCcy(acc)}` });
+      const title = reason === "sl" ? tr("order.toast.slHit", { symbol: p.symbol }) : reason === "tp" ? tr("order.toast.tpHit", { symbol: p.symbol }) : remaining > 0 ? tr("order.toast.closedPartial", { ticket, volume: fmtVol(vol) }) : tr("order.toast.closed", { ticket });
+      (profit >= 0 ? toast.success : toast.error)(title, { description: tr("order.toast.closedDesc", { side: tr(`order.side.${p.side}`).toLocaleUpperCase(), volume: fmtVol(vol), symbol: p.symbol, price: fmtPrice(p.symbol, price), profit: `${accMoney(acc, profit, { signed: true })} ${accCcy(acc)}` }) });
       notify("close");
     }
   };
@@ -779,7 +792,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const closePositionMock = React.useCallback(
     (ticket: string, volume?: number, reason = "manual") => {
       if (sessionRef.current.guest) return;
-      if (sessionRef.current.investor) return void toast.error("Read-only session");
+      if (sessionRef.current.investor) return void toast.error(tr("order.toast.readOnly"));
       const p = coreRef.current.positions.find((x) => x.ticket === ticket);
       if (p && !isMarketOpen(p.symbol)) return void marketClosed(`'${p.login}': close #${ticket} ${p.side} ${fmtVol(volume ?? p.volume)} ${p.symbol}`);
       closeInternal(ticket, volume, reason);
@@ -802,7 +815,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       if (!validStops(p.side, p.side === "buy" ? q.bid : q.ask, sl, tp)) return fail(text, "Invalid stops");
       commit((c) => ({ ...c, positions: c.positions.map((x) => (x.ticket === ticket ? { ...x, sl, tp, trailing } : x)) }));
       log("Trade", `'${p.login}': ${text}${trailing ? `, trailing ${Math.round(trailing / pointSize(p.symbol))} pts` : ""} done`);
-      toast.success(`Position #${ticket} modified`, { description: `S/L ${sl ? fmtPrice(p.symbol, sl) : "—"} · T/P ${tp ? fmtPrice(p.symbol, tp) : "—"}${trailing ? ` · trailing ${Math.round(trailing / pointSize(p.symbol))} pts` : ""}` });
+      toast.success(tr("order.toast.positionModified", { ticket }), { description: `${tr("order.toast.slTp", { sl: sl ? fmtPrice(p.symbol, sl) : "—", tp: tp ? fmtPrice(p.symbol, tp) : "—" })}${trailing ? tr("order.toast.trailingPts", { n: Math.round(trailing / pointSize(p.symbol)) }) : ""}` });
       return true;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -814,7 +827,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       const c = coreRef.current;
       const pa = c.positions.find((x) => x.ticket === a);
       const pb = c.positions.find((x) => x.ticket === b);
-      if (!pa || !pb || pa.symbol !== pb.symbol || pa.side === pb.side) return void toast.error("Close By needs an opposite position on the same symbol");
+      if (!pa || !pb || pa.symbol !== pb.symbol || pa.side === pb.side) return void toast.error(tr("order.toast.closeByNeedsOpposite"));
       if (!isMarketOpen(pa.symbol)) return void marketClosed(`'${pa.login}': close position #${a} by position #${b} ${pa.symbol}`);
       const vol = Math.min(pa.volume, pb.volume);
       // pa closes at pb's open price, pb closes at its own open price (zero gross), saving one spread
@@ -823,7 +836,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       const acc = accountOf(pa.login);
       const gross = profitAt({ ...pa, volume: vol }, pb.openPrice);
       log("Trade", `'${pa.login}': close position #${a} ${pa.side} ${fmtVol(vol)} ${pa.symbol} by position #${b} ${pb.side} ${fmtVol(vol)} ${pb.symbol} done`);
-      toast.success(`Closed #${a} by #${b}`, { description: `${fmtVol(vol)} ${pa.symbol} · ${accMoney(acc, gross, { signed: true })} ${accCcy(acc)} · spread saved` });
+      toast.success(tr("order.toast.closedBy", { a, b }), { description: tr("order.toast.closedByProfitDesc", { volume: fmtVol(vol), symbol: pa.symbol, profit: `${accMoney(acc, gross, { signed: true })} ${accCcy(acc)}` }) });
       notify("close");
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -837,7 +850,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       if (!o) return;
       commit((c) => ({ ...c, pendings: c.pendings.filter((x) => x.ticket !== ticket) }));
       log("Trade", `'${o.login}': cancel order #${ticket} ${PENDING_LABEL(o)} ${fmtVol(o.volume)} ${o.symbol} at ${fmtPrice(o.symbol, o.price)} done`);
-      toast(`Order #${ticket} cancelled`, { description: `${PENDING_LABEL(o)} ${fmtVol(o.volume)} ${o.symbol}` });
+      toast(tr("order.toast.orderCancelled", { ticket }), { description: tr("order.toast.orderDesc", { label: tr(pendingLabelKey(o)), volume: fmtVol(o.volume), symbol: o.symbol }) });
     },
     [commit, log],
   );
@@ -859,7 +872,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       if (!validStops(o.side, price, sl, tp)) return fail(text, "Invalid stops");
       commit((c) => ({ ...c, pendings: c.pendings.map((x) => (x.ticket === ticket ? { ...x, price, sl, tp } : x)) }));
       log("Trade", `'${o.login}': ${text} done`);
-      toast.success(`Order #${ticket} modified`, { description: `${PENDING_LABEL(o)} at ${fmtPrice(o.symbol, price)}` });
+      toast.success(tr("order.toast.orderModified", { ticket }), { description: tr("order.toast.orderAtDesc", { label: tr(pendingLabelKey(o)), price: fmtPrice(o.symbol, price) }) });
       return true;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -881,14 +894,14 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
         if (kind === "sells") return p.side === "sell";
         return true;
       });
-      if (!list.length) return void toast("Nothing to close", { description: "No positions match that filter." });
+      if (!list.length) return void toast(tr("order.toast.nothingToClose"), { description: tr("order.toast.noPositionsMatch") });
       // positions on closed markets stay open (MT5 rejects them with "Market closed")
       const open = list.filter((p) => isMarketOpen(p.symbol));
       const blocked = list.filter((p) => !isMarketOpen(p.symbol));
       for (const p of blocked) marketClosed(`'${login}': close #${p.ticket} ${p.side} ${fmtVol(p.volume)} ${p.symbol}`, true);
       const blockedSyms = [...new Set(blocked.map((p) => p.symbol))].join(", ");
       if (!open.length) {
-        toast.error("Market is closed", { description: `${blocked.length} position${blocked.length > 1 ? "s" : ""} on ${blockedSyms} can't be closed until the market opens.` });
+        toast.error(tr("order.toast.marketIsClosed"), { description: tr("order.toast.marketClosedPositions", { count: blocked.length, symbols: blockedSyms }) });
         return void notify("error");
       }
       const before = coreRef.current.balances[login] ?? 0;
@@ -896,8 +909,8 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       const realised = (coreRef.current.balances[login] ?? 0) - before;
       const acc = accountOf(login);
       log("Trade", `'${login}': bulk close (${kind}${symbol ? ` ${symbol}` : ""}): ${open.length} positions, profit ${accMoney(acc, realised, { signed: true })}${blocked.length ? `, ${blocked.length} skipped (market closed)` : ""}`);
-      (realised >= 0 ? toast.success : toast.error)(`Closed ${open.length} position${open.length > 1 ? "s" : ""}`, {
-        description: `Realised ${accMoney(acc, realised, { signed: true })} ${accCcy(acc)}${blocked.length ? ` · ${blocked.length} left open, market closed (${blockedSyms})` : ""}`,
+      (realised >= 0 ? toast.success : toast.error)(tr("order.toast.closedCount", { count: open.length }), {
+        description: `${tr("order.toast.realised", { amount: `${accMoney(acc, realised, { signed: true })} ${accCcy(acc)}` })}${blocked.length ? tr("order.toast.leftOpen", { count: blocked.length, symbols: blockedSyms }) : ""}`,
       });
       notify("close");
     },
@@ -909,10 +922,10 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
     if (sessionRef.current.investor) return;
     const login = sessionRef.current.login;
     const n = coreRef.current.pendings.filter((p) => p.login === login).length;
-    if (!n) return void toast("No pending orders");
+    if (!n) return void toast(tr("order.toast.noPendingOrders"));
     commit((c) => ({ ...c, pendings: c.pendings.filter((p) => p.login !== login) }));
     log("Trade", `'${login}': ${n} pending orders cancelled`);
-    toast(`Cancelled ${n} pending order${n > 1 ? "s" : ""}`);
+    toast(tr("order.toast.cancelledPending", { count: n }));
   }, [commit, log]);
 
   /* ------------------------------ trading engine (live builds) ------------------------------ */
@@ -963,29 +976,29 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
         case "sl":
         case "tp":
           log("Trade", `${who}${message}`);
-          (kind === "tp" ? toast.success : toast.error)(kind === "sl" ? "Stop loss triggered" : "Take profit triggered", { description: message });
+          (kind === "tp" ? toast.success : toast.error)(kind === "sl" ? tr("order.toast.slTriggered") : tr("order.toast.tpTriggered"), { description: message });
           return notify("close");
         case "order_triggered":
         case "order_filled":
           log("Trade", `${who}${message}`);
-          toast.success(kind === "order_filled" ? "Pending order filled" : "Pending order triggered", { description: message });
+          toast.success(kind === "order_filled" ? tr("order.toast.pendingFilled") : tr("order.toast.pendingTriggered"), { description: message });
           return notify("fill");
         case "order_rejected":
         case "order_expired":
           log("Trade", `${who}${message}`, "warn");
-          toast.warning(kind === "order_expired" ? "Pending order expired" : "Pending order rejected", { description: message });
+          toast.warning(kind === "order_expired" ? tr("order.toast.pendingExpired") : tr("order.toast.pendingRejected"), { description: message });
           return notify("error");
         case "margin_call":
           log("Account", `${who}${message}`, "warn");
-          toast.warning("Margin call", { description: message, duration: 12_000 });
+          toast.warning(tr("order.toast.marginCall"), { description: message, duration: 12_000 });
           return notify("alert");
         case "stop_out":
           log("Account", `${who}${message}`, "error");
-          toast.error("Stop out", { description: message, duration: 15_000 });
+          toast.error(tr("order.toast.stopOut"), { description: message, duration: 15_000 });
           return notify("error");
         case "balance":
           log("Account", `${who}${message}`);
-          return void toast(`Balance operation`, { description: message });
+          return void toast(tr("order.toast.balanceOperation"), { description: message });
         default:
           log(kind === "order_cancelled" ? "Trade" : "Account", `${who}${message}`);
       }
@@ -1120,7 +1133,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       return true;
     }
     if (s.investor) {
-      if (source !== "ai") toast.error("Trading is disabled", { description: "You are connected with the investor (read-only) password." });
+      if (source !== "ai") toast.error(tr("order.toast.tradingDisabled"), { description: tr("order.toast.investorPassword") });
       return true;
     }
     return false;
@@ -1129,7 +1142,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const placeOrder = React.useCallback(
     async (o: OrderRequest): Promise<boolean> => {
       if (!engine) return placeOrderMock(o);
-      if (blocked(o.type === "market" ? `${o.side === "buy" ? "Buying" : "Selling"} ${o.symbol}` : `A ${o.side} ${o.type} order`, o.source)) return false;
+      if (blocked(o.type === "market" ? tr(o.side === "buy" ? "order.guest.buying" : "order.guest.selling", { symbol: o.symbol }) : tr("order.guest.pendingOrder", { label: tr(pendingLabelKey({ side: o.side, type: o.type as PendingOrder["type"] })) }), o.source)) return false;
       return (await eng.placeOrder(o)).ok;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1142,7 +1155,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const closePosition = React.useCallback(
     async (ticket: string, volume?: number, reason = "manual"): Promise<boolean> => {
       if (!engine) return (closePositionMock(ticket, volume, reason), true);
-      if (blocked("Closing a position")) return false;
+      if (blocked(tr("order.guest.closingPosition"))) return false;
       return eng.closePosition(ticket, volume, reason);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1151,7 +1164,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const modifyPosition = React.useCallback(
     async (ticket: string, patch: { sl?: number | null; tp?: number | null; trailing?: number | null }): Promise<boolean> => {
       if (!engine) return modifyPositionMock(ticket, patch);
-      if (blocked("Modifying a position")) return false;
+      if (blocked(tr("order.guest.modifyingPosition"))) return false;
       return eng.modifyPosition(ticket, patch);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1160,7 +1173,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const closeBy = React.useCallback(
     (a: string, b: string) => {
       if (!engine) return closeByMock(a, b);
-      if (!blocked("Close By")) void eng.closeBy(a, b);
+      if (!blocked(tr("order.guest.closeBy"))) void eng.closeBy(a, b);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [eng, closeByMock],
@@ -1168,7 +1181,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const cancelPending = React.useCallback(
     (ticket: string) => {
       if (!engine) return cancelPendingMock(ticket);
-      if (!blocked("Deleting an order")) void eng.cancelPending(ticket);
+      if (!blocked(tr("order.guest.deletingOrder"))) void eng.cancelPending(ticket);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [eng, cancelPendingMock],
@@ -1176,7 +1189,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const modifyPending = React.useCallback(
     async (ticket: string, patch: { price?: number; sl?: number | null; tp?: number | null }): Promise<boolean> => {
       if (!engine) return modifyPendingMock(ticket, patch);
-      if (blocked("Modifying an order")) return false;
+      if (blocked(tr("order.guest.modifyingOrder"))) return false;
       return eng.modifyPending(ticket, patch);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1185,14 +1198,14 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const bulkClose = React.useCallback(
     (kind: "all" | "profit" | "loss" | "symbol" | "buys" | "sells", symbol?: string) => {
       if (!engine) return bulkCloseMock(kind, symbol);
-      if (!blocked("Closing positions")) void eng.bulkClose(kind, symbol);
+      if (!blocked(tr("order.guest.closingPositions"))) void eng.bulkClose(kind, symbol);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [eng, bulkCloseMock],
   );
   const cancelAllPendings = React.useCallback(() => {
     if (!engine) return cancelAllPendingsMock();
-    if (!blocked("Deleting orders")) void eng.cancelAllPendings();
+    if (!blocked(tr("order.guest.deletingOrders"))) void eng.cancelAllPendings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eng, cancelAllPendingsMock]);
 
@@ -1247,7 +1260,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
           log("Trade", `'${o.login}': order #${o.ticket} ${PENDING_LABEL(o)} ${fmtVol(o.volume)} ${o.symbol} at ${fmtPrice(o.symbol, o.price)} triggered, deal #${ticket} at ${fmtPrice(o.symbol, px)} done`);
           if (o.oco) log("Trade", `'${o.login}': OCO sibling of #${o.ticket} cancelled`);
           if (o.login === sessionRef.current.login) {
-            toast.success(`Order #${o.ticket} filled`, { description: `${PENDING_LABEL(o)} ${fmtVol(o.volume)} ${o.symbol} at ${fmtPrice(o.symbol, px)}${o.oco ? " · OCO sibling cancelled" : ""}` });
+            toast.success(tr("order.toast.orderFilled", { ticket: o.ticket }), { description: `${tr("order.toast.orderFilledDesc", { label: tr(pendingLabelKey(o)), volume: fmtVol(o.volume), symbol: o.symbol, price: fmtPrice(o.symbol, px) })}${o.oco ? tr("order.toast.ocoSiblingCancelled") : ""}` });
             notify("fill");
           }
         }
@@ -1257,7 +1270,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
           if (a.cond === "above" ? q.bid >= a.price : q.bid <= a.price) {
             commit((cc) => ({ ...cc, alerts: cc.alerts.map((x) => (x.id === a.id ? { ...x, active: false, triggeredAt: new Date().toISOString() } : x)) }));
             log("Alerts", `${a.symbol} bid ${a.cond === "above" ? ">=" : "<="} ${fmtPrice(a.symbol, a.price)} (bid ${fmtPrice(a.symbol, q.bid)})${a.note ? ` · ${a.note}` : ""}`, "warn");
-            toast.warning(`Alert · ${a.symbol} ${a.cond} ${fmtPrice(a.symbol, a.price)}`, { description: `Bid ${fmtPrice(a.symbol, q.bid)}${a.note ? ` · ${a.note}` : ""}` });
+            toast.warning(tr("order.toast.alert", { symbol: a.symbol, cond: tr(`order.toast.alertCond.${a.cond}`), price: fmtPrice(a.symbol, a.price) }), { description: `${tr("order.toast.alertBid", { price: fmtPrice(a.symbol, q.bid) })}${a.note ? ` · ${a.note}` : ""}` });
             notify("alert");
           }
         }
@@ -1348,7 +1361,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const closeTab = React.useCallback((id: string) => {
     setWsState((w) => {
       if (w.tabs.length <= 1) {
-        toast("At least one chart must stay open");
+        toast(tr("order.toast.lastChart"));
         return w;
       }
       const tabs = w.tabs.filter((t) => t.id !== id);
@@ -1389,7 +1402,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
     if (!selectedDrawing) return;
     setWsState((w) => ({ ...w, tabs: w.tabs.map((t) => ({ ...t, drawings: t.drawings.filter((d) => d.id !== selectedDrawing) })) }));
     selectDrawing(null);
-    toast("Object deleted");
+    toast(tr("order.toast.objectDeleted"));
   }, [selectedDrawing]);
 
   const resetWorkspace = React.useCallback(() => {
@@ -1399,14 +1412,14 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
     } catch {
       /* ignore */
     }
-    toast.success("Workspace reset to Default");
+    toast.success(tr("order.toast.workspaceReset"));
   }, []);
 
   const setUi = React.useCallback((patch: Partial<UiState>) => setUiState((u) => ({ ...u, ...patch })), []);
   const openNewOrder = React.useCallback(
     (p?: Partial<NewOrderPrefill>) => {
-      if (sessionRef.current.guest) return void guestNotice("Placing an order");
-      if (sessionRef.current.investor) return void toast.error("Read-only session", { description: "Log in with the master password to trade." });
+      if (sessionRef.current.guest) return void guestNotice(tr("order.guest.placingOrder"));
+      if (sessionRef.current.investor) return void toast.error(tr("order.toast.readOnly"), { description: tr("order.toast.readOnlyDesc") });
       const w = wsRef.current;
       const sym = p?.symbol ?? w.tabs.find((t) => t.id === w.activeId)?.symbol ?? "EURUSD";
       setUiState((u) => ({ ...u, newOrder: { symbol: sym, side: p?.side, type: p?.type, price: p?.price } }));
@@ -1420,7 +1433,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
     (a: Omit<PriceAlert, "id" | "created" | "active">) => {
       commit((c) => ({ ...c, alerts: [{ ...a, id: uid(), active: true, created: new Date().toISOString() }, ...c.alerts] }));
       log("Alerts", `alert created: ${a.symbol} bid ${a.cond === "above" ? ">=" : "<="} ${fmtPrice(a.symbol, a.price)}`);
-      toast.success("Alert created", { description: `${a.symbol} ${a.cond} ${fmtPrice(a.symbol, a.price)}` });
+      toast.success(tr("order.toast.alertCreated"), { description: `${a.symbol} ${tr(`order.toast.alertCond.${a.cond}`)} ${fmtPrice(a.symbol, a.price)}` });
     },
     [commit, log],
   );
@@ -1428,7 +1441,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const removeAlert = React.useCallback(
     (id: string) => {
       commit((c) => ({ ...c, alerts: c.alerts.filter((a) => a.id !== id) }));
-      toast("Alert deleted");
+      toast(tr("order.toast.alertDeleted"));
     },
     [commit],
   );
@@ -1447,7 +1460,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       writeSession(s);
       log("Network", `'${login}': authorized on ${a.server} through Access Point EU Frankfurt (ping ${(30 + Math.random() * 14).toFixed(1)} ms)`);
       log("Network", `'${login}': terminal synchronized with Kalks Global`);
-      toast.success(`Switched to ${a.type === "demo" ? "demo" : "live"} account ${login}`, { description: `${a.group} · ${a.mode} · ${a.server}` });
+      toast.success(tr(a.type === "demo" ? "order.toast.switchedDemo" : "order.toast.switchedLive", { login }), { description: `${a.group} · ${tr.dyn(`order.mode.${a.mode}`, a.mode)} · ${a.server}` });
     },
     [log],
   );
@@ -1455,13 +1468,13 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const refillDemoMock = React.useCallback(() => {
     if (sessionRef.current.guest) return;
     const a = accountOf(sessionRef.current.login);
-    if (a.type !== "demo") return void toast.error("Refill is available on demo accounts only");
+    if (a.type !== "demo") return void toast.error(tr("order.toast.refillDemoOnly"));
     const left = coreRef.current.refills[a.login] ?? 0;
-    if (left <= 0) return void toast.error("No refills left", { description: "Open a new demo account from the Client Area." });
+    if (left <= 0) return void toast.error(tr("order.toast.noRefillsLeft"), { description: tr("order.toast.noRefillsLeftDesc") });
     const target = a.balance;
     commit((c) => ({ ...c, balances: { ...c.balances, [a.login]: target }, refills: { ...c.refills, [a.login]: left - 1 } }));
     log("Account", `'${a.login}': demo balance refilled to ${accMoney(a, target)} ${accCcy(a)} (${left - 1} refills left)`);
-    toast.success("Demo balance refilled", { description: `${accMoney(a, target)} ${accCcy(a)} · ${left - 1} refills left` });
+    toast.success(tr("order.toast.demoRefilled"), { description: tr("order.toast.refillsLeft", { amount: `${accMoney(a, target)} ${accCcy(a)}`, count: left - 1 }) });
   }, [commit, log]);
 
   const logoutMock = React.useCallback(() => {
@@ -1482,7 +1495,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       sessionRef.current = s;
       setSession(s);
       writeActive(login);
-      if (!quiet) toast.success(`Switched to ${a?.type === "demo" ? "demo" : "live"} account ${login}`, { description: a ? `${a.group} · ${a.mode} · ${a.server}${e.readOnly ? " · read-only" : ""}` : undefined });
+      if (!quiet) toast.success(tr(a?.type === "demo" ? "order.toast.switchedDemo" : "order.toast.switchedLive", { login }), { description: a ? `${a.group} · ${tr.dyn(`order.mode.${a.mode}`, a.mode)} · ${a.server}${e.readOnly ? tr("order.toast.readOnlySuffix") : ""}` : undefined });
     },
     [],
   );
@@ -1508,7 +1521,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   expiredRef.current = (login: string) => {
     if (!engSessionsRef.current.some((x) => x.login === login)) return;
     log("Network", `'${login}': session expired, log in again`, "error");
-    toast.error("Session expired", { id: `expired-${login}`, description: `Your session for ${login} has ended. Log in again to trade.` });
+    toast.error(tr("order.toast.sessionExpired"), { id: `expired-${login}`, description: tr("order.toast.sessionExpiredDesc", { login }) });
     dropSession(login, `/login?expired=1&login=${login}`);
   };
 
@@ -1516,8 +1529,8 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
 
   const refillDemo = React.useCallback(() => {
     if (!engine) return refillDemoMock();
-    if (blocked("Refilling the demo balance")) return;
-    if (engAccRef.current[sessionRef.current.login]?.type !== "demo") return void toast.error("Refill is available on demo accounts only");
+    if (blocked(tr("order.guest.refillingDemo"))) return;
+    if (engAccRef.current[sessionRef.current.login]?.type !== "demo") return void toast.error(tr("order.toast.refillDemoOnly"));
     void eng.refillDemo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engine, eng, refillDemoMock]);
@@ -1527,7 +1540,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
     const login = sessionRef.current.login;
     void engineApi.logout(login).then(() => {
       log("Network", `'${login}': logged out`);
-      if (engSessionsRef.current.length > 1) toast(`Logged out of ${login}`);
+      if (engSessionsRef.current.length > 1) toast(tr("order.toast.loggedOut", { login }));
       dropSession(login, "/login?logout=1");
     });
   }, [engine, logoutMock, log, dropSession]);
