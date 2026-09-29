@@ -97,7 +97,7 @@ export function LiveDiscoverPage() {
       cell: (m) => (m.stats.spark?.length > 1 ? <Sparkline data={m.stats.spark} width={72} height={26} tone={m.stats.spark[m.stats.spark.length - 1]! >= m.stats.spark[0]! ? "up" : "down"} className="ms-auto" /> : <span className="text-fg-3">—</span>),
       hideOn: "lg",
     },
-    { key: "dd", header: <span className="whitespace-nowrap">{t("social.maxDd")}</span>, align: "right", cell: (m) => <span className="k-num text-down">{m.stats.maxDd > 0 ? `-${m.stats.maxDd.toFixed(1)}%` : "0.0%"}</span>, sort: (m) => -m.stats.maxDd },
+    { key: "dd", header: <span className="whitespace-nowrap">{t("social.maxDd")}</span>, align: "right", cell: (m) => <span className={cn("k-num", m.stats.maxDd > 0 ? "text-down" : "text-fg-2")}>{m.stats.maxDd > 0 ? `-${m.stats.maxDd.toFixed(1)}%` : "0.0%"}</span>, sort: (m) => -m.stats.maxDd },
     { key: "aum", header: t("social.aum"), align: "right", cell: (m) => <span className="k-num">{compactUsd(m.stats.aum)}</span>, sort: (m) => m.stats.aum },
     { key: "fol", header: t("social.followers"), align: "right", cell: (m) => <span className="k-num text-fg-2">{f.number(m.stats.followers, 0)}</span>, sort: (m) => m.stats.followers, hideOn: "md" },
     { key: "age", header: t("social.lb.col.age"), align: "right", cell: (m) => <span className="k-num whitespace-nowrap text-fg-2">{formatAge(m.ageDays)}</span>, sort: (m) => m.ageDays, hideOn: "sm" },

@@ -601,10 +601,10 @@ function ContestTile({ c, onJoined }: { c: ContestCard; onJoined: () => void }) 
           {c.name}
         </Link>
         {c.description && <div className="mt-0.5 line-clamp-2 text-[12.5px] text-fg-3">{c.description}</div>}
-        <div className="mt-4 grid grid-cols-2 gap-2 text-[12px]">
-          <div className="k-row flex items-center gap-2 px-3 py-2">
+        <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-[12px]">
+          <div className="k-row flex min-w-0 items-center gap-2 px-3 py-2">
             <CalendarDays className="size-3.5 shrink-0 text-fg-3" />
-            <span className="k-num truncate">
+            <span className="k-num truncate whitespace-nowrap">
               {fmtDate(c.startsAt, false)} – {fmtDate(c.endsAt, false)}
             </span>
           </div>
@@ -613,7 +613,7 @@ function ContestTile({ c, onJoined }: { c: ContestCard; onJoined: () => void }) 
             <span className="k-num">{t("rewards.value.joined", { count: fmtCount(c.entrants) })}</span>
           </div>
         </div>
-        <div className="mt-2 truncate text-[11.5px] text-fg-3">
+        <div className="mt-2 line-clamp-2 text-[11.5px] leading-relaxed text-fg-3">
           {t("rewards.tile.rankedBy", { scoring: scoringLabel(c.scoring).toLowerCase() })}
           {c.minTrades ? t("rewards.tile.minTrades", { count: c.minTrades }) : ""}
           {c.kind === "demo" && c.startingBalance ? t("rewards.tile.demoBalance", { amount: fmtUsd(c.startingBalance, 0) }) : ""}

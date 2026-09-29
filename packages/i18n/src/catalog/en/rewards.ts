@@ -168,7 +168,7 @@ const rewards = {
   // Contests: cards
   "tile.prizePool": "Prize pool",
   "tile.rankedBy": "Ranked by {scoring}",
-  "tile.minTrades": " · min {count} trades",
+  "tile.minTrades": { one: " · min {count} trade", other: " · min {count} trades" },
   "tile.demoBalance": " · {amount} demo balance",
   "tile.minEquity": " · min equity {amount}",
   "tile.seats": "Seats",

@@ -317,7 +317,8 @@ function CompareTable({ plans, current, size, onPick }: { plans: Plan[]; current
                 {plans.map((p) => {
                   const on = p.id === current;
                   return (
-                    <td key={p.id} className="px-1.5 py-0">
+                    // h-px on the cell lets the inner box fill the row, so columns stay continuous when one cell wraps
+                    <td key={p.id} className="h-px px-1.5 py-0 align-top">
                       <div
                         className={cn(
                           "h-full border-x border-t px-4 py-3",

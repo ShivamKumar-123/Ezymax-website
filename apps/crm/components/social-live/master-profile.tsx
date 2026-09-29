@@ -106,7 +106,7 @@ function StatsCard({ p }: { p: MasterProfile }) {
   const stats: [string, React.ReactNode][] = [
     [t("social.profile.winRate"), s.trades ? `${s.winRate.toFixed(1)}%` : "—"],
     [t("social.profile.closedTrades"), fmt.number(s.trades, 0)],
-    [t("social.follow.maxDrawdown"), <span key="dd" className="text-down">{s.maxDd > 0 ? `-${s.maxDd.toFixed(1)}%` : "0.0%"}</span>],
+    [t("social.follow.maxDrawdown"), <span key="dd" className={s.maxDd > 0 ? "text-down" : "text-fg-2"}>{s.maxDd > 0 ? `-${s.maxDd.toFixed(1)}%` : "0.0%"}</span>],
     [t("social.profile.currentDd"), <span key="cdd" className={s.currentDd > 10 ? "text-down" : "text-fg"}>{s.currentDd > 0 ? `-${s.currentDd.toFixed(1)}%` : "0.0%"}</span>],
     [t("social.profile.volatility"), `${s.volatility.toFixed(1)}%`],
     [t("social.profile.masterEquity"), compactUsd(s.equity)],

@@ -600,7 +600,7 @@ export function LiveAnalyticsPage() {
               align="end"
               trigger={
                 <Button variant="surface">
-                  <span className="font-mono text-[13px]">{label}</span>
+                  <span className={cn("text-[13px]", account !== "all" && "font-mono")}>{label}</span>
                 </Button>
               }
               items={[

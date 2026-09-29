@@ -88,7 +88,8 @@ export function PasswordInput({ value, onChange, placeholder, generate }: { valu
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder ?? t("accountDetail.pwInput.placeholder")}
-      inputClassName="font-mono"
+      // monospace only for the typed value (easier to read a generated password); the placeholder stays in the UI font
+      inputClassName={cn(value && "font-mono")}
       autoComplete="new-password"
       trailing={
         <>
