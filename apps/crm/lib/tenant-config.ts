@@ -50,6 +50,8 @@ const MODULE_PATHS: [string, string][] = [
   ["/wallet", "wallet"],
   ["/api/wallet", "wallet"],
   ["/rewards", "rewards"],
+  // growth BFF: rewards features follow the module; banners and share cards stay on
+  ...["rewards", "points", "redeem", "redemptions", "vouchers", "cashback", "promotions", "bonuses", "promo", "contests"].map((p): [string, string] => [`/api/growth/${p}`, "rewards"]),
 ];
 
 export function moduleFor(pathname: string): string | null {

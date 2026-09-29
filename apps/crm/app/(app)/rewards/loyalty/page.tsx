@@ -23,6 +23,8 @@ import {
 } from "@kalks/ui";
 import { EARN_RULES, LOYALTY, LOYALTY_TIERS, POINTS_HISTORY, type PointsTx } from "@kalks/mock/rewards";
 import { RedeemCatalogue, TierOrb, TierTrack } from "@/components/rewards/loyalty";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveLoyaltyPage } from "@/components/growth/loyalty";
 
 function useCountUp(target: number, ms = 900) {
   const [v, setV] = React.useState(target);
@@ -136,7 +138,7 @@ function EarnRules() {
 
 const TYPE_TONE = { earned: "up", redeemed: "ember", bonus: "gold", expired: "neutral" } as const;
 
-export default function LoyaltyPage() {
+function DemoLoyaltyPage() {
   const [balance, setBalance] = React.useState(LOYALTY.balance);
   const [extra, setExtra] = React.useState<PointsTx[]>([]);
   const [filter, setFilter] = React.useState<"all" | "earned" | "redeemed" | "bonus">("all");
@@ -222,4 +224,8 @@ export default function LoyaltyPage() {
       </Reveal>
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <DemoLoyaltyPage /> : <LiveLoyaltyPage />;
 }

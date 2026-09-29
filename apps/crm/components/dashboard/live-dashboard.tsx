@@ -13,6 +13,7 @@ import { useAccounts, type EngineAccount } from "@/components/trading/api";
 import { liveTotals } from "@/components/trading/accounts-page";
 import { LiveAccountRow } from "@/components/trading/ui";
 import { useWalletFunded, walletStep } from "@/components/wallet-live/onboarding";
+import { BannerSlot } from "@/components/growth/banner-slot";
 
 function greeting() {
   const h = new Date().getHours();
@@ -432,6 +433,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
         }
       />
 
+      <BannerSlot placement="dashboard" />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal className="xl:col-span-8">
           <GettingStarted accounts={accounts} />

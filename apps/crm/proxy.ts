@@ -13,7 +13,7 @@ import { moduleFor, tenantConfig } from "@/lib/tenant-config";
 
 const AUTH_PAGES = ["/login", "/register", "/forgot"];
 /** Public pages (no sign-in): Academy and Prop certificate verification. */
-const PUBLIC_PAGES = ["/certificate", "/verify"];
+const PUBLIC_PAGES = ["/certificate", "/verify", "/s"];
 
 // Partner links (IB programme, services/ib): /r/CODE[/campaign] or any page with ?ref=CODE[&c=campaign].
 // The click is recorded with the IB service and the referral kept in a first-party cookie (kalks_ref), so

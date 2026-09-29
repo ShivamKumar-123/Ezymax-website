@@ -29,10 +29,12 @@ import {
 } from "@kalks/ui";
 import { MKT_CATALOGUE, MKT_POINT_RULES, MKT_REDEMPTIONS, MKT_REWARDS_KPIS, MKT_TIERS, type MktRedemption, type MktRewardItem, type MktTier } from "@kalks/mock/admin-growth-marketing";
 import { NumField, SectionLabel, fmtDateTime, fmtInt, fmtK } from "@/components/marketing/kit";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveRewards } from "@/components/marketing/live/rewards";
 
 const ITEM = Object.fromEntries(MKT_CATALOGUE.map((c) => [c.id, c]));
 
-export default function RewardsPage() {
+function DemoRewardsPage() {
   const [addOpen, setAddOpen] = React.useState(false);
   const k = MKT_REWARDS_KPIS;
   return (
@@ -410,4 +412,8 @@ function AddRewardDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
       </div>
     </Dialog>
   );
+}
+
+export default function RewardsPage() {
+  return IS_DEMO ? <DemoRewardsPage /> : <LiveRewards />;
 }

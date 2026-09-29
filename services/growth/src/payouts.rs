@@ -1,0 +1,137 @@
+//! Cash out to client wallets: cashback payouts (`refund`), loyalty cashback redemptions and contest prizes
+//! (`adjustment`). Every transfer has a stable idempotency key; network errors and 5xx retry with backoff.
+
+use crate::clients::{self, WalletOutcome};
+use crate::db;
+use crate::money::{D, ZERO};
+use crate::state::AppState;
+use sqlx::Row;
+
+/// Groups accruals past the hold into one payout per client. Returns (payouts created, total).
+pub async fn cashback_batch(st: &AppState, tenant: &str, ignore_hold: bool) -> anyhow::Result<(usize, D)> {
+    let hold = if ignore_hold { 0 } else { db::settings(&st.pool, tenant).await?.cashback_hold_hours };
+    let mut tx = st.pool.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtext($1))").bind(format!("growth-cashback:{tenant}")).execute(&mut *tx).await?;
+    let users: Vec<(i64, D)> = sqlx::query_as(
+        "SELECT user_id, sum(amount) FROM cashback_accruals WHERE tenant = $1 AND status = 'accrued' AND payout_id IS NULL
+           AND created_at <= now() - make_interval(hours => $2) GROUP BY user_id HAVING sum(amount) > 0",
+    )
+    .bind(tenant)
+    .bind(hold as i32)
+    .fetch_all(&mut *tx)
+    .await?;
+    let mut total = ZERO;
+    for (user, amount) in &users {
+        let id: i64 = sqlx::query_scalar("INSERT INTO cashback_payouts (tenant, user_id, amount) VALUES ($1,$2,$3) RETURNING id").bind(tenant).bind(user).bind(amount).fetch_one(&mut *tx).await?;
+        sqlx::query(
+            "UPDATE cashback_accruals SET payout_id = $1 WHERE tenant = $2 AND user_id = $3 AND status = 'accrued' AND payout_id IS NULL AND created_at <= now() - make_interval(hours => $4)",
+        )
+        .bind(id)
+        .bind(tenant)
+        .bind(user)
+        .bind(hold as i32)
+        .execute(&mut *tx)
+        .await?;
+        total += *amount;
+    }
+    tx.commit().await?;
+    if !users.is_empty() {
+        st.wake.notify_one();
+    }
+    Ok((users.len(), total))
+}
+
+fn backoff(attempts: i32) -> f64 {
+    (2i64.pow(attempts.clamp(0, 6) as u32) * 15).min(900) as f64
+}
+
+pub async fn cashback_tick(st: &AppState) -> anyhow::Result<usize> {
+    let rows = sqlx::query("SELECT id, tenant, user_id, amount, attempts FROM cashback_payouts WHERE status = 'pending' AND next_try_at <= now() ORDER BY id LIMIT 100").fetch_all(&st.pool).await?;
+    let mut n = 0;
+    for r in rows {
+        let id: i64 = r.get("id");
+        let tenant: String = r.get("tenant");
+        let user: i64 = r.get("user_id");
+        let amount: D = r.get("amount");
+        match clients::wallet_credit(st, &tenant, &format!("growth:cashback:{id}"), user, amount, "refund", &format!("cashback:{id}"), "Cashback on your trading volume").await {
+            WalletOutcome::Credited { txn } => {
+                let mut tx = st.pool.begin().await?;
+                sqlx::query("UPDATE cashback_payouts SET status = 'paid', wallet_txn = $2, paid_at = now(), error = NULL WHERE id = $1").bind(id).bind(&txn).execute(&mut *tx).await?;
+                sqlx::query("UPDATE cashback_accruals SET status = 'paid' WHERE payout_id = $1 AND status = 'accrued'").bind(id).execute(&mut *tx).await?;
+                tx.commit().await?;
+                clients::notify(st, &tenant, user, "cashback.paid", "Cashback paid".into(), format!("${} cashback is in your wallet.", amount.normalize()), "/rewards/cashback");
+                n += 1;
+            }
+            WalletOutcome::Retry(msg) => {
+                let a: i32 = r.get::<i32, _>("attempts") + 1;
+                sqlx::query("UPDATE cashback_payouts SET attempts = $2, error = $3, next_try_at = now() + make_interval(secs => $4) WHERE id = $1").bind(id).bind(a).bind(&msg).bind(backoff(a)).execute(&st.pool).await?;
+            }
+            WalletOutcome::Fail(msg) => {
+                sqlx::query("UPDATE cashback_payouts SET status = 'failed', error = $2 WHERE id = $1").bind(id).bind(&msg).execute(&st.pool).await?;
+                tracing::error!(payout = id, error = %msg, "cashback payout failed; needs review");
+            }
+        }
+    }
+    Ok(n)
+}
+
+/// Pending wallet credits (loyalty cashback redemptions, contest prizes).
+pub async fn wallet_tick(st: &AppState) -> anyhow::Result<usize> {
+    let rows = sqlx::query("SELECT * FROM wallet_credits WHERE status = 'pending' AND next_try_at <= now() ORDER BY id LIMIT 100").fetch_all(&st.pool).await?;
+    let mut n = 0;
+    for r in rows {
+        let id: i64 = r.get("id");
+        let tenant: String = r.get("tenant");
+        let user: i64 = r.get("user_id");
+        let reference: String = r.get("ref");
+        let amount: D = r.get("amount");
+        let out = clients::wallet_credit(st, &tenant, r.get::<&str, _>("idem_key"), user, amount, r.get::<&str, _>("kind"), &reference, r.get::<&str, _>("note")).await;
+        let (status, txn, err) = match &out {
+            WalletOutcome::Credited { txn } => ("paid", Some(txn.clone()), None),
+            WalletOutcome::Fail(m) => ("failed", None, Some(m.clone())),
+            WalletOutcome::Retry(m) => ("pending", None, Some(m.clone())),
+        };
+        let mut tx = st.pool.begin().await?;
+        if status == "pending" {
+            let a: i32 = r.get::<i32, _>("attempts") + 1;
+            sqlx::query("UPDATE wallet_credits SET attempts = $2, error = $3, next_try_at = now() + make_interval(secs => $4) WHERE id = $1").bind(id).bind(a).bind(&err).bind(backoff(a)).execute(&mut *tx).await?;
+        } else {
+            sqlx::query("UPDATE wallet_credits SET status = $2, wallet_txn = $3, error = $4, paid_at = CASE WHEN $2 = 'paid' THEN now() END WHERE id = $1").bind(id).bind(status).bind(&txn).bind(&err).execute(&mut *tx).await?;
+            let done = status == "paid";
+            if let Some(rid) = reference.strip_prefix("redemption:").and_then(|x| x.parse::<i64>().ok()) {
+                sqlx::query("UPDATE redemptions SET status = $2, wallet_txn = $3, error = $4, completed_at = CASE WHEN $2 = 'completed' THEN now() END WHERE id = $1")
+                    .bind(rid)
+                    .bind(if done { "completed" } else { "failed" })
+                    .bind(&txn)
+                    .bind(&err)
+                    .execute(&mut *tx)
+                    .await?;
+            }
+            if let Some(eid) = reference.strip_prefix("prize:").and_then(|x| x.parse::<i64>().ok()) {
+                sqlx::query("UPDATE contest_entries SET prize_status = $2, prize_ref = COALESCE($3, prize_ref), prize_error = $4 WHERE id = $1")
+                    .bind(eid)
+                    .bind(if done { "paid" } else { "failed" })
+                    .bind(&txn)
+                    .bind(&err)
+                    .execute(&mut *tx)
+                    .await?;
+            }
+            n += 1;
+        }
+        tx.commit().await?;
+        if status == "paid" {
+            let title = if reference.starts_with("prize:") { "Contest prize paid" } else { "Reward paid" };
+            clients::notify(st, &tenant, user, "reward.paid", title.into(), format!("${} is in your wallet.", amount.normalize()), "/wallet");
+        }
+    }
+    Ok(n)
+}
+
+/// Re-queues a failed wallet credit (staff retry).
+pub async fn retry_credit(st: &AppState, reference: &str) -> anyhow::Result<bool> {
+    let n = sqlx::query("UPDATE wallet_credits SET status = 'pending', next_try_at = now(), error = NULL WHERE ref = $1 AND status = 'failed'").bind(reference).execute(&st.pool).await?.rows_affected();
+    if n > 0 {
+        st.wake.notify_one();
+    }
+    Ok(n > 0)
+}

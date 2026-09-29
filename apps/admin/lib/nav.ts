@@ -183,6 +183,8 @@ export const ADMIN_NAV: NavModule[] = [
       { href: "/marketing/automation", label: "Automation" },
       { href: "/marketing/promo-codes", label: "Promo codes" },
       { href: "/marketing/campaigns", label: "Campaigns" },
+      { href: "/marketing/cashback", label: "Cashback" },
+      { href: "/marketing/reports", label: "Reports" },
     ],
   },
   {

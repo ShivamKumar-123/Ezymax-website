@@ -6,6 +6,8 @@ import { Gift, History, Medal, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Icon3D, KpiCard, PageHeader, Reveal } from "@kalks/ui";
 import { ContestHero, Leaderboard, PastContests, PrizeCard, UpcomingContests } from "@/components/rewards/contests";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveContestsPage } from "@/components/growth/contests";
 
 function RewardsShortcuts() {
   return (
@@ -33,7 +35,7 @@ function RewardsShortcuts() {
   );
 }
 
-export default function ContestsPage() {
+function DemoContestsPage() {
   return (
     <div className="pb-16">
       <PageHeader
@@ -95,4 +97,8 @@ export default function ContestsPage() {
       </Reveal>
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <DemoContestsPage /> : <LiveContestsPage />;
 }

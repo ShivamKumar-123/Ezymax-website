@@ -30,6 +30,8 @@ import {
   type Column,
 } from "@kalks/ui";
 import { CASHBACK, CASHBACK_BY_ACCOUNT, CASHBACK_HISTORY, CASHBACK_RATES, CASHBACK_WEEKLY, type CashbackTx } from "@kalks/mock/rewards";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveCashbackPage } from "@/components/growth/cashback";
 
 function WithdrawDialog({ available, onDone, trigger }: { available: number; onDone: (amt: number) => void; trigger: React.ReactNode }) {
   const [open, setOpen] = React.useState(false);
@@ -89,7 +91,7 @@ function WithdrawDialog({ available, onDone, trigger }: { available: number; onD
   );
 }
 
-export default function CashbackPage() {
+function DemoCashbackPage() {
   const [available, setAvailable] = React.useState(CASHBACK.available);
   const [week, setWeek] = React.useState<number | undefined>(undefined);
   const totalLots = CASHBACK_BY_ACCOUNT.reduce((s, a) => s + a.lots, 0);
@@ -258,4 +260,8 @@ export default function CashbackPage() {
       </Reveal>
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <DemoCashbackPage /> : <LiveCashbackPage />;
 }

@@ -27,11 +27,13 @@ import { BonusCampaignCard } from "@/components/marketing/bonus-campaign-card";
 import { BonusEditor } from "@/components/marketing/bonus-editor";
 import { ComboChart } from "@/components/marketing/charts";
 import { MiniStat, daysFromToday, fmtDate, fmtDateTime, fmtK } from "@/components/marketing/kit";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveBonuses } from "@/components/marketing/live/bonuses";
 
 const CAMPAIGN_NAME = Object.fromEntries(MKT_BONUS_CAMPAIGNS.map((c) => [c.id, c.name]));
 type Filter = "all" | "active" | "paused" | "scheduled";
 
-export default function BonusesPage() {
+function DemoBonusesPage() {
   const [filter, setFilter] = React.useState<Filter>("all");
   const [editing, setEditing] = React.useState<MktBonusCampaign | null>(null);
   const [open, setOpen] = React.useState(false);
@@ -252,4 +254,8 @@ function FlowCard() {
       </div>
     </Card>
   );
+}
+
+export default function BonusesPage() {
+  return IS_DEMO ? <DemoBonusesPage /> : <LiveBonuses />;
 }

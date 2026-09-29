@@ -84,6 +84,15 @@ pub fn clean_domain(raw: &str) -> Result<String, &'static str> {
     Ok(d)
 }
 
+/// Broker brand names: 2–80 characters, letters, digits and punctuation (unlike person names).
+pub fn brand_name(raw: &str) -> Result<String, &'static str> {
+    let n = raw.split_whitespace().collect::<Vec<_>>().join(" ");
+    if n.chars().count() < 2 || n.chars().count() > 80 || n.chars().any(char::is_control) {
+        return Err("Enter the broker's brand name (2–80 characters).");
+    }
+    Ok(n)
+}
+
 fn clean_color(raw: &str) -> Result<String, &'static str> {
     let c = raw.trim().to_lowercase();
     if c.len() == 7 && c.starts_with('#') && c[1..].chars().all(|x| x.is_ascii_hexdigit()) {
@@ -333,7 +342,7 @@ pub async fn create_tenant(State(st): State<AppState>, ctx: Ctx, req: Result<Jso
     let r = body(req)?;
     let me = require_key(&st, &ctx, "owner.tenants").await?;
     let slug = clean_slug(&r.slug).map_err(field("slug"))?;
-    let name = validate::name(&r.name, "Enter the broker's brand name.").map_err(field("name"))?;
+    let name = brand_name(&r.name).map_err(field("name"))?;
     let domains = clean_domains(&r.domains)?;
     let brand = brand_json(&r.brand)?;
     let limits = limits_json(&r.limits)?;
@@ -556,7 +565,7 @@ pub async fn update_tenant(State(st): State<AppState>, ctx: Ctx, Path(id): Path<
         .await?
         .ok_or(ApiError::NotFound)?;
     let name = match r.name.as_deref() {
-        Some(n) => Some(validate::name(n, "Enter the broker's brand name.").map_err(field("name"))?),
+        Some(n) => Some(brand_name(n).map_err(field("name"))?),
         None => None,
     };
     let domains = match &r.domains {
@@ -1046,5 +1055,7 @@ mod tests {
         assert!(clean_domain("localhost").is_err());
         assert!(clean_domain("bad_domain.com").is_err());
         assert!(clean_color("#FF5A1F").is_ok() && clean_color("red").is_err());
+        assert_eq!(brand_name("  Acme  FX 24 ").unwrap(), "Acme FX 24");
+        assert!(brand_name("A").is_err());
     }
 }

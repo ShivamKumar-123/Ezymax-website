@@ -7,11 +7,13 @@ import { Button, Card, CardHeader, Chip, IconButton, KpiCard, Menu, PageHeader, 
 import { MKT_BANNERS, type MktBanner, type MktPlacement } from "@kalks/mock/admin-growth-marketing";
 import { BannerEditor } from "@/components/marketing/banner-editor";
 import { BannerPreview, fmtDate, fmtInt, fmtK } from "@/components/marketing/kit";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveBanners } from "@/components/marketing/live/banners";
 
 type P = "all" | MktPlacement;
 const PLACEMENT_ICON: Record<MktPlacement, React.ReactNode> = { dashboard: <LayoutDashboard className="size-3" />, wallet: <Wallet className="size-3" />, login: <LogIn className="size-3" /> };
 
-export default function BannersPage() {
+function DemoBannersPage() {
   const [placement, setPlacement] = React.useState<P>("all");
   const [editing, setEditing] = React.useState<MktBanner | null>(null);
   const [open, setOpen] = React.useState(false);
@@ -246,4 +248,8 @@ function RotationCard() {
       </div>
     </Card>
   );
+}
+
+export default function BannersPage() {
+  return IS_DEMO ? <DemoBannersPage /> : <LiveBanners />;
 }

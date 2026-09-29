@@ -31,6 +31,8 @@ import { PROMO_CODES, PROMO_DAILY, PROMO_KPIS, PROMO_REDEMPTIONS, PROMO_TYPE_MET
 import { MiniStat, daysFromToday, fmtDate, fmtDateTime, fmtK } from "@/components/marketing/kit";
 import { PromoCreateDialog } from "@/components/marketing/promo-create-dialog";
 import { StackedBars } from "@/components/marketing/stacked-bars";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePromoCodes } from "@/components/marketing/live/promos";
 
 const TYPE_COLOR: Record<PromoType, string> = { "deposit-bonus": "#ff5a1f", "fee-waiver": "#e9b949", "prop-retry": "#22c55e" };
 const STATUS_META: Record<PromoStatus, { tone: ChipTone; label: string }> = {
@@ -46,7 +48,7 @@ function valueText(c: PromoCode) {
   return c.type === "deposit-bonus" ? `${c.value}%` : c.type === "fee-waiver" ? `${c.value}% off` : `${c.value}× retry`;
 }
 
-export default function PromoCodesPage() {
+function DemoPromoCodesPage() {
   const [codes, setCodes] = React.useState<PromoCode[]>(PROMO_CODES);
   const [filter, setFilter] = React.useState<Filter>("all");
   const [open, setOpen] = React.useState(false);
@@ -380,4 +382,8 @@ export default function PromoCodesPage() {
       <PromoCreateDialog open={open} onOpenChange={setOpen} onCreate={(c) => setCodes((cs) => [c, ...cs])} />
     </div>
   );
+}
+
+export default function PromoCodesPage() {
+  return IS_DEMO ? <DemoPromoCodesPage /> : <LivePromoCodes />;
 }

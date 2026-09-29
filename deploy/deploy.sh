@@ -16,6 +16,7 @@ cargo build --release -p market-data -p gateway -p trading -p prop -p ib
 cargo build --release -p academy
 cargo build --release -p algo
 cargo build --release -p wallet
+cargo build --release -p growth
 
 # trading engine secrets are generated on the server on first deploy (never committed, never printed)
 touch .env.local
@@ -114,6 +115,17 @@ for app in apps/crm apps/admin; do
   grep -q '^WALLET_URL=' "$f" || printf 'WALLET_URL=http://127.0.0.1:8095\n' >> "$f"
   grep -q '^WALLET_INTERNAL_TOKEN=' "$f" || printf 'WALLET_INTERNAL_TOKEN=%s\n' "$(grep '^WALLET_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
 done
+# growth (rewards + marketing) secrets: internal token generated once, database kalks_growth next to the gateway's;
+# the Client Area and Back Office BFFs reach the service with the same token
+grep -q '^GROWTH_INTERNAL_TOKEN=' .env.local || printf 'GROWTH_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
+if ! grep -q '^GROWTH_DATABASE_URL=' .env.local && grep -q '^GATEWAY_DATABASE_URL=' .env.local; then
+  printf 'GROWTH_DATABASE_URL=%s\n' "$(grep '^GATEWAY_DATABASE_URL=' .env.local | cut -d= -f2- | sed -E 's#/[^/?]+([?].*)?$#/kalks_growth\1#')" >> .env.local
+fi
+for app in apps/crm apps/admin; do
+  f="$app/.env.production.local"; touch "$f"
+  grep -q '^GROWTH_URL=' "$f" || printf 'GROWTH_URL=http://127.0.0.1:8101\n' >> "$f"
+  grep -q '^GROWTH_INTERNAL_TOKEN=' "$f" || printf 'GROWTH_INTERNAL_TOKEN=%s\n' "$(grep '^GROWTH_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
+done
 pnpm turbo run build --filter=@kalks/crm --filter=@kalks/admin --filter=@kalks/terminal --concurrency=1
 
 # service units + edge config (idempotent)
@@ -125,6 +137,7 @@ sudo systemctl restart kalks-market-data kalks-gateway kalks-trading kalks-ib ka
 sudo systemctl enable kalks-academy >/dev/null && sudo systemctl restart kalks-academy
 sudo systemctl enable kalks-algo >/dev/null && sudo systemctl restart kalks-algo
 sudo systemctl enable kalks-wallet >/dev/null && sudo systemctl restart kalks-wallet
+sudo systemctl enable kalks-growth >/dev/null && sudo systemctl restart kalks-growth
 sudo systemctl reload caddy
 sleep 5
 for u in 127.0.0.1:8081/health 127.0.0.1:8080/health 127.0.0.1:8090/health 127.0.0.1:8096/health 127.0.0.1:8097/health 127.0.0.1:3000/login 127.0.0.1:3001/login 127.0.0.1:3002/login; do
@@ -133,3 +146,4 @@ done
 printf "%-26s %s\n" 127.0.0.1:8098/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8098/health)"
 printf "%-26s %s\n" 127.0.0.1:8095/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8095/health)"
 printf "%-26s %s\n" 127.0.0.1:8099/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/health)"
+printf "%-26s %s\n" 127.0.0.1:8101/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8101/health)"

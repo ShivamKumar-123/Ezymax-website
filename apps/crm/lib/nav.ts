@@ -35,6 +35,7 @@ import {
   Target,
   Medal,
   Percent,
+  Ticket,
   KeyRound,
   Webhook,
   Workflow,
@@ -157,6 +158,7 @@ export const CRM_NAV: NavModule[] = [
       { href: "/rewards", label: "Contests", icon: Medal },
       { href: "/rewards/loyalty", label: "Loyalty", icon: Gift },
       { href: "/rewards/cashback", label: "Cashback", icon: Percent },
+      { href: "/rewards/promotions", label: "Promotions", icon: Ticket },
     ],
   },
   {

@@ -18,6 +18,7 @@ import {
   type HistoryPage,
   type LedgerPage,
 } from "./api";
+import { SharePeriodButton, ShareTradeButton } from "@/components/growth/share-dialog";
 
 /* ------------------------------------------------------------------ */
 /* Date range                                                          */
@@ -129,6 +130,9 @@ export function DealsTable({ deals, cur }: { deals: EngineDeal[]; cur: string })
             <th className={cn(TH, "text-right")}>Commission</th>
             <th className={cn(TH, "text-right")}>Swap</th>
             <th className={cn(TH, "text-right")}>Profit</th>
+            <th className={cn(TH, "w-12 text-right")}>
+              <span className="sr-only">Share</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -166,6 +170,7 @@ export function DealsTable({ deals, cur }: { deals: EngineDeal[]; cur: string })
                 <td className={cn(TD, "k-num text-right text-[12.5px] text-fg-3")}>{d.commission ? fmtAmount(d.commission, "") : "—"}</td>
                 <td className={cn(TD, "k-num text-right text-[12.5px] text-fg-3")}>{d.swap ? fmtAmount(d.swap, "") : "—"}</td>
                 <td className={cn(TD, "k-num text-right font-semibold", !exit ? "text-fg-3" : d.profit > 0 ? "text-up" : d.profit < 0 ? "text-down" : "")}>{exit ? fmtAmount(d.profit, cur, true) : "—"}</td>
+                <td className={cn(TD, "text-right")}>{exit && !d.reversed && <ShareTradeButton login={d.login} dealId={d.id} symbol={d.symbol} />}</td>
               </tr>
             );
           })}
@@ -202,9 +207,12 @@ export function HistoryPanel({ a, title = "Trade history" }: { a: Pick<EngineAcc
             )
           }
           action={
-            <Button size="sm" variant="surface" disabled={invalid} onClick={() => downloadExport(a.login, "history", q.from, q.to)}>
-              <Download /> CSV
-            </Button>
+            <>
+              {data && data.total > 0 && !invalid && <SharePeriodButton login={a.login} from={q.from ?? isoDay(new Date(Date.now() - 5 * 365 * 86400_000))} to={q.to ?? isoDay(new Date(Date.now() + 86400_000))} />}
+              <Button size="sm" variant="surface" disabled={invalid} onClick={() => downloadExport(a.login, "history", q.from, q.to)}>
+                <Download /> CSV
+              </Button>
+            </>
           }
         />
         <div className="px-4 pb-5 pt-4 sm:px-6">

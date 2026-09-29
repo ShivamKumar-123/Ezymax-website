@@ -68,6 +68,17 @@ cargo test -p ib
 
 Its settings (`IB_*`) live in `.env.local` at the repo root; the Client Area and Back Office need `IB_URL` / `IB_INTERNAL_TOKEN` in their `.env.local`. Partner links are `/r/CODE[/campaign]` on the Client Area. Rules, API and integration guide: [services/ib/README.md](services/ib/README.md).
 
+## Rewards and marketing (growth)
+
+The Rust growth service runs loyalty points per lot with tiers and a redemption catalogue, cashback programmes, demo / live trading contests with live leaderboards and prizes, deposit / credit bonus campaigns that release per lot (posted to the engine's bonus sub-ledger), promo codes, targeted banners and share P&L cards. It reads closed deals from the trading engine and pays cash rewards through the wallet. It uses PostgreSQL on port 5433 (database `kalks_growth`, created and migrated on first start).
+
+```bash
+cargo run -p growth                # http://127.0.0.1:8101 (BFFs and internal services only)
+cargo test -p growth
+```
+
+Its settings (`GROWTH_*`) live in `.env.local` at the repo root; the Client Area and Back Office need `GROWTH_URL` / `GROWTH_INTERNAL_TOKEN` in their `.env.local`. Client pages are under `/rewards` (contests, loyalty, cashback, promotions), public share cards at `/s/CODE`; staff pages under `/marketing` (permissions `marketing.read|write|approve`). Rules, API and integration guide: [services/growth/README.md](services/growth/README.md).
+
 ## Layout
 
 ```
@@ -80,6 +91,7 @@ services/market-data  Rust market-data service (prices, candles, spreads) — :8
 services/gateway      Rust sign-in service (clients, staff, sessions, audit log) — :8080
 services/trading      Rust trading engine (accounts, orders, margin, ledger, dealing) — :8090
 services/ib           Rust IB / referral programme (tree, commissions, payouts) — :8096
+services/growth       Rust rewards + marketing (loyalty, cashback, contests, bonuses, promos, banners, share cards) — :8101
 config/         Instrument catalogue + trading contract specs
 brand/          Logo sources
 scripts/        Asset sync

@@ -8,7 +8,7 @@ import { ADMIN_NAV } from "@/lib/nav";
  */
 
 /** Pages (path prefixes) that run on real data in live builds. */
-export const LIVE_PAGES = ["/", "/clients", "/security", "/org", "/trading", "/config", "/content/academy", "/partners", "/finance", "/prop", "/algo", "/brokers", "/settings/maintenance", "/settings/features"] as const;
+export const LIVE_PAGES = ["/", "/clients", "/security", "/org", "/trading", "/config", "/content/academy", "/partners", "/finance", "/prop", "/algo", "/brokers", "/settings/maintenance", "/settings/features", "/marketing"] as const;
 
 /** Sub-pages under a live prefix that are not live yet. */
 export const LIVE_EXCLUDED = [
@@ -37,6 +37,10 @@ export const LIVE_EXCLUDED = [
   "/finance/adjustments",
   "/finance/payouts",
   "/finance/conversion",
+  // marketing: bonuses, promo codes, banners, contests, rewards, cashback and reports run on the growth service;
+  // UTM campaign attribution and trigger journeys are not live yet
+  "/marketing/automation",
+  "/marketing/campaigns",
 ] as const;
 
 /** Next milestone: shown in the live nav with a "Soon" chip and a Coming soon page. */

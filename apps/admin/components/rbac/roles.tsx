@@ -177,7 +177,7 @@ export function LiveRoles() {
 
   const role = data?.items.find((r) => r.id === sel) ?? null;
   React.useEffect(() => {
-    if (data && (sel === null || !data.items.some((r) => r.id === sel))) setSel(data.items.find((r) => r.kind !== "system")?.id ?? data.items[0]?.id ?? null);
+    if (data && sel === null) setSel(data.items.find((r) => r.kind !== "system")?.id ?? data.items[0]?.id ?? null);
   }, [data, sel]);
   React.useEffect(() => {
     if (role) {

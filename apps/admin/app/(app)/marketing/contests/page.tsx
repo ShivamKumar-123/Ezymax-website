@@ -25,10 +25,12 @@ import {
 import { MKT_CONTESTS, MKT_LEADERBOARD, type MktContest } from "@kalks/mock/admin-growth-marketing";
 import { ContestWizard, rankIcon } from "@/components/marketing/contest-wizard";
 import { daysFromToday, fmtDate, fmtInt, fmtK } from "@/components/marketing/kit";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveContests } from "@/components/marketing/live/contests";
 
 type F = "all" | "running" | "scheduled" | "completed";
 
-export default function ContestsPage() {
+function DemoContestsPage() {
   const [wizard, setWizard] = React.useState(false);
   const [sel, setSel] = React.useState<MktContest>(MKT_CONTESTS[0]!);
   const [f, setF] = React.useState<F>("all");
@@ -317,4 +319,8 @@ function IntegrityCard() {
       </div>
     </Card>
   );
+}
+
+export default function ContestsPage() {
+  return IS_DEMO ? <DemoContestsPage /> : <LiveContests />;
 }
