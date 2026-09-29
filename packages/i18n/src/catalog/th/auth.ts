@@ -1,0 +1,134 @@
+import type { NsMessages } from "../../core";
+
+const auth: NsMessages<"auth"> = {
+  // Shared form fields
+  "field.email": "อีเมล",
+  "field.emailOrViewer": "อีเมลหรือ Viewer ID",
+  "field.password": "รหัสผ่าน",
+  "field.newPassword": "รหัสผ่านใหม่",
+  "field.firstName": "ชื่อ",
+  "field.lastName": "นามสกุล",
+  "field.country": "ประเทศที่พำนัก",
+  "field.phone": "โทรศัพท์",
+  "field.dateOfBirth": "วันเกิด",
+  "field.referralCode": "รหัสแนะนำ",
+  "field.optionalHint": "ไม่บังคับ",
+  "placeholder.email": "you@example.com",
+  "placeholder.createPassword": "สร้างรหัสผ่านที่รัดกุม",
+  "togglePassword": "แสดง/ซ่อนรหัสผ่าน",
+
+  // Shared OTP / code step
+  "otp.didntGetIt": "ไม่ได้รับรหัสใช่ไหม",
+  "otp.verifying": "กำลังยืนยัน…",
+  "otp.resendIn": "ส่งอีกครั้งใน 0:{seconds}",
+  "otp.sending": "กำลังส่ง…",
+  "otp.resendCode": "ส่งรหัสอีกครั้ง",
+  "otp.devHint": "โหมดนักพัฒนา: ยังไม่ได้ตั้งค่าการส่งอีเมล รหัสของคุณคือ <code>{code}</code> (อยู่ใน gateway log ด้วย)",
+  "toast.newCodeSent": "ส่งรหัสใหม่แล้ว",
+  "toast.checkEmail": "โปรดตรวจสอบ {email}",
+
+  // Google sign-in
+  "google.continue": "ดำเนินการต่อด้วย Google",
+  "google.signUp": "สมัครด้วย Google",
+  "google.opening": "กำลังเปิด Google…",
+  "google.orWithEmail": "หรือใช้อีเมล",
+  "google.error.cancelled": "การเข้าสู่ระบบด้วย Google ถูกยกเลิก โปรดเลือกบัญชีเพื่อดำเนินการต่อ หรือใช้อีเมลของคุณด้านล่าง",
+  "google.error.expired": "การเข้าสู่ระบบด้วย Google หมดเวลาหรือถูกเปิดในแท็บอื่น โปรดลองอีกครั้ง",
+  "google.error.unverified": "อีเมลของบัญชี Google ของคุณยังไม่ได้รับการยืนยัน โปรดยืนยันกับ Google หรือใช้อีเมลของคุณด้านล่าง",
+  "google.error.conflict": "อีเมลนี้เชื่อมโยงกับบัญชี Google อื่นอยู่แล้ว โปรดใช้บัญชี Google นั้น หรือเข้าสู่ระบบด้วยรหัสผ่าน",
+  "google.error.disabled": "บัญชีนี้ถูกปิดใช้งาน โปรดติดต่อฝ่ายสนับสนุน",
+  "google.error.rate_limited": "มีการพยายามเข้าสู่ระบบมากเกินไป โปรดรอสักครู่แล้วลองอีกครั้ง",
+  "google.error.unavailable": "ขณะนี้ไม่สามารถเข้าสู่ระบบด้วย Google ได้ โปรดลองอีกครั้งในอีกสักครู่ หรือใช้อีเมลของคุณ",
+  "google.error.failed": "ไม่สามารถเข้าสู่ระบบด้วย Google ได้ โปรดลองอีกครั้ง",
+
+  // Password strength meter
+  "strength.rule": "8 ตัวอักษรขึ้นไป มีตัวพิมพ์ใหญ่ ตัวเลข และสัญลักษณ์",
+  "strength.tooWeak": "อ่อนเกินไป",
+  "strength.weak": "อ่อน",
+  "strength.fair": "พอใช้",
+  "strength.good": "ดี",
+  "strength.strong": "รัดกุม",
+
+  // Demo entry card (demo builds only)
+  "demo.title": "นี่คือเดโมของ Kalks",
+  "demo.body": "ไม่ต้องมีบัญชี ทุกหน้าจอใช้ข้อมูลตัวอย่าง",
+  "demo.enter": "เข้าสู่เดโม",
+
+  // Auth layout brand panel
+  "brand.headline": "เทรดตลาดทั่วโลกด้วยความแม่นยำระดับสถาบัน",
+  "brand.body": "ฟอเร็กซ์ โลหะ ดัชนี พลังงาน คริปโต และหุ้น ฝากเงินด้วย USDT ได้ทันที บัญชีเดียวสำหรับการเทรด การคัดลอกการเทรด และการเป็นพาร์ทเนอร์",
+  "brand.previewAlt": "แดชบอร์ดพื้นที่ลูกค้า Kalks",
+
+  // Sign in
+  "login.title": "ยินดีต้อนรับกลับมา",
+  "login.subtitle": "เข้าสู่ระบบพื้นที่ลูกค้า Kalks ของคุณ",
+  "login.forgot": "ลืมรหัสผ่าน?",
+  "login.signingIn": "กำลังเข้าสู่ระบบ…",
+  "login.signIn": "เข้าสู่ระบบ",
+  "login.newToKalks": "เพิ่งเริ่มใช้ Kalks? <link>สร้างบัญชี</link>",
+  "login.verifyEmailTitle": "ยืนยันอีเมลของคุณ",
+  "login.verifyDeviceTitle": "ยืนยันว่าเป็นคุณ",
+  "login.emailNotVerified": "อีเมลของคุณยังไม่ได้รับการยืนยัน",
+  "login.newDevice": "ตรวจพบอุปกรณ์ใหม่",
+  "login.codeSent": "เราได้ส่งรหัส 6 หลักไปที่ <b>{email}</b> แล้ว",
+  "login.verifyContinue": "ยืนยันและดำเนินการต่อ",
+  "login.back": "← ย้อนกลับ",
+
+  // Sign up
+  "register.stepDetails": "ข้อมูล",
+  "register.stepVerify": "ยืนยันอีเมล",
+  "register.stepDone": "เสร็จสิ้น",
+  "register.title": "สร้างบัญชี Kalks ของคุณ",
+  "register.subtitleDemo": "เปิดบัญชีทดลองฟรีได้ทันที และเริ่มเทรดจริงได้ทุกเมื่อที่คุณพร้อม",
+  "register.subtitle": "สมัครได้ในหนึ่งนาที และติดตามตลาดแบบเรียลไทม์ได้ทันที",
+  "register.emailTaken": "<signin>เข้าสู่ระบบ</signin> หรือ <reset>รีเซ็ตรหัสผ่าน</reset>",
+  "register.terms": "ข้าพเจ้ามีอายุเกิน 18 ปี และยอมรับ <agreement>ข้อตกลงลูกค้า</agreement> <risk>การเปิดเผยความเสี่ยง</risk> และ <privacy>นโยบายความเป็นส่วนตัว</privacy>",
+  "register.creating": "กำลังสร้างบัญชี…",
+  "register.create": "สร้างบัญชี",
+  "register.haveAccount": "มีบัญชีอยู่แล้ว? <link>เข้าสู่ระบบ</link>",
+  "register.checkInbox": "โปรดตรวจสอบกล่องจดหมายของคุณ",
+  "register.enterCode": "กรอกรหัส 6 หลักที่เราส่งไปที่ <b>{email}</b>",
+  "register.verifyEmail": "ยืนยันอีเมล",
+  "register.welcome": "ยินดีต้อนรับสู่ Kalks คุณ{name}",
+  "register.readyDemo": "อีเมลของคุณได้รับการยืนยันแล้วและบัญชีของคุณพร้อมใช้งาน เปิดบัญชีทดลองได้เลย หรือยืนยันตัวตนเพื่อเริ่มเทรดจริง",
+  "register.ready": "อีเมลของคุณได้รับการยืนยันแล้วและบัญชีของคุณพร้อมใช้งาน ติดตามตลาดแบบเรียลไทม์ได้เลย การฝากเงินและบัญชีเทรดจะเปิดให้บริการเร็วๆ นี้",
+  "register.openClientArea": "เปิดพื้นที่ลูกค้า",
+
+  // Complete profile after Google sign-up
+  "complete.stepGoogle": "บัญชี Google",
+  "complete.stepDetails": "ข้อมูลของคุณ",
+  "complete.loading": "กำลังโหลดโปรไฟล์ Google ของคุณ…",
+  "complete.expiredTitle": "มาเริ่มกันใหม่",
+  "complete.accountExists": "บัญชีของคุณตั้งค่าเรียบร้อยแล้ว ดำเนินการต่อด้วย Google เพื่อเข้าสู่ระบบ",
+  "complete.expired": "การสมัครด้วย Google ของคุณหมดอายุหรือเสร็จสิ้นในแท็บอื่นแล้ว ดำเนินการต่อด้วย Google เพื่อทำต่อจากเดิม",
+  "complete.preferEmail": "ต้องการใช้อีเมล? <link>สมัครด้วยอีเมล</link>",
+  "complete.title": "กรอกโปรไฟล์ให้ครบถ้วน",
+  "complete.subtitle": "ข้อมูลบางส่วนที่จำเป็นสำหรับทุกบัญชี Kalks ใช้เวลาไม่ถึงหนึ่งนาที",
+  "complete.googleAccount": "บัญชี Google",
+  "complete.emailTaken": "<signin>เข้าสู่ระบบ</signin> ด้วยรหัสผ่านแทน หรือ <reset>รีเซ็ตรหัสผ่าน</reset>",
+  "complete.ready": "บัญชีของคุณพร้อมใช้งานและเข้าสู่ระบบด้วย Google แล้ว ติดตามตลาดแบบเรียลไทม์ได้เลย การฝากเงินและบัญชีเทรดจะเปิดให้บริการเร็วๆ นี้",
+  "complete.notYou": "ไม่ใช่คุณ? <link>ใช้บัญชี Google อื่น</link>",
+
+  // Forgot / reset password
+  "forgot.backToSignIn": "กลับไปที่การเข้าสู่ระบบ",
+  "forgot.titleReset": "รีเซ็ตรหัสผ่านของคุณ",
+  "forgot.titleCode": "กรอกรหัส",
+  "forgot.titleNew": "ตั้งรหัสผ่านใหม่",
+  "forgot.intro": "เราจะส่งรหัส 6 หลักไปยังอีเมลของคุณเพื่อรีเซ็ตรหัสผ่าน",
+  "forgot.codeSent": "หากมีบัญชีสำหรับ <b>{email}</b> เราได้ส่งรหัสไปแล้ว",
+  "forgot.passwordRule": "ใช้อย่างน้อย 8 ตัวอักษร ผสมตัวอักษร ตัวเลข และสัญลักษณ์",
+  "forgot.sendCode": "ส่งรหัส",
+  "forgot.updating": "กำลังอัปเดต…",
+  "forgot.update": "อัปเดตรหัสผ่าน",
+  "forgot.toastUpdated": "อัปเดตรหัสผ่านแล้ว",
+  "forgot.toastUpdatedBody": "เข้าสู่ระบบด้วยรหัสผ่านใหม่ของคุณ",
+
+  // Step-up confirmation dialog (emailed code before sensitive changes)
+  "stepup.intro": "หากต้องการ{what} โปรดกรอกรหัส 6 หลักที่เราส่งไปที่ <b>{email}</b> รหัสจะหมดอายุใน {minutes} นาที",
+  "stepup.spam": "ไม่ได้รับรหัส? โปรดตรวจสอบโฟลเดอร์สแปม",
+  "stepup.checking": "กำลังตรวจสอบ…",
+  "stepup.saving": "กำลังบันทึก…",
+  "stepup.sendAgain": "ส่งรหัสอีกครั้ง",
+  "stepup.sendingCode": "กำลังส่งรหัสยืนยันไปยังอีเมลของคุณ…",
+};
+export default auth;

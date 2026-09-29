@@ -1,0 +1,135 @@
+import type { NsMessages } from "../../core";
+
+const auth: NsMessages<"auth"> = {
+  // Campos de formulário compartilhados
+  "field.email": "E-mail",
+  "field.emailOrViewer": "E-mail ou ID de visualizador",
+  "field.password": "Senha",
+  "field.newPassword": "Nova senha",
+  "field.firstName": "Nome",
+  "field.lastName": "Sobrenome",
+  "field.country": "País de residência",
+  "field.phone": "Telefone",
+  "field.dateOfBirth": "Data de nascimento",
+  "field.referralCode": "Código de indicação",
+  "field.optionalHint": "opcional",
+  "placeholder.email": "voce@exemplo.com",
+  "placeholder.createPassword": "Crie uma senha forte",
+  "togglePassword": "Mostrar/ocultar senha",
+
+  // Etapa de código OTP
+  "otp.didntGetIt": "Não recebeu?",
+  "otp.verifying": "Verificando…",
+  "otp.resendIn": "Reenviar em 0:{seconds}",
+  "otp.sending": "Enviando…",
+  "otp.resendCode": "Reenviar código",
+  "otp.devHint": "Modo de desenvolvimento: o envio de e-mails ainda não está configurado. Seu código é <code>{code}</code> (também no log do gateway).",
+  "toast.newCodeSent": "Novo código enviado",
+  "toast.checkEmail": "Verifique {email}",
+
+  // Login com Google
+  "google.continue": "Continuar com Google",
+  "google.signUp": "Cadastrar-se com Google",
+  "google.opening": "Abrindo o Google…",
+  "google.orWithEmail": "ou com e-mail",
+  "google.error.cancelled": "O login com Google foi cancelado. Escolha uma conta para continuar ou use seu e-mail abaixo.",
+  "google.error.expired": "Seu login com Google expirou ou foi aberto em outra aba. Tente novamente.",
+  "google.error.unverified": "O endereço de e-mail da sua conta Google não está verificado. Verifique-o no Google ou use seu e-mail abaixo.",
+  "google.error.conflict": "Este e-mail já está vinculado a outra conta Google. Use essa conta Google ou entre com sua senha.",
+  "google.error.disabled": "Esta conta está desativada. Entre em contato com o suporte.",
+  "google.error.rate_limited": "Muitas tentativas de login. Aguarde alguns minutos e tente novamente.",
+  "google.error.unavailable": "O login com Google está indisponível no momento. Tente novamente em instantes ou use seu e-mail.",
+  "google.error.failed": "Não foi possível fazer seu login com Google. Tente novamente.",
+
+  // Medidor de força da senha
+  "strength.rule": "8+ caracteres, maiúscula, número e símbolo",
+  "strength.tooWeak": "Muito fraca",
+  "strength.weak": "Fraca",
+  "strength.fair": "Razoável",
+  "strength.good": "Boa",
+  "strength.strong": "Forte",
+
+  // Cartão de entrada da demo
+  "demo.title": "Esta é a demo da Kalks",
+  "demo.body": "Não é preciso ter conta. Todas as telas usam dados de exemplo.",
+  "demo.enter": "Entrar na demo",
+
+  // Painel da marca no layout de autenticação
+  "brand.headline": "Negocie nos mercados globais com precisão institucional.",
+  "brand.body": "Forex, metais, índices, energia, cripto e ações — depósitos instantâneos em USDT, uma única conta para negociar, copiar e ser parceiro.",
+  "brand.previewAlt": "Painel da área do cliente Kalks",
+
+  // Entrar
+  "login.title": "Bem-vindo de volta",
+  "login.subtitle": "Entre na sua área do cliente Kalks.",
+  "login.forgot": "Esqueceu a senha?",
+  "login.signingIn": "Entrando…",
+  "login.signIn": "Entrar",
+  "login.newToKalks": "Novo na Kalks? <link>Crie uma conta</link>",
+  "login.verifyEmailTitle": "Verifique seu e-mail",
+  "login.verifyDeviceTitle": "Confirme que é você",
+  "login.emailNotVerified": "Seu e-mail ainda não foi verificado.",
+  "login.newDevice": "Novo dispositivo detectado.",
+  "login.codeSent": "Enviamos um código de 6 dígitos para <b>{email}</b>.",
+  "login.verifyContinue": "Verificar e continuar",
+  "login.back": "← Voltar",
+
+  // Cadastro
+  "register.stepDetails": "Dados",
+  "register.stepVerify": "Verificar e-mail",
+  "register.stepDone": "Concluído",
+  "register.title": "Crie sua conta Kalks",
+  "register.subtitleDemo": "Abra uma conta demo gratuita na hora. Passe para a conta real quando estiver pronto.",
+  "register.subtitle": "Cadastre-se em um minuto e acompanhe os mercados em tempo real imediatamente.",
+  "register.emailTaken": "<signin>Entre</signin> ou <reset>redefina sua senha</reset>.",
+  "register.terms": "Tenho mais de 18 anos e concordo com o <agreement>Contrato do Cliente</agreement>, a <risk>Divulgação de Riscos</risk> e a <privacy>Política de Privacidade</privacy>.",
+  "register.creating": "Criando conta…",
+  "register.create": "Criar conta",
+  "register.haveAccount": "Já tem uma conta? <link>Entrar</link>",
+  "register.checkInbox": "Verifique sua caixa de entrada",
+  "register.enterCode": "Digite o código de 6 dígitos que enviamos para <b>{email}</b>.",
+  "register.verifyEmail": "Verificar e-mail",
+  "register.welcome": "Bem-vindo à Kalks, {name}",
+  "register.readyDemo": "Seu e-mail foi verificado e sua conta está pronta. Abra uma conta demo agora ou verifique sua identidade para operar em conta real.",
+  "register.ready": "Seu e-mail foi verificado e sua conta está pronta. Acompanhe os mercados em tempo real agora; depósitos e contas de negociação chegam em breve.",
+  "register.openClientArea": "Abrir área do cliente",
+
+  // Completar perfil após cadastro com Google
+  "complete.stepGoogle": "Conta Google",
+  "complete.stepDetails": "Seus dados",
+  "complete.loading": "Carregando seu perfil do Google…",
+  "complete.expiredTitle": "Vamos começar de novo",
+  "complete.accountExists": "Sua conta já está configurada. Continue com Google para entrar.",
+  "complete.expired": "Seu cadastro com Google expirou ou foi concluído em outra aba. Continue com Google para retomar de onde parou.",
+  "complete.preferEmail": "Prefere e-mail? <link>Cadastre-se com e-mail</link>",
+  "complete.title": "Complete seu perfil",
+  "complete.subtitle": "Alguns dados que precisamos para toda conta Kalks. Leva menos de um minuto.",
+  "complete.googleAccount": "Conta Google",
+  "complete.emailTaken": "<signin>Entre</signin> com sua senha ou <reset>redefina-a</reset>.",
+  "complete.ready": "Sua conta está pronta e conectada com o Google. Acompanhe os mercados em tempo real agora; depósitos e contas de negociação chegam em breve.",
+  "complete.notYou": "Não é você? <link>Use outra conta Google</link>",
+
+  // Esqueci / redefinir senha
+  "forgot.backToSignIn": "Voltar para o login",
+  "forgot.titleReset": "Redefina sua senha",
+  "forgot.titleCode": "Digite o código",
+  "forgot.titleNew": "Defina uma nova senha",
+  "forgot.intro": "Enviaremos para seu e-mail um código de 6 dígitos para redefinir sua senha.",
+  "forgot.codeSent": "Se houver uma conta para <b>{email}</b>, enviamos um código para ela.",
+  "forgot.passwordRule": "Use pelo menos 8 caracteres, combinando letras, números e símbolos.",
+  "forgot.sendCode": "Enviar código",
+  "forgot.updating": "Atualizando…",
+  "forgot.update": "Atualizar senha",
+  "forgot.toastUpdated": "Senha atualizada",
+  "forgot.toastUpdatedBody": "Entre com sua nova senha.",
+
+  // Diálogo de confirmação adicional (código por e-mail antes de alterações sensíveis)
+  // {what} é uma frase de ação traduzida, como "alterar a alavancagem da conta #10000123"
+  "stepup.intro": "Para {what}, digite o código de 6 dígitos que enviamos para <b>{email}</b>. Ele expira em {minutes} minutos.",
+  "stepup.spam": "Não recebeu? Verifique sua pasta de spam.",
+  "stepup.checking": "Verificando…",
+  "stepup.saving": "Salvando…",
+  "stepup.sendAgain": "Enviar o código novamente",
+  "stepup.sendingCode": "Enviando um código de confirmação para seu e-mail…",
+};
+export default auth;

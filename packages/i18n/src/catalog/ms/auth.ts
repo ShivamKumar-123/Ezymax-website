@@ -1,0 +1,134 @@
+import type { NsMessages } from "../../core";
+
+const auth: NsMessages<"auth"> = {
+  // Shared form fields
+  "field.email": "E-mel",
+  "field.emailOrViewer": "E-mel atau ID penonton",
+  "field.password": "Kata laluan",
+  "field.newPassword": "Kata laluan baharu",
+  "field.firstName": "Nama pertama",
+  "field.lastName": "Nama akhir",
+  "field.country": "Negara kediaman",
+  "field.phone": "Telefon",
+  "field.dateOfBirth": "Tarikh lahir",
+  "field.referralCode": "Kod rujukan",
+  "field.optionalHint": "pilihan",
+  "placeholder.email": "anda@example.com",
+  "placeholder.createPassword": "Cipta kata laluan yang kukuh",
+  "togglePassword": "Tunjuk/sembunyi kata laluan",
+
+  // Shared OTP / code step
+  "otp.didntGetIt": "Tidak menerimanya?",
+  "otp.verifying": "Mengesahkan…",
+  "otp.resendIn": "Hantar semula dalam 0:{seconds}",
+  "otp.sending": "Menghantar…",
+  "otp.resendCode": "Hantar semula kod",
+  "otp.devHint": "Mod pembangun: penghantaran e-mel belum dikonfigurasikan. Kod anda ialah <code>{code}</code> (juga dalam log gateway).",
+  "toast.newCodeSent": "Kod baharu telah dihantar",
+  "toast.checkEmail": "Semak {email}",
+
+  // Google sign-in
+  "google.continue": "Teruskan dengan Google",
+  "google.signUp": "Daftar dengan Google",
+  "google.opening": "Membuka Google…",
+  "google.orWithEmail": "atau dengan e-mel",
+  "google.error.cancelled": "Log masuk Google telah dibatalkan. Pilih akaun untuk meneruskan, atau gunakan e-mel anda di bawah.",
+  "google.error.expired": "Log masuk Google anda telah tamat masa atau dibuka di tab lain. Sila cuba lagi.",
+  "google.error.unverified": "Alamat e-mel akaun Google anda belum disahkan. Sahkannya dengan Google, atau gunakan e-mel anda di bawah.",
+  "google.error.conflict": "E-mel ini sudah dipautkan kepada akaun Google yang lain. Gunakan akaun Google tersebut, atau log masuk dengan kata laluan anda.",
+  "google.error.disabled": "Akaun ini telah dilumpuhkan. Sila hubungi sokongan.",
+  "google.error.rate_limited": "Terlalu banyak cubaan log masuk. Sila tunggu beberapa minit dan cuba lagi.",
+  "google.error.unavailable": "Log masuk Google tidak tersedia buat masa ini. Sila cuba sebentar lagi, atau gunakan e-mel anda.",
+  "google.error.failed": "Kami tidak dapat melog masuk anda dengan Google. Sila cuba lagi.",
+
+  // Password strength meter
+  "strength.rule": "8+ aksara, huruf besar, nombor & simbol",
+  "strength.tooWeak": "Terlalu lemah",
+  "strength.weak": "Lemah",
+  "strength.fair": "Sederhana",
+  "strength.good": "Baik",
+  "strength.strong": "Kukuh",
+
+  // Demo entry card (demo builds only)
+  "demo.title": "Ini ialah demo Kalks",
+  "demo.body": "Tiada akaun diperlukan. Setiap skrin menggunakan data contoh.",
+  "demo.enter": "Masuk demo",
+
+  // Auth layout brand panel
+  "brand.headline": "Dagangkan pasaran global dengan ketepatan institusi.",
+  "brand.body": "Forex, logam, indeks, tenaga, kripto dan saham — pendanaan USDT segera, satu akaun untuk berdagang, menyalin dan menjadi rakan kongsi.",
+  "brand.previewAlt": "Papan pemuka kawasan pelanggan Kalks",
+
+  // Sign in
+  "login.title": "Selamat kembali",
+  "login.subtitle": "Log masuk ke kawasan pelanggan Kalks anda.",
+  "login.forgot": "Lupa kata laluan?",
+  "login.signingIn": "Sedang log masuk…",
+  "login.signIn": "Log masuk",
+  "login.newToKalks": "Baharu di Kalks? <link>Cipta akaun</link>",
+  "login.verifyEmailTitle": "Sahkan e-mel anda",
+  "login.verifyDeviceTitle": "Sahkan bahawa ini anda",
+  "login.emailNotVerified": "E-mel anda belum disahkan.",
+  "login.newDevice": "Peranti baharu dikesan.",
+  "login.codeSent": "Kami telah menghantar kod 6 digit ke <b>{email}</b>.",
+  "login.verifyContinue": "Sahkan & teruskan",
+  "login.back": "← Kembali",
+
+  // Sign up
+  "register.stepDetails": "Butiran",
+  "register.stepVerify": "Sahkan e-mel",
+  "register.stepDone": "Selesai",
+  "register.title": "Cipta akaun Kalks anda",
+  "register.subtitleDemo": "Buka akaun demo percuma dengan segera. Beralih ke akaun sebenar bila-bila masa anda bersedia.",
+  "register.subtitle": "Daftar dalam seminit dan ikuti pasaran langsung dengan serta-merta.",
+  "register.emailTaken": "<signin>Log masuk</signin> atau <reset>set semula kata laluan anda</reset>.",
+  "register.terms": "Saya berumur lebih 18 tahun dan bersetuju dengan <agreement>Perjanjian Pelanggan</agreement>, <risk>Pendedahan Risiko</risk> dan <privacy>Dasar Privasi</privacy>.",
+  "register.creating": "Mencipta akaun…",
+  "register.create": "Cipta akaun",
+  "register.haveAccount": "Sudah mempunyai akaun? <link>Log masuk</link>",
+  "register.checkInbox": "Semak peti masuk anda",
+  "register.enterCode": "Masukkan kod 6 digit yang kami hantar ke <b>{email}</b>.",
+  "register.verifyEmail": "Sahkan e-mel",
+  "register.welcome": "Selamat datang ke Kalks, {name}",
+  "register.readyDemo": "E-mel anda telah disahkan dan akaun anda sudah sedia. Buka akaun demo sekarang, atau sahkan identiti anda untuk beralih ke akaun sebenar.",
+  "register.ready": "E-mel anda telah disahkan dan akaun anda sudah sedia. Ikuti pasaran langsung sekarang; pendanaan dan akaun dagangan akan datang tidak lama lagi.",
+  "register.openClientArea": "Buka kawasan pelanggan",
+
+  // Complete profile after Google sign-up
+  "complete.stepGoogle": "Akaun Google",
+  "complete.stepDetails": "Butiran anda",
+  "complete.loading": "Memuatkan profil Google anda…",
+  "complete.expiredTitle": "Mari mulakan semula",
+  "complete.accountExists": "Akaun anda sudah disediakan. Teruskan dengan Google untuk log masuk.",
+  "complete.expired": "Pendaftaran Google anda telah tamat tempoh atau diselesaikan di tab lain. Teruskan dengan Google untuk menyambung dari tempat anda berhenti.",
+  "complete.preferEmail": "Lebih suka e-mel? <link>Daftar dengan e-mel</link>",
+  "complete.title": "Lengkapkan profil anda",
+  "complete.subtitle": "Beberapa butiran yang kami perlukan untuk setiap akaun Kalks. Ia mengambil masa kurang daripada seminit.",
+  "complete.googleAccount": "Akaun Google",
+  "complete.emailTaken": "<signin>Log masuk</signin> dengan kata laluan anda, atau <reset>set semula kata laluan</reset>.",
+  "complete.ready": "Akaun anda sudah sedia dan telah log masuk dengan Google. Ikuti pasaran langsung sekarang; pendanaan dan akaun dagangan akan datang tidak lama lagi.",
+  "complete.notYou": "Bukan anda? <link>Gunakan akaun Google lain</link>",
+
+  // Forgot / reset password
+  "forgot.backToSignIn": "Kembali ke log masuk",
+  "forgot.titleReset": "Set semula kata laluan anda",
+  "forgot.titleCode": "Masukkan kod",
+  "forgot.titleNew": "Tetapkan kata laluan baharu",
+  "forgot.intro": "Kami akan menghantar kod 6 digit ke e-mel anda untuk menetapkan semula kata laluan anda.",
+  "forgot.codeSent": "Jika akaun wujud untuk <b>{email}</b>, kami telah menghantar kod kepadanya.",
+  "forgot.passwordRule": "Gunakan sekurang-kurangnya 8 aksara dengan gabungan huruf, nombor dan simbol.",
+  "forgot.sendCode": "Hantar kod",
+  "forgot.updating": "Mengemas kini…",
+  "forgot.update": "Kemas kini kata laluan",
+  "forgot.toastUpdated": "Kata laluan dikemas kini",
+  "forgot.toastUpdatedBody": "Log masuk dengan kata laluan baharu anda.",
+
+  // Step-up confirmation dialog (emailed code before sensitive changes)
+  "stepup.intro": "Untuk {what}, masukkan kod 6 digit yang kami hantar ke <b>{email}</b>. Kod ini tamat tempoh dalam {minutes} minit.",
+  "stepup.spam": "Tidak menerimanya? Semak folder spam anda.",
+  "stepup.checking": "Menyemak…",
+  "stepup.saving": "Menyimpan…",
+  "stepup.sendAgain": "Hantar semula kod",
+  "stepup.sendingCode": "Menghantar kod pengesahan ke e-mel anda…",
+};
+export default auth;

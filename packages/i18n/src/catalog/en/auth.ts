@@ -2,6 +2,7 @@
 const auth = {
   // Shared form fields
   "field.email": "Email",
+  "field.emailOrViewer": "Email or viewer ID",
   "field.password": "Password",
   "field.newPassword": "New password",
   "field.firstName": "First name",

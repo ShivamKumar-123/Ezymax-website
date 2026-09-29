@@ -1,0 +1,166 @@
+import type { NsMessages } from "../../core";
+
+const dashboard: NsMessages<"dashboard"> = {
+  // Page header (Client Area home)
+  "greeting.morning": "Habari za asubuhi, {name}",
+  "greeting.afternoon": "Habari za mchana, {name}",
+  "greeting.evening": "Habari za jioni, {name}",
+  "greeting.welcome": "Karibu, {name}",
+  "subtitle.live": "Karibu Kalks. Hii ndiyo akaunti yako na masoko ya leo.",
+  "subtitle.demo": "Hivi ndivyo akaunti zako zinavyofanya leo.",
+  launchTrader: "Fungua Kalks Trader",
+  openTerminal: "Fungua terminal ya biashara",
+
+  // Getting started checklist
+  "steps.title": "Kuanza",
+  "steps.subtitle": "Maendeleo yako kuelekea biashara halisi",
+  "steps.progress": "{done} kati ya {total}",
+  "steps.account.title": "Fungua akaunti yako",
+  "steps.account.text": "Ulisajiliwa tarehe {date}.",
+  "steps.email.title": "Thibitisha barua pepe yako",
+  "steps.email.verified": "{email} imethibitishwa.",
+  "steps.email.confirm": "Thibitisha {email} kwa msimbo tuliokutumia.",
+  "steps.kyc.title": "Thibitisha utambulisho wako",
+  "steps.kyc.verified": "Utambulisho wako umethibitishwa. Kutoa pesa kumefunguliwa.",
+  "steps.kyc.moreInfo": "Timu yetu inahitaji hati moja zaidi kutoka kwako.",
+  "steps.kyc.review": "Hati zako ziko kwa timu yetu ya uthibitishaji.",
+  "steps.kyc.draft": "Endelea ulipoishia. Inachukua takriban dakika 3.",
+  "steps.kyc.rejected": "Hatukuweza kuthibitisha hati zako. Unaweza kuanza upya.",
+  "steps.kyc.todo": "Inachukua takriban dakika 3. Inafungua kutoa pesa.",
+  "steps.accountOpen.title": "Fungua akaunti ya biashara",
+  "steps.accountOpen.opened": { one: "Akaunti {live} halisi na {demo} ya demo zimefunguliwa.", other: "Akaunti {live} halisi na {demo} za demo zimefunguliwa." },
+  "steps.accountOpen.todo": "Fungua akaunti halisi au ya demo; login yako hutolewa papo hapo.",
+  "steps.wallet.title": "Weka pesa kwenye pochi yako",
+  "steps.wallet.text": "Uwekaji wa USDT kupitia TRC20 unaunganishwa.",
+  // Step status chips
+  "steps.state.done": "Imekamilika",
+  "steps.state.todo": "Ya kufanya",
+  "steps.state.review": "Inakaguliwa",
+  "steps.state.rejected": "Imekataliwa",
+  "steps.state.soon": "Haijaanza",
+
+  // Trading accounts card
+  "accounts.title": "Akaunti za biashara",
+  "accounts.summary": "Equity halisi <b>{equity}</b> · {live} halisi · {demo} demo · nafasi {positions} zilizo wazi",
+  "accounts.subtitle": "Akaunti zako halisi na za demo",
+  "accounts.all": "Akaunti zote",
+  "accounts.open": "Fungua akaunti",
+  "accounts.unavailable": "Akaunti za biashara hazipatikani kwa sasa. Salio lako liko salama.",
+  "accounts.openLive.title": "Fungua akaunti halisi",
+  "accounts.openLive.text": "Masoko halisi. Inaanza na salio sifuri; ufadhili unafunguliwa pamoja na pochi.",
+  "accounts.openDemo.title": "Fungua akaunti ya demo",
+  "accounts.openDemo.text": "Fedha za mtandaoni kwa bei za wakati halisi, zinazoweza kujazwa upya kila siku.",
+  "accounts.more": { one: "Akaunti {count} zaidi", other: "Akaunti {count} zaidi" },
+  "accounts.myTitle": "Akaunti zangu za biashara",
+
+  // Your account card
+  "account.title": "Akaunti yako",
+  "account.clientId": "Kitambulisho cha mteja",
+  "account.emailStatus": "Hali ya barua pepe",
+  "account.notVerified": "Haijathibitishwa",
+  "account.identity": "Utambulisho",
+  "account.memberSince": "Mwanachama tangu",
+  "account.profile": "Wasifu",
+
+  // Kalks Trader banner
+  "trader.chip": "Bei za moja kwa moja",
+  "trader.text": "Bei na chati za wakati halisi kwa vyombo {count} katika forex, metali, fahirisi, nishati, crypto na hisa. Inafanya kazi kwenye kivinjari chako, hakuna cha kusakinisha.",
+
+  // Market clock / heatmap
+  "sessions.title": "Saa ya soko",
+  "sessions.open": "Masoko {open} kati ya {total} yako wazi",
+  "heatmap.title": "Ramani ya joto ya soko",
+  "heatmap.subtitle": "Mabadiliko ya leo kutoka bei za moja kwa moja · nukta tupu: soko limefungwa",
+  "heatmap.up": "{count} juu",
+  "heatmap.down": "{count} chini",
+  "heatmap.allMarkets": "Masoko yote",
+  "heatmap.tipOpen": "{symbol} · soko liko wazi",
+  "heatmap.tipClosed": "{symbol} · soko limefungwa, mabadiliko ya kipindi kilichopita",
+
+  // Support card
+  "support.title": "Unahitaji msaada?",
+  "support.text": "Tuandikie kwa <mail>{email}</mail> kutoka kwa anwani yako iliyosajiliwa na ujumuishe kitambulisho chako cha mteja.",
+  "support.emailSupport": "Tuma barua pepe kwa msaada",
+  "support.copied": "Anwani ya barua pepe imenakiliwa",
+  "support.copyFailed": "Imeshindwa kunakili, tafadhali chagua anwani badala yake",
+
+  // Demo dashboard: onboarding strip
+  "onboarding.title": "Maliza kusanidi akaunti yako",
+  "onboarding.text": "Kamilisha KYC ili kufungua kutoa pesa na viwango vya juu zaidi.",
+  "onboarding.progress": "Maendeleo",
+  "onboarding.dismiss": "Ondoa",
+
+  // Margin health
+  "margin.title": "Afya ya margin",
+  "margin.subtitle": "Katika akaunti zote halisi",
+  "margin.healthy": "Nzuri",
+  "margin.level": "Kiwango cha margin",
+  "margin.used": "Margin iliyotumika",
+  "margin.free": "Margin huru",
+
+  // Equity / P&L
+  "equity.title": "Jumla ya equity",
+  "equity.changeOver": "Mabadiliko kwa {range}",
+  "pnl.title": "Faida / hasara · mwezi",
+  "pnl.lowRisk": "Hatari ndogo",
+  "pnl.winRate": "Kiwango cha ushindi (siku 30)",
+  "pnl.trades": "Biashara (siku 30)",
+  "pnl.avgWin": "Wastani wa biashara ya faida",
+  "pnl.avgLoss": "Wastani wa biashara ya hasara",
+  "pnl.charges": "Ada zilizolipwa",
+
+  // KPI cards
+  "kpi.wallet": "Pochi",
+  "kpi.today": "+{pct}% leo",
+  "kpi.monthPnl": "P&L ya mwezi",
+  "kpi.vsLastMonth": "+{pct}% dhidi ya mwezi uliopita",
+  "kpi.partnerEarnings": "Mapato ya mshirika",
+  "kpi.copy": "Copy {amount}",
+
+  // Top movers
+  "movers.title": "Wanaosonga zaidi",
+  "movers.gainers": "Waliopanda",
+  "movers.losers": "Walioshuka",
+
+  // Economic calendar. A = Actual, F = Forecast, P = Previous
+  "calendar.title": "Kalenda ya kiuchumi",
+  "calendar.subtitle": "Leo · saa za seva GMT+3",
+  "calendar.actual": "A {value} · ",
+  "calendar.forecastPrevious": "F {forecast} · P {previous}",
+
+  // News / world
+  "news.title": "Habari za soko",
+  "news.all": "Habari zote",
+  "news.pinned": "Zilizobandikwa",
+  "world.title": "Masoko na habari duniani kote",
+  "world.subtitle": "Vichwa vya habari vya moja kwa moja kwa nchi na mwelekeo wa sarafu",
+  "world.stories": { one: "Habari {count} leo", other: "Habari {count} leo" },
+
+  // Open positions
+  "positions.title": "Nafasi zilizo wazi",
+  "positions.summary": { one: "Nafasi {count} · inayoelea", other: "Nafasi {count} · zinazoelea" },
+  "positions.terminal": "Terminal",
+
+  // Partner banner
+  "partner.chip": "Mpango wa washirika",
+  "partner.title": "Alika wafanyabiashara. Pata hadi $15 kwa kila loti — maisha yote.",
+  "partner.text": "Kamisheni za ngazi nyingi, bonasi za CPA na ufuatiliaji wa wakati halisi. Kiungo chako: <link>{url}</link>",
+  "partner.open": "Fungua dashibodi ya mshirika",
+
+  // Short relative times
+  "time.justNow": "Sasa hivi",
+  "time.minutesAgo": "dak {count} zilizopita",
+  "time.hoursAgo": "saa {count} zilizopita",
+  "time.daysAgo": "siku {count} zilizopita",
+  "time.ago": "{time} zilizopita",
+
+  // Notifications bell / panel
+  "notifications.title": "Arifa",
+  "notifications.ariaUnread": "Arifa, {count} hazijasomwa",
+  "notifications.markAll": "Weka zote kama zimesomwa",
+  "notifications.clear": "Futa",
+  "notifications.emptyTitle": "Bado hakuna arifa",
+  "notifications.emptyText": "Uwekaji na utoaji wa pesa, uthibitishaji, tahadhari za biashara na majibu kutoka kwa msaada huonekana hapa.",
+  "notifications.settings": "Mipangilio ya arifa",
+};
+export default dashboard;

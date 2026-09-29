@@ -1,0 +1,134 @@
+import type { NsMessages } from "../../core";
+
+const auth: NsMessages<"auth"> = {
+  // Shared form fields
+  "field.email": "Эл. почта",
+  "field.emailOrViewer": "Эл. почта или ID наблюдателя",
+  "field.password": "Пароль",
+  "field.newPassword": "Новый пароль",
+  "field.firstName": "Имя",
+  "field.lastName": "Фамилия",
+  "field.country": "Страна проживания",
+  "field.phone": "Телефон",
+  "field.dateOfBirth": "Дата рождения",
+  "field.referralCode": "Реферальный код",
+  "field.optionalHint": "необязательно",
+  "placeholder.email": "you@example.com",
+  "placeholder.createPassword": "Придумайте надёжный пароль",
+  "togglePassword": "Показать или скрыть пароль",
+
+  // Shared OTP / code step
+  "otp.didntGetIt": "Не получили код?",
+  "otp.verifying": "Проверка…",
+  "otp.resendIn": "Повторно через 0:{seconds}",
+  "otp.sending": "Отправка…",
+  "otp.resendCode": "Отправить код повторно",
+  "otp.devHint": "Режим разработки: отправка писем ещё не настроена. Ваш код: <code>{code}</code> (также есть в логе шлюза).",
+  "toast.newCodeSent": "Новый код отправлен",
+  "toast.checkEmail": "Проверьте {email}",
+
+  // Google sign-in
+  "google.continue": "Продолжить с Google",
+  "google.signUp": "Регистрация через Google",
+  "google.opening": "Открываем Google…",
+  "google.orWithEmail": "или по эл. почте",
+  "google.error.cancelled": "Вход через Google отменён. Выберите аккаунт, чтобы продолжить, или воспользуйтесь эл. почтой ниже.",
+  "google.error.expired": "Время входа через Google истекло или вход был открыт в другой вкладке. Пожалуйста, попробуйте ещё раз.",
+  "google.error.unverified": "Адрес эл. почты Вашего аккаунта Google не подтверждён. Подтвердите его в Google или воспользуйтесь эл. почтой ниже.",
+  "google.error.conflict": "Этот адрес эл. почты уже привязан к другому аккаунту Google. Используйте тот аккаунт Google или войдите с паролем.",
+  "google.error.disabled": "Этот аккаунт отключён. Пожалуйста, обратитесь в поддержку.",
+  "google.error.rate_limited": "Слишком много попыток входа. Пожалуйста, подождите несколько минут и попробуйте снова.",
+  "google.error.unavailable": "Вход через Google сейчас недоступен. Пожалуйста, повторите попытку чуть позже или воспользуйтесь эл. почтой.",
+  "google.error.failed": "Не удалось войти через Google. Пожалуйста, попробуйте ещё раз.",
+
+  // Password strength meter
+  "strength.rule": "От 8 символов, заглавная буква, цифра и спецсимвол",
+  "strength.tooWeak": "Слишком слабый",
+  "strength.weak": "Слабый",
+  "strength.fair": "Средний",
+  "strength.good": "Хороший",
+  "strength.strong": "Надёжный",
+
+  // Demo entry card (demo builds only)
+  "demo.title": "Это демоверсия Kalks",
+  "demo.body": "Аккаунт не нужен. Все экраны работают на тестовых данных.",
+  "demo.enter": "Открыть демо",
+
+  // Auth layout brand panel
+  "brand.headline": "Торгуйте на мировых рынках с институциональной точностью.",
+  "brand.body": "Форекс, металлы, индексы, энергоносители, криптовалюты и акции — мгновенное пополнение в USDT, один аккаунт для торговли, копирования и партнёрства.",
+  "brand.previewAlt": "Главная страница личного кабинета Kalks",
+
+  // Sign in
+  "login.title": "С возвращением",
+  "login.subtitle": "Войдите в личный кабинет Kalks.",
+  "login.forgot": "Забыли пароль?",
+  "login.signingIn": "Вход…",
+  "login.signIn": "Войти",
+  "login.newToKalks": "Впервые в Kalks? <link>Создать аккаунт</link>",
+  "login.verifyEmailTitle": "Подтвердите эл. почту",
+  "login.verifyDeviceTitle": "Подтвердите, что это Вы",
+  "login.emailNotVerified": "Ваша эл. почта ещё не подтверждена.",
+  "login.newDevice": "Обнаружено новое устройство.",
+  "login.codeSent": "Мы отправили 6-значный код на <b>{email}</b>.",
+  "login.verifyContinue": "Подтвердить и продолжить",
+  "login.back": "← Назад",
+
+  // Sign up
+  "register.stepDetails": "Данные",
+  "register.stepVerify": "Подтверждение почты",
+  "register.stepDone": "Готово",
+  "register.title": "Создайте аккаунт Kalks",
+  "register.subtitleDemo": "Откройте бесплатный демо-счёт за секунды. Переходите на реальный, когда будете готовы.",
+  "register.subtitle": "Зарегистрируйтесь за минуту и сразу следите за рынками в реальном времени.",
+  "register.emailTaken": "<signin>Войдите</signin> или <reset>сбросьте пароль</reset>.",
+  "register.terms": "Мне больше 18 лет, и я принимаю <agreement>Клиентское соглашение</agreement>, <risk>Уведомление о рисках</risk> и <privacy>Политику конфиденциальности</privacy>.",
+  "register.creating": "Создание аккаунта…",
+  "register.create": "Создать аккаунт",
+  "register.haveAccount": "Уже есть аккаунт? <link>Войти</link>",
+  "register.checkInbox": "Проверьте почту",
+  "register.enterCode": "Введите 6-значный код, который мы отправили на <b>{email}</b>.",
+  "register.verifyEmail": "Подтвердить почту",
+  "register.welcome": "Добро пожаловать в Kalks, {name}",
+  "register.readyDemo": "Ваша эл. почта подтверждена, аккаунт готов. Откройте демо-счёт прямо сейчас или подтвердите личность, чтобы перейти на реальный счёт.",
+  "register.ready": "Ваша эл. почта подтверждена, аккаунт готов. Следите за рынками в реальном времени уже сейчас; пополнение и торговые счета скоро появятся.",
+  "register.openClientArea": "Открыть личный кабинет",
+
+  // Complete profile after Google sign-up
+  "complete.stepGoogle": "Аккаунт Google",
+  "complete.stepDetails": "Ваши данные",
+  "complete.loading": "Загружаем Ваш профиль Google…",
+  "complete.expiredTitle": "Давайте начнём заново",
+  "complete.accountExists": "Ваш аккаунт уже настроен. Продолжите с Google, чтобы войти.",
+  "complete.expired": "Срок регистрации через Google истёк или она была завершена в другой вкладке. Продолжите с Google, чтобы вернуться к тому, на чём Вы остановились.",
+  "complete.preferEmail": "Предпочитаете эл. почту? <link>Зарегистрироваться по эл. почте</link>",
+  "complete.title": "Заполните профиль",
+  "complete.subtitle": "Несколько данных, необходимых для каждого аккаунта Kalks. Это займёт меньше минуты.",
+  "complete.googleAccount": "Аккаунт Google",
+  "complete.emailTaken": "Вместо этого <signin>войдите</signin> с паролем или <reset>сбросьте его</reset>.",
+  "complete.ready": "Ваш аккаунт готов, Вы вошли через Google. Следите за рынками в реальном времени уже сейчас; пополнение и торговые счета скоро появятся.",
+  "complete.notYou": "Это не Вы? <link>Использовать другой аккаунт Google</link>",
+
+  // Forgot / reset password
+  "forgot.backToSignIn": "Вернуться ко входу",
+  "forgot.titleReset": "Сброс пароля",
+  "forgot.titleCode": "Введите код",
+  "forgot.titleNew": "Задайте новый пароль",
+  "forgot.intro": "Мы отправим Вам на почту 6-значный код для сброса пароля.",
+  "forgot.codeSent": "Если аккаунт с адресом <b>{email}</b> существует, мы отправили на него код.",
+  "forgot.passwordRule": "Используйте не менее 8 символов: буквы, цифры и спецсимволы.",
+  "forgot.sendCode": "Отправить код",
+  "forgot.updating": "Обновление…",
+  "forgot.update": "Обновить пароль",
+  "forgot.toastUpdated": "Пароль обновлён",
+  "forgot.toastUpdatedBody": "Войдите с новым паролем.",
+
+  // Step-up confirmation dialog (emailed code before sensitive changes)
+  "stepup.intro": "Чтобы {what}, введите 6-значный код, который мы отправили на <b>{email}</b>. Код действует {minutes} мин.",
+  "stepup.spam": "Не получили код? Проверьте папку «Спам».",
+  "stepup.checking": "Проверка…",
+  "stepup.saving": "Сохранение…",
+  "stepup.sendAgain": "Отправить код ещё раз",
+  "stepup.sendingCode": "Отправляем код подтверждения на Вашу почту…",
+};
+export default auth;

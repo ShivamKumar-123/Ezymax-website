@@ -1,0 +1,135 @@
+import type { NsMessages } from "../../core";
+
+const auth: NsMessages<"auth"> = {
+  // Campos de formulario compartidos
+  "field.email": "Correo electrónico",
+  "field.emailOrViewer": "Correo electrónico o ID de observador",
+  "field.password": "Contraseña",
+  "field.newPassword": "Nueva contraseña",
+  "field.firstName": "Nombre",
+  "field.lastName": "Apellidos",
+  "field.country": "País de residencia",
+  "field.phone": "Teléfono",
+  "field.dateOfBirth": "Fecha de nacimiento",
+  "field.referralCode": "Código de referido",
+  "field.optionalHint": "opcional",
+  "placeholder.email": "you@example.com",
+  "placeholder.createPassword": "Cree una contraseña segura",
+  "togglePassword": "Mostrar u ocultar contraseña",
+
+  // Paso de código OTP compartido
+  "otp.didntGetIt": "¿No lo ha recibido?",
+  "otp.verifying": "Verificando…",
+  "otp.resendIn": "Reenviar en 0:{seconds}",
+  "otp.sending": "Enviando…",
+  "otp.resendCode": "Reenviar código",
+  "otp.devHint": "Modo de desarrollo: el envío de correos aún no está configurado. Su código es <code>{code}</code> (también aparece en el registro del gateway).",
+  "toast.newCodeSent": "Nuevo código enviado",
+  "toast.checkEmail": "Revise {email}",
+
+  // Inicio de sesión con Google
+  "google.continue": "Continuar con Google",
+  "google.signUp": "Registrarse con Google",
+  "google.opening": "Abriendo Google…",
+  "google.orWithEmail": "o con correo electrónico",
+  "google.error.cancelled": "Se canceló el inicio de sesión con Google. Elija una cuenta para continuar o use su correo electrónico a continuación.",
+  "google.error.expired": "El inicio de sesión con Google caducó o se abrió en otra pestaña. Inténtelo de nuevo.",
+  "google.error.unverified": "El correo electrónico de su cuenta de Google no está verificado. Verifíquelo con Google o use su correo electrónico a continuación.",
+  "google.error.conflict": "Este correo electrónico ya está vinculado a otra cuenta de Google. Use esa cuenta de Google o inicie sesión con su contraseña.",
+  "google.error.disabled": "Esta cuenta está deshabilitada. Póngase en contacto con soporte.",
+  "google.error.rate_limited": "Demasiados intentos de inicio de sesión. Espere unos minutos e inténtelo de nuevo.",
+  "google.error.unavailable": "El inicio de sesión con Google no está disponible en este momento. Inténtelo de nuevo en unos instantes o use su correo electrónico.",
+  "google.error.failed": "No pudimos iniciar su sesión con Google. Inténtelo de nuevo.",
+
+  // Indicador de seguridad de la contraseña
+  "strength.rule": "8+ caracteres, mayúscula, número y símbolo",
+  "strength.tooWeak": "Muy débil",
+  "strength.weak": "Débil",
+  "strength.fair": "Aceptable",
+  "strength.good": "Buena",
+  "strength.strong": "Fuerte",
+
+  // Tarjeta de acceso a la demo (solo versiones demo)
+  "demo.title": "Esta es la demo de Kalks",
+  "demo.body": "No necesita cuenta. Todas las pantallas funcionan con datos de ejemplo.",
+  "demo.enter": "Entrar en la demo",
+
+  // Panel de marca del diseño de acceso
+  "brand.headline": "Opere en los mercados globales con precisión institucional.",
+  "brand.body": "Forex, metales, índices, energías, criptomonedas y acciones: financiación instantánea en USDT y una sola cuenta para operar, copiar y asociarse.",
+  "brand.previewAlt": "Panel del área de clientes de Kalks",
+
+  // Iniciar sesión
+  "login.title": "Hola de nuevo",
+  "login.subtitle": "Inicie sesión en su área de clientes de Kalks.",
+  "login.forgot": "¿Olvidó su contraseña?",
+  "login.signingIn": "Iniciando sesión…",
+  "login.signIn": "Iniciar sesión",
+  "login.newToKalks": "¿Es nuevo en Kalks? <link>Cree una cuenta</link>",
+  "login.verifyEmailTitle": "Verifique su correo electrónico",
+  "login.verifyDeviceTitle": "Confirme que es usted",
+  "login.emailNotVerified": "Su correo electrónico aún no está verificado.",
+  "login.newDevice": "Se ha detectado un dispositivo nuevo.",
+  "login.codeSent": "Hemos enviado un código de 6 dígitos a <b>{email}</b>.",
+  "login.verifyContinue": "Verificar y continuar",
+  "login.back": "← Atrás",
+
+  // Registro
+  "register.stepDetails": "Datos",
+  "register.stepVerify": "Verificar correo",
+  "register.stepDone": "Listo",
+  "register.title": "Cree su cuenta de Kalks",
+  "register.subtitleDemo": "Abra una demo gratuita al instante. Pase a real cuando esté listo.",
+  "register.subtitle": "Regístrese en un minuto y siga los mercados en tiempo real de inmediato.",
+  "register.emailTaken": "<signin>Inicie sesión</signin> o <reset>restablezca su contraseña</reset>.",
+  "register.terms": "Soy mayor de 18 años y acepto el <agreement>Acuerdo de cliente</agreement>, la <risk>Divulgación de riesgos</risk> y la <privacy>Política de privacidad</privacy>.",
+  "register.creating": "Creando cuenta…",
+  "register.create": "Crear cuenta",
+  "register.haveAccount": "¿Ya tiene una cuenta? <link>Inicie sesión</link>",
+  "register.checkInbox": "Revise su bandeja de entrada",
+  "register.enterCode": "Introduzca el código de 6 dígitos que enviamos a <b>{email}</b>.",
+  "register.verifyEmail": "Verificar correo",
+  "register.welcome": "Le damos la bienvenida a Kalks, {name}",
+  "register.readyDemo": "Su correo electrónico está verificado y su cuenta está lista. Abra ahora una cuenta demo o verifique su identidad para operar en real.",
+  "register.ready": "Su correo electrónico está verificado y su cuenta está lista. Siga ya los mercados en tiempo real; la financiación y las cuentas de trading llegarán pronto.",
+  "register.openClientArea": "Abrir área de clientes",
+
+  // Completar el perfil tras registrarse con Google
+  "complete.stepGoogle": "Cuenta de Google",
+  "complete.stepDetails": "Sus datos",
+  "complete.loading": "Cargando su perfil de Google…",
+  "complete.expiredTitle": "Empecemos de nuevo",
+  "complete.accountExists": "Su cuenta ya está configurada. Continúe con Google para iniciar sesión.",
+  "complete.expired": "Su registro con Google caducó o se completó en otra pestaña. Continúe con Google para retomarlo donde lo dejó.",
+  "complete.preferEmail": "¿Prefiere el correo electrónico? <link>Regístrese con su correo</link>",
+  "complete.title": "Complete su perfil",
+  "complete.subtitle": "Algunos datos que necesitamos para toda cuenta de Kalks. Le llevará menos de un minuto.",
+  "complete.googleAccount": "Cuenta de Google",
+  "complete.emailTaken": "<signin>Inicie sesión</signin> con su contraseña o <reset>restablézcala</reset>.",
+  "complete.ready": "Su cuenta está lista y ha iniciado sesión con Google. Siga ya los mercados en tiempo real; la financiación y las cuentas de trading llegarán pronto.",
+  "complete.notYou": "¿No es usted? <link>Use otra cuenta de Google</link>",
+
+  // Contraseña olvidada / restablecer
+  "forgot.backToSignIn": "Volver a iniciar sesión",
+  "forgot.titleReset": "Restablezca su contraseña",
+  "forgot.titleCode": "Introduzca el código",
+  "forgot.titleNew": "Establezca una nueva contraseña",
+  "forgot.intro": "Le enviaremos por correo un código de 6 dígitos para restablecer su contraseña.",
+  "forgot.codeSent": "Si existe una cuenta para <b>{email}</b>, le hemos enviado un código.",
+  "forgot.passwordRule": "Use al menos 8 caracteres con una combinación de letras, números y símbolos.",
+  "forgot.sendCode": "Enviar código",
+  "forgot.updating": "Actualizando…",
+  "forgot.update": "Actualizar contraseña",
+  "forgot.toastUpdated": "Contraseña actualizada",
+  "forgot.toastUpdatedBody": "Inicie sesión con su nueva contraseña.",
+
+  // Diálogo de confirmación reforzada (código por correo antes de cambios sensibles)
+  // {what} es una frase de acción traducida, p. ej. "cambiar el apalancamiento de #10000123"
+  "stepup.intro": "Para {what}, introduzca el código de 6 dígitos que enviamos a <b>{email}</b>. Caduca en {minutes} minutos.",
+  "stepup.spam": "¿No lo ha recibido? Revise su carpeta de spam.",
+  "stepup.checking": "Comprobando…",
+  "stepup.saving": "Guardando…",
+  "stepup.sendAgain": "Enviar el código de nuevo",
+  "stepup.sendingCode": "Enviando un código de confirmación a su correo electrónico…",
+};
+export default auth;

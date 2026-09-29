@@ -1,0 +1,134 @@
+import type { NsMessages } from "../../core";
+
+const auth: NsMessages<"auth"> = {
+  // Shared form fields
+  "field.email": "邮箱",
+  "field.emailOrViewer": "邮箱或查看者 ID",
+  "field.password": "密码",
+  "field.newPassword": "新密码",
+  "field.firstName": "名",
+  "field.lastName": "姓",
+  "field.country": "居住国家/地区",
+  "field.phone": "电话",
+  "field.dateOfBirth": "出生日期",
+  "field.referralCode": "推荐码",
+  "field.optionalHint": "可选",
+  "placeholder.email": "you@example.com",
+  "placeholder.createPassword": "设置一个强密码",
+  "togglePassword": "显示/隐藏密码",
+
+  // Shared OTP / code step
+  "otp.didntGetIt": "没有收到？",
+  "otp.verifying": "验证中…",
+  "otp.resendIn": "0:{seconds} 后重新发送",
+  "otp.sending": "发送中…",
+  "otp.resendCode": "重新发送验证码",
+  "otp.devHint": "开发模式：尚未配置邮件发送。您的验证码是 <code>{code}</code>（也可在网关日志中查看）。",
+  "toast.newCodeSent": "新验证码已发送",
+  "toast.checkEmail": "请查收 {email}",
+
+  // Google sign-in
+  "google.continue": "使用 Google 继续",
+  "google.signUp": "使用 Google 注册",
+  "google.opening": "正在打开 Google…",
+  "google.orWithEmail": "或使用邮箱",
+  "google.error.cancelled": "Google 登录已取消。请选择一个账户继续，或在下方使用您的邮箱。",
+  "google.error.expired": "您的 Google 登录已超时，或已在其他标签页中打开。请重试。",
+  "google.error.unverified": "您的 Google 账户邮箱尚未验证。请在 Google 完成验证，或在下方使用您的邮箱。",
+  "google.error.conflict": "该邮箱已关联到另一个 Google 账户。请使用该 Google 账户，或使用密码登录。",
+  "google.error.disabled": "该账户已被停用。请联系客户支持。",
+  "google.error.rate_limited": "登录尝试次数过多。请等待几分钟后重试。",
+  "google.error.unavailable": "Google 登录暂时不可用。请稍后重试，或使用您的邮箱。",
+  "google.error.failed": "无法通过 Google 为您登录。请重试。",
+
+  // Password strength meter
+  "strength.rule": "至少 8 个字符，包含大写字母、数字和符号",
+  "strength.tooWeak": "太弱",
+  "strength.weak": "弱",
+  "strength.fair": "一般",
+  "strength.good": "良好",
+  "strength.strong": "强",
+
+  // Demo entry card (demo builds only)
+  "demo.title": "这是 Kalks 演示版",
+  "demo.body": "无需注册账户。所有页面均使用示例数据运行。",
+  "demo.enter": "进入演示",
+
+  // Auth layout brand panel
+  "brand.headline": "以机构级精准度交易全球市场。",
+  "brand.body": "外汇、贵金属、指数、能源、加密货币和股票——USDT 即时入金，一个账户即可交易、跟单和成为合作伙伴。",
+  "brand.previewAlt": "Kalks 客户专区仪表板",
+
+  // Sign in
+  "login.title": "欢迎回来",
+  "login.subtitle": "登录您的 Kalks 客户专区。",
+  "login.forgot": "忘记密码？",
+  "login.signingIn": "登录中…",
+  "login.signIn": "登录",
+  "login.newToKalks": "初次使用 Kalks？<link>创建账户</link>",
+  "login.verifyEmailTitle": "验证您的邮箱",
+  "login.verifyDeviceTitle": "验证您的身份",
+  "login.emailNotVerified": "您的邮箱尚未验证。",
+  "login.newDevice": "检测到新设备。",
+  "login.codeSent": "我们已向 <b>{email}</b> 发送了 6 位验证码。",
+  "login.verifyContinue": "验证并继续",
+  "login.back": "← 返回",
+
+  // Sign up
+  "register.stepDetails": "资料",
+  "register.stepVerify": "验证邮箱",
+  "register.stepDone": "完成",
+  "register.title": "创建您的 Kalks 账户",
+  "register.subtitleDemo": "立即开设免费模拟账户。准备就绪后随时转为真实账户。",
+  "register.subtitle": "一分钟完成注册，立即关注实时行情。",
+  "register.emailTaken": "<signin>登录</signin>或<reset>重置密码</reset>。",
+  "register.terms": "我已年满 18 周岁，并同意<agreement>客户协议</agreement>、<risk>风险披露</risk>和<privacy>隐私政策</privacy>。",
+  "register.creating": "正在创建账户…",
+  "register.create": "创建账户",
+  "register.haveAccount": "已有账户？<link>登录</link>",
+  "register.checkInbox": "请查收您的邮件",
+  "register.enterCode": "请输入我们发送至 <b>{email}</b> 的 6 位验证码。",
+  "register.verifyEmail": "验证邮箱",
+  "register.welcome": "欢迎加入 Kalks，{name}",
+  "register.readyDemo": "您的邮箱已验证，账户已准备就绪。立即开设模拟账户，或验证身份以开设真实账户。",
+  "register.ready": "您的邮箱已验证，账户已准备就绪。立即关注实时行情；入金和交易账户即将推出。",
+  "register.openClientArea": "打开客户专区",
+
+  // Complete profile after Google sign-up
+  "complete.stepGoogle": "Google 账户",
+  "complete.stepDetails": "您的资料",
+  "complete.loading": "正在加载您的 Google 资料…",
+  "complete.expiredTitle": "让我们重新开始",
+  "complete.accountExists": "您的账户已设置完成。使用 Google 继续即可登录。",
+  "complete.expired": "您的 Google 注册已过期，或已在其他标签页中完成。使用 Google 继续，从中断处接着进行。",
+  "complete.preferEmail": "更喜欢使用邮箱？<link>使用邮箱注册</link>",
+  "complete.title": "完善您的个人资料",
+  "complete.subtitle": "每个 Kalks 账户都需要以下几项资料，不到一分钟即可完成。",
+  "complete.googleAccount": "Google 账户",
+  "complete.emailTaken": "请改用密码<signin>登录</signin>，或<reset>重置密码</reset>。",
+  "complete.ready": "您的账户已准备就绪，并已通过 Google 登录。立即关注实时行情；入金和交易账户即将推出。",
+  "complete.notYou": "不是您？<link>使用其他 Google 账户</link>",
+
+  // Forgot / reset password
+  "forgot.backToSignIn": "返回登录",
+  "forgot.titleReset": "重置您的密码",
+  "forgot.titleCode": "输入验证码",
+  "forgot.titleNew": "设置新密码",
+  "forgot.intro": "我们将向您的邮箱发送 6 位验证码以重置密码。",
+  "forgot.codeSent": "如果存在与 <b>{email}</b> 关联的账户，我们已向其发送验证码。",
+  "forgot.passwordRule": "请至少使用 8 个字符，并混合字母、数字和符号。",
+  "forgot.sendCode": "发送验证码",
+  "forgot.updating": "更新中…",
+  "forgot.update": "更新密码",
+  "forgot.toastUpdated": "密码已更新",
+  "forgot.toastUpdatedBody": "请使用新密码登录。",
+
+  // Step-up confirmation dialog (emailed code before sensitive changes)
+  "stepup.intro": "如需{what}，请输入我们发送至 <b>{email}</b> 的 6 位验证码。验证码将在 {minutes} 分钟后失效。",
+  "stepup.spam": "没有收到？请检查您的垃圾邮件文件夹。",
+  "stepup.checking": "核验中…",
+  "stepup.saving": "保存中…",
+  "stepup.sendAgain": "重新发送验证码",
+  "stepup.sendingCode": "正在向您的邮箱发送确认码…",
+};
+export default auth;

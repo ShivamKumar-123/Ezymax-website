@@ -1,0 +1,135 @@
+import type { NsMessages } from "../../core";
+
+const auth: NsMessages<"auth"> = {
+  // Shared form fields
+  "field.email": "Email",
+  "field.emailOrViewer": "Email atau ID viewer",
+  "field.password": "Kata sandi",
+  "field.newPassword": "Kata sandi baru",
+  "field.firstName": "Nama depan",
+  "field.lastName": "Nama belakang",
+  "field.country": "Negara tempat tinggal",
+  "field.phone": "Telepon",
+  "field.dateOfBirth": "Tanggal lahir",
+  "field.referralCode": "Kode referral",
+  "field.optionalHint": "opsional",
+  "placeholder.email": "anda@contoh.com",
+  "placeholder.createPassword": "Buat kata sandi yang kuat",
+  "togglePassword": "Tampilkan/sembunyikan kata sandi",
+
+  // Shared OTP / code step
+  "otp.didntGetIt": "Tidak menerima kode?",
+  "otp.verifying": "Memverifikasi…",
+  "otp.resendIn": "Kirim ulang dalam 0:{seconds}",
+  "otp.sending": "Mengirim…",
+  "otp.resendCode": "Kirim ulang kode",
+  "otp.devHint": "Mode dev: pengiriman email belum dikonfigurasi. Kode Anda adalah <code>{code}</code> (juga ada di log gateway).",
+  "toast.newCodeSent": "Kode baru telah dikirim",
+  "toast.checkEmail": "Periksa {email}",
+
+  // Google sign-in
+  "google.continue": "Lanjutkan dengan Google",
+  "google.signUp": "Daftar dengan Google",
+  "google.opening": "Membuka Google…",
+  "google.orWithEmail": "atau dengan email",
+  "google.error.cancelled": "Masuk dengan Google dibatalkan. Pilih akun untuk melanjutkan, atau gunakan email Anda di bawah.",
+  "google.error.expired": "Sesi masuk Google Anda habis waktu atau dibuka di tab lain. Silakan coba lagi.",
+  "google.error.unverified": "Alamat email akun Google Anda belum terverifikasi. Verifikasi di Google, atau gunakan email Anda di bawah.",
+  "google.error.conflict": "Email ini sudah terhubung ke akun Google lain. Gunakan akun Google tersebut, atau masuk dengan kata sandi Anda.",
+  "google.error.disabled": "Akun ini dinonaktifkan. Silakan hubungi dukungan.",
+  "google.error.rate_limited": "Terlalu banyak percobaan masuk. Harap tunggu beberapa menit lalu coba lagi.",
+  "google.error.unavailable": "Masuk dengan Google sedang tidak tersedia. Silakan coba lagi sebentar lagi, atau gunakan email Anda.",
+  "google.error.failed": "Kami tidak dapat memasukkan Anda dengan Google. Silakan coba lagi.",
+
+  // Password strength meter
+  "strength.rule": "8+ karakter, huruf besar, angka & simbol",
+  "strength.tooWeak": "Terlalu lemah",
+  "strength.weak": "Lemah",
+  "strength.fair": "Cukup",
+  "strength.good": "Baik",
+  "strength.strong": "Kuat",
+
+  // Demo entry card (demo builds only)
+  "demo.title": "Ini adalah demo Kalks",
+  "demo.body": "Tidak perlu akun. Setiap layar menggunakan data contoh.",
+  "demo.enter": "Masuk demo",
+
+  // Auth layout brand panel
+  "brand.headline": "Trading di pasar global dengan presisi institusional.",
+  "brand.body": "Forex, logam, indeks, energi, kripto, dan saham — pendanaan USDT instan, satu akun untuk trading, copy trading, dan kemitraan.",
+  "brand.previewAlt": "Dasbor area klien Kalks",
+
+  // Sign in
+  "login.title": "Selamat datang kembali",
+  "login.subtitle": "Masuk ke area klien Kalks Anda.",
+  "login.forgot": "Lupa kata sandi?",
+  "login.signingIn": "Sedang masuk…",
+  "login.signIn": "Masuk",
+  "login.newToKalks": "Baru di Kalks? <link>Buat akun</link>",
+  "login.verifyEmailTitle": "Verifikasi email Anda",
+  "login.verifyDeviceTitle": "Verifikasi bahwa ini Anda",
+  "login.emailNotVerified": "Email Anda belum terverifikasi.",
+  "login.newDevice": "Perangkat baru terdeteksi.",
+  "login.codeSent": "Kami telah mengirim kode 6 digit ke <b>{email}</b>.",
+  "login.verifyContinue": "Verifikasi & lanjutkan",
+  "login.back": "← Kembali",
+
+  // Sign up
+  "register.stepDetails": "Data diri",
+  "register.stepVerify": "Verifikasi email",
+  "register.stepDone": "Selesai",
+  "register.title": "Buat akun Kalks Anda",
+  "register.subtitleDemo": "Buka akun demo gratis secara instan. Beralih ke live kapan pun Anda siap.",
+  "register.subtitle": "Daftar dalam satu menit dan langsung ikuti pasar secara live.",
+  "register.emailTaken": "<signin>Masuk</signin> atau <reset>atur ulang kata sandi Anda</reset>.",
+  "register.terms": "Saya berusia di atas 18 tahun dan menyetujui <agreement>Perjanjian Klien</agreement>, <risk>Pengungkapan Risiko</risk>, dan <privacy>Kebijakan Privasi</privacy>.",
+  "register.creating": "Membuat akun…",
+  "register.create": "Buat akun",
+  "register.haveAccount": "Sudah punya akun? <link>Masuk</link>",
+  "register.checkInbox": "Periksa kotak masuk Anda",
+  "register.enterCode": "Masukkan kode 6 digit yang kami kirim ke <b>{email}</b>.",
+  "register.verifyEmail": "Verifikasi email",
+  "register.welcome": "Selamat datang di Kalks, {name}",
+  "register.readyDemo": "Email Anda telah terverifikasi dan akun Anda siap. Buka akun demo sekarang, atau verifikasi identitas Anda untuk beralih ke live.",
+  "register.ready": "Email Anda telah terverifikasi dan akun Anda siap. Ikuti pasar secara live sekarang; pendanaan dan akun trading segera hadir.",
+  "register.openClientArea": "Buka area klien",
+
+  // Complete profile after Google sign-up
+  "complete.stepGoogle": "Akun Google",
+  "complete.stepDetails": "Data diri Anda",
+  "complete.loading": "Memuat profil Google Anda…",
+  "complete.expiredTitle": "Mari mulai lagi",
+  "complete.accountExists": "Akun Anda sudah siap. Lanjutkan dengan Google untuk masuk.",
+  "complete.expired": "Pendaftaran Google Anda telah kedaluwarsa atau sudah diselesaikan di tab lain. Lanjutkan dengan Google untuk meneruskan dari langkah terakhir.",
+  "complete.preferEmail": "Lebih suka email? <link>Daftar dengan email</link>",
+  "complete.title": "Lengkapi profil Anda",
+  "complete.subtitle": "Beberapa data yang kami perlukan untuk setiap akun Kalks. Butuh kurang dari satu menit.",
+  "complete.googleAccount": "Akun Google",
+  "complete.emailTaken": "<signin>Masuk</signin> dengan kata sandi Anda, atau <reset>atur ulang</reset>.",
+  "complete.ready": "Akun Anda siap dan telah masuk dengan Google. Ikuti pasar secara live sekarang; pendanaan dan akun trading segera hadir.",
+  "complete.notYou": "Bukan Anda? <link>Gunakan akun Google lain</link>",
+
+  // Forgot / reset password
+  "forgot.backToSignIn": "Kembali ke halaman masuk",
+  "forgot.titleReset": "Atur ulang kata sandi Anda",
+  "forgot.titleCode": "Masukkan kode",
+  "forgot.titleNew": "Tetapkan kata sandi baru",
+  "forgot.intro": "Kami akan mengirimkan kode 6 digit ke email Anda untuk mengatur ulang kata sandi.",
+  "forgot.codeSent": "Jika akun untuk <b>{email}</b> ada, kami telah mengirimkan kode ke sana.",
+  "forgot.passwordRule": "Gunakan minimal 8 karakter dengan kombinasi huruf, angka, dan simbol.",
+  "forgot.sendCode": "Kirim kode",
+  "forgot.updating": "Memperbarui…",
+  "forgot.update": "Perbarui kata sandi",
+  "forgot.toastUpdated": "Kata sandi diperbarui",
+  "forgot.toastUpdatedBody": "Masuk dengan kata sandi baru Anda.",
+
+  // Step-up confirmation dialog (emailed code before sensitive changes)
+  // {what} is a translated action phrase such as "mengubah leverage #10000123"
+  "stepup.intro": "Untuk {what}, masukkan kode 6 digit yang kami kirim ke <b>{email}</b>. Kode berlaku selama {minutes} menit.",
+  "stepup.spam": "Tidak menerima kode? Periksa folder spam Anda.",
+  "stepup.checking": "Memeriksa…",
+  "stepup.saving": "Menyimpan…",
+  "stepup.sendAgain": "Kirim ulang kode",
+  "stepup.sendingCode": "Mengirim kode konfirmasi ke email Anda…",
+};
+export default auth;

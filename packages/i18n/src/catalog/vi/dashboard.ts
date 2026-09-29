@@ -1,0 +1,166 @@
+import type { NsMessages } from "../../core";
+
+const dashboard: NsMessages<"dashboard"> = {
+  // Page header (Client Area home)
+  "greeting.morning": "Chào buổi sáng, {name}",
+  "greeting.afternoon": "Chào buổi chiều, {name}",
+  "greeting.evening": "Chào buổi tối, {name}",
+  "greeting.welcome": "Chào mừng, {name}",
+  "subtitle.live": "Chào mừng bạn đến với Kalks. Đây là tài khoản của bạn và thị trường hôm nay.",
+  "subtitle.demo": "Hiệu suất các tài khoản của bạn hôm nay.",
+  launchTrader: "Mở Kalks Trader",
+  openTerminal: "Mở nền tảng giao dịch",
+
+  // Getting started checklist
+  "steps.title": "Bắt đầu",
+  "steps.subtitle": "Tiến độ của bạn để giao dịch thực",
+  "steps.progress": "{done}/{total}",
+  "steps.account.title": "Tạo tài khoản",
+  "steps.account.text": "Đã đăng ký ngày {date}.",
+  "steps.email.title": "Xác minh email",
+  "steps.email.verified": "{email} đã được xác minh.",
+  "steps.email.confirm": "Xác nhận {email} bằng mã chúng tôi đã gửi cho bạn.",
+  "steps.kyc.title": "Xác minh danh tính",
+  "steps.kyc.verified": "Danh tính của bạn đã được xác minh. Đã mở khóa rút tiền.",
+  "steps.kyc.moreInfo": "Đội ngũ của chúng tôi cần thêm một tài liệu từ bạn.",
+  "steps.kyc.review": "Tài liệu của bạn đang được đội ngũ xác minh xem xét.",
+  "steps.kyc.draft": "Tiếp tục từ chỗ bạn đã dừng. Mất khoảng 3 phút.",
+  "steps.kyc.rejected": "Chúng tôi không thể xác minh tài liệu của bạn. Bạn có thể bắt đầu lại.",
+  "steps.kyc.todo": "Mất khoảng 3 phút. Mở khóa rút tiền.",
+  "steps.accountOpen.title": "Mở tài khoản giao dịch",
+  "steps.accountOpen.opened": { other: "Đã mở {live} tài khoản thực và {demo} tài khoản demo." },
+  "steps.accountOpen.todo": "Mở tài khoản thực hoặc demo; thông tin đăng nhập được cấp ngay lập tức.",
+  "steps.wallet.title": "Nạp tiền vào ví",
+  "steps.wallet.text": "Nạp USDT qua TRC20 đang được kết nối.",
+  // Step status chips
+  "steps.state.done": "Xong",
+  "steps.state.todo": "Cần làm",
+  "steps.state.review": "Đang xét duyệt",
+  "steps.state.rejected": "Bị từ chối",
+  "steps.state.soon": "Chưa bắt đầu",
+
+  // Trading accounts card
+  "accounts.title": "Tài khoản giao dịch",
+  "accounts.summary": "Vốn thực <b>{equity}</b> · {live} thực · {demo} demo · {positions} lệnh đang mở",
+  "accounts.subtitle": "Tài khoản thực và demo của bạn",
+  "accounts.all": "Tất cả tài khoản",
+  "accounts.open": "Mở tài khoản",
+  "accounts.unavailable": "Tài khoản giao dịch hiện không khả dụng. Số dư của bạn vẫn an toàn.",
+  "accounts.openLive.title": "Mở tài khoản thực",
+  "accounts.openLive.text": "Thị trường thực. Bắt đầu với số dư bằng 0; nạp tiền được mở cùng với ví.",
+  "accounts.openDemo.title": "Mở tài khoản demo",
+  "accounts.openDemo.text": "Tiền ảo trên giá thời gian thực, có thể nạp lại mỗi ngày.",
+  "accounts.more": { other: "Thêm {count} tài khoản" },
+  "accounts.myTitle": "Tài khoản giao dịch của tôi",
+
+  // Your account card
+  "account.title": "Tài khoản của bạn",
+  "account.clientId": "ID khách hàng",
+  "account.emailStatus": "Trạng thái email",
+  "account.notVerified": "Chưa xác minh",
+  "account.identity": "Danh tính",
+  "account.memberSince": "Thành viên từ",
+  "account.profile": "Hồ sơ",
+
+  // Kalks Trader banner
+  "trader.chip": "Giá trực tiếp",
+  "trader.text": "Báo giá và biểu đồ thời gian thực cho {count} công cụ gồm forex, kim loại, chỉ số, năng lượng, tiền mã hóa và cổ phiếu. Chạy trên trình duyệt, không cần cài đặt.",
+
+  // Market clock / heatmap
+  "sessions.title": "Đồng hồ thị trường",
+  "sessions.open": "{open}/{total} thị trường đang mở",
+  "heatmap.title": "Bản đồ nhiệt thị trường",
+  "heatmap.subtitle": "Biến động hôm nay theo giá trực tiếp · chấm rỗng: thị trường đóng cửa",
+  "heatmap.up": "{count} tăng",
+  "heatmap.down": "{count} giảm",
+  "heatmap.allMarkets": "Tất cả thị trường",
+  "heatmap.tipOpen": "{symbol} · thị trường đang mở",
+  "heatmap.tipClosed": "{symbol} · thị trường đóng cửa, biến động phiên trước",
+
+  // Support card
+  "support.title": "Cần hỗ trợ?",
+  "support.text": "Hãy viết thư đến <mail>{email}</mail> từ địa chỉ đã đăng ký và ghi kèm ID khách hàng của bạn.",
+  "support.emailSupport": "Gửi email hỗ trợ",
+  "support.copied": "Đã sao chép địa chỉ email",
+  "support.copyFailed": "Không thể sao chép, vui lòng tự chọn địa chỉ",
+
+  // Demo dashboard: onboarding strip
+  "onboarding.title": "Hoàn tất thiết lập tài khoản",
+  "onboarding.text": "Hoàn thành KYC để mở khóa rút tiền và hạn mức cao hơn.",
+  "onboarding.progress": "Tiến độ",
+  "onboarding.dismiss": "Bỏ qua",
+
+  // Margin health
+  "margin.title": "Tình trạng ký quỹ",
+  "margin.subtitle": "Trên tất cả tài khoản thực",
+  "margin.healthy": "Tốt",
+  "margin.level": "Mức ký quỹ",
+  "margin.used": "Ký quỹ đã dùng",
+  "margin.free": "Ký quỹ khả dụng",
+
+  // Equity / P&L
+  "equity.title": "Tổng vốn",
+  "equity.changeOver": "Thay đổi trong {range}",
+  "pnl.title": "Lãi / lỗ · tháng",
+  "pnl.lowRisk": "Rủi ro thấp",
+  "pnl.winRate": "Tỷ lệ thắng (30 ngày)",
+  "pnl.trades": "Giao dịch (30 ngày)",
+  "pnl.avgWin": "Lệnh thắng TB",
+  "pnl.avgLoss": "Lệnh thua TB",
+  "pnl.charges": "Phí đã trả",
+
+  // KPI cards
+  "kpi.wallet": "Ví",
+  "kpi.today": "+{pct}% hôm nay",
+  "kpi.monthPnl": "Lãi/lỗ tháng",
+  "kpi.vsLastMonth": "+{pct}% so với tháng trước",
+  "kpi.partnerEarnings": "Thu nhập đối tác",
+  "kpi.copy": "Copy {amount}",
+
+  // Top movers
+  "movers.title": "Biến động mạnh nhất",
+  "movers.gainers": "Tăng mạnh",
+  "movers.losers": "Giảm mạnh",
+
+  // Economic calendar. A = Actual, F = Forecast, P = Previous
+  "calendar.title": "Lịch kinh tế",
+  "calendar.subtitle": "Hôm nay · giờ máy chủ GMT+3",
+  "calendar.actual": "TT {value} · ",
+  "calendar.forecastPrevious": "DB {forecast} · TR {previous}",
+
+  // News / world
+  "news.title": "Tin thị trường",
+  "news.all": "Tất cả tin",
+  "news.pinned": "Đã ghim",
+  "world.title": "Thị trường & tin tức toàn cầu",
+  "world.subtitle": "Tin nóng theo quốc gia và tâm lý tiền tệ",
+  "world.stories": { other: "{count} tin hôm nay" },
+
+  // Open positions
+  "positions.title": "Lệnh đang mở",
+  "positions.summary": { other: "{count} lệnh · thả nổi" },
+  "positions.terminal": "Nền tảng",
+
+  // Partner banner
+  "partner.chip": "Chương trình đối tác",
+  "partner.title": "Mời nhà giao dịch. Nhận đến $15 mỗi lot — trọn đời.",
+  "partner.text": "Hoa hồng nhiều cấp, thưởng CPA và theo dõi thời gian thực. Liên kết của bạn: <link>{url}</link>",
+  "partner.open": "Mở bảng điều khiển đối tác",
+
+  // Short relative times
+  "time.justNow": "Vừa xong",
+  "time.minutesAgo": "{count} phút trước",
+  "time.hoursAgo": "{count} giờ trước",
+  "time.daysAgo": "{count} ngày trước",
+  "time.ago": "{time} trước",
+
+  // Notifications bell / panel
+  "notifications.title": "Thông báo",
+  "notifications.ariaUnread": "Thông báo, {count} chưa đọc",
+  "notifications.markAll": "Đánh dấu đã đọc tất cả",
+  "notifications.clear": "Xóa",
+  "notifications.emptyTitle": "Chưa có thông báo",
+  "notifications.emptyText": "Nạp tiền, rút tiền, xác minh, cảnh báo giao dịch và phản hồi từ bộ phận hỗ trợ sẽ hiển thị tại đây.",
+  "notifications.settings": "Cài đặt thông báo",
+};
+export default dashboard;

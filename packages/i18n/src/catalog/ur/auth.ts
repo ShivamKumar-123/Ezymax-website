@@ -1,0 +1,134 @@
+import type { NsMessages } from "../../core";
+
+const auth: NsMessages<"auth"> = {
+  // Shared form fields
+  "field.email": "ای میل",
+  "field.emailOrViewer": "ای میل یا ویوئر ID",
+  "field.password": "پاس ورڈ",
+  "field.newPassword": "نیا پاس ورڈ",
+  "field.firstName": "پہلا نام",
+  "field.lastName": "آخری نام",
+  "field.country": "رہائش کا ملک",
+  "field.phone": "فون",
+  "field.dateOfBirth": "تاریخ پیدائش",
+  "field.referralCode": "ریفرل کوڈ",
+  "field.optionalHint": "اختیاری",
+  "placeholder.email": "you@example.com",
+  "placeholder.createPassword": "ایک مضبوط پاس ورڈ بنائیں",
+  "togglePassword": "پاس ورڈ دکھائیں/چھپائیں",
+
+  // Shared OTP / code step
+  "otp.didntGetIt": "کوڈ نہیں ملا؟",
+  "otp.verifying": "تصدیق ہو رہی ہے…",
+  "otp.resendIn": "0:{seconds} میں دوبارہ بھیجیں",
+  "otp.sending": "بھیجا جا رہا ہے…",
+  "otp.resendCode": "کوڈ دوبارہ بھیجیں",
+  "otp.devHint": "ڈیو موڈ: ای میل کی ترسیل ابھی کنفیگر نہیں ہوئی۔ آپ کا کوڈ <code>{code}</code> ہے (گیٹ وے لاگ میں بھی موجود ہے)۔",
+  "toast.newCodeSent": "نیا کوڈ بھیج دیا گیا",
+  "toast.checkEmail": "{email} چیک کریں",
+
+  // Google sign-in
+  "google.continue": "Google کے ساتھ جاری رکھیں",
+  "google.signUp": "Google کے ساتھ سائن اپ کریں",
+  "google.opening": "Google کھل رہا ہے…",
+  "google.orWithEmail": "یا ای میل کے ساتھ",
+  "google.error.cancelled": "Google سائن اِن منسوخ کر دیا گیا۔ جاری رکھنے کے لیے کوئی اکاؤنٹ منتخب کریں، یا نیچے اپنی ای میل استعمال کریں۔",
+  "google.error.expired": "آپ کے Google سائن اِن کا وقت ختم ہو گیا یا یہ کسی دوسرے ٹیب میں کھولا گیا۔ براہ کرم دوبارہ کوشش کریں۔",
+  "google.error.unverified": "آپ کے Google اکاؤنٹ کا ای میل ایڈریس تصدیق شدہ نہیں ہے۔ Google پر اس کی تصدیق کریں، یا نیچے اپنی ای میل استعمال کریں۔",
+  "google.error.conflict": "یہ ای میل پہلے سے کسی دوسرے Google اکاؤنٹ سے منسلک ہے۔ وہی Google اکاؤنٹ استعمال کریں، یا اپنے پاس ورڈ سے سائن اِن کریں۔",
+  "google.error.disabled": "یہ اکاؤنٹ غیر فعال ہے۔ براہ کرم سپورٹ سے رابطہ کریں۔",
+  "google.error.rate_limited": "سائن اِن کی بہت زیادہ کوششیں۔ براہ کرم چند منٹ انتظار کریں اور دوبارہ کوشش کریں۔",
+  "google.error.unavailable": "Google سائن اِن اس وقت دستیاب نہیں ہے۔ براہ کرم تھوڑی دیر بعد دوبارہ کوشش کریں، یا اپنی ای میل استعمال کریں۔",
+  "google.error.failed": "ہم آپ کو Google کے ذریعے سائن اِن نہیں کر سکے۔ براہ کرم دوبارہ کوشش کریں۔",
+
+  // Password strength meter
+  "strength.rule": "کم از کم 8 حروف، بڑا حرف، نمبر اور علامت",
+  "strength.tooWeak": "بہت کمزور",
+  "strength.weak": "کمزور",
+  "strength.fair": "مناسب",
+  "strength.good": "اچھا",
+  "strength.strong": "مضبوط",
+
+  // Demo entry card (demo builds only)
+  "demo.title": "یہ Kalks ڈیمو ہے",
+  "demo.body": "کسی اکاؤنٹ کی ضرورت نہیں۔ ہر اسکرین نمونہ ڈیٹا پر چلتی ہے۔",
+  "demo.enter": "ڈیمو میں جائیں",
+
+  // Auth layout brand panel
+  "brand.headline": "عالمی مارکیٹس میں ادارہ جاتی درستگی کے ساتھ ٹریڈ کریں۔",
+  "brand.body": "فاریکس، دھاتیں، انڈیکسز، توانائی، کرپٹو اور اسٹاکس — فوری USDT فنڈنگ، ٹریڈنگ، کاپی اور پارٹنرشپ کے لیے ایک ہی اکاؤنٹ۔",
+  "brand.previewAlt": "Kalks کلائنٹ ایریا ڈیش بورڈ",
+
+  // Sign in
+  "login.title": "خوش آمدید",
+  "login.subtitle": "اپنے Kalks کلائنٹ ایریا میں سائن اِن کریں۔",
+  "login.forgot": "پاس ورڈ بھول گئے؟",
+  "login.signingIn": "سائن اِن ہو رہا ہے…",
+  "login.signIn": "سائن اِن",
+  "login.newToKalks": "Kalks پر نئے ہیں؟ <link>اکاؤنٹ بنائیں</link>",
+  "login.verifyEmailTitle": "اپنی ای میل کی تصدیق کریں",
+  "login.verifyDeviceTitle": "تصدیق کریں کہ یہ آپ ہی ہیں",
+  "login.emailNotVerified": "آپ کی ای میل کی ابھی تصدیق نہیں ہوئی۔",
+  "login.newDevice": "نئی ڈیوائس کا پتہ چلا ہے۔",
+  "login.codeSent": "ہم نے <b>{email}</b> پر 6 ہندسوں کا کوڈ بھیجا ہے۔",
+  "login.verifyContinue": "تصدیق کریں اور جاری رکھیں",
+  "login.back": "→ واپس",
+
+  // Sign up
+  "register.stepDetails": "تفصیلات",
+  "register.stepVerify": "ای میل کی تصدیق",
+  "register.stepDone": "مکمل",
+  "register.title": "اپنا Kalks اکاؤنٹ بنائیں",
+  "register.subtitleDemo": "فوری طور پر مفت ڈیمو کھولیں۔ جب تیار ہوں، لائیو پر جائیں۔",
+  "register.subtitle": "ایک منٹ میں سائن اپ کریں اور فوراً لائیو مارکیٹس دیکھیں۔",
+  "register.emailTaken": "<signin>سائن اِن کریں</signin> یا <reset>اپنا پاس ورڈ ری سیٹ کریں</reset>۔",
+  "register.terms": "میری عمر 18 سال سے زیادہ ہے اور میں <agreement>کلائنٹ معاہدے</agreement>، <risk>رسک ڈسکلوژر</risk> اور <privacy>پرائیویسی پالیسی</privacy> سے متفق ہوں۔",
+  "register.creating": "اکاؤنٹ بن رہا ہے…",
+  "register.create": "اکاؤنٹ بنائیں",
+  "register.haveAccount": "پہلے سے اکاؤنٹ ہے؟ <link>سائن اِن کریں</link>",
+  "register.checkInbox": "اپنا ان باکس چیک کریں",
+  "register.enterCode": "وہ 6 ہندسوں کا کوڈ درج کریں جو ہم نے <b>{email}</b> پر بھیجا ہے۔",
+  "register.verifyEmail": "ای میل کی تصدیق کریں",
+  "register.welcome": "Kalks میں خوش آمدید، {name}",
+  "register.readyDemo": "آپ کی ای میل کی تصدیق ہو گئی ہے اور آپ کا اکاؤنٹ تیار ہے۔ ابھی ڈیمو اکاؤنٹ کھولیں، یا لائیو ٹریڈنگ کے لیے اپنی شناخت کی تصدیق کریں۔",
+  "register.ready": "آپ کی ای میل کی تصدیق ہو گئی ہے اور آپ کا اکاؤنٹ تیار ہے۔ ابھی لائیو مارکیٹس دیکھیں؛ فنڈنگ اور ٹریڈنگ اکاؤنٹس جلد آ رہے ہیں۔",
+  "register.openClientArea": "کلائنٹ ایریا کھولیں",
+
+  // Complete profile after Google sign-up
+  "complete.stepGoogle": "Google اکاؤنٹ",
+  "complete.stepDetails": "آپ کی تفصیلات",
+  "complete.loading": "آپ کا Google پروفائل لوڈ ہو رہا ہے…",
+  "complete.expiredTitle": "آئیے دوبارہ شروع کریں",
+  "complete.accountExists": "آپ کا اکاؤنٹ پہلے سے سیٹ اپ ہے۔ سائن اِن کے لیے Google کے ساتھ جاری رکھیں۔",
+  "complete.expired": "آپ کے Google سائن اپ کی میعاد ختم ہو گئی یا یہ کسی دوسرے ٹیب میں مکمل ہو چکا ہے۔ جہاں چھوڑا تھا وہیں سے شروع کرنے کے لیے Google کے ساتھ جاری رکھیں۔",
+  "complete.preferEmail": "ای میل استعمال کرنا چاہتے ہیں؟ <link>ای میل کے ساتھ سائن اپ کریں</link>",
+  "complete.title": "اپنا پروفائل مکمل کریں",
+  "complete.subtitle": "چند تفصیلات جو ہر Kalks اکاؤنٹ کے لیے ضروری ہیں۔ اس میں ایک منٹ سے بھی کم وقت لگتا ہے۔",
+  "complete.googleAccount": "Google اکاؤنٹ",
+  "complete.emailTaken": "اس کے بجائے اپنے پاس ورڈ سے <signin>سائن اِن کریں</signin>، یا <reset>اسے ری سیٹ کریں</reset>۔",
+  "complete.ready": "آپ کا اکاؤنٹ تیار ہے اور Google کے ذریعے سائن اِن ہے۔ ابھی لائیو مارکیٹس دیکھیں؛ فنڈنگ اور ٹریڈنگ اکاؤنٹس جلد آ رہے ہیں۔",
+  "complete.notYou": "آپ نہیں ہیں؟ <link>کوئی دوسرا Google اکاؤنٹ استعمال کریں</link>",
+
+  // Forgot / reset password
+  "forgot.backToSignIn": "سائن اِن پر واپس",
+  "forgot.titleReset": "اپنا پاس ورڈ ری سیٹ کریں",
+  "forgot.titleCode": "کوڈ درج کریں",
+  "forgot.titleNew": "نیا پاس ورڈ سیٹ کریں",
+  "forgot.intro": "پاس ورڈ ری سیٹ کرنے کے لیے ہم آپ کو 6 ہندسوں کا کوڈ ای میل کریں گے۔",
+  "forgot.codeSent": "اگر <b>{email}</b> کا اکاؤنٹ موجود ہے تو ہم نے اس پر کوڈ بھیج دیا ہے۔",
+  "forgot.passwordRule": "کم از کم 8 حروف استعمال کریں جن میں حروف، نمبر اور علامات شامل ہوں۔",
+  "forgot.sendCode": "کوڈ بھیجیں",
+  "forgot.updating": "اپ ڈیٹ ہو رہا ہے…",
+  "forgot.update": "پاس ورڈ اپ ڈیٹ کریں",
+  "forgot.toastUpdated": "پاس ورڈ اپ ڈیٹ ہو گیا",
+  "forgot.toastUpdatedBody": "اپنے نئے پاس ورڈ سے سائن اِن کریں۔",
+
+  // Step-up confirmation dialog (emailed code before sensitive changes)
+  "stepup.intro": "{what} کے لیے وہ 6 ہندسوں کا کوڈ درج کریں جو ہم نے <b>{email}</b> پر بھیجا ہے۔ یہ {minutes} منٹ میں ختم ہو جائے گا۔",
+  "stepup.spam": "کوڈ نہیں ملا؟ اپنا اسپام فولڈر چیک کریں۔",
+  "stepup.checking": "چیک ہو رہا ہے…",
+  "stepup.saving": "محفوظ ہو رہا ہے…",
+  "stepup.sendAgain": "کوڈ دوبارہ بھیجیں",
+  "stepup.sendingCode": "آپ کی ای میل پر تصدیقی کوڈ بھیجا جا رہا ہے…",
+};
+export default auth;

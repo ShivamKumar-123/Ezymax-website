@@ -1,0 +1,134 @@
+import type { NsMessages } from "../../core";
+
+const auth: NsMessages<"auth"> = {
+  // 공통 입력 항목
+  "field.email": "이메일",
+  "field.emailOrViewer": "이메일 또는 조회자 ID",
+  "field.password": "비밀번호",
+  "field.newPassword": "새 비밀번호",
+  "field.firstName": "이름",
+  "field.lastName": "성",
+  "field.country": "거주 국가",
+  "field.phone": "전화번호",
+  "field.dateOfBirth": "생년월일",
+  "field.referralCode": "추천 코드",
+  "field.optionalHint": "선택 사항",
+  "placeholder.email": "you@example.com",
+  "placeholder.createPassword": "강력한 비밀번호를 만드세요",
+  "togglePassword": "비밀번호 표시 전환",
+
+  // 공통 인증 코드 단계
+  "otp.didntGetIt": "코드를 받지 못하셨나요?",
+  "otp.verifying": "확인 중…",
+  "otp.resendIn": "0:{seconds} 후 재전송",
+  "otp.sending": "전송 중…",
+  "otp.resendCode": "코드 재전송",
+  "otp.devHint": "개발 모드: 이메일 발송이 아직 설정되지 않았습니다. 코드는 <code>{code}</code>입니다(게이트웨이 로그에서도 확인할 수 있습니다).",
+  "toast.newCodeSent": "새 코드를 보냈습니다",
+  "toast.checkEmail": "{email}을(를) 확인하세요",
+
+  // Google 로그인
+  "google.continue": "Google로 계속하기",
+  "google.signUp": "Google로 가입하기",
+  "google.opening": "Google 여는 중…",
+  "google.orWithEmail": "또는 이메일로",
+  "google.error.cancelled": "Google 로그인이 취소되었습니다. 계속하려면 계정을 선택하거나 아래에서 이메일을 사용하세요.",
+  "google.error.expired": "Google 로그인 시간이 초과되었거나 다른 탭에서 열렸습니다. 다시 시도해 주세요.",
+  "google.error.unverified": "Google 계정의 이메일 주소가 인증되지 않았습니다. Google에서 인증하거나 아래에서 이메일을 사용하세요.",
+  "google.error.conflict": "이 이메일은 이미 다른 Google 계정에 연결되어 있습니다. 해당 Google 계정을 사용하거나 비밀번호로 로그인하세요.",
+  "google.error.disabled": "비활성화된 계정입니다. 고객 지원팀에 문의해 주세요.",
+  "google.error.rate_limited": "로그인 시도가 너무 많습니다. 몇 분 후 다시 시도해 주세요.",
+  "google.error.unavailable": "지금은 Google 로그인을 사용할 수 없습니다. 잠시 후 다시 시도하거나 이메일을 사용하세요.",
+  "google.error.failed": "Google로 로그인하지 못했습니다. 다시 시도해 주세요.",
+
+  // 비밀번호 강도 표시
+  "strength.rule": "8자 이상, 대문자, 숫자 및 기호 포함",
+  "strength.tooWeak": "너무 약함",
+  "strength.weak": "약함",
+  "strength.fair": "보통",
+  "strength.good": "좋음",
+  "strength.strong": "강함",
+
+  // 데모 입장 카드
+  "demo.title": "Kalks 데모입니다",
+  "demo.body": "계정이 필요 없습니다. 모든 화면은 샘플 데이터로 실행됩니다.",
+  "demo.enter": "데모 시작",
+
+  // 인증 화면 브랜드 패널
+  "brand.headline": "기관 수준의 정밀함으로 글로벌 시장을 거래하세요.",
+  "brand.body": "외환, 금속, 지수, 에너지, 암호화폐, 주식 — USDT 즉시 입금, 거래·카피·파트너십을 하나의 계정으로.",
+  "brand.previewAlt": "Kalks Client Area 대시보드",
+
+  // 로그인
+  "login.title": "다시 오신 것을 환영합니다",
+  "login.subtitle": "Kalks Client Area에 로그인하세요.",
+  "login.forgot": "비밀번호를 잊으셨나요?",
+  "login.signingIn": "로그인 중…",
+  "login.signIn": "로그인",
+  "login.newToKalks": "Kalks가 처음이신가요? <link>계정 만들기</link>",
+  "login.verifyEmailTitle": "이메일 인증",
+  "login.verifyDeviceTitle": "본인 확인",
+  "login.emailNotVerified": "이메일이 아직 인증되지 않았습니다.",
+  "login.newDevice": "새 기기가 감지되었습니다.",
+  "login.codeSent": "<b>{email}</b>(으)로 6자리 코드를 보냈습니다.",
+  "login.verifyContinue": "인증 후 계속",
+  "login.back": "← 뒤로",
+
+  // 회원가입
+  "register.stepDetails": "정보 입력",
+  "register.stepVerify": "이메일 인증",
+  "register.stepDone": "완료",
+  "register.title": "Kalks 계정 만들기",
+  "register.subtitleDemo": "무료 데모 계좌를 바로 개설하세요. 준비되면 언제든 실계좌로 전환할 수 있습니다.",
+  "register.subtitle": "1분 만에 가입하고 바로 실시간 시장을 확인하세요.",
+  "register.emailTaken": "<signin>로그인</signin>하거나 <reset>비밀번호를 재설정</reset>하세요.",
+  "register.terms": "만 18세 이상이며 <agreement>고객 약관</agreement>, <risk>위험 고지</risk> 및 <privacy>개인정보 처리방침</privacy>에 동의합니다.",
+  "register.creating": "계정 생성 중…",
+  "register.create": "계정 만들기",
+  "register.haveAccount": "이미 계정이 있으신가요? <link>로그인</link>",
+  "register.checkInbox": "받은편지함을 확인하세요",
+  "register.enterCode": "<b>{email}</b>(으)로 보낸 6자리 코드를 입력하세요.",
+  "register.verifyEmail": "이메일 인증",
+  "register.welcome": "{name}님, Kalks에 오신 것을 환영합니다",
+  "register.readyDemo": "이메일이 인증되었으며 계정이 준비되었습니다. 지금 데모 계좌를 개설하거나 본인 인증을 완료하고 실거래를 시작하세요.",
+  "register.ready": "이메일이 인증되었으며 계정이 준비되었습니다. 지금 실시간 시장을 확인하세요. 입금 및 거래 계좌 기능은 곧 제공됩니다.",
+  "register.openClientArea": "Client Area 열기",
+
+  // Google 가입 후 프로필 완성
+  "complete.stepGoogle": "Google 계정",
+  "complete.stepDetails": "내 정보",
+  "complete.loading": "Google 프로필을 불러오는 중…",
+  "complete.expiredTitle": "다시 시작하겠습니다",
+  "complete.accountExists": "계정이 이미 설정되어 있습니다. Google로 계속하여 로그인하세요.",
+  "complete.expired": "Google 가입이 만료되었거나 다른 탭에서 완료되었습니다. Google로 계속하여 이어서 진행하세요.",
+  "complete.preferEmail": "이메일을 선호하시나요? <link>이메일로 가입하기</link>",
+  "complete.title": "프로필 완성하기",
+  "complete.subtitle": "모든 Kalks 계정에 필요한 몇 가지 정보입니다. 1분도 걸리지 않습니다.",
+  "complete.googleAccount": "Google 계정",
+  "complete.emailTaken": "대신 비밀번호로 <signin>로그인</signin>하거나 <reset>비밀번호를 재설정</reset>하세요.",
+  "complete.ready": "계정이 준비되었으며 Google로 로그인되었습니다. 지금 실시간 시장을 확인하세요. 입금 및 거래 계좌 기능은 곧 제공됩니다.",
+  "complete.notYou": "본인이 아니신가요? <link>다른 Google 계정 사용</link>",
+
+  // 비밀번호 찾기 / 재설정
+  "forgot.backToSignIn": "로그인으로 돌아가기",
+  "forgot.titleReset": "비밀번호 재설정",
+  "forgot.titleCode": "코드 입력",
+  "forgot.titleNew": "새 비밀번호 설정",
+  "forgot.intro": "비밀번호 재설정을 위한 6자리 코드를 이메일로 보내 드립니다.",
+  "forgot.codeSent": "<b>{email}</b> 계정이 존재하는 경우 해당 주소로 코드를 보냈습니다.",
+  "forgot.passwordRule": "문자, 숫자, 기호를 조합하여 8자 이상 사용하세요.",
+  "forgot.sendCode": "코드 보내기",
+  "forgot.updating": "변경 중…",
+  "forgot.update": "비밀번호 변경",
+  "forgot.toastUpdated": "비밀번호가 변경되었습니다",
+  "forgot.toastUpdatedBody": "새 비밀번호로 로그인하세요.",
+
+  // 추가 인증 대화 상자 (민감한 변경 전 이메일 코드)
+  "stepup.intro": "{what}하려면 <b>{email}</b>(으)로 보낸 6자리 코드를 입력하세요. 코드는 {minutes}분 후 만료됩니다.",
+  "stepup.spam": "코드를 받지 못하셨나요? 스팸 폴더를 확인하세요.",
+  "stepup.checking": "확인 중…",
+  "stepup.saving": "저장 중…",
+  "stepup.sendAgain": "코드 다시 보내기",
+  "stepup.sendingCode": "확인 코드를 이메일로 보내는 중…",
+};
+export default auth;

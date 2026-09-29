@@ -1,0 +1,134 @@
+import type { NsMessages } from "../../core";
+
+const auth: NsMessages<"auth"> = {
+  // Shared form fields
+  "field.email": "மின்னஞ்சல்",
+  "field.emailOrViewer": "மின்னஞ்சல் அல்லது பார்வையாளர் ID",
+  "field.password": "கடவுச்சொல்",
+  "field.newPassword": "புதிய கடவுச்சொல்",
+  "field.firstName": "முதல் பெயர்",
+  "field.lastName": "கடைசிப் பெயர்",
+  "field.country": "வசிக்கும் நாடு",
+  "field.phone": "தொலைபேசி",
+  "field.dateOfBirth": "பிறந்த தேதி",
+  "field.referralCode": "பரிந்துரைக் குறியீடு",
+  "field.optionalHint": "விருப்பத்தேர்வு",
+  "placeholder.email": "you@example.com",
+  "placeholder.createPassword": "வலுவான கடவுச்சொல்லை உருவாக்குங்கள்",
+  "togglePassword": "கடவுச்சொல்லைக் காட்டு/மறை",
+
+  // Shared OTP / code step
+  "otp.didntGetIt": "குறியீடு வரவில்லையா?",
+  "otp.verifying": "சரிபார்க்கிறது…",
+  "otp.resendIn": "0:{seconds} இல் மீண்டும் அனுப்பலாம்",
+  "otp.sending": "அனுப்புகிறது…",
+  "otp.resendCode": "குறியீட்டை மீண்டும் அனுப்பு",
+  "otp.devHint": "டெவ் பயன்முறை: மின்னஞ்சல் அனுப்புதல் இன்னும் அமைக்கப்படவில்லை. உங்கள் குறியீடு <code>{code}</code> (gateway பதிவிலும் உள்ளது).",
+  "toast.newCodeSent": "புதிய குறியீடு அனுப்பப்பட்டது",
+  "toast.checkEmail": "{email} ஐச் சரிபார்க்கவும்",
+
+  // Google sign-in
+  "google.continue": "Google மூலம் தொடர்க",
+  "google.signUp": "Google மூலம் பதிவுசெய்க",
+  "google.opening": "Google திறக்கிறது…",
+  "google.orWithEmail": "அல்லது மின்னஞ்சல் மூலம்",
+  "google.error.cancelled": "Google உள்நுழைவு ரத்துசெய்யப்பட்டது. தொடர ஒரு கணக்கைத் தேர்வுசெய்யவும், அல்லது கீழே உங்கள் மின்னஞ்சலைப் பயன்படுத்தவும்.",
+  "google.error.expired": "உங்கள் Google உள்நுழைவு நேரம் முடிந்தது அல்லது வேறொரு டேபில் திறக்கப்பட்டது. மீண்டும் முயலவும்.",
+  "google.error.unverified": "உங்கள் Google கணக்கின் மின்னஞ்சல் முகவரி சரிபார்க்கப்படவில்லை. அதை Google இல் சரிபார்க்கவும், அல்லது கீழே உங்கள் மின்னஞ்சலைப் பயன்படுத்தவும்.",
+  "google.error.conflict": "இந்த மின்னஞ்சல் ஏற்கனவே வேறொரு Google கணக்குடன் இணைக்கப்பட்டுள்ளது. அந்த Google கணக்கைப் பயன்படுத்தவும், அல்லது உங்கள் கடவுச்சொல்லுடன் உள்நுழையவும்.",
+  "google.error.disabled": "இந்தக் கணக்கு முடக்கப்பட்டுள்ளது. உதவிக் குழுவைத் தொடர்புகொள்ளவும்.",
+  "google.error.rate_limited": "அதிகமான உள்நுழைவு முயற்சிகள். சில நிமிடங்கள் காத்திருந்து மீண்டும் முயலவும்.",
+  "google.error.unavailable": "Google உள்நுழைவு தற்போது கிடைக்கவில்லை. சிறிது நேரத்தில் மீண்டும் முயலவும், அல்லது உங்கள் மின்னஞ்சலைப் பயன்படுத்தவும்.",
+  "google.error.failed": "Google மூலம் உங்களை உள்நுழைய வைக்க முடியவில்லை. மீண்டும் முயலவும்.",
+
+  // Password strength meter
+  "strength.rule": "8+ எழுத்துகள், பெரிய எழுத்து, எண் & குறியீடு",
+  "strength.tooWeak": "மிகவும் பலவீனம்",
+  "strength.weak": "பலவீனம்",
+  "strength.fair": "பரவாயில்லை",
+  "strength.good": "நன்று",
+  "strength.strong": "வலுவானது",
+
+  // Demo entry card (demo builds only)
+  "demo.title": "இது Kalks டெமோ",
+  "demo.body": "கணக்கு தேவையில்லை. ஒவ்வொரு திரையும் மாதிரித் தரவில் இயங்குகிறது.",
+  "demo.enter": "டெமோவில் நுழை",
+
+  // Auth layout brand panel
+  "brand.headline": "நிறுவன அளவிலான துல்லியத்துடன் உலகச் சந்தைகளில் டிரேட் செய்யுங்கள்.",
+  "brand.body": "ஃபாரெக்ஸ், உலோகங்கள், குறியீடுகள், எரிசக்தி, கிரிப்டோ மற்றும் பங்குகள் — உடனடி USDT நிதியளிப்பு, டிரேடிங், காப்பி மற்றும் பார்ட்னர்ஷிப்பிற்கு ஒரே கணக்கு.",
+  "brand.previewAlt": "Kalks கிளையன்ட் ஏரியா டாஷ்போர்டு",
+
+  // Sign in
+  "login.title": "மீண்டும் வருக",
+  "login.subtitle": "உங்கள் Kalks கிளையன்ட் ஏரியாவில் உள்நுழையுங்கள்.",
+  "login.forgot": "கடவுச்சொல் மறந்துவிட்டதா?",
+  "login.signingIn": "உள்நுழைகிறது…",
+  "login.signIn": "உள்நுழை",
+  "login.newToKalks": "Kalks க்குப் புதியவரா? <link>கணக்கை உருவாக்குங்கள்</link>",
+  "login.verifyEmailTitle": "உங்கள் மின்னஞ்சலைச் சரிபார்க்கவும்",
+  "login.verifyDeviceTitle": "இது நீங்கள்தான் என்பதை உறுதிப்படுத்தவும்",
+  "login.emailNotVerified": "உங்கள் மின்னஞ்சல் இன்னும் சரிபார்க்கப்படவில்லை.",
+  "login.newDevice": "புதிய சாதனம் கண்டறியப்பட்டது.",
+  "login.codeSent": "<b>{email}</b> க்கு 6 இலக்கக் குறியீட்டை அனுப்பியுள்ளோம்.",
+  "login.verifyContinue": "சரிபார்த்துத் தொடர்க",
+  "login.back": "← பின்செல்",
+
+  // Sign up
+  "register.stepDetails": "விவரங்கள்",
+  "register.stepVerify": "மின்னஞ்சல் சரிபார்ப்பு",
+  "register.stepDone": "முடிந்தது",
+  "register.title": "உங்கள் Kalks கணக்கை உருவாக்குங்கள்",
+  "register.subtitleDemo": "இலவச டெமோவை உடனே திறங்கள். நீங்கள் தயாரானதும் லைவ் செல்லுங்கள்.",
+  "register.subtitle": "ஒரு நிமிடத்தில் பதிவுசெய்து, உடனே லைவ் சந்தைகளைப் பின்தொடருங்கள்.",
+  "register.emailTaken": "<signin>உள்நுழையுங்கள்</signin> அல்லது <reset>உங்கள் கடவுச்சொல்லை மீட்டமையுங்கள்</reset>.",
+  "register.terms": "எனக்கு 18 வயதுக்கு மேல் ஆகிறது; <agreement>கிளையன்ட் ஒப்பந்தம்</agreement>, <risk>அபாய வெளிப்படுத்தல்</risk> மற்றும் <privacy>தனியுரிமைக் கொள்கை</privacy> ஆகியவற்றை ஏற்கிறேன்.",
+  "register.creating": "கணக்கை உருவாக்குகிறது…",
+  "register.create": "கணக்கை உருவாக்கு",
+  "register.haveAccount": "ஏற்கனவே கணக்கு உள்ளதா? <link>உள்நுழையுங்கள்</link>",
+  "register.checkInbox": "உங்கள் இன்பாக்ஸைச் சரிபார்க்கவும்",
+  "register.enterCode": "<b>{email}</b> க்கு அனுப்பிய 6 இலக்கக் குறியீட்டை உள்ளிடவும்.",
+  "register.verifyEmail": "மின்னஞ்சலைச் சரிபார்",
+  "register.welcome": "Kalks க்கு வரவேற்கிறோம், {name}",
+  "register.readyDemo": "உங்கள் மின்னஞ்சல் சரிபார்க்கப்பட்டது, உங்கள் கணக்கு தயார். இப்போதே டெமோ கணக்கைத் திறங்கள், அல்லது லைவ் செல்ல உங்கள் அடையாளத்தைச் சரிபார்க்கவும்.",
+  "register.ready": "உங்கள் மின்னஞ்சல் சரிபார்க்கப்பட்டது, உங்கள் கணக்கு தயார். இப்போதே லைவ் சந்தைகளைப் பின்தொடருங்கள்; நிதியளிப்பு மற்றும் டிரேடிங் கணக்குகள் விரைவில் வருகின்றன.",
+  "register.openClientArea": "கிளையன்ட் ஏரியாவைத் திற",
+
+  // Complete profile after Google sign-up
+  "complete.stepGoogle": "Google கணக்கு",
+  "complete.stepDetails": "உங்கள் விவரங்கள்",
+  "complete.loading": "உங்கள் Google சுயவிவரத்தை ஏற்றுகிறது…",
+  "complete.expiredTitle": "மீண்டும் தொடங்குவோம்",
+  "complete.accountExists": "உங்கள் கணக்கு ஏற்கனவே அமைக்கப்பட்டுள்ளது. உள்நுழைய Google மூலம் தொடருங்கள்.",
+  "complete.expired": "உங்கள் Google பதிவு காலாவதியானது அல்லது வேறொரு டேபில் முடிக்கப்பட்டது. விட்ட இடத்திலிருந்து தொடர Google மூலம் தொடருங்கள்.",
+  "complete.preferEmail": "மின்னஞ்சல் விருப்பமா? <link>மின்னஞ்சல் மூலம் பதிவுசெய்க</link>",
+  "complete.title": "உங்கள் சுயவிவரத்தை நிறைவுசெய்யுங்கள்",
+  "complete.subtitle": "ஒவ்வொரு Kalks கணக்கிற்கும் தேவையான சில விவரங்கள். ஒரு நிமிடத்திற்குள் முடிந்துவிடும்.",
+  "complete.googleAccount": "Google கணக்கு",
+  "complete.emailTaken": "அதற்குப் பதிலாக உங்கள் கடவுச்சொல்லுடன் <signin>உள்நுழையுங்கள்</signin>, அல்லது <reset>அதை மீட்டமையுங்கள்</reset>.",
+  "complete.ready": "உங்கள் கணக்கு தயார், Google மூலம் உள்நுழைந்துள்ளீர்கள். இப்போதே லைவ் சந்தைகளைப் பின்தொடருங்கள்; நிதியளிப்பு மற்றும் டிரேடிங் கணக்குகள் விரைவில் வருகின்றன.",
+  "complete.notYou": "நீங்கள் இல்லையா? <link>வேறொரு Google கணக்கைப் பயன்படுத்துங்கள்</link>",
+
+  // Forgot / reset password
+  "forgot.backToSignIn": "உள்நுழைவுக்குத் திரும்பு",
+  "forgot.titleReset": "உங்கள் கடவுச்சொல்லை மீட்டமையுங்கள்",
+  "forgot.titleCode": "குறியீட்டை உள்ளிடவும்",
+  "forgot.titleNew": "புதிய கடவுச்சொல்லை அமையுங்கள்",
+  "forgot.intro": "உங்கள் கடவுச்சொல்லை மீட்டமைக்க 6 இலக்கக் குறியீட்டை மின்னஞ்சலில் அனுப்புவோம்.",
+  "forgot.codeSent": "<b>{email}</b> க்கு கணக்கு இருந்தால், அதற்குக் குறியீட்டை அனுப்பியுள்ளோம்.",
+  "forgot.passwordRule": "எழுத்துகள், எண்கள் மற்றும் குறியீடுகள் கலந்த குறைந்தது 8 எழுத்துகளைப் பயன்படுத்துங்கள்.",
+  "forgot.sendCode": "குறியீட்டை அனுப்பு",
+  "forgot.updating": "புதுப்பிக்கிறது…",
+  "forgot.update": "கடவுச்சொல்லைப் புதுப்பி",
+  "forgot.toastUpdated": "கடவுச்சொல் புதுப்பிக்கப்பட்டது",
+  "forgot.toastUpdatedBody": "உங்கள் புதிய கடவுச்சொல்லுடன் உள்நுழையுங்கள்.",
+
+  // Step-up confirmation dialog (emailed code before sensitive changes)
+  "stepup.intro": "{what}: <b>{email}</b> க்கு அனுப்பிய 6 இலக்கக் குறியீட்டை உள்ளிடவும். இது {minutes} நிமிடங்களில் காலாவதியாகும்.",
+  "stepup.spam": "குறியீடு வரவில்லையா? உங்கள் ஸ்பேம் கோப்புறையைச் சரிபார்க்கவும்.",
+  "stepup.checking": "சரிபார்க்கிறது…",
+  "stepup.saving": "சேமிக்கிறது…",
+  "stepup.sendAgain": "குறியீட்டை மீண்டும் அனுப்பு",
+  "stepup.sendingCode": "உங்கள் மின்னஞ்சலுக்கு உறுதிப்படுத்தல் குறியீட்டை அனுப்புகிறது…",
+};
+export default auth;

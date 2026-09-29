@@ -1,0 +1,134 @@
+import type { NsMessages } from "../../core";
+
+const auth: NsMessages<"auth"> = {
+  // Shared form fields
+  "field.email": "メールアドレス",
+  "field.emailOrViewer": "メールアドレスまたは閲覧者ID",
+  "field.password": "パスワード",
+  "field.newPassword": "新しいパスワード",
+  "field.firstName": "名",
+  "field.lastName": "姓",
+  "field.country": "居住国",
+  "field.phone": "電話番号",
+  "field.dateOfBirth": "生年月日",
+  "field.referralCode": "紹介コード",
+  "field.optionalHint": "任意",
+  "placeholder.email": "you@example.com",
+  "placeholder.createPassword": "安全なパスワードを作成",
+  "togglePassword": "パスワードの表示切り替え",
+
+  // Shared OTP / code step
+  "otp.didntGetIt": "届きませんか？",
+  "otp.verifying": "確認中…",
+  "otp.resendIn": "0:{seconds} 後に再送信",
+  "otp.sending": "送信中…",
+  "otp.resendCode": "コードを再送信",
+  "otp.devHint": "開発モード：メール送信はまだ設定されていません。お客様のコードは <code>{code}</code> です（ゲートウェイのログにも記録されています）。",
+  "toast.newCodeSent": "新しいコードを送信しました",
+  "toast.checkEmail": "{email} をご確認ください",
+
+  // Google sign-in
+  "google.continue": "Googleで続行",
+  "google.signUp": "Googleで登録",
+  "google.opening": "Googleを開いています…",
+  "google.orWithEmail": "またはメールアドレスで",
+  "google.error.cancelled": "Googleログインがキャンセルされました。アカウントを選択して続行するか、下のメールアドレスをご利用ください。",
+  "google.error.expired": "Googleログインがタイムアウトしたか、別のタブで開かれました。もう一度お試しください。",
+  "google.error.unverified": "Googleアカウントのメールアドレスが認証されていません。Googleで認証するか、下のメールアドレスをご利用ください。",
+  "google.error.conflict": "このメールアドレスは別のGoogleアカウントに紐付けられています。そのGoogleアカウントを使用するか、パスワードでログインしてください。",
+  "google.error.disabled": "このアカウントは無効になっています。サポートまでお問い合わせください。",
+  "google.error.rate_limited": "ログインの試行回数が多すぎます。数分待ってからもう一度お試しください。",
+  "google.error.unavailable": "現在Googleログインはご利用いただけません。しばらくしてから再度お試しいただくか、メールアドレスをご利用ください。",
+  "google.error.failed": "Googleでログインできませんでした。もう一度お試しください。",
+
+  // Password strength meter
+  "strength.rule": "8文字以上、大文字・数字・記号を含む",
+  "strength.tooWeak": "弱すぎます",
+  "strength.weak": "弱い",
+  "strength.fair": "普通",
+  "strength.good": "良い",
+  "strength.strong": "強い",
+
+  // Demo entry card (demo builds only)
+  "demo.title": "Kalksデモ版です",
+  "demo.body": "アカウントは不要です。すべての画面がサンプルデータで動作します。",
+  "demo.enter": "デモを開く",
+
+  // Auth layout brand panel
+  "brand.headline": "機関投資家レベルの精度で世界の市場を取引。",
+  "brand.body": "FX、貴金属、株価指数、エネルギー、暗号資産、株式 — USDTで即時入金、取引・コピー・パートナーをひとつの口座で。",
+  "brand.previewAlt": "Kalksクライアントエリアのダッシュボード",
+
+  // Sign in
+  "login.title": "おかえりなさい",
+  "login.subtitle": "Kalksクライアントエリアにログインしてください。",
+  "login.forgot": "パスワードをお忘れですか？",
+  "login.signingIn": "ログイン中…",
+  "login.signIn": "ログイン",
+  "login.newToKalks": "Kalksは初めてですか？ <link>口座を作成</link>",
+  "login.verifyEmailTitle": "メールアドレスの認証",
+  "login.verifyDeviceTitle": "ご本人確認",
+  "login.emailNotVerified": "メールアドレスはまだ認証されていません。",
+  "login.newDevice": "新しいデバイスが検出されました。",
+  "login.codeSent": "<b>{email}</b> に6桁のコードを送信しました。",
+  "login.verifyContinue": "確認して続行",
+  "login.back": "← 戻る",
+
+  // Sign up
+  "register.stepDetails": "情報入力",
+  "register.stepVerify": "メール認証",
+  "register.stepDone": "完了",
+  "register.title": "Kalks口座を作成",
+  "register.subtitleDemo": "無料のデモ口座をすぐに開設できます。準備ができたらいつでもリアル口座へ。",
+  "register.subtitle": "1分で登録して、すぐにリアルタイムの市場をフォローできます。",
+  "register.emailTaken": "<signin>ログイン</signin>するか、<reset>パスワードをリセット</reset>してください。",
+  "register.terms": "私は18歳以上であり、<agreement>顧客契約</agreement>、<risk>リスク開示</risk>、<privacy>プライバシーポリシー</privacy>に同意します。",
+  "register.creating": "口座を作成中…",
+  "register.create": "口座を作成",
+  "register.haveAccount": "すでにアカウントをお持ちですか？ <link>ログイン</link>",
+  "register.checkInbox": "受信トレイをご確認ください",
+  "register.enterCode": "<b>{email}</b> に送信した6桁のコードを入力してください。",
+  "register.verifyEmail": "メールアドレスを認証",
+  "register.welcome": "Kalksへようこそ、{name}様",
+  "register.readyDemo": "メールアドレスが認証され、アカウントの準備が整いました。今すぐデモ口座を開設するか、本人確認を行ってリアル取引を始めましょう。",
+  "register.ready": "メールアドレスが認証され、アカウントの準備が整いました。今すぐリアルタイムの市場をフォローできます。入金と取引口座は近日公開予定です。",
+  "register.openClientArea": "クライアントエリアを開く",
+
+  // Complete profile after Google sign-up
+  "complete.stepGoogle": "Googleアカウント",
+  "complete.stepDetails": "お客様情報",
+  "complete.loading": "Googleプロフィールを読み込み中…",
+  "complete.expiredTitle": "もう一度始めましょう",
+  "complete.accountExists": "アカウントはすでに設定済みです。Googleで続行してログインしてください。",
+  "complete.expired": "Googleでの登録の有効期限が切れたか、別のタブで完了しました。Googleで続行して、中断したところから再開してください。",
+  "complete.preferEmail": "メールアドレスをご希望ですか？ <link>メールアドレスで登録</link>",
+  "complete.title": "プロフィールを完成させる",
+  "complete.subtitle": "すべてのKalksアカウントに必要な情報です。1分もかかりません。",
+  "complete.googleAccount": "Googleアカウント",
+  "complete.emailTaken": "代わりにパスワードで<signin>ログイン</signin>するか、<reset>リセット</reset>してください。",
+  "complete.ready": "アカウントの準備が整い、Googleでログインしました。今すぐリアルタイムの市場をフォローできます。入金と取引口座は近日公開予定です。",
+  "complete.notYou": "ご本人ではありませんか？ <link>別のGoogleアカウントを使用</link>",
+
+  // Forgot / reset password
+  "forgot.backToSignIn": "ログインに戻る",
+  "forgot.titleReset": "パスワードをリセット",
+  "forgot.titleCode": "コードを入力",
+  "forgot.titleNew": "新しいパスワードを設定",
+  "forgot.intro": "パスワードをリセットするための6桁のコードをメールでお送りします。",
+  "forgot.codeSent": "<b>{email}</b> のアカウントが存在する場合、コードを送信しました。",
+  "forgot.passwordRule": "文字・数字・記号を組み合わせた8文字以上を使用してください。",
+  "forgot.sendCode": "コードを送信",
+  "forgot.updating": "更新中…",
+  "forgot.update": "パスワードを更新",
+  "forgot.toastUpdated": "パスワードを更新しました",
+  "forgot.toastUpdatedBody": "新しいパスワードでログインしてください。",
+
+  // Step-up confirmation dialog (emailed code before sensitive changes)
+  "stepup.intro": "{what}には、<b>{email}</b> に送信した6桁のコードを入力してください。コードの有効期限は{minutes}分です。",
+  "stepup.spam": "届きませんか？迷惑メールフォルダをご確認ください。",
+  "stepup.checking": "確認中…",
+  "stepup.saving": "保存中…",
+  "stepup.sendAgain": "コードを再送信",
+  "stepup.sendingCode": "確認コードをメールに送信しています…",
+};
+export default auth;

@@ -1,0 +1,135 @@
+import type { NsMessages } from "../../core";
+
+const auth: NsMessages<"auth"> = {
+  // Shared form fields
+  "field.email": "ईमेल",
+  "field.emailOrViewer": "ईमेल या व्यूअर ID",
+  "field.password": "पासवर्ड",
+  "field.newPassword": "नया पासवर्ड",
+  "field.firstName": "पहला नाम",
+  "field.lastName": "उपनाम",
+  "field.country": "निवास का देश",
+  "field.phone": "फ़ोन",
+  "field.dateOfBirth": "जन्म तिथि",
+  "field.referralCode": "रेफ़रल कोड",
+  "field.optionalHint": "वैकल्पिक",
+  "placeholder.email": "you@example.com",
+  "placeholder.createPassword": "एक मज़बूत पासवर्ड बनाएँ",
+  "togglePassword": "पासवर्ड दिखाएँ/छिपाएँ",
+
+  // Shared OTP / code step
+  "otp.didntGetIt": "कोड नहीं मिला?",
+  "otp.verifying": "वेरिफ़ाई हो रहा है…",
+  "otp.resendIn": "0:{seconds} में दोबारा भेजें",
+  "otp.sending": "भेजा जा रहा है…",
+  "otp.resendCode": "कोड दोबारा भेजें",
+  "otp.devHint": "डेव मोड: ईमेल डिलीवरी अभी कॉन्फ़िगर नहीं है। आपका कोड <code>{code}</code> है (गेटवे लॉग में भी है)।",
+  "toast.newCodeSent": "नया कोड भेजा गया",
+  "toast.checkEmail": "{email} जाँचें",
+
+  // Google sign-in
+  "google.continue": "Google के साथ जारी रखें",
+  "google.signUp": "Google के साथ साइन अप करें",
+  "google.opening": "Google खुल रहा है…",
+  "google.orWithEmail": "या ईमेल से",
+  "google.error.cancelled": "Google साइन-इन रद्द कर दिया गया। जारी रखने के लिए कोई अकाउंट चुनें, या नीचे अपने ईमेल का उपयोग करें।",
+  "google.error.expired": "आपका Google साइन-इन टाइम आउट हो गया या किसी दूसरे टैब में खोला गया। कृपया फिर से कोशिश करें।",
+  "google.error.unverified": "आपके Google अकाउंट का ईमेल पता वेरिफ़ाइड नहीं है। इसे Google पर वेरिफ़ाई करें, या नीचे अपने ईमेल का उपयोग करें।",
+  "google.error.conflict": "यह ईमेल पहले से किसी दूसरे Google अकाउंट से जुड़ा है। उसी Google अकाउंट का उपयोग करें, या अपने पासवर्ड से साइन इन करें।",
+  "google.error.disabled": "यह अकाउंट बंद कर दिया गया है। कृपया सहायता टीम से संपर्क करें।",
+  "google.error.rate_limited": "साइन-इन के बहुत ज़्यादा प्रयास हुए। कृपया कुछ मिनट रुककर फिर से कोशिश करें।",
+  "google.error.unavailable": "Google साइन-इन अभी उपलब्ध नहीं है। कृपया थोड़ी देर बाद कोशिश करें, या अपने ईमेल का उपयोग करें।",
+  "google.error.failed": "हम आपको Google से साइन इन नहीं कर सके। कृपया फिर से कोशिश करें।",
+
+  // Password strength meter
+  "strength.rule": "8+ अक्षर, बड़ा अक्षर, अंक और सिंबल",
+  "strength.tooWeak": "बहुत कमज़ोर",
+  "strength.weak": "कमज़ोर",
+  "strength.fair": "ठीक-ठाक",
+  "strength.good": "अच्छा",
+  "strength.strong": "मज़बूत",
+
+  // Demo entry card (demo builds only)
+  "demo.title": "यह Kalks का डेमो है",
+  "demo.body": "किसी अकाउंट की ज़रूरत नहीं। हर स्क्रीन सैंपल डेटा पर चलती है।",
+  "demo.enter": "डेमो में जाएँ",
+
+  // Auth layout brand panel
+  "brand.headline": "संस्थागत सटीकता के साथ ग्लोबल मार्केट में ट्रेड करें।",
+  "brand.body": "फ़ॉरेक्स, मेटल्स, इंडाइसेस, एनर्जी, क्रिप्टो और स्टॉक्स — तुरंत USDT फ़ंडिंग, ट्रेडिंग, कॉपी और पार्टनरशिप के लिए एक ही अकाउंट।",
+  "brand.previewAlt": "Kalks क्लाइंट एरिया डैशबोर्ड",
+
+  // Sign in
+  "login.title": "फिर से स्वागत है",
+  "login.subtitle": "अपने Kalks क्लाइंट एरिया में साइन इन करें।",
+  "login.forgot": "पासवर्ड भूल गए?",
+  "login.signingIn": "साइन इन हो रहा है…",
+  "login.signIn": "साइन इन करें",
+  "login.newToKalks": "Kalks पर नए हैं? <link>अकाउंट बनाएँ</link>",
+  "login.verifyEmailTitle": "अपना ईमेल वेरिफ़ाई करें",
+  "login.verifyDeviceTitle": "पुष्टि करें कि यह आप ही हैं",
+  "login.emailNotVerified": "आपका ईमेल अभी वेरिफ़ाइड नहीं है।",
+  "login.newDevice": "नया डिवाइस पाया गया।",
+  "login.codeSent": "हमने <b>{email}</b> पर 6-अंकों का कोड भेजा है।",
+  "login.verifyContinue": "वेरिफ़ाई करें और जारी रखें",
+  "login.back": "← वापस",
+
+  // Sign up
+  "register.stepDetails": "विवरण",
+  "register.stepVerify": "ईमेल वेरिफ़ाई करें",
+  "register.stepDone": "हो गया",
+  "register.title": "अपना Kalks अकाउंट बनाएँ",
+  "register.subtitleDemo": "तुरंत मुफ़्त डेमो खोलें। जब चाहें लाइव पर जाएँ।",
+  "register.subtitle": "एक मिनट में साइन अप करें और तुरंत लाइव मार्केट फ़ॉलो करें।",
+  "register.emailTaken": "<signin>साइन इन करें</signin> या <reset>अपना पासवर्ड रीसेट करें</reset>।",
+  "register.terms": "मेरी उम्र 18 वर्ष से अधिक है और मैं <agreement>क्लाइंट एग्रीमेंट</agreement>, <risk>रिस्क डिस्क्लोज़र</risk> और <privacy>प्राइवेसी पॉलिसी</privacy> से सहमत हूँ।",
+  "register.creating": "अकाउंट बन रहा है…",
+  "register.create": "अकाउंट बनाएँ",
+  "register.haveAccount": "पहले से अकाउंट है? <link>साइन इन करें</link>",
+  "register.checkInbox": "अपना इनबॉक्स देखें",
+  "register.enterCode": "<b>{email}</b> पर भेजा गया 6-अंकों का कोड डालें।",
+  "register.verifyEmail": "ईमेल वेरिफ़ाई करें",
+  "register.welcome": "Kalks में आपका स्वागत है, {name}",
+  "register.readyDemo": "आपका ईमेल वेरिफ़ाई हो गया है और आपका अकाउंट तैयार है। अभी डेमो अकाउंट खोलें, या लाइव होने के लिए अपनी पहचान वेरिफ़ाई करें।",
+  "register.ready": "आपका ईमेल वेरिफ़ाई हो गया है और आपका अकाउंट तैयार है। अभी लाइव मार्केट फ़ॉलो करें; फ़ंडिंग और ट्रेडिंग अकाउंट जल्द आ रहे हैं।",
+  "register.openClientArea": "क्लाइंट एरिया खोलें",
+
+  // Complete profile after Google sign-up
+  "complete.stepGoogle": "Google अकाउंट",
+  "complete.stepDetails": "आपका विवरण",
+  "complete.loading": "आपकी Google प्रोफ़ाइल लोड हो रही है…",
+  "complete.expiredTitle": "चलिए फिर से शुरू करते हैं",
+  "complete.accountExists": "आपका अकाउंट पहले से सेट अप है। साइन इन करने के लिए Google के साथ जारी रखें।",
+  "complete.expired": "आपका Google साइन-अप एक्सपायर हो गया है या किसी दूसरे टैब में पूरा हो चुका है। जहाँ छोड़ा था वहीं से शुरू करने के लिए Google के साथ जारी रखें।",
+  "complete.preferEmail": "ईमेल पसंद है? <link>ईमेल से साइन अप करें</link>",
+  "complete.title": "अपनी प्रोफ़ाइल पूरी करें",
+  "complete.subtitle": "कुछ विवरण जो हर Kalks अकाउंट के लिए ज़रूरी हैं। इसमें एक मिनट से भी कम लगता है।",
+  "complete.googleAccount": "Google अकाउंट",
+  "complete.emailTaken": "इसकी जगह अपने पासवर्ड से <signin>साइन इन करें</signin>, या <reset>उसे रीसेट करें</reset>।",
+  "complete.ready": "आपका अकाउंट तैयार है और Google से साइन इन है। अभी लाइव मार्केट फ़ॉलो करें; फ़ंडिंग और ट्रेडिंग अकाउंट जल्द आ रहे हैं।",
+  "complete.notYou": "आप नहीं हैं? <link>दूसरे Google अकाउंट का उपयोग करें</link>",
+
+  // Forgot / reset password
+  "forgot.backToSignIn": "साइन इन पर वापस जाएँ",
+  "forgot.titleReset": "अपना पासवर्ड रीसेट करें",
+  "forgot.titleCode": "कोड डालें",
+  "forgot.titleNew": "नया पासवर्ड सेट करें",
+  "forgot.intro": "पासवर्ड रीसेट करने के लिए हम आपको 6-अंकों का कोड ईमेल करेंगे।",
+  "forgot.codeSent": "अगर <b>{email}</b> के लिए कोई अकाउंट है, तो हमने उस पर कोड भेज दिया है।",
+  "forgot.passwordRule": "कम से कम 8 अक्षर रखें, जिनमें अक्षर, अंक और सिंबल का मेल हो।",
+  "forgot.sendCode": "कोड भेजें",
+  "forgot.updating": "अपडेट हो रहा है…",
+  "forgot.update": "पासवर्ड अपडेट करें",
+  "forgot.toastUpdated": "पासवर्ड अपडेट हो गया",
+  "forgot.toastUpdatedBody": "अपने नए पासवर्ड से साइन इन करें।",
+
+  // Step-up confirmation dialog (emailed code before sensitive changes)
+  // {what} is a translated action phrase such as "change the leverage of #10000123"
+  "stepup.intro": "{what} के लिए, <b>{email}</b> पर भेजा गया 6-अंकों का कोड डालें। यह {minutes} मिनट में एक्सपायर हो जाएगा।",
+  "stepup.spam": "कोड नहीं मिला? अपना स्पैम फ़ोल्डर देखें।",
+  "stepup.checking": "जाँच हो रही है…",
+  "stepup.saving": "सेव हो रहा है…",
+  "stepup.sendAgain": "कोड दोबारा भेजें",
+  "stepup.sendingCode": "आपके ईमेल पर पुष्टि कोड भेजा जा रहा है…",
+};
+export default auth;

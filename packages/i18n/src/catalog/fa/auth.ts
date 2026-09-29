@@ -1,0 +1,134 @@
+import type { NsMessages } from "../../core";
+
+const auth: NsMessages<"auth"> = {
+  // Shared form fields
+  "field.email": "ایمیل",
+  "field.emailOrViewer": "ایمیل یا شناسه بیننده",
+  "field.password": "رمز عبور",
+  "field.newPassword": "رمز عبور جدید",
+  "field.firstName": "نام",
+  "field.lastName": "نام خانوادگی",
+  "field.country": "کشور محل اقامت",
+  "field.phone": "تلفن",
+  "field.dateOfBirth": "تاریخ تولد",
+  "field.referralCode": "کد معرف",
+  "field.optionalHint": "اختیاری",
+  "placeholder.email": "you@example.com",
+  "placeholder.createPassword": "یک رمز عبور قوی بسازید",
+  "togglePassword": "نمایش/پنهان کردن رمز عبور",
+
+  // Shared OTP / code step
+  "otp.didntGetIt": "کد را دریافت نکردید؟",
+  "otp.verifying": "در حال بررسی…",
+  "otp.resendIn": "ارسال مجدد تا 0:{seconds}",
+  "otp.sending": "در حال ارسال…",
+  "otp.resendCode": "ارسال مجدد کد",
+  "otp.devHint": "حالت توسعه: ارسال ایمیل هنوز پیکربندی نشده است. کد شما <code>{code}</code> است (در لاگ gateway نیز موجود است).",
+  "toast.newCodeSent": "کد جدید ارسال شد",
+  "toast.checkEmail": "ایمیل {email} را بررسی کنید",
+
+  // Google sign-in
+  "google.continue": "ادامه با Google",
+  "google.signUp": "ثبت‌نام با Google",
+  "google.opening": "در حال باز کردن Google…",
+  "google.orWithEmail": "یا با ایمیل",
+  "google.error.cancelled": "ورود با Google لغو شد. برای ادامه یک حساب را انتخاب کنید یا از ایمیل خود در پایین استفاده کنید.",
+  "google.error.expired": "مهلت ورود با Google به پایان رسید یا در زبانه دیگری باز شد. لطفاً دوباره تلاش کنید.",
+  "google.error.unverified": "آدرس ایمیل حساب Google شما تأیید نشده است. آن را در Google تأیید کنید یا از ایمیل خود در پایین استفاده کنید.",
+  "google.error.conflict": "این ایمیل قبلاً به حساب Google دیگری متصل شده است. از همان حساب Google استفاده کنید یا با رمز عبور خود وارد شوید.",
+  "google.error.disabled": "این حساب غیرفعال شده است. لطفاً با پشتیبانی تماس بگیرید.",
+  "google.error.rate_limited": "تلاش‌های ورود بیش از حد مجاز است. لطفاً چند دقیقه صبر کرده و دوباره تلاش کنید.",
+  "google.error.unavailable": "ورود با Google در حال حاضر در دسترس نیست. لطفاً کمی بعد دوباره تلاش کنید یا از ایمیل خود استفاده کنید.",
+  "google.error.failed": "ورود شما با Google انجام نشد. لطفاً دوباره تلاش کنید.",
+
+  // Password strength meter
+  "strength.rule": "حداقل 8 کاراکتر، حرف بزرگ، عدد و نماد",
+  "strength.tooWeak": "خیلی ضعیف",
+  "strength.weak": "ضعیف",
+  "strength.fair": "متوسط",
+  "strength.good": "خوب",
+  "strength.strong": "قوی",
+
+  // Demo entry card (demo builds only)
+  "demo.title": "این نسخه دموی Kalks است",
+  "demo.body": "نیازی به حساب نیست. همه صفحات با داده‌های نمونه کار می‌کنند.",
+  "demo.enter": "ورود به دمو",
+
+  // Auth layout brand panel
+  "brand.headline": "در بازارهای جهانی با دقت نهادی معامله کنید.",
+  "brand.body": "فارکس، فلزات، شاخص‌ها، انرژی، رمزارز و سهام — واریز فوری USDT و یک حساب برای معامله، کپی ترید و همکاری.",
+  "brand.previewAlt": "داشبورد پنل کاربری Kalks",
+
+  // Sign in
+  "login.title": "خوش آمدید",
+  "login.subtitle": "به پنل کاربری Kalks وارد شوید.",
+  "login.forgot": "رمز عبور را فراموش کرده‌اید؟",
+  "login.signingIn": "در حال ورود…",
+  "login.signIn": "ورود",
+  "login.newToKalks": "در Kalks تازه‌وارد هستید؟ <link>ایجاد حساب</link>",
+  "login.verifyEmailTitle": "ایمیل خود را تأیید کنید",
+  "login.verifyDeviceTitle": "تأیید کنید که خودتان هستید",
+  "login.emailNotVerified": "ایمیل شما هنوز تأیید نشده است.",
+  "login.newDevice": "دستگاه جدید شناسایی شد.",
+  "login.codeSent": "یک کد 6 رقمی به <b>{email}</b> ارسال کردیم.",
+  "login.verifyContinue": "تأیید و ادامه",
+  "login.back": "→ بازگشت",
+
+  // Sign up
+  "register.stepDetails": "مشخصات",
+  "register.stepVerify": "تأیید ایمیل",
+  "register.stepDone": "پایان",
+  "register.title": "حساب Kalks خود را بسازید",
+  "register.subtitleDemo": "همین حالا یک حساب دموی رایگان باز کنید. هر زمان آماده بودید، به حساب واقعی بروید.",
+  "register.subtitle": "در یک دقیقه ثبت‌نام کنید و بلافاصله بازارها را به‌صورت زنده دنبال کنید.",
+  "register.emailTaken": "<signin>وارد شوید</signin> یا <reset>رمز عبور خود را بازنشانی کنید</reset>.",
+  "register.terms": "بالای 18 سال سن دارم و با <agreement>توافق‌نامه مشتری</agreement>، <risk>افشای ریسک</risk> و <privacy>سیاست حریم خصوصی</privacy> موافقم.",
+  "register.creating": "در حال ایجاد حساب…",
+  "register.create": "ایجاد حساب",
+  "register.haveAccount": "قبلاً حساب دارید؟ <link>ورود</link>",
+  "register.checkInbox": "صندوق ایمیل خود را بررسی کنید",
+  "register.enterCode": "کد 6 رقمی ارسال‌شده به <b>{email}</b> را وارد کنید.",
+  "register.verifyEmail": "تأیید ایمیل",
+  "register.welcome": "{name}، به Kalks خوش آمدید",
+  "register.readyDemo": "ایمیل شما تأیید شد و حسابتان آماده است. همین حالا یک حساب دمو باز کنید یا برای شروع معامله واقعی، هویت خود را تأیید کنید.",
+  "register.ready": "ایمیل شما تأیید شد و حسابتان آماده است. همین حالا بازارها را به‌صورت زنده دنبال کنید؛ واریز و حساب‌های معاملاتی به‌زودی فعال می‌شوند.",
+  "register.openClientArea": "ورود به پنل کاربری",
+
+  // Complete profile after Google sign-up
+  "complete.stepGoogle": "حساب Google",
+  "complete.stepDetails": "مشخصات شما",
+  "complete.loading": "در حال بارگذاری پروفایل Google شما…",
+  "complete.expiredTitle": "از نو شروع کنیم",
+  "complete.accountExists": "حساب شما از قبل آماده است. برای ورود با Google ادامه دهید.",
+  "complete.expired": "ثبت‌نام شما با Google منقضی شده یا در زبانه دیگری تکمیل شده است. برای ادامه از همان‌جا که بودید، با Google ادامه دهید.",
+  "complete.preferEmail": "ایمیل را ترجیح می‌دهید؟ <link>ثبت‌نام با ایمیل</link>",
+  "complete.title": "پروفایل خود را تکمیل کنید",
+  "complete.subtitle": "چند مشخصه که برای هر حساب Kalks لازم داریم. کمتر از یک دقیقه طول می‌کشد.",
+  "complete.googleAccount": "حساب Google",
+  "complete.emailTaken": "به‌جای آن با رمز عبور خود <signin>وارد شوید</signin> یا <reset>آن را بازنشانی کنید</reset>.",
+  "complete.ready": "حساب شما آماده است و با Google وارد شده‌اید. همین حالا بازارها را به‌صورت زنده دنبال کنید؛ واریز و حساب‌های معاملاتی به‌زودی فعال می‌شوند.",
+  "complete.notYou": "شما نیستید؟ <link>از حساب Google دیگری استفاده کنید</link>",
+
+  // Forgot / reset password
+  "forgot.backToSignIn": "بازگشت به صفحه ورود",
+  "forgot.titleReset": "بازنشانی رمز عبور",
+  "forgot.titleCode": "کد را وارد کنید",
+  "forgot.titleNew": "رمز عبور جدید تعیین کنید",
+  "forgot.intro": "برای بازنشانی رمز عبور، یک کد 6 رقمی به ایمیل شما ارسال می‌کنیم.",
+  "forgot.codeSent": "اگر حسابی با <b>{email}</b> وجود داشته باشد، کدی به آن ارسال کردیم.",
+  "forgot.passwordRule": "حداقل 8 کاراکتر، ترکیبی از حروف، اعداد و نمادها استفاده کنید.",
+  "forgot.sendCode": "ارسال کد",
+  "forgot.updating": "در حال به‌روزرسانی…",
+  "forgot.update": "به‌روزرسانی رمز عبور",
+  "forgot.toastUpdated": "رمز عبور به‌روزرسانی شد",
+  "forgot.toastUpdatedBody": "با رمز عبور جدید خود وارد شوید.",
+
+  // Step-up confirmation dialog (emailed code before sensitive changes)
+  "stepup.intro": "برای {what}، کد 6 رقمی ارسال‌شده به <b>{email}</b> را وارد کنید. این کد تا {minutes} دقیقه معتبر است.",
+  "stepup.spam": "کد را دریافت نکردید؟ پوشه اسپم را بررسی کنید.",
+  "stepup.checking": "در حال بررسی…",
+  "stepup.saving": "در حال ذخیره…",
+  "stepup.sendAgain": "ارسال دوباره کد",
+  "stepup.sendingCode": "در حال ارسال کد تأیید به ایمیل شما…",
+};
+export default auth;
