@@ -89,7 +89,7 @@ export const PriceCell = React.memo(function PriceCell({ symbol, side, digits, b
   const [lead, pips, pipette] = big ? splitPrice(text, digits) : [text, "", ""];
   const base: TextStyle = { fontFamily: fonts.monoMedium, color: colors.text, fontVariant: ["tabular-nums"] };
   return (
-    <Animated.View style={[{ borderRadius: radius.xs, paddingHorizontal: 6, paddingVertical: 3, alignItems: align === "left" ? "flex-start" : align === "center" ? "center" : "flex-end" }, style, anim]}>
+    <Animated.View testID={`px-${symbol}-${side}`} style={[{ borderRadius: radius.xs, paddingHorizontal: 6, paddingVertical: 3, alignItems: align === "left" ? "flex-start" : align === "center" ? "center" : "flex-end" }, style, anim]}>
       <Animated.Text style={[base, { fontSize: size * 0.8, lineHeight: size * 1.2 }]} numberOfLines={1}>
         {lead}
         {big && pips ? <Animated.Text style={[base, { fontFamily: fonts.monoBold, fontSize: size * 1.12 }]}>{pips}</Animated.Text> : null}
