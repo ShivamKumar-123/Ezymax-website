@@ -3,30 +3,23 @@
 import * as React from "react";
 import { ArrowRight } from "lucide-react";
 import { Button, cn } from "@kalks/ui";
+import { useT, Trans } from "@kalks/i18n/react";
 
 /** "Sign in with Google" is shown only once Google OAuth is configured (NEXT_PUBLIC_GOOGLE_LOGIN=1). */
 export const GOOGLE_LOGIN = process.env.NEXT_PUBLIC_GOOGLE_LOGIN === "1";
 
-/** Friendly messages for /login?google_error=... and /register?google_error=... (set by /api/auth/google/callback). */
-export const GOOGLE_ERRORS: Record<string, string> = {
-  cancelled: "Google sign-in was cancelled. Choose an account to continue, or use your email below.",
-  expired: "Your Google sign-in timed out or was opened in another tab. Please try again.",
-  unverified: "Your Google account's email address isn't verified. Verify it with Google, or use your email below.",
-  conflict: "This email is already linked to a different Google account. Use that Google account, or sign in with your password.",
-  disabled: "This account is disabled. Please contact support.",
-  rate_limited: "Too many sign-in attempts. Please wait a few minutes and try again.",
-  unavailable: "Google sign-in is unavailable right now. Please try again shortly, or use your email.",
-  failed: "We couldn't sign you in with Google. Please try again.",
-};
+/** Friendly messages for /login?google_error=... and /register?google_error=... (set by /api/auth/google/callback). Text: auth.google.error.<code>. */
+export const GOOGLE_ERRORS = new Set(["cancelled", "expired", "unverified", "conflict", "disabled", "rate_limited", "unavailable", "failed"]);
 
 /** Reads ?google_error= once on mount (client only, so the server render stays identical). */
 export function useGoogleError(): string | null {
-  const [msg, setMsg] = React.useState<string | null>(null);
+  const t = useT();
+  const [code, setCode] = React.useState<string | null>(null);
   React.useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get("google_error");
-    if (code) setMsg(GOOGLE_ERRORS[code] ?? GOOGLE_ERRORS.failed);
+    const c = new URLSearchParams(window.location.search).get("google_error");
+    if (c) setCode(GOOGLE_ERRORS.has(c) ? c : "failed");
   }, []);
-  return msg;
+  return code ? t.dyn(`auth.google.error.${code}`) : null;
 }
 
 /** Google "G" mark (brand colours are Google's, required for the sign-in button). */
@@ -45,7 +38,8 @@ export function GoogleMark({ className }: { className?: string }) {
  * Starts the Google OAuth flow (/api/auth/google/start). Carries ?next= (sign-in) and ?ref= (sign-up)
  * from the current page so they survive the round trip to Google.
  */
-export function GoogleButton({ label = "Continue with Google", mode = "login" }: { label?: string; mode?: "login" | "register" }) {
+export function GoogleButton({ label, mode = "login" }: { label?: string; mode?: "login" | "register" }) {
+  const t = useT();
   const [href, setHref] = React.useState(`/api/auth/google/start?mode=${mode}`);
   const [busy, setBusy] = React.useState(false);
   React.useEffect(() => {
@@ -72,16 +66,17 @@ export function GoogleButton({ label = "Continue with Google", mode = "login" }:
       )}
     >
       <GoogleMark className="size-5" />
-      {busy ? "Opening Google…" : label}
+      {busy ? t("auth.google.opening") : (label ?? t("auth.google.continue"))}
     </a>
   );
 }
 
 export function OrDivider() {
+  const t = useT();
   return (
     <div className="my-6 flex items-center gap-3 text-[12px] text-fg-3">
       <span className="h-px flex-1 bg-line" />
-      or with email
+      {t("auth.google.orWithEmail")}
       <span className="h-px flex-1 bg-line" />
     </div>
   );
@@ -135,7 +130,8 @@ export function OtpInput({ length = 6, onComplete }: { length?: number; onComple
 export function PasswordStrength({ value }: { value: string }) {
   const checks = [value.length >= 8, /[A-Z]/.test(value), /[0-9]/.test(value), /[^A-Za-z0-9]/.test(value)];
   const score = checks.filter(Boolean).length;
-  const label = ["Too weak", "Weak", "Fair", "Good", "Strong"][score];
+  const t = useT();
+  const label = [t("auth.strength.tooWeak"), t("auth.strength.weak"), t("auth.strength.fair"), t("auth.strength.good"), t("auth.strength.strong")][score];
   return (
     <div className="mt-2">
       <div className="flex gap-1.5">
@@ -144,7 +140,7 @@ export function PasswordStrength({ value }: { value: string }) {
         ))}
       </div>
       <div className="mt-1.5 flex justify-between text-[11.5px] text-fg-3">
-        <span>8+ chars, uppercase, number & symbol</span>
+        <span>{t("auth.strength.rule")}</span>
         <span className={score >= 4 ? "text-up" : ""}>{value ? label : ""}</span>
       </div>
     </div>
@@ -166,19 +162,20 @@ export function DevCodeHint({ code }: { code?: string }) {
   if (!code) return null;
   return (
     <p className="mt-4 rounded-[14px] border border-dashed border-line px-4 py-2.5 text-[12px] text-fg-3">
-      Dev mode: email delivery isn&apos;t configured yet. Your code is <span className="k-num font-mono text-fg">{code}</span> (also in the gateway log).
+      <Trans k="auth.otp.devHint" vars={{ code }} tags={{ code: (c) => <span dir="ltr" className="k-num font-mono text-fg">{c}</span> }} />
     </p>
   );
 }
 
 /** "Resend in 0:30" countdown that turns into a resend link. */
 export function ResendLink({ seconds, onResend }: { seconds: number; onResend: () => Promise<number | void> }) {
+  const t = useT();
   const [left, setLeft] = React.useState(seconds);
   const [busy, setBusy] = React.useState(false);
   React.useEffect(() => {
     if (left <= 0) return;
-    const t = setTimeout(() => setLeft((s) => s - 1), 1000);
-    return () => clearTimeout(t);
+    const id = setTimeout(() => setLeft((s) => s - 1), 1000);
+    return () => clearTimeout(id);
   }, [left]);
   return (
     <button
@@ -192,20 +189,21 @@ export function ResendLink({ seconds, onResend }: { seconds: number; onResend: (
       }}
       className="text-ember hover:underline disabled:text-fg-3 disabled:no-underline"
     >
-      {left > 0 ? `Resend in 0:${String(left).padStart(2, "0")}` : busy ? "Sending…" : "Resend code"}
+      {left > 0 ? t("auth.otp.resendIn", { seconds: String(left).padStart(2, "0") }) : busy ? t("auth.otp.sending") : t("auth.otp.resendCode")}
     </button>
   );
 }
 
 /** Demo builds only: skip sign-in and browse the Client Area as the sample client. */
 export function DemoEntry() {
+  const t = useT();
   return (
     <div className="mt-8 rounded-[18px] border border-ember/30 bg-ember-soft px-5 py-4">
-      <div className="text-[14px] font-medium text-fg">This is the Kalks demo</div>
-      <p className="mt-1 text-[13px] text-fg-2">No account needed. Every screen runs on sample data.</p>
+      <div className="text-[14px] font-medium text-fg">{t("auth.demo.title")}</div>
+      <p className="mt-1 text-[13px] text-fg-2">{t("auth.demo.body")}</p>
       <a href="/" className="mt-3 block">
         <Button type="button" variant="ember" size="lg" className="w-full">
-          Enter demo <ArrowRight />
+          {t("auth.demo.enter")} <ArrowRight className="rtl:-scale-x-100" />
         </Button>
       </a>
     </div>

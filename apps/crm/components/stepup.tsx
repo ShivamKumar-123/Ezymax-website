@@ -11,6 +11,7 @@ import * as React from "react";
 import { Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog } from "@kalks/ui";
+import { useT, Trans } from "@kalks/i18n/react";
 import { DevCodeHint, FormError, OtpInput, ResendLink } from "@/components/auth";
 import { authPost, type ApiError, type OtpChallenge } from "@/lib/auth-client";
 
@@ -31,6 +32,7 @@ export function useStepUp(action: StepUpAction, target = "") {
   const [code, setCode] = React.useState("");
   const [otpKey, setOtpKey] = React.useState(0);
   const seq = React.useRef(0);
+  const t = useT();
 
   const fail = React.useCallback((e: ApiError) => {
     if (e.code === "unauthorized") signInAgain();
@@ -87,7 +89,7 @@ export function useStepUp(action: StepUpAction, target = "") {
     setChallenge(r.data);
     setCode("");
     setOtpKey((k) => k + 1);
-    toast.success("New code sent", { description: `Check ${r.data.email_masked}` });
+    toast.success(t("auth.toast.newCodeSent"), { description: t("auth.toast.checkEmail", { email: r.data.email_masked }) });
   };
 
   const reset = React.useCallback(() => {
@@ -105,6 +107,7 @@ export type StepUp = ReturnType<typeof useStepUp>;
 
 /** The code step: where it was sent, six boxes (submits on the sixth digit), errors and the resend countdown. */
 export function StepUpCode({ s, what, onSubmit }: { s: StepUp; what: string; onSubmit: (code: string) => void }) {
+  const t = useT();
   const mins = Math.max(1, Math.round((s.challenge?.expires_in ?? 600) / 60));
   return (
     <div className="space-y-4">
@@ -113,7 +116,7 @@ export function StepUpCode({ s, what, onSubmit }: { s: StepUp; what: string; onS
           <Mail className="size-4" />
         </span>
         <div className="min-w-0 text-[13px] leading-relaxed text-fg-2">
-          To {what}, enter the 6-digit code we sent to <span className="text-fg">{s.challenge?.email_masked}</span>. It expires in {mins} minutes.
+          <Trans k="auth.stepup.intro" vars={{ what, email: s.challenge?.email_masked, minutes: mins }} tags={{ b: (c) => <span className="text-fg">{c}</span> }} />
         </div>
       </div>
       <FormError>{s.err?.message}</FormError>
@@ -126,7 +129,7 @@ export function StepUpCode({ s, what, onSubmit }: { s: StepUp; what: string; onS
       />
       <DevCodeHint code={s.challenge?.dev_code} />
       <div className="flex items-center justify-between gap-3 text-[12.5px] text-fg-3">
-        <span>Didn&apos;t get it? Check your spam folder.</span>
+        <span>{t("auth.stepup.spam")}</span>
         <ResendLink key={s.challenge?.challenge} seconds={s.challenge?.resend_in ?? 30} onResend={s.resend} />
       </div>
     </div>
@@ -145,7 +148,7 @@ export function StepUpDialog({
   title,
   description,
   what,
-  confirmLabel = "Confirm",
+  confirmLabel,
   onConfirmed,
 }: {
   open: boolean;
@@ -159,6 +162,7 @@ export function StepUpDialog({
   confirmLabel?: string;
   onConfirmed: (token: string) => Promise<void>;
 }) {
+  const t = useT();
   const s = useStepUp(action, target);
   const [busy, setBusy] = React.useState(false);
   const { start, reset } = s;
@@ -200,10 +204,10 @@ export function StepUpDialog({
       footer={
         <>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button variant="ember" disabled={!s.challenge || s.code.length !== 6 || s.verifying || busy} onClick={() => void submit()}>
-            {s.verifying ? "Checking…" : busy ? "Saving…" : confirmLabel}
+            {s.verifying ? t("auth.stepup.checking") : busy ? t("auth.stepup.saving") : (confirmLabel ?? t("common.confirm"))}
           </Button>
         </>
       }
@@ -214,11 +218,11 @@ export function StepUpDialog({
         <div className="space-y-4">
           <FormError>{s.err.message}</FormError>
           <Button variant="surface" disabled={s.sending} onClick={() => void start()}>
-            {s.sending ? "Sending…" : "Send the code again"}
+            {s.sending ? t("auth.otp.sending") : t("auth.stepup.sendAgain")}
           </Button>
         </div>
       ) : (
-        <p className="text-[13px] text-fg-3">Sending a confirmation code to your email…</p>
+        <p className="text-[13px] text-fg-3">{t("auth.stepup.sendingCode")}</p>
       )}
     </Dialog>
   );

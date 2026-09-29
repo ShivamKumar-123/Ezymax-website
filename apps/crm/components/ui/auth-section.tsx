@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { FlutedGlass } from "@paper-design/shaders-react";
 import { motion } from "motion/react";
+import { useT } from "@kalks/i18n/react";
 import { Delta, LanguageMenu, Logo, PriceText, SymbolAvatar, ThemeToggle, useQuote } from "@kalks/ui";
 
 /**
@@ -11,6 +12,7 @@ import { Delta, LanguageMenu, Logo, PriceText, SymbolAvatar, ThemeToggle, useQuo
  * Pages render their own form as `children`, so every auth flow (sign in, sign up, reset) shares it.
  */
 export function AuthSection({ children }: { children: ReactNode }) {
+  const t = useT();
   return (
     <section className="min-h-dvh bg-bg p-3 text-fg antialiased [font-synthesis:none]">
       <div className="grid min-h-[calc(100dvh-1.5rem)] gap-3 lg:grid-cols-[0.94fr_1.06fr]">
@@ -35,7 +37,7 @@ export function AuthSection({ children }: { children: ReactNode }) {
             </motion.div>
           </div>
           <p className="relative px-6 pb-6 text-[11px] leading-relaxed text-fg-3 lg:px-10">
-            Risk warning: CFDs are complex instruments and come with a high risk of losing money rapidly due to leverage. Consider whether you understand how CFDs work and whether you can afford to take the high risk of losing your money.
+            {t("common.riskWarning")}
           </p>
         </div>
 
@@ -47,6 +49,7 @@ export function AuthSection({ children }: { children: ReactNode }) {
 }
 
 function BrandPanel() {
+  const t = useT();
   return (
     <div className="relative hidden min-h-[720px] flex-col overflow-hidden rounded-md bg-linear-to-b from-black via-[#140906] to-bg p-8 text-white sm:p-12 lg:flex lg:min-h-0 lg:p-16">
       {/* ember glow + fluted glass shader */}
@@ -90,7 +93,7 @@ function BrandPanel() {
             transition={{ duration: 0.8, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
             className="mt-10 text-2xl font-light leading-tight tracking-[-0.035em] text-white/90 sm:text-3xl lg:text-[34px]"
           >
-            Trade global markets with institutional precision.
+            {t("auth.brand.headline")}
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 12 }}
@@ -98,7 +101,7 @@ function BrandPanel() {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="mt-4 max-w-md text-[14.5px] leading-relaxed text-white/60"
           >
-            Forex, metals, indices, energies, crypto and stocks — instant USDT funding, one account for trading, copying and partnering.
+            {t("auth.brand.body")}
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.28 }} className="mt-7 flex flex-wrap gap-2">
             {["XAUUSD", "EURUSD", "BTCUSD"].map((s) => (
@@ -122,9 +125,9 @@ function BrandPanel() {
               <span className="ml-4 font-mono text-[9px] tracking-wider text-white/40">app.kalks.com/dashboard</span>
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/app/dashboard-dark.jpg" alt="Kalks client area dashboard" className="h-auto w-full object-cover object-top opacity-95 light:hidden" />
+            <img src="/assets/app/dashboard-dark.jpg" alt={t("auth.brand.previewAlt")} className="h-auto w-full object-cover object-top opacity-95 light:hidden" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/app/dashboard-light.jpg" alt="Kalks client area dashboard" className="hidden h-auto w-full object-cover object-top light:block" />
+            <img src="/assets/app/dashboard-light.jpg" alt={t("auth.brand.previewAlt")} className="hidden h-auto w-full object-cover object-top light:block" />
           </motion.div>
         </div>
       </div>
@@ -135,7 +138,7 @@ function BrandPanel() {
 function Ticker({ symbol }: { symbol: string }) {
   const q = useQuote(symbol);
   return (
-    <div className="flex items-center gap-2.5 rounded-full border border-white/12 bg-black/40 py-1.5 pl-1.5 pr-3 backdrop-blur-xl">
+    <div className="flex items-center gap-2.5 rounded-full border border-white/12 bg-black/40 py-1.5 ps-1.5 pe-3 backdrop-blur-xl">
       <SymbolAvatar symbol={symbol} size={22} />
       <span className="text-[12px] font-medium text-white/85">{symbol}</span>
       <PriceText symbol={symbol} value={q.bid} dir={q.dir} className="text-[12px] [&_span]:!text-white/90" />

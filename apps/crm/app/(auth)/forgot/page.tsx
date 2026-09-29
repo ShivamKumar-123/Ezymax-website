@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Mail, Lock, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Field, Input } from "@kalks/ui";
+import { useT, Trans } from "@kalks/i18n/react";
 import { DevCodeHint, FormError, OtpInput, PasswordStrength, ResendLink } from "@/components/auth";
 import { authPost, type ApiError, type OtpChallenge } from "@/lib/auth-client";
 
 export default function ForgotPage() {
+  const t = useT();
   const router = useRouter();
   const [step, setStep] = React.useState(0);
   const [email, setEmail] = React.useState("");
@@ -40,7 +42,7 @@ export default function ForgotPage() {
     const r = await authPost("reset", { challenge: otp.challenge, code, password: pw });
     setLoading(false);
     if (r.ok) {
-      toast.success("Password updated", { description: "Sign in with your new password." });
+      toast.success(t("auth.forgot.toastUpdated"), { description: t("auth.forgot.toastUpdatedBody") });
       router.push("/login");
       return;
     }
@@ -56,32 +58,30 @@ export default function ForgotPage() {
   return (
     <div>
       <Link href="/login" className="mb-8 inline-flex items-center gap-2 text-[13px] text-fg-3 hover:text-fg">
-        <ArrowLeft className="size-4" /> Back to sign in
+        <ArrowLeft className="size-4 rtl:-scale-x-100" /> {t("auth.forgot.backToSignIn")}
       </Link>
       <span className="grid size-12 place-items-center rounded-2xl border border-ember/30 bg-ember-soft text-ember">
         <KeyRound className="size-6" />
       </span>
-      <h1 className="mt-5 text-3xl font-medium tracking-tight sm:text-4xl">{step === 0 ? "Reset your password" : step === 1 ? "Enter the code" : "Set a new password"}</h1>
+      <h1 className="mt-5 text-3xl font-medium tracking-tight sm:text-4xl">{step === 0 ? t("auth.forgot.titleReset") : step === 1 ? t("auth.forgot.titleCode") : t("auth.forgot.titleNew")}</h1>
       <p className="mt-2 text-[14px] text-fg-2">
         {step === 0 ? (
-          "We'll email you a 6-digit code to reset your password."
+          t("auth.forgot.intro")
         ) : step === 1 ? (
-          <>
-            If an account exists for <span className="text-fg">{otp?.email_masked}</span>, we sent it a code.
-          </>
+          <Trans k="auth.forgot.codeSent" vars={{ email: otp?.email_masked }} tags={{ b: (c) => <span className="text-fg">{c}</span> }} />
         ) : (
-          "Use at least 8 characters with a mix of letters, numbers and symbols."
+          t("auth.forgot.passwordRule")
         )}
       </p>
       <div className="mt-8 space-y-4">
         <FormError>{err && (step !== 2 || !err.field) ? err.message : null}</FormError>
         {step === 0 && (
           <form className="space-y-4" onSubmit={sendCode} noValidate>
-            <Field label="Email" error={err?.field === "email" ? err.message : undefined}>
-              <Input leading={<Mail />} type="email" name="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+            <Field label={t("auth.field.email")} error={err?.field === "email" ? err.message : undefined}>
+              <Input leading={<Mail />} type="email" name="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.placeholder.email")} />
             </Field>
             <Button type="submit" variant="ember" size="xl" className="w-full" disabled={loading}>
-              {loading ? "Sending…" : "Send code"}
+              {loading ? t("auth.otp.sending") : t("auth.forgot.sendCode")}
             </Button>
           </form>
         )}
@@ -96,8 +96,8 @@ export default function ForgotPage() {
               }}
             />
             <DevCodeHint code={otp?.dev_code} />
-            <div className="text-right text-[13px] text-fg-3">
-              Didn&apos;t get it?{" "}
+            <div className="text-end text-[13px] text-fg-3">
+              {t("auth.otp.didntGetIt")}{" "}
               <ResendLink
                 key={otp?.challenge}
                 seconds={otp?.resend_in ?? 30}
@@ -113,7 +113,7 @@ export default function ForgotPage() {
                   setErr(null);
                   setOtp(r.data);
                   setOtpKey((k) => k + 1);
-                  toast.success("New code sent", { description: `Check ${r.data.email_masked}` });
+                  toast.success(t("auth.toast.newCodeSent"), { description: t("auth.toast.checkEmail", { email: r.data.email_masked }) });
                 }}
               />
             </div>
@@ -121,12 +121,12 @@ export default function ForgotPage() {
         )}
         {step === 2 && (
           <form className="space-y-4" onSubmit={reset} noValidate>
-            <Field label="New password" error={err?.field === "password" ? err.message : undefined}>
+            <Field label={t("auth.field.newPassword")} error={err?.field === "password" ? err.message : undefined}>
               <Input leading={<Lock />} type="password" name="new-password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />
               <PasswordStrength value={pw} />
             </Field>
             <Button type="submit" variant="ember" size="xl" className="w-full" disabled={loading || !pw}>
-              {loading ? "Updating…" : "Update password"}
+              {loading ? t("auth.forgot.updating") : t("auth.forgot.update")}
             </Button>
           </form>
         )}

@@ -1,4 +1,133 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/auth.ts.
 const auth = {
+  // Shared form fields
+  "field.email": "Email",
+  "field.password": "Password",
+  "field.newPassword": "New password",
+  "field.firstName": "First name",
+  "field.lastName": "Last name",
+  "field.country": "Country of residence",
+  "field.phone": "Phone",
+  "field.dateOfBirth": "Date of birth",
+  "field.referralCode": "Referral code",
+  "field.optionalHint": "optional",
+  "placeholder.email": "you@example.com",
+  "placeholder.createPassword": "Create a strong password",
+  "togglePassword": "Toggle password",
+
+  // Shared OTP / code step
+  "otp.didntGetIt": "Didn't get it?",
+  "otp.verifying": "Verifying…",
+  "otp.resendIn": "Resend in 0:{seconds}", // countdown, {seconds} is two digits e.g. "0:30"
+  "otp.sending": "Sending…",
+  "otp.resendCode": "Resend code",
+  "otp.devHint": "Dev mode: email delivery isn't configured yet. Your code is <code>{code}</code> (also in the gateway log).",
+  "toast.newCodeSent": "New code sent",
+  "toast.checkEmail": "Check {email}", // {email} is a masked address
+
+  // Google sign-in
+  "google.continue": "Continue with Google",
+  "google.signUp": "Sign up with Google",
+  "google.opening": "Opening Google…",
+  "google.orWithEmail": "or with email",
+  "google.error.cancelled": "Google sign-in was cancelled. Choose an account to continue, or use your email below.",
+  "google.error.expired": "Your Google sign-in timed out or was opened in another tab. Please try again.",
+  "google.error.unverified": "Your Google account's email address isn't verified. Verify it with Google, or use your email below.",
+  "google.error.conflict": "This email is already linked to a different Google account. Use that Google account, or sign in with your password.",
+  "google.error.disabled": "This account is disabled. Please contact support.",
+  "google.error.rate_limited": "Too many sign-in attempts. Please wait a few minutes and try again.",
+  "google.error.unavailable": "Google sign-in is unavailable right now. Please try again shortly, or use your email.",
+  "google.error.failed": "We couldn't sign you in with Google. Please try again.",
+
+  // Password strength meter
+  "strength.rule": "8+ chars, uppercase, number & symbol",
+  "strength.tooWeak": "Too weak",
+  "strength.weak": "Weak",
+  "strength.fair": "Fair",
+  "strength.good": "Good",
+  "strength.strong": "Strong",
+
+  // Demo entry card (demo builds only)
+  "demo.title": "This is the Kalks demo",
+  "demo.body": "No account needed. Every screen runs on sample data.",
+  "demo.enter": "Enter demo",
+
+  // Auth layout brand panel
+  "brand.headline": "Trade global markets with institutional precision.",
+  "brand.body": "Forex, metals, indices, energies, crypto and stocks — instant USDT funding, one account for trading, copying and partnering.",
+  "brand.previewAlt": "Kalks client area dashboard",
+
+  // Sign in
+  "login.title": "Welcome back",
+  "login.subtitle": "Sign in to your Kalks client area.",
+  "login.forgot": "Forgot password?",
+  "login.signingIn": "Signing in…",
+  "login.signIn": "Sign in",
+  "login.newToKalks": "New to Kalks? <link>Create an account</link>",
+  "login.verifyEmailTitle": "Verify your email",
+  "login.verifyDeviceTitle": "Verify it's you",
+  "login.emailNotVerified": "Your email isn't verified yet.",
+  "login.newDevice": "New device detected.",
+  "login.codeSent": "We sent a 6-digit code to <b>{email}</b>.",
+  "login.verifyContinue": "Verify & continue",
+  "login.back": "← Back",
+
+  // Sign up
+  "register.stepDetails": "Details",
+  "register.stepVerify": "Verify email",
+  "register.stepDone": "Done",
+  "register.title": "Create your Kalks account",
+  "register.subtitleDemo": "Open a free demo instantly. Go live whenever you're ready.",
+  "register.subtitle": "Sign up in a minute and follow live markets straight away.",
+  "register.emailTaken": "<signin>Sign in</signin> or <reset>reset your password</reset>.",
+  "register.terms": "I'm over 18 and agree to the <agreement>Client Agreement</agreement>, <risk>Risk Disclosure</risk> and <privacy>Privacy Policy</privacy>.",
+  "register.creating": "Creating account…",
+  "register.create": "Create account",
+  "register.haveAccount": "Already have an account? <link>Sign in</link>",
+  "register.checkInbox": "Check your inbox",
+  "register.enterCode": "Enter the 6-digit code we sent to <b>{email}</b>.",
+  "register.verifyEmail": "Verify email",
+  "register.welcome": "Welcome to Kalks, {name}",
+  "register.readyDemo": "Your email is verified and your account is ready. Open a demo account now, or verify your identity to go live.",
+  "register.ready": "Your email is verified and your account is ready. Follow live markets now; funding and trading accounts are coming soon.",
+  "register.openClientArea": "Open client area",
+
+  // Complete profile after Google sign-up
+  "complete.stepGoogle": "Google account",
+  "complete.stepDetails": "Your details",
+  "complete.loading": "Loading your Google profile…",
+  "complete.expiredTitle": "Let's start again",
+  "complete.accountExists": "Your account is already set up. Continue with Google to sign in.",
+  "complete.expired": "Your Google sign-up has expired or was finished in another tab. Continue with Google to pick up where you left off.",
+  "complete.preferEmail": "Prefer email? <link>Sign up with email</link>",
+  "complete.title": "Complete your profile",
+  "complete.subtitle": "A few details we need for every Kalks account. It takes under a minute.",
+  "complete.googleAccount": "Google account",
+  "complete.emailTaken": "<signin>Sign in</signin> with your password instead, or <reset>reset it</reset>.",
+  "complete.ready": "Your account is ready and signed in with Google. Follow live markets now; funding and trading accounts are coming soon.",
+  "complete.notYou": "Not you? <link>Use another Google account</link>",
+
+  // Forgot / reset password
+  "forgot.backToSignIn": "Back to sign in",
+  "forgot.titleReset": "Reset your password",
+  "forgot.titleCode": "Enter the code",
+  "forgot.titleNew": "Set a new password",
+  "forgot.intro": "We'll email you a 6-digit code to reset your password.",
+  "forgot.codeSent": "If an account exists for <b>{email}</b>, we sent it a code.",
+  "forgot.passwordRule": "Use at least 8 characters with a mix of letters, numbers and symbols.",
+  "forgot.sendCode": "Send code",
+  "forgot.updating": "Updating…",
+  "forgot.update": "Update password",
+  "forgot.toastUpdated": "Password updated",
+  "forgot.toastUpdatedBody": "Sign in with your new password.",
+
+  // Step-up confirmation dialog (emailed code before sensitive changes)
+  // {what} is a translated action phrase such as "change the leverage of #10000123"
+  "stepup.intro": "To {what}, enter the 6-digit code we sent to <b>{email}</b>. It expires in {minutes} minutes.",
+  "stepup.spam": "Didn't get it? Check your spam folder.",
+  "stepup.checking": "Checking…",
+  "stepup.saving": "Saving…",
+  "stepup.sendAgain": "Send the code again",
+  "stepup.sendingCode": "Sending a confirmation code to your email…",
 };
 export default auth;
