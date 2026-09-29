@@ -35,6 +35,8 @@ export type ChartProps = {
   ask: SharedValue<number>;
   /** flattened [price, kind] (LINE) */
   lines: SharedValue<number[]>;
+  /** how many lines `lines` holds (only that many line slots are mounted) */
+  lineCount: number;
   /** the viewport (shared so the data layer can keep the view steady when bars are added) */
   barW: SharedValue<number>;
   off: SharedValue<number>;
@@ -439,7 +441,7 @@ export function SkiaChart(p: ChartProps) {
             <Path path={rsiPath} color={colors.periwinkle} style="stroke" strokeWidth={1.4} />
             {small ? <SkText x={8} y={rsiLabelY} text={rsiText} font={small} color={colors.text3} /> : null}
             {/* position / order lines */}
-            <PositionLines lines={lines} vp={vp} yOf={yOf} font={small} digits={digits} />
+            <PositionLines count={Math.min(MAX_LINES, p.lineCount)} lines={lines} vp={vp} yOf={yOf} font={small} digits={digits} />
             {/* ask + bid */}
             <Line p1={askP1} p2={askP2} color="rgba(240,82,82,0.55)" strokeWidth={1}>
               <DashPathEffect intervals={[2, 3]} />
@@ -515,10 +517,10 @@ function TimeSlot({ i, levels, font, y }: { i: number; levels: SharedValue<{ x: 
 const LINE_COLORS = [colors.up, colors.down, colors.down, colors.up, "rgba(52,199,123,0.6)", "rgba(240,82,82,0.6)"];
 const LINE_LABELS = ["BUY", "SELL", "SL", "TP", "BUY LMT", "SELL LMT"];
 
-function PositionLines({ lines, vp, yOf, font, digits }: { lines: SharedValue<number[]>; vp: SharedValue<Viewport>; yOf: (p: number, v: Viewport) => number; font: SkFont | null; digits: number }) {
+function PositionLines({ count, lines, vp, yOf, font, digits }: { count: number; lines: SharedValue<number[]>; vp: SharedValue<Viewport>; yOf: (p: number, v: Viewport) => number; font: SkFont | null; digits: number }) {
   return (
     <>
-      {Array.from({ length: MAX_LINES }, (_, i) => (
+      {Array.from({ length: count }, (_, i) => (
         <PositionLine key={i} i={i} lines={lines} vp={vp} yOf={yOf} font={font} digits={digits} />
       ))}
     </>

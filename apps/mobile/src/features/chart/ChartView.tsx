@@ -153,6 +153,7 @@ export function ChartView({ symbol, tf, digits, type, indicators }: ChartViewPro
   // positions and pending orders of the active account on this symbol
   const positions = useTrade((s) => s.positions);
   const orders = useTrade((s) => s.orders);
+  const [lineCount, setLineCount] = React.useState(0);
   React.useEffect(() => {
     const out: number[] = [];
     for (const p of positions) {
@@ -163,6 +164,7 @@ export function ChartView({ symbol, tf, digits, type, indicators }: ChartViewPro
     }
     for (const o of orders) if (o.symbol === symbol) out.push(o.price, o.side === "buy" ? LINE.pendingBuy : LINE.pendingSell);
     sv.lines.value = out.slice(0, 24);
+    setLineCount(Math.min(12, out.length / 2));
   }, [positions, orders, symbol, sv]);
 
   const quote = feed.sv(symbol);
@@ -179,6 +181,7 @@ export function ChartView({ symbol, tf, digits, type, indicators }: ChartViewPro
           bid={quote.bid}
           ask={quote.ask}
           lines={sv.lines}
+          lineCount={lineCount}
           barW={sv.barW}
           off={sv.off}
           digits={digits}
