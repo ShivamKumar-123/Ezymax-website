@@ -4,49 +4,54 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Award, CircleAlert, ExternalLink, IdCard, RotateCw, ShieldCheck } from "lucide-react";
 import { Button, Card, Chip, CoinIcon, EmptyState, Progress, cn, formatDateTime, shortHash, type ChipTone } from "@kalks/ui";
+import { Trans, useT } from "@kalks/i18n/react";
+import type { MessageKey, T } from "@kalks/i18n";
 import { CHAIN_LABEL, fmt, type ActivityItem, type Chain, type Deposit, type DepositStatus, type WithdrawalStatus } from "./api";
 
-export const DEPOSIT_STATUS: Record<DepositStatus, { tone: ChipTone; label: string }> = {
-  pending: { tone: "warn", label: "Waiting for the network" },
-  confirming: { tone: "info", label: "Confirming" },
-  credited: { tone: "up", label: "Credited" },
-  failed: { tone: "down", label: "Failed" },
-  review: { tone: "warn", label: "Under review" },
-  unmatched: { tone: "warn", label: "Under review" },
-  rejected: { tone: "down", label: "Not credited" },
+/** Status chips: `label` is a message key, translated when rendered. */
+export const DEPOSIT_STATUS: Record<DepositStatus, { tone: ChipTone; label: MessageKey }> = {
+  pending: { tone: "warn", label: "wallet.status.deposit.pending" },
+  confirming: { tone: "info", label: "wallet.status.deposit.confirming" },
+  credited: { tone: "up", label: "wallet.status.deposit.credited" },
+  failed: { tone: "down", label: "common.failed" },
+  review: { tone: "warn", label: "wallet.status.deposit.review" },
+  unmatched: { tone: "warn", label: "wallet.status.deposit.review" },
+  rejected: { tone: "down", label: "wallet.status.deposit.rejected" },
 };
 
-export const WITHDRAWAL_STATUS: Record<WithdrawalStatus, { tone: ChipTone; label: string }> = {
-  requested: { tone: "warn", label: "Waiting for review" },
-  approved: { tone: "info", label: "Approved" },
-  paid: { tone: "info", label: "Sending" },
-  completed: { tone: "up", label: "Completed" },
-  rejected: { tone: "down", label: "Rejected" },
-  cancelled: { tone: "neutral", label: "Cancelled" },
+export const WITHDRAWAL_STATUS: Record<WithdrawalStatus, { tone: ChipTone; label: MessageKey }> = {
+  requested: { tone: "warn", label: "wallet.status.withdrawal.requested" },
+  approved: { tone: "info", label: "common.approved" },
+  paid: { tone: "info", label: "wallet.status.withdrawal.paid" },
+  completed: { tone: "up", label: "common.completed" },
+  rejected: { tone: "down", label: "common.rejected" },
+  cancelled: { tone: "neutral", label: "common.cancelled" },
 };
 
-const TRANSFER_STATUS: Record<string, { tone: ChipTone; label: string }> = {
-  pending: { tone: "warn", label: "Processing" },
-  completed: { tone: "up", label: "Completed" },
-  failed: { tone: "down", label: "Failed" },
+const TRANSFER_STATUS: Record<string, { tone: ChipTone; label: MessageKey }> = {
+  pending: { tone: "warn", label: "common.processing" },
+  completed: { tone: "up", label: "common.completed" },
+  failed: { tone: "down", label: "common.failed" },
 };
 
-export const KIND_LABEL: Record<string, string> = {
-  commission: "Commission",
-  ib_payout: "Partner payout",
-  prop_purchase: "Prop challenge",
-  prop_payout: "Prop payout",
-  pamm_invest: "PAMM investment",
-  pamm_redeem: "PAMM redemption",
-  copy_fee: "Copy trading fee",
-  adjustment: "Balance adjustment",
-  refund: "Refund",
+export const KIND_LABEL: Record<string, MessageKey> = {
+  commission: "wallet.kind.commission",
+  ib_payout: "wallet.kind.ibPayout",
+  prop_purchase: "wallet.kind.propPurchase",
+  prop_payout: "wallet.kind.propPayout",
+  pamm_invest: "wallet.kind.pammInvest",
+  pamm_redeem: "wallet.kind.pammRedeem",
+  copy_fee: "wallet.kind.copyFee",
+  mam_fee: "wallet.kind.mamFee",
+  adjustment: "wallet.kind.adjustment",
+  refund: "wallet.kind.refund",
 };
 
-export function StatusTag({ tone, label }: { tone: ChipTone; label: string }) {
+export function StatusTag({ tone, label }: { tone: ChipTone; label: MessageKey }) {
+  const t = useT();
   return (
     <Chip size="sm" tone={tone} dot>
-      {label}
+      {t(label)}
     </Chip>
   );
 }
@@ -56,7 +61,7 @@ export function ChainBadge({ chain }: { chain: Chain }) {
     <span className="inline-flex items-center gap-1.5">
       <span className="relative">
         <CoinIcon coin="usdt" size={20} />
-        <CoinIcon coin={chain === "bsc" ? "bnb" : "trx"} size={11} className="absolute -bottom-0.5 -right-1 ring-2 ring-surface" />
+        <CoinIcon coin={chain === "bsc" ? "bnb" : "trx"} size={11} className="absolute -bottom-0.5 -end-1 ring-2 ring-surface" />
       </span>
       <span className="text-[12.5px] text-fg-2">
         USDT <span className="text-fg-3">· {CHAIN_LABEL[chain].short}</span>
@@ -77,15 +82,16 @@ export function HashLink({ hash, url, className }: { hash: string | null | undef
 
 /** Confirmations x / y as a bar. */
 export function Confirmations({ d }: { d: Pick<Deposit, "confirmations" | "required_confirmations" | "status"> }) {
+  const t = useT();
   const done = d.status === "credited";
   const pct = done ? 100 : d.required_confirmations ? (Math.min(d.confirmations, d.required_confirmations) / d.required_confirmations) * 100 : 0;
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between text-[12px]">
         <span className="text-fg-2">
-          <span className="k-num font-semibold text-fg">{done ? d.required_confirmations : Math.min(d.confirmations, d.required_confirmations)}</span> / {d.required_confirmations} confirmations
+          <Trans k="wallet.confirmations.progress" vars={{ done: done ? d.required_confirmations : Math.min(d.confirmations, d.required_confirmations), required: d.required_confirmations }} tags={{ num: (c) => <span className="k-num font-semibold text-fg">{c}</span> }} />
         </span>
-        <span className="text-fg-3">{done ? "Complete" : d.status === "pending" ? "Waiting for the first block" : "Confirming"}</span>
+        <span className="text-fg-3">{done ? t("wallet.confirmations.complete") : d.status === "pending" ? t("wallet.confirmations.firstBlock") : t("wallet.confirmations.confirming")}</span>
       </div>
       <Progress value={pct} tone={done ? "up" : "ember"} />
     </div>
@@ -93,6 +99,7 @@ export function Confirmations({ d }: { d: Pick<Deposit, "confirmations" | "requi
 }
 
 export function KycNotice({ status }: { status: string }) {
+  const t = useT();
   if (status === "verified") return null;
   const pending = status === "pending";
   return (
@@ -101,16 +108,14 @@ export function KycNotice({ status }: { status: string }) {
         <IdCard className="size-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <div className="text-[14px] font-medium">{pending ? "Your identity check is in review" : status === "rejected" ? "Your identity check needs attention" : "Verify your identity to withdraw"}</div>
+        <div className="text-[14px] font-medium">{pending ? t("wallet.kyc.inReview") : status === "rejected" ? t("wallet.kyc.needsAttention") : t("wallet.kyc.verifyToWithdraw")}</div>
         <p className="mt-0.5 text-[12.5px] text-fg-2">
-          {pending
-            ? "Withdrawals open as soon as your documents are approved. Deposits, transfers and trading are available now."
-            : "Withdrawals need a verified identity. Deposits, transfers and trading are available without it."}
+          {pending ? t("wallet.kyc.pendingText") : t("wallet.kyc.requiredText")}
         </p>
       </div>
       <Link href="/profile/verification" className="shrink-0">
         <Button variant="surface" size="sm">
-          <ShieldCheck /> {pending ? "View verification" : "Verify now"}
+          <ShieldCheck /> {pending ? t("wallet.kyc.viewVerification") : t("wallet.kyc.verifyNow")}
         </Button>
       </Link>
     </div>
@@ -118,15 +123,16 @@ export function KycNotice({ status }: { status: string }) {
 }
 
 export function WalletUnavailable({ onRetry, message }: { onRetry: () => void; message?: string }) {
+  const t = useT();
   return (
     <Card>
       <EmptyState
         illustration="satellite_antenna"
-        title="The wallet is unavailable"
-        text={message ?? "We couldn't reach the wallet service. Your balance is safe; please try again in a moment."}
+        title={t("wallet.unavailable.title")}
+        text={message ?? t("wallet.unavailable.text")}
         action={
           <Button variant="surface" onClick={onRetry}>
-            <RotateCw /> Try again
+            <RotateCw /> {t("common.retry")}
           </Button>
         }
       />
@@ -134,20 +140,21 @@ export function WalletUnavailable({ onRetry, message }: { onRetry: () => void; m
   );
 }
 
-export function activityTitle(a: ActivityItem): string {
+export function activityTitle(a: ActivityItem, t: T): string {
+  const kind = KIND_LABEL[a.kind ?? ""];
   switch (a.type) {
     case "deposit":
-      return `Deposit · USDT ${a.chain ? CHAIN_LABEL[a.chain].short : ""}`.trim();
+      return t("wallet.depositLine", { network: a.chain ? CHAIN_LABEL[a.chain].short : "" }).trim();
     case "withdrawal":
-      return `Withdrawal · USDT ${a.chain ? CHAIN_LABEL[a.chain].short : ""}`.trim();
+      return t("wallet.withdrawalLine", { network: a.chain ? CHAIN_LABEL[a.chain].short : "" }).trim();
     case "transfer":
-      return a.direction === "out" ? `To trading account #${a.login}` : `From trading account #${a.login}`;
+      return a.direction === "out" ? t("wallet.activity.toTrading", { login: a.login }) : t("wallet.activity.fromTrading", { login: a.login });
     default:
-      return KIND_LABEL[a.kind ?? ""] ?? "Wallet transaction";
+      return kind ? t(kind) : t("wallet.activity.walletTx");
   }
 }
 
-export function activityStatus(a: ActivityItem): { tone: ChipTone; label: string } | null {
+export function activityStatus(a: ActivityItem): { tone: ChipTone; label: MessageKey } | null {
   if (a.type === "deposit") return DEPOSIT_STATUS[a.status as DepositStatus] ?? null;
   if (a.type === "withdrawal") return WITHDRAWAL_STATUS[a.status as WithdrawalStatus] ?? null;
   if (a.type === "transfer") return TRANSFER_STATUS[a.status] ?? null;
@@ -166,20 +173,21 @@ function ActivityIcon({ a }: { a: ActivityItem }) {
 }
 
 export function ActivityRow({ a }: { a: ActivityItem }) {
+  const t = useT();
   const st = activityStatus(a);
   const dim = ["failed", "rejected", "cancelled"].includes(a.status);
   const sub =
     a.type === "deposit" && a.status === "confirming" && a.required_confirmations
-      ? `${Math.min(a.confirmations ?? 0, a.required_confirmations)} / ${a.required_confirmations} confirmations`
+      ? t("wallet.activity.confirmations", { done: Math.min(a.confirmations ?? 0, a.required_confirmations), required: a.required_confirmations })
       : a.type === "withdrawal" && a.address
-        ? `To ${shortHash(a.address, 6, 4)}`
+        ? t("wallet.activity.to", { address: shortHash(a.address, 6, 4) })
         : a.note ?? "";
   return (
     <div className="k-row flex items-center gap-3 px-4 py-3">
       <ActivityIcon a={a} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-medium">
-          {activityTitle(a)}
+          {activityTitle(a, t)}
           {st && a.status !== "completed" && a.status !== "credited" && <StatusTag {...st} />}
         </div>
         <div className="truncate text-[11.5px] text-fg-3">
@@ -193,10 +201,10 @@ export function ActivityRow({ a }: { a: ActivityItem }) {
           )}
         </div>
       </div>
-      <span className={cn("k-num whitespace-nowrap text-[14px] font-semibold", dim ? "text-fg-3 line-through" : a.direction === "in" ? "text-up" : "text-fg")}>
+      <span dir="ltr" className={cn("k-num whitespace-nowrap text-[14px] font-semibold", dim ? "text-fg-3 line-through" : a.direction === "in" ? "text-up" : "text-fg")}>
         {a.direction === "in" ? "+" : "−"}
         {fmt(a.amount)}
-        <span className="ml-1 text-[0.8em] font-medium text-fg-3">{a.type === "transfer" && a.direction === "in" ? "USD" : "USDT"}</span>
+        <span className="ms-1 text-[0.8em] font-medium text-fg-3">{a.type === "transfer" && a.direction === "in" ? "USD" : "USDT"}</span>
       </span>
     </div>
   );

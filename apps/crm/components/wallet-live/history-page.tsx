@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button, Card, EmptyState, IconButton, PageHeader, Skeleton, Tabs } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 import { useWallet, type ActivityItem, type Page } from "./api";
 import { ActivityRow, WalletUnavailable } from "./ui";
 
@@ -12,6 +13,7 @@ type Kind = "all" | "deposit" | "withdrawal" | "transfer" | "other";
 const PER = 25;
 
 function Inner() {
+  const t = useT();
   const sp = useSearchParams();
   const router = useRouter();
   const raw = sp.get("type");
@@ -23,12 +25,12 @@ function Inner() {
   return (
     <div className="pb-16">
       <PageHeader
-        title="Wallet history"
-        subtitle="Deposits, withdrawals, transfers and other credits, newest first."
+        title={t("wallet.history.title")}
+        subtitle={t("wallet.history.subtitle")}
         actions={
           <Link href="/wallet">
             <Button variant="surface">
-              <ArrowLeft /> Wallet
+              <ArrowLeft className="rtl:-scale-x-100" /> {t("wallet.wallet")}
             </Button>
           </Link>
         }
@@ -42,32 +44,32 @@ function Inner() {
               value={kind}
               onChange={(v) => go(v)}
               tabs={[
-                { value: "all", label: "All" },
-                { value: "deposit", label: "Deposits" },
-                { value: "withdrawal", label: "Withdrawals" },
-                { value: "transfer", label: "Transfers" },
-                { value: "other", label: "Other" },
+                { value: "all", label: t("common.all") },
+                { value: "deposit", label: t("wallet.tab.deposits") },
+                { value: "withdrawal", label: t("wallet.tab.withdrawals") },
+                { value: "transfer", label: t("wallet.tab.transfers") },
+                { value: "other", label: t("wallet.tab.other") },
               ]}
             />
           </div>
           <div className="space-y-2 px-4 pb-5 pt-4 sm:px-6">
             {loading && <Skeleton className="h-40 w-full rounded-[14px]" />}
-            {data && data.items.length === 0 && <EmptyState illustration="money_bag" title="Nothing here yet" text="Transactions of this type will appear here." />}
+            {data && data.items.length === 0 && <EmptyState illustration="money_bag" title={t("common.noData")} text={t("wallet.history.emptyText")} />}
             {data?.items.map((a) => <ActivityRow key={`${a.type}${a.id}`} a={a} />)}
             {data && data.total > PER && (
               <div className="flex items-center justify-between pt-2 text-[12.5px] text-fg-3">
                 <span className="k-num">
-                  {(page - 1) * PER + 1}–{Math.min(data.total, page * PER)} of {data.total}
+                  {t("wallet.history.range", { from: (page - 1) * PER + 1, to: Math.min(data.total, page * PER), total: data.total })}
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <IconButton size="sm" disabled={page <= 1} onClick={() => go(kind, page - 1)} aria-label="Previous page">
-                    <ChevronLeft />
+                  <IconButton size="sm" disabled={page <= 1} onClick={() => go(kind, page - 1)} aria-label={t("wallet.history.prevPage")}>
+                    <ChevronLeft className="rtl:-scale-x-100" />
                   </IconButton>
                   <span className="k-num px-2">
                     {page} / {pages}
                   </span>
-                  <IconButton size="sm" disabled={page >= pages} onClick={() => go(kind, page + 1)} aria-label="Next page">
-                    <ChevronRight />
+                  <IconButton size="sm" disabled={page >= pages} onClick={() => go(kind, page + 1)} aria-label={t("wallet.history.nextPage")}>
+                    <ChevronRight className="rtl:-scale-x-100" />
                   </IconButton>
                 </div>
               </div>

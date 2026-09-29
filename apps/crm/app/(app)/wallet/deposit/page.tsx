@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, Blocks, Check, ChevronDown, Clock, Copy, ExternalLink, Radar, Share2, ShieldAlert, Wallet, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, CoinIcon, PageHeader, Reveal, Starfield, cn, formatNumber, shortHash } from "@kalks/ui";
+import { Trans, useT } from "@kalks/i18n/react";
 import { WALLET } from "@kalks/mock";
 import { DEPOSIT_FAQ, DEPOSIT_NETWORKS, INCOMING_DEPOSIT } from "@kalks/mock/wallet-extra";
 import { AddressBox, AddressQr, tronscan } from "@/components/wallet/wallet-ui";
@@ -15,23 +16,24 @@ import { LiveDepositPage } from "@/components/wallet-live/deposit-page";
 const CHAIN: Record<string, string> = { TRC20: "trx", ERC20: "eth", BEP20: "bnb" };
 
 function NetworkSelector() {
+  const t = useT();
   return (
     <Card>
-      <CardHeader title="Asset & network" subtitle="Choose what you're sending" />
+      <CardHeader title={t("wallet.demo.assetNetwork")} subtitle={t("wallet.demo.chooseSending")} />
       <div className="space-y-2 px-4 pb-5 pt-4 sm:px-6">
         {DEPOSIT_NETWORKS.map((n) => (
           <button
             key={n.id}
             type="button"
-            onClick={() => (n.active ? toast("USDT · TRC20 selected") : toast(`${n.asset} on ${n.network} is coming soon`, { description: "We'll notify you when it goes live." }))}
+            onClick={() => (n.active ? toast(t("wallet.demo.selected")) : toast(t("wallet.demo.comingSoonAsset", { asset: n.asset, network: n.network }), { description: t("wallet.demo.notifyLive") }))}
             className={cn(
-              "k-row flex w-full items-center gap-3 px-4 py-3 text-left transition-all",
+              "k-row flex w-full items-center gap-3 px-4 py-3 text-start transition-all",
               n.active ? "border-ember/50 bg-ember-soft shadow-[0_0_24px_-12px_rgba(255,90,31,0.8)]" : "opacity-60 hover:opacity-90",
             )}
           >
             <span className="relative">
               <CoinIcon coin={n.asset === "USDT" ? "usdt" : n.icon} size={32} />
-              {CHAIN[n.short] && <CoinIcon coin={CHAIN[n.short]!} size={15} className="absolute -bottom-0.5 -right-1 ring-2 ring-surface-2" />}
+              {CHAIN[n.short] && <CoinIcon coin={CHAIN[n.short]!} size={15} className="absolute -bottom-0.5 -end-1 ring-2 ring-surface-2" />}
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-[14px] font-medium">
@@ -45,7 +47,7 @@ function NetworkSelector() {
                 <Check className="size-3.5" />
               </span>
             ) : (
-              <Chip size="sm">Coming soon</Chip>
+              <Chip size="sm">{t("common.comingSoon")}</Chip>
             )}
           </button>
         ))}
@@ -55,19 +57,20 @@ function NetworkSelector() {
 }
 
 function HowItWorks() {
+  const tt = useT();
   const steps = [
-    { icon: <Copy />, t: "Copy your address", d: "Or scan the QR from your exchange / wallet app." },
-    { icon: <Radar />, t: "We detect it instantly", d: "Your deposit appears within seconds of the first block." },
-    { icon: <Blocks />, t: "20 confirmations", d: "About 60 seconds on TRON — protects against chain re-orgs." },
-    { icon: <Zap />, t: "Auto-credited", d: "USDT lands in your wallet, ready to transfer or trade." },
+    { icon: <Copy />, t: tt("wallet.demo.how1Title"), d: tt("wallet.demo.how1Text") },
+    { icon: <Radar />, t: tt("wallet.demo.how2Title"), d: tt("wallet.demo.how2Text") },
+    { icon: <Blocks />, t: tt("wallet.demo.how3Title"), d: tt("wallet.demo.how3Text") },
+    { icon: <Zap />, t: tt("wallet.demo.how4Title"), d: tt("wallet.demo.how4Text") },
   ];
   return (
     <Card>
-      <CardHeader title="How deposits work" subtitle="Fully automatic — no need to contact support" />
+      <CardHeader title={tt("wallet.howDepositsWork")} subtitle={tt("wallet.demo.howSubtitle")} />
       <ol className="px-6 pb-6 pt-5">
         {steps.map((s, i) => (
           <li key={s.t} className="relative flex gap-4 pb-5 last:pb-0">
-            {i < steps.length - 1 && <span className="absolute left-[17px] top-10 h-[calc(100%-32px)] w-px bg-gradient-to-b from-ember/50 to-line" />}
+            {i < steps.length - 1 && <span className="absolute start-[17px] top-10 h-[calc(100%-32px)] w-px bg-gradient-to-b from-ember/50 to-line" />}
             <span className="grid size-9 shrink-0 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember [&_svg]:size-4">{s.icon}</span>
             <div>
               <div className="text-[13.5px] font-medium">{s.t}</div>
@@ -81,11 +84,12 @@ function HowItWorks() {
 }
 
 function Tracker() {
+  const tt = useT();
   const d = INCOMING_DEPOSIT;
   const [conf, setConf] = React.useState(d.confirmations);
   React.useEffect(() => {
     if (conf >= d.required) {
-      toast.success(`${formatNumber(d.amount)} USDT credited to your wallet`, { description: "20/20 confirmations" });
+      toast.success(tt("wallet.demo.creditedToast", { amount: formatNumber(d.amount) }), { description: tt("wallet.demo.confirmationsCount", { count: "20/20" }) });
       return;
     }
     const t = setTimeout(() => setConf((c) => c + 1), 6000);
@@ -105,22 +109,22 @@ function Tracker() {
             </span>
             <div>
               <div className="flex items-center gap-2 text-[15px] font-medium">
-                Incoming deposit
+                {tt("wallet.demo.incoming")}
                 {done ? (
                   <Chip size="sm" tone="up" dot>
-                    Credited
+                    {tt("wallet.status.deposit.credited")}
                   </Chip>
                 ) : (
                   <Chip size="sm" tone="ember" dot>
-                    Confirming
+                    {tt("wallet.status.deposit.confirming")}
                   </Chip>
                 )}
               </div>
-              <div className="text-[12.5px] text-fg-3">Detected 18:31 · from {shortHash(d.from, 5, 4)}</div>
+              <div className="text-[12.5px] text-fg-3">{tt("wallet.demo.detected", { address: shortHash(d.from, 5, 4) })}</div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="k-num text-[26px] font-semibold leading-none">
+          <div className="text-end">
+            <div dir="ltr" className="k-num text-[26px] font-semibold leading-none">
               +{formatNumber(d.amount)} <span className="text-[14px] text-fg-3">USDT</span>
             </div>
             <div className="mt-1 text-[12px] text-fg-3">≈ ${formatNumber(d.amount)}</div>
@@ -129,13 +133,13 @@ function Tracker() {
         <div className="mt-6">
           <div className="mb-2 flex items-center justify-between text-[12.5px]">
             <span className="text-fg-2">
-              <span className="k-num text-[15px] font-semibold text-fg">{conf}</span>/{d.required} confirmations
+              <Trans k="wallet.demo.confProgress" vars={{ done: conf, required: d.required }} tags={{ num: (c) => <span className="k-num text-[15px] font-semibold text-fg">{c}</span> }} />
             </span>
-            <span className="text-fg-3">{done ? "Complete" : `≈ ${(d.required - conf) * 3}s remaining`}</span>
+            <span className="text-fg-3">{done ? tt("wallet.confirmations.complete") : tt("wallet.demo.secondsLeft", { seconds: (d.required - conf) * 3 })}</span>
           </div>
           <div className="relative h-3 overflow-hidden rounded-full bg-black/35 light:bg-black/10">
             <motion.div className={cn("relative h-full overflow-hidden rounded-full", done ? "bg-up" : "bg-gradient-to-r from-[#ff7a2f] to-[#e8431a]")} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}>
-              {!done && <span className="absolute inset-y-0 left-0 w-1/3 animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent" />}
+              {!done && <span className="absolute inset-y-0 start-0 w-1/3 animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent" />}
             </motion.div>
           </div>
           <div className="mt-2 grid grid-cols-[repeat(20,minmax(0,1fr))] gap-1">
@@ -146,14 +150,14 @@ function Tracker() {
         </div>
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-white/10 bg-black/25 light:border-black/5 light:bg-white/70 px-4 py-3">
           <div className="min-w-0">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">Transaction hash</div>
+            <div className="text-[11px] uppercase tracking-wider text-fg-3">{tt("wallet.transactionHash")}</div>
             <a href={tronscan(d.hash)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-mono text-[13px] text-fg hover:text-ember">
               {shortHash(d.hash, 10, 8)} <ExternalLink className="size-3.5" />
             </a>
           </div>
           <a href={tronscan(d.hash)} target="_blank" rel="noreferrer">
             <Button size="sm" variant="surface">
-              View on Tronscan <ExternalLink />
+              {tt("wallet.demo.viewTronscan")} <ExternalLink />
             </Button>
           </a>
         </div>
@@ -163,16 +167,17 @@ function Tracker() {
 }
 
 function Faq() {
+  const t = useT();
   const [open, setOpen] = React.useState<number | null>(0);
   return (
     <Card>
-      <CardHeader title="Frequently asked questions" />
+      <CardHeader title={t("wallet.demo.faq")} />
       <div className="space-y-2 px-4 pb-5 pt-4 sm:px-6">
         {DEPOSIT_FAQ.map((f, i) => {
           const on = open === i;
           return (
             <div key={f.q} className={cn("k-row overflow-hidden transition-colors", on && "border-[var(--k-border-top)]")}>
-              <button type="button" onClick={() => setOpen(on ? null : i)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+              <button type="button" onClick={() => setOpen(on ? null : i)} className="flex w-full items-center gap-3 px-4 py-3.5 text-start">
                 <span className="flex-1 text-[14px] font-medium">{f.q}</span>
                 <motion.span animate={{ rotate: on ? 180 : 0 }} className="text-fg-3">
                   <ChevronDown className="size-4" />
@@ -194,16 +199,17 @@ function Faq() {
 }
 
 function DemoDepositPage() {
+  const t = useT();
   const net = DEPOSIT_NETWORKS[0]!;
   return (
     <div className="pb-16">
       <PageHeader
-        title="Deposit USDT"
-        subtitle="Send USDT on the TRON network to your personal address. Credited automatically."
+        title={t("wallet.depositUsdt")}
+        subtitle={t("wallet.demo.depositSubtitle")}
         actions={
           <Link href="/wallet">
             <Button variant="surface">
-              <ArrowLeft /> Wallet
+              <ArrowLeft className="rtl:-scale-x-100" /> {t("wallet.wallet")}
             </Button>
           </Link>
         }
@@ -223,12 +229,12 @@ function DemoDepositPage() {
           <Reveal delay={0.05}>
             <Card>
               <CardHeader
-                title="Your USDT deposit address"
+                title={t("wallet.demo.yourAddress")}
                 subtitle={WALLET.network}
                 icon={<Wallet />}
                 action={
                   <Chip tone="up" dot>
-                    Permanent address
+                    {t("wallet.demo.permanent")}
                   </Chip>
                 }
               />
@@ -236,40 +242,40 @@ function DemoDepositPage() {
                 <div className="flex flex-col items-center">
                   <AddressQr size={208} />
                   <div className="mt-3 flex items-center gap-2 text-[12px] text-fg-3">
-                    <CoinIcon coin="usdt" size={16} /> USDT · TRC20 only
+                    <CoinIcon coin="usdt" size={16} /> {t("wallet.demo.trc20Only")}
                   </div>
                 </div>
                 <div className="min-w-0">
-                  <div className="k-label mb-2">Address</div>
+                  <div className="k-label mb-2">{t("wallet.address")}</div>
                   <AddressBox className="py-4" />
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Button
                       variant="ember"
                       onClick={() => {
                         navigator.clipboard?.writeText(WALLET.address).catch(() => {});
-                        toast.success("Deposit address copied", { description: shortHash(WALLET.address, 8, 6) });
+                        toast.success(t("wallet.demo.addressCopied"), { description: shortHash(WALLET.address, 8, 6) });
                       }}
                     >
-                      <Copy /> Copy address
+                      <Copy /> {t("wallet.demo.copyAddress")}
                     </Button>
-                    <Button variant="surface" onClick={() => toast.success("Address shared", { description: "Link copied to clipboard" })}>
-                      <Share2 /> Share
+                    <Button variant="surface" onClick={() => toast.success(t("wallet.demo.addressShared"), { description: t("wallet.demo.linkCopied") })}>
+                      <Share2 /> {t("wallet.demo.share")}
                     </Button>
                   </div>
 
                   <div className="mt-5 flex items-start gap-3 rounded-[14px] border border-down/30 bg-down-soft px-4 py-3">
                     <ShieldAlert className="mt-0.5 size-4 shrink-0 text-down" />
                     <div className="text-[13px] text-fg-2">
-                      <span className="font-medium text-fg">Send only USDT via TRON (TRC20).</span> Sending any other token, or using ERC20 / BEP20, will result in permanent loss of funds.
+                      <Trans k="wallet.demo.sendOnlyWarning" tags={{ b: (c) => <span className="font-medium text-fg">{c}</span> }} />
                     </div>
                   </div>
 
                   <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
                     {[
-                      ["Min deposit", `${net.minDeposit} USDT`],
-                      ["Confirmations", `${net.confirmations}`],
-                      ["Arrival", net.eta],
-                      ["Kalks fee", "Free"],
+                      [t("wallet.demo.minDeposit"), `${net.minDeposit} USDT`],
+                      [t("wallet.demo.confirmations"), `${net.confirmations}`],
+                      [t("wallet.demo.arrival"), net.eta],
+                      [t("wallet.demo.kalksFee"), t("wallet.free")],
                     ].map(([k, v]) => (
                       <div key={k} className="k-row px-3 py-2.5">
                         <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
@@ -278,7 +284,7 @@ function DemoDepositPage() {
                     ))}
                   </div>
                   <div className="mt-3 flex items-center gap-2 text-[12px] text-fg-3">
-                    <Clock className="size-3.5" /> No KYC needed to deposit. Verification is only required before your first withdrawal.
+                    <Clock className="size-3.5" /> {t("wallet.demo.noKycDeposit")}
                   </div>
                 </div>
               </div>

@@ -4,6 +4,8 @@
 
 import * as React from "react";
 import { toast } from "sonner";
+import { tr } from "@kalks/i18n/react";
+import type { MessageKey } from "@kalks/i18n";
 
 export type Chain = "bsc" | "tron";
 
@@ -167,9 +169,9 @@ export class WalletError extends Error {
   }
 }
 
-const FRIENDLY: Record<string, string> = {
-  unavailable: "The wallet is unavailable. Please try again shortly.",
-  insufficient_funds: "Not enough available balance.",
+const FRIENDLY: Record<string, MessageKey> = {
+  unavailable: "wallet.error.unavailable",
+  insufficient_funds: "wallet.error.insufficientFunds",
 };
 
 export async function walletApi<T>(path: string, init?: { body?: unknown; signal?: AbortSignal; headers?: Record<string, string> }): Promise<T> {
@@ -185,7 +187,7 @@ export async function walletApi<T>(path: string, init?: { body?: unknown; signal
     });
   } catch (e) {
     if ((e as Error).name === "AbortError") throw e;
-    throw new WalletError(0, "network", "Network error. Check your connection and try again.");
+    throw new WalletError(0, "network", tr("common.networkError"));
   }
   const data = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string; field?: string } };
   if (!res.ok) {
@@ -193,13 +195,14 @@ export async function walletApi<T>(path: string, init?: { body?: unknown; signal
       window.location.assign(`/api/auth/expired?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
     }
     const code = data.error?.code ?? "error";
-    throw new WalletError(res.status, code, (res.status >= 500 && FRIENDLY[code]) || data.error?.message || FRIENDLY[code] || "Something went wrong. Please try again.", data.error?.field);
+    const friendly = FRIENDLY[code] ? tr(FRIENDLY[code]) : undefined;
+    throw new WalletError(res.status, code, (res.status >= 500 && friendly) || data.error?.message || friendly || tr("common.errorRetry"), data.error?.field);
   }
   return data as T;
 }
 
 export function walletToast(title: string, e: unknown) {
-  toast.error(title, { description: e instanceof Error ? e.message : "Something went wrong. Please try again." });
+  toast.error(title, { description: e instanceof Error ? e.message : tr("common.errorRetry") });
 }
 
 /** Polls a wallet BFF path every `ms` while the tab is visible (ms = 0: once). */
@@ -223,7 +226,7 @@ export function useWallet<T>(path: string | null, ms = 0) {
           setError(null);
         } catch (e) {
           if (stop || (e as Error).name === "AbortError") return;
-          setError(e instanceof WalletError ? e : new WalletError(0, "error", "Something went wrong."));
+          setError(e instanceof WalletError ? e : new WalletError(0, "error", tr("wallet.error.generic")));
         }
       }
       if (!stop && ms > 0) timer = setTimeout(run, ms);

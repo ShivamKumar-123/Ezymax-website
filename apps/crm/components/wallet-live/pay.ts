@@ -9,6 +9,8 @@
 // - TronLink (TRON, window.tronLink / window.tronWeb): tron_requestAccounts → triggerSmartContract
 //   transfer(address,uint256) on the USDT contract → sign → sendRawTransaction (TRC20 USDT has 6 decimals).
 
+import { tr } from "@kalks/i18n/react";
+
 type Eip1193 = { request: (a: { method: string; params?: unknown[] }) => Promise<unknown>; isMetaMask?: boolean };
 
 type TronWebLike = {
@@ -50,14 +52,14 @@ export class PayError extends Error {
 /** Decimal string → integer units (no floating point). */
 export function toUnits(amount: string, decimals: number): bigint {
   const [i = "0", f = ""] = amount.trim().split(".");
-  if (!/^\d+$/.test(i) || !/^\d*$/.test(f) || f.length > decimals) throw new PayError("failed", "Invalid amount");
+  if (!/^\d+$/.test(i) || !/^\d*$/.test(f) || f.length > decimals) throw new PayError("failed", tr("wallet.pay.invalidAmount"));
   return BigInt(i + f.padEnd(decimals, "0"));
 }
 
 /** ABI data for ERC-20 transfer(address,uint256). */
 export function erc20TransferData(to: string, units: bigint): string {
   const addr = to.toLowerCase().replace(/^0x/, "");
-  if (!/^[0-9a-f]{40}$/.test(addr)) throw new PayError("failed", "Invalid receiving address");
+  if (!/^[0-9a-f]{40}$/.test(addr)) throw new PayError("failed", tr("wallet.pay.invalidAddress"));
   return "0xa9059cbb" + addr.padStart(64, "0") + units.toString(16).padStart(64, "0");
 }
 
@@ -73,9 +75,9 @@ export function metamaskDeepLink(intentId: string) {
 
 function rpcError(e: unknown): PayError {
   const err = e as { code?: number; message?: string };
-  if (err?.code === 4001) return new PayError("rejected", "You cancelled the request in MetaMask.");
-  if (err?.code === -32002) return new PayError("locked", "MetaMask already has a pending request. Open MetaMask to continue.");
-  return new PayError("failed", err?.message ? String(err.message).slice(0, 200) : "MetaMask could not send the transaction.");
+  if (err?.code === 4001) return new PayError("rejected", tr("wallet.pay.mmCancelled"));
+  if (err?.code === -32002) return new PayError("locked", tr("wallet.pay.mmPending"));
+  return new PayError("failed", err?.message ? String(err.message).slice(0, 200) : tr("wallet.pay.mmSendFailed"));
 }
 
 const BSC = {
@@ -88,12 +90,12 @@ const BSC = {
 
 export async function payWithMetaMask(p: { token: string; to: string; amount: string; decimals: number }): Promise<{ hash: string; from: string }> {
   const eth = window.ethereum;
-  if (!eth) throw new PayError("no_wallet", "MetaMask is not installed in this browser.");
+  if (!eth) throw new PayError("no_wallet", tr("wallet.pay.mmNotInstalled"));
   let from: string;
   try {
     const accounts = (await eth.request({ method: "eth_requestAccounts" })) as string[];
     from = accounts?.[0] ?? "";
-    if (!from) throw new PayError("locked", "Unlock MetaMask and choose an account.");
+    if (!from) throw new PayError("locked", tr("wallet.pay.mmUnlock"));
   } catch (e) {
     throw e instanceof PayError ? e : rpcError(e);
   }
@@ -109,12 +111,12 @@ export async function payWithMetaMask(p: { token: string; to: string; amount: st
     }
   } catch (e) {
     const pe = rpcError(e);
-    throw pe.code === "rejected" ? new PayError("wrong_network", "Switch MetaMask to BNB Smart Chain to pay.") : pe;
+    throw pe.code === "rejected" ? new PayError("wrong_network", tr("wallet.pay.mmSwitch")) : pe;
   }
   const data = erc20TransferData(p.to, toUnits(p.amount, p.decimals));
   try {
     const hash = (await eth.request({ method: "eth_sendTransaction", params: [{ from, to: p.token, data, value: "0x0" }] })) as string;
-    if (!/^0x[0-9a-fA-F]{64}$/.test(hash ?? "")) throw new PayError("failed", "MetaMask did not return a transaction hash.");
+    if (!/^0x[0-9a-fA-F]{64}$/.test(hash ?? "")) throw new PayError("failed", tr("wallet.pay.mmNoHash"));
     return { hash, from };
   } catch (e) {
     throw e instanceof PayError ? e : rpcError(e);
@@ -123,19 +125,19 @@ export async function payWithMetaMask(p: { token: string; to: string; amount: st
 
 export async function payWithTronLink(p: { token: string; to: string; amount: string; decimals: number }): Promise<{ hash: string; from: string }> {
   const link = window.tronLink;
-  if (!link && !window.tronWeb) throw new PayError("no_wallet", "TronLink is not installed in this browser.");
+  if (!link && !window.tronWeb) throw new PayError("no_wallet", tr("wallet.pay.tlNotInstalled"));
   try {
     if (link?.request) {
       const r = (await link.request({ method: "tron_requestAccounts" })) as { code?: number; message?: string } | undefined;
-      if (r && typeof r === "object" && r.code === 4001) throw new PayError("rejected", "You declined the connection in TronLink.");
+      if (r && typeof r === "object" && r.code === 4001) throw new PayError("rejected", tr("wallet.pay.tlDeclined"));
     }
   } catch (e) {
     if (e instanceof PayError) throw e;
-    throw new PayError("failed", "TronLink could not connect.");
+    throw new PayError("failed", tr("wallet.pay.tlConnectFailed"));
   }
   const tw = link?.tronWeb ?? window.tronWeb;
   const from = tw?.defaultAddress?.base58;
-  if (!tw || !from) throw new PayError("locked", "Unlock TronLink and choose an account.");
+  if (!tw || !from) throw new PayError("locked", tr("wallet.pay.tlUnlock"));
   const units = toUnits(p.amount, p.decimals);
   try {
     const built = await tw.transactionBuilder.triggerSmartContract(
@@ -148,16 +150,16 @@ export async function payWithTronLink(p: { token: string; to: string; amount: st
       ],
       from,
     );
-    if (!built?.result?.result || !built.transaction) throw new PayError("failed", "TronLink could not build the transfer.");
+    if (!built?.result?.result || !built.transaction) throw new PayError("failed", tr("wallet.pay.tlBuildFailed"));
     const signed = await tw.trx.sign(built.transaction);
     const sent = await tw.trx.sendRawTransaction(signed);
     const hash = sent?.txid ?? built.transaction.txID;
-    if (sent?.result === false || !/^[0-9a-fA-F]{64}$/.test(hash ?? "")) throw new PayError("failed", sent?.message ? String(sent.message) : "TronLink could not send the transaction.");
+    if (sent?.result === false || !/^[0-9a-fA-F]{64}$/.test(hash ?? "")) throw new PayError("failed", sent?.message ? String(sent.message) : tr("wallet.pay.tlSendFailed"));
     return { hash, from };
   } catch (e) {
     if (e instanceof PayError) throw e;
     const m = String((e as Error)?.message ?? e ?? "");
-    if (/cancel|declin|reject/i.test(m)) throw new PayError("rejected", "You cancelled the transfer in TronLink.");
-    throw new PayError("failed", m ? m.slice(0, 200) : "TronLink could not send the transaction.");
+    if (/cancel|declin|reject/i.test(m)) throw new PayError("rejected", tr("wallet.pay.tlCancelled"));
+    throw new PayError("failed", m ? m.slice(0, 200) : tr("wallet.pay.tlSendFailed"));
   }
 }

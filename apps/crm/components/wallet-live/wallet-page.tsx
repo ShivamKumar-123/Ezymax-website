@@ -4,41 +4,43 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, ArrowUpRight, Bell, ChevronRight, History, Lock } from "lucide-react";
 import { Button, Card, CardHeader, Chip, EmptyState, PageHeader, Skeleton, formatDateTime } from "@kalks/ui";
+import { Trans, useT } from "@kalks/i18n/react";
 import { useSession } from "@/components/session";
 import { toUsd, useAccounts } from "@/components/trading/api";
 import { CHAIN_LABEL, fmt, usdtAvailable, useWallet, walletApi, type ActivityItem, type Notification, type Overview, type Page } from "./api";
 import { ActivityRow, Confirmations, DEPOSIT_STATUS, HashLink, KycNotice, StatusTag, WITHDRAWAL_STATUS, WalletUnavailable } from "./ui";
 
 function BalanceCard({ o, loading }: { o: Overview | null; loading: boolean }) {
+  const t = useT();
   const b = usdtAvailable(o);
   const total = Number(b.available) + Number(b.locked);
   return (
     <Card className="h-full">
       <div className="p-6">
-        <div className="k-label">Wallet balance</div>
+        <div className="k-label">{t("wallet.balance.title")}</div>
         <div className="mt-3 flex flex-wrap items-baseline gap-2">
           {loading ? (
             <Skeleton className="h-11 w-48" />
           ) : (
-            <span className="k-num text-[40px] font-semibold leading-none tracking-[-0.02em]">
+            <span dir="ltr" className="k-num text-[40px] font-semibold leading-none tracking-[-0.02em]">
               {fmt(b.available)} <span className="text-[18px] font-medium text-fg-3">USDT</span>
             </span>
           )}
         </div>
-        <div className="mt-2 text-[13px] text-fg-2">Available to transfer or withdraw · USDT is credited 1:1 in USD</div>
+        <div className="mt-2 text-[13px] text-fg-2">{t("wallet.balance.sub")}</div>
         <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
           <div className="k-row px-4 py-3">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">Available</div>
+            <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("wallet.available")}</div>
             <div className="k-num mt-1 text-[16px] font-semibold">{fmt(b.available)}</div>
           </div>
           <div className="k-row px-4 py-3">
             <div className="flex items-center gap-1 text-[11px] uppercase tracking-wider text-fg-3">
-              <Lock className="size-3" /> In progress
+              <Lock className="size-3" /> {t("wallet.inProgress")}
             </div>
             <div className="k-num mt-1 text-[16px] font-semibold">{fmt(b.locked)}</div>
           </div>
           <div className="k-row col-span-2 px-4 py-3 sm:col-span-1">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">Total</div>
+            <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("common.total")}</div>
             <div className="k-num mt-1 text-[16px] font-semibold">{fmt(total)}</div>
           </div>
         </div>
@@ -48,10 +50,11 @@ function BalanceCard({ o, loading }: { o: Overview | null; loading: boolean }) {
 }
 
 function QuickActions({ kyc }: { kyc: string }) {
+  const t = useT();
   const items = [
-    { href: "/wallet/deposit", title: "Deposit", sub: "USDT on BNB Chain or TRON", icon: <ArrowDownToLine />, primary: true },
-    { href: "/wallet/withdraw", title: "Withdraw", sub: kyc === "verified" ? "To your own USDT address" : "Needs identity verification", icon: <ArrowUpFromLine /> },
-    { href: "/wallet/transfer", title: "Transfer", sub: "Wallet ↔ your trading accounts", icon: <ArrowLeftRight /> },
+    { href: "/wallet/deposit", title: t("common.deposit"), sub: t("wallet.quick.depositSub"), icon: <ArrowDownToLine />, primary: true },
+    { href: "/wallet/withdraw", title: t("common.withdraw"), sub: kyc === "verified" ? t("wallet.quick.withdrawSub") : t("wallet.quick.withdrawKyc"), icon: <ArrowUpFromLine /> },
+    { href: "/wallet/transfer", title: t("common.transfer"), sub: t("wallet.quick.transferSub"), icon: <ArrowLeftRight /> },
   ];
   return (
     <div className="grid h-full grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-1">
@@ -62,7 +65,7 @@ function QuickActions({ kyc }: { kyc: string }) {
             <div className="text-[15px] font-medium">{it.title}</div>
             <div className="truncate text-[12px] text-fg-3">{it.sub}</div>
           </div>
-          <ChevronRight className="size-4 text-fg-3 group-hover:text-fg" />
+          <ChevronRight className="size-4 text-fg-3 group-hover:text-fg rtl:-scale-x-100" />
         </Link>
       ))}
     </div>
@@ -70,17 +73,18 @@ function QuickActions({ kyc }: { kyc: string }) {
 }
 
 function InProgress({ o }: { o: Overview }) {
+  const t = useT();
   if (!o.pending_deposits.length && !o.open_withdrawals.length) return null;
   return (
     <Card>
-      <CardHeader title="In progress" subtitle="Deposits being confirmed and withdrawals being processed. This updates on its own." />
+      <CardHeader title={t("wallet.inProgress")} subtitle={t("wallet.progress.subtitle")} />
       <div className="mt-4 space-y-2 px-4 pb-5 sm:px-6">
         {o.pending_deposits.map((d) => (
           <Link key={`d${d.id}`} href={d.intent_id ? `/wallet/deposit?intent=${d.intent_id}` : "/wallet/history?type=deposit"} className="k-row block px-4 py-3 hover:border-[var(--k-border-top)]">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[13.5px] font-medium">Deposit · USDT {CHAIN_LABEL[d.chain].short}</span>
+              <span className="text-[13.5px] font-medium">{t("wallet.depositLine", { network: CHAIN_LABEL[d.chain].short })}</span>
               <StatusTag {...DEPOSIT_STATUS[d.status]} />
-              <span className="k-num ml-auto text-[14px] font-semibold text-up">+{fmt(d.amount ?? d.expected_amount)} USDT</span>
+              <span dir="ltr" className="k-num ms-auto text-[14px] font-semibold text-up">+{fmt(d.amount ?? d.expected_amount)} USDT</span>
             </div>
             <div className="mt-1 text-[11.5px] text-fg-3">
               {formatDateTime(d.created_at)} · <HashLink hash={d.tx_hash} url={d.explorer_url} className="text-[11.5px]" />
@@ -94,11 +98,11 @@ function InProgress({ o }: { o: Overview }) {
         ))}
         {o.open_withdrawals.map((w) => (
           <Link key={`w${w.id}`} href="/wallet/withdraw" className="k-row flex flex-wrap items-center gap-2 px-4 py-3 hover:border-[var(--k-border-top)]">
-            <span className="text-[13.5px] font-medium">Withdrawal · USDT {CHAIN_LABEL[w.chain].short}</span>
+            <span className="text-[13.5px] font-medium">{t("wallet.withdrawalLine", { network: CHAIN_LABEL[w.chain].short })}</span>
             <StatusTag {...WITHDRAWAL_STATUS[w.status]} />
-            <span className="k-num ml-auto text-[14px] font-semibold">−{fmt(w.amount)} USDT</span>
+            <span dir="ltr" className="k-num ms-auto text-[14px] font-semibold">−{fmt(w.amount)} USDT</span>
             <div className="w-full text-[11.5px] text-fg-3">
-              {formatDateTime(w.created_at)} · you receive {fmt(w.net_amount)} USDT after the {fmt(w.fee)} USDT fee
+              {formatDateTime(w.created_at)} · {t("wallet.progress.withdrawalNet", { net: fmt(w.net_amount), fee: fmt(w.fee) })}
             </div>
           </Link>
         ))}
@@ -108,17 +112,18 @@ function InProgress({ o }: { o: Overview }) {
 }
 
 function FundAccounts() {
+  const t = useT();
   const { data } = useAccounts(15000);
   const live = (data?.accounts ?? []).filter((a) => a.type === "live");
   return (
     <Card className="h-full">
       <CardHeader
-        title="Fund a trading account"
-        subtitle="Instant and free between your wallet and your own live accounts"
+        title={t("wallet.fundTradingAccount")}
+        subtitle={t("wallet.fund.subtitle")}
         action={
           <Link href="/wallet/transfer">
             <Button size="xs" variant="surface">
-              Transfer
+              {t("common.transfer")}
             </Button>
           </Link>
         }
@@ -126,31 +131,36 @@ function FundAccounts() {
       <div className="mt-4 space-y-2 px-4 pb-5 sm:px-6">
         {data && live.length === 0 && (
           <div className="k-row px-4 py-4 text-[13px] text-fg-2">
-            You have no live account yet.{" "}
-            <Link href="/accounts/new?type=live" className="text-ember hover:underline">
-              Open one
-            </Link>{" "}
-            and fund it from your wallet.
+            <Trans
+              k="wallet.fund.noLive"
+              tags={{
+                link: (c) => (
+                  <Link href="/accounts/new?type=live" className="text-ember hover:underline">
+                    {c}
+                  </Link>
+                ),
+              }}
+            />
           </div>
         )}
         {!data && <Skeleton className="h-16 w-full rounded-[14px]" />}
         {live.map((a) => (
           <Link key={a.login} href={`/wallet/transfer?to=${a.login}`} className="k-row group flex items-center gap-3 px-4 py-3 hover:border-[var(--k-border-top)]">
             <Chip size="sm" tone="ember" className="font-semibold tracking-wider">
-              LIVE
+              {t("wallet.liveBadge")}
             </Chip>
             <div className="min-w-0 flex-1">
               <div className="truncate text-[13.5px] font-medium">
                 {a.groupName} <span className="font-mono text-[12px] text-fg-3">#{a.login}</span>
               </div>
               <div className="k-num text-[11.5px] text-fg-3">
-                Balance {a.cent ? "USC " : "$"}
+                {t("common.balance")} {a.cent ? "USC " : "$"}
                 {fmt(a.balance)}
                 {a.cent && <> · ≈ ${fmt(toUsd(a, a.balance))}</>}
               </div>
             </div>
             <span className="inline-flex items-center gap-1 text-[12.5px] font-medium text-fg-3 group-hover:text-ember">
-              Top up <ChevronRight className="size-4" />
+              {t("wallet.fund.topUp")} <ChevronRight className="size-4 rtl:-scale-x-100" />
             </span>
           </Link>
         ))}
@@ -161,14 +171,15 @@ function FundAccounts() {
 
 function Notifications() {
   const { data, reload } = useWallet<{ items: Notification[]; unread: number }>("notifications", 30000);
+  const t = useT();
   const items = data?.items.slice(0, 5) ?? [];
   if (!items.length) return null;
   return (
     <Card>
       <CardHeader
-        title="Updates"
+        title={t("wallet.updates.title")}
         icon={<Bell />}
-        subtitle={data?.unread ? `${data.unread} new` : "Everything read"}
+        subtitle={data?.unread ? t("wallet.updates.new", { count: data.unread }) : t("wallet.updates.allRead")}
         action={
           data?.unread ? (
             <Button
@@ -179,7 +190,7 @@ function Notifications() {
                 reload();
               }}
             >
-              Mark all read
+              {t("shell.markAllRead")}
             </Button>
           ) : undefined
         }
@@ -201,6 +212,7 @@ function Notifications() {
 }
 
 export function LiveWalletPage() {
+  const t = useT();
   const me = useSession();
   const { data: o, error, loading, reload } = useWallet<Overview>("overview", 10000);
   const act = useWallet<Page<ActivityItem>>("activity?limit=8", 15000);
@@ -208,18 +220,18 @@ export function LiveWalletPage() {
   return (
     <div className="pb-16">
       <PageHeader
-        title="Wallet"
-        subtitle="Your USDT wallet on BNB Chain and TRON. Deposit, withdraw and fund your trading accounts."
+        title={t("wallet.wallet")}
+        subtitle={t("wallet.page.subtitle")}
         actions={
           <>
             <Link href="/wallet/history">
               <Button variant="surface" size="lg">
-                <History /> History
+                <History /> {t("wallet.history")}
               </Button>
             </Link>
             <Link href="/wallet/deposit">
               <Button variant="ember" size="lg">
-                <ArrowDownToLine /> Deposit USDT
+                <ArrowDownToLine /> {t("wallet.depositUsdt")}
               </Button>
             </Link>
           </>
@@ -243,12 +255,12 @@ export function LiveWalletPage() {
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
             <Card className="xl:col-span-7">
               <CardHeader
-                title="Recent activity"
-                subtitle={act.data ? `${act.data.total} transaction${act.data.total === 1 ? "" : "s"}` : undefined}
+                title={t("wallet.recent.title")}
+                subtitle={act.data ? t("wallet.recent.count", { count: act.data.total }) : undefined}
                 action={
                   <Link href="/wallet/history">
                     <Button size="sm" variant="surface">
-                      View all <ArrowUpRight />
+                      {t("common.viewAll")} <ArrowUpRight className="rtl:-scale-x-100" />
                     </Button>
                   </Link>
                 }
@@ -256,7 +268,7 @@ export function LiveWalletPage() {
               <div className="mt-4 space-y-2 px-4 pb-5 sm:px-6">
                 {act.loading && <Skeleton className="h-16 w-full rounded-[14px]" />}
                 {act.data && act.data.items.length === 0 && (
-                  <EmptyState illustration="money_bag" title="No transactions yet" text="Your deposits, withdrawals and transfers will appear here." action={<Link href="/wallet/deposit"><Button variant="ember">Make your first deposit</Button></Link>} />
+                  <EmptyState illustration="money_bag" title={t("wallet.recent.emptyTitle")} text={t("wallet.recent.emptyText")} action={<Link href="/wallet/deposit"><Button variant="ember">{t("wallet.recent.firstDeposit")}</Button></Link>} />
                 )}
                 {act.data?.items.map((a) => <ActivityRow key={`${a.type}${a.id}`} a={a} />)}
               </div>

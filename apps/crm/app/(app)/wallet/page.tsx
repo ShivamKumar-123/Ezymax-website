@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, ArrowUpRight, ChevronRight, History, ShieldCheck } from "lucide-react";
 import { Button, Card, CardHeader, Chip, CoinIcon, Delta, Icon3D, Money, PageHeader, Reveal, Starfield, cn, formatNumber } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 import { ME, WALLET, WALLET_TXS, accountUsd, type WalletTx } from "@kalks/mock";
 import { PENDING_WITHDRAWALS, liveAccounts, walletAvailableUsdt, walletTotalUsd } from "@kalks/mock/wallet-extra";
 import { DepositAddressCard, KycBanner, LimitsCard, TxDetailDrawer, TxRow } from "@/components/wallet/wallet-ui";
@@ -15,6 +16,7 @@ const COIN_COLOR: Record<string, string> = { usdt: "#26a17b", trx: "#ff5a1f", bt
 const NAMES: Record<string, string> = { USDT: "Tether USD", TRX: "TRON", BTC: "Bitcoin" };
 
 function Hero() {
+  const t = useT();
   const total = walletTotalUsd();
   const change = WALLET.assets.reduce((s, a) => s + a.usd * (a.change / 100), 0);
   const pending = PENDING_WITHDRAWALS.reduce((s, w) => s + w.amount + w.fee, 0);
@@ -24,15 +26,15 @@ function Hero() {
       <div className="relative p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="k-label">Total wallet value</div>
+            <div className="k-label">{t("wallet.demo.totalValue")}</div>
             <div className="mt-3 flex flex-wrap items-baseline gap-3">
               <Money value={total} className="text-[40px] font-semibold leading-none tracking-[-0.02em] sm:text-[48px]" />
               <Chip tone="up">
-                +${formatNumber(change)} · 24h
+                <span dir="ltr">+${formatNumber(change)} · 24h</span>
               </Chip>
             </div>
             <div className="mt-2 text-[13px] text-fg-2">
-              Available <span className="k-num text-fg">${formatNumber(walletAvailableUsdt())}</span> · In withdrawal <span className="k-num text-fg">${formatNumber(pending)}</span>
+              {t("wallet.available")} <span dir="ltr" className="k-num text-fg">${formatNumber(walletAvailableUsdt())}</span> · {t("wallet.demo.inWithdrawal")} <span dir="ltr" className="k-num text-fg">${formatNumber(pending)}</span>
             </div>
           </div>
           <Icon3D name="coin" size={72} className="hidden sm:block" />
@@ -40,7 +42,7 @@ function Hero() {
 
         <div className="mt-6 flex h-2.5 overflow-hidden rounded-full bg-black/30">
           {WALLET.assets.map((a, i) => (
-            <motion.div key={a.asset} className="h-full first:rounded-l-full last:rounded-r-full" style={{ background: COIN_COLOR[a.icon] }} initial={{ width: 0 }} animate={{ width: `${(a.usd / total) * 100}%` }} transition={{ duration: 0.9, delay: 0.2 + i * 0.1, ease: [0.16, 1, 0.3, 1] }} />
+            <motion.div key={a.asset} className="h-full first:rounded-s-full last:rounded-e-full" style={{ background: COIN_COLOR[a.icon] }} initial={{ width: 0 }} animate={{ width: `${(a.usd / total) * 100}%` }} transition={{ duration: 0.9, delay: 0.2 + i * 0.1, ease: [0.16, 1, 0.3, 1] }} />
           ))}
         </div>
 
@@ -57,9 +59,9 @@ function Hero() {
                   {formatNumber(a.balance, a.asset === "BTC" ? 4 : 2)} {a.asset}
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-end">
                 <Money value={a.usd} className="block text-[14px] font-semibold" />
-                {a.change ? <Delta value={a.change} className="text-[11px]" /> : <span className="text-[11px] text-fg-3">{NAMES[a.asset] === "Tether USD" ? "Stable 1:1" : ""}</span>}
+                {a.change ? <Delta value={a.change} className="text-[11px]" /> : <span className="text-[11px] text-fg-3">{NAMES[a.asset] === "Tether USD" ? t("wallet.demo.stable") : ""}</span>}
               </div>
             </div>
           ))}
@@ -70,10 +72,11 @@ function Hero() {
 }
 
 function QuickActions() {
+  const t = useT();
   const items = [
-    { href: "/wallet/deposit", title: "Deposit", sub: "USDT TRC20 · auto-credit after 20 conf.", icon: <ArrowDownToLine />, art: "money_bag", tone: "ember" },
-    { href: "/wallet/withdraw", title: "Withdraw", sub: "To any TRC20 address · $1 fee", icon: <ArrowUpFromLine />, art: "money_with_wings", tone: "neutral", badge: "KYC" },
-    { href: "/wallet/transfer", title: "Transfer", sub: "Wallet ↔ trading accounts, instant", icon: <ArrowLeftRight />, art: "dollar_banknote", tone: "neutral" },
+    { href: "/wallet/deposit", title: t("common.deposit"), sub: t("wallet.demo.quickDeposit"), icon: <ArrowDownToLine />, art: "money_bag", tone: "ember" },
+    { href: "/wallet/withdraw", title: t("common.withdraw"), sub: t("wallet.demo.quickWithdraw"), icon: <ArrowUpFromLine />, art: "money_with_wings", tone: "neutral", badge: "KYC" },
+    { href: "/wallet/transfer", title: t("common.transfer"), sub: t("wallet.demo.quickTransfer"), icon: <ArrowLeftRight />, art: "dollar_banknote", tone: "neutral" },
   ];
   return (
     <div className="grid h-full grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-1">
@@ -101,33 +104,34 @@ function QuickActions() {
 }
 
 function FundAccounts() {
+  const t = useT();
   const list = liveAccounts();
   return (
     <Card className="h-full">
-      <CardHeader title="Fund a trading account" subtitle="USDT → USD 1:1 · cent accounts receive USC" action={<Link href="/accounts"><Button size="xs" variant="surface">All accounts</Button></Link>} />
+      <CardHeader title={t("wallet.fundTradingAccount")} subtitle={t("wallet.demo.fundSubtitle")} action={<Link href="/accounts"><Button size="xs" variant="surface">{t("wallet.demo.allAccounts")}</Button></Link>} />
       <div className="mt-4 space-y-2 px-4 pb-5 sm:px-6">
         {list.map((a) => (
           <Link key={a.login} href={`/wallet/transfer?to=${a.login}`} className="k-row group flex items-center gap-3 px-4 py-3 transition-colors hover:border-[var(--k-border-top)] hover:bg-surface-3/60">
             <Chip size="sm" tone="ember" className="font-semibold tracking-wider">
-              LIVE
+              {t("wallet.liveBadge")}
             </Chip>
             <div className="min-w-0 flex-1">
               <div className="truncate text-[13.5px] font-medium">
-                {a.group} · {a.mode === "hedging" ? "Hedging" : "Netting"} <span className="font-mono text-[12px] text-fg-3">#{a.login}</span>
+                {a.group} · {a.mode === "hedging" ? t("wallet.demo.hedging") : t("wallet.demo.netting")} <span className="font-mono text-[12px] text-fg-3">#{a.login}</span>
               </div>
               <div className="k-num text-[11.5px] text-fg-3">
-                Balance {a.cent ? "USC " : "$"}
+                {t("common.balance")} {a.cent ? "USC " : "$"}
                 {formatNumber(a.balance)}
                 {a.cent && <> · ≈ ${formatNumber(accountUsd(a, "balance"))}</>}
               </div>
             </div>
             <span className="inline-flex items-center gap-1 text-[12.5px] font-medium text-fg-3 group-hover:text-ember">
-              Top up <ChevronRight className="size-4" />
+              {t("wallet.fund.topUp")} <ChevronRight className="size-4 rtl:-scale-x-100" />
             </span>
           </Link>
         ))}
         <div className="flex items-center gap-3 pt-2 text-[12px] text-fg-3">
-          <ShieldCheck className="size-4 text-up" /> Transfers between your wallet and your own accounts are instant and free.
+          <ShieldCheck className="size-4 text-up" /> {t("wallet.demo.transfersFree")}
         </div>
       </div>
     </Card>
@@ -135,22 +139,23 @@ function FundAccounts() {
 }
 
 function DemoWalletPage() {
+  const t = useT();
   const [tx, setTx] = React.useState<WalletTx | null>(null);
   return (
     <div className="pb-16">
       <PageHeader
-        title="Wallet"
-        subtitle={`Your central USDT wallet on TRON · ${ME.firstName}'s HD address`}
+        title={t("wallet.wallet")}
+        subtitle={t("wallet.demo.subtitle", { name: ME.firstName })}
         actions={
           <>
             <Link href="/wallet/history">
               <Button variant="surface" size="lg">
-                <History /> History
+                <History /> {t("wallet.history")}
               </Button>
             </Link>
             <Link href="/wallet/deposit">
               <Button variant="ember" size="lg" shimmer>
-                <ArrowDownToLine /> Deposit USDT
+                <ArrowDownToLine /> {t("wallet.depositUsdt")}
               </Button>
             </Link>
           </>
@@ -183,19 +188,19 @@ function DemoWalletPage() {
         <Reveal delay={0.1} className="xl:col-span-7">
           <Card className="h-full">
             <CardHeader
-              title="Recent transactions"
-              subtitle={`${WALLET_TXS.length} this quarter`}
+              title={t("wallet.demo.recentTransactions")}
+              subtitle={t("wallet.demo.thisQuarter", { count: WALLET_TXS.length })}
               action={
                 <Link href="/wallet/history">
                   <Button size="sm" variant="surface">
-                    View all <ArrowUpRight />
+                    {t("common.viewAll")} <ArrowUpRight className="rtl:-scale-x-100" />
                   </Button>
                 </Link>
               }
             />
             <div className="k-fade-bottom mt-4 space-y-2 px-4 pb-5 sm:px-6">
-              {WALLET_TXS.slice(0, 7).map((t) => (
-                <TxRow key={t.id} tx={t} onClick={() => setTx(t)} />
+              {WALLET_TXS.slice(0, 7).map((x) => (
+                <TxRow key={x.id} tx={x} onClick={() => setTx(x)} />
               ))}
             </div>
           </Card>

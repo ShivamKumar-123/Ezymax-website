@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { ArrowDownUp, ArrowLeft, ArrowRight, Check, ChevronDown, CircleAlert, Info, ShieldCheck, Wallet, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, CoinIcon, Dialog, Input, KeyValue, Menu, PageHeader, Reveal, Segmented, cn, formatNumber, useQuote } from "@kalks/ui";
+import { Trans, useT } from "@kalks/i18n/react";
 import { WALLET, WALLET_TXS, freeMargin, type TradingAccount, type WalletTx } from "@kalks/mock";
 import { CONVERSION, WALLET_LIMITS, liveAccounts, walletAvailableUsdt } from "@kalks/mock/wallet-extra";
 import { AccountBadge, accountTitle } from "@/components/account-row";
@@ -23,10 +24,11 @@ function accCur(a: TradingAccount) {
 }
 
 function EndpointCard({ label, value, onPick, lockedWallet, asset, onAsset }: { label: string; value: string; onPick: (v: string) => void; lockedWallet?: boolean; asset: Asset; onAsset?: (a: Asset) => void }) {
+  const t = useT();
   const acc = ACCS.find((a) => a.login === value);
   const walletAsset = WALLET.assets.find((x) => x.asset === asset)!;
   const trigger = (
-    <button type="button" className="k-row flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:border-[var(--k-border-top)] hover:bg-surface-3/60">
+    <button type="button" className="k-row flex w-full items-center gap-3 px-4 py-3.5 text-start transition-colors hover:border-[var(--k-border-top)] hover:bg-surface-3/60">
       {acc ? (
         <span className="grid size-10 shrink-0 place-items-center rounded-full border border-ember/30 bg-ember-soft font-mono text-[11px] font-semibold text-ember">{acc.group.slice(0, 3).toUpperCase()}</span>
       ) : (
@@ -41,19 +43,19 @@ function EndpointCard({ label, value, onPick, lockedWallet, asset, onAsset }: { 
               {accountTitle(acc)} <span className="font-mono text-[12px] text-fg-3">#{acc.login}</span>
             </>
           ) : (
-            "Kalks Wallet"
+            t("wallet.demo.kalksWallet")
           )}
         </div>
         <div className="k-num truncate text-[12px] text-fg-3">
           {acc ? (
             <>
-              Balance {acc.cent ? "USC " : "$"}
-              {formatNumber(acc.balance)} · Free margin {acc.cent ? "USC " : "$"}
+              {t("common.balance")} {acc.cent ? "USC " : "$"}
+              {formatNumber(acc.balance)} · {t("wallet.demo.freeMargin")} {acc.cent ? "USC " : "$"}
               {formatNumber(freeMargin(acc))}
             </>
           ) : (
             <>
-              {formatNumber(asset === "USDT" ? walletAvailableUsdt() : walletAsset.balance, asset === "BTC" ? 4 : 2)} {asset} available · {walletAsset.network}
+              {t("wallet.demo.assetAvailable", { amount: formatNumber(asset === "USDT" ? walletAvailableUsdt() : walletAsset.balance, asset === "BTC" ? 4 : 2), asset, network: walletAsset.network })}
             </>
           )}
         </div>
@@ -79,7 +81,7 @@ function EndpointCard({ label, value, onPick, lockedWallet, asset, onAsset }: { 
         align="start"
         trigger={trigger}
         items={[
-          { label: <span className="flex items-center justify-between gap-2">Kalks Wallet <span className="k-num text-[12px] text-fg-3">${formatNumber(walletAvailableUsdt())}</span></span>, icon: <Wallet />, onSelect: () => onPick(WALLET_ID), hint: value === WALLET_ID ? <Check className="size-3.5 text-ember" /> : undefined },
+          { label: <span className="flex items-center justify-between gap-2">{t("wallet.demo.kalksWallet")} <span className="k-num text-[12px] text-fg-3">${formatNumber(walletAvailableUsdt())}</span></span>, icon: <Wallet />, onSelect: () => onPick(WALLET_ID), hint: value === WALLET_ID ? <Check className="size-3.5 text-ember" /> : undefined },
           "sep",
           ...ACCS.map((a) => ({
             label: (
@@ -99,12 +101,13 @@ function EndpointCard({ label, value, onPick, lockedWallet, asset, onAsset }: { 
           })),
         ]}
       />
-      {lockedWallet && <div className="mt-1.5 text-[11.5px] text-fg-3">Transfers always go through your wallet.</div>}
+      {lockedWallet && <div className="mt-1.5 text-[11.5px] text-fg-3">{t("wallet.demo.throughWallet")}</div>}
     </div>
   );
 }
 
 function Transfer() {
+  const t = useT();
   const sp = useSearchParams();
   const qTo = ACCS.find((a) => a.login === sp.get("to"))?.login;
   const qFrom = ACCS.find((a) => a.login === sp.get("from"))?.login;
@@ -174,22 +177,22 @@ function Transfer() {
   const err = !amount
     ? null
     : amt <= 0
-      ? "Enter an amount"
+      ? t("wallet.demo.enterAmount")
       : usd < WALLET_LIMITS.transfer.min
-        ? `Minimum transfer is $${WALLET_LIMITS.transfer.min}`
+        ? t("wallet.demo.minTransfer", { min: WALLET_LIMITS.transfer.min })
         : fromAcc && amt > freeMargin(fromAcc)
-          ? `Exceeds free margin (${fromAcc.cent ? "USC " : "$"}${formatNumber(freeMargin(fromAcc))}) — close positions or reduce the amount`
+          ? t("wallet.demo.exceedsFreeMargin", { amount: `${fromAcc.cent ? "USC " : "$"}${formatNumber(freeMargin(fromAcc))}` })
           : fromAcc && amt > fromAcc.balance
-            ? "Exceeds account balance (credit can't be withdrawn)"
+            ? t("wallet.demo.exceedsBalance")
             : amt > available
-              ? "Insufficient wallet balance"
+              ? t("wallet.demo.insufficientWallet")
               : usd > WALLET_LIMITS.transfer.maxPerTx
-                ? "Exceeds max per transfer"
+                ? t("wallet.demo.exceedsMaxTransfer")
                 : null;
   const warn = !err && fromAcc && Number.isFinite(newLevel) && newLevel < 300;
 
   const doTransfer = () => {
-    const t: WalletTx = {
+    const row: WalletTx = {
       id: `TX${904500 + Math.floor(Math.random() * 99)}`,
       type: "transfer",
       status: "completed",
@@ -200,31 +203,31 @@ function Transfer() {
       fee: 0,
       createdAt: new Date().toISOString(),
     };
-    setRecent((r) => [t, ...r].slice(0, 6));
+    setRecent((r) => [row, ...r].slice(0, 6));
     setConfirm(false);
     setAmount("");
-    toast.success("Transfer completed", {
-      description: `${formatNumber(amt, dec)} ${srcCur} → ${formatNumber(receive)} ${receiveCur} ${toAcc ? `into #${toAcc.login}` : "into your wallet"}`,
+    toast.success(t("wallet.transferCompleted"), {
+      description: `${formatNumber(amt, dec)} ${srcCur} → ${formatNumber(receive)} ${receiveCur} ${toAcc ? t("wallet.demo.intoAccount", { login: toAcc.login }) : t("wallet.demo.intoWallet")}`,
     });
   };
 
   const summaryRows: [React.ReactNode, React.ReactNode][] = [
-    ["Exchange rate", srcAsset === "USDT" && !toAcc?.cent && !fromAcc?.cent ? "1 USDT = 1 USD" : fromAcc?.cent ? "100 USC = 1 USDT" : srcAsset === "USDT" ? "1 USDT = 100 USC" : `1 ${srcAsset} = $${formatNumber(rate, srcAsset === "BTC" ? 2 : 4)}`],
-    ["Conversion markup", markup ? `${markup}%` : <Chip key="m" size="sm" tone="up">None · 1:1</Chip>],
-    ...(toAcc?.cent && !fromAcc ? ([["Cent conversion", `$${formatNumber(usd)} × 100 → USC`]] as [React.ReactNode, React.ReactNode][]) : []),
-    ["Fee", "Free"],
-    ["Arrives", <span key="a" className="inline-flex items-center gap-1"><Zap className="size-3.5 text-gold" /> Instantly</span>],
+    [t("wallet.demo.exchangeRate"), srcAsset === "USDT" && !toAcc?.cent && !fromAcc?.cent ? "1 USDT = 1 USD" : fromAcc?.cent ? "100 USC = 1 USDT" : srcAsset === "USDT" ? "1 USDT = 100 USC" : `1 ${srcAsset} = $${formatNumber(rate, srcAsset === "BTC" ? 2 : 4)}`],
+    [t("wallet.demo.conversionMarkup"), markup ? `${markup}%` : <Chip key="m" size="sm" tone="up">{t("wallet.demo.noneOneToOne")}</Chip>],
+    ...(toAcc?.cent && !fromAcc ? ([[t("wallet.demo.centConversion"), `$${formatNumber(usd)} × 100 → USC`]] as [React.ReactNode, React.ReactNode][]) : []),
+    [t("wallet.fee"), t("wallet.free")],
+    [t("wallet.demo.arrives"), <span key="a" className="inline-flex items-center gap-1"><Zap className="size-3.5 text-gold" /> {t("wallet.demo.instantly")}</span>],
   ];
 
   return (
     <div className="pb-16">
       <PageHeader
-        title="Transfer funds"
-        subtitle="Move money between your wallet and your own trading accounts — instant and free."
+        title={t("wallet.demo.transferTitle")}
+        subtitle={t("wallet.demo.transferSubtitle")}
         actions={
           <Link href="/wallet">
             <Button variant="surface">
-              <ArrowLeft /> Wallet
+              <ArrowLeft className="rtl:-scale-x-100" /> {t("wallet.wallet")}
             </Button>
           </Link>
         }
@@ -233,22 +236,22 @@ function Transfer() {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal className="xl:col-span-7">
           <Card>
-            <CardHeader title="New transfer" subtitle="Wallet ↔ own live accounts only" />
+            <CardHeader title={t("wallet.newTransfer")} subtitle={t("wallet.demo.ownOnly")} />
             <div className="px-4 pb-6 pt-5 sm:px-6">
-              <EndpointCard label="From" value={from} onPick={pickFrom} asset={asset} onAsset={(a) => { setAsset(a); setAmount(""); }} />
+              <EndpointCard label={t("wallet.from")} value={from} onPick={pickFrom} asset={asset} onAsset={(a) => { setAsset(a); setAmount(""); }} />
               <div className="relative my-3 flex items-center justify-center">
                 <span className="absolute inset-x-0 top-1/2 h-px bg-line" />
-                <motion.button type="button" onClick={swap} animate={{ rotate: spin }} transition={{ type: "spring", bounce: 0.3 }} className="relative grid size-10 place-items-center rounded-full border border-line bg-surface-2 text-fg-2 shadow-[inset_0_1px_0_var(--k-border-top)] hover:border-ember/40 hover:text-ember" aria-label="Swap direction">
+                <motion.button type="button" onClick={swap} animate={{ rotate: spin }} transition={{ type: "spring", bounce: 0.3 }} className="relative grid size-10 place-items-center rounded-full border border-line bg-surface-2 text-fg-2 shadow-[inset_0_1px_0_var(--k-border-top)] hover:border-ember/40 hover:text-ember" aria-label={t("wallet.demo.swap")}>
                   <ArrowDownUp className="size-4" />
                 </motion.button>
               </div>
-              <EndpointCard label="To" value={to} onPick={pickTo} asset="USDT" />
+              <EndpointCard label={t("wallet.to")} value={to} onPick={pickTo} asset="USDT" />
 
               <div className="mt-6">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="k-label">Amount</span>
+                  <span className="k-label">{t("common.amount")}</span>
                   <span className="k-num text-[12px] text-fg-3">
-                    {fromAcc ? "Transferable" : "Available"} {formatNumber(available, dec)} {srcCur}
+                    {fromAcc ? t("wallet.demo.transferable") : t("wallet.available")} {formatNumber(available, dec)} {srcCur}
                   </span>
                 </div>
                 <Input
@@ -263,7 +266,7 @@ function Transfer() {
                     <>
                       <span className="text-[13px]">{srcCur}</span>
                       <button type="button" className="rounded-full border border-ember/30 bg-ember-soft px-2.5 py-1 text-[11.5px] font-semibold text-ember hover:bg-ember/20" onClick={() => setAmount(available.toFixed(dec))}>
-                        Max
+                        {t("wallet.max")}
                       </button>
                     </>
                   }
@@ -287,30 +290,30 @@ function Transfer() {
                 )}
                 {warn && (
                   <div className="mt-3 flex items-start gap-2 rounded-[14px] border border-warn/25 bg-warn-soft px-3 py-2.5 text-[12.5px] text-fg-2">
-                    <CircleAlert className="mt-0.5 size-3.5 shrink-0 text-warn" /> Margin level on #{fromAcc!.login} would drop to <span className="k-num font-semibold text-warn">{Math.round(newLevel)}%</span>. Margin call at 50%, stop out at 20%.
+                    <CircleAlert className="mt-0.5 size-3.5 shrink-0 text-warn" /> <Trans k="wallet.demo.marginWarning" vars={{ login: fromAcc!.login, level: Math.round(newLevel) }} tags={{ num: (c) => <span className="k-num font-semibold text-warn">{c}</span> }} />
                   </div>
                 )}
               </div>
 
               <div className="mt-6 flex justify-end">
                 <Button variant="ember" size="lg" disabled={!amt || !!err} onClick={() => setConfirm(true)}>
-                  Review transfer <ArrowRight />
+                  {t("wallet.demo.reviewTransfer")} <ArrowRight className="rtl:-scale-x-100" />
                 </Button>
               </div>
             </div>
           </Card>
           <Card className="mt-4">
-            <CardHeader title="How transfers work" />
+            <CardHeader title={t("wallet.demo.howTransfers")} />
             <div className="grid grid-cols-1 gap-2 px-4 pb-5 pt-4 sm:grid-cols-2 sm:px-6">
               {[
-                ["Own accounts only", "Funds move between your wallet and your own live accounts. Account-to-account goes via the wallet."],
-                ["USDT is 1:1", "1 USDT = 1 USD in your account. TRX and BTC convert at the live rate plus a 0.5% markup."],
-                ["Cent accounts in USC", "Moving $100 into a Cent account credits USC 10,000. Lot sizes are unchanged."],
-                ["Free margin protected", "You can only move out what your free margin allows, so open trades stay safe."],
-              ].map(([t, d]) => (
-                <div key={t} className="k-row px-4 py-3">
+                [t("wallet.demo.rule1Title"), t("wallet.demo.rule1Text")],
+                [t("wallet.demo.rule2Title"), t("wallet.demo.rule2Text")],
+                [t("wallet.demo.rule3Title"), t("wallet.demo.rule3Text")],
+                [t("wallet.demo.rule4Title"), t("wallet.demo.rule4Text")],
+              ].map(([title, d], i) => (
+                <div key={i} className="k-row px-4 py-3">
                   <div className="flex items-center gap-2 text-[13.5px] font-medium">
-                    <Check className="size-3.5 text-up" /> {t}
+                    <Check className="size-3.5 text-up" /> {title}
                   </div>
                   <div className="mt-1 text-[12px] leading-snug text-fg-3">{d}</div>
                 </div>
@@ -323,8 +326,8 @@ function Transfer() {
           <Reveal delay={0.05}>
             <Card hot className="overflow-hidden">
               <div className="relative p-6">
-                <div className="k-label">You receive</div>
-                <div className="mt-2 flex items-baseline gap-2">
+                <div className="k-label">{t("wallet.youReceive")}</div>
+                <div dir="ltr" className="mt-2 flex items-baseline gap-2">
                   <motion.span key={receiveCur + Math.round(receive * 100)} initial={{ opacity: 0.4, y: 4 }} animate={{ opacity: 1, y: 0 }} className={cn("k-num text-[36px] font-semibold leading-none tracking-tight", err && "text-fg-3 line-through decoration-down/60")}>
                     {formatNumber(receive)}
                   </motion.span>
@@ -333,10 +336,10 @@ function Transfer() {
                 <div className="mt-1 text-[12.5px] text-fg-3">
                   {toAcc ? (
                     <span className="inline-flex items-center gap-1.5">
-                      into <AccountBadge a={toAcc} /> #{toAcc.login}
+                      {t("wallet.demo.into")} <AccountBadge a={toAcc} /> #{toAcc.login}
                     </span>
                   ) : (
-                    "into your Kalks Wallet"
+                    t("wallet.demo.intoKalksWallet")
                   )}
                 </div>
                 <div className="mt-5 rounded-[14px] border border-white/10 bg-black/20 light:border-black/5 light:bg-white/70 px-4">
@@ -345,21 +348,21 @@ function Transfer() {
                 {fromAcc && (
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     <div className="rounded-[14px] border border-white/10 bg-black/20 light:border-black/5 light:bg-white/70 px-3 py-2.5">
-                      <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Free margin after</div>
+                      <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("wallet.demo.freeMarginAfter")}</div>
                       <div className={cn("k-num mt-0.5 text-[14px] font-semibold", err ? "text-down" : "text-fg")}>
                         {fromAcc.cent ? "USC " : "$"}
                         {formatNumber(Math.max(0, freeMargin(fromAcc) - amt))}
                       </div>
                     </div>
                     <div className="rounded-[14px] border border-white/10 bg-black/20 light:border-black/5 light:bg-white/70 px-3 py-2.5">
-                      <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Margin level after</div>
+                      <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("wallet.demo.marginLevelAfter")}</div>
                       <div className={cn("k-num mt-0.5 text-[14px] font-semibold", newLevel < 300 ? "text-warn" : "text-up")}>{Number.isFinite(newLevel) ? `${Math.round(Math.max(0, newLevel)).toLocaleString()}%` : "—"}</div>
                     </div>
                   </div>
                 )}
                 {!fromAcc && srcAsset !== "USDT" && (
                   <div className="mt-4 flex items-start gap-2 text-[12px] text-fg-3">
-                    <Info className="mt-0.5 size-3.5 shrink-0" /> {srcAsset} is converted to USD at the live rate minus {CONVERSION.markupPct}% markup. Rate refreshes every tick until you confirm.
+                    <Info className="mt-0.5 size-3.5 shrink-0" /> {t("wallet.demo.convertedNote", { asset: srcAsset, markup: CONVERSION.markupPct })}
                   </div>
                 )}
               </div>
@@ -367,10 +370,10 @@ function Transfer() {
           </Reveal>
           <Reveal delay={0.1}>
             <Card>
-              <CardHeader title="Recent transfers" action={<Link href="/wallet/history"><Button size="xs" variant="surface">History</Button></Link>} />
+              <CardHeader title={t("wallet.recentTransfers")} action={<Link href="/wallet/history"><Button size="xs" variant="surface">{t("wallet.history")}</Button></Link>} />
               <div className="k-fade-bottom mt-4 space-y-2 px-4 pb-5 sm:px-6">
-                {recent.map((t) => (
-                  <TxRow key={t.id} tx={t} onClick={() => setTx(t)} />
+                {recent.map((x) => (
+                  <TxRow key={x.id} tx={x} onClick={() => setTx(x)} />
                 ))}
               </div>
             </Card>
@@ -381,16 +384,16 @@ function Transfer() {
       <Dialog
         open={confirm}
         onOpenChange={setConfirm}
-        title="Confirm transfer"
-        description="Transfers between your own wallet and accounts are processed instantly."
+        title={t("wallet.demo.confirmTransfer")}
+        description={t("wallet.demo.confirmTransferText")}
         width={460}
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirm(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="ember" onClick={doTransfer}>
-              <ShieldCheck /> Confirm transfer
+              <ShieldCheck /> {t("wallet.demo.confirmTransfer")}
             </Button>
           </>
         }
@@ -398,17 +401,17 @@ function Transfer() {
         <div className="space-y-3">
           <div className="k-row flex items-center gap-3 px-4 py-3">
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">From</div>
-              <div className="truncate text-[13.5px] font-medium">{fromAcc ? `#${fromAcc.login}` : "Kalks Wallet"}</div>
-              <div className="k-num text-[15px] font-semibold">
+              <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("wallet.from")}</div>
+              <div className="truncate text-[13.5px] font-medium">{fromAcc ? `#${fromAcc.login}` : t("wallet.demo.kalksWallet")}</div>
+              <div dir="ltr" className="k-num text-[15px] font-semibold">
                 {formatNumber(amt, dec)} {srcCur}
               </div>
             </div>
-            <ArrowRight className="size-4 text-ember" />
-            <div className="min-w-0 flex-1 text-right">
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">To</div>
-              <div className="truncate text-[13.5px] font-medium">{toAcc ? `#${toAcc.login}` : "Kalks Wallet"}</div>
-              <div className="k-num text-[15px] font-semibold text-up">
+            <ArrowRight className="size-4 text-ember rtl:-scale-x-100" />
+            <div className="min-w-0 flex-1 text-end">
+              <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("wallet.to")}</div>
+              <div className="truncate text-[13.5px] font-medium">{toAcc ? `#${toAcc.login}` : t("wallet.demo.kalksWallet")}</div>
+              <div dir="ltr" className="k-num text-[15px] font-semibold text-up">
                 {formatNumber(receive)} {receiveCur}
               </div>
             </div>

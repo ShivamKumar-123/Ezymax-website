@@ -134,7 +134,7 @@ function GettingStarted({ accounts }: { accounts: EngineAccount[] | null }) {
   const t = useT();
   const f = useFormat();
   const wallet = useWalletFunded();
-  const list = steps(me, accounts, t, f).map((s) => (s.key === "wallet" ? walletStep(wallet) : s));
+  const list = steps(me, accounts, t, f).map((s) => (s.key === "wallet" ? walletStep(wallet, t) : s));
   const done = list.filter((s) => s.state === "done").length;
   return (
     <Card className="flex h-full flex-col">
