@@ -10,7 +10,7 @@ import { Button, Card, CardHeader, CoinIcon, CopyButton, Field, Input, PageHeade
 import { Trans, useT } from "@kalks/i18n/react";
 import { CHAIN_LABEL, WalletError, fmt, useWallet, walletApi, type Chain, type Deposit, type Intent, type WalletConfig } from "./api";
 import { PayError, hasMetaMask, hasTronLink, isMobile, metamaskDeepLink, payWithMetaMask, payWithTronLink } from "./pay";
-import { Confirmations, DEPOSIT_STATUS, HashLink, InlineError, StatusTag, Tile, WalletUnavailable } from "./ui";
+import { Confirmations, DEPOSIT_STATUS, HashLink, InlineError, StatusTag, Tile, WalletUnavailable, cleanAmount } from "./ui";
 
 type IntentView = { intent: Intent; deposit: Deposit | null };
 
@@ -37,7 +37,7 @@ function NetworkPicker({ cfg, value, onChange }: { cfg: WalletConfig; value: Cha
               <div className="text-[14px] font-medium">
                 USDT <span className="rounded-md bg-surface-3 px-1.5 py-px text-[10.5px] font-medium text-fg-2">{CHAIN_LABEL[c.chain].short}</span>
               </div>
-              <div className="truncate text-[12px] text-fg-3">
+              <div className="line-clamp-2 text-[12px] leading-snug text-fg-3">
                 {t("wallet.deposit.payWithShort", { network: CHAIN_LABEL[c.chain].name, wallet: CHAIN_LABEL[c.chain].wallet })}
               </div>
             </div>
@@ -113,7 +113,7 @@ function StartForm({ cfg, onCreated }: { cfg: WalletConfig; onCreated: (i: Inten
             inputMode="decimal"
             placeholder="100.00"
             value={amount}
-            onChange={(e) => setAmount(e.target.value.replace(",", "."))}
+            onChange={(e) => setAmount(cleanAmount(e.target.value))}
             trailing={<span className="text-[12.5px] font-medium text-fg-2">USDT</span>}
             aria-label={t("wallet.deposit.amountAria")}
           />

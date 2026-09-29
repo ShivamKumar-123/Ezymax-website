@@ -32,7 +32,8 @@ export function SupportLauncher() {
   }, []);
   if (pathname === "/support" || pathname.startsWith("/support/")) return null;
   return (
-    <div className="fixed bottom-5 end-5 z-40 flex flex-col items-end gap-3 print:hidden">
+    // below lg the shell shows a bottom tab bar: sit above it instead of covering its last tab
+    <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+92px)] end-4 z-40 flex flex-col items-end gap-3 lg:bottom-5 lg:end-5 print:hidden">
       <AnimatePresence>
         {open && (
           <motion.div
@@ -41,7 +42,7 @@ export function SupportLauncher() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
             transition={{ duration: 0.18 }}
-            className="h-[min(620px,calc(100vh-110px))] w-[min(400px,calc(100vw-40px))] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.6)]"
+            className="h-[min(620px,calc(100dvh-190px))] w-[min(400px,calc(100vw-32px))] lg:h-[min(620px,calc(100vh-110px))] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.6)]"
           >
             {IS_DEMO ? <ChatPanel variant="widget" onClose={() => setOpen(false)} /> : <LiveChat variant="widget" onClose={() => setOpen(false)} onUnread={onUnread} />}
           </motion.div>

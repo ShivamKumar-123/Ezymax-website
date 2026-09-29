@@ -147,8 +147,8 @@ export function LiveDiscoverPage() {
       <Card>
         <div className="grid grid-cols-1 gap-6 p-6 sm:p-7 lg:grid-cols-[1.2fr_1fr] lg:items-center">
           <div>
-            <Chip tone="ember" className="mb-3">
-              <ShieldCheck className="size-3.5" /> {rows.some((m) => m.house) ? t("social.lb.hero.chipClient") : t("social.lb.hero.chipAll")}
+            <Chip tone="ember" className="mb-3 h-auto max-w-full whitespace-normal py-1 leading-snug">
+              <ShieldCheck className="size-3.5 shrink-0" /> {rows.some((m) => m.house) ? t("social.lb.hero.chipClient") : t("social.lb.hero.chipAll")}
             </Chip>
             <h2 className="text-[22px] font-medium leading-tight tracking-tight sm:text-[26px]">{t("social.lb.hero.title")}</h2>
             <p className="mt-2 max-w-xl text-[14px] text-fg-2">{t("social.lb.hero.text")}</p>

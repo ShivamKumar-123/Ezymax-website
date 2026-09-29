@@ -127,7 +127,12 @@ function Configurator({ plans, plan, setPlan, size, setSize }: { plans: Plan[]; 
             onChange={(x) => setPlan(plans.find((p) => p.type === x)!.id)}
             options={types.map((x) => ({ value: x, label: <>{TYPE_ICON[x]}{typeLabel(x)}</> }))}
           />
-          {sameType.length > 1 && <Segmented size="xs" value={plan.id} onChange={setPlan} options={sameType.map((p) => ({ value: p.id, label: p.name }))} />}
+          {sameType.length > 1 && (
+            // plan names stay on one line; on narrow screens the row scrolls instead of wrapping inside the pills
+            <div className="-mx-1 max-w-full overflow-x-auto px-1 [scrollbar-width:none]">
+              <Segmented size="xs" className="whitespace-nowrap" value={plan.id} onChange={setPlan} options={sameType.map((p) => ({ value: p.id, label: p.name }))} />
+            </div>
+          )}
         </div>
         <p className="text-[13.5px] text-fg-2">{TYPE_TEXT[plan.type] ? t(TYPE_TEXT[plan.type]) : null}</p>
 

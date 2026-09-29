@@ -9,7 +9,7 @@ import { Trans, tr, useT } from "@kalks/i18n/react";
 import { useSession } from "@/components/session";
 import { STEPUP_CODES, StepUpDialog } from "@/components/stepup";
 import { CHAIN_LABEL, WalletError, addressLooksValid, fmt, requestId, usdtAvailable, useWallet, walletApi, type Chain, type Overview, type Page, type WalletConfig, type Withdrawal } from "./api";
-import { HashLink, InlineError, KycNotice, StatusTag, Tile, WITHDRAWAL_STATUS, WalletUnavailable } from "./ui";
+import { HashLink, InlineError, KycNotice, StatusTag, Tile, WITHDRAWAL_STATUS, WalletUnavailable, cleanAmount } from "./ui";
 
 type Quote = { amount: string; fee: string; net_amount: string; used_today: string; daily_max: string; available: string };
 
@@ -103,7 +103,7 @@ function WithdrawForm({ cfg, o, kyc, onDone }: { cfg: WalletConfig; o: Overview;
             inputMode="decimal"
             value={amount}
             disabled={!verified}
-            onChange={(e) => setAmount(e.target.value.replace(",", "."))}
+            onChange={(e) => setAmount(cleanAmount(e.target.value))}
             placeholder="0.00"
             aria-label={t("wallet.withdraw.amountAria")}
             trailing={

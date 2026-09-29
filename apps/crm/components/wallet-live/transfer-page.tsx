@@ -9,7 +9,7 @@ import { Button, Card, CardHeader, Chip, EmptyState, Field, Input, PageHeader, S
 import { useT } from "@kalks/i18n/react";
 import { toUsd, useAccounts, type EngineAccount } from "@/components/trading/api";
 import { fmt, requestId, usdtAvailable, useWallet, walletApi, type Overview, type Page, type TradingTransfer } from "./api";
-import { InlineError, StatusTag, WalletUnavailable } from "./ui";
+import { InlineError, StatusTag, WalletUnavailable, cleanAmount } from "./ui";
 
 type Dir = "to" | "from";
 
@@ -150,7 +150,7 @@ function Inner() {
                 <Input
                   inputMode="decimal"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value.replace(",", "."))}
+                  onChange={(e) => setAmount(cleanAmount(e.target.value))}
                   placeholder="0.00"
                   aria-label={t("wallet.transfer.amountAria")}
                   trailing={

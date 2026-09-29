@@ -47,6 +47,13 @@ export const KIND_LABEL: Record<string, MessageKey> = {
   refund: "wallet.kind.refund",
 };
 
+/** Amount fields: accepts a comma as the decimal point, drops anything that isn't a digit, keeps one point and 2 decimals. */
+export function cleanAmount(raw: string): string {
+  const v = raw.replace(/,/g, ".").replace(/[^\d.]/g, "");
+  const dot = v.indexOf(".");
+  return dot < 0 ? v : v.slice(0, dot + 1) + v.slice(dot + 1).replace(/\./g, "").slice(0, 2);
+}
+
 export function StatusTag({ tone, label }: { tone: ChipTone; label: MessageKey }) {
   const t = useT();
   return (

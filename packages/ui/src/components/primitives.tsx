@@ -194,7 +194,7 @@ export function CardHeader({
         )}
         <div className="min-w-0">
           <h3 className="truncate text-[17px] font-medium tracking-tight text-fg">{title}</h3>
-          {subtitle && <p className="mt-0.5 truncate text-[13px] text-fg-3">{subtitle}</p>}
+          {subtitle && <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-fg-3">{subtitle}</p>}
         </div>
       </div>
       {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
