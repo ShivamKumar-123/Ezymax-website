@@ -6,6 +6,7 @@ import { cn } from "@kalks/ui";
 import { DropMenu } from "@/components/ui/menu";
 import { notifications, useNotifications, type Note } from "@/lib/notify";
 import { serverTime } from "@/lib/trading";
+import { BellTabs, useAccountBell } from "./account-notifications";
 
 const ICON: Record<Note["kind"], React.ReactNode> = {
   success: <CircleCheck className="text-up" />,
@@ -20,10 +21,12 @@ function when(ts: number) {
   return today ? s.time : `${s.date.slice(5)} ${s.time.slice(0, 5)}`;
 }
 
-/** Title-bar bell: history of every toast (newest first), unread badge, mark all read, clear. */
+/** Title-bar bell: account notifications (support inbox) and this browser's toast history, unread badge. */
 export function NotificationBell({ className, size = "md" }: { className?: string; size?: "sm" | "md" }) {
   const list = useNotifications();
-  const unread = list.filter((n) => !n.read).length;
+  const local = list.filter((n) => !n.read).length;
+  const { inbox, enabled } = useAccountBell();
+  const unread = local + (enabled ? inbox.unread : 0);
   return (
     <DropMenu
       align="end"
@@ -40,7 +43,7 @@ export function NotificationBell({ className, size = "md" }: { className?: strin
         </button>
       )}
     >
-      {() => <Panel list={list} unread={unread} />}
+      {() => <BellTabs inbox={inbox} enabled={enabled} terminalUnread={local} terminal={<Panel list={list} unread={local} />} />}
     </DropMenu>
   );
 }
