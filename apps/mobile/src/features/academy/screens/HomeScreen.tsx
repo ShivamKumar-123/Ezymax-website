@@ -7,6 +7,7 @@ import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { Award, ChevronRight, Flame, GraduationCap, Library, Search } from "lucide-react-native";
 import { useFormat, useLocale, useT } from "@/i18n";
+import { useSession } from "@/session";
 import { Button, Card, ColorBlock, Display, IconButton, PressableScale, Text, useBottomInset } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { prefetchAcademy, useCatalog, type Catalog } from "../api";
@@ -285,7 +286,9 @@ export function AcademyHomeScreen() {
   const cat = q.data;
   const openPhase = React.useCallback((slug: string) => router.push(`/academy/${slug}`), [router]);
 
-  const actions = (
+  // a view-only login can't open the Academy (the server says so): no shortcuts into it either
+  const viewer = useSession((s) => !!s.viewer);
+  const actions = viewer ? null : (
     <>
       <IconButton tone="ghost" accessibilityLabel={t("mobileAcademy.a11y.glossary")} icon={<Library size={21} color={colors.text} />} onPress={() => router.push("/academy/glossary")} />
       <IconButton tone="ghost" accessibilityLabel={t("mobileAcademy.a11y.progress")} icon={<Award size={21} color={colors.text} />} onPress={() => router.push("/academy/progress")} />
