@@ -93,5 +93,13 @@ const shell: NsMessages<"shell"> = {
   "gate.text": "Esta seção ainda não está habilitada para sua conta. Entre em contato com {email} se precisar de acesso.",
   "gate.backToDashboard": "Voltar ao painel",
   "gate.launchTrader": "Abrir o Kalks Trader",
+  // market sessions clock
+  "sessions.title": "Sessões de mercado",
+  "sessions.openLeft": "Aberta · faltam {h}h {m}min",
+  "sessions.opensIn": "Abre em {h}h {m}min",
+  "sessions.sydney": "Sydney",
+  "sessions.tokyo": "Tóquio",
+  "sessions.london": "Londres",
+  "sessions.newYork": "Nova York",
 };
 export default shell;

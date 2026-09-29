@@ -93,5 +93,13 @@ const shell: NsMessages<"shell"> = {
   "gate.text": "এই বিভাগটি আপনার অ্যাকাউন্টে এখনো চালু করা হয়নি। অ্যাক্সেস প্রয়োজন হলে {email}-এ যোগাযোগ করুন।",
   "gate.backToDashboard": "ড্যাশবোর্ডে ফিরে যান",
   "gate.launchTrader": "Kalks Trader চালু করুন",
+  // market sessions clock
+  "sessions.title": "মার্কেট সেশন",
+  "sessions.openLeft": "খোলা · {h}ঘ {m}মি বাকি",
+  "sessions.opensIn": "{h}ঘ {m}মি পরে খুলবে",
+  "sessions.sydney": "সিডনি",
+  "sessions.tokyo": "টোকিও",
+  "sessions.london": "লন্ডন",
+  "sessions.newYork": "নিউ ইয়র্ক",
 };
 export default shell;

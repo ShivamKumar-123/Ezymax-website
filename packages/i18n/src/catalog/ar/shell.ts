@@ -93,5 +93,13 @@ const shell: NsMessages<"shell"> = {
   "gate.text": "هذا القسم غير مفعّل لحسابك بعد. تواصل مع {email} إذا كنت بحاجة إلى الوصول.",
   "gate.backToDashboard": "العودة إلى لوحة التحكم",
   "gate.launchTrader": "تشغيل Kalks Trader",
+  // market sessions clock
+  "sessions.title": "جلسات السوق",
+  "sessions.openLeft": "مفتوح · متبقٍ {h}س {m}د",
+  "sessions.opensIn": "يفتح بعد {h}س {m}د",
+  "sessions.sydney": "سيدني",
+  "sessions.tokyo": "طوكيو",
+  "sessions.london": "لندن",
+  "sessions.newYork": "نيويورك",
 };
 export default shell;

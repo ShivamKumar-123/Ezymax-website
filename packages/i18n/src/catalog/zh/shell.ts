@@ -93,5 +93,13 @@ const shell: NsMessages<"shell"> = {
   "gate.text": "您的账户尚未开通此板块。如需访问，请联系 {email}。",
   "gate.backToDashboard": "返回仪表板",
   "gate.launchTrader": "启动 Kalks Trader",
+  // market sessions clock
+  "sessions.title": "市场交易时段",
+  "sessions.openLeft": "开市中 · 剩余 {h}小时{m}分",
+  "sessions.opensIn": "{h}小时{m}分后开市",
+  "sessions.sydney": "悉尼",
+  "sessions.tokyo": "东京",
+  "sessions.london": "伦敦",
+  "sessions.newYork": "纽约",
 };
 export default shell;

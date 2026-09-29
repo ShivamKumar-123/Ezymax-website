@@ -93,5 +93,13 @@ const shell: NsMessages<"shell"> = {
   "gate.text": "Cette section n'est pas encore activée pour votre compte. Contactez {email} si vous avez besoin d'y accéder.",
   "gate.backToDashboard": "Retour au tableau de bord",
   "gate.launchTrader": "Lancer Kalks Trader",
+  // market sessions clock
+  "sessions.title": "Sessions de marché",
+  "sessions.openLeft": "Ouverte · encore {h} h {m} min",
+  "sessions.opensIn": "Ouvre dans {h} h {m} min",
+  "sessions.sydney": "Sydney",
+  "sessions.tokyo": "Tokyo",
+  "sessions.london": "Londres",
+  "sessions.newYork": "New York",
 };
 export default shell;

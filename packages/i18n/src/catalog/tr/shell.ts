@@ -93,5 +93,13 @@ const shell: NsMessages<"shell"> = {
   "gate.text": "Bu bölüm hesabınız için henüz etkinleştirilmedi. Erişime ihtiyacınız varsa {email} adresiyle iletişime geçin.",
   "gate.backToDashboard": "Gösterge paneline dön",
   "gate.launchTrader": "Kalks Trader'ı başlat",
+  // market sessions clock
+  "sessions.title": "Piyasa seansları",
+  "sessions.openLeft": "Açık · {h} sa {m} dk kaldı",
+  "sessions.opensIn": "{h} sa {m} dk sonra açılır",
+  "sessions.sydney": "Sidney",
+  "sessions.tokyo": "Tokyo",
+  "sessions.london": "Londra",
+  "sessions.newYork": "New York",
 };
 export default shell;

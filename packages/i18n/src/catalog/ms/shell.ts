@@ -93,5 +93,13 @@ const shell: NsMessages<"shell"> = {
   "gate.text": "Bahagian ini belum didayakan untuk akaun anda. Hubungi {email} jika anda memerlukan akses.",
   "gate.backToDashboard": "Kembali ke papan pemuka",
   "gate.launchTrader": "Lancarkan Kalks Trader",
+  // market sessions clock
+  "sessions.title": "Sesi pasaran",
+  "sessions.openLeft": "Dibuka · baki {h}j {m}m",
+  "sessions.opensIn": "Dibuka dalam {h}j {m}m",
+  "sessions.sydney": "Sydney",
+  "sessions.tokyo": "Tokyo",
+  "sessions.london": "London",
+  "sessions.newYork": "New York",
 };
 export default shell;

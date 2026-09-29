@@ -256,7 +256,7 @@ function AccountCard() {
     [t("dashboard.account.clientId"), <span key="id" className="font-mono" dir="ltr">{clientId(me.id)}</span>],
     [t("common.email"), <span key="e" className="truncate">{me.email}</span>],
     [t("dashboard.account.emailStatus"), me.email_verified ? <Chip key="ev" size="sm" tone="up">{t("common.verified")}</Chip> : <Chip key="ev" size="sm" tone="warn">{t("dashboard.account.notVerified")}</Chip>],
-    [t("dashboard.account.identity"), <Chip key="k" size="sm" tone={kyc.tone} dot>{kyc.label}</Chip>],
+    [t("dashboard.account.identity"), <Chip key="k" size="sm" tone={kyc.tone} dot>{t.dyn(`shell.kyc.${me.kyc_status}`, kyc.label)}</Chip>],
     [t("dashboard.account.memberSince"), <span key="m" className="k-num">{fmtDate(me.created_at, f)}</span>],
   ];
   return (

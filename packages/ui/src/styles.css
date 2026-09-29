@@ -184,6 +184,8 @@
   .k-fade-bottom { mask-image: linear-gradient(to bottom, #000 70%, transparent); }
   .k-label { font-size: 11px; line-height: 14px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; color: var(--k-fg-2); }
   .k-num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  /* figures keep their left-to-right digit order inside right-to-left text (Arabic, Urdu, Persian) */
+  [dir="rtl"] .k-num { direction: ltr; unicode-bidi: isolate; }
   /* live ticks: changed digits flash + slide in; cells pulse; ~MT5 speed */
   .flash-up { animation: flash-up 0.38s ease-out; }
   .flash-down { animation: flash-down 0.38s ease-out; }

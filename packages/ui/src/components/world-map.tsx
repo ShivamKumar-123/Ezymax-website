@@ -6,6 +6,7 @@ import { feature } from "topojson-client";
 import type { FeatureCollection, Geometry } from "geojson";
 import countries110 from "world-atlas/countries-110m.json";
 import { cn } from "../lib/cn";
+import { useT } from "@kalks/i18n/react";
 
 const W = 960;
 const H = 470;
@@ -135,13 +136,14 @@ export function WorldMap({ pins, heat, className, onPin }: { pins: MapPin[]; hea
 /* ------------------------------------------------------------------ */
 
 const SESSIONS = [
-  { name: "Sydney", open: 0, close: 9, flag: "au" },
-  { name: "Tokyo", open: 3, close: 12, flag: "jp" },
-  { name: "London", open: 10, close: 19, flag: "gb" },
-  { name: "New York", open: 15, close: 24, flag: "us" },
-];
+  { name: "Sydney", key: "shell.sessions.sydney", open: 0, close: 9, flag: "au" },
+  { name: "Tokyo", key: "shell.sessions.tokyo", open: 3, close: 12, flag: "jp" },
+  { name: "London", key: "shell.sessions.london", open: 10, close: 19, flag: "gb" },
+  { name: "New York", key: "shell.sessions.newYork", open: 15, close: 24, flag: "us" },
+] as const;
 
 export function MarketSessions({ className }: { className?: string }) {
+  const tr = useT();
   const [now, setNow] = React.useState<Date | null>(null);
   React.useEffect(() => {
     setNow(new Date());
@@ -154,7 +156,7 @@ export function MarketSessions({ className }: { className?: string }) {
   return (
     <div className={cn("space-y-2.5", className)}>
       <div className="flex items-center justify-between text-xs text-fg-3">
-        <span>Market sessions</span>
+        <span>{tr("shell.sessions.title")}</span>
         <span className="k-num font-mono text-fg-2">GMT+3 · {clock}</span>
       </div>
       <div className="relative space-y-2">
@@ -166,12 +168,12 @@ export function MarketSessions({ className }: { className?: string }) {
           return (
             <div key={s.name} className="flex items-center gap-3">
               <span className={`fi fis fi-${s.flag} size-4 shrink-0 rounded-full`} />
-              <span className="w-20 shrink-0 text-[12.5px] text-fg-2">{s.name}</span>
-              <div className="relative h-2 flex-1 rounded-full bg-surface-3">
+              <span className="w-20 shrink-0 text-[12.5px] text-fg-2">{tr(s.key)}</span>
+              <div dir="ltr" className="relative h-2 flex-1 rounded-full bg-surface-3">
                 <span className={cn("absolute top-0 h-full rounded-full", open ? "bg-gradient-to-r from-ember/60 to-ember shadow-[0_0_12px_rgba(255,90,31,0.5)]" : "bg-fg-3/30")} style={{ left: `${(s.open / 24) * 100}%`, width: `${((s.close - s.open) / 24) * 100}%` }} />
               </div>
-              <span className={cn("k-num w-28 shrink-0 text-right text-[11.5px]", open ? "text-up" : "text-fg-3")}>
-                {open ? `● Open · ${hh}h ${mm}m left` : `Opens in ${hh}h ${mm}m`}
+              <span className={cn("w-28 shrink-0 text-end text-[11.5px] tabular-nums", open ? "text-up" : "text-fg-3")}>
+                {open ? `● ${tr("shell.sessions.openLeft", { h: hh, m: mm })}` : tr("shell.sessions.opensIn", { h: hh, m: mm })}
               </span>
             </div>
           );

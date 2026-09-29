@@ -93,5 +93,13 @@ const shell: NsMessages<"shell"> = {
   "gate.text": "Sehemu hii bado haijawezeshwa kwa akaunti yako. Wasiliana na {email} ikiwa unahitaji ufikiaji.",
   "gate.backToDashboard": "Rudi kwenye dashibodi",
   "gate.launchTrader": "Fungua Kalks Trader",
+  // market sessions clock
+  "sessions.title": "Vipindi vya soko",
+  "sessions.openLeft": "Wazi · zimebaki saa {h} dak {m}",
+  "sessions.opensIn": "Hufunguliwa baada ya saa {h} dak {m}",
+  "sessions.sydney": "Sydney",
+  "sessions.tokyo": "Tokyo",
+  "sessions.london": "London",
+  "sessions.newYork": "New York",
 };
 export default shell;

@@ -93,5 +93,13 @@ const shell: NsMessages<"shell"> = {
   "gate.text": "Mục này chưa được bật cho tài khoản của bạn. Vui lòng liên hệ {email} nếu bạn cần truy cập.",
   "gate.backToDashboard": "Về bảng điều khiển",
   "gate.launchTrader": "Mở Kalks Trader",
+  // market sessions clock
+  "sessions.title": "Phiên giao dịch",
+  "sessions.openLeft": "Đang mở · còn {h}g {m}p",
+  "sessions.opensIn": "Mở sau {h}g {m}p",
+  "sessions.sydney": "Sydney",
+  "sessions.tokyo": "Tokyo",
+  "sessions.london": "London",
+  "sessions.newYork": "New York",
 };
 export default shell;

@@ -91,5 +91,13 @@ const shell = {
   "gate.text": "This section isn't enabled for your account yet. Contact {email} if you need access.",
   "gate.backToDashboard": "Back to dashboard",
   "gate.launchTrader": "Launch Kalks Trader",
+  // market sessions clock (server time GMT+3); {h} hours, {m} minutes
+  "sessions.title": "Market sessions",
+  "sessions.openLeft": "Open · {h}h {m}m left",
+  "sessions.opensIn": "Opens in {h}h {m}m",
+  "sessions.sydney": "Sydney",
+  "sessions.tokyo": "Tokyo",
+  "sessions.london": "London",
+  "sessions.newYork": "New York",
 };
 export default shell;
