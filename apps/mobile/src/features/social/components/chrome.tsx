@@ -77,8 +77,9 @@ export function ModalHeader({ eyebrow, onClose, steps, step }: { eyebrow?: strin
   );
 }
 
-// the keyboard frame on the UI thread (phones); a browser resizes the page itself
-const useKeyboard: () => ReturnType<typeof useAnimatedKeyboard> | null = Platform.OS === "web" ? () => null : useAnimatedKeyboard;
+// iOS: the footer follows the keyboard frame on the UI thread. Android resizes the window for the keyboard
+// (adjustResize, like the rest of the app) and a browser resizes the page, so nothing to add there.
+const useKeyboard: () => ReturnType<typeof useAnimatedKeyboard> | null = Platform.OS === "ios" ? useAnimatedKeyboard : () => null;
 
 /**
  * Scaffold of a modal form (follow, invest, redeem, connect, settings): header, scrolling body and a footer that
