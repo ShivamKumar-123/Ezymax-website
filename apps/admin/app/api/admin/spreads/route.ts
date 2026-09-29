@@ -2,11 +2,27 @@ import { NextResponse, type NextRequest } from "next/server";
 import { clientIp, gateway } from "@/lib/gateway";
 import { apiError, mutationAllowed, requireStaff } from "@/lib/bff";
 import { marketData, marketDataConfigured, type Markup, type MdInstrument, type MdQuote } from "@/lib/market-data";
+import { engine } from "@/lib/trading";
+import type { GatewayStaff } from "@/lib/gateway";
 
 // Spread markups BFF: staff session (spreads.read / spreads.write) -> market-data /v1/admin/spreads with
 // MARKET_DATA_ADMIN_TOKEN (server-only). Every change is written to the gateway audit log with a reason.
 
-const GROUPS = ["standard", "pro", "ecn", "cent"] as const;
+const ORDER = ["standard", "pro", "ecn", "cent"];
+
+/**
+ * The spread groups this broker's account groups price from (trading engine `spreadGroup`), in the usual order.
+ * Market-data markups are keyed by spread group only, so a broker may read and edit just the groups its own
+ * account groups use: a broker without trading groups can't change another broker's prices, and a custom spread
+ * group set on an account group becomes editable here. Null: the engine is unreachable.
+ */
+async function tenantSpreadGroups(staff: GatewayStaff): Promise<string[] | null> {
+  const r = await engine<{ groups?: { spreadGroup?: string }[] }>("/v1/admin/groups", { staff, timeoutMs: 8000 });
+  if (r.status >= 500) return null;
+  const set = new Set((r.status === 200 ? (r.data?.groups ?? []) : []).map((g) => g.spreadGroup ?? "").filter((g) => g && g !== "raw"));
+  const rank = (g: string) => (ORDER.includes(g) ? ORDER.indexOf(g) : ORDER.length);
+  return [...set].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+}
 const SYMBOL_RE = /^(\*|[A-Z0-9.]{2,20})$/;
 
 function notConfigured() {
@@ -19,6 +35,8 @@ export async function GET(req: NextRequest) {
   if (!marketDataConfigured()) return notConfigured();
 
   const onlyQuotes = req.nextUrl.searchParams.get("only") === "quotes";
+  const groups = onlyQuotes ? [] : await tenantSpreadGroups(who.staff);
+  if (groups === null) return apiError(503, "unavailable", "The trading engine is unavailable.");
   const quotes = await marketData<Record<string, MdQuote>>("/v1/quotes?group=raw");
   if (onlyQuotes) return NextResponse.json({ quotes: quotes.data ?? {} }, { headers: { "cache-control": "no-store" } });
 
@@ -27,8 +45,8 @@ export async function GET(req: NextRequest) {
   if (markups.status !== 200 || !markups.data) return apiError(503, "unavailable", "Market-data service is unavailable.");
   return NextResponse.json(
     {
-      groups: GROUPS,
-      markups: markups.data,
+      groups,
+      markups: markups.data.filter((m) => groups.includes(m.group_code)),
       instruments: (instruments.data ?? []).map((i) => ({ symbol: i.symbol, asset_class: i.asset_class, digits: i.digits })),
       quotes: quotes.data ?? {},
       can_edit: who.staff.permissions?.includes("spreads.write") ?? false,
@@ -53,7 +71,9 @@ export async function PUT(req: NextRequest) {
   const group = typeof b.group_code === "string" ? b.group_code : "";
   const symbol = typeof b.symbol === "string" ? b.symbol.toUpperCase() : "";
   const reason = typeof b.reason === "string" ? b.reason.trim() : "";
-  if (!(GROUPS as readonly string[]).includes(group)) return apiError(422, "validation", "Unknown group.");
+  const groups = await tenantSpreadGroups(who.staff);
+  if (groups === null) return apiError(503, "unavailable", "The trading engine is unavailable.");
+  if (!groups.includes(group)) return apiError(422, "validation", "Unknown group.");
   if (!SYMBOL_RE.test(symbol)) return apiError(422, "validation", "Unknown symbol.");
   if (!intIn(b.markup_points, 0, 100000)) return NextResponse.json({ error: { code: "validation", field: "markup_points", message: "Markup must be a whole number of points (0–100,000)." } }, { status: 422 });
   if (!intIn(b.min_spread_points, 0, 100000)) return NextResponse.json({ error: { code: "validation", field: "min_spread_points", message: "Minimum spread must be a whole number of points (0–100,000)." } }, { status: 422 });

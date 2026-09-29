@@ -224,7 +224,7 @@ export function LiveSpreads() {
 
       <Reveal>
         <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <MiniStat label="Group defaults" value={data ? groups.map((g) => `${resolve(markups, g, ALL).m?.markup_points ?? 0}`).join(" · ") : "—"} sub={groups.map((g) => GROUP_LABEL[g] ?? g).join(" · ") + " (pts)"} />
+          <MiniStat label="Group defaults" value={data && groups.length ? groups.map((g) => `${resolve(markups, g, ALL).m?.markup_points ?? 0}`).join(" · ") : "—"} sub={groups.map((g) => GROUP_LABEL[g] ?? g).join(" · ") + " (pts)"} />
           <MiniStat label="Symbol overrides" value={data ? overrides : "—"} sub="Symbols with their own markup" />
           <MiniStat label="Live symbols" value={data ? `${ticking} / ${data.instruments.length}` : "—"} sub="Quoted in the last minute" tone={data && ticking < data.instruments.length / 2 ? "warn" : undefined} />
           <MiniStat label="Your access" value={canEdit ? "Can edit" : "View only"} sub="Every change needs a reason" tone={canEdit ? "up" : undefined} />
@@ -243,6 +243,8 @@ export function LiveSpreads() {
             <div className="mt-4 overflow-x-auto px-4 pb-5 sm:px-6">
               {!data ? (
                 <Skeleton className="h-96 w-full" />
+              ) : !groups.length ? (
+                <EmptyState title="No account groups yet" text="Spread markups apply per account group. Create an account group first; its spread group then appears here." />
               ) : (
                 <table className="w-full min-w-[760px] border-separate border-spacing-0 text-[12.5px]">
                   <thead>
