@@ -55,7 +55,6 @@ export function ServiceCard({ s }: { s: BrkService }) {
   ];
   return (
     <div className={cn("k-card relative overflow-hidden p-5 transition-colors hover:border-[var(--k-border-top)]", s.status === "degraded" && "border-warn/30")}>
-      {s.status !== "operational" && <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-warn/15 blur-3xl" />}
       <div className="relative flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <span className={cn("grid size-10 shrink-0 place-items-center rounded-full border", tone === "up" ? "border-line bg-surface-2 text-fg-2" : "border-warn/30 bg-warn-soft text-warn")}>

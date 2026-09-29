@@ -55,13 +55,33 @@ function useRailSide(): "left" | "right" {
 function IconRail({ modules, footer, side = "right" }: { modules: NavModule[]; footer?: React.ReactNode; side?: "left" | "right" }) {
   const railSide = side;
   const pathname = usePathname();
+  // long module lists (the Back Office) get a denser rail; whatever still doesn't fit scrolls, with the cut edge
+  // faded so the hidden modules read as "more below" rather than a clipped icon
+  const dense = modules.length > 12;
+  const navRef = React.useRef<HTMLElement>(null);
+  const [edges, setEdges] = React.useState({ top: false, bottom: false });
+  React.useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const update = () => setEdges({ top: el.scrollTop > 2, bottom: el.scrollTop + el.clientHeight < el.scrollHeight - 2 });
+    update();
+    el.querySelector<HTMLElement>("[data-rail-active]")?.scrollIntoView({ block: "nearest" });
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, [modules.length]);
+  const fade = edges.top || edges.bottom ? `linear-gradient(to bottom, ${edges.top ? "transparent, #000 28px" : "#000"}, ${edges.bottom ? "#000 calc(100% - 28px), transparent" : "#000"})` : undefined;
   let lastSection: string | undefined;
   return (
     <aside className="fixed inset-y-3 start-3 z-40 hidden w-[76px] flex-col items-center rounded-[24px] border border-line bg-surface/85 py-4 shadow-[inset_0_1px_0_var(--k-border-top)] backdrop-blur-xl lg:flex">
-      <Link href="/" className="grid size-11 place-items-center rounded-2xl border border-line bg-surface-3 shadow-[0_0_24px_-6px_rgba(255,90,31,0.55),inset_0_1px_0_var(--k-border-top)]">
+      <Link href="/" className="grid size-11 place-items-center rounded-2xl border border-line bg-surface-3 shadow-[inset_0_1px_0_var(--k-border-top)]">
         <LogoMark size={20} className="text-fg" />
       </Link>
-      <nav className="mt-5 flex w-full flex-1 flex-col items-center gap-1.5 overflow-y-auto px-2 [scrollbar-width:none]">
+      <nav ref={navRef} className={cn("mt-5 flex min-h-0 w-full flex-1 flex-col items-center overflow-y-auto px-2 [scrollbar-width:none]", dense ? "gap-1" : "gap-1.5")} style={fade ? { maskImage: fade, WebkitMaskImage: fade } : undefined}>
         {modules.map((m) => {
           const active = isActive(pathname, m);
           const Icon = m.icon;
@@ -69,17 +89,18 @@ function IconRail({ modules, footer, side = "right" }: { modules: NavModule[]; f
           lastSection = m.section ?? lastSection;
           return (
             <React.Fragment key={m.key}>
-              {sep && <span className="my-1.5 h-px w-8 bg-line" />}
+              {sep && <span className={cn("h-px w-8 shrink-0 bg-line", dense ? "my-1" : "my-1.5")} />}
               <Tooltip content={m.label} side={railSide}>
                 <Link
                   href={m.href}
                   target={m.external ? "_blank" : undefined}
-                  className={cn("relative grid size-11 shrink-0 place-items-center rounded-full transition-colors", active ? "text-ember" : "text-fg-3 hover:bg-surface-3 hover:text-fg")}
+                  data-rail-active={active || undefined}
+                  className={cn("relative grid shrink-0 place-items-center rounded-full transition-colors", dense ? "size-10" : "size-11", active ? "text-ember" : "text-fg-3 hover:bg-surface-3 hover:text-fg")}
                 >
                   {active && (
                     <>
                       <motion.span layoutId="rail-active" className="absolute inset-0 rounded-full border border-ember/25 bg-ember-soft" transition={{ type: "spring", bounce: 0.2, duration: 0.5 }} />
-                      <motion.span layoutId="rail-bar" className="absolute -start-2 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-ember shadow-[0_0_12px_var(--k-ember)]" />
+                      <motion.span layoutId="rail-bar" className="absolute -start-2 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-ember" />
                     </>
                   )}
                   <Icon className="relative size-[19px]" strokeWidth={1.7} />
