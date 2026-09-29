@@ -7,6 +7,7 @@ import { ArrowDownToLine, Bell, CandlestickChart, CheckCircle2, Coins, IdCard, I
 import { EmptyState, IconButton, Popover, cn } from "@kalks/ui";
 import { IS_DEMO, NOTIFICATIONS } from "@kalks/mock";
 import { realtime, type Frame } from "@/lib/realtime";
+import { useFormat, useT } from "@kalks/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* In-app event log: every toast is kept as a notification             */
@@ -220,16 +221,16 @@ const MOCK_ICON: Record<string, React.ReactNode> = {
   margin: <TriangleAlert />,
 };
 
-function ago(at: number, now: number) {
+function ago(at: number, now: number, t: ReturnType<typeof useT>, f: ReturnType<typeof useFormat>) {
   const s = Math.max(0, Math.round((now - at) / 1000));
-  if (s < 45) return "Just now";
+  if (s < 45) return t("dashboard.time.justNow");
   const m = Math.round(s / 60);
-  if (m < 60) return `${m}m ago`;
+  if (m < 60) return t("dashboard.time.minutesAgo", { count: m });
   const h = Math.round(m / 60);
-  if (h < 24) return `${h}h ago`;
+  if (h < 24) return t("dashboard.time.hoursAgo", { count: h });
   const d = Math.round(h / 24);
-  if (d < 7) return `${d}d ago`;
-  return new Date(at).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  if (d < 7) return t("dashboard.time.daysAgo", { count: d });
+  return f.date(at, { day: "numeric", month: "short" });
 }
 
 type Row = { id: string; title: string; description?: string; at: number; time: string; unread: boolean; icon: React.ReactNode; iconCls: string; onOpen?: () => void };
@@ -241,6 +242,8 @@ type Row = { id: string; title: string; description?: string; at: number; time: 
  */
 export function NotificationsBell({ userKey }: { userKey: string }) {
   const router = useRouter();
+  const t = useT();
+  const f = useFormat();
   const log = useEventLog(userKey);
   const srv = useServerNotifications(!IS_DEMO);
   const [mock, setMock] = React.useState(() => (IS_DEMO ? NOTIFICATIONS.map((n) => ({ ...n })) : []));
@@ -254,7 +257,7 @@ export function NotificationsBell({ userKey }: { userKey: string }) {
         title: n.title,
         description: n.body || undefined,
         at,
-        time: now ? ago(at, now) : "",
+        time: now ? ago(at, now, t, f) : "",
         unread: !n.read,
         icon: CATEGORY_ICON[n.category] ?? <Bell />,
         iconCls: SEVERITY_CLS[n.severity] ?? "text-fg-2",
@@ -265,9 +268,9 @@ export function NotificationsBell({ userKey }: { userKey: string }) {
         },
       };
     }),
-    ...log.map((e) => ({ id: e.id, title: e.title, description: e.description, at: e.at, time: now ? ago(e.at, now) : "", unread: e.unread, icon: KIND_ICON[e.kind].icon, iconCls: KIND_ICON[e.kind].cls })),
+    ...log.map((e) => ({ id: e.id, title: e.title, description: e.description, at: e.at, time: now ? ago(e.at, now, t, f) : "", unread: e.unread, icon: KIND_ICON[e.kind].icon, iconCls: KIND_ICON[e.kind].cls })),
   ].sort((a, b) => b.at - a.at);
-  const mockRows: Row[] = mock.map((n) => ({ id: `mock-${n.id}`, title: n.title, at: 0, time: `${n.time} ago`, unread: n.unread, icon: MOCK_ICON[n.kind] ?? <Bell />, iconCls: "text-fg-2" }));
+  const mockRows: Row[] = mock.map((n) => ({ id: `mock-${n.id}`, title: n.title, at: 0, time: t("dashboard.time.ago", { time: n.time }), unread: n.unread, icon: MOCK_ICON[n.kind] ?? <Bell />, iconCls: "text-fg-2" }));
   const all = [...rows, ...mockRows];
   const unread = srv.unread + log.filter((e) => e.unread).length + mock.filter((m) => m.unread).length;
 
@@ -288,10 +291,10 @@ export function NotificationsBell({ userKey }: { userKey: string }) {
       <Popover
         width={380}
         trigger={
-          <IconButton aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"} data-testid="notifications-bell" onPointerDown={() => setNow(Date.now())} onKeyDown={() => setNow(Date.now())}>
+          <IconButton aria-label={unread ? t("dashboard.notifications.ariaUnread", { count: unread }) : t("dashboard.notifications.title")} data-testid="notifications-bell" onPointerDown={() => setNow(Date.now())} onKeyDown={() => setNow(Date.now())}>
             <Bell />
             {unread > 0 && (
-              <span data-testid="notifications-unread" className="k-num pointer-events-none absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-ember px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-bg">
+              <span data-testid="notifications-unread" className="k-num pointer-events-none absolute -end-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-ember px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-bg">
                 {unread > 99 ? "99+" : unread}
               </span>
             )}
@@ -300,21 +303,21 @@ export function NotificationsBell({ userKey }: { userKey: string }) {
       >
         <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
           <div className="text-sm font-medium">
-            Notifications {unread > 0 && <span className="k-num ml-1 rounded-full bg-ember-soft px-1.5 text-[11px] text-ember">{unread}</span>}
+            {t("dashboard.notifications.title")} {unread > 0 && <span className="k-num ms-1 rounded-full bg-ember-soft px-1.5 text-[11px] text-ember">{unread}</span>}
           </div>
           {all.length > 0 && (
             <div className="flex items-center gap-3 text-xs">
               <button onClick={markAll} disabled={!unread} className="text-fg-3 hover:text-fg disabled:opacity-40 disabled:hover:text-fg-3">
-                Mark all read
+                {t("dashboard.notifications.markAll")}
               </button>
               <button onClick={clear} className="text-fg-3 hover:text-down">
-                Clear
+                {t("dashboard.notifications.clear")}
               </button>
             </div>
           )}
         </div>
         {all.length === 0 ? (
-          <EmptyState illustration="bell" title="No notifications yet" text="Deposits, withdrawals, verification, trading alerts and replies from support appear here." className="py-10" />
+          <EmptyState illustration="bell" title={t("dashboard.notifications.emptyTitle")} text={t("dashboard.notifications.emptyText")} className="py-10" />
         ) : (
           <div className="max-h-[min(24rem,60vh)] overflow-y-auto p-1.5" data-testid="notifications-list">
             {all.map((n) => {
@@ -330,7 +333,7 @@ export function NotificationsBell({ userKey }: { userKey: string }) {
                 </>
               );
               return n.onOpen ? (
-                <button key={n.id} onClick={n.onOpen} className="flex w-full gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-surface-3">
+                <button key={n.id} onClick={n.onOpen} className="flex w-full gap-3 rounded-xl px-3 py-2.5 text-start hover:bg-surface-3">
                   {inner}
                 </button>
               ) : (
@@ -341,9 +344,9 @@ export function NotificationsBell({ userKey }: { userKey: string }) {
             })}
           </div>
         )}
-        <div className="border-t border-line px-4 py-2.5 text-right text-xs">
+        <div className="border-t border-line px-4 py-2.5 text-end text-xs">
           <a href="/profile/notifications" className="text-fg-3 hover:text-fg">
-            Notification settings
+            {t("dashboard.notifications.settings")}
           </a>
         </div>
       </Popover>

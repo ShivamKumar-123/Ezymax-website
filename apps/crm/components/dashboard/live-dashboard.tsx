@@ -15,19 +15,23 @@ import { LiveAccountRow } from "@/components/trading/ui";
 import { useWalletFunded, walletStep } from "@/components/wallet-live/onboarding";
 import { BannerSlot } from "@/components/growth/banner-slot";
 import { LiveCalendarCard, LiveNewsCard, LiveWorldCard } from "@/components/news-live/dashboard";
+import { Trans, useFormat, useT } from "@kalks/i18n/react";
 
 function greeting() {
   const h = new Date().getHours();
-  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  return h < 12 ? "morning" : h < 18 ? "afternoon" : "evening";
 }
 
 export function clientId(id: number) {
   return `KL-${String(id).padStart(6, "0")}`;
 }
 
-function fmtDate(iso: string) {
+type T = ReturnType<typeof useT>;
+type F = ReturnType<typeof useFormat>;
+
+function fmtDate(iso: string, f: F) {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return Number.isNaN(d.getTime()) ? "—" : f.date(d);
 }
 
 /* ------------------------------------------------------------------ */
@@ -37,52 +41,52 @@ function fmtDate(iso: string) {
 type StepState = "done" | "todo" | "review" | "rejected" | "soon";
 type Step = { key: string; icon: React.ReactNode; title: string; text: string; state: StepState; href?: string };
 
-function steps(me: SessionUser, accounts: EngineAccount[] | null): Step[] {
+function steps(me: SessionUser, accounts: EngineAccount[] | null, t: T, f: F): Step[] {
   const live = accounts?.filter((a) => a.type === "live").length ?? 0;
   const demo = accounts?.filter((a) => a.type === "demo").length ?? 0;
   const opened = live + demo > 0;
-  return baseSteps(me, live, demo, opened, kycStep(me));
+  return baseSteps(me, live, demo, opened, kycStep(me, t), t, f);
 }
 
 /** The "Verify your identity" step from the real KYC status (users.kyc_status + the latest case). */
-function kycStep(me: SessionUser): { state: StepState; text: string } {
-  if (me.kyc_status === "verified") return { state: "done", text: "Your identity is verified. Withdrawals are unlocked." };
+function kycStep(me: SessionUser, t: T): { state: StepState; text: string } {
+  if (me.kyc_status === "verified") return { state: "done", text: t("dashboard.steps.kyc.verified") };
   switch (me.kyc_case_status) {
     case "more_info":
-      return { state: "todo", text: "Our team needs one more document from you." };
+      return { state: "todo", text: t("dashboard.steps.kyc.moreInfo") };
     case "submitted":
     case "in_review":
-      return { state: "review", text: "Your documents are with our verification team." };
+      return { state: "review", text: t("dashboard.steps.kyc.review") };
     case "draft":
-      return { state: "todo", text: "Continue where you left off. Takes about 3 minutes." };
+      return { state: "todo", text: t("dashboard.steps.kyc.draft") };
     case "rejected":
-      return { state: "rejected", text: "We couldn't verify your documents. You can start again." };
+      return { state: "rejected", text: t("dashboard.steps.kyc.rejected") };
   }
-  if (me.kyc_status === "pending") return { state: "review", text: "Your documents are with our verification team." };
-  if (me.kyc_status === "rejected") return { state: "rejected", text: "We couldn't verify your documents. You can start again." };
-  return { state: "todo", text: "Takes about 3 minutes. Unlocks withdrawals." };
+  if (me.kyc_status === "pending") return { state: "review", text: t("dashboard.steps.kyc.review") };
+  if (me.kyc_status === "rejected") return { state: "rejected", text: t("dashboard.steps.kyc.rejected") };
+  return { state: "todo", text: t("dashboard.steps.kyc.todo") };
 }
 
-function baseSteps(me: SessionUser, live: number, demo: number, opened: boolean, kyc: { state: StepState; text: string }): Step[] {
+function baseSteps(me: SessionUser, live: number, demo: number, opened: boolean, kyc: { state: StepState; text: string }, t: T, f: F): Step[] {
   return [
-    { key: "account", icon: <UserRound />, title: "Create your account", text: `Registered on ${fmtDate(me.created_at)}.`, state: "done" },
+    { key: "account", icon: <UserRound />, title: t("dashboard.steps.account.title"), text: t("dashboard.steps.account.text", { date: fmtDate(me.created_at, f) }), state: "done" },
     {
       key: "email",
       icon: <Mail />,
-      title: "Verify your email",
-      text: me.email_verified ? `${me.email} is verified.` : `Confirm ${me.email} with the code we sent you.`,
+      title: t("dashboard.steps.email.title"),
+      text: me.email_verified ? t("dashboard.steps.email.verified", { email: me.email }) : t("dashboard.steps.email.confirm", { email: me.email }),
       state: me.email_verified ? "done" : "todo",
     },
-    { key: "kyc", icon: <IdCard />, title: "Verify your identity", ...kyc, href: "/profile/verification" },
+    { key: "kyc", icon: <IdCard />, title: t("dashboard.steps.kyc.title"), ...kyc, href: "/profile/verification" },
     {
       key: "account-open",
       icon: <Layers />,
-      title: "Open a trading account",
-      text: opened ? `${live} live and ${demo} demo account${live + demo === 1 ? "" : "s"} open.` : "Open a live or demo account; your login is issued instantly.",
+      title: t("dashboard.steps.accountOpen.title"),
+      text: opened ? t("dashboard.steps.accountOpen.opened", { live, demo, count: live + demo }) : t("dashboard.steps.accountOpen.todo"),
       state: opened ? "done" : "todo",
       href: opened ? "/accounts" : "/accounts/new",
     },
-    { key: "wallet", icon: <Wallet />, title: "Fund your wallet", text: "USDT deposits on TRC20 are being connected.", state: "soon", href: "/wallet" },
+    { key: "wallet", icon: <Wallet />, title: t("dashboard.steps.wallet.title"), text: t("dashboard.steps.wallet.text"), state: "soon", href: "/wallet" },
   ];
 }
 
@@ -95,6 +99,7 @@ const STATE_CHIP: Record<StepState, { tone: "up" | "warn" | "down" | "neutral" |
 };
 
 function StepRow({ s, n }: { s: Step; n: number }) {
+  const t = useT();
   const chip = STATE_CHIP[s.state];
   const done = s.state === "done";
   const body = (
@@ -110,9 +115,9 @@ function StepRow({ s, n }: { s: Step; n: number }) {
         <div className="mt-0.5 truncate text-[12px] text-fg-3">{s.text}</div>
       </div>
       <Chip size="sm" tone={chip.tone} dot={!done}>
-        {chip.label}
+        {t.dyn(`dashboard.steps.state.${s.state}`, chip.label)}
       </Chip>
-      {s.href && <ChevronRight className="size-4 shrink-0 text-fg-3" />}
+      {s.href && <ChevronRight className="size-4 shrink-0 text-fg-3 rtl:-scale-x-100" />}
     </>
   );
   return s.href ? (
@@ -126,20 +131,20 @@ function StepRow({ s, n }: { s: Step; n: number }) {
 
 function GettingStarted({ accounts }: { accounts: EngineAccount[] | null }) {
   const me = useSession();
+  const t = useT();
+  const f = useFormat();
   const wallet = useWalletFunded();
-  const list = steps(me, accounts).map((s) => (s.key === "wallet" ? walletStep(wallet) : s));
+  const list = steps(me, accounts, t, f).map((s) => (s.key === "wallet" ? walletStep(wallet) : s));
   const done = list.filter((s) => s.state === "done").length;
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Getting started"
-        subtitle="Your progress towards live trading"
+        title={t("dashboard.steps.title")}
+        subtitle={t("dashboard.steps.subtitle")}
         action={
           <div className="w-32">
             <div className="mb-1 flex justify-between text-[11px] text-fg-3">
-              <span>
-                {done} of {list.length}
-              </span>
+              <span>{t("dashboard.steps.progress", { done, total: list.length })}</span>
               <span className="k-num">{Math.round((done / list.length) * 100)}%</span>
             </div>
             <Progress value={(done / list.length) * 100} />
@@ -160,20 +165,25 @@ function GettingStarted({ accounts }: { accounts: EngineAccount[] | null }) {
 /* ------------------------------------------------------------------ */
 
 function TradingAccountsCard({ accounts, failed, reload }: { accounts: EngineAccount[] | null; failed: boolean; reload: () => void }) {
+  const tr = useT();
   const t = liveTotals(accounts ?? []);
   const shown = [...t.live, ...t.demo].slice(0, 3);
   const more = (accounts?.length ?? 0) - shown.length;
   return (
     <Card>
       <CardHeader
-        title="Trading accounts"
+        title={tr("dashboard.accounts.title")}
         subtitle={
           accounts && accounts.length > 0 ? (
             <span>
-              Live equity <span className="k-num font-medium text-fg">${t.equity.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> · {t.live.length} live · {t.demo.length} demo · {t.positions} open positions
+              <Trans
+                k="dashboard.accounts.summary"
+                vars={{ equity: `$${t.equity.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, live: t.live.length, demo: t.demo.length, positions: t.positions }}
+                tags={{ b: (c) => <span className="k-num font-medium text-fg" dir="ltr">{c}</span> }}
+              />
             </span>
           ) : (
-            "Your live and demo accounts"
+            tr("dashboard.accounts.subtitle")
           )
         }
         action={
@@ -181,13 +191,13 @@ function TradingAccountsCard({ accounts, failed, reload }: { accounts: EngineAcc
             {accounts && accounts.length > 0 && (
               <Link href="/accounts" className="hidden sm:block">
                 <Button size="sm" variant="surface">
-                  All accounts
+                  {tr("dashboard.accounts.all")}
                 </Button>
               </Link>
             )}
             <Link href="/accounts/new">
               <Button size="sm" variant="ember">
-                <Plus /> Open account
+                <Plus /> {tr("dashboard.accounts.open")}
               </Button>
             </Link>
           </>
@@ -197,27 +207,27 @@ function TradingAccountsCard({ accounts, failed, reload }: { accounts: EngineAcc
         {accounts === null && !failed && <Skeleton className="h-[138px] w-full rounded-[18px]" />}
         {accounts === null && failed && (
           <div className="k-row flex flex-wrap items-center gap-3 px-4 py-4 text-[13px] text-fg-2">
-            <span className="flex-1">Trading accounts are unavailable right now. Your balances are safe.</span>
+            <span className="flex-1">{tr("dashboard.accounts.unavailable")}</span>
             <Button size="sm" variant="surface" onClick={reload}>
-              Try again
+              {tr("common.retry")}
             </Button>
           </div>
         )}
         {accounts && accounts.length === 0 && (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[
-              { type: "live", title: "Open a live account", text: "Real markets. Starts at a zero balance; funding opens with the wallet." },
-              { type: "demo", title: "Open a demo account", text: "Virtual funds on real-time prices, refillable every day." },
+              { type: "live", title: tr("dashboard.accounts.openLive.title"), text: tr("dashboard.accounts.openLive.text") },
+              { type: "demo", title: tr("dashboard.accounts.openDemo.title"), text: tr("dashboard.accounts.openDemo.text") },
             ].map((o) => (
               <Link key={o.type} href={`/accounts/new?type=${o.type}`} className="k-row flex items-start gap-3 p-4 transition-colors hover:border-[var(--k-border-top)]">
                 <Chip size="sm" tone={o.type === "live" ? "ember" : "gold"} className="font-semibold tracking-wider">
-                  {o.type.toUpperCase()}
+                  {tr(o.type === "live" ? "common.live" : "common.demo").toUpperCase()}
                 </Chip>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[14px] font-medium">{o.title}</span>
                   <span className="mt-0.5 block text-[12.5px] text-fg-3">{o.text}</span>
                 </span>
-                <ChevronRight className="mt-0.5 size-4 shrink-0 text-fg-3" />
+                <ChevronRight className="mt-0.5 size-4 shrink-0 text-fg-3 rtl:-scale-x-100" />
               </Link>
             ))}
           </div>
@@ -227,7 +237,7 @@ function TradingAccountsCard({ accounts, failed, reload }: { accounts: EngineAcc
         ))}
         {more > 0 && (
           <Link href="/accounts" className="block text-center text-[12.5px] text-fg-3 hover:text-ember">
-            {more} more account{more === 1 ? "" : "s"}
+            {tr("dashboard.accounts.more", { count: more })}
           </Link>
         )}
       </div>
@@ -239,22 +249,24 @@ function TradingAccountsCard({ accounts, failed, reload }: { accounts: EngineAcc
 
 function AccountCard() {
   const me = useSession();
+  const t = useT();
+  const f = useFormat();
   const kyc = KYC_CHIP[me.kyc_status];
   const rows: [string, React.ReactNode][] = [
-    ["Client ID", <span key="id" className="font-mono">{clientId(me.id)}</span>],
-    ["Email", <span key="e" className="truncate">{me.email}</span>],
-    ["Email status", me.email_verified ? <Chip key="ev" size="sm" tone="up">Verified</Chip> : <Chip key="ev" size="sm" tone="warn">Not verified</Chip>],
-    ["Identity", <Chip key="k" size="sm" tone={kyc.tone} dot>{kyc.label}</Chip>],
-    ["Member since", <span key="m" className="k-num">{fmtDate(me.created_at)}</span>],
+    [t("dashboard.account.clientId"), <span key="id" className="font-mono" dir="ltr">{clientId(me.id)}</span>],
+    [t("common.email"), <span key="e" className="truncate">{me.email}</span>],
+    [t("dashboard.account.emailStatus"), me.email_verified ? <Chip key="ev" size="sm" tone="up">{t("common.verified")}</Chip> : <Chip key="ev" size="sm" tone="warn">{t("dashboard.account.notVerified")}</Chip>],
+    [t("dashboard.account.identity"), <Chip key="k" size="sm" tone={kyc.tone} dot>{kyc.label}</Chip>],
+    [t("dashboard.account.memberSince"), <span key="m" className="k-num">{fmtDate(me.created_at, f)}</span>],
   ];
   return (
     <Card>
       <CardHeader
-        title="Your account"
+        title={t("dashboard.account.title")}
         action={
           <Link href="/profile">
             <Button size="sm" variant="surface">
-              Profile
+              {t("dashboard.account.profile")}
             </Button>
           </Link>
         }
@@ -263,7 +275,7 @@ function AccountCard() {
         {rows.map(([k, v]) => (
           <div key={k} className="flex items-center justify-between gap-4 py-2.5 text-[13px]">
             <span className="shrink-0 text-fg-3">{k}</span>
-            <span className="min-w-0 truncate text-right text-fg">{v}</span>
+            <span className="min-w-0 truncate text-end text-fg">{v}</span>
           </div>
         ))}
       </div>
@@ -274,6 +286,7 @@ function AccountCard() {
 /* ------------------------------------------------------------------ */
 
 function TraderBanner() {
+  const t = useT();
   return (
     <Card className="relative overflow-hidden">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -282,16 +295,14 @@ function TraderBanner() {
       <div className="relative flex flex-col gap-5 p-7 md:flex-row md:items-center md:justify-between">
         <div className="max-w-xl">
           <Chip tone="ember" className="mb-3">
-            <CandlestickChart className="size-3.5" /> Live prices
+            <CandlestickChart className="size-3.5" /> {t("dashboard.trader.chip")}
           </Chip>
           <h3 className="text-2xl font-medium tracking-tight">Kalks Trader</h3>
-          <p className="mt-2 text-sm text-fg-2">
-            Real-time quotes and charts for {INSTRUMENTS.length} instruments across forex, metals, indices, energies, crypto and stocks. Runs in your browser, nothing to install.
-          </p>
+          <p className="mt-2 text-sm text-fg-2">{t("dashboard.trader.text", { count: INSTRUMENTS.length })}</p>
         </div>
         <a href={TERMINAL_URL} target="_blank" rel="noopener" className="shrink-0">
           <Button variant="ember" size="lg">
-            Launch Kalks Trader <ArrowUpRight />
+            {t("dashboard.launchTrader")} <ArrowUpRight />
           </Button>
         </a>
       </div>
@@ -300,10 +311,11 @@ function TraderBanner() {
 }
 
 function SessionsCard() {
+  const t = useT();
   const open = INSTRUMENTS.filter((i) => isMarketOpen(i.symbol)).length;
   return (
     <Card>
-      <CardHeader title="Market clock" action={<Chip size="sm">{open} of {INSTRUMENTS.length} markets open</Chip>} />
+      <CardHeader title={t("dashboard.sessions.title")} action={<Chip size="sm">{t("dashboard.sessions.open", { open, total: INSTRUMENTS.length })}</Chip>} />
       <div className="px-6 pb-6 pt-4">
         <MarketSessions />
       </div>
@@ -312,25 +324,26 @@ function SessionsCard() {
 }
 
 function HeatmapCard() {
+  const t = useT();
   const qs = useQuotes(INSTRUMENTS.map((i) => i.symbol));
   const sorted = [...INSTRUMENTS].sort((a, b) => (qs[b.symbol]?.change ?? 0) - (qs[a.symbol]?.change ?? 0));
   const up = INSTRUMENTS.filter((i) => (qs[i.symbol]?.change ?? 0) >= 0).length;
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Market heatmap"
-        subtitle="Today's move from live prices · hollow dot: market closed"
+        title={t("dashboard.heatmap.title")}
+        subtitle={t("dashboard.heatmap.subtitle")}
         action={
           <>
             <Chip tone="up" className="hidden sm:inline-flex">
-              {up} up
+              {t("dashboard.heatmap.up", { count: up })}
             </Chip>
             <Chip tone="down" className="hidden sm:inline-flex">
-              {INSTRUMENTS.length - up} down
+              {t("dashboard.heatmap.down", { count: INSTRUMENTS.length - up })}
             </Chip>
             <Link href="/markets">
               <Button size="sm" variant="surface">
-                All markets
+                {t("dashboard.heatmap.allMarkets")}
               </Button>
             </Link>
           </>
@@ -345,7 +358,7 @@ function HeatmapCard() {
             <Link
               key={i.symbol}
               href="/markets"
-              title={open ? `${i.symbol} · market open` : `${i.symbol} · market closed, last session's move`}
+              title={open ? t("dashboard.heatmap.tipOpen", { symbol: i.symbol }) : t("dashboard.heatmap.tipClosed", { symbol: i.symbol })}
               className="rounded-[14px] border border-line px-3 py-2.5 transition-colors hover:border-[var(--k-border-top)]"
               style={{ background: `color-mix(in oklab, ${ch >= 0 ? "var(--k-up)" : "var(--k-down)"} ${Math.round(8 + a * 52)}%, var(--k-surface-2))` }}
             >
@@ -354,8 +367,10 @@ function HeatmapCard() {
                 <span className={cn("size-1.5 shrink-0 rounded-full", open ? "bg-up" : "border border-fg-3")} />
               </div>
               <div className={cn("k-num mt-0.5 text-[12px] font-medium", a > 0.55 ? "text-fg" : ch >= 0 ? "text-up" : "text-down")}>
-                {ch >= 0 ? "+" : ""}
-                {ch.toFixed(2)}%
+                <span dir="ltr">
+                  {ch >= 0 ? "+" : ""}
+                  {ch.toFixed(2)}%
+                </span>
               </div>
             </Link>
           );
@@ -366,10 +381,11 @@ function HeatmapCard() {
 }
 
 function SupportCard() {
+  const t = useT();
   const copy = () => {
     navigator.clipboard?.writeText(SUPPORT_EMAIL).then(
-      () => toast.success("Email address copied"),
-      () => toast.error("Couldn't copy, please select the address instead"),
+      () => toast.success(t("dashboard.support.copied")),
+      () => toast.error(t("dashboard.support.copyFailed")),
     );
   };
   return (
@@ -378,18 +394,18 @@ function SupportCard() {
         <LifeBuoy className="size-[18px]" />
       </span>
       <div className="min-w-0 flex-1">
-        <div className="text-[15px] font-medium">Need help?</div>
+        <div className="text-[15px] font-medium">{t("dashboard.support.title")}</div>
         <div className="mt-0.5 text-[13px] text-fg-2">
-          Write to <span className="font-mono text-fg">{SUPPORT_EMAIL}</span> from your registered address and include your client ID.
+          <Trans k="dashboard.support.text" vars={{ email: SUPPORT_EMAIL }} tags={{ mail: (c) => <span className="font-mono text-fg" dir="ltr">{c}</span> }} />
         </div>
       </div>
       <div className="flex gap-2">
         <Button size="sm" variant="surface" onClick={copy}>
-          <Copy /> Copy
+          <Copy /> {t("common.copy")}
         </Button>
         <a href={`mailto:${SUPPORT_EMAIL}`}>
           <Button size="sm" variant="ember">
-            <Mail /> Email support
+            <Mail /> {t("dashboard.support.emailSupport")}
           </Button>
         </a>
       </div>
@@ -402,25 +418,22 @@ function SupportCard() {
 /** Live builds: only data that is real for this client — their record, live prices, real links. */
 export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
   const me = useSession();
+  const t = useT();
   const acc = useAccounts(10000);
   const accounts = acc.data?.accounts ?? null;
-  const [hour, setHour] = React.useState<string>("Welcome");
+  const [hour, setHour] = React.useState<string>("welcome");
   React.useEffect(() => setHour(greeting()), []);
   const verified = me.kyc_status === "verified";
   return (
     <div className="pb-16">
       <PageHeader
-        title={
-          <>
-            {hour}, {me.first_name}
-          </>
-        }
+        title={t.dyn(`dashboard.greeting.${hour}`, undefined, { name: me.first_name })}
         subtitle={
           <span className="inline-flex flex-wrap items-center gap-2">
-            Welcome to Kalks. Here&apos;s your account and today&apos;s markets.
+            {t("dashboard.subtitle.live")}
             {verified && (
               <Chip size="sm" tone="up">
-                <BadgeCheck className="size-3.5" /> Verified
+                <BadgeCheck className="size-3.5" /> {t("common.verified")}
               </Chip>
             )}
           </span>
@@ -428,7 +441,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
         actions={
           <a href={TERMINAL_URL} target="_blank" rel="noopener">
             <Button variant="ember" size="lg">
-              Launch Kalks Trader <ArrowUpRight />
+              {t("dashboard.launchTrader")} <ArrowUpRight />
             </Button>
           </a>
         }
@@ -455,12 +468,12 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal delay={0.05} className="xl:col-span-4">
-          <FeedGuard title="Top movers" minHeight={320}>
+          <FeedGuard title={t("dashboard.movers.title")} minHeight={320}>
             {movers}
           </FeedGuard>
         </Reveal>
         <Reveal delay={0.1} className="xl:col-span-8">
-          <FeedGuard title="Market heatmap" minHeight={320}>
+          <FeedGuard title={t("dashboard.heatmap.title")} minHeight={320}>
             <HeatmapCard />
           </FeedGuard>
         </Reveal>

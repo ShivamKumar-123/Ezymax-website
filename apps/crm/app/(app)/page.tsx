@@ -66,15 +66,17 @@ import { AccountRow } from "@/components/account-row";
 import { useSession } from "@/components/session";
 import { LiveDashboard } from "@/components/dashboard/live-dashboard";
 import { TERMINAL_URL } from "@/lib/live";
+import { Trans, useFormat, useT } from "@kalks/i18n/react";
 
 function greeting() {
   const h = new Date().getHours();
-  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  return h < 12 ? "morning" : h < 18 ? "afternoon" : "evening";
 }
 
 /* ------------------------------------------------------------------ */
 
 function OnboardingStrip() {
+  const t = useT();
   const [hidden, setHidden] = React.useState(false);
   const done = ONBOARDING.filter((s) => s.done).length;
   if (hidden) return null;
@@ -86,8 +88,8 @@ function OnboardingStrip() {
           <div className="flex items-center gap-4">
             <Icon3D name="rocket" size={48} />
             <div>
-              <div className="text-[15px] font-medium">Finish setting up your account</div>
-              <div className="text-[13px] text-fg-2">Complete KYC to unlock withdrawals and higher limits.</div>
+              <div className="text-[15px] font-medium">{t("dashboard.onboarding.title")}</div>
+              <div className="text-[13px] text-fg-2">{t("dashboard.onboarding.text")}</div>
             </div>
           </div>
           <ol className="flex flex-1 flex-wrap items-center gap-2 md:justify-center">
@@ -101,17 +103,17 @@ function OnboardingStrip() {
           <div className="flex items-center gap-3">
             <div className="w-28">
               <div className="mb-1 flex justify-between text-[11px] text-fg-3">
-                <span>Progress</span>
+                <span>{t("dashboard.onboarding.progress")}</span>
                 <span className="k-num">{Math.round((done / ONBOARDING.length) * 100)}%</span>
               </div>
               <Progress value={(done / ONBOARDING.length) * 100} />
             </div>
             <Link href="/profile/verification">
               <Button size="sm" variant="ember">
-                Continue <ChevronRight />
+                {t("common.continue")} <ChevronRight className="rtl:-scale-x-100" />
               </Button>
             </Link>
-            <button onClick={() => setHidden(true)} className="text-fg-3 hover:text-fg" aria-label="Dismiss">
+            <button onClick={() => setHidden(true)} className="text-fg-3 hover:text-fg" aria-label={t("dashboard.onboarding.dismiss")}>
               <X className="size-4" />
             </button>
           </div>
@@ -124,12 +126,13 @@ function OnboardingStrip() {
 /* ------------------------------------------------------------------ */
 
 function AccountsCard() {
+  const t = useT();
   const [tab, setTab] = React.useState<"live" | "demo">("live");
   const list = ACCOUNTS.filter((a) => a.type === tab);
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="My trading accounts"
+        title={t("dashboard.accounts.myTitle")}
         action={
           <>
             <Segmented
@@ -137,13 +140,13 @@ function AccountsCard() {
               value={tab}
               onChange={setTab}
               options={[
-                { value: "live", label: <>Live <span className="text-fg-3">{ACCOUNTS.filter((a) => a.type === "live").length}</span></> },
-                { value: "demo", label: <>Demo <span className="text-fg-3">{ACCOUNTS.filter((a) => a.type === "demo").length}</span></> },
+                { value: "live", label: <>{t("common.live")} <span className="text-fg-3">{ACCOUNTS.filter((a) => a.type === "live").length}</span></> },
+                { value: "demo", label: <>{t("common.demo")} <span className="text-fg-3">{ACCOUNTS.filter((a) => a.type === "demo").length}</span></> },
               ]}
             />
             <Link href="/accounts/new">
               <Button size="sm" variant="surface">
-                <Plus /> Open account
+                <Plus /> {t("dashboard.accounts.open")}
               </Button>
             </Link>
           </>
@@ -166,23 +169,24 @@ function AccountRowCompact({ login }: { login: string }) {
 /* ------------------------------------------------------------------ */
 
 function MarginHealth() {
+  const t = useT();
   const live = ACCOUNTS.filter((a) => a.type === "live" && !a.cent);
   const equity = live.reduce((s, a) => s + a.equity, 0);
   const margin = live.reduce((s, a) => s + a.margin, 0);
   const level = (equity / margin) * 100;
   return (
     <Card className="flex h-full flex-col">
-      <CardHeader title="Margin health" subtitle="Across all live accounts" action={<Chip tone="up" dot>Healthy</Chip>} />
+      <CardHeader title={t("dashboard.margin.title")} subtitle={t("dashboard.margin.subtitle")} action={<Chip tone="up" dot>{t("dashboard.margin.healthy")}</Chip>} />
       <div className="flex flex-1 items-center justify-center py-4">
-        <Gauge value={Math.min(level, 2000)} max={2000} display={`${Math.round(level).toLocaleString()}%`} label="Margin level" size={230} />
+        <Gauge value={Math.min(level, 2000)} max={2000} display={`${Math.round(level).toLocaleString()}%`} label={t("dashboard.margin.level")} size={230} />
       </div>
       <div className="grid grid-cols-2 gap-3 px-6 pb-6">
         <div className="k-row px-4 py-3">
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">Used margin</div>
+          <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("dashboard.margin.used")}</div>
           <Money value={margin} className="mt-1 block text-[15px] font-medium" />
         </div>
         <div className="k-row px-4 py-3">
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">Free margin</div>
+          <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("dashboard.margin.free")}</div>
           <Money value={equity - margin} className="mt-1 block text-[15px] font-medium" />
         </div>
       </div>
@@ -196,6 +200,8 @@ const RANGES = ["1W", "1M", "3M", "YTD", "1Y", "ALL"] as const;
 const RANGE_DAYS: Record<(typeof RANGES)[number], number> = { "1W": 7, "1M": 30, "3M": 90, YTD: 267, "1Y": 365, ALL: 540 };
 
 function EquityCard() {
+  const t = useT();
+  const f = useFormat();
   const [range, setRange] = React.useState<(typeof RANGES)[number]>("3M");
   const all = React.useMemo(() => equitySeries(540, DASHBOARD.totalEquity), []);
   const data = React.useMemo(() => all.slice(-RANGE_DAYS[range]), [all, range]);
@@ -208,7 +214,7 @@ function EquityCard() {
     <Card className="h-full">
       <div className="flex flex-col gap-4 px-6 pt-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="k-label flex items-center gap-2">Total equity</div>
+          <div className="k-label flex items-center gap-2">{t("dashboard.equity.title")}</div>
           <div className="mt-2 flex flex-wrap items-baseline gap-3">
             <Money value={shown} countUp={!hover} className="text-[34px] font-semibold tracking-tight" />
             <Chip tone={diff >= 0 ? "up" : "down"}>
@@ -216,7 +222,7 @@ function EquityCard() {
               {formatMoney(Math.abs(diff))} ({((diff / first) * 100).toFixed(2)}%)
             </Chip>
           </div>
-          <div className="mt-1 text-xs text-fg-3">{hover ? new Date(hover.time * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : `Change over ${range}`}</div>
+          <div className="mt-1 text-xs text-fg-3">{hover ? f.date(hover.time * 1000, { day: "2-digit", month: "short", year: "numeric" }) : t("dashboard.equity.changeOver", { range })}</div>
         </div>
         <Segmented size="xs" value={range} onChange={setRange} options={RANGES} />
       </div>
@@ -228,25 +234,26 @@ function EquityCard() {
 }
 
 function ProfitLossCard() {
+  const t = useT();
   return (
     <Card className="flex h-full flex-col">
       <div className="px-6 pt-6">
         <div className="flex items-start justify-between">
           <div>
-            <div className="k-label">Profit / loss · month</div>
+            <div className="k-label">{t("dashboard.pnl.title")}</div>
             <Money value={DASHBOARD.monthPnl} signed className="mt-2 block text-[28px] font-semibold text-up" />
           </div>
           <Chip tone="up" dot>
-            Low risk
+            {t("dashboard.pnl.lowRisk")}
           </Chip>
         </div>
         <div className="mt-6 flex items-end justify-between text-xs">
           <div>
-            <div className="text-fg-3">Loss</div>
+            <div className="text-fg-3">{t("common.loss")}</div>
             <div className="k-num text-base font-semibold text-down">{DASHBOARD.profitShare.lossPct}%</div>
           </div>
-          <div className="text-right">
-            <div className="text-fg-3">Profit</div>
+          <div className="text-end">
+            <div className="text-fg-3">{t("common.profit")}</div>
             <div className="k-num text-base font-semibold text-up">{DASHBOARD.profitShare.profitPct}%</div>
           </div>
         </div>
@@ -254,15 +261,15 @@ function ProfitLossCard() {
       </div>
       <div className="mt-4 flex-1 divide-y divide-line px-6 pb-4">
         {[
-          ["Win rate (30d)", "64.2%"],
-          ["Trades (30d)", "148"],
-          ["Avg. winning trade", "$212.40"],
-          ["Avg. losing trade", "-$118.06"],
-          ["Charges paid", "$96.30"],
+          [t("dashboard.pnl.winRate"), "64.2%"],
+          [t("dashboard.pnl.trades"), "148"],
+          [t("dashboard.pnl.avgWin"), "$212.40"],
+          [t("dashboard.pnl.avgLoss"), "-$118.06"],
+          [t("dashboard.pnl.charges"), "$96.30"],
         ].map(([k, v]) => (
           <div key={k} className="flex items-center justify-between py-2.5 text-[13px]">
             <span className="text-fg-3">{k}</span>
-            <span className={cn("k-num font-medium", v.startsWith("-") ? "text-down" : "text-fg")}>{v}</span>
+            <span dir="ltr" className={cn("k-num font-medium", v.startsWith("-") ? "text-down" : "text-fg")}>{v}</span>
           </div>
         ))}
       </div>
@@ -290,7 +297,7 @@ function MoverRow({ symbol, name, range, q }: { symbol: string; name: string; ra
         <div className="truncate text-[11.5px] text-fg-3">{name}</div>
       </div>
       {data ? <Sparkline data={data} width={64} height={24} tone={data[data.length - 1]! >= data[0]! ? "up" : "down"} className="hidden sm:block" /> : <div className="hidden h-6 w-16 sm:block" />}
-      <div className="w-24 text-right">
+      <div className="w-24 text-end">
         <PriceText symbol={symbol} value={q.bid} dir={q.dir} className="text-[13px]" />
         <div className="mt-0.5">
           {ch === null ? <span className="text-[11.5px] text-fg-3">—</span> : <Delta value={ch} className="text-[11.5px]" />}
@@ -345,15 +352,16 @@ function MoversCard() {
     const ranked = INSTRUMENTS.filter((i) => rangeCh[i.symbol] !== undefined).sort((x, y) => rangeCh[y.symbol]! - rangeCh[x.symbol]!);
     list = (dir === "gainers" ? ranked : ranked.reverse()).slice(0, 6);
   }
+  const t = useT();
   const qs = useQuotes(list.map((i) => i.symbol));
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Top movers"
+        title={t("dashboard.movers.title")}
         action={<Segmented size="xs" value={range} onChange={setRange} options={["1D", "1W", "1M"] as const} />}
       />
       <div className="px-6 pt-3">
-        <Segmented size="xs" value={dir} onChange={setDir} options={[{ value: "gainers", label: "Gainers" }, { value: "losers", label: "Losers" }]} />
+        <Segmented size="xs" value={dir} onChange={setDir} options={[{ value: "gainers", label: t("dashboard.movers.gainers") }, { value: "losers", label: t("dashboard.movers.losers") }]} />
       </div>
       <div className="k-fade-bottom mt-3 flex-1 space-y-2 px-4 pb-5 sm:px-6">
         {list.map((i) => (
@@ -365,28 +373,30 @@ function MoversCard() {
 }
 
 function CalendarCard() {
+  const t = useT();
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Economic calendar"
-        subtitle="Today · server time GMT+3"
+        title={t("dashboard.calendar.title")}
+        subtitle={t("dashboard.calendar.subtitle")}
         action={
           <Link href="/calendar">
             <Button size="sm" variant="surface">
-              View all
+              {t("common.viewAll")}
             </Button>
           </Link>
         }
       />
       <div className="k-fade-bottom mt-4 flex-1 space-y-2 px-4 pb-5 sm:px-6">
         {CALENDAR.slice(0, 5).map((e) => (
-          <div key={e.id} className="k-row relative flex items-center gap-3 overflow-hidden py-3 pl-5 pr-4">
-            <span className={cn("absolute inset-y-2 left-0 w-[3px] rounded-r-full", e.impact === 3 ? "bg-down" : e.impact === 2 ? "bg-warn" : "bg-fg-3")} />
+          <div key={e.id} className="k-row relative flex items-center gap-3 overflow-hidden py-3 ps-5 pe-4">
+            <span className={cn("absolute inset-y-2 start-0 w-[3px] rounded-e-full", e.impact === 3 ? "bg-down" : e.impact === 2 ? "bg-warn" : "bg-fg-3")} />
             <div className="w-11 shrink-0 font-mono text-[12px] text-fg-3">{e.time}</div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-[13.5px] font-medium">{e.title}</div>
               <div className="k-num mt-0.5 text-[11.5px] text-fg-3">
-                {e.actual ? <span className="text-fg-2">A {e.actual} · </span> : null}F {e.forecast} · P {e.previous}
+                {e.actual ? <span className="text-fg-2">{t("dashboard.calendar.actual", { value: e.actual })}</span> : null}
+                {t("dashboard.calendar.forecastPrevious", { forecast: e.forecast, previous: e.previous })}
               </div>
             </div>
             <Chip size="sm" tone={e.impact === 3 ? "down" : "neutral"}>
@@ -401,14 +411,15 @@ function CalendarCard() {
 }
 
 function NewsCard() {
+  const t = useT();
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Market news"
+        title={t("dashboard.news.title")}
         action={
           <Link href="/news">
             <Button size="sm" variant="surface">
-              All news
+              {t("dashboard.news.all")}
             </Button>
           </Link>
         }
@@ -420,8 +431,8 @@ function NewsCard() {
             <img src={n.image} alt="" className="size-14 shrink-0 rounded-xl object-cover" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-[11.5px] text-fg-3">
-                {n.pinned && <Chip size="sm" tone="ember">Pinned</Chip>}
-                <span>{n.source}</span>·<span>{n.minutesAgo}m ago</span>
+                {n.pinned && <Chip size="sm" tone="ember">{t("dashboard.news.pinned")}</Chip>}
+                <span>{n.source}</span>·<span>{t("dashboard.time.minutesAgo", { count: n.minutesAgo })}</span>
               </div>
               <div className="mt-1 line-clamp-2 text-[13.5px] font-medium leading-snug">{n.title}</div>
               <div className="mt-1.5 flex gap-1.5">
@@ -454,10 +465,11 @@ function WorldCard() {
     { country: "br", count: 2, label: "Brazil" },
     { country: "sg", count: 2, label: "Singapore" },
   ];
+  const t = useT();
   const heat = { us: 0.8, gb: 0.4, de: -0.6, jp: -0.3, au: 0.5, ch: -0.2, ca: -0.4, cn: 0.3 };
   return (
     <Card className="h-full">
-      <CardHeader title="Markets & news around the world" subtitle="Live headlines by country and currency sentiment" action={<Chip tone="ember" dot>54 stories today</Chip>} />
+      <CardHeader title={t("dashboard.world.title")} subtitle={t("dashboard.world.subtitle")} action={<Chip tone="ember" dot>{t("dashboard.world.stories", { count: 54 })}</Chip>} />
       <div className="px-4 pt-2 sm:px-6">
         <WorldMap pins={pins} heat={heat} />
       </div>
@@ -469,15 +481,16 @@ function WorldCard() {
 }
 
 function PositionsCard() {
+  const t = useT();
   const qs = useQuotes(POSITIONS.map((p) => p.symbol));
   const total = POSITIONS.reduce((s, p) => s + positionProfit(p, qs[p.symbol]!.bid, qs[p.symbol]!.ask), 0);
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Open positions"
+        title={t("dashboard.positions.title")}
         subtitle={
           <span>
-            {POSITIONS.length} positions · floating{" "}
+            {t("dashboard.positions.summary", { count: POSITIONS.length })}{" "}
             <span className={cn("k-num font-medium", total >= 0 ? "text-up" : "text-down")}>
               {total >= 0 ? "+" : "-"}
               {formatMoney(Math.abs(total))}
@@ -487,7 +500,7 @@ function PositionsCard() {
         action={
           <Link target="_blank" rel="noopener" href="/trade">
             <Button size="sm" variant="surface">
-              <CandlestickChart /> Terminal
+              <CandlestickChart /> {t("dashboard.positions.terminal")}
             </Button>
           </Link>
         }
@@ -503,14 +516,14 @@ function PositionsCard() {
                 <div className="flex items-center gap-2 text-[13.5px] font-medium">
                   {p.symbol}
                   <Chip size="sm" tone={p.side === "buy" ? "up" : "down"}>
-                    {p.side.toUpperCase()} {p.volume}
+                    {t(p.side === "buy" ? "common.buy" : "common.sell").toUpperCase()} {p.volume}
                   </Chip>
                 </div>
                 <div className="k-num mt-0.5 font-mono text-[11px] text-fg-3">
                   {p.openPrice} → <PriceText symbol={p.symbol} value={p.side === "buy" ? q.bid : q.ask} dir={q.dir} className="text-[11px]" />
                 </div>
               </div>
-              <div className={cn("k-num text-right text-[14px] font-semibold", pnl >= 0 ? "text-up" : "text-down")}>
+              <div dir="ltr" className={cn("k-num text-end text-[14px] font-semibold", pnl >= 0 ? "text-up" : "text-down")}>
                 {pnl >= 0 ? "+" : "-"}
                 {formatMoney(Math.abs(pnl))}
               </div>
@@ -526,22 +539,19 @@ function PositionsCard() {
 
 function DemoDashboard() {
   const me = useSession();
-  const [hour, setHour] = React.useState<string>("Good evening");
+  const t = useT();
+  const [hour, setHour] = React.useState<string>("evening");
   React.useEffect(() => setHour(greeting()), []);
   const ib = DASHBOARD.earnings;
   return (
     <div className="pb-40">
       <PageHeader
-        title={
-          <>
-            {hour}, {me.first_name}
-          </>
-        }
-        subtitle="Here's how your accounts are performing today."
+        title={t.dyn(`dashboard.greeting.${hour}`, undefined, { name: me.first_name })}
+        subtitle={t("dashboard.subtitle.demo")}
         actions={
           <Link target="_blank" rel="noopener" href="/trade">
             <Button variant="ember" size="lg" shimmer>
-              Open trading terminal <ArrowUpRight />
+              {t("dashboard.openTerminal")} <ArrowUpRight />
             </Button>
           </Link>
         }
@@ -551,15 +561,15 @@ function DemoDashboard() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label="Total equity"
+          label={t("dashboard.equity.title")}
           icon={<TrendingUp />}
           value={<Money value={DASHBOARD.totalEquity} />}
-          chip={`+${DASHBOARD.equityChangeTodayPct}% today`}
+          chip={t("dashboard.kpi.today", { pct: DASHBOARD.equityChangeTodayPct })}
           chipTone="up"
           href="/portfolio"
         />
         <KpiCard
-          label="Wallet"
+          label={t("dashboard.kpi.wallet")}
           icon={<Wallet />}
           value={<Money value={DASHBOARD.wallet} />}
           footer={
@@ -577,16 +587,16 @@ function DemoDashboard() {
           delay={0.05}
         />
         <KpiCard
-          label="Month P&L"
+          label={t("dashboard.kpi.monthPnl")}
           icon={<LineChart />}
           value={<Money value={DASHBOARD.monthPnl} signed tone="up" />}
-          chip={`+${DASHBOARD.monthPnlPct}% vs last month`}
+          chip={t("dashboard.kpi.vsLastMonth", { pct: DASHBOARD.monthPnlPct })}
           chipTone="up"
           href="/portfolio/analytics"
           delay={0.1}
         />
         <KpiCard
-          label="Partner earnings"
+          label={t("dashboard.kpi.partnerEarnings")}
           icon={<Award />}
           value={<Money value={ib.total} />}
           hot
@@ -594,7 +604,7 @@ function DemoDashboard() {
           footer={
             <div className="flex items-center gap-1.5 text-[11.5px]">
               <Chip size="sm" tone="gold">IB ${ib.ib.toFixed(0)}</Chip>
-              <Chip size="sm">Copy ${ib.copy.toFixed(0)}</Chip>
+              <Chip size="sm">{t("dashboard.kpi.copy", { amount: `$${ib.copy.toFixed(0)}` })}</Chip>
               <Chip size="sm">PAMM ${ib.pamm.toFixed(0)}</Chip>
             </div>
           }
@@ -650,16 +660,18 @@ function DemoDashboard() {
           <div className="relative flex flex-col gap-5 p-7 md:flex-row md:items-center md:justify-between">
             <div className="max-w-xl">
               <Chip tone="gold" className="mb-3">
-                <BadgeCheck className="size-3.5" /> Partner programme
+                <BadgeCheck className="size-3.5" /> {t("dashboard.partner.chip")}
               </Chip>
-              <h3 className="text-2xl font-medium tracking-tight">Invite traders. Earn up to $15 per lot — for life.</h3>
-              <p className="mt-2 text-sm text-fg-2">Multi-tier commissions, CPA bonuses and real-time tracking. Your link: <span className="font-mono text-fg">kalks.com/r/{me.referral_code}</span></p>
+              <h3 className="text-2xl font-medium tracking-tight">{t("dashboard.partner.title")}</h3>
+              <p className="mt-2 text-sm text-fg-2">
+                <Trans k="dashboard.partner.text" vars={{ url: `kalks.com/r/${me.referral_code}` }} tags={{ link: (c) => <span className="font-mono text-fg" dir="ltr">{c}</span> }} />
+              </p>
             </div>
             <div className="flex items-center gap-4">
               <Icon3D name="handshake" size={84} className="hidden md:block" />
               <Link href="/partner">
                 <Button variant="ember" size="lg">
-                  Open partner dashboard <ArrowUpRight />
+                  {t("dashboard.partner.open")} <ArrowUpRight />
                 </Button>
               </Link>
             </div>
