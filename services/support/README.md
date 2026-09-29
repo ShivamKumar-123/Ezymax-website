@@ -121,7 +121,16 @@ curl -s localhost:8100/v1/notify -H "x-kalks-internal: $SUPPORT_INTERNAL_TOKEN" 
   -H 'content-type: application/json' -d '{"type":"wallet.deposit_credited","userId":42,"title":"Deposit credited","dedupeKey":"deposit:991"}'
 ```
 
-Until a producer calls it directly, polling adapters (`src/adapters.rs`) cover: engine closing deals (`trading.stop_out`, `trading.sl`, `trading.tp`, `trading.dealer_close`), engine margin-call flags (`trading.margin_call`), gateway KYC decisions (`kyc.verified`, `kyc.rejected`, in-app only because the gateway emails them) and the wallet's own notifications (`wallet.*`) for clients seen on the stream in the last 24 hours. Each starts from "now" on its first run. Wallet, prop, IB and copy/PAMM should call `POST /v1/notify` at the moment of the event for timely emails.
+Producers that push directly (each from an outbox written with the business change, delivered after the commit with retries, so a support outage never blocks money movement):
+
+| Service | Types | Dedupe key | Link |
+|---|---|---|---|
+| wallet | every wallet notification: `wallet.deposit_credited`, `wallet.deposit_rejected`, `wallet.withdrawal_requested`, `wallet.withdrawal_approved`, `wallet.withdrawal_rejected`, `wallet.withdrawal_completed`, `wallet.transfer_completed`, `wallet.credit` | `wallet:n:<wallet notification id>` | `/wallet/history`, `/wallet` |
+| prop | `prop.passed`, `prop.failed` (breach), `prop.funded`, `prop.phase_started`, `prop.scaled`, `prop.loss_warning`, `prop.violation`, `prop.payout_requested`, `prop.payout_paid`, `prop.payout_rejected` | `prop:n:<prop notification id>` | `/prop/mine`, `/prop/payouts` |
+| ib | `ib.commission_paid` (a payout landed in the partner's wallet) | `ib:payout:<payout id>:paid` | `/partner/payouts` |
+| news | `calendar.reminder` (in-app) | per event and user | `/calendar` |
+
+Polling adapters (`src/adapters.rs`) cover the rest: engine closing deals (`trading.stop_out`, `trading.sl`, `trading.tp`, `trading.dealer_close`), engine margin-call flags (`trading.margin_call`) and gateway KYC decisions (`kyc.verified`, `kyc.rejected`, in-app only because the gateway emails them). The wallet adapter (wallet notifications of clients seen on the stream in the last 24 hours) stays as a safety net and uses the wallet's dedupe key, so nothing is shown twice. Each adapter starts from "now" on its first run. Copy/PAMM should call `POST /v1/notify` at the moment of the event too.
 
 ### Broadcasts
 

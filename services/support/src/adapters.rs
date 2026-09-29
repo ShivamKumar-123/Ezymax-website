@@ -8,6 +8,10 @@
 //! | margin   | engine `GET /v1/admin/accounts` (`marginCall` flag)           | `trading.margin_call`                        |
 //! | kyc      | gateway `GET /v1/internal/referrals/users?since=` (kyc_status) | `kyc.verified`, `kyc.rejected` (in-app; the gateway emails decisions) |
 //! | wallet   | wallet `GET /v1/wallets/{id}/notifications` for clients seen on the stream in the last 24 h | `wallet.deposit_credited`, `wallet.withdrawal_*`, … |
+//!
+//! The wallet now pushes every notification itself (its `notifier` outbox, for online and offline clients)
+//! with the same dedupe key `wallet:n:<wallet notification id>`, so the wallet adapter is only a safety net
+//! for a wallet running without `SUPPORT_URL`; whichever delivers first wins, the other is a no-op.
 
 use crate::db;
 use crate::notify::{self, EmailMode, NewNotification};
@@ -202,6 +206,7 @@ pub async fn wallet(st: &AppState) -> anyhow::Result<usize> {
                 .severity(sev)
                 .source("wallet")
                 .link(link)
+                // same key the wallet's own push uses (services/wallet/src/notifier.rs): never shown twice
                 .dedupe(format!("wallet:n:{}", it["id"]))
                 .data(it["data"].clone());
             if !notify::deliver(st, &tenant, nn).await?.duplicate {

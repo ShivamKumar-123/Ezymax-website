@@ -10,6 +10,7 @@ pub mod engine;
 pub mod error;
 pub mod ledger;
 pub mod money;
+pub mod notifier;
 pub mod ops;
 pub mod settings;
 pub mod state;

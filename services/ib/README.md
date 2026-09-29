@@ -147,6 +147,7 @@ Every route except `GET /health` needs `X-Kalks-Internal: $IB_INTERNAL_TOKEN`. T
 | **Client Area** | `proxy.ts`: `/r/CODE[/campaign]` and any `?ref=CODE&c=campaign` record a click (`POST /v1/ib/clicks`, 1.5 s budget), set the first-party `kalks_ref` cookie and send signed-out visitors to `/register?ref=…`. The register and Google-complete BFFs add `referral_campaign` from the cookie when the code matches. `/api/partner/*` → `/v1/ib/me/*` |
 | **Back Office** | `/api/partners/*` → `/v1/ib/admin/*` with permissions `partners.read / write / approve` (`apps/admin/lib/partners-perms.ts`) |
 | **Wallet** | The IB service calls `POST /v1/wallets/transfers` (`direction: credit`, `kind: ib_payout`, `currency: USDT`). The wallet may call `POST /v1/ib/events/deposit` on confirmed deposits |
+| **Support** | After each payout step, paid payouts not yet announced go to `POST $SUPPORT_URL/v1/notify` as `ib.commission_paid` (link `/partner/payouts`, `dedupeKey ib:payout:<id>:paid`): bell in the Client Area and Kalks Trader, email per the partner's `ib` preference. Retries back off (`payouts.notify_attempts`, `notify_error`) and never hold a payout back |
 | **Copy / PAMM** | Push investor allocations with `POST /v1/ib/events/lots` when the master deal closes (not for trades on the investor's own account, which are read from the engine) |
 | **Website** | Partner links should point to the Client Area (`https://app.<domain>/r/CODE/campaign`), or pass `?ref=&c=` through to it |
 
@@ -161,6 +162,7 @@ Every route except `GET /health` needs `X-Kalks-Internal: $IB_INTERNAL_TOKEN`. T
 | `GATEWAY_URL` / `GATEWAY_INTERNAL_TOKEN` | `http://127.0.0.1:8080` | referral feed |
 | `TRADING_URL` / `TRADING_INTERNAL_TOKEN` | `http://127.0.0.1:8090` | deals, accounts, ledgers |
 | `WALLET_URL` / `WALLET_INTERNAL_TOKEN` | `http://127.0.0.1:8095` | payout credits |
+| `SUPPORT_URL` / `SUPPORT_INTERNAL_TOKEN` | `http://127.0.0.1:8100` / – | `ib.commission_paid` notifications; empty URL = none |
 | `INSTRUMENTS_FILE` | `config/instruments.json` | asset classes for symbol groups |
 | `IB_SYNC_SECS` / `IB_DEALS_SECS` | `10` / `5` | poll periods |
 | `IB_WORKERS` | `true` | `false` serves the API only |

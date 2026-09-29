@@ -8,7 +8,7 @@ use wallet::config::Config;
 use wallet::engine::HttpEngine;
 use wallet::state::{AppState, Tenants};
 use wallet::users::GatewayUsers;
-use wallet::{api, db, ledger, settings, watcher};
+use wallet::{api, db, ledger, notifier, settings, watcher};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -62,6 +62,7 @@ async fn main() -> anyhow::Result<()> {
     };
     if cfg.workers {
         watcher::spawn(st.clone());
+        notifier::spawn(st.clone());
     }
     let listener = tokio::net::TcpListener::bind(&cfg.bind).await?;
     tracing::info!(bind = %cfg.bind, workers = cfg.workers, "http listening");

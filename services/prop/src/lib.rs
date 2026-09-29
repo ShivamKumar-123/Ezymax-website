@@ -8,6 +8,7 @@ pub mod error;
 pub mod evaluator;
 pub mod heuristics;
 pub mod money;
+pub mod notifier;
 pub mod ops;
 pub mod plans;
 pub mod rules;

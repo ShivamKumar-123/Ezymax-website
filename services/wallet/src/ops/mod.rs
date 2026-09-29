@@ -8,7 +8,8 @@ pub mod withdrawals;
 use serde_json::Value;
 use sqlx::{PgPool, Postgres, Transaction};
 
-/// Records an in-app notification (D41). Email delivery is a follow-up (gateway mailer).
+/// Records a client notification (D41) inside the caller's transaction. `notifier` pushes it to the support
+/// service after the commit (bell, realtime, email per the client's preference).
 pub async fn notify(tx: &mut Transaction<'_, Postgres>, tenant_id: i64, user_id: i64, kind: &str, title: &str, body: &str, data: Value) -> sqlx::Result<()> {
     sqlx::query("INSERT INTO notifications (tenant_id, user_id, kind, title, body, data) VALUES ($1, $2, $3, $4, $5, $6)")
         .bind(tenant_id)
@@ -19,6 +20,7 @@ pub async fn notify(tx: &mut Transaction<'_, Postgres>, tenant_id: i64, user_id:
         .bind(sqlx::types::Json(data))
         .execute(&mut **tx)
         .await?;
+    crate::notifier::WAKE.notify_one();
     Ok(())
 }
 

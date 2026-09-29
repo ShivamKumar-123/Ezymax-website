@@ -21,6 +21,9 @@ pub struct Config {
     pub sync_secs: u64,
     pub deals_secs: u64,
     pub log_json: bool,
+    /// Support / notifications service (`POST /v1/notify`). Empty = no payout notifications.
+    pub support_url: String,
+    pub support_token: String,
 }
 
 fn var(key: &str, default: &str) -> String {
@@ -61,6 +64,8 @@ impl fmt::Debug for Config {
             .field("workers", &self.workers)
             .field("sync_secs", &self.sync_secs)
             .field("deals_secs", &self.deals_secs)
+            .field("support_url", &self.support_url)
+            .field("support_token", &redact(&self.support_token))
             .finish()
     }
 }
@@ -88,6 +93,8 @@ impl Config {
             sync_secs: var("IB_SYNC_SECS", "10").parse().unwrap_or(10).max(1),
             deals_secs: var("IB_DEALS_SECS", "5").parse().unwrap_or(5).max(1),
             log_json: var("IB_LOG_FORMAT", "json") == "json",
+            support_url: var("SUPPORT_URL", "http://127.0.0.1:8100").trim().trim_end_matches('/').to_string(),
+            support_token: var("SUPPORT_INTERNAL_TOKEN", "").trim().to_string(),
         })
     }
 
@@ -109,6 +116,8 @@ impl Config {
             sync_secs: 10,
             deals_secs: 5,
             log_json: false,
+            support_url: String::new(),
+            support_token: String::new(),
         }
     }
 }

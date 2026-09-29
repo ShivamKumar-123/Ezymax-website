@@ -15,6 +15,7 @@ pub mod deals;
 pub mod error;
 pub mod model;
 pub mod money;
+pub mod notifier;
 pub mod payouts;
 pub mod state;
 pub mod stats;

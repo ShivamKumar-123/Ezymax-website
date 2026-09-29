@@ -39,6 +39,7 @@ struct Mock {
     wallet: HashMap<i64, D>,
     wallet_keys: HashMap<String, Value>,
     bulk_closes: usize,
+    notified: Vec<Value>,
 }
 
 type M = Arc<Mutex<Mock>>;
@@ -127,6 +128,11 @@ async fn wallet(State(m): State<M>, Json(b): Json<Value>) -> (axum::http::Status
     (axum::http::StatusCode::OK, Json(v))
 }
 
+async fn support_notify(State(m): State<M>, Json(b): Json<Value>) -> Json<Value> {
+    m.lock().unwrap().notified.push(b);
+    Json(json!({"results": []}))
+}
+
 async fn start_mock(m: M) -> String {
     let app = Router::new()
         .route("/health", get(|| async { "ok" }))
@@ -139,6 +145,7 @@ async fn start_mock(m: M) -> String {
         .route("/v1/dealing/deals", get(deals))
         .route("/v1/admin/groups", get(groups))
         .route("/v1/wallets/transfers", post(wallet))
+        .route("/v1/notify", post(support_notify))
         .with_state(m);
     let l = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = l.local_addr().unwrap();
@@ -162,6 +169,8 @@ fn config(db: &str, mock: &str) -> Config {
         poll_concurrency: 4,
         evaluator_enabled: false,
         verify_base_url: "https://app.example/verify".into(),
+        support_url: String::new(),
+        support_token: String::new(),
     }
 }
 
@@ -340,6 +349,32 @@ async fn phase_state_machine_and_payouts() {
 
     // audit log is append-only
     assert!(sqlx::query("DELETE FROM audit_log").execute(&pool).await.is_err());
+
+    // every inbox row reaches the support service once (bell + email), with a stable dedupe key
+    let mut cfg = config(&db, &url);
+    cfg.support_url = url.clone();
+    let pusher = Arc::new(Svc::new(cfg, pool.clone(), None));
+    let http = reqwest::Client::new();
+    let total: i64 = sqlx::query_scalar("SELECT count(*) FROM notifications").fetch_one(&pool).await.unwrap();
+    let mut sent = 0;
+    loop {
+        let (n, failed) = prop::notifier::push_pending(&pusher, &http).await.unwrap();
+        assert_eq!(failed, 0);
+        if n == 0 {
+            break;
+        }
+        sent += n;
+    }
+    assert_eq!(sent as i64, total);
+    let pushed = m.lock().unwrap().notified.clone();
+    assert_eq!(pushed.len() as i64, total);
+    let types: Vec<&str> = pushed.iter().filter_map(|b| b["type"].as_str()).collect();
+    for want in ["prop.passed", "prop.failed", "prop.funded", "prop.payout_paid", "prop.payout_rejected"] {
+        assert!(types.contains(&want), "{want} pushed: {types:?}");
+    }
+    let paid = pushed.iter().find(|b| b["type"] == "prop.payout_paid").unwrap();
+    assert_eq!((paid["userId"].as_i64(), paid["link"].as_str(), paid["severity"].as_str()), (Some(user), Some("/prop/payouts"), Some("success")));
+    assert!(paid["dedupeKey"].as_str().unwrap().starts_with("prop:n:"));
 
     pool.close().await;
     let admin = sqlx::PgPool::connect("postgres://postgres@127.0.0.1:5433/postgres").await.unwrap();

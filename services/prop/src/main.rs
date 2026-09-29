@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use prop::config::Config;
 use prop::ops::Svc;
-use prop::{api, evaluator, store};
+use prop::{api, evaluator, notifier, store};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -45,6 +45,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Arc::new(Svc::new(cfg.clone(), pool, gateway));
     if cfg.evaluator_enabled {
         tokio::spawn(evaluator::run(app.clone()));
+        notifier::spawn(app.clone());
         tracing::info!(poll_ms = cfg.poll_ms, "rule evaluator running");
     }
 

@@ -235,6 +235,7 @@ curl -s -X POST localhost:8097/v1/admin/payouts/1/approve $H -H x-kalks-staff-id
 | `PROP_ENV` | `development` | |
 | `TRADING_URL` / `TRADING_INTERNAL_TOKEN` | `http://127.0.0.1:8090` / – | engine |
 | `WALLET_URL` / `WALLET_INTERNAL_TOKEN` | `http://127.0.0.1:8095` / – | wallet |
+| `SUPPORT_URL` / `SUPPORT_INTERNAL_TOKEN` | `http://127.0.0.1:8100` / – | notification push (bell, realtime, email); empty URL = prop inbox only |
 | `PROP_GATEWAY_DATABASE_URL` | `GATEWAY_DATABASE_URL` | KYC status (read-only) |
 | `PROP_POLL_MS` | `1000` | evaluator interval (200 – 60 000) |
 | `PROP_POLL_CONCURRENCY` | `16` | parallel engine requests |
@@ -263,5 +264,5 @@ cargo test -p prop
 - **Account limit per group.** The engine's `maxAccountsPerUser` applies to prop groups too (seeded `prop`: 5). Raise it for the prop group in Back Office → Config → Account groups; a refused open refunds the fee.
 - **Heuristics** cover the five listed strategies; martingale / grid or other labels on a plan are shown to traders but not detected. Cross-account checks only see prop accounts.
 - **News calendar** is managed by staff in the Back Office; there is no feed ingest yet.
-- **Notifications** are stored and shown in the Client Area; email / push delivery waits for the notify service.
+- **Notifications** are stored in the prop inbox and pushed by `src/notifier.rs` (with the evaluator instance) to the support service: `prop.passed`, `prop.failed` (breach), `prop.funded`, `prop.phase_started`, `prop.scaled`, `prop.loss_warning`, `prop.violation`, `prop.payout_requested`, `prop.payout_paid`, `prop.payout_rejected`, links `/prop/mine` / `/prop/payouts`, `dedupeKey prop:n:<id>`. Support shows them in the Client Area and Kalks Trader bells and emails them per the trader's `prop` preference; delivery retries with backoff and never blocks the evaluator or a payout.
 - **Certificates** use first name + last initial; there is no opt-out setting yet.

@@ -77,8 +77,9 @@ pub async fn notify(pool: &PgPool, tenant: &str, user_id: i64, challenge_id: Opt
         .bind(body)
         .execute(pool)
         .await;
-    if let Err(e) = r {
-        tracing::error!(error = %e, kind, "notification write failed");
+    match r {
+        Ok(_) => crate::notifier::WAKE.notify_one(),
+        Err(e) => tracing::error!(error = %e, kind, "notification write failed"),
     }
 }
 

@@ -523,3 +523,79 @@ async fn wallet_trading_transfers_are_two_phase_safe() {
     t.invariants().await;
     t.drop_db().await;
 }
+
+/// Mock support service: records every `POST /v1/notify`; answers 503 while `down` is set.
+#[derive(Default)]
+struct MockSupport {
+    calls: std::sync::Mutex<Vec<(String, Value)>>,
+    down: std::sync::atomic::AtomicBool,
+}
+
+async fn mock_support() -> (Arc<MockSupport>, String) {
+    use axum::extract::State;
+    use axum::http::{HeaderMap, StatusCode};
+    let m = Arc::new(MockSupport::default());
+    let app = axum::Router::new()
+        .route(
+            "/v1/notify",
+            axum::routing::post(|State(m): State<Arc<MockSupport>>, h: HeaderMap, axum::Json(b): axum::Json<Value>| async move {
+                if m.down.load(std::sync::atomic::Ordering::SeqCst) {
+                    return (StatusCode::SERVICE_UNAVAILABLE, axum::Json(json!({})));
+                }
+                let tenant = h.get("x-kalks-tenant").and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
+                m.calls.lock().unwrap().push((tenant, b));
+                (StatusCode::OK, axum::Json(json!({"results": []})))
+            }),
+        )
+        .with_state(m.clone());
+    let l = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}", l.local_addr().unwrap());
+    tokio::spawn(async move { axum::serve(l, app).await.unwrap() });
+    (m, url)
+}
+
+#[tokio::test]
+async fn notifications_are_pushed_to_support_once() {
+    let Some(t) = T::new("support push").await else { return };
+    let (m, url) = mock_support().await;
+    let mut st = t.st.clone();
+    let mut cfg = (*st.cfg).clone();
+    cfg.support_url = url;
+    cfg.support_token = "support-token".into();
+    st.cfg = Arc::new(cfg);
+    let http = reqwest::Client::new();
+    // a withdrawal request, then a staff rejection: two wallet notifications
+    t.credit(7, "100", "seed-n").await;
+    t.users.set(7, "verified");
+    let (s, v) = t.post("/v1/withdrawals", json!({"user_id": 7, "amount": "40", "chain": "tron", "to_address": CLIENT_TRON, "idempotency_key": "w-n"})).await;
+    assert_eq!(s, 200, "{v}");
+    let id = v["withdrawal"]["id"].as_i64().unwrap();
+    // support is down: nothing is lost, the rows back off
+    m.down.store(true, std::sync::atomic::Ordering::SeqCst);
+    let (sent, failed) = wallet::notifier::push_pending(&st, &http).await.unwrap();
+    assert_eq!((sent, failed), (0, 1));
+    let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM notifications WHERE pushed_at IS NULL").fetch_one(&st.pool).await.unwrap();
+    assert!(pending >= 1, "the withdrawal request waits for delivery");
+    m.down.store(false, std::sync::atomic::Ordering::SeqCst);
+    sqlx::query("UPDATE notifications SET push_next_at = NULL").execute(&st.pool).await.unwrap();
+    let (s, v) = t.staff("POST", &format!("/v1/admin/withdrawals/{id}/reject"), Some(json!({"reason": "Address on a sanctions list"}))).await;
+    assert_eq!(s, 200, "{v}");
+    let (sent, failed) = wallet::notifier::push_pending(&st, &http).await.unwrap();
+    assert_eq!(failed, 0);
+    let total: i64 = sqlx::query_scalar("SELECT count(*) FROM notifications").fetch_one(&st.pool).await.unwrap();
+    assert!(total >= 2);
+    assert_eq!(sent as i64, total, "every notification delivered");
+    // a second pass sends nothing again
+    assert_eq!(wallet::notifier::push_pending(&st, &http).await.unwrap(), (0, 0));
+    let calls = m.calls.lock().unwrap().clone();
+    assert_eq!(calls.len(), sent);
+    let rejected = calls.iter().find(|(_, b)| b["type"] == "wallet.withdrawal_rejected").expect("rejection pushed");
+    assert_eq!(rejected.0, "kalks");
+    assert_eq!(rejected.1["userId"], 7);
+    assert_eq!(rejected.1["link"], "/wallet/history");
+    assert_eq!(rejected.1["severity"], "warning");
+    assert_eq!(rejected.1["data"]["withdrawal_id"], id);
+    let nid: i64 = sqlx::query_scalar("SELECT id FROM notifications WHERE kind = 'withdrawal.rejected'").fetch_one(&st.pool).await.unwrap();
+    assert_eq!(rejected.1["dedupeKey"], format!("wallet:n:{nid}"), "same key as support's polling adapter");
+    t.drop_db().await;
+}

@@ -27,6 +27,9 @@ pub struct Config {
     pub trading_token: String,
     pub gateway_url: String,
     pub gateway_token: String,
+    /// Support / notifications service (`POST /v1/notify`). Empty = notifications stay in-app only.
+    pub support_url: String,
+    pub support_token: String,
 }
 
 /// Masks the password in a connection URL (`postgres://user:secret@host` → `postgres://user:***@host`).
@@ -82,6 +85,8 @@ impl fmt::Debug for Config {
             .field("trading_token", &redact(&self.trading_token))
             .field("gateway_url", &self.gateway_url)
             .field("gateway_token", &redact(&self.gateway_token))
+            .field("support_url", &self.support_url)
+            .field("support_token", &redact(&self.support_token))
             .finish()
     }
 }
@@ -119,6 +124,8 @@ impl Config {
             trading_token: var("TRADING_INTERNAL_TOKEN", ""),
             gateway_url: var("GATEWAY_URL", "http://127.0.0.1:8080").trim_end_matches('/').to_string(),
             gateway_token: var("GATEWAY_INTERNAL_TOKEN", ""),
+            support_url: var("SUPPORT_URL", "http://127.0.0.1:8100").trim_end_matches('/').to_string(),
+            support_token: var("SUPPORT_INTERNAL_TOKEN", ""),
         })
     }
 
@@ -144,6 +151,8 @@ impl Config {
             trading_token: String::new(),
             gateway_url: String::new(),
             gateway_token: String::new(),
+            support_url: String::new(),
+            support_token: String::new(),
         }
     }
 }

@@ -247,6 +247,7 @@ The service writes every staff action to its append-only `audit_log`, with the a
 | `WALLET_BSC_CONFIRMATIONS` / `WALLET_TRON_CONFIRMATIONS` | `15` / `20` | seed values |
 | `TRADING_URL` / `TRADING_INTERNAL_TOKEN` | `http://127.0.0.1:8090` | engine |
 | `GATEWAY_URL` / `GATEWAY_INTERNAL_TOKEN` | `http://127.0.0.1:8080` | KYC status |
+| `SUPPORT_URL` / `SUPPORT_INTERNAL_TOKEN` | `http://127.0.0.1:8100` / – | notification push (bell, realtime, email); empty URL = in-app only |
 
 The apps need `WALLET_URL` (default `http://127.0.0.1:8095`) and `WALLET_INTERNAL_TOKEN` (server-only) in `apps/crm` and `apps/admin`.
 
@@ -273,6 +274,6 @@ The apps need `WALLET_URL` (default `http://127.0.0.1:8095`) and `WALLET_INTERNA
 - Paid RPC:
   - Use a paid BSC RPC (or a self-hosted node) with an `eth_getLogs` allowance; public endpoints rate-limit.
   - Use a TronGrid key per environment.
-- Emails: deposit, withdrawal and transfer notifications are only recorded (`notifications` table, shown in the CRM). The email sending goes through the gateway mailer later (D41).
+- Notifications: every row of `notifications` (deposit credited / rejected, withdrawal requested / approved / rejected / completed, transfers, credits) is written in the same transaction as the money change and then pushed by `src/notifier.rs` to the support service (`POST $SUPPORT_URL/v1/notify`, type `wallet.<kind>`, link `/wallet/history`, `dedupeKey wallet:n:<id>`). Support shows it in the Client Area and Kalks Trader bells, on the realtime stream, and emails it per the client's `wallet` preference. The push runs after the commit (woken at once, else every 5 s), retries with backoff (15 s doubling to 1 h, 12 attempts, `push_attempts` / `push_error`), never blocks or rolls back the money transaction, and support's wallet polling adapter uses the same dedupe key, so nothing is shown or emailed twice.
 - RLS: every table carries `tenant_id` and queries are tenant-scoped, but Row-Level Security policies are not enabled yet (same as the trading engine).
 - Workers: run `WALLET_WORKERS=true` on exactly one instance.

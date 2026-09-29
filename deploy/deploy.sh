@@ -128,9 +128,9 @@ fi
 grep -q '^SUPPORT_STORAGE_DIR=' .env.local || printf 'SUPPORT_STORAGE_DIR=%s\n' "$HOME/.kalks-data/support" >> .env.local
 grep -q '^SUPPORT_APP_URL=' .env.local || printf 'SUPPORT_APP_URL=https://app.kalkstrade.com\n' >> .env.local
 install -d -m 700 "$(grep '^SUPPORT_STORAGE_DIR=' .env.local | cut -d= -f2-)"
-# the Client Area and Back Office BFFs reach the support service with the same token; browsers open the
-# realtime stream at wss://<host>/support/stream (Caddy)
-for app in apps/crm apps/admin; do
+# the Client Area, Back Office and Kalks Trader BFFs reach the support service with the same token; browsers
+# open the realtime stream at wss://<host>/support/stream (Caddy). Wallet, prop and IB push notifications with it too.
+for app in apps/crm apps/admin apps/terminal; do
   f="$app/.env.production.local"; touch "$f"
   grep -q '^SUPPORT_URL=' "$f" || printf 'SUPPORT_URL=http://127.0.0.1:8100\n' >> "$f"
   grep -q '^SUPPORT_INTERNAL_TOKEN=' "$f" || printf 'SUPPORT_INTERNAL_TOKEN=%s\n' "$(grep '^SUPPORT_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"

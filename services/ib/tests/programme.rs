@@ -272,6 +272,38 @@ async fn batch_approval_pays_wallet_with_retry_and_reversal_claws_back() {
         assert_eq!(c[1]["direction"], "credit");
         assert_eq!(c[1]["user_id"], 30);
     }
+    // the partner hears about it once through the support service (bell + email)
+    let notes: Arc<Mutex<Vec<(String, Value)>>> = Arc::default();
+    let n2 = notes.clone();
+    let support = axum::Router::new().route(
+        "/v1/notify",
+        axum::routing::post(move |h: axum::http::HeaderMap, Json(body): Json<Value>| {
+            let notes = n2.clone();
+            async move {
+                notes.lock().unwrap().push((h.get("x-kalks-service").and_then(|v| v.to_str().ok()).unwrap_or("").to_string(), body));
+                Json(json!({"results": []}))
+            }
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let support_url = format!("http://{}", listener.local_addr().unwrap());
+    tokio::spawn(async move { axum::serve(listener, support).await.unwrap() });
+    let mut cfg = (*e.st.cfg).clone();
+    cfg.support_url = support_url;
+    let st = AppState { cfg: Arc::new(cfg), ..e.st.clone() };
+    assert_eq!(ib::notifier::push_paid(&st).await.unwrap(), (1, 0));
+    assert_eq!(ib::notifier::push_paid(&st).await.unwrap(), (0, 0), "announced once");
+    {
+        let n = notes.lock().unwrap();
+        assert_eq!(n.len(), 1);
+        let (svc, b) = &n[0];
+        assert_eq!(svc, "ib");
+        assert_eq!(b["type"], "ib.commission_paid");
+        assert_eq!(b["userId"], 30);
+        assert_eq!(b["link"], "/partner/payouts");
+        assert!(b["body"].as_str().unwrap().starts_with("33.50 USDT"), "{b}");
+        assert!(b["dedupeKey"].as_str().unwrap().starts_with("ib:payout:"));
+    }
     // a paid deal reopened by the dealing desk is clawed back with a negative pending line
     deals::reverse_deal(&e.st, "kalks", "engine", 9301).await.unwrap();
     assert_eq!(e.sum("SELECT sum(amount) FROM commissions WHERE kind = 'clawback' AND beneficiary_id = 30").await, dec("-30"));

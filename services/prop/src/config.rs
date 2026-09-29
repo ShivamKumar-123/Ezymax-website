@@ -25,6 +25,9 @@ pub struct Config {
     pub evaluator_enabled: bool,
     /// Public base URL of the certificate verify page, e.g. https://app.kalkstrade.com/verify
     pub verify_base_url: String,
+    /// Support / notifications service (`POST /v1/notify`). Empty = the prop inbox only.
+    pub support_url: String,
+    pub support_token: String,
 }
 
 pub fn redact_url(url: &str) -> String {
@@ -60,6 +63,8 @@ impl fmt::Debug for Config {
             .field("poll_concurrency", &self.poll_concurrency)
             .field("evaluator_enabled", &self.evaluator_enabled)
             .field("verify_base_url", &self.verify_base_url)
+            .field("support_url", &self.support_url)
+            .field("support_token", &redact(&self.support_token))
             .finish()
     }
 }
@@ -90,6 +95,8 @@ impl Config {
             poll_concurrency: var("PROP_POLL_CONCURRENCY", "16").parse::<usize>().unwrap_or(16).clamp(1, 128),
             evaluator_enabled: var("PROP_EVALUATOR", "true") != "false",
             verify_base_url: var("PROP_VERIFY_BASE_URL", "http://localhost:3000/verify").trim_end_matches('/').to_string(),
+            support_url: var("SUPPORT_URL", "http://127.0.0.1:8100").trim().trim_end_matches('/').to_string(),
+            support_token: var("SUPPORT_INTERNAL_TOKEN", "").trim().to_string(),
         })
     }
 }

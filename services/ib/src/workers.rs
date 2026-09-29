@@ -1,7 +1,7 @@
 //! Background loops. Each loop logs and carries on after an error; all work is idempotent.
 
 use crate::state::AppState;
-use crate::{db, deals, payouts, stats, sync};
+use crate::{db, deals, notifier, payouts, stats, sync};
 use std::future::Future;
 use std::time::Duration;
 
@@ -80,6 +80,10 @@ pub fn spawn(st: &AppState) {
         loop {
             if let Err(e) = payouts::transfer_tick(&st2).await {
                 tracing::warn!(error = %e, "payout transfer step failed");
+            }
+            // announce paid payouts to the partner (retries of earlier failures ride along)
+            if let Err(e) = notifier::push_paid(&st2).await {
+                tracing::warn!(error = %e, "payout notification step failed");
             }
             tokio::select! {
                 _ = st2.wake_payouts.notified() => {}
