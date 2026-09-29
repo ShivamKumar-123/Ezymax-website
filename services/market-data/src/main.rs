@@ -8,6 +8,7 @@ mod api;
 mod backfill;
 mod config;
 mod db;
+mod depth;
 mod ingest;
 mod instruments;
 mod spreads;

@@ -7,8 +7,11 @@
 //! GET  /v1/history/status               stored bars per symbol/timeframe
 //! GET  /v1/admin/spreads                spread markups           (Bearer MARKET_DATA_ADMIN_TOKEN)
 //! PUT  /v1/admin/spreads                upsert a markup          (Bearer MARKET_DATA_ADMIN_TOKEN)
+//! GET  /v1/depth?symbol=&group=&levels= depth of market (feed levels, else indicative) with the group's spread
 //! WS   /v1/stream?group=                {"op":"subscribe","symbols":[..]} → {"type":"quote",...} (+ {"type":"hb"} every 5s)
 //!                                       {"op":"bars","symbol":"XAUUSD","tf":"M15"} → {"type":"bar",...}
+//!                                       {"op":"depth","symbols":[..],"levels"?:10,"src"?:"feed"} → {"type":"depth",...} on every
+//!                                       quote change of those symbols ("undepth" to stop; src "feed" = provider depth only)
 
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Query, State};
@@ -25,6 +28,7 @@ use tokio::sync::broadcast::error::RecvError;
 use tower_http::cors::CorsLayer;
 
 use crate::db::{self, Bar};
+use crate::depth;
 use crate::spreads::Markup;
 use crate::state::{Event, Market, Quote};
 use crate::timeframes::Tf;
@@ -42,6 +46,7 @@ pub fn router(state: AppState) -> Router {
         .route("/v1/quotes", get(quotes))
         .route("/v1/candles", get(candles))
         .route("/v1/history/status", get(history_status))
+        .route("/v1/depth", get(depth_rest))
         .route("/v1/admin/spreads", get(get_spreads).put(put_spread))
         .route("/v1/stream", get(stream))
         .layer(CorsLayer::permissive())
@@ -176,6 +181,29 @@ async fn put_spread(State(s): State<AppState>, h: HeaderMap, Json(m): Json<Marku
 }
 
 #[derive(Deserialize)]
+struct DepthQ {
+    symbol: String,
+    group: Option<String>,
+    levels: Option<usize>,
+}
+
+/// Depth of `symbol` for `group` (see `depth.rs`).
+fn depth_for(s: &AppState, group: &str, symbol: &str, levels: usize) -> Option<depth::Depth> {
+    let inst = s.market.cat.get(symbol)?;
+    let raw = s.market.quote(symbol)?;
+    let client = s.market.spreads.apply(group, inst, raw);
+    Some(depth::build(inst, &raw, &client, s.market.feed_depth(symbol).as_ref(), levels))
+}
+
+async fn depth_rest(State(s): State<AppState>, Query(q): Query<DepthQ>) -> Response {
+    let group = q.group.unwrap_or_else(|| "raw".into());
+    match depth_for(&s, &group, &q.symbol, q.levels.unwrap_or(depth::DEFAULT_LEVELS)) {
+        Some(d) => Json(json!({"symbol": q.symbol, "src": d.src, "t": d.t, "bids": d.bids, "asks": d.asks})).into_response(),
+        None => bad("unknown symbol or no price yet"),
+    }
+}
+
+#[derive(Deserialize)]
 struct StreamQ {
     group: Option<String>,
 }
@@ -210,6 +238,10 @@ async fn client(mut socket: WebSocket, s: AppState, group: String) {
     let mut rx = s.market.tx.subscribe();
     let mut syms: HashSet<String> = HashSet::new();
     let mut bars: HashSet<(String, Tf)> = HashSet::new();
+    // depth-of-market subscriptions: levels per client; `feed_only` = provider depth only (relays)
+    let mut depths: HashSet<String> = HashSet::new();
+    let mut depth_levels = depth::DEFAULT_LEVELS;
+    let mut feed_only = false;
     // application heartbeat: lets the browser detect a dead connection (it cannot see WS pings)
     let mut hb = tokio::time::interval(std::time::Duration::from_secs(5));
     hb.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
@@ -250,6 +282,28 @@ async fn client(mut socket: WebSocket, s: AppState, group: String) {
                             bars.insert((sym.to_string(), tf));
                         }
                     }
+                    Some("depth") => {
+                        depth_levels = v["levels"].as_u64().map(|n| n as usize).unwrap_or(depth_levels).clamp(1, depth::MAX_LEVELS);
+                        feed_only = v["src"] == "feed";
+                        let mut added = Vec::new();
+                        for x in v["symbols"].as_array().into_iter().flatten().filter_map(Value::as_str) {
+                            if s.market.cat.get(x).is_some() && depths.insert(x.to_string()) {
+                                added.push(x.to_string());
+                            }
+                        }
+                        for x in added {
+                            if let Some(d) = depth_for(&s, &group, &x, depth_levels).filter(|d| !feed_only || d.src == "feed")
+                                && socket.send(Message::text(depth::frame(&x, &d))).await.is_err()
+                            {
+                                return;
+                            }
+                        }
+                    }
+                    Some("undepth") => {
+                        for x in v["symbols"].as_array().into_iter().flatten().filter_map(Value::as_str) {
+                            depths.remove(x);
+                        }
+                    }
                     Some("unbars") => {
                         if let (Some(sym), Some(tf)) = (v["symbol"].as_str(), v["tf"].as_str().and_then(Tf::parse)) {
                             bars.remove(&(sym.to_string(), tf));
@@ -273,6 +327,17 @@ async fn client(mut socket: WebSocket, s: AppState, group: String) {
                     }
                     Err(RecvError::Closed) => break,
                 };
+                // the ladder follows every quote change of a symbol it is open for
+                if let Event::Quote { symbol, quote } = &ev
+                    && depths.contains(symbol)
+                    && let Some(inst) = s.market.cat.get(symbol)
+                {
+                    let client = s.market.spreads.apply(&group, inst, *quote);
+                    let d = depth::build(inst, quote, &client, s.market.feed_depth(symbol).as_ref(), depth_levels);
+                    if (!feed_only || d.src == "feed") && socket.send(Message::text(depth::frame(symbol, &d))).await.is_err() {
+                        break;
+                    }
+                }
                 let out = match ev {
                     Event::Quote { symbol, quote } if syms.contains(&symbol) => {
                         let Some(inst) = s.market.cat.get(&symbol) else { continue };

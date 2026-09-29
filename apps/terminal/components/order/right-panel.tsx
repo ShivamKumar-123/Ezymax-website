@@ -17,7 +17,7 @@ export function RightPanel({ onCollapse }: { onCollapse?: () => void }) {
   const T = useTerminal();
   const t = useT();
   const symbol = T.activeSymbol;
-  // the depth ladder is synthetic (no real order book): demo builds only
+  // guests have no trading account, so no depth ladder with one-click trading
   const tab = T.guest && T.ws.rightTab === "depth" ? "info" : T.ws.rightTab;
   return (
     <div className="flex h-full min-h-0 flex-col">

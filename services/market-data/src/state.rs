@@ -9,6 +9,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use tokio::sync::broadcast;
 
 use crate::db::{self, Bar, Source};
+use crate::depth::FeedDepth;
 use crate::instruments::Catalogue;
 use crate::spreads::Spreads;
 use crate::timeframes::Tf;
@@ -45,6 +46,8 @@ pub struct Market {
     pub pool: PgPool,
     pub spreads: Spreads,
     quotes: RwLock<HashMap<String, Quote>>,
+    /// provider depth (several priced levels) per symbol, when the feed carries it
+    depth: RwLock<HashMap<String, FeedDepth>>,
     forming: RwLock<HashMap<(String, Tf), Bar>>,
     pending: Mutex<Pending>,
     pub tx: broadcast::Sender<Event>,
@@ -68,6 +71,7 @@ impl Market {
             pool,
             spreads,
             quotes: RwLock::new(HashMap::new()),
+            depth: RwLock::new(HashMap::new()),
             forming: RwLock::new(HashMap::new()),
             pending: Mutex::new(Pending::default()),
             tx,
@@ -78,6 +82,22 @@ impl Market {
 
     pub fn quote(&self, symbol: &str) -> Option<Quote> {
         self.quotes.read().unwrap().get(symbol).copied()
+    }
+
+    pub fn feed_depth(&self, symbol: &str) -> Option<FeedDepth> {
+        self.depth.read().unwrap().get(symbol).cloned()
+    }
+
+    /// Several priced levels from the provider's depth stream (raw prices, best first). The top of book still
+    /// goes through `on_book`; this only keeps the ladder for the depth-of-market view.
+    pub fn on_depth(&self, symbol: &str, bids: Vec<(f64, f64)>, asks: Vec<(f64, f64)>, t: i64) {
+        let Some(inst) = self.cat.get(symbol) else { return };
+        let clean = |v: Vec<(f64, f64)>| v.into_iter().filter(|(p, s)| *p > 0.0 && *s > 0.0 && p.is_finite() && s.is_finite()).map(|(p, s)| (inst.round(p), s)).take(crate::depth::MAX_LEVELS).collect::<Vec<_>>();
+        let (bids, asks) = (clean(bids), clean(asks));
+        if bids.len() < 2 || asks.len() < 2 {
+            return;
+        }
+        self.depth.write().unwrap().insert(symbol.to_string(), FeedDepth { bids, asks, t });
     }
 
     pub fn forming(&self, symbol: &str, tf: Tf) -> Option<Bar> {

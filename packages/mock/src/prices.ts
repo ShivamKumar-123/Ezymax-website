@@ -34,7 +34,21 @@ export interface LiveBar {
 
 export type FeedMode = "connecting" | "live" | "sim";
 
+/**
+ * Depth of market from the market-data service (D97), with the account group's spread applied. `src` is
+ * "feed" when the provider carries depth, else "indicative" (levels derived from the live bid/ask).
+ * Levels are best first: `[price, lots]`.
+ */
+export interface DepthBook {
+  symbol: string;
+  src: "feed" | "indicative";
+  t: number;
+  bids: [number, number][];
+  asks: [number, number][];
+}
+
 type Listener = (q: Quote) => void;
+type DepthListener = (d: DepthBook) => void;
 type RawQuotes = Record<string, { bid: number; ask: number; last: number; t: number; o?: number; h?: number; l?: number }>;
 type BarListener = (b: LiveBar) => void;
 
@@ -82,6 +96,8 @@ class PriceFeed {
   private days = new Map<string, DayStats>();
   private listeners = new Map<string, Set<Listener>>();
   private barListeners = new Map<string, Set<BarListener>>();
+  private depthListeners = new Map<string, Set<DepthListener>>();
+  private depths = new Map<string, DepthBook>();
   private timer: ReturnType<typeof setInterval> | null = null;
   private dayTimer: ReturnType<typeof setTimeout> | null = null;
   private rand = seeded(20260924);
@@ -341,6 +357,7 @@ class PriceFeed {
         const [symbol, tf] = key.split("|");
         ws.send(JSON.stringify({ op: "bars", symbol, tf }));
       }
+      if (this.depthListeners.size) ws.send(JSON.stringify({ op: "depth", symbols: [...this.depthListeners.keys()] }));
       // after a drop: bars/quotes may have been missed while disconnected
       if (this.opened) this.resync();
       this.opened = true;
@@ -361,6 +378,11 @@ class PriceFeed {
         }
         this.onLiveQuote(m.s, m.b, m.a, m.l, m.t);
       } else if (m.type === "bar") this.barListeners.get(`${m.s}|${m.tf}`)?.forEach((fn) => fn({ t: m.t, o: m.o, h: m.h, l: m.l, c: m.c, v: m.v }));
+      else if (m.type === "depth" && Array.isArray(m.b) && Array.isArray(m.a)) {
+        const d: DepthBook = { symbol: m.s, src: m.src === "feed" ? "feed" : "indicative", t: m.t, bids: m.b, asks: m.a };
+        this.depths.set(m.s, d);
+        this.depthListeners.get(m.s)?.forEach((fn) => fn(d));
+      }
     };
     ws.onclose = () => {
       if (this.ws !== ws) return;
@@ -401,6 +423,7 @@ class PriceFeed {
     this.group = g;
     if (this.mode !== "live") return;
     this.liveTimes.clear(); // the next REST reply carries the new group's spread: take it as is
+    this.depths.clear(); // ladders carry the group's spread too: wait for the new socket's
     void this.loadQuotes(4000).then(() => this.notifyAll());
     const old = this.ws;
     this.ws = null;
@@ -428,6 +451,30 @@ class PriceFeed {
       if (set!.size === 0) {
         this.barListeners.delete(key);
         if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify({ op: "unbars", symbol, tf }));
+      }
+    };
+  }
+
+  /**
+   * Stream the depth-of-market ladder of `symbol` (live mode only): every quote change pushes a fresh book.
+   * The last book (if any) is delivered at once.
+   */
+  subscribeDepth(symbol: string, fn: DepthListener): () => void {
+    let set = this.depthListeners.get(symbol);
+    if (!set) {
+      set = new Set();
+      this.depthListeners.set(symbol, set);
+      if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify({ op: "depth", symbols: [symbol] }));
+    }
+    set.add(fn);
+    const cur = this.depths.get(symbol);
+    if (cur) fn(cur);
+    return () => {
+      set!.delete(fn);
+      if (set!.size === 0) {
+        this.depthListeners.delete(symbol);
+        this.depths.delete(symbol);
+        if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify({ op: "undepth", symbols: [symbol] }));
       }
     };
   }

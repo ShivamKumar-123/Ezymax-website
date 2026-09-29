@@ -146,6 +146,12 @@ fn handle(business: &str, text: &str, market: &Arc<Market>) -> bool {
             let t = d["t"].as_i64().unwrap_or_else(|| chrono::Utc::now().timestamp_millis());
             if b > 0.0 && a >= b {
                 market.on_book(&inst.symbol, b, a, t);
+                // more than one priced level: keep the book for the depth-of-market ladder (D97)
+                let levels = |v: &Value| v.as_array().map(|l| l.iter().filter_map(|x| Some((num(&x[0])?, num(&x[1])?))).collect::<Vec<_>>()).unwrap_or_default();
+                let (bl, al) = (levels(&d["b"]), levels(&d["a"]));
+                if bl.len() > 1 && al.len() > 1 {
+                    market.on_depth(&inst.symbol, bl, al, t);
+                }
             }
         }
         10001 | 10004 | 10011 | 200 => {}
@@ -167,6 +173,8 @@ async fn relay(url: String, market: Arc<Market>) {
             let (ws, _) = tokio::time::timeout(Duration::from_secs(15), connect_async(&url)).await??;
             let (mut tx, mut rx) = ws.split();
             tx.send(Message::text(json!({"op": "subscribe", "symbols": symbols}).to_string())).await?;
+            // provider depth only (never the upstream's indicative ladders); upstreams without depth ignore it
+            tx.send(Message::text(json!({"op": "depth", "symbols": symbols, "src": "feed"}).to_string())).await?;
             market.set_connected("relay", true);
             tracing::info!(%url, "relay connected");
             backoff = 1;
@@ -176,6 +184,14 @@ async fn relay(url: String, market: Arc<Market>) {
                 match msg? {
                     Message::Text(t) => {
                         let Ok(v) = serde_json::from_str::<Value>(&t) else { continue };
+                        if v["type"] == "depth" && v["src"] == "feed" {
+                            if let Some(s) = v["s"].as_str() {
+                                let levels = |x: &Value| x.as_array().map(|l| l.iter().filter_map(|p| Some((num(&p[0])?, num(&p[1])?))).collect::<Vec<_>>()).unwrap_or_default();
+                                let t = v["t"].as_i64().unwrap_or_else(|| chrono::Utc::now().timestamp_millis());
+                                market.on_depth(s, levels(&v["b"]), levels(&v["a"]), t);
+                            }
+                            continue;
+                        }
                         if v["type"] != "quote" { continue }
                         let (Some(s), Some(b), Some(a)) = (v["s"].as_str(), num(&v["b"]), num(&v["a"])) else { continue };
                         let t = v["t"].as_i64().unwrap_or_else(|| chrono::Utc::now().timestamp_millis());

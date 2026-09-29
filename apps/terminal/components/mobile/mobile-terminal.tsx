@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useTheme } from "next-themes";
 import { toast } from "@/lib/notify";
-import { ArrowUpRight, BarChart2, CandlestickChart, History, Languages, List, LogOut, Moon, RefreshCw, Search, Sun, UserRound, Wallet, X, Zap } from "lucide-react";
+import { ArrowUpRight, BarChart2, CandlestickChart, ChevronDown, History, Languages, List, LogOut, Moon, RefreshCw, Search, Sun, UserRound, Wallet, X, Zap } from "lucide-react";
 import { INSTRUMENTS, getInstrument } from "@kalks/mock";
 import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { useMetrics, usePositionProfit, useTerminal } from "@/lib/store";
@@ -18,6 +18,7 @@ import { GuestActions, GuestNotice } from "@/components/shell/guest";
 import { SegmentChips, inSegment } from "@/components/market/segments";
 import { NotificationBell } from "@/components/shell/notifications";
 import { REGISTER_URL } from "@/lib/guest";
+import { DomLadder } from "@/components/order/dom-ladder";
 
 type MTab = "watch" | "chart" | "trade" | "history" | "account";
 
@@ -210,6 +211,7 @@ function MTrade() {
   const t = useT();
   const m = useMetrics();
   const a = T.account;
+  const [depth, setDepth] = React.useState(false);
   return (
     <div className="t-scroll h-full overflow-y-auto">
       <div className="grid grid-cols-3 gap-px border-b border-line bg-line">
@@ -226,6 +228,20 @@ function MTrade() {
             <div className={cn("k-num font-mono text-[12.5px]", k === "pnl" && (m.floating >= 0 ? "text-up" : "text-down"))}>{v}</div>
           </div>
         ))}
+      </div>
+      {/* depth of market with one-click trading (D97), same ladder as the desktop panel */}
+      <div className="border-b border-line">
+        <button onClick={() => setDepth((v) => !v)} aria-expanded={depth} className="flex w-full items-center justify-between px-3 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">
+          <span>
+            {t("order.panel.tabDepth")} · <span className="normal-case tracking-normal text-fg-2">{T.activeSymbol}</span>
+          </span>
+          <ChevronDown className={cn("size-4 transition-transform", depth && "rotate-180")} />
+        </button>
+        {depth && (
+          <div className="h-[560px]">
+            <DomLadder symbol={T.activeSymbol} />
+          </div>
+        )}
       </div>
       <div className="flex items-center justify-between px-3 pb-1 pt-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">
         {t("trader.mobile.positions", { count: T.positions.length })}

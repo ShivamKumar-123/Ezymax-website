@@ -39,7 +39,8 @@ Config env vars (with defaults) are listed in `src/config.rs`. The instrument li
 | `GET /v1/candles?symbol=EURUSD&tf=H1&limit=500&to=<unix>` | ascending bars `{t,o,h,l,c,v}` (t = unix secs); the latest page includes the forming bar |
 | `GET /v1/history/status` | stored bars per symbol/timeframe |
 | `GET/PUT /v1/admin/spreads` | spread markups per group/symbol (`Authorization: Bearer $MARKET_DATA_ADMIN_TOKEN`); body `{group_code, symbol ("*" = all), markup_points, min_spread_points}` |
-| `WS /v1/stream?group=pro` | send `{"op":"subscribe","symbols":[..]}` → `{"type":"quote","s","b","a","l","t"}`; `{"op":"bars","symbol","tf"}` → `{"type":"bar","s","tf","t","o","h","l","c","v"}` (`unsubscribe` / `unbars` to stop) |
+| `GET /v1/depth?symbol=XAUUSD&group=standard&levels=10` | depth of market `{src, t, bids, asks}` (levels best first, `[price, lots]`) |
+| `WS /v1/stream?group=pro` | send `{"op":"subscribe","symbols":[..]}` → `{"type":"quote","s","b","a","l","t"}`; `{"op":"bars","symbol","tf"}` → `{"type":"bar","s","tf","t","o","h","l","c","v"}`; `{"op":"depth","symbols":[..],"levels"?:10}` → `{"type":"depth","s","src","t","b":[[p,lots]..],"a":[..]}` on every quote change (`unsubscribe` / `unbars` / `undepth` to stop) |
 
 Timeframes: `M1 M5 M15 M30 H1 H4 D1 W1 MN`.
 
@@ -57,3 +58,12 @@ Timeframes: `M1 M5 M15 M30 H1 H4 D1 W1 MN`.
 - **Phase 1:** the latest 500 bars per timeframe for all symbols (about 3 minutes).
 - **Phase 2:** deep history, resumable, in the background.
 - **After that:** the live feed and reconciler keep every timeframe growing permanently.
+
+## Depth of market (D97)
+
+Kalks Trader's ladder is served here (`src/depth.rs`), with the account group's spread markup applied like quotes:
+
+- **Feed** (`src: "feed"`): when the provider's depth stream carries several priced levels (and they are under 5 s old), those levels are shown, moved outwards by the group markup.
+- **Indicative** (`src: "indicative"`): otherwise (Infoway sends only the top of book for FX and metals) levels step out from the live bid/ask by half the instrument's typical spread; sizes follow a fixed per-asset-class liquidity profile, scaled down when the raw spread is wider than typical. Deterministic: the same quote gives the same ladder. The terminal labels it Indicative.
+- Relay mode (local development) asks the upstream for provider depth only (`"src":"feed"`) and never opens a provider connection.
+
