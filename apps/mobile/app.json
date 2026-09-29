@@ -59,7 +59,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Kalks lets you choose a photo of your identity documents for verification.",
+          "photosPermission": "Kalks lets you choose photos of your identity documents for verification, and screenshots to send to our support team.",
           "cameraPermission": "Kalks uses the camera to photograph your identity documents and take your verification selfie.",
           "microphonePermission": false
         }
