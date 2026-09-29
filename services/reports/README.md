@@ -68,6 +68,7 @@ Server time is GMT+3 during US DST and GMT+2 otherwise (MT5 convention). Periods
 - B-book P&L = −client price P&L on B-book exits; swap = −client swap on exits; commission = entry-deal commission; spread markup = group markup × volume per deal side (estimate); IB cost = IB commission lines (lot, split, rebate, CPA, clawback) created in the period, excluding rejected / void.
 - Net revenue = B-book + swap + commission + A-book markup − IB cost. The B-book markup is inside the B-book P&L, so it is not added twice.
 - Money in / out = wallet credited deposits and completed withdrawals, plus deposits / withdrawals booked by staff on live accounts. FTD = a client's first deposit ever. Net deposits = deposits − withdrawals.
+- Campaign (`clients.campaign`): the first-touch `utm_campaign` the client signed up with (gateway feed), else the IB partner campaign; `utm_source` / `utm_medium` are kept alongside.
 - Funnel (clients who signed up in the period): registered → email verified → KYC verified → live account → funded → traded, by campaign and country.
 - Cohorts: sign-up month; retention = share of the cohort with a live deal in month k; LTV = cumulative net deposits and broker revenue per client.
 - AML list: single movements ≥ `large` (default 10 000), withdrawals within 72 h of a similar deposit with < 1 lot traded, open IB fraud flags.
@@ -92,6 +93,8 @@ Every route except `GET /health` needs `X-Kalks-Internal: $REPORTS_INTERNAL_TOKE
 | `GET /v1/admin/pnl?from&to` | reports.read | `{totals, previous, activeTraders, book, daily[], bySymbol[], byGroup[], clients[]}` |
 | `GET /v1/admin/deposits?from&to` | reports.read | `{totals, daily[], byCountry[], byIb[], byCampaign[], topDepositors[], ftdList[]}` |
 | `GET /v1/admin/funnel?from&to` | reports.read | `{stages[], medianDaysToFtd, byCampaign[], byCountry[], daily[]}` |
+| `GET /v1/admin/campaigns?from&to` | reports.read or marketing.read | UTM attribution of clients who signed up in the period: `{totals, items: {source, medium, campaign, signups, emailVerified, kycVerified, ftds, ftdAmount, deposits, withdrawals, net, conversion}[], bySource[]}`; no UTM = `(direct)` or `(IB link)` |
+| `GET /v1/internal/client-facts` (X-Kalks-Tenant) | internal token | `{items: {userId, firstDepositAt, firstLiveAccountAt, firstTradeAt}[]}` for growth journey triggers |
 | `GET /v1/admin/cohorts?months=12` | reports.read | `{cohorts:[{cohort, clients, funded, retention[], ltv[]}], totals}` |
 | `GET /v1/admin/activity?from&to` | reports.read | `{totals, daily[], byGroup[], topAccounts[]}` |
 | `GET /v1/admin/partners?from&to` | reports.read | IB lines by kind, top IBs, IB / social / prop overviews |

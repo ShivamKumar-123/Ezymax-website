@@ -5,6 +5,7 @@
 
 pub mod admin;
 pub mod client;
+pub mod journeys;
 pub mod public;
 
 use crate::audit::Actor;
@@ -78,6 +79,13 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/growth/admin/contests/{id}/pay", post(admin::pay_contest))
         .route("/v1/growth/admin/contests/{id}/entries/{entry}/{action}", post(admin::entry_action))
         .route("/v1/growth/admin/contests/{id}/flags/{flag}/resolve", post(admin::resolve_flag))
+        .route("/v1/growth/admin/journeys", get(journeys::list).post(journeys::create))
+        .route("/v1/growth/admin/journeys/meta", get(journeys::meta))
+        .route("/v1/growth/admin/journeys/{id}", get(journeys::get).patch(journeys::patch))
+        .route("/v1/growth/admin/journeys/{id}/status", post(journeys::set_status))
+        .route("/v1/growth/admin/journeys/{id}/enrollments", get(journeys::enrollments))
+        .route("/v1/growth/admin/journeys/{id}/events", get(journeys::events))
+        .route("/v1/growth/admin/journeys/{id}/test", post(journeys::test))
         .route("/v1/growth/admin/reports", get(admin::reports))
         .route("/v1/growth/admin/audit", get(admin::audit))
         .route("/v1/growth/admin/run/{job}", post(admin::run_job))

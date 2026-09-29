@@ -31,6 +31,8 @@ pub fn router(app: App) -> Router {
         .route("/v1/admin/pnl", get(admin::pnl))
         .route("/v1/admin/deposits", get(admin::deposits))
         .route("/v1/admin/funnel", get(admin::funnel))
+        .route("/v1/admin/campaigns", get(admin::campaigns))
+        .route("/v1/internal/client-facts", get(admin::client_facts))
         .route("/v1/admin/cohorts", get(admin::cohorts))
         .route("/v1/admin/activity", get(admin::activity))
         .route("/v1/admin/partners", get(admin::partners))
@@ -138,7 +140,7 @@ impl FromRequestParts<App> for StaffCtx {
             return Err(ApiError::BadRequest("Invalid staff headers.".into()));
         }
         let name = header(&parts.headers, "x-kalks-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
-        let perms = header(&parts.headers, "x-kalks-staff-perms").map(|p| p.split(',').map(|x| x.trim().to_string()).filter(|x| x.starts_with("reports.")).collect()).unwrap_or_default();
+        let perms = header(&parts.headers, "x-kalks-staff-perms").map(|p| p.split(',').map(|x| x.trim().to_string()).filter(|x| x.starts_with("reports.") || x == "marketing.read").collect()).unwrap_or_default();
         Ok(StaffCtx { tenant, actor: Actor { id: format!("staff:{id}"), name: name.chars().take(120).collect(), role }, perms })
     }
 }

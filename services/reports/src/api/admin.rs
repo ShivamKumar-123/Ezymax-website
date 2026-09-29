@@ -42,6 +42,20 @@ pub async fn funnel(State(app): State<App>, s: StaffCtx, Query(q): Query<RangeQ>
     Ok(Json(broker::funnel(&app, &s.tenant, from, to).await?.0))
 }
 
+/// UTM attribution; Marketing staff (`marketing.read`) can open it too.
+pub async fn campaigns(State(app): State<App>, s: StaffCtx, Query(q): Query<RangeQ>) -> ApiResult<Json<Value>> {
+    if s.require("reports.read").is_err() {
+        s.require("marketing.read")?;
+    }
+    let (from, to) = range(&q, 30)?;
+    Ok(Json(broker::campaigns(&app, &s.tenant, from, to).await?))
+}
+
+/// Service-to-service (growth journeys): lifecycle facts per client.
+pub async fn client_facts(State(app): State<App>, super::Tenant(tenant): super::Tenant) -> ApiResult<Json<Value>> {
+    Ok(Json(broker::client_facts(&app, &tenant).await?))
+}
+
 pub async fn cohorts(State(app): State<App>, s: StaffCtx, Query(q): Query<RangeQ>) -> ApiResult<Json<Value>> {
     s.require("reports.read")?;
     Ok(Json(broker::cohorts(&app, &s.tenant, q.months.unwrap_or(12)).await?.0))

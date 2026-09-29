@@ -504,6 +504,7 @@ pub async fn user_detail(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i6
         "sessions": { "active": r.get::<i64, _>("active_sessions"), "total": r.get::<i64, _>("sessions_total") },
         "trusted_devices": r.get::<i64, _>("trusted_devices"),
         "last_login": last_login,
+        "attribution": crate::marketing::attribution_json(&st.pool, me.tenant_id, id).await?,
         "events": events,
     })))
 }

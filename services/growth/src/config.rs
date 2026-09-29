@@ -16,6 +16,11 @@ pub struct Config {
     pub wallet_url: String,
     pub wallet_token: String,
     pub notify_url: String,
+    /// Support service token for `POST /v1/notify` (SUPPORT_INTERNAL_TOKEN).
+    pub notify_token: String,
+    /// Reports service (client lifecycle facts for journeys).
+    pub reports_url: String,
+    pub reports_token: String,
     pub instruments_file: String,
     /// Background loops. Tests turn them off.
     pub workers: bool,
@@ -60,6 +65,9 @@ impl fmt::Debug for Config {
             .field("wallet_url", &self.wallet_url)
             .field("wallet_token", &redact(&self.wallet_token))
             .field("notify_url", &self.notify_url)
+            .field("notify_token", &redact(&self.notify_token))
+            .field("reports_url", &self.reports_url)
+            .field("reports_token", &redact(&self.reports_token))
             .field("instruments_file", &self.instruments_file)
             .field("workers", &self.workers)
             .field("sync_secs", &self.sync_secs)
@@ -88,6 +96,9 @@ impl Config {
             wallet_url: var("WALLET_URL", "http://127.0.0.1:8095").trim_end_matches('/').to_string(),
             wallet_token: var("WALLET_INTERNAL_TOKEN", ""),
             notify_url: var("NOTIFY_URL", "http://127.0.0.1:8100").trim_end_matches('/').to_string(),
+            notify_token: var("SUPPORT_INTERNAL_TOKEN", &var("NOTIFY_INTERNAL_TOKEN", "")),
+            reports_url: var("REPORTS_URL", "http://127.0.0.1:8102").trim_end_matches('/').to_string(),
+            reports_token: var("REPORTS_INTERNAL_TOKEN", ""),
             instruments_file: var("INSTRUMENTS_FILE", concat!(env!("CARGO_MANIFEST_DIR"), "/../../config/instruments.json")),
             workers: var("GROWTH_WORKERS", "true") != "false",
             sync_secs: var("GROWTH_SYNC_SECS", "30").parse().unwrap_or(30).max(1),
@@ -111,6 +122,9 @@ impl Config {
             wallet_url: "http://127.0.0.1:9".into(),
             wallet_token: String::new(),
             notify_url: "http://127.0.0.1:9".into(),
+            notify_token: String::new(),
+            reports_url: "http://127.0.0.1:9".into(),
+            reports_token: String::new(),
             instruments_file: concat!(env!("CARGO_MANIFEST_DIR"), "/../../config/instruments.json").into(),
             workers: false,
             sync_secs: 30,

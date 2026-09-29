@@ -48,6 +48,8 @@ On first start it creates `kalks_growth`, runs `migrations/`, and seeds tenant `
 | payouts | 30 s | cashback payouts, prize and redemption wallet credits (idempotent keys, retried) |
 | reversals | 10 min | reopened deals of the last 14 days: points reversed, unpaid cashback voided, contest trade removed |
 | points expiry | hourly | points older than `pointsExpiryMonths` with no activity since are expired |
+| journey facts | 60 s | reports `GET /v1/internal/client-facts` (first deposit, first live account, first live trade) into `profiles` |
+| journeys | 15 s | enrol clients whose trigger fired since each live journey went live, then walk due enrolments (see [Journeys](#journeys)) |
 
 Every engine / wallet write carries an idempotency key derived from a row id (`growth:bonus:<event>:<leg>`, `growth:cashback:<payout>`, `growth:prize:<entry>`, `growth:redeem:<redemption>`), so a retry after a timeout never books twice. The engine answers a reused key with `409 duplicate_idempotency_key`, which counts as booked.
 
@@ -68,6 +70,32 @@ Every engine / wallet write carries an idempotency key derived from a row id (`g
 | Prizes | Admin finalizes after the end (ranks frozen), then pays: `wallet` = wallet credit (`adjustment`), `credit` = engine `credit` on the entered live account (or the client's first live account) |
 | Banners (D121) | Placement `dashboard` / `wallet` / `rewards` / `terminal`. Targeting: countries (ISO-2, empty = all), KYC statuses, account types (`live`, `demo`, `none` = no account), new users within N days. Active inside the window, highest priority first, dismissed ones hidden for that client |
 | Share cards (D136) | Snapshot of one closed trade or a period on one account. Without `showAmounts` only the symbol, side, prices, % move / % return, trade count and win rate are stored; money amounts are stored only when the client opts in. Carries the client's referral code; the public page and image are at `/s/<code>` on the Client Area |
+
+## Journeys
+
+Marketing automation (D144, `src/journeys.rs`, `src/api/journeys.rs`). A journey = a trigger + up to 20 steps; editing, launching, pausing, archiving and test sends are audited.
+
+| Trigger | Fires when (per client) | Enrols |
+|---|---|---|
+| `signed_up` | `profiles.signed_up_at` | once |
+| `email_verified` / `kyc_approved` | gateway feed `email_verified_at` / `kyc_verified_at` (latest approved KYC case) | once |
+| `first_deposit` / `account_opened` / `first_trade` | reports facts: first credited deposit, first live account, first closed live deal | once |
+| `no_deposit` + `days` | sign-up + N days, still no deposit | once |
+| `inactive` + `days` | last sign-in + N days | once per inactivity period (occurrence = last sign-in day) |
+| `birthday` | date of birth MM-DD = today (UTC) | once a year |
+
+Only trigger events at or after `live_since` (the first launch) enrol, so launching never mails the back catalogue. Blocked or closed clients never enrol.
+
+| Step | Does |
+|---|---|
+| `wait {amount, unit: minutes|hours|days}` | parks the enrolment until then (max 365 days) |
+| `email {subject, preheader, heading, body, buttonLabel, buttonUrl}` | gateway `POST /v1/internal/mail/marketing`: the transactional email design with the tenant's brand (name, logo, colours) and a signed unsubscribe link; the gateway skips clients who unsubscribed (`email_suppressed`, the journey carries on). Without SMTP the email is logged (`email_logged`) |
+| `inapp {title, body, link}` | support `POST /v1/notify` type `marketing.journey`, `email: false`, dedupe key `journey:<enrolment>:<step>` (the client's News and offers in-app setting applies) |
+| `condition {check, expect}` | `email_verified`, `kyc_approved`, `has_deposit`, `has_live_account`, `has_traded`, `marketing_consent`; not matching = the enrolment exits |
+
+Placeholders in email and in-app text: `{{first_name}}` (or "there"), `{{last_name}}`, `{{name}}`, `{{country}}`, `{{referral_code}}`.
+
+The runner leases due enrolments (`next_run_at + 5 min`, `FOR UPDATE SKIP LOCKED`), so several instances never double-send; after each step the position is saved at once. A failed email / in-app call is retried with back-off (1, 2, 4, 8, 16 min) and fails the enrolment after 6 attempts. Paused journeys keep their enrolments where they are; resuming carries on and enrols triggers that fired meanwhile. Archiving exits everyone. `journey_events` is the enrolment log and the per-step stats source (sent, logged, suppressed, retries, condition passed / exited).
 
 ## API
 
@@ -196,7 +224,15 @@ Headers: `X-Kalks-Staff-Id`, `X-Kalks-Staff-Name` (percent-encoded), `X-Kalks-St
 | `POST /v1/growth/admin/contests/{id}/flags/{flagId}/resolve` | write | `{action: "clear"|"disqualify", note}` | `{flag}` |
 | `GET /v1/growth/admin/reports?from=&to=` | read | dates | `{from, to, totals: {bonusIssued, bonusReleased, bonusForfeited, cashbackPaid, cashbackAccrued, prizesPaid, pointsRedeemedUsd, redemptionCashPaid, promoRedemptions, total}, byCampaign: {id, name, issued, released, forfeited, claims}[], byProgramme: {id, name, accrued, paid, lots}[], byContest: {id, name, prizes, entrants}[], series: {day, bonus, cashback, prizes, points}[]}` (`total` = released bonus + cashback + prizes + redeemed points value; issued bonus is shown separately, it is not cash until released) |
 | `GET /v1/growth/admin/audit?page=&limit=` | read | – | `{items: {id, at, actor, actorName, action, target, before, after, note}[], total}` |
-| `POST /v1/growth/admin/run/{job}` | write | job `profiles|deals|bonus|contests|payouts|reversals|expiry` | `{ok, result}` |
+| `POST /v1/growth/admin/run/{job}` | write | job `profiles|deals|bonus|contests|payouts|reversals|expiry|journeys` | `{ok, result}` |
+| `GET /v1/growth/admin/journeys` | read | – | `{items: Journey[] (with stats), archived}` |
+| `GET /v1/growth/admin/journeys/meta` | read | – | `{triggers, checks, placeholders}` |
+| `POST /v1/growth/admin/journeys` · `PATCH …/journeys/{id}` | write | `{name, description, trigger: {kind, days?}, steps: Step[]}` | `{journey}` (created as `draft`) |
+| `GET /v1/growth/admin/journeys/{id}` | read | – | `{journey}` with `stats` and `stepStats: {stepId, kind, counts: {event: n}, pending}[]` |
+| `POST /v1/growth/admin/journeys/{id}/status` | write | `{status: "live"|"paused"|"archived"}` | `{journey}` |
+| `GET /v1/growth/admin/journeys/{id}/enrollments?status=&user=&page=&limit=` | read | – | `{items: {id, userId, name, email, status, stepIndex, currentStep, nextRunAt, lastEvent, lastError}[], total}` |
+| `GET /v1/growth/admin/journeys/{id}/events?enrollment=&page=&limit=` | read | – | `{items: {id, enrollmentId, userId, name, stepId, kind, detail, at}[], total}` |
+| `POST /v1/growth/admin/journeys/{id}/test` | write | `{to, steps?}` (the admin BFF sets `to` to the signed-in staff member's address) | `{results: {stepId, kind, status}[]}`: emails to `to` with `[Test]` and sample data, in-app to the staff bell |
 
 ## Permissions
 
@@ -213,9 +249,9 @@ The gateway RBAC (`services/gateway/src/rbac.rs`) defines `marketing.read`, `mar
 | App | Integration |
 |---|---|
 | Client Area | BFF `app/api/growth/[[...path]]` → `/v1/growth/me/*` with the session user and segment headers. Pages: `/rewards` (contests), `/rewards/contests/[id]`, `/rewards/loyalty`, `/rewards/cashback`, `/rewards/promotions`. Banner slots (`components/growth/banner-slot.tsx`) on the dashboard and wallet. "Share P&L" on trade history. Public share page `/s/[code]` and PNG `/s/[code]/image` (next/og). |
-| Back Office | BFF `app/api/marketing/[...path]` → `/v1/growth/admin/*` with permissions from `lib/marketing-perms.ts`. Pages under `/marketing`: bonuses, promo codes, banners, contests, rewards (rules, tiers, catalogue, redemptions), cashback, reports. |
+| Back Office | BFF `app/api/marketing/[...path]` → `/v1/growth/admin/*` with permissions from `lib/marketing-perms.ts`. Pages under `/marketing`: bonuses, promo codes, banners, contests, rewards (rules, tiers, catalogue, redemptions), cashback, reports, automation (journeys) and campaigns (UTM attribution, served by the reports service `GET /v1/admin/campaigns`). |
 | Other services | `POST /v1/growth/internal/vouchers/redeem` for fee-discount vouchers (prop checkout, commission rebates). |
-| Notifications | Best effort `POST $NOTIFY_URL/v1/notify` `{userId, kind, title, body, link}` for bonus granted / released / forfeited, prize paid, redemption completed. Ignored when the service is absent. |
+| Notifications | Best effort `POST $NOTIFY_URL/v1/notify` `{userId, type, title, body, link}` (header `X-Kalks-Service: growth`) for bonus granted / released / forfeited, prize paid, redemption completed; journeys' in-app steps. |
 
 ## Environment
 
@@ -231,7 +267,8 @@ The gateway RBAC (`services/gateway/src/rbac.rs`) defines `marketing.read`, `mar
 | `GATEWAY_URL` / `GATEWAY_INTERNAL_TOKEN` | `http://127.0.0.1:8080` | profiles feed |
 | `TRADING_URL` / `TRADING_INTERNAL_TOKEN` | `http://127.0.0.1:8090` | deals, accounts, ledgers, bonus / credit postings |
 | `WALLET_URL` / `WALLET_INTERNAL_TOKEN` | `http://127.0.0.1:8095` | payouts |
-| `NOTIFY_URL` | `http://127.0.0.1:8100` | optional |
+| `NOTIFY_URL` / `SUPPORT_INTERNAL_TOKEN` | `http://127.0.0.1:8100` | support notifications (journey in-app steps) |
+| `REPORTS_URL` / `REPORTS_INTERNAL_TOKEN` | `http://127.0.0.1:8102` | client facts for journey triggers |
 | `INSTRUMENTS_FILE` | `config/instruments.json` | symbol → asset class |
 
 Production runs `deploy/systemd/kalks-growth.service`. `deploy/deploy.sh` builds it, generates `GROWTH_INTERNAL_TOKEN` once, derives `GROWTH_DATABASE_URL` (database `kalks_growth`) from the gateway's, and writes `GROWTH_URL` / `GROWTH_INTERNAL_TOKEN` into the Client Area and Back Office env files.
@@ -243,6 +280,7 @@ cargo test -p growth
 ```
 
 - Unit (`src/calc.rs`): points per lot with rule matching, tier multiplier and cent lots; cashback with the monthly cap; bonus amount (pct + cap, min deposit) and release per lot (partial, capped, completion); promo eligibility (window, limits, per-user, segments); contest scoring, ranking (min trades, ties, disqualified) and prize allocation; anti-cheat flags.
+- Journeys (`tests/journeys.rs`, gateway mailer and support notify mocked): enrolment once per client after `live_since`, email → condition → in-app → wait, suppressed email for an unsubscribed client, retry after a mailer outage, per-step stats, paused journeys don't move, `no_deposit` after N days.
 - Integration (`tests/growth.rs`, throw-away database `kalks_growth_test_<pid>_<n>`, skipped without PostgreSQL; engine and wallet are mock HTTP servers): deal ingest → points / cashback / bonus release / contest trades once per deal; promo limits under 20 concurrent redemptions; bonus grant → release legs → completion; redemption → wallet credit with idempotent retry.
 
 ## Known gaps
@@ -250,5 +288,6 @@ cargo test -p growth
 - The engine has no deals-since-id feed (same gap as the IB service): the poller re-reads a 2-minute overlap and caches account type / group per login.
 - Bonus release reversal: when the desk reopens a deal after its lots released bonus, the release stays (logged for review).
 - Credit is not removed on stop-out by the engine; the bonus grant is capped at the account's actual bonus when removed.
-- UTM campaign attribution and trigger journeys (D144) are not in this service yet; `/marketing/campaigns` and `/marketing/automation` stay demo-only.
+- Journey emails report sent / logged / suppressed; opens and clicks are not tracked (no pixel or link redirect).
+- Journey triggers poll (15 s, facts every 60 s), so a step can run up to a minute after the event.
 - Wallet transfer kinds: cashback uses `refund`, prizes and points cashback use `adjustment` (no dedicated `cashback` / `prize` kind yet).

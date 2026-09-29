@@ -92,10 +92,11 @@ pub async fn sync_clients(app: &App) -> anyhow::Result<usize> {
         for u in &items {
             let tenant = u["tenant"].as_str().unwrap_or("kalks");
             sqlx::query(
-                "INSERT INTO clients (tenant, user_id, email, first_name, last_name, country, referral_code, referred_by, campaign, kyc_status, status, email_verified, created_at, changed_at)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+                "INSERT INTO clients (tenant, user_id, email, first_name, last_name, country, referral_code, referred_by, campaign, kyc_status, status, email_verified, created_at, changed_at, utm_source, utm_medium)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
                  ON CONFLICT (tenant, user_id) DO UPDATE SET email = EXCLUDED.email, first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name,
                    country = EXCLUDED.country, referral_code = EXCLUDED.referral_code, referred_by = EXCLUDED.referred_by, campaign = EXCLUDED.campaign,
+                   utm_source = EXCLUDED.utm_source, utm_medium = EXCLUDED.utm_medium,
                    kyc_status = EXCLUDED.kyc_status, status = EXCLUDED.status, email_verified = EXCLUDED.email_verified, changed_at = EXCLUDED.changed_at",
             )
             .bind(tenant)
@@ -106,12 +107,15 @@ pub async fn sync_clients(app: &App) -> anyhow::Result<usize> {
             .bind(u["country"].as_str().unwrap_or(""))
             .bind(u["referral_code"].as_str())
             .bind(u["referred_by"].as_i64())
-            .bind(u["referral_campaign"].as_str())
+            // UTM campaign first (marketing attribution), else the IB partner campaign
+            .bind(u["utm_campaign"].as_str().or(u["referral_campaign"].as_str()))
             .bind(u["kyc_status"].as_str().unwrap_or("unverified"))
             .bind(u["status"].as_str().unwrap_or("active"))
             .bind(u["email_verified"].as_bool().unwrap_or(false))
             .bind(jtime(&u["created_at"]).unwrap_or_else(Utc::now))
             .bind(jtime(&u["changed_at"]).unwrap_or_else(Utc::now))
+            .bind(u["utm_source"].as_str())
+            .bind(u["utm_medium"].as_str())
             .execute(&app.pool)
             .await?;
             n += 1;

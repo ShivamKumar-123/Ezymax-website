@@ -1030,3 +1030,107 @@ pub async fn status(app: &App, tenant: &str) -> ApiResult<Value> {
         "smtp": app.mailer.is_some(), "markups": !app.specs.markups.read().unwrap().is_empty(),
     }))
 }
+
+/* ------------------------------------------------------------------ */
+/* UTM campaign attribution (D144)                                     */
+/* ------------------------------------------------------------------ */
+
+#[derive(Default, Clone)]
+struct CampAgg {
+    signups: usize,
+    verified: usize,
+    kyc: usize,
+    ftds: usize,
+    ftd_amount: f64,
+    deposits: f64,
+    withdrawals: f64,
+}
+
+impl CampAgg {
+    fn json(&self) -> Value {
+        json!({"signups": self.signups, "emailVerified": self.verified, "kycVerified": self.kyc, "ftds": self.ftds, "ftdAmount": round2(self.ftd_amount),
+               "deposits": round2(self.deposits), "withdrawals": round2(self.withdrawals), "net": round2(self.deposits + self.withdrawals),
+               "conversion": if self.signups > 0 { round2(self.ftds as f64 / self.signups as f64 * 100.0) } else { 0.0 }})
+    }
+}
+
+/// Sign-ups in `[from, to)` grouped by first-touch utm source / medium / campaign, with their conversion to a
+/// first deposit and the money they moved in the same window. Clients without UTM are "(direct)" or "(IB link)".
+pub async fn campaigns(app: &App, tenant: &str, from: DateTime<Utc>, to: DateTime<Utc>) -> ApiResult<Value> {
+    let first = ftds(app, tenant).await?;
+    let rows = sqlx::query("SELECT user_id, utm_source, utm_medium, campaign, referred_by, email_verified, kyc_status FROM clients WHERE tenant = $1 AND created_at >= $2 AND created_at < $3")
+        .bind(tenant)
+        .bind(from)
+        .bind(to)
+        .fetch_all(&app.pool)
+        .await?;
+    let mut key_of: HashMap<i64, (String, String, String)> = HashMap::new();
+    let mut groups: BTreeMap<(String, String, String), CampAgg> = BTreeMap::new();
+    let mut sources: BTreeMap<String, CampAgg> = BTreeMap::new();
+    let mut total = CampAgg::default();
+    for r in &rows {
+        let u: i64 = r.get("user_id");
+        let ib = r.get::<Option<i64>, _>("referred_by").is_some();
+        let src = r.get::<Option<String>, _>("utm_source").unwrap_or_else(|| if ib { "(IB link)".into() } else { "(direct)".into() });
+        let med = r.get::<Option<String>, _>("utm_medium").unwrap_or_default();
+        let camp = r.get::<Option<String>, _>("campaign").unwrap_or_default();
+        let k = (src.clone(), med, camp);
+        key_of.insert(u, k.clone());
+        let ftd = first.get(&u).filter(|(at, _)| *at >= from);
+        for a in [&mut total, groups.entry(k).or_default(), sources.entry(src).or_default()] {
+            a.signups += 1;
+            a.verified += r.get::<bool, _>("email_verified") as usize;
+            a.kyc += (r.get::<String, _>("kyc_status") == "verified") as usize;
+            if let Some((_, amt)) = ftd {
+                a.ftds += 1;
+                a.ftd_amount += amt;
+            }
+        }
+    }
+    for m in money(app, tenant, Some(from), Some(to)).await? {
+        let Some(k) = key_of.get(&m.user_id) else { continue };
+        let src = k.0.clone();
+        for a in [&mut total, groups.entry(k.clone()).or_default(), sources.entry(src).or_default()] {
+            if m.amount > 0.0 { a.deposits += m.amount } else { a.withdrawals += m.amount }
+        }
+    }
+    let mut items: Vec<Value> = groups
+        .iter()
+        .map(|((s, m, c), a)| {
+            let mut v = a.json();
+            v["source"] = json!(s);
+            v["medium"] = json!(m);
+            v["campaign"] = json!(c);
+            v
+        })
+        .collect();
+    items.sort_by(|a, b| b["signups"].as_u64().cmp(&a["signups"].as_u64()));
+    Ok(json!({
+        "from": from, "to": to, "currency": "USD",
+        "totals": total.json(),
+        "items": items,
+        "bySource": sources.iter().map(|(s, a)| { let mut v = a.json(); v["source"] = json!(s); v }).collect::<Vec<_>>(),
+    }))
+}
+
+/// Lifecycle facts per client for marketing journeys (growth service): first deposit, first live account,
+/// first live trade. Only clients with at least one fact are listed.
+pub async fn client_facts(app: &App, tenant: &str) -> ApiResult<Value> {
+    let first = ftds(app, tenant).await?;
+    let traded = first_trades(app, tenant).await?;
+    let accounts: HashMap<i64, DateTime<Utc>> = sqlx::query("SELECT user_id, min(created_at) AS t FROM accounts WHERE tenant = $1 AND kind = 'live' GROUP BY 1")
+        .bind(tenant)
+        .fetch_all(&app.pool)
+        .await?
+        .iter()
+        .map(|r| (r.get("user_id"), r.get("t")))
+        .collect();
+    let mut ids: Vec<i64> = first.keys().chain(traded.keys()).chain(accounts.keys()).copied().collect();
+    ids.sort_unstable();
+    ids.dedup();
+    let items: Vec<Value> = ids
+        .iter()
+        .map(|u| json!({"userId": u, "firstDepositAt": first.get(u).map(|x| x.0), "firstLiveAccountAt": accounts.get(u), "firstTradeAt": traded.get(u)}))
+        .collect();
+    Ok(json!({"tenant": tenant, "items": items}))
+}

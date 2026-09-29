@@ -19,6 +19,7 @@ mod kyc;
 mod internal;
 mod mail_i18n;
 mod mailer;
+mod marketing;
 mod owner;
 mod ratelimit;
 mod rbac;
@@ -240,6 +241,9 @@ fn router(st: AppState) -> Router {
         .route("/v1/public/shares/{code}", get(shares::public))
         .route("/v1/internal/referrals/users", get(internal::referral_users))
         .route("/v1/internal/users/{id}", get(users_internal::user))
+        .route("/v1/internal/mail/marketing", post(marketing::send_marketing))
+        .route("/v1/public/unsubscribe", post(marketing::unsubscribe))
+        .route("/v1/auth/marketing", get(marketing::get_consent).put(marketing::put_consent).post(marketing::put_consent))
         .layer(DefaultBodyLimit::max(256 * 1024))
         .layer(middleware::from_fn(mail_i18n::locale_layer))
         .layer(middleware::from_fn_with_state(st.clone(), internal_only));

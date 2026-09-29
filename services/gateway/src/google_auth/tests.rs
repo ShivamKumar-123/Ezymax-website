@@ -99,6 +99,8 @@ fn creq(ticket: &str, dob: &str) -> CompleteReq {
         date_of_birth: dob.into(),
         referral_code: None,
         referral_campaign: None,
+        attribution: Some(crate::marketing::AttributionReq { utm_source: Some("google".into()), utm_campaign: Some("g-signup".into()), ..Default::default() }),
+        marketing_consent: Some(false),
         accept_terms: true,
     }
 }

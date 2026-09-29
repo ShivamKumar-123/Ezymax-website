@@ -1,7 +1,7 @@
 //! Background loops. Each loop logs and carries on after an error; all work is idempotent.
 
 use crate::state::AppState;
-use crate::{bonus, contests, db, deals, loyalty, payouts, profiles};
+use crate::{bonus, contests, db, deals, journeys, loyalty, payouts, profiles};
 use std::future::Future;
 use std::time::Duration;
 
@@ -72,6 +72,13 @@ pub async fn run_job(st: &AppState, job: &str) -> anyhow::Result<serde_json::Val
             }
             json!({"expired": n})
         }
+        "journeys" => {
+            let mut facts = 0;
+            for t in db::tenants(&st.pool).await? {
+                facts += journeys::sync_facts(st, &t).await.unwrap_or(0);
+            }
+            json!({"facts": facts, "enrolled": journeys::enrol_tick(st).await?, "processed": journeys::run_tick(st).await?})
+        }
         _ => anyhow::bail!("unknown job"),
     })
 }
@@ -113,6 +120,17 @@ pub fn spawn(st: &AppState) {
         for t in db::tenants(&st.pool).await? {
             loyalty::expiry_tick(&st, &t).await?;
         }
+        Ok(())
+    });
+    every(st, "journey-facts", secs(60), |st| async move {
+        for t in db::tenants(&st.pool).await? {
+            journeys::sync_facts(&st, &t).await?;
+        }
+        Ok(())
+    });
+    every(st, "journeys", secs(15), |st| async move {
+        journeys::enrol_tick(&st).await?;
+        while journeys::run_tick(&st).await? == 100 {}
         Ok(())
     });
     // engine legs and wallet credits: every 5 s, or at once when something is queued

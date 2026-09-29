@@ -53,6 +53,23 @@ pub struct GwUser {
     pub kyc_status: String,
     pub created_at: DateTime<Utc>,
     pub changed_at: DateTime<Utc>,
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub email_verified_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub kyc_verified_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub last_login_at: Option<DateTime<Utc>>,
+    /// MM-DD
+    #[serde(default)]
+    pub birthday: Option<String>,
+    #[serde(default)]
+    pub marketing_consent: Option<bool>,
+    #[serde(default)]
+    pub utm_source: Option<String>,
+    #[serde(default)]
+    pub utm_campaign: Option<String>,
 }
 
 /// The gateway's referral users feed (every client, keyset by (changed_at, id)).
@@ -360,14 +377,15 @@ pub async fn wallet_credit(st: &AppState, tenant: &str, key: &str, user_id: i64,
 /// Best effort: the notifications service may not exist yet. Never fails the caller.
 pub fn notify(st: &AppState, tenant: &str, user_id: i64, kind: &str, title: String, body: String, link: &str) {
     let st = st.clone();
-    let payload = json!({"userId": user_id, "tenant": tenant, "kind": kind, "title": title, "body": body, "link": link, "source": "growth"});
+    let payload = json!({"userId": user_id, "type": kind, "title": title, "body": body, "link": link});
     let tenant = tenant.to_string();
     tokio::spawn(async move {
         let r = st
             .http
             .post(format!("{}/v1/notify", st.cfg.notify_url))
-            .header("x-kalks-internal", std::env::var("NOTIFY_INTERNAL_TOKEN").unwrap_or_default())
+            .header("x-kalks-internal", &st.cfg.notify_token)
             .header("x-kalks-tenant", tenant)
+            .header("x-kalks-service", "growth")
             .timeout(std::time::Duration::from_secs(3))
             .json(&payload)
             .send()

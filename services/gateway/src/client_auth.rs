@@ -100,6 +100,11 @@ pub struct RegisterReq {
     referral_code: Option<String>,
     /// Partner campaign slug (IB programme), kept only when the referral code resolves to a client.
     referral_campaign: Option<String>,
+    /// First-touch campaign attribution (utm_*, landing page, referrer) captured by the Client Area.
+    #[serde(default)]
+    attribution: Option<crate::marketing::AttributionReq>,
+    /// "Email me news and offers" (journeys, campaigns). Transactional emails are sent regardless.
+    marketing_consent: Option<bool>,
     #[serde(default)]
     password: String,
     #[serde(default)]
@@ -236,6 +241,8 @@ pub async fn register(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Reg
     })
     .await?
     .ok_or(ApiError::EmailTaken)?;
+    let attribution = crate::marketing::clean_attribution(&r.attribution.unwrap_or_default());
+    crate::marketing::store_signup(&st.pool, user_id, &attribution, r.marketing_consent.unwrap_or(true)).await?;
 
     audit::record(&st.pool, &ctx, Entry {
         tenant_id,
@@ -243,7 +250,8 @@ pub async fn register(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Reg
         actor_id: Some(user_id),
         action: "user.register",
         target: Some(("user", user_id)),
-        meta: json!({"country": country, "referral_code": referral, "referred_by": referred_by, "referral_campaign": campaign}),
+        meta: json!({"country": country, "referral_code": referral, "referred_by": referred_by, "referral_campaign": campaign,
+                     "utm_source": attribution.source, "utm_medium": attribution.medium, "utm_campaign": attribution.campaign}),
     })
     .await;
     tracing::info!(user_id, "client registered");

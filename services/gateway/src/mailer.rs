@@ -312,6 +312,118 @@ impl Mailer {
     }
 }
 
+// ---------- marketing emails (journeys, D144) ----------
+
+/// Tenant brand used by marketing emails. Kalks uses the inline logo; other tenants their https logo or name.
+#[derive(Clone, Debug)]
+pub struct MailBrand {
+    pub name: String,
+    pub primary: String,
+    pub accent: String,
+    /// https:// logo URL (other tenants); None = inline Kalks logo when `kalks_logo`, else the name as text.
+    pub logo_url: Option<String>,
+    pub kalks_logo: bool,
+    pub site_url: String,
+    pub support_email: String,
+}
+
+/// One marketing email: heading, paragraphs (blank-line separated), optional button, unsubscribe link.
+#[derive(Clone, Debug)]
+pub struct MarketingMail {
+    pub subject: String,
+    pub preheader: String,
+    pub heading: String,
+    pub body: String,
+    pub button: Option<(String, String)>,
+    pub unsubscribe_url: String,
+}
+
+fn safe_color(c: &str, fallback: &str) -> String {
+    let ok = c.len() == 7 && c.starts_with('#') && c[1..].chars().all(|x| x.is_ascii_hexdigit());
+    if ok { c.to_string() } else { fallback.to_string() }
+}
+
+/// Renders a marketing email in the transactional design with the tenant's brand. Returns (text, html).
+pub fn render_marketing(b: &MailBrand, m: &MarketingMail) -> (String, String) {
+    let primary = safe_color(&b.primary, EMBER);
+    let accent = safe_color(&b.accent, GOLD);
+    let paras: Vec<&str> = m.body.split("\n\n").map(str::trim).filter(|p| !p.is_empty()).collect();
+    let mut text = format!("{}\n\n{}\n", m.heading, paras.join("\n\n"));
+    if let Some((label, url)) = &m.button {
+        text.push_str(&format!("\n{label}: {url}\n"));
+    }
+    text.push_str(&format!(
+        "\n{} · {} · {}\nYou get this email because you allowed news and offers from {}. Unsubscribe: {}\n",
+        b.name, b.site_url, b.support_email, b.name, m.unsubscribe_url
+    ));
+    let body_html: String = paras
+        .iter()
+        .map(|p| format!(r#"<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:{FG2}">{}</p>"#, html_escape(p).replace('\n', "<br>")))
+        .collect();
+    let button_html = m
+        .button
+        .as_ref()
+        .map(|(label, url)| {
+            format!(
+                r#"<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 6px"><tr><td style="border-radius:10px;background:{primary}"><a href="{}" style="display:inline-block;padding:13px 22px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px">{}</a></td></tr></table>"#,
+                html_escape(url),
+                html_escape(label)
+            )
+        })
+        .unwrap_or_default();
+    let name = html_escape(&b.name);
+    let logo = match (&b.logo_url, b.kalks_logo) {
+        (Some(u), _) => format!(r#"<img src="{}" height="36" alt="{name}" style="display:block;border:0;outline:none;height:36px;max-width:180px">"#, html_escape(u)),
+        (None, true) => format!(r#"<img src="cid:{LOGO_CID}" width="120" height="40" alt="{name}" style="display:block;border:0;outline:none;width:120px;height:40px">"#),
+        (None, false) => format!(r#"<div style="font-size:20px;font-weight:700;letter-spacing:0.3px;color:{FG}">{name}</div>"#),
+    };
+    let site = html_escape(&b.site_url);
+    let site_host = html_escape(b.site_url.trim_start_matches("https://").trim_start_matches("http://"));
+    let support = html_escape(&b.support_email);
+    let unsub = html_escape(&m.unsubscribe_url);
+    let preheader = html_escape(&m.preheader);
+    let heading = html_escape(&m.heading);
+    let html = format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><title>{name}</title></head>
+<body style="margin:0;padding:0;background:{BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:{FG}">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:{BG}">{preheader}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG}"><tr><td align="center" style="padding:32px 14px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
+<tr><td style="padding:0 4px 18px">{logo}</td></tr>
+<tr><td style="background:{CARD};border:1px solid {LINE};border-radius:16px;overflow:hidden">
+<div style="height:3px;background:{primary};background-image:linear-gradient(90deg,{primary},{accent})"></div>
+<div style="padding:30px 28px 28px"><h1 style="margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:700;color:{FG}">{heading}</h1>{body_html}{button_html}</div>
+</td></tr>
+<tr><td style="padding:20px 6px 0;font-size:12px;line-height:1.6;color:{FG3}">
+<a href="{site}" style="color:{FG2};text-decoration:none">{site_host}</a> · <a href="mailto:{support}" style="color:{FG2};text-decoration:none">{support}</a><br>
+You get this email because you allowed news and offers from {name}. <a href="{unsub}" style="color:{FG2};text-decoration:underline">Unsubscribe</a><br><br>
+<span style="color:#6b6b75">Risk warning: CFDs are complex instruments and come with a high risk of losing money rapidly due to leverage. Only trade with money you can afford to lose.</span>
+</td></tr>
+</table></td></tr></table></body></html>"#
+    );
+    (text, html)
+}
+
+impl Mailer {
+    /// Sends a rendered marketing email (inline Kalks logo attached when the template uses it).
+    pub async fn send_marketing(&self, to: &str, b: &MailBrand, m: &MarketingMail) -> anyhow::Result<()> {
+        let (text, html) = render_marketing(b, m);
+        let from = Mailbox::new(Some(b.name.clone()), self.from.email.clone());
+        let reply_to: Mailbox = format!("{} Support <{}>", b.name.replace(['<', '>', '"', ','], ""), b.support_email).parse().unwrap_or_else(|_| self.from.clone());
+        let html_part = SinglePart::builder().header(ContentType::TEXT_HTML).body(html);
+        let alt = MultiPart::alternative().singlepart(SinglePart::builder().header(ContentType::TEXT_PLAIN).body(text));
+        let alt = if b.logo_url.is_none() && b.kalks_logo {
+            let logo = Attachment::new_inline(LOGO_CID.to_string()).body(LOGO_PNG.to_vec(), "image/png".parse()?);
+            alt.multipart(MultiPart::related().singlepart(html_part).singlepart(logo))
+        } else {
+            alt.singlepart(html_part)
+        };
+        let msg = Message::builder().from(from).reply_to(reply_to).to(to.parse()?).subject(&m.subject).multipart(alt)?;
+        self.transport.send(msg).await?;
+        Ok(())
+    }
+}
+
 fn html_escape(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;").replace('\'', "&#39;")
 }

@@ -45,6 +45,10 @@ pub async fn referral_users(State(st): State<AppState>, q: Result<Query<Referral
             SELECT u.id, t.slug AS tenant, u.email, u.first_name, u.last_name, u.country, u.date_of_birth,
                    u.phone_dial || u.phone AS phone, u.referral_code, u.referred_by, u.referred_code_raw, u.referral_campaign,
                    u.kyc_status, u.status, u.email_verified_at IS NOT NULL AS email_verified, u.created_at,
+                   u.email_verified_at, u.last_login_at, to_char(u.date_of_birth, 'MM-DD') AS birthday,
+                   u.utm_source, u.utm_medium, u.utm_campaign, u.utm_term, u.utm_content, u.landing_page, u.first_referrer,
+                   u.marketing_consent,
+                   (SELECT max(k.decided_at) FROM kyc_cases k WHERE k.user_id = u.id AND k.status = 'approved') AS kyc_verified_at,
                    GREATEST(u.updated_at, COALESCE(u.last_login_at, u.updated_at)) AS changed_at,
                    ARRAY(SELECT DISTINCT x.ip FROM (
                             (SELECT s.ip FROM sessions s WHERE s.subject_kind = 'user' AND s.subject_id = u.id AND s.ip IS NOT NULL
@@ -55,6 +59,7 @@ pub async fn referral_users(State(st): State<AppState>, q: Result<Query<Referral
                    ARRAY(SELECT d.device_hash FROM trusted_devices d WHERE d.subject_kind = 'user' AND d.subject_id = u.id
                          ORDER BY d.last_seen_at DESC LIMIT 20) AS devices
             FROM users u JOIN tenants t ON t.id = u.tenant_id
+            WHERE NOT u.is_house
          ) z
          WHERE (z.changed_at, z.id) > ($1, $2)
          ORDER BY z.changed_at, z.id
@@ -90,6 +95,18 @@ pub async fn referral_users(State(st): State<AppState>, q: Result<Query<Referral
                 "status": r.get::<String, _>("status"),
                 "email_verified": r.get::<bool, _>("email_verified"),
                 "created_at": r.get::<DateTime<Utc>, _>("created_at"),
+                "email_verified_at": r.get::<Option<DateTime<Utc>>, _>("email_verified_at"),
+                "kyc_verified_at": r.get::<Option<DateTime<Utc>>, _>("kyc_verified_at"),
+                "last_login_at": r.get::<Option<DateTime<Utc>>, _>("last_login_at"),
+                "birthday": r.get::<Option<String>, _>("birthday"),
+                "utm_source": r.get::<Option<String>, _>("utm_source"),
+                "utm_medium": r.get::<Option<String>, _>("utm_medium"),
+                "utm_campaign": r.get::<Option<String>, _>("utm_campaign"),
+                "utm_term": r.get::<Option<String>, _>("utm_term"),
+                "utm_content": r.get::<Option<String>, _>("utm_content"),
+                "landing_page": r.get::<Option<String>, _>("landing_page"),
+                "referrer": r.get::<Option<String>, _>("first_referrer"),
+                "marketing_consent": r.get::<bool, _>("marketing_consent"),
                 "changed_at": r.get::<DateTime<Utc>, _>("changed_at"),
                 "identity": [hex(&st.keys.hash("ib-identity", &ident)), hex(&st.keys.hash("ib-phone", &phone))],
                 "ips": r.get::<Vec<String>, _>("ips"),
