@@ -28,7 +28,8 @@ interface Cfg {
   agree: boolean;
 }
 
-const offers = (g: EngineGroup, kind: AccountKind) => g.enabled && (g.accountTypes === "both" || g.accountTypes === kind);
+// prop* groups are for prop-challenge accounts only (bought under Prop challenges), never opened here
+const offers = (g: EngineGroup, kind: AccountKind) => g.enabled && !g.code.toLowerCase().startsWith("prop") && (g.accountTypes === "both" || g.accountTypes === kind);
 const usedIn = (accounts: EngineAccount[], g: EngineGroup, kind: AccountKind) => accounts.filter((a) => a.group === g.code && a.type === kind).length;
 const money = (v: number, cent: boolean) => (cent ? `USC ${(v * 100).toLocaleString("en-US")}` : `$${v.toLocaleString("en-US")}`);
 

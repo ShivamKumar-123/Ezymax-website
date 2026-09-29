@@ -32,6 +32,9 @@ const NO_STORE = { "cache-control": "no-store" };
 const LOGIN_RE = /^\d{8}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:\d{2})?)?$/;
 
+/** Engine groups reserved for prop-challenge accounts (same rule as the prop service and the wallet). */
+const isPropGroup = (code: unknown) => typeof code === "string" && code.toLowerCase().startsWith("prop");
+
 function error(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status, headers: NO_STORE });
 }
@@ -77,7 +80,8 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     const r = await engine<{ groups?: Obj[] }>("/v1/groups", { user, req });
     if (r.status !== 200) return reply(r.status, r.data);
     // spread group / route are dealing details; the client sees the commercial terms only
-    const groups = (r.data.groups ?? []).map(({ route: _r, tenantId: _t, ...g }) => g);
+    // prop* groups hold prop-challenge accounts only (opened by the prop service; the wallet refuses transfers to them)
+    const groups = (r.data.groups ?? []).filter((g) => !isPropGroup(g.code)).map(({ route: _r, tenantId: _t, ...g }) => g);
     return reply(200, { groups });
   }
 
@@ -132,6 +136,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     const type = body.type;
     if (type !== "live" && type !== "demo") return error(422, "validation", "Choose a live or demo account.");
     if (typeof body.group !== "string" || !/^[a-z0-9_-]{1,40}$/i.test(body.group)) return error(422, "validation", "Choose an account type.");
+    if (isPropGroup(body.group)) return error(422, "validation", "Prop accounts are opened by buying a prop challenge.");
     const open: Obj = { type, group: body.group };
     if (body.leverage !== undefined) {
       if (!Number.isInteger(body.leverage)) return error(422, "validation", "Invalid leverage.");
