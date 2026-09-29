@@ -90,7 +90,7 @@ const auth = {
   "register.verifyEmail": "Verify email",
   "register.welcome": "Welcome to Kalks, {name}",
   "register.readyDemo": "Your email is verified and your account is ready. Open a demo account now, or verify your identity to go live.",
-  "register.ready": "Your email is verified and your account is ready. Follow live markets now; funding and trading accounts are coming soon.",
+  "register.ready": "Your email is verified and your account is ready. Open a trading account, fund your wallet and start trading.",
   "register.openClientArea": "Open client area",
 
   // Complete profile after Google sign-up
@@ -105,7 +105,7 @@ const auth = {
   "complete.subtitle": "A few details we need for every Kalks account. It takes under a minute.",
   "complete.googleAccount": "Google account",
   "complete.emailTaken": "<signin>Sign in</signin> with your password instead, or <reset>reset it</reset>.",
-  "complete.ready": "Your account is ready and signed in with Google. Follow live markets now; funding and trading accounts are coming soon.",
+  "complete.ready": "Your account is ready and signed in with Google. Open a trading account, fund your wallet and start trading.",
   "complete.notYou": "Not you? <link>Use another Google account</link>",
 
   // Forgot / reset password
@@ -130,5 +130,6 @@ const auth = {
   "stepup.saving": "Saving…",
   "stepup.sendAgain": "Send the code again",
   "stepup.sendingCode": "Sending a confirmation code to your email…",
+  "otp.digit": "Digit {n} of {total}",
 };
 export default auth;

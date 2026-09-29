@@ -91,7 +91,7 @@ const auth: NsMessages<"auth"> = {
   "register.verifyEmail": "Vérifier l'e-mail",
   "register.welcome": "Bienvenue chez Kalks, {name}",
   "register.readyDemo": "Votre e-mail est vérifié et votre compte est prêt. Ouvrez un compte démo dès maintenant, ou vérifiez votre identité pour passer en réel.",
-  "register.ready": "Votre e-mail est vérifié et votre compte est prêt. Suivez les marchés en temps réel dès maintenant ; le financement et les comptes de trading arrivent bientôt.",
+  "register.ready": "Votre e-mail est vérifié et votre compte est prêt. Ouvrez un compte de trading, alimentez votre portefeuille et commencez à trader.",
   "register.openClientArea": "Ouvrir l'espace client",
 
   // Complete profile after Google sign-up
@@ -106,7 +106,7 @@ const auth: NsMessages<"auth"> = {
   "complete.subtitle": "Quelques informations nécessaires pour tout compte Kalks. Cela prend moins d'une minute.",
   "complete.googleAccount": "Compte Google",
   "complete.emailTaken": "<signin>Connectez-vous</signin> plutôt avec votre mot de passe, ou <reset>réinitialisez-le</reset>.",
-  "complete.ready": "Votre compte est prêt et connecté avec Google. Suivez les marchés en temps réel dès maintenant ; le financement et les comptes de trading arrivent bientôt.",
+  "complete.ready": "Votre compte est prêt et connecté avec Google. Ouvrez un compte de trading, alimentez votre portefeuille et commencez à trader.",
   "complete.notYou": "Ce n'est pas vous ? <link>Utiliser un autre compte Google</link>",
 
   // Forgot / reset password
@@ -130,5 +130,6 @@ const auth: NsMessages<"auth"> = {
   "stepup.saving": "Enregistrement…",
   "stepup.sendAgain": "Renvoyer le code",
   "stepup.sendingCode": "Envoi d'un code de confirmation à votre e-mail…",
+  "otp.digit": "Chiffre {n} sur {total}",
 };
 export default auth;

@@ -91,7 +91,7 @@ const auth: NsMessages<"auth"> = {
   "register.verifyEmail": "Sahkan e-mel",
   "register.welcome": "Selamat datang ke Kalks, {name}",
   "register.readyDemo": "E-mel anda telah disahkan dan akaun anda sudah sedia. Buka akaun demo sekarang, atau sahkan identiti anda untuk beralih ke akaun sebenar.",
-  "register.ready": "E-mel anda telah disahkan dan akaun anda sudah sedia. Ikuti pasaran langsung sekarang; pendanaan dan akaun dagangan akan datang tidak lama lagi.",
+  "register.ready": "E-mel anda telah disahkan dan akaun anda sedia. Buka akaun dagangan, dana dompet anda dan mula berdagang.",
   "register.openClientArea": "Buka kawasan pelanggan",
 
   // Complete profile after Google sign-up
@@ -106,7 +106,7 @@ const auth: NsMessages<"auth"> = {
   "complete.subtitle": "Beberapa butiran yang kami perlukan untuk setiap akaun Kalks. Ia mengambil masa kurang daripada seminit.",
   "complete.googleAccount": "Akaun Google",
   "complete.emailTaken": "<signin>Log masuk</signin> dengan kata laluan anda, atau <reset>set semula kata laluan</reset>.",
-  "complete.ready": "Akaun anda sudah sedia dan telah log masuk dengan Google. Ikuti pasaran langsung sekarang; pendanaan dan akaun dagangan akan datang tidak lama lagi.",
+  "complete.ready": "Akaun anda sedia dan telah log masuk dengan Google. Buka akaun dagangan, dana dompet anda dan mula berdagang.",
   "complete.notYou": "Bukan anda? <link>Gunakan akaun Google lain</link>",
 
   // Forgot / reset password
@@ -130,5 +130,6 @@ const auth: NsMessages<"auth"> = {
   "stepup.saving": "Menyimpan…",
   "stepup.sendAgain": "Hantar semula kod",
   "stepup.sendingCode": "Menghantar kod pengesahan ke e-mel anda…",
+  "otp.digit": "Digit {n} daripada {total}",
 };
 export default auth;

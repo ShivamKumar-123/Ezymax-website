@@ -91,7 +91,7 @@ const auth: NsMessages<"auth"> = {
   "register.verifyEmail": "이메일 인증",
   "register.welcome": "{name}님, Kalks에 오신 것을 환영합니다",
   "register.readyDemo": "이메일이 인증되었으며 계정이 준비되었습니다. 지금 데모 계좌를 개설하거나 본인 인증을 완료하고 실거래를 시작하세요.",
-  "register.ready": "이메일이 인증되었으며 계정이 준비되었습니다. 지금 실시간 시장을 확인하세요. 입금 및 거래 계좌 기능은 곧 제공됩니다.",
+  "register.ready": "이메일이 인증되었으며 계정이 준비되었습니다. 거래 계좌를 개설하고 지갑에 입금한 후 거래를 시작하세요.",
   "register.openClientArea": "Client Area 열기",
 
   // Google 가입 후 프로필 완성
@@ -106,7 +106,7 @@ const auth: NsMessages<"auth"> = {
   "complete.subtitle": "모든 Kalks 계정에 필요한 몇 가지 정보입니다. 1분도 걸리지 않습니다.",
   "complete.googleAccount": "Google 계정",
   "complete.emailTaken": "대신 비밀번호로 <signin>로그인</signin>하거나 <reset>비밀번호를 재설정</reset>하세요.",
-  "complete.ready": "계정이 준비되었으며 Google로 로그인되었습니다. 지금 실시간 시장을 확인하세요. 입금 및 거래 계좌 기능은 곧 제공됩니다.",
+  "complete.ready": "계정이 준비되었으며 Google로 로그인되었습니다. 거래 계좌를 개설하고 지갑에 입금한 후 거래를 시작하세요.",
   "complete.notYou": "본인이 아니신가요? <link>다른 Google 계정 사용</link>",
 
   // 비밀번호 찾기 / 재설정
@@ -130,5 +130,6 @@ const auth: NsMessages<"auth"> = {
   "stepup.saving": "저장 중…",
   "stepup.sendAgain": "코드 다시 보내기",
   "stepup.sendingCode": "확인 코드를 이메일로 보내는 중…",
+  "otp.digit": "{total}자리 중 {n}번째",
 };
 export default auth;

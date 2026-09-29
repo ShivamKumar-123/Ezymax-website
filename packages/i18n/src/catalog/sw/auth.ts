@@ -91,7 +91,7 @@ const auth: NsMessages<"auth"> = {
   "register.verifyEmail": "Thibitisha barua pepe",
   "register.welcome": "Karibu Kalks, {name}",
   "register.readyDemo": "Barua pepe yako imethibitishwa na akaunti yako iko tayari. Fungua akaunti ya demo sasa, au thibitisha utambulisho wako ili uanze biashara halisi.",
-  "register.ready": "Barua pepe yako imethibitishwa na akaunti yako iko tayari. Fuatilia masoko moja kwa moja sasa; ufadhili na akaunti za biashara zinakuja hivi karibuni.",
+  "register.ready": "Barua pepe yako imethibitishwa na akaunti yako iko tayari. Fungua akaunti ya biashara, weka pesa kwenye pochi yako na uanze kufanya biashara.",
   "register.openClientArea": "Fungua eneo la mteja",
 
   // Complete profile after Google sign-up
@@ -106,7 +106,7 @@ const auth: NsMessages<"auth"> = {
   "complete.subtitle": "Maelezo machache tunayohitaji kwa kila akaunti ya Kalks. Inachukua chini ya dakika moja.",
   "complete.googleAccount": "Akaunti ya Google",
   "complete.emailTaken": "<signin>Ingia</signin> kwa nenosiri lako badala yake, au <reset>liweke upya</reset>.",
-  "complete.ready": "Akaunti yako iko tayari na umeingia kwa Google. Fuatilia masoko moja kwa moja sasa; ufadhili na akaunti za biashara zinakuja hivi karibuni.",
+  "complete.ready": "Akaunti yako iko tayari na umeingia kwa Google. Fungua akaunti ya biashara, weka pesa kwenye pochi yako na uanze kufanya biashara.",
   "complete.notYou": "Si wewe? <link>Tumia akaunti nyingine ya Google</link>",
 
   // Forgot / reset password
@@ -130,5 +130,6 @@ const auth: NsMessages<"auth"> = {
   "stepup.saving": "Inahifadhi…",
   "stepup.sendAgain": "Tuma msimbo tena",
   "stepup.sendingCode": "Inatuma msimbo wa uthibitisho kwa barua pepe yako…",
+  "otp.digit": "Tarakimu {n} kati ya {total}",
 };
 export default auth;

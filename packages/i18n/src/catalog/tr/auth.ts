@@ -91,7 +91,7 @@ const auth: NsMessages<"auth"> = {
   "register.verifyEmail": "E-postayı doğrula",
   "register.welcome": "Kalks'a hoş geldiniz, {name}",
   "register.readyDemo": "E-postanız doğrulandı ve hesabınız hazır. Şimdi bir demo hesap açın veya gerçek hesaba geçmek için kimliğinizi doğrulayın.",
-  "register.ready": "E-postanız doğrulandı ve hesabınız hazır. Canlı piyasaları şimdi takip edin; fonlama ve işlem hesapları çok yakında.",
+  "register.ready": "E-postanız doğrulandı ve hesabınız hazır. Bir işlem hesabı açın, cüzdanınıza para yatırın ve işlem yapmaya başlayın.",
   "register.openClientArea": "Müşteri alanını aç",
 
   // Complete profile after Google sign-up
@@ -106,7 +106,7 @@ const auth: NsMessages<"auth"> = {
   "complete.subtitle": "Her Kalks hesabı için gereken birkaç bilgi. Bir dakikadan kısa sürer.",
   "complete.googleAccount": "Google hesabı",
   "complete.emailTaken": "Bunun yerine şifrenizle <signin>giriş yapın</signin> veya <reset>şifrenizi sıfırlayın</reset>.",
-  "complete.ready": "Hesabınız hazır ve Google ile giriş yaptınız. Canlı piyasaları şimdi takip edin; fonlama ve işlem hesapları çok yakında.",
+  "complete.ready": "Hesabınız hazır ve Google ile oturum açıldı. Bir işlem hesabı açın, cüzdanınıza para yatırın ve işlem yapmaya başlayın.",
   "complete.notYou": "Siz değil misiniz? <link>Başka bir Google hesabı kullanın</link>",
 
   // Forgot / reset password
@@ -131,5 +131,6 @@ const auth: NsMessages<"auth"> = {
   "stepup.saving": "Kaydediliyor…",
   "stepup.sendAgain": "Kodu tekrar gönder",
   "stepup.sendingCode": "E-postanıza onay kodu gönderiliyor…",
+  "otp.digit": "Rakam {n}/{total}",
 };
 export default auth;

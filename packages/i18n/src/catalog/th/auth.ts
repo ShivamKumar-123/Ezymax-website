@@ -91,7 +91,7 @@ const auth: NsMessages<"auth"> = {
   "register.verifyEmail": "ยืนยันอีเมล",
   "register.welcome": "ยินดีต้อนรับสู่ Kalks คุณ{name}",
   "register.readyDemo": "อีเมลของคุณได้รับการยืนยันแล้วและบัญชีของคุณพร้อมใช้งาน เปิดบัญชีทดลองได้เลย หรือยืนยันตัวตนเพื่อเริ่มเทรดจริง",
-  "register.ready": "อีเมลของคุณได้รับการยืนยันแล้วและบัญชีของคุณพร้อมใช้งาน ติดตามตลาดแบบเรียลไทม์ได้เลย การฝากเงินและบัญชีเทรดจะเปิดให้บริการเร็วๆ นี้",
+  "register.ready": "ยืนยันอีเมลของคุณแล้ว และบัญชีของคุณพร้อมใช้งาน เปิดบัญชีเทรด เติมเงินเข้ากระเป๋าเงิน แล้วเริ่มเทรดได้เลย",
   "register.openClientArea": "เปิดพื้นที่ลูกค้า",
 
   // Complete profile after Google sign-up
@@ -106,7 +106,7 @@ const auth: NsMessages<"auth"> = {
   "complete.subtitle": "ข้อมูลบางส่วนที่จำเป็นสำหรับทุกบัญชี Kalks ใช้เวลาไม่ถึงหนึ่งนาที",
   "complete.googleAccount": "บัญชี Google",
   "complete.emailTaken": "<signin>เข้าสู่ระบบ</signin> ด้วยรหัสผ่านแทน หรือ <reset>รีเซ็ตรหัสผ่าน</reset>",
-  "complete.ready": "บัญชีของคุณพร้อมใช้งานและเข้าสู่ระบบด้วย Google แล้ว ติดตามตลาดแบบเรียลไทม์ได้เลย การฝากเงินและบัญชีเทรดจะเปิดให้บริการเร็วๆ นี้",
+  "complete.ready": "บัญชีของคุณพร้อมใช้งานและเข้าสู่ระบบด้วย Google แล้ว เปิดบัญชีเทรด เติมเงินเข้ากระเป๋าเงิน แล้วเริ่มเทรดได้เลย",
   "complete.notYou": "ไม่ใช่คุณ? <link>ใช้บัญชี Google อื่น</link>",
 
   // Forgot / reset password
@@ -130,5 +130,6 @@ const auth: NsMessages<"auth"> = {
   "stepup.saving": "กำลังบันทึก…",
   "stepup.sendAgain": "ส่งรหัสอีกครั้ง",
   "stepup.sendingCode": "กำลังส่งรหัสยืนยันไปยังอีเมลของคุณ…",
+  "otp.digit": "หลักที่ {n} จาก {total}",
 };
 export default auth;

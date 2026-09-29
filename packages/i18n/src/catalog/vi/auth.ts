@@ -91,7 +91,7 @@ const auth: NsMessages<"auth"> = {
   "register.verifyEmail": "Xác minh email",
   "register.welcome": "Chào mừng bạn đến với Kalks, {name}",
   "register.readyDemo": "Email của bạn đã được xác minh và tài khoản đã sẵn sàng. Hãy mở tài khoản demo ngay hoặc xác minh danh tính để giao dịch thực.",
-  "register.ready": "Email của bạn đã được xác minh và tài khoản đã sẵn sàng. Theo dõi thị trường trực tiếp ngay; tính năng nạp tiền và tài khoản giao dịch sắp ra mắt.",
+  "register.ready": "Email của bạn đã được xác minh và tài khoản đã sẵn sàng. Mở tài khoản giao dịch, nạp tiền vào ví và bắt đầu giao dịch.",
   "register.openClientArea": "Mở khu vực khách hàng",
 
   // Complete profile after Google sign-up
@@ -106,7 +106,7 @@ const auth: NsMessages<"auth"> = {
   "complete.subtitle": "Một vài thông tin cần thiết cho mọi tài khoản Kalks. Chỉ mất chưa đầy một phút.",
   "complete.googleAccount": "Tài khoản Google",
   "complete.emailTaken": "Hãy <signin>đăng nhập</signin> bằng mật khẩu hoặc <reset>đặt lại mật khẩu</reset>.",
-  "complete.ready": "Tài khoản của bạn đã sẵn sàng và đã đăng nhập bằng Google. Theo dõi thị trường trực tiếp ngay; tính năng nạp tiền và tài khoản giao dịch sắp ra mắt.",
+  "complete.ready": "Tài khoản của bạn đã sẵn sàng và đã đăng nhập bằng Google. Mở tài khoản giao dịch, nạp tiền vào ví và bắt đầu giao dịch.",
   "complete.notYou": "Không phải bạn? <link>Dùng tài khoản Google khác</link>",
 
   // Forgot / reset password
@@ -130,5 +130,6 @@ const auth: NsMessages<"auth"> = {
   "stepup.saving": "Đang lưu…",
   "stepup.sendAgain": "Gửi lại mã",
   "stepup.sendingCode": "Đang gửi mã xác nhận đến email của bạn…",
+  "otp.digit": "Chữ số {n}/{total}",
 };
 export default auth;

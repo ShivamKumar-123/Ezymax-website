@@ -91,7 +91,7 @@ const auth: NsMessages<"auth"> = {
   "register.verifyEmail": "メールアドレスを認証",
   "register.welcome": "Kalksへようこそ、{name}様",
   "register.readyDemo": "メールアドレスが認証され、アカウントの準備が整いました。今すぐデモ口座を開設するか、本人確認を行ってリアル取引を始めましょう。",
-  "register.ready": "メールアドレスが認証され、アカウントの準備が整いました。今すぐリアルタイムの市場をフォローできます。入金と取引口座は近日公開予定です。",
+  "register.ready": "メールアドレスが確認され、アカウントの準備ができました。取引口座を開設し、ウォレットに入金して取引を始めましょう。",
   "register.openClientArea": "クライアントエリアを開く",
 
   // Complete profile after Google sign-up
@@ -106,7 +106,7 @@ const auth: NsMessages<"auth"> = {
   "complete.subtitle": "すべてのKalksアカウントに必要な情報です。1分もかかりません。",
   "complete.googleAccount": "Googleアカウント",
   "complete.emailTaken": "代わりにパスワードで<signin>ログイン</signin>するか、<reset>リセット</reset>してください。",
-  "complete.ready": "アカウントの準備が整い、Googleでログインしました。今すぐリアルタイムの市場をフォローできます。入金と取引口座は近日公開予定です。",
+  "complete.ready": "アカウントの準備ができ、Google でサインインしました。取引口座を開設し、ウォレットに入金して取引を始めましょう。",
   "complete.notYou": "ご本人ではありませんか？ <link>別のGoogleアカウントを使用</link>",
 
   // Forgot / reset password
@@ -130,5 +130,6 @@ const auth: NsMessages<"auth"> = {
   "stepup.saving": "保存中…",
   "stepup.sendAgain": "コードを再送信",
   "stepup.sendingCode": "確認コードをメールに送信しています…",
+  "otp.digit": "{total} 桁中 {n} 桁目",
 };
 export default auth;

@@ -84,6 +84,7 @@ export function OrDivider() {
 
 /** 6-digit OTP input with auto-advance and paste support. */
 export function OtpInput({ length = 6, onComplete }: { length?: number; onComplete?: (code: string) => void }) {
+  const t = useT();
   const [vals, setVals] = React.useState<string[]>(Array(length).fill(""));
   const refs = React.useRef<(HTMLInputElement | null)[]>([]);
   function set(i: number, v: string) {
@@ -111,6 +112,9 @@ export function OtpInput({ length = 6, onComplete }: { length?: number; onComple
             refs.current[i] = el;
           }}
           value={v}
+          // the code step opens with the cursor in the first box, so the client can type or paste at once
+          autoFocus={i === 0}
+          aria-label={t("auth.otp.digit", { n: i + 1, total: length })}
           inputMode="numeric"
           autoComplete="one-time-code"
           onChange={(e) => set(i, e.target.value)}

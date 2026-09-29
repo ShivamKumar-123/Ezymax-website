@@ -91,7 +91,7 @@ const auth: NsMessages<"auth"> = {
   "register.verifyEmail": "تحقّق من البريد",
   "register.welcome": "مرحبًا بك في Kalks، {name}",
   "register.readyDemo": "تم التحقق من بريدك الإلكتروني وحسابك جاهز. افتح حسابًا تجريبيًا الآن، أو تحقّق من هويتك للانتقال إلى التداول الحقيقي.",
-  "register.ready": "تم التحقق من بريدك الإلكتروني وحسابك جاهز. تابع الأسواق المباشرة الآن؛ التمويل وحسابات التداول قادمة قريبًا.",
+  "register.ready": "تم التحقق من بريدك الإلكتروني وأصبح حسابك جاهزًا. افتح حساب تداول، ومَوِّل محفظتك، وابدأ التداول.",
   "register.openClientArea": "فتح منطقة العملاء",
 
   // Complete profile after Google sign-up
@@ -106,7 +106,7 @@ const auth: NsMessages<"auth"> = {
   "complete.subtitle": "بعض البيانات التي نحتاجها لكل حساب في Kalks. يستغرق ذلك أقل من دقيقة.",
   "complete.googleAccount": "حساب Google",
   "complete.emailTaken": "<signin>سجّل الدخول</signin> بكلمة المرور بدلًا من ذلك، أو <reset>أعد تعيينها</reset>.",
-  "complete.ready": "حسابك جاهز وتم تسجيل دخولك عبر Google. تابع الأسواق المباشرة الآن؛ التمويل وحسابات التداول قادمة قريبًا.",
+  "complete.ready": "حسابك جاهز وتم تسجيل الدخول باستخدام Google. افتح حساب تداول، ومَوِّل محفظتك، وابدأ التداول.",
   "complete.notYou": "لست أنت؟ <link>استخدم حساب Google آخر</link>",
 
   // Forgot / reset password
@@ -130,5 +130,6 @@ const auth: NsMessages<"auth"> = {
   "stepup.saving": "جارٍ الحفظ…",
   "stepup.sendAgain": "إرسال الرمز مرة أخرى",
   "stepup.sendingCode": "جارٍ إرسال رمز التأكيد إلى بريدك الإلكتروني…",
+  "otp.digit": "الرقم {n} من {total}",
 };
 export default auth;

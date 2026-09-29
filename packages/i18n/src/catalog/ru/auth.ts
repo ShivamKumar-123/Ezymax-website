@@ -91,7 +91,7 @@ const auth: NsMessages<"auth"> = {
   "register.verifyEmail": "Подтвердить почту",
   "register.welcome": "Добро пожаловать в Kalks, {name}",
   "register.readyDemo": "Ваша эл. почта подтверждена, аккаунт готов. Откройте демо-счёт прямо сейчас или подтвердите личность, чтобы перейти на реальный счёт.",
-  "register.ready": "Ваша эл. почта подтверждена, аккаунт готов. Следите за рынками в реальном времени уже сейчас; пополнение и торговые счета скоро появятся.",
+  "register.ready": "Ваш email подтверждён, аккаунт готов. Откройте торговый счёт, пополните кошелёк и начните торговать.",
   "register.openClientArea": "Открыть личный кабинет",
 
   // Complete profile after Google sign-up
@@ -106,7 +106,7 @@ const auth: NsMessages<"auth"> = {
   "complete.subtitle": "Несколько данных, необходимых для каждого аккаунта Kalks. Это займёт меньше минуты.",
   "complete.googleAccount": "Аккаунт Google",
   "complete.emailTaken": "Вместо этого <signin>войдите</signin> с паролем или <reset>сбросьте его</reset>.",
-  "complete.ready": "Ваш аккаунт готов, Вы вошли через Google. Следите за рынками в реальном времени уже сейчас; пополнение и торговые счета скоро появятся.",
+  "complete.ready": "Ваш аккаунт готов, вход выполнен через Google. Откройте торговый счёт, пополните кошелёк и начните торговать.",
   "complete.notYou": "Это не Вы? <link>Использовать другой аккаунт Google</link>",
 
   // Forgot / reset password
@@ -130,5 +130,6 @@ const auth: NsMessages<"auth"> = {
   "stepup.saving": "Сохранение…",
   "stepup.sendAgain": "Отправить код ещё раз",
   "stepup.sendingCode": "Отправляем код подтверждения на Вашу почту…",
+  "otp.digit": "Цифра {n} из {total}",
 };
 export default auth;
