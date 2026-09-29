@@ -129,6 +129,18 @@ export function accMoney(a: Pick<TradingAccount, "cent">, usd: number, opts: { s
 }
 export const accCcy = (a: Pick<TradingAccount, "cent">) => (a.cent ? "USC" : "USD");
 
+/**
+ * Margin level state against the account group's levels (engine accounts carry them; 100 % / 50 %
+ * otherwise): "stopout" at or below stop out, "call" at or below margin call, "low" below twice the call.
+ */
+export function marginState(level: number, a: TradingAccount): "ok" | "low" | "call" | "stopout" {
+  if (!Number.isFinite(level)) return "ok";
+  const e = (a as TradingAccount & { engine?: { marginCallLevel?: number; stopOutLevel?: number } }).engine;
+  const call = e?.marginCallLevel ?? 100;
+  const out = e?.stopOutLevel ?? 50;
+  return level <= out ? "stopout" : level <= call ? "call" : level < call * 2 ? "low" : "ok";
+}
+
 /* ------------------------------------------------------------------ */
 /* Orders                                                              */
 /* ------------------------------------------------------------------ */

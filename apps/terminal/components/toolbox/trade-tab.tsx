@@ -6,7 +6,7 @@ import { ArrowLeftRight, Edit3, Layers, Scissors, Share2, X, XCircle } from "luc
 import { getInstrument } from "@kalks/mock";
 import { SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { useMetrics, usePositionProfit, useTerminal } from "@/lib/store";
-import { PENDING_LABEL, SOURCE_LABEL, accCcy, accMoney, fmtPrice, fmtServer, fmtVol, type PendingOrder, type TPosition } from "@/lib/trading";
+import { PENDING_LABEL, SOURCE_LABEL, accCcy, accMoney, fmtPrice, fmtServer, fmtVol, marginState, type PendingOrder, type TPosition } from "@/lib/trading";
 import { Td, Th } from "@/components/ui/panel";
 import { Pnl, LiveMoney } from "@/components/ui/primitives";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
@@ -146,6 +146,7 @@ function SummaryRow({ picking }: { picking?: boolean }) {
   const a = m.account;
   const ccy = accCcy(a);
   const lvl = Number.isFinite(m.level) ? `${m.level.toFixed(2)}%` : "—";
+  const ms = marginState(m.level, a);
   return (
     <tr className="[&>td]:sticky [&>td]:bottom-0 [&>td]:z-[1] [&>td]:border-t [&>td]:border-line [&>td]:bg-panel-2">
       <td colSpan={picking ? 12 : 11} className="h-[28px] whitespace-nowrap ps-3 text-[12px]">
@@ -153,8 +154,9 @@ function SummaryRow({ picking }: { picking?: boolean }) {
           <SumItem k={t("toolbox.summary.balance")} v={`${accMoney(a, m.balance)} ${ccy}`} />
           <SumItem k={t("toolbox.summary.equity")} v={accMoney(a, m.equity)} live={m.equity} fmt={(v) => accMoney(a, v)} />
           <SumItem k={t("toolbox.summary.margin")} v={accMoney(a, m.margin)} />
-          <SumItem k={t("toolbox.summary.freeMargin")} v={accMoney(a, m.free)} live={m.free} fmt={(v) => accMoney(a, v)} />
-          <SumItem k={t("toolbox.summary.marginLevel")} v={lvl} tone={Number.isFinite(m.level) && m.level < 200 ? "text-warn" : undefined} />
+          <SumItem k={t("toolbox.summary.freeMargin")} v={accMoney(a, m.free)} live={m.free} fmt={(v) => accMoney(a, v)} tone={m.free < 0 ? "text-down" : undefined} />
+          <SumItem k={t("toolbox.summary.marginLevel")} v={lvl} tone={ms === "call" || ms === "stopout" ? "text-down" : ms === "low" ? "text-warn" : undefined} />
+          {(ms === "call" || ms === "stopout") && <span className="rounded-[4px] bg-down-soft px-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.06em] text-down">{t(ms === "stopout" ? "order.toast.stopOut" : "order.toast.marginCall")}</span>}
           {m.credit > 0 && <SumItem k={t("toolbox.summary.credit")} v={accMoney(a, m.credit)} />}
         </span>
       </td>

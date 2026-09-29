@@ -8,7 +8,7 @@ import { useT } from "@kalks/i18n/react";
 import { Pnl } from "@/components/ui/primitives";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { useQps } from "@/lib/market";
-import { accCcy, accMoney, serverTime } from "@/lib/trading";
+import { accCcy, accMoney, marginState, serverTime } from "@/lib/trading";
 import { LOGIN_URL } from "@/lib/guest";
 import { useStreamStatus } from "@/lib/engine/live";
 
@@ -31,7 +31,8 @@ export function StatusBar() {
   const mode = useFeedMode();
   // real feed latency: browser receive − market-data service receive, p95 of the last 500 quotes
   const lat = priceFeed().latency();
-  const ping = lat.n ? lat.p95 : null;
+  // the sample compares two clocks: a browser clock that is off by minutes gives nonsense, shown as "—"
+  const ping = lat.n && lat.p95 >= 0 && lat.p95 < 60_000 ? lat.p95 : null;
   const ok = mode === "live" && (ping === null || ping < 150);
   const [cpu, setCpu] = React.useState(7);
   React.useEffect(() => {
@@ -45,14 +46,14 @@ export function StatusBar() {
         <span className={cn("size-1.5 rounded-full", ok ? "bg-up" : "bg-warn")} />
         <span className="font-sans text-fg-2">{mode === "live" ? t("trader.status.connected") : mode === "sim" ? t("trader.status.feedSimulated") : t("trader.status.connecting")}</span>
         <span>· {a.server} ·</span>
-        <span title={t("trader.status.latencyTitle")} className={cn("k-num w-[38px]", ok ? "text-fg-2" : "text-warn")}>{ping === null ? "—" : `${ping} ms`}</span>
+        <span title={t("trader.status.latencyTitle")} className={cn("k-num min-w-[38px] whitespace-nowrap", ok ? "text-fg-2" : "text-warn")}>{ping === null ? "—" : `${ping} ms`}</span>
       </Cell>
       <Cell title={t("trader.status.profileTitle")}>
         <LayoutTemplate className="size-3" />
         <span className="font-sans">{t.dyn(`trader.profile.${T.ws.profile.toLowerCase()}`, T.ws.profile)}</span>
       </Cell>
       <Cell title={t("trader.status.qpsTitle")}>
-        <span className="k-num w-[46px] text-fg-2">{qps} q/s</span>
+        <span className="k-num min-w-[46px] whitespace-nowrap text-fg-2">{qps} q/s</span>
       </Cell>
       {T.engine && <TradeServerCell />}
       {T.guest ? (
@@ -75,7 +76,7 @@ export function StatusBar() {
           </Cell>
           <Cell className="hidden xl:flex" title={t("trader.status.marginLevel")}>
             <Gauge className="size-3" />
-            <span className={cn("k-num", lvl !== null && lvl < 200 ? "text-warn" : "text-fg-2")}>{lvl === null ? "—" : `${lvl.toFixed(0)}%`}</span>
+            <span className={cn("k-num", lvl === null ? "text-fg-2" : { ok: "text-fg-2", low: "text-warn", call: "text-down", stopout: "text-down" }[marginState(lvl, a)])}>{lvl === null ? "—" : `${lvl.toFixed(0)}%`}</span>
           </Cell>
         </>
       )}

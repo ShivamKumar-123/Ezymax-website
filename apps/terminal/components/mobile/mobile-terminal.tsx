@@ -10,7 +10,7 @@ import { useMetrics, usePositionProfit, useTerminal } from "@/lib/store";
 import { useT } from "@kalks/i18n/react";
 import { LanguageMenu } from "@/components/shell/language-menu";
 import { useMarketOpen } from "@/lib/market-hours";
-import { PENDING_LABEL, TIMEFRAMES, accCcy, accMoney, fmtPrice, fmtServer, fmtVol } from "@/lib/trading";
+import { PENDING_LABEL, TIMEFRAMES, accCcy, accMoney, fmtPrice, fmtServer, fmtVol, marginState } from "@/lib/trading";
 import { Badge, LiveMoney, MiniSwitch, Pnl, Stepper } from "@/components/ui/primitives";
 import { ChartView } from "@/components/chart/chart-view";
 import { CLIENT_AREA } from "@/components/shell/title-bar";
@@ -225,7 +225,7 @@ function MTrade() {
         ].map(([k, label, v]) => (
           <div key={k} className="bg-panel px-3 py-2">
             <div className="text-[10px] uppercase tracking-[0.06em] text-fg-3">{label}</div>
-            <div className={cn("k-num font-mono text-[12.5px]", k === "pnl" && (m.floating >= 0 ? "text-up" : "text-down"))}>{v}</div>
+            <div className={cn("k-num font-mono text-[12.5px]", k === "pnl" && (m.floating >= 0 ? "text-up" : "text-down"), k === "level" && { ok: "", low: "text-warn", call: "text-down", stopout: "text-down" }[marginState(m.level, a)], k === "free" && m.free < 0 && "text-down")}>{v}</div>
           </div>
         ))}
       </div>
