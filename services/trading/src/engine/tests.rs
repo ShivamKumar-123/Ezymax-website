@@ -580,6 +580,28 @@ fn withdrawal_respects_free_margin_and_credit() {
 }
 
 #[test]
+fn house_capital_is_booked_against_house_capital_not_as_a_deposit() {
+    let kit = Kit::new();
+    kit.quote("EURUSD", "1.1", "1.1");
+    let mut h = Harness::live(&kit, "hedge", "0");
+    h.run(&kit, |tx, env| funds::adjust(tx, env, AdjustKind::HouseCapital, d("10000"), "house:h1:capital:initial", "HOUSE", "house account")).unwrap();
+    assert_eq!(h.st.balance, d("10000.00"));
+    let txn = h.log.iter().rev().find_map(|x| match x { Event::Ledger { txn } => Some(txn.clone()), _ => None }).unwrap();
+    assert_eq!(txn.kind, crate::model::TxnKind::HouseCapital);
+    assert_eq!(txn.kind.as_str(), "house_capital");
+    assert!(txn.postings.iter().any(|p| p.account == crate::model::house_code("house_capital", "USD") && p.amount == d("-10000.00")));
+    // a withdrawal of house capital is limited to the free funds, like any withdrawal
+    place(&mut h, &kit, buy("EURUSD", "1")); // margin 1100
+    assert_eq!(h.run(&kit, |tx, env| funds::adjust(tx, env, AdjustKind::HouseCapital, d("-9000"), "house:h1:capital:w1", "HOUSE", "too much")).unwrap_err().code, "insufficient_funds");
+    h.run(&kit, |tx, env| funds::adjust(tx, env, AdjustKind::HouseCapital, d("-5000"), "house:h1:capital:w2", "HOUSE", "withdraw")).unwrap();
+    assert_eq!(h.st.balance, d("5000.00"));
+    // the admin balance API can't book it (only the house routes construct this kind)
+    assert!(AdjustKind::parse("house_capital").is_none());
+    h.assert_ledger();
+    h.assert_replay();
+}
+
+#[test]
 fn live_account_kind() {
     let kit = Kit::new();
     let h = Harness::live(&kit, "hedge", "0");

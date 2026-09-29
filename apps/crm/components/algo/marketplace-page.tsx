@@ -4,7 +4,7 @@
 // your account, or clone the rules when the author allows it), review, and publish your own.
 
 import * as React from "react";
-import { BadgeCheck, Loader2, Plus, Search, Star, Store, Upload, Users } from "lucide-react";
+import { BadgeCheck, Building2, Loader2, Plus, Search, Star, Store, Upload, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, EmptyState, EquityChart, PageHeader, Reveal, Segmented, Skeleton, Sparkline, SymbolAvatar, Tabs, Toggle, cn } from "@kalks/ui";
 import { NumInput } from "./builder";
@@ -40,6 +40,16 @@ interface Listing {
   subscribers: number;
   track: Track;
   createdAt: string;
+  /** House account listing: operated by the broker (shown with the disclosure label) */
+  house?: boolean;
+}
+/** A house listing's backtest: simulated on history, never live results. */
+interface HouseBacktest {
+  kind: "backtest";
+  label: string;
+  summary: { returnPct?: number; trades?: number; winRate?: number; maxDrawdownPct?: number; profitFactor?: number | null; firstBar?: number | null; lastBar?: number | null } | null;
+  curve: { t: number; equity: number }[];
+  notes: string[] | null;
 }
 interface ListingDetail extends Listing {
   risk?: Record<string, unknown> & { sizing?: { mode: string; lots: number; riskPct: number }; sl?: { mode: string; value: number }; tp?: { mode: string; value: number } };
@@ -49,6 +59,54 @@ interface ListingDetail extends Listing {
   subscription: { id: number; mode: string; status: string; login: number | null; deploymentId: number | null; clonedStrategyId: number | null; periodEnd: string | null; autoRenew: boolean } | null;
   isAuthor: boolean;
   platformCutPct: number;
+  backtest?: HouseBacktest | null;
+}
+
+const HOUSE_NOTE = "House strategy operated by Kalks: a broker-owned live account running this strategy. The track record is only its own live trades since it started; nothing is simulated or backfilled.";
+
+function HouseChip() {
+  return (
+    <Chip size="sm" tone="info">
+      <Building2 className="size-3" /> House strategy · Operated by Kalks
+    </Chip>
+  );
+}
+
+function BacktestBlock({ b }: { b: HouseBacktest }) {
+  const s = b.summary ?? {};
+  const data = b.curve.map((p) => ({ time: p.t, value: p.equity })).filter((p) => Number.isFinite(p.time));
+  const range = s.firstBar && s.lastBar ? `${new Date(s.firstBar * 1000).toISOString().slice(0, 10)} to ${new Date(s.lastBar * 1000).toISOString().slice(0, 10)}` : null;
+  return (
+    <div className="rounded-[12px] border border-warn/30 bg-warn-soft p-3" data-testid="house-backtest">
+      <div className="flex flex-wrap items-center gap-2">
+        <Chip size="sm" tone="warn">
+          Backtest · simulated
+        </Chip>
+        {range && <span className="text-[11.5px] text-fg-3">{range}</span>}
+      </div>
+      <p className="mt-1.5 text-[11.5px] text-fg-2">{b.label}. It shows how the rules would have traded historical prices with this account type&apos;s costs; it is not part of the live track record above.</p>
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {(
+          [
+            ["Return", s.returnPct !== undefined ? fmtPct(s.returnPct, 2) : "—"],
+            ["Win rate", s.winRate !== undefined ? `${s.winRate.toFixed(1)}%` : "—"],
+            ["Max DD", s.maxDrawdownPct !== undefined ? `${s.maxDrawdownPct.toFixed(2)}%` : "—"],
+            ["Trades", s.trades !== undefined ? String(s.trades) : "—"],
+          ] as const
+        ).map(([k, v]) => (
+          <div key={k} className="rounded-[10px] bg-surface/60 px-2.5 py-1.5">
+            <div className="text-[10.5px] uppercase text-fg-3">{k}</div>
+            <div className="k-num text-[13.5px] text-fg">{v}</div>
+          </div>
+        ))}
+      </div>
+      {data.length > 1 && (
+        <div className="mt-2">
+          <EquityChart data={data} height={120} showVolume={false} color="ember" />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function Stars({ v, size = 12 }: { v: number; size?: number }) {
@@ -72,6 +130,11 @@ function ListingCard({ l, subscribed, onOpen }: { l: Listing; subscribed: boolea
           <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-fg-3">
             <span>by {l.author}</span>·<span className="font-mono">{l.symbol} {l.timeframe}</span>
           </div>
+          {l.house && (
+            <div className="mt-1.5">
+              <HouseChip />
+            </div>
+          )}
         </div>
         <Chip size="sm" tone={l.priceMonthly > 0 ? "gold" : "up"}>{l.priceMonthly > 0 ? `${l.priceMonthly} USDT/mo` : "Free"}</Chip>
       </div>
@@ -169,6 +232,7 @@ function ListingDialog({ id, onClose, accounts, onChanged }: { id: number | null
       ) : (
         <div className="space-y-5 text-[13px]" data-testid="listing-detail">
           <div className="flex flex-wrap items-center gap-2">
+            {l.house && <HouseChip />}
             <Chip tone="up">
               <BadgeCheck className="size-3.5" /> Verified {l.track.accountType} track record
             </Chip>
@@ -176,6 +240,7 @@ function ListingDialog({ id, onClose, accounts, onChanged }: { id: number | null
             {l.status !== "approved" && <Chip tone="warn">{l.status}</Chip>}
           </div>
           <p className="whitespace-pre-line text-fg-2">{l.description}</p>
+          {l.house && <div className="rounded-[12px] border border-line bg-surface-2/60 px-3 py-2 text-[12px] text-fg-2">{HOUSE_NOTE}</div>}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {(
               [
@@ -195,6 +260,7 @@ function ListingDialog({ id, onClose, accounts, onChanged }: { id: number | null
           <div className="text-[11.5px] text-fg-3">
             Track record from the author's own deployment on Kalks since {fmtDateTime(l.track.since ?? null).slice(0, 10)}: {l.track.days.toFixed(1)} days, net {fmtMoney(l.track.netProfit ?? 0)}. Computed from closed deals on the trading engine, not entered by the author.
           </div>
+          {l.house && l.backtest && <BacktestBlock b={l.backtest} />}
           {l.risk && (
             <div className="rounded-[12px] border border-line p-3 text-[12.5px] text-fg-2">
               <div className="k-label mb-1.5">Risk settings</div>

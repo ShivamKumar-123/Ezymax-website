@@ -89,7 +89,7 @@ pub async fn find_principal(pool: &PgPool, kind: Kind, tenant_id: i64, email: &s
         Kind::User => {
             "SELECT id, email, password_hash, status = 'active' AS active, failed_logins, locked_until,
                     email_verified_at IS NOT NULL AS verified
-             FROM users WHERE tenant_id = $1 AND email = $2"
+             FROM users WHERE tenant_id = $1 AND email = $2 AND NOT is_house"
         }
         Kind::Staff => {
             "SELECT id, email, password_hash, status = 'active' AS active, failed_logins, locked_until, true AS verified

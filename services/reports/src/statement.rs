@@ -171,6 +171,7 @@ pub fn kind_label(kind: &str) -> &'static str {
         "demo_initial" => "Initial demo balance",
         "demo_refill" => "Demo refill",
         "perf_fee" => "Performance fee",
+        "house_capital" => "House capital",
         _ => "Other",
     }
 }

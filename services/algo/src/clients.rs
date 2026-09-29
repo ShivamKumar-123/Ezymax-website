@@ -179,6 +179,29 @@ impl Engine {
         Ok(EngineReply { status, body })
     }
 
+    /// Back Office route on behalf of a staff member (house accounts): the engine checks the role again and
+    /// writes its own audit entries.
+    pub async fn staff_call(&self, method: Method, path: &str, staff: &crate::state::Staff, body: Option<&Value>) -> anyhow::Result<EngineReply> {
+        let mut rb = self
+            .http
+            .request(method, format!("{}{path}", self.base))
+            .header("x-kalks-internal", &self.token)
+            .header("x-kalks-tenant", &staff.tenant)
+            .header("x-kalks-staff-id", staff.id.to_string())
+            .header("x-kalks-staff-name", staff.name.bytes().map(|b| if b.is_ascii_alphanumeric() { (b as char).to_string() } else { format!("%{b:02X}") }).collect::<String>())
+            .header("x-kalks-staff-role", &staff.role)
+            .header("x-forwarded-for", "127.0.0.1")
+            .header("user-agent", "kalks-algo");
+        if let Some(b) = body {
+            rb = rb.json(b);
+        }
+        let r = rb.send().await?;
+        let status = r.status();
+        let text = r.text().await.unwrap_or_default();
+        let body = serde_json::from_str(&text).unwrap_or_else(|_| json!({"error": {"code": "engine_error", "message": text.chars().take(200).collect::<String>()}}));
+        Ok(EngineReply { status, body })
+    }
+
     /// Client Area route on behalf of `user` (the engine returns 404 for accounts the user doesn't own).
     pub async fn user_call(&self, method: Method, path: &str, tenant: &str, user: i64, body: Option<&Value>) -> anyhow::Result<EngineReply> {
         self.send(method, path, tenant, Some(user), None, body).await

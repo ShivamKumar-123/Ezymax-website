@@ -452,11 +452,11 @@ impl Social {
             .collect()
     }
 
-    /// Flows (USD) booked on `login` inside [from, to): deposits − withdrawals.
+    /// Flows (USD) booked on `login` inside [from, to): deposits − withdrawals (and house capital on house accounts).
     pub async fn flows(&self, login: i64, from: DateTime<Utc>, to: DateTime<Utc>) -> D {
         sqlx::query_scalar::<_, Option<D>>(
             "SELECT sum(p.amount) FROM ledger_txns t JOIN ledger_postings p ON p.txn_id = t.id
-             WHERE t.login = $1 AND p.account_code = $2 AND t.kind IN ('transfer_in','transfer_out','deposit','withdrawal','demo_initial','demo_refill')
+             WHERE t.login = $1 AND p.account_code = $2 AND t.kind IN ('transfer_in','transfer_out','deposit','withdrawal','demo_initial','demo_refill','house_capital')
                AND t.created_at >= $3 AND t.created_at < $4",
         )
         .bind(login)

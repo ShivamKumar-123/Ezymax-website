@@ -61,7 +61,8 @@ async fn main() -> anyhow::Result<()> {
                 let _ = sqlx::query("DELETE FROM api_requests WHERE at < now() - interval '30 days'").execute(&pool2).await;
                 let _ = sqlx::query("DELETE FROM deployment_logs WHERE at < now() - interval '90 days'").execute(&pool2).await;
                 let _ = sqlx::query("DELETE FROM webhook_events WHERE received_at < now() - interval '90 days'").execute(&pool2).await;
-                let _ = sqlx::query("DELETE FROM backtests WHERE finished_at < now() - interval '180 days'").execute(&pool2).await;
+                // a house account's backtest stays (the Back Office and its marketplace listing show it)
+                let _ = sqlx::query("DELETE FROM backtests WHERE finished_at < now() - interval '180 days' AND id NOT IN (SELECT backtest_id FROM house_accounts WHERE backtest_id IS NOT NULL)").execute(&pool2).await;
             }
         });
     }

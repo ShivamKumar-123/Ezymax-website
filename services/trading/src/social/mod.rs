@@ -102,6 +102,8 @@ pub struct Master {
     pub reviewed_by: Option<String>,
     pub created_at: DateTime<Utc>,
     pub approved_at: Option<DateTime<Utc>>,
+    /// House account: platform-owned, runs an automated strategy (services/algo "House accounts").
+    pub is_house: bool,
 }
 
 impl Master {
@@ -289,6 +291,7 @@ fn master_from(r: &sqlx::postgres::PgRow) -> Master {
         reviewed_by: r.get("reviewed_by"),
         created_at: r.get("created_at"),
         approved_at: r.get("approved_at"),
+        is_house: r.try_get("is_house").unwrap_or(false),
     }
 }
 
@@ -708,7 +711,7 @@ pub fn sub_json(s: &Sub, master: Option<&Master>, risk: Option<u8>, fees_pending
     let profit = equity - s.net_deposits;
     json!({
         "id": s.id, "masterId": s.master_id,
-        "master": master.map(|m| json!({"id": m.id, "nickname": m.nickname, "strategy": m.strategy, "riskScore": risk, "frozen": m.frozen, "status": m.status})),
+        "master": master.map(|m| json!({"id": m.id, "nickname": m.nickname, "strategy": m.strategy, "riskScore": risk, "frozen": m.frozen, "status": m.status, "house": m.is_house})),
         "login": s.login, "status": s.status, "stopReason": s.stop_reason, "sizing": sizing_json(&s.sizing),
         "maxLot": num_opt(s.max_lot), "equityStop": num_opt(s.equity_stop), "maxDdPct": num_opt(s.max_dd_pct), "excludedSymbols": s.excluded,
         "perfFeePct": num(s.perf_fee_pct), "feePeriod": s.fee_period, "allocation": num(s.allocation), "netDeposits": num(s.net_deposits),

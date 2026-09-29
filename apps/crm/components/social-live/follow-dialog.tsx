@@ -8,7 +8,7 @@ import { Button, Dialog, Field, Input, KeyValue, Stepper, SymbolAvatar, Toggle, 
 import { Checkbox, RadioCard, RangeSlider, ToggleChip } from "@/components/social/controls";
 import { TradeButton } from "@/components/trading/ui";
 import { ApiError, PERIOD_LABEL, SIZING_LABEL, sizingText, socialApi, usd, useSocial, type FollowResult, type MasterView, type SizingMode } from "./api";
-import { InfoBox, MasterIdentity, RiskBadge, useNumber } from "./bits";
+import { HOUSE_DISCLOSURE, HouseBadge, InfoBox, MasterIdentity, RiskBadge, useNumber } from "./bits";
 
 const STEPS = ["Sizing", "Risk limits", "Amount", "Review"];
 
@@ -183,8 +183,12 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
     >
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-line bg-surface-2 px-4 py-3">
         <MasterIdentity nickname={m.nickname} size={38} sub={`${m.strategy} · fee ${m.perfFeePct}% above HWM · min ${usd(m.minAllocation, 0)}`} />
-        <RiskBadge risk={m.stats.riskScore} showLabel />
+        <span className="flex flex-wrap items-center gap-1.5">
+          {m.house && <HouseBadge />}
+          <RiskBadge risk={m.stats.riskScore} showLabel />
+        </span>
       </div>
+      {m.house && <InfoBox className="-mt-2 mb-5">{HOUSE_DISCLOSURE}</InfoBox>}
       <Stepper steps={STEPS} current={step} className="mb-6" />
 
       {step === 0 && (

@@ -200,7 +200,14 @@ export function LiveMastersPage() {
       csv: (m) => m.nickname,
       cell: (m) => (
         <span className="min-w-0">
-          <span className="block truncate text-[13.5px] font-medium text-fg">{m.nickname}</span>
+          <span className="flex items-center gap-1.5 truncate text-[13.5px] font-medium text-fg">
+            {m.nickname}
+            {m.house && (
+              <Chip size="sm" tone="info">
+                House
+              </Chip>
+            )}
+          </span>
           <span className="block truncate text-[11.5px] text-fg-3">
             {m.strategy || "—"} · <span className="font-mono">#{m.id}</span>
           </span>

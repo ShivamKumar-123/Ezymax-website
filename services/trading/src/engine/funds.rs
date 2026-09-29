@@ -82,6 +82,9 @@ pub enum AdjustKind {
     Adjustment,
     Credit,
     Bonus,
+    /// House account capital (signed): never a client deposit. Not parseable from the admin balance API;
+    /// only the house provisioning routes (api/social_house.rs) book it.
+    HouseCapital,
 }
 
 impl AdjustKind {
@@ -124,6 +127,12 @@ pub fn adjust(tx: &mut Tx, env: &Env, kind: AdjustKind, amount: D, idem: &str, r
                 return Err(Reject::new("invalid_amount", format!("Bonus cannot go below 0 (current {})", tx.st.bonus.normalize())));
             }
             ("bonus", "bonus_issued", TxnKind::Bonus, amount)
+        }
+        AdjustKind::HouseCapital => {
+            if amount < ZERO && amount.abs() > m.withdrawable() {
+                return Err(Reject::new("insufficient_funds", format!("Not enough free funds: {} available", r2(m.withdrawable()).normalize())));
+            }
+            ("balance", "house_capital", TxnKind::HouseCapital, amount)
         }
     };
     let id = tx.post(env, tk, idem.to_string(), sub, house, amt, None, Some(reason_code.to_string()), Some(note.to_string())).expect("non-zero amount");

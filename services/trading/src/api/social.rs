@@ -439,7 +439,8 @@ pub async fn subscribe(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Body(
     let tenant = ctx.tenant.tenant_id;
     let master_id = b.get("masterId").and_then(Value::as_i64).ok_or(ApiError::Validation { field: "masterId", message: "masterId is required".into() })?;
     let m = so.reg.read().unwrap().masters.get(&master_id).cloned().filter(|m| m.tenant_id == tenant).ok_or_else(|| ApiError::NotFound("Master not found".into()))?;
-    if m.status != "approved" || m.frozen || !m.offers_copy() {
+    // a house account that is switched off or hidden (House accounts) takes no new followers
+    if m.status != "approved" || m.frozen || !m.offers_copy() || (m.is_house && m.hidden) {
         return Err(bad("master_status", format!("{} is not open for copying right now", m.nickname)));
     }
     if m.user_id == u {

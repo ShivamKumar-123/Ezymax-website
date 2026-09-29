@@ -9,6 +9,7 @@ pub mod ledger;
 pub mod mam;
 pub mod social;
 pub mod social_admin;
+pub mod social_house;
 pub mod stream;
 pub mod terminal;
 
@@ -167,6 +168,9 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/social/admin/fees", get(social_admin::fees))
         .route("/v1/social/admin/fees/{id}/review", post(social_admin::review_fee))
         .route("/v1/social/admin/audit", get(social_admin::audit))
+        .route("/v1/social/admin/house", post(social_house::provision))
+        .route("/v1/social/admin/house/{id}/capital", post(social_house::capital))
+        .route("/v1/social/admin/house/{id}/retire", post(social_house::retire))
         .layer(DefaultBodyLimit::max(256 * 1024))
         .layer(middleware::from_fn_with_state(st.clone(), internal_only));
     Router::new()

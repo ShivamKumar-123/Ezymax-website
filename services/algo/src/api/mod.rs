@@ -4,6 +4,7 @@
 pub mod admin;
 pub mod backtests;
 pub mod deployments;
+pub mod house;
 pub mod keys;
 pub mod market;
 pub mod public;
@@ -138,6 +139,15 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/webhooks", get(admin::webhook_events))
         .route("/v1/admin/subscriptions", get(admin::subscriptions))
         .route("/v1/admin/audit", get(admin::audit))
+        .route("/v1/admin/house", get(house::list).post(house::provision))
+        .route("/v1/admin/house/seed", post(house::seed))
+        .route("/v1/admin/house/settings", put(house::put_settings))
+        .route("/v1/admin/house/{id}", get(house::detail))
+        .route("/v1/admin/house/{id}/retry", post(house::retry))
+        .route("/v1/admin/house/{id}/switch", post(house::switch))
+        .route("/v1/admin/house/{id}/visibility", post(house::visibility))
+        .route("/v1/admin/house/{id}/capital", post(house::top_up))
+        .route("/v1/admin/house/{id}/delete", post(house::remove))
         .layer(middleware::from_fn_with_state(st.clone(), internal_only));
     let public = Router::new()
         .route("/hooks/{token}", post(webhooks::receive))

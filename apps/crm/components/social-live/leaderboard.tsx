@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, Crown, Landmark, LineChart, Repeat, ShieldCheck, Trophy, Users, Wallet } from "lucide-react";
 import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Menu, PageHeader, Segmented, Skeleton, Sparkline, cn, type Column } from "@kalks/ui";
 import { compactUsd, formatAge, pct, useSocial, type Leaderboard, type MasterView } from "./api";
-import { MasterIdentity, RiskBadge, SocialError } from "./bits";
+import { HouseBadge, MasterIdentity, RiskBadge, SocialError } from "./bits";
 import { FollowDialog } from "./follow-dialog";
 import { InvestDialog } from "./invest-dialog";
 
@@ -58,6 +58,7 @@ export function LiveDiscoverPage() {
           size={36}
           sub={
             <span className="flex items-center gap-1.5">
+              {m.house && <HouseBadge />}
               <span className="truncate">{m.strategy}</span>
               {m.program === "both" && m.fund && (
                 <Chip size="sm" tone="gold">
@@ -143,7 +144,7 @@ export function LiveDiscoverPage() {
         <div className="grid grid-cols-1 gap-6 p-6 sm:p-7 lg:grid-cols-[1.2fr_1fr] lg:items-center">
           <div>
             <Chip tone="ember" className="mb-3">
-              <ShieldCheck className="size-3.5" /> Every master is identity-verified and approved by our risk team
+              <ShieldCheck className="size-3.5" /> {rows.some((m) => m.house) ? "Client masters are identity-verified and approved by our risk team" : "Every master is identity-verified and approved by our risk team"}
             </Chip>
             <h2 className="text-[22px] font-medium leading-tight tracking-tight sm:text-[26px]">Copy a master&apos;s trades, or invest in their PAMM fund.</h2>
             <p className="mt-2 max-w-xl text-[14px] text-fg-2">Time-weighted returns with deposits and withdrawals removed, a system risk score from 1 to 10, and fees charged only above the high-water mark.</p>
@@ -276,6 +277,11 @@ export function LiveDiscoverPage() {
         <LineChart className="mt-0.5 size-3.5 shrink-0" />
         Returns are time-weighted from end-of-day equity with deposits and withdrawals removed. Past performance doesn&apos;t guarantee future results. Copy trading and PAMM investing carry risk of loss.
       </p>
+      {rows.some((m) => m.house) && (
+        <p className="mt-2 pl-5.5 text-[12px] leading-relaxed text-fg-3">
+          Masters labelled &ldquo;House strategy · Operated by Kalks&rdquo; are broker-owned live accounts running an automated strategy. Their statistics are only their own live trades since they started; nothing is simulated or backfilled.
+        </p>
+      )}
 
       <FollowDialog master={copyM} open={!!copyM} onOpenChange={(o) => !o && setCopyM(null)} />
       <InvestDialog fundId={investFund} open={investFund !== null} onOpenChange={(o) => !o && setInvestFund(null)} />

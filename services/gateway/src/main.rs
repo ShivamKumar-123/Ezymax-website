@@ -15,6 +15,7 @@ mod error;
 mod flows;
 mod google_auth;
 mod identity;
+mod house;
 mod kyc;
 mod internal;
 mod mail_i18n;
@@ -261,6 +262,7 @@ async fn health(State(st): State<AppState>) -> impl IntoResponse {
     Json(serde_json::json!({ "status": if db { "ok" } else { "degraded" }, "db": db, "service": "gateway" }))
 }
 
+        .route("/v1/internal/house-users", post(house::create))
 /// Only the apps' server-side route handlers may call /v1 (shared secret in `X-Kalks-Internal`).
 async fn internal_only(State(st): State<AppState>, req: Request, next: Next) -> Response {
     let expected = st.cfg.internal_token.as_bytes();

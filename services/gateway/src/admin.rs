@@ -263,13 +263,13 @@ pub async fn stats(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value
     let me = require(&st, &ctx, Perm::StatsRead).await?;
     let r = sqlx::query(sqlx::AssertSqlSafe(live_sql(
         "SELECT
-            (SELECT count(*) FROM users WHERE tenant_id = $1) AS clients_total,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND email_verified_at IS NOT NULL) AS email_verified,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND kyc_status = 'verified') AS kyc_verified,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND kyc_status = 'pending') AS kyc_pending,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND (created_at AT TIME ZONE $2)::date = (now() AT TIME ZONE $2)::date) AS registered_today,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND created_at > now() - interval '7 days') AS registered_7d,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND created_at > now() - interval '30 days') AS registered_30d,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house) AS clients_total,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND email_verified_at IS NOT NULL) AS email_verified,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND kyc_status = 'verified') AS kyc_verified,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND kyc_status = 'pending') AS kyc_pending,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND (created_at AT TIME ZONE $2)::date = (now() AT TIME ZONE $2)::date) AS registered_today,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND created_at > now() - interval '7 days') AS registered_7d,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND created_at > now() - interval '30 days') AS registered_30d,
             (SELECT count(*) FROM sessions se WHERE se.tenant_id = $1 AND se.subject_kind = 'user' AND {LIVE}) AS sessions_user,
             (SELECT count(*) FROM sessions se WHERE se.tenant_id = $1 AND se.subject_kind = 'staff' AND {LIVE}) AS sessions_staff,
             (SELECT count(*) FROM staff WHERE tenant_id = $1 AND status = 'active') AS staff_active,
@@ -365,7 +365,7 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
             (SELECT count(*) FROM sessions se WHERE se.subject_kind = 'user' AND se.subject_id = u.id AND {{LIVE}}) AS active_sessions,
             count(*) OVER () AS total
          FROM users u
-         WHERE u.tenant_id = $1
+         WHERE u.tenant_id = $1 AND NOT u.is_house
            AND ($2::text IS NULL OR u.email ILIKE $2 OR (u.first_name || ' ' || u.last_name) ILIKE $2
                 OR (u.phone_dial || u.phone) ILIKE $2 OR u.phone ILIKE $2 OR u.referral_code ILIKE $2 OR u.id = $3)
            AND ($4::text IS NULL OR u.kyc_status = $4)

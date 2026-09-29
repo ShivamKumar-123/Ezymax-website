@@ -25,6 +25,8 @@ struct Mock {
     orders: Mutex<Vec<Value>>,
     transfers: Mutex<Vec<Value>>,
     wallet_balance: Mutex<f64>,
+    /// house account calls to the engine's staff routes: (route, body)
+    house: Mutex<Vec<(String, Value)>>,
 }
 
 async fn serve(app: Router) -> String {
@@ -40,7 +42,7 @@ fn account(login: i64) -> Value {
     json!({"login": login, "type": "demo", "group": "standard", "groupName": "Standard", "mode": "hedging", "status": "active", "balance": 10000.0, "equity": 10000.0, "currency": "USD"})
 }
 
-async fn mocks(m: Arc<Mock>) -> (String, String, String) {
+async fn mocks(m: Arc<Mock>) -> (String, String, String, String) {
     let engine = Router::new()
         .route("/v1/accounts", get(|| async { Json(json!({"accounts": [account(50000001), account(50000002)]})) }))
         .route("/v1/accounts/{login}", get(|Path(l): Path<i64>| async move { Json(json!({"account": account(l), "positions": [], "orders": []})) }))
@@ -57,7 +59,45 @@ async fn mocks(m: Arc<Mock>) -> (String, String, String) {
                 Json(json!({"status": "filled", "orderTicket": t, "positionTicket": t, "price": 1.1, "book": "B"}))
             }),
         )
+        // house accounts: the engine's staff routes (services/trading api/social_house.rs, social_admin.rs)
+        .route(
+            "/v1/social/admin/house",
+            post(|State(m): State<Arc<Mock>>, Json(b): Json<Value>| async move {
+                m.house.lock().unwrap().push(("provision".into(), b));
+                Json(json!({"login": 50000009, "master": {"id": 77, "hidden": false}, "created": true}))
+            }),
+        )
+        .route(
+            "/v1/social/admin/masters/{id}/status",
+            post(|State(m): State<Arc<Mock>>, Path(id): Path<i64>, Json(b): Json<Value>| async move {
+                m.house.lock().unwrap().push((format!("status:{id}"), b));
+                Json(json!({"master": {"id": id}}))
+            }),
+        )
+        .route(
+            "/v1/social/admin/house/{id}/capital",
+            post(|State(m): State<Arc<Mock>>, Path(id): Path<i64>, Json(b): Json<Value>| async move {
+                m.house.lock().unwrap().push((format!("capital:{id}"), b));
+                Json(json!({"balance": 15000.0, "txn": 5}))
+            }),
+        )
+        .route(
+            "/v1/social/admin/house/{id}/retire",
+            post(|State(m): State<Arc<Mock>>, Path(id): Path<i64>, Json(b): Json<Value>| async move {
+                m.house.lock().unwrap().push((format!("retire:{id}"), b));
+                Json(json!({"retired": true, "followersStopped": 0, "withdrawn": {"amount": 15000.0}}))
+            }),
+        )
+        .route("/v1/social/admin/masters", get(|| async { Json(json!({"items": [{"id": 77, "status": "approved", "hidden": false, "stats": {"equity": 10000.0, "followers": 0, "aum": 0.0, "trades": 0}}]})) }))
         .with_state(m.clone());
+    let gateway = Router::new().route(
+        "/v1/internal/house-users",
+        post(|State(m): State<Arc<Mock>>, Json(b): Json<Value>| async move {
+            m.house.lock().unwrap().push(("house-user".into(), b));
+            Json(json!({"user": {"id": 900, "isHouse": true}}))
+        }),
+    );
+    let gateway = gateway.with_state(m.clone());
     let md = Router::new().route("/v1/quotes", get(|| async { Json(json!({"EURUSD": {"bid": 1.1, "ask": 1.1001, "t": 0}, "BTCUSD": {"bid": 80000.0, "ask": 80010.0, "t": 0}})) }));
     let wallet = Router::new()
         .route(
@@ -76,7 +116,7 @@ async fn mocks(m: Arc<Mock>) -> (String, String, String) {
             }),
         )
         .with_state(m);
-    (serve(engine).await, serve(md).await, serve(wallet).await)
+    (serve(engine).await, serve(md).await, serve(wallet).await, serve(gateway).await)
 }
 
 async fn setup() -> Option<(String, AppState, Arc<Mock>)> {
@@ -89,12 +129,13 @@ async fn setup() -> Option<(String, AppState, Arc<Mock>)> {
         }
     };
     let m = Arc::new(Mock::default());
-    let (eng, md, wal) = mocks(m.clone()).await;
+    let (eng, md, wal, gw) = mocks(m.clone()).await;
     let mut cfg = Config::from_env().unwrap();
     cfg.internal_token = "test-internal".into();
     cfg.key_secret = "test-key-secret-0123456789abcdef0123456789".into();
     cfg.public_url = "http://test".into();
     cfg.anthropic_key = String::new();
+    cfg.gateway_url = gw;
     let http = algo::clients::http();
     let st = AppState {
         cfg: Arc::new(cfg),
@@ -314,6 +355,85 @@ async fn service_end_to_end() {
     let (_, mine) = c.user(1, M::GET, "/v1/market/mine", None).await;
     assert_eq!(mine["earned"], 40.0);
     assert_eq!(mine["platformFees"], 10.0);
+
+    /* ---------------- house accounts ---------------- */
+    // roles: a dealer can't provision
+    let r = c.http.post(format!("{}/v1/admin/house", c.base)).header("x-kalks-internal", "test-internal").header("x-kalks-staff-id", "2").header("x-kalks-staff-role", "dealer").json(&json!({"preset": "gold-ema-trend", "note": "x"})).send().await.unwrap();
+    assert_eq!(r.status().as_u16(), 403);
+    let (s, _) = c.staff(M::POST, "/v1/admin/house", json!({"preset": "gold-ema-trend"})).await;
+    assert_eq!(s, 422, "a note is required");
+    let (s, r) = c.staff(M::POST, "/v1/admin/house", json!({"preset": "gold-ema-trend", "capital": 10000, "note": "launch"})).await;
+    assert_eq!(s, 200, "{r}");
+    let h = r["item"].clone();
+    let hid = h["id"].as_i64().unwrap();
+    assert_eq!((h["status"].as_str(), h["userId"].as_i64(), h["login"].as_i64(), h["masterId"].as_i64()), (Some("active"), Some(900), Some(50000009), Some(77)));
+    assert_eq!(h["deployment"]["status"], "running");
+    assert_eq!(h["listing"]["status"], "approved");
+    assert_eq!(h["backtest"]["status"], "queued");
+    {
+        let calls = mock.house.lock().unwrap();
+        let prov = &calls.iter().find(|(k, _)| k == "provision").unwrap().1;
+        assert_eq!((prov["userId"].as_i64(), prov["capital"].as_f64(), prov["group"].as_str()), (Some(900), Some(10000.0), Some("standard")));
+        assert!(!calls.iter().any(|(k, _)| k.starts_with("status:")), "visible and on: nothing to hide");
+    }
+    // the preset is the house user's strategy, sized to the capital; nothing else is written for it
+    let dep = h["deploymentId"].as_i64().unwrap();
+    let (trades, src): (i64, String) = (
+        sqlx::query_scalar("SELECT count(*) FROM deployment_positions WHERE deployment_id = $1").bind(dep).fetch_one(&st.pool).await.unwrap(),
+        sqlx::query_scalar("SELECT v.source FROM strategy_versions v JOIN house_accounts h ON h.version_id = v.id WHERE h.id = $1").bind(hid).fetch_one(&st.pool).await.unwrap(),
+    );
+    assert_eq!(trades, 0, "no fabricated history");
+    assert!(src.contains("max_daily_loss(200)"));
+    // the marketplace shows it labelled as a house listing
+    let (_, b) = c.user(5, M::GET, "/v1/market/listings", None).await;
+    let l = b["items"].as_array().unwrap().iter().find(|l| l["id"] == h["listingId"]).cloned().unwrap();
+    assert_eq!((l["house"].as_bool(), l["track"]["trades"].as_i64()), (Some(true), Some(0)));
+    let (_, d) = c.user(5, M::GET, &format!("/v1/market/listings/{}", h["listingId"]), None).await;
+    assert_eq!(d["house"], true);
+    // provisioning the same preset twice is refused
+    let (s, _) = c.staff(M::POST, "/v1/admin/house", json!({"preset": "gold-ema-trend", "note": "again"})).await;
+    assert_eq!(s, 409);
+    // off: paused, hidden, unlisted
+    let (s, r) = c.staff(M::POST, &format!("/v1/admin/house/{hid}/switch"), json!({"enabled": false, "note": "pause"})).await;
+    assert_eq!(s, 200, "{r}");
+    assert_eq!((r["applied"]["deployment"].as_str(), r["applied"]["leaderboard"].as_str(), r["applied"]["listing"].as_str()), (Some("paused"), Some("hidden"), Some("unlisted")));
+    let (s, _) = c.user(5, M::GET, &format!("/v1/market/listings/{}", h["listingId"]), None).await;
+    assert_eq!(s, 404, "unlisted while off");
+    // on again: running, shown, listed
+    let (_, r) = c.staff(M::POST, &format!("/v1/admin/house/{hid}/switch"), json!({"enabled": true, "note": "resume"})).await;
+    assert_eq!((r["applied"]["deployment"].as_str(), r["applied"]["leaderboard"].as_str(), r["applied"]["listing"].as_str()), (Some("running"), Some("shown"), Some("approved")));
+    // visibility off keeps it trading but hidden
+    let (_, r) = c.staff(M::POST, &format!("/v1/admin/house/{hid}/visibility"), json!({"visible": false, "note": "hide"})).await;
+    assert_eq!((r["applied"]["deployment"].as_str(), r["applied"]["leaderboard"].as_str()), (Some("running"), Some("hidden")));
+    // master switch off overrides the account switch
+    let (_, _) = c.staff(M::POST, &format!("/v1/admin/house/{hid}/visibility"), json!({"visible": true, "note": "show"})).await;
+    let (s, r) = c.staff(M::PUT, "/v1/admin/house/settings", json!({"enabled": false, "note": "all off"})).await;
+    assert_eq!(s, 200, "{r}");
+    assert_eq!(r["results"][0]["applied"]["deployment"], "paused");
+    let (_, l) = c.staff(M::GET, "/v1/admin/house", json!({})).await;
+    assert_eq!((l["settings"]["enabled"].as_bool(), l["totals"]["on"].as_i64()), (Some(false), Some(0)));
+    let (_, r) = c.staff(M::PUT, "/v1/admin/house/settings", json!({"enabled": true, "note": "all on"})).await;
+    assert_eq!(r["results"][0]["applied"]["deployment"], "running");
+    // capital top-up goes to the engine as house capital
+    let (s, _) = c.staff(M::POST, &format!("/v1/admin/house/{hid}/capital"), json!({"amount": 5000, "note": "top up"})).await;
+    assert_eq!(s, 200);
+    let (_, one) = c.staff(M::GET, &format!("/v1/admin/house/{hid}"), json!({})).await;
+    assert_eq!(one["capital"], 15000.0);
+    assert!(one["audit"].as_array().unwrap().len() >= 6, "every action audited");
+    // delete: strategy stopped, listing unlisted, master retired in the engine
+    let (s, r) = c.staff(M::POST, &format!("/v1/admin/house/{hid}/delete"), json!({"note": "wind down"})).await;
+    assert_eq!(s, 200, "{r}");
+    let status: String = sqlx::query_scalar("SELECT status FROM deployments WHERE id = $1").bind(dep).fetch_one(&st.pool).await.unwrap();
+    assert_eq!(status, "stopped");
+    {
+        let calls = mock.house.lock().unwrap();
+        assert!(calls.iter().any(|(k, b)| k == "retire:77" && b["withdrawCapital"] == true));
+        assert!(calls.iter().any(|(k, b)| k == "capital:77" && b["amount"] == 5000.0));
+        assert!(calls.iter().filter(|(k, _)| k == "status:77").count() >= 4);
+    }
+    let (_, l) = c.staff(M::GET, "/v1/admin/house", json!({})).await;
+    assert_eq!(l["items"].as_array().unwrap().len(), 0);
+    assert!(l["presets"].as_array().unwrap().iter().all(|p| p["houseId"].is_null()), "a deleted preset can be provisioned again");
 
     teardown(&st).await;
 }

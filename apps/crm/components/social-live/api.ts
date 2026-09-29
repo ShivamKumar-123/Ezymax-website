@@ -63,6 +63,8 @@ export interface MasterView {
   ageDays: number;
   stats: MasterStats;
   fund: MasterFundCard | null;
+  /** House account: operated by the broker, runs an automated strategy (always shown with the disclosure label) */
+  house?: boolean;
   // private (own profile only)
   login?: number;
   kycVerified?: boolean;
@@ -78,7 +80,7 @@ export interface Sizing {
 export interface SubscriptionView {
   id: number;
   masterId: number;
-  master: { id: number; nickname: string; strategy: string; riskScore: number; frozen: boolean; status: MasterStatus };
+  master: { id: number; nickname: string; strategy: string; riskScore: number; frozen: boolean; status: MasterStatus; house?: boolean };
   login: number;
   status: "active" | "paused" | "stopped";
   stopReason: string | null;

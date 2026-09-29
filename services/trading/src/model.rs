@@ -485,6 +485,9 @@ pub enum TxnKind {
     /// Copy / PAMM performance fee crystallised at the period end (D66): balance → `house:perf_fees`.
     #[serde(rename = "perf_fee")]
     PerformanceFee,
+    /// Platform capital booked on (or withdrawn from) a house account (services/algo "House accounts"):
+    /// `house:house_capital` ↔ balance. Not a client deposit: deposit / FTD reports never count it.
+    HouseCapital,
 }
 
 impl TxnKind {
@@ -505,6 +508,7 @@ impl TxnKind {
             TxnKind::Nbp => "nbp",
             TxnKind::Reversal => "reversal",
             TxnKind::PerformanceFee => "perf_fee",
+            TxnKind::HouseCapital => "house_capital",
         }
     }
 }

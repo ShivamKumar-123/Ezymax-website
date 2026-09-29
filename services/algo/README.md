@@ -12,6 +12,7 @@ It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8099`.
 - [Webhooks](#webhooks)
 - [Public API](#public-api)
 - [Marketplace](#marketplace)
+- [House accounts](#house-accounts)
 - [Internal API](#internal-api)
 - [Environment](#environment)
 - [Tests](#tests)
@@ -293,6 +294,75 @@ If the copy can't start, the first period is refunded. A renewal loop runs every
 
 **Reviews.** Only subscribers can post reviews: one per user, rated 1–5.
 
+## House accounts
+
+House accounts are platform-owned accounts that give copy trading and the marketplace real content at launch. The founder can switch them on and off from the Back Office (**Social & Algo → House accounts**, permission `social.read` to view and `social.write` to change).
+
+**The honesty rule.** Each house account is a real live trading account on the real engine running a real strategy through this runtime on live market data. Its leaderboard statistics, profile and marketplace track record are computed only from what it actually trades, from the moment it is provisioned. Nothing is backfilled: no trades, equity, followers, AUM or history are written by this feature. The backtest is stored and shown, but only ever labelled as a backtest.
+
+**Disclosure.** Clients see every house account labelled **"House strategy · Operated by Kalks"**: on the leaderboard, the master profile (with an explanation box), the copy dialog, their subscription cards and the marketplace listing card and detail. The engine exposes the flag as `house: true` on the master view and on the subscription's master; this service exposes it as `house: true` on listings.
+
+**What provisioning creates** (`src/house.rs`, one step at a time, resumable after a failure):
+
+| Step | Service | Result |
+|---|---|---|
+| 1. House user | gateway `POST /v1/internal/house-users {key, nickname}` | a `users` row with `is_house = true`, e-mail `house-<key>@<tenant>.house.invalid`, an unusable password hash. It cannot sign in (also refused explicitly), and is left out of client lists, client counts and the referral / reports sync |
+| 2. Account, capital, master | engine `POST /v1/social/admin/house` | a live account in the `standard` group; the capital booked as ledger kind `house_capital` (`house:house_capital` ↔ balance), not a deposit; an **approved** master with `is_house = true`, program `copy`, 0 % performance fee |
+| 3. Strategy | here | the preset's DSL stored as the house user's strategy (origin `template`) |
+| 4. Backtest | here | a backtest job over the preset's range (capped by the timeframe limit and the history available), at the account's group costs |
+| 5. Deployment | here, `deployments::start` | the normal runtime deployment on the live account: same order path and checks as any client |
+| 6. Listing | here | a free marketplace listing, `is_house = true`, `allow_clone = true`, track record = the deployment's closed deals; auto-approved because the broker is the author |
+
+House masters skip the client application checks (KYC, 30-day track, own capital): the broker operates them, and the profile shows their real age from day 0.
+
+**Presets** (`PRESETS` in `src/house.rs`). Every preset sizes by risk % of balance with a stop loss on every trade, trades one position at a time, caps entries per day and stops for the day at a loss of 2 % of the starting capital (`max_daily_loss`).
+
+| Preset | Market | Idea | Risk / trade |
+|---|---|---|---|
+| Gold Trend H1 | XAUUSD H1 | 21/55 EMA cross with ADX > 20, 2 ATR stop, 2R target | 0.5 % |
+| EURUSD Reversion M15 | EURUSD M15 | RSI(14) back through 30/70 with the 200 EMA, 1.5 ATR stop, 1.5R | 0.4 % |
+| BTC Breakout H4 | BTCUSD H4 | 20-bar Donchian breakout, 10-bar exit, 3 ATR trailing | 0.5 % |
+| NAS100 Momentum H1 | NAS100 H1 | MACD signal cross with trend filter, US session | 0.5 % |
+| GBPUSD Band Reversion | GBPUSD M30 | Bollinger (20, 2) re-entry with RSI confirmation while ADX < 22, exit at the middle band | 0.4 % |
+| USDJPY ATR Trend | USDJPY H1 | 10/30 EMA cross with the 50/200 trend, 2.5 ATR trailing, no target | 0.5 % |
+| London Breakout | EURUSD M15 | break of the 6-hour pre-London range, 10:00–13:00 server time, one trade a day | 0.4 % |
+| ETH Trend Pullback | ETHUSD H1 | pullback to the 20 EMA in a 20/50/200 EMA trend, candle confirmation | 0.5 % |
+| AUDUSD Range Stoch | AUDUSD M15 | Stochastic (14, 3) cross beyond 20 / 80 while ADX < 20 | 0.3 % |
+| US30 Dual Trend | US30 H1 | H4 20/50 EMA trend, H1 20 EMA re-cross with RSI, US session | 0.5 % |
+
+**Switches.** Each account has `enabled` (on/off) and `visible` (leaderboard and marketplace), and the tenant has a master switch. `on = master switch && enabled`.
+
+- Off: the deployment is paused (no new entries; open positions keep their SL/TP), the master is hidden from the leaderboard and the listing is unlisted. Optionally the open positions are closed at market; followers' copies close with them through normal mirroring. Existing followers are not stopped.
+- On: the deployment runs; the master and the listing are shown when `visible`.
+- Capital: top-up or withdrawal (negative) as `house_capital` through the engine.
+- Delete: stops the deployment and closes its positions, unlists the listing, and in the engine stops every follower, closes the master profile (status `rejected`, note "Retired house account") and by default withdraws the remaining balance and disables the account. The ledger history stays.
+- Retry: resumes a failed provisioning, or redeploys an active account whose deployment was stopped or killed (the listing's track then starts from the new deployment).
+
+A kill switch (deployment, user or platform) applies to house accounts like to anyone else.
+
+**Audit.** Every action is written to this service's `audit_log` (`house.*`, target `house:<id>`); the engine writes `social.house.provision|capital_topup|capital_withdraw|retire` and `social.master.hide|unhide` entries to its own audit log with the staff member and the note.
+
+**Production seeding.** One click: Back Office → Social & Algo → House accounts → **Provision all 10** (asks for the capital per account and a note). The same as `POST /v1/admin/house/seed {capital, note}` with staff headers. It only creates presets that are missing, so it is safe to press again.
+
+**Reports.** House capital is ledger kind `house_capital`. The reports service counts only `deposit` / `withdrawal` ledger rows and wallet deposits as money in / out, so house capital never appears in deposit, withdrawal or FTD reports. House users are not synced as clients. House accounts do appear in trading-account and book reports (they are real accounts trading on the `standard` group).
+
+**Routes** (admin, staff headers; writes need a note and `platform_owner | super_admin | admin | risk_manager`):
+
+| Method & path | Body | |
+|---|---|---|
+| `GET /v1/admin/house` | – | `{settings, items, presets, totals}` |
+| `GET /v1/admin/house/{id}` | – | the account, its backtest report, runtime log, strategy positions, source and audit |
+| `POST /v1/admin/house` | `{preset, capital?, note}` | provision one preset |
+| `POST /v1/admin/house/seed` | `{capital?, note}` | provision every missing preset |
+| `PUT /v1/admin/house/settings` | `{enabled, closePositions?, note}` | master switch |
+| `POST /v1/admin/house/{id}/switch` | `{enabled, closePositions?, note}` | on / off |
+| `POST /v1/admin/house/{id}/visibility` | `{visible, note}` | leaderboard and marketplace |
+| `POST /v1/admin/house/{id}/capital` | `{amount, note}` | top-up (negative = withdraw) |
+| `POST /v1/admin/house/{id}/retry` | `{note}` | resume / redeploy |
+| `POST /v1/admin/house/{id}/delete` | `{note, withdrawCapital?}` | retire |
+
+The service reads `GATEWAY_URL` (default `http://127.0.0.1:8080`) and `GATEWAY_INTERNAL_TOKEN` from the repo-root `.env.local` to create house users.
+
 ## Internal API
 
 Every `/v1/*` route needs `X-Kalks-Internal: $ALGO_INTERNAL_TOKEN`. JSON uses camelCase keys, and errors are `{"error": {"code", "message", ...}}`.
@@ -328,6 +398,7 @@ Every `/v1/*` route needs `X-Kalks-Internal: $ALGO_INTERNAL_TOKEN`. JSON uses ca
 | `TRADING_URL`, `TRADING_INTERNAL_TOKEN` | `http://127.0.0.1:8090` | |
 | `MARKET_DATA_URL` | `http://127.0.0.1:8081` | |
 | `WALLET_URL`, `WALLET_INTERNAL_TOKEN` | `http://127.0.0.1:8095` | paid subscriptions |
+| `GATEWAY_URL`, `GATEWAY_INTERNAL_TOKEN` | `http://127.0.0.1:8080` | house users (house accounts) |
 | `ALGO_LOG_FORMAT` | `json` | or `pretty` |
 
 Production runs `deploy/systemd/kalks-algo.service`. `deploy/deploy.sh` does the following:
@@ -361,4 +432,5 @@ cargo test -p algo
 - **Positions.** Breakeven is applied by the management tick (every 3 s), not on every tick. Positions on netting accounts opened by other sources block new strategy entries on that symbol.
 - **Conversion.** Cross-currency conversion in backtests uses the current rate for non-USD quote currencies.
 - **Wallet.** The wallet has no dedicated transfer kind for subscriptions yet, so `adjustment` is used with an `algo-sub-<id>` reference; a `strategy_subscription` kind would make wallet reports clearer. If the author's credit fails, it is logged but not retried automatically.
+- **House accounts.** They offer copy trading and the marketplace, not PAMM: a house PAMM fund would need the strategy to trade the fund account and a seed from a house wallet. The daily loss limit is sized to the starting capital and does not follow later top-ups. Provisioning is synchronous (the Back Office waits for up to ten presets).
 - **Protocols.** FIX 4.4 and a WebSocket API (D77) are not part of this service yet. The REST API covers the account, orders, positions, history and quotes.

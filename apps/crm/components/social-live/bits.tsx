@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Copy as CopyIcon, Info, Landmark, RotateCw } from "lucide-react";
+import { Building2, Copy as CopyIcon, Info, Landmark, RotateCw } from "lucide-react";
 import { Avatar, Button, Card, Chip, EmptyState, Skeleton, Tooltip, cn } from "@kalks/ui";
 import { pct, riskLabel, riskTone, toneOf, type Program } from "./api";
 
@@ -26,6 +26,22 @@ export function RiskBadge({ risk, showLabel = false, className }: { risk: number
         </span>
         {r}
         {showLabel && <span className="font-medium opacity-80">{riskLabel(r)}</span>}
+      </span>
+    </Tooltip>
+  );
+}
+
+/** Disclosure label of a house account (a broker-operated account running an automated strategy). */
+export const HOUSE_DISCLOSURE =
+  "House strategy operated by Kalks: a broker-owned live account running an automated strategy. Its statistics are only its own live trades since it started; nothing is simulated or backfilled.";
+
+export function HouseBadge({ size = "sm", className }: { size?: "sm" | "md"; className?: string }) {
+  return (
+    <Tooltip content={HOUSE_DISCLOSURE}>
+      <span className={cn("inline-flex", className)}>
+        <Chip size={size} tone="info">
+          <Building2 className="size-3" /> House strategy · Operated by Kalks
+        </Chip>
       </span>
     </Tooltip>
   );

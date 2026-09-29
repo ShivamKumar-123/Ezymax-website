@@ -65,7 +65,21 @@ fn listing_view(r: &sqlx::postgres::PgRow) -> Value {
         "rating": r.get::<f32, _>("rating_avg"), "ratings": r.get::<i32, _>("rating_count"), "subscribers": r.get::<i32, _>("subscribers"),
         "strategyId": r.get::<i64, _>("strategy_id"), "versionId": r.get::<i64, _>("version_id"), "trackDeploymentId": r.get::<i64, _>("track_deployment_id"),
         "createdAt": r.get::<chrono::DateTime<chrono::Utc>, _>("created_at"), "updatedAt": r.get::<chrono::DateTime<chrono::Utc>, _>("updated_at"),
+        // house account (README "House accounts"): operated by the broker, shown with a disclosure label
+        "house": r.try_get::<bool, _>("is_house").unwrap_or(false),
     })
+}
+
+/// A house listing's backtest, for display labelled as a backtest (simulated on history, not live results).
+async fn house_backtest(st: &AppState, r: &sqlx::postgres::PgRow) -> Result<Value, ApiError> {
+    let Some(bt) = r.try_get::<Option<i64>, _>("backtest_id").ok().flatten() else { return Ok(Value::Null) };
+    let Some(x) = sqlx::query("SELECT summary, report, params FROM backtests WHERE id = $1 AND status = 'done'").bind(bt).fetch_optional(&st.pool).await? else { return Ok(Value::Null) };
+    let rep: Value = x.get::<Option<Value>, _>("report").unwrap_or(Value::Null);
+    let eq = rep["equity"].as_array().cloned().unwrap_or_default();
+    let step = (eq.len() / 200).max(1);
+    let curve: Vec<Value> = eq.iter().step_by(step).map(|p| json!({"t": p["t"], "equity": p["equity"]})).collect();
+    Ok(json!({"kind": "backtest", "label": "Backtest: simulated on historical data, not live results", "id": bt, "summary": x.get::<Option<Value>, _>("summary"), "params": x.get::<Value, _>("params"),
+              "curve": curve, "notes": rep["notes"], "model": rep["model"]}))
 }
 
 #[derive(Deserialize)]
@@ -117,6 +131,9 @@ pub async fn listing(State(st): State<AppState>, u: User, Path(id): Path<i64>) -
     }
     let mut v = listing_view(&r);
     v["track"] = track_record(&st, r.get("track_deployment_id")).await?;
+    if v["house"] == json!(true) {
+        v["backtest"] = house_backtest(&st, &r).await?;
+    }
     let ver = load_version(&st.pool, &u.tenant, r.get("version_id")).await?;
     if let Some(ver) = ver
         && let Ok(p) = ver.program(&st.specs)

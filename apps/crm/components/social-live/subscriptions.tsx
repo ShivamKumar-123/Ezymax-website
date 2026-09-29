@@ -43,7 +43,7 @@ import {
   type SubscriptionDetail,
   type SubscriptionView,
 } from "./api";
-import { BlockSkeleton, InfoBox, MasterIdentity, RiskBadge, SocialError, Tile, useNumber } from "./bits";
+import { BlockSkeleton, HouseBadge, InfoBox, MasterIdentity, RiskBadge, SocialError, Tile, useNumber } from "./bits";
 
 type Log = SubscriptionDetail["log"][number];
 
@@ -451,6 +451,11 @@ function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionVi
           <StatusChip status={s.status} />
         </div>
       </div>
+      {s.master.house && (
+        <div className="mt-2.5 px-5">
+          <HouseBadge />
+        </div>
+      )}
       <div className="mt-3 flex flex-wrap items-center gap-1.5 px-5 text-[12px] text-fg-3">
         Copy account <span className="font-mono text-fg-2">#{s.login}</span>
         <CopyButton value={String(s.login)} label="Copy account" className="size-5" />

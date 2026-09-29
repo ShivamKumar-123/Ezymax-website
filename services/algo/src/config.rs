@@ -22,6 +22,9 @@ pub struct Config {
     pub market_data_url: String,
     pub wallet_url: String,
     pub wallet_token: String,
+    /// Gateway (house users for house accounts): `GATEWAY_URL`, `GATEWAY_INTERNAL_TOKEN`.
+    pub gateway_url: String,
+    pub gateway_token: String,
     pub anthropic_key: String,
     pub ai_model: String,
     pub instruments_file: String,
@@ -63,6 +66,8 @@ impl fmt::Debug for Config {
             .field("market_data_url", &self.market_data_url)
             .field("wallet_url", &self.wallet_url)
             .field("wallet_token", &redact(&self.wallet_token))
+            .field("gateway_url", &self.gateway_url)
+            .field("gateway_token", &redact(&self.gateway_token))
             .field("anthropic_key", &redact(&self.anthropic_key))
             .field("ai_model", &self.ai_model)
             .field("public_url", &self.public_url)
@@ -101,6 +106,8 @@ impl Config {
             market_data_url: var("MARKET_DATA_URL", "http://127.0.0.1:8081").trim_end_matches('/').to_string(),
             wallet_url: var("WALLET_URL", "http://127.0.0.1:8095").trim_end_matches('/').to_string(),
             wallet_token: var("WALLET_INTERNAL_TOKEN", ""),
+            gateway_url: var("GATEWAY_URL", "http://127.0.0.1:8080").trim_end_matches('/').to_string(),
+            gateway_token: var("GATEWAY_INTERNAL_TOKEN", ""),
             anthropic_key: var("ANTHROPIC_API_KEY", ""),
             ai_model: var("ALGO_AI_MODEL", "claude-opus-5-5"),
             instruments_file: var("INSTRUMENTS_FILE", &format!("{root}/config/instruments.json")),

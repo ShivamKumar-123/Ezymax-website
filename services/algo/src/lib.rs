@@ -9,6 +9,7 @@ pub mod config;
 pub mod db;
 pub mod dsl;
 pub mod error;
+pub mod house;
 pub mod indicators;
 pub mod runtime;
 pub mod security;

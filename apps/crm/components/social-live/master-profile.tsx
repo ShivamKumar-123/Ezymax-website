@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, CalendarClock, Clock, Copy as CopyIcon, Landmark, Lock, Snowflake, Users } from "lucide-react";
+import { ArrowLeft, Building2, CalendarClock, Clock, Copy as CopyIcon, Landmark, Lock, Snowflake, Users } from "lucide-react";
 import {
   Avatar,
   Button,
@@ -29,7 +29,7 @@ import {
 } from "@kalks/ui";
 import { fmtDate, fmtPrice, serverTime } from "@/components/trading/api";
 import { PERIOD_LABEL, compactUsd, formatAge, nav4, pct, riskLabel, usd, useSocial, type MasterProfile } from "./api";
-import { InfoBox, ProgramTags, RiskBadge, SocialError } from "./bits";
+import { HOUSE_DISCLOSURE, HouseBadge, InfoBox, ProgramTags, RiskBadge, SocialError } from "./bits";
 import { FollowDialog } from "./follow-dialog";
 import { InvestDialog } from "./invest-dialog";
 
@@ -370,7 +370,7 @@ export function LiveMasterProfilePage() {
 
   const m = p.master;
   const s = m.stats;
-  const canCopy = m.program !== "pamm" && m.status === "approved" && !m.frozen;
+  const canCopy = m.program !== "pamm" && m.status === "approved" && !m.frozen && !(m.house && m.hidden);
   const canInvest = !!m.fund && m.program !== "copy" && m.fund.status === "active";
 
   return (
@@ -383,9 +383,13 @@ export function LiveMasterProfilePage() {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="text-[26px] font-medium leading-tight tracking-tight">{m.nickname}</h1>
-              <Chip tone="up" size="sm">
-                Approved master
-              </Chip>
+              {m.house ? (
+                <HouseBadge />
+              ) : (
+                <Chip tone="up" size="sm">
+                  Approved master
+                </Chip>
+              )}
               {m.frozen && (
                 <Chip tone="down" size="sm">
                   <Snowflake className="size-3" /> Copying paused by risk team
@@ -394,6 +398,11 @@ export function LiveMasterProfilePage() {
             </div>
             <div className="mt-1 text-[16px] text-fg">{m.strategy}</div>
             {m.description && <p className="mt-3 max-w-3xl whitespace-pre-line text-[14px] leading-relaxed text-fg-2">{m.description}</p>}
+            {m.house && (
+              <InfoBox className="mt-3 max-w-3xl" icon={<Building2 />}>
+                {HOUSE_DISCLOSURE}
+              </InfoBox>
+            )}
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <ProgramTags program={m.program} size="md" />
             </div>

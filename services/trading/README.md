@@ -544,6 +544,16 @@ Same conventions as the rest of the engine: the internal token, `X-Kalks-Tenant`
 | `POST /v1/social/admin/fees/{id}/review` | `{decision:"approve"\|"reject", note}` | `{fee}`: approve pays the master through the wallet (`copy_fee`) |
 | `GET /v1/social/admin/audit?limit=&before=` | – | `AuditEntry[]` (`social.*` actions) |
 
+**House accounts** (driven by the ALGO service, services/algo README "House accounts"). A house master is a platform-owned live account running an automated strategy; `social_masters.is_house` marks it and every master view (and a subscription's `master`) carries `"house": true` so the apps show the "House strategy · Operated by Kalks" label. A hidden house master takes no new followers (`master_status`). Staff headers, `ROLES_SOCIAL_WRITE`, a note on every write, audited as `social.house.*`:
+
+| Method & path | Body | Response |
+|---|---|---|
+| `POST /v1/social/admin/house` | `{userId, nickname, strategy?, description?, group? ("standard"), capital, perfFeePct? (0), feePeriod? ("monthly"), minAllocation?, key?, note}` | `{master, login, created}`: opens a live account for the house user, books `capital` as ledger kind `house_capital` (`house:house_capital` ↔ balance, never a deposit) and inserts an approved master with `is_house`. Idempotent per `userId` |
+| `POST /v1/social/admin/house/{id}/capital` | `{amount (signed), key?, note}` | `{balance, txn}`: top-up or withdrawal (limited to the withdrawable amount) of house capital |
+| `POST /v1/social/admin/house/{id}/retire` | `{note, withdrawCapital?}` | stops every follower (copied positions closed), hides the master and closes it (status `rejected`, "Retired house account"); with `withdrawCapital` the free balance goes back to house capital and the account is disabled |
+
+House capital counts as an external flow in the return index (like a deposit), so it never shows as performance.
+
 Errors use the standard shape. Social codes: `not_master`, `master_status`, `requirements`, `fee_out_of_range`, `own_subscription`, `min_allocation`, `wallet_unavailable`, `wallet_rejected`, `fund_frozen`, `min_investment`, `locked`, `insufficient_units`, `request_done`, `copy_managed`, `copy_account`, `pamm_account`.
 
 ## MAM (multi-account manager)

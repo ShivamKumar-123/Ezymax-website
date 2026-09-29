@@ -58,6 +58,8 @@ export type MasterView = {
   ageDays: number | null;
   stats: Partial<MasterStats> | null;
   fund: FundRef | null;
+  /** House account: operated by the broker (Social & Algo → House accounts) */
+  house?: boolean;
   // private (admin)
   login?: number | string | null;
   kycVerified?: boolean;
