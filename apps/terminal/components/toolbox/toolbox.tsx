@@ -13,34 +13,36 @@ import { AiTraderTab, useAi } from "./ai-trader";
 import { LiveCalendarTab, LiveNewsTab } from "./news-live";
 import { ShareControls } from "@/components/share/share-dialogs";
 import { GuestNotice } from "@/components/shell/guest";
+import { useT } from "@kalks/i18n/react";
 
 /** Guest mode: account-only tabs explain what they show once a trading account is logged in. */
-const GUEST_TABS: Partial<Record<ToolboxTab, { icon: React.ReactNode; text: string }>> = {
-  trade: { icon: <BarChart3 />, text: "Open positions, pending orders, balance, equity and margin appear here once you log in to a trading account. Charts, quotes and alerts work now." },
-  history: { icon: <History />, text: "Your closed trades and performance stats are listed here once you log in to a trading account." },
-  exposure: { icon: <PieChart />, text: "Net exposure by currency and asset is calculated from your open positions once you log in to a trading account." },
+const GUEST_TABS: Partial<Record<ToolboxTab, { icon: React.ReactNode; textKey: "toolbox.guest.trade" | "toolbox.guest.history" | "toolbox.guest.exposure" }>> = {
+  trade: { icon: <BarChart3 />, textKey: "toolbox.guest.trade" },
+  history: { icon: <History />, textKey: "toolbox.guest.history" },
+  exposure: { icon: <PieChart />, textKey: "toolbox.guest.exposure" },
 };
 
 export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: () => void; onMaximize?: () => void; maximized?: boolean }) {
   const T = useTerminal();
+  const t = useT();
   const tab = T.ws.toolboxTab;
   const ai = useAi();
   const tabs: { value: ToolboxTab; label: string; count?: number }[] = [
-    { value: "trade", label: "Trade", count: T.positions.length + T.pendings.length },
-    { value: "history", label: "History" },
-    { value: "exposure", label: "Exposure" },
+    { value: "trade", label: t("toolbox.tab.trade"), count: T.positions.length + T.pendings.length },
+    { value: "history", label: t("toolbox.tab.history") },
+    { value: "exposure", label: t("toolbox.tab.exposure") },
     // live builds: real headlines and calendar (services/news); demo builds: sample content
-    ...(T.live ? ([{ value: "news", label: "News" }, { value: "calendar", label: "Calendar" }] as const) : ([{ value: "news", label: "News", count: 3 }, { value: "calendar", label: "Calendar" }] as const)),
-    { value: "alerts", label: "Alerts", count: T.alerts.filter((a) => a.active).length },
-    { value: "journal", label: "Journal" },
-    { value: "ai", label: "AI Trader", count: ai.records.filter((r) => r.status === "active").length },
+    ...(T.live ? [{ value: "news" as const, label: t("toolbox.tab.news") }, { value: "calendar" as const, label: t("toolbox.tab.calendar") }] : [{ value: "news" as const, label: t("toolbox.tab.news"), count: 3 }, { value: "calendar" as const, label: t("toolbox.tab.calendar") }]),
+    { value: "alerts", label: t("toolbox.tab.alerts"), count: T.alerts.filter((a) => a.active).length },
+    { value: "journal", label: t("toolbox.tab.journal") },
+    { value: "ai", label: t("toolbox.tab.ai"), count: ai.records.filter((r) => r.status === "active").length },
   ];
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-line bg-panel">
-      <header className="flex h-8 shrink-0 items-stretch gap-1 border-b border-line bg-panel-2 pl-2.5 pr-1">
-        <span className="flex items-center gap-1.5 pr-2 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-fg-2">
+      <header className="flex h-8 shrink-0 items-stretch gap-1 border-b border-line bg-panel-2 ps-2.5 pe-1">
+        <span className="flex items-center gap-1.5 pe-2 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-fg-2">
           <Layers className="size-3.5 text-fg-3" />
-          Toolbox
+          {t("toolbox.title")}
         </span>
         <PanelTabs value={tab} onChange={(v) => T.setWs({ toolboxTab: v })} tabs={tabs} className="min-w-0 flex-1" />
         <div className="flex shrink-0 items-center gap-0.5">
@@ -51,19 +53,19 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
               width={230}
               items={bulkMenu(T)}
               trigger={({ toggle, open }) => (
-                <button onClick={toggle} className={cn("mr-1 flex h-6 items-center gap-1 rounded-[5px] border border-line px-2 text-[11px] font-medium", open ? "bg-surface-3 text-fg" : "text-fg-2 hover:bg-surface-3 hover:text-fg")}>
-                  Bulk close <ChevronDown className="size-3" />
+                <button onClick={toggle} className={cn("me-1 flex h-6 items-center gap-1 rounded-[5px] border border-line px-2 text-[11px] font-medium", open ? "bg-surface-3 text-fg" : "text-fg-2 hover:bg-surface-3 hover:text-fg")}>
+                  {t("toolbox.bulkClose")} <ChevronDown className="size-3" />
                 </button>
               )}
             />
           )}
           {onMaximize && (
-            <TIcon label={maximized ? "Restore" : "Maximise"} onClick={onMaximize}>
+            <TIcon label={maximized ? t("toolbox.restore") : t("toolbox.maximise")} onClick={onMaximize}>
               {maximized ? <Minimize2 /> : <Maximize2 />}
             </TIcon>
           )}
           {onCollapse && (
-            <TIcon label="Hide Toolbox (Ctrl+T)" onClick={onCollapse}>
+            <TIcon label={t("toolbox.hide")} onClick={onCollapse}>
               <ChevronsDown />
             </TIcon>
           )}
@@ -71,7 +73,7 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
       </header>
       <div className="min-h-0 flex-1">
         {T.guest && GUEST_TABS[tab] ? (
-          <GuestNotice icon={GUEST_TABS[tab]!.icon} text={GUEST_TABS[tab]!.text} />
+          <GuestNotice icon={GUEST_TABS[tab]!.icon} text={t(GUEST_TABS[tab]!.textKey)} />
         ) : (
           <ToolboxBody tab={tab} live={T.live} />
         )}

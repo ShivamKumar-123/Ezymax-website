@@ -13,6 +13,7 @@ import { PanelHeader, PanelTabs } from "@/components/ui/panel";
 import { TIcon } from "@/components/ui/primitives";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
 import { SegmentChips, inSegment } from "./segments";
+import { useT } from "@kalks/i18n/react";
 
 const ORDER: AssetClass[] = ["forex", "metals", "indices", "energies", "crypto", "stocks"];
 
@@ -30,6 +31,7 @@ function MwClock() {
 
 export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
   const T = useTerminal();
+  const t = useT();
   const [q, setQ] = React.useState("");
   const tab = T.ws.mwTab;
   const cm = useContextMenu(220);
@@ -46,32 +48,32 @@ export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
   const menuFor = (symbol: string): MenuItem[] => {
     const fav = T.ws.favourites.includes(symbol);
     return [
-      { label: "New Order", icon: <ShoppingCart />, hint: "F9", disabled: T.readOnly, onSelect: () => T.openNewOrder({ symbol }) },
-      { label: "Chart Window", icon: <BarChart2 />, onSelect: () => T.addTab(symbol) },
-      { label: "Open in active chart", icon: <TrendingUp />, onSelect: () => T.openSymbol(symbol) },
-      ...(T.guest ? [] : ([{ label: "Depth of Market", icon: <FileText />, hint: "Alt+B", onSelect: () => (T.openSymbol(symbol), T.setWs({ rightTab: "depth" }), T.togglePanel("right", true)) }] as MenuItem[])),
+      { label: t("market.menu.newOrder"), icon: <ShoppingCart />, hint: "F9", disabled: T.readOnly, onSelect: () => T.openNewOrder({ symbol }) },
+      { label: t("market.menu.chartWindow"), icon: <BarChart2 />, onSelect: () => T.addTab(symbol) },
+      { label: t("market.menu.openInActive"), icon: <TrendingUp />, onSelect: () => T.openSymbol(symbol) },
+      ...(T.guest ? [] : ([{ label: t("market.menu.depth"), icon: <FileText />, hint: "Alt+B", onSelect: () => (T.openSymbol(symbol), T.setWs({ rightTab: "depth" }), T.togglePanel("right", true)) }] as MenuItem[])),
       "sep",
-      { label: "Specification", icon: <Info />, onSelect: () => T.setUi({ spec: symbol }) },
-      { label: fav ? "Remove from Favourites" : "Add to Favourites", icon: <Star />, onSelect: () => T.setWs((w) => ({ favourites: fav ? w.favourites.filter((s) => s !== symbol) : [...w.favourites, symbol] })) },
+      { label: t("market.menu.specification"), icon: <Info />, onSelect: () => T.setUi({ spec: symbol }) },
+      { label: fav ? t("market.menu.removeFavourite") : t("market.menu.addFavourite"), icon: <Star />, onSelect: () => T.setWs((w) => ({ favourites: fav ? w.favourites.filter((s) => s !== symbol) : [...w.favourites, symbol] })) },
       "sep",
       {
-        label: "Hide",
+        label: t("market.menu.hide"),
         icon: <EyeOff />,
         hint: "Del",
         onSelect: () => {
           T.setWs((w) => ({ hidden: [...w.hidden, symbol] }));
-          toast(`${symbol} hidden from Market Watch`, { description: "Show all symbols from the context menu." });
+          toast(t("market.toast.hidden", { symbol }), { description: t("market.toast.hiddenDesc") });
         },
       },
-      { label: "Show All", icon: <Eye />, disabled: !T.ws.hidden.length, onSelect: () => T.setWs({ hidden: [] }) },
+      { label: t("market.menu.showAll"), icon: <Eye />, disabled: !T.ws.hidden.length, onSelect: () => T.setWs({ hidden: [] }) },
     ];
   };
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <PanelHeader icon={<BarChart2 />} title={<span className="flex items-center gap-2">Market Watch <MwClock /></span>}>
+      <PanelHeader icon={<BarChart2 />} title={<span className="flex items-center gap-2">{t("market.title")} <MwClock /></span>}>
         {onCollapse && (
-          <TIcon label="Collapse" onClick={onCollapse}>
+          <TIcon label={t("market.collapse")} onClick={onCollapse}>
             <ChevronsLeft />
           </TIcon>
         )}
@@ -81,20 +83,20 @@ export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
           value={tab}
           onChange={(v) => T.setWs({ mwTab: v })}
           tabs={[
-            { value: "symbols", label: "Symbols" },
-            { value: "details", label: "Details" },
-            { value: "favourites", label: "Favourites", count: T.ws.favourites.length },
+            { value: "symbols", label: t("market.tab.symbols") },
+            { value: "details", label: t("market.tab.details") },
+            { value: "favourites", label: t("market.tab.favourites"), count: T.ws.favourites.length },
           ]}
         />
       </div>
       <div className="shrink-0 space-y-1 border-b border-line p-1.5">
-        <SegmentChips instruments={base} value={seg} onChange={(s) => T.setWs({ mwSegment: s })} favourites={T.ws.favourites} withFavourites={tab !== "favourites"} label="Market Watch segment" />
+        <SegmentChips instruments={base} value={seg} onChange={(s) => T.setWs({ mwSegment: s })} favourites={T.ws.favourites} withFavourites={tab !== "favourites"} label={t("market.segmentAria")} />
         <label className="flex h-7 items-center gap-1.5 rounded-[6px] border border-line bg-surface-2 px-2 focus-within:border-ember/50">
           <Search className="size-3.5 text-fg-3" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search symbol" className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-fg-3" aria-label="Search Market Watch" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("market.searchPlaceholder")} className="min-w-0 flex-1 bg-transparent text-[12px] outline-none placeholder:text-fg-3" aria-label={t("market.searchAria")} />
           {q && (
             <button onClick={() => setQ("")} className="text-[10px] text-fg-3 hover:text-fg">
-              Clear
+              {t("market.clear")}
             </button>
           )}
         </label>
@@ -118,11 +120,11 @@ export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
             </colgroup>
             <thead>
               <tr>
-                <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pl-2 text-left text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3">Symbol</th>
-                <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pr-1.5 text-right text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3">Bid</th>
-                <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pr-1.5 text-right text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3">Ask</th>
-                <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pr-1 text-right text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3" title="Spread, points">Sp</th>
-                <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pr-2 text-right text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3">Chg%</th>
+                <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 ps-2 text-start text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3">{t("market.col.symbol")}</th>
+                <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pe-1.5 text-end text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3">{t("market.col.bid")}</th>
+                <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pe-1.5 text-end text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3">{t("market.col.ask")}</th>
+                <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pe-1 text-end text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3" title={t("market.col.spreadTitle")}>{t("market.col.spread")}</th>
+                <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pe-2 text-end text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3">{t("market.col.change")}</th>
               </tr>
             </thead>
             <tbody>
@@ -134,7 +136,7 @@ export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
                   fav={T.ws.favourites.includes(i.symbol)}
                   onOpen={() => {
                     T.openSymbol(i.symbol);
-                    toast(`${i.symbol} opened in active chart`, { description: `${T.activeTab.tf} · ${i.name}` });
+                    toast(t("market.toast.opened", { symbol: i.symbol }), { description: `${T.activeTab.tf} · ${i.name}` });
                   }}
                   onContext={(e) => cm.open(e, menuFor(i.symbol), i.symbol)}
                   onHover={(rect) => setHover(rect ? { symbol: i.symbol, rect } : null)}
@@ -142,14 +144,14 @@ export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
               ))}
             </tbody>
           </table>
-          {list.length === 0 && <div className="p-4 text-center text-[12px] text-fg-3">{(tab === "favourites" || seg === "favourites") && !T.ws.favourites.length ? "No favourites yet. Right-click a symbol to add it." : "No symbols match."}</div>}
+          {list.length === 0 && <div className="p-4 text-center text-[12px] text-fg-3">{(tab === "favourites" || seg === "favourites") && !T.ws.favourites.length ? t("market.empty.favourites") : t("market.empty.noMatch")}</div>}
         </div>
       )}
       <div className="flex h-6 shrink-0 items-center justify-between border-t border-line px-2 font-mono text-[10px] text-fg-3">
         <span>
-          {list.length} / {INSTRUMENTS.length} symbols
+          {t("market.footer.count", { shown: list.length, total: INSTRUMENTS.length })}
         </span>
-        <span className="truncate pl-2">dbl-click: chart</span>
+        <span className="truncate ps-2">{t("market.footer.hint")}</span>
       </div>
       {hover && <RangeTip symbol={hover.symbol} rect={hover.rect} />}
       {cm.node}
@@ -172,6 +174,7 @@ const MwRow = React.memo(function MwRow({
   onContext: (e: React.MouseEvent) => void;
   onHover: (r: DOMRect | null) => void;
 }) {
+  const t = useT();
   const q = useQuote(symbol);
   const inst = getInstrument(symbol);
   const spread = Math.round((q.ask - q.bid) * 10 ** inst.digits);
@@ -181,24 +184,26 @@ const MwRow = React.memo(function MwRow({
       onContextMenu={onContext}
       onMouseEnter={(e) => onHover(e.currentTarget.getBoundingClientRect())}
       className={cn("group h-[28px] cursor-default text-[12px]", active ? "bg-ember-soft/60" : "hover:bg-surface-2")}
-      title={`${inst.name} · spread ${spread}`}
+      title={t("market.row.title", { name: inst.name, spread })}
     >
-      <td className={cn("border-b border-line/50 pl-2", active && "shadow-[inset_2px_0_0_var(--k-ember)]")}>
+      <td className={cn("border-b border-line/50 ps-2", active && "shadow-[inset_2px_0_0_var(--k-ember)]")}>
         <span className="flex min-w-0 items-center gap-1.5">
           <SymbolAvatar symbol={symbol} size={12} />
           <span className={cn("truncate text-[11.5px] font-medium", active ? "text-fg" : "text-fg-2 group-hover:text-fg")}>{symbol}</span>
         </span>
       </td>
-      <td className="border-b border-line/50 pr-1.5 text-right">
+      <td className="border-b border-line/50 pe-1.5 text-end">
         <PriceText symbol={symbol} value={q.bid} dir={q.dir} pulse className="justify-end px-0.5 text-[10.5px]" />
       </td>
-      <td className="border-b border-line/50 pr-1.5 text-right">
+      <td className="border-b border-line/50 pe-1.5 text-end">
         <PriceText symbol={symbol} value={q.ask} dir={q.dir} pulse className="justify-end px-0.5 text-[10.5px]" />
       </td>
-      <td className="k-num border-b border-line/50 pr-1 text-right font-mono text-[10px] text-fg-3">{spread}</td>
-      <td className={cn("k-num border-b border-line/50 pr-2 text-right font-mono text-[10.5px]", q.change >= 0 ? "text-up" : "text-down")}>
-        {q.change >= 0 ? "+" : ""}
-        {q.change.toFixed(2)}
+      <td className="k-num border-b border-line/50 pe-1 text-end font-mono text-[10px] text-fg-3">{spread}</td>
+      <td className={cn("k-num border-b border-line/50 pe-2 text-end font-mono text-[10.5px]", q.change >= 0 ? "text-up" : "text-down")}>
+        <span dir="ltr">
+          {q.change >= 0 ? "+" : ""}
+          {q.change.toFixed(2)}
+        </span>
       </td>
     </tr>
   );
@@ -206,6 +211,7 @@ const MwRow = React.memo(function MwRow({
 
 function RangeTip({ symbol, rect }: { symbol: string; rect: DOMRect }) {
   useMarketClock();
+  const t = useT();
   const q = useQuote(symbol);
   const r = getRange(symbol);
   const inst = getInstrument(symbol);
@@ -221,20 +227,20 @@ function RangeTip({ symbol, rect }: { symbol: string; rect: DOMRect }) {
         <span className="text-[10.5px] text-fg-3">{inst.name}</span>
       </div>
       <div className="mt-2 flex items-center justify-between font-mono text-[10.5px] text-fg-3">
-        <span>L {fmtPrice(symbol, r.low)}</span>
-        <span>H {fmtPrice(symbol, r.high)}</span>
+        <span>{t("market.tip.low")} <span dir="ltr">{fmtPrice(symbol, r.low)}</span></span>
+        <span>{t("market.tip.high")} <span dir="ltr">{fmtPrice(symbol, r.high)}</span></span>
       </div>
       <div className="relative mt-1 h-1.5 rounded-full bg-gradient-to-r from-down/50 via-surface-3 to-up/50">
         <span className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-panel-2 bg-fg" style={{ left: `${pct}%` }} />
       </div>
       <div className="mt-2 grid grid-cols-3 gap-1 font-mono text-[10.5px]">
         <span className="text-fg-3">
-          Sprd <span className="text-fg-2">{spread}</span>
+          {t("market.tip.spread")} <span className="text-fg-2">{spread}</span>
         </span>
         <span className="text-center text-fg-3">
-          Rng <span className="text-fg-2">{((r.high - r.low) / (inst.assetClass === "forex" ? (inst.digits === 3 ? 0.01 : 0.0001) : 1)).toFixed(inst.assetClass === "forex" ? 0 : 1)}</span>
+          {t("market.tip.range")} <span className="text-fg-2">{((r.high - r.low) / (inst.assetClass === "forex" ? (inst.digits === 3 ? 0.01 : 0.0001) : 1)).toFixed(inst.assetClass === "forex" ? 0 : 1)}</span>
         </span>
-        <span className={cn("text-right", q.change >= 0 ? "text-up" : "text-down")}>{q.change >= 0 ? "+" : ""}{q.change.toFixed(2)}%</span>
+        <span className={cn("text-end", q.change >= 0 ? "text-up" : "text-down")}><span dir="ltr">{q.change >= 0 ? "+" : ""}{q.change.toFixed(2)}%</span></span>
       </div>
     </div>,
     document.body,
@@ -243,6 +249,7 @@ function RangeTip({ symbol, rect }: { symbol: string; rect: DOMRect }) {
 
 function DetailCard({ symbol, active, onOpen, onContext }: { symbol: string; active: boolean; onOpen: () => void; onContext: (e: React.MouseEvent) => void }) {
   useMarketClock();
+  const t = useT();
   const q = useQuote(symbol);
   const r = getRange(symbol);
   const inst = getInstrument(symbol);
@@ -254,18 +261,18 @@ function DetailCard({ symbol, active, onOpen, onContext }: { symbol: string; act
           <SymbolAvatar symbol={symbol} size={15} />
           {symbol}
         </span>
-        <span className={cn("k-num font-mono text-[11px]", q.change >= 0 ? "text-up" : "text-down")}>
+        <span dir="ltr" className={cn("k-num font-mono text-[11px]", q.change >= 0 ? "text-up" : "text-down")}>
           {q.change >= 0 ? "+" : ""}
           {q.change.toFixed(2)}%
         </span>
       </div>
       <div className="mt-1.5 grid grid-cols-2 gap-1.5">
         <div className="rounded-[4px] bg-down-soft px-1.5 py-1">
-          <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-down">Bid</div>
+          <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-down">{t("market.bid")}</div>
           <PriceText symbol={symbol} value={q.bid} dir={q.dir} className="text-[14px]" />
         </div>
-        <div className="rounded-[4px] bg-up-soft px-1.5 py-1 text-right">
-          <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-up">Ask</div>
+        <div className="rounded-[4px] bg-up-soft px-1.5 py-1 text-end">
+          <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-up">{t("market.ask")}</div>
           <PriceText symbol={symbol} value={q.ask} dir={q.dir} className="justify-end text-[14px]" />
         </div>
       </div>

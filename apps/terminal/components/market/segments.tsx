@@ -5,12 +5,15 @@ import { Star } from "lucide-react";
 import { ASSET_CLASS_LABEL, type Instrument } from "@kalks/mock";
 import { cn } from "@kalks/ui";
 import type { Segment } from "@/lib/store";
+import { useT } from "@kalks/i18n/react";
+import type { T as Translate } from "@kalks/i18n";
 
 export type { Segment };
 
 export const SEGMENTS: readonly Segment[] = ["all", "forex", "metals", "indices", "energies", "crypto", "stocks", "favourites"];
 
-export function segmentLabel(s: Segment) {
+export function segmentLabel(s: Segment, t?: Translate) {
+  if (t) return s === "all" ? t("common.all") : t.dyn(`market.segment.${s}`, s === "favourites" ? "Favourites" : ASSET_CLASS_LABEL[s]);
   return s === "all" ? "All" : s === "favourites" ? "Favourites" : ASSET_CLASS_LABEL[s];
 }
 
@@ -31,7 +34,7 @@ export function SegmentChips({
   withFavourites = true,
   size = "sm",
   className,
-  label = "Asset class",
+  label,
 }: {
   instruments: readonly Instrument[];
   value: Segment;
@@ -42,6 +45,7 @@ export function SegmentChips({
   className?: string;
   label?: string;
 }) {
+  const t = useT();
   const counts = React.useMemo(() => {
     const m = new Map<Segment, number>();
     for (const s of SEGMENTS) m.set(s, instruments.filter((i) => inSegment(i, s, favourites)).length);
@@ -95,7 +99,7 @@ export function SegmentChips({
     <div
       ref={box}
       role="tablist"
-      aria-label={label}
+      aria-label={label ?? t("market.segment.aria")}
       onKeyDown={move}
       onScroll={measure}
       style={edge.l || edge.r ? { maskImage: `linear-gradient(to right, ${edge.l ? "transparent, black 18px" : "black"}, ${edge.r ? "black calc(100% - 22px), transparent" : "black"})` } : undefined}
@@ -115,15 +119,15 @@ export function SegmentChips({
             aria-selected={on}
             tabIndex={on ? 0 : -1}
             onClick={() => onChange(s)}
-            title={`${segmentLabel(s)} · ${n} symbol${n === 1 ? "" : "s"}`}
+            title={t("market.segment.title", { label: segmentLabel(s, t), count: n })}
             className={cn(
               "flex shrink-0 items-center gap-1 whitespace-nowrap rounded-[5px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ember/40",
               size === "md" ? "h-7 px-2.5 text-[12px]" : "h-[22px] px-1.5 text-[11px]",
               on ? "bg-ember-soft text-ember" : "text-fg-3 hover:bg-surface-3 hover:text-fg-2",
             )}
           >
-            {s === "favourites" ? <Star className={cn("size-3", on && "fill-ember")} aria-hidden /> : segmentLabel(s)}
-            {s === "favourites" && <span className="sr-only">Favourites</span>}
+            {s === "favourites" ? <Star className={cn("size-3", on && "fill-ember")} aria-hidden /> : segmentLabel(s, t)}
+            {s === "favourites" && <span className="sr-only">{t("market.segment.favourites")}</span>}
             <span className={cn("k-num font-mono text-[9.5px]", on ? "text-ember/80" : "text-fg-3/80")}>{n}</span>
           </button>
         );
