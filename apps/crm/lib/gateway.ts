@@ -3,6 +3,8 @@
 // keep the token in an HttpOnly first-party cookie and forward it here as a bearer token.
 
 import type { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { LOCALE_COOKIE, isLocale } from "@kalks/i18n/locales";
 
 export const SESSION_COOKIE = "kalks_session";
 export const DEVICE_COOKIE = "kalks_did";
@@ -47,6 +49,9 @@ export async function gateway<T = Record<string, unknown>>(path: string, init: {
   if (init.userAgent) headers["user-agent"] = init.userAgent;
   if (init.device) headers["x-kalks-device"] = init.device;
   if (init.token) headers.authorization = `Bearer ${init.token}`;
+  // the reader's language (Client Area switcher cookie): the gateway writes code and welcome emails in it
+  const locale = await requestLocale();
+  if (locale) headers["x-kalks-locale"] = locale;
   try {
     const res = await fetch(`${GATEWAY_URL}${path}`, {
       method: init.method ?? (init.body !== undefined ? "POST" : "GET"),
@@ -58,6 +63,16 @@ export async function gateway<T = Record<string, unknown>>(path: string, init: {
     return { status: res.status, data };
   } catch {
     return { status: 503, data: { error: { code: "unavailable", message: "Sign-in service is unavailable. Please try again shortly." } } as T };
+  }
+}
+
+/** The kalks_locale cookie of the current request, when there is one (route handlers and server components). */
+async function requestLocale(): Promise<string | undefined> {
+  try {
+    const v = (await cookies()).get(LOCALE_COOKIE)?.value;
+    return v && isLocale(v) ? v : undefined;
+  } catch {
+    return undefined; // outside a request scope
   }
 }
 

@@ -19,7 +19,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body>
-        <Providers i18n={{ locale, messages, persistUrl: "/api/auth/locale" }}>{children}</Providers>
+        <Providers i18n={{ locale, messages }}>{children}</Providers>
       </body>
     </html>
   );
