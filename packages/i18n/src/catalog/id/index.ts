@@ -12,6 +12,16 @@ import trader from "./trader";
 import order from "./order";
 import toolbox from "./toolbox";
 import market from "./market";
+import partner from "./partner";
+import social from "./social";
+import prop from "./prop";
+import security from "./security";
+import rewards from "./rewards";
+import developer from "./developer";
+import academy from "./academy";
+import support from "./support";
+import news from "./news";
+import portfolio from "./portfolio";
 
-const catalog: PartialCatalog = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market };
+const catalog: PartialCatalog = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio };
 export default catalog;
