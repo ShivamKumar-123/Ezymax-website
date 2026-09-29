@@ -1,4 +1,5 @@
-// App icon, Android adaptive icon, splash mark and web favicon from the Kalks mark (repo assets/brand).
+// App icon, Android adaptive icon, splash mark, web favicon and Android notification icon from the Kalks mark (repo
+// assets/brand).
 //   node scripts/brand-assets.mjs
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -22,4 +23,6 @@ await (await onSquare(1024, "#0E0E10", "#F26A3D", 0.56)).toFile(join(out, "icon.
 await (await onSquare(1024, { r: 0, g: 0, b: 0, alpha: 0 }, "#F26A3D", 0.42)).toFile(join(out, "adaptive-icon.png"));
 await sharp(colored("#F5EFE3"), { density: 600 }).resize({ width: 600 }).png().toFile(join(out, "splash.png"));
 await (await onSquare(96, "#0E0E10", "#F26A3D", 0.64)).toFile(join(out, "favicon.png"));
+// Android status-bar notification icon: white mark on transparent (expo-notifications plugin, app.json)
+await (await onSquare(96, { r: 0, g: 0, b: 0, alpha: 0 }, "#FFFFFF", 0.66)).toFile(join(out, "notification-icon.png"));
 console.log("brand assets written");

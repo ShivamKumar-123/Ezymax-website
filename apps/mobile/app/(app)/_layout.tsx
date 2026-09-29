@@ -1,6 +1,7 @@
 // Signed-in area. The tabs are the home of the app; feature screens (wallet, settings, …) are pushed on this
 // native stack: app/(app)/<feature>/... (see README › Conventions).
 import { Stack } from "expo-router";
+import { PlatformRoot } from "@/features/platform/PlatformRoot";
 import { useTradingController } from "@/features/trading/accounts";
 import { colors } from "@/theme/tokens";
 
@@ -8,8 +9,13 @@ export default function AppLayout() {
   // the active trading account: default pick, engine stream, quote group
   useTradingController();
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: "default", gestureEnabled: true, fullScreenGestureEnabled: true }}>
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: "default", gestureEnabled: true, fullScreenGestureEnabled: true }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="lock" options={{ animation: "none" }} />
+      </Stack>
+      {/* app lock, push notifications, notification taps and deep links (src/features/platform) */}
+      <PlatformRoot />
+    </>
   );
 }
