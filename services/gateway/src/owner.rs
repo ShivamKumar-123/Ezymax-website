@@ -147,12 +147,7 @@ fn limits_json(l: &Limits) -> ApiResult<Value> {
 }
 
 async fn domains_free(st: &AppState, domains: &[String], except: Option<i64>) -> ApiResult<()> {
-    let taken: Option<String> = sqlx::query_scalar("SELECT d FROM tenants, unnest(domains) d WHERE d = ANY($1) AND ($2::bigint IS NULL OR id <> $2) LIMIT 1")
-        .bind(domains)
-        .bind(except)
-        .fetch_optional(&st.pool)
-        .await?;
-    if taken.is_some() {
+    if crate::domains::taken(&st.pool, domains, except).await?.is_some() {
         return Err(conflict("domain_taken", "One of these domains already belongs to another tenant."));
     }
     Ok(())
@@ -379,6 +374,7 @@ pub async fn create_tenant(State(st): State<AppState>, ctx: Ctx, req: Result<Jso
     .fetch_optional(&st.pool)
     .await?;
     let id = id.ok_or(conflict("slug_taken", "A tenant with this identifier already exists."))?;
+    crate::domains::replace_all(&st.pool, id, &domains, Some(me.id)).await?;
     rbac::seed_tenant_roles(&st.pool, id).await?;
     for (k, v) in &modules {
         tenancy::write_feature(&st, &ctx, &me, id, k, Some(*v)).await?;
@@ -521,6 +517,7 @@ pub async fn tenant_detail(State(st): State<AppState>, ctx: Ctx, Path(id): Path<
     tenant["maintenance"] = json!(r.get::<bool, _>("maintenance_enabled"));
     tenant["ip_allowlist"] = json!(r.get::<bool, _>("ip_allowlist_enabled"));
     tenant["is_owner_tenant"] = json!(id == rbac::owner_tenant_id(&st.pool).await?);
+    tenant["domain_records"] = json!(crate::domains::records(&st.pool, id).await?);
     let features = tenancy::features(&st.pool, id).await?;
     let billing = sqlx::query("SELECT * FROM tenant_billing WHERE tenant_id = $1").bind(id).fetch_optional(&st.pool).await?;
     let admins = sqlx::query(
@@ -602,6 +599,9 @@ pub async fn update_tenant(State(st): State<AppState>, ctx: Ctx, Path(id): Path<
     .bind(&contact)
     .execute(&st.pool)
     .await?;
+    if let Some(d) = &domains {
+        crate::domains::replace_all(&st.pool, id, d, Some(me.id)).await?;
+    }
     audit::record(&st.pool, &ctx, entry(&me, "owner.tenant_updated", id, json!({
         "before": { "name": before.get::<String, _>("name"), "domains": before.get::<Vec<String>, _>("domains"), "brand": before.get::<sqlx::types::Json<Value>, _>("brand").0,
                     "plan": before.get::<String, _>("plan"), "limits": before.get::<sqlx::types::Json<Value>, _>("limits").0 },

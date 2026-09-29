@@ -374,6 +374,8 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
          ORDER BY u.created_at DESC, u.id DESC
          LIMIT $7 OFFSET $8"
     ), 9);
+    // defense in depth: the listing runs under the tenant's RLS scope (kalks_tenant role), not only `WHERE tenant_id`
+    let mut tx = crate::domains::tenant_tx(&st.pool, me.tenant_id).await?;
     let rows = sqlx::query(sqlx::AssertSqlSafe(sql))
         .bind(me.tenant_id)
         .bind(pat)
@@ -385,8 +387,9 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
         .bind(offset)
         .bind(idle_secs(Kind::Staff))
         .bind(idle_secs(Kind::User))
-        .fetch_all(&st.pool)
+        .fetch_all(&mut *tx)
         .await?;
+    tx.commit().await?;
     let total = rows.first().map(|r| r.get::<i64, _>("total")).unwrap_or(0);
     Ok(Json(json!({ "items": rows.iter().map(user_row).collect::<Vec<_>>(), "total": total, "page": page, "per_page": per })))
 }
@@ -403,12 +406,14 @@ pub async fn user_detail(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i6
             (SELECT count(*) FROM users r WHERE r.referred_by = u.id) AS referrals_total
          FROM users u WHERE u.id = $1 AND u.tenant_id = $2"
     ), 3);
+    // defense in depth: the client's record and history are read under the tenant's RLS scope
+    let mut tx = crate::domains::tenant_tx(&st.pool, me.tenant_id).await?;
     let r = sqlx::query(sqlx::AssertSqlSafe(sql))
         .bind(id)
         .bind(me.tenant_id)
         .bind(idle_secs(Kind::Staff))
         .bind(idle_secs(Kind::User))
-        .fetch_optional(&st.pool)
+        .fetch_optional(&mut *tx)
         .await?
         .ok_or(ApiError::NotFound)?;
     let mut user = user_row(&r);
@@ -421,7 +426,7 @@ pub async fn user_detail(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i6
         Some(rid) => sqlx::query("SELECT id, email, first_name, last_name, referral_code FROM users WHERE id = $1 AND tenant_id = $2")
             .bind(rid)
             .bind(me.tenant_id)
-            .fetch_optional(&st.pool)
+            .fetch_optional(&mut *tx)
             .await?
             .map(|x| {
                 json!({
@@ -433,7 +438,7 @@ pub async fn user_detail(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i6
             }),
         None => None,
     };
-    let code_raw: Option<String> = sqlx::query_scalar("SELECT referred_code_raw FROM users WHERE id = $1").bind(id).fetch_one(&st.pool).await?;
+    let code_raw: Option<String> = sqlx::query_scalar("SELECT referred_code_raw FROM users WHERE id = $1").bind(id).fetch_one(&mut *tx).await?;
     user["referred_code_raw"] = json!(code_raw);
 
     let referrals = sqlx::query(
@@ -442,7 +447,7 @@ pub async fn user_detail(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i6
     )
     .bind(id)
     .bind(me.tenant_id)
-    .fetch_all(&st.pool)
+    .fetch_all(&mut *tx)
     .await?
     .iter()
     .map(|x| {
@@ -463,7 +468,7 @@ pub async fn user_detail(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i6
     )
     .bind(me.tenant_id)
     .bind(id)
-    .fetch_optional(&st.pool)
+    .fetch_optional(&mut *tx)
     .await?
     .map(|x| json!({ "at": x.get::<DateTime<Utc>, _>("created_at"), "ip": x.get::<Option<String>, _>("ip"), "user_agent": x.get::<Option<String>, _>("user_agent"), "via": x.get::<Option<String>, _>("via") }));
 
@@ -474,7 +479,7 @@ pub async fn user_detail(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i6
     )
     .bind(me.tenant_id)
     .bind(id)
-    .fetch_all(&st.pool)
+    .fetch_all(&mut *tx)
     .await?
     .iter()
     .map(|x| {
@@ -490,6 +495,7 @@ pub async fn user_detail(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i6
         })
     })
     .collect::<Vec<_>>();
+    tx.commit().await?;
 
     Ok(Json(json!({
         "user": user,

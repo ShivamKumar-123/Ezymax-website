@@ -10,6 +10,7 @@ mod client_auth;
 mod config;
 mod crypto;
 mod db;
+mod domains;
 mod error;
 mod flows;
 mod google_auth;
@@ -141,7 +142,7 @@ async fn main() -> anyhow::Result<()> {
     let app = router(st);
     let listener = tokio::net::TcpListener::bind(&bind).await?;
     tracing::info!(%bind, "http listening");
-    axum::serve(listener, app)
+    axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>())
         .with_graceful_shutdown(async {
             let _ = tokio::signal::ctrl_c().await;
         })
@@ -200,7 +201,11 @@ fn router(st: AppState) -> Router {
         .route("/v1/admin/settings/maintenance", get(tenancy::get_maintenance).put(tenancy::set_maintenance))
         .route("/v1/admin/settings/features", get(tenancy::get_features))
         .route("/v1/admin/settings/features/{key}", put(tenancy::set_feature))
-        .route("/v1/public/tenant-config", get(tenancy::public_config))
+        .route("/v1/public/tenant-config", get(domains::tenant_config))
+        .route("/v1/public/tenant-by-host", get(domains::tenant_by_host))
+        .route("/v1/owner/tenants/{id}/domains", get(domains::owner_list).post(domains::owner_add))
+        .route("/v1/owner/tenants/{id}/domains/{domain_id}", patch(domains::owner_update).delete(domains::owner_delete))
+        .route("/v1/owner/tenants/{id}/domains/{domain_id}/check", post(domains::owner_check))
         // Platform Owner (owner.rs)
         .route("/v1/owner/dashboard", get(owner::dashboard))
         .route("/v1/owner/tenants", get(owner::tenants).post(owner::create_tenant))
@@ -240,6 +245,8 @@ fn router(st: AppState) -> Router {
         .layer(middleware::from_fn_with_state(st.clone(), internal_only));
     Router::new()
         .route("/health", get(health))
+        // Caddy on-demand TLS `ask` (no internal token: loopback-only, yes / no answer; domains.rs)
+        .route("/v1/public/domain-check", get(domains::domain_check))
         .merge(v1)
         .fallback(|| async { (axum::http::StatusCode::NOT_FOUND, Json(serde_json::json!({"error": {"code": "not_found", "message": "Not found."}}))) })
         .with_state(st)

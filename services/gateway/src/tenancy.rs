@@ -5,7 +5,8 @@
 //! * Feature flags are switched by the tenant (`settings.write`); the Platform Owner can add new flags.
 //! * Maintenance mode: clients see a maintenance page and can't sign in; staff keep working.
 //!
-//! `GET /v1/public/tenant-config` gives the apps everything they need in one call (internal token only).
+//! `GET /v1/public/tenant-config` gives the apps everything they need in one call (internal token only),
+//! including the tenant's branding; the tenant is the one of the forwarded browser host (domains.rs).
 
 use axum::Json;
 use axum::extract::rejection::JsonRejection;
@@ -185,6 +186,8 @@ pub async fn public_config(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Js
         "maintenance": if status == "active" { maintenance_json(&m) } else { json!({ "enabled": true, "active": true, "message": "This service is temporarily unavailable.", "until": null, "since": null }) },
         "modules": modules,
         "flags": flags,
+        // name, logo, colours, support email and domains by kind (domains.rs)
+        "branding": crate::domains::branding(&st, id).await?,
     })))
 }
 
