@@ -119,3 +119,31 @@ export function useQps() {
 export function startMarket() {
   start();
 }
+
+/**
+ * Quote of `symbol`, re-rendering at most once per `ms` (trailing: the last tick of a burst is always shown).
+ * For numbers derived from the price that don't need every tick (margin, pip value, placeholders), so a
+ * large component doesn't re-render per tick; live prices belong in small leaf components with useQuote.
+ */
+export function useSlowQuote(symbol: string, ms = 1000): Quote {
+  const feed = priceFeed();
+  const [q, setQ] = React.useState<Quote>(() => feed.quote(symbol));
+  React.useEffect(() => {
+    setQ(feed.quote(symbol));
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const unsub = feed.subscribe([symbol], () => {
+      if (timer) return;
+      timer = setTimeout(() => {
+        timer = null;
+        setQ(feed.quote(symbol));
+      }, ms);
+    });
+    const unmode = feed.onMode(() => setQ(feed.quote(symbol)));
+    return () => {
+      unsub();
+      unmode();
+      if (timer) clearTimeout(timer);
+    };
+  }, [feed, symbol, ms]);
+  return q;
+}

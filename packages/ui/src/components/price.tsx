@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { flushSync } from "react-dom";
 import { fetchCandles, priceFeed, getInstrument, type Quote } from "@kalks/mock";
 import { cn } from "../lib/cn";
 import { splitPrice } from "../lib/format";
@@ -9,6 +10,9 @@ import { splitPrice } from "../lib/format";
  * Coalesces UI updates to one per animation frame: every quote is kept (the latest per symbol wins), and all
  * pending React updates are applied together in the next frame — one render per frame instead of one per
  * tick, without dropping the final price. While the tab is hidden, updates wait for the next visible frame.
+ * The updates render synchronously inside the frame callback (flushSync), so a tick is painted in the frame it
+ * was applied in: left to React's scheduler, a render requested from requestAnimationFrame runs after that
+ * frame's paint and shows up one frame (~16 ms) late.
  */
 const frameQueue = new Set<() => void>();
 let frameReq = 0;
@@ -19,7 +23,7 @@ function onFrame(fn: () => void) {
     frameReq = 0;
     const list = [...frameQueue];
     frameQueue.clear();
-    list.forEach((f) => f());
+    flushSync(() => list.forEach((f) => f()));
   });
 }
 
@@ -179,6 +183,8 @@ const DOWN = "var(--k-down)";
 export function useTickGlow<T extends HTMLElement>(value: number, { strength = 16, duration = 750 } = {}) {
   const ref = React.useRef<T>(null);
   const prev = React.useRef(value);
+  // the running glow, cancelled directly: el.getAnimations() would force a style recalculation on every tick
+  const anim = React.useRef<Animation | null>(null);
   React.useEffect(() => {
     const el = ref.current;
     if (!el || value === prev.current) return;
@@ -186,27 +192,31 @@ export function useTickGlow<T extends HTMLElement>(value: number, { strength = 1
     prev.current = value;
     if (typeof el.animate !== "function" || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     const tint = `color-mix(in oklab, ${up ? UP : DOWN} ${strength}%, transparent)`;
-    el.getAnimations().forEach((a) => a.id === "tick-glow" && a.cancel());
-    const anim = el.animate([{ backgroundColor: tint }, { backgroundColor: "transparent" }], { duration, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
-    anim.id = "tick-glow";
+    anim.current?.cancel();
+    anim.current = el.animate([{ backgroundColor: tint }, { backgroundColor: "transparent" }], { duration, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
   }, [value, strength, duration]);
   return ref;
 }
 
-/** One character of a price. When it changes, its colour eases from green/red back to normal (no remount). */
-function Digit({ ch, dir }: { ch: string; dir: 1 | -1 | 0 }) {
+/**
+ * One character of a price. When it changes, its colour eases from green/red back to normal (no remount).
+ * Memoised: on a tick only the characters that changed re-render; the running animation is kept in a ref and
+ * cancelled directly (el.getAnimations() forces a synchronous style recalculation per call).
+ */
+const Digit = React.memo(function Digit({ ch, dir }: { ch: string; dir: 1 | -1 | 0 }) {
   const ref = React.useRef<HTMLSpanElement>(null);
   const prev = React.useRef(ch);
+  const anim = React.useRef<Animation | null>(null);
   React.useEffect(() => {
     const el = ref.current;
     if (!el || ch === prev.current) return;
     prev.current = ch;
     if (!dir || typeof el.animate !== "function") return;
-    el.getAnimations().forEach((a) => a.cancel());
-    el.animate([{ color: dir === 1 ? UP : DOWN }, { color: dir === 1 ? UP : DOWN, offset: 0.25 }, {}], { duration: 650, easing: "ease-out" });
+    anim.current?.cancel();
+    anim.current = el.animate([{ color: dir === 1 ? UP : DOWN }, { color: dir === 1 ? UP : DOWN, offset: 0.25 }, {}], { duration: 650, easing: "ease-out" });
   }, [ch, dir]);
   return <span ref={ref}>{ch}</span>;
-}
+});
 
 /**
  * Price with MT5-style emphasised pips. On each tick only the digits that actually changed

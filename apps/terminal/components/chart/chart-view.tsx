@@ -7,8 +7,8 @@ import { toast } from "@/lib/notify";
 import { ArrowDownRight, ArrowUpRight, Bell, Camera, CandlestickChart, Crosshair, Layers, Minus, Plus, ShoppingCart, SlidersHorizontal, X } from "lucide-react";
 import { getInstrument, isMarketOpen, priceFeed } from "@kalks/mock";
 import { PriceText, cn, useQuote } from "@kalks/ui";
-import { useTerminal, type Anchor, type ChartTab, type Drawing } from "@/lib/store";
-import { CHART_TYPES, TIMEFRAMES, accMoney, fmtPrice, fmtVol, profitAt, profitUsd, roundPrice } from "@/lib/trading";
+import { usePositionProfit, useTerminal, type Anchor, type ChartTab, type Drawing } from "@/lib/store";
+import { CHART_TYPES, TIMEFRAMES, accMoney, fmtPrice, fmtVol, profitAt, roundPrice, type TPosition } from "@/lib/trading";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
 import { INDICATOR_CATEGORIES, INDICATOR_LIST } from "@/lib/indicators";
 import { chartRegistry, useChartEngine, type LegendData } from "./engine";
@@ -16,7 +16,6 @@ import { IndicatorLegendRow } from "./indicators/legend";
 import { addIndicator, openIndicatorList, openIndicatorSettings, removeIndicator, toggleIndicator } from "./indicators/state";
 import { useMarketOpen } from "@/lib/market-hours";
 import { GUEST_TITLE, openRegister } from "@/lib/guest";
-import { liveStore } from "@/lib/engine/live";
 
 /* ------------------------------------------------------------------ */
 /* Trade lines                                                         */
@@ -99,9 +98,21 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
   const { resolvedTheme } = useTheme();
   const wrap = React.useRef<HTMLDivElement>(null);
   const el = React.useRef<HTMLDivElement>(null);
-  const [legend, setLegend] = React.useState<LegendData | null>(null);
+  // legend values change on every tick: they live in a small store read by the legend leaves; ChartView only
+  // keeps the legend's shape (which indicator rows exist), which changes when indicators do
+  const legendStore = React.useMemo(createLegendStore, []);
+  const [shape, setShape] = React.useState<LegendShape>(EMPTY_SHAPE);
+  const onLegend = React.useCallback(
+    (l: LegendData) => {
+      legendStore.set(l);
+      setShape((s) => sameShape(s, l) ? s : shapeOf(l));
+    },
+    [legendStore],
+  );
   const [legendOpen, setLegendOpen] = React.useState(false);
-  const q = useQuote(tab.symbol);
+  // No quote subscription here: a tick must not re-render the chart overlays. Leaf components (QuoteTag,
+  // OneClickPanel, PositionChipPnl) subscribe themselves; handlers read the current quote when they run.
+  const quoteNow = () => priceFeed().quote(tab.symbol);
   const inst = getInstrument(tab.symbol);
   const acc = T.account;
   const tool = active ? T.drawTool : "cursor";
@@ -112,7 +123,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
     indicators: tab.indicators,
     theme: resolvedTheme,
     crosshair: tool === "crosshair" || tool === "hline" || tool === "trend" || tool === "rect" || tool === "fib",
-    onLegend: setLegend,
+    onLegend,
   });
   const cm = useContextMenu(236);
 
@@ -208,7 +219,9 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
   React.useEffect(() => {
     if (!engine) return;
     let raf = 0;
-    let prev = "";
+    // flat list of every number the overlays depend on: a frame where none changed costs no React render
+    let prev: (number | string | null)[] = [];
+    const sig: (number | string | null)[] = [];
     const loop = () => {
       if (!engine.alive.current) return;
       const ys: Record<string, number | null> = {};
@@ -236,13 +249,27 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
       const h = pane0 ? pane0.getHeight() : 0;
       const w = el.current?.clientWidth ?? 0;
       // pane tops (px from the chart's top) for the oscillator sub-window legends
-      const top0 = el.current?.getBoundingClientRect().top ?? 0;
-      const pt = engine.chart.panes().map((p) => Math.round((p.getHTMLElement()?.getBoundingClientRect().top ?? top0) - top0));
-      const next = { ys, psw, w, h, dr, pt };
-      const key = JSON.stringify(next);
-      if (key !== prev) {
-        prev = key;
-        setGeo(next);
+      // (only charts with oscillator sub-windows need their layout read)
+      const panes = engine.chart.panes();
+      let pt: number[] = [0];
+      if (panes.length > 1) {
+        const top0 = el.current?.getBoundingClientRect().top ?? 0;
+        pt = panes.map((p) => Math.round((p.getHTMLElement()?.getBoundingClientRect().top ?? top0) - top0));
+      }
+      sig.length = 0;
+      sig.push(psw, w, h, pt.length, ...pt);
+      for (const k in ys) sig.push(k, ys[k]!);
+      for (const k in dr) {
+        sig.push(k);
+        const g = dr[k];
+        if (g) sig.push(...g);
+        else sig.push(null);
+      }
+      let same = sig.length === prev.length;
+      for (let i = 0; same && i < sig.length; i++) same = sig[i] === prev[i];
+      if (!same) {
+        prev = sig.slice();
+        setGeo({ ys, psw, w, h, dr, pt });
       }
       raf = requestAnimationFrame(loop);
     };
@@ -335,6 +362,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
     else if (kind === "pos") {
       const p = T.positions.find((x) => x.ticket === ref);
       if (!p) return;
+      const q = quoteNow();
       const cur = p.side === "buy" ? q.bid : q.ask;
       const isSl = p.side === "buy" ? price < cur : price > cur;
       T.modifyPosition(ref, isSl ? { sl: price } : { tp: price });
@@ -391,6 +419,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
   const onContext = (e: React.MouseEvent) => {
     e.preventDefault();
     onActivate();
+    const q = quoteNow();
     const price = priceAt(e.clientY);
     const p = price ?? q.bid;
     const ps = fmtPrice(tab.symbol, p);
@@ -463,15 +492,12 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
   const dragLine = drag ? lines.find((l) => l.id === drag.id) : null;
   const dragPos = dragLine && (dragLine.kind === "pos" || dragLine.kind === "sl" || dragLine.kind === "tp") ? T.positions.find((p) => p.ticket === dragLine.ref) : null;
   const chipRight = geo.psw + 6;
-  const upBar = legend ? legend.c >= legend.o : true;
-  const f = (v: number) => v.toFixed(inst.digits);
-  const spreadPts = Math.round((q.ask - q.bid) * 10 ** inst.digits);
-  const allMainRows = legend ? legend.ind.filter((r) => r.pane <= 0) : [];
+  const allMainRows = shape.main;
   // keep the overlay legend inside the main pane: extra rows fold into "+N more"
   const maxRows = Math.max(1, Math.floor(((geo.h || 400) - (ro || hideOneClick ? 40 : 96)) / 16));
   const folded = !legendOpen && allMainRows.length > maxRows;
   const mainRows = folded ? allMainRows.slice(0, maxRows - 1) : allMainRows;
-  const paneRows = legend ? legend.ind.filter((r) => r.pane > 0) : [];
+  const paneRows = shape.panes;
   const indAction = (a: "toggle", uid: string) => {
     const x = tab.indicators.find((i) => i.uid === uid);
     if (x && a === "toggle") toggleIndicator(T, tab.id, x);
@@ -576,13 +602,8 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
           const price = isDrag ? drag.price : hold?.id === l.id ? hold.price : l.price;
           let pnlText = "";
           let pnl = 0;
-          if (l.kind === "pos") {
-            const p = T.positions.find((x) => x.ticket === l.ref);
-            if (p) {
-              pnl = T.engine ? (liveStore.equity(p.login)?.positions.get(p.ticket)?.profit ?? (p as { profit?: number }).profit ?? 0) : profitUsd(p, q.bid, q.ask);
-              pnlText = `${accMoney(acc, pnl, { signed: true })}`;
-            }
-          } else if (l.kind === "sl" || l.kind === "tp") {
+          const livePos = l.kind === "pos" ? T.positions.find((x) => x.ticket === l.ref) : undefined;
+          if (l.kind === "sl" || l.kind === "tp") {
             const p = T.positions.find((x) => x.ticket === l.ref);
             if (p) {
               pnl = profitAt(p, price) + p.swap - p.commission;
@@ -610,9 +631,8 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
                 {l.label}
                 {isDrag && l.kind !== "pos" && <span className="ml-1 opacity-80">{fmtPrice(tab.symbol, price)}</span>}
               </span>
-              {pnlText && (
-                <span className={cn("k-num border-l px-1.5", l.kind === "pos" ? (pnl >= 0 ? "border-line bg-up/15 text-up" : "border-line bg-down/15 text-down") : "border-white/25")}>{pnlText}</span>
-              )}
+              {livePos && <PositionChipPnl p={livePos} />}
+              {pnlText && <span className="k-num border-l border-white/25 px-1.5">{pnlText}</span>}
               {l.closable && (
                 <button
                   aria-label={`Remove ${l.label}`}
@@ -636,6 +656,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
         {/* ghost while dragging a position line → projected SL/TP */}
         {drag && dragLine?.kind === "pos" && dragPos && geo.ys[drag.id] != null && (
           (() => {
+            const q = quoteNow();
             const cur = dragPos.side === "buy" ? q.bid : q.ask;
             const isSl = dragPos.side === "buy" ? drag.price < cur : drag.price > cur;
             const pr = profitAt(dragPos, drag.price);
@@ -658,19 +679,12 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
             {tab.symbol}, {tab.tf}
           </span>
           {!compact && <span className="font-sans text-fg-3">{inst.name}</span>}
-          {legend &&
-            (["o", "h", "l", "c"] as const).map((k) => (
-              <span key={k} className="k-num">
-                {k.toUpperCase()}
-                <span className={cn("ml-1", upBar ? "text-up" : "text-down")}>{f(legend[k])}</span>
-              </span>
-            ))}
-          {legend && !compact && <span className={cn("k-num", legend.chg >= 0 ? "text-up" : "text-down")}>{legend.chg >= 0 ? "+" : ""}{legend.chg.toFixed(2)}%</span>}
+          <LegendOhlc store={legendStore} digits={inst.digits} compact={compact} />
         </div>
         {mainRows.length > 0 && (
           <div className="mt-0.5 flex flex-col items-start">
-            {mainRows.map((r) => (
-              <IndicatorLegendRow key={r.uid} row={r} onToggle={() => indAction("toggle", r.uid)} onSettings={() => openIndicatorSettings(tab.id, r.uid)} onRemove={() => removeIndicator(T, tab.id, r.uid)} />
+            {mainRows.map((uid) => (
+              <LiveLegendRow key={uid} store={legendStore} uid={uid} onToggle={() => indAction("toggle", uid)} onSettings={() => openIndicatorSettings(tab.id, uid)} onRemove={() => removeIndicator(T, tab.id, uid)} />
             ))}
             {(folded || legendOpen) && allMainRows.length > maxRows && (
               <button
@@ -690,29 +704,18 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
       {paneRows.map((r) =>
         geo.pt[r.pane] === undefined ? null : (
           <div key={r.uid} className="pointer-events-none absolute left-2 z-[5] max-w-[calc(100%-90px)]" style={{ top: geo.pt[r.pane]! + 3 }}>
-            <IndicatorLegendRow row={r} onToggle={() => indAction("toggle", r.uid)} onSettings={() => openIndicatorSettings(tab.id, r.uid)} onRemove={() => removeIndicator(T, tab.id, r.uid)} />
+            <LiveLegendRow store={legendStore} uid={r.uid} onToggle={() => indAction("toggle", r.uid)} onSettings={() => openIndicatorSettings(tab.id, r.uid)} onRemove={() => removeIndicator(T, tab.id, r.uid)} />
           </div>
         ),
       )}
 
       {/* one-click trading panel */}
       {!ro && !hideOneClick && (
-        <OneClickPanel symbol={tab.symbol} bid={q.bid} ask={q.ask} dir={q.dir} spread={spreadPts} compact={compact} top={24 + (mainRows.length ? (mainRows.length + (allMainRows.length > maxRows ? 1 : 0)) * 16 + 2 : 0)} />
+        <OneClickPanel symbol={tab.symbol} compact={compact} top={24 + (mainRows.length ? (mainRows.length + (allMainRows.length > maxRows ? 1 : 0)) * 16 + 2 : 0)} />
       )}
 
       {/* bid/ask tag */}
-      <div className="pointer-events-none absolute bottom-7 left-2 z-[5] flex items-center gap-2 font-mono text-[10px] text-fg-3">
-        <span>
-          Bid <span className="text-fg-2">{fmtPrice(tab.symbol, q.bid)}</span>
-        </span>
-        <span>
-          Ask <span className="text-down">{fmtPrice(tab.symbol, q.ask)}</span>
-        </span>
-        {!compact && <span>Spread {spreadPts}</span>}
-        {/* candles = raw last trade price (same for every account); Bid/Ask lines = this account's spread */}
-        {!compact && q.last !== undefined && <span>Last {fmtPrice(tab.symbol, q.last)}</span>}
-        {!compact && !isMarketOpen(tab.symbol) && <span className="text-fg-2">Market closed</span>}
-      </div>
+      <QuoteTag symbol={tab.symbol} compact={compact} />
 
       {drawing && active && (
         <div className="pointer-events-none absolute left-1/2 top-2 z-[6] -translate-x-1/2 rounded-[5px] border border-ember/40 bg-panel-2/95 px-2 py-0.5 text-[10.5px] text-fg-2">
@@ -725,11 +728,104 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
 }
 
 /* ------------------------------------------------------------------ */
+/* Per-tick leaves (the only parts of a chart that re-render on a tick) */
+/* ------------------------------------------------------------------ */
+
+/** Latest legend values of one chart (the bar under the crosshair, else the forming bar), outside React state. */
+function createLegendStore() {
+  let v: LegendData | null = null;
+  const subs = new Set<() => void>();
+  return {
+    get: () => v,
+    set: (l: LegendData) => {
+      v = l;
+      subs.forEach((f) => f());
+    },
+    subscribe: (f: () => void) => {
+      subs.add(f);
+      return () => void subs.delete(f);
+    },
+  };
+}
+type LegendStore = ReturnType<typeof createLegendStore>;
+interface LegendShape {
+  main: string[];
+  panes: { uid: string; pane: number }[];
+}
+const EMPTY_SHAPE: LegendShape = { main: [], panes: [] };
+const shapeOf = (l: LegendData): LegendShape => ({ main: l.ind.filter((r) => r.pane <= 0).map((r) => r.uid), panes: l.ind.filter((r) => r.pane > 0).map((r) => ({ uid: r.uid, pane: r.pane })) });
+function sameShape(s: LegendShape, l: LegendData) {
+  let mi = 0;
+  let pi = 0;
+  for (const r of l.ind) {
+    if (r.pane <= 0) {
+      if (s.main[mi++] !== r.uid) return false;
+    } else {
+      const p = s.panes[pi++];
+      if (!p || p.uid !== r.uid || p.pane !== r.pane) return false;
+    }
+  }
+  return mi === s.main.length && pi === s.panes.length;
+}
+
+function LegendOhlc({ store, digits, compact }: { store: LegendStore; digits: number; compact?: boolean }) {
+  const legend = React.useSyncExternalStore(store.subscribe, store.get, () => null);
+  if (!legend) return null;
+  const up = legend.c >= legend.o;
+  return (
+    <>
+      {(["o", "h", "l", "c"] as const).map((k) => (
+        <span key={k} className="k-num">
+          {k.toUpperCase()}
+          <span className={cn("ml-1", up ? "text-up" : "text-down")}>{legend[k].toFixed(digits)}</span>
+        </span>
+      ))}
+      {!compact && <span className={cn("k-num", legend.chg >= 0 ? "text-up" : "text-down")}>{legend.chg >= 0 ? "+" : ""}{legend.chg.toFixed(2)}%</span>}
+    </>
+  );
+}
+
+function LiveLegendRow({ store, uid, ...actions }: { store: LegendStore; uid: string; onToggle: () => void; onSettings: () => void; onRemove: () => void }) {
+  const row = React.useSyncExternalStore(store.subscribe, () => store.get()?.ind.find((r) => r.uid === uid), () => undefined);
+  return row ? <IndicatorLegendRow row={row} {...actions} /> : null;
+}
+
+/** Floating P&L on a position line chip: the engine's value (equity frames) or computed from the quote. */
+function PositionChipPnl({ p }: { p: TPosition }) {
+  const T = useTerminal();
+  const pnl = usePositionProfit(p);
+  return <span className={cn("k-num border-l border-line px-1.5", pnl >= 0 ? "bg-up/15 text-up" : "bg-down/15 text-down")}>{accMoney(T.account, pnl, { signed: true })}</span>;
+}
+
+/** Bid / Ask / Spread / Last strip at the bottom-left of a chart. */
+function QuoteTag({ symbol, compact }: { symbol: string; compact?: boolean }) {
+  const q = useQuote(symbol);
+  const inst = getInstrument(symbol);
+  const spreadPts = Math.round((q.ask - q.bid) * 10 ** inst.digits);
+  return (
+    <div className="pointer-events-none absolute bottom-7 left-2 z-[5] flex items-center gap-2 font-mono text-[10px] text-fg-3">
+      <span>
+        Bid <span className="text-fg-2">{fmtPrice(symbol, q.bid)}</span>
+      </span>
+      <span>
+        Ask <span className="text-down">{fmtPrice(symbol, q.ask)}</span>
+      </span>
+      {!compact && <span>Spread {spreadPts}</span>}
+      {/* candles = raw last trade price (same for every account); Bid/Ask lines = this account's spread */}
+      {!compact && q.last !== undefined && <span>Last {fmtPrice(symbol, q.last)}</span>}
+      {!compact && !isMarketOpen(symbol) && <span className="text-fg-2">Market closed</span>}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* One-click trading panel (top-left of each chart)                    */
 /* ------------------------------------------------------------------ */
 
-export function OneClickPanel({ symbol, bid, ask, dir, spread, compact, top, left }: { symbol: string; bid: number; ask: number; dir: 1 | -1 | 0; spread: number; compact?: boolean; top: number; left?: number }) {
+export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; compact?: boolean; top: number; left?: number }) {
   const T = useTerminal();
+  const { bid, ask, dir } = useQuote(symbol);
+  const spread = Math.round((ask - bid) * 10 ** getInstrument(symbol).digits);
   const [lot, setLot] = React.useState(String(T.ws.lot.toFixed(2)));
   React.useEffect(() => setLot(T.ws.lot.toFixed(2)), [T.ws.lot]);
   const vol = Math.max(0.01, parseFloat(lot) || 0.01);
@@ -767,7 +863,7 @@ export function OneClickPanel({ symbol, bid, ask, dir, spread, compact, top, lef
       </button>
     );
   return (
-    <div className="absolute left-2 z-[6] flex items-stretch overflow-hidden rounded-[6px] border border-line-top bg-panel-2/95 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)] backdrop-blur" style={{ top, left }} onPointerDown={(e) => e.stopPropagation()} onContextMenu={(e) => e.stopPropagation()}>
+    <div className="absolute left-2 z-[6] flex items-stretch overflow-hidden rounded-[6px] border border-line-top bg-panel-2 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)]" style={{ top, left }} onPointerDown={(e) => e.stopPropagation()} onContextMenu={(e) => e.stopPropagation()}>
       <button onClick={() => go("sell")} disabled={!open} title={open ? (T.guest ? GUEST_TITLE : undefined) : "Market closed"} className={cn("group flex flex-col items-start bg-down/12 px-2 py-1 text-left transition-colors hover:bg-down/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={`Sell ${symbol}${open ? "" : " (market closed)"}`}>
         <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-down">Sell</span>
         <PriceText symbol={symbol} value={bid} dir={dir} className={compact ? "text-[12px]" : "text-[14px]"} />
