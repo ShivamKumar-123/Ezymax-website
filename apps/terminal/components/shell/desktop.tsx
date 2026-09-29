@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelHandle } from "react-resizable-panels";
 import { useTerminal } from "@/lib/store";
+import { useT } from "@kalks/i18n/react";
 import { TPanel } from "@/components/ui/panel";
 import { MarketWatch } from "@/components/market/market-watch";
 import { Navigator } from "@/components/market/navigator";
@@ -18,6 +19,7 @@ function Handle() {
 
 /** Thin edge rail that re-opens a hidden panel. */
 function Rail({ label, side, onClick }: { label: string; side: "left" | "right" | "bottom"; onClick: () => void }) {
+  const t = useT();
   if (side === "bottom")
     return (
       <button onClick={onClick} className="mt-1 flex h-6 shrink-0 items-center justify-center gap-2 rounded-[6px] border border-line bg-panel text-[10.5px] font-semibold uppercase tracking-[0.09em] text-fg-3 hover:border-ember/40 hover:text-fg">
@@ -25,7 +27,7 @@ function Rail({ label, side, onClick }: { label: string; side: "left" | "right" 
       </button>
     );
   return (
-    <button onClick={onClick} className="flex w-6 shrink-0 items-center justify-center rounded-[6px] border border-line bg-panel text-fg-3 hover:border-ember/40 hover:text-fg" title={`Show ${label}`}>
+    <button onClick={onClick} className="flex w-6 shrink-0 items-center justify-center rounded-[6px] border border-line bg-panel text-fg-3 hover:border-ember/40 hover:text-fg" title={t("trader.rail.show", { label })}>
       <span className="text-[10px] font-semibold uppercase tracking-[0.12em] [writing-mode:vertical-rl]" style={side === "left" ? { transform: "rotate(180deg)" } : undefined}>
         {label}
       </span>
@@ -75,6 +77,7 @@ const pct = (px: number, w: number) => Math.min(45, Math.ceil((px / Math.max(w, 
 
 export function DesktopTerminal() {
   const T = useTerminal();
+  const t = useT();
   const p = T.ws.panels;
   const vw = useViewportWidth();
   // Small laptops: start with Market Watch tucked into its rail so the chart and ticket get room.
@@ -91,14 +94,17 @@ export function DesktopTerminal() {
   const center = React.useRef<HTMLDivElement>(null);
   useToastPlacement(center);
   const [maxed, setMaxed] = React.useState(false);
+  // dir="ltr": the workspace keeps the MT5 arrangement (Market Watch left, order panel right, chart and
+  // price columns left-to-right) in Arabic/Urdu/Persian as well. Only the text is translated; RTL scripts
+  // still shape correctly inside an LTR container. Portaled layers (dialogs, menus) repeat this.
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-page">
+    <div dir="ltr" className="flex h-dvh flex-col overflow-hidden bg-page">
       <TitleBar />
       <div className="flex min-h-0 flex-1 flex-col p-1">
         <PanelGroup direction="vertical" autoSaveId="kalks.terminal.v" className="min-h-0 flex-1">
           <Panel id="main" order={1} minSize={30}>
             <div className="flex h-full min-h-0 gap-1">
-              {!p.watch && <Rail label="Market Watch" side="left" onClick={() => T.togglePanel("watch", true)} />}
+              {!p.watch && <Rail label={t("trader.panel.marketWatch")} side="left" onClick={() => T.togglePanel("watch", true)} />}
               <PanelGroup direction="horizontal" autoSaveId="kalks.terminal.h" className="min-w-0 flex-1">
                 {p.watch && (
                   <>
@@ -142,7 +148,7 @@ export function DesktopTerminal() {
                   </>
                 )}
               </PanelGroup>
-              {!p.right && <Rail label={T.guest ? "Order · Info" : "Order · DOM"} side="right" onClick={() => T.togglePanel("right", true)} />}
+              {!p.right && <Rail label={T.guest ? t("trader.panel.orderInfo") : t("trader.panel.orderDom")} side="right" onClick={() => T.togglePanel("right", true)} />}
             </div>
           </Panel>
           {p.toolbox && (
@@ -162,7 +168,7 @@ export function DesktopTerminal() {
             </>
           )}
         </PanelGroup>
-        {!p.toolbox && <Rail label="Toolbox" side="bottom" onClick={() => T.togglePanel("toolbox", true)} />}
+        {!p.toolbox && <Rail label={t("trader.panel.toolbox")} side="bottom" onClick={() => T.togglePanel("toolbox", true)} />}
       </div>
       <StatusBar />
     </div>

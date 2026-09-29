@@ -4,6 +4,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { Minus, Plus, X } from "lucide-react";
 import { cn, useRolling, useTick, useTickGlow } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Dense modal dialog (Esc closes)                                     */
@@ -30,6 +31,7 @@ export function TDialog({
   width?: number;
   className?: string;
 }) {
+  const t = useT();
   React.useEffect(() => {
     if (!open) return;
     const k = (e: KeyboardEvent) => {
@@ -42,8 +44,10 @@ export function TDialog({
     return () => window.removeEventListener("keydown", k);
   }, [open, onClose]);
   if (!open || typeof document === "undefined") return null;
+  // Portaled out of the terminal root, so it repeats dir="ltr": terminal dialogs keep the LTR layout in
+  // Arabic/Urdu/Persian too (see desktop.tsx); translated text still shapes correctly inside.
   return createPortal(
-    <div className="fixed inset-0 z-[70] grid place-items-center p-3" role="dialog" aria-modal>
+    <div className="fixed inset-0 z-[70] grid place-items-center p-3" role="dialog" aria-modal dir="ltr">
       <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px] animate-[t-fade_.12s_ease-out]" onMouseDown={onClose} />
       <div
         className={cn("t-pop relative flex max-h-[calc(100dvh-24px)] w-full flex-col overflow-hidden rounded-[10px] border border-line-top bg-panel shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]", className)}
@@ -55,7 +59,7 @@ export function TDialog({
             {title}
             {subtitle && <span className="ml-2 font-normal text-fg-3">{subtitle}</span>}
           </div>
-          <button onClick={onClose} aria-label="Close" className="grid size-7 place-items-center rounded-md text-fg-3 hover:bg-surface-3 hover:text-fg">
+          <button onClick={onClose} aria-label={t("common.close")} className="grid size-7 place-items-center rounded-md text-fg-3 hover:bg-surface-3 hover:text-fg">
             <X className="size-4" />
           </button>
         </div>
@@ -156,6 +160,7 @@ export function Stepper({
   ariaLabel?: string;
   decimals?: number;
 }) {
+  const t = useT();
   const bump = (d: number) => {
     const n = parseFloat(value || placeholder || "0") || 0;
     let v = n + d * step;
@@ -172,7 +177,7 @@ export function Stepper({
         className,
       )}
     >
-      <button type="button" tabIndex={-1} onClick={() => bump(-1)} className="grid h-full w-6 shrink-0 place-items-center text-fg-3 hover:text-fg" aria-label="Decrease">
+      <button type="button" tabIndex={-1} onClick={() => bump(-1)} className="grid h-full w-6 shrink-0 place-items-center text-fg-3 hover:text-fg" aria-label={t("trader.stepper.decrease")}>
         <Minus className="size-3" />
       </button>
       <input
@@ -187,7 +192,7 @@ export function Stepper({
         }}
         className="k-num h-full w-full min-w-0 bg-transparent text-center font-mono text-[12px] text-fg outline-none placeholder:text-fg-3/70"
       />
-      <button type="button" tabIndex={-1} onClick={() => bump(1)} className="grid h-full w-6 shrink-0 place-items-center text-fg-3 hover:text-fg" aria-label="Increase">
+      <button type="button" tabIndex={-1} onClick={() => bump(1)} className="grid h-full w-6 shrink-0 place-items-center text-fg-3 hover:text-fg" aria-label={t("trader.stepper.increase")}>
         <Plus className="size-3" />
       </button>
     </div>

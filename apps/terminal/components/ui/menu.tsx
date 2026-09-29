@@ -39,8 +39,12 @@ const SheetCtx = React.createContext(false);
 
 const isSheetViewport = () => typeof window !== "undefined" && window.innerWidth < SHEET_MAX_W;
 
-/** Every menu layer carries this attribute, so clicks in a (portaled) submenu don't count as "outside". */
-const LAYER = { "data-kmenu": "" };
+/**
+ * Every menu layer carries this attribute, so clicks in a (portaled) submenu don't count as "outside".
+ * Layers are portaled to <body>, outside the terminal's dir="ltr" root, so they set it again: menus keep
+ * the LTR layout (and fly-out direction) in Arabic/Urdu/Persian; the translated text still shapes correctly.
+ */
+const LAYER = { "data-kmenu": "", dir: "ltr" } as const;
 
 export function MenuList({ items, onClose, width = 232, className }: { items: MenuItem[]; onClose: () => void; width?: number; className?: string }) {
   const sheet = React.useContext(SheetCtx);

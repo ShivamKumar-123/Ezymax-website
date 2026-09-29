@@ -13,6 +13,7 @@ import {
   Expand,
   Grid2x2,
   Keyboard,
+  Languages,
   Lock,
   LogIn,
   LogOut,
@@ -29,7 +30,10 @@ import {
   Zap,
 } from "lucide-react";
 import { ME, INSTRUMENTS } from "@kalks/mock";
-import { Avatar, LogoMark, cn } from "@kalks/ui";
+import { Avatar, Flag, LogoMark, cn } from "@kalks/ui";
+import { tr, useLocale, useT } from "@kalks/i18n/react";
+import { LOCALES } from "@kalks/i18n/locales";
+import type { MessageKey } from "@kalks/i18n";
 import { useMetrics, useTerminal, type Layout, type Workspace } from "@/lib/store";
 import { CHART_TYPES, TIMEFRAMES, accCcy, accMoney } from "@/lib/trading";
 import { INDICATOR_CATEGORIES, INDICATOR_LIST } from "@/lib/indicators";
@@ -38,9 +42,10 @@ import { Badge, LiveMoney } from "@/components/ui/primitives";
 import { chartRegistry } from "@/components/chart/engine";
 import { BUILTIN_TEMPLATES, addIndicator, applyTemplate, openIndicatorList, openSaveTemplate, useUserTemplates } from "@/components/chart/indicators/state";
 import { Kbd } from "@/components/dialogs/kbd";
-import { CLIENT_AREA, GUEST_TEXT, openRegister, openSignIn } from "@/lib/guest";
+import { CLIENT_AREA, openRegister, openSignIn } from "@/lib/guest";
 import { GuestAccountChip, GuestUserMenu } from "./guest";
 import { NotificationBell } from "./notifications";
+import { LanguageMenu } from "./language-menu";
 
 export { CLIENT_AREA };
 
@@ -49,19 +54,22 @@ export function toggleFullscreen() {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void document.documentElement.requestFullscreen();
   } catch {
-    toast.error("Fullscreen is not available");
+    toast.error(tr("trader.toast.fullscreenUnavailable"));
   }
 }
 
-export const PRESETS: { name: string; hint: string; patch: (w: Workspace) => Partial<Workspace> }[] = [
-  { name: "Trading", hint: "Default", patch: (w) => ({ layout: "1", panels: { ...w.panels, watch: true, right: true, toolbox: true, navigator: true }, rightTab: "order" }) },
-  { name: "Chart focus", hint: "Charts only", patch: (w) => ({ layout: "1", panels: { ...w.panels, watch: false, right: false, toolbox: false } }) },
-  { name: "Analysis", hint: "4 charts", patch: (w) => ({ layout: "4", panels: { ...w.panels, watch: true, right: false, toolbox: true, navigator: false } }) },
-  { name: "Scalper", hint: "DOM + 2 charts", patch: (w) => ({ layout: "2v", panels: { ...w.panels, watch: true, right: true, toolbox: true, navigator: false }, rightTab: "depth" }) },
+// name/hint are the English copies; the UI renders nameKey/hintKey.
+export const PRESETS: { name: string; hint: string; nameKey: MessageKey; hintKey: MessageKey; patch: (w: Workspace) => Partial<Workspace> }[] = [
+  { name: "Trading", hint: "Default", nameKey: "trader.preset.trading", hintKey: "trader.preset.tradingHint", patch: (w) => ({ layout: "1", panels: { ...w.panels, watch: true, right: true, toolbox: true, navigator: true }, rightTab: "order" }) },
+  { name: "Chart focus", hint: "Charts only", nameKey: "trader.preset.chartFocus", hintKey: "trader.preset.chartFocusHint", patch: (w) => ({ layout: "1", panels: { ...w.panels, watch: false, right: false, toolbox: false } }) },
+  { name: "Analysis", hint: "4 charts", nameKey: "trader.preset.analysis", hintKey: "trader.preset.analysisHint", patch: (w) => ({ layout: "4", panels: { ...w.panels, watch: true, right: false, toolbox: true, navigator: false } }) },
+  { name: "Scalper", hint: "DOM + 2 charts", nameKey: "trader.preset.scalper", hintKey: "trader.preset.scalperHint", patch: (w) => ({ layout: "2v", panels: { ...w.panels, watch: true, right: true, toolbox: true, navigator: false }, rightTab: "depth" }) },
 ];
 
 function useMenus(): { label: string; items: MenuItem[] }[] {
   const T = useTerminal();
+  const t = useT();
+  const lang = useLocale();
   const { resolvedTheme, setTheme } = useTheme();
   const tab = T.activeTab;
   const userTpl = useUserTemplates();
@@ -69,126 +77,127 @@ function useMenus(): { label: string; items: MenuItem[] }[] {
     T.setWs((w) => p.patch(w));
     const next = p.patch(T.ws);
     if (next.layout) T.setLayout(next.layout);
-    toast(`Layout “${p.name}” applied`);
+    toast(t("trader.toast.layoutApplied", { name: t(p.nameKey) }));
   };
   return [
     {
-      label: "File",
+      label: t("trader.menu.file"),
       items: [
-        { label: "New Chart", icon: <BarChart2 />, items: INSTRUMENTS.slice(0, 16).map((i) => ({ label: i.symbol, onSelect: () => T.addTab(i.symbol) })) },
-        { label: "Close Chart", disabled: T.ws.tabs.length <= 1, onSelect: () => T.closeTab(tab.id) },
+        { label: t("trader.menu.newChart"), icon: <BarChart2 />, items: INSTRUMENTS.slice(0, 16).map((i) => ({ label: i.symbol, onSelect: () => T.addTab(i.symbol) })) },
+        { label: t("trader.menu.closeChart"), disabled: T.ws.tabs.length <= 1, onSelect: () => T.closeTab(tab.id) },
         "sep",
-        { label: "Profiles", items: [{ label: "Default", checked: T.ws.profile === "Default", onSelect: () => T.setWs({ profile: "Default" }) }, { label: "Scalping", checked: T.ws.profile === "Scalping", onSelect: () => (T.setWs({ profile: "Scalping" }), applyPreset(PRESETS[3]!)) }, { label: "Analysis", checked: T.ws.profile === "Analysis", onSelect: () => (T.setWs({ profile: "Analysis" }), applyPreset(PRESETS[2]!)) }] },
-        { label: "Save as Picture", icon: <Camera />, onSelect: () => chartRegistry.get(tab.id)?.screenshot() },
+        { label: t("trader.menu.profiles"), items: [{ label: t("trader.profile.default"), checked: T.ws.profile === "Default", onSelect: () => T.setWs({ profile: "Default" }) }, { label: t("trader.profile.scalping"), checked: T.ws.profile === "Scalping", onSelect: () => (T.setWs({ profile: "Scalping" }), applyPreset(PRESETS[3]!)) }, { label: t("trader.profile.analysis"), checked: T.ws.profile === "Analysis", onSelect: () => (T.setWs({ profile: "Analysis" }), applyPreset(PRESETS[2]!)) }] },
+        { label: t("trader.menu.saveAsPicture"), icon: <Camera />, onSelect: () => chartRegistry.get(tab.id)?.screenshot() },
         "sep",
         ...(T.guest
           ? ([
-              { label: "Login to Trade Account…", icon: <LogIn />, onSelect: () => T.openLogin() },
-              { label: "Open account", icon: <UserPlus />, onSelect: openRegister },
-              { label: "Sign in to Client Area", icon: <UserRound />, onSelect: openSignIn },
+              { label: t("trader.menu.loginToTrade"), icon: <LogIn />, onSelect: () => T.openLogin() },
+              { label: t("trader.guest.openAccount"), icon: <UserPlus />, onSelect: openRegister },
+              { label: t("trader.menu.signInClientArea"), icon: <UserRound />, onSelect: openSignIn },
               "sep",
-              { label: "Client Area", icon: <ArrowUpRight />, onSelect: () => window.open(CLIENT_AREA, "_blank") },
+              { label: t("trader.clientArea"), icon: <ArrowUpRight />, onSelect: () => window.open(CLIENT_AREA, "_blank") },
             ] as MenuItem[])
           : ([
-              { label: "Login to Trade Account…", icon: <UserRound />, onSelect: () => (T.engine ? T.openLogin() : T.logout()) },
-              { label: "Open an Account", icon: <ArrowUpRight />, onSelect: () => window.open(`${CLIENT_AREA}/accounts`, "_blank") },
-              ...(T.account.type === "demo" ? [{ label: `Refill demo balance (${T.refillsLeft} left)`, icon: <RefreshCw />, onSelect: () => T.refillDemo() } as MenuItem] : []),
+              { label: t("trader.menu.loginToTrade"), icon: <UserRound />, onSelect: () => (T.engine ? T.openLogin() : T.logout()) },
+              { label: t("trader.menu.openAnAccount"), icon: <ArrowUpRight />, onSelect: () => window.open(`${CLIENT_AREA}/accounts`, "_blank") },
+              ...(T.account.type === "demo" ? [{ label: t("trader.menu.refillDemo", { count: T.refillsLeft }), icon: <RefreshCw />, onSelect: () => T.refillDemo() } as MenuItem] : []),
               "sep",
-              { label: "Client Area", icon: <ArrowUpRight />, onSelect: () => window.open(CLIENT_AREA, "_blank") },
-              { label: "Log out", icon: <LogOut />, danger: true, onSelect: () => T.logout() },
+              { label: t("trader.clientArea"), icon: <ArrowUpRight />, onSelect: () => window.open(CLIENT_AREA, "_blank") },
+              { label: t("trader.menu.logOut"), icon: <LogOut />, danger: true, onSelect: () => T.logout() },
             ] as MenuItem[])),
       ],
     },
     {
-      label: "View",
+      label: t("trader.menu.view"),
       items: [
-        { label: "Market Watch", checked: T.ws.panels.watch, hint: "Ctrl+M", onSelect: () => T.togglePanel("watch") },
-        { label: "Navigator", checked: T.ws.panels.navigator, hint: "Ctrl+N", onSelect: () => (T.togglePanel("navigator"), !T.ws.panels.watch && T.togglePanel("watch", true)) },
-        { label: T.guest ? "Order / Info" : "Order / DOM", checked: T.ws.panels.right, hint: "Ctrl+D", onSelect: () => T.togglePanel("right") },
-        { label: "Toolbox", checked: T.ws.panels.toolbox, hint: "Ctrl+T", onSelect: () => T.togglePanel("toolbox") },
+        { label: t("trader.panel.marketWatch"), checked: T.ws.panels.watch, hint: "Ctrl+M", onSelect: () => T.togglePanel("watch") },
+        { label: t("trader.panel.navigator"), checked: T.ws.panels.navigator, hint: "Ctrl+N", onSelect: () => (T.togglePanel("navigator"), !T.ws.panels.watch && T.togglePanel("watch", true)) },
+        { label: T.guest ? t("trader.menu.orderInfo") : t("trader.menu.orderDom"), checked: T.ws.panels.right, hint: "Ctrl+D", onSelect: () => T.togglePanel("right") },
+        { label: t("trader.panel.toolbox"), checked: T.ws.panels.toolbox, hint: "Ctrl+T", onSelect: () => T.togglePanel("toolbox") },
         "sep",
-        { label: "Layout presets", items: PRESETS.map((p) => ({ label: p.name, hint: p.hint, onSelect: () => applyPreset(p) })) },
-        { label: "Theme", icon: resolvedTheme === "light" ? <Sun /> : <Moon />, items: [{ label: "Dark", checked: resolvedTheme !== "light", onSelect: () => setTheme("dark") }, { label: "Light", checked: resolvedTheme === "light", onSelect: () => setTheme("light") }] },
+        { label: t("trader.menu.layoutPresets"), items: PRESETS.map((p) => ({ label: t(p.nameKey), hint: t(p.hintKey), onSelect: () => applyPreset(p) })) },
+        { label: t("trader.menu.theme"), icon: resolvedTheme === "light" ? <Sun /> : <Moon />, items: [{ label: t("trader.menu.themeDark"), checked: resolvedTheme !== "light", onSelect: () => setTheme("dark") }, { label: t("trader.menu.themeLight"), checked: resolvedTheme === "light", onSelect: () => setTheme("light") }] },
+        { label: t("common.language"), icon: <Languages />, items: LOCALES.map((l) => ({ label: l.name, icon: <Flag country={l.flag} className="size-3.5" />, hint: l.code === "en" ? undefined : l.english, checked: lang.locale === l.code, onSelect: () => void lang.setLocale(l.code) })) },
         "sep",
-        { label: "Full Screen", icon: <Expand />, hint: "F11", onSelect: toggleFullscreen },
-        { label: "Reset workspace", onSelect: () => T.resetWorkspace() },
+        { label: t("trader.menu.fullScreen"), icon: <Expand />, hint: "F11", onSelect: toggleFullscreen },
+        { label: t("trader.menu.resetWorkspace"), onSelect: () => T.resetWorkspace() },
       ],
     },
     {
-      label: "Insert",
+      label: t("trader.menu.insert"),
       items: [
-        { header: `Indicators · ${tab.symbol}, ${tab.tf}` },
-        { label: "Indicators list…", hint: "Ctrl+I", onSelect: () => openIndicatorList(tab.id) },
+        { header: t("trader.menu.indicatorsHeader", { symbol: tab.symbol, tf: tab.tf }) },
+        { label: t("trader.menu.indicatorsList"), hint: "Ctrl+I", onSelect: () => openIndicatorList(tab.id) },
         ...INDICATOR_CATEGORIES.map((cat) => ({ label: cat, items: INDICATOR_LIST.filter((d) => d.category === cat).map((d) => ({ label: d.name, onSelect: () => addIndicator(T, tab.id, d.type) })) })),
         "sep",
         {
-          label: "Objects",
+          label: t("trader.menu.objects"),
           items: [
-            { label: "Horizontal Line", onSelect: () => T.setDrawTool("hline") },
-            { label: "Trend Line", onSelect: () => T.setDrawTool("trend") },
-            { label: "Fibonacci Retracement", onSelect: () => T.setDrawTool("fib") },
-            { label: "Rectangle", onSelect: () => T.setDrawTool("rect") },
+            { label: t("trader.menu.horizontalLine"), onSelect: () => T.setDrawTool("hline") },
+            { label: t("trader.menu.trendLine"), onSelect: () => T.setDrawTool("trend") },
+            { label: t("trader.menu.fibonacci"), onSelect: () => T.setDrawTool("fib") },
+            { label: t("trader.menu.rectangle"), onSelect: () => T.setDrawTool("rect") },
           ],
         },
-        { label: "Price alert…", icon: <Bell />, onSelect: () => (T.setWs({ toolboxTab: "alerts" }), T.togglePanel("toolbox", true)) },
+        { label: t("trader.menu.priceAlert"), icon: <Bell />, onSelect: () => (T.setWs({ toolboxTab: "alerts" }), T.togglePanel("toolbox", true)) },
       ],
     },
     {
-      label: "Charts",
+      label: t("trader.menu.charts"),
       items: [
-        ...CHART_TYPES.map((ct) => ({ label: ct === "candles" ? "Candlesticks" : ct === "bars" ? "Bar Chart" : ct === "line" ? "Line Chart" : "Area Chart", checked: tab.type === ct, onSelect: () => T.updateTab(tab.id, { type: ct }) })),
-        { label: "Timeframes", items: TIMEFRAMES.map((tf) => ({ label: tf, checked: tab.tf === tf, onSelect: () => T.updateTab(tab.id, { tf }) })) },
+        ...CHART_TYPES.map((ct) => ({ label: ct === "candles" ? t("trader.chartType.candles") : ct === "bars" ? t("trader.chartType.bars") : ct === "line" ? t("trader.chartType.line") : t("trader.chartType.area"), checked: tab.type === ct, onSelect: () => T.updateTab(tab.id, { type: ct }) })),
+        { label: t("trader.menu.timeframes"), items: TIMEFRAMES.map((tf) => ({ label: tf, checked: tab.tf === tf, onSelect: () => T.updateTab(tab.id, { tf }) })) },
         {
-          label: "Templates",
+          label: t("trader.menu.templates"),
           items: [
             ...[...BUILTIN_TEMPLATES, ...userTpl].map((tp) => ({ label: tp.name, onSelect: () => applyTemplate(T, [tab.id], tp) })),
             "sep",
-            { label: "Save template…", onSelect: () => openSaveTemplate(tab.id) },
+            { label: t("trader.menu.saveTemplate"), onSelect: () => openSaveTemplate(tab.id) },
           ],
         },
         "sep",
         {
-          label: "Layout",
+          label: t("trader.menu.layout"),
           items: [
-            { label: "1 chart", hint: "Alt+1", checked: T.ws.layout === "1", onSelect: () => T.setLayout("1") },
-            { label: "2 side by side", hint: "Alt+2", checked: T.ws.layout === "2h", onSelect: () => T.setLayout("2h") },
-            { label: "2 stacked", hint: "Alt+3", checked: T.ws.layout === "2v", onSelect: () => T.setLayout("2v") },
-            { label: "4 grid", hint: "Alt+4", checked: T.ws.layout === "4", onSelect: () => T.setLayout("4") },
+            { label: t("trader.layout.one"), hint: "Alt+1", checked: T.ws.layout === "1", onSelect: () => T.setLayout("1") },
+            { label: t("trader.layout.twoH"), hint: "Alt+2", checked: T.ws.layout === "2h", onSelect: () => T.setLayout("2h") },
+            { label: t("trader.layout.twoV"), hint: "Alt+3", checked: T.ws.layout === "2v", onSelect: () => T.setLayout("2v") },
+            { label: t("trader.layout.four"), hint: "Alt+4", checked: T.ws.layout === "4", onSelect: () => T.setLayout("4") },
           ],
         },
-        { label: "New Chart Tab", onSelect: () => T.addTab() },
+        { label: t("trader.menu.newChartTab"), onSelect: () => T.addTab() },
         "sep",
-        { label: "Zoom In", hint: "+", onSelect: () => chartRegistry.get(tab.id)?.zoom(1) },
-        { label: "Zoom Out", hint: "−", onSelect: () => chartRegistry.get(tab.id)?.zoom(-1) },
-        { label: "Delete all objects", danger: true, disabled: !tab.drawings.length, onSelect: () => T.updateTab(tab.id, { drawings: [] }) },
+        { label: t("trader.menu.zoomIn"), hint: "+", onSelect: () => chartRegistry.get(tab.id)?.zoom(1) },
+        { label: t("trader.menu.zoomOut"), hint: "−", onSelect: () => chartRegistry.get(tab.id)?.zoom(-1) },
+        { label: t("trader.menu.deleteAllObjects"), danger: true, disabled: !tab.drawings.length, onSelect: () => T.updateTab(tab.id, { drawings: [] }) },
       ],
     },
     {
-      label: "Tools",
+      label: t("trader.menu.tools"),
       items: [
-        { label: "New Order", icon: <ShoppingCart />, hint: "F9", disabled: T.readOnly, onSelect: () => T.openNewOrder() },
+        { label: t("trader.newOrder"), icon: <ShoppingCart />, hint: "F9", disabled: T.readOnly, onSelect: () => T.openNewOrder() },
         ...(T.guest
           ? []
           : ([
-              { label: "One-Click Trading", icon: <Zap />, hint: "F10", checked: T.ws.oneClick, disabled: T.readOnly, onSelect: () => T.setWs({ oneClick: !T.ws.oneClick }) },
-              { label: "Sound on fills", checked: T.ws.sound, onSelect: () => (T.setWs({ sound: !T.ws.sound }), toast(`Sounds ${T.ws.sound ? "off" : "on"}`)) },
-              { label: `Max deviation · ${T.ws.deviation} pts`, items: [0, 3, 5, 10, 20, 50, 100].map((d) => ({ label: `${d} points`, checked: T.ws.deviation === d, onSelect: () => (T.setWs({ deviation: d }), T.log("Terminal", `max deviation set to ${d} points`)) })) },
+              { label: t("trader.menu.oneClickTrading"), icon: <Zap />, hint: "F10", checked: T.ws.oneClick, disabled: T.readOnly, onSelect: () => T.setWs({ oneClick: !T.ws.oneClick }) },
+              { label: t("trader.menu.soundOnFills"), checked: T.ws.sound, onSelect: () => (T.setWs({ sound: !T.ws.sound }), toast(T.ws.sound ? t("trader.toast.soundsOff") : t("trader.toast.soundsOn"))) },
+              { label: t("trader.menu.maxDeviation", { count: T.ws.deviation }), items: [0, 3, 5, 10, 20, 50, 100].map((d) => ({ label: t("trader.menu.points", { count: d }), checked: T.ws.deviation === d, onSelect: () => (T.setWs({ deviation: d }), T.log("Terminal", `max deviation set to ${d} points`)) })) },
             ] as MenuItem[])),
         "sep",
-        { label: "Price Alerts", icon: <Bell />, onSelect: () => (T.setWs({ toolboxTab: "alerts" }), T.togglePanel("toolbox", true)) },
-        { label: "History", onSelect: () => (T.setWs({ toolboxTab: "history" }), T.togglePanel("toolbox", true)) },
-        { label: "Journal", onSelect: () => (T.setWs({ toolboxTab: "journal" }), T.togglePanel("toolbox", true)) },
-        ...(T.guest ? [] : (["sep", { label: "Options…", onSelect: () => toast("Options", { description: "Server Kalks-Live01 · proxy off · news on · sounds " + (T.ws.sound ? "on" : "off") }) }] as MenuItem[])),
+        { label: t("trader.menu.priceAlerts"), icon: <Bell />, onSelect: () => (T.setWs({ toolboxTab: "alerts" }), T.togglePanel("toolbox", true)) },
+        { label: t("trader.menu.history"), onSelect: () => (T.setWs({ toolboxTab: "history" }), T.togglePanel("toolbox", true)) },
+        { label: t("trader.menu.journal"), onSelect: () => (T.setWs({ toolboxTab: "journal" }), T.togglePanel("toolbox", true)) },
+        ...(T.guest ? [] : (["sep", { label: t("trader.menu.options"), onSelect: () => toast(t("trader.options.title"), { description: T.ws.sound ? t("trader.options.summarySoundOn") : t("trader.options.summarySoundOff") }) }] as MenuItem[])),
       ],
     },
     {
-      label: "Help",
+      label: t("trader.menu.help"),
       items: [
-        { label: "Keyboard Shortcuts", icon: <Keyboard />, hint: "F1", onSelect: () => T.setUi({ shortcuts: true }) },
-        { label: "Help Topics", onSelect: () => window.open(`${CLIENT_AREA}/academy`, "_blank") },
-        { label: "Contact Support", onSelect: () => window.open(`${CLIENT_AREA}/support`, "_blank") },
+        { label: t("trader.menu.keyboardShortcuts"), icon: <Keyboard />, hint: "F1", onSelect: () => T.setUi({ shortcuts: true }) },
+        { label: t("trader.menu.helpTopics"), onSelect: () => window.open(`${CLIENT_AREA}/academy`, "_blank") },
+        { label: t("trader.menu.contactSupport"), onSelect: () => window.open(`${CLIENT_AREA}/support`, "_blank") },
         "sep",
-        { label: "About Kalks Trader", onSelect: () => T.setUi({ about: true }) },
+        { label: t("trader.menu.about"), onSelect: () => T.setUi({ about: true }) },
       ],
     },
   ];
@@ -196,6 +205,7 @@ function useMenus(): { label: string; items: MenuItem[] }[] {
 
 function MenuBar() {
   const menus = useMenus();
+  const t = useT();
   const [open, setOpen] = React.useState<number | null>(null);
   const [at, setAt] = React.useState<{ x: number; y: number; anchor?: Anchor }>({ x: 0, y: 0 });
   const refs = React.useRef<(HTMLButtonElement | null)[]>([]);
@@ -206,7 +216,7 @@ function MenuBar() {
   };
   const close = React.useCallback(() => setOpen(null), []);
   return (
-    <nav className="flex items-center" aria-label="Main menu">
+    <nav className="flex items-center" aria-label={t("trader.mainMenu")}>
       {menus.map((m, i) => (
         <button
           key={m.label}
@@ -235,11 +245,12 @@ function MenuBar() {
 
 function AccountRow({ login, active, onPick }: { login: string; active: boolean; onPick: () => void }) {
   const m = useMetrics(login);
+  const t = useT();
   const a = m.account;
   return (
-    <button onClick={onPick} className={cn("flex w-full items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-left transition-colors", active ? "bg-ember-soft/60" : "hover:bg-surface-3")}>
+    <button onClick={onPick} className={cn("flex w-full items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-start transition-colors", active ? "bg-ember-soft/60" : "hover:bg-surface-3")}>
       <Badge tone={a.type === "live" ? "ember" : "gold"} className="w-11 justify-center">
-        {a.type}
+        {t.dyn(`trader.accountType.${a.type}`, a.type)}
       </Badge>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 font-mono text-[12.5px] text-fg">
@@ -250,9 +261,9 @@ function AccountRow({ login, active, onPick }: { login: string; active: boolean;
           {a.group} · {a.mode} · 1:{a.leverage} · {a.server}
         </div>
       </div>
-      <div className="text-right">
+      <div className="text-end">
         <div className="font-mono text-[12px] text-fg"><LiveMoney value={m.equity} format={(v) => accMoney(a, v)} className="px-0.5" /></div>
-        <div className="font-mono text-[10px] text-fg-3">{accCcy(a)} equity</div>
+        <div className="font-mono text-[10px] text-fg-3">{t("trader.account.equity", { ccy: accCcy(a) })}</div>
       </div>
     </button>
   );
@@ -260,6 +271,7 @@ function AccountRow({ login, active, onPick }: { login: string; active: boolean;
 
 function AccountSwitcher() {
   const T = useTerminal();
+  const t = useT();
   const m = useMetrics();
   const a = T.account;
   return (
@@ -267,15 +279,15 @@ function AccountSwitcher() {
       width={380}
       align="end"
       trigger={({ toggle, open }) => (
-        <button onClick={toggle} className={cn("flex h-8 items-center gap-2 rounded-[7px] border border-line bg-surface-2 pl-1.5 pr-2 text-left transition-colors hover:bg-surface-3", open && "bg-surface-3")} aria-label="Switch account">
-          <Badge tone={a.type === "live" ? "ember" : "gold"}>{a.type}</Badge>
+        <button onClick={toggle} className={cn("flex h-8 items-center gap-2 rounded-[7px] border border-line bg-surface-2 ps-1.5 pe-2 text-start transition-colors hover:bg-surface-3", open && "bg-surface-3")} aria-label={t("trader.account.switch")}>
+          <Badge tone={a.type === "live" ? "ember" : "gold"}>{t.dyn(`trader.accountType.${a.type}`, a.type)}</Badge>
           <span className="leading-none">
             <span className="block font-mono text-[12px] text-fg">{a.login}</span>
             <span className="block text-[10px] text-fg-3">
               {a.group} · {a.mode}
             </span>
           </span>
-          <span className="hidden border-l border-line pl-2 text-right leading-none 2xl:block">
+          <span className="hidden border-s border-line ps-2 text-end leading-none 2xl:block">
             <span className="block font-mono text-[12px] text-fg"><LiveMoney value={m.equity} format={(v) => accMoney(a, v)} /></span>
             <span className="block text-[10px] text-fg-3">{accCcy(a)}</span>
           </span>
@@ -285,7 +297,7 @@ function AccountSwitcher() {
     >
       {(close) => (
         <div>
-          <div className="border-b border-line px-3 py-2 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">{T.engine ? "Trading accounts · logged in on this device" : `Trading accounts · ${ME.name}`}</div>
+          <div className="border-b border-line px-3 py-2 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">{T.engine ? t("trader.account.listDevice") : t("trader.account.listUser", { name: ME.name })}</div>
           <div className="space-y-0.5 p-1">
             {T.accounts.map((x) => (
               <AccountRow key={x.login} login={x.login} active={x.login === a.login} onPick={() => (T.switchAccount(x.login), close())} />
@@ -294,25 +306,25 @@ function AccountSwitcher() {
           {T.engine && (
             <div className="flex items-center justify-between border-t border-line px-3 py-2 text-[11.5px]">
               <button onClick={() => (T.openLogin(), close())} className="flex items-center gap-1.5 text-fg-2 hover:text-fg">
-                <LogIn className="size-3" /> Log in to another account
+                <LogIn className="size-3" /> {t("trader.account.logInAnother")}
               </button>
               <button onClick={() => (T.logout(), close())} className="flex items-center gap-1.5 text-fg-3 hover:text-down">
-                <LogOut className="size-3" /> Log out of {a.login}
+                <LogOut className="size-3" /> {t("trader.account.logOutOf", { login: a.login })}
               </button>
             </div>
           )}
           <div className="flex items-center justify-between border-t border-line px-3 py-2 text-[11.5px]">
             {a.type === "demo" ? (
               <button onClick={() => (T.refillDemo(), close())} className="flex items-center gap-1.5 text-gold hover:underline">
-                <RefreshCw className="size-3" /> Refill demo ({T.refillsLeft} left)
+                <RefreshCw className="size-3" /> {t("trader.account.refillDemo", { count: T.refillsLeft })}
               </button>
             ) : (
               <a href={`${CLIENT_AREA}/wallet`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-fg-2 hover:text-fg">
-                <Wallet className="size-3" /> Deposit
+                <Wallet className="size-3" /> {t("common.deposit")}
               </a>
             )}
             <a href={`${CLIENT_AREA}/accounts`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-fg-2 hover:text-fg">
-              Manage accounts <ArrowUpRight className="size-3" />
+              {t("trader.account.manage")} <ArrowUpRight className="size-3" />
             </a>
           </div>
         </div>
@@ -321,15 +333,16 @@ function AccountSwitcher() {
   );
 }
 
-const LAYOUTS: { id: Layout; label: string; icon: React.ReactNode }[] = [
-  { id: "1", label: "1 chart (Alt+1)", icon: <Square /> },
-  { id: "2h", label: "2 side by side (Alt+2)", icon: <Columns2 /> },
-  { id: "2v", label: "2 stacked (Alt+3)", icon: <Rows2 /> },
-  { id: "4", label: "4 grid (Alt+4)", icon: <Grid2x2 /> },
+const LAYOUTS: { id: Layout; label: MessageKey; hint: string; icon: React.ReactNode }[] = [
+  { id: "1", label: "trader.layout.one", hint: "Alt+1", icon: <Square /> },
+  { id: "2h", label: "trader.layout.twoH", hint: "Alt+2", icon: <Columns2 /> },
+  { id: "2v", label: "trader.layout.twoV", hint: "Alt+3", icon: <Rows2 /> },
+  { id: "4", label: "trader.layout.four", hint: "Alt+4", icon: <Grid2x2 /> },
 ];
 
 export function TitleBar() {
   const T = useTerminal();
+  const t = useT();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
@@ -337,7 +350,7 @@ export function TitleBar() {
   const a = T.account;
   return (
     <header className="t-titlebar-glow relative z-20 flex h-11 shrink-0 items-center gap-2 border-b border-line bg-panel px-2.5">
-      <div className="flex shrink-0 items-center gap-2 pr-1.5">
+      <div className="flex shrink-0 items-center gap-2 pe-1.5">
         <span className="grid size-7 place-items-center rounded-[7px] border border-line-top bg-surface-3 shadow-[0_0_16px_-6px_rgba(255,90,31,0.7)]">
           <LogoMark size={13} className="text-fg" />
         </span>
@@ -347,60 +360,61 @@ export function TitleBar() {
       </div>
       <MenuBar />
 
-      <div className="ml-auto flex min-w-0 items-center gap-1.5">
-        {a.cent && <Badge tone="info">Cent · USC</Badge>}
-        {T.readOnly && <Badge tone="warn">Read-only</Badge>}
+      <div className="ms-auto flex min-w-0 items-center gap-1.5">
+        {a.cent && <Badge tone="info">{t("trader.badge.cent")}</Badge>}
+        {T.readOnly && <Badge tone="warn">{t("trader.badge.readOnly")}</Badge>}
         {T.guest ? <GuestAccountChip /> : <AccountSwitcher />}
-        <button onClick={() => T.setUi({ search: true })} className="hidden h-8 w-[180px] items-center gap-2 rounded-[7px] border border-line bg-surface-2 px-2.5 text-[12px] text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg-2 xl:flex" aria-label="Search symbols">
+        <button onClick={() => T.setUi({ search: true })} className="hidden h-8 w-[180px] items-center gap-2 rounded-[7px] border border-line bg-surface-2 px-2.5 text-[12px] text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg-2 xl:flex" aria-label={t("trader.searchSymbols")}>
           <Search className="size-3.5" />
-          Search symbol
-          <span className="ml-auto">
+          {t("trader.searchSymbol")}
+          <span className="ms-auto">
             <Kbd>⌘K</Kbd>
           </span>
         </button>
-        <button onClick={() => T.setUi({ search: true })} className="grid size-8 place-items-center rounded-[7px] text-fg-2 hover:bg-surface-3 xl:hidden" aria-label="Search symbols">
+        <button onClick={() => T.setUi({ search: true })} className="grid size-8 place-items-center rounded-[7px] text-fg-2 hover:bg-surface-3 xl:hidden" aria-label={t("trader.searchSymbols")}>
           <Search className="size-4" />
         </button>
         {T.guest && (
-          <button onClick={() => T.openNewOrder()} title={GUEST_TEXT} className="flex h-8 items-center gap-1.5 rounded-[7px] border border-line bg-surface-2 px-3 text-[12px] font-semibold text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg-2">
+          <button onClick={() => T.openNewOrder()} title={t("trader.guest.text")} className="flex h-8 items-center gap-1.5 rounded-[7px] border border-line bg-surface-2 px-3 text-[12px] font-semibold text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg-2">
             <Lock className="size-3.5" />
-            New Order
+            {t("trader.newOrder")}
           </button>
         )}
         {!T.readOnly && !T.guest && (
           <>
             <button onClick={() => T.openNewOrder()} className="flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[7px] bg-ember px-3 text-[12px] font-semibold text-white shadow-[0_6px_18px_-8px_rgba(255,90,31,0.8)] transition hover:brightness-110">
               <ShoppingCart className="size-3.5" />
-              New Order
+              {t("trader.newOrder")}
               <span className="rounded-[3px] bg-white/20 px-1 font-mono text-[9.5px]">F9</span>
             </button>
             <button
               onClick={() => T.setWs({ oneClick: !T.ws.oneClick })}
-              title="One-click trading (F10)"
+              title={t("trader.oneClick.title")}
               className={cn("flex h-8 items-center gap-1.5 rounded-[7px] border px-2.5 text-[11.5px] font-medium transition-colors", T.ws.oneClick ? "border-ember/40 bg-ember-soft text-ember" : "border-line text-fg-3 hover:text-fg-2")}
             >
               <Zap className={cn("size-3.5", T.ws.oneClick && "fill-ember")} />
-              <span className="hidden 2xl:inline">One-click</span>
-              <span className="font-mono text-[10px]">{T.ws.oneClick ? "ON" : "OFF"}</span>
+              <span className="hidden 2xl:inline">{t("trader.oneClick.short")}</span>
+              <span className="font-mono text-[10px]">{T.ws.oneClick ? t("trader.oneClick.on") : t("trader.oneClick.off")}</span>
             </button>
           </>
         )}
         <div className="flex items-center rounded-[7px] border border-line bg-surface-2 p-0.5">
           {LAYOUTS.map((l) => (
-            <button key={l.id} title={l.label} aria-label={l.label} onClick={() => T.setLayout(l.id)} className={cn("grid size-6 place-items-center rounded-[5px] [&_svg]:size-3.5", T.ws.layout === l.id ? "bg-surface-3 text-ember" : "text-fg-3 hover:text-fg")}>
+            <button key={l.id} title={`${t(l.label)} (${l.hint})`} aria-label={`${t(l.label)} (${l.hint})`} onClick={() => T.setLayout(l.id)} className={cn("grid size-6 place-items-center rounded-[5px] [&_svg]:size-3.5", T.ws.layout === l.id ? "bg-surface-3 text-ember" : "text-fg-3 hover:text-fg")}>
               {l.icon}
             </button>
           ))}
         </div>
         <NotificationBell />
-        <button onClick={() => setTheme(dark ? "light" : "dark")} className="grid size-8 place-items-center rounded-[7px] text-fg-2 hover:bg-surface-3 hover:text-fg" aria-label="Toggle theme" title="Theme">
+        <LanguageMenu />
+        <button onClick={() => setTheme(dark ? "light" : "dark")} className="grid size-8 place-items-center rounded-[7px] text-fg-2 hover:bg-surface-3 hover:text-fg" aria-label={t("trader.toggleTheme")} title={t("trader.menu.theme")}>
           {dark ? <Moon className="size-4" /> : <Sun className="size-4" />}
         </button>
-        <button onClick={toggleFullscreen} className="grid size-8 place-items-center rounded-[7px] text-fg-2 hover:bg-surface-3 hover:text-fg" aria-label="Fullscreen" title="Fullscreen (F11)">
+        <button onClick={toggleFullscreen} className="grid size-8 place-items-center rounded-[7px] text-fg-2 hover:bg-surface-3 hover:text-fg" aria-label={t("trader.fullscreen")} title={t("trader.fullscreenHint")}>
           <Expand className="size-4" />
         </button>
         <a href={CLIENT_AREA} target="_blank" rel="noreferrer" className="hidden h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-[7px] px-2 text-[12px] text-fg-2 hover:bg-surface-3 hover:text-fg 2xl:flex">
-          Client Area <ArrowUpRight className="size-3.5" />
+          {t("trader.clientArea")} <ArrowUpRight className="size-3.5" />
         </a>
         {T.guest ? (
           <GuestUserMenu />
@@ -409,16 +423,16 @@ export function TitleBar() {
           align="end"
           width={240}
           items={[
-            { header: T.engine ? `${a.nickname ? `${a.nickname} · ` : ""}${a.login} · ${a.type}` : `${ME.name} · ${ME.email}` },
-            { label: `Connected to ${a.server}`, icon: <UserRound />, disabled: true },
-            { label: "Client Area", icon: <ArrowUpRight />, onSelect: () => window.open(CLIENT_AREA, "_blank") },
-            { label: "Profile & security", onSelect: () => window.open(`${CLIENT_AREA}/profile`, "_blank") },
-            { label: "Keyboard shortcuts", icon: <Keyboard />, hint: "F1", onSelect: () => T.setUi({ shortcuts: true }) },
+            { header: T.engine ? `${a.nickname ? `${a.nickname} · ` : ""}${a.login} · ${t.dyn(`trader.accountType.${a.type}`, a.type)}` : `${ME.name} · ${ME.email}` },
+            { label: t("trader.account.connectedTo", { server: a.server }), icon: <UserRound />, disabled: true },
+            { label: t("trader.clientArea"), icon: <ArrowUpRight />, onSelect: () => window.open(CLIENT_AREA, "_blank") },
+            { label: t("trader.account.profileSecurity"), onSelect: () => window.open(`${CLIENT_AREA}/profile`, "_blank") },
+            { label: t("trader.account.keyboardShortcuts"), icon: <Keyboard />, hint: "F1", onSelect: () => T.setUi({ shortcuts: true }) },
             "sep",
-            { label: "Log out", icon: <LogOut />, danger: true, onSelect: () => T.logout() },
+            { label: t("trader.menu.logOut"), icon: <LogOut />, danger: true, onSelect: () => T.logout() },
           ]}
           trigger={({ toggle }) => (
-            <button onClick={toggle} className="ml-0.5 rounded-full ring-1 ring-line transition hover:ring-ember/50" aria-label="Account menu">
+            <button onClick={toggle} className="ms-0.5 rounded-full ring-1 ring-line transition hover:ring-ember/50" aria-label={t("trader.accountMenu")}>
               {T.engine ? (
                 <span className="grid size-7 place-items-center rounded-full bg-surface-3 text-fg-2">
                   <UserRound className="size-4" />

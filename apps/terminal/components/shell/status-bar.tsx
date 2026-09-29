@@ -4,11 +4,12 @@ import * as React from "react";
 import { Cpu, Gauge, HelpCircle, LayoutTemplate } from "lucide-react";
 import { priceFeed } from "@kalks/mock";
 import { cn, useFeedMode } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 import { Pnl } from "@/components/ui/primitives";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { useQps } from "@/lib/market";
 import { accCcy, accMoney, serverTime } from "@/lib/trading";
-import { GUEST_TEXT, LOGIN_URL } from "@/lib/guest";
+import { LOGIN_URL } from "@/lib/guest";
 import { useStreamStatus } from "@/lib/engine/live";
 
 function useTicker(ms: number) {
@@ -22,6 +23,7 @@ function useTicker(ms: number) {
 
 export function StatusBar() {
   const T = useTerminal();
+  const t = useT();
   const m = useMetrics();
   const a = T.account;
   const qps = useQps();
@@ -41,37 +43,37 @@ export function StatusBar() {
     <footer className="flex h-[26px] shrink-0 items-center gap-0 overflow-hidden border-t border-line bg-panel px-1 font-mono text-[10.5px] text-fg-3">
       <Cell>
         <span className={cn("size-1.5 rounded-full", ok ? "t-live-dot bg-up" : "bg-warn")} />
-        <span className="font-sans text-fg-2">{mode === "live" ? "Connected" : mode === "sim" ? "Price feed offline · simulated" : "Connecting"}</span>
+        <span className="font-sans text-fg-2">{mode === "live" ? t("trader.status.connected") : mode === "sim" ? t("trader.status.feedSimulated") : t("trader.status.connecting")}</span>
         <span>· {a.server} ·</span>
-        <span title="Quote latency (p95): market-data service → this terminal" className={cn("k-num w-[38px]", ok ? "text-fg-2" : "text-warn")}>{ping === null ? "—" : `${ping} ms`}</span>
+        <span title={t("trader.status.latencyTitle")} className={cn("k-num w-[38px]", ok ? "text-fg-2" : "text-warn")}>{ping === null ? "—" : `${ping} ms`}</span>
       </Cell>
-      <Cell title="Workspace profile">
+      <Cell title={t("trader.status.profileTitle")}>
         <LayoutTemplate className="size-3" />
-        <span className="font-sans">{T.ws.profile}</span>
+        <span className="font-sans">{t.dyn(`trader.profile.${T.ws.profile.toLowerCase()}`, T.ws.profile)}</span>
       </Cell>
-      <Cell title="Quotes per second">
+      <Cell title={t("trader.status.qpsTitle")}>
         <span className="k-num w-[46px] text-fg-2">{qps} q/s</span>
       </Cell>
       {T.engine && <TradeServerCell />}
       {T.guest ? (
-        <Cell title={GUEST_TEXT}>
-          <span className="font-sans text-fg-2">Guest</span>
-          <span className="font-sans">· no trading account ·</span>
+        <Cell title={t("trader.guest.text")}>
+          <span className="font-sans text-fg-2">{t("trader.guest.badge")}</span>
+          <span className="font-sans">· {t("trader.status.noAccount")} ·</span>
           <a href={LOGIN_URL} className="font-sans text-ember hover:underline">
-            Log in
+            {t("trader.guest.logIn")}
           </a>
         </Cell>
       ) : (
         <>
-          <Cell title="Account currency">
+          <Cell title={t("trader.status.currencyTitle")}>
             <span className="text-fg-2">{accCcy(a)}</span>
             <span>· 1:{a.leverage}</span>
           </Cell>
-          <Cell className="hidden lg:flex" title="Floating P&L">
-            <span className="font-sans">P&L</span>
+          <Cell className="hidden lg:flex" title={t("trader.status.floatingPnl")}>
+            <span className="font-sans">{t("trader.status.pnl")}</span>
             <Pnl value={m.floating} text={accMoney(a, m.floating, { signed: true })} format={(v) => accMoney(a, v, { signed: true })} className="px-0.5" />
           </Cell>
-          <Cell className="hidden xl:flex" title="Margin level">
+          <Cell className="hidden xl:flex" title={t("trader.status.marginLevel")}>
             <Gauge className="size-3" />
             <span className={cn("k-num", lvl !== null && lvl < 200 ? "text-warn" : "text-fg-2")}>{lvl === null ? "—" : `${lvl.toFixed(0)}%`}</span>
           </Cell>
@@ -79,18 +81,18 @@ export function StatusBar() {
       )}
       {T.ws.oneClick && !T.readOnly && !T.guest && (
         <Cell className="hidden xl:flex">
-          <span className="font-sans text-ember">One-click ON</span>
+          <span className="font-sans text-ember">{t("trader.status.oneClickOn")}</span>
         </Cell>
       )}
-      <div className="ml-auto flex items-center">
-        <Cell title="Server time (GMT+3)">
+      <div className="ms-auto flex items-center">
+        <Cell title={t("trader.status.serverTime")}>
           <span className="k-num text-fg-2">
             {st.date} {st.time}
           </span>
           <span>GMT+3</span>
         </Cell>
         {!T.live && (
-        <Cell title="Terminal load">
+        <Cell title={t("trader.status.terminalLoad")}>
           <Cpu className="size-3" />
           <span className="flex h-2 w-12 items-end gap-px">
             {Array.from({ length: 10 }, (_, i) => (
@@ -101,7 +103,7 @@ export function StatusBar() {
         </Cell>
         )}
         <button onClick={() => T.setUi({ shortcuts: true })} className="flex h-[26px] items-center gap-1 px-2 font-sans hover:text-fg">
-          <HelpCircle className="size-3" /> Help: F1
+          <HelpCircle className="size-3" /> {t("trader.status.help")}
         </button>
       </div>
     </footer>
@@ -111,11 +113,12 @@ export function StatusBar() {
 /** Live builds: the account stream to the trading engine (positions, orders, equity). */
 function TradeServerCell() {
   const T = useTerminal();
+  const t = useT();
   const st = useStreamStatus();
   const up = st.s === "open";
-  const text = up ? "Trade server" : st.s === "reconnecting" ? `Reconnecting${st.attempt > 1 ? ` (${st.attempt})` : ""}` : st.s === "connecting" ? "Connecting" : "Trade server offline";
+  const text = up ? t("trader.status.tradeServer") : st.s === "reconnecting" ? `${t("trader.status.reconnecting")}${st.attempt > 1 ? ` (${st.attempt})` : ""}` : st.s === "connecting" ? t("trader.status.connecting") : t("trader.status.tradeServerOffline");
   return (
-    <Cell title={up ? `Account stream connected · ${T.account.login} on ${T.account.server}` : "Account stream down: orders still work, positions refresh after each request; reconnecting automatically"}>
+    <Cell title={up ? t("trader.status.streamUp", { login: T.account.login, server: T.account.server }) : t("trader.status.streamDown")}>
       <span className={cn("size-1.5 rounded-full", up ? "bg-up" : "bg-warn")} />
       <span className={cn("font-sans", up ? "text-fg-2" : "text-warn")}>{text}</span>
     </Cell>
@@ -124,7 +127,7 @@ function TradeServerCell() {
 
 function Cell({ children, className, title }: { children: React.ReactNode; className?: string; title?: string }) {
   return (
-    <div title={title} className={cn("flex h-[26px] shrink-0 items-center gap-1.5 border-r border-line px-2 last:border-r-0", className)}>
+    <div title={title} className={cn("flex h-[26px] shrink-0 items-center gap-1.5 border-e border-line px-2 last:border-e-0", className)}>
       {children}
     </div>
   );

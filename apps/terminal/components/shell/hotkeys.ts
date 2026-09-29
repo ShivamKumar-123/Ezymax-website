@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { toast } from "@/lib/notify";
+import { tr } from "@kalks/i18n/react";
 import { useTerminal, type Layout } from "@/lib/store";
 import { chartRegistry } from "@/components/chart/engine";
 import { toggleFullscreen } from "./title-bar";
@@ -37,10 +38,10 @@ export function useHotkeys() {
       if (e.key === "F10") {
         e.preventDefault();
         if (t.readOnly) return;
-        if (t.guest) return void guestNotice("One-click trading");
+        if (t.guest) return void guestNotice(tr("trader.oneClick.name"));
         const v = !t.ws.oneClick;
         t.setWs({ oneClick: v });
-        toast(v ? "One-click trading enabled" : "One-click trading disabled", { description: v ? "Chart and DOM orders execute instantly." : "Chart and DOM buttons open the order window." });
+        toast(v ? tr("trader.oneClick.enabled") : tr("trader.oneClick.disabled"), { description: v ? tr("trader.oneClick.enabledHint") : tr("trader.oneClick.disabledHint") });
         return;
       }
       if (e.key === "F1") {

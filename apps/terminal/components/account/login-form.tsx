@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Eye, EyeOff, Loader2, Lock, Server, UserRound } from "lucide-react";
 import { cn } from "@kalks/ui";
+import { tr, useT } from "@kalks/i18n/react";
 import { Check } from "@/components/ui/primitives";
 import { SAVED_KEY } from "@/lib/store";
 import { engineApi, type AuthResult } from "@/lib/engine/client";
@@ -43,18 +44,18 @@ export const serverForLogin = (login: string): LiveServer | null => (/^\d{8}$/.t
 function loginError(e: EngineErr): string {
   switch (e.code) {
     case "invalid_credentials":
-      return "Invalid account or password.";
+      return tr("trader.login.error.invalid");
     case "locked":
-      return "Too many failed attempts. This login is locked for 15 minutes.";
+      return tr("trader.login.error.locked");
     case "rate_limited":
-      return "Too many attempts. Wait a minute and try again.";
+      return tr("trader.login.error.rateLimited");
     case "unavailable":
-      return "The trade server is unavailable. Try again shortly.";
+      return tr("trader.login.error.unavailable");
     case "wrong_server":
     case "validation":
       return e.message;
     default:
-      return e.status === 403 ? e.message || "This account can't log in." : e.message || "Login failed.";
+      return e.status === 403 ? e.message || tr("trader.login.error.forbidden") : e.message || tr("trader.login.error.failed");
   }
 }
 
@@ -63,6 +64,7 @@ function loginError(e: EngineErr): string {
  * password opens a read-only session; the server decides, the form only sends what was typed.
  */
 export function EngineLoginForm({ initialLogin = "", onSuccess, autoFocus, className, footer }: { initialLogin?: string; onSuccess: (r: AuthResult) => void; autoFocus?: boolean; className?: string; footer?: React.ReactNode }) {
+  const t = useT();
   const [login, setLogin] = React.useState(initialLogin);
   const [password, setPassword] = React.useState("");
   const [server, setServer] = React.useState<LiveServer>(serverForLogin(initialLogin) ?? "Kalks-Live");
@@ -84,10 +86,10 @@ export function EngineLoginForm({ initialLogin = "", onSuccess, autoFocus, class
     if (busy) return;
     setError(null);
     const l = login.trim();
-    if (!/^\d{8}$/.test(l)) return setError("Enter your 8-digit account number (login).");
-    if (!password) return setError("Enter your trading or investor password.");
+    if (!/^\d{8}$/.test(l)) return setError(t("trader.login.error.loginFormat"));
+    if (!password) return setError(t("trader.login.error.passwordRequired"));
     const expected = serverForLogin(l);
-    if (expected && expected !== server) return setError(`Account ${l} is on ${expected}, not ${server}.`);
+    if (expected && expected !== server) return setError(t("trader.login.error.wrongServer", { login: l, expected, server }));
     setBusy(true);
     const r = await engineApi.login(l, password, server);
     setBusy(false);
@@ -101,8 +103,8 @@ export function EngineLoginForm({ initialLogin = "", onSuccess, autoFocus, class
   };
 
   return (
-    <form onSubmit={submit} className={cn("space-y-3.5", className)} aria-label="Login to trade account">
-      <Field label="Login" icon={<UserRound />}>
+    <form onSubmit={submit} className={cn("space-y-3.5", className)} aria-label={t("trader.loginDialog.title")}>
+      <Field label={t("trader.login.login")} icon={<UserRound />}>
         <input
           value={login}
           onChange={(e) => {
@@ -114,33 +116,34 @@ export function EngineLoginForm({ initialLogin = "", onSuccess, autoFocus, class
           inputMode="numeric"
           autoComplete="username"
           autoFocus={autoFocus && !initialLogin}
-          placeholder="Account number"
+          placeholder={t("trader.login.accountNumber")}
           className="h-full w-full bg-transparent font-mono text-[13px] outline-none placeholder:font-sans placeholder:text-fg-3"
-          aria-label="Login"
+          aria-label={t("trader.login.login")}
+          dir="ltr"
         />
       </Field>
       <Field
-        label="Password"
+        label={t("common.password")}
         icon={<Lock />}
         trailing={
-          <button type="button" onClick={() => setShow(!show)} className="text-fg-3 hover:text-fg" aria-label={show ? "Hide password" : "Show password"}>
+          <button type="button" onClick={() => setShow(!show)} className="text-fg-3 hover:text-fg" aria-label={show ? t("trader.login.hidePassword") : t("trader.login.showPassword")}>
             {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </button>
         }
       >
-        <input ref={pwRef} value={password} onChange={(e) => setPassword(e.target.value)} type={show ? "text" : "password"} autoComplete="current-password" placeholder="Trading or investor password" className="h-full w-full bg-transparent text-[13px] outline-none placeholder:text-fg-3" aria-label="Password" />
+        <input ref={pwRef} value={password} onChange={(e) => setPassword(e.target.value)} type={show ? "text" : "password"} autoComplete="current-password" placeholder={t("trader.login.passwordPlaceholder")} className="h-full w-full bg-transparent text-[13px] outline-none placeholder:text-fg-3" aria-label={t("common.password")} />
       </Field>
-      <Field label="Server" icon={<Server />}>
-        <select value={server} onChange={(e) => setServer(e.target.value as LiveServer)} className="t-select h-full w-full bg-transparent text-[13px] outline-none" aria-label="Server">
+      <Field label={t("trader.login.server")} icon={<Server />}>
+        <select value={server} onChange={(e) => setServer(e.target.value as LiveServer)} className="t-select h-full w-full bg-transparent text-[13px] outline-none" aria-label={t("trader.login.server")}>
           {LIVE_SERVERS.map((s) => (
             <option key={s} value={s}>
-              {s} · {s === "Kalks-Demo" ? "Demo accounts" : "Real accounts"}
+              {s} · {s === "Kalks-Demo" ? t("trader.login.demoAccounts") : t("trader.login.realAccounts")}
             </option>
           ))}
         </select>
       </Field>
-      <Check checked={remember} onChange={setRemember} label="Save login on this device" />
-      <p className="text-[11.5px] leading-relaxed text-fg-3">The investor password opens a read-only session: quotes, charts, positions and history, no trading.</p>
+      <Check checked={remember} onChange={setRemember} label={t("trader.login.saveLogin")} />
+      <p className="text-[11.5px] leading-relaxed text-fg-3">{t("trader.login.investorNote")}</p>
       {error && (
         <div role="alert" className="rounded-[7px] border border-down/30 bg-down-soft px-3 py-2 text-[12px] text-down">
           {error}
@@ -149,10 +152,10 @@ export function EngineLoginForm({ initialLogin = "", onSuccess, autoFocus, class
       <button type="submit" disabled={busy} className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] bg-ember text-[13.5px] font-semibold text-white transition hover:brightness-110 disabled:opacity-70">
         {busy ? (
           <>
-            <Loader2 className="size-4 animate-spin" /> Connecting to {server}…
+            <Loader2 className="size-4 animate-spin" /> {t("trader.splash.connecting", { server })}
           </>
         ) : (
-          <>Log in</>
+          <>{t("trader.guest.logIn")}</>
         )}
       </button>
       {footer}

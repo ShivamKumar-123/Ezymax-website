@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ACCOUNTS, INSTRUMENTS, priceFeed } from "@kalks/mock";
 import { LogoMark } from "@kalks/ui";
+import { tr, useT } from "@kalks/i18n/react";
 import { toast } from "@/lib/notify";
 import { TerminalProvider, engineSession, guestSession, readActive, readSession, useTerminal, writeActive, writeSession, type Session } from "@/lib/store";
 import { GUEST_MODE } from "@/lib/guest";
@@ -32,7 +33,9 @@ function useIsMobile() {
   return m;
 }
 
-export function Splash({ text = GUEST_MODE ? "Connecting to Kalks…" : "Connecting to Kalks-Live01…" }: { text?: string }) {
+export function Splash({ text }: { text?: string }) {
+  const t = useT();
+  const label = text ?? (GUEST_MODE ? t("trader.splash.connecting", { server: "Kalks" }) : t("trader.splash.connecting", { server: "Kalks-Live01" }));
   return (
     <div className="grid h-dvh place-items-center bg-page">
       <div className="flex flex-col items-center gap-3">
@@ -44,7 +47,7 @@ export function Splash({ text = GUEST_MODE ? "Connecting to Kalks…" : "Connect
         </div>
         <div className="flex items-center gap-2 font-mono text-[11px] text-fg-3">
           <span className="t-live-dot size-1.5 rounded-full bg-ember" />
-          {text}
+          {label}
         </div>
       </div>
     </div>
@@ -67,11 +70,11 @@ async function liveEntry(sp: URLSearchParams): Promise<{ session: Session; sessi
     if (r.ok) {
       prefer = r.data.login;
       via = "sso";
-    } else toast.error("Sign-in link not accepted", { description: r.err.message });
+    } else toast.error(tr("trader.toast.ssoRejected"), { description: r.err.message });
   }
   const list = await engineApi.sessions();
   const sessions = list.ok ? list.data.sessions : [];
-  if (!list.ok) toast.error("Trade server unavailable", { description: "Showing charts only. Your trading session will reconnect when you reload." });
+  if (!list.ok) toast.error(tr("trader.toast.serverUnavailable"), { description: tr("trader.toast.serverUnavailableHint") });
   const pick = sessions.find((x) => x.login === prefer) ?? sessions.find((x) => x.login === readActive()) ?? sessions[0];
   if (!pick) {
     if (prefer && !sso) window.location.replace(`/login?login=${encodeURIComponent(prefer)}`);

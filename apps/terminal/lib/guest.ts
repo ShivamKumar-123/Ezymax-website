@@ -1,5 +1,6 @@
 import { toast } from "@/lib/notify";
 import { IS_LIVE, type TradingAccount } from "@kalks/mock";
+import { tr } from "@kalks/i18n/react";
 
 /**
  * Live builds (`GUEST_MODE`): accounts, orders and positions come from the trading engine. Until a
@@ -15,6 +16,7 @@ export const REGISTER_URL = `${CLIENT_AREA}/register`;
 export const SIGNIN_URL = `${CLIENT_AREA}/login`;
 
 export const GUEST_LOGIN = "guest";
+// English copies kept for existing imports; UI should render t("trader.guest.title") / t("trader.guest.text").
 export const GUEST_TITLE = "Log in to a trading account";
 export const GUEST_TEXT = "Log in to a trading account to trade, or open one in the Client Area";
 
@@ -52,9 +54,9 @@ export function guestNotice(what?: string) {
   const now = Date.now();
   if (now - lastNotice < 600) return; // one toast per click burst (e.g. double-clicks)
   lastNotice = now;
-  toast(GUEST_TITLE, {
+  toast(tr("trader.guest.title"), {
     id: "kalks-guest",
-    description: `${what ? `${what} needs a trading account. ` : ""}Log in, or open an account in the Client Area.`,
-    action: { label: "Log in", onClick: () => window.location.assign(LOGIN_URL) },
+    description: `${what ? `${tr("trader.guest.needsAccount", { what })} ` : ""}${tr("trader.guest.noticeText")}`,
+    action: { label: tr("trader.guest.logIn"), onClick: () => window.location.assign(LOGIN_URL) },
   });
 }
