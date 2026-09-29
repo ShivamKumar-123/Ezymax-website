@@ -9,6 +9,7 @@ import { ASSET_CLASS_LABEL, INSTRUMENTS, IS_DEMO, fetchCandles, isMarketOpen, sp
 import { CONTRACT_SPECS, DEFAULT_FAVOURITES } from "@kalks/mock/markets-extra";
 import { InstrumentDrawer } from "@/components/markets/instrument-drawer";
 import { FeedGuard } from "@/components/feed-guard";
+import { useT } from "@kalks/i18n/react";
 
 type Tab = "all" | "fav" | AssetClass;
 const CLASSES: AssetClass[] = ["forex", "metals", "indices", "energies", "crypto", "stocks"];
@@ -77,16 +78,17 @@ function HeatTile({ inst, change, onClick }: { inst: Instrument; change: number;
   const a = Math.min(1, Math.abs(change) / 3);
   const tone = change >= 0 ? "var(--k-up)" : "var(--k-down)";
   const open = isMarketOpen(inst.symbol);
+  const t = useT();
   return (
     <button
       onClick={onClick}
-      title={open ? `${inst.symbol} · market open` : `${inst.symbol} · market closed, last session's move`}
-      className="group relative overflow-hidden rounded-[14px] border border-line px-3 py-2.5 text-left transition-transform hover:-translate-y-0.5 hover:border-[var(--k-border-top)]"
+      title={open ? t("news.markets.tile.open", { symbol: inst.symbol }) : t("news.markets.tile.closed", { symbol: inst.symbol })}
+      className="group relative overflow-hidden rounded-[14px] border border-line px-3 py-2.5 text-start transition-transform hover:-translate-y-0.5 hover:border-[var(--k-border-top)]"
       style={{ background: `color-mix(in oklab, ${tone} ${Math.round(8 + a * 52)}%, var(--k-surface-2))` }}
     >
       <div className="flex items-center gap-1.5">
         <span className="truncate text-[12.5px] font-semibold text-fg">{inst.symbol}</span>
-        <span aria-label={open ? "Market open" : "Market closed"} className={cn("size-1.5 shrink-0 rounded-full", open ? "bg-up" : "border border-fg-3")} />
+        <span aria-label={open ? t("news.markets.marketOpen") : t("news.markets.marketClosed")} className={cn("size-1.5 shrink-0 rounded-full", open ? "bg-up" : "border border-fg-3")} />
       </div>
       <div className={cn("k-num mt-0.5 text-[12px] font-medium", a > 0.55 ? "text-fg" : change >= 0 ? "text-up" : "text-down")}>
         {change >= 0 ? "+" : ""}
@@ -105,10 +107,11 @@ export default function MarketsPage() {
   const [q, setQ] = React.useState("");
   const [favs, setFavs] = React.useState<string[]>(DEFAULT_FAVOURITES);
   const [open, setOpen] = React.useState<string | null>(null);
+  const t = useT();
 
   const toggleFav = (s: string) => {
     const on = favs.includes(s);
-    toast.success(on ? `${s} removed from favourites` : `${s} added to favourites`);
+    toast.success(on ? t("news.markets.favRemoved", { symbol: s }) : t("news.markets.favAdded", { symbol: s }));
     setFavs((f) => (on ? f.filter((x) => x !== s) : [...f, s]));
   };
 
@@ -135,27 +138,27 @@ export default function MarketsPage() {
             e.stopPropagation();
             toggleFav(i.symbol);
           }}
-          aria-label="Favourite"
+          aria-label={t("news.markets.favourite")}
           className={cn("grid size-7 place-items-center rounded-full transition-colors hover:bg-surface-3", favs.includes(i.symbol) ? "text-gold" : "text-fg-3")}
         >
           <Star className={cn("size-4", favs.includes(i.symbol) && "fill-current")} />
         </button>
       ),
     },
-    { key: "symbol", header: "Instrument", cell: (i) => <SymbolCell symbol={i.symbol} size={28} />, sort: (i) => i.symbol },
-    { key: "bid", header: "Bid", align: "right", cell: (i) => <PriceText symbol={i.symbol} value={qs[i.symbol]!.bid} dir={qs[i.symbol]!.dir} className="text-[13.5px]" /> },
-    { key: "ask", header: "Ask", align: "right", cell: (i) => <PriceText symbol={i.symbol} value={qs[i.symbol]!.ask} dir={qs[i.symbol]!.dir} className="text-[13.5px]" /> },
+    { key: "symbol", header: t("news.markets.col.instrument"), cell: (i) => <SymbolCell symbol={i.symbol} size={28} />, sort: (i) => i.symbol },
+    { key: "bid", header: t("news.markets.col.bid"), align: "right", cell: (i) => <PriceText symbol={i.symbol} value={qs[i.symbol]!.bid} dir={qs[i.symbol]!.dir} className="text-[13.5px]" /> },
+    { key: "ask", header: t("news.markets.col.ask"), align: "right", cell: (i) => <PriceText symbol={i.symbol} value={qs[i.symbol]!.ask} dir={qs[i.symbol]!.dir} className="text-[13.5px]" /> },
     {
       key: "spread",
-      header: "Spread",
+      header: t("news.markets.col.spread"),
       align: "right",
       hideOn: "md",
       cell: (i) => <span className="k-num font-mono text-[12.5px] text-fg-2">{spreadText(i, qs[i.symbol]!.bid, qs[i.symbol]!.ask)}</span>,
     },
-    { key: "chg", header: "Daily change", align: "right", cell: (i) => <Delta value={qs[i.symbol]!.change} chip />, sort: (i) => qs[i.symbol]!.change },
+    { key: "chg", header: t("news.markets.col.dailyChange"), align: "right", cell: (i) => <Delta value={qs[i.symbol]!.change} chip />, sort: (i) => qs[i.symbol]!.change },
     {
       key: "spark",
-      header: "7 days",
+      header: t("news.markets.col.week"),
       align: "center",
       hideOn: "sm",
       cell: (i) => (
@@ -166,13 +169,13 @@ export default function MarketsPage() {
     },
     {
       key: "hours",
-      header: "Trading hours",
+      header: t("news.markets.col.hours"),
       hideOn: "lg",
       cell: (i) => (
         <div className="flex items-center gap-2 text-[12.5px]">
-          <span className={cn("size-1.5 rounded-full", isMarketOpen(i.symbol) ? "bg-up" : "bg-fg-3")} title={isMarketOpen(i.symbol) ? "Market open" : "Market closed · last price shown"} />
-          <span className="text-fg-2">{CONTRACT_SPECS[i.symbol]!.hoursShort}</span>
-          <span className="font-mono text-[11px] text-fg-3">{CONTRACT_SPECS[i.symbol]!.hours[0]!.sessions}</span>
+          <span className={cn("size-1.5 rounded-full", isMarketOpen(i.symbol) ? "bg-up" : "bg-fg-3")} title={isMarketOpen(i.symbol) ? t("news.markets.marketOpen") : t("news.markets.marketClosedLastPrice")} />
+          <span className="text-fg-2">{t.dyn(`news.hoursShort.${i.assetClass}`, CONTRACT_SPECS[i.symbol]!.hoursShort)}</span>
+          <span dir="ltr" className="font-mono text-[11px] text-fg-3">{CONTRACT_SPECS[i.symbol]!.hours[0]!.sessions}</span>
         </div>
       ),
     },
@@ -183,7 +186,7 @@ export default function MarketsPage() {
       cell: (i) => (
         <Link target="_blank" rel="noopener" href={`/trade?symbol=${i.symbol}`} onClick={(e) => e.stopPropagation()}>
           <Button size="xs" variant="surface" className="group-hover:border-ember/40 group-hover:text-ember">
-            Trade <ArrowUpRight />
+            {t("news.markets.trade")} <ArrowUpRight className="rtl:-scale-x-100" />
           </Button>
         </Link>
       ),
@@ -193,12 +196,12 @@ export default function MarketsPage() {
   return (
     <div className="pb-24">
       <PageHeader
-        title="Markets"
-        subtitle={`${INSTRUMENTS.length} instruments · live quotes · server time GMT+3`}
+        title={t("news.markets.title")}
+        subtitle={t("news.markets.subtitle", { count: INSTRUMENTS.length })}
         actions={
           <Link target="_blank" rel="noopener" href="/trade">
             <Button variant="ember" shimmer>
-              <CandlestickChart /> Open terminal
+              <CandlestickChart /> {t("news.markets.openTerminal")}
             </Button>
           </Link>
         }
@@ -207,13 +210,13 @@ export default function MarketsPage() {
       <Reveal>
         <Card>
           <CardHeader
-            title="Market heatmap"
-            subtitle="Today's move, sorted from best to worst · hollow dot: market closed, last session shown"
+            title={t("news.markets.heatmap.title")}
+            subtitle={t("news.markets.heatmap.subtitle")}
             action={
               IS_DEMO || mode === "live" ? (
                 <div className="hidden items-center gap-2 sm:flex">
-                  <Chip tone="up">{breadth} up</Chip>
-                  <Chip tone="down">{INSTRUMENTS.length - breadth} down</Chip>
+                  <Chip tone="up">{t("news.markets.heatmap.up", { count: breadth })}</Chip>
+                  <Chip tone="down">{t("news.markets.heatmap.down", { count: INSTRUMENTS.length - breadth })}</Chip>
                 </div>
               ) : undefined
             }
@@ -236,7 +239,7 @@ export default function MarketsPage() {
                 value={tab}
                 onChange={setTab}
                 options={[
-                  { value: "all", label: "All" },
+                  { value: "all", label: t("common.all") },
                   {
                     value: "fav",
                     label: (
@@ -245,15 +248,15 @@ export default function MarketsPage() {
                       </>
                     ),
                   },
-                  ...CLASSES.map((c) => ({ value: c, label: ASSET_CLASS_LABEL[c] })),
+                  ...CLASSES.map((c) => ({ value: c, label: t.dyn(`news.assetClass.${c}`, ASSET_CLASS_LABEL[c]) })),
                 ]}
               />
             </div>
-            <div className="ml-auto flex h-9 items-center gap-2 rounded-full border border-line bg-surface-2 px-3.5">
+            <div className="ms-auto flex h-9 items-center gap-2 rounded-full border border-line bg-surface-2 px-3.5">
               <Search className="size-3.5 text-fg-3" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search symbol or name…" className="w-40 bg-transparent text-[13px] outline-none placeholder:text-fg-3 sm:w-52" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("news.markets.searchPlaceholder")} className="w-40 bg-transparent text-[13px] outline-none placeholder:text-fg-3 sm:w-52" />
               {q && (
-                <button onClick={() => setQ("")} aria-label="Clear" className="text-fg-3 hover:text-fg">
+                <button onClick={() => setQ("")} aria-label={t("news.markets.clearSearch")} className="text-fg-3 hover:text-fg">
                   <X className="size-3.5" />
                 </button>
               )}
@@ -263,12 +266,12 @@ export default function MarketsPage() {
             <DataTable columns={cols} rows={rows} pageSize={30} rowKey={(i) => i.symbol} onRowClick={(i) => setOpen(i.symbol)} />
           </FeedGuard>
           <div className="mt-3 flex items-center gap-2 text-[11.5px] text-fg-3">
-            <Tooltip content="Quotes stream from the Kalks price feed">
+            <Tooltip content={t("news.markets.liveTooltip")}>
               <span className="flex items-center gap-1.5">
-                <span className="size-1.5 rounded-full bg-up" /> Live
+                <span className="size-1.5 rounded-full bg-up" /> {t("common.live")}
               </span>
             </Tooltip>
-            · Standard group spreads: pips for FX, price units for others · closed markets show their last price · click a row for contract specs
+            · {t("news.markets.footnote")}
           </div>
         </Card>
       </Reveal>

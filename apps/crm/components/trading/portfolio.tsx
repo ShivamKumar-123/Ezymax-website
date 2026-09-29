@@ -10,6 +10,7 @@ import { accountTitle, curOf, fmtAmount, fmtPrice, isoDay, toUsd, tradingApi, us
 import { AccountsError, liveTotals } from "./accounts-page";
 import { HistoryPanel, LedgerPanel } from "./activity";
 import { KindBadge, TradeButton } from "./ui";
+import { tr, useFormat, useT } from "@kalks/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Account picker (history / ledger / statements)                      */
@@ -27,7 +28,7 @@ function AccountPicker({ accounts, value, onChange }: { accounts: EngineAccount[
               type="button"
               aria-pressed={on}
               onClick={() => onChange(a.login)}
-              className={cn("k-row flex items-center gap-2.5 px-3.5 py-2.5 text-left transition-colors", on ? "border-ember/50 bg-ember-soft" : "hover:border-[var(--k-border-top)]")}
+              className={cn("k-row flex items-center gap-2.5 px-3.5 py-2.5 text-start transition-colors", on ? "border-ember/50 bg-ember-soft" : "hover:border-[var(--k-border-top)]")}
             >
               <KindBadge type={a.type} />
               <span>
@@ -54,16 +55,17 @@ function useSelectedAccount(base: string) {
 }
 
 function NoAccounts() {
+  const t = useT();
   return (
     <Card>
       <EmptyState
         illustration="bar_chart"
-        title="No trading accounts yet"
-        text="Open a live or demo account; its trades, ledger and statements appear here."
+        title={t("portfolio.noAccounts.title")}
+        text={t("portfolio.noAccounts.text")}
         action={
           <Link href="/accounts/new">
             <Button variant="ember">
-              <Plus /> Open account
+              <Plus /> {t("portfolio.openAccount")}
             </Button>
           </Link>
         }
@@ -95,20 +97,22 @@ function Wrap({ children }: { children: React.ReactNode }) {
 }
 
 export function LiveHistoryPage() {
+  const t = useT();
   return (
     <Wrap>
-      <PickerPage base="/portfolio/history" title="Trade history" subtitle="Entry and exit deals per account, with CSV export.">
-        {(a) => <HistoryPanel a={a} title={`Trade history · #${a.login}`} />}
+      <PickerPage base="/portfolio/history" title={t("portfolio.history.title")} subtitle={t("portfolio.history.subtitle")}>
+        {(a) => <HistoryPanel a={a} title={t("portfolio.history.panelTitle", { login: a.login })} />}
       </PickerPage>
     </Wrap>
   );
 }
 
 export function LiveLedgerPage() {
+  const t = useT();
   return (
     <Wrap>
-      <PickerPage base="/portfolio/ledger" title="Ledger" subtitle="Every balance, credit and bonus movement per account.">
-        {(a) => <LedgerPanel a={a} title={`Balance ledger · #${a.login}`} />}
+      <PickerPage base="/portfolio/ledger" title={t("portfolio.ledger.title")} subtitle={t("portfolio.ledger.subtitle")}>
+        {(a) => <LedgerPanel a={a} title={t("portfolio.ledger.panelTitle", { login: a.login })} />}
       </PickerPage>
     </Wrap>
   );
@@ -122,10 +126,10 @@ type StPeriod = "day" | "month" | "year" | "custom";
 type StFormat = "pdf" | "csv" | "xlsx";
 type MonthRow = { month: string; from: string; to: string; net: number; deposits: number; withdrawals: number; trades: number };
 
-const ST_FORMATS: Record<StFormat, { label: string; icon: React.ReactNode; note: string }> = {
-  pdf: { label: "PDF", icon: <FileText />, note: "Branded statement: summary, trades, positions, ledger" },
-  xlsx: { label: "Excel", icon: <FileSpreadsheet />, note: "One sheet per section" },
-  csv: { label: "CSV", icon: <Sheet />, note: "All sections in one file" },
+const ST_FORMATS: Record<StFormat, { label: string; icon: React.ReactNode; note: "portfolio.st.format.pdf" | "portfolio.st.format.xlsx" | "portfolio.st.format.csv" }> = {
+  pdf: { label: "PDF", icon: <FileText />, note: "portfolio.st.format.pdf" },
+  xlsx: { label: "Excel", icon: <FileSpreadsheet />, note: "portfolio.st.format.xlsx" },
+  csv: { label: "CSV", icon: <Sheet />, note: "portfolio.st.format.csv" },
 };
 
 const addDays = (d: string, n: number) => {
@@ -135,17 +139,17 @@ const addDays = (d: string, n: number) => {
 };
 
 /** [from, to) in server days for the chosen period; null when the input is incomplete. */
-function stRange(p: StPeriod, day: string, month: string, year: string, from: string, to: string): { from: string; to: string; label: string } | null {
-  if (p === "day") return day ? { from: day, to: addDays(day, 1), label: new Date(`${day}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) } : null;
+function stRange(p: StPeriod, day: string, month: string, year: string, from: string, to: string, f: ReturnType<typeof useFormat>): { from: string; to: string; label: string } | null {
+  if (p === "day") return day ? { from: day, to: addDays(day, 1), label: f.date(`${day}T00:00:00Z`, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) } : null;
   if (p === "month") {
     if (!/^\d{4}-\d{2}$/.test(month)) return null;
     const [y, m] = month.split("-").map(Number) as [number, number];
     const next = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
-    return { from: `${month}-01`, to: next, label: new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" }) };
+    return { from: `${month}-01`, to: next, label: f.date(Date.UTC(y, m - 1, 1), { month: "long", year: "numeric", timeZone: "UTC" }) };
   }
-  if (p === "year") return { from: `${year}-01-01`, to: `${+year + 1}-01-01`, label: `Year ${year}` };
+  if (p === "year") return { from: `${year}-01-01`, to: `${+year + 1}-01-01`, label: tr("portfolio.st.yearLabel", { year }) };
   if (!from || !to || from > to) return null;
-  return { from, to: addDays(to, 1), label: `${from} to ${to}` };
+  return { from, to: addDays(to, 1), label: tr("portfolio.st.rangeLabel", { from, to }) };
 }
 
 function stUrl(login: number, from: string, to: string, f: StFormat, opts?: { open: boolean; charges: boolean; deals: boolean }) {
@@ -163,7 +167,7 @@ function download(url: string, what: string) {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  toast.success("Statement download started", { description: what });
+  toast.success(tr("portfolio.st.downloadStarted"), { description: what });
 }
 
 function Statements({ a }: { a: EngineAccount }) {
@@ -180,7 +184,9 @@ function Statements({ a }: { a: EngineAccount }) {
   const [withDeals, setWithDeals] = React.useState(true);
   const [months, setMonths] = React.useState<MonthRow[] | null>(null);
   const [monthsError, setMonthsError] = React.useState(false);
-  const range = stRange(period, day, month, year, from, to);
+  const t = useT();
+  const fmt = useFormat();
+  const range = stRange(period, day, month, year, from, to, fmt);
   const created = new Date(a.createdAt);
   const firstYear = created.getFullYear();
   const years = Array.from({ length: new Date().getFullYear() - firstYear + 1 }, (_, i) => String(new Date().getFullYear() - i));
@@ -205,29 +211,29 @@ function Statements({ a }: { a: EngineAccount }) {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal className="xl:col-span-8">
           <Card className="h-full">
-            <CardHeader title="Generate a statement" subtitle={`#${a.login} · ${accountTitle(a)} · server time (GMT+2/+3)`} icon={<FileText />} />
+            <CardHeader title={t("portfolio.st.generate.title")} subtitle={t("portfolio.st.generate.subtitle", { login: a.login, account: accountTitle(a) })} icon={<FileText />} />
             <div className="space-y-5 px-4 pb-6 pt-5 sm:px-6">
               <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                 <div>
-                  <div className="mb-2 text-[12.5px] font-medium text-fg-2">Period</div>
+                  <div className="mb-2 text-[12.5px] font-medium text-fg-2">{t("portfolio.st.period")}</div>
                   <Segmented
                     value={period}
                     onChange={setPeriod}
                     options={[
-                      { value: "day", label: "Day" },
-                      { value: "month", label: "Month" },
-                      { value: "year", label: "Year" },
-                      { value: "custom", label: "Custom" },
+                      { value: "day", label: t("portfolio.st.period.day") },
+                      { value: "month", label: t("portfolio.st.period.month") },
+                      { value: "year", label: t("portfolio.st.period.year") },
+                      { value: "custom", label: t("portfolio.st.period.custom") },
                     ]}
                   />
                   <div className="mt-3">
                     {period === "day" && (
-                      <Field label="Date">
+                      <Field label={t("common.date")}>
                         <Input type="date" value={day} max={today} onChange={(e) => setDay(e.target.value)} />
                       </Field>
                     )}
                     {period === "month" && (
-                      <Field label="Month">
+                      <Field label={t("portfolio.st.month")}>
                         <Input type="month" value={month} max={today.slice(0, 7)} onChange={(e) => setMonth(e.target.value)} />
                       </Field>
                     )}
@@ -236,17 +242,17 @@ function Statements({ a }: { a: EngineAccount }) {
                         {years.map((y) => (
                           <button key={y} type="button" onClick={() => setYear(y)} className={cn("k-num h-10 rounded-full border px-5 text-[13px] font-medium transition-colors", y === year ? "border-ember/40 bg-ember-soft text-ember" : "border-line bg-surface-2 text-fg-2 hover:text-fg")}>
                             {y}
-                            {y === today.slice(0, 4) && <span className="ml-1 text-fg-3">YTD</span>}
+                            {y === today.slice(0, 4) && <span className="ms-1 text-fg-3">{t("portfolio.st.ytd")}</span>}
                           </button>
                         ))}
                       </div>
                     )}
                     {period === "custom" && (
                       <div className="grid grid-cols-2 gap-2">
-                        <Field label="From">
+                        <Field label={t("portfolio.st.from")}>
                           <Input type="date" value={from} max={today} onChange={(e) => setFrom(e.target.value)} />
                         </Field>
-                        <Field label="To">
+                        <Field label={t("portfolio.st.to")}>
                           <Input type="date" value={to} max={today} onChange={(e) => setTo(e.target.value)} />
                         </Field>
                       </div>
@@ -254,7 +260,7 @@ function Statements({ a }: { a: EngineAccount }) {
                   </div>
                 </div>
                 <div>
-                  <div className="mb-2 text-[12.5px] font-medium text-fg-2">Format</div>
+                  <div className="mb-2 text-[12.5px] font-medium text-fg-2">{t("portfolio.st.formatLabel")}</div>
                   <div className="grid grid-cols-3 gap-2">
                     {(Object.keys(ST_FORMATS) as StFormat[]).map((f) => (
                       <button
@@ -262,20 +268,20 @@ function Statements({ a }: { a: EngineAccount }) {
                         type="button"
                         aria-pressed={f === format}
                         onClick={() => setFormat(f)}
-                        className={cn("k-row flex flex-col items-start gap-1.5 px-3 py-3 text-left transition-colors [&_svg]:size-4", f === format ? "border-ember/40 bg-ember-soft text-ember" : "text-fg-2 hover:bg-surface-3/60")}
+                        className={cn("k-row flex flex-col items-start gap-1.5 px-3 py-3 text-start transition-colors [&_svg]:size-4", f === format ? "border-ember/40 bg-ember-soft text-ember" : "text-fg-2 hover:bg-surface-3/60")}
                       >
                         {ST_FORMATS[f].icon}
                         <span className="text-[13px] font-semibold text-fg">{ST_FORMATS[f].label}</span>
-                        <span className="text-[10.5px] leading-tight text-fg-3">{ST_FORMATS[f].note}</span>
+                        <span className="text-[10.5px] leading-tight text-fg-3">{t(ST_FORMATS[f].note)}</span>
                       </button>
                     ))}
                   </div>
                   <div className="mt-3 space-y-2.5 rounded-[14px] border border-line bg-surface-2 px-4 py-3">
                     {(
                       [
-                        ["Open positions and pending orders", withOpen, setWithOpen],
-                        ["Charges breakdown", withCharges, setWithCharges],
-                        ["Every deal (entries and exits)", withDeals, setWithDeals],
+                        [t("portfolio.st.opt.open"), withOpen, setWithOpen],
+                        [t("portfolio.st.opt.charges"), withCharges, setWithCharges],
+                        [t("portfolio.st.opt.deals"), withDeals, setWithDeals],
                       ] as const
                     ).map(([l, v, set]) => (
                       <div key={l} className="flex items-center justify-between text-[13px] text-fg-2">
@@ -293,7 +299,7 @@ function Statements({ a }: { a: EngineAccount }) {
                       <span className="text-fg-2">{range.label}</span> · {ST_FORMATS[format].label}
                     </>
                   ) : (
-                    "Choose a valid period"
+                    t("portfolio.st.invalidPeriod")
                   )}
                 </div>
                 <Button
@@ -301,7 +307,7 @@ function Statements({ a }: { a: EngineAccount }) {
                   disabled={!range}
                   onClick={() => range && download(stUrl(a.login, range.from, range.to, format, { open: withOpen, charges: withCharges, deals: withDeals }), `#${a.login} · ${range.label} · ${ST_FORMATS[format].label}`)}
                 >
-                  <Download /> Download statement
+                  <Download /> {t("portfolio.st.download")}
                 </Button>
               </div>
             </div>
@@ -309,15 +315,15 @@ function Statements({ a }: { a: EngineAccount }) {
         </Reveal>
         <Reveal delay={0.05} className="xl:col-span-4">
           <Card className="h-full">
-            <CardHeader title="What's in your statement" />
+            <CardHeader title={t("portfolio.st.contents.title")} />
             <ul className="space-y-2.5 px-6 pb-6 pt-4 text-[13px] text-fg-2">
               {[
-                "Account details, opening and closing balance",
-                "Every closed trade with commission, swap and profit",
-                "Open positions and pending orders at generation time",
-                "Deposits, withdrawals, transfers, credit and bonus",
-                "Charges: commission, swap, fees and the spread cost",
-                "Totals reconciled to the ledger",
+                t("portfolio.st.contents.account"),
+                t("portfolio.st.contents.trades"),
+                t("portfolio.st.contents.open"),
+                t("portfolio.st.contents.funding"),
+                t("portfolio.st.contents.charges"),
+                t("portfolio.st.contents.totals"),
               ].map((x) => (
                 <li key={x} className="flex gap-2.5">
                   <Check className="mt-0.5 size-4 shrink-0 text-ember" />
@@ -331,12 +337,12 @@ function Statements({ a }: { a: EngineAccount }) {
 
       <Reveal delay={0.08}>
         <Card>
-          <CardHeader title="Monthly statements" subtitle={`Calendar months since the account was opened · ${cur.trim()}`} />
+          <CardHeader title={t("portfolio.st.monthly.title")} subtitle={t("portfolio.st.monthly.subtitle", { currency: cur.trim() })} />
           <div className="space-y-2 px-4 pb-6 pt-4 sm:px-6">
             {months === null && !monthsError && <Skeleton className="h-[120px] w-full rounded-[14px]" />}
-            {monthsError && <div className="py-4 text-[13px] text-fg-3">Monthly statements are unavailable right now.</div>}
+            {monthsError && <div className="py-4 text-[13px] text-fg-3">{t("portfolio.st.monthly.unavailable")}</div>}
             {months?.map((m) => {
-              const label = new Date(`${m.from}T00:00:00Z`).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+              const label = fmt.date(`${m.from}T00:00:00Z`, { month: "long", year: "numeric", timeZone: "UTC" });
               return (
                 <div key={m.month} className="k-row flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -346,16 +352,16 @@ function Statements({ a }: { a: EngineAccount }) {
                     <div className="min-w-0">
                       <div className="text-[14px] font-medium">{label}</div>
                       <div className="truncate text-[11.5px] text-fg-3">
-                        {m.trades} closed trade{m.trades === 1 ? "" : "s"}
+                        {t("portfolio.closedTrades", { count: m.trades })}
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 text-right md:w-[360px]">
+                  <div className="grid grid-cols-3 gap-4 text-end md:w-[360px]">
                     {(
                       [
-                        ["Net P&L", m.net, true],
-                        ["Deposits", m.deposits, false],
-                        ["Withdrawn", m.withdrawals, false],
+                        [t("portfolio.st.monthly.net"), m.net, true],
+                        [t("portfolio.st.monthly.deposits"), m.deposits, false],
+                        [t("portfolio.st.monthly.withdrawn"), m.withdrawals, false],
                       ] as const
                     ).map(([k, v, signed]) => (
                       <div key={k}>
@@ -382,9 +388,10 @@ function Statements({ a }: { a: EngineAccount }) {
 }
 
 export function LiveStatementsPage() {
+  const t = useT();
   return (
     <Wrap>
-      <PickerPage base="/portfolio/statements" title="Statements" subtitle="Branded PDF statements and Excel / CSV exports of trades, ledger and charges for any period.">
+      <PickerPage base="/portfolio/statements" title={t("portfolio.st.title")} subtitle={t("portfolio.st.subtitle")}>
         {(a) => <Statements a={a} />}
       </PickerPage>
     </Wrap>
@@ -431,22 +438,24 @@ export function LivePortfolio() {
   const positions = useOpenPositions(accounts);
   const alloc = t.live.filter((a) => a.equity > 0).map((a, i) => ({ label: `#${a.login}`, value: toUsd(a, a.equity), color: CHART_COLORS[i % CHART_COLORS.length]! }));
   const allocTotal = alloc.reduce((s, d) => s + d.value, 0);
+  const tx = useT();
+  const fmt = useFormat();
 
   return (
     <div className="pb-16">
       <PageHeader
-        title="Portfolio"
-        subtitle="Your trading accounts in one view. Totals are live accounts in USD (cent accounts converted from USC)."
+        title={tx("portfolio.title")}
+        subtitle={tx("portfolio.subtitle")}
         actions={
           <>
             <Link href="/portfolio/statements">
               <Button variant="surface">
-                <FileText /> Statements
+                <FileText /> {tx("portfolio.st.title")}
               </Button>
             </Link>
             <Link href="/accounts/new">
               <Button variant="ember">
-                <Plus /> Open account
+                <Plus /> {tx("portfolio.openAccount")}
               </Button>
             </Link>
           </>
@@ -458,26 +467,26 @@ export function LivePortfolio() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <KpiCard label="Live equity" icon={<TrendingUp />} value={loading ? <Skeleton className="h-8 w-32" /> : <Money value={t.equity} countUp={false} />} chip={`${t.live.length} live account${t.live.length === 1 ? "" : "s"}`} href="/accounts" />
-            <KpiCard label="Live balance" icon={<Wallet />} value={loading ? <Skeleton className="h-8 w-32" /> : <Money value={t.balance} countUp={false} />} chip="Excludes floating P&L" delay={0.05} />
+            <KpiCard label={tx("portfolio.kpi.liveEquity")} icon={<TrendingUp />} value={loading ? <Skeleton className="h-8 w-32" /> : <Money value={t.equity} countUp={false} />} chip={tx("portfolio.kpi.liveAccounts", { count: t.live.length })} href="/accounts" />
+            <KpiCard label={tx("portfolio.kpi.liveBalance")} icon={<Wallet />} value={loading ? <Skeleton className="h-8 w-32" /> : <Money value={t.balance} countUp={false} />} chip={tx("portfolio.kpi.excludesFloating")} delay={0.05} />
             <KpiCard
-              label="Floating P&L"
+              label={tx("portfolio.kpi.floating")}
               icon={<ShieldCheck />}
               value={loading ? <Skeleton className="h-8 w-32" /> : <Money value={t.profit} signed tone="auto" countUp={false} />}
-              chip={`Free margin $${t.free.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              chip={tx("portfolio.kpi.freeMargin", { amount: fmt.money(t.free, "USD") })}
               delay={0.1}
             />
             <KpiCard
-              label="Open positions"
+              label={tx("portfolio.kpi.openPositions")}
               icon={<Layers />}
               value={<span className="k-num">{loading ? "—" : t.positions}</span>}
               footer={
                 <div className="flex items-center gap-1.5">
                   <Chip size="sm" tone="ember">
-                    {t.live.length} live
+                    {tx("portfolio.kpi.live", { count: t.live.length })}
                   </Chip>
                   <Chip size="sm" tone="gold">
-                    {t.demo.length} demo
+                    {tx("portfolio.kpi.demo", { count: t.demo.length })}
                   </Chip>
                 </div>
               }
@@ -496,7 +505,7 @@ export function LivePortfolio() {
               <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
                 <Reveal delay={0.05} className="xl:col-span-5">
                   <Card className="h-full">
-                    <CardHeader title="Equity allocation" subtitle="Live accounts, USD equivalent" />
+                    <CardHeader title={tx("portfolio.alloc.title")} subtitle={tx("portfolio.alloc.subtitle")} />
                     {allocTotal > 0 ? (
                       <div className="flex flex-col items-center gap-6 px-6 pb-6 pt-4 sm:flex-row">
                         <Donut
@@ -505,7 +514,7 @@ export function LivePortfolio() {
                           thickness={18}
                           center={
                             <div className="text-center">
-                              <div className="text-[11px] uppercase tracking-wider text-fg-3">Total</div>
+                              <div className="text-[11px] uppercase tracking-wider text-fg-3">{tx("common.total")}</div>
                               <Money value={allocTotal} decimals={0} countUp={false} className="text-[17px] font-semibold" />
                             </div>
                           }
@@ -522,7 +531,7 @@ export function LivePortfolio() {
                       </div>
                     ) : (
                       <div className="px-6 pb-6 pt-4 text-[13px] text-fg-3">
-                        {t.live.length ? "Your live accounts have no equity yet. Deposits open with the Kalks wallet." : "Open a live account to see your equity split here."}
+                        {t.live.length ? tx("portfolio.alloc.noEquity") : tx("portfolio.alloc.noLive")}
                       </div>
                     )}
                   </Card>
@@ -530,12 +539,12 @@ export function LivePortfolio() {
                 <Reveal delay={0.1} className="xl:col-span-7">
                   <Card className="h-full">
                     <CardHeader
-                      title="Accounts"
-                      subtitle="Equity and margin per account"
+                      title={tx("common.accounts")}
+                      subtitle={tx("portfolio.accounts.subtitle")}
                       action={
                         <Link href="/accounts">
                           <Button size="sm" variant="surface">
-                            Manage
+                            {tx("portfolio.accounts.manage")}
                           </Button>
                         </Link>
                       }
@@ -544,11 +553,11 @@ export function LivePortfolio() {
                       <table className="w-full min-w-[560px] border-separate border-spacing-y-1.5 text-[13px]">
                         <thead>
                           <tr className="text-[11px] uppercase tracking-wider text-fg-3">
-                            <th className="px-3 text-left font-medium">Account</th>
-                            <th className="px-3 text-right font-medium">Balance</th>
-                            <th className="px-3 text-right font-medium">Equity</th>
-                            <th className="px-3 text-right font-medium">Floating</th>
-                            <th className="px-3 text-right font-medium">Positions</th>
+                            <th className="px-3 text-start font-medium">{tx("common.account")}</th>
+                            <th className="px-3 text-end font-medium">{tx("common.balance")}</th>
+                            <th className="px-3 text-end font-medium">{tx("common.equity")}</th>
+                            <th className="px-3 text-end font-medium">{tx("portfolio.col.floating")}</th>
+                            <th className="px-3 text-end font-medium">{tx("portfolio.col.positions")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -556,17 +565,17 @@ export function LivePortfolio() {
                             const cur = curOf(a);
                             return (
                               <tr key={a.login} className="bg-surface-2">
-                                <td className="rounded-l-[12px] border-y border-l border-line px-3 py-2.5">
+                                <td className="rounded-s-[12px] border-y border-s border-line px-3 py-2.5">
                                   <Link href={`/accounts/${a.login}`} className="flex items-center gap-2 hover:text-ember">
                                     <KindBadge type={a.type} />
                                     <span className="font-mono">#{a.login}</span>
                                     <span className="hidden text-[12px] text-fg-3 sm:inline">{a.groupName}</span>
                                   </Link>
                                 </td>
-                                <td className="k-num border-y border-line px-3 text-right">{fmtAmount(a.balance, cur)}</td>
-                                <td className="k-num border-y border-line px-3 text-right font-medium">{fmtAmount(a.equity, cur)}</td>
-                                <td className={cn("k-num border-y border-line px-3 text-right", a.profit > 0 ? "text-up" : a.profit < 0 ? "text-down" : "text-fg-3")}>{fmtAmount(a.profit, cur, true)}</td>
-                                <td className="k-num rounded-r-[12px] border-y border-r border-line px-3 text-right text-fg-2">{a.positions}</td>
+                                <td className="k-num border-y border-line px-3 text-end tabular-nums">{fmtAmount(a.balance, cur)}</td>
+                                <td className="k-num border-y border-line px-3 text-end font-medium tabular-nums">{fmtAmount(a.equity, cur)}</td>
+                                <td className={cn("k-num border-y border-line px-3 text-end tabular-nums", a.profit > 0 ? "text-up" : a.profit < 0 ? "text-down" : "text-fg-3")}>{fmtAmount(a.profit, cur, true)}</td>
+                                <td className="k-num rounded-e-[12px] border-y border-e border-line px-3 text-end tabular-nums text-fg-2">{a.positions}</td>
                               </tr>
                             );
                           })}
@@ -579,10 +588,10 @@ export function LivePortfolio() {
 
               <Reveal delay={0.1} className="mt-4 block">
                 <Card>
-                  <CardHeader title="Open positions" subtitle="Across all accounts, refreshed every 10 seconds" />
+                  <CardHeader title={tx("portfolio.kpi.openPositions")} subtitle={tx("portfolio.positions.subtitle")} />
                   <div className="mt-3 space-y-2 px-4 pb-5 sm:px-6">
                     {positions === null && <Skeleton className="h-24 w-full rounded-[14px]" />}
-                    {positions && positions.length === 0 && <div className="py-8 text-center text-[13px] text-fg-3">No open positions right now.</div>}
+                    {positions && positions.length === 0 && <div className="py-8 text-center text-[13px] text-fg-3">{tx("portfolio.positions.empty")}</div>}
                     {positions?.map(({ a, p }) => (
                       <div key={`${a.login}-${p.ticket}`} className="k-row flex flex-wrap items-center gap-3 px-4 py-2.5">
                         <SymbolAvatar symbol={p.symbol} size={24} />
@@ -590,11 +599,11 @@ export function LivePortfolio() {
                           <div className="flex items-center gap-2 text-[13.5px] font-medium">
                             {p.symbol}
                             <Chip size="sm" tone={p.side === "buy" ? "up" : "down"}>
-                              {p.side.toUpperCase()} {p.volume}
+                              {(p.side === "buy" ? tx("common.buy") : tx("common.sell")).toUpperCase()} {p.volume}
                             </Chip>
                             <KindBadge type={a.type} />
                           </div>
-                          <div className="k-num mt-0.5 truncate font-mono text-[11px] text-fg-3">
+                          <div dir="ltr" className="k-num mt-0.5 truncate text-start font-mono text-[11px] text-fg-3">
                             #{a.login} · {fmtPrice(p.openPrice)} → {fmtPrice(p.currentPrice)}
                           </div>
                         </div>
@@ -608,9 +617,9 @@ export function LivePortfolio() {
 
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {[
-                  { href: "/portfolio/history", icon: <History />, title: "Trade history", text: "Every deal, per account" },
-                  { href: "/portfolio/ledger", icon: <BookText />, title: "Ledger", text: "Balance movements, per account" },
-                  { href: "/portfolio/statements", icon: <FileText />, title: "Statements", text: "Monthly and custom CSV exports" },
+                  { href: "/portfolio/history", icon: <History />, title: tx("portfolio.history.title"), text: tx("portfolio.links.history") },
+                  { href: "/portfolio/ledger", icon: <BookText />, title: tx("portfolio.ledger.title"), text: tx("portfolio.links.ledger") },
+                  { href: "/portfolio/statements", icon: <FileText />, title: tx("portfolio.st.title"), text: tx("portfolio.links.statements") },
                 ].map((l) => (
                   <Link key={l.href} href={l.href} className="k-card flex items-center gap-3 rounded-[20px] px-5 py-4 transition-colors hover:border-[var(--k-border-top)]">
                     <span className="grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface-2 text-fg-2 [&_svg]:size-4">{l.icon}</span>

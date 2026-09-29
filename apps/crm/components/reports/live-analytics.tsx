@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, Clock3, Download, FileText, Gauge as GaugeIcon, Percent, RefreshCw, Scale, ShieldCheck, Target, TrendingDown, Trophy, Zap } from "lucide-react";
 import { Button, Card, CardHeader, Chip, Donut, EmptyState, KpiCard, Menu, Money, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, cn, formatMoney } from "@kalks/ui";
 import { ColumnBars, DrawdownChart, HourHeatmap, MultiLineChart, PnlBars, Waterfall } from "@/components/portfolio/charts";
+import { tr, useT } from "@kalks/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Shapes (services/reports/README.md, GET /v1/me/analytics)            */
@@ -80,7 +81,7 @@ export type Analytics = {
 const PERIODS = ["7D", "30D", "90D", "1Y", "ALL"] as const;
 type Period = (typeof PERIODS)[number];
 const PERIOD_DAYS: Record<Period, number> = { "7D": 7, "30D": 30, "90D": 90, "1Y": 365, ALL: 3650 };
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAYS = ["portfolio.an.day.mon", "portfolio.an.day.tue", "portfolio.an.day.wed", "portfolio.an.day.thu", "portfolio.an.day.fri", "portfolio.an.day.sat", "portfolio.an.day.sun"] as const;
 
 function isoDay(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -97,9 +98,9 @@ export function periodRange(p: Period) {
 export function fmtHold(secs: number) {
   if (!secs) return "—";
   const m = Math.round(secs / 60);
-  if (m >= 1440) return `${Math.floor(m / 1440)}d ${Math.floor((m % 1440) / 60)}h`;
-  if (m >= 60) return `${Math.floor(m / 60)}h ${m % 60}m`;
-  return m ? `${m}m` : `${Math.round(secs)}s`;
+  if (m >= 1440) return tr("portfolio.an.hold.dh", { d: Math.floor(m / 1440), h: Math.floor((m % 1440) / 60) });
+  if (m >= 60) return tr("portfolio.an.hold.hm", { h: Math.floor(m / 60), m: m % 60 });
+  return m ? tr("portfolio.an.hold.m", { m }) : tr("portfolio.an.hold.s", { s: Math.round(secs) });
 }
 
 export function useAnalytics(login: number | "all", period: Period) {
@@ -114,12 +115,12 @@ export function useAnalytics(login: number | "all", period: Period) {
     fetch(`/api/reports/analytics?login=${login}&from=${from}&to=${to}`, { signal: ctl.signal, cache: "no-store" })
       .then(async (r) => {
         const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j?.error?.message ?? "Analytics are unavailable right now.");
+        if (!r.ok) throw new Error(j?.error?.message ?? tr("portfolio.an.unavailable"));
         setData(j as Analytics);
         setError(null);
       })
       .catch((e) => {
-        if (!ctl.signal.aborted) setError(e instanceof Error ? e.message : "Analytics are unavailable right now.");
+        if (!ctl.signal.aborted) setError(e instanceof Error && e.message ? e.message : tr("portfolio.an.unavailable"));
       })
       .finally(() => !ctl.signal.aborted && setLoading(false));
     return () => ctl.abort();
@@ -134,24 +135,25 @@ export function useAnalytics(login: number | "all", period: Period) {
 function Curves({ d, label }: { d: Analytics; label: string }) {
   const pts = d.curve.points;
   const times = pts.map((p) => Date.parse(`${p.day}T12:00:00Z`));
+  const t = useT();
   return (
     <Card className="h-full">
       <CardHeader
-        title="Equity vs balance"
-        subtitle={`${label} · end of each server day, USD`}
+        title={t("portfolio.an.curves.title")}
+        subtitle={t("portfolio.an.curves.subtitle", { label })}
         action={
           <div className="hidden items-center gap-3 text-[12px] text-fg-2 sm:flex">
             <span className="flex items-center gap-1.5">
-              <span className="h-0.5 w-4 rounded-full bg-gold" /> Equity
+              <span className="h-0.5 w-4 rounded-full bg-gold" /> {t("common.equity")}
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-0 w-4 border-t border-dashed border-fg-2" /> Balance
+              <span className="h-0 w-4 border-t border-dashed border-fg-2" /> {t("common.balance")}
             </span>
           </div>
         }
       />
       {pts.length < 2 ? (
-        <div className="px-6 pb-8 pt-6 text-[13px] text-fg-3">The curve builds up from daily snapshots; it appears after the account's second day.</div>
+        <div className="px-6 pb-8 pt-6 text-[13px] text-fg-3">{t("portfolio.an.curves.empty")}</div>
       ) : (
         <>
           <div className="px-4 pt-4 sm:px-6">
@@ -159,15 +161,15 @@ function Curves({ d, label }: { d: Analytics; label: string }) {
               times={times}
               height={260}
               series={[
-                { key: "eq", label: "Equity", color: "var(--k-gold)", values: pts.map((p) => p.equity), fill: true },
-                { key: "bal", label: "Balance", color: "var(--k-fg-2)", values: pts.map((p) => p.balance), dashed: true },
+                { key: "eq", label: t("common.equity"), color: "var(--k-gold)", values: pts.map((p) => p.equity), fill: true },
+                { key: "bal", label: t("common.balance"), color: "var(--k-fg-2)", values: pts.map((p) => p.balance), dashed: true },
               ]}
             />
           </div>
           <div className="mt-2 flex items-center justify-between px-6 pt-3">
-            <div className="k-label">Drawdown from peak · deposits and withdrawals removed</div>
+            <div className="k-label">{t("portfolio.an.curves.drawdown")}</div>
             <Chip size="sm" tone="down">
-              Max {d.curve.maxDrawdown.toFixed(2)}%
+              {t("portfolio.an.curves.max", { value: d.curve.maxDrawdown.toFixed(2) })}
             </Chip>
           </div>
           <div className="px-4 pb-5 pt-2 sm:px-6">
@@ -180,27 +182,28 @@ function Curves({ d, label }: { d: Analytics; label: string }) {
 }
 
 function StatsCard({ s, curve }: { s: Stats; curve: Analytics["curve"] }) {
+  const t = useT();
   const rows: [string, React.ReactNode][] = [
-    ["Net profit", <Money key="n" value={s.net} countUp={false} signed tone="auto" />],
-    ["Average win", <span key="aw" className="text-up">+{formatMoney(s.avgWin)}</span>],
-    ["Average loss", <span key="al" className="text-down">-{formatMoney(s.avgLoss)}</span>],
-    ["Expectancy / trade", formatMoney(s.expectancy)],
-    ["Commission + swap", <span key="c" className={s.swap - s.commission < 0 ? "text-down" : ""}>{formatMoney(s.swap - s.commission)}</span>],
-    ["Holding time: winners / losers", `${fmtHold(s.avgHoldWinSecs)} / ${fmtHold(s.avgHoldLossSecs)}`],
-    ["Streaks: wins / losses", `${s.maxConsecWins} / ${s.maxConsecLosses}`],
-    ["Sharpe · Sortino", `${curve.sharpe?.toFixed(2) ?? "—"} · ${curve.sortino?.toFixed(2) ?? "—"}`],
-    ["Return (time-weighted)", <span key="r" className={curve.returnPct >= 0 ? "text-up" : "text-down"}>{curve.returnPct >= 0 ? "+" : ""}{curve.returnPct.toFixed(2)}%</span>],
+    [t("portfolio.an.stats.net"), <Money key="n" value={s.net} countUp={false} signed tone="auto" />],
+    [t("portfolio.an.stats.avgWin"), <span key="aw" className="text-up">+{formatMoney(s.avgWin)}</span>],
+    [t("portfolio.an.stats.avgLoss"), <span key="al" className="text-down">-{formatMoney(s.avgLoss)}</span>],
+    [t("portfolio.an.stats.expectancy"), formatMoney(s.expectancy)],
+    [t("portfolio.an.stats.commSwap"), <span key="c" className={s.swap - s.commission < 0 ? "text-down" : ""}>{formatMoney(s.swap - s.commission)}</span>],
+    [t("portfolio.an.stats.holding"), `${fmtHold(s.avgHoldWinSecs)} / ${fmtHold(s.avgHoldLossSecs)}`],
+    [t("portfolio.an.stats.streaks"), `${s.maxConsecWins} / ${s.maxConsecLosses}`],
+    [t("portfolio.an.stats.sharpe"), `${curve.sharpe?.toFixed(2) ?? "—"} · ${curve.sortino?.toFixed(2) ?? "—"}`],
+    [t("portfolio.an.stats.return"), <span key="r" className={curve.returnPct >= 0 ? "text-up" : "text-down"}>{curve.returnPct >= 0 ? "+" : ""}{curve.returnPct.toFixed(2)}%</span>],
   ];
   return (
     <Card className="flex h-full flex-col">
-      <CardHeader title="Trade statistics" subtitle={`${s.trades} closed trade${s.trades === 1 ? "" : "s"}`} />
+      <CardHeader title={t("portfolio.an.stats.title")} subtitle={t("portfolio.closedTrades", { count: s.trades })} />
       <div className="grid grid-cols-2 gap-3 px-6 pt-4">
         <div className="k-row px-4 py-3">
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">Gross profit</div>
+          <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("portfolio.an.stats.grossProfit")}</div>
           <Money value={s.grossProfit} countUp={false} className="mt-1 block text-[16px] font-semibold text-up" />
         </div>
         <div className="k-row px-4 py-3">
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">Gross loss</div>
+          <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("portfolio.an.stats.grossLoss")}</div>
           <Money value={-s.grossLoss} countUp={false} className="mt-1 block text-[16px] font-semibold text-down" />
         </div>
       </div>
@@ -208,32 +211,32 @@ function StatsCard({ s, curve }: { s: Stats; curve: Analytics["curve"] }) {
         {rows.map(([k, v]) => (
           <div key={k} className="flex items-center justify-between gap-3 py-2.5 text-[13px]">
             <span className="text-fg-3">{k}</span>
-            <span className="k-num text-right font-medium">{v}</span>
+            <span className="k-num text-end font-medium tabular-nums">{v}</span>
           </div>
         ))}
       </div>
       <div className="grid grid-cols-2 gap-3 px-6 pb-6 pt-3">
         {[
-          { t: s.best, label: "Best trade", icon: <ArrowUpRight className="size-3.5 text-up" /> },
-          { t: s.worst, label: "Worst trade", icon: <ArrowDownRight className="size-3.5 text-down" /> },
-        ].map(({ t, label, icon }) => (
+          { t: s.best, label: t("portfolio.an.stats.best"), icon: <ArrowUpRight className="size-3.5 text-up" /> },
+          { t: s.worst, label: t("portfolio.an.stats.worst"), icon: <ArrowDownRight className="size-3.5 text-down" /> },
+        ].map(({ t: tr, label, icon }) => (
           <div key={label} className="k-row px-3.5 py-3">
             <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-fg-3">
               {icon}
               {label}
             </div>
-            {t ? (
+            {tr ? (
               <>
                 <div className="mt-2 flex items-center gap-2">
-                  <SymbolAvatar symbol={t.symbol} size={20} />
-                  <span className="text-[13px] font-medium">{t.symbol}</span>
+                  <SymbolAvatar symbol={tr.symbol} size={20} />
+                  <span className="text-[13px] font-medium">{tr.symbol}</span>
                 </div>
-                <div className={cn("k-num mt-1 text-[15px] font-semibold", t.net >= 0 ? "text-up" : "text-down")}>
-                  {t.net >= 0 ? "+" : "-"}
-                  {formatMoney(Math.abs(t.net))}
+                <div className={cn("k-num mt-1 text-[15px] font-semibold", tr.net >= 0 ? "text-up" : "text-down")}>
+                  {tr.net >= 0 ? "+" : "-"}
+                  {formatMoney(Math.abs(tr.net))}
                 </div>
                 <div className="font-mono text-[10.5px] text-fg-3">
-                  #{t.ticket} · {t.login}
+                  #{tr.ticket} · {tr.login}
                 </div>
               </>
             ) : (
@@ -259,11 +262,12 @@ const INSIGHT_ICON: Record<string, React.ReactNode> = {
 };
 
 function Insights({ b, period }: { b: Analytics["behaviour"]; period: string }) {
+  const t = useT();
   return (
     <Card>
-      <CardHeader title="Behaviour insights" subtitle={`Patterns in your closed trades · ${period}`} action={<Chip tone="ember">{b.insights.length} insight{b.insights.length === 1 ? "" : "s"}</Chip>} />
+      <CardHeader title={t("portfolio.an.insights.title")} subtitle={t("portfolio.an.insights.subtitle", { period })} action={<Chip tone="ember">{t("portfolio.an.insights.count", { count: b.insights.length })}</Chip>} />
       {b.insights.length === 0 ? (
-        <div className="px-6 pb-6 pt-4 text-[13px] text-fg-3">Close a few more trades to see patterns such as overtrading, revenge trades and risk per trade.</div>
+        <div className="px-6 pb-6 pt-4 text-[13px] text-fg-3">{t("portfolio.an.insights.empty")}</div>
       ) : (
         <div className="grid grid-cols-1 gap-3 px-4 pb-6 pt-4 sm:px-6 md:grid-cols-2 xl:grid-cols-3">
           {b.insights.map((ins) => (
@@ -291,21 +295,22 @@ function Insights({ b, period }: { b: Analytics["behaviour"]; period: string }) 
 /** Everything below the header: used by the Analytics page and the account Analytics tab. */
 export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: string; periodLabel: string }) {
   const s = d.stats;
+  const t = useT();
   const byDay = DAYS.map((name, i) => {
     const g = d.byWeekday.find((x) => x.key === String(i));
-    return { label: name, value: g?.net ?? 0, sub: g ? `${g.trades} tr` : undefined };
+    return { label: t(name), value: g?.net ?? 0, sub: g ? t("portfolio.an.weekday.sub", { count: g.trades }) : undefined };
   });
-  const heat = DAYS.map((day, i) => ({ day, cells: (d.hourHeatmap[i] ?? []).map((pnl, h) => ({ pnl, trades: d.hourTrades?.[i]?.[h] ?? 0 })) }));
+  const heat = DAYS.map((day, i) => ({ day: t(day), cells: (d.hourHeatmap[i] ?? []).map((pnl, h) => ({ pnl, trades: d.hourTrades?.[i]?.[h] ?? 0 })) }));
   let best = { d: 0, h: 0, v: -Infinity };
   d.hourHeatmap.forEach((r, i) => r.forEach((v, h) => (d.hourTrades?.[i]?.[h] ?? 0) > 0 && v > best.v && (best = { d: i, h, v })));
   const sessions = [...d.bySession].sort((a, b) => b.net - a.net);
   const mf = d.moneyFlow;
   const ch = d.charges;
   const chargeRows = [
-    { label: "Commission", value: ch.commission, note: "Round turn per lot", color: "var(--k-ember)" },
-    { label: "Swap paid", value: ch.swapPaid, note: `Overnight financing${ch.swapEarned ? ` · ${formatMoney(ch.swapEarned)} earned` : ""}`, color: "var(--k-gold)" },
-    { label: "Performance fees", value: ch.performanceFees, note: "Copy trading and PAMM", color: "var(--k-info)" },
-    { label: "Wallet fees", value: ch.walletFees, note: "Withdrawal network and service fees", color: "var(--k-fg-3)" },
+    { label: t("portfolio.an.charges.commission"), value: ch.commission, note: t("portfolio.an.charges.commissionNote"), color: "var(--k-ember)" },
+    { label: t("portfolio.an.charges.swapPaid"), value: ch.swapPaid, note: `${t("portfolio.an.charges.swapNote")}${ch.swapEarned ? ` · ${t("portfolio.an.charges.swapEarned", { amount: formatMoney(ch.swapEarned) })}` : ""}`, color: "var(--k-gold)" },
+    { label: t("portfolio.an.charges.perfFees"), value: ch.performanceFees, note: t("portfolio.an.charges.perfNote"), color: "var(--k-info)" },
+    { label: t("portfolio.an.charges.walletFees"), value: ch.walletFees, note: t("portfolio.an.charges.walletNote"), color: "var(--k-fg-3)" },
   ].filter((c) => c.value > 0);
   const chargesTotal = chargeRows.reduce((a, c) => a + c.value, 0);
   const longs = d.long;
@@ -314,7 +319,7 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
   if (s.trades === 0 && d.curve.points.length < 2) {
     return (
       <Card>
-        <EmptyState illustration="bar_chart" title="No trading activity in this period" text="Analytics appear once the account has closed trades or a few days of history. Try a longer period." />
+        <EmptyState illustration="bar_chart" title={t("portfolio.an.empty.title")} text={t("portfolio.an.empty.text")} />
       </Card>
     );
   }
@@ -322,19 +327,19 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
   return (
     <>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
-        <KpiCard label="Win rate" icon={<Target />} value={<span className="k-num">{s.winRate.toFixed(1)}<span className="opacity-40">%</span></span>} chip={`${s.wins}W · ${s.losses}L`} chipTone={s.winRate >= 50 ? "up" : "neutral"} />
+        <KpiCard label={t("portfolio.an.kpi.winRate")} icon={<Target />} value={<span className="k-num">{s.winRate.toFixed(1)}<span className="opacity-40">%</span></span>} chip={t("portfolio.an.kpi.winsLosses", { wins: s.wins, losses: s.losses })} chipTone={s.winRate >= 50 ? "up" : "neutral"} />
         <KpiCard
-          label="Profit factor"
+          label={t("portfolio.an.kpi.profitFactor")}
           icon={<Scale />}
           value={<span className="k-num">{s.profitFactor === null ? (s.wins ? "∞" : "—") : s.profitFactor.toFixed(2)}</span>}
-          chip={s.profitFactor === null ? (s.wins ? "No losing trades" : "No trades") : s.profitFactor >= 1.5 ? "Strong edge" : s.profitFactor >= 1 ? "Thin edge" : "Losing edge"}
+          chip={s.profitFactor === null ? (s.wins ? t("portfolio.an.kpi.noLosing") : t("portfolio.an.kpi.noTrades")) : s.profitFactor >= 1.5 ? t("portfolio.an.kpi.strongEdge") : s.profitFactor >= 1 ? t("portfolio.an.kpi.thinEdge") : t("portfolio.an.kpi.losingEdge")}
           chipTone={s.profitFactor === null || s.profitFactor >= 1.5 ? "up" : s.profitFactor >= 1 ? "warn" : "down"}
           delay={0.04}
         />
-        <KpiCard label="Avg R:R" icon={<Percent />} value={<span className="k-num">1 : {s.rewardRisk?.toFixed(2) ?? "—"}</span>} chip={`Exp. ${formatMoney(s.expectancy)}/trade`} chipTone={s.expectancy >= 0 ? "up" : "down"} delay={0.08} />
-        <KpiCard label="Max drawdown" icon={<TrendingDown />} value={<span className="k-num text-down">{d.curve.maxDrawdown.toFixed(2)}%</span>} chip={`Now ${d.curve.currentDrawdown.toFixed(2)}%`} chipTone="neutral" delay={0.12} />
-        <KpiCard label="Avg hold time" icon={<Clock3 />} value={<span className="k-num">{fmtHold(s.avgHoldSecs)}</span>} chip={s.avgHoldSecs < 86400 ? "Intraday" : "Multi-day"} chipTone="neutral" delay={0.16} />
-        <KpiCard label="Trades" icon={<Activity />} value={<span className="k-num">{s.trades}</span>} chip={`${s.lots.toFixed(2)} lots`} chipTone="ember" delay={0.2} />
+        <KpiCard label={t("portfolio.an.kpi.avgRR")} icon={<Percent />} value={<span className="k-num">1 : {s.rewardRisk?.toFixed(2) ?? "—"}</span>} chip={t("portfolio.an.kpi.expPerTrade", { amount: formatMoney(s.expectancy) })} chipTone={s.expectancy >= 0 ? "up" : "down"} delay={0.08} />
+        <KpiCard label={t("portfolio.an.kpi.maxDrawdown")} icon={<TrendingDown />} value={<span className="k-num text-down">{d.curve.maxDrawdown.toFixed(2)}%</span>} chip={t("portfolio.an.kpi.nowDrawdown", { value: d.curve.currentDrawdown.toFixed(2) })} chipTone="neutral" delay={0.12} />
+        <KpiCard label={t("portfolio.an.kpi.avgHold")} icon={<Clock3 />} value={<span className="k-num">{fmtHold(s.avgHoldSecs)}</span>} chip={s.avgHoldSecs < 86400 ? t("portfolio.an.kpi.intraday") : t("portfolio.an.kpi.multiDay")} chipTone="neutral" delay={0.16} />
+        <KpiCard label={t("portfolio.an.kpi.trades")} icon={<Activity />} value={<span className="k-num">{s.trades}</span>} chip={t("portfolio.an.kpi.lots", { value: s.lots.toFixed(2) })} chipTone="ember" delay={0.2} />
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
@@ -349,14 +354,14 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-12">
         <Reveal delay={0.05} className="xl:col-span-5">
           <Card className="h-full">
-            <CardHeader title="Performance by symbol" subtitle="Net P&L after charges" />
+            <CardHeader title={t("portfolio.an.symbol.title")} subtitle={t("portfolio.an.symbol.subtitle")} />
             <div className="px-4 pb-6 pt-4 sm:px-6">
               {d.bySymbol.length ? (
                 <PnlBars
                   rows={d.bySymbol.slice(0, 9).map((g) => ({
                     key: g.key,
                     value: g.net,
-                    sub: `${g.trades} tr · ${Math.round(g.winRate)}%`,
+                    sub: t("portfolio.an.symbol.sub", { count: g.trades, rate: Math.round(g.winRate) }),
                     label: (
                       <span className="flex items-center gap-2">
                         <SymbolAvatar symbol={g.key} size={20} />
@@ -366,14 +371,14 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
                   }))}
                 />
               ) : (
-                <div className="py-6 text-center text-[13px] text-fg-3">No closed trades.</div>
+                <div className="py-6 text-center text-[13px] text-fg-3">{t("portfolio.an.symbol.empty")}</div>
               )}
             </div>
           </Card>
         </Reveal>
         <Reveal delay={0.1} className="xl:col-span-4">
           <Card className="h-full">
-            <CardHeader title="By weekday" subtitle="Close time, server time" />
+            <CardHeader title={t("portfolio.an.weekday.title")} subtitle={t("portfolio.an.weekday.subtitle")} />
             <div className="px-4 pb-6 pt-4 sm:px-6">
               <ColumnBars data={byDay} height={250} />
             </div>
@@ -381,31 +386,31 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
         </Reveal>
         <Reveal delay={0.15} className="lg:col-span-2 xl:col-span-3">
           <Card className="h-full">
-            <CardHeader title="Long vs short" />
+            <CardHeader title={t("portfolio.an.side.title")} />
             <div className="px-6 pb-6 pt-4">
               <div className="flex h-3 overflow-hidden rounded-full bg-surface-3">
                 <span className="bg-up" style={{ width: `${(longs.trades / Math.max(1, s.trades)) * 100}%` }} />
-                <span className="border-l-2 border-bg bg-down" style={{ width: `${(shorts.trades / Math.max(1, s.trades)) * 100}%` }} />
+                <span className="border-s-2 border-bg bg-down" style={{ width: `${(shorts.trades / Math.max(1, s.trades)) * 100}%` }} />
               </div>
               <div className="mt-2 flex justify-between text-[11.5px] text-fg-3">
-                <span className="k-num">{Math.round((longs.trades / Math.max(1, s.trades)) * 100)}% long</span>
-                <span className="k-num">{Math.round((shorts.trades / Math.max(1, s.trades)) * 100)}% short</span>
+                <span className="k-num">{t("portfolio.an.side.longPct", { value: Math.round((longs.trades / Math.max(1, s.trades)) * 100) })}</span>
+                <span className="k-num">{t("portfolio.an.side.shortPct", { value: Math.round((shorts.trades / Math.max(1, s.trades)) * 100) })}</span>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-1">
                 {[
-                  { k: "Long", st: longs, tone: "up" as const },
-                  { k: "Short", st: shorts, tone: "down" as const },
+                  { k: t("portfolio.an.side.long"), st: longs, tone: "up" as const },
+                  { k: t("portfolio.an.side.short"), st: shorts, tone: "down" as const },
                 ].map(({ k, st, tone }) => (
                   <div key={k} className="k-row px-4 py-3">
                     <div className="flex items-center justify-between">
                       <Chip size="sm" tone={tone}>
                         {k.toUpperCase()}
                       </Chip>
-                      <span className="k-num text-[11.5px] text-fg-3">{st.trades} trades</span>
+                      <span className="k-num text-[11.5px] text-fg-3">{t("portfolio.trades", { count: st.trades })}</span>
                     </div>
                     <Money value={st.net} countUp={false} signed tone="auto" className="mt-2 block text-[17px] font-semibold" />
                     <div className="k-num mt-0.5 text-[11.5px] text-fg-3">
-                      Win {st.winRate.toFixed(0)}% · PF {st.profitFactor?.toFixed(2) ?? (st.wins ? "∞" : "—")}
+                      {t("portfolio.an.side.winPf", { rate: st.winRate.toFixed(0), pf: st.profitFactor?.toFixed(2) ?? (st.wins ? "∞" : "—") })}
                     </div>
                   </div>
                 ))}
@@ -419,9 +424,9 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
         <Reveal delay={0.05} className="xl:col-span-8">
           <Card className="h-full">
             <CardHeader
-              title="By hour of day"
-              subtitle="P&L heatmap · weekday × hour of the close (server time)"
-              action={best.v > 0 ? <Chip tone="up">Best: {DAYS[best.d]} {String(best.h).padStart(2, "0")}:00</Chip> : undefined}
+              title={t("portfolio.an.hour.title")}
+              subtitle={t("portfolio.an.hour.subtitle")}
+              action={best.v > 0 ? <Chip tone="up">{t("portfolio.an.hour.best", { day: t(DAYS[best.d]!), hour: String(best.h).padStart(2, "0") })}</Chip> : undefined}
             />
             <div className="px-4 pb-5 pt-4 sm:px-6">
               <HourHeatmap rows={heat} />
@@ -430,7 +435,7 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
         </Reveal>
         <Reveal delay={0.1} className="xl:col-span-4">
           <Card className="h-full">
-            <CardHeader title="By session" subtitle="Session of the open time" />
+            <CardHeader title={t("portfolio.an.session.title")} subtitle={t("portfolio.an.session.subtitle")} />
             <div className="space-y-2 px-4 pb-5 pt-4 sm:px-6">
               {sessions.map((x, i) => (
                 <div key={x.session} className={cn("k-row flex items-center gap-3 px-4 py-3", i === 0 && x.net > 0 && "border-up/30 bg-up-soft/40")}>
@@ -440,15 +445,15 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
                       {i === 0 && x.net > 0 && <Trophy className="size-3.5 text-gold" />}
                     </div>
                     <div className="k-num font-mono text-[11px] text-fg-3">
-                      {x.hours} · {x.trades} trades
+                      {x.hours} · {t("portfolio.trades", { count: x.trades })}
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <div className={cn("k-num text-[14px] font-semibold", x.net > 0 ? "text-up" : x.net < 0 ? "text-down" : "text-fg-3")}>
                       {x.net >= 0 ? "+" : "-"}
                       {formatMoney(Math.abs(x.net))}
                     </div>
-                    <div className="k-num text-[11px] text-fg-3">{x.trades ? `${Math.round(x.winRate)}% win` : "—"}</div>
+                    <div className="k-num text-[11px] text-fg-3">{x.trades ? t("portfolio.an.session.win", { rate: Math.round(x.winRate) }) : "—"}</div>
                   </div>
                 </div>
               ))}
@@ -460,19 +465,19 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal delay={0.05} className="xl:col-span-7">
           <Card className="h-full">
-            <CardHeader title="Money flow" subtitle={`${periodLabel} · deposits → P&L → charges → withdrawals`} action={<Chip tone="gold">Equity now {formatMoney(mf.equityNow)}</Chip>} />
+            <CardHeader title={t("portfolio.an.flow.title")} subtitle={t("portfolio.an.flow.subtitle", { period: periodLabel })} action={<Chip tone="gold">{t("portfolio.an.flow.equityNow", { amount: formatMoney(mf.equityNow) })}</Chip>} />
             <div className="px-4 pb-5 pt-4 sm:px-6">
               <Waterfall
                 height={270}
                 steps={[
-                  { label: "Deposits", value: mf.deposits },
-                  { label: "Trading P&L", value: mf.tradingPnl },
-                  ...(mf.bonus ? [{ label: "Credit & bonus", value: mf.bonus }] : []),
-                  ...(mf.earnings ? [{ label: "IB earnings", value: mf.earnings }] : []),
-                  { label: "Charges", value: mf.commission + mf.performanceFees },
-                  ...(mf.adjustments ? [{ label: "Adjustments", value: mf.adjustments }] : []),
-                  { label: "Withdrawals", value: mf.withdrawals },
-                  { label: "Net", value: 0, total: true },
+                  { label: t("portfolio.an.flow.deposits"), value: mf.deposits },
+                  { label: t("portfolio.an.flow.tradingPnl"), value: mf.tradingPnl },
+                  ...(mf.bonus ? [{ label: t("portfolio.an.flow.bonus"), value: mf.bonus }] : []),
+                  ...(mf.earnings ? [{ label: t("portfolio.an.flow.earnings"), value: mf.earnings }] : []),
+                  { label: t("portfolio.an.flow.charges"), value: mf.commission + mf.performanceFees },
+                  ...(mf.adjustments ? [{ label: t("portfolio.an.flow.adjustments"), value: mf.adjustments }] : []),
+                  { label: t("portfolio.an.flow.withdrawals"), value: mf.withdrawals },
+                  { label: t("portfolio.an.flow.net"), value: 0, total: true },
                 ]}
               />
             </div>
@@ -480,7 +485,7 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
         </Reveal>
         <Reveal delay={0.1} className="xl:col-span-5">
           <Card className="h-full">
-            <CardHeader title="Charges" subtitle="Commission, swap and fees paid" />
+            <CardHeader title={t("portfolio.an.charges.title")} subtitle={t("portfolio.an.charges.subtitle")} />
             {chargeRows.length ? (
               <div className="flex flex-col items-center gap-5 px-6 pb-4 pt-4 sm:flex-row">
                 <Donut
@@ -489,7 +494,7 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
                   data={chargeRows.map((c) => ({ label: c.label, value: c.value, color: c.color }))}
                   center={
                     <div>
-                      <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Total</div>
+                      <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("common.total")}</div>
                       <div className="k-num text-[16px] font-semibold">{formatMoney(chargesTotal)}</div>
                     </div>
                   }
@@ -501,7 +506,7 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
                       <div className="min-w-0 flex-1">
                         <div className="flex justify-between text-[13px]">
                           <span className="font-medium">{c.label}</span>
-                          <span className="k-num">{formatMoney(c.value)}</span>
+                          <span className="k-num tabular-nums">{formatMoney(c.value)}</span>
                         </div>
                         <div className="truncate text-[11.5px] text-fg-3">{c.note}</div>
                       </div>
@@ -510,11 +515,11 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
                 </div>
               </div>
             ) : (
-              <div className="px-6 pb-4 pt-4 text-[13px] text-fg-3">No charges in this period.</div>
+              <div className="px-6 pb-4 pt-4 text-[13px] text-fg-3">{t("portfolio.an.charges.empty")}</div>
             )}
             <div className="mx-6 mb-6 flex items-center justify-between rounded-[14px] border border-dashed border-line px-4 py-3 text-[12.5px]">
               <span className="text-fg-3">
-                Spread cost <span className="text-fg-2">(estimate, already in prices)</span>
+                {t("portfolio.an.charges.spread")} <span className="text-fg-2">{t("portfolio.an.charges.spreadNote")}</span>
               </span>
               <span className="k-num font-medium text-fg-2">{formatMoney(ch.spreadEstimate)}</span>
             </div>
@@ -543,15 +548,16 @@ function Loading() {
 }
 
 function Failed({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const t = useT();
   return (
     <Card>
       <EmptyState
         illustration="bar_chart"
-        title="Analytics couldn't be loaded"
+        title={t("portfolio.an.failed")}
         text={message}
         action={
           <Button variant="surface" onClick={onRetry}>
-            <RefreshCw /> Try again
+            <RefreshCw /> {t("common.retry")}
           </Button>
         }
       />
@@ -563,6 +569,13 @@ function Failed({ message, onRetry }: { message: string; onRetry: () => void }) 
 /* Pages                                                               */
 /* ------------------------------------------------------------------ */
 
+function usePeriodLabel(period: Period) {
+  const t = useT();
+  if (period === "ALL") return t("portfolio.an.period.allTime");
+  if (period === "1Y") return t("portfolio.an.period.last12Months");
+  return t("portfolio.an.period.lastDays", { count: PERIOD_DAYS[period] });
+}
+
 export function statementUrl(login: number, from: string, to: string, format: "pdf" | "csv" | "xlsx") {
   return `/api/reports/accounts/${login}/statement?from=${from}&to=${to}&format=${format}`;
 }
@@ -572,14 +585,15 @@ export function LiveAnalyticsPage() {
   const [period, setPeriod] = React.useState<Period>("90D");
   const { data, error, loading, reload } = useAnalytics(account, period);
   const accounts = data?.accounts ?? [];
-  const label = account === "all" ? "All live accounts" : `#${account}`;
+  const t = useT();
+  const label = account === "all" ? t("portfolio.an.allLive") : `#${account}`;
   const range = periodRange(period);
-  const periodLabel = period === "ALL" ? "All time" : `Last ${period.replace("D", " days").replace("1Y", "12 months")}`;
+  const periodLabel = usePeriodLabel(period);
   return (
     <div className="pb-24">
       <PageHeader
-        title="Analytics"
-        subtitle="How you trade: performance, risk, money flow and behaviour. USD, server time."
+        title={t("portfolio.an.title")}
+        subtitle={t("portfolio.an.subtitle")}
         actions={
           <>
             <Menu
@@ -590,16 +604,16 @@ export function LiveAnalyticsPage() {
                 </Button>
               }
               items={[
-                { label: "All live accounts", onSelect: () => setAccount("all") },
+                { label: t("portfolio.an.allLive"), onSelect: () => setAccount("all") },
                 "sep",
-                ...accounts.map((a) => ({ label: <span className="font-mono">#{a.login}</span>, hint: `${a.type === "demo" ? "Demo · " : ""}${a.groupName}`, onSelect: () => setAccount(a.login) })),
+                ...accounts.map((a) => ({ label: <span className="font-mono">#{a.login}</span>, hint: `${a.type === "demo" ? `${t("common.demo")} · ` : ""}${a.groupName}`, onSelect: () => setAccount(a.login) })),
               ]}
             />
-            <Segmented value={period} onChange={setPeriod} options={PERIODS} />
+            <Segmented value={period} onChange={setPeriod} options={PERIODS.map((p) => ({ value: p, label: t(`portfolio.an.period.${p}`) }))} />
             {account === "all" ? (
               <Link href="/portfolio/statements">
                 <Button variant="ember">
-                  <FileText /> Statements
+                  <FileText /> {t("portfolio.st.title")}
                 </Button>
               </Link>
             ) : (
@@ -607,10 +621,10 @@ export function LiveAnalyticsPage() {
                 align="end"
                 trigger={
                   <Button variant="ember">
-                    <Download /> Export
+                    <Download /> {t("common.export")}
                   </Button>
                 }
-                items={(["pdf", "xlsx", "csv"] as const).map((f) => ({ label: `Statement (${f.toUpperCase()})`, href: statementUrl(account, range.from, range.to, f) }))}
+                items={(["pdf", "xlsx", "csv"] as const).map((f) => ({ label: t("portfolio.an.statementFormat", { format: f.toUpperCase() }), href: statementUrl(account, range.from, range.to, f) }))}
               />
             )}
           </>
@@ -621,11 +635,11 @@ export function LiveAnalyticsPage() {
           <Card>
             <EmptyState
               illustration="bar_chart"
-              title="No trading accounts yet"
-              text="Open an account and trade; your analytics appear here."
+              title={t("portfolio.noAccounts.title")}
+              text={t("portfolio.an.noAccountsText")}
               action={
                 <Link href="/accounts/new">
-                  <Button variant="ember">Open account</Button>
+                  <Button variant="ember">{t("portfolio.openAccount")}</Button>
                 </Link>
               }
             />
@@ -645,20 +659,21 @@ export function AccountAnalyticsPanel({ login }: { login: number }) {
   const [period, setPeriod] = React.useState<Period>("90D");
   const { data, error, loading, reload } = useAnalytics(login, period);
   const range = periodRange(period);
-  const periodLabel = period === "ALL" ? "All time" : `Last ${period.replace("D", " days").replace("1Y", "12 months")}`;
+  const periodLabel = usePeriodLabel(period);
+  const t = useT();
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <Segmented value={period} onChange={setPeriod} options={PERIODS} />
+        <Segmented value={period} onChange={setPeriod} options={PERIODS.map((p) => ({ value: p, label: t(`portfolio.an.period.${p}`) }))} />
         <div className="flex items-center gap-2">
           <a href={statementUrl(login, range.from, range.to, "pdf")}>
             <Button size="sm" variant="surface">
-              <Download /> PDF statement
+              <Download /> {t("portfolio.an.pdfStatement")}
             </Button>
           </a>
           <Link href="/portfolio/analytics">
             <Button size="sm" variant="ghost">
-              <GaugeIcon /> All accounts
+              <GaugeIcon /> {t("portfolio.an.allAccounts")}
             </Button>
           </Link>
         </div>

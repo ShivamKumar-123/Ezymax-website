@@ -7,6 +7,7 @@ import { Bell, CandlestickChart, Star } from "lucide-react";
 import { Button, Chip, Delta, Dialog, EquityChart, IconButton, PriceText, Segmented, SymbolAvatar, cn, formatNumber, useFeedMode, useQuote } from "@kalks/ui";
 import { ASSET_CLASS_LABEL, IS_DEMO, candles, fetchCandles, getInstrument, isMarketOpen, priceFeed, serverOffset, type Candle, type Instrument } from "@kalks/mock";
 import { CONTRACT_SPECS } from "@kalks/mock/markets-extra";
+import { tr, useT } from "@kalks/i18n/react";
 
 const RANGES = { "1M": 30, "3M": 90, "6M": 180 } as const;
 
@@ -14,7 +15,7 @@ const RANGES = { "1M": 30, "3M": 90, "6M": 180 } as const;
 function liveSpread(i: Instrument, bid: number, ask: number) {
   if (i.assetClass !== "forex") return formatNumber(ask - bid, i.digits);
   const pip = i.digits === 5 || i.digits === 3 ? Math.pow(10, -(i.digits - 1)) : Math.pow(10, -i.digits);
-  return `${((ask - bid) / pip).toFixed(1)} pips`;
+  return tr("news.instrument.pips", { value: ((ask - bid) / pip).toFixed(1) });
 }
 
 function Body({ symbol, fav, onFav }: { symbol: string; fav: boolean; onFav: () => void }) {
@@ -42,6 +43,8 @@ function Body({ symbol, fav, onFav }: { symbol: string; fav: boolean; onFav: () 
   const todayIdx = new Date((nowSec + serverOffset(nowSec)) * 1000).getUTCDay(); // server-time weekday, 0 Sun
   const open = isMarketOpen(symbol);
   const dayOrder = [1, 2, 3, 4, 5, 6, 0];
+  const t = useT();
+  const dayName = (d: string) => t.dyn(`news.day.${d.toLowerCase()}`, d);
 
   return (
     <div className="space-y-5">
@@ -51,9 +54,9 @@ function Body({ symbol, fav, onFav }: { symbol: string; fav: boolean; onFav: () 
           <div>
             <div className="flex items-center gap-2 text-lg font-semibold">
               {symbol}
-              <Chip size="sm">{ASSET_CLASS_LABEL[inst.assetClass]}</Chip>
+              <Chip size="sm">{t.dyn(`news.assetClass.${inst.assetClass}`, ASSET_CLASS_LABEL[inst.assetClass])}</Chip>
               <Chip size="sm" tone={open ? "up" : "neutral"} dot>
-                {open ? "Market open" : "Market closed"}
+                {open ? t("news.markets.marketOpen") : t("news.markets.marketClosed")}
               </Chip>
             </div>
             <div className="text-[13px] text-fg-3">{inst.name}</div>
@@ -61,11 +64,11 @@ function Body({ symbol, fav, onFav }: { symbol: string; fav: boolean; onFav: () 
         </div>
         <div className="flex gap-2">
           {IS_DEMO && (
-            <IconButton size="sm" aria-label="Price alert" onClick={() => toast.success(`Price alert set for ${symbol}`, { description: `Notify when bid crosses ${formatNumber(q.bid * 1.005, inst.digits)}` })}>
+            <IconButton size="sm" aria-label={t("news.instrument.priceAlert")} onClick={() => toast.success(t("news.instrument.alertSet", { symbol }), { description: t("news.instrument.alertSetDesc", { price: formatNumber(q.bid * 1.005, inst.digits) }) })}>
               <Bell />
             </IconButton>
           )}
-          <IconButton size="sm" active={fav} aria-label="Favourite" onClick={onFav}>
+          <IconButton size="sm" active={fav} aria-label={t("news.markets.favourite")} onClick={onFav}>
             <Star className={cn(fav && "fill-current")} />
           </IconButton>
         </div>
@@ -73,49 +76,49 @@ function Body({ symbol, fav, onFav }: { symbol: string; fav: boolean; onFav: () 
 
       <div className="grid grid-cols-2 gap-3">
         <Link target="_blank" rel="noopener" href={`/trade?symbol=${symbol}&side=sell`} className="k-row group px-4 py-3 transition-colors hover:border-down/40">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-down">Sell · bid</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-down">{t("news.instrument.sellBid")}</div>
           <PriceText symbol={symbol} value={q.bid} dir={q.dir} size="lg" className="mt-1 text-[22px]" />
         </Link>
-        <Link target="_blank" rel="noopener" href={`/trade?symbol=${symbol}&side=buy`} className="k-row group px-4 py-3 text-right transition-colors hover:border-up/40">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-up">Buy · ask</div>
+        <Link target="_blank" rel="noopener" href={`/trade?symbol=${symbol}&side=buy`} className="k-row group px-4 py-3 text-end transition-colors hover:border-up/40">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-up">{t("news.instrument.buyAsk")}</div>
           <PriceText symbol={symbol} value={q.ask} dir={q.dir} size="lg" className="mt-1 text-[22px]" />
         </Link>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-[12px] text-fg-3">
         <span>
-          Change <Delta value={q.change} className="ml-1" />
+          {t("news.instrument.change")} <Delta value={q.change} className="ms-1" />
         </span>
         <span className="k-num">
-          Day range <span className="font-mono text-fg-2">{formatNumber(lo, inst.digits)} – {formatNumber(hi, inst.digits)}</span>
+          {t("news.instrument.dayRange")} <span dir="ltr" className="font-mono text-fg-2">{formatNumber(lo, inst.digits)} – {formatNumber(hi, inst.digits)}</span>
         </span>
         <span className="k-num">
-          Spread <span className="font-mono text-fg-2">{liveSpread(inst, q.bid, q.ask)}</span>
+          {t("news.instrument.spread")} <span className="font-mono text-fg-2">{liveSpread(inst, q.bid, q.ask)}</span>
         </span>
       </div>
 
       <div className="k-row p-3">
         <div className="mb-1 flex items-center justify-between px-1">
-          <span className="k-label">Daily close</span>
+          <span className="k-label">{t("news.instrument.dailyClose")}</span>
           <Segmented size="xs" value={range} onChange={setRange} options={Object.keys(RANGES) as (keyof typeof RANGES)[]} />
         </div>
         {data.length > 1 ? <EquityChart data={data} height={190} color={q.change >= 0 ? "gold" : "down"} /> : <div style={{ height: 190 }} />}
       </div>
 
       <div>
-        <div className="k-label mb-2">Contract specification</div>
+        <div className="k-label mb-2">{t("news.instrument.contractSpec")}</div>
         <div className="grid grid-cols-2 gap-2">
           {[
-            ["Digits", spec.digits],
-            ["Contract size", `${formatNumber(spec.contractSize, 0)} ${spec.contractUnit}`],
-            ["Min / max lot", `${spec.minLot} / ${spec.maxLot}`],
-            ["Lot step", spec.lotStep],
-            ["Max leverage", `1:${spec.leverage}`],
-            ["Margin currency", spec.marginCurrency],
+            [t("news.instrument.spec.digits"), spec.digits],
+            [t("news.instrument.spec.contractSize"), `${formatNumber(spec.contractSize, 0)} ${t.dyn(`news.instrument.unit.${inst.assetClass}`, spec.contractUnit)}`],
+            [t("news.instrument.spec.minMaxLot"), `${spec.minLot} / ${spec.maxLot}`],
+            [t("news.instrument.spec.lotStep"), spec.lotStep],
+            [t("news.instrument.spec.maxLeverage"), `1:${spec.leverage}`],
+            [t("news.instrument.spec.marginCurrency"), spec.marginCurrency],
             // swap rates come from the trading engine, which isn't live yet: shown in demo builds only
-            ...(!IS_DEMO ? [] : [["Swap long", <span key="sl" className={spec.swapLong < 0 ? "text-down" : "text-up"}>{spec.swapLong.toFixed(2)}</span>],
-            ["Swap short", <span key="ss" className={spec.swapShort < 0 ? "text-down" : "text-up"}>{spec.swapShort.toFixed(2)}</span>],
-            ["Swap type", spec.swapType],
-            ["Triple swap", spec.tripleSwap]] as [string, React.ReactNode][]),
+            ...(!IS_DEMO ? [] : [[t("news.instrument.spec.swapLong"), <span key="sl" className={spec.swapLong < 0 ? "text-down" : "text-up"}>{spec.swapLong.toFixed(2)}</span>],
+            [t("news.instrument.spec.swapShort"), <span key="ss" className={spec.swapShort < 0 ? "text-down" : "text-up"}>{spec.swapShort.toFixed(2)}</span>],
+            [t("news.instrument.spec.swapType"), spec.swapType === "Points" ? t("news.instrument.swapType.points") : t("news.instrument.swapType.percent")],
+            [t("news.instrument.spec.tripleSwap"), dayName(spec.tripleSwap)]] as [string, React.ReactNode][]),
           ].map(([k, v], i) => (
             <div key={i} className="rounded-xl border border-line bg-surface-2 px-3 py-2">
               <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
@@ -127,7 +130,7 @@ function Body({ symbol, fav, onFav }: { symbol: string; fav: boolean; onFav: () 
 
       <div>
         <div className="k-label mb-2 flex items-center justify-between">
-          Trading hours <span className="font-normal normal-case tracking-normal text-fg-3">server time GMT+3</span>
+          {t("news.instrument.tradingHours")} <span className="font-normal normal-case tracking-normal text-fg-3">{t("news.instrument.serverTime")}</span>
         </div>
         <div className="divide-y divide-line rounded-[14px] border border-line bg-surface-2">
           {dayOrder.map((d, i) => {
@@ -137,14 +140,14 @@ function Body({ symbol, fav, onFav }: { symbol: string; fav: boolean; onFav: () 
             return (
               <div key={h.day} className={cn("flex items-center justify-between px-4 py-2 text-[12.5px]", today && "bg-ember-soft/60")}>
                 <span className={cn("flex items-center gap-2", today ? "font-medium text-fg" : "text-fg-2")}>
-                  {h.day}
+                  {dayName(h.day)}
                   {today && (
                     <Chip size="sm" tone="ember">
-                      Today
+                      {t("common.today")}
                     </Chip>
                   )}
                 </span>
-                <span className={cn("k-num font-mono", closed ? "text-fg-3" : "text-fg")}>{h.sessions}</span>
+                <span dir="ltr" className={cn("k-num font-mono", closed ? "text-fg-3" : "text-fg")}>{closed ? t("news.sessionClosed") : h.sessions}</span>
               </div>
             );
           })}
@@ -155,25 +158,26 @@ function Body({ symbol, fav, onFav }: { symbol: string; fav: boolean; onFav: () 
 }
 
 export function InstrumentDrawer({ symbol, onClose, fav, onFav }: { symbol: string | null; onClose: () => void; fav: boolean; onFav: () => void }) {
+  const t = useT();
   return (
     <Dialog
       open={!!symbol}
       onOpenChange={(o) => !o && onClose()}
       side="right"
-      title="Instrument details"
-      description={symbol ? `${symbol} · live quote and contract specification` : undefined}
+      title={t("news.instrument.title")}
+      description={symbol ? t("news.instrument.description", { symbol }) : undefined}
       footer={
         symbol ? (
           <>
             <Link target="_blank" rel="noopener" href={`/trade?symbol=${symbol}&side=sell`}>
-              <Button variant="down-outline">Sell</Button>
+              <Button variant="down-outline">{t("common.sell")}</Button>
             </Link>
             <Link target="_blank" rel="noopener" href={`/trade?symbol=${symbol}&side=buy`}>
-              <Button variant="up-outline">Buy</Button>
+              <Button variant="up-outline">{t("common.buy")}</Button>
             </Link>
             <Link target="_blank" rel="noopener" href={`/trade?symbol=${symbol}`}>
               <Button variant="ember">
-                <CandlestickChart /> Trade {symbol}
+                <CandlestickChart /> {t("news.instrument.trade", { symbol })}
               </Button>
             </Link>
           </>

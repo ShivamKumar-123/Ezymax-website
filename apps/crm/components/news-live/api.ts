@@ -3,6 +3,7 @@
 // Browser client for the news + calendar BFF (/api/news/*, see app/api/news/[...path]/route.ts).
 
 import * as React from "react";
+import { tr } from "@kalks/i18n/react";
 
 export type Sentiment = "bullish" | "bearish" | "neutral";
 export type NewsItem = {
@@ -85,10 +86,10 @@ export async function newsApi<T>(path: string, init?: { method?: "GET" | "POST" 
     });
   } catch (e) {
     if ((e as Error).name === "AbortError") throw e;
-    throw new NewsError(0, "network", "Network error. Check your connection and try again.");
+    throw new NewsError(0, "network", tr("common.networkError"));
   }
   const data = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string } };
-  if (!res.ok) throw new NewsError(res.status, data.error?.code ?? "error", data.error?.message ?? "Something went wrong. Please try again.");
+  if (!res.ok) throw new NewsError(res.status, data.error?.code ?? "error", data.error?.message ?? tr("common.errorRetry"));
   return data as T;
 }
 
@@ -108,7 +109,7 @@ export function useNewsApi<T>(path: string | null, refreshMs = 0) {
       })
       .catch((e) => {
         if ((e as Error).name === "AbortError") return;
-        setError(e instanceof NewsError ? e : new NewsError(0, "error", "Something went wrong."));
+        setError(e instanceof NewsError ? e : new NewsError(0, "error", tr("common.errorRetry")));
       });
     return () => ctl.abort();
   }, [path, tick]);

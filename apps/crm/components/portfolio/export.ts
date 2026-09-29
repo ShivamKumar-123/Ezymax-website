@@ -1,9 +1,10 @@
 import { toast } from "sonner";
+import { tr } from "@kalks/i18n/react";
 
 /** Builds a CSV from plain rows and triggers a browser download. */
 export function downloadCsv(name: string, rows: Record<string, string | number>[]) {
   if (!rows.length) {
-    toast.error("Nothing to export", { description: "Adjust your filters and try again." });
+    toast.error(tr("portfolio.export.nothing"), { description: tr("portfolio.export.nothingDesc") });
     return;
   }
   const head = Object.keys(rows[0]!);
@@ -22,7 +23,7 @@ export function downloadCsv(name: string, rows: Record<string, string | number>[
   } catch {
     /* ignore — toast still confirms */
   }
-  toast.success(`${name}.csv exported`, { description: `${rows.length} rows · times in GMT+3` });
+  toast.success(tr("portfolio.export.done", { file: `${name}.csv` }), { description: tr("portfolio.export.doneDesc", { count: rows.length }) });
 }
 
 /** "24 Sep 2026, 14:03" in server time (GMT+3). */

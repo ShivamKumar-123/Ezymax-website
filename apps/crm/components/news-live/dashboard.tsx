@@ -6,6 +6,7 @@ import { Button, Card, CardHeader, Chip, Skeleton, WorldMap, cn } from "@kalks/u
 import { useNewsApi, type CalendarWeek, type Feed, type NewsItem, type NewsMap } from "./api";
 import { StoryDialog, useMapPins } from "./news-page";
 import { Flag, ago, coverFor, gmt, useNow } from "./shared";
+import { useFormat, useT } from "@kalks/i18n/react";
 
 /** Dashboard: latest headlines (pinned first). */
 export function LiveNewsCard() {
@@ -13,30 +14,31 @@ export function LiveNewsCard() {
   const [open, setOpen] = React.useState<NewsItem | null>(null);
   const now = useNow(60_000) ?? Date.now();
   const items = [...(feed.data?.pinned ?? []), ...(feed.data?.items ?? [])].slice(0, 4);
+  const t = useT();
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Market news"
+        title={t("news.dash.news.title")}
         action={
           <Link href="/news">
             <Button size="sm" variant="surface">
-              All news
+              {t("news.dash.news.allNews")}
             </Button>
           </Link>
         }
       />
       <div className="mt-4 flex-1 space-y-2 px-4 pb-5 sm:px-6">
         {feed.loading && Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[84px] w-full" />)}
-        {!feed.loading && items.length === 0 && <div className="py-10 text-center text-[13px] text-fg-3">{feed.error ? feed.error.message : "No headlines yet."}</div>}
+        {!feed.loading && items.length === 0 && <div className="py-10 text-center text-[13px] text-fg-3">{feed.error ? feed.error.message : t("news.dash.news.empty")}</div>}
         {items.map((n) => (
-          <button key={n.id} onClick={() => setOpen(n)} className="k-row flex w-full items-start gap-3.5 px-3.5 py-3 text-left transition-colors hover:bg-surface-3/60" data-testid="dashboard-news">
+          <button key={n.id} onClick={() => setOpen(n)} className="k-row flex w-full items-start gap-3.5 px-3.5 py-3 text-start transition-colors hover:bg-surface-3/60" data-testid="dashboard-news">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={coverFor(n)} alt="" className="size-14 shrink-0 rounded-xl object-cover opacity-90" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-[11.5px] text-fg-3">
                 {n.pinned && (
                   <Chip size="sm" tone="ember">
-                    Pinned
+                    {t("news.pinned")}
                   </Chip>
                 )}
                 <span className="truncate">{n.source.name}</span>·<span className="shrink-0" suppressHydrationWarning>{ago(n.publishedAt, now)}</span>
@@ -69,33 +71,35 @@ export function LiveCalendarCard() {
   const upcoming = (cal.data?.events ?? []).filter((e) => !e.allDay && (now === null || new Date(e.startsAt).getTime() > now - 2 * 3600_000));
   const today = now ? new Date(now + offset * 3600_000).toISOString().slice(0, 10) : null;
   const list = upcoming.slice(0, 5);
+  const t = useT();
+  const f = useFormat();
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
-        title="Economic calendar"
-        subtitle={`Medium and high impact · ${gmt(offset)}`}
+        title={t("news.cal.title")}
+        subtitle={t("news.dash.calendar.subtitle", { tz: gmt(offset) })}
         action={
           <Link href="/calendar">
             <Button size="sm" variant="surface">
-              View all
+              {t("common.viewAll")}
             </Button>
           </Link>
         }
       />
       <div className="mt-4 flex-1 space-y-2 px-4 pb-5 sm:px-6">
         {cal.loading && Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[62px] w-full" />)}
-        {!cal.loading && list.length === 0 && <div className="py-10 text-center text-[13px] text-fg-3">{cal.error ? cal.error.message : "Nothing scheduled for the rest of the week."}</div>}
+        {!cal.loading && list.length === 0 && <div className="py-10 text-center text-[13px] text-fg-3">{cal.error ? cal.error.message : t("news.dash.calendar.empty")}</div>}
         {list.map((e) => (
-          <Link key={e.id} href="/calendar" className="k-row relative flex items-center gap-3 overflow-hidden py-3 pl-5 pr-4 transition-colors hover:bg-surface-3/60" data-testid="dashboard-calendar">
-            <span className={cn("absolute inset-y-2 left-0 w-[3px] rounded-r-full", e.impact === 3 ? "bg-down" : "bg-warn")} />
+          <Link key={e.id} href="/calendar" className="k-row relative flex items-center gap-3 overflow-hidden py-3 ps-5 pe-4 transition-colors hover:bg-surface-3/60" data-testid="dashboard-calendar">
+            <span className={cn("absolute inset-y-2 start-0 w-[3px] rounded-e-full", e.impact === 3 ? "bg-down" : "bg-warn")} />
             <div className="w-12 shrink-0 font-mono text-[12px] leading-tight text-fg-3">
-              {e.serverDate !== today && <div className="text-[10px] uppercase">{new Date(`${e.serverDate}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" })}</div>}
+              {e.serverDate !== today && <div className="text-[10px] uppercase">{f.date(`${e.serverDate}T12:00:00Z`, { weekday: "short", timeZone: "UTC" })}</div>}
               {e.serverTime}
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-[13.5px] font-medium">{e.title}</div>
               <div className="k-num mt-0.5 text-[11.5px] text-fg-3">
-                {e.actual ? <span className={cn(e.surprise === 1 ? "text-up" : e.surprise === -1 ? "text-down" : "text-fg-2")}>A {e.actual} · </span> : null}F {e.forecast || "—"} · P {e.previous || "—"}
+                {e.actual ? <span className={cn(e.surprise === 1 ? "text-up" : e.surprise === -1 ? "text-down" : "text-fg-2")}>{t("news.abbr.actual")} {e.actual} · </span> : null}{t("news.abbr.forecast")} {e.forecast || "—"} · {t("news.abbr.previous")} {e.previous || "—"}
               </div>
             </div>
             <Chip size="sm" tone={e.impact === 3 ? "down" : "neutral"}>
@@ -113,11 +117,12 @@ export function LiveCalendarCard() {
 export function LiveWorldCard() {
   const map = useNewsApi<NewsMap>("map?hours=24", 5 * 60_000);
   const { pins, heat } = useMapPins(map.data);
+  const t = useT();
   return (
     <Card className="h-full">
-      <CardHeader title="Markets & news around the world" subtitle="Headlines by country, last 24 hours" action={<Chip tone="ember">{map.data ? `${map.data.total} stories today` : "Loading"}</Chip>} />
+      <CardHeader title={t("news.dash.world.title")} subtitle={t("news.dash.world.subtitle")} action={<Chip tone="ember">{map.data ? t("news.dash.world.storiesToday", { count: map.data.total }) : t("common.loading")}</Chip>} />
       <div className="px-4 pt-2 sm:px-6">
-        <Link href="/news" aria-label="Open market news">
+        <Link href="/news" aria-label={t("news.dash.world.open")}>
           <WorldMap pins={pins} heat={heat} />
         </Link>
       </div>

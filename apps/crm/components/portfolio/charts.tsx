@@ -3,6 +3,7 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { cn, formatCompact, formatMoney } from "@kalks/ui";
+import { tr } from "@kalks/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
@@ -173,7 +174,7 @@ export function DrawdownChart({ times, values, height = 160, className }: { time
           className="pointer-events-none absolute z-10 rounded-lg border border-line bg-surface-3/95 px-2.5 py-1.5 text-[11px] shadow-xl"
           style={{ top: `${Math.min(52, (y(values[hover ?? worst]!) / H) * 100)}%`, ...((hover ?? worst) / (n - 1) > 0.6 ? { right: `${(1 - (hover ?? worst) / (n - 1)) * 100 + 1.5}%` } : { left: `${((hover ?? worst) / (n - 1)) * 100 + 1.5}%` }) }}
         >
-          <div className="font-mono text-fg-3">{hover === null ? "Max drawdown" : fmtDate(times[hover]!)}</div>
+          <div className="font-mono text-fg-3">{hover === null ? tr("portfolio.an.kpi.maxDrawdown") : fmtDate(times[hover]!)}</div>
           <div className="k-num font-semibold text-down">{values[hover ?? worst]!.toFixed(2)}%</div>
         </div>
       </div>
@@ -350,17 +351,17 @@ export function HourHeatmap({ rows, className }: { rows: { day: string; cells: {
         <div className="k-num h-5">
           {hover && cell ? (
             <span>
-              <span className="text-fg-2">{rows[hover.d]!.day} {String(hover.h).padStart(2, "0")}:00–{String(hover.h + 1).padStart(2, "0")}:00</span> · {cell.trades} trades ·{" "}
+              <span className="text-fg-2">{rows[hover.d]!.day} {String(hover.h).padStart(2, "0")}:00–{String(hover.h + 1).padStart(2, "0")}:00</span> · {tr("portfolio.trades", { count: cell.trades })} ·{" "}
               <span className={cell.pnl >= 0 ? "text-up" : "text-down"}>{cell.pnl >= 0 ? "+" : "-"}{formatMoney(Math.abs(cell.pnl))}</span>
             </span>
           ) : (
-            "Hover a cell · server time GMT+3"
+            tr("portfolio.chart.hoverHint")
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span>Loss</span>
+          <span>{tr("common.loss")}</span>
           <span className="h-2 w-24 rounded-full" style={{ background: "linear-gradient(90deg, var(--k-down), var(--k-surface-3), var(--k-up))" }} />
-          <span>Profit</span>
+          <span>{tr("common.profit")}</span>
         </div>
       </div>
     </div>

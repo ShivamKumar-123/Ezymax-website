@@ -7,7 +7,8 @@ import { Bookmark, ExternalLink, Link2, Pin, RefreshCw, Sparkles, X } from "luci
 import { Button, Card, CardHeader, Chip, Delta, Dialog, MarketSessions, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, WorldMap, cn, useQuotes, type MapPin } from "@kalks/ui";
 import { INSTRUMENT_MAP } from "@kalks/mock";
 import { useNewsApi, type Brief, type Feed, type NewsItem, type NewsMap, type Sentiment } from "./api";
-import { CATEGORY_LABEL, COUNTRY_NAME, Flag, SENT, SentimentChip, SymbolPill, ago, coverFor, heatOf, useNow } from "./shared";
+import { COUNTRY_NAME, Flag, SENT, SentimentChip, SymbolPill, ago, categoryLabel, countryName, coverFor, heatOf, useNow } from "./shared";
+import { tr, useFormat, useT } from "@kalks/i18n/react";
 
 const CATS = ["all", "macro", "forex", "metals", "indices", "energies", "crypto", "stocks"] as const;
 type Cat = (typeof CATS)[number];
@@ -28,17 +29,17 @@ function useSaved() {
       try {
         localStorage.setItem(SAVED_KEY, JSON.stringify(next));
       } catch {}
-      toast.success(on ? "Removed from your reading list" : "Saved to your reading list");
+      toast.success(on ? tr("news.saved.removed") : tr("news.saved.added"));
       return next;
     });
   return { saved, toggle };
 }
 
-const MOOD: Record<string, { tone: "up" | "down" | "warn" | "neutral"; label: string }> = {
-  "risk-on": { tone: "up", label: "Risk-on" },
-  "risk-off": { tone: "down", label: "Risk-off" },
-  mixed: { tone: "neutral", label: "Mixed" },
-  cautious: { tone: "warn", label: "Cautious" },
+const MOOD: Record<string, { tone: "up" | "down" | "warn" | "neutral"; labelKey: "news.mood.riskOn" | "news.mood.riskOff" | "news.mood.mixed" | "news.mood.cautious" }> = {
+  "risk-on": { tone: "up", labelKey: "news.mood.riskOn" },
+  "risk-off": { tone: "down", labelKey: "news.mood.riskOff" },
+  mixed: { tone: "neutral", labelKey: "news.mood.mixed" },
+  cautious: { tone: "warn", labelKey: "news.mood.cautious" },
 };
 
 function BriefCard() {
@@ -46,6 +47,8 @@ function BriefCard() {
   const brief = b.data?.brief;
   const watch = (brief?.watch ?? []).filter((s) => INSTRUMENT_MAP[s]);
   const qs = useQuotes(watch);
+  const t = useT();
+  const f = useFormat();
   return (
     <Card hot className="relative h-full overflow-hidden">
       <div className="relative flex h-full flex-col p-6">
@@ -55,13 +58,13 @@ function BriefCard() {
               <Sparkles className="size-4" />
             </span>
             <div>
-              <div className="text-[15px] font-medium">Today&apos;s market brief</div>
+              <div className="text-[15px] font-medium">{t("news.brief.title")}</div>
               <div className="text-[11.5px] text-fg-3">
-                {b.data?.createdAt ? `Written ${new Date(b.data.createdAt).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })} from today's headlines and calendar` : "Written each morning from the headlines and calendar"}
+                {b.data?.createdAt ? t("news.brief.written", { time: f.dateTime(b.data.createdAt, { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: undefined }) }) : t("news.brief.writtenDaily")}
               </div>
             </div>
           </div>
-          {brief && <Chip tone={MOOD[brief.mood]?.tone ?? "neutral"}>{MOOD[brief.mood]?.label ?? brief.mood}</Chip>}
+          {brief && <Chip tone={MOOD[brief.mood]?.tone ?? "neutral"}>{MOOD[brief.mood] ? t(MOOD[brief.mood]!.labelKey) : brief.mood}</Chip>}
         </div>
         {b.loading ? (
           <div className="mt-5 space-y-3">
@@ -71,7 +74,7 @@ function BriefCard() {
           </div>
         ) : !brief ? (
           <p className="mt-5 flex-1 text-[13px] leading-relaxed text-fg-3">
-            {b.data?.configured === false ? "The daily brief isn't switched on for this platform yet." : "Today's brief will appear here shortly. Meanwhile, the latest headlines are below."}
+            {b.data?.configured === false ? t("news.brief.off") : t("news.brief.pending")}
           </p>
         ) : (
           <>
@@ -91,12 +94,12 @@ function BriefCard() {
                   <Link key={s} target="_blank" rel="noopener" href={`/trade?symbol=${s}`} className="flex items-center gap-2 rounded-xl border border-line bg-surface/60 px-2.5 py-2 transition-colors hover:border-ember/40">
                     <SymbolAvatar symbol={s} size={18} />
                     <span className="text-[12px] font-medium">{s}</span>
-                    {qs[s] && <Delta value={qs[s]!.change} className="ml-auto text-[11px]" />}
+                    {qs[s] && <Delta value={qs[s]!.change} className="ms-auto text-[11px]" />}
                   </Link>
                 ))}
               </div>
             )}
-            <p className="mt-3 text-[10.5px] leading-snug text-fg-3">AI-generated summary of public headlines. Not investment advice.</p>
+            <p className="mt-3 text-[10.5px] leading-snug text-fg-3">{t("news.brief.disclaimer")}</p>
           </>
         )}
       </div>
@@ -106,15 +109,16 @@ function BriefCard() {
 
 function FeaturedCard({ n, onOpen }: { n: NewsItem; onOpen: () => void }) {
   const now = useNow(60_000) ?? Date.now();
+  const t = useT();
   return (
-    <button onClick={onOpen} className="k-card group relative block h-full min-h-[380px] w-full overflow-hidden text-left">
+    <button onClick={onOpen} className="k-card group relative block h-full min-h-[380px] w-full overflow-hidden text-start">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={coverFor(n)} alt="" className="absolute inset-0 size-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/75 to-bg/10" />
-      <div className="absolute inset-0 bg-gradient-to-r from-bg/70 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-bg/70 to-transparent rtl:bg-gradient-to-l" />
       <div className="relative flex h-full flex-col justify-end p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-2 text-[12px] text-fg-2">
-          <Chip tone="ember">{n.pinned ? "Pinned" : "Top story"}</Chip>
+          <Chip tone="ember">{n.pinned ? t("news.pinned") : t("news.featured.topStory")}</Chip>
           <SentimentChip s={n.sentiment} />
           <span>{n.source.name}</span>·<span suppressHydrationWarning>{ago(n.publishedAt, now)}</span>
         </div>
@@ -124,7 +128,7 @@ function FeaturedCard({ n, onOpen }: { n: NewsItem; onOpen: () => void }) {
           {n.symbols.map((s) => (
             <SymbolPill key={s} s={s} />
           ))}
-          <span className="ml-auto hidden text-[12.5px] font-medium text-ember group-hover:underline sm:inline">Details →</span>
+          <span className="ms-auto hidden text-[12.5px] font-medium text-ember group-hover:underline sm:inline">{t("news.featured.details")}</span>
         </div>
       </div>
     </button>
@@ -132,20 +136,21 @@ function FeaturedCard({ n, onOpen }: { n: NewsItem; onOpen: () => void }) {
 }
 
 function StoryCard({ n, saved, onSave, onOpen, now }: { n: NewsItem; saved: boolean; onSave: () => void; onOpen: () => void; now: number }) {
+  const t = useT();
   return (
     <div role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => e.key === "Enter" && onOpen()} className="k-card group flex h-full cursor-pointer flex-col overflow-hidden transition-colors hover:border-[var(--k-border-top)]" data-testid="news-card">
       <div className="relative h-36 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={coverFor(n)} alt="" className="size-full object-cover opacity-80" />
         <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
-        <div className="absolute left-3 top-3 flex gap-1.5">
+        <div className="absolute start-3 top-3 flex gap-1.5">
           <SentimentChip s={n.sentiment} className="bg-bg/75" />
           <Chip size="sm" className="bg-bg/70">
-            {CATEGORY_LABEL[n.category] ?? n.category}
+            {categoryLabel(n.category)}
           </Chip>
           {n.pinned && (
             <Chip size="sm" tone="ember" className="bg-bg/80">
-              <Pin className="size-3" /> Pinned
+              <Pin className="size-3" /> {t("news.pinned")}
             </Chip>
           )}
         </div>
@@ -154,8 +159,8 @@ function StoryCard({ n, saved, onSave, onOpen, now }: { n: NewsItem; saved: bool
             e.stopPropagation();
             onSave();
           }}
-          aria-label={saved ? "Remove from reading list" : "Save to reading list"}
-          className={cn("absolute right-3 top-3 grid size-8 place-items-center rounded-full border border-line bg-bg/70 transition-colors hover:text-fg", saved ? "text-ember" : "text-fg-2")}
+          aria-label={saved ? t("news.saved.removeAria") : t("news.saved.addAria")}
+          className={cn("absolute end-3 top-3 grid size-8 place-items-center rounded-full border border-line bg-bg/70 transition-colors hover:text-fg", saved ? "text-ember" : "text-fg-2")}
         >
           <Bookmark className={cn("size-3.5", saved && "fill-current")} />
         </button>
@@ -182,34 +187,36 @@ function StoryCard({ n, saved, onSave, onOpen, now }: { n: NewsItem; saved: bool
 export function StoryDialog({ open, onClose, saved, onSave }: { open: NewsItem | null; onClose: () => void; saved?: boolean; onSave?: () => void }) {
   const now = useNow(60_000) ?? Date.now();
   const tradable = open?.symbols.find((s) => INSTRUMENT_MAP[s]);
+  const t = useT();
+  const f = useFormat();
   return (
     <Dialog
       open={!!open}
       onOpenChange={(o) => !o && onClose()}
       width={680}
       title={open?.source.name ?? ""}
-      description={open ? `${ago(open.publishedAt, now)} · ${new Date(open.publishedAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}` : undefined}
+      description={open ? `${ago(open.publishedAt, now)} · ${f.dateTime(open.publishedAt, { dateStyle: "medium", timeStyle: "short", timeZone: undefined })}` : undefined}
       footer={
         open ? (
           <>
             {onSave && (
               <Button variant="ghost" onClick={onSave}>
-                <Bookmark /> {saved ? "Saved" : "Save"}
+                <Bookmark /> {saved ? t("news.story.saved") : t("common.save")}
               </Button>
             )}
             {open.link && (
               <Button
                 variant="surface"
                 onClick={() => {
-                  navigator.clipboard?.writeText(open.link).then(() => toast.success("Link copied"), () => toast.error("Couldn't copy the link"));
+                  navigator.clipboard?.writeText(open.link).then(() => toast.success(t("news.story.linkCopied")), () => toast.error(t("news.story.copyFailed")));
                 }}
               >
-                <Link2 /> Copy link
+                <Link2 /> {t("news.story.copyLink")}
               </Button>
             )}
             {tradable && (
               <Link target="_blank" rel="noopener" href={`/trade?symbol=${tradable}`}>
-                <Button variant="ember">Trade {tradable}</Button>
+                <Button variant="ember">{t("news.story.trade", { symbol: tradable })}</Button>
               </Link>
             )}
           </>
@@ -220,11 +227,11 @@ export function StoryDialog({ open, onClose, saved, onSave }: { open: NewsItem |
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <SentimentChip s={open.sentiment} />
-            <Chip size="sm">{CATEGORY_LABEL[open.category] ?? open.category}</Chip>
+            <Chip size="sm">{categoryLabel(open.category)}</Chip>
             {open.countries.map((c) => (
               <span key={c} className="flex items-center gap-1.5 text-[12px] text-fg-3">
                 <Flag country={c} />
-                {COUNTRY_NAME[c] ?? c.toUpperCase()}
+                {countryName(c)}
               </span>
             ))}
           </div>
@@ -232,7 +239,7 @@ export function StoryDialog({ open, onClose, saved, onSave }: { open: NewsItem |
           {open.summary && <p className="mt-3 text-[14px] leading-relaxed text-fg-2">{open.summary}</p>}
           {open.symbols.length > 0 && (
             <div className="mt-5">
-              <div className="k-label mb-2">Instruments in this story</div>
+              <div className="k-label mb-2">{t("news.story.instruments")}</div>
               <div className="flex flex-wrap gap-2">
                 {open.symbols.map((s) => (
                   <SymbolPill key={s} s={s} />
@@ -244,12 +251,12 @@ export function StoryDialog({ open, onClose, saved, onSave }: { open: NewsItem |
             <a href={open.link} target="_blank" rel="noopener noreferrer nofollow" className="k-row mt-5 flex items-center gap-3 px-4 py-3 text-[13px] transition-colors hover:border-ember/40">
               <ExternalLink className="size-4 shrink-0 text-ember" />
               <span className="min-w-0 flex-1">
-                <span className="font-medium text-fg">Read the full story at {open.source.name}</span>
-                <span className="block truncate text-[11.5px] text-fg-3">{open.link}</span>
+                <span className="font-medium text-fg">{t("news.story.readFull", { source: open.source.name })}</span>
+                <span dir="ltr" className="block truncate text-start text-[11.5px] text-fg-3">{open.link}</span>
               </span>
             </a>
           )}
-          <p className="mt-3 text-[11px] leading-snug text-fg-3">Headline and summary by {open.source.name}. Tags and tone are assigned automatically.</p>
+          <p className="mt-3 text-[11px] leading-snug text-fg-3">{t("news.story.attribution", { source: open.source.name })}</p>
         </div>
       )}
     </Dialog>
@@ -257,11 +264,12 @@ export function StoryDialog({ open, onClose, saved, onSave }: { open: NewsItem |
 }
 
 export function useMapPins(map: NewsMap | null) {
+  const t = useT();
   return React.useMemo(() => {
     const countries = map?.countries ?? [];
-    const pins: MapPin[] = countries.map((c) => ({ country: c.country, count: c.count, label: c.name || COUNTRY_NAME[c.country] || c.country.toUpperCase(), tone: c.sentiment > 0.2 ? "up" : c.sentiment < -0.2 ? "down" : "ember" }));
+    const pins: MapPin[] = countries.map((c) => ({ country: c.country, count: c.count, label: t.dyn(`news.country.${c.country}`, c.name || COUNTRY_NAME[c.country] || c.country.toUpperCase()), tone: c.sentiment > 0.2 ? "up" : c.sentiment < -0.2 ? "down" : "ember" }));
     return { pins, heat: heatOf(countries) };
-  }, [map]);
+  }, [map, t]);
 }
 
 export function LiveNewsPage() {
@@ -274,6 +282,7 @@ export function LiveNewsPage() {
   const [loadingMore, setLoadingMore] = React.useState(false);
   const { saved, toggle } = useSaved();
   const now = useNow(60_000) ?? Date.now();
+  const t = useT();
 
   const qs = new URLSearchParams({ limit: "36" });
   if (cls !== "all") qs.set("category", cls);
@@ -297,7 +306,7 @@ export function LiveNewsPage() {
       setMore((m) => [...m, ...((r.items as NewsItem[]) ?? [])]);
       setNext(r.next ?? null);
     } catch {
-      toast.error("Couldn't load more stories");
+      toast.error(t("news.list.loadMoreError"));
     } finally {
       setLoadingMore(false);
     }
@@ -315,13 +324,13 @@ export function LiveNewsPage() {
   return (
     <div className="pb-24">
       <PageHeader
-        title="Market news"
-        subtitle={total !== null ? `${total} stories in the last 48 hours · headlines from central banks, statistics offices and news publishers` : "Headlines from central banks, statistics offices and news publishers"}
+        title={t("news.page.title")}
+        subtitle={total !== null ? t("news.page.subtitleCount", { count: total }) : t("news.page.subtitle")}
         actions={
           <div className="flex items-center gap-2">
-            <Chip tone="up">{pos} positive</Chip>
-            <Chip tone="down">{neg} negative</Chip>
-            <Button variant="surface" size="sm" onClick={() => (feed.reload(), map.reload())} aria-label="Refresh">
+            <Chip tone="up">{t("news.page.positive", { count: pos })}</Chip>
+            <Chip tone="down">{t("news.page.negative", { count: neg })}</Chip>
+            <Button variant="surface" size="sm" onClick={() => (feed.reload(), map.reload())} aria-label={t("common.refresh")}>
               <RefreshCw />
             </Button>
           </div>
@@ -335,7 +344,7 @@ export function LiveNewsPage() {
           ) : featured ? (
             <FeaturedCard n={featured} onOpen={() => setOpen(featured)} />
           ) : (
-            <Card className="grid h-full min-h-[380px] place-items-center px-6 text-center text-[13.5px] text-fg-3">{feed.error ? feed.error.message : "No stories yet. Headlines appear here as publishers release them."}</Card>
+            <Card className="grid h-full min-h-[380px] place-items-center px-6 text-center text-[13.5px] text-fg-3">{feed.error ? feed.error.message : t("news.page.empty")}</Card>
           )}
         </Reveal>
         <Reveal delay={0.08} className="xl:col-span-4">
@@ -346,7 +355,7 @@ export function LiveNewsPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal delay={0.1} className="xl:col-span-8">
           <Card className="h-full">
-            <CardHeader title="News around the world" subtitle="Stories by country in the last 48 hours · colour shows headline tone · click a pin to filter" action={<Chip tone="ember">{pins.length} countries</Chip>} />
+            <CardHeader title={t("news.world.title")} subtitle={t("news.world.subtitle")} action={<Chip tone="ember">{t("news.world.countries", { count: pins.length })}</Chip>} />
             <div className="px-3 pt-2 sm:px-8">
               <WorldMap pins={pins} heat={heat} onPin={(p) => setCountry((c) => (c === p.country ? null : p.country))} />
             </div>
@@ -367,7 +376,7 @@ export function LiveNewsPage() {
         </Reveal>
         <Reveal delay={0.15} className="xl:col-span-4">
           <Card className="h-full">
-            <CardHeader title="Most mentioned" subtitle="Instruments in the last 48 hours of headlines" />
+            <CardHeader title={t("news.mentions.title")} subtitle={t("news.mentions.subtitle")} />
             <div className="space-y-1.5 px-4 pb-5 pt-3 sm:px-6">
               {(map.data?.mentions ?? []).slice(0, 5).map((m, i) => (
                 <Link key={m.symbol} target="_blank" rel="noopener" href={`/trade?symbol=${m.symbol}`} className="k-row flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-surface-3/60">
@@ -375,11 +384,11 @@ export function LiveNewsPage() {
                   <SymbolAvatar symbol={m.symbol} size={22} />
                   <span className="flex-1 text-[13px] font-medium">{m.symbol}</span>
                   <span className="k-num text-[11.5px] text-fg-3">
-                    {m.count} {m.count === 1 ? "story" : "stories"}
+                    {t("news.stories", { count: m.count })}
                   </span>
                 </Link>
               ))}
-              {map.data && map.data.mentions.length === 0 && <div className="py-6 text-center text-[12.5px] text-fg-3">No instrument mentions yet.</div>}
+              {map.data && map.data.mentions.length === 0 && <div className="py-6 text-center text-[12.5px] text-fg-3">{t("news.mentions.empty")}</div>}
             </div>
             <div className="px-6 pb-6 pt-1">
               <MarketSessions />
@@ -391,7 +400,7 @@ export function LiveNewsPage() {
       <Reveal delay={0.05} className="mt-6">
         <div className="flex flex-wrap items-center gap-2">
           <div className="max-w-full overflow-x-auto">
-            <Segmented value={cls} onChange={setCls} options={CATS.map((c) => ({ value: c, label: c === "all" ? "All" : c === "macro" ? "Macro" : CATEGORY_LABEL[c]! }))} />
+            <Segmented value={cls} onChange={setCls} options={CATS.map((c) => ({ value: c, label: c === "all" ? t("common.all") : c === "macro" ? t("news.category.macroShort") : categoryLabel(c) }))} />
           </div>
           <div className="flex items-center gap-1.5">
             {(Object.keys(SENT) as Sentiment[]).map((s) => {
@@ -406,7 +415,7 @@ export function LiveNewsPage() {
                   )}
                 >
                   {SENT[s].icon}
-                  {SENT[s].label}
+                  {t(SENT[s].labelKey)}
                 </button>
               );
             })}
@@ -414,11 +423,11 @@ export function LiveNewsPage() {
           {country && (
             <button onClick={() => setCountry(null)} className="flex h-8 items-center gap-1.5 rounded-full border border-ember/40 bg-ember-soft px-3 text-[12px] font-medium text-ember">
               <Flag country={country} />
-              {COUNTRY_NAME[country] ?? country.toUpperCase()}
+              {countryName(country)}
               <X className="size-3.5" />
             </button>
           )}
-          <span className="ml-auto text-[12.5px] text-fg-3">{list.length} stories</span>
+          <span className="ms-auto text-[12.5px] text-fg-3">{t("news.stories", { count: list.length })}</span>
         </div>
       </Reveal>
 
@@ -430,7 +439,7 @@ export function LiveNewsPage() {
             ))}
           </div>
         ) : list.length === 0 ? (
-          <Card className="py-16 text-center text-[13.5px] text-fg-3">{feed.error ? feed.error.message : "No stories match these filters."}</Card>
+          <Card className="py-16 text-center text-[13.5px] text-fg-3">{feed.error ? feed.error.message : t("news.list.empty")}</Card>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {list.map((n) => (
@@ -441,7 +450,7 @@ export function LiveNewsPage() {
         {next && (
           <div className="mt-6 flex justify-center">
             <Button variant="surface" onClick={loadMore} disabled={loadingMore}>
-              {loadingMore ? "Loading…" : "Load older stories"}
+              {loadingMore ? t("common.loading") : t("news.list.loadMore")}
             </Button>
           </div>
         )}
