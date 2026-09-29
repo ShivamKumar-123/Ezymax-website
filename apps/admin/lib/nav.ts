@@ -264,6 +264,7 @@ export const ADMIN_NAV: NavModule[] = [
     section: "owner",
     sub: [
       { href: "/brokers", label: "Tenants" },
+      { href: "/brokers/overview", label: "Cross-tenant dashboard" },
       { href: "/brokers/billing", label: "Billing" },
       { href: "/brokers/modules", label: "Modules & plans" },
       { href: "/brokers/symbols", label: "Global symbols" },
@@ -284,6 +285,7 @@ export const ADMIN_NAV: NavModule[] = [
       { href: "/settings/countries", label: "Countries" },
       { href: "/settings/webhooks", label: "Webhooks" },
       { href: "/settings/maintenance", label: "Maintenance" },
+      { href: "/settings/features", label: "Features & modules" },
     ],
   },
 ];

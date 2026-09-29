@@ -11,6 +11,9 @@ export async function proxy(req: NextRequest) {
   if (IS_DEMO) return NextResponse.next();
   const token = req.cookies.get(STAFF_COOKIE)?.value;
 
+  // staff invite links: set a password, no session yet
+  if (pathname.startsWith("/invite/")) return NextResponse.next();
+
   if (pathname === "/login") {
     if (!token) return NextResponse.next();
     const r = await gateway("/v1/admin/auth/me", { token, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });

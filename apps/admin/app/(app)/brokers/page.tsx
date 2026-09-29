@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveTenants } from "@/components/owner/tenants";
+
 import * as React from "react";
 import { toast } from "sonner";
 import { Building2, Coins, Eye, KeyRound, MoreHorizontal, Plus, Receipt, Users, Ban, Globe2 } from "lucide-react";
@@ -34,7 +37,7 @@ type Filter = "all" | BrkTenant["status"];
 const TONE_BG: Record<string, string> = { up: "bg-up", down: "bg-down", ember: "bg-ember", gold: "bg-gold", info: "bg-info", warn: "bg-warn" };
 const ONBOARD_STEPS = ["Company", "DNS", "Branding", "Modules", "Billing", "Go-live"];
 
-export default function TenantsPage() {
+function TenantsPage() {
   const [tenants, setTenants] = React.useState<BrkTenant[]>(BRK_TENANTS);
   const [filter, setFilter] = React.useState<Filter>("all");
   const [wizard, setWizard] = React.useState(false);
@@ -402,4 +405,8 @@ export default function TenantsPage() {
       <TenantDrawer tenant={open} onOpenChange={(o) => !o && setOpenId(null)} onStatus={setStatus} />
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <TenantsPage /> : <LiveTenants />;
 }

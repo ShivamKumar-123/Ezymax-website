@@ -28,7 +28,8 @@ export const PARTNER_ROLE_MAP: Record<PartnerPerm, readonly string[]> = {
 };
 
 /** Whether a staff member (role + gateway permission list) holds an IB programme permission. */
-export function partnersAllow(staff: { role: string; permissions?: string[] }, perm: PartnerPerm): boolean {
+export function partnersAllow(staff: { role: string; permissions?: string[]; rbac?: boolean }, perm: PartnerPerm): boolean {
+  if (staff.rbac) return staff.permissions?.includes(perm) ?? false;
   const fromGateway = staff.permissions?.some((p) => p.startsWith("partners."));
   if (fromGateway) return staff.permissions!.includes(perm);
   return PARTNER_ROLE_MAP[perm].includes(staff.role);

@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveBilling } from "@/components/owner/billing";
+
 import * as React from "react";
 import { toast } from "sonner";
 import { AlertTriangle, Ban, Calculator, CalendarClock, Coins, Download, FileText, Mail, Plus, Receipt, Send, TrendingUp, Wallet } from "lucide-react";
@@ -31,7 +34,7 @@ type Filter = "all" | BrkInvoice["status"];
 const STATUS_TONE = { paid: "up", pending: "warn", overdue: "down" } as const;
 const d = (iso: string) => formatDateTime(iso, { day: "2-digit", month: "short", year: "numeric" });
 
-export default function BillingPage() {
+function BillingPage() {
   const [invoices, setInvoices] = React.useState(BRK_INVOICES);
   const [filter, setFilter] = React.useState<Filter>("all");
   const [openInv, setOpenInv] = React.useState<BrkInvoice | null>(null);
@@ -422,4 +425,8 @@ function InvoiceDrawer({ inv, onClose, onPaid }: { inv: BrkInvoice | null; onClo
       </div>
     </Dialog>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <BillingPage /> : <LiveBilling />;
 }

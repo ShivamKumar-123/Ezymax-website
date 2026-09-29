@@ -8,7 +8,7 @@ import { ADMIN_NAV } from "@/lib/nav";
  */
 
 /** Pages (path prefixes) that run on real data in live builds. */
-export const LIVE_PAGES = ["/", "/clients", "/security", "/org", "/trading", "/config", "/content/academy", "/partners", "/finance", "/prop", "/algo"] as const;
+export const LIVE_PAGES = ["/", "/clients", "/security", "/org", "/trading", "/config", "/content/academy", "/partners", "/finance", "/prop", "/algo", "/brokers", "/settings/maintenance", "/settings/features"] as const;
 
 /** Sub-pages under a live prefix that are not live yet. */
 export const LIVE_EXCLUDED = [
@@ -17,8 +17,6 @@ export const LIVE_EXCLUDED = [
   "/clients/duplicates",
   "/clients/segments",
   "/security/users",
-  "/security/ip",
-  "/org/roles",
   "/org/desks",
   "/org/kpis",
   // trading: everything runs on the trading engine except these two
@@ -32,6 +30,8 @@ export const LIVE_EXCLUDED = [
   "/config/sessions",
   "/config/demo",
   "/partners/sub-brokers",
+  // owner panel: everything but the global symbol master
+  "/brokers/symbols",
   // finance: deposits, withdrawals, wallets, reconciliation and wallet settings run on the wallet service
   "/finance/transactions",
   "/finance/adjustments",

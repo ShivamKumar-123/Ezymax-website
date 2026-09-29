@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveIpAllowlist } from "@/components/rbac/ip";
+
 import * as React from "react";
 import { toast } from "sonner";
 import { Copy, FlaskConical, Globe, MapPin, MoreHorizontal, Pencil, Plus, ShieldAlert, ShieldCheck, ShieldOff, Trash2, User, Users, Wifi } from "lucide-react";
@@ -31,7 +34,7 @@ import { Mono, ago } from "@/components/security/shared";
 
 type Mode = "enforce" | "grace" | "off";
 
-export default function IpWhitelistPage() {
+function IpWhitelistPage() {
   const [rules, setRules] = React.useState<SecIpRule[]>(SEC_IP_RULES);
   const [mode, setMode] = React.useState<Mode>("enforce");
   const [dialog, setDialog] = React.useState<{ open: boolean; rule: SecIpRule | null; prefill?: string }>({ open: false, rule: null });
@@ -353,4 +356,8 @@ export default function IpWhitelistPage() {
       <IpRuleDialog open={dialog.open} initial={dialog.rule} prefill={dialog.prefill} onOpenChange={(o) => setDialog((d) => ({ ...d, open: o }))} onSave={save} />
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <IpWhitelistPage /> : <LiveIpAllowlist />;
 }

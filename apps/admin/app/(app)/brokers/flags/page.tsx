@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveFlags } from "@/components/owner/platform";
+
 import * as React from "react";
 import { Activity, ChevronDown, FlaskConical, Flag as FlagIcon, History, Plus, Rocket, Search, ShieldAlert, Timer } from "lucide-react";
 import { toast } from "sonner";
@@ -24,7 +27,7 @@ function statusOf(f: FlgFlag): { tone: ChipTone; label: string } {
   return { tone: "ember", label: "Partial rollout" };
 }
 
-export default function FlagsPage() {
+function FlagsPage() {
   const [flags, setFlags] = React.useState<FlgFlag[]>(FLG_FLAGS);
   const [expanded, setExpanded] = React.useState<string | null>(FLG_FLAGS[0]!.key);
   const [filter, setFilter] = React.useState<Filter>("all");
@@ -316,4 +319,8 @@ export default function FlagsPage() {
       <NewFlagDialog open={open} onOpenChange={setOpen} onCreate={(f) => setFlags((fs) => [f, ...fs])} />
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <FlagsPage /> : <LiveFlags />;
 }

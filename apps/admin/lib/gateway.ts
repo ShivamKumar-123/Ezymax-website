@@ -11,12 +11,28 @@ export type GatewayStaff = {
   id: number;
   email: string;
   name: string;
+  /** Built-in role name the downstream services check (`x-kalks-staff-role`); for custom roles the smallest
+   *  built-in role that covers their service permissions (services/gateway/src/rbac.rs `service_role`). */
   role: string;
+  /** The staff member's actual role: a built-in key (`dealer`) or a custom role key (`c-kyc-desk-x1`). */
+  role_key?: string;
+  role_id?: number | null;
   role_label: string;
-  /** Back Office permissions of the role, e.g. "clients.read", "spreads.write" (see services/gateway/src/admin.rs). */
+  /** Every Back Office permission of the role, e.g. "clients.read", "dealing.write" (services/gateway/src/rbac.rs). */
   permissions?: string[];
-  tenant: { slug: string; name: string };
+  /** True when `permissions` is the gateway's authoritative list: local role maps (lib/*-perms.ts) are ignored. */
+  rbac?: boolean;
+  /** Platform Owner (holds owner.* permissions). */
+  is_owner?: boolean;
+  tenant: { id?: number; slug: string; name: string };
 };
+
+/** Whether a staff member holds a permission. The gateway's list is authoritative when `rbac` is set; `fallback`
+ *  (a local role map) is consulted only for older gateways that returned no keys for the module. */
+export function staffCan(staff: { role: string; permissions?: string[]; rbac?: boolean }, perm: string, fallback?: () => boolean): boolean {
+  if (staff.rbac || !fallback) return staff.permissions?.includes(perm) ?? false;
+  return fallback();
+}
 
 /** Demo builds (NEXT_PUBLIC_KALKS_MODE=demo) skip staff sign-in and browse the mock showcase as this staff member. */
 export const DEMO_STAFF: GatewayStaff = {
@@ -31,7 +47,7 @@ export const DEMO_STAFF: GatewayStaff = {
 
 type Forward = { ip?: string | null; userAgent?: string | null; device?: string | null; token?: string | null };
 
-export async function gateway<T = Record<string, unknown>>(path: string, init: { method?: "GET" | "POST" | "PUT"; body?: unknown } & Forward = {}): Promise<{ status: number; data: T }> {
+export async function gateway<T = Record<string, unknown>>(path: string, init: { method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; body?: unknown } & Forward = {}): Promise<{ status: number; data: T }> {
   const headers: Record<string, string> = { "x-kalks-internal": INTERNAL_TOKEN, "x-kalks-tenant": "kalks" };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   if (init.ip) headers["x-forwarded-for"] = init.ip;
@@ -63,6 +79,7 @@ export function safeNext(next: string | null | undefined, fallback = "/"): strin
 export async function fetchStaff(token: string, h: Headers): Promise<GatewayStaff | null | "unavailable"> {
   const r = await gateway<{ staff?: GatewayStaff }>("/v1/admin/auth/me", { token, ip: clientIp(h), userAgent: h.get("user-agent") });
   if (r.status === 200 && r.data.staff) return r.data.staff;
-  if (r.status === 401) return null;
+  // 401: no live session; 403: the session is blocked (IP allow-list, suspended tenant) and must sign in again
+  if (r.status === 401 || r.status === 403) return null;
   return "unavailable";
 }

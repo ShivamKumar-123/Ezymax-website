@@ -34,3 +34,16 @@ export async function requireStaff(req: NextRequest, perm?: string): Promise<{ s
   if (perm && !staff.permissions?.includes(perm)) return apiError(403, "forbidden", "Your role doesn't allow this.");
   return { staff, token };
 }
+
+/** Development: the gateway returns an invite path when email isn't configured; show a full link on this origin. */
+export function withInviteUrl(req: NextRequest, data: unknown): unknown {
+  const fix = (o: Record<string, unknown> | undefined) => {
+    if (o && typeof o.dev_invite_path === "string") o.dev_invite_url = new URL(o.dev_invite_path, req.nextUrl.origin).toString();
+  };
+  if (data && typeof data === "object") {
+    const d = data as Record<string, Record<string, unknown> | undefined>;
+    fix(d.invite);
+    fix(d.admin_invite);
+  }
+  return data;
+}

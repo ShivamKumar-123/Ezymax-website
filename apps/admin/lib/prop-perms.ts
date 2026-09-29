@@ -35,7 +35,8 @@ export const PROP_ROLE_MAP: Record<PropPerm, readonly string[]> = {
 export const isPropPerm = (p: string): p is PropPerm => (PROP_PERMS as readonly string[]).includes(p);
 
 /** Whether a staff member (role + gateway permission list) holds a prop permission. */
-export function propAllows(staff: { role: string; permissions?: string[] }, perm: PropPerm): boolean {
+export function propAllows(staff: { role: string; permissions?: string[]; rbac?: boolean }, perm: PropPerm): boolean {
+  if (staff.rbac) return staff.permissions?.includes(perm) ?? false;
   const fromGateway = staff.permissions?.some((p) => p.startsWith("prop."));
   if (fromGateway) return staff.permissions!.includes(perm);
   return PROP_ROLE_MAP[perm].includes(staff.role);

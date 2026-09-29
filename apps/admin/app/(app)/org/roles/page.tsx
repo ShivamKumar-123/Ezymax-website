@@ -1,11 +1,14 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveRoles } from "@/components/rbac/roles";
+
 import { toast } from "sonner";
 import { History, ShieldCheck } from "lucide-react";
 import { Button, PageHeader } from "@kalks/ui";
 import { PermissionBuilder } from "@/components/org/permission-builder";
 
-export default function RolesPage() {
+function RolesPage() {
   return (
     <div className="pb-16">
       <PageHeader
@@ -26,4 +29,8 @@ export default function RolesPage() {
       <PermissionBuilder />
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <RolesPage /> : <LiveRoles />;
 }

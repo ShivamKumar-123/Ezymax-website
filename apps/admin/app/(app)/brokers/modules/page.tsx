@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveModules } from "@/components/owner/platform";
+
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
@@ -30,7 +33,7 @@ type PlanKey = "starter" | "growth" | "enterprise";
 type Matrix = Record<BrkModuleKey, Record<PlanKey, boolean>>;
 const initialMatrix = () => Object.fromEntries(BRK_MODULES.map((m) => [m.key, { ...m.plans }])) as Matrix;
 
-export default function ModulesPage() {
+function ModulesPage() {
   const [matrix, setMatrix] = React.useState<Matrix>(initialMatrix);
   const [prices, setPrices] = React.useState<Record<string, number>>(() => Object.fromEntries(BRK_MODULES.map((m) => [m.key, m.addOn])));
   const base = React.useMemo(initialMatrix, []);
@@ -324,4 +327,8 @@ function TenantOverrides() {
       </div>
     </Card>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <ModulesPage /> : <LiveModules />;
 }

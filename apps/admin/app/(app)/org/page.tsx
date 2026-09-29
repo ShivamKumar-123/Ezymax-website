@@ -1,7 +1,7 @@
 "use client";
 
 import { IS_DEMO } from "@kalks/mock/mode";
-import { LiveOrg } from "@/components/live/org";
+import { LiveStaff } from "@/components/rbac/staff";
 
 import * as React from "react";
 import { toast } from "sonner";
@@ -319,5 +319,5 @@ function DemoEmployeesPage() {
 
 /** Live builds: real data from the gateway / market-data. Demo builds: the mock showcase above. */
 export default function Page() {
-  return IS_DEMO ? <DemoEmployeesPage /> : <LiveOrg />;
+  return IS_DEMO ? <DemoEmployeesPage /> : <LiveStaff />;
 }

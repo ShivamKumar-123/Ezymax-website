@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveSystem } from "@/components/owner/platform";
+
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
@@ -30,7 +33,7 @@ import { PEOPLE } from "@kalks/mock/people";
 import { ConfirmDialog, SectionLabel, Select, TenantLogo, Textarea, timeAgo } from "@/components/brokers/kit";
 import { IncidentItem, SVC_LABEL, SVC_TONE, ServiceCard, UptimeBars } from "@/components/brokers/system-widgets";
 
-export default function SystemOpsPage() {
+function SystemOpsPage() {
   const [incidents, setIncidents] = React.useState<BrkIncident[]>(BRK_INCIDENTS);
   const [post, setPost] = React.useState(false);
   const degraded = BRK_SERVICES.filter((s) => s.status !== "operational").length;
@@ -483,4 +486,8 @@ function PostIncidentDialog({ open, onOpenChange, onPost }: { open: boolean; onO
       </div>
     </Dialog>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <SystemOpsPage /> : <LiveSystem />;
 }

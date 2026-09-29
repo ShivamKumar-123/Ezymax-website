@@ -42,7 +42,8 @@ export const TRADING_ROLE_MAP: Record<TradingPerm, readonly string[]> = {
 export const isTradingPerm = (p: string): p is TradingPerm => (TRADING_PERMS as readonly string[]).includes(p);
 
 /** Whether a staff member (role + gateway permission list) holds a trading permission. */
-export function tradingAllows(staff: { role: string; permissions?: string[] }, perm: TradingPerm): boolean {
+export function tradingAllows(staff: { role: string; permissions?: string[]; rbac?: boolean }, perm: TradingPerm): boolean {
+  if (staff.rbac) return staff.permissions?.includes(perm) ?? false;
   const fromGateway = staff.permissions?.some((p) => p.startsWith("dealing."));
   if (fromGateway) return staff.permissions!.includes(perm);
   return TRADING_ROLE_MAP[perm].includes(staff.role);

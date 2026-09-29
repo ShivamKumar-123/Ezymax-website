@@ -38,7 +38,8 @@ export const WALLET_ROLE_MAP: Record<WalletPerm, readonly string[]> = {
 export const isWalletPerm = (p: string): p is WalletPerm => (WALLET_PERMS as readonly string[]).includes(p);
 
 /** Whether a staff member (role + gateway permission list) holds a wallet permission. */
-export function walletAllows(staff: { role: string; permissions?: string[] }, perm: WalletPerm): boolean {
+export function walletAllows(staff: { role: string; permissions?: string[]; rbac?: boolean }, perm: WalletPerm): boolean {
+  if (staff.rbac) return staff.permissions?.includes(perm) ?? false;
   if (staff.permissions?.includes("finance.read")) return staff.permissions.includes(perm);
   return WALLET_ROLE_MAP[perm].includes(staff.role);
 }

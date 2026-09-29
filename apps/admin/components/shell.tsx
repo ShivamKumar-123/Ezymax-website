@@ -1,8 +1,11 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { AppShell, Avatar, Tooltip } from "@kalks/ui";
+import { IS_DEMO } from "@kalks/mock/mode";
 import { NAV } from "@/lib/live";
+import { navFor } from "@/lib/access";
 import { AdminTopRight } from "@/components/topbar";
 import { signOut, useStaff } from "@/components/staff-session";
 
@@ -19,10 +22,12 @@ function onRailSignOut(e: React.MouseEvent) {
 /** Back Office chrome for the signed-in staff member. */
 export function BackOfficeShell({ children }: { children: React.ReactNode }) {
   const staff = useStaff();
+  // live builds hide every page the staff member's role can't open (permissions come from the gateway)
+  const modules = React.useMemo(() => (IS_DEMO ? NAV : navFor(NAV, staff)), [staff]);
   return (
     <div className="contents" onClickCapture={onRailSignOut}>
       <AppShell
-        modules={NAV}
+        modules={modules}
         pillVariant="text"
         brandSuffix={<span className="hidden whitespace-nowrap rounded-md border border-line px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-fg-2 sm:inline">BACK OFFICE</span>}
         railFooter={

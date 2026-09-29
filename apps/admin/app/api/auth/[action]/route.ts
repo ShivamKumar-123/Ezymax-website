@@ -9,6 +9,8 @@ const POST_ACTIONS: Record<string, string> = {
   "verify-otp": "/v1/admin/auth/verify-otp",
   resend: "/v1/admin/auth/resend",
   logout: "/v1/admin/auth/logout",
+  // staff invite: set a password, then the emailed sign-in code (verify-otp) issues the session
+  "invite-accept": "/v1/admin/auth/invite/accept",
 };
 
 const PROD = process.env.NODE_ENV === "production";
@@ -72,6 +74,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ act
 export async function GET(req: NextRequest, { params }: { params: Promise<{ action: string }> }) {
   const { action } = await params;
   const token = req.cookies.get(STAFF_COOKIE)?.value;
+  if (action === "invite") {
+    const t = req.nextUrl.searchParams.get("token") ?? "";
+    if (!/^[A-Za-z0-9_-]{20,128}$/.test(t)) return error(410, "invite_expired", "This invite link is invalid or has expired.");
+    const r = await gateway(`/v1/admin/auth/invite?token=${encodeURIComponent(t)}`, { ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });
+    return NextResponse.json(r.data, { status: r.status, headers: { "cache-control": "no-store" } });
+  }
   if (action === "me") {
     if (!token) return error(401, "unauthorized", "Please sign in.");
     const r = await gateway("/v1/admin/auth/me", { token, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });
@@ -84,7 +92,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ acti
     if (token) {
       // only clear a cookie that really is dead, so a cross-site link can't sign someone out
       const r = await gateway("/v1/admin/auth/me", { token, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });
-      if (r.status !== 401) return NextResponse.redirect(new URL(next || "/", req.url));
+      // 403 = blocked session (IP allow-list, suspended broker): it's dead for this browser too
+      if (r.status !== 401 && r.status !== 403) return NextResponse.redirect(new URL(next || "/", req.url));
     }
     const url = new URL("/login", req.url);
     if (next) url.searchParams.set("next", next);

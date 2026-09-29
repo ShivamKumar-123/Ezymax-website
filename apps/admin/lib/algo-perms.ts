@@ -30,7 +30,8 @@ export const ALGO_ROLE_MAP: Record<AlgoPerm, readonly string[]> = {
 };
 
 /** Whether a staff member (role + gateway permission list) holds an algo permission. */
-export function algoAllows(staff: { role: string; permissions?: string[] }, perm: AlgoPerm): boolean {
+export function algoAllows(staff: { role: string; permissions?: string[]; rbac?: boolean }, perm: AlgoPerm): boolean {
+  if (staff.rbac) return staff.permissions?.includes(perm) ?? false;
   const fromGateway = staff.permissions?.some((p) => p.startsWith("algo."));
   if (fromGateway) return staff.permissions!.includes(perm);
   return ALGO_ROLE_MAP[perm].includes(staff.role);

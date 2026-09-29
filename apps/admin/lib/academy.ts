@@ -22,7 +22,8 @@ export const CONTENT_ROLE_MAP: Record<ContentPerm, readonly string[]> = {
   "content.write": ["platform_owner", "super_admin", "admin", "marketing"],
 };
 
-export function contentAllows(staff: { role: string; permissions?: string[] }, perm: ContentPerm): boolean {
+export function contentAllows(staff: { role: string; permissions?: string[]; rbac?: boolean }, perm: ContentPerm): boolean {
+  if (staff.rbac) return staff.permissions?.includes(perm) ?? false;
   if (staff.permissions?.some((p) => p.startsWith("content."))) return staff.permissions.includes(perm);
   return CONTENT_ROLE_MAP[perm].includes(staff.role);
 }

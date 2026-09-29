@@ -1,5 +1,8 @@
 "use client";
 
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveMaintenance } from "@/components/rbac/settings";
+
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
@@ -35,7 +38,7 @@ function ScopePicker({ value, onChange }: { value: string[]; onChange: (v: strin
   );
 }
 
-export default function MaintenancePage() {
+function MaintenancePage() {
   const [on, setOn] = React.useState(false);
   const [confirm, setConfirm] = React.useState(false);
   const [scope, setScope] = React.useState<string[]>(["Client Area", "Trading terminal", "API"]);
@@ -479,4 +482,8 @@ export default function MaintenancePage() {
       </Dialog>
     </div>
   );
+}
+
+export default function Page() {
+  return IS_DEMO ? <MaintenancePage /> : <LiveMaintenance />;
 }
