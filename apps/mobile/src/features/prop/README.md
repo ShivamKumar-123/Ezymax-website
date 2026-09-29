@@ -11,7 +11,7 @@ Prop challenges in the Kalks app: the plan catalogue and checkout, a live rule d
 | `/prop/payouts` | `screens/PayoutsScreen.tsx` | Available / in review / paid totals, each funded account's quote (profit, split, firm share, fee refund) with what still blocks it, the request sheet, profit split and scaling, history. |
 | `/prop/certificates` | `screens/CertificatesScreen.tsx` | Every certificate as a colour tile; the viewer draws it and shares it. |
 
-Other modules link to `/prop` (More tab, Home). Deposit shortcuts go to `/wallet/deposit`, KYC to `/profile/verification`, support to `/support`.
+`/prop/mine` (the Client Area's page, used by the prop service's notification links) redirects to the challenge in `?id=`, else to `/prop`. Other modules link to `/prop` (More tab, Home). Deposit shortcuts go to `/wallet/deposit`, KYC to `/profile/verification`, support to `/support`.
 
 ## Data
 
