@@ -134,7 +134,7 @@ export function HistoryScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
-      <ChatHeader title={t("support.history.title")} subtitle={items.length ? t("mobileAi.support.count", { count: items.length }) : undefined} />
+      <ChatHeader title={t("support.page.title")} subtitle={items.length ? t("mobileAi.support.count", { count: items.length }) : undefined} />
       {body}
     </View>
   );
