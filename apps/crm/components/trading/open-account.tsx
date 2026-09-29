@@ -7,12 +7,13 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, Copy, Info, KeyRound, Lock, RotateCw, TriangleAlert, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, EmptyState, Field, Icon3D, Input, KeyValue, PageHeader, Reveal, Skeleton, Stepper, Toggle, cn } from "@kalks/ui";
+import { Trans, useT } from "@kalks/i18n/react";
 import { PasswordInput } from "@/components/accounts/security";
 import { ApiError, modeLabel, serverOf, tradingApi, useAccounts, useGroups, type AccountKind, type EngineAccount, type EngineGroup, type OpenResult } from "./api";
 import { EngineGroupCard, commissionText, groupPhoto, spreadType } from "./group-card";
 import { FundButton, PasswordRules, SecretField, TradeButton, livePasswordOk } from "./ui";
 
-const STEPS = ["Account", "Type", "Configure", "Confirm", "Done"];
+const STEPS = ["accounts.wizard.step.account", "accounts.wizard.step.type", "accounts.wizard.step.configure", "accounts.wizard.step.confirm", "accounts.wizard.step.done"] as const;
 const DEMO_BALANCES = [1000, 5000, 10000, 25000, 50000, 100000];
 
 interface Cfg {
@@ -32,13 +33,14 @@ const usedIn = (accounts: EngineAccount[], g: EngineGroup, kind: AccountKind) =>
 const money = (v: number, cent: boolean) => (cent ? `USC ${(v * 100).toLocaleString("en-US")}` : `$${v.toLocaleString("en-US")}`);
 
 function KindCard({ kind, selected, onSelect, demoGroup }: { kind: AccountKind; selected: boolean; onSelect: () => void; demoGroup?: EngineGroup }) {
+  const t = useT();
   const live = kind === "live";
   const points = live
-    ? ["Real execution on Kalks-Live", "Starts at a zero balance; funded from your wallet", "Login and passwords issued instantly"]
+    ? [t("accounts.kind.live.point1"), t("accounts.kind.live.point2"), t("accounts.kind.live.point3")]
     : [
-        `Virtual funds (default ${demoGroup ? `$${demoGroup.demoInitialBalance.toLocaleString("en-US")}` : "$10,000"})`,
-        `Refill up to ${demoGroup?.demoRefillsPerDay ?? 3}× per day`,
-        `Expires after ${demoGroup?.demoExpiryDays ?? 10} days without a terminal login`,
+        t("accounts.kind.demo.virtualFunds", { amount: demoGroup ? `$${demoGroup.demoInitialBalance.toLocaleString("en-US")}` : "$10,000" }),
+        t("accounts.kind.demo.refill", { count: demoGroup?.demoRefillsPerDay ?? 3 }),
+        t("accounts.kind.demo.expires", { days: demoGroup?.demoExpiryDays ?? 10 }),
       ];
   return (
     <button
@@ -46,13 +48,13 @@ function KindCard({ kind, selected, onSelect, demoGroup }: { kind: AccountKind; 
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "relative flex h-full flex-col overflow-hidden rounded-[20px] border p-6 text-left transition-colors duration-200",
+        "relative flex h-full flex-col overflow-hidden rounded-[20px] border p-6 text-start transition-colors duration-200",
         selected ? (live ? "border-ember/60 bg-surface shadow-[0_0_0_4px_rgba(255,90,31,0.12)]" : "border-gold/60 bg-surface shadow-[0_0_0_4px_rgba(233,185,73,0.12)]") : "k-card hover:border-[var(--k-border-top)]",
       )}
     >
       <div className="flex items-start justify-between">
         <Chip tone={live ? "ember" : "gold"} className="font-semibold tracking-wider">
-          {live ? "LIVE" : "DEMO"}
+          {live ? t("accounts.badge.live") : t("accounts.badge.demo")}
         </Chip>
         <span className={cn("grid size-6 place-items-center rounded-full border transition-colors", selected ? (live ? "border-ember bg-ember text-white" : "border-gold bg-gold text-black") : "border-line")}>
           {selected && <Check className="size-3.5" />}
@@ -61,8 +63,8 @@ function KindCard({ kind, selected, onSelect, demoGroup }: { kind: AccountKind; 
       <div className="mt-4">
         <Icon3D name={live ? "money_bag" : "rocket"} size={64} />
       </div>
-      <div className="mt-4 text-[22px] font-semibold tracking-tight">{live ? "Live account" : "Demo account"}</div>
-      <p className="mt-1 text-[13.5px] text-fg-2">{live ? "Trade real markets with real money." : "Practise risk-free on real-time prices."}</p>
+      <div className="mt-4 text-[22px] font-semibold tracking-tight">{live ? t("accounts.kind.liveTitle") : t("accounts.kind.demoTitle")}</div>
+      <p className="mt-1 text-[13.5px] text-fg-2">{live ? t("accounts.kind.liveText") : t("accounts.kind.demoText")}</p>
       <ul className="mt-4 space-y-2 text-[13px] text-fg-2">
         {points.map((f) => (
           <li key={f} className="flex items-center gap-2">
@@ -75,37 +77,39 @@ function KindCard({ kind, selected, onSelect, demoGroup }: { kind: AccountKind; 
 }
 
 function Summary({ cfg, g, step }: { cfg: Cfg; g: EngineGroup; step: number }) {
+  const t = useT();
+  const mode = t.dyn(`accounts.mode.${g.mode}`, modeLabel(g.mode));
   return (
     <Card className="overflow-hidden">
       <div className="relative h-24 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={groupPhoto(g)} alt="" className="absolute inset-0 size-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--k-surface)] to-black/20" />
-        <div className="absolute bottom-3 left-5 flex items-center gap-2">
+        <div className="absolute bottom-3 start-5 flex items-center gap-2">
           <Chip tone={cfg.kind === "live" ? "ember" : "gold"} className="font-semibold tracking-wider">
-            {cfg.kind.toUpperCase()}
+            {cfg.kind === "live" ? t("accounts.badge.live") : t("accounts.badge.demo")}
           </Chip>
           <span className="text-[17px] font-semibold text-white">
-            {g.name} · {modeLabel(g.mode)}
+            {g.name} · {mode}
           </span>
         </div>
       </div>
       <div className="px-6 pb-5">
         <KeyValue
           rows={[
-            ["Server", <span key="s" className="font-mono">{serverOf({ type: cfg.kind })}</span>],
-            ["Currency", g.cent ? "USC (US cents)" : "USD"],
-            ["Position mode", modeLabel(g.mode)],
-            ["Leverage", `1:${cfg.leverage.toLocaleString("en-US")}`],
-            ["Pricing", spreadType(g)],
-            ["Commission", commissionText(g)],
-            ["Margin call / stop out", `${g.marginCallPct}% / ${g.stopOutPct}%`],
-            cfg.kind === "demo" ? ["Start balance", money(cfg.demoBalance, g.cent)] : ["Min. first deposit", g.minDeposit > 0 ? `$${g.minDeposit.toLocaleString("en-US")}` : "None"],
-            ["Nickname", cfg.nickname || <span key="n" className="text-fg-3">—</span>],
+            [t("accounts.label.server"), <span key="s" className="font-mono">{serverOf({ type: cfg.kind })}</span>],
+            [t("common.currency"), g.cent ? t("accounts.currency.uscUsCents") : "USD"],
+            [t("accounts.label.positionMode"), mode],
+            [t("accounts.label.leverage"), `1:${cfg.leverage.toLocaleString("en-US")}`],
+            [t("accounts.label.pricing"), spreadType(g, t)],
+            [t("accounts.label.commission"), commissionText(g, t)],
+            [t("accounts.label.marginCallStopOut"), `${g.marginCallPct}% / ${g.stopOutPct}%`],
+            cfg.kind === "demo" ? [t("accounts.label.startBalance"), money(cfg.demoBalance, g.cent)] : [t("accounts.label.minFirstDeposit"), g.minDeposit > 0 ? `$${g.minDeposit.toLocaleString("en-US")}` : t("common.none")],
+            [t("accounts.label.nickname"), cfg.nickname || <span key="n" className="text-fg-3">—</span>],
           ]}
         />
         <div className="mt-3 flex items-center gap-2 text-[12px] text-fg-3">
-          <Lock className="size-3.5 shrink-0" /> Step {Math.min(step + 1, 5)} of 5 · after opening only the leverage can be changed
+          <Lock className="size-3.5 shrink-0" /> {t("accounts.summary.stepOf", { step: Math.min(step + 1, 5) })}
         </div>
       </div>
     </Card>
@@ -113,15 +117,16 @@ function Summary({ cfg, g, step }: { cfg: Cfg; g: EngineGroup; step: number }) {
 }
 
 function Created({ res, cfg, g }: { res: OpenResult; cfg: Cfg; g: EngineGroup }) {
+  const t = useT();
   const a = res.account;
   const c = res.credentials;
   const login = String(c.login);
   const server = serverOf(a);
   const copyAll = () => {
-    const text = [`Login: ${login}`, `Server: ${server}`, c.password ? `Trading password: ${c.password}` : null, c.investorPassword ? `Investor password: ${c.investorPassword}` : null].filter(Boolean).join("\n");
+    const text = [`${t("accounts.label.login")}: ${login}`, `${t("accounts.label.server")}: ${server}`, c.password ? `${t("accounts.label.tradingPassword")}: ${c.password}` : null, c.investorPassword ? `${t("accounts.label.investorPassword")}: ${c.investorPassword}` : null].filter(Boolean).join("\n");
     navigator.clipboard?.writeText(text).then(
-      () => toast.success("Credentials copied", { description: "Store them in a password manager." }),
-      () => toast.error("Couldn't copy, please copy each field instead"),
+      () => toast.success(t("accounts.created.copied"), { description: t("accounts.created.copiedDesc") }),
+      () => toast.error(t("accounts.created.copyFailed")),
     );
   };
   return (
@@ -131,26 +136,26 @@ function Created({ res, cfg, g }: { res: OpenResult; cfg: Cfg; g: EngineGroup })
           <span className="grid size-14 place-items-center rounded-full border border-up/30 bg-up-soft text-up">
             <Check className="size-7" />
           </span>
-          <h2 className="mt-5 text-[26px] font-semibold tracking-tight">Your account is ready</h2>
+          <h2 className="mt-5 text-[26px] font-semibold tracking-tight">{t("accounts.created.title")}</h2>
           <p className="mt-2 text-[14px] text-fg-2">
             {a.type === "live"
-              ? "It starts at a zero balance. Deposits open with the Kalks wallet; meanwhile you can log in to Kalks Trader with these credentials."
-              : `Loaded with ${a.cent ? "USC " : "$"}${a.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })} in virtual funds.${a.demo ? ` Expires after ${a.demo.expiryDays} days without a terminal login.` : ""}`}
+              ? t("accounts.created.liveText")
+              : `${t("accounts.created.demoText", { amount: `${a.cent ? "USC " : "$"}${a.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}` })}${a.demo ? ` ${t("accounts.created.demoExpires", { days: a.demo.expiryDays })}` : ""}`}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Chip tone={a.type === "live" ? "ember" : "gold"}>{a.type.toUpperCase()}</Chip>
+            <Chip tone={a.type === "live" ? "ember" : "gold"}>{a.type === "live" ? t("accounts.badge.live") : t("accounts.badge.demo")}</Chip>
             <Chip>
-              {g.name} · {modeLabel(a.mode)}
+              {g.name} · {t.dyn(`accounts.mode.${a.mode}`, modeLabel(a.mode))}
             </Chip>
             <Chip>1:{a.leverage.toLocaleString("en-US")}</Chip>
             {a.cent && <Chip tone="gold">USC</Chip>}
           </div>
           <div className="mt-6 flex flex-wrap gap-2">
-            <TradeButton a={a} size="lg" label="Open in Kalks Trader" />
+            <TradeButton a={a} size="lg" label={t("accounts.created.openInTrader")} />
             {a.type === "live" && <FundButton a={a} size="lg" />}
             <Link href={`/accounts/${a.login}`}>
               <Button variant="surface" size="lg">
-                View account
+                {t("accounts.created.viewAccount")}
               </Button>
             </Link>
           </div>
@@ -158,25 +163,25 @@ function Created({ res, cfg, g }: { res: OpenResult; cfg: Cfg; g: EngineGroup })
         <div className="rounded-[20px] border border-line bg-surface-2/60 p-5">
           <div className="mb-4 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-[15px] font-medium">
-              <KeyRound className="size-4 text-fg-3" /> Login credentials
+              <KeyRound className="size-4 text-fg-3" /> {t("accounts.created.credentials")}
             </div>
             <Button size="xs" variant="surface" onClick={copyAll}>
-              <Copy /> Copy all
+              <Copy /> {t("accounts.created.copyAll")}
             </Button>
           </div>
           <div className="space-y-3">
-            <SecretField label="Login" value={login} />
-            <SecretField label="Server" value={server} hint="GMT+3 / GMT+2" />
-            {c.password && <SecretField label="Trading password" value={c.password} secret hint="Full access" />}
-            {c.investorPassword && <SecretField label="Investor password" value={c.investorPassword} secret hint="Read-only" />}
+            <SecretField label={t("accounts.label.login")} value={login} />
+            <SecretField label={t("accounts.label.server")} value={server} hint="GMT+3 / GMT+2" />
+            {c.password && <SecretField label={t("accounts.label.tradingPassword")} value={c.password} secret hint={t("accounts.hint.fullAccess")} />}
+            {c.investorPassword && <SecretField label={t("accounts.label.investorPassword")} value={c.investorPassword} secret hint={t("accounts.hint.readOnly")} />}
           </div>
           <div className="mt-4 flex items-start gap-2 rounded-[14px] border border-warn/25 bg-warn-soft px-3.5 py-3 text-[12.5px] text-fg-2">
             <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" />
             <span>
-              These passwords are shown <b className="text-fg">only once</b> and are not stored by the Client Area. Save them now; you can set new ones anytime under the account&apos;s Credentials tab.
+              <Trans k="accounts.created.onceWarning" tags={{ b: (ch) => <b className="text-fg">{ch}</b> }} />
             </span>
           </div>
-          {cfg.ownPassword && <p className="mt-3 text-[12px] text-fg-3">The trading password is the one you chose. The investor password was generated for you.</p>}
+          {cfg.ownPassword && <p className="mt-3 text-[12px] text-fg-3">{t("accounts.created.ownPasswordNote")}</p>}
         </div>
       </div>
     </Card>
@@ -184,6 +189,7 @@ function Created({ res, cfg, g }: { res: OpenResult; cfg: Cfg; g: EngineGroup })
 }
 
 function Wizard() {
+  const t = useT();
   const sp = useSearchParams();
   const groupsQ = useGroups();
   const accountsQ = useAccounts(0);
@@ -262,10 +268,10 @@ function Wizard() {
       setCreated(res);
       setCfg((c) => ({ ...c, password: "", confirm: "" }));
       go(1);
-      toast.success(`${cfg.kind === "live" ? "Live" : "Demo"} account #${res.credentials.login} opened`, { description: `${g.name} · ${modeLabel(g.mode)} · 1:${cfg.leverage}` });
+      toast.success(t(cfg.kind === "live" ? "accounts.wizard.openedLive" : "accounts.wizard.openedDemo", { login: res.credentials.login }), { description: `${g.name} · ${t.dyn(`accounts.mode.${g.mode}`, modeLabel(g.mode))} · 1:${cfg.leverage}` });
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Something went wrong. Please try again.";
-      toast.error("Couldn't open the account", { description: msg });
+      const msg = e instanceof ApiError ? e.message : t("common.errorRetry");
+      toast.error(t("accounts.wizard.openFailed"), { description: msg });
       if (e instanceof ApiError && (e.field === "password" || e.field === "investorPassword")) go(-1);
     } finally {
       setBusy(false);
@@ -275,15 +281,15 @@ function Wizard() {
   if (groupsQ.error && !groupsQ.data)
     return (
       <div className="pb-16">
-        <PageHeader title="Open a trading account" />
+        <PageHeader title={t("accounts.wizard.title")} />
         <Card>
           <EmptyState
             illustration="satellite_antenna"
-            title="Account opening is unavailable"
-            text="We couldn't reach the trading service. Please try again in a moment."
+            title={t("accounts.wizard.unavailableTitle")}
+            text={t("accounts.wizard.unavailableText")}
             action={
               <Button variant="surface" onClick={groupsQ.reload}>
-                <RotateCw /> Try again
+                <RotateCw /> {t("common.retry")}
               </Button>
             }
           />
@@ -297,12 +303,12 @@ function Wizard() {
   return (
     <div className="pb-16">
       <PageHeader
-        title="Open a trading account"
-        subtitle="Takes under a minute. Your login and passwords are issued instantly."
+        title={t("accounts.wizard.title")}
+        subtitle={t("accounts.wizard.subtitle")}
         actions={
           <Link href="/accounts">
             <Button variant="surface">
-              <ArrowLeft /> My accounts
+              <ArrowLeft className="rtl:-scale-x-100" /> {t("accounts.list.myAccounts")}
             </Button>
           </Link>
         }
@@ -310,7 +316,7 @@ function Wizard() {
 
       <Reveal>
         <Card className="mb-4 px-5 py-4 sm:px-6">
-          <Stepper steps={STEPS} current={step} />
+          <Stepper steps={STEPS.map((k) => t(k))} current={step} />
         </Card>
       </Reveal>
 
@@ -326,7 +332,7 @@ function Wizard() {
               <motion.div key={step} initial={{ opacity: 0, x: dir * 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: dir * -20 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}>
                 {step === 0 && (
                   <Card>
-                    <CardHeader title="Choose an account" subtitle="You can hold live and demo accounts at the same time." />
+                    <CardHeader title={t("accounts.wizard.chooseTitle")} subtitle={t("accounts.wizard.chooseSubtitle")} />
                     <div className="grid grid-cols-1 gap-4 px-4 pb-6 pt-4 sm:grid-cols-2 sm:px-6">
                       <KindCard kind="live" selected={cfg.kind === "live"} onSelect={() => set("kind", "live")} />
                       <KindCard kind="demo" selected={cfg.kind === "demo"} onSelect={() => set("kind", "demo")} demoGroup={demoRef} />
@@ -336,7 +342,7 @@ function Wizard() {
 
                 {step === 1 && (
                   <Card>
-                    <CardHeader title="Pick an account type" subtitle={`${available.length} types available for ${cfg.kind} accounts`} />
+                    <CardHeader title={t("accounts.wizard.pickTitle")} subtitle={t(cfg.kind === "live" ? "accounts.wizard.pickSubtitleLive" : "accounts.wizard.pickSubtitleDemo", { count: available.length })} />
                     <div className="grid grid-cols-1 gap-4 px-4 pb-6 pt-4 sm:grid-cols-2 sm:px-6 2xl:grid-cols-3">
                       {available.map((x) => (
                         <EngineGroupCard key={x.code} g={x} kind={cfg.kind} used={usedIn(accounts, x, cfg.kind)} selected={g?.code === x.code} onSelect={() => pickGroup(x)} />
@@ -347,12 +353,12 @@ function Wizard() {
 
                 {step === 2 && g && (
                   <Card>
-                    <CardHeader title="Configure your account" subtitle={`${g.name} · ${modeLabel(g.mode)} · ${cfg.kind === "live" ? "Live" : "Demo"}`} />
+                    <CardHeader title={t("accounts.wizard.configureTitle")} subtitle={`${g.name} · ${t.dyn(`accounts.mode.${g.mode}`, modeLabel(g.mode))} · ${cfg.kind === "live" ? t("common.live") : t("common.demo")}`} />
                     <div className="space-y-6 px-4 pb-6 pt-5 sm:px-6">
                       <div>
                         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[12.5px] font-medium text-fg-2">
-                          Leverage
-                          <span className="font-normal text-fg-3">Changeable later, only with no open positions</span>
+                          {t("accounts.label.leverage")}
+                          <span className="font-normal text-fg-3">{t("accounts.wizard.leverageHint")}</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {g.leverages.map((l) => (
@@ -372,14 +378,14 @@ function Wizard() {
                         </div>
                         {cfg.leverage >= 1000 && (
                           <div className="mt-2 flex items-center gap-2 text-[12px] text-warn">
-                            <Info className="size-3.5" /> High leverage magnifies both profits and losses.
+                            <Info className="size-3.5" /> {t("accounts.wizard.highLeverage")}
                           </div>
                         )}
                       </div>
 
                       {cfg.kind === "demo" && (
                         <div>
-                          <div className="mb-2 text-[12.5px] font-medium text-fg-2">Starting balance</div>
+                          <div className="mb-2 text-[12.5px] font-medium text-fg-2">{t("accounts.wizard.startingBalance")}</div>
                           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                             {balances.map((b) => (
                               <button
@@ -387,25 +393,25 @@ function Wizard() {
                                 type="button"
                                 onClick={() => set("demoBalance", b)}
                                 aria-pressed={cfg.demoBalance === b}
-                                className={cn("k-row flex flex-col items-start px-4 py-3 text-left transition-colors", cfg.demoBalance === b ? "border-gold/60 bg-gold-soft" : "hover:border-[var(--k-border-top)]")}
+                                className={cn("k-row flex flex-col items-start px-4 py-3 text-start transition-colors", cfg.demoBalance === b ? "border-gold/60 bg-gold-soft" : "hover:border-[var(--k-border-top)]")}
                               >
                                 <span className={cn("k-num text-[17px] font-semibold", cfg.demoBalance === b ? "text-gold" : "text-fg")}>{money(b, g.cent)}</span>
-                                <span className="text-[11.5px] text-fg-3">virtual funds</span>
+                                <span className="text-[11.5px] text-fg-3">{t("accounts.wizard.virtualFunds")}</span>
                               </button>
                             ))}
                           </div>
                           <div className="mt-2 text-[12px] text-fg-3">
-                            Refill back to this balance up to {g.demoRefillsPerDay}× per day. The account expires after {g.demoExpiryDays} days without a terminal login.
+                            {t("accounts.wizard.refillNote", { count: g.demoRefillsPerDay, days: g.demoExpiryDays })}
                           </div>
                         </div>
                       )}
 
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <Field label="Nickname" hint="Optional, only visible to you">
-                          <Input value={cfg.nickname} maxLength={32} onChange={(e) => set("nickname", e.target.value)} placeholder="e.g. Gold swing" />
+                        <Field label={t("accounts.label.nickname")} hint={t("accounts.wizard.nicknameHint")}>
+                          <Input value={cfg.nickname} maxLength={32} onChange={(e) => set("nickname", e.target.value)} placeholder={t("accounts.wizard.nicknamePlaceholder")} />
                         </Field>
-                        <Field label="Account currency">
-                          <Input value={g.cent ? "USC — US cents (USD × 100)" : "USD — US Dollar"} readOnly leading={<Wallet />} className="opacity-80" />
+                        <Field label={t("accounts.label.accountCurrency")}>
+                          <Input value={g.cent ? t("accounts.currency.uscLong") : t("accounts.currency.usdLong")} readOnly leading={<Wallet />} className="opacity-80" />
                         </Field>
                       </div>
 
@@ -415,19 +421,19 @@ function Wizard() {
                             <KeyRound className="size-4" />
                           </span>
                           <div className="min-w-0 flex-1">
-                            <div className="text-[14px] font-medium">Choose my own trading password</div>
-                            <div className="text-[12.5px] text-fg-3">Off: we generate strong trading and investor passwords and show them once.</div>
+                            <div className="text-[14px] font-medium">{t("accounts.wizard.ownPassword")}</div>
+                            <div className="text-[12.5px] text-fg-3">{t("accounts.wizard.ownPasswordHint")}</div>
                           </div>
-                          <Toggle checked={cfg.ownPassword} onChange={(v) => set("ownPassword", v)} label="Own password" />
+                          <Toggle checked={cfg.ownPassword} onChange={(v) => set("ownPassword", v)} label={t("accounts.wizard.ownPasswordToggle")} />
                         </div>
                         {cfg.ownPassword && (
                           <div className="mt-4 space-y-3">
-                            <Field label="Trading password">
+                            <Field label={t("accounts.label.tradingPassword")}>
                               <PasswordInput value={cfg.password} onChange={(v) => set("password", v)} generate />
                             </Field>
                             <PasswordRules password={cfg.password} />
-                            <Field label="Confirm password" error={cfg.confirm && cfg.confirm !== cfg.password ? "Passwords don't match" : undefined}>
-                              <PasswordInput value={cfg.confirm} onChange={(v) => set("confirm", v)} placeholder="Repeat password" />
+                            <Field label={t("accounts.label.confirmPassword")} error={cfg.confirm && cfg.confirm !== cfg.password ? t("accounts.wizard.passwordsMismatch") : undefined}>
+                              <PasswordInput value={cfg.confirm} onChange={(v) => set("confirm", v)} placeholder={t("accounts.wizard.repeatPassword")} />
                             </Field>
                           </div>
                         )}
@@ -438,14 +444,14 @@ function Wizard() {
 
                 {step === 3 && g && (
                   <Card>
-                    <CardHeader title="Review and confirm" subtitle="Check the details, then open the account." />
+                    <CardHeader title={t("accounts.wizard.reviewTitle")} subtitle={t("accounts.wizard.reviewSubtitle")} />
                     <div className="space-y-5 px-4 pb-6 pt-4 sm:px-6">
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         {[
-                          ["Account", cfg.kind === "live" ? "Live" : "Demo"],
-                          ["Type", `${g.name}`],
-                          ["Leverage", `1:${cfg.leverage.toLocaleString("en-US")}`],
-                          ["Start balance", cfg.kind === "demo" ? money(cfg.demoBalance, g.cent) : g.cent ? "USC 0.00" : "$0.00"],
+                          [t("common.account"), cfg.kind === "live" ? t("common.live") : t("common.demo")],
+                          [t("common.type"), `${g.name}`],
+                          [t("accounts.label.leverage"), `1:${cfg.leverage.toLocaleString("en-US")}`],
+                          [t("accounts.label.startBalance"), cfg.kind === "demo" ? money(cfg.demoBalance, g.cent) : g.cent ? "USC 0.00" : "$0.00"],
                         ].map(([k, v]) => (
                           <div key={k} className="k-row px-4 py-3">
                             <div className="text-[11px] uppercase tracking-wider text-fg-3">{k}</div>
@@ -455,23 +461,23 @@ function Wizard() {
                       </div>
                       <ul className="space-y-1.5 text-[13px] text-fg-2">
                         <li className="flex items-start gap-2">
-                          <Check className="mt-0.5 size-3.5 shrink-0 text-up" /> {cfg.ownPassword ? "Your trading password is set; an investor (read-only) password is generated." : "Trading and investor passwords are generated and shown once on the next screen."}
+                          <Check className="mt-0.5 size-3.5 shrink-0 text-up" /> {cfg.ownPassword ? t("accounts.wizard.review.ownPassword") : t("accounts.wizard.review.generated")}
                         </li>
                         {cfg.kind === "live" && (
                           <li className="flex items-start gap-2">
-                            <Check className="mt-0.5 size-3.5 shrink-0 text-up" /> The account opens at a zero balance. {g.minDeposit > 0 ? `A first deposit of at least $${g.minDeposit.toLocaleString("en-US")} applies once wallet funding opens.` : ""}
+                            <Check className="mt-0.5 size-3.5 shrink-0 text-up" /> {t("accounts.wizard.review.zeroBalance")} {g.minDeposit > 0 ? t("accounts.wizard.review.minDeposit", { amount: `$${g.minDeposit.toLocaleString("en-US")}` }) : ""}
                           </li>
                         )}
                         <li className="flex items-start gap-2">
-                          <Check className="mt-0.5 size-3.5 shrink-0 text-up" /> Position mode ({modeLabel(g.mode)}) and currency ({g.cent ? "USC" : "USD"}) can&apos;t be changed after opening.
+                          <Check className="mt-0.5 size-3.5 shrink-0 text-up" /> {t("accounts.wizard.review.fixed", { mode: t.dyn(`accounts.mode.${g.mode}`, modeLabel(g.mode)), currency: g.cent ? "USC" : "USD" })}
                         </li>
                       </ul>
                       <label className="flex cursor-pointer items-start gap-3 text-[13px] text-fg-2">
                         <input type="checkbox" checked={cfg.agree} onChange={(e) => set("agree", e.target.checked)} className="mt-0.5 size-4 accent-[var(--k-ember)]" />
                         <span>
                           {cfg.kind === "live"
-                            ? "I understand that CFDs are complex instruments and carry a high risk of losing money rapidly due to leverage."
-                            : "I understand that demo results use virtual funds and don't guarantee live results."}
+                            ? t("accounts.wizard.agreeLive")
+                            : t("accounts.wizard.agreeDemo")}
                         </span>
                       </label>
                     </div>
@@ -485,15 +491,15 @@ function Wizard() {
             {step < 4 && (
               <div className="mt-4 flex items-center justify-between gap-3">
                 <Button variant="ghost" onClick={() => go(-1)} disabled={step === 0 || busy}>
-                  <ArrowLeft /> Back
+                  <ArrowLeft className="rtl:-scale-x-100" /> {t("common.back")}
                 </Button>
                 {step < 3 ? (
                   <Button variant="ember" size="lg" onClick={() => go(1)} disabled={!canNext}>
-                    Continue <ArrowRight />
+                    {t("common.continue")} <ArrowRight className="rtl:-scale-x-100" />
                   </Button>
                 ) : (
                   <Button variant="ember" size="lg" disabled={!canNext || busy} onClick={create}>
-                    {busy ? "Opening account…" : `Open ${cfg.kind} account`} {!busy && <Check />}
+                    {busy ? t("accounts.wizard.opening") : cfg.kind === "live" ? t("accounts.wizard.openLive") : t("accounts.wizard.openDemo")} {!busy && <Check />}
                   </Button>
                 )}
               </div>

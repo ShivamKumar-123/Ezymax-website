@@ -5,6 +5,8 @@
 
 import * as React from "react";
 import { toast } from "sonner";
+import { tr } from "@kalks/i18n/react";
+import type { MessageKey } from "@kalks/i18n";
 
 /* ------------------------------------------------------------------ */
 /* Engine shapes (services/trading/README.md, client-safe subset)       */
@@ -181,13 +183,13 @@ export class ApiError extends Error {
   }
 }
 
-const FRIENDLY: Record<string, string> = {
-  positions_open: "Close all open positions before changing leverage.",
-  refill_limit: "You have used all demo refills for today. They reset at 00:00 server time.",
-  refill_not_needed: "The demo balance is already at its starting amount.",
-  account_limit: "You have reached the maximum number of accounts of this type.",
-  invalid_leverage: "This leverage isn't available for the account's group.",
-  unavailable: "Trading service is unavailable. Please try again shortly.",
+const FRIENDLY: Record<string, MessageKey> = {
+  positions_open: "accounts.error.positions_open",
+  refill_limit: "accounts.error.refill_limit",
+  refill_not_needed: "accounts.error.refill_not_needed",
+  account_limit: "accounts.error.account_limit",
+  invalid_leverage: "accounts.error.invalid_leverage",
+  unavailable: "accounts.error.unavailable",
 };
 
 export async function tradingApi<T>(path: string, init?: { method?: "GET" | "POST"; body?: unknown; signal?: AbortSignal }): Promise<T> {
@@ -203,7 +205,7 @@ export async function tradingApi<T>(path: string, init?: { method?: "GET" | "POS
     });
   } catch (e) {
     if ((e as Error).name === "AbortError") throw e;
-    throw new ApiError(0, "network", "Network error. Check your connection and try again.");
+    throw new ApiError(0, "network", tr("common.networkError"));
   }
   const data = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string; field?: string } };
   if (!res.ok) {
@@ -211,13 +213,13 @@ export async function tradingApi<T>(path: string, init?: { method?: "GET" | "POS
       window.location.assign(`/api/auth/expired?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
     }
     const code = data.error?.code ?? "error";
-    throw new ApiError(res.status, code, FRIENDLY[code] ?? data.error?.message ?? "Something went wrong. Please try again.", data.error?.field);
+    throw new ApiError(res.status, code, (FRIENDLY[code] ? tr(FRIENDLY[code]) : undefined) ?? data.error?.message ?? tr("common.errorRetry"), data.error?.field);
   }
   return data as T;
 }
 
 export function errorToast(title: string, e: unknown) {
-  toast.error(title, { description: e instanceof Error ? e.message : "Something went wrong. Please try again." });
+  toast.error(title, { description: e instanceof Error ? e.message : tr("common.errorRetry") });
 }
 
 /** Polls `path` every `ms` while the tab is visible. `reload()` refetches at once. */
@@ -242,7 +244,7 @@ export function usePoll<T>(path: string | null, ms: number) {
           setError(null);
         } catch (e) {
           if (stop || (e as Error).name === "AbortError") return;
-          setError(e instanceof ApiError ? e : new ApiError(0, "error", "Something went wrong."));
+          setError(e instanceof ApiError ? e : new ApiError(0, "error", tr("common.error")));
         }
       }
       if (!stop && ms > 0) timer = setTimeout(run, ms);
@@ -277,7 +279,7 @@ export async function openTerminal(login: number) {
     }
   } catch (e) {
     w?.close();
-    errorToast("Couldn't open Kalks Trader", e);
+    errorToast(tr("accounts.toast.openTraderFailed"), e);
   }
 }
 
@@ -417,5 +419,5 @@ export function downloadExport(login: number, kind: "history" | "ledger", from?:
   document.body.appendChild(a);
   a.click();
   a.remove();
-  toast.success("Statement export started", { description: `#${login} · ${kind === "history" ? "trades" : "ledger"} · CSV, times in UTC` });
+  toast.success(tr("accounts.toast.exportStarted"), { description: tr("accounts.toast.exportDesc", { login, kind: tr(kind === "history" ? "accounts.export.trades" : "accounts.export.ledger") }) });
 }

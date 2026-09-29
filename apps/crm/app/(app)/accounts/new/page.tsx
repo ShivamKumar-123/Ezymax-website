@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, CandlestickChart, Check, Info, Lock, Moon, Server, ShieldCheck, Wallet } from "lucide-react";
 import { toast } from "sonner";
+import { Trans, useT } from "@kalks/i18n/react";
 import { Button, Card, CardHeader, Chip, Field, Icon3D, Input, KeyValue, PageHeader, Reveal, Starfield, Stepper, Toggle, cn } from "@kalks/ui";
 import { ACCOUNT_GROUPS } from "@kalks/mock";
 import { DEMO_RULES } from "@kalks/mock/accounts-extra";
@@ -14,7 +15,7 @@ import { CredentialField, PasswordInput, PasswordStrength, generatePassword, isP
 import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
 import { LiveOpenAccount } from "@/components/trading/open-account";
 
-const STEPS = ["Account", "Type", "Configure", "Password", "Done"];
+const STEPS = ["accounts.wizard.step.account", "accounts.wizard.step.type", "accounts.wizard.step.configure", "accounts.wizard.step.password", "accounts.wizard.step.done"] as const;
 type Kind = "live" | "demo";
 
 interface Cfg {
@@ -31,20 +32,21 @@ interface Cfg {
 }
 
 function KindCard({ kind, selected, onSelect }: { kind: Kind; selected: boolean; onSelect: () => void }) {
+  const t = useT();
   const live = kind === "live";
   return (
     <button
       type="button"
       onClick={onSelect}
       className={cn(
-        "group relative flex h-full flex-col overflow-hidden rounded-[20px] border p-6 text-left transition-all duration-300",
+        "group relative flex h-full flex-col overflow-hidden rounded-[20px] border p-6 text-start transition-all duration-300",
         selected ? (live ? "k-hot-card border-ember/60 shadow-[0_0_0_4px_rgba(255,90,31,0.12)]" : "border-gold/60 bg-surface shadow-[0_0_0_4px_rgba(233,185,73,0.12)]") : "k-card hover:-translate-y-0.5 hover:border-[var(--k-border-top)]",
       )}
     >
       {selected && live && <Starfield density={36} />}
       <div className="relative flex items-start justify-between">
         <Chip tone={live ? "ember" : "gold"} className="font-semibold tracking-wider">
-          {live ? "LIVE" : "DEMO"}
+          {live ? t("accounts.badge.live") : t("accounts.badge.demo")}
         </Chip>
         <span className={cn("grid size-6 place-items-center rounded-full border transition-colors", selected ? (live ? "border-ember bg-ember text-white" : "border-gold bg-gold text-black") : "border-line")}>
           {selected && <Check className="size-3.5" />}
@@ -53,12 +55,12 @@ function KindCard({ kind, selected, onSelect }: { kind: Kind; selected: boolean;
       <div className="relative mt-4">
         <Icon3D name={live ? "money_bag" : "rocket"} size={96} />
       </div>
-      <div className="relative mt-4 text-[22px] font-semibold tracking-tight">{live ? "Live account" : "Demo account"}</div>
-      <p className="relative mt-1 text-[13.5px] text-fg-2">{live ? "Trade real markets with real money. Fund instantly from your USDT wallet." : "Practise risk-free with virtual funds on real-time prices."}</p>
+      <div className="relative mt-4 text-[22px] font-semibold tracking-tight">{live ? t("accounts.kind.liveTitle") : t("accounts.kind.demoTitle")}</div>
+      <p className="relative mt-1 text-[13.5px] text-fg-2">{live ? t("accounts.kind.liveTextMock") : t("accounts.kind.demoTextMock")}</p>
       <ul className="relative mt-4 space-y-2 text-[13px] text-fg-2">
         {(live
-          ? ["Real execution on Kalks-Live servers", "Instant USDT funding, 1:1 to USD", "Withdraw profits anytime (after KYC)"]
-          : [`Start with $1k – $100k virtual balance`, `Refill up to ${DEMO_RULES.refillsPerDay}× per day`, `Expires after ${DEMO_RULES.expiryDays} days of use`]
+          ? [t("accounts.kind.live.mock1"), t("accounts.kind.live.mock2"), t("accounts.kind.live.mock3")]
+          : [t("accounts.kind.demo.mockStart"), t("accounts.kind.demo.refill", { count: DEMO_RULES.refillsPerDay }), t("accounts.kind.demo.mockExpires", { days: DEMO_RULES.expiryDays })]
         ).map((f) => (
           <li key={f} className="flex items-center gap-2">
             <Check className={cn("size-3.5", live ? "text-ember" : "text-gold")} /> {f}
@@ -83,6 +85,7 @@ function SuccessCheck() {
 }
 
 function Summary({ cfg, step }: { cfg: Cfg; step: number }) {
+  const t = useT();
   const g = ACCOUNT_GROUPS.find((x) => x.id === cfg.group)!;
   return (
     <Card className="overflow-hidden">
@@ -90,30 +93,30 @@ function Summary({ cfg, step }: { cfg: Cfg; step: number }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={g.photo} alt="" className="absolute inset-0 size-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--k-surface)] to-black/20" />
-        <div className="absolute bottom-3 left-5 flex items-center gap-2">
+        <div className="absolute bottom-3 start-5 flex items-center gap-2">
           <Chip tone={cfg.kind === "live" ? "ember" : "gold"} className="font-semibold tracking-wider">
-            {cfg.kind.toUpperCase()}
+            {cfg.kind === "live" ? t("accounts.badge.live") : t("accounts.badge.demo")}
           </Chip>
           <span className="text-[17px] font-semibold text-white">
-            {g.name} · {cfg.mode === "hedging" ? "Hedging" : "Netting"}
+            {g.name} · {t(cfg.mode === "hedging" ? "accounts.mode.hedging" : "accounts.mode.netting")}
           </span>
         </div>
       </div>
       <div className="px-6 pb-5">
         <KeyValue
           rows={[
-            ["Server", <span key="s" className="font-mono">{cfg.kind === "live" ? (g.cent ? "Kalks-Live02" : "Kalks-Live01") : "Kalks-Demo"}</span>],
-            ["Currency", g.cent ? "USC (cent)" : "USD"],
-            ["Leverage", `1:${cfg.leverage.toLocaleString()}`],
-            ["Spread from", `${g.spreadFrom} pips`],
-            ["Commission", g.commission],
-            ["Swap-free", cfg.swapFree ? "Yes (Islamic)" : "No"],
-            cfg.kind === "demo" ? ["Start balance", `${g.cent ? "USC " : "$"}${(cfg.demoBalance * (g.cent ? 100 : 1)).toLocaleString()}`] : ["Min. first deposit", `$${g.minDeposit}`],
-            ["Nickname", cfg.nickname || <span key="n" className="text-fg-3">—</span>],
+            [t("accounts.label.server"), <span key="s" className="font-mono">{cfg.kind === "live" ? (g.cent ? "Kalks-Live02" : "Kalks-Live01") : "Kalks-Demo"}</span>],
+            [t("common.currency"), g.cent ? t("accounts.currency.uscCent") : "USD"],
+            [t("accounts.label.leverage"), `1:${cfg.leverage.toLocaleString()}`],
+            [t("accounts.label.spreadFrom"), t("accounts.unit.pips", { value: g.spreadFrom })],
+            [t("accounts.label.commission"), g.commission],
+            [t("accounts.label.swapFree"), cfg.swapFree ? t("accounts.summary.yesIslamic") : t("common.no")],
+            cfg.kind === "demo" ? [t("accounts.label.startBalance"), `${g.cent ? "USC " : "$"}${(cfg.demoBalance * (g.cent ? 100 : 1)).toLocaleString()}`] : [t("accounts.label.minFirstDeposit"), `$${g.minDeposit}`],
+            [t("accounts.label.nickname"), cfg.nickname || <span key="n" className="text-fg-3">—</span>],
           ]}
         />
         <div className="mt-3 flex items-center gap-2 text-[12px] text-fg-3">
-          <Lock className="size-3.5" /> Step {Math.min(step + 1, 5)} of 5 · settings can&apos;t be edited after creation except leverage and name
+          <Lock className="size-3.5" /> {t("accounts.summary.stepOfMock", { step: Math.min(step + 1, 5) })}
         </div>
       </div>
     </Card>
@@ -121,6 +124,7 @@ function Summary({ cfg, step }: { cfg: Cfg; step: number }) {
 }
 
 function Wizard() {
+  const t = useT();
   const sp = useSearchParams();
   const initGroup = ACCOUNT_GROUPS.some((g) => g.id === sp.get("group")) ? sp.get("group")! : "pro";
   const initKind: Kind = sp.get("type") === "demo" ? "demo" : "live";
@@ -152,7 +156,7 @@ function Wizard() {
       setCreated({ login, investor: generatePassword(10) });
       setBusy(false);
       go(1);
-      toast.success(`${cfg.kind === "live" ? "Live" : "Demo"} account #${login} created`, { description: `${g.name} · ${cfg.mode === "hedging" ? "Hedging" : "Netting"} · 1:${cfg.leverage}` });
+      toast.success(t(cfg.kind === "live" ? "accounts.wizard.createdLive" : "accounts.wizard.createdDemo", { login }), { description: `${g.name} · ${t(cfg.mode === "hedging" ? "accounts.mode.hedging" : "accounts.mode.netting")} · 1:${cfg.leverage}` });
     }, 900);
   };
 
@@ -161,12 +165,12 @@ function Wizard() {
   return (
     <div className="pb-16">
       <PageHeader
-        title="Open a trading account"
-        subtitle="Takes under a minute. MT5-compatible login delivered instantly."
+        title={t("accounts.wizard.title")}
+        subtitle={t("accounts.wizard.subtitleMock")}
         actions={
           <Link href="/accounts">
             <Button variant="surface">
-              <ArrowLeft /> My accounts
+              <ArrowLeft className="rtl:-scale-x-100" /> {t("accounts.list.myAccounts")}
             </Button>
           </Link>
         }
@@ -174,7 +178,7 @@ function Wizard() {
 
       <Reveal>
         <Card className="mb-4 px-5 py-4 sm:px-6">
-          <Stepper steps={STEPS} current={step} />
+          <Stepper steps={STEPS.map((k) => t(k))} current={step} />
         </Card>
       </Reveal>
 
@@ -184,7 +188,7 @@ function Wizard() {
             <motion.div key={step} initial={{ opacity: 0, x: dir * 28 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: dir * -28 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}>
               {step === 0 && (
                 <Card>
-                  <CardHeader title="Choose an account" subtitle="You can hold multiple live and demo accounts at the same time." />
+                  <CardHeader title={t("accounts.wizard.chooseTitle")} subtitle={t("accounts.wizard.chooseSubtitleMock")} />
                   <div className="grid grid-cols-1 gap-4 px-4 pb-6 pt-4 sm:grid-cols-2 sm:px-6">
                     <KindCard kind="live" selected={cfg.kind === "live"} onSelect={() => set("kind", "live")} />
                     <KindCard kind="demo" selected={cfg.kind === "demo"} onSelect={() => set("kind", "demo")} />
@@ -194,7 +198,7 @@ function Wizard() {
 
               {step === 1 && (
                 <Card>
-                  <CardHeader title="Pick an account type" subtitle="All types include 250+ instruments, MT5 access and negative balance protection." />
+                  <CardHeader title={t("accounts.wizard.pickTitle")} subtitle={t("accounts.wizard.pickSubtitleMock")} />
                   <div className="grid grid-cols-1 gap-4 px-4 pb-6 pt-4 sm:grid-cols-2 sm:px-6 2xl:grid-cols-4">
                     {ACCOUNT_GROUPS.map((x) => (
                       <GroupCard key={x.id} g={x} selected={cfg.group === x.id} onSelect={() => pickGroup(x.id)} />
@@ -205,10 +209,10 @@ function Wizard() {
 
               {step === 2 && (
                 <Card>
-                  <CardHeader title="Configure your account" subtitle={`${g.name} · ${cfg.kind === "live" ? "Live" : "Demo"}`} />
+                  <CardHeader title={t("accounts.wizard.configureTitle")} subtitle={`${g.name} · ${cfg.kind === "live" ? t("common.live") : t("common.demo")}`} />
                   <div className="space-y-6 px-4 pb-6 pt-5 sm:px-6">
                     <div>
-                      <div className="mb-2 text-[12.5px] font-medium text-fg-2">Position mode</div>
+                      <div className="mb-2 text-[12.5px] font-medium text-fg-2">{t("accounts.label.positionMode")}</div>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         {(["hedging", "netting"] as const).map((m) => {
                           const disabled = !g.modes.includes(m);
@@ -219,15 +223,15 @@ function Wizard() {
                               type="button"
                               disabled={disabled}
                               onClick={() => set("mode", m)}
-                              className={cn("k-row flex items-start gap-3 p-4 text-left transition-all", on && "border-ember/50 bg-ember-soft", disabled && "cursor-not-allowed opacity-45", !on && !disabled && "hover:border-[var(--k-border-top)]")}
+                              className={cn("k-row flex items-start gap-3 p-4 text-start transition-all", on && "border-ember/50 bg-ember-soft", disabled && "cursor-not-allowed opacity-45", !on && !disabled && "hover:border-[var(--k-border-top)]")}
                             >
                               <span className={cn("mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border", on ? "border-ember bg-ember" : "border-line")}>{on && <span className="size-2 rounded-full bg-white" />}</span>
                               <span>
                                 <span className="flex items-center gap-2 text-[14px] font-medium">
-                                  {m === "hedging" ? "Hedging" : "Netting"}
-                                  {disabled && <Chip size="sm">Not on Cent</Chip>}
+                                  {t(m === "hedging" ? "accounts.mode.hedging" : "accounts.mode.netting")}
+                                  {disabled && <Chip size="sm">{t("accounts.wizard.notOnCent")}</Chip>}
                                 </span>
-                                <span className="mt-0.5 block text-[12.5px] text-fg-3">{m === "hedging" ? "Hold multiple buy & sell positions on the same symbol." : "One net position per symbol — opposite orders reduce it."}</span>
+                                <span className="mt-0.5 block text-[12.5px] text-fg-3">{m === "hedging" ? t("accounts.mode.hedgingDesc") : t("accounts.mode.nettingDesc")}</span>
                               </span>
                             </button>
                           );
@@ -237,8 +241,8 @@ function Wizard() {
 
                     <div>
                       <div className="mb-2 flex items-center justify-between text-[12.5px] font-medium text-fg-2">
-                        Leverage
-                        <span className="font-normal text-fg-3">Fixed per account · changeable only with no open positions</span>
+                        {t("accounts.label.leverage")}
+                        <span className="font-normal text-fg-3">{t("accounts.wizard.leverageHintMock")}</span>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {g.leverage.map((l) => (
@@ -257,39 +261,39 @@ function Wizard() {
                       </div>
                       {cfg.leverage >= 1000 && (
                         <div className="mt-2 flex items-center gap-2 text-[12px] text-warn">
-                          <Info className="size-3.5" /> High leverage magnifies both profits and losses.
+                          <Info className="size-3.5" /> {t("accounts.wizard.highLeverage")}
                         </div>
                       )}
                     </div>
 
                     {cfg.kind === "demo" && (
                       <div>
-                        <div className="mb-2 text-[12.5px] font-medium text-fg-2">Starting balance</div>
+                        <div className="mb-2 text-[12.5px] font-medium text-fg-2">{t("accounts.wizard.startingBalance")}</div>
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                           {DEMO_RULES.startBalances.map((b) => (
                             <button
                               key={b}
                               type="button"
                               onClick={() => set("demoBalance", b)}
-                              className={cn("k-row flex flex-col items-start px-4 py-3 text-left transition-all", cfg.demoBalance === b ? "border-gold/60 bg-gold-soft" : "hover:border-[var(--k-border-top)]")}
+                              className={cn("k-row flex flex-col items-start px-4 py-3 text-start transition-all", cfg.demoBalance === b ? "border-gold/60 bg-gold-soft" : "hover:border-[var(--k-border-top)]")}
                             >
                               <span className={cn("k-num text-[18px] font-semibold", cfg.demoBalance === b ? "text-gold" : "text-fg")}>{g.cent ? `USC ${(b * 100).toLocaleString()}` : `$${b >= 1000 ? `${b / 1000}k` : b}`}</span>
-                              <span className="text-[11.5px] text-fg-3">virtual funds</span>
+                              <span className="text-[11.5px] text-fg-3">{t("accounts.wizard.virtualFunds")}</span>
                             </button>
                           ))}
                         </div>
                         <div className="mt-2 text-[12px] text-fg-3">
-                          Refill back to this balance up to {DEMO_RULES.refillsPerDay}× per day. Demo accounts expire after {DEMO_RULES.expiryDays} days.
+                          {t("accounts.wizard.refillNoteMock", { count: DEMO_RULES.refillsPerDay, days: DEMO_RULES.expiryDays })}
                         </div>
                       </div>
                     )}
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <Field label="Nickname" hint="Optional">
-                        <Input value={cfg.nickname} maxLength={24} onChange={(e) => set("nickname", e.target.value)} placeholder="e.g. Gold swing" />
+                      <Field label={t("accounts.label.nickname")} hint={t("common.optional")}>
+                        <Input value={cfg.nickname} maxLength={24} onChange={(e) => set("nickname", e.target.value)} placeholder={t("accounts.wizard.nicknamePlaceholder")} />
                       </Field>
-                      <Field label="Account currency">
-                        <Input value={g.cent ? "USC — US cents (×100)" : "USD — US Dollar"} readOnly leading={<Wallet />} className="opacity-80" />
+                      <Field label={t("accounts.label.accountCurrency")}>
+                        <Input value={g.cent ? t("accounts.currency.uscShort") : t("accounts.currency.usdLong")} readOnly leading={<Wallet />} className="opacity-80" />
                       </Field>
                     </div>
 
@@ -298,10 +302,10 @@ function Wizard() {
                         <Moon className="size-4" />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="text-[14px] font-medium">Swap-free (Islamic) account</div>
-                        <div className="text-[12.5px] text-fg-3">No overnight swaps. A fixed admin fee may apply after 5 nights on some instruments.</div>
+                        <div className="text-[14px] font-medium">{t("accounts.wizard.swapFreeTitle")}</div>
+                        <div className="text-[12.5px] text-fg-3">{t("accounts.wizard.swapFreeText")}</div>
                       </div>
-                      <Toggle checked={cfg.swapFree} onChange={(v) => set("swapFree", v)} label="Swap-free" />
+                      <Toggle checked={cfg.swapFree} onChange={(v) => set("swapFree", v)} label={t("accounts.label.swapFree")} />
                     </div>
                   </div>
                 </Card>
@@ -309,20 +313,25 @@ function Wizard() {
 
               {step === 3 && (
                 <Card>
-                  <CardHeader title="Set a trading password" subtitle="Your master password for MT5 and the Kalks terminal. An investor (read-only) password is generated for you." icon={<ShieldCheck />} />
+                  <CardHeader title={t("accounts.wizard.setPasswordTitle")} subtitle={t("accounts.wizard.setPasswordSubtitle")} icon={<ShieldCheck />} />
                   <div className="space-y-5 px-4 pb-6 pt-5 sm:px-6">
-                    <Field label="Trading password">
+                    <Field label={t("accounts.label.tradingPassword")}>
                       <PasswordInput value={cfg.password} onChange={(v) => set("password", v)} generate />
                     </Field>
                     <PasswordStrength password={cfg.password} />
-                    <Field label="Confirm password" error={cfg.confirm && cfg.confirm !== cfg.password ? "Passwords don't match" : undefined}>
-                      <PasswordInput value={cfg.confirm} onChange={(v) => set("confirm", v)} placeholder="Repeat password" />
+                    <Field label={t("accounts.label.confirmPassword")} error={cfg.confirm && cfg.confirm !== cfg.password ? t("accounts.wizard.passwordsMismatch") : undefined}>
+                      <PasswordInput value={cfg.confirm} onChange={(v) => set("confirm", v)} placeholder={t("accounts.wizard.repeatPassword")} />
                     </Field>
                     <label className="flex cursor-pointer items-start gap-3 text-[13px] text-fg-2">
                       <input type="checkbox" checked={cfg.agree} onChange={(e) => set("agree", e.target.checked)} className="mt-0.5 size-4 accent-[var(--k-ember)]" />
                       <span>
-                        I agree to the <a className="text-ember hover:underline" href="#" onClick={(e) => { e.preventDefault(); toast("Client agreement opened"); }}>Client Agreement</a> and{" "}
-                        <a className="text-ember hover:underline" href="#" onClick={(e) => { e.preventDefault(); toast("Risk disclosure opened"); }}>Risk Disclosure</a>, and understand that CFDs carry a high risk of losing money.
+                        <Trans
+                          k="accounts.wizard.agreeMock"
+                          tags={{
+                            client: (c) => <a className="text-ember hover:underline" href="#" onClick={(e) => { e.preventDefault(); toast(t("accounts.wizard.clientAgreementOpened")); }}>{c}</a>,
+                            risk: (c) => <a className="text-ember hover:underline" href="#" onClick={(e) => { e.preventDefault(); toast(t("accounts.wizard.riskDisclosureOpened")); }}>{c}</a>,
+                          }}
+                        />
                       </span>
                     </label>
                   </div>
@@ -333,57 +342,57 @@ function Wizard() {
                 <Card hot className="overflow-hidden">
                   <Starfield density={60} />
                   <div className="relative grid grid-cols-1 gap-8 p-6 sm:p-8 lg:grid-cols-2 lg:items-center">
-                    <div className="text-center lg:text-left">
+                    <div className="text-center lg:text-start">
                       <div className="lg:mx-0 lg:flex lg:justify-start">
                         <SuccessCheck />
                       </div>
-                      <h2 className="mt-5 text-[26px] font-semibold tracking-tight">Your account is ready</h2>
+                      <h2 className="mt-5 text-[26px] font-semibold tracking-tight">{t("accounts.created.title")}</h2>
                       <p className="mt-2 text-[14px] text-fg-2">
-                        {cfg.kind === "live" ? "Fund it from your USDT wallet and start trading in seconds." : `Loaded with ${g.cent ? "USC " : "$"}${(cfg.demoBalance * (g.cent ? 100 : 1)).toLocaleString()} in virtual funds. Expires in ${DEMO_RULES.expiryDays} days.`}
+                        {cfg.kind === "live" ? t("accounts.created.liveTextMock") : t("accounts.created.demoTextMock", { amount: `${g.cent ? "USC " : "$"}${(cfg.demoBalance * (g.cent ? 100 : 1)).toLocaleString()}`, days: DEMO_RULES.expiryDays })}
                       </p>
                       <div className="mt-3 flex flex-wrap justify-center gap-2 lg:justify-start">
-                        <Chip tone={cfg.kind === "live" ? "ember" : "gold"}>{cfg.kind.toUpperCase()}</Chip>
+                        <Chip tone={cfg.kind === "live" ? "ember" : "gold"}>{cfg.kind === "live" ? t("accounts.badge.live") : t("accounts.badge.demo")}</Chip>
                         <Chip>
-                          {g.name} · {cfg.mode === "hedging" ? "Hedging" : "Netting"}
+                          {g.name} · {t(cfg.mode === "hedging" ? "accounts.mode.hedging" : "accounts.mode.netting")}
                         </Chip>
                         <Chip>1:{cfg.leverage.toLocaleString()}</Chip>
-                        {cfg.swapFree && <Chip tone="info">Swap-free</Chip>}
+                        {cfg.swapFree && <Chip tone="info">{t("accounts.label.swapFree")}</Chip>}
                       </div>
                       <div className="mt-6 flex flex-wrap justify-center gap-2 lg:justify-start">
                         {cfg.kind === "live" ? (
                           <Link href={`/wallet/transfer?to=${created.login}`}>
                             <Button variant="ember" size="lg" shimmer>
-                              <Wallet /> Fund account
+                              <Wallet /> {t("accounts.fund.button")}
                             </Button>
                           </Link>
                         ) : (
                           <Link href={`/accounts/${created.login}`}>
                             <Button variant="gold" size="lg">
-                              View account
+                              {t("accounts.created.viewAccount")}
                             </Button>
                           </Link>
                         )}
                         <Link target="_blank" rel="noopener" href={`/trade?account=${created.login}`}>
                           <Button variant="surface" size="lg">
-                            <CandlestickChart /> Open terminal
+                            <CandlestickChart /> {t("accounts.created.openTerminal")}
                           </Button>
                         </Link>
                       </div>
                     </div>
                     <div className="rounded-[20px] border border-line bg-surface/80 p-5 backdrop-blur">
                       <div className="mb-4 flex items-center justify-between">
-                        <div className="text-[15px] font-medium">MT5 credentials</div>
+                        <div className="text-[15px] font-medium">{t("accounts.created.mt5Credentials")}</div>
                         <Chip size="sm" tone="warn">
-                          Save these now
+                          {t("accounts.created.saveNow")}
                         </Chip>
                       </div>
                       <div className="space-y-3">
-                        <CredentialField label="Login" value={created.login} />
-                        <CredentialField label="Server" value={server} hint={<span className="inline-flex items-center gap-1"><Server className="size-3" /> GMT+3</span>} />
-                        <CredentialField label="Trading password" value={cfg.password} secret hint="Master · full access" />
-                        <CredentialField label="Investor password" value={created.investor} secret hint="Read-only" />
+                        <CredentialField label={t("accounts.label.login")} value={created.login} />
+                        <CredentialField label={t("accounts.label.server")} value={server} hint={<span className="inline-flex items-center gap-1"><Server className="size-3" /> GMT+3</span>} />
+                        <CredentialField label={t("accounts.label.tradingPassword")} value={cfg.password} secret hint={t("accounts.hint.masterFull")} />
+                        <CredentialField label={t("accounts.label.investorPassword")} value={created.investor} secret hint={t("accounts.hint.readOnly")} />
                       </div>
-                      <p className="mt-4 text-[12px] text-fg-3">We&apos;ve also emailed your login and server. Passwords are never sent by email — change them anytime under Credentials (email OTP required).</p>
+                      <p className="mt-4 text-[12px] text-fg-3">{t("accounts.created.emailNote")}</p>
                     </div>
                   </div>
                 </Card>
@@ -394,15 +403,15 @@ function Wizard() {
           {step < 4 && (
             <div className="mt-4 flex items-center justify-between gap-3">
               <Button variant="ghost" onClick={() => go(-1)} disabled={step === 0}>
-                <ArrowLeft /> Back
+                <ArrowLeft className="rtl:-scale-x-100" /> {t("common.back")}
               </Button>
               {step < 3 ? (
                 <Button variant="ember" size="lg" onClick={() => go(1)}>
-                  Continue <ArrowRight />
+                  {t("common.continue")} <ArrowRight className="rtl:-scale-x-100" />
                 </Button>
               ) : (
                 <Button variant="ember" size="lg" disabled={!canNext || busy} onClick={create} shimmer>
-                  {busy ? "Creating account…" : `Create ${cfg.kind} account`} {!busy && <Check />}
+                  {busy ? t("accounts.wizard.creating") : cfg.kind === "live" ? t("accounts.wizard.createLive") : t("accounts.wizard.createDemo")} {!busy && <Check />}
                 </Button>
               )}
             </div>

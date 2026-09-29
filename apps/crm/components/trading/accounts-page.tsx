@@ -5,20 +5,22 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, FlaskConical, Layers, Plus, RotateCw, ShieldCheck, TrendingUp } from "lucide-react";
 import { Button, Card, CardHeader, Chip, EmptyState, KpiCard, Money, PageHeader, Reveal, Segmented, Skeleton } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 import { toUsd, useAccounts, useGroups, type EngineAccount } from "./api";
 import { EngineGroupCard } from "./group-card";
 import { LiveAccountRow, refillsLeft } from "./ui";
 
 export function AccountsError({ onRetry, message }: { onRetry: () => void; message?: string }) {
+  const tt = useT();
   return (
     <Card>
       <EmptyState
         illustration="satellite_antenna"
-        title="Trading accounts are unavailable"
-        text={message ?? "We couldn't reach the trading service. Your accounts and balances are safe; please try again in a moment."}
+        title={tt("accounts.error.unavailableTitle")}
+        text={message ?? tt("accounts.error.unavailableText")}
         action={
           <Button variant="surface" onClick={onRetry}>
-            <RotateCw /> Try again
+            <RotateCw /> {tt("common.retry")}
           </Button>
         }
       />
@@ -53,6 +55,7 @@ export function liveTotals(accounts: EngineAccount[]) {
 function Inner() {
   const sp = useSearchParams();
   const router = useRouter();
+  const tt = useT();
   const { data, error, loading, reload } = useAccounts();
   const groups = useGroups();
   const accounts = data?.accounts ?? [];
@@ -71,12 +74,12 @@ function Inner() {
   return (
     <div className="pb-16">
       <PageHeader
-        title="Trading accounts"
-        subtitle="Your live and demo accounts, balances, credentials and leverage."
+        title={tt("accounts.list.title")}
+        subtitle={tt("accounts.list.subtitle")}
         actions={
           <Link href={`/accounts/new${active === "demo" ? "?type=demo" : ""}`}>
             <Button variant="ember" size="lg">
-              <Plus /> Open account
+              <Plus /> {tt("accounts.list.openAccount")}
             </Button>
           </Link>
         }
@@ -84,43 +87,43 @@ function Inner() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label="Live equity"
+          label={tt("accounts.kpi.liveEquity")}
           icon={<TrendingUp />}
           value={loading ? <Skeleton className="h-8 w-32" /> : <Money value={t.equity} countUp={false} />}
-          chip={t.live.length ? `Balance $${t.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "No live accounts yet"}
+          chip={t.live.length ? tt("accounts.kpi.balanceChip", { amount: `$${t.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }) : tt("accounts.empty.noLive")}
           chipTone="neutral"
           href="/portfolio"
         />
         <KpiCard
-          label="Free margin"
+          label={tt("accounts.label.freeMargin")}
           icon={<ShieldCheck />}
           value={loading ? <Skeleton className="h-8 w-32" /> : <Money value={t.free} countUp={false} />}
-          chip={t.equity > 0 ? `${((t.free / t.equity) * 100).toFixed(1)}% of equity` : "Live accounts, USD"}
+          chip={t.equity > 0 ? tt("accounts.kpi.ofEquity", { pct: ((t.free / t.equity) * 100).toFixed(1) }) : tt("accounts.kpi.liveUsd")}
           chipTone="neutral"
           delay={0.05}
         />
         <KpiCard
-          label="Accounts"
+          label={tt("common.accounts")}
           icon={<Layers />}
           value={<span className="k-num">{loading ? "—" : accounts.length}</span>}
           footer={
             <div className="flex flex-wrap items-center gap-1.5">
               <Chip size="sm" tone="ember">
-                {t.live.length} live
+                {tt("accounts.kpi.liveCount", { count: t.live.length })}
               </Chip>
               <Chip size="sm" tone="gold">
-                {t.demo.length} demo
+                {tt("accounts.kpi.demoCount", { count: t.demo.length })}
               </Chip>
-              <Chip size="sm">{t.positions} open positions</Chip>
+              <Chip size="sm">{tt("accounts.kpi.openPositions", { count: t.positions })}</Chip>
             </div>
           }
           delay={0.1}
         />
         <KpiCard
-          label="Demo accounts"
+          label={tt("accounts.kpi.demoAccounts")}
           icon={<FlaskConical />}
           value={<span className="k-num">{loading ? "—" : t.demo.length}</span>}
-          footer={<span className="text-[11.5px] text-fg-2">{t.demo.length ? `${refills} refill${refills === 1 ? "" : "s"} left today across demo accounts` : "Practise with virtual funds on live prices"}</span>}
+          footer={<span className="text-[11.5px] text-fg-2">{t.demo.length ? tt("accounts.kpi.refillsLeftToday", { count: refills }) : tt("accounts.kpi.practise")}</span>}
           delay={0.15}
         />
       </div>
@@ -132,16 +135,16 @@ function Inner() {
           ) : (
             <Card>
               <CardHeader
-                title="My accounts"
-                subtitle="Equity and margin update every few seconds. Open an account for statements, credentials and settings."
+                title={tt("accounts.list.myAccounts")}
+                subtitle={tt("accounts.list.liveHint")}
                 action={
                   <Segmented
                     size="xs"
                     value={active}
                     onChange={setTab}
                     options={[
-                      { value: "live", label: <>Live <span className="text-fg-3">{t.live.length}</span></> },
-                      { value: "demo", label: <>Demo <span className="text-fg-3">{t.demo.length}</span></> },
+                      { value: "live", label: <>{tt("common.live")} <span className="text-fg-3">{t.live.length}</span></> },
+                      { value: "demo", label: <>{tt("common.demo")} <span className="text-fg-3">{t.demo.length}</span></> },
                     ]}
                   />
                 }
@@ -151,11 +154,11 @@ function Inner() {
                 {!loading && list.length === 0 && (
                   <EmptyState
                     illustration={active === "live" ? "money_bag" : "rocket"}
-                    title={active === "live" ? "No live accounts yet" : "No demo accounts yet"}
+                    title={active === "live" ? tt("accounts.empty.noLive") : tt("accounts.empty.noDemo")}
                     text={
                       active === "live"
-                        ? "Open a live account now and get your login and passwords instantly. Funding opens with the Kalks wallet."
-                        : "A demo account comes with virtual funds on real-time prices, so you can practise without risk."
+                        ? tt("accounts.empty.liveText")
+                        : tt("accounts.empty.demoText")
                     }
                   />
                 )}
@@ -166,7 +169,7 @@ function Inner() {
                   href={`/accounts/new?type=${active}`}
                   className="flex items-center justify-center gap-2 rounded-[14px] border border-dashed border-line py-4 text-[13.5px] text-fg-3 transition-colors hover:border-ember/40 hover:bg-ember-soft hover:text-ember"
                 >
-                  <Plus className="size-4" /> Open a new {active} account
+                  <Plus className="size-4" /> {active === "demo" ? tt("accounts.list.openNewDemo") : tt("accounts.list.openNewLive")}
                 </Link>
               </div>
             </Card>
@@ -178,12 +181,12 @@ function Inner() {
         <Reveal delay={0.1} className="mt-4 block">
           <Card>
             <CardHeader
-              title="Account types"
-              subtitle="Same instruments and Kalks Trader on every type. Pick the pricing and position mode that suit you."
+              title={tt("accounts.types.title")}
+              subtitle={tt("accounts.types.subtitle")}
               action={
                 <Link href="/accounts/new" className="hidden sm:block">
                   <Button size="sm" variant="surface">
-                    Open account <ArrowRight />
+                    {tt("accounts.list.openAccount")} <ArrowRight className="rtl:-scale-x-100" />
                   </Button>
                 </Link>
               }
@@ -196,7 +199,7 @@ function Inner() {
               ))}
             </div>
             <div className="border-t border-line px-6 py-4 text-[12.5px] text-fg-3">
-              Negative balance protection on every account · Leverage can be changed only with no open positions · Demo balances can be refilled a few times per day.
+              {tt("accounts.types.footer")}
             </div>
           </Card>
         </Reveal>
