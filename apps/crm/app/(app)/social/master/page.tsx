@@ -27,6 +27,8 @@ import { ACCOUNTS, ME, equitySeries } from "@kalks/mock";
 import { MASTER_APPLICATION, SOCIAL_POLICY, type MasterProgram, type Rollover } from "@kalks/mock/social";
 import { RadioCard, RangeSlider, ToggleChip } from "@/components/social/controls";
 import { ProgramTags, RiskBadge } from "@/components/social/master-bits";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveMasterPage } from "@/components/social-live/master-dashboard";
 
 const TAGS = ["Gold", "Forex", "Indices", "Crypto", "Swing", "Intraday", "Scalping", "Algo", "Low risk", "News", "Swap-free"];
 const LOCKS = [0, 7, 14, 30, 60, 90] as const;
@@ -52,7 +54,7 @@ function StateIcon({ s }: { s: ReqState }) {
   );
 }
 
-export default function BecomeMasterPage() {
+function DemoBecomeMasterPage() {
   const live = ACCOUNTS.filter((a) => a.type === "live" && !a.cent);
   const [login, setLogin] = React.useState(MASTER_APPLICATION.account);
   const [program, setProgram] = React.useState<MasterProgram>("both");
@@ -423,4 +425,8 @@ export default function BecomeMasterPage() {
       </div>
     </div>
   );
+}
+
+export default function BecomeMasterPage() {
+  return DEMO_BUILD ? <DemoBecomeMasterPage /> : <LiveMasterPage />;
 }

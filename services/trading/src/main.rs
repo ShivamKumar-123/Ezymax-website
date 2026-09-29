@@ -73,6 +73,11 @@ async fn main() -> anyhow::Result<()> {
     let hub = Hub::start(shared, cfg.shards, states);
     feed::spawn(hub.clone(), cfg.market_data_ws.clone(), specs.symbols());
 
+    let logins = Arc::new(LoginAlloc { live: AtomicI64::new(live), demo: AtomicI64::new(demo) });
+    let wallet = trading::social::wallet::WalletClient::new(&cfg.wallet_url, &cfg.wallet_token);
+    let social = trading::social::Social::new(pool.clone(), hub.clone(), wallet, logins.clone()).await?;
+    let _ = social.ib.set(trading::social::wallet::WalletClient::new(&cfg.ib_url, &cfg.ib_token));
+    social.start();
     let st = AppState {
         hub: hub.clone(),
         pool: pool.clone(),
@@ -80,8 +85,9 @@ async fn main() -> anyhow::Result<()> {
         cfg: Arc::new(cfg.clone()),
         limiter: Limiter::default(),
         tickets: StreamTickets::default(),
-        logins: Arc::new(LoginAlloc { live: AtomicI64::new(live), demo: AtomicI64::new(demo) }),
+        logins,
         open_lock: Arc::new(tokio::sync::Mutex::new(())),
+        social,
     };
     let _ = trading::auth::dummy_hash();
 

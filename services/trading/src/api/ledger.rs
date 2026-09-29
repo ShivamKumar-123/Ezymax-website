@@ -84,6 +84,9 @@ pub async fn transfer(State(st): State<AppState>, ctx: Ctx, Body(r): Body<Transf
         return replay(existing, &fingerprint);
     }
     let meta = st.hub.meta(r.login).filter(|m| m.tenant_id == ctx.tenant.tenant_id).ok_or_else(|| ApiError::NotFound("Account not found".into()))?;
+    if st.social.is_fund(r.login) {
+        return Err(ApiError::Status { status: 422, code: "pamm_account", message: "This is a PAMM fund account: money moves in and out only through invest and redeem requests at the rollover".into() });
+    }
     let reference = r.reference.clone();
     let k2 = key.clone();
     let op: Op = Box::new(move |tx, env| {

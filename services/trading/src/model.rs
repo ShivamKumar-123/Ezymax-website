@@ -479,6 +479,9 @@ pub enum TxnKind {
     Nbp,
     /// Reversal of an earlier transaction (reopened deal, void).
     Reversal,
+    /// Copy / PAMM performance fee crystallised at the period end (D66): balance → `house:perf_fees`.
+    #[serde(rename = "perf_fee")]
+    PerformanceFee,
 }
 
 impl TxnKind {
@@ -498,6 +501,7 @@ impl TxnKind {
             TxnKind::Bonus => "bonus",
             TxnKind::Nbp => "nbp",
             TxnKind::Reversal => "reversal",
+            TxnKind::PerformanceFee => "perf_fee",
         }
     }
 }

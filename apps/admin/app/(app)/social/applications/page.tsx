@@ -10,6 +10,8 @@ import { MiniStat, SegBar, auditToast, useReason } from "@/components/config/kit
 import { ago, fmtDT } from "@/components/partners/common";
 import { TypeChip } from "@/components/social/common";
 import { equityPoints } from "@/components/social/master-drawer";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveApplicationsPage } from "@/components/social-live/applications";
 
 function checks(a: MasterApplication) {
   const L = SOCIAL_SETTINGS.leaderboard;
@@ -139,7 +141,7 @@ function Detail({ a, onDecide }: { a: MasterApplication; onDecide: (a: MasterApp
   );
 }
 
-export default function ApplicationsPage() {
+function DemoApplicationsPage() {
   const [rows, setRows] = React.useState(APPLICATIONS);
   const [sel, setSel] = React.useState(APPLICATIONS[0]!.id);
   const [tab, setTab] = React.useState<"open" | "decided">("open");
@@ -204,4 +206,8 @@ export default function ApplicationsPage() {
       </div>
     </div>
   );
+}
+
+export default function ApplicationsPage() {
+  return IS_DEMO ? <DemoApplicationsPage /> : <LiveApplicationsPage />;
 }

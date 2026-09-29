@@ -94,14 +94,48 @@ pub struct Index {
     pub tickets: HashMap<i64, i64>,
 }
 
-/// Per-account and per-tenant (dealing) broadcast channels of JSON frames.
+/// Events of one committed transaction, handed to the copy-trading tap (see `social::copier`).
+#[derive(Clone, Debug)]
+pub struct Committed {
+    pub login: i64,
+    pub tenant_id: i64,
+    /// Stream version of `events[0]`.
+    pub first_version: i64,
+    pub at: DateTime<Utc>,
+    pub events: Vec<Event>,
+    /// Account equity (USD) right after the commit.
+    pub equity_usd: crate::money::D,
+}
+
+/// Per-account and per-tenant (dealing) broadcast channels of JSON frames, plus the committed-event tap
+/// for watched accounts (copy-trading masters and copy accounts).
 #[derive(Clone, Default)]
 pub struct Streams {
     accounts: Arc<Mutex<HashMap<i64, broadcast::Sender<Arc<str>>>>>,
     dealing: Arc<Mutex<HashMap<i64, broadcast::Sender<Arc<str>>>>>,
+    tap: Arc<RwLock<Option<mpsc::UnboundedSender<Committed>>>>,
+    watched: Arc<RwLock<HashSet<i64>>>,
 }
 
 impl Streams {
+    /// Sends every committed transaction of a watched login to `tx`, in commit order.
+    pub fn set_tap(&self, tx: mpsc::UnboundedSender<Committed>) {
+        *self.tap.write().unwrap() = Some(tx);
+    }
+    pub fn watch(&self, login: i64) {
+        self.watched.write().unwrap().insert(login);
+    }
+    pub fn unwatch(&self, login: i64) {
+        self.watched.write().unwrap().remove(&login);
+    }
+    pub fn watching(&self, login: i64) -> bool {
+        self.tap.read().unwrap().is_some() && self.watched.read().unwrap().contains(&login)
+    }
+    fn tap(&self, c: Committed) {
+        if let Some(t) = self.tap.read().unwrap().as_ref() {
+            let _ = t.send(c);
+        }
+    }
     pub fn subscribe_account(&self, login: i64) -> broadcast::Receiver<Arc<str>> {
         self.accounts.lock().unwrap().entry(login).or_insert_with(|| broadcast::channel(1024).0).subscribe()
     }
@@ -454,6 +488,10 @@ impl Shard {
         self.sh.stats.commits.fetch_add(1, Ordering::Relaxed);
         let audit: Vec<Value> = ids.iter().zip(rows.iter()).map(|(id, r)| persist::audit_json(*id, r)).collect();
         // --- committed: publish, then swap the state in ---
+        if self.sh.streams.watching(login) {
+            let equity_usd = crate::engine::metrics(&env, &tx.st).equity / tx.st.account.usd_factor();
+            self.sh.streams.tap(Committed { login, tenant_id: tx.st.account.tenant_id, first_version: before_version + 1, at: env.now, events: tx.events.clone(), equity_usd });
+        }
         self.publish(&env, &tx, &audit);
         self.lp_hooks(&tx.events);
         for e in &tx.events {

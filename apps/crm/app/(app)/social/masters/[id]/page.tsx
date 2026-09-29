@@ -46,6 +46,8 @@ import {
 import { ProgramTags, RiskBadge, formatAge } from "@/components/social/master-bits";
 import { CopyDialog } from "@/components/social/copy-dialog";
 import { InvestDialog } from "@/components/social/invest-dialog";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveMasterProfilePage } from "@/components/social-live/master-profile";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DONUT_COLORS = ["#ff5a1f", "#e9b949", "#22c55e", "#38bdf8", "#a1a1aa"];
@@ -316,7 +318,7 @@ function TradesCard({ m }: { m: Master }) {
 
 /* ------------------------------------------------------------------ */
 
-export default function MasterProfilePage() {
+function DemoMasterProfilePage() {
   const { id } = useParams<{ id: string }>();
   const m = masterById(id);
   const [copy, setCopy] = React.useState(false);
@@ -489,4 +491,8 @@ export default function MasterProfilePage() {
       <InvestDialog fund={fund} open={invest} onOpenChange={setInvest} />
     </div>
   );
+}
+
+export default function MasterProfilePage() {
+  return DEMO_BUILD ? <DemoMasterProfilePage /> : <LiveMasterProfilePage />;
 }

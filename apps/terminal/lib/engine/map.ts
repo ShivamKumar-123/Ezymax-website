@@ -8,7 +8,7 @@ import type { EngAccount, EngDeal, EngOrder, EngPosition } from "./types";
 
 export const serverName = (type: "live" | "demo") => (type === "demo" ? "Kalks-Demo" : "Kalks-Live");
 
-const SOURCES: Record<string, TradeSource> = { manual: "manual", ai: "ai", api: "api", fix: "api", webhook: "api", strategy: "strategy", copy: "copy", pamm: "copy" };
+const SOURCES: Record<string, TradeSource> = { manual: "manual", ai: "ai", api: "api", fix: "api", webhook: "api", strategy: "strategy", copy: "copy", pamm: "pamm" };
 export const mapSource = (s: string): TradeSource => SOURCES[s] ?? "manual";
 
 const opt = (v: number | null | undefined) => (v === null || v === undefined ? undefined : v);
@@ -192,6 +192,10 @@ const REJECT: Record<string, string> = {
   validation: "Invalid request",
   bad_request: "Invalid request",
   duplicate: "Duplicate request",
+  // copy trading (D70): copied trades close with the master; the follower stops copying in the Client Area
+  copy_managed: "Copied position",
+  copy_account: "Copy account",
+  pamm_account: "PAMM fund account",
 };
 
 export interface EngineErr {

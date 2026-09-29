@@ -10,13 +10,15 @@ import { ColumnChart, PersonCell, RiskScore, auditToast, useReason } from "@/com
 import { EmergencyStopDialog, STATUS_LABEL, TypeChip, type StopTarget } from "@/components/social/common";
 import { MasterDrawer } from "@/components/social/master-drawer";
 import { fmtInt, fmtUsdK } from "@/components/partners/common";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveMastersPage } from "@/components/social-live/masters";
 
 const FEE_MONTHS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep"].map((label, i) => {
   const total = 212_000 + i * 21_500 + (i % 2 ? 9_000 : -4_000);
   return { label, values: [total * 0.8 * 0.72, total * 0.8 * 0.28, total * 0.2] };
 });
 
-export default function MastersPage() {
+function DemoMastersPage() {
   const [rows, setRows] = React.useState(MASTERS);
   const [sel, setSel] = React.useState<string | null>(null);
   const [stop, setStop] = React.useState<StopTarget | null>(null);
@@ -176,4 +178,8 @@ export default function MastersPage() {
       {reason.node}
     </div>
   );
+}
+
+export default function MastersPage() {
+  return IS_DEMO ? <DemoMastersPage /> : <LiveMastersPage />;
 }

@@ -9,8 +9,10 @@ import { PersonCell, auditToast, useReason } from "@/components/config/kit";
 import { fmtInt, fmtUsdK } from "@/components/partners/common";
 import { EmergencyStopDialog, STATUS_LABEL, type StopTarget } from "@/components/social/common";
 import { Countdown, FundDrawer, RequestRow, useClock } from "@/components/social/pamm-parts";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LivePammPage } from "@/components/social-live/pamm";
 
-export default function PammPage() {
+function DemoPammPage() {
   const [funds, setFunds] = React.useState(PAMM_FUNDS);
   const [reqs, setReqs] = React.useState(PAMM_REQUESTS);
   const [sel, setSel] = React.useState<string | null>(null);
@@ -136,4 +138,8 @@ export default function PammPage() {
       {reason.node}
     </div>
   );
+}
+
+export default function PammPage() {
+  return IS_DEMO ? <DemoPammPage /> : <LivePammPage />;
 }

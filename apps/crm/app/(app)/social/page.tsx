@@ -24,6 +24,8 @@ import { MASTERS, PAMM_FUNDS, masterSpark, type Master } from "@kalks/mock/socia
 import { MasterCard, MasterIdentity, RiskBadge, formatAge } from "@/components/social/master-bits";
 import { CopyDialog } from "@/components/social/copy-dialog";
 import { InvestDialog } from "@/components/social/invest-dialog";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveDiscoverPage } from "@/components/social-live/leaderboard";
 
 type Period = "1M" | "3M" | "1Y" | "All";
 type SortKey = "return" | "dd" | "aum" | "age";
@@ -124,7 +126,7 @@ function Hero() {
   );
 }
 
-export default function DiscoverPage() {
+function DemoDiscoverPage() {
   const router = useRouter();
   const { setCopyM, setInvestM, el } = useDialogs();
   const [period, setPeriod] = React.useState<Period>("1Y");
@@ -283,4 +285,8 @@ export default function DiscoverPage() {
       {el}
     </div>
   );
+}
+
+export default function DiscoverPage() {
+  return DEMO_BUILD ? <DemoDiscoverPage /> : <LiveDiscoverPage />;
 }

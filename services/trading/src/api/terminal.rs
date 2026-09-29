@@ -387,6 +387,15 @@ fn with_notes(mut v: Value, notes: &[crate::engine::Note]) -> Value {
     v
 }
 
+/// D70: an account that is copying a master is managed by the copier; the follower stops copying instead
+/// of closing or changing copied trades one by one.
+fn copy_guard(st: &AppState, s: &Session, opening: bool) -> ApiResult<()> {
+    match st.social.terminal_guard(s.login, opening) {
+        Some((code, message)) => Err(ApiError::Status { status: 422, code, message }),
+        None => Ok(()),
+    }
+}
+
 async fn run(st: &AppState, s: &Session, op: Op) -> ApiResult<Value> {
     let done = st.hub.exec(s.login, "client", None, "", "", None, op).await?;
     Ok(with_notes(done.value, &done.notes))
@@ -395,7 +404,11 @@ async fn run(st: &AppState, s: &Session, op: Op) -> ApiResult<Value> {
 pub async fn place(State(st): State<AppState>, ctx: Ctx, Body(b): Body<OrderBody>) -> ApiResult<Json<Value>> {
     let s = session(&st, &ctx).await?;
     s.writable()?;
-    let req = order_req(&b, Source::Manual)?;
+    copy_guard(&st, &s, true)?;
+    let mut req = order_req(&b, Source::Manual)?;
+    if st.social.is_fund(s.login) {
+        req.source = Source::Pamm; // D84: trades on a PAMM fund account carry the pamm source tag
+    }
     let delay = if req.kind == OrderType::Market { exec_delay(&st, &ctx.tenant, s.login).await } else { 0 };
     let op: Op = Box::new(move |tx, env| trade::place_order(tx, env, req).map(|r| place_json(&r)));
     let mut v = run(&st, &s, op).await?;
@@ -444,6 +457,7 @@ pub fn order_patch(b: &OrderPatchBody) -> ApiResult<OrderPatch> {
 pub async fn modify_order(State(st): State<AppState>, ctx: Ctx, Path(ticket): Path<String>, Body(b): Body<OrderPatchBody>) -> ApiResult<Json<Value>> {
     let s = session(&st, &ctx).await?;
     s.writable()?;
+    copy_guard(&st, &s, false)?;
     let ticket = parse_ticket(&ticket)?;
     let patch = order_patch(&b)?;
     let op: Op = Box::new(move |tx, env| trade::modify_order(tx, env, ticket, patch, None).map(|(_, o)| json!({"order": views::order_json(&o)})));
@@ -453,6 +467,7 @@ pub async fn modify_order(State(st): State<AppState>, ctx: Ctx, Path(ticket): Pa
 pub async fn cancel_order(State(st): State<AppState>, ctx: Ctx, Path(ticket): Path<String>) -> ApiResult<Json<Value>> {
     let s = session(&st, &ctx).await?;
     s.writable()?;
+    copy_guard(&st, &s, false)?;
     let ticket = parse_ticket(&ticket)?;
     let op: Op = Box::new(move |tx, env| trade::cancel_order(tx, env, ticket, "cancelled by client").map(|o| json!({"status": "cancelled", "ticket": o.ticket})));
     Ok(Json(run(&st, &s, op).await?))
@@ -476,6 +491,7 @@ pub struct CloseBody {
 pub async fn close_position(State(st): State<AppState>, ctx: Ctx, Path(ticket): Path<String>, body: Option<Json<CloseBody>>) -> ApiResult<Json<Value>> {
     let s = session(&st, &ctx).await?;
     s.writable()?;
+    copy_guard(&st, &s, false)?;
     let ticket = parse_ticket(&ticket)?;
     let b = body.map(|b| b.0).unwrap_or_default();
     let delay = exec_delay(&st, &ctx.tenant, s.login).await;
@@ -502,6 +518,7 @@ pub struct PositionPatchBody {
 pub async fn modify_position(State(st): State<AppState>, ctx: Ctx, Path(ticket): Path<String>, Body(b): Body<PositionPatchBody>) -> ApiResult<Json<Value>> {
     let s = session(&st, &ctx).await?;
     s.writable()?;
+    copy_guard(&st, &s, false)?;
     let ticket = parse_ticket(&ticket)?;
     let patch = PositionPatch { sl: b.sl, tp: b.tp, trailing_points: b.trailing_points };
     let op: Op = Box::new(move |tx, env| trade::modify_position(tx, env, ticket, patch, None).map(|(_, p)| json!({"position": views::position_json(env, &tx.st, &p)})));
@@ -517,6 +534,7 @@ pub struct CloseByBody {
 pub async fn close_by(State(st): State<AppState>, ctx: Ctx, Body(b): Body<CloseByBody>) -> ApiResult<Json<Value>> {
     let s = session(&st, &ctx).await?;
     s.writable()?;
+    copy_guard(&st, &s, false)?;
     let op: Op = Box::new(move |tx, env| trade::close_by(tx, env, b.ticket, b.by).map(|deals| json!({"status": "closed", "deals": deals})));
     Ok(Json(run(&st, &s, op).await?))
 }
@@ -531,6 +549,7 @@ pub struct BulkBody {
 pub async fn bulk_close(State(st): State<AppState>, ctx: Ctx, Body(b): Body<BulkBody>) -> ApiResult<Json<Value>> {
     let s = session(&st, &ctx).await?;
     s.writable()?;
+    copy_guard(&st, &s, false)?;
     let filter = match b.filter.as_str() {
         "all" => BulkFilter::All,
         "profitable" => BulkFilter::Profitable,

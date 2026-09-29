@@ -11,6 +11,7 @@ pub mod money;
 pub mod persist;
 pub mod rules;
 pub mod shard;
+pub mod social;
 pub mod specs;
 pub mod state;
 pub mod views;

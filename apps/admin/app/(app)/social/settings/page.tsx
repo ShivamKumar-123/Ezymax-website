@@ -5,11 +5,13 @@ import { RotateCcw, Save } from "lucide-react";
 import { Button, Card, CardHeader, Chip, Icon3D, PageHeader, Reveal, Toggle, cn } from "@kalks/ui";
 import { MASTERS, SOCIAL_SETTINGS } from "@kalks/mock/admin-partners";
 import { ChipList, MiniField, NumInput, Select, SettingRow, Slider, auditToast, useReason } from "@/components/config/kit";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveSocialSettingsPage } from "@/components/social-live/settings";
 
 type S = typeof SOCIAL_SETTINGS;
 const PERIODS = ["Daily", "Weekly", "Bi-weekly", "Monthly", "Quarterly"];
 
-export default function SocialSettingsPage() {
+function DemoSocialSettingsPage() {
   const [s, setS] = React.useState<S>(SOCIAL_SETTINGS);
   const [saved, setSaved] = React.useState<S>(SOCIAL_SETTINGS);
   const [defPeriod, setDefPeriod] = React.useState("Monthly");
@@ -169,4 +171,8 @@ export default function SocialSettingsPage() {
       {reason.node}
     </div>
   );
+}
+
+export default function SocialSettingsPage() {
+  return IS_DEMO ? <DemoSocialSettingsPage /> : <LiveSocialSettingsPage />;
 }

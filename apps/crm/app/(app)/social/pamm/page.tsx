@@ -23,6 +23,8 @@ import {
 import { PAMM_FUNDS, masterById, masterSpark, type PammFund, type Rollover } from "@kalks/mock/social";
 import { RiskBadge } from "@/components/social/master-bits";
 import { InvestDialog } from "@/components/social/invest-dialog";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LivePammPage } from "@/components/social-live/funds";
 
 type RollF = "all" | Rollover;
 type RiskF = "all" | "low" | "med" | "high";
@@ -106,7 +108,7 @@ function FundCard({ f, onInvest }: { f: PammFund; onInvest: () => void }) {
   );
 }
 
-export default function PammPage() {
+function DemoPammPage() {
   const [view, setView] = React.useState<"cards" | "table">("cards");
   const [roll, setRoll] = React.useState<RollF>("all");
   const [risk, setRisk] = React.useState<RiskF>("all");
@@ -276,4 +278,8 @@ export default function PammPage() {
       <InvestDialog fund={sel} open={!!sel} onOpenChange={(o) => !o && setSel(null)} />
     </div>
   );
+}
+
+export default function PammPage() {
+  return DEMO_BUILD ? <DemoPammPage /> : <LivePammPage />;
 }

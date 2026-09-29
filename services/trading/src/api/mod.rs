@@ -6,6 +6,8 @@ pub mod accounts;
 pub mod admin;
 pub mod dealing;
 pub mod ledger;
+pub mod social;
+pub mod social_admin;
 pub mod stream;
 pub mod terminal;
 
@@ -45,6 +47,8 @@ pub struct AppState {
     pub logins: Arc<LoginAlloc>,
     /// Serialises account creation (max-accounts check + login allocation).
     pub open_lock: Arc<tokio::sync::Mutex<()>>,
+    /// Copy trading and PAMM (src/social).
+    pub social: Arc<crate::social::Social>,
 }
 
 pub fn router(st: AppState) -> Router {
@@ -112,6 +116,40 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/groups", get(admin::groups).post(admin::create_group))
         .route("/v1/admin/groups/{code}", put(admin::update_group))
         .route("/v1/admin/ledger/accounts", get(admin::ledger_accounts))
+        // copy trading and PAMM: Client Area (X-Kalks-User-Id) and public reads
+        .route("/v1/social/leaderboard", get(social::leaderboard))
+        .route("/v1/social/masters/{id}", get(social::master_profile))
+        .route("/v1/social/master/me", get(social::master_me).patch(social::master_update))
+        .route("/v1/social/master/apply", post(social::master_apply))
+        .route("/v1/social/master/dashboard", get(social::master_dashboard))
+        .route("/v1/social/subscriptions", post(social::subscribe).get(social::subscriptions))
+        .route("/v1/social/subscriptions/{id}", get(social::subscription).patch(social::update_subscription))
+        .route("/v1/social/subscriptions/{id}/stop", post(social::stop_subscription))
+        .route("/v1/social/funds", get(social::funds).post(social::create_fund))
+        .route("/v1/social/funds/{id}", get(social::fund).patch(social::update_fund))
+        .route("/v1/social/funds/{id}/invest", post(social::invest))
+        .route("/v1/social/funds/{id}/redeem", post(social::redeem))
+        .route("/v1/social/funds/{id}/statement", get(social::statement))
+        .route("/v1/social/requests/{id}/cancel", post(social::cancel_request))
+        .route("/v1/social/investments", get(social::investments))
+        .route("/v1/social/investments/{fund_id}", patch(social::update_investment))
+        // copy trading and PAMM: Back Office
+        .route("/v1/social/admin/overview", get(social_admin::overview))
+        .route("/v1/social/admin/masters", get(social_admin::masters))
+        .route("/v1/social/admin/masters/{id}/review", post(social_admin::review))
+        .route("/v1/social/admin/masters/{id}/status", post(social_admin::master_status))
+        .route("/v1/social/admin/masters/{id}/emergency", post(social_admin::emergency))
+        .route("/v1/social/admin/subscriptions", get(social_admin::subscriptions))
+        .route("/v1/social/admin/subscriptions/{id}/stop", post(social_admin::stop_subscription))
+        .route("/v1/social/admin/funds", get(social_admin::funds))
+        .route("/v1/social/admin/funds/{id}/freeze", post(social_admin::freeze_fund))
+        .route("/v1/social/admin/funds/{id}/rollover", post(social_admin::fund_rollover))
+        .route("/v1/social/admin/rollover", post(social_admin::rollover_all))
+        .route("/v1/social/admin/snapshots", post(social_admin::snapshots))
+        .route("/v1/social/admin/settings", get(social_admin::settings).put(social_admin::save_settings))
+        .route("/v1/social/admin/fees", get(social_admin::fees))
+        .route("/v1/social/admin/fees/{id}/review", post(social_admin::review_fee))
+        .route("/v1/social/admin/audit", get(social_admin::audit))
         .layer(DefaultBodyLimit::max(256 * 1024))
         .layer(middleware::from_fn_with_state(st.clone(), internal_only));
     Router::new()
@@ -173,6 +211,10 @@ pub enum ApiError {
     Conflict { code: &'static str, message: String },
     RateLimited(u64),
     Reject { reject: Reject, audit: Vec<Value> },
+    /// Any status with our error shape (social API: 422 business rules, 503 wallet unavailable, …).
+    Status { status: u16, code: &'static str, message: String },
+    /// Same, with extra fields merged into the error object (e.g. `checks`).
+    StatusData { status: u16, code: &'static str, message: String, data: Value },
     Internal(anyhow::Error),
 }
 
@@ -224,6 +266,14 @@ impl IntoResponse for ApiError {
                     b["ask"] = crate::money::num(ask);
                 }
                 (status, b, Some(audit), None)
+            }
+            ApiError::Status { status, code, message } => (StatusCode::from_u16(status).unwrap_or(StatusCode::UNPROCESSABLE_ENTITY), json!({"code": code, "message": message}), None, None),
+            ApiError::StatusData { status, code, message, data } => {
+                let mut b = json!({"code": code, "message": message});
+                if let (Value::Object(o), Value::Object(d)) = (&mut b, data) {
+                    o.extend(d);
+                }
+                (StatusCode::from_u16(status).unwrap_or(StatusCode::UNPROCESSABLE_ENTITY), b, None, None)
             }
             ApiError::Internal(e) => {
                 tracing::error!(error = ?e, "internal error");

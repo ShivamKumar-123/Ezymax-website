@@ -39,6 +39,8 @@ import {
 import { MasterIdentity, RiskBadge } from "@/components/social/master-bits";
 import { InvestDialog } from "@/components/social/invest-dialog";
 import { RangeSlider, ToggleChip } from "@/components/social/controls";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveInvestmentsPage } from "@/components/social-live/investments";
 
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const fmtDay = (iso: string) => {
@@ -439,7 +441,7 @@ function HoldingRow({ h, onRedeem, onAdd }: { h: PammHolding; onRedeem: () => vo
 
 /* ------------------------------------------------------------------ */
 
-export default function InvestmentsPage() {
+function DemoInvestmentsPage() {
   const [subs, setSubs] = React.useState(MY_COPY_SUBS);
   const [edit, setEdit] = React.useState<CopySubscription | null>(null);
   const [stop, setStop] = React.useState<CopySubscription | null>(null);
@@ -573,4 +575,8 @@ export default function InvestmentsPage() {
       <InvestDialog fund={add} open={!!add} onOpenChange={(o) => !o && setAdd(null)} />
     </div>
   );
+}
+
+export default function InvestmentsPage() {
+  return DEMO_BUILD ? <DemoInvestmentsPage /> : <LiveInvestmentsPage />;
 }

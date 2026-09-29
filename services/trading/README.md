@@ -14,6 +14,7 @@ The engine executes B-book only. A/B routing is decided and recorded on every ti
 - [Wallet transfers](#wallet-transfers)
 - [Dealing desk API](#dealing-desk-api)
 - [Admin account API](#admin-account-api)
+- [Copy trading and PAMM](#copy-trading-and-pamm)
 - [Streams](#streams)
 - [How the apps integrate](#how-the-apps-integrate)
 - [Environment](#environment)
@@ -72,6 +73,8 @@ Source layout:
 | `src/feed.rs` | market-data sockets, `QuoteBook` |
 | `src/api/` | HTTP handlers (`terminal`, `accounts`, `ledger`, `dealing`, `admin`, `stream`) |
 | `src/views.rs` | JSON views (terminal and Back Office shapes) |
+| `src/social/` | copy trading and PAMM: `math` (sizing, HWM fees, NAV, statistics), `mirror` (follower side of a master event), `copier` (event tap, catch-up, guard, scheduler), `pamm`, `stats`, `wallet` (client + outbox) |
+| `src/api/social.rs`, `src/api/social_admin.rs` | Client Area and Back Office social routes |
 
 ## Data model
 
@@ -352,6 +355,196 @@ The Group object has `code, name, mode, cent, accountTypes ("live"|"demo"|"both"
 
 These groups are seeded: `standard`, `pro`, `pro-netting`, `ecn` (7 USD/lot), `cent`, `vip`, `prop`.
 
+## Copy trading and PAMM
+
+Social trading (D65–D76, D125) lives in `src/social/`. A **master** is a client whose live account was approved as a strategy provider. Followers **copy** the master into a dedicated copy account per subscription (D71). Investors buy units of a master's **PAMM fund**, a pooled trading account valued by NAV per unit (D65). Masters can run both (D75).
+
+### How mirroring works
+
+```
+master account shard ── commit (events) ──► event tap (only logins with active followers)
+                                              │  unbounded, in commit order, + master equity at commit
+                                              ▼
+                                      copier task (one, sequential)
+                                              │  for every active subscription of that master:
+                                              │  plan → op on the follower's shard (single writer)
+                                              ▼
+                        follower copy account: open / add / partial close / close / SL-TP / pending
+```
+
+- **Tap.** After an account's events are committed, the shard hands them to the copier when the login is a watched master. The copier gets them in commit order, with the master's equity at that moment.
+- **Ordering.** One copier task processes masters' commits one at a time and awaits every follower op, so each follower sees the master's actions in the master's order.
+- **Idempotency and links.** Every mirrored action carries a key derived from the master stream:
+  - opens use `clientOrderId = cp<sub>:<master position ticket>`;
+  - pending orders use `co<sub>:<master order ticket>`;
+  - the (at most one) exit a master event causes stamps `cx<sub>:<master event version>` on the follower's exit deal.
+
+  The follower state remembers these keys (the same duplicate guard as the terminal's `clientOrderId`). The master → follower ticket links are derived from them, so they are part of the follower's own event stream and replay with it: there is no separate link table. A repeated or replayed master event never executes twice.
+- **Catch-up.** A cursor per watched login (`copy_cursors`) records the last event version processed. After a restart the copier catches up from the `events` table. During catch-up it still applies closes, SL/TP changes and cancels, but skips opens older than 60 s.
+- **Stops win.** A stop sets an in-memory flag before it closes anything. A mirrored action that is already queued on the follower's shard checks the flag first, so it can never reopen a stopped copy.
+- **What is mirrored (D73).**
+
+| Master event | Follower action |
+|---|---|
+| market fill / pending fill (`position_opened` with a deal) | market order, same side, sized volume, same SL/TP, source `copy`, comment `copy #<master ticket>` |
+| volume added (netting add, dealer add) | market order for the sized extra volume (netting) or a dealer-style add on the linked position (hedging) |
+| partial close | closes the same **fraction** of the linked follower position (rounded down to the lot step; the whole position if the remainder would fall below the minimum lot) |
+| full close (client, SL, TP, stop-out, Close By, dealer, void) | closes the linked follower position at market |
+| SL / TP / trailing change | same levels on the linked follower position |
+| pending placed / modified / cancelled / expired | same order type, prices, SL/TP, expiry and sized volume on the follower; when the master's order fills, a still-pending follower order is replaced by a market fill |
+| netting reversal | close + open, like the master |
+
+- **Sizing (D69).** `v = master volume × factor`, then clamped to the follower's max lot and the symbol's max lot, rounded **down** to the lot step. A result below the minimum lot is skipped and logged (`skipped: below min lot`).
+
+| mode | factor |
+|---|---|
+| `equity` | follower equity ÷ master equity (both in USD, at the moment of the master's trade) |
+| `allocation` | fixed allocation (USD) ÷ master equity |
+| `multiplier` | `value` (for example 0.5 or 2) |
+| `fixed_lot` | every open is `value` lots; adds and partial closes stay proportional |
+
+- **Follower controls (D70).**
+  - Symbols in `excludedSymbols` are never copied.
+  - `maxLot` caps each copied trade.
+  - `equityStop` (USD) and `maxDdPct` (from the subscription's peak equity) are checked every 2 s by the guard. A breach stops the subscription and closes every copied position and order.
+  - `stopReason` is `client` (the follower stopped), `equity_stop`, `max_dd` or `admin`.
+  - Copied positions and orders cannot be closed, modified or cancelled one by one in the terminal. The terminal API returns `422 copy_managed` with the message "This position is copied from <master>. It closes when the master closes it. To exit, stop copying in the Client Area (Social → My subscriptions)." Manual orders on an actively copying account return `422 copy_account`. Stopping the subscription (`POST …/stop`) closes everything and, when `returnFunds` is set, moves the balance back to the wallet.
+- **Copy account (D71).** The copy account is a live account owned by the follower in group `copy` (hedging masters) or `copy-netting` (netting masters). Both groups are seeded disabled, so they never appear in the open-account wizard. Money arrives through the wallet (`to-trading`). Every deposit and withdrawal on the account adjusts the high-water mark.
+- **Performance fee, copy (D66).**
+  - It is settled at the master's fee period end (`daily`, `weekly` or `monthly`, at the server-day rollover) by `settle_copy`: `hwm' = hwm + net deposits since the last settlement`, and `fee = pct × max(0, equity − hwm')`.
+  - The fee is debited from the copy account (`perf_fee` ledger txn: `acct:L:balance −fee` · `house:perf_fees:USD +fee`) and `hwm = equity − fee`.
+  - The fee is recorded in `social_fees` as `pending`. After admin approval (D76), the wallet pays the master `fee − platform cut` (`kind: copy_fee`, direction `credit`). The platform cut stays in `house:perf_fees`.
+  - The fee % is locked on the subscription when it starts. A later change by the master applies to new subscriptions only.
+
+### PAMM (D65–D67, D74)
+
+- **Fund.**
+  - A fund is a live account in group `pamm` owned by the master, who trades it in Kalks Trader with the credentials returned at creation. Orders on it are tagged source `pamm`.
+  - Wallet ↔ account transfers on a fund login are refused (`422 pamm_account`): money moves only through invest/redeem.
+  - `NAV = fund equity ÷ total units`. The first NAV is 1.00: the master's seed capital buys the first units.
+- **Requests.**
+  - An invest request debits the investor's wallet at once (`kind: pamm_invest`, direction `debit`) and waits for the next rollover.
+  - A redeem request waits for the rollover (lock-in: `lockInDays` from the investor's first investment).
+  - A pending request can be cancelled; a cancelled invest is refunded to the wallet (`pamm_redeem`, `credit`).
+- **Rollover.** At the end of the fund's period (daily / weekly / monthly, at 00:00 server time; weekly = the rollover into Monday; monthly = into the 1st), or on demand from the Back Office:
+  1. `nav = equity ÷ units`.
+  2. **Fees.** For each investor (the master pays none) with `nav > hwm`: `fee = pct × (nav − hwm) × units`. The fee is taken as units at NAV (`units −= fee ÷ nav`, so NAV is unchanged) and `hwm = nav`. The total fee is debited from the fund account (`perf_fee` txn) and recorded as a pending `social_fees` row per investor.
+  3. **Redemptions** at `nav`: `amount = units × nav`, debited from the fund (`transfer_out`, ref `pamm:redeem:<id>`), then credited to the wallet (`pamm_redeem`). A redemption the fund's free margin cannot cover stays pending (`insufficient_free_margin`). The master cannot redeem below `minOwnPct` of units (D68).
+  4. **Investments** at `nav`: `units = amount ÷ nav`. The fund is credited (`transfer_in`, ref `pamm:invest:<id>`). The investor's HWM becomes the unit-weighted blend of the old HWM and `nav`. An investment that would push the master's share below `minOwnPct` is rejected and refunded.
+  5. A `pamm_rollovers` row records NAV, equity, units, fees, inflows and outflows.
+- **Unit ledger.** `pamm_unit_ledger` is append-only: `seed | invest | redeem | fee | stop_loss` with ±units and NAV. The holdings in `pamm_investors` always equal Σ of the ledger (checked by the tests).
+- **Protection (D74).**
+  - **Investor stop-loss.** If `value ≤ net invested × (1 − stopLossPct)`, the guard redeems that investor at once at the current NAV (fee rules applied; free margin permitting).
+  - **Fund max drawdown.** If NAV falls `maxDdPct` below its peak, the fund is frozen. All positions and orders are closed, the account becomes `close_only`, and invests are refused. Redemptions still run at rollover. The Back Office unfreezes it.
+- **Money precision.** NAV and units have 8 decimals. Amounts are rounded to 0.01 USD.
+- **Consistency.** Rollovers, freezes and stop-loss redemptions hold one PAMM lock. The guard skips a fund while a rollover holds it, so it never reads a NAV between the ledger move and the unit update.
+- **IB lots (D64).** Every closed deal on a fund account is split across the holders by units and pushed to the IB service (`POST {IB_URL}/v1/ib/events/lots`, `source: "pamm"`, idempotent on deal + user, best effort with retries). The IB poller also sees the fund account's own deal (owner = the master). Add the `pamm` group to the IB programme's excluded groups so fund volume is not counted twice. Copy trades need no push: they are ordinary deals with source `copy` on the follower's own account.
+
+### Statistics, leaderboard and risk score (D72)
+
+- `social_snapshots (login, day)` holds the end-of-day equity (USD) and the day's net external flow (transfers, deposits, withdrawals, demo funding) for every master account and fund account.
+- Snapshots are written:
+  - at every server-day rollover;
+  - on `POST /v1/social/admin/snapshots`;
+  - on approval, which also backfills the account's history from the ledger (end-of-day balance; past floating P&L is not known).
+- **Return index** (time-weighted, flows removed): `I₀ = 1`, `I_t = I_{t−1} × (E_t − F_t) ÷ E_{t−1}`. Today's live equity is the last point.
+- **Returns.**
+  - Period return = `I_now ÷ I_(period start) − 1`.
+  - Monthly returns chain the index at month ends.
+  - Max drawdown = max of `1 − I_t ÷ max_{s≤t} I_s`.
+  - Volatility = stdev of daily index returns × √252.
+- **Risk score 1–10.** `raw = 0.6 × min(maxDD ÷ 50%, 1) + 0.4 × min(volatility ÷ 100%, 1)`; `score = clamp(1 + round(9 × raw), 1, 10)`. Maximum drawdown weighs more than day-to-day volatility. A 10% drawdown with 20% volatility scores 3; a 40% drawdown with 80% volatility scores 8; 50% / 100% scores 10.
+- **Delayed trade history.** The master profile shows closed deals older than `tradeDelayMinutes` (tenant setting, default 30).
+
+### Social API
+
+Same conventions as the rest of the engine: the internal token, `X-Kalks-Tenant`, camelCase JSON, money in USD, percentages as numbers (`12.5` = 12.5 %). Client routes need `X-Kalks-User-Id` (the signed-in gateway user). The CRM BFF also sends `X-Kalks-Kyc: unverified|pending|verified|rejected` from the gateway profile (D68). Staff routes need the staff headers.
+
+**Shapes**
+
+```jsonc
+// MasterView (public card; private fields only on /master/me and admin)
+{"id":3,"nickname":"Gold Swing","strategy":"Gold swing","description":"…","program":"copy|pamm|both",
+ "perfFeePct":20,"feePeriod":"daily|weekly|monthly","minAllocation":100,
+ "status":"pending|approved|rejected|suspended","hidden":false,"frozen":false,"since":"<approvedAt>","ageDays":412,
+ "stats":{"return1m":2.1,"return3m":8.4,"return1y":31.0,"returnAll":44.2,"maxDd":7.9,"currentDd":1.2,"volatility":14.1,
+          "riskScore":3,"equity":25310.5,"aum":120400.0,"followers":14,"investors":6,"trades":212,"winRate":58.4,"spark":[1,1.01,…]},
+ "fund":{"id":2,"name":"…","nav":1.0842,"period":"weekly","perfFeePct":20,"lockInDays":30,"minInvestment":100,"status":"active"} | null,
+ // private: "login","kycVerified","reviewNote","reviewedBy","createdAt","userId"
+}
+// SubscriptionView
+{"id":7,"masterId":3,"master":{"id":3,"nickname":"…","strategy":"…","riskScore":3,"frozen":false,"status":"approved"},"login":10000042,
+ "status":"active|paused|stopped","stopReason":null,"sizing":{"mode":"equity|allocation|multiplier|fixed_lot","value":1},
+ "maxLot":null,"equityStop":null,"maxDdPct":30,"excludedSymbols":["BTCUSD"],"perfFeePct":20,"feePeriod":"weekly",
+ "allocation":1000,"netDeposits":1000,"hwm":1000,"peakEquity":1043.2,"feesPaid":0,"feesPending":0,
+ "balance":1012.3,"equity":1043.2,"profit":43.2,"returnPct":4.32,"positions":2,"orders":0,
+ "createdAt":"…","stoppedAt":null,"nextFeeAt":"…"}
+// FundView
+{"id":2,"masterId":3,"master":{"id":3,"nickname":"…"},"name":"…","status":"active|frozen|closed","period":"weekly",
+ "perfFeePct":20,"lockInDays":30,"minInvestment":100,"maxDdPct":35,"minOwnPct":5,
+ "nav":1.0842,"units":10234.5,"equity":11096.3,"aum":9500.1,"investors":6,"masterSharePct":14.2,"navPeak":1.1,"drawdownPct":1.4,
+ "returnAll":8.42,"return1m":1.2,"lastRolloverAt":"…","nextRolloverAt":"…","createdAt":"…", "login": 10000050 /* owner/admin only */}
+// InvestmentView
+{"fundId":2,"fund":FundView,"units":920.4,"nav":1.0842,"value":997.9,"netInvested":950,"pnl":47.9,"pnlPct":5.04,"hwmNav":1.07,
+ "stopLossPct":20,"lockedUntil":"…","feesPaid":3.1,"pending":[RequestView]}
+// RequestView
+{"id":11,"fundId":2,"kind":"invest|redeem","amount":500,"units":null,"all":false,"status":"pending|done|rejected|cancelled",
+ "reason":null,"createdAt":"…","executedAt":null,"nav":null,"unitsDelta":null,"amountOut":null,"fee":null}
+// FeeView
+{"id":5,"source":"copy|pamm","masterId":3,"master":"Gold Swing","subscriptionId":7,"fundId":null,"payerUserId":42,"login":10000042,
+ "amount":8.64,"platformCut":1.73,"masterAmount":6.91,"periodStart":"…","periodEnd":"…","hwmBefore":1000,"hwmAfter":1034.56,
+ "equity":1043.2,"status":"pending|approved|paid|rejected|failed","reviewedBy":null,"note":null,"createdAt":"…","paidAt":null}
+```
+
+**Public and client routes** (`X-Kalks-User-Id`)
+
+| Method & path | Body / query | Response |
+|---|---|---|
+| `GET /v1/social/leaderboard` | `?period=1m\|3m\|1y\|all&program=all\|copy\|pamm&sort=return\|dd\|aum\|followers\|age&risk=all\|low\|med\|high&minDays=` | `{items: MasterView[], totals:{masters, aum, followers, investors}}`: approved, not hidden |
+| `GET /v1/social/masters/{id}` | – | `{master: MasterView, equity:[{day, equity, index}], monthly:[{month:"2026-09", returnPct}], trades:[{id, symbol, side, volume, openPrice, closePrice, openTime, closeTime, profit}], symbols:[{symbol, trades, share}], tradeDelayMinutes, terms:{perfFeePct, feePeriod, hwm:true, minAllocation, platformCutPct}}` |
+| `GET /v1/social/master/me` | – | `{master: MasterView+private \| null, settings:{feeMinPct, feeMaxPct, minTrackDays, minOwnCapitalPct, minMasterEquity, platformCutPct, minAllocation}, candidates:[{login, group, equity, ageDays, eligible, checks:[{key:"kyc"\|"live"\|"track"\|"equity"\|"free", ok, label, detail}]}]}` |
+| `POST /v1/social/master/apply` | `{login, nickname, strategy, description, program, perfFeePct, feePeriod, minAllocation?}` | `{master}` (status `pending`); 422 `requirements` when a check fails (`checks` in the error) |
+| `PATCH /v1/social/master/me` | `{nickname?, strategy?, description?, perfFeePct?, feePeriod?, minAllocation?}` | `{master}` |
+| `GET /v1/social/master/dashboard` | – | `{master, followers:[{subscriptionId, since, status, sizing, equity, profit}], funds:[FundView + {investors:[{investorId, units, value, since}], pending}], fees: FeeView[], totals:{followers, aum, feesPending, feesPaid}}` |
+| `POST /v1/social/subscriptions` | `{masterId, sizing:{mode, value}, allocation, maxLot?, equityStop?, maxDdPct?, excludedSymbols?[]}` | `{subscription, account, funding:{status:"done"\|"failed", message?}}`. Opens the copy account and pulls `allocation` from the wallet (`to-trading`) |
+| `GET /v1/social/subscriptions` | – | `{items: SubscriptionView[]}` |
+| `GET /v1/social/subscriptions/{id}` | – | `{subscription, positions[], orders[], log:[{at, action, masterTicket, followerTicket, volume, status, message}], fees: FeeView[]}` |
+| `PATCH /v1/social/subscriptions/{id}` | `{sizing?, maxLot?, equityStop?, maxDdPct?, excludedSymbols?, paused?}` (`null` clears a limit) | `{subscription}` |
+| `POST /v1/social/subscriptions/{id}/stop` | `{returnFunds?: true}` | `{subscription, closed:[tickets], failed:[{ticket, error}], returned: amount \| null}` |
+| `GET /v1/social/funds` | – | `{items: FundView[]}` (active and frozen) |
+| `GET /v1/social/funds/{id}` | – | `{fund, master, navHistory:[{at, nav}], rollovers:[{at, nav, invested, redeemed, fees}]}` |
+| `POST /v1/social/funds` | master only: `{name, period, perfFeePct, lockInDays, minInvestment, maxDdPct, seed}` | `{fund, credentials:{login, password, investorPassword}}`. `seed` comes from the master's wallet at NAV 1 |
+| `PATCH /v1/social/funds/{id}` | owner: `{name?, period?, perfFeePct?, lockInDays?, minInvestment?, maxDdPct?}` | `{fund}` |
+| `POST /v1/social/funds/{id}/invest` | `{amount, stopLossPct?}` | `{request}` (the wallet is debited now; units at the next rollover) |
+| `POST /v1/social/funds/{id}/redeem` | `{units?} \| {amount?} \| {all:true}` | `{request}` |
+| `POST /v1/social/requests/{id}/cancel` | – | `{request}` |
+| `GET /v1/social/investments` | – | `{items: InvestmentView[], requests: RequestView[]}` |
+| `PATCH /v1/social/investments/{fundId}` | `{stopLossPct: number\|null}` | `{investment}` |
+| `GET /v1/social/funds/{id}/statement` | – | `{items:[{at, kind, units, nav, amount}], requests: RequestView[]}` (the caller's own) |
+
+**Back Office routes** (staff headers). Reads are open to every staff role. Writes (`suspend`, `hide`, `emergency`, `freeze`, `rollover`, `snapshots`, `settings`) need `platform_owner`, `super_admin`, `admin` or `risk_manager`. Approvals (masters, fee payouts) need `platform_owner`, `super_admin`, `admin` or `compliance`. Every write needs a `note` and is written to `audit_log` as `social.*`.
+
+| Method & path | Body | Response |
+|---|---|---|
+| `GET /v1/social/admin/overview` | – | `{masters:{pending, approved, suspended}, subscriptions:{active, stopped}, funds:{active, frozen}, aum, feesPending:{count, amount}, settings}` |
+| `GET /v1/social/admin/masters?status=` | – | `{items: MasterView+private[]}` |
+| `POST /v1/social/admin/masters/{id}/review` | `{decision:"approve"\|"reject", note}` | `{master}` |
+| `POST /v1/social/admin/masters/{id}/status` | `{action:"suspend"\|"reinstate"\|"hide"\|"unhide", note}` | `{master}` |
+| `POST /v1/social/admin/masters/{id}/emergency` | `{freeze: bool, closePositions?: bool, note}` | `{master, closed, failed}`: stops mirroring for every follower (D125) |
+| `GET /v1/social/admin/subscriptions?masterId=&status=` | – | `{items: SubscriptionView[] + userId}` |
+| `POST /v1/social/admin/subscriptions/{id}/stop` | `{note}` | `{subscription}` |
+| `GET /v1/social/admin/funds` | – | `{items: FundView[] + {login, pending}}` |
+| `POST /v1/social/admin/funds/{id}/freeze` | `{freeze: bool, closePositions?: bool, note}` | `{fund}` |
+| `POST /v1/social/admin/funds/{id}/rollover` | `{note}` | `{rollover}`: runs the fund's rollover now |
+| `POST /v1/social/admin/rollover` | `{note, force?: bool}` | `{funds, subscriptions, fees}`: everything due (or all with `force`) |
+| `POST /v1/social/admin/snapshots` | `{note}` | `{written}` |
+| `GET /v1/social/admin/settings` / `PUT` | `{feeMinPct, feeMaxPct, platformCutPct, minTrackDays, minOwnCapitalPct, minMasterEquity, minAllocation, tradeDelayMinutes, note}` | `{settings}` |
+| `GET /v1/social/admin/fees?status=` | – | `{items: FeeView[], totals:{pending, approved, paid}}` |
+| `POST /v1/social/admin/fees/{id}/review` | `{decision:"approve"\|"reject", note}` | `{fee}`: approve pays the master through the wallet (`copy_fee`) |
+| `GET /v1/social/admin/audit?limit=&before=` | – | `AuditEntry[]` (`social.*` actions) |
+
+Errors use the standard shape. Social codes: `not_master`, `master_status`, `requirements`, `fee_out_of_range`, `own_subscription`, `min_allocation`, `wallet_unavailable`, `wallet_rejected`, `fund_frozen`, `min_investment`, `locked`, `insufficient_units`, `request_done`, `copy_managed`, `copy_account`, `pamm_account`.
+
 ## Streams
 
 Browsers connect directly with a one-time ticket, so the internal token never reaches the browser. The flow is:
@@ -401,6 +594,9 @@ The dealing stream sends `snapshot` (`positions` as DeskPosition[], `orders` as 
 | `TRADING_SESSION_TTL_HOURS` | `12` | terminal sessions |
 | `TRADING_LOG_FORMAT` | `json` | `json` (structured) or `pretty` |
 | `TRADING_ROLLOVER` | `true` | only one engine instance may run rollovers |
+| `WALLET_URL` | `http://127.0.0.1:8095` | wallet service (copy allocations, PAMM invest / redeem, fee payouts) |
+| `WALLET_INTERNAL_TOKEN` | – | sent as `X-Kalks-Internal` to the wallet |
+| `IB_URL` / `IB_INTERNAL_TOKEN` | `http://127.0.0.1:8096` / – | IB service (PAMM lots allocated to investors) |
 | `RUST_LOG` | `info,sqlx=warn` | |
 
 The config is logged at start with every secret and the DB password redacted.
@@ -429,9 +625,20 @@ cargo test -p trading
   - replaying the event log gives exactly the live state.
   They also check that a close done in two parts matches a close done at once, within 0.01.
 - **API tests.** Investor sessions are read-only, order body parsing (clients cannot claim the `dealer` source), and PATCH null semantics.
+- **Social tests.**
+  - `social::math`: sizing modes, proportional adds and partial closes, HWM copy fee with deposits and withdrawals, NAV / units, the rollover plan (fee as units, NAV unchanged, blended HWM, master share, deferred redemptions), return index, drawdown, monthly returns, risk score anchors.
+  - `social::tests`: a master and a follower through the real engine: opens with SL/TP, SL change, partial close, full close, pending place / modify / cancel / fill both ways, netting add and reversal, exclusions, pause, fixed-lot and multiplier with max lot, idempotency (the same master event twice executes once), equity stop / drawdown and close-all, and follower replay + ledger.
+  - `tests/social.rs` (PostgreSQL): shards + tap + copier + a mock wallet. It covers mirroring with the right size, partial close, the fee above HWM, stop and return of funds, a PAMM seed → invest → rollover → profit → fee + redemption with exact figures, units = Σ unit ledger, and replay of every account from `events`.
 - **Integration test** (`tests/replay.rs`). This runs against a throw-away database `kalks_trading_test_<pid>` on the local Postgres; it is skipped when Postgres is unreachable. It runs trades, reversal, pending fills, a partial close, a book split, swaps, a demo refill and credit through the shards. It then checks that `replay_all` from the `events` table equals the live state. It also checks the database guarantees: a reused ledger idempotency key is refused, an unbalanced transaction cannot commit, and `events` / `ledger_postings` are append-only.
 
 ## Known gaps
+
+- **Social.**
+  - The copier is one task that mirrors followers one after another. That is fine for hundreds of followers per master; fan-out per follower shard is the next step.
+  - A hedging master's dealer "add volume" is mirrored as a dealer-style add, so that deal carries source `dealer`, not `copy`.
+  - Book splits of a master position (A/B transfer of part of a ticket) are not mirrored.
+  - A PAMM rollover posts its ledger in the fund's shard, then writes the unit ledger in a second database transaction. If the engine stops between the two, that rollover must be reconciled by hand. The error is logged with the plan.
+  - Master KYC comes from the CRM BFF (`X-Kalks-Kyc`), not from a call to the gateway.
 
 - **A-book.** A-book routing is recorded and the LP adapter is called, but the only adapter is `NullLp` (not connected), so every trade is executed internally.
 - **Routing conditions.** Rules on risk score, hold time, win rate, news window, country or equity never match yet.
@@ -439,6 +646,6 @@ cargo test -p trading
 - **Snapshots.** Replay reads the whole event table on start; periodic snapshots are the next step for large books.
 - **Tick cost.** A tick clones the account state for every account holding that symbol. That is fine at current scale; a read-only pre-check would avoid the clone.
 - **Bonus rules.** Bonus is a separate sub-ledger that counts toward equity. Lot-based bonus release (D29) is not implemented, and credit is not removed on stop-out.
-- **Excluded features.** Prop-firm rules, copy/PAMM mirroring, the public API key auth (the source tag is recorded), FIX, dynamic margin schedules (weekend or news), exposure limits, and price-freeze / spike filter hooks (D116) are not included.
+- **Excluded features.** Prop-firm rules, the public API key auth (the source tag is recorded), FIX, dynamic margin schedules (weekend or news), exposure limits, and price-freeze / spike filter hooks (D116) are not included.
 - **Demo expiry.** A demo account expires by inactivity (last terminal login). The admin can also set `expired` or `active` directly.
 - **Scaling.** Commands are served before ticks. This is correct for a single engine instance, but there is no multi-instance leader election yet: run exactly one engine per database.

@@ -24,6 +24,12 @@ pub struct Config {
     pub json_logs: bool,
     /// Run swap rollovers (only one engine instance may do this).
     pub rollover_enabled: bool,
+    /// Wallet service base URL (copy allocations, PAMM invest / redeem, fee payouts).
+    pub wallet_url: String,
+    pub wallet_token: String,
+    /// IB service (PAMM lots allocated to investors, D64).
+    pub ib_url: String,
+    pub ib_token: String,
 }
 
 /// Masks the password in a connection URL (`postgres://user:secret@host` → `postgres://user:***@host`).
@@ -60,6 +66,10 @@ impl fmt::Debug for Config {
             .field("session_ttl_hours", &self.session_ttl_hours)
             .field("json_logs", &self.json_logs)
             .field("rollover_enabled", &self.rollover_enabled)
+            .field("wallet_url", &redact_url(&self.wallet_url))
+            .field("wallet_token", &redact(&self.wallet_token))
+            .field("ib_url", &redact_url(&self.ib_url))
+            .field("ib_token", &redact(&self.ib_token))
             .finish()
     }
 }
@@ -93,6 +103,10 @@ impl Config {
             session_ttl_hours: var("TRADING_SESSION_TTL_HOURS", "12").parse().unwrap_or(12),
             json_logs: var("TRADING_LOG_FORMAT", "json") == "json",
             rollover_enabled: var("TRADING_ROLLOVER", "true") != "false",
+            wallet_url: var("WALLET_URL", "http://127.0.0.1:8095"),
+            wallet_token: var("WALLET_INTERNAL_TOKEN", ""),
+            ib_url: var("IB_URL", "http://127.0.0.1:8096"),
+            ib_token: var("IB_INTERNAL_TOKEN", ""),
         })
     }
 }

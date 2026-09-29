@@ -7,6 +7,8 @@ import { Avatar, Button, Card, CardHeader, Chip, Icon3D, Money, PageHeader, Reve
 import { MASTERS, MY_COPY_SUBS, masterById, masterSpark, type Master } from "@kalks/mock/social";
 import { MasterIdentity, RiskBadge, formatAge } from "@/components/social/master-bits";
 import { CopyDialog } from "@/components/social/copy-dialog";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveCopyPage } from "@/components/social-live/subscriptions";
 
 type RiskF = "all" | "low" | "med" | "high";
 type SortF = "return" | "dd" | "followers" | "fee";
@@ -69,7 +71,7 @@ function MasterRow({ m, onCopy }: { m: Master; onCopy: () => void }) {
   );
 }
 
-export default function CopyTradingPage() {
+function DemoCopyTradingPage() {
   const [q, setQ] = React.useState("");
   const [risk, setRisk] = React.useState<RiskF>("all");
   const [sort, setSort] = React.useState<SortF>("return");
@@ -226,4 +228,8 @@ export default function CopyTradingPage() {
       <CopyDialog master={sel} open={!!sel} onOpenChange={(o) => !o && setSel(null)} />
     </div>
   );
+}
+
+export default function CopyTradingPage() {
+  return DEMO_BUILD ? <DemoCopyTradingPage /> : <LiveCopyPage />;
 }
