@@ -1,4 +1,4 @@
-// "Running": the strategy was deployed after the client confirmed it. A mint block names the account in big
+// "Running": the strategy was deployed after the client confirmed it. A gold block names the account in big
 // type and links to the strategy in the Algo module, where it is paused, stopped or killed.
 import * as React from "react";
 import { View } from "react-native";
@@ -19,12 +19,12 @@ export const DeployedCard = React.memo(function DeployedCard({ m }: { m: Deploye
   const router = useRouter();
   const kind = m.accountType === "live" ? t("common.live") : t("common.demo");
   return (
-    <ColorBlock color="mint" padded={false} style={{ padding: space[5], gap: space[3] }} testID={`ai-deployed-${m.deploymentId}`}>
+    <ColorBlock color="gold" padded={false} style={{ padding: space[5], gap: space[3] }} testID={`ai-deployed-${m.deploymentId}`}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
         <Text variant="label" color={colors.ink2} style={{ flex: 1 }}>
           {t("mobileAi.deployed.label")}
         </Text>
-        <InkTag label={kind} fill={m.accountType === "live" ? colors.ember : colors.periwinkle} />
+        <InkTag label={kind} fill={m.accountType === "live" ? colors.ember : undefined} />
       </View>
       <Display size="lg" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit>
         {`${kind} #${m.login}`}

@@ -92,7 +92,7 @@ export const AttachmentView = React.memo(function AttachmentView({ a, mine }: { 
       scaleTo={0.98}
       accessibilityLabel={t("mobileAi.support.openFile", { name })}
       testID={`support-attachment-${a.id}`}
-      style={{ minHeight: 56, maxWidth: 260, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[3], paddingVertical: space[2], borderRadius: radius.md, backgroundColor: colors.surface2, borderWidth: 1, borderColor: mine ? "rgba(242,106,61,0.45)" : colors.line }}
+      style={{ minHeight: 56, maxWidth: 260, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[3], paddingVertical: space[2], borderRadius: radius.md, backgroundColor: colors.surface2, borderWidth: 1, borderColor: mine ? colors.ember : colors.line }}
     >
       <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surface3, alignItems: "center", justifyContent: "center" }}>{opening ? <ActivityIndicator color={colors.text2} /> : <FileText size={18} color={colors.ember} />}</View>
       <View style={{ flexShrink: 1 }}>
