@@ -11,7 +11,8 @@ if [ -z "${KALKS_DEPLOY_PULLED:-}" ]; then
   git pull --ff-only
   KALKS_DEPLOY_PULLED=1 exec "$0" "$@"
 fi
-pnpm install --frozen-lockfile
+# the mobile app (apps/mobile, Expo) is built with EAS, never on the server: skip its React Native toolchain
+pnpm install --frozen-lockfile --filter '!@kalks/mobile'
 cargo build --release -p market-data -p gateway -p trading -p prop -p ib
 cargo build --release -p academy
 cargo build --release -p algo

@@ -1,8 +1,16 @@
 packages:
   - "apps/*"
   - "packages/*"
+allowBuilds:
+  '@shopify/react-native-skia': true
+  sharp: true
 minimumReleaseAgeExclude:
   - framer-motion@13.4.2
   - lucide-react@1.48.0
   - motion-dom@13.4.2
   - motion@13.4.2
+  - '@expo/ui@57.0.21'
+  - expo-constants@57.0.20
+  - expo-modules-core@57.0.20
+  - expo-router@57.0.24
+  - expo@57.0.26

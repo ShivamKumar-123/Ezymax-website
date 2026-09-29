@@ -1,0 +1,11 @@
+.expo/
+dist-web/
+dist-ios/
+dist-android/
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision

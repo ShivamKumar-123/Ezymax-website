@@ -1,0 +1,193 @@
+# Kalks mobile app (`apps/mobile`)
+
+The native Kalks app for iOS and Android: React Native + Expo SDK 57, expo-router, Reanimated 4, Gesture Handler, Skia (chart), FlashList, @gorhom/bottom-sheet.
+
+Design direction (approved by the founder): a hybrid app.
+- **Trading screens are dense** like MT5 / cTrader: watchlist, chart with a one-tap Sell / Buy bar, the order ticket as a bottom sheet, positions / orders / history.
+- **Everything else is bold and editorial:** tall condensed uppercase headings (Anton), big saturated colour blocks with a 28–32 radius on near-black `#0E0E10`, pill chips, a floating pill tab bar, and huge numbers with small labels.
+- **Prices** use JetBrains Mono (tabular digits).
+- **Green and red are reserved for money:** P&L and price direction only.
+- **No** emoji, blur, glow, particles or looping animation. Motion is functional only: price flash, swipe, sheet, press feedback, and haptics on fills.
+
+## Run it on your phone (Expo Go)
+
+1. Install **Expo Go** from the App Store / Play Store. It must support SDK 57.
+2. Put the phone and the Mac on the **same Wi-Fi**.
+3. From the repo root:
+   ```bash
+   pnpm install
+   pnpm --filter @kalks/mobile start        # Metro on :8082 (market-data owns :8081)
+   ```
+4. Scan the QR code: with the Camera app on iOS, or from inside Expo Go on Android.
+
+By default the app talks to **production** (`https://app.kalkstrade.com`), so you sign in with your real Kalks account.
+
+### Against the local stack
+
+```bash
+scripts/dev-services.sh                                  # Postgres, services, Client Area on :3000
+pnpm --filter @kalks/mobile dev-relay                    # 0.0.0.0:8790, maps the local stack like the production edge
+EXPO_PUBLIC_API_BASE=http://<your Mac's LAN IP>:8790 pnpm --filter @kalks/mobile start
+```
+
+Find the Mac's LAN IP with `ipconfig getifaddr en0`.
+
+The relay (`scripts/dev-relay.mjs`) forwards these paths:
+
+| Path | Goes to |
+|---|---|
+| `/api/*` | Client Area BFF `:3000` |
+| `/v1/*` | market-data `:8081` (HTTP and WebSocket) |
+| `/engine/stream` | trading engine `:8090` |
+| `/support/stream` | support service `:8100` |
+
+The BFF's `/api/mobile/config` tells the app to use the relay for quotes and streams when it is reached over the LAN. The relay is for development only; never deploy it.
+
+### Web preview (screenshots, quick checks)
+
+```bash
+EXPO_PUBLIC_API_BASE=http://localhost:8790 pnpm --filter @kalks/mobile export:web
+pnpm --filter @kalks/mobile dev-relay                    # also serves dist-web/ at http://localhost:8790
+```
+
+## Builds (EAS)
+
+`eas.json` has three profiles:
+
+| Profile | What it builds |
+|---|---|
+| `development` | dev client |
+| `preview` | internal APK / ad-hoc IPA |
+| `production` | store build |
+
+```bash
+cd apps/mobile
+npx eas-cli login
+npx eas-cli build --profile preview --platform android
+npx eas-cli build --profile production --platform ios
+```
+
+Every profile points `EXPO_PUBLIC_API_BASE` at production. Nothing here runs a cloud build automatically.
+
+The server deploy (`deploy/deploy.sh`, `deploy-demo.sh`) installs with `--filter '!@kalks/mobile'`, so the VPS never installs or builds the React Native toolchain.
+
+### Expo Go compatibility
+
+Everything in phase 1 runs in Expo Go.
+- **Storage:** expo-sqlite's kv-store stands in for MMKV. MMKV needs a dev build; kv-store gives synchronous reads, so screens still open on cached data.
+- **Fonts:** loaded at runtime.
+
+A dev build (`development` profile) is only needed for phase-2 native modules (push notifications, biometrics).
+
+## Security model
+
+- The app never contains an internal service token. It talks only to the Client Area BFF under `/api/mobile/*` (`apps/crm/lib/mobile.ts`, `apps/crm/proxy.ts`).
+- The gateway session token lives in the **secure store** (Keychain / Keystore) and is sent as `Authorization: Bearer <token>`. It is the same session model as the web (email code on new devices, step-up codes, restrictions, blocked sign-in).
+- **Most mobile paths are rewrites of the existing cookie routes.** For example, `/api/mobile/wallet/...` is served by `/api/wallet/...`. The proxy moves the bearer token into the session cookie of the rewritten request and drops any browser cookie, so the identical handler logic runs, including viewer scopes, ownership checks and read-only staff sessions. Cookie routes keep their same-origin (CSRF) check unchanged.
+- **Native mobile routes:**
+  - `auth/*` returns the session token in the JSON body.
+  - `config` gives the public service URLs.
+  - `trade/*` covers trading-engine sessions, obtained through the same SSO token as Kalks Trader.
+- Tests: `node --test apps/crm/tests/mobile.test.mjs`.
+
+## Conventions (for everyone adding a feature)
+
+### Where things live
+
+| What | Where |
+|---|---|
+| Tabs (Home, Markets, Trade, Portfolio, More) | `app/(app)/(tabs)/<tab>.tsx` (thin: imports the screen from `src/features/<feature>`) |
+| Feature screens pushed on the stack | `app/(app)/<feature>/<screen>.tsx`, e.g. `app/(app)/wallet/deposit.tsx` |
+| Signed-out screens | `app/(auth)/…` |
+| Feature code (components, hooks, API calls) | `src/features/<feature>/…` |
+| Shared UI kit | `src/ui` (import from `@/ui`) |
+| Tokens (colours, spacing, radii, type) | `src/theme/tokens.ts` |
+| API client, cache, storage, haptics | `src/lib` |
+| Session (me, restrictions, sign-out hooks) | `src/session` |
+| Quotes stream, instruments | `src/market` |
+| Illustrations | `assets/illustrations` (generated) |
+
+Signed-in routes are protected by `Stack.Protected` in `app/_layout.tsx`. Anything under `app/(app)/` requires a session automatically. Don't add screens to the root layout.
+
+Shared registry files are `app/_layout.tsx`, `app/(app)/_layout.tsx`, `app/(app)/(tabs)/_layout.tsx` and `src/ui/index.ts`. Keep hunks in them small. Most features need no change there, because expo-router picks up new files by themselves.
+
+### Server (BFF) routes for the app
+
+- **Existing cookie route?** Just call it as `/api/mobile/<family>/...` with `api()`. The family (first segment) must be listed in `REWRITES` in `apps/crm/lib/mobile.ts`. Already listed: trading, wallet, news, notifications, kyc, security, support, status, growth, partner, social, prop, academy, reports, algo.
+- **Needs a mobile-only route?** Add `apps/crm/app/api/mobile/<family>/.../route.ts`, add `<family>` to `NATIVE` in `lib/mobile.ts`, and read the session with `bearerOf(req.headers)` + `fetchMe()`. The proxy has already applied the maintenance, module, viewer and staff policies. Add tests next to `apps/crm/tests/mobile.test.mjs`.
+
+### Calling the API
+
+```ts
+import { api, apiGet, apiPost } from "@/lib/api";
+const r = await apiGet<{ accounts: Account[] }>("trading/accounts");
+if (!r.ok) show(r.error.message); // already in the reader's language
+```
+
+- **Screen data:** use `useQuery(key, fetcher, { persist: true })` (`src/lib/query.ts`). It returns cached data at once and refreshes in the background.
+- **Invalidation:** after a confirmed change, call `invalidate(prefix)` or `setQueryData()`.
+- **Money actions** (orders, withdrawals, transfers) are never optimistic. Show the server's answer.
+- **Sign-out cleanup:** clear feature state with `onSignOut(fn)`.
+
+### i18n
+
+- **Shared catalogs:** everything is in `packages/i18n` (22 languages, English fallback).
+- **New strings:** give each feature its own namespace file, `packages/i18n/src/catalog/en/mobile<Feature>.ts` (for example `mobileWallet`), registered in `en/index.ts`.
+- **Translations:** put them in `packages/i18n/src/catalog/<lang>/mobile<Feature>.ts`, typed `NsMessages<"mobile<Feature>">`. Locale `index.ts` files don't need them; the app loads namespaces directly.
+- **Reuse** existing keys (`common.*`, `auth.*`, `wallet.*`, `order.*` …) before adding new ones.
+- **Regenerate the loaders** after adding a namespace: `pnpm --filter @kalks/mobile i18n`. It rewrites `src/i18n/loaders.generated.ts` and includes every `mobile*` namespace automatically.
+- **In code:**
+  - `const t = useT(); t("mobileWallet.title")`.
+  - Outside React, use `i18n.t`.
+  - Rich text with tags uses `<Trans k=… tags={…} />`.
+- **RTL** (ar, ur, fa) flips the root view's `direction`. Use `start` / `end` (`marginStart`, `paddingEnd`, `start:`), never left / right.
+
+### Performance rules (Instagram / Netflix bar: 60 fps, 120 on ProMotion)
+
+1. **A price tick never re-renders a list or a screen.**
+   - Live numbers are leaf components: `PriceCell`, `ChangeText`, `LivePrice`, `useLiveQuote`, each coalesced to one update per frame.
+   - The UI thread reads `feed.sv(symbol)` shared values.
+2. **Lists use FlashList.**
+   - Rows are `React.memo` with stable props and a fixed height (pass it to the list).
+   - Don't pass inline objects or closures to rows.
+3. **Gestures and animations run on the UI thread** (Reanimated / Gesture Handler worklets). Springs come from `motion` in tokens. Gestures follow the finger 1:1 and can be interrupted.
+4. **Open to content:** use `useQuery(…, { persist: true })` and skeletons shaped like the content (`Skeleton`, `SkeletonRows`), never a centred spinner for a whole screen.
+5. **Prefetch** on press-in (e.g. chart candles from a watchlist row) with `prefetch()`.
+6. **Images:** use `<Illustration>` (expo-image, memory+disk cache, fixed aspect ratio, @2x / @3x WebP).
+7. **Haptics** (`src/lib/haptics.ts`) are for meaningful moments only:
+   - order fill, close;
+   - swipe threshold;
+   - pull-to-refresh;
+   - selection changes.
+8. **No decorative motion:** no looping animations, blur or glow. Skeletons are static.
+
+### UI kit (`@/ui`)
+
+| Group | Components |
+|---|---|
+| Text | `Text` (variants: title, headline, body, callout, caption, label), `Display` (Anton, uppercase), `Mono` (tabular) |
+| Surfaces | `Card`, `ColorBlock` (ember / gold / mint / periwinkle / cream), `Screen` (safe areas, header, pull-to-refresh, tab-bar padding, keyboard) |
+| Controls | `Pill` / `PillRow`, `Button` (primary, secondary, ghost, cream, buy, sell), `IconButton`, `PressableScale` (press feedback + haptic), `TextField`, `OtpInput`, `Sheet` (bottom sheet) |
+| States and notices | `Skeleton`, `EmptyState`, `Illustration`, `Banner` |
+| Rows | `ListRow`, `Divider` |
+| Numbers and brand | `PriceCell`, `ChangeText`, `LivePrice`, `Money`, `KalksMark` |
+
+Tokens: 4 / 8 pt spacing (`space`), `GUTTER` 20, radii `card` 28 / `block` 32, touch targets ≥ 44 pt (`HIT`).
+
+### Illustrations
+
+`pnpm --filter @kalks/mobile illustrations` processes the source PNGs.
+
+- **Input:** it reads `illustrator/*.png` at the repo root and never modifies them.
+- **Background:** it removes the baked-in checkerboard (a flood fill from the borders, with a feathered edge).
+- **Output:** @1x / @2x / @3x WebP, plus `src/ui/illustrations.generated.ts` (names and aspect ratios).
+- **Placeholders:** images the founder is regenerating keep a clean placeholder: copy trading, empty watchlist, PAMM funds, prop challenge, prop passed, rewards, partner IB, market closed. When a source file changes, re-running the script picks it up automatically (`scripts/illustrations.manifest.json` keeps the old hashes).
+
+## Phase 2 (not in this build)
+
+| Area | Scope |
+|---|---|
+| Investing | Copy trading, PAMM and MAM; prop challenges; Academy; AI Trader |
+| Partners | IB / partner dashboard; rewards |
+| Device features | Push notifications (expo-notifications plus the server side in services/support); biometric unlock; Google sign-in (needs the OAuth client for iOS / Android) |
+| Trading tools | Depth of market; price alerts |

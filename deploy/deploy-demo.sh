@@ -15,7 +15,8 @@ for app in crm admin terminal; do
     echo "NEXT_PUBLIC_CLIENT_AREA_URL=https://demo.kalkstrade.com"
   } > "$f"
 done
-pnpm install --frozen-lockfile
+# the mobile app (apps/mobile, Expo) is built with EAS, never on the server: skip its React Native toolchain
+pnpm install --frozen-lockfile --filter '!@kalks/mobile'
 pnpm turbo run build --filter=@kalks/crm --filter=@kalks/admin --filter=@kalks/terminal --concurrency=1
 sudo cp ~/kalks/deploy/systemd/kalks-demo-*.service /etc/systemd/system/
 sudo systemctl daemon-reload
