@@ -248,5 +248,6 @@ const profile: NsMessages<"profile"> = {
   "prefs.notif.priceAlerts": "가격 알림",
   "prefs.notif.news": "시장 뉴스 및 일일 AI 브리핑",
   "prefs.notif.promotions": "프로모션 및 대회",
+  "prefs.subtitleLive": "클라이언트 영역의 언어와 화면 설정.",
 };
 export default profile;

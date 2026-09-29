@@ -249,5 +249,6 @@ const profile: NsMessages<"profile"> = {
   "prefs.notif.priceAlerts": "Tahadhari za bei",
   "prefs.notif.news": "Habari za soko na muhtasari wa kila siku wa AI",
   "prefs.notif.promotions": "Ofa na mashindano",
+  "prefs.subtitleLive": "Lugha na mwonekano wa Eneo lako la Mteja.",
 };
 export default profile;

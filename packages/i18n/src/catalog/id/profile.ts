@@ -255,5 +255,6 @@ const profile: NsMessages<"profile"> = {
   "prefs.notif.priceAlerts": "Peringatan harga",
   "prefs.notif.news": "Berita pasar & ringkasan AI harian",
   "prefs.notif.promotions": "Promosi & kontes",
+  "prefs.subtitleLive": "Bahasa dan tampilan Area Klien Anda.",
 };
 export default profile;

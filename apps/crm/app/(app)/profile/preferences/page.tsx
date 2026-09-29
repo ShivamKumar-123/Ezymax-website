@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Bell, Clock, Languages, MonitorSmartphone, Moon, Sun, Mail } from "lucide-react";
+import Link from "next/link";
+import { Bell, ChevronRight, Clock, Languages, MonitorSmartphone, Moon, Sun, Mail } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { Card, CardHeader, Flag, LANGUAGES, PageHeader, Reveal, Segmented, Toggle, cn } from "@kalks/ui";
 import { useLocale, useT } from "@kalks/i18n/react";
+import { IS_DEMO } from "@kalks/mock/mode";
 
 const NOTIFS = [
   ["profile.prefs.notif.fills", true, true],
@@ -28,8 +30,8 @@ export default function PreferencesPage() {
   const [prefs, setPrefs] = React.useState(() => NOTIFS.map(([, e, i]) => ({ email: e, app: i })));
   return (
     <div>
-      <PageHeader title={t("profile.prefs.title")} subtitle={t("profile.prefs.subtitle")} />
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+      <PageHeader title={t("profile.prefs.title")} subtitle={IS_DEMO ? t("profile.prefs.subtitle") : t("profile.prefs.subtitleLive")} />
+      <div className={cn("grid grid-cols-1 gap-4", IS_DEMO ? "xl:grid-cols-3" : "lg:grid-cols-2")}>
         <Reveal>
           <Card className="h-full">
             <CardHeader title={t("profile.prefs.appearance")} icon={<MonitorSmartphone />} />
@@ -53,7 +55,7 @@ export default function PreferencesPage() {
           </Card>
         </Reveal>
 
-        <Reveal delay={0.05}>
+        {IS_DEMO && <Reveal delay={0.05}>
           <Card className="h-full">
             <CardHeader title={t("profile.prefs.timeDisplay")} icon={<Clock />} />
             <div className="p-6">
@@ -61,7 +63,7 @@ export default function PreferencesPage() {
               <p className="mt-4 text-[13px] leading-relaxed text-fg-3">{t("profile.prefs.timeHint")}</p>
             </div>
           </Card>
-        </Reveal>
+        </Reveal>}
 
         <Reveal delay={0.1}>
           <Card className="h-full">
@@ -82,7 +84,24 @@ export default function PreferencesPage() {
         </Reveal>
       </div>
 
-      <Reveal delay={0.15}>
+      {!IS_DEMO && (
+        <Reveal delay={0.1}>
+          <Link href="/profile/notifications" className="mt-4 block">
+            <Card className="flex items-center gap-4 px-6 py-5 transition-colors hover:border-[var(--k-border-top)]">
+              <span className="grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface-3 text-fg-2">
+                <Bell className="size-[18px]" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-medium">{t("profile.notifCard.title")}</div>
+                <div className="mt-0.5 text-[12.5px] text-fg-3">{t("profile.notifCard.hint")}</div>
+              </div>
+              <ChevronRight className="size-4 text-fg-3 rtl:-scale-x-100" />
+            </Card>
+          </Link>
+        </Reveal>
+      )}
+
+      {IS_DEMO && <Reveal delay={0.15}>
         <Card className="mt-4">
           <CardHeader title={t("profile.prefs.notifications")} subtitle={t("profile.prefs.notificationsHint")} icon={<Bell />} />
           <div className="p-6 pt-4">
@@ -107,7 +126,7 @@ export default function PreferencesPage() {
             </div>
           </div>
         </Card>
-      </Reveal>
+      </Reveal>}
     </div>
   );
 }

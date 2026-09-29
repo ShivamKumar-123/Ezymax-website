@@ -6,7 +6,7 @@
 export const LIVE_PAGES = ["/", "/markets", "/profile", "/support", "/accounts", "/portfolio", "/social", "/academy", "/partner", "/wallet", "/prop", "/developer", "/rewards", "/news", "/calendar"] as const;
 
 /** Sub-pages of a live prefix that are still mock-only and stay gated in live builds. */
-export const LIVE_GATED = ["/profile/preferences", "/academy/coach"] as const;
+export const LIVE_GATED = ["/academy/coach"] as const;
 
 /** Modules that are next on the roadmap: listed in live navigation with a "Soon" chip. */
 export type SoonModule = { prefix: string; title: string; text: string };

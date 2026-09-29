@@ -99,5 +99,9 @@ const shell = {
   "sessions.tokyo": "Tokyo",
   "sessions.london": "London",
   "sessions.newYork": "New York",
+  "nav.academyLive": "Academy",
+  "nav.managed": "Managed accounts",
+  "nav.mamManager": "MAM manager",
+  "nav.notifications": "Notifications",
 };
 export default shell;

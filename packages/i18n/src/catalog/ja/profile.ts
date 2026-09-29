@@ -251,5 +251,6 @@ const profile: NsMessages<"profile"> = {
   "prefs.notif.priceAlerts": "価格アラート",
   "prefs.notif.news": "マーケットニュースと毎日のAIブリーフ",
   "prefs.notif.promotions": "キャンペーンとコンテスト",
+  "prefs.subtitleLive": "クライアントエリアの言語と表示。",
 };
 export default profile;

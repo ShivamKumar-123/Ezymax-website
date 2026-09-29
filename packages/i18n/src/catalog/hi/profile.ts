@@ -256,5 +256,6 @@ const profile: NsMessages<"profile"> = {
   "prefs.notif.priceAlerts": "प्राइस अलर्ट",
   "prefs.notif.news": "मार्केट न्यूज़ और दैनिक AI ब्रीफ़",
   "prefs.notif.promotions": "प्रमोशन और कॉन्टेस्ट",
+  "prefs.subtitleLive": "आपके क्लाइंट एरिया की भाषा और रूप।",
 };
 export default profile;

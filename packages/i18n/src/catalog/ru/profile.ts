@@ -268,5 +268,6 @@ const profile: NsMessages<"profile"> = {
   "prefs.notif.priceAlerts": "Ценовые оповещения",
   "prefs.notif.news": "Новости рынков и ежедневный AI-обзор",
   "prefs.notif.promotions": "Акции и конкурсы",
+  "prefs.subtitleLive": "Язык и оформление вашего Личного кабинета.",
 };
 export default profile;

@@ -256,5 +256,6 @@ const profile: NsMessages<"profile"> = {
   "prefs.notif.priceAlerts": "هشدارهای قیمت",
   "prefs.notif.news": "اخبار بازار و خلاصه روزانه هوش مصنوعی",
   "prefs.notif.promotions": "پیشنهادهای ویژه و مسابقات",
+  "prefs.subtitleLive": "زبان و ظاهر ناحیه مشتری شما.",
 };
 export default profile;

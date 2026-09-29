@@ -48,6 +48,7 @@ const ACCOUNT_MENU_LIVE = [
   { label: "shell.security", icon: <ShieldCheck />, href: "/profile/security" },
   { label: "shell.nav.viewers", icon: <Eye />, href: "/profile/viewers" },
   { label: "shell.verification", icon: <IdCard />, href: "/profile/verification" },
+  { label: "shell.preferences", icon: <Settings />, href: "/profile/preferences" },
 ] as const;
 
 /** Client Area chrome (rail, top bar, account menu) for the signed-in client. */

@@ -101,5 +101,9 @@ const shell: NsMessages<"shell"> = {
   "sessions.tokyo": "طوكيو",
   "sessions.london": "لندن",
   "sessions.newYork": "نيويورك",
+  "nav.academyLive": "الأكاديمية",
+  "nav.managed": "الحسابات المُدارة",
+  "nav.mamManager": "مدير MAM",
+  "nav.notifications": "الإشعارات",
 };
 export default shell;

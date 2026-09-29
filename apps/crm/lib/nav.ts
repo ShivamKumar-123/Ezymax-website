@@ -50,10 +50,12 @@ import {
   BadgeCheck,
   Eye,
   SlidersHorizontal,
+  Bell,
 } from "lucide-react";
 import type { NavModule } from "@kalks/ui";
 import { IS_DEMO } from "@kalks/mock/mode";
 import type { MessageKey, T } from "@kalks/i18n";
+import { LIVE_GATED } from "@/lib/live";
 
 export const CRM_NAV: NavModule[] = [
   {
@@ -206,17 +208,22 @@ export const CRM_NAV: NavModule[] = [
       { href: "/profile/security", label: "Security", icon: ShieldCheck },
       { href: "/profile/verification", label: "Verification", icon: BadgeCheck },
       { href: "/profile/viewers", label: "View-only access", icon: Eye },
+      { href: "/profile/notifications", label: "Notifications", icon: Bell },
       { href: "/profile/preferences", label: "Preferences", icon: SlidersHorizontal },
     ],
   },
   { key: "support", label: "Support", icon: LifeBuoy, href: "/support", section: "account" },
 ];
 
-/** Live builds list every module, like the demo, without the demo's mock count badges. */
+const gated = (href: string) => LIVE_GATED.some((g) => href === g || href.startsWith(g + "/"));
+
+/** Live builds list every module, like the demo, without the demo's mock count badges and without
+ * sub-pages that are still gated (LIVE_GATED) — navigation never leads to a placeholder. */
 export const LIVE_NAV: NavModule[] = CRM_NAV.map((m) => ({
   ...m,
+  label: m.key === "academy" ? "Academy" : m.label,
   badge: undefined, // demo badges are mock counts
-  sub: m.sub?.map((s) => ({ ...s, badge: undefined })),
+  sub: m.sub?.filter((s) => !gated(s.href)).map((s) => ({ ...s, badge: undefined })),
 }));
 
 /** Navigation for this build. */
@@ -247,7 +254,7 @@ const MODULE_KEYS: Record<string, MessageKey> = {
   prop: "shell.nav.prop",
   rewards: "shell.nav.rewards",
   developer: "shell.nav.developer",
-  academy: "shell.nav.academy",
+  academy: IS_DEMO ? "shell.nav.academy" : "shell.nav.academyLive",
   profile: "shell.nav.profileSecurity",
   support: "shell.nav.support",
 };
@@ -304,6 +311,9 @@ const SUB_KEYS: Record<string, MessageKey> = {
   "/profile/verification": "shell.nav.verification",
   "/profile/viewers": "shell.nav.viewers",
   "/profile/preferences": "shell.nav.preferences",
+  "/profile/notifications": "shell.nav.notifications",
+  "/social/managed": "shell.nav.managed",
+  "/social/mam": "shell.nav.mamManager",
 };
 
 /** Navigation with labels in the reader's language (unknown entries keep their English label). */

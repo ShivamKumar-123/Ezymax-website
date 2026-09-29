@@ -248,5 +248,6 @@ const profile: NsMessages<"profile"> = {
   "prefs.notif.priceAlerts": "விலை எச்சரிக்கைகள்",
   "prefs.notif.news": "சந்தைச் செய்திகள் & தினசரி AI சுருக்கம்",
   "prefs.notif.promotions": "சலுகைகள் & போட்டிகள்",
+  "prefs.subtitleLive": "உங்கள் கிளையன்ட் பகுதியின் மொழி மற்றும் தோற்றம்.",
 };
 export default profile;

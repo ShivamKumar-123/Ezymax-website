@@ -248,5 +248,6 @@ const profile: NsMessages<"profile"> = {
   "prefs.notif.priceAlerts": "Cảnh báo giá",
   "prefs.notif.news": "Tin thị trường & bản tin AI hằng ngày",
   "prefs.notif.promotions": "Khuyến mãi & cuộc thi",
+  "prefs.subtitleLive": "Ngôn ngữ và giao diện Khu vực khách hàng của bạn.",
 };
 export default profile;

@@ -248,5 +248,6 @@ const profile: NsMessages<"profile"> = {
   "prefs.notif.priceAlerts": "การแจ้งเตือนราคา",
   "prefs.notif.news": "ข่าวตลาดและสรุป AI รายวัน",
   "prefs.notif.promotions": "โปรโมชันและการแข่งขัน",
+  "prefs.subtitleLive": "ภาษาและรูปลักษณ์ของพื้นที่ลูกค้าของคุณ",
 };
 export default profile;

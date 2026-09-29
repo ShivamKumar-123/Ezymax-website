@@ -255,5 +255,6 @@ const profile = {
   "prefs.notif.priceAlerts": "Price alerts",
   "prefs.notif.news": "Market news & daily AI brief",
   "prefs.notif.promotions": "Promotions & contests",
+  "prefs.subtitleLive": "Language and appearance of your Client Area.",
 };
 export default profile;

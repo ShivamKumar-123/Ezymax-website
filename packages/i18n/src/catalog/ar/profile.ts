@@ -284,5 +284,6 @@ const profile: NsMessages<"profile"> = {
   "prefs.notif.priceAlerts": "تنبيهات الأسعار",
   "prefs.notif.news": "أخبار السوق والملخص اليومي بالذكاء الاصطناعي",
   "prefs.notif.promotions": "العروض الترويجية والمسابقات",
+  "prefs.subtitleLive": "لغة منطقة العميل ومظهرها.",
 };
 export default profile;
