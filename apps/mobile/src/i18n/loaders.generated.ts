@@ -2,10 +2,11 @@
 /* eslint-disable */
 type Loader = () => Promise<{ default: unknown }>;
 
-export const NAMESPACES = ["auth","common","dashboard","kyc","market","mobile","mobileAccounts","mobileAuth","mobileHome","mobileMarkets","mobilePortfolio","mobileProfile","mobileProp","mobileReports","mobileSocial","mobileTrade","mobileWallet","news","order","portfolio","profile","security","support","wallet"] as const;
+export const NAMESPACES = ["academy","auth","common","dashboard","kyc","market","mobile","mobileAcademy","mobileAccounts","mobileAuth","mobileHome","mobileMarkets","mobilePortfolio","mobileProfile","mobileProp","mobileReports","mobileSocial","mobileTrade","mobileWallet","news","order","portfolio","profile","security","support","wallet"] as const;
 
 export const LOADERS: Record<string, Record<string, Loader>> = {
   "ar": {
+    "academy": () => import("@kalks/i18n/catalog/ar/academy"),
     "auth": () => import("@kalks/i18n/catalog/ar/auth"),
     "common": () => import("@kalks/i18n/catalog/ar/common"),
     "dashboard": () => import("@kalks/i18n/catalog/ar/dashboard"),
@@ -20,6 +21,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/ar/wallet"),
   },
   "bn": {
+    "academy": () => import("@kalks/i18n/catalog/bn/academy"),
     "auth": () => import("@kalks/i18n/catalog/bn/auth"),
     "common": () => import("@kalks/i18n/catalog/bn/common"),
     "dashboard": () => import("@kalks/i18n/catalog/bn/dashboard"),
@@ -34,6 +36,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/bn/wallet"),
   },
   "de": {
+    "academy": () => import("@kalks/i18n/catalog/de/academy"),
     "auth": () => import("@kalks/i18n/catalog/de/auth"),
     "common": () => import("@kalks/i18n/catalog/de/common"),
     "dashboard": () => import("@kalks/i18n/catalog/de/dashboard"),
@@ -48,6 +51,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/de/wallet"),
   },
   "es": {
+    "academy": () => import("@kalks/i18n/catalog/es/academy"),
     "auth": () => import("@kalks/i18n/catalog/es/auth"),
     "common": () => import("@kalks/i18n/catalog/es/common"),
     "dashboard": () => import("@kalks/i18n/catalog/es/dashboard"),
@@ -62,6 +66,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/es/wallet"),
   },
   "fa": {
+    "academy": () => import("@kalks/i18n/catalog/fa/academy"),
     "auth": () => import("@kalks/i18n/catalog/fa/auth"),
     "common": () => import("@kalks/i18n/catalog/fa/common"),
     "dashboard": () => import("@kalks/i18n/catalog/fa/dashboard"),
@@ -76,6 +81,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/fa/wallet"),
   },
   "fr": {
+    "academy": () => import("@kalks/i18n/catalog/fr/academy"),
     "auth": () => import("@kalks/i18n/catalog/fr/auth"),
     "common": () => import("@kalks/i18n/catalog/fr/common"),
     "dashboard": () => import("@kalks/i18n/catalog/fr/dashboard"),
@@ -90,6 +96,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/fr/wallet"),
   },
   "hi": {
+    "academy": () => import("@kalks/i18n/catalog/hi/academy"),
     "auth": () => import("@kalks/i18n/catalog/hi/auth"),
     "common": () => import("@kalks/i18n/catalog/hi/common"),
     "dashboard": () => import("@kalks/i18n/catalog/hi/dashboard"),
@@ -104,6 +111,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/hi/wallet"),
   },
   "id": {
+    "academy": () => import("@kalks/i18n/catalog/id/academy"),
     "auth": () => import("@kalks/i18n/catalog/id/auth"),
     "common": () => import("@kalks/i18n/catalog/id/common"),
     "dashboard": () => import("@kalks/i18n/catalog/id/dashboard"),
@@ -118,6 +126,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/id/wallet"),
   },
   "it": {
+    "academy": () => import("@kalks/i18n/catalog/it/academy"),
     "auth": () => import("@kalks/i18n/catalog/it/auth"),
     "common": () => import("@kalks/i18n/catalog/it/common"),
     "dashboard": () => import("@kalks/i18n/catalog/it/dashboard"),
@@ -132,6 +141,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/it/wallet"),
   },
   "ja": {
+    "academy": () => import("@kalks/i18n/catalog/ja/academy"),
     "auth": () => import("@kalks/i18n/catalog/ja/auth"),
     "common": () => import("@kalks/i18n/catalog/ja/common"),
     "dashboard": () => import("@kalks/i18n/catalog/ja/dashboard"),
@@ -146,6 +156,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/ja/wallet"),
   },
   "ko": {
+    "academy": () => import("@kalks/i18n/catalog/ko/academy"),
     "auth": () => import("@kalks/i18n/catalog/ko/auth"),
     "common": () => import("@kalks/i18n/catalog/ko/common"),
     "dashboard": () => import("@kalks/i18n/catalog/ko/dashboard"),
@@ -160,6 +171,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/ko/wallet"),
   },
   "ms": {
+    "academy": () => import("@kalks/i18n/catalog/ms/academy"),
     "auth": () => import("@kalks/i18n/catalog/ms/auth"),
     "common": () => import("@kalks/i18n/catalog/ms/common"),
     "dashboard": () => import("@kalks/i18n/catalog/ms/dashboard"),
@@ -174,6 +186,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/ms/wallet"),
   },
   "pt": {
+    "academy": () => import("@kalks/i18n/catalog/pt/academy"),
     "auth": () => import("@kalks/i18n/catalog/pt/auth"),
     "common": () => import("@kalks/i18n/catalog/pt/common"),
     "dashboard": () => import("@kalks/i18n/catalog/pt/dashboard"),
@@ -188,6 +201,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/pt/wallet"),
   },
   "ru": {
+    "academy": () => import("@kalks/i18n/catalog/ru/academy"),
     "auth": () => import("@kalks/i18n/catalog/ru/auth"),
     "common": () => import("@kalks/i18n/catalog/ru/common"),
     "dashboard": () => import("@kalks/i18n/catalog/ru/dashboard"),
@@ -202,6 +216,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/ru/wallet"),
   },
   "sw": {
+    "academy": () => import("@kalks/i18n/catalog/sw/academy"),
     "auth": () => import("@kalks/i18n/catalog/sw/auth"),
     "common": () => import("@kalks/i18n/catalog/sw/common"),
     "dashboard": () => import("@kalks/i18n/catalog/sw/dashboard"),
@@ -216,6 +231,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/sw/wallet"),
   },
   "ta": {
+    "academy": () => import("@kalks/i18n/catalog/ta/academy"),
     "auth": () => import("@kalks/i18n/catalog/ta/auth"),
     "common": () => import("@kalks/i18n/catalog/ta/common"),
     "dashboard": () => import("@kalks/i18n/catalog/ta/dashboard"),
@@ -230,6 +246,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/ta/wallet"),
   },
   "th": {
+    "academy": () => import("@kalks/i18n/catalog/th/academy"),
     "auth": () => import("@kalks/i18n/catalog/th/auth"),
     "common": () => import("@kalks/i18n/catalog/th/common"),
     "dashboard": () => import("@kalks/i18n/catalog/th/dashboard"),
@@ -244,6 +261,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/th/wallet"),
   },
   "tr": {
+    "academy": () => import("@kalks/i18n/catalog/tr/academy"),
     "auth": () => import("@kalks/i18n/catalog/tr/auth"),
     "common": () => import("@kalks/i18n/catalog/tr/common"),
     "dashboard": () => import("@kalks/i18n/catalog/tr/dashboard"),
@@ -258,6 +276,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/tr/wallet"),
   },
   "ur": {
+    "academy": () => import("@kalks/i18n/catalog/ur/academy"),
     "auth": () => import("@kalks/i18n/catalog/ur/auth"),
     "common": () => import("@kalks/i18n/catalog/ur/common"),
     "dashboard": () => import("@kalks/i18n/catalog/ur/dashboard"),
@@ -272,6 +291,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/ur/wallet"),
   },
   "vi": {
+    "academy": () => import("@kalks/i18n/catalog/vi/academy"),
     "auth": () => import("@kalks/i18n/catalog/vi/auth"),
     "common": () => import("@kalks/i18n/catalog/vi/common"),
     "dashboard": () => import("@kalks/i18n/catalog/vi/dashboard"),
@@ -286,6 +306,7 @@ export const LOADERS: Record<string, Record<string, Loader>> = {
     "wallet": () => import("@kalks/i18n/catalog/vi/wallet"),
   },
   "zh": {
+    "academy": () => import("@kalks/i18n/catalog/zh/academy"),
     "auth": () => import("@kalks/i18n/catalog/zh/auth"),
     "common": () => import("@kalks/i18n/catalog/zh/common"),
     "dashboard": () => import("@kalks/i18n/catalog/zh/dashboard"),

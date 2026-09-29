@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const catalog = join(here, "..", "..", "..", "packages", "i18n", "src", "catalog");
-const BASE = ["common", "auth", "market", "order", "portfolio", "wallet", "dashboard", "security", "kyc", "news", "support", "profile"];
+const BASE = ["common", "auth", "market", "order", "portfolio", "wallet", "dashboard", "security", "kyc", "news", "support", "profile", "academy"];
 
 const en = readdirSync(join(catalog, "en")).filter((f) => f.endsWith(".ts") && f !== "index.ts").map((f) => f.slice(0, -3));
 const namespaces = [...new Set([...BASE, ...en.filter((n) => n.startsWith("mobile"))])].filter((n) => en.includes(n)).sort();

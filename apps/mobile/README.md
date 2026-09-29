@@ -197,6 +197,7 @@ Tokens: 4 / 8 pt spacing (`space`), `GUTTER` 20, radii `card` 28 / `block` 32, t
 | Trading core | `src/features/trading` | Engine session (SSO), account stream, live money, actions, contract specs, accounts controller, account switcher. |
 | Accounts | `src/features/accounts` | Live / demo list with USD totals, open-account wizard (the Client Area's rules, credentials shown once), account screen: live figures for the active account, demo refill with the daily cap, leverage and trading / investor passwords confirmed with an emailed code, Trade on this account, transfer and statement shortcuts. Reusable: `useStepUp` / `StepUpCode` (`stepup.tsx`), and `SheetTextField` / `SheetOtpInput` for typing inside bottom sheets (a sheet only rises above the keyboard for its own inputs). |
 | Social | `src/features/social` | Copy trading, PAMM and MAM on the social BFF: leaderboard with filters and house disclosure, master profile (Skia growth curve with scrub, monthly returns, fee terms, delayed trades), follow wizard, my copies (pause, settings, stop: close all or keep the positions), PAMM funds / my investments (invest and redeem queued to the rollover, stop-loss, cancel), MAM programmes (terms-hash consent, limits, revoke: close or keep). Master and MAM-manager dashboards: summary plus "Manage on the web". Details: `src/features/social/README.md`. |
+| Academy | `src/features/academy` | The Client Area's Academy on the phone (same BFF, same rules: the service grades every quiz and exam, a pass of 60 % completes a chapter, a phase exam unlocks when all its chapters are complete and passing it issues the certificate). Home: continue where you left off, streak / chapters / quiz average / certificates, the eight phases as colour blocks. Phase: chapters by track (FlashList, memoised rows), final exam, certificate. Reader: the course markdown drawn natively (no WebView): callouts, tables that fit or scroll sideways, `text` blocks, svg diagrams with a pinch-zoom viewer; contents sheet, reading progress measured on the UI thread and synced like the web, instant server-graded quiz feedback, next / previous, practise on the demo account in the Trade tab; the chapter's updated date and the learner's completion date. Glossary: 257 terms, search, categories, A–Z scrubber, term sheet with related terms. Progress: by phase, certificates (drawn from the service's SVG; share, copy link, verify). Routes: `/academy`, `/academy/[phase]`, `/academy/[phase]/exam`, `/academy/chapter/[id]` (`?resume=1` reopens at the last position), `/academy/glossary` (`?q=`, `?term=<slug>`, `?focus=1`), `/academy/progress`. Measured on the web preview: reader scroll 60 fps with no screen re-render (4 commits of 4 fibers), no long task opening the longest chapter, glossary scroll and scrub 60 fps. |
 
 ### Trading and chart building blocks (for other modules)
 
@@ -253,7 +254,7 @@ On a phone, confirm the numbers with Expo Go's **Performance Monitor**: shake th
 
 | Area | Scope |
 |---|---|
-| Investing | Prop challenges; Academy; AI Trader |
+| Investing | Prop challenges; AI Trader |
 | Partners | IB / partner dashboard; rewards |
 | Device features | Push notifications (expo-notifications plus the server side in services/support); biometric unlock; Google sign-in (needs the OAuth client for iOS / Android) |
 | Trading tools | Depth of market; price alerts |
