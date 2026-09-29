@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { SESSION_COOKIE, clientIp, gateway, safeNext } from "@/lib/gateway";
 import { REF_COOKIE, cleanRef, trackClick } from "@/lib/ib";
+import { moduleFor, tenantConfig } from "@/lib/tenant-config";
 
 // Route protection for the Client Area.
 // - Signed-out visitors on any app page -> /login?next=<page>
@@ -19,7 +20,34 @@ const PUBLIC_PAGES = ["/certificate", "/verify"];
 // sign-up (email or Google) attributes the partner and campaign. Signed-out visitors land on /register.
 const REF_SEEN = "kalks_ref_seen";
 
+/** Pages and APIs that stay reachable in maintenance mode and without a session. */
+const ALWAYS_OPEN = ["/status", "/maintenance", "/unavailable", "/api/status"];
+
+// Broker runtime config (gateway tenant config): maintenance mode holds clients on /maintenance (their API
+// calls answer 503); a module the Platform Owner switched off (D112) is hidden from the nav and its pages and
+// BFF routes answer "not available". Staff (Back Office) are never affected.
 export async function proxy(req: NextRequest) {
+  if (IS_DEMO) return routes(req);
+  const { pathname } = req.nextUrl;
+  const open = ALWAYS_OPEN.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const api = pathname.startsWith("/api/");
+  if (!open) {
+    const cfg = await tenantConfig();
+    if (cfg?.maintenance.active && pathname !== "/api/auth/logout") {
+      if (api) return NextResponse.json({ error: { code: "maintenance", message: "The Client Area is under maintenance. Please try again shortly." } }, { status: 503, headers: { "retry-after": "60" } });
+      return NextResponse.rewrite(new URL("/maintenance", req.url));
+    }
+    const mod = moduleFor(pathname);
+    if (cfg && mod && cfg.modules[mod] === false) {
+      if (api) return NextResponse.json({ error: { code: "module_disabled", message: "This feature isn't available on your account." } }, { status: 403 });
+      return NextResponse.rewrite(new URL("/unavailable", req.url));
+    }
+  }
+  if (api || open) return NextResponse.next();
+  return routes(req);
+}
+
+async function routes(req: NextRequest) {
   if (IS_DEMO) return gate(req);
   const { pathname, searchParams } = req.nextUrl;
   const short = pathname.match(/^\/r\/([^/]+)(?:\/([^/]+))?\/?$/);
@@ -79,5 +107,6 @@ async function gate(req: NextRequest): Promise<NextResponse> {
 export const config = {
   // everything except API routes, Next internals and static files
   // (/trade is redirected to Kalks Trader by next.config before the proxy runs)
-  matcher: ["/((?!api/|_next/|assets/|favicon\\.ico|.*\\.[a-zA-Z0-9]+$).*)"],
+  // (API routes only pass the maintenance / module gate above)
+  matcher: ["/((?!_next/|assets/|favicon\\.ico|.*\\.[a-zA-Z0-9]+$).*)"],
 };

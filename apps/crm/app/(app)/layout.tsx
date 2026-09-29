@@ -4,6 +4,8 @@ import { IS_DEMO } from "@kalks/mock/mode";
 import { SESSION_COOKIE, fetchMe, safeNext } from "@/lib/gateway";
 import { SessionProvider } from "@/components/session";
 import { ClientShell } from "@/components/shell";
+import { FeaturesProvider } from "@/components/tenant-config";
+import { tenantConfig } from "@/lib/tenant-config";
 
 // Server-side session gate for every Client Area page: validates the HttpOnly session cookie with the
 // gateway and hands the real client to the (client-side) shell. Demo builds skip it and browse as the
@@ -27,9 +29,12 @@ export default async function ClientAreaLayout({ children }: { children: React.R
   if (user === "unavailable") throw new Error("Sign-in service is unavailable. Please try again shortly.");
   if (!user) redirect(next ? `/api/auth/expired?next=${encodeURIComponent(next)}` : "/api/auth/expired");
 
+  const cfg = await tenantConfig();
   return (
     <SessionProvider user={user}>
-      <ClientShell>{children}</ClientShell>
+      <FeaturesProvider value={cfg ? { modules: cfg.modules, flags: cfg.flags } : null}>
+        <ClientShell>{children}</ClientShell>
+      </FeaturesProvider>
     </SessionProvider>
   );
 }

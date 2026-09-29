@@ -16,9 +16,11 @@ import {
 } from "@kalks/ui";
 import { IS_DEMO } from "@kalks/mock";
 import { CRM_COMMANDS, NAV } from "@/lib/nav";
+import { navForFeatures, pageModule, useFeatures } from "@/components/tenant-config";
 import { TERMINAL_URL } from "@/lib/live";
 import { LiveGate } from "@/components/live-gate";
 import { NotificationsBell } from "@/components/notifications";
+import { SupportLauncher } from "@/components/support/launcher";
 import { KYC_CHIP, logout, useSession } from "@/components/session";
 
 /** The shared rail's sign-out icon is a plain link to /login; turn it into a real sign-out. */
@@ -48,10 +50,13 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   const me = useSession();
   const verified = me.kyc_status === "verified";
   const kyc = KYC_CHIP[me.kyc_status];
+  // modules the broker switched off (Platform Owner, D112) disappear from the navigation
+  const features = useFeatures();
+  const modules = navForFeatures(NAV, features);
   return (
     <div className="contents" onClickCapture={onRailSignOut}>
       <AppShell
-        modules={NAV}
+        modules={modules}
         railFooter={
           <Tooltip content="Profile" side="right">
             <Link href="/profile" className="mb-1">
@@ -61,7 +66,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
         }
         topRight={
           <>
-            <CommandPalette items={CRM_COMMANDS.map((c) => ({ group: c.group, label: c.label, href: c.href, icon: <c.Icon /> }))} />
+            <CommandPalette items={CRM_COMMANDS.filter((c) => { const m = pageModule(c.href); return !m || features?.modules[m] !== false; }).map((c) => ({ group: c.group, label: c.label, href: c.href, icon: <c.Icon /> }))} />
             <LanguageMenu />
             <ThemeToggle />
             <NotificationsBell userKey={String(me.id)} />
@@ -110,6 +115,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           <LiveGate>{children}</LiveGate>
         </MarketBoundary>
       </AppShell>
+      <SupportLauncher />
     </div>
   );
 }
