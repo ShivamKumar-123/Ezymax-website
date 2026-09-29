@@ -1,6 +1,7 @@
 // Contract shapes of the MAM routes (services/trading README "MAM (multi-account manager)"), fetched through
 // the social BFF (`/api/social/mam/…`, lib/mam-bff.ts) with socialApi / useSocial.
 
+import { tr } from "@kalks/i18n/react";
 import type { EngineOrder, EnginePosition } from "@/components/trading/api";
 import type { FeePeriod, FeeView } from "./api";
 
@@ -170,23 +171,45 @@ export interface ManagerMe {
 }
 
 export const METHOD_LABEL: Record<MamMethod, string> = {
-  equity: "Equity share",
-  balance: "Balance share",
-  multiplier: "Multiplier per account",
-  percent: "Percent per account",
+  get equity() {
+    return tr("social.mam.method.equity");
+  },
+  get balance() {
+    return tr("social.mam.method.balance");
+  },
+  get multiplier() {
+    return tr("social.mam.method.multiplier");
+  },
+  get percent() {
+    return tr("social.mam.method.percent");
+  },
 };
 
 export const METHOD_HINT: Record<MamMethod, string> = {
-  equity: "Each block is split by the linked accounts' equity",
-  balance: "Each block is split by the linked accounts' balance",
-  multiplier: "Each account trades the block × its multiplier",
-  percent: "Each account trades a percentage of the block",
+  get equity() {
+    return tr("social.mam.methodHint.equity");
+  },
+  get balance() {
+    return tr("social.mam.methodHint.balance");
+  },
+  get multiplier() {
+    return tr("social.mam.methodHint.multiplier");
+  },
+  get percent() {
+    return tr("social.mam.methodHint.percent");
+  },
 };
 
 export const STOP_REASON: Record<string, string> = {
-  client: "Revoked by you",
-  equity_stop: "Equity stop reached",
-  admin: "Stopped by the risk team",
+  get client() {
+    return tr("social.mam.stopReason.client");
+  },
+  get equity_stop() {
+    return tr("social.mam.stopReason.equityStop");
+  },
+  get admin() {
+    return tr("social.mam.stopReason.admin");
+  },
 };
 
 /** "1.5×" / "50%" / "—" for the proportional methods. */
@@ -198,6 +221,6 @@ export function valueText(method: MamMethod | undefined, v: number | null | unde
 }
 
 export const reasonText = (r: string | null | undefined) =>
-  !r ? "" : r === "below_min_lot" ? "Below min lot" : r === "no_equity" ? "No equity" : r === "max_lot" ? "Capped at max lot" : r === "symbol_max_lot" ? "Capped at symbol max" : r.replace(/_/g, " ");
+  !r ? "" : r === "below_min_lot" ? tr("social.mam.reason.belowMinLot") : r === "no_equity" ? tr("social.mam.reason.noEquity") : r === "max_lot" ? tr("social.mam.reason.maxLot") : r === "symbol_max_lot" ? tr("social.mam.reason.symbolMaxLot") : r.replace(/_/g, " ");
 
 export const lots = (v: number | null | undefined) => (typeof v === "number" && Number.isFinite(v) ? v.toFixed(2) : "—");

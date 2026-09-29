@@ -5,19 +5,21 @@ import Link from "next/link";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, Coins, Layers, Loader2, Percent, Scale, Search, ShieldCheck, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Field, Input, KeyValue, Stepper, SymbolAvatar, Toggle, cn } from "@kalks/ui";
+import { Trans, useT } from "@kalks/i18n/react";
 import { Checkbox, RadioCard, RangeSlider, ToggleChip } from "@/components/social/controls";
 import { TradeButton } from "@/components/trading/ui";
 import { ApiError, PERIOD_LABEL, SIZING_LABEL, sizingText, socialApi, usd, useSocial, type FollowResult, type MasterView, type SizingMode } from "./api";
-import { HOUSE_DISCLOSURE, HouseBadge, InfoBox, MasterIdentity, RiskBadge, useNumber } from "./bits";
+import { HouseBadge, InfoBox, MasterIdentity, RiskBadge, useNumber } from "./bits";
 
-const STEPS = ["Sizing", "Risk limits", "Amount", "Review"];
+// Step label keys, translated at render
+const STEPS = ["social.follow.step.sizing", "social.follow.step.risk", "social.follow.step.amount", "social.follow.step.review"] as const;
 
-const MODES: { key: SizingMode; text: string; icon: React.ReactNode }[] = [
-  { key: "equity", icon: <Scale />, text: "Trades scale with your copy account's equity against the master's equity." },
-  { key: "fixed_lot", icon: <Layers />, text: "Every copied open uses the same lot size, whatever the master trades." },
-  { key: "multiplier", icon: <Percent />, text: "The master's lot size times your multiplier, for example 0.5× or 2×." },
-  { key: "allocation", icon: <Coins />, text: "Sized as if you had a fixed USD amount against the master's equity." },
-];
+const MODES = [
+  { key: "equity", icon: <Scale />, text: "social.follow.mode.equity" },
+  { key: "fixed_lot", icon: <Layers />, text: "social.follow.mode.fixedLot" },
+  { key: "multiplier", icon: <Percent />, text: "social.follow.mode.multiplier" },
+  { key: "allocation", icon: <Coins />, text: "social.follow.mode.allocation" },
+] as const satisfies readonly { key: SizingMode; text: string; icon: React.ReactNode }[];
 
 /** Follower lot for a 1.00-lot master trade (rounded down to 0.01, capped by max lot). */
 function exampleLot(mode: SizingMode, value: number, allocation: number, masterEquity: number, maxLot: number | null) {
@@ -29,6 +31,7 @@ function exampleLot(mode: SizingMode, value: number, allocation: number, masterE
 }
 
 export function FollowDialog({ master: m, open, onOpenChange, suggested = [], onDone }: { master: MasterView | null; open: boolean; onOpenChange: (o: boolean) => void; suggested?: string[]; onDone?: () => void }) {
+  const t = useT();
   const [step, setStep] = React.useState(0);
   const [mode, setMode] = React.useState<SizingMode>("equity");
   const value = useNumber(1);
@@ -69,10 +72,10 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
   const masterEq = m.stats.equity;
   const lot = exampleLot(mode, val, alloc, masterEq, maxLot.value);
 
-  const sizingErr = mode === "equity" ? undefined : !(val > 0) ? "Enter a value above zero" : mode === "fixed_lot" && val < 0.01 ? "Minimum 0.01 lot" : undefined;
-  const allocErr = !(alloc > 0) ? "Enter an amount" : alloc < m.minAllocation ? `Minimum allocation is ${usd(m.minAllocation, 0)}` : undefined;
-  const maxLotErr = maxLot.raw && !(maxLot.value! >= 0.01) ? "Minimum 0.01 lot" : undefined;
-  const stopErr = equityStop.raw && !(equityStop.value! >= 0) ? "Enter an amount" : equityStop.value !== null && alloc > 0 && equityStop.value >= alloc ? "Must be below your allocation" : undefined;
+  const sizingErr = mode === "equity" ? undefined : !(val > 0) ? t("social.follow.err.aboveZero") : mode === "fixed_lot" && val < 0.01 ? t("social.follow.err.minLot") : undefined;
+  const allocErr = !(alloc > 0) ? t("social.follow.err.enterAmount") : alloc < m.minAllocation ? t("social.follow.err.minAllocation", { amount: usd(m.minAllocation, 0) }) : undefined;
+  const maxLotErr = maxLot.raw && !(maxLot.value! >= 0.01) ? t("social.follow.err.minLot") : undefined;
+  const stopErr = equityStop.raw && !(equityStop.value! >= 0) ? t("social.follow.err.enterAmount") : equityStop.value !== null && alloc > 0 && equityStop.value >= alloc ? t("social.follow.err.belowAllocation") : undefined;
 
   const all = symbolsQ.data?.symbols.map((s) => s.symbol) ?? [];
   const ordered = Array.from(new Set([...suggested, ...all]));
@@ -87,11 +90,11 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
       if (ddOn) body.maxDdPct = dd;
       const r = await socialApi<FollowResult>("subscriptions", { body });
       setResult(r);
-      if (r.funding?.status === "done") toast.success(`Now copying ${m.nickname}`, { description: `Copy account #${r.account?.login ?? r.subscription.login} · ${usd(alloc)} from your wallet` });
-      else toast.warning(`Copy account #${r.account?.login ?? r.subscription.login} created`, { description: "Funding from the wallet didn't go through. You can fund it from the wallet." });
+      if (r.funding?.status === "done") toast.success(t("social.follow.nowCopying", { name: m.nickname }), { description: t("social.follow.toast.fundedDesc", { login: r.account?.login ?? r.subscription.login, amount: usd(alloc) }) });
+      else toast.warning(t("social.follow.toast.createdTitle", { login: r.account?.login ?? r.subscription.login }), { description: t("social.follow.toast.createdDesc") });
       onDone?.();
     } catch (e) {
-      toast.error("Couldn't start copying", { description: e instanceof ApiError || e instanceof Error ? e.message : undefined });
+      toast.error(t("social.follow.toast.failed"), { description: e instanceof ApiError || e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -113,16 +116,16 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
         open={open}
         onOpenChange={onOpenChange}
         width={560}
-        title={ok ? `Now copying ${m.nickname}` : "Copy account created"}
-        description={`Copy account #${login} · Kalks-Live`}
+        title={ok ? t("social.follow.nowCopying", { name: m.nickname }) : t("social.follow.done.createdTitle")}
+        description={t("social.follow.done.description", { login })}
         footer={
           <>
             <Link href="/social/copy">
               <Button variant="surface" onClick={() => onOpenChange(false)}>
-                My subscriptions
+                {t("social.mySubscriptions")}
               </Button>
             </Link>
-            <TradeButton a={{ login, status: "active" }} size="md" label="Open in Kalks Trader" />
+            <TradeButton a={{ login, status: "active" }} size="md" label={t("social.openInTrader")} />
           </>
         }
       >
@@ -134,17 +137,17 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
             <div className="text-[14px] text-fg-2">
               {ok ? (
                 <>
-                  {usd(alloc)} moved from your wallet to copy account <span className="font-mono text-fg">#{login}</span>. New trades from {m.nickname} are copied from now on.
+                  <Trans k="social.follow.done.okText" vars={{ amount: usd(alloc), login, name: m.nickname }} tags={{ acc: (c) => <span className="font-mono text-fg">{c}</span> }} />
                 </>
               ) : (
                 <>
-                  The copy account <span className="font-mono text-fg">#{login}</span> was created, but the wallet transfer didn&apos;t go through
-                  {result.funding?.message ? <>: {result.funding.message}</> : "."} You can fund it from the wallet; copying starts once it has a balance.
+                  <Trans k="social.follow.done.failText" vars={{ login }} tags={{ acc: (c) => <span className="font-mono text-fg">{c}</span> }} />
+                  {result.funding?.message ? <>: {result.funding.message}</> : "."} {t("social.follow.done.failHint")}
                 </>
               )}
             </div>
           </div>
-          <InfoBox>Copied trades can&apos;t be closed one by one in Kalks Trader. To exit, stop copying under Copy trading → My subscriptions: every copied position closes and the balance can go back to your wallet.</InfoBox>
+          <InfoBox>{t("social.follow.done.exitNote")}</InfoBox>
         </div>
       </Dialog>
     );
@@ -155,26 +158,26 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
       open={open}
       onOpenChange={onOpenChange}
       width={680}
-      title={<>Copy {m.nickname}</>}
-      description="Every subscription runs in its own dedicated copy account, funded from your wallet."
+      title={t("social.follow.title", { name: m.nickname })}
+      description={t("social.follow.description")}
       footer={
         <div className="flex w-full items-center justify-between gap-2">
           <Button variant="ghost" size="sm" onClick={() => (step === 0 ? onOpenChange(false) : setStep(step - 1))} disabled={busy}>
             {step === 0 ? (
-              "Cancel"
+              t("common.cancel")
             ) : (
               <>
-                <ArrowLeft /> Back
+                <ArrowLeft className="rtl:-scale-x-100" /> {t("common.back")}
               </>
             )}
           </Button>
           <Button variant="ember" size="md" onClick={next} disabled={busy || (step === 3 && !agree)}>
             {busy ? <Loader2 className="animate-spin" /> : null}
             {step === 3 ? (
-              "Confirm & start copying"
+              t("social.follow.confirm")
             ) : (
               <>
-                Continue <ArrowRight />
+                {t("common.continue")} <ArrowRight className="rtl:-scale-x-100" />
               </>
             )}
           </Button>
@@ -182,14 +185,14 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
       }
     >
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-line bg-surface-2 px-4 py-3">
-        <MasterIdentity nickname={m.nickname} size={38} sub={`${m.strategy} · fee ${m.perfFeePct}% above HWM · min ${usd(m.minAllocation, 0)}`} />
+        <MasterIdentity nickname={m.nickname} size={38} sub={t("social.follow.masterSub", { strategy: m.strategy, fee: m.perfFeePct, min: usd(m.minAllocation, 0) })} />
         <span className="flex flex-wrap items-center gap-1.5">
           {m.house && <HouseBadge />}
           <RiskBadge risk={m.stats.riskScore} showLabel />
         </span>
       </div>
-      {m.house && <InfoBox className="-mt-2 mb-5">{HOUSE_DISCLOSURE}</InfoBox>}
-      <Stepper steps={STEPS} current={step} className="mb-6" />
+      {m.house && <InfoBox className="-mt-2 mb-5">{t("social.house.disclosure")}</InfoBox>}
+      <Stepper steps={STEPS.map((k) => t(k))} current={step} className="mb-6" />
 
       {step === 0 && (
         <div className="space-y-4">
@@ -203,14 +206,14 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
                   value.set(s.key === "fixed_lot" ? 0.1 : s.key === "multiplier" ? 1 : s.key === "allocation" ? Math.max(m.minAllocation, alloc || 1000) : 1);
                 }}
                 title={SIZING_LABEL[s.key]}
-                text={s.text}
+                text={t(s.text)}
                 icon={s.icon}
               />
             ))}
           </div>
           {mode !== "equity" && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field label={mode === "fixed_lot" ? "Lot size per trade" : mode === "multiplier" ? "Multiplier" : "Allocation used for sizing"} error={sizingErr}>
+              <Field label={mode === "fixed_lot" ? t("social.follow.lotPerTrade") : mode === "multiplier" ? t("social.sizing.multiplier") : t("social.follow.allocForSizing")} error={sizingErr}>
                 <Input
                   type="number"
                   inputMode="decimal"
@@ -219,7 +222,7 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
                   value={value.raw}
                   onChange={(e) => value.setRaw(e.target.value)}
                   leading={mode === "allocation" ? "$" : undefined}
-                  trailing={mode === "fixed_lot" ? "lots" : mode === "multiplier" ? "×" : "USD"}
+                  trailing={mode === "fixed_lot" ? t("social.lotsUnit") : mode === "multiplier" ? "×" : "USD"}
                   inputClassName="k-num"
                 />
               </Field>
@@ -228,15 +231,14 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
           <InfoBox tone="gold">
             {masterEq > 0 ? (
               <>
-                If {m.nickname} (equity {usd(masterEq, 0)}) opens <b className="text-fg">1.00 lot</b>, your copy account opens{" "}
-                <b className="k-num text-ember">{lot.toFixed(2)} lot</b>
-                {mode === "equity" && <> (your {usd(alloc, 0)} ÷ {usd(masterEq, 0)}, recalculated at every trade)</>}
+                <Trans k="social.follow.example.lead" vars={{ name: m.nickname, equity: usd(masterEq, 0), lot: lot.toFixed(2) }} tags={{ b: (c) => <b className="text-fg">{c}</b>, lot: (c) => <b className="k-num text-ember">{c}</b> }} />
+                {mode === "equity" && <> {t("social.follow.example.equity", { alloc: usd(alloc, 0), equity: usd(masterEq, 0) })}</>}
                 {mode === "allocation" && <> ({usd(val, 0)} ÷ {usd(masterEq, 0)})</>}
                 {mode === "multiplier" && <> (1.00 × {val})</>}
-                {maxLot.value !== null && lot === maxLot.value && <>, capped by your max lot</>}. Sizes are rounded down to the symbol&apos;s lot step; a result below the minimum lot is skipped.
+                {maxLot.value !== null && lot === maxLot.value && <>{t("social.follow.example.capped")}</>}. {t("social.follow.example.rounding")}
               </>
             ) : (
-              <>Sizes are rounded down to the symbol&apos;s lot step; a result below the minimum lot is skipped and logged.</>
+              <>{t("social.follow.example.roundingLogged")}</>
             )}
           </InfoBox>
         </div>
@@ -247,32 +249,32 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
           <div className="rounded-[16px] border border-line bg-surface-2 px-4 py-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-[13.5px] font-medium">Max drawdown stop</div>
-                <div className="text-[12px] text-fg-3">Stops copying and closes everything if equity falls this far from its peak</div>
+                <div className="text-[13.5px] font-medium">{t("social.follow.ddStop")}</div>
+                <div className="text-[12px] text-fg-3">{t("social.follow.ddStopHint")}</div>
               </div>
-              <Toggle checked={ddOn} onChange={setDdOn} label="Max drawdown stop" />
+              <Toggle checked={ddOn} onChange={setDdOn} label={t("social.follow.ddStop")} />
             </div>
             <div className={cn("mt-4", !ddOn && "pointer-events-none opacity-40")}>
               <div className="mb-1 flex justify-between text-[12.5px]">
-                <span className="text-fg-3">Trigger</span>
-                <span className="k-num font-medium text-down">-{dd}% from peak</span>
+                <span className="text-fg-3">{t("social.follow.trigger")}</span>
+                <span className="k-num font-medium text-down">{t("social.follow.fromPeak", { dd })}</span>
               </div>
-              <RangeSlider value={dd} onChange={setDd} min={5} max={90} step={1} tone="down" ticks={[5, 20, 30, 50, 90]} format={(v) => `${v}%`} label="Max drawdown" />
+              <RangeSlider value={dd} onChange={setDd} min={5} max={90} step={1} tone="down" ticks={[5, 20, 30, 50, 90]} format={(v) => `${v}%`} label={t("social.follow.maxDrawdown")} />
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Equity stop" hint="Optional · USD" error={stopErr}>
-              <Input type="number" inputMode="decimal" min={0} placeholder="No equity stop" value={equityStop.raw} onChange={(e) => equityStop.setRaw(e.target.value)} leading="$" inputClassName="k-num" />
+            <Field label={t("social.equityStop")} hint={t("social.follow.optionalUsd")} error={stopErr}>
+              <Input type="number" inputMode="decimal" min={0} placeholder={t("social.follow.noEquityStop")} value={equityStop.raw} onChange={(e) => equityStop.setRaw(e.target.value)} leading="$" inputClassName="k-num" />
             </Field>
-            <Field label="Max lot per copied trade" hint="Optional" error={maxLotErr}>
-              <Input type="number" inputMode="decimal" step={0.01} min={0.01} placeholder="No cap" value={maxLot.raw} onChange={(e) => maxLot.setRaw(e.target.value)} trailing="lots" inputClassName="k-num" />
+            <Field label={t("social.follow.maxLotPerTrade")} hint={t("common.optional")} error={maxLotErr}>
+              <Input type="number" inputMode="decimal" step={0.01} min={0.01} placeholder={t("social.noCap")} value={maxLot.raw} onChange={(e) => maxLot.setRaw(e.target.value)} trailing={t("social.lotsUnit")} inputClassName="k-num" />
             </Field>
           </div>
-          <p className="-mt-3 text-[12px] text-fg-3">Limits are checked every few seconds. A breach stops the subscription and closes every copied position and order.</p>
+          <p className="-mt-3 text-[12px] text-fg-3">{t("social.follow.limitsNote")}</p>
           <div>
             <div className="mb-2 flex items-center justify-between text-[12.5px] font-medium text-fg-2">
-              Exclude symbols
-              <span className="font-normal text-fg-3">{excluded.length ? `${excluded.length} excluded` : "Copy everything"}</span>
+              {t("social.follow.excludeSymbols")}
+              <span className="font-normal text-fg-3">{excluded.length ? t("social.follow.excludedCount", { count: excluded.length }) : t("social.follow.copyEverything")}</span>
             </div>
             {excluded.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-2">
@@ -285,10 +287,10 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
                 ))}
               </div>
             )}
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search symbols" leading={<Search />} className="mb-2 h-9" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("social.follow.searchSymbols")} leading={<Search />} className="mb-2 h-9" />
             <div className="flex flex-wrap gap-2">
-              {symbolsQ.loading && !suggested.length && <span className="text-[12px] text-fg-3">Loading symbols…</span>}
-              {symbolsQ.error && !ordered.length && <span className="text-[12px] text-fg-3">Symbols are unavailable right now.</span>}
+              {symbolsQ.loading && !suggested.length && <span className="text-[12px] text-fg-3">{t("social.follow.loadingSymbols")}</span>}
+              {symbolsQ.error && !ordered.length && <span className="text-[12px] text-fg-3">{t("social.follow.symbolsUnavailable")}</span>}
               {shown
                 .filter((s) => !excluded.includes(s))
                 .map((s) => (
@@ -304,7 +306,7 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
 
       {step === 2 && (
         <div className="space-y-5">
-          <Field label="Amount to allocate from your wallet" hint={`Min ${usd(m.minAllocation, 0)}`} error={allocation.raw ? allocErr : undefined}>
+          <Field label={t("social.follow.amountLabel")} hint={t("social.minAmount", { amount: usd(m.minAllocation, 0) })} error={allocation.raw ? allocErr : undefined}>
             <Input type="number" inputMode="decimal" min={m.minAllocation} value={allocation.raw} onChange={(e) => allocation.setRaw(e.target.value)} leading="$" trailing="USD" inputClassName="k-num text-[16px] font-medium" />
           </Field>
           <div className="flex flex-wrap gap-2">
@@ -317,7 +319,7 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
               ))}
           </div>
           <InfoBox tone="gold">
-            A new copy account is opened for this subscription and {alloc > 0 ? usd(alloc) : "the amount"} moves into it from your wallet. Later deposits and withdrawals on the copy account adjust your high-water mark, so fees are only charged on trading profit.
+            {t("social.follow.amountNote", { amount: alloc > 0 ? usd(alloc) : t("social.follow.theAmount") })}
           </InfoBox>
         </div>
       )}
@@ -325,25 +327,25 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
       {step === 3 && (
         <div className="space-y-4">
           <div className="flex items-center gap-3 rounded-[16px] border border-ember/30 bg-ember-soft px-5 py-4 text-[14px]">
-            <ShieldCheck className="size-5 shrink-0 text-ember" />A dedicated copy account will be opened on Kalks-Live and funded from your wallet.
+            <ShieldCheck className="size-5 shrink-0 text-ember" />{t("social.follow.reviewBanner")}
           </div>
           <KeyValue
             rows={[
-              ["Master", `${m.nickname} · ${m.strategy}`],
-              ["Sizing", mode === "equity" ? SIZING_LABEL.equity : sizingText({ mode, value: val })],
-              ["Allocation", usd(alloc)],
-              ["Max drawdown stop", ddOn ? `-${dd}% from peak equity` : "Off"],
-              ["Equity stop", equityStop.value !== null ? usd(equityStop.value) : "Off"],
-              ["Max lot", maxLot.value !== null ? `${maxLot.value.toFixed(2)} lots` : "No cap"],
-              ["Excluded symbols", excluded.length ? excluded.join(", ") : "None"],
-              ["Performance fee", `${m.perfFeePct}% above high-water mark · settled ${PERIOD_LABEL[m.feePeriod].toLowerCase()}`],
+              [t("social.master"), `${m.nickname} · ${m.strategy}`],
+              [t("social.follow.step.sizing"), mode === "equity" ? SIZING_LABEL.equity : sizingText({ mode, value: val })],
+              [t("social.allocation"), usd(alloc)],
+              [t("social.follow.ddStop"), ddOn ? t("social.follow.fromPeakEquity", { dd }) : t("common.off")],
+              [t("social.equityStop"), equityStop.value !== null ? usd(equityStop.value) : t("common.off")],
+              [t("social.maxLot"), maxLot.value !== null ? t("social.lotsValue", { lots: maxLot.value.toFixed(2) }) : t("social.noCap")],
+              [t("social.follow.excludedSymbols"), excluded.length ? excluded.join(", ") : t("common.none")],
+              [t("social.performanceFee"), t("social.follow.feeTerms", { fee: m.perfFeePct, period: PERIOD_LABEL[m.feePeriod].toLowerCase() })],
             ]}
           />
           <InfoBox>
-            Opens, adds, partial closes, SL/TP changes and pending orders are mirrored. Copied trades can&apos;t be closed or modified one by one; to exit, stop copying and everything closes at market. The fee rate is locked for this subscription and is taken from the copy account when the period ends.
+            {t("social.follow.mirrorNote")}
           </InfoBox>
           <Checkbox checked={agree} onChange={setAgree}>
-            I understand copy trading carries risk, past results don&apos;t guarantee future returns, and I accept the master&apos;s fee terms.
+            {t("social.follow.agree")}
           </Checkbox>
         </div>
       )}

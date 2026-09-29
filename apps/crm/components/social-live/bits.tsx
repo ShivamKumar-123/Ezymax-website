@@ -3,15 +3,17 @@
 import * as React from "react";
 import { Building2, Copy as CopyIcon, Info, Landmark, RotateCw } from "lucide-react";
 import { Avatar, Button, Card, Chip, EmptyState, Skeleton, Tooltip, cn } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 import { pct, riskLabel, riskTone, toneOf, type Program } from "./api";
 
 /** System risk score 1–10 (D72) as a compact badge with a 10-tick meter. */
 export function RiskBadge({ risk, showLabel = false, className }: { risk: number; showLabel?: boolean; className?: string }) {
+  const t = useT();
   const r = Math.max(1, Math.min(10, Math.round(risk || 1)));
   const tone = riskTone(r);
   const color = tone === "up" ? "bg-up" : tone === "warn" ? "bg-warn" : "bg-down";
   return (
-    <Tooltip content={`System risk score ${r}/10 · ${riskLabel(r)} risk (from max drawdown and volatility)`}>
+    <Tooltip content={t("social.riskBadge.tooltip", { r, level: riskLabel(r) })}>
       <span
         className={cn(
           "k-num inline-flex h-6 items-center gap-1.5 rounded-full border px-2 text-[11.5px] font-semibold",
@@ -31,16 +33,14 @@ export function RiskBadge({ risk, showLabel = false, className }: { risk: number
   );
 }
 
-/** Disclosure label of a house account (a broker-operated account running an automated strategy). */
-export const HOUSE_DISCLOSURE =
-  "House strategy operated by Kalks: a broker-owned live account running an automated strategy. Its statistics are only its own live trades since it started; nothing is simulated or backfilled.";
-
+/** Disclosure label of a house account (a broker-operated account running an automated strategy): t("social.house.disclosure"). */
 export function HouseBadge({ size = "sm", className }: { size?: "sm" | "md"; className?: string }) {
+  const t = useT();
   return (
-    <Tooltip content={HOUSE_DISCLOSURE}>
+    <Tooltip content={t("social.house.disclosure")}>
       <span className={cn("inline-flex", className)}>
         <Chip size={size} tone="info">
-          <Building2 className="size-3" /> House strategy · Operated by Kalks
+          <Building2 className="size-3" /> {t("social.house.badge")}
         </Chip>
       </span>
     </Tooltip>
@@ -48,11 +48,12 @@ export function HouseBadge({ size = "sm", className }: { size?: "sm" | "md"; cla
 }
 
 export function ProgramTags({ program, size = "sm" }: { program: Program; size?: "sm" | "md" }) {
+  const t = useT();
   return (
     <span className="inline-flex items-center gap-1">
       {(program === "copy" || program === "both") && (
         <Chip size={size} tone="ember">
-          <CopyIcon className="size-3" /> Copy
+          <CopyIcon className="size-3" /> {t("social.program.copy")}
         </Chip>
       )}
       {(program === "pamm" || program === "both") && (
@@ -66,9 +67,10 @@ export function ProgramTags({ program, size = "sm" }: { program: Program; size?:
 
 /** Masters are shown by nickname only: an initials avatar, never a photo or personal name. */
 export function MasterIdentity({ nickname, sub, size = 40 }: { nickname: string; sub?: React.ReactNode; size?: number }) {
+  const t = useT();
   return (
     <span className="flex min-w-0 items-center gap-3">
-      <Avatar name={nickname || "Master"} size={size} />
+      <Avatar name={nickname || t("social.master")} size={size} />
       <span className="min-w-0">
         <span className="block truncate text-[14px] font-medium text-fg">{nickname}</span>
         {sub !== undefined && <span className="block truncate text-[12px] text-fg-3">{sub}</span>}
@@ -100,16 +102,17 @@ export function InfoBox({ children, tone = "neutral", icon, className }: { child
   );
 }
 
-export function SocialError({ onRetry, message, title = "Copy trading is unavailable" }: { onRetry: () => void; message?: string; title?: string }) {
+export function SocialError({ onRetry, message, title }: { onRetry: () => void; message?: string; title?: string }) {
+  const t = useT();
   return (
     <Card>
       <EmptyState
         illustration="satellite_antenna"
-        title={title}
-        text={message ?? "We couldn't reach the service. Your accounts and funds are safe; please try again in a moment."}
+        title={title ?? t("social.errorState.title")}
+        text={message ?? t("social.errorState.text")}
         action={
           <Button variant="surface" onClick={onRetry}>
-            <RotateCw /> Try again
+            <RotateCw /> {t("common.retry")}
           </Button>
         }
       />

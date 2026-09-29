@@ -4,6 +4,7 @@
 // Shapes follow the engine contract (services/trading README, "Copy trading and PAMM" → "Social API").
 
 import * as React from "react";
+import { tr } from "@kalks/i18n/react";
 import { ApiError } from "@/components/trading/api";
 import type { EngineOrder, EnginePosition } from "@/components/trading/api";
 
@@ -291,22 +292,53 @@ export interface StopResult {
 /* Fetch                                                               */
 /* ------------------------------------------------------------------ */
 
+// Getters so the text follows the current language when an error is raised.
 const FRIENDLY: Record<string, string> = {
-  unavailable: "Copy trading is unavailable right now. Please try again shortly.",
-  not_master: "This is available to approved masters only.",
-  master_status: "This master isn't accepting new followers right now.",
-  requirements: "Your account doesn't meet every requirement yet.",
-  fee_out_of_range: "The performance fee is outside the allowed range.",
-  own_subscription: "You can't copy your own strategy.",
-  min_allocation: "The amount is below the master's minimum allocation.",
-  wallet_unavailable: "The wallet is unavailable right now. Please try again shortly.",
-  wallet_rejected: "Your wallet balance doesn't cover this amount.",
-  fund_frozen: "This fund is frozen and isn't accepting investments.",
-  min_investment: "The amount is below the fund's minimum investment.",
-  locked: "Your investment is still in its lock-in period.",
-  insufficient_units: "You don't hold enough units for this redemption.",
-  request_done: "This request has already been processed.",
-  pamm_account: "Money moves in and out of a PAMM fund only through invest and redeem.",
+  get unavailable() {
+    return tr("social.error.unavailable");
+  },
+  get not_master() {
+    return tr("social.error.not_master");
+  },
+  get master_status() {
+    return tr("social.error.master_status");
+  },
+  get requirements() {
+    return tr("social.error.requirements");
+  },
+  get fee_out_of_range() {
+    return tr("social.error.fee_out_of_range");
+  },
+  get own_subscription() {
+    return tr("social.error.own_subscription");
+  },
+  get min_allocation() {
+    return tr("social.error.min_allocation");
+  },
+  get wallet_unavailable() {
+    return tr("social.error.wallet_unavailable");
+  },
+  get wallet_rejected() {
+    return tr("social.error.wallet_rejected");
+  },
+  get fund_frozen() {
+    return tr("social.error.fund_frozen");
+  },
+  get min_investment() {
+    return tr("social.error.min_investment");
+  },
+  get locked() {
+    return tr("social.error.locked");
+  },
+  get insufficient_units() {
+    return tr("social.error.insufficient_units");
+  },
+  get request_done() {
+    return tr("social.error.request_done");
+  },
+  get pamm_account() {
+    return tr("social.error.pamm_account");
+  },
 };
 
 export async function socialApi<T>(path: string, init?: { method?: "GET" | "POST" | "PATCH"; body?: unknown; signal?: AbortSignal }): Promise<T> {
@@ -322,7 +354,7 @@ export async function socialApi<T>(path: string, init?: { method?: "GET" | "POST
     });
   } catch (e) {
     if ((e as Error).name === "AbortError") throw e;
-    throw new ApiError(0, "network", "Network error. Check your connection and try again.");
+    throw new ApiError(0, "network", tr("common.networkError"));
   }
   const data = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string; field?: string; checks?: Check[] } };
   if (!res.ok) {
@@ -331,8 +363,8 @@ export async function socialApi<T>(path: string, init?: { method?: "GET" | "POST
     }
     const code = data.error?.code ?? "error";
     // the engine's own message is more specific for validation-type errors; the map covers the terse codes
-    const msg = data.error?.message && code !== "unavailable" ? data.error.message : FRIENDLY[code] ?? "Something went wrong. Please try again.";
-    const err = new ApiError(res.status, code, res.status === 404 && code === "not_found" && !data.error?.message ? "Not found." : msg, data.error?.field);
+    const msg = data.error?.message && code !== "unavailable" ? data.error.message : FRIENDLY[code] ?? tr("common.errorRetry");
+    const err = new ApiError(res.status, code, res.status === 404 && code === "not_found" && !data.error?.message ? tr("social.error.notFound") : msg, data.error?.field);
     (err as ApiError & { checks?: Check[] }).checks = data.error?.checks;
     throw err;
   }
@@ -361,7 +393,7 @@ export function useSocial<T>(path: string | null, ms = 0) {
           setError(null);
         } catch (e) {
           if (stop || (e as Error).name === "AbortError") return;
-          setError(e instanceof ApiError ? e : new ApiError(0, "error", "Something went wrong."));
+          setError(e instanceof ApiError ? e : new ApiError(0, "error", tr("social.error.generic")));
         }
       }
       if (!stop && ms > 0) timer = setTimeout(run, ms);
@@ -410,36 +442,55 @@ export const units4 = (v: number | null | undefined) => safe(v).toLocaleString("
 
 export function formatAge(days: number | null | undefined) {
   const d = Math.max(0, Math.floor(safe(days)));
-  if (d < 30) return `${d}d`;
+  if (d < 30) return tr("social.age.days", { d });
   const y = Math.floor(d / 365);
   const mo = Math.floor((d % 365) / 30.4);
-  return y > 0 ? `${y}y ${mo}m` : `${mo}m`;
+  return y > 0 ? tr("social.age.yearsMonths", { y, mo }) : tr("social.age.months", { mo });
 }
 
-export const PERIOD_LABEL: Record<FeePeriod, string> = { daily: "Daily", weekly: "Weekly", monthly: "Monthly" };
+// Getters: each read returns the label in the current language.
+export const PERIOD_LABEL: Record<FeePeriod, string> = {
+  get daily() {
+    return tr("social.period.daily");
+  },
+  get weekly() {
+    return tr("social.period.weekly");
+  },
+  get monthly() {
+    return tr("social.period.monthly");
+  },
+};
 
 export const SIZING_LABEL: Record<SizingMode, string> = {
-  equity: "Equity proportional",
-  fixed_lot: "Fixed lot",
-  multiplier: "Multiplier",
-  allocation: "Fixed allocation",
+  get equity() {
+    return tr("social.sizing.equity");
+  },
+  get fixed_lot() {
+    return tr("social.sizing.fixedLot");
+  },
+  get multiplier() {
+    return tr("social.sizing.multiplier");
+  },
+  get allocation() {
+    return tr("social.sizing.allocation");
+  },
 };
 
 export function sizingText(s: Sizing | null | undefined) {
   if (!s) return "—";
   switch (s.mode) {
     case "equity":
-      return "Equity proportional";
+      return tr("social.sizing.equity");
     case "fixed_lot":
-      return `Fixed ${safe(s.value).toFixed(2)} lot`;
+      return tr("social.sizing.fixedLotValue", { lot: safe(s.value).toFixed(2) });
     case "multiplier":
-      return `Multiplier ${safe(s.value)}×`;
+      return tr("social.sizing.multiplierValue", { value: safe(s.value) });
     case "allocation":
-      return `Allocation ${usd(s.value, 0)}`;
+      return tr("social.sizing.allocationValue", { amount: usd(s.value, 0) });
   }
 }
 
-export const riskLabel = (r: number) => (r <= 3 ? "Low" : r <= 6 ? "Medium" : "High");
+export const riskLabel = (r: number) => (r <= 3 ? tr("social.risk.low") : r <= 6 ? tr("social.risk.medium") : tr("social.risk.high"));
 export const riskTone = (r: number): "up" | "warn" | "down" => (r <= 3 ? "up" : r <= 6 ? "warn" : "down");
 
 export const toneOf = (v: number | null | undefined) => (safe(v) > 0 ? "text-up" : safe(v) < 0 ? "text-down" : "text-fg-2");

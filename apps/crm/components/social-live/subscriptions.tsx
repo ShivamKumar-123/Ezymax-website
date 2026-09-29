@@ -26,6 +26,7 @@ import {
   cn,
   type Column,
 } from "@kalks/ui";
+import { Trans, useT } from "@kalks/i18n/react";
 import { Checkbox, RadioCard, RangeSlider, ToggleChip } from "@/components/social/controls";
 import { TradeButton } from "@/components/trading/ui";
 import { fmtDate, fmtPrice, serverTime, type EngineOrder, type EnginePosition } from "@/components/trading/api";
@@ -47,25 +48,20 @@ import { BlockSkeleton, HouseBadge, InfoBox, MasterIdentity, RiskBadge, SocialEr
 
 type Log = SubscriptionDetail["log"][number];
 
-const STOP_REASON: Record<string, string> = {
-  client: "Stopped by you",
-  equity_stop: "Equity stop reached",
-  max_dd: "Max drawdown reached",
-  admin: "Stopped by the risk team",
-  master: "Master no longer active",
-};
-const stopReason = (r: string | null) => (r ? STOP_REASON[r] ?? r.replace(/_/g, " ") : null);
+// Stop reasons are translated at render: social.subs.stopReason.<reason>
+const stopReason = (r: string | null, t: ReturnType<typeof useT>) => (r ? t.dyn(`social.subs.stopReason.${r}`, r.replace(/_/g, " ")) : null);
 
 export const FEE_STATUS_TONE: Record<FeeView["status"], "warn" | "info" | "up" | "down" | "neutral"> = { pending: "warn", approved: "info", paid: "up", rejected: "neutral", failed: "down" };
 
-export function FeesTable({ fees, empty = "No performance fees yet." }: { fees: FeeView[]; empty?: string }) {
+export function FeesTable({ fees, empty }: { fees: FeeView[]; empty?: string }) {
+  const t = useT();
   const cols: Column<FeeView>[] = [
-    { key: "p", header: "Period", cell: (f) => <span className="whitespace-nowrap text-fg-2">{fmtDate(f.periodStart)} – {fmtDate(f.periodEnd)}</span>, sort: (f) => f.periodEnd },
+    { key: "p", header: t("social.fees.col.period"), cell: (f) => <span className="whitespace-nowrap text-fg-2">{fmtDate(f.periodStart)} – {fmtDate(f.periodEnd)}</span>, sort: (f) => f.periodEnd },
     { key: "hwm", header: "HWM", align: "right", cell: (f) => <span className="k-num text-fg-2">{usd(f.hwmBefore)} → {usd(f.hwmAfter)}</span>, hideOn: "md" },
-    { key: "a", header: "Fee", align: "right", cell: (f) => <span className="k-num font-medium">{usd(f.amount)}</span>, sort: (f) => f.amount },
-    { key: "s", header: "Status", align: "right", cell: (f) => <Chip size="sm" tone={FEE_STATUS_TONE[f.status] ?? "neutral"}>{f.status}</Chip> },
+    { key: "a", header: t("social.fee"), align: "right", cell: (f) => <span className="k-num font-medium">{usd(f.amount)}</span>, sort: (f) => f.amount },
+    { key: "s", header: t("common.status"), align: "right", cell: (f) => <Chip size="sm" tone={FEE_STATUS_TONE[f.status] ?? "neutral"}>{t.dyn(`social.feeStatus.${f.status}`, f.status)}</Chip> },
   ];
-  if (!fees.length) return <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">{empty}</div>;
+  if (!fees.length) return <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">{empty ?? t("social.fees.empty")}</div>;
   return <DataTable columns={cols} rows={fees} dense pageSize={10} rowKey={(f) => String(f.id)} />;
 }
 
@@ -74,6 +70,7 @@ export function FeesTable({ fees, empty = "No performance fees yet." }: { fees: 
 /* ------------------------------------------------------------------ */
 
 function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | null; onClose: () => void; onSaved: () => void }) {
+  const t = useT();
   const [mode, setMode] = React.useState<SizingMode>("equity");
   const value = useNumber(1);
   const maxLot = useNumber(null);
@@ -100,7 +97,7 @@ function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | nul
 
   if (!sub) return null;
   const val = mode === "equity" ? 1 : value.value;
-  const err = mode !== "equity" && !(val! > 0) ? "Enter a sizing value above zero" : maxLot.raw && !(maxLot.value! >= 0.01) ? "Max lot must be at least 0.01" : equityStop.raw && !(equityStop.value! >= 0) ? "Invalid equity stop" : undefined;
+  const err = mode !== "equity" && !(val! > 0) ? t("social.subs.err.sizing") : maxLot.raw && !(maxLot.value! >= 0.01) ? t("social.subs.err.maxLot") : equityStop.raw && !(equityStop.value! >= 0) ? t("social.subs.err.equityStop") : undefined;
   const all = symbolsQ.data?.symbols.map((s) => s.symbol) ?? [];
   const matches = add ? all.filter((s) => s.toLowerCase().includes(add.toLowerCase()) && !ex.includes(s)).slice(0, 12) : [];
 
@@ -112,11 +109,11 @@ function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | nul
         method: "PATCH",
         body: { sizing: { mode, value: val }, maxLot: maxLot.value, equityStop: equityStop.value, maxDdPct: ddOn ? dd : null, excludedSymbols: ex },
       });
-      toast.success("Copy settings saved", { description: "They apply to the next copied trades. Open positions keep their size." });
+      toast.success(t("social.subs.toast.saved"), { description: t("social.subs.toast.savedDesc") });
       onSaved();
       onClose();
     } catch (e) {
-      toast.error("Couldn't save the settings", { description: e instanceof Error ? e.message : undefined });
+      toast.error(t("social.subs.toast.saveFailed"), { description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -127,22 +124,22 @@ function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | nul
       open={!!sub}
       onOpenChange={(o) => !o && onClose()}
       width={620}
-      title="Copy settings"
-      description={`${sub.master.nickname} · copy account #${sub.login}`}
+      title={t("social.subs.settings.title")}
+      description={t("social.subs.nameAccount", { name: sub.master.nickname, login: sub.login })}
       footer={
         <>
           <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button variant="ember" onClick={save} disabled={busy || !!err}>
-            {busy && <Loader2 className="animate-spin" />} Save changes
+            {busy && <Loader2 className="animate-spin" />} {t("common.saveChanges")}
           </Button>
         </>
       }
     >
       <div className="space-y-6">
         <div>
-          <div className="mb-2 text-[12.5px] font-medium text-fg-2">Sizing</div>
+          <div className="mb-2 text-[12.5px] font-medium text-fg-2">{t("social.follow.step.sizing")}</div>
           <div role="radiogroup" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {(Object.keys(SIZING_LABEL) as SizingMode[]).map((k) => (
               <RadioCard
@@ -159,38 +156,38 @@ function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | nul
             ))}
           </div>
           {mode !== "equity" && (
-            <Field label={mode === "fixed_lot" ? "Lot size per trade" : mode === "multiplier" ? "Multiplier" : "Allocation used for sizing"} className="mt-3">
-              <Input type="number" inputMode="decimal" min={0} step={mode === "fixed_lot" ? 0.01 : 0.1} value={value.raw} onChange={(e) => value.setRaw(e.target.value)} trailing={mode === "fixed_lot" ? "lots" : mode === "multiplier" ? "×" : "USD"} inputClassName="k-num" />
+            <Field label={mode === "fixed_lot" ? t("social.follow.lotPerTrade") : mode === "multiplier" ? t("social.sizing.multiplier") : t("social.follow.allocForSizing")} className="mt-3">
+              <Input type="number" inputMode="decimal" min={0} step={mode === "fixed_lot" ? 0.01 : 0.1} value={value.raw} onChange={(e) => value.setRaw(e.target.value)} trailing={mode === "fixed_lot" ? t("social.lotsUnit") : mode === "multiplier" ? "×" : "USD"} inputClassName="k-num" />
             </Field>
           )}
         </div>
         <div className="rounded-[16px] border border-line bg-surface-2 px-4 py-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-[13.5px] font-medium">Max drawdown stop</div>
-              <div className="text-[12px] text-fg-3">From the subscription&apos;s peak equity ({usd(sub.peakEquity)})</div>
+              <div className="text-[13.5px] font-medium">{t("social.follow.ddStop")}</div>
+              <div className="text-[12px] text-fg-3">{t("social.subs.settings.fromPeak", { amount: usd(sub.peakEquity) })}</div>
             </div>
-            <Toggle checked={ddOn} onChange={setDdOn} label="Max drawdown stop" />
+            <Toggle checked={ddOn} onChange={setDdOn} label={t("social.follow.ddStop")} />
           </div>
           <div className={cn("mt-4", !ddOn && "pointer-events-none opacity-40")}>
             <div className="mb-1 flex justify-between text-[12.5px]">
-              <span className="text-fg-3">Trigger</span>
+              <span className="text-fg-3">{t("social.follow.trigger")}</span>
               <span className="k-num font-medium text-down">-{dd}%</span>
             </div>
-            <RangeSlider value={dd} onChange={setDd} min={5} max={90} tone="down" ticks={[5, 20, 30, 50, 90]} format={(v) => `${v}%`} label="Max drawdown" />
+            <RangeSlider value={dd} onChange={setDd} min={5} max={90} tone="down" ticks={[5, 20, 30, 50, 90]} format={(v) => `${v}%`} label={t("social.follow.maxDrawdown")} />
           </div>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Equity stop" hint="Empty = off">
-            <Input type="number" inputMode="decimal" min={0} placeholder="No equity stop" value={equityStop.raw} onChange={(e) => equityStop.setRaw(e.target.value)} leading="$" inputClassName="k-num" />
+          <Field label={t("social.equityStop")} hint={t("social.subs.settings.emptyOff")}>
+            <Input type="number" inputMode="decimal" min={0} placeholder={t("social.follow.noEquityStop")} value={equityStop.raw} onChange={(e) => equityStop.setRaw(e.target.value)} leading="$" inputClassName="k-num" />
           </Field>
-          <Field label="Max lot per copied trade" hint="Empty = no cap">
-            <Input type="number" inputMode="decimal" min={0.01} step={0.01} placeholder="No cap" value={maxLot.raw} onChange={(e) => maxLot.setRaw(e.target.value)} trailing="lots" inputClassName="k-num" />
+          <Field label={t("social.follow.maxLotPerTrade")} hint={t("social.subs.settings.emptyNoCap")}>
+            <Input type="number" inputMode="decimal" min={0.01} step={0.01} placeholder={t("social.noCap")} value={maxLot.raw} onChange={(e) => maxLot.setRaw(e.target.value)} trailing={t("social.lotsUnit")} inputClassName="k-num" />
           </Field>
         </div>
         <div>
           <div className="mb-2 flex items-center justify-between text-[12.5px] font-medium text-fg-2">
-            Excluded symbols <span className="font-normal text-fg-3">{ex.length ? `${ex.length} excluded` : "Copy everything"}</span>
+            {t("social.follow.excludedSymbols")} <span className="font-normal text-fg-3">{ex.length ? t("social.follow.excludedCount", { count: ex.length }) : t("social.follow.copyEverything")}</span>
           </div>
           {ex.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-2">
@@ -203,7 +200,7 @@ function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | nul
               ))}
             </div>
           )}
-          <Input value={add} onChange={(e) => setAdd(e.target.value)} placeholder="Search a symbol to exclude" className="h-9" />
+          <Input value={add} onChange={(e) => setAdd(e.target.value)} placeholder={t("social.subs.settings.searchExclude")} className="h-9" />
           {matches.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {matches.map((s) => (
@@ -223,7 +220,7 @@ function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | nul
             </div>
           )}
         </div>
-        <p className="text-[12px] text-fg-3">Changes apply to new copied trades immediately. Open positions keep their current size.</p>
+        <p className="text-[12px] text-fg-3">{t("social.subs.settings.note")}</p>
       </div>
     </Dialog>
   );
@@ -234,6 +231,7 @@ function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | nul
 /* ------------------------------------------------------------------ */
 
 function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null; onClose: () => void; onStopped: () => void }) {
+  const t = useT();
   const [returnFunds, setReturnFunds] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
   const [res, setRes] = React.useState<StopResult | null>(null);
@@ -248,10 +246,10 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
     try {
       const r = await socialApi<StopResult>(`subscriptions/${sub.id}/stop`, { body: returnFunds ? { returnFunds: true } : {} });
       setRes(r);
-      toast.success("Copying stopped", { description: `${r.closed?.length ?? 0} copied position${r.closed?.length === 1 ? "" : "s"} closed${r.returned ? ` · ${usd(r.returned)} back to your wallet` : ""}` });
+      toast.success(t("social.subs.stop.stopped"), { description: `${t("social.subs.stop.closedCount", { count: r.closed?.length ?? 0 })}${r.returned ? ` · ${t("social.subs.stop.backToWallet", { amount: usd(r.returned) })}` : ""}` });
       onStopped();
     } catch (e) {
-      toast.error("Couldn't stop copying", { description: e instanceof Error ? e.message : undefined });
+      toast.error(t("social.subs.stop.failed"), { description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -263,36 +261,36 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
         open={!!sub}
         onOpenChange={(o) => !o && onClose()}
         width={480}
-        title="Copying stopped"
-        description={`${sub.master.nickname} · copy account #${sub.login}`}
+        title={t("social.subs.stop.stopped")}
+        description={t("social.subs.nameAccount", { name: sub.master.nickname, login: sub.login })}
         footer={
           <Button variant="ember" onClick={onClose}>
-            Done
+            {t("common.done")}
           </Button>
         }
       >
         <div className="space-y-3 text-[13.5px]">
           <div className="grid grid-cols-2 gap-2">
-            <Tile label="Positions closed">{(res.closed?.length ?? 0).toString()}</Tile>
-            <Tile label="Returned to wallet">{res.returned !== null && res.returned !== undefined ? usd(res.returned) : "—"}</Tile>
+            <Tile label={t("social.subs.stop.positionsClosed")}>{(res.closed?.length ?? 0).toString()}</Tile>
+            <Tile label={t("social.subs.stop.returned")}>{res.returned !== null && res.returned !== undefined ? usd(res.returned) : "—"}</Tile>
           </div>
           {res.failed?.length > 0 && (
             <InfoBox tone="down" icon={<AlertTriangle />}>
-              {res.failed.length} position{res.failed.length === 1 ? "" : "s"} couldn&apos;t be closed:
-              <ul className="mt-1 list-disc pl-4">
+              {t("social.subs.stop.failedCount", { count: res.failed.length })}
+              <ul className="mt-1 list-disc ps-4">
                 {res.failed.map((f) => (
                   <li key={f.ticket}>
                     #{f.ticket}: {f.error}
                   </li>
                 ))}
               </ul>
-              Contact support if they stay open.
+              {t("social.subs.stop.contactSupport")}
             </InfoBox>
           )}
           {returnFunds && res.returned === null && (
-            <InfoBox tone="warn">The balance couldn&apos;t be moved to your wallet right now. It stays on copy account #{sub.login}; you can transfer it from the wallet later.</InfoBox>
+            <InfoBox tone="warn">{t("social.subs.stop.notMoved", { login: sub.login })}</InfoBox>
           )}
-          {!returnFunds && <InfoBox>The balance stays on copy account #{sub.login}. You can move it to your wallet at any time.</InfoBox>}
+          {!returnFunds && <InfoBox>{t("social.subs.stop.stays", { login: sub.login })}</InfoBox>}
         </div>
       </Dialog>
     );
@@ -303,15 +301,15 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
       open={!!sub}
       onOpenChange={(o) => !o && onClose()}
       width={480}
-      title="Stop copying and close all?"
-      description={`${sub.master.nickname} · copy account #${sub.login}`}
+      title={t("social.subs.stop.title")}
+      description={t("social.subs.nameAccount", { name: sub.master.nickname, login: sub.login })}
       footer={
         <>
           <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
-            Keep copying
+            {t("social.subs.stop.keep")}
           </Button>
           <Button variant="sell" onClick={stop} disabled={busy}>
-            {busy ? <Loader2 className="animate-spin" /> : <Square />} Stop & close all
+            {busy ? <Loader2 className="animate-spin" /> : <Square />} {t("social.subs.stop.confirm")}
           </Button>
         </>
       }
@@ -320,20 +318,20 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
         <InfoBox tone="down" icon={<AlertTriangle />}>
           {sub.positions + sub.orders > 0 ? (
             <>
-              All <b className="text-fg">{sub.positions} copied position{sub.positions === 1 ? "" : "s"}</b>
-              {sub.orders ? <> and {sub.orders} pending order{sub.orders === 1 ? "" : "s"}</> : null} will close at market price.
+              <Trans k="social.subs.stop.allPositions" vars={{ count: sub.positions }} tags={{ b: (c) => <b className="text-fg">{c}</b> }} />
+              {sub.orders ? <> {t("social.subs.stop.andOrders", { count: sub.orders })}</> : null} {t("social.subs.stop.atMarket")}
             </>
           ) : (
-            <>There are no open copied positions. The subscription ends and no new trades are copied.</>
+            <>{t("social.subs.stop.noPositions")}</>
           )}{" "}
-          This can&apos;t be undone; to copy {sub.master.nickname} again you start a new subscription.
+          {t("social.subs.stop.undone", { name: sub.master.nickname })}
         </InfoBox>
         <div className="grid grid-cols-2 gap-2">
-          <Tile label="Equity now">{usd(sub.equity)}</Tile>
-          <Tile label="Fees pending">{usd(sub.feesPending)}</Tile>
+          <Tile label={t("social.subs.equityNow")}>{usd(sub.equity)}</Tile>
+          <Tile label={t("social.feesPending")}>{usd(sub.feesPending)}</Tile>
         </div>
         <Checkbox checked={returnFunds} onChange={setReturnFunds}>
-          Move the balance back to my wallet after closing
+          {t("social.subs.stop.moveBack")}
         </Checkbox>
       </div>
     </Dialog>
@@ -345,73 +343,74 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
 /* ------------------------------------------------------------------ */
 
 function DetailDrawer({ id, onClose }: { id: number | null; onClose: () => void }) {
+  const t = useT();
   const { data, error } = useSocial<SubscriptionDetail>(id ? `subscriptions/${id}` : null, 5000);
   const [tab, setTab] = React.useState<"positions" | "orders" | "log" | "fees">("positions");
   React.useEffect(() => setTab("positions"), [id]);
   const d = data && data.subscription.id === id ? data : null;
 
   const posCols: Column<EnginePosition>[] = [
-    { key: "s", header: "Symbol", cell: (p) => <SymbolCell symbol={p.symbol} size={22} sub={<span className="font-mono">#{p.ticket}</span>} /> },
-    { key: "side", header: "Side", cell: (p) => <Chip size="sm" tone={p.side === "buy" ? "up" : "down"}>{p.side.toUpperCase()}</Chip> },
-    { key: "v", header: "Lots", align: "right", cell: (p) => <span className="k-num">{p.volume.toFixed(2)}</span> },
-    { key: "px", header: "Open", align: "right", cell: (p) => <span className="k-num text-[12px] text-fg-2" title={`now ${fmtPrice(p.currentPrice)}`}>{fmtPrice(p.openPrice)}</span>, hideOn: "sm" },
-    { key: "pl", header: "P&L", align: "right", cell: (p) => <span className={cn("k-num font-medium", p.profit > 0 ? "text-up" : p.profit < 0 ? "text-down" : "")}>{usd(p.profit, 2, true)}</span> },
+    { key: "s", header: t("social.col.symbol"), cell: (p) => <SymbolCell symbol={p.symbol} size={22} sub={<span className="font-mono">#{p.ticket}</span>} /> },
+    { key: "side", header: t("social.col.side"), cell: (p) => <Chip size="sm" tone={p.side === "buy" ? "up" : "down"}>{t.dyn(`common.${p.side}`, p.side).toUpperCase()}</Chip> },
+    { key: "v", header: t("social.col.lots"), align: "right", cell: (p) => <span className="k-num">{p.volume.toFixed(2)}</span> },
+    { key: "px", header: t("social.col.open"), align: "right", cell: (p) => <span className="k-num text-[12px] text-fg-2" title={t("social.col.nowPrice", { price: fmtPrice(p.currentPrice) })}>{fmtPrice(p.openPrice)}</span>, hideOn: "sm" },
+    { key: "pl", header: t("social.pnl"), align: "right", cell: (p) => <span className={cn("k-num font-medium", p.profit > 0 ? "text-up" : p.profit < 0 ? "text-down" : "")}>{usd(p.profit, 2, true)}</span> },
   ];
   const ordCols: Column<EngineOrder>[] = [
-    { key: "s", header: "Symbol", cell: (o) => <SymbolCell symbol={o.symbol} size={22} sub={<span className="font-mono">#{o.ticket}</span>} /> },
-    { key: "t", header: "Type", cell: (o) => <span className="capitalize">{o.side} {o.type.replace("_", " ")}</span> },
-    { key: "v", header: "Lots", align: "right", cell: (o) => <span className="k-num">{o.volume.toFixed(2)}</span> },
-    { key: "p", header: "Price", align: "right", cell: (o) => <span className="k-num">{fmtPrice(o.price)}</span> },
+    { key: "s", header: t("social.col.symbol"), cell: (o) => <SymbolCell symbol={o.symbol} size={22} sub={<span className="font-mono">#{o.ticket}</span>} /> },
+    { key: "t", header: t("common.type"), cell: (o) => <span className="capitalize">{t.dyn(`common.${o.side}`, o.side)} {t.dyn(`social.orderType.${o.type}`, o.type.replace("_", " "))}</span> },
+    { key: "v", header: t("social.col.lots"), align: "right", cell: (o) => <span className="k-num">{o.volume.toFixed(2)}</span> },
+    { key: "p", header: t("social.col.price"), align: "right", cell: (o) => <span className="k-num">{fmtPrice(o.price)}</span> },
   ];
   const logCols: Column<Log>[] = [
-    { key: "at", header: "Time", cell: (l) => <span className="k-num whitespace-nowrap text-fg-2">{serverTime(l.at, false)}</span> },
+    { key: "at", header: t("common.time"), cell: (l) => <span className="k-num whitespace-nowrap text-fg-2">{serverTime(l.at, false)}</span> },
     {
       key: "a",
-      header: "Action",
+      header: t("social.col.action"),
       cell: (l) => (
         <span className="block">
-          <span className="capitalize">{l.action.replace(/_/g, " ")}</span>
+          <span className="capitalize">{t.dyn(`social.logAction.${l.action}`, l.action.replace(/_/g, " "))}</span>
           {l.message && <span className="block text-[11px] text-fg-3">{l.message}</span>}
         </span>
       ),
     },
-    { key: "v", header: "Lots", align: "right", cell: (l) => <span className="k-num">{l.volume !== null && l.volume !== undefined ? l.volume.toFixed(2) : "—"}</span>, hideOn: "sm" },
-    { key: "st", header: "Result", align: "right", cell: (l) => <Chip size="sm" tone={l.status === "ok" || l.status === "done" ? "up" : l.status === "skipped" ? "neutral" : "down"}>{l.status}</Chip> },
+    { key: "v", header: t("social.col.lots"), align: "right", cell: (l) => <span className="k-num">{l.volume !== null && l.volume !== undefined ? l.volume.toFixed(2) : "—"}</span>, hideOn: "sm" },
+    { key: "st", header: t("social.inv.col.result"), align: "right", cell: (l) => <Chip size="sm" tone={l.status === "ok" || l.status === "done" ? "up" : l.status === "skipped" ? "neutral" : "down"}>{t.dyn(`social.logStatus.${l.status}`, l.status)}</Chip> },
   ];
 
   return (
-    <Dialog open={id !== null} onOpenChange={(o) => !o && onClose()} side="right" title={d ? `${d.subscription.master.nickname} · #${d.subscription.login}` : "Subscription"} description="Copied positions, orders, the copy log and fees">
+    <Dialog open={id !== null} onOpenChange={(o) => !o && onClose()} side="right" title={d ? `${d.subscription.master.nickname} · #${d.subscription.login}` : t("social.subs.detail.title")} description={t("social.subs.detail.description")}>
       {!d ? (
         error ? <InfoBox tone="down">{error.message}</InfoBox> : <BlockSkeleton n={3} h={90} />
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <Tile label="Equity">{usd(d.subscription.equity)}</Tile>
-            <Tile label="Profit">
+            <Tile label={t("common.equity")}>{usd(d.subscription.equity)}</Tile>
+            <Tile label={t("social.profit")}>
               <span className={d.subscription.profit >= 0 ? "text-up" : "text-down"}>{usd(d.subscription.profit, 2, true)}</span>
             </Tile>
-            <Tile label="Return">{pct(d.subscription.returnPct)}</Tile>
-            <Tile label="High-water mark">{usd(d.subscription.hwm)}</Tile>
-            <Tile label="Fees pending">{usd(d.subscription.feesPending)}</Tile>
-            <Tile label="Next fee check">{d.subscription.nextFeeAt ? serverTime(d.subscription.nextFeeAt, false) : "—"}</Tile>
+            <Tile label={t("social.return")}>{pct(d.subscription.returnPct)}</Tile>
+            <Tile label={t("social.funds.explain.hwmT")}>{usd(d.subscription.hwm)}</Tile>
+            <Tile label={t("social.feesPending")}>{usd(d.subscription.feesPending)}</Tile>
+            <Tile label={t("social.subs.detail.nextFee")}>{d.subscription.nextFeeAt ? serverTime(d.subscription.nextFeeAt, false) : "—"}</Tile>
           </div>
           <Segmented
             size="xs"
             value={tab}
             onChange={setTab}
             options={[
-              { value: "positions", label: `Positions ${d.positions.length}` },
-              { value: "orders", label: `Orders ${d.orders.length}` },
-              { value: "log", label: "Copy log" },
-              { value: "fees", label: `Fees ${d.fees.length}` },
+              { value: "positions", label: t("social.subs.detail.tabPositions", { n: d.positions.length }) },
+              { value: "orders", label: t("social.subs.detail.tabOrders", { n: d.orders.length }) },
+              { value: "log", label: t("social.subs.detail.tabLog") },
+              { value: "fees", label: t("social.subs.detail.tabFees", { n: d.fees.length }) },
             ]}
           />
           {tab === "positions" &&
-            (d.positions.length ? <DataTable columns={posCols} rows={d.positions} dense pageSize={20} rowKey={(p) => String(p.ticket)} /> : <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">No copied positions open.</div>)}
-          {tab === "orders" && (d.orders.length ? <DataTable columns={ordCols} rows={d.orders} dense pageSize={20} rowKey={(o) => String(o.ticket)} /> : <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">No copied pending orders.</div>)}
-          {tab === "log" && (d.log.length ? <DataTable columns={logCols} rows={d.log} dense pageSize={20} rowKey={(l, i) => `${l.at}-${i}`} /> : <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">Nothing copied yet.</div>)}
+            (d.positions.length ? <DataTable columns={posCols} rows={d.positions} dense pageSize={20} rowKey={(p) => String(p.ticket)} /> : <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">{t("social.subs.detail.noPositions")}</div>)}
+          {tab === "orders" && (d.orders.length ? <DataTable columns={ordCols} rows={d.orders} dense pageSize={20} rowKey={(o) => String(o.ticket)} /> : <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">{t("social.subs.detail.noOrders")}</div>)}
+          {tab === "log" && (d.log.length ? <DataTable columns={logCols} rows={d.log} dense pageSize={20} rowKey={(l, i) => `${l.at}-${i}`} /> : <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">{t("social.subs.detail.noLog")}</div>)}
           {tab === "fees" && <FeesTable fees={d.fees} />}
-          <InfoBox>Copied positions close when the master closes them. To exit early, stop copying: everything closes at market.</InfoBox>
+          <InfoBox>{t("social.subs.detail.note")}</InfoBox>
         </div>
       )}
     </Dialog>
@@ -423,6 +422,7 @@ function DetailDrawer({ id, onClose }: { id: number | null; onClose: () => void 
 /* ------------------------------------------------------------------ */
 
 function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionView; onChanged: () => void; onEdit: () => void; onStop: () => void; onDetail: () => void }) {
+  const t = useT();
   const [busy, setBusy] = React.useState(false);
   const stopped = s.status === "stopped";
   const togglePause = async () => {
@@ -430,12 +430,12 @@ function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionVi
     const pause = s.status !== "paused";
     try {
       await socialApi(`subscriptions/${s.id}`, { method: "PATCH", body: { paused: pause } });
-      toast.success(pause ? "Copying paused" : "Copying resumed", {
-        description: pause ? "No new trades are opened. Positions already copied still follow the master's closes and SL/TP changes." : `New trades from ${s.master.nickname} are copied again.`,
+      toast.success(pause ? t("social.subs.toast.paused") : t("social.subs.toast.resumed"), {
+        description: pause ? t("social.subs.toast.pausedDesc") : t("social.subs.toast.resumedDesc", { name: s.master.nickname }),
       });
       onChanged();
     } catch (e) {
-      toast.error(pause ? "Couldn't pause" : "Couldn't resume", { description: e instanceof Error ? e.message : undefined });
+      toast.error(pause ? t("social.subs.toast.pauseFailed") : t("social.subs.toast.resumeFailed"), { description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -448,7 +448,7 @@ function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionVi
         </Link>
         <div className="flex shrink-0 items-center gap-1.5">
           <RiskBadge risk={s.master.riskScore} />
-          <StatusChip status={s.status} />
+          <StatusChip status={s.status} label={t.dyn(`social.subStatus.${s.status}`, s.status)} />
         </div>
       </div>
       {s.master.house && (
@@ -457,64 +457,64 @@ function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionVi
         </div>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-1.5 px-5 text-[12px] text-fg-3">
-        Copy account <span className="font-mono text-fg-2">#{s.login}</span>
-        <CopyButton value={String(s.login)} label="Copy account" className="size-5" />
-        <span>· since {fmtDate(s.createdAt)}</span>
+        {t("social.subs.copyAccount")} <span className="font-mono text-fg-2">#{s.login}</span>
+        <CopyButton value={String(s.login)} label={t("social.subs.copyAccount")} className="size-5" />
+        <span>{t("social.subs.since", { date: fmtDate(s.createdAt) })}</span>
       </div>
-      {stopped && s.stopReason && <div className="mt-1 px-5 text-[12px] text-down">{stopReason(s.stopReason)}{s.stoppedAt ? ` · ${fmtDate(s.stoppedAt)}` : ""}</div>}
-      {!stopped && s.master.frozen && <div className="mt-1 px-5 text-[12px] text-warn">Copying of this master is paused by the risk team.</div>}
+      {stopped && s.stopReason && <div className="mt-1 px-5 text-[12px] text-down">{stopReason(s.stopReason, t)}{s.stoppedAt ? ` · ${fmtDate(s.stoppedAt)}` : ""}</div>}
+      {!stopped && s.master.frozen && <div className="mt-1 px-5 text-[12px] text-warn">{t("social.subs.frozen")}</div>}
       <div className="mt-4 px-5">
-        <div className="text-[11px] uppercase tracking-wider text-fg-3">Equity</div>
+        <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("common.equity")}</div>
         <Money value={s.equity} countUp={false} className="text-[26px] font-semibold" />
         <div className={cn("k-num text-[12.5px] font-medium", s.profit > 0 ? "text-up" : s.profit < 0 ? "text-down" : "text-fg-2")}>
           {usd(s.profit, 2, true)} ({pct(s.returnPct)})
         </div>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2 px-5 text-[12px] sm:grid-cols-3">
-        <Tile label="Net deposits">{usd(s.netDeposits, 0)}</Tile>
-        <Tile label="High-water">{usd(s.hwm, 0)}</Tile>
-        <Tile label="Fees pending">
+        <Tile label={t("social.subs.netDeposits")}>{usd(s.netDeposits, 0)}</Tile>
+        <Tile label={t("social.subs.highWater")}>{usd(s.hwm, 0)}</Tile>
+        <Tile label={t("social.feesPending")}>
           <span className={s.feesPending ? "text-warn" : ""}>{usd(s.feesPending)}</span>
         </Tile>
-        <Tile label="Sizing">{sizingText(s.sizing)}</Tile>
-        <Tile label="Open">
-          {s.positions} pos · {s.orders} ord
+        <Tile label={t("social.follow.step.sizing")}>{sizingText(s.sizing)}</Tile>
+        <Tile label={t("social.col.open")}>
+          {t("social.subs.openCounts", { pos: s.positions, ord: s.orders })}
         </Tile>
-        <Tile label="Fees paid">{usd(s.feesPaid)}</Tile>
+        <Tile label={t("social.inv.kpi.feesPaid")}>{usd(s.feesPaid)}</Tile>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-1.5 px-5">
         <Chip size="sm">
-          {s.perfFeePct}% fee · {PERIOD_LABEL[s.feePeriod].toLowerCase()}
+          {t("social.subs.feeChip", { fee: s.perfFeePct, period: PERIOD_LABEL[s.feePeriod].toLowerCase() })}
         </Chip>
         {s.maxDdPct !== null && (
           <Chip size="sm" tone="down">
-            <ShieldAlert className="size-3" /> DD stop -{s.maxDdPct}%
+            <ShieldAlert className="size-3" /> {t("social.subs.ddStopChip", { dd: s.maxDdPct })}
           </Chip>
         )}
         {s.equityStop !== null && (
           <Chip size="sm" tone="down">
-            Equity stop {usd(s.equityStop, 0)}
+            {t("social.subs.equityStopChip", { amount: usd(s.equityStop, 0) })}
           </Chip>
         )}
-        {s.maxLot !== null && <Chip size="sm">Max {s.maxLot.toFixed(2)} lot</Chip>}
-        {s.excludedSymbols.length > 0 ? <Chip size="sm">Excl. {s.excludedSymbols.slice(0, 3).join(", ")}{s.excludedSymbols.length > 3 ? ` +${s.excludedSymbols.length - 3}` : ""}</Chip> : <Chip size="sm">All symbols</Chip>}
+        {s.maxLot !== null && <Chip size="sm">{t("social.subs.maxLotChip", { lot: s.maxLot.toFixed(2) })}</Chip>}
+        {s.excludedSymbols.length > 0 ? <Chip size="sm">{t("social.subs.exclChip", { list: s.excludedSymbols.slice(0, 3).join(", ") })}{s.excludedSymbols.length > 3 ? ` +${s.excludedSymbols.length - 3}` : ""}</Chip> : <Chip size="sm">{t("social.subs.allSymbols")}</Chip>}
       </div>
       <div className="mt-auto grid grid-cols-2 gap-2 px-5 pb-5 pt-4 sm:grid-cols-3">
         {!stopped && (
           <>
             <Button size="sm" variant="surface" disabled={busy} onClick={togglePause}>
-              {busy ? <Loader2 className="animate-spin" /> : s.status === "paused" ? <Play /> : <Pause />} {s.status === "paused" ? "Resume" : "Pause"}
+              {busy ? <Loader2 className="animate-spin" /> : s.status === "paused" ? <Play /> : <Pause />} {s.status === "paused" ? t("social.subs.resume") : t("social.subs.pause")}
             </Button>
             <Button size="sm" variant="surface" onClick={onEdit}>
-              <Settings2 /> Settings
+              <Settings2 /> {t("social.subs.settings")}
             </Button>
             <Button size="sm" variant="down-outline" onClick={onStop}>
-              <Square /> Stop
+              <Square /> {t("social.subs.stop")}
             </Button>
           </>
         )}
         <Button size="sm" variant="surface" onClick={onDetail} className={cn(stopped && "col-span-1")}>
-          <ListChecks /> Details
+          <ListChecks /> {t("common.details")}
         </Button>
         <TradeButton a={{ login: s.login, status: "active" }} size="sm" label="Kalks Trader" className="sm:col-span-2" />
       </div>
@@ -525,6 +525,7 @@ function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionVi
 /* ------------------------------------------------------------------ */
 
 export function LiveCopyPage() {
+  const t = useT();
   const { data, error, loading, reload } = useSocial<{ items: SubscriptionView[] }>("subscriptions", 5000);
   const [view, setView] = React.useState<"current" | "stopped">("current");
   const [edit, setEdit] = React.useState<SubscriptionView | null>(null);
@@ -544,12 +545,12 @@ export function LiveCopyPage() {
   return (
     <div className="pb-24">
       <PageHeader
-        title="Copy trading"
-        subtitle="Your copy subscriptions. Each one runs in its own copy account."
+        title={t("social.subs.title")}
+        subtitle={t("social.subs.subtitle")}
         actions={
           <Link href="/social">
             <Button variant="ember" size="lg">
-              <Compass /> Find a master
+              <Compass /> {t("social.subs.findMaster")}
             </Button>
           </Link>
         }
@@ -564,12 +565,12 @@ export function LiveCopyPage() {
           <Card className="xl:col-span-8">
             <EmptyState
               illustration="chart_increasing"
-              title="You're not copying anyone yet"
-              text="Pick a master on the leaderboard, choose how trades are sized and set your limits. A dedicated copy account is opened and funded from your wallet."
+              title={t("social.subs.empty.title")}
+              text={t("social.subs.empty.text")}
               action={
                 <Link href="/social">
                   <Button variant="ember">
-                    <Compass /> Discover masters
+                    <Compass /> {t("social.lb.title")}
                   </Button>
                 </Link>
               }
@@ -580,32 +581,32 @@ export function LiveCopyPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <KpiCard label="Copy equity" icon={<Wallet />} value={<Money value={equity} countUp={false} />} chip={`${current.length} active or paused`} />
-            <KpiCard label="Profit" icon={<Repeat />} value={<Money value={profit} signed tone="auto" countUp={false} />} chip={deposits > 0 ? pct((profit / deposits) * 100) + " on net deposits" : "—"} chipTone={profit >= 0 ? "up" : "down"} delay={0.04} />
-            <KpiCard label="Fees pending" icon={<ShieldCheck />} value={<Money value={feesPending} countUp={false} />} chip="Awaiting approval" chipTone="warn" delay={0.08} />
-            <KpiCard label="Fees paid" icon={<Layers />} value={<Money value={feesPaid} countUp={false} />} chip="All subscriptions" delay={0.12} />
+            <KpiCard label={t("social.subs.kpi.copyEquity")} icon={<Wallet />} value={<Money value={equity} countUp={false} />} chip={t("social.subs.kpi.activeOrPaused", { count: current.length })} />
+            <KpiCard label={t("social.profit")} icon={<Repeat />} value={<Money value={profit} signed tone="auto" countUp={false} />} chip={deposits > 0 ? t("social.subs.kpi.onNetDeposits", { pct: pct((profit / deposits) * 100) }) : "—"} chipTone={profit >= 0 ? "up" : "down"} delay={0.04} />
+            <KpiCard label={t("social.feesPending")} icon={<ShieldCheck />} value={<Money value={feesPending} countUp={false} />} chip={t("social.subs.kpi.awaitingApproval")} chipTone="warn" delay={0.08} />
+            <KpiCard label={t("social.inv.kpi.feesPaid")} icon={<Layers />} value={<Money value={feesPaid} countUp={false} />} chip={t("social.subs.kpi.allSubs")} delay={0.12} />
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-12">
             <div className="xl:col-span-8">
               <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
                 <div>
-                  <h2 className="text-[18px] font-medium tracking-tight">My subscriptions</h2>
-                  <p className="text-[13px] text-fg-3">To exit, pause or stop. Copied trades can&apos;t be closed one by one.</p>
+                  <h2 className="text-[18px] font-medium tracking-tight">{t("social.mySubscriptions")}</h2>
+                  <p className="text-[13px] text-fg-3">{t("social.subs.listHint")}</p>
                 </div>
                 <Segmented
                   size="xs"
                   value={view}
                   onChange={setView}
                   options={[
-                    { value: "current", label: `Current ${current.length}` },
-                    { value: "stopped", label: `Stopped ${stopped.length}` },
+                    { value: "current", label: t("social.subs.tabCurrent", { n: current.length }) },
+                    { value: "stopped", label: t("social.subs.tabStopped", { n: stopped.length }) },
                   ]}
                 />
               </div>
               {list.length === 0 ? (
                 <Card>
-                  <div className="px-6 py-12 text-center text-[13px] text-fg-3">{view === "current" ? "No active subscriptions." : "No stopped subscriptions."}</div>
+                  <div className="px-6 py-12 text-center text-[13px] text-fg-3">{view === "current" ? t("social.subs.noActive") : t("social.subs.noStopped")}</div>
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -628,21 +629,22 @@ export function LiveCopyPage() {
 }
 
 function HowItWorks({ className }: { className?: string }) {
+  const t = useT();
   return (
     <Card className={className}>
-      <CardHeader title="How copying works" subtitle="Rules that protect you" icon={<ShieldCheck />} />
+      <CardHeader title={t("social.subs.how.title")} subtitle={t("social.subs.how.subtitle")} icon={<ShieldCheck />} />
       <div className="space-y-2 px-4 pb-5 pt-4 sm:px-6">
-        {[
-          { icon: <Layers />, t: "Everything is mirrored", s: "Opens, adds, partial closes, SL/TP changes and pending orders, in the master's order." },
-          { icon: <Ban />, t: "No single-trade closing", s: "Copied trades can't be closed one by one. Pause to stop new trades, or stop to close everything." },
-          { icon: <Sliders />, t: "Your limits win", s: "Max drawdown, equity stop, max lot and excluded symbols override the master." },
-          { icon: <Check />, t: "Fees above high-water mark", s: "Charged only on new trading profit at the end of each period, then approved by our team." },
-        ].map((r) => (
+        {([
+          { icon: <Layers />, t: "social.subs.how.mirroredT", s: "social.subs.how.mirroredS" },
+          { icon: <Ban />, t: "social.subs.how.noSingleT", s: "social.subs.how.noSingleS" },
+          { icon: <Sliders />, t: "social.subs.how.limitsT", s: "social.subs.how.limitsS" },
+          { icon: <Check />, t: "social.subs.how.feesT", s: "social.subs.how.feesS" },
+        ] as const).map((r) => (
           <div key={r.t} className="k-row flex items-start gap-3 px-3.5 py-3">
             <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-surface-3 text-fg-2 [&_svg]:size-3.5">{r.icon}</span>
             <div>
-              <div className="text-[13px] font-medium">{r.t}</div>
-              <div className="text-[12px] leading-snug text-fg-3">{r.s}</div>
+              <div className="text-[13px] font-medium">{t(r.t)}</div>
+              <div className="text-[12px] leading-snug text-fg-3">{t(r.s)}</div>
             </div>
           </div>
         ))}
