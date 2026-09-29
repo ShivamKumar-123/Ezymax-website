@@ -12,7 +12,7 @@ import { kv } from "@/lib/kv";
 import { feed } from "@/market/feed";
 import { instrument, instruments, type Instrument } from "@/market/instruments";
 import { useSession } from "@/session";
-import { ChangeText, Display, EmptyState, IconButton, Mono, PressableScale, PriceCell, Screen, Sheet, Skeleton, Text, useBottomInset, useLiveQuote, type SheetRef } from "@/ui";
+import { Banner, ChangeText, Display, EmptyState, IconButton, Mono, PressableScale, PriceCell, Screen, Sheet, Skeleton, Text, useBottomInset, useLiveQuote, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { ChartLazy } from "../chart/ChartLazy";
 import { prefetchCandles, TIMEFRAMES, type Timeframe } from "../chart/data";
@@ -117,7 +117,8 @@ export function TradeScreen() {
       </View>
 
       {/* Sell / volume / Buy */}
-      <View style={{ paddingHorizontal: GUTTER, paddingTop: space[3], paddingBottom: bottom - space[2] }}>
+      <View style={{ paddingHorizontal: GUTTER, paddingTop: space[3], paddingBottom: bottom - space[2], gap: space[3] }}>
+        {spec && !spec.open && !noAccount ? <Banner tone="info" title={t("mobileTrade.state.marketClosed.title")} body={t("mobileTrade.state.marketClosed.body", { symbol })} /> : null}
         {noAccount ? (
           <EmptyState title={t("mobileTrade.state.noAccount.title")} body={t("mobileTrade.state.noAccount.body")} action={t("mobileTrade.state.noAccount.action")} onAction={() => router.push("/accounts/new")} style={{ paddingVertical: space[2] }} />
         ) : (

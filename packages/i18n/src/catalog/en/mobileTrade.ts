@@ -20,6 +20,7 @@ const mobileTrade = {
   "ind.ema": "Exponential MA 50",
   "ind.bb": "Bollinger Bands 20, 2",
   "ind.rsi": "RSI 14",
+  "chart.noData": "No chart history for this symbol yet",
   "chart.hint": "Pinch to zoom · drag to scroll · press and hold for the crosshair · double-tap to reset",
 
   // Sell / Buy bar and ticket

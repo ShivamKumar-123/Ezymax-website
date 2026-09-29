@@ -169,6 +169,7 @@ export function ChartView({ symbol, tf, digits, type, indicators }: ChartViewPro
 
   const quote = feed.sv(symbol);
   const hasData = (q.data?.length ?? 0) > 0;
+  const noHistory = q.data !== undefined && q.data.length === 0 && !q.fetching;
 
   return (
     <View style={{ flex: 1 }}>
@@ -190,6 +191,8 @@ export function ChartView({ symbol, tf, digits, type, indicators }: ChartViewPro
           step={TF_SECONDS[tf]}
           onNeedOlder={onNeedOlder}
         />
+      ) : noHistory ? (
+        <EmptyState title={t("mobileTrade.chart.noData")} style={{ flex: 1, justifyContent: "center" }} />
       ) : q.error && !q.fetching ? (
         <EmptyState illustration="connectionLost" size={170} title={online ? t("mobile.state.error.title") : t("mobile.state.offline.title")} body={online ? t("mobile.state.error.body") : t("mobile.state.offline.body")} action={t("mobile.action.retry")} onAction={() => void q.refresh()} style={{ flex: 1, justifyContent: "center", paddingVertical: space[4] }} />
       ) : (
