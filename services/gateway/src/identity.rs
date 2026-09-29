@@ -79,6 +79,8 @@ pub struct Principal {
     pub email: String,
     pub password_hash: String,
     pub active: bool,
+    /// `active` / `blocked` (suspended by staff, see client_controls) / `closed` (clients); staff: `active` / `disabled` / `invited`.
+    pub status: String,
     pub failed_logins: i32,
     pub locked_until: Option<DateTime<Utc>>,
     pub email_verified: bool,
@@ -87,12 +89,12 @@ pub struct Principal {
 pub async fn find_principal(pool: &PgPool, kind: Kind, tenant_id: i64, email: &str) -> ApiResult<Option<Principal>> {
     let sql = match kind {
         Kind::User => {
-            "SELECT id, email, password_hash, status = 'active' AS active, failed_logins, locked_until,
+            "SELECT id, email, password_hash, status = 'active' AS active, status, failed_logins, locked_until,
                     email_verified_at IS NOT NULL AS verified
              FROM users WHERE tenant_id = $1 AND email = $2 AND NOT is_house"
         }
         Kind::Staff => {
-            "SELECT id, email, password_hash, status = 'active' AS active, failed_logins, locked_until, true AS verified
+            "SELECT id, email, password_hash, status = 'active' AS active, status, failed_logins, locked_until, true AS verified
              FROM staff WHERE tenant_id = $1 AND email = $2"
         }
     };
@@ -102,6 +104,7 @@ pub async fn find_principal(pool: &PgPool, kind: Kind, tenant_id: i64, email: &s
         email: r.get("email"),
         password_hash: r.get("password_hash"),
         active: r.get("active"),
+        status: r.get("status"),
         failed_logins: r.get("failed_logins"),
         locked_until: r.get("locked_until"),
         email_verified: r.get("verified"),
@@ -119,7 +122,8 @@ pub async fn set_failures(pool: &PgPool, kind: Kind, id: i64, failures: i32, loc
 
 pub async fn mark_login(pool: &PgPool, kind: Kind, id: i64) -> ApiResult<()> {
     let sql = match kind {
-        Kind::User => "UPDATE users SET failed_logins = 0, locked_until = NULL, last_login_at = now() WHERE id = $1",
+        // signing in counts as activity for the client's presence (client_controls.rs)
+        Kind::User => "UPDATE users SET failed_logins = 0, locked_until = NULL, last_login_at = now(), last_active_at = now() WHERE id = $1",
         Kind::Staff => "UPDATE staff SET failed_logins = 0, locked_until = NULL, last_login_at = now() WHERE id = $1",
     };
     sqlx::query(sql).bind(id).execute(pool).await?;
@@ -209,6 +213,16 @@ pub struct SessionRef {
     pub expires_at: DateTime<Utc>,
     /// Set for a view-only session (D90): the subject is the owning client, but nothing may be changed.
     pub viewer_id: Option<i64>,
+    /// Set for a staff session opened as the client from the Back Office (client_controls.rs).
+    pub impersonation: Option<Impersonation>,
+}
+
+/// A staff member acting as the client ("log in as client").
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Impersonation {
+    pub staff_id: i64,
+    /// `read_only` (every change refused, like a view-only login) or `full` (Super Admin, confirmed).
+    pub read_only: bool,
 }
 
 /// 403 for any change attempted with a view-only session.
@@ -227,6 +241,12 @@ pub async fn resolve_session(st: &AppState, ctx: &Ctx, kind: Kind) -> ApiResult<
     if s.viewer_id.is_some() {
         return Err(viewer_read_only());
     }
+    if let Some(imp) = &s.impersonation
+        && imp.read_only
+    {
+        crate::client_controls::write_refused(st, ctx, &s, imp).await;
+        return Err(crate::client_controls::staff_read_only());
+    }
     Ok(s)
 }
 
@@ -239,12 +259,12 @@ pub fn idle_window(kind: Kind, client_idle_minutes: i32) -> Duration {
 }
 
 /// Resolves a bearer token to a live session of `kind` (view-only sessions included), sliding `last_seen_at`
-/// forward (at most once a minute). Only read paths (`/v1/auth/me`, lists) use this directly.
+/// forward (at most every `PRESENCE_BUMP_SECS`). Only read paths (`/v1/auth/me`, lists) use this directly.
 pub async fn resolve_session_any(st: &AppState, ctx: &Ctx, kind: Kind) -> ApiResult<SessionRef> {
     let token = ctx.bearer.as_deref().ok_or(ApiError::Unauthorized)?;
     let row = sqlx::query(
         "SELECT s.id, s.subject_id, s.tenant_id, s.expires_at, s.last_seen_at, s.revoked_at IS NOT NULL AS revoked, s.viewer_id,
-                t.client_idle_minutes
+                s.impersonator_id, s.impersonator_session_id, s.impersonation_mode, t.client_idle_minutes
          FROM sessions s JOIN tenants t ON t.id = s.tenant_id WHERE s.token_hash = $1 AND s.subject_kind = $2",
     )
     .bind(st.keys.hash("session", token))
@@ -259,6 +279,7 @@ pub async fn resolve_session_any(st: &AppState, ctx: &Ctx, kind: Kind) -> ApiRes
         return Err(ApiError::Unauthorized);
     }
     let session_id: i64 = row.get("id");
+    let subject_id: i64 = row.get("subject_id");
     let viewer_id: Option<i64> = row.get("viewer_id");
     if let Some(v) = viewer_id {
         // a revoked, expired or re-keyed viewer login ends its sessions at once
@@ -270,11 +291,34 @@ pub async fn resolve_session_any(st: &AppState, ctx: &Ctx, kind: Kind) -> ApiRes
             return Err(ApiError::Unauthorized);
         }
     }
-    if now - last_seen > Duration::seconds(60) {
-        sqlx::query("UPDATE sessions SET last_seen_at = now() WHERE id = $1").bind(session_id).execute(&st.pool).await?;
+    let impersonation = match row.get::<Option<i64>, _>("impersonator_id") {
+        Some(staff_id) => {
+            // bound to the staff member: it ends with their own Back Office session (sign-out, disabled, expired)
+            let staff_session: i64 = row.get::<Option<i64>, _>("impersonator_session_id").unwrap_or(0);
+            if !crate::client_controls::staff_session_live(st, staff_id, staff_session).await? {
+                return Err(ApiError::Unauthorized);
+            }
+            Some(Impersonation { staff_id, read_only: row.get::<Option<String>, _>("impersonation_mode").as_deref() != Some("full") })
+        }
+        None => None,
+    };
+    if now - last_seen > Duration::seconds(PRESENCE_BUMP_SECS) {
+        // presence (client_controls): only the client's own sessions count, never view-only logins or staff
+        sqlx::query(
+            "WITH s AS (UPDATE sessions SET last_seen_at = now() WHERE id = $1
+                        RETURNING subject_kind, subject_id, viewer_id, impersonator_id)
+             UPDATE users u SET last_active_at = now() FROM s
+              WHERE s.subject_kind = 'user' AND u.id = s.subject_id AND s.viewer_id IS NULL AND s.impersonator_id IS NULL",
+        )
+        .bind(session_id)
+        .execute(&st.pool)
+        .await?;
     }
-    Ok(SessionRef { session_id, subject_id: row.get("subject_id"), tenant_id: row.get("tenant_id"), expires_at, viewer_id })
+    Ok(SessionRef { session_id, subject_id, tenant_id: row.get("tenant_id"), expires_at, viewer_id, impersonation })
 }
+
+/// A session's `last_seen_at` (and the client's presence) moves forward at most this often.
+pub const PRESENCE_BUMP_SECS: i64 = 30;
 
 pub async fn revoke_token(st: &AppState, token: &str, kind: Kind) -> ApiResult<Option<(i64, i64)>> {
     let row = sqlx::query(

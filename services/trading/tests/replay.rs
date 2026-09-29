@@ -101,6 +101,7 @@ async fn replay_rebuilds_identical_state_and_ledger_holds() {
         stats: Arc::new(Stats::default()),
         lp: Arc::new(NullLp),
         max_quote_age_ms: 0,
+        restrictions: Default::default(),
     });
     let _ = AtomicI64::new(0);
     let hub = Hub::start(shared, 4, Default::default());

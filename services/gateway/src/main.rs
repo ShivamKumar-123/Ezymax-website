@@ -7,6 +7,7 @@
 mod admin;
 mod audit;
 mod client_auth;
+mod client_controls;
 mod client_security;
 mod config;
 mod crypto;
@@ -140,6 +141,19 @@ async fn main() -> anyhow::Result<()> {
             }
         });
     }
+    // client controls: expired restrictions and staff sessions, stale Kalks Trader connections (client_controls.rs)
+    {
+        let st = st.clone();
+        tokio::spawn(async move {
+            let mut tick = tokio::time::interval(Duration::from_secs(30));
+            loop {
+                tick.tick().await;
+                if let Err(e) = client_controls::sweep(&st).await {
+                    tracing::warn!(error = %e, "client controls sweep failed");
+                }
+            }
+        });
+    }
 
     let bind = st.cfg.bind.clone();
     let app = router(st);
@@ -187,6 +201,21 @@ fn router(st: AppState) -> Router {
         .route("/v1/admin/requests", get(client_security::admin_requests))
         .route("/v1/admin/requests/{id}", post(client_security::admin_process_request))
         .route("/v1/admin/settings/sessions", get(client_security::get_session_settings).put(client_security::set_session_settings))
+        // client controls: presence, restrictions, staff sessions as the client (client_controls.rs)
+        .route("/v1/admin/presence", get(client_controls::presence_list))
+        .route("/v1/admin/users/{id}/controls", get(client_controls::controls))
+        .route("/v1/admin/users/{id}/restrictions/{kind}", put(client_controls::put_restriction))
+        .route("/v1/admin/users/{id}/restrictions/{kind}/lift", post(client_controls::lift))
+        .route("/v1/admin/restrictions/bulk", post(client_controls::bulk))
+        .route("/v1/admin/users/{id}/impersonate", post(client_controls::impersonate))
+        .route("/v1/admin/users/{id}/impersonate/trader", post(client_controls::impersonate_trader))
+        .route("/v1/admin/impersonations/{id}/end", post(client_controls::end_impersonation))
+        .route("/v1/auth/impersonate/redeem", post(client_controls::redeem))
+        .route("/v1/auth/heartbeat", post(client_controls::heartbeat))
+        .route("/v1/auth/impersonation/event", post(client_controls::event))
+        .route("/v1/internal/restrictions", get(client_controls::internal_list))
+        .route("/v1/internal/presence/trader", post(client_controls::trader_report))
+        .route("/v1/internal/impersonation/ended", post(client_controls::trader_ended))
         .route("/v1/auth/google", post(google_auth::google))
         .route("/v1/auth/google/ticket", post(google_auth::ticket))
         .route("/v1/auth/google/complete", post(google_auth::complete))

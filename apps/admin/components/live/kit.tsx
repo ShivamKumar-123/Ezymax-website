@@ -102,6 +102,8 @@ export function day(iso: string | null | undefined) {
 export function ago(iso: string | null | undefined, now: number) {
   if (!iso) return "never";
   const s = Math.round((now - Date.parse(iso)) / 1000);
+  // `now` ticks every 30 s: something that just happened is never "in 1m"
+  if (s < 0 && s > -90) return "just now";
   if (s < 0) {
     const f = -s;
     if (f < 3600) return `in ${Math.max(1, Math.round(f / 60))}m`;
@@ -219,6 +221,14 @@ export function actionLabel(action: string) {
     "kyc.note_added": "KYC note added",
     "kyc.document_viewed": "KYC document viewed",
     "user.identity_corrected": "Client corrected name / date of birth",
+    "client.restriction_set": "Restriction set",
+    "client.restriction_lifted": "Restriction lifted",
+    "client.restriction_expired": "Restriction expired",
+    "client.impersonation_started": "Staff session as client started",
+    "client.impersonation_ended": "Staff session as client ended",
+    "client.impersonation_action": "Staff action as client",
+    "client.impersonation_write_refused": "Staff change refused (read-only)",
+    "client.impersonation_page_view": "Staff opened a page as client",
   };
   return map[action] ?? action;
 }

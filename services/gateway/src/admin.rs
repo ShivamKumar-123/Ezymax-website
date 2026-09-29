@@ -237,6 +237,11 @@ fn user_row(r: &PgRow) -> Value {
         "last_login_at": ts(r, "last_login_at"),
         "created_at": r.get::<DateTime<Utc>, _>("created_at"),
         "active_sessions": r.get::<i64, _>("active_sessions"),
+        // presence and restrictions (client_controls.rs)
+        "last_active_at": ts(r, "last_active_at"),
+        "presence": crate::client_controls::presence(ts(r, "last_active_at"), Utc::now()).as_str(),
+        "apps": r.try_get::<Option<Vec<String>>, _>("apps").ok().flatten().unwrap_or_default(),
+        "restrictions": r.try_get::<Option<Vec<String>>, _>("restrictions").ok().flatten().unwrap_or_default(),
     })
 }
 
@@ -280,7 +285,10 @@ pub async fn stats(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value
             (SELECT count(*) FROM staff WHERE tenant_id = $1 AND status = 'active') AS staff_active,
             (SELECT count(*) FROM audit_log WHERE tenant_id = $1 AND action = 'user.login' AND created_at > now() - interval '24 hours') AS logins_24h,
             (SELECT count(*) FROM audit_log WHERE tenant_id = $1 AND action IN ('user.login_failed', 'staff.login_failed', 'user.locked', 'staff.locked') AND created_at > now() - interval '24 hours') AS failed_logins_24h,
-            (SELECT count(*) FROM audit_log WHERE tenant_id = $1 AND created_at > now() - interval '24 hours') AS audit_24h",
+            (SELECT count(*) FROM audit_log WHERE tenant_id = $1 AND created_at > now() - interval '24 hours') AS audit_24h,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND last_active_at > now() - interval '2 minutes') AS online_now,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND last_active_at <= now() - interval '2 minutes' AND last_active_at > now() - interval '15 minutes') AS away_now,
+            (SELECT count(DISTINCT user_id) FROM client_restrictions WHERE tenant_id = $1 AND lifted_at IS NULL AND (expires_at IS NULL OR expires_at > now())) AS restricted",
         3,
     )))
     .bind(me.tenant_id)
@@ -315,6 +323,9 @@ pub async fn stats(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value
             "registered_today": n("registered_today"),
             "registered_7d": n("registered_7d"),
             "registered_30d": n("registered_30d"),
+            "online": n("online_now"),
+            "away": n("away_now"),
+            "restricted": n("restricted"),
         },
         "sessions": { "clients": n("sessions_user"), "staff": n("sessions_staff") },
         "staff": { "active": n("staff_active") },
@@ -336,6 +347,12 @@ pub struct UsersQuery {
     pub per_page: Option<i64>,
     /// Bulk export (CSV): needs `clients.export`, allows 200 rows a page and is audited once per export (page 1).
     pub export: Option<bool>,
+    /// `online` | `away` | `offline` | `active` (online or away), client_controls.rs.
+    pub presence: Option<String>,
+    /// `true`: only clients with an active restriction; `false`: only clients without.
+    pub restricted: Option<String>,
+    /// `online`: most recently active first (default: newest registration first).
+    pub sort: Option<String>,
 }
 
 /// Page size cap for the client list: browsing reads at most 100 rows a page; exports (`clients.export`) 200.
@@ -344,7 +361,15 @@ pub fn users_page_cap(export: bool) -> i64 {
 }
 
 const USER_COLS: &str = "u.id, u.email, u.first_name, u.last_name, u.phone_dial, u.phone, u.country, u.date_of_birth, u.referral_code,
-     u.referred_by, u.kyc_status, u.status, u.email_verified_at, u.locked_until, u.last_login_at, u.created_at";
+     u.referred_by, u.kyc_status, u.status, u.email_verified_at, u.locked_until, u.last_login_at, u.created_at, u.last_active_at,
+     (SELECT array_agg(cr.kind ORDER BY cr.kind) FROM client_restrictions cr
+       WHERE cr.user_id = u.id AND cr.lifted_at IS NULL AND (cr.expires_at IS NULL OR cr.expires_at > now())) AS restrictions,
+     CASE WHEN u.last_active_at > now() - interval '15 minutes' THEN array_remove(ARRAY[
+       CASE WHEN EXISTS (SELECT 1 FROM sessions sa WHERE sa.subject_kind = 'user' AND sa.subject_id = u.id AND sa.viewer_id IS NULL
+              AND sa.impersonator_id IS NULL AND sa.revoked_at IS NULL AND sa.expires_at > now() AND sa.last_seen_at > now() - interval '15 minutes')
+            THEN 'client_area' END,
+       CASE WHEN EXISTS (SELECT 1 FROM client_presence cp WHERE cp.user_id = u.id AND cp.ended_at IS NULL AND cp.last_active > now() - interval '60 seconds')
+            THEN 'trader' END], NULL) END AS apps";
 
 pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQuery>, QueryRejection>) -> ApiResult<Json<Value>> {
     let Query(q) = q.map_err(q_err)?;
@@ -372,6 +397,19 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
     let term = clean(&q.q);
     let pat = term.and_then(like_pattern);
     let id_eq = term.and_then(|t| t.trim_start_matches('#').parse::<i64>().ok());
+    let presence = clean(&q.presence).filter(|p| *p != "all");
+    if let Some(p) = presence
+        && !matches!(p, "online" | "away" | "offline" | "active")
+    {
+        return Err(ApiError::BadRequest("Unknown presence."));
+    }
+    let restricted = match clean(&q.restricted) {
+        None | Some("all") => None,
+        Some("true" | "1" | "yes") => Some(true),
+        Some("false" | "0" | "no") => Some(false),
+        _ => return Err(ApiError::BadRequest("restricted must be true or false.")),
+    };
+    let by_activity = clean(&q.sort) == Some("online");
 
     let sql = live_sql(&format!(
         "SELECT {USER_COLS},
@@ -384,9 +422,16 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
            AND ($4::text IS NULL OR u.kyc_status = $4)
            AND ($5::bool IS NULL OR (u.email_verified_at IS NOT NULL) = $5)
            AND ($6::text IS NULL OR u.status = $6)
-         ORDER BY u.created_at DESC, u.id DESC
+           AND ($9::text IS NULL OR CASE $9
+                 WHEN 'online' THEN u.last_active_at > now() - make_interval(secs => $12)
+                 WHEN 'away' THEN u.last_active_at <= now() - make_interval(secs => $12) AND u.last_active_at > now() - make_interval(secs => $13)
+                 WHEN 'active' THEN u.last_active_at > now() - make_interval(secs => $13)
+                 ELSE u.last_active_at IS NULL OR u.last_active_at <= now() - make_interval(secs => $13) END)
+           AND ($10::bool IS NULL OR EXISTS (SELECT 1 FROM client_restrictions cr WHERE cr.user_id = u.id AND cr.lifted_at IS NULL
+                                              AND (cr.expires_at IS NULL OR cr.expires_at > now())) = $10)
+         ORDER BY CASE WHEN $11 THEN u.last_active_at END DESC NULLS LAST, u.created_at DESC, u.id DESC
          LIMIT $7 OFFSET $8"
-    ), 9);
+    ), 14);
     // defense in depth: the listing runs under the tenant's RLS scope (kalks_tenant role), not only `WHERE tenant_id`
     let mut tx = crate::domains::tenant_tx(&st.pool, me.tenant_id).await?;
     let rows = sqlx::query(sqlx::AssertSqlSafe(sql))
@@ -398,6 +443,11 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
         .bind(status)
         .bind(per)
         .bind(offset)
+        .bind(presence)
+        .bind(restricted)
+        .bind(by_activity)
+        .bind(crate::client_controls::ONLINE_SECS as f64)
+        .bind(crate::client_controls::AWAY_SECS as f64)
         .bind(idle_secs(Kind::Staff))
         .bind(idle_secs(Kind::User))
         .fetch_all(&mut *tx)

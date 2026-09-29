@@ -16,6 +16,7 @@ The engine executes B-book only. A/B routing is decided and recorded on every ti
 - [Admin account API](#admin-account-api)
 - [Copy trading and PAMM](#copy-trading-and-pamm)
 - [MAM (multi-account manager)](#mam-multi-account-manager)
+- [Client controls](#client-controls)
 - [Streams](#streams)
 - [How the apps integrate](#how-the-apps-integrate)
 - [Environment](#environment)
@@ -614,6 +615,18 @@ A MAM manager is an approved social master (same application, KYC and review as 
 | `POST /v1/social/admin/mam/links/{id}/stop` | `{closePositions?, note}` | `{link, result}` |
 
 MAM fees appear in `GET /v1/social/admin/fees` (`source:"mam"`, `linkId`, `perfAmount`, `mgmtAmount`) and are approved with `POST /v1/social/admin/fees/{id}/review`. Client consent and revocation are also written to `audit_log` (`social.mam.link`, `social.mam.revoke`, actor `user:<id>`).
+
+## Client controls
+
+The Back Office sets per-client restrictions in the gateway (`services/gateway/src/client_controls.rs`); the engine enforces its part (`src/controls.rs`, `src/api/controls.rs`):
+
+- **Cache.** Every active restriction is held in memory (`Shared.restrictions`), reloaded from the gateway every 10 s (`GET /v1/internal/restrictions`, `GATEWAY_URL` + `GATEWAY_INTERNAL_TOKEN`) and refreshed for one client at once by the Back Office BFF (`POST /v1/internal/restrictions/refresh {userId}`). Expiry is checked on every use. If the gateway is unreachable the last known set stays in force.
+- **`trading`**: `trade::gate` refuses every client order, modification and close with `trading_disabled` ("Trading is disabled on your account. Contact support."). Dealers still act; SL, TP and stop-out still run.
+- **`close_only`**: new exposure is refused with `close_only` ("Your account is in close-only mode: you can close positions but not open new ones."); closes, reductions and SL/TP changes pass.
+- **`login`**: terminal sign-in, SSO (the Client Area's Trade button) and every request of an existing session answer 403 `account_suspended`; the client's terminal sessions are revoked when the block arrives and open streams close with `{"type":"ended","reason":"suspended"}`.
+- **`social`**: new copy subscriptions, PAMM investments and funds, master applications, MAM links and programmes answer 422 `restricted`.
+- **Presence.** Every Kalks Trader stream of the client's own session is reported to the gateway (`POST /v1/internal/presence/trader`, every 15 s and ~1 s after a change). Staff sessions are never reported.
+- **Staff sessions ("log in as client").** `POST /v1/admin/accounts/{login}/staff-sso {userId, readOnly, minutes}` (staff headers; the BFF checked `clients.impersonate` / `clients.impersonate_full` with the gateway and audited it) returns a one-time SSO token. The session it opens is read-only unless full access was granted, lasts `minutes` (30), carries `staff` in `/v1/terminal/state` and `GET /v1/terminal/controls`, and full-access trades are recorded with the actor `staff:<id>`.
 
 ## Streams
 

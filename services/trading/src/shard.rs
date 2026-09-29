@@ -204,6 +204,8 @@ pub struct Shared {
     pub stats: Arc<Stats>,
     pub lp: Arc<dyn LpAdapter>,
     pub max_quote_age_ms: i64,
+    /// Client restrictions from the gateway (controls.rs), checked by `trade::gate` for client actions.
+    pub restrictions: Arc<crate::controls::Restrictions>,
 }
 
 /* ------------------------------------------------------------------ */
@@ -436,7 +438,7 @@ impl Shard {
     }
 
     fn env<'a>(&'a self, t: &'a crate::rules::TenantConfig, g: &'a crate::rules::Group) -> Env<'a> {
-        Env { specs: &self.sh.specs, tenant: t, group: g, quotes: self.sh.quotes.as_ref(), ids: &self.sh.ids, now: Utc::now(), max_quote_age_ms: self.sh.max_quote_age_ms }
+        Env { specs: &self.sh.specs, tenant: t, group: g, quotes: self.sh.quotes.as_ref(), ids: &self.sh.ids, now: Utc::now(), max_quote_age_ms: self.sh.max_quote_age_ms, restrictions: Some(&self.sh.restrictions) }
     }
 
     async fn open(&mut self, account: Account, credentials: (String, String), actor: &str) -> Result<Value, ExecError> {

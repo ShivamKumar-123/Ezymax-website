@@ -196,6 +196,19 @@ Deposit statuses: `pending` (submitted, not yet found on chain) → `confirming`
 - **Unknown outcome** (timeout, 5xx). The transfer stays `pending`. A recovery loop asks the engine `GET /v1/ledger/transfers/{key}` and commits, or re-sends the same idempotent request. Money is never booked twice and never lost.
 - The client's `idempotency_key` makes the request itself idempotent: the same key returns the same transfer.
 
+## Client restrictions
+
+The Back Office can restrict a client (gateway `client_controls.rs`); the wallet reads the client's effective restrictions from `GET /v1/internal/users/{id}` (`restrictions`, with `freeze` expanded) on every operation it enforces and answers 403 `restricted` with a readable message:
+
+| Restriction | Refused |
+|---|---|
+| `deposits` | `POST /v1/deposits/intents`, `POST /v1/deposits/submit` |
+| `withdrawals` | `POST /v1/withdrawals`, `POST /v1/withdrawals/quote` |
+| `transfers` | `POST /v1/wallets/{user_id}/to-trading`, `from-trading` (also the copy-trading allocations that use them) |
+| `ib` | `POST /v1/wallets/transfers` credits of kind `commission` / `ib_payout` |
+
+An unreachable gateway refuses these operations (503 `unavailable`); a replayed idempotent request still returns its stored result.
+
 ## Back Office API
 
 The service checks the role on every staff route. The admin app maps them to `finance.*` permissions (`apps/admin/lib/wallet-perms.ts`).

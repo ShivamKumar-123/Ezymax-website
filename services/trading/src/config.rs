@@ -30,6 +30,9 @@ pub struct Config {
     /// IB service (PAMM lots allocated to investors, D64).
     pub ib_url: String,
     pub ib_token: String,
+    /// Gateway (client restrictions, Kalks Trader presence; controls.rs).
+    pub gateway_url: String,
+    pub gateway_token: String,
 }
 
 /// Masks the password in a connection URL (`postgres://user:secret@host` → `postgres://user:***@host`).
@@ -70,6 +73,8 @@ impl fmt::Debug for Config {
             .field("wallet_token", &redact(&self.wallet_token))
             .field("ib_url", &redact_url(&self.ib_url))
             .field("ib_token", &redact(&self.ib_token))
+            .field("gateway_url", &redact_url(&self.gateway_url))
+            .field("gateway_token", &redact(&self.gateway_token))
             .finish()
     }
 }
@@ -107,6 +112,8 @@ impl Config {
             wallet_token: var("WALLET_INTERNAL_TOKEN", ""),
             ib_url: var("IB_URL", "http://127.0.0.1:8096"),
             ib_token: var("IB_INTERNAL_TOKEN", ""),
+            gateway_url: var("GATEWAY_URL", "http://127.0.0.1:8080"),
+            gateway_token: var("GATEWAY_INTERNAL_TOKEN", ""),
         })
     }
 }

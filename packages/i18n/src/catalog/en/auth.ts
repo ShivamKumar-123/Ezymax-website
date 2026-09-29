@@ -36,6 +36,7 @@ const auth = {
   "google.error.unverified": "Your Google account's email address isn't verified. Verify it with Google, or use your email below.",
   "google.error.conflict": "This email is already linked to a different Google account. Use that Google account, or sign in with your password.",
   "google.error.disabled": "This account is disabled. Please contact support.",
+  "google.error.suspended": "This account is suspended. Contact support.",
   "google.error.rate_limited": "Too many sign-in attempts. Please wait a few minutes and try again.",
   "google.error.unavailable": "Google sign-in is unavailable right now. Please try again shortly, or use your email.",
   "google.error.failed": "We couldn't sign you in with Google. Please try again.",
@@ -135,6 +136,7 @@ const auth = {
   // Sign-in service errors shown in the reader's language (codes and validation texts from the gateway)
   "apiError.invalid_credentials": "Incorrect email or password.",
   "apiError.account_disabled": "This account is disabled. Please contact support.",
+  "apiError.account_suspended": "This account is suspended. Contact support.",
   "apiError.email_taken": "An account with this email already exists. Sign in instead.",
   "apiError.code_expired": "This code has expired. Request a new one.",
   "apiError.unauthorized": "Please sign in.",

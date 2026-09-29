@@ -137,6 +137,7 @@ async fn copy_and_pamm_end_to_end_with_replay() {
         stats: Arc::new(Stats::default()),
         lp: Arc::new(NullLp),
         max_quote_age_ms: 0,
+        restrictions: Default::default(),
     });
     let hub = Hub::start(shared, 4, Default::default());
     set_btc(&quotes, "80000", "80020");

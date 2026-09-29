@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Card, EmptyState, PageHeader, Reveal, buttonVariants } from "@kalks/ui";
 import { ClientDetailView, ClientHeader } from "./client-detail";
+import { ClientControlsProvider, ClientControlsSection, ClientStaffActions } from "@/components/clients/client-controls";
 import { useApi } from "./kit";
 import type { ClientDetail } from "./types";
 
@@ -24,18 +25,22 @@ export function LiveClientPage() {
       </Card>
     );
   return (
-    <div className="pb-10">
-      <PageHeader title="Client profile" subtitle={data ? `Client #${id} · ${data.user.email}` : `Client #${id}`} actions={back} />
-      {data && (
-        <Reveal>
-          <Card className="mb-4 px-6 py-5">
-            <ClientHeader d={data} />
-          </Card>
+    <ClientControlsProvider id={id} name={data?.user.name ?? `Client #${id}`}>
+      <div className="pb-10">
+        <PageHeader title="Client profile" subtitle={data ? `Client #${id} · ${data.user.email}` : `Client #${id}`} actions={<><ClientStaffActions />{back}</>} />
+        {data && (
+          <Reveal>
+            <Card className="mb-4 px-6 py-5">
+              <ClientHeader d={data} />
+            </Card>
+          </Reveal>
+        )}
+        {/* presence, devices and restrictions (client-controls.tsx) */}
+        <ClientControlsSection />
+        <Reveal delay={0.05}>
+          <ClientDetailView id={id} />
         </Reveal>
-      )}
-      <Reveal delay={0.05}>
-        <ClientDetailView id={id} />
-      </Reveal>
-    </div>
+      </div>
+    </ClientControlsProvider>
   );
 }

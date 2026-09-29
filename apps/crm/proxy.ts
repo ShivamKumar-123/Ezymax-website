@@ -15,8 +15,8 @@ import { VIEWER_OUT_OF_SCOPE, VIEWER_READ_ONLY, isViewerToken, viewerApiAllowed,
 // login / register pages offer "Enter demo".
 
 const AUTH_PAGES = ["/login", "/register", "/forgot"];
-/** Public pages (no sign-in): Academy and Prop certificate verification. */
-const PUBLIC_PAGES = ["/certificate", "/verify", "/s"];
+/** Public pages (no sign-in): Academy and Prop certificate verification, the end page of a staff session. */
+const PUBLIC_PAGES = ["/certificate", "/verify", "/s", "/staff-session"];
 
 // Partner links (IB programme, services/ib): /r/CODE[/campaign] or any page with ?ref=CODE[&c=campaign].
 // The click is recorded with the IB service and the referral kept in a first-party cookie (kalks_ref), so
@@ -47,7 +47,7 @@ export async function proxy(req: NextRequest) {
     }
   }
   if (api && !open) {
-    const held = await viewerApi(req);
+    const held = (await viewerApi(req)) ?? (await staffApi(req));
     if (held) return held;
   }
   if (api || open) return NextResponse.next();
@@ -75,6 +75,44 @@ async function viewerApi(req: NextRequest): Promise<NextResponse | null> {
   if (viewerApiAllowed(scope, req.method, pathname)) return null;
   const readOnly = req.method !== "GET" && req.method !== "HEAD";
   return NextResponse.json({ error: readOnly ? VIEWER_READ_ONLY : VIEWER_OUT_OF_SCOPE }, { status: 403, headers: { "cache-control": "no-store" } });
+}
+
+// Staff sessions (Back Office "Log in as client", gateway client_controls.rs): read-only ones are held to read
+// requests before any BFF runs (the gateway refuses their changes too); every change a staff session makes or is
+// refused is reported to the gateway, which audits it with the staff id.
+const STAFF_READ_ONLY_PREFIX = "i.";
+const STAFF_FULL_PREFIX = "s.";
+/** Changes a read-only staff session may still make: sign out / end the staff session, presence heartbeat. */
+const STAFF_ALWAYS_POST = ["/api/auth/logout", "/api/auth/heartbeat", "/api/auth/impersonation"];
+
+function staffToken(req: NextRequest): { token: string; readOnly: boolean } | null {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  if (!token) return null;
+  if (token.startsWith(STAFF_READ_ONLY_PREFIX)) return { token, readOnly: true };
+  if (token.startsWith(STAFF_FULL_PREFIX)) return { token, readOnly: false };
+  return null;
+}
+
+async function staffEvent(req: NextRequest, token: string, kind: "action" | "write_refused" | "page_view", status?: number) {
+  await gateway("/v1/auth/impersonation/event", {
+    body: { kind, method: req.method, path: req.nextUrl.pathname, status },
+    token,
+    ip: clientIp(req.headers),
+    userAgent: req.headers.get("user-agent"),
+  }).catch(() => null);
+}
+
+async function staffApi(req: NextRequest): Promise<NextResponse | null> {
+  const s = staffToken(req);
+  if (!s || req.method === "GET" || req.method === "HEAD") return null;
+  const { pathname } = req.nextUrl;
+  if (STAFF_ALWAYS_POST.includes(pathname) || pathname === "/api/security/viewer-activity") return null;
+  if (s.readOnly) {
+    await staffEvent(req, s.token, "write_refused", 403);
+    return NextResponse.json({ error: { code: "staff_read_only", message: "This is a read-only staff session. Changes are not allowed." } }, { status: 403, headers: { "cache-control": "no-store" } });
+  }
+  await staffEvent(req, s.token, "action");
+  return null;
 }
 
 async function routes(req: NextRequest) {
@@ -128,6 +166,9 @@ async function gate(req: NextRequest): Promise<NextResponse> {
     if (pathname !== "/") url.searchParams.set("next", pathname + search);
     return NextResponse.redirect(url);
   }
+  // pages a staff member opens as the client are audited (at most once per page every 5 minutes)
+  const staff = staffToken(req);
+  if (staff) await staffEvent(req, staff.token, "page_view");
   // view-only sessions only see the sections they were given
   if (isViewerToken(token)) {
     const scope = await viewerScope(req);

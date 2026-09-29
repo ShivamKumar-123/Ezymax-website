@@ -69,6 +69,7 @@ async fn main() -> anyhow::Result<()> {
         stats: Arc::new(Stats::default()),
         lp: Arc::new(NullLp),
         max_quote_age_ms: cfg.max_quote_age_ms,
+        restrictions: Default::default(),
     });
     let hub = Hub::start(shared, cfg.shards, states);
     feed::spawn(hub.clone(), cfg.market_data_ws.clone(), specs.symbols());
@@ -88,7 +89,11 @@ async fn main() -> anyhow::Result<()> {
         logins,
         open_lock: Arc::new(tokio::sync::Mutex::new(())),
         social,
+        presence: Arc::new(trading::controls::Presence::default()),
+        gateway: Arc::new(trading::controls::Gateway::new(&cfg.gateway_url, &cfg.gateway_token)),
     };
+    // client controls: restrictions cache from the gateway, Kalks Trader presence reports (controls.rs)
+    trading::controls::spawn(hub.clone(), pool.clone(), st.gateway.clone(), st.presence.clone());
     let _ = trading::auth::dummy_hash();
 
     if cfg.rollover_enabled {

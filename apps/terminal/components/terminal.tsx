@@ -20,6 +20,7 @@ import { PendingDialog, PositionDialog } from "./dialogs/position-dialog";
 import { AboutDialog, ShortcutsDialog, SpecDialog, SymbolSearch } from "./dialogs/misc-dialogs";
 import { IndicatorDialogs } from "./chart/indicators/dialogs";
 import { ShareLayer } from "./share/share-dialogs";
+import { ControlsBanner } from "./shell/controls-banner";
 
 function useIsMobile() {
   const [m, setM] = React.useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches);
@@ -170,7 +171,11 @@ function Shell({ intent }: { intent: { symbol: string | null; side: string | nul
   }, []);
   return (
     <>
-      {mobile ? <MobileTerminal /> : <DesktopTerminal />}
+      {/* staff session / account restrictions banner above the terminal (shell/controls-banner.tsx) */}
+      <div className="flex h-dvh flex-col">
+        <ControlsBanner />
+        <div className="min-h-0 flex-1 [&>div]:h-full">{mobile ? <MobileTerminal /> : <DesktopTerminal />}</div>
+      </div>
       <NewOrderDialog />
       <PositionDialog />
       <PendingDialog />

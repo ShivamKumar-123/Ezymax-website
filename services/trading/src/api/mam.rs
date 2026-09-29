@@ -113,6 +113,7 @@ fn own_link(st: &AppState, ctx: &Ctx, u: i64, id: i64) -> ApiResult<Link> {
 
 pub async fn create_link(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Body(b): Body<Map<String, Value>>) -> ApiResult<Json<Value>> {
     let u = user(&h)?;
+    super::controls::social_gate(&st, u)?;
     let manager = b.get("managerId").and_then(Value::as_i64).ok_or(ApiError::Validation { field: "managerId", message: "Choose a MAM programme".into() })?;
     let login = b.get("login").and_then(Value::as_i64).ok_or(ApiError::Validation { field: "login", message: "Choose the account to link".into() })?;
     if b.get("accept").and_then(Value::as_bool) != Some(true) {
@@ -257,6 +258,7 @@ fn text_field(b: &Map<String, Value>, k: &'static str, min: usize, max: usize, l
 
 pub async fn create_manager(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Body(b): Body<Map<String, Value>>) -> ApiResult<Json<Value>> {
     let u = user(&h)?;
+    super::controls::social_gate(&st, u)?;
     let tenant = ctx.tenant.tenant_id;
     let master = master_of_user(&st, tenant, u).filter(|m| m.status == "approved").ok_or_else(|| bad("not_master", "Only approved masters can run a MAM programme. Apply as a master first (Social → Become a master)."))?;
     let name = text_field(&b, "name", 3, 60, "Programme name")?.ok_or(ApiError::Validation { field: "name", message: "Enter a programme name".into() })?;

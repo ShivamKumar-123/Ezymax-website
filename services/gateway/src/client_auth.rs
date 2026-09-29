@@ -359,7 +359,10 @@ pub async fn logout(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Valu
     if let Some(token) = ctx.bearer.as_deref()
         && let Some((tenant_id, user_id)) = identity::revoke_token(&st, token, K).await?
     {
-        let entry = if token.starts_with(identity::VIEWER_TOKEN_PREFIX) {
+        let staff = crate::client_controls::logout_entry(&st, token).await?;
+        let entry = if let Some((sid, _, _, staff_id)) = staff {
+            Entry { tenant_id, actor_kind: "staff", actor_id: Some(staff_id), action: "client.impersonation_ended", target: Some(("user", user_id)), meta: json!({ "session_id": sid, "via": "ended", "app": "client_area" }) }
+        } else if token.starts_with(identity::VIEWER_TOKEN_PREFIX) {
             let vid: Option<i64> = sqlx::query_scalar("SELECT viewer_id FROM sessions WHERE token_hash = $1").bind(st.keys.hash("session", token)).fetch_optional(&st.pool).await?.flatten();
             Entry { tenant_id, actor_kind: "viewer", actor_id: vid, action: "viewer.logout", target: Some(("user", user_id)), meta: json!({}) }
         } else {
@@ -376,14 +379,21 @@ pub async fn me(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value>> 
     let s = identity::resolve_session_any(&st, &ctx, K).await?;
     let idle: i32 = sqlx::query_scalar("SELECT client_idle_minutes FROM tenants WHERE id = $1").bind(s.tenant_id).fetch_one(&st.pool).await?;
     let session = json!({ "id": s.session_id, "expires_at": s.expires_at, "tenant_id": s.tenant_id, "idle_minutes": idle });
-    match s.viewer_id {
-        Some(v) => Ok(Json(json!({
-            "user": crate::client_security::viewer_user_json(&st, s.subject_id).await?,
-            "viewer": crate::client_security::viewer_scope(&st, v).await?,
-            "session": session,
-        }))),
-        None => Ok(Json(json!({ "user": user_json(&st, s.subject_id).await?, "viewer": null, "session": session }))),
-    }
+    // restrictions (banner) and, for a staff session, who opened it (client_controls.rs); also inside `user` so
+    // the apps' cached session record carries them
+    let (restrictions, impersonation) = crate::client_controls::me_extras(&st, &s).await?;
+    let mut user = match s.viewer_id {
+        Some(_) => crate::client_security::viewer_user_json(&st, s.subject_id).await?,
+        None => user_json(&st, s.subject_id).await?,
+    };
+    user["restrictions"] = restrictions["restrictions"].clone();
+    user["restricted"] = restrictions["restricted"].clone();
+    user["impersonation"] = impersonation.clone();
+    let viewer = match s.viewer_id {
+        Some(v) => crate::client_security::viewer_scope(&st, v).await?,
+        None => Value::Null,
+    };
+    Ok(Json(json!({ "user": user, "viewer": viewer, "session": session, "impersonation": impersonation })))
 }
 
 // ---------- password reset ----------

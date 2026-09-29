@@ -100,6 +100,13 @@ pub fn gate(env: &Env, st: &AccountState, symbol: &str, opening: bool, volume: D
     let acc = &st.account;
     let c = &acc.controls;
     let login = acc.login;
+    // client restrictions set in the Back Office (controls.rs): the client can't trade / open; dealers still can
+    if dealer.is_none()
+        && let Some(r) = env.restrictions
+        && let Some(rej) = crate::controls::trading_reject(r, acc.user_id, opening, env.now)
+    {
+        return Err(rej);
+    }
     if opening {
         match acc.status {
             Status::Active => {}
@@ -782,6 +789,12 @@ pub fn modify_position(tx: &mut Tx, env: &Env, ticket: i64, patch: PositionPatch
         match tx.st.account.status {
             Status::Active | Status::CloseOnly => {}
             s => return Err(Reject::new("account_status", format!("Account {} is {} — trading not allowed", tx.st.account.login, s.as_str()))),
+        }
+        // trading disabled in the Back Office: SL / TP can't change either (close-only still may)
+        if let Some(r) = env.restrictions
+            && let Some(rej) = crate::controls::trading_reject(r, tx.st.account.user_id, false, env.now)
+        {
+            return Err(rej);
         }
     }
     let q = env.live_quote(&tx.st.account, &p.symbol)?;

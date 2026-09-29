@@ -25,6 +25,7 @@ import { SupportLauncher } from "@/components/support/launcher";
 import { KYC_CHIP, logout, useSession } from "@/components/session";
 import { SessionGuard, ViewerBar, navForViewer } from "@/components/security/session-guard";
 import { viewerPageAllowed } from "@/lib/viewer";
+import { AccountNotices } from "@/components/account-notices";
 
 /** The shared rail's sign-out icon is a plain link to /login; turn it into a real sign-out. */
 function onRailSignOut(e: React.MouseEvent) {
@@ -136,6 +137,8 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
         }
       >
         <MarketBoundary>
+          {/* staff session banner, account restrictions, presence heartbeat */}
+          <AccountNotices />
           {viewer && <ViewerBar viewer={viewer} owner={me.name} />}
           <LiveGate>{children}</LiveGate>
         </MarketBoundary>

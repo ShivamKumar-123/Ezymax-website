@@ -75,6 +75,10 @@ pub async fn transfer(st: &AppState, tenant_id: i64, actor: &str, key_ns: &str, 
     if let Some(v) = replay(st, tenant_id, &full_key, &fingerprint).await? {
         return Ok(v);
     }
+    // IB commissions and payouts on hold for this partner (client restrictions set in the Back Office)
+    if credit && matches!(r.kind.as_str(), "commission" | "ib_payout") {
+        crate::users::gate(st, &st.tenants.slug_of(tenant_id).unwrap_or_else(|| "kalks".into()), r.user_id, "ib").await?;
+    }
 
     let ccy = r.currency.clone();
     let signed = if credit { amount } else { -amount };

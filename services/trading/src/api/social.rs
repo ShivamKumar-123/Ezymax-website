@@ -210,6 +210,7 @@ fn check_nickname(n: &str) -> ApiResult<String> {
 
 pub async fn master_apply(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Body(r): Body<ApplyReq>) -> ApiResult<Json<Value>> {
     let u = user(&h)?;
+    super::controls::social_gate(&st, u)?;
     let so = social(&st);
     let tenant = ctx.tenant.tenant_id;
     if let Some(m) = master_of_user(&st, tenant, u)
@@ -435,6 +436,7 @@ async fn sub_view(st: &AppState, s: &crate::social::Sub) -> Value {
 
 pub async fn subscribe(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Body(b): Body<Map<String, Value>>) -> ApiResult<Json<Value>> {
     let u = user(&h)?;
+    super::controls::social_gate(&st, u)?;
     let so = social(&st);
     let tenant = ctx.tenant.tenant_id;
     let master_id = b.get("masterId").and_then(Value::as_i64).ok_or(ApiError::Validation { field: "masterId", message: "masterId is required".into() })?;
@@ -608,6 +610,7 @@ pub async fn fund(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Path(id): 
 
 pub async fn create_fund(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Body(b): Body<Map<String, Value>>) -> ApiResult<Json<Value>> {
     let u = user(&h)?;
+    super::controls::social_gate(&st, u)?;
     let m = master_of_user(&st, ctx.tenant.tenant_id, u).filter(|m| m.status == "approved").ok_or_else(|| bad("not_master", "Only approved masters can open a PAMM fund"))?;
     if m.program == "copy" {
         return Err(bad("master_status", "Your master profile offers copy trading only. Change the program to PAMM or both first."));
@@ -681,6 +684,7 @@ pub async fn update_fund(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Pat
 
 pub async fn invest(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Path(id): Path<i64>, Body(b): Body<Map<String, Value>>) -> ApiResult<Json<Value>> {
     let u = user(&h)?;
+    super::controls::social_gate(&st, u)?;
     st.social.fund(id).filter(|f| f.tenant_id == ctx.tenant.tenant_id).ok_or_else(|| ApiError::NotFound("Fund not found".into()))?;
     let amount = dec(b.get("amount"), "amount")?.ok_or(ApiError::Validation { field: "amount", message: "Enter the amount".into() })?;
     let sl = dec(b.get("stopLossPct"), "stopLossPct")?;

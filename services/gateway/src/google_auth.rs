@@ -150,21 +150,21 @@ pub async fn google(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Googl
     crate::tenancy::require_feature(&st, tenant_id, "google_login").await?;
 
     // 1. Google account already linked.
-    let linked = sqlx::query("SELECT id, status = 'active' AS active FROM users WHERE tenant_id = $1 AND google_sub = $2")
+    let linked = sqlx::query("SELECT id, status = 'active' AS active, status FROM users WHERE tenant_id = $1 AND google_sub = $2")
         .bind(tenant_id)
         .bind(&sub)
         .fetch_optional(&st.pool)
         .await?;
     if let Some(row) = linked {
         if !row.get::<bool, _>("active") {
-            return Err(ApiError::AccountDisabled);
+            return Err(crate::client_controls::inactive_error(row.get("status")));
         }
         return Ok(Json(google_sign_in(&st, &ctx, tenant_id, row.get("id")).await?));
     }
 
     // 2. Existing account with the same (Google-verified) email: link it.
     let existing = sqlx::query(
-        "SELECT id, google_sub, status = 'active' AS active, email_verified_at IS NULL AS unverified, first_name
+        "SELECT id, google_sub, status = 'active' AS active, status, email_verified_at IS NULL AS unverified, first_name
          FROM users WHERE tenant_id = $1 AND email = $2",
     )
     .bind(tenant_id)
@@ -177,7 +177,7 @@ pub async fn google(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Googl
             return Err(CONFLICT);
         }
         if !row.get::<bool, _>("active") {
-            return Err(ApiError::AccountDisabled);
+            return Err(crate::client_controls::inactive_error(row.get("status")));
         }
         // An unverified account may have been opened by someone else with this address. Google has just
         // proven who owns the mailbox, so that password and any sessions/devices are dropped

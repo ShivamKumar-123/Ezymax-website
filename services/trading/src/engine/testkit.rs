@@ -62,6 +62,7 @@ pub struct Kit {
     pub quotes: MapQuotes,
     pub ids: Ids,
     pub now: DateTime<Utc>,
+    pub restrictions: crate::controls::Restrictions,
 }
 
 impl Kit {
@@ -77,7 +78,7 @@ impl Kit {
         ecn.commission_per_lot = d("7");
         tenant.groups.insert("ecn".into(), ecn);
         // Monday 2026-09-28 12:00 UTC: FX open
-        Self { specs: crate::specs::test_specs(), tenant, quotes: MapQuotes::default(), ids: Ids::new(1000, 5000, 9000), now: t("2026-09-28T12:00:00Z") }
+        Self { specs: crate::specs::test_specs(), tenant, quotes: MapQuotes::default(), ids: Ids::new(1000, 5000, 9000), now: t("2026-09-28T12:00:00Z"), restrictions: Default::default() }
     }
 
     pub fn quote(&self, symbol: &str, bid: &str, ask: &str) {
@@ -85,7 +86,7 @@ impl Kit {
     }
 
     pub fn env<'a>(&'a self, st: &AccountState) -> Env<'a> {
-        Env { specs: &self.specs, tenant: &self.tenant, group: &self.tenant.groups[&st.account.group], quotes: &self.quotes, ids: &self.ids, now: self.now, max_quote_age_ms: 0 }
+        Env { specs: &self.specs, tenant: &self.tenant, group: &self.tenant.groups[&st.account.group], quotes: &self.quotes, ids: &self.ids, now: self.now, max_quote_age_ms: 0, restrictions: Some(&self.restrictions) }
     }
 
     pub fn account(&self, login: i64, group: &str, kind: AccountKind) -> Account {

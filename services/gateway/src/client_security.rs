@@ -137,6 +137,8 @@ fn login_result(action: &str, meta: &Value) -> Option<&'static str> {
         "user.password_reset" => "password_reset",
         "user.session_revoked" | "user.sessions_revoked" => "signed_out_device",
         "admin.session_revoked" | "admin.sessions_revoked" => "signed_out_by_staff",
+        // a staff member opened the account from the Back Office (client_controls.rs)
+        "client.impersonation_started" => "staff_access",
         _ => return None,
     })
 }
@@ -155,7 +157,7 @@ pub async fn logins(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Valu
     .bind(
         [
             "user.login", "user.login_challenge", "user.login_failed", "user.locked", "user.logout", "user.password_reset",
-            "user.session_revoked", "user.sessions_revoked", "admin.session_revoked", "admin.sessions_revoked",
+            "user.session_revoked", "user.sessions_revoked", "admin.session_revoked", "admin.sessions_revoked", "client.impersonation_started",
         ]
         .map(String::from)
         .to_vec(),
@@ -168,13 +170,16 @@ pub async fn logins(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Valu
             let action: String = r.get("action");
             let meta: Value = r.get::<sqlx::types::Json<Value>, _>("meta").0;
             let result = login_result(&action, &meta)?;
+            // staff access: the broker's support, never the staff member's own network details
+            let staff = result == "staff_access";
             Some(json!({
                 "id": r.get::<i64, _>("id"),
                 "at": r.get::<DateTime<Utc>, _>("created_at"),
                 "result": result,
-                "ip": r.get::<Option<String>, _>("ip"),
-                "user_agent": r.get::<Option<String>, _>("user_agent"),
-                "country": meta["country"].as_str(),
+                "ip": if staff { None } else { r.get::<Option<String>, _>("ip") },
+                "user_agent": if staff { None } else { r.get::<Option<String>, _>("user_agent") },
+                "country": if staff { None } else { meta["country"].as_str() },
+                "app": if staff { meta["app"].as_str() } else { None },
             }))
         })
         .collect();

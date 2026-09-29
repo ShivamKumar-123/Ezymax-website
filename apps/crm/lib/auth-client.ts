@@ -55,6 +55,7 @@ export function localizeError(e: ApiError): ApiError {
   switch (e.code) {
     case "invalid_credentials":
     case "account_disabled":
+    case "account_suspended":
     case "email_taken":
     case "code_expired":
     case "unauthorized":

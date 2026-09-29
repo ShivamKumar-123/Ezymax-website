@@ -130,6 +130,7 @@ async fn mam_link_allocate_close_fee_revoke_with_replay() {
         stats: Arc::new(Stats::default()),
         lp: Arc::new(NullLp),
         max_quote_age_ms: 0,
+        restrictions: Default::default(),
     });
     let hub = Hub::start(shared, 4, Default::default());
     set_btc(&quotes, "80000", "80000");

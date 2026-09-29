@@ -58,6 +58,10 @@ pub const PERMS: &[PermDef] = &[
     PermDef { key: "clients.read", module: "clients", action: "view", label: "View clients" },
     PermDef { key: "clients.write", module: "clients", action: "edit", label: "Edit and block clients" },
     PermDef { key: "clients.export", module: "clients", action: "export", label: "Export clients" },
+    PermDef { key: "clients.restrict", module: "clients", action: "edit", label: "Restrict clients (trading, funding, transfers, IB, copy)" },
+    PermDef { key: "clients.block", module: "clients", action: "approve", label: "Block and unblock client sign-in" },
+    PermDef { key: "clients.impersonate", module: "clients", action: "create", label: "Open the Client Area as the client (read-only)" },
+    PermDef { key: "clients.impersonate_full", module: "clients", action: "approve", label: "Full-access staff sessions as the client (Super Admin only)" },
     PermDef { key: "kyc.read", module: "kyc", action: "view", label: "View KYC cases and documents" },
     PermDef { key: "kyc.review", module: "kyc", action: "approve", label: "Approve / reject KYC" },
     PermDef { key: "dealing.read", module: "dealing", action: "view", label: "View positions, orders, routing" },
@@ -215,7 +219,7 @@ pub fn preset_perms(key: &str) -> Option<Vec<&'static str>> {
             "marketing.read", "marketing.approve", "reports.read", "reports.export",
         ],
         "compliance" => vec![
-            "stats.read", "clients.read", "clients.export", "kyc.read", "kyc.review", "audit.read", "audit.export", "sessions.read", "spreads.read",
+            "stats.read", "clients.read", "clients.export", "clients.restrict", "clients.block", "clients.impersonate", "kyc.read", "kyc.review", "audit.read", "audit.export", "sessions.read", "spreads.read",
             "dealing.read", "accounts.read", "finance.read", "partners.read", "social.read", "social.approve", "prop.read", "algo.read",
             "content.read", "marketing.read", "support.read", "reports.read",
         ],
@@ -232,13 +236,18 @@ pub fn preset_perms(key: &str) -> Option<Vec<&'static str>> {
     Some(v)
 }
 
+/// Permissions only the system roles (Super Admin, Platform Owner) hold: a preset (edited or not) or a custom role
+/// never gets them, whatever is stored.
+pub const SUPER_ADMIN_ONLY: &[&str] = &["clients.impersonate_full"];
+
 /// Effective permissions of a stored role row.
 pub fn effective(kind: &str, key: &str, customised: bool, stored: &[String]) -> Vec<String> {
     let from_code = |k: &str| preset_perms(k).map(|v| v.into_iter().map(str::to_string).collect::<Vec<_>>());
+    let system_only = |k: &String| SUPER_ADMIN_ONLY.contains(&k.as_str());
     match kind {
         "system" => from_code(key).unwrap_or_default(),
-        "preset" if !customised => from_code(key).unwrap_or_else(|| stored.to_vec()),
-        _ => stored.iter().filter(|k| perm(k).is_some() && !is_owner_perm(k)).cloned().collect(),
+        "preset" if !customised => from_code(key).unwrap_or_else(|| stored.to_vec()).into_iter().filter(|k| !system_only(k)).collect(),
+        _ => stored.iter().filter(|k| perm(k).is_some() && !is_owner_perm(k) && !system_only(k)).cloned().collect(),
     }
 }
 
@@ -429,6 +438,9 @@ mod tests {
         let has = |r: &str, k: &str| preset_perms(r).unwrap().contains(&k);
         assert!(has("dealer", "dealing.write") && !has("dealer", "finance.read") && !has("dealer", "kyc.read"));
         assert!(has("compliance", "kyc.review") && has("compliance", "social.approve") && !has("compliance", "sessions.revoke"));
+        // client controls: Compliance restricts, blocks and opens read-only staff sessions
+        assert!(has("compliance", "clients.restrict") && has("compliance", "clients.block") && has("compliance", "clients.impersonate"));
+        assert!(!has("compliance", "clients.impersonate_full") && !has("support", "clients.block") && has("super_admin", "clients.block"));
         assert!(has("finance", "finance.approve") && has("finance", "partners.approve") && !has("finance", "finance.settings"));
         assert!(!has("admin", "owner.tenants") && has("platform_owner", "owner.tenants"));
         assert!(has("marketing", "content.write") && !has("marketing", "clients.read"));
@@ -451,6 +463,12 @@ mod tests {
         let custom = vec!["kyc.read".to_string(), "owner.tenants".to_string(), "nope".to_string()];
         assert_eq!(effective("custom", "c-x", false, &custom), vec!["kyc.read"]);
         assert_eq!(effective("preset", "dealer", true, &["kyc.read".into()]), vec!["kyc.read"]);
+        // full-access staff sessions: Super Admin and Platform Owner only, never a preset or custom role
+        let full = "clients.impersonate_full".to_string();
+        assert!(effective("system", "super_admin", false, &[]).contains(&full) && effective("system", "platform_owner", false, &[]).contains(&full));
+        assert!(!effective("preset", "admin", false, &[]).contains(&full) && effective("preset", "admin", false, &[]).contains(&"clients.impersonate".to_string()));
+        assert!(!effective("preset", "admin", true, &[full.clone()]).contains(&full));
+        assert_eq!(effective("custom", "c-x", false, &[full.clone(), "clients.impersonate".into()]), vec!["clients.impersonate"]);
         assert!(effective("preset", "dealer", false, &[]).contains(&"dealing.write".to_string()));
     }
 

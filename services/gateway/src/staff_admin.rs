@@ -571,6 +571,9 @@ fn checked_perms(me: &Staff, raw: &[String]) -> ApiResult<Vec<String>> {
     if perms.iter().any(|p| rbac::is_owner_perm(p)) {
         return Err(denied("Platform owner permissions can't be given to a role."));
     }
+    if perms.iter().any(|p| rbac::SUPER_ADMIN_ONLY.contains(&p.as_str())) {
+        return Err(denied("Full-access staff sessions stay with the Super Admin; give the read-only one instead."));
+    }
     if !subset(&perms, &me.perms) {
         return Err(denied("You can only grant permissions you hold yourself."));
     }

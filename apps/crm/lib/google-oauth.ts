@@ -270,6 +270,7 @@ const GATEWAY_ERRORS: Record<string, string> = {
   google_unverified: "unverified",
   google_conflict: "conflict",
   account_disabled: "disabled",
+  account_suspended: "suspended",
   rate_limited: "rate_limited",
   unavailable: "unavailable",
 };

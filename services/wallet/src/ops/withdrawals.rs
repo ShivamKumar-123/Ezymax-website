@@ -164,6 +164,10 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
     if user.status != "active" {
         return Err(ApiError::Coded { status: axum::http::StatusCode::FORBIDDEN, code: "account_disabled", message: "Your account can't withdraw. Contact support.".into() });
     }
+    // withdrawals disabled in the Back Office (client restrictions)
+    if user.restrictions.iter().any(|k| k == "withdrawals") {
+        return Err(crate::users::restricted("withdrawals"));
+    }
     if user.kyc_status != "verified" {
         return Err(ApiError::Coded { status: axum::http::StatusCode::FORBIDDEN, code: "kyc_required", message: "Verify your identity before your first withdrawal.".into() });
     }

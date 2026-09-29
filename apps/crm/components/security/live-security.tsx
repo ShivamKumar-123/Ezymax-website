@@ -49,6 +49,7 @@ const RESULT: Record<string, { tone: ChipTone }> = {
   password_reset: { tone: "warn" },
   signed_out_device: { tone: "neutral" },
   signed_out_by_staff: { tone: "warn" },
+  staff_access: { tone: "info" },
 };
 
 function ErrorLine({ error, onRetry }: { error: SecError; onRetry: () => void }) {
@@ -208,8 +209,9 @@ function SessionsCard({ page, error, reload }: { page: SessionsPage | null; erro
 
 function LoginHistory() {
   const t = useT();
+  const broker = useSession().tenant.name;
   const { data, error, reload } = useSec<{ items: LoginRow[] }>("logins");
-  const resultLabel = (r: string) => (RESULT[r] ? t.dyn(`security.result.${r}`, r) : r);
+  const resultLabel = (r: string) => (RESULT[r] ? t.dyn(`security.result.${r}`, r, { broker }) : r);
   const cols: Column<LoginRow>[] = [
     { key: "at", header: t("security.col.time"), sort: (r) => r.at, csv: (r) => r.at, cell: (r) => <span className="k-num whitespace-nowrap text-fg-2">{when(r.at, true)}</span> },
     {

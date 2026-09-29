@@ -27,6 +27,11 @@ pub struct Session {
     pub login: i64,
     pub tenant_id: i64,
     pub read_only: bool,
+    /// The account owner (gateway user id).
+    pub user_id: i64,
+    /// A staff member acting as the client from the Back Office (id, name); trades are recorded as `staff:<id>`.
+    pub staff: Option<(i64, String)>,
+    pub expires_at: DateTime<Utc>,
 }
 
 impl Session {
@@ -40,23 +45,35 @@ pub async fn session(st: &AppState, ctx: &Ctx) -> ApiResult<Session> {
     let h = st.keys.hash("terminal-session", token);
     let r = sqlx::query(
         "UPDATE terminal_sessions SET last_seen_at = now() WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > now()
-         RETURNING login, tenant_id, read_only",
+         RETURNING login, tenant_id, read_only, staff_id, staff_name, expires_at",
     )
     .bind(&h)
     .fetch_optional(&st.pool)
     .await?
     .ok_or(ApiError::Unauthorized)?;
-    let s = Session { login: r.get("login"), tenant_id: r.get("tenant_id"), read_only: r.get("read_only") };
+    let login: i64 = r.get("login");
+    let staff = r.get::<Option<i64>, _>("staff_id").map(|id| (id, r.get::<Option<String>, _>("staff_name").unwrap_or_else(|| format!("Staff {id}"))));
+    let user_id = st.hub.meta(login).map(|m| m.user_id).unwrap_or(0);
+    let s = Session { login, tenant_id: r.get("tenant_id"), read_only: r.get("read_only"), user_id, staff, expires_at: r.get("expires_at") };
     if s.tenant_id != ctx.tenant.tenant_id {
         return Err(ApiError::Unauthorized);
     }
+    // sign-in blocked in the Back Office: every terminal session stops at once (controls.rs)
+    super::controls::login_gate(st, login)?;
     Ok(s)
 }
 
 async fn create_session(st: &AppState, ctx: &Ctx, login: i64, read_only: bool, via: &str) -> ApiResult<Value> {
+    create_session_as(st, ctx, login, read_only, via, None, None).await
+}
+
+/// `staff` = a staff member acting as the client (Back Office), for `minutes` instead of the normal lifetime.
+async fn create_session_as(st: &AppState, ctx: &Ctx, login: i64, read_only: bool, via: &str, staff: Option<(i64, String)>, minutes: Option<i64>) -> ApiResult<Value> {
+    super::controls::login_gate(st, login)?;
     let token = auth::random_token(32);
-    let expires: DateTime<Utc> = Utc::now() + Duration::hours(st.cfg.session_ttl_hours);
-    sqlx::query("INSERT INTO terminal_sessions (tenant_id, login, token_hash, read_only, via, ip, user_agent, expires_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)")
+    let expires: DateTime<Utc> = Utc::now() + minutes.map(Duration::minutes).unwrap_or_else(|| Duration::hours(st.cfg.session_ttl_hours));
+    let (staff_id, staff_name) = staff.map(|(i, n)| (Some(i), Some(n))).unwrap_or((None, None));
+    sqlx::query("INSERT INTO terminal_sessions (tenant_id, login, token_hash, read_only, via, ip, user_agent, expires_at, staff_id, staff_name) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)")
         .bind(ctx.tenant.tenant_id)
         .bind(login)
         .bind(st.keys.hash("terminal-session", &token))
@@ -65,12 +82,16 @@ async fn create_session(st: &AppState, ctx: &Ctx, login: i64, read_only: bool, v
         .bind(&ctx.ip)
         .bind(&ctx.user_agent)
         .bind(expires)
+        .bind(staff_id)
+        .bind(&staff_name)
         .execute(&st.pool)
         .await?;
-    sqlx::query("UPDATE accounts SET last_activity_at = now() WHERE login = $1").bind(login).execute(&st.pool).await?;
+    if staff_id.is_none() {
+        sqlx::query("UPDATE accounts SET last_activity_at = now() WHERE login = $1").bind(login).execute(&st.pool).await?;
+    }
     let account = account_view(st, login).await;
-    tracing::info!(login, read_only, via, ip = %ctx.ip, "terminal login");
-    Ok(json!({"token": token, "expiresAt": expires, "readOnly": read_only, "account": account}))
+    tracing::info!(login, read_only, via, staff = staff_id, ip = %ctx.ip, "terminal login");
+    Ok(json!({"token": token, "expiresAt": expires, "readOnly": read_only, "account": account, "staff": staff_id.map(|i| json!({"id": i, "name": staff_name}))}))
 }
 
 pub async fn account_view(st: &AppState, login: i64) -> Value {
@@ -127,6 +148,7 @@ pub async fn login(State(st): State<AppState>, ctx: Ctx, Body(r): Body<LoginReq>
     if row.get::<String, _>("status") == Status::Expired.as_str() {
         return Err(ApiError::Forbidden("This demo account has expired.".into()));
     }
+    super::controls::login_gate(&st, r.login)?;
     sqlx::query("UPDATE account_credentials SET failed_logins = 0, locked_until = NULL WHERE login = $1").bind(r.login).execute(&st.pool).await?;
     st.limiter.clear(&format!("tlogin:login:{}", r.login));
     Ok(Json(create_session(&st, &ctx, r.login, is_investor, if is_investor { "investor_password" } else { "password" }).await?))
@@ -144,13 +166,21 @@ pub struct SsoReq {
 /// Redeems a one-time SSO token minted by `POST /v1/accounts/{login}/sso` (CRM "Trade" button).
 pub async fn sso(State(st): State<AppState>, ctx: Ctx, Body(r): Body<SsoReq>) -> ApiResult<Json<Value>> {
     st.limiter.hit(&format!("tsso:ip:{}", ctx.ip), 60, StdDuration::from_secs(300)).map_err(ApiError::RateLimited)?;
-    let row = sqlx::query("UPDATE sso_tokens SET used_at = now() WHERE token_hash = $1 AND tenant_id = $2 AND used_at IS NULL AND expires_at > now() RETURNING login")
-        .bind(st.keys.hash("sso", r.token.trim()))
-        .bind(ctx.tenant.tenant_id)
-        .fetch_optional(&st.pool)
-        .await?
-        .ok_or(ApiError::Unauthorized)?;
-    Ok(Json(create_session(&st, &ctx, row.get("login"), false, "sso").await?))
+    let row = sqlx::query(
+        "UPDATE sso_tokens SET used_at = now() WHERE token_hash = $1 AND tenant_id = $2 AND used_at IS NULL AND expires_at > now()
+         RETURNING login, staff_id, staff_name, read_only, minutes",
+    )
+    .bind(st.keys.hash("sso", r.token.trim()))
+    .bind(ctx.tenant.tenant_id)
+    .fetch_optional(&st.pool)
+    .await?
+    .ok_or(ApiError::Unauthorized)?;
+    // a staff session opened from the Back Office (controls.rs): read-only unless full access was granted, 30 min
+    let staff = row.get::<Option<i64>, _>("staff_id").map(|id| (id, row.get::<Option<String>, _>("staff_name").unwrap_or_default()));
+    let read_only = staff.is_some() && row.get::<bool, _>("read_only");
+    let minutes = row.get::<Option<i32>, _>("minutes").map(i64::from);
+    let via = if staff.is_some() { "staff_sso" } else { "sso" };
+    Ok(Json(create_session_as(&st, &ctx, row.get("login"), read_only, via, staff, minutes).await?))
 }
 
 pub async fn logout(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value>> {
@@ -194,6 +224,10 @@ pub async fn state(State(st): State<AppState>, ctx: Ctx, Query(q): Query<StateQ>
     v["history"] = json!({"deals": deals});
     v["readOnly"] = json!(s.read_only);
     v["serverTime"] = json!(Utc::now());
+    // client controls: what the Back Office restricted, and the staff banner (controls.rs)
+    v["restrictions"] = json!(st.hub.shared.restrictions.kinds(s.user_id, Utc::now()));
+    v["staff"] = json!(s.staff.as_ref().map(|(id, name)| json!({"id": id, "name": name})));
+    v["expiresAt"] = json!(s.expires_at);
     Ok(Json(v))
 }
 
@@ -406,7 +440,12 @@ async fn mam_guard(st: &AppState, s: &Session, tickets: Vec<i64>, bulk: bool) ->
 }
 
 async fn run(st: &AppState, s: &Session, op: Op) -> ApiResult<Value> {
-    let done = st.hub.exec(s.login, "client", None, "", "", None, op).await?;
+    // a staff member acting as the client (full access) is recorded as such in the event stream
+    let actor = match &s.staff {
+        Some((id, _)) => format!("staff:{id}"),
+        None => "client".to_string(),
+    };
+    let done = st.hub.exec(s.login, &actor, None, "", "", None, op).await?;
     Ok(with_notes(done.value, &done.notes))
 }
 
@@ -588,7 +627,8 @@ pub async fn bulk_close(State(st): State<AppState>, ctx: Ctx, Body(b): Body<Bulk
 /// One-time ticket for `GET /v1/terminal/stream?ticket=` (valid 30 s).
 pub async fn stream_ticket(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value>> {
     let s = session(&st, &ctx).await?;
-    let t = st.tickets.issue(&st.keys, auth::StreamGrant::Account { tenant_id: s.tenant_id, login: s.login, read_only: s.read_only });
+    let session = auth::StreamSession { user_id: s.user_id, staff: s.staff.is_some(), expires_at: s.expires_at, ip: ctx.ip.clone(), user_agent: ctx.user_agent.clone() };
+    let t = st.tickets.issue(&st.keys, auth::StreamGrant::Account { tenant_id: s.tenant_id, login: s.login, read_only: s.read_only, session: Some(std::sync::Arc::new(session)) });
     Ok(Json(json!({"ticket": t, "expiresIn": 30})))
 }
 
@@ -598,9 +638,12 @@ mod tests {
 
     #[test]
     fn investor_sessions_are_read_only() {
-        let inv = Session { login: 1, tenant_id: 1, read_only: true };
+        let inv = Session { login: 1, tenant_id: 1, read_only: true, user_id: 7, staff: None, expires_at: Utc::now() };
         assert!(matches!(inv.writable(), Err(ApiError::ReadOnly)));
-        let tr = Session { login: 1, tenant_id: 1, read_only: false };
+        // a read-only staff session (Back Office "log in as client") is refused every write the same way
+        let staff = Session { login: 1, tenant_id: 1, read_only: true, user_id: 7, staff: Some((3, "Maya".into())), expires_at: Utc::now() };
+        assert!(matches!(staff.writable(), Err(ApiError::ReadOnly)));
+        let tr = Session { login: 1, tenant_id: 1, read_only: false, user_id: 7, staff: None, expires_at: Utc::now() };
         assert!(tr.writable().is_ok());
     }
 

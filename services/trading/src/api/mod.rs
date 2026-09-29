@@ -4,6 +4,7 @@
 
 pub mod accounts;
 pub mod admin;
+pub mod controls;
 pub mod dealing;
 pub mod ledger;
 pub mod mam;
@@ -51,6 +52,10 @@ pub struct AppState {
     pub open_lock: Arc<tokio::sync::Mutex<()>>,
     /// Copy trading and PAMM (src/social).
     pub social: Arc<crate::social::Social>,
+    /// Kalks Trader connections reported to the gateway (client presence, controls.rs).
+    pub presence: Arc<crate::controls::Presence>,
+    /// The gateway's internal API (client restrictions, controls.rs).
+    pub gateway: Arc<crate::controls::Gateway>,
 }
 
 pub fn router(st: AppState) -> Router {
@@ -69,6 +74,10 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/terminal/bulk-close", post(terminal::bulk_close))
         .route("/v1/terminal/stream-ticket", post(terminal::stream_ticket))
         .route("/v1/terminal/mam", get(mam::terminal))
+        .route("/v1/terminal/controls", get(controls::terminal_controls))
+        // client controls: staff sessions in Kalks Trader, restriction refresh (Back Office BFF)
+        .route("/v1/admin/accounts/{login}/staff-sso", post(controls::staff_sso))
+        .route("/v1/internal/restrictions/refresh", post(controls::refresh))
         // Client Area (CRM BFF, with the gateway user id)
         .route("/v1/accounts", post(accounts::open).get(accounts::list))
         .route("/v1/accounts/{login}", get(accounts::detail))

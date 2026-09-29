@@ -9,7 +9,7 @@ import { useT, Trans } from "@kalks/i18n/react";
 export const GOOGLE_LOGIN = process.env.NEXT_PUBLIC_GOOGLE_LOGIN === "1";
 
 /** Friendly messages for /login?google_error=... and /register?google_error=... (set by /api/auth/google/callback). Text: auth.google.error.<code>. */
-export const GOOGLE_ERRORS = new Set(["cancelled", "expired", "unverified", "conflict", "disabled", "rate_limited", "unavailable", "failed"]);
+export const GOOGLE_ERRORS = new Set(["cancelled", "expired", "unverified", "conflict", "disabled", "suspended", "rate_limited", "unavailable", "failed"]);
 
 /** Reads ?google_error= once on mount (client only, so the server render stays identical). */
 export function useGoogleError(): string | null {

@@ -4,6 +4,7 @@
 pub mod api;
 pub mod auth;
 pub mod config;
+pub mod controls;
 pub mod engine;
 pub mod feed;
 pub mod model;

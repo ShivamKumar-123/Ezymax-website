@@ -116,9 +116,20 @@ impl Limiter {
 #[derive(Clone, Default)]
 pub struct StreamTickets(Arc<Mutex<HashMap<Vec<u8>, (StreamGrant, Instant)>>>);
 
+/// Who a terminal stream belongs to (presence and the session's limits, controls.rs).
+#[derive(Clone, Debug)]
+pub struct StreamSession {
+    pub user_id: i64,
+    /// A staff session opened as the client: never counted as the client being online.
+    pub staff: bool,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
+    pub ip: String,
+    pub user_agent: String,
+}
+
 #[derive(Clone, Debug)]
 pub enum StreamGrant {
-    Account { tenant_id: i64, login: i64, read_only: bool },
+    Account { tenant_id: i64, login: i64, read_only: bool, session: Option<Arc<StreamSession>> },
     Dealing { tenant_id: i64, staff: String },
 }
 
@@ -159,7 +170,7 @@ mod tests {
     fn stream_tickets_are_one_time() {
         let k = Keys::new("0123456789abcdef0123456789abcdef");
         let s = StreamTickets::default();
-        let t = s.issue(&k, StreamGrant::Account { tenant_id: 1, login: 5, read_only: true });
+        let t = s.issue(&k, StreamGrant::Account { tenant_id: 1, login: 5, read_only: true, session: None });
         assert!(matches!(s.redeem(&k, &t), Some(StreamGrant::Account { login: 5, read_only: true, .. })));
         assert!(s.redeem(&k, &t).is_none());
     }

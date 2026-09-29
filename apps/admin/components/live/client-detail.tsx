@@ -75,11 +75,16 @@ export function ClientHeader({ d }: { d: ClientDetail }) {
               Locked after failed sign-ins
             </Chip>
           )}
-          {d.sessions.active > 0 && (
-            <Chip size="sm" tone="up" dot>
-              Online · {d.sessions.active} session{d.sessions.active > 1 ? "s" : ""}
+          {/* presence (client_controls): Online = active in the last 2 minutes, Away = 2–15 minutes */}
+          {u.presence === "online" || u.presence === "away" ? (
+            <Chip size="sm" tone={u.presence === "online" ? "up" : "warn"} dot>
+              {u.presence === "online" ? "Online" : "Away"}
             </Chip>
-          )}
+          ) : d.sessions.active > 0 ? (
+            <Chip size="sm" tone="neutral" dot>
+              Signed in · {d.sessions.active} session{d.sessions.active > 1 ? "s" : ""}
+            </Chip>
+          ) : null}
         </div>
       </div>
     </div>

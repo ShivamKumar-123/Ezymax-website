@@ -118,7 +118,8 @@ impl WalletClient {
     }
 }
 
-fn parse_response(buf: &[u8]) -> Option<(u16, Vec<u8>)> {
+/// Status and body of a raw HTTP/1.1 response (also used by the gateway client, controls.rs).
+pub(crate) fn parse_response(buf: &[u8]) -> Option<(u16, Vec<u8>)> {
     let split = buf.windows(4).position(|w| w == b"\r\n\r\n")?;
     let head = std::str::from_utf8(&buf[..split]).ok()?;
     let status: u16 = head.lines().next()?.split_whitespace().nth(1)?.parse().ok()?;

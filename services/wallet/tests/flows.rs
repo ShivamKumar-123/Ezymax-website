@@ -599,3 +599,49 @@ async fn notifications_are_pushed_to_support_once() {
     assert_eq!(rejected.1["dedupeKey"], format!("wallet:n:{nid}"), "same key as support's polling adapter");
     t.drop_db().await;
 }
+
+#[tokio::test]
+async fn back_office_restrictions_are_enforced() {
+    let Some(t) = T::new("restrictions").await else { return };
+    t.users.set(7, "verified");
+    t.credit(7, "500", "seed-r7").await;
+    let wd = |key: &str| json!({"user_id": 7, "amount": "100", "chain": "tron", "to_address": CLIENT_TRON, "idempotency_key": key});
+    let to = |amount: &str, key: &str| json!({"login": 10000001, "amount": amount, "idempotency_key": key});
+
+    // withdrawals disabled: request and quote are refused with a readable reason; nothing is locked
+    t.users.restrict(7, &["withdrawals"]);
+    let (s, v) = t.post("/v1/withdrawals", wd("r-w1")).await;
+    assert_eq!((s, v["error"]["code"].as_str()), (403, Some("restricted")), "{v}");
+    assert!(v["error"]["message"].as_str().unwrap().contains("Withdrawals are disabled"));
+    let (s, _) = t.post("/v1/withdrawals/quote", wd("r-wq")).await;
+    assert_eq!(s, 403);
+    assert_eq!(t.balance(7).await, ("500".into(), "0".into()));
+    // deposits still work while only withdrawals are disabled
+    let (s, _) = t.post("/v1/deposits/intents", json!({"user_id": 7, "chain": "tron", "amount": "50"})).await;
+    assert_eq!(s, 200);
+
+    // deposits disabled
+    t.users.restrict(7, &["deposits"]);
+    let (s, v) = t.post("/v1/deposits/intents", json!({"user_id": 7, "chain": "tron", "amount": "50"})).await;
+    assert_eq!((s, v["error"]["code"].as_str()), (403, Some("restricted")));
+    // wallet <-> trading transfers disabled, both ways
+    t.users.restrict(7, &["transfers"]);
+    let (s, v) = t.post("/v1/wallets/7/to-trading", to("100", "r-t1")).await;
+    assert_eq!((s, v["error"]["code"].as_str()), (403, Some("restricted")));
+    let (s, _) = t.post("/v1/wallets/7/from-trading", to("10", "r-f1")).await;
+    assert_eq!(s, 403);
+    // IB commissions and payouts on hold; other credits still go through
+    t.users.restrict(7, &["ib"]);
+    let (s, v) = t.post("/v1/wallets/transfers", json!({"idempotency_key": "r-ib1", "user_id": 7, "currency": "USDT", "amount": "25", "direction": "credit", "kind": "ib_payout"})).await;
+    assert_eq!((s, v["error"]["code"].as_str()), (403, Some("restricted")));
+    let (s, _) = t.post("/v1/wallets/transfers", json!({"idempotency_key": "r-ib2", "user_id": 7, "currency": "USDT", "amount": "25", "direction": "credit", "kind": "refund"})).await;
+    assert_eq!(s, 200);
+    // lifted: everything works again
+    t.users.restrict(7, &[]);
+    let (s, v) = t.post("/v1/wallets/7/to-trading", to("100", "r-t2")).await;
+    assert_eq!((s, v["transfer"]["status"].as_str()), (200, Some("completed")), "{v}");
+    let (s, v) = t.post("/v1/withdrawals", wd("r-w2")).await;
+    assert_eq!(s, 200, "{v}");
+    t.invariants().await;
+    t.drop_db().await;
+}

@@ -87,6 +87,8 @@ pub struct Env<'a> {
     pub now: DateTime<Utc>,
     /// Quotes older than this are not tradable (stale feed, D116). 0 = no check.
     pub max_quote_age_ms: i64,
+    /// Client restrictions (trading disabled, close-only) set in the Back Office; None = not checked.
+    pub restrictions: Option<&'a crate::controls::Restrictions>,
 }
 
 impl Env<'_> {

@@ -57,6 +57,10 @@ pub async fn check_password(st: &AppState, ctx: &Ctx, kind: Kind, tenant_id: i64
         return Err(ApiError::InvalidCredentials);
     }
     if !p.active {
+        if kind == Kind::User && p.status == "blocked" {
+            audit::record(&st.pool, ctx, Entry { tenant_id, actor_kind: k, actor_id: Some(p.id), action: "user.login_failed", target: Some((k, p.id)), meta: json!({"reason": "suspended"}) }).await;
+            return Err(crate::client_controls::account_suspended());
+        }
         return Err(ApiError::AccountDisabled);
     }
     Ok(p)

@@ -348,6 +348,7 @@ pub async fn sso(State(st): State<AppState>, ctx: Ctx, headers: HeaderMap, Path(
     if m.status == Status::Expired {
         return Err(ApiError::Forbidden("This demo account has expired.".into()));
     }
+    super::controls::login_gate(&st, login)?;
     let token = auth::random_token(32);
     let expires = Utc::now() + Duration::seconds(60);
     sqlx::query("INSERT INTO sso_tokens (token_hash, tenant_id, login, user_id, expires_at) VALUES ($1,$2,$3,$4,$5)")

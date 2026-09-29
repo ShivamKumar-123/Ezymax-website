@@ -80,6 +80,8 @@ pub async fn start(st: &AppState, ctx: &Ctx, user_id: i64, dir: Dir, login: i64,
         return Ok(transfer_json(&r));
     }
 
+    // wallet <-> trading transfers disabled in the Back Office (client restrictions)
+    crate::users::gate(st, &ctx.tenant.slug, user_id, "transfers").await?;
     // D24: only the client's own live accounts
     let accounts = st.engine.accounts(&ctx.tenant.slug, user_id).await.map_err(|e| match e {
         EngineError::Unavailable(_) => ApiError::Coded { status: axum::http::StatusCode::SERVICE_UNAVAILABLE, code: "unavailable", message: "The trading service is unavailable. Please try again shortly.".into() },

@@ -94,6 +94,8 @@ const security = {
   "result.password_reset": "Password reset",
   "result.signed_out_device": "Device signed out",
   "result.signed_out_by_staff": "Signed out by support",
+  // a staff member opened the account from the broker's Back Office (read-only unless the client was told otherwise)
+  "result.staff_access": "Staff access by {broker} support",
 
   // Data export and account closure requests
   "requests.title": "Your data and account",
@@ -249,5 +251,31 @@ const security = {
   "revoke.text": "The viewer is signed out at once and can't sign in again. This can't be undone.",
   "revoke.busy": "Revoking…",
   "revoke.confirm": "Revoke access",
+
+  // Restrictions the broker set on the account (banner at the top of the Client Area)
+  "restricted.title": "Some features are limited on your account",
+  "restricted.frozen": "Your account is frozen",
+  "restricted.contact": "Contact support",
+  "restricted.until": "until {date}",
+  "restricted.kind.trading": "Trading is disabled",
+  "restricted.kind.close_only": "Close-only: you can close positions but not open new ones",
+  "restricted.kind.deposits": "Deposits are disabled",
+  "restricted.kind.withdrawals": "Withdrawals are disabled",
+  "restricted.kind.transfers": "Transfers between your wallet and trading accounts are disabled",
+  "restricted.kind.ib": "Partner commissions and payouts are on hold",
+  "restricted.kind.social": "Copy trading, PAMM and MAM are disabled",
+  // Staff session opened as the client from the Back Office (shown to the staff member)
+  "staff.banner": "Staff session as {client}",
+  "staff.startedBy": "started by {staff}",
+  "staff.readOnly": "Read-only",
+  "staff.full": "Full access",
+  "staff.left": "{time} left",
+  "staff.end": "End",
+  "staff.ending": "Ending…",
+  "staff.refused": "Read-only staff session: changes are not allowed.",
+  "staff.ended.title": "Staff session ended",
+  "staff.ended.text": "You can close this tab. Your own Back Office session is not affected.",
+  "staff.expired.title": "This staff link has expired",
+  "staff.expired.text": "Staff links work once, within a minute. Start again from the client's profile in the Back Office.",
 };
 export default security;

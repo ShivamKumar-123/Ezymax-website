@@ -1,7 +1,7 @@
 // Shapes returned by the gateway admin API (services/gateway/src/admin.rs) via /api/admin/*.
 
 export type Stats = {
-  clients: { total: number; email_verified: number; kyc_verified: number; kyc_pending: number; registered_today: number; registered_7d: number; registered_30d: number };
+  clients: { total: number; email_verified: number; kyc_verified: number; kyc_pending: number; registered_today: number; registered_7d: number; registered_30d: number; online?: number; away?: number; restricted?: number };
   sessions: { clients: number; staff: number };
   staff: { active: number };
   security: { logins_24h: number; failed_logins_24h: number; audit_events_24h: number };
@@ -30,6 +30,13 @@ export type Client = {
   last_login_at: string | null;
   created_at: string;
   active_sessions: number;
+  /** Presence (gateway client_controls.rs): online = active in the last 2 min, away = 2–15 min. */
+  presence?: "online" | "away" | "offline";
+  last_active_at?: string | null;
+  /** Apps the client is in right now: client_area, trader. */
+  apps?: string[];
+  /** Active restriction kinds (login, trading, close_only, deposits, withdrawals, transfers, ib, social, freeze). */
+  restrictions?: string[];
 };
 
 export type Paged<T> = { items: T[]; total: number; page: number; per_page: number };

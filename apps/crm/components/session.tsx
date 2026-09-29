@@ -31,9 +31,11 @@ export function SessionProvider({ user, children }: { user?: SessionUser; childr
   return <SessionContext.Provider value={user ?? (IS_DEMO ? DEMO_USER : null)}>{children}</SessionContext.Provider>;
 }
 
-/** True for a view-only session (D90): pages hide their account actions (the servers refuse them anyway). */
+/** True for a view-only session (D90) or a read-only staff session (Back Office "Log in as client"): pages hide
+ *  their account actions (the servers refuse them anyway). */
 export function useReadOnly(): boolean {
-  return !!React.useContext(SessionContext)?.viewer;
+  const u = React.useContext(SessionContext) as (SessionUser & { impersonation?: { mode?: string } | null }) | null;
+  return !!u?.viewer || u?.impersonation?.mode === "read_only";
 }
 
 /** The signed-in client. Only usable inside the (app) layout. */

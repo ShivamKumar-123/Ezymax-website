@@ -221,10 +221,10 @@ async fn google_flows() {
     let e = complete(st(), ctx("device-eeeeeeeeeeee"), Ok(Json(creq(&race_ticket, "1990-01-01")))).await.unwrap_err();
     assert_eq!(code(&e), "email_taken");
 
-    // blocked accounts cannot sign in with Google
+    // blocked (suspended) accounts cannot sign in with Google
     sqlx::query("UPDATE users SET status = 'blocked' WHERE id = $1").bind(uid).execute(&db.st.pool).await.unwrap();
     let e = google(st(), ctx("device-aaaaaaaaaaaa"), Ok(Json(greq("111", "new@gmail.com", true)))).await.unwrap_err();
-    assert_eq!(code(&e), "account_disabled");
+    assert_eq!(code(&e), "account_suspended");
 
     // rate limit per IP
     let mut limited = false;
