@@ -92,14 +92,14 @@ export const AttachmentView = React.memo(function AttachmentView({ a, mine }: { 
       scaleTo={0.98}
       accessibilityLabel={t("mobileAi.support.openFile", { name })}
       testID={`support-attachment-${a.id}`}
-      style={{ minHeight: 56, maxWidth: 260, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[3], paddingVertical: space[2], borderRadius: radius.md, backgroundColor: mine ? "rgba(14,14,16,0.12)" : colors.surface2, borderWidth: 1, borderColor: mine ? "rgba(14,14,16,0.16)" : colors.line }}
+      style={{ minHeight: 56, maxWidth: 260, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[3], paddingVertical: space[2], borderRadius: radius.md, backgroundColor: colors.surface2, borderWidth: 1, borderColor: mine ? "rgba(242,106,61,0.45)" : colors.line }}
     >
-      <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: mine ? colors.ink : colors.surface3, alignItems: "center", justifyContent: "center" }}>{opening ? <ActivityIndicator color={colors.cream} /> : <FileText size={18} color={mine ? colors.cream : colors.ember} />}</View>
+      <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surface3, alignItems: "center", justifyContent: "center" }}>{opening ? <ActivityIndicator color={colors.text2} /> : <FileText size={18} color={colors.ember} />}</View>
       <View style={{ flexShrink: 1 }}>
-        <Text variant="callout" weight="600" color={mine ? colors.ink : colors.text} numberOfLines={1}>
+        <Text variant="callout" weight="600" numberOfLines={1}>
           {name}
         </Text>
-        <Text variant="caption" color={mine ? colors.ink2 : colors.text3}>
+        <Text variant="caption" tone="tertiary">
           {t("support.attachmentSize", { size: kb })}
         </Text>
       </View>

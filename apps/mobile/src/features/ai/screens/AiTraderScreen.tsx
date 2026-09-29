@@ -53,6 +53,7 @@ const REFINE: { key: string; label: MessageKey }[] = [
   { key: "longOnly", label: "mobileAi.refine.longOnly" },
 ];
 
+const noop = () => {};
 const warmAccounts = () => prefetch(ACCOUNTS_KEY, fetchAccounts, { persist: true, staleMs: 15_000 });
 
 /** An assistant row: the mascot and "Kalks AI · 14:02" on the first item after the client spoke. */
@@ -111,10 +112,37 @@ export function AiTraderScreen() {
     requestAnimationFrame(() => list.current?.scrollToEnd({ animated: true }));
   }, []);
 
+  // a new strategy card is read from its top (its name and rules), not its last line; everything else (the client's
+  // messages, the drafting bubble, backtest and running cards, notes) fits and keeps the view at the end. Scheduled
+  // once per new message, twice (the second pass lands once the new row is measured); a backtest that finishes at
+  // the end of the conversation brings its result into view.
+  const itemsRef = React.useRef(items);
+  itemsRef.current = items;
+  const last = messages[messages.length - 1];
+  const lastId = last?.id;
+  const lastDone = last?.kind === "backtest" && (last.status === "done" || last.status === "failed");
+  const seen = React.useRef(lastId);
+  React.useEffect(() => {
+    if (lastId === seen.current) return;
+    seen.current = lastId;
+    const m = threadStore.get().messages.at(-1);
+    if (!m) return;
+    const go = () => {
+      if (m.kind !== "draft") return list.current?.scrollToEnd({ animated: true });
+      const index = itemsRef.current.findIndex((i) => i.key === m.id);
+      if (index >= 0) list.current?.scrollToIndex({ index, viewPosition: 0, viewOffset: 4, animated: true });
+    };
+    setTimeout(go, 60);
+    setTimeout(go, 420);
+  }, [lastId]);
+  React.useEffect(() => {
+    if (lastDone) setTimeout(() => list.current?.scrollToEnd({ animated: true }), 120);
+  }, [lastDone]);
+
   const send = React.useCallback(
     (text: string) => {
-      scrollToEnd();
       void ask(text, { symbol: chartSymbol, timeframe: "H1" });
+      scrollToEnd();
     },
     [chartSymbol, scrollToEnd],
   );
@@ -221,7 +249,7 @@ export function AiTraderScreen() {
               getItemType={(i) => (i.type === "msg" ? i.m.kind : i.type)}
               ListHeaderComponent={intro}
               contentContainerStyle={{ paddingBottom: space[5] }}
-              maintainVisibleContentPosition={{ startRenderingFromBottom: messages.length > 0, autoscrollToBottomThreshold: 0.25 }}
+              maintainVisibleContentPosition={{ startRenderingFromBottom: messages.length > 0 }}
               keyboardDismissMode="on-drag"
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
@@ -242,8 +270,8 @@ export function AiTraderScreen() {
         )}
       </KeyboardAvoidingView>
       <EditSheet ref={editSheet} draftId={target} />
-      <BacktestSheet ref={btSheet} draftId={target} onStarted={scrollToEnd} />
-      <DeploySheet ref={deploySheet} draftId={target} onDeployed={scrollToEnd} />
+      <BacktestSheet ref={btSheet} draftId={target} onStarted={noop} />
+      <DeploySheet ref={deploySheet} draftId={target} onDeployed={noop} />
       <ConfirmSheet ref={confirmNew} testID="ai-new-confirm" title={t("mobileAi.newConfirm.title")} body={t("mobileAi.newConfirm.body")} confirm={t("mobileAi.newConfirm.action")} cancel={t("common.cancel")} onConfirm={startOver} />
     </View>
   );
