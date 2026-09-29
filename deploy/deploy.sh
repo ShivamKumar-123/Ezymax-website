@@ -170,6 +170,13 @@ for app in apps/crm apps/admin apps/terminal; do
   grep -q '^NEWS_URL=' "$f" || printf 'NEWS_URL=http://127.0.0.1:8103\n' >> "$f"
   grep -q '^NEWS_INTERNAL_TOKEN=' "$f" || printf 'NEWS_INTERNAL_TOKEN=%s\n' "$(grep '^NEWS_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
 done
+# market-data price alerts: internal token generated once (never printed). The Client Area BFF manages clients'
+# alerts with it (/v1/internal/alerts, never exposed by Caddy); triggers go out through the support service
+# (SUPPORT_INTERNAL_TOKEN, already in .env.local).
+grep -q '^MARKET_DATA_INTERNAL_TOKEN=' .env.local || printf 'MARKET_DATA_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
+f=apps/crm/.env.production.local; touch "$f"
+grep -q '^MARKET_DATA_URL=' "$f" || printf 'MARKET_DATA_URL=http://127.0.0.1:8081\n' >> "$f"
+grep -q '^MARKET_DATA_INTERNAL_TOKEN=' "$f" || printf 'MARKET_DATA_INTERNAL_TOKEN=%s\n' "$(grep '^MARKET_DATA_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
 pnpm turbo run build --filter=@kalks/crm --filter=@kalks/admin --filter=@kalks/terminal --concurrency=1
 
 # service units + edge config (idempotent)

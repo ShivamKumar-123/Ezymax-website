@@ -76,7 +76,8 @@ api.kalkstrade.com {
 		}
 		respond 404
 	}
-	@admin path /v1/admin*
+	# admin (spreads) and internal (client price alerts, Client Area BFF only) endpoints stay on the server
+	@admin path /v1/admin* /v1/internal*
 	respond @admin 404
 	reverse_proxy 127.0.0.1:8081
 }
