@@ -1,6 +1,7 @@
 //! Copy trading + PAMM end to end against PostgreSQL, through the real shards, the event tap, the copier,
 //! the PAMM rollover and a mock wallet service (axum on a random port). Checks:
 //! - a master's open / partial close / close are mirrored into the follower's copy account with the right size;
+//! - stopping with "keep positions" leaves the copied position open and unmanaged (no guard, no more mirroring);
 //! - the copy allocation arrives through the wallet (`to-trading`) and moves the HWM; a performance fee is
 //!   charged above the HWM at settlement and recorded pending;
 //! - a PAMM fund: seed → invest request → rollover (units at NAV) → profit → rollover with fee + redemption;
@@ -211,6 +212,34 @@ async fn copy_and_pamm_end_to_end_with_replay() {
     // stop copying: nothing open, balance goes back to the wallet
     let out = social.stop_sub(sub.id, "client", true, true).await.unwrap();
     assert!(out["returned"].as_f64().unwrap() > 2500.0, "{out}");
+
+    // stop copying but keep the positions (closePositions: false): mirroring stops, the copied position stays on
+    // the copy account as an ordinary trade the client manages (no terminal guard), and the master's later close
+    // no longer reaches it
+    let sub2 = social.create_sub(1, 778, mid, Sizing { mode: SizingMode::Equity, value: D::ONE }, d("2000"), None, None, None, vec![]).await.unwrap();
+    social.wallet.to_trading("kalks", &format!("copy:alloc:{}", sub2.id), 778, sub2.login, d("2000")).await.unwrap();
+    for _ in 0..50 {
+        if social.reg.read().unwrap().subs[&sub2.id].net_deposits == d("2000") {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(40)).await;
+    }
+    let open2 = exec(&hub, master_login, Box::new(|tx, env| trade::place_order(tx, env, OrderReq::market("BTCUSD", Side::Buy, d("0.4"))).map(|r| match r {
+        trade::PlaceResult::Filled { position_ticket, .. } => json!(position_ticket),
+        _ => Value::Null,
+    })))
+    .await;
+    let mt2 = open2.as_i64().unwrap();
+    wait_for(&hub, sub2.login, |p| p.len() == 1).await;
+    assert_eq!(social.terminal_guard(sub2.login, false).map(|g| g.0), Some("copy_managed"), "copied trades are managed while copying");
+    let kept = social.stop_sub(sub2.id, "client", false, false).await.unwrap();
+    assert!(kept["closed"].as_array().unwrap().is_empty(), "{kept}");
+    assert!(kept["returned"].is_null(), "{kept}");
+    assert_eq!(positions(&hub, sub2.login).await.len(), 1, "the copied position stays open");
+    assert!(social.terminal_guard(sub2.login, false).is_none(), "after the stop the client manages it");
+    exec(&hub, master_login, Box::new(move |tx, env| trade::close_position(tx, env, mt2, CloseReq::default()).map(|_| Value::Null))).await;
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    assert_eq!(positions(&hub, sub2.login).await.len(), 1, "a stopped subscription mirrors nothing");
 
     // ---------------- PAMM ----------------
     let m = social.reg.read().unwrap().masters[&mid].clone();

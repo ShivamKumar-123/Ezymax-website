@@ -17,7 +17,7 @@ import { mamGet, mamPatch, mamPost } from "@/lib/mam-bff";
 //   GET   subscriptions · subscriptions/{id}
 //   POST  subscriptions                       {masterId, sizing:{mode, value}, allocation, maxLot?, equityStop?, maxDdPct?, excludedSymbols?}
 //   PATCH subscriptions/{id}                  {sizing?, maxLot?, equityStop?, maxDdPct?, excludedSymbols?, paused?}
-//   POST  subscriptions/{id}/stop             {returnFunds?}
+//   POST  subscriptions/{id}/stop             {returnFunds?, closePositions?} (closePositions false keeps the copied positions)
 //   GET   funds · funds/{id} · funds/{id}/statement
 //   POST  funds                               {name, period, perfFeePct, lockInDays, minInvestment, maxDdPct, seed}
 //   PATCH funds/{id}                          {name?, period?, perfFeePct?, lockInDays?, minInvestment?, maxDdPct?}
@@ -328,7 +328,11 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
     if (n === 3 && a === "subscriptions" && ID_RE.test(b!) && c === "stop") {
       if (body.returnFunds !== undefined && typeof body.returnFunds !== "boolean") throw new Invalid("Invalid returnFunds.");
-      const r = await socialEngine(`/v1/social/subscriptions/${b}/stop`, { user, req, body: body.returnFunds ? { returnFunds: true } : {} });
+      if (body.closePositions !== undefined && typeof body.closePositions !== "boolean") throw new Invalid("Invalid closePositions.");
+      // both flags are always explicit for the engine: the balance goes back only when asked (the web sends
+      // returnFunds: true when its box is ticked); copied positions close unless the client chose to keep them
+      const out = { returnFunds: body.returnFunds === true, closePositions: body.closePositions !== false };
+      const r = await socialEngine(`/v1/social/subscriptions/${b}/stop`, { user, req, body: out });
       return reply(r.status, r.data);
     }
 

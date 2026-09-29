@@ -557,11 +557,20 @@ pub async fn update_subscription(State(st): State<AppState>, ctx: Ctx, h: Header
     Ok(Json(json!({"subscription": sub_view(&st, &s).await})))
 }
 
+/// Options of a client stop: `closePositions` (default true) closes every copied position and order at market;
+/// false stops the mirroring and leaves them on the copy account as ordinary trades the client manages (the
+/// terminal guard only applies while copying). `returnFunds` (default true) moves the withdrawable balance back
+/// to the wallet, which is only the free margin while positions stay open.
+pub fn stop_options(body: Option<&Map<String, Value>>) -> (bool, bool) {
+    let flag = |k: &str| body.and_then(|b| b.get(k)).and_then(Value::as_bool).unwrap_or(true);
+    (flag("closePositions"), flag("returnFunds"))
+}
+
 pub async fn stop_subscription(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Path(id): Path<i64>, body: Option<Json<Map<String, Value>>>) -> ApiResult<Json<Value>> {
     let u = user(&h)?;
     let s = own_sub(&st, &ctx, u, id)?;
-    let ret = body.as_ref().and_then(|b| b.get("returnFunds")).and_then(Value::as_bool).unwrap_or(true);
-    let out = st.social.stop_sub(s.id, "client", true, ret).await?;
+    let (close, ret) = stop_options(body.as_ref().map(|b| &b.0));
+    let out = st.social.stop_sub(s.id, "client", close, ret).await?;
     let s = own_sub(&st, &ctx, u, id)?;
     let mut v = out;
     v["subscription"] = sub_view(&st, &s).await;
@@ -722,4 +731,29 @@ pub async fn update_investment(State(st): State<AppState>, ctx: Ctx, h: HeaderMa
 pub async fn statement(State(st): State<AppState>, h: HeaderMap, Path(id): Path<i64>) -> ApiResult<Json<Value>> {
     let u = user(&h)?;
     Ok(Json(st.social.statement(id, u).await?))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::stop_options;
+    use serde_json::{Map, Value, json};
+
+    fn body(v: Value) -> Map<String, Value> {
+        v.as_object().cloned().unwrap()
+    }
+
+    #[test]
+    fn stop_defaults_close_everything_and_return_funds() {
+        assert_eq!(stop_options(None), (true, true));
+        assert_eq!(stop_options(Some(&body(json!({})))), (true, true));
+        // unknown values never turn a default off
+        assert_eq!(stop_options(Some(&body(json!({"closePositions": "no", "returnFunds": 0})))), (true, true));
+    }
+
+    #[test]
+    fn stop_keeps_positions_or_the_balance_when_asked() {
+        assert_eq!(stop_options(Some(&body(json!({"closePositions": false})))), (false, true));
+        assert_eq!(stop_options(Some(&body(json!({"returnFunds": false})))), (true, false));
+        assert_eq!(stop_options(Some(&body(json!({"closePositions": false, "returnFunds": false})))), (false, false));
+    }
 }
