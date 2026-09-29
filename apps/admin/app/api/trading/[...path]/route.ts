@@ -69,6 +69,10 @@ async function handle(req: NextRequest, parts: string[], method: Method) {
   const who = await requireStaff(req);
   if (who instanceof NextResponse) return who;
   if (!tradingAllows(who.staff, route.perm)) return apiError(403, "forbidden", "Your role doesn't allow this.");
+  // balance and credit changes go through "Balance & credit" (wallet service: limits, four-eyes, client
+  // notification); the direct engine route stays for bonus only
+  if (/^admin\/accounts\/\d+\/balance$/.test(path) && (body as { type?: unknown }).type !== "bonus")
+    return apiError(422, "use_adjustments", "Balance and credit changes are made with Balance & credit (four-eyes, limits and client notice apply).");
 
   const target = route.to ? route.to(path.match(route.re)!) : `/v1/${path}${method === "GET" ? req.nextUrl.search : ""}`;
   const r = await engine(target, { method, body, staff: who.staff, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });

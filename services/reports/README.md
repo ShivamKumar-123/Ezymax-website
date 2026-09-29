@@ -37,6 +37,7 @@ It creates and migrates `kalks_reports` on first start and reads `REPORTS_*` plu
           /v1/admin/groups ─────────────┤ group → spread group
  market-data /v1/admin/spreads ─────────┤ markups (spread cost / markup revenue estimates)
  wallet   /v1/admin/deposits|withdrawals┤ credited deposits, completed withdrawals, fees
+          /v1/admin/adjustments         ┤ manual wallet deposits / withdrawals (external payments)
  IB       /v1/ib/admin/commissions ─────┘ partner cost lines
                          │ every REPORTS_SYNC_SECS (30 s); wallet / IB every 5th pass
                          ▼
@@ -67,7 +68,7 @@ Server time is GMT+3 during US DST and GMT+2 otherwise (MT5 convention). Periods
 **Broker reports (live accounts, prop groups excluded, USD).**
 - B-book P&L = −client price P&L on B-book exits; swap = −client swap on exits; commission = entry-deal commission; spread markup = group markup × volume per deal side (estimate); IB cost = IB commission lines (lot, split, rebate, CPA, clawback) created in the period, excluding rejected / void.
 - Net revenue = B-book + swap + commission + A-book markup − IB cost. The B-book markup is inside the B-book P&L, so it is not added twice.
-- Money in / out = wallet credited deposits and completed withdrawals, plus deposits / withdrawals booked by staff on live accounts. FTD = a client's first deposit ever. Net deposits = deposits − withdrawals.
+- Money in / out = wallet credited deposits and completed withdrawals, manual wallet deposits / withdrawals staff booked as external payments (Balance & credit reasons "Deposit (external payment received)" / "Withdrawal (paid externally)", table `wallet_manual`), plus deposits / withdrawals booked by staff on live accounts (engine kinds `deposit` / `withdrawal`). Every other manual adjustment (correction, compensation, bonus, fee, chargeback, other, credit) is never money in or out and never an FTD. FTD = a client's first deposit ever. Net deposits = deposits − withdrawals.
 - Campaign (`clients.campaign`): the first-touch `utm_campaign` the client signed up with (gateway feed), else the IB partner campaign; `utm_source` / `utm_medium` are kept alongside.
 - Funnel (clients who signed up in the period): registered → email verified → KYC verified → live account → funded → traded, by campaign and country.
 - Cohorts: sign-up month; retention = share of the cohort with a live deal in month k; LTV = cumulative net deposits and broker revenue per client.

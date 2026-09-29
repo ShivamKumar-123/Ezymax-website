@@ -106,6 +106,9 @@ pub struct Staff {
     pub id: String,
     pub name: String,
     pub role: String,
+    /// `X-Kalks-Staff-Perms`: the staff member's gateway permission keys as forwarded by the admin BFF. None when
+    /// the caller sent no list (older BFFs): then only the role is checked.
+    pub perms: Option<Vec<String>>,
 }
 
 impl Staff {
@@ -123,10 +126,24 @@ pub const ROLES_READ: &[&str] = &["platform_owner", "super_admin", "admin", "fin
 pub const ROLES_WRITE: &[&str] = &["platform_owner", "super_admin", "admin", "finance"];
 pub const ROLES_APPROVE: &[&str] = &["platform_owner", "super_admin", "admin", "finance"];
 pub const ROLES_SETTINGS: &[&str] = &["platform_owner", "super_admin", "admin"];
+/// Forcing a trading-account deduction past the free margin (finance.adjust_force): Super Admin only.
+pub const ROLES_FORCE: &[&str] = &["platform_owner", "super_admin"];
 
 impl StaffCtx {
     pub fn require(&self, roles: &[&str]) -> Result<(), ApiError> {
         if roles.contains(&self.staff.role.as_str()) { Ok(()) } else { Err(ApiError::Forbidden(format!("Role {} may not do this", self.staff.role))) }
+    }
+
+    /// Whether the staff member holds `perm`: the forwarded gateway list when present, else the role map.
+    pub fn has_perm(&self, perm: &str, fallback_roles: &[&str]) -> bool {
+        match &self.staff.perms {
+            Some(p) => p.iter().any(|x| x == perm),
+            None => fallback_roles.contains(&self.staff.role.as_str()),
+        }
+    }
+
+    pub fn require_perm(&self, perm: &str, fallback_roles: &[&str]) -> Result<(), ApiError> {
+        if self.has_perm(perm, fallback_roles) { Ok(()) } else { Err(ApiError::Forbidden(format!("Your role doesn't allow this ({perm})"))) }
     }
 }
 
@@ -160,7 +177,8 @@ impl FromRequestParts<AppState> for StaffCtx {
             return Err(ApiError::BadRequest("Invalid staff headers".into()));
         }
         let name = header(parts, "x-kalks-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
-        Ok(StaffCtx { ctx, staff: Staff { id, name: name.chars().take(120).collect(), role } })
+        let perms = header(parts, "x-kalks-staff-perms").map(|v| v.split(',').map(|p| p.trim().to_string()).filter(|p| !p.is_empty() && p.len() <= 64).take(200).collect());
+        Ok(StaffCtx { ctx, staff: Staff { id, name: name.chars().take(120).collect(), role, perms } })
     }
 }
 

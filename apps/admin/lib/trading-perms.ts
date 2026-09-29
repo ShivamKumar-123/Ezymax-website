@@ -17,7 +17,7 @@
  * | dealing.policy   | tenant policy (execution-delay switch and cap, margin call / stop-out)     | platform_owner, super_admin, admin                 |
  * | accounts.read    | trading account list / detail, history, ledger, groups (read)              | same as dealing.read                               |
  * | accounts.write   | account status, group change, leverage                                     | same as dealing.write                              |
- * | finance.adjust   | balance deposit / withdrawal / adjustment, credit, bonus                   | platform_owner, super_admin, admin, finance        |
+ * | finance.adjust   | add / deduct funds (Balance & credit, wallet service) and account bonus     | platform_owner, super_admin, admin, finance        |
  * | groups.write     | create / edit account groups                                               | platform_owner, super_admin, admin                 |
  */
 

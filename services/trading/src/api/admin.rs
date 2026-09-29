@@ -9,11 +9,11 @@ use sqlx::Row;
 use std::sync::Arc;
 
 use super::dealing::{Reason, audit_now, check_reason};
-use super::{ApiError, ApiResult, AppState, Body, ROLES_CONFIG, ROLES_DEALING, ROLES_FINANCE, StaffCtx};
+use super::{ApiError, ApiResult, AppState, Body, ROLES_CONFIG, ROLES_DEALING, ROLES_FINANCE, ROLES_FORCE, StaffCtx};
 use crate::engine::AuditDraft;
 use crate::engine::funds::{self, AdjustKind};
 use crate::model::{Book, Mode, Status};
-use crate::money::{D, de_dec, num};
+use crate::money::{D, de_dec, num, r2};
 use crate::persist::{self, AuditRow};
 use crate::rules::Group;
 use crate::shard::{ExecError, Op};
@@ -152,6 +152,184 @@ pub async fn balance(State(st): State<AppState>, s: StaffCtx, Path(login): Path<
     match staff_exec(&st, &s, login, &b.reason, "balance adjustment", op).await {
         Err(ApiError::Conflict { code: "duplicate_idempotency_key", .. }) => Err(ApiError::Conflict { code: "duplicate_idempotency_key", message: "This adjustment was already booked".into() }),
         r => r,
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Balance & credit (manual adjustments via the wallet service)       */
+/* ------------------------------------------------------------------ */
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AdjustBody {
+    /// add | deduct | credit_in | credit_out
+    op: String,
+    /// deposit | withdrawal | correction | compensation | bonus | fee | chargeback | other
+    category: String,
+    /// Positive, account currency (USC for cent accounts), at most 2 decimals.
+    #[serde(deserialize_with = "de_dec")]
+    amount: D,
+    #[serde(default)]
+    idempotency_key: String,
+    #[serde(default)]
+    force: bool,
+    /// Client-visible statement text.
+    #[serde(default)]
+    statement_note: String,
+    /// Validate and show before → after without booking anything.
+    #[serde(default)]
+    dry_run: bool,
+    /// Four-eyes: the staff member who approved the request (recorded in the audit).
+    #[serde(default)]
+    approved_by: Option<Value>,
+    /// The wallet service's adjustment id.
+    #[serde(default)]
+    request_id: Option<i64>,
+    /// reasonCode + internal comment (the audit note, never shown to the client).
+    #[serde(flatten)]
+    reason: Reason,
+}
+
+async fn adjust_lookup(st: &AppState, tenant: i64, key: &str) -> ApiResult<Option<(i64, String, Option<Value>, chrono::DateTime<chrono::Utc>)>> {
+    let r = sqlx::query("SELECT id, kind, request, created_at FROM ledger_txns WHERE tenant_id = $1 AND idempotency_key = $2").bind(tenant).bind(key).fetch_optional(&st.pool).await?;
+    Ok(r.map(|r| (r.get("id"), r.get("kind"), r.get::<Option<sqlx::types::Json<Value>>, _>("request").map(|j| j.0), r.get("created_at"))))
+}
+
+/// `POST /v1/admin/accounts/{login}/adjust`: Back Office "Balance & credit" (add / deduct funds, give / take
+/// credit). Called by the wallet service, which owns the request, the four-eyes approval and the client
+/// notification. Idempotent on `idempotencyKey`: the same key and body returns the original booking with
+/// `replayed: true`; the same key with another body is a 409. `dryRun` returns before → after only.
+pub async fn adjust(State(st): State<AppState>, s: StaffCtx, Path(login): Path<i64>, Body(b): Body<AdjustBody>) -> ApiResult<Json<Value>> {
+    s.require(ROLES_FINANCE)?;
+    let op = funds::AdjustOp::parse(&b.op).ok_or(ApiError::Validation { field: "op", message: "op must be add, deduct, credit_in or credit_out".into() })?;
+    s.require_perm(if op.is_credit() { "finance.credit" } else { "finance.adjust" }, ROLES_FINANCE)?;
+    if b.force {
+        if op == funds::AdjustOp::Add || op == funds::AdjustOp::CreditIn {
+            return Err(ApiError::Validation { field: "force", message: "Force applies to deductions and taking credit back only".into() });
+        }
+        s.require_perm("finance.adjust_force", ROLES_FORCE)?;
+    }
+    if !funds::ADJUST_CATEGORIES.contains(&b.category.as_str()) {
+        return Err(ApiError::Validation { field: "category", message: format!("category must be one of {}", funds::ADJUST_CATEGORIES.join(", ")) });
+    }
+    check_reason(&b.reason)?;
+    let comment = b.reason.note.trim().to_string();
+    if !b.dry_run && comment.chars().count() < 3 {
+        return Err(ApiError::Validation { field: "note", message: "Add a comment (kept in the audit, not shown to the client)".into() });
+    }
+    let statement: String = b.statement_note.trim().chars().filter(|c| !c.is_control()).take(200).collect();
+    let amount = b.amount;
+    let m = st.hub.meta(login).filter(|m| m.tenant_id == s.ctx.tenant.tenant_id).ok_or_else(|| ApiError::NotFound("Account not found".into()))?;
+    if st.social.is_fund(login) {
+        return Err(ApiError::Status { status: 422, code: "pamm_account", message: "This is a PAMM fund account: its money moves only through invest and redeem at the rollover".into() });
+    }
+    let (category, code, force) = (b.category.clone(), b.reason.reason_code.clone(), b.force);
+
+    if b.dry_run {
+        let v = st
+            .hub
+            .read(
+                login,
+                Box::new(move |x| {
+                    let Some((a, env)) = x else { return Value::Null };
+                    let before = funds::funds_snapshot(env, a);
+                    let (strict, forced) = funds::adjust_limits(env, a, op);
+                    let limits = json!({"max": if strict == D::MAX { Value::Null } else { num(strict) }, "maxForced": if forced == D::MAX { Value::Null } else { num(forced) }});
+                    let mut tx = crate::engine::Tx::new(a);
+                    match funds::staff_adjust(&mut tx, env, funds::StaffAdjust { op, category: &category, amount, force, key: "dry-run", reason_code: &code, statement: &statement }) {
+                        Ok(_) => json!({"ok": true, "before": before, "after": funds::funds_snapshot(env, &tx.st), "limits": limits,
+                                        "stopOut": tx.events.iter().any(|e| matches!(e, crate::state::Event::StopOut { .. })),
+                                        "marginCall": tx.st.margin_call}),
+                        Err(r) => json!({"ok": false, "before": before, "limits": limits, "error": {"code": r.code, "message": r.message}}),
+                    }
+                }),
+            )
+            .await;
+        if v.is_null() {
+            return Err(ApiError::NotFound("Account not found".into()));
+        }
+        let mut v = v;
+        v["login"] = json!(login);
+        v["userId"] = json!(m.user_id);
+        v["type"] = json!(m.kind.as_str());
+        return Ok(Json(json!({"data": v})));
+    }
+
+    let key = b.idempotency_key.trim();
+    if key.is_empty() || key.len() > 128 {
+        return Err(ApiError::Validation { field: "idempotencyKey", message: "idempotencyKey must be 1–128 characters".into() });
+    }
+    let key = format!("adj:{key}");
+    let fingerprint = json!({"login": login, "op": op.as_str(), "category": b.category, "amount": r2(amount).to_string(), "force": force});
+    let replay = |found: (i64, String, Option<Value>, chrono::DateTime<chrono::Utc>)| -> ApiResult<Json<Value>> {
+        if found.2.as_ref() != Some(&fingerprint) {
+            return Err(ApiError::Conflict { code: "idempotency_conflict", message: "This idempotency key was used for a different adjustment".into() });
+        }
+        Ok(Json(json!({"data": {"txn": found.0, "kind": found.1, "at": found.3, "login": login, "replayed": true}, "audit": []})))
+    };
+    if let Some(found) = adjust_lookup(&st, s.ctx.tenant.tenant_id, &key).await? {
+        return replay(found);
+    }
+    let (k2, cat2, approved_by, request_id) = (key.clone(), b.category.clone(), b.approved_by.clone(), b.request_id);
+    let action = if op.is_credit() { "account.credit" } else { "account.balance" };
+    let o: Op = Box::new(move |tx, env| {
+        let before = funds::funds_snapshot(env, &tx.st);
+        let txn = funds::staff_adjust(tx, env, funds::StaffAdjust { op, category: &cat2, amount, force, key: &k2, reason_code: &code, statement: &statement })?;
+        let kind = tx.events.iter().find_map(|e| match e {
+            crate::state::Event::Ledger { txn: t } if t.id == txn => Some(t.kind.as_str()),
+            _ => None,
+        });
+        let after = funds::funds_snapshot(env, &tx.st);
+        let mut flags = vec!["ledger", "manual_adjustment"];
+        if force {
+            flags.push("forced");
+        }
+        if approved_by.is_some() {
+            flags.push("four_eyes");
+        }
+        let detail = json!({"op": op.as_str(), "category": cat2, "amount": num(amount), "txn": txn, "kind": kind, "statementNote": statement, "approvedBy": approved_by, "requestId": request_id});
+        let mut after_audit = after.clone();
+        if let (Value::Object(o), Value::Object(d)) = (&mut after_audit, detail.clone()) {
+            o.extend(d);
+        }
+        tx.audit.push(draft(action, before.clone(), after_audit, flags));
+        Ok(json!({"txn": txn, "kind": kind, "op": op.as_str(), "category": cat2, "amount": num(amount), "currency": tx.st.account.ccy(), "before": before, "after": after}))
+    });
+    let actor = format!("staff:{}", s.staff.id);
+    match st.hub.exec(login, &actor, Some(s.staff.clone()), &b.reason.reason_code, &comment, Some(fingerprint.clone()), o).await {
+        Ok(d) => {
+            let mut v = d.value;
+            v["login"] = json!(login);
+            v["userId"] = json!(m.user_id);
+            v["replayed"] = json!(false);
+            tracing::info!(login, op = op.as_str(), category = %b.category, amount = %amount, force, staff = %s.staff.id, "manual adjustment");
+            Ok(Json(json!({"data": v, "audit": d.audit})))
+        }
+        Err(ExecError::Duplicate(_)) => match adjust_lookup(&st, s.ctx.tenant.tenant_id, &key).await? {
+            Some(found) => replay(found),
+            None => Err(ApiError::Conflict { code: "idempotency_conflict", message: "Duplicate idempotency key".into() }),
+        },
+        Err(ExecError::Reject(rej)) => {
+            let a = AuditRow {
+                tenant_id: s.ctx.tenant.tenant_id,
+                at: chrono::Utc::now(),
+                staff_id: s.staff.id.clone(),
+                staff_name: s.staff.name.clone(),
+                staff_role: s.staff.role.clone(),
+                action: "account.rejected".into(),
+                tickets: vec![],
+                login: Some(login),
+                symbol: None,
+                before: None,
+                after: Some(json!({"attempted": format!("{} {}", op.as_str(), b.category), "amount": num(amount), "error": rej.message})),
+                reason_code: b.reason.reason_code.clone(),
+                note: comment.clone(),
+                flags: vec!["rejected".into()],
+            };
+            let entry = audit_now(&st, a).await?;
+            Err(ApiError::Reject { reject: rej, audit: vec![entry] })
+        }
+        Err(e) => Err(e.into()),
     }
 }
 

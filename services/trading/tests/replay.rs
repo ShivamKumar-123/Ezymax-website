@@ -160,6 +160,14 @@ async fn replay_rebuilds_identical_state_and_ledger_holds() {
     exec(&hub, logins[3], Box::new(|tx, env| trade::bulk_close(tx, env, trade::BulkFilter::All, None).done.is_empty().then_some(()).map_or(Ok(Value::Null), |_| Ok(Value::Null)))).await.unwrap();
     exec(&hub, logins[3], Box::new(|tx, env| funds::demo_refill(tx, env).map(|_| Value::Null))).await.ok();
     exec(&hub, logins[2], Box::new(|tx, env| funds::adjust(tx, env, funds::AdjustKind::Credit, d("500"), "it-credit", "BON", "it").map(|_| Value::Null))).await.unwrap();
+    // Back Office "Balance & credit": manual adjustments replay too, and one idempotency key books once
+    let manual = |op: funds::AdjustOp, cat: &'static str, amt: &'static str, key: &'static str| -> Op {
+        Box::new(move |tx, env| funds::staff_adjust(tx, env, funds::StaffAdjust { op, category: cat, amount: d(amt), force: false, key, reason_code: "ADJ", statement: "IT" }).map(|_| Value::Null))
+    };
+    exec(&hub, logins[2], manual(funds::AdjustOp::Add, "compensation", "100", "adj:it-1")).await.unwrap();
+    exec(&hub, logins[2], manual(funds::AdjustOp::CreditOut, "correction", "200", "adj:it-2")).await.unwrap();
+    let again = exec(&hub, logins[2], manual(funds::AdjustOp::Add, "compensation", "100", "adj:it-1")).await;
+    assert!(matches!(again, Err(ExecError::Duplicate(_))), "a repeated adjustment key must not book twice: {again:?}");
 
     // live state vs. replayed state
     let mut live = Vec::new();

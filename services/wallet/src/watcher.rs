@@ -6,7 +6,7 @@
 use std::time::Duration;
 
 use crate::chain::ChainId;
-use crate::ops::{deposits, trading, withdrawals};
+use crate::ops::{adjustments, deposits, trading, withdrawals};
 use crate::state::AppState;
 
 /// One pass of the fast loop. Returns (deposits checked, payouts checked, transfers recovered).
@@ -24,6 +24,9 @@ pub async fn tick(st: &AppState) -> anyhow::Result<(usize, usize, usize)> {
         }
     }
     let rec = trading::recover(st, 10).await?;
+    if let Err(e) = adjustments::recover(st, 30).await {
+        tracing::warn!(error = %e, "adjustment recovery pass failed");
+    }
     deposits::expire_intents(st).await?;
     Ok((deps.len(), pays.len(), rec))
 }

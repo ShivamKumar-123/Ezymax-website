@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUpRight, Clock, Gift, KeyRound, Mail, Monitor, Phone, ShieldCheck, UserRound } from "lucide-react";
+import { ArrowUpRight, Clock, Gift, Mail, Monitor, Phone, ShieldCheck, UserRound } from "lucide-react";
 import { Avatar, Card, CardHeader, Chip, CopyButton, DataTable, EmptyState, Flag, KeyValue, Skeleton, cn } from "@kalks/ui";
 import { useCan } from "@/components/staff-session";
 import { EmailChip, ErrorState, KycChip, Mono, actionLabel, actionTone, ago, countryName, day, device, useApi, useNow, when } from "./kit";
 import { RevokeDialog, sessionColumns } from "./sessions";
 import { ClientSecurityCard } from "./client-security";
 import { ClientKycCard } from "@/components/kyc/client-kyc-card";
+import { ClientBalanceCard } from "@/components/clients/balance-card";
 import type { ClientDetail, Session, SessionsPage } from "./types";
 
 /** UTM source / medium / campaign, landing page, referrer and marketing-email consent. */
@@ -259,17 +260,7 @@ export function ClientDetailView({ id, compact = false }: { id: number; compact?
             <ClientSecurityCard userId={u.id} onChanged={() => (sessions.reload(), reload())} />
             <ClientKycCard userId={u.id} kycStatus={u.kyc_status} />
             {referral}
-            <Card className="px-6 py-5">
-              <div className="flex items-start gap-3">
-                <span className="grid size-9 shrink-0 place-items-center rounded-full border border-line bg-surface-2 text-fg-2">
-                  <KeyRound className="size-4" />
-                </span>
-                <div>
-                  <div className="text-[13.5px] font-medium">Accounts and wallet</div>
-                  <p className="mt-0.5 text-[12.5px] text-fg-3">Trading accounts, USDT deposits and withdrawals appear here once those modules are live.</p>
-                </div>
-              </div>
-            </Card>
+            <ClientBalanceCard userId={u.id} clientName={u.name} />
           </div>
         </div>
       )}

@@ -26,8 +26,9 @@ pub fn kind_label(kind: &str) -> &'static str {
         "mam_fee" => "MAM fee",
         "adjustment" => "Balance adjustment",
         "refund" => "Refund",
-        "deposit" => "Deposit",
-        "withdrawal" => "Withdrawal",
+        "deposit" | "manual_deposit" => "Deposit",
+        "withdrawal" | "manual_withdrawal" => "Withdrawal",
+        "adjustment_in" | "adjustment_out" => "Balance adjustment",
         _ => "Wallet transaction",
     }
 }

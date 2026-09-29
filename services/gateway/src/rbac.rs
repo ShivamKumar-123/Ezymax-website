@@ -74,9 +74,12 @@ pub const PERMS: &[PermDef] = &[
     PermDef { key: "spreads.write", module: "config", action: "edit", label: "Edit spread markups" },
     PermDef { key: "finance.read", module: "finance", action: "view", label: "View deposits, withdrawals, wallets" },
     PermDef { key: "finance.write", module: "finance", action: "create", label: "Process deposits, adjust wallets, mark paid" },
-    PermDef { key: "finance.adjust", module: "finance", action: "edit", label: "Balance, credit and bonus on accounts" },
+    PermDef { key: "finance.adjust", module: "finance", action: "edit", label: "Add / deduct funds on wallets and trading accounts" },
+    PermDef { key: "finance.credit", module: "finance", action: "edit", label: "Give / take credit on trading accounts" },
     PermDef { key: "finance.settings", module: "finance", action: "edit", label: "Wallet settings (addresses, limits, fees)" },
     PermDef { key: "finance.approve", module: "finance", action: "approve", label: "Approve / reject withdrawals" },
+    PermDef { key: "finance.adjust_approve", module: "finance", action: "approve", label: "Approve balance adjustments above the 4-eyes threshold" },
+    PermDef { key: "finance.adjust_force", module: "finance", action: "approve", label: "Force a deduction beyond free margin (Super Admin)" },
     PermDef { key: "finance.export", module: "finance", action: "export", label: "Export finance data" },
     PermDef { key: "partners.read", module: "partners", action: "view", label: "View IB programme" },
     PermDef { key: "partners.write", module: "partners", action: "edit", label: "Plans, levels, partner changes, batches" },
@@ -203,7 +206,9 @@ pub fn builtin(key: &str) -> Option<&'static RoleDef> {
 pub fn preset_perms(key: &str) -> Option<Vec<&'static str>> {
     let v: Vec<&'static str> = match key {
         "platform_owner" => all_perms(),
-        "super_admin" | "admin" => tenant_perms(),
+        "super_admin" => tenant_perms(),
+        // forcing a deduction past the free margin is a Super Admin power only
+        "admin" => tenant_perms().into_iter().filter(|k| *k != "finance.adjust_force").collect(),
         "dealer" => vec![
             "stats.read", "clients.read", "spreads.read", "spreads.write", "dealing.read", "dealing.write", "accounts.read", "accounts.write",
             "social.read", "prop.read", "prop.write", "algo.read", "algo.write",
@@ -214,8 +219,8 @@ pub fn preset_perms(key: &str) -> Option<Vec<&'static str>> {
             "marketing.read", "reports.read",
         ],
         "finance" => vec![
-            "stats.read", "clients.read", "dealing.read", "accounts.read", "finance.read", "finance.write", "finance.adjust", "finance.approve",
-            "finance.export", "partners.read", "partners.approve", "social.read", "prop.read", "prop.approve", "algo.read", "content.read",
+            "stats.read", "clients.read", "dealing.read", "accounts.read", "finance.read", "finance.write", "finance.adjust", "finance.credit",
+            "finance.approve", "finance.adjust_approve", "finance.export", "partners.read", "partners.approve", "social.read", "prop.read", "prop.approve", "algo.read", "content.read",
             "marketing.read", "marketing.approve", "reports.read", "reports.export",
         ],
         "compliance" => vec![
@@ -425,7 +430,7 @@ mod tests {
         for k in [
             "stats.read", "clients.read", "audit.read", "sessions.read", "sessions.revoke", "staff.read", "spreads.read", "spreads.write", "kyc.read",
             "kyc.review", "dealing.read", "dealing.write", "dealing.policy", "accounts.read", "accounts.write", "finance.adjust", "groups.write",
-            "finance.read", "finance.write", "finance.approve", "finance.settings", "partners.read", "partners.write", "partners.approve",
+            "finance.credit", "finance.adjust_approve", "finance.adjust_force", "finance.read", "finance.write", "finance.approve", "finance.settings", "partners.read", "partners.write", "partners.approve",
             "social.read", "social.write", "social.approve", "prop.read", "prop.write", "prop.approve", "algo.read", "algo.write", "algo.settings",
             "content.read", "content.write", "support.read", "support.write", "notifications.write", "marketing.read", "marketing.write",
         ] {
@@ -442,6 +447,10 @@ mod tests {
         assert!(has("compliance", "clients.restrict") && has("compliance", "clients.block") && has("compliance", "clients.impersonate"));
         assert!(!has("compliance", "clients.impersonate_full") && !has("support", "clients.block") && has("super_admin", "clients.block"));
         assert!(has("finance", "finance.approve") && has("finance", "partners.approve") && !has("finance", "finance.settings"));
+        // balance controls: finance adjusts, gives credit and approves; only Super Admin may force
+        assert!(has("finance", "finance.adjust") && has("finance", "finance.credit") && has("finance", "finance.adjust_approve"));
+        assert!(!has("finance", "finance.adjust_force") && !has("admin", "finance.adjust_force") && has("super_admin", "finance.adjust_force"));
+        assert!(!has("dealer", "finance.adjust") && !has("support", "finance.credit"));
         assert!(!has("admin", "owner.tenants") && has("platform_owner", "owner.tenants"));
         assert!(has("marketing", "content.write") && !has("marketing", "clients.read"));
         assert!(has("partner_manager", "partners.write") && !has("support", "partners.write"));

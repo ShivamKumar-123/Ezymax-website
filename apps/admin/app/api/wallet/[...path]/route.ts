@@ -3,14 +3,23 @@ import { clientIp, gateway } from "@/lib/gateway";
 import { apiError, mutationAllowed, requireStaff } from "@/lib/bff";
 import { walletConfigured, walletService } from "@/lib/wallet";
 import { walletAllows, type WalletPerm } from "@/lib/wallet-perms";
+import { tradingAllows } from "@/lib/trading-perms";
 
 // Finance BFF: browser -> /api/wallet/<path> (same origin, staff cookie) -> wallet service /v1/admin/<path>.
 // The staff session is verified with the gateway on every call and the permission for the route is checked
 // here (lib/wallet-perms.ts); the wallet service checks the role again and writes its audit log.
 //   GET names?ids=1,2  -> client names / emails from the gateway (needs clients.read in the gateway)
+// Balance & credit (adjustments/*): a route lists the permissions of which any one is enough here; the wallet
+// service then enforces the exact key (finance.adjust for add / deduct, finance.credit for credit,
+// finance.adjust_force to force, finance.adjust_approve to approve) from the forwarded x-kalks-staff-perms.
 
 type Method = "GET" | "POST" | "PUT";
-type Route = { method: Method; re: RegExp; perm: WalletPerm };
+type Perm = WalletPerm | "finance.adjust";
+type Route = { method: Method; re: RegExp; perm: Perm | Perm[] };
+
+const ADJ_READ: Perm[] = ["finance.read", "finance.adjust", "finance.credit", "finance.adjust_approve"];
+const ADJ_WRITE: Perm[] = ["finance.adjust", "finance.credit"];
+const allows = (staff: Parameters<typeof walletAllows>[0], p: Perm) => (p === "finance.adjust" ? tradingAllows(staff, p) : walletAllows(staff, p));
 
 const N = "\\d{1,18}";
 const ROUTES: Route[] = [
@@ -19,7 +28,12 @@ const ROUTES: Route[] = [
   { method: "POST", re: new RegExp(`^deposits/${N}/(assign|reject|recheck)$`), perm: "finance.write" },
   { method: "POST", re: new RegExp(`^withdrawals/${N}/(approve|reject)$`), perm: "finance.approve" },
   { method: "POST", re: new RegExp(`^withdrawals/${N}/paid$`), perm: "finance.write" },
-  { method: "POST", re: /^adjustments$/, perm: "finance.write" },
+  { method: "GET", re: /^adjustments$/, perm: ADJ_READ },
+  { method: "GET", re: new RegExp(`^adjustments/(${N}|settings|targets/${N})$`), perm: ADJ_READ },
+  { method: "POST", re: /^adjustments(\/preview)?$/, perm: ADJ_WRITE },
+  { method: "POST", re: new RegExp(`^adjustments/${N}/(approve|reject)$`), perm: "finance.adjust_approve" },
+  { method: "POST", re: new RegExp(`^adjustments/${N}/cancel$`), perm: ADJ_WRITE },
+  { method: "PUT", re: /^adjustments\/settings$/, perm: "finance.settings" },
   { method: "PUT", re: /^settings$/, perm: "finance.settings" },
 ];
 
@@ -40,7 +54,8 @@ async function handle(req: NextRequest, parts: string[], method: Method) {
   }
   const who = await requireStaff(req);
   if (who instanceof NextResponse) return who;
-  if (!walletAllows(who.staff, route.perm)) return apiError(403, "forbidden", "Your role doesn't allow this.");
+  const perms = Array.isArray(route.perm) ? route.perm : [route.perm];
+  if (!perms.some((p) => allows(who.staff, p))) return apiError(403, "forbidden", "Your role doesn't allow this.");
   const r = await walletService(`/v1/admin/${path}${method === "GET" ? req.nextUrl.search : ""}`, { method, body, staff: who.staff, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });
   return json(r.data, r.status);
 }

@@ -523,6 +523,38 @@ pub async fn sync_wallet(app: &App, tenant: &str) -> anyhow::Result<()> {
             break;
         }
     }
+    sync_wallet_manual(app, tenant).await
+}
+
+/// Manual wallet deposits / withdrawals booked by staff as real money (Back Office "Balance & credit", reasons
+/// "Deposit (external payment received)" and "Withdrawal (paid externally)"). Rare, and an approval can apply an
+/// older request later, so every applied one is re-read (idempotent upsert).
+pub async fn sync_wallet_manual(app: &App, tenant: &str) -> anyhow::Result<()> {
+    for (category, kind) in [("deposit", "deposit"), ("withdrawal", "withdrawal")] {
+        for page in 1..=50 {
+            let v = app.up.get(Target::Wallet, tenant, As::Staff, &format!("/v1/admin/adjustments?target=wallet&status=applied&category={category}&limit=2000&page={page}")).await?;
+            let items = v["items"].as_array().cloned().unwrap_or_default();
+            for a in &items {
+                let Some(at) = jtime(&a["applied_at"]) else { continue };
+                sqlx::query(
+                    "INSERT INTO wallet_manual (tenant, id, user_id, kind, amount, currency, applied_at) VALUES ($1,$2,$3,$4,$5,$6,$7)
+                     ON CONFLICT (tenant, id) DO UPDATE SET amount = EXCLUDED.amount, applied_at = EXCLUDED.applied_at",
+                )
+                .bind(tenant)
+                .bind(a["id"].as_i64().unwrap_or(0))
+                .bind(a["user_id"].as_i64().unwrap_or(0))
+                .bind(kind)
+                .bind(dec(&a["amount_usd"]))
+                .bind(a["currency"].as_str().unwrap_or("USDT"))
+                .bind(at)
+                .execute(&app.pool)
+                .await?;
+            }
+            if items.len() < 2000 {
+                break;
+            }
+        }
+    }
     Ok(())
 }
 

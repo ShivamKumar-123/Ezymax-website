@@ -140,6 +140,162 @@ pub fn adjust(tx: &mut Tx, env: &Env, kind: AdjustKind, amount: D, idem: &str, r
     Ok(id)
 }
 
+/// Back Office "Balance & credit" operation (manual adjustment, requested through the wallet service).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AdjustOp {
+    /// Add funds to the balance.
+    Add,
+    /// Deduct funds from the balance.
+    Deduct,
+    /// Give credit (non-withdrawable, counts toward equity and margin, D29).
+    CreditIn,
+    /// Take credit back.
+    CreditOut,
+}
+
+impl AdjustOp {
+    pub fn parse(s: &str) -> Option<Self> {
+        Some(match s {
+            "add" => Self::Add,
+            "deduct" => Self::Deduct,
+            "credit_in" => Self::CreditIn,
+            "credit_out" => Self::CreditOut,
+            _ => return None,
+        })
+    }
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Add => "add",
+            Self::Deduct => "deduct",
+            Self::CreditIn => "credit_in",
+            Self::CreditOut => "credit_out",
+        }
+    }
+    pub fn is_credit(self) -> bool {
+        matches!(self, Self::CreditIn | Self::CreditOut)
+    }
+}
+
+/// Reason categories of a manual adjustment. Only `deposit` on Add and `withdrawal` on Deduct are real money
+/// (ledger kinds `deposit` / `withdrawal`, counted as client deposits / FTDs by the reports); every other
+/// category is booked as `adjustment` (balance) or `credit` and is never counted as a deposit.
+pub const ADJUST_CATEGORIES: &[&str] = &["deposit", "withdrawal", "correction", "compensation", "bonus", "fee", "chargeback", "other"];
+
+pub struct StaffAdjust<'a> {
+    pub op: AdjustOp,
+    pub category: &'a str,
+    /// Positive, in the account currency (USC for cent accounts).
+    pub amount: D,
+    /// Super Admin override of the free-margin limit (never of negative balance protection or the credit held).
+    pub force: bool,
+    pub key: &'a str,
+    pub reason_code: &'a str,
+    /// Client-visible statement text (ledger note); falls back to a neutral label.
+    pub statement: &'a str,
+}
+
+/// Balance, credit, equity, margin and limits of the account right now (account currency).
+pub fn funds_snapshot(env: &Env, st: &AccountState) -> serde_json::Value {
+    let m = metrics(env, st);
+    json!({
+        "balance": num(r2(m.balance)), "credit": num(r2(m.credit)), "bonus": num(r2(m.bonus)), "equity": num(r2(m.equity)),
+        "margin": num(r2(m.margin)), "freeMargin": num(r2(m.free_margin)), "withdrawable": num(r2(m.withdrawable())),
+        "marginLevel": m.level.map(|l| num(r2(l))).unwrap_or(serde_json::Value::Null), "currency": st.account.ccy(),
+    })
+}
+
+/// The most a staff member may deduct / take back right now: (limit without force, limit with force).
+/// Deduct: the free own funds (`withdrawable`), or with force the whole balance (negative balance protection
+/// is always on, so a forced deduction never takes the balance below 0). Take credit: the free margin capped
+/// at the credit held, or with force the credit held.
+pub fn adjust_limits(env: &Env, st: &AccountState, op: AdjustOp) -> (D, D) {
+    let m = metrics(env, st);
+    match op {
+        AdjustOp::Deduct => (r2(m.withdrawable()), r2(m.balance.max(ZERO))),
+        AdjustOp::CreditOut => (r2(m.free_margin.max(ZERO).min(m.credit)), r2(m.credit)),
+        AdjustOp::Add | AdjustOp::CreditIn => (D::MAX, D::MAX),
+    }
+}
+
+/// Books a manual balance / credit adjustment. Returns the ledger txn id.
+/// - Add: `deposit` (house `external`) for category deposit, else `adjustment` (house `adjustments`).
+/// - Deduct: `withdrawal` (house `external`) for category withdrawal, else `adjustment`; limited to the free own
+///   funds unless `force` (then to the balance: never below 0).
+/// - Give / take credit: `credit` (house `credit_issued`); taking back is limited to the credit held and,
+///   unless `force`, to the free margin (open positions keep their margin).
+/// - Demo accounts book every leg against `demo_funding` as `adjustment` / `credit`: never real money.
+///
+/// After the posting the margin level is re-checked (a forced deduction can trigger margin call or stop-out).
+pub fn staff_adjust(tx: &mut Tx, env: &Env, a: StaffAdjust) -> Result<i64, Reject> {
+    if !ADJUST_CATEGORIES.contains(&a.category) {
+        return Err(Reject::new("invalid_category", format!("Unknown reason {}", a.category)));
+    }
+    let amount = r2(a.amount);
+    if amount <= ZERO || amount != a.amount {
+        return Err(Reject::new("invalid_amount", "Amount must be above 0 with at most 2 decimals"));
+    }
+    let acc = tx.st.account.clone();
+    let ccy = acc.ccy();
+    if a.op == AdjustOp::Add && a.category == "withdrawal" {
+        return Err(Reject::new("invalid_category", "“Withdrawal (paid externally)” is a deduction"));
+    }
+    if a.op == AdjustOp::Deduct && a.category == "deposit" {
+        return Err(Reject::new("invalid_category", "“Deposit (external payment received)” adds funds"));
+    }
+    let (strict, forced) = adjust_limits(env, &tx.st, a.op);
+    match a.op {
+        AdjustOp::Deduct if amount > strict => {
+            if !a.force {
+                return Err(Reject::new(
+                    "insufficient_funds",
+                    format!("Deducting {} {ccy} exceeds the free funds: {} {ccy} can be deducted (balance {}, free margin {})", amount.normalize(), strict.normalize(), r2(tx.st.balance).normalize(), r2(metrics(env, &tx.st).free_margin).normalize()),
+                ));
+            }
+            if amount > forced {
+                return Err(Reject::new("negative_balance", format!("Negative balance protection: a forced deduction can take at most the balance, {} {ccy}", forced.normalize())));
+            }
+        }
+        AdjustOp::CreditOut if amount > forced => {
+            return Err(Reject::new("insufficient_credit", format!("The account holds {} {ccy} credit; you can't take back more", forced.normalize())));
+        }
+        AdjustOp::CreditOut if amount > strict && !a.force => {
+            return Err(Reject::new("insufficient_funds", format!("Taking back {} {ccy} credit exceeds the free margin: {} {ccy} can be taken while the positions are open", amount.normalize(), strict.normalize())));
+        }
+        _ => {}
+    }
+    let demo = acc.kind == AccountKind::Demo;
+    let (sub, house, kind, signed) = match a.op {
+        AdjustOp::Add if a.category == "deposit" && !demo => ("balance", "external", TxnKind::Deposit, amount),
+        AdjustOp::Deduct if a.category == "withdrawal" && !demo => ("balance", "external", TxnKind::Withdrawal, -amount),
+        AdjustOp::Add => ("balance", if demo { "demo_funding" } else { "adjustments" }, TxnKind::Adjustment, amount),
+        AdjustOp::Deduct => ("balance", if demo { "demo_funding" } else { "adjustments" }, TxnKind::Adjustment, -amount),
+        AdjustOp::CreditIn => ("credit", if demo { "demo_funding" } else { "credit_issued" }, TxnKind::Credit, amount),
+        AdjustOp::CreditOut => ("credit", if demo { "demo_funding" } else { "credit_issued" }, TxnKind::Credit, -amount),
+    };
+    let statement = a.statement.trim();
+    let statement = if statement.is_empty() {
+        match a.op {
+            AdjustOp::Add if kind == TxnKind::Deposit => "Deposit",
+            AdjustOp::Deduct if kind == TxnKind::Withdrawal => "Withdrawal",
+            AdjustOp::Add | AdjustOp::Deduct => "Balance adjustment",
+            AdjustOp::CreditIn => "Credit",
+            AdjustOp::CreditOut => "Credit removed",
+        }
+    } else {
+        statement
+    };
+    let id = tx.post(env, kind, a.key.to_string(), sub, house, signed, None, Some(a.reason_code.to_string()), Some(statement.to_string())).expect("non-zero amount");
+    let what = match a.op {
+        AdjustOp::Add => "added to your balance",
+        AdjustOp::Deduct => "deducted from your balance",
+        AdjustOp::CreditIn => "credit added",
+        AdjustOp::CreditOut => "credit removed",
+    };
+    tx.note("balance", format!("{} {ccy} {what}", amount.normalize()), json!({"amount": num(signed), "kind": sub, "txn": id}));
+    super::risk::check_margin(tx, env);
+    Ok(id)
+}
+
 /// D8: user-triggered refill back to the initial demo balance, capped at N per server day.
 pub fn demo_refill(tx: &mut Tx, env: &Env) -> Result<D, Reject> {
     let acc = tx.st.account.clone();

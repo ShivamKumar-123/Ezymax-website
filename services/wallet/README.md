@@ -13,6 +13,7 @@ Other services (IB, copy/PAMM, prop) move money in and out of client wallets **o
 - [Withdrawals](#withdrawals)
 - [Wallet and trading accounts](#wallet-and-trading-accounts)
 - [Back Office API](#back-office-api)
+- [Balance & credit (manual adjustments)](#balance--credit-manual-adjustments)
 - [Environment](#environment)
 - [Tests](#tests)
 - [Production checklist](#production-checklist)
@@ -216,7 +217,8 @@ The service checks the role on every staff route. The admin app maps them to `fi
 | Permission | Roles | Routes |
 |---|---|---|
 | `finance.read` | platform_owner, super_admin, admin, finance, compliance, risk_manager | all `GET /v1/admin/*` |
-| `finance.write` | platform_owner, super_admin, admin, finance | adjustments, assign / reject / recheck deposits, mark paid |
+| `finance.write` | platform_owner, super_admin, admin, finance | assign / reject / recheck deposits, mark paid |
+| `finance.adjust`, `finance.credit`, `finance.adjust_approve`, `finance.adjust_force` | see [Balance & credit](#balance--credit-manual-adjustments) | manual adjustments |
 | `finance.approve` | platform_owner, super_admin, admin, finance | approve / reject withdrawals |
 | `finance.settings` | platform_owner, super_admin, admin | receiving addresses, confirmations, limits, fees |
 
@@ -235,12 +237,50 @@ The service checks the role on every staff route. The admin app maps them to `fi
 | `POST /v1/admin/withdrawals/{id}/paid` | `{tx_hash}` |
 | `GET /v1/admin/wallets?user_ids=1,2&min_balance&page&limit` | – |
 | `GET /v1/admin/wallets/{user_id}` | – (balances, ledger, deposits, withdrawals, transfers) |
-| `POST /v1/admin/adjustments` | `{idempotency_key, user_id, currency, amount, direction, reason}` |
+| `POST /v1/admin/adjustments` | see [Balance & credit](#balance--credit-manual-adjustments) (the older `{idempotency_key, user_id, currency, amount, direction, reason}` body still works: wallet add / deduct, reason "correction") |
 | `GET /v1/admin/settings` / `PUT /v1/admin/settings` | `{limits?, chains?: [{chain, receiving_address, payout_address?, confirmations, deposits_enabled, withdrawals_enabled, min_deposit, withdraw_fee}]}` |
 | `GET /v1/admin/reconciliation` | – |
 | `GET /v1/admin/audit?page&limit` | – |
 
 The service writes every staff action to its append-only `audit_log`, with the actor, before and after values, reason, IP and user agent. Receiving-address changes are validated and audited, and are also visible as a settings history.
+
+## Balance & credit (manual adjustments)
+
+Back Office "Balance & credit" (client 360, Trading → Accounts, Finance → Wallets and Finance → Adjustments): add or deduct funds on the client's wallet or a trading account (live or demo), give or take credit on a trading account. Code: `src/ops/adjustments.rs`, routes `src/api/adjust.rs`, table `adjustments` (`migrations/0003_adjustments.sql`).
+
+| Permission | Allows |
+|---|---|
+| `finance.adjust` | add / deduct funds |
+| `finance.credit` | give / take credit (trading accounts only) |
+| `finance.adjust_approve` | approve / reject requests above the four-eyes threshold |
+| `finance.adjust_force` | force a trading-account deduction or credit take-back past the free margin (Super Admin) |
+| `finance.settings` | the four-eyes threshold |
+
+The admin BFF forwards the staff member's `finance.*` keys as `X-Kalks-Staff-Perms`; the service enforces the exact key (without the header it falls back to the role: finance roles for adjust / credit / approve, `super_admin` / `platform_owner` for force).
+
+**Request** (`POST /v1/admin/adjustments`, and `POST /v1/admin/adjustments/preview` without `idempotency_key`):
+
+```json
+{ "idempotency_key": "<one per submit>", "user_id": 42, "target": "wallet | trading", "login": 10000001, "currency": "USDT",
+  "op": "add | deduct | credit_in | credit_out", "category": "deposit | withdrawal | correction | compensation | bonus | fee | chargeback | other",
+  "amount": "100", "comment": "internal, audit only (required)", "client_note": "shown on the client's statement (optional)",
+  "notify": true, "force": false }
+```
+
+- **Preview** returns `{preview: {ok, before, after, limits, error?, amount_usd, threshold_usd, needs_approval, marginCall?, stopOut?}}`: the dialog's before → after step. Nothing is booked.
+- **Create** validates, runs the same preview (a refused request is audited as `adjustment.refused` and returns `422` with the reason), then records the row. At or below the threshold it is booked at once (`applied`); above it the row is `pending`. Returns `{adjustment}`. The same `idempotency_key` returns the original adjustment with `replayed: true` (a double click books once); the same key with another request is `409 idempotency_conflict`.
+- **Wallet target** (USDT, up to 6 decimals). Booked here in one transaction with the row, the audit entry and the client notification: `manual_deposit` (reason "Deposit (external payment received)", counter-account `sys:USDT:manual_deposit`), `manual_withdrawal` ("Withdrawal (paid externally)", `sys:USDT:manual_withdrawal`), otherwise `adjustment_in` / `adjustment_out` (`sys:USDT:adjustment`). A wallet never goes below 0 (the balance CHECK): a deduction above `available` is refused and `force` does not apply. Credit exists on trading accounts only.
+- **Trading target** (account currency: USD, or USC for cent accounts; up to 2 decimals). The account must belong to the client. The engine books it (`POST /v1/admin/accounts/{login}/adjust`, key `wallet-adj-<tenant>-<id>`; ledger kinds `deposit` / `withdrawal` / `adjustment` / `credit`, limits and the force / negative-balance-protection rules in `services/trading/README.md#balance--credit`). The row is `processing` while the call is in flight; when the answer is lost the recovery loop (every `WALLET_POLL_SECS`, rows older than 30 s) re-sends the same key and the engine replays the booking, so nothing is booked twice.
+- **Real money.** Only the two external reasons are deposits / withdrawals: the reports service counts `manual_deposit` / `manual_withdrawal` rows (wallet) and engine `deposit` / `withdrawal` (accounts) as money in / out and FTDs; every other reason is an adjustment.
+- **Four-eyes.** `tenant_settings.adjust_approval_usd` (USD value: USDT 1:1, USC ÷ 100). `null` = off. `GET/PUT /v1/admin/adjustments/settings {approval_threshold_usd}` (PUT needs `finance.settings`, audited as `wallet.settings.adjust_threshold`). A pending request is booked by `POST /v1/admin/adjustments/{id}/approve {note?}` from another staff member with `finance.adjust_approve` (the requester gets 403). The booking re-checks the limits at that moment; if it can no longer be booked the row becomes `failed` with the reason. `POST .../{id}/reject {reason}` (approver, reason required) and `POST .../{id}/cancel` (the requester) book nothing.
+- **Client.** The ledger note (wallet) / statement note (engine) is `client_note`, or a neutral label ("Balance adjustment", "Deposit", "Credit"). With `notify`, a notification row `adjustment.<wallet|account|credit>_<in|out>` is written in the booking transaction and pushed to support (bell + email per the client's `wallet` preference; link `/wallet/history` or `/accounts`).
+- **Audit.** `adjustment.requested`, `adjustment.approved`, `adjustment.rejected`, `adjustment.cancelled`, `adjustment.applied` (before / after balances, ledger txn and kind, requester and approver), `adjustment.failed`, `adjustment.refused`. The engine writes its own `account.balance` / `account.credit` audit for trading targets.
+
+| Method & path | |
+|---|---|
+| `GET /v1/admin/adjustments?user_id&login&staff&category&op&target&status&from&to&page&limit` | `{items, total, totals:{added_usd, deducted_usd, credit_in_usd, credit_out_usd, net_balance_usd, net_credit_usd, external_deposits_usd, external_withdrawals_usd, applied, pending, pending_usd, declined, failed}, staff[], threshold_usd, categories[]}`; `staff` matches the requester or the approver; `from` inclusive, `to` exclusive; `limit` up to 2000 (CSV export) |
+| `GET /v1/admin/adjustments/{id}` | `{adjustment}` |
+| `GET /v1/admin/adjustments/targets/{user_id}` | `{wallet, accounts (engine views, live and demo), engine_available, open[], recent[], threshold_usd, can:{adjust, credit, approve, force}}` |
 
 ## Environment
 
@@ -278,6 +318,7 @@ The apps need `WALLET_URL` (default `http://127.0.0.1:8095`) and `WALLET_INTERNA
   - withdrawal limits, cooldown, KYC gate, approve → paid → verify → completed, reject and cancel unlock;
   - to-trading / from-trading with engine success, rejection and timeout recovery;
   - the ledger invariants after every flow (Σ postings = 0 per txn, balances = Σ postings, append-only).
+- **Balance & credit** (`tests/adjustments.rs`): wallet add / deduct with the balance and ledger after each step, the notification and history note, a double submit booking once and a key conflict, over-deduction refused and audited, the external kinds; four-eyes (threshold set by `finance.settings` only, pending books nothing, the requester can't approve, a second staff member approves, double approval, reject / cancel, an approval that can no longer be booked fails); permissions (403 without `finance.adjust` / `finance.credit` / `finance.adjust_force`, role fallback without the header); trading accounts through the mock engine (free-margin refusal, force, credit take-back limits, another client's account refused, a lost engine answer settled by recovery with one booking, four-eyes on credit).
 
 ## Production checklist
 

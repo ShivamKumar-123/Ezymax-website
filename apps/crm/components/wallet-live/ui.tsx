@@ -44,6 +44,11 @@ export const KIND_LABEL: Record<string, MessageKey> = {
   copy_fee: "wallet.kind.copyFee",
   mam_fee: "wallet.kind.mamFee",
   adjustment: "wallet.kind.adjustment",
+  // Back Office "Balance & credit" (manual adjustments): the statement note is shown underneath
+  adjustment_in: "wallet.kind.adjustment",
+  adjustment_out: "wallet.kind.adjustment",
+  manual_deposit: "wallet.txType.deposit",
+  manual_withdrawal: "wallet.txType.withdrawal",
   refund: "wallet.kind.refund",
 };
 

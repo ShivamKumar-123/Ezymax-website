@@ -1,5 +1,6 @@
 //! HTTP API (axum, 127.0.0.1:8095). Every route except `/health` requires `X-Kalks-Internal`.
 
+pub mod adjust;
 pub mod admin;
 pub mod client;
 
@@ -54,7 +55,14 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/withdrawals/{id}/paid", post(admin::paid_withdrawal))
         .route("/v1/admin/wallets", get(admin::wallets))
         .route("/v1/admin/wallets/{user_id}", get(admin::wallet))
-        .route("/v1/admin/adjustments", post(admin::adjustment))
+        .route("/v1/admin/adjustments", post(adjust::create).get(adjust::list))
+        .route("/v1/admin/adjustments/preview", post(adjust::preview))
+        .route("/v1/admin/adjustments/settings", get(adjust::get_settings).put(adjust::put_settings))
+        .route("/v1/admin/adjustments/targets/{user_id}", get(adjust::targets))
+        .route("/v1/admin/adjustments/{id}", get(adjust::get))
+        .route("/v1/admin/adjustments/{id}/approve", post(adjust::approve))
+        .route("/v1/admin/adjustments/{id}/reject", post(adjust::reject))
+        .route("/v1/admin/adjustments/{id}/cancel", post(adjust::cancel))
         .route("/v1/admin/settings", get(admin::settings).put(admin::update_settings))
         .route("/v1/admin/reconciliation", get(admin::reconciliation))
         .route("/v1/admin/audit", get(admin::audit))

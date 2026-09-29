@@ -344,7 +344,8 @@ These use the same staff headers, reason rules and response shape as the dealing
 |---|---|---|
 | `GET /v1/admin/accounts?q=&group=&type=&status=&user_id=&page=&limit=` | – | `{items:[account view], page, limit, total}` (`q` matches login, name or user id) |
 | `GET /v1/admin/accounts/{login}` | – | `{account, positions: DeskPosition[], orders: DeskOrder[], lastActivityAt}` |
-| `POST /v1/admin/accounts/{login}/balance` | `{type:"deposit"|"withdrawal"|"adjustment"|"credit"|"bonus", amount (signed, account currency), idempotencyKey?, reasonCode, note}` | `{data:{balance, credit, bonus, txn, type, amount}, audit}`. A note is required; withdrawals are limited to the withdrawable amount; credit/bonus cannot go below 0 |
+| `POST /v1/admin/accounts/{login}/balance` | `{type:"deposit"|"withdrawal"|"adjustment"|"credit"|"bonus", amount (signed, account currency), idempotencyKey?, reasonCode, note}` | `{data:{balance, credit, bonus, txn, type, amount}, audit}`. A note is required; withdrawals are limited to the withdrawable amount; credit/bonus cannot go below 0. Used by services (prop, growth); the Back Office uses it for bonus only and books balance and credit through `/adjust` |
+| `POST /v1/admin/accounts/{login}/adjust` | `{op:"add"|"deduct"|"credit_in"|"credit_out", category, amount (positive, account currency), idempotencyKey, force?, statementNote?, dryRun?, approvedBy?, requestId?, reasonCode, note}` | Back Office **Balance & credit**, called by the wallet service (which owns the request, four-eyes and the client notice). `{data:{txn, kind, op, category, amount, currency, before, after, login, userId, replayed}, audit}`; `dryRun` returns `{ok, before, after?, limits:{max, maxForced}, marginCall, stopOut, error?}` and books nothing. See [Balance & credit](#balance--credit) |
 | `POST /v1/admin/accounts/{login}/status` | `{status:"active"|"disabled"|"close_only"|"read_only"|"expired", reasonCode, note}` | `{data:{status}, audit}` |
 | `POST /v1/admin/accounts/{login}/group` | `{group, reasonCode, note}` | `{data:{group}, audit}`. Netting ↔ hedging only while flat; cent ↔ standard never |
 | `POST /v1/admin/accounts/{login}/leverage` | `{leverage, reasonCode, note}` | `{data:{leverage}, audit}` (allowed with open positions; margin is re-checked at once) |
@@ -352,6 +353,25 @@ These use the same staff headers, reason rules and response shape as the dealing
 | `POST /v1/admin/groups` | `Group` (all fields, camelCase) + `reasonCode, note` | `{data: Group, audit}` |
 | `PUT /v1/admin/groups/{code}` | `Group` + reason | `{data: Group, audit}`. Mode and cent are fixed once the group has accounts |
 | `GET /v1/admin/ledger/accounts` | – | `{house:[{code, currency, balance}], netByCurrency:[{currency, net}]}` (net is always 0) |
+
+### Balance & credit
+
+Manual adjustments from the Back Office go through `POST /v1/admin/accounts/{login}/adjust` (`funds::staff_adjust`). The wallet service calls it (`services/wallet`, `ops/adjustments.rs`) with the staff identity of the requester and their permission keys in `X-Kalks-Staff-Perms`; the engine checks them again.
+
+| Operation | Permission | Ledger kind (house account) | Limit |
+|---|---|---|---|
+| `add` | `finance.adjust` | `deposit` (`external`) for category `deposit`, else `adjustment` (`adjustments`) | – |
+| `deduct` | `finance.adjust` | `withdrawal` (`external`) for category `withdrawal`, else `adjustment` (`adjustments`) | the free own funds (`withdrawable`) |
+| `credit_in` | `finance.credit` | `credit` (`credit_issued`) | – |
+| `credit_out` | `finance.credit` | `credit` (`credit_issued`) | the credit held, and the free margin |
+
+- Categories: `deposit`, `withdrawal`, `correction`, `compensation`, `bonus`, `fee`, `chargeback`, `other`. Only `deposit` on add and `withdrawal` on deduct are real money: the reports count ledger kinds `deposit` / `withdrawal` as client deposits, withdrawals and FTDs, and never `adjustment` or `credit`. `deposit` can't be a deduction and `withdrawal` can't add funds.
+- Demo accounts book every leg against `house:demo_funding` as `adjustment` / `credit`: never real money.
+- **Force** (`force: true`, permission `finance.adjust_force`, Super Admin only) lifts the free-margin limit of a deduction or of taking credit back. Negative balance protection (D16) is always on in Kalks, so even a forced deduction can take at most the balance (`422 negative_balance`: the balance never goes below 0 by a staff action), and credit taken back can never exceed the credit held (`422 insufficient_credit`). After every adjustment the margin level is re-checked, so a forced deduction can raise the margin call or stop out positions at once; the stop-out's realised loss is then covered by NBP as usual.
+- Refusals: `insufficient_funds` (above the free funds / free margin), `insufficient_credit`, `negative_balance`, `invalid_category`, `invalid_amount` (≤ 0 or more than 2 decimals), `pamm_account` (fund accounts move money only through invest / redeem). A refusal is audited as `account.rejected`.
+- The ledger `note` is the client-visible `statementNote` (a neutral label such as "Balance adjustment" or "Credit" when empty); the internal comment (`note` in the body) goes to the audit only. `reasonCode` is `ADJ-<CAT> · <label>`.
+- Idempotent on `idempotencyKey` (stored as `adj:<key>`): the same key and body returns the original booking with `replayed: true`; the same key with another body is `409 idempotency_conflict`.
+- Audit: `account.balance` / `account.credit` with before and after (balance, credit, equity, margin, free margin, withdrawable, margin level), the operation, category, statement note, the approver for four-eyes requests (`approvedBy`) and flags `ledger`, `manual_adjustment`, `forced`, `four_eyes`.
 
 The Group object has `code, name, mode, cent, accountTypes ("live"|"demo"|"both"), leverages[], defaultLeverage, marginCallPct, stopOutPct, hedgedMarginPct, minDeposit, swapFree, commissionPerLot, route, spreadGroup, maxAccountsPerUser, demoInitialBalance, demoRefillsPerDay, demoExpiryDays, enabled`.
 
@@ -700,6 +720,7 @@ cargo test -p trading
   - Orders: limit / stop / stop-limit, OCO, Today expiry, weekend `market_closed` while BTC trades, requote, free-margin check.
   - Risk: margin call, stop-out closing the largest loser first, then NBP. Swaps: triple Wednesday, weekend, crypto daily, swap-free, and a position opened after the rollover.
   - Dealing and accounts: book transfer (full + split), reopen / void / price correction, halt / close-only / max-lot / disabled gates, duplicate `clientOrderId`, demo refill cap, leverage only when flat, withdrawable with credit.
+  - Balance & credit: the ledger kind per operation and category, balance = Σ postings after every step, deductions refused above the free funds, force past the free margin (margin call, stop-out) but never below a zero balance, credit take-back limited to the credit held and the free margin, demo accounts against `demo_funding`, replay.
 - **Property tests (proptest).** Random operation sequences run on hedging, netting and cent accounts. After every step they check:
   - every ledger transaction balances, and Σ of all postings is 0 per currency;
   - balance = Σ postings;
@@ -714,7 +735,7 @@ cargo test -p trading
   - `social::allocation`: equity / balance share, rounding down to the lot step with the remainder reported, the minimum lot, accounts without equity, account and symbol max lot, multiplier and percent, the MAM performance fee above the HWM and the pro-rata management fee.
   - `tests/mam.rs` (PostgreSQL): a MAM programme through the real shards, tap and copier. Stale consent refused; a 0.50 block split 0.30 / 0.20 by equity with the allocation audit row; the terminal guard refuses MAM tickets and a bulk close but allows the client's own trade; partial and full close follow; exact performance fee (20 % of +300 = 60) with the balance after the debit; revoke settles the other link's fee and the next block goes only to the remaining account; the equity stop closes the MAM trade and stops the link; replay of every account and balanced ledger.
   - `tests/social.rs` (PostgreSQL): shards + tap + copier + a mock wallet. It covers mirroring with the right size, partial close, the fee above HWM, stop and return of funds, a PAMM seed → invest → rollover → profit → fee + redemption with exact figures, units = Σ unit ledger, and replay of every account from `events`.
-- **Integration test** (`tests/replay.rs`). This runs against a throw-away database `kalks_trading_test_<pid>` on the local Postgres; it is skipped when Postgres is unreachable. It runs trades, reversal, pending fills, a partial close, a book split, swaps, a demo refill and credit through the shards. It then checks that `replay_all` from the `events` table equals the live state. It also checks the database guarantees: a reused ledger idempotency key is refused, an unbalanced transaction cannot commit, and `events` / `ledger_postings` are append-only.
+- **Integration test** (`tests/replay.rs`). This runs against a throw-away database `kalks_trading_test_<pid>` on the local Postgres; it is skipped when Postgres is unreachable. It runs trades, reversal, pending fills, a partial close, a book split, swaps, a demo refill, credit and manual adjustments (a repeated adjustment key books once) through the shards. It then checks that `replay_all` from the `events` table equals the live state. It also checks the database guarantees: a reused ledger idempotency key is refused, an unbalanced transaction cannot commit, and `events` / `ledger_postings` are append-only.
 
 ## Known gaps
 

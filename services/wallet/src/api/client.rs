@@ -178,7 +178,7 @@ pub async fn activity(State(st): State<AppState>, ctx: Ctx, Path(user_id): Path<
     if !matches!(kind, "all" | "deposit" | "withdrawal" | "transfer" | "other") {
         return Err(ApiError::BadRequest("type must be all, deposit, withdrawal, transfer or other".into()));
     }
-    let kinds: Vec<String> = transfers::KINDS.iter().map(|k| k.to_string()).collect();
+    let kinds: Vec<String> = transfers::KINDS.iter().chain(crate::ops::adjustments::LEDGER_KINDS).map(|k| k.to_string()).collect();
     let rows = sqlx::query(
         "SELECT *, count(*) OVER () AS total FROM (
             SELECT 'deposit' AS type, id::text AS id, status, COALESCE(amount, expected_amount) AS amount, currency, chain, tx_hash AS hash,

@@ -317,8 +317,10 @@ pub struct Money {
     pub reference: String,
 }
 
-/// Every real-money movement: wallet deposits (credited) and withdrawals (completed), plus deposits /
-/// withdrawals staff booked directly on live trading accounts. `to = None` = up to now.
+/// Every real-money movement: wallet deposits (credited) and withdrawals (completed), manual wallet deposits /
+/// withdrawals staff booked as external payments (`wallet_manual`), plus deposits / withdrawals staff booked
+/// directly on live trading accounts. Other manual adjustments (corrections, compensation, bonus, credit…) are
+/// never money in or out. `to = None` = up to now.
 pub async fn money(app: &App, tenant: &str, from: Option<DateTime<Utc>>, to: Option<DateTime<Utc>>) -> ApiResult<Vec<Money>> {
     let mut v = vec![];
     for r in sqlx::query("SELECT id, user_id, amount, chain, credited_at FROM wallet_deposits WHERE tenant = $1 AND status = 'credited' AND user_id IS NOT NULL AND ($2::timestamptz IS NULL OR credited_at >= $2) AND ($3::timestamptz IS NULL OR credited_at < $3)")
@@ -338,6 +340,16 @@ pub async fn money(app: &App, tenant: &str, from: Option<DateTime<Utc>>, to: Opt
         .await?
     {
         v.push(Money { at: r.get("completed_at"), user_id: r.get("user_id"), amount: -f(r.get("amount")), fee: f(r.get("fee")), source: "wallet", reference: format!("withdrawal #{} {}", r.get::<i64, _>("id"), r.get::<String, _>("chain")) });
+    }
+    for r in sqlx::query("SELECT id, user_id, kind, amount, applied_at FROM wallet_manual WHERE tenant = $1 AND ($2::timestamptz IS NULL OR applied_at >= $2) AND ($3::timestamptz IS NULL OR applied_at < $3)")
+        .bind(tenant)
+        .bind(from)
+        .bind(to)
+        .fetch_all(&app.pool)
+        .await?
+    {
+        let sign = if r.get::<String, _>("kind") == "withdrawal" { -1.0 } else { 1.0 };
+        v.push(Money { at: r.get("applied_at"), user_id: r.get("user_id"), amount: sign * f(r.get("amount")), fee: 0.0, source: "wallet", reference: format!("manual {} ADJ-{}", r.get::<String, _>("kind"), r.get::<i64, _>("id")) });
     }
     for r in sqlx::query(
         "SELECT l.at, a.user_id, l.amount, a.cent, l.txn, l.login FROM ledger l JOIN accounts a ON a.tenant = l.tenant AND a.login = l.login

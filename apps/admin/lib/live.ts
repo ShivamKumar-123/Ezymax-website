@@ -35,9 +35,9 @@ export const LIVE_EXCLUDED = [
   "/partners/sub-brokers",
   // owner panel: everything but the global symbol master
   "/brokers/symbols",
-  // finance: deposits, withdrawals, wallets, reconciliation and wallet settings run on the wallet service
+  // finance: deposits, withdrawals, wallets, adjustments (Balance & credit), reconciliation and wallet settings
+  // run on the wallet service
   "/finance/transactions",
-  "/finance/adjustments",
   "/finance/payouts",
   "/finance/conversion",
   // marketing: everything runs on the growth service (journeys included); UTM campaigns on the reports service

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeftRight, Ban, CandlestickChart, CirclePause, CirclePlay, Coins, Gauge as GaugeIcon, Layers, List, MoreHorizontal, RefreshCw, Search, ShieldAlert, SlidersHorizontal, UserRound, Wallet } from "lucide-react";
+import { ArrowLeftRight, Ban, CandlestickChart, CirclePause, CirclePlay, Coins, Gauge as GaugeIcon, Gift, Layers, List, MoreHorizontal, RefreshCw, Search, ShieldAlert, SlidersHorizontal, UserRound, Wallet } from "lucide-react";
 import { Button, Card, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, Menu, PageHeader, Reveal, Segmented, SymbolCell, Tabs, cn, formatNumber, type Column } from "@kalks/ui";
 import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
@@ -29,6 +29,7 @@ import {
   type DeskPosition,
   type LiveAccount,
 } from "@/lib/trading-desk";
+import { AdjustDialog } from "@/components/clients/adjust-dialog";
 import { ACC_REASONS, FIN_REASONS, LEDGER_KIND, STATUS_LABEL, STATUS_TONE, money2, signed2, tradingWrite, type History, type Ledger } from "./kit";
 
 const PER = 50;
@@ -60,7 +61,7 @@ export function StatusChip({ status }: { status: string }) {
   );
 }
 
-type Act = { k: "funds" | "status" | "group" | "leverage" | "trade" | "controls"; a: LiveAccount } | { k: "route"; a: LiveAccount; book: Book | null } | null;
+type Act = { k: "adjust" | "funds" | "status" | "group" | "leverage" | "trade" | "controls"; a: LiveAccount } | { k: "route"; a: LiveAccount; book: Book | null } | null;
 
 /* ------------------------------------------------------------------ */
 /* Page                                                                */
@@ -199,11 +200,13 @@ export function LiveAccountsPage() {
 
 function AccountMenu({ a, onOpen, onAct }: { a: LiveAccount; onOpen?: () => void; onAct: (x: Act) => void }) {
   const canFunds = useCan("finance.adjust");
+  const canCredit = useCan("finance.credit");
   const canAcc = useCan("accounts.write");
   const canDeal = useCan("dealing.write");
   const items = [
     ...(onOpen ? [{ label: "Open account", icon: <UserRound />, onSelect: onOpen }] : []),
-    ...(canFunds ? [{ label: "Balance · credit · bonus", icon: <Coins />, onSelect: () => onAct({ k: "funds", a }) }] : []),
+    ...(canFunds || canCredit ? [{ label: "Balance & credit", icon: <Coins />, onSelect: () => onAct({ k: "adjust", a }) }] : []),
+    ...(canFunds ? [{ label: "Bonus", icon: <Gift />, onSelect: () => onAct({ k: "funds", a }) }] : []),
     ...(canAcc
       ? [
           { label: "Change status", icon: <CirclePause />, onSelect: () => onAct({ k: "status", a }) },
@@ -357,13 +360,14 @@ function Info({ k, v }: { k: string; v: React.ReactNode }) {
 
 function AccountButtons({ a, onAct }: { a: LiveAccount; onAct: (x: Act) => void }) {
   const canFunds = useCan("finance.adjust");
+  const canCredit = useCan("finance.credit");
   const canAcc = useCan("accounts.write");
   const canDeal = useCan("dealing.write");
   return (
     <div className="flex w-full flex-wrap items-center justify-end gap-2">
-      {canFunds && (
-        <Button size="sm" variant="gold" onClick={() => onAct({ k: "funds", a })}>
-          <Coins /> Adjust funds
+      {(canFunds || canCredit) && (
+        <Button size="sm" variant="gold" onClick={() => onAct({ k: "adjust", a })}>
+          <Coins /> Balance & credit
         </Button>
       )}
       {canAcc && (
@@ -495,7 +499,8 @@ export function AccountActions({ act, onClose, onDone }: { act: Act; onClose: ()
   const rest = useRestDesk();
   const dir = useLiveDirectory();
   const a = act?.a;
-  const [fType, setFType] = React.useState<FundsType>("deposit");
+  // balance and credit go through Balance & credit (AdjustDialog); this dialog books the bonus sub-ledger only
+  const [fType, setFType] = React.useState<FundsType>("bonus");
   const [dirn, setDirn] = React.useState<"add" | "remove">("add");
   const [amount, setAmount] = React.useState("");
   const [idem, setIdem] = React.useState("");
@@ -505,7 +510,7 @@ export function AccountActions({ act, onClose, onDone }: { act: Act; onClose: ()
   const [ctl, setCtl] = React.useState({ tradingDisabled: false, closeOnly: false, maxLot: "", execDelayMs: "0", markupPips: "0" });
   React.useEffect(() => {
     if (!a) return;
-    setFType("deposit");
+    setFType("bonus");
     setDirn("add");
     setAmount("");
     setIdem(typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now()));
@@ -536,10 +541,11 @@ export function AccountActions({ act, onClose, onDone }: { act: Act; onClose: ()
 
   return (
     <>
+      <AdjustDialog open={act?.k === "adjust"} onOpenChange={close} userId={Number(a.userId)} clientName={clientName(a.userId, a.login)} preset={{ target: "trading", login: Number(a.login) }} onDone={() => onDone?.()} />
       <DeskDialog
         open={act?.k === "funds"}
         onOpenChange={close}
-        title={`Balance · credit · bonus · ${a.login}`}
+        title={`Bonus · ${a.login}`}
         description={`${clientName(a.userId, a.login)} · ${a.groupName} · ${ccy}. Booked on the double-entry ledger and shown on the client statement.`}
         codes={FIN_REASONS}
         requireNote
@@ -550,7 +556,7 @@ export function AccountActions({ act, onClose, onDone }: { act: Act; onClose: ()
         success={(d) => `Booked · balance ${money2(d?.balance ?? 0, ccy)}${d?.txn ? ` · txn ${d.txn}` : ""}`}
       >
         <div className="space-y-4">
-          <Segmented size="sm" value={fType} onChange={setFType} options={[{ value: "deposit", label: "Deposit" }, { value: "withdrawal", label: "Withdrawal" }, { value: "adjustment", label: "Adjustment" }, { value: "credit", label: "Credit" }, { value: "bonus", label: "Bonus" }]} />
+          <p className="text-[12px] text-fg-3">Bonus is a separate sub-ledger that counts toward equity. Balance and credit changes are made with Balance &amp; credit.</p>
           <div className="grid grid-cols-2 gap-3">
             {fType !== "deposit" && fType !== "withdrawal" ? (
               <Field label="Direction">

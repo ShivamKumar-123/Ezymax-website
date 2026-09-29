@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button, Card, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Segmented, Tabs, cn, type Column } from "@kalks/ui";
 import { ErrorState, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
+import { AdjustDialog } from "@/components/clients/adjust-dialog";
 import { ClientCell, DEP_STATUS, Status, TxLink, WD_STATUS, usd, walletWrite, type Deposit, type Paged, type Summary, type Withdrawal } from "./kit";
 
 const PER = 50;
@@ -32,54 +33,34 @@ const KIND: Record<string, string> = {
   pamm_redeem: "PAMM redeem",
   copy_fee: "Copy fee",
   adjustment: "Adjustment",
+  adjustment_in: "Adjustment (added)",
+  adjustment_out: "Adjustment (deducted)",
+  manual_deposit: "Deposit (external)",
+  manual_withdrawal: "Withdrawal (external)",
   refund: "Refund",
 };
 
+/** Opens Balance & credit on the wallet (limits, four-eyes, client notice: components/clients/adjust-dialog). */
 function Adjust({ userId, onDone }: { userId: number; onDone: () => void }) {
-  const [dir, setDir] = React.useState<"credit" | "debit">("credit");
-  const [amount, setAmount] = React.useState("");
-  const [reason, setReason] = React.useState("");
-  const [busy, setBusy] = React.useState(false);
-  const [err, setErr] = React.useState<string | null>(null);
-  const [key, setKey] = React.useState(() => crypto.randomUUID());
-  const ok = /^\d{1,12}(\.\d{1,6})?$/.test(amount.trim()) && Number(amount) > 0 && reason.trim().length >= 3;
-  const submit = async () => {
-    setBusy(true);
-    setErr(null);
-    const r = await walletWrite<{ adjustment: { balance: { available: string } } }>("adjustments", { idempotency_key: key, user_id: userId, currency: "USDT", amount: amount.trim(), direction: dir, reason: reason.trim() });
-    setBusy(false);
-    if (!r.ok) return setErr(r.error.message);
-    toast.success(dir === "credit" ? "Wallet credited" : "Wallet debited", { description: `${usd(amount)} USDT · available now ${usd(r.data.adjustment.balance.available)}` });
-    setAmount("");
-    setReason("");
-    setKey(crypto.randomUUID());
-    onDone();
-  };
+  const [open, setOpen] = React.useState(false);
   return (
-    <div className="space-y-3 rounded-[16px] border border-line bg-surface-2 p-4">
-      <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-3 rounded-[16px] border border-line bg-surface-2 px-4 py-3">
+      <div>
         <div className="text-[13.5px] font-medium">Manual adjustment</div>
-        <Segmented size="xs" value={dir} onChange={setDir} options={[{ value: "credit", label: "Credit" }, { value: "debit", label: "Debit" }]} />
+        <div className="text-[11.5px] text-fg-3">Add or deduct funds with a reason; audited, four-eyes above the threshold.</div>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Amount (USDT)">
-          <Input value={amount} onChange={(e) => setAmount(e.target.value.replace(",", "."))} inputMode="decimal" placeholder="0.00" aria-label="Adjustment amount" />
-        </Field>
-        <Field label="Reason" hint="Shown on the client's history; audited.">
-          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Compensation for …" aria-label="Adjustment reason" />
-        </Field>
-      </div>
-      {err && <div className="text-[12.5px] text-down">{err}</div>}
-      <Button variant={dir === "credit" ? "ember" : "down-outline"} disabled={!ok || busy} onClick={submit}>
-        {dir === "credit" ? "Credit wallet" : "Debit wallet"}
+      <Button variant="surface" size="sm" onClick={() => setOpen(true)}>
+        <Coins /> Balance &amp; credit
       </Button>
+      <AdjustDialog open={open} onOpenChange={setOpen} userId={userId} preset={{ target: "wallet" }} onDone={onDone} />
     </div>
   );
 }
 
 function WalletDrawer({ userId, onClose, onChanged }: { userId: number | null; onClose: () => void; onChanged: () => void }) {
   const { data, error, reload } = useApi<WalletDetail>(userId ? `/api/wallet/wallets/${userId}` : null, { refreshMs: 15_000 });
-  const canWrite = useCan("finance.write");
+  const canAdjust = useCan("finance.adjust");
+  const canCredit = useCan("finance.credit");
   const [tab, setTab] = React.useState<"ledger" | "deposits" | "withdrawals" | "transfers">("ledger");
   const b = data?.balances.find((x) => x.currency === "USDT");
   return (
@@ -103,7 +84,7 @@ function WalletDrawer({ userId, onClose, onChanged }: { userId: number | null; o
               </div>
             ))}
           </div>
-          {canWrite && <Adjust userId={data.user_id} onDone={() => (reload(), onChanged())} />}
+          {(canAdjust || canCredit) && <Adjust userId={data.user_id} onDone={() => (reload(), onChanged())} />}
           <Tabs value={tab} onChange={setTab} tabs={[{ value: "ledger", label: "Ledger" }, { value: "deposits", label: "Deposits", count: data.deposits.length }, { value: "withdrawals", label: "Withdrawals", count: data.withdrawals.length }, { value: "transfers", label: "Transfers", count: data.transfers.length }]} />
           <div className="space-y-1.5">
             {tab === "ledger" &&

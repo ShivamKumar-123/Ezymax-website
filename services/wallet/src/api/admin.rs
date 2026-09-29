@@ -13,8 +13,8 @@ use crate::audit::{self, Entry};
 use crate::chain::ChainId;
 use crate::error::{ApiError, ApiResult};
 use crate::ledger;
-use crate::money::{D, WALLET_DP, check_amount, de_dec, de_opt_dec, s};
-use crate::ops::{deposits, transfers, withdrawals};
+use crate::money::{D, WALLET_DP, de_opt_dec, s};
+use crate::ops::{deposits, withdrawals};
 use crate::settings;
 use crate::state::{AppState, ROLES_APPROVE, ROLES_READ, ROLES_SETTINGS, ROLES_WRITE, StaffCtx};
 
@@ -299,67 +299,6 @@ pub async fn wallet(State(st): State<AppState>, s_ctx: StaffCtx, Path(user_id): 
     let wds: Vec<Value> = sqlx::query("SELECT * FROM withdrawals WHERE tenant_id = $1 AND user_id = $2 ORDER BY id DESC LIMIT 50").bind(t).bind(user_id).fetch_all(&st.pool).await?.iter().map(withdrawals::withdrawal_json).collect();
     let tts: Vec<Value> = sqlx::query("SELECT * FROM trading_transfers WHERE tenant_id = $1 AND user_id = $2 ORDER BY id DESC LIMIT 50").bind(t).bind(user_id).fetch_all(&st.pool).await?.iter().map(crate::ops::trading::transfer_json).collect();
     Ok(ok(json!({"user_id": user_id, "balances": ledger::balances_json(&b), "ledger": ledger_items, "deposits": deps, "withdrawals": wds, "transfers": tts})))
-}
-
-/* ---------------- adjustments ---------------- */
-
-#[derive(Deserialize)]
-pub struct AdjustBody {
-    #[serde(default)]
-    idempotency_key: String,
-    #[serde(default)]
-    user_id: i64,
-    #[serde(default = "usdt")]
-    currency: String,
-    #[serde(deserialize_with = "de_dec")]
-    amount: D,
-    #[serde(default)]
-    direction: String,
-    #[serde(default)]
-    reason: String,
-}
-
-fn usdt() -> String {
-    "USDT".into()
-}
-
-pub async fn adjustment(State(st): State<AppState>, s_ctx: StaffCtx, Body(b): Body<AdjustBody>) -> ApiResult<Json<Value>> {
-    s_ctx.require(ROLES_WRITE)?;
-    let reason = b.reason.trim().to_string();
-    if reason.len() < 3 {
-        return Err(ApiError::validation("reason", "Enter a reason (shown on the client's wallet history)"));
-    }
-    check_amount(b.amount, WALLET_DP).map_err(|m| ApiError::validation("amount", m))?;
-    let before = ledger::balances(&st.pool, s_ctx.ctx.tenant.id, b.user_id).await?;
-    let r = transfers::TransferReq {
-        idempotency_key: b.idempotency_key,
-        user_id: b.user_id,
-        currency: b.currency.trim().to_uppercase(),
-        amount: b.amount,
-        direction: b.direction.trim().to_lowercase(),
-        kind: "adjustment".into(),
-        reference: Some(format!("staff:{}", s_ctx.staff.id)),
-        note: Some(reason.clone()),
-    };
-    let v = transfers::transfer(&st, s_ctx.ctx.tenant.id, &s_ctx.staff.tag(), "adj", r).await?;
-    if v.get("replayed").and_then(Value::as_bool) != Some(true) {
-        let mut tx = st.pool.begin().await?;
-        audit::staff(
-            &mut tx,
-            &s_ctx,
-            Entry {
-                action: "wallet.adjustment",
-                target_kind: "wallet",
-                target_id: b.user_id.to_string(),
-                reason: Some(&reason),
-                before: Some(json!({"balances": ledger::balances_json(&before)})),
-                after: Some(json!({"txn_id": v.get("txn_id"), "direction": v.get("direction"), "amount": v.get("amount"), "balance": v.get("balance")})),
-            },
-        )
-        .await?;
-        tx.commit().await?;
-    }
-    Ok(ok(json!({"adjustment": v})))
 }
 
 /* ---------------- settings ---------------- */

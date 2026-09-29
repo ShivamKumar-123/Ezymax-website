@@ -31,7 +31,7 @@ pub fn support_type(kind: &str) -> String {
 pub fn severity(kind: &str) -> &'static str {
     if kind.contains("rejected") || kind.contains("failed") {
         "warning"
-    } else if kind.contains("credited") || kind.contains("completed") || kind.contains("approved") || kind == "wallet.credit" {
+    } else if kind.contains("credited") || kind.contains("completed") || kind.contains("approved") || kind == "wallet.credit" || (kind.starts_with("adjustment.") && kind.ends_with("_in")) {
         "success"
     } else {
         "info"
@@ -40,7 +40,14 @@ pub fn severity(kind: &str) -> &'static str {
 
 /// Client Area path the notification opens.
 pub fn link(kind: &str) -> &'static str {
-    if kind.starts_with("withdrawal") || kind.starts_with("deposit") || kind.starts_with("transfer") { "/wallet/history" } else { "/wallet" }
+    if kind.starts_with("withdrawal") || kind.starts_with("deposit") || kind.starts_with("transfer") || kind.starts_with("adjustment.wallet") {
+        "/wallet/history"
+    } else if kind.starts_with("adjustment.") {
+        // trading account balance / credit adjustments
+        "/accounts"
+    } else {
+        "/wallet"
+    }
 }
 
 pub fn dedupe_key(id: i64) -> String {
@@ -182,6 +189,12 @@ mod tests {
         assert_eq!(severity("withdrawal.requested"), "info");
         assert_eq!(link("withdrawal.completed"), "/wallet/history");
         assert_eq!(dedupe_key(991), "wallet:n:991");
+        // manual adjustments (Back Office "Balance & credit")
+        assert_eq!(support_type("adjustment.wallet_in"), "wallet.adjustment_wallet_in");
+        assert_eq!(link("adjustment.wallet_out"), "/wallet/history");
+        assert_eq!(link("adjustment.credit_in"), "/accounts");
+        assert_eq!(severity("adjustment.account_in"), "success");
+        assert_eq!(severity("adjustment.wallet_out"), "info");
     }
 
     #[test]

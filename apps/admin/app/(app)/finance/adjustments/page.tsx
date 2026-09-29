@@ -8,6 +8,8 @@ import { FIN_ADJUSTMENTS, FIN_ADJ_REASONS, FIN_ADJ_THRESHOLD, FIN_STAFF, finAgo,
 import { PersonCell, auditToast, useReason } from "@/components/config/kit";
 import { AdjustmentCreate, type NewAdjustment } from "@/components/finance/adjustment-create";
 import { ShareBars, usd } from "@/components/finance/shared";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveAdjustmentsPage } from "@/components/finance-live/adjustments";
 
 const ME = FIN_STAFF[0]!; // Priya Nair — signed-in Risk Manager
 
@@ -21,6 +23,16 @@ function Signed({ a }: { a: FinAdjustment }) {
 }
 
 export default function AdjustmentsPage() {
+  return IS_DEMO ? (
+    <DemoAdjustmentsPage />
+  ) : (
+    <React.Suspense fallback={null}>
+      <LiveAdjustmentsPage />
+    </React.Suspense>
+  );
+}
+
+function DemoAdjustmentsPage() {
   const [rows, setRows] = React.useState<FinAdjustment[]>(FIN_ADJUSTMENTS);
   const [createOpen, setCreateOpen] = React.useState(false);
   const [kind, setKind] = React.useState<"all" | "balance" | "credit">("all");

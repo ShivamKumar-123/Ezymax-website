@@ -601,6 +601,126 @@ fn house_capital_is_booked_against_house_capital_not_as_a_deposit() {
     h.assert_replay();
 }
 
+fn adj(h: &mut Harness, kit: &Kit, op: funds::AdjustOp, category: &str, amount: &str, force: bool, key: &str) -> Result<i64, super::Reject> {
+    h.run(kit, |tx, env| funds::staff_adjust(tx, env, funds::StaffAdjust { op, category, amount: d(amount), force, key, reason_code: "ADJ", statement: "" }))
+}
+
+fn last_txn(h: &Harness) -> crate::model::LedgerTxn {
+    h.log.iter().rev().find_map(|x| match x { Event::Ledger { txn } => Some(txn.clone()), _ => None }).unwrap()
+}
+
+#[test]
+fn manual_adjustments_book_the_right_kind_and_keep_the_ledger_balanced() {
+    use funds::AdjustOp::*;
+    let kit = Kit::new();
+    kit.quote("EURUSD", "1.1", "1.1");
+    let mut h = Harness::live(&kit, "hedge", "1000");
+    // add funds, reason correction: an adjustment against house:adjustments (never a deposit)
+    adj(&mut h, &kit, Add, "correction", "100", false, "a1").unwrap();
+    assert_eq!(h.st.balance, d("1100.00"));
+    let t = last_txn(&h);
+    assert_eq!(t.kind.as_str(), "adjustment");
+    assert!(t.postings.iter().any(|p| p.account == crate::model::house_code("adjustments", "USD") && p.amount == d("-100.00")));
+    assert_eq!(t.note.as_deref(), Some("Balance adjustment"));
+    h.assert_ledger();
+    // external payment received: a real deposit against house:external
+    adj(&mut h, &kit, Add, "deposit", "250", false, "a2").unwrap();
+    assert_eq!(last_txn(&h).kind.as_str(), "deposit");
+    assert_eq!(h.st.balance, d("1350.00"));
+    h.assert_ledger();
+    // deduct 30 (fee), then a withdrawal paid externally
+    adj(&mut h, &kit, Deduct, "fee", "30", false, "a3").unwrap();
+    assert_eq!((h.st.balance, last_txn(&h).kind.as_str()), (d("1320.00"), "adjustment"));
+    adj(&mut h, &kit, Deduct, "withdrawal", "20", false, "a4").unwrap();
+    assert_eq!((h.st.balance, last_txn(&h).kind.as_str()), (d("1300.00"), "withdrawal"));
+    h.assert_ledger();
+    // give 50 credit, take 20 back: the credit sub-ledger against house:credit_issued, equity follows
+    adj(&mut h, &kit, CreditIn, "bonus", "50", false, "a5").unwrap();
+    assert_eq!(h.st.credit, d("50.00"));
+    assert_eq!(metrics(&kit.env(&h.st), &h.st).equity, d("1350.00"));
+    adj(&mut h, &kit, CreditOut, "correction", "20", false, "a6").unwrap();
+    assert_eq!(h.st.credit, d("30.00"));
+    assert_eq!(last_txn(&h).effect(h.st.account.login, "credit"), d("-20.00"));
+    // category / direction mismatches and bad amounts are refused
+    assert_eq!(adj(&mut h, &kit, Add, "withdrawal", "1", false, "a7").unwrap_err().code, "invalid_category");
+    assert_eq!(adj(&mut h, &kit, Deduct, "deposit", "1", false, "a8").unwrap_err().code, "invalid_category");
+    assert_eq!(adj(&mut h, &kit, Add, "gift", "1", false, "a9").unwrap_err().code, "invalid_category");
+    assert_eq!(adj(&mut h, &kit, Add, "other", "0.001", false, "a10").unwrap_err().code, "invalid_amount");
+    assert_eq!(adj(&mut h, &kit, Add, "other", "-5", false, "a11").unwrap_err().code, "invalid_amount");
+    // every transaction balances; the house side mirrors the client side
+    for e in &h.log {
+        if let Event::Ledger { txn } = e {
+            assert!(txn.is_balanced());
+        }
+    }
+    h.assert_ledger();
+    h.assert_replay();
+}
+
+#[test]
+fn manual_deduction_is_limited_to_free_margin_unless_forced_and_never_below_zero() {
+    use funds::AdjustOp::*;
+    let kit = Kit::new();
+    kit.quote("EURUSD", "1.1", "1.1");
+    let mut h = Harness::live(&kit, "hedge", "2000");
+    place(&mut h, &kit, buy("EURUSD", "1")); // margin 1100 → free funds 900
+    let e = adj(&mut h, &kit, Deduct, "correction", "901", false, "d1").unwrap_err();
+    assert_eq!(e.code, "insufficient_funds");
+    assert!(e.message.contains("900"), "{}", e.message);
+    assert_eq!(h.st.balance, d("2000.00"));
+    adj(&mut h, &kit, Deduct, "correction", "900", false, "d2").unwrap();
+    assert_eq!(h.st.balance, d("1100.00"));
+    // force (Super Admin): past the free margin — the margin level drops to 100% → margin call
+    adj(&mut h, &kit, Deduct, "chargeback", "50", true, "d3").unwrap();
+    assert_eq!(h.st.balance, d("1050.00"));
+    assert!(h.st.margin_call, "a forced deduction below the margin call level raises the margin call");
+    // negative balance protection is always on: even a forced deduction stops at the balance
+    assert_eq!(adj(&mut h, &kit, Deduct, "chargeback", "1050.01", true, "d4").unwrap_err().code, "negative_balance");
+    // a forced deduction that pushes the level under stop-out closes the position at once
+    adj(&mut h, &kit, Deduct, "chargeback", "600", true, "d5").unwrap();
+    assert!(h.st.positions.is_empty(), "stop-out closed the position");
+    assert!(h.st.balance >= D::ZERO);
+    h.assert_ledger();
+    h.assert_replay();
+}
+
+#[test]
+fn taking_credit_back_is_limited_to_the_credit_held_and_the_free_margin() {
+    use funds::AdjustOp::*;
+    let kit = Kit::new();
+    kit.quote("EURUSD", "1.1", "1.1");
+    let mut h = Harness::live(&kit, "hedge", "600");
+    adj(&mut h, &kit, CreditIn, "bonus", "500", false, "c1").unwrap();
+    // more than the credit held: refused, force or not
+    assert_eq!(adj(&mut h, &kit, CreditOut, "correction", "500.01", false, "c2").unwrap_err().code, "insufficient_credit");
+    assert_eq!(adj(&mut h, &kit, CreditOut, "correction", "500.01", true, "c3").unwrap_err().code, "insufficient_credit");
+    place(&mut h, &kit, buy("EURUSD", "1")); // equity 1100, margin 1100 → free margin 0
+    assert_eq!(adj(&mut h, &kit, CreditOut, "correction", "100", false, "c4").unwrap_err().code, "insufficient_funds");
+    assert_eq!(h.st.credit, d("500.00"));
+    // forced: allowed up to the credit held; equity 600 on margin 1100 = 54.5 % → margin call (stop-out at 50 %)
+    adj(&mut h, &kit, CreditOut, "correction", "500", true, "c5").unwrap();
+    assert_eq!(h.st.credit, d("0.00"));
+    assert!(h.st.margin_call && h.st.positions.len() == 1);
+    h.assert_ledger();
+    h.assert_replay();
+}
+
+#[test]
+fn manual_adjustments_on_demo_accounts_never_touch_real_money_accounts() {
+    use funds::AdjustOp::*;
+    let kit = Kit::new();
+    let mut h = Harness::demo(&kit, "hedge");
+    adj(&mut h, &kit, Add, "deposit", "100", false, "m1").unwrap();
+    let t = last_txn(&h);
+    assert_eq!(t.kind.as_str(), "adjustment", "a demo 'deposit' is never a real deposit");
+    assert!(t.postings.iter().any(|p| p.account == crate::model::house_code("demo_funding", "USD")));
+    adj(&mut h, &kit, CreditIn, "bonus", "50", false, "m2").unwrap();
+    assert!(last_txn(&h).postings.iter().any(|p| p.account == crate::model::house_code("demo_funding", "USD")));
+    assert_eq!((h.st.balance, h.st.credit), (d("10100.00"), d("50.00")));
+    h.assert_ledger();
+    h.assert_replay();
+}
+
 #[test]
 fn live_account_kind() {
     let kit = Kit::new();

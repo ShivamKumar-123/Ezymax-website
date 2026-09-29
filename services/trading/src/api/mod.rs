@@ -122,6 +122,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/accounts", get(admin::accounts))
         .route("/v1/admin/accounts/{login}", get(admin::account))
         .route("/v1/admin/accounts/{login}/balance", post(admin::balance))
+        .route("/v1/admin/accounts/{login}/adjust", post(admin::adjust))
         .route("/v1/admin/accounts/{login}/status", post(admin::status))
         .route("/v1/admin/accounts/{login}/group", post(admin::group))
         .route("/v1/admin/accounts/{login}/leverage", post(admin::leverage))
@@ -370,15 +371,29 @@ impl FromRequestParts<AppState> for Ctx {
 pub struct StaffCtx {
     pub ctx: Ctx,
     pub staff: Staff,
+    /// `X-Kalks-Staff-Perms`: the gateway permission keys the BFF (or the wallet service, for balance
+    /// adjustments) forwards. None when the caller sent no list (older callers): then only the role is checked.
+    pub perms: Option<Vec<String>>,
 }
 
 pub const ROLES_DEALING: &[&str] = &["platform_owner", "super_admin", "admin", "dealer", "risk_manager"];
 pub const ROLES_FINANCE: &[&str] = &["platform_owner", "super_admin", "admin", "finance"];
 pub const ROLES_CONFIG: &[&str] = &["platform_owner", "super_admin", "admin"];
+/// Forcing a deduction past the free margin (finance.adjust_force): Super Admin only.
+pub const ROLES_FORCE: &[&str] = &["platform_owner", "super_admin"];
 
 impl StaffCtx {
     pub fn require(&self, roles: &[&str]) -> ApiResult<()> {
         if roles.contains(&self.staff.role.as_str()) { Ok(()) } else { Err(ApiError::Forbidden(format!("Role {} may not do this", self.staff.role))) }
+    }
+
+    /// The exact gateway permission when the caller forwarded the list; otherwise the role fallback.
+    pub fn require_perm(&self, perm: &str, fallback_roles: &[&str]) -> ApiResult<()> {
+        match &self.perms {
+            Some(p) if p.iter().any(|x| x == perm) => Ok(()),
+            Some(_) => Err(ApiError::Forbidden(format!("Missing permission {perm}"))),
+            None => self.require(fallback_roles),
+        }
     }
 }
 
@@ -411,7 +426,8 @@ impl FromRequestParts<AppState> for StaffCtx {
         if id.len() > 64 || role.len() > 32 {
             return Err(ApiError::BadRequest("Invalid staff headers".into()));
         }
-        Ok(StaffCtx { ctx, staff: Staff { id, name: name.chars().take(120).collect(), role } })
+        let perms = header(parts, "x-kalks-staff-perms").map(|v| v.split(',').map(|p| p.trim().to_string()).filter(|p| !p.is_empty() && p.len() <= 64).take(200).collect());
+        Ok(StaffCtx { ctx, staff: Staff { id, name: name.chars().take(120).collect(), role }, perms })
     }
 }
 

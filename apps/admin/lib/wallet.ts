@@ -3,6 +3,7 @@
 // session the gateway verified (lib/bff.ts requireStaff), never from anything the browser sends.
 
 import type { GatewayStaff } from "@/lib/gateway";
+import { financePerms } from "@/lib/wallet-perms";
 
 const WALLET_URL = (process.env.WALLET_URL ?? "http://127.0.0.1:8095").replace(/\/$/, "");
 const INTERNAL_TOKEN = process.env.WALLET_INTERNAL_TOKEN ?? "";
@@ -22,6 +23,9 @@ export async function walletService<T = unknown>(
     "x-kalks-staff-id": String(init.staff.id),
     "x-kalks-staff-name": encodeURIComponent(init.staff.name || init.staff.email),
     "x-kalks-staff-role": init.staff.role,
+    // exact finance.* keys: the wallet enforces finance.adjust / credit / adjust_approve / adjust_force itself
+    // ("-" when none: an empty header would fall back to the role check)
+    "x-kalks-staff-perms": financePerms(init.staff).join(",") || "-",
   };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   if (init.ip) headers["x-forwarded-for"] = init.ip;

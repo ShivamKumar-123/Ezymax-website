@@ -18,21 +18,35 @@
  * | finance.write     | assign / reject / re-check deposits, manual wallet adjustments,          | platform_owner, super_admin, admin, finance            |
  * |                   | mark withdrawals paid (payout hash)                                      |                                                        |
  * | finance.approve   | approve / reject withdrawals                                             | platform_owner, super_admin, admin, finance            |
- * | finance.settings  | receiving / payout addresses, confirmations, limits, fees                | platform_owner, super_admin, admin                     |
+ * | finance.settings  | receiving / payout addresses, confirmations, limits, fees, the           | platform_owner, super_admin, admin                     |
+ * |                   | four-eyes threshold of manual adjustments                                |                                                        |
+ *
+ * Balance & credit (manual adjustments, services/wallet/src/ops/adjustments.rs):
+ *
+ * | permission             | what it allows                                                      | roles                                          |
+ * |------------------------|---------------------------------------------------------------------|------------------------------------------------|
+ * | finance.adjust         | add / deduct funds on wallets and trading accounts                  | platform_owner, super_admin, admin, finance    |
+ * | finance.credit         | give / take credit on trading accounts                              | platform_owner, super_admin, admin, finance    |
+ * | finance.adjust_approve | approve / reject adjustments above the four-eyes threshold          | platform_owner, super_admin, admin, finance    |
+ * | finance.adjust_force   | force a trading-account deduction past the free margin              | platform_owner, super_admin                    |
  */
 
-export const WALLET_PERMS = ["finance.read", "finance.write", "finance.approve", "finance.settings"] as const;
+export const WALLET_PERMS = ["finance.read", "finance.write", "finance.approve", "finance.settings", "finance.credit", "finance.adjust_approve", "finance.adjust_force"] as const;
 export type WalletPerm = (typeof WALLET_PERMS)[number];
 
 const READERS = ["platform_owner", "super_admin", "admin", "finance", "compliance", "risk_manager"];
 const FINANCE = ["platform_owner", "super_admin", "admin", "finance"];
 const CONFIG = ["platform_owner", "super_admin", "admin"];
+const SUPER = ["platform_owner", "super_admin"];
 
 export const WALLET_ROLE_MAP: Record<WalletPerm, readonly string[]> = {
   "finance.read": READERS,
   "finance.write": FINANCE,
   "finance.approve": FINANCE,
   "finance.settings": CONFIG,
+  "finance.credit": FINANCE,
+  "finance.adjust_approve": FINANCE,
+  "finance.adjust_force": SUPER,
 };
 
 export const isWalletPerm = (p: string): p is WalletPerm => (WALLET_PERMS as readonly string[]).includes(p);
@@ -42,4 +56,13 @@ export function walletAllows(staff: { role: string; permissions?: string[]; rbac
   if (staff.rbac) return staff.permissions?.includes(perm) ?? false;
   if (staff.permissions?.includes("finance.read")) return staff.permissions.includes(perm);
   return WALLET_ROLE_MAP[perm].includes(staff.role);
+}
+
+/** Finance permission keys forwarded to the wallet service as `x-kalks-staff-perms`, so it can enforce the exact key
+ *  (the gateway's list when authoritative, else the role map above plus finance.adjust from the trading map). */
+export function financePerms(staff: { role: string; permissions?: string[]; rbac?: boolean }): string[] {
+  if (staff.rbac || staff.permissions?.includes("finance.read")) return (staff.permissions ?? []).filter((p) => p.startsWith("finance."));
+  const out = WALLET_PERMS.filter((p) => WALLET_ROLE_MAP[p].includes(staff.role)) as string[];
+  if (["platform_owner", "super_admin", "admin", "finance"].includes(staff.role)) out.push("finance.adjust");
+  return out;
 }

@@ -1,5 +1,6 @@
 //! Business operations shared by the HTTP handlers, the background workers and the tests.
 
+pub mod adjustments;
 pub mod deposits;
 pub mod trading;
 pub mod transfers;
