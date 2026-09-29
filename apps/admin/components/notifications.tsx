@@ -6,10 +6,12 @@
  * also list a few sample alerts.
  */
 import * as React from "react";
-import { useSonner, type ToastT } from "sonner";
-import { Bell, CheckCircle2, Info, TriangleAlert, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast, useSonner, type ToastT } from "sonner";
+import { Bell, CheckCircle2, Info, LifeBuoy, TriangleAlert, XCircle } from "lucide-react";
 import { IconButton, Popover, cn, formatDateTime } from "@kalks/ui";
 import { IS_DEMO } from "@kalks/mock/mode";
+import { realtime, type Frame } from "@/lib/realtime";
 
 export type NoticeType = "success" | "error" | "warning" | "info" | "default";
 export type Notice = { id: string; type: NoticeType; title: string; description?: string; at: number; read: boolean };
@@ -98,6 +100,8 @@ export function NotificationRecorder() {
     let changed = false;
     for (const t of toasts) {
       if (t.type === "loading" || t.delete) continue;
+      // live notifications from the support service are already in the bell
+      if (typeof t.id === "string" && t.id.startsWith("srv-")) continue;
       const title = text(t.title).trim();
       if (!title) continue;
       const description = text(t.description).trim() || undefined;
@@ -141,8 +145,79 @@ function relative(at: number, now: number) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
+/** A staff notification from services/support (new chat waiting, assignment, SLA breach). */
+type ServerItem = { id: number; type: string; severity: "info" | "success" | "warning" | "critical"; title: string; body: string; link: string | null; read: boolean; createdAt: string };
+
+async function staffCall<T>(path: string, body?: unknown): Promise<T | null> {
+  try {
+    const r = await fetch(`/api/support/notifications${path}`, { method: body === undefined ? "GET" : "POST", headers: body === undefined ? undefined : { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body), cache: "no-store" });
+    return r.ok ? ((await r.json()) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function useStaffNotifications() {
+  const [items, setItems] = React.useState<ServerItem[]>([]);
+  const load = React.useCallback(async () => {
+    const d = await staffCall<{ items: ServerItem[] }>("?limit=40");
+    if (d) setItems(d.items);
+  }, []);
+  React.useEffect(() => {
+    if (IS_DEMO) return;
+    void load();
+    return realtime().subscribe((f: Frame) => {
+      if (f.type === "reconnected") return void load();
+      if (f.type === "notification") {
+        const it = f.item as ServerItem;
+        setItems((xs) => (xs.some((x) => x.id === it.id) ? xs : [it, ...xs].slice(0, 100)));
+        (it.severity === "critical" || it.severity === "warning" ? toast.warning : toast.info)(it.title, { id: `srv-${it.id}`, description: it.body || undefined });
+      }
+      if (f.type === "notifications.read") {
+        if (f.cleared) setItems([]);
+        else if (f.all) setItems((xs) => xs.map((x) => ({ ...x, read: true })));
+      }
+    });
+  }, [load]);
+  return {
+    items,
+    markAll: () => {
+      setItems((xs) => xs.map((x) => ({ ...x, read: true })));
+      void staffCall("/read", { all: true });
+    },
+    markOne: (id: number) => {
+      setItems((xs) => xs.map((x) => (x.id === id ? { ...x, read: true } : x)));
+      void staffCall("/read", { ids: [id] });
+    },
+    clear: () => {
+      setItems([]);
+      void staffCall("/clear", {});
+    },
+  };
+}
+
+const SEV: Record<ServerItem["severity"], NoticeType> = { info: "info", success: "success", warning: "warning", critical: "error" };
+
 export function NotificationBell() {
-  const real = useNotices();
+  const router = useRouter();
+  const srv = useStaffNotifications();
+  const local = useNotices();
+  const real: (Notice & { onOpen?: () => void; server?: boolean })[] = [
+    ...local,
+    ...srv.items.map((n) => ({
+      id: `srv-${n.id}`,
+      type: SEV[n.severity] ?? "info",
+      title: n.title,
+      description: n.body || undefined,
+      at: new Date(n.createdAt).getTime(),
+      read: n.read,
+      server: true,
+      onOpen: () => {
+        if (!n.read) srv.markOne(n.id);
+        if (n.link?.startsWith("/")) router.push(n.link);
+      },
+    })),
+  ];
   const [demoRead, setDemoRead] = React.useState(false);
   const [now, setNow] = React.useState(() => Date.now());
   React.useEffect(() => {
@@ -150,7 +225,7 @@ export function NotificationBell() {
     return () => clearInterval(t);
   }, []);
   const demo = IS_DEMO ? DEMO_NOTICES.map((n, i) => ({ ...n, at: now - (i + 1) * 6 * 60_000, read: demoRead })) : [];
-  const list = [...real, ...demo].sort((a, b) => b.at - a.at);
+  const list: (Notice & { onOpen?: () => void; server?: boolean })[] = [...real, ...demo].sort((a, b) => b.at - a.at);
   const unread = list.filter((n) => !n.read).length;
 
   return (
@@ -176,13 +251,14 @@ export function NotificationBell() {
             disabled={!unread}
             onClick={() => {
               notices.markAllRead();
+              srv.markAll();
               setDemoRead(true);
             }}
             className="text-xs text-fg-3 hover:text-fg disabled:opacity-40 disabled:hover:text-fg-3"
           >
             Mark all read
           </button>
-          <button disabled={!real.length} onClick={() => notices.clear()} className="text-xs text-fg-3 hover:text-down disabled:opacity-40 disabled:hover:text-fg-3">
+          <button disabled={!real.length} onClick={() => { notices.clear(); srv.clear(); }} className="text-xs text-fg-3 hover:text-down disabled:opacity-40 disabled:hover:text-fg-3">
             Clear
           </button>
         </div>
@@ -200,10 +276,10 @@ export function NotificationBell() {
           list.map((n) => (
             <button
               key={n.id}
-              onClick={() => (n.id.startsWith("demo-") ? setDemoRead(true) : notices.markRead(n.id))}
+              onClick={() => (n.onOpen ? n.onOpen() : n.id.startsWith("demo-") ? setDemoRead(true) : notices.markRead(n.id))}
               className="flex w-full gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-surface-3"
             >
-              <span className={cn("mt-0.5 grid size-8 shrink-0 place-items-center rounded-full [&_svg]:size-4", ICON[n.type].className)}>{ICON[n.type].icon}</span>
+              <span className={cn("mt-0.5 grid size-8 shrink-0 place-items-center rounded-full [&_svg]:size-4", ICON[n.type].className)}>{n.server ? <LifeBuoy /> : ICON[n.type].icon}</span>
               <span className="min-w-0 flex-1">
                 <span className={cn("block text-[13px] leading-snug", n.read ? "text-fg-2" : "text-fg")}>{n.title}</span>
                 {n.description && <span className="mt-0.5 block text-[12px] leading-snug text-fg-3">{n.description}</span>}

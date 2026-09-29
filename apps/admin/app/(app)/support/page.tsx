@@ -9,13 +9,15 @@ import { ConversationList, type InboxFilter } from "@/components/support/convers
 import { ChatThread } from "@/components/support/chat-thread";
 import { ContextPanel } from "@/components/support/context-panel";
 import { AiSpark } from "@/components/support/shared";
+import { IS_DEMO as IS_DEMO_MODE } from "@kalks/mock/mode";
+import { LiveInbox } from "@/components/support-live/inbox";
 
 function nowHHMM() {
   const d = new Date(Date.now() + 3 * 3600_000);
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
 
-export default function SupportInboxPage() {
+function DemoSupportInboxPage() {
   const me = { name: SUP_ME.person.name, photo: SUP_ME.person.photo };
   const [convs, setConvs] = React.useState<SupConversation[]>(SUP_CONVERSATIONS);
   const [selected, setSelected] = React.useState(SUP_CONVERSATIONS[0]!.id);
@@ -147,5 +149,14 @@ export default function SupportInboxPage() {
         </div>
       </Dialog>
     </div>
+  );
+}
+
+/** Demo builds: the mock showcase. Live builds: services/support. */
+export default function SupportInboxPage() {
+  return IS_DEMO_MODE ? <DemoSupportInboxPage /> : (
+    <React.Suspense fallback={null}>
+      <LiveInbox />
+    </React.Suspense>
   );
 }

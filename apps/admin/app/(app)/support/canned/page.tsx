@@ -26,6 +26,8 @@ import {
 import { PEOPLE } from "@kalks/mock";
 import { SUP_CANNED, SUP_VARIABLES, type SupCanned } from "@kalks/mock/admin-growth-support";
 import { VarText, fillVars } from "@/components/support/shared";
+import { IS_DEMO as IS_DEMO_MODE } from "@kalks/mock/mode";
+import { LiveCanned } from "@/components/support-live/canned";
 
 const CATS = ["All", "Withdrawals", "Deposits", "KYC", "Trading", "Accounts", "Partners", "Security", "General", "Prop"] as const;
 const LANGS = ["EN", "ES", "AR", "PT", "HI", "VI"] as const;
@@ -157,7 +159,7 @@ function Editor({ open, onOpenChange, initial, onSave }: { open: boolean; onOpen
   );
 }
 
-export default function CannedRepliesPage() {
+function DemoCannedRepliesPage() {
   const [items, setItems] = React.useState<SupCanned[]>(SUP_CANNED);
   const [cat, setCat] = React.useState<string>("All");
   const [lang, setLang] = React.useState<string>("All");
@@ -339,4 +341,9 @@ export default function CannedRepliesPage() {
       />
     </div>
   );
+}
+
+/** Demo builds: the mock showcase. Live builds: services/support. */
+export default function CannedRepliesPage() {
+  return IS_DEMO_MODE ? <DemoCannedRepliesPage /> : <LiveCanned />;
 }

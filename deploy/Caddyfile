@@ -13,9 +13,18 @@
 	}
 }
 
-# Client Area (CRM)
+# Client Area (CRM). /support/stream = support chat + notifications stream (one-time ticket from the CRM BFF).
 app.kalkstrade.com {
 	import common
+	handle /support/stream {
+		rewrite * /v1/stream?{query}
+		reverse_proxy 127.0.0.1:8100
+	}
+	# support chat attachments: 10 MB files; the support service enforces the exact limit and sniffs the type
+	@supportUpload path /api/support/attachments
+	request_body @supportUpload {
+		max_size 11MB
+	}
 	# KYC uploads: 10 MB files (+ multipart overhead); the gateway enforces the exact limit and sniffs the type
 	@kycUpload path /api/kyc/documents
 	request_body @kycUpload {
@@ -36,9 +45,14 @@ trade.kalkstrade.com {
 	}
 }
 
-# Back Office. /engine/stream = trading-engine dealing stream (one-time ticket from the admin BFF).
+# Back Office. /engine/stream = trading-engine dealing stream (one-time ticket from the admin BFF);
+# /support/stream = support inbox + staff notifications stream (one-time ticket from the admin BFF).
 admin.kalkstrade.com {
 	import common
+	handle /support/stream {
+		rewrite * /v1/stream?{query}
+		reverse_proxy 127.0.0.1:8100
+	}
 	handle /engine/stream {
 		rewrite * /v1/dealing/stream?{query}
 		reverse_proxy 127.0.0.1:8090

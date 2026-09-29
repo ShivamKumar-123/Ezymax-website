@@ -23,6 +23,8 @@ import { SUP_AGENT_SCORES, SUP_CSAT_BY_CHANNEL, SUP_CSAT_DISTRIBUTION, SUP_CSAT_
 import { ShareBar } from "@/components/command/kit";
 import { CsatTrend } from "@/components/support/csat-trend";
 import { AiSpark, ChannelBadge } from "@/components/support/shared";
+import { IS_DEMO as IS_DEMO_MODE } from "@kalks/mock/mode";
+import { LiveCsat } from "@/components/support-live/csat";
 
 const CH_COLORS = ["var(--k-ember)", "var(--k-gold)", "var(--k-up)", "var(--k-info)"];
 
@@ -36,7 +38,7 @@ function Stars({ n, size = 12 }: { n: number; size?: number }) {
   );
 }
 
-export default function CsatPage() {
+function DemoCsatPage() {
   const k = SUP_CSAT_KPIS;
   const [range, setRange] = React.useState<"7D" | "30D" | "90D">("30D");
   const [fb, setFb] = React.useState<"all" | "low" | "ai">("all");
@@ -259,4 +261,9 @@ export default function CsatPage() {
       </Reveal>
     </div>
   );
+}
+
+/** Demo builds: the mock showcase. Live builds: services/support. */
+export default function CsatPage() {
+  return IS_DEMO_MODE ? <DemoCsatPage /> : <LiveCsat />;
 }

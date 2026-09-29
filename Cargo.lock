@@ -2518,6 +2518,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
+name = "support"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "bytes",
+ "chrono",
+ "dotenvy",
+ "futures-util",
+ "getrandom 0.4.3",
+ "lettre",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2 0.11.0",
+ "sqlx",
+ "subtle",
+ "tokio",
+ "tokio-tungstenite 0.30.0",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "syn"
 version = "2.0.119"
 source = "registry+https://github.com/rust-lang/crates.io-index"

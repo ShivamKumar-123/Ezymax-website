@@ -25,6 +25,8 @@ import {
 } from "@kalks/ui";
 import { SUP_ARTICLES, SUP_BOT_TESTS, SUP_KB_CATEGORIES, type SupArticle } from "@kalks/mock/admin-growth-support";
 import { AiSpark } from "@/components/support/shared";
+import { IS_DEMO as IS_DEMO_MODE } from "@kalks/mock/mode";
+import { LiveKnowledge } from "@/components/support-live/knowledge";
 
 const STATUS_MAP: Record<SupArticle["status"], { s: string; label: string }> = {
   published: { s: "active", label: "Published" },
@@ -41,7 +43,7 @@ const GAPS = [
   { q: "How do I change my account currency to EUR?", count: 12, trend: "+1" },
 ];
 
-export default function KnowledgePage() {
+function DemoKnowledgePage() {
   const [articles, setArticles] = React.useState<SupArticle[]>(SUP_ARTICLES);
   const [cat, setCat] = React.useState<string>("All");
   const [edit, setEdit] = React.useState<SupArticle>(SUP_ARTICLES[0]!);
@@ -402,4 +404,9 @@ function BotPlayground({ articles, onOpen }: { articles: SupArticle[]; onOpen: (
       </div>
     </Card>
   );
+}
+
+/** Demo builds: the mock showcase. Live builds: services/support. */
+export default function KnowledgePage() {
+  return IS_DEMO_MODE ? <DemoKnowledgePage /> : <LiveKnowledge />;
 }

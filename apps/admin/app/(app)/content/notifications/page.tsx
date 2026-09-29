@@ -5,6 +5,8 @@ import { Bell, BellRing, Mail, MousePointerClick, Plus, Save, Send, Smartphone, 
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Field, Icon3D, Input, KpiCard, PageHeader, Reveal, Segmented, Toggle, type ChipTone, cn } from "@kalks/ui";
 import { CNT_NOTIF_SAMPLES, CNT_NOTIF_TEMPLATES, type CntNotifTemplate } from "@kalks/mock/admin-growth-content";
+import { IS_DEMO as IS_DEMO_MODE } from "@kalks/mock/mode";
+import { LiveBroadcasts } from "@/components/support-live/broadcast";
 
 type Priority = "low" | "normal" | "high" | "critical";
 type Channel = "email" | "inapp" | "push";
@@ -46,7 +48,7 @@ function Highlight({ text }: { text: string }) {
   );
 }
 
-export default function NotificationsPage() {
+function DemoNotificationsPage() {
   const [items, setItems] = React.useState<NotifState[]>(INIT);
   const [sel, setSel] = React.useState(INIT[2]!.id);
   const [cat, setCat] = React.useState<(typeof CATS)[number]>("All");
@@ -364,4 +366,9 @@ export default function NotificationsPage() {
       </div>
     </div>
   );
+}
+
+/** Demo builds: the mock showcase. Live builds: services/support. */
+export default function NotificationsPage() {
+  return IS_DEMO_MODE ? <DemoNotificationsPage /> : <LiveBroadcasts />;
 }

@@ -16,6 +16,7 @@ cargo build --release -p market-data -p gateway -p trading -p prop -p ib
 cargo build --release -p academy
 cargo build --release -p algo
 cargo build --release -p wallet
+cargo build --release -p support
 cargo build --release -p growth
 cargo build --release -p reports
 
@@ -116,6 +117,23 @@ for app in apps/crm apps/admin; do
   grep -q '^WALLET_URL=' "$f" || printf 'WALLET_URL=http://127.0.0.1:8095\n' >> "$f"
   grep -q '^WALLET_INTERNAL_TOKEN=' "$f" || printf 'WALLET_INTERNAL_TOKEN=%s\n' "$(grep '^WALLET_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
 done
+# support + notifications service: internal token generated once (never printed), database kalks_support,
+# chat attachments stored privately under ~/.kalks-data/support. The AI help bot's Claude key is read from
+# .env.claude (see ALGO above); emails go through the same SMTP relay settings as the gateway (SMTP_*).
+grep -q '^SUPPORT_INTERNAL_TOKEN=' .env.local || printf 'SUPPORT_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
+if ! grep -q '^SUPPORT_DATABASE_URL=' .env.local && grep -q '^GATEWAY_DATABASE_URL=' .env.local; then
+  printf 'SUPPORT_DATABASE_URL=%s\n' "$(grep '^GATEWAY_DATABASE_URL=' .env.local | cut -d= -f2- | sed -E 's#/[^/?]+([?].*)?$#/kalks_support\1#')" >> .env.local
+fi
+grep -q '^SUPPORT_STORAGE_DIR=' .env.local || printf 'SUPPORT_STORAGE_DIR=%s\n' "$HOME/.kalks-data/support" >> .env.local
+grep -q '^SUPPORT_APP_URL=' .env.local || printf 'SUPPORT_APP_URL=https://app.kalkstrade.com\n' >> .env.local
+install -d -m 700 "$(grep '^SUPPORT_STORAGE_DIR=' .env.local | cut -d= -f2-)"
+# the Client Area and Back Office BFFs reach the support service with the same token; browsers open the
+# realtime stream at wss://<host>/support/stream (Caddy)
+for app in apps/crm apps/admin; do
+  f="$app/.env.production.local"; touch "$f"
+  grep -q '^SUPPORT_URL=' "$f" || printf 'SUPPORT_URL=http://127.0.0.1:8100\n' >> "$f"
+  grep -q '^SUPPORT_INTERNAL_TOKEN=' "$f" || printf 'SUPPORT_INTERNAL_TOKEN=%s\n' "$(grep '^SUPPORT_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
+done
 # growth (rewards + marketing) secrets: internal token generated once, database kalks_growth next to the gateway's;
 # the Client Area and Back Office BFFs reach the service with the same token
 grep -q '^GROWTH_INTERNAL_TOKEN=' .env.local || printf 'GROWTH_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
@@ -149,6 +167,7 @@ sudo systemctl restart kalks-market-data kalks-gateway kalks-trading kalks-ib ka
 sudo systemctl enable kalks-academy >/dev/null && sudo systemctl restart kalks-academy
 sudo systemctl enable kalks-algo >/dev/null && sudo systemctl restart kalks-algo
 sudo systemctl enable kalks-wallet >/dev/null && sudo systemctl restart kalks-wallet
+sudo systemctl enable kalks-support >/dev/null && sudo systemctl restart kalks-support
 sudo systemctl enable kalks-growth >/dev/null && sudo systemctl restart kalks-growth
 sudo systemctl enable kalks-reports >/dev/null && sudo systemctl restart kalks-reports
 sudo systemctl reload caddy
@@ -159,5 +178,6 @@ done
 printf "%-26s %s\n" 127.0.0.1:8098/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8098/health)"
 printf "%-26s %s\n" 127.0.0.1:8095/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8095/health)"
 printf "%-26s %s\n" 127.0.0.1:8099/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/health)"
+printf "%-26s %s\n" 127.0.0.1:8100/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8100/health)"
 printf "%-26s %s\n" 127.0.0.1:8101/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8101/health)"
 printf "%-26s %s\n" 127.0.0.1:8102/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8102/health)"

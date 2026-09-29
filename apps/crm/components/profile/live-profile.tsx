@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { CalendarDays, ChevronRight, IdCard, KeyRound, Lock, Mail, Phone, ShieldCheck, UserRound } from "lucide-react";
+import { Bell, CalendarDays, ChevronRight, IdCard, KeyRound, Lock, Mail, Phone, ShieldCheck, UserRound } from "lucide-react";
 import { Avatar, Button, Card, CardHeader, Chip, Flag, PageHeader, Reveal } from "@kalks/ui";
 import { ChangePasswordCard } from "@/components/profile/change-password";
 import { KYC_CHIP, useSession } from "@/components/session";
@@ -206,6 +206,20 @@ export function LiveProfile() {
                           ? "Your documents are with our verification team."
                           : "Verify online in about 3 minutes to unlock withdrawals."}
                   </div>
+                </div>
+                <ChevronRight className="size-4 text-fg-3" />
+              </Card>
+            </Link>
+          </Reveal>
+          <Reveal delay={0.2}>
+            <Link href="/profile/notifications" className="block">
+              <Card className="flex items-center gap-4 px-6 py-5 transition-colors hover:border-[var(--k-border-top)]">
+                <span className="grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface-3 text-fg-2">
+                  <Bell className="size-[18px]" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[14px] font-medium">Notifications</div>
+                  <div className="mt-0.5 text-[12.5px] text-fg-3">Choose what reaches you in the app and by email.</div>
                 </div>
                 <ChevronRight className="size-4 text-fg-3" />
               </Card>
