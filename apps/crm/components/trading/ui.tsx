@@ -118,9 +118,9 @@ export function refillsLeft(a: Pick<EngineAccount, "demo">) {
   return a.demo ? Math.max(0, a.demo.refillsPerDay - a.demo.refillsUsedToday) : 0;
 }
 
-/** Demo starting balance in the account currency (cent accounts: USD × 100). */
+/** Demo starting balance in the account currency (the engine already reports it in cents for cent accounts). */
 export function demoTarget(a: Pick<EngineAccount, "demo" | "cent">) {
-  return a.demo ? a.demo.initialBalance * (a.cent ? 100 : 1) : null;
+  return a.demo ? a.demo.initialBalance : null;
 }
 
 export function useRefill(a: Pick<EngineAccount, "login" | "cent" | "currency" | "demo">, onDone?: () => void) {
