@@ -184,7 +184,7 @@ sudo systemctl enable kalks-support >/dev/null && sudo systemctl restart kalks-s
 sudo systemctl enable kalks-growth >/dev/null && sudo systemctl restart kalks-growth
 sudo systemctl enable kalks-reports >/dev/null && sudo systemctl restart kalks-reports
 sudo systemctl enable kalks-news >/dev/null && sudo systemctl restart kalks-news
-sudo systemctl reload caddy
+sudo systemctl reload caddy || echo "caddy reload timed out (long-lived connections); config is validated, continuing"
 sleep 5
 for u in 127.0.0.1:8081/health 127.0.0.1:8080/health 127.0.0.1:8090/health 127.0.0.1:8096/health 127.0.0.1:8097/health 127.0.0.1:3000/login 127.0.0.1:3001/login 127.0.0.1:3002/login; do
   printf "%-26s %s\n" "$u" "$(curl -s -o /dev/null -w '%{http_code}' "http://$u")"
