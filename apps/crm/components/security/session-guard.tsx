@@ -12,6 +12,7 @@ import { usePathname } from "next/navigation";
 import { Eye, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 import type { NavModule } from "@kalks/ui";
 import { logout, useSession } from "@/components/session";
 import { viewerPageAllowed, type ViewerScope } from "@/lib/viewer";
@@ -42,6 +43,9 @@ function writeActivity(t: number) {
 }
 
 export function SessionGuard() {
+  const t = useT();
+  const tRef = React.useRef(t);
+  tRef.current = t;
   const me = useSession();
   const idleMs = Math.max(5, me.session?.idle_minutes ?? 1440) * 60_000;
   const last = React.useRef(Date.now());
@@ -98,11 +102,11 @@ export function SessionGuard() {
       }
       if (quiet >= idleMs - WARN_MS && !warned.current) {
         warned.current = true;
-        toast.warning("You'll be signed out in 1 minute", {
+        toast.warning(tRef.current("security.idle.warnTitle"), {
           id: "idle-warning",
-          description: "For your security, inactive sessions end automatically.",
+          description: tRef.current("security.idle.warnText"),
           duration: WARN_MS,
-          action: { label: "Stay signed in", onClick: bump },
+          action: { label: tRef.current("security.idle.stay"), onClick: bump },
         });
       }
     }, 5_000);
@@ -125,6 +129,9 @@ export function navForViewer(nav: NavModule[], scope: Pick<ViewerScope, "section
 }
 
 export function ViewerBar({ viewer, owner }: { viewer: ViewerScope; owner: string }) {
+  const t = useT();
+  const tRef = React.useRef(t);
+  tRef.current = t;
   const pathname = usePathname() ?? "/";
 
   // pages opened by the viewer, for the owner's activity log
@@ -147,7 +154,7 @@ export function ViewerBar({ viewer, owner }: { viewer: ViewerScope; owner: strin
           .clone()
           .json()
           .then((d: { error?: { code?: string } }) => {
-            if (d?.error?.code === "viewer_read_only") toast.info("View-only access", { id: "viewer-read-only", description: "Viewers can see this account but can't make changes." });
+            if (d?.error?.code === "viewer_read_only") toast.info(tRef.current("security.viewerBar.title"), { id: "viewer-read-only", description: tRef.current("security.viewerBar.refused") });
           })
           .catch(() => {});
       }
@@ -163,15 +170,15 @@ export function ViewerBar({ viewer, owner }: { viewer: ViewerScope; owner: strin
       <div className="flex min-w-0 items-center gap-2.5">
         <Eye className="size-4 shrink-0 text-info" />
         <span className="min-w-0">
-          <span className="font-medium text-fg">View-only access</span>
+          <span className="font-medium text-fg">{t("security.viewerBar.title")}</span>
           <span className="text-fg-2">
             {" "}
-            · {viewer.label} · viewing {owner}&apos;s account. Nothing can be changed.
+            · {viewer.label} · {t("security.viewerBar.viewing", { owner })}
           </span>
         </span>
       </div>
       <Button size="xs" variant="surface" onClick={() => void logout()}>
-        <LogOut /> Sign out
+        <LogOut /> {t("security.signOut")}
       </Button>
     </div>
   );

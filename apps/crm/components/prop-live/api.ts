@@ -5,6 +5,8 @@
 
 import * as React from "react";
 import { toast } from "sonner";
+import { intlTag, type MessageKey } from "@kalks/i18n";
+import { tr } from "@kalks/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Service shapes                                                      */
@@ -281,30 +283,30 @@ export class PropError extends Error {
 }
 
 /** Codes that need an action outside this page: shown with a link. */
-export const ERROR_LINK: Record<string, { href: string; label: string }> = {
-  insufficient_funds: { href: "/wallet/deposit", label: "Deposit USDT" },
-  kyc_required: { href: "/profile/verification", label: "Verify identity" },
+export const ERROR_LINK: Record<string, { href: string; labelKey: MessageKey }> = {
+  insufficient_funds: { href: "/wallet/deposit", labelKey: "prop.errorLink.deposit" },
+  kyc_required: { href: "/profile/verification", labelKey: "prop.errorLink.verify" },
 };
 
-const FRIENDLY: Record<string, string> = {
-  insufficient_funds: "Your USDT wallet balance is too low for this challenge fee. Deposit USDT and try again.",
-  kyc_required: "Verify your identity before requesting a payout.",
-  payment_pending: "We couldn't confirm the wallet payment yet. Please try again in a minute: you won't be charged twice.",
-  payment_failed: "The wallet payment didn't go through. You haven't been charged.",
-  wallet_pending: "The wallet hasn't confirmed yet. Please try again in a minute.",
-  wallet_rejected: "The wallet refused this payment. Please contact support.",
-  provisioning: "Payment received. Your trading account is still being opened: it will appear under My challenges within a minute.",
-  plan_unavailable: "This plan or size isn't available any more. Please pick another one.",
-  not_yet_eligible: "This account isn't eligible for a payout yet.",
-  below_minimum: "The profit is below the minimum payout amount.",
-  positions_open: "Close all open positions before requesting a payout.",
-  payout_pending: "A payout for this account is already in review.",
-  consistency: "The consistency rule isn't met yet: your best day is too large a share of the profit.",
-  not_funded: "Payouts are available on funded accounts only.",
-  account_unavailable: "The trading account is unavailable right now. Please try again shortly.",
-  idempotency_conflict: "This request was already used for a different purchase. Close the dialog and start again.",
-  not_active: "This challenge isn't active.",
-  account_limit: "You have reached the maximum number of prop accounts. Contact support to raise the limit.",
+const FRIENDLY: Record<string, MessageKey> = {
+  insufficient_funds: "prop.error.insufficientFunds",
+  kyc_required: "prop.error.kycRequired",
+  payment_pending: "prop.error.paymentPending",
+  payment_failed: "prop.error.paymentFailed",
+  wallet_pending: "prop.error.walletPending",
+  wallet_rejected: "prop.error.walletRejected",
+  provisioning: "prop.error.provisioning",
+  plan_unavailable: "prop.error.planUnavailable",
+  not_yet_eligible: "prop.error.notYetEligible",
+  below_minimum: "prop.error.belowMinimum",
+  positions_open: "prop.error.positionsOpen",
+  payout_pending: "prop.error.payoutPending",
+  consistency: "prop.error.consistency",
+  not_funded: "prop.error.notFunded",
+  account_unavailable: "prop.error.accountUnavailable",
+  idempotency_conflict: "prop.error.idempotencyConflict",
+  not_active: "prop.error.notActive",
+  account_limit: "prop.error.accountLimit",
 };
 
 const PREFER_SERVICE = new Set(["not_yet_eligible", "below_minimum", "consistency", "positions_open", "payout_pending", "plan_unavailable"]);
@@ -322,7 +324,7 @@ export async function propApi<T>(path: string, init?: { method?: "GET" | "POST";
     });
   } catch (e) {
     if ((e as Error).name === "AbortError") throw e;
-    throw new PropError(0, "network", "Network error. Check your connection and try again.");
+    throw new PropError(0, "network", tr("prop.error.network"));
   }
   const data = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string; field?: string } };
   if (!res.ok) {
@@ -330,16 +332,16 @@ export async function propApi<T>(path: string, init?: { method?: "GET" | "POST";
       window.location.assign(`/api/auth/expired?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
     }
     const code = data.error?.code ?? "error";
-    const fallback = code.startsWith("engine_") ? "The trading server didn't respond. Please try again shortly." : "Something went wrong. Please try again.";
+    const fallback = code.startsWith("engine_") ? tr("prop.error.engine") : tr("prop.error.generic");
     // payout gate codes: the service message carries the specifics (dates, amounts)
-    const msg = PREFER_SERVICE.has(code) && data.error?.message ? data.error.message : (FRIENDLY[code] ?? data.error?.message ?? fallback);
+    const msg = PREFER_SERVICE.has(code) && data.error?.message ? data.error.message : (FRIENDLY[code] ? tr(FRIENDLY[code]) : data.error?.message ?? fallback);
     throw new PropError(res.status, code, msg, data.error?.field);
   }
   return data as T;
 }
 
 export function errorToast(title: string, e: unknown) {
-  toast.error(title, { description: e instanceof Error ? e.message : "Something went wrong. Please try again." });
+  toast.error(title, { description: e instanceof Error ? e.message : tr("prop.error.generic") });
 }
 
 /** Polls `path` every `ms` while the tab is visible (0 = once). `reload()` refetches at once. */
@@ -364,7 +366,7 @@ export function usePropPoll<T>(path: string | null, ms: number) {
           setError(null);
         } catch (e) {
           if (stop || (e as Error).name === "AbortError") return;
-          setError(e instanceof PropError ? e : new PropError(0, "error", "Something went wrong."));
+          setError(e instanceof PropError ? e : new PropError(0, "error", tr("prop.error.generic")));
         }
       }
       if (!stop && ms > 0) timer = setTimeout(run, ms);
@@ -403,49 +405,55 @@ export const sizeLabel = (n: number) => (n >= 1_000_000 ? `$${+(n / 1_000_000).t
 
 export const pct = (v: number | null | undefined, d = 0) => (v === null || v === undefined || !Number.isFinite(v) ? "—" : `${+v.toFixed(d)}%`);
 
-export const TYPE_LABEL: Record<PlanType, string> = { "1-step": "1-Step", "2-step": "2-Step", instant: "Instant" };
+// Labels below are looked up when rendered (tr follows the reader's language); they are only shown after
+// client-side fetches, so server rendering never sees them.
+const TYPE_KEY: Record<PlanType, MessageKey> = { "1-step": "prop.type.oneStep", "2-step": "prop.type.twoStep", instant: "prop.type.instant" };
+export const typeLabel = (x: PlanType) => (TYPE_KEY[x] ? tr(TYPE_KEY[x]) : x);
 
-export const BANNED_LABEL: Record<string, string> = {
-  hft: "High-frequency trading",
-  latency_arbitrage: "Latency arbitrage",
-  tick_scalping: "Tick scalping",
-  cross_account_copying: "Copying between accounts",
-  cross_account_hedging: "Hedging between accounts",
-  martingale: "Martingale",
-  grid: "Grid trading",
+const BANNED_KEY: Record<string, MessageKey> = {
+  hft: "prop.banned.hft",
+  latency_arbitrage: "prop.banned.latencyArbitrage",
+  tick_scalping: "prop.banned.tickScalping",
+  cross_account_copying: "prop.banned.crossAccountCopying",
+  cross_account_hedging: "prop.banned.crossAccountHedging",
+  martingale: "prop.banned.martingale",
+  grid: "prop.banned.grid",
 };
 
-export const bannedLabel = (k: string) => BANNED_LABEL[k] ?? k.replace(/_/g, " ");
+export const bannedLabel = (k: string) => (BANNED_KEY[k] ? tr(BANNED_KEY[k]) : k.replace(/_/g, " "));
 
-export const PAYOUT_FREQ: Record<string, string> = { weekly: "Weekly", "bi-weekly": "Every 2 weeks", monthly: "Monthly", "on-demand": "On demand" };
+const PAYOUT_FREQ_KEY: Record<string, MessageKey> = { weekly: "prop.payoutFreq.weekly", "bi-weekly": "prop.payoutFreq.biWeekly", monthly: "prop.payoutFreq.monthly", "on-demand": "prop.payoutFreq.onDemand" };
+/** Payout cycle in lower case for use inside a sentence ("then weekly"). */
+export const payoutFreqLabel = (f: string) => (PAYOUT_FREQ_KEY[f] ? tr(PAYOUT_FREQ_KEY[f]) : f);
 
-export const RULE_LABEL: Record<string, string> = {
-  daily_loss: "Daily loss",
-  max_drawdown: "Max drawdown",
-  profit_target: "Profit target",
-  time_limit: "Time limit",
-  weekend_holding: "Weekend holding",
-  news_window: "News window",
-  banned_strategy: "Banned strategy",
-  consistency: "Consistency",
-  manual: "Risk desk decision",
-  override: "Risk desk decision",
+const RULE_KEY: Record<string, MessageKey> = {
+  daily_loss: "prop.rule.dailyLoss",
+  max_drawdown: "prop.rule.maxDrawdown",
+  profit_target: "prop.rule.profitTarget",
+  time_limit: "prop.rule.timeLimit",
+  weekend_holding: "prop.rule.weekendHolding",
+  news_window: "prop.rule.newsWindow",
+  banned_strategy: "prop.rule.bannedStrategy",
+  consistency: "prop.rule.consistency",
+  manual: "prop.rule.riskDesk",
+  override: "prop.rule.riskDesk",
 };
 
-export const ruleLabel = (r: string) => RULE_LABEL[r] ?? r.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+export const ruleLabel = (r: string) => (RULE_KEY[r] ? tr(RULE_KEY[r]) : r.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase()));
 
-export const BLOCKER_TEXT: Record<string, string> = {
-  not_yet_eligible: "Not eligible yet: the first payout opens after the waiting period, then once per payout cycle.",
-  below_minimum: "Profit is below the minimum payout.",
-  positions_open: "Close all open positions to request a payout.",
-  payout_pending: "A payout is already in review.",
-  consistency: "Consistency rule not met: your best day is too large a share of the profit.",
+const BLOCKER_KEY: Record<string, MessageKey> = {
+  not_yet_eligible: "prop.blocker.notYetEligible",
+  below_minimum: "prop.blocker.belowMinimum",
+  positions_open: "prop.blocker.positionsOpen",
+  payout_pending: "prop.blocker.payoutPending",
+  consistency: "prop.blocker.consistency",
 };
+export const blockerText = (b: string) => (BLOCKER_KEY[b] ? tr(BLOCKER_KEY[b]) : b.replace(/_/g, " "));
 
 export function fmtDate(iso: string | null | undefined) {
   if (!iso) return "—";
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString(intlTag(tr.locale), { day: "2-digit", month: "short", year: "numeric" });
 }
 
 export function fmtDateTime(iso: string | null | undefined) {
@@ -453,39 +461,44 @@ export function fmtDateTime(iso: string | null | undefined) {
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
     ? "—"
-    : d.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+    : d.toLocaleString(intlTag(tr.locale), { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 export function fmtDuration(secs: number) {
   if (!Number.isFinite(secs) || secs < 0) return "—";
-  if (secs < 60) return `${Math.round(secs)}s`;
-  if (secs < 3600) return `${Math.floor(secs / 60)}m ${Math.round(secs % 60)}s`;
-  if (secs < 86400) return `${Math.floor(secs / 3600)}h ${Math.floor((secs % 3600) / 60)}m`;
-  return `${Math.floor(secs / 86400)}d ${Math.floor((secs % 86400) / 3600)}h`;
+  if (secs < 60) return tr("prop.duration.s", { s: Math.round(secs) });
+  if (secs < 3600) return tr("prop.duration.ms", { m: Math.floor(secs / 60), s: Math.round(secs % 60) });
+  if (secs < 86400) return tr("prop.duration.hm", { h: Math.floor(secs / 3600), m: Math.floor((secs % 3600) / 60) });
+  return tr("prop.duration.dh", { d: Math.floor(secs / 86400), h: Math.floor((secs % 86400) / 3600) });
 }
 
 /** Steps of a plan: Phase 1 → Phase 2 → Funded / Evaluation → Funded / Funded. */
 export function planSteps(p: Pick<Plan, "phases">): string[] {
-  return [...p.phases.map((x) => x.name), "Funded"];
+  return [...p.phases.map((x) => x.name), tr("prop.status.funded")];
 }
 
-export const CHALLENGE_STATUS: Record<ChallengeStatus, { label: string; tone: "up" | "down" | "warn" | "gold" | "ember" | "neutral" | "info" }> = {
-  pending_payment: { label: "Awaiting payment", tone: "warn" },
-  provisioning: { label: "Opening account", tone: "info" },
-  active: { label: "Active", tone: "ember" },
-  funded: { label: "Funded", tone: "gold" },
-  failed: { label: "Failed", tone: "down" },
-  closed: { label: "Closed", tone: "neutral" },
-  payment_failed: { label: "Payment failed", tone: "down" },
+export const CHALLENGE_STATUS: Record<ChallengeStatus, { labelKey: MessageKey; tone: "up" | "down" | "warn" | "gold" | "ember" | "neutral" | "info" }> = {
+  pending_payment: { labelKey: "prop.status.pendingPayment", tone: "warn" },
+  provisioning: { labelKey: "prop.status.provisioning", tone: "info" },
+  active: { labelKey: "prop.status.active", tone: "ember" },
+  funded: { labelKey: "prop.status.funded", tone: "gold" },
+  failed: { labelKey: "prop.status.failed", tone: "down" },
+  closed: { labelKey: "prop.status.closed", tone: "neutral" },
+  payment_failed: { labelKey: "prop.status.paymentFailed", tone: "down" },
+};
+
+export const challengeStatusLabel = (s: string) => {
+  const m = CHALLENGE_STATUS[s as ChallengeStatus];
+  return m ? tr(m.labelKey) : s;
 };
 
 /** Short label of where a challenge stands, e.g. "Phase 2 · Active", "Funded", "Phase 1 · Failed". */
 export function stageLabel(c: Challenge) {
   const cur = c.current;
-  if (c.status === "funded") return "Funded";
-  if (c.status === "active" && cur) return `${cur.phase} · Active`;
-  if (c.status === "failed" && cur) return `${cur.phase} · Failed`;
-  return CHALLENGE_STATUS[c.status]?.label ?? c.status;
+  if (c.status === "funded") return tr("prop.status.funded");
+  if (c.status === "active" && cur) return tr("prop.stage.active", { phase: cur.phase });
+  if (c.status === "failed" && cur) return tr("prop.stage.failed", { phase: cur.phase });
+  return challengeStatusLabel(c.status);
 }
 
 /** Stepper index for a challenge (steps from planSteps). */

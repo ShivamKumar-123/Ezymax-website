@@ -4,24 +4,26 @@ import * as React from "react";
 import { toast } from "sonner";
 import { Download, Link2 } from "lucide-react";
 import { Button } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 
 /** Copy-link and download buttons on the public verify page. */
 export function VerifyActions({ code }: { code: string }) {
+  const t = useT();
   const copy = () => {
     const url = `${window.location.origin}/verify/${code}`;
     navigator.clipboard?.writeText(url).then(
-      () => toast.success("Link copied", { description: url }),
-      () => toast.error("Couldn't copy the link", { description: url }),
+      () => toast.success(t("prop.verify.linkCopied"), { description: url }),
+      () => toast.error(t("prop.verify.copyFailed"), { description: url }),
     );
   };
   return (
     <div className="flex flex-wrap gap-2">
       <Button variant="surface" onClick={copy}>
-        <Link2 /> Copy link
+        <Link2 /> {t("prop.verify.copyLink")}
       </Button>
       <a href={`/verify/${code}/image?download=1`} download={`kalks-certificate-${code}.png`}>
         <Button variant="ember">
-          <Download /> Download PNG
+          <Download /> {t("prop.verify.downloadPng")}
         </Button>
       </a>
     </div>

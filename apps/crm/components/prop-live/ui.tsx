@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, CandlestickChart, Eye, EyeOff, Loader2, RotateCw } from "lucide-react";
 import { Button, Card, Chip, CopyButton, EmptyState, Progress, cn, type ButtonProps } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
 import { openTerminal } from "@/components/trading/api";
 import { ERROR_LINK, PropError, usd } from "./api";
 
@@ -13,9 +14,10 @@ import { ERROR_LINK, PropError, usd } from "./api";
 
 /** Inline error with the next step (deposit, verify) when there is one. */
 export function ErrorNote({ error, className }: { error: unknown; className?: string }) {
+  const t = useT();
   if (!error) return null;
   const code = error instanceof PropError ? error.code : "error";
-  const msg = error instanceof Error ? error.message : "Something went wrong. Please try again.";
+  const msg = error instanceof Error ? error.message : t("prop.error.generic");
   const link = ERROR_LINK[code];
   const soft = code === "provisioning" || code === "payment_pending" || code === "wallet_pending";
   return (
@@ -27,7 +29,7 @@ export function ErrorNote({ error, className }: { error: unknown; className?: st
       {link && (
         <Link href={link.href} className="shrink-0">
           <Button size="sm" variant="surface">
-            {link.label} <ArrowRight />
+            {t(link.labelKey)} <ArrowRight className="rtl:-scale-x-100" />
           </Button>
         </Link>
       )}
@@ -35,16 +37,17 @@ export function ErrorNote({ error, className }: { error: unknown; className?: st
   );
 }
 
-export function LoadError({ error, onRetry, title = "Prop challenges are unavailable" }: { error: PropError; onRetry: () => void; title?: string }) {
+export function LoadError({ error, onRetry, title }: { error: PropError; onRetry: () => void; title?: string }) {
+  const t = useT();
   return (
     <Card>
       <EmptyState
         illustration="satellite_antenna"
-        title={title}
-        text={error.status === 0 || error.status >= 500 ? "We couldn't reach the prop service. Your accounts are safe; please try again in a moment." : error.message}
+        title={title ?? t("prop.loadError.title")}
+        text={error.status === 0 || error.status >= 500 ? t("prop.loadError.text") : error.message}
         action={
           <Button variant="surface" onClick={onRetry}>
-            <RotateCw /> Try again
+            <RotateCw /> {t("prop.tryAgain")}
           </Button>
         }
       />
@@ -59,12 +62,13 @@ export function LoadError({ error, onRetry, title = "Prop challenges are unavail
 export type RuleState = "ok" | "passed" | "failed" | "waiting" | "off";
 
 export function RuleStateChip({ state }: { state: RuleState }) {
+  const t = useT();
   const m = {
-    ok: { t: "In progress", tone: "ember" as const },
-    passed: { t: "Met", tone: "up" as const },
-    failed: { t: "Breached", tone: "down" as const },
-    waiting: { t: "Not started", tone: "neutral" as const },
-    off: { t: "Off", tone: "neutral" as const },
+    ok: { t: t("prop.ruleState.ok"), tone: "ember" as const },
+    passed: { t: t("prop.ruleState.passed"), tone: "up" as const },
+    failed: { t: t("prop.ruleState.failed"), tone: "down" as const },
+    waiting: { t: t("prop.ruleState.waiting"), tone: "neutral" as const },
+    off: { t: t("prop.ruleState.off"), tone: "neutral" as const },
   }[state];
   return (
     <Chip size="sm" tone={m.tone}>
@@ -118,7 +122,7 @@ export function RuleTile({
         {rows.map(([k, v, t], i) => (
           <div key={i} className="flex items-center justify-between gap-3 py-2 text-[12.5px]">
             <dt className="text-fg-3">{k}</dt>
-            <dd className={cn("k-num text-right font-medium", t === "up" && "text-up", t === "down" && "text-down", t === "warn" && "text-warn")}>{v}</dd>
+            <dd className={cn("k-num text-end font-medium", t === "up" && "text-up", t === "down" && "text-down", t === "warn" && "text-warn")}>{v}</dd>
           </div>
         ))}
       </dl>
@@ -177,14 +181,15 @@ export function daysLeft(deadline: string | null | undefined, now = Date.now()) 
 /* ------------------------------------------------------------------ */
 
 export function CredentialField({ label, value, secret, mono = true }: { label: string; value: string; secret?: boolean; mono?: boolean }) {
+  const t = useT();
   const [show, setShow] = React.useState(!secret);
   return (
     <div className="min-w-0">
       <div className="mb-1.5 text-[11px] text-fg-3">{label}</div>
-      <div className="flex h-10 items-center gap-1 rounded-[12px] border border-line bg-surface-2 pl-3 pr-1.5">
+      <div className="flex h-10 items-center gap-1 rounded-[12px] border border-line bg-surface-2 ps-3 pe-1.5">
         <span className={cn("min-w-0 flex-1 truncate text-[13px]", mono && "font-mono", !show && "tracking-[0.2em]")}>{show ? value : "••••••••"}</span>
         {secret && (
-          <button type="button" onClick={() => setShow((s) => !s)} className="grid size-6 place-items-center rounded-md text-fg-3 hover:bg-surface-3 hover:text-fg" aria-label={show ? "Hide" : "Show"}>
+          <button type="button" onClick={() => setShow((s) => !s)} className="grid size-6 place-items-center rounded-md text-fg-3 hover:bg-surface-3 hover:text-fg" aria-label={show ? t("prop.hide") : t("prop.show")}>
             {show ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
           </button>
         )}
@@ -198,7 +203,8 @@ export function CredentialField({ label, value, secret, mono = true }: { label: 
 /* Trade button (one-time SSO into Kalks Trader)                       */
 /* ------------------------------------------------------------------ */
 
-export function PropTradeButton({ login, disabled, reason, size = "sm", label = "Trade", ...rest }: { login: number | null; disabled?: boolean; reason?: string; label?: string } & Omit<ButtonProps, "onClick" | "disabled">) {
+export function PropTradeButton({ login, disabled, reason, size = "sm", label, ...rest }: { login: number | null; disabled?: boolean; reason?: string; label?: string } & Omit<ButtonProps, "onClick" | "disabled">) {
+  const t = useT();
   const [busy, setBusy] = React.useState(false);
   const blocked = disabled || !login;
   return (
@@ -206,7 +212,7 @@ export function PropTradeButton({ login, disabled, reason, size = "sm", label = 
       size={size}
       variant="ember"
       disabled={busy || blocked}
-      title={blocked ? reason ?? "This account can't be traded" : undefined}
+      title={blocked ? reason ?? t("prop.trade.blocked") : undefined}
       onClick={async () => {
         if (!login) return;
         setBusy(true);
@@ -215,7 +221,7 @@ export function PropTradeButton({ login, disabled, reason, size = "sm", label = 
       }}
       {...rest}
     >
-      {busy ? <Loader2 className="animate-spin" /> : <CandlestickChart />} {label}
+      {busy ? <Loader2 className="animate-spin" /> : <CandlestickChart />} {label ?? t("prop.trade.button")}
     </Button>
   );
 }

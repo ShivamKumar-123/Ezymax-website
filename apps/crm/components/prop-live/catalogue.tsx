@@ -4,12 +4,14 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, Ban, CalendarDays, Check, Clock, Gauge as GaugeIcon, Layers, Loader2, Minus, Percent, ShieldCheck, Target, TrendingDown, Trophy, Wallet, Zap } from "lucide-react";
 import { Button, Card, CardHeader, Chip, Dialog, EmptyState, PageHeader, Reveal, Segmented, Skeleton, cn } from "@kalks/ui";
+import type { T } from "@kalks/i18n";
+import { useT } from "@kalks/i18n/react";
 import {
-  PAYOUT_FREQ,
-  TYPE_LABEL,
   bannedLabel,
+  payoutFreqLabel,
   propApi,
   sizeLabel,
+  typeLabel,
   usd,
   usePropPoll,
   type Challenge,
@@ -26,46 +28,50 @@ const TYPE_ICON: Record<PlanType, React.ReactNode> = {
   "2-step": <Layers className="size-3.5" />,
   instant: <Zap className="size-3.5" />,
 };
-const TYPE_TEXT: Record<PlanType, string> = {
-  "1-step": "One evaluation phase. Hit the target, respect the limits, get funded.",
-  "2-step": "Two evaluation phases with lower targets and wider limits.",
-  instant: "No evaluation. Start on a funded account straight away with tighter limits.",
-};
+const TYPE_TEXT = {
+  "1-step": "prop.store.typeText.oneStep",
+  "2-step": "prop.store.typeText.twoStep",
+  instant: "prop.store.typeText.instant",
+} as const satisfies Record<PlanType, string>;
 
 /* ------------------------------------------------------------------ */
 /* Rule text                                                           */
 /* ------------------------------------------------------------------ */
 
-const days = (n: number) => `${n} day${n === 1 ? "" : "s"}`;
+const days = (t: T, n: number) => t("prop.days", { count: n });
+/** "balance" / "equity" (daily loss basis) and "static" / "trailing" (drawdown type) from the plan. */
+const basisLabel = (t: T, b: string) => t.dyn(`prop.basis.${b}`, b);
+const ddTypeLabel = (t: T, d: string) => t.dyn(`prop.ddType.${d}`, d);
 
-export function targetsText(p: Plan) {
-  return p.phases.length ? p.phases.map((x) => `${x.target}%`).join(" / ") : "None";
+export function targetsText(t: T, p: Plan) {
+  return p.phases.length ? p.phases.map((x) => `${x.target}%`).join(" / ") : t("prop.none");
 }
 
-export function ddText(p: Plan) {
-  return `${p.maxDD}% ${p.ddType}${p.ddType === "trailing" && p.trailingLock ? ", locks at start" : ""}`;
+export function ddText(t: T, p: Plan) {
+  const base = `${p.maxDD}% ${ddTypeLabel(t, p.ddType)}`;
+  return p.ddType === "trailing" && p.trailingLock ? t("prop.rules.ddLocks", { dd: base }) : base;
 }
 
 /** Every rule of a plan at one size, as label / value rows. */
-export function planRules(p: Plan, s: PlanSize): [string, React.ReactNode][] {
+export function planRules(t: T, p: Plan, s: PlanSize): [string, React.ReactNode][] {
   const rows: [string, React.ReactNode][] = [];
   for (const ph of p.phases) {
-    rows.push([`${ph.name} target`, `${ph.target}% · ${usd((s.size * ph.target) / 100, 0)}`]);
-    rows.push([`${ph.name} minimum days`, days(ph.minDays)]);
-    rows.push([`${ph.name} time limit`, ph.timeLimit ? days(ph.timeLimit) : "No time limit"]);
+    rows.push([t("prop.rules.phaseTarget", { phase: ph.name }), `${ph.target}% · ${usd((s.size * ph.target) / 100, 0)}`]);
+    rows.push([t("prop.rules.phaseMinDays", { phase: ph.name }), days(t, ph.minDays)]);
+    rows.push([t("prop.rules.phaseTimeLimit", { phase: ph.name }), ph.timeLimit ? days(t, ph.timeLimit) : t("prop.noTimeLimit")]);
   }
-  if (!p.phases.length) rows.push(["Evaluation", "None, funded from day one"]);
-  rows.push(["Daily loss limit", `${p.dailyLoss}% · ${usd((s.size * p.dailyLoss) / 100, 0)} · from ${p.dailyBasis === "equity" ? "higher of balance and equity" : "balance"} at 17:00 New York`]);
-  rows.push(["Max drawdown", `${ddText(p)} · ${usd((s.size * p.maxDD) / 100, 0)}`]);
-  rows.push(["Consistency", p.consistency > 0 ? `Best day ≤ ${p.consistency}% of total profit` : "No consistency rule"]);
-  rows.push(["News trading", p.newsTrading ? "Allowed" : `Not within ±${p.newsWindow} min of high-impact news${p.newsBreachFails ? " (fails the account)" : ""}`]);
-  rows.push(["Weekend holding", p.weekendHolding ? "Allowed" : "Positions closed Friday 16:45 New York"]);
-  rows.push(["Expert Advisors", p.eaAllowed ? "Allowed" : "Not allowed"]);
-  rows.push(["Banned strategies", p.banned.length ? p.banned.map(bannedLabel).join(", ") : "None"]);
-  rows.push(["Profit split", p.splitMax > p.split ? `${p.split}%, scaling to ${p.splitMax}%` : `${p.split}%`]);
-  rows.push(["First payout", `After ${days(p.firstPayoutDays)}, then ${(PAYOUT_FREQ[p.payoutFreq] ?? p.payoutFreq).toLowerCase()} · min ${usd(p.minPayout, 0)}`]);
-  rows.push(["Fee refund", p.refundFee ? "Refunded with the first payout" : "Non-refundable"]);
-  rows.push(["Leverage", `1:${s.leverage}`]);
+  if (!p.phases.length) rows.push([t("prop.rules.evaluation"), t("prop.rules.evaluationNone")]);
+  rows.push([t("prop.dailyLossLimit"), t(p.dailyBasis === "equity" ? "prop.rules.dailyLossEquity" : "prop.rules.dailyLossBalance", { pct: p.dailyLoss, amount: usd((s.size * p.dailyLoss) / 100, 0) })]);
+  rows.push([t("prop.rule.maxDrawdown"), `${ddText(t, p)} · ${usd((s.size * p.maxDD) / 100, 0)}`]);
+  rows.push([t("prop.rule.consistency"), p.consistency > 0 ? t("prop.rules.consistencyValue", { pct: p.consistency }) : t("prop.rules.noConsistency")]);
+  rows.push([t("prop.newsTrading"), p.newsTrading ? t("prop.allowed") : t(p.newsBreachFails ? "prop.rules.newsBlockedFails" : "prop.rules.newsBlocked", { min: p.newsWindow })]);
+  rows.push([t("prop.rule.weekendHolding"), p.weekendHolding ? t("prop.allowed") : t("prop.rules.weekendClosed")]);
+  rows.push([t("prop.expertAdvisors"), p.eaAllowed ? t("prop.allowed") : t("prop.notAllowed")]);
+  rows.push([t("prop.bannedStrategies"), p.banned.length ? p.banned.map(bannedLabel).join(", ") : t("prop.none")]);
+  rows.push([t("prop.profitSplit"), p.splitMax > p.split ? t("prop.rules.splitScaling", { split: p.split, max: p.splitMax }) : `${p.split}%`]);
+  rows.push([t("prop.firstPayout"), t("prop.rules.firstPayoutValue", { days: days(t, p.firstPayoutDays), freq: payoutFreqLabel(p.payoutFreq), min: usd(p.minPayout, 0) })]);
+  rows.push([t("prop.feeRefund"), p.refundFee ? t("prop.rules.refunded") : t("prop.nonRefundable")]);
+  rows.push([t("prop.leverage"), `1:${s.leverage}`]);
   return rows;
 }
 
@@ -74,7 +80,11 @@ export function planRules(p: Plan, s: PlanSize): [string, React.ReactNode][] {
 /* ------------------------------------------------------------------ */
 
 function PhaseTrack({ p }: { p: Plan }) {
-  const steps = [...p.phases.map((x) => ({ name: x.name, title: `${x.target}% target`, sub: `Min ${days(x.minDays)}${x.timeLimit ? ` · ${days(x.timeLimit)} max` : ""}`, funded: false })), { name: "Funded", title: `${p.split}% split`, sub: `First payout after ${days(p.firstPayoutDays)}`, funded: true }];
+  const t = useT();
+  const steps = [
+    ...p.phases.map((x) => ({ name: x.name, title: t("prop.track.target", { pct: x.target }), sub: x.timeLimit ? t("prop.track.minMax", { min: days(t, x.minDays), max: days(t, x.timeLimit) }) : t("prop.track.min", { min: days(t, x.minDays) }), funded: false })),
+    { name: t("prop.status.funded"), title: t("prop.track.split", { pct: p.split }), sub: t("prop.track.firstPayout", { days: days(t, p.firstPayoutDays) }), funded: true },
+  ];
   return (
     <div className="flex flex-col items-stretch gap-2 sm:flex-row">
       {steps.map((s, i) => (
@@ -89,7 +99,7 @@ function PhaseTrack({ p }: { p: Plan }) {
           </div>
           {i < steps.length - 1 && (
             <div className="hidden items-center sm:flex">
-              <ArrowRight className="size-4 text-fg-3" />
+              <ArrowRight className="size-4 text-fg-3 rtl:-scale-x-100" />
             </div>
           )}
         </React.Fragment>
@@ -103,25 +113,26 @@ function PhaseTrack({ p }: { p: Plan }) {
 /* ------------------------------------------------------------------ */
 
 function Configurator({ plans, plan, setPlan, size, setSize }: { plans: Plan[]; plan: Plan; setPlan: (id: string) => void; size: PlanSize; setSize: (n: number) => void }) {
-  const types = TYPE_ORDER.filter((t) => plans.some((p) => p.type === t));
+  const t = useT();
+  const types = TYPE_ORDER.filter((x) => plans.some((p) => p.type === x));
   const sameType = plans.filter((p) => p.type === plan.type);
   return (
     <Card className="h-full">
-      <CardHeader title="Choose your challenge" subtitle="Pick a model and an account size" icon={<Trophy />} />
+      <CardHeader title={t("prop.store.chooseTitle")} subtitle={t("prop.store.chooseSubtitle")} icon={<Trophy />} />
       <div className="space-y-5 px-4 pb-6 pt-5 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Segmented
             size="md"
             value={plan.type}
-            onChange={(t) => setPlan(plans.find((p) => p.type === t)!.id)}
-            options={types.map((t) => ({ value: t, label: <>{TYPE_ICON[t]}{TYPE_LABEL[t]}</> }))}
+            onChange={(x) => setPlan(plans.find((p) => p.type === x)!.id)}
+            options={types.map((x) => ({ value: x, label: <>{TYPE_ICON[x]}{typeLabel(x)}</> }))}
           />
           {sameType.length > 1 && <Segmented size="xs" value={plan.id} onChange={setPlan} options={sameType.map((p) => ({ value: p.id, label: p.name }))} />}
         </div>
-        <p className="text-[13.5px] text-fg-2">{TYPE_TEXT[plan.type]}</p>
+        <p className="text-[13.5px] text-fg-2">{TYPE_TEXT[plan.type] ? t(TYPE_TEXT[plan.type]) : null}</p>
 
         <div>
-          <div className="k-label mb-2.5">Account size</div>
+          <div className="k-label mb-2.5">{t("prop.accountSize")}</div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             {plan.sizes.map((s) => {
               const on = s.size === size.size;
@@ -131,7 +142,7 @@ function Configurator({ plans, plan, setPlan, size, setSize }: { plans: Plan[]; 
                   type="button"
                   onClick={() => setSize(s.size)}
                   aria-pressed={on}
-                  className={cn("rounded-[14px] border px-3 py-3 text-left transition-colors", on ? "border-ember/50 bg-ember-soft" : "border-line bg-surface-2 hover:border-fg-3/40 hover:bg-surface-3")}
+                  className={cn("rounded-[14px] border px-3 py-3 text-start transition-colors", on ? "border-ember/50 bg-ember-soft" : "border-line bg-surface-2 hover:border-fg-3/40 hover:bg-surface-3")}
                 >
                   <div className="k-num text-[17px] font-semibold tracking-tight">{sizeLabel(s.size)}</div>
                   <div className={cn("k-num mt-0.5 text-[11.5px]", on ? "text-ember" : "text-fg-3")}>{usd(s.fee, s.fee % 1 ? 2 : 0)}</div>
@@ -142,16 +153,16 @@ function Configurator({ plans, plan, setPlan, size, setSize }: { plans: Plan[]; 
         </div>
 
         <div>
-          <div className="k-label mb-2.5">Your path</div>
+          <div className="k-label mb-2.5">{t("prop.store.yourPath")}</div>
           <PhaseTrack p={plan} />
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
-            { i: <TrendingDown />, l: "Daily loss", v: `${plan.dailyLoss}%`, s: `${usd((size.size * plan.dailyLoss) / 100, 0)} · ${plan.dailyBasis}` },
-            { i: <GaugeIcon />, l: "Max drawdown", v: `${plan.maxDD}%`, s: `${plan.ddType} · ${usd((size.size * plan.maxDD) / 100, 0)}` },
-            { i: <CalendarDays />, l: "Min days", v: plan.phases.length ? String(Math.max(...plan.phases.map((p) => p.minDays))) : "—", s: plan.phases.some((p) => p.timeLimit) ? "Time limit applies" : "No time limit" },
-            { i: <Percent />, l: "Profit split", v: `${plan.split}%`, s: plan.splitMax > plan.split ? `Scales to ${plan.splitMax}%` : "Fixed" },
+            { i: <TrendingDown />, l: t("prop.rule.dailyLoss"), v: `${plan.dailyLoss}%`, s: `${usd((size.size * plan.dailyLoss) / 100, 0)} · ${basisLabel(t, plan.dailyBasis)}` },
+            { i: <GaugeIcon />, l: t("prop.rule.maxDrawdown"), v: `${plan.maxDD}%`, s: `${ddTypeLabel(t, plan.ddType)} · ${usd((size.size * plan.maxDD) / 100, 0)}` },
+            { i: <CalendarDays />, l: t("prop.minDays"), v: plan.phases.length ? String(Math.max(...plan.phases.map((p) => p.minDays))) : "—", s: plan.phases.some((p) => p.timeLimit) ? t("prop.store.timeLimitApplies") : t("prop.noTimeLimit") },
+            { i: <Percent />, l: t("prop.profitSplit"), v: `${plan.split}%`, s: plan.splitMax > plan.split ? t("prop.store.scalesTo", { pct: plan.splitMax }) : t("prop.store.fixed") },
           ].map((x) => (
             <div key={x.l} className="k-row px-3.5 py-3">
               <div className="flex items-center gap-1.5 text-[11px] text-fg-3 [&_svg]:size-3.5">
@@ -169,46 +180,47 @@ function Configurator({ plans, plan, setPlan, size, setSize }: { plans: Plan[]; 
 }
 
 function PlanCard({ plan, size, onBuy }: { plan: Plan; size: PlanSize; onBuy: () => void }) {
+  const t = useT();
   const rows: [string, React.ReactNode][] = [
-    ...plan.phases.map((p): [string, React.ReactNode] => [`${p.name} target`, `${p.target}% · ${usd((size.size * p.target) / 100, 0)}`]),
-    ["Daily loss limit", `${plan.dailyLoss}% · ${plan.dailyBasis}`],
-    ["Max drawdown", `${plan.maxDD}% ${plan.ddType}`],
-    ["Leverage", `1:${size.leverage}`],
-    ["Profit split", plan.splitMax > plan.split ? `${plan.split}% → ${plan.splitMax}%` : `${plan.split}%`],
-    ["Fee refund", plan.refundFee ? <span className="text-up">With 1st payout</span> : <span className="text-fg-3">Non-refundable</span>],
+    ...plan.phases.map((p): [string, React.ReactNode] => [t("prop.rules.phaseTarget", { phase: p.name }), `${p.target}% · ${usd((size.size * p.target) / 100, 0)}`]),
+    [t("prop.dailyLossLimit"), `${plan.dailyLoss}% · ${basisLabel(t, plan.dailyBasis)}`],
+    [t("prop.rule.maxDrawdown"), `${plan.maxDD}% ${ddTypeLabel(t, plan.ddType)}`],
+    [t("prop.leverage"), `1:${size.leverage}`],
+    [t("prop.profitSplit"), plan.splitMax > plan.split ? `${plan.split}% → ${plan.splitMax}%` : `${plan.split}%`],
+    [t("prop.feeRefund"), plan.refundFee ? <span className="text-up">{t("prop.store.withFirstPayout")}</span> : <span className="text-fg-3">{t("prop.nonRefundable")}</span>],
   ];
   return (
     <Card className="flex h-full flex-col">
       <div className="flex flex-1 flex-col p-6">
         <div className="k-label">{plan.name}</div>
-        <div className="mt-1 text-[13px] text-fg-2">{sizeLabel(size.size)} simulated account</div>
+        <div className="mt-1 text-[13px] text-fg-2">{t("prop.store.simulatedAccount", { size: sizeLabel(size.size) })}</div>
         <div className="mt-3 flex items-baseline gap-2">
           <span className="k-num text-[44px] font-semibold leading-none tracking-[-0.03em]">{usd(size.fee, size.fee % 1 ? 2 : 0)}</span>
-          <span className="text-[13px] text-fg-3">one-time · USDT</span>
+          <span className="text-[13px] text-fg-3">{t("prop.store.oneTimeUsdt")}</span>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {plan.refundFee && (
             <Chip size="sm" tone="gold">
-              Refundable
+              {t("prop.store.refundable")}
             </Chip>
           )}
-          <Chip size="sm">1:{size.leverage} leverage</Chip>
-          <Chip size="sm">{plan.phases.some((p) => p.timeLimit) ? "Time limit" : "No time limit"}</Chip>
+          <Chip size="sm">{t("prop.store.leverageChip", { leverage: size.leverage })}</Chip>
+          <Chip size="sm">{plan.phases.some((p) => p.timeLimit) ? t("prop.rule.timeLimit") : t("prop.noTimeLimit")}</Chip>
         </div>
         <dl className="mt-5 divide-y divide-line text-[13px]">
           {rows.map(([k, v]) => (
             <div key={k} className="flex items-center justify-between gap-3 py-2.5">
               <dt className="text-fg-2">{k}</dt>
-              <dd className="k-num text-right font-medium">{v}</dd>
+              <dd className="k-num text-end font-medium">{v}</dd>
             </div>
           ))}
         </dl>
         <div className="mt-auto pt-5">
           <Button variant="ember" size="xl" className="w-full" onClick={onBuy}>
-            Buy challenge · {usd(size.fee, size.fee % 1 ? 2 : 0)} <ArrowRight />
+            {t("prop.store.buyChallenge", { fee: usd(size.fee, size.fee % 1 ? 2 : 0) })} <ArrowRight className="rtl:-scale-x-100" />
           </Button>
           <div className="mt-2.5 flex items-center justify-center gap-1.5 text-[11.5px] text-fg-3">
-            <Wallet className="size-3.5" /> Paid from your USDT wallet
+            <Wallet className="size-3.5" /> {t("prop.store.paidFromWallet")}
           </div>
         </div>
       </div>
@@ -239,32 +251,33 @@ function No({ children }: { children?: React.ReactNode }) {
 }
 
 function CompareTable({ plans, current, size, onPick }: { plans: Plan[]; current: string; size: number; onPick: (id: string) => void }) {
+  const t = useT();
   const feeAt = (p: Plan) => p.sizes.find((s) => s.size === size) ?? null;
   const rows: { label: string; icon: React.ReactNode; cell: (p: Plan) => React.ReactNode }[] = [
-    { label: `Fee (${sizeLabel(size)})`, icon: <Wallet />, cell: (p) => (feeAt(p) ? <span className="k-num font-semibold">{usd(feeAt(p)!.fee, 0)}</span> : <span className="text-fg-3">Not offered</span>) },
-    { label: "Profit target", icon: <Target />, cell: (p) => targetsText(p) },
-    { label: "Daily loss limit", icon: <TrendingDown />, cell: (p) => <span>{p.dailyLoss}% <span className="text-fg-3">· {p.dailyBasis}</span></span> },
-    { label: "Max drawdown", icon: <GaugeIcon />, cell: (p) => <span>{p.maxDD}% <span className="text-fg-3">· {p.ddType}</span></span> },
-    { label: "Min trading days", icon: <CalendarDays />, cell: (p) => (p.phases.length ? p.phases.map((x) => x.minDays).join(" / ") : "—") },
-    { label: "Time limit", icon: <Clock />, cell: (p) => (p.phases.some((x) => x.timeLimit) ? p.phases.map((x) => (x.timeLimit ? days(x.timeLimit) : "none")).join(" / ") : "None") },
-    { label: "Leverage", icon: <Layers />, cell: (p) => (feeAt(p) ? `1:${feeAt(p)!.leverage}` : `1:${p.sizes[0]?.leverage ?? "—"}`) },
-    { label: "Profit split", icon: <Percent />, cell: (p) => (p.splitMax > p.split ? `${p.split}% → ${p.splitMax}%` : `${p.split}%`) },
-    { label: "Fee refund", icon: <Check />, cell: (p) => (p.refundFee ? <Yes>1st payout</Yes> : <No>No</No>) },
-    { label: "Consistency rule", icon: <ShieldCheck />, cell: (p) => (p.consistency > 0 ? `Best day ≤ ${p.consistency}%` : <No>None</No>) },
-    { label: "News trading", icon: <Zap />, cell: (p) => (p.newsTrading ? <Yes>Allowed</Yes> : <No>±{p.newsWindow} min blocked</No>) },
-    { label: "Weekend holding", icon: <CalendarDays />, cell: (p) => (p.weekendHolding ? <Yes>Allowed</Yes> : <No>Closed Friday</No>) },
-    { label: "Expert Advisors", icon: <Layers />, cell: (p) => (p.eaAllowed ? <Yes>Allowed</Yes> : <No>Not allowed</No>) },
-    { label: "Banned strategies", icon: <Ban />, cell: (p) => <span className="text-[12px] text-fg-2">{p.banned.length ? p.banned.map(bannedLabel).join(" · ") : "None"}</span> },
-    { label: "First payout", icon: <Clock />, cell: (p) => `After ${days(p.firstPayoutDays)} · ${(PAYOUT_FREQ[p.payoutFreq] ?? p.payoutFreq).toLowerCase()}` },
+    { label: t("prop.compare.fee", { size: sizeLabel(size) }), icon: <Wallet />, cell: (p) => (feeAt(p) ? <span className="k-num font-semibold">{usd(feeAt(p)!.fee, 0)}</span> : <span className="text-fg-3">{t("prop.compare.notOffered")}</span>) },
+    { label: t("prop.rule.profitTarget"), icon: <Target />, cell: (p) => targetsText(t, p) },
+    { label: t("prop.dailyLossLimit"), icon: <TrendingDown />, cell: (p) => <span>{p.dailyLoss}% <span className="text-fg-3">· {basisLabel(t, p.dailyBasis)}</span></span> },
+    { label: t("prop.rule.maxDrawdown"), icon: <GaugeIcon />, cell: (p) => <span>{p.maxDD}% <span className="text-fg-3">· {ddTypeLabel(t, p.ddType)}</span></span> },
+    { label: t("prop.compare.minTradingDays"), icon: <CalendarDays />, cell: (p) => (p.phases.length ? p.phases.map((x) => x.minDays).join(" / ") : "—") },
+    { label: t("prop.rule.timeLimit"), icon: <Clock />, cell: (p) => (p.phases.some((x) => x.timeLimit) ? p.phases.map((x) => (x.timeLimit ? days(t, x.timeLimit) : t("prop.compare.noneLower"))).join(" / ") : t("prop.none")) },
+    { label: t("prop.leverage"), icon: <Layers />, cell: (p) => (feeAt(p) ? `1:${feeAt(p)!.leverage}` : `1:${p.sizes[0]?.leverage ?? "—"}`) },
+    { label: t("prop.profitSplit"), icon: <Percent />, cell: (p) => (p.splitMax > p.split ? `${p.split}% → ${p.splitMax}%` : `${p.split}%`) },
+    { label: t("prop.feeRefund"), icon: <Check />, cell: (p) => (p.refundFee ? <Yes>{t("prop.compare.firstPayout")}</Yes> : <No>{t("prop.no")}</No>) },
+    { label: t("prop.compare.consistencyRule"), icon: <ShieldCheck />, cell: (p) => (p.consistency > 0 ? t("prop.compare.bestDay", { pct: p.consistency }) : <No>{t("prop.none")}</No>) },
+    { label: t("prop.newsTrading"), icon: <Zap />, cell: (p) => (p.newsTrading ? <Yes>{t("prop.allowed")}</Yes> : <No>{t("prop.compare.newsBlocked", { min: p.newsWindow })}</No>) },
+    { label: t("prop.rule.weekendHolding"), icon: <CalendarDays />, cell: (p) => (p.weekendHolding ? <Yes>{t("prop.allowed")}</Yes> : <No>{t("prop.compare.closedFriday")}</No>) },
+    { label: t("prop.expertAdvisors"), icon: <Layers />, cell: (p) => (p.eaAllowed ? <Yes>{t("prop.allowed")}</Yes> : <No>{t("prop.notAllowed")}</No>) },
+    { label: t("prop.bannedStrategies"), icon: <Ban />, cell: (p) => <span className="text-[12px] text-fg-2">{p.banned.length ? p.banned.map(bannedLabel).join(" · ") : t("prop.none")}</span> },
+    { label: t("prop.firstPayout"), icon: <Clock />, cell: (p) => t("prop.compare.firstPayoutValue", { days: days(t, p.firstPayoutDays), freq: payoutFreqLabel(p.payoutFreq) }) },
   ];
   return (
     <Card>
-      <CardHeader title="Compare the rules" subtitle="Every plan side by side. Rules are checked on the server around the clock." icon={<Layers />} />
+      <CardHeader title={t("prop.compare.title")} subtitle={t("prop.compare.subtitle")} icon={<Layers />} />
       <div className="overflow-x-auto px-4 pb-6 pt-4 sm:px-6">
         <table className="w-full border-separate border-spacing-0 text-[13px]" style={{ minWidth: 220 + plans.length * 220 }}>
           <thead>
             <tr>
-              <th className="w-[22%] pb-3 text-left text-[11.5px] font-medium uppercase tracking-wider text-fg-3">Rule</th>
+              <th className="w-[22%] pb-3 text-start text-[11.5px] font-medium uppercase tracking-wider text-fg-3">{t("prop.compare.rule")}</th>
               {plans.map((p) => {
                 const on = p.id === current;
                 const from = Math.min(...p.sizes.map((s) => s.fee));
@@ -273,17 +286,17 @@ function CompareTable({ plans, current, size, onPick }: { plans: Plan[]; current
                     <button
                       type="button"
                       onClick={() => onPick(p.id)}
-                      className={cn("flex w-full items-center justify-between gap-2 rounded-t-[16px] border border-b-0 px-4 py-3 text-left transition-colors", on ? "border-ember/40 bg-ember-soft" : "border-line bg-surface-2 hover:bg-surface-3")}
+                      className={cn("flex w-full items-center justify-between gap-2 rounded-t-[16px] border border-b-0 px-4 py-3 text-start transition-colors", on ? "border-ember/40 bg-ember-soft" : "border-line bg-surface-2 hover:bg-surface-3")}
                     >
                       <span className="min-w-0">
                         <span className="flex items-center gap-1.5 text-[14px] font-medium text-fg">
                           {TYPE_ICON[p.type]} <span className="truncate">{p.name}</span>
                         </span>
-                        <span className="mt-0.5 block text-[11px] font-normal text-fg-3">from {usd(from, 0)}</span>
+                        <span className="mt-0.5 block text-[11px] font-normal text-fg-3">{t("prop.compare.from", { fee: usd(from, 0) })}</span>
                       </span>
                       {on && (
                         <Chip size="sm" tone="ember">
-                          Selected
+                          {t("prop.compare.selected")}
                         </Chip>
                       )}
                     </button>
@@ -295,7 +308,7 @@ function CompareTable({ plans, current, size, onPick }: { plans: Plan[]; current
           <tbody>
             {rows.map((r, ri) => (
               <tr key={r.label}>
-                <td className="border-t border-line py-3 pr-3 text-fg-2">
+                <td className="border-t border-line py-3 pe-3 text-fg-2">
                   <span className="flex items-center gap-2 [&_svg]:size-3.5 [&_svg]:text-fg-3">
                     {r.icon}
                     {r.label}
@@ -337,6 +350,7 @@ function newKey() {
 }
 
 export function CheckoutDialog({ plan, size, open, onOpenChange, onBought }: { plan: Plan; size: PlanSize; open: boolean; onOpenChange: (o: boolean) => void; onBought?: () => void }) {
+  const t = useT();
   const [agree, setAgree] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<unknown>(null);
@@ -378,17 +392,17 @@ export function CheckoutDialog({ plan, size, open, onOpenChange, onBought }: { p
       <Dialog
         open={open}
         onOpenChange={onOpenChange}
-        title="Your challenge is ready"
-        description={`${plan.name} · ${sizeLabel(size.size)} · ${done.challenge.current?.phase ?? (plan.phases[0]?.name ?? "Funded")}`}
+        title={t("prop.checkout.readyTitle")}
+        description={`${plan.name} · ${sizeLabel(size.size)} · ${done.challenge.current?.phase ?? (plan.phases[0]?.name ?? t("prop.status.funded"))}`}
         width={560}
         footer={
           <>
             <Link href="/prop/mine">
               <Button variant="surface">
-                My challenges <ArrowRight />
+                {t("prop.myChallenges")} <ArrowRight className="rtl:-scale-x-100" />
               </Button>
             </Link>
-            <PropTradeButton login={login} size="md" label="Trade now" />
+            <PropTradeButton login={login} size="md" label={t("prop.tradeNow")} />
           </>
         }
       >
@@ -396,24 +410,24 @@ export function CheckoutDialog({ plan, size, open, onOpenChange, onBought }: { p
           <div className="flex items-start gap-3 rounded-[14px] border border-up/25 bg-up-soft px-4 py-3">
             <Check className="mt-0.5 size-4 shrink-0 text-up" />
             <p className="text-[13px] text-fg">
-              {fee} was paid from your USDT wallet and your {sizeLabel(size.size)} account is open. The rules are live from now on.
+              {t("prop.checkout.paidText", { fee, size: sizeLabel(size.size) })}
             </p>
           </div>
           {creds ? (
             <>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <CredentialField label="Login" value={String(creds.login)} />
-                <CredentialField label="Server" value="Kalks-Live" mono={false} />
-                <CredentialField label="Trading password" value={creds.password} secret />
-                <CredentialField label="Investor password (read-only)" value={creds.investorPassword} secret />
+                <CredentialField label={t("prop.cred.login")} value={String(creds.login)} />
+                <CredentialField label={t("prop.cred.server")} value="Kalks-Live" mono={false} />
+                <CredentialField label={t("prop.cred.password")} value={creds.password} secret />
+                <CredentialField label={t("prop.cred.investorPassword")} value={creds.investorPassword} secret />
               </div>
               <p className="text-[12.5px] text-fg-3">
-                Save these passwords now: they are shown only once and we don&apos;t store them. The Trade button signs you in to Kalks Trader without a password, so you can always trade from here.
+                {t("prop.checkout.savePasswords")}
               </p>
             </>
           ) : (
             <p className="text-[13px] text-fg-2">
-              The trading passwords were shown when this purchase was first confirmed. Use the Trade button to open Kalks Trader: it signs you in without a password.
+              {t("prop.checkout.passwordsShown")}
             </p>
           )}
         </div>
@@ -425,16 +439,16 @@ export function CheckoutDialog({ plan, size, open, onOpenChange, onBought }: { p
     <Dialog
       open={open}
       onOpenChange={(o) => !busy && onOpenChange(o)}
-      title={`Buy ${plan.name}`}
-      description={`${sizeLabel(size.size)} simulated account · ${fee} one-time fee`}
+      title={t("prop.checkout.title", { plan: plan.name })}
+      description={t("prop.checkout.description", { size: sizeLabel(size.size), fee })}
       width={600}
       footer={
         <>
           <Button variant="surface" disabled={busy} onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button variant="ember" disabled={!agree || busy} onClick={pay}>
-            {busy ? <Loader2 className="animate-spin" /> : <Wallet />} {err ? `Retry · ${fee}` : `Pay ${fee}`}
+            {busy ? <Loader2 className="animate-spin" /> : <Wallet />} {err ? t("prop.checkout.retry", { fee }) : t("prop.checkout.pay", { fee })}
           </Button>
         </>
       }
@@ -446,35 +460,35 @@ export function CheckoutDialog({ plan, size, open, onOpenChange, onBought }: { p
               <Wallet className="size-4" />
             </span>
             <div>
-              <div className="text-[13.5px] font-medium">Paid from your USDT wallet</div>
-              <div className="text-[12px] text-fg-3">Charged once. {plan.refundFee ? "Refunded with your first payout." : "Non-refundable."}</div>
+              <div className="text-[13.5px] font-medium">{t("prop.store.paidFromWallet")}</div>
+              <div className="text-[12px] text-fg-3">{plan.refundFee ? t("prop.checkout.chargedOnceRefund") : t("prop.checkout.chargedOnceNoRefund")}</div>
             </div>
           </div>
           <span className="k-num text-[18px] font-semibold">{fee}</span>
         </div>
 
         <div>
-          <div className="k-label mb-2">Rules of this challenge</div>
+          <div className="k-label mb-2">{t("prop.checkout.rulesTitle")}</div>
           <dl className="divide-y divide-line rounded-[14px] border border-line px-4">
-            {planRules(plan, size).map(([k, v]) => (
+            {planRules(t, plan, size).map(([k, v]) => (
               <div key={k} className="flex items-start justify-between gap-4 py-2.5 text-[12.5px]">
                 <dt className="shrink-0 text-fg-3">{k}</dt>
-                <dd className="text-right font-medium text-fg">{v}</dd>
+                <dd className="text-end font-medium text-fg">{v}</dd>
               </div>
             ))}
           </dl>
-          <p className="mt-2 text-[11.5px] text-fg-3">Limits are a percentage of the starting balance. Breaching the daily loss or max drawdown fails the account and closes all positions at market. The trading day resets at 17:00 New York.</p>
+          <p className="mt-2 text-[11.5px] text-fg-3">{t("prop.checkout.limitsNote")}</p>
         </div>
 
         <label className="flex cursor-pointer items-start gap-2.5 text-[12.5px] leading-snug text-fg-2">
           <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 size-4 shrink-0 accent-[var(--k-ember)]" />
-          <span>I have read the rules above and understand that the account is simulated and fails automatically when a loss limit is breached.</span>
+          <span>{t("prop.checkout.agree")}</span>
         </label>
 
         <ErrorNote error={err} />
         {err !== null && (err as { code?: string }).code === "provisioning" && (
           <Link href="/prop/mine" className="inline-flex items-center gap-1 text-[12.5px] text-ember hover:underline">
-            Go to My challenges <ArrowRight className="size-3.5" />
+            {t("prop.checkout.goToMine")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
           </Link>
         )}
       </div>
@@ -487,6 +501,7 @@ export function CheckoutDialog({ plan, size, open, onOpenChange, onBought }: { p
 /* ------------------------------------------------------------------ */
 
 export function LivePropStore() {
+  const t = useT();
   const { data, error, loading, reload } = usePropPoll<{ plans: Plan[] }>("plans", 0);
   const mine = usePropPoll<{ challenges: Challenge[] }>("challenges", 0);
   const plans = React.useMemo(() => {
@@ -504,12 +519,12 @@ export function LivePropStore() {
   return (
     <div className="pb-24">
       <PageHeader
-        title="Prop challenges"
-        subtitle="Trade simulated capital under clear rules and get paid a share of the profit."
+        title={t("prop.store.title")}
+        subtitle={t("prop.store.subtitle")}
         actions={
           <Link href="/prop/mine">
             <Button variant="surface" size="lg">
-              <Trophy /> My challenges
+              <Trophy /> {t("prop.myChallenges")}
               {count > 0 && (
                 <Chip size="sm" tone="ember">
                   {count}
@@ -529,7 +544,7 @@ export function LivePropStore() {
         </div>
       ) : !plan || !size ? (
         <Card>
-          <EmptyState illustration="trophy" title="No challenges on offer right now" text="New challenge plans are being prepared. Please check back soon." />
+          <EmptyState illustration="trophy" title={t("prop.store.emptyTitle")} text={t("prop.store.emptyText")} />
         </Card>
       ) : (
         <>
@@ -554,16 +569,16 @@ export function LivePropStore() {
 
           <Reveal delay={0.05} className="mt-4 block">
             <Card>
-              <CardHeader title="How the rules are enforced" subtitle="Checked on the server every second, 24/5" icon={<ShieldCheck />} />
+              <CardHeader title={t("prop.enforce.title")} subtitle={t("prop.enforce.subtitle")} icon={<ShieldCheck />} />
               <div className="grid grid-cols-1 gap-2 px-4 pb-6 pt-4 sm:grid-cols-2 sm:px-6 xl:grid-cols-4">
                 {[
-                  { t: "Live monitoring", d: "Daily loss and drawdown are measured on equity, including floating profit and loss.", c: "bg-info" },
-                  { t: "Early warnings", d: "You are notified at 50%, 75% and 90% of today's loss limit.", c: "bg-warn" },
-                  { t: "Breach", d: "All positions close at market, pending orders are cancelled and the account is disabled.", c: "bg-down" },
-                  { t: "Pass", d: "Target, minimum days and consistency met: the next phase or your funded account opens automatically.", c: "bg-up" },
+                  { t: t("prop.enforce.monitoring"), d: t("prop.enforce.monitoringText"), c: "bg-info" },
+                  { t: t("prop.enforce.warnings"), d: t("prop.enforce.warningsText"), c: "bg-warn" },
+                  { t: t("prop.enforce.breach"), d: t("prop.enforce.breachText"), c: "bg-down" },
+                  { t: t("prop.enforce.pass"), d: t("prop.enforce.passText"), c: "bg-up" },
                 ].map((x) => (
-                  <div key={x.t} className="k-row relative overflow-hidden py-3 pl-5 pr-4">
-                    <span className={cn("absolute inset-y-2 left-0 w-[3px] rounded-r-full", x.c)} />
+                  <div key={x.t} className="k-row relative overflow-hidden py-3 ps-5 pe-4">
+                    <span className={cn("absolute inset-y-2 start-0 w-[3px] rounded-e-full", x.c)} />
                     <div className="text-[13.5px] font-medium">{x.t}</div>
                     <div className="mt-0.5 text-[12.5px] text-fg-3">{x.d}</div>
                   </div>

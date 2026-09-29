@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { cn } from "@kalks/ui";
+import { intlTag } from "@kalks/i18n";
+import { useT } from "@kalks/i18n/react";
 import { usd } from "./api";
 
 export interface ChartLine {
@@ -24,6 +26,8 @@ const short = (v: number) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(v >= 1
  * no glow: a plain line, a faint area and a hover read-out.
  */
 export function PropEquityLine({ data, lines, height = 300, className }: { data: { t: number; v: number }[]; lines: ChartLine[]; height?: number; className?: string }) {
+  const t = useT();
+  const tag = intlTag(t.locale);
   const wrap = React.useRef<HTMLDivElement>(null);
   const [w, setW] = React.useState(800);
   const [hover, setHover] = React.useState<number | null>(null);
@@ -40,7 +44,7 @@ export function PropEquityLine({ data, lines, height = 300, className }: { data:
   if (data.length < 2) {
     return (
       <div ref={wrap} className={cn("grid place-items-center rounded-[14px] border border-dashed border-line text-[13px] text-fg-3", className)} style={{ height }}>
-        The equity curve appears after the first minutes of trading.
+        {t("prop.chart.empty")}
       </div>
     );
   }
@@ -73,7 +77,7 @@ export function PropEquityLine({ data, lines, height = 300, className }: { data:
     lastDay = day;
     const prev = ticks[ticks.length - 1];
     if (prev && x(p.t) - x(prev.t) < 64) continue;
-    ticks.push({ t: p.t, label: dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) });
+    ticks.push({ t: p.t, label: dt.toLocaleDateString(tag, { day: "2-digit", month: "short" }) });
   }
 
   const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -88,7 +92,7 @@ export function PropEquityLine({ data, lines, height = 300, className }: { data:
   const last = data[data.length - 1]!;
 
   return (
-    <div ref={wrap} className={cn("relative w-full", className)} style={{ height }}>
+    <div ref={wrap} dir="ltr" className={cn("relative w-full", className)} style={{ height }}>
       <svg width={w} height={height} className="relative block touch-none select-none" onPointerMove={onMove} onPointerLeave={() => setHover(null)}>
         <defs>
           <linearGradient id={`a${id}`} x1="0" x2="0" y1="0" y2="1">
@@ -137,7 +141,7 @@ export function PropEquityLine({ data, lines, height = 300, className }: { data:
       </svg>
       {hp && (
         <div className="pointer-events-none absolute top-2 z-10 rounded-xl border border-line bg-surface-3 px-3 py-2 text-[11.5px] shadow-xl" style={{ left: Math.min(Math.max(x(hp.t) - 70, 0), w - padR - 150) }}>
-          <div className="text-fg-3">{new Date(hp.t).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false })}</div>
+          <div className="text-fg-3">{new Date(hp.t).toLocaleString(tag, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false })}</div>
           <div className="k-num mt-0.5 text-[13px] font-semibold">{usd(hp.v)}</div>
         </div>
       )}

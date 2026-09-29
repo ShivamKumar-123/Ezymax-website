@@ -5,6 +5,8 @@
 
 import * as React from "react";
 import { Globe2, Laptop, Monitor, Smartphone, Tablet } from "lucide-react";
+import { intlTag } from "@kalks/i18n";
+import { tr } from "@kalks/i18n/react";
 
 export type SecError = { status: number; code: string; message: string; field?: string };
 export type SecResult<T> = { ok: true; data: T } | { ok: false; error: SecError };
@@ -26,9 +28,9 @@ export async function secApi<T>(path: string, init: { method?: "GET" | "POST" | 
       window.location.assign(`/api/auth/expired?next=${encodeURIComponent(window.location.pathname)}`);
     }
     const e = (data as { error?: Partial<SecError> }).error ?? {};
-    return { ok: false, error: { status: res.status, code: e.code ?? "error", message: e.message ?? "Something went wrong. Please try again.", field: e.field } };
+    return { ok: false, error: { status: res.status, code: e.code ?? "error", message: e.message ?? tr("security.error.generic"), field: e.field } };
   } catch {
-    return { ok: false, error: { status: 0, code: "network", message: "Can't reach Kalks. Check your connection and try again." } };
+    return { ok: false, error: { status: 0, code: "network", message: tr("security.error.network") } };
   }
 }
 
@@ -66,7 +68,7 @@ export type Device = { browser: string; os: string; kind: "desktop" | "mobile" |
 /** Browser, OS and form factor from a user-agent string (best effort, no external data). */
 export function parseDevice(ua: string | null | undefined): Device {
   const u = ua ?? "";
-  if (!u) return { browser: "Unknown browser", os: "Unknown device", kind: "unknown" };
+  if (!u) return { browser: tr("security.device.unknownBrowser"), os: tr("security.device.unknownDevice"), kind: "unknown" };
   const browser = /Edg\//.test(u)
     ? "Edge"
     : /OPR\/|Opera/.test(u)
@@ -80,8 +82,8 @@ export function parseDevice(ua: string | null | undefined): Device {
             : /Safari\//.test(u)
               ? "Safari"
               : /curl|python|node|axios/i.test(u)
-                ? "API client"
-                : "Browser";
+                ? tr("security.device.apiClient")
+                : tr("security.device.browser");
   const os = /iPad/.test(u)
     ? "iPadOS"
     : /iPhone|iPod/.test(u)
@@ -96,7 +98,7 @@ export function parseDevice(ua: string | null | undefined): Device {
               ? "ChromeOS"
               : /Linux/.test(u)
                 ? "Linux"
-                : "Unknown OS";
+                : tr("security.device.unknownOs");
   const kind = /iPad|Tablet/.test(u) || (/Android/.test(u) && !/Mobile/.test(u)) ? "tablet" : /Mobi|iPhone|Android/.test(u) ? "mobile" : /Windows|Macintosh|Linux|CrOS/.test(u) ? "desktop" : "unknown";
   return { browser, os, kind };
 }
@@ -109,7 +111,7 @@ export function DeviceIcon({ kind, className }: { kind: Device["kind"]; classNam
 export function countryName(code: string | null | undefined): string | null {
   if (!code) return null;
   try {
-    return new Intl.DisplayNames(["en"], { type: "region" }).of(code.toUpperCase()) ?? code.toUpperCase();
+    return new Intl.DisplayNames([intlTag(tr.locale)], { type: "region" }).of(code.toUpperCase()) ?? code.toUpperCase();
   } catch {
     return code.toUpperCase();
   }
@@ -119,28 +121,28 @@ export function countryName(code: string | null | undefined): string | null {
 export function ago(iso: string | null | undefined, now = Date.now()): string {
   if (!iso) return "—";
   const s = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
-  if (s < 90) return "Just now";
-  if (s < 3600) return `${Math.round(s / 60)} min ago`;
-  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
-  return `${Math.round(s / 86400)} d ago`;
+  if (s < 90) return tr("security.ago.now");
+  if (s < 3600) return tr("security.ago.min", { n: Math.round(s / 60) });
+  if (s < 86400) return tr("security.ago.hours", { n: Math.round(s / 3600) });
+  return tr("security.ago.days", { n: Math.round(s / 86400) });
 }
 
 export function when(iso: string | null | undefined, withYear = false): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("en-GB", { day: "2-digit", month: "short", ...(withYear ? { year: "numeric" } : {}), hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString(intlTag(tr.locale), { day: "2-digit", month: "short", ...(withYear ? { year: "numeric" } : {}), hour: "2-digit", minute: "2-digit" });
 }
 
 export function day(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString(intlTag(tr.locale), { day: "numeric", month: "short", year: "numeric" });
 }
 
 /** Idle minutes as "30 minutes", "2 hours", "1 day". */
 export function idleLabel(min: number): string {
-  if (min % 1440 === 0) return `${min / 1440} day${min === 1440 ? "" : "s"}`;
-  if (min % 60 === 0) return `${min / 60} hour${min === 60 ? "" : "s"}`;
-  return `${min} minutes`;
+  if (min % 1440 === 0) return tr("security.idle.days", { count: min / 1440 });
+  if (min % 60 === 0) return tr("security.idle.hours", { count: min / 60 });
+  return tr("security.idle.minutes", { count: min });
 }

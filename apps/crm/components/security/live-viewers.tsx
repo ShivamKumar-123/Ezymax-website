@@ -5,6 +5,8 @@ import Link from "next/link";
 import { AlertTriangle, CalendarDays, Eye, KeyRound, Pencil, Plus, ShieldOff, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, EmptyState, Field, Input, PageHeader, Skeleton, type ChipTone, type Column } from "@kalks/ui";
+import type { T } from "@kalks/i18n";
+import { useT } from "@kalks/i18n/react";
 import { FormError } from "@/components/auth";
 import { StepUpDialog } from "@/components/stepup";
 import { useAccounts } from "@/components/trading/api";
@@ -14,48 +16,43 @@ import { ago, day, parseDevice, secApi, useSec, when, type SecError } from "./co
 type Activity = { id: number; viewer_id: number | null; label: string | null; action: string; path: string | null; ip: string | null; user_agent: string | null; at: string };
 type ViewersPage = { items: ViewerScope[]; activity: Activity[]; max: number };
 
-const STATUS: Record<ViewerScope["status"], { tone: ChipTone; label: string }> = {
-  active: { tone: "up", label: "Active" },
-  expired: { tone: "neutral", label: "Expired" },
-  revoked: { tone: "down", label: "Revoked" },
-};
+const STATUS = {
+  active: { tone: "up", labelKey: "security.viewerStatus.active" },
+  expired: { tone: "neutral", labelKey: "security.viewerStatus.expired" },
+  revoked: { tone: "down", labelKey: "security.viewerStatus.revoked" },
+} as const satisfies Record<ViewerScope["status"], { tone: ChipTone; labelKey: string }>;
 
-const ACTIVITY: Record<string, string> = {
-  "viewer.login": "Signed in",
-  "viewer.logout": "Signed out",
-  "viewer.login_failed": "Wrong password",
-  "viewer.locked": "Locked after failed attempts",
-  "viewer.login_blocked": "Sign-in blocked (inactive login)",
-  "viewer.page_view": "Viewed",
-  "viewer.created": "Login created",
-  "viewer.updated": "Access changed",
-  "viewer.password_reset": "New password set",
-  "viewer.revoked": "Access revoked",
-};
+// Activity labels: security.activity.<action without "viewer.">
+const ACTIVITY = new Set(["viewer.login", "viewer.logout", "viewer.login_failed", "viewer.locked", "viewer.login_blocked", "viewer.page_view", "viewer.created", "viewer.updated", "viewer.password_reset", "viewer.revoked"]);
+const activityLabel = (t: T, action: string) => (ACTIVITY.has(action) ? t.dyn(`security.activity.${action.slice(7)}`, action) : action);
 
-const PAGE_NAMES: [string, string][] = [
-  ["/portfolio/history", "Trade history"],
-  ["/portfolio/ledger", "Ledger"],
-  ["/portfolio/statements", "Statements"],
-  ["/portfolio/analytics", "Analytics"],
-  ["/portfolio", "Portfolio"],
-  ["/accounts/", "Account #"],
-  ["/accounts", "Accounts"],
-  ["/wallet/history", "Wallet history"],
-  ["/wallet", "Wallet"],
-  ["/partner", "Partner dashboard"],
-  ["/markets", "Markets"],
-  ["/news", "News"],
-  ["/calendar", "Calendar"],
-];
+const PAGE_NAMES = [
+  ["/portfolio/history", "security.page.tradeHistory"],
+  ["/portfolio/ledger", "security.page.ledger"],
+  ["/portfolio/statements", "security.page.statements"],
+  ["/portfolio/analytics", "security.page.analytics"],
+  ["/portfolio", "security.page.portfolio"],
+  ["/accounts/", "security.page.account"],
+  ["/accounts", "security.page.accounts"],
+  ["/wallet/history", "security.page.walletHistory"],
+  ["/wallet", "security.page.wallet"],
+  ["/partner", "security.page.partner"],
+  ["/markets", "security.page.markets"],
+  ["/news", "security.page.news"],
+  ["/calendar", "security.page.calendar"],
+] as const;
 
-function pageName(path: string | null): string {
+function pageName(t: T, path: string | null): string {
   if (!path) return "";
-  if (path === "/") return "Dashboard";
+  if (path === "/") return t("security.page.dashboard");
   const hit = PAGE_NAMES.find(([p]) => path.startsWith(p));
   if (!hit) return path;
-  return hit[1] === "Account #" ? `Account #${path.split("/")[2] ?? ""}` : hit[1];
+  return hit[1] === "security.page.account" ? t("security.page.account", { n: path.split("/")[2] ?? "" }) : t(hit[1]);
 }
+
+/** Viewer section name and hint (definitions in lib/viewer stay English for the server). */
+const sectionLabel = (t: T, k: ViewerSection) => t.dyn(`security.section.${k}.label`, VIEWER_SECTIONS[k]?.label ?? k);
+const sectionHint = (t: T, k: ViewerSection) => t.dyn(`security.section.${k}.hint`, VIEWER_SECTIONS[k]?.hint ?? "");
 
 /** yyyy-mm-dd (local) for the date input; the login then ends at the end of that day (local time). */
 const toDateInput = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-CA") : "");
@@ -64,6 +61,7 @@ const fromDateInput = (v: string) => (v ? new Date(`${v}T23:59:59`).toISOString(
 type Draft = { label: string; username: string; accounts: string[]; sections: ViewerSection[]; expires: string };
 
 function ViewerForm({ draft, set, editing, errors }: { draft: Draft; set: (d: Partial<Draft>) => void; editing: boolean; errors: Record<string, string> }) {
+  const t = useT();
   const accounts = useAccounts(0);
   const list = accounts.data?.accounts ?? [];
   const toggle = <T,>(arr: T[], v: T) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -71,23 +69,23 @@ function ViewerForm({ draft, set, editing, errors }: { draft: Draft; set: (d: Pa
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Name" error={errors.label}>
-          <Input leading={<UserRound />} value={draft.label} onChange={(e) => set({ label: e.target.value.slice(0, 60) })} placeholder="e.g. My accountant" />
+        <Field label={t("security.form.name")} error={errors.label}>
+          <Input leading={<UserRound />} value={draft.label} onChange={(e) => set({ label: e.target.value.slice(0, 60) })} placeholder={t("security.form.namePlaceholder")} />
         </Field>
-        <Field label="Expires on (optional)" error={errors.expires_at}>
+        <Field label={t("security.form.expires")} error={errors.expires_at}>
           <Input type="date" leading={<CalendarDays />} min={today} value={draft.expires} onChange={(e) => set({ expires: e.target.value })} />
         </Field>
       </div>
       {!editing && (
-        <Field label="Viewer ID (optional)" error={errors.username} hint={<span className="text-fg-3">Leave empty to generate one</span>}>
-          <Input className="font-mono" value={draft.username} onChange={(e) => set({ username: e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 32) })} placeholder="e.g. priya-accountant" autoComplete="off" />
+        <Field label={t("security.form.viewerId")} error={errors.username} hint={<span className="text-fg-3">{t("security.form.viewerIdHint")}</span>}>
+          <Input dir="ltr" className="font-mono" value={draft.username} onChange={(e) => set({ username: e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 32) })} placeholder={t("security.form.viewerIdPlaceholder")} autoComplete="off" />
         </Field>
       )}
-      <Field label="Trading accounts they can see" error={errors.accounts}>
+      <Field label={t("security.form.accounts")} error={errors.accounts}>
         {accounts.loading ? (
           <Skeleton className="h-10 w-full" />
         ) : list.length === 0 ? (
-          <p className="text-[12.5px] text-fg-3">You don't have trading accounts yet. You can add them to this login later.</p>
+          <p className="text-[12.5px] text-fg-3">{t("security.form.noAccounts")}</p>
         ) : (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {list.map((a) => {
@@ -97,7 +95,7 @@ function ViewerForm({ draft, set, editing, errors }: { draft: Draft; set: (d: Pa
                   <input type="checkbox" className="accent-[var(--k-ember)]" checked={draft.accounts.includes(login)} onChange={() => set({ accounts: toggle(draft.accounts, login) })} />
                   <span className="font-mono">#{login}</span>
                   <span className="truncate text-fg-3">
-                    {a.type === "demo" ? "Demo" : "Live"} · {a.groupName}
+                    {a.type === "demo" ? t("security.form.demo") : t("security.form.live")} · {a.groupName}
                   </span>
                 </label>
               );
@@ -105,14 +103,14 @@ function ViewerForm({ draft, set, editing, errors }: { draft: Draft; set: (d: Pa
           </div>
         )}
       </Field>
-      <Field label="Sections they can open" error={errors.sections}>
+      <Field label={t("security.form.sections")} error={errors.sections}>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {VIEWER_SECTION_KEYS.map((k) => (
             <label key={k} className="flex cursor-pointer items-start gap-2.5 rounded-[12px] border border-line bg-surface-2 px-3 py-2 hover:border-fg-3">
               <input type="checkbox" className="mt-0.5 accent-[var(--k-ember)]" checked={draft.sections.includes(k)} onChange={() => set({ sections: toggle(draft.sections, k) })} />
               <span className="min-w-0">
-                <span className="block text-[13px] font-medium">{VIEWER_SECTIONS[k].label}</span>
-                <span className="block text-[11.5px] text-fg-3">{VIEWER_SECTIONS[k].hint}</span>
+                <span className="block text-[13px] font-medium">{sectionLabel(t, k)}</span>
+                <span className="block text-[11.5px] text-fg-3">{sectionHint(t, k)}</span>
               </span>
             </label>
           ))}
@@ -120,38 +118,39 @@ function ViewerForm({ draft, set, editing, errors }: { draft: Draft; set: (d: Pa
       </Field>
       <p className="flex items-start gap-2 rounded-[12px] border border-line bg-surface-2 px-3 py-2.5 text-[12px] text-fg-3">
         <Eye className="mt-0.5 size-3.5 shrink-0" />
-        Viewers sign in on the normal sign-in page with their viewer ID. They can never trade, move money or change settings, and never see your contact details.
+        {t("security.form.note")}
       </p>
     </div>
   );
 }
 
 function Credentials({ creds, onClose }: { creds: { username: string; password: string; label: string } | null; onClose: () => void }) {
+  const t = useT();
   const url = typeof window !== "undefined" ? `${window.location.origin}/login` : "/login";
   return (
     <Dialog
       open={!!creds}
       onOpenChange={(o) => !o && onClose()}
-      title="Viewer sign-in details"
-      description={creds ? `For “${creds.label}”. Share them privately.` : undefined}
+      title={t("security.creds.title")}
+      description={creds ? t("security.creds.description", { label: creds.label }) : undefined}
       width={460}
       footer={
         <Button variant="ember" onClick={onClose}>
-          I've saved them
+          {t("security.creds.saved")}
         </Button>
       }
     >
       {creds && (
         <div className="space-y-3 text-[13px]">
           {[
-            ["Sign-in page", url],
-            ["Viewer ID", creds.username],
-            ["Password", creds.password],
-          ].map(([k, v]) => (
-            <div key={k} className="flex items-center justify-between gap-3 rounded-[12px] border border-line bg-surface-2 px-3 py-2.5">
+            ["sign-in-page", t("security.creds.page"), url],
+            ["viewer-id", t("security.creds.viewerId"), creds.username],
+            ["password", t("security.creds.password"), creds.password],
+          ].map(([id, k, v]) => (
+            <div key={id} className="flex items-center justify-between gap-3 rounded-[12px] border border-line bg-surface-2 px-3 py-2.5">
               <span className="shrink-0 text-fg-3">{k}</span>
-              <span className="flex min-w-0 items-center gap-1 font-mono">
-                <span className="truncate" data-testid={`viewer-cred-${k.toLowerCase().replace(/\s+/g, "-")}`}>
+              <span dir="ltr" className="flex min-w-0 items-center gap-1 font-mono">
+                <span className="truncate" data-testid={`viewer-cred-${id}`}>
                   {v}
                 </span>
                 <CopyButton value={v!} label={k} />
@@ -159,7 +158,7 @@ function Credentials({ creds, onClose }: { creds: { username: string; password: 
             </div>
           ))}
           <p className="flex items-start gap-2 text-[12px] text-warn">
-            <AlertTriangle className="mt-0.5 size-3.5 shrink-0" /> The password is shown only now. You can set a new one at any time.
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0" /> {t("security.creds.warning")}
           </p>
         </div>
       )}
@@ -170,6 +169,7 @@ function Credentials({ creds, onClose }: { creds: { username: string; password: 
 const EMPTY: Draft = { label: "", username: "", accounts: [], sections: ["accounts", "history"], expires: "" };
 
 export function LiveViewers() {
+  const t = useT();
   const { data, error, reload } = useSec<ViewersPage>("viewers");
   const [open, setOpen] = React.useState<"new" | ViewerScope | null>(null);
   const [draft, setDraft] = React.useState<Draft>(EMPTY);
@@ -201,9 +201,9 @@ export function LiveViewers() {
   };
   const localCheck = (): boolean => {
     const e: Record<string, string> = {};
-    if (!draft.label.trim()) e.label = "Give this login a name.";
-    if (draft.sections.length === 0) e.sections = "Choose at least one section.";
-    if (draft.username && !/^[a-z0-9][a-z0-9._-]{3,31}$/.test(draft.username)) e.username = "Use 4–32 lowercase letters, digits, dots, dashes or underscores.";
+    if (!draft.label.trim()) e.label = t("security.form.errName");
+    if (draft.sections.length === 0) e.sections = t("security.form.errSections");
+    if (draft.username && !/^[a-z0-9][a-z0-9._-]{3,31}$/.test(draft.username)) e.username = t("security.form.errUsername");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -235,14 +235,14 @@ export function LiveViewers() {
     });
     setBusy(false);
     if (!r.ok) return failed(r.error);
-    toast.success("Access updated", { description: "Changes apply to the viewer's next page." });
+    toast.success(t("security.viewers.updated"), { description: t("security.viewers.updatedText") });
     setOpen(null);
     reload();
   };
 
   const newPassword = async (v: ViewerScope, token: string) => {
     const r = await secApi<{ password: string; username: string }>(`viewers/${v.id}/password`, { body: { stepup_token: token } });
-    if (!r.ok) return void toast.error("Couldn't set a new password", { description: r.error.message });
+    if (!r.ok) return void toast.error(t("security.viewers.passwordFailed"), { description: r.error.message });
     setCreds({ username: r.data.username, password: r.data.password, label: v.label });
     reload();
   };
@@ -252,33 +252,33 @@ export function LiveViewers() {
     const r = await secApi(`viewers/${v.id}/revoke`, { body: {} });
     setBusy(false);
     setRevoking(null);
-    if (!r.ok) return void toast.error("Couldn't revoke access", { description: r.error.message });
-    toast.success(`Access for “${v.label}” revoked`, { description: "Any open viewer session ended at once." });
+    if (!r.ok) return void toast.error(t("security.viewers.revokeFailed"), { description: r.error.message });
+    toast.success(t("security.viewers.revoked", { label: v.label }), { description: t("security.viewers.revokedText") });
     reload();
   };
 
   const cols: Column<ViewerScope>[] = [
     {
       key: "who",
-      header: "Viewer",
+      header: t("security.viewers.colViewer"),
       cell: (v) => (
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-[13px] font-medium">
             <span className="truncate">{v.label}</span>
-            <Chip size="sm" tone={STATUS[v.status].tone} dot>
-              {STATUS[v.status].label}
+            <Chip size="sm" tone={STATUS[v.status]?.tone ?? "neutral"} dot>
+              {STATUS[v.status] ? t(STATUS[v.status].labelKey) : v.status}
             </Chip>
           </div>
           <div className="mt-0.5 flex items-center gap-1 font-mono text-[12px] text-fg-3">
             {v.username}
-            <CopyButton value={v.username} label="Viewer ID" />
+            <CopyButton value={v.username} label={t("security.creds.viewerId")} />
           </div>
         </div>
       ),
     },
     {
       key: "scope",
-      header: "Can see",
+      header: t("security.viewers.colScope"),
       hideOn: "md",
       cell: (v) => (
         <div className="flex max-w-[360px] flex-wrap gap-1">
@@ -289,31 +289,31 @@ export function LiveViewers() {
           ))}
           {v.sections.map((s) => (
             <Chip key={s} size="sm" tone="info">
-              {VIEWER_SECTIONS[s]?.label ?? s}
+              {sectionLabel(t, s)}
             </Chip>
           ))}
         </div>
       ),
     },
-    { key: "exp", header: "Expires", hideOn: "lg", cell: (v) => <span className="k-num text-fg-2">{v.expires_at ? day(v.expires_at) : "Never"}</span> },
-    { key: "seen", header: "Last sign-in", hideOn: "sm", cell: (v) => <span className="k-num text-fg-2" title={v.last_login_at ? when(v.last_login_at, true) : undefined}>{v.last_login_at ? ago(v.last_login_at, now) : "Never"}</span> },
+    { key: "exp", header: t("security.viewers.colExpires"), hideOn: "lg", cell: (v) => <span className="k-num text-fg-2">{v.expires_at ? day(v.expires_at) : t("security.viewers.never")}</span> },
+    { key: "seen", header: t("security.viewers.colLastSignIn"), hideOn: "sm", cell: (v) => <span className="k-num text-fg-2" title={v.last_login_at ? when(v.last_login_at, true) : undefined}>{v.last_login_at ? ago(v.last_login_at, now) : t("security.viewers.never")}</span> },
     {
       key: "act",
       header: "",
       align: "right",
       cell: (v) =>
         v.status === "revoked" ? (
-          <span className="text-[11.5px] text-fg-3">Revoked {day(v.revoked_at)}</span>
+          <span className="text-[11.5px] text-fg-3">{t("security.viewers.revokedOn", { date: day(v.revoked_at) })}</span>
         ) : (
           <div className="flex justify-end gap-1">
-            <Button size="xs" variant="ghost" onClick={() => startEdit(v)} aria-label={`Edit ${v.label}`}>
-              <Pencil /> <span className="hidden sm:inline">Edit</span>
+            <Button size="xs" variant="ghost" onClick={() => startEdit(v)} aria-label={t("security.viewers.editAria", { label: v.label })}>
+              <Pencil /> <span className="hidden sm:inline">{t("security.viewers.edit")}</span>
             </Button>
-            <Button size="xs" variant="ghost" onClick={() => setConfirm({ kind: "password", v })} aria-label={`New password for ${v.label}`}>
-              <KeyRound /> <span className="hidden sm:inline">Password</span>
+            <Button size="xs" variant="ghost" onClick={() => setConfirm({ kind: "password", v })} aria-label={t("security.viewers.passwordAria", { label: v.label })}>
+              <KeyRound /> <span className="hidden sm:inline">{t("security.creds.password")}</span>
             </Button>
-            <Button size="xs" variant="ghost" className="text-down hover:text-down" onClick={() => setRevoking(v)} aria-label={`Revoke ${v.label}`}>
-              <ShieldOff /> <span className="hidden sm:inline">Revoke</span>
+            <Button size="xs" variant="ghost" className="text-down hover:text-down" onClick={() => setRevoking(v)} aria-label={t("security.viewers.revokeAria", { label: v.label })}>
+              <ShieldOff /> <span className="hidden sm:inline">{t("security.viewers.revoke")}</span>
             </Button>
           </div>
         ),
@@ -324,23 +324,23 @@ export function LiveViewers() {
   return (
     <div className="space-y-4 pb-16">
       <PageHeader
-        title="View-only access"
-        subtitle="Read-only logins for an accountant, investor or mentor. You choose the accounts and sections; viewers can never trade, move money or change settings."
+        title={t("security.viewerBar.title")}
+        subtitle={t("security.viewers.subtitle")}
         actions={
           <Button variant="ember" onClick={startNew} disabled={!data || active >= (data?.max ?? 10)}>
-            <Plus /> New viewer
+            <Plus /> {t("security.viewers.new")}
           </Button>
         }
       />
       <Card>
-        <CardHeader title="Viewer logins" subtitle={data ? `${active} active of ${data.max} allowed` : undefined} icon={<Eye />} />
+        <CardHeader title={t("security.viewers.title")} subtitle={data ? t("security.viewers.count", { active, max: data.max }) : undefined} icon={<Eye />} />
         <div className="px-4 pb-5 pt-3 sm:px-6">
           {error ? (
             <FormError>{error.message}</FormError>
           ) : !data ? (
             <Skeleton className="h-28 w-full" />
           ) : data.items.length === 0 ? (
-            <EmptyState title="No view-only logins yet" text="Create one to share read-only access to chosen accounts." illustration="locked" className="py-8" action={<Button variant="surface" onClick={startNew}><Plus /> New viewer</Button>} />
+            <EmptyState title={t("security.viewers.emptyTitle")} text={t("security.viewers.emptyText")} illustration="locked" className="py-8" action={<Button variant="surface" onClick={startNew}><Plus /> {t("security.viewers.new")}</Button>} />
           ) : (
             <DataTable rows={data.items} rowKey={(v) => String(v.id)} columns={cols} dense pageSize={10} />
           )}
@@ -349,12 +349,12 @@ export function LiveViewers() {
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
-          <CardHeader title="Viewer activity" subtitle="Sign-ins and pages opened with your view-only logins" />
+          <CardHeader title={t("security.activity.title")} subtitle={t("security.activity.subtitle")} />
           <div className="px-4 pb-5 pt-3 sm:px-6">
             {!data ? (
               <Skeleton className="h-24 w-full" />
             ) : data.activity.length === 0 ? (
-              <p className="py-4 text-[13px] text-fg-3">Nothing yet. Activity appears here as soon as a viewer signs in.</p>
+              <p className="py-4 text-[13px] text-fg-3">{t("security.activity.empty")}</p>
             ) : (
               <div className="divide-y divide-line rounded-[14px] border border-line">
                 {data.activity.slice(0, 30).map((a) => {
@@ -362,16 +362,16 @@ export function LiveViewers() {
                   return (
                     <div key={a.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2.5 text-[13px]">
                       <div className="min-w-0">
-                        <span className="font-medium">{a.label ?? "Viewer"}</span>
+                        <span className="font-medium">{a.label ?? t("security.viewers.colViewer")}</span>
                         <span className="text-fg-2">
                           {" · "}
-                          {ACTIVITY[a.action] ?? a.action}
-                          {a.action === "viewer.page_view" && a.path ? ` ${pageName(a.path)}` : ""}
+                          {activityLabel(t, a.action)}
+                          {a.action === "viewer.page_view" && a.path ? ` ${pageName(t, a.path)}` : ""}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-[11.5px] text-fg-3">
                         <span className="hidden sm:inline">
-                          {d.browser} · <span className="font-mono">{a.ip ?? "—"}</span>
+                          {d.browser} · <span dir="ltr" className="font-mono">{a.ip ?? "—"}</span>
                         </span>
                         <span className="k-num" title={when(a.at, true)}>
                           {ago(a.at, now)}
@@ -385,13 +385,13 @@ export function LiveViewers() {
           </div>
         </Card>
         <Card>
-          <CardHeader title="Investor passwords" icon={<KeyRound />} />
+          <CardHeader title={t("security.investor.title")} icon={<KeyRound />} />
           <div className="space-y-3 px-6 pb-6 pt-2 text-[13px] text-fg-2">
-            <p>Each trading account also has an investor password for read-only access in Kalks Trader, MT5 style: positions and history, no trading.</p>
-            <p className="text-fg-3">Set or change it on the account page.</p>
+            <p>{t("security.investor.text")}</p>
+            <p className="text-fg-3">{t("security.investor.hint")}</p>
             <Link href="/accounts">
               <Button size="sm" variant="surface">
-                Go to accounts
+                {t("security.investor.goToAccounts")}
               </Button>
             </Link>
           </div>
@@ -401,17 +401,17 @@ export function LiveViewers() {
       <Dialog
         open={!!open}
         onOpenChange={(o) => !o && setOpen(null)}
-        title={editing ? `Edit “${editing.label}”` : "New view-only login"}
-        description={editing ? `Viewer ID ${editing.username}` : "We email you a code to confirm, then show the password once."}
+        title={editing ? t("security.dialog.editTitle", { label: editing.label }) : t("security.dialog.newTitle")}
+        description={editing ? t("security.dialog.viewerId", { id: editing.username }) : t("security.dialog.newText")}
         width={600}
         footer={
           <>
             <Button variant="ghost" onClick={() => setOpen(null)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             {editing ? (
               <Button variant="ember" disabled={busy} onClick={() => void save(editing)}>
-                {busy ? "Saving…" : "Save changes"}
+                {busy ? t("security.dialog.saving") : t("security.dialog.save")}
               </Button>
             ) : (
               <Button
@@ -422,7 +422,7 @@ export function LiveViewers() {
                   setConfirm({ kind: "create" });
                 }}
               >
-                Continue
+                {t("common.continue")}
               </Button>
             )}
           </>
@@ -441,10 +441,10 @@ export function LiveViewers() {
           open={!!confirm}
           onOpenChange={(o) => !o && setConfirm(null)}
           action="viewer_access"
-          title={confirm.kind === "create" ? "Confirm new view-only login" : `New password for “${confirm.v.label}”`}
-          description={confirm.kind === "create" ? draft.label : "Their open sessions end and the old password stops working."}
-          what={confirm.kind === "create" ? "create a view-only login" : "set a new password for a view-only login"}
-          confirmLabel={confirm.kind === "create" ? "Confirm & create" : "Confirm & set password"}
+          title={confirm.kind === "create" ? t("security.stepup.createTitle") : t("security.stepup.passwordTitle", { label: confirm.v.label })}
+          description={confirm.kind === "create" ? draft.label : t("security.stepup.passwordText")}
+          what={confirm.kind === "create" ? t("security.stepup.createWhat") : t("security.stepup.passwordWhat")}
+          confirmLabel={confirm.kind === "create" ? t("security.stepup.createConfirm") : t("security.stepup.passwordConfirm")}
           onConfirmed={(token) => (confirm.kind === "create" ? create(token) : newPassword(confirm.v, token))}
         />
       )}
@@ -452,21 +452,21 @@ export function LiveViewers() {
       <Dialog
         open={!!revoking}
         onOpenChange={(o) => !o && setRevoking(null)}
-        title={`Revoke “${revoking?.label ?? ""}”?`}
-        description="The viewer is signed out at once and can't sign in again. This can't be undone."
+        title={t("security.revoke.title", { label: revoking?.label ?? "" })}
+        description={t("security.revoke.text")}
         width={440}
         footer={
           <>
             <Button variant="ghost" onClick={() => setRevoking(null)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="sell" disabled={busy} onClick={() => revoking && void revoke(revoking)}>
-              {busy ? "Revoking…" : "Revoke access"}
+              {busy ? t("security.revoke.busy") : t("security.revoke.confirm")}
             </Button>
           </>
         }
       >
-        <p className="text-[13px] text-fg-2">Viewer ID <span className="font-mono text-fg">{revoking?.username}</span></p>
+        <p className="text-[13px] text-fg-2">{t("security.creds.viewerId")} <span className="font-mono text-fg">{revoking?.username}</span></p>
       </Dialog>
 
       <Credentials creds={creds} onClose={() => setCreds(null)} />
