@@ -201,7 +201,7 @@ export default function SignUp() {
           <TextField ref={refs.dob} label={t("auth.field.dateOfBirth")} value={form.date_of_birth} onChangeText={set("date_of_birth")} placeholder={t("mobileAuth.signUp.dobPlaceholder")} keyboardType="number-pad" maxLength={10} error={fieldErr("date_of_birth")} leading={<CalendarDays size={18} color={colors.text3} />} mono />
         </View>
         <View style={{ flex: 1 }}>
-          <TextField label={`${t("auth.field.referralCode")} (${t("auth.field.optionalHint")})`} value={form.referral_code} onChangeText={set("referral_code")} autoCapitalize="characters" autoCorrect={false} placeholder="ABC1234" error={fieldErr("referral_code")} leading={<Gift size={18} color={colors.text3} />} />
+          <TextField label={t("auth.field.referralCode")} value={form.referral_code} onChangeText={set("referral_code")} autoCapitalize="characters" autoCorrect={false} placeholder={t("auth.field.optionalHint")} error={fieldErr("referral_code")} leading={<Gift size={18} color={colors.text3} />} />
         </View>
       </View>
       <TextField

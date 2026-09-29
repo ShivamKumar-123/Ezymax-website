@@ -7,6 +7,12 @@ import { Text } from "./Text";
 export function OtpInput({ length = 6, onComplete, autoFocus = true, error, label = "Code" }: { length?: number; onComplete: (code: string) => void; autoFocus?: boolean; error?: boolean; label?: string }) {
   const [value, setValue] = React.useState("");
   const ref = React.useRef<TextInput>(null);
+  // focus once the screen has settled (autoFocus alone can lose to a transition or a previous field)
+  React.useEffect(() => {
+    if (!autoFocus) return;
+    const id = setTimeout(() => ref.current?.focus(), 120);
+    return () => clearTimeout(id);
+  }, [autoFocus]);
   return (
     <Pressable onPress={() => ref.current?.focus()} accessibilityLabel={label} accessibilityHint={`${length} digits`}>
       <View style={{ flexDirection: "row", gap: space[2], justifyContent: "space-between", direction: "ltr" }}>
