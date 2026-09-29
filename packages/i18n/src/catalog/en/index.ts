@@ -26,7 +26,8 @@ import aiTrader from "./aiTrader";
 import mobile from "./mobile";
 import mobileAuth from "./mobileAuth";
 import mobileMarkets from "./mobileMarkets";
+import mobileTrade from "./mobileTrade";
 
 /** English: the source language and the fallback for every missing translation. */
-export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, mobile, mobileAuth, mobileMarkets };
+export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, mobile, mobileAuth, mobileMarkets, mobileTrade };
 export type EnCatalog = typeof en;

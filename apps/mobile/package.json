@@ -9,7 +9,7 @@
     "ios": "expo start --port 8082 --ios",
     "android": "expo start --port 8082 --android",
     "web": "expo start --port 8082 --web",
-    "export:web": "expo export --platform web --output-dir dist-web",
+    "export:web": "expo export --platform web --output-dir dist-web && node scripts/copy-canvaskit.mjs dist-web",
     "export:ios": "expo export --platform ios --output-dir dist-ios",
     "dev-relay": "node scripts/dev-relay.mjs",
     "illustrations": "node scripts/process-illustrations.mjs",

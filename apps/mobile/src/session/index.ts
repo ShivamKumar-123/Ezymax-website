@@ -49,11 +49,23 @@ export const sessionStore = createStore<SessionState>({ status: "loading", user:
 export const useSession = <S>(select: (s: SessionState) => S) => useStore(sessionStore, select);
 export const useMe = () => useStore(sessionStore, (s) => s.user);
 
-/** Callbacks run on sign-out (feature modules drop their own state: trading sessions, streams…). */
-const signOutHooks = new Set<() => void | Promise<void>>();
-export function onSignOut(fn: () => void | Promise<void>) {
+/**
+ * Callbacks run on sign-out (feature modules drop their own state: trading sessions, streams…). On a sign-out
+ * the user asked for, they run while the session is still valid (`remote: true`), so they can end server-side
+ * sessions too; when the server already ended the session they only clean up locally.
+ */
+const signOutHooks = new Set<(ctx: { remote: boolean }) => void | Promise<void>>();
+export function onSignOut(fn: (ctx: { remote: boolean }) => void | Promise<void>) {
   signOutHooks.add(fn);
   return () => signOutHooks.delete(fn);
+}
+
+async function runSignOutHooks(remote: boolean) {
+  for (const fn of signOutHooks) {
+    try {
+      await fn({ remote });
+    } catch {}
+  }
 }
 
 type MeResponse = { user?: Me; viewer?: ViewerScope | null; restrictions?: Restriction[]; restricted?: string[] };
@@ -117,21 +129,20 @@ export async function completeSignIn(session: { token: string; expires_at?: stri
 
 /** Sign out on this phone (and end the session on the server unless it is already gone). */
 export async function signOut() {
+  if (sessionStore.get().status !== "signedIn") return;
+  stopHeartbeat();
+  await runSignOutHooks(true);
   await apiPost("auth/logout", {});
-  await endSession(false);
+  await endSession(false, true);
 }
 
-async function endSession(expired: boolean) {
+async function endSession(expired: boolean, hooksDone = false) {
   if (sessionStore.get().status === "signedOut") return;
   stopHeartbeat();
   setApiSession(null);
   await secure.remove(TOKEN_KEY);
   kv.remove(ME_KEY);
-  for (const fn of signOutHooks) {
-    try {
-      await fn();
-    } catch {}
-  }
+  if (!hooksDone) await runSignOutHooks(false);
   clearQueries();
   sessionStore.set({ status: "signedOut", user: null, viewer: null, restricted: [], restrictions: [], expired });
 }
