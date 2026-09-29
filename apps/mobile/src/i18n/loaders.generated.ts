@@ -2,7 +2,7 @@
 /* eslint-disable */
 type Loader = () => Promise<{ default: unknown }>;
 
-export const NAMESPACES = ["auth","common","dashboard","kyc","market","mobile","mobileAuth","mobileHome","mobileMarkets","mobilePortfolio","mobileTrade","news","order","portfolio","profile","security","support","wallet"] as const;
+export const NAMESPACES = ["auth","common","dashboard","kyc","market","mobile","mobileAuth","mobileHome","mobileMarkets","mobilePortfolio","mobileTrade","mobileWallet","news","order","portfolio","profile","security","support","wallet"] as const;
 
 export const LOADERS: Record<string, Record<string, Loader>> = {
   "ar": {
