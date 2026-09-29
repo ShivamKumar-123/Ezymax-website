@@ -76,3 +76,44 @@ export async function api<T = Record<string, unknown>>(path: string, opts: ApiOp
 
 export const apiGet = <T = Record<string, unknown>>(path: string, opts?: Omit<ApiOptions, "method" | "body">) => api<T>(path, { ...opts, method: "GET" });
 export const apiPost = <T = Record<string, unknown>>(path: string, body: unknown = {}, opts?: Omit<ApiOptions, "method" | "body">) => api<T>(path, { ...opts, method: "POST", body });
+
+export type ApiFile = { bytes: Uint8Array; contentType: string; filename: string | null };
+
+/**
+ * A file from the BFF (statements, exports): the same headers, bearer session and error handling as api(), with the
+ * body as bytes plus its type and the server's file name (Content-Disposition). Errors are the JSON error body in
+ * the reader's language; a 401 ends the session.
+ */
+export async function apiFile(path: string, opts: { timeoutMs?: number; signal?: AbortSignal } = {}): Promise<ApiResult<ApiFile>> {
+  const url = `${API_BASE}/api/mobile/${path.replace(/^\/+/, "")}`;
+  const headers: Record<string, string> = { accept: "*/*", "x-kalks-device": await deviceId(), "x-kalks-locale": i18n.locale, "x-kalks-platform": PLATFORM, "x-kalks-app-version": APP_VERSION };
+  const withAuth = !!sessionToken;
+  if (withAuth) headers.authorization = `Bearer ${sessionToken}`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? 90_000);
+  const abort = () => ctrl.abort();
+  opts.signal?.addEventListener("abort", abort);
+  try {
+    const res = await fetch(url, { method: "GET", headers, credentials: "omit", signal: ctrl.signal });
+    if (res.ok) {
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      const name = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(res.headers.get("content-disposition") ?? "")?.[1];
+      return { ok: true, status: res.status, data: { bytes, contentType: res.headers.get("content-type") ?? "application/octet-stream", filename: name ? decodeURIComponent(name) : null } };
+    }
+    let data: unknown = {};
+    try {
+      data = JSON.parse(await res.text());
+    } catch {
+      data = {};
+    }
+    const raw = (data as { error?: ApiError }).error ?? { code: res.status === 503 ? "unavailable" : "unknown", message: i18n.t("common.errorRetry") };
+    if (res.status === 401 && withAuth) unauthorized?.();
+    return { ok: false, status: res.status, error: localizeError({ ...raw, status: res.status }) };
+  } catch {
+    const aborted = opts.signal?.aborted;
+    return { ok: false, status: 0, error: localizeError({ code: aborted ? "aborted" : "network", message: i18n.t("auth.apiError.network") }) };
+  } finally {
+    clearTimeout(timer);
+    opts.signal?.removeEventListener("abort", abort);
+  }
+}
