@@ -88,6 +88,7 @@ A dev build (`development` profile) is only needed for phase-2 native modules (p
   - `auth/*` returns the session token in the JSON body.
   - `config` gives the public service URLs.
   - `trade/*` covers trading-engine sessions, obtained through the same SSO token as Kalks Trader.
+  - `accounts/options` tells the open-account wizard whether the broker allows new demo accounts (Back Office › Settings › Features).
 - Tests: `node --test apps/crm/tests/mobile.test.mjs`.
 
 ## Conventions (for everyone adding a feature)
@@ -193,6 +194,7 @@ Tokens: 4 / 8 pt spacing (`space`), `GUTTER` 20, radii `card` 28 / `block` 32, t
 | Trade | `src/features/trade`, `src/features/chart` | Skia chart, one-tap Sell / Buy bar, order ticket sheet (market / limit / stop, SL / TP, margin and pip-value preview), Depth and Alert entry points. |
 | Portfolio | `src/features/portfolio` | Live summary; positions with swipe to close, partial close and SL / TP; orders with edit and cancel; history; Statements link. |
 | Trading core | `src/features/trading` | Engine session (SSO), account stream, live money, actions, contract specs, accounts controller, account switcher. |
+| Accounts | `src/features/accounts` | Live / demo list with USD totals, open-account wizard (the Client Area's rules, credentials shown once), account screen: live figures for the active account, demo refill with the daily cap, leverage and trading / investor passwords confirmed with an emailed code, Trade on this account, transfer and statement shortcuts. Reusable: `useStepUp` / `StepUpCode` (`stepup.tsx`), and `SheetTextField` / `SheetOtpInput` for typing inside bottom sheets (a sheet only rises above the keyboard for its own inputs). |
 
 ### Trading and chart building blocks (for other modules)
 
@@ -221,16 +223,19 @@ There is no Xcode or Android emulator on the build Mac, so these numbers come fr
 - tick-to-screen timed from WebSocket frame arrival to the DOM text change;
 - fps taken from `requestAnimationFrame` intervals.
 
-| What | Result |
+These runs happened while other builds were loading the Mac (load average 8–19 on 8 cores), and headless Chromium draws WebGL on the CPU, so the chart numbers are pessimistic.
+
+| What | Result (several runs) |
 |---|---|
-| Cold start with a saved session, reload to Home content on screen (warm HTTP cache) | median **121 ms** (runs 209 / 108 / 121) |
-| First load of the web preview to onboarding (cold cache) | 288 ms |
-| Markets: tick to screen (WebSocket frame to price text changed) | p50 **6 ms**, p95 **17.8 ms** (96 screen updates in 20 s) |
-| Markets: work per tick | 24 React commits in 20 s, p50 **32** / max 64 fibers rendered per commit (a full Markets tree is about 900). Only the ticking price leaves render, never the rows or the list. |
-| Fast watchlist scroll while prices tick | **59.3 fps**, p95 frame 18.6 ms, 1 dropped frame in 185 |
-| Chart pan | **59.9 fps**, p95 frame 18.6 ms, **0 React commits** during the pan |
-| Chart pinch zoom (two-finger CDP touch) | **59.4 fps**, **0 React commits** during the pinch |
+| Cold start with a saved session, reload to Home content on screen | 193–273 ms (medians around 200 ms) |
+| Markets: tick to screen (WebSocket frame to price text changed) | p50 10–13 ms, p95 16–18 ms |
+| Markets: work per tick | p50 **32** fibers rendered per React commit, max 137. A full Markets tree is about 900 fibers, so only the ticking price leaves render, never the rows or the list. |
+| Fast watchlist scroll while prices tick | **60 fps**, 0 dropped frames (3 of 3 runs) |
+| Chart pan | 56–60 fps, **0 React commits** during the pan |
+| Chart pinch zoom (two-finger CDP touch) | 43–60 fps depending on load, **0 React commits** during the pinch |
 | iOS Hermes bundle (`expo export --platform ios`) | 10 MB .hbc. About 4 MB of that is the 21 translated languages for the app's namespaces, loaded lazily per language. |
+
+Pre-rendering hidden tabs was tried and dropped. Preloaded tabs are never frozen, so their prices kept rendering in the background: tick p95 went from 18 to 57 ms and pinch fell to 45 fps. The app warms the chart module and the Trade tab's candles after the first paint instead.
 
 On a phone, confirm the numbers with Expo Go's **Performance Monitor**: shake the phone, open the dev menu, and check that the UI and JS threads stay at 60 / 120 fps while scrolling Markets and panning the chart.
 
@@ -240,6 +245,7 @@ On a phone, confirm the numbers with Expo Go's **Performance Monitor**: shake th
 - Google sign-in, biometrics, push notifications, depth of market and price alerts are phase 2. The Trade header already links to `/depth/[symbol]` and `/alerts?symbol=`.
 - On a phone, native smoothness has not been measured yet: this build Mac has no simulator. Use the Performance Monitor steps above.
 - Local market-data runs in relay mode, so local candle history can have gaps. Production history is complete.
+- No shared-element transition from a watchlist row to the chart header. Tabs are not pre-rendered: the data and the chart module are warmed instead (see Performance).
 
 ## Phase 2 (not in this build)
 
