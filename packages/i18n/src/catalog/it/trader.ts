@@ -123,6 +123,8 @@ const trader: NsMessages<"trader"> = {
   "menu.oneClickTrading": "Trading con un clic",
   "menu.soundOnFills": "Suono all'esecuzione",
   "menu.maxDeviation": "Deviazione max · {count} pt",
+  "menu.maxDeviationAny": "Deviazione max · qualsiasi prezzo",
+  "menu.anyPrice": "Qualsiasi prezzo",
   "menu.points": { one: "{count} punto", other: "{count} punti" },
   "menu.priceAlerts": "Avvisi di prezzo",
   "menu.history": "Storico",

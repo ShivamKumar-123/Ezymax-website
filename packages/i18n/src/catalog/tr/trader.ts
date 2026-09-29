@@ -124,6 +124,8 @@ const trader: NsMessages<"trader"> = {
   "menu.soundOnFills": "Gerçekleşmede ses",
   // puan = price points
   "menu.maxDeviation": "Maks. sapma · {count} puan",
+  "menu.maxDeviationAny": "Maks. sapma · herhangi bir fiyat",
+  "menu.anyPrice": "Herhangi bir fiyat",
   "menu.points": { other: "{count} puan" },
   "menu.priceAlerts": "Fiyat Uyarıları",
   "menu.history": "Geçmiş",

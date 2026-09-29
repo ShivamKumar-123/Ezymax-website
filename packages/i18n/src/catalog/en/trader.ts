@@ -127,6 +127,9 @@ const trader = {
   "menu.soundOnFills": "Sound on fills",
   // pts = points (price steps)
   "menu.maxDeviation": "Max deviation · {count} pts",
+  // Max deviation not limited: market orders fill at whatever price the server has
+  "menu.maxDeviationAny": "Max deviation · any price",
+  "menu.anyPrice": "Any price",
   "menu.points": { one: "{count} point", other: "{count} points" },
   "menu.priceAlerts": "Price Alerts",
   "menu.history": "History",

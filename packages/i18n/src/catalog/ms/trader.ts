@@ -123,6 +123,8 @@ const trader: NsMessages<"trader"> = {
   "menu.oneClickTrading": "Dagangan Satu Klik",
   "menu.soundOnFills": "Bunyi semasa pelaksanaan",
   "menu.maxDeviation": "Sisihan maks · {count} mata",
+  "menu.maxDeviationAny": "Sisihan maks. · sebarang harga",
+  "menu.anyPrice": "Sebarang harga",
   "menu.points": { other: "{count} mata" },
   "menu.priceAlerts": "Amaran Harga",
   "menu.history": "Sejarah",

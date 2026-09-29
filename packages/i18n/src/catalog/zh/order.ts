@@ -86,6 +86,7 @@ const order: NsMessages<"order"> = {
   "ticket.comment": "注释",
   "ticket.maxDeviationPts": "最大偏差（点）",
   "ticket.maxDeviation": "最大偏差",
+  "ticket.anyPrice": "任意价格",
   "ticket.margin": "预付款",
   "ticket.freeMargin": "可用预付款",
   "ticket.leverageSpread": "杠杆 · 点差",

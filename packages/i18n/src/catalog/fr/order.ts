@@ -86,6 +86,7 @@ const order: NsMessages<"order"> = {
   "ticket.comment": "Commentaire",
   "ticket.maxDeviationPts": "Déviation max., pts",
   "ticket.maxDeviation": "Déviation max.",
+  "ticket.anyPrice": "Tout prix",
   "ticket.margin": "Marge",
   "ticket.freeMargin": "Marge libre",
   "ticket.leverageSpread": "Levier · spread",

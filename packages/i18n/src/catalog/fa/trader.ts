@@ -126,6 +126,8 @@ const trader: NsMessages<"trader"> = {
   "menu.soundOnFills": "صدا هنگام اجرای سفارش",
   // pts = points (price steps)
   "menu.maxDeviation": "حداکثر انحراف · {count} پوینت",
+  "menu.maxDeviationAny": "حداکثر انحراف · هر قیمتی",
+  "menu.anyPrice": "هر قیمتی",
   "menu.points": { one: "{count} پوینت", other: "{count} پوینت" },
   "menu.priceAlerts": "هشدارهای قیمت",
   "menu.history": "تاریخچه",

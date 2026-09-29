@@ -86,6 +86,7 @@ const order: NsMessages<"order"> = {
   "ticket.comment": "মন্তব্য",
   "ticket.maxDeviationPts": "সর্বোচ্চ বিচ্যুতি, পয়েন্ট",
   "ticket.maxDeviation": "সর্বোচ্চ বিচ্যুতি",
+  "ticket.anyPrice": "যেকোনো মূল্য",
   "ticket.margin": "মার্জিন",
   "ticket.freeMargin": "ফ্রি মার্জিন",
   "ticket.leverageSpread": "লিভারেজ · স্প্রেড",

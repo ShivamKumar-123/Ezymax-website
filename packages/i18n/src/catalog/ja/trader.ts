@@ -123,6 +123,8 @@ const trader: NsMessages<"trader"> = {
   "menu.oneClickTrading": "ワンクリック取引",
   "menu.soundOnFills": "約定時にサウンド",
   "menu.maxDeviation": "最大偏差 · {count}ポイント",
+  "menu.maxDeviationAny": "最大許容偏差 · 任意の価格",
+  "menu.anyPrice": "任意の価格",
   "menu.points": { other: "{count}ポイント" },
   "menu.priceAlerts": "価格アラート",
   "menu.history": "履歴",

@@ -123,6 +123,8 @@ const trader: NsMessages<"trader"> = {
   "menu.oneClickTrading": "เทรดคลิกเดียว",
   "menu.soundOnFills": "เสียงเมื่อคำสั่งถูกจับคู่",
   "menu.maxDeviation": "ส่วนเบี่ยงเบนสูงสุด · {count} จุด",
+  "menu.maxDeviationAny": "ความคลาดเคลื่อนสูงสุด · ทุกราคา",
+  "menu.anyPrice": "ทุกราคา",
   "menu.points": { other: "{count} จุด" },
   "menu.priceAlerts": "การแจ้งเตือนราคา",
   "menu.history": "ประวัติ",

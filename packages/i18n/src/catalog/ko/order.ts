@@ -86,6 +86,7 @@ const order: NsMessages<"order"> = {
   "ticket.comment": "코멘트",
   "ticket.maxDeviationPts": "최대 편차, pts",
   "ticket.maxDeviation": "최대 편차",
+  "ticket.anyPrice": "모든 가격",
   "ticket.margin": "증거금",
   "ticket.freeMargin": "가용 증거금",
   "ticket.leverageSpread": "레버리지 · 스프레드",

@@ -119,6 +119,8 @@ const trader: NsMessages<"trader"> = {
   "menu.oneClickTrading": "Biashara ya Mbofyo Mmoja",
   "menu.soundOnFills": "Sauti wakati wa utekelezaji",
   "menu.maxDeviation": "Mkengeuko wa juu · pointi {count}",
+  "menu.maxDeviationAny": "Mkengeuko wa juu · bei yoyote",
+  "menu.anyPrice": "Bei yoyote",
   "menu.points": { one: "Pointi {count}", other: "Pointi {count}" },
   "menu.priceAlerts": "Tahadhari za Bei",
   "menu.history": "Historia",

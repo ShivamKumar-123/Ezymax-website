@@ -21,6 +21,8 @@ export interface EngineDeps {
   /** the stream isn't delivering: reload the account state after a write */
   refreshIfStale: () => void;
   expired: (login: string) => void;
+  /** the trader's max deviation in points (Tools menu); null = any price */
+  deviation: () => number | null;
 }
 
 export type PlaceResult = { ok: boolean; ticket?: string };
@@ -61,6 +63,17 @@ export function engineActions(d: EngineDeps) {
     d.refreshIfStale();
     return r.data;
   }
+
+  /**
+   * Max deviation (MT5 "deviation"): the price the trader saw when clicking travels with the request; the engine
+   * requotes instead of filling when the market has moved further than that. Nothing is sent for "any price".
+   */
+  const slippage = (symbol: string, side: "buy" | "sell"): { deviationPoints?: number; requestedPrice?: number } => {
+    const dev = d.deviation();
+    const q = priceFeed().snapshot(symbol);
+    if (dev === null || !q) return {};
+    return { deviationPoints: dev, requestedPrice: side === "buy" ? q.ask : q.bid };
+  };
 
   const orderDesc = (o: OrderRequest) =>
     o.type === "market"
@@ -104,7 +117,7 @@ export function engineActions(d: EngineDeps) {
       return { ok: false };
     }
     d.log("Trade", `'${login}': ${desc}${o.source === "ai" ? " [AI Trader]" : ""}`);
-    const res = await run(login, desc, engineApi.placeOrder(login, toBody({ ...o, volume: vol })));
+    const res = await run(login, desc, engineApi.placeOrder(login, toBody({ ...o, volume: vol }, o.type === "market" ? slippage(o.symbol, o.side) : {})));
     if (!res) return { ok: false };
     if (res.status === "filled") {
       const deal = res.deals?.[0];
@@ -140,7 +153,9 @@ export function engineActions(d: EngineDeps) {
     const vol = volume !== undefined && p ? Math.min(p.volume, +volume.toFixed(2)) : undefined;
     const partial = p && vol !== undefined && vol < p.volume - 1e-9;
     const desc = p ? `close #${ticket} ${p.side} ${fmtVol(vol ?? p.volume)} ${p.symbol}${partial ? ` (partial of ${fmtVol(p.volume)})` : ""}` : `close #${ticket}`;
-    const res = await run(login, desc, engineApi.closePosition(login, ticket, partial ? { volume: vol } : {}), quiet);
+    // the closing deal is a sell for a buy position (fills at the bid) and a buy for a sell position
+    const guard = p ? slippage(p.symbol, p.side === "buy" ? "sell" : "buy") : {};
+    const res = await run(login, desc, engineApi.closePosition(login, ticket, partial ? { volume: vol, ...guard } : guard), quiet);
     if (!res) return false;
     const q = p ? priceFeed().snapshot(p.symbol) : undefined;
     d.log("Trade", `'${login}': ${reason !== "manual" ? `${reason}: ` : ""}deal #${res.dealId} ${p ? `${p.side === "buy" ? "sell" : "buy"} ${fmtVol(vol ?? p.volume)} ${p.symbol} ` : ""}done (close #${ticket}${partial ? `, partial ${fmtVol(vol!)} of ${fmtVol(p!.volume)}` : ""}), profit ${money(d.account()?.cent ? res.profit / 100 : res.profit)}`);

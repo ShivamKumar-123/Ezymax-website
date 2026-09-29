@@ -123,6 +123,8 @@ const trader: NsMessages<"trader"> = {
   "menu.oneClickTrading": "ون کلک ٹریڈنگ",
   "menu.soundOnFills": "فِل ہونے پر آواز",
   "menu.maxDeviation": "زیادہ سے زیادہ انحراف · {count} پوائنٹس",
+  "menu.maxDeviationAny": "زیادہ سے زیادہ انحراف · کوئی بھی قیمت",
+  "menu.anyPrice": "کوئی بھی قیمت",
   "menu.points": { one: "{count} پوائنٹ", other: "{count} پوائنٹس" },
   "menu.priceAlerts": "قیمت کے الرٹس",
   "menu.history": "ہسٹری",

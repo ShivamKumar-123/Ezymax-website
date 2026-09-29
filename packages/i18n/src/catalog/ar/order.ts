@@ -86,6 +86,7 @@ const order: NsMessages<"order"> = {
   "ticket.comment": "تعليق",
   "ticket.maxDeviationPts": "أقصى انحراف، نقاط",
   "ticket.maxDeviation": "أقصى انحراف",
+  "ticket.anyPrice": "أي سعر",
   "ticket.margin": "الهامش",
   "ticket.freeMargin": "الهامش الحر",
   "ticket.leverageSpread": "الرافعة · السبريد",

@@ -123,6 +123,8 @@ const trader: NsMessages<"trader"> = {
   "menu.oneClickTrading": "一键交易",
   "menu.soundOnFills": "成交时播放声音",
   "menu.maxDeviation": "最大偏差 · {count} 点",
+  "menu.maxDeviationAny": "最大偏差 · 任意价格",
+  "menu.anyPrice": "任意价格",
   "menu.points": { other: "{count} 点" },
   "menu.priceAlerts": "价格警报",
   "menu.history": "历史",

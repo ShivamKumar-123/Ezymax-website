@@ -87,6 +87,7 @@ const order: NsMessages<"order"> = {
   "ticket.comment": "ความคิดเห็น",
   "ticket.maxDeviationPts": "ส่วนเบี่ยงเบนสูงสุด, จุด",
   "ticket.maxDeviation": "ส่วนเบี่ยงเบนสูงสุด",
+  "ticket.anyPrice": "ทุกราคา",
   "ticket.margin": "มาร์จิ้น",
   "ticket.freeMargin": "ฟรีมาร์จิ้น",
   "ticket.leverageSpread": "เลเวอเรจ · สเปรด",

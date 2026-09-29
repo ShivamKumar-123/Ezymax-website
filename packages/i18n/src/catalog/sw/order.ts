@@ -88,6 +88,7 @@ const order: NsMessages<"order"> = {
   "ticket.comment": "Maoni",
   "ticket.maxDeviationPts": "Mkengeuko wa juu, pointi",
   "ticket.maxDeviation": "Mkengeuko wa juu",
+  "ticket.anyPrice": "Bei yoyote",
   "ticket.margin": "Margin",
   "ticket.freeMargin": "Margin huru",
   "ticket.leverageSpread": "Leverage · spread",

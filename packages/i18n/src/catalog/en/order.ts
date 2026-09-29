@@ -90,6 +90,7 @@ const order = {
   "ticket.comment": "Comment",
   "ticket.maxDeviationPts": "Max deviation, pts",
   "ticket.maxDeviation": "Max deviation",
+  "ticket.anyPrice": "Any price",
   "ticket.margin": "Margin",
   "ticket.freeMargin": "Free margin",
   "ticket.leverageSpread": "Leverage · spread",

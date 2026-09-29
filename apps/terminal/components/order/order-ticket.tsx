@@ -3,10 +3,11 @@
 import * as React from "react";
 import { Calculator, ChevronDown, ChevronUp, Lock, Zap } from "lucide-react";
 import { toast } from "@/lib/notify";
-import { INSTRUMENTS, getInstrument } from "@kalks/mock";
+import { INSTRUMENTS, getInstrument, priceFeed, type Quote } from "@kalks/mock";
 import { PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { useMarketOpen } from "@/lib/market-hours";
+import { useSlowQuote } from "@/lib/market";
 import { accCcy, accMoney, fmtPrice, marginRequired, pendingLabelKey, pipSize, pipValuePerLot, splitSymbol, type Expiry, type OrderType, type PendingOrder } from "@/lib/trading";
 import { Check, MiniSwitch, Stepper, TInput, TSelect } from "@/components/ui/primitives";
 import { GuestActions } from "@/components/shell/guest";
@@ -49,9 +50,10 @@ export function OrderTicket({
 }) {
   const T = useTerminal();
   const t = useT();
-  const m = useMetrics();
   const acc = T.account;
-  const q = useQuote(symbol);
+  // derived numbers (pip value, margin, placeholders) follow the price once a second; the live prices, spread
+  // and free margin are leaf components (TicketPrice, TicketSummary), so a tick doesn't re-render the form
+  const q = useSlowQuote(symbol);
   const inst = getInstrument(symbol);
   const pip = pipSize(inst);
   const marketOpen = useMarketOpen(symbol);
@@ -65,7 +67,7 @@ export function OrderTicket({
   const [trailing, setTrailing] = React.useState(false);
   const [trailPips, setTrailPips] = React.useState("20");
   const [expiry, setExpiry] = React.useState<Expiry>("GTC");
-  const [expiryDate, setExpiryDate] = React.useState("2026-09-30");
+  const [expiryDate, setExpiryDate] = React.useState(tomorrow);
   const [oco, setOco] = React.useState(false);
   const [ocoPrice, setOcoPrice] = React.useState("");
   const [comment, setComment] = React.useState("");
@@ -112,18 +114,16 @@ export function OrderTicket({
   const vol = Math.max(0.01, parseFloat(volume) || 0);
   const pending = type !== "market";
   const pv = pipValuePerLot(symbol, q.bid);
-  const balance = m.balance;
+  const balance = T.engine ? acc.balance / (acc.cent ? 100 : 1) : (T.balances[acc.login] ?? 0);
   const riskUsd = riskMode === "pct" ? (balance * (parseFloat(risk) || 0)) / 100 : (parseFloat(risk) || 0) / (acc.cent ? 100 : 1);
   const calcLots = Math.max(0.01, Math.floor((riskUsd / ((parseFloat(riskPips) || 1) * pv)) * 100) / 100);
-  const margin = marginRequired(symbol, vol, q.ask, acc.leverage);
-  const spreadPts = Math.round((q.ask - q.bid) * 10 ** inst.digits);
   const units = vol * inst.contractSize;
   const unitLabel = inst.assetClass === "forex" ? splitSymbol(symbol).base : inst.assetClass === "metals" ? t("order.unit.oz") : inst.assetClass === "energies" ? t("order.unit.bbl") : inst.assetClass === "stocks" ? t("order.unit.shares") : t("order.unit.units");
 
-  const entryFor = (side: "buy" | "sell") => (pending ? parseFloat(type === "stop-limit" && stopLimit ? stopLimit : price) || (side === "buy" ? q.ask : q.bid) : side === "buy" ? q.ask : q.bid);
-  const stopsFor = (side: "buy" | "sell") => {
+  const entryFor = (side: "buy" | "sell", qq: Quote = q) => (pending ? parseFloat(type === "stop-limit" && stopLimit ? stopLimit : price) || (side === "buy" ? qq.ask : qq.bid) : side === "buy" ? qq.ask : qq.bid);
+  const stopsFor = (side: "buy" | "sell", qq: Quote = q) => {
     if (stopMode === "price") return { sl: parseFloat(sl) || undefined, tp: parseFloat(tp) || undefined };
-    const e = entryFor(side);
+    const e = entryFor(side, qq);
     const s = parseFloat(sl);
     const tpv = parseFloat(tp);
     const dir = side === "buy" ? 1 : -1;
@@ -146,7 +146,7 @@ export function OrderTicket({
       toast.error(t("order.toast.enterPendingPrice"));
       return;
     }
-    const st = stopsFor(side);
+    const st = stopsFor(side, priceFeed().quote(symbol)); // pips → prices from the price at the moment of the click
     setBusy(true);
     const ok = await T.placeOrder({
       symbol,
@@ -189,7 +189,7 @@ export function OrderTicket({
           <span className="pointer-events-none absolute start-2 top-1/2 -translate-y-1/2">
             <SymbolAvatar symbol={symbol} size={14} />
           </span>
-          <TSelect ariaLabel={t("order.ticket.symbol")} value={symbol} onChange={(v) => (onSymbol ? onSymbol(v) : T.openSymbol(v))} options={INSTRUMENTS.map((i) => ({ value: i.symbol, label: `${i.symbol} · ${i.name}` }))} className="ps-7 font-medium" />
+          <TSelect ariaLabel={t("order.ticket.symbol")} value={symbol} onChange={(v) => (onSymbol ? onSymbol(v) : T.openSymbol(v))} options={INSTRUMENTS.map((i) => ({ value: i.symbol, label: `${i.symbol} · ${i.name}` }))} className="ps-8 font-medium" />
         </div>
       </div>
 
@@ -365,37 +365,25 @@ export function OrderTicket({
           </div>
           <div>
             <Label>{t("order.ticket.maxDeviationPts")}</Label>
-            <Stepper ariaLabel={t("order.ticket.maxDeviation")} value={String(T.ws.deviation)} onChange={(v) => T.setWs({ deviation: Math.max(0, Math.round(parseFloat(v) || 0)) })} step={1} decimals={0} />
+            <Stepper ariaLabel={t("order.ticket.maxDeviation")} value={T.ws.maxDeviation === null ? "" : String(T.ws.maxDeviation)} placeholder={t("order.ticket.anyPrice")} onChange={(v) => T.setWs({ maxDeviation: v.trim() === "" ? null : Math.max(0, Math.round(parseFloat(v) || 0)) })} step={1} min={0} decimals={0} />
           </div>
         </div>
       )}
 
       {/* summary */}
-      <div className="space-y-0.5 rounded-[6px] border border-line bg-surface-2/40 px-2 py-1.5 font-mono text-[11px]">
-        {[
-          ["margin", t("order.ticket.margin"), `${accMoney(acc, margin)} ${accCcy(acc)}`],
-          ["free", t("order.ticket.freeMargin"), `${accMoney(acc, m.free)}`],
-          ["leverage", t("order.ticket.leverageSpread"), `1:${acc.leverage} · ${t("order.unit.pts", { n: spreadPts })}`],
-          ...(!dialog ? [["deviation", t("order.ticket.deviation"), t("order.unit.pts", { n: T.ws.deviation })]] : []),
-        ].map(([id, k, v]) => (
-          <div key={id} className="flex justify-between">
-            <span className="font-sans text-fg-3">{k}</span>
-            <span className={cn("k-num", id === "free" && margin > m.free ? "text-down" : "text-fg-2")}>{v}</span>
-          </div>
-        ))}
-      </div>
+      <TicketSummary symbol={symbol} volume={vol} showDeviation={!dialog} />
 
       {/* sell / buy */}
       <div className="relative grid grid-cols-2 gap-1.5">
         <button onClick={() => void submit("sell")} disabled={!marketOpen || busy} title={marketOpen ? undefined : t("order.ticket.marketClosed")} aria-label={pending ? t("order.ticket.placePending", { label: t(pendingLabelKey({ side: "sell", type: type as PendingOrder["type"] })) }) : t("order.ticket.placeSell")} className={cn("group rounded-[7px] bg-down px-2.5 py-1.5 text-start text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100 [&:disabled_span]:!text-fg-3", prefill?.side === "sell" && "ring-2 ring-down/40 ring-offset-1 ring-offset-panel")}>
           <div className="text-[10px] font-semibold uppercase tracking-[0.1em] opacity-85">{pending ? t(pendingLabelKey({ side: "sell", type: type as PendingOrder["type"] })) : t("common.sell")}</div>
-          <PriceText symbol={symbol} value={pending && price ? parseFloat(price) || q.bid : q.bid} dir={pending ? 0 : q.dir} className="text-[16px] [&_span]:!text-white" />
+          <TicketPrice symbol={symbol} side="sell" fixed={pending && price ? parseFloat(price) || undefined : undefined} className="text-[16px] [&_span]:!text-white" />
         </button>
         <button onClick={() => void submit("buy")} disabled={!marketOpen || busy} title={marketOpen ? undefined : t("order.ticket.marketClosed")} aria-label={pending ? t("order.ticket.placePending", { label: t(pendingLabelKey({ side: "buy", type: type as PendingOrder["type"] })) }) : t("order.ticket.placeBuy")} className={cn("rounded-[7px] bg-up px-2.5 py-1.5 text-end text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100 [&:disabled_span]:!text-fg-3", prefill?.side === "buy" && "ring-2 ring-up/40 ring-offset-1 ring-offset-panel")}>
           <div className="text-[10px] font-semibold uppercase tracking-[0.1em] opacity-85">{pending ? t(pendingLabelKey({ side: "buy", type: type as PendingOrder["type"] })) : t("common.buy")}</div>
-          <PriceText symbol={symbol} value={pending && price ? parseFloat(price) || q.ask : q.ask} dir={pending ? 0 : q.dir} className="justify-end text-[16px] [&_span]:!text-white" />
+          <TicketPrice symbol={symbol} side="buy" fixed={pending && price ? parseFloat(price) || undefined : undefined} className="justify-end text-[16px] [&_span]:!text-white" />
         </button>
-        <span className="k-num absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[4px] border border-line bg-panel px-1.5 py-px font-mono text-[10px] text-fg-2">{spreadPts}</span>
+        <TicketSpread symbol={symbol} />
       </div>
       {!marketOpen && (
         <div role="status" className="flex items-center gap-1.5 rounded-[6px] border border-warn/30 bg-warn-soft px-2 py-1 text-[11px] text-warn">
@@ -408,6 +396,51 @@ export function OrderTicket({
         </span>
         <MiniSwitch checked={T.ws.oneClick} onChange={(v) => T.setWs({ oneClick: v })} label={t("order.ticket.oneClick")} />
       </div>
+    </div>
+  );
+}
+
+function tomorrow() {
+  const d = new Date(Date.now() + 86400e3);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/* ---- per-tick leaves ---- */
+
+/** Live bid (sell) / ask (buy) on a ticket button; a pending order's own price when one is entered. */
+function TicketPrice({ symbol, side, fixed, className }: { symbol: string; side: "buy" | "sell"; fixed?: number; className?: string }) {
+  const q = useQuote(symbol);
+  return <PriceText symbol={symbol} value={fixed ?? (side === "buy" ? q.ask : q.bid)} dir={fixed === undefined ? q.dir : 0} className={className} />;
+}
+
+function TicketSpread({ symbol }: { symbol: string }) {
+  const q = useQuote(symbol);
+  const spreadPts = Math.round((q.ask - q.bid) * 10 ** getInstrument(symbol).digits);
+  return <span className="k-num absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[4px] border border-line bg-panel px-1.5 py-px font-mono text-[10px] text-fg-2">{spreadPts}</span>;
+}
+
+/** Margin, free margin, leverage · spread and deviation of the order being prepared. */
+function TicketSummary({ symbol, volume, showDeviation }: { symbol: string; volume: number; showDeviation: boolean }) {
+  const T = useTerminal();
+  const t = useT();
+  const m = useMetrics();
+  const q = useQuote(symbol);
+  const acc = T.account;
+  const margin = marginRequired(symbol, volume, q.ask, acc.leverage);
+  const spreadPts = Math.round((q.ask - q.bid) * 10 ** getInstrument(symbol).digits);
+  return (
+    <div className="space-y-0.5 rounded-[6px] border border-line bg-surface-2/40 px-2 py-1.5 font-mono text-[11px]">
+      {[
+        ["margin", t("order.ticket.margin"), `${accMoney(acc, margin)} ${accCcy(acc)}`],
+        ["free", t("order.ticket.freeMargin"), `${accMoney(acc, m.free)}`],
+        ["leverage", t("order.ticket.leverageSpread"), `1:${acc.leverage} · ${t("order.unit.pts", { n: spreadPts })}`],
+        ...(showDeviation ? [["deviation", t("order.ticket.deviation"), T.ws.maxDeviation === null ? t("order.ticket.anyPrice") : t("order.unit.pts", { n: T.ws.maxDeviation })]] : []),
+      ].map(([id, k, v]) => (
+        <div key={id} className="flex justify-between">
+          <span className="font-sans text-fg-3">{k}</span>
+          <span className={cn("k-num", id === "free" && margin > m.free ? "text-down" : "text-fg-2")}>{v}</span>
+        </div>
+      ))}
     </div>
   );
 }

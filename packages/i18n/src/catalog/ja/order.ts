@@ -87,6 +87,7 @@ const order: NsMessages<"order"> = {
   "ticket.comment": "コメント",
   "ticket.maxDeviationPts": "最大偏差（ポイント）",
   "ticket.maxDeviation": "最大偏差",
+  "ticket.anyPrice": "任意の価格",
   "ticket.margin": "証拠金",
   "ticket.freeMargin": "余剰証拠金",
   "ticket.leverageSpread": "レバレッジ · スプレッド",

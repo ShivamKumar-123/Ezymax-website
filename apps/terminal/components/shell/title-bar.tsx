@@ -181,7 +181,10 @@ function useMenus(): { label: string; items: MenuItem[] }[] {
           : ([
               { label: t("trader.menu.oneClickTrading"), icon: <Zap />, hint: "F10", checked: T.ws.oneClick, disabled: T.readOnly, onSelect: () => T.setWs({ oneClick: !T.ws.oneClick }) },
               { label: t("trader.menu.soundOnFills"), checked: T.ws.sound, onSelect: () => (T.setWs({ sound: !T.ws.sound }), toast(T.ws.sound ? t("trader.toast.soundsOff") : t("trader.toast.soundsOn"))) },
-              { label: t("trader.menu.maxDeviation", { count: T.ws.deviation }), items: [0, 3, 5, 10, 20, 50, 100].map((d) => ({ label: t("trader.menu.points", { count: d }), checked: T.ws.deviation === d, onSelect: () => (T.setWs({ deviation: d }), T.log("Terminal", `max deviation set to ${d} points`)) })) },
+              {
+                label: T.ws.maxDeviation === null ? t("trader.menu.maxDeviationAny") : t("trader.menu.maxDeviation", { count: T.ws.maxDeviation }),
+                items: [null, 0, 3, 5, 10, 20, 50, 100].map((d) => ({ label: d === null ? t("trader.menu.anyPrice") : t("trader.menu.points", { count: d }), checked: T.ws.maxDeviation === d, onSelect: () => (T.setWs({ maxDeviation: d }), T.log("Terminal", d === null ? "max deviation: any price (market execution)" : `max deviation set to ${d} points`)) })),
+              },
             ] as MenuItem[])),
         "sep",
         { label: t("trader.menu.priceAlerts"), icon: <Bell />, onSelect: () => (T.setWs({ toolboxTab: "alerts" }), T.togglePanel("toolbox", true)) },
@@ -349,7 +352,7 @@ export function TitleBar() {
   const dark = !mounted || resolvedTheme !== "light";
   const a = T.account;
   return (
-    <header className="t-titlebar-glow relative z-20 flex h-11 shrink-0 items-center gap-2 border-b border-line bg-panel px-2.5">
+    <header className="relative z-20 flex h-11 shrink-0 items-center gap-2 border-b border-line bg-panel px-2.5">
       <div className="flex shrink-0 items-center gap-2 pe-1.5">
         <span className="grid size-7 place-items-center rounded-[7px] border border-line-top bg-surface-3 shadow-[0_0_16px_-6px_rgba(255,90,31,0.7)]">
           <LogoMark size={13} className="text-fg" />

@@ -126,6 +126,8 @@ const trader: NsMessages<"trader"> = {
   "menu.soundOnFills": "অর্ডার পূরণে শব্দ",
   // pts = points (price steps)
   "menu.maxDeviation": "সর্বোচ্চ বিচ্যুতি · {count} পয়েন্ট",
+  "menu.maxDeviationAny": "সর্বোচ্চ বিচ্যুতি · যেকোনো মূল্য",
+  "menu.anyPrice": "যেকোনো মূল্য",
   "menu.points": { one: "{count} পয়েন্ট", other: "{count} পয়েন্ট" },
   "menu.priceAlerts": "প্রাইস অ্যালার্ট",
   "menu.history": "ইতিহাস",

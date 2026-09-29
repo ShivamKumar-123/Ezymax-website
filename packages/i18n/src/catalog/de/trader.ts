@@ -126,6 +126,8 @@ const trader: NsMessages<"trader"> = {
   "menu.soundOnFills": "Ton bei Ausführung",
   // Pkt. = points (price steps)
   "menu.maxDeviation": "Max. Abweichung · {count} Pkt.",
+  "menu.maxDeviationAny": "Max. Abweichung · jeder Preis",
+  "menu.anyPrice": "Jeder Preis",
   "menu.points": { one: "{count} Punkt", other: "{count} Punkte" },
   "menu.priceAlerts": "Kursalarme",
   "menu.history": "Historie",

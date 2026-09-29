@@ -123,6 +123,8 @@ const trader: NsMessages<"trader"> = {
   "menu.oneClickTrading": "원클릭 거래",
   "menu.soundOnFills": "체결 시 소리",
   "menu.maxDeviation": "최대 편차 · {count} pts",
+  "menu.maxDeviationAny": "최대 편차 · 모든 가격",
+  "menu.anyPrice": "모든 가격",
   "menu.points": { other: "{count}포인트" },
   "menu.priceAlerts": "가격 알림",
   "menu.history": "내역",

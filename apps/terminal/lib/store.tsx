@@ -133,7 +133,8 @@ export interface Workspace {
   hidden: string[];
   oneClick: boolean;
   sound: boolean;
-  deviation: number; // points
+  /** max slippage (points) from the price on screen when the order is sent; null = any price (market execution) */
+  maxDeviation: number | null;
   lot: number; // default one-click lot
   profile: string;
 }
@@ -227,7 +228,7 @@ export function defaultWorkspace(): Workspace {
     hidden: [],
     oneClick: true,
     sound: true,
-    deviation: 10,
+    maxDeviation: null,
     lot: 0.5,
     profile: "Default",
   };
@@ -457,7 +458,8 @@ export function useMetrics(login?: string): Metrics & { account: TradingAccount 
   const l = login ?? t.account.login;
   const live = useLiveEquity(t.engine ? l : null);
   const pos = t.allPositions.filter((p) => p.login === l);
-  const qs = useQuotes(pos.length ? [...new Set(pos.map((p) => p.symbol))] : ["EURUSD"]);
+  // engine accounts: the numbers come from equity frames; quotes are only needed to compute them locally
+  const qs = useQuotes(!t.engine && pos.length ? [...new Set(pos.map((p) => p.symbol))] : []);
   if (t.engine) {
     // the engine's numbers (equity frames ≤ 4/s, else the last account view); cent accounts USC → USD
     const acc = (t.accounts.find((a) => a.login === l) ?? t.account) as EngineTradingAccount;
@@ -473,7 +475,7 @@ export function useMetrics(login?: string): Metrics & { account: TradingAccount 
 /** Floating profit (USD) of an open position: the engine's value in live builds, else computed from quotes. */
 export function usePositionProfit(p: TPosition): number {
   const t = useTerminal();
-  const q = useQuotes([p.symbol])[p.symbol];
+  const q = useQuotes(t.engine ? [] : [p.symbol])[p.symbol];
   const live = useLivePosition(t.engine ? p.login : null, p.ticket);
   if (live) return live.profit;
   if (t.engine) return (p as TPosition & { profit?: number }).profit ?? 0;
@@ -696,7 +698,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       if (o.type === "market" && need > m.free) return fail(desc, "Not enough money");
 
       if (o.type === "market") {
-        const dev = wsRef.current.deviation;
+        const dev = wsRef.current.maxDeviation ?? 3;
         const slipPts = Math.floor(Math.random() * Math.min(dev, 3));
         const px = roundPrice(o.symbol, (o.side === "buy" ? q.ask : q.bid) + (o.side === "buy" ? 1 : -1) * slipPts * pointSize(o.symbol) * (Math.random() < 0.5 ? 1 : -1));
         if (!validStops(o.side, px, o.sl, o.tp)) return fail(desc, "Invalid stops");
@@ -1120,6 +1122,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
         refreshIfStale: () => {
           if (streamRef.current?.status !== "open") void loadState(sessionRef.current.login);
         },
+        deviation: () => wsRef.current.maxDeviation,
         expired: (login) => expiredRef.current(login),
       }),
     [log, notify, loadState],

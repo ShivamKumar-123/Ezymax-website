@@ -119,6 +119,8 @@ const trader: NsMessages<"trader"> = {
   "menu.oneClickTrading": "ஒன்-கிளிக் டிரேடிங்",
   "menu.soundOnFills": "நிறைவேற்றங்களில் ஒலி",
   "menu.maxDeviation": "அதிகபட்ச டீவியேஷன் · {count} pts",
+  "menu.maxDeviationAny": "அதிகபட்ச விலகல் · எந்த விலையும்",
+  "menu.anyPrice": "எந்த விலையும்",
   "menu.points": { one: "{count} புள்ளி", other: "{count} புள்ளிகள்" },
   "menu.priceAlerts": "விலை அலர்ட்கள்",
   "menu.history": "வரலாறு",

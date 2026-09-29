@@ -86,6 +86,7 @@ const order: NsMessages<"order"> = {
   "ticket.comment": "Ghi chú",
   "ticket.maxDeviationPts": "Độ lệch tối đa, điểm",
   "ticket.maxDeviation": "Độ lệch tối đa",
+  "ticket.anyPrice": "Mọi mức giá",
   "ticket.margin": "Ký quỹ",
   "ticket.freeMargin": "Ký quỹ khả dụng",
   "ticket.leverageSpread": "Đòn bẩy · spread",

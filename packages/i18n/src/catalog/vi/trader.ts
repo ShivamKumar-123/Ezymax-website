@@ -123,6 +123,8 @@ const trader: NsMessages<"trader"> = {
   "menu.oneClickTrading": "Giao dịch một chạm",
   "menu.soundOnFills": "Âm thanh khi khớp lệnh",
   "menu.maxDeviation": "Độ lệch tối đa · {count} điểm",
+  "menu.maxDeviationAny": "Độ lệch tối đa · mọi mức giá",
+  "menu.anyPrice": "Mọi mức giá",
   "menu.points": { other: "{count} điểm" },
   "menu.priceAlerts": "Cảnh báo giá",
   "menu.history": "Lịch sử",

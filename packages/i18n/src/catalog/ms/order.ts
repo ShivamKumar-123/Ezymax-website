@@ -87,6 +87,7 @@ const order: NsMessages<"order"> = {
   "ticket.comment": "Komen",
   "ticket.maxDeviationPts": "Sisihan maks, mata",
   "ticket.maxDeviation": "Sisihan maks",
+  "ticket.anyPrice": "Sebarang harga",
   "ticket.margin": "Margin",
   "ticket.freeMargin": "Margin bebas",
   "ticket.leverageSpread": "Leveraj · spread",

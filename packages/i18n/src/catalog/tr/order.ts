@@ -87,6 +87,7 @@ const order: NsMessages<"order"> = {
   "ticket.comment": "Yorum",
   "ticket.maxDeviationPts": "Maks. sapma, puan",
   "ticket.maxDeviation": "Maks. sapma",
+  "ticket.anyPrice": "Herhangi bir fiyat",
   "ticket.margin": "Teminat",
   "ticket.freeMargin": "Serbest teminat",
   "ticket.leverageSpread": "Kaldıraç · spread",

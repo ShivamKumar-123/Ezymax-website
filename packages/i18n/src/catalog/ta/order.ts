@@ -87,6 +87,7 @@ const order: NsMessages<"order"> = {
   "ticket.comment": "கருத்து",
   "ticket.maxDeviationPts": "அதிகபட்ச டீவியேஷன், pts",
   "ticket.maxDeviation": "அதிகபட்ச டீவியேஷன்",
+  "ticket.anyPrice": "எந்த விலையும்",
   "ticket.margin": "மார்ஜின்",
   "ticket.freeMargin": "ஃப்ரீ மார்ஜின்",
   "ticket.leverageSpread": "லீவரேஜ் · ஸ்ப்ரெட்",
