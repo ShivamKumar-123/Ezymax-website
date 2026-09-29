@@ -242,6 +242,7 @@ fn router(st: AppState) -> Router {
         .route("/v1/public/shares/{code}", get(shares::public))
         .route("/v1/internal/referrals/users", get(internal::referral_users))
         .route("/v1/internal/users/{id}", get(users_internal::user))
+        .route("/v1/internal/house-users", post(house::create))
         .route("/v1/internal/mail/marketing", post(marketing::send_marketing))
         .route("/v1/public/unsubscribe", post(marketing::unsubscribe))
         .route("/v1/auth/marketing", get(marketing::get_consent).put(marketing::put_consent).post(marketing::put_consent))
@@ -262,7 +263,6 @@ async fn health(State(st): State<AppState>) -> impl IntoResponse {
     Json(serde_json::json!({ "status": if db { "ok" } else { "degraded" }, "db": db, "service": "gateway" }))
 }
 
-        .route("/v1/internal/house-users", post(house::create))
 /// Only the apps' server-side route handlers may call /v1 (shared secret in `X-Kalks-Internal`).
 async fn internal_only(State(st): State<AppState>, req: Request, next: Next) -> Response {
     let expected = st.cfg.internal_token.as_bytes();
