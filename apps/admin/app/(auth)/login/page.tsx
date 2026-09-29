@@ -184,7 +184,7 @@ function StaffLogin() {
           <div className="mt-7">
             <AuditNotice />
           </div>
-          <form className="mt-6 space-y-4" onSubmit={signIn} noValidate>
+          <form method="post" className="mt-6 space-y-4" onSubmit={signIn} noValidate>
             <FormError>{err && !err.field ? err.message : null}</FormError>
             <Field label="Work email" error={fieldErr("email")}>
               <Input leading={<Mail />} type="email" name="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@kalks.com" required />

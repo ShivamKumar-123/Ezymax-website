@@ -84,7 +84,7 @@ export default function RegisterPage() {
                 <OrDivider />
               </>
             )}
-            <form className={GOOGLE_LOGIN ? "space-y-3.5" : "mt-6 space-y-3.5"} onSubmit={submit} noValidate>
+            <form method="post" className={GOOGLE_LOGIN ? "space-y-3.5" : "mt-6 space-y-3.5"} onSubmit={submit} noValidate>
               <FormError>{err && !err.field ? err.message : null}</FormError>
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t("auth.field.firstName")} error={fieldErr("first_name")}>

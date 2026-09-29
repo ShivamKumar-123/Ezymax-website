@@ -139,7 +139,7 @@ function LoginForm() {
         </div>
 
         <div className="relative mx-auto flex w-full max-w-[860px] flex-1 flex-col items-center justify-center gap-5 px-4 pb-10 lg:flex-row lg:items-start lg:pt-[8vh]">
-          <form onSubmit={submit} className="w-full max-w-[400px] rounded-[12px] border border-line bg-panel shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]" aria-label="Login to trade account">
+          <form method="post" onSubmit={submit} className="w-full max-w-[400px] rounded-[12px] border border-line bg-panel shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]" aria-label="Login to trade account">
             <div className="border-b border-line px-5 py-4">
               <div className="flex items-center gap-2 text-[15px] font-semibold">
                 <KeyRound className="size-4 text-ember" /> Login to trade account

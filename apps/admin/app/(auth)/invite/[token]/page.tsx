@@ -153,7 +153,7 @@ export default function InvitePage() {
         You&apos;ve been invited to the <span className="text-fg">{info.tenant.name}</span> Back Office as <span className="text-fg">{info.role_label}</span>. Set a password for{" "}
         <span className="text-fg">{info.email}</span>.
       </p>
-      <form className="mt-7 space-y-4" onSubmit={activate} noValidate>
+      <form method="post" className="mt-7 space-y-4" onSubmit={activate} noValidate>
         <FormError>{err && !err.field ? err.message : null}</FormError>
         <Field label="New password" error={fieldErr("password")}>
           <Input

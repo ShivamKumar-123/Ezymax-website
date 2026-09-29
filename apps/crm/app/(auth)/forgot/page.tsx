@@ -76,7 +76,7 @@ export default function ForgotPage() {
       <div className="mt-8 space-y-4">
         <FormError>{err && (step !== 2 || !err.field) ? err.message : null}</FormError>
         {step === 0 && (
-          <form className="space-y-4" onSubmit={sendCode} noValidate>
+          <form method="post" className="space-y-4" onSubmit={sendCode} noValidate>
             <Field label={t("auth.field.email")} error={err?.field === "email" ? err.message : undefined}>
               <Input leading={<Mail />} type="email" name="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.placeholder.email")} />
             </Field>
@@ -120,7 +120,7 @@ export default function ForgotPage() {
           </>
         )}
         {step === 2 && (
-          <form className="space-y-4" onSubmit={reset} noValidate>
+          <form method="post" className="space-y-4" onSubmit={reset} noValidate>
             <Field label={t("auth.field.newPassword")} error={err?.field === "password" ? err.message : undefined}>
               <Input leading={<Lock />} type="password" name="new-password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />
               <PasswordStrength value={pw} />

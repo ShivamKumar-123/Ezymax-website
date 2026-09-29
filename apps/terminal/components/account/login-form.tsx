@@ -103,7 +103,7 @@ export function EngineLoginForm({ initialLogin = "", onSuccess, autoFocus, class
   };
 
   return (
-    <form onSubmit={submit} className={cn("space-y-3.5", className)} aria-label={t("trader.loginDialog.title")}>
+    <form method="post" onSubmit={submit} className={cn("space-y-3.5", className)} aria-label={t("trader.loginDialog.title")}>
       <Field label={t("trader.login.login")} icon={<UserRound />}>
         <input
           value={login}

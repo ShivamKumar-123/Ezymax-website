@@ -75,7 +75,7 @@ export default function LoginPage() {
               <OrDivider />
             </>
           )}
-          <form className={GOOGLE_LOGIN ? "space-y-4" : "mt-8 space-y-4"} onSubmit={signIn} noValidate>
+          <form method="post" className={GOOGLE_LOGIN ? "space-y-4" : "mt-8 space-y-4"} onSubmit={signIn} noValidate>
             <FormError>{formErr}</FormError>
             <Field label={t("auth.field.emailOrViewer")} error={fieldErr("email")}>
               <Input leading={<Mail />} type="text" inputMode="email" autoCapitalize="none" spellCheck={false} name="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.placeholder.email")} required />

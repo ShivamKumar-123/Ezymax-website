@@ -58,7 +58,7 @@ export function ChangePasswordCard({ onForgot }: { onForgot: () => void }) {
   return (
     <Card>
       <CardHeader title={t("profile.password.title")} subtitle={t("profile.password.subtitle")} icon={<KeyRound />} />
-      <form
+      <form method="post"
         className="grid grid-cols-1 gap-4 px-6 pb-6 pt-2 md:grid-cols-2"
         onSubmit={(e) => {
           e.preventDefault();
