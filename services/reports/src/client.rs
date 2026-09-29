@@ -231,6 +231,11 @@ pub async fn analytics(app: &App, tenant: &str, user_id: i64, login: Option<i64>
     let equity_now: f64 = sc.iter().map(|a| a.equity * a.usd()).sum();
 
     let heat = metrics::hour_heatmap(&trades);
+    let mut heat_n = vec![vec![0usize; 24]; 7];
+    for t in &trades {
+        let s = time::server_naive(t.close_time);
+        heat_n[s.weekday().num_days_from_monday() as usize][chrono::Timelike::hour(&s) as usize] += 1;
+    }
     let trade_json = |t: &Option<Trade>| t.as_ref().map(|t| json!({"deal": t.deal, "ticket": t.ticket, "login": t.login, "symbol": t.symbol, "side": t.side, "volume": t.volume, "net": round2(t.net), "closeTime": t.close_time}));
     let stats = |s: &metrics::TradeStats| {
         json!({
@@ -263,6 +268,7 @@ pub async fn analytics(app: &App, tenant: &str, user_id: i64, login: Option<i64>
             json!({"session": name, "hours": hours, "trades": g.map(|x| x.trades).unwrap_or(0), "net": round2(g.map(|x| x.net).unwrap_or(0.0)), "winRate": round2(g.map(|x| x.win_rate).unwrap_or(0.0))})
         }).collect::<Vec<_>>(),
         "hourHeatmap": heat,
+        "hourTrades": heat_n,
         "moneyFlow": {
             "deposits": g("deposits"), "withdrawals": g("withdrawals"), "tradingPnl": g("tradingPnl"), "commission": g("commission"),
             "performanceFees": g("performanceFees"), "bonus": g("bonus"), "adjustments": g("adjustments"), "earnings": round2(earnings),

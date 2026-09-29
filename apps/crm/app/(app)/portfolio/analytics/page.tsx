@@ -37,6 +37,8 @@ import {
   tradeStats,
 } from "@kalks/mock/portfolio-extra";
 import { ColumnBars, DrawdownChart, HourHeatmap, MultiLineChart, PnlBars, Waterfall } from "@/components/portfolio/charts";
+import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { LiveAnalyticsPage } from "@/components/reports/live-analytics";
 
 const PERIODS = ["7D", "30D", "90D", "ALL"] as const;
 const PERIOD_DAYS: Record<(typeof PERIODS)[number], number> = { "7D": 7, "30D": 30, "90D": 90, ALL: 100000 };
@@ -74,7 +76,7 @@ function useCurves(account: string, days: number) {
 
 /* ------------------------------------------------------------------ */
 
-export default function AnalyticsPage() {
+function DemoAnalyticsPage() {
   const [account, setAccount] = React.useState("all");
   const [period, setPeriod] = React.useState<(typeof PERIODS)[number]>("90D");
   const days = PERIOD_DAYS[period];
@@ -454,4 +456,9 @@ export default function AnalyticsPage() {
       </Reveal>
     </div>
   );
+}
+
+/** Live builds: the reports service (/api/reports/analytics). Demo builds: mock data. */
+export default function AnalyticsPage() {
+  return DEMO_BUILD ? <DemoAnalyticsPage /> : <LiveAnalyticsPage />;
 }

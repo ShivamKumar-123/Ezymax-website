@@ -10,8 +10,9 @@ import { STATUS_LABEL, curOf, fmtAmount, fmtDate, fmtLevel, fmtPrice, levelTone,
 import { DealsTable, HistoryPanel, LedgerPanel } from "./activity";
 import { CredentialsPanel, SettingsPanel } from "./manage";
 import { FundButton, KindBadge, RefillButton, StatusBadge, TradeButton } from "./ui";
+import { AccountAnalyticsPanel } from "@/components/reports/live-analytics";
 
-const TAB_KEYS = ["overview", "positions", "history", "ledger", "credentials", "settings"] as const;
+const TAB_KEYS = ["overview", "positions", "history", "ledger", "analytics", "credentials", "settings"] as const;
 type TabKey = (typeof TAB_KEYS)[number];
 
 function StatTile({ label, children, tone }: { label: string; children: React.ReactNode; tone?: "up" | "down" | "warn" }) {
@@ -438,6 +439,7 @@ function Detail() {
             { value: "positions", label: "Positions", count: a.positions + a.orders },
             { value: "history", label: "History" },
             { value: "ledger", label: "Ledger" },
+            { value: "analytics", label: "Analytics" },
             { value: "credentials", label: "Credentials" },
             { value: "settings", label: "Settings" },
           ]}
@@ -451,6 +453,7 @@ function Detail() {
             {tab === "positions" && <PositionsPanel a={a} positions={data.positions} orders={data.orders} />}
             {tab === "history" && <HistoryPanel a={a} />}
             {tab === "ledger" && <LedgerPanel a={a} />}
+            {tab === "analytics" && <AccountAnalyticsPanel login={a.login} />}
             {tab === "credentials" && <CredentialsPanel a={a} />}
             {tab === "settings" && <SettingsPanel a={a} onChanged={reload} />}
           </motion.div>

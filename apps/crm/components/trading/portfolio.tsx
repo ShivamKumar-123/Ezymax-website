@@ -3,11 +3,12 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BookText, Download, FileText, History, Layers, Plus, ShieldCheck, TrendingUp, Wallet } from "lucide-react";
-import { Button, CHART_COLORS, Card, CardHeader, Chip, Donut, EmptyState, KpiCard, Money, PageHeader, Reveal, Skeleton, SymbolAvatar, cn } from "@kalks/ui";
-import { accountTitle, curOf, downloadExport, fmtAmount, fmtPrice, isoDay, toUsd, tradingApi, useAccounts, type AccountDetail, type EngineAccount, type EnginePosition } from "./api";
+import { BookText, Check, Download, FileSpreadsheet, FileText, History, Layers, Plus, Sheet, ShieldCheck, TrendingUp, Wallet } from "lucide-react";
+import { toast } from "sonner";
+import { Button, CHART_COLORS, Card, CardHeader, Chip, Donut, EmptyState, Field, Input, KpiCard, Money, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, Toggle, cn } from "@kalks/ui";
+import { accountTitle, curOf, fmtAmount, fmtPrice, isoDay, toUsd, tradingApi, useAccounts, type AccountDetail, type EngineAccount, type EnginePosition } from "./api";
 import { AccountsError, liveTotals } from "./accounts-page";
-import { HistoryPanel, LedgerPanel, RangePicker, rangeQuery, type Range } from "./activity";
+import { HistoryPanel, LedgerPanel } from "./activity";
 import { KindBadge, TradeButton } from "./ui";
 
 /* ------------------------------------------------------------------ */
@@ -114,74 +115,265 @@ export function LiveLedgerPage() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Statements (D48)                                                    */
+/* Statements (D48, D50): reports service                              */
 /* ------------------------------------------------------------------ */
 
-function monthsBack(n: number) {
-  const out: { label: string; from: string; to: string }[] = [];
-  const now = new Date();
-  for (let i = 0; i < n; i++) {
-    const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-    out.push({ label: start.toLocaleDateString("en-GB", { month: "long", year: "numeric" }), from: isoDay(start), to: isoDay(end) });
+type StPeriod = "day" | "month" | "year" | "custom";
+type StFormat = "pdf" | "csv" | "xlsx";
+type MonthRow = { month: string; from: string; to: string; net: number; deposits: number; withdrawals: number; trades: number };
+
+const ST_FORMATS: Record<StFormat, { label: string; icon: React.ReactNode; note: string }> = {
+  pdf: { label: "PDF", icon: <FileText />, note: "Branded statement: summary, trades, positions, ledger" },
+  xlsx: { label: "Excel", icon: <FileSpreadsheet />, note: "One sheet per section" },
+  csv: { label: "CSV", icon: <Sheet />, note: "All sections in one file" },
+};
+
+const addDays = (d: string, n: number) => {
+  const x = new Date(`${d}T00:00:00Z`);
+  x.setUTCDate(x.getUTCDate() + n);
+  return x.toISOString().slice(0, 10);
+};
+
+/** [from, to) in server days for the chosen period; null when the input is incomplete. */
+function stRange(p: StPeriod, day: string, month: string, year: string, from: string, to: string): { from: string; to: string; label: string } | null {
+  if (p === "day") return day ? { from: day, to: addDays(day, 1), label: new Date(`${day}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) } : null;
+  if (p === "month") {
+    if (!/^\d{4}-\d{2}$/.test(month)) return null;
+    const [y, m] = month.split("-").map(Number) as [number, number];
+    const next = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
+    return { from: `${month}-01`, to: next, label: new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" }) };
   }
-  return out;
+  if (p === "year") return { from: `${year}-01-01`, to: `${+year + 1}-01-01`, label: `Year ${year}` };
+  if (!from || !to || from > to) return null;
+  return { from, to: addDays(to, 1), label: `${from} to ${to}` };
+}
+
+function stUrl(login: number, from: string, to: string, f: StFormat, opts?: { open: boolean; charges: boolean; deals: boolean }) {
+  const q = new URLSearchParams({ from, to, format: f });
+  if (opts && !opts.open) q.set("open", "0");
+  if (opts && !opts.charges) q.set("charges", "0");
+  if (opts && !opts.deals) q.set("deals", "0");
+  return `/api/reports/accounts/${login}/statement?${q}`;
+}
+
+function download(url: string, what: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  toast.success("Statement download started", { description: what });
 }
 
 function Statements({ a }: { a: EngineAccount }) {
-  const [range, setRange] = React.useState<Range>({ preset: "30d" });
-  const q = rangeQuery(range);
-  const invalid = range.preset === "custom" && (!range.from || !range.to || range.from > range.to);
+  const today = isoDay(new Date());
+  const [period, setPeriod] = React.useState<StPeriod>("month");
+  const [day, setDay] = React.useState(today);
+  const [month, setMonth] = React.useState(today.slice(0, 7));
+  const [year, setYear] = React.useState(today.slice(0, 4));
+  const [from, setFrom] = React.useState(`${today.slice(0, 7)}-01`);
+  const [to, setTo] = React.useState(today);
+  const [format, setFormat] = React.useState<StFormat>("pdf");
+  const [withOpen, setWithOpen] = React.useState(true);
+  const [withCharges, setWithCharges] = React.useState(true);
+  const [withDeals, setWithDeals] = React.useState(true);
+  const [months, setMonths] = React.useState<MonthRow[] | null>(null);
+  const [monthsError, setMonthsError] = React.useState(false);
+  const range = stRange(period, day, month, year, from, to);
   const created = new Date(a.createdAt);
-  const months = monthsBack(6).filter((m) => new Date(`${m.to}T00:00:00`) > new Date(created.getFullYear(), created.getMonth(), 1));
+  const firstYear = created.getFullYear();
+  const years = Array.from({ length: new Date().getFullYear() - firstYear + 1 }, (_, i) => String(new Date().getFullYear() - i));
+
+  React.useEffect(() => {
+    let stop = false;
+    fetch(`/api/reports/accounts/${a.login}/months`, { cache: "no-store" })
+      .then(async (r) => {
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error();
+        if (!stop) setMonths((j.months ?? []) as MonthRow[]);
+      })
+      .catch(() => !stop && setMonthsError(true));
+    return () => {
+      stop = true;
+    };
+  }, [a.login]);
+
+  const cur = curOf(a);
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-      <Reveal className="xl:col-span-7">
-        <Card className="h-full">
-          <CardHeader title="Custom statement" subtitle={`#${a.login} · ${accountTitle(a)} · CSV, times in UTC`} icon={<FileText />} />
-          <div className="space-y-5 px-4 pb-6 pt-4 sm:px-6">
-            <RangePicker value={range} onChange={setRange} />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button type="button" disabled={invalid} onClick={() => downloadExport(a.login, "history", q.from, q.to)} className="k-row flex items-center gap-3 p-4 text-left transition-colors hover:border-[var(--k-border-top)] disabled:opacity-50">
-                <span className="grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface-3 text-fg-2">
-                  <History className="size-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[14px] font-medium">Trades</span>
-                  <span className="block text-[12px] text-fg-3">Every deal with price, commission, swap and profit</span>
-                </span>
-                <Download className="size-4 text-fg-3" />
-              </button>
-              <button type="button" disabled={invalid} onClick={() => downloadExport(a.login, "ledger", q.from, q.to)} className="k-row flex items-center gap-3 p-4 text-left transition-colors hover:border-[var(--k-border-top)] disabled:opacity-50">
-                <span className="grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface-3 text-fg-2">
-                  <BookText className="size-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[14px] font-medium">Ledger</span>
-                  <span className="block text-[12px] text-fg-3">Deposits, trade results, commissions, refills</span>
-                </span>
-                <Download className="size-4 text-fg-3" />
-              </button>
-            </div>
-          </div>
-        </Card>
-      </Reveal>
-      <Reveal delay={0.05} className="xl:col-span-5">
-        <Card className="h-full">
-          <CardHeader title="Monthly statements" subtitle="Calendar months since the account was opened" />
-          <div className="space-y-2 px-4 pb-6 pt-4 sm:px-6">
-            {months.map((m) => (
-              <div key={m.from} className="k-row flex items-center gap-3 px-4 py-2.5">
-                <FileText className="size-4 shrink-0 text-fg-3" />
-                <span className="flex-1 text-[13.5px] font-medium">{m.label}</span>
-                <Button size="xs" variant="surface" onClick={() => downloadExport(a.login, "history", m.from, m.to)}>
-                  Trades
-                </Button>
-                <Button size="xs" variant="surface" onClick={() => downloadExport(a.login, "ledger", m.from, m.to)}>
-                  Ledger
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <Reveal className="xl:col-span-8">
+          <Card className="h-full">
+            <CardHeader title="Generate a statement" subtitle={`#${a.login} · ${accountTitle(a)} · server time (GMT+2/+3)`} icon={<FileText />} />
+            <div className="space-y-5 px-4 pb-6 pt-5 sm:px-6">
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <div>
+                  <div className="mb-2 text-[12.5px] font-medium text-fg-2">Period</div>
+                  <Segmented
+                    value={period}
+                    onChange={setPeriod}
+                    options={[
+                      { value: "day", label: "Day" },
+                      { value: "month", label: "Month" },
+                      { value: "year", label: "Year" },
+                      { value: "custom", label: "Custom" },
+                    ]}
+                  />
+                  <div className="mt-3">
+                    {period === "day" && (
+                      <Field label="Date">
+                        <Input type="date" value={day} max={today} onChange={(e) => setDay(e.target.value)} />
+                      </Field>
+                    )}
+                    {period === "month" && (
+                      <Field label="Month">
+                        <Input type="month" value={month} max={today.slice(0, 7)} onChange={(e) => setMonth(e.target.value)} />
+                      </Field>
+                    )}
+                    {period === "year" && (
+                      <div className="flex flex-wrap gap-2">
+                        {years.map((y) => (
+                          <button key={y} type="button" onClick={() => setYear(y)} className={cn("k-num h-10 rounded-full border px-5 text-[13px] font-medium transition-colors", y === year ? "border-ember/40 bg-ember-soft text-ember" : "border-line bg-surface-2 text-fg-2 hover:text-fg")}>
+                            {y}
+                            {y === today.slice(0, 4) && <span className="ml-1 text-fg-3">YTD</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {period === "custom" && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <Field label="From">
+                          <Input type="date" value={from} max={today} onChange={(e) => setFrom(e.target.value)} />
+                        </Field>
+                        <Field label="To">
+                          <Input type="date" value={to} max={today} onChange={(e) => setTo(e.target.value)} />
+                        </Field>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-2 text-[12.5px] font-medium text-fg-2">Format</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(Object.keys(ST_FORMATS) as StFormat[]).map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        aria-pressed={f === format}
+                        onClick={() => setFormat(f)}
+                        className={cn("k-row flex flex-col items-start gap-1.5 px-3 py-3 text-left transition-colors [&_svg]:size-4", f === format ? "border-ember/40 bg-ember-soft text-ember" : "text-fg-2 hover:bg-surface-3/60")}
+                      >
+                        {ST_FORMATS[f].icon}
+                        <span className="text-[13px] font-semibold text-fg">{ST_FORMATS[f].label}</span>
+                        <span className="text-[10.5px] leading-tight text-fg-3">{ST_FORMATS[f].note}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 space-y-2.5 rounded-[14px] border border-line bg-surface-2 px-4 py-3">
+                    {(
+                      [
+                        ["Open positions and pending orders", withOpen, setWithOpen],
+                        ["Charges breakdown", withCharges, setWithCharges],
+                        ["Every deal (entries and exits)", withDeals, setWithDeals],
+                      ] as const
+                    ).map(([l, v, set]) => (
+                      <div key={l} className="flex items-center justify-between text-[13px] text-fg-2">
+                        {l}
+                        <Toggle checked={v} onChange={set} label={l} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-[12.5px] text-fg-3">
+                  {range ? (
+                    <>
+                      <span className="text-fg-2">{range.label}</span> · {ST_FORMATS[format].label}
+                    </>
+                  ) : (
+                    "Choose a valid period"
+                  )}
+                </div>
+                <Button
+                  variant="ember"
+                  disabled={!range}
+                  onClick={() => range && download(stUrl(a.login, range.from, range.to, format, { open: withOpen, charges: withCharges, deals: withDeals }), `#${a.login} · ${range.label} · ${ST_FORMATS[format].label}`)}
+                >
+                  <Download /> Download statement
                 </Button>
               </div>
-            ))}
+            </div>
+          </Card>
+        </Reveal>
+        <Reveal delay={0.05} className="xl:col-span-4">
+          <Card className="h-full">
+            <CardHeader title="What's in your statement" />
+            <ul className="space-y-2.5 px-6 pb-6 pt-4 text-[13px] text-fg-2">
+              {[
+                "Account details, opening and closing balance",
+                "Every closed trade with commission, swap and profit",
+                "Open positions and pending orders at generation time",
+                "Deposits, withdrawals, transfers, credit and bonus",
+                "Charges: commission, swap, fees and the spread cost",
+                "Totals reconciled to the ledger",
+              ].map((x) => (
+                <li key={x} className="flex gap-2.5">
+                  <Check className="mt-0.5 size-4 shrink-0 text-ember" />
+                  {x}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </Reveal>
+      </div>
+
+      <Reveal delay={0.08}>
+        <Card>
+          <CardHeader title="Monthly statements" subtitle={`Calendar months since the account was opened · ${cur.trim()}`} />
+          <div className="space-y-2 px-4 pb-6 pt-4 sm:px-6">
+            {months === null && !monthsError && <Skeleton className="h-[120px] w-full rounded-[14px]" />}
+            {monthsError && <div className="py-4 text-[13px] text-fg-3">Monthly statements are unavailable right now.</div>}
+            {months?.map((m) => {
+              const label = new Date(`${m.from}T00:00:00Z`).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+              return (
+                <div key={m.month} className="k-row flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-line bg-surface-3 text-fg-2">
+                      <FileText className="size-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-[14px] font-medium">{label}</div>
+                      <div className="truncate text-[11.5px] text-fg-3">
+                        {m.trades} closed trade{m.trades === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-right md:w-[360px]">
+                    {(
+                      [
+                        ["Net P&L", m.net, true],
+                        ["Deposits", m.deposits, false],
+                        ["Withdrawn", m.withdrawals, false],
+                      ] as const
+                    ).map(([k, v, signed]) => (
+                      <div key={k}>
+                        <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
+                        <div className={cn("k-num text-[13px] font-medium", signed ? (v > 0 ? "text-up" : v < 0 ? "text-down" : "text-fg-3") : v ? "text-fg" : "text-fg-3")}>{fmtAmount(v, cur, signed)}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1.5 md:justify-end">
+                    {(["pdf", "xlsx", "csv"] as const).map((f) => (
+                      <Button key={f} size="xs" variant="surface" onClick={() => download(stUrl(a.login, m.from, m.to, f), `#${a.login} · ${label} · ${ST_FORMATS[f].label}`)}>
+                        {f === "pdf" && <Download />} {f === "xlsx" ? "XLSX" : f.toUpperCase()}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </Card>
       </Reveal>
@@ -192,7 +384,7 @@ function Statements({ a }: { a: EngineAccount }) {
 export function LiveStatementsPage() {
   return (
     <Wrap>
-      <PickerPage base="/portfolio/statements" title="Statements" subtitle="Download trade and ledger statements for any account and period.">
+      <PickerPage base="/portfolio/statements" title="Statements" subtitle="Branded PDF statements and Excel / CSV exports of trades, ledger and charges for any period.">
         {(a) => <Statements a={a} />}
       </PickerPage>
     </Wrap>
