@@ -6,6 +6,9 @@
 
 import * as React from "react";
 import { toast } from "sonner";
+import type { MessageKey } from "@kalks/i18n";
+import { intlTag } from "@kalks/i18n/locales";
+import { tr } from "@kalks/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Shapes                                                              */
@@ -358,13 +361,13 @@ export class GrowthApiError extends Error {
   }
 }
 
-const FRIENDLY: Record<string, string> = {
-  insufficient_points: "You don't have enough points for this reward.",
-  out_of_stock: "This reward is out of stock.",
-  already_joined: "You have already joined this contest.",
-  already_claimed: "You have already claimed this bonus.",
-  contest_closed: "This contest is no longer open for entries.",
-  limit_reached: "This offer has reached its limit.",
+const FRIENDLY: Record<string, MessageKey> = {
+  insufficient_points: "rewards.error.insufficientPoints",
+  out_of_stock: "rewards.error.outOfStock",
+  already_joined: "rewards.error.alreadyJoined",
+  already_claimed: "rewards.error.alreadyClaimed",
+  contest_closed: "rewards.error.contestClosed",
+  limit_reached: "rewards.error.limitReached",
 };
 
 export async function growthApi<T>(path: string, init?: { method?: "GET" | "POST"; body?: unknown; signal?: AbortSignal }): Promise<T> {
@@ -381,7 +384,7 @@ export async function growthApi<T>(path: string, init?: { method?: "GET" | "POST
     });
   } catch (e) {
     if ((e as Error).name === "AbortError") throw e;
-    throw new GrowthApiError(0, "network", "Network error. Check your connection and try again.");
+    throw new GrowthApiError(0, "network", tr("common.networkError"));
   }
   const data = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string; field?: string } };
   if (!res.ok) {
@@ -391,15 +394,15 @@ export async function growthApi<T>(path: string, init?: { method?: "GET" | "POST
     const code = data.error?.code ?? "error";
     const msg =
       code === "unavailable" || res.status >= 500
-        ? "The rewards service is unavailable. Please try again shortly."
-        : (data.error?.message ?? FRIENDLY[code] ?? "Something went wrong. Please try again.");
+        ? tr("rewards.error.unavailable")
+        : (data.error?.message ?? (FRIENDLY[code] ? tr(FRIENDLY[code]) : tr("common.errorRetry")));
     throw new GrowthApiError(res.status, code, msg, data.error?.field);
   }
   return data as T;
 }
 
 export function errorToast(title: string, e: unknown) {
-  toast.error(title, { description: e instanceof Error ? e.message : "Something went wrong. Please try again." });
+  toast.error(title, { description: e instanceof Error ? e.message : tr("common.errorRetry") });
 }
 
 /** Loads `path` once (and again on `reload()`); refreshes quietly every `ms` while the tab is visible. */
@@ -424,7 +427,7 @@ export function useGrowth<T>(path: string | null, ms = 0) {
           setError(null);
         } catch (e) {
           if (stop || (e as Error).name === "AbortError") return;
-          setError(e instanceof GrowthApiError ? e : new GrowthApiError(0, "error", "Something went wrong."));
+          setError(e instanceof GrowthApiError ? e : new GrowthApiError(0, "error", tr("common.errorRetry")));
         }
       }
       if (!stop && ms > 0) timer = setTimeout(run, ms);
@@ -444,14 +447,17 @@ export function useGrowth<T>(path: string | null, ms = 0) {
 /* Formatting                                                          */
 /* ------------------------------------------------------------------ */
 
-const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** Intl tag for the reader's language (Latin digits). These helpers only run in the browser on loaded data. */
+const tag = () => intlTag(tr.locale);
+/** Short month name in the reader's language, e.g. "Sep". */
+const mon = (m: number) => new Intl.DateTimeFormat(tag(), { month: "short", timeZone: "UTC" }).format(Date.UTC(2000, m, 1));
 
 /** "28 Sep 2026" (local time). */
 export function fmtDate(iso: string | null | undefined, withYear = true) {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return `${String(d.getDate()).padStart(2, "0")} ${MON[d.getMonth()]}${withYear ? ` ${d.getFullYear()}` : ""}`;
+  return `${String(d.getDate()).padStart(2, "0")} ${mon(d.getMonth())}${withYear ? ` ${d.getFullYear()}` : ""}`;
 }
 
 /** "28 Sep, 14:03" (local time). */
@@ -465,13 +471,16 @@ export function fmtDateTime(iso: string | null | undefined) {
 /** "28 Sep" for a "YYYY-MM-DD" day key. */
 export function fmtDay(day: string) {
   const [, m, d] = day.split("-").map(Number);
-  return m && d ? `${d} ${MON[m - 1]}` : day;
+  return m && d ? `${d} ${mon(m - 1)}` : day;
 }
 
-export const fmtPoints = (v: number) => Math.round(v).toLocaleString("en-US");
+export const fmtPoints = (v: number) => Math.round(v).toLocaleString(tag());
+
+/** Whole count with grouping in the reader's language, e.g. "1,234". */
+export const fmtCount = (v: number) => v.toLocaleString(tag());
 
 export function fmtUsd(v: number, digits = 2) {
-  const s = Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  const s = Math.abs(v).toLocaleString(tag(), { minimumFractionDigits: digits, maximumFractionDigits: digits });
   return `${v < 0 ? "-" : ""}$${s}`;
 }
 
@@ -481,7 +490,7 @@ export function fmtPct(v: number, signed = false) {
   return `${signed && v > 0 ? "+" : ""}${n}%`;
 }
 
-export const fmtLots = (v: number) => v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const fmtLots = (v: number) => v.toLocaleString(tag(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export const titleCase = (s: string) => s.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 
@@ -497,8 +506,8 @@ export function prizeFor(c: Pick<Contest, "prizes">, rank: number | null) {
 /** Last rank that wins a prize. */
 export const prizeZone = (c: Pick<Contest, "prizes">) => c.prizes.reduce((m, p) => Math.max(m, p.rankTo), 0);
 
-export const SCORING_LABEL: Record<string, string> = { return_pct: "Return %", profit: "Profit", lots: "Lots traded" };
-export const scoringLabel = (s: string) => SCORING_LABEL[s] ?? titleCase(s);
+export const SCORING_LABEL: Record<string, MessageKey> = { return_pct: "rewards.scoring.returnPct", profit: "rewards.scoring.profit", lots: "rewards.scoring.lots" };
+export const scoringLabel = (s: string) => (SCORING_LABEL[s] ? tr(SCORING_LABEL[s]) : titleCase(s));
 
 /** Public origin for share links: NEXT_PUBLIC_APP_URL, else this page's origin. */
 export function linkBase(): string {

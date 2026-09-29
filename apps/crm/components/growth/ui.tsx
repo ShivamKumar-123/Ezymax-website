@@ -6,22 +6,25 @@ import { Plus, RotateCw } from "lucide-react";
 import { Avatar, Button, Card, Chip, EmptyState, Flag, PageHeader, Skeleton, cn, type ChipTone } from "@kalks/ui";
 import { accountTitle, fmtAmount, curOf, useAccounts, type EngineAccount } from "@/components/trading/api";
 import { KindBadge } from "@/components/trading/ui";
+import type { MessageKey } from "@kalks/i18n";
+import { useT } from "@kalks/i18n/react";
 import type { GrowthApiError } from "./api";
 
 /* ------------------------------------------------------------------ */
 /* Load states                                                         */
 /* ------------------------------------------------------------------ */
 
-export function LoadError({ error, onRetry, title = "Rewards are unavailable" }: { error: GrowthApiError; onRetry: () => void; title?: string }) {
+export function LoadError({ error, onRetry, title }: { error: GrowthApiError; onRetry: () => void; title?: string }) {
+  const t = useT();
   return (
     <Card>
       <EmptyState
         illustration="satellite_antenna"
-        title={title}
-        text={error.message || "We couldn't reach the rewards service. Please try again in a moment."}
+        title={title ?? t("rewards.load.unavailableTitle")}
+        text={error.message || t("rewards.load.unavailableText")}
         action={
           <Button variant="surface" onClick={onRetry}>
-            <RotateCw /> Try again
+            <RotateCw /> {t("common.retry")}
           </Button>
         }
       />
@@ -95,41 +98,42 @@ export function SectionTitle({ title, text, action }: { title: string; text?: st
 /* Chips                                                               */
 /* ------------------------------------------------------------------ */
 
-type Tone = { label: string; tone: ChipTone };
+type Tone = { label: MessageKey; tone: ChipTone };
 
 const STATUS: Record<string, Tone> = {
   // generic
-  pending: { label: "Pending", tone: "warn" },
-  completed: { label: "Completed", tone: "up" },
-  failed: { label: "Failed", tone: "down" },
-  paid: { label: "Paid", tone: "up" },
-  accrued: { label: "Accrued", tone: "info" },
-  void: { label: "Void", tone: "neutral" },
-  voided: { label: "Void", tone: "neutral" },
+  pending: { label: "rewards.status.pending", tone: "warn" },
+  completed: { label: "rewards.status.completed", tone: "up" },
+  failed: { label: "rewards.status.failed", tone: "down" },
+  paid: { label: "rewards.status.paid", tone: "up" },
+  accrued: { label: "rewards.status.accrued", tone: "info" },
+  void: { label: "rewards.status.void", tone: "neutral" },
+  voided: { label: "rewards.status.void", tone: "neutral" },
   // vouchers
-  active: { label: "Active", tone: "up" },
-  used: { label: "Used", tone: "neutral" },
-  expired: { label: "Expired", tone: "neutral" },
+  active: { label: "rewards.status.active", tone: "up" },
+  used: { label: "rewards.status.used", tone: "neutral" },
+  expired: { label: "rewards.status.expired", tone: "neutral" },
   // grants
-  awaiting_deposit: { label: "Awaiting deposit", tone: "warn" },
-  forfeited: { label: "Forfeited", tone: "down" },
-  cancelled: { label: "Cancelled", tone: "neutral" },
+  awaiting_deposit: { label: "rewards.status.awaitingDeposit", tone: "warn" },
+  forfeited: { label: "rewards.status.forfeited", tone: "down" },
+  cancelled: { label: "rewards.status.cancelled", tone: "neutral" },
   // promo
-  applied: { label: "Applied", tone: "up" },
-  blocked: { label: "Blocked", tone: "down" },
+  applied: { label: "rewards.status.applied", tone: "up" },
+  blocked: { label: "rewards.status.blocked", tone: "down" },
   // contests
-  scheduled: { label: "Upcoming", tone: "info" },
-  running: { label: "Live", tone: "ember" },
-  ended: { label: "Ended", tone: "neutral" },
-  finalized: { label: "Results final", tone: "gold" },
-  disqualified: { label: "Disqualified", tone: "down" },
+  scheduled: { label: "rewards.status.upcoming", tone: "info" },
+  running: { label: "rewards.status.live", tone: "ember" },
+  ended: { label: "rewards.status.ended", tone: "neutral" },
+  finalized: { label: "rewards.status.finalized", tone: "gold" },
+  disqualified: { label: "rewards.status.disqualified", tone: "down" },
 };
 
 export function GrowthStatus({ status, dot = true }: { status: string; dot?: boolean }) {
-  const s = STATUS[status] ?? { label: status.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase()), tone: "neutral" as const };
+  const t = useT();
+  const s = STATUS[status];
   return (
-    <Chip size="sm" dot={dot} tone={s.tone}>
-      {s.label}
+    <Chip size="sm" dot={dot} tone={s?.tone ?? "neutral"}>
+      {s ? t(s.label) : status.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase())}
     </Chip>
   );
 }
@@ -154,19 +158,20 @@ export function RankBadge({ rank, size = 30 }: { rank: number | null; size?: num
 }
 
 export function PersonCell({ name, country, sub, me }: { name: string; country?: string | null; sub?: React.ReactNode; me?: boolean }) {
+  const t = useT();
   const initials = name.replace(/[^\p{L}\s]/gu, "").trim() || "?";
   return (
     <span className="flex min-w-0 items-center gap-3">
       <span className="relative shrink-0">
         <Avatar name={initials} size={32} />
-        {country && <Flag country={country.toLowerCase()} className="absolute -bottom-0.5 -right-1 size-3.5 ring-2 ring-surface" />}
+        {country && <Flag country={country.toLowerCase()} className="absolute -bottom-0.5 -end-1 size-3.5 ring-2 ring-surface" />}
       </span>
       <span className="min-w-0">
         <span className="flex items-center gap-1.5 truncate text-[13.5px] font-medium text-fg">
           <span className="truncate">{name}</span>
           {me && (
             <Chip size="sm" tone="ember">
-              You
+              {t("rewards.you")}
             </Chip>
           )}
         </span>
@@ -238,6 +243,7 @@ export function DayBars({ data, format, height = 200, label }: { data: { label: 
 /* ------------------------------------------------------------------ */
 
 export function LiveAccountPicker({ value, onChange, filter, hint }: { value: number | null; onChange: (login: number) => void; filter?: (a: EngineAccount) => boolean; hint?: string }) {
+  const t = useT();
   const { data, error, loading, reload } = useAccounts(0);
   const live = (data?.accounts ?? []).filter((a) => a.type === "live" && (!filter || filter(a)));
   React.useEffect(() => {
@@ -247,24 +253,24 @@ export function LiveAccountPicker({ value, onChange, filter, hint }: { value: nu
   if (loading) return <Skeleton className="h-[62px] w-full rounded-[14px]" />;
   if (error && !data)
     return (
-      <CardEmpty title="Accounts are unavailable" text={error.message}>
+      <CardEmpty title={t("rewards.picker.accountsUnavailable")} text={error.message}>
         <Button size="xs" variant="surface" onClick={reload}>
-          <RotateCw /> Try again
+          <RotateCw /> {t("common.retry")}
         </Button>
       </CardEmpty>
     );
   if (live.length === 0)
     return (
-      <CardEmpty title="No eligible live account" text={hint ?? "Open a live trading account first."}>
+      <CardEmpty title={t("rewards.picker.noEligible")} text={hint ?? t("rewards.picker.openFirst")}>
         <Link href="/accounts/new">
           <Button size="xs" variant="surface">
-            <Plus /> Open live account
+            <Plus /> {t("rewards.picker.openLive")}
           </Button>
         </Link>
       </CardEmpty>
     );
   return (
-    <div className="space-y-1.5" role="radiogroup" aria-label="Live account">
+    <div className="space-y-1.5" role="radiogroup" aria-label={t("rewards.picker.label")}>
       {live.map((a) => {
         const on = a.login === value;
         return (
@@ -275,7 +281,7 @@ export function LiveAccountPicker({ value, onChange, filter, hint }: { value: nu
             aria-checked={on}
             data-testid={`account-option-${a.login}`}
             onClick={() => onChange(a.login)}
-            className={cn("k-row flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors", on ? "border-ember/50 bg-ember-soft" : "hover:border-[var(--k-border-top)]")}
+            className={cn("k-row flex w-full items-center gap-3 px-3.5 py-2.5 text-start transition-colors", on ? "border-ember/50 bg-ember-soft" : "hover:border-[var(--k-border-top)]")}
           >
             <KindBadge type={a.type} />
             <span className="min-w-0 flex-1">

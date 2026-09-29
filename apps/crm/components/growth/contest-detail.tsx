@@ -6,7 +6,8 @@ import { ArrowLeft, ArrowUpRight, Check, ListChecks, ShieldAlert, Timer, Trophy,
 import { Button, Card, CardHeader, Chip, KeyValue, Money, PageHeader, Reveal, cn } from "@kalks/ui";
 import { TERMINAL_URL } from "@/lib/live";
 import { Countdown } from "@/components/rewards/countdown";
-import { bandLabel, fmtDate, fmtDateTime, fmtLots, fmtPct, fmtUsd, prizeZone, scoringLabel, useGrowth, type ContestDetail } from "./api";
+import { useT } from "@kalks/i18n/react";
+import { bandLabel, fmtCount, fmtDate, fmtDateTime, fmtLots, fmtPct, fmtUsd, prizeZone, scoringLabel, useGrowth, type ContestDetail } from "./api";
 import { JoinContestButton, Leaderboard, canJoin, isPast, isRunning, isUpcoming, kindChip, scoreText, tradesHint } from "./contests";
 import { CardEmpty, GrowthStatus, PageFallback, RankBadge } from "./ui";
 
@@ -20,14 +21,15 @@ function Stat({ label, value, className }: { label: string; value: React.ReactNo
 }
 
 function MyEntry({ d }: { d: ContestDetail }) {
+  const t = useT();
   const c = d.contest;
   const me = d.myEntry;
   if (!me)
     return (
       <Card className="h-full">
-        <CardHeader title="Your entry" subtitle="You haven't joined this contest" />
+        <CardHeader title={t("rewards.detail.entryTitle")} subtitle={t("rewards.detail.notJoined")} />
         <div className="px-4 pb-6 pt-4 sm:px-6">
-          <CardEmpty title={canJoin(c) ? "Join to start ranking" : isPast(c) ? "This contest has ended" : "Entries are closed"} text={canJoin(c) ? "Your rank, score and trades appear here after you join." : undefined} />
+          <CardEmpty title={canJoin(c) ? t("rewards.detail.joinToRank") : isPast(c) ? t("rewards.detail.ended") : t("rewards.detail.entriesClosed")} text={canJoin(c) ? t("rewards.detail.joinText") : undefined} />
         </div>
       </Card>
     );
@@ -38,35 +40,35 @@ function MyEntry({ d }: { d: ContestDetail }) {
   return (
     <Card className="h-full" data-testid="contest-my-entry">
       <CardHeader
-        title="Your entry"
-        subtitle={me.login ? `Account #${me.login} · updated ${fmtDateTime(me.updatedAt)}` : `Updated ${fmtDateTime(me.updatedAt)}`}
-        action={dq ? <GrowthStatus status="disqualified" /> : me.rank && zone && me.rank <= zone ? <Chip tone="gold">Prize zone</Chip> : null}
+        title={t("rewards.detail.entryTitle")}
+        subtitle={me.login ? t("rewards.detail.accountUpdated", { login: me.login, date: fmtDateTime(me.updatedAt) }) : t("rewards.detail.updated", { date: fmtDateTime(me.updatedAt) })}
+        action={dq ? <GrowthStatus status="disqualified" /> : me.rank && zone && me.rank <= zone ? <Chip tone="gold">{t("rewards.hero.prizeZone")}</Chip> : null}
       />
       <div className="space-y-3 px-4 pb-6 pt-4 sm:px-6">
         {dq && (
           <div className="flex items-start gap-3 rounded-[14px] border border-down/30 bg-down-soft px-4 py-3 text-[12.5px] text-down" data-testid="contest-disqualified">
             <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-            <span>This entry was disqualified by the contest review and is not ranked or eligible for a prize. Contact support if you think this is a mistake.</span>
+            <span>{t("rewards.detail.dqText")}</span>
           </div>
         )}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <Stat label="Rank" value={dq ? "—" : me.rank ? `#${me.rank}` : "—"} />
+          <Stat label={t("rewards.hero.rank")} value={dq ? "—" : me.rank ? `#${me.rank}` : "—"} />
           <Stat label={scoringLabel(c.scoring)} value={scoreText(c, me)} className={c.scoring === "lots" ? "" : good(c.scoring === "profit" ? me.profit : me.returnPct)} />
-          <Stat label="Return" value={fmtPct(+me.returnPct.toFixed(2), true)} className={good(me.returnPct)} />
-          <Stat label="Profit" value={fmtUsd(me.profit)} className={good(me.profit)} />
-          <Stat label="Trades" value={me.trades} />
-          <Stat label="Lots" value={fmtLots(me.lots)} />
+          <Stat label={t("rewards.detail.return")} value={fmtPct(+me.returnPct.toFixed(2), true)} className={good(me.returnPct)} />
+          <Stat label={t("rewards.detail.profit")} value={fmtUsd(me.profit)} className={good(me.profit)} />
+          <Stat label={t("rewards.hero.trades")} value={me.trades} />
+          <Stat label={t("rewards.detail.lots")} value={fmtLots(me.lots)} />
         </div>
         {hint && !dq && (
           <div className="flex items-center justify-between rounded-[12px] border border-warn/25 bg-warn-soft px-3 py-2 text-[12.5px] text-warn" data-testid="contest-trades-hint">
-            <span>{hint}. Entries below the minimum rank after everyone who qualifies.</span>
+            <span>{t("rewards.detail.belowMin", { hint })}</span>
           </div>
         )}
         {me.prize ? (
           <div className="flex items-center justify-between rounded-[12px] border border-gold/25 bg-gold-soft px-3 py-2 text-[12.5px] text-gold">
             <span>
-              Prize {fmtUsd(me.prize, 0)}
-              {me.prizeStatus ? ` · ${me.prizeStatus.replace(/_/g, " ")}` : ""}
+              {t("rewards.detail.prize", { amount: fmtUsd(me.prize, 0) })}
+              {me.prizeStatus ? ` · ${t.dyn(`rewards.status.${me.prizeStatus}`, me.prizeStatus.replace(/_/g, " ")).toLowerCase()}` : ""}
             </span>
             <Trophy className="size-3.5 shrink-0" />
           </div>
@@ -74,7 +76,7 @@ function MyEntry({ d }: { d: ContestDetail }) {
         {isRunning(c) && !dq && (
           <a href={TERMINAL_URL} target="_blank" rel="noopener" className="block">
             <Button variant="surface" className="w-full">
-              Trade in Kalks Trader <ArrowUpRight />
+              {t("rewards.hero.trade")} <ArrowUpRight />
             </Button>
           </a>
         )}
@@ -84,23 +86,24 @@ function MyEntry({ d }: { d: ContestDetail }) {
 }
 
 function Rules({ d }: { d: ContestDetail }) {
+  const t = useT();
   const c = d.contest;
   const lines = c.rules
     .split(/\n+/)
     .map((l) => l.replace(/^\s*[-*•]\s*/, "").trim())
     .filter(Boolean);
   const auto = [
-    `Ranked by ${scoringLabel(c.scoring).toLowerCase()}${c.scoring === "return_pct" ? " (realised + floating P&L ÷ starting equity)" : c.scoring === "profit" ? " (realised + floating P&L)" : " (lots closed)"}.`,
-    "Only deals closed inside the contest window on the entered account count.",
-    c.minTrades > 0 ? `At least ${c.minTrades} trade${c.minTrades === 1 ? "" : "s"} to rank; entries below that rank after everyone who qualifies.` : null,
-    "Ties go to the earlier entry.",
-    c.antiCheat.disqualifyOnBalanceChange ? "Deposits, withdrawals, transfers or adjustments on the account during the contest disqualify the entry." : "Balance changes on the account during the contest are reviewed.",
-    c.antiCheat.minHoldSeconds > 0 ? `Trades held under ${c.antiCheat.minHoldSeconds} s are reviewed.` : null,
-    c.antiCheat.maxSingleTradePct > 0 ? `One trade may not exceed ${c.antiCheat.maxSingleTradePct}% of total profit.` : null,
+    t(c.scoring === "return_pct" ? "rewards.detail.ruleRankedReturn" : c.scoring === "profit" ? "rewards.detail.ruleRankedProfit" : "rewards.detail.ruleRankedLots", { scoring: scoringLabel(c.scoring).toLowerCase() }),
+    t("rewards.detail.ruleWindow"),
+    c.minTrades > 0 ? t("rewards.detail.ruleMinTrades", { count: c.minTrades }) : null,
+    t("rewards.detail.ruleTies"),
+    c.antiCheat.disqualifyOnBalanceChange ? t("rewards.detail.ruleBalanceDq") : t("rewards.detail.ruleBalanceReview"),
+    c.antiCheat.minHoldSeconds > 0 ? t("rewards.detail.ruleHold", { seconds: c.antiCheat.minHoldSeconds }) : null,
+    c.antiCheat.maxSingleTradePct > 0 ? t("rewards.detail.ruleMaxTrade", { pct: c.antiCheat.maxSingleTradePct }) : null,
   ].filter((x): x is string => !!x);
   return (
     <Card className="h-full">
-      <CardHeader title="Rules" subtitle="Read before you trade" icon={<ListChecks />} />
+      <CardHeader title={t("rewards.detail.rulesTitle")} subtitle={t("rewards.detail.rulesSubtitle")} icon={<ListChecks />} />
       <ul className="space-y-2 px-4 pb-4 pt-4 sm:px-6">
         {[...lines, ...auto].map((r, i) => (
           <li key={i} className="k-row flex items-start gap-2.5 px-3.5 py-2.5 text-[13px] text-fg-2">
@@ -112,12 +115,12 @@ function Rules({ d }: { d: ContestDetail }) {
       <div className="px-4 pb-5 sm:px-6">
         <KeyValue
           rows={[
-            ["Type", c.kind === "demo" ? `Demo${c.startingBalance ? ` · ${fmtUsd(c.startingBalance, 0)} starting balance` : ""}` : "Live account"],
-            ["Window", `${fmtDateTime(c.startsAt)} – ${fmtDateTime(c.endsAt)}`],
-            ...(c.accountGroups.length ? ([["Account types", c.accountGroups.join(", ")]] as [string, string][]) : []),
-            ...(c.minEquity ? ([["Minimum equity", fmtUsd(c.minEquity, 0)]] as [string, string][]) : []),
-            ["Verification", c.kycRequired ? "Verified clients only" : "Not required"],
-            ["Seats", c.maxEntrants ? `${d.entrants.toLocaleString("en-US")} / ${c.maxEntrants.toLocaleString("en-US")}` : `${d.entrants.toLocaleString("en-US")} joined · unlimited`],
+            [t("rewards.detail.type"), c.kind === "demo" ? (c.startingBalance ? t("rewards.detail.typeDemoBalance", { amount: fmtUsd(c.startingBalance, 0) }) : t("rewards.detail.typeDemo")) : t("rewards.detail.typeLive")],
+            [t("rewards.detail.window"), `${fmtDateTime(c.startsAt)} – ${fmtDateTime(c.endsAt)}`],
+            ...(c.accountGroups.length ? ([[t("rewards.detail.accountTypes"), c.accountGroups.join(", ")]] as [string, string][]) : []),
+            ...(c.minEquity ? ([[t("rewards.detail.minEquity"), fmtUsd(c.minEquity, 0)]] as [string, string][]) : []),
+            [t("rewards.detail.verification"), c.kycRequired ? t("rewards.detail.verifiedOnly") : t("rewards.detail.notRequired")],
+            [t("rewards.detail.seats"), c.maxEntrants ? `${fmtCount(d.entrants)} / ${fmtCount(c.maxEntrants)}` : t("rewards.detail.seatsUnlimited", { count: fmtCount(d.entrants) })],
           ]}
         />
       </div>
@@ -126,21 +129,22 @@ function Rules({ d }: { d: ContestDetail }) {
 }
 
 function PrizesTable({ d }: { d: ContestDetail }) {
+  const t = useT();
   const c = d.contest;
   return (
     <Card className="h-full">
-      <CardHeader title="Prizes" subtitle={`Pool ${fmtUsd(c.prizePool, 0)} · paid after the results are final`} icon={<Trophy />} />
+      <CardHeader title={t("rewards.detail.prizesTitle")} subtitle={t("rewards.detail.prizesSubtitle", { amount: fmtUsd(c.prizePool, 0) })} icon={<Trophy />} />
       <div className="px-4 pb-6 pt-4 sm:px-6">
         {c.prizes.length === 0 ? (
-          <CardEmpty title="No cash prizes" text="This contest is for ranking only." />
+          <CardEmpty title={t("rewards.prize.noneTitle")} text={t("rewards.prize.noneText")} />
         ) : (
           <div className="overflow-hidden rounded-[14px] border border-line">
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="bg-surface-2 text-[11px] uppercase tracking-[0.05em] text-fg-3">
-                  <th className="px-4 py-2.5 text-left font-medium">Rank</th>
-                  <th className="px-4 py-2.5 text-right font-medium">Prize</th>
-                  <th className="px-4 py-2.5 text-right font-medium">Paid as</th>
+                  <th className="px-4 py-2.5 text-start font-medium">{t("rewards.detail.colRank")}</th>
+                  <th className="px-4 py-2.5 text-end font-medium">{t("rewards.detail.colPrize")}</th>
+                  <th className="px-4 py-2.5 text-end font-medium">{t("rewards.detail.colPaidAs")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -152,11 +156,11 @@ function PrizesTable({ d }: { d: ContestDetail }) {
                         <span className="k-num font-medium">{bandLabel(p)}</span>
                       </span>
                     </td>
-                    <td className="k-num px-4 py-2.5 text-right font-semibold text-gold">
+                    <td className="k-num px-4 py-2.5 text-end font-semibold text-gold">
                       {fmtUsd(p.amount, 0)}
-                      {p.rankTo > p.rankFrom ? <span className="font-normal text-fg-3"> each</span> : null}
+                      {p.rankTo > p.rankFrom ? <span className="font-normal text-fg-3"> {t("rewards.value.each")}</span> : null}
                     </td>
-                    <td className="px-4 py-2.5 text-right text-fg-2">{p.payout === "credit" ? "Trading credit" : "Wallet"}</td>
+                    <td className="px-4 py-2.5 text-end text-fg-2">{p.payout === "credit" ? t("rewards.detail.paidCredit") : t("rewards.detail.paidWallet")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -169,17 +173,18 @@ function PrizesTable({ d }: { d: ContestDetail }) {
 }
 
 export function LiveContestDetail({ id }: { id: string }) {
+  const t = useT();
   const { data, error, reload } = useGrowth<ContestDetail>(`contests/${encodeURIComponent(id)}`, 15_000);
   const back = (
     <Link href="/rewards" className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] text-fg-3 hover:text-fg">
-      <ArrowLeft className="size-3.5" /> All contests
+      <ArrowLeft className="size-3.5 rtl:-scale-x-100" /> {t("rewards.detail.allContests")}
     </Link>
   );
   if (!data)
     return (
       <div>
         {back}
-        <PageFallback title="Contest" subtitle="Rules, prizes and the leaderboard" error={error} onRetry={reload} rows={[{ cols: "", h: "h-[220px]", n: 1 }, { cols: "xl:grid-cols-2", h: "h-[320px]", n: 2 }]} />
+        <PageFallback title={t("rewards.detail.fallbackTitle")} subtitle={t("rewards.detail.fallbackSubtitle")} error={error} onRetry={reload} rows={[{ cols: "", h: "h-[220px]", n: 1 }, { cols: "xl:grid-cols-2", h: "h-[320px]", n: 2 }]} />
       </div>
     );
   const c = data.contest;
@@ -187,7 +192,7 @@ export function LiveContestDetail({ id }: { id: string }) {
   return (
     <div className="pb-16">
       {back}
-      <PageHeader title={c.name} subtitle={c.description || `${c.kind === "demo" ? "Demo" : "Live"} contest · ranked by ${scoringLabel(c.scoring).toLowerCase()}`} />
+      <PageHeader title={c.name} subtitle={c.description || t(c.kind === "demo" ? "rewards.detail.subtitleDemo" : "rewards.detail.subtitleLive", { scoring: scoringLabel(c.scoring).toLowerCase() })} />
 
       <Reveal>
         <Card hot className="overflow-hidden">
@@ -200,18 +205,18 @@ export function LiveContestDetail({ id }: { id: string }) {
                   {fmtDate(c.startsAt, false)} – {fmtDate(c.endsAt)}
                 </Chip>
                 <Chip>
-                  <Users className="size-3" /> {data.entrants.toLocaleString("en-US")} joined
+                  <Users className="size-3" /> {t("rewards.value.joined", { count: fmtCount(data.entrants) })}
                 </Chip>
               </div>
               <div className="mt-6 flex flex-wrap items-end gap-x-8 gap-y-5">
                 <div>
-                  <div className="k-label">Prize pool</div>
+                  <div className="k-label">{t("rewards.detail.prizePool")}</div>
                   <Money value={c.prizePool} decimals={0} countUp={false} className="mt-1.5 block text-[40px] font-semibold leading-none tracking-tight text-gold" />
                 </div>
                 {(running || isUpcoming(c)) && (
                   <div>
                     <div className="k-label mb-2 flex items-center gap-1.5">
-                      <Timer className="size-3.5" /> {running ? "Ends in" : "Starts in"}
+                      <Timer className="size-3.5" /> {running ? t("rewards.hero.endsIn") : t("rewards.hero.startsIn")}
                     </div>
                     <Countdown to={running ? c.endsAt : c.startsAt} />
                   </div>
@@ -221,13 +226,13 @@ export function LiveContestDetail({ id }: { id: string }) {
             <div className="flex flex-wrap items-center gap-3">
               {data.myEntry ? (
                 <Button variant="up-outline" size="lg" disabled className="disabled:opacity-100">
-                  <Check /> Joined{data.myEntry.login ? ` · #${data.myEntry.login}` : ""}
+                  <Check /> {data.myEntry.login ? t("rewards.detail.joinedLogin", { login: data.myEntry.login }) : t("rewards.hero.joined")}
                 </Button>
               ) : canJoin(c) ? (
                 <JoinContestButton c={c} onJoined={reload} />
               ) : (
                 <Button variant="surface" size="lg" disabled>
-                  {isPast(c) ? "Contest ended" : "Entries closed"}
+                  {isPast(c) ? t("rewards.detail.contestEnded") : t("rewards.hero.entriesClosed")}
                 </Button>
               )}
             </div>
@@ -246,7 +251,7 @@ export function LiveContestDetail({ id }: { id: string }) {
 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal delay={0.1} className="xl:col-span-8">
-          <Leaderboard d={data} title={running ? "Live leaderboard" : "Leaderboard"} podium={false} />
+          <Leaderboard d={data} title={running ? t("rewards.board.title") : t("rewards.board.titleFinal")} podium={false} />
         </Reveal>
         <Reveal delay={0.15} className="xl:col-span-4">
           <Rules d={data} />

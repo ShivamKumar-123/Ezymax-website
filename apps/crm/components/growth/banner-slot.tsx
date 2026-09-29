@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, X } from "lucide-react";
 import { Button, cn } from "@kalks/ui";
 import { IS_DEMO } from "@kalks/mock/mode";
+import { useT } from "@kalks/i18n/react";
 import { growthApi, useGrowth, type BannerView } from "./api";
 
 // Targeted marketing banners (D121) from the growth service. Renders nothing in demo builds, when the service is
@@ -27,6 +28,7 @@ function isExternal(url: string) {
 
 function BannerCard({ b, onDismiss }: { b: BannerView; onDismiss: () => void }) {
   const t = TONE[b.tone] ?? TONE.neutral!;
+  const tt = useT();
   const seen = React.useRef(false);
   React.useEffect(() => {
     if (seen.current) return;
@@ -68,13 +70,13 @@ function BannerCard({ b, onDismiss }: { b: BannerView; onDismiss: () => void }) 
       {b.dismissible && (
         <button
           type="button"
-          aria-label="Dismiss"
+          aria-label={tt("rewards.banner.dismiss")}
           data-testid="banner-dismiss"
           onClick={() => {
             track(b.id, "dismiss");
             onDismiss();
           }}
-          className="absolute right-2.5 top-2.5 grid size-7 place-items-center rounded-full text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg"
+          className="absolute end-2.5 top-2.5 grid size-7 place-items-center rounded-full text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg"
         >
           <X className="size-3.5" />
         </button>

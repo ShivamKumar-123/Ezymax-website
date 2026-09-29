@@ -7,10 +7,12 @@ import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, DialogClose, Flag, Icon3D, KeyValue, KpiCard, Money, PageHeader, Reveal, cn, type Column } from "@kalks/ui";
 import { TERMINAL_URL } from "@/lib/live";
 import { Countdown } from "@/components/rewards/countdown";
+import { tr, useT } from "@kalks/i18n/react";
 import { BannerSlot } from "./banner-slot";
 import {
   bandLabel,
   errorToast,
+  fmtCount,
   fmtDate,
   fmtLots,
   fmtPct,
@@ -44,7 +46,7 @@ export const canJoin = (c: Pick<Contest, "status" | "maxEntrants" | "entrants">)
 /** Main score of a standing in the contest's scoring unit. */
 export function scoreText(c: Pick<Contest, "scoring">, s: Pick<Standing, "returnPct" | "profit" | "lots" | "score">) {
   if (c.scoring === "profit") return fmtUsd(s.profit);
-  if (c.scoring === "lots") return `${fmtLots(s.lots)} lots`;
+  if (c.scoring === "lots") return tr("rewards.value.lots", { lots: fmtLots(s.lots) });
   return fmtPct(+s.returnPct.toFixed(2), true);
 }
 
@@ -57,11 +59,11 @@ const scoreTone = (c: Pick<Contest, "scoring">, s: Pick<Standing, "returnPct" | 
 export function kindChip(c: Pick<Contest, "kind">) {
   return c.kind === "live" ? (
     <Chip tone="ember" size="sm" className="font-semibold tracking-wider">
-      LIVE
+      {tr("rewards.contest.badge.live")}
     </Chip>
   ) : (
     <Chip tone="gold" size="sm" className="font-semibold tracking-wider">
-      DEMO
+      {tr("rewards.contest.badge.demo")}
     </Chip>
   );
 }
@@ -70,7 +72,7 @@ export function kindChip(c: Pick<Contest, "kind">) {
 export function tradesHint(c: Pick<Contest, "minTrades">, s: Pick<Standing, "trades" | "qualified">) {
   if (s.qualified || c.minTrades <= 0) return null;
   const n = Math.max(0, c.minTrades - s.trades);
-  return n > 0 ? `Needs ${n} more trade${n === 1 ? "" : "s"} to rank` : "Qualifies at the next update";
+  return n > 0 ? tr("rewards.contest.needsTrades", { count: n }) : tr("rewards.contest.qualifiesNext");
 }
 
 /* ------------------------------------------------------------------ */
@@ -78,33 +80,35 @@ export function tradesHint(c: Pick<Contest, "minTrades">, s: Pick<Standing, "tra
 /* ------------------------------------------------------------------ */
 
 function Credentials({ c, creds }: { c: Contest; creds: NonNullable<JoinResult["credentials"]> }) {
+  const t = useT();
   return (
     <div className="space-y-3" data-testid="contest-credentials">
       <div className="flex items-start gap-3 rounded-[14px] border border-warn/25 bg-warn-soft px-4 py-3 text-[12.5px] text-warn">
         <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-        <span>Save these details now. The passwords are shown only once; you can reset them later from the account page.</span>
+        <span>{t("rewards.join.saveNow")}</span>
       </div>
       <div className="divide-y divide-line rounded-[14px] border border-line bg-surface-2">
         {(
           [
-            ["Login", String(creds.login)],
-            ["Password", creds.password],
-            ["Investor password", creds.investorPassword],
-            ["Server", "Kalks-Demo"],
+            ["Login", t("rewards.join.login"), String(creds.login)],
+            ["Password", t("rewards.join.password"), creds.password],
+            ["Investor password", t("rewards.join.investorPassword"), creds.investorPassword],
+            ["Server", t("rewards.join.server"), "Kalks-Demo"],
           ] as const
-        ).map(([k, v]) => (
+        ).map(([k, label, v]) => (
           <div key={k} className="flex items-center gap-3 px-4 py-2.5">
-            <span className="w-36 shrink-0 text-[12.5px] text-fg-3">{k}</span>
-            <span className="min-w-0 flex-1 truncate font-mono text-[13.5px]" data-testid={`credential-${k.toLowerCase().replace(/\s+/g, "-")}`}>
+            <span className="w-36 shrink-0 text-[12.5px] text-fg-3">{label}</span>
+            <span dir="ltr" className="min-w-0 flex-1 truncate text-start font-mono text-[13.5px]" data-testid={`credential-${k.toLowerCase().replace(/\s+/g, "-")}`}>
               {v}
             </span>
-            <CopyButton value={v} label={k} />
+            <CopyButton value={v} label={label} />
           </div>
         ))}
       </div>
       <p className="text-[12px] text-fg-3">
-        Contest account for {c.name}
-        {c.startingBalance ? ` · ${fmtUsd(c.startingBalance, 0)} starting balance` : ""}. Only trades on this account count.
+        {t("rewards.join.accountFor", { name: c.name })}
+        {c.startingBalance ? t("rewards.join.startingBalanceSuffix", { amount: fmtUsd(c.startingBalance, 0) }) : ""}
+        {t("rewards.join.onlyThisAccount")}
       </p>
     </div>
   );
@@ -116,6 +120,7 @@ export function JoinContestButton({ c, onJoined, size = "lg", className }: { c: 
   const [busy, setBusy] = React.useState(false);
   const [creds, setCreds] = React.useState<JoinResult["credentials"] | null>(null);
   const live = c.kind === "live";
+  const t = useT();
 
   const join = async () => {
     if (live && !login) return;
@@ -126,10 +131,10 @@ export function JoinContestButton({ c, onJoined, size = "lg", className }: { c: 
       if (r.credentials) setCreds(r.credentials);
       else {
         setOpen(false);
-        toast.success(`You joined ${c.name}`, { description: live ? `Trades on #${login} count from ${fmtDate(c.startsAt)}.` : "Your contest account is ready." });
+        toast.success(t("rewards.join.toastJoined", { name: c.name }), { description: live ? t("rewards.join.toastLive", { login, date: fmtDate(c.startsAt) }) : t("rewards.join.toastDemo") });
       }
     } catch (e) {
-      errorToast("Couldn't join the contest", e);
+      errorToast(t("rewards.join.error"), e);
     } finally {
       setBusy(false);
     }
@@ -150,30 +155,30 @@ export function JoinContestButton({ c, onJoined, size = "lg", className }: { c: 
       width={500}
       trigger={
         <Button variant="ember" size={size} className={className} data-testid="contest-join">
-          {isUpcoming(c) ? "Register" : "Join contest"} <ArrowUpRight />
+          {isUpcoming(c) ? t("rewards.join.register") : t("rewards.join.join")} <ArrowUpRight />
         </Button>
       }
-      title={creds ? "Your contest account" : `Join ${c.name}`}
-      description={creds ? "Demo contest account created" : live ? "Pick the live account you will trade in this contest." : "A dedicated demo account is opened for this contest."}
+      title={creds ? t("rewards.join.credsTitle") : t("rewards.join.title", { name: c.name })}
+      description={creds ? t("rewards.join.credsDesc") : live ? t("rewards.join.descLive") : t("rewards.join.descDemo")}
       footer={
         creds ? (
           <>
             <DialogClose asChild>
-              <Button variant="ghost">Done</Button>
+              <Button variant="ghost">{t("common.done")}</Button>
             </DialogClose>
             <a href={TERMINAL_URL} target="_blank" rel="noopener" data-testid="contest-open-terminal">
               <Button variant="ember">
-                Open in Kalks Trader <ArrowUpRight />
+                {t("rewards.join.openTerminal")} <ArrowUpRight />
               </Button>
             </a>
           </>
         ) : (
           <>
             <DialogClose asChild>
-              <Button variant="ghost">Cancel</Button>
+              <Button variant="ghost">{t("common.cancel")}</Button>
             </DialogClose>
             <Button variant="ember" disabled={busy || (live && !login)} onClick={join} data-testid="contest-join-confirm">
-              {busy && <Loader2 className="animate-spin" />} Confirm entry
+              {busy && <Loader2 className="animate-spin" />} {t("rewards.join.confirm")}
             </Button>
           </>
         )
@@ -185,27 +190,27 @@ export function JoinContestButton({ c, onJoined, size = "lg", className }: { c: 
         <div className="space-y-4">
           <KeyValue
             rows={[
-              ["Runs", `${fmtDate(c.startsAt)} – ${fmtDate(c.endsAt)}`],
-              ["Ranked by", scoringLabel(c.scoring)],
-              ["Prize pool", fmtUsd(c.prizePool, 0)],
-              ...(c.minTrades > 0 ? ([["Minimum trades", String(c.minTrades)]] as [string, string][]) : []),
-              ...(!live && c.startingBalance ? ([["Starting balance", fmtUsd(c.startingBalance, 0)]] as [string, string][]) : []),
-              ...(live && c.minEquity ? ([["Minimum equity", fmtUsd(c.minEquity, 0)]] as [string, string][]) : []),
+              [t("rewards.join.runs"), `${fmtDate(c.startsAt)} – ${fmtDate(c.endsAt)}`],
+              [t("rewards.join.rankedBy"), scoringLabel(c.scoring)],
+              [t("rewards.join.prizePool"), fmtUsd(c.prizePool, 0)],
+              ...(c.minTrades > 0 ? ([[t("rewards.join.minTrades"), String(c.minTrades)]] as [string, string][]) : []),
+              ...(!live && c.startingBalance ? ([[t("rewards.join.startingBalance"), fmtUsd(c.startingBalance, 0)]] as [string, string][]) : []),
+              ...(live && c.minEquity ? ([[t("rewards.join.minEquity"), fmtUsd(c.minEquity, 0)]] as [string, string][]) : []),
             ]}
           />
           {live && (
             <div>
-              <div className="k-label mb-2">Live account</div>
+              <div className="k-label mb-2">{t("rewards.picker.label")}</div>
               <LiveAccountPicker
                 value={login}
                 onChange={setLogin}
                 filter={(a) => groupsOk(a.group) && (c.minEquity === null || a.equity >= c.minEquity)}
-                hint={c.minEquity ? `This contest needs a live account with at least ${fmtUsd(c.minEquity, 0)} equity${c.accountGroups.length ? ` in ${c.accountGroups.join(", ")}` : ""}.` : undefined}
+                hint={c.minEquity ? (c.accountGroups.length ? t("rewards.join.equityHintGroups", { amount: fmtUsd(c.minEquity, 0), groups: c.accountGroups.join(", ") }) : t("rewards.join.equityHint", { amount: fmtUsd(c.minEquity, 0) })) : undefined}
               />
-              {c.antiCheat.disqualifyOnBalanceChange && <p className="mt-2 text-[12px] text-fg-3">Deposits, withdrawals and transfers on this account during the contest disqualify the entry.</p>}
+              {c.antiCheat.disqualifyOnBalanceChange && <p className="mt-2 text-[12px] text-fg-3">{t("rewards.join.balanceRule")}</p>}
             </div>
           )}
-          {c.kycRequired && <p className="text-[12px] text-fg-3">This contest is open to verified clients only.</p>}
+          {c.kycRequired && <p className="text-[12px] text-fg-3">{t("rewards.join.kycOnly")}</p>}
         </div>
       )}
     </Dialog>
@@ -219,6 +224,7 @@ export function JoinContestButton({ c, onJoined, size = "lg", className }: { c: 
 const ROW_GRID = "grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-3 sm:grid-cols-[40px_minmax(0,1.6fr)_70px_110px_100px_90px]";
 
 function StandingRow({ c, s }: { c: Contest; s: Standing }) {
+  const t = useT();
   const top = s.rank !== null && s.rank <= 3;
   const dq = s.status === "disqualified";
   const prize = s.prize ?? prizeFor(c, s.rank);
@@ -240,37 +246,38 @@ function StandingRow({ c, s }: { c: Contest; s: Standing }) {
       <div className="flex min-w-0 items-center gap-3">
         <div className="relative shrink-0">
           <Avatar name={s.name.replace(/[^\p{L}\s]/gu, "").trim() || "?"} size={34} />
-          {s.country && <Flag country={s.country.toLowerCase()} className="absolute -bottom-1 -right-1 size-3.5 ring-2 ring-surface-2" />}
+          {s.country && <Flag country={s.country.toLowerCase()} className="absolute -bottom-1 -end-1 size-3.5 ring-2 ring-surface-2" />}
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 truncate text-[13.5px] font-medium">
-            <span className="truncate">{s.me ? `You · ${s.name}` : s.name}</span>
+            <span className="truncate">{s.me ? t("rewards.board.youName", { name: s.name }) : s.name}</span>
             {s.me && (
               <Chip size="sm" tone="ember">
-                You
+                {t("rewards.you")}
               </Chip>
             )}
             {dq && <GrowthStatus status="disqualified" dot={false} />}
           </div>
           <div className="truncate text-[11.5px] text-fg-3">
-            <span className="k-num">{s.trades} trades</span>
+            <span className="k-num">{t("rewards.value.trades", { count: s.trades })}</span>
             {hint && <span className="text-warn"> · {hint}</span>}
             {s.me && s.login && <span className="font-mono"> · #{s.login}</span>}
           </div>
         </div>
       </div>
-      <div className="k-num hidden text-right text-[12.5px] text-fg-2 sm:block">{fmtLots(s.lots)}</div>
-      <div className="text-right">
+      <div className="k-num hidden text-end text-[12.5px] text-fg-2 sm:block">{fmtLots(s.lots)}</div>
+      <div className="text-end">
         <span className={cn("k-num text-[14px] font-semibold", scoreTone(c, s))}>{scoreText(c, s)}</span>
         <span className="k-num block text-[11px] text-fg-3 sm:hidden">{prize ? fmtUsd(prize, 0) : ""}</span>
       </div>
-      <div className={cn("k-num hidden text-right text-[13px] sm:block", s.profit > 0 ? "text-up" : s.profit < 0 ? "text-down" : "text-fg-2")}>{fmtUsd(s.profit)}</div>
-      <div className="hidden text-right sm:block">{prize && !dq ? <span className={cn("k-num text-[13.5px] font-semibold", top ? "text-gold" : "text-fg")}>{fmtUsd(prize, 0)}</span> : <span className="text-[12px] text-fg-3">—</span>}</div>
+      <div className={cn("k-num hidden text-end text-[13px] sm:block", s.profit > 0 ? "text-up" : s.profit < 0 ? "text-down" : "text-fg-2")}>{fmtUsd(s.profit)}</div>
+      <div className="hidden text-end sm:block">{prize && !dq ? <span className={cn("k-num text-[13.5px] font-semibold", top ? "text-gold" : "text-fg")}>{fmtUsd(prize, 0)}</span> : <span className="text-[12px] text-fg-3">—</span>}</div>
     </div>
   );
 }
 
 function Podium({ c, rows }: { c: Contest; rows: Standing[] }) {
+  const t = useT();
   const ranked = rows.filter((r) => r.rank !== null && r.status !== "disqualified");
   if (ranked.length < 3) return null;
   const [first, second, third] = ranked;
@@ -289,7 +296,7 @@ function Podium({ c, rows }: { c: Contest; rows: Standing[] }) {
             </div>
             <div className="mt-4 flex max-w-full items-center gap-1.5 text-[12.5px] font-medium">
               {r.country && <Flag country={r.country.toLowerCase()} className="size-3.5" />}
-              <span className="truncate">{r.me ? "You" : r.name}</span>
+              <span className="truncate">{r.me ? t("rewards.you") : r.name}</span>
             </div>
             <div className={cn("k-num mt-1 font-semibold", one ? "text-[17px]" : "text-[14px]", scoreTone(c, r))}>{scoreText(c, r)}</div>
             {prize ? <div className={cn("k-num mt-0.5 text-[12px] font-semibold", one ? "text-gold" : "text-fg-2")}>{fmtUsd(prize, 0)}</div> : null}
@@ -300,7 +307,8 @@ function Podium({ c, rows }: { c: Contest; rows: Standing[] }) {
   );
 }
 
-export function Leaderboard({ d, limit, title = "Live leaderboard", podium = true }: { d: ContestDetail; limit?: number; title?: string; podium?: boolean }) {
+export function Leaderboard({ d, limit, title, podium = true }: { d: ContestDetail; limit?: number; title?: string; podium?: boolean }) {
+  const t = useT();
   const c = d.contest;
   const all = d.leaderboard;
   const shown = limit ? all.slice(0, limit) : all;
@@ -311,17 +319,17 @@ export function Leaderboard({ d, limit, title = "Live leaderboard", podium = tru
   return (
     <Card className="flex h-full flex-col" data-testid="contest-leaderboard">
       <CardHeader
-        title={title}
+        title={title ?? t("rewards.board.title")}
         subtitle={
           <span>
-            {isRunning(c) ? "Updates every 15 s" : c.status === "scheduled" ? "Starts " + fmtDate(c.startsAt) : "Final standings"} · {d.entrants.toLocaleString("en-US")} trader{d.entrants === 1 ? "" : "s"} · ranked by {scoringLabel(c.scoring).toLowerCase()}
+            {isRunning(c) ? t("rewards.board.updates") : c.status === "scheduled" ? t("rewards.board.starts", { date: fmtDate(c.startsAt) }) : t("rewards.board.final")} · {t("rewards.board.traders", { count: d.entrants, n: fmtCount(d.entrants) })} · {t("rewards.board.rankedBy", { scoring: scoringLabel(c.scoring).toLowerCase() })}
           </span>
         }
         action={
           limit ? (
             <Link href={`/rewards/contests/${c.id}`}>
               <Button size="sm" variant="surface">
-                Full standings <ChevronRight />
+                {t("rewards.board.full")} <ChevronRight className="rtl:-scale-x-100" />
               </Button>
             </Link>
           ) : undefined
@@ -329,18 +337,18 @@ export function Leaderboard({ d, limit, title = "Live leaderboard", podium = tru
       />
       {all.length === 0 ? (
         <div className="px-4 pb-6 pt-4 sm:px-6">
-          <CardEmpty title="No entries yet" text={isUpcoming(c) ? "Register now; the leaderboard opens when the contest starts." : "Be the first to join. Rankings appear after the first closed trade."} />
+          <CardEmpty title={t("rewards.board.emptyTitle")} text={isUpcoming(c) ? t("rewards.board.emptyUpcoming") : t("rewards.board.emptyOpen")} />
         </div>
       ) : (
         <>
           {podium && <Podium c={c} rows={all} />}
           <div className={cn("mt-5 hidden gap-3 px-8 text-[10.5px] font-medium uppercase tracking-[0.06em] text-fg-3 sm:grid", ROW_GRID)}>
             <span className="text-center">#</span>
-            <span>Trader</span>
-            <span className="text-right">Lots</span>
-            <span className="text-right">{scoringLabel(c.scoring)}</span>
-            <span className="text-right">Profit</span>
-            <span className="text-right">Prize</span>
+            <span>{t("rewards.board.colTrader")}</span>
+            <span className="text-end">{t("rewards.board.colLots")}</span>
+            <span className="text-end">{scoringLabel(c.scoring)}</span>
+            <span className="text-end">{t("rewards.board.colProfit")}</span>
+            <span className="text-end">{t("rewards.board.colPrize")}</span>
           </div>
           <div className="mt-2 flex-1 space-y-1.5 px-4 pb-2 sm:px-6">
             {shown.map((s, i) => (
@@ -348,7 +356,7 @@ export function Leaderboard({ d, limit, title = "Live leaderboard", podium = tru
                 <StandingRow c={c} s={s} />
                 {zone > 0 && s.rank === zone && i < shown.length - 1 && (
                   <div className="flex items-center gap-2 py-1.5 text-[11px] text-fg-3">
-                    <span className="h-px flex-1 bg-line" /> Prize zone ends at #{zone} <span className="h-px flex-1 bg-line" />
+                    <span className="h-px flex-1 bg-line" /> {t("rewards.board.zoneEnds", { rank: zone })} <span className="h-px flex-1 bg-line" />
                   </div>
                 )}
               </React.Fragment>
@@ -357,7 +365,7 @@ export function Leaderboard({ d, limit, title = "Live leaderboard", podium = tru
           {me && !meShown && (
             <div className="space-y-1.5 px-4 pb-2 sm:px-6">
               <div className="flex items-center gap-2 py-1.5 text-[11px] text-fg-3">
-                <span className="h-px flex-1 bg-line" /> {zone > lastRankShown ? `Prize zone to #${zone}` : "Your position"} <span className="h-px flex-1 bg-line" />
+                <span className="h-px flex-1 bg-line" /> {zone > lastRankShown ? t("rewards.board.zoneTo", { rank: zone }) : t("rewards.board.yourPosition")} <span className="h-px flex-1 bg-line" />
               </div>
               <StandingRow c={c} s={me} />
             </div>
@@ -376,33 +384,34 @@ export function Leaderboard({ d, limit, title = "Live leaderboard", podium = tru
 export function PrizeCard({ c }: { c: Contest }) {
   const max = Math.max(1, ...c.prizes.map((p) => p.amount));
   const wallet = c.prizes.every((p) => p.payout === "wallet");
+  const t = useT();
   return (
     <Card className="flex h-full flex-col">
-      <CardHeader title="Prize distribution" subtitle={wallet ? "Paid to your wallet after the results are final" : "Wallet or trading credit per band"} action={<Icon3D name="money_bag" size={36} />} />
+      <CardHeader title={t("rewards.prize.title")} subtitle={wallet ? t("rewards.prize.wallet") : t("rewards.prize.mixed")} action={<Icon3D name="money_bag" size={36} />} />
       <div className="mt-4 flex-1 space-y-1.5 px-4 pb-5 sm:px-6">
-        {c.prizes.length === 0 && <CardEmpty title="No cash prizes" text="This contest is for ranking only." />}
+        {c.prizes.length === 0 && <CardEmpty title={t("rewards.prize.noneTitle")} text={t("rewards.prize.noneText")} />}
         {c.prizes.map((p, i) => (
           <div key={`${p.rankFrom}-${p.rankTo}`} className="flex items-center gap-3">
             <span className="k-num w-14 shrink-0 text-[12px] font-medium text-fg-2">{bandLabel(p)}</span>
             <div className="relative h-7 flex-1 overflow-hidden rounded-full bg-surface-2">
-              <div className={cn("absolute inset-y-0 left-0 rounded-full", i === 0 ? "bg-gold" : i < 3 ? "bg-gold/35" : "bg-surface-3")} style={{ width: `${Math.max(14, (p.amount / max) * 100)}%` }} />
+              <div className={cn("absolute inset-y-0 start-0 rounded-full", i === 0 ? "bg-gold" : i < 3 ? "bg-gold/35" : "bg-surface-3")} style={{ width: `${Math.max(14, (p.amount / max) * 100)}%` }} />
               <span className={cn("k-num relative flex h-full items-center px-3 text-[12px] font-semibold", i === 0 ? "text-[#1a1204]" : "text-fg")}>
                 {fmtUsd(p.amount, 0)}
-                {p.rankTo > p.rankFrom ? " each" : ""}
+                {p.rankTo > p.rankFrom ? ` ${t("rewards.value.each")}` : ""}
               </span>
             </div>
-            {!wallet && <span className="w-12 text-right text-[10.5px] uppercase tracking-wider text-fg-3">{p.payout}</span>}
+            {!wallet && <span className="w-12 text-end text-[10.5px] uppercase tracking-wider text-fg-3">{p.payout === "credit" ? t("rewards.prize.payout.credit") : p.payout === "wallet" ? t("rewards.prize.payout.wallet") : p.payout}</span>}
           </div>
         ))}
       </div>
       <div className="grid grid-cols-2 gap-2 border-t border-line px-4 py-4 sm:px-6">
         <div className="k-row px-3 py-2.5">
-          <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Prize pool</div>
+          <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.prize.pool")}</div>
           <div className="k-num mt-0.5 text-[13px] font-medium text-gold">{fmtUsd(c.prizePool, 0)}</div>
         </div>
         <div className="k-row px-3 py-2.5">
-          <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Minimum trades</div>
-          <div className="k-num mt-0.5 text-[13px] font-medium">{c.minTrades || "None"}</div>
+          <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.prize.minTrades")}</div>
+          <div className="k-num mt-0.5 text-[13px] font-medium">{c.minTrades || t("rewards.prize.none")}</div>
         </div>
       </div>
     </Card>
@@ -414,6 +423,7 @@ export function PrizeCard({ c }: { c: Contest }) {
 /* ------------------------------------------------------------------ */
 
 function ContestHero({ c, d, onJoined }: { c: ContestCard; d: ContestDetail | null; onJoined: () => void }) {
+  const t = useT();
   const running = isRunning(c);
   const me = d?.myEntry ?? c.myEntry;
   const start = Date.parse(c.startsAt);
@@ -446,12 +456,12 @@ function ContestHero({ c, d, onJoined }: { c: ContestCard; d: ContestDetail | nu
 
           <div className="mt-6 flex flex-wrap items-end gap-x-8 gap-y-5">
             <div>
-              <div className="k-label">Prize pool</div>
+              <div className="k-label">{t("rewards.prize.pool")}</div>
               <Money value={c.prizePool} decimals={0} countUp={false} className="mt-1.5 block text-[40px] font-semibold leading-none tracking-tight text-gold sm:text-[44px]" />
             </div>
             <div>
               <div className="k-label mb-2 flex items-center gap-1.5">
-                <Timer className="size-3.5" /> {running ? "Ends in" : "Starts in"}
+                <Timer className="size-3.5" /> {running ? t("rewards.hero.endsIn") : t("rewards.hero.startsIn")}
               </div>
               <Countdown to={running ? c.endsAt : c.startsAt} />
             </div>
@@ -460,25 +470,25 @@ function ContestHero({ c, d, onJoined }: { c: ContestCard; d: ContestDetail | nu
           <div className="mt-6 flex flex-wrap items-center gap-3">
             {me ? (
               <Button variant="up-outline" size="lg" disabled className="disabled:opacity-100">
-                <Check /> Joined{me.login ? ` · account #${me.login}` : ""}
+                <Check /> {me.login ? t("rewards.hero.joinedAccount", { login: me.login }) : t("rewards.hero.joined")}
               </Button>
             ) : canJoin(c) ? (
               <JoinContestButton c={c} onJoined={onJoined} />
             ) : (
               <Button size="lg" variant="surface" disabled>
-                Entries closed
+                {t("rewards.hero.entriesClosed")}
               </Button>
             )}
             {me && (
               <a href={TERMINAL_URL} target="_blank" rel="noopener">
                 <Button variant="surface" size="lg">
-                  Trade in Kalks Trader
+                  {t("rewards.hero.trade")}
                 </Button>
               </a>
             )}
             <Link href={`/rewards/contests/${c.id}`}>
               <Button variant="ghost" size="lg">
-                Rules & prizes
+                {t("rewards.hero.rules")}
               </Button>
             </Link>
           </div>
@@ -490,14 +500,14 @@ function ContestHero({ c, d, onJoined }: { c: ContestCard; d: ContestDetail | nu
               <>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-[14px] font-medium">Your standing</div>
-                    <div className="text-[12px] text-fg-3">{me.rank ? `#${me.rank} of ${entrants.toLocaleString("en-US")} traders` : me.status === "disqualified" ? "Entry disqualified" : "Not ranked yet"}</div>
+                    <div className="text-[14px] font-medium">{t("rewards.hero.standing")}</div>
+                    <div className="text-[12px] text-fg-3">{me.rank ? t("rewards.hero.rankOf", { rank: me.rank, count: fmtCount(entrants) }) : me.status === "disqualified" ? t("rewards.hero.dq") : t("rewards.hero.notRanked")}</div>
                   </div>
-                  {me.status === "disqualified" ? <GrowthStatus status="disqualified" /> : me.rank && zone && me.rank <= zone ? <Chip tone="gold">Prize zone</Chip> : null}
+                  {me.status === "disqualified" ? <GrowthStatus status="disqualified" /> : me.rank && zone && me.rank <= zone ? <Chip tone="gold">{t("rewards.hero.prizeZone")}</Chip> : null}
                 </div>
                 <div className="mt-5 grid grid-cols-3 gap-2">
                   <div className="k-row px-3 py-3">
-                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Rank</div>
+                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.hero.rank")}</div>
                     <div className="k-num mt-1 text-[20px] font-semibold leading-none">{me.rank ? `#${me.rank}` : "—"}</div>
                   </div>
                   <div className="k-row px-3 py-3">
@@ -505,28 +515,25 @@ function ContestHero({ c, d, onJoined }: { c: ContestCard; d: ContestDetail | nu
                     <div className={cn("k-num mt-1 text-[17px] font-semibold leading-none", scoreTone(c, me))}>{scoreText(c, me)}</div>
                   </div>
                   <div className="k-row px-3 py-3">
-                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Trades</div>
+                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.hero.trades")}</div>
                     <div className="k-num mt-1 text-[20px] font-semibold leading-none">{me.trades}</div>
                   </div>
                 </div>
               </>
             ) : (
               <>
-                <div className="text-[14px] font-medium">{running ? "Join while it's running" : "Register early"}</div>
+                <div className="text-[14px] font-medium">{running ? t("rewards.hero.joinRunning") : t("rewards.hero.registerEarly")}</div>
                 <div className="mt-1 text-[12.5px] text-fg-3">
-                  {c.kind === "demo" ? `A contest demo account${c.startingBalance ? ` with ${fmtUsd(c.startingBalance, 0)}` : ""} is opened for you. No deposit needed.` : "Compete with one of your live accounts. Only trades closed inside the contest window count."}
+                  {c.kind === "demo" ? (c.startingBalance ? t("rewards.hero.demoTextBalance", { amount: fmtUsd(c.startingBalance, 0) }) : t("rewards.hero.demoText")) : t("rewards.hero.liveText")}
                 </div>
                 <div className="mt-5 grid grid-cols-2 gap-2">
                   <div className="k-row flex items-center gap-2 px-3 py-2.5 text-[12.5px]">
                     <Users className="size-3.5 text-fg-3" />
-                    <span className="k-num">
-                      {entrants.toLocaleString("en-US")}
-                      {c.maxEntrants ? ` / ${c.maxEntrants.toLocaleString("en-US")}` : ""} joined
-                    </span>
+                    <span className="k-num">{t("rewards.value.joined", { count: `${fmtCount(entrants)}${c.maxEntrants ? ` / ${fmtCount(c.maxEntrants)}` : ""}` })}</span>
                   </div>
                   <div className="k-row flex items-center gap-2 px-3 py-2.5 text-[12.5px]">
                     <Trophy className="size-3.5 text-fg-3" />
-                    <span>{zone ? `Top ${zone} paid` : "Ranking only"}</span>
+                    <span>{zone ? t("rewards.hero.topPaid", { count: zone }) : t("rewards.hero.rankingOnly")}</span>
                   </div>
                 </div>
               </>
@@ -534,8 +541,8 @@ function ContestHero({ c, d, onJoined }: { c: ContestCard; d: ContestDetail | nu
             <div className="mt-4 space-y-3 text-[12px]">
               <div>
                 <div className="mb-1.5 flex justify-between text-fg-3">
-                  <span>Contest progress</span>
-                  <span className="k-num text-fg-2">{running ? `Day ${Math.min(dayN, days)} of ${days}` : `${days} days`}</span>
+                  <span>{t("rewards.hero.progress")}</span>
+                  <span className="k-num text-fg-2">{running ? t("rewards.hero.dayOf", { day: Math.min(dayN, days), days }) : t("rewards.value.days", { count: days })}</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-surface-3">
                   <div className="h-full rounded-full bg-ember" style={{ width: `${running ? pctTime : 0}%` }} />
@@ -549,9 +556,7 @@ function ContestHero({ c, d, onJoined }: { c: ContestCard; d: ContestDetail | nu
               )}
               {me && me.status !== "disqualified" && !hint && me.rank && zone > 0 && me.rank > zone && (
                 <div className="flex items-center justify-between rounded-[12px] border border-gold/25 bg-gold-soft px-3 py-2 text-gold">
-                  <span>
-                    {me.rank - zone} place{me.rank - zone === 1 ? "" : "s"} to the prize zone (#{zone})
-                  </span>
+                  <span>{t("rewards.hero.placesToZone", { count: me.rank - zone, rank: zone })}</span>
                   <Trophy className="size-3.5 shrink-0" />
                 </div>
               )}
@@ -571,6 +576,7 @@ function ContestTile({ c, onJoined }: { c: ContestCard; onJoined: () => void }) 
   const fill = c.maxEntrants ? Math.min(100, (c.entrants / c.maxEntrants) * 100) : null;
   const past = isPast(c);
   const me = c.myEntry;
+  const t = useT();
   return (
     <Card className="flex flex-col overflow-hidden" data-testid="contest-card">
       <div className="border-b border-line bg-surface-2/60 px-5 pb-4 pt-4">
@@ -580,7 +586,7 @@ function ContestTile({ c, onJoined }: { c: ContestCard; onJoined: () => void }) 
         </div>
         <div className="mt-3 flex items-end justify-between gap-3">
           <div>
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Prize pool</div>
+            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.tile.prizePool")}</div>
             <div className="k-num text-[24px] font-semibold leading-tight text-gold">{fmtUsd(c.prizePool, 0)}</div>
           </div>
           {!past && (
@@ -604,21 +610,21 @@ function ContestTile({ c, onJoined }: { c: ContestCard; onJoined: () => void }) 
           </div>
           <div className="k-row flex items-center gap-2 px-3 py-2">
             <Users className="size-3.5 shrink-0 text-fg-3" />
-            <span className="k-num">{c.entrants.toLocaleString("en-US")} joined</span>
+            <span className="k-num">{t("rewards.value.joined", { count: fmtCount(c.entrants) })}</span>
           </div>
         </div>
         <div className="mt-2 truncate text-[11.5px] text-fg-3">
-          Ranked by {scoringLabel(c.scoring).toLowerCase()}
-          {c.minTrades ? ` · min ${c.minTrades} trades` : ""}
-          {c.kind === "demo" && c.startingBalance ? ` · ${fmtUsd(c.startingBalance, 0)} demo balance` : ""}
-          {c.kind === "live" && c.minEquity ? ` · min equity ${fmtUsd(c.minEquity, 0)}` : ""}
+          {t("rewards.tile.rankedBy", { scoring: scoringLabel(c.scoring).toLowerCase() })}
+          {c.minTrades ? t("rewards.tile.minTrades", { count: c.minTrades }) : ""}
+          {c.kind === "demo" && c.startingBalance ? t("rewards.tile.demoBalance", { amount: fmtUsd(c.startingBalance, 0) }) : ""}
+          {c.kind === "live" && c.minEquity ? t("rewards.tile.minEquity", { amount: fmtUsd(c.minEquity, 0) }) : ""}
         </div>
         {fill !== null && !past && (
           <div className="mt-3">
             <div className="mb-1 flex justify-between text-[11px] text-fg-3">
-              <span>Seats</span>
+              <span>{t("rewards.tile.seats")}</span>
               <span className="k-num">
-                {c.entrants.toLocaleString("en-US")} / {c.maxEntrants!.toLocaleString("en-US")}
+                {fmtCount(c.entrants)} / {fmtCount(c.maxEntrants!)}
               </span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-surface-3">
@@ -630,8 +636,8 @@ function ContestTile({ c, onJoined }: { c: ContestCard; onJoined: () => void }) 
           <div className="k-row mt-3 flex items-center gap-3 px-3 py-2.5">
             <RankBadge rank={me.status === "disqualified" ? null : me.rank} size={26} />
             <div className="min-w-0 flex-1 text-[12.5px]">
-              <div className="font-medium">{past ? "Your result" : "You're in"}</div>
-              <div className="truncate text-fg-3">{me.status === "disqualified" ? "Disqualified" : `${scoreText(c, me)} · ${me.trades} trades`}</div>
+              <div className="font-medium">{past ? t("rewards.tile.yourResult") : t("rewards.tile.youreIn")}</div>
+              <div className="truncate text-fg-3">{me.status === "disqualified" ? t("rewards.status.disqualified") : `${scoreText(c, me)} · ${t("rewards.value.trades", { count: me.trades })}`}</div>
             </div>
             {me.prize ? <span className="k-num text-[13px] font-semibold text-gold">{fmtUsd(me.prize, 0)}</span> : null}
           </div>
@@ -640,7 +646,7 @@ function ContestTile({ c, onJoined }: { c: ContestCard; onJoined: () => void }) 
           {!me && canJoin(c) ? <JoinContestButton c={c} onJoined={onJoined} size="sm" className="flex-1" /> : null}
           <Link href={`/rewards/contests/${c.id}`} className={cn(!me && canJoin(c) ? "" : "flex-1")}>
             <Button size="sm" variant="surface" className="w-full">
-              {past ? "Results" : "Details"}
+              {past ? t("rewards.tile.results") : t("rewards.tile.details")}
             </Button>
           </Link>
         </div>
@@ -653,26 +659,27 @@ function RewardsShortcuts() {
   const rewards = useGrowth<Rewards>("rewards");
   const cash = useGrowth<CashbackMe>("cashback");
   const r = rewards.data;
+  const t = useT();
   const items = [
     {
       href: "/rewards/loyalty",
       icon: "gem_stone",
-      title: r ? `${fmtPoints(r.points.balance)} points` : "Loyalty points",
-      sub: r ? `${r.tier.name} tier · ≈ ${fmtUsd(r.points.balance * r.pointValue)} value` : "Earn on every lot you trade",
-      chip: "Redeem",
+      title: r ? t("rewards.shortcuts.points", { points: fmtPoints(r.points.balance) }) : t("rewards.shortcuts.loyalty"),
+      sub: r ? t("rewards.shortcuts.tierValue", { tier: r.tier.name, value: fmtUsd(r.points.balance * r.pointValue) }) : t("rewards.shortcuts.loyaltySub"),
+      chip: t("rewards.shortcuts.redeem"),
     },
     {
       href: "/rewards/cashback",
       icon: "money_with_wings",
-      title: cash.data ? `${fmtUsd(cash.data.totals.lifetime)} cashback` : "Cashback",
-      sub: cash.data ? `${fmtUsd(cash.data.totals.accrued)} pending payout to wallet` : "Paid back per lot, to your wallet",
-      chip: "View",
+      title: cash.data ? t("rewards.shortcuts.cashbackValue", { amount: fmtUsd(cash.data.totals.lifetime) }) : t("rewards.shortcuts.cashback"),
+      sub: cash.data ? t("rewards.shortcuts.cashbackPending", { amount: fmtUsd(cash.data.totals.accrued) }) : t("rewards.shortcuts.cashbackSub"),
+      chip: t("rewards.shortcuts.view"),
     },
-    { href: "/rewards/promotions", icon: "wrapped_gift", title: "Promotions", sub: "Deposit bonuses and promo codes", chip: "Open" },
+    { href: "/rewards/promotions", icon: "wrapped_gift", title: t("rewards.shortcuts.promotions"), sub: t("rewards.shortcuts.promotionsSub"), chip: t("rewards.shortcuts.open") },
   ];
   return (
     <Card className="flex h-full flex-col">
-      <CardHeader title="Your rewards" subtitle="Everything you earn while trading" />
+      <CardHeader title={t("rewards.shortcuts.title")} subtitle={t("rewards.shortcuts.subtitle")} />
       <div className="mt-4 flex-1 space-y-2 px-4 pb-5 sm:px-6">
         {items.map((it) => (
           <Link key={it.href} href={it.href} className="k-row flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-surface-3/60">
@@ -693,24 +700,25 @@ function RewardsShortcuts() {
 
 function MyResults({ items }: { items: ContestCard[] }) {
   const rows = items.filter((c) => c.myEntry);
+  const t = useT();
   const columns: Column<ContestCard>[] = [
     {
       key: "name",
-      header: "Contest",
+      header: t("rewards.results.colContest"),
       cell: (c) => (
         <Link href={`/rewards/contests/${c.id}`} className="flex items-center gap-2 font-medium hover:underline hover:underline-offset-2">
           {kindChip(c)} {c.name}
         </Link>
       ),
     },
-    { key: "dates", header: "Dates", hideOn: "md", cell: (c) => <span className="k-num text-fg-2">{`${fmtDate(c.startsAt, false)} – ${fmtDate(c.endsAt)}`}</span>, sort: (c) => c.startsAt },
-    { key: "status", header: "Status", cell: (c) => <GrowthStatus status={c.myEntry?.status === "disqualified" ? "disqualified" : c.status} /> },
-    { key: "rank", header: "Rank", align: "right", cell: (c) => <span className="k-num font-medium">{c.myEntry?.rank ? `#${c.myEntry.rank}` : "—"}</span>, sort: (c) => c.myEntry?.rank ?? 99999 },
-    { key: "score", header: "Score", align: "right", cell: (c) => <span className={cn("k-num", scoreTone(c, c.myEntry!))}>{scoreText(c, c.myEntry!)}</span> },
-    { key: "trades", header: "Trades", align: "right", hideOn: "sm", cell: (c) => <span className="k-num text-fg-2">{c.myEntry!.trades}</span> },
+    { key: "dates", header: t("rewards.results.colDates"), hideOn: "md", cell: (c) => <span className="k-num text-fg-2">{`${fmtDate(c.startsAt, false)} – ${fmtDate(c.endsAt)}`}</span>, sort: (c) => c.startsAt },
+    { key: "status", header: t("common.status"), cell: (c) => <GrowthStatus status={c.myEntry?.status === "disqualified" ? "disqualified" : c.status} /> },
+    { key: "rank", header: t("rewards.results.colRank"), align: "right", cell: (c) => <span className="k-num font-medium">{c.myEntry?.rank ? `#${c.myEntry.rank}` : "—"}</span>, sort: (c) => c.myEntry?.rank ?? 99999 },
+    { key: "score", header: t("rewards.results.colScore"), align: "right", cell: (c) => <span className={cn("k-num", scoreTone(c, c.myEntry!))}>{scoreText(c, c.myEntry!)}</span> },
+    { key: "trades", header: t("rewards.results.colTrades"), align: "right", hideOn: "sm", cell: (c) => <span className="k-num text-fg-2">{c.myEntry!.trades}</span> },
     {
       key: "prize",
-      header: "Prize",
+      header: t("rewards.results.colPrize"),
       align: "right",
       cell: (c) =>
         c.myEntry?.prize ? (
@@ -725,9 +733,9 @@ function MyResults({ items }: { items: ContestCard[] }) {
   ];
   return (
     <Card id="my-results" className="scroll-mt-24">
-      <CardHeader title="My results" subtitle="Every contest you entered" icon={<Medal />} />
+      <CardHeader title={t("rewards.results.title")} subtitle={t("rewards.results.subtitle")} icon={<Medal />} />
       <div className="px-4 pb-6 pt-4 sm:px-6">
-        {rows.length === 0 ? <CardEmpty title="No entries yet" text="Join a contest above; your rank, score and prizes are tracked here." /> : <DataTable columns={columns} rows={rows} pageSize={8} rowKey={(c) => String(c.id)} />}
+        {rows.length === 0 ? <CardEmpty title={t("rewards.results.emptyTitle")} text={t("rewards.results.emptyText")} /> : <DataTable columns={columns} rows={rows} pageSize={8} rowKey={(c) => String(c.id)} />}
       </div>
     </Card>
   );
@@ -744,6 +752,7 @@ function pickFeatured(items: ContestCard[]) {
 }
 
 export function LiveContestsPage() {
+  const t = useT();
   const list = useGrowth<ContestsResp>("contests", 60_000);
   const featured = list.data ? pickFeatured(list.data.items) : null;
   const detail = useGrowth<ContestDetail>(featured ? `contests/${featured.id}` : null, 15_000);
@@ -752,8 +761,8 @@ export function LiveContestsPage() {
     detail.reload();
   };
 
-  const title = "Contests";
-  const subtitle = "Compete on demo or live accounts, climb the leaderboard and win cash prizes.";
+  const title = t("rewards.contests.title");
+  const subtitle = t("rewards.contests.subtitle");
   if (!list.data)
     return <PageFallback title={title} subtitle={subtitle} error={list.error} onRetry={list.reload} top={<BannerSlot placement="rewards" />} rows={[{ cols: "", h: "h-[320px]", n: 1 }, { cols: "sm:grid-cols-2 xl:grid-cols-4", h: "h-[150px]", n: 4 }]} />;
 
@@ -770,7 +779,7 @@ export function LiveContestsPage() {
         actions={
           <a href="#my-results">
             <Button variant="surface">
-              <Medal /> My results
+              <Medal /> {t("rewards.results.title")}
             </Button>
           </a>
         }
@@ -785,17 +794,17 @@ export function LiveContestsPage() {
         <Card>
           <div className="flex flex-col items-center px-6 py-12 text-center">
             <Icon3D name="trophy" size={52} />
-            <h3 className="mt-4 text-[17px] font-medium">No contest running right now</h3>
-            <p className="mt-1 max-w-md text-[13.5px] text-fg-3">New demo and live contests are announced here. Past results stay below.</p>
+            <h3 className="mt-4 text-[17px] font-medium">{t("rewards.contests.noneTitle")}</h3>
+            <p className="mt-1 max-w-md text-[13.5px] text-fg-3">{t("rewards.contests.noneText")}</p>
           </div>
         </Card>
       )}
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Contests entered" icon={<Medal />} value={<span className="k-num">{stats.entered}</span>} chip={`${stats.prizeFinishes} prize finish${stats.prizeFinishes === 1 ? "" : "es"}`} chipTone="gold" delay={0.05} />
-        <KpiCard label="Prizes won" icon={<Gift />} value={<Money value={stats.prizesWon} countUp={false} />} chip="Paid to wallet" chipTone="up" delay={0.1} />
-        <KpiCard label="Best finish" icon={<Trophy />} value={<span className="k-num">{stats.bestRank ? `#${stats.bestRank}` : "—"}</span>} chip={stats.bestRank ? "Across all contests" : "Not ranked yet"} delay={0.15} />
-        <KpiCard label="Active contests" value={<span className="k-num">{stats.active}</span>} hot illustration="trophy" chip={`${items.filter(isUpcoming).length} upcoming`} chipTone="ember" delay={0.2} />
+        <KpiCard label={t("rewards.contests.kpiEntered")} icon={<Medal />} value={<span className="k-num">{stats.entered}</span>} chip={t("rewards.contests.kpiPrizeFinishes", { count: stats.prizeFinishes })} chipTone="gold" delay={0.05} />
+        <KpiCard label={t("rewards.contests.kpiPrizesWon")} icon={<Gift />} value={<Money value={stats.prizesWon} countUp={false} />} chip={t("rewards.contests.kpiPaidToWallet")} chipTone="up" delay={0.1} />
+        <KpiCard label={t("rewards.contests.kpiBest")} icon={<Trophy />} value={<span className="k-num">{stats.bestRank ? `#${stats.bestRank}` : "—"}</span>} chip={stats.bestRank ? t("rewards.contests.kpiAcross") : t("rewards.contests.kpiNotRanked")} delay={0.15} />
+        <KpiCard label={t("rewards.contests.kpiActive")} value={<span className="k-num">{stats.active}</span>} hot illustration="trophy" chip={t("rewards.contests.kpiUpcoming", { count: items.filter(isUpcoming).length })} chipTone="ember" delay={0.2} />
       </div>
 
       {featured && (
@@ -816,7 +825,7 @@ export function LiveContestsPage() {
 
       {upcoming.length > 0 && (
         <Reveal delay={0.1} className="mt-8">
-          <SectionTitle title="Open for entry" text="Register early; seats on some contests are limited." />
+          <SectionTitle title={t("rewards.contests.openTitle")} text={t("rewards.contests.openText")} />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {upcoming.map((c) => (
               <ContestTile key={String(c.id)} c={c} onJoined={reload} />
@@ -827,7 +836,7 @@ export function LiveContestsPage() {
 
       {past.length > 0 && (
         <Reveal delay={0.1} className="mt-8">
-          <SectionTitle title="Past contests" text="Final standings and winners." />
+          <SectionTitle title={t("rewards.contests.pastTitle")} text={t("rewards.contests.pastText")} />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {past.slice(0, 8).map((c) => (
               <ContestTile key={String(c.id)} c={c} onJoined={reload} />
