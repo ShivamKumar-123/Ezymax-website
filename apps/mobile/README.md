@@ -168,7 +168,9 @@ if (!r.ok) show(r.error.message); // already in the reader's language
 | Group | Components |
 |---|---|
 | Text | `Text` (variants: title, headline, body, callout, caption, label), `Display` (Anton, uppercase), `Mono` (tabular) |
-| Surfaces | `Card`, `ColorBlock` (ember / gold / mint / periwinkle / cream), `Screen` (safe areas, header, pull-to-refresh, tab-bar padding, keyboard) |
+> **Colours and finish:** the app uses the web platform's colour family (`packages/ui/src/styles.css`: `#07070A` canvas, graphite surfaces, `#F5F5F7` text, ember `#FF5A1F`, light ember `#FF8A3D`, gold `#E9B949`, warm off-white `#F6F4F1`) and a MATTE FINISH: flat solid fills only, no gradients, gloss, sheen, glass, drop shadows or glows. Charts use flat lines and flat low-opacity fills. Always use tokens from `@/theme/tokens`, never hex values in feature code.
+
+| Surfaces | `Card`, `ColorBlock` (ember / gold / mint = light ember / periwinkle = warm sand / cream = warm off-white; all from the web colour family, flat matte fills only), `Screen` (safe areas, header, pull-to-refresh, tab-bar padding, keyboard) |
 | Controls | `Pill` / `PillRow`, `Button` (primary, secondary, ghost, cream, buy, sell), `IconButton`, `PressableScale` (press feedback + haptic), `TextField`, `OtpInput`, `Sheet` (bottom sheet) |
 | States and notices | `Skeleton`, `EmptyState`, `Illustration`, `Banner` |
 | Rows | `ListRow`, `Divider` |

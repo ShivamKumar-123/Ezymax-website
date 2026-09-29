@@ -1,38 +1,51 @@
-// Kalks mobile design tokens. Dark first: near-black canvas, big saturated colour blocks, cream text.
-// Rules: green / red are for money only (P&L, price direction), never decoration. No blur, glow or looping motion.
+// Kalks mobile design tokens. Same colour family as the web platform (packages/ui/src/styles.css, dark theme):
+// near-black canvas, graphite surfaces, neutral white text, Kalks ember + gold, and warm light tones for blocks.
+// MATTE FINISH: every surface is a flat solid fill. No gradients, gloss, sheen, glass, drop shadows or glows.
+// Rules: green / red are for money only (P&L, price direction), never decoration. No blur or looping motion.
 
 export const colors = {
-  bg: "#0E0E10",
-  bgRaised: "#131316",
-  surface: "#18181C",
-  surface2: "#202025",
-  surface3: "#2A2A30",
-  line: "rgba(245,239,227,0.08)",
-  lineStrong: "rgba(245,239,227,0.16)",
+  bg: "#07070A",
+  bgRaised: "#0C0C0F",
+  surface: "#111114",
+  surface2: "#17171C",
+  surface3: "#1E1E24",
+  line: "rgba(255,255,255,0.07)",
+  lineStrong: "rgba(255,255,255,0.14)",
 
-  text: "#F5EFE3",
-  text2: "rgba(245,239,227,0.66)",
-  text3: "rgba(245,239,227,0.42)",
-  /** Text on colour blocks */
-  ink: "#0E0E10",
-  ink2: "rgba(14,14,16,0.64)",
-  ink3: "rgba(14,14,16,0.42)",
+  text: "#F5F5F7",
+  text2: "#A1A1AA",
+  text3: "#63636E",
+  /** Text on colour blocks (every block colour is light enough for ink text) */
+  ink: "#0E0E12",
+  ink2: "rgba(14,14,18,0.66)",
+  ink3: "rgba(14,14,18,0.44)",
 
-  ember: "#F26A3D",
-  gold: "#F2B84B",
-  mint: "#7FD1B9",
-  periwinkle: "#8C8CF0",
-  cream: "#F5EFE3",
+  /** Kalks ember (web --k-ember) */
+  ember: "#FF5A1F",
+  /** Lighter ember (web --k-ember-2) */
+  ember2: "#FF8A3D",
+  emberSoft: "rgba(255,90,31,0.12)",
+  /** Kalks gold (web --k-gold) */
+  gold: "#E9B949",
+  goldSoft: "rgba(233,185,73,0.12)",
+  /** Block tone "mint" (kept for compatibility): now the lighter ember, same family as the web */
+  mint: "#FF8A3D",
+  /** Block tone "periwinkle" (kept for compatibility): now a warm sand tint of Kalks gold */
+  periwinkle: "#EAD9B8",
+  /** Warm off-white (web light theme --k-bg) */
+  cream: "#F6F4F1",
 
-  /** Money only: profit / buy / price up */
-  up: "#34C77B",
-  upSoft: "rgba(52,199,123,0.14)",
-  /** Money only: loss / sell / price down */
-  down: "#F05252",
-  downSoft: "rgba(240,82,82,0.14)",
+  /** Money only: profit / buy / price up (web --k-up) */
+  up: "#22C55E",
+  upSoft: "rgba(34,197,94,0.12)",
+  /** Money only: loss / sell / price down (web --k-down) */
+  down: "#F04438",
+  downSoft: "rgba(240,68,56,0.12)",
 
-  warn: "#F2B84B",
-  warnSoft: "rgba(242,184,75,0.12)",
+  warn: "#F59E0B",
+  warnSoft: "rgba(245,158,11,0.12)",
+  info: "#38BDF8",
+  infoSoft: "rgba(56,189,248,0.12)",
   scrim: "rgba(0,0,0,0.6)",
 } as const;
 
