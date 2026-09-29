@@ -1,0 +1,30 @@
+// Keys for this namespace. English is the source; translations live in ../<lang>/mobileHome.ts.
+// Kalks mobile app: Home tab. Headings are shown in tall uppercase display type: keep them short.
+const mobileHome = {
+  "greet.morning": "Good morning, {name}",
+  "greet.afternoon": "Good afternoon, {name}",
+  "greet.evening": "Good evening, {name}",
+  equity: "Equity",
+  closedToday: "Closed today",
+  openPnl: "Open P&L",
+  allLive: "All live accounts {amount}",
+  "quick.deposit": "Deposit",
+  "quick.withdraw": "Withdraw",
+  "quick.transfer": "Transfer",
+  "quick.trade": "Trade",
+  movers: "Top movers",
+  news: "Headlines",
+  allNews: "All news",
+  notifications: "Notifications",
+  "kyc.title": "Verify your identity",
+  "kyc.body": "Verification unlocks live trading and withdrawals. It takes a few minutes.",
+  "kyc.pending": "Verification in review",
+  "kyc.pendingBody": "We're checking your documents. You'll get a notification when it's done.",
+  "kyc.action": "Continue",
+  "noAccount.title": "Open your first account",
+  "noAccount.body": "A demo account is ready in seconds with virtual funds. Go live when you're ready.",
+  "noAccount.action": "Open an account",
+  "news.empty": "No headlines right now.",
+  "a11y.bell": "Notifications, {count} unread",
+};
+export default mobileHome;
