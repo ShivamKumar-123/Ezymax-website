@@ -83,7 +83,8 @@ export async function closePosition(ticket: number, volume?: number): Promise<Ac
   if (r.ok) {
     const profit = Number((r.data as { profit?: number }).profit ?? 0);
     haptic.success();
-    toast.show({ title: i18n.t("mobileTrade.toast.closed", { ticket }), body: fmtMoney(profit, { signed: true }), tone: profit >= 0 ? "success" : "error" });
+    const title = volume ? i18n.t("mobileTrade.toast.partial", { ticket, volume: volume.toFixed(2) }) : i18n.t("mobileTrade.toast.closed", { ticket });
+    toast.show({ title, body: fmtMoney(profit, { signed: true }), tone: profit >= 0 ? "success" : "error" });
   }
   return r;
 }

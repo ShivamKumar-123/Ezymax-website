@@ -53,6 +53,7 @@ const mobileTrade = {
   "toast.at": "at {price}",
   "toast.placed": "{symbol} pending order placed",
   "toast.closed": "Position #{ticket} closed",
+  "toast.partial": "Closed {volume} lots of #{ticket}",
   "toast.modified": "#{ticket} updated",
   "toast.cancelled": "Order #{ticket} cancelled",
 
