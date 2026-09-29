@@ -32,7 +32,8 @@ import mobileHome from "./mobileHome";
 import mobileWallet from "./mobileWallet";
 import mobileAccounts from "./mobileAccounts";
 import mobileReports from "./mobileReports";
+import mobileProp from "./mobileProp";
 
 /** English: the source language and the fallback for every missing translation. */
-export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, mobile, mobileAccounts, mobileAuth, mobileMarkets, mobileTrade, mobilePortfolio, mobileHome, mobileWallet, mobileReports };
+export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, mobile, mobileAccounts, mobileAuth, mobileMarkets, mobileTrade, mobilePortfolio, mobileHome, mobileWallet, mobileReports, mobileProp };
 export type EnCatalog = typeof en;
