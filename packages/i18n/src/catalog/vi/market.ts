@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "Chưa có mã yêu thích. Nhấp chuột phải vào một mã để thêm.",
+  "empty.favouritesTitle": "Chưa có mã yêu thích",
   "empty.noMatch": "Không có mã phù hợp.",
   "footer.count": "{shown} / {total} mã",
   "footer.hint": "nhấp đúp: biểu đồ",

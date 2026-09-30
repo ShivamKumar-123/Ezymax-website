@@ -19,7 +19,6 @@ const security: NsMessages<"security"> = {
   "device.unknownOs": "ระบบปฏิบัติการที่ไม่รู้จัก",
   // e.g. "Chrome on Windows"
   "device.on": "{browser} บน {os}",
-  "device.app": "แอป {brand} · {device}",
 
   // Compact "time ago" (min = minutes, h = hours, d = days)
   "ago.now": "เมื่อสักครู่",

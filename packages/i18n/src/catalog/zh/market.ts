@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "暂无收藏。右键点击交易品种即可添加。",
+  "empty.favouritesTitle": "暂无收藏",
   "empty.noMatch": "没有匹配的交易品种。",
   "footer.count": "{shown} / {total} 个交易品种",
   "footer.hint": "双击：图表",

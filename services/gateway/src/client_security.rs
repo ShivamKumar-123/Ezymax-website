@@ -93,17 +93,13 @@ pub async fn revoke_session(State(st): State<AppState>, ctx: Ctx, Path(id): Path
     }
     let row = sqlx::query(
         "UPDATE sessions SET revoked_at = now() WHERE id = $1 AND subject_kind = 'user' AND subject_id = $2 AND revoked_at IS NULL
-         RETURNING viewer_id, ip, user_agent, CASE WHEN viewer_id IS NULL AND impersonator_id IS NULL THEN device_ref END AS device_ref",
+         RETURNING viewer_id, ip, user_agent",
     )
     .bind(id)
     .bind(s.subject_id)
     .fetch_optional(&st.pool)
     .await?
     .ok_or(ApiError::NotFound)?;
-    // that device's phone stops receiving pushes (unless another session of the client still uses it)
-    if let Some(r) = row.get::<Option<String>, _>("device_ref") {
-        crate::push_revoke::sessions_ended(&st.pool, s.tenant_id, s.subject_id, &[r]).await;
-    }
     audit::record(&st.pool, &ctx, entry(s.tenant_id, s.subject_id, "user.session_revoked", json!({
         "session_id": id, "viewer_id": row.get::<Option<i64>, _>("viewer_id"), "ip": row.get::<Option<String>, _>("ip"),
     })))
@@ -113,17 +109,12 @@ pub async fn revoke_session(State(st): State<AppState>, ctx: Ctx, Path(id): Path
 
 pub async fn revoke_others(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value>> {
     let s = identity::resolve_session(&st, &ctx, K).await?;
-    let ended: Vec<Option<String>> = sqlx::query_scalar(
-        "UPDATE sessions SET revoked_at = now() WHERE subject_kind = 'user' AND subject_id = $1 AND id <> $2 AND revoked_at IS NULL
-         RETURNING CASE WHEN viewer_id IS NULL AND impersonator_id IS NULL THEN device_ref END",
-    )
-    .bind(s.subject_id)
-    .bind(s.session_id)
-    .fetch_all(&st.pool)
-    .await?;
-    let n = ended.len() as u64;
-    // the phones of those sessions stop receiving pushes (not this device's)
-    crate::push_revoke::sessions_ended(&st.pool, s.tenant_id, s.subject_id, &ended.into_iter().flatten().collect::<Vec<_>>()).await;
+    let n = sqlx::query("UPDATE sessions SET revoked_at = now() WHERE subject_kind = 'user' AND subject_id = $1 AND id <> $2 AND revoked_at IS NULL")
+        .bind(s.subject_id)
+        .bind(s.session_id)
+        .execute(&st.pool)
+        .await?
+        .rows_affected();
     audit::record(&st.pool, &ctx, entry(s.tenant_id, s.subject_id, "user.sessions_revoked", json!({ "count": n }))).await;
     Ok(Json(json!({ "status": "ok", "revoked": n })))
 }
@@ -801,8 +792,6 @@ pub async fn admin_revoke_all(State(st): State<AppState>, ctx: Ctx, Path(id): Pa
         .execute(&st.pool)
         .await?
         .rows_affected();
-    // signed out everywhere: every phone of the client stops receiving pushes
-    crate::push_revoke::client_signed_out(&st.pool, me.tenant_id, id).await;
     audit::record(&st.pool, &ctx, Entry { tenant_id: me.tenant_id, actor_kind: "staff", actor_id: Some(me.id), action: "admin.sessions_revoked", target: Some(("user", id)), meta: json!({ "count": n, "reason": reason }) }).await;
     Ok(Json(json!({ "status": "ok", "revoked": n })))
 }
@@ -912,10 +901,6 @@ pub async fn admin_process_request(State(st): State<AppState>, ctx: Ctx, Path(id
         sqlx::query("UPDATE client_viewers SET revoked_at = COALESCE(revoked_at, now()) WHERE user_id = $1").bind(user_id).execute(&mut *tx).await?;
     }
     tx.commit().await?;
-    if kind == "closure" && status == "completed" {
-        // a closed account's phones stop receiving pushes (queued after the commit: it never fails the closure)
-        crate::push_revoke::client_signed_out(&st.pool, me.tenant_id, user_id).await;
-    }
     audit::record(&st.pool, &ctx, Entry {
         tenant_id: me.tenant_id,
         actor_kind: "staff",

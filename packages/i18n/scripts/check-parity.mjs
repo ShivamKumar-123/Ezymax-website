@@ -3,8 +3,8 @@
 // {placeholder} and <tag>, and add nothing that English does not have.
 //
 //   node packages/i18n/scripts/check-parity.mjs                 # all namespaces, all locales
-//   node packages/i18n/scripts/check-parity.mjs --prefix mobile # namespaces starting with "mobile"
-//   node packages/i18n/scripts/check-parity.mjs --ns mobileHome,mobileTrade --lang ar,hi
+//   node packages/i18n/scripts/check-parity.mjs --prefix account # namespaces starting with "account"
+//   node packages/i18n/scripts/check-parity.mjs --ns wallet,portfolio --lang ar,hi
 //
 // Needs Node 23.6+ (TypeScript type stripping) to import the .ts catalogs directly. Exits 1 on problems.
 import { existsSync, readdirSync } from "node:fs";

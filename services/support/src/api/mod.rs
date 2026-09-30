@@ -7,7 +7,6 @@
 pub mod admin;
 pub mod client;
 pub mod notifications;
-pub mod push;
 pub mod stream;
 
 use crate::chat::{Agent, Client};
@@ -45,11 +44,6 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/notifications/me/read", post(notifications::my_read))
         .route("/v1/notifications/me/clear", post(notifications::my_clear))
         .route("/v1/notifications/me/prefs", get(notifications::my_prefs).put(notifications::my_prefs_put))
-        // mobile app phones (push tokens)
-        .route("/v1/push/tokens", post(push::register))
-        .route("/v1/push/tokens/delete", post(push::unregister))
-        .route("/v1/push/tokens/forget", post(push::forget))
-        .route("/v1/push/tokens/revoke", post(push::revoked))
         // Back Office
         .route("/v1/support/admin/conversations", get(admin::conversations))
         .route("/v1/support/admin/conversations/{id}", get(admin::conversation))

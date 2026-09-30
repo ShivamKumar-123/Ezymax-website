@@ -4,7 +4,6 @@
 //! backfills history, stores everything in PostgreSQL and serves candles + live quotes to the apps.
 //! Account-group spread markups (Back Office) are applied only to outgoing quotes.
 
-mod alerts;
 mod api;
 mod backfill;
 mod config;
@@ -65,9 +64,7 @@ async fn main() -> anyhow::Result<()> {
         });
     }
 
-    // price alerts: evaluated on every quote change, delivered through the notifications service (src/alerts)
-    let alerts = alerts::Alerts::start(alerts::Config::from_env(), market.clone()).await?;
-    let app = api::router(api::AppState { market: market.clone(), admin_token: cfg.admin_token.clone() }).merge(alerts::router(alerts));
+    let app = api::router(api::AppState { market: market.clone(), admin_token: cfg.admin_token.clone() });
     // TCP_NODELAY: every quote frame is tiny — never let Nagle hold one back waiting for an ACK
     let listener = axum::serve::ListenerExt::tap_io(tokio::net::TcpListener::bind(&cfg.bind).await?, |tcp| {
         let _ = tcp.set_nodelay(true);

@@ -18,7 +18,6 @@ const security: NsMessages<"security"> = {
   "device.unknownOs": "அறியப்படாத OS",
   // e.g. "Chrome on Windows"
   "device.on": "{os} இல் {browser}",
-  "device.app": "{brand} ஆப் · {device}",
 
   // Compact "time ago" (min = minutes, h = hours, d = days)
   "ago.now": "இப்போது",

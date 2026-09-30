@@ -11,8 +11,7 @@ if [ -z "${KALKS_DEPLOY_PULLED:-}" ]; then
   git pull --ff-only
   KALKS_DEPLOY_PULLED=1 exec "$0" "$@"
 fi
-# the mobile app (apps/mobile, Expo) is built with EAS, never on the server: skip its React Native toolchain
-pnpm install --frozen-lockfile --filter '!@kalks/mobile'
+pnpm install --frozen-lockfile
 cargo build --release -p market-data -p gateway -p trading -p prop -p ib
 cargo build --release -p academy
 cargo build --release -p algo
@@ -129,9 +128,6 @@ fi
 grep -q '^SUPPORT_STORAGE_DIR=' .env.local || printf 'SUPPORT_STORAGE_DIR=%s\n' "$HOME/.kalks-data/support" >> .env.local
 grep -q '^SUPPORT_APP_URL=' .env.local || printf 'SUPPORT_APP_URL=https://app.kalkstrade.com\n' >> .env.local
 install -d -m 700 "$(grep '^SUPPORT_STORAGE_DIR=' .env.local | cut -d= -f2-)"
-# mobile push through the Expo push service (services/support src/push.rs): on in production. SUPPORT_EXPO_ACCESS_TOKEN
-# is only needed when the Expo project turns on "enhanced push security"; add it to .env.local by hand.
-grep -q '^SUPPORT_PUSH_ENABLED=' .env.local || printf 'SUPPORT_PUSH_ENABLED=true\n' >> .env.local
 # the Client Area, Back Office and Kalks Trader BFFs reach the support service with the same token; browsers
 # open the realtime stream at wss://<host>/support/stream (Caddy). Wallet, prop and IB push notifications with it too.
 for app in apps/crm apps/admin apps/terminal; do
@@ -173,15 +169,9 @@ for app in apps/crm apps/admin apps/terminal; do
   grep -q '^NEWS_URL=' "$f" || printf 'NEWS_URL=http://127.0.0.1:8103\n' >> "$f"
   grep -q '^NEWS_INTERNAL_TOKEN=' "$f" || printf 'NEWS_INTERNAL_TOKEN=%s\n' "$(grep '^NEWS_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
 done
-# market-data price alerts: internal token generated once (never printed). The Client Area BFF manages clients'
-# alerts with it (/v1/internal/alerts, never exposed by Caddy); triggers go out through the support service
-# (SUPPORT_INTERNAL_TOKEN, already in .env.local).
-grep -q '^MARKET_DATA_INTERNAL_TOKEN=' .env.local || printf 'MARKET_DATA_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
+# the Client Area's public URLs, inlined at build time: market-data at the public edge (live quotes in the browser)
+# and Kalks Trader (Trade links and sign-in hand-off)
 f=apps/crm/.env.production.local; touch "$f"
-grep -q '^MARKET_DATA_URL=' "$f" || printf 'MARKET_DATA_URL=http://127.0.0.1:8081\n' >> "$f"
-grep -q '^MARKET_DATA_INTERNAL_TOKEN=' "$f" || printf 'MARKET_DATA_INTERNAL_TOKEN=%s\n' "$(grep '^MARKET_DATA_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
-# mobile app: /api/mobile/config hands phones the public quote / chart / engine-stream hosts. They are built from
-# these (public) URLs; unset, phones would be sent to app.kalkstrade.com, which Caddy routes to the Client Area.
 grep -q '^NEXT_PUBLIC_MARKET_DATA_URL=' "$f" || printf 'NEXT_PUBLIC_MARKET_DATA_URL=https://api.kalkstrade.com\n' >> "$f"
 grep -q '^NEXT_PUBLIC_TERMINAL_URL=' "$f" || printf 'NEXT_PUBLIC_TERMINAL_URL=https://trade.kalkstrade.com\n' >> "$f"
 pnpm turbo run build --filter=@kalks/crm --filter=@kalks/admin --filter=@kalks/terminal --concurrency=1
@@ -211,5 +201,3 @@ printf "%-26s %s\n" 127.0.0.1:8100/health "$(curl -s -o /dev/null -w '%{http_cod
 printf "%-26s %s\n" 127.0.0.1:8101/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8101/health)"
 printf "%-26s %s\n" 127.0.0.1:8102/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8102/health)"
 printf "%-26s %s\n" 127.0.0.1:8103/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8103/health)"
-# what phones are told (public URLs only)
-printf "%-26s %s\n" "mobile config" "$(curl -s -m 10 -H 'x-forwarded-host: app.kalkstrade.com' -H 'x-forwarded-proto: https' http://127.0.0.1:3000/api/mobile/config | head -c 400)"

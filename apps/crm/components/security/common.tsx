@@ -63,34 +63,12 @@ export function useSec<T>(path: string, ms = 0) {
   return { data, error, reload };
 }
 
-export type Device = {
-  browser: string;
-  os: string;
-  kind: "desktop" | "mobile" | "tablet" | "app" | "unknown";
-  /** The phone a session of the mobile app runs on ("iPhone", "Pixel 8", "Android"). */
-  device?: string;
-};
+export type Device = { browser: string; os: string; kind: "desktop" | "mobile" | "tablet" | "unknown" };
 
-/**
- * A session of the mobile app. The app talks to the server with the phone's own networking, not a browser: iOS
- * sends `<App>/<build> CFNetwork/… Darwin/…` (the app is iPhone-only: an iPad runs it as an iPhone app), Android
- * `okhttp/…` or `Dalvik/… (Linux; U; Android 14; <model> Build/…)`.
- */
-function appDevice(u: string): Device | null {
-  if (/Safari\/|Chrome\/|Firefox\//.test(u)) return null;
-  if (/CFNetwork\/|Darwin\//.test(u)) return { browser: "app", os: "iOS", kind: "app", device: "iPhone" };
-  const dalvik = /Dalvik\/[\d.]+ \(Linux; U; Android [\d.]+; ([^;)]+?)(?: Build\/[^)]*)?\)/.exec(u);
-  if (dalvik) return { browser: "app", os: "Android", kind: "app", device: dalvik[1]!.trim() || "Android" };
-  if (/^okhttp\//i.test(u)) return { browser: "app", os: "Android", kind: "app", device: "Android" };
-  return null;
-}
-
-/** Browser (or the mobile app), OS and form factor from a user-agent string (best effort, no external data). */
+/** Browser, OS and form factor from a user-agent string (best effort, no external data). */
 export function parseDevice(ua: string | null | undefined): Device {
   const u = ua ?? "";
   if (!u) return { browser: tr("security.device.unknownBrowser"), os: tr("security.device.unknownDevice"), kind: "unknown" };
-  const app = appDevice(u);
-  if (app) return app;
   const browser = /Edg\//.test(u)
     ? "Edge"
     : /OPR\/|Opera/.test(u)
@@ -125,13 +103,8 @@ export function parseDevice(ua: string | null | undefined): Device {
   return { browser, os, kind };
 }
 
-/** "Chrome on Windows"; a session of the mobile app reads "Kalks app · iPhone" (`brand`: the broker's name). */
-export function deviceName(d: Device, brand: string): string {
-  return d.kind === "app" ? tr("security.device.app", { brand, device: d.device ?? d.os }) : tr("security.device.on", { browser: d.browser, os: d.os });
-}
-
 export function DeviceIcon({ kind, className }: { kind: Device["kind"]; className?: string }) {
-  const I = kind === "mobile" || kind === "app" ? Smartphone : kind === "tablet" ? Tablet : kind === "desktop" ? Laptop : kind === "unknown" ? Globe2 : Monitor;
+  const I = kind === "mobile" ? Smartphone : kind === "tablet" ? Tablet : kind === "desktop" ? Laptop : kind === "unknown" ? Globe2 : Monitor;
   return <I className={className} />;
 }
 

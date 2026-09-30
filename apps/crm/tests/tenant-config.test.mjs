@@ -3,8 +3,7 @@
 //
 // What it guards: a page or BFF path follows its module; the strategy catalogue (/api/algo/meta) and the account
 // picker (/api/algo/accounts) serve both the strategy builder and AI Trader (Algo) and API keys and webhooks (API), so
-// they stay open while EITHER module is on and close only when both are off; the same holds through the mobile app's
-// /api/mobile/algo/* rewrites.
+// they stay open while EITHER module is on and close only when both are off.
 
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -84,12 +83,4 @@ test("the strategy catalogue and account picker stay open while Algo or API is o
   assert.equal(await gate(m, "algo-off.broker.test", "/api/algo/strategies"), "off");
   assert.equal(await gate(m, "algo-off.broker.test", "/api/algo/ai/strategy"), "off");
   assert.equal(await gate(m, "algo-off.broker.test", "/api/algo/keys"), "open");
-});
-
-test("the mobile app's algo routes follow the same rule", async () => {
-  const m = await load();
-  assert.equal(await gate(m, "api-off.broker.test", "/api/mobile/algo/meta"), "open");
-  assert.equal(await gate(m, "algo-off.broker.test", "/api/mobile/algo/accounts"), "open");
-  assert.equal(await gate(m, "both-off.broker.test", "/api/mobile/algo/accounts"), "off");
-  assert.equal(await gate(m, "api-off.broker.test", "/api/mobile/algo/keys"), "off");
 });

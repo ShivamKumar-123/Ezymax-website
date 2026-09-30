@@ -18,8 +18,6 @@ const security = {
   "device.unknownOs": "Unknown OS",
   // e.g. "Chrome on Windows"
   "device.on": "{browser} on {os}",
-  // a session of the mobile app, e.g. "Kalks app · iPhone" ({brand} = the broker's name, {device} = iPhone, Android or the phone model)
-  "device.app": "{brand} app · {device}",
 
   // Compact "time ago" (min = minutes, h = hours, d = days)
   "ago.now": "Just now",

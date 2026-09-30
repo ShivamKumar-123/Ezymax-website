@@ -35,14 +35,6 @@ pub struct Config {
     /// Polling adapters (KYC decisions, trading stop-outs / margin calls / SL-TP fills, wallet) on top of POST /v1/notify.
     pub adapters: bool,
     pub adapter_secs: u64,
-    /// Mobile push through the Expo push service (`SUPPORT_PUSH_ENABLED`, default on in production).
-    pub push_enabled: bool,
-    /// Expo push API base: `<base>/send` and `<base>/getReceipts`.
-    pub expo_push_url: String,
-    /// Expo access token, needed only when the Expo project turns on "enhanced push security".
-    pub expo_access_token: String,
-    /// How long after sending a push its delivery receipt is checked (Expo: about 15 minutes).
-    pub push_receipt_delay_secs: i64,
     pub log_json: bool,
 }
 
@@ -86,9 +78,6 @@ impl fmt::Debug for Config {
             .field("smtp_user", &redact(&self.smtp_user))
             .field("workers", &self.workers)
             .field("adapters", &self.adapters)
-            .field("push_enabled", &self.push_enabled)
-            .field("expo_push_url", &self.expo_push_url)
-            .field("expo_access_token", &redact(&self.expo_access_token))
             .finish()
     }
 }
@@ -131,10 +120,6 @@ impl Config {
             workers: var("SUPPORT_WORKERS", "true") != "false",
             adapters: var("SUPPORT_ADAPTERS", "true") != "false",
             adapter_secs: var("SUPPORT_ADAPTER_SECS", "15").parse().unwrap_or(15).max(3),
-            push_enabled: var("SUPPORT_PUSH_ENABLED", if production { "true" } else { "false" }) == "true",
-            expo_push_url: var("SUPPORT_EXPO_PUSH_URL", "https://exp.host/--/api/v2/push").trim_end_matches('/').to_string(),
-            expo_access_token: var("SUPPORT_EXPO_ACCESS_TOKEN", ""),
-            push_receipt_delay_secs: var("SUPPORT_PUSH_RECEIPT_DELAY_SECS", "900").parse().unwrap_or(900).clamp(0, 86_400),
             log_json: var("SUPPORT_LOG_FORMAT", "json") == "json",
         })
     }
@@ -168,10 +153,6 @@ impl Config {
             workers: false,
             adapters: false,
             adapter_secs: 15,
-            push_enabled: false,
-            expo_push_url: "http://127.0.0.1:9".into(),
-            expo_access_token: String::new(),
-            push_receipt_delay_secs: 0,
             log_json: false,
         }
     }

@@ -13,9 +13,11 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "postinstall": "node scripts/sync-assets.mjs",
-    "sync-assets": "node scripts/sync-assets.mjs"
+    "sync-assets": "node scripts/sync-assets.mjs",
+    "illustrations": "node scripts/process-illustrations.mjs"
   },
   "devDependencies": {
+    "sharp": "0.34.4",
     "turbo": "2.11.3",
     "typescript": "5.9.3"
   }

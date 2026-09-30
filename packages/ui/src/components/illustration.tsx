@@ -5,8 +5,8 @@ import { WEB_ILLUSTRATIONS, type IllustrationName } from "./illustrations.genera
 export type { IllustrationName };
 
 /**
- * The founder's illustrations on the web (public/illustrations of the app; made, with the phone copies, by
- * apps/mobile/scripts/process-illustrations.mjs). Only for empty and success states: never on data screens.
+ * The founder's illustrations on the web (public/illustrations of the app; made by scripts/process-illustrations.mjs
+ * at the repo root). Only for empty and success states: never on data screens.
  *
  * Sized by its container: fills the available width up to `width` px and never gets taller than `maxHeight` px (tall
  * art is narrowed, so every picture sits in the same box). Intrinsic width / height keep the space reserved while it

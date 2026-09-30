@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // 빈 상태 및 하단
   "empty.favourites": "아직 즐겨찾기가 없습니다. 종목을 마우스 오른쪽 버튼으로 클릭하여 추가하세요.",
+  "empty.favouritesTitle": "아직 즐겨찾기가 없습니다",
   "empty.noMatch": "일치하는 종목이 없습니다.",
   "footer.count": "종목 {shown} / {total}",
   "footer.hint": "더블클릭: 차트",

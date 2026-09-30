@@ -40,7 +40,6 @@ Config env vars (with defaults) are listed in `src/config.rs`. The instrument li
 | `GET /v1/history/status` | stored bars per symbol/timeframe |
 | `GET/PUT /v1/admin/spreads` | spread markups per group/symbol (`Authorization: Bearer $MARKET_DATA_ADMIN_TOKEN`); body `{group_code, symbol ("*" = all), markup_points, min_spread_points}` |
 | `GET /v1/depth?symbol=XAUUSD&group=standard&levels=10` | depth of market `{src, t, bids, asks}` (levels best first, `[price, lots]`) |
-| `GET/POST /v1/internal/alerts`, `PATCH/DELETE /v1/internal/alerts/{id}`, `GET/DELETE /v1/internal/alerts/history` | client price alerts for the Client Area BFF (`X-Kalks-Internal: $MARKET_DATA_INTERNAL_TOKEN`, `X-Kalks-Tenant`, `X-Kalks-User-Id`); never served at the public edge. See [Price alerts](#price-alerts) |
 | `WS /v1/stream?group=pro` | send `{"op":"subscribe","symbols":[..]}` → `{"type":"quote","s","b","a","l","t"}`; `{"op":"bars","symbol","tf"}` → `{"type":"bar","s","tf","t","o","h","l","c","v"}`; `{"op":"depth","symbols":[..],"levels"?:10}` → `{"type":"depth","s","src","t","b":[[p,lots]..],"a":[..]}` on every quote change (`unsubscribe` / `unbars` / `undepth` to stop) |
 
 Timeframes: `M1 M5 M15 M30 H1 H4 D1 W1 MN`.
@@ -68,30 +67,3 @@ Kalks Trader's ladder is served here (`src/depth.rs`), with the account group's 
 - **Indicative** (`src: "indicative"`): otherwise (Infoway sends only the top of book for FX and metals) levels step out from the live bid/ask by half the instrument's typical spread; sizes follow a fixed per-asset-class liquidity profile, scaled down when the raw spread is wider than typical. Deterministic: the same quote gives the same ladder. The terminal labels it Indicative.
 - Relay mode (local development) asks the upstream for provider depth only (`"src":"feed"`) and never opens a provider connection.
 
-## Price alerts
-
-Clients' price alerts are evaluated here, on the quotes this service already has (`src/alerts/`). The mobile app sets them through the Client Area BFF (`/api/mobile/alerts…`).
-
-- **Conditions.**
-  - `above` / `below`: the price crosses a level. The level must be on the far side of the market when the alert is set (it never fires at once), and within 10x of the price.
-  - `change_up` / `change_down`: the price moves by 0.01–50 % from a reference. The reference is the price when the alert was set, or when it last triggered.
-- **Price.** The bid or the ask of the client's account (spread) group, i.e. the group's markup applied: the exact quote the client sees. Out-of-session prints never reach alerts.
-- **One-shot or repeating.**
-  - A one-shot alert is done after its trigger. It can be set again (`PATCH … {active: true}`).
-  - A repeating level alert re-arms once the price is back on the other side of the level.
-  - A repeating % alert measures its next move from the trigger price.
-  - A repeating alert fires at most once per `ALERTS_REPEAT_COOLDOWN_SECS` (default 300).
-- **Expiry** (optional, up to a year) and **pause / resume**. A client has at most `ALERTS_MAX_PER_USER` live (active or paused) alerts (default 50).
-- **Evaluation.** On every quote change of a symbol that has live alerts: an in-memory list per symbol, a few comparisons per alert, no IO on the quote path. A trigger is committed with its history row in one statement, guarded by the alert's revision: a trigger decided on a version the client has since edited, paused or deleted is dropped.
-- **Delivery.** The history row (`price_alert_events`) is also the outbox. Every trigger goes once to the notifications service (services/support `POST /v1/notify`, type `alerts.price`, dedupe key `alert:<event id>`, link `/alerts`): the bell, email per the client's "Price alerts" preference, and phone push. It is retried with back-off (5 s … 1 h) while that service is down, and marked failed after 12 attempts or a day. It stays in the client's history either way.
-- **Housekeeping.** Expired alerts are retired every 15 s. Finished alerts and history older than 90 days, and history beyond 500 rows per client, are pruned hourly; nothing waiting for delivery is removed.
-
-| Variable | Default | |
-|---|---|---|
-| `MARKET_DATA_INTERNAL_TOKEN` | – | `X-Kalks-Internal` of the alerts API (Client Area BFF). Empty = the API answers 503; alerts already set keep running |
-| `MARKET_DATA_SUPPORT_URL` | `http://127.0.0.1:8100` | notifications service |
-| `SUPPORT_INTERNAL_TOKEN` | – | its internal token; empty = triggers are kept but not delivered |
-| `ALERTS_MAX_PER_USER` | `50` | live alerts per client |
-| `ALERTS_REPEAT_COOLDOWN_SECS` | `300` | shortest time between two triggers of a repeating alert |
-
-Tests: `cargo test -p market-data` covers the rules, and runs end-to-end flows against a throw-away database on :5433 (`MARKET_DATA_TEST_DATABASE_URL`). The flows cover ownership, validation against the market, group prices, one-shot / repeating / % triggers, the cooldown, the limit, pause and resume, stale triggers, expiry, delivery retries and history. They are skipped without PostgreSQL.

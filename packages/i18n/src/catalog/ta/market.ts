@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "இன்னும் பிடித்தவை இல்லை. சேர்க்க ஒரு சிம்பலில் ரைட்-கிளிக் செய்யுங்கள்.",
+  "empty.favouritesTitle": "இன்னும் பிடித்தவை இல்லை",
   "empty.noMatch": "பொருந்தும் சிம்பல்கள் இல்லை.",
   "footer.count": "{shown} / {total} சிம்பல்கள்",
   "footer.hint": "இரு-கிளிக்: சார்ட்",

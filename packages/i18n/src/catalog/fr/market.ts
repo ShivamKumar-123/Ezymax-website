@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "Aucun favori pour le moment. Faites un clic droit sur un symbole pour l'ajouter.",
+  "empty.favouritesTitle": "Aucun favori",
   "empty.noMatch": "Aucun symbole correspondant.",
   "footer.count": "{shown} / {total} symboles",
   "footer.hint": "double-clic : graphique",

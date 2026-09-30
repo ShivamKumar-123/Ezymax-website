@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "Henüz favori yok. Eklemek için bir sembole sağ tıklayın.",
+  "empty.favouritesTitle": "Henüz favori yok",
   "empty.noMatch": "Eşleşen sembol yok.",
   "footer.count": "{shown} / {total} sembol",
   "footer.hint": "çift tık: grafik",

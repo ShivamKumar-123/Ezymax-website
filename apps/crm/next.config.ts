@@ -14,8 +14,8 @@ const config: NextConfig = {
   async redirects() {
     return [{ source: "/trade", destination: `${TERMINAL_URL}/`, permanent: false }];
   },
-  // Illustrations (public/illustrations, made by apps/mobile/scripts/process-illustrations.mjs): every URL carries a
-  // content hash (?v=, see Illustration in @kalks/ui), so browsers and the CDN may keep a file for a year.
+  // Illustrations (public/illustrations, made by scripts/process-illustrations.mjs): every URL carries a content hash
+  // (?v=, see Illustration in @kalks/ui), so browsers and the CDN may keep a file for a year.
   async headers() {
     return [{ source: "/illustrations/:file*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] }];
   },

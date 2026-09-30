@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Estados vazios e rodapé
   "empty.favourites": "Nenhum favorito ainda. Clique com o botão direito em um símbolo para adicioná-lo.",
+  "empty.favouritesTitle": "Nenhum favorito ainda",
   "empty.noMatch": "Nenhum símbolo encontrado.",
   "footer.count": "{shown} / {total} símbolos",
   "footer.hint": "clique duplo: gráfico",

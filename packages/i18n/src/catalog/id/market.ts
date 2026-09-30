@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "Belum ada favorit. Klik kanan simbol untuk menambahkannya.",
+  "empty.favouritesTitle": "Belum ada favorit",
   "empty.noMatch": "Tidak ada simbol yang cocok.",
   "footer.count": "{shown} / {total} simbol",
   "footer.hint": "klik ganda: grafik",

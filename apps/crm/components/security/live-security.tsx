@@ -4,11 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { Clock, Download, Eye, FileArchive, History, KeyRound, LogOut, MailCheck, MonitorSmartphone, ShieldCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Flag, PageHeader, Skeleton, useBrand, type ChipTone, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Flag, PageHeader, Skeleton, type ChipTone, type Column } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
 import { ChangePasswordCard } from "@/components/profile/change-password";
 import { useSession } from "@/components/session";
-import { DeviceIcon, ago, countryName, day, deviceName, idleLabel, parseDevice, secApi, useSec, when, type SecError } from "./common";
+import { DeviceIcon, ago, countryName, day, idleLabel, parseDevice, secApi, useSec, when, type SecError } from "./common";
 
 type SessionRow = {
   id: number;
@@ -82,8 +82,6 @@ function Place({ ip, country }: { ip: string | null; country: string | null }) {
 
 function SessionsCard({ page, error, reload }: { page: SessionsPage | null; error: SecError | null; reload: () => void }) {
   const t = useT();
-  // a session of the mobile app reads "<brand> app · iPhone" (the broker's brand; Kalks by default)
-  const brand = useBrand()?.name ?? "Kalks";
   const [confirmAll, setConfirmAll] = React.useState(false);
   const [busy, setBusy] = React.useState<number | "all" | null>(null);
   const now = Date.now();
@@ -95,7 +93,7 @@ function SessionsCard({ page, error, reload }: { page: SessionsPage | null; erro
     setBusy(null);
     if (!r.ok) return toast.error(t("security.sessions.revokeFailed"), { description: r.error.message });
     const d = parseDevice(s.user_agent);
-    toast.success(t("security.sessions.revoked"), { description: s.viewer ? t("security.sessions.viewerLogin", { label: s.viewer.label ?? t("security.sessions.viewer") }) : deviceName(d, brand) });
+    toast.success(t("security.sessions.revoked"), { description: s.viewer ? t("security.sessions.viewerLogin", { label: s.viewer.label ?? t("security.sessions.viewer") }) : t("security.device.on", { browser: d.browser, os: d.os }) });
     reload();
   };
   const revokeAll = async () => {
@@ -121,7 +119,9 @@ function SessionsCard({ page, error, reload }: { page: SessionsPage | null; erro
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium">
-                <span className="truncate">{deviceName(d, brand)}</span>
+                <span className="truncate">
+                  {t("security.device.on", { browser: d.browser, os: d.os })}
+                </span>
                 {s.current && (
                   <Chip size="sm" tone="up" dot>
                     {t("security.sessions.thisDevice")}
@@ -210,7 +210,6 @@ function SessionsCard({ page, error, reload }: { page: SessionsPage | null; erro
 function LoginHistory() {
   const t = useT();
   const broker = useSession().tenant.name;
-  const brand = useBrand()?.name ?? "Kalks";
   const { data, error, reload } = useSec<{ items: LoginRow[] }>("logins");
   const resultLabel = (r: string) => (RESULT[r] ? t.dyn(`security.result.${r}`, r, { broker }) : r);
   const cols: Column<LoginRow>[] = [
@@ -232,10 +231,17 @@ function LoginHistory() {
       key: "device",
       header: t("security.col.device"),
       hideOn: "md",
-      csv: (r) => deviceName(parseDevice(r.user_agent), brand),
+      csv: (r) => {
+        const d = parseDevice(r.user_agent);
+        return t("security.device.on", { browser: d.browser, os: d.os });
+      },
       cell: (r) => {
         const d = parseDevice(r.user_agent);
-        return <span className="text-fg-2">{d.kind === "app" ? deviceName(d, brand) : `${d.browser} · ${d.os}`}</span>;
+        return (
+          <span className="text-fg-2">
+            {d.browser} · {d.os}
+          </span>
+        );
       },
     },
     { key: "place", header: t("security.col.place"), csv: (r) => `${r.country ?? ""} ${r.ip ?? ""}`.trim(), cell: (r) => <Place ip={r.ip} country={r.country} /> },

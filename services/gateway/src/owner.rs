@@ -636,8 +636,6 @@ pub async fn suspend_tenant(State(st): State<AppState>, ctx: Ctx, Path(id): Path
         return if exists.is_some() { Ok(Json(json!({ "status": "ok", "already": true }))) } else { Err(ApiError::NotFound) };
     }
     let sessions = sqlx::query("UPDATE sessions SET revoked_at = now() WHERE tenant_id = $1 AND revoked_at IS NULL").bind(id).execute(&st.pool).await?.rows_affected();
-    // every phone of the broker's clients stops receiving pushes
-    crate::push_revoke::tenant_signed_out(&st.pool, id).await;
     audit::record(&st.pool, &ctx, entry(&me, "owner.tenant_suspended", id, json!({"reason": reason, "sessions_revoked": sessions, "before": {"status": "active"}, "after": {"status": "suspended"}}))).await;
     Ok(Json(json!({ "status": "ok", "sessions_revoked": sessions })))
 }

@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "لا توجد مفضّلات بعد. انقر بزر الماوس الأيمن على رمز لإضافته.",
+  "empty.favouritesTitle": "لا توجد مفضّلات بعد",
   "empty.noMatch": "لا توجد رموز مطابقة.",
   "footer.count": "{shown} / {total} رمز",
   "footer.hint": "نقر مزدوج: رسم بياني",

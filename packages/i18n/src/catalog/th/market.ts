@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "ยังไม่มีรายการโปรด คลิกขวาที่สัญลักษณ์เพื่อเพิ่ม",
+  "empty.favouritesTitle": "ยังไม่มีรายการโปรด",
   "empty.noMatch": "ไม่มีสัญลักษณ์ที่ตรงกัน",
   "footer.count": "{shown} / {total} สัญลักษณ์",
   "footer.hint": "ดับเบิลคลิก: กราฟ",

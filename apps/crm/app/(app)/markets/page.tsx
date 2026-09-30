@@ -272,7 +272,7 @@ export default function MarketsPage() {
               onRowClick={(i) => setOpen(i.symbol)}
               empty={
                 tab === "fav" && !q ? (
-                  <EmptyState art="emptyWatchlist" title={t("mobileMarkets.empty.favourites.title")} action={<Button variant="surface" onClick={() => setTab("all")}>{t("common.viewAll")}</Button>} />
+                  <EmptyState art="emptyWatchlist" title={t("market.empty.favouritesTitle")} action={<Button variant="surface" onClick={() => setTab("all")}>{t("common.viewAll")}</Button>} />
                 ) : (
                   <EmptyState illustration="magnifying_glass_tilted_left" title={t("market.empty.noMatch")} />
                 )

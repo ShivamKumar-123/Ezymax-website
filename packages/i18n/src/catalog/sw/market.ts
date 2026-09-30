@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "Bado hakuna vipendwa. Bofya kulia kwenye alama ili kuiongeza.",
+  "empty.favouritesTitle": "Bado hakuna vipendwa",
   "empty.noMatch": "Hakuna alama zinazolingana.",
   "footer.count": "Alama {shown} / {total}",
   "footer.hint": "bofya mara 2: chati",

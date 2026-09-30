@@ -800,10 +800,6 @@ pub async fn set_restriction(st: &AppState, ctx: &Ctx, me: &Staff, id: i64, kind
             .rows_affected();
     }
     tx.commit().await?;
-    if kind == "login" {
-        // a blocked client's phones stop receiving pushes (queued after the commit: it never fails the block)
-        crate::push_revoke::client_signed_out(&st.pool, me.tenant_id, id).await;
-    }
     audit::record(&st.pool, ctx, Entry {
         tenant_id: me.tenant_id,
         actor_kind: "staff",

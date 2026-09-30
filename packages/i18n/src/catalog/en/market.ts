@@ -31,6 +31,8 @@ const market = {
 
   // Empty states and footer
   "empty.favourites": "No favourites yet. Right-click a symbol to add it.",
+  // title of the empty Favourites tab on the Client Area's Markets page
+  "empty.favouritesTitle": "No favourites yet",
   "empty.noMatch": "No symbols match.",
   "footer.count": "{shown} / {total} symbols",
   "footer.hint": "dbl-click: chart",

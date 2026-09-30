@@ -24,7 +24,6 @@ mod mail_i18n;
 mod mailer;
 mod marketing;
 mod owner;
-mod push_revoke;
 mod ratelimit;
 mod rbac;
 mod shares;
@@ -139,21 +138,6 @@ async fn main() -> anyhow::Result<()> {
                 let _ = sqlx::query("DELETE FROM stepup_tokens WHERE expires_at < now() - interval '1 day'").execute(&st.pool).await;
                 let _ = sqlx::query("DELETE FROM sessions WHERE expires_at < now() - interval '30 days'").execute(&st.pool).await;
                 let _ = owner::mark_overdue(&st.pool).await;
-                let _ = push_revoke::sweep(&st.pool).await;
-            }
-        });
-    }
-    // the phones of revoked sessions stop receiving pushes: revocations go to the support service (push_revoke.rs)
-    {
-        let st = st.clone();
-        tokio::spawn(async move {
-            let http = push_revoke::http();
-            let mut tick = tokio::time::interval(Duration::from_secs(5));
-            loop {
-                tick.tick().await;
-                if let Err(e) = push_revoke::deliver(&st, &http).await {
-                    tracing::warn!(error = %e, "push revocations not delivered");
-                }
             }
         });
     }

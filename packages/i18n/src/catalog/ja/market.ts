@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "お気に入りはまだありません。銘柄を右クリックして追加してください。",
+  "empty.favouritesTitle": "お気に入りはまだありません",
   "empty.noMatch": "一致する銘柄はありません。",
   "footer.count": "{shown} / {total} 銘柄",
   "footer.hint": "ダブルクリック：チャート",

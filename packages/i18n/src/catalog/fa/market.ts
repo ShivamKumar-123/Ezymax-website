@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "هنوز علاقه‌مندی ندارید. برای افزودن روی یک نماد راست‌کلیک کنید.",
+  "empty.favouritesTitle": "هنوز علاقه‌مندی ندارید",
   "empty.noMatch": "نمادی یافت نشد.",
   "footer.count": "{shown} / {total} نماد",
   "footer.hint": "دوبار کلیک: نمودار",

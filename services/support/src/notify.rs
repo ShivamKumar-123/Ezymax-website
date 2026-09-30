@@ -1,6 +1,5 @@
 //! Notifications (D37, D41): per-user and per-staff inbox rows, read / unread, per-category preferences
-//! (in-app / email / phone push), realtime push over the stream, emails through the outbox and mobile pushes
-//! through the Expo push service (`push.rs`).
+//! (in-app / email), realtime push over the stream and emails through the outbox.
 //!
 //! Every producer goes through [`deliver`]: `POST /v1/notify` (other services), the polling adapters
 //! (`adapters.rs`), support replies and Back Office broadcasts.
@@ -20,26 +19,23 @@ pub struct PrefKey {
     pub hint: &'static str,
     pub in_app: bool,
     pub email: bool,
-    /// Phone push (the mobile app) for clients. Marketing is opt-in (App Store guideline 4.5.4).
-    pub push: bool,
     /// Security notices can't be switched off.
     pub locked: bool,
     pub audience: &'static [&'static str],
 }
 
 pub const PREF_KEYS: &[PrefKey] = &[
-    PrefKey { key: "security", label: "Security", hint: "Sign-ins from new devices, password and email changes", in_app: true, email: true, push: true, locked: true, audience: &["user", "staff"] },
-    PrefKey { key: "trading_alerts", label: "Margin call and stop-out", hint: "When an account reaches its margin call or stop-out level", in_app: true, email: true, push: true, locked: false, audience: &["user"] },
-    PrefKey { key: "trading_fills", label: "Order fills and closes", hint: "Stop loss, take profit and dealer closes", in_app: true, email: false, push: true, locked: false, audience: &["user"] },
-    PrefKey { key: "price_alerts", label: "Price alerts", hint: "When a price alert you set is triggered", in_app: true, email: true, push: true, locked: false, audience: &["user"] },
-    PrefKey { key: "wallet", label: "Deposits and withdrawals", hint: "Deposits credited, withdrawals approved, rejected or paid", in_app: true, email: true, push: true, locked: false, audience: &["user"] },
-    PrefKey { key: "kyc", label: "Identity verification", hint: "Verification decisions and requests for documents", in_app: true, email: true, push: true, locked: false, audience: &["user"] },
-    PrefKey { key: "ib", label: "Partner commissions", hint: "IB commissions, payouts and level changes", in_app: true, email: false, push: true, locked: false, audience: &["user"] },
-    PrefKey { key: "copy", label: "Copy trading and PAMM", hint: "Subscriptions, fees and fund rollovers", in_app: true, email: false, push: true, locked: false, audience: &["user"] },
-    PrefKey { key: "prop", label: "Prop challenges", hint: "Phase passed or failed, funded account and payouts", in_app: true, email: true, push: true, locked: false, audience: &["user"] },
-    PrefKey { key: "support", label: "Support replies", hint: "Replies from our support team", in_app: true, email: true, push: true, locked: false, audience: &["user", "staff"] },
-    PrefKey { key: "system", label: "Platform notices", hint: "Maintenance and service announcements", in_app: true, email: true, push: true, locked: false, audience: &["user", "staff"] },
-    PrefKey { key: "marketing", label: "News and offers", hint: "Promotions, contests and product news", in_app: true, email: false, push: false, locked: false, audience: &["user"] },
+    PrefKey { key: "security", label: "Security", hint: "Sign-ins from new devices, password and email changes", in_app: true, email: true, locked: true, audience: &["user", "staff"] },
+    PrefKey { key: "trading_alerts", label: "Margin call and stop-out", hint: "When an account reaches its margin call or stop-out level", in_app: true, email: true, locked: false, audience: &["user"] },
+    PrefKey { key: "trading_fills", label: "Order fills and closes", hint: "Stop loss, take profit and dealer closes", in_app: true, email: false, locked: false, audience: &["user"] },
+    PrefKey { key: "wallet", label: "Deposits and withdrawals", hint: "Deposits credited, withdrawals approved, rejected or paid", in_app: true, email: true, locked: false, audience: &["user"] },
+    PrefKey { key: "kyc", label: "Identity verification", hint: "Verification decisions and requests for documents", in_app: true, email: true, locked: false, audience: &["user"] },
+    PrefKey { key: "ib", label: "Partner commissions", hint: "IB commissions, payouts and level changes", in_app: true, email: false, locked: false, audience: &["user"] },
+    PrefKey { key: "copy", label: "Copy trading and PAMM", hint: "Subscriptions, fees and fund rollovers", in_app: true, email: false, locked: false, audience: &["user"] },
+    PrefKey { key: "prop", label: "Prop challenges", hint: "Phase passed or failed, funded account and payouts", in_app: true, email: true, locked: false, audience: &["user"] },
+    PrefKey { key: "support", label: "Support replies", hint: "Replies from our support team", in_app: true, email: true, locked: false, audience: &["user", "staff"] },
+    PrefKey { key: "system", label: "Platform notices", hint: "Maintenance and service announcements", in_app: true, email: true, locked: false, audience: &["user", "staff"] },
+    PrefKey { key: "marketing", label: "News and offers", hint: "Promotions, contests and product news", in_app: true, email: false, locked: false, audience: &["user"] },
 ];
 
 /// Preference category of a notification type (`category.event`).
@@ -49,7 +45,6 @@ pub fn pref_key(kind: &str) -> &'static str {
         "security" => "security",
         "trading" if matches!(ev, "margin_call" | "stop_out") => "trading_alerts",
         "trading" => "trading_fills",
-        "alerts" => "price_alerts",
         "wallet" => "wallet",
         "kyc" => "kyc",
         "ib" => "ib",
@@ -178,7 +173,7 @@ pub fn item_row(r: &sqlx::postgres::PgRow) -> Item {
     }
 }
 
-/// Effective preferences of a recipient: `{key: {inApp, email, push}}` with defaults filled in.
+/// Effective preferences of a recipient: `{key: {inApp, email}}` with defaults filled in.
 pub async fn prefs(st: &AppState, tenant: &str, audience: &str, recipient: &str) -> anyhow::Result<Map<String, Value>> {
     let saved: Option<sqlx::types::Json<Value>> = sqlx::query_scalar("SELECT prefs FROM notification_prefs WHERE tenant = $1 AND audience = $2 AND recipient = $3")
         .bind(tenant)
@@ -192,8 +187,7 @@ pub async fn prefs(st: &AppState, tenant: &str, audience: &str, recipient: &str)
         let s = &saved[p.key];
         let in_app = if p.locked { true } else { s["inApp"].as_bool().unwrap_or(p.in_app) };
         let email = if p.locked { true } else { s["email"].as_bool().unwrap_or(p.email) };
-        let push = if p.locked { true } else { s["push"].as_bool().unwrap_or(p.push) };
-        out.insert(p.key.into(), json!({"inApp": in_app, "email": email, "push": push}));
+        out.insert(p.key.into(), json!({"inApp": in_app, "email": email}));
     }
     Ok(out)
 }
@@ -202,7 +196,7 @@ pub fn prefs_catalog(audience: &str) -> Vec<Value> {
     PREF_KEYS
         .iter()
         .filter(|p| p.audience.contains(&audience))
-        .map(|p| json!({"key": p.key, "label": p.label, "hint": p.hint, "locked": p.locked, "defaults": {"inApp": p.in_app, "email": p.email, "push": p.push}}))
+        .map(|p| json!({"key": p.key, "label": p.label, "hint": p.hint, "locked": p.locked, "defaults": {"inApp": p.in_app, "email": p.email}}))
         .collect()
 }
 
@@ -220,9 +214,6 @@ pub async fn save_prefs(st: &AppState, tenant: &str, audience: &str, recipient: 
             }
             if let Some(b) = v["email"].as_bool() {
                 entry.insert("email".into(), Value::Bool(b));
-            }
-            if let Some(b) = v["push"].as_bool() {
-                entry.insert("push".into(), Value::Bool(b));
             }
         }
     }
@@ -258,20 +249,15 @@ pub struct Outcome {
     pub duplicate: bool,
     pub in_app: bool,
     pub emailed: bool,
-    /// Phones the push was queued for (mobile app).
-    pub pushed: u64,
 }
 
 /// Stores, pushes and (per preferences) emails one notification. A repeated `dedupe_key` for the same
 /// recipient is a no-op (`duplicate: true`), so producers and polling adapters can retry safely.
-/// A client's phones get a push when the in-app notification is on for the category and so is its push
-/// preference (`push.rs`, behind `SUPPORT_PUSH_ENABLED`).
 pub async fn deliver(st: &AppState, tenant: &str, n: NewNotification) -> anyhow::Result<Outcome> {
     let p = prefs(st, tenant, n.audience, &n.recipient).await?;
     let key = pref_key(&n.kind);
     let in_app = n.in_app && p.get(key).and_then(|v| v["inApp"].as_bool()).unwrap_or(true);
     let email = n.email == EmailMode::Prefs && n.audience == "user" && p.get(key).and_then(|v| v["email"].as_bool()).unwrap_or(false);
-    let push = st.cfg.push_enabled && in_app && n.audience == "user" && p.get(key).and_then(|v| v["push"].as_bool()).unwrap_or(false);
     let title = clean(&n.title, 200);
     let body = clean(&n.body, 2000);
     let row = sqlx::query(
@@ -299,20 +285,9 @@ pub async fn deliver(st: &AppState, tenant: &str, n: NewNotification) -> anyhow:
         return Ok(Outcome { duplicate: true, ..Default::default() });
     };
     let item = item_row(&row);
-    let mut pushed = 0;
     if in_app {
         let unread = unread(st, tenant, n.audience, &n.recipient).await.unwrap_or(0);
         st.hub.send(tenant, target(n.audience, &n.recipient), json!({"type": "notification", "item": item, "unread": unread}));
-        if push {
-            // best effort: the notification is stored either way
-            match crate::push::enqueue(st, tenant, n.recipient.parse().unwrap_or(0), &item, unread).await {
-                Ok(k) => pushed = k,
-                Err(e) => tracing::warn!(error = %e, kind = %n.kind, "push not queued"),
-            }
-            if pushed > 0 {
-                st.wake_push.notify_one();
-            }
-        }
     }
     let mut emailed = false;
     if email {
@@ -332,7 +307,7 @@ pub async fn deliver(st: &AppState, tenant: &str, n: NewNotification) -> anyhow:
             None => tracing::warn!(user = %n.recipient, kind = %n.kind, "no email address for notification"),
         }
     }
-    Ok(Outcome { id: Some(item.id), duplicate: false, in_app, emailed, pushed })
+    Ok(Outcome { id: Some(item.id), duplicate: false, in_app, emailed })
 }
 
 pub async fn queue_email(st: &AppState, tenant: &str, to: &str, subject: &str, text: &str, html: &str, kind: &str) -> anyhow::Result<()> {
@@ -440,7 +415,6 @@ mod tests {
         assert_eq!(pref_key("trading.stop_out"), "trading_alerts");
         assert_eq!(pref_key("trading.margin_call"), "trading_alerts");
         assert_eq!(pref_key("trading.sl"), "trading_fills");
-        assert_eq!(pref_key("alerts.price"), "price_alerts");
         assert_eq!(pref_key("wallet.deposit_credited"), "wallet");
         assert_eq!(pref_key("pamm.fee"), "copy");
         assert_eq!(pref_key("security.new_device"), "security");

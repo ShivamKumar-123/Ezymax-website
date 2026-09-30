@@ -18,7 +18,6 @@ const security: NsMessages<"security"> = {
   "device.unknownOs": "OS tidak diketahui",
   // e.g. "Chrome on Windows"
   "device.on": "{browser} pada {os}",
-  "device.app": "Aplikasi {brand} · {device}",
 
   // Compact "time ago" (min = minit, j = jam, h = hari)
   "ago.now": "Baru sahaja",

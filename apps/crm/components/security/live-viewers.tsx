@@ -4,14 +4,14 @@ import * as React from "react";
 import Link from "next/link";
 import { AlertTriangle, CalendarDays, Eye, KeyRound, Pencil, Plus, ShieldOff, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, EmptyState, Field, Input, PageHeader, Skeleton, useBrand, type ChipTone, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, EmptyState, Field, Input, PageHeader, Skeleton, type ChipTone, type Column } from "@kalks/ui";
 import type { T } from "@kalks/i18n";
 import { useT } from "@kalks/i18n/react";
 import { FormError } from "@/components/auth";
 import { StepUpDialog } from "@/components/stepup";
 import { useAccounts } from "@/components/trading/api";
 import { VIEWER_SECTIONS, VIEWER_SECTION_KEYS, type ViewerScope, type ViewerSection } from "@/lib/viewer";
-import { ago, day, deviceName, parseDevice, secApi, useSec, when, type SecError } from "./common";
+import { ago, day, parseDevice, secApi, useSec, when, type SecError } from "./common";
 
 type Activity = { id: number; viewer_id: number | null; label: string | null; action: string; path: string | null; ip: string | null; user_agent: string | null; at: string };
 type ViewersPage = { items: ViewerScope[]; activity: Activity[]; max: number };
@@ -170,7 +170,6 @@ const EMPTY: Draft = { label: "", username: "", accounts: [], sections: ["accoun
 
 export function LiveViewers() {
   const t = useT();
-  const brand = useBrand()?.name ?? "Kalks";
   const { data, error, reload } = useSec<ViewersPage>("viewers");
   const [open, setOpen] = React.useState<"new" | ViewerScope | null>(null);
   const [draft, setDraft] = React.useState<Draft>(EMPTY);
@@ -372,7 +371,7 @@ export function LiveViewers() {
                       </div>
                       <div className="flex items-center gap-3 text-[11.5px] text-fg-3">
                         <span className="hidden sm:inline">
-                          {d.kind === "app" ? deviceName(d, brand) : d.browser} · <span dir="ltr" className="font-mono">{a.ip ?? "—"}</span>
+                          {d.browser} · <span dir="ltr" className="font-mono">{a.ip ?? "—"}</span>
                         </span>
                         <span className="k-num" title={when(a.at, true)}>
                           {ago(a.at, now)}

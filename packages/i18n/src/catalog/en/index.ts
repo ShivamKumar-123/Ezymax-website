@@ -23,27 +23,7 @@ import news from "./news";
 import portfolio from "./portfolio";
 import chart from "./chart";
 import aiTrader from "./aiTrader";
-import mobile from "./mobile";
-import mobileAuth from "./mobileAuth";
-import mobileMarkets from "./mobileMarkets";
-import mobileTrade from "./mobileTrade";
-import mobilePortfolio from "./mobilePortfolio";
-import mobileHome from "./mobileHome";
-import mobileWallet from "./mobileWallet";
-import mobileAcademy from "./mobileAcademy";
-import mobileAccounts from "./mobileAccounts";
-import mobileReports from "./mobileReports";
-import mobileProp from "./mobileProp";
-import mobileProfile from "./mobileProfile";
-import mobileSocial from "./mobileSocial";
-import mobileAi from "./mobileAi";
-import mobileNews from "./mobileNews";
-import mobileDepth from "./mobileDepth";
-import mobilePlatform from "./mobilePlatform";
-import mobilePartner from "./mobilePartner";
-import mobileRewards from "./mobileRewards";
-import mobileAlgo from "./mobileAlgo";
 
 /** English: the source language and the fallback for every missing translation. */
-export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, mobile, mobileAccounts, mobileAuth, mobileMarkets, mobileTrade, mobilePortfolio, mobileHome, mobileWallet, mobileReports, mobileProp, mobileProfile, mobileSocial, mobileAcademy, mobileAi, mobileNews, mobileDepth, mobilePlatform, mobilePartner, mobileRewards, mobileAlgo };
+export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader };
 export type EnCatalog = typeof en;

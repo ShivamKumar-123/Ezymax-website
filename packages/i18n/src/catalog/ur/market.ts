@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "ابھی کوئی پسندیدہ نہیں۔ شامل کرنے کے لیے کسی سمبل پر رائٹ کلک کریں۔",
+  "empty.favouritesTitle": "ابھی کوئی پسندیدہ نہیں",
   "empty.noMatch": "کوئی سمبل مماثل نہیں۔",
   "footer.count": "{shown} / {total} سمبلز",
   "footer.hint": "ڈبل کلک: چارٹ",

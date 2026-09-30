@@ -81,7 +81,7 @@ pub async fn ingest(State(st): State<AppState>, Tenant(tenant): Tenant, Service(
         }
         n.email_subject = b["emailSubject"].as_str().map(|s| clean(s, 200)).filter(|s| !s.is_empty());
         let o = notify::deliver(&st, &tenant, n).await?;
-        results.push(json!({"audience": aud, "recipient": r, "id": o.id, "duplicate": o.duplicate, "inApp": o.in_app, "emailed": o.emailed, "pushed": o.pushed}));
+        results.push(json!({"audience": aud, "recipient": r, "id": o.id, "duplicate": o.duplicate, "inApp": o.in_app, "emailed": o.emailed}));
     }
     Ok(Json(json!({"results": results})))
 }

@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "अभी कोई पसंदीदा नहीं। जोड़ने के लिए किसी सिंबल पर राइट-क्लिक करें।",
+  "empty.favouritesTitle": "अभी कोई पसंदीदा नहीं",
   "empty.noMatch": "कोई सिंबल मेल नहीं खाता।",
   "footer.count": "{shown} / {total} सिंबल",
   "footer.hint": "डबल-क्लिक: चार्ट",

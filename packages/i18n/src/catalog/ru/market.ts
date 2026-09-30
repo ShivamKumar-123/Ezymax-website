@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "В избранном пока пусто. Нажмите правой кнопкой на символ, чтобы добавить его.",
+  "empty.favouritesTitle": "В избранном пусто",
   "empty.noMatch": "Символы не найдены.",
   "footer.count": "{shown} / {total} символов",
   "footer.hint": "двойной клик: график",

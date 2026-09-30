@@ -17,7 +17,6 @@ const security: NsMessages<"security"> = {
   "device.browser": "Browser",
   "device.unknownOs": "Sistema operativo sconosciuto",
   "device.on": "{browser} su {os}",
-  "device.app": "App {brand} · {device}",
 
   // Tempo trascorso compatto (min = minuti, h = ore, g = giorni)
   "ago.now": "Proprio ora",

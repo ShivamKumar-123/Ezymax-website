@@ -329,8 +329,8 @@ fn reminder_text(title: &str, currency: &str, impact: i16, starts: DateTime<Utc>
     (head, parts.join(" · "))
 }
 
-/// Where a reminder opens: the calendar with that event's sheet (the mobile app reads `?event=`; the Client Area's
-/// calendar ignores it). Push payloads carry only the link, so the event travels in it, not just in `data`.
+/// Where a reminder opens: the calendar, with the event named in the link (`?event=<id>`) as well as in `data`. The
+/// Client Area's calendar ignores the parameter.
 fn reminder_link(event_id: i64) -> String {
     format!("/calendar?event={event_id}")
 }

@@ -840,18 +840,11 @@ pub async fn revoke_session(State(st): State<AppState>, ctx: Ctx, Path(id): Path
     if target.get::<bool, _>("revoked") {
         return Ok(Json(json!({ "status": "ok", "already_revoked": true })));
     }
-    let ended: Option<Option<String>> = sqlx::query_scalar(
-        "UPDATE sessions SET revoked_at = now() WHERE id = $1 AND tenant_id = $2 AND revoked_at IS NULL
-         RETURNING CASE WHEN subject_kind = 'user' AND viewer_id IS NULL AND impersonator_id IS NULL THEN device_ref END",
-    )
-    .bind(id)
-    .bind(me.tenant_id)
-    .fetch_optional(&st.pool)
-    .await?;
-    // a client's phone on that session stops receiving pushes (unless another of their sessions still uses it)
-    if let Some(Some(r)) = ended {
-        crate::push_revoke::sessions_ended(&st.pool, me.tenant_id, subject_id, &[r]).await;
-    }
+    sqlx::query("UPDATE sessions SET revoked_at = now() WHERE id = $1 AND tenant_id = $2 AND revoked_at IS NULL")
+        .bind(id)
+        .bind(me.tenant_id)
+        .execute(&st.pool)
+        .await?;
     audit::record(&st.pool, &ctx, Entry {
         tenant_id: me.tenant_id,
         actor_kind: "staff",
@@ -1013,8 +1006,6 @@ mod db_tests {
             super_admin_email: String::new(),
             super_admin_password: String::new(),
             super_admin_name: String::new(),
-            support_url: String::new(),
-            support_token: String::new(),
         };
         Some(AppState { pool, keys: Keys::new(&secret), cfg: Arc::new(cfg), limiter: Default::default(), mailer: None })
     }

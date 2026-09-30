@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "এখনো কোনো পছন্দের সিম্বল নেই। যোগ করতে কোনো সিম্বলে রাইট-ক্লিক করুন।",
+  "empty.favouritesTitle": "এখনো কোনো পছন্দের সিম্বল নেই",
   "empty.noMatch": "কোনো সিম্বল মেলেনি।",
   "footer.count": "{shown} / {total}টি সিম্বল",
   "footer.hint": "ডাবল-ক্লিক: চার্ট",

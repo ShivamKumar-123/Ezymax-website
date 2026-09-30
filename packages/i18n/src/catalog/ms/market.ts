@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Empty states and footer
   "empty.favourites": "Belum ada kegemaran. Klik kanan pada simbol untuk menambahnya.",
+  "empty.favouritesTitle": "Belum ada kegemaran",
   "empty.noMatch": "Tiada simbol yang sepadan.",
   "footer.count": "{shown} / {total} simbol",
   "footer.hint": "dwiklik: carta",

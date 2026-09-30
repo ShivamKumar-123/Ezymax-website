@@ -32,6 +32,7 @@ const market: NsMessages<"market"> = {
 
   // Stati vuoti e piè di pagina
   "empty.favourites": "Ancora nessun preferito. Fai clic destro su un simbolo per aggiungerlo.",
+  "empty.favouritesTitle": "Ancora nessun preferito",
   "empty.noMatch": "Nessun simbolo corrispondente.",
   "footer.count": "{shown} / {total} simboli",
   "footer.hint": "doppio clic: grafico",

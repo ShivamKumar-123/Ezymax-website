@@ -18,7 +18,6 @@ const security: NsMessages<"security"> = {
   "device.unknownOs": "알 수 없는 OS",
   // 예: "Windows의 Chrome"
   "device.on": "{os}의 {browser}",
-  "device.app": "{brand} 앱 · {device}",
 
   // 짧은 경과 시간
   "ago.now": "방금",
