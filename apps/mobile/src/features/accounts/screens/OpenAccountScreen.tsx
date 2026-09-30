@@ -2,9 +2,10 @@
 // only enabled, non-prop types offering the kind; the per-type account limit; the type's leverage list; demo
 // starting balances; an optional own trading password (8–64, letters and digits); the broker's demo switch. The
 // server enforces every one of them again. The credentials come back once and are shown once, never stored.
-//   ?type=live|demo   preselects the kind       ?group=<code>   preselects the type and jumps to Set up
+//   ?type=live|demo   preselects the kind       ?group=<code>   preselects the type and jumps to Set up (or to the
+//                                               type step, saying why, when that type is already at its limit)
 import * as React from "react";
-import { BackHandler, KeyboardAvoidingView, Platform, Switch, View } from "react-native";
+import { BackHandler, KeyboardAvoidingView, Platform, Switch, useWindowDimensions, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import Animated, { FadeIn, FadeInLeft, FadeInRight, useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,15 +15,18 @@ import { useLocale, useT } from "@/i18n";
 import { fmtMoney } from "@/lib/format";
 import { useOnline } from "@/lib/net";
 import { setActiveLogin } from "@/session/activeAccount";
-import { Button, Checkbox, ColorBlock, Display, EmptyState, FormError, Mono, Pill, PressableScale, RevealToggle, Skeleton, Text, TextField, toast } from "@/ui";
+import { Banner, Button, Checkbox, ColorBlock, Display, EmptyState, FormError, Mono, Pill, PressableScale, RevealToggle, Skeleton, Text, TextField, toast } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { accountError, openAccount, refreshAccounts, useAccountList, useAccountOptions, useGroups, useReadOnly } from "../api";
-import { Page, PageTitle, SectionTitle, StackBar } from "../components/Chrome";
+import { BACK, Page, PageTitle, SectionTitle, StackBar } from "../components/Chrome";
 import { PasswordRules, SecretRow } from "../components/Credentials";
 import { GroupOption, commissionText, minDepositText, modeText, pricingText } from "../components/GroupCards";
-import { demoBalancesFor, groupColor, groupMoney, lev, money, offers, passwordOk, serverOf, usedIn } from "../format";
+import { demoBalancesFor, fitDisplayDigits, fitMono, groupColor, groupMoney, lev, money, offers, passwordOk, serverOf, usedIn } from "../format";
 import { generatePassword } from "../password";
-import type { AccountKind, Group, OpenResult } from "../types";
+import type { AccountKind, OpenResult } from "../types";
+
+/** A demo starting balance as offered (whole dollars). */
+const usd0 = (b: number) => fmtMoney(b, { currency: "USD", decimals: 0 });
 
 type Step = 0 | 1 | 2 | 3 | 4;
 const STEPS = 4; // kind, type, set up, review (then: done)
@@ -129,13 +133,17 @@ function WizardSkeleton() {
   );
 }
 
-/** The new account and its credentials, shown once. */
-function Created({ res, cfg, g, onTrade, onFund, onView }: { res: OpenResult; cfg: Cfg; g: Group; onTrade: () => void; onFund: () => void; onView: () => void }) {
+/** The new account and its credentials, shown once. Everything here is the server's answer (the type's name
+ *  included: the wizard's own pick moves on once this account fills its type). */
+function Created({ res, cfg, onTrade, onFund, onView }: { res: OpenResult; cfg: Cfg; onTrade: () => void; onFund: () => void; onView: () => void }) {
   const t = useT();
   const a = res.account;
   const c = res.credentials;
   const login = String(c.login ?? a.login);
   const server = serverOf(a.type);
+  // the login as big as the block allows (a 360 pt phone fits "#50000099" at 57 pt, not the hero's 60)
+  const { width } = useWindowDimensions();
+  const hero = fitDisplayDigits(`#${login}`, width - GUTTER * 2 - space[6] * 2, 60);
   const copyAll = async () => {
     const text = [
       `${t("mobileAccounts.info.login")}: ${login}`,
@@ -158,11 +166,11 @@ function Created({ res, cfg, g, onTrade, onFund, onView }: { res: OpenResult; cf
         <Text variant="label" color={colors.ink2}>
           {t("mobileAccounts.created.eyebrow")}
         </Text>
-        <Display size="hero" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit style={{ marginTop: space[1] }}>
+        <Display size="hero" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit style={{ marginTop: space[1], fontSize: hero, lineHeight: hero }}>
           #{login}
         </Display>
         <Text variant="callout" weight="600" color={colors.ink2} style={{ marginTop: space[2] }}>
-          {a.type === "live" ? t("mobileAccounts.kind.live") : t("mobileAccounts.kind.demo")} · {g.name} · {modeText(a.mode, t)} · {lev(a.leverage)}
+          {a.type === "live" ? t("mobileAccounts.kind.live") : t("mobileAccounts.kind.demo")} · {a.groupName} · {modeText(a.mode, t)} · {lev(a.leverage)}
         </Text>
       </ColorBlock>
       <Text tone="secondary">{a.type === "live" ? t("mobileAccounts.created.liveBody") : t("mobileAccounts.created.demoBody", { amount: money(a.balance, a) })}</Text>
@@ -227,6 +235,7 @@ export function OpenAccountScreen() {
   const router = useRouter();
   const { rtl } = useLocale();
   const insets = useSafeAreaInsets();
+  const { width: winWidth } = useWindowDimensions();
   const online = useOnline();
   const params = useLocalSearchParams<{ type?: string; group?: string }>();
   const readOnly = useReadOnly();
@@ -259,23 +268,33 @@ export function OpenAccountScreen() {
   const full = g ? usedIn(accounts, g, kind) >= g.maxAccountsPerUser : true;
   const leverage = g && g.leverages.includes(cfg.leverage) ? cfg.leverage : (g?.defaultLeverage ?? 0);
   const balances = g ? demoBalancesFor(g) : [];
+  // demo balance options: three to a row, so the amounts are sized to fit a third of it (a 360 pt phone included)
+  const optSize = React.useMemo(() => {
+    const inner = (winWidth - GUTTER * 2 - space[2] * 2) / 3 - space[3] * 2 - 2;
+    const longest = (f: (b: number) => string) => balances.map(f).reduce((x, y) => (y.length > x.length ? y : x), "");
+    return { usd: fitMono(longest(usd0), inner, 16, 11), usc: g?.cent ? fitMono(longest((b) => groupMoney(b, g)), inner, 12.5, 9) : 12.5 };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [winWidth, balances.join(","), g?.code, g?.cent]);
   const demoBalance = g && balances.includes(cfg.demoBalance) ? cfg.demoBalance : (g?.demoInitialBalance ?? 10000);
   const pwOk = !cfg.ownPassword || (passwordOk(cfg.password) && cfg.password === cfg.confirm);
   const demoRef = groups.find((x) => offers(x, "demo"));
 
-  // ?group=: once the types are known, preselect it (switching the kind when it only offers the other one) and
-  // open on Set up; otherwise the first type with room is preselected
+  // ?group=: once the types (and the client's accounts) are known, preselect it (switching the kind when it only
+  // offers the other one) and open on Set up, or on the type step when that type is already at its limit (the
+  // card says so there); otherwise the first type with room is preselected
   const booted = React.useRef(false);
+  const accountsKnown = !!accountsQ.data || !!accountsQ.error;
   React.useEffect(() => {
-    if (booted.current || !groups.length) return;
+    if (booted.current || !groups.length || !accountsKnown) return;
     booted.current = true;
     const want = groups.find((x) => x.code === params.group);
     if (!want) return;
     const k: AccountKind | null = offers(want, kind) ? kind : offers(want, kind === "live" ? "demo" : "live") && (kind === "demo" || demoOn) ? (kind === "live" ? "demo" : "live") : null;
     if (!k) return;
     setCfg((c) => ({ ...c, kind: k, group: want.code, leverage: want.defaultLeverage, demoBalance: want.demoInitialBalance }));
-    setStep(2);
-  }, [groups, params.group, kind, demoOn]);
+    setStep(usedIn(accounts, want, k) >= want.maxAccountsPerUser ? 1 : 2);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups, params.group, kind, demoOn, accountsKnown]);
 
   const pickGroup = React.useCallback(
     (code: string) =>
@@ -307,10 +326,20 @@ export function OpenAccountScreen() {
     return () => sub.remove();
   }, [step, busy, go]);
 
-  const canNext = step === 0 ? true : step === 1 ? !!g && !full : step === 2 ? !!g && g.leverages.includes(leverage) && pwOk : step === 3 ? cfg.agree && pwOk && !!g && !full : false;
+  const canNext = step === 0 ? true : step === 1 ? !!g && !full : step === 2 ? !!g && !full && g.leverages.includes(leverage) && pwOk : step === 3 ? cfg.agree && pwOk && !!g && !full : false;
 
+  const next = () => {
+    // the type chosen on its step stays the choice: the preselection (first type with room) must not move to
+    // another type later, when the account list refreshes
+    if (step === 1 && g) set("group", g.code);
+    go(1);
+  };
+
+  // one request at a time: the button is disabled while it runs, this also covers a second tap in the same frame
+  const creating = React.useRef(false);
   const create = async () => {
-    if (!g || busy) return;
+    if (!g || creating.current) return;
+    creating.current = true;
     setBusy(true);
     setError(null);
     const r = await openAccount({
@@ -321,6 +350,7 @@ export function OpenAccountScreen() {
       password: cfg.ownPassword ? cfg.password : undefined,
       initialBalance: kind === "demo" ? demoBalance : undefined,
     });
+    creating.current = false;
     setBusy(false);
     if (!r.ok) {
       // a refused password belongs to Set up: go back there first (moving clears the message), then say why
@@ -331,7 +361,7 @@ export function OpenAccountScreen() {
       return;
     }
     setCreated(r.data);
-    setCfg((c) => ({ ...c, password: "", confirm: "" }));
+    setCfg((c) => ({ ...c, group: g.code, password: "", confirm: "" }));
     go(1);
   };
 
@@ -362,6 +392,26 @@ export function OpenAccountScreen() {
       </Page>
     );
   }
+
+  const toTypes = () => {
+    setDir(-1);
+    setError(null);
+    setStep(1);
+    scroll.current?.scrollTo({ y: 0, animated: false });
+  };
+  // the chosen type is already at the client's limit for this kind (a ?group= link, or accounts opened elsewhere):
+  // say why the wizard can't go on, and offer the type step
+  // (not while opening: the new account joins the list a moment before the credentials step shows)
+  const limitNotice = full && g && !busy && !created ? (
+    <Banner
+      tone="warn"
+      title={t("mobileAccounts.error.account_limit")}
+      body={t.dyn(`mobileAccounts.group.limit.${kind}`, undefined, { max: g.maxAccountsPerUser })}
+      action={step === 1 ? undefined : t("mobileAccounts.wizard.otherType")}
+      onAction={step === 1 ? undefined : toTypes}
+      style={{ marginBottom: space[5] }}
+    />
+  ) : null;
 
   let body: React.ReactNode;
   if (!groupsQ.data) {
@@ -408,6 +458,7 @@ export function OpenAccountScreen() {
           ) : step === 1 ? (
             <>
               <StepHead title={t("mobileAccounts.wizard.type.title")} body={t(kind === "live" ? "mobileAccounts.wizard.type.body.live" : "mobileAccounts.wizard.type.body.demo", { count: available.length })} />
+              {limitNotice}
               {available.length ? (
                 <View style={{ gap: space[3] }} accessibilityRole="radiogroup">
                   {available.map((x) => (
@@ -421,6 +472,7 @@ export function OpenAccountScreen() {
           ) : step === 2 && g ? (
             <>
               <StepHead title={t("mobileAccounts.wizard.setup.title")} body={`${g.name} · ${modeText(g.mode, t)} · ${kind === "live" ? t("mobileAccounts.kind.live") : t("mobileAccounts.kind.demo")}`} />
+              {limitNotice}
               <View style={{ gap: space[6] }}>
                 <View style={{ gap: space[3] }}>
                   <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space[3] }}>
@@ -454,6 +506,7 @@ export function OpenAccountScreen() {
                     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space[2] }} accessibilityRole="radiogroup">
                       {balances.map((b) => {
                         const on = demoBalance === b;
+                        // one size for every option (the longest amount's), fitted to a third of the row
                         return (
                           <PressableScale
                             key={b}
@@ -464,13 +517,13 @@ export function OpenAccountScreen() {
                             accessibilityState={{ selected: on }}
                             style={{ width: "31.5%", flexGrow: 1, height: 64, borderRadius: radius.md, justifyContent: "center", paddingHorizontal: space[3], backgroundColor: on ? colors.periwinkle : colors.surface, borderWidth: 1, borderColor: on ? colors.periwinkle : colors.line }}
                           >
-                            <Mono size={16} weight="bold" color={on ? colors.ink : colors.text} numberOfLines={1} adjustsFontSizeToFit>
-                              {fmtMoney(b, { currency: "USD", decimals: 0 })}
+                            <Mono size={optSize.usd} weight="bold" color={on ? colors.ink : colors.text} numberOfLines={1} adjustsFontSizeToFit style={{ lineHeight: 20 }}>
+                              {usd0(b)}
                             </Mono>
                             {g.cent ? (
-                              <Text variant="caption" color={on ? colors.ink2 : colors.text3} numberOfLines={1}>
+                              <Mono size={optSize.usc} color={on ? colors.ink2 : colors.text3} numberOfLines={1} adjustsFontSizeToFit style={{ lineHeight: 16 }}>
                                 {groupMoney(b, g)}
-                              </Text>
+                              </Mono>
                             ) : null}
                           </PressableScale>
                         );
@@ -571,6 +624,7 @@ export function OpenAccountScreen() {
           ) : step === 3 && g ? (
             <>
               <StepHead title={t("mobileAccounts.wizard.review.title")} body={t("mobileAccounts.wizard.review.body")} />
+              {limitNotice}
               <View style={{ gap: space[5] }}>
                 <ColorBlock color={groupColor(g.code, groups)} padded={false} style={{ padding: space[5], gap: space[1] }}>
                   <View style={{ alignSelf: "flex-start", height: 24, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: colors.ink, justifyContent: "center" }}>
@@ -606,11 +660,10 @@ export function OpenAccountScreen() {
                 <FormError message={error} />
               </View>
             </>
-          ) : step === 4 && created && g ? (
+          ) : step === 4 && created ? (
             <Created
               res={created}
               cfg={cfg}
-              g={g}
               onTrade={() => {
                 setActiveLogin(created.account.login);
                 leaveTo("/trade", true);
@@ -627,14 +680,14 @@ export function OpenAccountScreen() {
   const footer =
     groupsQ.data && step < 4 ? (
       <View style={{ flexDirection: "row", gap: space[3], paddingHorizontal: GUTTER, paddingTop: space[3], paddingBottom: Math.max(insets.bottom, space[3]) + space[1], borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.bg }}>
-        {step > 0 ? <Button label={t("mobileAccounts.wizard.back")} variant="ghost" full={false} style={{ flex: 1 }} disabled={busy} onPress={() => go(-1)} /> : null}
+        {step > 0 ? <Button label={t("mobileAccounts.wizard.back")} variant="ghost" full={false} style={BACK} disabled={busy} onPress={() => go(-1)} /> : null}
         {step < 3 ? (
-          <Button label={t("mobileAccounts.wizard.next")} full={false} style={{ flex: 2 }} disabled={!canNext} onPress={() => go(1)} testID="wizard-next" />
+          <Button label={t("mobileAccounts.wizard.next")} full={false} style={{ flex: 1 }} disabled={!canNext} onPress={next} testID="wizard-next" />
         ) : (
           <Button
             label={busy ? t("mobileAccounts.wizard.opening") : kind === "live" ? t("mobileAccounts.wizard.open.live") : t("mobileAccounts.wizard.open.demo")}
             full={false}
-            style={{ flex: 2 }}
+            style={{ flex: 1 }}
             disabled={!canNext}
             loading={busy}
             onPress={() => void create()}

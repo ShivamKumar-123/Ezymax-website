@@ -17,6 +17,10 @@ export function Flip({ rtl, children }: { rtl: boolean; children: React.ReactNod
   return <View style={rtl ? { transform: [{ scaleX: -1 }] } : undefined}>{children}</View>;
 }
 
+/** A footer's Back next to its main action: as wide as its label while the main action takes the rest (like the
+ *  other modules' flows), so the main label isn't cut off on a narrow phone. */
+export const BACK = { paddingHorizontal: space[5] } as const;
+
 /** Safe-area page with a fixed bar on top; the body scrolls under it. */
 export function Page({ bar, children }: { bar: React.ReactNode; children: React.ReactNode }) {
   const insets = useSafeAreaInsets();

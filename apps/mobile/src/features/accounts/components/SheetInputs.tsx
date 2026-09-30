@@ -10,8 +10,9 @@ import { colors, fonts, radius, space } from "@/theme/tokens";
  *  handler relies on a React Native API react-native-web doesn't have). */
 const Input = (Platform.OS === "web" ? RNTextInput : BottomSheetTextInput) as unknown as React.ComponentType<TextInputProps & { ref?: React.Ref<TextInput> }>;
 
-/** The field draws its own focus border; the browser's focus ring would double it in the web preview. */
-const WEB_NO_OUTLINE = Platform.OS === "web" ? ({ outlineWidth: 0 } as object) : null;
+/** The field draws its own focus border; the browser's focus ring would double it in the web preview (Chrome draws
+ *  an `outline-style: auto` ring whatever its width, so the style has to go too). */
+const WEB_NO_OUTLINE = Platform.OS === "web" ? ({ outlineWidth: 0, outlineStyle: "none" } as object) : null;
 
 type FieldProps = TextInputProps & { label: string; error?: string | null; hint?: string; trailing?: React.ReactNode; mono?: boolean };
 

@@ -248,6 +248,8 @@ const mobileAccounts = {
   "wizard.failed": "Couldn't open the account",
   "wizard.unavailable.title": "Can't open accounts right now",
   "wizard.unavailable.body": "We couldn't reach the trading service. Please try again in a moment.",
+  // action on the notice shown when the chosen type is already at the client's limit
+  "wizard.otherType": "Choose another type",
 
   // Account created (credentials shown once)
   "created.eyebrow": "Account opened",

@@ -183,10 +183,11 @@ export const LeverageSection = React.memo(function LeverageSection({ a, onChange
 function PasswordRow({ icon, title, body, onChange }: { icon: React.ReactNode; title: string; body: string; onChange: () => void }) {
   const t = useT();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: space[3], minHeight: 64 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: space[3], minHeight: 64, paddingVertical: space[3] }}>
       <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface3, alignItems: "center", justifyContent: "center" }}>{icon}</View>
       <View style={{ flex: 1, gap: 2 }}>
-        <Text variant="headline" numberOfLines={1}>
+        {/* two lines on a narrow phone rather than a cut-off name */}
+        <Text variant="headline" numberOfLines={2}>
           {title}
         </Text>
         <Text variant="caption" tone="tertiary">

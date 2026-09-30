@@ -10,7 +10,7 @@ import { accountError, changeLeverage, isStepupError } from "../api";
 import { lev } from "../format";
 import { StepUpCode, useStepUp } from "../stepup";
 import type { Account } from "../types";
-import { Tag } from "./Chrome";
+import { BACK, Tag } from "./Chrome";
 
 export function SheetHeader({ title, onClose }: { title: string; onClose: () => void }) {
   const t = useT();
@@ -35,20 +35,31 @@ export const LeverageSheet = React.memo(React.forwardRef<SheetRef, { a: Account 
   const [code, setCode] = React.useState("");
   const s = useStepUp("leverage", String(a.login));
   const locked = a.positions > 0;
+  // the account's leverage right now (the sheet can close before the refreshed account arrives)
+  const current = React.useRef(a.leverage);
+  current.current = a.leverage;
+  // one confirmation at a time: the sixth digit submits, and so can the button
+  const inflight = React.useRef(false);
 
   const reset = React.useCallback(() => {
     setPhase("pick");
     setError(null);
     setBusy(false);
-    setValue(a.leverage);
+    setValue(current.current);
     s.reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [a.leverage, s.reset]);
+  }, [s.reset]);
 
-  // the account's leverage changed underneath (another device, staff): follow it while nothing is picked
+  // the choice starts from the account's leverage and follows it when it changes (this change confirmed, another
+  // device, staff): never an old value that would offer to change it straight back
   React.useEffect(() => {
-    if (phase === "pick") setValue((v) => (a.leverages.includes(v) ? v : a.leverage));
-  }, [a.leverage, a.leverages, phase]);
+    if (phase === "pick") setValue(a.leverage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [a.leverage]);
+  // the type's list changed underneath: keep a choice it still offers
+  React.useEffect(() => {
+    setValue((v) => (a.leverages.includes(v) ? v : current.current));
+  }, [a.leverages]);
 
   const requestCode = async () => {
     setError(null);
@@ -56,7 +67,16 @@ export const LeverageSheet = React.memo(React.forwardRef<SheetRef, { a: Account 
   };
 
   const submit = async (code: string) => {
-    if (busy) return;
+    if (inflight.current) return;
+    inflight.current = true;
+    try {
+      await apply(code);
+    } finally {
+      inflight.current = false;
+    }
+  };
+
+  const apply = async (code: string) => {
     const token = await s.verify(code);
     if (!token) return;
     setBusy(true);
@@ -129,7 +149,7 @@ export const LeverageSheet = React.memo(React.forwardRef<SheetRef, { a: Account 
               label={t("mobileAccounts.wizard.back")}
               variant="ghost"
               full={false}
-              style={{ flex: 1 }}
+              style={BACK}
               disabled={busy || s.verifying}
               onPress={() => {
                 s.reset();
@@ -139,7 +159,7 @@ export const LeverageSheet = React.memo(React.forwardRef<SheetRef, { a: Account 
             <Button
               label={s.verifying ? t("mobileAccounts.stepup.checking") : busy ? t("mobileAccounts.stepup.saving") : t("mobileAccounts.leverage.confirm")}
               full={false}
-              style={{ flex: 2 }}
+              style={{ flex: 1 }}
               loading={busy || s.verifying}
               disabled={code.length !== 6}
               onPress={() => void submit(code)}

@@ -26,6 +26,7 @@ type Props = {
   weight?: "regular" | "medium" | "bold";
   /** ink on a colour block; otherwise cream, or the money colours for P&L and a margin level at risk */
   ink?: boolean;
+  /** line box as a multiple of `size` (the largest size, so a figure that shrinks to fit never moves what sits under it) */
   lineHeight?: number;
 };
 
@@ -41,11 +42,13 @@ function textOf(a: Account, field: LiveField, src: Source): { value: string; col
   return { value: money(src[field], a), color: undefined };
 }
 
-function Figure({ a, field, size, fit, weight = "medium", ink, lineHeight, src }: Props & { src: Source }) {
+function Figure({ a, field, size, fit, weight = "medium", ink, lineHeight = 1.25, src }: Props & { src: Source }) {
   const t = textOf(a, field, src);
   const s = fit ? fitMono(t.value, fit.width, size, fit.min) : size;
+  // the line box comes from the largest size: a live number that gets longer (and smaller to fit) keeps its height,
+  // so nothing under it moves while it streams
   return (
-    <Mono size={s} weight={weight} color={ink ? colors.ink : (t.color ?? colors.text)} numberOfLines={1} style={lineHeight ? { lineHeight: Math.round(s * lineHeight) } : undefined}>
+    <Mono size={s} weight={weight} color={ink ? colors.ink : (t.color ?? colors.text)} numberOfLines={1} style={{ lineHeight: Math.round(size * lineHeight) }}>
       {t.value}
     </Mono>
   );
@@ -102,7 +105,9 @@ export const HealthTag = React.memo(function HealthTag({ a }: { a: Account }) {
   const tone = levelTone(f);
   if (f.marginCall || tone === "risk") return <Tag label={t("mobileAccounts.detail.health.risk")} tone="risk" />;
   if (tone === null) return <Tag label={t("mobileAccounts.detail.health.none")} tone="outline" />;
-  if (tone === "ok") return <Tag label={t("mobileAccounts.detail.health.ok")} tone="mint" />;
+  // healthy reads neutral (cream): the block tones are ember-family now, and orange next to gold "Watch" and red
+  // "At risk" would read as a warning
+  if (tone === "ok") return <Tag label={t("mobileAccounts.detail.health.ok")} tone="cream" />;
   return <Tag label={t("mobileAccounts.detail.health.warn")} tone="warn" />;
 });
 

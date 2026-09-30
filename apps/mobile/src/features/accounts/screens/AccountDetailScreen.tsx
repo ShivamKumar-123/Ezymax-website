@@ -10,13 +10,12 @@ import { ArrowLeftRight, CandlestickChart, Copy, FileText, RotateCcw } from "luc
 import { useT } from "@/i18n";
 import { haptic } from "@/lib/haptics";
 import { useOnline } from "@/lib/net";
-import { invalidate } from "@/lib/query";
 import { useSession } from "@/session";
 import { setActiveLogin, useActiveLogin } from "@/session/activeAccount";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { Banner, Button, EmptyState, IconButton, Skeleton, Text, toast, useBottomInset, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
-import { KEYS, LOGIN_RE, accountError, cachedAccount, refillDemo, useAccountDetail, useReadOnly } from "../api";
+import { LOGIN_RE, accountError, cachedAccount, refetchList, refillDemo, useAccountDetail, useReadOnly } from "../api";
 import { copyText } from "../components/Credentials";
 import { KindTag, Page, PageTitle, StatusTag, StackBar, Tag } from "../components/Chrome";
 import { CredentialsSection, DemoFundsSection, EquityHero, InfoSection, LeverageSection, MarginSection } from "../components/DetailParts";
@@ -29,6 +28,9 @@ import { MarginCallBanner } from "../components/LiveFigure";
 
 /** Broker restrictions that matter on this screen (trading and transfers). */
 const RESTRICTION_KINDS = ["trading", "close_only", "transfers"];
+
+/** Half-width action buttons: tighter sides than a full-width button, so an icon and a label fit a 360 pt phone. */
+const HALF = { flex: 1, paddingHorizontal: space[4] } as const;
 
 /** Leaves the stack for one of the tabs (Trade, Portfolio) on the app's active account. */
 function useGoToTab() {
@@ -115,11 +117,11 @@ const DetailBody = React.memo(function DetailBody({ a, readOnly, active, restric
           ) : null}
           <View style={{ flexDirection: "row", gap: space[3] }}>
             {live ? (
-              <Button label={t("mobileAccounts.detail.transfer")} variant="secondary" size="md" full={false} style={{ flex: 1 }} icon={<ArrowLeftRight size={17} color={colors.text} />} onPress={transfer} />
+              <Button label={t("mobileAccounts.detail.transfer")} variant="secondary" size="md" full={false} style={HALF} icon={<ArrowLeftRight size={17} color={colors.text} />} onPress={transfer} />
             ) : (
-              <Button label={t("mobileAccounts.detail.refill")} variant="secondary" size="md" full={false} style={{ flex: 1 }} icon={<RotateCcw size={17} color={colors.text} />} disabled={refillBlocked} loading={refilling} onPress={onRefill} testID="refill" />
+              <Button label={t("mobileAccounts.detail.refill")} variant="secondary" size="md" full={false} style={HALF} icon={<RotateCcw size={17} color={colors.text} />} disabled={refillBlocked} loading={refilling} onPress={onRefill} testID="refill" />
             )}
-            <Button label={t("mobileAccounts.detail.statement")} variant="secondary" size="md" full={false} style={{ flex: 1 }} icon={<FileText size={17} color={colors.text} />} onPress={statement} />
+            <Button label={t("mobileAccounts.detail.statement")} variant="secondary" size="md" full={false} style={HALF} icon={<FileText size={17} color={colors.text} />} onPress={statement} />
           </View>
         </View>
       ) : (
@@ -181,8 +183,9 @@ export function AccountDetailScreen() {
     haptic.select();
     setRefreshing(true);
     try {
+      // the list (Home, Trade, the accounts list) refreshes too, without fetching this account a second time
+      refetchList();
       await refetch();
-      invalidate(KEYS.list);
     } finally {
       setRefreshing(false);
     }

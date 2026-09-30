@@ -13,6 +13,9 @@ import { LiveFigure, MarginLevelTag, ProfitText } from "./LiveFigure";
 
 export const ACCOUNT_CARD_HEIGHT = 190;
 export const ACCOUNT_CARD_GAP = 12;
+/** Smallest size a money figure on the card shrinks to. */
+const FIT_MIN = 12;
+const CARD_BORDER = 1;
 
 type Props = {
   a: Account;
@@ -29,9 +32,10 @@ export const AccountCard = React.memo(function AccountCard({ a, active, onOpen, 
   // `a` is the account's structural part: price-driven figures come from leaf subscribers (figures.ts)
   const balance = money(a.balance, a);
   const equity = money(a.equity, a);
-  // two columns inside the card's padding; one size for both so the figures line up
-  const col = (Math.min(width, 520) - GUTTER * 2 - space[5] * 2 - space[4]) / 2;
-  const size = Math.min(fitMono(balance, col, 20), fitMono(equity, col, 20));
+  // two columns inside the card's padding; one size for both so the figures line up (the same floor as the equity
+  // leaf's own fit, so a long cent balance shrinks instead of being cut off on a narrow phone)
+  const col = (Math.min(width, 520) - GUTTER * 2 - space[5] * 2 - CARD_BORDER * 2 - space[4]) / 2;
+  const size = Math.min(fitMono(balance, col, 20, FIT_MIN), fitMono(equity, col, 20, FIT_MIN));
   const busy = a.positions > 0 || a.orders > 0;
   const title = `${a.groupName} · ${t.dyn(`mobileAccounts.mode.${a.mode}`, a.mode)}`;
   return (
@@ -45,7 +49,7 @@ export const AccountCard = React.memo(function AccountCard({ a, active, onOpen, 
         height: ACCOUNT_CARD_HEIGHT,
         borderRadius: radius.card,
         backgroundColor: colors.surface,
-        borderWidth: 1,
+        borderWidth: CARD_BORDER,
         borderColor: active ? colors.lineStrong : colors.line,
         paddingHorizontal: space[5],
         paddingTop: space[4],
@@ -92,7 +96,7 @@ export const AccountCard = React.memo(function AccountCard({ a, active, onOpen, 
           <Text variant="label" tone="tertiary" numberOfLines={1} style={{ fontSize: 10.5 }}>
             {t("common.balance")}
           </Text>
-          <Mono size={size} weight="medium" numberOfLines={1}>
+          <Mono size={size} weight="medium" numberOfLines={1} style={{ lineHeight: Math.round(size * 1.25) }}>
             {balance}
           </Mono>
         </View>
@@ -100,7 +104,7 @@ export const AccountCard = React.memo(function AccountCard({ a, active, onOpen, 
           <Text variant="label" tone="tertiary" numberOfLines={1} style={{ fontSize: 10.5 }}>
             {t("common.equity")}
           </Text>
-          <LiveFigure a={a} field="equity" size={size} fit={{ width: col, min: 12 }} />
+          <LiveFigure a={a} field="equity" size={size} fit={{ width: col, min: FIT_MIN }} />
         </View>
       </View>
 

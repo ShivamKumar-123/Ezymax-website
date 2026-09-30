@@ -152,6 +152,11 @@ export function refreshAccounts() {
   invalidate(KEYS.list);
 }
 
+/** The account list only, now (a pull to refresh on one account: `invalidate` would refetch that account again). */
+export function refetchList() {
+  prefetch(KEYS.list, fetchAccounts, { persist: true, staleMs: 0 });
+}
+
 /** The server's new account goes into the shared list at once (before the refetch), so the Trade tab knows it. */
 export function addOpenedAccount(account: Account) {
   publishFigures([account]);

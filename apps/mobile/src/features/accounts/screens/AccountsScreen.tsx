@@ -32,7 +32,21 @@ const Totals = React.memo(function Totals({ kind, accounts }: { kind: AccountKin
   const positions = accounts.reduce((s, a) => s + a.positions, 0);
   const usd = (v: number) => fmtMoney(v, { currency: "USD" });
   const { width } = useWindowDimensions();
-  const size = fitMono(usd(equity), Math.min(width, 520) - GUTTER * 2 - space[6] * 2, 42, 24);
+  const inner = Math.min(width, 520) - GUTTER * 2 - space[6] * 2;
+  const size = fitMono(usd(equity), inner, 42, 24);
+  // balance and free margin share what the positions count (its own width) leaves, at one size that fits both
+  const col = (inner - space[4] * 2 - POSITIONS_W) / 2;
+  const small = Math.min(fitMono(usd(balance), col, 15, 10), fitMono(usd(free), col, 15, 10));
+  const metric = (label: string, value: string, grow: boolean) => (
+    <View key={label} style={grow ? { flex: 1, gap: 2, minWidth: 0 } : { flexShrink: 0, gap: 2, minWidth: 0 }}>
+      <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ fontSize: 10.5 }}>
+        {label}
+      </Text>
+      <Mono size={grow ? small : 15} weight="bold" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ lineHeight: 19 }}>
+        {value}
+      </Mono>
+    </View>
+  );
   return (
     <ColorBlock color={kind === "live" ? "ember" : "periwinkle"} style={{ marginHorizontal: GUTTER, marginBottom: space[5] }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[3] }}>
@@ -43,28 +57,21 @@ const Totals = React.memo(function Totals({ kind, accounts }: { kind: AccountKin
           {t("mobileAccounts.totals.accounts", { count: accounts.length })}
         </Text>
       </View>
-      <Mono size={size} weight="bold" color={colors.ink} numberOfLines={1} style={{ marginTop: space[1], lineHeight: Math.round(size * 1.2) }}>
+      {/* the line box follows the largest size, so the block keeps its height while the total changes length */}
+      <Mono size={size} weight="bold" color={colors.ink} numberOfLines={1} style={{ marginTop: space[1], lineHeight: Math.round(42 * 1.2) }}>
         {usd(equity)}
       </Mono>
       <View style={{ flexDirection: "row", gap: space[4], marginTop: space[5] }}>
-        {[
-          [t("common.balance"), usd(balance)],
-          [t("mobileAccounts.metric.freeMargin"), usd(free)],
-          [t("mobileAccounts.metric.positions"), String(positions)],
-        ].map(([label, value], i) => (
-          <View key={label} style={{ flex: i === 2 ? 0.7 : 1, gap: 2, minWidth: 0 }}>
-            <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ fontSize: 10.5 }}>
-              {label}
-            </Text>
-            <Mono size={15} weight="bold" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
-              {value}
-            </Mono>
-          </View>
-        ))}
+        {metric(t("common.balance"), usd(balance), true)}
+        {metric(t("mobileAccounts.metric.freeMargin"), usd(free), true)}
+        {metric(t("mobileAccounts.metric.positions"), String(positions), false)}
       </View>
     </ColorBlock>
   );
 });
+
+/** Room the positions count takes in the totals block (its label, e.g. "POSITIONS", at 10.5 pt). */
+const POSITIONS_W = 72;
 
 /** Loading placeholders shaped like the totals block and two account cards (static, no shimmer). */
 function ListSkeleton() {

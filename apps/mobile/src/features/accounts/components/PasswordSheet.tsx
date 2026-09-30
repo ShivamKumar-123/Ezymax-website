@@ -12,6 +12,7 @@ import { generatePassword } from "../password";
 import { StepUpCode, useStepUp } from "../stepup";
 import type { Account, PasswordKind } from "../types";
 import { PasswordRules, SecretRow } from "./Credentials";
+import { BACK } from "./Chrome";
 import { SheetHeader } from "./LeverageSheet";
 import { SheetTextField } from "./SheetInputs";
 
@@ -53,8 +54,19 @@ export const PasswordSheet = React.memo(React.forwardRef<SheetRef, { a: Account;
     if (await s.start()) setPhase("code");
   };
 
+  // one confirmation at a time: the sixth digit submits, and so can the button
+  const inflight = React.useRef(false);
   const submit = async (c: string) => {
-    if (busy) return;
+    if (inflight.current) return;
+    inflight.current = true;
+    try {
+      await apply(c);
+    } finally {
+      inflight.current = false;
+    }
+  };
+
+  const apply = async (c: string) => {
     const token = await s.verify(c);
     if (!token) return;
     setBusy(true);
@@ -153,7 +165,7 @@ export const PasswordSheet = React.memo(React.forwardRef<SheetRef, { a: Account;
               label={t("mobileAccounts.wizard.back")}
               variant="ghost"
               full={false}
-              style={{ flex: 1 }}
+              style={BACK}
               disabled={busy || s.verifying}
               onPress={() => {
                 s.reset();
@@ -163,7 +175,7 @@ export const PasswordSheet = React.memo(React.forwardRef<SheetRef, { a: Account;
             <Button
               label={s.verifying ? t("mobileAccounts.stepup.checking") : busy ? t("mobileAccounts.stepup.saving") : t("mobileAccounts.password.set")}
               full={false}
-              style={{ flex: 2 }}
+              style={{ flex: 1 }}
               loading={busy || s.verifying}
               disabled={code.length !== 6}
               onPress={() => void submit(code)}

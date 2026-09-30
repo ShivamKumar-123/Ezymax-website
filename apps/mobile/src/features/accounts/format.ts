@@ -35,8 +35,13 @@ export const refillsLeft = (a: Pick<Account, "demo">) => (a.demo ? Math.max(0, a
 /** A refill tops the balance back to the starting amount, so there is nothing to refill at or above it. */
 export const demoFull = (a: Pick<Account, "demo" | "balance">) => !!a.demo && a.balance >= a.demo.initialBalance;
 
-/** Font size that keeps a JetBrains Mono string (0.6 em per character) on one line within `width` points. */
-export const fitMono = (text: string, width: number, max: number, min = 18) => Math.max(min, Math.min(max, Math.floor(width / (Math.max(1, text.length) * 0.6))));
+/** Font size that keeps a JetBrains Mono string (0.6 em per character) on one line within `width` points, with a
+ *  point to spare: a string exactly as wide as its box is cut off by the text engine's rounding. */
+export const fitMono = (text: string, width: number, max: number, min = 18) => Math.max(min, Math.min(max, Math.floor((width - 1) / (Math.max(1, text.length) * 0.6))));
+
+/** Font size that keeps a login ("#50000099") in the Display face on one line within `width` points (Anton digits
+ *  are about 0.5 em wide; 0.52 leaves room for the letter spacing). */
+export const fitDisplayDigits = (text: string, width: number, max: number) => Math.min(max, Math.floor((width - 2) / (Math.max(1, text.length) * 0.52)));
 
 /** Kalks Trader refuses disabled and expired accounts. */
 export const canTrade = (a: Pick<Account, "status">) => a.status !== "disabled" && a.status !== "expired";

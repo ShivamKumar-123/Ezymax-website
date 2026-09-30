@@ -64,7 +64,7 @@ export function PasswordRules({ password }: { password: string }) {
       {PASSWORD_RULES.map((r) => {
         const ok = r.test(password);
         return (
-          <View key={r.key} style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: space[3], borderRadius: radius.pill, backgroundColor: ok ? "rgba(127,209,185,0.14)" : colors.surface2 }} accessibilityState={{ checked: ok }}>
+          <View key={r.key} style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: space[3], borderRadius: radius.pill, backgroundColor: ok ? colors.emberSoft : colors.surface2 }} accessibilityState={{ checked: ok }}>
             {ok ? <Check size={13} color={colors.mint} strokeWidth={3} /> : <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.text3 }} />}
             <Text variant="caption" color={ok ? colors.mint : colors.text3}>
               {t.dyn(`mobileAccounts.password.rule.${r.key}`, r.key)}

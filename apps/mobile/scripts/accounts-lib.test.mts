@@ -8,6 +8,7 @@ import {
   curOf,
   demoBalancesFor,
   demoFull,
+  fitDisplayDigits,
   fitMono,
   fmtLevel,
   groupColor,
@@ -151,6 +152,13 @@ test("leverage and figure sizing", () => {
   assert.ok(big < 42 && big >= 24);
   assert.ok(big * 0.6 * "¢1,000,000.00".length <= 302);
   assert.equal(fitMono("x".repeat(200), 100, 42, 18), 18);
+  // never exactly as wide as the box (a 131 pt column on a 360 pt phone cut "¢100,000.00" at 20 pt = 132 pt)
+  assert.ok(fitMono("¢100,000.00", 132, 20, 12) * 0.6 * 11 < 132);
+  assert.ok(fitMono("¢100,000.00", 131, 20, 12) * 0.6 * 11 <= 130);
+  // the hero login: full size where it fits, smaller on a 360 pt phone (272 pt inside the block)
+  assert.equal(fitDisplayDigits("#50000099", 302, 60), 60);
+  assert.ok(fitDisplayDigits("#50000099", 272, 60) < 60);
+  assert.ok(fitDisplayDigits("#50000099", 272, 60) * 0.52 * 9 <= 270);
 });
 
 test("account types keep their colour wherever they are listed", () => {
