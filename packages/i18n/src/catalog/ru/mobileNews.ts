@@ -1,0 +1,95 @@
+import type { NsMessages } from "../../core";
+
+// Kalks mobile app: market news (/news, /news/[id]) and the economic calendar (/calendar).
+// Shared wording (tone, impact, calendar columns, brief, alerts) is reused from the `news` namespace.
+const mobileNews: NsMessages<"mobileNews"> = {
+  // News feed
+  "eyebrow": "Рыночная аналитика",
+  "title": "Новости", // tall uppercase display title, keep it one short word
+  "latest": "Последние",
+  "filters": "Фильтры",
+  "filtersOn": "Фильтры · {n}", // n = number of active filters
+  "importance.all": "Все",
+  "importance.important": "Важные",
+  "importance.top": "Главные",
+  "importance.label": "Важность",
+  // Chips on a story (importance tier)
+  "chip.top": "Главная новость",
+  "chip.important": "Важно",
+  "filter.tone": "Тон",
+  "filter.anyTone": "Любой тон",
+  "filter.currency": "Валюта",
+  "filter.anyCurrency": "Любая валюта",
+  "filter.symbol": "Инструмент",
+  "filter.anySymbol": "Любой инструмент",
+  "filter.mentioned": "В сегодняшних заголовках",
+  "filter.clear": "Сбросить фильтры",
+  "filter.remove": "Убрать фильтр {label}",
+  "list.loadingMore": "Загрузка более ранних новостей…",
+  "list.end": "Вы в курсе всех новостей",
+  "list.endBody": "Это все новости за последние дни по этим фильтрам.",
+  "empty.title": "Новостей пока нет",
+  "empty.filteredTitle": "Ничего не найдено",
+  "updated": "Обновлено {time}",
+
+  // Daily brief card
+  "brief.label": "Обзор дня",
+  "brief.readMore": "Читать весь обзор",
+  "brief.watch": "В фокусе сегодня",
+  "brief.calendarNote": "В календаре",
+  "brief.writtenAt": "Составлен {time}",
+
+  // Story screen
+  "story.readAt": "Читать на {source}",
+  "story.noTeaser": "Издатель публикует только заголовок. Полный текст — на его сайте.",
+  "story.currencies": "Валюты",
+  "story.calendarFor": "Календарь {currency}",
+  "story.relatedSymbol": "Ещё о {symbol}",
+  "story.relatedCurrency": "Ещё о {currency}",
+  "story.share": "Поделиться",
+  "story.notFound.title": "Новость не найдена",
+  "story.notFound.body": "Возможно, она была удалена. Последние заголовки — в ленте новостей.",
+  "story.backToNews": "Вернуться к новостям",
+  "story.openChart": "Открыть график {symbol}",
+  "story.published": "Опубликовано {time}",
+
+  // Economic calendar
+  "cal.eyebrow": "Экономический календарь",
+  "cal.title": "Календарь", // tall uppercase display title, keep it one short word
+  "cal.summary.events": "События",
+  "cal.prevWeekShort": "Раньше",
+  "cal.nextWeekShort": "Позже",
+  "cal.startsNow": "Начинается сейчас",
+  "cal.startsIn": "Начнётся через",
+  "cal.zone.local": "Ваше время · {tz}",
+  "cal.zone.server": "Время сервера · {tz}",
+  "cal.zoneNote.local": "Время указано в Вашем часовом поясе ({local}). Время сервера (часы Вашего торгового счёта): {server}.",
+  "cal.zoneNote.server": "Время указано по серверу ({server}) — это часы Вашего торгового счёта. Ваш часовой пояс: {local}.",
+  "cal.zone.title": "Показывать время",
+  "cal.zone.myTime": "Моё время ({tz})",
+  "cal.zone.serverTime": "Время сервера ({tz})",
+  "cal.filters.currencies": "Валюты",
+  "cal.filters.allCurrencies": "Все валюты",
+  "cal.filters.reset": "Сбросить",
+  "cal.empty.title": "Спокойная неделя",
+  "cal.empty.body": "На эту неделю публикаций пока не запланировано.",
+  "cal.empty.filteredTitle": "Ничего не найдено",
+  "cal.impact.high": "Высокая важность",
+  "cal.impact.medium": "Средняя важность",
+  "cal.impact.low": "Низкая важность",
+  "cal.row.a11y": "{time}, {currency}, {title}, {impact}",
+  "cal.remind": "Напомнить",
+  "cal.reminderOn": "Напоминание включено",
+  "cal.remindBefore": "Напомнить за",
+  "cal.reminderSetDesc": "Мы уведомим Вас за {minutes} мин до события {currency} {title}.",
+  "cal.reminderChanged": "Напоминание перенесено: за {minutes} мин",
+  "cal.viewOnlyRemind": "При входе только для просмотра нельзя устанавливать напоминания.",
+  "cal.newsFor": "Новости {currency}",
+  "cal.eventTime.local": "{day} · {local} по Вашему времени · {server} по времени сервера ({tz})",
+  "cal.eventTime.server": "{day} · {server} по времени сервера ({tz}) · {local} по Вашему времени",
+  "cal.eventTime.allDay": "{day} · весь день",
+  "cal.alertsAria": "Оповещения о важных событиях",
+  "cal.filtersAria": "Фильтры календаря",
+  "cal.dayAria": "{day}, событий: {count}",
+};
+export default mobileNews;
