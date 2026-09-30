@@ -413,11 +413,26 @@ export function downloadExport(login: number, kind: "history" | "ledger", from?:
   const q = new URLSearchParams({ kind });
   if (from) q.set("from", from);
   if (to) q.set("to", to);
-  const a = document.createElement("a");
-  a.href = `/api/trading/accounts/${login}/export?${q}`;
-  a.rel = "noopener";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  toast.success(tr("accounts.toast.exportStarted"), { description: tr("accounts.toast.exportDesc", { login, kind: tr(kind === "history" ? "accounts.export.trades" : "accounts.export.ledger") }) });
+  const description = tr("accounts.toast.exportDesc", { login, kind: tr(kind === "history" ? "accounts.export.trades" : "accounts.export.ledger") });
+  // fetched first: a service error becomes a message instead of replacing the page with raw JSON
+  void (async () => {
+    try {
+      const r = await fetch(`/api/trading/accounts/${login}/export?${q}`, { credentials: "same-origin" });
+      if (!r.ok) {
+        const body = (await r.json().catch(() => null)) as { error?: { message?: string } } | null;
+        throw new Error(body?.error?.message || tr("common.errorRetry"));
+      }
+      const href = URL.createObjectURL(await r.blob());
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = /filename="?([^";]+)"?/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? `${login}-${kind}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(href), 10_000);
+      toast.success(tr("accounts.toast.exportStarted"), { description });
+    } catch (e) {
+      toast.error(tr("accounts.toast.exportFailed"), { description: e instanceof Error ? e.message : description });
+    }
+  })();
 }

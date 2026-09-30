@@ -332,5 +332,6 @@ const accounts: NsMessages<"accounts"> = {
   "toast.exportDesc": "#{login} · {kind} · CSV，时间为 UTC",
   "export.trades": "交易",
   "export.ledger": "账目明细",
+  "toast.exportFailed": "无法导出文件",
 };
 export default accounts;

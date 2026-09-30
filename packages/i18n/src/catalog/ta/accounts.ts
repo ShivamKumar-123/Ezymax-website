@@ -332,5 +332,6 @@ const accounts: NsMessages<"accounts"> = {
   "toast.exportDesc": "#{login} · {kind} · CSV, நேரங்கள் UTC இல்",
   "export.trades": "டிரேடுகள்",
   "export.ledger": "லெட்ஜர்",
+  "toast.exportFailed": "கோப்பை ஏற்றுமதி செய்ய முடியவில்லை",
 };
 export default accounts;

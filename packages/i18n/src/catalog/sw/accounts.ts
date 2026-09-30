@@ -332,5 +332,6 @@ const accounts: NsMessages<"accounts"> = {
   "toast.exportDesc": "#{login} · {kind} · CSV, muda kwa UTC",
   "export.trades": "biashara",
   "export.ledger": "leja",
+  "toast.exportFailed": "Imeshindikana kuhamisha faili",
 };
 export default accounts;

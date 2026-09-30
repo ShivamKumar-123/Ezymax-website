@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import { tr } from "@kalks/i18n/react";
+import { intlTag } from "@kalks/i18n/locales";
 
 /** Builds a CSV from plain rows and triggers a browser download. */
 export function downloadCsv(name: string, rows: Record<string, string | number>[]) {
@@ -28,7 +29,7 @@ export function downloadCsv(name: string, rows: Record<string, string | number>[
 
 /** "24 Sep 2026, 14:03" in server time (GMT+3). */
 export function serverTime(iso: string, withYear = false) {
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(intlTag(tr.locale), {
     day: "2-digit",
     month: "short",
     ...(withYear ? { year: "numeric" } : {}),

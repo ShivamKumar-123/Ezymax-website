@@ -339,5 +339,6 @@ const accounts = {
   "toast.exportDesc": "#{login} · {kind} · CSV, times in UTC",
   "export.trades": "trades",
   "export.ledger": "ledger",
+  "toast.exportFailed": "Couldn't export the file",
 };
 export default accounts;

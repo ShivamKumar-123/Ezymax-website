@@ -339,5 +339,6 @@ const accounts: NsMessages<"accounts"> = {
   "toast.exportDesc": "#{login} · {kind} · CSV، زمان‌ها به UTC",
   "export.trades": "معاملات",
   "export.ledger": "دفتر تراکنش‌ها",
+  "toast.exportFailed": "خروجی فایل گرفته نشد",
 };
 export default accounts;

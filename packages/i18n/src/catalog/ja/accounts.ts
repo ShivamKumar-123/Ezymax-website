@@ -332,5 +332,6 @@ const accounts: NsMessages<"accounts"> = {
   "toast.exportDesc": "#{login} · {kind} · CSV、時間はUTC",
   "export.trades": "取引",
   "export.ledger": "入出金明細",
+  "toast.exportFailed": "ファイルをエクスポートできませんでした",
 };
 export default accounts;

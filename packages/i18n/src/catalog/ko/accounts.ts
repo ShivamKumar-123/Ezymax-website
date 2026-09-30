@@ -332,5 +332,6 @@ const accounts: NsMessages<"accounts"> = {
   "toast.exportDesc": "#{login} · {kind} · CSV, UTC 기준 시간",
   "export.trades": "거래",
   "export.ledger": "원장",
+  "toast.exportFailed": "파일을 내보내지 못했습니다",
 };
 export default accounts;
