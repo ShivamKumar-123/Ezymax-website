@@ -66,7 +66,7 @@ export default function Onboarding() {
         {SLIDES.map((s, i) => (
           <View key={s.key} style={{ width, paddingHorizontal: GUTTER, paddingTop: space[3] }} accessibilityLabel={`${t(s.title)}. ${t(s.body)}`}>
             <ColorBlock color={s.color} padded={false} style={{ height: blockH, alignItems: "center", justifyContent: "center" }}>
-              <Mono size={13} weight="bold" color={colors.ink2} style={{ position: "absolute", top: space[5], start: space[6] }}>
+              <Mono size={13} weight="bold" color={colors.ink} style={{ position: "absolute", top: space[5], start: space[6] }}>
                 {`0${i + 1} / 0${SLIDES.length}`}
               </Mono>
               <Illustration name={s.art} width={width - GUTTER * 2 - space[10]} height={blockH - space[14]} />

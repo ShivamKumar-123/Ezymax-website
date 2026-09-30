@@ -2,7 +2,7 @@
 // (email not verified yet, or a new device). The same gateway flow as the Client Area.
 import * as React from "react";
 import { TextInput, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Lock, Mail } from "lucide-react-native";
 import { authPost, type OtpChallenge, type SessionAnswer } from "@/features/auth/api";
 import { AuthScaffold, DevCodeHint, FooterLink, ResendLink } from "@/features/auth/parts";
@@ -17,8 +17,13 @@ export default function SignIn() {
   const t = useT();
   const router = useRouter();
   const expired = useSession((s) => s.expired);
+  const params = useLocalSearchParams<{ email?: string }>();
   const [step, setStep] = React.useState<"creds" | "otp">("creds");
-  const [email, setEmail] = React.useState("");
+  const [email, setEmail] = React.useState(typeof params.email === "string" ? params.email : "");
+  // back from a password reset: the email it was done for
+  React.useEffect(() => {
+    if (typeof params.email === "string" && params.email) setEmail(params.email);
+  }, [params.email]);
   const [password, setPassword] = React.useState("");
   const [show, setShow] = React.useState(false);
   const [loading, setLoading] = React.useState(false);

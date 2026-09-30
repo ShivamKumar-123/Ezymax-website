@@ -167,18 +167,20 @@ if (!r.ok) show(r.error.message); // already in the reader's language
 
 ### UI kit (`@/ui`)
 
+> **Colours and finish:** the app uses the web platform's colour family (`packages/ui/src/styles.css`: `#07070A` canvas, graphite surfaces, `#F5F5F7` text, ember `#FF5A1F`, light ember `#FF8A3D`, gold `#E9B949`, warm off-white `#F6F4F1`) and a MATTE FINISH: flat solid fills only, no gradients, gloss, sheen, glass, drop shadows or glows. Charts use flat lines and flat low-opacity fills. Always use tokens from `@/theme/tokens`, never hex values in feature code; a translucent tint is a token too: `alpha(colors.down, 0.3)` (`@/theme/alpha`). Text on every colour block and on the Buy / Sell green and red is `colors.ink` (light text is under 4.5:1 on the web palette's green, red and ember).
+
 | Group | Components |
 |---|---|
 | Text | `Text` (variants: title, headline, body, callout, caption, label), `Display` (Anton, uppercase), `Mono` (tabular) |
-> **Colours and finish:** the app uses the web platform's colour family (`packages/ui/src/styles.css`: `#07070A` canvas, graphite surfaces, `#F5F5F7` text, ember `#FF5A1F`, light ember `#FF8A3D`, gold `#E9B949`, warm off-white `#F6F4F1`) and a MATTE FINISH: flat solid fills only, no gradients, gloss, sheen, glass, drop shadows or glows. Charts use flat lines and flat low-opacity fills. Always use tokens from `@/theme/tokens`, never hex values in feature code.
-
 | Surfaces | `Card`, `ColorBlock` (ember / gold / mint = light ember / periwinkle = warm sand / cream = warm off-white; all from the web colour family, flat matte fills only), `Screen` (safe areas, header, pull-to-refresh, tab-bar padding, keyboard) |
-| Controls | `Pill` / `PillRow`, `Button` (primary, secondary, ghost, cream, buy, sell), `IconButton`, `PressableScale` (press feedback + haptic), `TextField`, `OtpInput`, `Sheet` (bottom sheet) |
+| Controls | `Pill` / `PillRow`, `Button` (primary, secondary, ghost, cream, buy, sell), `IconButton`, `PressableScale` (press feedback + haptic), `TextField`, `OtpInput`, `Sheet` (bottom sheet; `scrollable` for forms and tickets) |
 | States and notices | `Skeleton`, `EmptyState`, `Illustration`, `Banner` |
 | Rows | `ListRow`, `Divider` |
-| Numbers and brand | `PriceCell`, `ChangeText`, `LivePrice`, `Money`, `KalksMark` |
+| Numbers and brand | `PriceCell` (`flash={false}` + `color` for a price on a coloured button), `ChangeText`, `LivePrice`, `Money`, `KalksMark` |
 
 Tokens: 4 / 8 pt spacing (`space`), `GUTTER` 20, radii `card` 28 / `block` 32, touch targets ≥ 44 pt (`HIT`).
+
+**Typing inside a bottom sheet.** @gorhom/bottom-sheet only lifts a sheet above the keyboard for its own text input. `TextField` and `OtpInput` detect a sheet (`useInSheet()`) and use that input there, so a plain `<TextField>` in any `Sheet` stays above the keyboard. A sheet whose content can be taller than the space above the keyboard (a form, the order ticket) also sets `scrollable`, so every field and the confirm button stay reachable. A custom input inside a sheet uses `SheetTextInput` (plus `NO_WEB_OUTLINE`). The older `SheetTextField` / `SheetOtpInput` (`src/features/accounts/components/SheetInputs.tsx`) keep working.
 
 ### Illustrations
 
@@ -194,10 +196,10 @@ Tokens: 4 / 8 pt spacing (`space`), `GUTTER` 20, radii `card` 28 / `block` 32, t
 | Area | Where | Notes |
 |---|---|---|
 | Onboarding, sign in, sign up, reset | `app/(auth)`, `src/features/auth` | The gateway flows through `/api/mobile/auth/*`: email code on new devices and unverified emails, rate limits, blocked sign-in, referral code (`kalks://sign-up?ref=CODE`). The dev code hint appears only when a server has no SMTP. |
-| Home | `src/features/home` | Equity block (live), closed today and open P&L, account switcher, quick actions, top movers, headlines, bell. |
+| Home | `src/features/home` | Equity block (live, a matte ember block with the globe art), closed today (refreshes on every close) and open P&L, account switcher, quick actions, top movers, headlines, bell; illustrated no-account, error and offline states. A view-only login reads the figures through the Client Area. |
 | Markets | `src/features/markets` | Segments, search, favourites, live Bid / Ask with a tick flash; prefetches candles on press-in. |
-| Trade | `src/features/trade`, `src/features/chart` | Skia chart, one-tap Sell / Buy bar, order ticket sheet (market / limit / stop, SL / TP, margin and pip-value preview), Depth and Alert entry points. |
-| Portfolio | `src/features/portfolio` | Live summary; positions with swipe to close, partial close and SL / TP; orders with edit and cancel; history; Statements link. |
+| Trade | `src/features/trade`, `src/features/chart` | Skia chart (limit and stop orders labelled apart, the bars missed during a disconnection filled in on reconnect), one-tap Sell / Buy bar, order ticket sheet (market / limit / stop; price, volume, SL / TP typed or stepped; margin and pip-value preview; rejections in plain words; a retry after a lost answer never opens a second trade), symbol search, Depth and Alert entry points, market-closed notice refreshed every minute. |
+| Portfolio | `src/features/portfolio` | Live summary; positions with swipe to close, partial close and SL / TP; orders with edit and cancel (a spinner while it goes, a refusal in words); history; Statements link. Connecting, offline and error states; a view-only login gets the shared account read-only. |
 | Trading core | `src/features/trading` | Engine session (SSO), account stream, live money, actions, contract specs, accounts controller, account switcher. |
 | Accounts | `src/features/accounts` | Live / demo list with USD totals, open-account wizard (the Client Area's rules, credentials shown once), account screen: live figures for the active account, demo refill with the daily cap, leverage and trading / investor passwords confirmed with an emailed code, Trade on this account, transfer and statement shortcuts. Reusable: `useStepUp` / `StepUpCode` (`stepup.tsx`), and `SheetTextField` / `SheetOtpInput` for typing inside bottom sheets (a sheet only rises above the keyboard for its own inputs). |
 | Wallet | `src/features/wallet` | The Client Area's wallet BFF (`/api/mobile/wallet/*`, same rules: identity check, restrictions, view-only and read-only staff sessions refused on the server). Overview (`/wallet`): the USDT balance, Deposit / Withdraw / Transfer (warmed on press-in), what is in progress, live accounts to top up, recent activity. Deposit (`/wallet/deposit[?intent=dep_…]`): only the service's address, network and token contract, with QR, copy and share, the expiry countdown and the transaction hash; the status is polled every 5 s until credited (illustration and one success haptic), and the request in progress is resumed after a trip to a wallet app. "Open in wallet app" is an EIP-681 link for BEP20 only (TronLink's transfer link needs the payer's own address and an HTTPS callback, so TRON uses QR, copy and share). Withdraw (`/wallet/withdraw`): the destination checked as typed (EIP-55, TRON base58check, other network, token contract), the service's quote before any code, an emailed code bound to `<chain>-<amount>`, a request id kept across network retries (never booked twice), cancel while waiting for review. Transfer (`/wallet/transfer[?to=|?from=]`): own live accounts, the engine's withdrawable amount as the limit, cent accounts in USC. History (`/wallet/history[?type=]`): filters, paging, a detail sheet with the server's explorer link and Back Office notes. Money actions are never optimistic, and a sheet closed while the server answers comes back with the answer. |
@@ -216,8 +218,13 @@ Tokens: 4 / 8 pt spacing (`space`), `GUTTER` 20, radii `card` 28 / `block` 32, t
   - `useTradingController()` (mounted in `app/(app)/_layout.tsx`) opens that account's engine stream and sets the quote group.
   - `useActiveAccount()` / `useAccounts()` (`@/features/trading/accounts`) read the account list, which is the shared `"trading/accounts"` cache.
 - **Live structure:** `useTrade(select)` gives positions, orders, recent deals and stream status. It changes only on fills, closes and modifications.
-- **Live money:** `useAccountLive()` / `usePositionLive(ticket)` update from equity frames (at most 4 a second). Use them only in small leaf components.
-- **Actions:** `placeOrder`, `closePosition`, `modifyPosition`, `modifyOrder`, `cancelOrder` (`@/features/trading/actions`). They return `{ ok }` or `{ ok: false, reason }`, where `reason` is already localized. Haptics and toasts are included.
+- **Live money:** `useAccountLive()` / `usePositionLive(ticket)` update from equity frames (at most 4 a second). Use them only in small leaf components; `useAccountValue((a) => a?.freeMargin)` for one number re-renders only when that number changes.
+- **Actions:** `placeOrder`, `closePosition`, `modifyPosition`, `modifyOrder`, `cancelOrder` (`@/features/trading/actions`). Haptics and toasts are included. They return `{ ok }` or `{ ok: false, reason, title, body, uncertain }`:
+  - `reason` is one localized line (for a toast); `title` / `body` fill a banner: the engine's reason in the reader's language, a plain-language hint (`mobileTrade.reject.<code>`) and the engine's own detail;
+  - `uncertain`: no answer (network, timeout, 502 / 503 / 504), so the action may have gone through. Say so; never retry on your own.
+  - Orders are idempotent: give `placeOrder` a `clientOrderId` (`newClientOrderId()`) and send the same one again after an uncertain answer. The engine then answers with the order it already has (`status: "duplicate"`, toast "Already placed") instead of opening a second trade. The order ticket does this.
+- **Number entry:** `<Stepper label value digits step normalize onChange />` (`@/features/trading/Stepper`): typed on a decimal pad (keyboard-safe inside a sheet) or stepped with − / + (press and hold repeats, then speeds up). `normalize` rounds and clamps when the field is left; round again before you send (the reader may tap Confirm while typing).
+- **Stream status:** `useTrade((s) => s.account !== null)` is true once the account's first snapshot arrived; `retryAccountStream()` for a Retry button.
 - **Raw engine calls:** `tradeApi(login, path, init)` (`@/features/trading/session`) goes to `/api/mobile/trade/*` and renews a stale terminal session once.
 - **Contract maths:** `useSpec(symbol)`, `marginFor`, `pipValue`, `profitAt`, `clampLots` (`@/features/trading/specs`) use the same formulas as the engine.
 - **Quotes:**
@@ -249,6 +256,19 @@ These runs happened while other builds were loading the Mac (load average 8–19
 | Chart pinch zoom (two-finger CDP touch) | 43–60 fps depending on load, **0 React commits** during the pinch |
 | iOS Hermes bundle (`expo export --platform ios`) | 10 MB .hbc. About 4 MB of that is the 21 translated languages for the app's namespaces, loaded lazily per language. |
 
+Re-measured in the core review (2026-09-30, same probe, load average 7–11):
+
+| What | Result |
+|---|---|
+| Markets: tick to screen | p50 8–10 ms, p95 16–18 ms, no long tasks |
+| Chart pan and pinch, quote frames muted | 60 fps, **0 React commits** caused by the gestures (with prices on, the only commits during a gesture are the header's price leaves) |
+| Portfolio while positions tick | p95 77 fibers per commit (was 123): the summary is one leaf per number (`useAccountValue`) |
+| Order ticket | tap on Buy to the confirm button on screen in 108–113 ms |
+| Background refreshes | a poll or stale refresh whose answer did not change re-renders nothing (`useQuery` keeps the same data and doesn't announce `fetching` when data is on screen) |
+| iOS Hermes bundle | 13.4 MB .hbc with every module |
+
+The web preview can't freeze hidden tabs (react-native-screens' web `Screen` has no freeze), so there the Home tab's price leaves keep rendering behind the other tabs and the commit counts above include them. On iOS and Android `freezeOnBlur` freezes hidden tabs.
+
 Pre-rendering hidden tabs was tried and dropped. Preloaded tabs are never frozen, so their prices kept rendering in the background: tick p95 went from 18 to 57 ms and pinch fell to 45 fps. The app warms the chart module and the Trade tab's candles after the first paint instead.
 
 On a phone, confirm the numbers with Expo Go's **Performance Monitor**: shake the phone, open the dev menu, and check that the UI and JS threads stay at 60 / 120 fps while scrolling Markets and panning the chart.
@@ -259,6 +279,8 @@ On a phone, confirm the numbers with Expo Go's **Performance Monitor**: shake th
 - Google sign-in and push notifications need the founder's one-time setup (the app's Google OAuth clients, an EAS project, APNs and FCM credentials): `src/features/platform/README.md` › Founder steps. Universal links (https://app.kalkstrade.com/… opening the app) wait for the store builds; the app already maps those links.
 - On a phone, native smoothness has not been measured yet: this build Mac has no simulator. Use the Performance Monitor steps above.
 - Local market-data runs in relay mode, so local candle history can have gaps. Production history is complete.
+- Keyboard handling inside sheets (typed prices in the order ticket, codes in step-up sheets) was checked on the web preview only: confirm on an iPhone and an Android phone that the sheet rises with the keyboard.
+- Close By (closing two opposite positions of a hedging account against each other) is not offered in the app; the engine supports it, the mobile trade BFF has no route for it yet.
 - No shared-element transition from a watchlist row to the chart header. Tabs are not pre-rendered: the data and the chart module are warmed instead (see Performance).
 
 ## Phase 2 (not in this build)

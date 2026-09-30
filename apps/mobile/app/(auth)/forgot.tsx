@@ -1,4 +1,4 @@
-// Forgot password: email -> 6-digit code -> new password (the gateway checks the code with the reset).
+// Forgot password: email -> 6-digit code -> new password (the gateway checks the code with the reset) -> done.
 import * as React from "react";
 import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -8,14 +8,14 @@ import { AuthScaffold, DevCodeHint, PasswordStrength, ResendLink } from "@/featu
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
-import { Button, FormError, OtpInput, RevealToggle, Text, TextField, Trans, toast } from "@/ui";
+import { Button, ColorBlock, FormError, Illustration, OtpInput, RevealToggle, Text, TextField, Trans, toast } from "@/ui";
 import { colors, space } from "@/theme/tokens";
 
 export default function Forgot() {
   const t = useT();
   const router = useRouter();
   const params = useLocalSearchParams<{ email?: string }>();
-  const [step, setStep] = React.useState<0 | 1 | 2>(0);
+  const [step, setStep] = React.useState<0 | 1 | 2 | 3>(0);
   const [email, setEmail] = React.useState(typeof params.email === "string" ? params.email : "");
   const [code, setCode] = React.useState("");
   const [pw, setPw] = React.useState("");
@@ -44,8 +44,8 @@ export default function Forgot() {
     setLoading(false);
     if (r.ok) {
       haptic.success();
-      toast.show({ title: t("auth.forgot.toastUpdated"), body: t("auth.forgot.toastUpdatedBody"), tone: "success" });
-      router.replace("/sign-in");
+      setErr(null);
+      setStep(3);
       return;
     }
     haptic.error();
@@ -56,6 +56,18 @@ export default function Forgot() {
       setOtpKey((k) => k + 1);
       setStep(1);
     }
+  }
+
+  if (step === 3) {
+    return (
+      <AuthScaffold eyebrow={t("mobileAuth.forgot.eyebrow")} title={t("auth.forgot.toastUpdated")} subtitle={t("auth.forgot.toastUpdatedBody")}>
+        <ColorBlock color="periwinkle" style={{ alignItems: "center" }}>
+          <Illustration name="security" width={240} height={190} />
+        </ColorBlock>
+        {/* back to the sign-in screen underneath (or a new one), with this email filled in */}
+        <Button label={t("auth.login.signIn")} onPress={() => router.dismissTo({ pathname: "/sign-in", params: email ? { email } : {} })} testID="reset-done" />
+      </AuthScaffold>
+    );
   }
 
   const title = step === 0 ? t("auth.forgot.titleReset") : step === 1 ? t("auth.forgot.titleCode") : t("auth.forgot.titleNew");
