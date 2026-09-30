@@ -176,7 +176,10 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
 
   /* ---------------- lines from store ---------------- */
   const ro = T.readOnly;
-  const lines = useTradeLines(tab.symbol);
+  const tradeLines = useTradeLines(tab.symbol);
+  // a position line dropped to create an SL / TP: the new line shows at once, not when the trade server answers
+  const [fresh, setFresh] = React.useState<TLine | null>(null);
+  const lines = React.useMemo(() => (fresh && !tradeLines.some((l) => l.id === fresh.id) ? [...tradeLines, fresh] : tradeLines), [tradeLines, fresh]);
 
   const [drag, setDrag] = React.useState<{ id: string; price: number } | null>(null);
   const dragRef = React.useRef(drag);
@@ -397,7 +400,9 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
       const q = quoteNow();
       const cur = p.side === "buy" ? q.bid : q.ask;
       const isSl = p.side === "buy" ? price < cur : price > cur;
-      T.modifyPosition(ref, isSl ? { sl: price } : { tp: price });
+      const id = `${isSl ? "sl" : "tp"}:${ref}`;
+      setFresh({ id, kind: isSl ? "sl" : "tp", price, ref, side: p.side, label: isSl ? "SL" : "TP", draggable: false, closable: false });
+      settle(id, price, T.modifyPosition(ref, isSl ? { sl: price } : { tp: price }).finally(() => setFresh((f) => (f?.id === id ? null : f))));
     }
   };
 
