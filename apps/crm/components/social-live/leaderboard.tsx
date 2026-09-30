@@ -238,6 +238,7 @@ export function LiveDiscoverPage() {
               ) : rows.length === 0 ? (
                 <EmptyState
                   illustration="trophy"
+                  art={filtered ? undefined : "copyTrading"}
                   title={filtered ? t("social.lb.empty.filteredTitle") : t("social.lb.empty.title")}
                   text={filtered ? t("social.lb.empty.filteredText") : t("social.lb.empty.text")}
                   action={

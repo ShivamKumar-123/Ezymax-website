@@ -3,7 +3,7 @@
 import * as React from "react";
 import { AlertTriangle, BadgeCheck, Check, Clock, FileSearch, Lock, Mail, RotateCcw, ShieldCheck, UserCheck, X } from "lucide-react";
 import { motion } from "motion/react";
-import { Button, Chip, cn } from "@kalks/ui";
+import { Button, Chip, Illustration, cn } from "@kalks/ui";
 import { tr, useT } from "@kalks/i18n/react";
 import type { T } from "@kalks/i18n";
 import type { KycDocument, KycState, TimelineEvent } from "./api";
@@ -164,10 +164,12 @@ export function StatusTracker({ state, justSubmitted, onRestart }: { state: KycS
         : c.status === "in_review"
           ? { icon: <UserCheck className="size-7" />, tone: "border-ember/30 bg-ember-soft text-ember", title: t("kyc.tracker.inReview.title"), text: t("kyc.tracker.inReview.text", { hours: typical }) }
           : { icon: <Clock className="size-7" />, tone: "border-ember/30 bg-ember-soft text-ember", title: justSubmitted ? t("kyc.tracker.submitted.title", { hours: typical }) : t("kyc.tracker.queued.title", { hours: typical }), text: t("kyc.tracker.queued.text") };
+  // the founder's art for waiting on the review and for the approval; a rejection keeps its plain icon
+  const art = c.status === "approved" ? "kycApproved" : c.status === "rejected" ? null : "kycPending";
   return (
     <div data-testid="tracker" data-status={c.status}>
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-        <span className={cn("grid size-14 shrink-0 place-items-center rounded-full border", head.tone)}>{head.icon}</span>
+        {art ? <Illustration name={art} width={128} maxHeight={120} className="shrink-0" /> : <span className={cn("grid size-14 shrink-0 place-items-center rounded-full border", head.tone)}>{head.icon}</span>}
         <div className="min-w-0">
           <h3 className="text-xl font-medium tracking-tight">{head.title}</h3>
           <p className="mt-1 text-[13.5px] text-fg-2">{head.text}</p>

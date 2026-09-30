@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpFromLine, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, CoinIcon, EmptyState, Field, Input, PageHeader, Progress, Skeleton, cn, formatDateTime, shortHash } from "@kalks/ui";
+import { Button, Card, CardHeader, CoinIcon, EmptyState, Field, Illustration, Input, PageHeader, Progress, Skeleton, cn, formatDateTime, shortHash } from "@kalks/ui";
 import { Trans, tr, useT } from "@kalks/i18n/react";
 import { useSession } from "@/components/session";
 import { STEPUP_CODES, StepUpDialog } from "@/components/stepup";
@@ -50,6 +50,7 @@ function WithdrawForm({ cfg, o, kyc, onDone }: { cfg: WalletConfig; o: Overview;
   const [confirm, setConfirm] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
   const [key, setKey] = React.useState(requestId);
+  const [requested, setRequested] = React.useState<Withdrawal | null>(null);
   const available = usdtAvailable(o).available;
   const amt = amount.trim();
   const amountOk = /^\d{1,12}(\.\d{1,2})?$/.test(amt) && Number(amt) > 0;
@@ -61,15 +62,36 @@ function WithdrawForm({ cfg, o, kyc, onDone }: { cfg: WalletConfig; o: Overview;
   const send = async (token: string) => {
     try {
       const r = await walletApi<{ withdrawal: Withdrawal }>("withdrawals", { body: { chain, amount: amt, to_address: to.trim(), idempotency_key: key, stepup_token: token } });
-      toast.success(t("wallet.withdraw.toastRequested"), { description: t("wallet.withdraw.toastRequestedText", { amount: fmt(r.withdrawal.amount), net: fmt(r.withdrawal.net_amount) }) });
       setAmount("");
       setKey(requestId());
+      setRequested(r.withdrawal);
       onDone();
     } catch (e) {
       const we = e instanceof WalletError ? e : null;
       setErr(we && STEPUP_CODES.has(we.code) ? t("wallet.withdraw.confirmationExpired") : e instanceof Error ? e.message : t("wallet.withdraw.failed"));
     }
   };
+
+  // the request is in: the team reviews it, then it is sent (the form comes back with Done)
+  if (requested)
+    return (
+      <Card>
+        <div role="status" className="flex flex-col items-center px-6 py-12 text-center" data-testid="withdrawal-requested">
+          <Illustration name="withdrawalProcessing" width={224} maxHeight={152} />
+          <h3 className="mt-6 text-[19px] font-medium tracking-tight">{t("wallet.withdraw.toastRequested")}</h3>
+          <p className="mt-1.5 max-w-sm text-[13.5px] text-fg-2">{t("wallet.withdraw.toastRequestedText", { amount: fmt(requested.amount), net: fmt(requested.net_amount) })}</p>
+          <p className="mt-1 max-w-sm text-[12.5px] text-fg-3">{t("wallet.withdraw.formSubtitle")}</p>
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            <Button variant="surface" onClick={() => setRequested(null)}>
+              {t("common.done")}
+            </Button>
+            <Link href="/wallet">
+              <Button variant="ghost">{t("wallet.backToWallet")}</Button>
+            </Link>
+          </div>
+        </div>
+      </Card>
+    );
 
   return (
     <Card>

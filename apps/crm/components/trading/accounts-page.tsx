@@ -16,7 +16,7 @@ export function AccountsError({ onRetry, message }: { onRetry: () => void; messa
   return (
     <Card>
       <EmptyState
-        illustration="satellite_antenna"
+        art="connectionLost"
         title={tt("accounts.error.unavailableTitle")}
         text={message ?? tt("accounts.error.unavailableText")}
         action={
@@ -155,7 +155,7 @@ function Inner() {
                 {loading && <RowsSkeleton />}
                 {!loading && list.length === 0 && (
                   <EmptyState
-                    illustration={active === "live" ? "money_bag" : "rocket"}
+                    art="welcome"
                     title={active === "live" ? tt("accounts.empty.noLive") : tt("accounts.empty.noDemo")}
                     text={
                       active === "live"

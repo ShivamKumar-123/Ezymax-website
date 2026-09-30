@@ -288,7 +288,7 @@ function Wizard() {
         <PageHeader title={t("accounts.wizard.title")} />
         <Card>
           <EmptyState
-            illustration="satellite_antenna"
+            art="connectionLost"
             title={t("accounts.wizard.unavailableTitle")}
             text={t("accounts.wizard.unavailableText")}
             action={

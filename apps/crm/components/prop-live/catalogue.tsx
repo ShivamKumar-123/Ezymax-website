@@ -569,7 +569,7 @@ export function LivePropStore() {
         </div>
       ) : !plan || !size ? (
         <Card>
-          <EmptyState illustration="trophy" title={t("prop.store.emptyTitle")} text={t("prop.store.emptyText")} />
+          <EmptyState art="propChallenge" title={t("prop.store.emptyTitle")} text={t("prop.store.emptyText")} />
         </Card>
       ) : (
         <>

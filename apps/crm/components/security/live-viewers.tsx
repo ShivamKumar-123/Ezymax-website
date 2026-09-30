@@ -341,7 +341,7 @@ export function LiveViewers() {
           ) : !data ? (
             <Skeleton className="h-28 w-full" />
           ) : data.items.length === 0 ? (
-            <EmptyState title={t("security.viewers.emptyTitle")} text={t("security.viewers.emptyText")} illustration="locked" className="py-8" action={<Button variant="surface" onClick={startNew}><Plus /> {t("security.viewers.new")}</Button>} />
+            <EmptyState title={t("security.viewers.emptyTitle")} text={t("security.viewers.emptyText")} art="security" className="py-8" action={<Button variant="surface" onClick={startNew}><Plus /> {t("security.viewers.new")}</Button>} />
           ) : (
             <DataTable rows={data.items} rowKey={(v) => String(v.id)} columns={cols} dense pageSize={10} />
           )}

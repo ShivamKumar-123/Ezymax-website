@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@kalks/ui/logo";
+import { Illustration } from "@kalks/ui/illustration";
 import { getFormatter, getT } from "@kalks/i18n/server";
 import { tenantConfig } from "@/lib/tenant-config";
 
@@ -17,7 +18,8 @@ export default async function MaintenancePage() {
     <main className="grid min-h-dvh place-items-center bg-bg px-4 text-fg">
       <div className="max-w-md text-center">
         <Logo height={26} className="mx-auto" />
-        <h1 className="mt-10 text-[30px] font-medium tracking-[-0.02em]" data-testid="maintenance-title">
+        <Illustration name="maintenance" width={280} maxHeight={190} priority className="mx-auto mt-10" />
+        <h1 className="mt-8 text-[30px] font-medium tracking-[-0.02em]" data-testid="maintenance-title">
           {t("shell.system.maintenance.title")}
         </h1>
         <p className="mt-3 text-[15px] text-fg-2">{m?.active ? m.message : t("shell.system.maintenance.available")}</p>

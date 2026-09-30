@@ -521,7 +521,7 @@ export function LiveManagedPage() {
           ) : !managers.data ? (
             <BlockSkeleton n={2} h={60} />
           ) : managers.data.items.length === 0 ? (
-            <EmptyState illustration="briefcase" title={t("social.mam.page.noProgrammes")} text={t("social.mam.page.noProgrammesText")} />
+            <EmptyState art="copyTrading" title={t("social.mam.page.noProgrammes")} text={t("social.mam.page.noProgrammesText")} />
           ) : (
             <DataTable columns={cols} rows={managers.data.items} dense pageSize={10} rowKey={(m) => String(m.id)} />
           )}

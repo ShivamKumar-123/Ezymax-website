@@ -134,7 +134,7 @@ function PositionsPanel({ a, positions, orders }: { a: EngineAccount; positions:
     return (
       <Card>
         <EmptyState
-          illustration="chart_increasing"
+          art="emptyPosition"
           title={t("accountDetail.positions.emptyTitle")}
           text={t("accountDetail.positions.emptyText")}
           action={<TradeButton a={a} size="md" label={t("accountDetail.positions.openTrader")} />}
@@ -329,7 +329,7 @@ function Detail() {
       <div className="pb-16">
         <Card className="mt-10">
           <EmptyState
-            illustration="magnifying_glass_tilted_left"
+            art="market"
             title={t("accountDetail.notFound.title", { login })}
             text={t("accountDetail.notFound.text")}
             action={
@@ -353,7 +353,7 @@ function Detail() {
     return (
       <Card className="mt-10">
         <EmptyState
-          illustration="satellite_antenna"
+          art="connectionLost"
           title={t("accountDetail.unavailable.title")}
           text={error.message}
           action={

@@ -139,7 +139,7 @@ export function WalletUnavailable({ onRetry, message }: { onRetry: () => void; m
   return (
     <Card>
       <EmptyState
-        illustration="satellite_antenna"
+        art="connectionLost"
         title={t("wallet.unavailable.title")}
         text={message ?? t("wallet.unavailable.text")}
         action={

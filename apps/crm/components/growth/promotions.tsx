@@ -6,7 +6,7 @@ import { AlertCircle, CheckCircle2, Clock, FileText, Gift, Loader2, Ticket, Wall
 import { toast } from "sonner";
 import type { T } from "@kalks/i18n";
 import { useT } from "@kalks/i18n/react";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, DialogClose, Icon3D, Input, KeyValue, KpiCard, Money, PageHeader, Progress, Reveal, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, DialogClose, Illustration, Input, KeyValue, KpiCard, Money, PageHeader, Progress, Reveal, cn, type Column } from "@kalks/ui";
 import { useAccounts } from "@/components/trading/api";
 import { BannerSlot } from "./banner-slot";
 import { GrowthApiError, errorToast, fmtCount, fmtDate, fmtDateTime, fmtLots, fmtUsd, growthApi, titleCase, useGrowth, type CampaignPublic, type Grant, type PromoResult, type PromoUse, type Promotions } from "./api";
@@ -384,8 +384,8 @@ export function LivePromotionsPage() {
         {campaigns.length === 0 ? (
           <Card>
             <div className="flex flex-col items-center px-6 py-12 text-center">
-              <Icon3D name="wrapped_gift" size={52} />
-              <h3 className="mt-4 text-[17px] font-medium">{t("rewards.promo.noOffersTitle")}</h3>
+              <Illustration name="rewards" width={208} maxHeight={156} />
+              <h3 className="mt-6 text-[17px] font-medium">{t("rewards.promo.noOffersTitle")}</h3>
               <p className="mt-1 max-w-md text-[13.5px] text-fg-3">{t("rewards.promo.noOffersText")}</p>
             </div>
           </Card>

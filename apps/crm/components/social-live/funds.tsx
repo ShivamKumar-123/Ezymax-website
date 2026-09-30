@@ -311,6 +311,7 @@ export function LivePammPage() {
               <Card>
                 <EmptyState
                   illustration="bank"
+                  art={all.length ? undefined : "pammFunds"}
                   title={all.length ? t("social.funds.empty.filteredTitle") : t("social.funds.empty.title")}
                   text={all.length ? t("social.funds.empty.filteredText") : t("social.funds.empty.text")}
                   action={

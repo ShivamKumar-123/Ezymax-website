@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, CalendarDays, CheckCircle2, Gift, UserRound } from "lucide-react";
+import { ArrowRight, BadgeCheck, CalendarDays, Gift, UserRound } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { Button, Field, Flag, Input, Stepper } from "@kalks/ui";
+import { Button, Field, Flag, Illustration, Input, Stepper } from "@kalks/ui";
 import { useT, Trans } from "@kalks/i18n/react";
 import { FormError, GoogleButton, GoogleMark } from "@/components/auth";
 import { authGet, authPost, nextPath, type ApiError } from "@/lib/auth-client";
@@ -195,10 +195,8 @@ export default function CompleteProfilePage() {
 
         {stage === "done" && (
           <motion.div key="done" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
-            <span className="grid size-14 place-items-center rounded-2xl border border-up/30 bg-up-soft text-up">
-              <CheckCircle2 className="size-7" />
-            </span>
-            <h1 className="mt-4 text-3xl font-medium tracking-tight sm:text-4xl">{t("auth.register.welcome", { name: form.first_name.trim() })}</h1>
+            <Illustration name="welcome" width={150} maxHeight={176} priority />
+            <h1 className="mt-6 text-3xl font-medium tracking-tight sm:text-4xl">{t("auth.register.welcome", { name: form.first_name.trim() })}</h1>
             <p className="mt-2 text-[14px] text-fg-2">{t("auth.complete.ready")}</p>
             <Button variant="ember" size="xl" className="mt-8 w-full" onClick={() => window.location.assign(nextPath())}>
               {t("auth.register.openClientArea")} <ArrowRight className="rtl:-scale-x-100" />

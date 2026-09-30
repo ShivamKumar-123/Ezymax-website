@@ -581,7 +581,7 @@ export function LiveCopyPage() {
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
           <Card className="xl:col-span-8">
             <EmptyState
-              illustration="chart_increasing"
+              art="copyTrading"
               title={t("social.subs.empty.title")}
               text={t("social.subs.empty.text")}
               action={

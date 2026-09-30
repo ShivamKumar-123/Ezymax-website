@@ -870,7 +870,7 @@ function Inner() {
       ) : list.length === 0 || id === null ? (
         <Card>
           <EmptyState
-            illustration="trophy"
+            art="propChallenge"
             title={t("prop.mine.emptyTitle")}
             text={t("prop.mine.emptyText")}
             action={

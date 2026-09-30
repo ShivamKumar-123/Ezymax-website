@@ -231,7 +231,7 @@ export function HistoryPanel({ a, title }: { a: Pick<EngineAccount, "login" | "c
           {loading && <TableSkeleton />}
           {error && !data && (
             <EmptyState
-              illustration="satellite_antenna"
+              art="connectionLost"
               title={t("accountDetail.history.loadError")}
               text={error.message}
               action={
@@ -241,7 +241,7 @@ export function HistoryPanel({ a, title }: { a: Pick<EngineAccount, "login" | "c
               }
             />
           )}
-          {data && data.deals.length === 0 && <EmptyState illustration="chart_increasing" title={t("accountDetail.history.emptyTitle")} text={t("accountDetail.history.emptyText")} />}
+          {data && data.deals.length === 0 && <EmptyState art="emptyHistory" title={t("accountDetail.history.emptyTitle")} text={t("accountDetail.history.emptyText")} />}
           {data && data.deals.length > 0 && (
             <>
               <DealsTable deals={data.deals} cur={cur} />
@@ -293,7 +293,7 @@ export function LedgerPanel({ a, title }: { a: Pick<EngineAccount, "login" | "ce
           {loading && <TableSkeleton />}
           {error && !data && (
             <EmptyState
-              illustration="satellite_antenna"
+              art="connectionLost"
               title={t("accountDetail.ledger.loadError")}
               text={error.message}
               action={
@@ -303,7 +303,7 @@ export function LedgerPanel({ a, title }: { a: Pick<EngineAccount, "login" | "ce
               }
             />
           )}
-          {data && data.items.length === 0 && <EmptyState illustration="receipt" title={t("accountDetail.ledger.emptyTitle")} text={t("accountDetail.ledger.emptyText")} />}
+          {data && data.items.length === 0 && <EmptyState art="emptyHistory" title={t("accountDetail.ledger.emptyTitle")} text={t("accountDetail.ledger.emptyText")} />}
           {data && data.items.length > 0 && (
             <>
               <div className="overflow-x-auto">

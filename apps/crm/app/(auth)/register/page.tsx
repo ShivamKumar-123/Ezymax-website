@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Gift, Lock, Mail, UserRound, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, CalendarDays, Gift, Lock, Mail, UserRound, Eye, EyeOff } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
-import { Button, Field, Input, Stepper, Flag, Icon3D } from "@kalks/ui";
+import { Button, Field, Input, Stepper, Flag, Icon3D, Illustration } from "@kalks/ui";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { useT, Trans } from "@kalks/i18n/react";
 import { DemoEntry, DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, useGoogleError, OrDivider, OtpInput, PasswordStrength, ResendLink } from "@/components/auth";
@@ -222,10 +222,8 @@ export default function RegisterPage() {
         )}
         {step === 2 && (
           <motion.div key="s2" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
-            <span className="grid size-14 place-items-center rounded-2xl border border-up/30 bg-up-soft text-up">
-              <CheckCircle2 className="size-7" />
-            </span>
-            <h1 className="mt-4 text-3xl font-medium tracking-tight sm:text-4xl">{t("auth.register.welcome", { name: form.first_name.trim() })}</h1>
+            <Illustration name="welcome" width={150} maxHeight={176} priority />
+            <h1 className="mt-6 text-3xl font-medium tracking-tight sm:text-4xl">{t("auth.register.welcome", { name: form.first_name.trim() })}</h1>
             <p className="mt-2 text-[14px] text-fg-2">{IS_DEMO ? t("auth.register.readyDemo") : t("auth.register.ready")}</p>
             <Button variant="ember" size="xl" className="mt-8 w-full" onClick={() => window.location.assign("/")}>
               {t("auth.register.openClientArea")} <ArrowRight className="rtl:-scale-x-100" />

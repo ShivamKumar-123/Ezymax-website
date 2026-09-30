@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, ArrowLeftRight, Check, CircleAlert, Clock, Loader2, Smartphone, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, CoinIcon, CopyButton, Field, Input, PageHeader, Skeleton, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, CoinIcon, CopyButton, Field, Illustration, Input, PageHeader, Skeleton, cn } from "@kalks/ui";
 import { Trans, useT } from "@kalks/i18n/react";
 import { CHAIN_LABEL, WalletError, fmt, useWallet, walletApi, type Chain, type Deposit, type Intent, type WalletConfig } from "./api";
 import { PayError, hasMetaMask, hasTronLink, isMobile, metamaskDeepLink, payWithMetaMask, payWithTronLink } from "./pay";
@@ -296,6 +296,7 @@ function Tracker({ view, onNew }: { view: IntentView; onNew: () => void }) {
               {t("wallet.deposit.transaction")} <HashLink hash={d.tx_hash} url={d.explorer_url} />
             </div>
           </div>
+          {credited && <Illustration name="depositCredited" width={140} maxHeight={140} className="shrink-0" />}
         </div>
         {!bad && d.status !== "review" && <Confirmations d={d} />}
         <ol className="grid grid-cols-1 gap-2 sm:grid-cols-3">

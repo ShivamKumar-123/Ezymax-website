@@ -9,9 +9,11 @@ import {
   Chip,
   EmptyState,
   Flag,
+  Illustration,
   PageHeader,
   Skeleton,
   cn,
+  type IllustrationName,
 } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
 import type { ClientStatus, PartnerApiError } from "./api";
@@ -36,7 +38,7 @@ export function SettingUp({ onRetry }: { onRetry: () => void }) {
   return (
     <Card>
       <EmptyState
-        illustration="handshake"
+        art="partnerIb"
         title={t("partner.load.settingUpTitle")}
         text={t("partner.load.settingUpText")}
         action={
@@ -60,7 +62,7 @@ export function LoadError({
   return (
     <Card>
       <EmptyState
-        illustration="satellite_antenna"
+        art="connectionLost"
         title={t("partner.load.errorTitle")}
         text={error.message || t("partner.load.errorText")}
         action={
@@ -276,15 +278,17 @@ export function MiniStat({
   );
 }
 
-/** Quiet inline empty state for a card body. */
+/** Quiet inline empty state for a card body. `art` only where the card has nothing to show yet (not a filter miss). */
 export function CardEmpty({
   title,
   text,
+  art,
   className,
   children,
 }: {
   title: string;
   text?: React.ReactNode;
+  art?: IllustrationName;
   className?: string;
   children?: React.ReactNode;
 }) {
@@ -295,6 +299,7 @@ export function CardEmpty({
         className,
       )}
     >
+      {art && <Illustration name={art} width={176} maxHeight={132} className="mb-4" />}
       <div className="text-[13.5px] font-medium text-fg-2">{title}</div>
       {text && (
         <div className="mt-1 max-w-xs text-[12.5px] leading-snug text-fg-3">

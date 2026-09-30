@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowUpRight, CandlestickChart, Search, Star, X } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, Delta, PageHeader, PriceText, Reveal, Segmented, Sparkline, SymbolCell, Tooltip, cn, formatNumber, useFeedMode, useQuotes, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Delta, EmptyState, PageHeader, PriceText, Reveal, Segmented, Sparkline, SymbolCell, Tooltip, cn, formatNumber, useFeedMode, useQuotes, type Column } from "@kalks/ui";
 import { ASSET_CLASS_LABEL, INSTRUMENTS, IS_DEMO, fetchCandles, isMarketOpen, sparkline, type AssetClass, type Instrument } from "@kalks/mock";
 import { CONTRACT_SPECS, DEFAULT_FAVOURITES } from "@kalks/mock/markets-extra";
 import { InstrumentDrawer } from "@/components/markets/instrument-drawer";
@@ -264,7 +264,20 @@ export default function MarketsPage() {
             </div>
           </div>
           <FeedGuard minHeight={320}>
-            <DataTable columns={cols} rows={rows} pageSize={30} rowKey={(i) => i.symbol} onRowClick={(i) => setOpen(i.symbol)} />
+            <DataTable
+              columns={cols}
+              rows={rows}
+              pageSize={30}
+              rowKey={(i) => i.symbol}
+              onRowClick={(i) => setOpen(i.symbol)}
+              empty={
+                tab === "fav" && !q ? (
+                  <EmptyState art="emptyWatchlist" title={t("mobileMarkets.empty.favourites.title")} action={<Button variant="surface" onClick={() => setTab("all")}>{t("common.viewAll")}</Button>} />
+                ) : (
+                  <EmptyState illustration="magnifying_glass_tilted_left" title={t("market.empty.noMatch")} />
+                )
+              }
+            />
           </FeedGuard>
           <div className="mt-3 flex items-center gap-2 text-[11.5px] text-fg-3">
             <Tooltip content={t("news.markets.liveTooltip")}>

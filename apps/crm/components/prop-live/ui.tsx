@@ -42,7 +42,7 @@ export function LoadError({ error, onRetry, title }: { error: PropError; onRetry
   return (
     <Card>
       <EmptyState
-        illustration="satellite_antenna"
+        art="connectionLost"
         title={title ?? t("prop.loadError.title")}
         text={error.status === 0 || error.status >= 500 ? t("prop.loadError.text") : error.message}
         action={

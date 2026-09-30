@@ -319,7 +319,7 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
   if (s.trades === 0 && d.curve.points.length < 2) {
     return (
       <Card>
-        <EmptyState illustration="bar_chart" title={t("portfolio.an.empty.title")} text={t("portfolio.an.empty.text")} />
+        <EmptyState art="emptyHistory" title={t("portfolio.an.empty.title")} text={t("portfolio.an.empty.text")} />
       </Card>
     );
   }
@@ -552,7 +552,7 @@ function Failed({ message, onRetry }: { message: string; onRetry: () => void }) 
   return (
     <Card>
       <EmptyState
-        illustration="bar_chart"
+        art="connectionLost"
         title={t("portfolio.an.failed")}
         text={message}
         action={
@@ -634,7 +634,7 @@ export function LiveAnalyticsPage() {
         data.accounts.length === 0 ? (
           <Card>
             <EmptyState
-              illustration="bar_chart"
+              art="welcome"
               title={t("portfolio.noAccounts.title")}
               text={t("portfolio.an.noAccountsText")}
               action={

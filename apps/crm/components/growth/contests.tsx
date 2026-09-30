@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowUpRight, CalendarDays, Check, ChevronRight, Gift, Loader2, Medal, ShieldAlert, Timer, Trophy, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, DialogClose, Flag, Icon3D, KeyValue, KpiCard, Money, PageHeader, Reveal, cn, type Column } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, DialogClose, Flag, Icon3D, Illustration, KeyValue, KpiCard, Money, PageHeader, Reveal, cn, type Column } from "@kalks/ui";
 import { TERMINAL_URL } from "@/lib/live";
 import { Countdown } from "@/components/rewards/countdown";
 import { tr, useT } from "@kalks/i18n/react";
@@ -795,8 +795,8 @@ export function LiveContestsPage() {
       ) : (
         <Card>
           <div className="flex flex-col items-center px-6 py-12 text-center">
-            <Icon3D name="trophy" size={52} />
-            <h3 className="mt-4 text-[17px] font-medium">{t("rewards.contests.noneTitle")}</h3>
+            <Illustration name="rewards" width={208} maxHeight={156} />
+            <h3 className="mt-6 text-[17px] font-medium">{t("rewards.contests.noneTitle")}</h3>
             <p className="mt-1 max-w-md text-[13.5px] text-fg-3">{t("rewards.contests.noneText")}</p>
           </div>
         </Card>

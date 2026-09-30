@@ -53,7 +53,7 @@ export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; pos
     return (
       <Card>
         <EmptyState
-          illustration="chart_increasing"
+          art="emptyPosition"
           title={t("accountDetail.positions.noneTitle")}
           text={t("accountDetail.positions.noneText")}
           action={

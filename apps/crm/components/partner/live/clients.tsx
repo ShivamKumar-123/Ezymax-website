@@ -603,6 +603,7 @@ export function LivePartnerClients() {
               all.length === 0 ? (
                 <div className="py-6">
                   <CardEmpty
+                    art="partnerIb"
                     title={t("partner.clients.emptyTitle")}
                     text={t("partner.clients.emptyText")}
                   >

@@ -59,7 +59,7 @@ function NoAccounts() {
   return (
     <Card>
       <EmptyState
-        illustration="bar_chart"
+        art="welcome"
         title={t("portfolio.noAccounts.title")}
         text={t("portfolio.noAccounts.text")}
         action={
@@ -591,7 +591,7 @@ export function LivePortfolio() {
                   <CardHeader title={tx("portfolio.kpi.openPositions")} subtitle={tx("portfolio.positions.subtitle")} />
                   <div className="mt-3 space-y-2 px-4 pb-5 sm:px-6">
                     {positions === null && <Skeleton className="h-24 w-full rounded-[14px]" />}
-                    {positions && positions.length === 0 && <div className="py-8 text-center text-[13px] text-fg-3">{tx("portfolio.positions.empty")}</div>}
+                    {positions && positions.length === 0 && <EmptyState art="emptyPosition" title={tx("portfolio.positions.empty")} className="py-8" />}
                     {positions?.map(({ a, p }) => (
                       <div key={`${a.login}-${p.ticket}`} className="k-row flex flex-wrap items-center gap-3 px-4 py-2.5">
                         <SymbolAvatar symbol={p.symbol} size={24} />

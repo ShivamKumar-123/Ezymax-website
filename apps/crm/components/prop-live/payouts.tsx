@@ -382,7 +382,7 @@ export function LivePropPayouts() {
             {funded.length === 0 ? (
               <Card>
                 <EmptyState
-                  illustration="money_bag"
+                  art="propPassed"
                   title={t("prop.payouts.emptyTitle")}
                   text={t("prop.payouts.emptyText")}
                   action={

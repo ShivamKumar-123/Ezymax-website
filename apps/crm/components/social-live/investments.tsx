@@ -443,7 +443,7 @@ export function LiveInvestmentsPage() {
       ) : items.length === 0 && requests.length === 0 ? (
         <Card>
           <EmptyState
-            illustration="bank"
+            art="pammFunds"
             title={t("social.inv.empty.title")}
             text={t("social.inv.empty.text")}
             action={

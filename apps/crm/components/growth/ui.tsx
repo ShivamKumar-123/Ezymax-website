@@ -19,7 +19,7 @@ export function LoadError({ error, onRetry, title }: { error: GrowthApiError; on
   return (
     <Card>
       <EmptyState
-        illustration="satellite_antenna"
+        art="connectionLost"
         title={title ?? t("rewards.load.unavailableTitle")}
         text={error.message || t("rewards.load.unavailableText")}
         action={

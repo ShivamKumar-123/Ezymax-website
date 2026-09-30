@@ -268,7 +268,7 @@ export function LiveWalletPage() {
               <div className="mt-4 space-y-2 px-4 pb-5 sm:px-6">
                 {act.loading && <Skeleton className="h-16 w-full rounded-[14px]" />}
                 {act.data && act.data.items.length === 0 && (
-                  <EmptyState illustration="money_bag" title={t("wallet.recent.emptyTitle")} text={t("wallet.recent.emptyText")} action={<Link href="/wallet/deposit"><Button variant="ember">{t("wallet.recent.firstDeposit")}</Button></Link>} />
+                  <EmptyState art="emptyHistory" title={t("wallet.recent.emptyTitle")} text={t("wallet.recent.emptyText")} action={<Link href="/wallet/deposit"><Button variant="ember">{t("wallet.recent.firstDeposit")}</Button></Link>} />
                 )}
                 {act.data?.items.map((a) => <ActivityRow key={`${a.type}${a.id}`} a={a} />)}
               </div>

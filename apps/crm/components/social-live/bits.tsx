@@ -107,7 +107,7 @@ export function SocialError({ onRetry, message, title }: { onRetry: () => void; 
   return (
     <Card>
       <EmptyState
-        illustration="satellite_antenna"
+        art="connectionLost"
         title={title ?? t("social.errorState.title")}
         text={message ?? t("social.errorState.text")}
         action={

@@ -15,7 +15,7 @@ export function AcademyUnavailable({ error, onRetry, notFound: nf }: { error: Ac
   return (
     <Card>
       <EmptyState
-        illustration={notFound ? "magnifying_glass_tilted_left" : "satellite_antenna"}
+        art={notFound ? "market" : "connectionLost"}
         title={notFound ? t("academy.unavailable.notFoundTitle") : t("academy.unavailable.title")}
         text={notFound ? t("academy.unavailable.notFoundText") : (error?.message ?? t("academy.unavailable.text"))}
         action={

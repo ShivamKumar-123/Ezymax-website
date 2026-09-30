@@ -120,7 +120,7 @@ export function LivePropCertificates() {
       ) : list.length === 0 ? (
         <Card>
           <EmptyState
-            illustration="1st_place_medal"
+            art="propPassed"
             title={t("prop.certs.emptyTitle")}
             text={t("prop.certs.emptyText")}
             action={
