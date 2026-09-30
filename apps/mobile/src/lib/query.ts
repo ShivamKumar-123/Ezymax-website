@@ -43,24 +43,42 @@ function notify(e: Entry) {
   e.subs.forEach((f) => f());
 }
 
+const same = (a: unknown, b: unknown) => {
+  if (a === b) return true;
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
+};
+
 async function run<T>(key: string, fetcher: Fetcher<T>, persist: boolean): Promise<void> {
   const e = entry(key, persist);
   if (e.inflight) return e.inflight;
+  // a background refresh of data already on screen (polls, stale refreshes) re-renders nobody unless the answer
+  // changed: same data keeps its reference, and `fetching` is only announced when there is nothing to show yet
+  const quiet = e.data !== undefined && !e.error;
+  let changed = !quiet;
   e.inflight = (async () => {
     const r = await fetcher();
     if (r.ok) {
-      e.data = r.data;
+      if (!same(r.data, e.data)) {
+        e.data = r.data;
+        changed = true;
+      }
+      if (e.error) changed = true;
       e.error = undefined;
       e.at = Date.now();
-      if (persist) kv.setJSON(storageKey(key), { d: r.data, at: e.at });
+      if (persist) kv.setJSON(storageKey(key), { d: e.data, at: e.at });
     } else if (r.error.code !== "aborted") {
       e.error = r.error;
+      changed = true;
     }
   })().finally(() => {
     e.inflight = undefined;
-    notify(e);
+    if (changed) notify(e);
   });
-  notify(e);
+  if (!quiet) notify(e);
   return e.inflight;
 }
 

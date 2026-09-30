@@ -1,5 +1,6 @@
-// Floating pill tab bar: solid surface (no blur), the active tab is a cream capsule with its label; the others
-// are icons. The capsule moves with a spring (functional motion only). 64 pt tall, 44 pt+ targets.
+// Floating pill tab bar: a flat matte surface with a hairline border (no blur, no drop shadow), the active tab is a
+// cream capsule with its label; the others are icons. The capsule moves with a spring (functional motion only).
+// 64 pt tall, 44 pt+ targets.
 import * as React from "react";
 import { InteractionManager, Platform, View } from "react-native";
 import Animated, { LinearTransition } from "react-native-reanimated";
@@ -62,11 +63,6 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
           backgroundColor: colors.surface2,
           borderWidth: 1,
           borderColor: colors.lineStrong,
-          shadowColor: "#000",
-          shadowOpacity: 0.35,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 8 },
-          elevation: 10,
         }}
       >
         {state.routes.map((route, i) => {

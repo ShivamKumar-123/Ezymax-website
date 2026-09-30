@@ -2,7 +2,7 @@
 // kept current by the session heartbeat. Show it on screens where the restricted action lives.
 import * as React from "react";
 import { ShieldAlert } from "lucide-react-native";
-import { useT } from "@/i18n";
+import { useFormat, useT } from "@/i18n";
 import { useSession } from "@/session";
 import { Banner } from "@/ui";
 import { colors } from "@/theme/tokens";
@@ -11,6 +11,7 @@ const ORDER = ["login", "trading", "close_only", "deposits", "withdrawals", "tra
 
 export function RestrictionBanner({ kinds, onContact }: { kinds?: string[]; onContact?: () => void }) {
   const t = useT();
+  const fmt = useFormat();
   const restricted = useSession((s) => s.restricted);
   const restrictions = useSession((s) => s.restrictions);
   const frozen = restrictions.some((r) => r.kind === "freeze");
@@ -18,7 +19,7 @@ export function RestrictionBanner({ kinds, onContact }: { kinds?: string[]; onCo
   if (!show.length) return null;
   const until = (k: string) => {
     const e = restrictions.find((r) => r.kind === k)?.expires_at ?? (frozen ? restrictions.find((r) => r.kind === "freeze")?.expires_at : null);
-    return e ? t("security.restricted.until", { date: new Date(e).toLocaleString() }) : null;
+    return e ? t("security.restricted.until", { date: fmt.dateTime(e, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: undefined }) }) : null;
   };
   return (
     <Banner

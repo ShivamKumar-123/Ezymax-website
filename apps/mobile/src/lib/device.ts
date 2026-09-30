@@ -5,6 +5,7 @@ import { secure } from "./secure";
 
 const KEY = "kalks.device";
 let cached: string | null = null;
+let loading: Promise<string> | null = null;
 
 function base64url(bytes: Uint8Array): string {
   const abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -17,15 +18,21 @@ function base64url(bytes: Uint8Array): string {
   return out;
 }
 
-export async function deviceId(): Promise<string> {
-  if (cached) return cached;
-  let id = await secure.get(KEY);
-  if (!id || !/^[A-Za-z0-9_-]{16,64}$/.test(id)) {
-    id = base64url(getRandomBytes(24));
-    await secure.set(KEY, id);
-  }
-  cached = id;
-  return id;
+export function deviceId(): Promise<string> {
+  if (cached) return Promise.resolve(cached);
+  // one read for every request of the first moment: concurrent first calls must not mint different ids (the gateway
+  // would see two devices, and the stored one might not be the one the sign-in used)
+  loading ??= (async () => {
+    let id = await secure.get(KEY);
+    if (!id || !/^[A-Za-z0-9_-]{16,64}$/.test(id)) {
+      id = base64url(getRandomBytes(24));
+      await secure.set(KEY, id);
+    }
+    return (cached ??= id);
+  })().finally(() => {
+    loading = null;
+  });
+  return loading;
 }
 
 /** The server minted one for us (first request before ours was stored). */

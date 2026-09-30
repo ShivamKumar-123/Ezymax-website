@@ -192,8 +192,11 @@ class QuoteFeed {
   async snapshot(): Promise<boolean> {
     const cfg = this.cfg ?? (await loadConfig());
     if (!cfg) return false;
+    // a stalled request must not hold pull-to-refresh (or a reconnect) for minutes
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
     try {
-      const res = await fetch(`${cfg.marketData.http}/v1/quotes?group=${encodeURIComponent(this.group)}`);
+      const res = await fetch(`${cfg.marketData.http}/v1/quotes?group=${encodeURIComponent(this.group)}`, { signal: ctrl.signal });
       if (!res.ok) return false;
       const data = (await res.json()) as Record<string, RawQuote>;
       for (const [symbol, q] of Object.entries(data)) {
@@ -204,6 +207,8 @@ class QuoteFeed {
       return true;
     } catch {
       return false;
+    } finally {
+      clearTimeout(timer);
     }
   }
 
@@ -258,6 +263,11 @@ class QuoteFeed {
       this.lastFrame = Date.now();
       const symbols = instruments().map((i) => i.symbol);
       ws.send(JSON.stringify({ op: "subscribe", symbols }));
+      // the catalogue failed to load at start (first launch offline): load it now and subscribe to it
+      if (!symbols.length)
+        void loadInstruments().then((list) => {
+          if (list.length && this.ws === ws) this.send({ op: "subscribe", symbols: list.map((i) => i.symbol) });
+        });
       for (const key of this.barListeners.keys()) {
         const [symbol, tf] = key.split("|");
         ws.send(JSON.stringify({ op: "bars", symbol, tf }));
@@ -321,8 +331,13 @@ class QuoteFeed {
 
   private startWatchdog() {
     if (this.watchdog) return;
+    // silent for 12 s, or still connecting after 12 s (a half-dead network can hold a connect for a minute or more)
     this.watchdog = setInterval(() => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN && Date.now() - this.lastFrame > 12_000) this.reopen();
+      const ws = this.ws;
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) && Date.now() - this.lastFrame > 12_000) {
+        this.reopen();
+        void this.snapshot();
+      }
     }, 3000);
   }
 }

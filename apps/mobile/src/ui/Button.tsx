@@ -7,7 +7,8 @@ import { Text } from "./Text";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "cream" | "buy" | "sell" | "danger";
 const BG: Record<ButtonVariant, string> = { primary: colors.ember, secondary: colors.surface2, ghost: "transparent", cream: colors.cream, buy: colors.up, sell: colors.down, danger: colors.surface2 };
-const FG: Record<ButtonVariant, string> = { primary: colors.ink, secondary: colors.text, ghost: colors.text, cream: colors.ink, buy: colors.ink, sell: colors.text, danger: colors.down };
+// ink on the sell red too: light text on the web palette's red is under 4.5:1
+const FG: Record<ButtonVariant, string> = { primary: colors.ink, secondary: colors.text, ghost: colors.text, cream: colors.ink, buy: colors.ink, sell: colors.ink, danger: colors.down };
 
 export type ButtonProps = {
   label: string;

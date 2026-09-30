@@ -5,8 +5,12 @@ import { View, type StyleProp, type TextStyle, type ViewStyle } from "react-nati
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming, interpolateColor } from "react-native-reanimated";
 import { feed, type Quote } from "@/market/feed";
 import { fmtPct, fmtPrice, splitPrice } from "@/lib/format";
+import { alpha } from "@/theme/alpha";
 import { colors, fonts, motion, radius } from "@/theme/tokens";
 import { Mono } from "./Text";
+
+const FLASH_UP = alpha(colors.up, 0.22);
+const FLASH_DOWN = alpha(colors.down, 0.22);
 
 /** Subscribe to one symbol's quote with a per-frame coalesced React state (for small leaf components only). */
 export function useLiveQuote(symbol: string): Quote | undefined {
@@ -37,9 +41,10 @@ type Side = "bid" | "ask";
 
 /**
  * A bid or ask box that flashes green / red on each tick (price direction only; the colours are money colours).
- * `big` renders the MT5-style big figure (pips larger than the leading digits).
+ * `big` renders the MT5-style big figure (pips larger than the leading digits). `flash={false}` for a price on a
+ * coloured button (a green / red flash on a green / red fill reads as a glitch); `color` for its text.
  */
-export const PriceCell = React.memo(function PriceCell({ symbol, side, digits, big = true, size = 17, style, align = "right" }: { symbol: string; side: Side; digits: number; big?: boolean; size?: number; style?: StyleProp<ViewStyle>; align?: "left" | "right" | "center" }) {
+export const PriceCell = React.memo(function PriceCell({ symbol, side, digits, big = true, size = 17, style, align = "right", flash: flashOn = true, color }: { symbol: string; side: Side; digits: number; big?: boolean; size?: number; style?: StyleProp<ViewStyle>; align?: "left" | "right" | "center"; flash?: boolean; color?: string }) {
   const flash = useSharedValue(0);
   const dirSv = useSharedValue(0);
   const [text, setText] = React.useState(() => {
@@ -58,6 +63,7 @@ export const PriceCell = React.memo(function PriceCell({ symbol, side, digits, b
       const q = feed.quote(symbol);
       if (!q) return;
       setText(fmtPrice(q[side], digits));
+      if (!flashOn) return;
       dirSv.value = dir;
       flash.value = withSequence(withTiming(1, { duration: 40 }), withTiming(0, { duration: motion.flashMs }));
     };
@@ -80,16 +86,16 @@ export const PriceCell = React.memo(function PriceCell({ symbol, side, digits, b
       offSnap();
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [symbol, side, digits, flash, dirSv]);
+  }, [symbol, side, digits, flash, dirSv, flashOn]);
 
   const anim = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(flash.value, [0, 1], ["rgba(0,0,0,0)", dirSv.value >= 0 ? "rgba(52,199,123,0.22)" : "rgba(240,82,82,0.22)"]),
+    backgroundColor: interpolateColor(flash.value, [0, 1], ["rgba(0,0,0,0)", dirSv.value >= 0 ? FLASH_UP : FLASH_DOWN]),
   }));
 
   const [lead, pips, pipette] = big ? splitPrice(text, digits) : [text, "", ""];
-  const base: TextStyle = { fontFamily: fonts.monoMedium, color: colors.text, fontVariant: ["tabular-nums"] };
+  const base: TextStyle = { fontFamily: fonts.monoMedium, color: color ?? colors.text, fontVariant: ["tabular-nums"] };
   return (
-    <Animated.View testID={`px-${symbol}-${side}`} style={[{ borderRadius: radius.xs, paddingHorizontal: 6, paddingVertical: 3, alignItems: align === "left" ? "flex-start" : align === "center" ? "center" : "flex-end" }, style, anim]}>
+    <Animated.View testID={`px-${symbol}-${side}`} style={[{ borderRadius: radius.xs, paddingHorizontal: 6, paddingVertical: 3, alignItems: align === "left" ? "flex-start" : align === "center" ? "center" : "flex-end" }, style, flashOn ? anim : null]}>
       <Animated.Text style={[base, { fontSize: size * 0.8, lineHeight: size * 1.2 }]} numberOfLines={1}>
         {lead}
         {big && pips ? <Animated.Text style={[base, { fontFamily: fonts.monoBold, fontSize: size * 1.12 }]}>{pips}</Animated.Text> : null}
