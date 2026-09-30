@@ -1,31 +1,18 @@
-// Skia line + area chart with a scrub crosshair (equity curve, NAV history). The path is built once per data
+// Skia line + flat area chart with a scrub crosshair (equity curve, NAV history). The path is built once per data
 // change; the crosshair and dot are driven by a shared value on the UI thread, so scrubbing never re-renders this
 // component: React only hears the index (onScrub) when it changes, and only the small header that shows it
 // re-renders. Always left-to-right (time axis), whatever the reading direction.
 import * as React from "react";
 import { View } from "react-native";
-import { Canvas, Circle, DashPathEffect, Line, LinearGradient, Path, Skia, vec } from "@shopify/react-native-skia";
+import { Canvas, Circle, DashPathEffect, Line, Path, Skia, vec } from "@shopify/react-native-skia";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS, useDerivedValue, useSharedValue } from "react-native-reanimated";
 import { colors } from "@/theme/tokens";
+import { alpha } from "../../tint";
 import type { ChartProps } from "./types";
 
 const PAD_T = 14;
 const PAD_B = 10;
-
-function alpha(hex: string, a: number) {
-  const h = hex.replace("#", "");
-  const n = parseInt(
-    h.length === 3
-      ? h
-          .split("")
-          .map((c) => c + c)
-          .join("")
-      : h,
-    16,
-  );
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-}
 
 export default function ChartCanvas({ values, height, color, baseline, onScrub, accessibilityLabel }: ChartProps) {
   const [width, setWidth] = React.useState(0);
@@ -136,9 +123,8 @@ export default function ChartCanvas({ values, height, color, baseline, onScrub, 
                 <DashPathEffect intervals={[4, 5]} />
               </Line>
             ) : null}
-            <Path path={geom.area}>
-              <LinearGradient start={vec(0, 0)} end={vec(0, height)} colors={[alpha(color, 0.22), alpha(color, 0)]} />
-            </Path>
+            {/* matte finish: a flat low-opacity fill under the line (no gradient) */}
+            <Path path={geom.area} color={alpha(color, 0.1)} />
             <Path path={geom.line} style="stroke" strokeWidth={2} strokeJoin="round" strokeCap="round" color={color} />
             <Line p1={p1} p2={p2} color={colors.text3} strokeWidth={1} opacity={shown} />
             <Circle cx={cx} cy={cy} r={9} color={alpha(color, 0.25)} opacity={shown} />

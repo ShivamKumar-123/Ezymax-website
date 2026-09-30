@@ -12,7 +12,7 @@ import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { Card, Display, EmptyState, Mono, Pill, Screen, Skeleton, Text, toast, useBottomInset, type SheetRef } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { fetchers, keys, socialPatch, type SubscriptionView } from "../api";
-import { pct, usd } from "../format";
+import { pct, shownTone, usd } from "../format";
 import { TopBar, useBack } from "../components/chrome";
 import { StatGrid } from "../components/primitives";
 import { LoadError } from "../components/states";
@@ -50,11 +50,9 @@ export function SubscriptionsScreen() {
       const r = await socialPatch<{ subscription: SubscriptionView }>(`subscriptions/${s.id}`, { paused });
       setBusy(null);
       if (!r.ok) {
-        haptic.error();
         toast.show({ title: r.error.message, tone: "error" });
         return;
       }
-      haptic.success();
       setQueryData<{ items: SubscriptionView[] }>(keys.subs, (prev) => ({ items: (prev?.items ?? []).map((x) => (x.id === s.id ? r.data.subscription : x)) }), true);
       invalidate(keys.sub(s.id));
       toast.show({
@@ -172,7 +170,7 @@ const Header = React.memo(function Header({
             <Mono size={40} weight="bold" style={{ letterSpacing: -1 }} numberOfLines={1} adjustsFontSizeToFit>
               {usd(equity)}
             </Mono>
-            <Text variant="callout" tone={profit > 0 ? "up" : profit < 0 ? "down" : "secondary"} weight="700" style={{ marginBottom: space[4] }}>
+            <Text variant="callout" tone={shownTone(profit)} weight="700" style={{ marginBottom: space[4] }}>
               {`${usd(profit, 2, true)} · ${deposits > 0 ? t("mobileSocial.subs.onDeposits", { pct: pct((profit / deposits) * 100) }) : t("mobileSocial.subs.activeCount", { count: current.length })}`}
             </Text>
             <StatGrid

@@ -7,12 +7,12 @@ import { useFormat, useT } from "@/i18n";
 import { Button, Mono, PressableScale, Text } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import type { FundView, InvestmentView, RequestView } from "../api";
-import { compactUsd, ddText, nav4, pct, periodLabel, units4, usd } from "../format";
+import { compactUsd, ddText, nav4, pct, periodLabel, shownTone, units4, usd } from "../format";
 import { Avatar } from "./identity";
 import { StatGrid, Tag, type TagTone } from "./primitives";
 import { RequestRow } from "./rows";
 
-export const fundTone = (s: FundView["status"]): TagTone => (s === "active" ? "mint" : s === "frozen" ? "gold" : "neutral");
+export const fundTone = (s: FundView["status"]): TagTone => (s === "active" ? "good" : s === "frozen" ? "gold" : "neutral");
 
 export const FundCard = React.memo(function FundCard({
   f,
@@ -59,7 +59,7 @@ export const FundCard = React.memo(function FundCard({
             </Mono>
           </View>
           <View style={{ alignItems: "flex-end", gap: 2 }}>
-            <Mono size={15} weight="bold" tone={f.return1m > 0 ? "up" : f.return1m < 0 ? "down" : "secondary"}>
+            <Mono size={15} weight="bold" tone={shownTone(f.return1m)}>
               {pct(f.return1m)}
             </Mono>
             <Text variant="caption" tone="tertiary">
@@ -72,7 +72,7 @@ export const FundCard = React.memo(function FundCard({
           items={[
             { label: t("mobileSocial.aum"), value: compactUsd(f.aum) },
             { label: t("mobileSocial.investors"), value: fmt.number(f.investors, 0) },
-            { label: t("mobileSocial.fund.returnAll"), value: pct(f.returnAll, 1), tone: f.returnAll > 0 ? "up" : f.returnAll < 0 ? "down" : undefined },
+            { label: t("mobileSocial.fund.returnAll"), value: pct(f.returnAll, 1), tone: shownTone(f.returnAll, 1) },
             { label: t("mobileSocial.fund.drawdown"), value: ddText(f.drawdownPct), tone: f.drawdownPct > 0 ? "down" : undefined },
             { label: t("mobileSocial.fund.perfFee"), value: `${f.perfFeePct}%` },
             { label: t("mobileSocial.fund.min"), value: usd(f.minInvestment, 0) },
@@ -107,7 +107,8 @@ export const HoldingCard = React.memo(function HoldingCard({
   onCancel,
 }: {
   inv: InvestmentView;
-  onOpen: (id: number) => void;
+  /** opens the fund; left out on the fund's own screen (the header is then plain text, no press feedback) */
+  onOpen?: (id: number) => void;
   onAdd: (id: number) => void;
   onRedeem: (id: number) => void;
   onStopLoss: (inv: InvestmentView) => void;
@@ -122,9 +123,10 @@ export const HoldingCard = React.memo(function HoldingCard({
       <View style={{ borderRadius: radius.card, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, paddingVertical: space[5], gap: space[4] }}>
         <PressableScale
           testID={`holding-${inv.fundId}`}
-          onPress={() => onOpen(inv.fundId)}
+          onPress={onOpen ? () => onOpen(inv.fundId) : undefined}
+          disabled={!onOpen}
           scaleTo={0.985}
-          accessibilityRole="link"
+          accessibilityRole={onOpen ? "link" : "text"}
           style={{ paddingHorizontal: space[5], flexDirection: "row", alignItems: "center", gap: space[3] }}
         >
           <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
@@ -147,10 +149,10 @@ export const HoldingCard = React.memo(function HoldingCard({
             </Mono>
           </View>
           <View style={{ alignItems: "flex-end", gap: 2 }}>
-            <Mono size={15} weight="bold" tone={inv.pnl > 0 ? "up" : inv.pnl < 0 ? "down" : "secondary"}>
+            <Mono size={15} weight="bold" tone={shownTone(inv.pnl)}>
               {usd(inv.pnl, 2, true)}
             </Mono>
-            <Mono size={12} tone={inv.pnlPct > 0 ? "up" : inv.pnlPct < 0 ? "down" : "tertiary"}>
+            <Mono size={12} tone={shownTone(inv.pnlPct, 2, "tertiary")}>
               {pct(inv.pnlPct)}
             </Mono>
           </View>

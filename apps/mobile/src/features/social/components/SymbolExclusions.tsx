@@ -8,6 +8,7 @@ import { useQuery } from "@/lib/query";
 import { PressableScale, Text, TextField } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { fetchers, keys } from "../api";
+import { alpha } from "../tint";
 
 export function SymbolExclusions({ value, onChange, suggested = [], suggestedLabel }: { value: string[]; onChange: (v: string[]) => void; suggested?: string[]; suggestedLabel?: string }) {
   const t = useT();
@@ -86,8 +87,8 @@ const SymbolChip = React.memo(function SymbolChip({ symbol, on, onPress }: { sym
         alignItems: "center",
         gap: 6,
         borderWidth: 1,
-        borderColor: on ? "rgba(242,106,61,0.45)" : colors.line,
-        backgroundColor: on ? "rgba(242,106,61,0.14)" : colors.surface,
+        borderColor: on ? alpha(colors.ember, 0.45) : colors.line,
+        backgroundColor: on ? alpha(colors.ember, 0.14) : colors.surface,
       }}
     >
       <Text variant="callout" weight="700" color={on ? colors.ember : colors.text2} style={{ fontFamily: "JetBrainsMono_500Medium", fontSize: 13 }}>

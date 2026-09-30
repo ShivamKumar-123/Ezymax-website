@@ -8,7 +8,7 @@ import { instrument } from "@/market/instruments";
 import { Mono, PressableScale, Text } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import type { CopyLogEntry, FeeView, MamDeal, MamLogEntry, Order, Position, RequestView } from "../api";
-import { nav4, units4, usd } from "../format";
+import { nav4, shownTone, units4, usd } from "../format";
 import { Tag, type TagTone } from "./primitives";
 
 export const ROW = 64;
@@ -43,7 +43,7 @@ export const PositionRow = React.memo(function PositionRow({ p }: { p: Position 
           {`#${p.ticket} · ${fmtPrice(p.openPrice, d)}${p.currentPrice ? ` → ${fmtPrice(p.currentPrice, d)}` : ""}`}
         </Mono>
       </View>
-      <Mono size={15} weight="bold" tone={p.profit > 0 ? "up" : p.profit < 0 ? "down" : "secondary"}>
+      <Mono size={15} weight="bold" tone={shownTone(p.profit)}>
         {usd(p.profit, 2, true)}
       </Mono>
     </View>
@@ -74,7 +74,7 @@ export const OrderRow = React.memo(function OrderRow({ o }: { o: Order }) {
   );
 });
 
-const logTone = (s: string): TagTone => (s === "ok" || s === "done" ? "mint" : s === "skipped" ? "neutral" : "ember");
+const logTone = (s: string): TagTone => (s === "ok" || s === "done" ? "good" : s === "skipped" ? "neutral" : "ember");
 
 export const LogRow = React.memo(function LogRow({ l }: { l: CopyLogEntry | MamLogEntry }) {
   const t = useT();
@@ -97,7 +97,7 @@ export const LogRow = React.memo(function LogRow({ l }: { l: CopyLogEntry | MamL
   );
 });
 
-const feeTone = (s: FeeView["status"]): TagTone => (s === "paid" ? "mint" : s === "pending" ? "gold" : s === "approved" ? "periwinkle" : "neutral");
+const feeTone = (s: FeeView["status"]): TagTone => (s === "paid" ? "good" : s === "pending" ? "gold" : s === "approved" ? "periwinkle" : "neutral");
 
 export const FeeRow = React.memo(function FeeRow({ f }: { f: FeeView }) {
   const t = useT();
@@ -148,7 +148,7 @@ export const DealRow = React.memo(function DealRow({ d }: { d: MamDeal }) {
           {d.commission ? usd(-d.commission, 2, true) : "—"}
         </Mono>
       ) : (
-        <Mono size={15} weight="bold" tone={result > 0 ? "up" : result < 0 ? "down" : "secondary"}>
+        <Mono size={15} weight="bold" tone={shownTone(result)}>
           {usd(result, 2, true)}
         </Mono>
       )}
@@ -156,7 +156,7 @@ export const DealRow = React.memo(function DealRow({ d }: { d: MamDeal }) {
   );
 });
 
-const reqTone = (s: RequestView["status"]): TagTone => (s === "done" ? "mint" : s === "pending" ? "gold" : "neutral");
+const reqTone = (s: RequestView["status"]): TagTone => (s === "done" ? "good" : s === "pending" ? "gold" : "neutral");
 
 export function requestAmount(r: RequestView, t: ReturnType<typeof useT>) {
   if (r.kind === "invest") return usd(r.amount ?? 0);

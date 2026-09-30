@@ -14,7 +14,7 @@ import { instrument } from "@/market/instruments";
 import { Button, Card, ColorBlock, Display, Mono, Pill, Screen, Skeleton, Text, useBottomInset } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { fetchers, keys, validId, type MasterProfile, type MasterTrade } from "../api";
-import { compactUsd, ddText, formatAge, nav4, pct, periodLabel, usd } from "../format";
+import { compactUsd, ddText, formatAge, nav4, pct, periodLabel, shownTone, usd } from "../format";
 import { ActionBar, TopBar, useBack } from "../components/chrome";
 import { GrowthCard, type Point } from "../components/GrowthCard";
 import { Avatar, HouseDisclosure, ProgramTags, RiskMeter } from "../components/identity";
@@ -189,25 +189,33 @@ export function MasterScreen() {
         />
       )}
       {m && m.program !== "pamm" ? (
-        <ActionBar>
-          <Button
-            testID="master-copy"
-            label={t("mobileSocial.master.copy")}
-            icon={<CopyIcon size={18} color={colors.ink} />}
-            disabled={!canCopy}
-            style={{ flex: 1 }}
-            onPress={() => router.push(`/social/follow/${m.id}`)}
-          />
-          {canInvest ? (
-            <Button
-              testID="master-invest"
-              label={t("mobileSocial.master.invest")}
-              variant="cream"
-              icon={<Landmark size={18} color={colors.ink} />}
-              style={{ flex: 1 }}
-              onPress={() => router.push(`/social/pamm/${m.fund!.id}/invest`)}
-            />
+        <ActionBar style={{ flexDirection: "column", gap: space[2] }}>
+          {/* a disabled Copy says why (frozen by the risk team, a hidden house strategy, not approved any more) */}
+          {!canCopy ? (
+            <Text testID="master-copy-unavailable" variant="caption" tone="tertiary" align="center">
+              {t("mobileSocial.master.copyUnavailable")}
+            </Text>
           ) : null}
+          <View style={{ flexDirection: "row", gap: space[3] }}>
+            <Button
+              testID="master-copy"
+              label={t("mobileSocial.master.copy")}
+              icon={<CopyIcon size={18} color={colors.ink} />}
+              disabled={!canCopy}
+              style={{ flex: 1 }}
+              onPress={() => router.push(`/social/follow/${m.id}`)}
+            />
+            {canInvest ? (
+              <Button
+                testID="master-invest"
+                label={t("mobileSocial.master.invest")}
+                variant="cream"
+                icon={<Landmark size={18} color={colors.ink} />}
+                style={{ flex: 1 }}
+                onPress={() => router.push(`/social/pamm/${m.fund!.id}/invest`)}
+              />
+            ) : null}
+          </View>
         </ActionBar>
       ) : canInvest && m ? (
         <ActionBar>
@@ -251,7 +259,7 @@ function Hero({ p }: { p: MasterProfile }) {
         </View>
       </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space[2] }}>
-        {m.house ? null : <Tag tone="mint" label={t("mobileSocial.master.approved")} />}
+        {m.house ? null : <Tag tone="good" label={t("mobileSocial.master.approved")} />}
         <ProgramTags program={m.program} hasFund={!!m.fund} />
         {m.frozen ? <Tag tone="warn" label={t("mobileSocial.master.frozen")} icon={<Snowflake size={12} color={colors.gold} />} /> : null}
       </View>
@@ -306,7 +314,7 @@ function Returns({ p }: { p: MasterProfile }) {
       <View style={{ flexDirection: "row", marginTop: space[2], paddingVertical: space[5], borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.line }}>
         {cells.map(([label, v], i) => (
           <View key={label} style={{ flex: 1, gap: 2, paddingStart: i ? space[3] : 0, borderStartWidth: i ? 1 : 0, borderColor: colors.line }}>
-            <Mono size={24} weight="bold" tone={v > 0 ? "up" : v < 0 ? "down" : "secondary"} numberOfLines={1} adjustsFontSizeToFit>
+            <Mono size={24} weight="bold" tone={shownTone(v, 1)} numberOfLines={1} adjustsFontSizeToFit>
               {pct(v, 1)}
             </Mono>
             <Text variant="label" tone="tertiary" numberOfLines={1}>
@@ -502,7 +510,7 @@ const TradeRow = React.memo(function TradeRow({ trade }: { trade: MasterTrade })
         </Mono>
       </View>
       <View style={{ alignItems: "flex-end", gap: 3 }}>
-        <Mono size={15} weight="bold" tone={trade.profit > 0 ? "up" : trade.profit < 0 ? "down" : "secondary"}>
+        <Mono size={15} weight="bold" tone={shownTone(trade.profit)}>
           {usd(trade.profit, 2, true)}
         </Mono>
         <Text variant="caption" tone="tertiary" style={{ fontSize: 11 }}>

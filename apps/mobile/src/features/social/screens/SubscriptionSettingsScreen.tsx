@@ -5,7 +5,6 @@ import { View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
-import { haptic } from "@/lib/haptics";
 import { invalidate, setQueryData, useQuery } from "@/lib/query";
 import { Button, Display, FormError, Skeleton, Text, toast } from "@/ui";
 import { space } from "@/theme/tokens";
@@ -61,7 +60,7 @@ function Form({ s, onClose }: { s: SubscriptionView; onClose: () => void }) {
   const invalid = sizingErr ?? limits.maxLot ?? limits.equityStop;
 
   const save = async () => {
-    if (invalid) return haptic.error();
+    if (invalid) return;
     setBusy(true);
     setErr(null);
     const r = await socialPatch<{ subscription: SubscriptionView }>(`subscriptions/${s.id}`, {
@@ -73,11 +72,9 @@ function Form({ s, onClose }: { s: SubscriptionView; onClose: () => void }) {
     });
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(r.error);
       return;
     }
-    haptic.success();
     setQueryData<SubscriptionDetail>(keys.sub(s.id), (prev) => (prev ? { ...prev, subscription: r.data.subscription } : prev!), true);
     invalidate(keys.subs);
     toast.show({ title: t("mobileSocial.settings.saved"), body: t("mobileSocial.settings.savedText"), tone: "success" });

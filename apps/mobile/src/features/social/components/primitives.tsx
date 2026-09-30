@@ -4,36 +4,45 @@ import * as React from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import { Display, Mono, Text, type Tone } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
+import { alpha } from "../tint";
 
-export type TagTone = "neutral" | "ember" | "gold" | "mint" | "periwinkle" | "cream" | "up" | "down" | "warn";
+export type TagTone = "neutral" | "good" | "ember" | "gold" | "mint" | "periwinkle" | "cream" | "up" | "down" | "warn";
 
+// Flat tints of the token colours (matte: no gradients or glows). "good" is a positive state that isn't money
+// (active, done, paid): the warm off-white, since green is reserved for money and "mint" is now a light ember.
+const soft = (c: string, bg = 0.12, border = 0.28) => ({ bg: alpha(c, bg), fg: c, border: alpha(c, border) });
 const TAG: Record<TagTone, { bg: string; fg: string; border: string }> = {
   neutral: { bg: colors.surface2, fg: colors.text2, border: colors.line },
-  ember: { bg: "rgba(242,106,61,0.14)", fg: colors.ember, border: "rgba(242,106,61,0.28)" },
-  gold: { bg: "rgba(242,184,75,0.14)", fg: colors.gold, border: "rgba(242,184,75,0.28)" },
-  mint: { bg: "rgba(127,209,185,0.14)", fg: colors.mint, border: "rgba(127,209,185,0.28)" },
-  periwinkle: { bg: "rgba(140,140,240,0.16)", fg: colors.periwinkle, border: "rgba(140,140,240,0.32)" },
+  good: soft(colors.cream, 0.1, 0.24),
+  ember: soft(colors.ember),
+  gold: soft(colors.gold),
+  mint: soft(colors.mint),
+  periwinkle: soft(colors.periwinkle, 0.12, 0.3),
   cream: { bg: colors.cream, fg: colors.ink, border: colors.cream },
-  up: { bg: colors.upSoft, fg: colors.up, border: "rgba(52,199,123,0.28)" },
-  down: { bg: colors.downSoft, fg: colors.down, border: "rgba(240,82,82,0.28)" },
-  warn: { bg: colors.warnSoft, fg: colors.gold, border: "rgba(242,184,75,0.28)" },
+  up: { bg: colors.upSoft, fg: colors.up, border: alpha(colors.up, 0.28) },
+  down: { bg: colors.downSoft, fg: colors.down, border: alpha(colors.down, 0.28) },
+  warn: soft(colors.gold),
 };
 
-/** Non-interactive pill label (status, terms, programme). In a column, give it `alignSelf` so it doesn't stretch. */
+/** Non-interactive pill label (status, terms, programme). In a column, give it `alignSelf` so it doesn't stretch.
+ *  `wrap`: the label is never cut; it takes a second line when the row is too narrow (disclosures). */
 export const Tag = React.memo(function Tag({
   label,
   tone = "neutral",
   icon,
   style,
   compact,
+  wrap,
 }: {
   label: string;
   tone?: TagTone;
   icon?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   compact?: boolean;
+  wrap?: boolean;
 }) {
   const c = TAG[tone];
+  const h = compact ? 22 : 24;
   return (
     <View
       style={[
@@ -41,19 +50,27 @@ export const Tag = React.memo(function Tag({
           flexDirection: "row",
           alignItems: "center",
           gap: compact ? 4 : 5,
-          height: compact ? 22 : 24,
           paddingHorizontal: compact ? 7 : 9,
-          borderRadius: radius.pill,
+          borderRadius: wrap ? radius.sm : radius.pill,
           backgroundColor: c.bg,
           borderWidth: 1,
           borderColor: c.border,
           maxWidth: "100%",
         },
+        wrap ? { minHeight: h, paddingVertical: 2 } : { height: h },
         style,
       ]}
     >
       {icon}
-      <Text variant="caption" color={c.fg} weight="700" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[{ flexShrink: 1 }, compact ? { fontSize: 11.5, lineHeight: 14 } : null]}>
+      <Text
+        variant="caption"
+        color={c.fg}
+        weight="700"
+        numberOfLines={wrap ? 2 : 1}
+        adjustsFontSizeToFit={!wrap}
+        minimumFontScale={0.8}
+        style={[{ flexShrink: 1 }, compact ? { fontSize: 11.5, lineHeight: 14 } : null]}
+      >
         {label}
       </Text>
     </View>
@@ -62,7 +79,8 @@ export const Tag = React.memo(function Tag({
 
 export const tagColor = (tone: TagTone) => TAG[tone].fg;
 
-/** Small uppercase label over a value (tabular). */
+/** Small uppercase label over a value (tabular). A long label wraps (narrow phones, longer languages); tiles sit
+ *  on the bottom of their row so the values of a row stay on one line. */
 export function StatTile({
   label,
   value,
@@ -81,8 +99,8 @@ export function StatTile({
   text?: boolean;
 }) {
   return (
-    <View style={[{ flex: 1, minWidth: 0, gap: 3 }, style]}>
-      <Text variant="label" tone="tertiary" numberOfLines={1}>
+    <View style={[{ flex: 1, minWidth: 0, gap: 3, justifyContent: "flex-end" }, style]}>
+      <Text variant="label" tone="tertiary" numberOfLines={2}>
         {label}
       </Text>
       {typeof value === "string" ? (
@@ -178,7 +196,7 @@ export function KeyValues({ rows, ink }: { rows: [string, React.ReactNode][]; in
             gap: space[3],
             paddingVertical: space[2],
             borderTopWidth: i ? 1 : 0,
-            borderTopColor: ink ? "rgba(14,14,16,0.12)" : colors.line,
+            borderTopColor: ink ? alpha(colors.ink, 0.12) : colors.line,
           }}
         >
           <Text variant="callout" color={ink ? colors.ink2 : colors.text2} style={{ flex: 1 }}>

@@ -37,7 +37,8 @@ export const RevokeSheet = React.forwardRef<SheetRef, { link: LinkView | null; o
       setErr(r.error);
       return;
     }
-    haptic.success();
+    // a haptic marks MAM trades closed, not a revoke that kept them
+    if (r.data.closed?.length) haptic.success();
     setRes(r.data);
     invalidate("social:mam:");
     onRevoked?.();

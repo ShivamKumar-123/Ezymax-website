@@ -9,14 +9,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Check, FileText } from "lucide-react-native";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
-import { haptic } from "@/lib/haptics";
 import { invalidate, useQuery } from "@/lib/query";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { useSession } from "@/session";
 import { Banner, Button, ColorBlock, Display, FormError, Mono, Skeleton, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { fetchers, keys, socialPost, validId, type Candidate, type LinkView, type ManagerDetail } from "../api";
-import { ddText, mamFeesText, methodHint, methodLabel, parseAmount, pct, usd } from "../format";
+import { ddText, mamFeesText, methodHint, methodLabel, parseAmount, pct, shownTone, usd } from "../format";
 import { ActionBar, FormScreen, ModalHeader, useBack } from "../components/chrome";
 import { AmountField, Consent, RadioCard } from "../components/controls";
 import { Avatar, RiskMeter } from "../components/identity";
@@ -91,12 +90,10 @@ function Form({ d, onClose, reload }: { d: ManagerDetail; onClose: () => void; r
     const r = await socialPost<{ link: LinkView }>("mam/links", body);
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(r.error);
       if (r.error.code === "terms_changed") void reload();
       return;
     }
-    haptic.success();
     invalidate("social:mam:");
     setLinked(r.data.link);
   };
@@ -170,7 +167,7 @@ function Form({ d, onClose, reload }: { d: ManagerDetail; onClose: () => void; r
           <StatGrid
             columns={3}
             items={[
-              { label: t("mobileSocial.mam.return1y"), value: pct(m.track.return1y, 1), tone: m.track.return1y > 0 ? "up" : m.track.return1y < 0 ? "down" : undefined },
+              { label: t("mobileSocial.mam.return1y"), value: pct(m.track.return1y, 1), tone: shownTone(m.track.return1y, 1) },
               { label: t("mobileSocial.maxDd"), value: ddText(m.track.maxDd) },
               { label: t("common.accounts"), value: String(m.accounts) },
             ]}
@@ -200,7 +197,11 @@ function Form({ d, onClose, reload }: { d: ManagerDetail; onClose: () => void; r
                   testID={`connect-account-${a.login}`}
                   selected={login === a.login}
                   disabled={!a.eligible}
-                  onPress={() => setLogin(a.login)}
+                  onPress={() => {
+                    // the consent names the account: choosing another one asks for it again
+                    if (a.login !== login) setAccept(false);
+                    setLogin(a.login);
+                  }}
                   title={`#${a.login}`}
                   text={a.eligible ? `${a.group} · ${t("mobileSocial.connect.positions", { count: a.positions })}` : (a.reason ?? "")}
                   right={

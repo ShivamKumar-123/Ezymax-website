@@ -12,7 +12,8 @@ import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { Card, ColorBlock, Display, EmptyState, Illustration, Mono, Pill, Screen, Skeleton, Text, useBottomInset, type SheetRef } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { fetchers, keys, type FeePeriod, type FundView, type InvestmentView, type RequestView } from "../api";
-import { compactUsd, pct, usd } from "../format";
+import { compactUsd, pct, shownTone, usd } from "../format";
+import { alpha } from "../tint";
 import { TopBar, useBack } from "../components/chrome";
 import { FundCard, HoldingCard } from "../components/FundCard";
 import { Note, StatGrid } from "../components/primitives";
@@ -135,7 +136,7 @@ export function PammScreen() {
             <Illustration name="pammFunds" width={112} height={100} style={{ marginEnd: -space[2], marginTop: -space[1] }} />
           </View>
           {next ? (
-            <View style={{ flexDirection: "row", gap: space[2], alignItems: "center", marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: "rgba(14,14,16,0.14)" }}>
+            <View style={{ flexDirection: "row", gap: space[2], alignItems: "center", marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: alpha(colors.ink, 0.14) }}>
               <CalendarClock size={15} color={colors.ink} />
               <Text variant="caption" color={colors.ink2}>
                 {`${t("mobileSocial.pamm.hero.next", { time: fmt.dateTime(next) })} · ${t("mobileSocial.serverTime")}`}
@@ -247,7 +248,7 @@ function MineSummary({ holdings, pending }: { holdings: InvestmentView[]; pendin
       <Mono size={40} weight="bold" style={{ letterSpacing: -1 }} numberOfLines={1} adjustsFontSizeToFit>
         {usd(value)}
       </Mono>
-      <Text variant="callout" weight="700" tone={pnl > 0 ? "up" : pnl < 0 ? "down" : "secondary"} style={{ marginBottom: space[4] }}>
+      <Text variant="callout" weight="700" tone={shownTone(pnl)} style={{ marginBottom: space[4] }}>
         {`${usd(pnl, 2, true)} · ${invested > 0 ? pct((pnl / invested) * 100) : "—"}`}
       </Text>
       <StatGrid
@@ -275,7 +276,7 @@ function Explain() {
     <View style={{ paddingHorizontal: GUTTER, paddingTop: space[6], gap: space[4] }}>
       {rows.map((r) => (
         <View key={r.t} style={{ flexDirection: "row", gap: space[3] }}>
-          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(242,184,75,0.12)", alignItems: "center", justifyContent: "center" }}>{r.icon}</View>
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: alpha(colors.gold, 0.12), alignItems: "center", justifyContent: "center" }}>{r.icon}</View>
           <View style={{ flex: 1, gap: 2 }}>
             <Text variant="callout" weight="700">
               {r.t}

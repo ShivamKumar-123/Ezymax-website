@@ -4,7 +4,6 @@ import * as React from "react";
 import { View } from "react-native";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
-import { haptic } from "@/lib/haptics";
 import { invalidate } from "@/lib/query";
 import { Button, Display, FormError, Sheet, Text, toast, type SheetRef } from "@/ui";
 import { space } from "@/theme/tokens";
@@ -33,11 +32,9 @@ export const StopLossSheet = React.forwardRef<SheetRef, { inv: InvestmentView | 
     const r = await socialPatch(`investments/${inv.fundId}`, { stopLossPct: on ? sl : null });
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(r.error);
       return;
     }
-    haptic.success();
     invalidate("social:inv");
     invalidate(`social:fund:${inv.fundId}`);
     toast.show({ title: on ? t("mobileSocial.sl.set", { sl }) : t("mobileSocial.sl.removed"), tone: "success" });
@@ -95,11 +92,9 @@ export const CancelRequestSheet = React.forwardRef<SheetRef, { req: RequestView 
     const r = await socialPost(`requests/${req.id}/cancel`, {});
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(r.error);
       return;
     }
-    haptic.success();
     invalidate("social:inv");
     invalidate(`social:fund:${req.fundId}`);
     invalidate(`social:stmt:${req.fundId}`);

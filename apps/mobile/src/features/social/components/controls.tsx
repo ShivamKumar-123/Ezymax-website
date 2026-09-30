@@ -9,6 +9,7 @@ import { haptic } from "@/lib/haptics";
 import { PressableScale, Text, TextField } from "@/ui";
 import { colors, motion, radius, space } from "@/theme/tokens";
 import { cleanAmount } from "../format";
+import { alpha } from "../tint";
 
 /* ------------------------------------------------------------------ */
 /* Slider                                                              */
@@ -270,7 +271,7 @@ export const RadioCard = React.memo(function RadioCard({
           borderRadius: radius.lg,
           borderWidth: 1.5,
           borderColor: selected ? colors.ember : colors.line,
-          backgroundColor: selected ? "rgba(242,106,61,0.08)" : colors.surface,
+          backgroundColor: selected ? alpha(colors.ember, 0.08) : colors.surface,
         },
         style,
       ]}

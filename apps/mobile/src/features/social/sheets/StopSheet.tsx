@@ -42,7 +42,8 @@ export const StopSheet = React.forwardRef<SheetRef, { sub: SubscriptionView | nu
       setErr(r.error);
       return;
     }
-    haptic.success();
+    // a haptic marks positions closed (like a close in the Trade tab), not a stop that kept them
+    if (r.data.closed?.length) haptic.success();
     setRes(r.data);
     invalidate("social:");
     invalidate("wallet");
@@ -86,8 +87,30 @@ export const StopSheet = React.forwardRef<SheetRef, { sub: SubscriptionView | nu
             </Text>
           </View>
           <View style={{ gap: space[2] }} accessibilityRole="radiogroup">
-            <RadioCard testID="stop-close" selected={close} onPress={() => setClose(true)} title={t("mobileSocial.stop.closeAll")} text={t("mobileSocial.stop.closeAllText", { count: open })} />
-            {open > 0 ? <RadioCard testID="stop-keep" selected={!close} onPress={() => setClose(false)} title={t("mobileSocial.stop.keep")} text={t("mobileSocial.stop.keepText")} /> : null}
+            {/* each choice starts from its safe default for the balance: everything back after a full close; kept
+                positions keep their margin unless the client moves the free margin out on purpose */}
+            <RadioCard
+              testID="stop-close"
+              selected={close}
+              onPress={() => {
+                if (!close) setReturnFunds(true);
+                setClose(true);
+              }}
+              title={t("mobileSocial.stop.closeAll")}
+              text={t("mobileSocial.stop.closeAllText", { count: open })}
+            />
+            {open > 0 ? (
+              <RadioCard
+                testID="stop-keep"
+                selected={!close}
+                onPress={() => {
+                  if (close) setReturnFunds(false);
+                  setClose(false);
+                }}
+                title={t("mobileSocial.stop.keep")}
+                text={t("mobileSocial.stop.keepText")}
+              />
+            ) : null}
           </View>
           <SwitchRow testID="stop-return" title={t("mobileSocial.stop.returnFunds")} hint={!close ? t("mobileSocial.stop.returnFundsKeep") : undefined} value={returnFunds} onChange={setReturnFunds} />
           <StatGrid

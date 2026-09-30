@@ -26,13 +26,22 @@ The social module of the Kalks app. It uses the same server routes and rules as 
 - **Stop copying: close all or keep.** The stop sheet offers:
   - "Close everything now" (default);
   - "Keep my positions open": the new engine option `closePositions: false`. Mirroring stops and the positions become the client's own trades.
-  - Separately, "Move the balance back to my wallet".
+  - Separately, "Move the balance back to my wallet". It is on after "Close everything" and off after "Keep my positions": with positions open only the free margin can leave, and moving it out leaves them no room before a margin call, so the client turns it on on purpose.
 
   The BFF now always sends both flags explicitly. This also fixes the web, where unticking "move the balance back" had no effect.
+  The engine returns the free margin rounded down to the cent (rounding to the nearest cent was refused as more than the free funds) and retries once on a fresh reading when prices moved in between. A repeated stop of a stopped subscription (double tap, stale screen, Back Office) never closes the positions the client kept and keeps the first stop's reason.
+  A stopped subscription's screen says the master's trades no longer reach the account and that what is still open is the client's own (Trade tab).
 - **MAM consent.** The terms and their SHA-256 hash always come fresh from the server (never from the device cache). The link is sent with that `termsHash` and `accept: true`, exactly like the web. On a `terms_changed` answer, the screen reloads the terms and asks for consent again.
 - **Master and MAM-manager dashboards stay on the web.** Applying involves requirement checks. PAMM fund creation shows credentials only once. Programme set-up and fee reviews are long forms. So the app shows a summary instead ("For masters": status, followers, AUM, fees; the MAM programme's accounts and equity) with **Manage on the web**, which opens the Client Area page (`/social/master`, `/social/mam`) in the in-app browser.
 - **House accounts** always show "House strategy · Operated by Kalks": in each leaderboard row (in full), on the profile with the full disclosure, in the follow wizard, and in the footnote under the list.
-- **Colours.** Green / red only for money (returns, P&L, buy / sell). Risk scores use mint / gold / ember; excluded symbols use ember.
+- **Colours.** Green / red only for money (returns, P&L, buy / sell), and only when the figure as shown isn't zero (a return that reads 0.0% is grey, never red). Every tint comes from the tokens through `tint.ts` (the web colour family, matte: flat fills, no gradients; the growth / NAV curves have a flat low-opacity fill). Since the palette moved to the web colour family, "mint" is a light ember and "periwinkle" a warm sand, so:
+  - positive states that aren't money (active, done, paid, approved master) use the `good` tag tone: the warm off-white;
+  - risk scores are low = warm off-white, medium = gold, high = ember (mint read like the high end);
+  - the house label and disclosure use the sand tint; excluded symbols use ember.
+- **Narrow phones (360 pt).** Leaderboard rows are 124 pt with four lines (return; house label or strategy; drawdown, AUM and the risk meter; followers and track record), so no figure is cut in the middle; the house label takes a second line rather than being cut. MAM programme rows show the fee terms in full. The subscription action bar is a round Settings button plus Pause / Resume and Stop, so both labels keep their full words. Stat tile labels wrap and the values of a row stay aligned.
+- **Haptics.** Selection (pills, switches, radio cards, symbol chips), pull-to-refresh, and a stop / revoke that closed positions (a close, like the Trade tab). Saving settings or limits, pausing, following, investing, redeeming and connecting have no buzz: the result screen or toast says what the server did.
+- **A disabled Copy says why** (frozen by the risk team, a hidden house strategy, a master no longer approved) under the button.
+- **MAM consent names the account:** choosing another account unticks it.
 - **Wallet check before following.** The wizard compares the amount with the wallet's available USDT. Otherwise the engine would open a copy account that the wallet then can't fund. The server stays authoritative.
 
 ## Data
@@ -51,6 +60,11 @@ The social module of the Kalks app. It uses the same server routes and rules as 
 | Master profile scroll | 60 fps, 0 frames over 25 ms |
 | Growth chart scrub | Only the header re-renders (store leaf); canvas 0 renders |
 | Subscription detail, 5 s poll with nothing changed | About 48 fibers per commit (rows, header and actions memoised and skipped) |
+| Subscription detail with an open copied position, prices ticking (review) | 60 fps; commits only when a 5 s poll answers (a tick renders nothing): about 200 fibers when the equity moved (header, the changed position row, the stop sheet's summary; the action bar is memoised on its status) |
+
+## Server rules the app relies on (review)
+
+- PAMM investments and their requests (`/api/social/investments`, `/api/social/requests/*`, and the web page `/social/investments`) follow the broker's **PAMM** module switch, not copy trading (`apps/crm/lib/tenant-config.ts`): a broker that runs PAMM with copy trading off keeps My investments, stop-loss and cancel.
 
 ## Testing locally
 

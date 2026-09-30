@@ -7,12 +7,12 @@ import { useLocalSearchParams } from "expo-router";
 import { Check, Lock } from "lucide-react-native";
 import { useFormat, useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
-import { haptic } from "@/lib/haptics";
 import { invalidate, useQuery } from "@/lib/query";
 import { Banner, Button, ColorBlock, Display, EmptyState, FormError, Mono, Pill, Skeleton, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { fetchers, keys, socialPost, validId, type InvestmentView } from "../api";
 import { nav4, parseAmount, units4, usd } from "../format";
+import { alpha } from "../tint";
 import { ActionBar, FormScreen, ModalHeader, useBack } from "../components/chrome";
 import { AmountField } from "../components/controls";
 import { StatGrid } from "../components/primitives";
@@ -72,17 +72,15 @@ function Form({ inv, onClose }: { inv: InvestmentView; onClose: () => void }) {
   const next = f.nextRolloverAt ? fmt.dateTime(f.nextRolloverAt) : t("mobileSocial.invest.theNextRollover");
 
   const submit = async () => {
-    if (valueErr) return haptic.error();
+    if (valueErr) return;
     setBusy(true);
     setErr(null);
     const r = await socialPost(`funds/${f.id}/redeem`, by === "all" ? { all: true } : by === "units" ? { units: v } : { amount: v });
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(r.error);
       return;
     }
-    haptic.success();
     invalidate("social:inv");
     invalidate(`social:fund:${f.id}`);
     invalidate(`social:stmt:${f.id}`);
@@ -170,7 +168,7 @@ function Form({ inv, onClose }: { inv: InvestmentView; onClose: () => void }) {
             error={raw ? valueErr : undefined}
           />
         ) : null}
-        <View style={{ borderRadius: radius.lg, padding: space[4], gap: space[2], backgroundColor: "rgba(242,184,75,0.10)", borderWidth: 1, borderColor: "rgba(242,184,75,0.28)" }}>
+        <View style={{ borderRadius: radius.lg, padding: space[4], gap: space[2], backgroundColor: alpha(colors.gold, 0.1), borderWidth: 1, borderColor: alpha(colors.gold, 0.28) }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
             <Text variant="callout" tone="secondary">
               {t("mobileSocial.redeem.unitsToRedeem")}

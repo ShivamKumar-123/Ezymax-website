@@ -11,7 +11,7 @@ import { useQuery } from "@/lib/query";
 import { Button, Card, Display, Mono, Screen, Skeleton, Text, type SheetRef } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { fetchers, keys, validId, type FeeView, type LinkDetail, type MamDeal, type MamLogEntry, type Position } from "../api";
-import { mamFeesText, methodLabel, usd } from "../format";
+import { mamFeesText, methodLabel, shownTone, usd } from "../format";
 import { ActionBar, TopBar, useBack } from "../components/chrome";
 import { Avatar } from "../components/identity";
 import { linkTone } from "../components/MamCards";
@@ -188,7 +188,7 @@ const Header = React.memo(function Header({ d }: { d: LinkDetail }) {
         <Text variant="label" tone="tertiary">
           {t("mobileSocial.mam.result")}
         </Text>
-        <Mono size={40} weight="bold" tone={l.mamResult > 0 ? "up" : l.mamResult < 0 ? "down" : undefined} style={{ letterSpacing: -1 }} numberOfLines={1} adjustsFontSizeToFit>
+        <Mono size={40} weight="bold" tone={shownTone(l.mamResult)} style={{ letterSpacing: -1 }} numberOfLines={1} adjustsFontSizeToFit>
           {usd(l.mamResult, 2, true)}
         </Mono>
       </View>

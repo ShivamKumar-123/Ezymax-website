@@ -6,6 +6,7 @@ import { API_BASE } from "@/lib/config";
 import { createStore, useStore, shallowEqual } from "@/lib/store";
 import { cachedConfig } from "@/market/config";
 import { onSignOut } from "@/session";
+import { colors } from "@/theme/tokens";
 import type { LbFilters } from "./api";
 
 const KEY = "kalks.social.filters";
@@ -30,5 +31,5 @@ export const narrowed = (f: LbFilters) => f.program !== "all" || f.risk !== "all
 /** Opens a Client Area page on the web (in-app browser); the user signs in there with the same account. */
 export function openClientArea(path: string) {
   const base = (cachedConfig()?.clientAreaUrl || API_BASE).replace(/\/+$/, "");
-  void WebBrowser.openBrowserAsync(`${base}${path}`, { dismissButtonStyle: "close", controlsColor: "#F26A3D", toolbarColor: "#0E0E10" }).catch(() => {});
+  void WebBrowser.openBrowserAsync(`${base}${path}`, { dismissButtonStyle: "close", controlsColor: colors.ember, toolbarColor: colors.bg }).catch(() => {});
 }

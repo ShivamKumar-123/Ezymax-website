@@ -402,6 +402,8 @@ const mobileSocial = {
   "sub.noLog": "Nothing copied yet.",
   "sub.noFees": "No performance fees yet.",
   "sub.note": "Copied positions close when the master closes them. To exit early, stop copying.",
+  // A stopped subscription: anything left open on the copy account is the client's own now
+  "sub.noteStopped": "Copying has stopped: the master's trades no longer reach copy account #{login}. Positions still open there are yours to manage in the Trade tab, and the balance can go back to your wallet at any time.",
   "sub.accountDetails": "Copy account details",
 
   // Copy settings (/social/subscriptions/[id]/settings)
@@ -426,7 +428,7 @@ const mobileSocial = {
   "stop.keep": "Keep my positions open",
   "stop.keepText": "Copying stops. Open copied positions and orders stay on the copy account and you manage them yourself.",
   "stop.returnFunds": "Move the balance back to my wallet",
-  "stop.returnFundsKeep": "While positions are open, only the free margin moves.",
+  "stop.returnFundsKeep": "While positions are open only the free margin can move, and moving it leaves them no room before a margin call.",
   "stop.equityNow": "Equity now",
   "stop.feesPending": "Fees pending",
   "stop.undone": "This can't be undone; to copy {name} again you start a new subscription.",
@@ -505,6 +507,7 @@ const mobileSocial = {
   "fund.out": "Out",
   "fund.masterProfile": "Master profile",
   "fund.frozenText": "This fund is frozen and isn't accepting new investments. Redemptions still run at rollover.",
+  "fund.closedText": "This fund is closed and isn't accepting investments.",
   "fund.yours": "Your investment",
   "fund.statement": "Your unit ledger",
   "fund.noMovements": "No unit movements yet.",

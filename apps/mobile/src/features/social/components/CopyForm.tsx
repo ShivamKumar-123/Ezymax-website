@@ -8,6 +8,7 @@ import { Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import type { SizingMode } from "../api";
 import { exampleLot, parseAmount, sizingLabel, SIZING_MODES, usd } from "../format";
+import { alpha } from "../tint";
 import { AmountField, RadioCard, Slider, SwitchRow } from "./controls";
 
 const ICON: Record<SizingMode, React.ComponentType<{ size?: number; color?: string }>> = { equity: Scale, fixed_lot: Layers, multiplier: Percent, allocation: Coins };
@@ -94,7 +95,7 @@ function SizingExample({ mode, value, name, masterEquity, allocation, maxLot }: 
           ? t("mobileSocial.follow.example.multiplier", { value })
           : "";
   return (
-    <View testID="sizing-example" style={{ borderRadius: radius.lg, padding: space[4], gap: space[2], backgroundColor: "rgba(242,184,75,0.10)", borderWidth: 1, borderColor: "rgba(242,184,75,0.28)" }}>
+    <View testID="sizing-example" style={{ borderRadius: radius.lg, padding: space[4], gap: space[2], backgroundColor: alpha(colors.gold, 0.1), borderWidth: 1, borderColor: alpha(colors.gold, 0.28) }}>
       <Text variant="callout" weight="700">
         {t("mobileSocial.follow.example", { name, lot: lot.toFixed(2) })}
       </Text>

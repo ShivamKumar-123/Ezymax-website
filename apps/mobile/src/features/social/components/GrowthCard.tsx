@@ -7,9 +7,9 @@ import { useFormat, useT } from "@/i18n";
 import { createStore, useStore, type Store } from "@/lib/store";
 import { Card, Mono, Pill, Text } from "@/ui";
 import { colors, space } from "@/theme/tokens";
-import { pct } from "../format";
+import { pct, shownTone } from "../format";
 import { Chart } from "./chart/Chart";
-import { Tag } from "./primitives";
+import { Tag, type TagTone } from "./primitives";
 
 export type Point = { t: number; v: number };
 type Range = "1m" | "3m" | "1y" | "all";
@@ -82,6 +82,11 @@ export function GrowthCard({
   );
 }
 
+const tagTone = (change: number): TagTone => {
+  const tone = shownTone(change);
+  return tone === "secondary" ? "neutral" : tone;
+};
+
 /** The value (and date) under the finger, else the latest one: the only part that re-renders while scrubbing. */
 function Header({ title, hint, shown, format, scrub, rangeLabel }: { title: string; hint: string; shown: Point[]; format: (v: number) => string; scrub: Store<number | null>; rangeLabel: string }) {
   const fmt = useFormat();
@@ -98,7 +103,7 @@ function Header({ title, hint, shown, format, scrub, rangeLabel }: { title: stri
         <Mono size={30} weight="bold" style={{ letterSpacing: -0.5 }}>
           {format(at.v)}
         </Mono>
-        <Tag tone={change > 0 ? "up" : change < 0 ? "down" : "neutral"} label={`${pct(change)} · ${rangeLabel}`} />
+        <Tag tone={tagTone(change)} label={`${pct(change)} · ${rangeLabel}`} />
       </View>
       <Text variant="caption" tone="tertiary">
         {i !== null ? fmt.date(at.t, { day: "numeric", month: "short", year: "numeric" }) : hint}

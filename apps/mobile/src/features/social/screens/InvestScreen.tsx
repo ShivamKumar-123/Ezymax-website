@@ -8,7 +8,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { CalendarClock, Check, Lock } from "lucide-react-native";
 import { useFormat, useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
-import { haptic } from "@/lib/haptics";
 import { invalidate, useQuery } from "@/lib/query";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { useSession } from "@/session";
@@ -82,11 +81,9 @@ function Form({ f, available, onClose }: { f: FundView; available: number | null
     const r = await socialPost<{ request: RequestView }>(`funds/${f.id}/invest`, body);
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(r.error);
       return;
     }
-    haptic.success();
     invalidate("social:inv");
     invalidate(`social:fund:${f.id}`);
     invalidate(`social:stmt:${f.id}`);
@@ -152,7 +149,7 @@ function Form({ f, available, onClose }: { f: FundView; available: number | null
           </Text>
         </View>
         <RestrictionBanner kinds={["social"]} />
-        {frozen ? <Banner tone="warn" title={t("mobileSocial.fund.frozenText")} /> : null}
+        {frozen ? <Banner tone="warn" title={f.status === "closed" ? t("mobileSocial.fund.closedText") : t("mobileSocial.fund.frozenText")} /> : null}
         <AmountField
           testID="invest-amount"
           label={t("mobileSocial.invest.amount")}

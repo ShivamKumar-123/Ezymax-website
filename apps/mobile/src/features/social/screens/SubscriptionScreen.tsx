@@ -12,7 +12,7 @@ import { invalidate, setQueryData, useQuery } from "@/lib/query";
 import { Button, Mono, PillRow, PressableScale, Screen, Skeleton, Text, toast, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { fetchers, keys, socialPatch, validId, type CopyLogEntry, type FeeView, type Order, type Position, type SubscriptionDetail, type SubscriptionView } from "../api";
-import { pct, sizingText, usd } from "../format";
+import { pct, shownTone, sizingText, usd } from "../format";
 import { ActionBar, ForwardIcon, TopBar, useBack } from "../components/chrome";
 import { Avatar, HouseBadge, RiskMeter } from "../components/identity";
 import { Note, StatGrid, Tag } from "../components/primitives";
@@ -87,63 +87,71 @@ export function SubscriptionScreen() {
         renderItem={renderRow}
         ListHeaderComponent={<Header d={d} tab={tab} onTab={setTab} />}
         ListEmptyComponent={<EmptyTab tab={tab} />}
-        ListFooterComponent={<Footer />}
+        ListFooterComponent={<Footer stopped={s.status === "stopped"} login={s.login} />}
         contentContainerStyle={{ paddingBottom: space[8] }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text3} colors={[colors.ember]} progressBackgroundColor={colors.surface} />}
       />
-      {s.status !== "stopped" ? <Actions s={s} onStop={openStop} /> : null}
+      {s.status !== "stopped" ? <Actions id={s.id} status={s.status} nickname={s.master.nickname} onStop={openStop} /> : null}
       <StopSheet ref={sheet} sub={s} onStopped={() => void q.refresh()} />
     </Screen>
   );
 }
 
-/** Pause / Resume, Settings and Stop (memoised: re-renders only when the subscription changed). */
-const Actions = React.memo(function Actions({ s, onStop }: { s: SubscriptionView; onStop: () => void }) {
+/** Settings, Pause / Resume and Stop. Memoised on the few fields it shows, so a poll that only moved the equity of
+ *  an open position doesn't re-render it. Settings is a round icon button so the two labelled actions keep their
+ *  full words on a 360 pt phone and in longer languages. */
+const Actions = React.memo(function Actions({ id, status, nickname, onStop }: { id: number; status: SubscriptionView["status"]; nickname: string; onStop: () => void }) {
   const t = useT();
   const router = useRouter();
   const [busy, setBusy] = React.useState(false);
   const pause = async () => {
-    const paused = s.status !== "paused";
+    const paused = status !== "paused";
     setBusy(true);
-    const r = await socialPatch<{ subscription: SubscriptionView }>(`subscriptions/${s.id}`, { paused });
+    const r = await socialPatch<{ subscription: SubscriptionView }>(`subscriptions/${id}`, { paused });
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       toast.show({ title: r.error.message, tone: "error" });
       return;
     }
-    haptic.success();
-    setQueryData<SubscriptionDetail>(keys.sub(s.id), (prev) => (prev ? { ...prev, subscription: r.data.subscription } : prev!), true);
+    setQueryData<SubscriptionDetail>(keys.sub(id), (prev) => (prev ? { ...prev, subscription: r.data.subscription } : prev!), true);
     invalidate(keys.subs);
     toast.show({
       title: paused ? t("mobileSocial.subs.paused") : t("mobileSocial.subs.resumed"),
-      body: paused ? t("mobileSocial.subs.pausedText") : t("mobileSocial.subs.resumedText", { name: s.master.nickname }),
+      body: paused ? t("mobileSocial.subs.pausedText") : t("mobileSocial.subs.resumedText", { name: nickname }),
       tone: "success",
     });
   };
   return (
     <ActionBar>
+      <PressableScale
+        testID="sub-settings"
+        haptics="tap"
+        accessibilityLabel={t("mobileSocial.subs.settings")}
+        onPress={() => router.push(`/social/subscriptions/${id}/settings`)}
+        style={{ width: 46, height: 46, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.lineStrong }}
+      >
+        <Settings2 size={19} color={colors.text} />
+      </PressableScale>
       <Button
         testID="sub-pause"
-        label={s.status === "paused" ? t("mobileSocial.subs.resume") : t("mobileSocial.subs.pause")}
-        icon={s.status === "paused" ? <Play size={16} color={colors.text} /> : <Pause size={16} color={colors.text} />}
+        label={status === "paused" ? t("mobileSocial.subs.resume") : t("mobileSocial.subs.pause")}
+        icon={status === "paused" ? <Play size={16} color={colors.text} /> : <Pause size={16} color={colors.text} />}
         variant="secondary"
         size="md"
-        style={{ flex: 1 }}
+        style={{ flex: 1, paddingHorizontal: space[3] }}
         loading={busy}
         onPress={() => void pause()}
       />
       <Button
-        testID="sub-settings"
-        label={t("mobileSocial.subs.settings")}
-        icon={<Settings2 size={16} color={colors.text} />}
-        variant="secondary"
+        testID="sub-stop"
+        label={t("mobileSocial.subs.stop")}
+        icon={<Square size={14} color={colors.down} />}
+        variant="danger"
         size="md"
-        style={{ flex: 1 }}
-        onPress={() => router.push(`/social/subscriptions/${s.id}/settings`)}
+        style={{ flex: 1, paddingHorizontal: space[3] }}
+        onPress={onStop}
       />
-      <Button testID="sub-stop" label={t("mobileSocial.subs.stop")} icon={<Square size={14} color={colors.down} />} variant="danger" size="md" style={{ flex: 1 }} onPress={onStop} />
     </ActionBar>
   );
 });
@@ -162,11 +170,11 @@ const EmptyTab = React.memo(function EmptyTab({ tab }: { tab: Tab }) {
   );
 });
 
-const Footer = React.memo(function Footer() {
+const Footer = React.memo(function Footer({ stopped, login }: { stopped: boolean; login: number }) {
   const t = useT();
   return (
     <View style={{ paddingHorizontal: GUTTER, paddingTop: space[6] }}>
-      <Note>{t("mobileSocial.sub.note")}</Note>
+      <Note>{stopped ? t("mobileSocial.sub.noteStopped", { login }) : t("mobileSocial.sub.note")}</Note>
     </View>
   );
 });
@@ -217,7 +225,7 @@ const Header = React.memo(function Header({ d, tab, onTab }: { d: SubscriptionDe
           {usd(s.equity)}
         </Mono>
         {s.status !== "stopped" ? (
-          <Mono size={15} weight="bold" tone={s.profit > 0 ? "up" : s.profit < 0 ? "down" : "secondary"}>
+          <Mono size={15} weight="bold" tone={shownTone(s.profit)}>
             {`${usd(s.profit, 2, true)} · ${pct(s.returnPct)}`}
           </Mono>
         ) : null}

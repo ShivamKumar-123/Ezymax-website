@@ -12,7 +12,7 @@ import { useQuery } from "@/lib/query";
 import { Banner, Button, Card, Display, Mono, PressableScale, Screen, Skeleton, Text, type SheetRef } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { fetchers, keys, validId, type FundDetail, type InvestmentView, type RequestView, type Statement } from "../api";
-import { compactUsd, ddText, nav4, pct, periodLabel, units4, usd } from "../format";
+import { compactUsd, ddText, nav4, pct, periodLabel, shownTone, units4, usd } from "../format";
 import { ActionBar, ForwardIcon, TopBar, useBack } from "../components/chrome";
 import { HoldingCard, fundTone } from "../components/FundCard";
 import { GrowthCard, type Point } from "../components/GrowthCard";
@@ -225,7 +225,9 @@ function Top({
           </View>
           <ForwardIcon />
         </PressableScale>
-        {f.status !== "active" ? <Banner tone="warn" icon={<Snowflake size={18} color={colors.gold} />} title={t("mobileSocial.fund.frozenText")} /> : null}
+        {f.status !== "active" ? (
+          <Banner tone="warn" icon={<Snowflake size={18} color={colors.gold} />} title={f.status === "closed" ? t("mobileSocial.fund.closedText") : t("mobileSocial.fund.frozenText")} />
+        ) : null}
       </View>
       <View style={{ paddingHorizontal: GUTTER, gap: space[4] }}>
         <View style={{ flexDirection: "row", alignItems: "flex-end", gap: space[4] }}>
@@ -238,8 +240,8 @@ function Top({
             </Mono>
           </View>
           <View style={{ alignItems: "flex-end", gap: 2 }}>
-            <Mono size={16} weight="bold" tone={f.return1m > 0 ? "up" : f.return1m < 0 ? "down" : "secondary"}>{`${pct(f.return1m)} · ${t("mobileSocial.fund.return1m")}`}</Mono>
-            <Mono size={13} tone={f.returnAll > 0 ? "up" : f.returnAll < 0 ? "down" : "tertiary"}>{`${pct(f.returnAll)} · ${t("mobileSocial.fund.returnAll")}`}</Mono>
+            <Mono size={16} weight="bold" tone={shownTone(f.return1m)}>{`${pct(f.return1m)} · ${t("mobileSocial.fund.return1m")}`}</Mono>
+            <Mono size={13} tone={shownTone(f.returnAll, 2, "tertiary")}>{`${pct(f.returnAll)} · ${t("mobileSocial.fund.returnAll")}`}</Mono>
           </View>
         </View>
         <StatGrid
@@ -256,7 +258,7 @@ function Top({
           <Display size="sm" style={{ paddingHorizontal: GUTTER }}>
             {t("mobileSocial.fund.yours")}
           </Display>
-          <HoldingCard inv={mine} onOpen={() => undefined} onAdd={onAdd} onRedeem={onRedeem} onStopLoss={onStopLoss} onCancel={onCancel} />
+          <HoldingCard inv={mine} onAdd={onAdd} onRedeem={onRedeem} onStopLoss={onStopLoss} onCancel={onCancel} />
         </View>
       ) : null}
       <View style={{ paddingHorizontal: GUTTER }}>

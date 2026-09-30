@@ -95,8 +95,9 @@ export function RowSkeleton({ height = 96 }: { height?: number }) {
 }
 
 export function RowsSkeleton({ rows = 6, height = 96 }: { rows?: number; height?: number }) {
+  const t = useT();
   return (
-    <View accessible accessibilityLabel="Loading">
+    <View accessible accessibilityLabel={t("common.loading")}>
       {Array.from({ length: rows }, (_, i) => (
         <RowSkeleton key={i} height={height} />
       ))}

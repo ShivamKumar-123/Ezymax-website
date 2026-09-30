@@ -7,6 +7,7 @@ import { useT } from "@/i18n";
 import { Text } from "@/ui";
 import { blockColors, colors, fonts, radius, space, type BlockColor } from "@/theme/tokens";
 import { clampRisk, riskLevel } from "../format";
+import { alpha } from "../tint";
 import type { Program } from "../api";
 import { Tag, tagColor, type TagTone } from "./primitives";
 
@@ -43,13 +44,15 @@ export const Avatar = React.memo(function Avatar({ name, size = 44, house }: { n
   );
 });
 
-/** "House strategy · Operated by Kalks": exactly the web label, on every house master. */
+/** "House strategy · Operated by Kalks": exactly the web label, on every house master, always in full (it takes a
+ *  second line on a narrow phone rather than being cut). */
 export const HouseBadge = React.memo(function HouseBadge({ style, compact }: { style?: StyleProp<ViewStyle>; compact?: boolean }) {
   const t = useT();
   return (
     <Tag
       tone="periwinkle"
       compact={compact}
+      wrap
       label={t("mobileSocial.house.badge")}
       icon={<Building2 size={compact ? 11 : 12} color={colors.periwinkle} strokeWidth={2.2} />}
       style={[{ alignSelf: "flex-start" }, style]}
@@ -64,7 +67,7 @@ export function HouseDisclosure({ style }: { style?: StyleProp<ViewStyle> }) {
     <View
       accessibilityRole="text"
       style={[
-        { flexDirection: "row", gap: space[3], padding: space[4], borderRadius: radius.lg, backgroundColor: "rgba(140,140,240,0.10)", borderWidth: 1, borderColor: "rgba(140,140,240,0.3)" },
+        { flexDirection: "row", gap: space[3], padding: space[4], borderRadius: radius.lg, backgroundColor: alpha(colors.periwinkle, 0.08), borderWidth: 1, borderColor: alpha(colors.periwinkle, 0.3) },
         style,
       ]}
     >
@@ -91,7 +94,9 @@ export function ProgramTags({ program, hasFund = true }: { program: Program; has
   );
 }
 
-const riskTone = (r: number): TagTone => (r <= 3 ? "mint" : r <= 6 ? "gold" : "ember");
+// low: warm off-white (calm), medium: gold, high: ember. Palette colours (risk isn't money); since the web
+// colour family "mint" is a light ember, so it no longer marks low risk (it read like the high end).
+const riskTone = (r: number): TagTone => (r <= 3 ? "good" : r <= 6 ? "gold" : "ember");
 
 /** Risk score 1–10 as a 10-bar meter plus the number (palette colours: risk isn't money). */
 export const RiskMeter = React.memo(function RiskMeter({ risk, showLabel, size = "sm" }: { risk: number; showLabel?: boolean; size?: "sm" | "lg" }) {

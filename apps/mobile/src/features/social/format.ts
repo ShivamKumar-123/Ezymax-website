@@ -23,8 +23,8 @@ export function compactUsd(v: number | null | undefined) {
 /** "+12.34%" / "−3.10%" / "0.00%". */
 export const pct = (v: number | null | undefined, decimals = 2, signed = true) => fmtPct(safe(v), decimals, signed);
 
-/** Drawdown as a negative percentage ("−7.9%"), "0.0%" when flat. */
-export const ddText = (v: number | null | undefined, decimals = 1) => (safe(v) > 0 ? `−${safe(v).toFixed(decimals)}%` : `${(0).toFixed(decimals)}%`);
+/** Drawdown as a negative percentage ("−7.9%"), "0.0%" when flat (or when it rounds to 0 at `decimals`). */
+export const ddText = (v: number | null | undefined, decimals = 1) => (safe(v) >= 0.5 / 10 ** decimals ? `−${safe(v).toFixed(decimals)}%` : `${(0).toFixed(decimals)}%`);
 
 export const nav4 = (v: number | null | undefined) => safe(v).toFixed(4);
 export const units4 = (v: number | null | undefined) => {
@@ -35,6 +35,14 @@ export const lots = (v: number | null | undefined) => (typeof v === "number" && 
 
 /** Tone of a money / return figure: green / red are for money only. */
 export const moneyTone = (v: number | null | undefined): "up" | "down" | "secondary" => (safe(v) > 0 ? "up" : safe(v) < 0 ? "down" : "secondary");
+
+/** Tone of a figure as it is shown with `decimals`: one that reads 0.0% (or $0.00) is neither green nor red. */
+export function shownTone(v: number | null | undefined, decimals?: number): "up" | "down" | "secondary";
+export function shownTone(v: number | null | undefined, decimals: number, zero: "tertiary"): "up" | "down" | "tertiary";
+export function shownTone(v: number | null | undefined, decimals = 2, zero: "secondary" | "tertiary" = "secondary"): "up" | "down" | "secondary" | "tertiary" {
+  if (Math.abs(safe(v)) < 0.5 / 10 ** decimals) return zero;
+  return safe(v) > 0 ? "up" : "down";
+}
 
 export function formatAge(days: number | null | undefined, t: T = i18n.t) {
   const d = Math.max(0, Math.floor(safe(days)));

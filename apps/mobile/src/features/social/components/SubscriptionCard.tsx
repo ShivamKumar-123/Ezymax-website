@@ -7,11 +7,12 @@ import { useFormat, useT } from "@/i18n";
 import { Mono, PressableScale, Text } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import type { SubscriptionView } from "../api";
-import { pct, periodLabel, usd } from "../format";
+import { pct, periodLabel, shownTone, usd } from "../format";
+import { alpha } from "../tint";
 import { Avatar, HouseBadge, RiskMeter } from "./identity";
 import { Tag, type TagTone } from "./primitives";
 
-export const statusTone = (s: SubscriptionView["status"]): TagTone => (s === "active" ? "mint" : s === "paused" ? "gold" : "neutral");
+export const statusTone = (s: SubscriptionView["status"]): TagTone => (s === "active" ? "good" : s === "paused" ? "gold" : "neutral");
 
 export const SubscriptionCard = React.memo(function SubscriptionCard({
   s,
@@ -59,7 +60,7 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({
             <Text variant="headline" weight="700" numberOfLines={1}>
               {s.master.nickname}
             </Text>
-            <Text variant="caption" tone="tertiary" numberOfLines={1}>
+            <Text variant="caption" tone="tertiary" numberOfLines={2}>
               {t("mobileSocial.subs.copyAccount", { login: s.login })}
             </Text>
           </View>
@@ -91,10 +92,10 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({
           {/* a stopped subscription's balance may have gone back to the wallet: its P&L is no longer meaningful */}
           {!stopped ? (
             <View style={{ alignItems: "flex-end", gap: 2 }}>
-              <Mono size={15} weight="bold" tone={s.profit > 0 ? "up" : s.profit < 0 ? "down" : "secondary"}>
+              <Mono size={15} weight="bold" tone={shownTone(s.profit)}>
                 {usd(s.profit, 2, true)}
               </Mono>
-              <Mono size={12} tone={s.returnPct > 0 ? "up" : s.returnPct < 0 ? "down" : "tertiary"}>
+              <Mono size={12} tone={shownTone(s.returnPct, 2, "tertiary")}>
                 {pct(s.returnPct)}
               </Mono>
             </View>
@@ -140,7 +141,7 @@ function CardAction({ icon, label, onPress, busy, tone, testID }: { icon: React.
         gap: 6,
         backgroundColor: colors.surface2,
         borderWidth: 1,
-        borderColor: tone === "ember" ? "rgba(242,106,61,0.35)" : colors.line,
+        borderColor: tone === "ember" ? alpha(colors.ember, 0.35) : colors.line,
       }}
     >
       {icon}

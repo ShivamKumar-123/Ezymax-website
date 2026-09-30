@@ -9,7 +9,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { AlertTriangle, Check, ShieldCheck } from "lucide-react-native";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
-import { haptic } from "@/lib/haptics";
 import { invalidate, useQuery } from "@/lib/query";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { useSession } from "@/session";
@@ -17,6 +16,7 @@ import { Banner, Button, ColorBlock, Display, FormError, Skeleton, Text } from "
 import { colors, radius, space } from "@/theme/tokens";
 import { fetchers, keys, socialPost, validId, walletAvailable, type FollowResult, type MasterView, type SizingMode } from "../api";
 import { parseAmount, periodLabel, sizingText, usd } from "../format";
+import { alpha } from "../tint";
 import { ActionBar, FormScreen, ModalHeader, useBack } from "../components/chrome";
 import { AmountField, ChipChoice, Consent } from "../components/controls";
 import { defaultSizingValue, limitErrors, RiskLimits, SizingPicker, sizingError } from "../components/CopyForm";
@@ -73,7 +73,8 @@ export function FollowScreen() {
 function Wizard({ m, suggested, available, onClose, onDone }: { m: MasterView; suggested: string[]; available: number | null; onClose: () => void; onDone: () => void }) {
   const t = useT();
   const router = useRouter();
-  const restricted = useSession((s) => s.restricted.includes("social"));
+  // the allocation moves from the wallet to the copy account: a "transfers" restriction would leave it unfunded
+  const restricted = useSession((s) => s.restricted.includes("social") || s.restricted.includes("transfers"));
   const scroll = React.useRef<ScrollView>(null);
   const [step, setStep] = React.useState(0);
   const [mode, setMode] = React.useState<SizingMode>("equity");
@@ -127,12 +128,9 @@ function Wizard({ m, suggested, available, onClose, onDone }: { m: MasterView; s
     const r = await socialPost<FollowResult>("subscriptions", body);
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(r.error);
       return;
     }
-    if (r.data.funding?.status === "done") haptic.success();
-    else haptic.warning();
     invalidate("social:");
     invalidate("wallet");
     setResult(r.data);
@@ -141,7 +139,6 @@ function Wizard({ m, suggested, available, onClose, onDone }: { m: MasterView; s
   const next = () => {
     if (stepErr) {
       setTried(true);
-      haptic.error();
       return;
     }
     if (step < 3) go(step + 1);
@@ -228,7 +225,7 @@ function Wizard({ m, suggested, available, onClose, onDone }: { m: MasterView; s
             {available !== null && allocation !== null && allocation > available ? (
               <Banner tone="warn" title={t("mobileSocial.follow.short", { amount: usd(available) })} action={t("mobileSocial.follow.deposit")} onAction={() => router.push("/wallet/deposit")} />
             ) : null}
-            <View style={{ borderRadius: radius.lg, padding: space[4], backgroundColor: "rgba(242,184,75,0.10)", borderWidth: 1, borderColor: "rgba(242,184,75,0.28)" }}>
+            <View style={{ borderRadius: radius.lg, padding: space[4], backgroundColor: alpha(colors.gold, 0.1), borderWidth: 1, borderColor: alpha(colors.gold, 0.28) }}>
               <Text variant="caption" tone="secondary" style={{ lineHeight: 18 }}>
                 {t("mobileSocial.follow.amountNote", { amount: allocation ? usd(allocation) : t("mobileSocial.follow.theAmount") })}
               </Text>
@@ -245,9 +242,9 @@ function Wizard({ m, suggested, available, onClose, onDone }: { m: MasterView; s
                 alignItems: "center",
                 padding: space[4],
                 borderRadius: radius.lg,
-                backgroundColor: "rgba(242,106,61,0.10)",
+                backgroundColor: alpha(colors.ember, 0.1),
                 borderWidth: 1,
-                borderColor: "rgba(242,106,61,0.3)",
+                borderColor: alpha(colors.ember, 0.3),
               }}
             >
               <ShieldCheck size={20} color={colors.ember} />

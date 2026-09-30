@@ -14,6 +14,7 @@ import { ColorBlock, Display, Illustration, Mono, Pill, PressableScale, Screen, 
 import { blockColors, colors, GUTTER, radius, space } from "@/theme/tokens";
 import { fetchers, keys, leaderboardPath, shared, socialGet, type Leaderboard, type LbPeriod, type MasterView } from "../api";
 import { compactUsd } from "../format";
+import { alpha } from "../tint";
 import { TopBar, useBack } from "../components/chrome";
 import { LEADER_ROW_HEIGHT, LeaderRow } from "../components/LeaderRow";
 import { MastersCard } from "../components/MastersCard";
@@ -232,7 +233,7 @@ function Hero({ totals, anyHouse, loading }: { totals?: Leaderboard["totals"]; a
         <HeroStat label={t("mobileSocial.hub.hero.followers")} value={totals ? fmt.number(totals.followers, 0) : "—"} />
         <HeroStat label={t("mobileSocial.hub.hero.investors")} value={totals ? fmt.number(totals.investors, 0) : "—"} />
       </View>
-      <View style={{ flexDirection: "row", gap: space[2], alignItems: "flex-start", marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: "rgba(14,14,16,0.14)" }}>
+      <View style={{ flexDirection: "row", gap: space[2], alignItems: "flex-start", marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: alpha(colors.ink, 0.14) }}>
         <ShieldCheck size={15} color={colors.ink} style={{ marginTop: 1 }} />
         <Text variant="caption" color={colors.ink2} style={{ flex: 1, lineHeight: 17 }}>
           {anyHouse ? t("mobileSocial.hub.hero.chipClient") : t("mobileSocial.hub.hero.chipAll")}
@@ -317,9 +318,9 @@ function MineBlock({
       onPressIn={onPressIn}
       accessibilityRole="button"
       accessibilityLabel={`${title}, ${value}, ${sub}`}
-      style={{ flex: 1, height: 136, padding: space[4], borderRadius: radius.card, backgroundColor: blockColors[color], overflow: "hidden" }}
+      style={{ flex: 1, height: 136, paddingHorizontal: space[3], paddingVertical: space[4], borderRadius: radius.card, backgroundColor: blockColors[color], overflow: "hidden" }}
     >
-      <Text variant="label" color={colors.ink2} numberOfLines={1}>
+      <Text variant="label" color={colors.ink2} numberOfLines={2} style={{ letterSpacing: 0.6 }}>
         {title}
       </Text>
       <View style={{ flex: 1 }} />

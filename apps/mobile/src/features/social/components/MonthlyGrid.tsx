@@ -5,7 +5,8 @@ import { View } from "react-native";
 import { useFormat, useT } from "@/i18n";
 import { Mono, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
-import { pct } from "../format";
+import { pct, shownTone } from "../format";
+import { alpha } from "../tint";
 import { StatGrid } from "./primitives";
 
 type Month = { month: string; returnPct: number };
@@ -46,7 +47,7 @@ export const MonthlyGrid = React.memo(function MonthlyGrid({ monthly }: { monthl
               <Mono size={15} weight="bold">
                 {String(y)}
               </Mono>
-              <Mono size={15} weight="bold" tone={ytd > 0 ? "up" : ytd < 0 ? "down" : "secondary"}>
+              <Mono size={15} weight="bold" tone={shownTone(ytd, 1)}>
                 {pct(ytd, 1)}
               </Mono>
             </View>
@@ -55,7 +56,7 @@ export const MonthlyGrid = React.memo(function MonthlyGrid({ monthly }: { monthl
                 const c = cells.find((x) => x.month === mo);
                 const a = c ? Math.min(1, Math.abs(c.ret) / 8) : 0;
                 const flat = !c || c.ret === 0;
-                const bg = flat ? colors.surface2 : c.ret > 0 ? `rgba(52,199,123,${0.1 + a * 0.5})` : `rgba(240,82,82,${0.1 + a * 0.5})`;
+                const bg = flat ? colors.surface2 : alpha(c.ret > 0 ? colors.up : colors.down, 0.1 + a * 0.5);
                 const fg = !c ? colors.text3 : flat ? colors.text2 : a > 0.55 ? colors.text : c.ret > 0 ? colors.up : colors.down;
                 return (
                   <View
@@ -81,8 +82,8 @@ export const MonthlyGrid = React.memo(function MonthlyGrid({ monthly }: { monthl
         <StatGrid
           columns={3}
           items={[
-            { label: t("mobileSocial.master.bestMonth"), value: pct(best.ret, 1), tone: best.ret > 0 ? "up" : best.ret < 0 ? "down" : undefined, sub: `${monthName(best.month)} ${best.year}` },
-            { label: t("mobileSocial.master.worstMonth"), value: pct(worst.ret, 1), tone: worst.ret > 0 ? "up" : worst.ret < 0 ? "down" : undefined, sub: `${monthName(worst.month)} ${worst.year}` },
+            { label: t("mobileSocial.master.bestMonth"), value: pct(best.ret, 1), tone: shownTone(best.ret, 1), sub: `${monthName(best.month)} ${best.year}` },
+            { label: t("mobileSocial.master.worstMonth"), value: pct(worst.ret, 1), tone: shownTone(worst.ret, 1), sub: `${monthName(worst.month)} ${worst.year}` },
             { label: t("mobileSocial.master.positiveMonths"), value: `${Math.round((positive / parsed.length) * 100)}%`, sub: `${positive} / ${parsed.length}` },
           ]}
         />

@@ -5,7 +5,6 @@ import { View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
-import { haptic } from "@/lib/haptics";
 import { invalidate, setQueryData, useQuery } from "@/lib/query";
 import { Button, Display, FormError, Skeleton, Text, toast } from "@/ui";
 import { space } from "@/theme/tokens";
@@ -54,17 +53,15 @@ function Form({ l, onClose }: { l: LinkView; onClose: () => void }) {
   const stopErr = equityStop && !(es !== null && es > 0 && es < l.equity) ? t("mobileSocial.connect.err.equityStop") : undefined;
 
   const save = async () => {
-    if (maxErr || stopErr) return haptic.error();
+    if (maxErr || stopErr) return;
     setBusy(true);
     setErr(null);
     const r = await socialPatch<{ link: LinkView }>(`mam/links/${l.id}`, { maxLot: ml, equityStop: es });
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(r.error);
       return;
     }
-    haptic.success();
     setQueryData<LinkDetail>(keys.link(l.id), (prev) => (prev ? { ...prev, link: r.data.link } : prev!), true);
     invalidate(keys.links);
     toast.show({ title: t("mobileSocial.limits.saved"), body: t("mobileSocial.limits.savedText"), tone: "success" });

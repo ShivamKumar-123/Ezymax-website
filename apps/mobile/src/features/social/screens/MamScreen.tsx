@@ -13,8 +13,9 @@ import { Button, Card, ColorBlock, Display, EmptyState, Screen, Skeleton, Text, 
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { fetchers, keys, type LinkView, type ManagerView } from "../api";
 import { compactUsd } from "../format";
+import { alpha } from "../tint";
 import { TopBar, useBack } from "../components/chrome";
-import { LinkCard, ManagerRow } from "../components/MamCards";
+import { LinkCard, MANAGER_ROW, ManagerRow } from "../components/MamCards";
 import { SectionTitle } from "../components/primitives";
 import { LoadError } from "../components/states";
 import { openClientArea } from "../state";
@@ -115,7 +116,7 @@ export function MamScreen() {
           <Text color={colors.ink} style={{ marginTop: space[2], lineHeight: 21 }}>
             {t("mobileSocial.mam.heroText")}
           </Text>
-          <View style={{ flexDirection: "row", gap: space[2], alignItems: "flex-start", marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: "rgba(14,14,16,0.14)" }}>
+          <View style={{ flexDirection: "row", gap: space[2], alignItems: "flex-start", marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: alpha(colors.ink, 0.14) }}>
             <ShieldCheck size={16} color={colors.ink} style={{ marginTop: 1 }} />
             <Text variant="caption" color={colors.ink2} style={{ flex: 1, lineHeight: 17 }}>
               {t("mobileSocial.mam.safety")}
@@ -185,8 +186,8 @@ export function MamScreen() {
             case "progLoading":
               return (
                 <View style={{ paddingHorizontal: GUTTER, gap: space[3] }}>
-                  <Skeleton h={96} r={16} />
-                  <Skeleton h={96} r={16} />
+                  <Skeleton h={MANAGER_ROW - space[3]} r={16} />
+                  <Skeleton h={MANAGER_ROW - space[3]} r={16} />
                 </View>
               );
             case "progError":
