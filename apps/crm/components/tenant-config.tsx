@@ -19,6 +19,7 @@ export function useFeatures(): ClientFeatures | null {
 /** Nav path → module key (mirrors lib/tenant-config.ts MODULE_PATHS for pages). */
 const PAGE_MODULES: [string, string][] = [
   ["/social/pamm", "pamm"],
+  ["/social/investments", "pamm"],
   ["/social", "copy_trading"],
   ["/prop", "prop"],
   ["/partner", "ib"],

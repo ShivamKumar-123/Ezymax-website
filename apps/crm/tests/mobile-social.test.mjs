@@ -27,6 +27,7 @@ const VIEWER = {
   created_at: "2026-09-01T00:00:00Z",
 };
 const HASH = "a".repeat(64);
+const PAMM_ONLY_HOST = "pamm-only.example";
 
 const calls = [];
 let gateway, engineSvc;
@@ -49,7 +50,11 @@ const bearer = (req) => (req.headers.authorization ?? "").replace(/^Bearer /, ""
 before(async () => {
   gateway = await stub("gateway", (req) => {
     const url = new URL(req.url, "http://x");
-    if (url.pathname === "/v1/public/tenant-config") return [200, { maintenance: { active: false }, modules: {}, flags: {} }];
+    if (url.pathname === "/v1/public/tenant-config") {
+      // a broker that runs PAMM funds but switched copy trading off
+      if (req.headers["x-kalks-host"] === PAMM_ONLY_HOST) return [200, { maintenance: { active: false }, modules: { copy_trading: false, pamm: true }, flags: {} }];
+      return [200, { maintenance: { active: false }, modules: {}, flags: {} }];
+    }
     if (url.pathname === "/v1/auth/impersonation/event") return [200, { status: "ok" }];
     if (url.pathname === "/v1/auth/me") {
       const t = bearer(req);
@@ -67,6 +72,8 @@ before(async () => {
     if (/^\/v1\/social\/subscriptions\/\d+\/stop$/.test(url.pathname))
       return [200, { subscription: { id: 9, status: "stopped" }, closed: body?.closePositions === false ? [] : [1], failed: [], returned: null }];
     if (url.pathname === "/v1/social/mam/links") return [200, { link: { id: 5 } }];
+    if (url.pathname === "/v1/social/investments") return [200, { items: [], requests: [] }];
+    if (/^\/v1\/social\/requests\/\d+\/cancel$/.test(url.pathname)) return [200, { request: { id: 5, status: "cancelled" } }];
     return [404, { error: { code: "not_found", message: "stub" } }];
   });
   process.env.GATEWAY_URL = `http://127.0.0.1:${gateway.address().port}`;
@@ -210,4 +217,17 @@ test("a browser cookie never authenticates a mobile social request", async () =>
   });
   assert.ok(res.status === 401 || res.status === 403, `got ${res.status}`);
   assert.equal(engineCalls("/v1/social/subscriptions").length, n);
+});
+
+test("a broker with PAMM on and copy trading off: PAMM investments and request cancels stay open, copy trading doesn't", async () => {
+  const m = await load();
+  const headers = { authorization: `Bearer ${TOKENS.user}`, host: PAMM_ONLY_HOST };
+  const inv = await viaProxy(m, "/api/mobile/social/investments", { headers });
+  assert.equal(inv.res.status, 200);
+  const cancel = await viaProxy(m, "/api/mobile/social/requests/5/cancel", { method: "POST", headers: { ...headers, "content-type": "application/json" }, body: "{}" });
+  assert.equal(cancel.res.status, 200);
+  assert.equal(engineCalls("/v1/social/requests/5/cancel").length, 1);
+  const lb = await viaProxy(m, "/api/mobile/social/leaderboard", { headers });
+  assert.equal(lb.res.status, 403);
+  assert.equal((await lb.res.json()).error.code, "module_disabled");
 });

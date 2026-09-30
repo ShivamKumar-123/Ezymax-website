@@ -41,7 +41,11 @@ export async function tenantBrand(host?: string): Promise<TenantBrand | null> {
 /** Which module a Client Area page or BFF path belongs to (longest prefix wins). */
 const MODULE_PATHS: [string, string][] = [
   ["/social/pamm", "pamm"],
+  ["/social/investments", "pamm"],
   ["/api/social/funds", "pamm"],
+  // PAMM investments and their invest / redeem requests (cancel) belong to PAMM, not copy trading
+  ["/api/social/investments", "pamm"],
+  ["/api/social/requests", "pamm"],
   ["/social", "copy_trading"],
   ["/api/social", "copy_trading"],
   ["/prop", "prop"],
