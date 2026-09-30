@@ -11,6 +11,9 @@ import { Mono } from "./Text";
 
 const FLASH_UP = alpha(colors.up, 0.22);
 const FLASH_DOWN = alpha(colors.down, 0.22);
+// the flash fades to the same hue at zero opacity (never through black)
+const CLEAR_UP = alpha(colors.up, 0);
+const CLEAR_DOWN = alpha(colors.down, 0);
 
 /** Subscribe to one symbol's quote with a per-frame coalesced React state (for small leaf components only). */
 export function useLiveQuote(symbol: string): Quote | undefined {
@@ -89,7 +92,7 @@ export const PriceCell = React.memo(function PriceCell({ symbol, side, digits, b
   }, [symbol, side, digits, flash, dirSv, flashOn]);
 
   const anim = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(flash.value, [0, 1], ["rgba(0,0,0,0)", dirSv.value >= 0 ? FLASH_UP : FLASH_DOWN]),
+    backgroundColor: interpolateColor(flash.value, [0, 1], dirSv.value >= 0 ? [CLEAR_UP, FLASH_UP] : [CLEAR_DOWN, FLASH_DOWN]),
   }));
 
   const [lead, pips, pipette] = big ? splitPrice(text, digits) : [text, "", ""];

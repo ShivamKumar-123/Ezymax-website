@@ -1,27 +1,37 @@
 // Home (bold editorial): the active account's equity as a big colour block with today's closed P&L and the open
-// P&L, the account switcher, quick actions, top movers, headlines and the notifications bell.
+// P&L, the account switcher, quick actions, the Explore row (the broker's other modules), top movers, headlines
+// and the notifications bell.
+//
+// The screen itself reads no account figures: the equity block (Hero) follows the account list and the engine, so a
+// refresh of the figures re-renders that block only; the Explore row follows the broker's module switches only.
 import * as React from "react";
 import { ScrollView, View } from "react-native";
-import { useIsFocused, useRouter } from "expo-router";
+import { useIsFocused, useRouter, type Href } from "expo-router";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Bell, CandlestickChart, ChevronRight, TrendingDown, TrendingUp } from "lucide-react-native";
-import { useT } from "@/i18n";
+import { useT, type MessageKey } from "@/i18n";
 import { apiGet } from "@/lib/api";
 import { fmtMoney, fmtPct, fmtPrice } from "@/lib/format";
 import { useOnline } from "@/lib/net";
-import { useQuery } from "@/lib/query";
+import { refreshQuery, useQuery, useQuerySelect } from "@/lib/query";
 import { feed } from "@/market/feed";
 import { instrument, instruments } from "@/market/instruments";
 import { useMe, useSession } from "@/session";
 import { useActiveLogin } from "@/session/activeAccount";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
-import { Button, Card, ColorBlock, Display, EmptyState, IconButton, Illustration, Mono, PressableScale, Screen, Skeleton, Text, type SheetRef } from "@/ui";
+import { Button, Card, ColorBlock, Display, EmptyState, Flip, IconButton, Illustration, Mono, PressableScale, Screen, Skeleton, Text, type IllustrationName, type SheetRef } from "@/ui";
 import { alpha } from "@/theme/alpha";
 import { colors, GUTTER, radius, space, type BlockColor } from "@/theme/tokens";
+import { prefetchAcademy } from "../academy/api";
+import { prefetchAi } from "../ai/api";
 import { serverOffset } from "../chart/data";
+import { prefetchPartner } from "../partner/api";
+import { fetchMenu, QK, type MenuConfig } from "../profile/api";
+import { prefetchHome as prefetchProp } from "../prop/api";
+import { prefetchSocial } from "../social/prefetch";
 import { setTradeSymbol } from "../trade/symbol";
 import { prefetchWallet } from "../wallet/api";
 import { AccountChip, AccountSheet } from "../trading/AccountSwitcher";
-import { useAccounts } from "../trading/accounts";
+import { noTradingAccount, refreshAccounts, useAccounts } from "../trading/accounts";
 import { useAccountLive } from "../trading/live";
 import { tradeApi } from "../trading/session";
 
@@ -35,6 +45,9 @@ function serverDayStart(): string {
   return new Date(start * 1000).toISOString().slice(0, 19) + "Z";
 }
 
+type Totals = { totals?: { profit: number; swap: number; commission: number } };
+const todayKey = (login: number) => `trade/today/${login}`;
+
 export function HomeScreen() {
   const t = useT();
   const router = useRouter();
@@ -42,32 +55,19 @@ export function HomeScreen() {
   const online = useOnline();
   const viewer = useSession((s) => !!s.viewer);
   const login = useActiveLogin();
-  const accounts = useAccounts();
-  const account = accounts.data?.accounts.find((a) => a.login === login);
-  const accSheet = React.useRef<SheetRef>(null);
 
-  const news = useQuery("home/news", () => apiGet<{ items: NewsItem[] }>("news/feed?limit=5"), { persist: true, staleMs: 120_000 });
+  // headlines: every client; a view-only login when it was given the dashboard section (news is part of it)
+  const readsNews = useSession((s) => !s.viewer || s.viewer.sections.includes("dashboard"));
+  const news = useQuery(readsNews ? "home/news" : null, () => apiGet<{ items: NewsItem[] }>("news/feed?limit=5"), { persist: true, staleMs: 120_000 });
   const bell = useQuery("home/bell", () => apiGet<{ unread: number }>("notifications?limit=1"), { staleMs: 30_000, intervalMs: 60_000, enabled: !viewer });
-  // closed today: the engine's history since the broker's day start (a view-only login reads it through the Client Area)
-  type Totals = { totals?: { profit: number; swap: number; commission: number } };
-  const today = useQuery(login !== null ? `trade/today/${login}` : null, () => (viewer ? apiGet<Totals>(`trading/accounts/${login}/history?limit=1&from=${serverDayStart()}`) : tradeApi<Totals>(login!, `history?limit=1&from=${serverDayStart()}`)), { staleMs: 30_000 });
-  // a view-only login has no engine stream: its account figures refresh every few seconds while Home is on screen
-  const focused = useIsFocused();
-  const view = useQuery<{ account: { equity: number; profit: number } }>(viewer && login !== null ? `trading/account/${login}` : null, () => apiGet(`trading/accounts/${login}`), { staleMs: 4000, intervalMs: focused ? 5000 : undefined });
-  const heroAccount = (viewer ? view.data?.account : undefined) ?? account;
-
-  const liveTotal = React.useMemo(() => (accounts.data?.accounts ?? []).filter((a) => a.type === "live").reduce((s, a) => s + (a.cent ? a.equity / 100 : a.equity), 0), [accounts.data]);
-  const hasLive = (accounts.data?.accounts ?? []).some((a) => a.type === "live");
-  const closedToday = today.data?.totals ? today.data.totals.profit + today.data.totals.swap - Math.abs(today.data.totals.commission) : undefined;
 
   const hour = new Date().getHours();
   const greetKey = hour < 12 ? "mobileHome.greet.morning" : hour < 18 ? "mobileHome.greet.afternoon" : "mobileHome.greet.evening";
 
   const refresh = async () => {
-    await Promise.all([accounts.refresh(), news.refresh(), bell.refresh(), today.refresh()]);
+    await Promise.all([refreshAccounts(), news.refresh(), bell.refresh(), login !== null ? refreshQuery(todayKey(login)) : Promise.resolve()]);
   };
 
-  const noAccount = accounts.data && accounts.data.accounts.length === 0;
   const kyc = me?.kyc_status;
 
   return (
@@ -88,48 +88,7 @@ export function HomeScreen() {
       <View style={{ paddingHorizontal: GUTTER, gap: space[4], marginTop: space[4] }}>
         <RestrictionBanner onContact={() => router.push("/support")} />
 
-        {/* hero: equity (a flat ember block; the globe peeks in from the corner, below every number) */}
-        {noAccount ? (
-          <ColorBlock color="periwinkle" style={{ gap: space[3], paddingBottom: 0 }}>
-            <Display size="lg" color={colors.ink}>
-              {t("mobileHome.noAccount.title")}
-            </Display>
-            <Text color={colors.ink}>{t("mobileHome.noAccount.body")}</Text>
-            <View style={{ minHeight: 120, justifyContent: "flex-end", paddingBottom: space[6], paddingEnd: 96 }}>
-              <Illustration name="mascot" width={92} height={140} style={{ position: "absolute", bottom: -26, end: -4 }} />
-              <Button label={t("mobileHome.noAccount.action")} variant="primary" full={false} onPress={() => router.push("/accounts/new")} />
-            </View>
-          </ColorBlock>
-        ) : !account ? (
-          accounts.error && !accounts.data ? (
-            <Card style={{ paddingVertical: space[2] }}>
-              <EmptyState illustration="connectionLost" size={170} title={online ? t("mobile.state.error.title") : t("mobile.state.offline.title")} body={online ? t("mobile.state.error.body") : t("mobile.state.offline.body")} action={t("mobile.action.retry")} onAction={() => void accounts.refresh()} style={{ paddingVertical: space[4], paddingHorizontal: space[2] }} />
-            </Card>
-          ) : (
-            <Skeleton h={286} r={radius.block} />
-          )
-        ) : (
-          <ColorBlock color="ember" style={{ gap: space[5], paddingBottom: 0 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text variant="label" color={colors.ink}>
-                {t("mobileHome.equity")}
-              </Text>
-              {!viewer ? <AccountChip tone="ink" onPress={() => accSheet.current?.present()} /> : null}
-            </View>
-            <HeroEquity currency={account.currency} fallback={heroAccount?.equity ?? account.equity} />
-            <View style={{ flexDirection: "row", gap: space[4] }}>
-              <Stat label={t("mobileHome.closedToday")} value={closedToday} currency={account.currency} />
-              <OpenPnl currency={account.currency} fallback={heroAccount?.profit ?? account.profit} />
-            </View>
-            {/* the caption keeps clear of the globe in the end corner (either direction) */}
-            <View style={{ minHeight: 84, justifyContent: "flex-end", paddingEnd: 104, paddingBottom: space[6] }}>
-              <Illustration name="market" width={112} height={112} style={{ position: "absolute", bottom: -22, end: -18 }} />
-              <Text variant="caption" weight="600" color={colors.ink} numberOfLines={2}>
-                {hasLive ? t("mobileHome.allLive", { amount: fmtMoney(liveTotal, { currency: "USD" }) }) : ""}
-              </Text>
-            </View>
-          </ColorBlock>
-        )}
+        <Hero />
 
         {/* quick actions */}
         {!viewer ? (
@@ -153,54 +112,139 @@ export function HomeScreen() {
                 {t(kyc === "pending" ? "mobileHome.kyc.pendingBody" : "mobileHome.kyc.body")}
               </Text>
             </View>
-            <ChevronRight size={18} color={colors.text3} />
+            <Flip>
+              <ChevronRight size={18} color={colors.text3} />
+            </Flip>
           </Card>
         ) : null}
       </View>
+
+      {/* the broker's other modules (hidden for view-only logins, like the quick actions) */}
+      {!viewer ? <Explore /> : null}
 
       {/* top movers */}
       <SectionTitle title={t("mobileHome.movers")} />
       <Movers />
 
       {/* headlines */}
-      <SectionTitle title={t("mobileHome.news")} action={t("mobileHome.allNews")} onAction={() => router.push("/news")} />
-      <View style={{ paddingHorizontal: GUTTER }}>
-        <Card padded={false}>
-          {news.error && !news.data ? (
-            <View style={{ padding: space[5], gap: space[3], alignItems: "flex-start" }}>
-              <Text tone="tertiary">{online ? t("mobile.state.error.body") : t("mobile.state.offline.body")}</Text>
-              <Button label={t("mobile.action.retry")} variant="secondary" size="sm" full={false} onPress={() => void news.refresh()} />
-            </View>
-          ) : news.loading ? (
-            <View style={{ padding: space[5], gap: space[4] }}>
-              {[0, 1, 2].map((i) => (
-                <View key={i} style={{ gap: 6 }}>
-                  <Skeleton w="90%" h={14} />
-                  <Skeleton w="40%" h={10} />
-                </View>
-              ))}
-            </View>
-          ) : (news.data?.items ?? []).length === 0 ? (
-            <Text tone="tertiary" style={{ padding: space[5] }}>
-              {t("mobileHome.news.empty")}
-            </Text>
-          ) : (
-            (news.data?.items ?? []).slice(0, 5).map((n, i) => (
-              <PressableScale key={String(n.id)} onPress={() => router.push(`/news/${n.id}`)} scaleTo={0.985} style={{ paddingHorizontal: space[5], paddingVertical: space[4], borderTopWidth: i ? 1 : 0, borderTopColor: colors.line, gap: 6 }}>
-                <Text variant="headline" weight="600" numberOfLines={2}>
-                  {n.title}
-                </Text>
-                <Text variant="caption" tone="tertiary" numberOfLines={1}>
-                  {[n.source?.name, relTime(n.publishedAt), (n.symbols ?? []).slice(0, 3).join(" · ")].filter(Boolean).join("  ·  ")}
-                </Text>
-              </PressableScale>
-            ))
-          )}
-        </Card>
-      </View>
-
-      <AccountSheet ref={accSheet} />
+      {readsNews ? <SectionTitle title={t("mobileHome.news")} action={t("mobileHome.allNews")} onAction={() => router.push("/news")} /> : null}
+      {readsNews ? (
+        <View style={{ paddingHorizontal: GUTTER }}>
+          <Card padded={false}>
+            {news.error && !news.data ? (
+              <View style={{ padding: space[5], gap: space[3], alignItems: "flex-start" }}>
+                <Text tone="tertiary">{online ? t("mobile.state.error.body") : t("mobile.state.offline.body")}</Text>
+                <Button label={t("mobile.action.retry")} variant="secondary" size="sm" full={false} onPress={() => void news.refresh()} />
+              </View>
+            ) : news.loading ? (
+              <View style={{ padding: space[5], gap: space[4] }}>
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={{ gap: 6 }}>
+                    <Skeleton w="90%" h={14} />
+                    <Skeleton w="40%" h={10} />
+                  </View>
+                ))}
+              </View>
+            ) : (news.data?.items ?? []).length === 0 ? (
+              <Text tone="tertiary" style={{ padding: space[5] }}>
+                {t("mobileHome.news.empty")}
+              </Text>
+            ) : (
+              (news.data?.items ?? []).slice(0, 5).map((n, i) => (
+                <PressableScale key={String(n.id)} onPress={() => router.push(`/news/${n.id}`)} scaleTo={0.985} style={{ paddingHorizontal: space[5], paddingVertical: space[4], borderTopWidth: i ? 1 : 0, borderTopColor: colors.line, gap: 6 }}>
+                  <Text variant="headline" weight="600" numberOfLines={2}>
+                    {n.title}
+                  </Text>
+                  <Text variant="caption" tone="tertiary" numberOfLines={1}>
+                    {[n.source?.name, relTime(n.publishedAt), (n.symbols ?? []).slice(0, 3).join(" · ")].filter(Boolean).join("  ·  ")}
+                  </Text>
+                </PressableScale>
+              ))
+            )}
+          </Card>
+        </View>
+      ) : null}
     </Screen>
+  );
+}
+
+/**
+ * The equity block: the active account's live equity, today's closed P&L and the open P&L (a matte ember block with
+ * the globe art), or the no-account / error / loading states. It is the only part of Home that follows the account
+ * list, so a refresh of the figures re-renders this block and nothing else.
+ */
+function Hero() {
+  const t = useT();
+  const router = useRouter();
+  const online = useOnline();
+  const viewer = useSession((s) => !!s.viewer);
+  const login = useActiveLogin();
+  const accounts = useAccounts();
+  const list = accounts.data?.accounts;
+  const account = list?.find((a) => a.login === login);
+  const accSheet = React.useRef<SheetRef>(null);
+  const openAccounts = React.useCallback(() => accSheet.current?.present(), []);
+
+  // closed today: the engine's history since the broker's day start (a view-only login reads it through the Client Area)
+  const today = useQuery(login !== null ? todayKey(login) : null, () => (viewer ? apiGet<Totals>(`trading/accounts/${login}/history?limit=1&from=${serverDayStart()}`) : tradeApi<Totals>(login!, `history?limit=1&from=${serverDayStart()}`)), { staleMs: 30_000 });
+  // a view-only login has no engine stream: its account figures refresh every few seconds while Home is on screen
+  const focused = useIsFocused();
+  const view = useQuery<{ account: { equity: number; profit: number } }>(viewer && login !== null ? `trading/account/${login}` : null, () => apiGet(`trading/accounts/${login}`), { staleMs: 4000, intervalMs: focused ? 5000 : undefined });
+  const heroAccount = (viewer ? view.data?.account : undefined) ?? account;
+
+  const liveTotal = React.useMemo(() => (list ?? []).filter((a) => a.type === "live").reduce((s, a) => s + (a.cent ? a.equity / 100 : a.equity), 0), [list]);
+  const hasLive = (list ?? []).some((a) => a.type === "live");
+  const closedToday = today.data?.totals ? today.data.totals.profit + today.data.totals.swap - Math.abs(today.data.totals.commission) : undefined;
+  // no account to show: none at all, or only programme accounts (prop, copy, PAMM, MAM) and none chosen
+  const noAccount = noTradingAccount(list, login);
+
+  if (noAccount) {
+    return (
+      <ColorBlock color="periwinkle" style={{ gap: space[3], paddingBottom: 0 }}>
+        <Display size="lg" color={colors.ink}>
+          {t("mobileHome.noAccount.title")}
+        </Display>
+        <Text color={colors.ink}>{t("mobileHome.noAccount.body")}</Text>
+        <View style={{ minHeight: 120, justifyContent: "flex-end", paddingBottom: space[6], paddingEnd: 96 }}>
+          <Illustration name="mascot" width={92} height={140} style={{ position: "absolute", bottom: -26, end: -4 }} />
+          {!viewer ? <Button label={t("mobileHome.noAccount.action")} variant="primary" full={false} onPress={() => router.push("/accounts/new")} /> : null}
+        </View>
+      </ColorBlock>
+    );
+  }
+  if (!account) {
+    return accounts.error && !accounts.data ? (
+      <Card style={{ paddingVertical: space[2] }}>
+        <EmptyState illustration="connectionLost" size={170} title={online ? t("mobile.state.error.title") : t("mobile.state.offline.title")} body={online ? t("mobile.state.error.body") : t("mobile.state.offline.body")} action={t("mobile.action.retry")} onAction={() => void accounts.refresh()} style={{ paddingVertical: space[4], paddingHorizontal: space[2] }} />
+      </Card>
+    ) : (
+      <Skeleton h={286} r={radius.block} />
+    );
+  }
+  return (
+    <>
+      <ColorBlock color="ember" style={{ gap: space[5], paddingBottom: 0 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <Text variant="label" color={colors.ink}>
+            {t("mobileHome.equity")}
+          </Text>
+          {!viewer ? <AccountChip tone="ink" onPress={openAccounts} /> : null}
+        </View>
+        <HeroEquity currency={account.currency} fallback={heroAccount?.equity ?? account.equity} />
+        <View style={{ flexDirection: "row", gap: space[4] }}>
+          <Stat label={t("mobileHome.closedToday")} value={closedToday} currency={account.currency} />
+          <OpenPnl currency={account.currency} fallback={heroAccount?.profit ?? account.profit} />
+        </View>
+        {/* the caption keeps clear of the globe in the end corner (either direction) */}
+        <View style={{ minHeight: 84, justifyContent: "flex-end", paddingEnd: 104, paddingBottom: space[6] }}>
+          <Illustration name="market" width={112} height={112} style={{ position: "absolute", bottom: -22, end: -18 }} />
+          <Text variant="caption" weight="600" color={colors.ink} numberOfLines={2}>
+            {hasLive ? t("mobileHome.allLive", { amount: fmtMoney(liveTotal, { currency: "USD" }) }) : ""}
+          </Text>
+        </View>
+      </ColorBlock>
+      <AccountSheet ref={accSheet} />
+    </>
   );
 }
 
@@ -276,6 +320,57 @@ function Quick({ color, icon, label, onPress, onPressIn }: { color: BlockColor; 
     </ColorBlock>
   );
 }
+
+type ExploreItem = { key: string; href: Href; color: BlockColor; art: IllustrationName; title: MessageKey; hint: MessageKey; module: string; warm: () => void };
+
+/** The broker's other modules, each gated by its switch (the More tab's `module` of the same screen). */
+const EXPLORE: ExploreItem[] = [
+  { key: "copy", href: "/social", color: "gold", art: "copyTrading", title: "mobileHome.explore.copy", hint: "mobileHome.explore.copyHint", module: "copy_trading", warm: prefetchSocial.hub },
+  { key: "prop", href: "/prop", color: "mint", art: "propChallenge", title: "mobileHome.explore.prop", hint: "mobileHome.explore.propHint", module: "prop", warm: prefetchProp },
+  { key: "academy", href: "/academy", color: "periwinkle", art: "welcome", title: "mobileHome.explore.academy", hint: "mobileHome.explore.academyHint", module: "academy", warm: prefetchAcademy.catalog },
+  { key: "ai", href: "/ai", color: "cream", art: "mascot", title: "mobileHome.explore.ai", hint: "mobileHome.explore.aiHint", module: "algo", warm: prefetchAi },
+  { key: "invite", href: "/partner", color: "ember", art: "partnerIb", title: "mobileHome.explore.invite", hint: "mobileHome.explore.inviteHint", module: "ib", warm: prefetchPartner.dash },
+];
+
+/** The keys of the Explore items the broker's switches leave on (a string: a refresh that changes nothing renders
+ *  nothing). Before the menu is known, everything shows, like the More tab. */
+const visibleExplore = (d: MenuConfig | undefined) =>
+  EXPLORE.filter((it) => d?.modules?.[it.module] !== false)
+    .map((it) => it.key)
+    .join(",");
+
+/**
+ * Explore: bold matte colour blocks with the founder's illustrations, one per module the broker runs (copy trading,
+ * prop, academy, AI Trader, invite friends). Static: no price or account data, and it re-renders only when the
+ * broker switches a module on or off. Press-in warms the module's first screen.
+ */
+const Explore = React.memo(function Explore() {
+  const t = useT();
+  const router = useRouter();
+  const shown = useQuerySelect(QK.menu, fetchMenu, visibleExplore, { persist: true, staleMs: 5 * 60_000 });
+  const items = React.useMemo(() => EXPLORE.filter((it) => shown.split(",").includes(it.key)), [shown]);
+  if (!items.length) return null;
+  return (
+    <>
+      <SectionTitle title={t("mobileHome.explore.title")} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: GUTTER, gap: space[3] }}>
+        {items.map((it) => (
+          <ColorBlock key={it.key} color={it.color} padded={false} onPress={() => router.push(it.href)} onPressIn={it.warm} accessibilityRole="button" accessibilityLabel={`${t(it.title)}. ${t(it.hint)}`} testID={`explore-${it.key}`} style={{ width: 152, height: 196, borderRadius: radius.card, paddingTop: space[4], paddingHorizontal: space[4], justifyContent: "space-between" }}>
+            <View style={{ gap: 4 }}>
+              <Display size="sm" color={colors.ink} numberOfLines={2}>
+                {t(it.title)}
+              </Display>
+              <Text variant="caption" weight="600" color={colors.ink} numberOfLines={2}>
+                {t(it.hint)}
+              </Text>
+            </View>
+            <Illustration name={it.art} width={104} height={88} style={{ alignSelf: "flex-end", marginEnd: -space[2], marginBottom: -space[1] }} />
+          </ColorBlock>
+        ))}
+      </ScrollView>
+    </>
+  );
+});
 
 /** Biggest daily moves among the symbols with prices (re-sorted on each snapshot, prices live). */
 function Movers() {

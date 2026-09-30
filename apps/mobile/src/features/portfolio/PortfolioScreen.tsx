@@ -1,34 +1,36 @@
 // Portfolio: the active account's summary (balance, equity, margin, free margin, margin level; live), open
-// positions (swipe to close, tap for details, partial close, SL / TP), pending orders (edit / cancel) and the
-// closed-trade history. Data comes from the engine stream; history from the engine's history endpoint.
+// positions (swipe to close, tap for details, partial close, SL / TP, Close By on hedging accounts), pending orders
+// (edit / cancel) and the closed-trade history (tap for details and "Share P&L"). Statements and Analytics of the
+// account open from the header. Data comes from the engine stream; history from the engine's history endpoint.
 // A view-only login has no trading session: it reads the same account through the Client Area (refreshed every
 // few seconds), without any action.
 import * as React from "react";
 import { RefreshControl, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useIsFocused, useRouter } from "expo-router";
-import { FileText } from "lucide-react-native";
-import { useFormat, useT } from "@/i18n";
+import { ChartColumn, FileText } from "lucide-react-native";
+import { useT } from "@/i18n";
 import { apiGet } from "@/lib/api";
-import { fmtLots, fmtMoney, fmtPrice } from "@/lib/format";
+import { fmtMoney } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
+import { kv } from "@/lib/kv";
 import { useOnline } from "@/lib/net";
 import { useQuery } from "@/lib/query";
-import { instrument } from "@/market/instruments";
 import { useSession } from "@/session";
 import { useActiveLogin } from "@/session/activeAccount";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { Banner, EmptyState, IconButton, Mono, PressableScale, Screen, ScreenHeader, SkeletonRows, Text, toast, useBottomInset } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
-import { prefetchStatements } from "../reports/api";
+import { isPeriod, PERIOD_PREF, prefetchAnalytics, prefetchStatements } from "../reports/api";
 import { accountLabel } from "../trading/AccountSwitcher";
-import { useAccounts } from "../trading/accounts";
+import { noTradingAccount, refreshAccounts, useAccountsSelect, useActiveAccountLabel } from "../trading/accounts";
 import { cancelOrder, closePosition } from "../trading/actions";
 import { refreshState, retryAccountStream, useAccountValue, useTrade } from "../trading/live";
 import { tradeApi } from "../trading/session";
 import type { EngAccount, EngDeal, EngOrder, EngPosition } from "../trading/types";
-import { OrderRow, PositionRow } from "./rows";
-import { ModifySheet, PartialCloseSheet } from "./sheets";
+import { DealRow, OrderRow, PositionRow } from "./rows";
+import { ShareSheet, type ShareSheetHandle } from "./share/ShareSheet";
+import { CloseBySheet, ModifySheet, PartialCloseSheet } from "./sheets";
 
 type Tab = "positions" | "orders" | "history";
 type HistoryPage = { deals: EngDeal[]; total: number; totals?: { profit: number; swap: number; commission: number } };
@@ -38,6 +40,12 @@ const EMPTY_POS: EngPosition[] = [];
 const EMPTY_ORD: EngOrder[] = [];
 /** Press-in on the Statements button: the months of the account it opens on. */
 const warmStatements = () => prefetchStatements();
+/** Press-in on the Analytics button: the account's analytics for the period the screen will open on. */
+const warmAnalytics = (login: number) => {
+  const saved = kv.get(PERIOD_PREF);
+  prefetchAnalytics(login, isPeriod(saved) ? saved : "90D");
+};
+const NO_TICKETS: ReadonlySet<number> = new Set();
 
 export function PortfolioScreen() {
   const t = useT();
@@ -45,13 +53,20 @@ export function PortfolioScreen() {
   const online = useOnline();
   const login = useActiveLogin();
   const viewer = useSession((s) => !!s.viewer);
-  const accounts = useAccounts();
-  const account = accounts.data?.accounts.find((a) => a.login === login);
+  // Statements and Analytics: every client; a view-only login when it was given the history section
+  const reports = useSession((s) => !s.viewer || s.viewer.sections.includes("history"));
+  // the account list is read through selectors: its equity figures refresh often and this screen shows the
+  // stream's (or, for a view-only login, the Client Area's) live figures instead
+  const account = useActiveAccountLabel();
+  const noAccount = useAccountsSelect((list) => noTradingAccount(list, login));
   const currency = account?.currency ?? "USD";
   const [tab, setTab] = React.useState<Tab>("positions");
   const [open, setOpen] = React.useState<number | null>(null);
+  const [openDeal, setOpenDeal] = React.useState<number | null>(null);
   const partial = React.useRef<{ open: (p: EngPosition) => void }>(null);
   const modify = React.useRef<{ open: (x: { kind: "position"; p: EngPosition } | { kind: "order"; o: EngOrder }) => void }>(null);
+  const closeBySheet = React.useRef<{ open: (p: EngPosition) => void }>(null);
+  const shareSheet = React.useRef<ShareSheetHandle>(null);
   const bottom = useBottomInset();
 
   // the engine stream (clients) or the Client Area's read-only view of the account (view-only logins)
@@ -65,6 +80,14 @@ export function PortfolioScreen() {
   const positions = viewer ? (view.data?.positions ?? EMPTY_POS) : streamPositions;
   const orders = viewer ? (view.data?.orders ?? EMPTY_ORD) : streamOrders;
   const readOnly = useTrade((s) => s.readOnly) || viewer;
+  // Close By: a hedging account's positions that have an opposite position on the same symbol
+  const hedging = useTrade((s) => s.account?.mode === "hedging");
+  const closable = React.useMemo(() => {
+    if (!hedging || readOnly) return NO_TICKETS;
+    const sides = new Map<string, number>();
+    for (const p of positions) sides.set(p.symbol, (sides.get(p.symbol) ?? 0) | (p.side === "buy" ? 1 : 2));
+    return new Set(positions.filter((p) => sides.get(p.symbol) === 3).map((p) => p.ticket));
+  }, [positions, hedging, readOnly]);
 
   // history: first page cached per account; more pages on demand
   const histKey = login !== null ? `trade/history/${login}` : null;
@@ -95,7 +118,7 @@ export function PortfolioScreen() {
   const refresh = async () => {
     haptic.select();
     setRefreshing(true);
-    await Promise.all([viewer ? view.refresh() : refreshState(), accounts.refresh(), tab === "history" ? history.refresh() : Promise.resolve()]);
+    await Promise.all([viewer ? view.refresh() : refreshState(), refreshAccounts(), tab === "history" ? history.refresh() : Promise.resolve()]);
     setRefreshing(false);
   };
 
@@ -128,19 +151,36 @@ export function PortfolioScreen() {
   const onClose = React.useCallback((p: EngPosition) => runOnce(p.ticket, () => closePosition(p.ticket)), [runOnce]);
   const onPartial = React.useCallback((p: EngPosition) => partial.current?.open(p), []);
   const onModify = React.useCallback((p: EngPosition) => modify.current?.open({ kind: "position", p }), []);
+  const onCloseBy = React.useCallback((p: EngPosition) => closeBySheet.current?.open(p), []);
   const onCancel = React.useCallback((o: EngOrder) => runOnce(o.ticket, () => cancelOrder(o.ticket)), [runOnce]);
   const onEdit = React.useCallback((o: EngOrder) => modify.current?.open({ kind: "order", o }), []);
+  const toggleDeal = React.useCallback((id: number) => setOpenDeal((o) => (o === id ? null : id)), []);
+  const onShare = React.useCallback((d: EngDeal) => shareSheet.current?.open(d, currency), [currency]);
 
-  const extra = React.useMemo(() => ({ open, busy }), [open, busy]);
-  const noAccount = accounts.data && accounts.data.accounts.length === 0;
-  const summaryFallback = (viewer ? view.data?.account : undefined) ?? account;
+  const extra = React.useMemo(() => ({ open, busy, closable }), [open, busy, closable]);
+  // the summary's numbers until live ones arrive: the stream's snapshot (it changes on balance events only), else the
+  // account list's figures, read only while there is no snapshot (they refresh often; the live leaves take over)
+  const streamAccount = useTrade((s) => s.account);
+  const listFigures = useAccountsSelect((list) => {
+    if (streamAccount && !viewer) return null;
+    const a = list?.find((x) => x.login === login);
+    return a ? { balance: a.balance, equity: a.equity, margin: a.margin, freeMargin: a.freeMargin, marginLevel: a.marginLevel, profit: a.profit, marginCallLevel: a.marginCallLevel } : null;
+  });
+  const summaryFallback = viewer ? (view.data?.account ?? listFigures) : (streamAccount ?? listFigures);
 
   const header = (
     <View>
       <ScreenHeader
         eyebrow={account ? accountLabel(t, account) : undefined}
         title={t("mobile.tab.portfolio")}
-        right={<IconButton accessibilityLabel={t("mobilePortfolio.statements")} icon={<FileText size={19} color={colors.text} />} onPress={() => router.push("/reports/statements")} onPressIn={warmStatements} />}
+        right={
+          reports ? (
+            <>
+              {login !== null ? <IconButton accessibilityLabel={t("mobilePortfolio.analytics")} icon={<ChartColumn size={19} color={colors.text} />} onPress={() => router.push({ pathname: "/reports/analytics", params: { login: String(login) } })} onPressIn={() => warmAnalytics(login)} /> : null}
+              <IconButton accessibilityLabel={t("mobilePortfolio.statements")} icon={<FileText size={19} color={colors.text} />} onPress={() => router.push("/reports/statements")} onPressIn={warmStatements} />
+            </>
+          ) : undefined
+        }
       />
       {summaryFallback ? <Summary currency={currency} fallback={summaryFallback} live={!viewer} /> : null}
       <View style={{ paddingHorizontal: GUTTER, gap: space[3], marginTop: space[4] }}>
@@ -217,7 +257,7 @@ export function PortfolioScreen() {
         <FlashList
           data={positions}
           keyExtractor={(p) => String(p.ticket)}
-          renderItem={({ item }) => <PositionRow p={item} currency={currency} expanded={open === item.ticket} readOnly={readOnly} busy={busy.has(item.ticket)} onToggle={toggle} onClose={onClose} onPartial={onPartial} onModify={onModify} />}
+          renderItem={({ item }) => <PositionRow p={item} currency={currency} expanded={open === item.ticket} readOnly={readOnly} busy={busy.has(item.ticket)} canCloseBy={closable.has(item.ticket)} onToggle={toggle} onClose={onClose} onPartial={onPartial} onModify={onModify} onCloseBy={onCloseBy} />}
           ListHeaderComponent={header}
           ListEmptyComponent={empty}
           extraData={extra}
@@ -241,9 +281,10 @@ export function PortfolioScreen() {
         <FlashList
           data={deals}
           keyExtractor={(d) => String(d.id)}
-          renderItem={({ item }) => <DealRow d={item} currency={currency} />}
+          renderItem={({ item }) => <DealRow d={item} currency={currency} expanded={openDeal === item.id} onToggle={toggleDeal} onShare={viewer ? undefined : onShare} />}
           ListHeaderComponent={header}
           ListEmptyComponent={empty}
+          extraData={openDeal}
           onEndReached={() => void loadMore()}
           onEndReachedThreshold={0.6}
           contentContainerStyle={{ paddingBottom: bottom }}
@@ -253,6 +294,8 @@ export function PortfolioScreen() {
       )}
       <PartialCloseSheet ref={partial} />
       <ModifySheet ref={modify} />
+      <CloseBySheet ref={closeBySheet} currency={currency} />
+      <ShareSheet ref={shareSheet} />
     </Screen>
   );
 }
@@ -340,29 +383,3 @@ function Summary({ currency, fallback, live }: { currency: string; fallback: Sum
     </View>
   );
 }
-
-const DealRow = React.memo(function DealRow({ d, currency }: { d: EngDeal; currency: string }) {
-  const t = useT();
-  const fmt = useFormat();
-  const digits = instrument(d.symbol).digits;
-  const side = d.positionSide ?? (d.side === "buy" ? "sell" : "buy");
-  const net = d.profit + (d.swap ?? 0) - Math.abs(d.commission ?? 0);
-  return (
-    <View style={{ minHeight: 64, paddingHorizontal: GUTTER, flexDirection: "row", alignItems: "center", gap: space[3], borderBottomWidth: 1, borderBottomColor: colors.line }}>
-      <View style={{ flex: 1, gap: 3 }}>
-        <View style={{ flexDirection: "row", alignItems: "baseline", gap: space[2] }}>
-          <Text weight="700">{d.symbol}</Text>
-          <Text variant="caption" weight="700" tone="secondary">
-            {`${t(side === "buy" ? "common.buy" : "common.sell").toUpperCase()} ${fmtLots(d.volume)}`}
-          </Text>
-        </View>
-        <Text variant="caption" tone="tertiary" numberOfLines={1}>
-          {`${d.openPrice ? `${fmtPrice(d.openPrice, digits)} → ` : ""}${fmtPrice(d.price, digits)} · ${fmt.dateTime(d.time)}`}
-        </Text>
-      </View>
-      <Mono size={15} weight="bold" tone={net > 0 ? "up" : net < 0 ? "down" : "primary"}>
-        {fmtMoney(net, { signed: true, currency })}
-      </Mono>
-    </View>
-  );
-});

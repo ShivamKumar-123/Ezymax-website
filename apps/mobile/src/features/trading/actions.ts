@@ -9,7 +9,7 @@
 import { getRandomBytes } from "expo-crypto";
 import { i18n } from "@/i18n";
 import { haptic } from "@/lib/haptics";
-import { fmtMoney, fmtPrice } from "@/lib/format";
+import { fmtLots, fmtMoney, fmtPrice } from "@/lib/format";
 import { toast } from "@/ui/Toast";
 import { instrument } from "@/market/instruments";
 import { refreshState, streamIsOpen, tradeStore } from "./live";
@@ -99,14 +99,33 @@ export async function placeOrder(o: OrderInput): Promise<ActionResult> {
   return r;
 }
 
-/** Full close (no volume) or partial close. */
+/** Full close (no volume) or partial close. A close that went through is a success whatever its result (the toast's
+ *  "done" accent); the result itself is the body. */
 export async function closePosition(ticket: number, volume?: number): Promise<ActionResult> {
   const r = await run(`positions/${ticket}/close`, { method: "POST", body: volume ? { volume: +volume.toFixed(2) } : {} });
   if (r.ok) {
     const profit = Number((r.data as { profit?: number }).profit ?? 0);
     haptic.success();
     const title = volume ? i18n.t("mobileTrade.toast.partial", { ticket, volume: volume.toFixed(2) }) : i18n.t("mobileTrade.toast.closed", { ticket });
-    toast.show({ title, body: fmtMoney(profit, { signed: true, currency: tradeStore.get().account?.currency }), tone: profit >= 0 ? "success" : "error" });
+    toast.show({ title, body: fmtMoney(profit, { signed: true, currency: tradeStore.get().account?.currency }), tone: "success" });
+  }
+  return r;
+}
+
+/**
+ * Close By (hedging accounts): closes `ticket` against the opposite position `by` on the same symbol. The engine
+ * closes the overlapping volume of both at the open price of `by`, so no spread is paid on it.
+ */
+export async function closeBy(ticket: number, by: number): Promise<ActionResult> {
+  const s = tradeStore.get();
+  const a = s.positions.find((p) => p.ticket === ticket);
+  const b = s.positions.find((p) => p.ticket === by);
+  const r = await run("positions/close-by", { method: "POST", body: { ticket, by } });
+  if (r.ok) {
+    haptic.success();
+    const t = i18n.t;
+    const body = a ? t("order.toast.closedByDesc", { volume: fmtLots(Math.min(a.volume, b?.volume ?? a.volume)), symbol: a.symbol }) : undefined;
+    toast.show({ title: t("order.toast.closedBy", { a: ticket, b: by }), body, tone: "success" });
   }
   return r;
 }

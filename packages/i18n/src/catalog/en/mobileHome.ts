@@ -26,5 +26,18 @@ const mobileHome = {
   "noAccount.action": "Open an account",
   "news.empty": "No headlines right now.",
   "a11y.bell": "Notifications, {count} unread",
+
+  // Explore: one colour block per module (title in display type on two short lines at most, hint on two lines)
+  "explore.title": "Explore",
+  "explore.copy": "Copy trading",
+  "explore.copyHint": "Follow proven traders",
+  "explore.prop": "Prop challenge",
+  "explore.propHint": "Get funded to trade",
+  "explore.academy": "Academy",
+  "explore.academyHint": "Learn to trade, step by step",
+  "explore.ai": "AI Trader",
+  "explore.aiHint": "Turn an idea into a strategy",
+  "explore.invite": "Invite friends",
+  "explore.inviteHint": "Earn when they trade",
 };
 export default mobileHome;

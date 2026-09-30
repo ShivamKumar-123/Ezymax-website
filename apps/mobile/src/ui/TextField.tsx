@@ -57,7 +57,9 @@ export const TextField = React.forwardRef<TextInput, TextFieldProps>(function Te
             setFocused(false);
             onBlur?.(e);
           }}
-          style={[{ flex: 1, height: "100%", color: colors.text, fontSize: 16, fontFamily: mono ? "JetBrainsMono_500Medium" : undefined }, NO_WEB_OUTLINE, style]}
+          // minWidth 0: a web input's intrinsic width (about 20 characters) would otherwise push a half-width field's
+          // icon and text out of its box
+          style={[{ flex: 1, minWidth: 0, height: "100%", color: colors.text, fontSize: 16, fontFamily: mono ? "JetBrainsMono_500Medium" : undefined }, NO_WEB_OUTLINE, style]}
           {...rest}
         />
         {trailing}

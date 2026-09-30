@@ -1,10 +1,10 @@
 // Trade tab: symbol header with the live price, timeframes, the Skia chart, and the one-tap Sell / Buy bar that
 // opens the order ticket. Depth of market and price alerts open from the header.
 import * as React from "react";
-import { View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
 import { BottomSheetFlatList } from "@gorhom/bottom-sheet";
-import { useIsFocused, useRouter } from "expo-router";
-import { Bell, ChevronDown, Layers, Minus, Plus, Search, SlidersHorizontal } from "lucide-react-native";
+import { useIsFocused, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { Bell, CalendarDays, ChevronDown, Layers, Minus, Newspaper, Plus, Search, SlidersHorizontal } from "lucide-react-native";
 import { useT } from "@/i18n";
 import { fmtLots, fmtPrice } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
@@ -12,6 +12,7 @@ import { kv } from "@/lib/kv";
 import { feed } from "@/market/feed";
 import { instrument, instruments, type Instrument } from "@/market/instruments";
 import { useSession } from "@/session";
+import { useActiveLogin } from "@/session/activeAccount";
 import { Banner, Button, ChangeText, Display, IconButton, Illustration, Mono, PressableScale, PriceCell, Screen, Sheet, SheetTextInput, Skeleton, Text, NO_WEB_OUTLINE, useBottomInset, useLiveQuote, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { ChartLazy } from "../chart/ChartLazy";
@@ -19,9 +20,10 @@ import { prefetchCandles, TIMEFRAMES, type Timeframe } from "../chart/data";
 import type { IndicatorKey } from "../chart/indicators";
 import { setChartType, toggleIndicator, useChartType, useIndicators } from "../chart/settings";
 import { AccountChip, AccountSheet } from "../trading/AccountSwitcher";
-import { useAccounts } from "../trading/accounts";
+import { noTradingAccount, useAccountsSelect } from "../trading/accounts";
 import { useTrade } from "../trading/live";
 import { clampLots, useSpec, useSpecs } from "../trading/specs";
+import { calendarCurrency, calendarHref, linkedSymbol, newsHref, warmCalendar, warmNews } from "./links";
 import { OrderSheet, type OrderSheetHandle } from "./OrderSheet";
 import { setTradeSymbol, setTradeTf, useTradeSymbol, useTradeTf } from "./symbol";
 
@@ -37,13 +39,28 @@ export function TradeScreen() {
   const type = useChartType();
   const indicators = useIndicators();
   const viewer = useSession((s) => !!s.viewer);
-  const accounts = useAccounts();
+  const active = useActiveLogin();
+  // no account to trade on: none at all, or only programme accounts (prop, copy, PAMM, MAM) and none chosen
+  const noAccount = useAccountsSelect((list) => noTradingAccount(list, active));
+  // a link to the tab (/trade?symbol=XAUUSD, from a story, an alert, a notification) shows that symbol; the param is
+  // cleared once applied, so the same link opens it again after the reader picked another symbol
+  const params = useLocalSearchParams<{ symbol?: string }>();
+  const navigation = useNavigation();
+  React.useEffect(() => {
+    if (params.symbol === undefined) return;
+    const s = linkedSymbol(params.symbol);
+    if (s) setTradeSymbol(s);
+    // on this tab's own route (the router's setParams would go to the outer stack's focused route)
+    navigation.setParams({ symbol: undefined } as never);
+  }, [params.symbol, navigation]);
   // while the tab is on screen, the contract specs refresh every minute (the market-closed notice follows them)
   const focused = useIsFocused();
   useSpecs({ live: focused });
   const spec = useSpec(symbol);
   const status = useTrade((s) => s.status);
   const bottom = useBottomInset();
+  // a 360 pt phone: the symbol steps down one display size so it stays whole next to the four header buttons
+  const narrow = useWindowDimensions().width < 370;
   const [volume, setVolume] = React.useState(() => volumes[symbol] ?? 0.01);
   React.useEffect(() => setVolume(clampLots(spec, volumes[symbol] ?? spec?.lotMin ?? 0.01)), [symbol, spec]);
   const saveVolume = React.useCallback((s: string, v: number) => {
@@ -55,13 +72,13 @@ export function TradeScreen() {
   const symbolSheet = React.useRef<SheetRef>(null);
   const indSheet = React.useRef<SheetRef>(null);
   const accSheet = React.useRef<SheetRef>(null);
+  const openAccounts = React.useCallback(() => accSheet.current?.present(), []);
 
-  const noAccount = accounts.data && accounts.data.accounts.length === 0;
   const canTrade = !viewer && !noAccount;
-  const openTicket = (side: "buy" | "sell") => {
-    haptic.tap();
-    ticket.current?.open({ symbol, side, volume });
-  };
+  // no haptic here: opening the ticket is a plain press (the fill gives the haptic)
+  const openTicket = (side: "buy" | "sell") => ticket.current?.open({ symbol, side, volume });
+  const news = newsHref(symbol);
+  const ccy = calendarCurrency(symbol);
   const stepVolume = (dir: 1 | -1) => {
     const next = clampLots(spec, volume + dir * (spec?.lotStep ?? 0.01));
     setVolume(next);
@@ -73,13 +90,20 @@ export function TradeScreen() {
       {/* header */}
       <View style={{ paddingHorizontal: GUTTER, paddingTop: space[2], gap: space[2] }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
-          <PressableScale onPress={() => symbolSheet.current?.present()} haptics="select" accessibilityLabel={t("mobileTrade.pickSymbol")} style={{ flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44 }}>
-            <Display size="lg">{symbol}</Display>
+          <PressableScale onPress={() => symbolSheet.current?.present()} haptics="select" accessibilityLabel={t("mobileTrade.pickSymbol")} style={{ flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, flexShrink: 1 }}>
+            <Display size={narrow ? "md" : "lg"} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ flexShrink: 1 }}>
+              {symbol}
+            </Display>
             <ChevronDown size={20} color={colors.text3} />
           </PressableScale>
           <View style={{ flex: 1 }} />
-          <IconButton accessibilityLabel={t("mobileTrade.alert")} icon={<Bell size={19} color={colors.text} />} onPress={() => router.push({ pathname: "/alerts", params: { symbol } })} />
-          <IconButton accessibilityLabel={t("mobileTrade.depth")} icon={<Layers size={19} color={colors.text} />} onPress={() => router.push(`/depth/${symbol}`)} />
+          {/* the symbol's stories and its currency's calendar, then alerts and depth (40 pt: all four fit a 360 pt phone) */}
+          <View style={{ flexDirection: "row", gap: 6 }}>
+            {news ? <IconButton size={40} accessibilityLabel={t("mobileTrade.news", { symbol })} icon={<Newspaper size={18} color={colors.text} />} onPress={() => router.push(news)} onPressIn={() => warmNews(symbol)} /> : null}
+            <IconButton size={40} accessibilityLabel={t("mobileTrade.calendar", { currency: ccy })} icon={<CalendarDays size={18} color={colors.text} />} onPress={() => router.push(calendarHref(symbol))} onPressIn={warmCalendar} />
+            <IconButton size={40} accessibilityLabel={t("mobileTrade.alert")} icon={<Bell size={18} color={colors.text} />} onPress={() => router.push({ pathname: "/alerts", params: { symbol } })} />
+            <IconButton size={40} accessibilityLabel={t("mobileTrade.depth")} icon={<Layers size={18} color={colors.text} />} onPress={() => router.push(`/depth/${symbol}`)} />
+          </View>
         </View>
         {/* bid + account chip, then the day's change and range on their own line (fits a 360 pt phone) */}
         <View style={{ gap: 2 }}>
@@ -87,7 +111,7 @@ export function TradeScreen() {
             <View style={{ flex: 1, minWidth: 0 }}>
               <LiveBid symbol={symbol} digits={inst.digits} />
             </View>
-            {canTrade ? <AccountChip onPress={() => accSheet.current?.present()} /> : null}
+            {canTrade ? <AccountChip onPress={openAccounts} /> : null}
           </View>
           <DayRange symbol={symbol} digits={inst.digits} />
         </View>

@@ -1,17 +1,20 @@
-// Portfolio sheets: partial close, and modify (a position's SL / TP, a pending order's price / SL / TP). Numbers are
-// typed or stepped (Stepper, keyboard-safe inside the sheet); the engine's answer is shown in words.
+// Portfolio sheets: partial close, Close By (hedging accounts), and modify (a position's SL / TP, a pending order's
+// price / SL / TP). Numbers are typed or stepped (Stepper, keyboard-safe inside the sheet); the engine's answer is
+// shown in words.
 import * as React from "react";
 import { Keyboard, View } from "react-native";
 import { useT } from "@/i18n";
-import { fmtLots } from "@/lib/format";
+import { fmtLots, fmtMoney, fmtPrice } from "@/lib/format";
 import { feed } from "@/market/feed";
 import { instrument } from "@/market/instruments";
 import { Banner, Button, Display, PressableScale, Sheet, Text, type SheetRef } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
-import { closePosition, modifyOrder, modifyPosition, type ActionResult } from "../trading/actions";
-import { clampLots, specOf } from "../trading/specs";
+import { closeBy, closePosition, modifyOrder, modifyPosition, type ActionResult } from "../trading/actions";
+import { useTrade } from "../trading/live";
+import { clampLots, profitAt, specOf, useSpec } from "../trading/specs";
 import { Stepper } from "../trading/Stepper";
 import type { EngOrder, EngPosition } from "../trading/types";
+import { LivePnl } from "./rows";
 
 type Failure = { title: string; body: string } | null;
 const failure = (r: ActionResult): Failure => (r.ok ? null : { title: r.title, body: r.body });
@@ -64,6 +67,124 @@ function Partial({ p, done }: { p: EngPosition; done: () => void }) {
       {err ? <Banner tone="error" title={err.title} body={err.body || undefined} /> : null}
       {canPart ? <Button label={t("mobilePortfolio.partial.confirm", { volume: fmtLots(clamp(vol)) })} variant="sell" loading={busy === "part"} disabled={!!busy} onPress={() => void run("part")} testID="partial-confirm" /> : null}
       <Button label={t("mobilePortfolio.partial.all", { volume: fmtLots(p.volume) })} variant="secondary" loading={busy === "all"} disabled={!!busy} onPress={() => void run("all")} testID="partial-all" />
+    </View>
+  );
+}
+
+/* ---------------- close by ---------------- */
+
+/**
+ * Close By (hedging accounts): pick the opposite position on the same symbol, then confirm. The engine closes the
+ * overlapping volume of both at the open price of the picked one, so no spread is paid on it; the rest stays open.
+ */
+export const CloseBySheet = React.forwardRef<{ open: (p: EngPosition) => void }, { currency: string }>(function CloseBySheet({ currency }, ref) {
+  const sheet = React.useRef<SheetRef>(null);
+  const [p, setP] = React.useState<EngPosition | null>(null);
+  React.useImperativeHandle(ref, () => ({
+    open: (pos) => {
+      setP(pos);
+      requestAnimationFrame(() => sheet.current?.present());
+    },
+  }));
+  return (
+    <Sheet ref={sheet} scrollable onDismiss={() => setP(null)}>
+      {p ? <CloseBy key={p.ticket} p={p} currency={currency} done={() => sheet.current?.dismiss()} /> : null}
+    </Sheet>
+  );
+});
+
+function CloseBy({ p: opened, currency, done }: { p: EngPosition; currency: string; done: () => void }) {
+  const t = useT();
+  const digits = instrument(opened.symbol).digits;
+  const cent = useTrade((s) => s.account?.cent);
+  // this position as the stream has it now (a partial close elsewhere changes its volume); gone once it is closed
+  const current = useTrade((s) => s.positions.find((x) => x.ticket === opened.ticket) ?? null);
+  const still = current !== null;
+  const p = current ?? opened;
+  // the opposite positions still open (the stream keeps this list current while the sheet is up)
+  const opposite = useTrade(
+    (s) => s.positions.filter((x) => x.symbol === opened.symbol && x.side !== opened.side),
+    (a, b) => a.length === b.length && a.every((x, i) => x === b[i]),
+  );
+  const [by, setBy] = React.useState<number | null>(() => (opposite.length === 1 ? opposite[0]!.ticket : null));
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState<Failure>(null);
+  const other = opposite.find((x) => x.ticket === by) ?? null;
+  const volume = other ? Math.min(p.volume, other.volume) : null;
+  const spec = useSpec(p.symbol);
+  // what the overlap locks in: this position closed at the other's open price (the other one closes at its own open)
+  const locks = other && spec && volume !== null ? profitAt(spec, p.side, volume, p.openPrice, other.openPrice, cent) : null;
+  const buyLabel = (x: EngPosition) => t(x.side === "buy" ? "common.buy" : "common.sell");
+
+  const run = async () => {
+    if (!other) return;
+    setBusy(true);
+    setErr(null);
+    const r = await closeBy(p.ticket, other.ticket);
+    setBusy(false);
+    if (r.ok) done();
+    else setErr(failure(r));
+  };
+
+  return (
+    <View style={{ gap: space[4] }}>
+      <View style={{ gap: space[1] }}>
+        <Display size="md">{t("order.position.closeBy")}</Display>
+        <Text tone="secondary">{`#${p.ticket} · ${buyLabel(p)} ${fmtLots(p.volume)} ${p.symbol} · ${t("mobilePortfolio.row.open", { price: fmtPrice(p.openPrice, digits) })}`}</Text>
+      </View>
+      <Text variant="caption" tone="tertiary">
+        {t("mobilePortfolio.closeBy.body")}
+      </Text>
+      {!still ? (
+        <Banner tone="info" title={t("mobilePortfolio.closeBy.gone")} />
+      ) : opposite.length === 0 ? (
+        <Banner tone="info" title={t("order.toast.closeByNeedsOpposite")} />
+      ) : (
+        <View style={{ gap: space[2] }} accessibilityRole="radiogroup">
+          <Text variant="label" tone="tertiary">
+            {t("mobilePortfolio.closeBy.pick")}
+          </Text>
+          {opposite.map((x) => {
+            const on = x.ticket === by;
+            return (
+              <PressableScale
+                key={x.ticket}
+                onPress={() => setBy(x.ticket)}
+                haptics="select"
+                scaleTo={0.985}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: on }}
+                testID={`closeby-${x.ticket}`}
+                style={{ minHeight: 60, borderRadius: radius.lg, paddingHorizontal: space[4], paddingVertical: space[3], flexDirection: "row", alignItems: "center", gap: space[3], backgroundColor: on ? colors.surface3 : colors.surface2, borderWidth: 1, borderColor: on ? colors.cream : colors.line }}
+              >
+                <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: on ? colors.cream : colors.lineStrong, alignItems: "center", justifyContent: "center" }}>{on ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.cream }} /> : null}</View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text weight="700">{`#${x.ticket} · ${buyLabel(x)} ${fmtLots(x.volume)}`}</Text>
+                  <Text variant="caption" tone="tertiary">
+                    {t("mobilePortfolio.row.open", { price: fmtPrice(x.openPrice, digits) })}
+                  </Text>
+                </View>
+                <LivePnl p={x} currency={currency} size={14} />
+              </PressableScale>
+            );
+          })}
+        </View>
+      )}
+      {other && volume !== null ? (
+        <View style={{ borderRadius: radius.lg, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.line, padding: space[4], gap: space[2] }}>
+          <Text variant="callout">{t("mobilePortfolio.closeBy.summary", { volume: fmtLots(volume), price: fmtPrice(other.openPrice, digits), ticket: other.ticket })}</Text>
+          {locks !== null ? (
+            <Text variant="caption" tone="secondary">
+              {t("mobilePortfolio.closeBy.locks")}{" "}
+              <Text variant="caption" weight="700" tone={locks > 0 ? "up" : locks < 0 ? "down" : "primary"}>
+                {fmtMoney(locks, { signed: true, currency })}
+              </Text>
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+      {err ? <Banner tone="error" title={err.title} body={err.body || undefined} /> : null}
+      <Button label={other ? t("order.position.closeByTicket", { ticket: other.ticket }) : t("order.position.closeBy")} variant="sell" loading={busy} disabled={!other || !still || busy} onPress={() => void run()} testID="closeby-confirm" />
     </View>
   );
 }

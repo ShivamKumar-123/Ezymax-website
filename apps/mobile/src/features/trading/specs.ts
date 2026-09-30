@@ -3,14 +3,19 @@
 import { apiGet } from "@/lib/api";
 import { getQueryData, useQuery } from "@/lib/query";
 import { feed } from "@/market/feed";
+import { useSession } from "@/session";
 import type { SymbolSpec } from "./types";
 
 export const SPECS_KEY = "trade/symbols";
 const fetchSpecs = () => apiGet<{ symbols: SymbolSpec[] }>("trade/symbols");
 
-/** `live`: poll every minute while mounted (the Trade tab: each spec's `open` flag follows the trading session). */
+/**
+ * `live`: poll every minute while mounted (the Trade tab: each spec's `open` flag follows the trading session).
+ * A view-only login never asks: the trade BFF serves the client's own sessions only (it would answer 403).
+ */
 export function useSpecs(opts: { live?: boolean } = {}) {
-  return useQuery(SPECS_KEY, fetchSpecs, opts.live ? { persist: true, staleMs: 60_000, intervalMs: 60_000 } : { persist: true, staleMs: 10 * 60_000 });
+  const viewer = useSession((s) => !!s.viewer);
+  return useQuery(viewer ? null : SPECS_KEY, fetchSpecs, opts.live ? { persist: true, staleMs: 60_000, intervalMs: 60_000 } : { persist: true, staleMs: 10 * 60_000 });
 }
 
 export function specOf(symbol: string): SymbolSpec | undefined {

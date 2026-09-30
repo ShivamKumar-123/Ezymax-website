@@ -14,7 +14,8 @@ import { Mono, PressableScale, Text, useLiveQuote } from "@/ui";
 import { alpha } from "@/theme/alpha";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { usePositionLive } from "../trading/live";
-import type { EngOrder, EngPosition } from "../trading/types";
+import type { EngDeal, EngOrder, EngPosition } from "../trading/types";
+import { netOf, positionSide } from "./share/pnl";
 
 export const POSITION_ROW_H = 72;
 
@@ -22,7 +23,7 @@ function SwipeAction({ label, drag, onPress }: { label: string; drag: SharedValu
   const anim = useAnimatedStyle(() => ({ opacity: interpolate(-drag.value, [0, 40, 88], [0, 0.6, 1], "clamp"), transform: [{ scale: interpolate(-drag.value, [0, 88], [0.85, 1], "clamp") }] }));
   return (
     <Animated.View style={[{ width: 96, alignItems: "center", justifyContent: "center" }, anim]}>
-      <PressableScale onPress={onPress} haptics="tap" accessibilityLabel={label} style={{ width: 76, height: 56, borderRadius: radius.lg, backgroundColor: colors.down, alignItems: "center", justifyContent: "center", gap: 2 }}>
+      <PressableScale onPress={onPress} accessibilityLabel={label} style={{ width: 76, height: 56, borderRadius: radius.lg, backgroundColor: colors.down, alignItems: "center", justifyContent: "center", gap: 2 }}>
         <X size={18} color={colors.ink} strokeWidth={2.5} />
         <Text variant="label" color={colors.ink} style={{ fontSize: 10 }}>
           {label}
@@ -67,10 +68,11 @@ function Detail({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ActionPill({ label, onPress, tone = "neutral" }: { label: string; onPress: () => void; tone?: "neutral" | "danger" }) {
+/** An action under an expanded row. Three share a line; four make two lines of two (they never squeeze a label). */
+function ActionPill({ label, onPress, tone = "neutral", wide, testID }: { label: string; onPress: () => void; tone?: "neutral" | "danger"; wide?: boolean; testID?: string }) {
   return (
-    <PressableScale onPress={onPress} haptics="tap" style={{ flex: 1, height: 40, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", backgroundColor: tone === "danger" ? colors.downSoft : colors.surface3 }}>
-      <Text variant="callout" weight="700" tone={tone === "danger" ? "down" : "primary"}>
+    <PressableScale onPress={onPress} testID={testID} style={{ flexGrow: 1, flexBasis: wide ? "40%" : 0, height: 40, paddingHorizontal: space[2], borderRadius: radius.pill, alignItems: "center", justifyContent: "center", backgroundColor: tone === "danger" ? colors.downSoft : colors.surface3 }}>
+      <Text variant="callout" weight="700" tone={tone === "danger" ? "down" : "primary"} numberOfLines={1}>
         {label}
       </Text>
     </PressableScale>
@@ -92,13 +94,16 @@ type PositionRowProps = {
   expanded: boolean;
   readOnly: boolean;
   busy?: boolean;
+  /** a hedging account with an opposite position on the same symbol */
+  canCloseBy?: boolean;
   onToggle: (ticket: number) => void;
   onClose: (p: EngPosition) => void;
   onPartial: (p: EngPosition) => void;
   onModify: (p: EngPosition) => void;
+  onCloseBy?: (p: EngPosition) => void;
 };
 
-export const PositionRow = React.memo(function PositionRow({ p, currency, expanded, readOnly, busy, onToggle, onClose, onPartial, onModify }: PositionRowProps) {
+export const PositionRow = React.memo(function PositionRow({ p, currency, expanded, readOnly, busy, canCloseBy, onToggle, onClose, onPartial, onModify, onCloseBy }: PositionRowProps) {
   const t = useT();
   const fmt = useFormat();
   const digits = instrument(p.symbol).digits;
@@ -132,10 +137,11 @@ export const PositionRow = React.memo(function PositionRow({ p, currency, expand
             <Detail label={t("mobilePortfolio.detail.commission")} value={fmtMoney(-Math.abs(p.commission ?? 0), { signed: true, currency })} />
           </View>
           {!readOnly && !busy ? (
-            <View style={{ flexDirection: "row", gap: space[2] }}>
-              <ActionPill label={t("mobilePortfolio.action.modify")} onPress={() => onModify(p)} />
-              <ActionPill label={t("mobilePortfolio.action.partial")} onPress={() => onPartial(p)} />
-              <ActionPill label={t("mobilePortfolio.action.close")} tone="danger" onPress={() => onClose(p)} />
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space[2] }}>
+              <ActionPill label={t("mobilePortfolio.action.modify")} wide={canCloseBy} onPress={() => onModify(p)} />
+              <ActionPill label={t("mobilePortfolio.action.partial")} wide={canCloseBy} onPress={() => onPartial(p)} />
+              {canCloseBy && onCloseBy ? <ActionPill label={t("order.position.closeBy")} wide onPress={() => onCloseBy(p)} testID={`closeby-open-${p.ticket}`} /> : null}
+              <ActionPill label={t("mobilePortfolio.action.close")} tone="danger" wide={canCloseBy} onPress={() => onClose(p)} />
             </View>
           ) : null}
         </View>
@@ -255,5 +261,54 @@ export const OrderRow = React.memo(function OrderRow({ o, expanded, readOnly, bu
     >
       {row}
     </ReanimatedSwipeable>
+  );
+});
+
+type DealRowProps = { d: EngDeal; currency: string; expanded: boolean; onToggle: (id: number) => void; onShare?: (d: EngDeal) => void };
+
+/** A closed trade: symbol, side and volume, open -> close price and time, the net result. Tap for the details and
+ *  "Share P&L". */
+export const DealRow = React.memo(function DealRow({ d, currency, expanded, onToggle, onShare }: DealRowProps) {
+  const t = useT();
+  const fmt = useFormat();
+  const digits = instrument(d.symbol).digits;
+  const side = positionSide(d);
+  const net = netOf(d);
+  return (
+    <Animated.View layout={LinearTransition.duration(180)} style={{ backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: colors.line }}>
+      <PressableScale onPress={() => onToggle(d.id)} scaleTo={0.99} accessibilityState={{ expanded }} testID={`deal-${d.id}`} style={{ minHeight: 64, paddingHorizontal: GUTTER, flexDirection: "row", alignItems: "center", gap: space[3] }}>
+        <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+          <View style={{ flexDirection: "row", alignItems: "baseline", gap: space[2] }}>
+            <Text weight="700">{d.symbol}</Text>
+            <Text variant="caption" weight="700" tone="secondary">
+              {`${t(side === "buy" ? "common.buy" : "common.sell").toUpperCase()} ${fmtLots(d.volume)}`}
+            </Text>
+          </View>
+          <Text variant="caption" tone="tertiary" numberOfLines={1}>
+            {`${d.openPrice ? `${fmtPrice(d.openPrice, digits)} → ` : ""}${fmtPrice(d.price, digits)} · ${fmt.dateTime(d.time)}`}
+          </Text>
+        </View>
+        <Mono size={15} weight="bold" tone={net > 0 ? "up" : net < 0 ? "down" : "primary"}>
+          {fmtMoney(net, { signed: true, currency })}
+        </Mono>
+      </PressableScale>
+      {expanded ? (
+        <View style={{ paddingHorizontal: GUTTER, paddingBottom: space[4], gap: space[3] }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", backgroundColor: colors.surface, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2] }}>
+            <Detail label={t("mobilePortfolio.deal.position")} value={`#${d.positionTicket}`} />
+            <Detail label={t("mobilePortfolio.deal.reason")} value={t.dyn(`mobilePortfolio.reason.${d.reason}`, d.reason)} />
+            {d.openTime ? <Detail label={t("mobilePortfolio.detail.opened")} value={fmt.dateTime(d.openTime)} /> : null}
+            <Detail label={t("mobilePortfolio.deal.closed")} value={fmt.dateTime(d.time)} />
+            <Detail label={t("mobilePortfolio.detail.swap")} value={fmtMoney(d.swap ?? 0, { signed: true, currency })} />
+            <Detail label={t("mobilePortfolio.detail.commission")} value={fmtMoney(-Math.abs(d.commission ?? 0), { signed: true, currency })} />
+          </View>
+          {onShare ? (
+            <View style={{ flexDirection: "row" }}>
+              <ActionPill label={t("mobilePortfolio.action.share")} onPress={() => onShare(d)} testID={`deal-share-${d.id}`} />
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+    </Animated.View>
   );
 });

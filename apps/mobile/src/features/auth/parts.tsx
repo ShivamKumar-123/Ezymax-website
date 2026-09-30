@@ -1,21 +1,21 @@
 // Shared pieces of the sign-in / sign-up / reset screens.
 import * as React from "react";
 import { View } from "react-native";
-import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { Display, IconButton, KalksMark, Mono, PressableScale, Screen, Text, Trans } from "@/ui";
+import { BackButton, Display, KalksMark, Mono, PressableScale, Screen, Text, Trans } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 
-/** Signed-out screen: back button or the Kalks mark, eyebrow, tall title, subtitle, form, footer. */
+/** Signed-out screen: back button (the kit's, flipped in right-to-left) or the Kalks mark, eyebrow, tall title,
+ *  subtitle, form, footer. Back goes to the previous step (`onBack`), else the previous screen, else sign-in. */
 export function AuthScaffold({ eyebrow, title, subtitle, back, onBack, children, footer }: { eyebrow?: string; title: string; subtitle?: React.ReactNode; back?: boolean; onBack?: () => void; children: React.ReactNode; footer?: React.ReactNode }) {
-  const router = useRouter();
-  const t = useT();
   return (
     <Screen tabBar={false} keyboard contentStyle={{ paddingHorizontal: GUTTER, flexGrow: 1 }}>
       <View style={{ height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        {/* the kit's bare chevron, lined up with the title below like the other modules' bars */}
         {back ? (
-          <IconButton accessibilityLabel={t("mobile.a11y.back")} icon={<ChevronLeft size={22} color={colors.text} />} onPress={() => (onBack ? onBack() : router.canGoBack() ? router.back() : router.replace("/sign-in"))} />
+          <View style={{ marginStart: -6 }}>
+            <BackButton onPress={onBack} fallback="/sign-in" />
+          </View>
         ) : (
           <KalksMark size={30} />
         )}

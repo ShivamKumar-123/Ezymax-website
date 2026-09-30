@@ -10,21 +10,20 @@ import { setActiveLogin, useActiveLogin } from "@/session/activeAccount";
 import { Button, Display, Money, PressableScale, Sheet, Text, type SheetRef } from "@/ui";
 import { alpha } from "@/theme/alpha";
 import { colors, radius, space } from "@/theme/tokens";
+import { useAccounts, useActiveAccountLabel } from "./accounts";
+import type { EngAccount } from "./types";
 
 const CHIP_ON_BLOCK = alpha(colors.ink, 0.12);
-import { useAccounts } from "./accounts";
-import type { EngAccount } from "./types";
 
 export function accountLabel(t: ReturnType<typeof useT>, a: Pick<EngAccount, "type" | "login">) {
   return t("mobileTrade.account.chip", { type: t(a.type === "live" ? "common.live" : "common.demo"), login: a.login });
 }
 
-/** The chip; `tone` = on a colour block (ink) or on the dark canvas. */
-export function AccountChip({ onPress, tone = "dark" }: { onPress: () => void; tone?: "dark" | "ink" }) {
+/** The chip; `tone` = on a colour block (ink) or on the dark canvas. It reads only the active account's type and
+ *  number (a selector), so a refresh of the account list's figures doesn't re-render it. */
+export const AccountChip = React.memo(function AccountChip({ onPress, tone = "dark" }: { onPress: () => void; tone?: "dark" | "ink" }) {
   const t = useT();
-  const login = useActiveLogin();
-  const accounts = useAccounts();
-  const acc = accounts.data?.accounts.find((a) => a.login === login);
+  const acc = useActiveAccountLabel();
   const ink = tone === "ink";
   return (
     <PressableScale
@@ -40,17 +39,26 @@ export function AccountChip({ onPress, tone = "dark" }: { onPress: () => void; t
       <ChevronDown size={14} color={ink ? colors.ink : colors.text3} />
     </PressableScale>
   );
-}
+});
 
+/** The sheet. Its list (with live equity) is only rendered, and only follows the account list, while it is open. */
 export const AccountSheet = React.forwardRef<SheetRef>(function AccountSheet(_, ref) {
+  const dismiss = React.useCallback(() => (ref && typeof ref !== "function" ? ref.current?.dismiss() : undefined), [ref]);
+  return (
+    <Sheet ref={ref} scrollable>
+      <AccountList dismiss={dismiss} />
+    </Sheet>
+  );
+});
+
+function AccountList({ dismiss }: { dismiss: () => void }) {
   const t = useT();
   const router = useRouter();
   const login = useActiveLogin();
   const accounts = useAccounts();
   const list = React.useMemo(() => [...(accounts.data?.accounts ?? [])].sort((a, b) => (a.type === b.type ? a.login - b.login : a.type === "live" ? -1 : 1)), [accounts.data]);
-  const dismiss = () => (ref && typeof ref !== "function" ? ref.current?.dismiss() : undefined);
   return (
-    <Sheet ref={ref} scrollable>
+    <>
       <Display size="md" style={{ marginBottom: space[4] }}>
         {t("common.accounts")}
       </Display>
@@ -103,6 +111,6 @@ export const AccountSheet = React.forwardRef<SheetRef>(function AccountSheet(_, 
           }}
         />
       </View>
-    </Sheet>
+    </>
   );
-});
+}

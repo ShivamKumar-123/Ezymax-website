@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { AppState } from "react-native";
 import type { ApiError, ApiResult } from "./api";
 import { kv } from "./kv";
+import { share } from "./structural";
 
 type Entry = { data?: unknown; error?: ApiError; at: number; inflight?: Promise<void>; subs: Set<() => void>; version: number; persist?: boolean; fetch?: () => Promise<ApiResult<unknown>> };
 type Fetcher<T> = () => Promise<ApiResult<T>>;
@@ -153,6 +154,68 @@ export function useQuery<T>(key: string | null, fetcher: Fetcher<T>, opts: Query
     updatedAt: e?.at ?? 0,
     refresh,
   };
+}
+
+/**
+ * `useQuery` with a selector: the same cache and fetching (cached data at once, a refresh when stale, on return to
+ * the foreground, `intervalMs`), but the component re-renders only when its slice of the data changes: `select`'s
+ * result is structurally shared with the previous one (./structural), so a refresh that leaves the slice as it was
+ * renders nothing. Return primitives or plain data from `select`. For controllers and small leaves that need one
+ * piece of a shared answer, e.g. the active account's group out of "trading/accounts", whose equity figures change
+ * on every refresh.
+ */
+export function useQuerySelect<T, S>(key: string | null, fetcher: Fetcher<T>, select: (data: T | undefined) => S, opts: QueryOptions = {}): S {
+  const { persist = false, staleMs = 30_000, intervalMs, enabled = true } = opts;
+  const fetchRef = useRef(fetcher);
+  fetchRef.current = fetcher;
+  const pick = useRef(select);
+  pick.current = select;
+  const last = useRef<{ v: S } | null>(null);
+  const active = enabled && key !== null;
+
+  const subscribe = useCallback(
+    (fn: () => void) => {
+      if (!key) return () => {};
+      const e = entry(key, persist);
+      e.subs.add(fn);
+      e.persist = persist;
+      e.fetch = () => fetchRef.current() as Promise<ApiResult<unknown>>;
+      return () => e.subs.delete(fn);
+    },
+    [key, persist],
+  );
+  const snapshot = () => {
+    const next = pick.current(key ? (entry(key, persist).data as T | undefined) : undefined);
+    const v = last.current ? share(last.current.v, next) : next;
+    if (!last.current || v !== last.current.v) last.current = { v };
+    return last.current.v;
+  };
+  const value = useSyncExternalStore(subscribe, snapshot, snapshot);
+
+  const refresh = useCallback(() => (key ? run(key, () => fetchRef.current(), persist) : Promise.resolve()), [key, persist]);
+  useEffect(() => {
+    if (!active || !key) return;
+    const cur = entry(key, persist);
+    if (cur.data === undefined || Date.now() - cur.at > staleMs) void refresh();
+    const onApp = AppState.addEventListener("change", (s) => {
+      if (s === "active" && Date.now() - entry(key, persist).at > staleMs) void refresh();
+    });
+    const timer = intervalMs ? setInterval(() => AppState.currentState === "active" && void refresh(), intervalMs) : undefined;
+    return () => {
+      onApp.remove();
+      if (timer) clearInterval(timer);
+    };
+  }, [active, key, persist, staleMs, intervalMs, refresh]);
+
+  return value;
+}
+
+/** Refetch a query now (pull to refresh without subscribing to its data): with the fetcher its screens registered,
+ *  else `fetcher`. Resolves when the answer is in. */
+export function refreshQuery<T>(key: string, fetcher?: Fetcher<T>, persist = false): Promise<void> {
+  const e = entries.get(key);
+  const f = (e?.fetch ?? fetcher) as Fetcher<unknown> | undefined;
+  return f ? run(key, f, e?.persist ?? persist) : Promise.resolve();
 }
 
 /** Warm a query before its screen opens (e.g. chart candles on a watchlist row press-in). */

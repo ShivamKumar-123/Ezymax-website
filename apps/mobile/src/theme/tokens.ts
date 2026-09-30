@@ -14,7 +14,9 @@ export const colors = {
 
   text: "#F5F5F7",
   text2: "#A1A1AA",
-  text3: "#63636E",
+  /** Tertiary text: a lighter step than the web's fg-3 (#63636E, 2.8–3.4:1) so small labels and captions pass WCAG AA
+   *  (4.5:1) on the canvas and on every surface (4.5–5.5:1) */
+  text3: "#85858F",
   /** Text on colour blocks (every block colour is light enough for ink text) */
   ink: "#0E0E12",
   ink2: "rgba(14,14,18,0.66)",

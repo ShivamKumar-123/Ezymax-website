@@ -50,5 +50,43 @@ const mobilePortfolio = {
   "history.more": "Load more",
   "confirm.close": "Close #{ticket}?",
   "confirm.closeBody": "{side} {volume} {symbol} at market.",
+
+  // Header: the account's analytics (Reports)
+  analytics: "Analytics",
+
+  // Close By (hedging accounts; the button and title use order.position.closeBy)
+  "closeBy.body": "Closes this position against an opposite one on the same symbol, at the open price of the one you pick. No spread is paid on the overlap; any volume left over stays open.",
+  "closeBy.pick": "Opposite position",
+  "closeBy.summary": "Closes {volume} lots of each at {price}, the open price of #{ticket}.",
+  "closeBy.locks": "Result of the overlap",
+  "closeBy.gone": "This position is already closed.",
+
+  // Closed trade details (History)
+  "deal.position": "Position",
+  "deal.reason": "Reason",
+  "deal.closed": "Closed",
+  "reason.client": "Manual",
+  "reason.sl": "Stop loss",
+  "reason.tp": "Take profit",
+  "reason.stop_out": "Stop out",
+  "reason.close_by": "Close By",
+  "reason.dealer": "Dealing desk",
+  "reason.force": "Dealing desk",
+  "reason.reversal": "Reversal",
+  "reason.price_correction": "Price correction",
+  "reason.pending_fill": "Pending order",
+  "action.share": "Share P&L",
+
+  // Share P&L: a picture of one closed trade's result. {brand} is the broker's name (e.g. Kalks)
+  "share.title": "Share P&L",
+  "share.body": "Your result as a picture, ready to post. It never shows a balance, an account number or a volume.",
+  "share.action": "Share picture",
+  "share.withCode": "Add my referral code {code}",
+  "share.result": "Result",
+  "share.footerCode": "Trade with me on {brand}",
+  "share.footer": "Trade on {brand}",
+  "share.failed": "Couldn't create the picture. Try again.",
+  "share.unavailable": "Sharing isn't available on this device.",
+  "share.a11y": "P&L card: {symbol}, {side}, {result}, {date}",
 };
 export default mobilePortfolio;

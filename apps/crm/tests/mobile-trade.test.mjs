@@ -53,6 +53,12 @@ before(async () => {
       return [401, { error: { code: "unauthorized", message: "x" } }];
     }
     if (p === "/v1/terminal/orders") return [200, { status: "filled", received: body }];
+    if (p === "/v1/terminal/positions/close-by") {
+      if (bearer(req) !== TRADE.own) return [401, { error: { code: "unauthorized", message: "x" } }];
+      // a netting account: the engine's own refusal (the BFF must pass its code through)
+      if (body?.ticket === 7) return [422, { error: { code: "not_hedging", message: "Close By is only available on hedging accounts" } }];
+      return [200, { status: "closed", deals: [9001, 9002], received: body }];
+    }
     if (p === "/v1/symbols") return [200, { symbols: [{ symbol: "EURUSD", digits: 5 }] }];
     return [404, {}];
   });
@@ -153,6 +159,69 @@ test("read-only staff sessions can't trade from the app", async () => {
   assert.equal(res.status, 403);
   assert.equal((await res.json()).error.code, "staff_read_only");
   assert.equal(calls.filter((c) => c.path === "/v1/terminal/orders").length, before);
+});
+
+const closeByCalls = () => calls.filter((c) => c.svc === "engine" && c.path === "/v1/terminal/positions/close-by").length;
+
+test("close by: both tickets reach the engine as numbers, with the owner's terminal session", async () => {
+  const m = await load();
+  const res = await call(m, "POST", "positions/close-by", { token: TOKENS.user, trade: TRADE.own, body: { ticket: 101, by: "102", volume: 5, login: "50000009" } });
+  assert.equal(res.status, 200);
+  const d = await res.json();
+  assert.equal(d.status, "closed");
+  assert.deepEqual(d.deals, [9001, 9002]);
+  const sent = calls.findLast((c) => c.path === "/v1/terminal/positions/close-by");
+  // only the two tickets are forwarded (nothing else from the app's body), with the terminal session as bearer
+  assert.deepEqual(sent.body, { ticket: 101, by: 102 });
+  assert.equal(sent.headers.authorization, `Bearer ${TRADE.own}`);
+  assert.ok(sent.headers["x-kalks-internal"] !== undefined);
+});
+
+test("close by: the engine's refusal keeps its status and code (e.g. a netting account)", async () => {
+  const m = await load();
+  const res = await call(m, "POST", "positions/close-by", { token: TOKENS.user, trade: TRADE.own, body: { ticket: 7, by: 8 } });
+  assert.equal(res.status, 422);
+  assert.equal((await res.json()).error.code, "not_hedging");
+});
+
+test("close by: two different positive tickets are required; nothing reaches the engine otherwise", async () => {
+  const m = await load();
+  const before = closeByCalls();
+  for (const body of [{ ticket: 101 }, { by: 102 }, { ticket: 101, by: 101 }, { ticket: -1, by: 102 }, { ticket: 0, by: 102 }, { ticket: 1.5, by: 102 }, { ticket: "abc", by: 102 }, { ticket: 1e13, by: 102 }, { ticket: null, by: 102 }]) {
+    const res = await call(m, "POST", "positions/close-by", { token: TOKENS.user, trade: TRADE.own, body });
+    assert.equal(res.status, 422, JSON.stringify(body));
+    assert.equal((await res.json()).error.code, "validation");
+  }
+  assert.equal((await call(m, "GET", "positions/close-by", { token: TOKENS.user, trade: TRADE.own })).status, 404);
+  assert.equal(closeByCalls(), before);
+});
+
+test("close by: the gateway session and the terminal session must belong to the same client", async () => {
+  const m = await load();
+  const before = closeByCalls();
+  const body = { ticket: 101, by: 102 };
+  // no gateway session
+  assert.equal((await call(m, "POST", "positions/close-by", { trade: TRADE.own, body })).status, 401);
+  // no / malformed terminal session
+  const none = await call(m, "POST", "positions/close-by", { token: TOKENS.user, body });
+  assert.equal(none.status, 401);
+  assert.equal((await none.json()).error.code, "session_expired");
+  // someone else's terminal session with my gateway session, and mine with someone else's
+  assert.equal((await call(m, "POST", "positions/close-by", { token: TOKENS.user, trade: TRADE.foreign, body })).status, 403);
+  assert.equal((await call(m, "POST", "positions/close-by", { token: TOKENS.other, trade: TRADE.own, body })).status, 403);
+  assert.equal(closeByCalls(), before);
+});
+
+test("close by: view-only logins and read-only staff sessions can't close anything", async () => {
+  const m = await load();
+  const before = closeByCalls();
+  const viewer = await call(m, "POST", "positions/close-by", { token: TOKENS.viewer, trade: TRADE.own, body: { ticket: 101, by: 102 } });
+  assert.equal(viewer.status, 403);
+  assert.equal((await viewer.json()).error.code, "viewer_read_only");
+  const staff = await call(m, "POST", "positions/close-by", { token: TOKENS.staffRead, trade: TRADE.own, body: { ticket: 101, by: 102 } });
+  assert.equal(staff.status, 403);
+  assert.equal((await staff.json()).error.code, "staff_read_only");
+  assert.equal(closeByCalls(), before);
 });
 
 test("contract specs need a signed-in client", async () => {

@@ -17,6 +17,9 @@ import { completeSignIn } from "@/session";
 import { Button, Checkbox, ColorBlock, Display, FormError, Illustration, OtpInput, PressableScale, RevealToggle, Sheet, Text, TextField, Trans, toast, type SheetRef } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 
+/** The date of birth's ten mono characters fit the half-width field of a 360 pt phone. */
+const DOB_TEXT = { fontSize: 15 } as const;
+
 type Form = { first_name: string; last_name: string; email: string; country: string; phone: string; date_of_birth: string; referral_code: string; password: string };
 
 export default function SignUp() {
@@ -201,7 +204,7 @@ export default function SignUp() {
       />
       <View style={{ flexDirection: "row", gap: space[3] }}>
         <View style={{ flex: 1 }}>
-          <TextField ref={refs.dob} label={t("auth.field.dateOfBirth")} value={form.date_of_birth} onChangeText={set("date_of_birth")} placeholder={t("mobileAuth.signUp.dobPlaceholder")} keyboardType="number-pad" maxLength={10} error={fieldErr("date_of_birth")} leading={<CalendarDays size={18} color={colors.text3} />} mono />
+          <TextField ref={refs.dob} label={t("auth.field.dateOfBirth")} value={form.date_of_birth} onChangeText={set("date_of_birth")} placeholder={t("mobileAuth.signUp.dobPlaceholder")} keyboardType="number-pad" maxLength={10} error={fieldErr("date_of_birth")} leading={<CalendarDays size={18} color={colors.text3} />} mono style={DOB_TEXT} />
         </View>
         <View style={{ flex: 1 }}>
           <TextField label={t("auth.field.referralCode")} value={form.referral_code} onChangeText={set("referral_code")} autoCapitalize="characters" autoCorrect={false} placeholder={t("auth.field.optionalHint")} error={fieldErr("referral_code")} leading={<Gift size={18} color={colors.text3} />} />

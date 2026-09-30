@@ -14,6 +14,8 @@ import { LOGIN_RE, TRADE_TOKEN_RE, engineCall, engineStreamUrl, forgetTradeSessi
 //   PATCH  orders/{ticket}                    {price?, stopLimit?, volume?, sl?, tp?, expiry?, expiryAt?}
 //   DELETE orders/{ticket}
 //   POST   positions/{ticket}/close           {volume?}  (no volume = full close)
+//   POST   positions/close-by                 {ticket, by}  Close By (hedging): the overlapping volume of two opposite
+//                                            positions on one symbol, closed at the open price of `by`
 //   PATCH  positions/{ticket}                 {sl?, tp?, trailingPoints?}  (null clears)
 //   POST   stream-ticket                      {ticket, expiresIn, url}: one-time WebSocket ticket (30 s)
 //   POST   logout                             ends the terminal session
@@ -186,6 +188,15 @@ async function handle(req: NextRequest, { params }: Ctx, method: "GET" | "POST" 
       if (typeof o === "string") return error(422, "validation", `Invalid ${o}.`);
       return forward(`/v1/terminal/orders/${b}`, { method: "PATCH", body: o });
     }
+  }
+  if (a === "positions" && b === "close-by" && path.length === 2 && method === "POST") {
+    const o = pick(body, { ticket: "int", by: "int" });
+    const ticket = typeof o === "string" ? undefined : o.ticket;
+    const by = typeof o === "string" ? undefined : o.by;
+    const valid = (n: unknown): n is number => typeof n === "number" && Number.isSafeInteger(n) && n > 0 && TICKET_RE.test(String(n));
+    if (!valid(ticket) || !valid(by) || ticket === by) return error(422, "validation", "Choose two opposite positions.");
+    // the engine checks the rest: a hedging account, two open positions of this account, opposite sides, one symbol
+    return forward("/v1/terminal/positions/close-by", { method: "POST", body: { ticket, by } });
   }
   if (a === "positions" && TICKET_RE.test(b ?? "")) {
     if (path.length === 3 && c === "close" && method === "POST") {

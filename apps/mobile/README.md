@@ -4,7 +4,7 @@ The native Kalks app for iOS and Android: React Native + Expo SDK 57, expo-route
 
 Design direction (approved by the founder): a hybrid app.
 - **Trading screens are dense** like MT5 / cTrader: watchlist, chart with a one-tap Sell / Buy bar, the order ticket as a bottom sheet, positions / orders / history.
-- **Everything else is bold and editorial:** tall condensed uppercase headings (Anton), big saturated colour blocks with a 28–32 radius on near-black `#0E0E10`, pill chips, a floating pill tab bar, and huge numbers with small labels.
+- **Everything else is bold and editorial:** tall condensed uppercase headings (Anton), big saturated colour blocks with a 28–32 radius on the near-black `#07070A` canvas, pill chips, a floating pill tab bar, and huge numbers with small labels.
 - **Prices** use JetBrains Mono (tabular digits).
 - **Green and red are reserved for money:** P&L and price direction only.
 - **No** emoji, blur, glow, particles or looping animation. Motion is functional only: price flash, swipe, sheet, press feedback, and haptics on fills.
@@ -87,12 +87,12 @@ Push notifications need a development or store build (Expo Go on Android has no 
 - **Native mobile routes:**
   - `auth/*` returns the session token in the JSON body.
   - `config` gives the public service URLs.
-  - `trade/*` covers trading-engine sessions, obtained through the same SSO token as Kalks Trader.
+  - `trade/*` covers trading-engine sessions, obtained through the same SSO token as Kalks Trader, and every trade call (orders, closes, Close By on hedging accounts: `POST trade/positions/close-by {ticket, by}`), each checked against the owner of the terminal session.
   - `accounts/options` tells the open-account wizard whether the broker allows new demo accounts (Back Office › Settings › Features).
   - `menu` gives the More tab the broker's modules (a module switched off is hidden), support email and legal page links; every session reads it, view-only logins too (judged like `/auth/me`).
   - `push/*` keeps this phone's Expo push token for the signed-in client (never for view-only logins or staff sessions). Sign-out removes it: with the session, or with the phone's installation id once the session is gone.
   - `auth/google` and `auth/google/complete` run "Continue with Google": the server redeems the app's authorization code (PKCE) and verifies the ID token like the web flow; the session comes back in the body.
-- Tests: `node --test apps/crm/tests/mobile.test.mjs` and the feature files next to it (e.g. `mobile-platform.test.mjs` for push and Google).
+- Tests: `node --test apps/crm/tests/mobile.test.mjs` and the feature files next to it (e.g. `mobile-platform.test.mjs` for push and Google, `mobile-trade.test.mjs` for the trade routes and Close By). The app's pure logic: `node --import ./apps/mobile/scripts/test-hooks.mjs --test apps/mobile/scripts/*.test.mts` (`core-lib.test.mts`: the default account, structural sharing, the Trade links, the share card's figures).
 
 ## Conventions (for everyone adding a feature)
 
@@ -129,6 +129,7 @@ if (!r.ok) show(r.error.message); // already in the reader's language
 ```
 
 - **Screen data:** use `useQuery(key, fetcher, { persist: true })` (`src/lib/query.ts`). It returns cached data at once and refreshes in the background.
+- **A slice of shared data:** `useQuerySelect(key, fetcher, select, opts)` fetches the same way but re-renders only when `select`'s result changes (it is structurally shared with the previous one, `src/lib/structural.ts`). Use it for controllers and leaves that need one piece of a list that refreshes often (e.g. `useAccountsSelect` for the account list, whose equity figures change on every refresh). `refreshQuery(key)` refetches without subscribing (pull to refresh).
 - **Invalidation:** after a confirmed change, call `invalidate(prefix)` or `setQueryData()`.
 - **Money actions** (orders, withdrawals, transfers) are never optimistic. Show the server's answer.
 - **Sign-out cleanup:** clear feature state with `onSignOut(fn)`.
@@ -167,7 +168,7 @@ if (!r.ok) show(r.error.message); // already in the reader's language
 
 ### UI kit (`@/ui`)
 
-> **Colours and finish:** the app uses the web platform's colour family (`packages/ui/src/styles.css`: `#07070A` canvas, graphite surfaces, `#F5F5F7` text, ember `#FF5A1F`, light ember `#FF8A3D`, gold `#E9B949`, warm off-white `#F6F4F1`) and a MATTE FINISH: flat solid fills only, no gradients, gloss, sheen, glass, drop shadows or glows. Charts use flat lines and flat low-opacity fills. Always use tokens from `@/theme/tokens`, never hex values in feature code; a translucent tint is a token too: `alpha(colors.down, 0.3)` (`@/theme/alpha`). Text on every colour block and on the Buy / Sell green and red is `colors.ink` (light text is under 4.5:1 on the web palette's green, red and ember).
+> **Colours and finish:** the app uses the web platform's colour family (`packages/ui/src/styles.css`: `#07070A` canvas, graphite surfaces, `#F5F5F7` text, ember `#FF5A1F`, light ember `#FF8A3D`, gold `#E9B949`, warm off-white `#F6F4F1`; tertiary text `text3` is one step lighter than the web's so small labels pass WCAG AA on every surface) and a MATTE FINISH: flat solid fills only, no gradients, gloss, sheen, glass, drop shadows or glows. Charts use flat lines and flat low-opacity fills. Always use tokens from `@/theme/tokens`, never hex values in feature code; a translucent tint is a token too: `alpha(colors.down, 0.3)` (`@/theme/alpha`). Text on every colour block and on the Buy / Sell green and red is `colors.ink` (light text is under 4.5:1 on the web palette's green, red and ember).
 
 | Group | Components |
 |---|---|
@@ -188,20 +189,20 @@ Tokens: 4 / 8 pt spacing (`space`), `GUTTER` 20, radii `card` 28 / `block` 32, t
 `pnpm --filter @kalks/mobile illustrations` processes the source PNGs.
 
 - **Input:** it reads `illustrator/*.png` at the repo root and never modifies them.
-- **Background:** it removes the baked-in checkerboard (a flood fill from the borders, with a feathered edge).
+- **Background:** it removes the baked-in checkerboard (a flood fill from the borders, with a feathered edge). A few images get their own treatment (`OPTIONS` in the script): the rewards chest loses its white ground and grey ground shadow (a glow on the dark screens), the market globe its grain specks (a starfield on dark), and the full-bleed scenes (maintenance, partner IB, market closed) get rounded corners like the cards.
 - **Output:** @1x / @2x / @3x WebP, plus `src/ui/illustrations.generated.ts` (names and aspect ratios).
-- **Placeholders:** images the founder is regenerating keep a clean placeholder: copy trading, empty watchlist, PAMM funds, prop challenge, prop passed, rewards, partner IB, market closed. When a source file changes, re-running the script picks it up automatically (`scripts/illustrations.manifest.json` keeps the old hashes).
+- **Placeholders:** images the founder is regenerating keep a clean placeholder: copy trading, empty watchlist, PAMM funds, prop challenge, prop passed. When a source file changes, re-running the script picks it up automatically (`scripts/illustrations.manifest.json` keeps the old hashes).
 
 ## What phase 1 contains (core modules)
 
 | Area | Where | Notes |
 |---|---|---|
 | Onboarding, sign in, sign up, reset | `app/(auth)`, `src/features/auth` | The gateway flows through `/api/mobile/auth/*`: email code on new devices and unverified emails, rate limits, blocked sign-in, referral code (`kalks://sign-up?ref=CODE`). The dev code hint appears only when a server has no SMTP. |
-| Home | `src/features/home` | Equity block (live, a matte ember block with the globe art), closed today (refreshes on every close) and open P&L, account switcher, quick actions, top movers, headlines, bell; illustrated no-account, error and offline states. A view-only login reads the figures through the Client Area. |
+| Home | `src/features/home` | Equity block (live, a matte ember block with the globe art), closed today (refreshes on every close) and open P&L, account switcher, quick actions, Explore (copy trading, prop, academy, AI Trader and invite friends as matte colour blocks with the founder's illustrations; a module the broker switched off is hidden like in the More tab; warmed on press-in; no price or account data), top movers, headlines, bell; illustrated no-account, error and offline states. Only the equity block follows the account list (a refresh of its figures re-renders nothing else). A view-only login reads the figures through the Client Area; it gets no quick actions or Explore, and headlines only with its dashboard section. |
 | Markets | `src/features/markets` | Segments, search, favourites, live Bid / Ask with a tick flash; prefetches candles on press-in. |
-| Trade | `src/features/trade`, `src/features/chart` | Skia chart (limit and stop orders labelled apart, the bars missed during a disconnection filled in on reconnect), one-tap Sell / Buy bar, order ticket sheet (market / limit / stop; price, volume, SL / TP typed or stepped; margin and pip-value preview; rejections in plain words; a retry after a lost answer never opens a second trade), symbol search, Depth and Alert entry points, market-closed notice refreshed every minute. |
-| Portfolio | `src/features/portfolio` | Live summary; positions with swipe to close, partial close and SL / TP; orders with edit and cancel (a spinner while it goes, a refusal in words); history; Statements link. Connecting, offline and error states; a view-only login gets the shared account read-only. |
-| Trading core | `src/features/trading` | Engine session (SSO), account stream, live money, actions, contract specs, accounts controller, account switcher. |
+| Trade | `src/features/trade`, `src/features/chart` | Skia chart (limit and stop orders labelled apart, the bars missed during a disconnection filled in on reconnect), one-tap Sell / Buy bar, order ticket sheet (market / limit / stop; price, volume, SL / TP typed or stepped; margin and pip-value preview; rejections in plain words; a retry after a lost answer never opens a second trade; opening it gives no haptic, the fill does), symbol search, News (`/news?symbol=`), Calendar (`/calendar?currency=`: the symbol's base currency when the calendar covers it, else its quote currency, `trade/currencies.ts`), Alert and Depth in the header (the first two warmed on press-in), market-closed notice refreshed every minute (view-only logins don't ask for contract specs). A link to `/trade?symbol=X` switches the tab to X (the param is cleared once applied). |
+| Portfolio | `src/features/portfolio` | Live summary; positions with swipe to close, partial close, SL / TP and Close By on hedging accounts (pick the opposite position on the same symbol, see what the overlap locks in, confirm; the engine closes the overlap at the picked position's open price); orders with edit and cancel (a spinner while it goes, a refusal in words); history with each closed trade's details and **Share P&L**: a matte Skia-drawn card (the Kalks mark, symbol, side, the move in % and the net result in money, the close date; the client's referral code and its QR from the partner API when there is one and the reader keeps it on) shared as a PNG through the share sheet (`share/`; it never shows a balance, equity, account number or volume). Statements and Analytics (`/reports/analytics?login=<active>`) links, warmed on press-in. Connecting, offline and error states; a view-only login gets the shared account read-only (no share). |
+| Trading core | `src/features/trading` | Engine session (SSO), account stream, live money, actions (incl. Close By), contract specs, accounts controller (`<TradingController />`, selectors), account switcher. The default account is a standard live one, else demo: never a prop, copy, PAMM or MAM account (`pick.ts`). |
 | Accounts | `src/features/accounts` | Live / demo list with USD totals, open-account wizard (the Client Area's rules, credentials shown once), account screen: live figures for the active account, demo refill with the daily cap, leverage and trading / investor passwords confirmed with an emailed code, Trade on this account, transfer and statement shortcuts. Reusable: `useStepUp` / `StepUpCode` (`stepup.tsx`), and `SheetTextField` / `SheetOtpInput` for typing inside bottom sheets (a sheet only rises above the keyboard for its own inputs). |
 | Wallet | `src/features/wallet` | The Client Area's wallet BFF (`/api/mobile/wallet/*`, same rules: identity check, restrictions, view-only and read-only staff sessions refused on the server). Overview (`/wallet`): the USDT balance, Deposit / Withdraw / Transfer (warmed on press-in), what is in progress, live accounts to top up, recent activity. Deposit (`/wallet/deposit[?intent=dep_…]`): only the service's address, network and token contract, with QR, copy and share, the expiry countdown and the transaction hash; the status is polled every 5 s until credited (illustration and one success haptic), and the request in progress is resumed after a trip to a wallet app. "Open in wallet app" is an EIP-681 link for BEP20 only (TronLink's transfer link needs the payer's own address and an HTTPS callback, so TRON uses QR, copy and share). Withdraw (`/wallet/withdraw`): the destination checked as typed (EIP-55, TRON base58check, other network, token contract), the service's quote before any code, an emailed code bound to `<chain>-<amount>`, a request id kept across network retries (never booked twice), cancel while waiting for review. Transfer (`/wallet/transfer[?to=|?from=]`): own live accounts, the engine's withdrawable amount as the limit, cent accounts in USC. History (`/wallet/history[?type=]`): filters, paging, a detail sheet with the server's explorer link and Back Office notes. Money actions are never optimistic, and a sheet closed while the server answers comes back with the answer. |
 | Social | `src/features/social` | Copy trading, PAMM and MAM on the social BFF: leaderboard with filters and house disclosure, master profile (Skia growth curve with scrub, monthly returns, fee terms, delayed trades), follow wizard, my copies (pause, settings, stop: close all or keep the positions), PAMM funds / my investments (invest and redeem queued to the rollover, stop-loss, cancel), MAM programmes (terms-hash consent, limits, revoke: close or keep). Master and MAM-manager dashboards: summary plus "Manage on the web". Details: `src/features/social/README.md`. |
@@ -219,11 +220,11 @@ Tokens: 4 / 8 pt spacing (`space`), `GUTTER` 20, radii `card` 28 / `block` 32, t
 ### Trading and chart building blocks (for other modules)
 
 - `useActiveLogin()` / `setActiveLogin()` (`@/session/activeAccount`) pick the account.
-  - `useTradingController()` (mounted in `app/(app)/_layout.tsx`) opens that account's engine stream and sets the quote group.
-  - `useActiveAccount()` / `useAccounts()` (`@/features/trading/accounts`) read the account list, which is the shared `"trading/accounts"` cache.
+  - `<TradingController />` (mounted in `app/(app)/_layout.tsx`, renders nothing) picks the default account (`pickDefault`: a standard live account, else demo, never a prop / copy / PAMM / MAM one), opens that account's engine stream and sets the quote group (the group list is never requested for view-only logins). It reads the list through selectors, so a refresh of the list's figures re-renders neither it nor the layout.
+  - `useActiveAccount()` / `useAccounts()` (`@/features/trading/accounts`) read the account list, which is the shared `"trading/accounts"` cache. For a piece of it, prefer `useAccountsSelect(select)` or `useActiveAccountLabel()` (type, login, currency): they re-render only when that piece changes. `refreshAccounts()` refetches it (pull to refresh).
 - **Live structure:** `useTrade(select)` gives positions, orders, recent deals and stream status. It changes only on fills, closes and modifications.
 - **Live money:** `useAccountLive()` / `usePositionLive(ticket)` update from equity frames (at most 4 a second). Use them only in small leaf components; `useAccountValue((a) => a?.freeMargin)` for one number re-renders only when that number changes.
-- **Actions:** `placeOrder`, `closePosition`, `modifyPosition`, `modifyOrder`, `cancelOrder` (`@/features/trading/actions`). Haptics and toasts are included. They return `{ ok }` or `{ ok: false, reason, title, body, uncertain }`:
+- **Actions:** `placeOrder`, `closePosition`, `closeBy`, `modifyPosition`, `modifyOrder`, `cancelOrder` (`@/features/trading/actions`). Haptics and toasts are included (a close that went through is a "done" toast whatever its result; red is for refusals). They return `{ ok }` or `{ ok: false, reason, title, body, uncertain }`:
   - `reason` is one localized line (for a toast); `title` / `body` fill a banner: the engine's reason in the reader's language, a plain-language hint (`mobileTrade.reject.<code>`) and the engine's own detail;
   - `uncertain`: no answer (network, timeout, 502 / 503 / 504), so the action may have gone through. Say so; never retry on your own.
   - Orders are idempotent: give `placeOrder` a `clientOrderId` (`newClientOrderId()`) and send the same one again after an uncertain answer. The engine then answers with the order it already has (`status: "duplicate"`, toast "Already placed") instead of opening a second trade. The order ticket does this.
@@ -238,7 +239,7 @@ Tokens: 4 / 8 pt spacing (`space`), `GUTTER` 20, radii `card` 28 / `block` 32, t
 - **Chart:**
   - `<ChartLazy symbol tf digits type indicators fallback />` (`@/features/chart/ChartLazy`);
   - candles with `fetchCandles` / `prefetchCandles` (`@/features/chart/data`);
-  - the Trade tab's symbol with `setTradeSymbol(symbol)` + `router.navigate("/trade")`.
+  - the Trade tab's symbol with `setTradeSymbol(symbol)` + `router.navigate("/trade")`, or a link to `/trade?symbol=X`.
 
 ## Performance (measured)
 
@@ -271,6 +272,15 @@ Re-measured in the core review (2026-09-30, same probe, load average 7–11):
 | Background refreshes | a poll or stale refresh whose answer did not change re-renders nothing (`useQuery` keeps the same data and doesn't announce `fetching` when data is on screen) |
 | iOS Hermes bundle | 13.4 MB .hbc with every module |
 
+Re-measured in the core follow-ups (2026-09-30, unminified web build, React DevTools hook, quote frames muted unless noted):
+
+| What | Result |
+|---|---|
+| The account list refreshes (4 refetches with new figures after trades on the active account) | the signed-in layout, `TradingController`, `HomeScreen`, Explore and the account chip: **0 renders**; Home's equity block (the only full-list reader on screen): 6 |
+| The Accounts screen polls the list every 5 s over the tabs | the layout, the controller and every tab screen: **0 renders** |
+| Home while prices tick (12 s) | screens, Explore, Movers: 0 renders; only the mover cards' and the equity's leaves |
+| Portfolio while positions tick (12 s) | `PortfolioScreen`, the rows and the list: 0 renders; only the P&L / price / summary leaves |
+
 The web preview can't freeze hidden tabs (react-native-screens' web `Screen` has no freeze), so there the Home tab's price leaves keep rendering behind the other tabs and the commit counts above include them. On iOS and Android `freezeOnBlur` freezes hidden tabs.
 
 Pre-rendering hidden tabs was tried and dropped. Preloaded tabs are never frozen, so their prices kept rendering in the background: tick p95 went from 18 to 57 ms and pinch fell to 45 fps. The app warms the chart module and the Trade tab's candles after the first paint instead.
@@ -284,7 +294,6 @@ On a phone, confirm the numbers with Expo Go's **Performance Monitor**: shake th
 - On a phone, native smoothness has not been measured yet: this build Mac has no simulator. Use the Performance Monitor steps above.
 - Local market-data runs in relay mode, so local candle history can have gaps. Production history is complete.
 - Keyboard handling inside sheets (typed prices in the order ticket, codes in step-up sheets) was checked on the web preview only: confirm on an iPhone and an Android phone that the sheet rises with the keyboard.
-- Close By (closing two opposite positions of a hedging account against each other) is not offered in the app; the engine supports it, the mobile trade BFF has no route for it yet.
 - No shared-element transition from a watchlist row to the chart header. Tabs are not pre-rendered: the data and the chart module are warmed instead (see Performance).
 
 ## Phase 2 (not in this build)

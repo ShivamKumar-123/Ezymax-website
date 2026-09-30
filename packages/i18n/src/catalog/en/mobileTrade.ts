@@ -8,6 +8,8 @@ const mobileTrade = {
   searchSymbol: "Search symbols",
   depth: "Depth of market",
   alert: "Price alert",
+  news: "News on {symbol}", // a header button's accessibility label
+  calendar: "{currency} economic calendar", // a header button's accessibility label, e.g. "EUR economic calendar"
   "account.chip": "{type} · #{login}",
   "account.manage": "Manage accounts",
   "account.open": "Open account",
