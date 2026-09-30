@@ -1,0 +1,95 @@
+import type { NsMessages } from "../../core";
+
+// Kalks mobile app: market news (/news, /news/[id]) and the economic calendar (/calendar).
+// Shared wording comes from the `news` namespace; this file holds only what the app adds.
+const mobileNews: NsMessages<"mobileNews"> = {
+  // News feed
+  "eyebrow": "Markteinblicke",
+  "title": "News", // tall uppercase display title, keep it one short word
+  "latest": "Neueste",
+  "filters": "Filter",
+  "filtersOn": "Filter · {n}", // n = number of active filters
+  "importance.all": "Alle",
+  "importance.important": "Wichtig",
+  "importance.top": "Topmeldungen",
+  "importance.label": "Wichtigkeit",
+  // Chips on a story (importance tier)
+  "chip.top": "Topmeldung",
+  "chip.important": "Wichtig",
+  "filter.tone": "Tendenz",
+  "filter.anyTone": "Alle Tendenzen",
+  "filter.currency": "Währung",
+  "filter.anyCurrency": "Alle Währungen",
+  "filter.symbol": "Instrument",
+  "filter.anySymbol": "Alle Instrumente",
+  "filter.mentioned": "In den heutigen Schlagzeilen",
+  "filter.clear": "Filter zurücksetzen",
+  "filter.remove": "Filter {label} entfernen",
+  "list.loadingMore": "Ältere Meldungen werden geladen…",
+  "list.end": "Sie sind auf dem neuesten Stand",
+  "list.endBody": "Das sind alle Meldungen der letzten Tage für diese Filter.",
+  "empty.title": "Noch keine Meldungen",
+  "empty.filteredTitle": "Keine Treffer",
+  "updated": "Aktualisiert um {time}",
+
+  // Daily brief card
+  "brief.label": "Tagesüberblick",
+  "brief.readMore": "Vollständigen Überblick lesen",
+  "brief.watch": "Heute im Blick",
+  "brief.calendarNote": "Im Kalender",
+  "brief.writtenAt": "Verfasst am {time}",
+
+  // Story screen
+  "story.readAt": "Bei {source} lesen",
+  "story.noTeaser": "Der Verlag stellt nur die Schlagzeile bereit. Die vollständige Meldung finden Sie auf seiner Website.",
+  "story.currencies": "Währungen",
+  "story.calendarFor": "{currency}-Kalender",
+  "story.relatedSymbol": "Mehr zu {symbol}",
+  "story.relatedCurrency": "Mehr zu {currency}",
+  "story.share": "Teilen",
+  "story.notFound.title": "Meldung nicht gefunden",
+  "story.notFound.body": "Sie wurde möglicherweise entfernt. Die neuesten Schlagzeilen finden Sie im News-Feed.",
+  "story.backToNews": "Zurück zu den News",
+  "story.openChart": "{symbol}-Chart öffnen",
+  "story.published": "Veröffentlicht am {time}",
+
+  // Economic calendar
+  "cal.eyebrow": "Wirtschaftskalender",
+  "cal.title": "Kalender", // tall uppercase display title, keep it one short word
+  "cal.summary.events": "Ereignisse",
+  "cal.prevWeekShort": "Früher",
+  "cal.nextWeekShort": "Später",
+  "cal.startsNow": "Beginnt jetzt",
+  "cal.startsIn": "Beginnt in",
+  "cal.zone.local": "Ihre Zeit · {tz}",
+  "cal.zone.server": "Serverzeit · {tz}",
+  "cal.zoneNote.local": "Zeiten in Ihrer Zeitzone ({local}). Die Serverzeit, also die Uhr Ihres Handelskontos, ist {server}.",
+  "cal.zoneNote.server": "Zeiten in Serverzeit ({server}), der Uhr Ihres Handelskontos. Ihre Zeitzone ist {local}.",
+  "cal.zone.title": "Zeiten anzeigen in",
+  "cal.zone.myTime": "Meine Zeit ({tz})",
+  "cal.zone.serverTime": "Serverzeit ({tz})",
+  "cal.filters.currencies": "Währungen",
+  "cal.filters.allCurrencies": "Alle Währungen",
+  "cal.filters.reset": "Zurücksetzen",
+  "cal.empty.title": "Ruhige Woche",
+  "cal.empty.body": "Für diese Woche sind noch keine Veröffentlichungen geplant.",
+  "cal.empty.filteredTitle": "Keine Treffer",
+  "cal.impact.high": "Hohe Auswirkung",
+  "cal.impact.medium": "Mittlere Auswirkung",
+  "cal.impact.low": "Geringe Auswirkung",
+  "cal.row.a11y": "{time}, {currency}, {title}, {impact}",
+  "cal.remind": "Erinnern",
+  "cal.reminderOn": "Erinnerung aktiv",
+  "cal.remindBefore": "Vorher erinnern",
+  "cal.reminderSetDesc": "Wir benachrichtigen Sie {minutes} Minuten vor {currency} {title}.",
+  "cal.reminderChanged": "Erinnerung auf {minutes} Minuten vorher verschoben",
+  "cal.viewOnlyRemind": "Nur-Lese-Logins können keine Erinnerungen setzen.",
+  "cal.newsFor": "{currency}-News",
+  "cal.eventTime.local": "{day} · {local} Ihre Zeit · {server} Serverzeit ({tz})",
+  "cal.eventTime.server": "{day} · {server} Serverzeit ({tz}) · {local} Ihre Zeit",
+  "cal.eventTime.allDay": "{day} · ganztägig",
+  "cal.alertsAria": "Alarme bei hoher Auswirkung",
+  "cal.filtersAria": "Kalenderfilter",
+  "cal.dayAria": "{day}, {count} Ereignisse",
+};
+export default mobileNews;
