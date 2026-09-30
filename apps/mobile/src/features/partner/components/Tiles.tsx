@@ -36,7 +36,7 @@ export const Tile = React.memo(function Tile({ color, label, value, sub, money, 
       </View>
     );
   return (
-    <PressableScale onPress={onPress} onPressIn={onPressIn} haptics="tap" accessibilityLabel={a11y} testID={testID} style={s}>
+    <PressableScale onPress={onPress} onPressIn={onPressIn} accessibilityLabel={a11y} testID={testID} style={s}>
       {body}
     </PressableScale>
   );

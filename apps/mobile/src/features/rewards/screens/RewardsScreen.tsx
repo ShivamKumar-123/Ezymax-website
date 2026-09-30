@@ -32,7 +32,7 @@ const PointsHero = React.memo(function PointsHero({ r, onOpen }: { r: Rewards; o
   const pct = next ? Math.min(100, ((next.minPoints - next.pointsToGo) / Math.max(1, next.minPoints)) * 100) : 100;
   return (
     <ColorBlock color="gold" padded={false}>
-      <PressableScale onPress={onOpen} onPressIn={prefetchRewards.loyalty} haptics="tap" accessibilityLabel={`${t("mobileRewards.points.title")}: ${pts(r.points.balance)}, ${r.tier.name}`} testID="points-hero" style={{ padding: space[6], gap: space[4] }}>
+      <PressableScale onPress={onOpen} onPressIn={prefetchRewards.loyalty} accessibilityLabel={`${t("mobileRewards.points.title")}: ${pts(r.points.balance)}, ${r.tier.name}`} testID="points-hero" style={{ padding: space[6], gap: space[4] }}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[2] }}>
           <Text variant="label" color={colors.ink2}>
             {t("mobileRewards.points.title")}

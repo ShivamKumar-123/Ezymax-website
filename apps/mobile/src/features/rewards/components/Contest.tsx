@@ -38,7 +38,7 @@ export const ContestBlock = React.memo(function ContestBlock({ c, onOpen, onWarm
   const me = c.myEntry;
   return (
     <ColorBlock color={c.kind === "live" ? "ember" : "periwinkle"} padded={false}>
-      <PressableScale onPress={() => onOpen(c.id)} onPressIn={() => onWarm?.(c.id)} haptics="tap" accessibilityLabel={`${c.name}, ${t("mobileRewards.contest.prizePool")} ${usdShort(c.prizePool)}`} testID={`contest-${c.id}`} style={{ padding: space[6], gap: space[4] }}>
+      <PressableScale onPress={() => onOpen(c.id)} onPressIn={() => onWarm?.(c.id)} accessibilityLabel={`${c.name}, ${t("mobileRewards.contest.prizePool")} ${usdShort(c.prizePool)}`} testID={`contest-${c.id}`} style={{ padding: space[6], gap: space[4] }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
           <KindTag kind={c.kind} onColor />
           <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ flex: 1 }}>

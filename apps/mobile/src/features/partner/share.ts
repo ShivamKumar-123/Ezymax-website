@@ -4,7 +4,6 @@ import { Platform, Share } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import * as Sharing from "expo-sharing";
 import { File as FsFile, Paths } from "expo-file-system";
-import { haptic } from "@/lib/haptics";
 import { toast } from "@/ui";
 
 /** Copies `value` and confirms with a short toast. */
@@ -14,7 +13,6 @@ export async function copyText(value: string, title: string, body?: string) {
     () => false,
   );
   if (ok) {
-    haptic.select();
     toast.show({ title, body, tone: "success" });
   }
   return ok;

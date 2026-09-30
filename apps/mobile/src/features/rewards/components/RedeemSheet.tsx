@@ -6,7 +6,6 @@ import * as React from "react";
 import { View } from "react-native";
 import { Copy, Ticket } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { Button, Display, FormError, IconButton, Mono, Sheet, Text, toast, type SheetRef } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { copyText } from "../../partner/share";
@@ -50,11 +49,9 @@ export function RedeemSheet({ sheetRef, item, balance }: { sheetRef: React.RefOb
     const r = await redeem(item.id, needsAccount ? login : null);
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(rewardsError(r.error));
       return;
     }
-    haptic.success();
     if (r.data.redemption.voucherCode) {
       setDone(r.data.redemption);
       return;

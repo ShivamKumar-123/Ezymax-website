@@ -7,7 +7,6 @@ import { useRouter } from "expo-router";
 import { FlashList, type ListRenderItem } from "@shopify/flash-list";
 import { Wallet } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { useReadOnly } from "@/features/partner/api";
 import { Button, Card, ColorBlock, Mono, Text, toast, useBottomInset } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
@@ -68,11 +67,9 @@ const Programme = React.memo(function Programme({ p, readOnly }: { p: CashbackPr
     const r = await enrolCashback(p.id);
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       toast.show({ title: t("mobileRewards.cashback.enrolFailed"), body: rewardsError(r.error), tone: "error" });
       return;
     }
-    haptic.success();
     toast.show({ title: t("mobileRewards.cashback.enrolled", { name: p.name }), body: t("mobileRewards.cashback.enrolledBody", { amount: usd(p.usdPerLot) }), tone: "success" });
   };
   return (

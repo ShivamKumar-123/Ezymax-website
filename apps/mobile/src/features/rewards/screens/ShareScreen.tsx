@@ -8,7 +8,6 @@ import { Image } from "expo-image";
 import { Copy, Image as ImageIcon, Share2 } from "lucide-react-native";
 import { useT } from "@/i18n";
 import { API_BASE } from "@/lib/config";
-import { haptic } from "@/lib/haptics";
 import { cachedConfig } from "@/market/config";
 import { useReadOnly } from "@/features/partner/api";
 import { useAccounts } from "@/features/trading/accounts";
@@ -86,11 +85,9 @@ function ShareCards() {
     const r = await createShare({ kind: "period", login: Number(chosen), ...range(period), showAmounts: amounts });
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(rewardsError(r.error));
       return;
     }
-    haptic.success();
     setCurrent(r.data.share);
   };
 

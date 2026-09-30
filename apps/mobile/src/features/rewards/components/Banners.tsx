@@ -10,7 +10,6 @@ import { Image } from "expo-image";
 import { ArrowUpRight, X } from "lucide-react-native";
 import { useT } from "@/i18n";
 import { API_BASE } from "@/lib/config";
-import { haptic } from "@/lib/haptics";
 import { cachedConfig } from "@/market/config";
 import { openResolved, openWeb, resolve } from "@/features/platform/open";
 import { useReadOnly } from "@/features/partner/api";
@@ -48,7 +47,6 @@ const BannerCard = React.memo(function BannerCard({ b, placement, readOnly }: { 
     openBannerLink(cta);
   }, [b.id, cta, placement, readOnly]);
   const onDismiss = React.useCallback(() => {
-    haptic.select();
     void bannerEvent(b.id, "dismiss", placement);
   }, [b.id, placement]);
   return (

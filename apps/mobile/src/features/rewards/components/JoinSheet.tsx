@@ -6,7 +6,6 @@ import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { Copy, ShieldAlert } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { setQueryData } from "@/lib/query";
 import { ACCOUNTS_KEY, fetchAccounts } from "@/features/trading/accounts";
 import type { EngAccount } from "@/features/trading/types";
@@ -74,11 +73,9 @@ export function JoinSheet({ sheetRef, c, onJoined }: { sheetRef: React.RefObject
     const r = await joinContest(c.id, live ? login : null);
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(rewardsError(r.error));
       return;
     }
-    haptic.success();
     onJoined?.();
     if (r.data.credentials) {
       setCreds(r.data.credentials);

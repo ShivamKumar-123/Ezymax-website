@@ -6,7 +6,6 @@ import { View } from "react-native";
 import { FlashList, type ListRenderItem } from "@shopify/flash-list";
 import { Plus } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { useMe } from "@/session";
 import { Button, Card, IconButton, toast, useBottomInset, type SheetRef } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
@@ -62,11 +61,9 @@ export function LinksScreen() {
       const r = await setCampaignActive(c, !c.active);
       setBusy((b) => ({ ...b, [k]: false }));
       if (!r.ok) {
-        haptic.error();
         toast.show({ title: c.active ? t("mobilePartner.links.pauseFailed") : t("mobilePartner.links.resumeFailed"), body: partnerError(r.error), tone: "error" });
         return;
       }
-      haptic.select();
       toast.show({ title: c.active ? t("mobilePartner.links.pausedToast") : t("mobilePartner.links.resumedToast"), body: c.active ? t("mobilePartner.links.pausedBody") : t("mobilePartner.links.resumedBody"), tone: "success" });
     },
     [t],

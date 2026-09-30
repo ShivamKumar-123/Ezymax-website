@@ -4,7 +4,6 @@
 import * as React from "react";
 import { View } from "react-native";
 import { useT, type T } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { Button, Display, FormError, Text, toast, type SheetRef, Sheet } from "@/ui";
 import { colors, space } from "@/theme/tokens";
 import { claimBonus, rewardsError } from "../api";
@@ -54,11 +53,9 @@ export function OfferSheet({ sheetRef, c, mode }: { sheetRef: React.RefObject<Sh
     const r = await claimBonus(c.id, fixed ? login : null);
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(rewardsError(r.error));
       return;
     }
-    haptic.success();
     const g = r.data.grant;
     toast.show({
       title: t("mobileRewards.offer.claimed", { name: c.name }),

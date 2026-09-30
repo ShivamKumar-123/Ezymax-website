@@ -6,7 +6,6 @@ import * as React from "react";
 import { ScrollView, View } from "react-native";
 import { Ban, Clock, Infinity as InfinityIcon, Timer, UserX } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { Button, Card, Display, FormError, Mono, PillRow, Text, toast, useBottomInset } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { partnerError, saveRates, useReadOnly, usePartnerDashboard } from "../api";
@@ -134,11 +133,9 @@ function Rebates({ d, readOnly }: { d: Dashboard; readOnly: boolean }) {
     const res = await saveRates(rebate, split);
     setBusy(false);
     if (!res.ok) {
-      haptic.error();
       setErr(partnerError(res.error));
       return;
     }
-    haptic.success();
     toast.show({ title: t("mobilePartner.prog.saved"), body: t("mobilePartner.prog.savedBody", { rebate: pct(res.data.rebatePct), split: pct(res.data.splitPct) }), tone: "success" });
   };
 

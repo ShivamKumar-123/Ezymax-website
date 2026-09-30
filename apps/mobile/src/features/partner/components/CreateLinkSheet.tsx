@@ -5,7 +5,6 @@ import * as React from "react";
 import { View } from "react-native";
 import { ChevronDown, ChevronUp } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { SheetTextField } from "@/features/accounts/components/SheetInputs";
 import { Button, Display, FormError, Mono, PressableScale, Sheet, Text, toast, type SheetRef } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
@@ -43,13 +42,11 @@ export function CreateLinkSheet({ sheetRef, base, code, onCreated }: { sheetRef:
     const r = await createCampaign({ name: name.trim(), slug: slug.trim() || undefined, utmSource: utm.source.trim() || undefined, utmMedium: utm.medium.trim() || undefined, utmCampaign: utm.campaign.trim() || undefined });
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       const field = r.error.field ?? (r.error.code === "exists" ? "slug" : undefined);
       setErr({ field, message: partnerError(r.error) });
       if (field === "utmSource" || field === "utmMedium" || field === "utmCampaign") setShowUtm(true);
       return;
     }
-    haptic.success();
     const url = campaignLink(base, code, r.data.slug);
     const copied = await copyText(url, t("mobilePartner.links.created"), shortUrl(url));
     if (!copied) toast.show({ title: t("mobilePartner.links.created"), body: shortUrl(url), tone: "success" });

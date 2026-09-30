@@ -7,7 +7,6 @@ import { ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { CircleAlert, CircleCheck, Ticket } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { useReadOnly } from "@/features/partner/api";
 import { useAccounts } from "@/features/trading/accounts";
 import { Banner, Button, Card, Mono, PillRow, Text, TextField, useBottomInset, type SheetRef } from "@/ui";
@@ -42,11 +41,9 @@ function PromoCode({ readOnly }: { readOnly: boolean }) {
     const r = await applyPromo(c, login === "any" ? null : Number(login));
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setResult({ ok: false, message: rewardsError(r.error) });
       return;
     }
-    haptic.success();
     const res = r.data.result;
     // the result in the reader's language, from its fields (the service's sentence is English)
     const message =
