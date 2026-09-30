@@ -297,7 +297,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "身份已验证：支付可被批准。",
   "kyc.pendingTitle": "验证审核中",
   "kyc.requiredTitle": "需要身份验证",
-  "kyc.pendingText": "您的验证正在审核中。您现在可以申请支付；身份验证通过后即会批准。",
+  "kyc.pendingText": "您的验证正在审核中。身份验证通过后即可申请支付。",
   "kyc.rejectedText": "您的验证被拒绝。请重新提交以接收支付。",
   "kyc.requiredText": "支付仅发放给已验证的交易者。请在首次支付前验证您的身份。",
   // Request payout dialog
@@ -324,7 +324,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "不可退还",
   "funded.opens": "{date} 开放。",
   "funded.minimum": "最低 {amount}。",
-  "funded.kycNote": "支付仅在身份验证后批准。",
+  "funded.kycNote": "身份验证通过后即可申请支付。",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "支付周期：{freq} · {days}后首次支付",
   // Scaling plan

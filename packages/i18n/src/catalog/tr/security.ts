@@ -18,6 +18,7 @@ const security: NsMessages<"security"> = {
   "device.unknownOs": "Bilinmeyen işletim sistemi",
   // e.g. "Chrome on Windows"
   "device.on": "{browser} · {os}",
+  "device.app": "{brand} uygulaması · {device}",
 
   // Compact "time ago" (min = minutes, h = hours, d = days)
   "ago.now": "Az önce",

@@ -297,7 +297,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "هویت تأیید شد: برداشت‌ها قابل تأیید هستند.",
   "kyc.pendingTitle": "احراز هویت در حال بررسی",
   "kyc.requiredTitle": "احراز هویت الزامی است",
-  "kyc.pendingText": "احراز هویت شما در حال بررسی است. هم‌اکنون می‌توانید درخواست برداشت سود دهید؛ پس از تأیید هویت، درخواست تأیید می‌شود.",
+  "kyc.pendingText": "احراز هویت شما در حال بررسی است. پس از تأیید هویت می‌توانید درخواست برداشت سود دهید.",
   "kyc.rejectedText": "احراز هویت شما رد شد. برای دریافت برداشت سود، دوباره ارسال کنید.",
   "kyc.requiredText": "برداشت سود فقط به معامله‌گران تأییدشده پرداخت می‌شود. پیش از اولین برداشت، هویت خود را تأیید کنید.",
   // Request payout dialog
@@ -324,7 +324,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "غیرقابل بازپرداخت",
   "funded.opens": "از {date} باز می‌شود.",
   "funded.minimum": "حداقل {amount}.",
-  "funded.kycNote": "برداشت سود فقط پس از احراز هویت تأیید می‌شود.",
+  "funded.kycNote": "پس از تأیید هویت می‌توانید درخواست برداشت سود دهید.",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "دوره پرداخت: {freq} · اولین برداشت پس از {days}",
   // Scaling plan

@@ -18,6 +18,7 @@ const security: NsMessages<"security"> = {
   "device.unknownOs": "Unbekanntes Betriebssystem",
   // e.g. "Chrome on Windows"
   "device.on": "{browser} unter {os}",
+  "device.app": "{brand}-App · {device}",
 
   // Compact "time ago" (min = minutes, h = hours, d = days)
   "ago.now": "Gerade eben",

@@ -213,8 +213,9 @@ function FundedCard({ f, plan, kyc, onDone }: { f: FundedAccount; plan: Challeng
               ))}
             </ul>
           )}
+          {/* the prop service refuses a payout request until the identity is verified (kyc_required) */}
           {kyc !== "verified" && q.eligible && <p className="mt-3 text-[12px] text-warn">{t("prop.funded.kycNote")}</p>}
-          <Button variant="gold" className="mt-4 w-full" disabled={!q.eligible} onClick={() => setOpen(true)}>
+          <Button variant="gold" className="mt-4 w-full" disabled={!q.eligible || kyc !== "verified"} onClick={() => setOpen(true)}>
             <Banknote /> {t("prop.requestPayout")}
           </Button>
           {plan && (

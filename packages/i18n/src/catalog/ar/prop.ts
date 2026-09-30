@@ -333,7 +333,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "تم التحقق من الهوية: يمكن الموافقة على عمليات الصرف.",
   "kyc.pendingTitle": "التحقق قيد المراجعة",
   "kyc.requiredTitle": "التحقق من الهوية مطلوب",
-  "kyc.pendingText": "طلب التحقق الخاص بك قيد المراجعة. يمكنك طلب الصرف الآن؛ وستتم الموافقة عليه بمجرد التحقق من هويتك.",
+  "kyc.pendingText": "طلب التحقق الخاص بك قيد المراجعة. يمكنك طلب الصرف بمجرد التحقق من هويتك.",
   "kyc.rejectedText": "تم رفض طلب التحقق الخاص بك. أعد تقديمه لتلقي عمليات الصرف.",
   "kyc.requiredText": "تُصرف الأرباح للمتداولين الذين تم التحقق منهم فقط. تحقّق من هويتك قبل الصرف الأول.",
   // Request payout dialog
@@ -360,7 +360,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "غير قابلة للاسترداد",
   "funded.opens": "يُتاح في {date}.",
   "funded.minimum": "الحد الأدنى {amount}.",
-  "funded.kycNote": "لا تتم الموافقة على الصرف إلا بعد التحقق من الهوية.",
+  "funded.kycNote": "يمكنك طلب الصرف بمجرد التحقق من هويتك.",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "دورة الصرف: {freq} · الصرف الأول بعد {days}",
   // Scaling plan

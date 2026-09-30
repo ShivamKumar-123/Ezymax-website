@@ -297,7 +297,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "पहचान वेरिफ़ाइड: पेआउट स्वीकृत किए जा सकते हैं।",
   "kyc.pendingTitle": "वेरिफ़िकेशन समीक्षा में",
   "kyc.requiredTitle": "पहचान वेरिफ़िकेशन ज़रूरी",
-  "kyc.pendingText": "आपका वेरिफ़िकेशन समीक्षा में है। आप अभी पेआउट का अनुरोध कर सकते हैं; आपकी पहचान वेरिफ़ाई होते ही यह स्वीकृत हो जाएगा।",
+  "kyc.pendingText": "आपका वेरिफ़िकेशन समीक्षा में है। आपकी पहचान वेरिफ़ाई होते ही आप पेआउट का अनुरोध कर सकेंगे।",
   "kyc.rejectedText": "आपका वेरिफ़िकेशन अस्वीकार कर दिया गया। पेआउट पाने के लिए इसे फिर से सबमिट करें।",
   "kyc.requiredText": "पेआउट केवल वेरिफ़ाइड ट्रेडर को दिए जाते हैं। अपने पहले पेआउट से पहले अपनी पहचान वेरिफ़ाई करें।",
   // Request payout dialog
@@ -324,7 +324,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "रिफ़ंडेबल नहीं",
   "funded.opens": "{date} को खुलेगा।",
   "funded.minimum": "न्यूनतम {amount}।",
-  "funded.kycNote": "पेआउट केवल पहचान वेरिफ़िकेशन के बाद स्वीकृत होते हैं।",
+  "funded.kycNote": "आपकी पहचान वेरिफ़ाई होते ही आप पेआउट का अनुरोध कर सकेंगे।",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "पेआउट चक्र: {freq} · {days} के बाद पहला पेआउट",
   // Scaling plan

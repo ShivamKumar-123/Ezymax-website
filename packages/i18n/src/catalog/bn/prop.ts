@@ -298,7 +298,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "পরিচয় যাচাই হয়েছে: পেআউট অনুমোদন করা যাবে।",
   "kyc.pendingTitle": "যাচাই পর্যালোচনায়",
   "kyc.requiredTitle": "পরিচয় যাচাই প্রয়োজন",
-  "kyc.pendingText": "আপনার যাচাই পর্যালোচনায় আছে। আপনি এখনই পেআউটের অনুরোধ করতে পারেন; আপনার পরিচয় যাচাই হলে এটি অনুমোদিত হবে।",
+  "kyc.pendingText": "আপনার যাচাই পর্যালোচনায় আছে। আপনার পরিচয় যাচাই হলে আপনি পেআউটের অনুরোধ করতে পারবেন।",
   "kyc.rejectedText": "আপনার যাচাই প্রত্যাখ্যাত হয়েছে। পেআউট পেতে আবার জমা দিন।",
   "kyc.requiredText": "পেআউট শুধু যাচাইকৃত ট্রেডারদের দেওয়া হয়। প্রথম পেআউটের আগে আপনার পরিচয় যাচাই করুন।",
   // Request payout dialog
@@ -325,7 +325,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "ফেরতযোগ্য নয়",
   "funded.opens": "{date} থেকে খোলে।",
   "funded.minimum": "ন্যূনতম {amount}।",
-  "funded.kycNote": "পরিচয় যাচাইয়ের পরেই শুধু পেআউট অনুমোদিত হয়।",
+  "funded.kycNote": "আপনার পরিচয় যাচাই হলে আপনি পেআউটের অনুরোধ করতে পারবেন।",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "পেআউট চক্র: {freq} · {days} পরে প্রথম পেআউট",
   // Scaling plan

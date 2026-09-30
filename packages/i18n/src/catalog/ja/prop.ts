@@ -297,7 +297,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "本人確認済み：報酬出金の承認が可能です。",
   "kyc.pendingTitle": "本人確認の審査中",
   "kyc.requiredTitle": "本人確認が必要です",
-  "kyc.pendingText": "本人確認を審査中です。報酬出金は今すぐリクエストできます。本人確認の完了後に承認されます。",
+  "kyc.pendingText": "本人確認を審査中です。本人確認の完了後に報酬出金をリクエストできます。",
   "kyc.rejectedText": "本人確認が却下されました。報酬を受け取るには、再度提出してください。",
   "kyc.requiredText": "報酬は本人確認済みのトレーダーにのみ支払われます。初回の報酬出金の前に本人確認を完了してください。",
   // Request payout dialog
@@ -324,7 +324,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "返金不可",
   "funded.opens": "{date}から可能。",
   "funded.minimum": "最低{amount}。",
-  "funded.kycNote": "報酬出金は本人確認の完了後にのみ承認されます。",
+  "funded.kycNote": "本人確認の完了後に報酬出金をリクエストできます。",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "出金サイクル：{freq} · 初回出金は{days}後",
   // Scaling plan

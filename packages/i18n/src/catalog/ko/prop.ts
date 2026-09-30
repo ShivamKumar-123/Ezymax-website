@@ -298,7 +298,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "본인 인증 완료: 지급이 승인될 수 있습니다.",
   "kyc.pendingTitle": "인증 검토 중",
   "kyc.requiredTitle": "본인 인증 필요",
-  "kyc.pendingText": "인증을 검토하고 있습니다. 지금 지급을 요청할 수 있으며, 본인 인증이 완료되면 승인됩니다.",
+  "kyc.pendingText": "인증을 검토하고 있습니다. 본인 인증이 완료되면 지급을 요청할 수 있습니다.",
   "kyc.rejectedText": "인증이 거부되었습니다. 지급을 받으려면 다시 제출하세요.",
   "kyc.requiredText": "지급은 인증된 트레이더에게만 이루어집니다. 첫 지급 전에 본인 인증을 완료하세요.",
   // 지급 요청 대화 상자
@@ -325,7 +325,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "환불 불가",
   "funded.opens": "{date}부터 가능.",
   "funded.minimum": "최소 {amount}.",
-  "funded.kycNote": "지급은 본인 인증 후에만 승인됩니다.",
+  "funded.kycNote": "본인 인증이 완료되면 지급을 요청할 수 있습니다.",
   // {freq}는 지급 주기, {days} 예: "14일"
   "funded.cycle": "지급 주기: {freq} · {days} 후 첫 지급",
   // 스케일링 플랜

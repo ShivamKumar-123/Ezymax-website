@@ -19,6 +19,7 @@ const security: NsMessages<"security"> = {
   "device.unknownOs": "Hệ điều hành không xác định",
   // e.g. "Chrome on Windows"
   "device.on": "{browser} trên {os}",
+  "device.app": "Ứng dụng {brand} · {device}",
 
   // Compact "time ago" (min = minutes, h = hours, d = days)
   "ago.now": "Vừa xong",

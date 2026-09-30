@@ -19,6 +19,7 @@ const security: NsMessages<"security"> = {
   "device.unknownOs": "Mfumo endeshi usiojulikana",
   // e.g. "Chrome on Windows"
   "device.on": "{browser} kwenye {os}",
+  "device.app": "Programu ya {brand} · {device}",
 
   // Compact "time ago" (min = minutes, h = hours, d = days)
   "ago.now": "Sasa hivi",

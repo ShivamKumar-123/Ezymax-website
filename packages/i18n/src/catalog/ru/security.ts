@@ -17,6 +17,7 @@ const security: NsMessages<"security"> = {
   "device.browser": "Браузер",
   "device.unknownOs": "Неизвестная ОС",
   "device.on": "{browser} на {os}",
+  "device.app": "Приложение {brand} · {device}",
 
   // Compact "time ago" (min = minutes, h = hours, d = days)
   "ago.now": "Только что",

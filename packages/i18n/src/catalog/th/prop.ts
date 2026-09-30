@@ -298,7 +298,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "ยืนยันตัวตนแล้ว: สามารถอนุมัติการจ่ายเงินได้",
   "kyc.pendingTitle": "การยืนยันตัวตนอยู่ระหว่างตรวจสอบ",
   "kyc.requiredTitle": "ต้องยืนยันตัวตน",
-  "kyc.pendingText": "การยืนยันตัวตนของคุณอยู่ระหว่างตรวจสอบ คุณสามารถขอรับเงินได้ตอนนี้ และจะได้รับอนุมัติเมื่อยืนยันตัวตนแล้ว",
+  "kyc.pendingText": "การยืนยันตัวตนของคุณอยู่ระหว่างตรวจสอบ คุณจะขอรับเงินได้เมื่อยืนยันตัวตนแล้ว",
   "kyc.rejectedText": "การยืนยันตัวตนของคุณถูกปฏิเสธ ส่งอีกครั้งเพื่อรับเงิน",
   "kyc.requiredText": "จ่ายเงินให้เฉพาะเทรดเดอร์ที่ยืนยันตัวตนแล้วเท่านั้น โปรดยืนยันตัวตนก่อนการจ่ายเงินครั้งแรก",
   // Request payout dialog
@@ -325,7 +325,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "ไม่คืนเงิน",
   "funded.opens": "เปิด {date}",
   "funded.minimum": "ขั้นต่ำ {amount}",
-  "funded.kycNote": "การจ่ายเงินจะได้รับอนุมัติหลังยืนยันตัวตนแล้วเท่านั้น",
+  "funded.kycNote": "คุณจะขอรับเงินได้เมื่อยืนยันตัวตนแล้ว",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "รอบการจ่ายเงิน: {freq} · จ่ายครั้งแรกหลัง {days}",
   // Scaling plan

@@ -297,7 +297,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "Identität verifiziert: Auszahlungen können genehmigt werden.",
   "kyc.pendingTitle": "Verifizierung in Prüfung",
   "kyc.requiredTitle": "Identitätsverifizierung erforderlich",
-  "kyc.pendingText": "Ihre Verifizierung wird geprüft. Sie können jetzt eine Auszahlung beantragen; sie wird genehmigt, sobald Ihre Identität verifiziert ist.",
+  "kyc.pendingText": "Ihre Verifizierung wird geprüft. Sie können eine Auszahlung beantragen, sobald Ihre Identität verifiziert ist.",
   "kyc.rejectedText": "Ihre Verifizierung wurde abgelehnt. Reichen Sie sie erneut ein, um Auszahlungen zu erhalten.",
   "kyc.requiredText": "Auszahlungen erfolgen nur an verifizierte Trader. Verifizieren Sie Ihre Identität vor Ihrer ersten Auszahlung.",
   // Request payout dialog
@@ -324,7 +324,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "Nicht erstattungsfähig",
   "funded.opens": "Möglich ab {date}.",
   "funded.minimum": "Minimum {amount}.",
-  "funded.kycNote": "Auszahlungen werden erst nach der Identitätsverifizierung genehmigt.",
+  "funded.kycNote": "Sie können eine Auszahlung beantragen, sobald Ihre Identität verifiziert ist.",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "Auszahlungszyklus: {freq} · erste Auszahlung nach {days}",
   // Scaling plan

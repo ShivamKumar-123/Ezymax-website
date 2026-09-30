@@ -297,7 +297,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "Identitas terverifikasi: pembayaran dapat disetujui.",
   "kyc.pendingTitle": "Verifikasi sedang ditinjau",
   "kyc.requiredTitle": "Verifikasi identitas diperlukan",
-  "kyc.pendingText": "Verifikasi Anda sedang ditinjau. Anda dapat mengajukan pembayaran sekarang; pembayaran disetujui setelah identitas Anda terverifikasi.",
+  "kyc.pendingText": "Verifikasi Anda sedang ditinjau. Anda dapat mengajukan pembayaran setelah identitas Anda terverifikasi.",
   "kyc.rejectedText": "Verifikasi Anda ditolak. Kirim ulang untuk menerima pembayaran.",
   "kyc.requiredText": "Pembayaran hanya diberikan kepada trader terverifikasi. Verifikasi identitas Anda sebelum pembayaran pertama.",
   // Request payout dialog
@@ -324,7 +324,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "Tidak dapat dikembalikan",
   "funded.opens": "Dibuka {date}.",
   "funded.minimum": "Minimum {amount}.",
-  "funded.kycNote": "Pembayaran hanya disetujui setelah verifikasi identitas.",
+  "funded.kycNote": "Anda dapat mengajukan pembayaran setelah identitas Anda terverifikasi.",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "Siklus pembayaran: {freq} · pembayaran pertama setelah {days}",
   // Scaling plan

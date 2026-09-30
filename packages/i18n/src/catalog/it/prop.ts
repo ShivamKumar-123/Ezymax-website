@@ -293,7 +293,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "Identità verificata: i pagamenti possono essere approvati.",
   "kyc.pendingTitle": "Verifica in revisione",
   "kyc.requiredTitle": "Verifica dell'identità richiesta",
-  "kyc.pendingText": "La tua verifica è in revisione. Puoi già richiedere un pagamento; verrà approvato quando la tua identità sarà verificata.",
+  "kyc.pendingText": "La tua verifica è in revisione. Potrai richiedere un pagamento quando la tua identità sarà verificata.",
   "kyc.rejectedText": "La tua verifica è stata rifiutata. Inviala di nuovo per ricevere i pagamenti.",
   "kyc.requiredText": "I pagamenti vengono erogati solo ai trader verificati. Verifica la tua identità prima del primo pagamento.",
   // Finestra di richiesta pagamento
@@ -320,7 +320,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "Non rimborsabile",
   "funded.opens": "Disponibile dal {date}.",
   "funded.minimum": "Minimo {amount}.",
-  "funded.kycNote": "I pagamenti vengono approvati solo dopo la verifica dell'identità.",
+  "funded.kycNote": "Potrai richiedere un pagamento quando la tua identità sarà verificata.",
   "funded.cycle": "Ciclo di pagamento: {freq} · primo pagamento dopo {days}",
   // Piano di scaling
   "scaling.title": "Piano di scaling",

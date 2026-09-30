@@ -298,7 +298,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "Đã xác minh danh tính: khoản chi trả có thể được duyệt.",
   "kyc.pendingTitle": "Xác minh đang được xét duyệt",
   "kyc.requiredTitle": "Cần xác minh danh tính",
-  "kyc.pendingText": "Xác minh của bạn đang được xét duyệt. Bạn có thể yêu cầu chi trả ngay; yêu cầu sẽ được duyệt khi danh tính được xác minh.",
+  "kyc.pendingText": "Xác minh của bạn đang được xét duyệt. Bạn có thể yêu cầu chi trả sau khi danh tính được xác minh.",
   "kyc.rejectedText": "Xác minh của bạn bị từ chối. Hãy gửi lại để nhận chi trả.",
   "kyc.requiredText": "Chỉ nhà giao dịch đã xác minh mới được chi trả. Hãy xác minh danh tính trước lần chi trả đầu tiên.",
   // Request payout dialog
@@ -325,7 +325,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "Không hoàn lại",
   "funded.opens": "Mở ngày {date}.",
   "funded.minimum": "Tối thiểu {amount}.",
-  "funded.kycNote": "Khoản chi trả chỉ được duyệt sau khi xác minh danh tính.",
+  "funded.kycNote": "Bạn có thể yêu cầu chi trả sau khi danh tính được xác minh.",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "Chu kỳ chi trả: {freq} · lần chi trả đầu tiên sau {days}",
   // Scaling plan

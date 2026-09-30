@@ -297,7 +297,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "Identiti disahkan: pembayaran boleh diluluskan.",
   "kyc.pendingTitle": "Pengesahan sedang disemak",
   "kyc.requiredTitle": "Pengesahan identiti diperlukan",
-  "kyc.pendingText": "Pengesahan anda sedang disemak. Anda boleh memohon pembayaran sekarang; ia diluluskan sebaik sahaja identiti anda disahkan.",
+  "kyc.pendingText": "Pengesahan anda sedang disemak. Anda boleh memohon pembayaran sebaik sahaja identiti anda disahkan.",
   "kyc.rejectedText": "Pengesahan anda telah ditolak. Hantar semula untuk menerima pembayaran.",
   "kyc.requiredText": "Pembayaran hanya dibuat kepada pedagang yang disahkan. Sahkan identiti anda sebelum pembayaran pertama anda.",
   // Request payout dialog
@@ -324,7 +324,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "Tidak boleh dikembalikan",
   "funded.opens": "Dibuka {date}.",
   "funded.minimum": "Minimum {amount}.",
-  "funded.kycNote": "Pembayaran hanya diluluskan selepas pengesahan identiti.",
+  "funded.kycNote": "Anda boleh memohon pembayaran sebaik sahaja identiti anda disahkan.",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "Kitaran pembayaran: {freq} · pembayaran pertama selepas {days}",
   // Scaling plan

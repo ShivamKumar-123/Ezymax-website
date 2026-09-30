@@ -297,7 +297,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "Kimlik doğrulandı: ödemeler onaylanabilir.",
   "kyc.pendingTitle": "Doğrulama inceleniyor",
   "kyc.requiredTitle": "Kimlik doğrulaması gerekli",
-  "kyc.pendingText": "Doğrulamanız inceleniyor. Şimdi ödeme talep edebilirsiniz; kimliğiniz doğrulandığında onaylanır.",
+  "kyc.pendingText": "Doğrulamanız inceleniyor. Kimliğiniz doğrulandığında ödeme talep edebilirsiniz.",
   "kyc.rejectedText": "Doğrulamanız reddedildi. Ödeme almak için tekrar gönderin.",
   "kyc.requiredText": "Ödemeler yalnızca doğrulanmış işlemcilere yapılır. İlk ödemenizden önce kimliğinizi doğrulayın.",
   // Request payout dialog
@@ -324,7 +324,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "İade edilmez",
   "funded.opens": "{date} tarihinde açılır.",
   "funded.minimum": "Minimum {amount}.",
-  "funded.kycNote": "Ödemeler yalnızca kimlik doğrulamasından sonra onaylanır.",
+  "funded.kycNote": "Kimliğiniz doğrulandığında ödeme talep edebilirsiniz.",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "Ödeme dönemi: {freq} · ilk ödeme {days} sonra",
   // Scaling plan

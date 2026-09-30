@@ -19,8 +19,8 @@ import {
   fmtPoints,
   fmtUsd,
   growthApi,
-  prizeFor,
   prizeZone,
+  projectedPrize,
   scoringLabel,
   useGrowth,
   type CashbackMe,
@@ -225,9 +225,10 @@ const ROW_GRID = "grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-3 sm
 
 function StandingRow({ c, s }: { c: Contest; s: Standing }) {
   const t = useT();
-  const top = s.rank !== null && s.rank <= 3;
   const dq = s.status === "disqualified";
-  const prize = s.prize ?? prizeFor(c, s.rank);
+  const top = s.rank !== null && s.rank <= 3 && s.qualified && !dq;
+  // only a qualified entry wins its rank's prize
+  const prize = projectedPrize(c, s);
   const hint = tradesHint(c, s);
   return (
     <div
@@ -285,7 +286,7 @@ function Podium({ c, rows }: { c: Contest; rows: Standing[] }) {
     <div className="mt-5 grid grid-cols-3 items-end gap-2 px-4 sm:gap-3 sm:px-6">
       {[second!, first!, third!].map((r) => {
         const one = r === first;
-        const prize = r.prize ?? prizeFor(c, r.rank);
+        const prize = projectedPrize(c, r);
         return (
           <div key={String(r.entryId)} className={cn("flex flex-col items-center rounded-[18px] border px-2 pb-4 text-center", one ? "border-gold/30 bg-gold-soft/60 pt-5" : "border-line bg-surface-2 pt-4")}>
             <div className="relative">
@@ -342,7 +343,8 @@ export function Leaderboard({ d, limit, title, podium = true }: { d: ContestDeta
       ) : (
         <>
           {podium && <Podium c={c} rows={all} />}
-          <div className={cn("mt-5 hidden gap-3 px-8 text-[10.5px] font-medium uppercase tracking-[0.06em] text-fg-3 sm:grid", ROW_GRID)}>
+          {/* the header is for the wide grid: ROW_GRID first, so tailwind-merge keeps it hidden on phones */}
+          <div className={cn(ROW_GRID, "mt-5 hidden gap-3 px-8 text-[10.5px] font-medium uppercase tracking-[0.06em] text-fg-3 sm:grid")}>
             <span className="text-center">#</span>
             <span>{t("rewards.board.colTrader")}</span>
             <span className="text-end">{t("rewards.board.colLots")}</span>
@@ -503,7 +505,7 @@ function ContestHero({ c, d, onJoined }: { c: ContestCard; d: ContestDetail | nu
                     <div className="text-[14px] font-medium">{t("rewards.hero.standing")}</div>
                     <div className="text-[12px] text-fg-3">{me.rank ? t("rewards.hero.rankOf", { rank: me.rank, count: fmtCount(entrants) }) : me.status === "disqualified" ? t("rewards.hero.dq") : t("rewards.hero.notRanked")}</div>
                   </div>
-                  {me.status === "disqualified" ? <GrowthStatus status="disqualified" /> : me.rank && zone && me.rank <= zone ? <Chip tone="gold">{t("rewards.hero.prizeZone")}</Chip> : null}
+                  {me.status === "disqualified" ? <GrowthStatus status="disqualified" /> : projectedPrize(c, me) !== null ? <Chip tone="gold">{t("rewards.hero.prizeZone")}</Chip> : null}
                 </div>
                 <div className="mt-5 grid grid-cols-3 gap-2">
                   <div className="k-row px-3 py-3">

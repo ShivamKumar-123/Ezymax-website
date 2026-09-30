@@ -506,6 +506,17 @@ export function prizeFor(c: Pick<Contest, "prizes">, rank: number | null) {
 /** Last rank that wins a prize. */
 export const prizeZone = (c: Pick<Contest, "prizes">) => c.prizes.reduce((m, p) => Math.max(m, p.rankTo), 0);
 
+/**
+ * The prize a standing wins or is on track for: the service's own once the contest is finalized, else its rank's
+ * band, but only for a qualified entry that isn't disqualified (services/growth allocate_prizes: an entry under the
+ * minimum trades, or disqualified, wins nothing, and its rank pays nobody).
+ */
+export function projectedPrize(c: Pick<Contest, "prizes">, s: Pick<Standing, "prize" | "rank" | "qualified" | "status">): number | null {
+  if (s.prize !== null && s.prize !== undefined) return s.prize;
+  if (!s.qualified || s.status === "disqualified") return null;
+  return prizeFor(c, s.rank);
+}
+
 export const SCORING_LABEL: Record<string, MessageKey> = { return_pct: "rewards.scoring.returnPct", profit: "rewards.scoring.profit", lots: "rewards.scoring.lots" };
 export const scoringLabel = (s: string) => (SCORING_LABEL[s] ? tr(SCORING_LABEL[s]) : titleCase(s));
 

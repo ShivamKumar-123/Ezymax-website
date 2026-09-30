@@ -297,7 +297,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "شناخت تصدیق شدہ: پے آؤٹس منظور کیے جا سکتے ہیں۔",
   "kyc.pendingTitle": "تصدیق زیر جائزہ",
   "kyc.requiredTitle": "شناخت کی تصدیق درکار ہے",
-  "kyc.pendingText": "آپ کی تصدیق زیر جائزہ ہے۔ آپ ابھی پے آؤٹ کی درخواست کر سکتے ہیں؛ شناخت کی تصدیق ہونے پر یہ منظور ہو جائے گا۔",
+  "kyc.pendingText": "آپ کی تصدیق زیر جائزہ ہے۔ شناخت کی تصدیق ہوتے ہی آپ پے آؤٹ کی درخواست کر سکیں گے۔",
   "kyc.rejectedText": "آپ کی تصدیق مسترد ہو گئی۔ پے آؤٹس حاصل کرنے کے لیے دوبارہ جمع کرائیں۔",
   "kyc.requiredText": "پے آؤٹس صرف تصدیق شدہ ٹریڈرز کو ادا کیے جاتے ہیں۔ اپنے پہلے پے آؤٹ سے پہلے شناخت کی تصدیق کریں۔",
   // Request payout dialog
@@ -324,7 +324,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "ناقابل واپسی",
   "funded.opens": "{date} کو کھلے گا۔",
   "funded.minimum": "کم از کم {amount}۔",
-  "funded.kycNote": "پے آؤٹس صرف شناخت کی تصدیق کے بعد منظور ہوتے ہیں۔",
+  "funded.kycNote": "شناخت کی تصدیق ہوتے ہی آپ پے آؤٹ کی درخواست کر سکیں گے۔",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "پے آؤٹ سائیکل: {freq} · پہلا پے آؤٹ {days} کے بعد",
   // Scaling plan

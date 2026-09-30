@@ -18,6 +18,7 @@ const security: NsMessages<"security"> = {
   "device.unknownOs": "未知操作系统",
   // e.g. "Chrome on Windows"
   "device.on": "{os} 上的 {browser}",
+  "device.app": "{brand} 应用 · {device}",
 
   // Compact "time ago" (min = minutes, h = hours, d = days)
   "ago.now": "刚刚",

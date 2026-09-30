@@ -298,7 +298,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "Identidad verificada: los pagos pueden aprobarse.",
   "kyc.pendingTitle": "Verificación en revisión",
   "kyc.requiredTitle": "Se requiere verificación de identidad",
-  "kyc.pendingText": "Su verificación está en revisión. Ya puede solicitar un pago; se aprobará cuando se verifique su identidad.",
+  "kyc.pendingText": "Su verificación está en revisión. Podrá solicitar un pago cuando se verifique su identidad.",
   "kyc.rejectedText": "Su verificación fue rechazada. Envíela de nuevo para recibir pagos.",
   "kyc.requiredText": "Los pagos solo se realizan a traders verificados. Verifique su identidad antes de su primer pago.",
   // Diálogo de solicitud de pago
@@ -325,7 +325,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "No reembolsable",
   "funded.opens": "Se habilita el {date}.",
   "funded.minimum": "Mínimo {amount}.",
-  "funded.kycNote": "Los pagos solo se aprueban tras la verificación de identidad.",
+  "funded.kycNote": "Podrá solicitar un pago cuando se verifique su identidad.",
   // {freq} es un ciclo de pago en minúsculas, {days} p. ej. "14 días"
   "funded.cycle": "Ciclo de pago: {freq} · primer pago tras {days}",
   // Plan de escalado

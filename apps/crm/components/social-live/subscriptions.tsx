@@ -232,21 +232,27 @@ function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | nul
 
 function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null; onClose: () => void; onStopped: () => void }) {
   const t = useT();
+  // close every copied position and order at market (default), or keep them open as the client's own trades
+  const [close, setClose] = React.useState(true);
   const [returnFunds, setReturnFunds] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
-  const [res, setRes] = React.useState<StopResult | null>(null);
+  const [res, setRes] = React.useState<{ r: StopResult; kept: boolean } | null>(null);
   React.useEffect(() => {
+    setClose(true);
     setReturnFunds(true);
     setRes(null);
   }, [sub?.id]);
   if (!sub) return null;
+  const open = sub.positions + sub.orders > 0;
+  const keep = open && !close;
 
   const stop = async () => {
     setBusy(true);
     try {
-      const r = await socialApi<StopResult>(`subscriptions/${sub.id}/stop`, { body: returnFunds ? { returnFunds: true } : {} });
-      setRes(r);
-      toast.success(t("social.subs.stop.stopped"), { description: `${t("social.subs.stop.closedCount", { count: r.closed?.length ?? 0 })}${r.returned ? ` · ${t("social.subs.stop.backToWallet", { amount: usd(r.returned) })}` : ""}` });
+      const r = await socialApi<StopResult>(`subscriptions/${sub.id}/stop`, { body: { ...(returnFunds ? { returnFunds: true } : {}), ...(keep ? { closePositions: false } : {}) } });
+      setRes({ r, kept: keep });
+      const back = r.returned ? t("social.subs.stop.backToWallet", { amount: usd(r.returned) }) : "";
+      toast.success(t("social.subs.stop.stopped"), { description: keep ? back || undefined : `${t("social.subs.stop.closedCount", { count: r.closed?.length ?? 0 })}${back ? ` · ${back}` : ""}` });
       onStopped();
     } catch (e) {
       toast.error(t("social.subs.stop.failed"), { description: e instanceof Error ? e.message : undefined });
@@ -256,6 +262,7 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
   };
 
   if (res) {
+    const { r, kept } = res;
     return (
       <Dialog
         open={!!sub}
@@ -271,14 +278,15 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
       >
         <div className="space-y-3 text-[13.5px]">
           <div className="grid grid-cols-2 gap-2">
-            <Tile label={t("social.subs.stop.positionsClosed")}>{(res.closed?.length ?? 0).toString()}</Tile>
-            <Tile label={t("social.subs.stop.returned")}>{res.returned !== null && res.returned !== undefined ? usd(res.returned) : "—"}</Tile>
+            <Tile label={t("social.subs.stop.positionsClosed")}>{(r.closed?.length ?? 0).toString()}</Tile>
+            <Tile label={t("social.subs.stop.returned")}>{r.returned !== null && r.returned !== undefined ? usd(r.returned) : "—"}</Tile>
           </div>
-          {res.failed?.length > 0 && (
+          {kept && <InfoBox icon={<Layers />}>{t("social.subs.stop.kept", { login: sub.login })}</InfoBox>}
+          {r.failed?.length > 0 && (
             <InfoBox tone="down" icon={<AlertTriangle />}>
-              {t("social.subs.stop.failedCount", { count: res.failed.length })}
+              {t("social.subs.stop.failedCount", { count: r.failed.length })}
               <ul className="mt-1 list-disc ps-4">
-                {res.failed.map((f) => (
+                {r.failed.map((f) => (
                   <li key={f.ticket}>
                     #{f.ticket}: {f.error}
                   </li>
@@ -287,9 +295,7 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
               {t("social.subs.stop.contactSupport")}
             </InfoBox>
           )}
-          {returnFunds && res.returned === null && (
-            <InfoBox tone="warn">{t("social.subs.stop.notMoved", { login: sub.login })}</InfoBox>
-          )}
+          {returnFunds && r.returned === null && <InfoBox tone="warn">{t("social.subs.stop.notMoved", { login: sub.login })}</InfoBox>}
           {!returnFunds && <InfoBox>{t("social.subs.stop.stays", { login: sub.login })}</InfoBox>}
         </div>
       </Dialog>
@@ -308,21 +314,29 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
           <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
             {t("social.subs.stop.keep")}
           </Button>
-          <Button variant="sell" onClick={stop} disabled={busy}>
-            {busy ? <Loader2 className="animate-spin" /> : <Square />} {t("social.subs.stop.confirm")}
+          <Button variant="sell" onClick={stop} disabled={busy} data-testid="copy-stop-confirm">
+            {busy ? <Loader2 className="animate-spin" /> : <Square />} {keep ? t("social.subs.stop.confirmKeep") : t("social.subs.stop.confirm")}
           </Button>
         </>
       }
     >
       <div className="space-y-4 text-[13.5px] text-fg-2">
-        <InfoBox tone="down" icon={<AlertTriangle />}>
-          {sub.positions + sub.orders > 0 ? (
+        {open && (
+          <div role="radiogroup" aria-label={t("social.subs.stop.title")} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <RadioCard selected={close} onSelect={() => setClose(true)} title={t("social.subs.stop.closeAll")} icon={<XIcon />} className="p-3" />
+            <RadioCard selected={!close} onSelect={() => setClose(false)} title={t("social.subs.stop.keepOpen")} icon={<Layers />} className="p-3" />
+          </div>
+        )}
+        <InfoBox tone={keep ? "neutral" : "down"} icon={keep ? <Layers /> : <AlertTriangle />}>
+          {!open ? (
+            <>{t("social.subs.stop.noPositions")}</>
+          ) : keep ? (
+            <>{t("social.subs.stop.keepText", { login: sub.login })}</>
+          ) : (
             <>
               <Trans k="social.subs.stop.allPositions" vars={{ count: sub.positions }} tags={{ b: (c) => <b className="text-fg">{c}</b> }} />
               {sub.orders ? <> {t("social.subs.stop.andOrders", { count: sub.orders })}</> : null} {t("social.subs.stop.atMarket")}
             </>
-          ) : (
-            <>{t("social.subs.stop.noPositions")}</>
           )}{" "}
           {t("social.subs.stop.undone", { name: sub.master.nickname })}
         </InfoBox>
@@ -330,9 +344,12 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
           <Tile label={t("social.subs.equityNow")}>{usd(sub.equity)}</Tile>
           <Tile label={t("social.feesPending")}>{usd(sub.feesPending)}</Tile>
         </div>
-        <Checkbox checked={returnFunds} onChange={setReturnFunds}>
-          {t("social.subs.stop.moveBack")}
-        </Checkbox>
+        <div className="space-y-1.5">
+          <Checkbox checked={returnFunds} onChange={setReturnFunds}>
+            {t("social.subs.stop.moveBack")}
+          </Checkbox>
+          {keep && returnFunds && <p className="ps-[30px] text-[12px] leading-snug text-fg-3">{t("social.subs.stop.keepFunds")}</p>}
+        </div>
       </div>
     </Dialog>
   );

@@ -297,7 +297,7 @@ const prop = {
   "kyc.verified": "Identity verified: payouts can be approved.",
   "kyc.pendingTitle": "Verification in review",
   "kyc.requiredTitle": "Identity verification required",
-  "kyc.pendingText": "Your verification is in review. You can request a payout now; it is approved once your identity is verified.",
+  "kyc.pendingText": "Your verification is in review. You can request a payout once your identity is verified.",
   "kyc.rejectedText": "Your verification was rejected. Submit it again to receive payouts.",
   "kyc.requiredText": "Payouts are paid only to verified traders. Verify your identity before your first payout.",
   // Request payout dialog
@@ -324,7 +324,7 @@ const prop = {
   "funded.notRefundable": "Not refundable",
   "funded.opens": "Opens {date}.",
   "funded.minimum": "Minimum {amount}.",
-  "funded.kycNote": "Payouts are approved only after identity verification.",
+  "funded.kycNote": "You can request a payout once your identity is verified.",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "Payout cycle: {freq} · first payout after {days}",
   // Scaling plan

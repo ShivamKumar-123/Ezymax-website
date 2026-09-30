@@ -18,6 +18,7 @@ const security: NsMessages<"security"> = {
   "device.unknownOs": "سیستم‌عامل ناشناخته",
   // e.g. "Chrome on Windows"
   "device.on": "{browser} روی {os}",
+  "device.app": "اپ {brand} · {device}",
 
   // Compact "time ago" (min = minutes, h = hours, d = days)
   "ago.now": "همین حالا",

@@ -298,7 +298,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "Utambulisho umethibitishwa: malipo yanaweza kuidhinishwa.",
   "kyc.pendingTitle": "Uthibitishaji unakaguliwa",
   "kyc.requiredTitle": "Uthibitishaji wa utambulisho unahitajika",
-  "kyc.pendingText": "Uthibitishaji wako unakaguliwa. Unaweza kuomba malipo sasa; yataidhinishwa utambulisho wako ukishathibitishwa.",
+  "kyc.pendingText": "Uthibitishaji wako unakaguliwa. Utaweza kuomba malipo utambulisho wako ukishathibitishwa.",
   "kyc.rejectedText": "Uthibitishaji wako ulikataliwa. Uwasilishe tena ili upokee malipo.",
   "kyc.requiredText": "Malipo hulipwa kwa wafanyabiashara waliothibitishwa pekee. Thibitisha utambulisho wako kabla ya malipo yako ya kwanza.",
   // Request payout dialog
@@ -325,7 +325,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "Hairejeshwi",
   "funded.opens": "Hufunguka {date}.",
   "funded.minimum": "Kiwango cha chini {amount}.",
-  "funded.kycNote": "Malipo huidhinishwa tu baada ya uthibitishaji wa utambulisho.",
+  "funded.kycNote": "Utaweza kuomba malipo utambulisho wako ukishathibitishwa.",
   // {freq} is a lower-case payout cycle, {days} e.g. "14 days"
   "funded.cycle": "Mzunguko wa malipo: {freq} · malipo ya kwanza baada ya {days}",
   // Scaling plan

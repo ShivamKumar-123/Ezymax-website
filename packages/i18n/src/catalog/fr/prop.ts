@@ -293,7 +293,7 @@ const prop: NsMessages<"prop"> = {
   "kyc.verified": "Identité vérifiée : les paiements peuvent être approuvés.",
   "kyc.pendingTitle": "Vérification en cours d'examen",
   "kyc.requiredTitle": "Vérification d'identité requise",
-  "kyc.pendingText": "Votre vérification est en cours d'examen. Vous pouvez demander un paiement dès maintenant ; il sera approuvé une fois votre identité vérifiée.",
+  "kyc.pendingText": "Votre vérification est en cours d'examen. Vous pourrez demander un paiement une fois votre identité vérifiée.",
   "kyc.rejectedText": "Votre vérification a été rejetée. Soumettez-la à nouveau pour recevoir des paiements.",
   "kyc.requiredText": "Les paiements sont versés uniquement aux traders vérifiés. Vérifiez votre identité avant votre premier paiement.",
   // Request payout dialog
@@ -320,7 +320,7 @@ const prop: NsMessages<"prop"> = {
   "funded.notRefundable": "Non remboursables",
   "funded.opens": "Ouverture le {date}.",
   "funded.minimum": "Minimum {amount}.",
-  "funded.kycNote": "Les paiements ne sont approuvés qu'après vérification d'identité.",
+  "funded.kycNote": "Vous pourrez demander un paiement une fois votre identité vérifiée.",
   "funded.cycle": "Cycle de paiement : {freq} · premier paiement après {days}",
   // Scaling plan
   "scaling.title": "Plan d'évolution",

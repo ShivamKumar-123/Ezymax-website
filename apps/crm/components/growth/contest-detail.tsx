@@ -7,7 +7,7 @@ import { Button, Card, CardHeader, Chip, KeyValue, Money, PageHeader, Reveal, cn
 import { TERMINAL_URL } from "@/lib/live";
 import { Countdown } from "@/components/rewards/countdown";
 import { useT } from "@kalks/i18n/react";
-import { bandLabel, fmtCount, fmtDate, fmtDateTime, fmtLots, fmtPct, fmtUsd, prizeZone, scoringLabel, useGrowth, type ContestDetail } from "./api";
+import { bandLabel, fmtCount, fmtDate, fmtDateTime, fmtLots, fmtPct, fmtUsd, projectedPrize, scoringLabel, useGrowth, type ContestDetail } from "./api";
 import { JoinContestButton, Leaderboard, canJoin, isPast, isRunning, isUpcoming, kindChip, scoreText, tradesHint } from "./contests";
 import { CardEmpty, GrowthStatus, PageFallback, RankBadge } from "./ui";
 
@@ -35,14 +35,13 @@ function MyEntry({ d }: { d: ContestDetail }) {
     );
   const dq = me.status === "disqualified";
   const hint = tradesHint(c, me);
-  const zone = prizeZone(c);
   const good = (v: number) => (v > 0 ? "text-up" : v < 0 ? "text-down" : "");
   return (
     <Card className="h-full" data-testid="contest-my-entry">
       <CardHeader
         title={t("rewards.detail.entryTitle")}
         subtitle={me.login ? t("rewards.detail.accountUpdated", { login: me.login, date: fmtDateTime(me.updatedAt) }) : t("rewards.detail.updated", { date: fmtDateTime(me.updatedAt) })}
-        action={dq ? <GrowthStatus status="disqualified" /> : me.rank && zone && me.rank <= zone ? <Chip tone="gold">{t("rewards.hero.prizeZone")}</Chip> : null}
+        action={dq ? <GrowthStatus status="disqualified" /> : projectedPrize(c, me) !== null ? <Chip tone="gold">{t("rewards.hero.prizeZone")}</Chip> : null}
       />
       <div className="space-y-3 px-4 pb-6 pt-4 sm:px-6">
         {dq && (
