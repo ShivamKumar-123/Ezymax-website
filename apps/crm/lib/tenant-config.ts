@@ -58,6 +58,8 @@ const MODULE_PATHS: [string, string][] = [
   ["/api/algo/market", "algo"],
   ["/api/algo/ai", "algo"],
   ["/api/algo/validate", "algo"],
+  // the kill switch stops running strategies: it follows Algo, where its page lives
+  ["/api/algo/controls", "algo"],
   ["/developer", "api"],
   ["/api/algo", "api"],
   ["/academy", "academy"],
