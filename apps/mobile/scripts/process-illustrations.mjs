@@ -47,7 +47,8 @@ const FILES = {
   partnerIb: ["partner-ib.png", "partner ib.png"],
   marketClosed: ["market-closed.png", "market closed.png"],
 };
-const PENDING = ["copyTrading", "emptyWatchlist", "pammFunds", "propChallenge", "propPassed"];
+// Nothing is held back as a placeholder any more: the first-round art shows until the fresh set (clean names) lands.
+const PENDING = [];
 
 /**
  * Per-image treatment (the defaults suit the checkerboard cut-outs):
