@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button, Card, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Tabs, type Column } from "@kalks/ui";
 import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
-import { Addr, ChainTag, Check, ClientCell, Row, Status, TxLink, WD_STATUS, usd, walletWrite, type AuditItem, type Paged, type Summary, type Withdrawal } from "./kit";
+import { Addr, ChainTag, Check, ClientCell, Row, Status, TxLink, WD_STATUS, usd, usd2, walletWrite, type AuditItem, type Paged, type Summary, type Withdrawal } from "./kit";
 
 const PER = 50;
 type Tab = "requested" | "approved" | "paid" | "completed" | "all";
@@ -236,8 +236,8 @@ export function LiveWithdrawalsPage() {
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <KpiCard label="To review" icon={<Clock />} value={<span className="k-num">{s?.withdrawals.requested ?? "—"}</span>} chip="Requested" chipTone="warn" />
         <KpiCard label="To pay" icon={<Send />} value={<span className="k-num">{s?.withdrawals.approved ?? "—"}</span>} chip={s ? `${s.withdrawals.paid} verifying on chain` : "—"} delay={0.04} />
-        <KpiCard label="Open amount" icon={<CircleDollarSign />} value={<span className="k-num">{s ? `$${usd(s.withdrawals.open_amount)}` : "—"}</span>} chip="Locked in client wallets" delay={0.08} />
-        <KpiCard label="Paid today" icon={<ArrowUpRight />} value={<span className="k-num">{s ? `$${usd(s.withdrawals.completed_today)}` : "—"}</span>} chip="Completed · GMT+3 day" delay={0.12} />
+        <KpiCard label="Open amount" icon={<CircleDollarSign />} value={<span className="k-num">{s ? `$${usd2(s.withdrawals.open_amount)}` : "—"}</span>} chip="Locked in client wallets" delay={0.08} />
+        <KpiCard label="Paid today" icon={<ArrowUpRight />} value={<span className="k-num">{s ? `$${usd2(s.withdrawals.completed_today)}` : "—"}</span>} chip="Completed · GMT+3 day" delay={0.12} />
       </div>
       <Card className="mt-4 px-4 py-5 sm:px-6">
         <div className="mb-4 flex flex-wrap items-center gap-3">

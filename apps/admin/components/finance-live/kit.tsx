@@ -122,14 +122,17 @@ export function Status({ map, s }: { map: Record<string, { tone: ChipTone; label
   );
 }
 
-/** "1234.5" → "1,234.50" (display only). */
-export function usd(v: string | number | null | undefined, dp = 2) {
+/** "1234.5" → "1,234.50" (display only). Exact to the ledger's 6 decimals unless `maxDp` caps it. */
+export function usd(v: string | number | null | undefined, dp = 2, maxDp?: number) {
   if (v === null || v === undefined || v === "") return "—";
   const n = Number(v);
   if (!Number.isFinite(n)) return "—";
   const frac = (String(v).split(".")[1] ?? "").replace(/0+$/, "").length;
-  return n.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: Math.max(dp, Math.min(6, frac)) });
+  return n.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: maxDp ?? Math.max(dp, Math.min(6, frac)) });
 }
+
+/** Headline figures (KPI cards): always two decimals, "56,082.48" rather than "56,082.476344". */
+export const usd2 = (v: string | number | null | undefined) => usd(v, 2, 2);
 
 export function ChainTag({ chain }: { chain: Chain }) {
   return (

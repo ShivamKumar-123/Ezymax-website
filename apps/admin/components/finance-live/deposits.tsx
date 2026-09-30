@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button, Card, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Tabs, type Column } from "@kalks/ui";
 import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
-import { Addr, ChainTag, ClientCell, DEP_STATUS, Row, Status, TxLink, usd, walletWrite, type Deposit, type Paged, type Summary } from "./kit";
+import { Addr, ChainTag, ClientCell, DEP_STATUS, Row, Status, TxLink, usd, usd2, walletWrite, type Deposit, type Paged, type Summary } from "./kit";
 
 const PER = 50;
 type Tab = "queue" | "all" | "confirming" | "credited" | "failed";
@@ -194,8 +194,8 @@ export function LiveDepositsPage() {
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <KpiCard label="Queue" icon={<Inbox />} value={<span className="k-num">{s ? s.deposits.unmatched + s.deposits.review : "—"}</span>} chip={s ? `${s.deposits.unmatched} unmatched · ${s.deposits.review} review` : "—"} chipTone="warn" />
         <KpiCard label="Confirming" icon={<ArrowDownLeft />} value={<span className="k-num">{s?.deposits.open ?? "—"}</span>} chip="On chain, not credited yet" delay={0.04} />
-        <KpiCard label="Credited today" icon={<Landmark />} value={<span className="k-num">{s ? `$${usd(s.deposits.credited_today)}` : "—"}</span>} chip={s ? `${s.deposits.credited_today_count} deposits · GMT+3 day` : "—"} delay={0.08} />
-        <KpiCard label="Client wallets" icon={<Landmark />} value={<span className="k-num">{s ? `$${usd(s.wallets.liabilities)}` : "—"}</span>} chip={s ? `${s.wallets.funded} funded wallets` : "—"} delay={0.12} />
+        <KpiCard label="Credited today" icon={<Landmark />} value={<span className="k-num">{s ? `$${usd2(s.deposits.credited_today)}` : "—"}</span>} chip={s ? `${s.deposits.credited_today_count} deposits · GMT+3 day` : "—"} delay={0.08} />
+        <KpiCard label="Client wallets" icon={<Landmark />} value={<span className="k-num">{s ? `$${usd2(s.wallets.liabilities)}` : "—"}</span>} chip={s ? `${s.wallets.funded} funded wallets` : "—"} delay={0.12} />
       </div>
       <Card className="mt-4 px-4 py-5 sm:px-6">
         <div className="mb-4 flex flex-wrap items-center gap-3">

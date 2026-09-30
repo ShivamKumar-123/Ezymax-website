@@ -7,7 +7,7 @@ import { Button, Card, DataTable, Dialog, EmptyState, Field, Input, KpiCard, Pag
 import { ErrorState, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { AdjustDialog } from "@/components/clients/adjust-dialog";
-import { ClientCell, DEP_STATUS, Status, TxLink, WD_STATUS, usd, walletWrite, type Deposit, type Paged, type Summary, type Withdrawal } from "./kit";
+import { ClientCell, DEP_STATUS, Status, TxLink, WD_STATUS, usd, usd2, walletWrite, type Deposit, type Paged, type Summary, type Withdrawal } from "./kit";
 
 const PER = 50;
 
@@ -181,9 +181,9 @@ export function LiveWalletsPage() {
         }
       />
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <KpiCard label="Client money" icon={<Wallet />} value={<span className="k-num">{sum.data ? `$${usd(sum.data.wallets.liabilities)}` : "—"}</span>} chip="Available + locked" />
+        <KpiCard label="Client money" icon={<Wallet />} value={<span className="k-num">{sum.data ? `$${usd2(sum.data.wallets.liabilities)}` : "—"}</span>} chip="Available + locked" />
         <KpiCard label="Funded wallets" icon={<Users />} value={<span className="k-num">{sum.data?.wallets.funded ?? "—"}</span>} chip="Balance above zero" delay={0.04} />
-        <KpiCard label="Locked in withdrawals" icon={<Lock />} value={<span className="k-num">{sum.data ? `$${usd(sum.data.withdrawals.open_amount)}` : "—"}</span>} chip="Requested, approved, paid" delay={0.08} />
+        <KpiCard label="Locked in withdrawals" icon={<Lock />} value={<span className="k-num">{sum.data ? `$${usd2(sum.data.withdrawals.open_amount)}` : "—"}</span>} chip="Requested, approved, paid" delay={0.08} />
         <KpiCard label="Transfers in flight" icon={<Coins />} value={<span className="k-num">{sum.data?.trading_transfers_pending ?? "—"}</span>} chip="Wallet ↔ trading" delay={0.12} />
       </div>
       <Card className="mt-4 px-4 py-5 sm:px-6">

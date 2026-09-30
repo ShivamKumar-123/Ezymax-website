@@ -4,7 +4,7 @@ import * as React from "react";
 import { CheckCircle2, RefreshCw, Scale, TriangleAlert, Wallet } from "lucide-react";
 import { Button, Card, CardHeader, KpiCard, PageHeader, cn } from "@kalks/ui";
 import { ErrorState, TableSkeleton, useApi, when } from "@/components/live/kit";
-import { Addr, CHAIN_NAME, CHAIN_SHORT, Row, usd, type Chain } from "./kit";
+import { Addr, CHAIN_NAME, CHAIN_SHORT, Row, usd, usd2, type Chain } from "./kit";
 
 type ChainRecon = {
   chain: Chain;
@@ -125,9 +125,9 @@ export function LiveReconciliationPage() {
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-            <KpiCard label="Client money" icon={<Wallet />} value={<span className="k-num">${usd(data.liabilities.total)}</span>} chip={`${usd(data.liabilities.locked)} locked`} />
-            <KpiCard label="Net into trading" icon={<Scale />} value={<span className="k-num">${usd(data.trading_net_in)}</span>} chip="Wallet → accounts, net" delay={0.04} />
-            <KpiCard label="Fees earned" icon={<Scale />} value={<span className="k-num">${usd(data.fees_earned)}</span>} chip="Withdrawal fees" delay={0.08} />
+            <KpiCard label="Client money" icon={<Wallet />} value={<span className="k-num">${usd2(data.liabilities.total)}</span>} chip={`${usd2(data.liabilities.locked)} locked`} />
+            <KpiCard label="Net into trading" icon={<Scale />} value={<span className="k-num">${usd2(data.trading_net_in)}</span>} chip="Wallet → accounts, net" delay={0.04} />
+            <KpiCard label="Fees earned" icon={<Scale />} value={<span className="k-num">${usd2(data.fees_earned)}</span>} chip="Withdrawal fees" delay={0.08} />
             <KpiCard
               label="Ledger invariants"
               icon={data.invariants.ok ? <CheckCircle2 /> : <TriangleAlert />}
