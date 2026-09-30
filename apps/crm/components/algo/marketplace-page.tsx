@@ -9,7 +9,17 @@ import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, EmptyState, EquityChart, PageHeader, Reveal, Segmented, Skeleton, Sparkline, SymbolAvatar, Tabs, Toggle, cn } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
 import { NumInput } from "./builder";
-import { algoApi, algoError, fmtDateTime, fmtMoney, fmtPct, useAlgo, type Deployment, type StrategyItem, type TradingAccount } from "./api";
+import { AlgoError, algoApi, algoError, fmtDateTime, fmtMoney, fmtPct, useAlgo, type Deployment, type StrategyItem, type TradingAccount } from "./api";
+
+/** An idempotency key for one subscribe attempt (32 hex characters). */
+const attemptKey = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+
+/**
+ * Whether a failed subscribe attempt is over: the service refused it (a 4xx, except a setup still in progress).
+ * No answer, a timeout or a server error may have gone through: a retry sends the same key and gets that
+ * subscription instead of a second charge.
+ */
+const attemptOver = (e: unknown) => e instanceof AlgoError && e.status >= 400 && e.status < 500 && e.status !== 408 && e.status !== 429 && e.code !== "in_progress";
 
 interface Track {
   returnPct: number;
@@ -185,21 +195,36 @@ function ListingDialog({ id, onClose, accounts, onChanged }: { id: number | null
   const [busy, setBusy] = React.useState(false);
   const [rating, setRating] = React.useState(5);
   const [comment, setComment] = React.useState("");
+  // one request at a time (a double click), and one idempotency key per attempt until its answer is known
+  const inFlight = React.useRef(false);
+  const attempt = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    attempt.current = null;
+  }, [id]);
   React.useEffect(() => {
     if (login === null && accounts.length) setLogin((accounts.find((a) => a.type === "demo") ?? accounts[0]!).login);
   }, [accounts, login]);
   const l = d.data;
   const subscribe = async () => {
-    if (!l) return;
+    if (!l || inFlight.current) return;
+    inFlight.current = true;
+    attempt.current ??= attemptKey();
     setBusy(true);
     try {
-      const r = await algoApi<{ deploymentId: number | null; clonedStrategyId: number | null; charged: number }>(`market/listings/${l.id}/subscribe`, { body: { mode, login: mode === "copy" ? login : undefined, risk: mult !== 1 ? { lotMultiplier: mult } : undefined } });
+      const r = await algoApi<{ deploymentId: number | null; clonedStrategyId: number | null; charged: number }>(`market/listings/${l.id}/subscribe`, {
+        body: { mode, login: mode === "copy" ? login : undefined, risk: mult !== 1 ? { lotMultiplier: mult } : undefined, idempotencyKey: attempt.current },
+      });
+      attempt.current = null;
       toast.success(mode === "copy" ? t("developer.market.copyingToast", { title: l.title, login: login ?? "" }) : t("developer.market.clonedToast", { title: l.title }), { description: r.charged ? t("developer.market.charged", { amount: r.charged }) : t("developer.market.freeSubscription") });
       d.reload();
       onChanged();
     } catch (e) {
+      if (attemptOver(e)) attempt.current = null;
       algoError(t("developer.market.subscribeFailed"), e);
+      // the listing shows a subscription that went through meanwhile
+      d.reload();
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   };

@@ -292,6 +292,14 @@ The HMAC signs the path as the service sees it, `/public/v1/…`, without the `/
 
 If the copy can't start, the first period is refunded. A renewal loop runs every 5 minutes and charges each new 30-day period. A failed charge sets `past_due` and stops the copy. A cancelled paid subscription runs until the end of its period.
 
+**One subscription, one charge.**
+
+- A client's subscribe requests are serialised by a per-client advisory lock: the check for a live subscription to the listing (active, or still being set up) and the new row are one atomic step. Two quick requests (a double tap, two devices, a retry racing the first) get one subscription and one charge; the others answer 409 `subscribed`.
+- `idempotencyKey` (optional, 1–80 letters, digits, `-` or `_`; one per attempt, kept across retries of it): a retry with the same key answers with the same subscription (`replayed: true`), 409 `in_progress` while it is still being set up, or 409 `subscription_failed` with the reason it didn't go through. A key used for another listing answers 409 `idempotency_conflict`.
+- A new row is `setup` (status `past_due` until `active`, as before) under a lease. The payment keeps its wallet keys, so finishing a setup later never charges twice, and the payment is recorded once per period. A debit the wallet doesn't answer is sent once more with the same key; still unanswered, the request answers 503 `payment_pending` and the setup waits.
+- A setup that was interrupted (a lost answer, a restart, an unconfirmed payment) is finished by a retry with the same key or, within a minute or so, by the janitor (`finish_setups`, every minute). The copy deployment or clone it already made is kept. A copy that can't start is refunded, and the refund is tried again until the wallet books it.
+- Only a subscription that actually ran (its copy started or its clone was made) counts as a subscriber for reviews.
+
 **Reviews.** Only subscribers can post reviews: one per user, rated 1–5.
 
 ## House accounts
@@ -378,7 +386,7 @@ Every `/v1/*` route needs `X-Kalks-Internal: $ALGO_INTERNAL_TOKEN`. JSON uses ca
 | runtime | `GET /v1/accounts` · `GET/POST /v1/deployments` · `GET /v1/deployments/{id}` (logs, positions, daily) · `POST /v1/deployments/{id}/{pause|resume|stop|kill|close-positions}` · `GET /v1/controls` · `POST /v1/controls/kill` |
 | webhooks | `GET/POST /v1/webhooks` · `GET/PATCH/DELETE /v1/webhooks/{id}` · `POST /v1/webhooks/{id}/rotate` · `PUT /v1/webhooks/{id}/routes` · `POST /v1/webhooks/{id}/test {payload}` |
 | API keys | `GET/POST /v1/keys` · `PATCH /v1/keys/{id}` · `POST /v1/keys/{id}/revoke` · `GET /v1/keys/{id}/activity` |
-| marketplace | `GET/POST /v1/market/listings` · `GET/PATCH /v1/market/listings/{id}` · `POST /v1/market/listings/{id}/subscribe {mode, login?, risk?}` · `POST /v1/market/listings/{id}/reviews` · `GET /v1/market/mine` · `GET /v1/market/subscriptions` · `POST /v1/market/subscriptions/{id}/cancel` |
+| marketplace | `GET/POST /v1/market/listings` · `GET/PATCH /v1/market/listings/{id}` · `POST /v1/market/listings/{id}/subscribe {mode, login?, risk?, idempotencyKey?}` · `POST /v1/market/listings/{id}/reviews` · `GET /v1/market/mine` · `GET /v1/market/subscriptions` · `POST /v1/market/subscriptions/{id}/cancel` |
 | admin | `GET /v1/admin/overview` · `GET /v1/admin/strategies` · `GET /v1/admin/deployments` · `POST /v1/admin/deployments/{id}/kill` · `POST /v1/admin/users/{id}/kill` · `GET/PUT /v1/admin/settings` (`globalKill`, `platformCutPct`, `apiRatePerMin`, `webhookRatePerMin`, `maxDeploymentsPerUser`, `minTrackTrades`, `aiPerHour`, `backtestsPerDay`) · `GET /v1/admin/listings` · `POST /v1/admin/listings/{id}/moderate` · `GET /v1/admin/keys` · `POST /v1/admin/keys/{id}/revoke` · `GET /v1/admin/webhooks` · `GET /v1/admin/subscriptions` · `GET /v1/admin/audit` |
 
 ## Environment
@@ -422,7 +430,7 @@ cargo test -p algo
 | Indicator parity (`tests/indicator_parity.rs`) | 32 series (SMA, EMA, RSI, MACD ×3, Bollinger ×3, ATR, Stochastic ×2, highest/lowest, WMA, CCI, Williams %R, momentum, ROC, std dev, ADX ×3, 8 candle patterns) match the TypeScript values to 1e-9 relative |
 | DSL | Parsing; rejecting unsafe syntax (import/def/lambda/loops/attributes/dunders); depth, size, statement and exponential-inlining limits; semantic errors with line numbers; visual spec ↔ code round trip; NaN propagation; `htf` without look-ahead; the evaluation deadline |
 | Backtest | A take-profit trade with exact P&L / commission / spread cost; the M1 path deciding SL before TP where the H1 bar alone would give TP; a gap fill at the open; triple-Wednesday swaps; trailing stop; daily trade limit; drawdown; monthly returns; H1 / D1 aggregation at NY close |
-| Service (`tests/service.rs`) | Throw-away database plus mock engine, market-data and wallet; skipped without Postgres. Covers webhook auth (unknown URL, passphrase, id and timestamp replay, rate limit, disabled, kill switch, fan-out sizing, source tags), API keys (bearer, wrong secret, HMAC + replay + stale timestamp, scopes, IP whitelist, revoke, expiry, dealing fields stripped, source not overridable), and paid marketplace subscriptions (insufficient funds, debit / credit with the 20 % platform cut, own listing, pending listing, reviews) |
+| Service (`tests/service.rs`) | Throw-away database plus mock engine, market-data and wallet; skipped without Postgres. Covers webhook auth (unknown URL, passphrase, id and timestamp replay, rate limit, disabled, kill switch, fan-out sizing, source tags), API keys (bearer, wrong secret, HMAC + replay + stale timestamp, scopes, IP whitelist, revoke, expiry, dealing fields stripped, source not overridable), and paid marketplace subscriptions (insufficient funds, debit / credit with the 20 % platform cut, own listing, pending listing, reviews). One subscription, one charge: eight concurrent requests without a key and eight with the same key each end in one subscription and one debit; a lost wallet answer is finished by a retry with the same key and, untouched, by the janitor, with the one payment; a refused payment is replayed with its reason |
 
 ## Known gaps
 

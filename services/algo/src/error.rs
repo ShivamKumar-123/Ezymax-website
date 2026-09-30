@@ -50,6 +50,22 @@ impl ApiError {
             other => other,
         }
     }
+    /// The client-facing message (what the response body says).
+    pub fn message(&self) -> String {
+        match self {
+            ApiError::BadRequest(m) | ApiError::Unauthorized(m) | ApiError::Forbidden(m) | ApiError::NotFound(m) => m.clone(),
+            ApiError::Validation { message, .. } | ApiError::Coded { message, .. } => message.clone(),
+            ApiError::RateLimited(_) => "Too many requests. Slow down and retry shortly.".into(),
+            ApiError::Internal(_) => "Something went wrong. Please try again.".into(),
+        }
+    }
+    /// The machine code of a `Coded` error.
+    pub fn code(&self) -> Option<&'static str> {
+        match self {
+            ApiError::Coded { code, .. } => Some(code),
+            _ => None,
+        }
+    }
     pub fn status(&self) -> StatusCode {
         match self {
             ApiError::BadRequest(_) => StatusCode::BAD_REQUEST,

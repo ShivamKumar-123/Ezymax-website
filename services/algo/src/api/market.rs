@@ -3,9 +3,16 @@
 //! the author allows it, clone the spec into their own strategies. Paid subscriptions are charged from the
 //! subscriber's wallet and the author is credited the price minus the platform cut (wallet transfers,
 //! kind `adjustment`, idempotent keys `algo:sub:<id>:<period>:debit|credit`). Listings are moderated.
+//!
+//! One subscription, one charge: a client's subscribe requests are serialised (per-client advisory lock), a live
+//! subscription (active or being set up) refuses a second one for the listing, a retry with the same
+//! `idempotencyKey` answers with the same subscription, and a setup that was interrupted (a lost answer, a
+//! restart, a payment the wallet didn't confirm) is finished with the very same wallet transfer, never a new one.
 
 use axum::Json;
 use axum::extract::{Path, Query, State};
+use axum::http::StatusCode;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
 use serde::Deserialize;
@@ -16,6 +23,12 @@ use super::{Body, Res, b, f, i, s};
 use crate::error::ApiError;
 use crate::state::{AppState, User, audit, setting_f64, settings};
 use crate::strategy::{build, insert, load_version, own_version};
+
+/// A subscription being set up is leased to one worker at a time (the request that created it, a retry with the
+/// same key, or the janitor) for this long: longer than any setup takes (wallet and engine calls time out at 20 s).
+const SETUP_LEASE_SECS: f64 = 300.0;
+/// A payment the wallet didn't confirm (or a refund it didn't book) is tried again no sooner than this.
+const SETUP_RETRY_SECS: f64 = 30.0;
 
 /// Verified track record of a deployment, computed from the engine's closed deals (never user input).
 pub async fn track_record(st: &AppState, dep: i64) -> Result<Value, ApiError> {
@@ -148,8 +161,9 @@ pub async fn listing(State(st): State<AppState>, u: User, Path(id): Path<i64>) -
     }
     let reviews = sqlx::query("SELECT id, user_name, rating, comment, created_at, user_id FROM reviews WHERE listing_id = $1 AND status = 'visible' ORDER BY id DESC LIMIT 50").bind(id).fetch_all(&st.pool).await?;
     v["reviews"] = json!(reviews.iter().map(|x| json!({"id": x.get::<i64, _>("id"), "user": x.get::<String, _>("user_name"), "rating": x.get::<i32, _>("rating"), "comment": x.get::<String, _>("comment"), "createdAt": x.get::<chrono::DateTime<chrono::Utc>, _>("created_at"), "mine": x.get::<i64, _>("user_id") == u.id})).collect::<Vec<_>>());
-    let sub = sqlx::query("SELECT id, mode, status, login, deployment_id, cloned_strategy_id, period_end, auto_renew FROM subscriptions WHERE listing_id = $1 AND user_id = $2 ORDER BY id DESC LIMIT 1").bind(id).bind(u.id).fetch_optional(&st.pool).await?;
-    v["subscription"] = sub.map(|x| json!({"id": x.get::<i64, _>("id"), "mode": x.get::<String, _>("mode"), "status": x.get::<String, _>("status"), "login": x.get::<Option<i64>, _>("login"), "deploymentId": x.get::<Option<i64>, _>("deployment_id"), "clonedStrategyId": x.get::<Option<i64>, _>("cloned_strategy_id"), "periodEnd": x.get::<Option<chrono::DateTime<chrono::Utc>>, _>("period_end"), "autoRenew": x.get::<bool, _>("auto_renew")})).unwrap_or(Value::Null);
+    let sub = sqlx::query("SELECT id, mode, status, login, deployment_id, cloned_strategy_id, period_end, auto_renew, setup FROM subscriptions WHERE listing_id = $1 AND user_id = $2 ORDER BY id DESC LIMIT 1").bind(id).bind(u.id).fetch_optional(&st.pool).await?;
+    // `setup`: the payment and the copy / clone are still being finished (status stays `past_due` until `active`)
+    v["subscription"] = sub.map(|x| json!({"id": x.get::<i64, _>("id"), "mode": x.get::<String, _>("mode"), "status": x.get::<String, _>("status"), "login": x.get::<Option<i64>, _>("login"), "deploymentId": x.get::<Option<i64>, _>("deployment_id"), "clonedStrategyId": x.get::<Option<i64>, _>("cloned_strategy_id"), "periodEnd": x.get::<Option<chrono::DateTime<chrono::Utc>>, _>("period_end"), "autoRenew": x.get::<bool, _>("auto_renew"), "setup": x.get::<bool, _>("setup")})).unwrap_or(Value::Null);
     v["isAuthor"] = json!(author);
     v["platformCutPct"] = json!(setting_f64(&settings(&st.pool, &u.tenant).await, "platformCutPct"));
     Ok(Json(v))
@@ -241,7 +255,15 @@ pub async fn edit(State(st): State<AppState>, u: User, Path(id): Path<i64>, Body
     Ok(Json(json!({"status": "ok"})))
 }
 
-/// Charges one period: subscriber debit, author credit (price − platform cut). Idempotent per period.
+/// The wallet didn't answer the debit (twice): it may or may not have been booked.
+fn payment_pending() -> ApiError {
+    ApiError::coded(StatusCode::SERVICE_UNAVAILABLE, "payment_pending", "The wallet didn't confirm the payment yet. The subscription is finished automatically once it does, and nothing is charged twice.")
+}
+
+/// Charges one period: subscriber debit, author credit (price − platform cut). Idempotent per period: both
+/// transfers have fixed keys (a repeat is answered by the wallet with the transfer it already booked) and the
+/// payment is recorded once, so a setup finished later never charges twice. A debit the wallet didn't answer is
+/// sent once more with the same key; still unanswered, the error is `payment_pending`.
 pub async fn charge(st: &AppState, tenant: &str, sub: i64, subscriber: i64, author: i64, amount: Decimal, period_start: chrono::DateTime<chrono::Utc>, title: &str) -> Result<(), ApiError> {
     let cut = Decimal::from_f64(setting_f64(&settings(&st.pool, tenant).await, "platformCutPct").clamp(0.0, 100.0)).unwrap_or_default();
     let fee = (amount * cut / Decimal::from(100)).round_dp(2);
@@ -252,11 +274,15 @@ pub async fn charge(st: &AppState, tenant: &str, sub: i64, subscriber: i64, auth
     if st.wallet.token.is_empty() && !st.cfg.dev_mode {
         return Err(ApiError::unavailable("Payments are not configured (wallet service)."));
     }
-    let debit = st
-        .wallet
-        .transfer(tenant, &format!("algo:sub:{sub}:{period}:debit"), subscriber, &amount.to_string(), "debit", "adjustment", &format!("algo-sub-{sub}"), &format!("Strategy subscription: {title}"))
-        .await
-        .map_err(|_| ApiError::unavailable("The wallet service is unavailable. Try again shortly."))?;
+    let (debit_key, price, reference, note) = (format!("algo:sub:{sub}:{period}:debit"), amount.to_string(), format!("algo-sub-{sub}"), format!("Strategy subscription: {title}"));
+    let send = || st.wallet.transfer(tenant, &debit_key, subscriber, &price, "debit", "adjustment", &reference, &note);
+    let debit = match send().await {
+        Ok(d) => d,
+        Err(e) => {
+            tracing::warn!(sub, error = %e, "subscription debit unanswered; sending it again with the same key");
+            send().await.map_err(|_| payment_pending())?
+        }
+    };
     if let Err((status, code, msg)) = debit {
         let _ = sqlx::query("INSERT INTO subscription_payments (tenant_id, subscription_id, amount, platform_fee, author_amount, cut_pct, period_start, period_end, status, error) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'failed',$9)")
             .bind(tenant)
@@ -270,41 +296,61 @@ pub async fn charge(st: &AppState, tenant: &str, sub: i64, subscriber: i64, auth
             .bind(format!("{code}: {msg}"))
             .execute(&st.pool)
             .await;
-        return Err(if code == "insufficient_funds" { fail("insufficient_funds", format!("Your wallet balance is below {amount} USDT. Deposit USDT to subscribe.")) } else { ApiError::coded(axum::http::StatusCode::from_u16(status).unwrap_or(axum::http::StatusCode::BAD_GATEWAY), "wallet_error", msg) });
+        return Err(if code == "insufficient_funds" { fail("insufficient_funds", format!("Your wallet balance is below {amount} USDT. Deposit USDT to subscribe.")) } else { ApiError::coded(StatusCode::from_u16(status).unwrap_or(StatusCode::BAD_GATEWAY), "wallet_error", msg) });
     }
     if author_amount > Decimal::ZERO {
         // a failed author credit is logged (same idempotency key if it is re-sent); see README known gaps
         let credit = st
             .wallet
-            .transfer(tenant, &format!("algo:sub:{sub}:{period}:credit"), author, &author_amount.to_string(), "credit", "adjustment", &format!("algo-sub-{sub}"), &format!("Strategy subscription revenue: {title} (platform fee {fee})"))
+            .transfer(tenant, &format!("algo:sub:{sub}:{period}:credit"), author, &author_amount.to_string(), "credit", "adjustment", &reference, &format!("Strategy subscription revenue: {title} (platform fee {fee})"))
             .await;
         if !matches!(credit, Ok(Ok(_))) {
             tracing::warn!(sub, "author credit failed; will be retried");
         }
     }
-    sqlx::query("INSERT INTO subscription_payments (tenant_id, subscription_id, amount, platform_fee, author_amount, cut_pct, period_start, period_end, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'completed')")
-        .bind(tenant)
-        .bind(sub)
-        .bind(amount)
-        .bind(fee)
-        .bind(author_amount)
-        .bind(cut)
-        .bind(period_start)
-        .bind(period_end)
-        .execute(&st.pool)
-        .await?;
+    // recorded once per period, however often the (idempotent) charge ran
+    sqlx::query(
+        "INSERT INTO subscription_payments (tenant_id, subscription_id, amount, platform_fee, author_amount, cut_pct, period_start, period_end, status)
+         SELECT $1,$2,$3,$4,$5,$6,$7,$8,'completed'
+         WHERE NOT EXISTS (SELECT 1 FROM subscription_payments WHERE subscription_id = $2 AND period_start = $7 AND status = 'completed')",
+    )
+    .bind(tenant)
+    .bind(sub)
+    .bind(amount)
+    .bind(fee)
+    .bind(author_amount)
+    .bind(cut)
+    .bind(period_start)
+    .bind(period_end)
+    .execute(&st.pool)
+    .await?;
     Ok(())
 }
 
+/// The client's idempotency key for a subscribe request (optional): 1–80 letters, digits, `-` or `_`.
+fn request_key(v: &Value) -> Result<Option<String>, ApiError> {
+    match v.get("idempotencyKey") {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(k)) if (1..=80).contains(&k.len()) && k.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') => Ok(Some(k.clone())),
+        _ => Err(ApiError::validation("idempotencyKey", "idempotencyKey: 1–80 letters, digits, - or _.")),
+    }
+}
+
+const BY_KEY: &str = "SELECT id, listing_id FROM subscriptions WHERE tenant_id = $1 AND user_id = $2 AND request_key = $3";
+
+/// Subscribes to a listing (copy or clone; paid from the wallet). Body `{mode, login?, risk?, idempotencyKey?}`.
 pub async fn subscribe(State(st): State<AppState>, u: User, Path(id): Path<i64>, Body(v): Body<Value>) -> Res {
+    let key = request_key(&v)?;
+    // a retry of a request already made: that subscription, whatever happened to the listing since
+    if let Some(k) = &key
+        && let Some((sub, listing)) = sqlx::query_as::<_, (i64, i64)>(BY_KEY).bind(&u.tenant).bind(u.id).bind(k).fetch_optional(&st.pool).await?
+    {
+        return replay(&st, id, sub, listing).await;
+    }
     let l = sqlx::query("SELECT * FROM listings WHERE id = $1 AND tenant_id = $2 AND status = 'approved'").bind(id).bind(&u.tenant).fetch_optional(&st.pool).await?.ok_or_else(|| ApiError::not_found("Listing"))?;
     let author: i64 = l.get("author_user_id");
     if author == u.id {
         return Err(ApiError::conflict("own_listing", "You can't subscribe to your own strategy."));
-    }
-    let active: i64 = sqlx::query_scalar("SELECT count(*) FROM subscriptions WHERE listing_id = $1 AND user_id = $2 AND status = 'active'").bind(id).bind(u.id).fetch_one(&st.pool).await?;
-    if active > 0 {
-        return Err(ApiError::conflict("subscribed", "You already subscribe to this strategy."));
     }
     let mode = s(&v, "mode").unwrap_or("copy");
     if mode != "copy" && mode != "clone" {
@@ -320,50 +366,218 @@ pub async fn subscribe(State(st): State<AppState>, u: User, Path(id): Path<i64>,
     let amount: Decimal = l.get("price_monthly");
     let title: String = l.get("title");
     let now = chrono::Utc::now();
-    let sub: i64 = sqlx::query_scalar("INSERT INTO subscriptions (tenant_id, listing_id, user_id, mode, login, price, period_start, period_end, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'past_due') RETURNING id")
+    // what finishing the setup needs later: the copy's limits and the title the payment is booked with
+    let request = json!({"risk": crate::api::deployments::clean_risk(&v), "title": title});
+
+    // One subscribe at a time per client: the live-subscription check and the new row are one atomic step, so two
+    // quick requests (a double tap, two devices, a retry racing the first) can't both create and charge one.
+    let mut tx = st.pool.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))").bind(format!("algo:subscribe:{}:{}", u.tenant, u.id)).execute(&mut *tx).await?;
+    if let Some(k) = &key
+        && let Some((sub, listing)) = sqlx::query_as::<_, (i64, i64)>(BY_KEY).bind(&u.tenant).bind(u.id).bind(k).fetch_optional(&mut *tx).await?
+    {
+        tx.commit().await?;
+        return replay(&st, id, sub, listing).await;
+    }
+    let live: Option<bool> = sqlx::query_scalar("SELECT setup FROM subscriptions WHERE tenant_id = $1 AND listing_id = $2 AND user_id = $3 AND (status = 'active' OR setup) ORDER BY id DESC LIMIT 1")
         .bind(&u.tenant)
         .bind(id)
         .bind(u.id)
-        .bind(mode)
-        .bind(login)
-        .bind(amount)
-        .bind(now)
-        .bind(if amount > Decimal::ZERO { Some(now + chrono::Duration::days(30)) } else { None })
-        .fetch_one(&st.pool)
+        .fetch_optional(&mut *tx)
         .await?;
+    if let Some(setup) = live {
+        return Err(ApiError::conflict("subscribed", if setup { "Your subscription to this strategy is being set up." } else { "You already subscribe to this strategy." }));
+    }
+    let sub: i64 = sqlx::query_scalar(
+        "INSERT INTO subscriptions (tenant_id, listing_id, user_id, mode, login, price, period_start, period_end, status, setup, setup_until, request_key, request)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'past_due',TRUE,now() + make_interval(secs => $9),$10,$11) RETURNING id",
+    )
+    .bind(&u.tenant)
+    .bind(id)
+    .bind(u.id)
+    .bind(mode)
+    .bind(login)
+    .bind(amount)
+    .bind(now)
+    .bind(if amount > Decimal::ZERO { Some(now + chrono::Duration::days(30)) } else { None })
+    .bind(SETUP_LEASE_SECS)
+    .bind(&key)
+    .bind(&request)
+    .fetch_one(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    finish(&st, sub).await
+}
+
+/// A retry with a key that was already used: the same subscription, finished first when its setup was
+/// interrupted and nobody is working on it.
+async fn replay(st: &AppState, listing: i64, sub: i64, sub_listing: i64) -> Res {
+    if sub_listing != listing {
+        return Err(ApiError::conflict("idempotency_conflict", "This idempotency key was already used for another subscription."));
+    }
+    if claim(st, sub).await? {
+        let Json(mut v) = finish(st, sub).await?;
+        v["replayed"] = json!(true);
+        return Ok(Json(v));
+    }
+    outcome(st, sub, true).await
+}
+
+/// Takes the lease of a setup nobody is working on (true), so only one worker finishes it.
+async fn claim(st: &AppState, sub: i64) -> Result<bool, ApiError> {
+    let got: Option<i64> = sqlx::query_scalar("UPDATE subscriptions SET setup_until = now() + make_interval(secs => $2) WHERE id = $1 AND setup AND (setup_until IS NULL OR setup_until <= now()) RETURNING id")
+        .bind(sub)
+        .bind(SETUP_LEASE_SECS)
+        .fetch_optional(&st.pool)
+        .await?;
+    Ok(got.is_some())
+}
+
+/// What a subscribe request answers for an existing subscription: the subscription, or why it didn't go through.
+async fn outcome(st: &AppState, sub: i64, replayed: bool) -> Res {
+    let r = sqlx::query("SELECT status, mode, deployment_id, cloned_strategy_id, price, setup, failure FROM subscriptions WHERE id = $1").bind(sub).fetch_one(&st.pool).await?;
+    if r.get::<bool, _>("setup") {
+        return Err(ApiError::conflict("in_progress", "This subscription is still being set up. Check again in a moment."));
+    }
+    if let Some(f) = r.get::<Option<String>, _>("failure") {
+        return Err(ApiError::conflict("subscription_failed", format!("This subscription didn't go through: {f}")));
+    }
+    Ok(Json(json!({
+        "id": sub, "status": r.get::<String, _>("status"), "mode": r.get::<String, _>("mode"),
+        "deploymentId": r.get::<Option<i64>, _>("deployment_id"), "clonedStrategyId": r.get::<Option<i64>, _>("cloned_strategy_id"),
+        "charged": r.get::<Decimal, _>("price").to_f64(), "replayed": replayed,
+    })))
+}
+
+/// Ends a setup that can't go through: cancelled, with the reason (a retry with the same key is told it).
+async fn end_setup(st: &AppState, sub: i64, why: &str) -> Result<(), ApiError> {
+    sqlx::query("UPDATE subscriptions SET status = 'cancelled', setup = FALSE, setup_until = NULL, cancelled_at = now(), auto_renew = FALSE, failure = $2 WHERE id = $1 AND setup")
+        .bind(sub)
+        .bind(why.chars().take(300).collect::<String>())
+        .execute(&st.pool)
+        .await?;
+    Ok(())
+}
+
+/// Leaves a setup for another try (the client's retry with the same key, else the janitor) after `SETUP_RETRY_SECS`.
+async fn retry_later(st: &AppState, sub: i64) -> Result<(), ApiError> {
+    sqlx::query("UPDATE subscriptions SET setup_until = now() + make_interval(secs => $2) WHERE id = $1 AND setup").bind(sub).bind(SETUP_RETRY_SECS).execute(&st.pool).await?;
+    Ok(())
+}
+
+/// Finishes a subscription being set up, under its lease: the payment (idempotent per subscription and period),
+/// then the copy deployment or the clone (one this setup already made is kept), then active. A payment the wallet
+/// didn't confirm leaves the setup for another try with the same transfer; a copy that can't start is refunded
+/// (a refund the wallet didn't book is tried again too); anything else ends the setup, cancelled.
+async fn finish(st: &AppState, sub: i64) -> Res {
+    let Some(r) = sqlx::query(
+        "SELECT s.tenant_id, s.user_id, s.listing_id, s.mode, s.login, s.price, s.period_start, s.created_at, s.request, l.version_id, l.author_user_id, l.title
+         FROM subscriptions s JOIN listings l ON l.id = s.listing_id WHERE s.id = $1 AND s.setup",
+    )
+    .bind(sub)
+    .fetch_optional(&st.pool)
+    .await?
+    else {
+        // finished or ended meanwhile
+        return outcome(st, sub, false).await;
+    };
+    let tenant: String = r.get("tenant_id");
+    let u = User { tenant: tenant.clone(), id: r.get("user_id"), name: String::new() };
+    let listing: i64 = r.get("listing_id");
+    let mode: String = r.get("mode");
+    let amount: Decimal = r.get("price");
+    let req: Value = r.get("request");
+    let title = req.get("title").and_then(Value::as_str).map(str::to_string).unwrap_or_else(|| r.get("title"));
     if amount > Decimal::ZERO
-        && let Err(e) = charge(&st, &u.tenant, sub, u.id, author, amount, now, &title).await
+        && let Err(e) = charge(st, &tenant, sub, u.id, r.get("author_user_id"), amount, r.get("period_start"), &title).await
     {
-        sqlx::query("UPDATE subscriptions SET status = 'cancelled', cancelled_at = now(), auto_renew = FALSE WHERE id = $1").bind(sub).execute(&st.pool).await?;
+        if e.code() == Some("payment_pending") {
+            tracing::warn!(sub, "subscription payment not confirmed by the wallet; the setup is tried again later");
+            retry_later(st, sub).await?;
+        } else {
+            end_setup(st, sub, &e.message()).await?;
+        }
         return Err(e);
     }
-    let vid: i64 = l.get("version_id");
-    let (mut dep, mut cloned) = (None, None);
-    let result: Result<(), ApiError> = async {
-        if let Some(login) = login {
-            dep = Some(crate::api::deployments::start(&st, &u, vid, login, crate::api::deployments::clean_risk(&v), Some(sub)).await?);
-        } else {
-            let ver = load_version(&st.pool, &u.tenant, vid).await?.ok_or_else(|| ApiError::not_found("Strategy version"))?;
-            let sym = ver.spec.get("symbol").and_then(Value::as_str).unwrap_or("EURUSD").to_string();
-            let tf = ver.spec.get("timeframe").and_then(Value::as_str).unwrap_or("H1").to_string();
-            let bl = build(&ver.kind, Some(&ver.spec), ver.source.as_deref(), &sym, &tf, &st.specs).map_err(|m| ApiError::unprocessable("invalid_strategy", m))?;
-            cloned = Some(insert(&st.pool, &u.tenant, u.id, &format!("{title} (marketplace)"), "marketplace", Some(id), &bl, Some(&format!("Cloned from marketplace listing #{id}")), None).await?.0);
+    let vid: i64 = r.get("version_id");
+    let since: DateTime<Utc> = r.get("created_at");
+    let started: Result<(Option<i64>, Option<i64>), ApiError> = async {
+        if mode == "copy" {
+            let login: i64 = r.get::<Option<i64>, _>("login").ok_or_else(|| ApiError::validation("login", "Choose the account the strategy runs on."))?;
+            // the deployment this setup already started before it was interrupted is kept
+            let had: Option<i64> = sqlx::query_scalar("SELECT id FROM deployments WHERE subscription_id = $1 ORDER BY id DESC LIMIT 1").bind(sub).fetch_optional(&st.pool).await?;
+            let dep = match had {
+                Some(d) => d,
+                None => crate::api::deployments::start(st, &u, vid, login, req.get("risk").cloned().unwrap_or_else(|| json!({})), Some(sub)).await?,
+            };
+            return Ok((Some(dep), None));
         }
-        Ok(())
+        // so is the clone it already made
+        let had: Option<i64> = sqlx::query_scalar("SELECT id FROM strategies WHERE tenant_id = $1 AND user_id = $2 AND origin = 'marketplace' AND source_listing_id = $3 AND created_at >= $4 ORDER BY id DESC LIMIT 1")
+            .bind(&tenant)
+            .bind(u.id)
+            .bind(listing)
+            .bind(since)
+            .fetch_optional(&st.pool)
+            .await?;
+        if let Some(s) = had {
+            return Ok((None, Some(s)));
+        }
+        let ver = load_version(&st.pool, &tenant, vid).await?.ok_or_else(|| ApiError::not_found("Strategy version"))?;
+        let sym = ver.spec.get("symbol").and_then(Value::as_str).unwrap_or("EURUSD").to_string();
+        let tf = ver.spec.get("timeframe").and_then(Value::as_str).unwrap_or("H1").to_string();
+        let bl = build(&ver.kind, Some(&ver.spec), ver.source.as_deref(), &sym, &tf, &st.specs).map_err(|m| ApiError::unprocessable("invalid_strategy", m))?;
+        Ok((None, Some(insert(&st.pool, &tenant, u.id, &format!("{title} (marketplace)"), "marketplace", Some(listing), &bl, Some(&format!("Cloned from marketplace listing #{listing}")), None).await?.0)))
     }
     .await;
-    if let Err(e) = result {
-        // refund a paid first period when the copy could not start
-        if amount > Decimal::ZERO {
-            let _ = st.wallet.transfer(&u.tenant, &format!("algo:sub:{sub}:refund"), u.id, &amount.to_string(), "credit", "refund", &format!("algo-sub-{sub}"), &format!("Refund: {title} could not start")).await;
+    let (dep, cloned) = match started {
+        Ok(x) => x,
+        Err(e) => {
+            // refund a paid first period when the copy could not start
+            if amount > Decimal::ZERO {
+                let refund = st.wallet.transfer(&tenant, &format!("algo:sub:{sub}:refund"), u.id, &amount.to_string(), "credit", "refund", &format!("algo-sub-{sub}"), &format!("Refund: {title} could not start")).await;
+                if !matches!(refund, Ok(Ok(_))) {
+                    tracing::error!(sub, "subscription refund not booked; the setup is tried again later");
+                    retry_later(st, sub).await?;
+                    return Err(e);
+                }
+            }
+            end_setup(st, sub, &e.message()).await?;
+            return Err(e);
         }
-        sqlx::query("UPDATE subscriptions SET status = 'cancelled', cancelled_at = now(), auto_renew = FALSE WHERE id = $1").bind(sub).execute(&st.pool).await?;
-        return Err(e);
+    };
+    let done = sqlx::query("UPDATE subscriptions SET status = 'active', setup = FALSE, setup_until = NULL, deployment_id = $2, cloned_strategy_id = $3, failure = NULL WHERE id = $1 AND setup")
+        .bind(sub)
+        .bind(dep)
+        .bind(cloned)
+        .execute(&st.pool)
+        .await?
+        .rows_affected();
+    sqlx::query("UPDATE listings SET subscribers = (SELECT count(*) FROM subscriptions WHERE listing_id = $1 AND status = 'active') WHERE id = $1").bind(listing).execute(&st.pool).await?;
+    if done > 0 {
+        audit(&st.pool, &tenant, &format!("user:{}", u.id), "subscription.create", &format!("subscription:{sub}"), json!({"listing": listing, "mode": mode, "amount": amount.to_string()})).await;
     }
-    sqlx::query("UPDATE subscriptions SET status = 'active', deployment_id = $2, cloned_strategy_id = $3 WHERE id = $1").bind(sub).bind(dep).bind(cloned).execute(&st.pool).await?;
-    sqlx::query("UPDATE listings SET subscribers = (SELECT count(*) FROM subscriptions WHERE listing_id = $1 AND status = 'active') WHERE id = $1").bind(id).execute(&st.pool).await?;
-    audit(&st.pool, &u.tenant, &format!("user:{}", u.id), "subscription.create", &format!("subscription:{sub}"), json!({"listing": id, "mode": mode, "amount": amount.to_string()})).await;
-    Ok(Json(json!({"id": sub, "status": "active", "mode": mode, "deploymentId": dep, "clonedStrategyId": cloned, "charged": amount.to_f64()})))
+    outcome(st, sub, false).await
+}
+
+/// Janitor: finishes subscriptions whose setup was interrupted (a lost answer nobody retried, a restart, a payment
+/// the wallet didn't confirm). Returns how many it worked on.
+pub async fn finish_setups(st: &AppState) -> anyhow::Result<usize> {
+    let ids: Vec<i64> = sqlx::query_scalar(
+        "UPDATE subscriptions SET setup_until = now() + make_interval(secs => $1)
+         WHERE id IN (SELECT id FROM subscriptions WHERE setup AND (setup_until IS NULL OR setup_until <= now()) ORDER BY id LIMIT 20 FOR UPDATE SKIP LOCKED)
+         RETURNING id",
+    )
+    .bind(SETUP_LEASE_SECS)
+    .fetch_all(&st.pool)
+    .await?;
+    for id in &ids {
+        match finish(st, *id).await {
+            Ok(_) => tracing::info!(sub = id, "interrupted subscription setup finished"),
+            Err(e) => tracing::warn!(sub = id, error = %e.message(), "interrupted subscription setup not finished"),
+        }
+    }
+    Ok(ids.len())
 }
 
 pub async fn subscriptions(State(st): State<AppState>, u: User) -> Res {
@@ -381,6 +595,7 @@ pub async fn subscriptions(State(st): State<AppState>, u: User) -> Res {
         "login": r.get::<Option<i64>, _>("login"), "deploymentId": r.get::<Option<i64>, _>("deployment_id"), "deploymentStatus": r.get::<Option<String>, _>("dep_status"),
         "clonedStrategyId": r.get::<Option<i64>, _>("cloned_strategy_id"), "price": r.get::<Decimal, _>("price").to_f64(), "autoRenew": r.get::<bool, _>("auto_renew"),
         "periodEnd": r.get::<Option<chrono::DateTime<chrono::Utc>>, _>("period_end"), "createdAt": r.get::<chrono::DateTime<chrono::Utc>, _>("created_at"),
+        "setup": r.get::<bool, _>("setup"),
     })).collect::<Vec<_>>()})))
 }
 
@@ -405,7 +620,14 @@ pub async fn cancel(State(st): State<AppState>, u: User, Path(id): Path<i64>) ->
 }
 
 pub async fn review(State(st): State<AppState>, u: User, Path(id): Path<i64>, Body(v): Body<Value>) -> Res {
-    let subscribed: i64 = sqlx::query_scalar("SELECT count(*) FROM subscriptions WHERE listing_id = $1 AND user_id = $2 AND status IN ('active','cancelled','expired')").bind(id).bind(u.id).fetch_one(&st.pool).await?;
+    // a subscription that ran (its copy started or its clone was made), not one whose setup didn't go through
+    let subscribed: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM subscriptions WHERE listing_id = $1 AND user_id = $2 AND status IN ('active','cancelled','expired') AND (deployment_id IS NOT NULL OR cloned_strategy_id IS NOT NULL)",
+    )
+    .bind(id)
+    .bind(u.id)
+    .fetch_one(&st.pool)
+    .await?;
     if subscribed == 0 {
         return Err(ApiError::Forbidden("Only subscribers can review a strategy.".into()));
     }
@@ -440,8 +662,18 @@ pub async fn mine(State(st): State<AppState>, u: User) -> Res {
     Ok(Json(json!({"items": rows.iter().map(listing_view).collect::<Vec<_>>(), "earned": earn.get::<f64, _>("earned"), "platformFees": earn.get::<f64, _>("fees"), "payments": earn.get::<i64, _>("payments")})))
 }
 
-/// Renewal loop: charges due paid subscriptions, expires cancelled ones at the period end.
+/// Renewal loop: charges due paid subscriptions, expires cancelled ones at the period end. Also the janitor that
+/// finishes interrupted subscription setups (every minute).
 pub fn spawn_renewals(st: AppState) {
+    let janitor = st.clone();
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+            if let Err(e) = finish_setups(&janitor).await {
+                tracing::warn!(error = %e, "subscription setup janitor failed");
+            }
+        }
+    });
     tokio::spawn(async move {
         loop {
             tokio::time::sleep(std::time::Duration::from_secs(300)).await;

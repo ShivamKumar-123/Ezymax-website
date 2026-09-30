@@ -1,9 +1,11 @@
-//! Service tests against a throw-away database `kalks_algo_test_<pid>` on the local Postgres (skipped when
+//! Service tests against a throw-away database `kalks_algo_test_<pid>_<n>` per test on the local Postgres (skipped when
 //! Postgres is unreachable) with mock trading-engine, market-data and wallet servers:
 //! - webhook auth: unknown URL, passphrase, replay (id / timestamp), rate limit, disabled, kill switch, fan-out;
 //! - API key auth: bearer, wrong secret, HMAC + replay, scopes, IP whitelist, revocation, expiry;
 //! - marketplace: paid subscription charges the wallet (price − platform cut) with idempotent keys; an
-//!   insufficient balance cancels the subscription.
+//!   insufficient balance cancels the subscription;
+//! - one subscription, one charge: concurrent subscribe requests (with and without an idempotency key), a lost
+//!   wallet answer finished by a retry with the same key or by the janitor, a failed setup replayed.
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -23,8 +25,15 @@ use tokio::sync::Notify;
 #[derive(Default)]
 struct Mock {
     orders: Mutex<Vec<Value>>,
+    /// wallet transfers booked (a repeated idempotency key is answered, not booked again)
     transfers: Mutex<Vec<Value>>,
     wallet_balance: Mutex<f64>,
+    /// idempotency keys the wallet has booked
+    wallet_keys: Mutex<std::collections::HashSet<String>>,
+    /// every call to the wallet, replays included
+    wallet_calls: std::sync::atomic::AtomicUsize,
+    /// the wallet books the transfer, then answers this late (ms): longer than the client waits = a lost answer
+    wallet_delay_ms: std::sync::atomic::AtomicU64,
     /// house account calls to the engine's staff routes: (route, body)
     house: Mutex<Vec<(String, Value)>>,
 }
@@ -103,24 +112,50 @@ async fn mocks(m: Arc<Mock>) -> (String, String, String, String) {
         .route(
             "/v1/wallets/transfers",
             post(|State(m): State<Arc<Mock>>, Json(b): Json<Value>| async move {
-                let amount: f64 = b["amount"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
-                let mut bal = m.wallet_balance.lock().unwrap();
-                if b["direction"] == "debit" && amount > *bal {
-                    return (axum::http::StatusCode::UNPROCESSABLE_ENTITY, Json(json!({"error": {"code": "insufficient_funds", "message": "Insufficient available balance"}})));
+                use std::sync::atomic::Ordering::SeqCst;
+                m.wallet_calls.fetch_add(1, SeqCst);
+                let answer = {
+                    // like services/wallet: a key already booked is answered with that transfer, never booked twice
+                    let key = b["idempotency_key"].as_str().unwrap_or("").to_string();
+                    let mut keys = m.wallet_keys.lock().unwrap();
+                    if keys.contains(&key) {
+                        (axum::http::StatusCode::OK, json!({"status": "completed", "replayed": true}))
+                    } else {
+                        let amount: f64 = b["amount"].as_str().unwrap_or("0").parse().unwrap_or(0.0);
+                        let mut bal = m.wallet_balance.lock().unwrap();
+                        if b["direction"] == "debit" && amount > *bal {
+                            (axum::http::StatusCode::UNPROCESSABLE_ENTITY, json!({"error": {"code": "insufficient_funds", "message": "Insufficient available balance"}}))
+                        } else {
+                            if b["direction"] == "debit" {
+                                *bal -= amount;
+                            }
+                            keys.insert(key);
+                            m.transfers.lock().unwrap().push(b.clone());
+                            (axum::http::StatusCode::OK, json!({"status": "completed", "replayed": false}))
+                        }
+                    }
+                };
+                let delay = m.wallet_delay_ms.load(SeqCst);
+                if delay > 0 {
+                    tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
                 }
-                if b["direction"] == "debit" {
-                    *bal -= amount;
-                }
-                m.transfers.lock().unwrap().push(b.clone());
-                (axum::http::StatusCode::OK, Json(json!({"status": "completed", "replayed": false})))
+                (answer.0, Json(answer.1))
             }),
         )
         .with_state(m);
     (serve(engine).await, serve(md).await, serve(wallet).await, serve(gateway).await)
 }
 
+static DB_SEQ: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
 async fn setup() -> Option<(String, AppState, Arc<Mock>)> {
-    let url = format!("postgres://postgres@127.0.0.1:5433/kalks_algo_test_{}", std::process::id());
+    setup_with(None).await
+}
+
+/// A service on its own throw-away database (one per test: tests run in parallel); `wallet_timeout` makes the
+/// wallet client give up sooner (lost answers).
+async fn setup_with(wallet_timeout: Option<std::time::Duration>) -> Option<(String, AppState, Arc<Mock>)> {
+    let url = format!("postgres://postgres@127.0.0.1:5433/kalks_algo_test_{}_{}", std::process::id(), DB_SEQ.fetch_add(1, std::sync::atomic::Ordering::SeqCst));
     let pool = match tokio::time::timeout(std::time::Duration::from_secs(5), algo::db::connect(&url)).await {
         Ok(Ok(p)) => p,
         _ => {
@@ -143,7 +178,7 @@ async fn setup() -> Option<(String, AppState, Arc<Mock>)> {
         specs: Arc::new(Specs::repo()),
         md: MarketData { base: md, http: http.clone() },
         engine: Arc::new(Engine::new(eng, "t".into(), http.clone())),
-        wallet: Wallet { base: wal, token: "w".into(), http: http.clone() },
+        wallet: Wallet { base: wal, token: "w".into(), http: wallet_timeout.map(|t| reqwest::Client::builder().timeout(t).build().unwrap()).unwrap_or_else(|| http.clone()) },
         http,
         limiter: Arc::new(Limiter::default()),
         cancels: Arc::new(Mutex::new(HashMap::new())),
@@ -155,7 +190,7 @@ async fn setup() -> Option<(String, AppState, Arc<Mock>)> {
 }
 
 async fn teardown(st: &AppState) {
-    let db = format!("kalks_algo_test_{}", std::process::id());
+    let db = st.pool.connect_options().get_database().unwrap_or_default().to_string();
     st.pool.close().await;
     if let Ok(mut c) = sqlx::ConnectOptions::connect(&"postgres://postgres@127.0.0.1:5433/postgres".parse::<sqlx::postgres::PgConnectOptions>().unwrap()).await {
         let _ = sqlx::query(sqlx::AssertSqlSafe(format!("DROP DATABASE IF EXISTS \"{db}\" WITH (FORCE)"))).execute(&mut c).await;
@@ -435,5 +470,154 @@ async fn service_end_to_end() {
     assert_eq!(l["items"].as_array().unwrap().len(), 0);
     assert!(l["presets"].as_array().unwrap().iter().all(|p| p["houseId"].is_null()), "a deleted preset can be provisioned again");
 
+    teardown(&st).await;
+}
+
+/// An approved paid listing (50 USDT a month) by user 1, with a verified track record.
+async fn paid_listing(c: &C, st: &AppState) -> i64 {
+    let (s, strat) = c.user(1, M::POST, "/v1/strategies", Some(json!({"kind": "code", "name": "Paid", "source": "symbol(\"EURUSD\")\ntimeframe(\"H1\")\nlots(0.1)\nbuy = crosses_above(ema(close, 10), ema(close, 30))\n"}))).await;
+    assert_eq!(s, 200, "{strat}");
+    let sid = strat["id"].as_i64().unwrap();
+    let dep: i64 = sqlx::query_scalar("INSERT INTO deployments (user_id, strategy_id, version_id, login, account_type, status, start_balance) VALUES (1, $1, $2, 50000001, 'demo', 'stopped', 10000) RETURNING id")
+        .bind(sid)
+        .bind(strat["versionId"].as_i64().unwrap())
+        .fetch_one(&st.pool)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO deployment_daily (deployment_id, day, realized, trades, wins) VALUES ($1, current_date, 25.5, 1, 1)").bind(dep).execute(&st.pool).await.unwrap();
+    let (s, l) = c.user(1, M::POST, "/v1/market/listings", Some(json!({"strategyId": sid, "deploymentId": dep, "title": "Paid EMA", "description": "An EMA crossover on EURUSD H1 with fixed lots.", "priceMonthly": 50}))).await;
+    assert_eq!(s, 200, "{l}");
+    let lid = l["id"].as_i64().unwrap();
+    let (s, _) = c.staff(M::POST, &format!("/v1/admin/listings/{lid}/moderate"), json!({"status": "approved", "note": "ok"})).await;
+    assert_eq!(s, 200);
+    lid
+}
+
+/// Debits the wallet booked for a user (replays of a key are not bookings).
+fn debits(m: &Mock, user: i64) -> usize {
+    m.transfers.lock().unwrap().iter().filter(|t| t["direction"] == "debit" && t["user_id"] == user).count()
+}
+
+#[tokio::test]
+async fn marketplace_one_subscription_one_charge() {
+    use std::sync::atomic::Ordering::SeqCst;
+    // the wallet client gives up after 1 s, so a 2.5 s wallet answer is a lost one
+    let Some((base, st, mock)) = setup_with(Some(std::time::Duration::from_millis(1000))).await else { return };
+    let c = Arc::new(C { base, http: reqwest::Client::new() });
+    let lid = paid_listing(&c, &st).await;
+    *mock.wallet_balance.lock().unwrap() = 10_000.0;
+    let path = format!("/v1/market/listings/{lid}/subscribe");
+    let burst = |user: i64, body: Value| {
+        let (c, path) = (c.clone(), path.clone());
+        async move {
+            let calls = (0..8).map(|_| {
+                let (c, path, body) = (c.clone(), path.clone(), body.clone());
+                tokio::spawn(async move { c.user(user, M::POST, &path, Some(body)).await })
+            });
+            let mut out = vec![];
+            for h in calls.collect::<Vec<_>>() {
+                out.push(h.await.unwrap());
+            }
+            out
+        }
+    };
+    let subs_of = |user: i64| {
+        let pool = st.pool.clone();
+        async move { sqlx::query_as::<_, (i64, String, bool)>("SELECT id, status, setup FROM subscriptions WHERE user_id = $1 ORDER BY id").bind(user).fetch_all(&pool).await.unwrap() }
+    };
+    let payments = |sub: i64| {
+        let pool = st.pool.clone();
+        async move { sqlx::query_scalar::<_, i64>("SELECT count(*) FROM subscription_payments WHERE subscription_id = $1 AND status = 'completed'").bind(sub).fetch_one(&pool).await.unwrap() }
+    };
+
+    // eight quick requests without a key (a double tap, two devices): one subscription, one charge
+    let out = burst(3, json!({"mode": "copy", "login": 50000103})).await;
+    let ok: Vec<&(u16, Value)> = out.iter().filter(|(s, _)| *s == 200).collect();
+    assert_eq!(ok.len(), 1, "{out:?}");
+    assert!(out.iter().all(|(s, v)| *s == 200 || (*s == 409 && v["error"]["code"] == "subscribed")), "{out:?}");
+    assert_eq!(debits(&mock, 3), 1);
+    let rows = subs_of(3).await;
+    assert_eq!(rows.len(), 1, "{rows:?}");
+    assert_eq!((rows[0].1.as_str(), rows[0].2), ("active", false));
+    assert_eq!(payments(rows[0].0).await, 1);
+    let deps: i64 = sqlx::query_scalar("SELECT count(*) FROM deployments WHERE subscription_id = $1").bind(rows[0].0).fetch_one(&st.pool).await.unwrap();
+    assert_eq!(deps, 1);
+
+    // eight requests with the same idempotency key: the same subscription for all of them, one charge
+    let out = burst(4, json!({"mode": "copy", "login": 50000104, "idempotencyKey": "tap-4"})).await;
+    let ids: std::collections::HashSet<i64> = out.iter().filter(|(s, _)| *s == 200).map(|(_, v)| v["id"].as_i64().unwrap()).collect();
+    assert_eq!(ids.len(), 1, "{out:?}");
+    assert_eq!(out.iter().filter(|(s, v)| *s == 200 && v["replayed"] == false).count(), 1, "{out:?}");
+    assert!(out.iter().all(|(s, v)| *s == 200 || (*s == 409 && v["error"]["code"] == "in_progress")), "{out:?}");
+    assert_eq!(debits(&mock, 4), 1);
+    assert_eq!(subs_of(4).await.len(), 1);
+    // a later retry with that key answers with the subscription; the key can't be reused for another listing
+    let (s, v) = c.user(4, M::POST, &path, Some(json!({"mode": "copy", "login": 50000104, "idempotencyKey": "tap-4"}))).await;
+    assert_eq!((s, v["replayed"].as_bool(), v["status"].as_str()), (200, Some(true), Some("active")), "{v}");
+    let (s, v) = c.user(4, M::POST, &format!("/v1/market/listings/{}/subscribe", lid + 1000), Some(json!({"mode": "copy", "login": 50000104, "idempotencyKey": "tap-4"}))).await;
+    assert_eq!((s, v["error"]["code"].as_str()), (409, Some("idempotency_conflict")));
+    let (s, v) = c.user(4, M::POST, &path, Some(json!({"mode": "copy", "login": 50000104, "idempotencyKey": "bad key!"}))).await;
+    assert_eq!((s, v["error"]["field"].as_str()), (422, Some("idempotencyKey")));
+    assert_eq!(debits(&mock, 4), 1);
+
+    // the wallet books the debit but its answer is lost (twice): the setup waits for the same transfer
+    mock.wallet_delay_ms.store(2500, SeqCst);
+    let (s, v) = c.user(5, M::POST, &path, Some(json!({"mode": "copy", "login": 50000105, "idempotencyKey": "lost-5"}))).await;
+    assert_eq!((s, v["error"]["code"].as_str()), (503, Some("payment_pending")), "{v}");
+    assert_eq!(debits(&mock, 5), 1, "booked once, although sent twice");
+    let rows = subs_of(5).await;
+    assert_eq!((rows.len(), rows[0].1.as_str(), rows[0].2), (1, "past_due", true), "{rows:?}");
+    // meanwhile: no second subscription, and the same key waits for the setup
+    let (s, v) = c.user(5, M::POST, &path, Some(json!({"mode": "copy", "login": 50000105}))).await;
+    assert_eq!((s, v["error"]["code"].as_str()), (409, Some("subscribed")));
+    let (s, v) = c.user(5, M::POST, &path, Some(json!({"mode": "copy", "login": 50000105, "idempotencyKey": "lost-5"}))).await;
+    assert_eq!((s, v["error"]["code"].as_str()), (409, Some("in_progress")));
+    // the wallet answers again: the retry with the same key finishes the subscription with the booked payment
+    mock.wallet_delay_ms.store(0, SeqCst);
+    sqlx::query("UPDATE subscriptions SET setup_until = now() WHERE id = $1").bind(rows[0].0).execute(&st.pool).await.unwrap();
+    let (s, v) = c.user(5, M::POST, &path, Some(json!({"mode": "copy", "login": 50000105, "idempotencyKey": "lost-5"}))).await;
+    assert_eq!((s, v["status"].as_str(), v["replayed"].as_bool()), (200, Some("active"), Some(true)), "{v}");
+    assert!(v["deploymentId"].as_i64().is_some());
+    assert_eq!(debits(&mock, 5), 1);
+    assert_eq!(payments(rows[0].0).await, 1);
+
+    // a lost answer nobody retries: the janitor finishes it, still with the one payment
+    mock.wallet_delay_ms.store(2500, SeqCst);
+    let (s, _) = c.user(6, M::POST, &path, Some(json!({"mode": "copy", "login": 50000106, "idempotencyKey": "lost-6"}))).await;
+    assert_eq!(s, 503);
+    mock.wallet_delay_ms.store(0, SeqCst);
+    assert_eq!(algo::api::market::finish_setups(&st).await.unwrap(), 0, "not before its lease ends");
+    sqlx::query("UPDATE subscriptions SET setup_until = now() WHERE user_id = 6").execute(&st.pool).await.unwrap();
+    assert_eq!(algo::api::market::finish_setups(&st).await.unwrap(), 1);
+    let rows = subs_of(6).await;
+    assert_eq!((rows.len(), rows[0].1.as_str(), rows[0].2), (1, "active", false), "{rows:?}");
+    assert_eq!(debits(&mock, 6), 1);
+    assert_eq!(payments(rows[0].0).await, 1);
+
+    // a refused payment ends the setup; a retry with its key is told why, a new request can succeed
+    *mock.wallet_balance.lock().unwrap() = 10.0;
+    let (s, v) = c.user(7, M::POST, &path, Some(json!({"mode": "clone", "idempotencyKey": "poor-7"}))).await;
+    assert_eq!((s, v["error"]["code"].as_str()), (422, Some("clone_not_allowed")), "the author doesn't allow cloning");
+    let (s, v) = c.user(7, M::POST, &path, Some(json!({"mode": "copy", "login": 50000107, "idempotencyKey": "poor-7"}))).await;
+    assert_eq!((s, v["error"]["code"].as_str()), (422, Some("insufficient_funds")), "{v}");
+    let (s, v) = c.user(7, M::POST, &path, Some(json!({"mode": "copy", "login": 50000107, "idempotencyKey": "poor-7"}))).await;
+    assert_eq!((s, v["error"]["code"].as_str()), (409, Some("subscription_failed")), "{v}");
+    assert!(v["error"]["message"].as_str().unwrap().contains("below 50"), "{v}");
+    // a failed setup is not a subscriber: no review
+    let (s, _) = c.user(7, M::POST, &format!("/v1/market/listings/{lid}/reviews"), Some(json!({"rating": 1}))).await;
+    assert_eq!(s, 403);
+    *mock.wallet_balance.lock().unwrap() = 100.0;
+    let (s, v) = c.user(7, M::POST, &path, Some(json!({"mode": "copy", "login": 50000107, "idempotencyKey": "poor-7b"}))).await;
+    assert_eq!((s, v["status"].as_str()), (200, Some("active")), "{v}");
+    assert_eq!(debits(&mock, 7), 1);
+
+    // the author was credited once per subscription (5 × 40 USDT after the 20 % platform cut)
+    let credits = mock.transfers.lock().unwrap().iter().filter(|t| t["direction"] == "credit" && t["user_id"] == 1).count();
+    assert_eq!(credits, 5);
+    let (_, mine) = c.user(1, M::GET, "/v1/market/mine", None).await;
+    assert_eq!((mine["earned"].as_f64(), mine["payments"].as_i64()), (Some(200.0), Some(5)));
+    let (_, l) = c.user(8, M::GET, &format!("/v1/market/listings/{lid}"), None).await;
+    assert_eq!(l["subscribers"], 5);
+    assert!(mock.wallet_calls.load(SeqCst) > mock.transfers.lock().unwrap().len(), "replays reached the wallet and were not booked");
     teardown(&st).await;
 }
