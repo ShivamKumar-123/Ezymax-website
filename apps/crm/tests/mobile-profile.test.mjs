@@ -107,9 +107,10 @@ const auth = (t, extra = {}) => ({ authorization: `Bearer ${t}`, ...extra });
 /* GET /api/mobile/menu                                                */
 /* ------------------------------------------------------------------ */
 
-test("menu is a native mobile family", async () => {
+test("menu is a native mobile route, judged like /auth/me by the proxy's policies", async () => {
   const { mobile } = await load();
-  assert.deepEqual(mobile.mobileRoute("/api/mobile/menu"), { kind: "native", target: "/api/mobile/menu", policyPath: "/api/mobile/menu" });
+  assert.deepEqual(mobile.mobileRoute("/api/mobile/menu"), { kind: "native", target: "/api/mobile/menu", policyPath: "/api/auth/me" });
+  assert.equal(mobile.mobileRoute("/api/mobile/menu/anything"), null, "nothing else under menu/");
 });
 
 test("menu needs a session and returns the broker's modules, support email and legal pages", async () => {
@@ -138,11 +139,22 @@ test("menu prefers the broker's configured website; local hosts fall back to the
   assert.equal((await local.res.json()).brand.website, "https://kalkstrade.com");
 });
 
-test("a view-only login can't read the menu (outside its sections); the app shows its shared sections instead", async () => {
+test("a view-only login reads the broker's menu (module switches, support email, legal pages) but can't write to it", async () => {
   const m = await load();
-  const { res } = await viaProxy(m, "/api/mobile/menu", { headers: auth(TOKENS.viewer) }, m.menu.GET, {});
-  assert.equal(res.status, 403);
-  assert.equal((await res.json()).error.code, "viewer_scope");
+  const { res } = await viaProxy(m, "/api/mobile/menu", { headers: auth(TOKENS.viewer, { host: "app.brokerone.com" }) }, m.menu.GET, {}, "https://app.brokerone.com");
+  assert.equal(res.status, 200);
+  const d = await res.json();
+  assert.equal(d.modules.prop, false);
+  assert.equal(d.legal[0].url, "https://brokerone.com/terms", "the broker's own legal pages, not the Kalks website");
+  const post = await viaProxy(m, "/api/mobile/menu", { method: "POST", headers: auth(TOKENS.viewer, { "content-type": "application/json" }), body: "{}" }, m.menu.GET, {});
+  assert.equal(post.res.status, 403);
+  assert.equal((await post.res.json()).error.code, "viewer_read_only");
+});
+
+test("a dead viewer session gets no menu", async () => {
+  const m = await load();
+  const { res } = await viaProxy(m, "/api/mobile/menu", { headers: auth(`v.${"z".repeat(43)}`) }, m.menu.GET, {});
+  assert.equal(res.status, 401);
 });
 
 /* ------------------------------------------------------------------ */

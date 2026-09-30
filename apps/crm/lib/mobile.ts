@@ -47,6 +47,8 @@ export function mobileRoute(pathname: string): MobileRoute | null {
   const [family, second] = rest.split("/");
   if (family === "auth" && second && AUTH_REWRITES.has(second)) return { kind: "rewrite", target: `/api/${rest}`, policyPath: `/api/${rest}` };
   if (family === "config") return rest === "config" ? { kind: "native", target: pathname, policyPath: "/api/status" } : null;
+  // the More tab's menu (brand, module switches, legal pages) is read by every session, view-only logins too: judged like /auth/me
+  if (family === "menu") return rest === "menu" ? { kind: "native", target: pathname, policyPath: "/api/auth/me" } : null;
   if (family === "auth") return second ? { kind: "native", target: pathname, policyPath: `/api/auth/${second}` } : null;
   if (family && NATIVE.has(family)) return { kind: "native", target: pathname, policyPath: pathname };
   if (family && REWRITES.has(family)) return { kind: "rewrite", target: `/api/${rest}`, policyPath: `/api/${rest}` };
