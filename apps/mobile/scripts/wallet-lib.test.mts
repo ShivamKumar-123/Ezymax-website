@@ -7,7 +7,7 @@ import test from "node:test";
 import { ascii, keccak256, sha256, sha3_256, toHex } from "../src/features/wallet/lib/hash.ts";
 import { checkAddress, eip55Valid, shortAddress, toChecksumAddress, tronValid, TX_HASH_RE } from "../src/features/wallet/lib/address.ts";
 import { eip681TokenTransfer, toUnits } from "../src/features/wallet/lib/eip681.ts";
-import { cents, cleanAmount, fmtAmount, fromCents, isAmount } from "../src/features/wallet/lib/money.ts";
+import { addAmounts, cents, cleanAmount, fmtAmount, fromCents, isAmount } from "../src/features/wallet/lib/money.ts";
 
 test("sha256 matches node:crypto for every length 0..300 and published vectors", () => {
   for (let n = 0; n <= 300; n++) {
@@ -102,4 +102,22 @@ test("amount helpers", () => {
   assert.equal(fromCents(123456), "1234.56");
   assert.equal(fromCents(100), "1");
   assert.equal(fromCents(150), "1.5");
+});
+
+test("computed amounts never show float noise; wallet sums are exact decimals", () => {
+  // 10.7 + 0.1 = 10.799999999999999 and 0.1 + 0.2 = 0.30000000000000004 in floating point
+  assert.equal(fmtAmount(10.7 + 0.1), "10.80");
+  assert.equal(fmtAmount(0.1 + 0.2), "0.30");
+  assert.equal(fmtAmount(123457.13 / 100), "1,234.5713");
+  assert.equal(fmtAmount(120001.57 / 100), "1,200.0157");
+  assert.equal(fmtAmount(0.000125), "0.000125");
+  // the balance block's total: available + locked as the service's decimal strings
+  assert.equal(addAmounts("10.7", "0.1"), "10.8");
+  assert.equal(addAmounts("0.1", "0.2"), "0.3");
+  assert.equal(addAmounts("1250.100000", "100.200000"), "1350.3");
+  assert.equal(addAmounts("0.000001", "0.000002"), "0.000003");
+  assert.equal(addAmounts("99999999.999999", "0.000001"), "100000000");
+  assert.equal(addAmounts("5", null, undefined, ""), "5");
+  assert.equal(addAmounts("-2.5", "1"), "-1.5");
+  assert.equal(fmtAmount(addAmounts("10.7", "0.1")), "10.80");
 });

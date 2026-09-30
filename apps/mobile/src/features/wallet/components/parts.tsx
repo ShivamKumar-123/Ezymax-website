@@ -8,6 +8,7 @@ import { useLocale, useT, type MessageKey } from "@/i18n";
 import { Mono, PressableScale, Text } from "@/ui";
 import { colors, GUTTER, HIT, radius, space } from "@/theme/tokens";
 import type { DepositStatus, WithdrawalStatus } from "../api";
+import { alpha } from "../lib/tint";
 
 /* ---- section title ---- */
 
@@ -30,14 +31,16 @@ export function SectionTitle({ title, action, onAction, onActionPressIn, style }
   );
 }
 
-/* ---- status chips (palette tones: green / red stay reserved for money) ---- */
+/* ---- status chips (token tones, all tints derived from them; green / red stay reserved for money amounts) ---- */
 
 export type ChipTone = "success" | "waiting" | "active" | "failed" | "neutral";
-const CHIP: Record<ChipTone, { fg: string; bg: string }> = {
-  success: { fg: colors.mint, bg: "rgba(127,209,185,0.14)" },
-  waiting: { fg: colors.gold, bg: "rgba(242,184,75,0.14)" },
-  active: { fg: colors.periwinkle, bg: "rgba(140,140,240,0.16)" },
-  failed: { fg: colors.ember, bg: "rgba(242,106,61,0.14)" },
+/** Settled = warm off-white, waiting for someone = gold, moving along on its own = info, not done = ember. Five tones
+ *  that stay apart in the web colour family (the Client Area uses info for the same "confirming / approved / paid"). */
+export const CHIP: Record<ChipTone, { fg: string; bg: string }> = {
+  success: { fg: colors.cream, bg: alpha(colors.cream, 0.12) },
+  waiting: { fg: colors.gold, bg: colors.goldSoft },
+  active: { fg: colors.info, bg: colors.infoSoft },
+  failed: { fg: colors.ember, bg: colors.emberSoft },
   neutral: { fg: colors.text2, bg: colors.surface2 },
 };
 
@@ -80,11 +83,12 @@ export function StatusChip({ tone, label, compact }: { tone: ChipTone; label: st
   );
 }
 
-/** Compact status for list rows: a dot and the label in the tone colour, followed by " · ". */
+/** Compact status for list rows: a dot and the label in the tone colour. It never shrinks: the status is the one
+ *  thing a row must always show in full (the text after it gives way instead). */
 export function StatusDot({ tone, label }: { tone: ChipTone; label: string }) {
   const c = CHIP[tone];
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, flexShrink: 1, minWidth: 0 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, flexShrink: 0 }}>
       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.fg }} />
       <Text variant="caption" weight="700" color={c.fg} numberOfLines={1}>
         {label}
@@ -104,21 +108,23 @@ export function ProgressBar({ value, color = colors.ember, height = 6 }: { value
   );
 }
 
-/** "12 / 15 confirmations" with a bar. */
-export function Confirmations({ done, required, credited, pending }: { done: number; required: number; credited?: boolean; pending?: boolean }) {
+/** "12 / 15 confirmations" with a bar; `state` adds the phase on the other side (off where a status chip says it). */
+export function Confirmations({ done, required, credited, pending, state = true }: { done: number; required: number; credited?: boolean; pending?: boolean; state?: boolean }) {
   const t = useT();
   const n = credited ? required : Math.min(done, required);
   return (
     <View style={{ gap: space[2] }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: space[3] }}>
         <Text variant="caption" tone="secondary">
           {t("wallet.activity.confirmations", { done: n, required })}
         </Text>
-        <Text variant="caption" tone="tertiary">
-          {credited ? t("wallet.confirmations.complete") : pending ? t("wallet.confirmations.firstBlock") : t("wallet.confirmations.confirming")}
-        </Text>
+        {state ? (
+          <Text variant="caption" tone="tertiary" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {credited ? t("wallet.confirmations.complete") : pending ? t("wallet.confirmations.firstBlock") : t("wallet.confirmations.confirming")}
+          </Text>
+        ) : null}
       </View>
-      <ProgressBar value={required ? n / required : 0} color={credited ? colors.mint : colors.ember} />
+      <ProgressBar value={required ? n / required : 0} color={credited ? colors.cream : colors.ember} />
     </View>
   );
 }

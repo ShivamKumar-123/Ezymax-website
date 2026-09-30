@@ -1,12 +1,15 @@
 // Transaction detail sheet (history and recent activity): status, amount, network, addresses, the explorer link
 // the server built (explorer_url), confirmations, the statement note of Back Office adjustments, and "Cancel" for a
-// withdrawal that is still waiting for review (the server decides; nothing changes until it answers).
+// withdrawal that is still waiting for review (the server decides; nothing changes until it answers). The content
+// scrolls when it is taller than the screen (a long note on a small phone), so the actions stay reachable.
 import * as React from "react";
 import { View } from "react-native";
+import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
 import { ExternalLink } from "lucide-react-native";
 import { useFormat, useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
+import { useSession } from "@/session";
 import { Button, Display, FormError, Sheet, Text, type SheetRef } from "@/ui";
 import { colors, space } from "@/theme/tokens";
 import { cancelWithdrawal, CHAIN_LABEL, refreshWallet, walletError, type ActivityItem } from "../api";
@@ -23,6 +26,7 @@ export function openExplorer(url: string | null | undefined) {
 }
 
 export const ActivitySheet = React.forwardRef<ActivitySheetHandle, { onChanged?: () => void }>(function ActivitySheet({ onChanged }, ref) {
+  const insets = useSafeAreaInsets();
   const sheet = React.useRef<SheetRef>(null);
   const [item, setItem] = React.useState<ActivityItem | null>(null);
   React.useImperativeHandle(ref, () => ({
@@ -32,8 +36,10 @@ export const ActivitySheet = React.forwardRef<ActivitySheetHandle, { onChanged?:
     },
   }));
   return (
-    <Sheet ref={sheet} onDismiss={() => setItem(null)}>
-      {item ? <Detail key={`${item.type}${item.id}`} item={item} onClose={() => sheet.current?.dismiss()} onChanged={onChanged} /> : <View style={{ height: 1 }} />}
+    <Sheet ref={sheet} scroll topInset={insets.top + space[2]} onDismiss={() => setItem(null)}>
+      <BottomSheetScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: space[5], paddingBottom: Math.max(insets.bottom, space[4]) + space[2] }}>
+        {item ? <Detail key={`${item.type}${item.id}`} item={item} onClose={() => sheet.current?.dismiss()} onChanged={onChanged} /> : <View style={{ height: 1 }} />}
+      </BottomSheetScrollView>
     </Sheet>
   );
 });
@@ -46,20 +52,21 @@ function Detail({ item, onClose, onChanged }: { item: ActivityItem; onClose: () 
   const [confirming, setConfirming] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
-  const canCancel = item.type === "withdrawal" && item.status === "requested";
+  // a view-only login can look but not cancel (the server refuses it too)
+  const viewer = useSession((s) => !!s.viewer);
+  const canCancel = item.type === "withdrawal" && item.status === "requested" && !viewer;
   const cur = activityCurrency(item);
 
   const cancel = async () => {
+    if (busy) return;
     setBusy(true);
     setErr(null);
     const r = await cancelWithdrawal(Number(item.id));
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(walletError(r.error, "wallet.withdraw.cancelFailed"));
       return;
     }
-    haptic.success();
     refreshWallet();
     onChanged?.();
     onClose();
@@ -116,17 +123,16 @@ function Detail({ item, onClose, onChanged }: { item: ActivityItem; onClose: () 
       {confirming ? (
         <View style={{ gap: space[3] }}>
           <Text tone="secondary">{t("mobileWallet.withdraw.cancelConfirm")}</Text>
-          <View style={{ flexDirection: "row", gap: space[3] }}>
-            <Button label={t("mobileWallet.keep")} variant="secondary" size="md" onPress={() => setConfirming(false)} style={{ flex: 1 }} />
-            <Button label={t("mobileWallet.withdraw.cancelAction")} variant="danger" size="md" loading={busy} onPress={cancel} style={{ flex: 1 }} testID="confirm-cancel-withdrawal" />
-          </View>
+          {/* stacked full width: the labels stay whole on a 360 pt phone and in longer languages */}
+          <Button label={t("mobileWallet.withdraw.cancelAction")} variant="danger" size="md" loading={busy} onPress={cancel} testID="confirm-cancel-withdrawal" />
+          <Button label={t("mobileWallet.keep")} variant="ghost" size="md" disabled={busy} onPress={() => setConfirming(false)} />
         </View>
       ) : (
-        <View style={{ flexDirection: "row", gap: space[3] }}>
+        <View style={{ gap: space[3] }}>
           {item.explorer_url ? (
-            <Button label={t("mobileWallet.viewOnExplorer")} variant="secondary" size="md" icon={<ExternalLink size={17} color={colors.text} />} onPress={() => openExplorer(item.explorer_url)} style={{ flex: 1 }} />
+            <Button label={t("mobileWallet.viewOnExplorer")} variant="secondary" size="md" icon={<ExternalLink size={17} color={colors.text} />} onPress={() => openExplorer(item.explorer_url)} />
           ) : null}
-          {canCancel ? <Button label={t("mobileWallet.withdraw.cancelAction")} variant="danger" size="md" onPress={() => setConfirming(true)} style={{ flex: 1 }} testID="cancel-withdrawal" /> : null}
+          {canCancel ? <Button label={t("mobileWallet.withdraw.cancelAction")} variant="danger" size="md" onPress={() => setConfirming(true)} testID="cancel-withdrawal" /> : null}
           {!item.explorer_url && !canCancel ? <Button label={t("common.close")} variant="secondary" size="md" onPress={onClose} /> : null}
         </View>
       )}

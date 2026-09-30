@@ -10,9 +10,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useT } from "@/i18n";
 import { haptic } from "@/lib/haptics";
 import { useQuery } from "@/lib/query";
+import { useSession } from "@/session";
 import { EmptyState, PillRow, Text, useBottomInset } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
-import { fetchActivity, QK, walletError, type ActivityItem, type Page } from "../api";
+import { fetchActivity, fetchHistory, HISTORY_PAGE, QK, walletError, type ActivityItem, type Page } from "../api";
 import { ACTIVITY_ROW_HEIGHT, ActivityRow, ActivitySkeleton } from "../components/ActivityRow";
 import { ActivitySheet, type ActivitySheetHandle } from "../components/ActivitySheet";
 import { WalletState } from "../components/states";
@@ -20,7 +21,7 @@ import { WalletHeader } from "../components/WalletHeader";
 
 type Kind = "all" | "deposit" | "withdrawal" | "transfer" | "other";
 const KINDS: Kind[] = ["all", "deposit", "withdrawal", "transfer", "other"];
-const PER = 25;
+const PER = HISTORY_PAGE;
 
 const keyOf = (a: ActivityItem) => `${a.type}:${a.id}`;
 
@@ -35,17 +36,20 @@ export function HistoryScreen() {
   const initial = KINDS.includes(params.type as Kind) ? (params.type as Kind) : "all";
   const [kind, setKind] = React.useState<Kind>(initial);
   const bottom = useBottomInset(false);
+  // a view-only login can't deposit: no call to action in the empty state
+  const viewer = useSession((st) => !!st.viewer);
   const sheet = React.useRef<ActivitySheetHandle>(null);
 
-  const first = useQuery<Page<ActivityItem>>(QK.history(kind), () => fetchActivity(kind, 1, PER), { persist: true, staleMs: 15_000 });
-  // further pages (not cached): reset whenever the filter or the first page changes
+  const first = useQuery<Page<ActivityItem>>(QK.history(kind), () => fetchHistory(kind), { persist: true, staleMs: 15_000 });
+  // further pages (not cached): reset whenever the filter or the first page changes (a refresh that brings the same
+  // first page keeps its object, see api.ts `shared`, so the pages already scrolled through stay)
   const [extra, setExtra] = React.useState<{ kind: Kind; items: ActivityItem[]; page: number }>({ kind, items: [], page: 1 });
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [moreError, setMoreError] = React.useState<string | null>(null);
   React.useEffect(() => {
     setExtra({ kind, items: [], page: 1 });
     setMoreError(null);
-  }, [kind, first.updatedAt]);
+  }, [kind, first.data]);
 
   const items = React.useMemo(() => {
     const seen = new Set<string>();
@@ -114,8 +118,8 @@ export function HistoryScreen() {
         size={220}
         title={kind === "all" ? t("wallet.recent.emptyTitle") : t("common.noData")}
         body={kind === "all" ? t("wallet.recent.emptyText") : t("wallet.history.emptyText")}
-        action={kind === "all" ? t("wallet.recent.firstDeposit") : undefined}
-        onAction={kind === "all" ? () => router.push("/wallet/deposit") : undefined}
+        action={kind === "all" && !viewer ? t("wallet.recent.firstDeposit") : undefined}
+        onAction={kind === "all" && !viewer ? () => router.push("/wallet/deposit") : undefined}
       />
     );
 

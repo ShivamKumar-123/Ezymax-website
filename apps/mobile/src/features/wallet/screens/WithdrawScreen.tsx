@@ -1,9 +1,11 @@
 // /wallet/withdraw: USDT to the client's own address on BNB Chain or TRON.
-// - Identity check first (KYC-required and in-review states); restrictions, view-only and the post-deposit cooldown
+// - Identity check first (KYC-required and in-review states, re-read from the server whenever the screen comes to
+//   the front, since the Back Office decides it at any time); restrictions, view-only and the post-deposit cooldown
 //   are shown and enforced by the server as well.
 // - The destination is checked as typed (format, EIP-55 / base58check checksum, other network, token contract).
 // - Fees and limits come from the service: every change of network / address / amount asks for a fresh quote
-//   (debounced), exactly the checks the request itself will run, before any code is emailed.
+//   (debounced), exactly the checks the request itself will run, before any code is emailed. A quote only counts
+//   for the inputs it was asked for.
 // - Confirm = emailed code (step-up) -> request; the answer is the server's. Pending requests can be cancelled
 //   while they wait for review.
 import * as React from "react";
@@ -12,13 +14,14 @@ import { useIsFocused, useRouter } from "expo-router";
 import { CircleCheck } from "lucide-react-native";
 import { useFormat, useT } from "@/i18n";
 import { haptic } from "@/lib/haptics";
-import { useMe, useSession } from "@/session";
+import { refreshMe, useMe, useSession } from "@/session";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { Banner, Button, Card, ColorBlock, Display, Divider, FormError, Illustration, Mono, Screen, Text, TextField } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 import {
   CHAIN_LABEL,
   quoteWithdrawal,
+  refreshOnScreen,
   refreshWallet,
   requestId,
   requestWithdrawal,
@@ -40,11 +43,12 @@ import { ActivitySheet, type ActivitySheetHandle } from "../components/ActivityS
 import { AmountInput } from "../components/AmountInput";
 import { NetworkPicker } from "../components/NetworkPicker";
 import { InfoRow, PasteButton, ProgressBar, SectionTitle, Tile } from "../components/parts";
-import { StepUpSheet, type StepUpSheetHandle } from "../components/StepUpSheet";
+import { CompactSummary, StepUpSheet, type StepUpSheetHandle } from "../components/StepUpSheet";
 import { FormSkeleton, HeroSkeleton, ViewOnlyNotice, WalletState } from "../components/states";
 import { WalletHeader } from "../components/WalletHeader";
-import { checkAddress, type AddressProblem } from "../lib/address";
+import { checkAddress, shortAddress, type AddressProblem } from "../lib/address";
 import { cents, fmtAmount, fromCents, isAmount } from "../lib/money";
+import { onBlock } from "../lib/tint";
 
 const asActivity = (w: Withdrawal): ActivityItem => ({
   type: "withdrawal",
@@ -69,27 +73,32 @@ const asActivity = (w: Withdrawal): ActivityItem => ({
   updated_at: w.updated_at,
 });
 
-/** The service's quote for the current form (debounced; stale answers are dropped). */
-function useQuote(chain: Chain | null, amount: string, to: string, enabled: boolean) {
-  const [s, setS] = React.useState<{ quote: Quote | null; error: ApiError | null; busy: boolean }>({ quote: null, error: null, busy: false });
+type QuoteState = { quote: Quote | null; error: ApiError | null; busy: boolean };
+
+/** The service's quote for the current form (debounced; stale answers are dropped). The answer is tied to the inputs
+ *  it was asked for, so a quote for the previous amount is never shown (or confirmed) for a new one. */
+function useQuote(chain: Chain | null, amount: string, to: string, enabled: boolean): QuoteState {
+  const inputs = `${chain}|${amount}|${to}`;
+  const [s, setS] = React.useState<QuoteState & { for: string }>({ quote: null, error: null, busy: false, for: "" });
   React.useEffect(() => {
-    setS({ quote: null, error: null, busy: enabled });
+    setS({ quote: null, error: null, busy: enabled, for: inputs });
     if (!enabled || !chain) return;
     const ctl = new AbortController();
     const id = setTimeout(async () => {
       const r = await quoteWithdrawal(chain, amount, to, ctl.signal);
       if (ctl.signal.aborted) return;
-      setS(r.ok ? { quote: r.data.quote, error: null, busy: false } : { quote: null, error: r.error, busy: false });
+      setS(r.ok ? { quote: r.data.quote, error: null, busy: false, for: inputs } : { quote: null, error: r.error, busy: false, for: inputs });
     }, 400);
     return () => {
       ctl.abort();
       clearTimeout(id);
     };
-  }, [chain, amount, to, enabled]);
+  }, [chain, amount, to, enabled, inputs]);
+  if (s.for !== inputs) return { quote: null, error: null, busy: enabled };
   return s;
 }
 
-function AvailableHero({ o }: { o: Overview }) {
+const AvailableHero = React.memo(function AvailableHero({ o }: { o: Overview }) {
   const t = useT();
   const b = usdtBalance(o);
   const used = Number(o.limits.used_today);
@@ -109,21 +118,21 @@ function AvailableHero({ o }: { o: Overview }) {
         </Text>
       </View>
       <View style={{ marginTop: space[4], gap: space[2] }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <Text variant="caption" weight="600" color={colors.ink2}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", gap: space[3] }}>
+          <Text variant="caption" weight="600" color={colors.ink2} numberOfLines={1} style={{ flexShrink: 1 }}>
             {t("wallet.withdraw.withdrawnToday")}
           </Text>
           <Mono size={12.5} weight="medium" color={colors.ink2}>
-            {`${fmtAmount(used)} / ${fmtAmount(max)}`}
+            {`${fmtAmount(o.limits.used_today)} / ${fmtAmount(o.limits.daily_max)}`}
           </Mono>
         </View>
-        <View style={{ height: 6, borderRadius: 3, backgroundColor: "rgba(14,14,16,0.14)", overflow: "hidden" }}>
+        <View style={{ height: 6, borderRadius: 3, backgroundColor: onBlock.track, overflow: "hidden" }}>
           <View style={{ width: `${max ? Math.min(100, (used / max) * 100) : 0}%`, height: "100%", backgroundColor: colors.ink }} />
         </View>
       </View>
     </ColorBlock>
   );
-}
+});
 
 function KycBlock({ status }: { status: string | undefined }) {
   const t = useT();
@@ -160,7 +169,8 @@ function addressMessage(p: AddressProblem, chain: Chain, t: ReturnType<typeof us
 
 type Pending = { chain: Chain; amount: string; to: string; quote: Quote; key: string };
 
-function WithdrawForm({ cfg, o, blocked }: { cfg: WalletConfig; o: Overview; blocked: boolean }) {
+/** Memoised: a poll that brings the same overview / config (api.ts `shared`) doesn't touch the form being typed. */
+const WithdrawForm = React.memo(function WithdrawForm({ cfg, o, blocked }: { cfg: WalletConfig; o: Overview; blocked: boolean }) {
   const t = useT();
   const enabled = cfg.chains.filter((c) => c.withdrawals_enabled);
   const [chain, setChain] = React.useState<Chain | null>(enabled[0]?.chain ?? null);
@@ -187,7 +197,7 @@ function WithdrawForm({ cfg, o, blocked }: { cfg: WalletConfig; o: Overview; blo
         : cents(amount) > cents(L.withdraw_max)
           ? t("mobileWallet.withdraw.aboveMax", { max: fmtAmount(L.withdraw_max) })
           : null;
-  const ready = !!chain && !!check?.ok && amountOk && !amountError && !blocked;
+  const ready = !!chain && !!c?.withdrawals_enabled && !!check?.ok && amountOk && !amountError && !blocked;
   // a new request id whenever the request changes (the same id replays the same withdrawal on the server)
   React.useEffect(() => setKey(requestId()), [chain, to, amount]);
   const q = useQuote(chain, amount.trim(), to.trim(), ready);
@@ -201,7 +211,7 @@ function WithdrawForm({ cfg, o, blocked }: { cfg: WalletConfig; o: Overview; blo
 
   const onMax = () => setAmount(fromCents(Math.min(cents(available), cents(L.withdraw_max))));
   const open = () => {
-    if (!q.quote || !chain) return;
+    if (!q.quote || !chain || !ready) return;
     setPending({ chain, amount: amount.trim(), to: to.trim(), quote: q.quote, key });
     setDone(null);
     sheet.current?.open();
@@ -210,7 +220,6 @@ function WithdrawForm({ cfg, o, blocked }: { cfg: WalletConfig; o: Overview; blo
     if (!pending) return t("wallet.withdraw.failed");
     const r = await requestWithdrawal({ chain: pending.chain, amount: pending.amount, to: pending.to, key: pending.key, stepupToken: token });
     if (!r.ok) {
-      haptic.error();
       // a definite refusal: the next try is a new request; after a network error / 5xx the same id is kept, so a
       // retry (with a new code) returns the withdrawal the server may already have recorded instead of a second one
       if (r.status >= 400 && r.status < 500) {
@@ -220,6 +229,7 @@ function WithdrawForm({ cfg, o, blocked }: { cfg: WalletConfig; o: Overview; blo
       }
       return walletError(r.error, "wallet.withdraw.failed");
     }
+    // the money left the available balance (booked on the server): the one haptic of this flow
     haptic.success();
     setDone(r.data.withdrawal);
     setAmount("");
@@ -308,6 +318,7 @@ function WithdrawForm({ cfg, o, blocked }: { cfg: WalletConfig; o: Overview; blo
             </View>
           ) : null
         }
+        compact={p ? <CompactSummary label={t("wallet.youReceive")} value={`${fmtAmount(p.quote.net_amount)} USDT`} detail={`${CHAIN_LABEL[p.chain].short} · ${shortAddress(p.to, 10, 8)}`} /> : null}
         success={
           done ? (
             <View style={{ alignItems: "center", gap: space[3] }}>
@@ -327,9 +338,9 @@ function WithdrawForm({ cfg, o, blocked }: { cfg: WalletConfig; o: Overview; blo
       />
     </View>
   );
-}
+});
 
-function LimitsCard({ cfg, o }: { cfg: WalletConfig; o: Overview }) {
+const LimitsCard = React.memo(function LimitsCard({ cfg, o }: { cfg: WalletConfig; o: Overview }) {
   const t = useT();
   const fmt = useFormat();
   const L = cfg.limits;
@@ -340,38 +351,35 @@ function LimitsCard({ cfg, o }: { cfg: WalletConfig; o: Overview }) {
   return (
     <>
       <SectionTitle title={t("wallet.withdraw.limitsTitle")} />
-      <Card style={{ marginHorizontal: GUTTER, gap: space[4] }}>
-        <View style={{ gap: space[2] }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <Text variant="callout" tone="secondary">
+      <Card style={{ marginHorizontal: GUTTER, gap: space[2] }}>
+        <View style={{ gap: space[2], paddingBottom: space[2] }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: space[3] }}>
+            <Text variant="callout" tone="secondary" numberOfLines={1} style={{ flexShrink: 1 }}>
               {t("wallet.withdraw.withdrawnToday")}
             </Text>
-            <Mono size={13} tone="tertiary">{`${fmtAmount(used)} / ${fmtAmount(max)} USDT`}</Mono>
+            <Mono size={13} tone="tertiary">{`${fmtAmount(o.limits.used_today)} / ${fmtAmount(o.limits.daily_max)}`}</Mono>
           </View>
           <ProgressBar value={max ? used / max : 0} color={max && used / max > 0.8 ? colors.gold : colors.periwinkle} />
           <Text variant="caption" tone="tertiary">
             {t("wallet.withdraw.limitsSubtitle")}
           </Text>
         </View>
-        <View style={{ flexDirection: "row", gap: space[2] }}>
-          <Tile label={t("wallet.minimum")} value={`${fmtAmount(L.withdraw_min)} USDT`} />
-          <Tile label={t("wallet.maximum")} value={`${fmtAmount(L.withdraw_max)} USDT`} />
-        </View>
-        <View style={{ flexDirection: "row", gap: space[2] }}>
-          <Tile label={t("wallet.fee")} value={`${fmtAmount(L.withdraw_fee_flat)} USDT${pct > 0 ? ` + ${L.withdraw_fee_pct}%` : ""}`} />
-          <Tile label={t("wallet.withdraw.afterDeposit")} value={L.deposit_cooldown_hours ? t("wallet.withdraw.hoursWait", { hours: L.deposit_cooldown_hours }) : t("wallet.withdraw.noWait")} />
-        </View>
+        {/* label / value rows (not tiles): the amounts stay whole on a 360 pt phone */}
+        <InfoRow label={t("wallet.minimum")} value={`${fmtAmount(L.withdraw_min)} USDT`} mono />
+        <InfoRow label={t("wallet.maximum")} value={`${fmtAmount(L.withdraw_max)} USDT`} mono />
+        <InfoRow label={t("wallet.fee")} value={`${fmtAmount(L.withdraw_fee_flat)} USDT${pct > 0 ? ` + ${L.withdraw_fee_pct}%` : ""}`} mono />
+        <InfoRow label={t("wallet.withdraw.afterDeposit")} value={L.deposit_cooldown_hours ? t("wallet.withdraw.hoursWait", { hours: L.deposit_cooldown_hours }) : t("wallet.withdraw.noWait")} last={!cooldown} />
         {cooldown ? (
-          <Text variant="caption" tone="gold">
+          <Text variant="caption" tone="gold" style={{ paddingTop: space[2] }}>
             {t("wallet.withdraw.cooldown", { date: fmt.dateTime(cooldown) })}
           </Text>
         ) : null}
       </Card>
     </>
   );
-}
+});
 
-function YourWithdrawals({ onOpen }: { onOpen: (a: ActivityItem) => void }) {
+const YourWithdrawals = React.memo(function YourWithdrawals({ onOpen }: { onOpen: (a: ActivityItem) => void }) {
   const t = useT();
   const router = useRouter();
   const q = useWithdrawals(useIsFocused());
@@ -382,7 +390,7 @@ function YourWithdrawals({ onOpen }: { onOpen: (a: ActivityItem) => void }) {
       {q.loading ? (
         <ActivitySkeleton rows={2} />
       ) : items.length === 0 ? (
-        <Text variant="callout" tone="tertiary" style={{ paddingHorizontal: GUTTER, paddingVertical: space[2] }}>
+        <Text variant="callout" tone="tertiary" style={{ paddingHorizontal: GUTTER, paddingVertical: space[2] }} onPress={q.error ? () => void q.refresh() : undefined}>
           {q.error ? walletError(q.error) : t("wallet.withdraw.none")}
         </Text>
       ) : (
@@ -397,7 +405,7 @@ function YourWithdrawals({ onOpen }: { onOpen: (a: ActivityItem) => void }) {
       )}
     </>
   );
-}
+});
 
 export function WithdrawScreen() {
   const t = useT();
@@ -408,14 +416,16 @@ export function WithdrawScreen() {
   const viewer = useSession((s) => !!s.viewer);
   const cfg = useWalletConfig();
   const o = useOverview(focused);
-  // "Your withdrawals" polls its own list; this handle is for pull to refresh
-  const list = useWithdrawals(false);
   const sheet = React.useRef<ActivitySheetHandle>(null);
   const openItem = React.useCallback((a: ActivityItem) => sheet.current?.open(a), []);
-  const refresh = React.useCallback(async () => {
-    await Promise.all([cfg.refresh(), o.refresh(), list.refresh()]);
-  }, [cfg.refresh, o.refresh, list.refresh]);
   const verified = me?.kyc_status === "verified";
+  // the identity check is decided by the Back Office at any time: re-read it whenever this screen comes to the front
+  React.useEffect(() => {
+    if (focused && !verified && !viewer) void refreshMe();
+  }, [focused, verified, viewer]);
+  const refresh = React.useCallback(async () => {
+    await Promise.all([refreshOnScreen(async () => void (await Promise.all([cfg.refresh(), o.refresh()]))), verified || viewer ? null : refreshMe()]);
+  }, [cfg.refresh, o.refresh, verified, viewer]);
   const cooldown = !!o.data?.limits.cooldown_until && Date.parse(o.data.limits.cooldown_until) > Date.now();
 
   const header = <WalletHeader eyebrow="USDT" title={t("common.withdraw")} subtitle={t("wallet.withdraw.subtitle")} />;
@@ -435,7 +445,7 @@ export function WithdrawScreen() {
         {cooldown && o.data?.limits.cooldown_until ? <CooldownBanner until={o.data.limits.cooldown_until} /> : null}
       </View>
       <View style={{ marginTop: space[5] }}>
-        {!me ? null : !verified ? <KycBlock status={me.kyc_status} /> : cfg.data && o.data ? <WithdrawForm cfg={cfg.data} o={o.data} blocked={restricted || viewer} /> : <FormSkeleton />}
+        {me && !verified ? <KycBlock status={me.kyc_status} /> : me && cfg.data && o.data ? <WithdrawForm cfg={cfg.data} o={o.data} blocked={restricted || viewer} /> : <FormSkeleton />}
       </View>
       {cfg.data && o.data ? <LimitsCard cfg={cfg.data} o={o.data} /> : null}
       <YourWithdrawals onOpen={openItem} />

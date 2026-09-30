@@ -1,30 +1,47 @@
 // /wallet: balances (huge number on a cream block), Deposit / Withdraw / Transfer, what is in progress (deposits
 // confirming, withdrawals in review), the live trading accounts to fund, and the latest activity. Opens on the
 // cached overview, refreshes in the background and every 15 s while on screen; pull to refresh.
+// Every section is memoised and subscribes to its own data: a poll that brings nothing new renders nothing, and a
+// change re-renders only the section it belongs to.
 import * as React from "react";
 import { View } from "react-native";
 import { useIsFocused, useRouter } from "expo-router";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, History } from "lucide-react-native";
-import { useT } from "@/i18n";
-import { useMe, useSession } from "@/session";
+import { useFormat, useT } from "@/i18n";
+import { refreshMe, useMe, useSession } from "@/session";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { Button, Card, ColorBlock, Display, Divider, EmptyState, IconButton, Mono, PressableScale, Screen, Skeleton, Text } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
-import { accountCurrencyPrefix, CHAIN_LABEL, prefetchWallet, toUsd, usdtBalance, useOverview, useRecentActivity, useTradingAccounts, type ActivityItem, type Balance, type Overview, type TradingAccount } from "../api";
+import {
+  accountCurrencyPrefix,
+  CHAIN_LABEL,
+  prefetchWallet,
+  refreshOnScreen,
+  usdOf,
+  usdtBalance,
+  useOverview,
+  useRecentActivity,
+  useTradingAccounts,
+  type ActivityItem,
+  type Balance,
+  type Deposit,
+  type TradingAccount,
+  type Withdrawal,
+} from "../api";
 import { ActivityRow, ActivitySkeleton } from "../components/ActivityRow";
 import { ActivitySheet, type ActivitySheetHandle } from "../components/ActivitySheet";
 import { Confirmations, DEPOSIT_STATUS, SectionTitle, StatusChip, WITHDRAWAL_STATUS } from "../components/parts";
 import { HeroSkeleton, KycNotice, ViewOnlyNotice, WalletState } from "../components/states";
 import { WalletHeader } from "../components/WalletHeader";
-import { fmtAmount } from "../lib/money";
+import { addAmounts, fmtAmount } from "../lib/money";
+import { alpha, onBlock } from "../lib/tint";
 
 /** Display size for a big number so it stays on one line. */
 const heroSize = (s: string) => (s.length > 12 ? "lg" : s.length > 9 ? "xl" : "hero");
 
-function BalanceHero({ b }: { b: Balance }) {
+const BalanceHero = React.memo(function BalanceHero({ currency, available, locked }: { currency: string; available: string; locked: string }) {
   const t = useT();
-  const available = fmtAmount(b.available);
-  const total = Number(b.available) + Number(b.locked);
+  const shown = fmtAmount(available);
   return (
     <ColorBlock color="cream" style={{ marginHorizontal: GUTTER }} testID="wallet-balance">
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -33,24 +50,24 @@ function BalanceHero({ b }: { b: Balance }) {
         </Text>
         <View style={{ height: 26, paddingHorizontal: space[3], borderRadius: radius.pill, backgroundColor: colors.ink, justifyContent: "center" }}>
           <Text variant="caption" weight="700" color={colors.cream}>
-            {b.currency}
+            {currency}
           </Text>
         </View>
       </View>
-      <Display size={heroSize(available)} color={colors.ink} style={{ marginTop: space[3] }} numberOfLines={1} accessibilityLabel={`${available} ${b.currency}`}>
-        {available}
+      <Display size={heroSize(shown)} color={colors.ink} style={{ marginTop: space[3] }} numberOfLines={1} accessibilityLabel={`${shown} ${currency}`}>
+        {shown}
       </Display>
       <Text variant="caption" color={colors.ink2} style={{ marginTop: space[1] }}>
         {t("wallet.transfer.creditedNote")}
       </Text>
-      <View style={{ height: 1, backgroundColor: "rgba(14,14,16,0.12)", marginVertical: space[4] }} />
+      <View style={{ height: 1, backgroundColor: onBlock.line, marginVertical: space[4] }} />
       <View style={{ flexDirection: "row", gap: space[8] }}>
         <View style={{ gap: 2 }}>
           <Text variant="label" color={colors.ink3}>
             {t("wallet.inProgress")}
           </Text>
           <Mono size={17} weight="bold" color={colors.ink}>
-            {fmtAmount(b.locked)}
+            {fmtAmount(locked)}
           </Mono>
         </View>
         <View style={{ gap: 2 }}>
@@ -58,15 +75,16 @@ function BalanceHero({ b }: { b: Balance }) {
             {t("common.total")}
           </Text>
           <Mono size={17} weight="bold" color={colors.ink}>
-            {fmtAmount(total)}
+            {/* exact decimal sum: available + locked, never float maths on money */}
+            {fmtAmount(addAmounts(available, locked))}
           </Mono>
         </View>
       </View>
     </ColorBlock>
   );
-}
+});
 
-function QuickActions() {
+const QuickActions = React.memo(function QuickActions() {
   const t = useT();
   const router = useRouter();
   const items = [
@@ -83,27 +101,29 @@ function QuickActions() {
           accessibilityLabel={label}
           onPressIn={warm}
           onPress={() => router.push(href)}
-          style={{ flex: 1, height: 108, borderRadius: radius.card, padding: space[4], justifyContent: "space-between", backgroundColor: primary ? colors.ember : colors.surface, borderWidth: primary ? 0 : 1, borderColor: colors.line }}
+          style={{ flex: 1, height: 108, borderRadius: radius.card, paddingHorizontal: space[3], paddingVertical: space[4], justifyContent: "space-between", backgroundColor: primary ? colors.ember : colors.surface, borderWidth: primary ? 0 : 1, borderColor: colors.line }}
         >
           <Icon size={24} color={primary ? colors.ink : colors.text} strokeWidth={2} />
-          <Display size="xs" color={primary ? colors.ink : colors.text} numberOfLines={1}>
+          {/* a third of a 360 pt phone: the label shrinks to fit rather than being cut (longer languages too) */}
+          <Display size="xs" color={primary ? colors.ink : colors.text} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
             {label}
           </Display>
         </PressableScale>
       ))}
     </View>
   );
-}
+});
 
-function InProgress({ o }: { o: Overview }) {
+const InProgress = React.memo(function InProgress({ deposits, withdrawals }: { deposits: Deposit[]; withdrawals: Withdrawal[] }) {
   const t = useT();
+  const fmt = useFormat();
   const router = useRouter();
-  if (!o.pending_deposits.length && !o.open_withdrawals.length) return null;
+  if (!deposits.length && !withdrawals.length) return null;
   return (
     <>
       <SectionTitle title={t("wallet.inProgress")} />
       <Card padded={false} style={{ marginHorizontal: GUTTER }}>
-        {o.pending_deposits.map((d, i) => {
+        {deposits.map((d, i) => {
           const st = DEPOSIT_STATUS[d.status];
           return (
             <View key={`d${d.id}`}>
@@ -124,16 +144,17 @@ function InProgress({ o }: { o: Overview }) {
                   </Mono>
                 </View>
                 {st ? <StatusChip compact tone={st.tone} label={t(st.label)} /> : null}
-                {d.status !== "review" ? <Confirmations done={d.confirmations} required={d.required_confirmations} pending={d.status === "pending"} /> : null}
+                {/* the chip says the phase; the bar counts the confirmations */}
+                {d.status !== "review" && d.status !== "unmatched" ? <Confirmations done={d.confirmations} required={d.required_confirmations} pending={d.status === "pending"} state={false} /> : null}
               </PressableScale>
             </View>
           );
         })}
-        {o.open_withdrawals.map((w, i) => {
+        {withdrawals.map((w, i) => {
           const st = WITHDRAWAL_STATUS[w.status];
           return (
             <View key={`w${w.id}`}>
-              {i > 0 || o.pending_deposits.length > 0 ? <Divider /> : null}
+              {i > 0 || deposits.length > 0 ? <Divider /> : null}
               <PressableScale scaleTo={0.985} onPressIn={prefetchWallet.withdraw} onPress={() => router.push("/wallet/withdraw")} style={{ padding: space[4], gap: space[2] }} testID={`open-withdrawal-${w.id}`}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
                   <Text variant="callout" weight="600" style={{ flex: 1 }} numberOfLines={1}>
@@ -141,12 +162,11 @@ function InProgress({ o }: { o: Overview }) {
                   </Text>
                   <Mono size={15} weight="bold">{`−${fmtAmount(w.amount)}`}</Mono>
                 </View>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: space[2], flexWrap: "wrap" }}>
-                  {st ? <StatusChip compact tone={st.tone} label={t(st.label)} /> : null}
-                  <Text variant="caption" tone="tertiary" style={{ flexShrink: 1 }}>
-                    {t("wallet.progress.withdrawalNet", { net: fmtAmount(w.net_amount), fee: fmtAmount(w.fee) })}
-                  </Text>
-                </View>
+                {st ? <StatusChip compact tone={st.tone} label={t(st.label)} /> : null}
+                {/* like the Client Area: "<date> · you receive … after the … fee" */}
+                <Text variant="caption" tone="tertiary">
+                  {`${fmt.dateTime(w.created_at)} · ${t("wallet.progress.withdrawalNet", { net: fmtAmount(w.net_amount), fee: fmtAmount(w.fee) })}`}
+                </Text>
               </PressableScale>
             </View>
           );
@@ -154,9 +174,9 @@ function InProgress({ o }: { o: Overview }) {
       </Card>
     </>
   );
-}
+});
 
-function OtherAssets({ balances }: { balances: Balance[] }) {
+const OtherAssets = React.memo(function OtherAssets({ balances }: { balances: Balance[] }) {
   const t = useT();
   const others = balances.filter((b) => b.currency !== "USDT" && (Number(b.available) > 0 || Number(b.locked) > 0));
   if (!others.length) return null;
@@ -187,15 +207,15 @@ function OtherAssets({ balances }: { balances: Balance[] }) {
       </Card>
     </>
   );
-}
+});
 
 const liveAccounts = (accounts: TradingAccount[] | undefined) => (accounts ?? []).filter((a) => a.type === "live" && a.status !== "disabled" && a.status !== "expired");
 
-function AccountsSection() {
+const AccountsSection = React.memo(function AccountsSection() {
   const t = useT();
   const router = useRouter();
   const q = useTradingAccounts();
-  const live = liveAccounts(q.data?.accounts);
+  const live = React.useMemo(() => liveAccounts(q.data?.accounts), [q.data]);
   // not loaded and not loadable (offline, or a view-only login without the accounts section): nothing to offer here
   if (!q.data && q.error) return null;
   return (
@@ -218,8 +238,8 @@ function AccountsSection() {
           {live.map((a, i) => (
             <View key={a.login}>
               {i > 0 ? <Divider /> : null}
-              <PressableScale scaleTo={0.985} onPressIn={prefetchWallet.transfer} onPress={() => router.push(`/wallet/transfer?to=${a.login}`)} style={{ minHeight: 68, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[4] }} testID={`fund-${a.login}`}>
-                <View style={{ height: 24, paddingHorizontal: space[2], borderRadius: radius.pill, backgroundColor: "rgba(242,106,61,0.14)", justifyContent: "center" }}>
+              <PressableScale scaleTo={0.985} onPressIn={prefetchWallet.transfer} onPress={() => router.push(`/wallet/transfer?to=${a.login}`)} style={{ minHeight: 68, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[4], paddingVertical: space[3] }} testID={`fund-${a.login}`}>
+                <View style={{ height: 24, paddingHorizontal: space[2], borderRadius: radius.pill, backgroundColor: alpha(colors.ember, 0.14), justifyContent: "center" }}>
                   <Text variant="label" tone="ember" style={{ fontSize: 10 }}>
                     {t("wallet.liveBadge")}
                   </Text>
@@ -228,9 +248,15 @@ function AccountsSection() {
                   <Text variant="callout" weight="600" numberOfLines={1}>
                     {`${a.groupName} · #${a.login}`}
                   </Text>
+                  {/* a cent account's USD value goes on its own line, so neither figure is ever cut */}
                   <Text variant="caption" tone="tertiary" numberOfLines={1}>
-                    {`${t("common.balance")} ${accountCurrencyPrefix(a)}${fmtAmount(a.balance)}${a.cent ? ` · ≈ $${fmtAmount(toUsd(a, a.balance))}` : ""}`}
+                    {`${t("common.balance")} ${accountCurrencyPrefix(a)}${fmtAmount(a.balance)}`}
                   </Text>
+                  {a.cent ? (
+                    <Text variant="caption" tone="tertiary" numberOfLines={1}>
+                      {`≈ $${fmtAmount(usdOf(a, a.balance))}`}
+                    </Text>
+                  ) : null}
                 </View>
                 <Text variant="callout" weight="700" tone="ember">
                   {t("wallet.fund.topUp")}
@@ -242,9 +268,9 @@ function AccountsSection() {
       )}
     </>
   );
-}
+});
 
-function Recent({ onOpen }: { onOpen: (a: ActivityItem) => void }) {
+const Recent = React.memo(function Recent({ onOpen, viewer }: { onOpen: (a: ActivityItem) => void; viewer: boolean }) {
   const t = useT();
   const router = useRouter();
   const q = useRecentActivity(useIsFocused());
@@ -256,11 +282,19 @@ function Recent({ onOpen }: { onOpen: (a: ActivityItem) => void }) {
         <ActivitySkeleton rows={4} />
       ) : items.length === 0 ? (
         q.error ? (
-          <Text variant="callout" tone="tertiary" style={{ paddingHorizontal: GUTTER }}>
+          <Text variant="callout" tone="tertiary" style={{ paddingHorizontal: GUTTER, paddingVertical: space[2] }} onPress={() => void q.refresh()} accessibilityRole="button">
             {t("mobile.state.error.body")}
           </Text>
         ) : (
-          <EmptyState illustration="emptyHistory" size={200} title={t("wallet.recent.emptyTitle")} body={t("wallet.recent.emptyText")} action={t("wallet.recent.firstDeposit")} onAction={() => router.push("/wallet/deposit")} style={{ paddingVertical: space[4] }} />
+          <EmptyState
+            illustration="emptyHistory"
+            size={200}
+            title={t("wallet.recent.emptyTitle")}
+            body={t("wallet.recent.emptyText")}
+            action={viewer ? undefined : t("wallet.recent.firstDeposit")}
+            onAction={viewer ? undefined : () => router.push("/wallet/deposit")}
+            style={{ paddingVertical: space[4] }}
+          />
         )
       ) : (
         <View>
@@ -274,7 +308,7 @@ function Recent({ onOpen }: { onOpen: (a: ActivityItem) => void }) {
       )}
     </>
   );
-}
+});
 
 export function WalletScreen() {
   const t = useT();
@@ -284,14 +318,16 @@ export function WalletScreen() {
   // a view-only login sees balances and history only (the Client Area hides the money pages from it too)
   const viewer = useSession((s) => !!s.viewer);
   const overview = useOverview(focused);
-  // the sections poll their own data; these handles are for pull to refresh
-  const recent = useRecentActivity(false);
-  const accounts = useTradingAccounts(false, !viewer);
   const sheet = React.useRef<ActivitySheetHandle>(null);
   const open = React.useCallback((a: ActivityItem) => sheet.current?.open(a), []);
+  const unverified = !!me && me.kyc_status !== "verified";
+  // the identity check is decided by the Back Office at any time: a notice on screen follows it
+  React.useEffect(() => {
+    if (focused && unverified && !viewer) void refreshMe();
+  }, [focused, unverified, viewer]);
   const refresh = React.useCallback(async () => {
-    await Promise.all([overview.refresh(), recent.refresh(), viewer ? null : accounts.refresh()]);
-  }, [overview.refresh, recent.refresh, accounts.refresh, viewer]);
+    await Promise.all([refreshOnScreen(overview.refresh, !viewer), unverified && !viewer ? refreshMe() : null]);
+  }, [overview.refresh, viewer, unverified]);
 
   const header = (
     <WalletHeader
@@ -309,19 +345,20 @@ export function WalletScreen() {
       </Screen>
     );
 
+  const usdt = o ? usdtBalance(o) : null;
   return (
     <Screen tabBar={false} header={header} onRefresh={refresh}>
-      {o ? <BalanceHero b={usdtBalance(o)} /> : <HeroSkeleton />}
+      {usdt ? <BalanceHero currency={usdt.currency} available={usdt.available} locked={usdt.locked} /> : <HeroSkeleton />}
       {viewer ? null : <QuickActions />}
       <View style={{ paddingHorizontal: GUTTER, gap: space[3], marginTop: space[4] }}>
         <ViewOnlyNotice />
         <RestrictionBanner kinds={["deposits", "withdrawals", "transfers"]} onContact={() => router.push("/support")} />
-        <KycNotice status={me?.kyc_status} />
+        {viewer ? null : <KycNotice status={me?.kyc_status} />}
       </View>
-      {o ? <InProgress o={o} /> : null}
+      {o ? <InProgress deposits={o.pending_deposits} withdrawals={o.open_withdrawals} /> : null}
       {o ? <OtherAssets balances={o.balances} /> : null}
       {viewer ? null : <AccountsSection />}
-      <Recent onOpen={open} />
+      <Recent onOpen={open} viewer={viewer} />
       <View style={{ height: space[6] }} />
       <ActivitySheet ref={sheet} />
     </Screen>

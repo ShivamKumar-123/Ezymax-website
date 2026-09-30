@@ -89,11 +89,11 @@ export function DepositScreen() {
     last.current = { id: intentId, status };
     if (prev === null || prev === status) return;
     if (status === "credited") {
+      // the money arrived: the one haptic of the deposit flow
       haptic.success();
       setCurrentIntent(null);
       refreshWallet();
     } else if (status === "failed" || status === "rejected") {
-      haptic.error();
       setCurrentIntent(null);
       refreshWallet();
     }
@@ -115,20 +115,24 @@ export function DepositScreen() {
     setIntentId(intent.id);
   };
 
-  const submit = async (hash: string) => {
-    if (!v) return;
-    setBusy(true);
-    setError(null);
-    const r = await submitDepositHash(v.intent.id, hash);
-    setBusy(false);
-    if (!r.ok) {
-      haptic.error();
-      setError(walletError(r.error, "wallet.deposit.submitFailed"));
-      return;
-    }
-    setQueryData<IntentView>(QK.intent(v.intent.id), (prev) => ({ intent: prev?.intent ?? v.intent, deposit: r.data.deposit }));
-    refreshWallet();
-  };
+  const intent = v?.intent ?? null;
+  const submit = React.useCallback(
+    async (hash: string) => {
+      if (!intent) return;
+      setBusy(true);
+      setError(null);
+      const r = await submitDepositHash(intent.id, hash);
+      setBusy(false);
+      if (!r.ok) {
+        setError(walletError(r.error, "wallet.deposit.submitFailed"));
+        return;
+      }
+      setQueryData<IntentView>(QK.intent(intent.id), (prev) => ({ intent: prev?.intent ?? intent, deposit: r.data.deposit }));
+      refreshWallet();
+    },
+    [intent],
+  );
+  const onSubmitHash = React.useCallback((h: string) => void submit(h), [submit]);
 
   const net = v ? CHAIN_LABEL[v.intent.chain] : null;
   let title = t("wallet.depositUsdt");
@@ -152,7 +156,7 @@ export function DepositScreen() {
   else if (intentId && !v && probe.error)
     body = <WalletState error={probe.error.status === 404 ? { ...probe.error, message: t("wallet.deposit.notFound") } : probe.error} onRetry={() => (probe.error?.status === 404 ? startNew() : void probe.refresh())} />;
   else if (v?.deposit) body = <Tracker deposit={v.deposit} onNew={startNew} />;
-  else if (v) body = <PayPanel key={v.intent.id} intent={v.intent} busy={busy} error={error} blocked={restricted || viewer} onSubmitHash={(h) => void submit(h)} onNew={startNew} />;
+  else if (v) body = <PayPanel key={v.intent.id} intent={v.intent} busy={busy} error={error} blocked={restricted || viewer} onSubmitHash={onSubmitHash} onNew={startNew} />;
   else
     body = (
       <>

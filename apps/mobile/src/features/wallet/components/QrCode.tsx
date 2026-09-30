@@ -1,9 +1,11 @@
-// QR code of the deposit address: one SVG path (all dark modules) on a white card with the standard quiet zone,
-// so exchange and wallet scanners read it at a glance. Memoised: it only redraws when the value changes.
+// QR code of the deposit address: one SVG path (all dark modules) on a light card with the standard quiet zone,
+// so exchange and wallet scanners read it at a glance (ink on warm off-white: the highest contrast in the tokens).
+// Memoised: it only redraws when the value changes.
 import * as React from "react";
 import { View } from "react-native";
 import Svg, { Path, Rect } from "react-native-svg";
 import qrcode from "qrcode-generator";
+import { colors } from "@/theme/tokens";
 
 const QUIET = 4;
 
@@ -39,11 +41,11 @@ export const QrCode = React.memo(function QrCode({ value, size = 216, label }: {
   // whole points per module, so every module edge lands on the pixel grid
   const box = qr ? Math.max(3, Math.floor(size / qr.size)) * qr.size : size;
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={label} style={{ width: box, height: box, borderRadius: 20, backgroundColor: "#FFFFFF", overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
+    <View accessible accessibilityRole="image" accessibilityLabel={label} style={{ width: box, height: box, borderRadius: 20, backgroundColor: colors.cream, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
       {qr ? (
         <Svg width={box} height={box} viewBox={`0 0 ${qr.size} ${qr.size}`}>
-          <Rect x={0} y={0} width={qr.size} height={qr.size} fill="#FFFFFF" />
-          <Path d={qr.d} fill="#0E0E10" />
+          <Rect x={0} y={0} width={qr.size} height={qr.size} fill={colors.cream} />
+          <Path d={qr.d} fill={colors.ink} />
         </Svg>
       ) : null}
     </View>

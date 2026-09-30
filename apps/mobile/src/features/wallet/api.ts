@@ -5,11 +5,12 @@
 // answer: nothing is optimistic. Reads go through the screen cache (useQuery, persisted per user).
 import { apiGet, apiPost, type ApiError, type ApiResult } from "@/lib/api";
 import { randomId } from "@/lib/device";
-import { invalidate, prefetch, useQuery } from "@/lib/query";
+import { getQueryData, invalidate, prefetch, useQuery } from "@/lib/query";
 import { i18n } from "@/i18n";
 import { ACCOUNTS_KEY, fetchAccounts } from "@/features/trading/accounts";
 import type { EngAccount } from "@/features/trading/types";
 import type { Chain } from "./lib/address";
+import { cents, fromCents } from "./lib/money";
 
 export type { Chain };
 
@@ -178,6 +179,8 @@ export const CHAIN_LABEL: Record<Chain, { name: string; short: string }> = {
 
 /** USD value of an amount in the account currency (cent accounts hold USC = USD / 100). */
 export const toUsd = (a: Pick<TradingAccount, "cent" | "currency">, v: number) => (a.cent || a.currency === "USC" ? v / 100 : v);
+/** The same in whole cents as a decimal string (never rounded up: it is what can actually move). */
+export const usdOf = (a: Pick<TradingAccount, "cent" | "currency">, v: number | null | undefined) => fromCents(cents(toUsd(a, v ?? 0)));
 export const accountCurrencyPrefix = (a: Pick<TradingAccount, "cent" | "currency">) => (a.cent || a.currency === "USC" ? "USC " : a.currency === "USD" ? "$" : `${a.currency} `);
 
 export const usdtBalance = (o: Pick<Overview, "balances"> | null | undefined): Balance => o?.balances.find((b) => b.currency === "USDT") ?? { currency: "USDT", available: "0", locked: "0" };
@@ -218,22 +221,37 @@ export const QK = {
   intent: (id: string) => `wallet:intent:${id}`,
 } as const;
 
-const get = <T>(path: string) => () => apiGet<T>(path);
+/**
+ * A poll that brings back exactly what is cached keeps the cached object, so memoised sections (and FlashList rows)
+ * see the same props and skip rendering: a background refresh only re-renders what actually changed.
+ */
+async function shared<T>(key: string, request: Promise<ApiResult<T>>): Promise<ApiResult<T>> {
+  const r = await request;
+  if (!r.ok) return r;
+  const prev = getQueryData<T>(key);
+  return prev !== undefined && JSON.stringify(prev) === JSON.stringify(r.data) ? { ...r, data: prev } : r;
+}
+const get = <T>(key: string, path: string) => () => shared(key, apiGet<T>(path));
 
-export const fetchConfig = get<WalletConfig>("wallet/config");
-export const fetchOverview = get<Overview>("wallet/overview");
-export const fetchRecent = get<Page<ActivityItem>>("wallet/activity?limit=8");
-export const fetchWithdrawals = get<Page<Withdrawal>>("wallet/withdrawals?limit=20");
-export const fetchTransfers = get<Page<TradingTransfer>>("wallet/transfers?limit=15");
-export const fetchActivity = (type: string, page: number, limit = 25) => apiGet<Page<ActivityItem>>(`wallet/activity?type=${type}&page=${page}&limit=${limit}`);
-export const fetchIntent = (id: string) => apiGet<{ intent: Intent; deposit: Deposit | null }>(`wallet/deposits/intents/${id}`);
+export const HISTORY_PAGE = 25;
+
+export const fetchConfig = get<WalletConfig>(QK.config, "wallet/config");
+export const fetchOverview = get<Overview>(QK.overview, "wallet/overview");
+export const fetchRecent = get<Page<ActivityItem>>(QK.recent, "wallet/activity?limit=8");
+export const fetchWithdrawals = get<Page<Withdrawal>>(QK.withdrawals, "wallet/withdrawals?limit=20");
+export const fetchTransfers = get<Page<TradingTransfer>>(QK.transfers, "wallet/transfers?limit=15");
+const fetchTradingAccounts = () => shared(ACCOUNTS_KEY, fetchAccounts());
+export const fetchActivity = (type: string, page: number, limit = HISTORY_PAGE) => apiGet<Page<ActivityItem>>(`wallet/activity?type=${type}&page=${page}&limit=${limit}`);
+/** The first history page of a filter (the cached one). */
+export const fetchHistory = (type: string) => shared(QK.history(type), fetchActivity(type, 1));
+export const fetchIntent = (id: string) => shared(QK.intent(id), apiGet<{ intent: Intent; deposit: Deposit | null }>(`wallet/deposits/intents/${id}`));
 
 export const useWalletConfig = () => useQuery(QK.config, fetchConfig, { persist: true, staleMs: 5 * 60_000 });
 export const useOverview = (poll = false) => useQuery(QK.overview, fetchOverview, { persist: true, staleMs: 10_000, intervalMs: poll ? 15_000 : undefined });
 export const useRecentActivity = (poll = false) => useQuery(QK.recent, fetchRecent, { persist: true, staleMs: 15_000, intervalMs: poll ? 30_000 : undefined });
 export const useWithdrawals = (poll = false) => useQuery(QK.withdrawals, fetchWithdrawals, { persist: true, staleMs: 15_000, intervalMs: poll ? 20_000 : undefined });
 export const useTransfers = () => useQuery(QK.transfers, fetchTransfers, { persist: true, staleMs: 15_000 });
-export const useTradingAccounts = (poll = false, enabled = true) => useQuery(ACCOUNTS_KEY, fetchAccounts, { persist: true, staleMs: 15_000, intervalMs: poll ? 15_000 : undefined, enabled });
+export const useTradingAccounts = (poll = false, enabled = true) => useQuery(ACCOUNTS_KEY, fetchTradingAccounts, { persist: true, staleMs: 15_000, intervalMs: poll ? 15_000 : undefined, enabled });
 
 /** Warm the screens' data on press-in (the tap that opens them). */
 export const prefetchWallet = {
@@ -247,12 +265,20 @@ export const prefetchWallet = {
     prefetch(QK.withdrawals, fetchWithdrawals, { persist: true, staleMs: 15_000 });
   },
   transfer: () => {
-    prefetch(ACCOUNTS_KEY, fetchAccounts, { persist: true, staleMs: 15_000 });
+    prefetch(ACCOUNTS_KEY, fetchTradingAccounts, { persist: true, staleMs: 15_000 });
     prefetch(QK.transfers, fetchTransfers, { persist: true, staleMs: 15_000 });
   },
-  history: () => prefetch(QK.history("all"), () => fetchActivity("all", 1), { persist: true, staleMs: 15_000 }),
+  history: () => prefetch(QK.history("all"), () => fetchHistory("all"), { persist: true, staleMs: 15_000 }),
   intent: (id: string) => prefetch(QK.intent(id), () => fetchIntent(id), { staleMs: 4_000 }),
 };
+
+/** Pull to refresh: every wallet query on screen refetches (and the trading accounts when asked); resolves when the
+ *  given query (the screen's main one) has its answer. */
+export function refreshOnScreen(main: () => Promise<void>, accounts = false) {
+  invalidate("wallet:");
+  if (accounts) invalidate(ACCOUNTS_KEY);
+  return main();
+}
 
 /** After a confirmed money change: every wallet screen refetches what it shows (and, for transfers, the trading
  *  accounts' balances everywhere in the app). */

@@ -2,13 +2,34 @@
 // for display and keep amount fields clean; comparisons use integer cents, never float maths on money.
 import { fmtMoney } from "@/lib/format";
 
-/** "1234.5" -> "1,234.50"; keeps up to 6 significant decimals of the source string ("0.000125" stays exact). */
+/** "1234.5" -> "1,234.50"; keeps up to 6 significant decimals of the source string ("0.000125" stays exact). A
+ *  computed number is read at the wallet's 6-decimal scale first, so float noise (10.7 + 0.1 = 10.799999999999999)
+ *  never shows as "10.800000". */
 export function fmtAmount(v: string | number | null | undefined, dp = 2): string {
   if (v === null || v === undefined || v === "") return "—";
   const n = typeof v === "number" ? v : Number(v);
   if (!Number.isFinite(n)) return "—";
-  const frac = (String(v).split(".")[1] ?? "").replace(/0+$/, "").length;
+  const src = typeof v === "number" ? String(Number(v.toFixed(6))) : v;
+  const frac = (src.split(".")[1] ?? "").replace(/0+$/, "").length;
   return fmtMoney(n, { decimals: Math.max(dp, Math.min(6, frac)) });
+}
+
+/** Micro-units (the wallet's 6-decimal scale) of a decimal string or number; exact below 9 billion. */
+function micros(v: string | number | null | undefined): number {
+  if (v === null || v === undefined) return 0;
+  const s = typeof v === "number" ? (Number.isFinite(v) ? v.toFixed(6) : "0") : v.trim();
+  const m = /^(-)?(\d+)(?:\.(\d*))?$/.exec(s);
+  if (!m) return 0;
+  const u = Number(m[2]) * 1e6 + Number((m[3] ?? "").slice(0, 6).padEnd(6, "0"));
+  return m[1] ? -u : u;
+}
+
+/** Exact sum of wallet amounts as a decimal string ("100.1" + "50.2" -> "150.3"), never float maths on money. */
+export function addAmounts(...values: (string | number | null | undefined)[]): string {
+  const total = values.reduce<number>((s, v) => s + micros(v), 0);
+  const abs = Math.abs(total);
+  const frac = String(abs % 1e6).padStart(6, "0").replace(/0+$/, "");
+  return `${total < 0 ? "-" : ""}${Math.floor(abs / 1e6)}${frac ? `.${frac}` : ""}`;
 }
 
 /** Amount field input: a comma becomes the decimal point, anything else that isn't a digit is dropped, one point,

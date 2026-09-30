@@ -2,7 +2,8 @@
 // accounts (instant, free). Wallet -> account is limited by the wallet's available balance; account -> wallet by
 // what the engine says can leave the account (`withdrawable`: free margin and credit already accounted for), and
 // the engine checks it again. The confirm sheet shows the server's answer (completed, or processing when the engine
-// has not answered yet); nothing moves on screen before that.
+// has not answered yet); nothing moves on screen before that. Closed while the request is in flight, the sheet comes
+// back with the answer.
 import * as React from "react";
 import { View } from "react-native";
 import { useIsFocused, useLocalSearchParams, useRouter } from "expo-router";
@@ -16,10 +17,12 @@ import { Button, Card, Display, Divider, EmptyState, FormError, Mono, PressableS
 import { colors, GUTTER, HIT, motion, radius, space } from "@/theme/tokens";
 import {
   accountCurrencyPrefix,
+  refreshOnScreen,
   refreshWallet,
   requestId,
   toUsd,
   transfer,
+  usdOf,
   usdtBalance,
   useOverview,
   useTradingAccounts,
@@ -118,7 +121,7 @@ function WalletSide({ label, available }: { label: string; available: string | n
   );
 }
 
-function AccountPicker({ label, accounts, value, onChange, dir }: { label: string; accounts: TradingAccount[]; value: number | null; onChange: (l: number) => void; dir: Dir }) {
+const AccountPicker = React.memo(function AccountPicker({ label, accounts, value, onChange, dir }: { label: string; accounts: TradingAccount[]; value: number | null; onChange: (l: number) => void; dir: Dir }) {
   const t = useT();
   return (
     <Card padded={false}>
@@ -148,8 +151,13 @@ function AccountPicker({ label, accounts, value, onChange, dir }: { label: strin
                 </Text>
                 <Text variant="caption" tone="tertiary" numberOfLines={1}>
                   {`${t("common.balance")} ${accountCurrencyPrefix(a)}${fmtAmount(a.balance)}`}
-                  {dir === "from" ? ` · ${t("wallet.transfer.withdrawable", { amount: fmtAmount(toUsd(a, a.withdrawable ?? 0)) })}` : ""}
                 </Text>
+                {/* what can leave the account, on its own line so it is never cut (it is the limit that matters here) */}
+                {dir === "from" ? (
+                  <Text variant="caption" tone="secondary" numberOfLines={1}>
+                    {t("wallet.transfer.withdrawable", { amount: fmtAmount(usdOf(a, a.withdrawable)) })}
+                  </Text>
+                ) : null}
               </View>
             </PressableScale>
           </View>
@@ -157,31 +165,21 @@ function AccountPicker({ label, accounts, value, onChange, dir }: { label: strin
       })}
     </Card>
   );
-}
+});
 
-/** Free margin and what can leave the account (engine figures), for account -> wallet. */
-function MarginFacts({ a }: { a: TradingAccount }) {
+/** Free margin and what can leave the account (engine figures), for account -> wallet: label / value rows, so a cent
+ *  account's large USC figures stay whole on a 360 pt phone. */
+const MarginFacts = React.memo(function MarginFacts({ a }: { a: TradingAccount }) {
   const t = useT();
   const cur = accountCurrencyPrefix(a);
   return (
-    <View style={{ flexDirection: "row", gap: space[2] }} testID="transfer-margin">
-      {[
-        [t("common.equity"), `${cur}${fmtAmount(a.equity)}`],
-        [t("mobileWallet.transfer.freeMargin"), `${cur}${fmtAmount(a.freeMargin)}`],
-        [t("mobileWallet.transfer.marginLevel"), a.marginLevel && a.marginLevel > 0 ? `${Math.round(a.marginLevel).toLocaleString("en-US")}%` : "—"],
-      ].map(([label, value]) => (
-        <View key={label} style={{ flex: 1, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, padding: space[3], gap: 4 }}>
-          <Text variant="caption" tone="tertiary" numberOfLines={1}>
-            {label}
-          </Text>
-          <Mono size={13.5} weight="bold" numberOfLines={1}>
-            {value}
-          </Mono>
-        </View>
-      ))}
-    </View>
+    <Card style={{ paddingVertical: space[1] }} testID="transfer-margin">
+      <InfoRow label={t("common.equity")} value={`${cur}${fmtAmount(a.equity)}`} mono />
+      <InfoRow label={t("mobileWallet.transfer.freeMargin")} value={`${cur}${fmtAmount(a.freeMargin)}`} mono />
+      <InfoRow label={t("mobileWallet.transfer.marginLevel")} value={a.marginLevel && a.marginLevel > 0 ? `${Math.round(a.marginLevel).toLocaleString("en-US")}%` : "—"} mono last />
+    </Card>
   );
-}
+});
 
 type Result = { transfer: TradingTransfer; dir: Dir } | null;
 
@@ -206,10 +204,11 @@ export function TransferScreen() {
   const acc = useTradingAccounts(focused);
   const list = useTransfers();
   const confirmSheet = React.useRef<SheetRef>(null);
+  const sheetShown = React.useRef(false);
   const detail = React.useRef<ActivitySheetHandle>(null);
   const openItem = React.useCallback((a: ActivityItem) => detail.current?.open(a), []);
 
-  const live = usable(acc.data?.accounts);
+  const live = React.useMemo(() => usable(acc.data?.accounts), [acc.data]);
   const account = live.find((a) => a.login === login) ?? null;
   React.useEffect(() => {
     if (!login && live.length === 1) setLogin(live[0]!.login);
@@ -234,36 +233,40 @@ export function TransferScreen() {
     turn.value = withSpring(d === "from" ? 1 : 0, motion.spring);
   };
 
-  const refresh = React.useCallback(async () => {
-    await Promise.all([o.refresh(), acc.refresh(), list.refresh()]);
-  }, [o.refresh, acc.refresh, list.refresh]);
+  const refresh = React.useCallback(() => refreshOnScreen(o.refresh, true), [o.refresh]);
+  const recent = React.useMemo(() => (list.data?.items ?? []).map(asActivity), [list.data]);
+  const presentConfirm = () => {
+    sheetShown.current = true;
+    confirmSheet.current?.present();
+  };
 
   const submit = async () => {
-    if (!valid || !account) return;
+    if (!valid || !account || busy) return;
     setBusy(true);
     setErr(null);
     const r = await transfer(dir, account.login, amt, key);
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(walletError(r.error, "wallet.transfer.failed"));
       // a definite refusal: the next try is a new request; after a network error / 5xx the same id is kept so a
       // retry can never book twice
       if (r.status >= 400 && r.status < 500) setKey(requestId());
-      return;
+    } else {
+      // the money moved (booked by the server and the engine): the one haptic of this flow
+      if (r.data.transfer.status === "completed") haptic.success();
+      setResult({ transfer: r.data.transfer, dir });
+      setAmount("");
+      setKey(requestId());
+      refreshWallet(true);
     }
-    if (r.data.transfer.status === "completed") haptic.success();
-    else if (r.data.transfer.status === "failed") haptic.error();
-    setResult({ transfer: r.data.transfer, dir });
-    setAmount("");
-    setKey(requestId());
-    refreshWallet(true);
+    // closed with a tap outside while the server was answering: bring the answer back
+    if (!sheetShown.current) presentConfirm();
   };
 
   const openConfirm = () => {
     setErr(null);
     setResult(null);
-    confirmSheet.current?.present();
+    presentConfirm();
   };
 
   const header = <WalletHeader eyebrow={t("mobileWallet.transfer.eyebrow")} title={t("common.transfer")} subtitle={t("wallet.transfer.subtitle")} />;
@@ -276,19 +279,18 @@ export function TransferScreen() {
     );
 
   const arrivesUsc = dir === "to" && account?.cent && amtOk ? `USC ${fmtAmount(cents(amt))}` : null;
-  const recent = (list.data?.items ?? []).map(asActivity);
 
   const accountsPart = acc.loading ? (
     <Skeleton h={140} r={radius.card} />
   ) : !acc.data && acc.error ? (
     <Card>
-      <Text variant="callout" tone="secondary">
-        {walletError(acc.error)}
+      <Text variant="callout" tone="secondary" onPress={() => void acc.refresh()}>
+        {`${walletError(acc.error)} · ${t("mobile.action.retry")}`}
       </Text>
     </Card>
   ) : live.length === 0 ? (
     <Card>
-      <EmptyState title={t("wallet.transfer.noLiveTitle")} body={t("wallet.transfer.noLiveText")} action={t("wallet.transfer.openLive")} onAction={() => router.push("/accounts/new")} style={{ paddingVertical: space[4], paddingHorizontal: 0 }} />
+      <EmptyState title={t("wallet.transfer.noLiveTitle")} body={t("wallet.transfer.noLiveText")} action={viewer ? undefined : t("wallet.transfer.openLive")} onAction={viewer ? undefined : () => router.push("/accounts/new")} style={{ paddingVertical: space[4], paddingHorizontal: 0 }} />
     </Card>
   ) : (
     <AccountPicker label={dir === "to" ? t("wallet.transfer.toTradingAccount") : t("wallet.transfer.fromTradingAccount")} accounts={live} value={login} onChange={setLogin} dir={dir} />
@@ -350,7 +352,7 @@ export function TransferScreen() {
       {list.loading ? (
         <ActivitySkeleton rows={2} />
       ) : recent.length === 0 ? (
-        <Text variant="callout" tone="tertiary" style={{ paddingHorizontal: GUTTER }}>
+        <Text variant="callout" tone="tertiary" style={{ paddingHorizontal: GUTTER }} onPress={list.error ? () => void list.refresh() : undefined}>
           {list.error ? walletError(list.error) : t("wallet.transfer.none")}
         </Text>
       ) : (
@@ -363,7 +365,13 @@ export function TransferScreen() {
       )}
       <View style={{ height: space[8] }} />
 
-      <Sheet ref={confirmSheet} enablePanDownToClose={!busy}>
+      <Sheet
+        ref={confirmSheet}
+        enablePanDownToClose={!busy}
+        onDismiss={() => {
+          sheetShown.current = false;
+        }}
+      >
         {result ? (
           <View style={{ gap: space[4], paddingTop: space[2] }} testID={`transfer-result-${result.transfer.status}`}>
             <Display size="md">{result.transfer.status === "completed" ? t("wallet.transferCompleted") : result.transfer.status === "failed" ? t("wallet.transfer.failed") : t("wallet.transfer.processing")}</Display>
@@ -388,12 +396,15 @@ export function TransferScreen() {
               <InfoRow label={t("wallet.fee")} value={t("wallet.free")} last={!arrivesUsc} />
               {arrivesUsc ? <InfoRow label={t("mobileWallet.transfer.arrives")} value={arrivesUsc} mono last /> : null}
             </View>
-            <FormError message={err} />
-            <Button label={t("mobileWallet.transfer.confirm")} loading={busy} onPress={() => void submit()} testID="transfer-confirm-button" />
+            <FormError message={err ?? amountError} />
+            <Button label={t("mobileWallet.transfer.confirm")} loading={busy} disabled={!valid} onPress={() => void submit()} testID="transfer-confirm-button" />
             <Button label={t("common.cancel")} variant="ghost" disabled={busy} onPress={() => confirmSheet.current?.dismiss()} />
           </View>
         ) : (
-          <View style={{ height: 1 }} />
+          <View style={{ gap: space[4], paddingTop: space[2] }}>
+            <FormError message={err} />
+            <Button label={t("common.close")} variant="secondary" onPress={() => confirmSheet.current?.dismiss()} />
+          </View>
         )}
       </Sheet>
       <ActivitySheet ref={detail} />

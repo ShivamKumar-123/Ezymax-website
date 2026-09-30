@@ -104,8 +104,9 @@ export function HeroSkeleton({ height = 208 }: { height?: number }) {
 }
 
 export function FormSkeleton() {
+  const t = useT();
   return (
-    <View style={{ paddingHorizontal: GUTTER, gap: space[5] }} accessibilityLabel="Loading" accessible>
+    <View style={{ paddingHorizontal: GUTTER, gap: space[5] }} accessibilityLabel={t("common.loading")} accessible>
       <View style={{ flexDirection: "row", gap: space[3] }}>
         <Skeleton w="48%" h={124} r={radius.lg + 2} />
         <Skeleton w="48%" h={124} r={radius.lg + 2} />

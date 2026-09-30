@@ -1,6 +1,8 @@
 // One wallet transaction (deposit, withdrawal, transfer, other credit / debit) as a fixed-height list row. Memoised
 // on the fields that change, so a refetch that returns the same rows re-renders nothing. Incoming money is green,
 // outgoing is plain (red is for losses); failed / cancelled amounts are struck through.
+// The row is built for a 360 pt phone: a short title (the detail sheet has the long one), the status never cut, then
+// whatever detail still fits, and a compact date (the time for today, else the day).
 import * as React from "react";
 import { View } from "react-native";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Award } from "lucide-react-native";
@@ -47,6 +49,31 @@ export function activityTitle(a: ActivityItem, t: T): string {
   }
 }
 
+/** The row's short title from the Client Area's translated wording: "Deposit · BEP20" (the amount carries the
+ *  currency), "To #login" / "From #login" for transfers (the Client Area's own transfer list). */
+export function rowTitle(a: ActivityItem, t: T): string {
+  switch (a.type) {
+    case "deposit":
+      return a.chain ? `${t("wallet.txType.deposit")} · ${CHAIN_LABEL[a.chain].short}` : t("wallet.txType.deposit");
+    case "withdrawal":
+      return a.chain ? `${t("wallet.txType.withdrawal")} · ${CHAIN_LABEL[a.chain].short}` : t("wallet.txType.withdrawal");
+    case "transfer":
+      return a.direction === "out" ? t("wallet.transfer.toLogin", { login: a.login }) : t("wallet.transfer.fromLogin", { login: a.login });
+    default:
+      return activityTitle(a, t);
+  }
+}
+
+type Fmt = ReturnType<typeof useFormat>;
+const DAY: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
+
+/** Today's rows show the time, this year's the day, older ones the day and year (server time, like statements). */
+export function rowDate(iso: string, fmt: Fmt, now = Date.now()): string {
+  const day = fmt.date(iso, DAY);
+  if (day === fmt.date(now, DAY)) return fmt.time(iso);
+  return fmt.date(iso, { year: "numeric" }) === fmt.date(now, { year: "numeric" }) ? fmt.date(iso, { day: "numeric", month: "short" }) : day;
+}
+
 export function activityStatus(a: ActivityItem): StatusDef | null {
   if (a.type === "deposit") return DEPOSIT_STATUS[a.status as DepositStatus] ?? null;
   if (a.type === "withdrawal") return WITHDRAWAL_STATUS[a.status as WithdrawalStatus] ?? null;
@@ -61,7 +88,8 @@ export const isSettled = (a: Pick<ActivityItem, "status">) => a.status === "comp
 export const activityCurrency = (a: ActivityItem) => (a.type === "transfer" && a.direction === "in" ? "USD" : a.currency || "USDT");
 
 function subtitle(a: ActivityItem, t: T): string {
-  if (a.type === "deposit" && a.status === "confirming" && a.required_confirmations) return t("wallet.activity.confirmations", { done: Math.min(a.confirmations ?? 0, a.required_confirmations), required: a.required_confirmations });
+  // "7 / 15": the status beside it already says "Confirming"
+  if (a.type === "deposit" && a.status === "confirming" && a.required_confirmations) return `${Math.min(a.confirmations ?? 0, a.required_confirmations)} / ${a.required_confirmations}`;
   if (a.type === "withdrawal" && a.address) return t("wallet.activity.to", { address: shortAddress(a.address) });
   return a.note ?? "";
 }
@@ -84,8 +112,8 @@ function Row({ item, onPress, onPressIn }: { item: ActivityItem; onPress?: (a: A
   const st = activityStatus(item);
   const dim = isDimmed(item);
   const sub = subtitle(item, t);
-  const when = fmt.dateTime(item.created_at);
-  const title = activityTitle(item, t);
+  const when = rowDate(item.created_at, fmt);
+  const title = rowTitle(item, t);
   const amount = `${item.direction === "in" ? "+" : "−"}${fmtAmount(item.amount)}`;
   return (
     <PressableScale
@@ -93,7 +121,7 @@ function Row({ item, onPress, onPressIn }: { item: ActivityItem; onPress?: (a: A
       onPressIn={onPressIn ? () => onPressIn(item) : undefined}
       disabled={!onPress}
       scaleTo={0.985}
-      accessibilityLabel={`${title}, ${amount} ${activityCurrency(item)}, ${st ? t(st.label) : ""}, ${when}`}
+      accessibilityLabel={`${activityTitle(item, t)}, ${amount} ${activityCurrency(item)}, ${st ? t(st.label) : ""}, ${fmt.dateTime(item.created_at)}`}
       testID={`activity-${item.type}-${item.id}`}
       style={{ height: ACTIVITY_ROW_HEIGHT, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: GUTTER }}
     >
@@ -103,10 +131,10 @@ function Row({ item, onPress, onPressIn }: { item: ActivityItem; onPress?: (a: A
           <Text variant="callout" weight="600" numberOfLines={1} style={{ flex: 1 }}>
             {title}
           </Text>
-          <Mono size={15} weight="bold" tone={dim ? "tertiary" : item.direction === "in" ? "up" : "primary"} style={dim ? { textDecorationLine: "line-through" } : undefined}>
+          <Mono size={15} weight="bold" numberOfLines={1} tone={dim ? "tertiary" : item.direction === "in" ? "up" : "primary"} style={[{ flexShrink: 0 }, dim ? { textDecorationLine: "line-through" } : null]}>
             {amount}
           </Mono>
-          <Text variant="caption" tone="tertiary">
+          <Text variant="caption" tone="tertiary" style={{ flexShrink: 0 }}>
             {activityCurrency(item)}
           </Text>
         </View>
@@ -119,7 +147,7 @@ function Row({ item, onPress, onPressIn }: { item: ActivityItem; onPress?: (a: A
               </Text>
             ) : null}
           </View>
-          <Text variant="caption" tone="tertiary" numberOfLines={1}>
+          <Text variant="caption" tone="tertiary" numberOfLines={1} style={{ flexShrink: 0 }}>
             {when}
           </Text>
         </View>
@@ -129,14 +157,15 @@ function Row({ item, onPress, onPressIn }: { item: ActivityItem; onPress?: (a: A
 }
 
 const same = (a: ActivityItem, b: ActivityItem) =>
-  a.id === b.id && a.type === b.type && a.status === b.status && a.updated_at === b.updated_at && a.confirmations === b.confirmations && a.amount === b.amount && a.note === b.note;
+  a.id === b.id && a.type === b.type && a.status === b.status && a.updated_at === b.updated_at && a.confirmations === b.confirmations && a.amount === b.amount && a.note === b.note && a.tx_hash === b.tx_hash;
 
 export const ActivityRow = React.memo(Row, (p, n) => p.onPress === n.onPress && p.onPressIn === n.onPressIn && same(p.item, n.item));
 
 /** Loading rows shaped like ActivityRow (static, no shimmer). */
 export function ActivitySkeleton({ rows = 5 }: { rows?: number }) {
+  const t = useT();
   return (
-    <View accessibilityLabel="Loading" accessible>
+    <View accessibilityLabel={t("common.loading")} accessible>
       {Array.from({ length: rows }, (_, i) => (
         <View key={i} style={{ height: ACTIVITY_ROW_HEIGHT, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: GUTTER }}>
           <Skeleton w={40} h={40} r={20} />

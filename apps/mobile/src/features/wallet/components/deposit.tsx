@@ -110,7 +110,8 @@ export function HowItWorks({ cfg }: { cfg: WalletConfig }) {
 /* 2. pay                                                              */
 /* ------------------------------------------------------------------ */
 
-export function PayPanel({ intent, busy, error, blocked, onSubmitHash, onNew }: { intent: Intent; busy: boolean; error: string | null; blocked: boolean; onSubmitHash: (hash: string) => void; onNew: () => void }) {
+/** Memoised: the 5 s status poll returns the same request object (api.ts `shared`), so nothing here re-renders. */
+export const PayPanel = React.memo(function PayPanel({ intent, busy, error, blocked, onSubmitHash, onNew }: { intent: Intent; busy: boolean; error: string | null; blocked: boolean; onSubmitHash: (hash: string) => void; onNew: () => void }) {
   const t = useT();
   const [hash, setHash] = React.useState("");
   const [expired, setExpired] = React.useState(() => Date.parse(intent.expires_at) <= Date.now());
@@ -220,22 +221,25 @@ export function PayPanel({ intent, busy, error, blocked, onSubmitHash, onNew }: 
       </View>
     </View>
   );
-}
+});
 
 /* ------------------------------------------------------------------ */
 /* 3. track                                                            */
 /* ------------------------------------------------------------------ */
 
-export function Tracker({ deposit, onNew }: { deposit: Deposit; onNew: () => void }) {
+export const Tracker = React.memo(function Tracker({ deposit, onNew }: { deposit: Deposit; onNew: () => void }) {
   const t = useT();
   const router = useRouter();
   const st = DEPOSIT_STATUS[deposit.status];
   const credited = deposit.status === "credited";
   const bad = deposit.status === "failed" || deposit.status === "rejected";
   const review = deposit.status === "review" || deposit.status === "unmatched";
+  // found = the service saw the transfer on chain (it then knows the paid amount); a deposit that failed because the
+  // transaction was never found must not tick "Found on the network"
+  const found = deposit.status === "confirming" || credited || deposit.amount !== null || deposit.confirmations > 0;
   const steps: [string, boolean][] = [
     [t("wallet.deposit.stepSent"), true],
-    [t("wallet.deposit.stepFound"), deposit.status !== "pending"],
+    [t("wallet.deposit.stepFound"), found],
     [t("wallet.deposit.stepCredited"), credited],
   ];
   const amount = `+${fmtAmount(deposit.amount ?? deposit.expected_amount)}`;
@@ -270,8 +274,8 @@ export function Tracker({ deposit, onNew }: { deposit: Deposit; onNew: () => voi
         <View style={{ gap: space[3] }}>
           {steps.map(([label, done], i) => (
             <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: space[3] }}>
-              <View style={{ width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: done ? "rgba(127,209,185,0.16)" : "transparent", borderWidth: done ? 0 : 1, borderColor: colors.lineStrong }}>
-                {done ? <Check size={14} color={colors.mint} strokeWidth={3} /> : <Mono size={11} tone="tertiary">{String(i + 1)}</Mono>}
+              <View style={{ width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: done ? colors.emberSoft : "transparent", borderWidth: done ? 0 : 1, borderColor: colors.lineStrong }}>
+                {done ? <Check size={14} color={colors.ember} strokeWidth={3} /> : <Mono size={11} tone="tertiary">{String(i + 1)}</Mono>}
               </View>
               <Text variant="callout" weight={done ? "600" : "400"} tone={done ? "primary" : "tertiary"}>
                 {label}
@@ -302,4 +306,4 @@ export function Tracker({ deposit, onNew }: { deposit: Deposit; onNew: () => voi
       </View>
     </View>
   );
-}
+});
