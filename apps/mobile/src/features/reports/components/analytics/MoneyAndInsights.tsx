@@ -6,6 +6,7 @@ import { useT } from "@/i18n";
 import { Card, ColorBlock, Display, Mono, Text } from "@/ui";
 import { colors, GUTTER, radius, space, type BlockColor } from "@/theme/tokens";
 import { insightView, usd, type InsightView } from "../../format";
+import { tint } from "../../tint";
 import type { Analytics } from "../../types";
 import { SectionTitle, Tag } from "../Chrome";
 
@@ -63,8 +64,8 @@ export const Charges = React.memo(function Charges({ c }: { c: Analytics["charge
   const parts = [
     { k: t("portfolio.an.charges.commission"), note: t("portfolio.an.charges.commissionNote"), v: c.commission, color: colors.ember },
     { k: t("portfolio.an.charges.swapPaid"), note: `${t("portfolio.an.charges.swapNote")}${c.swapEarned ? ` · ${t("portfolio.an.charges.swapEarned", { amount: usd(c.swapEarned) })}` : ""}`, v: c.swapPaid, color: colors.gold },
-    { k: t("portfolio.an.charges.perfFees"), note: t("portfolio.an.charges.perfNote"), v: c.performanceFees, color: colors.periwinkle },
-    { k: t("portfolio.an.charges.walletFees"), note: t("portfolio.an.charges.walletNote"), v: c.walletFees, color: colors.mint },
+    { k: t("portfolio.an.charges.perfFees"), note: t("portfolio.an.charges.perfNote"), v: c.performanceFees, color: colors.info },
+    { k: t("portfolio.an.charges.walletFees"), note: t("portfolio.an.charges.walletNote"), v: c.walletFees, color: colors.text3 },
   ].filter((p) => p.v > 0);
   const total = parts.reduce((a, p) => a + p.v, 0);
   return (
@@ -126,7 +127,8 @@ export const Charges = React.memo(function Charges({ c }: { c: Analytics["charge
 /* Behaviour insights                                                  */
 /* ------------------------------------------------------------------ */
 
-const TONE_BLOCK: Record<InsightView["tone"], BlockColor> = { up: "mint", info: "periwinkle", warn: "gold", down: "ember" };
+/** Costly habits in ember, warnings in gold, notes in sand, good habits in cream (green / red stay for money). */
+const TONE_BLOCK: Record<InsightView["tone"], BlockColor> = { up: "cream", info: "periwinkle", warn: "gold", down: "ember" };
 
 export const Insights = React.memo(function Insights({ d, periodLabel }: { d: Analytics; periodLabel: string }) {
   const t = useT();
@@ -180,7 +182,7 @@ function InsightCard({ v, width }: { v: InsightView; width: number }) {
           {v.text}
         </Text>
       </View>
-      <View style={{ marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: "rgba(14,14,16,0.16)", flexDirection: "row", gap: space[2] }}>
+      <View style={{ marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: tint(colors.ink, 0.16), flexDirection: "row", gap: space[2] }}>
         <Text variant="label" color={colors.ink2} style={{ fontSize: 10, marginTop: 2 }}>
           {t("mobileReports.insight.tip")}
         </Text>

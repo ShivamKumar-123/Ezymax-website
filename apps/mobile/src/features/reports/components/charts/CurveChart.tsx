@@ -1,18 +1,21 @@
-// Equity, balance and drawdown on Skia. Two panes share one x axis: equity (gold line over a soft fill) with the
-// balance (dashed cream) on top, the drawdown from peak (red, money) below. Scrubbing runs on the UI thread: a
+// Equity, balance and drawdown on Skia. Two panes share one x axis: equity (gold line over a flat low-opacity fill,
+// matte: no gradient) with the balance (dashed cream) on top, the drawdown from peak (red, money) below. The range
+// labels are drawn under the lines, on the side where the curve leaves them room, so the curve (and its latest
+// point) is never hidden behind them. Scrubbing runs on the UI thread: a
 // horizontal drag, or touch and hold, moves a crosshair with dots and a value tooltip from shared values, so the
 // finger is followed 1:1 and React never re-renders. A tap pins the tooltip; another tap on it clears it.
 // The tooltip holds only digits, a Latin-script date and colour markers matching the legend (Skia text has no font
 // fallback, so words in other scripts stay in React Native text: legend, labels).
 import * as React from "react";
 import { View } from "react-native";
-import { Canvas, Circle, DashPathEffect, Group, Line, LinearGradient, Path, RoundedRect, Skia, Text as SkText, useFont, vec } from "@shopify/react-native-skia";
+import { Canvas, Circle, DashPathEffect, Group, Line, Path, RoundedRect, Skia, Text as SkText, useFont, vec } from "@shopify/react-native-skia";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useDerivedValue, useSharedValue, withTiming } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { haptic } from "@/lib/haptics";
 import { Mono, Text } from "@/ui";
 import { colors } from "@/theme/tokens";
+import { tint } from "../../tint";
 import { CURVE, CURVE_H } from "./layout";
 
 const MONO = require("@expo-google-fonts/jetbrains-mono/500Medium/JetBrainsMono_500Medium.ttf");
@@ -27,6 +30,7 @@ export type CurveSeries = {
   tipEq: string[];
   tipBal: string[];
   tipDd: string[];
+  /** top / bottom of the equity range (ASCII: drawn with the chart's font) */
   hiLabel: string;
   loLabel: string;
   /** "DRAWDOWN" and the period's maximum, over the lower pane */
@@ -39,8 +43,12 @@ const PAD_X = 6;
 const TIP_PAD = 10;
 const DOT_GAP = 9; // marker + space before a value
 const SEP = 12; // space between values
-/** Axis values sit on a card-coloured chip, so the curve can pass behind them. */
-const AXIS = { position: "absolute", end: 0, paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4, backgroundColor: colors.surface } as const;
+const FILL = tint(colors.gold, 0.12);
+const BAL = tint(colors.cream, 0.55);
+const BAL_MARK = tint(colors.cream, 0.6);
+const CROSS = tint(colors.cream, 0.45);
+const DD_FILL = tint(colors.down, 0.22);
+const DD_LINE = tint(colors.down, 0.9);
 
 export function CurveChart({ s, width }: { s: CurveSeries; width: number }) {
   const n = s.eq.length;
@@ -102,6 +110,31 @@ export function CurveChart({ s, width }: { s: CurveSeries; width: number }) {
     ddFill.lineTo(lastX, ddTop).close();
     return { eqLine: eqLine.detach(), eqFill: eqFill.detach(), balLine: balLine.detach(), ddLine: ddLine.detach(), ddFill: ddFill.detach(), eqY, balY, ddY, top, bottom, ddTop, ddBottom, lastX };
   }, [s, n, step]);
+
+  // range labels: on the side (start or end of the time axis) where the curve stays farthest from the label's band
+  const advJs = React.useMemo(() => {
+    const w = font ? font.getGlyphWidths(font.getGlyphIDs("0"))[0] : 0;
+    return w && w > 0 ? w : 6.6;
+  }, [font]);
+  const labels = React.useMemo(() => {
+    const place = (text: string, top: boolean) => {
+      const w = text.length * advJs;
+      const band = w + 10;
+      const room = (from: number, to: number) => {
+        let r = Infinity;
+        for (let i = 0; i < n; i++) {
+          const x = PAD_X + i * step;
+          if (x < from || x > to) continue;
+          r = Math.min(r, top ? Math.min(g.eqY[i]!, g.balY[i]!) - g.top : g.bottom - Math.max(g.eqY[i]!, g.balY[i]!));
+        }
+        return r;
+      };
+      const start = room(0, band);
+      const end = room(width - band, width);
+      return { text, x: start > end ? 4 : Math.max(4, width - w - 4), y: top ? g.top + 14 : g.bottom - 5 };
+    };
+    return { hi: place(s.hiLabel, true), lo: place(s.loLabel, false) };
+  }, [advJs, g, n, step, width, s.hiLabel, s.loLabel]);
 
   // per-point data for the UI thread
   const eqY = useSharedValue<number[]>(g.eqY);
@@ -227,20 +260,24 @@ export function CurveChart({ s, width }: { s: CurveSeries; width: number }) {
           <Line p1={vec(0, g.bottom)} p2={vec(width, g.bottom)} color={colors.line} strokeWidth={1} />
           <Line p1={vec(0, g.ddTop)} p2={vec(width, g.ddTop)} color={colors.lineStrong} strokeWidth={1} />
 
-          <Path path={g.eqFill}>
-            <LinearGradient start={vec(0, g.top)} end={vec(0, g.bottom)} colors={["rgba(242,184,75,0.26)", "rgba(242,184,75,0)"]} />
-          </Path>
-          <Path path={g.balLine} style="stroke" strokeWidth={1.4} color="rgba(245,239,227,0.55)" strokeJoin="round">
+          <Path path={g.eqFill} color={FILL} />
+          {font ? (
+            <Group>
+              <SkText x={labels.hi.x} y={labels.hi.y} text={labels.hi.text} font={font} color={colors.text3} />
+              <SkText x={labels.lo.x} y={labels.lo.y} text={labels.lo.text} font={font} color={colors.text3} />
+            </Group>
+          ) : null}
+          <Path path={g.balLine} style="stroke" strokeWidth={1.4} color={BAL} strokeJoin="round">
             <DashPathEffect intervals={[5, 4]} />
           </Path>
           <Path path={g.eqLine} style="stroke" strokeWidth={2.2} color={colors.gold} strokeJoin="round" strokeCap="round" />
           <Circle cx={g.lastX} cy={lastEqY} r={3.5} color={colors.gold} />
 
-          <Path path={g.ddFill} color="rgba(240,82,82,0.22)" />
-          <Path path={g.ddLine} style="stroke" strokeWidth={1.4} color="rgba(240,82,82,0.9)" strokeJoin="round" />
+          <Path path={g.ddFill} color={DD_FILL} />
+          <Path path={g.ddLine} style="stroke" strokeWidth={1.4} color={DD_LINE} strokeJoin="round" />
 
           <Group opacity={active}>
-            <Line p1={lineTop} p2={lineBottom} color="rgba(245,239,227,0.45)" strokeWidth={1} />
+            <Line p1={lineTop} p2={lineBottom} color={CROSS} strokeWidth={1} />
             <Circle cx={cx} cy={balDot} r={3.5} color={colors.cream} />
             <Circle cx={cx} cy={eqDot} r={5} color={colors.bg} />
             <Circle cx={cx} cy={eqDot} r={3.8} color={colors.gold} />
@@ -251,7 +288,7 @@ export function CurveChart({ s, width }: { s: CurveSeries; width: number }) {
                 <SkText x={x0} y={17} text={textDate} font={font} color={colors.text2} />
                 <Circle cx={eqMarkX} cy={29} r={3} color={colors.gold} />
                 <SkText x={eqTextX} y={33} text={textEq} font={font} color={colors.text} />
-                <Circle cx={balMarkX} cy={29} r={3} color="rgba(245,239,227,0.6)" />
+                <Circle cx={balMarkX} cy={29} r={3} color={BAL_MARK} />
                 <SkText x={balTextX} y={33} text={textBal} font={font} color={colors.text} />
                 <SkText x={ddTextX} y={33} text={textDd} font={font} color={colors.down} />
               </Group>
@@ -259,17 +296,7 @@ export function CurveChart({ s, width }: { s: CurveSeries; width: number }) {
           </Group>
         </Canvas>
       </GestureDetector>
-      {/* static labels (React Native text: crisp, any script, never re-rendered while scrubbing) */}
-      <View pointerEvents="none" style={[AXIS, { top: g.top + 3 }]}>
-        <Mono size={10} tone="tertiary">
-          {s.hiLabel}
-        </Mono>
-      </View>
-      <View pointerEvents="none" style={[AXIS, { top: g.bottom - 18 }]}>
-        <Mono size={10} tone="tertiary">
-          {s.loLabel}
-        </Mono>
-      </View>
+      {/* static words (React Native text: any script, never re-rendered while scrubbing) */}
       <View pointerEvents="none" style={{ position: "absolute", start: 0, end: 0, top: g.ddTop - 19, flexDirection: "row", justifyContent: "space-between" }}>
         <Text variant="label" tone="tertiary" style={{ fontSize: 10 }}>
           {s.ddTitle}

@@ -11,6 +11,7 @@ import { Card, Mono, Text } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { addMonths, cmpYm, monthUtc, monthWeeks, ymKey, ymOf, type Ym } from "../../calendar";
 import { compactUsd, DAY_KEYS, usd } from "../../format";
+import { tint as alpha } from "../../tint";
 import type { Analytics } from "../../types";
 import { Flip, SectionTitle } from "../Chrome";
 import { StepButton } from "../DateSheet";
@@ -32,10 +33,8 @@ function dailyNet(d: Analytics): { map: Map<string, Day>; estimated: boolean } {
   return { map, estimated: true };
 }
 
-const tint = (net: number, max: number) => {
-  const a = 0.16 + 0.56 * Math.min(1, Math.abs(net) / Math.max(max, 0.01));
-  return net > 0 ? `rgba(52,199,123,${a.toFixed(3)})` : `rgba(240,82,82,${a.toFixed(3)})`;
-};
+/** Money colours, stronger with the size of the day against the month's largest. */
+const tint = (net: number, max: number) => alpha(net > 0 ? colors.up : colors.down, 0.16 + 0.56 * Math.min(1, Math.abs(net) / Math.max(max, 0.01)));
 
 export const PnlCalendar = React.memo(function PnlCalendar({ d, from, today }: { d: Analytics; from: string; today: string }) {
   const t = useT();

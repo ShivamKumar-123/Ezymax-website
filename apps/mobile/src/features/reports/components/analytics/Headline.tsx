@@ -6,6 +6,7 @@ import { useT } from "@/i18n";
 import { ColorBlock, Display, Mono, Text } from "@/ui";
 import { blockColors, colors, GUTTER, radius, space, type BlockColor } from "@/theme/tokens";
 import { fmtHold, pct, usd } from "../../format";
+import { tint } from "../../tint";
 import type { Analytics, TradeRef } from "../../types";
 
 export const Hero = React.memo(function Hero({ d, periodLabel }: { d: Analytics; periodLabel: string }) {
@@ -26,7 +27,7 @@ export const Hero = React.memo(function Hero({ d, periodLabel }: { d: Analytics;
       <Display size="hero" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={{ marginTop: space[3] }}>
         {net}
       </Display>
-      <View style={{ flexDirection: "row", marginTop: space[5], paddingTop: space[4], borderTopWidth: 1, borderTopColor: "rgba(14,14,16,0.16)" }}>
+      <View style={{ flexDirection: "row", marginTop: space[5], paddingTop: space[4], borderTopWidth: 1, borderTopColor: tint(colors.ink, 0.16) }}>
         {stats.map(([k, v]) => (
           <View key={k} style={{ flex: 1, gap: 3 }}>
             <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ fontSize: 10 }}>
@@ -44,7 +45,7 @@ export const Hero = React.memo(function Hero({ d, periodLabel }: { d: Analytics;
 
 const TILE_H = 136;
 
-function Tile({ color, label, value, valueColor, sub, children, width }: { color?: BlockColor; label: string; value?: string; valueColor?: string; sub?: string; children?: React.ReactNode; width: number }) {
+function Tile({ color, label, value, valueColor, asWritten, sub, children, width }: { color?: BlockColor; label: string; value?: string; valueColor?: string; /** keep the value's case ("2s", "1h 42m": an upper-case S reads as a 5) */ asWritten?: boolean; sub?: string; children?: React.ReactNode; width: number }) {
   const ink = !!color;
   return (
     <View
@@ -56,7 +57,7 @@ function Tile({ color, label, value, valueColor, sub, children, width }: { color
         {label}
       </Text>
       {children ?? (
-        <Display size="lg" color={valueColor ?? (ink ? colors.ink : colors.text)} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
+        <Display size="lg" color={valueColor ?? (ink ? colors.ink : colors.text)} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} style={asWritten ? { textTransform: "none" } : undefined}>
           {value}
         </Display>
       )}
@@ -124,7 +125,7 @@ export const Tiles = React.memo(function Tiles({ d }: { d: Analytics }) {
         <Tile label={t("mobileReports.an.tile.expectancy")} value={usd(s.expectancy, true)} valueColor={money(s.expectancy)} sub={t("mobileReports.an.tile.rr", { value: s.rewardRisk === null ? "—" : s.rewardRisk.toFixed(2) })} width={w} />
       </View>
       <View style={row}>
-        <Tile label={t("portfolio.an.kpi.avgHold")} value={fmtHold(t, s.avgHoldSecs)} sub={t("mobileReports.an.tile.holdSplit", { win: fmtHold(t, s.avgHoldWinSecs), loss: fmtHold(t, s.avgHoldLossSecs) })} width={w} />
+        <Tile label={t("portfolio.an.kpi.avgHold")} value={fmtHold(t, s.avgHoldSecs)} asWritten sub={t("mobileReports.an.tile.holdSplit", { win: fmtHold(t, s.avgHoldWinSecs), loss: fmtHold(t, s.avgHoldLossSecs) })} width={w} />
         <Tile label={t("mobileReports.an.tile.streaks")} value={`${s.maxConsecWins} / ${s.maxConsecLosses}`} sub={t("mobileReports.an.tile.streaksSub")} width={w} />
       </View>
       <View style={row}>

@@ -25,6 +25,7 @@ const mobileReports = {
   "st.failed": "The statement couldn't be downloaded",
   "st.offline": "You're offline. Connect to download statements.",
   "st.monthly.empty": "No statement months yet.",
+  "st.monthly.offline": "You're offline. Connect to see the monthly statements.",
   "st.monthly.a11y": "{month}: net {net}, {trades}. Opens the downloads.",
   "st.month.title": "{month} statement",
   "st.month.formats": "Download as",

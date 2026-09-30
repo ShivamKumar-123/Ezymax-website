@@ -2,7 +2,9 @@
 // the reports service. Net P&L hero, stat tiles, equity / balance / drawdown curves (Skia, scrub), the P&L calendar,
 // breakdowns by symbol, weekday, hour and session, long vs short, money flow, charges and behaviour insights.
 // Opens on the cached answer for the account and period, then refreshes; while another period loads, the previous
-// answer stays on screen, dimmed. Sections are list items, so each mounts only when it scrolls near.
+// answer stays on screen, dimmed and still labelled with its own account and period. If that load fails, the
+// screen says so (offline, not shared, service error) with a retry instead of keeping the old answer. Sections are
+// list items, so each mounts only when it scrolls near.
 import * as React from "react";
 import { View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
@@ -57,18 +59,24 @@ export function AnalyticsScreen() {
 
   const key = analyticsKey(scope, period);
   const q = useQuery(key, () => fetchAnalytics(scope, period), { persist: true, staleMs: ANALYTICS_STALE_MS });
-  const last = React.useRef<Analytics | undefined>(undefined);
-  if (q.data) last.current = q.data;
-  const d = q.data ?? last.current;
-  const stale = !q.data && !!d;
+  // the last answer on screen, with the account and period it belongs to
+  const last = React.useRef<{ d: Analytics; scope: Scope; period: Period } | undefined>(undefined);
+  if (q.data) last.current = { d: q.data, scope, period };
+  // nothing for this account / period and the last request failed: say so (never the previous answer)
+  const failed = !q.data && !!q.error && !q.fetching;
+  const stale = !q.data && !failed && !!last.current;
+  const d = q.data ?? (stale ? last.current!.d : undefined);
+  const shownScope = stale ? last.current!.scope : scope;
+  const shownPeriod = stale ? last.current!.period : period;
 
   const refreshControl = useRefresh(() => Promise.all([q.refresh(), accountsQ.refresh()]));
   const accounts: ReportAccount[] = React.useMemo(() => accountsQ.data?.accounts ?? d?.accounts ?? [], [accountsQ.data, d]);
   const account = typeof scope === "number" ? accounts.find((a) => a.login === scope) : undefined;
-  const range = analyticsRange(period);
+  const noAccounts = !!d && d.accounts.length === 0 && accounts.length === 0;
+  const range = analyticsRange(shownPeriod);
   const today = isoDay(new Date());
-  const periodLabel = period === "ALL" ? t("portfolio.an.period.allTime") : period === "1Y" ? t("portfolio.an.period.last12Months") : t("portfolio.an.period.lastDays", { count: PERIOD_DAYS[period] });
-  const scopeLabel = scope === "all" ? t("portfolio.an.allLive") : `#${scope}`;
+  const periodLabel = shownPeriod === "ALL" ? t("portfolio.an.period.allTime") : shownPeriod === "1Y" ? t("portfolio.an.period.last12Months") : t("portfolio.an.period.lastDays", { count: PERIOD_DAYS[shownPeriod] });
+  const scopeLabel = shownScope === "all" ? t("portfolio.an.allLive") : `#${shownScope}`;
 
   const items: Item[] = React.useMemo(() => {
     if (!d || d.accounts.length === 0) return [];
@@ -143,20 +151,25 @@ export function AnalyticsScreen() {
   const header = (
     <View>
       <PageTitle eyebrow={t("mobileReports.eyebrow.analytics")} title={t("portfolio.an.title")} />
-      <AccountCard scope={scope} account={account} liveCount={accounts.filter((a) => a.type === "live").length} onPress={() => accountSheet.current?.present()} />
-      <View style={{ flexDirection: "row", gap: space[2], paddingHorizontal: GUTTER, marginTop: space[3] }} accessibilityRole="tablist">
-        {PERIODS.map((p) => (
-          <View key={p} style={{ flex: 1 }} onTouchStart={() => p !== period && prefetchAnalytics(scope, p)}>
-            <Pill
-              label={t(`portfolio.an.period.${p}`)}
-              accessibilityLabel={p === "ALL" ? t("portfolio.an.period.allTime") : p === "1Y" ? t("portfolio.an.period.last12Months") : t("portfolio.an.period.lastDays", { count: PERIOD_DAYS[p] })}
-              selected={p === period}
-              onPress={() => setPeriod(p)}
-              style={{ paddingHorizontal: 0, alignItems: "center" }}
-            />
+      {/* a client without any trading account has nothing to pick: the empty state below offers to open one */}
+      {noAccounts ? null : (
+        <>
+          <AccountCard scope={scope} account={account} liveCount={accounts.filter((a) => a.type === "live").length} onPress={() => accountSheet.current?.present()} />
+          <View style={{ flexDirection: "row", gap: space[2], paddingHorizontal: GUTTER, marginTop: space[3] }} accessibilityRole="tablist">
+            {PERIODS.map((p) => (
+              <View key={p} style={{ flex: 1 }} onTouchStart={() => p !== period && prefetchAnalytics(scope, p)}>
+                <Pill
+                  label={t(`portfolio.an.period.${p}`)}
+                  accessibilityLabel={p === "ALL" ? t("portfolio.an.period.allTime") : p === "1Y" ? t("portfolio.an.period.last12Months") : t("portfolio.an.period.lastDays", { count: PERIOD_DAYS[p] })}
+                  selected={p === period}
+                  onPress={() => setPeriod(p)}
+                  style={{ paddingHorizontal: 0, alignItems: "center" }}
+                />
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      )}
       {stale ? (
         <Text variant="caption" tone="tertiary" align="center" style={{ marginTop: space[3] }} accessibilityLiveRegion="polite">
           {t("mobileReports.state.updating")}
@@ -169,7 +182,7 @@ export function AnalyticsScreen() {
 
   let empty: React.ReactElement | null = null;
   if (!d) {
-    if (q.error) {
+    if (q.error && !q.fetching) {
       const denied = q.error.status === 403;
       const offline = !online || q.error.code === "network";
       empty = (
@@ -182,7 +195,7 @@ export function AnalyticsScreen() {
           style={{ marginTop: space[4] }}
         />
       );
-    } else empty = <LoadingBody />;
+    } else empty = <LoadingBody label={t("common.loading")} />;
   } else if (d.accounts.length === 0) {
     empty = <EmptyState illustration="emptyHistory" title={t("portfolio.noAccounts.title")} body={t("portfolio.an.noAccountsText")} action={t("portfolio.openAccount")} onAction={() => router.push("/accounts/new")} style={{ marginTop: space[4] }} />;
   }
@@ -222,9 +235,9 @@ export function AnalyticsScreen() {
 }
 
 /** Shaped like the page: hero block, two rows of tiles, the chart card. Static (no shimmer). */
-function LoadingBody() {
+function LoadingBody({ label }: { label: string }) {
   return (
-    <View accessibilityLabel="Loading" accessible style={{ paddingHorizontal: GUTTER, paddingTop: space[5], gap: space[3] }}>
+    <View accessibilityLabel={label} accessible style={{ paddingHorizontal: GUTTER, paddingTop: space[5], gap: space[3] }}>
       <Skeleton h={214} r={radius.block} />
       {[0, 1].map((r) => (
         <View key={r} style={{ flexDirection: "row", gap: space[3] }}>

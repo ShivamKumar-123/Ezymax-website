@@ -16,17 +16,42 @@ const balanceOf = (a: ReportAccount) => fmtMoney(a.balance, { currency: a.cent |
 /** "Main · Standard"; the name is left out when it repeats the login or the group. */
 const nameOf = (a: ReportAccount) => [a.name && a.name !== String(a.login) && a.name.toLowerCase() !== a.groupName.toLowerCase() ? a.name : null, a.groupName].filter(Boolean).join(" · ");
 
+/** "Main · Standard · $1,234.56" on one line: the name gives way on narrow phones, the balance is never cut. */
+function AccountLine({ a }: { a: ReportAccount }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <Text variant="caption" tone="tertiary" numberOfLines={1} style={{ flexShrink: 1 }}>
+        {nameOf(a)}
+      </Text>
+      {/* separator on its own, so it stays between the two in right-to-left layouts */}
+      <Text variant="caption" tone="tertiary" style={{ flexShrink: 0 }}>
+        {"\u00A0·\u00A0"}
+      </Text>
+      <Text variant="caption" tone="tertiary" numberOfLines={1} style={{ flexShrink: 0 }}>
+        {balanceOf(a)}
+      </Text>
+    </View>
+  );
+}
+
 export function AccountCard({ scope, account, liveCount, onPress }: { scope: Scope; account?: ReportAccount; liveCount: number; onPress: () => void }) {
   const t = useT();
   const all = scope === "all";
   const title = all ? t("portfolio.an.allLive") : `#${scope}`;
   const sub = all ? t("mobileReports.account.allHint", { count: liveCount }) : account ? `${nameOf(account)} · ${balanceOf(account)}` : "";
+  const line = all ? (
+    <Text variant="caption" tone="tertiary" numberOfLines={1}>
+      {sub}
+    </Text>
+  ) : account ? (
+    <AccountLine a={account} />
+  ) : null;
   return (
     <PressableScale
       onPress={onPress}
       haptics="select"
       scaleTo={0.985}
-      accessibilityLabel={`${t("mobileReports.account.title")}: ${title}. ${t("mobileReports.account.change")}`}
+      accessibilityLabel={`${t("mobileReports.account.title")}: ${title}${sub ? `. ${sub}` : ""}. ${t("mobileReports.account.change")}`}
       style={{ marginHorizontal: GUTTER, minHeight: 64, borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, paddingHorizontal: space[4], paddingVertical: space[3], flexDirection: "row", alignItems: "center", gap: space[3] }}
     >
       <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface2, alignItems: "center", justifyContent: "center" }}>
@@ -45,11 +70,7 @@ export function AccountCard({ scope, account, liveCount, onPress }: { scope: Sco
           )}
           {!all && account ? <KindTag type={account.type} /> : null}
         </View>
-        {sub ? (
-          <Text variant="caption" tone="tertiary" numberOfLines={1}>
-            {sub}
-          </Text>
-        ) : null}
+        {line}
       </View>
       <ChevronDown size={20} color={colors.text3} />
     </PressableScale>
@@ -108,9 +129,13 @@ function Row({ selected, account, title, sub, onPress, onPressIn }: { selected: 
           )}
           {account ? <KindTag type={account.type} /> : <Tag label="USD" tone="outline" />}
         </View>
-        <Text variant="caption" tone="tertiary" numberOfLines={1}>
-          {sub}
-        </Text>
+        {account ? (
+          <AccountLine a={account} />
+        ) : (
+          <Text variant="caption" tone="tertiary" numberOfLines={1}>
+            {sub}
+          </Text>
+        )}
       </View>
       <View style={{ width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: selected ? colors.ember : "transparent", borderWidth: selected ? 0 : 1, borderColor: colors.lineStrong }}>
         {selected ? <Check size={16} color={colors.ink} strokeWidth={3} /> : null}

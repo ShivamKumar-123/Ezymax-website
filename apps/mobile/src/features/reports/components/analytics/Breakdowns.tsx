@@ -9,11 +9,13 @@ import { haptic } from "@/lib/haptics";
 import { Card, Display, Mono, PressableScale, Text } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { compactUsd, DAY_KEYS, sessionName, usd } from "../../format";
+import { tint } from "../../tint";
 import type { Analytics, Group, Stats } from "../../types";
 import { SectionTitle, Tag } from "../Chrome";
 
-const up = "rgba(52,199,123,0.85)";
-const down = "rgba(240,82,82,0.85)";
+const up = tint(colors.up, 0.85);
+const down = tint(colors.down, 0.85);
+const COL_ON = tint(colors.cream, 0.06);
 const moneyTone = (v: number): "up" | "down" | "tertiary" => (v > 0 ? "up" : v < 0 ? "down" : "tertiary");
 
 /* ------------------------------------------------------------------ */
@@ -122,7 +124,7 @@ function Columns({ cols, height, barW, values = true, selected, onSelect }: { co
                 opacity: selected === null || on ? 1 : 0.4,
               }}
             />
-            {on ? <View pointerEvents="none" style={{ position: "absolute", top: 0, bottom: 0, width: barW + 8, borderRadius: 6, backgroundColor: "rgba(245,239,227,0.06)" }} /> : null}
+            {on ? <View pointerEvents="none" style={{ position: "absolute", top: 0, bottom: 0, width: barW + 8, borderRadius: 6, backgroundColor: COL_ON }} /> : null}
           </Pressable>
         );
       })}
@@ -283,7 +285,7 @@ export const ByHour = React.memo(function ByHour({ heat, trades }: { heat: numbe
                           height: cell - gap,
                           marginEnd: gap,
                           borderRadius: 2,
-                          backgroundColor: n === 0 || v === 0 ? colors.surface2 : v > 0 ? `rgba(52,199,123,${a.toFixed(2)})` : `rgba(240,82,82,${a.toFixed(2)})`,
+                          backgroundColor: n === 0 || v === 0 ? colors.surface2 : tint(v > 0 ? colors.up : colors.down, a),
                           borderWidth: on ? 1 : 0,
                           borderColor: colors.cream,
                         }}

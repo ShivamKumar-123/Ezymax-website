@@ -6,6 +6,7 @@ import { useFormat, useT, type T } from "@/i18n";
 import { Card, Skeleton, Text } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { pct, usd } from "../../format";
+import { tint } from "../../tint";
 import type { Analytics, CurvePoint } from "../../types";
 import { SectionTitle } from "../Chrome";
 import { Curve, CURVE_H, type CurveSeries } from "../charts/Curve";
@@ -58,8 +59,8 @@ function buildSeries(points: CurvePoint[], width: number, t: T, fmt: ReturnType<
     tipEq: pts.map((p) => ascii(short(p.equity))),
     tipBal: pts.map((p) => ascii(short(p.balance))),
     tipDd: pts.map((p) => ascii(pct(p.drawdown))),
-    hiLabel: short(hi),
-    loLabel: short(lo),
+    hiLabel: ascii(short(hi)),
+    loLabel: ascii(short(lo)),
     ddTitle: ddWord,
     ddLabel: t("portfolio.an.curves.max", { value: maxDd.toFixed(2) }),
     a11y: t("mobileReports.an.curve.a11y", { equity: usd(last.equity), balance: usd(last.balance), date: date(last.day), drawdown: pct(maxDd) }),
@@ -80,8 +81,8 @@ export const CurveSection = React.memo(function CurveSection({ d, label }: { d: 
         {series ? (
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space[4] }}>
             <Legend swatch={<View style={{ width: 16, height: 3, borderRadius: 2, backgroundColor: colors.gold }} />} label={t("common.equity")} />
-            <Legend swatch={<View style={{ width: 16, height: 0, borderTopWidth: 2, borderStyle: "dashed", borderColor: "rgba(245,239,227,0.6)" }} />} label={t("common.balance")} />
-            <Legend swatch={<View style={{ width: 12, height: 8, borderRadius: 2, backgroundColor: "rgba(240,82,82,0.5)" }} />} label={t("mobileReports.an.curve.drawdown")} />
+            <Legend swatch={<View style={{ width: 16, height: 0, borderTopWidth: 2, borderStyle: "dashed", borderColor: tint(colors.cream, 0.6) }} />} label={t("common.balance")} />
+            <Legend swatch={<View style={{ width: 12, height: 8, borderRadius: 2, backgroundColor: tint(colors.down, 0.5) }} />} label={t("mobileReports.an.curve.drawdown")} />
           </View>
         ) : null}
         {series ? (

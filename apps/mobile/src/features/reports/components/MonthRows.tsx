@@ -6,6 +6,7 @@ import { useT } from "@/i18n";
 import { fmtMoney } from "@/lib/format";
 import { Button, ColorBlock, Display, Mono, PressableScale, Sheet, Skeleton, Text, type SheetRef } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
+import { tint } from "../tint";
 import type { MonthRow, StFormat } from "../types";
 import type { StatementRequest } from "../useStatementDownload";
 import { Flip, Label } from "./Chrome";
@@ -47,9 +48,9 @@ export const MonthItem = React.memo(function MonthItem({ m, label, currency, onO
   );
 });
 
-export function MonthRowsSkeleton({ rows = 4 }: { rows?: number }) {
+export function MonthRowsSkeleton({ rows = 4, label }: { rows?: number; label: string }) {
   return (
-    <View accessibilityLabel="Loading" accessible>
+    <View accessibilityLabel={label} accessible>
       {Array.from({ length: rows }, (_, i) => (
         <View key={i} style={{ height: MONTH_ROW_H, marginHorizontal: GUTTER, flexDirection: "row", alignItems: "center", gap: space[3], borderBottomWidth: 1, borderBottomColor: colors.line }}>
           <Skeleton w={44} h={44} r={22} />
@@ -115,7 +116,7 @@ export const MonthSheet = React.forwardRef<SheetRef, SheetProps>(function MonthS
 
 function Figure({ label, value, first }: { label: string; value: string; first?: boolean }) {
   return (
-    <View accessible accessibilityLabel={`${label}: ${value}`} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: space[3], borderTopWidth: first ? 0 : 1, borderTopColor: "rgba(14,14,16,0.12)" }}>
+    <View accessible accessibilityLabel={`${label}: ${value}`} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: space[3], borderTopWidth: first ? 0 : 1, borderTopColor: tint(colors.ink, 0.12) }}>
       <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ flex: 1, fontSize: 10.5 }}>
         {label}
       </Text>

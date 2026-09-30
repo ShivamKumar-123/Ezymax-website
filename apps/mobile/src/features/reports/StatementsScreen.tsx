@@ -11,9 +11,9 @@ import { useFormat, useT } from "@/i18n";
 import { useOnline } from "@/lib/net";
 import { useQuery } from "@/lib/query";
 import { useActiveLogin } from "@/session/activeAccount";
-import { ColorBlock, Display, EmptyState, Skeleton, Text, type SheetRef } from "@/ui";
+import { Button, ColorBlock, Display, EmptyState, Skeleton, Text, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
-import { ACCOUNTS_KEY, fetchAccounts, fetchMonths, monthsKey, pickStatementAccount, prefetchAnalytics } from "./api";
+import { ACCOUNTS_KEY, fetchAccounts, fetchMonths, monthsKey, pickStatementAccount, prefetchMonths } from "./api";
 import { AccountCard, AccountSheet } from "./components/AccountPicker";
 import { Page, PageTitle, SectionTitle, StackBar, useRefresh } from "./components/Chrome";
 import { MonthItem, MonthRowsSkeleton, MonthSheet } from "./components/MonthRows";
@@ -87,7 +87,7 @@ export function StatementsScreen() {
     return (
       <Page bar={bar}>
         {title}
-        <LoadingBody />
+        <LoadingBody label={t("common.loading")} />
       </Page>
     );
   }
@@ -127,12 +127,14 @@ export function StatementsScreen() {
     </View>
   );
 
-  const empty = monthsQ.loading ? (
-    <MonthRowsSkeleton />
+  const monthsOffline = !!monthsQ.error && (!online || monthsQ.error.code === "network");
+  const empty = monthsQ.loading || (monthsQ.fetching && !monthsQ.data) ? (
+    <MonthRowsSkeleton label={t("common.loading")} />
   ) : monthsQ.error && !monthsQ.data ? (
-    <Text tone="tertiary" style={{ marginHorizontal: GUTTER, marginTop: space[4] }} onPress={() => void monthsQ.refresh()}>
-      {monthsQ.error.status === 403 ? monthsQ.error.message : t("portfolio.st.monthly.unavailable")}
-    </Text>
+    <View style={{ marginHorizontal: GUTTER, marginTop: space[4], gap: space[3], alignItems: "flex-start" }} accessibilityLiveRegion="polite">
+      <Text tone="tertiary">{monthsQ.error.status === 403 ? monthsQ.error.message : monthsOffline ? t("mobileReports.st.monthly.offline") : t("portfolio.st.monthly.unavailable")}</Text>
+      {monthsQ.error.status === 403 ? null : <Button variant="secondary" size="sm" full={false} label={t("mobile.action.retry")} onPress={() => void monthsQ.refresh()} />}
+    </View>
   ) : (
     <Text tone="tertiary" style={{ marginHorizontal: GUTTER, marginTop: space[4] }}>
       {t("mobileReports.st.monthly.empty")}
@@ -169,7 +171,7 @@ export function StatementsScreen() {
         allowAll={false}
         onSelect={select}
         onPressIn={(s) => {
-          if (typeof s === "number") prefetchAnalytics(s);
+          if (typeof s === "number") prefetchMonths(s);
         }}
       />
       <MonthSheet ref={monthSheet} month={openMonth} label={openMonth ? (labels.get(openMonth.month) ?? openMonth.month) : ""} login={account.login} currency={currency} busy={busy} onDownload={download} />
@@ -177,9 +179,9 @@ export function StatementsScreen() {
   );
 }
 
-function LoadingBody() {
+function LoadingBody({ label }: { label: string }) {
   return (
-    <View accessibilityLabel="Loading" accessible style={{ gap: space[5] }}>
+    <View accessibilityLabel={label} accessible style={{ gap: space[5] }}>
       <View style={{ paddingHorizontal: GUTTER }}>
         <Skeleton h={64} r={radius.lg} />
       </View>
@@ -198,7 +200,7 @@ function LoadingBody() {
       <View style={{ paddingHorizontal: GUTTER }}>
         <Skeleton h={54} r={27} />
       </View>
-      <MonthRowsSkeleton rows={3} />
+      <MonthRowsSkeleton rows={3} label={label} />
     </View>
   );
 }
