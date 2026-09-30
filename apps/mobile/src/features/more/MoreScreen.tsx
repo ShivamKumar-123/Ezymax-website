@@ -37,7 +37,7 @@ import {
 } from "lucide-react-native";
 import { LOCALES, useLocale, useT, type MessageKey } from "@/i18n";
 import { APP_VERSION } from "@/lib/config";
-import { prefetch, useQuery } from "@/lib/query";
+import { getQueryData, prefetch, useQuery } from "@/lib/query";
 import { refreshMe, signOut, useSession } from "@/session";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { Banner, Button, ColorBlock, Display, Illustration, KalksMark, Mono, PressableScale, Screen, Text, toast, type SheetRef } from "@/ui";
@@ -109,7 +109,7 @@ const GROUPS: GroupDef[] = [
     key: "tools",
     label: "mobileProfile.more.group.tools",
     items: [
-      { key: "ai", icon: Bot, label: "mobileProfile.more.item.ai", hint: "mobileProfile.more.hint.ai", href: "/ai" },
+      { key: "ai", icon: Bot, label: "mobileProfile.more.item.ai", hint: "mobileProfile.more.hint.ai", href: "/ai", module: "algo" },
       { key: "algo", icon: Workflow, label: "mobileProfile.more.item.algo", href: "/algo", module: "algo" },
       { key: "alerts", icon: BellRing, label: "mobileProfile.more.item.alerts", href: "/alerts" },
     ],
@@ -157,21 +157,14 @@ export async function openLegal(url: string, failed: string) {
   }
 }
 
-const LEGAL_FALLBACK: MenuConfig["legal"] = [
-  { key: "terms", url: "https://kalkstrade.com/terms" },
-  { key: "privacy", url: "https://kalkstrade.com/privacy" },
-  { key: "risk", url: "https://kalkstrade.com/risk-warning" },
-  { key: "disclaimer", url: "https://kalkstrade.com/risk" },
-  { key: "restricted", url: "https://kalkstrade.com/restricted-countries" },
-];
-
 export default function MoreScreen() {
   const t = useT();
   const router = useRouter();
   const me = useMeX();
   const viewer = useSession((s) => s.viewer);
   const { locale } = useLocale();
-  const menu = useQuery(QK.menu, fetchMenu, { persist: true, staleMs: 5 * 60_000, enabled: !viewer });
+  // every session reads the broker's menu (view-only logins too: their module switches and legal pages)
+  const menu = useQuery(QK.menu, fetchMenu, { persist: true, staleMs: 5 * 60_000 });
   const legalSheet = React.useRef<SheetRef>(null);
   const outSheet = React.useRef<SheetRef>(null);
   const [leaving, setLeaving] = React.useState(false);
@@ -180,9 +173,10 @@ export default function MoreScreen() {
   const card = viewer ? null : KYC_CARD[badge.key];
   const languageName = LOCALES.find((l) => l.code === locale)?.name;
 
+  const refreshMenu = menu.refresh;
   const refresh = React.useCallback(async () => {
-    await Promise.all([refreshMe(), viewer ? null : menu.refresh()]);
-  }, [menu, viewer]);
+    await Promise.all([refreshMe(), refreshMenu()]);
+  }, [refreshMenu]);
 
   const groups = React.useMemo(() => {
     const modules = menu.data?.modules ?? {};
@@ -194,7 +188,15 @@ export default function MoreScreen() {
     return GROUPS.map((g) => ({ ...g, items: g.items.filter(visible) })).filter((g) => g.items.length);
   }, [menu.data, viewer]);
 
-  const legal = menu.data?.legal?.length ? menu.data.legal : LEGAL_FALLBACK;
+  const legal: MenuConfig["legal"] = menu.data?.legal ?? [];
+  // the broker's legal pages come from the server (white-label websites); without them yet, fetch them first
+  const openLegalSheet = async () => {
+    if (!legal.length) {
+      await refreshMenu();
+      if (!getQueryData<MenuConfig>(QK.menu)?.legal?.length) return toast.show({ title: t("mobileProfile.legal.openFailed"), tone: "error" });
+    }
+    legalSheet.current?.present();
+  };
 
   const header = (
     <View style={{ paddingHorizontal: GUTTER, paddingTop: space[2], paddingBottom: space[2] }}>
@@ -239,7 +241,7 @@ export default function MoreScreen() {
       </View>
 
       {card ? (
-        <PressableScale onPress={() => router.push("/profile/verification")} onPressIn={warmKyc} haptics="tap" accessibilityLabel={`${t(card.title)}. ${t(card.body)}`} testID="more-kyc-card" style={{ marginHorizontal: GUTTER, marginTop: space[4] }}>
+        <PressableScale onPress={() => router.push("/profile/verification")} onPressIn={warmKyc} accessibilityLabel={`${t(card.title)}. ${t(card.body)}`} testID="more-kyc-card" style={{ marginHorizontal: GUTTER, marginTop: space[4] }}>
         <ColorBlock color={card.color} style={{ padding: space[5], minHeight: 176 }}>
           <View style={{ gap: space[2], paddingEnd: card.ill ? 112 : 0 }}>
             <Display size="md" color={colors.ink}>
@@ -273,7 +275,7 @@ export default function MoreScreen() {
                 testID={`more-${it.key}`}
                 value={it.key === "language" ? languageName : it.key === "verification" && !viewer ? <StatusChip label={t(badge.label)} tone={badge.tone} /> : undefined}
                 onPressIn={it.prefetch}
-                onPress={() => (it.key === "legal" ? legalSheet.current?.present() : it.href ? router.push(it.href) : undefined)}
+                onPress={() => (it.key === "legal" ? void openLegalSheet() : it.href ? router.push(it.href) : undefined)}
               />
             ))}
           </Group>

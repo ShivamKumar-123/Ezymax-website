@@ -11,12 +11,12 @@ import { AlertTriangle, Building2, FileText, IdCard, Lock, Plus, ScanFace, Trash
 import { maxDob } from "@/features/auth/countries";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
-import { haptic } from "@/lib/haptics";
 import { Button, Checkbox, Display, FormError, Pill, PressableScale, Text, TextField, toast } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { NextArrow, Note, StatusChip } from "../components/bits";
 import { CountryField, DateField } from "../components/fields";
 import { ageDays, countryName, isYmd } from "../format";
+import { OK, tint } from "../tint";
 import { applyKyc, hoursLabel, kycPost } from "./api";
 import { flagged } from "./checks";
 import { DocSlot, previewFor } from "./DocSlot";
@@ -41,7 +41,7 @@ function Stepper({ steps, current }: { steps: string[]; current: number }) {
     <View style={{ paddingHorizontal: GUTTER, gap: space[2] }} accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: steps.length, now: current + 1 }}>
       <View style={{ flexDirection: "row", gap: 6 }}>
         {steps.map((s, i) => (
-          <View key={s} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i < current ? colors.mint : i === current ? colors.ember : colors.surface3 }} />
+          <View key={s} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i < current ? OK : i === current ? colors.ember : colors.surface3 }} />
         ))}
       </View>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
@@ -76,7 +76,6 @@ function useSave() {
     const r = await kycPost("details", body);
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(r.error);
       return false;
     }
@@ -103,7 +102,7 @@ function ChoiceCards<V extends string>({ value, options, onChange, disabled }: {
             accessibilityRole="radio"
             accessibilityState={{ selected: on, disabled: !!disabled }}
             testID={`choice-${o.value}`}
-            style={{ minHeight: 60, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[4], paddingVertical: space[3], borderRadius: radius.md, borderWidth: 1, borderColor: on ? colors.ember : colors.line, backgroundColor: on ? "rgba(242,106,61,0.10)" : colors.surface }}
+            style={{ minHeight: 60, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[4], paddingVertical: space[3], borderRadius: radius.md, borderWidth: 1, borderColor: on ? colors.ember : colors.line, backgroundColor: on ? tint.ember : colors.surface }}
           >
             <Icon size={20} color={on ? colors.ember : colors.text3} />
             <View style={{ flex: 1 }}>
@@ -139,10 +138,7 @@ export function StartPanel({ state, onStarted, readOnly }: { state: KycState; on
     setErr(null);
     const r = await kycPost("start", { kind });
     setBusy(false);
-    if (!r.ok) {
-      haptic.error();
-      return setErr(r.error.message);
-    }
+    if (!r.ok) return setErr(r.error.message);
     toast.show({ title: t("mobileProfile.kyc.startedToast"), tone: "success" });
     onStarted(r.data);
   };
@@ -364,7 +360,7 @@ function ReviewList({ state }: { state: KycState }) {
               <Text variant="caption" tone="tertiary">
                 {doc ? `${doc.mime.replace("image/", "").replace("application/", "").toUpperCase()} · ${(doc.size_bytes / 1024 / 1024).toFixed(2)} MB` : t("kyc.review.missing")}
               </Text>
-              {doc ? <StatusChip label={warn ? t("kyc.review.flagged") : t("kyc.review.passed")} tone={warn ? "gold" : "mint"} style={{ alignSelf: "flex-start" }} /> : <StatusChip label={t("kyc.review.missing")} tone="ember" style={{ alignSelf: "flex-start" }} />}
+              {doc ? <StatusChip label={warn ? t("kyc.review.flagged") : t("kyc.review.passed")} tone={warn ? "gold" : "ok"} style={{ alignSelf: "flex-start" }} /> : <StatusChip label={t("kyc.review.missing")} tone="ember" style={{ alignSelf: "flex-start" }} />}
             </View>
           </View>
         );
@@ -422,6 +418,36 @@ function CompanyStep({ state, onSaved }: { state: KycState; onSaved: (s: KycStat
   );
 }
 
+/** Ownership in % with up to two decimals, like the Client Area ("12.5"): the text is kept while typing ("12."), the
+ *  number goes to the draft. */
+function OwnershipField({ label, value, onChange, accessibilityLabel, error }: { label: string; value: number | null; onChange: (v: number | null) => void; accessibilityLabel: string; error?: string }) {
+  const [text, setText] = React.useState(value === null ? "" : String(value));
+  const parse = (v: string) => (v === "" || v === "." ? null : Number(v));
+  React.useEffect(() => {
+    // another value arrived from outside (a person above was removed): show it
+    if (parse(text) !== value) setText(value === null ? "" : String(value));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return (
+    <TextField
+      label={label}
+      value={text}
+      onChangeText={(v) => {
+        let clean = v.replace(",", ".").replace(/[^0-9.]/g, "");
+        const dot = clean.indexOf(".");
+        if (dot >= 0) clean = `${clean.slice(0, dot + 1)}${clean.slice(dot + 1).replace(/\./g, "").slice(0, 2)}`;
+        if (Number(clean) > 100) clean = "100";
+        setText(clean);
+        onChange(parse(clean));
+      }}
+      keyboardType="decimal-pad"
+      mono
+      accessibilityLabel={accessibilityLabel}
+      error={error}
+    />
+  );
+}
+
 const EMPTY_PARTY: Party = { first_name: "", last_name: "", date_of_birth: "", nationality: "", roles: ["director"], ownership: null, id_type: "passport" };
 
 function PeopleStep({ state, onSaved, onBack }: { state: KycState; onSaved: (s: KycState) => void; onBack: () => void }) {
@@ -462,7 +488,7 @@ function PeopleStep({ state, onSaved, onBack }: { state: KycState; onSaved: (s: 
               <Pill key={o.value} label={t(o.label)} selected={p.id_type === o.value} onPress={() => upd(i, { id_type: o.value })} compact />
             ))}
           </View>
-          <TextField label={t("kyc.parties.ownership")} value={p.ownership === null ? "" : String(p.ownership)} onChangeText={(v) => { const n = v.replace(",", ".").replace(/[^0-9.]/g, ""); upd(i, { ownership: n === "" ? null : Math.min(100, Number(n)) }); }} keyboardType="decimal-pad" mono accessibilityLabel={t("kyc.parties.ownershipAria", { n: i + 1 })} error={uboBad(p) ? t("mobileProfile.kyc.people.uboOwnership") : undefined} />
+          <OwnershipField label={t("kyc.parties.ownership")} value={p.ownership} onChange={(v) => upd(i, { ownership: v })} accessibilityLabel={t("kyc.parties.ownershipAria", { n: i + 1 })} error={uboBad(p) ? t("mobileProfile.kyc.people.uboOwnership") : undefined} />
           <Text variant="label" tone="tertiary">
             {t("mobileProfile.kyc.people.roles")}
           </Text>
@@ -563,16 +589,13 @@ export function Wizard({ state, onSubmitted, onStep }: { state: KycState; onSubm
     setResult(null);
     const r = await kycPost("submit", { confirm: true });
     if (!r.ok) {
-      haptic.error();
       setPhase("form");
       return setErr(r.error.message);
     }
     setResult(r.data);
   }
   const finish = React.useCallback(() => {
-    if (!result) return;
-    haptic.success();
-    onSubmitted(result);
+    if (result) onSubmitted(result);
   }, [result, onSubmitted]);
 
   if (phase === "checking") return <CheckingSequence steps={checkSteps} serverDone={!!result} onFinish={finish} />;
@@ -641,16 +664,13 @@ export function MoreInfo({ state, onSubmitted }: { state: KycState; onSubmitted:
     setPhase("checking");
     const r = await kycPost("submit", { confirm: true });
     if (!r.ok) {
-      haptic.error();
       setPhase("form");
       return setErr(r.error.message);
     }
     setResult(r.data);
   }
   const finish = React.useCallback(() => {
-    if (!result) return;
-    haptic.success();
-    onSubmitted(result);
+    if (result) onSubmitted(result);
   }, [result, onSubmitted]);
 
   if (phase === "checking")
@@ -658,7 +678,7 @@ export function MoreInfo({ state, onSubmitted }: { state: KycState; onSubmitted:
 
   return (
     <Pad>
-      <View style={{ padding: space[4], borderRadius: radius.lg, backgroundColor: colors.warnSoft, borderWidth: 1, borderColor: "rgba(242,184,75,0.35)", gap: space[2] }} testID="kyc-more-info">
+      <View style={{ padding: space[4], borderRadius: radius.lg, backgroundColor: tint.gold, borderWidth: 1, borderColor: tint.goldLine, gap: space[2] }} testID="kyc-more-info">
         <View style={{ flexDirection: "row", gap: space[2], alignItems: "center" }}>
           <AlertTriangle size={18} color={colors.gold} />
           <Text variant="headline" weight="700" style={{ flex: 1 }}>

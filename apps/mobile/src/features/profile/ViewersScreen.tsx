@@ -6,7 +6,6 @@ import { useFocusEffect, useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { Copy, Eye, KeyRound, Pencil, Plus, ShieldOff } from "lucide-react-native";
 import { useT, type T } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { invalidate, useQuery } from "@/lib/query";
 import { Button, EmptyState, IconButton, Mono, PressableScale, Text, toast, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
@@ -20,7 +19,7 @@ import { ago, day, parseDevice } from "./format";
 import { useReadOnly, type BadgeTone } from "./me";
 
 const STATUS: Record<Viewer["status"], { tone: BadgeTone; label: "security.viewerStatus.active" | "security.viewerStatus.expired" | "security.viewerStatus.revoked" }> = {
-  active: { tone: "mint", label: "security.viewerStatus.active" },
+  active: { tone: "ok", label: "security.viewerStatus.active" },
   expired: { tone: "neutral", label: "security.viewerStatus.expired" },
   revoked: { tone: "ember", label: "security.viewerStatus.revoked" },
 };
@@ -56,7 +55,6 @@ function ViewerCard({ v, onManage, readOnly }: { v: Viewer; onManage: (v: Viewer
   const t = useT();
   const copy = async () => {
     await Clipboard.setStringAsync(v.username);
-    haptic.select();
     toast.show({ title: t("mobileProfile.copied", { what: t("security.creds.viewerId") }) });
   };
   const canManage = !readOnly && v.status !== "revoked";
@@ -133,7 +131,6 @@ export default function ViewersScreen() {
     if (!sel) return;
     const r = await viewerPassword(sel.id, token);
     if (!r.ok) return void toast.show({ title: t("security.viewers.passwordFailed"), body: r.error.message, tone: "error" });
-    haptic.success();
     setCreds({ username: r.data.username, password: r.data.password, label: sel.label });
     invalidate(QK.viewers);
     setTimeout(() => credsSheet.current?.present(), 250);
@@ -146,7 +143,6 @@ export default function ViewersScreen() {
     setBusy(false);
     revokeSheet.current?.dismiss();
     if (!r.ok) return void toast.show({ title: t("security.viewers.revokeFailed"), body: r.error.message, tone: "error" });
-    haptic.success();
     toast.show({ title: t("security.viewers.revoked", { label: sel.label }), body: t("security.viewers.revokedText"), tone: "success" });
     invalidate(QK.viewers);
     invalidate(QK.sessions);

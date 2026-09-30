@@ -21,18 +21,20 @@ export function useReadOnly(): boolean {
   return viewer || staffRo;
 }
 
-export type BadgeTone = "mint" | "gold" | "ember" | "periwinkle" | "neutral";
+/** Status chip tones: ok (done / on / verified, warm off-white), gold (waiting, attention), ember (refused), periwinkle (in progress), neutral. */
+export type BadgeTone = "ok" | "gold" | "ember" | "periwinkle" | "neutral";
 export type KycBadge = { key: "verified" | "review" | "action" | "rejected" | "progress" | "none"; tone: BadgeTone; label: MessageKey };
 
-/** Verification status chip (same states as the Client Area profile card). */
+/** Verification status chip: the Client Area profile card's states, except that a new case started after a rejection
+ *  reads "in progress" (it is what the client is working on). */
 export function kycBadge(me: Pick<Me, "kyc_status" | "kyc_case_status"> | null | undefined): KycBadge {
   const status = me?.kyc_status ?? "unverified";
   const kase = me?.kyc_case_status ?? null;
-  if (status === "verified") return { key: "verified", tone: "mint", label: "common.verified" };
+  if (status === "verified") return { key: "verified", tone: "ok", label: "common.verified" };
   if (kase === "more_info") return { key: "action", tone: "gold", label: "kyc.levels.actionNeeded" };
   if (status === "pending" || kase === "submitted" || kase === "in_review") return { key: "review", tone: "gold", label: "kyc.levels.inReview" };
-  if (status === "rejected" || kase === "rejected") return { key: "rejected", tone: "ember", label: "kyc.tracker.stage.notApproved" };
   if (kase === "draft") return { key: "progress", tone: "periwinkle", label: "profile.kycCard.inProgress" };
+  if (status === "rejected" || kase === "rejected") return { key: "rejected", tone: "ember", label: "kyc.tracker.stage.notApproved" };
   return { key: "none", tone: "neutral", label: "profile.notVerified" };
 }
 

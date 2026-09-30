@@ -6,12 +6,11 @@ import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Eye, UserRound } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { getQueryData, invalidate, useQuery } from "@/lib/query";
-import { Button, Checkbox, FormError, Mono, Skeleton, Text, TextField, toast, type SheetRef } from "@/ui";
+import { Button, Checkbox, EmptyState, FormError, Mono, Skeleton, Text, TextField, toast, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { createViewer, fetchAccounts, fetchViewers, QK, updateViewer, VIEWER_SECTIONS, type ViewerSection, type ViewersPage } from "./api";
-import { Note } from "./components/bits";
+import { LoadState, Note } from "./components/bits";
 import { CredentialsSheet, type Creds } from "./components/Credentials";
 import { DateField } from "./components/fields";
 import { StackScreen } from "./components/StackScreen";
@@ -34,7 +33,7 @@ export default function ViewerEditScreen() {
   const t = useT();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
-  const id = params.id ? Number(params.id) : null;
+  const id = params.id ? (/^\d{1,18}$/.test(params.id) ? Number(params.id) : -1) : null;
   const viewers = useQuery<ViewersPage>(QK.viewers, fetchViewers, { persist: true, staleMs: 60_000 });
   const accounts = useQuery(QK.accounts, fetchAccounts, { persist: true, staleMs: 30_000 });
   const editing = id !== null ? (viewers.data ?? getQueryData<ViewersPage>(QK.viewers))?.items.find((v) => v.id === id) ?? null : null;
@@ -71,7 +70,6 @@ export default function ViewerEditScreen() {
     return Object.keys(e).length === 0;
   };
   const failed = (field: string | undefined, message: string) => {
-    haptic.error();
     if (field) setErrors({ [field]: message });
     else setFormErr(message);
   };
@@ -79,7 +77,6 @@ export default function ViewerEditScreen() {
   const create = async (token: string) => {
     const r = await createViewer({ label: draft.label.trim(), username: draft.username || undefined, accounts: draft.accounts, sections: draft.sections, expires_at: fromYmd(draft.expires) }, token);
     if (!r.ok) return failed(r.error.field, STEPUP_CODES.has(r.error.code) ? t("profile.password.expired") : r.error.message);
-    haptic.success();
     invalidate(QK.viewers);
     setCreds({ username: r.data.viewer.username, password: r.data.password, label: r.data.viewer.label });
     setTimeout(() => credsSheet.current?.present(), 250);
@@ -91,21 +88,26 @@ export default function ViewerEditScreen() {
     const r = await updateViewer(id, { label: draft.label.trim(), accounts: draft.accounts, sections: draft.sections, expires_at: fromYmd(draft.expires) });
     setBusy(false);
     if (!r.ok) return failed(r.error.field, r.error.message);
-    haptic.success();
     toast.show({ title: t("security.viewers.updated"), body: t("security.viewers.updatedText"), tone: "success" });
     invalidate(QK.viewers);
     router.back();
   };
 
   const list = accounts.data?.accounts ?? [];
-  const title = editing ? t("security.dialog.editTitle", { label: editing.label }) : t("security.dialog.newTitle");
+  const title = editing ? t("security.dialog.editTitle", { label: editing.label }) : id !== null ? t("security.viewerBar.title") : t("security.dialog.newTitle");
   return (
-    <StackScreen eyebrow={t("security.viewerBar.title")} title={title} subtitle={editing ? t("security.dialog.viewerId", { id: editing.username }) : t("security.dialog.newText")} keyboard testID="screen-viewer-edit">
+    <StackScreen eyebrow={t("security.viewerBar.title")} title={title} subtitle={editing ? t("security.dialog.viewerId", { id: editing.username }) : id !== null ? undefined : t("security.dialog.newText")} keyboard testID="screen-viewer-edit">
       {id !== null && !editing && !viewers.data ? (
-        <View style={{ paddingHorizontal: GUTTER, gap: space[3] }}>
-          <Skeleton h={52} r={radius.md} />
-          <Skeleton h={52} r={radius.md} />
-        </View>
+        viewers.error ? (
+          <LoadState error={viewers.error} onRetry={() => void viewers.refresh()} />
+        ) : (
+          <View style={{ paddingHorizontal: GUTTER, gap: space[3] }}>
+            <Skeleton h={52} r={radius.md} />
+            <Skeleton h={52} r={radius.md} />
+          </View>
+        )
+      ) : id !== null && (!editing || editing.status === "revoked") ? (
+        <EmptyState illustration="security" title={t("mobileProfile.viewers.notFoundTitle")} body={t("mobileProfile.viewers.notFoundBody")} action={t("common.back")} onAction={() => (router.canGoBack() ? router.back() : router.replace("/profile/viewers"))} />
       ) : (
         <View style={{ paddingHorizontal: GUTTER, gap: space[4] }}>
           <FormError message={formErr} />

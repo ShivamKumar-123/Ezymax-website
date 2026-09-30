@@ -76,12 +76,20 @@ export function LargeTitle({ eyebrow, title, subtitle, right, style }: { eyebrow
           {eyebrow}
         </Text>
       ) : null}
-      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: space[3] }}>
-        <Display size="xl" accessibilityRole="header" style={{ flex: 1 }}>
+      {right ? (
+        // the item next to the title (a case reference) wraps under a long title on narrow phones instead of
+        // pushing past the screen edge
+        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "flex-end", columnGap: space[3], rowGap: space[2] }}>
+          <Display size="xl" accessibilityRole="header" style={{ maxWidth: "100%" }}>
+            {title}
+          </Display>
+          <View style={{ marginBottom: space[1] }}>{right}</View>
+        </View>
+      ) : (
+        <Display size="xl" accessibilityRole="header">
           {title}
         </Display>
-        {right}
-      </View>
+      )}
       {subtitle ? typeof subtitle === "string" ? <Text tone="secondary" style={{ marginTop: space[1] }}>{subtitle}</Text> : subtitle : null}
     </View>
   );

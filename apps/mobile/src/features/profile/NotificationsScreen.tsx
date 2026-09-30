@@ -1,136 +1,188 @@
-// Profile › Notifications (/profile/notifications): what reaches the client in the app (the notifications inbox) and
-// by email, per topic (services/support preferences), plus the marketing-email consent (gateway), which the email
-// switch of "News and offers" controls like in the Client Area. Security notices are always on.
+// Profile › Notifications (/profile/notifications): what reaches the client, per topic, on each channel (services/
+// support preferences): push notifications on this phone, the notifications inbox (in the app and on the web) and
+// email. The email switch of "News and offers" is the marketing consent (gateway), like in the Client Area.
+// Security notices are always on. One channel at a time (pill chips), so every topic keeps a full-width row on
+// narrow phones. A push goes out only while the topic is on in the app too (services/support notify.rs), so the
+// push switch shows both, and turning a push on turns the topic on in the app as well.
 import * as React from "react";
 import { View } from "react-native";
-import { Lock, Mail, Smartphone } from "lucide-react-native";
+import { Lock } from "lucide-react-native";
 import { useT } from "@/i18n";
 import { haptic } from "@/lib/haptics";
-import { setQueryData, useQuery } from "@/lib/query";
-import { Text, toast } from "@/ui";
-import { colors, GUTTER, radius, space } from "@/theme/tokens";
-import { fetchMarketing, fetchPrefs, QK, saveMarketing, savePref, type PrefCategory, type Prefs } from "./api";
-import { KSwitch, LoadState, Note, SkeletonGroup } from "./components/bits";
+import { getQueryData, setQueryData, useQuery } from "@/lib/query";
+import { useSession } from "@/session";
+import { PillRow, PressableScale, Text, toast } from "@/ui";
+import { colors, GUTTER, space } from "@/theme/tokens";
+import { fetchMarketing, fetchPrefs, QK, saveMarketing, savePref, type Pref, type PrefCategory, type Prefs } from "./api";
+import { Group, KSwitch, LoadState, Note, SkeletonGroup } from "./components/bits";
 import { StackScreen } from "./components/StackScreen";
 import { useReadOnly } from "./me";
 
 type PrefsData = { catalog: PrefCategory[]; prefs: Prefs };
+export type Channel = "push" | "inApp" | "email";
 
-function Cell({ value, onChange, label, disabled }: { value: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
-  return (
-    <View style={{ width: 64, alignItems: "center" }}>
-      <KSwitch
-        value={value}
-        disabled={disabled}
-        onValueChange={(v) => {
-          haptic.select();
-          onChange(v);
-        }}
-        accessibilityLabel={label}
-      />
-    </View>
-  );
+const CHANNELS: Channel[] = ["push", "inApp", "email"];
+
+/** The saved preference of a topic, the catalog defaults filled in (the server always sends them; older servers had no push). */
+function prefOf(d: PrefsData, c: PrefCategory): Required<Pref> {
+  const def = c.defaults ?? { inApp: true, email: false, push: true };
+  const p = d.prefs[c.key];
+  return { inApp: p?.inApp ?? def.inApp, email: p?.email ?? def.email, push: p?.push ?? def.push ?? true };
 }
+
+/** A topic and its switch; the whole row toggles (44 pt+). */
+const TopicRow = React.memo(function TopicRow({
+  topic,
+  label,
+  hint,
+  value,
+  locked,
+  disabled,
+  alwaysOn,
+  onChange,
+}: {
+  topic: string;
+  label: string;
+  hint: string;
+  value: boolean;
+  locked: boolean;
+  disabled: boolean;
+  alwaysOn: string;
+  onChange: (topic: string, v: boolean) => void;
+}) {
+  const toggle = (v: boolean) => {
+    haptic.select();
+    onChange(topic, v);
+  };
+  return (
+    <PressableScale
+      onPress={locked || disabled ? undefined : () => toggle(!value)}
+      scaleTo={1}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: locked || value, disabled: locked || disabled }}
+      accessibilityLabel={`${label}. ${hint}`}
+      style={{ minHeight: 68, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[4], paddingVertical: space[3] }}
+      testID={`pref-${topic}`}
+    >
+      <View style={{ flex: 1, gap: 2 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Text variant="callout" weight="700" style={{ flexShrink: 1 }}>
+            {label}
+          </Text>
+          {locked ? <Lock size={12} color={colors.text3} /> : null}
+        </View>
+        <Text variant="caption" tone="tertiary">
+          {hint}
+        </Text>
+      </View>
+      {locked ? (
+        <Text variant="caption" tone="tertiary" weight="600">
+          {alwaysOn}
+        </Text>
+      ) : (
+        <KSwitch value={value} disabled={disabled} onValueChange={toggle} accessibilityLabel={label} />
+      )}
+    </PressableScale>
+  );
+});
 
 export default function NotificationsScreen() {
   const t = useT();
   const readOnly = useReadOnly();
+  const email = useSession((s) => s.user?.email ?? "");
   const q = useQuery<PrefsData>(QK.prefs, fetchPrefs, { persist: true, staleMs: 30_000 });
   const m = useQuery(QK.marketing, fetchMarketing, { persist: true, staleMs: 60_000 });
+  const [channel, setChannel] = React.useState<Channel>("push");
   const consent = typeof m.data?.marketing_consent === "boolean" ? m.data.marketing_consent : null;
 
-  const failed = (message?: string) => {
-    haptic.error();
-    toast.show({ title: t("profile.notifications.notSaved"), body: message ?? t("profile.notifications.tryAgain"), tone: "error" });
-  };
+  const failed = React.useCallback(
+    (message?: string) => toast.show({ title: t("profile.notifications.notSaved"), body: message ?? t("profile.notifications.tryAgain"), tone: "error" }),
+    [t],
+  );
 
-  const change = async (key: string, channel: "inApp" | "email", value: boolean) => {
-    const prev = q.data;
-    if (!prev) return;
-    setQueryData<PrefsData>(QK.prefs, { ...prev, prefs: { ...prev.prefs, [key]: { ...(prev.prefs[key] ?? { inApp: true, email: false }), [channel]: value } } }, true);
-    const r = await savePref(key, channel, value);
-    if (!r.ok || !r.data.prefs) {
-      setQueryData<PrefsData>(QK.prefs, prev, true);
-      return failed(r.ok ? undefined : r.error.message);
-    }
-    setQueryData<PrefsData>(QK.prefs, (d) => ({ catalog: d?.catalog ?? prev.catalog, prefs: r.data.prefs }), true);
-  };
+  /** Saves one topic's switches. Shown at once; on a refusal only this topic's switches go back. */
+  const change = React.useCallback(
+    async (key: string, patch: Partial<Pref>) => {
+      const cur = getQueryData<PrefsData>(QK.prefs);
+      const cat = cur?.catalog.find((c) => c.key === key);
+      if (!cur || !cat) return;
+      const before = prefOf(cur, cat);
+      const undo = Object.fromEntries(Object.keys(patch).map((k) => [k, before[k as keyof Pref]])) as Partial<Pref>;
+      const put = (p: Partial<Pref>) => setQueryData<PrefsData>(QK.prefs, (d) => ({ catalog: d?.catalog ?? cur.catalog, prefs: { ...(d?.prefs ?? cur.prefs), [key]: { ...prefOf(d ?? cur, cat), ...p } } }), true);
+      put(patch);
+      const r = await savePref(key, patch);
+      if (!r.ok || !r.data.prefs) {
+        put(undo);
+        return failed(r.ok ? undefined : r.error.message);
+      }
+      // the server's answer for this topic (another switch may still be on its way)
+      const saved = r.data.prefs[key];
+      if (saved) put(saved);
+    },
+    [failed],
+  );
 
-  const changeConsent = async (value: boolean) => {
-    const prev = consent;
-    setQueryData(QK.marketing, { marketing_consent: value }, true);
-    const r = await saveMarketing(value);
-    if (!r.ok) {
-      setQueryData(QK.marketing, { marketing_consent: prev ?? undefined }, true);
-      return failed(r.error.message);
-    }
-  };
+  const changeConsent = React.useCallback(
+    async (value: boolean) => {
+      const prev = getQueryData<{ marketing_consent?: boolean }>(QK.marketing)?.marketing_consent;
+      setQueryData(QK.marketing, { marketing_consent: value }, true);
+      const r = await saveMarketing(value);
+      if (!r.ok) {
+        setQueryData(QK.marketing, { marketing_consent: prev }, true);
+        return failed(r.error.message);
+      }
+    },
+    [failed],
+  );
 
-  const refresh = React.useCallback(() => Promise.all([q.refresh(), m.refresh()]), [q, m]);
-  const catalog = q.data?.catalog ?? [];
+  const onToggle = React.useCallback(
+    (key: string, v: boolean) => {
+      if (channel === "email") return void (key === "marketing" ? changeConsent(v) : change(key, { email: v }));
+      if (channel === "inApp") return void change(key, { inApp: v });
+      // a push needs the topic on in the app too
+      void change(key, v ? { inApp: true, push: true } : { push: false });
+    },
+    [channel, change, changeConsent],
+  );
+
+  const qRefresh = q.refresh;
+  const mRefresh = m.refresh;
+  const refresh = React.useCallback(() => Promise.all([qRefresh(), mRefresh()]), [qRefresh, mRefresh]);
+  const data = q.data;
+  const hint = channel === "push" ? t("mobileProfile.notif.pushHint") : channel === "inApp" ? t("mobileProfile.notif.inAppHint") : t("mobileProfile.notif.emailHint", { email });
+  const label = (c: Channel) => (c === "push" ? t("mobileProfile.notif.push") : c === "inApp" ? t("mobileProfile.notif.inApp") : t("mobileProfile.notif.email"));
 
   return (
     <StackScreen eyebrow={t("mobileProfile.more.group.account")} title={t("profile.notifications.title")} subtitle={t("mobileProfile.notif.subtitle")} onRefresh={refresh} testID="screen-notifications">
-      {!q.data ? (
+      <PillRow items={CHANNELS.map((c) => ({ key: c, label: label(c) }))} value={channel} onChange={setChannel} />
+      <Text variant="caption" tone="tertiary" style={{ marginHorizontal: GUTTER, marginTop: space[3], marginBottom: space[4] }} testID="notif-channel-hint">
+        {hint}
+      </Text>
+      {!data ? (
         q.error ? <LoadState error={q.error} onRetry={() => void q.refresh()} /> : <SkeletonGroup rows={7} />
       ) : (
-        <View style={{ marginHorizontal: GUTTER, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, overflow: "hidden" }}>
-          <View style={{ height: 44, flexDirection: "row", alignItems: "center", paddingHorizontal: space[4], borderBottomWidth: 1, borderBottomColor: colors.line }}>
-            <Text variant="label" tone="tertiary" style={{ flex: 1 }}>
-              {t("profile.notifications.topic")}
-            </Text>
-            <View style={{ width: 64, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 4 }}>
-              <Smartphone size={12} color={colors.text3} />
-              <Text variant="label" tone="tertiary" numberOfLines={1}>
-                {t("profile.notifications.inApp")}
-              </Text>
-            </View>
-            <View style={{ width: 64, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 4 }}>
-              <Mail size={12} color={colors.text3} />
-              <Text variant="label" tone="tertiary" numberOfLines={1}>
-                {t("mobileProfile.notif.email")}
-              </Text>
-            </View>
-          </View>
-          {catalog.map((c, i) => {
-            const p = q.data!.prefs[c.key] ?? { inApp: true, email: false };
-            const label = t.dyn(`mobileProfile.notif.cat.${c.key}`, c.label);
-            const hint = t.dyn(`mobileProfile.notif.cat.${c.key}.hint`, c.hint);
+        <Group>
+          {data.catalog.map((c) => {
+            const p = prefOf(data, c);
+            const marketingEmail = channel === "email" && c.key === "marketing";
+            const value = channel === "push" ? p.inApp && p.push : channel === "inApp" ? p.inApp : marketingEmail ? !!consent : p.email;
             return (
-              <View key={c.key} style={{ minHeight: 68, flexDirection: "row", alignItems: "center", paddingStart: space[4], paddingEnd: 0, paddingVertical: space[3], borderTopWidth: i ? 1 : 0, borderTopColor: colors.line }} testID={`pref-${c.key}`}>
-                <View style={{ flex: 1, gap: 2, paddingEnd: space[2] }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Text variant="callout" weight="700" style={{ flexShrink: 1 }}>
-                      {label}
-                    </Text>
-                    {c.locked ? <Lock size={12} color={colors.text3} /> : null}
-                  </View>
-                  <Text variant="caption" tone="tertiary">
-                    {hint}
-                  </Text>
-                </View>
-                {c.locked ? (
-                  <View style={{ width: 128, alignItems: "center" }}>
-                    <Text variant="caption" tone="tertiary" weight="600">
-                      {t("profile.notifications.alwaysOn")}
-                    </Text>
-                  </View>
-                ) : (
-                  <>
-                    <Cell value={p.inApp} disabled={readOnly} label={t("profile.notifications.toggleInApp", { label })} onChange={(v) => void change(c.key, "inApp", v)} />
-                    {c.key === "marketing" ? (
-                      consent === null ? <View style={{ width: 64 }} /> : <Cell value={consent} disabled={readOnly} label={t("profile.notifications.toggleEmail", { label })} onChange={(v) => void changeConsent(v)} />
-                    ) : (
-                      <Cell value={p.email} disabled={readOnly} label={t("profile.notifications.toggleEmail", { label })} onChange={(v) => void change(c.key, "email", v)} />
-                    )}
-                  </>
-                )}
-              </View>
+              <TopicRow
+                key={c.key}
+                topic={c.key}
+                label={t.dyn(`mobileProfile.notif.cat.${c.key}`, c.label)}
+                hint={t.dyn(`mobileProfile.notif.cat.${c.key}.hint`, c.hint)}
+                value={value}
+                locked={c.locked}
+                disabled={readOnly || (marketingEmail && consent === null)}
+                alwaysOn={t("profile.notifications.alwaysOn")}
+                onChange={onToggle}
+              />
             );
           })}
-        </View>
+        </Group>
       )}
-      {q.data ? <Note style={{ marginHorizontal: GUTTER, marginTop: space[4] }}>{t("mobileProfile.notif.marketingNote")}</Note> : null}
+      {data ? <Note style={{ marginHorizontal: GUTTER, marginTop: space[4] }}>{t("mobileProfile.notif.marketingNote")}</Note> : null}
     </StackScreen>
   );
 }

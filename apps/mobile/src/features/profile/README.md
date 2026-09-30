@@ -13,7 +13,7 @@ the mobile BFF (`/api/mobile/*`, bearer session).
 | `/profile/password` | `PasswordScreen.tsx` | `auth/stepup*` (action `account_password`) + `auth/password` |
 | `/profile/viewers`, `/profile/viewers/edit` | view-only logins | `security/viewers*` (create / new password: step-up `viewer_access`) |
 | `/profile/language` | `LanguageScreen.tsx` | none (the app sends `X-Kalks-Locale`) |
-| `/profile/notifications` | `NotificationsScreen.tsx` | `notifications/prefs`, `auth/marketing` |
+| `/profile/notifications` | `NotificationsScreen.tsx` | `notifications/prefs` (push, in the app, email), `auth/marketing` |
 
 ## Decisions
 
@@ -27,16 +27,27 @@ the mobile BFF (`/api/mobile/*`, bearer session).
   (resolution, a proof of address older than 3 months) blocks the upload; warnings don't. The results travel with
   the upload for the reviewer. Photos over 10 MB get a smaller JPEG copy; the gateway re-checks everything.
 - **Company verification** is supported on the phone too (company, people, documents, selfie).
-- **Step-up codes** use a sheet with its own code boxes on `BottomSheetTextInput`, so the sheet rises with the
-  keyboard.
+- **Step-up codes** use a sheet with its own code boxes on the kit's `SheetTextInput` (the sheet's own input on
+  phones, so the sheet rises with the keyboard); the sheets with inputs are `scrollable` for short phones.
 - **Legal links** come from `/api/mobile/menu`: the broker's website (its configured website domain, else the Client
   Area host without `app.`) + `/terms`, `/privacy`, `/risk-warning`, `/risk`, `/restricted-countries`, opened with
-  `expo-web-browser`.
+  `expo-web-browser`. Every session reads the menu, view-only logins too (the proxy judges it like `/auth/me`), so a
+  white-label broker's viewers get the broker's pages and module switches; the app never falls back to a fixed
+  website or support address (without the menu yet, Legal fetches it first; the support email choice waits for it).
 - **RTL:** the app's layout flips at once (root direction). A switch between LTR and RTL languages also sets
   `I18nManager.forceRTL` and offers a restart (`reloadAppAsync` from `expo`); `initI18n` keeps the native direction
   in step with the language from the next start.
-- **Notifications:** in-app and email per topic (services/support); the email switch of "News and offers" is the
-  account's marketing consent (gateway), as in the Client Area. Push is phase 2.
+- **Notifications:** push, in the app and email per topic (services/support), one channel at a time behind pill
+  chips so every topic keeps a full-width row on a 360 pt phone. A push goes out only while the topic is also on in
+  the app (notify.rs), so the push switch shows both and turning a push on turns the topic on in the app too. The
+  email switch of "News and offers" is the account's marketing consent (gateway), as in the Client Area. Each switch
+  is saved on its own; a refused save puts back only that topic.
 - **View-only logins and read-only staff sessions** see a banner and no change actions (the servers refuse them
   anyway); the More menu shows a view-only login only the sections it was given.
-- **Green / red are money colours:** sign-in results, statuses and destructive actions use mint / gold / ember.
+- **Green / red are money colours:** statuses use the off-white "ok" tone (done, on, verified; `tint.ts`), gold
+  (waiting, attention), ember (refused, failed) and sand (in progress). The block colours are one ember family since
+  the web palette, so a light-ember "verified" would not stand apart from an ember "not approved". Tints come from
+  the tokens (`tint.ts`), never fixed rgba values.
+- **Haptics** only for selection changes (switches, chips, choices) and pull-to-refresh, like the rest of the app.
+- **Privacy on a shared phone:** the photos captured for verification are kept in memory only for the review list
+  and forgotten on sign-out.

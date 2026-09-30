@@ -8,9 +8,9 @@ import Svg, { Defs, Ellipse, Mask, Rect } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Camera as CameraIcon, Flashlight, FlashlightOff, X } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { Button, Display, IconButton, PressableScale, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
+import { alpha } from "../tint";
 import type { Picked } from "./files";
 import type { Crop } from "./pixels";
 import type { Purpose } from "./types";
@@ -94,7 +94,6 @@ export function CaptureModal({
   const capture = async () => {
     if (!cam.current || !ready || busy) return;
     setBusy(true);
-    haptic.tap();
     try {
       const pic = await cam.current.takePictureAsync({ quality: 0.85, exif: false });
       if (!pic?.uri) throw new Error("no picture");
@@ -119,7 +118,7 @@ export function CaptureModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" statusBarTranslucent onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: "#000" }} testID="kyc-camera">
+      <View style={{ flex: 1, backgroundColor: colors.bg }} testID="kyc-camera">
         {granted && !failed ? (
           <>
             <CameraView
@@ -139,13 +138,13 @@ export function CaptureModal({
                   {selfie ? <Ellipse cx={f.x + f.w / 2} cy={f.y + f.h / 2} rx={f.w / 2} ry={f.h / 2} fill="black" /> : <Rect x={f.x} y={f.y} width={f.w} height={f.h} rx={16} ry={16} fill="black" />}
                 </Mask>
               </Defs>
-              <Rect x={0} y={0} width={vw} height={vh} fill="rgba(0,0,0,0.58)" mask="url(#kyc-guide)" />
+              <Rect x={0} y={0} width={vw} height={vh} fill={colors.scrim} mask="url(#kyc-guide)" />
               {selfie ? (
                 <Ellipse cx={f.x + f.w / 2} cy={f.y + f.h / 2} rx={f.w / 2} ry={f.h / 2} fill="none" stroke={colors.cream} strokeWidth={3} />
               ) : (
                 <Rect x={f.x} y={f.y} width={f.w} height={f.h} rx={16} ry={16} fill="none" stroke={colors.cream} strokeWidth={3} />
               )}
-              {!selfie && passport ? <Rect x={f.x + f.w * 0.04} y={f.y + f.h * 0.78} width={f.w * 0.92} height={f.h * 0.16} fill="none" stroke="rgba(245,239,227,0.55)" strokeDasharray="6 6" strokeWidth={1.5} /> : null}
+              {!selfie && passport ? <Rect x={f.x + f.w * 0.04} y={f.y + f.h * 0.78} width={f.w * 0.92} height={f.h * 0.16} fill="none" stroke={alpha(colors.cream, 0.55)} strokeDasharray="6 6" strokeWidth={1.5} /> : null}
             </Svg>
             <View style={{ position: "absolute", top: f.y + f.h + space[5], start: space[6], end: space[6], alignItems: "center" }} pointerEvents="none">
               <Text variant="callout" weight="600" align="center" color={colors.cream} accessibilityLiveRegion="polite">

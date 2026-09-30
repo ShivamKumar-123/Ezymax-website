@@ -2,11 +2,11 @@
 // selector with a searchable sheet, and a select row that looks like a TextField.
 import * as React from "react";
 import { View } from "react-native";
-import { BottomSheetFlatList, BottomSheetTextInput } from "@gorhom/bottom-sheet";
+import { BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import { CalendarDays, Check, ChevronDown, Search } from "lucide-react-native";
 import { COUNTRIES, maskDob } from "@/features/auth/countries";
 import { useT } from "@/i18n";
-import { Display, PressableScale, Sheet, Text, TextField, type SheetRef, type TextFieldProps } from "@/ui";
+import { Display, NO_WEB_OUTLINE, PressableScale, Sheet, SheetTextInput, Text, TextField, type SheetRef, type TextFieldProps } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { countryName, isYmd } from "../format";
 
@@ -102,7 +102,7 @@ export const CountrySheet = React.forwardRef<SheetRef, { value: string; onPick: 
             <Display size="md">{t("mobileProfile.country.choose")}</Display>
             <View style={{ height: 46, borderRadius: radius.md, backgroundColor: colors.surface2, flexDirection: "row", alignItems: "center", paddingHorizontal: space[3], gap: space[2], borderWidth: 1, borderColor: colors.line }}>
               <Search size={17} color={colors.text3} />
-              <BottomSheetTextInput value={q} onChangeText={setQ} placeholder={t("mobileProfile.country.search")} placeholderTextColor={colors.text3} style={{ flex: 1, color: colors.text, fontSize: 16, height: "100%" }} autoCorrect={false} accessibilityLabel={t("mobileProfile.country.search")} />
+              <SheetTextInput value={q} onChangeText={setQ} placeholder={t("mobileProfile.country.search")} placeholderTextColor={colors.text3} style={[{ flex: 1, color: colors.text, fontSize: 16, height: "100%" }, NO_WEB_OUTLINE]} autoCorrect={false} accessibilityLabel={t("mobileProfile.country.search")} />
             </View>
           </View>
         }

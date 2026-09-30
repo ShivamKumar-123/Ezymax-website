@@ -6,7 +6,6 @@ import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { Eye, Fingerprint, KeyRound, LogOut } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { invalidate, prefetch, useQuery } from "@/lib/query";
 import { useSession } from "@/session";
 import { Banner, Button, ColorBlock, Display, Illustration, Text, toast, type SheetRef } from "@/ui";
@@ -31,7 +30,8 @@ export default function SecurityScreen() {
   const logins = useQuery(QK.logins, fetchLogins, { persist: true, staleMs: 30_000 });
   const confirm = React.useRef<SheetRef>(null);
   const [busy, setBusy] = React.useState<number | "all" | null>(null);
-  const now = Date.now();
+  // "12 min ago" is computed against the time of the data, so the memoised rows don't re-render on every render
+  const now = React.useMemo(() => Date.now(), [sessions.updatedAt]);
   const items = sessions.data?.items ?? [];
   const others = items.filter((s) => !s.current).length;
   const idle = sessions.data?.idle_minutes;
@@ -44,7 +44,6 @@ export default function SecurityScreen() {
       const r = await revokeSession(s.id);
       setBusy(null);
       if (!r.ok) return toast.show({ title: t("security.sessions.revokeFailed"), body: r.error.message, tone: "error" });
-      haptic.success();
       toast.show({ title: t("security.sessions.revoked"), tone: "success" });
       invalidate(QK.sessions);
       invalidate(QK.logins);
@@ -57,7 +56,6 @@ export default function SecurityScreen() {
     setBusy(null);
     confirm.current?.dismiss();
     if (!r.ok) return toast.show({ title: t("security.sessions.revokeAllFailed"), body: r.error.message, tone: "error" });
-    haptic.success();
     toast.show({ title: r.data.revoked ? t("security.sessions.revokedAll", { count: r.data.revoked }) : t("security.sessions.noneOther"), tone: "success" });
     invalidate(QK.sessions);
     invalidate(QK.logins);
@@ -95,9 +93,9 @@ export default function SecurityScreen() {
 
       <SectionHeader title={t("security.protect.title")} />
       <Group>
-        <KeyValue label={t("security.protect.password")} value={<StatusChip label={t("security.protect.on")} tone="mint" />} />
-        <KeyValue label={t("security.protect.newDevice")} value={<StatusChip label={t("security.protect.on")} tone="mint" />} />
-        <KeyValue label={t("security.protect.sensitive")} value={<StatusChip label={t("security.protect.on")} tone="mint" />} />
+        <KeyValue label={t("security.protect.password")} value={<StatusChip label={t("security.protect.on")} tone="ok" />} />
+        <KeyValue label={t("security.protect.newDevice")} value={<StatusChip label={t("security.protect.on")} tone="ok" />} />
+        <KeyValue label={t("security.protect.sensitive")} value={<StatusChip label={t("security.protect.on")} tone="ok" />} />
         <KeyValue label={t("security.protect.idle")} value={idle ? idleLabel(idle) : "—"} />
       </Group>
 
@@ -109,7 +107,7 @@ export default function SecurityScreen() {
 
       <SectionHeader title={t("security.sessions.title")} action={items.length > PREVIEW ? t("mobileProfile.seeAllCount", { count: items.length }) : undefined} onAction={() => router.push("/profile/sessions")} />
       {!sessions.data ? (
-        sessions.error ? <LoadState error={sessions.error} onRetry={() => void sessions.refresh()} /> : <SkeletonGroup rows={3} />
+        sessions.error ? <LoadState error={sessions.error} onRetry={() => void sessions.refresh()} compact /> : <SkeletonGroup rows={3} />
       ) : (
         <View style={{ marginHorizontal: GUTTER, borderRadius: 22, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, overflow: "hidden" }}>
           {items.slice(0, PREVIEW).map((s, i) => (
@@ -131,7 +129,7 @@ export default function SecurityScreen() {
 
       <SectionHeader title={t("security.history.title")} action={(logins.data?.items.length ?? 0) > PREVIEW ? t("mobileProfile.seeAll") : undefined} onAction={() => router.push("/profile/sign-ins")} />
       {!logins.data ? (
-        logins.error ? null : <SkeletonGroup rows={3} />
+        logins.error ? <LoadState error={logins.error} onRetry={() => void logins.refresh()} compact /> : <SkeletonGroup rows={3} />
       ) : logins.data.items.length === 0 ? (
         <Note style={{ marginHorizontal: GUTTER }}>{t("security.history.empty")}</Note>
       ) : (

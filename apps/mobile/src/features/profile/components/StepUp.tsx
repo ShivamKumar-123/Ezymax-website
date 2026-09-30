@@ -6,15 +6,14 @@
 // performs the change and reports its own outcome, and then closes.
 import * as React from "react";
 import { Pressable, TextInput, View } from "react-native";
-import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { Mail } from "lucide-react-native";
 import { authPost, type OtpChallenge } from "@/features/auth/api";
 import { DevCodeHint, ResendLink } from "@/features/auth/parts";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
-import { haptic } from "@/lib/haptics";
-import { Button, Display, FormError, Sheet, Text, Trans, toast, type SheetRef } from "@/ui";
+import { Button, Display, FormError, Sheet, SheetTextInput, Text, Trans, toast, type SheetRef } from "@/ui";
 import { colors, fonts, radius, space } from "@/theme/tokens";
+import { tint } from "../tint";
 
 export type StepUpAction = "account_password" | "viewer_access";
 
@@ -55,7 +54,6 @@ export function useStepUp(action: StepUpAction, target = "") {
     const r = await authPost<{ stepup_token: string }>("stepup-verify", { challenge: challenge.challenge, code, action, target });
     setVerifying(false);
     if (!r.ok) {
-      haptic.error();
       setErr(r.error);
       setOtpKey((k) => k + 1);
       return null;
@@ -91,7 +89,8 @@ export function useStepUp(action: StepUpAction, target = "") {
   return { challenge, err, setErr, sending, verifying, otpKey, start, verify, resend, reset };
 }
 
-/** Six code boxes on one hidden input that lives inside a bottom sheet (so the sheet rises with the keyboard). */
+/** Six code boxes on one hidden input that lives inside a bottom sheet (the sheet's own input on phones, so the sheet
+ *  rises with the keyboard; a plain one on the web preview). */
 const SheetOtpInput = React.forwardRef<TextInput, { onComplete: (code: string) => void; error?: boolean; label: string }>(function SheetOtpInput({ onComplete, error, label }, ref) {
   const [value, setValue] = React.useState("");
   const inner = React.useRef<TextInput>(null);
@@ -109,8 +108,8 @@ const SheetOtpInput = React.forwardRef<TextInput, { onComplete: (code: string) =
           );
         })}
       </View>
-      <BottomSheetTextInput
-        ref={inner as never}
+      <SheetTextInput
+        ref={inner}
         value={value}
         keyboardType="number-pad"
         textContentType="oneTimeCode"
@@ -151,6 +150,7 @@ export const StepUpSheet = React.forwardRef<StepUpSheetHandle, SheetProps>(funct
   const [busy, setBusy] = React.useState(false);
   const code = React.useRef("");
   const open = React.useRef(false);
+  const opening = React.useRef(false);
   const { start, reset } = s;
 
   // the code boxes appear once the code is on its way (and again after a wrong code): put the cursor in them
@@ -162,6 +162,9 @@ export const StepUpSheet = React.forwardRef<StepUpSheetHandle, SheetProps>(funct
 
   React.useImperativeHandle(ref, () => ({
     open: () => {
+      // a second tap while the sheet is opening would email a second code
+      if (opening.current) return;
+      opening.current = true;
       reset();
       code.current = "";
       sheet.current?.present();
@@ -193,12 +196,14 @@ export const StepUpSheet = React.forwardRef<StepUpSheetHandle, SheetProps>(funct
   return (
     <Sheet
       ref={sheet}
+      scrollable
       onChange={(i) => {
         open.current = i >= 0;
         if (i >= 0) setTimeout(() => input.current?.focus(), 60);
       }}
       onDismiss={() => {
         open.current = false;
+        opening.current = false;
         reset();
         setBusy(false);
       }}
@@ -208,7 +213,7 @@ export const StepUpSheet = React.forwardRef<StepUpSheetHandle, SheetProps>(funct
         {s.challenge ? (
           <>
             <View style={{ flexDirection: "row", gap: space[3], alignItems: "flex-start" }}>
-              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(242,106,61,0.14)", alignItems: "center", justifyContent: "center" }}>
+              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: tint.ember, alignItems: "center", justifyContent: "center" }}>
                 <Mail size={17} color={colors.ember} />
               </View>
               <View style={{ flex: 1 }}>

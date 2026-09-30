@@ -4,7 +4,6 @@ import * as React from "react";
 import { View } from "react-native";
 import { LogOut } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { invalidate, useQuery } from "@/lib/query";
 import { Button, Text, toast, type SheetRef } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
@@ -32,7 +31,6 @@ export default function SessionsScreen() {
       const r = await revokeSession(s.id);
       setBusy(null);
       if (!r.ok) return toast.show({ title: t("security.sessions.revokeFailed"), body: r.error.message, tone: "error" });
-      haptic.success();
       toast.show({ title: t("security.sessions.revoked"), tone: "success" });
       invalidate(QK.sessions);
       invalidate(QK.logins);
@@ -77,7 +75,6 @@ export default function SessionsScreen() {
           setBusy(null);
           confirm.current?.dismiss();
           if (!r.ok) return toast.show({ title: t("security.sessions.revokeAllFailed"), body: r.error.message, tone: "error" });
-          haptic.success();
           toast.show({ title: r.data.revoked ? t("security.sessions.revokedAll", { count: r.data.revoked }) : t("security.sessions.noneOther"), tone: "success" });
           invalidate(QK.sessions);
           invalidate(QK.logins);

@@ -12,12 +12,16 @@ import { StatusChip } from "./components/bits";
 import { ConfirmSheet } from "./components/sheets";
 import { StackScreen } from "./components/StackScreen";
 import { needsRestart, restartApp, setNativeDirection } from "./rtl";
+import { tint } from "./tint";
 
 type Lang = (typeof LOCALES)[number];
 
-const LanguageRow = React.memo(function LanguageRow({ l, selected, busy, first, rtl, onPick }: { l: Lang; selected: boolean; busy: boolean; first: boolean; rtl: boolean; onPick: (code: Lang["code"]) => void }) {
-  // every name starts on the reading side of the current language, whatever script it is written in
-  const align = { textAlign: rtl ? "right" : "left" } as const;
+// Every name starts on the reading side of the current language, whatever script it is written in. The text box
+// hugs its content and sits at the start of the row (flex layout follows the direction on every platform); a
+// left / right text alignment would not, because React Native swaps them under a right-to-left layout.
+const START = { alignSelf: "flex-start", maxWidth: "100%" } as const;
+
+const LanguageRow = React.memo(function LanguageRow({ l, selected, busy, first, onPick }: { l: Lang; selected: boolean; busy: boolean; first: boolean; onPick: (code: Lang["code"]) => void }) {
   return (
     <PressableScale
       onPress={() => onPick(l.code)}
@@ -29,10 +33,10 @@ const LanguageRow = React.memo(function LanguageRow({ l, selected, busy, first, 
       style={{ height: 62, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[4], borderTopWidth: first ? 0 : 1, borderTopColor: colors.line }}
     >
       <View style={{ flex: 1, gap: 1 }}>
-        <Text variant="headline" weight={selected ? "700" : "600"} numberOfLines={1} style={align}>
+        <Text variant="headline" weight={selected ? "700" : "600"} numberOfLines={1} style={START}>
           {l.name}
         </Text>
-        <Text variant="caption" tone="tertiary" numberOfLines={1} style={align}>
+        <Text variant="caption" tone="tertiary" numberOfLines={1} style={START}>
           {l.english}
         </Text>
       </View>
@@ -72,7 +76,7 @@ export default function LanguageScreen() {
   return (
     <StackScreen eyebrow={t("mobileProfile.more.group.account")} title={t("common.language")} subtitle={t("mobileProfile.language.subtitle")} testID="screen-language">
       {mismatch ? (
-        <PressableScale onPress={() => restart.current?.present()} scaleTo={0.985} style={{ marginHorizontal: GUTTER, marginBottom: space[4], padding: space[4], borderRadius: radius.lg, backgroundColor: colors.warnSoft, borderWidth: 1, borderColor: "rgba(242,184,75,0.3)", gap: 2 }}>
+        <PressableScale onPress={() => restart.current?.present()} scaleTo={0.985} style={{ marginHorizontal: GUTTER, marginBottom: space[4], padding: space[4], borderRadius: radius.lg, backgroundColor: tint.gold, borderWidth: 1, borderColor: tint.goldLine, gap: 2 }}>
           <Text variant="callout" weight="700">
             {t("mobileProfile.language.rtlTitle")}
           </Text>
@@ -83,7 +87,7 @@ export default function LanguageScreen() {
       ) : null}
       <View style={{ marginHorizontal: GUTTER, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, overflow: "hidden" }} accessibilityRole="radiogroup">
         {LOCALES.map((l, i) => (
-          <LanguageRow key={l.code} l={l} first={i === 0} rtl={rtl} selected={l.code === locale} busy={busy === l.code} onPick={pick} />
+          <LanguageRow key={l.code} l={l} first={i === 0} selected={l.code === locale} busy={busy === l.code} onPick={pick} />
         ))}
       </View>
       <ConfirmSheet

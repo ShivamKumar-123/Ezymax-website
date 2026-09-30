@@ -68,7 +68,7 @@ const mobileProfile = {
   "more.hint.ai": "Ask about any market",
 
   // Sign out
-  "signOut.title": "Sign out of Kalks?",
+  "signOut.title": "Sign out?",
   "signOut.body": "You'll need your password and possibly an email code to sign in again on this phone.",
   "signOut.confirm": "Sign out",
   "signOut.busy": "Signing out…",
@@ -168,10 +168,10 @@ const mobileProfile = {
 
   // Camera
   "camera.permissionTitle": "Allow the camera",
-  "camera.permissionBody": "Kalks uses the camera only to photograph your documents and take your verification selfie. You can upload a photo or file instead.",
+  "camera.permissionBody": "The app uses the camera only to photograph your documents and take your verification selfie. You can upload a photo or file instead.",
   "camera.allow": "Allow camera",
   "camera.openSettings": "Open settings",
-  "camera.deniedBody": "Camera access is off for Kalks. Turn it on in Settings, or upload a photo or file instead.",
+  "camera.deniedBody": "Camera access is off for this app. Turn it on in Settings, or upload a photo or file instead.",
   "camera.unavailable": "The camera couldn't start on this device. Upload a photo or file instead.",
   "camera.torchOn": "Turn the torch on",
   "camera.torchOff": "Turn the torch off",
@@ -187,13 +187,13 @@ const mobileProfile = {
   "security.exportShareTitle": "Your personal data",
   "security.exportReady": "Ready to download",
   "security.exportFailed": "Couldn't download the file. Please try again.",
-  "security.appOn": "Kalks app on {os}",
+  "security.appOn": "Mobile app on {os}",
 
   // Change password
   "password.title": "Change password",
-  "password.body": "For signing in to Kalks in this app and on the web. We email you a code to confirm the change.",
+  "password.body": "Your sign-in password for this app and the web. We email you a code to confirm the change.",
   // Inserted into "To {what}, enter the 6-digit code we sent to …" (lowercase verb phrase)
-  "password.stepupWhat": "change your Kalks password",
+  "password.stepupWhat": "change your password",
   "password.othersHint": "Ends every other session, on the web and on other phones. This phone stays signed in.",
   "password.resetTitle": "Forgot your current password?",
   "password.resetBody": "Sign out and reset it with a code we email you.",
@@ -209,21 +209,29 @@ const mobileProfile = {
   "viewers.lastSignIn": "Last sign-in {when}",
   "viewers.copyAll": "Copy all",
   "viewers.credsCopied": "Sign-in details copied",
+  "viewers.notFoundTitle": "Not available",
+  "viewers.notFoundBody": "This view-only login was revoked or no longer exists.",
 
   // Language (display title: common.language)
   "language.subtitle": "22 languages. Arabic, Urdu and Persian read right to left.",
   "language.current": "Current",
   "language.changed": "Language changed",
   "language.rtlTitle": "Restart to switch direction",
-  "language.rtlBodyRtl": "Kalks restarts once so menus, swipe-back gestures and system screens read right to left.",
-  "language.rtlBodyLtr": "Kalks restarts once so menus, swipe-back gestures and system screens read left to right.",
+  "language.rtlBodyRtl": "The app restarts once so menus, swipe-back gestures and system screens read right to left.",
+  "language.rtlBodyLtr": "The app restarts once so menus, swipe-back gestures and system screens read left to right.",
   "language.restart": "Restart now",
   "language.later": "Later",
 
   // Notification settings (display title: profile.notifications.title)
-  "notif.subtitle": "Choose what reaches you in the app and by email. Security notices are always sent.",
+  "notif.subtitle": "Choose what reaches you as push notifications, in the app and by email. Security notices are always sent.",
+  // Channel chips (short)
+  "notif.push": "Push",
   "notif.inApp": "In the app",
   "notif.email": "Email",
+  // One line under the channel chips
+  "notif.pushHint": "Alerts on this phone, even when the app is closed. A topic sends them only while it is also on in the app.",
+  "notif.inAppHint": "Your notifications inbox, in this app and on the web.",
+  "notif.emailHint": "Sent to {email}.",
   "notif.marketingNote": "Emails about news and offers follow your marketing consent. Account emails are always sent.",
   // Topic labels / hints by server category key (the server's English text is used for unknown keys)
   "notif.cat.security": "Security",
@@ -232,6 +240,8 @@ const mobileProfile = {
   "notif.cat.trading_alerts.hint": "When an account reaches its margin call or stop-out level",
   "notif.cat.trading_fills": "Order fills and closes",
   "notif.cat.trading_fills.hint": "Stop loss, take profit and dealer closes",
+  "notif.cat.price_alerts": "Price alerts",
+  "notif.cat.price_alerts.hint": "When a price alert you set is triggered",
   "notif.cat.wallet": "Deposits and withdrawals",
   "notif.cat.wallet.hint": "Deposits credited, withdrawals approved, rejected or paid",
   "notif.cat.kyc": "Identity verification",

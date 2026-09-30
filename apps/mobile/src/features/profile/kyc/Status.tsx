@@ -7,6 +7,7 @@ import { useT, type T } from "@/i18n";
 import { Button, ColorBlock, Display, Illustration, PressableScale, Text } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { StatusChip } from "../components/bits";
+import { OK, tint } from "../tint";
 import { when } from "../format";
 import { hoursLabel } from "./api";
 import type { KycDocument, KycState, TimelineEvent } from "./types";
@@ -60,7 +61,7 @@ export function CheckingSequence({ steps, serverDone, onFinish }: { steps: Check
   }, [n, last, onFinish]);
   return (
     <View style={{ paddingHorizontal: GUTTER, gap: space[4] }} testID="kyc-checking">
-      <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: "rgba(242,106,61,0.14)", alignItems: "center", justifyContent: "center" }}>
+      <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: tint.ember, alignItems: "center", justifyContent: "center" }}>
         <FileSearch size={26} color={colors.ember} />
       </View>
       <View style={{ gap: space[1] }}>
@@ -74,11 +75,11 @@ export function CheckingSequence({ steps, serverDone, onFinish }: { steps: Check
           return (
             <View
               key={s.key}
-              style={{ flexDirection: "row", alignItems: "center", gap: space[3], padding: space[3], borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: active ? "rgba(242,106,61,0.45)" : colors.line, opacity: i <= n ? 1 : 0.45 }}
+              style={{ flexDirection: "row", alignItems: "center", gap: space[3], padding: space[3], borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: active ? tint.emberLine : colors.line, opacity: i <= n ? 1 : 0.45 }}
               accessibilityState={{ busy: active }}
             >
-              <View style={{ width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: done ? (s.warn ? "rgba(242,184,75,0.16)" : "rgba(127,209,185,0.16)") : colors.surface2 }}>
-                {done ? s.warn ? <AlertTriangle size={14} color={colors.gold} /> : <Check size={14} color={colors.mint} strokeWidth={3} /> : <Text variant="caption" weight="700" tone={active ? "ember" : "tertiary"}>{i + 1}</Text>}
+              <View style={{ width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: done ? (s.warn ? tint.gold : tint.ok) : colors.surface2 }}>
+                {done ? s.warn ? <AlertTriangle size={14} color={colors.gold} /> : <Check size={14} color={OK} strokeWidth={3} /> : <Text variant="caption" weight="700" tone={active ? "ember" : "tertiary"}>{i + 1}</Text>}
               </View>
               <View style={{ flex: 1 }}>
                 <Text variant="callout" weight="700">
@@ -128,10 +129,10 @@ function stages(s: KycState, t: T): Stage[] {
 }
 
 const STAGE: Record<Stage["state"], { bg: string; fg: string }> = {
-  done: { bg: "rgba(127,209,185,0.16)", fg: colors.mint },
-  current: { bg: "rgba(242,106,61,0.16)", fg: colors.ember },
-  action: { bg: "rgba(242,184,75,0.16)", fg: colors.gold },
-  failed: { bg: "rgba(242,106,61,0.16)", fg: colors.ember },
+  done: { bg: tint.ok, fg: OK },
+  current: { bg: tint.ember, fg: colors.ember },
+  action: { bg: tint.gold, fg: colors.gold },
+  failed: { bg: tint.ember, fg: colors.ember },
   todo: { bg: colors.surface2, fg: colors.text3 },
 };
 
@@ -156,7 +157,7 @@ export function StatusTracker({ state, justSubmitted, onRestart, readOnly }: { s
     <View style={{ gap: space[5] }} testID="kyc-tracker">
       <ColorBlock color={head.color} style={{ marginHorizontal: GUTTER, gap: space[3] }}>
         {head.ill ? <Illustration name={head.ill} width={170} height={150} style={{ alignSelf: "center" }} /> : (
-          <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(14,14,16,0.08)", alignItems: "center", justifyContent: "center" }}>
+          <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: tint.inkFill, alignItems: "center", justifyContent: "center" }}>
             <AlertTriangle size={26} color={colors.ember} />
           </View>
         )}
@@ -165,7 +166,7 @@ export function StatusTracker({ state, justSubmitted, onRestart, readOnly }: { s
         </Display>
         <Text color={colors.ink2}>{head.text}</Text>
         {rejected && c.decision?.message ? (
-          <View style={{ marginTop: space[1], padding: space[3], borderRadius: radius.md, backgroundColor: "rgba(14,14,16,0.06)", gap: 2 }}>
+          <View style={{ marginTop: space[1], padding: space[3], borderRadius: radius.md, backgroundColor: tint.inkFill, gap: 2 }}>
             <Text variant="label" color={colors.ink2}>
               {t("kyc.wizard.noteFromTeam")}
             </Text>
@@ -185,7 +186,7 @@ export function StatusTracker({ state, justSubmitted, onRestart, readOnly }: { s
                 <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: tone.bg, alignItems: "center", justifyContent: "center" }}>
                   <Icon size={17} color={tone.fg} strokeWidth={s.state === "done" ? 2.6 : 2} />
                 </View>
-                {i < all.length - 1 ? <View style={{ width: 2, flex: 1, minHeight: 18, backgroundColor: s.state === "done" ? "rgba(127,209,185,0.35)" : colors.line, marginVertical: 4 }} /> : null}
+                {i < all.length - 1 ? <View style={{ width: 2, flex: 1, minHeight: 18, backgroundColor: s.state === "done" ? tint.okLine : colors.line, marginVertical: 4 }} /> : null}
               </View>
               <View style={{ flex: 1, paddingTop: 6, paddingBottom: space[5], gap: 2 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: space[2], flexWrap: "wrap" }}>
@@ -264,10 +265,10 @@ export function Levels({ state, emailVerified }: { state: KycState | null; email
   return (
     <View style={{ marginHorizontal: GUTTER, gap: space[2] }} testID="kyc-levels">
       {levels.map((l) => (
-        <View key={l.n} style={{ padding: space[4], borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: !l.done && l.n === 2 ? "rgba(242,106,61,0.4)" : colors.line, gap: space[3] }}>
+        <View key={l.n} style={{ padding: space[4], borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: !l.done && l.n === 2 ? tint.emberLine : colors.line, gap: space[3] }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: space[3] }}>
-            <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: l.done ? "rgba(127,209,185,0.16)" : colors.surface2 }}>
-              {l.done ? <Check size={16} color={colors.mint} strokeWidth={2.6} /> : <Text variant="callout" weight="700" tone="secondary">{l.n}</Text>}
+            <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: l.done ? tint.ok : colors.surface2 }}>
+              {l.done ? <Check size={16} color={OK} strokeWidth={2.6} /> : <Text variant="callout" weight="700" tone="secondary">{l.n}</Text>}
             </View>
             <View style={{ flex: 1 }}>
               <Text variant="callout" weight="700">
@@ -278,7 +279,7 @@ export function Levels({ state, emailVerified }: { state: KycState | null; email
               </Text>
             </View>
             {l.done ? (
-              <StatusChip label={t("kyc.levels.complete")} tone="mint" />
+              <StatusChip label={t("kyc.levels.complete")} tone="ok" />
             ) : l.n === 2 && pending ? (
               <StatusChip label={state?.case?.status === "more_info" ? t("kyc.levels.actionNeeded") : t("kyc.levels.inReview")} tone="gold" />
             ) : (

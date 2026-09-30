@@ -2,23 +2,21 @@
 // be cancelled until staff start; a completed export can be downloaded (JSON through the share sheet).
 import * as React from "react";
 import { View } from "react-native";
-import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { Download, UserX } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { invalidate, useQuery } from "@/lib/query";
-import { Button, Display, FormError, Sheet, Skeleton, Text, toast, type SheetRef } from "@/ui";
+import { Button, Display, FormError, NO_WEB_OUTLINE, Sheet, SheetTextInput, Skeleton, Text, toast, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { cancelRequest, createRequest, fetchExport, fetchRequests, QK, type ClientRequest } from "../api";
 import type { BadgeTone } from "../me";
 import { day } from "../format";
 import { shareJson } from "../share";
-import { StatusChip } from "./bits";
+import { LoadState, StatusChip } from "./bits";
 
 const REQ_STATUS: Record<ClientRequest["status"], { tone: BadgeTone; label: "security.reqStatus.open" | "security.reqStatus.inProgress" | "security.reqStatus.completed" | "security.reqStatus.rejected" | "security.reqStatus.cancelled" }> = {
   open: { tone: "gold", label: "security.reqStatus.open" },
   in_progress: { tone: "periwinkle", label: "security.reqStatus.inProgress" },
-  completed: { tone: "mint", label: "security.reqStatus.completed" },
+  completed: { tone: "ok", label: "security.reqStatus.completed" },
   rejected: { tone: "ember", label: "security.reqStatus.rejected" },
   cancelled: { tone: "neutral", label: "security.reqStatus.cancelled" },
 };
@@ -46,11 +44,7 @@ export function DataRequests({ readOnly }: { readOnly?: boolean }) {
     setErr(null);
     const r = await createRequest(ask, reason);
     setBusy(false);
-    if (!r.ok) {
-      haptic.error();
-      return setErr(r.error.message);
-    }
-    haptic.success();
+    if (!r.ok) return setErr(r.error.message);
     sheet.current?.dismiss();
     toast.show({ title: ask === "closure" ? t("security.requests.closureSent") : t("security.requests.exportSent"), body: t("security.requests.sentText"), tone: "success" });
     invalidate(QK.requests);
@@ -105,6 +99,7 @@ export function DataRequests({ readOnly }: { readOnly?: boolean }) {
       {card("data_export")}
       {card("closure")}
       {q.loading ? <Skeleton h={60} r={radius.lg} /> : null}
+      {q.error && !q.data ? <LoadState error={q.error} onRetry={() => void q.refresh()} compact style={{ marginHorizontal: 0 }} /> : null}
       {items.length ? (
         <View style={{ borderRadius: radius.lg, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, overflow: "hidden" }}>
           {items.map((r, i) => (
@@ -131,19 +126,19 @@ export function DataRequests({ readOnly }: { readOnly?: boolean }) {
         </View>
       ) : null}
 
-      <Sheet ref={sheet}>
+      <Sheet ref={sheet} scrollable>
         <View style={{ gap: space[3], paddingTop: space[2] }} testID="request-sheet">
           <Display size="md">{ask === "closure" ? t("security.requests.closureDialogTitle") : t("security.requests.exportDialogTitle")}</Display>
           <Text tone="secondary">{ask === "closure" ? t("security.requests.closureDialogText") : t("security.requests.exportDialogText")}</Text>
           <Text variant="label" tone="tertiary" style={{ marginTop: space[1] }}>
             {ask === "closure" ? t("security.requests.reasonClosure") : t("security.requests.reasonExport")}
           </Text>
-          <BottomSheetTextInput
+          <SheetTextInput
             value={reason}
             onChangeText={(v) => setReason(v.slice(0, 1000))}
             multiline
             placeholderTextColor={colors.text3}
-            style={{ minHeight: 96, maxHeight: 160, borderRadius: radius.md, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line, color: colors.text, fontSize: 16, padding: space[3], textAlignVertical: "top" }}
+            style={[{ minHeight: 96, maxHeight: 160, borderRadius: radius.md, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line, color: colors.text, fontSize: 16, padding: space[3], textAlignVertical: "top" }, NO_WEB_OUTLINE]}
             accessibilityLabel={ask === "closure" ? t("security.requests.reasonClosure") : t("security.requests.reasonExport")}
           />
           <FormError message={err} />

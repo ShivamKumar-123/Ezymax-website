@@ -2,28 +2,31 @@
 // checks -> "Use this photo" -> encrypted upload with progress -> received. Same states and rules as the Client
 // Area's DocSlot; a failed check (resolution, a too-old issue date) blocks the upload, warnings don't.
 import * as React from "react";
-import { View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { Image } from "expo-image";
 import { AlertTriangle, Camera, Check, CircleCheck, FileText, Image as ImageIcon, Info, Upload, X } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
+import { onSignOut } from "@/session";
 import { Button, PressableScale, Skeleton, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { StatusChip } from "../components/bits";
+import { OK, tint } from "../tint";
 import { CaptureModal } from "./CaptureModal";
 import { checkRows, type CheckRow } from "./checks";
 import { pickFile, pickPhoto, prepare, uploadDocument, type Picked } from "./files";
 import { ASPECT, MIN_SIDE, slotKey, type ClientChecks, type KycDocument, type KycState, type Purpose, type Slot } from "./types";
 
-/** What the client captured in this app session (never uploaded anywhere else). */
+/** What the client captured in this app session (never uploaded anywhere else). Forgotten on sign-out, so the
+ *  next person to sign in on this phone never sees the previous client's documents. */
 const previews = new Map<string, { uri: string; mime: string }>();
 export const previewFor = (slot: Slot) => previews.get(slotKey(slot));
+onSignOut(() => previews.clear());
 
 type Mode = "idle" | "checking" | "review" | "uploading" | "done";
 
 const ROW_ICON: Record<CheckRow["state"], { icon: typeof Check; color: string }> = {
-  ok: { icon: CircleCheck, color: colors.mint },
+  ok: { icon: CircleCheck, color: OK },
   warn: { icon: AlertTriangle, color: colors.gold },
   fail: { icon: X, color: colors.ember },
   info: { icon: Info, color: colors.periwinkle },
@@ -78,7 +81,7 @@ function Preview({ uri, mime, aspect, round, small }: { uri?: string; mime?: str
       </View>
     );
   return image ? (
-    <Image source={{ uri }} style={{ width: "100%", aspectRatio: round ? 3 / 4 : Math.max(0.7, aspect), borderRadius: radius.md, backgroundColor: "#000" }} contentFit="contain" transition={0} accessibilityLabel="" />
+    <Image source={{ uri }} style={{ width: "100%", aspectRatio: round ? 3 / 4 : Math.max(0.7, aspect), borderRadius: radius.md, backgroundColor: colors.bg }} contentFit="contain" transition={0} accessibilityLabel="" />
   ) : (
     <View style={{ width: "100%", aspectRatio: 4 / 3, borderRadius: radius.md, backgroundColor: colors.surface3, alignItems: "center", justifyContent: "center", gap: space[2] }}>
       <FileText size={40} color={colors.text3} />
@@ -86,7 +89,7 @@ function Preview({ uri, mime, aspect, round, small }: { uri?: string; mime?: str
   );
 }
 
-function Tile({ icon: Icon, title, hint, onPress, primary, testID }: { icon: typeof Camera; title: string; hint?: string; onPress: () => void; primary?: boolean; testID?: string }) {
+function Tile({ icon: Icon, title, hint, onPress, primary, stacked, testID }: { icon: typeof Camera; title: string; hint?: string; onPress: () => void; primary?: boolean; stacked?: boolean; testID?: string }) {
   return (
     <PressableScale
       onPress={onPress}
@@ -94,7 +97,7 @@ function Tile({ icon: Icon, title, hint, onPress, primary, testID }: { icon: typ
       scaleTo={0.97}
       accessibilityLabel={hint ? `${title}. ${hint}` : title}
       style={{
-        flex: 1,
+        ...(stacked ? { alignSelf: "stretch" as const } : { flex: 1 }),
         minHeight: 56,
         flexDirection: "row",
         alignItems: "center",
@@ -102,9 +105,9 @@ function Tile({ icon: Icon, title, hint, onPress, primary, testID }: { icon: typ
         paddingHorizontal: space[4],
         paddingVertical: space[3],
         borderRadius: radius.md,
-        backgroundColor: primary ? "rgba(242,106,61,0.12)" : colors.surface2,
+        backgroundColor: primary ? tint.ember : colors.surface2,
         borderWidth: 1,
-        borderColor: primary ? "rgba(242,106,61,0.45)" : colors.line,
+        borderColor: primary ? tint.emberLine : colors.line,
       }}
     >
       <Icon size={20} color={primary ? colors.ember : colors.text2} />
@@ -149,6 +152,9 @@ export function DocSlot({ slot, label, hint, purpose, aspect = ASPECT.card, pass
   const local = previewFor(slot);
   const selfie = purpose === "selfie";
   const testId = slotKey(slot).replace(/:/g, "-");
+  // two tiles side by side leave too little room for their labels on a 360 pt phone: stack them there (a lone
+  // tile, or a stacked one, sizes to its content: `flex: 1` in a column of unknown height would collapse on native)
+  const narrow = useWindowDimensions().width < 380 && !selfie;
 
   React.useEffect(() => {
     if (current && mode === "idle") setMode("done");
@@ -156,7 +162,6 @@ export function DocSlot({ slot, label, hint, purpose, aspect = ASPECT.card, pass
   }, [current?.id]);
 
   const fail = (m: string) => {
-    haptic.error();
     setMsg(m);
     setMode(current ? "done" : "idle");
   };
@@ -181,12 +186,10 @@ export function DocSlot({ slot, label, hint, purpose, aspect = ASPECT.card, pass
     setPct(0);
     const r = await uploadDocument(slot, cap.file, { checks: cap.checks, issueDate, docType, onProgress: setPct });
     if (!r.ok) {
-      haptic.error();
       setMsg(r.error.message);
       setMode("review");
       return;
     }
-    haptic.success();
     previews.set(slotKey(slot), { uri: cap.file.uri, mime: cap.file.mime });
     setCap(null);
     setMode("done");
@@ -196,7 +199,7 @@ export function DocSlot({ slot, label, hint, purpose, aspect = ASPECT.card, pass
   const rows = cap ? checkRows(cap.checks, purpose, { passport }) : [];
   const hardFail = rows.some((r) => r.state === "fail");
   const warns = rows.filter((r) => r.state === "warn").length;
-  const border = mode === "done" ? "rgba(127,209,185,0.35)" : requested ? "rgba(242,184,75,0.5)" : colors.line;
+  const border = mode === "done" ? tint.okLine : requested ? tint.goldLine : colors.line;
 
   return (
     <View style={{ borderRadius: radius.lg, borderWidth: 1, borderColor: border, backgroundColor: colors.surface, padding: space[4], gap: space[3] }} testID={`slot-${testId}`}>
@@ -209,11 +212,11 @@ export function DocSlot({ slot, label, hint, purpose, aspect = ASPECT.card, pass
             {hint}
           </Text>
         </View>
-        {mode === "done" ? <StatusChip label={t("kyc.slot.uploaded")} tone="mint" /> : requested ? <StatusChip label={t("kyc.slot.requested")} tone="gold" /> : null}
+        {mode === "done" ? <StatusChip label={t("kyc.slot.uploaded")} tone="ok" /> : requested ? <StatusChip label={t("kyc.slot.requested")} tone="gold" /> : null}
       </View>
 
       {msg ? (
-        <View accessibilityRole="alert" style={{ flexDirection: "row", gap: space[2], alignItems: "flex-start", padding: space[3], borderRadius: radius.sm, backgroundColor: "rgba(242,106,61,0.10)", borderWidth: 1, borderColor: "rgba(242,106,61,0.3)" }}>
+        <View accessibilityRole="alert" style={{ flexDirection: "row", gap: space[2], alignItems: "flex-start", padding: space[3], borderRadius: radius.sm, backgroundColor: tint.ember, borderWidth: 1, borderColor: tint.emberLine }}>
           <AlertTriangle size={16} color={colors.ember} style={{ marginTop: 1 }} />
           <Text variant="caption" style={{ flex: 1 }}>
             {msg}
@@ -265,8 +268,8 @@ export function DocSlot({ slot, label, hint, purpose, aspect = ASPECT.card, pass
           <Preview uri={local?.uri} mime={local?.mime ?? current?.mime} aspect={aspect} round={selfie} small />
           <View style={{ flex: 1, gap: 2 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <CircleCheck size={16} color={colors.mint} />
-              <Text variant="callout" weight="700" color={colors.mint}>
+              <CircleCheck size={16} color={OK} />
+              <Text variant="callout" weight="700" color={OK}>
                 {t("kyc.slot.received")}
               </Text>
             </View>
@@ -287,10 +290,10 @@ export function DocSlot({ slot, label, hint, purpose, aspect = ASPECT.card, pass
         </View>
       ) : (
         <View style={{ gap: space[2] }}>
-          <Tile icon={Camera} title={selfie ? t("mobileProfile.slot.takeSelfie") : t("mobileProfile.slot.takePhoto")} hint={t("mobileProfile.slot.guided")} primary={purpose !== "poa" && purpose !== "doc"} onPress={() => setCamera(true)} testID={`camera-${testId}`} />
-          <View style={{ flexDirection: "row", gap: space[2] }}>
-            <Tile icon={ImageIcon} title={t("mobileProfile.slot.choosePhoto")} onPress={() => void pickPhoto(purpose).then(accept)} testID={`photos-${testId}`} />
-            {!selfie ? <Tile icon={Upload} title={t("mobileProfile.slot.chooseFile")} primary={purpose === "poa" || purpose === "doc"} onPress={() => void pickFile(purpose).then(accept).catch(() => fail(t("mobileProfile.slot.pickFailed")))} testID={`file-${testId}`} /> : null}
+          <Tile icon={Camera} stacked title={selfie ? t("mobileProfile.slot.takeSelfie") : t("mobileProfile.slot.takePhoto")} hint={t("mobileProfile.slot.guided")} primary={purpose !== "poa" && purpose !== "doc"} onPress={() => setCamera(true)} testID={`camera-${testId}`} />
+          <View style={{ flexDirection: narrow ? "column" : "row", gap: space[2] }}>
+            <Tile icon={ImageIcon} title={t("mobileProfile.slot.choosePhoto")} stacked={narrow} onPress={() => void pickPhoto(purpose).then(accept).catch(() => fail(t("mobileProfile.slot.pickFailed")))} testID={`photos-${testId}`} />
+            {!selfie ? <Tile icon={Upload} title={t("mobileProfile.slot.chooseFile")} stacked={narrow} primary={purpose === "poa" || purpose === "doc"} onPress={() => void pickFile(purpose).then(accept).catch(() => fail(t("mobileProfile.slot.pickFailed")))} testID={`file-${testId}`} /> : null}
           </View>
           <Text variant="caption" tone="tertiary">
             {selfie ? t("kyc.slot.formatsSelfie") : t("mobileProfile.slot.chooseFileHint")} · {t("kyc.slot.minSide", { min: MIN_SIDE[purpose] })}
@@ -310,7 +313,7 @@ export function DocSlot({ slot, label, hint, purpose, aspect = ASPECT.card, pass
           setCamera(false);
           void accept(p);
         }}
-        onFallback={() => void pickPhoto(purpose).then(accept)}
+        onFallback={() => void pickPhoto(purpose).then(accept).catch(() => fail(t("mobileProfile.slot.pickFailed")))}
       />
     </View>
   );

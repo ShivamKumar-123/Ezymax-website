@@ -119,10 +119,13 @@ export function passwordProblem(p: string) {
 
 /* ---------------- notification preferences ---------------- */
 
-export type PrefCategory = { key: string; label: string; hint: string; locked: boolean };
-export type Prefs = Record<string, { inApp: boolean; email: boolean }>;
+/** One topic's channels: the inbox (in the app and on the web), email, and push on the client's phones. */
+export type Pref = { inApp: boolean; email: boolean; push?: boolean };
+export type PrefCategory = { key: string; label: string; hint: string; locked: boolean; defaults?: { inApp: boolean; email: boolean; push?: boolean } };
+export type Prefs = Record<string, Pref>;
 export const fetchPrefs = () => apiGet<{ catalog: PrefCategory[]; prefs: Prefs }>("notifications/prefs");
-export const savePref = (key: string, channel: "inApp" | "email", value: boolean) => api<{ prefs: Prefs }>("notifications/prefs", { method: "PUT", body: { prefs: { [key]: { [channel]: value } } } });
+/** Changes some channels of one topic; the answer holds every topic's saved preferences. */
+export const savePref = (key: string, patch: Partial<Pref>) => api<{ prefs: Prefs }>("notifications/prefs", { method: "PUT", body: { prefs: { [key]: patch } } });
 
 export const fetchMarketing = () => apiGet<{ marketing_consent?: boolean }>("auth/marketing");
 export const saveMarketing = (consent: boolean): Promise<ApiResult<{ marketing_consent?: boolean }>> => api("auth/marketing", { method: "PUT", body: { consent } });

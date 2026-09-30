@@ -9,6 +9,7 @@ import { colors, space } from "@/theme/tokens";
 import type { LoginRow, SessionRow as Session } from "../api";
 import type { BadgeTone } from "../me";
 import { ago, countryName, deviceLabel, parseDevice, when, type Device } from "../format";
+import { OK, tint } from "../tint";
 import { StatusChip } from "./bits";
 
 export const SESSION_ROW_H = 76;
@@ -27,8 +28,8 @@ export const SessionItem = React.memo(function SessionItem({ s, now, busy, onRev
   const Icon = DEVICE_ICON[d.kind];
   return (
     <View style={{ height: SESSION_ROW_H, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[4] }} testID={`session-${s.id}`}>
-      <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: s.current ? "rgba(127,209,185,0.14)" : colors.surface2, alignItems: "center", justifyContent: "center" }}>
-        <Icon size={18} color={s.current ? colors.mint : colors.text2} />
+      <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: s.current ? tint.ok : colors.surface2, alignItems: "center", justifyContent: "center" }}>
+        <Icon size={18} color={s.current ? OK : colors.text2} />
       </View>
       <View style={{ flex: 1, gap: 3 }}>
         <Text variant="callout" weight="700" numberOfLines={1}>
@@ -39,17 +40,17 @@ export const SessionItem = React.memo(function SessionItem({ s, now, busy, onRev
           {place(s.ip, s.country)} · {s.current ? t("security.sessions.now") : ago(s.last_seen_at, now)}
         </Text>
       </View>
-      {s.current ? <StatusChip label={t("security.sessions.thisDevice")} tone="mint" /> : onRevoke ? <Button label={busy ? t("security.signingOut") : t("security.signOut")} size="sm" variant="secondary" full={false} disabled={busy} onPress={() => onRevoke(s)} accessibilityLabel={t("security.sessions.signOutAria", { id: s.id })} style={{ alignSelf: "center" }} /> : null}
+      {s.current ? <StatusChip label={t("security.sessions.thisDevice")} tone="ok" /> : onRevoke ? <Button label={busy ? t("security.signingOut") : t("security.signOut")} size="sm" variant="secondary" full={false} disabled={busy} onPress={() => onRevoke(s)} accessibilityLabel={t("security.sessions.signOutAria", { id: s.id })} style={{ alignSelf: "center" }} /> : null}
     </View>
   );
 });
 
-/** Sign-in event tone: green / red are for money, so success is mint and failures are ember. */
+/** Sign-in event tone: green / red are for money, so success is the off-white "ok" and failures are ember. */
 const RESULT_TONE: Record<string, BadgeTone> = {
-  success: "mint",
-  new_device: "mint",
-  verified: "mint",
-  google: "mint",
+  success: "ok",
+  new_device: "ok",
+  verified: "ok",
+  google: "ok",
   code_sent: "periwinkle",
   failed: "ember",
   locked: "ember",

@@ -6,7 +6,6 @@ import { useRouter } from "expo-router";
 import { KeyRound, Lock } from "lucide-react-native";
 import { PasswordStrength } from "@/features/auth/parts";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { invalidate } from "@/lib/query";
 import { signOut, useSession } from "@/session";
 import { Button, FormError, RevealToggle, Text, TextField, toast } from "@/ui";
@@ -39,14 +38,12 @@ export default function PasswordScreen() {
   const save = async (token: string) => {
     const r = await changePassword(current, next, token, others);
     if (!r.ok) {
-      haptic.error();
       const e = r.error;
       if (e.field === "current") setErrs({ current: e.message });
       else if (e.field === "new") setErrs({ next: e.message });
       else setErrs({ form: STEPUP_CODES.has(e.code) ? t("profile.password.expired") : e.message });
       return;
     }
-    haptic.success();
     const n = r.data.sessions_revoked ?? 0;
     toast.show({ title: t("profile.password.changed"), body: n ? t("profile.password.signedOutOthers", { count: n }) : t("profile.password.useNextTime"), tone: "success" });
     invalidate(QK.sessions);

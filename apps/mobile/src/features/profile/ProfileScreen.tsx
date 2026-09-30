@@ -7,10 +7,9 @@ import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { Bell, Copy, IdCard, KeyRound, Lock, Mail, MapPin, MessageCircle, Phone, UserRound } from "lucide-react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { prefetch, useQuery } from "@/lib/query";
 import { refreshMe } from "@/session";
-import { Button, ColorBlock, Display, IconButton, Mono, PressableScale, Text, toast, type SheetRef } from "@/ui";
+import { Button, ColorBlock, Display, IconButton, Mono, PressableScale, Skeleton, Text, toast, type SheetRef } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { fetchLogins, fetchMenu, fetchPrefs, fetchSessions, QK } from "./api";
 import { Chevron, Group, KeyValue, MenuRow, Note, SectionHeader, StatusChip } from "./components/bits";
@@ -19,8 +18,6 @@ import { StackScreen } from "./components/StackScreen";
 import { calendarDay, clientId, countryName, day } from "./format";
 import { useKyc } from "./kyc/api";
 import { kycBadge, useMeX } from "./me";
-
-const SUPPORT_FALLBACK = "support@kalkstrade.com";
 
 export default function ProfileScreen() {
   const t = useT();
@@ -35,11 +32,11 @@ export default function ProfileScreen() {
   const address = kyc.data?.case?.details.address;
   const addressText = address ? [address.line1, address.line2, address.city, address.postcode, countryName(address.country)].filter(Boolean).join(", ") : null;
   const locked = !!(me?.identity_locked ?? kyc.data?.identity_locked);
-  const support = menu.data?.brand.support_email || SUPPORT_FALLBACK;
+  // the broker's support address (white-label): known once the menu has loaded; until then only the chat is offered
+  const support = menu.data?.brand.support_email || null;
 
   const copyId = async () => {
     await Clipboard.setStringAsync(id);
-    haptic.select();
     toast.show({ title: t("mobileProfile.copied", { what: t("profile.stat.clientId") }) });
   };
 
@@ -115,12 +112,25 @@ export default function ProfileScreen() {
               <Text variant="callout" weight="600" numberOfLines={1}>
                 {me?.email}
               </Text>
-              {me?.email_verified ? <StatusChip label={t("common.verified")} tone="mint" /> : <StatusChip label={t("profile.notVerified")} tone="gold" />}
+              {me?.email_verified ? <StatusChip label={t("common.verified")} tone="ok" /> : <StatusChip label={t("profile.notVerified")} tone="gold" />}
             </View>
           }
         />
         <KeyValue label={t("common.phone")} value={phone ? <Text variant="callout" weight="600" style={{ writingDirection: "ltr" }}>{phone}</Text> : t("mobileProfile.profile.phoneNone")} />
-        <KeyValue label={t("mobileProfile.profile.addressLabel")} value={addressText ?? t("mobileProfile.profile.addressNone")} />
+        <KeyValue
+          label={t("mobileProfile.profile.addressLabel")}
+          value={
+            addressText ? (
+              addressText
+            ) : !kyc.data && !kyc.error ? (
+              <Skeleton w={140} h={14} />
+            ) : (
+              <Text variant="callout" tone="tertiary" style={{ flexShrink: 1 }}>
+                {t("mobileProfile.profile.addressNone")}
+              </Text>
+            )
+          }
+        />
       </Group>
 
       <SectionHeader title={t("mobileProfile.profile.rules.title")} />
@@ -175,17 +185,21 @@ export default function ProfileScreen() {
               router.push("/support");
             },
           },
-          {
-            key: "email",
-            icon: Mail,
-            title: t("mobileProfile.profile.correction.email"),
-            hint: `${t("mobileProfile.profile.correction.emailHint")} · ${support}`,
-            onPress: () => {
-              correction.current?.dismiss();
-              const subject = encodeURIComponent(t("mobileProfile.profile.correction.subject", { id }));
-              void Linking.openURL(`mailto:${support}?subject=${subject}`).catch(() => toast.show({ title: support }));
-            },
-          },
+          ...(support
+            ? [
+                {
+                  key: "email",
+                  icon: Mail,
+                  title: t("mobileProfile.profile.correction.email"),
+                  hint: `${t("mobileProfile.profile.correction.emailHint")} · ${support}`,
+                  onPress: () => {
+                    correction.current?.dismiss();
+                    const subject = encodeURIComponent(t("mobileProfile.profile.correction.subject", { id }));
+                    void Linking.openURL(`mailto:${support}?subject=${subject}`).catch(() => toast.show({ title: support }));
+                  },
+                },
+              ]
+            : []),
         ]}
       />
     </StackScreen>

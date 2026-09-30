@@ -6,7 +6,6 @@ import * as Clipboard from "expo-clipboard";
 import { AlertTriangle, Copy } from "lucide-react-native";
 import { useT } from "@/i18n";
 import { API_BASE } from "@/lib/config";
-import { haptic } from "@/lib/haptics";
 import { cachedConfig } from "@/market/config";
 import { Button, Display, IconButton, Mono, Sheet, Text, toast, type SheetRef } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
@@ -27,7 +26,6 @@ export const CredentialsSheet = React.forwardRef<SheetRef, { creds: Creds | null
     : [];
   const copy = async (what: string, value: string) => {
     await Clipboard.setStringAsync(value);
-    haptic.select();
     toast.show({ title: t("mobileProfile.copied", { what }) });
   };
   return (
@@ -60,7 +58,6 @@ export const CredentialsSheet = React.forwardRef<SheetRef, { creds: Creds | null
           icon={<Copy size={18} color={colors.text} />}
           onPress={() => {
             void Clipboard.setStringAsync(rows.map(([, l, v]) => `${l}: ${v}`).join("\n"));
-            haptic.select();
             toast.show({ title: t("mobileProfile.viewers.credsCopied") });
           }}
         />

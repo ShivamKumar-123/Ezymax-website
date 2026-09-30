@@ -73,7 +73,7 @@ export default function VerificationScreen() {
       eyebrow={t("mobileProfile.kyc.eyebrow")}
       title={t("kyc.page.title")}
       subtitle={mode === "loading" ? t("kyc.page.subtitle") : undefined}
-      titleRight={data?.case && mode !== "start" ? <StatusChip label={data.case.reference} tone={data.kyc_status === "verified" ? "mint" : data.kyc_status === "rejected" ? "ember" : "neutral"} dot={false} /> : undefined}
+      titleRight={data?.case && mode !== "start" ? <StatusChip label={data.case.reference} tone={data.case.status === "approved" ? "ok" : data.case.status === "rejected" ? "ember" : "neutral"} dot={false} /> : undefined}
       onRefresh={q.refresh}
       keyboard={mode === "wizard" || mode === "more_info"}
       scrollRef={scroll}

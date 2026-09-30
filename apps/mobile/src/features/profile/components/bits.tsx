@@ -1,20 +1,21 @@
 // Small building blocks shared by the More tab and the profile screens: status chips, grouped rows, key / value
 // rows, switches, the avatar, notes and the screen-level empty / error / offline states. Built on @/ui and tokens.
 import * as React from "react";
-import { Switch, View, type StyleProp, type ViewStyle } from "react-native";
-import { ArrowRight, ChevronRight, type LucideIcon } from "lucide-react-native";
+import { Platform, Switch, View, type StyleProp, type ViewStyle } from "react-native";
+import { AlertTriangle, ArrowRight, ChevronRight, WifiOff, type LucideIcon } from "lucide-react-native";
 import { useLocale, useT } from "@/i18n";
 import { haptic } from "@/lib/haptics";
 import { useOnline } from "@/lib/net";
-import { Display, EmptyState, PressableScale, Skeleton, Text } from "@/ui";
+import { Banner, Display, EmptyState, PressableScale, Skeleton, Text } from "@/ui";
 import { colors, fonts, GUTTER, radius, space } from "@/theme/tokens";
 import type { BadgeTone } from "../me";
+import { OK, tint } from "../tint";
 
 const TONE: Record<BadgeTone, { fg: string; bg: string }> = {
-  mint: { fg: colors.mint, bg: "rgba(127,209,185,0.14)" },
-  gold: { fg: colors.gold, bg: "rgba(242,184,75,0.14)" },
-  ember: { fg: colors.ember, bg: "rgba(242,106,61,0.14)" },
-  periwinkle: { fg: colors.periwinkle, bg: "rgba(140,140,240,0.16)" },
+  ok: { fg: OK, bg: tint.ok },
+  gold: { fg: colors.gold, bg: tint.gold },
+  ember: { fg: colors.ember, bg: tint.ember },
+  periwinkle: { fg: colors.periwinkle, bg: tint.periwinkle },
   neutral: { fg: colors.text2, bg: colors.surface2 },
 };
 
@@ -22,7 +23,7 @@ const TONE: Record<BadgeTone, { fg: string; bg: string }> = {
 export function StatusChip({ label, tone = "neutral", dot = true, style, onInk }: { label: string; tone?: BadgeTone; dot?: boolean; style?: StyleProp<ViewStyle>; onInk?: boolean }) {
   const c = TONE[tone];
   return (
-    <View style={[{ flexDirection: "row", alignItems: "center", gap: 6, height: 26, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: onInk ? "rgba(14,14,16,0.12)" : c.bg }, style]}>
+    <View style={[{ flexDirection: "row", alignItems: "center", gap: 6, height: 26, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: onInk ? tint.inkChip : c.bg }, style]}>
       {dot ? <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: onInk ? colors.ink : c.fg }} /> : null}
       <Text variant="caption" weight="700" color={onInk ? colors.ink : c.fg} numberOfLines={1}>
         {label}
@@ -160,8 +161,13 @@ export function KeyValue({ label, value, mono, trailing }: { label: string; valu
 
 /** The app's switch: ember track when on, cream thumb (also on the web preview). */
 export function KSwitch({ value, onValueChange, disabled, accessibilityLabel }: { value: boolean; onValueChange: (v: boolean) => void; disabled?: boolean; accessibilityLabel?: string }) {
+  const { rtl } = useLocale();
   const web = { activeThumbColor: colors.cream, activeTrackColor: colors.ember } as object;
-  return <Switch value={value} onValueChange={onValueChange} disabled={disabled} trackColor={{ false: colors.surface3, true: colors.ember }} thumbColor={colors.cream} ios_backgroundColor={colors.surface3} accessibilityLabel={accessibilityLabel} {...web} />;
+  const sw = <Switch value={value} onValueChange={onValueChange} disabled={disabled} trackColor={{ false: colors.surface3, true: colors.ember }} thumbColor={colors.cream} ios_backgroundColor={colors.surface3} accessibilityLabel={accessibilityLabel} {...web} />;
+  if (Platform.OS !== "web") return sw;
+  // web preview: react-native-web's switch places its thumb with both physical and logical offsets, which come apart
+  // under the app's right-to-left root; lay it out left-to-right and mirror it, like the native switch in RTL
+  return <View style={{ direction: "ltr", transform: rtl ? [{ scaleX: -1 }] : undefined }}>{sw}</View>;
 }
 
 /** A switch with its label (the whole row toggles; 44 pt+). */
@@ -221,12 +227,21 @@ export function Note({ icon: Icon, children, style }: { icon?: LucideIcon; child
   );
 }
 
-/** Screen-level state when there is nothing cached to show: offline, error or empty. */
-export function LoadState({ error, onRetry, style }: { error?: { message: string; code?: string } | null; onRetry: () => void; style?: StyleProp<ViewStyle> }) {
+/** Screen-level state when there is nothing cached to show: offline or error. `compact`: one section of a screen
+ *  failed (a notice with Retry instead of the full-screen illustration). */
+export function LoadState({ error, onRetry, style, compact }: { error?: { message: string; code?: string } | null; onRetry: () => void; style?: StyleProp<ViewStyle>; compact?: boolean }) {
   const t = useT();
   const online = useOnline();
-  if (!online || error?.code === "network") return <EmptyState illustration="connectionLost" title={t("mobile.state.offline.title")} body={t("mobile.state.offline.body")} action={t("mobile.action.retry")} onAction={onRetry} style={style} />;
-  return <EmptyState illustration="connectionLost" title={t("mobile.state.error.title")} body={error?.message ?? t("mobile.state.error.body")} action={t("mobile.action.retry")} onAction={onRetry} style={style} />;
+  const offline = !online || error?.code === "network";
+  const title = offline ? t("mobile.state.offline.title") : t("mobile.state.error.title");
+  const body = offline ? t("mobile.state.offline.body") : (error?.message ?? t("mobile.state.error.body"));
+  if (compact)
+    return (
+      <View style={[{ marginHorizontal: GUTTER }, style]}>
+        <Banner tone="info" icon={offline ? <WifiOff size={18} color={colors.text3} /> : <AlertTriangle size={18} color={colors.gold} />} title={title} body={body} action={t("mobile.action.retry")} onAction={onRetry} />
+      </View>
+    );
+  return <EmptyState illustration="connectionLost" title={title} body={body} action={t("mobile.action.retry")} onAction={onRetry} style={style} />;
 }
 
 /** Placeholder shaped like a group of rows. */
