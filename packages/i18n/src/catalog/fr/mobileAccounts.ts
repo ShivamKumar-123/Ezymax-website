@@ -130,7 +130,7 @@ const mobileAccounts: NsMessages<"mobileAccounts"> = {
   "leverage.change": "Modifier",
   "leverage.available": "Disponible sur {group}",
   "leverage.locked": {
-    one: "Clôturez votre {count} position ouverte pour modifier le levier. Cela évite des variations soudaines de marge sur les trades en cours.",
+    one: "Clôturez votre position ouverte pour modifier le levier. Cela évite des variations soudaines de marge sur les trades en cours.",
     many: "Clôturez vos {count} positions ouvertes pour modifier le levier. Cela évite des variations soudaines de marge sur les trades en cours.",
     other: "Clôturez vos {count} positions ouvertes pour modifier le levier. Cela évite des variations soudaines de marge sur les trades en cours.",
   },

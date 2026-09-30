@@ -757,7 +757,7 @@ const mobileSocial: NsMessages<"mobileSocial"> = {
   "revoke.text": "À partir de maintenant, aucun nouveau trade n'est alloué à votre compte. Les commissions dues jusqu'à présent sont réglées immédiatement.",
   "revoke.close": "Clôturer les trades MAM maintenant",
   "revoke.closeText": {
-    one: "Le {count} trade MAM ouvert est clôturé au prix du marché.",
+    one: "Le trade MAM ouvert est clôturé au prix du marché.",
     many: "Les {count} trades MAM ouverts sont clôturés au prix du marché.",
     other: "Les {count} trades MAM ouverts sont clôturés au prix du marché.",
   },

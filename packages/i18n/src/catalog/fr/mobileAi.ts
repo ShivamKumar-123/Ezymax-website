@@ -297,7 +297,7 @@ const mobileAi: NsMessages<"mobileAi"> = {
   /* ---------------------------------------------------------------- */
   /* Support chat (most wording comes from the `support` namespace)    */
   /* ---------------------------------------------------------------- */
-  "support.hero": "Comment pouvons-nous vous aider ?",
+  "support.hero": "Besoin d'aide ?",
   "support.instant": "Kalks AI répond en quelques secondes",
   "support.teamOnline": "Notre équipe est en ligne",
   "support.teamAway": "Notre équipe répond ici et par e-mail",
