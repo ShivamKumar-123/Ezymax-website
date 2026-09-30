@@ -14,10 +14,11 @@ import { i18n, useT } from "@/i18n";
 import { kv } from "@/lib/kv";
 import { createStore, useStore } from "@/lib/store";
 import { Button, ColorBlock, Display, KalksMark, PressableScale, Sheet, Text, toast, type SheetRef } from "@/ui";
-import { colors, motion, radius, space } from "@/theme/tokens";
-import { alpha } from "../components/tint";
+import { alpha } from "@/theme/alpha";
+import { colors, GUTTER, motion, radius, space } from "@/theme/tokens";
 import { withSystemDialog } from "../lock/state";
-import { openPushSettings, PUSH_SUPPORTED, requestPermission, usePushState, type PushPayload } from "./index";
+import { useSession } from "@/session";
+import { openPushSettings, pushAllowed, PUSH_SUPPORTED, requestPermission, usePushState, type PushPayload } from "./index";
 
 /* ---------------- the soft ask ---------------- */
 
@@ -95,7 +96,7 @@ export const PushAskSheet = React.forwardRef<{ present: () => void }, object>(fu
     [LifeBuoy, t("mobilePlatform.push.ask.point.support")],
   ];
   return (
-    <Sheet ref={sheet}>
+    <Sheet ref={sheet} scrollable>
       <View style={{ gap: space[4], paddingTop: space[1] }} testID="push-ask">
         <ColorBlock color="ember" style={{ padding: space[5] }}>
           <PreviewNotification />
@@ -145,12 +146,13 @@ export const PushAskSheet = React.forwardRef<{ present: () => void }, object>(fu
 export function PushCard() {
   const t = useT();
   const push = usePushState();
+  const allowed = useSession(pushAllowed);
   const [hidden, setHidden] = React.useState(() => Date.now() - (Number(kv.get(CARD_KEY)) || 0) < 30 * 24 * 3600_000);
   const [busy, setBusy] = React.useState(false);
-  if (!PUSH_SUPPORTED || hidden || (push.permission !== "undetermined" && push.permission !== "denied")) return null;
+  if (!PUSH_SUPPORTED || !allowed || hidden || (push.permission !== "undetermined" && push.permission !== "denied")) return null;
   const denied = push.permission === "denied" || !push.canAskAgain;
   return (
-    <View style={{ marginHorizontal: 20, marginBottom: space[3], borderRadius: radius.card, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, padding: space[4], flexDirection: "row", gap: space[3] }} testID="push-card">
+    <View style={{ marginHorizontal: GUTTER, marginBottom: space[3], borderRadius: radius.card, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, padding: space[4], flexDirection: "row", gap: space[3] }} testID="push-card">
       <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: alpha(colors.ember, 0.16), alignItems: "center", justifyContent: "center" }}>
         <BellRing size={19} color={colors.ember} strokeWidth={1.9} />
       </View>
@@ -209,6 +211,12 @@ function BannerCard({ p, onOpen }: { p: PushPayload; onOpen: (p: PushPayload) =>
   const t = useT();
   const insets = useSafeAreaInsets();
   const y = useSharedValue(-160);
+  const pressed = useSharedValue(0);
+  // a finger on the banner holds it: the 4.5 s auto-dismiss waits until it lets go
+  const holding = React.useRef(false);
+  const hold = React.useCallback((on: boolean) => {
+    holding.current = on;
+  }, []);
   const away = React.useCallback(() => {
     y.value = withTiming(-180, { duration: 180 }, (done) => {
       if (done) runOnJS(hideBanner)();
@@ -216,7 +224,12 @@ function BannerCard({ p, onOpen }: { p: PushPayload; onOpen: (p: PushPayload) =>
   }, [y]);
   React.useEffect(() => {
     y.value = withSpring(0, motion.spring);
-    const timer = setTimeout(away, 4500);
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      if (holding.current) timer = setTimeout(tick, 1500);
+      else away();
+    };
+    timer = setTimeout(tick, 4500);
     return () => clearTimeout(timer);
   }, [y, away]);
   const open = React.useCallback(() => {
@@ -225,6 +238,11 @@ function BannerCard({ p, onOpen }: { p: PushPayload; onOpen: (p: PushPayload) =>
   }, [onOpen, p]);
   const pan = Gesture.Pan()
     .activeOffsetY([-6, 6])
+    .onBegin(() => {
+      // immediate press feedback, on the UI thread
+      pressed.value = withTiming(1, { duration: 70 });
+      runOnJS(hold)(true);
+    })
     .onUpdate((e) => {
       // follows the finger upwards; a little give downwards
       y.value = e.translationY < 0 ? e.translationY : e.translationY * 0.2;
@@ -237,11 +255,15 @@ function BannerCard({ p, onOpen }: { p: PushPayload; onOpen: (p: PushPayload) =>
       } else {
         y.value = withSpring(0, motion.spring);
       }
+    })
+    .onFinalize(() => {
+      pressed.value = withSpring(0, motion.spring);
+      runOnJS(hold)(false);
     });
   const tap = Gesture.Tap().onEnd(() => {
     runOnJS(open)();
   });
-  const style = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
+  const style = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }, { scale: 1 - (1 - motion.pressScale) * pressed.value }] }));
   return (
     <GestureDetector gesture={Gesture.Exclusive(pan, tap)}>
       <Animated.View

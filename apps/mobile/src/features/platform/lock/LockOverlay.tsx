@@ -1,11 +1,17 @@
-// The app lock over everything (tabs, stack screens, bottom sheets): a native modal window, so nothing the client
-// had open shows or takes touches until the phone confirms the owner. While the app sits in the app switcher the
-// same window shows a plain cover instead of balances.
+// The app lock over everything (tabs, stack screens, modal screens, bottom sheets), so nothing the client had open
+// shows or takes touches until the phone confirms the owner. While the app sits in the app switcher the same layer
+// shows a plain cover instead of balances.
+// - iOS: react-native-screens' FullWindowOverlay, a layer on the app's window above every presented view controller.
+//   A React Native <Modal> is presented by its own screen's view controller, and UIKit refuses to present it while a
+//   native-stack modal (Algo deploy, copy-trading forms …) is open: the lock would silently not appear.
+// - Android and the web preview: a React Native <Modal> (a dialog window above the activity and its screens).
+// A focused text field loses the keyboard when the lock or the cover appears, so nothing can be typed underneath.
 //
 // Unlock: the system prompt opens by itself when the lock appears with the app in the foreground (once; after a
 // cancel the button stays). "Sign out" is the way out for someone who can't unlock (the password signs back in).
 import * as React from "react";
-import { AppState, Modal, View } from "react-native";
+import { AppState, Keyboard, Modal, Platform, ScrollView, useWindowDimensions, View } from "react-native";
+import { FullWindowOverlay } from "react-native-screens";
 import Animated, { cancelAnimation, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fingerprint, Lock, ScanFace, type LucideIcon } from "lucide-react-native";
@@ -39,6 +45,7 @@ export function LockOverlay() {
       opacity.value = 1;
       setMode(locked ? "lock" : "cover");
       setShown(true);
+      Keyboard.dismiss();
     } else {
       opacity.value = withTiming(0, { duration: 180 }, (done) => {
         if (done) runOnJS(setShown)(false);
@@ -48,11 +55,15 @@ export function LockOverlay() {
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
   // a modal window is outside the root view that sets the reading direction: set it again here
   const { rtl } = useLocale();
+  const layer = (
+    <Animated.View style={[{ flex: 1, backgroundColor: colors.bg, direction: rtl ? "rtl" : "ltr" }, style]} pointerEvents={want ? "auto" : "none"}>
+      {mode === "lock" ? <LockScreen /> : <PrivacyCover />}
+    </Animated.View>
+  );
+  if (Platform.OS === "ios") return shown ? <FullWindowOverlay unstable_accessibilityContainerViewIsModal>{layer}</FullWindowOverlay> : null;
   return (
     <Modal visible={shown} transparent animationType="none" presentationStyle="overFullScreen" statusBarTranslucent navigationBarTranslucent onRequestClose={() => {}} supportedOrientations={["portrait"]}>
-      <Animated.View style={[{ flex: 1, backgroundColor: colors.bg, direction: rtl ? "rtl" : "ltr" }, style]} pointerEvents={want ? "auto" : "none"}>
-        {mode === "lock" ? <LockScreen /> : <PrivacyCover />}
-      </Animated.View>
+      {layer}
     </Modal>
   );
 }
@@ -69,6 +80,9 @@ function PrivacyCover() {
 export function LockScreen() {
   const t = useT();
   const insets = useSafeAreaInsets();
+  // short phones (iPhone SE, 360 x 640 Androids): a smaller heading and art, so Unlock and Sign out stay on screen
+  const { height } = useWindowDimensions();
+  const compact = height - insets.top - insets.bottom < 720;
   const me = useMe();
   const [cap, setCap] = React.useState<Capability | null>(null);
   const [busy, setBusy] = React.useState(false);
@@ -105,7 +119,13 @@ export function LockScreen() {
   }, [tryUnlock]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + space[3], paddingBottom: Math.max(insets.bottom, space[4]) + space[2], paddingHorizontal: GUTTER }} testID="lock-screen">
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.bg }}
+      contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + space[3], paddingBottom: Math.max(insets.bottom, space[4]) + space[2], paddingHorizontal: GUTTER }}
+      bounces={false}
+      showsVerticalScrollIndicator={false}
+      testID="lock-screen"
+    >
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 44 }}>
         <KalksMark size={28} />
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 12, borderRadius: radius.pill, backgroundColor: colors.surface2 }}>
@@ -116,8 +136,8 @@ export function LockScreen() {
         </View>
       </View>
 
-      <View style={{ marginTop: space[8], gap: space[2] }}>
-        <Display size="hero" accessibilityRole="header">
+      <View style={{ marginTop: compact ? space[5] : space[8], gap: space[2] }}>
+        <Display size={compact ? "xl" : "hero"} accessibilityRole="header">
           {t("mobilePlatform.lock.title")}
         </Display>
         {me?.first_name ? (
@@ -128,11 +148,11 @@ export function LockScreen() {
         <Text tone="secondary">{t("mobilePlatform.lock.subtitle")}</Text>
       </View>
 
-      <ColorBlock color="periwinkle" style={{ marginTop: space[6], alignItems: "center", paddingVertical: space[5] }}>
-        <Illustration name="security" width={220} height={170} />
+      <ColorBlock color="periwinkle" style={{ marginTop: compact ? space[4] : space[6], alignItems: "center", paddingVertical: compact ? space[3] : space[5] }}>
+        <Illustration name="security" width={compact ? 170 : 220} height={compact ? 112 : 170} />
       </ColorBlock>
 
-      <View style={{ flex: 1 }} />
+      <View style={{ flex: 1, minHeight: space[5] }} />
 
       {message ? (
         <Text variant="callout" tone="gold" align="center" accessibilityLiveRegion="polite" style={{ marginBottom: space[3] }}>
@@ -183,6 +203,6 @@ export function LockScreen() {
           </PressableScale>
         </>
       )}
-    </View>
+    </ScrollView>
   );
 }

@@ -19,8 +19,12 @@ test("every link the services send opens its app screen", () => {
     ["/prop/mine", "/prop/mine"], // prop notifier
     ["/prop/mine?id=12", "/prop/mine?id=12"],
     ["/prop/payouts", "/prop/payouts"],
-    ["/partner/payouts", "/partner"], // IB notifier: the app has one partner screen
+    ["/partner/payouts", "/partner/payouts"], // IB notifier
     ["/calendar", "/calendar"], // news reminders
+    ["/alerts", "/alerts"], // price alerts (market-data)
+    ["/rewards", "/rewards"], // contest prizes (growth)
+    ["/rewards/cashback", "/rewards/cashback"], // cashback paid (growth)
+    ["/rewards/promotions", "/rewards/promotions"], // bonus granted / removed (growth)
     ["/wallet/deposit", "/wallet/deposit"], // growth journeys
   ];
   for (const [link, want] of cases) assert.deepEqual(resolveLink(link), { kind: "route", href: want, tab: want === "/portfolio" }, link);
@@ -30,13 +34,23 @@ test("web-only paths map to the app's screen; tabs are switched to, not pushed",
   assert.equal(appPath("/portfolio/history"), "/portfolio");
   assert.equal(appPath("/portfolio/statements"), "/reports/statements");
   assert.equal(appPath("/social/copy"), "/social/subscriptions");
-  assert.equal(appPath("/social/investments"), "/social/pamm");
   assert.equal(appPath("/social/masters/abc-12"), "/social/masters/abc-12");
-  assert.equal(appPath("/academy/phase/2/exam"), "/academy/2");
+  assert.equal(appPath("/social/investments"), "/social/pamm?tab=mine");
+  assert.equal(appPath("/social/managed"), "/social/mam");
+  assert.equal(appPath("/academy/phase/foundations"), "/academy/foundations");
+  assert.equal(appPath("/academy/phase/foundations/exam"), "/academy/foundations/exam");
+  assert.equal(appPath("/academy/progress"), "/academy/progress");
+  assert.equal(appPath("/academy/coach"), "/academy");
   assert.equal(appPath("/academy/chapter/what-is-a-pip"), "/academy/chapter/what-is-a-pip");
   assert.equal(appPath("/developer/marketplace"), "/algo/marketplace");
-  assert.equal(appPath("/developer/webhooks"), "/algo");
-  assert.equal(appPath("/rewards/contests/9"), "/rewards");
+  assert.equal(appPath("/developer/webhooks"), "/algo/keys");
+  assert.equal(appPath("/developer/deployments"), "/algo");
+  assert.equal(appPath("/rewards/contests/9"), "/rewards/contests/9");
+  assert.equal(appPath("/rewards/loyalty"), "/rewards/loyalty");
+  assert.equal(appPath("/partner/clients"), "/partner/clients");
+  assert.equal(appPath("/partner/network"), "/partner");
+  assert.equal(appPath("/prop/certificates"), "/prop/certificates");
+  assert.equal(appPath("/profile/viewers"), "/profile/viewers");
   assert.equal(appPath("/settings/notifications"), "/profile/notifications");
   assert.equal(appPath("/kyc"), "/profile/verification");
   assert.equal(appPath("/dashboard"), "/");
@@ -46,12 +60,49 @@ test("web-only paths map to the app's screen; tabs are switched to, not pushed",
   assert.deepEqual(resolveLink("/wallet"), { kind: "route", href: "/wallet", tab: false });
 });
 
+test("the app's own paths (kalks://…) open the same screens", () => {
+  for (const p of [
+    "/partner/programme",
+    "/partner/clients/41",
+    "/rewards/share",
+    "/academy/foundations",
+    "/academy/foundations/exam",
+    "/algo/deployments/12",
+    "/algo/keys",
+    "/algo/strategies/7",
+    "/algo/marketplace/3",
+    "/profile/password",
+    "/profile/sessions",
+    "/profile/sign-ins",
+    "/support/history",
+    "/support/88",
+    "/social/subscriptions/5",
+    "/social/pamm/9",
+    "/social/mam/links/4",
+    "/prop/12",
+    "/news/n-381",
+    "/depth/XAUUSD",
+    "/settings/app-lock",
+  ])
+    assert.equal(appPath(p), p, p);
+  // action screens (forms, confirmations) are never link targets
+  for (const p of ["/algo/strategies/7/deploy", "/algo/marketplace/3/subscribe", "/social/pamm/9/invest", "/social/follow/3", "/profile/viewers/edit", "/prop/abc", "/academy/phase", "/academy/chapter"])
+    assert.notEqual(appPath(p), p, p);
+});
+
 test("only the query parameters a screen reads survive", () => {
   assert.equal(appPath("/support?c=17&utm_source=x"), "/support?c=17");
   assert.equal(appPath("/wallet/history?type=deposit#top"), "/wallet/history?type=deposit");
   assert.equal(appPath("/wallet?type=deposit"), "/wallet");
   assert.equal(appPath("/support?c=<script>"), "/support");
   assert.equal(appPath("/alerts?symbol=EURUSD"), "/alerts?symbol=EURUSD");
+  assert.equal(appPath("/wallet/deposit?intent=dep_8f2a"), "/wallet/deposit?intent=dep_8f2a");
+  assert.equal(appPath("/wallet/transfer?to=50012345&x=1"), "/wallet/transfer?to=50012345");
+  assert.equal(appPath("/portfolio/analytics?login=all&period=30D"), "/reports/analytics?login=all&period=30D");
+  assert.equal(appPath("/calendar?currency=USD&event=nfp-2026-10"), "/calendar?currency=USD&event=nfp-2026-10");
+  assert.equal(appPath("/news?symbol=XAUUSD"), "/news?symbol=XAUUSD");
+  assert.equal(appPath("/social/investments?tab=funds"), "/social/pamm?tab=mine", "the rule's own tab wins");
+  assert.equal(appPath("/prop/mine?id=12"), "/prop/mine?id=12");
 });
 
 test("kalks:// and the Client Area's own https links open in the app; other sites open in the browser", () => {

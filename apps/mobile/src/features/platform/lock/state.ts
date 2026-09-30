@@ -9,6 +9,7 @@ import { i18n } from "@/i18n";
 import { kv } from "@/lib/kv";
 import { createStore, useStore } from "@/lib/store";
 import { sessionStore, type SessionState } from "@/session";
+import { toast } from "@/ui";
 import { authenticate, capability, type AuthResult, type Capability } from "./auth";
 import { cleanSettings, lockDue, type LockSettings } from "./policy";
 
@@ -60,6 +61,15 @@ sessionStore.subscribe(() => {
   if (status === "signedOut" || (from === "signedOut" && status === "signedIn")) {
     backgroundAt = null;
     patch({ locked: false, cover: false });
+  }
+  // a phone whose screen lock was removed can never confirm the owner: after the password sign-in (the owner's proof)
+  // the lock is switched off instead of locking them out again at the next start
+  if (from === "signedOut" && status === "signedIn" && lockStore.get().settings.enabled) {
+    void capability().then((c) => {
+      if (c.available || !lockStore.get().settings.enabled) return;
+      saveLockSettings({ ...lockStore.get().settings, enabled: false });
+      toast.show({ title: i18n.t("mobilePlatform.settings.off"), body: i18n.t("mobilePlatform.settings.turnedOffNoScreenLock") });
+    });
   }
 });
 

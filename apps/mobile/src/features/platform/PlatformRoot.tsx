@@ -13,9 +13,9 @@ import { onSignOut, sessionStore, useSession } from "@/session";
 import { watchAppState, useLocked, lockStore } from "./lock/state";
 import { LockOverlay } from "./lock/LockOverlay";
 import { markRead, setUnread } from "./notifications/api";
-import { openResolved, resolve } from "./open";
+import { openResolved, requestInboxDetail, resolve } from "./open";
 import { takePendingLink } from "./pending";
-import { onPushOpened, onPushReceived, refreshPermission, registerPush, unregisterPush, type PushPayload } from "./push";
+import { onPushOpened, onPushReceived, pushAllowed, refreshPermission, registerPush, unregisterPush, type PushPayload } from "./push";
 import { mayAsk, PushAskSheet, PushBanner, showPushBanner } from "./push/PushUI";
 
 // sign-out on this phone (or the session ended elsewhere): stop pushes to it, clear its notifications and badge
@@ -26,7 +26,11 @@ const mine = (p: PushPayload) => p.uid === null || p.uid === sessionStore.get().
 /** The screen on show (kept by SoftAsk, which follows the route anyway). */
 let currentPath = "";
 
-/** Opens a push the reader tapped: its screen (or the inbox), and marks it read. */
+/**
+ * Opens a push the reader tapped and marks it read: an app screen directly; anything else (a web page, no screen)
+ * in the inbox, which shows the server's copy of that notification. A push payload's own URL is never opened, so a
+ * push that didn't come from our server can't open a page inside the app.
+ */
 function openPush(p: PushPayload) {
   if (!mine(p)) return; // sent to someone who has since signed out on this phone
   if (p.id !== null) {
@@ -37,13 +41,20 @@ function openPush(p: PushPayload) {
   invalidate("platform:inbox");
   // after the navigator has settled (a tap can launch the app)
   setTimeout(() => {
-    if (!openResolved(resolve(p.link))) router.push("/notifications");
+    const target = resolve(p.link);
+    if (target?.kind === "route") {
+      openResolved(target);
+      return;
+    }
+    requestInboxDetail(p.id);
+    if (currentPath !== "/notifications") router.navigate("/notifications");
   }, 0);
 }
 
 export const PlatformRoot = React.memo(function PlatformRoot() {
   const locked = useLocked();
-  const viewer = useSession((s) => !!s.viewer);
+  // pushes are for the client's own sessions (not view-only logins or staff "log in as client" sessions)
+  const allowed = useSession(pushAllowed);
 
   React.useEffect(() => {
     watchAppState();
@@ -54,13 +65,13 @@ export const PlatformRoot = React.memo(function PlatformRoot() {
 
   // push registration now and whenever the app comes back (the permission may have changed in Settings)
   React.useEffect(() => {
-    if (viewer) return;
+    if (!allowed) return;
     void registerPush();
     const sub = AppState.addEventListener("change", (s) => {
       if (s === "active") void registerPush();
     });
     return () => sub.remove();
-  }, [viewer]);
+  }, [allowed]);
 
   React.useEffect(() => {
     const offReceived = onPushReceived((p) => {
@@ -81,7 +92,7 @@ export const PlatformRoot = React.memo(function PlatformRoot() {
   return (
     <>
       <PushBanner hidden={locked} onOpen={openPush} />
-      {viewer ? null : <SoftAsk locked={locked} />}
+      {allowed ? <SoftAsk locked={locked} /> : null}
       <LockOverlay />
     </>
   );

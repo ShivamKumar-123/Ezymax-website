@@ -16,7 +16,7 @@ import { PressableScale, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { GOOGLE_AVAILABLE } from "./config";
 import { continueWithGoogle } from "./flow";
-import { GoogleMark } from "./GoogleMark";
+import { GOOGLE_BRAND, GoogleMark } from "./GoogleMark";
 
 export { GOOGLE_AVAILABLE };
 
@@ -56,13 +56,12 @@ export function GoogleSignIn({ mode = "signIn", referral, divider = true, onErro
       <PressableScale
         onPress={() => void run()}
         disabled={busy}
-        haptics="tap"
         accessibilityLabel={label}
         testID="google-button"
-        style={{ height: 54, borderRadius: radius.pill, backgroundColor: "#131314", borderWidth: 1, borderColor: "#8E918F", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space[3], paddingHorizontal: space[5] }}
+        style={{ height: 54, borderRadius: radius.pill, backgroundColor: GOOGLE_BRAND.fill, borderWidth: 1, borderColor: GOOGLE_BRAND.stroke, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space[3], paddingHorizontal: space[5] }}
       >
-        {busy ? <ActivityIndicator color="#E3E3E3" /> : <GoogleMark size={20} />}
-        <Text variant="headline" weight="600" color="#E3E3E3" numberOfLines={1}>
+        {busy ? <ActivityIndicator color={GOOGLE_BRAND.text} /> : <GoogleMark size={20} />}
+        <Text variant="headline" weight="600" color={GOOGLE_BRAND.text} numberOfLines={1}>
           {label}
         </Text>
       </PressableScale>

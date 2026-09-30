@@ -14,12 +14,12 @@ const mobilePlatform = {
   "inbox.emptyUnread.title": "All caught up",
   "inbox.emptyUnread.body": "You've read every notification. New ones appear here as they arrive.",
   "inbox.loadMoreFailed": "Couldn't load older notifications. Tap to try again.",
-  "inbox.newItems": { one: "{count} new notification", other: "{count} new notifications" },
+  // Under the title while the phone is offline and the inbox shows what it saved earlier
+  "inbox.offlineCached": "You're offline. These are the notifications saved on this phone.",
   // Row accessibility: "Unread. Deposit credited. 100 USDT was credited. 2 minutes ago"
   "inbox.a11y.unread": "Unread",
   "inbox.a11y.settings": "Notification settings",
   // Detail sheet of a notification without a screen to open
-  "inbox.detail.open": "Open",
   "inbox.detail.openWeb": "Open link",
   "inbox.detail.received": "Received {time}",
 
@@ -97,17 +97,16 @@ const mobilePlatform = {
   "settings.lockNow": "Lock now",
   "settings.confirmOn": "Confirm to turn on app lock",
   "settings.confirmOff": "Confirm to turn off app lock",
+  // System prompt when the reader picks a longer "Lock again after" time
+  "settings.confirmTimeout": "Confirm to change when Kalks locks",
+  // Toast body after a password sign-in on a phone whose screen lock was removed (the app lock can't work without it)
+  "settings.turnedOffNoScreenLock": "This phone has no screen lock, so Kalks can't confirm it's you. Set one up in your phone's settings to use app lock again.",
   "settings.notConfirmed": "Not confirmed, nothing changed",
   "settings.unavailableTitle": "Set up a screen lock first",
   "settings.unavailableBody": "App lock uses your phone's Face ID, fingerprint or passcode. Turn one on in your phone's settings, then come back.",
   "settings.webTitle": "Available in the app",
   "settings.webBody": "App lock works in the Kalks app for iPhone and Android.",
   "settings.thisPhone": "Applies to this phone only",
-
-  // Google sign-in (the button is shown only when the app has a Google OAuth client for this platform)
-  "google.continuing": "Continuing with Google…",
-  "google.as": "Google account: {email}",
-  "google.missingProfile": "Your Google sign-up has expired. Continue with Google again.",
 
   // Links that open the app (kalks://…, notification taps) but match no screen
   "link.notFound.title": "Nothing to open here",

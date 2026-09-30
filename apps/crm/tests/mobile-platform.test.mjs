@@ -209,6 +209,8 @@ test("the OAuth client comes from the server's configuration for the app's platf
   assert.deepEqual(lib.mobileGoogleClient("ios", env), { platform: "ios", clientId: IOS_CLIENT });
   assert.equal(lib.mobileGoogleClient("android", env), null, "not configured yet");
   assert.deepEqual(lib.mobileGoogleClient("web", env), { platform: "web", clientId: "web.apps.googleusercontent.com", clientSecret: "web-secret" });
+  assert.equal(lib.mobileGoogleClient("web", { ...env, NODE_ENV: "production" }), null, "the web preview's client never on a production server");
+  assert.deepEqual(lib.mobileGoogleClient("ios", { ...env, NODE_ENV: "production" }), { platform: "ios", clientId: IOS_CLIENT });
   assert.equal(lib.mobileGoogleClient("desktop", env), null);
   assert.equal(lib.mobileGoogleClient(null, env), null);
 });

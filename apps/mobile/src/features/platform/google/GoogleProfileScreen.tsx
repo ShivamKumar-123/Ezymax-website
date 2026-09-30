@@ -16,7 +16,7 @@ import { haptic } from "@/lib/haptics";
 import { Button, Checkbox, Display, FormError, PressableScale, Sheet, Text, TextField, Trans, type SheetRef } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { completeGoogleProfile, pendingGoogleProfile } from "./flow";
-import { GoogleMark } from "./GoogleMark";
+import { GOOGLE_BRAND, GoogleMark } from "./GoogleMark";
 import { GoogleSignIn } from "./GoogleSignIn";
 
 type Form = { first_name: string; last_name: string; country: string; phone: string; date_of_birth: string; referral_code: string };
@@ -81,7 +81,7 @@ export function GoogleProfileScreen() {
   return (
     <AuthScaffold back onBack={() => router.replace("/sign-in")} eyebrow={t("auth.complete.stepDetails")} title={t("auth.complete.title")} subtitle={t("auth.complete.subtitle")}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: space[3], padding: space[4], borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line }} testID="google-account">
-        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}>
+        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: GOOGLE_BRAND.logoDisc, alignItems: "center", justifyContent: "center" }}>
           <GoogleMark size={18} />
         </View>
         <View style={{ flex: 1, gap: 2 }}>

@@ -2,6 +2,7 @@
 // bundle never loads expo-notifications. A preview built with EXPO_PUBLIC_WEB_DEVICE_DEMO=1 pretends the permission
 // was never asked (and is granted on "Turn on"), only to exercise the soft ask and the inbox card in screenshots.
 import { createStore, useStore } from "@/lib/store";
+import type { SessionState } from "@/session";
 import type { PushPayload, PushPermission, PushState } from "./index";
 
 export type { PushPayload, PushPermission, PushState };
@@ -13,6 +14,9 @@ export const pushStore = createStore<PushState>({ permission: DEMO ? "undetermin
 const selectState = (s: PushState) => s;
 export const usePushState = () => useStore(pushStore, selectState);
 
+export function pushAllowed(s: SessionState): boolean {
+  return s.status === "signedIn" && !!s.user && !s.viewer && !(s.user as { impersonation?: unknown }).impersonation;
+}
 export const refreshPermission = async (): Promise<PushPermission> => pushStore.get().permission;
 export const ensureChannels = async (): Promise<void> => {};
 export async function requestPermission(): Promise<PushPermission> {

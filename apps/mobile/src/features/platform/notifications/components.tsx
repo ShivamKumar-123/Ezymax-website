@@ -22,8 +22,8 @@ import {
 } from "lucide-react-native";
 import { useFormat, useT } from "@/i18n";
 import { Button, Display, PressableScale, Sheet, Skeleton, Text, type SheetRef } from "@/ui";
-import { colors, GUTTER, radius, space } from "@/theme/tokens";
-import { alpha } from "../components/tint";
+import { alpha } from "@/theme/alpha";
+import { colors, GUTTER, space } from "@/theme/tokens";
 import type { NotificationItem, Severity } from "./api";
 
 export const ROW_H = 86;
@@ -44,12 +44,16 @@ const ICONS: Record<string, LucideIcon> = {
   marketing: Gift,
 };
 
-/** Severity tints from the theme tokens (green / red stay reserved for money). */
+/**
+ * Severity tints on the app's palette (green / red stay reserved for money): routine news in neutral grey, good news
+ * in the warm off-white (the Profile screens' "ok" tone: light ember next to ember would not read apart), attention
+ * in gold, urgent (margin call, stop-out, a refusal) in ember.
+ */
 export const TINT: Record<Severity, { fg: string; bg: string }> = {
-  success: { fg: colors.mint, bg: alpha(colors.mint, 0.14) },
+  success: { fg: colors.cream, bg: alpha(colors.cream, 0.1) },
   warning: { fg: colors.gold, bg: alpha(colors.gold, 0.14) },
   critical: { fg: colors.ember, bg: alpha(colors.ember, 0.16) },
-  info: { fg: colors.info, bg: alpha(colors.info, 0.14) },
+  info: { fg: colors.text2, bg: colors.surface2 },
 };
 
 const LOCAL_TZ = (() => {
@@ -140,7 +144,8 @@ export function InboxSkeleton({ rows = 6 }: { rows?: number }) {
 
 export type DetailHandle = { open: (n: NotificationItem) => void };
 
-/** Full text of a notification with no screen to open; `onOpenWeb` when its link is a web page. */
+/** Full text of a notification with no screen to open; `onOpenWeb` when its link is a web page. Scrollable: a
+ *  body can be long (up to 2,000 characters), and the Close button must stay reachable on a small phone. */
 export const DetailSheet = React.forwardRef<DetailHandle, { onOpenWeb: (url: string) => void; webUrl: (n: NotificationItem) => string | null }>(function DetailSheet({ onOpenWeb, webUrl }, ref) {
   const t = useT();
   const fmt = useFormat();
@@ -155,7 +160,7 @@ export const DetailSheet = React.forwardRef<DetailHandle, { onOpenWeb: (url: str
   const url = item ? webUrl(item) : null;
   const topic = item ? t.dyn(`mobileProfile.notif.cat.${item.category}`, "") : "";
   return (
-    <Sheet ref={sheet} onDismiss={() => setItem(null)}>
+    <Sheet ref={sheet} onDismiss={() => setItem(null)} scrollable>
       {item ? (
         <View style={{ gap: space[4], paddingTop: space[2] }} testID="notif-detail">
           <View style={{ flexDirection: "row", alignItems: "center", gap: space[3] }}>
@@ -192,8 +197,3 @@ export const DetailSheet = React.forwardRef<DetailHandle, { onOpenWeb: (url: str
     </Sheet>
   );
 });
-
-/** Rounded surface card used above the list (push prompt). */
-export function InboxCard({ children }: { children: React.ReactNode }) {
-  return <View style={{ marginHorizontal: GUTTER, marginBottom: space[3], borderRadius: radius.card, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, padding: space[5], gap: space[3] }}>{children}</View>;
-}

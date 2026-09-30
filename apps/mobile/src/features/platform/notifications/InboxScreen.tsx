@@ -6,11 +6,12 @@
 // Opens on the cached first page, then refreshes. Live while open through the support service's stream (new
 // notifications, reads made on the web); a push that arrives refreshes it too (PlatformRoot), and a poll every 60 s
 // covers a stream that can't connect. FlashList with fixed-height memoised rows and day headers of their own type.
+// Offline with a saved page: the page plus a line saying so; offline with nothing saved: the connection-lost state.
 import * as React from "react";
 import { RefreshControl, View } from "react-native";
 import { useRouter } from "expo-router";
 import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
-import { CheckCheck, Eye, Settings2 } from "lucide-react-native";
+import { CheckCheck, Eye, Settings2, WifiOff } from "lucide-react-native";
 import { useFormat, useT } from "@/i18n";
 import { haptic } from "@/lib/haptics";
 import { useOnline } from "@/lib/net";
@@ -19,7 +20,7 @@ import { useSession } from "@/session";
 import { Banner, EmptyState, IconButton, PillRow, Text, toast, useBottomInset } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { LargeTitle, TopBar, useScrollY } from "../components/Chrome";
-import { openResolved, openWeb, resolve } from "../open";
+import { clearInboxDetail, openResolved, openWeb, resolve, useInboxDetailRequest } from "../open";
 import { PushCard } from "../push/PushUI";
 import { supportStream } from "@/features/support/stream";
 import { addCachedItem, fetchInbox, markAllRead, markCachedRead, markRead, PAGE, QK, setUnread, type InboxFilter, type InboxPage, type NotificationItem } from "./api";
@@ -74,12 +75,20 @@ function Inbox() {
       }),
     [refreshFirst],
   );
-  // older pages (not cached): reset when the filter changes or a refresh brings a different first page (new
-  // notifications shift the cursor); marking read changes neither, so the loaded pages stay
+  // back online: refresh at once (the connection-lost state or a saved page gives way to the server's answer)
+  const wasOnline = React.useRef(online);
+  React.useEffect(() => {
+    if (online && !wasOnline.current) void refreshFirst();
+    wasOnline.current = online;
+  }, [online, refreshFirst]);
+
+  // older pages (not cached): reset when the filter changes or a refresh brings a first page with a different cursor
+  // (the server's page moved, so the loaded pages could leave a gap). A notification arriving live goes on top of
+  // the cached page without moving its cursor, and marking read moves nothing, so the pages scrolled to stay.
   const [older, setOlder] = React.useState<{ filter: InboxFilter; items: NotificationItem[]; next: number | null | undefined }>({ filter, items: [], next: undefined });
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [moreFailed, setMoreFailed] = React.useState(false);
-  const pageKey = first.data ? `${first.data.items[0]?.id ?? 0}:${first.data.next ?? 0}` : "";
+  const pageKey = first.data ? String(first.data.next ?? 0) : "";
   React.useEffect(() => {
     setOlder({ filter, items: [], next: undefined });
     setMoreFailed(false);
@@ -103,6 +112,17 @@ function Inbox() {
 
   const next = older.filter === filter && older.next !== undefined ? older.next : (first.data?.next ?? null);
   const unread = first.data?.unread ?? 0;
+
+  // a push tapped for a web page or no screen: show that notification (the server's copy) as soon as it is listed
+  const wanted = useInboxDetailRequest();
+  React.useEffect(() => {
+    if (!wanted) return;
+    if (Date.now() - wanted.at > 60_000) return clearInboxDetail();
+    const n = items.find((x) => x.id === wanted.id);
+    if (!n) return;
+    clearInboxDetail();
+    detail.current?.open(n);
+  }, [wanted, items]);
 
   const dayLabel = React.useCallback(
     (_key: string, daysAgo: number, dayStart: number) => {
@@ -142,8 +162,12 @@ function Inbox() {
     [read],
   );
 
+  const readingAll = React.useRef(false);
   const readAll = async () => {
+    if (readingAll.current) return;
+    readingAll.current = true;
     const r = await markAllRead();
+    readingAll.current = false;
     if (!r.ok) return toast.show({ title: r.error.message, tone: "error" });
     markCachedRead("all");
     setOlder((prev) => ({ ...prev, items: prev.items.map((n) => ({ ...n, read: true })) }));
@@ -182,6 +206,14 @@ function Inbox() {
           ) : undefined
         }
       />
+      {!online && first.data ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: space[2], marginHorizontal: GUTTER, marginTop: -space[2], marginBottom: space[4] }} testID="inbox-offline">
+          <WifiOff size={15} color={colors.text3} />
+          <Text variant="caption" tone="tertiary" style={{ flex: 1 }}>
+            {t("mobilePlatform.inbox.offlineCached")}
+          </Text>
+        </View>
+      ) : null}
       <PushCard />
       <PillRow items={filters} value={filter} onChange={setFilter} contentPadding={GUTTER} style={{ marginBottom: space[1] }} />
     </View>

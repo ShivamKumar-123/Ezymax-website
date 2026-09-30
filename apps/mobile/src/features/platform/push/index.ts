@@ -8,19 +8,20 @@
 //   client; never for a view-only login, the server refuses staff sessions), again when the token or the client
 //   changes and once a day otherwise (keeps the phone "seen").
 // - Sign-out removes the phone (onSignOut in PlatformRoot): with the session while it is still valid, else with the
-//   phone's installation id; a failed attempt is retried at the next registration. Delivered notifications and the
-//   badge are cleared, so the next person on this phone doesn't see them.
+//   phone's installation id; a failed attempt (offline) is retried while signed out (at start and whenever the app
+//   comes back) and before the next registration. Delivered notifications and the badge are cleared, so the next
+//   person on this phone doesn't see them, and a push still addressed to them isn't presented while the app is open.
 // - Needs an EAS project id (app.json extra.eas.projectId, or EXPO_PUBLIC_EAS_PROJECT_ID) and a build with the
 //   expo-notifications plugin; Expo Go on Android has no remote pushes since SDK 53. Without them `PUSH_SUPPORTED` is
 //   false and everything here is a no-op.
-import { Linking, Platform } from "react-native";
+import { AppState, Linking, Platform } from "react-native";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import * as Notifications from "expo-notifications";
 import { i18n } from "@/i18n";
 import { apiPost } from "@/lib/api";
 import { kv } from "@/lib/kv";
 import { createStore, shallowEqual, useStore } from "@/lib/store";
-import { sessionStore } from "@/session";
+import { sessionStore, type SessionState } from "@/session";
 import { colors } from "@/theme/tokens";
 
 export type PushPermission = "granted" | "denied" | "undetermined" | "unsupported";
@@ -40,19 +41,42 @@ const same = (a: PushState, b: PushState) => shallowEqual(a, b);
 const selectState = (s: PushState) => s;
 export const usePushState = () => useStore(pushStore, selectState, same);
 
+/** Pushes belong to the client's own sessions: never a view-only login or a Back Office staff session ("log in as
+ *  client"), whose phone must not receive the client's notifications (the BFF refuses both too). */
+export function pushAllowed(s: SessionState): boolean {
+  return s.status === "signedIn" && !!s.user && !s.viewer && !(s.user as { impersonation?: unknown }).impersonation;
+}
+
 const REG_KEY = "kalks.push.registered"; // {token, uid, at}
 const FORGET_KEY = "kalks.push.forget"; // a token whose removal failed (offline sign-out)
 const OPENED_KEY = "kalks.push.opened"; // the last tap handled (a cold start must not replay it)
 const DAY = 24 * 3600_000;
 
 // A push that arrives while the app is open is shown by the app itself (PushBanner, only when unlocked), not the
-// system banner; it still goes to the notification list and sets the badge.
+// system banner; it still goes to the notification list and sets the badge. One addressed to someone else (they
+// signed out on this phone and the removal hasn't reached the server yet) is not presented at all.
 if (PUSH_SUPPORTED) {
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({ shouldShowBanner: false, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: true }),
+    handleNotification: async (n) => {
+      const uid = num(((n.request.content.data ?? {}) as Record<string, unknown>).uid);
+      const s = sessionStore.get();
+      const mine = s.status === "signedIn" && (uid === null || uid === s.user?.id);
+      return { shouldShowBanner: false, shouldShowList: mine, shouldPlaySound: false, shouldSetBadge: mine };
+    },
   });
   // the OS rotated the phone's push token: register the new one
   Notifications.addPushTokenListener(() => void registerPush(true));
+  // a sign-out whose removal failed (offline) is retried while signed out too: at start, and when the app comes back
+  let lastStatus = sessionStore.get().status;
+  sessionStore.subscribe(() => {
+    const status = sessionStore.get().status;
+    if (status === lastStatus) return;
+    lastStatus = status;
+    if (status === "signedOut") setTimeout(() => void retryForget(), 1500);
+  });
+  AppState.addEventListener("change", (s) => {
+    if (s === "active" && sessionStore.get().status === "signedOut") void retryForget();
+  });
 }
 
 function toPermission(p: Notifications.NotificationPermissionsStatus): PushPermission {
@@ -107,11 +131,17 @@ export function openPushSettings() {
   void Linking.openSettings().catch(() => {});
 }
 
+let forgetting = false;
 async function retryForget() {
   const token = kv.get(FORGET_KEY);
-  if (!token) return;
-  const r = await apiPost("push/unregister", { token }, { auth: false });
-  if (r.ok || (r.status >= 400 && r.status < 500)) kv.remove(FORGET_KEY);
+  if (!token || forgetting) return;
+  forgetting = true;
+  try {
+    const r = await apiPost("push/unregister", { token }, { auth: false, timeoutMs: 8000 });
+    if (r.ok || (r.status >= 400 && r.status < 500)) kv.remove(FORGET_KEY);
+  } finally {
+    forgetting = false;
+  }
 }
 
 /**
@@ -121,7 +151,7 @@ async function retryForget() {
 export async function registerPush(force = false): Promise<boolean> {
   if (!PUSH_SUPPORTED) return false;
   const s = sessionStore.get();
-  if (s.status !== "signedIn" || !s.user || s.viewer) return false;
+  if (!pushAllowed(s) || !s.user) return false;
   await retryForget();
   const prev = kv.getJSON<{ token: string; uid: number; at: number }>(REG_KEY);
   if ((await refreshPermission()) !== "granted") {
@@ -143,6 +173,8 @@ export async function registerPush(force = false): Promise<boolean> {
   const r = await apiPost("push/register", { token });
   // a refusal (staff session) is remembered like a registration, so it isn't asked again all day
   if (r.ok || r.status === 403) kv.setJSON(REG_KEY, { token, uid: s.user.id, at: Date.now() });
+  // the same phone token now belongs to this client: an older removal still waiting for it must not undo that
+  if (r.ok && kv.get(FORGET_KEY) === token) kv.remove(FORGET_KEY);
   return r.ok;
 }
 
@@ -160,7 +192,8 @@ export async function unregisterPush(remote: boolean): Promise<void> {
     await Promise.all([Notifications.dismissAllNotificationsAsync(), Notifications.setBadgeCountAsync(0)]);
   } catch {}
   if (!prev?.token) return;
-  const r = await apiPost("push/unregister", { token: prev.token }, remote ? undefined : { auth: false });
+  // a short wait: signing out must not hang on a bad connection (a failed removal is retried later)
+  const r = await apiPost("push/unregister", { token: prev.token }, { timeoutMs: 6000, ...(remote ? {} : { auth: false }) });
   if (!r.ok && (r.status === 0 || r.status >= 500)) kv.set(FORGET_KEY, prev.token);
 }
 

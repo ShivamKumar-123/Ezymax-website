@@ -15,8 +15,8 @@
 // ticket come back in the JSON body: the app keeps the session in the phone's secure store, the ticket in memory.
 //
 // Which OAuth client a code belongs to is decided from X-Kalks-Platform and this server's configuration
-// (GOOGLE_IOS_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID; the web preview uses GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET),
-// never from the request body.
+// (GOOGLE_IOS_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID; the app's web preview uses GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET,
+// and only on a development server), never from the request body.
 //
 // Plain TypeScript without Next or "@/" imports, so `node --test apps/crm/tests` can drive it with a local JWKS and
 // stub exchange / gateway (tests/mobile-platform.test.mjs); production always uses Google's.
@@ -35,6 +35,8 @@ export function mobileGoogleClient(platform: string | null | undefined, env: Rec
     return clientId ? { platform: p, clientId } : null;
   }
   if (p === "web") {
+    // the app's web preview only (development): a production server redeems codes of the phones' clients alone
+    if (env.NODE_ENV === "production") return null;
     const web = googleConfig(env);
     return web ? { platform: "web", clientId: web.clientId, clientSecret: web.clientSecret } : null;
   }

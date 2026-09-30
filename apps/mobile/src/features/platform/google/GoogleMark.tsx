@@ -1,6 +1,9 @@
-// Google's "G" mark, in Google's own colours as its sign-in branding requires (the one place those colours appear).
+// Google's "G" mark and the sign-in button colours, as Google's sign-in branding guidelines require (dark theme:
+// fill #131314, stroke #8E918F, text #E3E3E3; the logo on white). The only place those colours appear in the app.
 import * as React from "react";
 import Svg, { Path } from "react-native-svg";
+
+export const GOOGLE_BRAND = { fill: "#131314", stroke: "#8E918F", text: "#E3E3E3", logoDisc: "#FFFFFF" } as const;
 
 export function GoogleMark({ size = 20 }: { size?: number }) {
   return (

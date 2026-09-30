@@ -21,10 +21,15 @@ on the phone reads on the web.
 - **Grouping:** by the reader's local day (Today, Yesterday, dates), newest first.
 - **Controls:** All / Unread, mark all read, and a settings shortcut to Profile › Notifications.
 - **Tapping a row:** marks it read and opens its screen (`links.ts` maps the producers' Client Area paths to app routes).
-  A row with no screen opens its full text in a sheet, with "Open link" for web pages.
+  A row with no screen opens its full text in a sheet (it scrolls: a body can be 2,000 characters), with "Open link"
+  for web pages.
 - **Unread count:** one place for the whole app, the Home bell's query (`home/bell`), plus the app icon badge.
 - **Performance:** FlashList with fixed-height memoised rows. The screen opens on the cached first page, then refreshes:
-  every 30 s while open, and at once when a push arrives. Older pages load as you scroll.
+  every 60 s while open (the support stream brings new notifications and reads at once), when a push arrives and when
+  the connection comes back. Older pages load as you scroll and stay loaded when a notification arrives live.
+- **Offline:** a saved page shows with a line saying it is saved; with nothing saved, the connection-lost state.
+- **Colours:** routine notices neutral grey, good news warm off-white, attention gold, urgent ember (green and red
+  stay for money).
 - **View-only logins:** they have no inbox (the server refuses it) and see a notice instead.
 
 ## Push notifications
@@ -55,14 +60,19 @@ It is behind `SUPPORT_PUSH_ENABLED` (on in production, set by `deploy/deploy.sh`
 - **Signing out** removes the phone:
   - the client's own row while the session is valid;
   - after the session ended, the server matches the token with the installation id;
-  - if the phone is offline, the removal is retried at the next registration.
+  - it waits at most 6 s (sign-out never hangs on a bad connection); a removal that failed is retried while signed
+    out (at the next start and whenever the app comes back) and before the next registration.
   Delivered notifications and the badge are cleared too.
 - **A push while the app is open.** It updates the inbox and the badge, and slides in an in-app banner. There is no
   banner when the app is locked or the inbox is on screen. Tap the banner to open it; swipe it up (it follows the
   finger) or wait 4.5 s to dismiss it.
 - **Tapping a push**, including the tap that launched the app:
   - it opens the notification's screen and marks it read;
-  - a push meant for someone who has since signed out on the phone is ignored.
+  - a push whose link is a web page (or that has no screen) opens the inbox with that notification's full text: the
+    link is followed from the server's copy, never from the push payload, so a push that didn't come from our server
+    can't open a page inside the app;
+  - a push meant for someone who has since signed out on the phone is ignored, and isn't presented while the app is
+    open.
 - **Android channels:** `alerts` (margin call, stop-out, price alerts, security), `activity` (everything else) and `news` (offers).
 
 ## App lock
@@ -75,13 +85,22 @@ When it asks:
 - **Coming back** after the chosen time in the background: immediately, 1, 5 or 15 minutes, or 1 hour (default 1 minute).
 - **Never** right after a password sign-in.
 
-The lock is a native modal window above everything, including bottom sheets. It appears at once and fades out in
+The lock is a layer above everything, including bottom sheets and modal screens. It appears at once and fades out in
 180 ms after an unlock.
+- **iOS:** react-native-screens' `FullWindowOverlay` (on the app's window, above every presented view controller). A
+  React Native `<Modal>` is presented by its screen's view controller, and UIKit refuses to present it while a
+  native-stack modal (Algo deploy, copy-trading forms …) is open, so the lock would silently not appear.
+- **Android and the web preview:** a React Native `<Modal>` (a dialog window above the activity).
+- A focused text field loses the keyboard when the lock or the cover appears.
+- On short phones (iPhone SE, 360 x 640) the heading and art are smaller and the screen scrolls, so Unlock and Sign out
+  are always reachable.
 
 Other behaviour:
 - **App switcher:** while the lock is on, the app switcher shows a cover instead of balances.
 - **Escape hatch:** "Sign out" on the lock screen is the way out for someone who can't unlock.
-- **Turning it on or off** needs the owner to confirm.
+- **Turning it on or off**, and choosing a longer "Lock again after" time, needs the owner to confirm.
+- **A phone whose screen lock was removed** can't confirm anyone: the lock screen offers Sign out, and after the
+  password sign-in the app lock is switched off (with a note) instead of locking the owner out again.
 - **Scope:** the setting belongs to the phone (kv `kalks.appLock`). View-only logins can use it too.
 
 ## Continue with Google
@@ -131,8 +150,12 @@ phone's system browser, with the app's own Google OAuth client.
 
 ## Links into the app
 
-- **`kalks://<path>`** opens the matching screen. Client Area paths the app names differently are mapped
-  (`/portfolio/history` → Portfolio, `/partner/payouts` → Partner, `/social/copy` → My copies …, `links.ts`).
+- **`kalks://<path>`** opens the matching screen: the app's own paths (`/partner/clients/41`, `/algo/deployments/12`,
+  `/academy/<phase>/exam` …) and the Client Area paths the app names differently (`/portfolio/history` → Portfolio,
+  `/portfolio/analytics` → Reports, `/social/copy` → My copies, `/social/investments` → PAMM › My investments,
+  `/developer/webhooks` → Algo › API keys, `/academy/phase/<slug>` → the phase …, `links.ts`). Screens that only act
+  (deploy, subscribe, invest, edit) are never link targets. Only the query parameters a screen reads survive
+  (`?symbol=`, `?login=&period=`, `?intent=` …). From a notification, `/trade?symbol=X` opens the Trade tab on X.
 - **Signed out:** a link to a signed-in screen shows sign-in first, then opens right after it.
 - **Unknown paths** show "Nothing to open here" with a way Home.
 - **Google's OAuth redirect** is left to the auth session (the router ignores it).
