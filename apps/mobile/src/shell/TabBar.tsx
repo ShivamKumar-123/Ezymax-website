@@ -1,9 +1,9 @@
 // Floating pill tab bar: a flat matte surface with a hairline border (no blur, no drop shadow), the active tab is a
-// cream capsule with its label; the others are icons. The capsule moves with a spring (functional motion only).
+// cream capsule with its label; the others are icons. The capsule re-lays out instantly: a layout animation on
+// Android left a neighbour at its old position under the wider capsule (e.g. "Markets" covering the Trade icon).
 // 64 pt tall, 44 pt+ targets.
 import * as React from "react";
 import { InteractionManager, Platform, View } from "react-native";
-import Animated, { LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "expo-router/tabs";
 import { CandlestickChart, House, LayoutGrid, LineChart, Wallet } from "lucide-react-native";
@@ -12,7 +12,7 @@ import { tradeSymbolStore } from "@/features/trade/symbol";
 import { useT, type MessageKey } from "@/i18n";
 import { haptic } from "@/lib/haptics";
 import { PressableScale, Text } from "@/ui";
-import { colors, motion, radius, space, TAB_BAR } from "@/theme/tokens";
+import { colors, radius, space, TAB_BAR } from "@/theme/tokens";
 
 const TABS: Record<string, { icon: typeof House; label: MessageKey }> = {
   index: { icon: House, label: "mobile.tab.home" },
@@ -72,7 +72,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
           const Icon = def.icon;
           const label = t(def.label);
           return (
-            <Animated.View key={route.key} layout={LinearTransition.springify().damping(motion.spring.damping).stiffness(motion.spring.stiffness)}>
+            <View key={route.key}>
               <PressableScale
                 accessibilityRole="tab"
                 accessibilityState={{ selected: focused }}
@@ -104,7 +104,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
                   </Text>
                 ) : null}
               </PressableScale>
-            </Animated.View>
+            </View>
           );
         })}
       </View>
