@@ -157,6 +157,7 @@ const mobileAlgo = {
   "dep.eyebrow": "Deployment · {account}",
   "dep.marketplaceCopy": "Marketplace copy",
   "dep.openStrategy": "Open the strategy",
+  "dep.openSubscription": "Open my subscriptions",
   // {pct} = return %, {amount} = starting balance
   "dep.onStart": "{pct} on {amount}",
   "dep.curveA11y": "Balance by day over {days} days, realized {pnl}",
@@ -213,6 +214,8 @@ const mobileAlgo = {
   "ctl.failedLabel": "Couldn't close",
   "ctl.failedTitle": { one: "{count} position couldn't be closed", other: "{count} positions couldn't be closed" },
   "ctl.failedBody": "The market may be closed. Close it from Portfolio when trading reopens.",
+  // stopping or killing a marketplace copy leaves its subscription (and a paid one's renewals) running
+  "ctl.copyNote": "This is a marketplace copy: stopping it doesn't end the subscription. To stop paying, cancel it under Marketplace › Subscriptions.",
 
   /* ---------------------------------------------------------------- */
   /* Strategy                                                          */
@@ -371,7 +374,7 @@ const mobileAlgo = {
   "deploy.dailyLossHint": "When the day's closed and open loss reaches it, no new trades until tomorrow (server time).",
   "deploy.off": "Off",
   "deploy.custom": "Custom",
-  "deploy.dailyLossAmount": "Daily loss limit",
+  "deploy.dailyLossAmount": "Loss per day",
   "deploy.lossInvalid": "Enter an amount above 0.",
   "deploy.liveTitle": "Real money",
   "deploy.liveBody": "This is a live account. The strategy places real orders with real money, and can lose it.",
@@ -665,6 +668,13 @@ const mobileAlgo = {
   "sub.doneCopy": "“{title}” is running on {account}.",
   "sub.doneClone": "“{title}” is now one of your strategies.",
   "sub.charged": "{amount} USDT was charged from your wallet.",
+  // the answer to a subscribe request was lost (connection, timeout): the app re-reads the listing before a retry
+  "sub.noAnswer": "We didn't get an answer. The subscription may have gone through.",
+  "sub.checkingTitle": "Checking your subscription",
+  "sub.checkingBody": "The answer was lost on the way. We're checking with the server before you can try again, so you're never charged twice.",
+  "sub.noAnswerRetry": "Still no answer, and no new subscription on your account. You can try again.",
+  "sub.notThrough": "It didn't go through, and nothing stays charged (a charge is refunded to your wallet). You can try again.",
+  "sub.unfinished": "It's still being set up on the server. Check Marketplace › Subscriptions and your wallet history, or contact support, before trying again.",
   "sub.free": "Free subscription: nothing was charged.",
   "sub.copyOn": "copy on {login}",
   "sub.cloned": "cloned",

@@ -295,7 +295,7 @@ const MyListingRow = React.memo(function MyListingRow({ l, onOpen }: { l: Listin
   const t = useT();
   const tone = l.status === "approved" ? "gold" : l.status === "pending" ? "warn" : "neutral";
   return (
-    <PressableScale onPress={() => onOpen(l.id)} scaleTo={0.985} style={{ height: ROW.subscription, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: GUTTER, borderBottomWidth: 1, borderBottomColor: colors.line }}>
+    <PressableScale onPress={() => onOpen(l.id)} onPressIn={() => prefetchListing(l.id)} scaleTo={0.985} style={{ height: ROW.subscription, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: GUTTER, borderBottomWidth: 1, borderBottomColor: colors.line }}>
       <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
         <Text variant="headline" weight="700" numberOfLines={1}>
           {l.title}

@@ -4,6 +4,25 @@ import * as React from "react";
 import { useIsFocused, useRouter, type Href } from "expo-router";
 import { haptic } from "@/lib/haptics";
 import { useSession } from "@/session";
+import { useAccounts } from "@/features/trading/accounts";
+import { ccyOf, type Ccy } from "./format";
+
+/**
+ * The currency of each of the client's trading accounts (login -> USD / USC), from the shared account list. The
+ * lookup keeps its identity while the currencies stay the same, so rows that receive a currency don't redraw when
+ * an account's figures change. Unknown logins read as USD.
+ */
+export function useLoginCcy(): (login: number | null | undefined) => Ccy {
+  const data = useAccounts().data;
+  const sig = (data?.accounts ?? [])
+    .filter((a) => ccyOf(a) === "USC")
+    .map((a) => a.login)
+    .join(",");
+  return React.useMemo(() => {
+    const cents = new Set(sig ? sig.split(",").map(Number) : []);
+    return (login) => (login !== null && login !== undefined && cents.has(login) ? "USC" : "USD");
+  }, [sig]);
+}
 
 /** `ms` while this screen is the one in front, else no polling (a pushed screen stops the one below). */
 export function usePoll(ms: number | undefined): number | undefined {

@@ -8,7 +8,7 @@ import { instrument } from "@/market/instruments";
 import { Mono, PressableScale, Text } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import type { BacktestRow as Bt, Deployment, DeploymentLog, DeploymentPosition, Listing, MarketSubscription, StrategyItem, Trade } from "../api";
-import { BT_TONE, DEP_TONE, btLabel, depLabel, exitLabel, held, kindLabel, moneyTone, pct, range, rangeShort, realizedOf, tradesOf, usd, verifiedLine, type Tone } from "../format";
+import { BT_TONE, DEP_TONE, btLabel, depLabel, exitLabel, held, kindLabel, money, moneyTone, pct, range, rangeShort, realizedOf, tradesOf, usd, verifiedLine, type Ccy, type Tone } from "../format";
 import { HouseBadge, ProgressBar, Stars, SymbolTile, Tag } from "./bits";
 import { ForwardIcon } from "./chrome";
 
@@ -21,7 +21,8 @@ const rowStyle = (height: number) =>
 /* Deployments                                                         */
 /* ------------------------------------------------------------------ */
 
-export const DeploymentRow = React.memo(function DeploymentRow({ d, onOpen, onPressIn }: { d: Deployment; onOpen: (id: number) => void; onPressIn: (id: number) => void }) {
+/** One deployment: `ccy` is its account's currency (a cent account's P&L is in USC). */
+export const DeploymentRow = React.memo(function DeploymentRow({ d, ccy, onOpen, onPressIn }: { d: Deployment; ccy: Ccy; onOpen: (id: number) => void; onPressIn: (id: number) => void }) {
   const t = useT();
   const pnl = realizedOf(d);
   const status = depLabel(t, d.status);
@@ -31,7 +32,7 @@ export const DeploymentRow = React.memo(function DeploymentRow({ d, onOpen, onPr
       onPress={() => onOpen(d.id)}
       onPressIn={() => onPressIn(d.id)}
       scaleTo={0.985}
-      accessibilityLabel={[d.strategyName, status, `${d.symbol} ${d.timeframe}`, `${kindLabel(t, d.accountType)} ${d.login}`, `${t("mobileAlgo.dep.realized")} ${usd(pnl, true)}`, t("mobileAlgo.nTrades", { count: tradesOf(d) })].join(", ")}
+      accessibilityLabel={[d.strategyName, status, `${d.symbol} ${d.timeframe}`, `${kindLabel(t, d.accountType)} ${d.login}`, `${t("mobileAlgo.dep.realized")} ${money(pnl, ccy, true)}`, t("mobileAlgo.nTrades", { count: tradesOf(d) })].join(", ")}
       style={rowStyle(ROW.deployment)}
     >
       <SymbolTile symbol={d.symbol} />
@@ -45,7 +46,7 @@ export const DeploymentRow = React.memo(function DeploymentRow({ d, onOpen, onPr
       </View>
       <View style={{ alignItems: "flex-end", gap: 5 }}>
         <Mono size={16} weight="bold" tone={moneyTone(pnl)}>
-          {usd(pnl, true)}
+          {money(pnl, ccy, true)}
         </Mono>
         <Tag compact label={status} tone={DEP_TONE[d.status] ?? "neutral"} dot={d.status === "running"} />
       </View>
@@ -325,7 +326,8 @@ export const TradeRow = React.memo(function TradeRow({ x, digits }: { x: Trade; 
   );
 });
 
-export const PositionRow = React.memo(function PositionRow({ p }: { p: DeploymentPosition }) {
+/** A position a deployment opened: `ccy` is the account's currency (the engine books its profit in it). */
+export const PositionRow = React.memo(function PositionRow({ p, ccy }: { p: DeploymentPosition; ccy: Ccy }) {
   const t = useT();
   const f = useFormat();
   const digits = instrument(p.symbol).digits;
@@ -335,7 +337,7 @@ export const PositionRow = React.memo(function PositionRow({ p }: { p: Deploymen
   return (
     <View
       accessible
-      accessibilityLabel={[`#${p.ticket}`, buy ? t("common.buy") : t("common.sell"), `${p.volume}`, open ? t("mobileAlgo.dep.openNow") : exitLabel(t, p.reason), p.profit !== null ? usd(p.profit, true) : ""].join(", ")}
+      accessibilityLabel={[`#${p.ticket}`, buy ? t("common.buy") : t("common.sell"), `${p.volume}`, open ? t("mobileAlgo.dep.openNow") : exitLabel(t, p.reason), p.profit !== null ? money(p.profit, ccy, true) : ""].join(", ")}
       style={rowStyle(ROW.position)}
     >
       <View style={{ width: 56, gap: 4, alignItems: "flex-start" }}>
@@ -358,7 +360,7 @@ export const PositionRow = React.memo(function PositionRow({ p }: { p: Deploymen
         ) : (
           <>
             <Mono size={15} weight="bold" tone={moneyTone(p.profit)}>
-              {p.profit === null ? "—" : usd(p.profit, true)}
+              {p.profit === null ? "—" : money(p.profit, ccy, true)}
             </Mono>
             <Text variant="caption" tone="tertiary" numberOfLines={1}>
               {exitLabel(t, p.reason)}

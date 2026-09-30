@@ -18,7 +18,7 @@ import { KV, Note } from "../components/bits";
 import { ActionBar, FormScreen, ModalHeader } from "../components/chrome";
 import { Chip, ChipRow, Field, RadioCard, WEB_NO_RING } from "../components/controls";
 import { LoadError } from "../components/states";
-import { kindLabel, usd } from "../format";
+import { ccyOf, kindLabel, money } from "../format";
 import { useReadOnly, useTradingRestricted } from "../hooks";
 import { distanceText, sizeText } from "../spec";
 
@@ -44,6 +44,8 @@ export function DeployScreen() {
   const [lossCustom, setLossCustom] = React.useState("");
   const [ack, setAck] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
+  // one request at a time, even for two taps before the button shows its spinner
+  const inFlight = React.useRef(false);
   const [err, setErr] = React.useState<ApiError | null>(null);
   const [done, setDone] = React.useState<{ id: number } | null>(null);
 
@@ -66,13 +68,16 @@ export function DeployScreen() {
     );
   }
 
+  // the loss limit is in the account's own currency (the runtime compares it with the account's P&L): USC on a cent account
+  const ccy = ccyOf(acct);
   const equity = acct?.equity ?? 0;
   const lossAmount = lossPct === "custom" ? Number(lossCustom.replace(",", ".")) : Math.round((equity * lossPct) / 100);
   const lossOk = lossPct === 0 || (Number.isFinite(lossAmount) && lossAmount > 0);
   const ready = !!s && !!acct && s.current.valid && !readOnly && !restricted && lossOk && (!live || ack) && s.status !== "archived";
 
   const deploy = async () => {
-    if (!s || !acct || !ready || busy) return;
+    if (!s || !acct || !ready || inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     setErr(null);
     const risk: RiskLimits = {};
@@ -80,6 +85,7 @@ export function DeployScreen() {
     if (maxOpen > 0) risk.maxOpenPositions = maxOpen;
     if (lossPct !== 0 && lossAmount > 0) risk.maxDailyLoss = lossAmount;
     const r = await algoPost<{ id: number; status: string }>("deployments", { strategyId: s.id, versionId: s.current.id, login: acct.login, risk });
+    inFlight.current = false;
     setBusy(false);
     if (!r.ok) {
       setErr(r.error);
@@ -173,7 +179,7 @@ export function DeployScreen() {
                     selected={a.login === login}
                     onPress={() => setLogin(a.login)}
                     title={`${kindLabel(t, a.type)} ${a.login}`}
-                    text={`${a.groupName} · ${t("mobileAlgo.deploy.equity", { amount: usd(a.equity) })}`}
+                    text={`${a.groupName} · ${t("mobileAlgo.deploy.equity", { amount: money(a.equity, ccyOf(a)) })}`}
                   />
                 ))}
               </View>
@@ -208,7 +214,7 @@ export function DeployScreen() {
                   key={p}
                   testID={`deploy-loss-${p}`}
                   mono={p > 0}
-                  label={p === 0 ? t("mobileAlgo.deploy.off") : equity > 0 ? `${usd(Math.round((equity * p) / 100), false, 0)} · ${p}%` : `${p}%`}
+                  label={p === 0 ? t("mobileAlgo.deploy.off") : equity > 0 ? `${money(Math.round((equity * p) / 100), ccy, false, 0)} · ${p}%` : `${p}%`}
                   selected={lossPct === p}
                   disabled={p > 0 && equity <= 0}
                   onPress={() => setLossPct(p)}
@@ -227,10 +233,11 @@ export function DeployScreen() {
                 inputMode="decimal"
                 mono
                 placeholder="200"
-                error={lossOk ? null : t("mobileAlgo.deploy.lossInvalid")}
+                // nothing typed yet is not an error (the button waits for an amount)
+                error={lossOk || !lossCustom.trim() ? null : t("mobileAlgo.deploy.lossInvalid")}
                 trailing={
                   <Text variant="callout" tone="tertiary">
-                    {acct?.currency ?? "USD"}
+                    {ccy}
                   </Text>
                 }
               />

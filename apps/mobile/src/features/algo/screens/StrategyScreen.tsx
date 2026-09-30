@@ -17,8 +17,8 @@ import { DeploymentCard } from "../components/DeploymentCard";
 import { CodeDisclosure, RiskRows, RulesBody } from "../components/Rules";
 import { BacktestRow } from "../components/rows";
 import { BlockSkeleton, LoadError, RowsSkeleton } from "../components/states";
-import { day, moneyTone, originLabel, pct, range, ratio, usd } from "../format";
-import { useBack, usePoll, useReadOnly } from "../hooks";
+import { day, moneyTone, originLabel, pct, range, ratio, usd, type Ccy } from "../format";
+import { useBack, useLoginCcy, usePoll, useReadOnly } from "../hooks";
 import { BacktestSheet, type BacktestSheetRef, type BacktestTarget } from "../sheets/BacktestSheet";
 import { ConfirmSheet, type ConfirmSpec } from "../sheets/ConfirmSheet";
 import { DeploymentSheet, type DeploymentAction, type DeploymentSheetRef } from "../sheets/DeploymentSheet";
@@ -39,6 +39,7 @@ export function StrategyScreen() {
   const [confirm, setConfirm] = React.useState<ConfirmSpec | null>(null);
 
   const s = q.data;
+  const ccyOf = useLoginCcy();
   const openDep = React.useCallback((depId: number) => router.push(`/algo/deployments/${depId}`), [router]);
   const openBt = React.useCallback((btId: number) => router.push(`/algo/backtests/${btId}`), [router]);
   const onAction = React.useCallback((d: Deployment, a: DeploymentAction) => depSheet.current?.open(d, a), []);
@@ -99,7 +100,7 @@ export function StrategyScreen() {
           <RowsSkeleton rows={3} />
         </View>
       ) : (
-        <StrategyBody s={s} readOnly={readOnly} onOpenDep={openDep} onOpenBt={openBt} onAction={onAction} onBacktest={openBacktest} onDeploy={goDeploy} />
+        <StrategyBody s={s} readOnly={readOnly} ccyOf={ccyOf} onOpenDep={openDep} onOpenBt={openBt} onAction={onAction} onBacktest={openBacktest} onDeploy={goDeploy} />
       )}
       <DeploymentSheet ref={depSheet} onChanged={() => void q.refresh()} />
       <BacktestSheet ref={btSheet} onStarted={openBt} />
@@ -114,6 +115,7 @@ const versionOf = (s: StrategyDetail, versionId: number) => s.versions.find((v) 
 const StrategyBody = React.memo(function StrategyBody({
   s,
   readOnly,
+  ccyOf,
   onOpenDep,
   onOpenBt,
   onAction,
@@ -122,6 +124,8 @@ const StrategyBody = React.memo(function StrategyBody({
 }: {
   s: StrategyDetail;
   readOnly: boolean;
+  /** the currency of an account (a cent account's P&L is in USC) */
+  ccyOf: (login: number) => Ccy;
   onOpenDep: (id: number) => void;
   onOpenBt: (id: number) => void;
   onAction: (d: Deployment, a: DeploymentAction) => void;
@@ -196,7 +200,7 @@ const StrategyBody = React.memo(function StrategyBody({
         <SectionTitle title={t("mobileAlgo.strat.deployments")} sub={t("mobileAlgo.strat.deploymentsSub", { count: s.deployments.length })} />
         <View style={{ paddingHorizontal: GUTTER, gap: space[3] }}>
           {s.deployments.length ? (
-            s.deployments.map((d) => <DeploymentCard key={d.id} d={d} readOnly={readOnly} onOpen={onOpenDep} onPressIn={prefetchDeployment} onAction={onAction} />)
+            s.deployments.map((d) => <DeploymentCard key={d.id} d={d} ccy={ccyOf(d.login)} readOnly={readOnly} onOpen={onOpenDep} onPressIn={prefetchDeployment} onAction={onAction} />)
           ) : (
             <Card style={{ gap: space[3] }}>
               <Text tone="secondary">{t("mobileAlgo.strat.notRunning")}</Text>

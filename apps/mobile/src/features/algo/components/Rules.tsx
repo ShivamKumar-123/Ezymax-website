@@ -8,7 +8,7 @@ import { useFormat, useT } from "@/i18n";
 import { Mono, PressableScale, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import type { RiskSpec, SignalKey, StrategySpec, Summary } from "../api";
-import { usd, weekday, type Tone } from "../format";
+import { money, weekday, type Ccy, type Tone } from "../format";
 import { riskRows, specSignals, summarySignals } from "../spec";
 import { KV, Tag } from "./bits";
 
@@ -59,14 +59,15 @@ export function RulesBody({ spec, summary, kind }: { spec?: StrategySpec | null;
   );
 }
 
-/** Size, stop, target, trailing, trading window and daily limits as label / value rows. */
-export function RiskRows({ risk }: { risk: RiskSpec }) {
+/** Size, stop, target, trailing, trading window and daily limits as label / value rows. The daily loss limit is in
+ *  the account's currency when the rules run on one (`ccy`: a deployment on a cent account), else in USD. */
+export function RiskRows({ risk, ccy = "USD" }: { risk: RiskSpec; ccy?: Ccy }) {
   const t = useT();
   const f = useFormat();
   const rows = riskRows(
     t,
     risk,
-    (v) => usd(v, false, 0),
+    (v) => money(v, ccy, false, 0),
     (d) => weekday(f, d),
   );
   return (

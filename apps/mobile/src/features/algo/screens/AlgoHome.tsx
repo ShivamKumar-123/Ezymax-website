@@ -18,8 +18,8 @@ import { Note, SectionTitle } from "../components/bits";
 import { ForwardIcon, TopBar } from "../components/chrome";
 import { BacktestRow, DeploymentRow, StrategyRow } from "../components/rows";
 import { LoadError, RowSkeleton } from "../components/states";
-import { isLive, realizedOf, tradesOf, usd } from "../format";
-import { useBack, usePoll, usePullRefresh, useReadOnly } from "../hooks";
+import { isLive, realizedOf, toUsd, tradesOf, usd } from "../format";
+import { useBack, useLoginCcy, usePoll, usePullRefresh, useReadOnly } from "../hooks";
 import { KillAllSheet, type KillAllRef } from "../sheets/KillAllSheet";
 import { openClientArea } from "../web";
 
@@ -62,11 +62,13 @@ export function AlgoHome() {
   const openStrat = React.useCallback((id: number) => router.push(`/algo/strategies/${id}`), [router]);
   const openBt = React.useCallback((id: number) => router.push(`/algo/backtests/${id}`), [router]);
 
+  // a cent account's P&L is in USC: rows show it as it is, the total adds everything up in USD
+  const ccyOf = useLoginCcy();
   const all = deps.data?.items ?? [];
   const active = all.filter((d) => isLive(d.status));
   const running = all.filter((d) => d.status === "running").length;
   const shownDeps = filter === "active" ? active : all;
-  const realized = all.reduce((a, d) => a + realizedOf(d), 0);
+  const realized = all.reduce((a, d) => a + toUsd(realizedOf(d), ccyOf(d.login)), 0);
   const openPos = active.reduce((a, d) => a + (d.openPositions || Number(d.stats?.open ?? 0)), 0);
   const closedTrades = all.reduce((a, d) => a + tradesOf(d), 0);
   const killed = !!controls.data?.killed;
@@ -155,7 +157,7 @@ export function AlgoHome() {
         case "filter":
           return <FilterRow filter={filter} nActive={nActive} nAll={nAll} onActive={onActive} onAll={onAll} />;
         case "dep":
-          return <DeploymentRow d={item.d} onOpen={openDep} onPressIn={prefetchDeployment} />;
+          return <DeploymentRow d={item.d} ccy={ccyOf(item.d.login)} onOpen={openDep} onPressIn={prefetchDeployment} />;
         case "strat":
           return <StrategyRow s={item.s} onOpen={openStrat} onPressIn={prefetchStrategy} />;
         case "bt":
@@ -181,7 +183,7 @@ export function AlgoHome() {
           return <View style={{ height: space[10] }} />;
       }
     },
-    [filter, nActive, nAll, onActive, onAll, onSection, openDep, openStrat, openBt, readOnly, onAi, onMarket],
+    [filter, nActive, nAll, onActive, onAll, onSection, openDep, openStrat, openBt, readOnly, onAi, onMarket, ccyOf],
   );
 
   // the algo module is off, the session can't see it, or nothing loaded while offline: one full-screen state

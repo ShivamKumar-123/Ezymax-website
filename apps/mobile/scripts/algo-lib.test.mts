@@ -8,7 +8,7 @@ import { createT } from "@kalks/i18n/core";
 import { createFormatter } from "@kalks/i18n/format";
 import type { Condition, Operand, RuleSet, StrategySpec } from "../src/features/algo/api.ts";
 import { downsample, isoMinute } from "../src/features/algo/components/chart/types.ts";
-import { held, int, moneyTone, num, pct, rangeShort, ratio, realizedOf, stageText, usd, winRateOf } from "../src/features/algo/format.ts";
+import { ccyOf, held, int, money, moneyTone, num, pct, rangeShort, ratio, realizedOf, stageText, toUsd, usd, winRateOf } from "../src/features/algo/format.ts";
 import { share } from "../src/features/algo/share.ts";
 import { conditionText, defaultPeriod, distanceText, limitsText, maxDays, noteText, operandText, periodRange, periodsFor, riskRows, ruleLines, sizeText, specSignals, summarySignals, trailingText, windowText } from "../src/features/algo/spec.ts";
 
@@ -172,6 +172,18 @@ test("money, percentages and ratios: Latin digits, a real minus sign, no -0.00",
   assert.equal(realizedOf({ stats: { realized: 12.5 } }), 12.5);
   assert.equal(winRateOf({ stats: { trades: 4, wins: 1 } }), 25);
   assert.equal(winRateOf({ stats: {} }), null);
+});
+
+test("account money in its own currency: a cent account's P&L is USC, totals add up in USD", () => {
+  assert.equal(ccyOf({ cent: true, currency: "USC" }), "USC");
+  assert.equal(ccyOf({ cent: false, currency: "USC" }), "USC");
+  assert.equal(ccyOf({ cent: false, currency: "USD" }), "USD");
+  assert.equal(ccyOf(undefined), "USD");
+  assert.equal(money(-60, "USC", true), "−¢60.00");
+  assert.equal(money(1_000_000, "USC", false, 0), "¢1,000,000");
+  assert.equal(money(-0.6, "USD", true), "−$0.60");
+  // the Algo home's total: −0.60 USD on a standard account and −60 USC on a cent account are −1.20 USD, not −60.60
+  assert.equal(toUsd(-0.6, "USD") + toUsd(-60, "USC"), -1.2);
 });
 
 test("trade durations and ranges, compact", () => {

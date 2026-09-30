@@ -12,7 +12,7 @@ import { useFormat, useT } from "@/i18n";
 import { useQuery } from "@/lib/query";
 import { instrument } from "@/market/instruments";
 import { useGroups } from "@/features/trading/accounts";
-import { Banner, Button, Card, Display, Mono, Pill, Screen, Text, useBottomInset } from "@/ui";
+import { Banner, Button, Card, Display, Mono, Pill, Screen, Text, toast, useBottomInset } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { algoPost, fetchers, keys, refreshAlgo, seedReport, validId, type BacktestDetail, type Report, type Trade } from "../api";
 import { KV, Note, ProgressBar, SectionTitle, StatGrid, Tag, tint } from "../components/bits";
@@ -60,20 +60,32 @@ export function BacktestScreen() {
     return out;
   }, [report, filter]);
 
+  // stable callbacks for the memoised header: a poll or a trade filter change never redraws the report above the list
+  const current = React.useRef(d);
+  current.current = d;
+  const refresh = q.refresh;
   const runAgain = React.useCallback(() => {
-    if (!d || !d.strategyId) return;
-    sheet.current?.open({ strategyId: d.strategyId, versionId: d.versionId, version: d.version ?? 0, name: d.strategyName ?? `#${d.strategyId}`, symbol: d.params.symbol, timeframe: d.params.timeframe, valid: true });
-  }, [d]);
+    const x = current.current;
+    if (!x || !x.strategyId) return;
+    sheet.current?.open({ strategyId: x.strategyId, versionId: x.versionId, version: x.version ?? 0, name: x.strategyName ?? `#${x.strategyId}`, symbol: x.params.symbol, timeframe: x.params.timeframe, valid: true });
+  }, []);
   const openNew = React.useCallback((newId: number) => router.push(`/algo/backtests/${newId}`), [router]);
 
-  const cancel = async () => {
-    if (!d || cancelling) return;
+  const cancelling_ = React.useRef(false);
+  const cancel = React.useCallback(async () => {
+    const x = current.current;
+    if (!x || cancelling_.current) return;
+    cancelling_.current = true;
     setCancelling(true);
-    await algoPost(`backtests/${d.id}/cancel`, {});
+    const r = await algoPost(`backtests/${x.id}/cancel`, {});
+    cancelling_.current = false;
     setCancelling(false);
+    // refused (it finished meanwhile, the service is down): say so; the report shows the job's real state
+    if (!r.ok) toast.show({ title: r.error.message, tone: "error" });
     refreshAlgo();
-    void q.refresh();
-  };
+    void refresh();
+  }, [refresh]);
+  const onCancel = React.useCallback(() => void cancel(), [cancel]);
 
   if (!id || (!d && q.error)) {
     return (
@@ -94,7 +106,7 @@ export function BacktestScreen() {
           <ChartSkeleton height={curveHeight(EQUITY_LAYOUT, true)} style={{ marginHorizontal: GUTTER }} />
         </View>
       ) : (
-        <ReportHeader d={d} width={screenW - GUTTER * 2} readOnly={readOnly} cancelling={cancelling} onCancel={() => void cancel()} onRunAgain={runAgain} />
+        <ReportHeader d={d} width={screenW - GUTTER * 2} readOnly={readOnly} cancelling={cancelling} onCancel={onCancel} onRunAgain={runAgain} />
       )}
     </View>
   );
@@ -375,7 +387,9 @@ function Statistics({ d, r }: { d: BacktestDetail; r: Report }) {
 
 function TradesTitle({ r, filter, onFilter }: { r: Report; filter: Filter; onFilter: (f: Filter) => void }) {
   const t = useT();
-  const wins = r.metrics.wins;
+  // counted on the list itself (the same rule as the filter: a win is a positive net): a report over 5,000 trades
+  // lists only the first 5,000, while its metrics count them all
+  const wins = React.useMemo(() => r.trades.reduce((n, x) => n + (x.net > 0 ? 1 : 0), 0), [r.trades]);
   const all = r.trades.length;
   return (
     <View style={{ gap: space[3], paddingBottom: space[2] }} testID="bt-trades">
@@ -394,8 +408,9 @@ function TradesTitle({ r, filter, onFilter }: { r: Report; filter: Filter; onFil
   );
 }
 
-/** What history and costs the simulation used (the web's "Data & costs" tab). */
-function DataAndCosts({ d, r }: { d: BacktestDetail; r: Report }) {
+/** What history and costs the simulation used (the web's "Data & costs" tab). Memoised: a trade filter change
+ *  doesn't redraw it. */
+const DataAndCosts = React.memo(function DataAndCosts({ d, r }: { d: BacktestDetail; r: Report }) {
   const t = useT();
   const f = useFormat();
   const groups = useGroups();
@@ -427,6 +442,6 @@ function DataAndCosts({ d, r }: { d: BacktestDetail; r: Report }) {
       </View>
     </View>
   );
-}
+});
 
 export default BacktestScreen;

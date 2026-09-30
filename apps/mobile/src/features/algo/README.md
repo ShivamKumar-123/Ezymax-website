@@ -39,7 +39,17 @@ links for `/developer/*` resolve to `/algo` (`src/features/platform/links.ts`).
   client's trading restrictions); deploying itself doesn't trade, so the deploy form only shows the restriction notice.
 - Paid subscriptions are charged from the wallet by the service (idempotent per period, author credited minus the
   platform cut, refunded when the copy can't start). No step-up code: the web charges the same way.
+- The subscribe request itself takes no idempotency key, so the app sends one at a time (a ref guard, not only the
+  spinner) and treats a lost answer (no connection, timeout, 502 / 503 / 504) as "may have gone through": the button
+  stays locked while the listing is re-read every 3 s until the new subscription shows up active (the done screen),
+  cancelled (it failed; a charge is refunded by the service) or nothing new arrives within 30 s (then a retry is
+  offered). A new subscription still being set up is checked for up to 60 s; after that the app says so and offers
+  no retry while it is the latest one.
 - Never optimistic: every sheet and form shows the server's answer (closed / couldn't close counts, charged amount).
+- Money is in the account's own currency: the engine and the runtime book a cent account's P&L, starting balance and
+  loss limits in USC, so deployments, positions, the deploy form (equity, loss limit chips) and the subscribe form
+  show them with ¢ (`money(v, ccy)`, `useLoginCcy()` from the shared account list), and the Algo home adds realized
+  P&L up in USD (USC ÷ 100). Backtests are always in USD (the backtester converts).
 
 ## Data
 
@@ -61,6 +71,24 @@ deployments, backtests, trades and logs. Green / red only for money (P&L, return
 Flat fills only. Charts (`components/chart`): one Skia canvas for the equity / drawdown pair and the single line
 curves, scrubbed on the UI thread (pan, touch-and-hold, tap) with a Latin-digit tooltip; always left to right.
 
+## Review fixes (independent review, 2026-09-30)
+
+- Cent (USC) accounts: every account amount in its currency; the home total in USD (it added USC to USD before).
+- The deployment screen gives the sheets the real open position count (the service's detail answer always says 0):
+  Stop offers keep / close again, and Close names the positions.
+- "Close positions" gets a full-width row, and every confirmation sheet stacks its buttons full width (no truncated
+  labels on a 360 pt phone or in a longer language).
+- The report header's callbacks are stable, so a trade filter tap redraws only the list (the header, chart, monthly
+  grid, statistics and data sections keep their props); the data section is memoised too. A refused Cancel shows why.
+- Paid subscriptions: one request at a time and the lost-answer check above; "insufficient funds" re-reads the wallet
+  (the Deposit banner appears); a copy is refused under a trading restriction, like Deploy.
+- Deploy: the loss limit chips and the custom field in the account's currency; no error before anything is typed.
+- Stopping or killing a marketplace copy says the subscription keeps running (and renewing); a copy's deployment
+  links to the subscriptions. Setup shows the limits the runtime applies (the smaller of the deployment's and the
+  strategy's daily loss and lot caps; 1 open position for one-at-a-time rules, else the cap or 5).
+- The reports kept on the phone: the index is read when it is written, so two reports kept in a row both stay listed
+  (sign-out clears by it), and nothing is written after the user changed.
+
 ## Measured (web preview, 390 × 844, local stack, 2026-09-30)
 
 | What | Result |
@@ -71,6 +99,12 @@ curves, scrubbed on the UI thread (pan, touch-and-hold, tap) with a Latin-digit 
 | Report trade list fast scroll | 60 fps, p95 frame 16.8 ms, 0 dropped |
 | Equity chart scrub | 0 React commits; 54–57 fps (headless Chromium draws WebGL on the CPU) |
 | Deployment idle with 5 s polls | 29 fibers per commit |
+
+Re-measured in the review (same preview, load average 5–8): home idle with polls 0 commits in 12 s; home scroll 60 fps,
+p95 16.8 ms, 0 dropped; report trade list 60 fps, p95 16.7 ms, 0 dropped; chart scrub 0 React commits (57 fps, CPU
+WebGL); deployment idle with 5 s polls 0 commits in 11 s. A trade filter tap re-renders only the list: comparing every
+report node's props before and after the tap, the hero, chart, monthly grid, statistics and data sections are
+unchanged (the fiber counter above over-counts a filter tap: it reports the whole header).
 
 ## Testing
 
@@ -88,3 +122,9 @@ curves, scrubbed on the UI thread (pan, touch-and-hold, tap) with a Latin-digit 
   and custom date ranges are web-only.
 - Strings are English; the translation pass adds the other 21 languages (`mobileAlgo`).
 - Runtime log messages and the backtest model / notes are the service's English text.
+- Server side (not changed here): the service's subscribe checks "already subscribed" before it inserts and charges,
+  with no lock or idempotency key, so two simultaneous requests could both charge a paid listing. The app never sends
+  two; the web disables its button while busy. A per-user lock (or an idempotency key) in `services/algo`
+  `market::subscribe` would close it for every client.
+- A marketplace track record from an author's cent account is shown in $ (the listing doesn't say the account's
+  currency); the return and drawdown percentages are right either way.

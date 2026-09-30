@@ -68,14 +68,18 @@ export const BacktestSheet = React.forwardRef<BacktestSheetRef, { onStarted: (id
   const amountOk = Number.isFinite(amount) && amount >= 100 && amount <= 10_000_000;
   const costsOk = costs === "group" ? !!group : login !== null;
 
+  // one request at a time: a double tap never queues two backtests
+  const inFlight = React.useRef(false);
   const start = async () => {
-    if (!target || busy || !amountOk || !costsOk) return;
+    if (!target || inFlight.current || !amountOk || !costsOk) return;
+    inFlight.current = true;
     setBusy(true);
     setErr(null);
     const body: Record<string, unknown> = { strategyId: target.strategyId, versionId: target.versionId, from, to, initialBalance: amount };
     if (costs === "account" && login !== null) body.login = login;
     else body.group = group;
     const r = await algoPost<{ id: number; status: BacktestStatus }>("backtests", body);
+    inFlight.current = false;
     setBusy(false);
     if (!r.ok) {
       setErr(r.error);

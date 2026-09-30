@@ -48,12 +48,16 @@ export const KillAllSheet = React.forwardRef<KillAllRef, { running: number }>(fu
 
   const dismiss = () => sheet.current?.dismiss();
 
+  // one request at a time, even for two taps before the button shows its spinner
+  const inFlight = React.useRef(false);
   const run = async () => {
-    if (busy) return;
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     setErr(null);
     const kill = mode === "kill";
     const r = await algoPost<Partial<Result>>("controls/kill", { killed: kill, closePositions: kill && close }, 120_000);
+    inFlight.current = false;
     setBusy(false);
     if (!r.ok) {
       setErr(r.error);
@@ -101,9 +105,9 @@ export const KillAllSheet = React.forwardRef<KillAllRef, { running: number }>(fu
           </View>
           <SwitchRow testID="kill-all-close" title={t("mobileAlgo.kill.alsoClose")} hint={t("mobileAlgo.kill.alsoCloseHint")} value={close} onChange={setClose} />
           <FormError message={err?.message} />
-          <View style={{ flexDirection: "row", gap: space[3] }}>
-            <Button label={t("common.cancel")} variant="ghost" size="md" full={false} style={{ flex: 1 }} disabled={busy} onPress={dismiss} />
-            <Button testID="kill-confirm" label={t("mobileAlgo.kill.confirm")} variant="danger" size="md" full={false} style={{ flex: 1 }} loading={busy} onPress={() => void run()} />
+          <View style={{ gap: space[2] }}>
+            <Button testID="kill-confirm" label={t("mobileAlgo.kill.confirm")} variant="danger" size="md" loading={busy} onPress={() => void run()} />
+            <Button label={t("common.cancel")} variant="ghost" size="md" disabled={busy} onPress={dismiss} />
           </View>
         </View>
       ) : (
@@ -113,9 +117,9 @@ export const KillAllSheet = React.forwardRef<KillAllRef, { running: number }>(fu
             <Text tone="secondary">{t("mobileAlgo.kill.releaseBody")}</Text>
           </View>
           <FormError message={err?.message} />
-          <View style={{ flexDirection: "row", gap: space[3] }}>
-            <Button label={t("common.cancel")} variant="ghost" size="md" full={false} style={{ flex: 1 }} disabled={busy} onPress={dismiss} />
-            <Button testID="release-confirm" label={t("mobileAlgo.kill.release")} size="md" full={false} style={{ flex: 1 }} loading={busy} onPress={() => void run()} />
+          <View style={{ gap: space[2] }}>
+            <Button testID="release-confirm" label={t("mobileAlgo.kill.release")} size="md" loading={busy} onPress={() => void run()} />
+            <Button label={t("common.cancel")} variant="ghost" size="md" disabled={busy} onPress={dismiss} />
           </View>
         </View>
       )}

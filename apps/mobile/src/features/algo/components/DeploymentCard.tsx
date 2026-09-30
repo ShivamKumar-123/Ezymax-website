@@ -8,19 +8,22 @@ import { useFormat, useT } from "@/i18n";
 import { Mono, PressableScale, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import type { Deployment } from "../api";
-import { DEP_TONE, ago, depLabel, isLive, kindLabel, moneyTone, pct, realizedOf, tradesOf, usd, winRateOf } from "../format";
+import { DEP_TONE, ago, depLabel, isLive, kindLabel, money, moneyTone, pct, realizedOf, tradesOf, winRateOf, type Ccy } from "../format";
 import type { DeploymentAction } from "../sheets/DeploymentSheet";
 import { Tag } from "./bits";
 import { ForwardIcon } from "./chrome";
 
 export const DeploymentCard = React.memo(function DeploymentCard({
   d,
+  ccy,
   readOnly,
   onOpen,
   onPressIn,
   onAction,
 }: {
   d: Deployment;
+  /** the account's currency (a cent account's P&L is in USC) */
+  ccy: Ccy;
   readOnly: boolean;
   onOpen: (id: number) => void;
   onPressIn: (id: number) => void;
@@ -38,7 +41,7 @@ export const DeploymentCard = React.memo(function DeploymentCard({
         onPress={() => onOpen(d.id)}
         onPressIn={() => onPressIn(d.id)}
         scaleTo={0.985}
-        accessibilityLabel={[depLabel(t, d.status), `${kindLabel(t, d.accountType)} ${d.login}`, `v${d.version}`, `${t("mobileAlgo.dep.realized")} ${usd(pnl, true)}`].join(", ")}
+        accessibilityLabel={[depLabel(t, d.status), `${kindLabel(t, d.accountType)} ${d.login}`, `v${d.version}`, `${t("mobileAlgo.dep.realized")} ${money(pnl, ccy, true)}`].join(", ")}
         style={{ padding: space[5], gap: space[4] }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
@@ -54,7 +57,7 @@ export const DeploymentCard = React.memo(function DeploymentCard({
               {t("mobileAlgo.dep.realized")}
             </Text>
             <Mono size={26} weight="bold" tone={moneyTone(pnl)} numberOfLines={1} adjustsFontSizeToFit>
-              {usd(pnl, true)}
+              {money(pnl, ccy, true)}
             </Mono>
           </View>
           <Mini label={t("mobileAlgo.dep.trades")} value={String(tradesOf(d))} />

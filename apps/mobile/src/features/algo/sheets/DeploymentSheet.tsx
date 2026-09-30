@@ -10,7 +10,7 @@ import { haptic } from "@/lib/haptics";
 import { Banner, Button, Display, FormError, Sheet, Text, type SheetRef } from "@/ui";
 import { space } from "@/theme/tokens";
 import { algoPost, refreshAlgo, type ActionResult, type Deployment } from "../api";
-import { StatGrid } from "../components/bits";
+import { Note, StatGrid } from "../components/bits";
 import { RadioCard, SwitchRow } from "../components/controls";
 import { kindLabel } from "../format";
 
@@ -55,8 +55,11 @@ export const DeploymentSheet = React.forwardRef<DeploymentSheetRef, { onChanged?
   const dismiss = () => sheet.current?.dismiss();
   const open = dep?.openPositions ?? 0;
 
+  // one request at a time, even for two taps before the button shows its spinner
+  const inFlight = React.useRef(false);
   const run = async () => {
-    if (!dep || busy) return;
+    if (!dep || inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     setErr(null);
     const path = action === "close" ? "close-positions" : action;
@@ -64,6 +67,7 @@ export const DeploymentSheet = React.forwardRef<DeploymentSheetRef, { onChanged?
     // closing positions is a money moment (like a close in the Trade tab): the only one here that gets haptics
     const closing = action === "close" || ((action === "stop" || action === "kill") && close);
     const r = await algoPost<ActionResult>(`deployments/${dep.id}/${path}`, body, action === "kill" || action === "stop" || action === "close" ? 60_000 : 30_000);
+    inFlight.current = false;
     setBusy(false);
     if (!r.ok) {
       setErr(r.error);
@@ -164,10 +168,12 @@ export const DeploymentSheet = React.forwardRef<DeploymentSheetRef, { onChanged?
             </View>
           ) : null}
           {action === "kill" ? <SwitchRow testID="kill-close" title={t("mobileAlgo.ctl.killClose")} hint={t("mobileAlgo.ctl.killCloseHint")} value={close} onChange={setClose} /> : null}
+          {(action === "stop" || action === "kill") && dep.subscriptionId ? <Note>{t("mobileAlgo.ctl.copyNote")}</Note> : null}
           <FormError message={err?.message} />
-          <View style={{ flexDirection: "row", gap: space[3] }}>
-            <Button label={t("common.cancel")} variant="ghost" size="md" full={false} style={{ flex: 1 }} disabled={busy} onPress={dismiss} />
-            <Button testID="dep-action-confirm" label={confirm} variant={danger ? "danger" : "primary"} size="md" full={false} style={{ flex: 1 }} loading={busy} onPress={() => void run()} />
+          {/* stacked full width, like every confirmation: "Close positions" fits in any language */}
+          <View style={{ gap: space[2] }}>
+            <Button testID="dep-action-confirm" label={confirm} variant={danger ? "danger" : "primary"} size="md" loading={busy} onPress={() => void run()} />
+            <Button label={t("common.cancel")} variant="ghost" size="md" disabled={busy} onPress={dismiss} />
           </View>
         </View>
       )}

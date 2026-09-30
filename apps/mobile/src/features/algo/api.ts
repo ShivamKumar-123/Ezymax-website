@@ -751,10 +751,12 @@ const indexKey = (uid: number) => `algo.bt.idx.${uid}`;
 function keepReport(d: BacktestDetail) {
   const uid = userId();
   if (uid === null || d.status !== "done" || !d.report || d.report.trades.length > REPORT_MAX_TRADES) return;
-  const idx = kv.getJSON<number[]>(indexKey(uid)) ?? [];
-  if (idx.includes(d.id)) return;
+  if ((kv.getJSON<number[]>(indexKey(uid)) ?? []).includes(d.id)) return;
   // written after the screen settles: a report can be a few hundred kB
   InteractionManager.runAfterInteractions(() => {
+    // the index is read here, not before: two reports kept in a row must both stay listed (sign-out clears by it)
+    if (userId() !== uid) return;
+    const idx = kv.getJSON<number[]>(indexKey(uid)) ?? [];
     kv.setJSON(reportKey(uid, d.id), d);
     const next = [d.id, ...idx.filter((x) => x !== d.id)];
     for (const old of next.slice(REPORTS_KEPT)) kv.remove(reportKey(uid, old));

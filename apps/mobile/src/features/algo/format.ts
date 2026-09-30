@@ -10,6 +10,17 @@ export type Tone = "neutral" | "ember" | "gold" | "sand" | "cream" | "up" | "dow
 /** USD with a sign when asked: "+$1,234.50", "−$12.00". */
 export const usd = (v: number | null | undefined, signed = false, decimals = 2) => fmtMoney(v, { currency: "USD", signed, decimals });
 
+/** A trading account's currency: cent accounts keep their money in US cents (USC), every other account in USD. */
+export type Ccy = "USD" | "USC";
+export const ccyOf = (a: { cent?: boolean; currency?: string } | null | undefined): Ccy => (a && (a.cent || a.currency === "USC") ? "USC" : "USD");
+
+/** An amount in its account's currency: "+$12.40" on a USD account, "−¢1,240.00" on a cent account. Deployment P&L,
+ *  starting balances and loss limits are booked in the account's own currency by the engine and the runtime. */
+export const money = (v: number | null | undefined, ccy: Ccy, signed = false, decimals = 2) => fmtMoney(v, { currency: ccy, signed, decimals });
+
+/** The USD value of an account amount (a cent account's USC ÷ 100), to add up amounts across accounts. */
+export const toUsd = (v: number, ccy: Ccy) => (ccy === "USC" ? v / 100 : v);
+
 /** A percentage with a real minus sign: "+2.11%", "−3.13%" (unsigned: "24.14%"). */
 export const pct = (v: number | null | undefined, decimals = 2, signed = true) => fmtPct(v, decimals, signed);
 
