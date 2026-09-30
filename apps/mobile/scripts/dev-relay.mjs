@@ -2,6 +2,7 @@
 // so a phone running Expo Go can use the local services with a single EXPO_PUBLIC_API_BASE.
 //
 //   /api/*          -> Client Area BFF      127.0.0.1:3000   (the /api/mobile/* routes)
+//   /s/*, /r/*      -> Client Area          127.0.0.1:3000   (share cards, referral links the app shows)
 //   /v1/*  (+ WS)   -> market-data          127.0.0.1:8081   (quotes, candles, /v1/stream)
 //   /engine/stream  -> trading engine WS    127.0.0.1:8090   /v1/terminal/stream
 //   /support/stream -> support WS           127.0.0.1:8100   /v1/stream
@@ -24,6 +25,8 @@ const WEB = join(here, "..", process.env.RELAY_WEB_DIR ?? "dist-web");
 
 function target(path) {
   if (path.startsWith("/api/")) return { port: 3000, path };
+  // the Client Area's public pages the app links to: share cards (/s/<code>, /s/<code>/image) and referral links
+  if (path.startsWith("/s/") || path.startsWith("/r/")) return { port: 3000, path };
   if (path.startsWith("/v1/")) return { port: 8081, path };
   if (path.startsWith("/engine/stream")) return { port: 8090, path: path.replace("/engine/stream", "/v1/terminal/stream") };
   if (path.startsWith("/support/stream")) return { port: 8100, path: path.replace("/support/stream", "/v1/stream") };
