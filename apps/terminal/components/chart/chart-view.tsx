@@ -235,6 +235,29 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
     // flat list of every number the overlays depend on: a frame where none changed costs no React render
     let prev: (number | string | null)[] = [];
     const sig: (number | string | null)[] = [];
+    // DOM sizes are read when they change (ResizeObserver), never per frame: reading layout in the frame loop
+    // forced a synchronous layout per chart per frame while ticks were mutating the page
+    let w = el.current?.clientWidth ?? 0;
+    let pt: number[] = [0];
+    let observed: HTMLElement[] = [];
+    const measure = () => {
+      w = el.current?.clientWidth ?? 0;
+      const panes = engine.chart.panes();
+      if (panes.length > 1) {
+        // pane tops (px from the chart's top) for the oscillator sub-window legends
+        const top0 = el.current?.getBoundingClientRect().top ?? 0;
+        pt = panes.map((p) => Math.round((p.getHTMLElement()?.getBoundingClientRect().top ?? top0) - top0));
+      } else pt = [0];
+    };
+    const ro = new ResizeObserver(measure);
+    const observe = () => {
+      ro.disconnect();
+      observed = engine.chart.panes().map((p) => p.getHTMLElement()).filter((x): x is HTMLElement => !!x);
+      if (el.current) ro.observe(el.current);
+      observed.forEach((x) => ro.observe(x));
+      measure();
+    };
+    observe();
     const loop = () => {
       if (!engine.alive.current) return;
       const ys: Record<string, number | null> = {};
@@ -260,15 +283,8 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
       const psw = engine.chart.priceScale("right").width();
       const pane0 = engine.chart.panes()[0];
       const h = pane0 ? pane0.getHeight() : 0;
-      const w = el.current?.clientWidth ?? 0;
-      // pane tops (px from the chart's top) for the oscillator sub-window legends
-      // (only charts with oscillator sub-windows need their layout read)
-      const panes = engine.chart.panes();
-      let pt: number[] = [0];
-      if (panes.length > 1) {
-        const top0 = el.current?.getBoundingClientRect().top ?? 0;
-        pt = panes.map((p) => Math.round((p.getHTMLElement()?.getBoundingClientRect().top ?? top0) - top0));
-      }
+      // oscillator panes added or removed: watch the new pane elements (re-measures)
+      if (engine.chart.panes().length !== observed.length) observe();
       sig.length = 0;
       sig.push(psw, w, h, pt.length, ...pt);
       for (const k in ys) sig.push(k, ys[k]!);
@@ -287,7 +303,10 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
   }, [engine]);
 
   /* ---------------- helpers ---------------- */
