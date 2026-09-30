@@ -19,7 +19,10 @@ export const colors = {
   text3: "#85858F",
   /** Text on colour blocks (every block colour is light enough for ink text) */
   ink: "#0E0E12",
-  ink2: "rgba(14,14,18,0.66)",
+  /** Secondary text on colour blocks: 78 % ink is at least 4.5:1 on every block colour (ember 4.7, light ember 5.7,
+   *  gold 6.7, sand 8.0, off-white 9.3); the modules' `inkSoft` is the same shade */
+  ink2: "rgba(14,14,18,0.78)",
+  /** Not for text (under 3:1 on the blocks): hairlines and inactive marks on a block */
   ink3: "rgba(14,14,18,0.44)",
 
   /** Kalks ember (web --k-ember) */
