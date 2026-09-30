@@ -6,6 +6,7 @@ import * as React from "react";
 import { apiGet, apiPost, type ApiError, type ApiResult } from "@/lib/api";
 import { invalidate, prefetch, useQuery } from "@/lib/query";
 import { i18n, type MessageKey } from "@/i18n";
+import { useSession } from "@/session";
 import type { Certificate, Challenge, ChallengeDetail, EquityPoint, Payout, PayoutsData, Plan, PlanType, PurchaseResult, Trade } from "./types";
 
 /* ------------------------------------------------------------------ */
@@ -75,6 +76,16 @@ export function useStable<T>(value: T): T {
   return ref.current.v;
 }
 
+/**
+ * A view-only login (D90) or a read-only staff session ("Log in as client"): the screens keep every number but no
+ * purchase or payout request is offered (the proxy refuses them with viewer_read_only / staff_read_only anyway).
+ */
+export function useReadOnly(): boolean {
+  const viewer = useSession((s) => !!s.viewer);
+  const staffReadOnly = useSession((s) => (s.user as { impersonation?: { mode?: string } | null } | null)?.impersonation?.mode === "read_only");
+  return viewer || staffReadOnly;
+}
+
 /** Warm a challenge before its dashboard opens (press-in on a card). */
 export function prefetchChallenge(id: number) {
   prefetch(PROP_KEY.challenge(id), () => fetchChallenge(id), { persist: true, staleMs: 3_000 });
@@ -107,6 +118,11 @@ export function requestPayout(challengeId: number): Promise<ApiResult<{ payout: 
   return apiPost<{ payout: Payout }>(`prop/challenges/${challengeId}/payouts`, {}, { timeoutMs: 30_000 });
 }
 
+/** After a refused payout request: the quote on screen may be out of date (a position opened, a request in review). */
+export function refreshPayouts() {
+  invalidate(PROP_KEY.payouts);
+}
+
 /** After a confirmed purchase or payout: prop screens, the wallet and the accounts list refresh. */
 export function refreshAfterMoney() {
   invalidate("prop/");
@@ -123,6 +139,7 @@ const FRIENDLY: Record<string, MessageKey> = {
   kyc_required: "mobileProp.error.kycRequired",
   payment_pending: "mobileProp.error.paymentPending",
   payment_failed: "mobileProp.error.paymentFailed",
+  wallet_not_found: "mobileProp.error.paymentFailed",
   wallet_pending: "mobileProp.error.walletPending",
   wallet_rejected: "mobileProp.error.walletRejected",
   provisioning: "mobileProp.error.provisioning",
@@ -164,6 +181,14 @@ export function propMessage(e: ApiError | undefined | null): string {
 
 /** Soft outcomes: the request may still complete on its own (show as information, not failure). */
 export const isSoftError = (code: string | undefined) => code === "provisioning" || code === "payment_pending" || code === "wallet_pending";
+
+/**
+ * A final refusal (4xx): nothing is pending on the server, so the next attempt is a new purchase with a new
+ * idempotency key. Reusing the key would replay the refused purchase (the service keeps the payment_failed or
+ * refunded challenge under it), so a retry after a deposit could never succeed. Unknown outcomes (network, time-out,
+ * 5xx: payment_pending, provisioning, engine) keep the key: the retry must reach the same purchase.
+ */
+export const isFinalRefusal = (e: ApiError) => e.status !== undefined && e.status >= 400 && e.status < 500 && !isSoftError(e.code);
 
 /* ------------------------------------------------------------------ */
 /* Plans                                                               */

@@ -1,7 +1,9 @@
 // Checkout: plan and size, the fee against the USDT wallet (with a deposit shortcut when it's short), every rule,
 // the consent, then the purchase. The server's answer is the only truth: nothing is shown as bought before it.
-// One idempotency key per plan + size in an open checkout, so a retry after a lost answer never charges twice.
-// After the purchase the trading passwords are shown once (the service never stores them).
+// One idempotency key per plan + size in an open checkout, so a retry after a lost answer never charges twice; a
+// final refusal (insufficient funds, plan paused, account not opened and refunded) takes a new key, so the retry is
+// a new purchase instead of a replay of the refused one. After the purchase the trading passwords are shown once
+// (the service never stores them). View-only and read-only staff sessions see the terms but can't pay.
 import * as React from "react";
 import { View } from "react-native";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
@@ -11,10 +13,9 @@ import * as Clipboard from "expo-clipboard";
 import { Copy, Eye, EyeOff, Wallet } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { Banner, Button, Checkbox, Display, Illustration, Mono, PillRow, PressableScale, Sheet, Skeleton, Text, toast, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
-import { ERROR_LINK, isSoftError, propMessage, purchaseChallenge, refreshAfterMoney, useWalletUsdt } from "../api";
+import { ERROR_LINK, isFinalRefusal, isSoftError, propMessage, purchaseChallenge, refreshAfterMoney, useReadOnly, useWalletUsdt } from "../api";
 import { feeLabel, sizeLabel, usd } from "../format";
 import { planRules, typeText } from "../rules";
 import { openInTrade } from "../trade";
@@ -54,7 +55,6 @@ function Credential({ label, value, secret }: { label: string; value: string; se
         <PressableScale
           onPress={async () => {
             await Clipboard.setStringAsync(value);
-            haptic.select();
             toast.show({ title: t("mobileProp.copied", { what: label }) }, 1600);
           }}
           scaleTo={0.9}
@@ -83,8 +83,9 @@ export const CheckoutSheet = React.forwardRef<CheckoutHandle, { onOpenChallenge:
   const shown = React.useRef(false);
   const key = React.useRef("");
 
+  // set synchronously on the first tap, so a double tap can't send the purchase twice
   const busyRef = React.useRef(false);
-  busyRef.current = busy;
+  const readOnly = useReadOnly();
 
   React.useImperativeHandle(ref, () => ({
     open(p, size) {
@@ -120,20 +121,28 @@ export const CheckoutSheet = React.forwardRef<CheckoutHandle, { onOpenChallenge:
   };
 
   const pay = async () => {
-    if (!plan || !size || busy) return;
+    if (!plan || !size || busyRef.current || readOnly) return;
+    busyRef.current = true;
     setBusy(true);
     setErr(null);
     const r = await purchaseChallenge(plan.id, size.size, key.current);
+    busyRef.current = false;
     setBusy(false);
     if (!r.ok) {
-      if (isSoftError(r.error.code)) haptic.warning();
-      else haptic.error();
+      if (isFinalRefusal(r.error)) key.current = newKey();
       setErr(r.error);
-      if (r.error.code === "provisioning" || r.error.code === "payment_pending") refreshAfterMoney();
+      if (r.error.code === "provisioning" || r.error.code === "payment_pending" || r.error.code === "account_unavailable") refreshAfterMoney();
       return;
     }
-    haptic.success();
     refreshAfterMoney();
+    // a replayed key can answer with a purchase that ended meanwhile (payment failed, account not opened and
+    // refunded): that is not a purchase to celebrate
+    const st = r.data.challenge?.status;
+    if (st === "closed" || st === "payment_failed" || st === "failed") {
+      key.current = newKey();
+      setErr({ code: st === "closed" ? "account_unavailable" : "payment_failed", message: "", status: 422 });
+      return;
+    }
     setDone(r.data);
     // closed while paying: the passwords are shown only once, so bring the sheet back
     if (!shown.current) {
@@ -278,12 +287,22 @@ export const CheckoutSheet = React.forwardRef<CheckoutHandle, { onOpenChallenge:
           </Text>
         </Checkbox>
 
+        {readOnly ? <Banner tone="info" title={t("mobile.viewOnly")} body={t("mobileProp.checkout.readOnly")} /> : null}
+
         {err ? (
           <Banner
             tone={isSoftError(err.code) ? "info" : "error"}
             title={propMessage(err)}
-            action={link ? t(link.label) : err.code === "provisioning" ? t("mobileProp.checkout.goToMine") : undefined}
-            onAction={link ? () => go(() => router.push(link.href)) : err.code === "provisioning" ? () => go(() => router.navigate("/prop")) : undefined}
+            action={link ? t(link.label) : err.code === "provisioning" ? t("mobileProp.checkout.goToMine") : err.code === "account_unavailable" ? t("mobileProp.action.support") : undefined}
+            onAction={
+              link
+                ? () => go(() => router.push(link.href))
+                : err.code === "provisioning"
+                  ? () => go(() => router.navigate("/prop"))
+                  : err.code === "account_unavailable"
+                    ? () => go(() => router.push("/support"))
+                    : undefined
+            }
           />
         ) : null}
 
@@ -291,7 +310,7 @@ export const CheckoutSheet = React.forwardRef<CheckoutHandle, { onOpenChallenge:
           testID="prop-pay"
           label={busy ? t("mobileProp.checkout.paying") : err ? t("mobileProp.checkout.retry", { fee }) : t("mobileProp.checkout.pay", { fee })}
           loading={busy}
-          disabled={!agree || short}
+          disabled={!agree || short || readOnly}
           onPress={() => void pay()}
         />
       </View>

@@ -9,11 +9,11 @@ import { colors, GUTTER, space } from "@/theme/tokens";
 import { fmtDate, sizeLabel, usd, clamp01 } from "../format";
 import { challengeColor, stageLabel, viewOf } from "../rules";
 import type { Challenge } from "../types";
-import { Tag } from "./bits";
+import { alpha, Tag } from "./bits";
 
 function Meter({ share }: { share: number }) {
   return (
-    <View style={{ height: 8, borderRadius: 4, backgroundColor: "rgba(14,14,16,0.14)", overflow: "hidden" }}>
+    <View style={{ height: 8, borderRadius: 4, backgroundColor: alpha(colors.ink, 0.14), overflow: "hidden" }}>
       <View style={{ width: `${Math.round(clamp01(share) * 1000) / 10}%`, height: 8, borderRadius: 4, backgroundColor: colors.ink }} />
     </View>
   );

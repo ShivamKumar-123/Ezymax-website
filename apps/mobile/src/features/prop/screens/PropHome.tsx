@@ -5,9 +5,9 @@ import * as React from "react";
 import { RefreshControl, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useIsFocused, useRouter } from "expo-router";
-import { Award, Banknote, ChevronLeft, ChevronRight } from "lucide-react-native";
+import { AlertTriangle, Award, Banknote, ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useLocale, useT } from "@/i18n";
-import { Display, EmptyState, Mono, PressableScale, Screen, Skeleton, Text, useBottomInset } from "@/ui";
+import { Banner, Display, EmptyState, Mono, PressableScale, Screen, Skeleton, Text, useBottomInset } from "@/ui";
 import { colors, GUTTER, radius, space, type BlockColor } from "@/theme/tokens";
 import { isOpenChallenge, normalizePlans, prefetchCertificates, prefetchChallenge, prefetchPayouts, sortChallenges, useCertificates, useChallenges, usePayouts, usePlans } from "../api";
 import { usd } from "../format";
@@ -26,6 +26,7 @@ type Item =
   | { type: "more"; count: number }
   | { type: "plan"; plan: Plan; color: BlockColor }
   | { type: "noPlans" }
+  | { type: "error"; key: string; label: string; retry: "mine" | "plans" }
   | { type: "how" }
   | { type: "certs"; list: Certificate[] }
   | { type: "gap"; h: number; key: string };
@@ -148,14 +149,22 @@ export function PropHomeScreen() {
   const { refreshing, onRefresh } = useRefresh(React.useCallback(() => Promise.all([plans.refresh(), mine.refresh(), payouts.refresh(), certs.refresh()]), [plans, mine, payouts, certs]));
 
   const planList = React.useMemo(() => normalizePlans(plans.data?.plans), [plans.data]);
+  const { refresh: retryMine } = mine;
+  const { refresh: retryPlans } = plans;
+  // the best split any plan on sale reaches (the broker's plans decide it; no number when there are none)
+  const topSplit = planList.length ? Math.max(...planList.map((p) => Math.max(p.split, p.splitMax))) : null;
   const list = React.useMemo(() => sortChallenges(mine.data?.challenges), [mine.data]);
   const funded = payouts.data?.funded ?? [];
   const eligible = funded.filter((f) => f.quote.eligible);
   const available = eligible.reduce((s, f) => s + f.quote.total, 0);
   const certList = React.useMemo(() => (certs.data?.certificates ?? []).filter((c) => !c.revoked), [certs.data]);
 
+  // a list that failed with nothing cached says so (never an empty section that looks like "no challenges")
+  const mineFailed = !mine.data && !!mine.error;
+  const plansFailed = !plans.data && !!plans.error;
   const items = React.useMemo<Item[]>(() => {
     const out: Item[] = [];
+    if (mineFailed) out.push({ type: "label", key: "mine", label: t("mobileProp.home.mine") }, { type: "error", key: "err-mine", label: t("mobileProp.home.mineError"), retry: "mine" });
     const openOnes = list.filter(isOpenChallenge);
     const past = list.filter((c) => !isOpenChallenge(c));
     if (openOnes.length) {
@@ -172,14 +181,14 @@ export function PropHomeScreen() {
     }
     if (certList.length) out.push({ type: "label", key: "certs", label: t("mobileProp.home.yourCertificates"), action: t("mobile.action.seeAll"), onAction: () => router.push("/prop/certificates") }, { type: "certs", list: certList });
     out.push({ type: "label", key: "plans", label: list.length ? t("mobileProp.home.newChallenge") : t("mobileProp.home.plans") });
-    if (planList.length === 0) out.push({ type: "noPlans" });
+    if (planList.length === 0) out.push(plansFailed ? { type: "error", key: "err-plans", label: t("mobileProp.home.plansError"), retry: "plans" } : { type: "noPlans" });
     planList.forEach((plan, i) => {
       if (i) out.push({ type: "gap", h: space[4], key: `g-plan-${plan.id}` });
       out.push({ type: "plan", plan, color: PLAN_COLORS[i % PLAN_COLORS.length]! });
     });
     out.push({ type: "label", key: "how", label: t("mobileProp.how.title") }, { type: "how" });
     return out;
-  }, [list, planList, certList, showAllPast, t, router]);
+  }, [list, planList, certList, showAllPast, mineFailed, plansFailed, t, router]);
 
   const renderItem = React.useCallback(
     ({ item }: { item: Item }) => {
@@ -202,6 +211,17 @@ export function PropHomeScreen() {
           return <PlanCard plan={item.plan} color={item.color} onBuy={buy} />;
         case "noPlans":
           return <EmptyState illustration="propChallenge" title={t("mobileProp.home.emptyTitle")} body={t("mobileProp.home.emptyBody")} />;
+        case "error":
+          return (
+            <Banner
+              style={{ marginHorizontal: GUTTER }}
+              tone="warn"
+              icon={<AlertTriangle size={18} color={colors.gold} />}
+              title={item.label}
+              action={t("mobile.action.retry")}
+              onAction={() => void (item.retry === "mine" ? retryMine() : retryPlans())}
+            />
+          );
         case "how":
           return <How />;
         case "certs":
@@ -210,7 +230,7 @@ export function PropHomeScreen() {
           return <View style={{ height: item.h }} />;
       }
     },
-    [open, warm, buy, openCert, t],
+    [open, warm, buy, openCert, retryMine, retryPlans, t],
   );
 
   const header = (
@@ -220,7 +240,7 @@ export function PropHomeScreen() {
         title={t("mobileProp.home.title")}
         sub={
           <Text tone="secondary" style={{ marginTop: space[1] }}>
-            {t("mobileProp.home.subtitle", { split: Math.max(80, ...planList.map((p) => p.splitMax)) })}
+            {topSplit !== null ? t("mobileProp.home.subtitle", { split: topSplit }) : t("mobileProp.home.subtitleNoSplit")}
           </Text>
         }
       />
@@ -244,7 +264,7 @@ export function PropHomeScreen() {
       ) : (
         <FlashList
           data={items}
-          keyExtractor={(i) => (i.type === "open" || i.type === "past" ? `${i.type}-${i.c.id}` : i.type === "plan" ? `plan-${i.plan.id}` : i.type === "label" ? `label-${i.key}` : i.type === "gap" ? i.key : i.type)}
+          keyExtractor={(i) => (i.type === "open" || i.type === "past" ? `${i.type}-${i.c.id}` : i.type === "plan" ? `plan-${i.plan.id}` : i.type === "label" ? `label-${i.key}` : i.type === "gap" || i.type === "error" ? i.key : i.type)}
           getItemType={(i) => i.type}
           renderItem={renderItem}
           ListHeaderComponent={header}

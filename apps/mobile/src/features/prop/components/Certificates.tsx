@@ -7,7 +7,6 @@ import * as Clipboard from "expo-clipboard";
 import { Link2, Share2 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useT, type MessageKey } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { Button, ColorBlock, Display, Mono, PressableScale, Sheet, Text, toast, type SheetRef } from "@/ui";
 import { colors, GUTTER, space, type BlockColor } from "@/theme/tokens";
 import { certArt, certMoney, sharePng, shareLink, verifyUrl } from "../certificate";
@@ -141,7 +140,6 @@ export const CertificateSheet = React.forwardRef<CertificateSheetHandle>(functio
                     style={{ flex: 1 }}
                     onPress={async () => {
                       await Clipboard.setStringAsync(verifyUrl(cert.code));
-                      haptic.select();
                       toast.show({ title: t("mobileProp.certs.linkCopied") }, 1600);
                     }}
                   />

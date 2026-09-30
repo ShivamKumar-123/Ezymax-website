@@ -2,21 +2,18 @@
 // to how prop pages read: status tags, label / value rows, section heads, the stack header).
 import * as React from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { ChevronLeft, ChevronRight, Copy } from "lucide-react-native";
 import { useLocale, useT } from "@/i18n";
 import { haptic } from "@/lib/haptics";
 import { useOnline } from "@/lib/net";
+import { alpha } from "@/theme/alpha";
 import { Display, EmptyState, IconButton, Mono, PressableScale, Text, toast } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 
-/** `#RRGGBB` at `a` opacity. */
-export function alpha(hex: string, a: number): string {
-  const h = hex.replace("#", "");
-  const n = parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-}
+/** A token colour at an opacity (the app's helper, re-exported for the prop components). */
+export { alpha };
 
 export type TagTone = "ember" | "gold" | "mint" | "periwinkle" | "cream" | "neutral" | "up" | "down" | "ink";
 
@@ -30,7 +27,7 @@ const TAG: Record<TagTone, { bg: string; fg: string }> = {
   up: { bg: colors.upSoft, fg: colors.up },
   down: { bg: colors.downSoft, fg: colors.down },
   /** on a colour block */
-  ink: { bg: "rgba(14,14,16,0.12)", fg: colors.ink },
+  ink: { bg: alpha(colors.ink, 0.12), fg: colors.ink },
 };
 
 /** A static status tag ("Live", "Funded", "Breached"). */
@@ -51,7 +48,7 @@ export function Tag({ label, tone = "neutral", style }: { label: string; tone?: 
  */
 export function KV({ label, value, tone, ink, last, mono = true }: { label: string; value: React.ReactNode; tone?: "up" | "down" | "ember" | "gold" | "mint"; ink?: boolean; last?: boolean; mono?: boolean }) {
   return (
-    <View style={{ minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[4], paddingVertical: space[2], borderBottomWidth: last ? 0 : 1, borderBottomColor: ink ? "rgba(14,14,16,0.12)" : colors.line }}>
+    <View style={{ minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[4], paddingVertical: space[2], borderBottomWidth: last ? 0 : 1, borderBottomColor: ink ? alpha(colors.ink, 0.12) : colors.line }}>
       <Text variant="callout" color={ink ? colors.ink2 : colors.text3} style={{ flexShrink: 1, maxWidth: "48%" }}>
         {label}
       </Text>
@@ -88,8 +85,11 @@ export function SectionHead({ label, action, onAction, style }: { label: string;
   );
 }
 
-/** Stack screen header: back button, then an editorial eyebrow + tall title. */
-export function StackHeader({ eyebrow, title, right, sub }: { eyebrow?: string; title?: string; right?: React.ReactNode; sub?: React.ReactNode }) {
+/**
+ * Stack screen header: back button, then an editorial eyebrow + tall title. `fallback` is where back goes when the
+ * screen was opened with nothing behind it (a notification or a link): Prop home for the prop screens, More for it.
+ */
+export function StackHeader({ eyebrow, title, right, sub, fallback = "/more" }: { eyebrow?: string; title?: string; right?: React.ReactNode; sub?: React.ReactNode; fallback?: Href }) {
   const t = useT();
   const router = useRouter();
   const { rtl } = useLocale();
@@ -99,7 +99,7 @@ export function StackHeader({ eyebrow, title, right, sub }: { eyebrow?: string; 
         <IconButton
           accessibilityLabel={t("mobile.a11y.back")}
           icon={rtl ? <ChevronRight size={22} color={colors.text} /> : <ChevronLeft size={22} color={colors.text} />}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace("/more"))}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace(fallback))}
         />
         {right ? <View style={{ flexDirection: "row", gap: space[2] }}>{right}</View> : null}
       </View>
@@ -154,7 +154,6 @@ export function CopyValue({ value, label, mono = true, ink }: { value: string; l
     <PressableScale
       onPress={async () => {
         await Clipboard.setStringAsync(value);
-        haptic.select();
         toast.show({ title: t("mobileProp.copied", { what: label }) }, 1600);
       }}
       scaleTo={0.97}

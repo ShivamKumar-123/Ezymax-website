@@ -12,7 +12,7 @@ import { useT } from "@/i18n";
 import { Button, Card, EmptyState, IconButton, PillRow, Screen, Sheet, Skeleton, Text, useBottomInset, type SheetRef } from "@/ui";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
-import { useChallenge, useStable } from "../api";
+import { isOpenChallenge, useChallenge, useStable } from "../api";
 import { fmtDate, sizeLabel, usd } from "../format";
 import { useLiveStatus, usePropLive, type LiveEvent, type LiveMoney } from "../live";
 import { phaseStatusLabel, planRules, stageLabel, tradable, viewOf } from "../rules";
@@ -54,11 +54,29 @@ export function ChallengeScreen() {
   const focused = useIsFocused();
   const bottom = useBottomInset(false);
   const [pollMs, setPollMs] = React.useState(3_000);
-  const q = useChallenge(id, focused ? pollMs : undefined);
+  // a challenge that has ended (failed, closed, payment failed) doesn't change any more: no polling for it
+  const [ended, setEnded] = React.useState(false);
+  const q = useChallenge(id, focused && !ended ? pollMs : undefined);
   const data = useStable(q.data);
   const c = data && data.id === id ? data : null;
+  React.useEffect(() => setEnded(!!c && !isOpenChallenge(c)), [c]);
   const [phaseIdx, setPhaseIdx] = React.useState<number | null>(null);
   const a = React.useMemo(() => (c ? ((phaseIdx !== null ? c.phases.find((p) => p.phaseIndex === phaseIdx) : undefined) ?? c.current ?? c.phases[c.phases.length - 1] ?? null) : null), [c, phaseIdx]);
+  // passing a phase while watching it: the challenge moves on to the next account, but the screen stays on the
+  // phase that was just passed, so its passed state (certificate, "Go to Phase 2") is what the trader sees
+  const shownId = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    if (!c) return;
+    const prev = shownId.current;
+    if (phaseIdx === null && prev !== null && c.current && c.current.id !== prev) {
+      const was = c.phases.find((p) => p.id === prev);
+      if (was?.status === "passed") {
+        setPhaseIdx(was.phaseIndex);
+        return;
+      }
+    }
+    shownId.current = a?.id ?? null;
+  }, [c, a, phaseIdx]);
   const isLive = !!c && !!a && tradable(c, a);
   const v = React.useMemo(() => (c && a ? viewOf(c, a) : null), [c, a]);
   const rulesSheet = React.useRef<SheetRef>(null);
@@ -112,7 +130,7 @@ export function ChallengeScreen() {
   if (id === null || (!c && q.error?.status === 404)) {
     return (
       <Screen tabBar={false}>
-        <StackHeader />
+        <StackHeader fallback="/prop" />
         <EmptyState illustration="propChallenge" title={t("mobileProp.dash.notFound")} body={t("mobileProp.dash.notFoundBody")} action={t("mobileProp.dash.backToProp")} onAction={() => router.navigate("/prop")} />
       </Screen>
     );
@@ -120,7 +138,7 @@ export function ChallengeScreen() {
   if (!c || !a || !v) {
     return (
       <Screen tabBar={false}>
-        <StackHeader eyebrow={t("mobileProp.home.eyebrow")} />
+        <StackHeader eyebrow={t("mobileProp.home.eyebrow")} fallback="/prop" />
         {q.error && !q.data ? <LoadState error={q.error} onRetry={() => void refresh()} /> : c && !a ? <StateHero c={c} a={{ ...placeholderAccount, challengeId: c.id }} onCertificate={openCert} onPhase={setPhaseIdx} /> : <DashboardSkeleton />}
       </Screen>
     );
@@ -140,6 +158,7 @@ export function ChallengeScreen() {
         <StackHeader
           eyebrow={c.planName}
           title={`${sizeLabel(c.size)} · ${a.phase}`}
+          fallback="/prop"
           right={<IconButton accessibilityLabel={t("mobileProp.dash.rules")} icon={<BookOpen size={19} color={colors.text} />} onPress={() => rulesSheet.current?.present()} />}
           sub={
             <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: space[3], marginTop: space[2] }}>
@@ -151,7 +170,7 @@ export function ChallengeScreen() {
 
         {c.phases.length > 1 ? (
           <PillRow
-            items={c.phases.map((p) => ({ key: String(p.phaseIndex), label: `${p.phase} · ${phaseStatusLabel(t, p.status)}` }))}
+            items={c.phases.map((p) => ({ key: String(p.phaseIndex), label: `${p.phase} · ${phaseStatusLabel(t, p.status === "provisioning" && !isOpenChallenge(c) ? "closed" : p.status)}` }))}
             value={String(a.phaseIndex)}
             onChange={(k) => setPhaseIdx(Number(k))}
             compact
@@ -182,15 +201,16 @@ export function ChallengeScreen() {
           {a.funded ? <Button label={t("mobileProp.action.payouts")} variant="secondary" onPress={() => router.push("/prop/payouts")} /> : null}
         </View>
 
+        {/* the curve and the trades remount per phase; sibling keys must differ (a shared key duplicates the card) */}
         {a.status !== "provisioning" ? (
           <>
             <SectionHead label={t("mobileProp.chart.title")} />
-            <EquityCard key={`${c.id}-${a.phaseIndex}`} challengeId={c.id} a={a} v={v} live={live?.equity ?? null} active={isLive} refreshKey={dealTick} />
+            <EquityCard key={`equity-${c.id}-${a.phaseIndex}`} challengeId={c.id} a={a} v={v} live={live?.equity ?? null} active={isLive} refreshKey={dealTick} />
             <SectionHead label={t("mobileProp.stats.title")} />
             <StatsCard a={a} />
             <SectionHead label={t("mobileProp.events.title")} />
             <EventsList events={events} />
-            <TradesSection key={`${c.id}-${a.phaseIndex}`} challengeId={c.id} a={a} active={isLive} refreshKey={dealTick} />
+            <TradesSection key={`trades-${c.id}-${a.phaseIndex}`} challengeId={c.id} a={a} active={isLive} refreshKey={dealTick} />
           </>
         ) : null}
 

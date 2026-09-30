@@ -1,12 +1,14 @@
 // The big moments of a challenge: breached (prop challenge art), passed or funded (prop passed art), still
-// opening, payment failed. Warnings while trading (daily loss used, weekend close) are quieter banners.
+// opening, payment failed, closed (the engine wouldn't open the next account, e.g. the broker's account limit: the
+// service refunds the fee and closes the challenge). Warnings while trading (daily loss used, weekend close) are
+// quieter banners.
 import * as React from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { AlertTriangle, CalendarClock } from "lucide-react-native";
 import { i18n, useT } from "@/i18n";
 import { Banner, Button, ColorBlock, Display, Illustration, Text } from "@/ui";
-import { colors, GUTTER, space } from "@/theme/tokens";
+import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { fmtDate, fmtDateTime, usd } from "../format";
 import type { View as RuleView } from "../rules";
 import { ruleLabel, tradable } from "../rules";
@@ -43,6 +45,20 @@ function StateHero({ c, a, onCertificate, onPhase }: { c: ChallengeDetail; a: Ph
       </ColorBlock>
     );
 
+  // closed with the account still unopened: the service gave up on it and refunded the fee (never "opening")
+  if (c.status === "closed" && (a.status === "provisioning" || !a.login))
+    return (
+      <ColorBlock color="cream" style={{ marginHorizontal: GUTTER, gap: space[3] }}>
+        <Display size="md" color={colors.ink}>
+          {t("mobileProp.hero.closed.title")}
+        </Display>
+        <Text variant="callout" color={colors.ink2}>
+          {c.failureReason && i18n.locale === "en" ? t("mobileProp.hero.closed.reason", { reason: c.failureReason.replace(/\.$/, "") }) : t("mobileProp.hero.closed.body")}
+        </Text>
+        <Button label={t("mobileProp.action.support")} onPress={() => router.push("/support")} full={false} size="md" variant="secondary" style={{ backgroundColor: colors.ink, borderColor: colors.ink }} />
+      </ColorBlock>
+    );
+
   if (a.status === "provisioning" || c.status === "provisioning" || c.status === "pending_payment")
     return (
       <ColorBlock color="periwinkle" style={{ marginHorizontal: GUTTER, gap: space[3] }}>
@@ -57,7 +73,7 @@ function StateHero({ c, a, onCertificate, onPhase }: { c: ChallengeDetail; a: Ph
 
   if (a.status === "failed")
     return (
-      <View style={{ marginHorizontal: GUTTER, borderRadius: 32, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, padding: space[6], gap: space[3], alignItems: "center" }} accessibilityRole="alert">
+      <View style={{ marginHorizontal: GUTTER, borderRadius: radius.block, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, padding: space[6], gap: space[3], alignItems: "center" }} accessibilityRole="alert">
         <Illustration name="propChallenge" width={220} height={170} />
         <Display size="lg" align="center">
           {t("mobileProp.hero.failed.title", { phase: a.phase })}

@@ -2,7 +2,8 @@
 // certificate art (the same drawing on screen and in the shared PNG).
 //
 // Live values are Reanimated shared values: the gauges follow the engine stream on the UI thread without a
-// React render. Motion is functional only: a gauge eases to its new value (220 ms), nothing loops.
+// React render. Motion is functional only: a gauge eases to its new value (220 ms), nothing loops. Matte finish
+// like the rest of the app: flat strokes and flat fills, no gradients or glows.
 //
 // Import through ../gauges (native: this module as is; web: loaded after CanvasKit, see gauges.web.tsx).
 import * as React from "react";
@@ -14,14 +15,12 @@ import {
   FontWeight,
   Group,
   ImageFormat,
-  LinearGradient,
   Paragraph,
   Path,
   RoundedRect,
   Skia,
   TextAlign,
   useFonts,
-  vec,
   type SkParagraph,
   type SkPath,
   type SkTypefaceFontProvider,
@@ -31,6 +30,7 @@ import qrcode from "qrcode-generator";
 import { Anton_400Regular } from "@expo-google-fonts/anton/400Regular";
 import { JetBrainsMono_500Medium } from "@expo-google-fonts/jetbrains-mono/500Medium";
 import { JetBrainsMono_700Bold } from "@expo-google-fonts/jetbrains-mono/700Bold";
+import { alpha } from "@/theme/alpha";
 import { colors } from "@/theme/tokens";
 
 type Num = number | SharedValue<number>;
@@ -214,9 +214,8 @@ export function EquityChart({ width, height, points, min, max, lines, color, liv
             <DashPathEffect intervals={[4, 5]} />
           </Path>
         ))}
-        <Path path={area}>
-          <LinearGradient start={vec(0, 0)} end={vec(0, height)} colors={[`${color}33`, `${color}00`]} />
-        </Path>
+        {/* matte finish: a flat low-opacity fill under the curve, no gradient */}
+        <Path path={area} color={alpha(color, 0.08)} />
         <Path path={line} style="stroke" strokeWidth={2} strokeJoin="round" strokeCap="round" color={color} />
         {live && last ? (
           <>

@@ -1,49 +1,55 @@
 // Request a payout: the server's quote (profit, split, fee refund, total), what happens next, then the request.
-// Never optimistic: the payout exists once the server says so.
+// Never optimistic: the payout exists once the server says so. Opening the sheet refreshes the quote, and the sheet
+// follows the screen's list, so the amount confirmed is the server's current one (a closed trade moves it).
 import * as React from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
-import { haptic } from "@/lib/haptics";
 import { Banner, Button, Display, Text, toast, Sheet, type SheetRef } from "@/ui";
 import { space } from "@/theme/tokens";
-import { ERROR_LINK, propMessage, refreshAfterMoney, requestPayout } from "../api";
+import { ERROR_LINK, propMessage, refreshAfterMoney, refreshPayouts, requestPayout } from "../api";
 import { sizeLabel, usd } from "../format";
 import type { FundedAccount } from "../types";
 import { KV } from "./bits";
 
 export type PayoutSheetHandle = { open: (f: FundedAccount) => void };
 
-export const PayoutSheet = React.forwardRef<PayoutSheetHandle>(function PayoutSheet(_, ref) {
+export const PayoutSheet = React.forwardRef<PayoutSheetHandle, { funded?: FundedAccount[] }>(function PayoutSheet({ funded }, ref) {
   const t = useT();
   const router = useRouter();
   const sheet = React.useRef<SheetRef>(null);
-  const [f, setF] = React.useState<FundedAccount | null>(null);
+  const [picked, setF] = React.useState<FundedAccount | null>(null);
+  const f = (picked && funded?.find((x) => x.challengeId === picked.challengeId)) ?? picked;
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<ApiError | null>(null);
+  // set synchronously on the first tap, so a double tap can't send the request twice
+  const busyRef = React.useRef(false);
 
   React.useImperativeHandle(ref, () => ({
     open(x) {
       setF(x);
       setErr(null);
       setBusy(false);
+      refreshPayouts();
       sheet.current?.present();
     },
   }));
 
   const submit = async () => {
-    if (!f || busy) return;
+    if (!f || !f.quote.eligible || busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     setErr(null);
     const r = await requestPayout(f.challengeId);
+    busyRef.current = false;
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErr(r.error);
+      // the quote moved on the server (a position opened, a request already in review): show the new one behind
+      refreshPayouts();
       return;
     }
-    haptic.success();
     refreshAfterMoney();
     sheet.current?.dismiss();
     toast.show({ title: t("mobileProp.request.done"), body: t("mobileProp.request.doneBody", { amount: usd(r.data.payout.total) }), tone: "success" }, 3200);
@@ -78,7 +84,7 @@ export const PayoutSheet = React.forwardRef<PayoutSheetHandle>(function PayoutSh
               {t("mobileProp.request.note")}
             </Text>
             {err ? <Banner tone="error" title={propMessage(err)} action={link ? t(link.label) : undefined} onAction={link ? () => (sheet.current?.dismiss(), setTimeout(() => router.push(link.href), 180)) : undefined} /> : null}
-            <Button label={t("mobileProp.request.submit", { amount: usd(q.total) })} loading={busy} onPress={() => void submit()} testID="prop-payout-submit" />
+            <Button label={t("mobileProp.request.submit", { amount: usd(q.total) })} loading={busy} disabled={!q.eligible} onPress={() => void submit()} testID="prop-payout-submit" />
           </>
         ) : null}
       </View>

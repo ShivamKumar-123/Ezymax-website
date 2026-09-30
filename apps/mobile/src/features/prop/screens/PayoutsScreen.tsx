@@ -9,18 +9,18 @@ import { ArrowLeft, ArrowRight, BadgeCheck, Clock, ShieldAlert } from "lucide-re
 import { useLocale, useT } from "@/i18n";
 import { Banner, Button, Card, ColorBlock, Display, EmptyState, Mono, Screen, Skeleton, Text, useBottomInset } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
-import { useChallenges, usePayouts } from "../api";
+import { useChallenges, usePayouts, useReadOnly } from "../api";
 import { fmtDate, fmtDateTime, sizeLabel, usd } from "../format";
 import { blockerText, payoutFreqLabel } from "../rules";
 import { openInTrade } from "../trade";
 import type { FundedAccount, Payout, PayoutStatus, Plan } from "../types";
-import { CopyValue, KV, LoadState, SectionHead, StackHeader, Stat, Tag, useRefresh, type TagTone } from "../components/bits";
+import { alpha, CopyValue, KV, LoadState, SectionHead, StackHeader, Stat, Tag, useRefresh, type TagTone } from "../components/bits";
 import { PayoutSheet, type PayoutSheetHandle } from "../components/PayoutSheet";
 
 const STATUS: Record<PayoutStatus, { key: "mobileProp.payoutStatus.pending" | "mobileProp.payoutStatus.approved" | "mobileProp.payoutStatus.paid" | "mobileProp.payoutStatus.rejected" | "mobileProp.payoutStatus.failed"; tone: TagTone }> = {
   pending: { key: "mobileProp.payoutStatus.pending", tone: "gold" },
   approved: { key: "mobileProp.payoutStatus.approved", tone: "periwinkle" },
-  paid: { key: "mobileProp.payoutStatus.paid", tone: "mint" },
+  paid: { key: "mobileProp.payoutStatus.paid", tone: "cream" },
   rejected: { key: "mobileProp.payoutStatus.rejected", tone: "ember" },
   failed: { key: "mobileProp.payoutStatus.failed", tone: "ember" },
 };
@@ -82,7 +82,7 @@ function Kpis({ payouts, funded }: { payouts: Payout[]; funded: FundedAccount[] 
           {t("mobileProp.payouts.eligibleCount", { eligible: eligible.length, count: funded.length })}
         </Text>
       </View>
-      <View style={{ flexDirection: "row", gap: space[4], borderTopWidth: 1, borderTopColor: "rgba(14,14,16,0.14)", paddingTop: space[3] }}>
+      <View style={{ flexDirection: "row", gap: space[4], borderTopWidth: 1, borderTopColor: alpha(colors.ink, 0.14), paddingTop: space[3] }}>
         <Stat ink label={t("mobileProp.payoutStatus.pending")} value={usd(pendingList.reduce((s, p) => s + p.total, 0))} sub={t("mobileProp.payouts.requests", { count: pendingList.length })} style={{ flex: 1 }} />
         <Stat ink label={t("mobileProp.payouts.paidToDate")} value={usd(paidList.reduce((s, p) => s + p.total, 0))} sub={t("mobileProp.payouts.count", { count: paidList.length })} style={{ flex: 1 }} />
       </View>
@@ -90,11 +90,15 @@ function Kpis({ payouts, funded }: { payouts: Payout[]; funded: FundedAccount[] 
   );
 }
 
-const FundedCard = React.memo(function FundedCard({ f, kyc, onRequest }: { f: FundedAccount; kyc: string; onRequest: (f: FundedAccount) => void }) {
+const FundedCard = React.memo(function FundedCard({ f, kyc, readOnly, onRequest }: { f: FundedAccount; kyc: string; readOnly: boolean; onRequest: (f: FundedAccount) => void }) {
   const t = useT();
   const router = useRouter();
   const { rtl } = useLocale();
   const q = f.quote;
+  // the prop service takes a payout request only from a verified trader (kyc_required otherwise), so the button
+  // says what's missing instead of sending a request that can only be refused
+  const verified = kyc === "verified";
+  const canRequest = q.eligible && verified && !readOnly;
   return (
     <Card style={{ marginHorizontal: GUTTER, gap: space[4] }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[2] }}>
@@ -117,7 +121,7 @@ const FundedCard = React.memo(function FundedCard({ f, kyc, onRequest }: { f: Fu
           <Text variant="label" tone="tertiary">
             {t("mobileProp.payouts.quote")}
           </Text>
-          <Tag label={q.eligible ? t("mobileProp.payouts.eligibleNow") : t("mobileProp.payouts.notYet")} tone={q.eligible ? "mint" : "neutral"} />
+          <Tag label={q.eligible ? t("mobileProp.payouts.eligibleNow") : t("mobileProp.payouts.notYet")} tone={q.eligible ? "cream" : "neutral"} />
         </View>
         <View style={{ flexDirection: "row", alignItems: "baseline", gap: space[2] }}>
           <Mono size={30} weight="bold" tone={q.eligible && q.total > 0 ? "up" : "primary"}>
@@ -131,7 +135,7 @@ const FundedCard = React.memo(function FundedCard({ f, kyc, onRequest }: { f: Fu
           <KV label={t("mobileProp.request.profit")} value={usd(q.profit)} />
           <KV label={t("mobileProp.payouts.yourSplit")} value={`${q.split}% · ${usd(q.traderAmount)}`} />
           <KV label={t("mobileProp.payouts.firmShare")} value={usd(q.firmAmount)} />
-          <KV label={t("mobileProp.feeRefund")} value={q.feeRefund > 0 ? usd(q.feeRefund) : f.refundFee ? (f.feeRefunded ? t("mobileProp.payouts.alreadyRefunded") : t("mobileProp.payouts.withFirst")) : t("mobileProp.nonRefundable")} last />
+          <KV label={t("mobileProp.feeRefund")} value={q.feeRefund > 0 ? usd(q.feeRefund) : f.refundFee ? (f.feeRefunded ? t("mobileProp.payouts.alreadyRefunded") : t("mobileProp.payouts.withFirst")) : t("mobileProp.nonRefundable")} mono={q.feeRefund > 0} last />
         </View>
         {q.blockers.length ? (
           <View style={{ gap: space[2], marginTop: space[1] }}>
@@ -147,14 +151,22 @@ const FundedCard = React.memo(function FundedCard({ f, kyc, onRequest }: { f: Fu
             ))}
           </View>
         ) : null}
-        {kyc !== "verified" && q.eligible ? (
-          <Text variant="caption" tone="gold">
-            {t("mobileProp.payouts.kycNote")}
+        {q.eligible && readOnly ? (
+          <Text variant="caption" tone="secondary">
+            {t("mobileProp.payouts.readOnly")}
+          </Text>
+        ) : q.eligible && !verified ? (
+          <Text variant="caption" tone="gold" testID={`prop-kyc-note-${f.challengeId}`}>
+            {kyc === "pending" ? t("mobileProp.payouts.kycPendingNote") : t("mobileProp.payouts.kycNote")}
           </Text>
         ) : null}
       </View>
 
-      <Button label={t("mobileProp.payouts.request")} disabled={!q.eligible} onPress={() => onRequest(f)} testID={`prop-request-${f.challengeId}`} />
+      {q.eligible && !verified && kyc !== "pending" && !readOnly ? (
+        <Button label={t("mobileProp.errorLink.verify")} onPress={() => router.push("/profile/verification")} testID={`prop-verify-${f.challengeId}`} />
+      ) : (
+        <Button label={t("mobileProp.payouts.request")} disabled={!canRequest} onPress={() => onRequest(f)} testID={`prop-request-${f.challengeId}`} />
+      )}
       <View style={{ flexDirection: "row", gap: space[3] }}>
         <Button label={t("mobileProp.payouts.dashboard")} variant="secondary" size="md" style={{ flex: 1 }} onPress={() => router.push(`/prop/${f.challengeId}`)} trailing={rtl ? <ArrowLeft size={15} color={colors.text} /> : <ArrowRight size={15} color={colors.text} />} />
         {f.login ? <Button label={t("mobileProp.action.trade")} variant="secondary" size="md" style={{ flex: 1 }} onPress={() => openInTrade(f.login!)} /> : null}
@@ -230,6 +242,7 @@ export function PayoutsScreen() {
   const t = useT();
   const router = useRouter();
   const focused = useIsFocused();
+  const readOnly = useReadOnly();
   const bottom = useBottomInset(false);
   const q = usePayouts(focused);
   const ch = useChallenges();
@@ -268,7 +281,7 @@ export function PayoutsScreen() {
         case "label":
           return <SectionHead label={item.label} />;
         case "funded":
-          return <FundedCard f={item.f} kyc={data?.kycStatus ?? "unverified"} onRequest={request} />;
+          return <FundedCard f={item.f} kyc={data?.kycStatus ?? "unverified"} readOnly={readOnly} onRequest={request} />;
         case "noFunded":
           return <EmptyState illustration="propPassed" title={t("mobileProp.payouts.emptyTitle")} body={t("mobileProp.payouts.emptyBody")} action={t("mobileProp.payouts.emptyAction")} onAction={() => router.navigate("/prop")} />;
         case "split":
@@ -285,14 +298,14 @@ export function PayoutsScreen() {
           return <View style={{ height: space[3] }} />;
       }
     },
-    [data, request, router, t],
+    [data, readOnly, request, router, t],
   );
 
   return (
     <Screen scroll={false} tabBar={false}>
       {!data && q.loading ? (
         <>
-          <StackHeader eyebrow={t("mobileProp.home.eyebrow")} title={t("mobileProp.payouts.title")} />
+          <StackHeader eyebrow={t("mobileProp.home.eyebrow")} title={t("mobileProp.payouts.title")} fallback="/prop" />
           <View style={{ paddingHorizontal: GUTTER, gap: space[4] }}>
             <Skeleton h={190} r={radius.block} />
             <Skeleton h={380} r={radius.card} />
@@ -300,7 +313,7 @@ export function PayoutsScreen() {
         </>
       ) : !data ? (
         <>
-          <StackHeader eyebrow={t("mobileProp.home.eyebrow")} />
+          <StackHeader eyebrow={t("mobileProp.home.eyebrow")} fallback="/prop" />
           <LoadState error={q.error} onRetry={() => void onRefresh()} />
         </>
       ) : (
@@ -309,13 +322,13 @@ export function PayoutsScreen() {
           keyExtractor={(i) => (i.type === "funded" ? `f-${i.f.challengeId}` : i.type === "row" ? `p-${i.p.id}` : i.type === "label" || i.type === "gap" ? `${i.type}-${i.key}` : i.type)}
           getItemType={(i) => i.type}
           renderItem={renderItem}
-          ListHeaderComponent={<StackHeader eyebrow={t("mobileProp.home.eyebrow")} title={t("mobileProp.payouts.title")} />}
+          ListHeaderComponent={<StackHeader eyebrow={t("mobileProp.home.eyebrow")} title={t("mobileProp.payouts.title")} fallback="/prop" />}
           contentContainerStyle={{ paddingBottom: bottom + space[8] }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text3} colors={[colors.ember]} progressBackgroundColor={colors.surface} />}
         />
       )}
-      <PayoutSheet ref={sheet} />
+      <PayoutSheet ref={sheet} funded={data?.funded} />
     </Screen>
   );
 }

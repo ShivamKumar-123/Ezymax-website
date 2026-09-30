@@ -21,7 +21,8 @@ function StateTag({ state }: { state: RuleState }) {
   const t = useT();
   const m: Record<RuleState, { label: string; tone: TagTone }> = {
     ok: { label: t("mobileProp.ruleState.ok"), tone: "neutral" },
-    passed: { label: t("mobileProp.ruleState.passed"), tone: "mint" },
+    // cream, not an ember tint: "met" must never read like "breached" (green is for money only)
+    passed: { label: t("mobileProp.ruleState.passed"), tone: "cream" },
     failed: { label: t("mobileProp.ruleState.failed"), tone: "ember" },
     off: { label: t("mobileProp.ruleState.off"), tone: "neutral" },
   };
@@ -151,7 +152,8 @@ function LimitRing({ title, share, state, used, floor, left, live, fallback }: {
       </View>
       <View style={{ gap: 2 }}>
         <LiveText live={live} fallback={fallback} render={left} size={13} weight="medium" />
-        <LiveText live={live} fallback={fallback} render={floor} size={11.5} weight="regular" />
+        {/* two lines on narrow phones rather than a cut-off amount */}
+        <LiveText live={live} fallback={fallback} render={floor} size={11.5} weight="regular" numberOfLines={2} />
       </View>
       <StateTag state={state} />
     </Card>

@@ -6,7 +6,8 @@ const mobileProp = {
   // Prop home
   "home.eyebrow": "Kalks Prop",
   "home.title": "Get funded", // display
-  "home.subtitle": "Pass a challenge on a simulated account, then trade our capital and keep up to {split}% of the profit.",
+  "home.subtitle": "Pass a challenge, get a funded account and keep up to {split}% of the profit. Every prop account is simulated.",
+  "home.subtitleNoSplit": "Pass a challenge, get a funded account and keep a share of the profit. Every prop account is simulated.",
   "home.payouts": "Payouts",
   "home.payoutsReady": "{amount} ready",
   "home.payoutsNone": "None ready yet",
@@ -20,6 +21,8 @@ const mobileProp = {
   "home.newChallenge": "Start a new challenge",
   "home.emptyTitle": "No challenges on offer", // display
   "home.emptyBody": "New challenge plans are being prepared. Please check back soon.",
+  "home.mineError": "Your challenges couldn't be loaded.",
+  "home.plansError": "The challenge plans couldn't be loaded.",
 
   // How it works (numbered 01–04 on the Prop home)
   "how.title": "How it works",
@@ -73,6 +76,7 @@ const mobileProp = {
   "checkout.savePasswords": "Save these passwords now: they're shown only once and we don't store them. You can always trade this account from the app without them.",
   "checkout.passwordsShown": "The trading passwords were shown when this purchase first went through. You can trade this account from the app without them.",
   "checkout.viewChallenge": "View challenge",
+  "checkout.readOnly": "This session can't buy challenges.",
 
   // Account credentials
   "cred.login": "Login",
@@ -176,6 +180,10 @@ const mobileProp = {
   // Big states
   "hero.opening.title": "Opening your account", // display
   "hero.opening.body": "The payment is confirmed and your trading account is being set up. This page updates on its own.",
+  "hero.closed.title": "Challenge closed", // display
+  "hero.closed.body": "The trading account for this challenge couldn't be opened, so the challenge was closed and the fee was refunded to your USDT wallet. Contact support if you have questions.",
+  // {reason} is the prop service's reason, in English
+  "hero.closed.reason": "{reason}. The fee was refunded to your USDT wallet.",
   "hero.failed.title": "{phase} failed", // display
   "hero.failed.on": "Ended {date}",
   // {reason} is the breach reason from the risk engine
@@ -278,8 +286,11 @@ const mobileProp = {
   "payouts.withFirst": "With the first payout",
   "payouts.opens": "Opens {date}.",
   "payouts.minimum": "Minimum {amount}.",
-  "payouts.kycNote": "Payouts are approved only after identity verification.",
+  "payouts.kycNote": "Verify your identity to request this payout.",
+  "payouts.kycPendingNote": "You can request this payout once your identity verification is approved.",
+  "payouts.readOnly": "This session can't request payouts.",
   "payouts.request": "Request payout",
+  // opens the account's live rule dashboard (the web calls it "Rules dashboard"); short: it shares a row with Trade
   "payouts.dashboard": "Rules",
   "payouts.history": "History",
   "payouts.historyEmpty": "No payouts yet.",
@@ -316,7 +327,7 @@ const mobileProp = {
   // Identity verification (payouts)
   "kyc.verified": "Identity verified: payouts can be approved.",
   "kyc.pendingTitle": "Verification in review",
-  "kyc.pendingText": "You can request a payout now; it's approved once your identity is verified.",
+  "kyc.pendingText": "Your verification is in review. You can request payouts once your identity is verified.",
   "kyc.requiredTitle": "Verify your identity",
   "kyc.requiredText": "Payouts are paid only to verified traders. Verify before your first payout.",
   "kyc.rejectedText": "Your verification was rejected. Submit it again to receive payouts.",
@@ -418,7 +429,7 @@ const mobileProp = {
   "error.payoutPending": "A payout for this account is already in review.",
   "error.consistency": "The consistency rule isn't met yet: your best day is too large a share of the profit.",
   "error.notFunded": "Payouts are available on funded accounts only.",
-  "error.accountUnavailable": "The trading account is unavailable right now. Please try again shortly.",
+  "error.accountUnavailable": "We couldn't open the trading account for this challenge, so the fee was refunded to your USDT wallet. Contact support if this keeps happening.",
   "error.idempotencyConflict": "This checkout was already used for a different purchase. Close it and start again.",
   "error.notActive": "This challenge isn't active.",
   "error.accountLimit": "You've reached the maximum number of prop accounts. Contact support to raise the limit.",

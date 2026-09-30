@@ -10,7 +10,7 @@ import { defaultSize, prefetchWallet } from "../api";
 import { feeLabel, sizeLabel, usd } from "../format";
 import { targetsText, typeLabel, typeText } from "../rules";
 import type { Plan, PlanSize } from "../types";
-import { Tag } from "./bits";
+import { alpha, Tag } from "./bits";
 
 function SizeChip({ s, on, onPress }: { s: PlanSize; on: boolean; onPress: (n: number) => void }) {
   return (
@@ -20,7 +20,7 @@ function SizeChip({ s, on, onPress }: { s: PlanSize; on: boolean; onPress: (n: n
       accessibilityRole="radio"
       accessibilityState={{ selected: on }}
       accessibilityLabel={`${sizeLabel(s.size)} · ${feeLabel(s.fee)}`}
-      style={{ height: 40, minWidth: 64, paddingHorizontal: space[3], borderRadius: radius.pill, alignItems: "center", justifyContent: "center", backgroundColor: on ? colors.ink : "transparent", borderWidth: 1.5, borderColor: on ? colors.ink : "rgba(14,14,16,0.22)" }}
+      style={{ height: 40, minWidth: 64, paddingHorizontal: space[3], borderRadius: radius.pill, alignItems: "center", justifyContent: "center", backgroundColor: on ? colors.ink : "transparent", borderWidth: 1.5, borderColor: on ? colors.ink : alpha(colors.ink, 0.22) }}
     >
       <Mono size={14} weight="bold" color={on ? colors.cream : colors.ink}>
         {sizeLabel(s.size)}
@@ -97,7 +97,7 @@ export const PlanCard = React.memo(function PlanCard({ plan, color, onBuy }: { p
         </View>
       </View>
 
-      <View style={{ flexDirection: "row", flexWrap: "wrap", borderTopWidth: 1, borderTopColor: "rgba(14,14,16,0.14)", paddingTop: space[2] }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", borderTopWidth: 1, borderTopColor: alpha(colors.ink, 0.14), paddingTop: space[2] }}>
         <Term label={t("mobileProp.plan.target")} value={targetsText(t, plan)} />
         <Term label={t("mobileProp.plan.dailyLoss")} value={`${plan.dailyLoss}% · ${usd((size.size * plan.dailyLoss) / 100, 0)}`} />
         <Term label={t("mobileProp.plan.maxDD")} value={`${plan.maxDD}% · ${t(plan.ddType === "trailing" ? "mobileProp.plan.trailing" : "mobileProp.plan.static")}`} />

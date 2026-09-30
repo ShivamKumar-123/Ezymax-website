@@ -7,8 +7,8 @@ Prop challenges in the Kalks app: the plan catalogue and checkout, a live rule d
 | Route | Screen | What it does |
 |---|---|---|
 | `/prop` | `screens/PropHome.tsx` | Your challenges (open ones as colour blocks with their progress, finished ones as rows), payouts and certificates at a glance, the plan catalogue (colour-block cards with sizes, fee and key rules), How it works. Checkout opens as a sheet. |
-| `/prop/[id]` | `screens/ChallengeScreen.tsx` | The live rule dashboard of a challenge: equity, the profit-target ring (or the payout window on funded accounts), daily-loss and max-drawdown rings, trading-days, time-limit and consistency bars, the daily reset countdown, the equity curve with its floors and target, stats, the rule log, closed trades, certificates, account details. Breach, pass, funded, opening and payment-failed states take over the top. Open in Trade makes the account the app's active account and shows the Trade tab. |
-| `/prop/payouts` | `screens/PayoutsScreen.tsx` | Available / in review / paid totals, each funded account's quote (profit, split, firm share, fee refund) with what still blocks it, the request sheet, profit split and scaling, history. |
+| `/prop/[id]` | `screens/ChallengeScreen.tsx` | The live rule dashboard of a challenge: equity, the profit-target ring (or the payout window on funded accounts), daily-loss and max-drawdown rings, trading-days, time-limit and consistency bars, the daily reset countdown, the equity curve with its floors and target, stats, the rule log, closed trades, certificates, account details. Breach, pass, funded, opening, payment-failed and closed states take over the top. A phase passed while the trader watches stays on screen with its passed state ("Go to Phase 2"). Open in Trade makes the account the app's active account and shows the Trade tab. |
+| `/prop/payouts` | `screens/PayoutsScreen.tsx` | Available / in review / paid totals, each funded account's quote (profit, split, firm share, fee refund) with what still blocks it, the request sheet, profit split and scaling, history. The service takes a request only from a verified trader, so an unverified one gets "Verify identity" instead of the request (and a pending verification a disabled request with the reason). |
 | `/prop/certificates` | `screens/CertificatesScreen.tsx` | Every certificate as a colour tile; the viewer draws it and shares it. |
 
 `/prop/mine` (the Client Area's page, used by the prop service's notification links) redirects to the challenge in `?id=`, else to `/prop`. Other modules link to `/prop` (More tab, Home). Deposit shortcuts go to `/wallet/deposit`, KYC to `/profile/verification`, support to `/support`.
@@ -16,7 +16,10 @@ Prop challenges in the Kalks app: the plan catalogue and checkout, a live rule d
 ## Data
 
 - Reads use `useQuery(…, { persist: true })` (open on the cached answer, refresh in the background) with the keys in `api.ts` (`prop/…`). Polls run only while a screen is in front (`useIsFocused`): the challenge every 3 s without the stream and every 8 s with it, lists every 20 s. `useStable` keeps the same object while a poll brings nothing new, so the memoised sections below the screen skip the render.
-- Money actions (`purchaseChallenge`, `requestPayout`) call the server directly and show only its answer. A purchase carries one idempotency key per plan + size in an open checkout: a retry after a lost answer never charges twice. After a confirmed purchase or payout the prop screens, the wallet and the accounts list refresh (`refreshAfterMoney`).
+- Money actions (`purchaseChallenge`, `requestPayout`) call the server directly and show only its answer. A purchase carries one idempotency key per plan + size in an open checkout: a retry after a lost answer (network, time-out, 5xx such as `payment_pending`) never charges twice. A final refusal (4xx: `insufficient_funds`, `plan_unavailable`, `account_unavailable`…) takes a new key, because the service keeps the refused purchase under the old one and would only replay it; an answer carrying a challenge that ended (closed and refunded, payment failed) is shown as that error, never as "You're in". A double tap sends one request (a ref, set before the first await). After a confirmed purchase or payout the prop screens, the wallet and the accounts list refresh (`refreshAfterMoney`).
+- View-only logins and read-only staff sessions (`useReadOnly`) see everything but can't pay or request a payout (the proxy refuses them too).
+- A challenge that ended (failed, closed, payment failed) isn't polled any more; pull to refresh still works.
+- Closed challenges: when the engine refuses the next account (for example the broker's accounts-per-user limit on the prop group), the service refunds the fee and closes the challenge; the dashboard says so (never "opening"), with Contact support.
 - Errors: the service's codes map to `mobileProp.error.*`; payout gate codes keep the service's wording for English readers (it carries dates and amounts). `insufficient_funds` offers Deposit, `kyc_required` offers Verify identity.
 
 ## Live
@@ -27,9 +30,13 @@ Prop challenges in the Kalks app: the plan catalogue and checkout, a live rule d
 - A deal, an account status change or a resync refetches the prop service's verdict at once (debounced), so a breach or a pass shows within about a second.
 - Without a stream (view-only or read-only staff sessions, an older server) the gauges follow the evaluator's numbers from the polls; the badge says when they were checked. The socket closes after 30 s in the background and reconnects with backoff and a 15 s silence watchdog.
 
+## Motion and haptics
+
+Functional only, like the rest of the app: pull to refresh and choosing a size or showing a password (selection) give a haptic; a purchase or a payout answer, a copy or a navigation tap don't. Gauges ease to new values (220 ms); nothing loops.
+
 ## Skia
 
-`components/skia/parts.tsx` draws the rings, bars, the equity curve and the certificate art. On native it is imported as is (`components/gauges.tsx`). On web (`gauges.web.tsx`) each part renders a same-size placeholder until CanvasKit is loaded (`canvaskit.wasm` at the site root, copied by `scripts/copy-canvaskit.mjs`), then the drawing module is imported.
+`components/skia/parts.tsx` draws the rings, bars, the equity curve (flat lines and a flat low-opacity fill: the app's matte finish) and the certificate art. On native it is imported as is (`components/gauges.tsx`). On web (`gauges.web.tsx`) each part renders a same-size placeholder until CanvasKit is loaded (`canvaskit.wasm` at the site root, copied by `scripts/copy-canvaskit.mjs`), then the drawing module is imported.
 
 ## Certificates
 

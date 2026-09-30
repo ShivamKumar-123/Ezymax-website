@@ -26,6 +26,7 @@ export function CertificatesScreen() {
     <StackHeader
       eyebrow={t("mobileProp.home.eyebrow")}
       title={t("mobileProp.certs.title")}
+      fallback="/prop"
       sub={
         <Text tone="secondary" style={{ marginTop: space[1] }}>
           {t("mobileProp.certs.subtitle")}
