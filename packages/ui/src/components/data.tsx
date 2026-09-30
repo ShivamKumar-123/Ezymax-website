@@ -44,7 +44,8 @@ export function KpiCard({
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }} className={cn("min-w-0", className)}>
       <SpotlightCard hot={hot} className="flex h-full flex-col">
         <div className="relative flex flex-1 flex-col px-6 pb-5 pt-6">
-          <div className="flex items-start justify-between">
+          {/* min-h keeps the value on the same line in a row of cards with and without an icon */}
+          <div className="flex min-h-10 items-start justify-between">
             <span className="k-label">{label}</span>
             {icon && <span className="grid size-10 place-items-center rounded-full border border-line bg-surface-2/80 text-fg-2 shadow-[inset_0_1px_0_var(--k-border-top)] [&_svg]:size-[17px]">{icon}</span>}
           </div>
