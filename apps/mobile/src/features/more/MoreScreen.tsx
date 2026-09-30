@@ -48,6 +48,8 @@ import { ChoiceSheet, ConfirmSheet } from "@/features/profile/components/sheets"
 import { clientId } from "@/features/profile/format";
 import { fetchKyc } from "@/features/profile/kyc/api";
 import { initials, kycBadge, useMeX, type KycBadge } from "@/features/profile/me";
+import { prefetchAi } from "@/features/ai/api";
+import { prefetchSupport } from "@/features/support/api";
 
 type Item = {
   key: string;
@@ -109,7 +111,7 @@ const GROUPS: GroupDef[] = [
     key: "tools",
     label: "mobileProfile.more.group.tools",
     items: [
-      { key: "ai", icon: Bot, label: "mobileProfile.more.item.ai", hint: "mobileProfile.more.hint.ai", href: "/ai", module: "algo" },
+      { key: "ai", icon: Bot, label: "mobileProfile.more.item.ai", hint: "mobileProfile.more.hint.ai", href: "/ai", module: "algo", prefetch: prefetchAi },
       { key: "algo", icon: Workflow, label: "mobileProfile.more.item.algo", href: "/algo", module: "algo" },
       { key: "alerts", icon: BellRing, label: "mobileProfile.more.item.alerts", href: "/alerts" },
     ],
@@ -133,7 +135,7 @@ const GROUPS: GroupDef[] = [
       { key: "appLock", icon: Fingerprint, label: "mobileProfile.more.item.appLock", href: "/settings/app-lock", viewer: true },
       { key: "language", icon: Languages, label: "mobileProfile.more.item.language", href: "/profile/language", viewer: true },
       { key: "notifications", icon: Bell, label: "mobileProfile.more.item.notifications", href: "/profile/notifications", prefetch: () => prefetch(QK.prefs, fetchPrefs, { persist: true }) },
-      { key: "support", icon: LifeBuoy, label: "mobileProfile.more.item.support", href: "/support" },
+      { key: "support", icon: LifeBuoy, label: "mobileProfile.more.item.support", href: "/support", prefetch: prefetchSupport },
       { key: "legal", icon: Scale, label: "mobileProfile.more.item.legal", viewer: true },
     ],
   },
