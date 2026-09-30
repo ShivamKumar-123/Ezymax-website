@@ -59,7 +59,9 @@ before(async () => {
       }
       if (url.pathname === "/v1/me/analytics") {
         res.writeHead(200, { "content-type": "application/json" });
-        return res.end(JSON.stringify({ scope: url.searchParams.get("login") === "all" ? "live" : "account", byDay: [{ key: "2026-09-30", trades: 3, wins: 1, winRate: 33.33, net: -8.21, lots: 0.25 }] }));
+        // like the service: every account of the client is listed next to the analytics of the chosen scope
+        const accounts = [50000001, 50000002, 50000003].map((login) => ({ login, type: "live", group: "standard", groupName: "Standard", currency: "USD", cent: false, equity: login / 1000, balance: login / 1000 }));
+        return res.end(JSON.stringify({ scope: url.searchParams.get("login") === "all" ? "live" : "account", accounts, byDay: [{ key: "2026-09-30", trades: 3, wins: 1, winRate: 33.33, net: -8.21, lots: 0.25 }] }));
       }
       if (url.pathname.endsWith("/months")) {
         res.writeHead(200, { "content-type": "application/json" });
@@ -114,7 +116,9 @@ test("analytics: the bearer session is the client; the service gets its id, the 
   assert.equal(target.pathname, "/api/reports/analytics");
   assert.equal(res.status, 200);
   assert.equal(res.headers.get("cache-control"), "no-store");
-  assert.deepEqual((await res.json()).byDay[0], { key: "2026-09-30", trades: 3, wins: 1, winRate: 33.33, net: -8.21, lots: 0.25 });
+  const body = await res.json();
+  assert.deepEqual(body.byDay[0], { key: "2026-09-30", trades: 3, wins: 1, winRate: 33.33, net: -8.21, lots: 0.25 });
+  assert.deepEqual(body.accounts.map((a) => a.login), [50000001, 50000002, 50000003], "the owner sees every account");
   assert.equal(calls.length, n + 1);
   const c = lastCall();
   assert.equal(c.path, "/v1/me/analytics?login=all&from=2026-07-02&to=2026-10-01");
@@ -187,6 +191,18 @@ test("view-only logins: one shared account answers 'all' with it; several must p
 
   r = await viaProxy(m, "/api/mobile/reports/accounts/50000002/months", TOKENS.viewerTwo);
   assert.equal(r.res.status, 200);
+});
+
+test("view-only logins: the analytics account list holds only the shared accounts (no balances of the others)", async () => {
+  const m = await load();
+  let r = await viaProxy(m, "/api/mobile/reports/analytics?login=all&from=2026-07-02&to=2026-10-01", TOKENS.viewerOne);
+  assert.equal(r.res.status, 200);
+  assert.deepEqual((await r.res.json()).accounts.map((a) => a.login), [50000001]);
+  r = await viaProxy(m, "/api/mobile/reports/analytics?login=50000002&from=2026-07-02&to=2026-10-01", TOKENS.viewerTwo);
+  assert.equal(r.res.status, 200);
+  const body = await r.res.json();
+  assert.deepEqual(body.accounts.map((a) => a.login), [50000001, 50000002]);
+  assert.ok(!JSON.stringify(body).includes("50000.003"), "no figures of an account that wasn't shared");
 });
 
 test("view-only logins without the statements section are held at the proxy", async () => {

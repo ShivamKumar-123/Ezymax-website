@@ -89,5 +89,11 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     return new NextResponse(res.body, { status: 200, headers });
   }
   const data = await res.json().catch(() => ({ error: { code: "bad_gateway", message: "Unexpected response from the reports service." } }));
+  // the service lists every account of the client next to the analytics: a view-only login sees only the ones it
+  // was given (logins, balances and equity of the others stay private)
+  if (user.viewer && res.ok && path[0] === "analytics" && Array.isArray((data as { accounts?: unknown }).accounts)) {
+    const d = data as { accounts: { login: number | string }[] };
+    d.accounts = d.accounts.filter((a) => viewerHasAccount(user.viewer!, a.login));
+  }
   return NextResponse.json(data, { status: res.status, headers: NO_STORE });
 }
