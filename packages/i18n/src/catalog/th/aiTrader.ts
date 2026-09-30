@@ -61,7 +61,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "ตัวแยกวิเคราะห์ในเครื่อง (ยังไม่ได้ตั้งค่า AI) · ตรวจสอบการ์ดก่อนเปิดใช้งาน",
   "composer.byClaude": "Claude · ตรวจสอบการ์ดก่อนเปิดใช้งาน",
   "composer.notConfigured": "ยังไม่ได้ตั้งค่า AI: แยกวิเคราะห์ด้วยตัวแยกกฎในเครื่อง",
-  "composer.notConfiguredKey": "ยังไม่ได้ตั้งค่า AI: แยกวิเคราะห์ด้วยตัวแยกกฎในเครื่อง ตั้งค่า ANTHROPIC_API_KEY เพื่อใช้ Claude",
   "composer.failedNote": "{error} คุณสามารถใช้ตัวแยกวิเคราะห์ในเครื่องแทนได้",
   "composer.failed": "การแปลงล้มเหลว",
   "composer.failedToast": "AI แปลงไม่สำเร็จ",

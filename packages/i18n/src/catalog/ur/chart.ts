@@ -115,8 +115,6 @@ const chart: NsMessages<"chart"> = {
   "quote.marketClosed": "مارکیٹ بند",
 
   // One-click SELL / BUY panel
-  "oneClick.sell": "فروخت",
-  "oneClick.buy": "خرید",
   "oneClick.show": "ون کلک ٹریڈنگ دکھائیں",
   "oneClick.hide": "ون کلک ٹریڈنگ چھپائیں",
   "oneClick.hideShort": "چھپائیں",

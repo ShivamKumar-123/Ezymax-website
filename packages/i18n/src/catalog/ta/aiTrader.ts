@@ -61,7 +61,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "லோக்கல் பார்சர் (AI அமைக்கப்படவில்லை) · செயல்படுத்தும் முன் அட்டையைச் சரிபாருங்கள்",
   "composer.byClaude": "Claude · செயல்படுத்தும் முன் அட்டையைச் சரிபாருங்கள்",
   "composer.notConfigured": "AI அமைக்கப்படவில்லை: லோக்கல் விதி பார்சர் மூலம் பார்ஸ் செய்யப்பட்டது.",
-  "composer.notConfiguredKey": "AI அமைக்கப்படவில்லை: லோக்கல் விதி பார்சர் மூலம் பார்ஸ் செய்யப்பட்டது. Claude ஐப் பயன்படுத்த ANTHROPIC_API_KEY ஐ அமையுங்கள்.",
   "composer.failedNote": "{error}. அதற்குப் பதிலாக லோக்கல் பார்சரைப் பயன்படுத்தலாம்.",
   "composer.failed": "மாற்றம் தோல்வியடைந்தது",
   "composer.failedToast": "AI மாற்றம் தோல்வியடைந்தது",

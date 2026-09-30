@@ -115,8 +115,6 @@ const chart: NsMessages<"chart"> = {
   "quote.marketClosed": "بازار بسته است",
 
   // One-click SELL / BUY panel
-  "oneClick.sell": "فروش",
-  "oneClick.buy": "خرید",
   "oneClick.show": "نمایش معامله یک‌کلیکی",
   "oneClick.hide": "پنهان کردن معامله یک‌کلیکی",
   "oneClick.hideShort": "پنهان",

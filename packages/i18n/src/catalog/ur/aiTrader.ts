@@ -61,7 +61,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "لوکل پارسر (AI کنفیگر نہیں) · ایکٹیویٹ کرنے سے پہلے کارڈ کا جائزہ لیں",
   "composer.byClaude": "Claude · ایکٹیویٹ کرنے سے پہلے کارڈ کا جائزہ لیں",
   "composer.notConfigured": "AI کنفیگر نہیں: لوکل رول پارسر سے پارس کیا گیا۔",
-  "composer.notConfiguredKey": "AI کنفیگر نہیں: لوکل رول پارسر سے پارس کیا گیا۔ Claude استعمال کرنے کے لیے ANTHROPIC_API_KEY سیٹ کریں۔",
   "composer.failedNote": "{error}۔ آپ اس کے بجائے لوکل پارسر استعمال کر سکتے ہیں۔",
   "composer.failed": "تبدیلی ناکام ہو گئی",
   "composer.failedToast": "AI تبدیلی ناکام ہو گئی",

@@ -115,8 +115,6 @@ const chart: NsMessages<"chart"> = {
   "quote.marketClosed": "Marché fermé",
 
   // Panneau de trading en un clic
-  "oneClick.sell": "Vendre",
-  "oneClick.buy": "Acheter",
   "oneClick.show": "Afficher le trading en un clic",
   "oneClick.hide": "Masquer le trading en un clic",
   "oneClick.hideShort": "Masquer",

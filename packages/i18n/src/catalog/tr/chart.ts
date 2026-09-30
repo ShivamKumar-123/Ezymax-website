@@ -115,8 +115,6 @@ const chart: NsMessages<"chart"> = {
   "quote.marketClosed": "Piyasa kapalı",
 
   // One-click SELL / BUY panel
-  "oneClick.sell": "Sat",
-  "oneClick.buy": "Al",
   "oneClick.show": "Tek tıkla işlemi göster",
   "oneClick.hide": "Tek tıkla işlemi gizle",
   "oneClick.hideShort": "Gizle",

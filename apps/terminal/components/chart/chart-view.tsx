@@ -920,7 +920,7 @@ export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; 
   return (
     <div className="absolute left-2 z-[6] flex items-stretch overflow-hidden rounded-[6px] border border-line-top bg-panel-2 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)]" style={{ top, left }} onPointerDown={(e) => e.stopPropagation()} onContextMenu={(e) => e.stopPropagation()}>
       <button onClick={() => go("sell")} disabled={!open} title={open ? (T.guest ? t("trader.guest.title") : undefined) : t("chart.oneClick.marketClosed")} className={cn("group flex flex-col items-start bg-down/12 px-2 py-1 text-left transition-colors hover:bg-down/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={t(open ? "chart.oneClick.sellAria" : "chart.oneClick.sellClosedAria", { symbol })}>
-        <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-down">{t("chart.oneClick.sell")}</span>
+        <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-down">{t("common.sell")}</span>
         <PriceText symbol={symbol} value={bid} dir={dir} className={compact ? "text-[12px]" : "text-[14px]"} />
       </button>
       <div className="flex w-[84px] flex-col items-center justify-center border-x border-line bg-panel px-0.5">
@@ -944,7 +944,7 @@ export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; 
         {open ? <span className="font-mono text-[9px] text-fg-3">{spread}</span> : <span className="whitespace-nowrap text-[9px] font-semibold uppercase tracking-[0.06em] text-warn">{t("chart.oneClick.marketClosed")}</span>}
       </div>
       <button onClick={() => go("buy")} disabled={!open} title={open ? (T.guest ? t("trader.guest.title") : undefined) : t("chart.oneClick.marketClosed")} className={cn("flex flex-col items-end bg-up/12 px-2 py-1 text-right transition-colors hover:bg-up/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={t(open ? "chart.oneClick.buyAria" : "chart.oneClick.buyClosedAria", { symbol })}>
-        <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-up">{t("chart.oneClick.buy")}</span>
+        <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-up">{t("common.buy")}</span>
         <PriceText symbol={symbol} value={ask} dir={dir} className={cn("justify-end", compact ? "text-[12px]" : "text-[14px]")} />
       </button>
       <button onClick={() => setCollapsed(true)} className="grid w-5 place-items-center border-l border-line bg-panel text-[10px] text-fg-3 hover:text-fg" aria-label={t("chart.oneClick.hide")} title={t("chart.oneClick.hideShort")}>

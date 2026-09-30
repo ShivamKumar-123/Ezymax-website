@@ -75,7 +75,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "المحلل المحلي (AI غير مُعدّ) · راجع البطاقة قبل التفعيل",
   "composer.byClaude": "Claude · راجع البطاقة قبل التفعيل",
   "composer.notConfigured": "AI غير مُعدّ: تم التحليل بمحلل القواعد المحلي.",
-  "composer.notConfiguredKey": "AI غير مُعدّ: تم التحليل بمحلل القواعد المحلي. اضبط ANTHROPIC_API_KEY لاستخدام Claude.",
   "composer.failedNote": "{error}. يمكنك استخدام المحلل المحلي بدلًا من ذلك.",
   "composer.failed": "فشل التحويل",
   "composer.failedToast": "فشل تحويل AI",

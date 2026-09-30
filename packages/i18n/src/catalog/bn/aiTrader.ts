@@ -61,7 +61,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "লোকাল পার্সার (AI কনফিগার করা নেই) · অ্যাক্টিভেট করার আগে কার্ড যাচাই করুন",
   "composer.byClaude": "Claude · অ্যাক্টিভেট করার আগে কার্ড যাচাই করুন",
   "composer.notConfigured": "AI কনফিগার করা নেই: লোকাল রুল পার্সার দিয়ে পার্স করা হয়েছে।",
-  "composer.notConfiguredKey": "AI কনফিগার করা নেই: লোকাল রুল পার্সার দিয়ে পার্স করা হয়েছে। Claude ব্যবহার করতে ANTHROPIC_API_KEY সেট করুন।",
   "composer.failedNote": "{error}। এর বদলে লোকাল পার্সার ব্যবহার করতে পারেন।",
   "composer.failed": "রূপান্তর ব্যর্থ",
   "composer.failedToast": "AI রূপান্তর ব্যর্থ",

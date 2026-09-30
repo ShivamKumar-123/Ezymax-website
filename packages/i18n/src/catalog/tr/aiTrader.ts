@@ -62,7 +62,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "Yerel ayrıştırıcı (AI yapılandırılmamış) · etkinleştirmeden önce kartı inceleyin",
   "composer.byClaude": "Claude · etkinleştirmeden önce kartı inceleyin",
   "composer.notConfigured": "AI yapılandırılmamış: yerel kural ayrıştırıcısıyla işlendi.",
-  "composer.notConfiguredKey": "AI yapılandırılmamış: yerel kural ayrıştırıcısıyla işlendi. Claude'u kullanmak için ANTHROPIC_API_KEY ayarlayın.",
   "composer.failedNote": "{error}. Bunun yerine yerel ayrıştırıcıyı kullanabilirsiniz.",
   "composer.failed": "Dönüştürme başarısız",
   "composer.failedToast": "AI dönüştürmesi başarısız",

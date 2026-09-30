@@ -115,8 +115,6 @@ const chart: NsMessages<"chart"> = {
   "quote.marketClosed": "시장 마감",
 
   // One-click SELL / BUY panel
-  "oneClick.sell": "매도",
-  "oneClick.buy": "매수",
   "oneClick.show": "원클릭 거래 표시",
   "oneClick.hide": "원클릭 거래 숨기기",
   "oneClick.hideShort": "숨기기",

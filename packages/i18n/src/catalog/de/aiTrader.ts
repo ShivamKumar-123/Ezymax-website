@@ -61,7 +61,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "Lokaler Parser (KI nicht konfiguriert) · Karte vor dem Aktivieren prüfen",
   "composer.byClaude": "Claude · Karte vor dem Aktivieren prüfen",
   "composer.notConfigured": "KI nicht konfiguriert: mit dem lokalen Regelparser verarbeitet.",
-  "composer.notConfiguredKey": "KI nicht konfiguriert: mit dem lokalen Regelparser verarbeitet. Setzen Sie ANTHROPIC_API_KEY, um Claude zu nutzen.",
   "composer.failedNote": "{error}. Sie können stattdessen den lokalen Parser verwenden.",
   "composer.failed": "Umwandlung fehlgeschlagen",
   "composer.failedToast": "KI-Umwandlung fehlgeschlagen",

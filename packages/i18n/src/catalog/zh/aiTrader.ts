@@ -61,7 +61,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "本地解析器（未配置 AI）· 激活前请审核策略卡",
   "composer.byClaude": "Claude · 激活前请审核策略卡",
   "composer.notConfigured": "未配置 AI：已使用本地规则解析器解析。",
-  "composer.notConfiguredKey": "未配置 AI：已使用本地规则解析器解析。设置 ANTHROPIC_API_KEY 即可使用 Claude。",
   "composer.failedNote": "{error}。您可以改用本地解析器。",
   "composer.failed": "转换失败",
   "composer.failedToast": "AI 转换失败",

@@ -62,7 +62,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "Parser lokal (AI belum dikonfigurasi) · tinjau kartu sebelum mengaktifkan",
   "composer.byClaude": "Claude · tinjau kartu sebelum mengaktifkan",
   "composer.notConfigured": "AI belum dikonfigurasi: diurai dengan parser aturan lokal.",
-  "composer.notConfiguredKey": "AI belum dikonfigurasi: diurai dengan parser aturan lokal. Atur ANTHROPIC_API_KEY untuk menggunakan Claude.",
   "composer.failedNote": "{error}. Anda dapat menggunakan parser lokal sebagai gantinya.",
   "composer.failed": "Konversi gagal",
   "composer.failedToast": "Konversi AI gagal",

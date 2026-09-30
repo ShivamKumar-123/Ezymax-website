@@ -62,7 +62,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "Penghurai tempatan (AI tidak dikonfigurasi) · semak kad sebelum mengaktifkan",
   "composer.byClaude": "Claude · semak kad sebelum mengaktifkan",
   "composer.notConfigured": "AI tidak dikonfigurasi: dihurai dengan penghurai peraturan tempatan.",
-  "composer.notConfiguredKey": "AI tidak dikonfigurasi: dihurai dengan penghurai peraturan tempatan. Tetapkan ANTHROPIC_API_KEY untuk menggunakan Claude.",
   "composer.failedNote": "{error}. Anda boleh menggunakan penghurai tempatan sebagai ganti.",
   "composer.failed": "Penukaran gagal",
   "composer.failedToast": "Penukaran AI gagal",

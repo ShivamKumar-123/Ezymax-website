@@ -61,7 +61,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "Analizador local (IA no configurada) · revise la ficha antes de activarla",
   "composer.byClaude": "Claude · revise la ficha antes de activarla",
   "composer.notConfigured": "IA no configurada: analizado con el analizador de reglas local.",
-  "composer.notConfiguredKey": "IA no configurada: analizado con el analizador de reglas local. Defina ANTHROPIC_API_KEY para usar Claude.",
   "composer.failedNote": "{error}. Puede usar el analizador local en su lugar.",
   "composer.failed": "Falló la conversión",
   "composer.failedToast": "Falló la conversión con IA",

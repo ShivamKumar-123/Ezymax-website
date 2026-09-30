@@ -170,7 +170,7 @@ function Composer({ onCreated }: { onCreated: (id: string) => void }) {
   const build = async () => {
     const prompt = text.trim();
     if (!prompt || busy) return;
-    if (claude === false) return local(prompt, t("aiTrader.composer.notConfiguredKey"));
+    if (claude === false) return local(prompt, t("aiTrader.composer.notConfigured"));
     setBusy(true);
     setNote(null);
     try {
@@ -178,7 +178,7 @@ function Composer({ onCreated }: { onCreated: (id: string) => void }) {
       const data = (await res.json()) as { configured?: boolean; error?: string; result?: ParseResult };
       if (data.configured === false) {
         setClaude(false);
-        return local(prompt, data.error ?? t("aiTrader.composer.notConfigured"));
+        return local(prompt, t("aiTrader.composer.notConfigured"));
       }
       if (!res.ok || !data.result) {
         setNote(t("aiTrader.composer.failedNote", { error: data.error ?? t("aiTrader.composer.failed") }));
@@ -200,8 +200,8 @@ function Composer({ onCreated }: { onCreated: (id: string) => void }) {
     <div className="flex w-[300px] shrink-0 flex-col border-r border-line 2xl:w-[340px]">
       <div className="flex h-8 shrink-0 items-center gap-2 border-b border-line px-2.5">
         <Bot className="size-3.5 text-ember" />
-        <span className="text-[10.5px] font-semibold uppercase tracking-[0.09em] text-fg-2">{t("aiTrader.composer.title")}</span>
-        <span className="ms-auto">{claude === null ? <Badge>{t("aiTrader.composer.checking")}</Badge> : claude ? <Badge tone="ember">{t("aiTrader.composer.claude")}</Badge> : <Badge tone="warn">{t("aiTrader.composer.local")}</Badge>}</span>
+        <span className="min-w-0 truncate text-[10.5px] font-semibold uppercase tracking-[0.09em] text-fg-2">{t("aiTrader.composer.title")}</span>
+        <span className="ms-auto shrink-0 whitespace-nowrap">{claude === null ? <Badge>{t("aiTrader.composer.checking")}</Badge> : claude ? <Badge tone="ember">{t("aiTrader.composer.claude")}</Badge> : <Badge tone="warn">{t("aiTrader.composer.local")}</Badge>}</span>
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-2.5">
         <textarea

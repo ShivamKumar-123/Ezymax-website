@@ -61,7 +61,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "लोकल पार्सर (AI कॉन्फ़िगर नहीं) · एक्टिवेट करने से पहले कार्ड जाँचें",
   "composer.byClaude": "Claude · एक्टिवेट करने से पहले कार्ड जाँचें",
   "composer.notConfigured": "AI कॉन्फ़िगर नहीं: लोकल रूल पार्सर से पार्स किया गया।",
-  "composer.notConfiguredKey": "AI कॉन्फ़िगर नहीं: लोकल रूल पार्सर से पार्स किया गया। Claude इस्तेमाल करने के लिए ANTHROPIC_API_KEY सेट करें।",
   "composer.failedNote": "{error}। आप इसकी जगह लोकल पार्सर इस्तेमाल कर सकते हैं।",
   "composer.failed": "बदलना विफल",
   "composer.failedToast": "AI रूपांतरण विफल",

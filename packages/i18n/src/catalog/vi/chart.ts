@@ -115,8 +115,6 @@ const chart: NsMessages<"chart"> = {
   "quote.marketClosed": "Thị trường đóng cửa",
 
   // Bảng BÁN / MUA một chạm
-  "oneClick.sell": "Bán",
-  "oneClick.buy": "Mua",
   "oneClick.show": "Hiện giao dịch một chạm",
   "oneClick.hide": "Ẩn giao dịch một chạm",
   "oneClick.hideShort": "Ẩn",

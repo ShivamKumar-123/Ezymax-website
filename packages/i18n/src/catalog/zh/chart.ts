@@ -115,8 +115,6 @@ const chart: NsMessages<"chart"> = {
   "quote.marketClosed": "休市",
 
   // One-click SELL / BUY panel
-  "oneClick.sell": "卖出",
-  "oneClick.buy": "买入",
   "oneClick.show": "显示一键交易",
   "oneClick.hide": "隐藏一键交易",
   "oneClick.hideShort": "隐藏",

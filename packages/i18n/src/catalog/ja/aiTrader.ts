@@ -61,7 +61,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "ローカルパーサー（AI未設定）· 有効化する前にカードを確認してください",
   "composer.byClaude": "Claude · 有効化する前にカードを確認してください",
   "composer.notConfigured": "AI未設定：ローカルのルールパーサーで解析しました。",
-  "composer.notConfiguredKey": "AI未設定：ローカルのルールパーサーで解析しました。Claudeを使用するにはANTHROPIC_API_KEYを設定してください。",
   "composer.failedNote": "{error}。代わりにローカルパーサーを使用できます。",
   "composer.failed": "変換に失敗しました",
   "composer.failedToast": "AI変換に失敗しました",

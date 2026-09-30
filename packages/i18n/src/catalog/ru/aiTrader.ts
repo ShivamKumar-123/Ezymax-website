@@ -71,7 +71,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "Локальный парсер (ИИ не настроен) · проверьте карточку перед активацией",
   "composer.byClaude": "Claude · проверьте карточку перед активацией",
   "composer.notConfigured": "ИИ не настроен: обработано локальным парсером правил.",
-  "composer.notConfiguredKey": "ИИ не настроен: обработано локальным парсером правил. Задайте ANTHROPIC_API_KEY, чтобы использовать Claude.",
   "composer.failedNote": "{error}. Можно воспользоваться локальным парсером.",
   "composer.failed": "Не удалось преобразовать",
   "composer.failedToast": "Ошибка преобразования ИИ",

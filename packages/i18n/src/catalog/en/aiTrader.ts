@@ -63,7 +63,6 @@ const aiTrader = {
   "composer.byLocalNoAi": "Local parser (AI not configured) · review the card before activating",
   "composer.byClaude": "Claude · review the card before activating",
   "composer.notConfigured": "AI not configured: parsed with the local rule parser.",
-  "composer.notConfiguredKey": "AI not configured: parsed with the local rule parser. Set ANTHROPIC_API_KEY to use Claude.",
   "composer.failedNote": "{error}. You can use the local parser instead.",
   "composer.failed": "Conversion failed",
   "composer.failedToast": "AI conversion failed",

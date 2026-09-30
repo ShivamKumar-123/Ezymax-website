@@ -115,8 +115,6 @@ const chart: NsMessages<"chart"> = {
   "quote.marketClosed": "Soko limefungwa",
 
   // Paneli ya UZA / NUNUA kwa mbofyo mmoja
-  "oneClick.sell": "Uza",
-  "oneClick.buy": "Nunua",
   "oneClick.show": "Onyesha biashara ya mbofyo mmoja",
   "oneClick.hide": "Ficha biashara ya mbofyo mmoja",
   "oneClick.hideShort": "Ficha",

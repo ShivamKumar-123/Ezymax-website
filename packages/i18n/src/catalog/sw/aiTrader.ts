@@ -61,7 +61,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "Kichanganuzi cha ndani (AI haijasanidiwa) · kagua kadi kabla ya kuwasha",
   "composer.byClaude": "Claude · kagua kadi kabla ya kuwasha",
   "composer.notConfigured": "AI haijasanidiwa: imechanganuliwa kwa kichanganuzi cha kanuni cha ndani.",
-  "composer.notConfiguredKey": "AI haijasanidiwa: imechanganuliwa kwa kichanganuzi cha kanuni cha ndani. Weka ANTHROPIC_API_KEY ili kutumia Claude.",
   "composer.failedNote": "{error}. Unaweza kutumia kichanganuzi cha ndani badala yake.",
   "composer.failed": "Ubadilishaji umeshindwa",
   "composer.failedToast": "Ubadilishaji wa AI umeshindwa",

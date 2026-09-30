@@ -190,7 +190,7 @@ export function Stepper({
           if (document.activeElement !== e.currentTarget) return;
           bump(e.deltaY < 0 ? 1 : -1);
         }}
-        className="k-num h-full w-full min-w-0 bg-transparent text-center font-mono text-[12px] text-fg outline-none placeholder:text-fg-3/70"
+        className="k-num h-full w-full min-w-0 text-ellipsis bg-transparent text-center font-mono text-[12px] text-fg outline-none placeholder:font-sans placeholder:text-[11px] placeholder:text-fg-3/70"
       />
       <button type="button" tabIndex={-1} onClick={() => bump(1)} className="grid h-full w-6 shrink-0 place-items-center text-fg-3 hover:text-fg" aria-label={t("trader.stepper.increase")}>
         <Plus className="size-3" />

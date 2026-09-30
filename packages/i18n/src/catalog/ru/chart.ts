@@ -120,8 +120,6 @@ const chart: NsMessages<"chart"> = {
   "quote.marketClosed": "Рынок закрыт",
 
   // Панель торговли в один клик SELL / BUY
-  "oneClick.sell": "Sell",
-  "oneClick.buy": "Buy",
   "oneClick.show": "Показать торговлю в один клик",
   "oneClick.hide": "Скрыть торговлю в один клик",
   "oneClick.hideShort": "Скрыть",

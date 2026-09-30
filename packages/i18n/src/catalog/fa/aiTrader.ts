@@ -61,7 +61,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "تجزیه‌گر محلی (AI پیکربندی نشده) · پیش از فعال‌سازی کارت را بررسی کنید",
   "composer.byClaude": "Claude · پیش از فعال‌سازی کارت را بررسی کنید",
   "composer.notConfigured": "AI پیکربندی نشده است: با تجزیه‌گر قواعد محلی تجزیه شد.",
-  "composer.notConfiguredKey": "AI پیکربندی نشده است: با تجزیه‌گر قواعد محلی تجزیه شد. برای استفاده از Claude، ANTHROPIC_API_KEY را تنظیم کنید.",
   "composer.failedNote": "{error}. می‌توانید به‌جای آن از تجزیه‌گر محلی استفاده کنید.",
   "composer.failed": "تبدیل ناموفق بود",
   "composer.failedToast": "تبدیل AI ناموفق بود",

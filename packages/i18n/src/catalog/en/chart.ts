@@ -119,8 +119,6 @@ const chart = {
   "quote.marketClosed": "Market closed",
 
   // One-click SELL / BUY panel
-  "oneClick.sell": "Sell",
-  "oneClick.buy": "Buy",
   "oneClick.show": "Show one-click trading",
   "oneClick.hide": "Hide one-click trading",
   "oneClick.hideShort": "Hide",

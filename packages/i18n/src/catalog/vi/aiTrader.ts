@@ -61,7 +61,6 @@ const aiTrader: NsMessages<"aiTrader"> = {
   "composer.byLocalNoAi": "Bộ phân tích cục bộ (chưa cấu hình AI) · xem lại thẻ trước khi kích hoạt",
   "composer.byClaude": "Claude · xem lại thẻ trước khi kích hoạt",
   "composer.notConfigured": "Chưa cấu hình AI: đã phân tích bằng bộ quy tắc cục bộ.",
-  "composer.notConfiguredKey": "Chưa cấu hình AI: đã phân tích bằng bộ quy tắc cục bộ. Đặt ANTHROPIC_API_KEY để dùng Claude.",
   "composer.failedNote": "{error}. Bạn có thể dùng bộ phân tích cục bộ.",
   "composer.failed": "Chuyển đổi thất bại",
   "composer.failedToast": "AI chuyển đổi thất bại",
