@@ -6,6 +6,7 @@ import * as React from "react";
 import { Info } from "lucide-react";
 import { Card, CardHeader, Chip, DataTable, EquityChart, Tabs, cn, type Column } from "@kalks/ui";
 import { useFormat, useT } from "@kalks/i18n/react";
+import { INSTRUMENT_MAP } from "@kalks/mock";
 import { fmtDate, fmtDateTime, fmtMoney, fmtNum, fmtPct, fmtSigned, type BacktestDetail, type Trade } from "./api";
 
 const MONTHS = ["developer.month.jan", "developer.month.feb", "developer.month.mar", "developer.month.apr", "developer.month.may", "developer.month.jun", "developer.month.jul", "developer.month.aug", "developer.month.sep", "developer.month.oct", "developer.month.nov", "developer.month.dec"] as const;
@@ -14,7 +15,7 @@ function Kpi({ label, value, tone, sub }: { label: string; value: string; tone?:
   return (
     <div className="rounded-[14px] border border-line bg-surface-2/50 px-4 py-3">
       <div className="text-[10.5px] uppercase tracking-[0.06em] text-fg-3">{label}</div>
-      <div className={cn("k-num mt-1 text-[20px] font-semibold", tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-fg")}>{value}</div>
+      <div className={cn("k-num mt-1 whitespace-nowrap text-[18px] font-semibold 2xl:text-[20px]", tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-fg")}>{value}</div>
       {sub && <div className="mt-0.5 text-[11px] text-fg-3">{sub}</div>}
     </div>
   );
@@ -31,6 +32,9 @@ export function BacktestReport({ bt }: { bt: BacktestDetail }) {
   const f = useFormat();
   const r = bt.report!;
   const m = r.metrics;
+  // prices with the symbol's own decimals (1.17250, not 1.1725)
+  const digits = INSTRUMENT_MAP[bt.params.symbol]?.digits;
+  const px = (v: number) => (digits === undefined ? String(v) : v.toFixed(digits));
   const [tab, setTab] = React.useState<"trades" | "metrics" | "data">("trades");
   const eq = React.useMemo(() => r.equity.map((p) => ({ time: p.t, value: p.equity })), [r.equity]);
   const dd = React.useMemo(() => r.equity.map((p) => ({ time: p.t, value: p.dd })), [r.equity]);
@@ -39,10 +43,10 @@ export function BacktestReport({ bt }: { bt: BacktestDetail }) {
     { key: "side", header: t("developer.col.side"), cell: (x) => <Chip size="sm" tone={x.side === "buy" ? "up" : "down"}>{(x.side === "buy" ? t("common.buy") : t("common.sell")).toUpperCase()}</Chip>, sort: (x) => x.side },
     { key: "vol", header: t("developer.col.lots"), cell: (x) => <span className="k-num tabular-nums">{x.volume}</span>, align: "right", sort: (x) => x.volume },
     { key: "open", header: t("developer.col.open"), cell: (x) => <span className="k-num text-fg-2">{fmtDateTime(x.openTime)}</span>, sort: (x) => x.openTime, csv: (x) => new Date(x.openTime * 1000).toISOString() },
-    { key: "op", header: t("developer.col.price"), cell: (x) => <span className="k-num tabular-nums">{x.openPrice}</span>, align: "right", hideOn: "md" },
+    { key: "op", header: t("developer.col.price"), cell: (x) => <span className="k-num tabular-nums">{px(x.openPrice)}</span>, align: "right", hideOn: "md" },
     { key: "close", header: t("developer.col.close"), cell: (x) => <span className="k-num text-fg-2">{fmtDateTime(x.closeTime)}</span>, sort: (x) => x.closeTime, hideOn: "sm", csv: (x) => new Date(x.closeTime * 1000).toISOString() },
-    { key: "cp", header: t("developer.col.price"), cell: (x) => <span className="k-num tabular-nums">{x.closePrice}</span>, align: "right", hideOn: "md" },
-    { key: "reason", header: t("developer.col.exit"), cell: (x) => <span className="text-fg-2">{t.dyn(`developer.exit.${x.reason}`, x.reason.replace(/_/g, " "))}</span>, sort: (x) => x.reason, hideOn: "lg" },
+    { key: "cp", header: t("developer.col.price"), cell: (x) => <span className="k-num tabular-nums">{px(x.closePrice)}</span>, align: "right", hideOn: "md" },
+    { key: "reason", header: t("developer.col.exit"), cell: (x) => <span className="whitespace-nowrap text-fg-2">{t.dyn(`developer.exit.${x.reason}`, x.reason.replace(/_/g, " "))}</span>, sort: (x) => x.reason, hideOn: "lg" },
     { key: "swap", header: t("developer.col.swap"), cell: (x) => <span className="k-num tabular-nums text-fg-3">{fmtSigned(x.swap)}</span>, align: "right", hideOn: "xl", sort: (x) => x.swap },
     { key: "net", header: t("developer.col.net"), cell: (x) => <span className={cn("k-num tabular-nums font-medium", x.net >= 0 ? "text-up" : "text-down")}>{fmtSigned(x.net)}</span>, align: "right", sort: (x) => x.net },
   ];

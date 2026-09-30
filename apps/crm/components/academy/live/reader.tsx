@@ -206,7 +206,7 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
             </Card>
           )}
 
-          <div id="quiz" className="mt-4 scroll-mt-6">
+          <div id="quiz" className="mt-4 scroll-mt-24">
             <ChapterQuiz
               key={c.slug}
               slug={c.slug}
