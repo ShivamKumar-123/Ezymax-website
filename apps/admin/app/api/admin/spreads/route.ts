@@ -35,12 +35,18 @@ export async function GET(req: NextRequest) {
   if (!marketDataConfigured()) return notConfigured();
 
   const onlyQuotes = req.nextUrl.searchParams.get("only") === "quotes";
-  const groups = onlyQuotes ? [] : await tenantSpreadGroups(who.staff);
+  if (onlyQuotes) {
+    const quotes = await marketData<Record<string, MdQuote>>("/v1/quotes?group=raw");
+    return NextResponse.json({ quotes: quotes.data ?? {} }, { headers: { "cache-control": "no-store" } });
+  }
+  // independent reads: one round-trip instead of three in a row
+  const [groups, quotes, markups, instruments] = await Promise.all([
+    tenantSpreadGroups(who.staff),
+    marketData<Record<string, MdQuote>>("/v1/quotes?group=raw"),
+    marketData<Markup[]>("/v1/admin/spreads", { admin: true }),
+    marketData<MdInstrument[]>("/v1/instruments"),
+  ]);
   if (groups === null) return apiError(503, "unavailable", "The trading engine is unavailable.");
-  const quotes = await marketData<Record<string, MdQuote>>("/v1/quotes?group=raw");
-  if (onlyQuotes) return NextResponse.json({ quotes: quotes.data ?? {} }, { headers: { "cache-control": "no-store" } });
-
-  const [markups, instruments] = await Promise.all([marketData<Markup[]>("/v1/admin/spreads", { admin: true }), marketData<MdInstrument[]>("/v1/instruments")]);
   if (markups.status === 401) return apiError(502, "market_data_auth", "Market-data rejected the Back Office admin token.");
   if (markups.status !== 200 || !markups.data) return apiError(503, "unavailable", "Market-data service is unavailable.");
   return NextResponse.json(

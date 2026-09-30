@@ -7,6 +7,7 @@ import type { ViewerScope } from "@/lib/viewer";
 import { cookies } from "next/headers";
 import { LOCALE_COOKIE, isLocale } from "@kalks/i18n/locales";
 import { requestHost } from "@/lib/tenant-host";
+import { Memo, secretKey } from "@/lib/memo";
 
 export const SESSION_COOKIE = "kalks_session";
 export const DEVICE_COOKIE = "kalks_did";
@@ -103,11 +104,30 @@ export function edgeCountry(h: Headers): string | null {
   return c && /^[A-Za-z]{2}$/.test(c) ? c : null;
 }
 
+// Every page render and BFF call resolves the session; a page load fans out into several BFF calls, so the answer
+// is shared for a few seconds per session (and per client IP / host) instead of asking the gateway each time.
+// Sign-out drops the entry at once (forgetSession); a revocation elsewhere applies within ME_TTL_MS.
+const ME_TTL_MS = 3_000;
+const meCache = new Memo<GatewayUser | null | "unavailable">(ME_TTL_MS, 5_000);
+
 export async function fetchMe(token: string, h: Headers): Promise<GatewayUser | null | "unavailable"> {
-  const r = await gateway<{ user?: GatewayUser; viewer?: ViewerScope | null; session?: GatewayUser["session"] }>("/v1/auth/me", { token, ip: clientIp(h), userAgent: h.get("user-agent") });
-  if (r.status === 200 && r.data.user) return { ...r.data.user, viewer: r.data.viewer ?? null, session: r.data.session };
-  if (r.status === 401) return null;
-  return "unavailable";
+  const ip = clientIp(h);
+  const key = `${await secretKey(token)}|${ip}|${(await requestHost()) ?? ""}`;
+  return meCache.get(
+    key,
+    async () => {
+      const r = await gateway<{ user?: GatewayUser; viewer?: ViewerScope | null; session?: GatewayUser["session"] }>("/v1/auth/me", { token, ip, userAgent: h.get("user-agent") });
+      if (r.status === 200 && r.data.user) return { ...r.data.user, viewer: r.data.viewer ?? null, session: r.data.session };
+      if (r.status === 401) return null;
+      return "unavailable";
+    },
+    (v) => v !== "unavailable" && v !== null,
+  );
+}
+
+/** Forget the cached session answer (sign-out, password change). */
+export async function forgetSession(token: string | undefined | null) {
+  if (token) meCache.deletePrefix(`${await secretKey(token)}|`);
 }
 
 /** CSRF check for state-changing requests: the Origin (or Sec-Fetch-Site) must be this app. */

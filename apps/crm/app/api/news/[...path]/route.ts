@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { newsService } from "@/lib/news";
+import { newsService, publicNews } from "@/lib/news";
 import { sameOrigin, sessionUser } from "@/lib/trading";
 import { SESSION_COOKIE } from "@/lib/gateway";
 
@@ -63,14 +63,14 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     return reply(await newsService("/v1/me/calendar", { user }));
   }
   const user = await optionalUser(req);
-  if (a === "feed" && path.length === 1) return reply(await newsService(`/v1/news${query(req, ["symbol", "currency", "country", "category", "sentiment", "q", "before", "limit", "minImportance", "hours"])}`, { user }), true);
-  if (a === "feed" && path.length === 2 && ID.test(b!)) return reply(await newsService(`/v1/news/${b}`, { user }), true);
-  if (a === "map" && path.length === 1) return reply(await newsService(`/v1/news/map${query(req, ["hours"])}`, { user }), true);
-  if (a === "sources" && path.length === 1) return reply(await newsService("/v1/news/sources", { user }), true);
-  if (a === "brief" && path.length === 1) return reply(await newsService(`/v1/brief${query(req, ["day"])}`, { user }), true);
-  if (a === "calendar" && path.length === 1) return reply(await newsService(`/v1/calendar${query(req, ["from", "to", "currency", "impact"])}`, { user }), true);
-  if (a === "calendar" && path.length === 2 && b === "next") return reply(await newsService(`/v1/calendar/next${query(req, ["impact"])}`, { user }), true);
-  if (a === "calendar" && path.length === 2 && ID.test(b!)) return reply(await newsService(`/v1/calendar/${b}`, { user }), true);
+  if (a === "feed" && path.length === 1) return reply(await publicNews(`/v1/news${query(req, ["symbol", "currency", "country", "category", "sentiment", "q", "before", "limit", "minImportance", "hours"])}`, user), true);
+  if (a === "feed" && path.length === 2 && ID.test(b!)) return reply(await publicNews(`/v1/news/${b}`, user), true);
+  if (a === "map" && path.length === 1) return reply(await publicNews(`/v1/news/map${query(req, ["hours"])}`, user), true);
+  if (a === "sources" && path.length === 1) return reply(await publicNews("/v1/news/sources", user), true);
+  if (a === "brief" && path.length === 1) return reply(await publicNews(`/v1/brief${query(req, ["day"])}`, user), true);
+  if (a === "calendar" && path.length === 1) return reply(await publicNews(`/v1/calendar${query(req, ["from", "to", "currency", "impact"])}`, user), true);
+  if (a === "calendar" && path.length === 2 && b === "next") return reply(await publicNews(`/v1/calendar/next${query(req, ["impact"])}`, user), true);
+  if (a === "calendar" && path.length === 2 && ID.test(b!)) return reply(await publicNews(`/v1/calendar/${b}`, user), true);
   return error(404, "not_found", "Not found.");
 }
 

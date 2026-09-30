@@ -2,6 +2,7 @@
 // Staff sessions use their own cookie names, separate from Client Area sessions.
 
 import { requestHost } from "@/lib/tenant-host";
+import { Memo, secretKey } from "@/lib/memo";
 
 export const STAFF_COOKIE = "kalks_staff";
 export const STAFF_DEVICE_COOKIE = "kalks_staff_did";
@@ -81,10 +82,28 @@ export function safeNext(next: string | null | undefined, fallback = "/"): strin
   return next;
 }
 
+// Every page render and BFF call resolves the staff session; a Back Office page polls several BFFs at once, so
+// the answer is shared for a few seconds per session, client IP (the IP allow-list is per IP) and host. Sign-out drops
+// it at once (forgetStaff); role or allow-list changes apply within STAFF_TTL_MS.
+const STAFF_TTL_MS = 3_000;
+const staffCache = new Memo<GatewayStaff | null | "unavailable">(STAFF_TTL_MS, 2_000);
+
 export async function fetchStaff(token: string, h: Headers): Promise<GatewayStaff | null | "unavailable"> {
-  const r = await gateway<{ staff?: GatewayStaff }>("/v1/admin/auth/me", { token, ip: clientIp(h), userAgent: h.get("user-agent") });
-  if (r.status === 200 && r.data.staff) return r.data.staff;
-  // 401: no live session; 403: the session is blocked (IP allow-list, suspended tenant) and must sign in again
-  if (r.status === 401 || r.status === 403) return null;
-  return "unavailable";
+  const ip = clientIp(h);
+  return staffCache.get(
+    `${await secretKey(token)}|${ip}|${(await requestHost()) ?? ""}`,
+    async () => {
+      const r = await gateway<{ staff?: GatewayStaff }>("/v1/admin/auth/me", { token, ip, userAgent: h.get("user-agent") });
+      if (r.status === 200 && r.data.staff) return r.data.staff;
+      // 401: no live session; 403: the session is blocked (IP allow-list, suspended tenant) and must sign in again
+      if (r.status === 401 || r.status === 403) return null;
+      return "unavailable";
+    },
+    (v) => v !== "unavailable" && v !== null,
+  );
+}
+
+/** Forget the cached staff session answer (sign-out). */
+export async function forgetStaff(token: string | undefined | null) {
+  if (token) staffCache.deletePrefix(`${await secretKey(token)}|`);
 }

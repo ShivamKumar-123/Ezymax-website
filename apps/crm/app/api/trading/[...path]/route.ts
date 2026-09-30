@@ -3,6 +3,7 @@ import { consumeStepup, stepupTokenOf, type GatewayUser, type StepupAction } fro
 import { TERMINAL_BASE, clientAccount, clientDeal, clientOrder, clientPosition, engine, sameOrigin, sessionUser } from "@/lib/trading";
 import { viewerHasAccount } from "@/lib/viewer";
 import { tenantConfig } from "@/lib/tenant-config";
+import { Memo } from "@/lib/memo";
 
 // Client Area trading BFF. Browser -> /api/trading/<route> (same origin) -> trading engine /v1/…
 // The client is resolved from the HttpOnly gateway session cookie (gateway /v1/auth/me); the engine gets
@@ -31,6 +32,8 @@ type Ctx = { params: Promise<{ path: string[] }> };
 
 const NO_STORE = { "cache-control": "no-store" };
 const LOGIN_RE = /^\d{8}$/;
+/** Open-account groups per broker (the same for every client; Back Office edits show within the TTL). */
+const groupsCache = new Memo<{ status: number; data: { groups?: Obj[] } }>(15_000, 500);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:\d{2})?)?$/;
 
 /** Engine groups reserved for prop-challenge accounts (same rule as the prop service and the wallet). */
@@ -78,7 +81,8 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   if (user instanceof NextResponse) return user;
 
   if (path.length === 1 && path[0] === "groups") {
-    const r = await engine<{ groups?: Obj[] }>("/v1/groups", { user, req });
+    // the broker's group catalogue is the same for all its clients: shared briefly per broker
+    const r = await groupsCache.get(user.tenant?.slug ?? "", () => engine<{ groups?: Obj[] }>("/v1/groups", { user, req }), (x) => x.status === 200);
     if (r.status !== 200) return reply(r.status, r.data);
     // spread group / route are dealing details; the client sees the commercial terms only
     // prop* groups hold prop-challenge accounts only (opened by the prop service; the wallet refuses transfers to them)

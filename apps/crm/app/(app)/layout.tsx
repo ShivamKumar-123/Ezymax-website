@@ -25,11 +25,11 @@ export default async function ClientAreaLayout({ children }: { children: React.R
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) redirect(next ? `/login?next=${encodeURIComponent(next)}` : "/login");
 
-  const user = await fetchMe(token, h);
+  // session and broker config are independent: fetch them together
+  const [user, cfg] = await Promise.all([fetchMe(token, h), tenantConfig()]);
   if (user === "unavailable") throw new Error("Sign-in service is unavailable. Please try again shortly.");
   if (!user) redirect(next ? `/api/auth/expired?next=${encodeURIComponent(next)}` : "/api/auth/expired");
 
-  const cfg = await tenantConfig();
   return (
     <SessionProvider user={user}>
       <FeaturesProvider value={cfg ? { modules: cfg.modules, flags: cfg.flags } : null}>

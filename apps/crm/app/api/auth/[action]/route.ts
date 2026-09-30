@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { DEVICE_COOKIE, SESSION_COOKIE, clientIp, edgeCountry, gateway, newDeviceId, safeNext, sameOrigin, setDeviceCookie, setSessionCookie } from "@/lib/gateway";
+import { DEVICE_COOKIE, SESSION_COOKIE, clientIp, edgeCountry, forgetSession, gateway, newDeviceId, safeNext, sameOrigin, setDeviceCookie, setSessionCookie } from "@/lib/gateway";
 import { withCampaign } from "@/lib/ib";
 import { withAttribution } from "@/lib/attribution";
 
@@ -62,6 +62,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ act
   const res = NextResponse.json(data, { status: r.status, headers: { "cache-control": "no-store" } });
   if (mintDevice) setDeviceCookie(res, device);
   if (session?.token) setSessionCookie(res, session);
+  if (action === "logout" || action === "password") await forgetSession(token);
   if (action === "logout" || action === "reset") res.cookies.delete(SESSION_COOKIE);
   return res;
 }

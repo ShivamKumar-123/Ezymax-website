@@ -14,17 +14,25 @@ export async function GET(req: NextRequest) {
   const who = await requireStaff(req);
   if (who instanceof NextResponse) return who;
 
-  const t0 = Date.now();
-  const gw = await fetch(`${GATEWAY_URL}/health`, { cache: "no-store", signal: AbortSignal.timeout(4000) })
-    .then(async (r) => ({ status: r.status, data: (await r.json().catch(() => null)) as { status?: string; db?: boolean } | null }))
-    .catch(() => ({ status: 503, data: null }));
-  const gwMs = Date.now() - t0;
-  const md = await marketData<MdHealth>("/health", { timeoutMs: 4000 });
-  const t1 = Date.now();
-  const tr = await fetch(`${TRADING_URL}/health`, { cache: "no-store", signal: AbortSignal.timeout(4000) })
-    .then(async (r) => ({ status: r.status, data: (await r.json().catch(() => null)) as TrHealth | null }))
-    .catch(() => ({ status: 503, data: null as TrHealth | null }));
-  const trMs = Date.now() - t1;
+  // the three probes run together (worst case one timeout, not three), each timing itself
+  const timed = async <T,>(p: Promise<T>): Promise<[T, number]> => {
+    const t = Date.now();
+    const v = await p;
+    return [v, Date.now() - t];
+  };
+  const [[gw, gwMs], [md], [tr, trMs]] = await Promise.all([
+    timed(
+      fetch(`${GATEWAY_URL}/health`, { cache: "no-store", signal: AbortSignal.timeout(4000) })
+        .then(async (r) => ({ status: r.status, data: (await r.json().catch(() => null)) as { status?: string; db?: boolean } | null }))
+        .catch(() => ({ status: 503, data: null })),
+    ),
+    timed(marketData<MdHealth>("/health", { timeoutMs: 4000 })),
+    timed(
+      fetch(`${TRADING_URL}/health`, { cache: "no-store", signal: AbortSignal.timeout(4000) })
+        .then(async (r) => ({ status: r.status, data: (await r.json().catch(() => null)) as TrHealth | null }))
+        .catch(() => ({ status: 503, data: null as TrHealth | null })),
+    ),
+  ]);
 
   return NextResponse.json(
     {

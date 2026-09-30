@@ -19,6 +19,8 @@ export type TenantConfig = {
 const TTL_MS = 5_000;
 const MAX_HOSTS = 500;
 const cache = new Map<string, { at: number; cfg: TenantConfig | null }>();
+/** Refreshes in flight per host: the proxy, metadata and layouts of one page load share one gateway call. */
+const inflight = new Map<string, Promise<TenantConfig | null>>();
 
 /** Null when the gateway is unreachable (the Client Area then behaves as if everything is on).
  *  `host`: the visitor's host (the proxy passes it; elsewhere it's read from the request). */
@@ -26,11 +28,17 @@ export async function tenantConfig(host?: string): Promise<TenantConfig | null> 
   const key = host ?? (await requestHost()) ?? "";
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL_MS) return hit.cfg;
-  const r = await gateway<TenantConfig>("/v1/public/tenant-config", { host: key || null });
-  const cfg = r.status === 200 && r.data?.maintenance ? r.data : null;
-  if (cache.size >= MAX_HOSTS) cache.clear();
-  cache.set(key, { at: Date.now(), cfg: cfg ?? hit?.cfg ?? null });
-  return cache.get(key)!.cfg;
+  const pending = inflight.get(key);
+  if (pending) return pending;
+  const load = (async () => {
+    const r = await gateway<TenantConfig>("/v1/public/tenant-config", { host: key || null });
+    const cfg = r.status === 200 && r.data?.maintenance ? r.data : null;
+    if (cache.size >= MAX_HOSTS) cache.clear();
+    cache.set(key, { at: Date.now(), cfg: cfg ?? hit?.cfg ?? null });
+    return cache.get(key)!.cfg;
+  })().finally(() => inflight.delete(key));
+  inflight.set(key, load);
+  return load;
 }
 
 /** The broker brand of the current request (null: gateway unreachable → the stock Kalks look). */

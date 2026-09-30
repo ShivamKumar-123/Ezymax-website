@@ -3,6 +3,7 @@
 // client's own reminders, the gateway user id resolved from the session cookie).
 
 import type { GatewayUser } from "@/lib/gateway";
+import { Memo } from "@/lib/memo";
 
 const NEWS_URL = (process.env.NEWS_URL ?? "http://127.0.0.1:8103").replace(/\/+$/, "");
 const NEWS_TOKEN = process.env.NEWS_INTERNAL_TOKEN ?? "";
@@ -25,4 +26,15 @@ export async function newsService(path: string, init: { method?: "GET" | "POST" 
   } catch {
     return { status: 503, data: { error: { code: "unavailable", message: "News is unavailable right now. Please try again shortly." } } };
   }
+}
+
+// Headlines, the map, the calendar and the brief depend on the broker only (the service reads the user id for
+// reminders alone), so every client of a broker shares them for a short while instead of one call per poll.
+const PUBLIC_TTL_MS = 30_000;
+const publicReads = new Memo<NewsResult>(PUBLIC_TTL_MS, 2_000);
+
+/** A public (non-personal) read, shared per broker for PUBLIC_TTL_MS; failures are never cached. */
+export function publicNews(path: string, user?: GatewayUser | null): Promise<NewsResult> {
+  const tenant = user?.tenant?.slug || "kalks";
+  return publicReads.get(`${tenant}|${path}`, () => newsService(path, { user }), (r) => r.status === 200);
 }

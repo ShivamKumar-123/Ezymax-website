@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { Memo } from "@/lib/memo";
 
 // Kalks Trader news + economic calendar BFF (read-only). Browser -> /api/news/<route> (same origin) ->
 // services/news /v1/… with the internal token (never sent to the browser). Headlines and the calendar are
@@ -23,14 +24,23 @@ function query(req: NextRequest, keys: string[]) {
   return s ? `?${s}` : "";
 }
 
+// Public reads: every trader shares one upstream call per path for a short while (failures are never cached).
+const reads = new Memo<{ status: number; data: unknown }>(30_000, 2_000);
+
 async function forward(path: string) {
-  try {
-    const res = await fetch(`${NEWS_URL}${path}`, { headers: { "x-kalks-internal": NEWS_TOKEN, "x-kalks-tenant": "kalks" }, cache: "no-store", signal: AbortSignal.timeout(10_000) });
-    const data = await res.json().catch(() => ({}));
-    return NextResponse.json(data, { status: res.status, headers: { "cache-control": res.ok ? "private, max-age=30" : "no-store" } });
-  } catch {
-    return NextResponse.json({ error: { code: "unavailable", message: "News is unavailable right now." } }, { status: 503, headers: { "cache-control": "no-store" } });
-  }
+  const r = await reads.get(
+    path,
+    async () => {
+      try {
+        const res = await fetch(`${NEWS_URL}${path}`, { headers: { "x-kalks-internal": NEWS_TOKEN, "x-kalks-tenant": "kalks" }, cache: "no-store", signal: AbortSignal.timeout(10_000) });
+        return { status: res.status, data: await res.json().catch(() => ({})) };
+      } catch {
+        return { status: 503, data: { error: { code: "unavailable", message: "News is unavailable right now." } } };
+      }
+    },
+    (v) => v.status === 200,
+  );
+  return NextResponse.json(r.data, { status: r.status, headers: { "cache-control": r.status >= 200 && r.status < 300 ? "private, max-age=30" : "no-store" } });
 }
 
 export async function GET(req: NextRequest, { params }: Ctx) {

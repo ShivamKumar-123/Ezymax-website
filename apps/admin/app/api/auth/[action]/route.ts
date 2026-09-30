@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { STAFF_COOKIE, STAFF_DEVICE_COOKIE, clientIp, gateway, safeNext } from "@/lib/gateway";
+import { STAFF_COOKIE, STAFF_DEVICE_COOKIE, clientIp, forgetStaff, gateway, safeNext } from "@/lib/gateway";
 
 // Back Office staff auth BFF. Browser -> /api/auth/<action> (same origin) -> gateway /v1/admin/auth/<action>.
 // CSRF: cookies are SameSite=Lax, POSTs must be JSON and carry a same-origin Origin header.
@@ -67,6 +67,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ act
     const maxAge = Math.max(60, Math.floor((new Date(session.expires_at).getTime() - Date.now()) / 1000));
     res.cookies.set(STAFF_COOKIE, session.token, { httpOnly: true, secure: PROD, sameSite: "lax", path: "/", maxAge });
   }
+  if (action === "logout") await forgetStaff(req.cookies.get(STAFF_COOKIE)?.value);
   if (action === "logout") res.cookies.delete(STAFF_COOKIE);
   return res;
 }
