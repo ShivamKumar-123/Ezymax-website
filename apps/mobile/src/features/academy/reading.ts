@@ -16,6 +16,8 @@ export function useReadingSync(slug: string | null, lang: string, initial: numbe
   const sent = React.useRef(initial);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const inflight = React.useRef(false);
+  // the service stored progress during this visit (so leaving refreshes the catalog: continue, streak)
+  const touched = React.useRef(false);
 
   const flush = React.useCallback((final = false) => {
     if (!slug || !enabled) return;
@@ -25,7 +27,7 @@ export function useReadingSync(slug: string | null, lang: string, initial: numbe
     }
     const v = max.current;
     if (v <= sent.current) {
-      if (final) settleProgress(slug);
+      if (final) settleProgress(slug, touched.current);
       return;
     }
     // the reply of the report in flight schedules the next one; leaving the chapter reports at once (the service
@@ -37,6 +39,7 @@ export function useReadingSync(slug: string | null, lang: string, initial: numbe
     // while reading only the server hears about it; leaving the chapter also updates the cached screens
     void postProgress(slug, v, lang, final).then((r) => {
       inflight.current = false;
+      if (r.ok) touched.current = true;
       // not stored (offline, server busy): report again on the next flush; refused (read-only session): stop
       if (!r.ok && (r.status === 0 || r.status >= 500)) sent.current = Math.min(sent.current, before);
       if (!final && max.current > sent.current && r.ok) flushLater();
@@ -69,9 +72,10 @@ export function useReadingSync(slug: string | null, lang: string, initial: numbe
     if (!slug || !enabled) return;
     max.current = initial;
     sent.current = initial;
+    touched.current = false;
     // register the visit once the chapter settled (a first open posts 0 %, like the web)
     const first = setTimeout(() => {
-      if (sent.current === 0 && max.current === 0) void postProgress(slug, 0, lang, false);
+      if (sent.current === 0 && max.current === 0) void postProgress(slug, 0, lang, false).then((r) => void (r.ok && (touched.current = true)));
       else flush(false);
     }, OPEN_DELAY_MS);
     const app = AppState.addEventListener("change", (s) => s !== "active" && flush(false));

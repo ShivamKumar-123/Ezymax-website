@@ -13,18 +13,26 @@ import { colors, GUTTER, space, type DisplaySize } from "@/theme/tokens";
 
 export const BAR_HEIGHT = 52;
 
+const MIRROR = { transform: [{ scaleX: -1 }] } as const;
+
+/** A direction icon (arrow, chevron) that points the reading way: mirrored right to left. The mirror is on a wrapping
+ *  view, so it turns around the icon's centre everywhere (on the svg itself the web preview mirrors it off-screen). */
+export function Directional({ children }: { children: React.ReactNode }) {
+  const { rtl } = useLocale();
+  return <View style={rtl ? MIRROR : undefined}>{children}</View>;
+}
+
 export function BackButton({ onPress }: { onPress?: () => void }) {
   const router = useRouter();
   const t = useT();
-  const { rtl } = useLocale();
   return (
     <IconButton
       tone="ghost"
       accessibilityLabel={t("mobile.a11y.back")}
       icon={
-        <View style={rtl ? { transform: [{ scaleX: -1 }] } : undefined}>
+        <Directional>
           <ChevronLeft size={26} color={colors.text} strokeWidth={2} />
-        </View>
+        </Directional>
       }
       onPress={onPress ?? (() => (router.canGoBack() ? router.back() : router.replace("/academy")))}
     />

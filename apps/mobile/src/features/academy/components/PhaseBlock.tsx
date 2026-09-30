@@ -6,7 +6,7 @@ import { useT } from "@/i18n";
 import { Display, PressableScale, Text } from "@/ui";
 import { blockColors, colors, radius, space } from "@/theme/tokens";
 import type { PhaseT } from "../api";
-import { fmtMin, levelLabel, pct, phaseColor, phaseState, PHASE_STATE_LABEL, two } from "../format";
+import { fmtMin, levelLabel, pct, phaseColor, phaseState, PHASE_STATE_LABEL, TONE, two } from "../format";
 import { Bar } from "./Pills";
 
 export const PhaseBlock = React.memo(function PhaseBlock({ p, onOpen }: { p: PhaseT; onOpen: (slug: string) => void }) {
@@ -26,7 +26,7 @@ export const PhaseBlock = React.memo(function PhaseBlock({ p, onOpen }: { p: Pha
         </Text>
         {state !== "notStarted" ? (
           <View style={{ height: 24, paddingHorizontal: space[3], borderRadius: radius.pill, backgroundColor: colors.ink, justifyContent: "center" }}>
-            <Text variant="label" color={state === "certified" ? colors.mint : colors.cream} style={{ fontSize: 10, lineHeight: 13 }}>
+            <Text variant="label" color={state === "certified" ? TONE.award : colors.cream} style={{ fontSize: 10, lineHeight: 13 }}>
               {t(PHASE_STATE_LABEL[state])}
             </Text>
           </View>

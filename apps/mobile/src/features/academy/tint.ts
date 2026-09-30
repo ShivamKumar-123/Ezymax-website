@@ -1,4 +1,4 @@
-// Translucent tints of the palette tokens (callout, pill and state backgrounds), e.g. tint(colors.mint, 0.12).
+// Translucent tints of the palette tokens (callout, pill and state backgrounds), e.g. tint(colors.ember, 0.12).
 // Takes #rrggbb or rgba()/rgb() tokens (e.g. colors.text2) and returns the same colour at `alpha`.
 const cache = new Map<string, string>();
 

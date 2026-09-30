@@ -47,9 +47,15 @@ export function RiskNote() {
 
 /* ---- skeletons (static on purpose: functional motion only) ---- */
 
+/** Screen readers hear one "Loading…" for a whole skeleton. */
+function useLoadingLabel() {
+  return useT()("common.loading");
+}
+
 export function HomeSkeleton() {
+  const loading = useLoadingLabel();
   return (
-    <View style={{ paddingHorizontal: GUTTER, gap: space[4] }} accessibilityLabel="Loading" accessible>
+    <View style={{ paddingHorizontal: GUTTER, gap: space[4] }} accessibilityLabel={loading} accessible>
       <View style={{ height: 262, borderRadius: radius.block, backgroundColor: colors.surface, padding: space[6], gap: space[3] }}>
         <Skeleton w={120} h={12} />
         <Skeleton w="86%" h={34} r={8} />
@@ -71,8 +77,9 @@ export function HomeSkeleton() {
 }
 
 export function PhaseSkeleton() {
+  const loading = useLoadingLabel();
   return (
-    <View style={{ gap: space[4] }} accessibilityLabel="Loading" accessible>
+    <View style={{ gap: space[4] }} accessibilityLabel={loading} accessible>
       <View style={{ marginHorizontal: GUTTER, height: 300, borderRadius: radius.block, backgroundColor: colors.surface, padding: space[6], gap: space[3] }}>
         <Skeleton w={110} h={12} />
         <Skeleton w="80%" h={38} r={8} />
@@ -109,8 +116,9 @@ export function ChapterRowsSkeleton({ rows = 6 }: { rows?: number }) {
 }
 
 export function ReaderSkeleton() {
+  const loading = useLoadingLabel();
   return (
-    <View style={{ paddingHorizontal: GUTTER, gap: space[3], paddingTop: space[2] }} accessibilityLabel="Loading" accessible>
+    <View style={{ paddingHorizontal: GUTTER, gap: space[3], paddingTop: space[2] }} accessibilityLabel={loading} accessible>
       <View style={{ flexDirection: "row", gap: space[2] }}>
         <Skeleton w={120} h={26} r={radius.pill} />
         <Skeleton w={90} h={26} r={radius.pill} />
@@ -133,8 +141,9 @@ export function ReaderSkeleton() {
 }
 
 export function GlossarySkeleton({ rows = 7, height = 96 }: { rows?: number; height?: number }) {
+  const loading = useLoadingLabel();
   return (
-    <View accessibilityLabel="Loading" accessible>
+    <View accessibilityLabel={loading} accessible>
       {Array.from({ length: rows }, (_, i) => (
         <View key={i} style={{ height, paddingHorizontal: GUTTER, paddingVertical: space[3], gap: 8, borderBottomWidth: 1, borderBottomColor: colors.line }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>

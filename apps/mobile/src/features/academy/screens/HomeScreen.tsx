@@ -6,17 +6,17 @@ import { RefreshControl, ScrollView, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { Award, ChevronRight, Flame, GraduationCap, Library, Search } from "lucide-react-native";
-import { useFormat, useLocale, useT } from "@/i18n";
+import { useFormat, useT } from "@/i18n";
 import { useSession } from "@/session";
 import { Button, Card, ColorBlock, Display, IconButton, PressableScale, Text, useBottomInset } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { prefetchAcademy, useCatalog, type Catalog } from "../api";
-import { LargeTitle, SectionTitle, TopBar, useScrollY } from "../components/Bar";
+import { Directional, LargeTitle, SectionTitle, TopBar, useScrollY } from "../components/Bar";
 import { PhaseBlock } from "../components/PhaseBlock";
 import { Segments, Tag } from "../components/Pills";
 import { usePractise, useDemoAccount } from "../components/Practice";
 import { AcademyState, HomeSkeleton, RiskNote } from "../components/states";
-import { fmtMin, pct } from "../format";
+import { fmtMin, pct, utcWeek } from "../format";
 import { usePull, useRefreshOnFocus, useRetryOnReconnect } from "../hooks";
 
 /** The web's glossary shortcuts. */
@@ -108,14 +108,13 @@ function StatTile({ value, label, children, testID }: { value: string; label: st
   );
 }
 
-/** The last seven days, a flame for each day the learner studied (the service's active days). */
+/** The last seven days, a flame for each day the learner studied (the service's active days). The service counts
+ *  learning days in UTC, so the labels are the UTC weekdays of those days (a local weekday would be a day off for
+ *  part of the day far from UTC). */
 function Week({ days }: { days: string[] }) {
   const fmt = useFormat();
   const set = new Set(days);
-  const week = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() - (6 - i) * 86_400_000);
-    return { key: d.toISOString().slice(0, 10), label: fmt.date(d, { weekday: "narrow", timeZone: undefined }) };
-  });
+  const week = utcWeek().map((d) => ({ key: d.key, label: fmt.date(d.date, { weekday: "narrow", timeZone: "UTC" }) }));
   return (
     <View style={{ flexDirection: "row", gap: 3 }}>
       {week.map((d) => {
@@ -235,9 +234,12 @@ function PracticeTeaser() {
 function ProgressLinks({ cat }: { cat: Catalog }) {
   const t = useT();
   const router = useRouter();
-  const { rtl } = useLocale();
   const ready = cat.phases.find((p) => !p.certificate && p.exam?.unlocked);
-  const chevron = <ChevronRight size={18} color={colors.text3} style={rtl ? { transform: [{ scaleX: -1 }] } : undefined} />;
+  const chevron = (
+    <Directional>
+      <ChevronRight size={18} color={colors.text3} />
+    </Directional>
+  );
   return (
     <Card padded={false} style={{ marginHorizontal: GUTTER }}>
       {ready ? (

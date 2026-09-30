@@ -15,7 +15,7 @@ import { CertificateCard } from "../components/Certificate";
 import { Feedback, Option, type OptionState } from "../components/Option";
 import { Bar, Tag } from "../components/Pills";
 import { AcademyState, ReaderSkeleton, RiskNote } from "../components/states";
-import { levelLabel, pct } from "../format";
+import { DONE_BLOCK, levelLabel, pct } from "../format";
 import { usePull, useRetryOnReconnect } from "../hooks";
 
 const ExamQuestion = React.memo(function ExamQuestion({ qi, q, answer, result, locked, onChoose }: { qi: number; q: Question; answer: number | null; result: QuizResult | undefined; locked: boolean; onChoose: (qi: number, oi: number) => void }) {
@@ -59,7 +59,7 @@ function Result({ r, data, onRetake }: { r: ExamReply; data: ExamView; onRetake:
   const t = useT();
   return (
     <View style={{ paddingHorizontal: GUTTER, gap: space[4] }}>
-      <ColorBlock color={r.passed ? "mint" : "gold"} testID="exam-result" style={{ gap: space[3] }}>
+      <ColorBlock color={r.passed ? DONE_BLOCK : "gold"} testID="exam-result" style={{ gap: space[3] }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
           {r.passed ? <Award size={18} color={colors.ink} /> : <GraduationCap size={18} color={colors.ink} />}
           <Text variant="label" color={colors.ink2}>
@@ -110,12 +110,17 @@ function Exam({ data, refresh }: { data: ExamView; refresh: () => Promise<void> 
   const byIndex = React.useMemo(() => Object.fromEntries((result?.results ?? []).map((r) => [r.index, r])) as Record<number, QuizResult>, [result]);
 
   const submit = async () => {
-    if (answered < total || busy) return;
+    // one attempt per tap, even for a double tap that lands before the button shows it is busy
+    if (answered < total || busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     const r = await postExam(data.phase.slug, answers as number[]);
+    busyRef.current = false;
     setBusy(false);
     if (!r.ok) {
       toast.show({ title: t("academy.toast.examFailed"), body: r.error.message, tone: "error" });
+      // the service says the exam isn't open (a chapter's completion was undone, content changed): show its state
+      if (r.error.code === "exam_locked" || r.status === 404) void refresh();
       return;
     }
     setResult(r.data);

@@ -20,7 +20,7 @@ import { Tag } from "../components/Pills";
 import { useRetryOnReconnect } from "../hooks";
 import { AcademyState, ReaderSkeleton, RiskNote } from "../components/states";
 import { TopBar } from "../components/Bar";
-import { levelLabel, phaseColor, TRACK_LABEL } from "../format";
+import { levelLabel, phaseColor, TONE, TRACK_LABEL } from "../format";
 import { DiagramViewer } from "../markdown/DiagramViewer";
 import { Markdown } from "../markdown/Markdown";
 import { headingsOf, parseBlocks } from "../markdown/parse";
@@ -57,7 +57,7 @@ function Header({ view }: { view: ChapterView }) {
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space[2] }}>
         <Tag label={t(TRACK_LABEL[view.section.track])} color={view.section.track === "fundamental" ? colors.periwinkle : colors.ember} />
         <Tag label={levelLabel(t, view.phase.level)} />
-        {p.completed ? <Tag label={t("common.completed")} color={colors.mint} solid testID="chapter-completed" /> : null}
+        {p.completed ? <Tag label={t("common.completed")} color={TONE.done} solid testID="chapter-completed" /> : null}
       </View>
       <Display size="lg" accessibilityRole="header" style={{ marginTop: space[1] }}>
         {c.title}

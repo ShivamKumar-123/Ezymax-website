@@ -5,13 +5,14 @@ import { Share, View, useWindowDimensions } from "react-native";
 import { SvgXml } from "react-native-svg";
 import * as Clipboard from "expo-clipboard";
 import * as WebBrowser from "expo-web-browser";
-import { Share2, ShieldCheck } from "lucide-react-native";
+import { Award, Share2, ShieldCheck } from "lucide-react-native";
 import { useFormat, useT } from "@/i18n";
 import { API_BASE } from "@/lib/config";
 import { useMe } from "@/session";
-import { Button, Skeleton, Text, toast } from "@/ui";
+import { Button, PressableScale, Skeleton, Text, toast } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { useCertificateSvg } from "../api";
+import { useRetryOnReconnect } from "../hooks";
 
 export const CERT_ASPECT = 1600 / 1131;
 
@@ -21,9 +22,21 @@ export const verifyUrl = (code: string, url?: string) => url || `${API_BASE}/cer
 export function CertificateImage({ code, width, n }: { code: string; width: number; n: number }) {
   const t = useT();
   const q = useCertificateSvg(code);
+  useRetryOnReconnect(q);
   const h = Math.round(width / CERT_ASPECT);
+  const frame = { width, height: h, borderRadius: radius.sm, overflow: "hidden" as const, backgroundColor: colors.bgRaised, borderWidth: 1, borderColor: colors.line };
+  // the image couldn't be loaded (offline, service trouble): the certificate itself still stands, tap to try again
+  if (!q.data && q.error)
+    return (
+      <PressableScale onPress={() => void q.refresh()} scaleTo={0.985} accessibilityLabel={`${t("mobileAcademy.cert.imageA11y", { n })}. ${t("mobile.action.retry")}`} style={[frame, { alignItems: "center", justifyContent: "center", gap: space[2] }]}>
+        <Award size={30} color={colors.text3} />
+        <Text variant="caption" tone="tertiary" style={{ fontVariant: ["tabular-nums"] }}>
+          {code}
+        </Text>
+      </PressableScale>
+    );
   return (
-    <View style={{ width, height: h, borderRadius: radius.sm, overflow: "hidden", backgroundColor: "#0b0b0e", borderWidth: 1, borderColor: colors.line }} accessible accessibilityRole="image" accessibilityLabel={t("mobileAcademy.cert.imageA11y", { n })}>
+    <View style={frame} accessible accessibilityRole="image" accessibilityLabel={t("mobileAcademy.cert.imageA11y", { n })}>
       {q.data ? <SvgXml xml={q.data} width={width - 2} height={h - 2} /> : <Skeleton w={width - 2} h={h - 2} r={0} />}
     </View>
   );

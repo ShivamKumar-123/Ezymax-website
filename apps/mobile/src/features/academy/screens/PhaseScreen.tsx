@@ -6,15 +6,15 @@ import { RefreshControl, View } from "react-native";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowRight, ChevronLeft, ChevronRight, GraduationCap, Lock, Award } from "lucide-react-native";
-import { useLocale, useT } from "@/i18n";
+import { useT } from "@/i18n";
 import { Button, Card, Display, PillRow, PressableScale, Text, useBottomInset } from "@/ui";
 import { blockColors, colors, GUTTER, radius, space } from "@/theme/tokens";
 import { prefetchAcademy, useCatalog, type Catalog, type ChapterCard, type PhaseT, type SectionT, type Track } from "../api";
-import { TopBar, useScrollY } from "../components/Bar";
+import { Directional, TopBar, useScrollY } from "../components/Bar";
 import { CertificateCard } from "../components/Certificate";
 import { Bar, StatusDot } from "../components/Pills";
 import { AcademyState, PhaseSkeleton, RiskNote } from "../components/states";
-import { fmtMin, levelLabel, nextOpenChapter, pct, phaseColor, TRACK_LABEL, TRACK_SHORT } from "../format";
+import { fmtMin, levelLabel, nextOpenChapter, pct, phaseColor, TONE, TRACK_LABEL, TRACK_SHORT } from "../format";
 import { usePull, useRefreshOnFocus, useRetryOnReconnect } from "../hooks";
 
 export const CHAPTER_ROW_HEIGHT = 84;
@@ -32,7 +32,6 @@ type Item =
 
 const ChapterRow = React.memo(function ChapterRow({ c, n, next, onOpen, onPressIn }: { c: ChapterCard; n: number; next: boolean; onOpen: (slug: string) => void; onPressIn: (slug: string) => void }) {
   const t = useT();
-  const { rtl } = useLocale();
   const p = c.progress;
   const meta = p.completed && p.quiz_total ? t("academy.phase.quizScore", { score: `${p.quiz_best}/${p.quiz_total}` }) : p.read_pct > 0 ? t("academy.readPct", { pct: p.read_pct }) : null;
   return (
@@ -53,7 +52,11 @@ const ChapterRow = React.memo(function ChapterRow({ c, n, next, onOpen, onPressI
           {[t("academy.duration.min", { count: c.minutes }), meta].filter(Boolean).join(" · ")}
         </Text>
       </View>
-      {p.completed ? null : <ChevronRight size={18} color={colors.text3} style={rtl ? { transform: [{ scaleX: -1 }] } : undefined} />}
+      {p.completed ? null : (
+        <Directional>
+          <ChevronRight size={18} color={colors.text3} />
+        </Directional>
+      )}
     </PressableScale>
   );
 });
@@ -85,7 +88,7 @@ function Hero({ p, cat }: { p: PhaseT; cat: Catalog }) {
           </Text>
           {p.certificate ? (
             <View style={{ height: 24, paddingHorizontal: space[3], borderRadius: radius.pill, backgroundColor: colors.ink, justifyContent: "center" }}>
-              <Text variant="label" color={colors.mint} style={{ fontSize: 10, lineHeight: 13 }}>
+              <Text variant="label" color={TONE.award} style={{ fontSize: 10, lineHeight: 13 }}>
                 {t("academy.state.certified")}
               </Text>
             </View>
@@ -111,7 +114,12 @@ function Hero({ p, cat }: { p: PhaseT; cat: Catalog }) {
           </View>
           <Bar value={pct(p.progress.done, p.progress.total)} ink />
         </View>
-        {cta ? <Button label={cta.label} variant="secondary" full={false} onPress={cta.go} testID="phase-cta" style={{ marginTop: space[1] }} trailing={<ArrowRight size={18} color={colors.text} />} /> : null}
+        {cta ? <Button label={cta.label} variant="secondary" full={false} onPress={cta.go} testID="phase-cta" style={{ marginTop: space[1] }} trailing={
+              <Directional>
+                <ArrowRight size={18} color={colors.text} />
+              </Directional>
+            }
+          /> : null}
       </View>
     </View>
   );
@@ -149,7 +157,7 @@ function SectionHead({ s, done }: { s: SectionT; done: number }) {
           {s.summary}
         </Text>
       ) : null}
-      <Bar value={pct(done, total)} color={done === total && total > 0 ? colors.mint : colors.ember} height={4} style={{ marginTop: space[2] }} />
+      <Bar value={pct(done, total)} color={done === total && total > 0 ? TONE.done : colors.ember} height={4} style={{ marginTop: space[2] }} />
     </View>
   );
 }
@@ -226,10 +234,8 @@ function CertSlot({ p }: { p: PhaseT }) {
 function PhaseNav({ p, cat }: { p: PhaseT; cat: Catalog }) {
   const t = useT();
   const router = useRouter();
-  const { rtl } = useLocale();
   const prev = cat.phases.find((x) => x.order === p.order - 1);
   const next = cat.phases.find((x) => x.order === p.order + 1);
-  const flip = rtl ? { transform: [{ scaleX: -1 }] } : undefined;
   return (
     <View style={{ paddingHorizontal: GUTTER, marginTop: space[6], gap: space[2] }}>
       {next ? (
@@ -242,12 +248,16 @@ function PhaseNav({ p, cat }: { p: PhaseT; cat: Catalog }) {
               {t("academy.phaseLink", { n: next.order, title: next.title })}
             </Text>
           </View>
-          <ChevronRight size={18} color={colors.text3} style={flip} />
+          <Directional>
+            <ChevronRight size={18} color={colors.text3} />
+          </Directional>
         </PressableScale>
       ) : null}
       {prev ? (
         <PressableScale onPress={() => router.replace(`/academy/${prev.slug}`)} scaleTo={0.985} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: space[2] }}>
-          <ChevronLeft size={16} color={colors.text3} style={flip} />
+          <Directional>
+            <ChevronLeft size={16} color={colors.text3} />
+          </Directional>
           <Text variant="caption" tone="tertiary" numberOfLines={1} style={{ flex: 1 }}>
             {t("academy.phaseLink", { n: prev.order, title: prev.title })}
           </Text>

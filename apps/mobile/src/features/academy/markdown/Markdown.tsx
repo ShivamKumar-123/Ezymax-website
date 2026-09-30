@@ -1,5 +1,5 @@
 // Native renderer for the Academy's markdown subset (parse.ts): no WebView, no HTML. Reading typography (16.5 / 26
-// system font, cream at 66 % for body, full cream for emphasis), editorial Anton section headings, callouts tinted
+// system font, secondary text for body, full white for emphasis), editorial Anton section headings, callouts tinted
 // from the palette (never money green / red), tables that fit the phone or scroll sideways, ```text blocks that keep
 // their alignment, and svg diagrams drawn by react-native-svg that open a pinch-to-zoom viewer.
 import * as React from "react";
@@ -80,11 +80,13 @@ export const InlineText = React.memo(function InlineText({ text, style, numberOf
 
 /* ---- blocks ---- */
 
+// risk and warnings in gold, examples in warm sand, tips in off-white, notes neutral, Kalks Trader in ember: five
+// kinds that stay apart on the web colour family (the "mint" tone is a lighter ember now, too close to ember)
 const CALLOUT: Record<CalloutKind, { color: string; label: MessageKey }> = {
   riskWarning: { color: colors.gold, label: "academy.callout.riskWarning" },
   warning: { color: colors.gold, label: "academy.callout.warning" },
   example: { color: colors.periwinkle, label: "academy.callout.example" },
-  tip: { color: colors.mint, label: "academy.callout.tip" },
+  tip: { color: colors.cream, label: "academy.callout.tip" },
   note: { color: colors.text2, label: "academy.callout.note" },
   inKalksTrader: { color: colors.ember, label: "academy.callout.inKalksTrader" },
 };
@@ -180,7 +182,7 @@ const Diagram = React.memo(function Diagram({ svg, width, caption, onOpen }: { s
       accessibilityLabel={name}
       accessibilityHint={t("mobileAcademy.reader.zoomHint")}
       testID="diagram"
-      style={{ marginVertical: space[5], borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: "#121216", overflow: "hidden" }}
+      style={{ marginVertical: space[5], borderRadius: radius.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, overflow: "hidden" }}
     >
       <View style={{ width: w, height: h }} pointerEvents="none">
         <SvgXml xml={svg} width={w} height={h} />

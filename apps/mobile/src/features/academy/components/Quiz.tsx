@@ -8,6 +8,7 @@ import { useT } from "@/i18n";
 import { Button, ColorBlock, Display, Text, toast } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { postQuiz, type Question, type QuizReply, type QuizResult } from "../api";
+import { DONE_BLOCK, TONE } from "../format";
 import { Feedback, Option, type OptionState } from "./Option";
 
 const QuestionBlock = React.memo(function QuestionBlock({ qi, q, answer, result, onChoose }: { qi: number; q: Question; answer: number | null; result: QuizResult | undefined; onChoose: (qi: number, oi: number) => void }) {
@@ -88,7 +89,7 @@ export function ChapterQuiz({ slug, lang, questions, passedBefore, onDone }: Pro
             {t("academy.quiz.eyebrow")}
           </Text>
           {passedBefore && !final ? (
-            <View style={{ height: 24, paddingHorizontal: space[3], borderRadius: radius.pill, backgroundColor: colors.mint, justifyContent: "center" }}>
+            <View style={{ height: 24, paddingHorizontal: space[3], borderRadius: radius.pill, backgroundColor: TONE.done, justifyContent: "center" }}>
               <Text variant="label" color={colors.ink} style={{ fontSize: 10 }}>
                 {t("academy.quiz.alreadyPassed")}
               </Text>
@@ -108,7 +109,7 @@ export function ChapterQuiz({ slug, lang, questions, passedBefore, onDone }: Pro
       ))}
 
       {final ? (
-        <ColorBlock color={final.passed ? "mint" : "gold"} testID="quiz-result" style={{ gap: space[3], padding: space[5] }}>
+        <ColorBlock color={final.passed ? DONE_BLOCK : "gold"} testID="quiz-result" style={{ gap: space[3], padding: space[5] }}>
           <Display size="xl" color={colors.ink} accessibilityLabel={t("academy.quiz.score", { score: final.score, total: final.total })}>
             {`${final.score} / ${final.total}`}
           </Display>

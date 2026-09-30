@@ -1,11 +1,29 @@
 // Small shared helpers for the Academy screens (evaluated at render time, so they follow the current language).
 import type { MessageKey, T } from "@/i18n";
-import type { BlockColor } from "@/theme/tokens";
-import type { Level, PhaseT, Track } from "./api";
+import { colors, type BlockColor } from "@/theme/tokens";
+import type { Certificate, Level, PhaseT, Track } from "./api";
 
 /** Phase colour blocks: the palette in turn, so the learning path reads as a sequence of distinct steps. */
 const PHASE_COLORS: BlockColor[] = ["ember", "gold", "mint", "periwinkle"];
 export const phaseColor = (order: number): BlockColor => PHASE_COLORS[(Math.max(1, order) - 1) % PHASE_COLORS.length]!;
+
+/**
+ * What a colour means in the Academy (green and red stay reserved for money). Since the web colour family, the
+ * "mint" block tone is a lighter ember, so it can't tell right from wrong next to ember: settled things are the warm
+ * off-white, a wrong answer is ember, a picked (not yet graded) exam answer and awards are gold.
+ */
+export const TONE = {
+  /** right answer, completed chapter / track, passed quiz or exam */
+  done: colors.cream,
+  /** wrong answer */
+  wrong: colors.ember,
+  /** an exam answer picked before submitting */
+  chosen: colors.gold,
+  /** certified phase, the exam to take next */
+  award: colors.gold,
+} as const;
+/** The block tone of a passed quiz or exam result (a failed one is gold). */
+export const DONE_BLOCK: BlockColor = "cream";
 
 export const TRACK_LABEL: Record<Track, MessageKey> = { fundamental: "academy.track.fundamental", technical: "academy.track.technical" };
 export const TRACK_SHORT: Record<Track, MessageKey> = { fundamental: "academy.trackShort.fundamental", technical: "academy.trackShort.technical" };
@@ -43,3 +61,27 @@ export const two = (n: number) => String(n).padStart(2, "0");
 
 /** The first chapter of a phase the learner hasn't completed (both tracks, in order). */
 export const nextOpenChapter = (p: PhaseT) => p.sections.flatMap((s) => s.chapters).find((c) => !c.progress.completed) ?? null;
+
+export type CertItem = { code: string; issuedAt: string; n: number; title: string; url?: string; scorePct?: number };
+
+/**
+ * The certificates to show, by phase: the list (exam score, the service's verification link), plus any certificate
+ * the catalog names that the list doesn't have (yet): while the list loads, or when it can't be loaded, a learner
+ * still sees their certificates, never "no certificates yet".
+ */
+export function certificatesOf(phases: PhaseT[], listed: Certificate[] | undefined): CertItem[] {
+  const list = listed ?? [];
+  const known = new Set(list.map((c) => c.code));
+  return [
+    ...list.map((c): CertItem => ({ code: c.code, issuedAt: c.issued_at, n: c.phase_order, title: c.phase_title, url: c.verify_url, scorePct: c.score_pct })),
+    ...phases.flatMap((p): CertItem[] => (p.certificate && !known.has(p.certificate.code) ? [{ code: p.certificate.code, issuedAt: p.certificate.issued_at, n: p.order, title: p.title }] : [])),
+  ].sort((a, b) => a.n - b.n);
+}
+
+/** The last seven days (oldest first) the way the service counts learning days: UTC dates. */
+export function utcWeek(now = Date.now()): { key: string; date: Date }[] {
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(now - (6 - i) * 86_400_000);
+    return { key: date.toISOString().slice(0, 10), date };
+  });
+}

@@ -4,8 +4,9 @@
 // (>= 60 %), a phase exam unlocks when every chapter of the phase is complete and passing it issues the certificate.
 //
 // Screens open on the last answer kept on the phone (useQuery persist) and refresh in the background. After a
-// confirmed change (reading progress, a quiz, an exam) the cached answers are patched with the server's reply, so
-// every screen agrees without refetching the whole course.
+// confirmed change (reading progress, a quiz, an exam) the cached answers are patched with the server's reply at
+// once, then the catalog is fetched again for what only the service computes (continue where you left off, the
+// streak, the quiz average): the screens under the reader refresh while the reader itself never re-renders.
 import { API_BASE } from "@/lib/config";
 import { api, apiGet, type ApiError, type ApiResult } from "@/lib/api";
 import { getQueryData, invalidate, prefetch, setQueryData, useQuery } from "@/lib/query";
@@ -113,13 +114,18 @@ export const fetchCertificates = () => apiGet<{ certificates: Certificate[] }>("
 
 /** The certificate image (public SVG, served by the Academy BFF): its text, drawn natively by react-native-svg. */
 export async function fetchCertificateSvg(code: string): Promise<ApiResult<string>> {
+  // a stalled connection must not keep the placeholder up for ever (the query retries on the next open / refresh)
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 20_000);
   try {
-    const res = await fetch(`${API_BASE}/api/mobile/academy/certificates/${encodeURIComponent(code)}/image`, { credentials: "omit", headers: { accept: "image/svg+xml" } });
+    const res = await fetch(`${API_BASE}/api/mobile/academy/certificates/${encodeURIComponent(code)}/image`, { credentials: "omit", headers: { accept: "image/svg+xml" }, signal: ctrl.signal });
     const text = await res.text();
     if (res.ok && text.includes("<svg")) return { ok: true, status: res.status, data: text };
     return { ok: false, status: res.status, error: { code: res.status === 404 ? "not_found" : "unavailable", message: i18n.t("academy.unavailable.text") } };
   } catch {
     return { ok: false, status: 0, error: { code: "network", message: i18n.t("auth.apiError.network") } };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -151,7 +157,10 @@ export const prefetchAcademy = {
 export async function postProgress(slug: string, readPct: number, l: string, patch = true): Promise<ApiResult<{ progress: ChapterProgress }>> {
   const r = await api<{ progress: ChapterProgress }>(`academy/chapters/${encodeURIComponent(slug)}/progress${q(l)}`, { method: "POST", body: { read_pct: Math.max(0, Math.min(100, Math.round(readPct))) } });
   if (r.ok) lastProgress.set(slug, r.data.progress);
-  if (r.ok && patch) patchProgress(slug, r.data.progress);
+  if (r.ok && patch) {
+    patchProgress(slug, r.data.progress);
+    refreshCatalog();
+  }
   return r;
 }
 
@@ -159,10 +168,20 @@ export async function postProgress(slug: string, readPct: number, l: string, pat
 const lastProgress = new Map<string, ChapterProgress>();
 onSignOut(() => lastProgress.clear());
 
-/** The reader is leaving the chapter: bring the cached chapter and catalog up to the stored progress. */
-export function settleProgress(slug: string) {
+/**
+ * The reader is leaving the chapter: bring the cached chapter and catalog up to the stored progress. `touched`: the
+ * service recorded progress during this visit, so its "continue where you left off" now points at this chapter and
+ * today counts as a learning day: the catalog is fetched again.
+ */
+export function settleProgress(slug: string, touched = false) {
   const p = lastProgress.get(slug);
   if (p) patchProgress(slug, p);
+  if (touched) refreshCatalog();
+}
+
+/** The catalog again from the service (the screens on it refetch; any other cached language is marked stale). */
+function refreshCatalog() {
+  invalidate("academy/catalog/");
 }
 
 /** Checks the answers given so far: every answered question is graded at once; the attempt counts when all are. */
@@ -244,9 +263,8 @@ function applyQuiz(slug: string, r: QuizReply) {
     }
     setQueryData(KEYS.catalog(), next, true);
   }
-  // other chapters' next-up, streak, quiz average and the phase exam come from the server
-  if (r.completed_now) {
-    invalidate("academy/catalog/");
-    invalidate(`academy/exam/${lang()}/${r.phase.slug}`);
-  }
+  // every counted attempt: continue where you left off, the streak, the quiz average (best score per chapter) and the
+  // next step come from the service; a completed chapter can also unlock the phase exam
+  refreshCatalog();
+  if (r.completed_now) invalidate(`academy/exam/${lang()}/${r.phase.slug}`);
 }

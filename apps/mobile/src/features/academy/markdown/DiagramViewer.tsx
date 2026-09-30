@@ -1,5 +1,6 @@
 // Full-screen diagram viewer: pinch to zoom (1x-4x), drag to pan and double-tap to zoom in / reset. The gestures run
-// on the UI thread and follow the fingers 1:1; letting go springs back inside the edges (springs from the tokens).
+// on the UI thread and follow the fingers 1:1 (a pinch zooms around the point between the fingers, which stays under
+// them); letting go springs back inside the edges (springs from the tokens).
 import * as React from "react";
 import { Modal, View, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
@@ -25,6 +26,12 @@ function Zoomable({ svg, width, height }: { svg: string; width: number; height: 
   const ty = useSharedValue(0);
   const sx = useSharedValue(0);
   const sy = useSharedValue(0);
+  // while pinching: the shift that keeps the pinched point under the fingers, and that point (from the content's
+  // centre) when the pinch began
+  const zx = useSharedValue(0);
+  const zy = useSharedValue(0);
+  const fx = useSharedValue(0);
+  const fy = useSharedValue(0);
 
   const clamp = (v: number, lim: number) => {
     "worklet";
@@ -48,14 +55,38 @@ function Zoomable({ svg, width, height }: { svg: string; width: number; height: 
     ty.value = withSpring(clamp(ty.value, limY(s)), motion.spring);
   };
 
+  // the pinch's shift becomes part of the pan offset (a finger still down keeps panning from there)
+  const fold = () => {
+    "worklet";
+    tx.value += zx.value;
+    ty.value += zy.value;
+    sx.value += zx.value;
+    sy.value += zy.value;
+    zx.value = 0;
+    zy.value = 0;
+  };
+
   const pinch = Gesture.Pinch()
-    .onStart(() => {
+    .onStart((e) => {
       saved.value = scale.value;
+      fx.value = e.focalX - width / 2 - tx.value;
+      fy.value = e.focalY - height / 2 - ty.value;
     })
     .onUpdate((e) => {
-      scale.value = Math.max(0.8, Math.min(MAX * 1.15, saved.value * e.scale));
+      const s = Math.max(0.8, Math.min(MAX * 1.15, saved.value * e.scale));
+      const k = s / saved.value;
+      scale.value = s;
+      // a point p from the centre sits at t + s·p on screen: keep the pinched point where the fingers are
+      zx.value = fx.value * (1 - k);
+      zy.value = fy.value * (1 - k);
     })
-    .onEnd(settle);
+    .onEnd(() => {
+      fold();
+      settle();
+    })
+    .onFinalize(() => {
+      if (zx.value !== 0 || zy.value !== 0) fold();
+    });
   const pan = Gesture.Pan()
     .averageTouches(true)
     .onStart(() => {
@@ -87,7 +118,7 @@ function Zoomable({ svg, width, height }: { svg: string; width: number; height: 
       }
     });
   const gesture = Gesture.Simultaneous(pinch, pan, doubleTap);
-  const style = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }] }));
+  const style = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value + zx.value }, { translateY: ty.value + zy.value }, { scale: scale.value }] }));
 
   return (
     <GestureDetector gesture={gesture}>
@@ -108,7 +139,7 @@ export function DiagramViewer({ svg, caption, onClose }: { svg: string | null; c
   const areaH = height - insets.top - insets.bottom - 120;
   return (
     <Modal visible={!!svg} animationType="fade" transparent={false} onRequestClose={onClose} supportedOrientations={["portrait", "landscape"]} statusBarTranslucent>
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#121216" }}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.surface }}>
         <View style={{ paddingTop: insets.top + space[2], paddingHorizontal: space[4], flexDirection: "row", alignItems: "center", gap: space[3] }}>
           <View style={{ flex: 1, gap: 2 }}>
             <Text variant="label" tone="tertiary">

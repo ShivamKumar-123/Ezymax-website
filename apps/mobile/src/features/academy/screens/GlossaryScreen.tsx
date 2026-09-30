@@ -3,7 +3,7 @@
 // like the web) and an A–Z scrubber. A row opens the full definition with its related terms in a sheet.
 // Params: ?q= pre-fills the search, ?focus=1 focuses it, ?term=<slug> opens that term.
 import * as React from "react";
-import { RefreshControl, TextInput, View } from "react-native";
+import { RefreshControl, ScrollView, TextInput, View } from "react-native";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { useLocalSearchParams } from "expo-router";
 import { Search, X } from "lucide-react-native";
@@ -204,7 +204,21 @@ export function GlossaryScreen() {
           <GlossarySkeleton rows={7} height={TERM_ROW_HEIGHT} />
         )
       ) : matches === 0 ? (
-        <EmptyState title={t("academy.glossary.count", { count: 0 })} body={t("academy.glossary.noMatch", { q: deferred.trim() || cat })} style={{ paddingTop: space[10] }} />
+        // scrolls above the keyboard; one tap brings every term back
+        <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={{ paddingBottom: bottom }} testID="glossary-empty">
+          <EmptyState
+            illustration="emptyHistory"
+            size={150}
+            title={t("academy.glossary.count", { count: 0 })}
+            body={t("academy.glossary.noMatch", { q: deferred.trim() || cat })}
+            action={t("academy.glossary.clear")}
+            onAction={() => {
+              setQuery("");
+              setCat("");
+            }}
+            style={{ paddingTop: space[6] }}
+          />
+        </ScrollView>
       ) : (
         <View style={{ flex: 1 }}>
           <FlashList
