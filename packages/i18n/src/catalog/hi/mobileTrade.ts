@@ -8,6 +8,8 @@ const mobileTrade: NsMessages<"mobileTrade"> = {
   searchSymbol: "सिंबल खोजें",
   depth: "डेप्थ ऑफ़ मार्केट",
   alert: "प्राइस अलर्ट",
+  news: "{symbol} की न्यूज़", // a header button's accessibility label
+  calendar: "{currency} आर्थिक कैलेंडर", // a header button's accessibility label, e.g. "EUR economic calendar"
   "account.chip": "{type} · #{login}",
   "account.manage": "अकाउंट मैनेज करें",
   "account.open": "अकाउंट खोलें",

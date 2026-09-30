@@ -27,5 +27,18 @@ const mobileHome: NsMessages<"mobileHome"> = {
   "noAccount.action": "अकाउंट खोलें",
   "news.empty": "अभी कोई हेडलाइन नहीं।",
   "a11y.bell": "सूचनाएँ, {count} अपठित",
+
+  // Explore: one colour block per module (title in display type on two short lines at most, hint on two lines)
+  "explore.title": "एक्सप्लोर",
+  "explore.copy": "कॉपी ट्रेडिंग",
+  "explore.copyHint": "सफल ट्रेडर्स को फ़ॉलो करें",
+  "explore.prop": "प्रॉप चैलेंज",
+  "explore.propHint": "ट्रेड के लिए फ़ंडिंग पाएँ",
+  "explore.academy": "एकेडमी",
+  "explore.academyHint": "कदम-दर-कदम ट्रेडिंग सीखें",
+  "explore.ai": "AI ट्रेडर",
+  "explore.aiHint": "आइडिया को स्ट्रैटेजी में बदलें",
+  "explore.invite": "दोस्तों को बुलाएँ",
+  "explore.inviteHint": "उनके ट्रेड पर कमाएँ",
 };
 export default mobileHome;

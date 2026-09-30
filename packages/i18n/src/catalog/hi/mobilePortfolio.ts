@@ -51,5 +51,43 @@ const mobilePortfolio: NsMessages<"mobilePortfolio"> = {
   "history.more": "और लोड करें",
   "confirm.close": "#{ticket} बंद करें?",
   "confirm.closeBody": "{side} {volume} {symbol} मार्केट प्राइस पर।",
+
+  // Header: the account's analytics (Reports)
+  analytics: "एनालिटिक्स",
+
+  // Close By (hedging accounts; the button and title use order.position.closeBy)
+  "closeBy.body": "यह पोज़िशन उसी सिंबल की एक उल्टी पोज़िशन के सामने बंद होती है, आपकी चुनी पोज़िशन के ओपन प्राइस पर। ओवरलैप पर कोई स्प्रेड नहीं लगता; बचा हुआ वॉल्यूम खुला रहता है।",
+  "closeBy.pick": "उल्टी पोज़िशन",
+  "closeBy.summary": "दोनों के {volume} लॉट {price} पर बंद होंगे, जो #{ticket} का ओपन प्राइस है।",
+  "closeBy.locks": "ओवरलैप का नतीजा",
+  "closeBy.gone": "यह पोज़िशन पहले ही बंद हो चुकी है।",
+
+  // Closed trade details (History)
+  "deal.position": "पोज़िशन",
+  "deal.reason": "कारण",
+  "deal.closed": "बंद हुई",
+  "reason.client": "मैन्युअल",
+  "reason.sl": "स्टॉप लॉस",
+  "reason.tp": "टेक प्रॉफ़िट",
+  "reason.stop_out": "स्टॉप आउट",
+  "reason.close_by": "क्लोज़ बाय",
+  "reason.dealer": "डीलिंग डेस्क",
+  "reason.force": "डीलिंग डेस्क",
+  "reason.reversal": "रिवर्सल",
+  "reason.price_correction": "प्राइस सुधार",
+  "reason.pending_fill": "पेंडिंग ऑर्डर",
+  "action.share": "P&L शेयर करें",
+
+  // Share P&L: a picture of one closed trade's result. {brand} is the broker's name (e.g. Kalks)
+  "share.title": "P&L शेयर करें",
+  "share.body": "आपका नतीजा एक इमेज के रूप में, पोस्ट करने के लिए तैयार। इसमें बैलेंस, अकाउंट नंबर या वॉल्यूम कभी नहीं दिखता।",
+  "share.action": "इमेज शेयर करें",
+  "share.withCode": "मेरा रेफ़रल कोड {code} जोड़ें",
+  "share.result": "नतीजा",
+  "share.footerCode": "{brand} पर मेरे साथ ट्रेड करें",
+  "share.footer": "{brand} पर ट्रेड करें",
+  "share.failed": "इमेज नहीं बन सकी। फिर से कोशिश करें।",
+  "share.unavailable": "इस डिवाइस पर शेयरिंग उपलब्ध नहीं है।",
+  "share.a11y": "P&L कार्ड: {symbol}, {side}, {result}, {date}",
 };
 export default mobilePortfolio;
