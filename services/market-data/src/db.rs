@@ -139,19 +139,30 @@ pub async fn insert_ticks(pool: &PgPool, rows: &[(String, DateTime<Utc>, Option<
 }
 
 /// Bars in ascending time order, ending at or before `to` (inclusive), newest `limit`.
+/// One statement per filter combination (not `$3 IS NULL OR t <= $3`): prepared statements go generic after a
+/// few runs, and a generic plan can't use the bound as an index range, so scroll-back pages would scan every
+/// newer bar first.
 pub async fn load_bars(pool: &PgPool, symbol: &str, tf: i32, to: Option<DateTime<Utc>>, from: Option<DateTime<Utc>>, limit: i64) -> anyhow::Result<Vec<Bar>> {
-    let rows = sqlx::query(
-        "SELECT t, o, h, l, c, v FROM candles
-         WHERE symbol = $1 AND tf = $2 AND ($3::timestamptz IS NULL OR t <= $3) AND ($4::timestamptz IS NULL OR t >= $4)
-         ORDER BY t DESC LIMIT $5",
-    )
-    .bind(symbol)
-    .bind(tf)
-    .bind(to)
-    .bind(from)
-    .bind(limit)
-    .fetch_all(pool)
-    .await?;
+    let q = match (to, from) {
+        (None, None) => sqlx::query("SELECT t, o, h, l, c, v FROM candles WHERE symbol = $1 AND tf = $2 ORDER BY t DESC LIMIT $3").bind(symbol).bind(tf).bind(limit),
+        (Some(to), None) => sqlx::query("SELECT t, o, h, l, c, v FROM candles WHERE symbol = $1 AND tf = $2 AND t <= $3 ORDER BY t DESC LIMIT $4")
+            .bind(symbol)
+            .bind(tf)
+            .bind(to)
+            .bind(limit),
+        (None, Some(from)) => sqlx::query("SELECT t, o, h, l, c, v FROM candles WHERE symbol = $1 AND tf = $2 AND t >= $3 ORDER BY t DESC LIMIT $4")
+            .bind(symbol)
+            .bind(tf)
+            .bind(from)
+            .bind(limit),
+        (Some(to), Some(from)) => sqlx::query("SELECT t, o, h, l, c, v FROM candles WHERE symbol = $1 AND tf = $2 AND t <= $3 AND t >= $4 ORDER BY t DESC LIMIT $5")
+            .bind(symbol)
+            .bind(tf)
+            .bind(to)
+            .bind(from)
+            .bind(limit),
+    };
+    let rows = q.fetch_all(pool).await?;
     let mut out: Vec<Bar> = rows
         .into_iter()
         .map(|r| Bar { t: r.get("t"), o: r.get("o"), h: r.get("h"), l: r.get("l"), c: r.get("c"), v: r.get("v") })
@@ -169,4 +180,28 @@ pub async fn bar_counts(pool: &PgPool) -> anyhow::Result<Vec<(String, i32, i64, 
         .fetch_all(pool)
         .await?;
     Ok(rows.into_iter().map(|r| (r.get("symbol"), r.get("tf"), r.get("n"), r.get("first"), r.get("last"))).collect())
+}
+
+/// Deletes archived ticks older than `before`, symbol by symbol in small batches (index range on
+/// (symbol, t)), so the archive never holds long locks or competes with the live flush. Returns the rows removed.
+pub async fn prune_ticks(pool: &PgPool, symbols: &[String], before: DateTime<Utc>) -> anyhow::Result<u64> {
+    const BATCH: i64 = 20_000;
+    let mut total = 0;
+    for s in symbols {
+        loop {
+            let n = sqlx::query("DELETE FROM ticks WHERE ctid = ANY(ARRAY(SELECT ctid FROM ticks WHERE symbol = $1 AND t < $2 LIMIT $3))")
+                .bind(s)
+                .bind(before)
+                .bind(BATCH)
+                .execute(pool)
+                .await?
+                .rows_affected();
+            total += n;
+            if n < BATCH as u64 {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        }
+    }
+    Ok(total)
 }

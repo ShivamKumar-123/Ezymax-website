@@ -44,6 +44,25 @@ async fn main() -> anyhow::Result<()> {
         tracing::info!(upstream = %cfg.upstream, "relay mode: provider backfill and reconciliation are off");
     }
 
+    // tick archive retention: hourly, in small batches (the archive is write-only; nothing reads old ticks)
+    if cfg.store_ticks && cfg.ticks_retention_hours > 0 {
+        let mk = market.clone();
+        let hours = cfg.ticks_retention_hours;
+        tokio::spawn(async move {
+            let mut every = tokio::time::interval(Duration::from_secs(3600));
+            loop {
+                every.tick().await;
+                let symbols: Vec<String> = mk.cat.list.iter().map(|i| i.symbol.clone()).collect();
+                let before = chrono::Utc::now() - chrono::Duration::hours(hours);
+                match db::prune_ticks(&mk.pool, &symbols, before).await {
+                    Ok(0) => {}
+                    Ok(n) => tracing::info!(deleted = n, hours, "tick archive pruned"),
+                    Err(e) => tracing::warn!(error = %e, "tick archive prune failed"),
+                }
+            }
+        });
+    }
+
     // persist forming bars + ticks every second; log throughput every minute
     {
         let mk = market.clone();

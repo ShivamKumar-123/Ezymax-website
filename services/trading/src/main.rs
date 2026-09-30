@@ -102,7 +102,11 @@ async fn main() -> anyhow::Result<()> {
     tokio::spawn(housekeeping(hub.clone(), pool.clone(), st.limiter.clone()));
 
     let app = api::router(st);
-    let listener = tokio::net::TcpListener::bind(&cfg.bind).await?;
+    // TCP_NODELAY: a fill publishes several small frames back to back (position, deal, account); Nagle would hold
+    // the later ones until the proxy ACKs the first (up to ~40 ms with delayed ACKs)
+    let listener = axum::serve::ListenerExt::tap_io(tokio::net::TcpListener::bind(&cfg.bind).await?, |tcp| {
+        let _ = tcp.set_nodelay(true);
+    });
     tracing::info!(bind = %cfg.bind, shards = cfg.shards, "http listening");
     axum::serve(listener, app)
         .with_graceful_shutdown(async {

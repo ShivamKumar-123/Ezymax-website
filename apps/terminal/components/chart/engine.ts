@@ -58,9 +58,11 @@ function loadHistory(symbol: string, tf: Timeframe): Promise<History> {
   let p = historyWait.get(key);
   if (!p) {
     p = (async (): Promise<History> => {
+      // the request goes out at once, in parallel with the feed start-up (it doesn't depend on the quotes)
+      const fetching = fetchCandles(symbol, tf, 1500);
       await priceFeed().ready; // resolves once ("sim" stays resolved): read the current mode instead
       if (priceFeed().mode !== "live") return "sim";
-      const bars = await fetchCandles(symbol, tf, 1500);
+      const bars = await fetching;
       if (!bars || bars.length === 0) return "sim";
       return bars.map((b) => ({ ...b, time: toChartTime(b.time) }));
     })().then((h) => {

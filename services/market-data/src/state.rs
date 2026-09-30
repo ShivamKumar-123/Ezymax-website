@@ -31,8 +31,10 @@ pub struct Quote {
 
 #[derive(Clone, Debug)]
 pub enum Event {
-    Quote { symbol: String, quote: Quote },
-    Bar { symbol: String, tf: Tf, bar: Bar },
+    /// `symbol` is shared: the broadcast clones every event once per stream client, so no per-client allocation.
+    Quote { symbol: Arc<str>, quote: Quote },
+    /// Every timeframe a trade (or a correction) changed, in one event instead of one per timeframe.
+    Bars { symbol: Arc<str>, bars: Arc<[(Tf, Bar)]> },
 }
 
 #[derive(Default)]
@@ -180,7 +182,7 @@ impl Market {
             e.recv = recv;
             *e
         };
-        let _ = self.tx.send(Event::Quote { symbol: symbol.to_string(), quote: q });
+        let _ = self.tx.send(Event::Quote { symbol: symbol.into(), quote: q });
     }
 
     /// Trade/price tick from the provider: updates the quote (if no book yet) and every timeframe's bar.
@@ -249,11 +251,12 @@ impl Market {
             s.last_tick_ms.insert(symbol.to_string(), t_ms);
         }
         // quotes go out immediately on every change (no batching); unchanged prices only move the bars' volume
+        let sym: Arc<str> = symbol.into();
         if quote_changed {
-            let _ = self.tx.send(Event::Quote { symbol: symbol.to_string(), quote: q });
+            let _ = self.tx.send(Event::Quote { symbol: sym.clone(), quote: q });
         }
-        for (tf, bar) in changed {
-            let _ = self.tx.send(Event::Bar { symbol: symbol.to_string(), tf, bar });
+        if !changed.is_empty() {
+            let _ = self.tx.send(Event::Bars { symbol: sym, bars: changed.into() });
         }
     }
 
@@ -276,8 +279,8 @@ impl Market {
                 changed.push((tf, *b));
             }
         }
-        for (tf, bar) in changed {
-            let _ = self.tx.send(Event::Bar { symbol: symbol.to_string(), tf, bar });
+        if !changed.is_empty() {
+            let _ = self.tx.send(Event::Bars { symbol: symbol.into(), bars: changed.into() });
         }
     }
 

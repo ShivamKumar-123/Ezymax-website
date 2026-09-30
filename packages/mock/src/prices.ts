@@ -109,6 +109,12 @@ class PriceFeed {
   private lastFrame = 0;
   private watchdog: ReturnType<typeof setInterval> | null = null;
   private opened = false;
+  /** Group of the open socket (its quotes carry that group's spread). */
+  private wsGroup = "";
+  /** Until the feed goes live (first REST snapshot applied after hydration), stream quotes are held here: the
+   *  socket opens at start-up in parallel with the snapshot instead of after it, and nothing reaches React early. */
+  private holding = true;
+  private held = new Map<string, { b: number; a: number; l?: number; t: number }>();
   private hiddenAt = 0;
   private resyncListeners = new Set<() => void>();
   /** symbols the service has no prices for (no provider): removed from INSTRUMENTS in live mode */
@@ -288,8 +294,10 @@ class PriceFeed {
   }
 
   private async connect() {
+    this.openSocket(); // handshake overlaps the snapshot request and hydration
     const ok = await this.loadQuotes(2500);
     if (!ok) {
+      this.dropSocket();
       this.setMode("sim");
       this.resolveReady("sim");
       this.ensureSimulator();
@@ -316,8 +324,13 @@ class PriceFeed {
     rebaseTrades(HISTORY);
     this.setMode("live");
     this.resolveReady("live"); // no-op when it already resolved as "sim"
+    // the early socket is kept when it carries the current group; its held quotes are newer than the snapshot
+    if (this.ws && this.wsGroup !== this.group) this.dropSocket();
+    this.holding = false;
+    for (const [sym, q] of this.held) this.onLiveQuote(sym, q.b, q.a, q.l, q.t);
+    this.held.clear();
     this.notifyAll();
-    this.openSocket();
+    if (!this.ws) this.openSocket();
     this.startWatchdog();
   }
 
@@ -345,9 +358,18 @@ class PriceFeed {
     }
   }
 
+  /** Closes the current socket without the reconnect of onclose. */
+  private dropSocket() {
+    const old = this.ws;
+    this.ws = null;
+    this.held.clear();
+    old?.close();
+  }
+
   private openSocket() {
     const ws = new WebSocket(`${MARKET_DATA_URL.replace(/^http/, "ws")}/v1/stream?group=${encodeURIComponent(this.group)}`);
     this.ws = ws;
+    this.wsGroup = this.group;
     this.lastFrame = Date.now();
     ws.onopen = () => {
       this.backoff = 0;
@@ -359,7 +381,7 @@ class PriceFeed {
       }
       if (this.depthListeners.size) ws.send(JSON.stringify({ op: "depth", symbols: [...this.depthListeners.keys()] }));
       // after a drop: bars/quotes may have been missed while disconnected
-      if (this.opened) this.resync();
+      if (this.opened && !this.holding) this.resync();
       this.opened = true;
     };
     ws.onmessage = (e) => {
@@ -376,7 +398,8 @@ class PriceFeed {
           this.lat.push(now - m.r);
           if (this.lat.length > 500) this.lat.shift();
         }
-        this.onLiveQuote(m.s, m.b, m.a, m.l, m.t);
+        if (this.holding) this.held.set(m.s, { b: m.b, a: m.a, l: m.l, t: m.t });
+        else this.onLiveQuote(m.s, m.b, m.a, m.l, m.t);
       } else if (m.type === "bar") this.barListeners.get(`${m.s}|${m.tf}`)?.forEach((fn) => fn({ t: m.t, o: m.o, h: m.h, l: m.l, c: m.c, v: m.v }));
       else if (m.type === "depth" && Array.isArray(m.b) && Array.isArray(m.a)) {
         const d: DepthBook = { symbol: m.s, src: m.src === "feed" ? "feed" : "indicative", t: m.t, bids: m.b, asks: m.a };

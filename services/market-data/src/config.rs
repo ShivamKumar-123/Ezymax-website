@@ -19,6 +19,8 @@ pub struct Config {
     pub instruments_file: String,
     /// Archive every tick into `ticks` (large table — can be turned off).
     pub store_ticks: bool,
+    /// Hours of archived ticks kept (older ones are deleted hourly in small batches); 0 = keep forever.
+    pub ticks_retention_hours: i64,
     /// Days of history to backfill per timeframe (M1, M5, M15, M30, H1).
     pub backfill_days: [(i32, i64); 5],
     /// Oldest date for provider daily history (used before our H1 coverage).
@@ -86,6 +88,7 @@ impl Config {
             provider_rps: var("INFOWAY_RPS", "1").parse().unwrap_or(1.0),
             instruments_file: var("INSTRUMENTS_FILE", concat!(env!("CARGO_MANIFEST_DIR"), "/../../config/instruments.json")),
             store_ticks: var("STORE_TICKS", "true") == "true",
+            ticks_retention_hours: var("TICKS_RETENTION_HOURS", "72").parse().unwrap_or(72),
             backfill_days: [
                 (1, var("BACKFILL_DAYS_M1", "14").parse().unwrap_or(14)),
                 (5, var("BACKFILL_DAYS_M5", "60").parse().unwrap_or(60)),

@@ -24,7 +24,8 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::collections::HashSet;
 use std::sync::Arc;
-use tokio::sync::broadcast::error::RecvError;
+use futures_util::SinkExt;
+use tokio::sync::broadcast::error::{RecvError, TryRecvError};
 use tower_http::cors::CorsLayer;
 
 use crate::db::{self, Bar};
@@ -265,11 +266,9 @@ async fn client(mut socket: WebSocket, s: AppState, group: String) {
                                 added.push(x.to_string());
                             }
                         }
-                        // snapshot so the client renders immediately
-                        for frame in snapshot(&s, &group, added) {
-                            if socket.send(Message::text(frame)).await.is_err() {
-                                return;
-                            }
+                        // snapshot so the client renders immediately (one flush for all of it)
+                        if send_all(&mut socket, snapshot(&s, &group, added)).await.is_err() {
+                            return;
                         }
                     }
                     Some("unsubscribe") => {
@@ -313,46 +312,87 @@ async fn client(mut socket: WebSocket, s: AppState, group: String) {
                 }
             }
             ev = rx.recv() => {
-                let ev = match ev {
-                    Ok(ev) => ev,
-                    Err(RecvError::Lagged(n)) => {
-                        // this client fell behind: skip the backlog and resend the current prices
-                        tracing::debug!(skipped = n, "stream client lagged");
-                        for frame in snapshot(&s, &group, syms.iter().cloned()) {
-                            if socket.send(Message::text(frame)).await.is_err() {
-                                return;
-                            }
+                // Every frame goes out at once: take this event plus whatever else is already queued (a burst, or a
+                // client that fell behind) and write them with one flush instead of one syscall per frame. Nothing
+                // waits for more events, so a single quote is never delayed.
+                let sub = Subs { syms: &syms, bars: &bars, depths: &depths, depth_levels, feed_only };
+                let mut out = Vec::new();
+                let mut next = ev;
+                for _ in 0..MAX_BATCH {
+                    match next {
+                        Ok(ev) => frames(&s, &group, &sub, ev, &mut out),
+                        Err(RecvError::Lagged(n)) => {
+                            // this client fell behind: skip the backlog and resend the current prices
+                            tracing::debug!(skipped = n, "stream client lagged");
+                            out.extend(snapshot(&s, &group, syms.iter().cloned()));
                         }
-                        continue;
+                        Err(RecvError::Closed) => return,
                     }
-                    Err(RecvError::Closed) => break,
-                };
-                // the ladder follows every quote change of a symbol it is open for
-                if let Event::Quote { symbol, quote } = &ev
-                    && depths.contains(symbol)
-                    && let Some(inst) = s.market.cat.get(symbol)
-                {
-                    let client = s.market.spreads.apply(&group, inst, *quote);
-                    let d = depth::build(inst, quote, &client, s.market.feed_depth(symbol).as_ref(), depth_levels);
-                    if (!feed_only || d.src == "feed") && socket.send(Message::text(depth::frame(symbol, &d))).await.is_err() {
-                        break;
-                    }
+                    next = match rx.try_recv() {
+                        Ok(ev) => Ok(ev),
+                        Err(TryRecvError::Lagged(n)) => Err(RecvError::Lagged(n)),
+                        Err(TryRecvError::Empty) => break,
+                        Err(TryRecvError::Closed) => Err(RecvError::Closed),
+                    };
                 }
-                let out = match ev {
-                    Event::Quote { symbol, quote } if syms.contains(&symbol) => {
-                        let Some(inst) = s.market.cat.get(&symbol) else { continue };
-                        quote_frame(&symbol, &s.market.spreads.apply(&group, inst, quote))
-                    }
-                    Event::Bar { symbol, tf, bar } if bars.iter().any(|(b, t)| *t == tf && *b == symbol) => {
-                        let Some(inst) = s.market.cat.get(&symbol) else { continue };
-                        bar_frame(&symbol, tf, &inst.round_bar(bar))
-                    }
-                    _ => continue,
-                };
-                if socket.send(Message::text(out)).await.is_err() {
+                if send_all(&mut socket, out).await.is_err() {
                     break;
                 }
             }
         }
     }
+}
+
+/// Upper bound of events written per flush (keeps heartbeats and client commands responsive under load).
+const MAX_BATCH: usize = 256;
+
+/// What one stream client is subscribed to.
+struct Subs<'a> {
+    syms: &'a HashSet<String>,
+    bars: &'a HashSet<(String, Tf)>,
+    depths: &'a HashSet<String>,
+    depth_levels: usize,
+    feed_only: bool,
+}
+
+/// The frames `ev` produces for a client (none when it isn't subscribed to it).
+fn frames(s: &AppState, group: &str, sub: &Subs, ev: Event, out: &mut Vec<String>) {
+    match ev {
+        Event::Quote { symbol, quote } => {
+            let Some(inst) = s.market.cat.get(&symbol) else { return };
+            // the ladder follows every quote change of a symbol it is open for
+            if sub.depths.contains(&*symbol) {
+                let client = s.market.spreads.apply(group, inst, quote);
+                let d = depth::build(inst, &quote, &client, s.market.feed_depth(&symbol).as_ref(), sub.depth_levels);
+                if !sub.feed_only || d.src == "feed" {
+                    out.push(depth::frame(&symbol, &d));
+                }
+            }
+            if sub.syms.contains(&*symbol) {
+                out.push(quote_frame(&symbol, &s.market.spreads.apply(group, inst, quote)));
+            }
+        }
+        Event::Bars { symbol, bars } => {
+            if sub.bars.is_empty() {
+                return;
+            }
+            let Some(inst) = s.market.cat.get(&symbol) else { return };
+            for (tf, bar) in bars.iter() {
+                if sub.bars.iter().any(|(b, t)| t == tf && **b == *symbol) {
+                    out.push(bar_frame(&symbol, *tf, &inst.round_bar(*bar)));
+                }
+            }
+        }
+    }
+}
+
+/// Writes `frames` and flushes once.
+async fn send_all(socket: &mut WebSocket, frames: Vec<String>) -> Result<(), axum::Error> {
+    if frames.is_empty() {
+        return Ok(());
+    }
+    for f in frames {
+        socket.feed(Message::text(f)).await?;
+    }
+    socket.flush().await
 }
