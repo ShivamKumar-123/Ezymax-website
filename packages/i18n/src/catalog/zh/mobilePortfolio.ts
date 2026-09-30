@@ -51,5 +51,43 @@ const mobilePortfolio: NsMessages<"mobilePortfolio"> = {
   "history.more": "加载更多",
   "confirm.close": "平仓 #{ticket}？",
   "confirm.closeBody": "{side} {volume} {symbol}，按市价平仓。",
+
+  // Header: the account's analytics (Reports)
+  analytics: "分析",
+
+  // Close By (hedging accounts; the button and title use order.position.closeBy)
+  "closeBy.body": "以您所选反向持仓的开仓价，将此持仓与同一交易品种上的该反向持仓相互平仓。重叠部分无需支付点差，剩余交易量将继续持仓。",
+  "closeBy.pick": "反向持仓",
+  "closeBy.summary": "双方各平仓 {volume} 手，价格 {price}，即 #{ticket} 的开仓价。",
+  "closeBy.locks": "重叠部分盈亏",
+  "closeBy.gone": "此持仓已平仓。",
+
+  // Closed trade details (History)
+  "deal.position": "持仓",
+  "deal.reason": "原因",
+  "deal.closed": "平仓时间",
+  "reason.client": "手动",
+  "reason.sl": "止损",
+  "reason.tp": "止盈",
+  "reason.stop_out": "强制平仓",
+  "reason.close_by": "反向平仓",
+  "reason.dealer": "交易台",
+  "reason.force": "交易台",
+  "reason.reversal": "反手",
+  "reason.price_correction": "价格修正",
+  "reason.pending_fill": "挂单",
+  "action.share": "分享盈亏",
+
+  // Share P&L: a picture of one closed trade's result. {brand} is the broker's name (e.g. Kalks)
+  "share.title": "分享盈亏",
+  "share.body": "将您的交易结果生成图片，即可发布。图片绝不会显示余额、账号或交易量。",
+  "share.action": "分享图片",
+  "share.withCode": "添加我的推荐码 {code}",
+  "share.result": "结果",
+  "share.footerCode": "在 {brand} 和我一起交易",
+  "share.footer": "在 {brand} 交易",
+  "share.failed": "无法生成图片。请重试。",
+  "share.unavailable": "此设备不支持分享。",
+  "share.a11y": "盈亏卡片：{symbol}，{side}，{result}，{date}",
 };
 export default mobilePortfolio;

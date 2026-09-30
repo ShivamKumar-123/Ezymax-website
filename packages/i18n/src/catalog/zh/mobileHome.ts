@@ -27,5 +27,18 @@ const mobileHome: NsMessages<"mobileHome"> = {
   "noAccount.action": "开立账户",
   "news.empty": "暂无要闻。",
   "a11y.bell": "通知，{count} 条未读",
+
+  // Explore: one colour block per module (title in display type on two short lines at most, hint on two lines)
+  "explore.title": "探索",
+  "explore.copy": "跟单交易",
+  "explore.copyHint": "跟随优秀交易者",
+  "explore.prop": "自营交易挑战",
+  "explore.propHint": "获取资金进行交易",
+  "explore.academy": "学院",
+  "explore.academyHint": "循序渐进学交易",
+  "explore.ai": "AI 交易员",
+  "explore.aiHint": "将想法转化为策略",
+  "explore.invite": "邀请好友",
+  "explore.inviteHint": "好友交易，您赚收益",
 };
 export default mobileHome;

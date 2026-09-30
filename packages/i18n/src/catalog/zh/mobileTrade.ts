@@ -8,6 +8,8 @@ const mobileTrade: NsMessages<"mobileTrade"> = {
   searchSymbol: "搜索交易品种",
   depth: "市场深度",
   alert: "价格警报",
+  news: "{symbol} 相关新闻", // a header button's accessibility label
+  calendar: "{currency} 财经日历", // a header button's accessibility label, e.g. "EUR economic calendar"
   "account.chip": "{type} · #{login}",
   "account.manage": "管理账户",
   "account.open": "开立账户",
