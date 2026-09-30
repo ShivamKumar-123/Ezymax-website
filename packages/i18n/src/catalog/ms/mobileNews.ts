@@ -1,0 +1,95 @@
+import type { NsMessages } from "../../core";
+
+// Kalks mobile app: market news (/news, /news/[id]) and the economic calendar (/calendar).
+// Shared wording (tone, impact, calendar columns, brief, alerts) is reused from the `news` namespace.
+const mobileNews: NsMessages<"mobileNews"> = {
+  // News feed
+  "eyebrow": "Cerapan pasaran",
+  "title": "Berita", // tall uppercase display title, keep it one short word
+  "latest": "Terkini",
+  "filters": "Penapis",
+  "filtersOn": "Penapis · {n}", // n = number of active filters
+  "importance.all": "Semua",
+  "importance.important": "Penting",
+  "importance.top": "Berita utama",
+  "importance.label": "Kepentingan",
+  // Chips on a story (importance tier)
+  "chip.top": "Berita utama",
+  "chip.important": "Penting",
+  "filter.tone": "Nada",
+  "filter.anyTone": "Sebarang nada",
+  "filter.currency": "Mata wang",
+  "filter.anyCurrency": "Sebarang mata wang",
+  "filter.symbol": "Instrumen",
+  "filter.anySymbol": "Sebarang instrumen",
+  "filter.mentioned": "Dalam tajuk berita hari ini",
+  "filter.clear": "Kosongkan penapis",
+  "filter.remove": "Alih keluar penapis {label}",
+  "list.loadingMore": "Memuatkan berita lama…",
+  "list.end": "Anda sudah membaca semuanya",
+  "list.endBody": "Itulah setiap berita dari beberapa hari lepas untuk penapis ini.",
+  "empty.title": "Belum ada berita",
+  "empty.filteredTitle": "Tiada yang sepadan",
+  "updated": "Dikemas kini {time}",
+
+  // Daily brief card
+  "brief.label": "Ringkasan harian",
+  "brief.readMore": "Baca ringkasan penuh",
+  "brief.watch": "Pantau hari ini",
+  "brief.calendarNote": "Dalam kalendar",
+  "brief.writtenAt": "Ditulis {time}",
+
+  // Story screen
+  "story.readAt": "Baca di {source}",
+  "story.noTeaser": "Penerbit hanya berkongsi tajuk berita. Berita penuh ada di laman mereka.",
+  "story.currencies": "Mata wang",
+  "story.calendarFor": "Kalendar {currency}",
+  "story.relatedSymbol": "Lagi tentang {symbol}",
+  "story.relatedCurrency": "Lagi tentang {currency}",
+  "story.share": "Kongsi",
+  "story.notFound.title": "Berita tidak ditemui",
+  "story.notFound.body": "Ia mungkin telah dialih keluar. Tajuk berita terkini ada dalam suapan berita.",
+  "story.backToNews": "Kembali ke berita",
+  "story.openChart": "Buka carta {symbol}",
+  "story.published": "Diterbitkan {time}",
+
+  // Economic calendar
+  "cal.eyebrow": "Kalendar ekonomi",
+  "cal.title": "Kalendar", // tall uppercase display title, keep it one short word
+  "cal.summary.events": "Peristiwa",
+  "cal.prevWeekShort": "Terdahulu",
+  "cal.nextWeekShort": "Kemudian",
+  "cal.startsNow": "Bermula sekarang",
+  "cal.startsIn": "Bermula dalam",
+  "cal.zone.local": "Waktu anda · {tz}",
+  "cal.zone.server": "Waktu pelayan · {tz}",
+  "cal.zoneNote.local": "Masa dalam zon waktu anda ({local}). Waktu pelayan, iaitu jam akaun dagangan anda, ialah {server}.",
+  "cal.zoneNote.server": "Masa dalam waktu pelayan ({server}), iaitu jam akaun dagangan anda. Zon waktu anda ialah {local}.",
+  "cal.zone.title": "Tunjuk masa dalam",
+  "cal.zone.myTime": "Waktu saya ({tz})",
+  "cal.zone.serverTime": "Waktu pelayan ({tz})",
+  "cal.filters.currencies": "Mata wang",
+  "cal.filters.allCurrencies": "Semua mata wang",
+  "cal.filters.reset": "Set semula",
+  "cal.empty.title": "Minggu yang tenang",
+  "cal.empty.body": "Belum ada keluaran dijadualkan untuk minggu ini.",
+  "cal.empty.filteredTitle": "Tiada yang sepadan",
+  "cal.impact.high": "Impak tinggi",
+  "cal.impact.medium": "Impak sederhana",
+  "cal.impact.low": "Impak rendah",
+  "cal.row.a11y": "{time}, {currency}, {title}, {impact}",
+  "cal.remind": "Ingatkan saya",
+  "cal.reminderOn": "Peringatan hidup",
+  "cal.remindBefore": "Ingatkan saya sebelum",
+  "cal.reminderSetDesc": "Kami akan memaklumkan anda {minutes} minit sebelum {currency} {title}.",
+  "cal.reminderChanged": "Peringatan dialihkan ke {minutes} minit sebelum",
+  "cal.viewOnlyRemind": "Log masuk lihat sahaja tidak boleh menetapkan peringatan.",
+  "cal.newsFor": "Berita {currency}",
+  "cal.eventTime.local": "{day} · {local} waktu anda · {server} waktu pelayan ({tz})",
+  "cal.eventTime.server": "{day} · {server} waktu pelayan ({tz}) · {local} waktu anda",
+  "cal.eventTime.allDay": "{day} · sepanjang hari",
+  "cal.alertsAria": "Amaran impak tinggi",
+  "cal.filtersAria": "Penapis kalendar",
+  "cal.dayAria": "{day}, {count} peristiwa",
+};
+export default mobileNews;
