@@ -45,7 +45,10 @@ pub fn router(alerts: Arc<Alerts>) -> Router {
         .route("/v1/internal/alerts", get(list).post(create))
         .route("/v1/internal/alerts/history", get(history).delete(clear_history))
         .route("/v1/internal/alerts/{id}", patch(update).delete(remove))
-        .layer(middleware::from_fn_with_state(alerts.clone(), internal_only))
+        // `route_layer`, not `layer`: the token check runs only on these routes. As a `layer` it also wrapped the
+        // router's fallback, and main.rs merges this router with the public one, so every unknown path of the
+        // service (public at api.<domain>) answered 401 "Internal token required." (503 without a token) instead of 404.
+        .route_layer(middleware::from_fn_with_state(alerts.clone(), internal_only))
         .with_state(alerts)
 }
 

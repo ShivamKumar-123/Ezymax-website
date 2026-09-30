@@ -537,3 +537,42 @@ async fn alerts_survive_a_restart() {
     assert_eq!(e.alerts.live_ids(SYM), vec![id]);
     e.drop().await;
 }
+
+async fn status_of(http: &reqwest::Client, url: String, token: Option<&str>) -> u16 {
+    let mut rb = http.get(url);
+    if let Some(t) = token {
+        rb = rb.header("x-kalks-internal", t);
+    }
+    rb.send().await.unwrap().status().as_u16()
+}
+
+/// main.rs merges this router with the service's public one (served at api.<domain>): the token check guards only
+/// the alerts routes, and every other unknown path stays a 404 (it read 401 "Internal token required.", or 503 with
+/// no token configured, while the check was a `layer` that also wrapped the fallback). Needs no database.
+#[tokio::test]
+async fn unknown_paths_stay_not_found_next_to_the_internal_api() {
+    let cat = Catalogue::load(concat!(env!("CARGO_MANIFEST_DIR"), "/../../config/instruments.json")).expect("instruments");
+    let pool = sqlx::postgres::PgPoolOptions::new().connect_lazy("postgres://nobody@127.0.0.1:1/none").expect("lazy pool");
+    let market = Market::new(cat, pool, Spreads::default(), false);
+    let http = reqwest::Client::new();
+    for configured in [TOKEN, ""] {
+        let (writes, _rx) = mpsc::unbounded_channel();
+        let cfg = Config { internal_token: configured.into(), support_url: String::new(), support_token: String::new(), max_per_user: 50, repeat_cooldown: Duration::from_secs(300), tick: Duration::from_secs(3600) };
+        let alerts = Arc::new(Alerts { cfg, market: market.clone(), live: Mutex::new(HashMap::new()), writes, wake: Notify::new(), http: reqwest::Client::new() });
+        let app = axum::Router::new().route("/health", axum::routing::get(|| async { "ok" })).merge(router(alerts));
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let base = format!("http://{}", listener.local_addr().unwrap());
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+
+        assert_eq!(status_of(&http, format!("{base}/health"), None).await, 200, "public route (token {configured:?})");
+        for path in ["/nope", "/v1/nope", "/v1/internal/nope", "/favicon.ico"] {
+            for token in [None, Some("wrong"), Some(TOKEN)] {
+                assert_eq!(status_of(&http, format!("{base}{path}"), token).await, 404, "{path} with {token:?} (token {configured:?})");
+            }
+        }
+        // the alerts routes themselves still refuse a caller without the token (fail-closed when none is configured)
+        let expected = if configured.is_empty() { 503 } else { 401 };
+        assert_eq!(status_of(&http, format!("{base}/v1/internal/alerts"), None).await, expected);
+        assert_eq!(status_of(&http, format!("{base}/v1/internal/alerts/history"), Some("wrong")).await, expected);
+    }
+}

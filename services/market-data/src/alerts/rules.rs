@@ -104,7 +104,8 @@ pub enum Refusal {
 /// % moves must be between MIN_PCT and MAX_PCT.
 pub fn check(cond: Cond, value: f64, price: f64, inst: &Instrument) -> Result<(), Refusal> {
     if !value.is_finite() || value <= 0.0 {
-        return Err(Refusal::Invalid(if cond.is_level() { "Enter a price above zero." } else { "Enter a percentage above zero." }));
+        // a move is stored on two decimals, so 0.001 % arrives here as 0: name the bounds, not "above zero"
+        return Err(Refusal::Invalid(if cond.is_level() { "Enter a price above zero." } else { "Enter a move between 0.01% and 50%." }));
     }
     if !cond.is_level() {
         if !(MIN_PCT..=MAX_PCT).contains(&value) {
