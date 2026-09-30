@@ -76,8 +76,10 @@ export const LevelCard = React.memo(function LevelCard({ d }: { d: Dashboard }) 
       {levels.length > 1 ? (
         <View accessible accessibilityLabel={t("mobilePartner.level.ladderA11y", { name: cur?.name ?? "", n: curIdx + 1, total: levels.length })}>
           <View style={{ height: 14, justifyContent: "center", marginHorizontal: `${50 / levels.length}%` }}>
-            <View style={{ height: 2, backgroundColor: colors.surface3, borderRadius: 1 }} />
-            <View style={{ position: "absolute", start: 0, height: 2, width: `${Math.min(100, ladder)}%`, backgroundColor: colors.gold, borderRadius: 1 }} />
+            {/* a row, so the progress grows from the start edge in right-to-left languages too */}
+            <View style={{ height: 2, backgroundColor: colors.surface3, borderRadius: 1, flexDirection: "row" }}>
+              <View style={{ width: `${Math.min(100, ladder)}%`, backgroundColor: colors.gold, borderRadius: 1 }} />
+            </View>
           </View>
           <View style={{ flexDirection: "row", marginTop: -14 }}>
             {levels.map((l, i) => {

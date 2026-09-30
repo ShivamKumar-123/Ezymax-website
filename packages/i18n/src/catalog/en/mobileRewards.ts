@@ -344,6 +344,9 @@ const mobileRewards = {
   "share.views": { one: "{count} view", other: "{count} views" },
   "share.withAmounts": "Amounts",
 
+  // The broker's banners at the top of the rewards screens
+  "banner.dismiss": "Dismiss",
+
   // Statuses (server enums)
   "status.pending": "Pending",
   "status.completed": "Completed",

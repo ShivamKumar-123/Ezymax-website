@@ -18,7 +18,7 @@ the app never sends a user id.
 | `/partner/payouts` | What is accruing in the current period with a countdown to the batch close, the minimum payout, how a batch gets paid, and every payout with its status. |
 | `/partner/links` | Campaign links (the default `/r/CODE` and named ones with UTM tags): funnel per link, share, copy, QR, pause / resume, and a new-link sheet (name, optional slug that follows the name like the IB service's `slugify`, UTM tags, live preview; the created link is copied). |
 | `/partner/programme` | Rate card per level and symbol group, rebate to own clients and split with sub-IBs (sliders that follow the finger on the UI thread, within the programme's maximums, with a worked example), tier shares, the CPA bonus, and the rules that decide whether a deal earns. |
-| `/rewards` | Loyalty points as the hero (tier, value, progress to the next tier), cashback / offers / share card / contest record as tiles, and trading contests: the featured one (running first, else the next to start) as a colour block, the others, and past contests. |
+| `/rewards` | Loyalty points as the hero (tier, value, progress to the next tier), cashback / offers / share card / contest record as tiles, and trading contests: the featured one (running first, else the next to start) as a colour block, the others, and past contests. The broker's targeted banners (placement `rewards`, like the web's BannerSlot) sit at the top of the hub, points, cashback and promotions: impression once per mount, a click opens the app's screen for the link (else the web page), dismiss hides it for the client. |
 | `/rewards/contests/[id]` | Prize pool and time left, the reader's entry (rank, score in the contest's unit, trades still needed to rank, prize on track) or Join / Register, prize bands, rules and anti-cheat terms, the live leaderboard (top 100, refreshed every 15 s while the contest runs). Joining: a live contest with one of the eligible live accounts (groups, minimum equity); a demo contest opens a demo account whose credentials are shown once, with "Trade on this account". |
 | `/rewards/loyalty` | Balance, tiers with multipliers and perks, how points are earned, the rewards catalogue with redemption (a trading bonus needs a live account; tier, stock and balance are shown before the server checks them again), vouchers, redemptions and the points history with filters. |
 | `/rewards/cashback` | Accrued, this month, paid and lifetime; the last 30 days as bars; programmes (automatic or opt-in with Enrol, monthly cap); payouts and the latest accruals. |
@@ -31,6 +31,7 @@ the app never sends a user id.
 - **Read-only staff sessions** read everything and change nothing (the server refuses too); the screens say so and hide or disable the actions.
 - **Broker modules (D112):** `ib` and `rewards` switched off answer `module_disabled`; the screens show the programme-off state. The More tab already hides them.
 - **Restrictions:** the partner hub shows the `ib` restriction banner.
+- **Right-to-left:** layouts use start / end; the slider, the level ladder and the bars are rows (no absolute start offsets), so they mirror on phones and in the web preview alike, and the drag gestures read the finger from the start edge.
 - **Money actions are never optimistic:** rebate / split, links, joining, redeeming, enrolling, claiming and promo codes show the server's answer (in the reader's language, `rewardsText` maps the growth service's sentences), then the affected views refetch.
 
 ## Building blocks
@@ -57,6 +58,5 @@ The first checks the pure logic (week buckets, durations, commission lines, the 
 ## Known gaps
 
 - The web's network tree (`/partner/network`) is not drawn on the phone; the clients list shows the tier and the sub-IB a client came through.
-- Growth banners (placement `rewards`) are not shown in the app yet.
 - Share cards are for a period; a card for one closed trade (`kind: "trade"`, the web's "Share P&L" on trade history) can be made with `createShare()` from the portfolio history.
 - Notification links to `/partner/payouts` or `/rewards/contests/<id>` open the partner or rewards hub (the platform module's link map); the app has the sub-screens at the same paths.

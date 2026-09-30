@@ -18,6 +18,7 @@ import { isPast, isRunning, isUpcoming, pts, usd, usdShort } from "../format";
 import type { ContestCard, Rewards } from "../types";
 import { tint } from "../../partner/tint";
 import { viewerGated } from "../components/ViewerGate";
+import { RewardsBanners } from "../components/Banners";
 
 /** Same rule as the Client Area: a running contest the reader entered, else the biggest pool; else the next to start. */
 function pickFeatured(items: ContestCard[]): ContestCard | undefined {
@@ -111,6 +112,7 @@ function RewardsHub() {
       <ScrollView onScroll={onScroll} scrollEventThrottle={16} refreshControl={refreshControl} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottom + space[6] }}>
         <PageTitle eyebrow={t("mobileRewards.eyebrow")} title={t("mobileRewards.title")} />
         {readOnly ? <Banner tone="info" title={t("mobile.viewOnly")} body={t("mobileRewards.viewOnlyBody")} style={{ marginHorizontal: GUTTER, marginBottom: space[4] }} /> : null}
+        <RewardsBanners style={{ marginHorizontal: GUTTER, marginBottom: space[4] }} />
 
         {nothing && firstError ? (
           <ScreenState ns="mobileRewards" error={firstError} onRetry={() => void Promise.all([rewards.refresh(), contests.refresh()])} />

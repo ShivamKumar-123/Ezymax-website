@@ -120,7 +120,7 @@ export function PartnerScreen() {
                 {fresh ? null : (
                   <>
                     <Recent d={d} onAll={openLedger} />
-                    <TopClients d={d} onAll={() => go("/partner/clients")} />
+                    <TopClients d={d} onAll={() => go("/partner/clients")} onOpen={(id) => go(`/partner/clients/${id}`)} />
                   </>
                 )}
                 <View style={{ paddingHorizontal: GUTTER, marginTop: space[8] }}>
@@ -275,9 +275,11 @@ const Recent = React.memo(function Recent({ d, onAll }: { d: Dashboard; onAll: (
   );
 });
 
-const TopClients = React.memo(function TopClients({ d, onAll }: { d: Dashboard; onAll: () => void }) {
+/** The month's top clients by lots; a row opens the client when the broker shares client details (full visibility). */
+const TopClients = React.memo(function TopClients({ d, onAll, onOpen }: { d: Dashboard; onAll: () => void; onOpen: (id: number) => void }) {
   const t = useT();
   const top = d.topClients.slice(0, 5);
+  const full = d.programme.clientVisibility === "full";
   const max = Math.max(0.0001, ...top.map((c) => c.lotsMonth));
   return (
     <View style={{ paddingHorizontal: GUTTER, marginTop: space[8] }}>
@@ -294,7 +296,14 @@ const TopClients = React.memo(function TopClients({ d, onAll }: { d: Dashboard; 
           </View>
         ) : (
           top.map((c, i) => (
-            <PressableScale key={c.id} onPress={onAll} onPressIn={prefetchPartner.clients} scaleTo={0.985} accessibilityLabel={`${i + 1}. ${c.name}, ${t("mobilePartner.top.lots", { lots: lots(c.lotsMonth) })}`} style={{ height: 64, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[5], borderTopWidth: i ? 1 : 0, borderTopColor: colors.line }}>
+            <PressableScale
+              key={c.id}
+              onPress={full ? () => onOpen(c.id) : onAll}
+              onPressIn={() => {
+                prefetchPartner.clients();
+                if (full) prefetchPartner.trades(c.id);
+              }}
+              scaleTo={0.985} accessibilityLabel={`${i + 1}. ${c.name}, ${t("mobilePartner.top.lots", { lots: lots(c.lotsMonth) })}`} style={{ height: 64, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[5], borderTopWidth: i ? 1 : 0, borderTopColor: colors.line }}>
               <Mono size={13} tone="tertiary" style={{ width: 18, textAlign: "center" }}>
                 {i + 1}
               </Mono>

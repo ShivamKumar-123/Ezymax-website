@@ -307,3 +307,16 @@ export interface Share {
   url: string;
   data: ShareData;
 }
+
+/** A targeted marketing banner (D121) for one placement ("rewards" on these screens). */
+export interface BannerView {
+  id: number;
+  title: string;
+  body: string;
+  ctaLabel: string | null;
+  ctaUrl: string | null;
+  imageUrl: string | null;
+  tone: "ember" | "gold" | "neutral" | "up" | string;
+  placement: string;
+  dismissible: boolean;
+}

@@ -13,7 +13,7 @@ import { createT } from "@kalks/i18n/core";
 import { campaignLink, commissionLine, held, kindLabel, lastWeeks, minHold, rateText, reasonLabel, referralLink, shortUrl, SLUG_RE, slugOf, statusLabel } from "../src/features/partner/lib.ts";
 import { QUIET, qrPath, qrPng } from "../src/features/partner/qr.ts";
 import type { CommissionRow } from "../src/features/partner/types.ts";
-import { bandLabel, canJoin, isFull, itemValue, MESSAGES, prizeFor, prizeZone, pts, rewardsTextWith, scoreText, scoreTone, tradesHint } from "../src/features/rewards/lib.ts";
+import { bandLabel, canJoin, isFull, itemValue, MESSAGES, ownRoute, prizeFor, prizeZone, pts, rewardsTextWith, scoreText, scoreTone, tradesHint } from "../src/features/rewards/lib.ts";
 import type { Contest } from "../src/features/rewards/types.ts";
 
 const t = createT("en");
@@ -278,6 +278,17 @@ test("the growth service's sentences map to words, and every mapped sentence sti
   assert.equal(rewardsTextWith(t, "You need 1200 more points."), "You need 1,200 more points.");
   assert.equal(rewardsTextWith(t, "Something new from the server."), "Something new from the server.");
   assert.equal(rewardsTextWith(t, null), "");
+});
+
+test("a banner or notification link opens the partner / rewards screen at the same path; anything else is left to the link map", () => {
+  assert.equal(ownRoute("/rewards/loyalty"), "/rewards/loyalty");
+  assert.equal(ownRoute("/rewards/contests/october-gold-rush?utm=x#top"), "/rewards/contests/october-gold-rush");
+  assert.equal(ownRoute("/partner/payouts/"), "/partner/payouts");
+  assert.equal(ownRoute("/partner/network"), null, "the web's network tree has no app screen");
+  assert.equal(ownRoute("/rewards"), null, "the hub itself goes through the platform's map");
+  assert.equal(ownRoute("https://evil.example/rewards/loyalty"), null);
+  assert.equal(ownRoute("/rewards/contests/../../wallet"), null);
+  assert.equal(ownRoute("//rewards/loyalty"), null);
 });
 
 /** Every .rs file under a directory, concatenated. */

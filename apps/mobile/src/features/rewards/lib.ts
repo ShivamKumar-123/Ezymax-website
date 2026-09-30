@@ -112,3 +112,14 @@ export function rewardsTextWith(t: T, message: string | null | undefined): strin
   return message;
 }
 
+
+/**
+ * The partner and rewards screen for a Client Area link, when the app has it at the same path (a banner's call to
+ * action, a notification): "/rewards/loyalty", "/rewards/contests/october-gold-rush", "/partner/payouts". The query
+ * and fragment are dropped. Null for anything else (the platform's link map handles the rest).
+ */
+export function ownRoute(url: string): string | null {
+  const path = url.split(/[?#]/)[0] ?? "";
+  const m = /^\/(partner\/(?:clients|commissions|payouts|links|programme)|rewards\/(?:loyalty|cashback|promotions|share)|rewards\/contests\/[A-Za-z0-9_-]{1,64})\/?$/.exec(path);
+  return m ? `/${m[1]}` : null;
+}

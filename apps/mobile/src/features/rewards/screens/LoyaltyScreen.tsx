@@ -19,6 +19,7 @@ import { ago, date, itemValue, pts, statusLabel, tierName, tierRank, titleCase, 
 import type { CatalogueItem, PointsTx, Rewards } from "../types";
 import { tint } from "../../partner/tint";
 import { viewerGated } from "../components/ViewerGate";
+import { RewardsBanners } from "../components/Banners";
 
 type KindF = "all" | "earn" | "redeem" | "bonus" | "promo" | "expire";
 const EMPTY: PointsTx[] = [];
@@ -233,6 +234,7 @@ function Loyalty() {
   const header = (
     <View>
       <PageTitle eyebrow={t("mobileRewards.eyebrow.loyalty")} title={t("mobileRewards.title.loyalty")} />
+      <RewardsBanners style={{ marginHorizontal: GUTTER, marginBottom: space[4] }} />
       {!r ? (
         q.error ? (
           <ScreenState ns="mobileRewards" error={q.error} onRetry={() => void q.refresh()} />

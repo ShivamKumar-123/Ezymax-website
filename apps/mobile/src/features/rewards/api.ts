@@ -8,7 +8,7 @@ import { api, apiGet, type ApiError } from "@/lib/api";
 import { i18n } from "@/i18n";
 import { invalidate, prefetch, setQueryData, useQuery } from "@/lib/query";
 import { rewardsTextWith } from "./lib";
-import type { CashbackMe, ContestDetail, ContestsResp, Grant, JoinResult, PointsPage, PromoResult, Promotions, Redemption, Rewards, Share, Voucher } from "./types";
+import type { BannerView, CashbackMe, ContestDetail, ContestsResp, Grant, JoinResult, PointsPage, PromoResult, Promotions, Redemption, Rewards, Share, Voucher } from "./types";
 
 /** Applies the server's confirmed answer to a cached view at once (the refetch that follows fills in the rest). */
 function patch<T>(key: string, fn: (d: T) => T) {
@@ -25,6 +25,7 @@ export const REWARDS_KEYS = {
   redemptions: "growth/redemptions",
   vouchers: "growth/vouchers",
   shares: "growth/shares",
+  banners: (placement: string) => `growth/banners/${placement}`,
 } as const;
 
 const fetchRewards = () => apiGet<Rewards>("growth/rewards");
@@ -36,6 +37,7 @@ const fetchPoints = (kind: string) => apiGet<PointsPage>(`growth/points?page=1&l
 const fetchRedemptions = () => apiGet<{ items: Redemption[] }>("growth/redemptions");
 const fetchVouchers = () => apiGet<{ items: Voucher[] }>("growth/vouchers");
 const fetchShares = () => apiGet<{ items: Share[] }>("growth/shares");
+const fetchBanners = (placement: string) => apiGet<{ items: BannerView[] }>(`growth/banners?placement=${encodeURIComponent(placement)}`);
 
 /* ------------------------------------------------------------------ */
 /* Reads                                                               */
@@ -51,6 +53,8 @@ export const usePoints = (kind: string) => useQuery(REWARDS_KEYS.points(kind), (
 export const useRedemptions = () => useQuery(REWARDS_KEYS.redemptions, fetchRedemptions, { persist: true, staleMs: 45_000 });
 export const useVouchers = () => useQuery(REWARDS_KEYS.vouchers, fetchVouchers, { persist: true, staleMs: 45_000 });
 export const useShares = () => useQuery(REWARDS_KEYS.shares, fetchShares, { persist: true, staleMs: 45_000 });
+/** The broker's banners for a placement (targeted by the service on the client's country, KYC, accounts, age). */
+export const useBanners = (placement: string, enabled = true) => useQuery(REWARDS_KEYS.banners(placement), () => fetchBanners(placement), { persist: true, staleMs: 120_000, enabled });
 
 export const prefetchRewards = {
   rewards: () => prefetch(REWARDS_KEYS.rewards, fetchRewards, { persist: true, staleMs: 45_000 }),
@@ -138,6 +142,13 @@ export type ShareRequest = { kind: "period"; login: number; from: string; to: st
 export async function createShare(body: ShareRequest) {
   const r = await api<{ share: Share }>("growth/shares", { method: "POST", body });
   if (r.ok) invalidate(REWARDS_KEYS.shares);
+  return r;
+}
+
+/** Counts a banner impression / click, or dismisses it for this client (it stays hidden on every device). Best effort. */
+export async function bannerEvent(id: number, kind: "impression" | "click" | "dismiss", placement: string) {
+  const r = await api<{ ok: boolean }>(`growth/banners/${id}/events`, { method: "POST", body: { kind } });
+  if (r.ok && kind === "dismiss") patch<{ items: BannerView[] }>(REWARDS_KEYS.banners(placement), (d) => ({ ...d, items: d.items.filter((b) => b.id !== id) }));
   return r;
 }
 

@@ -20,6 +20,7 @@ import { ago, date, dateTime, lots, pts, statusLabel, titleCase, usd, usdShort }
 import type { CampaignPublic, Grant } from "../types";
 import { tint } from "../../partner/tint";
 import { viewerGated } from "../components/ViewerGate";
+import { RewardsBanners } from "../components/Banners";
 
 const grantTone = (s: string): TagTone => (s === "active" ? "mint" : s === "completed" ? "ok" : s === "awaiting_deposit" || s === "pending" ? "warn" : s === "forfeited" || s === "failed" ? "risk" : "muted");
 
@@ -260,6 +261,7 @@ function Promotions() {
     <Page bar={<StackBar title={t("mobileRewards.title.promotions")} scrollY={scrollY} />}>
       <ScrollView onScroll={onScroll} scrollEventThrottle={16} refreshControl={refreshControl} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={{ paddingBottom: bottom + space[6] }}>
         <PageTitle eyebrow={t("mobileRewards.eyebrow.promotions")} title={t("mobileRewards.title.promotions")} />
+        <RewardsBanners style={{ marginHorizontal: GUTTER, marginBottom: space[4] }} />
         <View style={{ paddingHorizontal: GUTTER }}>
           <PromoCode readOnly={readOnly} />
         </View>

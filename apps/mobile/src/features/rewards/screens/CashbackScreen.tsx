@@ -19,6 +19,7 @@ import { ago, date, day, lots, statusLabel, titleCase, usd } from "../format";
 import type { CashbackAccrual, CashbackMe, CashbackProgramme } from "../types";
 import { tint } from "../../partner/tint";
 import { viewerGated } from "../components/ViewerGate";
+import { RewardsBanners } from "../components/Banners";
 
 const ROW_HEIGHT = 64;
 const EMPTY: CashbackAccrual[] = [];
@@ -173,6 +174,7 @@ function Cashback() {
   const header = (
     <View>
       <PageTitle eyebrow={t("mobileRewards.eyebrow.cashback")} title={t("mobileRewards.title.cashback")} />
+      <RewardsBanners style={{ marginHorizontal: GUTTER, marginBottom: space[4] }} />
       {!d ? (
         q.error ? (
           <ScreenState ns="mobileRewards" error={q.error} onRetry={() => void q.refresh()} />
