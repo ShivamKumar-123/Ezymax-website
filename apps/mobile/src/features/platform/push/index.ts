@@ -16,7 +16,7 @@
 //   false and everything here is a no-op.
 import { AppState, Linking, Platform } from "react-native";
 import Constants, { ExecutionEnvironment } from "expo-constants";
-import * as Notifications from "expo-notifications";
+import type * as NotificationsTypes from "expo-notifications";
 import { i18n } from "@/i18n";
 import { apiPost } from "@/lib/api";
 import { kv } from "@/lib/kv";
@@ -30,11 +30,18 @@ export type PushState = { permission: PushPermission; canAskAgain: boolean };
 /** What a Kalks push carries (services/support push::message): the inbox item id, its type, the app link, the client. */
 export type PushPayload = { key: string; title: string; body: string; id: number | null; type: string | null; link: string | null; uid: number | null; badge: number | null };
 
+/** Expo Go on Android throws as soon as expo-notifications is imported (remote pushes were removed from Expo Go in
+ *  SDK 53), which crashed the whole app there. The module is therefore loaded lazily and never in Expo Go on
+ *  Android; every call below runs only when `PUSH_SUPPORTED`, which is false there. */
+const EXPO_GO_ANDROID = Platform.OS === "android" && Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const Notifications = (EXPO_GO_ANDROID ? null : require("expo-notifications")) as typeof NotificationsTypes;
+
 const extra = (Constants.expoConfig?.extra ?? {}) as { eas?: { projectId?: string } };
 const PROJECT_ID = extra.eas?.projectId || Constants.easConfig?.projectId || process.env.EXPO_PUBLIC_EAS_PROJECT_ID || "";
 
 /** Remote pushes work in this build (a native build with an EAS project; not Expo Go on Android). */
-export const PUSH_SUPPORTED = (Platform.OS === "ios" || Platform.OS === "android") && !!PROJECT_ID && !(Platform.OS === "android" && Constants.executionEnvironment === ExecutionEnvironment.StoreClient);
+export const PUSH_SUPPORTED = (Platform.OS === "ios" || Platform.OS === "android") && !!PROJECT_ID && !EXPO_GO_ANDROID;
 
 export const pushStore = createStore<PushState>({ permission: PUSH_SUPPORTED ? "undetermined" : "unsupported", canAskAgain: PUSH_SUPPORTED });
 const same = (a: PushState, b: PushState) => shallowEqual(a, b);
@@ -79,7 +86,7 @@ if (PUSH_SUPPORTED) {
   });
 }
 
-function toPermission(p: Notifications.NotificationPermissionsStatus): PushPermission {
+function toPermission(p: NotificationsTypes.NotificationPermissionsStatus): PushPermission {
   if (p.granted || p.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL || p.ios?.status === Notifications.IosAuthorizationStatus.EPHEMERAL) return "granted";
   return p.status === "denied" ? "denied" : "undetermined";
 }
@@ -206,7 +213,7 @@ export function setBadge(n: number) {
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && /^\d+$/.test(v) ? Number(v) : null);
 const str = (v: unknown) => (typeof v === "string" && v ? v : null);
 
-function payloadOf(n: Notifications.Notification): PushPayload {
+function payloadOf(n: NotificationsTypes.Notification): PushPayload {
   const c = n.request.content;
   const d = (c.data ?? {}) as Record<string, unknown>;
   return { key: n.request.identifier, title: c.title ?? "", body: c.body ?? "", id: num(d.id), type: str(d.type), link: str(d.link), uid: num(d.uid), badge: typeof c.badge === "number" ? c.badge : null };
@@ -222,7 +229,7 @@ export function onPushReceived(fn: (p: PushPayload) => void): () => void {
 /** A push the reader tapped: the one that launched the app (once) and any later one. */
 export function onPushOpened(fn: (p: PushPayload) => void): () => void {
   if (!PUSH_SUPPORTED) return () => {};
-  const run = (r: Notifications.NotificationResponse | null) => {
+  const run = (r: NotificationsTypes.NotificationResponse | null) => {
     if (!r || r.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
     const p = payloadOf(r.notification);
     if (kv.get(OPENED_KEY) === p.key) return;
