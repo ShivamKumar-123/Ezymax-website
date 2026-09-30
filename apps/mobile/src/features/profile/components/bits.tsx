@@ -88,7 +88,7 @@ export function NextArrow({ color = colors.ink, size = 18 }: { color?: string; s
 /** Tappable row: tinted icon, title (+ hint), value, chevron. 56 pt tall; prefetch on press-in. */
 export const MenuRow = React.memo(function MenuRow({
   icon: Icon,
-  iconColor = colors.text2,
+  iconColor = colors.text,
   title,
   hint,
   value,
@@ -112,8 +112,8 @@ export const MenuRow = React.memo(function MenuRow({
   return (
     <PressableScale onPress={onPress} onPressIn={onPressIn} scaleTo={0.985} accessibilityLabel={hint ? `${title}. ${hint}` : title} testID={testID} style={{ minHeight: 56, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: space[4], paddingVertical: space[2] }}>
       {Icon ? (
-        <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surface2, alignItems: "center", justifyContent: "center" }}>
-          <Icon size={18} color={destructive ? colors.ember : iconColor} strokeWidth={1.9} />
+        <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.surface3, alignItems: "center", justifyContent: "center" }}>
+          <Icon size={20} color={destructive ? colors.ember : iconColor} strokeWidth={2} />
         </View>
       ) : null}
       <View style={{ flex: 1, gap: 1 }}>

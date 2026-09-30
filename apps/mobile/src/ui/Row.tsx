@@ -14,7 +14,7 @@ export function Divider({ inset = 0 }: { inset?: number }) {
 export function ListRow({ icon, title, subtitle, value, onPress, chevron = !!onPress, destructive }: { icon?: React.ReactNode; title: string; subtitle?: string; value?: React.ReactNode; onPress?: () => void; chevron?: boolean; destructive?: boolean }) {
   const body = (
     <View style={{ minHeight: 56, flexDirection: "row", alignItems: "center", gap: space[3], paddingVertical: space[3] }}>
-      {icon ? <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface2, alignItems: "center", justifyContent: "center" }}>{icon}</View> : null}
+      {icon ? <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.surface3, alignItems: "center", justifyContent: "center" }}>{icon}</View> : null}
       <View style={{ flex: 1, gap: 2 }}>
         <Text variant="headline" weight="600" tone={destructive ? "ember" : "primary"}>
           {title}
