@@ -4,6 +4,7 @@ export * from "./components/primitives";
 export * from "./components/money";
 export * from "./components/avatars";
 export * from "./components/anim-icon";
+export * from "./components/illustration";
 export * from "./components/price";
 export * from "./components/navigation";
 export * from "./components/overlays";

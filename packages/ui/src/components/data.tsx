@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { cn } from "../lib/cn";
 import { Chip, type ChipTone, IconButton, Button } from "./primitives";
 import { Icon3D } from "./avatars";
+import { Illustration, type IllustrationName } from "./illustration";
 import { SpotlightCard } from "../effects/effects";
 
 /* ------------------------------------------------------------------ */
@@ -91,10 +92,12 @@ export function CopyButton({ value, label, className }: { value: string; label?:
 /* Empty state                                                         */
 /* ------------------------------------------------------------------ */
 
-export function EmptyState({ illustration = "package", title, text, action, className }: { illustration?: string; title: string; text?: string; action?: React.ReactNode; className?: string }) {
+/** `art` shows one of the founder's illustrations instead of the icon: only for a state with nothing to show (the
+ *  whole page or panel is empty) or a result worth marking, never for a quiet line inside a data screen. */
+export function EmptyState({ illustration = "package", art, title, text, action, className }: { illustration?: string; art?: IllustrationName; title: string; text?: string; action?: React.ReactNode; className?: string }) {
   return (
     <div className={cn("flex flex-col items-center justify-center px-6 py-14 text-center", className)}>
-      <Icon3D name={illustration} size={72} />
+      {art ? <Illustration name={art} width={208} maxHeight={156} className="mb-2" /> : <Icon3D name={illustration} size={72} />}
       <h4 className="mt-4 text-base font-medium">{title}</h4>
       {text && <p className="mt-1 max-w-sm text-sm text-fg-3">{text}</p>}
       {action && <div className="mt-5">{action}</div>}
