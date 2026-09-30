@@ -527,7 +527,7 @@ export function LivePartners() {
                 <div className="mt-4 px-4 pb-5 sm:px-6">
                   <DataTable
                     columns={[
-                      { key: "n", header: "Partner", cell: (x) => <Link className="font-medium hover:text-ember" href={`/partners/${x.userId}`}>{x.name || `Partner ${x.userId}`}</Link> },
+                      { key: "n", header: "Partner", cell: (x) => <Link className="font-medium hover:text-ember" href={`/partners/list?partner=${x.userId}`}>{x.name || `Partner ${x.userId}`}</Link> },
                       { key: "c", header: "Country", cell: (x) => <CountryCell code={x.country ?? ""} />, hideOn: "md" },
                       { key: "cl", header: "Clients", align: "right", sort: (x) => x.clients, cell: (x) => <span className="k-num">{x.clients}</span> },
                       { key: "lots", header: "Lots", align: "right", sort: (x) => x.lots, cell: (x) => <span className="k-num">{x.lots.toFixed(2)}</span> },

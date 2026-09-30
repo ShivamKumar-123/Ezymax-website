@@ -16,7 +16,13 @@ import { useCan, useStaff } from "@/components/staff-session";
 import { MiniField } from "@/components/config/kit";
 import { AdjustDialog, CATEGORY_LABEL, OP_LABEL, fmt, type Adjustment } from "@/components/clients/adjust-dialog";
 import { AdjStatus, SignedAmount } from "@/components/clients/balance-card";
-import { ClientCell, Row, walletWrite } from "./kit";
+import { ClientCell, Row, useClientName, walletWrite } from "./kit";
+
+/** "Bo Tester (#156)" once the name is known, "client #156" until then. */
+function ClientLabel({ id }: { id: number }) {
+  const n = useClientName(id);
+  return <>{n?.name ? `${n.name} (#${id})` : `client #${id}`}</>;
+}
 
 const PER = 50;
 
@@ -217,7 +223,7 @@ export function LiveAdjustmentsPage() {
                     <SignedAmount a={a} className="text-[14px] font-medium" />
                     <span className="min-w-0">
                       <span className="block truncate text-[13px]">
-                        {OP_LABEL[a.op]} · {targetText(a)} · client #{a.user_id} · {a.category_label}
+                        {OP_LABEL[a.op]} · {targetText(a)} · <ClientLabel id={a.user_id} /> · {a.category_label}
                       </span>
                       <span className="block truncate text-[11.5px] text-fg-3">
                         {a.requested_by.name} · {ago(a.created_at, now)} · {a.comment}
