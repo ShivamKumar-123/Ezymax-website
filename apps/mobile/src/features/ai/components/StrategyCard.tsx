@@ -3,10 +3,12 @@
 // newest draft is live (Edit / Backtest / Deploy); earlier drafts collapse to one line so the thread stays short.
 import * as React from "react";
 import { useWindowDimensions, View } from "react-native";
+import { useRecyclingState } from "@shopify/flash-list";
 import { ChevronDown, CircleAlert, Pencil, Play, Rocket } from "lucide-react-native";
 import { useFormat, useT } from "@/i18n";
 import { fmtMoney } from "@/lib/format";
 import { Card, ColorBlock, Display, Mono, PressableScale, Text } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { colors, radius, space } from "@/theme/tokens";
 import type { DraftMessage } from "../thread";
 import { distanceText, limitsText, noteText, ruleLines, sizeText, trailingText, windowText, type RuleLine } from "../spec";
@@ -53,7 +55,7 @@ function Toggle({ label, open, onPress, testID }: { label: string; open: boolean
   );
 }
 
-const Divider = () => <View style={{ height: 1, backgroundColor: "rgba(14,14,16,0.12)" }} />;
+const Divider = () => <View style={{ height: 1, backgroundColor: alpha(colors.ink, 0.12) }} />;
 
 type Props = {
   m: DraftMessage;
@@ -68,9 +70,11 @@ type Props = {
 export const StrategyCard = React.memo(function StrategyCard({ m, latest, busy, onEdit, onBacktest, onDeploy, onWarmDeploy }: Props) {
   const t = useT();
   const fmt = useFormat();
-  const [showAssumptions, setShowAssumptions] = React.useState(false);
-  const [showCode, setShowCode] = React.useState(false);
-  const narrow = useWindowDimensions().width < 360;
+  // folded again for another message: the list recycles this card's view for other drafts
+  const [showAssumptions, setShowAssumptions] = useRecyclingState(false, [m.id]);
+  const [showCode, setShowCode] = useRecyclingState(false, [m.id]);
+  // Backtest / Deploy keep their icons only where the labels still fit whole (the 360 pt Androids and smaller drop them)
+  const narrow = useWindowDimensions().width < 380;
   const s = m.built.spec;
 
   if (!latest) {
@@ -139,7 +143,7 @@ export const StrategyCard = React.memo(function StrategyCard({ m, latest, busy, 
       </View>
 
       {errors.length ? (
-        <View style={{ gap: space[1], padding: space[3], borderRadius: radius.md, backgroundColor: "rgba(14,14,16,0.07)" }} accessibilityRole="alert" testID="ai-draft-errors">
+        <View style={{ gap: space[1], padding: space[3], borderRadius: radius.md, backgroundColor: alpha(colors.ink, 0.07) }} accessibilityRole="alert" testID="ai-draft-errors">
           <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
             <CircleAlert size={15} color={colors.ink} strokeWidth={2.2} />
             <Text variant="label" color={colors.ink}>

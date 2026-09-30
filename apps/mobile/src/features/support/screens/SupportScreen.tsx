@@ -3,7 +3,7 @@
 // agent's replies and typing arrive live. Photos and PDFs can be attached. A finished chat can be rated, and past
 // conversations are one tap away. Opens at once on the last conversation (cached), then refreshes.
 import * as React from "react";
-import { KeyboardAvoidingView, Linking, Platform, RefreshControl, View } from "react-native";
+import { KeyboardAvoidingView, Linking, Platform, RefreshControl, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { useIsFocused, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -57,8 +57,9 @@ function items(home: Home | undefined, streaming: boolean, typingAgent: boolean)
 }
 
 function LoadingBubbles() {
+  const t = useT();
   return (
-    <View style={{ flex: 1, justifyContent: "flex-end", paddingHorizontal: GUTTER, paddingBottom: space[5], gap: space[4] }} accessibilityLabel="Loading" accessible>
+    <View style={{ flex: 1, justifyContent: "flex-end", paddingHorizontal: GUTTER, paddingBottom: space[5], gap: space[4] }} accessibilityLabel={t("common.loading")} accessible>
       <View style={{ flexDirection: "row", gap: space[2], alignItems: "flex-end" }}>
         <Skeleton w={32} h={32} r={16} />
         <Skeleton w="68%" h={74} r={radius.lg} />
@@ -82,6 +83,8 @@ export function SupportScreen() {
   const online = useOnline();
   const me = useMe();
   const viewer = useSession((s) => !!s.viewer);
+  // a read-only staff session ("Log in as client") reads the chat; writing is refused by the server
+  const staffReadOnly = useSession((s) => (s.user as { impersonation?: { mode?: string } | null } | null)?.impersonation?.mode === "read_only");
   useSupportStream();
   const q = useQuery(HOME_KEY, fetchHome, { persist: true, staleMs: 10_000, enabled: !viewer });
   // the broker's support email (the More tab's cached menu), for the "write to us" option
@@ -122,6 +125,18 @@ export function SupportScreen() {
     requestAnimationFrame(() => list.current?.scrollToEnd({ animated: true }));
   }, []);
 
+  // Following the conversation: while the reader is at the bottom, new messages and the bot's streamed words keep the
+  // newest line in view (the list only scrolls by itself when its data changes, not while a bubble grows); after
+  // scrolling up to read, nothing moves until they come back down.
+  const follow = React.useRef(true);
+  const onScroll = React.useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    follow.current = contentSize.height - (contentOffset.y + layoutMeasurement.height) < 96;
+  }, []);
+  const onContentSizeChange = React.useCallback(() => {
+    if (follow.current) list.current?.scrollToEnd({ animated: false });
+  }, []);
+
   const doSend = React.useCallback(
     async (text: string, attachmentId?: number) => {
       setSending(true);
@@ -129,7 +144,6 @@ export function SupportScreen() {
       const r = await send(text, attachmentId);
       setSending(false);
       if (!r.ok) {
-        haptic.error();
         toast.show({ title: t("support.toast.notSent"), body: r.error, tone: "error" });
         if (text) composer.current?.setText(text);
         return false;
@@ -149,11 +163,9 @@ export function SupportScreen() {
     }
     const r = await handover();
     if (!r.ok) {
-      haptic.error();
       toast.show({ title: t("support.toast.teamUnreachable"), body: r.error, tone: "error" });
       return;
     }
-    haptic.success();
     scrollToEnd();
   }, [conv?.assigneeName, human, scrollToEnd, status, t]);
 
@@ -175,7 +187,6 @@ export function SupportScreen() {
       const max = settings?.maxAttachmentMb ?? 10;
       const c = await prepare(p, max);
       if (!c.ok) {
-        haptic.error();
         toast.show(c.reason === "type" ? { title: t("support.toast.unsupported"), body: t("support.toast.unsupportedText"), tone: "error" } : { title: t("support.toast.fileTooLarge"), body: t("support.toast.fileTooLargeText", { mb: max }), tone: "error" });
         return;
       }
@@ -183,7 +194,6 @@ export function SupportScreen() {
       const up = await uploadAttachment(c.blob, p.name, p.mime, setUploading);
       if (!up.ok) {
         setUploading(null);
-        haptic.error();
         toast.show({ title: t("support.toast.uploadFailed"), body: up.error.message, tone: "error" });
         return;
       }
@@ -223,10 +233,10 @@ export function SupportScreen() {
         case "typing":
           return <TypingBubble name={conv?.assigneeName ?? t("support.agent")} />;
         case "csat":
-          return conv ? <RatingCard conv={conv} /> : null;
+          return conv ? <RatingCard conv={conv} readOnly={staffReadOnly} /> : null;
       }
     },
-    [botName, conv, me?.first_name, settings?.greeting, t],
+    [botName, conv, me?.first_name, settings?.greeting, staffReadOnly, t],
   );
 
   // header: who you're talking to
@@ -237,7 +247,9 @@ export function SupportScreen() {
   const dot: HeaderDot = status === "assigned" ? "mint" : status === "waiting" ? "gold" : resolved ? "muted" : "periwinkle";
   const avatar = status === "assigned" && agentName ? <InitialsAvatar name={agentName} size={36} tone="mint" /> : <MascotAvatar size={36} />;
 
-  const suggestions: Suggestion[] = resolved
+  const suggestions: Suggestion[] = staffReadOnly
+    ? []
+    : resolved
     ? [{ key: "new", label: t("support.menu.newChat"), tone: "cream" }]
     : !conv || (status === "bot" && (home?.messages.length ?? 0) < 3)
       ? [...QUICK.map((k) => ({ key: k, label: t(k) })), ...(!human ? [{ key: "person", label: t("support.menu.talkToPerson"), icon: <UserRound size={15} color={colors.text} /> }] : [])]
@@ -253,10 +265,11 @@ export function SupportScreen() {
     [onSend, t, talkToPerson],
   );
 
+  const writable = !staffReadOnly;
   const actions: Action[] = [
-    ...(!human && !resolved ? [{ key: "person", label: t("support.menu.talkToPerson"), icon: <UserRound size={18} color={colors.text} />, onPress: () => void talkToPerson() }] : []),
-    ...(conv && !resolved ? [{ key: "end", label: t("support.menu.endChat"), icon: <XCircle size={18} color={colors.text} />, onPress: () => void end() }] : []),
-    ...(resolved ? [{ key: "new", label: t("support.menu.newChat"), icon: <RotateCcw size={18} color={colors.text} />, onPress: startNew }] : []),
+    ...(writable && !human && !resolved ? [{ key: "person", label: t("support.menu.talkToPerson"), icon: <UserRound size={18} color={colors.text} />, onPress: () => void talkToPerson() }] : []),
+    ...(writable && conv && !resolved ? [{ key: "end", label: t("support.menu.endChat"), icon: <XCircle size={18} color={colors.text} />, onPress: () => void end() }] : []),
+    ...(writable && resolved ? [{ key: "new", label: t("support.menu.newChat"), icon: <RotateCcw size={18} color={colors.text} />, onPress: startNew }] : []),
     { key: "history", label: t("support.history.title"), hint: t("mobileAi.support.historyHint"), icon: <History size={18} color={colors.text} />, onPress: () => router.push("/support/history") },
     ...(supportEmail
       ? [
@@ -299,6 +312,9 @@ export function SupportScreen() {
         ListHeaderComponent={intro}
         contentContainerStyle={{ paddingBottom: space[5] }}
         maintainVisibleContentPosition={{ startRenderingFromBottom: true, autoscrollToBottomThreshold: 0.25 }}
+        onScroll={onScroll}
+        scrollEventThrottle={32}
+        onContentSizeChange={onContentSizeChange}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -330,12 +346,12 @@ export function SupportScreen() {
           <Composer
             ref={composer}
             testID="support-composer"
-            placeholder={status === "assigned" && agentName ? t("support.composer.messageTo", { name: agentName.split(" ")[0] ?? agentName }) : status === "waiting" ? t("mobileAi.support.writeTeam") : resolved ? t("support.composer.newChat") : t("support.composer.ask", { name: botName })}
+            placeholder={staffReadOnly ? t("mobileAi.support.readOnly") : status === "assigned" && agentName ? t("support.composer.messageTo", { name: agentName.split(" ")[0] ?? agentName }) : status === "waiting" ? t("mobileAi.support.writeTeam") : resolved ? t("support.composer.newChat") : t("support.composer.ask", { name: botName })}
             onSend={onSend}
             busy={sending}
-            onAttach={() => attachSheet.current?.present()}
+            onAttach={staffReadOnly ? undefined : () => attachSheet.current?.present()}
             attaching={uploading !== null}
-            disabled={!home}
+            disabled={!home || staffReadOnly}
             onTyping={typing}
             onKeyboardShow={scrollToEnd}
             top={

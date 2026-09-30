@@ -9,6 +9,7 @@ import { getQueryData, invalidate, setQueryData } from "@/lib/query";
 import { createStore } from "@/lib/store";
 import { onSignOut } from "@/session";
 import { HISTORY_KEY, HOME_KEY, postHandover, postMessage, postRate, postRead, postResolve, postTyping, transcriptKey, type Conversation, type Home, type Message } from "./api";
+import { answeredAfter, mergeConversation } from "./merge";
 import { supportStream, type Frame } from "./stream";
 
 /** The bot's answer while it streams (`id` "pending" until the first frame names it). */
@@ -141,10 +142,12 @@ const fail = (e: ApiError): Result => ({ ok: false, error: e.message || i18n.t("
 export async function send(body: string, attachmentId?: number): Promise<Result> {
   const r = await postMessage(body, attachmentId);
   if (!r.ok) return fail(r.error);
-  const { conversation, message } = r.data;
+  const { message } = r.data;
+  // the stream may already have delivered a later state (the bot answered, or handed the chat over)
+  const conversation = mergeConversation(home()?.conversation, r.data.conversation);
   setHome((x) => ({ ...x, conversation, messages: x.conversation?.id === conversation.id ? insert(x.messages, message) : [message] }));
-  // the bot answers over the stream: show its bubble at once
-  if (conversation.status === "bot") {
+  // the bot answers over the stream: show its bubble at once, unless its answer already arrived
+  if (conversation.status === "bot" && !answeredAfter(home()?.messages ?? [], message.id)) {
     botStream.set((s) => s ?? { id: "pending", conversationId: conversation.id, text: "" });
     armStream();
   }
@@ -156,7 +159,7 @@ export async function handover(): Promise<Result> {
   const r = await postHandover();
   if (!r.ok) return fail(r.error);
   const had = home()?.conversation?.id;
-  setHome((x) => ({ ...x, conversation: r.data.conversation }));
+  setHome((x) => ({ ...x, conversation: mergeConversation(x.conversation, r.data.conversation) }));
   // a chat opened straight into the queue: load its first messages
   if (had !== r.data.conversation.id) invalidate(HOME_KEY);
   endStream();

@@ -161,15 +161,18 @@ export interface Deployment {
 
 export const META_KEY = "algo/meta";
 export const fetchMeta = () => apiGet<Meta>("algo/meta", { timeoutMs: 15_000 });
+// the catalogue is small (about 10 kB) and says whether the assistant is switched on: refreshed after a few minutes,
+// so an old "not configured" answer never keeps the screen closed for long
+const META_STALE_MS = 5 * 60_000;
 
 /** The builder catalogue (symbols with lot steps, timeframes) and whether the AI is configured. */
 export function useMeta() {
-  return useQuery(META_KEY, fetchMeta, { persist: true, staleMs: 60 * 60_000 });
+  return useQuery(META_KEY, fetchMeta, { persist: true, staleMs: META_STALE_MS });
 }
 
 /** Warm /ai before it opens (a menu row's press-in): the catalogue and whether the assistant is on. */
 export function prefetchAi() {
-  prefetch(META_KEY, fetchMeta, { persist: true, staleMs: 60 * 60_000 });
+  prefetch(META_KEY, fetchMeta, { persist: true, staleMs: META_STALE_MS });
 }
 
 /** Natural language -> a validated visual strategy. Claude can take a minute: the BFF allows 240 s. */

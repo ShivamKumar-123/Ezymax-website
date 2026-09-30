@@ -188,6 +188,22 @@ export function defaultPeriod(tf: string): Period["key"] {
   return "p1y";
 }
 
+/* ---- refinements (the pills under the newest draft) ---- */
+
+export type RefineKey = "trailing" | "session" | "risk" | "limit" | "longOnly";
+const REFINES: [RefineKey, (s: StrategySpec) => boolean][] = [
+  ["trailing", (s) => !!s.trailing && s.trailing.mode !== "none" && s.trailing.value > 0],
+  ["session", (s) => (s.sessions?.length ?? 0) > 0],
+  ["risk", (s) => s.sizing?.mode === "risk"],
+  ["limit", (s) => s.maxTradesPerDay > 0],
+  ["longOnly", (s) => !s.short?.groups?.length],
+];
+/** The refinements worth offering for a draft: one it already has (a trailing stop, set hours, risk sizing, a daily
+ *  trade cap, buys only) is left out. */
+export function openRefinements(s: StrategySpec): RefineKey[] {
+  return REFINES.filter(([, has]) => !has(s)).map(([k]) => k);
+}
+
 /* ---- identity ---- */
 
 /** Stable JSON (sorted keys): the same spec always gives the same text, whatever the key order. */

@@ -7,7 +7,6 @@ import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronRight, Search } from "lucide-react-native";
 import { useT, type MessageKey } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { instrument } from "@/market/instruments";
 import { Button, Checkbox, FormError, Mono, Pill, PressableScale, Sheet, Text, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
@@ -156,10 +155,7 @@ export const EditSheet = React.forwardRef<SheetRef, { draftId: string | null }>(
     const maxLoss = need("maxLoss");
     if (!form.name.trim()) bad.name = t("mobileAi.edit.nameRequired");
     setFieldErr(bad);
-    if (Object.keys(bad).length) {
-      haptic.error();
-      return;
-    }
+    if (Object.keys(bad).length) return;
     const s = d.built.spec;
     const spec: StrategySpec = {
       ...s,
@@ -179,17 +175,14 @@ export const EditSheet = React.forwardRef<SheetRef, { draftId: string | null }>(
     const r = await applyEdit(d.id, spec);
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setErrors([r.error]);
       return;
     }
     if (r.built.errors.length) {
-      haptic.warning();
       setErrors(r.built.errors.map((e) => noteText(t, e.message)));
       setForm(toForm(r.built.spec));
       return;
     }
-    haptic.success();
     close();
   };
 

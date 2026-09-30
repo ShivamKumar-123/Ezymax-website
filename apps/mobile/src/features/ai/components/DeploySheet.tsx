@@ -9,8 +9,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronDown, TriangleAlert } from "lucide-react-native";
 import { useT } from "@/i18n";
 import { fmtMoney } from "@/lib/format";
-import { haptic } from "@/lib/haptics";
 import { useSession } from "@/session";
+import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { Banner, Button, Checkbox, FormError, Mono, PressableScale, Sheet, Skeleton, Text, toast, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { SheetTextField } from "@/features/accounts/components/SheetInputs";
@@ -79,6 +79,10 @@ export const DeploySheet = React.forwardRef<SheetRef, { draftId: string | null; 
   }, [usable, login]);
   const acct = usable.find((a) => a.login === login);
   const live = acct?.type === "live";
+  // the real-money tick is given for one account: choosing another asks again
+  React.useEffect(() => setAck(false), [login]);
+  // the dealer switched trading off (or to close-only) on this account: a strategy there couldn't open a trade
+  const accountBlocked = !!acct?.controls?.tradingDisabled || !!acct?.controls?.closeOnly;
 
   const reset = React.useCallback(() => {
     setAck(false);
@@ -94,7 +98,7 @@ export const DeploySheet = React.forwardRef<SheetRef, { draftId: string | null; 
   const limitsOk = [mult, maxOpen, maxLoss].every((v) => Number.isFinite(n(v)) && n(v) >= 0) && n(mult) > 0 && n(mult) <= 100;
 
   const go = async () => {
-    if (!draftId || !acct || busy || (live && !ack) || restricted || !limitsOk) return;
+    if (!draftId || !acct || busy || (live && !ack) || restricted || accountBlocked || !limitsOk) return;
     setBusy(true);
     setError(null);
     const risk: RiskLimits = {};
@@ -104,11 +108,9 @@ export const DeploySheet = React.forwardRef<SheetRef, { draftId: string | null; 
     const r = await deploy(draftId, { login: acct.login, type: acct.type }, risk);
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setError(r.error);
       return;
     }
-    haptic.success();
     toast.show({ title: t("mobileAi.deploy.done"), body: t("mobileAi.deploy.doneBody", { kind: live ? t("common.live") : t("common.demo"), login: acct.login }), tone: "success" });
     sheet.current?.dismiss();
     onDeployed();
@@ -174,7 +176,8 @@ export const DeploySheet = React.forwardRef<SheetRef, { draftId: string | null; 
         ) : null}
       </View>
 
-      {restricted ? <Banner tone="warn" title={t("mobileAi.deploy.restrictedTitle")} body={t("mobileAi.deploy.restricted")} icon={<TriangleAlert size={18} color={colors.gold} />} /> : null}
+      <RestrictionBanner kinds={["trading", "close_only"]} />
+      {accountBlocked && !restricted ? <Banner tone="warn" title={t("mobileAi.deploy.restrictedTitle")} body={t("mobileAi.deploy.accountRestricted")} icon={<TriangleAlert size={18} color={colors.gold} />} /> : null}
       {live ? (
         <View style={{ gap: space[3] }}>
           <Banner tone="warn" title={t("mobileAi.deploy.liveTitle")} body={t("mobileAi.deploy.liveBody")} icon={<TriangleAlert size={18} color={colors.gold} />} />
@@ -191,7 +194,7 @@ export const DeploySheet = React.forwardRef<SheetRef, { draftId: string | null; 
         label={acct ? t("mobileAi.deploy.confirm", { kind, login: acct.login }) : t("mobileAi.deploy.title")}
         variant="primary"
         loading={busy}
-        disabled={!acct || !d?.built.valid || (live && !ack) || restricted || !limitsOk}
+        disabled={!acct || !d?.built.valid || (live && !ack) || restricted || accountBlocked || !limitsOk}
         onPress={() => void go()}
         testID="ai-deploy-confirm"
       />

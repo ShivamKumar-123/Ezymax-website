@@ -5,6 +5,7 @@ import { ActivityIndicator, View, type StyleProp, type ViewStyle } from "react-n
 import { ShieldAlert } from "lucide-react-native";
 import { useT } from "@/i18n";
 import { Mono, PressableScale, Text } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { colors, radius, space } from "@/theme/tokens";
 
 export type BlockButtonTone = "ink" | "outline" | "ember" | "cream" | "surface";
@@ -13,13 +14,12 @@ export type BlockButtonTone = "ink" | "outline" | "ember" | "cream" | "surface";
 export function BlockButton({ label, onPress, tone = "ink", icon, iconOnly, disabled, loading, testID, style, onPressIn }: { label: string; onPress: () => void; tone?: BlockButtonTone; icon?: React.ReactNode; iconOnly?: boolean; disabled?: boolean; loading?: boolean; testID?: string; style?: StyleProp<ViewStyle>; onPressIn?: () => void }) {
   const bg = tone === "ink" ? colors.ink : tone === "ember" ? colors.ember : tone === "cream" ? colors.cream : tone === "surface" ? colors.surface2 : "transparent";
   const fg = tone === "ink" ? colors.cream : tone === "surface" ? colors.text : colors.ink;
-  const border = tone === "outline" ? "rgba(14,14,16,0.28)" : tone === "surface" ? colors.lineStrong : "transparent";
+  const border = tone === "outline" ? alpha(colors.ink, 0.28) : tone === "surface" ? colors.lineStrong : "transparent";
   return (
     <PressableScale
       onPress={onPress}
       onPressIn={onPressIn}
       disabled={disabled || loading}
-      haptics="tap"
       accessibilityLabel={label}
       testID={testID}
       style={[{ height: 46, minWidth: 46, paddingHorizontal: iconOnly ? 0 : space[4], width: iconOnly ? 46 : undefined, borderRadius: radius.pill, backgroundColor: bg, borderWidth: 1, borderColor: border, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space[2] }, style]}
@@ -43,7 +43,7 @@ export function BlockButton({ label, onPress, tone = "ink", icon, iconOnly, disa
 /** Tiny uppercase tag: filled (ink text) or ink outline, for colour blocks. */
 export function InkTag({ label, fill, mono }: { label: string; fill?: string; mono?: boolean }) {
   return (
-    <View style={{ height: 24, paddingHorizontal: 9, borderRadius: radius.pill, backgroundColor: fill ?? "transparent", borderWidth: fill ? 0 : 1, borderColor: "rgba(14,14,16,0.3)", justifyContent: "center" }}>
+    <View style={{ height: 24, paddingHorizontal: 9, borderRadius: radius.pill, backgroundColor: fill ?? "transparent", borderWidth: fill ? 0 : 1, borderColor: alpha(colors.ink, 0.3), justifyContent: "center" }}>
       {mono ? (
         <Mono size={12} weight="bold" color={colors.ink}>
           {label}

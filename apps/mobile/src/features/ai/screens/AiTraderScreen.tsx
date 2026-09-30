@@ -12,7 +12,7 @@ import { useFormat, useT, type MessageKey } from "@/i18n";
 import { prefetch, useQuery } from "@/lib/query";
 import { useStore } from "@/lib/store";
 import { useMe, useSession } from "@/session";
-import { EmptyState, IconButton, Text, type SheetRef } from "@/ui";
+import { EmptyState, IconButton, Text, toast, type SheetRef } from "@/ui";
 import { colors, space } from "@/theme/tokens";
 import { AuthorLine, Bubble, ChatRow, SystemNote } from "@/features/chat/Bubble";
 import { ChatHeader, HeaderPill } from "@/features/chat/ChatHeader";
@@ -25,6 +25,7 @@ import { clock } from "@/features/chat/time";
 import { ACCOUNTS_KEY, fetchAccounts } from "@/features/trading/accounts";
 import { useTradeSymbol } from "@/features/trade/symbol";
 import { fetchMenu, QK as PROFILE_QK } from "@/features/profile/api";
+import { prefetchHome as prefetchAlgo } from "@/features/algo/api";
 import { useMeta } from "../api";
 import { BacktestCard } from "../components/BacktestCard";
 import { BacktestSheet } from "../components/BacktestSheet";
@@ -35,7 +36,7 @@ import { EditSheet } from "../components/EditSheet";
 import { Intro } from "../components/Intro";
 import { BlockButton, RiskNote } from "../components/parts";
 import { StrategyCard } from "../components/StrategyCard";
-import { specKey } from "../spec";
+import { openRefinements, specKey, type RefineKey } from "../spec";
 import { ask, hydrateThread, latestDraft, newThread, stopAsking, stopBacktest, threadStore, type AiMessage } from "../thread";
 
 type Item = { key: string; type: "greeting" } | { key: string; type: "msg"; m: AiMessage; head: boolean } | { key: string; type: "pending"; startedAt: number };
@@ -46,13 +47,14 @@ const EXAMPLES: { key: string; label: MessageKey; prompt: MessageKey }[] = [
   { key: "rsi", label: "mobileAi.example.rsi.label", prompt: "mobileAi.example.rsi.prompt" },
   { key: "london", label: "mobileAi.example.london.label", prompt: "mobileAi.example.london.prompt" },
 ];
-const REFINE: { key: string; label: MessageKey }[] = [
-  { key: "trailing", label: "mobileAi.refine.trailing" },
-  { key: "session", label: "mobileAi.refine.session" },
-  { key: "risk", label: "mobileAi.refine.risk" },
-  { key: "limit", label: "mobileAi.refine.limit" },
-  { key: "longOnly", label: "mobileAi.refine.longOnly" },
-];
+// refinements for the newest draft (the ones it doesn't have yet: openRefinements)
+const REFINE: Record<RefineKey, MessageKey> = {
+  trailing: "mobileAi.refine.trailing",
+  session: "mobileAi.refine.session",
+  risk: "mobileAi.refine.risk",
+  limit: "mobileAi.refine.limit",
+  longOnly: "mobileAi.refine.longOnly",
+};
 
 const noop = () => {};
 const warmAccounts = () => prefetch(ACCOUNTS_KEY, fetchAccounts, { persist: true, staleMs: 15_000 });
@@ -62,7 +64,7 @@ function AssistantHead({ at }: { at?: number }) {
   const fmt = useFormat();
   const t = useT();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: space[2], paddingHorizontal: 16, marginBottom: space[2] }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: space[2], paddingHorizontal: space[4], marginBottom: space[2] }}>
       <MascotAvatar size={28} />
       <AuthorLine name={t("mobileAi.botName")} time={at ? clock(fmt, at) : undefined} />
     </View>
@@ -75,6 +77,8 @@ export function AiTraderScreen() {
   const insets = useSafeAreaInsets();
   const me = useMe();
   const viewer = useSession((s) => !!s.viewer);
+  // a read-only staff session ("Log in as client"): every AI Trader step is a change the server refuses
+  const staffReadOnly = useSession((s) => (s.user as { impersonation?: { mode?: string } | null } | null)?.impersonation?.mode === "read_only");
   const meta = useMeta();
   // the broker's module switches (the More tab's cached menu): AI Trader belongs to the algo module
   const menu = useQuery(PROFILE_QK.menu, fetchMenu, { persist: true, staleMs: 60_000, enabled: !viewer });
@@ -153,8 +157,8 @@ export function AiTraderScreen() {
   const onSuggestion = React.useCallback(
     (key: string) => {
       const ex = EXAMPLES.find((e) => e.key === key);
-      const re = REFINE.find((r) => r.key === key);
-      const text = ex ? t(ex.prompt) : re ? t(re.label) : "";
+      const re = Object.prototype.hasOwnProperty.call(REFINE, key) ? REFINE[key as RefineKey] : null;
+      const text = ex ? t(ex.prompt) : re ? t(re) : "";
       if (text) send(text);
     },
     [send, t],
@@ -177,8 +181,23 @@ export function AiTraderScreen() {
     const d = latestDraft(threadStore.get().messages);
     if (d) onDeploy(d.id);
   }, [onDeploy]);
-  const onCancelBacktest = React.useCallback((id: string) => void stopBacktest(id), []);
-  const retry = React.useCallback((prompt: string) => send(prompt), [send]);
+  const onCancelBacktest = React.useCallback(
+    (id: string) =>
+      void stopBacktest(id).then((r) => {
+        if (!r.ok) toast.show({ title: t("mobileAi.bt.cancelFailed"), body: r.error, tone: "error" });
+      }),
+    [t],
+  );
+  // asking again replaces the failed exchange (the message and the error) instead of repeating it
+  const retry = React.useCallback(
+    (errorId: string) => {
+      const m = threadStore.get().messages.find((x) => x.id === errorId);
+      if (m?.kind !== "error" || !m.prompt) return;
+      void ask(m.prompt, { symbol: chartSymbol, timeframe: "H1" }, m.id);
+      scrollToEnd();
+    },
+    [chartSymbol, scrollToEnd],
+  );
   const startOver = React.useCallback(() => {
     newThread();
     requestAnimationFrame(() => list.current?.scrollToOffset({ offset: 0, animated: false }));
@@ -206,15 +225,30 @@ export function AiTraderScreen() {
             </ChatRow>
           </View>
         );
-      return <Row m={item.m} head={item.head} latestId={latestId} deployable={deployable} onEdit={onEdit} onBacktest={onBacktest} onDeploy={onDeploy} onDeployLatest={onDeployLatest} onCancelBacktest={onCancelBacktest} onRetry={retry} />;
+      // per-row booleans (not the shared ids), so a new draft or a saved version re-renders only the rows it changes
+      const m = item.m;
+      return (
+        <Row
+          m={m}
+          head={item.head}
+          latest={m.id === latestId}
+          canDeploy={m.kind === "backtest" && deployable !== null && deployable === m.versionId}
+          onEdit={onEdit}
+          onBacktest={onBacktest}
+          onDeploy={onDeploy}
+          onDeployLatest={onDeployLatest}
+          onCancelBacktest={onCancelBacktest}
+          onRetry={retry}
+        />
+      );
     },
     [deployable, latestId, me?.first_name, onBacktest, onCancelBacktest, onDeploy, onDeployLatest, onEdit, retry, t],
   );
 
   const intro = React.useMemo(() => <Intro />, []);
-  const suggestions: Suggestion[] = pending ? [] : latest ? REFINE.map((r) => ({ key: r.key, label: t(r.label) })) : EXAMPLES.map((e) => ({ key: e.key, label: t(e.label) }));
+  const suggestions: Suggestion[] = pending ? [] : latest ? openRefinements(latest.built.spec).map((k) => ({ key: k, label: t(REFINE[k]) })) : EXAMPLES.map((e) => ({ key: e.key, label: t(e.label) }));
 
-  const unavailable = viewer ? "viewer" : menu.data?.modules.algo === false ? "module" : meta.data && !meta.data.ai.configured ? "ai" : null;
+  const unavailable = viewer ? "viewer" : staffReadOnly ? "staff" : menu.data?.modules.algo === false ? "module" : meta.data && !meta.data.ai.configured ? "ai" : null;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
@@ -227,17 +261,17 @@ export function AiTraderScreen() {
           dot={pending ? "gold" : "periwinkle"}
           right={
             <>
-              {unavailable === "viewer" || unavailable === "module" ? null : <HeaderPill label={t("mobileAi.algo")} onPress={() => router.push("/algo")} testID="ai-open-algo" />}
-              {messages.length ? <IconButton tone="ghost" accessibilityLabel={t("mobileAi.newStrategy")} icon={<RotateCcw size={20} color={colors.text2} strokeWidth={1.9} />} onPress={() => confirmNew.current?.present()} /> : null}
+              {unavailable === "viewer" || unavailable === "module" ? null : <HeaderPill label={t("mobileAi.algo")} onPressIn={prefetchAlgo} onPress={() => router.push("/algo")} testID="ai-open-algo" />}
+              {messages.length && !unavailable ? <IconButton tone="ghost" accessibilityLabel={t("mobileAi.newStrategy")} icon={<RotateCcw size={20} color={colors.text2} strokeWidth={1.9} />} onPress={() => confirmNew.current?.present()} /> : null}
             </>
           }
         />
         {unavailable ? (
           <View style={{ flex: 1, justifyContent: "center" }}>
             <EmptyState
-              illustration={unavailable === "viewer" ? "security" : "maintenance"}
-              title={unavailable === "viewer" ? t("mobile.viewOnly") : unavailable === "module" ? t("mobileAi.unavailable.moduleTitle") : t("mobileAi.unavailable.title")}
-              body={unavailable === "viewer" ? t("mobileAi.error.viewOnly") : unavailable === "module" ? t("mobileAi.error.module") : t("mobileAi.unavailable.body")}
+              illustration={unavailable === "viewer" || unavailable === "staff" ? "security" : "maintenance"}
+              title={unavailable === "viewer" ? t("mobile.viewOnly") : unavailable === "staff" ? t("mobileAi.unavailable.staffTitle") : unavailable === "module" ? t("mobileAi.unavailable.moduleTitle") : t("mobileAi.unavailable.title")}
+              body={unavailable === "viewer" ? t("mobileAi.error.viewOnly") : unavailable === "staff" ? t("mobileAi.error.staffReadOnly") : unavailable === "module" ? t("mobileAi.error.module") : t("mobileAi.unavailable.body")}
               action={unavailable === "ai" ? t("mobileAi.openAlgo") : undefined}
               onAction={unavailable === "ai" ? () => router.push("/algo") : undefined}
             />
@@ -283,17 +317,20 @@ export function AiTraderScreen() {
 type RowProps = {
   m: AiMessage;
   head: boolean;
-  latestId: string | null;
-  deployable: number | null;
+  /** the newest draft (the only live strategy card) */
+  latest: boolean;
+  /** a finished backtest of the version the newest draft is saved as */
+  canDeploy: boolean;
   onEdit: (id: string) => void;
   onBacktest: (id: string) => void;
   onDeploy: (id: string) => void;
   onDeployLatest: () => void;
   onCancelBacktest: (id: string) => void;
-  onRetry: (prompt: string) => void;
+  /** asks again after the error bubble with this id */
+  onRetry: (errorId: string) => void;
 };
 
-const Row = React.memo(function Row({ m, head, latestId, deployable, onEdit, onBacktest, onDeploy, onDeployLatest, onCancelBacktest, onRetry }: RowProps) {
+const Row = React.memo(function Row({ m, head, latest, canDeploy, onEdit, onBacktest, onDeploy, onDeployLatest, onCancelBacktest, onRetry }: RowProps) {
   const t = useT();
   const fmt = useFormat();
   const pad = { paddingTop: head ? space[4] : space[3] };
@@ -326,7 +363,7 @@ const Row = React.memo(function Row({ m, head, latestId, deployable, onEdit, onB
               <View style={{ gap: space[3] }} testID="ai-error">
                 <Text weight="700">{t("mobileAi.failed")}</Text>
                 <Text tone="secondary">{m.text}</Text>
-                {m.prompt ? <BlockButton label={t("mobile.action.retry")} tone="surface" onPress={() => onRetry(m.prompt!)} style={{ alignSelf: "flex-start" }} testID="ai-retry" /> : null}
+                {m.prompt ? <BlockButton label={t("mobile.action.retry")} tone="surface" onPress={() => onRetry(m.id)} style={{ alignSelf: "flex-start" }} testID="ai-retry" /> : null}
               </View>
             </Bubble>
           </ChatRow>
@@ -336,8 +373,8 @@ const Row = React.memo(function Row({ m, head, latestId, deployable, onEdit, onB
       return (
         <View style={pad}>
           {head ? <AssistantHead at={m.at} /> : null}
-          <View style={{ paddingHorizontal: 16 }}>
-            <StrategyCard m={m} latest={m.id === latestId} onEdit={onEdit} onBacktest={onBacktest} onDeploy={onDeploy} onWarmDeploy={warmAccounts} />
+          <View style={{ paddingHorizontal: space[4] }}>
+            <StrategyCard m={m} latest={latest} onEdit={onEdit} onBacktest={onBacktest} onDeploy={onDeploy} onWarmDeploy={warmAccounts} />
           </View>
         </View>
       );
@@ -345,8 +382,8 @@ const Row = React.memo(function Row({ m, head, latestId, deployable, onEdit, onB
       return (
         <View style={pad}>
           {head ? <AssistantHead at={m.at} /> : null}
-          <View style={{ paddingHorizontal: 16 }}>
-            <BacktestCard m={m} onCancel={onCancelBacktest} onDeploy={onDeployLatest} canDeploy={deployable !== null && deployable === m.versionId} />
+          <View style={{ paddingHorizontal: space[4] }}>
+            <BacktestCard m={m} onCancel={onCancelBacktest} onDeploy={onDeployLatest} canDeploy={canDeploy} />
           </View>
         </View>
       );
@@ -354,7 +391,7 @@ const Row = React.memo(function Row({ m, head, latestId, deployable, onEdit, onB
       return (
         <View style={pad}>
           {head ? <AssistantHead at={m.at} /> : null}
-          <View style={{ paddingHorizontal: 16 }}>
+          <View style={{ paddingHorizontal: space[4] }}>
             <DeployedCard m={m} />
           </View>
         </View>

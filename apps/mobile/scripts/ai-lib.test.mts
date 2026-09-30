@@ -4,8 +4,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createT } from "@kalks/i18n/core";
-import { conditionText, defaultPeriod, distanceText, limitsText, maxDays, noteText, operandText, periodsFor, ruleLines, sizeText, specKey, trailingText, windowText } from "../src/features/ai/spec.ts";
+import { conditionText, defaultPeriod, distanceText, limitsText, maxDays, noteText, openRefinements, operandText, periodsFor, ruleLines, sizeText, specKey, trailingText, windowText } from "../src/features/ai/spec.ts";
 import type { Condition, Operand, RuleSet, StrategySpec } from "../src/features/ai/api.ts";
+import { runningDeployment, withoutFailed } from "../src/features/ai/conversation.ts";
+import type { AiMessage } from "../src/features/ai/thread.ts";
+import type { Conversation, Message } from "../src/features/support/api.ts";
+import { answeredAfter, mergeConversation } from "../src/features/support/merge.ts";
 import { streamBase } from "../src/features/support/url.ts";
 
 const t = createT("en");
@@ -118,4 +122,62 @@ test("the support stream: the ticket's public URL, else the Client Area host (ed
   assert.equal(streamBase("ws://127.0.0.1:8100/v1/stream", "http://192.168.1.20:8790"), "ws://192.168.1.20:8790/support/stream");
   assert.equal(streamBase("ws://127.0.0.1:8100/v1/stream", "http://localhost:8798"), "ws://127.0.0.1:8100/v1/stream");
   assert.equal(streamBase("ws://localhost:8100/v1/stream", "https://app.kalkstrade.com/"), "wss://app.kalkstrade.com/support/stream");
+});
+
+test("refinement pills: only what the draft doesn't have yet", () => {
+  // SPEC: fixed lots, no trailing stop, all day, no daily trade cap, buy rules only ("buys only" is already true)
+  assert.deepEqual(openRefinements(SPEC), ["trailing", "session", "risk", "limit"]);
+  const full: StrategySpec = {
+    ...SPEC,
+    trailing: { ...SPEC.trailing, mode: "pips", value: 15 },
+    sessions: [{ start: "08:00", end: "17:00" }],
+    sizing: { mode: "risk", lots: 0, riskPct: 1 },
+    maxTradesPerDay: 3,
+  };
+  assert.deepEqual(openRefinements(full), []);
+  // with sell rules, "buys only" is worth offering
+  assert.deepEqual(openRefinements({ ...full, short: SPEC.long }), ["longOnly"]);
+  // a trailing mode without a distance is not a trailing stop
+  assert.deepEqual(openRefinements({ ...full, trailing: { ...SPEC.trailing, mode: "pips", value: 0 } }), ["trailing"]);
+});
+
+test("asking again after an error replaces that exchange; other messages stay", () => {
+  const msgs: AiMessage[] = [
+    { id: "u1", kind: "user", at: 1, text: "EMA cross" },
+    { id: "d1", kind: "notice", at: 2, text: "Stopped" },
+    { id: "u2", kind: "user", at: 3, text: "RSI dip" },
+    { id: "e2", kind: "error", at: 4, text: "Can't reach Kalks", prompt: "RSI dip" },
+  ];
+  assert.deepEqual(withoutFailed(msgs, "e2").map((m) => m.id), ["u1", "d1"]);
+  // the error answered something else (e.g. the app was closed mid-request): only the error goes
+  const other: AiMessage[] = [msgs[0]!, { id: "e1", kind: "error", at: 2, text: "Interrupted", prompt: "a different prompt" }];
+  assert.deepEqual(withoutFailed(other, "e1").map((m) => m.id), ["u1"]);
+  assert.equal(withoutFailed(msgs, undefined), msgs);
+  assert.equal(withoutFailed(msgs, "u1"), msgs, "only an error bubble is removed");
+});
+
+test("a Deploy retried after a lost answer finds the deployment that runs that version on that account", () => {
+  const items = [
+    { id: 1, versionId: 9, login: 50000001, status: "stopped" },
+    { id: 2, versionId: 9, login: 50000002, status: "running" },
+    { id: 3, versionId: 9, login: 50000001, status: "paused" },
+  ];
+  assert.equal(runningDeployment(items, 9, 50000001), 3);
+  assert.equal(runningDeployment(items, 9, 50000002), 2);
+  assert.equal(runningDeployment(items, 8, 50000001), null);
+});
+
+test("support: an HTTP answer never rolls back a later state the stream delivered", () => {
+  const conv = (id: number, status: Conversation["status"]): Conversation => ({ id, subject: "", status, assigneeName: null, handedOverAt: null, clientUnread: 0, csat: null, resolvedAt: null, createdAt: "", lastMessageAt: "", preview: "" });
+  // the bot handed over (stream) before the answer to the client's message (still "bot") arrived
+  assert.equal(mergeConversation(conv(1, "waiting"), conv(1, "bot")).status, "waiting");
+  assert.equal(mergeConversation(conv(1, "bot"), conv(1, "waiting")).status, "waiting");
+  assert.equal(mergeConversation(conv(1, "assigned"), conv(1, "resolved")).status, "resolved");
+  // a new conversation (after an ended one) always wins
+  assert.equal(mergeConversation(conv(1, "resolved"), conv(2, "bot")).id, 2);
+  assert.equal(mergeConversation(null, conv(2, "bot")).id, 2);
+  const msg = (id: number, author: Message["author"]): Message => ({ id, conversationId: 1, author, authorName: null, body: "", attachment: null, meta: {}, createdAt: "" });
+  assert.equal(answeredAfter([msg(10, "client")], 10), false);
+  assert.equal(answeredAfter([msg(10, "client"), msg(11, "bot")], 10), true);
+  assert.equal(answeredAfter([msg(9, "bot"), msg(10, "client")], 10), false, "an earlier answer doesn't count");
 });

@@ -10,6 +10,7 @@ import { useFormat, useT, type MessageKey } from "@/i18n";
 import { fmtMoney, fmtPct } from "@/lib/format";
 import { Card, Display, Text } from "@/ui";
 import { colors, space } from "@/theme/tokens";
+import { prefetchBacktest } from "@/features/algo/api";
 import type { BacktestMessage } from "../thread";
 import { BlockButton, Cell, ProgressBar } from "./parts";
 
@@ -40,13 +41,17 @@ export const BacktestCard = React.memo(function BacktestCard({ m, onDeploy, onCa
   const t = useT();
   const fmt = useFormat();
   const router = useRouter();
-  // the card spans the list minus its gutters (16) and its own padding (20): no layout pass needed for the line
-  const w = useWindowDimensions().width - 2 * 16 - 2 * space[5];
+  // the card spans the list minus its gutters (space[4]) and its own padding (space[5]): no layout pass for the line
+  const w = useWindowDimensions().width - 2 * space[4] - 2 * space[5];
   const running = m.status === "queued" || m.status === "running";
   const s = m.summary;
-  const range = `${fmt.date(m.params.from * 1000, { day: "numeric", month: "short", year: "numeric" })} – ${fmt.date(m.params.to * 1000, { day: "numeric", month: "short", year: "numeric" })}`;
+  // the range the prices actually covered once it ran (history can start after the requested start), else the one
+  // asked for: the same range the full report shows
+  const day = (sec: number) => fmt.date(sec * 1000, { day: "numeric", month: "short", year: "numeric" });
+  const range = s?.firstBar && s.lastBar ? `${day(s.firstBar)} – ${day(s.lastBar)}` : `${day(m.params.from)} – ${day(m.params.to)}`;
   const stageKey = m.stage ? STAGES.find(([re]) => re.test(m.stage!))?.[1] : undefined;
   const openReport = () => router.push(`/algo/backtests/${m.backtestId}`);
+  const warmReport = () => prefetchBacktest(m.backtestId);
 
   return (
     <Card padded={false} style={{ padding: space[5], gap: space[4] }} testID={`ai-backtest-${m.backtestId}`}>
@@ -97,7 +102,7 @@ export const BacktestCard = React.memo(function BacktestCard({ m, onDeploy, onCa
             </Text>
           </View>
           <View style={{ flexDirection: "row", gap: space[2] }}>
-            <BlockButton label={t("mobileAi.bt.fullReport")} tone="surface" icon={<ArrowUpRight size={16} color={colors.text} />} onPress={openReport} style={{ flex: 1 }} testID="ai-bt-report" />
+            <BlockButton label={t("mobileAi.bt.fullReport")} tone="surface" icon={<ArrowUpRight size={16} color={colors.text} />} onPressIn={warmReport} onPress={openReport} style={{ flex: 1 }} testID="ai-bt-report" />
             {canDeploy && onDeploy ? <BlockButton label={t("mobileAi.card.deploy")} tone="ember" onPress={onDeploy} style={{ flex: 1 }} testID="ai-bt-deploy" /> : null}
           </View>
         </View>

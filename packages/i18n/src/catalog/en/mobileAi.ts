@@ -26,7 +26,8 @@ const mobileAi = {
   // {name} is the client's first name
   greeting: "Hi {name}. Tell me the idea: what to trade, when to enter and exit, how much to risk and where to stop. I'll turn it into exact rules you can check before anything trades.",
   placeholder: "Describe a strategy…",
-  placeholderRefine: "Change something, or answer the questions…",
+  // Keep it short: it must fit one line of the message box on a narrow phone
+  placeholderRefine: "Change it, or answer…",
   "composer.stop": "Stop",
   // Header link to the Algo module (strategies, backtests, deployments); keep it one short word
   algo: "Algo",
@@ -60,6 +61,7 @@ const mobileAi = {
   interrupted: "The answer didn't arrive (the app was closed). Ask again.",
   "error.module": "AI Trader isn't available on your account.",
   "error.viewOnly": "View-only logins can't use AI Trader.",
+  "error.staffReadOnly": "This is a read-only staff session. AI Trader can't draft, test or deploy strategies in it.",
   "error.refused": "The assistant can't help with this request. Describe the trading rules you want instead.",
   "error.truncated": "That was too long to answer in one go. Describe the strategy in fewer words.",
   // {minutes} until the assistant can be asked again
@@ -68,6 +70,7 @@ const mobileAi = {
   "error.invalid": "Fix the strategy's problems first.",
   "unavailable.title": "AI Trader is resting",
   "unavailable.moduleTitle": "Not available",
+  "unavailable.staffTitle": "Read-only session",
   "unavailable.body": "The assistant isn't switched on for this broker right now. You can still build strategies yourself in Algo.",
 
   // Strategy card
@@ -261,6 +264,7 @@ const mobileAi = {
   "bt.fullReport": "Full report",
   "bt.failed": "Backtest failed",
   "bt.cancelled": "Backtest cancelled",
+  "bt.cancelFailed": "Couldn't cancel the backtest",
 
   // Deploy sheet and card
   "deploy.title": "Deploy",
@@ -276,7 +280,7 @@ const mobileAi = {
   "deploy.maxLoss": "Stop for the day after a loss of",
   "deploy.limitsInvalid": "Check the limits: the multiplier is between 0 and 100, the others 0 or more.",
   "deploy.restrictedTitle": "Trading is restricted",
-  "deploy.restricted": "Your account can't open trades right now, so a strategy couldn't place orders. Contact support to find out more.",
+  "deploy.accountRestricted": "Trading is switched off on this account, so a strategy couldn't open trades on it. Choose another account or contact support.",
   "deploy.liveTitle": "Real money",
   "deploy.liveBody": "This is a live account. The strategy opens and closes positions by itself until you stop it.",
   "deploy.ack": "I understand the strategy trades automatically with real money, and that a backtest doesn't guarantee results.",
@@ -284,9 +288,8 @@ const mobileAi = {
   "deploy.confirm": "Deploy on {kind} #{login}",
   "deploy.done": "Strategy running",
   "deploy.doneBody": "It's trading on {kind} #{login}.",
-  "deployed.label": "Running",
-  // {version} a number, {name} the strategy, {symbol} {tf} e.g. EURUSD H1, {time} a clock time
-  "deployed.body": "Version {version} of {name} · {symbol} {tf} · since {time}",
+  // {version} a number, {name} the strategy, {symbol} {tf} e.g. EURUSD H1, {time} a day and clock time ("Today 14:02")
+  "deployed.body": "Version {version} of {name} · {symbol} {tf} · deployed {time}",
   "deployed.open": "Open strategy",
   "deployed.manage": "Pause, stop or close its positions any time in Algo.",
 
@@ -298,6 +301,8 @@ const mobileAi = {
   "support.teamOnline": "Our team is online",
   "support.teamAway": "Our team replies here and by email",
   "support.writeTeam": "Write to our support team…",
+  // The message box of a read-only staff session ("Log in as client")
+  "support.readOnly": "Read-only session",
   "support.options": "Chat options",
   "support.historyHint": "Earlier conversations and their transcripts",
   // Email subject; {id} is the client ID, e.g. KL-000195

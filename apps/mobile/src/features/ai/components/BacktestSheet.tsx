@@ -4,7 +4,6 @@
 import * as React from "react";
 import { View } from "react-native";
 import { useT } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { useActiveLogin } from "@/session/activeAccount";
 import { Button, FormError, Pill, Sheet, Text, type SheetRef } from "@/ui";
 import { space } from "@/theme/tokens";
@@ -52,7 +51,6 @@ export const BacktestSheet = React.forwardRef<SheetRef, { draftId: string | null
     const r = await runBacktest(draftId, { days, initialBalance: amount, login: login ?? undefined });
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       setError(r.error);
       return;
     }
@@ -61,7 +59,7 @@ export const BacktestSheet = React.forwardRef<SheetRef, { draftId: string | null
   };
 
   return (
-    <Sheet ref={sheet} onDismiss={reset}>
+    <Sheet ref={sheet} onDismiss={reset} scrollable>
       <View style={{ gap: space[5] }}>
         <SheetHeader title={t("mobileAi.bt.title")} subtitle={d ? t("mobileAi.bt.body", { symbol: d.built.spec.symbol, tf }) : undefined} onClose={() => sheet.current?.dismiss()} />
         <View style={{ gap: space[3] }}>

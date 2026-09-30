@@ -17,6 +17,8 @@ import { openAttachment } from "../files";
 let headersCache: Record<string, string> | null = null;
 onSignOut(() => {
   headersCache = null;
+  // attachments are private files (memory cache only): none stays in memory for the next person on this phone
+  void Image.clearMemoryCache().catch(() => {});
 });
 
 /** The session headers for image sources (fetched once, cleared on sign-out). */
@@ -47,7 +49,7 @@ function ImageViewer({ id, name, onClose }: { id: number; name: string; onClose:
   const source = useAttachmentSource(id);
   return (
     <Modal visible animationType="fade" onRequestClose={onClose} statusBarTranslucent transparent={false}>
-      <View style={{ flex: 1, backgroundColor: "#000", paddingTop: insets.top, paddingBottom: insets.bottom }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom }}>
         <View style={{ height: 56, flexDirection: "row", alignItems: "center", paddingHorizontal: space[3], gap: space[2] }}>
           <Text variant="callout" weight="600" numberOfLines={1} style={{ flex: 1 }}>
             {name}

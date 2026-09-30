@@ -12,11 +12,14 @@ import { rate } from "../chat";
 
 const WEB_NO_OUTLINE = Platform.OS === "web" ? ({ outlineWidth: 0 } as object) : null;
 
-export const RatingCard = React.memo(function RatingCard({ conv }: { conv: Conversation }) {
+export const RatingCard = React.memo(function RatingCard({ conv, readOnly }: { conv: Conversation; readOnly?: boolean }) {
   const t = useT();
   const [stars, setStars] = React.useState(0);
   const [comment, setComment] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+
+  // a read-only staff session sees a rating the client gave, never the stars to rate for them
+  if (readOnly && !conv.csat) return null;
 
   if (conv.csat)
     return (
@@ -36,11 +39,9 @@ export const RatingCard = React.memo(function RatingCard({ conv }: { conv: Conve
     const r = await rate(conv.id, stars, comment.trim());
     setBusy(false);
     if (!r.ok) {
-      haptic.error();
       toast.show({ title: t("support.toast.rateFailed"), body: r.error, tone: "error" });
       return;
     }
-    haptic.success();
     toast.show({ title: t("support.toast.thanks"), tone: "success" });
   };
 

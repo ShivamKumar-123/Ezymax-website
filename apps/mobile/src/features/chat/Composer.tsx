@@ -144,7 +144,6 @@ export const Composer = React.memo(
             <PressableScale
               onPress={send}
               disabled={!canSend}
-              haptics="tap"
               accessibilityLabel={t("common.send")}
               testID={testID ? `${testID}-send` : undefined}
               style={{ width: HIT, height: HIT, borderRadius: HIT / 2, backgroundColor: canSend ? colors.ember : colors.surface2, alignItems: "center", justifyContent: "center" }}

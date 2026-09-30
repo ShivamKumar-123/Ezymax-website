@@ -32,7 +32,11 @@ Notification frames (`notification`, `notifications.read`) arrive on the same co
 can subscribe with `supportStream.subscribe(fn)` instead of opening a second socket.
 
 Streamed words are joined and shown once per frame in their own small store, so a word re-renders only the
-streaming bubble.
+streaming bubble. While the reader is at the bottom, the list follows the conversation (new messages, the growing
+answer, the final answer that replaces it); after scrolling up to read, nothing moves until they come back down.
+The stream and the HTTP answers race (the bot can answer or hand over before the answer to the message that
+triggered it arrives): `merge.ts` keeps the later conversation state and no "writing" bubble for an answer that
+already arrived. Read-only staff sessions read the chat with the message box and write actions off.
 
 ## Measured (web preview, 390 × 844, local stack)
 

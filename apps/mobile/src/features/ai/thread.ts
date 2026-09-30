@@ -8,9 +8,9 @@
 // new versions of it. "New strategy" starts a fresh conversation (saved strategies stay in Algo).
 import { i18n } from "@/i18n";
 import { kv } from "@/lib/kv";
-import { invalidate } from "@/lib/query";
 import { createStore } from "@/lib/store";
 import { onSignOut, sessionStore } from "@/session";
+import { fetchers as algoFetchers, refreshAlgo } from "@/features/algo/api";
 import {
   cancelBacktest,
   createStrategy,
@@ -27,6 +27,7 @@ import {
   type RiskLimits,
   type StrategySpec,
 } from "./api";
+import { runningDeployment, withoutFailed } from "./conversation";
 import { specKey } from "./spec";
 import type { ApiError } from "@/lib/api";
 
@@ -132,8 +133,12 @@ export function draftById(id: string): DraftMessage | null {
 
 /* ---- asking the assistant ---- */
 
-/** Sends an instruction. With a draft in the conversation the assistant edits it; otherwise it starts one. */
-export async function ask(prompt: string, context: { symbol: string; timeframe: string }) {
+/**
+ * Sends an instruction. With a draft in the conversation the assistant edits it; otherwise it starts one.
+ * `retryOf`: the error bubble of a request that failed; asking again replaces that exchange (its message and the
+ * error) instead of repeating the message under it.
+ */
+export async function ask(prompt: string, context: { symbol: string; timeframe: string }, retryOf?: string) {
   const text = prompt.trim();
   if (!text || threadStore.get().pending) return;
   const current = latestDraft(threadStore.get().messages);
@@ -141,7 +146,7 @@ export async function ask(prompt: string, context: { symbol: string; timeframe: 
   controller?.abort();
   const ctl = new AbortController();
   controller = ctl;
-  patch((s) => ({ ...s, pending, messages: [...s.messages, { id: newId(), kind: "user" as const, at: Date.now(), text }].slice(-MAX_MESSAGES) }));
+  patch((s) => ({ ...s, pending, messages: [...withoutFailed(s.messages, retryOf), { id: newId(), kind: "user" as const, at: Date.now(), text }].slice(-MAX_MESSAGES) }));
   const spec = current?.built.spec;
   const r = await draftStrategy({ prompt: text, symbol: spec?.symbol ?? context.symbol, timeframe: spec?.timeframe ?? context.timeframe, current: spec }, ctl.signal);
   if (controller === ctl) controller = null;
@@ -178,7 +183,7 @@ export function errorText(e: ApiError): string {
     case "viewer_out_of_scope":
       return i18n.t("mobileAi.error.viewOnly");
     case "staff_read_only":
-      return e.message;
+      return i18n.t("mobileAi.error.staffReadOnly");
     case "ai_refused":
       return i18n.t("mobileAi.error.refused");
     case "ai_truncated":
@@ -206,12 +211,28 @@ export async function applyEdit(draftId: string, spec: StrategySpec): Promise<{ 
 
 /* ---- saving (first run saves the strategy, later changes become versions) ---- */
 
-async function ensureSaved(draftId: string): Promise<{ ok: true; saved: SavedRef; name: string } | { ok: false; error: string }> {
+type SaveResult = { ok: true; saved: SavedRef; name: string } | { ok: false; error: string };
+
+/** Saves in flight, per draft and spec: a Backtest and a Deploy started while the first save is still on its way
+ *  share it, so the strategy (or version) is created once. */
+const saving = new Map<string, Promise<SaveResult>>();
+
+function ensureSaved(draftId: string): Promise<SaveResult> {
   const d = draftById(draftId);
-  if (!d) return { ok: false, error: i18n.t("common.errorRetry") };
+  if (!d) return Promise.resolve({ ok: false, error: i18n.t("common.errorRetry") });
+  const key = specKey(d.built.spec);
+  if (d.saved && d.saved.key === key) return Promise.resolve({ ok: true, saved: d.saved, name: d.built.spec.name });
+  const k = `${draftId}:${key}`;
+  const running = saving.get(k);
+  if (running) return running;
+  const p = save(d, key).finally(() => saving.delete(k));
+  saving.set(k, p);
+  return p;
+}
+
+async function save(d: DraftMessage, key: string): Promise<SaveResult> {
+  const draftId = d.id;
   const spec = d.built.spec;
-  const key = specKey(spec);
-  if (d.saved && d.saved.key === key) return { ok: true, saved: d.saved, name: spec.name };
   const body = { spec, name: spec.name, prompt: d.prompt };
   const lineage = threadStore.get().strategyId;
   let r = lineage ? await saveVersion(lineage, { ...body, note: d.edited ? "edited in the app" : "AI Trader" }) : await createStrategy(body);
@@ -221,7 +242,7 @@ async function ensureSaved(draftId: string): Promise<{ ok: true; saved: SavedRef
   if (!r.data.valid) return { ok: false, error: i18n.t("mobileAi.error.invalid") };
   const saved: SavedRef = { strategyId: r.data.id, versionId: r.data.versionId, version: r.data.version, key };
   patch((s) => ({ ...s, strategyId: saved.strategyId, messages: s.messages.map((m) => (m.id === draftId && m.kind === "draft" ? { ...m, saved } : m)) }));
-  invalidate("algo/strategies");
+  refreshAlgo();
   return { ok: true, saved, name: spec.name };
 }
 
@@ -252,7 +273,7 @@ export async function runBacktest(draftId: string, opts: { days: number; initial
     summary: null,
     error: null,
   });
-  invalidate("algo/backtests");
+  refreshAlgo();
   void pollBacktest(id, r.data.id);
   return { ok: true };
 }
@@ -286,7 +307,7 @@ async function pollBacktest(msgId: string, backtestId: number) {
         const changed = prev?.kind === "backtest" && prev.status !== b.status;
         update(msgId, (m) => (m.kind === "backtest" ? { ...m, status: b.status, progress: b.progress, stage: b.stage, summary: b.summary, error: b.error, equity: final ? sparkline(b.report?.equity) : m.equity } : m), changed || final);
         if (final) {
-          invalidate("algo/backtests");
+          refreshAlgo();
           return;
         }
       } else if (r.status === 404 || r.status === 403) {
@@ -301,10 +322,12 @@ async function pollBacktest(msgId: string, backtestId: number) {
   }
 }
 
-export async function stopBacktest(msgId: string) {
+/** Asks the service to cancel a running backtest; the card follows the job's own status (polled). */
+export async function stopBacktest(msgId: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const m = threadStore.get().messages.find((x) => x.id === msgId);
-  if (m?.kind !== "backtest" || FINAL.includes(m.status)) return;
-  await cancelBacktest(m.backtestId);
+  if (m?.kind !== "backtest" || FINAL.includes(m.status)) return { ok: true };
+  const r = await cancelBacktest(m.backtestId);
+  return r.ok ? { ok: true } : { ok: false, error: errorText(r.error) };
 }
 
 /* ---- deploying (only from the Deploy sheet, after the client confirmed) ---- */
@@ -313,13 +336,22 @@ export async function deploy(draftId: string, account: { login: number; type: "d
   const s = await ensureSaved(draftId);
   if (!s.ok) return s;
   const r = await deployStrategy({ strategyId: s.saved.strategyId, versionId: s.saved.versionId, login: account.login, risk });
-  if (!r.ok) return { ok: false, error: errorText(r.error) };
+  let deploymentId: number | null = r.ok ? r.data.id : null;
+  // an earlier Deploy whose answer was lost (network) already started this version on that account: the service
+  // refuses a second one ("exists"), so the conversation shows the one that runs. A deployment the conversation
+  // already shows keeps the service's refusal ("already running on that account").
+  if (!r.ok && r.error.code === "exists") {
+    const list = await algoFetchers.deployments();
+    const running = list.ok ? runningDeployment(list.data.items, s.saved.versionId, account.login) : null;
+    if (running !== null && !threadStore.get().messages.some((m) => m.kind === "deployed" && m.deploymentId === running)) deploymentId = running;
+  }
+  if (deploymentId === null) return { ok: false, error: r.ok ? i18n.t("common.errorRetry") : errorText(r.error) };
   const d = draftById(draftId);
   push({
     id: newId(),
     kind: "deployed",
     at: Date.now(),
-    deploymentId: r.data.id,
+    deploymentId,
     strategyId: s.saved.strategyId,
     version: s.saved.version,
     login: account.login,
@@ -328,6 +360,6 @@ export async function deploy(draftId: string, account: { login: number; type: "d
     symbol: d?.built.spec.symbol ?? "",
     timeframe: d?.built.spec.timeframe ?? "",
   });
-  invalidate("algo/");
-  return { ok: true, deploymentId: r.data.id };
+  refreshAlgo();
+  return { ok: true, deploymentId };
 }
