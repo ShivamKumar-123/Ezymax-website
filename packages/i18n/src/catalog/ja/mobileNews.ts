@@ -1,0 +1,95 @@
+import type { NsMessages } from "../../core";
+
+// Kalks mobile app: market news (/news, /news/[id]) and the economic calendar (/calendar).
+// Shared wording is reused from the `news` namespace; this file holds only what the app adds.
+const mobileNews: NsMessages<"mobileNews"> = {
+  // News feed
+  "eyebrow": "マーケット情報",
+  "title": "ニュース", // tall display title, keep it one short word
+  "latest": "最新",
+  "filters": "フィルター",
+  "filtersOn": "フィルター · {n}", // n = number of active filters
+  "importance.all": "すべて",
+  "importance.important": "重要",
+  "importance.top": "トップ記事",
+  "importance.label": "重要度",
+  // Chips on a story (importance tier)
+  "chip.top": "トップ記事",
+  "chip.important": "重要",
+  "filter.tone": "トーン",
+  "filter.anyTone": "すべてのトーン",
+  "filter.currency": "通貨",
+  "filter.anyCurrency": "すべての通貨",
+  "filter.symbol": "銘柄",
+  "filter.anySymbol": "すべての銘柄",
+  "filter.mentioned": "本日のヘッドラインに登場",
+  "filter.clear": "フィルターをクリア",
+  "filter.remove": "フィルター「{label}」を解除",
+  "list.loadingMore": "過去の記事を読み込み中…",
+  "list.end": "すべて確認済みです",
+  "list.endBody": "この条件に一致するここ数日の記事は以上です。",
+  "empty.title": "まだ記事はありません",
+  "empty.filteredTitle": "一致する記事はありません",
+  "updated": "{time}更新",
+
+  // Daily brief card
+  "brief.label": "デイリー概況",
+  "brief.readMore": "概況をすべて読む",
+  "brief.watch": "本日の注目",
+  "brief.calendarNote": "カレンダーの予定",
+  "brief.writtenAt": "{time}作成",
+
+  // Story screen
+  "story.readAt": "{source}で読む",
+  "story.noTeaser": "配信元はヘッドラインのみを提供しています。記事全文は配信元のサイトでご覧ください。",
+  "story.currencies": "通貨",
+  "story.calendarFor": "{currency}のカレンダー",
+  "story.relatedSymbol": "{symbol}の関連記事",
+  "story.relatedCurrency": "{currency}の関連記事",
+  "story.share": "共有",
+  "story.notFound.title": "記事が見つかりません",
+  "story.notFound.body": "削除された可能性があります。最新のヘッドラインはニュースフィードでご覧いただけます。",
+  "story.backToNews": "ニュースに戻る",
+  "story.openChart": "{symbol}のチャートを開く",
+  "story.published": "{time}公開",
+
+  // Economic calendar
+  "cal.eyebrow": "経済指標カレンダー",
+  "cal.title": "カレンダー", // tall display title, keep it one short word
+  "cal.summary.events": "イベント",
+  "cal.prevWeekShort": "前週",
+  "cal.nextWeekShort": "翌週",
+  "cal.startsNow": "まもなく開始",
+  "cal.startsIn": "開始まで",
+  "cal.zone.local": "現地時間 · {tz}",
+  "cal.zone.server": "サーバー時間 · {tz}",
+  "cal.zoneNote.local": "時間はお客様のタイムゾーン（{local}）で表示しています。取引口座の時計であるサーバー時間は{server}です。",
+  "cal.zoneNote.server": "時間は取引口座の時計であるサーバー時間（{server}）で表示しています。お客様のタイムゾーンは{local}です。",
+  "cal.zone.title": "時間の表示",
+  "cal.zone.myTime": "現地時間（{tz}）",
+  "cal.zone.serverTime": "サーバー時間（{tz}）",
+  "cal.filters.currencies": "通貨",
+  "cal.filters.allCurrencies": "すべての通貨",
+  "cal.filters.reset": "リセット",
+  "cal.empty.title": "静かな1週間",
+  "cal.empty.body": "今週の発表予定はまだありません。",
+  "cal.empty.filteredTitle": "一致するイベントはありません",
+  "cal.impact.high": "重要度・高",
+  "cal.impact.medium": "重要度・中",
+  "cal.impact.low": "重要度・低",
+  "cal.row.a11y": "{time}、{currency}、{title}、{impact}",
+  "cal.remind": "通知する",
+  "cal.reminderOn": "リマインダー設定済み",
+  "cal.remindBefore": "事前に通知",
+  "cal.reminderSetDesc": "{currency} {title}の{minutes}分前にお知らせします。",
+  "cal.reminderChanged": "リマインダーを{minutes}分前に変更しました",
+  "cal.viewOnlyRemind": "閲覧専用ログインではリマインダーを設定できません。",
+  "cal.newsFor": "{currency}のニュース",
+  "cal.eventTime.local": "{day} · 現地時間 {local} · サーバー時間 {server}（{tz}）",
+  "cal.eventTime.server": "{day} · サーバー時間 {server}（{tz}） · 現地時間 {local}",
+  "cal.eventTime.allDay": "{day} · 終日",
+  "cal.alertsAria": "重要度・高のアラート",
+  "cal.filtersAria": "カレンダーのフィルター",
+  "cal.dayAria": "{day}、{count}件のイベント",
+};
+export default mobileNews;
