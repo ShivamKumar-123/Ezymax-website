@@ -88,6 +88,10 @@ export function NewsScreen() {
   const change = React.useCallback((patch: Partial<NewsFilters>) => setFilters((x) => ({ ...x, ...patch })), []);
   const clear = React.useCallback(() => setFilters(NO_FILTERS), []);
   const sheet = React.useRef<SheetRef>(null);
+  // the filter sheet lives in the app's root portal: leaving the screen closes it
+  React.useEffect(() => {
+    if (!focused) sheet.current?.dismiss();
+  }, [focused]);
 
   const key = keys.feed(filters);
   // eslint-disable-next-line react-hooks/exhaustive-deps

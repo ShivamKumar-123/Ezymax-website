@@ -281,6 +281,14 @@ export function CalendarScreen() {
   const filterSheet = React.useRef<SheetRef>(null);
   const alertsSheet = React.useRef<SheetRef>(null);
   const nFilters = calFilterCount(filters);
+  // sheets live in the app's root portal: leaving the screen (an instrument's chart, a notification) closes them, or
+  // they would stay open over the next screen
+  React.useEffect(() => {
+    if (focused) return;
+    sheet.current?.dismiss();
+    filterSheet.current?.dismiss();
+    alertsSheet.current?.dismiss();
+  }, [focused]);
 
   const renderItem = React.useCallback(
     ({ item }: { item: CalRow }) => {
