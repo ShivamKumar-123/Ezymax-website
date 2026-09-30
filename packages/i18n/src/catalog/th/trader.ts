@@ -136,8 +136,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "เกี่ยวกับ Kalks Trader",
   // Tools > Options toast
   "options.title": "ตัวเลือก",
-  "options.summarySoundOn": "เซิร์ฟเวอร์ Kalks-Live01 · ปิดพร็อกซี · เปิดข่าว · เปิดเสียง",
-  "options.summarySoundOff": "เซิร์ฟเวอร์ Kalks-Live01 · ปิดพร็อกซี · เปิดข่าว · ปิดเสียง",
+  "options.trading": "การเทรด",
+  "options.appearance": "รูปลักษณ์",
+  "options.connection": "การเชื่อมต่อ",
+  "options.defaultLot": "ปริมาณเริ่มต้น, ล็อต",
+  "options.maxDeviation": "ค่าเบี่ยงเบนสูงสุด",
 
   // Account switcher and account menu
   "account.switch": "สลับบัญชี",

@@ -137,8 +137,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "Kalks Trader Hakkında",
   // Tools > Options toast
   "options.title": "Seçenekler",
-  "options.summarySoundOn": "Sunucu Kalks-Live01 · proxy kapalı · haberler açık · sesler açık",
-  "options.summarySoundOff": "Sunucu Kalks-Live01 · proxy kapalı · haberler açık · sesler kapalı",
+  "options.trading": "İşlem",
+  "options.appearance": "Görünüm",
+  "options.connection": "Bağlantı",
+  "options.defaultLot": "Varsayılan hacim, lot",
+  "options.maxDeviation": "Maks. sapma",
 
   // Account switcher and account menu
   "account.switch": "Hesap değiştir",

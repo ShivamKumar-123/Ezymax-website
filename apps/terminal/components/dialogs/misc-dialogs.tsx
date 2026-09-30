@@ -3,12 +3,15 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { toast } from "@/lib/notify";
-import { BarChart2, CornerDownLeft, Info, Keyboard, Search, ShoppingCart, Star } from "lucide-react";
+import { BarChart2, CornerDownLeft, Info, Keyboard, Search, Settings2, ShoppingCart, Star } from "lucide-react";
+import { useTheme } from "next-themes";
+import { LOCALES } from "@kalks/i18n/locales";
+import { useLocale } from "@kalks/i18n/react";
 import { ASSET_CLASS_LABEL, INSTRUMENTS } from "@kalks/mock";
 import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { useTerminal } from "@/lib/store";
 import { Kbd } from "./kbd";
-import { TDialog } from "@/components/ui/primitives";
+import { MiniSwitch, Stepper, TButton, TDialog, TSelect } from "@/components/ui/primitives";
 import { SymbolInfo } from "@/components/order/right-panel";
 import { SegmentChips, inSegment } from "@/components/market/segments";
 import type { Segment } from "@/lib/store";
@@ -181,13 +184,122 @@ export function SpecDialog() {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Tools > Options                                                     */
+/* ------------------------------------------------------------------ */
+
+const DEVIATIONS = [null, 0, 3, 5, 10, 20, 50, 100] as const;
+
+/** Terminal settings in one place (each also lives in its menu): applied at once, nothing to confirm. */
+export function OptionsDialog() {
+  const T = useTerminal();
+  const t = useT();
+  const { resolvedTheme, setTheme } = useTheme();
+  const lang = useLocale();
+  const close = React.useCallback(() => T.setUi({ options: false }), [T]);
+  const [lot, setLot] = React.useState(T.ws.lot.toFixed(2));
+  React.useEffect(() => setLot(T.ws.lot.toFixed(2)), [T.ws.lot, T.ui.options]);
+  const commitLot = (v: string) => {
+    setLot(v);
+    const n = Math.round((parseFloat(v) || 0) * 100) / 100;
+    if (n >= 0.01) T.setWs({ lot: n });
+  };
+  const a = T.account;
+  const ro = T.readOnly || T.guest;
+  return (
+    <TDialog
+      open={T.ui.options}
+      onClose={close}
+      width={460}
+      icon={<Settings2 />}
+      title={t("trader.options.title")}
+      footer={
+        <TButton variant="ember" onClick={close}>
+          {t("common.done")}
+        </TButton>
+      }
+    >
+      <div className="divide-y divide-line text-[12.5px]">
+        <OptSection title={t("trader.options.trading")}>
+          <OptRow label={t("trader.menu.oneClickTrading")} hint={T.ws.oneClick ? t("trader.oneClick.enabledHint") : t("trader.oneClick.disabledHint")}>
+            <MiniSwitch checked={T.ws.oneClick && !ro} onChange={(v) => !ro && T.setWs({ oneClick: v })} label={t("trader.menu.oneClickTrading")} />
+          </OptRow>
+          <OptRow label={t("trader.options.defaultLot")}>
+            <Stepper value={lot} onChange={commitLot} step={0.01} min={0.01} decimals={2} ariaLabel={t("trader.options.defaultLot")} className="w-[132px]" />
+          </OptRow>
+          <OptRow label={t("trader.options.maxDeviation")}>
+            <TSelect
+              ariaLabel={t("trader.options.maxDeviation")}
+              value={T.ws.maxDeviation === null ? "any" : String(T.ws.maxDeviation)}
+              onChange={(v) => T.setWs({ maxDeviation: v === "any" ? null : Number(v) })}
+              options={DEVIATIONS.map((d) => ({ value: d === null ? "any" : String(d), label: d === null ? t("trader.menu.anyPrice") : t("trader.menu.points", { count: d }) }))}
+              className="w-[132px]"
+            />
+          </OptRow>
+          <OptRow label={t("trader.menu.soundOnFills")}>
+            <MiniSwitch checked={T.ws.sound} onChange={(v) => T.setWs({ sound: v })} label={t("trader.menu.soundOnFills")} />
+          </OptRow>
+        </OptSection>
+        <OptSection title={t("trader.options.appearance")}>
+          <OptRow label={t("trader.menu.theme")}>
+            <TSelect
+              ariaLabel={t("trader.menu.theme")}
+              value={resolvedTheme === "light" ? "light" : "dark"}
+              onChange={(v) => setTheme(v)}
+              options={[
+                { value: "dark", label: t("trader.menu.themeDark") },
+                { value: "light", label: t("trader.menu.themeLight") },
+              ]}
+              className="w-[132px]"
+            />
+          </OptRow>
+          <OptRow label={t("common.language")}>
+            <TSelect ariaLabel={t("common.language")} value={lang.locale} onChange={(v) => void lang.setLocale(v)} options={LOCALES.map((l) => ({ value: l.code, label: l.name }))} className="w-[132px]" />
+          </OptRow>
+        </OptSection>
+        {!T.guest && (
+          <OptSection title={t("trader.options.connection")}>
+            <div className="flex items-center justify-between gap-3 py-1 font-mono text-[11.5px] text-fg-2">
+              <span className="font-sans text-fg-3">{t("trader.account.connectedTo", { server: a.server })}</span>
+              <span>
+                {a.login} · 1:{a.leverage}
+              </span>
+            </div>
+          </OptSection>
+        )}
+      </div>
+    </TDialog>
+  );
+}
+
+function OptSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="px-4 py-3">
+      <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.09em] text-fg-3">{title}</div>
+      <div className="space-y-1">{children}</div>
+    </div>
+  );
+}
+
+function OptRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-8 items-center justify-between gap-3">
+      <div className="min-w-0">
+        <div className="text-fg">{label}</div>
+        {hint && <div className="text-[11px] leading-[14px] text-fg-3">{hint}</div>}
+      </div>
+      <div className="shrink-0">{children}</div>
+    </div>
+  );
+}
+
 export function AboutDialog() {
   const T = useTerminal();
   const t = useT();
   return (
     <TDialog open={T.ui.about} onClose={() => T.setUi({ about: false })} width={420} icon={<Info />} title={t("order.about.title")}>
       <div className="space-y-3 p-5 text-center">
-        <div className="mx-auto grid size-14 place-items-center rounded-[14px] border border-line-top bg-surface-3 shadow-[0_0_30px_-8px_rgba(255,90,31,0.6)]">
+        <div className="mx-auto grid size-14 place-items-center rounded-[14px] border border-line-top bg-surface-3">
           <LogoMark size={26} className="text-fg" />
         </div>
         <div>

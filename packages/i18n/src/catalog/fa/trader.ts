@@ -139,8 +139,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "درباره Kalks Trader",
   // Tools > Options toast
   "options.title": "تنظیمات",
-  "options.summarySoundOn": "سرور Kalks-Live01 · پروکسی خاموش · اخبار روشن · صداها روشن",
-  "options.summarySoundOff": "سرور Kalks-Live01 · پروکسی خاموش · اخبار روشن · صداها خاموش",
+  "options.trading": "معاملات",
+  "options.appearance": "ظاهر",
+  "options.connection": "اتصال",
+  "options.defaultLot": "حجم پیش\u200cفرض، لات",
+  "options.maxDeviation": "حداکثر انحراف",
 
   // Account switcher and account menu
   "account.switch": "تعویض حساب",

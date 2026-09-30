@@ -136,8 +136,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "关于 Kalks Trader",
   // Tools > Options toast
   "options.title": "选项",
-  "options.summarySoundOn": "服务器 Kalks-Live01 · 代理关闭 · 新闻开启 · 声音开启",
-  "options.summarySoundOff": "服务器 Kalks-Live01 · 代理关闭 · 新闻开启 · 声音关闭",
+  "options.trading": "交易",
+  "options.appearance": "外观",
+  "options.connection": "连接",
+  "options.defaultLot": "默认交易量（手）",
+  "options.maxDeviation": "最大偏差",
 
   // Account switcher and account menu
   "account.switch": "切换账户",

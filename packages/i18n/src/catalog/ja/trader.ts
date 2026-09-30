@@ -136,8 +136,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "Kalks Traderについて",
   // Tools > Options toast
   "options.title": "オプション",
-  "options.summarySoundOn": "サーバー Kalks-Live01 · プロキシ オフ · ニュース オン · サウンド オン",
-  "options.summarySoundOff": "サーバー Kalks-Live01 · プロキシ オフ · ニュース オン · サウンド オフ",
+  "options.trading": "取引",
+  "options.appearance": "外観",
+  "options.connection": "接続",
+  "options.defaultLot": "デフォルト数量（ロット）",
+  "options.maxDeviation": "最大偏差",
 
   // Account switcher and account menu
   "account.switch": "口座を切り替え",

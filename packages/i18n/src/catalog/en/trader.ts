@@ -141,8 +141,13 @@ const trader = {
   "menu.about": "About Kalks Trader",
   // Tools > Options toast
   "options.title": "Options",
-  "options.summarySoundOn": "Server Kalks-Live01 · proxy off · news on · sounds on",
-  "options.summarySoundOff": "Server Kalks-Live01 · proxy off · news on · sounds off",
+  // Tools > Options dialog: section titles and rows
+  "options.trading": "Trading",
+  "options.appearance": "Appearance",
+  "options.connection": "Connection",
+  "options.defaultLot": "Default volume, lots",
+  // max deviation = how far the price may move from the one on screen before the server requotes
+  "options.maxDeviation": "Max deviation",
 
   // Account switcher and account menu
   "account.switch": "Switch account",

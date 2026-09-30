@@ -143,8 +143,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "حول Kalks Trader",
   // Tools > Options toast
   "options.title": "الخيارات",
-  "options.summarySoundOn": "الخادم Kalks-Live01 · الوكيل متوقف · الأخبار مفعّلة · الأصوات مفعّلة",
-  "options.summarySoundOff": "الخادم Kalks-Live01 · الوكيل متوقف · الأخبار مفعّلة · الأصوات متوقفة",
+  "options.trading": "التداول",
+  "options.appearance": "المظهر",
+  "options.connection": "الاتصال",
+  "options.defaultLot": "الحجم الافتراضي، لوت",
+  "options.maxDeviation": "أقصى انحراف",
 
   // Account switcher and account menu
   "account.switch": "تبديل الحساب",

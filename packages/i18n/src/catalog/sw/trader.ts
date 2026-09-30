@@ -131,8 +131,11 @@ const trader: NsMessages<"trader"> = {
   "menu.contactSupport": "Wasiliana na Msaada",
   "menu.about": "Kuhusu Kalks Trader",
   "options.title": "Chaguo",
-  "options.summarySoundOn": "Seva Kalks-Live01 · proksi imezimwa · habari zimewashwa · sauti zimewashwa",
-  "options.summarySoundOff": "Seva Kalks-Live01 · proksi imezimwa · habari zimewashwa · sauti zimezimwa",
+  "options.trading": "Biashara",
+  "options.appearance": "Mwonekano",
+  "options.connection": "Muunganisho",
+  "options.defaultLot": "Kiasi chaguo-msingi, loti",
+  "options.maxDeviation": "Mkengeuko wa juu",
 
   // Account switcher and account menu
   "account.switch": "Badilisha akaunti",

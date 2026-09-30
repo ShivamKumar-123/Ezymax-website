@@ -136,8 +136,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "Tentang Kalks Trader",
   // Tools > Options toast
   "options.title": "Opsi",
-  "options.summarySoundOn": "Server Kalks-Live01 · proxy nonaktif · berita aktif · suara aktif",
-  "options.summarySoundOff": "Server Kalks-Live01 · proxy nonaktif · berita aktif · suara nonaktif",
+  "options.trading": "Trading",
+  "options.appearance": "Tampilan",
+  "options.connection": "Koneksi",
+  "options.defaultLot": "Volume default, lot",
+  "options.maxDeviation": "Deviasi maksimum",
 
   // Account switcher and account menu
   "account.switch": "Ganti akun",

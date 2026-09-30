@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Rows2,
   Search,
+  Settings2,
   ShoppingCart,
   Square,
   Sun,
@@ -190,7 +191,7 @@ function useMenus(): { label: string; items: MenuItem[] }[] {
         { label: t("trader.menu.priceAlerts"), icon: <Bell />, onSelect: () => (T.setWs({ toolboxTab: "alerts" }), T.togglePanel("toolbox", true)) },
         { label: t("trader.menu.history"), onSelect: () => (T.setWs({ toolboxTab: "history" }), T.togglePanel("toolbox", true)) },
         { label: t("trader.menu.journal"), onSelect: () => (T.setWs({ toolboxTab: "journal" }), T.togglePanel("toolbox", true)) },
-        ...(T.guest ? [] : (["sep", { label: t("trader.menu.options"), onSelect: () => toast(t("trader.options.title"), { description: T.ws.sound ? t("trader.options.summarySoundOn") : t("trader.options.summarySoundOff") }) }] as MenuItem[])),
+        ...(T.guest ? [] : (["sep", { label: t("trader.menu.options"), icon: <Settings2 />, onSelect: () => T.setUi({ options: true }) }] as MenuItem[])),
       ],
     },
     {
@@ -354,7 +355,7 @@ export function TitleBar() {
   return (
     <header className="relative z-20 flex h-11 shrink-0 items-center gap-2 border-b border-line bg-panel px-2.5">
       <div className="flex shrink-0 items-center gap-2 pe-1.5">
-        <span className="grid size-7 place-items-center rounded-[7px] border border-line-top bg-surface-3 shadow-[0_0_16px_-6px_rgba(255,90,31,0.7)]">
+        <span className="grid size-7 place-items-center rounded-[7px] border border-line-top bg-surface-3">
           <LogoMark size={13} className="text-fg" />
         </span>
         <span className="hidden text-[13.5px] font-semibold tracking-tight lg:inline">

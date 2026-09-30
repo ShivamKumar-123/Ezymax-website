@@ -139,8 +139,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "Kalks Trader के बारे में",
   // Tools > Options toast
   "options.title": "विकल्प",
-  "options.summarySoundOn": "सर्वर Kalks-Live01 · प्रॉक्सी बंद · न्यूज़ चालू · साउंड चालू",
-  "options.summarySoundOff": "सर्वर Kalks-Live01 · प्रॉक्सी बंद · न्यूज़ चालू · साउंड बंद",
+  "options.trading": "ट्रेडिंग",
+  "options.appearance": "रूप-रंग",
+  "options.connection": "कनेक्शन",
+  "options.defaultLot": "डिफ़ॉल्ट वॉल्यूम, लॉट",
+  "options.maxDeviation": "अधिकतम विचलन",
 
   // Account switcher and account menu
   "account.switch": "अकाउंट बदलें",

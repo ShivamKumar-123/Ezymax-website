@@ -370,6 +370,8 @@ interface UiState {
   shortcuts: boolean;
   spec: string | null;
   about: boolean;
+  /** Tools > Options */
+  options: boolean;
   alertDialog: { symbol: string; price?: number } | null;
   /** live builds: log in to another trading account (kept in the account switcher) */
   loginDialog: boolean;
@@ -506,7 +508,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   wsRef.current = ws;
   const sessionRef = React.useRef(session);
   sessionRef.current = session;
-  const [ui, setUiState] = React.useState<UiState>({ newOrder: null, positionDialog: null, pendingDialog: null, search: false, shortcuts: false, spec: null, about: false, alertDialog: null, loginDialog: false });
+  const [ui, setUiState] = React.useState<UiState>({ newOrder: null, positionDialog: null, pendingDialog: null, search: false, shortcuts: false, spec: null, about: false, options: false, alertDialog: null, loginDialog: false });
   const [drawTool, setDrawTool] = React.useState<DrawTool>("cursor");
   const [selectedDrawing, selectDrawing] = React.useState<string | null>(null);
   const jid = React.useRef(0);

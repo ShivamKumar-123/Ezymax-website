@@ -141,8 +141,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "О Kalks Trader",
   // Tools > Options toast
   "options.title": "Настройки",
-  "options.summarySoundOn": "Сервер Kalks-Live01 · прокси выкл. · новости вкл. · звуки вкл.",
-  "options.summarySoundOff": "Сервер Kalks-Live01 · прокси выкл. · новости вкл. · звуки выкл.",
+  "options.trading": "Торговля",
+  "options.appearance": "Оформление",
+  "options.connection": "Подключение",
+  "options.defaultLot": "Объём по умолчанию, лоты",
+  "options.maxDeviation": "Макс. отклонение",
 
   // Account switcher and account menu
   "account.switch": "Сменить счёт",

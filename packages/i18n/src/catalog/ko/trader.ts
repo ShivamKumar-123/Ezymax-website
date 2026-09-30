@@ -136,8 +136,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "Kalks Trader 정보",
   // 도구 > 옵션 토스트
   "options.title": "옵션",
-  "options.summarySoundOn": "서버 Kalks-Live01 · 프록시 꺼짐 · 뉴스 켜짐 · 소리 켜짐",
-  "options.summarySoundOff": "서버 Kalks-Live01 · 프록시 꺼짐 · 뉴스 켜짐 · 소리 꺼짐",
+  "options.trading": "거래",
+  "options.appearance": "화면",
+  "options.connection": "연결",
+  "options.defaultLot": "기본 거래량, 랏",
+  "options.maxDeviation": "최대 편차",
 
   // 계좌 전환 및 계정 메뉴
   "account.switch": "계좌 전환",

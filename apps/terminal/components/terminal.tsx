@@ -17,7 +17,7 @@ import { useHotkeys } from "./shell/hotkeys";
 import { MobileTerminal } from "./mobile/mobile-terminal";
 import { NewOrderDialog } from "./order/new-order-dialog";
 import { PendingDialog, PositionDialog } from "./dialogs/position-dialog";
-import { AboutDialog, ShortcutsDialog, SpecDialog, SymbolSearch } from "./dialogs/misc-dialogs";
+import { AboutDialog, OptionsDialog, ShortcutsDialog, SpecDialog, SymbolSearch } from "./dialogs/misc-dialogs";
 import { IndicatorDialogs } from "./chart/indicators/dialogs";
 import { ShareLayer } from "./share/share-dialogs";
 import { ControlsBanner } from "./shell/controls-banner";
@@ -40,7 +40,7 @@ export function Splash({ text }: { text?: string }) {
   return (
     <div className="grid h-dvh place-items-center bg-page">
       <div className="flex flex-col items-center gap-3">
-        <span className="grid size-12 place-items-center rounded-[12px] border border-line-top bg-surface-3 shadow-[0_0_30px_-8px_rgba(255,90,31,0.7)]">
+        <span className="grid size-12 place-items-center rounded-[12px] border border-line-top bg-surface-3">
           <LogoMark size={22} className="text-fg" />
         </span>
         <div className="text-[13px] font-semibold">
@@ -183,6 +183,7 @@ function Shell({ intent }: { intent: { symbol: string | null; side: string | nul
       <ShortcutsDialog />
       <SpecDialog />
       <AboutDialog />
+      <OptionsDialog />
       <IndicatorDialogs />
       <ShareLayer />
       {T.live && <LoginDialog />}

@@ -136,8 +136,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "Giới thiệu Kalks Trader",
   // Tools > Options toast
   "options.title": "Tùy chọn",
-  "options.summarySoundOn": "Máy chủ Kalks-Live01 · proxy tắt · tin tức bật · âm thanh bật",
-  "options.summarySoundOff": "Máy chủ Kalks-Live01 · proxy tắt · tin tức bật · âm thanh tắt",
+  "options.trading": "Giao dịch",
+  "options.appearance": "Giao diện",
+  "options.connection": "Kết nối",
+  "options.defaultLot": "Khối lượng mặc định, lot",
+  "options.maxDeviation": "Độ lệch tối đa",
 
   // Account switcher and account menu
   "account.switch": "Chuyển tài khoản",

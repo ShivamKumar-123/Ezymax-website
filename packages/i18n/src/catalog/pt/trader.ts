@@ -136,8 +136,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "Sobre o Kalks Trader",
   // Ferramentas > Opções
   "options.title": "Opções",
-  "options.summarySoundOn": "Servidor Kalks-Live01 · proxy desativado · notícias ativadas · sons ativados",
-  "options.summarySoundOff": "Servidor Kalks-Live01 · proxy desativado · notícias ativadas · sons desativados",
+  "options.trading": "Negociação",
+  "options.appearance": "Aparência",
+  "options.connection": "Conexão",
+  "options.defaultLot": "Volume padrão, lotes",
+  "options.maxDeviation": "Desvio máximo",
 
   // Seletor de conta e menu da conta
   "account.switch": "Trocar de conta",

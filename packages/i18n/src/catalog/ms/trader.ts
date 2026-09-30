@@ -136,8 +136,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "Perihal Kalks Trader",
   // Tools > Options toast
   "options.title": "Pilihan",
-  "options.summarySoundOn": "Pelayan Kalks-Live01 · proksi mati · berita hidup · bunyi hidup",
-  "options.summarySoundOff": "Pelayan Kalks-Live01 · proksi mati · berita hidup · bunyi mati",
+  "options.trading": "Dagangan",
+  "options.appearance": "Penampilan",
+  "options.connection": "Sambungan",
+  "options.defaultLot": "Volum lalai, lot",
+  "options.maxDeviation": "Sisihan maksimum",
 
   // Account switcher and account menu
   "account.switch": "Tukar akaun",

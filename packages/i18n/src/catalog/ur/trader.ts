@@ -136,8 +136,11 @@ const trader: NsMessages<"trader"> = {
   "menu.about": "Kalks Trader کے بارے میں",
   // Tools > Options toast
   "options.title": "آپشنز",
-  "options.summarySoundOn": "سرور Kalks-Live01 · پراکسی آف · خبریں آن · آوازیں آن",
-  "options.summarySoundOff": "سرور Kalks-Live01 · پراکسی آف · خبریں آن · آوازیں آف",
+  "options.trading": "ٹریڈنگ",
+  "options.appearance": "ظاہری شکل",
+  "options.connection": "کنکشن",
+  "options.defaultLot": "ڈیفالٹ حجم، لاٹ",
+  "options.maxDeviation": "زیادہ سے زیادہ انحراف",
 
   // Account switcher and account menu
   "account.switch": "اکاؤنٹ تبدیل کریں",

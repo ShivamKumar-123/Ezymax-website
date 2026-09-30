@@ -131,8 +131,11 @@ const trader: NsMessages<"trader"> = {
   "menu.contactSupport": "உதவிக் குழுவைத் தொடர்புகொள்",
   "menu.about": "Kalks Trader பற்றி",
   "options.title": "விருப்பங்கள்",
-  "options.summarySoundOn": "சர்வர் Kalks-Live01 · ப்ராக்ஸி முடக்கம் · செய்திகள் இயக்கம் · ஒலிகள் இயக்கம்",
-  "options.summarySoundOff": "சர்வர் Kalks-Live01 · ப்ராக்ஸி முடக்கம் · செய்திகள் இயக்கம் · ஒலிகள் முடக்கம்",
+  "options.trading": "வர்த்தகம்",
+  "options.appearance": "தோற்றம்",
+  "options.connection": "இணைப்பு",
+  "options.defaultLot": "இயல்புநிலை அளவு, லாட்",
+  "options.maxDeviation": "அதிகபட்ச விலகல்",
 
   // Account switcher and account menu
   "account.switch": "கணக்கை மாற்று",
