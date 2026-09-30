@@ -195,7 +195,15 @@ async fn copy_and_pamm_end_to_end_with_replay() {
     wait_for(&hub, sub.login, |p| p.len() == 1 && p[0].0 == d("0.05")).await;
     exec(&hub, master_login, Box::new(move |tx, env| trade::close_position(tx, env, mt, CloseReq::default()).map(|_| Value::Null))).await;
     wait_for(&hub, sub.login, |p| p.is_empty()).await;
-    let log = social.copy_log(sub.id, 10).await;
+    // the copy log rows are written just after each mirrored step commits: wait for them
+    let mut log = social.copy_log(sub.id, 10).await;
+    for _ in 0..40 {
+        if log.iter().filter(|e| e["status"] == "done").count() >= 3 {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        log = social.copy_log(sub.id, 10).await;
+    }
     assert!(log.iter().filter(|e| e["status"] == "done").count() >= 3, "{log:?}");
 
     // the follower made ~ +96 USD: the daily fee (20 % above the 2 500 HWM) is charged and recorded pending
@@ -240,6 +248,17 @@ async fn copy_and_pamm_end_to_end_with_replay() {
     exec(&hub, master_login, Box::new(move |tx, env| trade::close_position(tx, env, mt2, CloseReq::default()).map(|_| Value::Null))).await;
     tokio::time::sleep(Duration::from_millis(500)).await;
     assert_eq!(positions(&hub, sub2.login).await.len(), 1, "a stopped subscription mirrors nothing");
+    // stopping it again (a repeated client call, a stale screen, a Back Office stop) never closes the positions the
+    // client kept, and keeps the first stop's reason; the balance can still go back: only the free margin, rounded
+    // down to the cent so the engine accepts the transfer while the position is open
+    let free = social.account_brief(sub2.login).await.unwrap().withdrawable;
+    let again = social.stop_sub(sub2.id, "admin", true, true).await.unwrap();
+    assert!(again["closed"].as_array().unwrap().is_empty(), "{again}");
+    assert_eq!(positions(&hub, sub2.login).await.len(), 1, "the kept position is the client's own trade");
+    assert_eq!(social.reg.read().unwrap().subs[&sub2.id].stop_reason.as_deref(), Some("client"));
+    assert!(again["returnError"].is_null(), "{again}");
+    let back: D = again["returned"].to_string().parse().unwrap();
+    assert!(back > D::ZERO && back <= free, "returned {back} of {free} free");
 
     // ---------------- PAMM ----------------
     let m = social.reg.read().unwrap().masters[&mid].clone();

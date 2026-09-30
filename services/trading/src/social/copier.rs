@@ -24,6 +24,12 @@ pub fn is_flow(kind: TxnKind) -> bool {
     matches!(kind, TxnKind::TransferIn | TxnKind::TransferOut | TxnKind::Deposit | TxnKind::Withdrawal)
 }
 
+/// The part of a withdrawable amount that can go back to the wallet: rounded down to the cent (a transfer is in
+/// cents and must never exceed the free funds; rounding to the nearest cent could ask for up to half a cent more).
+pub fn returnable(withdrawable: D) -> D {
+    withdrawable.max(ZERO).round_dp_with_strategy(2, rust_decimal::RoundingStrategy::ToZero)
+}
+
 impl Social {
     /// Starts the copier (after catching up from the events table) plus the guard and the scheduler.
     pub fn start(self: &Arc<Self>) {
@@ -193,16 +199,24 @@ impl Social {
 
     /// Stops a subscription: no more mirroring, then (optionally) closes everything, settles the fee for the
     /// period so far and moves the balance back to the wallet.
+    ///
+    /// Stopping an already stopped subscription changes nothing but the optional return of the balance: it keeps
+    /// the first stop's reason and time and never closes anything, because positions the client chose to keep
+    /// (`close: false`) are ordinary trades of theirs from then on (a repeated client stop, a stale screen or a
+    /// Back Office stop must not close them).
     pub async fn stop_sub(&self, id: i64, reason: &str, close: bool, return_funds: bool) -> anyhow::Result<Value> {
         let _g = self.sub_lock.lock().await;
         let Some(mut s) = self.reg.read().unwrap().subs.get(&id).cloned() else { anyhow::bail!("not found") };
         let was = s.status.clone();
         // the flag first: any mirrored action already queued behind this stop becomes a no-op
         self.flag(id).store(false, Ordering::SeqCst);
-        s.status = "stopped".into();
-        s.stop_reason = Some(reason.to_string());
-        s.stopped_at = Some(Utc::now());
-        self.save_sub(&s).await?;
+        let close = close && was != "stopped";
+        if was != "stopped" {
+            s.status = "stopped".into();
+            s.stop_reason = Some(reason.to_string());
+            s.stopped_at = Some(Utc::now());
+            self.save_sub(&s).await?;
+        }
         let (mut closed, mut failed) = (Vec::new(), Vec::new());
         if close {
             let r = reason.to_string();
@@ -224,20 +238,36 @@ impl Social {
                 tracing::error!(sub = id, error = %e, "fee settlement on stop failed");
             }
         }
-        let mut returned: Option<D> = None;
-        let mut return_error: Option<String> = None;
-        if return_funds && let Some(b) = self.account_brief(s.login).await {
-            let amt = r2(b.withdrawable);
-            if amt > ZERO {
-                let key = format!("copy:return:{id}:{}", b.version);
-                match self.wallet.from_trading(&self.slug(s.tenant_id), &key, s.user_id, s.login, amt).await {
-                    Ok(_) => returned = Some(amt),
-                    Err(e) => return_error = Some(e.message),
+        let (returned, return_error) = if return_funds { self.return_balance(id, &s).await } else { (None, None) };
+        tracing::info!(sub = id, reason, closed = closed.len(), failed = failed.len(), "subscription stopped");
+        Ok(json!({"closed": closed, "failed": failed, "returned": crate::money::num_opt(returned), "returnError": return_error}))
+    }
+
+    /// Moves the withdrawable balance of a stopped subscription's copy account back to the wallet. The amount is
+    /// rounded down to the cent (`returnable`), so it never exceeds what the engine lets leave the account. With
+    /// kept positions the free margin moves with every price, so a refusal for insufficient funds is retried
+    /// once on a fresh reading (with its own idempotency key).
+    async fn return_balance(&self, id: i64, s: &Sub) -> (Option<D>, Option<String>) {
+        let mut error = None;
+        for attempt in 0..2 {
+            let Some(b) = self.account_brief(s.login).await else { break };
+            let amt = returnable(b.withdrawable);
+            if amt <= ZERO {
+                break;
+            }
+            let key = if attempt == 0 { format!("copy:return:{id}:{}", b.version) } else { format!("copy:return:{id}:{}:retry", b.version) };
+            match self.wallet.from_trading(&self.slug(s.tenant_id), &key, s.user_id, s.login, amt).await {
+                Ok(_) => return (Some(amt), None),
+                Err(e) => {
+                    let again = e.code == "insufficient_funds";
+                    error = Some(e.message);
+                    if !again {
+                        break;
+                    }
                 }
             }
         }
-        tracing::info!(sub = id, reason, closed = closed.len(), failed = failed.len(), "subscription stopped");
-        Ok(json!({"closed": closed, "failed": failed, "returned": crate::money::num_opt(returned), "returnError": return_error}))
+        (None, error)
     }
 
     /// Crystallises the performance fee of a subscription (period end, or `final` on stop): HWM maths in
@@ -504,5 +534,26 @@ impl Social {
                 }
             });
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::returnable;
+    use crate::money::D;
+    use std::str::FromStr;
+
+    fn d(s: &str) -> D {
+        D::from_str(s).unwrap()
+    }
+
+    #[test]
+    fn the_returned_balance_never_exceeds_the_free_funds() {
+        // free margin with open positions has more than two decimals: round down, never to the nearest cent
+        assert_eq!(returnable(d("490.137")), d("490.13"));
+        assert_eq!(returnable(d("490.1349999")), d("490.13"));
+        assert_eq!(returnable(d("599.74")), d("599.74"));
+        assert_eq!(returnable(d("0.009")), d("0"));
+        assert_eq!(returnable(d("-3.5")), d("0"));
     }
 }
