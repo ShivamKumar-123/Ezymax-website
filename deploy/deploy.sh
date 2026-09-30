@@ -180,6 +180,10 @@ grep -q '^MARKET_DATA_INTERNAL_TOKEN=' .env.local || printf 'MARKET_DATA_INTERNA
 f=apps/crm/.env.production.local; touch "$f"
 grep -q '^MARKET_DATA_URL=' "$f" || printf 'MARKET_DATA_URL=http://127.0.0.1:8081\n' >> "$f"
 grep -q '^MARKET_DATA_INTERNAL_TOKEN=' "$f" || printf 'MARKET_DATA_INTERNAL_TOKEN=%s\n' "$(grep '^MARKET_DATA_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
+# mobile app: /api/mobile/config hands phones the public quote / chart / engine-stream hosts. They are built from
+# these (public) URLs; unset, phones would be sent to app.kalkstrade.com, which Caddy routes to the Client Area.
+grep -q '^NEXT_PUBLIC_MARKET_DATA_URL=' "$f" || printf 'NEXT_PUBLIC_MARKET_DATA_URL=https://api.kalkstrade.com\n' >> "$f"
+grep -q '^NEXT_PUBLIC_TERMINAL_URL=' "$f" || printf 'NEXT_PUBLIC_TERMINAL_URL=https://trade.kalkstrade.com\n' >> "$f"
 pnpm turbo run build --filter=@kalks/crm --filter=@kalks/admin --filter=@kalks/terminal --concurrency=1
 
 # service units + edge config (idempotent)
@@ -207,3 +211,5 @@ printf "%-26s %s\n" 127.0.0.1:8100/health "$(curl -s -o /dev/null -w '%{http_cod
 printf "%-26s %s\n" 127.0.0.1:8101/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8101/health)"
 printf "%-26s %s\n" 127.0.0.1:8102/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8102/health)"
 printf "%-26s %s\n" 127.0.0.1:8103/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8103/health)"
+# what phones are told (public URLs only)
+printf "%-26s %s\n" "mobile config" "$(curl -s -m 10 -H 'x-forwarded-host: app.kalkstrade.com' -H 'x-forwarded-proto: https' http://127.0.0.1:3000/api/mobile/config | head -c 400)"
