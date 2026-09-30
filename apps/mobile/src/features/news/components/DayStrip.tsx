@@ -34,6 +34,12 @@ export const DayStrip = React.memo(function DayStrip({ days, onPick, onWeek, cur
     const { x, w } = view.current;
     if (p.x < x + space[2] || p.x + p.w > x + w - space[2]) scroller.current?.scrollTo({ x: Math.max(0, p.x - GUTTER - 60), animated: true });
   }, [active, rtl, spots]);
+  // another week: back to the strip's start, so "Earlier" / "This week" are in view again
+  const first = days[0]?.day;
+  React.useEffect(() => {
+    if (rtl || !first) return;
+    scroller.current?.scrollTo({ x: 0, animated: false });
+  }, [first, rtl]);
 
   return (
     <View style={{ borderBottomWidth: 1, borderBottomColor: colors.line, backgroundColor: colors.bg }}>
@@ -51,30 +57,31 @@ export const DayStrip = React.memo(function DayStrip({ days, onPick, onWeek, cur
         {!current ? <WeekButton testID="week-this" label={t("news.cal.thisWeek")} a11y={t("news.cal.thisWeek")} onPress={() => onWeek(0)} strong /> : null}
         {days.map((d) => {
           const on = d.day === active;
+          // a day without (filtered) events is dimmed on a wrapper: PressableScale animates its own opacity
           return (
-            <PressableScale
-              key={d.day}
-              testID={`strip-${d.day}`}
-              onLayout={(e) => spots.set(d.day, { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width })}
-              onPress={() => onPick(d.day)}
-              haptics="select"
-              accessibilityRole="tab"
-              accessibilityState={{ selected: on }}
-              accessibilityLabel={t("mobileNews.cal.dayAria", { day: `${weekdayShort(f, d.day)} ${dayNum(d.day)}`, count: d.count })}
-              style={{ width: 54, height: 60, borderRadius: radius.md, alignItems: "center", justifyContent: "center", gap: 1, backgroundColor: on ? colors.cream : colors.surface, borderWidth: 1, borderColor: on ? colors.cream : d.today ? colors.ember : colors.line, opacity: d.count ? 1 : 0.5 }}
-            >
-              <Text variant="label" color={on ? colors.ink2 : d.today ? colors.ember : colors.text3} style={{ fontSize: 10 }}>
-                {weekdayShort(f, d.day)}
-              </Text>
-              <Display size="xs" color={on ? colors.ink : colors.text}>
-                {dayNum(d.day)}
-              </Display>
-              <View style={{ flexDirection: "row", gap: 2, height: 4 }}>
-                {Array.from({ length: Math.min(4, d.high) }, (_, i) => (
-                  <View key={i} style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: on ? colors.ink : colors.ember }} />
-                ))}
-              </View>
-            </PressableScale>
+            <View key={d.day} onLayout={(e) => spots.set(d.day, { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width })} style={{ opacity: d.count ? 1 : 0.5 }}>
+              <PressableScale
+                testID={`strip-${d.day}`}
+                onPress={() => onPick(d.day)}
+                haptics="select"
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={t("mobileNews.cal.dayAria", { day: `${weekdayShort(f, d.day)} ${dayNum(d.day)}`, count: d.count })}
+                style={{ width: 54, height: 60, borderRadius: radius.md, alignItems: "center", justifyContent: "center", gap: 1, backgroundColor: on ? colors.cream : colors.surface, borderWidth: 1, borderColor: on ? colors.cream : d.today ? colors.ember : colors.line }}
+              >
+                <Text variant="label" color={on ? colors.ink2 : d.today ? colors.ember : colors.text3} style={{ fontSize: 10 }}>
+                  {weekdayShort(f, d.day)}
+                </Text>
+                <Display size="xs" color={on ? colors.ink : colors.text}>
+                  {dayNum(d.day)}
+                </Display>
+                <View style={{ flexDirection: "row", gap: 2, height: 4 }}>
+                  {Array.from({ length: Math.min(4, d.high) }, (_, i) => (
+                    <View key={i} style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: on ? colors.ink : colors.ember }} />
+                  ))}
+                </View>
+              </PressableScale>
+            </View>
           );
         })}
         <WeekButton testID="week-next" label={t("mobileNews.cal.nextWeekShort")} a11y={t("news.cal.nextWeek")} trailing={<Next size={16} color={colors.text2} strokeWidth={2.2} />} onPress={() => onWeek(1)} />

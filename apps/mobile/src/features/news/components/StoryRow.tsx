@@ -4,13 +4,13 @@
 import * as React from "react";
 import { View } from "react-native";
 import { Pin } from "lucide-react-native";
-import { useT } from "@/i18n";
+import { useT, type T } from "@/i18n";
 import { PressableScale, Text } from "@/ui";
 import { colors, GUTTER, space, type TextVariant } from "@/theme/tokens";
-import type { NewsItem } from "../api";
+import { tierOf, type NewsItem } from "../api";
 import { useMinute } from "../clock";
 import { ago } from "../format";
-import { ImportanceChip, Kicker, SymbolTag, ToneChip } from "./chips";
+import { ImportanceChip, importanceKey, Kicker, SymbolTag, ToneChip, toneKey } from "./chips";
 
 /** Rows have one of three fixed heights, by the headline's estimated line count (one, two, up to three). */
 export type StoryLines = 1 | 2 | 3;
@@ -20,6 +20,34 @@ export const storyRowHeight = (lines: StoryLines) => 90 + 22 * lines;
  *  three from ~78). A misjudged headline ends in an ellipsis; the story screen shows it whole. */
 export const charsPerLine = (width: number) => Math.max(24, Math.floor((width - GUTTER * 2) / 7.8));
 export const linesOf = (title: string, perLine: number): StoryLines => (title.length > perLine * 1.85 ? 3 : title.length <= perLine * 0.9 ? 1 : 2);
+
+/** Estimated width of a chip label: about 6.9 pt per character at 11.5 pt (Latin, Cyrillic, Arabic), a full em for
+ *  CJK characters. */
+const textW = (s: string) => {
+  let w = 0;
+  for (const ch of s) w += ch.charCodeAt(0) >= 0x2e80 ? 11.5 : 6.9;
+  return w;
+};
+const GAP = 6;
+/** How many instrument tags fit on the chips line after the tone and importance chips (the rest fold into "+N"), in
+ *  `avail` pt. An estimate like the headline's line count, so the line never ends in a cut chip on a narrow phone or
+ *  in a longer language. */
+export function tagsThatFit(t: T, n: Pick<NewsItem, "sentiment" | "importance" | "symbols">, avail: number): number {
+  const tier = tierOf(n.importance);
+  // chip: padding 9 + 9, border 1 + 1, glyph 12 (tone) or bars 13 (importance), gap 5
+  let used = 37 + textW(t(toneKey(n.sentiment)));
+  if (tier !== 1) used += GAP + 38 + textW(t(importanceKey(tier)));
+  let fit = 0;
+  const max = Math.min(2, n.symbols.length);
+  for (let i = 0; i < max; i++) {
+    const tag = GAP + 16 + n.symbols[i]!.length * 7;
+    const plus = n.symbols.length > i + 1 ? GAP + 20 : 0;
+    if (used + tag + plus > avail) break;
+    used += tag;
+    fit++;
+  }
+  return fit;
+}
 
 /** "2h 10m ago", refreshed on the minute (a leaf: the row around it doesn't render). */
 export function Ago({ iso, variant = "caption", color, tone = "tertiary" }: { iso: string; variant?: TextVariant; color?: string; tone?: "tertiary" | "secondary" }) {
@@ -41,9 +69,9 @@ export function Dot() {
   );
 }
 
-export const StoryRow = React.memo(function StoryRow({ n, lines, onOpen, onPressIn }: { n: NewsItem; lines: StoryLines; onOpen: (n: NewsItem) => void; onPressIn: (n: NewsItem) => void }) {
+export const StoryRow = React.memo(function StoryRow({ n, lines, avail, onOpen, onPressIn }: { n: NewsItem; lines: StoryLines; /** width of the text column */ avail: number; onOpen: (n: NewsItem) => void; onPressIn: (n: NewsItem) => void }) {
   const t = useT();
-  const shown = n.symbols.slice(0, 2);
+  const shown = n.symbols.slice(0, tagsThatFit(t, n, avail));
   const more = n.symbols.length - shown.length;
   return (
     <PressableScale

@@ -1,8 +1,10 @@
 // Calendar reminders on the phone: which events have one, toggled optimistically (a reminder is not a money action)
 // and rolled back when the server refuses. Each bell subscribes to its own event id, so a toggle re-renders that bell
 // only, never the calendar list. The server (services/news) sends the notification; its answer is the truth.
+// Haptics come from the control that was pressed (the bell and the lead-time pills give the selection tick, buttons
+// their tap); a refusal only flips back with the server's reason (no error buzz: haptics are for selection, refresh,
+// fills and closes).
 import { i18n } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { getQueryData, setQueryData } from "@/lib/query";
 import { createStore, useStore } from "@/lib/store";
 import { onSignOut, sessionStore } from "@/session";
@@ -64,8 +66,8 @@ function commit(id: number, on: boolean, minutes: number | null) {
 const viewOnly = () => !!sessionStore.get().viewer;
 
 /**
- * Sets (or moves) a reminder `minutes` before the event, or removes it (`minutes` null). The bell flips at once with a
- * selection haptic; a refusal flips it back with the server's reason. Returns whether the server accepted.
+ * Sets (or moves) a reminder `minutes` before the event, or removes it (`minutes` null). The bell flips at once; a
+ * refusal flips it back with the server's reason. Returns whether the server accepted.
  */
 export async function setReminder(e: CalEvent, minutes: number | null): Promise<boolean> {
   const t = i18n.t;
@@ -78,12 +80,10 @@ export async function setReminder(e: CalEvent, minutes: number | null): Promise<
   const wasOn = s.on.has(e.id);
   const wasMin = s.minutes[e.id] ?? null;
   const on = minutes !== null;
-  haptic.select();
   patch(e.id, on, minutes, true);
   const r = on ? await addReminder(e.id, minutes) : await deleteReminder(e.id);
   if (!r.ok) {
     patch(e.id, wasOn, wasMin, false);
-    haptic.error();
     toast.show({ title: t("news.cal.reminder.error"), body: r.error.message, tone: "error" });
     return false;
   }

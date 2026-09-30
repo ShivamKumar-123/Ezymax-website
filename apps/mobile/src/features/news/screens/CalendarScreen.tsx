@@ -14,7 +14,7 @@ import { Bell } from "lucide-react-native";
 import { useFormat, useT } from "@/i18n";
 import { haptic } from "@/lib/haptics";
 import { kv } from "@/lib/kv";
-import { getQueryData, useQuery } from "@/lib/query";
+import { getQueryData, setQueryData, useQuery } from "@/lib/query";
 import { onSignOut, useSession } from "@/session";
 import { Display, EmptyState, IconButton, Mono, Screen, Text, useBottomInset, type SheetRef } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
@@ -153,9 +153,10 @@ export function CalendarScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const calFetcher = React.useMemo(() => fetchCalendar(week), [week]);
   const cal = useQuery(calKey, calFetcher, { persist: true, staleMs: 60_000, intervalMs: focused ? 5 * 60_000 : undefined });
+  // the previous week stays on screen (dimmed) while another loads; a week that can't load shows its error instead
   const shownRef = React.useRef<CalendarWeek | undefined>(undefined);
   if (cal.data) shownRef.current = cal.data;
-  const data = cal.data ?? shownRef.current;
+  const data = cal.data ?? (cal.error ? undefined : shownRef.current);
   const stale = !cal.data && !!data;
 
   const next = useQuery(keys.next, fetchNext, { persist: true, staleMs: 60_000, intervalMs: focused ? 5 * 60_000 : undefined });
@@ -194,7 +195,12 @@ export function CalendarScreen() {
     opened.current = true;
     const inWeek = getQueryData<CalendarWeek>(keys.calendar(null))?.events.find((e) => e.id === id);
     if (inWeek) return openEvent(inWeek);
-    void fetchEvent(id)().then((r) => r.ok && openEvent((r.data as CalDetail).event));
+    void fetchEvent(id)().then((r) => {
+      if (!r.ok) return;
+      // the sheet's release history reads the same answer: no second request
+      setQueryData<CalDetail>(keys.event(id), r.data);
+      openEvent(r.data.event);
+    });
   }, [params.event, openEvent]);
 
   // open at "now" on this week (a few rows of the day above it), at the top on another week: the list remounts per
@@ -203,6 +209,20 @@ export function CalendarScreen() {
   const list = React.useRef<FlashListRef<CalRow>>(null);
   const todayRow = built.rowOfDay.get(zone === "server" ? serverDay(now, offsetH) : localDay(now));
   const target = isThisWeek && todayRow !== undefined ? Math.max(todayRow, built.nowIndex - 3) : 0;
+
+  // other filters or clock: back to today's releases (this week) or the top, like on opening
+  const filterKey = `${filters.impacts.join()}|${filters.currencies.join()}|${filters.zone}`;
+  const firstFilter = React.useRef(filterKey);
+  const targetRef = React.useRef(target);
+  targetRef.current = target;
+  React.useEffect(() => {
+    if (filterKey === firstFilter.current) return;
+    firstFilter.current = filterKey;
+    const l = list.current;
+    if (!l) return;
+    if (targetRef.current > 0) void l.scrollToIndex({ index: targetRef.current, animated: false });
+    else l.scrollToOffset({ offset: 0, animated: false });
+  }, [filterKey]);
 
   const pickDay = React.useCallback(
     (day: string) => {
@@ -219,12 +239,15 @@ export function CalendarScreen() {
   );
   const shiftWeek = React.useCallback(
     (dir: -1 | 0 | 1) => {
-      if (dir === 0 || !data) return setWeek(null);
-      const from = addDays(data.from, 7 * dir);
+      if (dir === 0) return setWeek(null);
+      // from the week asked for (not the one still on screen while it loads), so two taps move two weeks
       const thisWeek = getQueryData<CalendarWeek>(keys.calendar(null))?.from;
+      const base = week ?? thisWeek ?? data?.from;
+      if (!base) return;
+      const from = addDays(base, 7 * dir);
       setWeek(from === thisWeek ? null : from);
     },
-    [data],
+    [week, data?.from],
   );
 
   // the day on screen (drives the strip's highlight; the strip re-renders, the list doesn't)
@@ -238,6 +261,11 @@ export function CalendarScreen() {
     if (day && visibleDayStore.get() !== day) visibleDayStore.set(day);
   }).current;
   React.useEffect(() => () => visibleDayStore.set(null), []);
+  // nothing listed (filtered out, a quiet week): no day is on screen
+  const noRows = !built.rows.length;
+  React.useEffect(() => {
+    if (noRows) visibleDayStore.set(null);
+  }, [noRows]);
 
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(async () => {
@@ -327,7 +355,7 @@ export function CalendarScreen() {
           </>
         }
       />
-      {data ? <DayStrip days={built.strip} onPick={pickDay} onWeek={shiftWeek} current={week === null} /> : null}
+      {data || week !== null ? <DayStrip days={built.strip} onPick={pickDay} onWeek={shiftWeek} current={week === null} /> : null}
       {next.data?.event && Date.parse(next.data.event.startsAt) > now - 60_000 ? <NextHigh e={next.data.event} zone={zone} onOpen={openEvent} /> : null}
       <FlashList
         ref={list}

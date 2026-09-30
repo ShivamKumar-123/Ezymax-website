@@ -113,6 +113,7 @@ const RowBell = React.memo(function RowBell({ e }: { e: CalEvent }) {
       testID={`bell-${e.id}`}
       onPress={() => void toggleReminder(e)}
       disabled={busy}
+      haptics="select"
       scaleTo={0.9}
       accessibilityRole="switch"
       accessibilityState={{ checked: on, busy }}
@@ -138,37 +139,41 @@ export const EventRow = React.memo(function EventRow({ e, past, zone, canRemind,
         scaleTo={0.985}
         accessibilityRole="button"
         accessibilityLabel={t("mobileNews.cal.row.a11y", { time, currency: e.currency, title: e.title, impact: impactText })}
-        style={{ flex: 1, height: EVENT_ROW_HEIGHT, flexDirection: "row", alignItems: "center", opacity: past ? 0.62 : 1 }}
+        style={{ flex: 1, height: EVENT_ROW_HEIGHT }}
       >
-        {/* the impact stripe on the start edge; spacing by fixed spacers (not start / end margins) so the row reads the
-            same in both directions on every renderer */}
-        <View style={{ width: 3, height: EVENT_ROW_HEIGHT - 24, borderRadius: 2, backgroundColor: impactColor(e.impact) }} />
-        <View style={{ width: GUTTER - 3 }} />
-        <View style={{ width: 50, gap: 5 }}>
-          {e.allDay ? (
-            <Text variant="caption" tone="secondary" weight="700" numberOfLines={1}>
-              {time}
-            </Text>
-          ) : (
-            <Mono size={14} weight="medium" tone="secondary">
-              {time}
-            </Mono>
-          )}
-          {e.impact > 0 ? <ImpactBars impact={e.impact} size={10} /> : null}
-        </View>
-        <View style={{ width: space[3] }} />
-        <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
-            <Mono size={13} weight="bold">
-              {e.currency}
-            </Mono>
-            <Text variant="callout" weight="600" numberOfLines={1} style={{ flex: 1 }}>
-              {e.title}
-            </Text>
+        {/* past releases are dimmed on this inner view: PressableScale animates its own opacity (press / disabled), which
+            would override an opacity given in its style */}
+        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", opacity: past ? 0.62 : 1 }}>
+          {/* the impact stripe on the start edge; spacing by fixed spacers (not start / end margins) so the row reads the
+              same in both directions on every renderer */}
+          <View style={{ width: 3, height: EVENT_ROW_HEIGHT - 24, borderRadius: 2, backgroundColor: impactColor(e.impact) }} />
+          <View style={{ width: GUTTER - 3 }} />
+          <View style={{ width: 50, gap: 5 }}>
+            {e.allDay ? (
+              <Text variant="caption" tone="secondary" weight="700" numberOfLines={1}>
+                {time}
+              </Text>
+            ) : (
+              <Mono size={14} weight="medium" tone="secondary">
+                {time}
+              </Mono>
+            )}
+            {e.impact > 0 ? <ImpactBars impact={e.impact} size={10} /> : null}
           </View>
-          <Figures e={e} />
+          <View style={{ width: space[3] }} />
+          <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
+              <Mono size={13} weight="bold">
+                {e.currency}
+              </Mono>
+              <Text variant="callout" weight="600" numberOfLines={1} style={{ flex: 1 }}>
+                {e.title}
+              </Text>
+            </View>
+            <Figures e={e} />
+          </View>
+          {canRemind ? null : <View style={{ width: GUTTER }} />}
         </View>
-        {canRemind ? null : <View style={{ width: GUTTER }} />}
       </PressableScale>
       {canRemind ? <View style={{ width: 56, alignItems: "center" }}>{!past && !e.allDay ? <RowBell e={e} /> : null}</View> : null}
     </View>

@@ -13,7 +13,7 @@ import { fetchEvent, keys, REMIND_MINUTES, type CalDetail, type CalEvent } from 
 import { useMinute } from "../clock";
 import { dayMonth, eventDay, figure, gmt, localHm, unitOf, weekdayLong, type Zone } from "../format";
 import { setReminder, useReminded, useReminderBusy, useReminderMinutes } from "../reminders";
-import { CurrencyPill, ImpactBars, impactColor, SymbolButton } from "./chips";
+import { CurrencyPill, ImpactBars, impactColor, LEAD_PILL, SymbolButton } from "./chips";
 import { Countdown } from "./NextHigh";
 
 type Props = { e: CalEvent | null; zone: Zone; offset: number; canRemind: boolean; onNewsFor: (currency: string) => void; onDismiss?: () => void };
@@ -24,7 +24,8 @@ export const EventSheet = React.forwardRef<SheetRef, Props>(function EventSheet(
   return (
     <Sheet ref={ref} scroll maxDynamicContentSize={Math.round(height * 0.88)} onDismiss={onDismiss}>
       <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: GUTTER, paddingTop: space[2], paddingBottom: Math.max(insets.bottom, space[4]) + space[4], gap: space[5] }} showsVerticalScrollIndicator={false}>
-        {e ? <Body e={e} zone={zone} offset={offset} canRemind={canRemind} onNewsFor={onNewsFor} /> : null}
+        {/* keyed on the event: another event starts from its own state (lead time, history) */}
+        {e ? <Body key={e.id} e={e} zone={zone} offset={offset} canRemind={canRemind} onNewsFor={onNewsFor} /> : null}
       </BottomSheetScrollView>
     </Sheet>
   );
@@ -74,7 +75,7 @@ function Body({ e, zone, offset, canRemind, onNewsFor }: { e: CalEvent; zone: Zo
       </View>
 
       <View style={{ flexDirection: "row", gap: space[3] }}>
-        <Big label={t("news.cal.col.actual")} value={e.actual || (future ? t("common.pending") : "—")} color={e.actual ? (e.surprise === 1 ? colors.up : e.surprise === -1 ? colors.down : colors.text) : colors.text3} small={!e.actual} />
+        <Big label={t("news.cal.col.actual")} value={e.actual || (future ? t("common.pending") : "—")} color={e.actual ? (e.surprise === 1 ? colors.up : e.surprise === -1 ? colors.down : colors.text) : colors.text3} word={!e.actual && future} />
         <Big label={t("news.cal.col.forecast")} value={e.forecast || "—"} color={e.forecast ? colors.text : colors.text3} />
         <Big label={t("news.cal.col.previous")} value={e.previous || "—"} color={e.previous ? colors.text2 : colors.text3} />
       </View>
@@ -119,15 +120,23 @@ function Body({ e, zone, offset, canRemind, onNewsFor }: { e: CalEvent; zone: Zo
   );
 }
 
-function Big({ label, value, color, small }: { label: string; value: string; color: string; small?: boolean }) {
+/** A figure of this release, big; `word` ("Pending") is set as text, not in the tabular mono face (which has no
+ *  glyphs for most scripts and letter-spaces a word). */
+function Big({ label, value, color, word }: { label: string; value: string; color: string; word?: boolean }) {
   return (
     <View style={{ flex: 1, minWidth: 0, gap: 4, padding: space[3], borderRadius: radius.md, backgroundColor: colors.surface2 }}>
       <Text variant="label" tone="tertiary" numberOfLines={1} style={{ fontSize: 10 }}>
         {label}
       </Text>
-      <Mono size={small ? 15 : 22} weight="bold" color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-        {value}
-      </Mono>
+      {word ? (
+        <Text variant="callout" weight="700" color={color} numberOfLines={1} style={{ lineHeight: 28 }}>
+          {value}
+        </Text>
+      ) : (
+        <Mono size={22} weight="bold" color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+          {value}
+        </Mono>
+      )}
     </View>
   );
 }
@@ -184,19 +193,21 @@ function History({ e, detail }: { e: CalEvent; detail: CalDetail | undefined }) 
   );
 }
 
-/** Reminder controls: the lead time, then on / off. Moving the lead time of a set reminder applies at once. */
+/**
+ * Reminder controls: the lead time, then on / off. Moving the lead time of a set reminder applies at once (the pill
+ * follows the optimistic change and flips back if the server refuses). A reminder set on another device has no known
+ * lead time here (the service returns only event ids), so no pill is selected until one is picked.
+ */
 function Remind({ e }: { e: CalEvent }) {
   const t = useT();
   const on = useReminded(e.id);
   const busy = useReminderBusy(e.id);
   const saved = useReminderMinutes(e.id);
-  const [minutes, setMinutes] = React.useState<number>(saved ?? 15);
-  React.useEffect(() => {
-    if (saved) setMinutes(saved);
-  }, [saved]);
+  const [pending, setPending] = React.useState<number>(15);
+  const selected = on ? saved : pending;
   const pick = (m: number) => {
-    setMinutes(m);
-    if (on && m !== saved) void setReminder(e, m);
+    if (!on) return setPending(m);
+    if (m !== saved) void setReminder(e, m);
   };
   return (
     <View style={{ gap: space[3], padding: space[4], borderRadius: radius.lg, backgroundColor: colors.surface2 }}>
@@ -205,13 +216,13 @@ function Remind({ e }: { e: CalEvent }) {
       </Text>
       <View style={{ flexDirection: "row", gap: space[2] }} accessibilityRole="radiogroup">
         {REMIND_MINUTES.map((m) => (
-          <Pill key={m} compact label={t("news.alerts.minutes", { m })} selected={minutes === m} onPress={() => pick(m)} style={{ flex: 1, alignItems: "center" }} />
+          <Pill key={m} compact label={t("news.alerts.minutes", { m })} selected={selected === m} onPress={() => pick(m)} style={LEAD_PILL} />
         ))}
       </View>
       {on ? (
         <Button testID="reminder-remove" label={t("news.cal.removeReminder")} variant="ghost" size="md" loading={busy} onPress={() => void setReminder(e, null)} />
       ) : (
-        <Button testID="reminder-set" label={t("mobileNews.cal.remind")} size="md" loading={busy} onPress={() => void setReminder(e, minutes)} />
+        <Button testID="reminder-set" label={t("mobileNews.cal.remind")} size="md" loading={busy} onPress={() => void setReminder(e, pending)} />
       )}
     </View>
   );

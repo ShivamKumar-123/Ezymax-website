@@ -8,7 +8,7 @@
 import * as React from "react";
 import { RefreshControl, ScrollView, useWindowDimensions, View } from "react-native";
 import { useIsFocused, useLocalSearchParams, useRouter } from "expo-router";
-import { FlashList } from "@shopify/flash-list";
+import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { X } from "lucide-react-native";
 import { useFormat, useT, type MessageKey } from "@/i18n";
 import { haptic } from "@/lib/haptics";
@@ -93,10 +93,11 @@ export function NewsScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetcher = React.useMemo(() => fetchFeed(filters), [key]);
   const feed = useQuery(key, fetcher, { persist: true, staleMs: 60_000, intervalMs: focused ? 120_000 : undefined });
-  // keep the previous answer on screen (dimmed) while a new filter loads, instead of flashing a skeleton
+  // keep the previous answer on screen (dimmed) while a new filter loads, instead of flashing a skeleton; a filter
+  // that can't load shows its error (with retry) rather than the other filter's stories
   const shown = React.useRef<Feed | undefined>(undefined);
   if (feed.data) shown.current = feed.data;
-  const data = feed.data ?? shown.current;
+  const data = feed.data ?? (feed.error ? undefined : shown.current);
   const stale = !feed.data && !!data;
 
   // older pages (infinite scroll), plus first pages a refresh replaced: kept for this filter so nothing on screen
@@ -122,10 +123,14 @@ export function NewsScreen() {
   }, [data, cur.extra, lead?.id]);
   const next = cur.next === undefined ? (data?.next ?? null) : cur.next;
 
+  // one older page at a time: the list can report its end twice before `loading` renders
+  const loadingRef = React.useRef<string | null>(null);
   const loadMore = React.useCallback(async (retry = false) => {
-    if (!data || stale || cur.loading || (cur.failed && !retry) || !next) return;
+    if (!data || stale || cur.loading || (cur.failed && !retry) || !next || loadingRef.current === `${key}|${next}`) return;
+    loadingRef.current = `${key}|${next}`;
     setPages({ ...cur, loading: true, failed: false });
     const r = await fetchOlder(filters, next);
+    loadingRef.current = null;
     setPages((p) => {
       const base = p.key === key ? p : fresh(key);
       if (!r.ok) return { ...base, loading: false, failed: true };
@@ -139,7 +144,8 @@ export function NewsScreen() {
     primeStory(n);
     prefetchRelated(n);
   }, []);
-  const renderItem = React.useCallback(({ item }: { item: NewsItem }) => <StoryRow n={item} lines={linesOf(item.title, perLine)} onOpen={open} onPressIn={warm} />, [perLine, open, warm]);
+  const avail = width - GUTTER * 2;
+  const renderItem = React.useCallback(({ item }: { item: NewsItem }) => <StoryRow n={item} lines={linesOf(item.title, perLine)} avail={avail} onOpen={open} onPressIn={warm} />, [perLine, avail, open, warm]);
   const typeOf = React.useCallback((item: NewsItem) => linesOf(item.title, perLine), [perLine]);
   const endReached = React.useCallback(() => void loadMore(), [loadMore]);
 
@@ -158,6 +164,18 @@ export function NewsScreen() {
   const n = activeFilters(filters);
   const narrowed = !!(filters.tone || filters.currency || filters.symbol || filters.importance !== "all");
 
+  // other filters: a reader scrolled past the filter row lands back on it (the lead story and the new results follow)
+  const listRef = React.useRef<FlashListRef<NewsItem>>(null);
+  const filterY = React.useRef(0);
+  const firstKey = React.useRef(key);
+  React.useEffect(() => {
+    if (key === firstKey.current) return;
+    firstKey.current = key;
+    const l = listRef.current;
+    const y = Math.max(0, filterY.current - space[2]);
+    if (l && l.getAbsoluteLastScrollOffset() > y) l.scrollToOffset({ offset: y, animated: false });
+  }, [key]);
+
   const header = (
     <View>
       <View style={{ paddingHorizontal: GUTTER, gap: space[1], marginBottom: space[5] }}>
@@ -171,7 +189,9 @@ export function NewsScreen() {
       <View style={{ paddingHorizontal: GUTTER, marginBottom: space[5] }}>
         <BriefCard focused={focused} />
       </View>
-      <FilterRow filters={filters} onChange={change} />
+      <View onLayout={(e) => (filterY.current = e.nativeEvent.layout.y)}>
+        <FilterRow filters={filters} onChange={change} />
+      </View>
       {lead ? (
         <View style={{ paddingHorizontal: GUTTER, marginTop: space[4] }}>
           <HeroStory n={lead} onOpen={open} onPressIn={warm} />
@@ -237,6 +257,7 @@ export function NewsScreen() {
     <Screen scroll={false} tabBar={false}>
       <TopBar fallback="/" right={<FilterButton testID="news-filters" count={n} label={n ? t("mobileNews.filtersOn", { n }) : t("mobileNews.filters")} onPress={() => sheet.current?.present()} />} />
       <FlashList
+        ref={listRef}
         data={list}
         keyExtractor={keyOf}
         renderItem={renderItem}

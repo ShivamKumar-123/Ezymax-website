@@ -54,6 +54,8 @@ const TONE: Record<Sentiment, { Icon: typeof TrendingUp; key: "news.sentiment.bu
   bearish: { Icon: TrendingDown, key: "news.sentiment.bearish" },
   neutral: { Icon: Minus, key: "news.sentiment.neutral" },
 };
+export const toneKey = (s: Sentiment) => (TONE[s] ?? TONE.neutral).key;
+export const importanceKey = (tier: 2 | 3) => (tier === 3 ? "mobileNews.chip.top" : "mobileNews.chip.important");
 
 /** Headline tone: Positive / Negative / Neutral, told by the direction glyph (no colour: green / red are for money,
  *  ember / gold for importance). `ink` for use on a colour block. */
@@ -80,11 +82,15 @@ export function ImportanceChip({ importance, ink }: { importance: number; ink?: 
     <Chip border={ink ? onBlock.line : tier === 3 ? emberLine : colors.lineStrong} bg={!ink && tier === 3 ? colors.emberSoft : "transparent"}>
       <ImpactBars impact={tier} color={ink ? colors.ink : undefined} size={9} />
       <Text variant="caption" color={ink ? colors.ink : tier === 3 ? colors.ember : colors.text2} weight="700" style={{ fontSize: 11.5 }}>
-        {t(tier === 3 ? "mobileNews.chip.top" : "mobileNews.chip.important")}
+        {t(importanceKey(tier))}
       </Text>
     </Chip>
   );
 }
+
+/** A lead-time pill (5 / 15 / 30 / 60 min, four to a row in the reminder and alert sheets): narrow padding so the
+ *  label stays on one line on a 360 pt phone. */
+export const LEAD_PILL = { flex: 1, alignItems: "center", paddingHorizontal: space[1] } as const;
 
 /* ---- impact ---- */
 

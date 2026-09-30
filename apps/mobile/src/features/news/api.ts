@@ -8,6 +8,7 @@
 // rows below the list skip their render (a refresh with nothing new re-renders nothing but the screen shell).
 import { api, apiGet, type ApiResult } from "@/lib/api";
 import { getQueryData, prefetch, setQueryData } from "@/lib/query";
+import { onSignOut } from "@/session";
 
 /* ------------------------------------------------------------------ */
 /* Types (the news service's JSON, see services/news/src/api.rs)       */
@@ -128,8 +129,10 @@ export const keys = {
   my: "news/me/calendar",
 };
 
-/** Items seen in any feed page, so a story opens at once from a list (no request, no spinner). */
+/** Items seen in any feed page, so a story opens at once from a list (no request, no spinner). Forgotten on sign-out:
+ *  the next client may be another broker's, with other pinned and hidden stories. */
 const seen = new Map<number, NewsItem>();
+onSignOut(() => seen.clear());
 export function remember(items: NewsItem[]) {
   for (const n of items) seen.set(n.id, n);
   // keep memory flat on long sessions: the oldest entries go first (Map keeps insertion order)
@@ -183,10 +186,11 @@ export function fetchItem(id: number) {
   };
 }
 
-/** Warm the story screen (list row press-in): the list already has the story, so this costs nothing. */
+/** Warm the story screen (list row press-in): the list already has the story, so this costs nothing. The list's copy
+ *  is the latest one (it follows the feed's polls), so it replaces an older one opened before. */
 export function primeStory(n: NewsItem) {
   remember([n]);
-  if (!getQueryData(keys.item(n.id))) setQueryData(keys.item(n.id), { item: n });
+  if (getQueryData<{ item: NewsItem }>(keys.item(n.id))?.item !== n) setQueryData(keys.item(n.id), { item: n });
 }
 
 export function relatedPath(by: { symbol?: string; currency?: string }) {

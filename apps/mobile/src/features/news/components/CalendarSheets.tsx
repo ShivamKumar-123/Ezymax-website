@@ -6,13 +6,13 @@ import { Switch, useWindowDimensions, View } from "react-native";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useT, type MessageKey } from "@/i18n";
-import { haptic } from "@/lib/haptics";
 import { getQueryData, setQueryData } from "@/lib/query";
 import { Button, Display, Pill, PressableScale, Sheet, Text, toast, type SheetRef } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { clearAlerts, CURRENCIES, keys, REMIND_MINUTES, saveAlerts, type Alerts, type Impact, type MyCalendar } from "../api";
 import { gmt, type Zone } from "../format";
 import { useReminderCount } from "../reminders";
+import { LEAD_PILL } from "./chips";
 
 export type CalFilters = { impacts: Impact[]; currencies: string[]; zone: Zone };
 export const DEFAULT_CAL_FILTERS: CalFilters = { impacts: [3, 2, 1, 0], currencies: [], zone: "local" };
@@ -82,10 +82,15 @@ export const CalendarFiltersSheet = React.forwardRef<SheetRef, { value: CalFilte
   );
 });
 
-/** The app's switch: ember track when on, cream thumb (the web preview too). */
-function KSwitch({ value, onValueChange, disabled, accessibilityLabel }: { value: boolean; onValueChange: (v: boolean) => void; disabled?: boolean; accessibilityLabel: string }) {
+/** The app's switch: ember track when on, cream thumb (the web preview too). Display only: the whole row is the
+ *  control, so one tap is one change (a switch inside a pressable row would otherwise report the same tap twice). */
+function KSwitch({ value, disabled }: { value: boolean; disabled?: boolean }) {
   const web = { activeThumbColor: colors.cream, activeTrackColor: colors.ember } as object;
-  return <Switch value={value} onValueChange={onValueChange} disabled={disabled} trackColor={{ false: colors.surface3, true: colors.ember }} thumbColor={colors.cream} ios_backgroundColor={colors.surface3} accessibilityLabel={accessibilityLabel} {...web} />;
+  return (
+    <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Switch value={value} disabled={disabled} trackColor={{ false: colors.surface3, true: colors.ember }} thumbColor={colors.cream} ios_backgroundColor={colors.surface3} {...web} />
+    </View>
+  );
 }
 
 export const AlertsSheet = React.forwardRef<SheetRef, { my: MyCalendar | undefined; canEdit: boolean }>(function AlertsSheet({ my, canEdit }, ref) {
@@ -94,6 +99,8 @@ export const AlertsSheet = React.forwardRef<SheetRef, { my: MyCalendar | undefin
   const reminders = useReminderCount();
   const [state, setState] = React.useState<Alerts | null>(my?.alerts ?? null);
   const [busy, setBusy] = React.useState(false);
+  // one change at a time, also for two taps in the same frame (before `busy` re-renders)
+  const inFlight = React.useRef(false);
   React.useEffect(() => {
     if (!busy) setState(my?.alerts ?? null);
   }, [my?.alerts, busy]);
@@ -101,26 +108,28 @@ export const AlertsSheet = React.forwardRef<SheetRef, { my: MyCalendar | undefin
   const minutes = state?.minutes ?? 15;
 
   const save = async (next: Alerts | null) => {
+    if (!canEdit || inFlight.current) return;
+    inFlight.current = true;
     const prev = state;
     setState(next);
     setBusy(true);
     const r = next ? await saveAlerts(next) : await clearAlerts();
-    setBusy(false);
+    inFlight.current = false;
     if (!r.ok) {
       setState(prev);
-      haptic.error();
+      setBusy(false);
       toast.show({ title: t("news.alerts.error"), body: r.error.message, tone: "error" });
       return;
     }
+    // the server's answer is the subscription now (it normalises the lead time and the currencies)
+    const saved = next ? (r.data as { alerts?: Alerts | null }).alerts ?? next : null;
+    setState(saved);
     const cached = getQueryData<MyCalendar>(keys.my);
-    if (cached) setQueryData<MyCalendar>(keys.my, { ...cached, alerts: next }, true);
-    toast.show({ title: next ? t("news.alerts.saved", { minutes: next.minutes }) : t("news.alerts.off"), tone: next ? "success" : "neutral" }, 2000);
+    if (cached) setQueryData<MyCalendar>(keys.my, { ...cached, alerts: saved }, true);
+    setBusy(false);
+    toast.show({ title: saved ? t("news.alerts.saved", { minutes: saved.minutes }) : t("news.alerts.off"), tone: saved ? "success" : "neutral" }, 2000);
   };
-  const flip = (v: boolean) => {
-    if (!canEdit || busy) return;
-    haptic.select();
-    void save(v ? { highImpact: true, currencies: state?.currencies ?? [], minutes } : null);
-  };
+  const flip = () => void save(on ? null : { highImpact: true, currencies: state?.currencies ?? [], minutes });
 
   return (
     <Sheet ref={ref}>
@@ -130,18 +139,19 @@ export const AlertsSheet = React.forwardRef<SheetRef, { my: MyCalendar | undefin
         </Display>
         <PressableScale
           testID="alerts-toggle"
-          onPress={() => flip(!on)}
+          onPress={flip}
+          haptics="select"
           scaleTo={1}
           disabled={!canEdit}
           accessibilityRole="switch"
-          accessibilityState={{ checked: on, disabled: !canEdit }}
+          accessibilityState={{ checked: on, disabled: !canEdit, busy }}
           accessibilityLabel={t("news.alerts.toggle")}
           style={{ minHeight: 56, flexDirection: "row", alignItems: "center", gap: space[3] }}
         >
           <Text variant="headline" weight="600" style={{ flex: 1 }}>
             {t("news.alerts.toggle")}
           </Text>
-          <KSwitch value={on} onValueChange={flip} disabled={!canEdit || busy} accessibilityLabel={t("news.alerts.toggle")} />
+          <KSwitch value={on} disabled={!canEdit} />
         </PressableScale>
         <Text variant="callout" tone="secondary">
           {!canEdit ? t("mobile.viewOnlyBody") : on ? t("news.alerts.onText", { minutes }) : t("news.alerts.offText")}
@@ -149,7 +159,7 @@ export const AlertsSheet = React.forwardRef<SheetRef, { my: MyCalendar | undefin
         {on ? (
           <View style={{ flexDirection: "row", gap: space[2] }} accessibilityRole="radiogroup">
             {REMIND_MINUTES.map((m) => (
-              <Pill key={m} compact label={t("news.alerts.minutes", { m })} selected={minutes === m} onPress={() => (m !== minutes && canEdit && !busy ? void save({ highImpact: true, currencies: state?.currencies ?? [], minutes: m }) : undefined)} style={{ flex: 1, alignItems: "center" }} />
+              <Pill key={m} compact label={t("news.alerts.minutes", { m })} selected={minutes === m} onPress={() => (m !== minutes && !busy ? void save({ highImpact: true, currencies: state?.currencies ?? [], minutes: m }) : undefined)} style={LEAD_PILL} />
             ))}
           </View>
         ) : null}
