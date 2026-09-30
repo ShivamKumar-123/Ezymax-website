@@ -40,8 +40,10 @@ export function AccountNotices() {
   const imp = me.impersonation ?? null;
 
   // presence heartbeat while the tab is open and visible; its answer keeps the banner current
+  const viewOnly = !!(me as { viewer?: unknown }).viewer;
   React.useEffect(() => {
-    if (IS_DEMO) return;
+    // view-only logins never count as the client being online (the gateway refuses their heartbeat)
+    if (IS_DEMO || viewOnly) return;
     let alive = true;
     const beat = async () => {
       if (document.visibilityState !== "visible") return;
@@ -60,7 +62,7 @@ export function AccountNotices() {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, []);
+  }, [viewOnly]);
 
   return (
     <>

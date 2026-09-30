@@ -70,7 +70,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
         modules={modules}
         railFooter={
           viewer ? (
-            <Tooltip content={`View-only · ${viewer.label}`} side={dir === "rtl" ? "left" : "right"}>
+            <Tooltip content={`${t("security.sessions.viewOnly")} · ${viewer.label}`} side={dir === "rtl" ? "left" : "right"}>
               <span className="mb-1">
                 <Avatar name={me.name} size={38} />
               </span>
@@ -109,7 +109,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
                   <Avatar name={me.name} size={40} />
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium">{me.name}</div>
-                    <div className="truncate text-xs text-fg-3">{viewer ? `View-only · ${viewer.label}` : me.email}</div>
+                    <div className="truncate text-xs text-fg-3">{viewer ? `${t("security.sessions.viewOnly")} · ${viewer.label}` : me.email}</div>
                     {viewer ? (
                       <Chip tone="info" size="sm" className="mt-1.5" dot>
                         Read-only

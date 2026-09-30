@@ -275,7 +275,8 @@ export function LiveWalletPage() {
             </Card>
             <div className="space-y-4 xl:col-span-5">
               <FundAccounts />
-              <Notifications />
+              {/* wallet notices belong to the account holder, not to a view-only login */}
+              {!me.viewer && <Notifications />}
             </div>
           </div>
         </div>
