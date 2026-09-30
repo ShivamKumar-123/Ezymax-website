@@ -16,6 +16,7 @@ import { fmtMoney } from "@/lib/format";
 import { useOnline } from "@/lib/net";
 import { setActiveLogin } from "@/session/activeAccount";
 import { Banner, Button, Checkbox, ColorBlock, Display, EmptyState, FormError, Mono, Pill, PressableScale, RevealToggle, Skeleton, Text, TextField, toast } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { accountError, openAccount, refreshAccounts, useAccountList, useAccountOptions, useGroups, useReadOnly } from "../api";
 import { BACK, Page, PageTitle, SectionTitle, StackBar } from "../components/Chrome";
@@ -204,7 +205,7 @@ function Created({ res, cfg, onTrade, onFund, onView }: { res: OpenResult; cfg: 
             </>
           ) : null}
         </View>
-        <View style={{ flexDirection: "row", gap: space[3], marginTop: space[3], padding: space[4], borderRadius: radius.lg, backgroundColor: colors.warnSoft, borderWidth: 1, borderColor: "rgba(242,184,75,0.28)" }} accessibilityRole="alert">
+        <View style={{ flexDirection: "row", gap: space[3], marginTop: space[3], padding: space[4], borderRadius: radius.lg, backgroundColor: colors.warnSoft, borderWidth: 1, borderColor: alpha(colors.warn, 0.28) }} accessibilityRole="alert">
           <TriangleAlert size={18} color={colors.gold} />
           <Text variant="callout" tone="secondary" style={{ flex: 1 }}>
             {t("mobileAccounts.created.once")}

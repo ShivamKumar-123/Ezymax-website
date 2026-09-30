@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useLocale, useT } from "@/i18n";
 import { Display, IconButton, Mono, Text } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { blockColors, colors, GUTTER, radius, space, type BlockColor } from "@/theme/tokens";
 import type { Account } from "../types";
 
@@ -98,7 +99,7 @@ export type TagTone = BlockColor | "outline" | "warn" | "risk" | "muted";
 export function Tag({ label, tone = "outline", mono, style }: { label: string; tone?: TagTone; mono?: boolean; style?: StyleProp<ViewStyle> }) {
   const filled = tone in blockColors;
   const bg = filled ? blockColors[tone as BlockColor] : tone === "warn" ? colors.warnSoft : tone === "risk" ? colors.downSoft : "transparent";
-  const border = filled ? "transparent" : tone === "warn" ? "rgba(242,184,75,0.35)" : tone === "risk" ? "rgba(240,82,82,0.4)" : colors.lineStrong;
+  const border = filled ? "transparent" : tone === "warn" ? alpha(colors.gold, 0.35) : tone === "risk" ? alpha(colors.down, 0.4) : colors.lineStrong;
   const fg = filled ? colors.ink : tone === "warn" ? colors.gold : tone === "risk" ? colors.down : tone === "muted" ? colors.text3 : colors.text2;
   return (
     <View style={[{ height: 24, paddingHorizontal: 9, borderRadius: radius.pill, backgroundColor: bg, borderWidth: 1, borderColor: border, justifyContent: "center", alignSelf: "flex-start" }, style]}>

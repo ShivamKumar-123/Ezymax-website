@@ -14,8 +14,9 @@ import { Text } from "./Text";
  *  input's blur handler relies on a React Native API react-native-web doesn't have). */
 export const SheetTextInput = (Platform.OS === "web" ? TextInput : BottomSheetTextInput) as unknown as typeof TextInput;
 
-/** The field draws its own focus border; the browser's focus ring would double it in the web preview. */
-export const NO_WEB_OUTLINE = Platform.OS === "web" ? ({ outlineWidth: 0 } as object) : null;
+/** The field draws its own focus border; the browser's focus ring would double it in the web preview (Chrome needs
+ *  the outline style off too, not only its width). */
+export const NO_WEB_OUTLINE = Platform.OS === "web" ? ({ outlineWidth: 0, outlineStyle: "none" } as object) : null;
 
 export type TextFieldProps = TextInputProps & { label: string; error?: string | null; hint?: string; leading?: React.ReactNode; trailing?: React.ReactNode; mono?: boolean };
 

@@ -7,7 +7,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronRight, X } from "lucide-react-native";
 import { useLocale, useT } from "@/i18n";
-import { IconButton, Text } from "@/ui";
+import { BackButton, IconButton, Text } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 
 /** Back to the previous screen, or to the social hub when this screen was opened directly (deep link). */
@@ -19,12 +19,6 @@ export function useBack(fallback = "/social") {
   }, [router, fallback]);
 }
 
-export function BackIcon({ color = colors.text, size = 22 }: { color?: string; size?: number }) {
-  const { rtl } = useLocale();
-  const Icon = rtl ? ChevronRight : ChevronLeft;
-  return <Icon size={size} color={color} strokeWidth={2} />;
-}
-
 /** Disclosure chevron (points to the reading direction's end). */
 export function ForwardIcon({ color = colors.text3, size = 18 }: { color?: string; size?: number }) {
   const { rtl } = useLocale();
@@ -34,11 +28,11 @@ export function ForwardIcon({ color = colors.text3, size = 18 }: { color?: strin
 
 /** 56 pt bar: back button, optional title (shown once the big title scrolled away) and end-side actions. */
 export function TopBar({ title, right, onBack, fallback }: { title?: string; right?: React.ReactNode; onBack?: () => void; fallback?: string }) {
-  const t = useT();
   const back = useBack(fallback);
   return (
-    <View style={{ height: 56, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: GUTTER - 4 }}>
-      <IconButton accessibilityLabel={t("mobile.a11y.back")} icon={<BackIcon />} onPress={onBack ?? back} />
+    <View style={{ height: 56, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: GUTTER - 6 }}>
+      {/* the kit's back button: the same bare chevron as the other modules' bars */}
+      <BackButton onPress={onBack ?? back} />
       <View style={{ flex: 1 }}>
         {title ? (
           <Text variant="headline" weight="700" numberOfLines={1}>

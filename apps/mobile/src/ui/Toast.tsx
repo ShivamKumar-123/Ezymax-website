@@ -28,7 +28,9 @@ export function Toaster() {
   const item = useStore(store);
   const insets = useSafeAreaInsets();
   if (!item) return null;
-  const accent = item.tone === "success" ? colors.up : item.tone === "error" ? colors.down : colors.ember;
+  // "done" is the warm off-white every module uses for completed states: green stays for money (P&L, buy), and a
+  // confirmation ("Link copied", "Saved") is not money
+  const accent = item.tone === "success" ? colors.cream : item.tone === "error" ? colors.down : colors.ember;
   return (
     <Animated.View key={item.id} entering={FadeInUp.duration(180)} exiting={FadeOutUp.duration(160)} pointerEvents="none" style={{ position: "absolute", top: insets.top + space[2], start: space[4], end: space[4], alignItems: "center" }}>
       <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ maxWidth: 420, width: "100%", flexDirection: "row", gap: space[3], alignItems: "center", paddingHorizontal: space[4], paddingVertical: space[3], borderRadius: radius.lg, backgroundColor: colors.surface3, borderWidth: 1, borderColor: colors.lineStrong }}>

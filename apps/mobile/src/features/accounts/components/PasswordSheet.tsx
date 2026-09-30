@@ -5,6 +5,7 @@ import { View, type TextInput } from "react-native";
 import { Sparkles, TriangleAlert } from "lucide-react-native";
 import { useT } from "@/i18n";
 import { Button, FormError, PressableScale, RevealToggle, Sheet, Text, toast, type SheetRef } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { colors, radius, space } from "@/theme/tokens";
 import { accountError, changePassword, isStepupError } from "../api";
 import { passwordOk } from "../format";
@@ -186,7 +187,7 @@ export const PasswordSheet = React.memo(React.forwardRef<SheetRef, { a: Account;
         <View style={{ gap: space[4] }}>
           <SheetHeader title={t("mobileAccounts.password.doneTitle")} onClose={close} />
           {done ? <SecretRow label={title} value={done} secret /> : null}
-          <View style={{ flexDirection: "row", gap: space[3], padding: space[4], borderRadius: radius.lg, backgroundColor: colors.warnSoft, borderWidth: 1, borderColor: "rgba(242,184,75,0.28)" }}>
+          <View style={{ flexDirection: "row", gap: space[3], padding: space[4], borderRadius: radius.lg, backgroundColor: colors.warnSoft, borderWidth: 1, borderColor: alpha(colors.warn, 0.28) }}>
             <TriangleAlert size={18} color={colors.gold} />
             <Text variant="callout" tone="secondary" style={{ flex: 1 }}>
               {t("mobileAccounts.password.shownOnce")}

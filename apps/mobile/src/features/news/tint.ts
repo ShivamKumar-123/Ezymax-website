@@ -1,13 +1,10 @@
 // Translucent shades derived from the design tokens (never hex values in feature code): ink shades for fills and
 // outlines on colour blocks, and the ember tint of the importance chip.
+import { alpha } from "@/theme/alpha";
 import { colors } from "@/theme/tokens";
 
-/** A token colour (#RRGGBB) at an opacity; any other token format is returned as it is. */
-export function alpha(color: string, a: number): string {
-  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(color);
-  if (!m) return color;
-  return `rgba(${parseInt(m[1]!, 16)},${parseInt(m[2]!, 16)},${parseInt(m[3]!, 16)},${a})`;
-}
+/** A token colour (#RRGGBB) at an opacity: the app's helper (@/theme/alpha), re-exported for the news screens. */
+export { alpha };
 
 /** Ink shades on a colour block. */
 export const onBlock = {

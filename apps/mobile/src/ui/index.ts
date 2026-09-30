@@ -15,6 +15,7 @@ export * from "./TextField";
 export * from "./OtpInput";
 export * from "./Banner";
 export * from "./Row";
+export * from "./Nav";
 export * from "./Trans";
 export * from "./KalksMark";
 export * from "./Toast";

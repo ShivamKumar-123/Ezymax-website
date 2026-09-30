@@ -6,6 +6,7 @@ import { Check } from "lucide-react-native";
 import { useT, type T } from "@/i18n";
 import { fmtMoney } from "@/lib/format";
 import { ColorBlock, Display, Mono, PressableScale, Text } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { blockColors, colors, radius, space } from "@/theme/tokens";
 import { lev, maxLeverage, type GroupColor } from "../format";
 import type { AccountKind, Group } from "../types";
@@ -52,7 +53,7 @@ export const GroupBlock = React.memo(function GroupBlock({ g, color, onPress }: 
           [t("mobileAccounts.spec.maxLeverage"), lev(maxLeverage(g))],
           [t("mobileAccounts.spec.minDeposit"), minDepositText(g, t)],
         ].map(([label, value]) => (
-          <View key={label} style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space[2], borderTopWidth: 1, borderTopColor: "rgba(14,14,16,0.14)", paddingTop: space[2] }}>
+          <View key={label} style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space[2], borderTopWidth: 1, borderTopColor: alpha(colors.ink, 0.14), paddingTop: space[2] }}>
             <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ fontSize: 10, flexShrink: 1 }}>
               {label}
             </Text>

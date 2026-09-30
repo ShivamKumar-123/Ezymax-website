@@ -12,6 +12,7 @@ import { useDerivedValue, useSharedValue, withTiming } from "react-native-reanim
 import { scheduleOnRN } from "react-native-worklets";
 import { haptic } from "@/lib/haptics";
 import { Mono, Text } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { colors } from "@/theme/tokens";
 import { curveHeight, type CurveData, type CurveLayout } from "./types";
 
@@ -21,12 +22,6 @@ const PAD_X = 6;
 const TIP_PAD = 10;
 const DOT_GAP = 9;
 const SEP = 12;
-
-function alpha(hex: string, a: number) {
-  const h = hex.replace("#", "");
-  const n = parseInt(h, 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-}
 
 /** Axis values sit on a card-coloured chip, so the curve can pass behind them. */
 const AXIS = { position: "absolute", end: 0, paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4, backgroundColor: colors.surface } as const;

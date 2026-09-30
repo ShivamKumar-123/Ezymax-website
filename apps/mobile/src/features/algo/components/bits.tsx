@@ -8,16 +8,12 @@ import { useT } from "@/i18n";
 import type { Segment } from "@/market/instruments";
 import { instrument } from "@/market/instruments";
 import { Display, Mono, PressableScale, Text, type Tone as TextTone } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { colors, fonts, GUTTER, radius, space } from "@/theme/tokens";
 import type { Tone } from "../format";
 
-/** A token colour at an opacity (flat tint for tags and quiet fills). */
-export function tint(color: string, a: number): string {
-  const h = color.replace("#", "");
-  if (h.length !== 6) return color;
-  const n = parseInt(h, 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-}
+/** A token colour at an opacity (flat tint for tags and quiet fills): the app's helper (@/theme/alpha). */
+export const tint = alpha;
 
 const TAG: Record<Tone, { bg: string; fg: string; border: string }> = {
   neutral: { bg: colors.surface2, fg: colors.text2, border: colors.line },

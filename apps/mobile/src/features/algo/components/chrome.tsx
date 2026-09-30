@@ -6,14 +6,8 @@ import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-re
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronRight, X } from "lucide-react-native";
 import { useLocale, useT } from "@/i18n";
-import { Display, IconButton, PressableScale, Text } from "@/ui";
+import { BackButton, Display, IconButton, PressableScale, Text } from "@/ui";
 import { colors, GUTTER, radius, space, type DisplaySize } from "@/theme/tokens";
-
-export function BackIcon({ color = colors.text, size = 22 }: { color?: string; size?: number }) {
-  const { rtl } = useLocale();
-  const Icon = rtl ? ChevronRight : ChevronLeft;
-  return <Icon size={size} color={color} strokeWidth={2} />;
-}
 
 /** Disclosure chevron: points to the reading direction's end. */
 export function ForwardIcon({ color = colors.text3, size = 18 }: { color?: string; size?: number }) {
@@ -39,10 +33,10 @@ export function BarButton({ icon, onPress, accessibilityLabel, testID }: { icon:
 
 /** 56 pt bar: back button and end-side actions. */
 export function TopBar({ onBack, right, title }: { onBack: () => void; right?: React.ReactNode; title?: string }) {
-  const t = useT();
   return (
-    <View style={{ height: 56, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: GUTTER - 4 }}>
-      <IconButton accessibilityLabel={t("mobile.a11y.back")} icon={<BackIcon />} onPress={onBack} />
+    <View style={{ height: 56, flexDirection: "row", alignItems: "center", gap: space[3], paddingHorizontal: GUTTER - 6 }}>
+      {/* the kit's back button: the same bare chevron as the other modules' bars */}
+      <BackButton onPress={onBack} />
       <View style={{ flex: 1 }}>
         {title ? (
           <Text variant="headline" weight="700" numberOfLines={1}>

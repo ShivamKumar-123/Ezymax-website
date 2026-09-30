@@ -1,4 +1,6 @@
 // Buttons: pill-shaped, 52 pt tall by default. `buy` / `sell` are the only green / red buttons (money actions).
+// No haptic on a plain press (README › Performance rules 7: fill, close, swipe threshold, pull-to-refresh and selection
+// changes only); the trading actions give the fill / close haptic themselves.
 import * as React from "react";
 import { ActivityIndicator, View, type StyleProp, type ViewStyle } from "react-native";
 import { colors, radius, space } from "@/theme/tokens";
@@ -23,16 +25,18 @@ export type ButtonProps = {
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
   testID?: string;
+  /** warm the next screen's data (prefetch) */
+  onPressIn?: () => void;
 };
 
-export function Button({ label, onPress, variant = "primary", size = "lg", loading, disabled, icon, trailing, full = true, style, accessibilityLabel, testID }: ButtonProps) {
+export function Button({ label, onPress, onPressIn, variant = "primary", size = "lg", loading, disabled, icon, trailing, full = true, style, accessibilityLabel, testID }: ButtonProps) {
   const h = size === "lg" ? 54 : size === "md" ? 46 : 38;
   return (
     <PressableScale
       testID={testID}
       onPress={onPress}
+      onPressIn={onPressIn}
       disabled={disabled || loading}
-      haptics="tap"
       accessibilityLabel={accessibilityLabel ?? label}
       style={[
         {
@@ -68,11 +72,11 @@ export function Button({ label, onPress, variant = "primary", size = "lg", loadi
 }
 
 /** Round icon button (44 pt). */
-export function IconButton({ icon, onPress, accessibilityLabel, tone = "surface", size = 44, badge }: { icon: React.ReactNode; onPress?: () => void; accessibilityLabel: string; tone?: "surface" | "ghost" | "cream"; size?: number; badge?: number }) {
+export function IconButton({ icon, onPress, onPressIn, accessibilityLabel, tone = "surface", size = 44, badge }: { icon: React.ReactNode; onPress?: () => void; onPressIn?: () => void; accessibilityLabel: string; tone?: "surface" | "ghost" | "cream"; size?: number; badge?: number }) {
   return (
     <PressableScale
       onPress={onPress}
-      haptics="select"
+      onPressIn={onPressIn}
       accessibilityLabel={accessibilityLabel}
       style={{ width: size, height: size, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", backgroundColor: tone === "cream" ? colors.cream : tone === "surface" ? colors.surface : "transparent", borderWidth: tone === "surface" ? 1 : 0, borderColor: colors.line }}
     >

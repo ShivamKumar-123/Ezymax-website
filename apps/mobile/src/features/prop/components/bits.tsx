@@ -2,14 +2,14 @@
 // to how prop pages read: status tags, label / value rows, section heads, the stack header).
 import * as React from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
-import { useRouter, type Href } from "expo-router";
+import type { Href } from "expo-router";
 import * as Clipboard from "expo-clipboard";
-import { ChevronLeft, ChevronRight, Copy } from "lucide-react-native";
-import { useLocale, useT } from "@/i18n";
+import { Copy } from "lucide-react-native";
+import { useT } from "@/i18n";
 import { haptic } from "@/lib/haptics";
 import { useOnline } from "@/lib/net";
 import { alpha } from "@/theme/alpha";
-import { Display, EmptyState, IconButton, Mono, PressableScale, Text, toast } from "@/ui";
+import { BackButton, Display, EmptyState, Mono, PressableScale, Text, toast } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 
 /** A token colour at an opacity (the app's helper, re-exported for the prop components). */
@@ -90,17 +90,13 @@ export function SectionHead({ label, action, onAction, style }: { label: string;
  * screen was opened with nothing behind it (a notification or a link): Prop home for the prop screens, More for it.
  */
 export function StackHeader({ eyebrow, title, right, sub, fallback = "/more" }: { eyebrow?: string; title?: string; right?: React.ReactNode; sub?: React.ReactNode; fallback?: Href }) {
-  const t = useT();
-  const router = useRouter();
-  const { rtl } = useLocale();
   return (
     <View style={{ paddingHorizontal: GUTTER, paddingBottom: space[4] }}>
       <View style={{ height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <IconButton
-          accessibilityLabel={t("mobile.a11y.back")}
-          icon={rtl ? <ChevronRight size={22} color={colors.text} /> : <ChevronLeft size={22} color={colors.text} />}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace(fallback))}
-        />
+        {/* the kit's back button (the same bare chevron as the other modules), lined up with the title below */}
+        <View style={{ marginStart: -6 }}>
+          <BackButton fallback={fallback} />
+        </View>
         {right ? <View style={{ flexDirection: "row", gap: space[2] }}>{right}</View> : null}
       </View>
       {eyebrow || title ? (

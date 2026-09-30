@@ -3,6 +3,7 @@ import * as React from "react";
 import { View } from "react-native";
 import { ChevronRight } from "lucide-react-native";
 import { colors, space } from "@/theme/tokens";
+import { Flip } from "./Nav";
 import { PressableScale } from "./PressableScale";
 import { Text } from "./Text";
 
@@ -31,7 +32,11 @@ export function ListRow({ icon, title, subtitle, value, onPress, chevron = !!onP
       ) : (
         value
       )}
-      {chevron ? <ChevronRight size={18} color={colors.text3} style={{ transform: [{ scaleX: 1 }] }} /> : null}
+      {chevron ? (
+        <Flip>
+          <ChevronRight size={18} color={colors.text3} />
+        </Flip>
+      ) : null}
     </View>
   );
   return onPress ? (
