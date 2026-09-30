@@ -6,7 +6,7 @@ import { View } from "react-native";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronRight, Search } from "lucide-react-native";
-import { useT, type MessageKey } from "@/i18n";
+import { useLocale, useT, type MessageKey } from "@/i18n";
 import { instrument } from "@/market/instruments";
 import { Button, Checkbox, FormError, Mono, Pill, PressableScale, Sheet, Text, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
@@ -94,6 +94,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export const EditSheet = React.forwardRef<SheetRef, { draftId: string | null }>(function EditSheet({ draftId }, ref) {
   const t = useT();
+  const { rtl } = useLocale();
   const insets = useSafeAreaInsets();
   const meta = useMeta();
   const sheet = React.useRef<SheetRef>(null);
@@ -226,8 +227,11 @@ export const EditSheet = React.forwardRef<SheetRef, { draftId: string | null }>(
       <SheetTextField label={t("mobileAi.edit.name")} value={form.name} onChangeText={(v) => set("name", v)} maxLength={48} error={fieldErr.name} testID="ai-edit-name" />
 
       <Section title={t("mobileAi.edit.market")}>
+        {/* the symbol list is the service's catalogue: without it (not loaded, or the broker's API module is off) the
+            market stays as it is rather than opening an empty list */}
         <PressableScale
           onPress={() => setPhase("symbol")}
+          disabled={!symbols.length}
           scaleTo={0.985}
           accessibilityLabel={`${t("mobileAi.edit.symbol")}: ${form.symbol}`}
           testID="ai-edit-symbol"
@@ -239,7 +243,11 @@ export const EditSheet = React.forwardRef<SheetRef, { draftId: string | null }>(
           <Text variant="callout" tone="secondary" numberOfLines={1} style={{ flex: 1 }}>
             {instrument(form.symbol).name}
           </Text>
-          <ChevronRight size={18} color={colors.text3} />
+          {symbols.length ? (
+            <View style={rtl ? { transform: [{ scaleX: -1 }] } : undefined}>
+              <ChevronRight size={18} color={colors.text3} />
+            </View>
+          ) : null}
         </PressableScale>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space[2] }} accessibilityRole="radiogroup">
           {timeframes.map((tf) => (
