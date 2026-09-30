@@ -949,5 +949,7 @@ const social: NsMessages<"social"> = {
   "mm.page.applyFirst": "まず申請してください。承認されると、ここでプログラムを開設できます。",
   "mm.page.openTitle": "MAMプログラムを開設",
   "mm.page.openSub": "{name} として開設します。専用のMAMマスター口座が開設されます。",
+  "follow.walletAvailable": "ウォレット残高 {balance} USDT",
+  "follow.err.overBalance": "ウォレット残高は {balance} USDT です。金額を減らすか、先に入金してください。",
 };
 export default social;

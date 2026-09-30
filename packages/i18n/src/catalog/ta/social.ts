@@ -950,5 +950,7 @@ const social: NsMessages<"social"> = {
   "mm.page.applyFirst": "முதலில் விண்ணப்பிக்கவும்; அங்கீகரிக்கப்பட்டதும் இங்கே புரோகிராமைத் திறக்கலாம்.",
   "mm.page.openTitle": "MAM புரோகிராமைத் திற",
   "mm.page.openSub": "{name} ஆக. உங்களுக்காகப் பிரத்யேக MAM மாஸ்டர் கணக்கு திறக்கப்படும்.",
+  "follow.walletAvailable": "உங்கள் வாலெட்டில் {balance} USDT",
+  "follow.err.overBalance": "உங்கள் வாலெட்டில் {balance} USDT உள்ளது. தொகையைக் குறைக்கவும் அல்லது முதலில் டெபாசிட் செய்யவும்.",
 };
 export default social;

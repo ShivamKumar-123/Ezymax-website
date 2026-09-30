@@ -944,5 +944,7 @@ const social: NsMessages<"social"> = {
   "mm.page.applyFirst": "먼저 신청하세요. 승인되면 여기에서 프로그램을 개설할 수 있습니다.",
   "mm.page.openTitle": "MAM 프로그램 개설",
   "mm.page.openSub": "{name}(으)로 개설합니다. 전용 MAM 마스터 계좌가 개설됩니다.",
+  "follow.walletAvailable": "지갑 잔액 {balance} USDT",
+  "follow.err.overBalance": "지갑 잔액은 {balance} USDT입니다. 금액을 줄이거나 먼저 입금하세요.",
 };
 export default social;

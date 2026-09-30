@@ -1042,5 +1042,7 @@ const social: NsMessages<"social"> = {
   "mm.page.applyFirst": "Сначала подайте заявку; после одобрения Вы сможете открыть программу здесь.",
   "mm.page.openTitle": "Открыть программу MAM",
   "mm.page.openSub": "От имени {name}. Для Вас будет открыт отдельный мастер-счёт MAM.",
+  "follow.walletAvailable": "{balance} USDT на кошельке",
+  "follow.err.overBalance": "На кошельке {balance} USDT. Уменьшите сумму или сначала пополните кошелёк.",
 };
 export default social;

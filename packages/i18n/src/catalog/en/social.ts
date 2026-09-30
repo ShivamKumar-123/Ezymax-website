@@ -952,5 +952,7 @@ const social = {
   "mm.page.applyFirst": "Apply first; once approved you can open a programme here.",
   "mm.page.openTitle": "Open a MAM programme",
   "mm.page.openSub": "As {name}. A dedicated MAM master account is opened for you.",
+  "follow.walletAvailable": "{balance} USDT in your wallet",
+  "follow.err.overBalance": "Your wallet has {balance} USDT. Lower the amount or deposit first.",
 };
 export default social;

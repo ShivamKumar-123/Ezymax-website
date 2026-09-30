@@ -950,5 +950,7 @@ const social: NsMessages<"social"> = {
   "mm.page.applyFirst": "पहले आवेदन करें; अप्रूवल के बाद आप यहाँ प्रोग्राम खोल सकते हैं।",
   "mm.page.openTitle": "MAM प्रोग्राम खोलें",
   "mm.page.openSub": "{name} के रूप में। आपके लिए एक अलग MAM मास्टर अकाउंट खोला जाता है।",
+  "follow.walletAvailable": "आपके वॉलेट में {balance} USDT",
+  "follow.err.overBalance": "आपके वॉलेट में {balance} USDT है। राशि कम करें या पहले जमा करें।",
 };
 export default social;

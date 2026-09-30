@@ -9,11 +9,15 @@ import { Checkbox, RangeSlider, ToggleChip } from "@/components/social/controls"
 import { serverTime } from "@/components/trading/api";
 import { PERIOD_LABEL, nav4, socialApi, units4, usd, useSocial, type FundDetail, type RequestView } from "./api";
 import { InfoBox, MasterIdentity, useNumber } from "./bits";
+import { fmt as fmtUsdt, usdtAvailable, useWallet, type Overview } from "@/components/wallet-live/api";
 
 /** Invest in a PAMM fund: the wallet is debited now, units are issued at the next rollover NAV. */
 export function InvestDialog({ fundId, open, onOpenChange, onDone }: { fundId: number | null; open: boolean; onOpenChange: (o: boolean) => void; onDone?: () => void }) {
   const t = useT();
   const q = useSocial<FundDetail>(open && fundId ? `funds/${fundId}` : null);
+  // the investment is debited from the USDT wallet: show the balance and stop an amount above it
+  const wallet = useWallet<Overview>(open ? "overview" : null);
+  const available = wallet.data ? Number(usdtAvailable(wallet.data).available) : null;
   const amount = useNumber(null);
   const [slOn, setSlOn] = React.useState(false);
   const [sl, setSl] = React.useState(20);
@@ -34,7 +38,15 @@ export function InvestDialog({ fundId, open, onOpenChange, onDone }: { fundId: n
   }, [open, f?.id]);
 
   const amt = amount.value ?? 0;
-  const err = !f ? undefined : !(amt > 0) ? t("social.follow.err.enterAmount") : amt < f.minInvestment ? t("social.invest.err.min", { amount: usd(f.minInvestment, 0) }) : undefined;
+  const err = !f
+    ? undefined
+    : !(amt > 0)
+      ? t("social.follow.err.enterAmount")
+      : amt < f.minInvestment
+        ? t("social.invest.err.min", { amount: usd(f.minInvestment, 0) })
+        : available !== null && amt > available
+          ? t("social.follow.err.overBalance", { balance: fmtUsdt(available) })
+          : undefined;
   const frozen = f?.status !== undefined && f.status !== "active";
   const next = f?.nextRolloverAt ? serverTime(f.nextRolloverAt) : t("social.invest.theNextRollover");
 
@@ -94,12 +106,12 @@ export function InvestDialog({ fundId, open, onOpenChange, onDone }: { fundId: n
               {t("social.invest.frozen", { status: t.dyn(`social.fundStatus.${f.status}`, f.status).toLowerCase() })}
             </InfoBox>
           )}
-          <Field label={t("common.amount")} error={amount.raw ? err : undefined} hint={t("social.invest.usdFromWallet")}>
+          <Field label={t("common.amount")} error={amount.raw ? err : undefined} hint={available !== null ? `${t("social.invest.usdFromWallet")} · ${t("social.follow.walletAvailable", { balance: fmtUsdt(available) })}` : t("social.invest.usdFromWallet")}>
             <Input type="number" inputMode="decimal" min={f.minInvestment} value={amount.raw} onChange={(e) => amount.setRaw(e.target.value)} leading="$" trailing="USD" inputClassName="k-num text-[16px] font-medium" />
           </Field>
           <div className="flex flex-wrap gap-2">
             {[f.minInvestment, 500, 1000, 2500, 5000]
-              .filter((v, i, arr) => v >= f.minInvestment && v > 0 && arr.indexOf(v) === i)
+              .filter((v, i, arr) => v >= f.minInvestment && v > 0 && arr.indexOf(v) === i && (available === null || v <= available))
               .map((v) => (
                 <ToggleChip key={v} on={amt === v} onClick={() => amount.set(v)}>
                   {usd(v, 0)}

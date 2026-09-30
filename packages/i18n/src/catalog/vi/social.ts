@@ -949,5 +949,7 @@ const social: NsMessages<"social"> = {
   "mm.page.applyFirst": "Hãy đăng ký trước; sau khi được phê duyệt, bạn có thể mở chương trình tại đây.",
   "mm.page.openTitle": "Mở chương trình MAM",
   "mm.page.openSub": "Với tên {name}. Một tài khoản master MAM riêng sẽ được mở cho bạn.",
+  "follow.walletAvailable": "{balance} USDT trong ví của bạn",
+  "follow.err.overBalance": "Ví của bạn có {balance} USDT. Hãy giảm số tiền hoặc nạp tiền trước.",
 };
 export default social;

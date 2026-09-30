@@ -949,5 +949,7 @@ const social: NsMessages<"social"> = {
   "mm.page.applyFirst": "Önce başvurun; onaylandığınızda buradan bir program açabilirsiniz.",
   "mm.page.openTitle": "MAM programı açın",
   "mm.page.openSub": "{name} olarak. Sizin için özel bir MAM master hesabı açılır.",
+  "follow.walletAvailable": "Cüzdanınızda {balance} USDT",
+  "follow.err.overBalance": "Cüzdanınızda {balance} USDT var. Tutarı düşürün veya önce para yatırın.",
 };
 export default social;

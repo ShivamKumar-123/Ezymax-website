@@ -10,6 +10,7 @@ import { Checkbox, RadioCard, RangeSlider, ToggleChip } from "@/components/socia
 import { TradeButton } from "@/components/trading/ui";
 import { ApiError, PERIOD_LABEL, SIZING_LABEL, sizingText, socialApi, usd, useSocial, type FollowResult, type MasterView, type SizingMode } from "./api";
 import { HouseBadge, InfoBox, MasterIdentity, RiskBadge, useNumber } from "./bits";
+import { fmt as fmtUsdt, usdtAvailable, useWallet, type Overview } from "@/components/wallet-live/api";
 
 // Step label keys, translated at render
 const STEPS = ["social.follow.step.sizing", "social.follow.step.risk", "social.follow.step.amount", "social.follow.step.review"] as const;
@@ -46,6 +47,7 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
   const [busy, setBusy] = React.useState(false);
   const [result, setResult] = React.useState<FollowResult | null>(null);
   const symbolsQ = useSocial<{ symbols: { symbol: string; assetClass: string | null }[] }>(open ? "symbols" : null);
+  const wallet = useWallet<Overview>(open ? "overview" : null);
 
   React.useEffect(() => {
     if (open && m) {
@@ -73,7 +75,15 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
   const lot = exampleLot(mode, val, alloc, masterEq, maxLot.value);
 
   const sizingErr = mode === "equity" ? undefined : !(val > 0) ? t("social.follow.err.aboveZero") : mode === "fixed_lot" && val < 0.01 ? t("social.follow.err.minLot") : undefined;
-  const allocErr = !(alloc > 0) ? t("social.follow.err.enterAmount") : alloc < m.minAllocation ? t("social.follow.err.minAllocation", { amount: usd(m.minAllocation, 0) }) : undefined;
+  // the allocation moves from the USDT wallet: show what is there and stop an amount above it before the review step
+  const available = wallet.data ? Number(usdtAvailable(wallet.data).available) : null;
+  const allocErr = !(alloc > 0)
+    ? t("social.follow.err.enterAmount")
+    : alloc < m.minAllocation
+      ? t("social.follow.err.minAllocation", { amount: usd(m.minAllocation, 0) })
+      : available !== null && alloc > available
+        ? t("social.follow.err.overBalance", { balance: fmtUsdt(available) })
+        : undefined;
   const maxLotErr = maxLot.raw && !(maxLot.value! >= 0.01) ? t("social.follow.err.minLot") : undefined;
   const stopErr = equityStop.raw && !(equityStop.value! >= 0) ? t("social.follow.err.enterAmount") : equityStop.value !== null && alloc > 0 && equityStop.value >= alloc ? t("social.follow.err.belowAllocation") : undefined;
 
@@ -306,12 +316,12 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
 
       {step === 2 && (
         <div className="space-y-5">
-          <Field label={t("social.follow.amountLabel")} hint={t("social.minAmount", { amount: usd(m.minAllocation, 0) })} error={allocation.raw ? allocErr : undefined}>
+          <Field label={t("social.follow.amountLabel")} hint={available !== null ? `${t("social.minAmount", { amount: usd(m.minAllocation, 0) })} · ${t("social.follow.walletAvailable", { balance: fmtUsdt(available) })}` : t("social.minAmount", { amount: usd(m.minAllocation, 0) })} error={allocation.raw ? allocErr : undefined}>
             <Input type="number" inputMode="decimal" min={m.minAllocation} value={allocation.raw} onChange={(e) => allocation.setRaw(e.target.value)} leading="$" trailing="USD" inputClassName="k-num text-[16px] font-medium" />
           </Field>
           <div className="flex flex-wrap gap-2">
             {[m.minAllocation, 500, 1000, 2500, 5000]
-              .filter((v, i, arr) => v >= m.minAllocation && v > 0 && arr.indexOf(v) === i)
+              .filter((v, i, arr) => v >= m.minAllocation && v > 0 && arr.indexOf(v) === i && (available === null || v <= available))
               .map((v) => (
                 <ToggleChip key={v} on={alloc === v} onClick={() => allocation.set(v)}>
                   {usd(v, 0)}

@@ -314,14 +314,17 @@ function TradesCard({ p }: { p: MasterProfile }) {
         title={tt("social.profile.tradeHistory")}
         subtitle={tt("social.profile.tradeHistorySub")}
         action={
-          <Chip tone="warn">
-            <Clock className="size-3" /> {tt("social.profile.delay", { n: p.tradeDelayMinutes })}
-          </Chip>
+          // only when trades are published with a delay; "0 min delay" says nothing
+          p.tradeDelayMinutes > 0 ? (
+            <Chip tone="warn">
+              <Clock className="size-3" /> {tt("social.profile.delay", { n: p.tradeDelayMinutes })}
+            </Chip>
+          ) : undefined
         }
       />
       <div className="px-4 pb-5 pt-4 sm:px-6">
         {p.trades.length === 0 ? (
-          <EmptyState illustration="hourglass_not_done" title={tt("social.profile.tradesEmptyTitle")} text={tt("social.profile.tradesEmptyText", { n: p.tradeDelayMinutes })} />
+          <EmptyState illustration="hourglass_not_done" title={tt("social.profile.tradesEmptyTitle")} text={p.tradeDelayMinutes > 0 ? tt("social.profile.tradesEmptyText", { n: p.tradeDelayMinutes }) : undefined} />
         ) : (
           <DataTable columns={columns} rows={p.trades} pageSize={12} dense rowKey={(t) => String(t.id)} />
         )}
@@ -501,7 +504,8 @@ export function LiveMasterProfilePage() {
         {t("social.profile.disclaimer")}
       </InfoBox>
 
-      <FollowDialog master={m} open={copy} onOpenChange={setCopy} suggested={p.symbols.map((x) => x.symbol)} />
+      {/* terms carry the effective minimum (the broker's floor or the master's, whichever is higher) */}
+      <FollowDialog master={{ ...m, minAllocation: p.terms.minAllocation }} open={copy} onOpenChange={setCopy} suggested={p.symbols.map((x) => x.symbol)} />
       <InvestDialog fundId={m.fund?.id ?? null} open={invest} onOpenChange={setInvest} />
     </div>
   );

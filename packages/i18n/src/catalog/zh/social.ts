@@ -949,5 +949,7 @@ const social: NsMessages<"social"> = {
   "mm.page.applyFirst": "请先申请；获批后即可在此开立计划。",
   "mm.page.openTitle": "开立 MAM 计划",
   "mm.page.openSub": "以 {name} 身份。系统将为您开立专用的 MAM 主账户。",
+  "follow.walletAvailable": "钱包余额 {balance} USDT",
+  "follow.err.overBalance": "您的钱包余额为 {balance} USDT。请降低金额或先入金。",
 };
 export default social;

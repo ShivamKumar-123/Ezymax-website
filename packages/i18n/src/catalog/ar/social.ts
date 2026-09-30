@@ -1080,5 +1080,7 @@ const social: NsMessages<"social"> = {
   "mm.page.applyFirst": "قدّم طلبك أولًا؛ بعد الاعتماد يمكنك فتح برنامج من هنا.",
   "mm.page.openTitle": "فتح برنامج MAM",
   "mm.page.openSub": "باسم {name}. يُفتح لك حساب MAM رئيسي مخصص.",
+  "follow.walletAvailable": "{balance} USDT في محفظتك",
+  "follow.err.overBalance": "رصيد محفظتك {balance} USDT. خفّض المبلغ أو أودِع أولًا.",
 };
 export default social;

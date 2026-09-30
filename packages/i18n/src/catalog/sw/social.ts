@@ -950,5 +950,7 @@ const social: NsMessages<"social"> = {
   "mm.page.applyFirst": "Tuma ombi kwanza; ukishaidhinishwa unaweza kufungua programu hapa.",
   "mm.page.openTitle": "Fungua programu ya MAM",
   "mm.page.openSub": "Kama {name}. Akaunti maalum ya master ya MAM inafunguliwa kwa ajili yako.",
+  "follow.walletAvailable": "{balance} USDT kwenye pochi yako",
+  "follow.err.overBalance": "Pochi yako ina {balance} USDT. Punguza kiasi au weka pesa kwanza.",
 };
 export default social;

@@ -949,5 +949,7 @@ const social: NsMessages<"social"> = {
   "mm.page.applyFirst": "Mohon dahulu; sebaik sahaja diluluskan anda boleh membuka program di sini.",
   "mm.page.openTitle": "Buka program MAM",
   "mm.page.openSub": "Sebagai {name}. Akaun master MAM khusus dibuka untuk anda.",
+  "follow.walletAvailable": "{balance} USDT dalam dompet anda",
+  "follow.err.overBalance": "Dompet anda mempunyai {balance} USDT. Kurangkan jumlah atau buat deposit dahulu.",
 };
 export default social;
