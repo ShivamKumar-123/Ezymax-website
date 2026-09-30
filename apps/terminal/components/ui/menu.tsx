@@ -74,12 +74,15 @@ function Row({ it, active, children, ...p }: { it: Exclude<MenuItem, "sep" | { h
     >
       <span className="grid w-4 shrink-0 place-items-center [&>svg]:size-3.5">{it.checked ? <Check className="text-ember" /> : it.icon}</span>
       <span className="min-w-0 flex-1 truncate">{it.label}</span>
-      {it.hint && <span className="shrink-0 pl-3 font-mono text-[10.5px] text-fg-3">{it.hint}</span>}
+      {/* keyboard shortcuts (F9, Ctrl+F…) mean nothing in the touch bottom sheet; other hints stay */}
+      {it.hint && !(sheet && isKeyHint(it.hint)) && <span className="shrink-0 pl-3 font-mono text-[10.5px] text-fg-3">{it.hint}</span>}
       {hasSub && <ChevronRight className="size-3 text-fg-3" />}
       {children}
     </div>
   );
 }
+
+const isKeyHint = (h: React.ReactNode) => typeof h === "string" && /^(F\d{1,2}|(Ctrl|Alt|Shift|⌘)\+.*|[+−=-])$/.test(h);
 
 function Header({ text }: { text: string }) {
   return <div className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-3">{text}</div>;
