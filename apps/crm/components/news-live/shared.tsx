@@ -6,6 +6,7 @@ import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { Chip, SymbolAvatar, cn } from "@kalks/ui";
 import { INSTRUMENT_MAP } from "@kalks/mock";
 import type { CalEvent, NewsItem, Sentiment } from "./api";
+import type { T } from "@kalks/i18n";
 import { tr, useT } from "@kalks/i18n/react";
 import { TERMINAL_URL } from "@/lib/live";
 
@@ -23,13 +24,14 @@ export const COUNTRY_NAME: Record<string, string> = {
 
 export const CATEGORY_LABEL: Record<string, string> = { macro: "Central banks & macro", forex: "Forex", metals: "Metals", indices: "Indices", energies: "Energy", crypto: "Crypto", stocks: "Stocks", markets: "Markets" };
 
-/** Country name in the reader's language (English fallback, then the code). */
-export function countryName(c: string) {
-  return tr.dyn(`news.country.${c}`, COUNTRY_NAME[c] ?? c.toUpperCase());
+/** Country name in the reader's language (English fallback, then the code). Pass the component's
+ * useT() translator when it renders during server rendering, so server and browser print the same text. */
+export function countryName(c: string, t: T = tr) {
+  return t.dyn(`news.country.${c}`, COUNTRY_NAME[c] ?? c.toUpperCase());
 }
 /** News category label in the reader's language; unknown categories as served. */
-export function categoryLabel(c: string) {
-  return tr.dyn(`news.category.${c}`, CATEGORY_LABEL[c] ?? c);
+export function categoryLabel(c: string, t: T = tr) {
+  return t.dyn(`news.category.${c}`, CATEGORY_LABEL[c] ?? c);
 }
 
 /** Local photo per category (publisher images are never copied; cards use our own library). */

@@ -296,7 +296,8 @@ function MoverRow({ symbol, name, range, q }: { symbol: string; name: string; ra
         <div className="text-[13.5px] font-medium">{symbol}</div>
         <div className="truncate text-[11.5px] text-fg-3">{name}</div>
       </div>
-      {data ? <Sparkline data={data} width={64} height={24} tone={data[data.length - 1]! >= data[0]! ? "up" : "down"} className="hidden sm:block" /> : <div className="hidden h-6 w-16 sm:block" />}
+      {/* the line takes the colour of the change shown next to it (1D: since the daily open, not the rolling 24 h window it draws) */}
+      {data ? <Sparkline data={data} width={64} height={24} tone={(ch ?? data[data.length - 1]! - data[0]!) >= 0 ? "up" : "down"} className="hidden sm:block" /> : <div className="hidden h-6 w-16 sm:block" />}
       <div className="w-24 text-end">
         <PriceText symbol={symbol} value={q.bid} dir={q.dir} className="text-[13px]" />
         <div className="mt-0.5">

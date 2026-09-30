@@ -147,7 +147,7 @@ function StoryCard({ n, saved, onSave, onOpen, now }: { n: NewsItem; saved: bool
         <div className="absolute start-3 top-3 flex gap-1.5">
           <SentimentChip s={n.sentiment} className="bg-bg/75" />
           <Chip size="sm" className="bg-bg/70">
-            {categoryLabel(n.category)}
+            {categoryLabel(n.category, t)}
           </Chip>
           {n.pinned && (
             <Chip size="sm" tone="ember" className="bg-bg/80">
@@ -228,11 +228,11 @@ export function StoryDialog({ open, onClose, saved, onSave }: { open: NewsItem |
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <SentimentChip s={open.sentiment} />
-            <Chip size="sm">{categoryLabel(open.category)}</Chip>
+            <Chip size="sm">{categoryLabel(open.category, t)}</Chip>
             {open.countries.map((c) => (
               <span key={c} className="flex items-center gap-1.5 text-[12px] text-fg-3">
                 <Flag country={c} />
-                {countryName(c)}
+                {countryName(c, t)}
               </span>
             ))}
           </div>
@@ -401,7 +401,7 @@ export function LiveNewsPage() {
       <Reveal delay={0.05} className="mt-6">
         <div className="flex flex-wrap items-center gap-2">
           <div className="max-w-full overflow-x-auto">
-            <Segmented value={cls} onChange={setCls} options={CATS.map((c) => ({ value: c, label: c === "all" ? t("common.all") : c === "macro" ? t("news.category.macroShort") : categoryLabel(c) }))} />
+            <Segmented value={cls} onChange={setCls} options={CATS.map((c) => ({ value: c, label: c === "all" ? t("common.all") : c === "macro" ? t("news.category.macroShort") : categoryLabel(c, t) }))} />
           </div>
           <div className="flex items-center gap-1.5">
             {(Object.keys(SENT) as Sentiment[]).map((s) => {
@@ -424,7 +424,7 @@ export function LiveNewsPage() {
           {country && (
             <button onClick={() => setCountry(null)} className="flex h-8 items-center gap-1.5 rounded-full border border-ember/40 bg-ember-soft px-3 text-[12px] font-medium text-ember">
               <Flag country={country} />
-              {countryName(country)}
+              {countryName(country, t)}
               <X className="size-3.5" />
             </button>
           )}
