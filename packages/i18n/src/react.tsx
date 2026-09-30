@@ -106,13 +106,12 @@ let activeMessages: PartialCatalog | null = null;
  * Translate outside components (event handlers in plain modules, stores). Prefer useT() inside components.
  * Client-side only: during server rendering this returns English.
  */
-export const tr: T = Object.assign((key: MessageKey, vars?: Vars) => active(key, vars), {
-  dyn: (key: string, fallback?: string, vars?: Vars) => active.dyn(key, fallback, vars),
-  has: (key: string) => active.has(key),
-  get locale() {
-    return active.locale;
-  },
-}) as T;
+export const tr: T = Object.defineProperties((key: MessageKey, vars?: Vars) => active(key, vars), {
+  dyn: { value: (key: string, fallback?: string, vars?: Vars) => active.dyn(key, fallback, vars) },
+  has: { value: (key: string) => active.has(key) },
+  // a real getter: Object.assign would copy the value once and leave tr.locale at "en" for good
+  locale: { get: () => active.locale, enumerable: true },
+}) as unknown as T;
 
 /** Translator for the current language. */
 export function useT(): T {
