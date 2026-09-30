@@ -167,5 +167,7 @@ const auth: NsMessages<"auth"> = {
   "apiError.terms": "Sila sahkan anda berumur lebih 18 tahun dan terima terma.",
   "apiError.codeOtherChange": "Kod ini dihantar untuk perubahan lain. Minta kod baharu.",
   "apiError.codeUseReset": "Gunakan borang set semula untuk kod ini.",
+  "google.error.suspended": "Akaun ini telah digantung. Hubungi sokongan.",
+  "apiError.account_suspended": "Akaun ini telah digantung. Hubungi sokongan.",
 };
 export default auth;

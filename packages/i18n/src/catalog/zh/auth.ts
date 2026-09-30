@@ -167,5 +167,7 @@ const auth: NsMessages<"auth"> = {
   "apiError.terms": "请确认您已年满 18 周岁并接受条款。",
   "apiError.codeOtherChange": "此验证码是为其他变更发送的。请重新获取验证码。",
   "apiError.codeUseReset": "请在重置表单中使用此验证码。",
+  "google.error.suspended": "该账户已被暂停使用。请联系客户支持。",
+  "apiError.account_suspended": "该账户已被暂停使用。请联系客户支持。",
 };
 export default auth;

@@ -167,5 +167,7 @@ const auth: NsMessages<"auth"> = {
   "apiError.terms": "Vui lòng xác nhận bạn trên 18 tuổi và chấp nhận các điều khoản.",
   "apiError.codeOtherChange": "Mã này được gửi cho một thay đổi khác. Hãy yêu cầu mã mới.",
   "apiError.codeUseReset": "Hãy dùng biểu mẫu đặt lại cho mã này.",
+  "google.error.suspended": "Tài khoản này đã bị tạm ngưng. Liên hệ bộ phận hỗ trợ.",
+  "apiError.account_suspended": "Tài khoản này đã bị tạm ngưng. Liên hệ bộ phận hỗ trợ.",
 };
 export default auth;

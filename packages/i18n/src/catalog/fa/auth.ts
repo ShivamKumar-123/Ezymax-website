@@ -167,5 +167,7 @@ const auth: NsMessages<"auth"> = {
   "apiError.terms": "لطفاً تأیید کنید که بالای 18 سال سن دارید و شرایط را بپذیرید.",
   "apiError.codeOtherChange": "این کد برای تغییر دیگری ارسال شده است. کد جدیدی درخواست کنید.",
   "apiError.codeUseReset": "برای این کد از فرم بازنشانی استفاده کنید.",
+  "google.error.suspended": "این حساب تعلیق شده است. با پشتیبانی تماس بگیرید.",
+  "apiError.account_suspended": "این حساب تعلیق شده است. با پشتیبانی تماس بگیرید.",
 };
 export default auth;

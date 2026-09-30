@@ -167,5 +167,7 @@ const auth: NsMessages<"auth"> = {
   "apiError.terms": "만 18세 이상임을 확인하고 약관에 동의하세요.",
   "apiError.codeOtherChange": "이 코드는 다른 변경을 위해 발송되었습니다. 새 코드를 요청하세요.",
   "apiError.codeUseReset": "이 코드는 재설정 양식에서 사용하세요.",
+  "google.error.suspended": "이용이 정지된 계정입니다. 고객 지원팀에 문의하세요.",
+  "apiError.account_suspended": "이용이 정지된 계정입니다. 고객 지원팀에 문의하세요.",
 };
 export default auth;

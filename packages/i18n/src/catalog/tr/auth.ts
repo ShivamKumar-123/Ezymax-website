@@ -168,5 +168,7 @@ const auth: NsMessages<"auth"> = {
   "apiError.terms": "Lütfen 18 yaşından büyük olduğunuzu onaylayın ve koşulları kabul edin.",
   "apiError.codeOtherChange": "Bu kod farklı bir değişiklik için gönderildi. Yeni bir kod isteyin.",
   "apiError.codeUseReset": "Bu kod için sıfırlama formunu kullanın.",
+  "google.error.suspended": "Bu hesap askıya alındı. Destek ekibiyle iletişime geçin.",
+  "apiError.account_suspended": "Bu hesap askıya alındı. Destek ekibiyle iletişime geçin.",
 };
 export default auth;

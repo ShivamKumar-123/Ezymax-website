@@ -167,5 +167,7 @@ const auth: NsMessages<"auth"> = {
   "apiError.terms": "براہ کرم تصدیق کریں کہ آپ کی عمر 18 سال سے زیادہ ہے اور شرائط قبول کریں۔",
   "apiError.codeOtherChange": "یہ کوڈ کسی دوسری تبدیلی کے لیے بھیجا گیا تھا۔ نیا کوڈ طلب کریں۔",
   "apiError.codeUseReset": "اس کوڈ کے لیے ری سیٹ فارم استعمال کریں۔",
+  "google.error.suspended": "یہ اکاؤنٹ معطل ہے۔ سپورٹ سے رابطہ کریں۔",
+  "apiError.account_suspended": "یہ اکاؤنٹ معطل ہے۔ سپورٹ سے رابطہ کریں۔",
 };
 export default auth;

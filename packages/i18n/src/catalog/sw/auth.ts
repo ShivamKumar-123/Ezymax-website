@@ -167,5 +167,7 @@ const auth: NsMessages<"auth"> = {
   "apiError.terms": "Tafadhali thibitisha kuwa una zaidi ya miaka 18 na ukubali masharti.",
   "apiError.codeOtherChange": "Msimbo huu ulitumwa kwa mabadiliko mengine. Omba msimbo mpya.",
   "apiError.codeUseReset": "Tumia fomu ya kuweka upya kwa msimbo huu.",
+  "google.error.suspended": "Akaunti hii imesimamishwa. Wasiliana na msaada.",
+  "apiError.account_suspended": "Akaunti hii imesimamishwa. Wasiliana na msaada.",
 };
 export default auth;
