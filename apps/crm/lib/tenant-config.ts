@@ -38,7 +38,10 @@ export async function tenantBrand(host?: string): Promise<TenantBrand | null> {
   return (await tenantConfig(host))?.branding ?? null;
 }
 
-/** Which module a Client Area page or BFF path belongs to (longest prefix wins). */
+/**
+ * Which module a Client Area page or BFF path belongs to (longest prefix wins). A path shared by two modules
+ * ("algo|api") stays open while either of them is on.
+ */
 const MODULE_PATHS: [string, string][] = [
   ["/social/pamm", "pamm"],
   ["/social/investments", "pamm"],
@@ -64,6 +67,10 @@ const MODULE_PATHS: [string, string][] = [
   ["/api/algo/validate", "algo"],
   // the kill switch stops running strategies: it follows Algo, where its page lives
   ["/api/algo/controls", "algo"],
+  // the strategy catalogue and the account picker serve the strategy builder and AI Trader (Algo) as well as API keys
+  // and webhooks (API)
+  ["/api/algo/meta", "algo|api"],
+  ["/api/algo/accounts", "algo|api"],
   ["/developer", "api"],
   ["/api/algo", "api"],
   ["/academy", "academy"],
@@ -78,4 +85,10 @@ const MODULE_PATHS: [string, string][] = [
 export function moduleFor(pathname: string): string | null {
   const hit = MODULE_PATHS.filter(([p]) => pathname === p || pathname.startsWith(p + "/")).sort((a, b) => b[0].length - a[0].length)[0];
   return hit ? hit[1] : null;
+}
+
+/** True when the broker switched off the module(s) a page or BFF path belongs to (every one of them, when shared). */
+export function moduleOff(modules: Record<string, boolean>, pathname: string): boolean {
+  const mod = moduleFor(pathname);
+  return !!mod && mod.split("|").every((m) => modules[m] === false);
 }

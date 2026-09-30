@@ -3,7 +3,7 @@ import { IS_DEMO } from "@kalks/mock/mode";
 import { SESSION_COOKIE, clientIp, gateway, safeNext } from "@/lib/gateway";
 import { REF_COOKIE, cleanRef, trackClick } from "@/lib/ib";
 import { captureAttribution } from "@/lib/attribution";
-import { moduleFor, tenantConfig } from "@/lib/tenant-config";
+import { moduleOff, tenantConfig } from "@/lib/tenant-config";
 import { hostOf } from "@/lib/tenant-host";
 import { VIEWER_OUT_OF_SCOPE, VIEWER_READ_ONLY, isViewerToken, viewerApiAllowed, viewerHome, viewerPageAllowed, type ViewerScope } from "@/lib/viewer";
 import { MOBILE_PREFIX, bearerOf, mobileRequestHeaders, mobileRoute } from "@/lib/mobile";
@@ -58,8 +58,7 @@ async function brokerGate(req: NextRequest, pathname: string, api: boolean): Pro
     if (api) return NextResponse.json({ error: { code: "maintenance", message: "The Client Area is under maintenance. Please try again shortly." } }, { status: 503, headers: { "retry-after": "60" } });
     return NextResponse.rewrite(new URL("/maintenance", req.url));
   }
-  const mod = moduleFor(pathname);
-  if (cfg && mod && cfg.modules[mod] === false) {
+  if (cfg && moduleOff(cfg.modules, pathname)) {
     if (api) return NextResponse.json({ error: { code: "module_disabled", message: "This feature isn't available on your account." } }, { status: 403 });
     return NextResponse.rewrite(new URL("/unavailable", req.url));
   }
