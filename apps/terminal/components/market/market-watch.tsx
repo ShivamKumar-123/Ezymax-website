@@ -36,6 +36,16 @@ export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
   const tab = T.ws.mwTab;
   const cm = useContextMenu(220);
   const [hover, setHover] = React.useState<{ symbol: string; rect: DOMRect } | null>(null);
+  // a narrow panel (small laptop screens) drops the spread and change columns so symbol names stay readable
+  const [narrow, setNarrow] = React.useState(false);
+  const tableBox = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const el = tableBox.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setNarrow(el.clientWidth < 250));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [tab]);
 
   // segment counts are taken before the text search so they stay stable while typing
   const base = INSTRUMENTS.filter((i) => !T.ws.hidden.includes(i.symbol)).filter((i) => (tab === "favourites" ? T.ws.favourites.includes(i.symbol) : true));
@@ -109,22 +119,22 @@ export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
           ))}
         </div>
       ) : (
-        <div className="t-scroll min-h-0 flex-1 overflow-y-auto" onMouseLeave={() => setHover(null)}>
+        <div ref={tableBox} className="t-scroll min-h-0 flex-1 overflow-y-auto" onMouseLeave={() => setHover(null)}>
           <table className="w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               <col />
               <col className="w-[62px]" />
               <col className="w-[62px]" />
-              <col className="w-[22px]" />
-              <col className="w-[40px]" />
+              {!narrow && <col className="w-[22px]" />}
+              {!narrow && <col className="w-[40px]" />}
             </colgroup>
             <thead>
               <tr>
                 <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 ps-2 text-start text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3">{t("market.col.symbol")}</th>
                 <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pe-1.5 text-end text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3">{t("market.col.bid")}</th>
                 <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pe-1.5 text-end text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3">{t("market.col.ask")}</th>
-                <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pe-1 text-end text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3" title={t("market.col.spreadTitle")}>{t("market.col.spread")}</th>
-                <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pe-2 text-end text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3">{t("market.col.change")}</th>
+                {!narrow && <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pe-1 text-end text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3" title={t("market.col.spreadTitle")}>{t("market.col.spread")}</th>}
+                {!narrow && <th className="sticky top-0 z-[1] h-6 border-b border-line bg-panel-2 pe-2 text-end text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3">{t("market.col.change")}</th>}
               </tr>
             </thead>
             <tbody>
@@ -134,6 +144,7 @@ export function MarketWatch({ onCollapse }: { onCollapse?: () => void }) {
                   symbol={i.symbol}
                   active={T.activeSymbol === i.symbol}
                   fav={T.ws.favourites.includes(i.symbol)}
+                  narrow={narrow}
                   onOpen={() => {
                     T.openSymbol(i.symbol);
                     toast(t("market.toast.opened", { symbol: i.symbol }), { description: `${T.activeTab.tf} · ${i.name}` });
@@ -163,6 +174,7 @@ const MwRow = React.memo(function MwRow({
   symbol,
   active,
   fav,
+  narrow,
   onOpen,
   onContext,
   onHover,
@@ -170,6 +182,7 @@ const MwRow = React.memo(function MwRow({
   symbol: string;
   active: boolean;
   fav: boolean;
+  narrow?: boolean;
   onOpen: () => void;
   onContext: (e: React.MouseEvent) => void;
   onHover: (r: DOMRect | null) => void;
@@ -198,13 +211,15 @@ const MwRow = React.memo(function MwRow({
       <td className="border-b border-line/50 pe-1.5 text-end">
         <PriceText symbol={symbol} value={q.ask} dir={q.dir} pulse className="justify-end px-0.5 text-[10.5px]" />
       </td>
-      <td className="k-num border-b border-line/50 pe-1 text-end font-mono text-[10px] text-fg-3">{spread}</td>
-      <td className={cn("k-num border-b border-line/50 pe-2 text-end font-mono text-[10.5px]", q.change >= 0 ? "text-up" : "text-down")}>
-        <span dir="ltr">
-          {q.change >= 0 ? "+" : ""}
-          {q.change.toFixed(2)}
-        </span>
-      </td>
+      {!narrow && <td className="k-num border-b border-line/50 pe-1 text-end font-mono text-[10px] text-fg-3">{spread}</td>}
+      {!narrow && (
+        <td className={cn("k-num border-b border-line/50 pe-2 text-end font-mono text-[10.5px]", q.change >= 0 ? "text-up" : "text-down")}>
+          <span dir="ltr">
+            {q.change >= 0 ? "+" : ""}
+            {q.change.toFixed(2)}
+          </span>
+        </td>
+      )}
     </tr>
   );
 });
