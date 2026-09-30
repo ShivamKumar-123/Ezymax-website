@@ -18,6 +18,7 @@ import { ConfirmSheet } from "./components/sheets";
 import { StackScreen } from "./components/StackScreen";
 import { idleLabel } from "./format";
 import { useReadOnly } from "./me";
+import { inkSoft } from "./tint";
 
 const PREVIEW = 4;
 
@@ -75,7 +76,7 @@ export default function SecurityScreen() {
             <Display size="hero" color={colors.ink} testID="security-count">
               {sessions.data ? String(items.length) : "–"}
             </Display>
-            <Text variant="label" color={colors.ink2}>
+            <Text variant="label" color={inkSoft}>
               {t("security.sessions.title")}
             </Text>
           </View>
@@ -83,7 +84,7 @@ export default function SecurityScreen() {
             <Display size="sm" color={colors.ink}>
               {idle ? idleLabel(idle) : "–"}
             </Display>
-            <Text variant="label" color={colors.ink2}>
+            <Text variant="label" color={inkSoft}>
               {t("security.protect.idle")}
             </Text>
           </View>

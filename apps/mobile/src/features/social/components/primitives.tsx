@@ -4,7 +4,7 @@ import * as React from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import { Display, Mono, Text, type Tone } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
-import { alpha } from "../tint";
+import { alpha, inkSoft } from "../tint";
 
 export type TagTone = "neutral" | "good" | "ember" | "gold" | "mint" | "periwinkle" | "cream" | "up" | "down" | "warn";
 
@@ -199,7 +199,7 @@ export function KeyValues({ rows, ink }: { rows: [string, React.ReactNode][]; in
             borderTopColor: ink ? alpha(colors.ink, 0.12) : colors.line,
           }}
         >
-          <Text variant="callout" color={ink ? colors.ink2 : colors.text2} style={{ flex: 1 }}>
+          <Text variant="callout" color={ink ? inkSoft : colors.text2} style={{ flex: 1 }}>
             {k}
           </Text>
           <View style={{ flexShrink: 1, maxWidth: "62%", alignItems: "flex-end" }}>

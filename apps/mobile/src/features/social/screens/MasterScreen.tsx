@@ -21,6 +21,7 @@ import { Avatar, HouseDisclosure, ProgramTags, RiskMeter } from "../components/i
 import { MonthlyGrid } from "../components/MonthlyGrid";
 import { KeyValues, Note, SectionTitle, StatGrid, Tag } from "../components/primitives";
 import { BlockSkeleton, LoadError } from "../components/states";
+import { inkSoft } from "../tint";
 
 type Item =
   | { type: "hero" }
@@ -462,7 +463,7 @@ function Fees({ p }: { p: MasterProfile }) {
   return (
     <Section>
       <ColorBlock color="gold" style={{ marginTop: space[4] }}>
-        <Text variant="label" color={colors.ink2}>
+        <Text variant="label" color={inkSoft}>
           {t("mobileSocial.master.fees")}
         </Text>
         <View style={{ flexDirection: "row", alignItems: "baseline", gap: space[2], marginTop: space[1] }}>
@@ -473,11 +474,11 @@ function Fees({ p }: { p: MasterProfile }) {
             {t("mobileSocial.master.perfFee")}
           </Text>
         </View>
-        <Text variant="caption" color={colors.ink2} style={{ marginBottom: space[3] }}>
+        <Text variant="caption" color={inkSoft} style={{ marginBottom: space[3] }}>
           {t("mobileSocial.master.feesSub")}
         </Text>
         <KeyValues ink rows={rows} />
-        <Text variant="caption" color={colors.ink2} style={{ marginTop: space[3], lineHeight: 17 }}>
+        <Text variant="caption" color={inkSoft} style={{ marginTop: space[3], lineHeight: 17 }}>
           {t.dyn(`mobileSocial.master.feeNote.${terms.feePeriod}`, "")}
         </Text>
       </ColorBlock>

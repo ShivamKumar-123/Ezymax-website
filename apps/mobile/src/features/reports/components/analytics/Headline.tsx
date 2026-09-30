@@ -6,7 +6,7 @@ import { useT } from "@/i18n";
 import { ColorBlock, Display, Mono, Text } from "@/ui";
 import { blockColors, colors, GUTTER, radius, space, type BlockColor } from "@/theme/tokens";
 import { fmtHold, pct, usd } from "../../format";
-import { tint } from "../../tint";
+import { inkSoft, tint } from "../../tint";
 import type { Analytics, TradeRef } from "../../types";
 
 export const Hero = React.memo(function Hero({ d, periodLabel }: { d: Analytics; periodLabel: string }) {
@@ -21,7 +21,7 @@ export const Hero = React.memo(function Hero({ d, periodLabel }: { d: Analytics;
   ];
   return (
     <ColorBlock color="ember" style={{ marginHorizontal: GUTTER }} accessible accessibilityLabel={`${label}: ${net}. ${stats.map(([k, v]) => `${k} ${v}`).join(", ")}`}>
-      <Text variant="label" color={colors.ink2}>
+      <Text variant="label" color={inkSoft}>
         {label}
       </Text>
       <Display size="hero" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={{ marginTop: space[3] }}>
@@ -30,7 +30,7 @@ export const Hero = React.memo(function Hero({ d, periodLabel }: { d: Analytics;
       <View style={{ flexDirection: "row", marginTop: space[5], paddingTop: space[4], borderTopWidth: 1, borderTopColor: tint(colors.ink, 0.16) }}>
         {stats.map(([k, v]) => (
           <View key={k} style={{ flex: 1, gap: 3 }}>
-            <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ fontSize: 10 }}>
+            <Text variant="label" color={inkSoft} numberOfLines={1} style={{ fontSize: 10 }}>
               {k}
             </Text>
             <Mono size={17} weight="bold" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
@@ -53,7 +53,7 @@ function Tile({ color, label, value, valueColor, asWritten, sub, children, width
       accessibilityLabel={[label, value, sub].filter(Boolean).join(". ")}
       style={{ width, height: TILE_H, borderRadius: radius.card, padding: space[4], justifyContent: "space-between", backgroundColor: color ? blockColors[color] : colors.surface, borderWidth: color ? 0 : 1, borderColor: colors.line, overflow: "hidden" }}
     >
-      <Text variant="label" color={ink ? colors.ink2 : colors.text3} numberOfLines={1} style={{ fontSize: 10.5 }}>
+      <Text variant="label" color={ink ? inkSoft : colors.text3} numberOfLines={1} style={{ fontSize: 10.5 }}>
         {label}
       </Text>
       {children ?? (
@@ -62,7 +62,7 @@ function Tile({ color, label, value, valueColor, asWritten, sub, children, width
         </Display>
       )}
       {sub ? (
-        <Text variant="caption" color={ink ? colors.ink2 : colors.text3} numberOfLines={2}>
+        <Text variant="caption" color={ink ? inkSoft : colors.text3} numberOfLines={2}>
           {sub}
         </Text>
       ) : (

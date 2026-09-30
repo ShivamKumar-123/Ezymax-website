@@ -13,7 +13,7 @@ import { Button, Card, ColorBlock, Display, EmptyState, Screen, Skeleton, Text, 
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { fetchers, keys, type LinkView, type ManagerView } from "../api";
 import { compactUsd } from "../format";
-import { alpha } from "../tint";
+import { alpha, inkSoft } from "../tint";
 import { TopBar, useBack } from "../components/chrome";
 import { LinkCard, MANAGER_ROW, ManagerRow } from "../components/MamCards";
 import { SectionTitle } from "../components/primitives";
@@ -124,7 +124,7 @@ export function MamScreen() {
           </Text>
           <View style={{ flexDirection: "row", gap: space[2], alignItems: "flex-start", marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: alpha(colors.ink, 0.14) }}>
             <ShieldCheck size={16} color={colors.ink} style={{ marginTop: 1 }} />
-            <Text variant="caption" color={colors.ink2} style={{ flex: 1, lineHeight: 17 }}>
+            <Text variant="caption" color={inkSoft} style={{ flex: 1, lineHeight: 17 }}>
               {t("mobileSocial.mam.safety")}
             </Text>
           </View>
@@ -188,7 +188,7 @@ export function MamScreen() {
             case "manager":
               return <ManagerRow m={item.m} linked={linkedTo.has(item.m.id)} onPress={onManager} onPressIn={warmManager} />;
             case "noProg":
-              return <EmptyState illustration="partnerIb" title={t("mobileSocial.mam.noProgrammes")} body={t("mobileSocial.mam.noProgrammesText")} />;
+              return <EmptyState illustration="copyTrading" title={t("mobileSocial.mam.noProgrammes")} body={t("mobileSocial.mam.noProgrammesText")} />;
             case "progLoading":
               return (
                 <View style={{ paddingHorizontal: GUTTER, gap: space[3] }}>

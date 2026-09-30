@@ -6,13 +6,13 @@ import * as React from "react";
 import { View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Check, FileText } from "lucide-react-native";
+import { FileText } from "lucide-react-native";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
 import { invalidate, useQuery } from "@/lib/query";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { useSession } from "@/session";
-import { Banner, Button, ColorBlock, Display, FormError, Mono, Skeleton, Text } from "@/ui";
+import { Banner, Button, ColorBlock, Display, FormError, Illustration, Mono, Skeleton, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { fetchers, keys, socialPost, validId, type Candidate, type LinkView, type ManagerDetail } from "../api";
 import { ddText, mamFeesText, methodHint, methodLabel, parseAmount, pct, shownTone, usd } from "../format";
@@ -21,6 +21,7 @@ import { AmountField, Consent, RadioCard } from "../components/controls";
 import { Avatar, RiskMeter } from "../components/identity";
 import { Paragraphs, StatGrid } from "../components/primitives";
 import { LoadError } from "../components/states";
+import { inkSoft } from "../tint";
 
 export function MamConnectScreen() {
   const close = useBack("/social/mam");
@@ -118,10 +119,9 @@ function Form({ d, onClose, reload }: { d: ManagerDetail; onClose: () => void; r
       >
         <Animated.View entering={FadeIn.duration(200)}>
           <ColorBlock color="periwinkle">
-            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center", marginBottom: space[4] }}>
-              <Check size={30} color={colors.periwinkle} strokeWidth={3} />
-            </View>
-            <Text variant="label" color={colors.ink2}>
+            {/* success: the founder's "copy trading" art on the matte block */}
+            <Illustration name="copyTrading" width={200} height={140} style={{ alignSelf: "center", marginBottom: space[4] }} />
+            <Text variant="label" color={inkSoft}>
               {m.name}
             </Text>
             <Display size="xl" color={colors.ink}>

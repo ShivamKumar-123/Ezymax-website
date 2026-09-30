@@ -21,6 +21,7 @@ import { GroupBlock } from "../components/GroupCards";
 import { fitMono, groupColor, offers } from "../format";
 import { publishFigures, useStructuralList } from "../figures";
 import { useTotals } from "../components/LiveFigure";
+import { inkSoft } from "../tint";
 import type { Account, AccountKind, Group } from "../types";
 
 /** Totals of the tab's accounts in USD (cent accounts converted from USC), on the kind's colour. A leaf: the
@@ -39,7 +40,7 @@ const Totals = React.memo(function Totals({ kind, accounts }: { kind: AccountKin
   const small = Math.min(fitMono(usd(balance), col, 15, 10), fitMono(usd(free), col, 15, 10));
   const metric = (label: string, value: string, grow: boolean) => (
     <View key={label} style={grow ? { flex: 1, gap: 2, minWidth: 0 } : { flexShrink: 0, gap: 2, minWidth: 0 }}>
-      <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ fontSize: 10.5 }}>
+      <Text variant="label" color={inkSoft} numberOfLines={1} style={{ fontSize: 10.5 }}>
         {label}
       </Text>
       <Mono size={grow ? small : 15} weight="bold" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ lineHeight: 19 }}>
@@ -50,10 +51,10 @@ const Totals = React.memo(function Totals({ kind, accounts }: { kind: AccountKin
   return (
     <ColorBlock color={kind === "live" ? "ember" : "periwinkle"} style={{ marginHorizontal: GUTTER, marginBottom: space[5] }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[3] }}>
-        <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ flexShrink: 1 }}>
+        <Text variant="label" color={inkSoft} numberOfLines={1} style={{ flexShrink: 1 }}>
           {kind === "live" ? t("mobileAccounts.totals.liveEquity") : t("mobileAccounts.totals.demoEquity")}
         </Text>
-        <Text variant="label" color={colors.ink2}>
+        <Text variant="label" color={inkSoft}>
           {t("mobileAccounts.totals.accounts", { count: accounts.length })}
         </Text>
       </View>
@@ -219,7 +220,7 @@ export function AccountsScreen() {
     if (list.length > 0) return null;
     return (
       <EmptyState
-        illustration={tab === "live" ? "welcome" : "mascot"}
+        illustration={tab === "live" ? "welcome" : "market"}
         size={tab === "live" ? 200 : 180}
         title={tab === "live" ? t("mobileAccounts.empty.live.title") : t("mobileAccounts.empty.demo.title")}
         body={tab === "live" ? t("mobileAccounts.empty.live.body") : t("mobileAccounts.empty.demo.body")}

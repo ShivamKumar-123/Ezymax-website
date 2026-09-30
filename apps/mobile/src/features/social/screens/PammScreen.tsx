@@ -1,7 +1,7 @@
 // /social/pamm — PAMM: the funds (NAV, returns, rollover, lock-in, freeze) and "My investments" (holdings with
 // pending requests, stop-loss, redeem / add, and the request history). ?tab=mine opens on my investments.
 import * as React from "react";
-import { RefreshControl, View } from "react-native";
+import { RefreshControl, useWindowDimensions, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
 import { CalendarClock, Coins, ShieldAlert, Snowflake, TrendingUp } from "lucide-react-native";
@@ -13,7 +13,7 @@ import { Card, ColorBlock, Display, EmptyState, Illustration, Mono, Pill, Screen
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { fetchers, keys, type FeePeriod, type FundView, type InvestmentView, type RequestView } from "../api";
 import { compactUsd, pct, shownTone, usd } from "../format";
-import { alpha } from "../tint";
+import { alpha, inkSoft } from "../tint";
 import { TopBar, useBack } from "../components/chrome";
 import { FundCard, HoldingCard } from "../components/FundCard";
 import { Note, StatGrid } from "../components/primitives";
@@ -31,6 +31,7 @@ export function PammScreen() {
   const router = useRouter();
   const back = useBack();
   const bottom = useBottomInset(false);
+  const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ tab?: string }>();
   const [tab, setTab] = React.useState<Tab>(params.tab === "mine" ? "mine" : "funds");
   const [roll, setRoll] = React.useState<"all" | FeePeriod>("all");
@@ -101,6 +102,10 @@ export function PammScreen() {
   }
 
   const aum = all.reduce((s, f) => s + f.aum, 0);
+  const aumText = funds.data ? compactUsd(aum) : "—";
+  // the figure stays on one line beside the art (RN web ignores adjustsFontSizeToFit): about 0.58 em per character
+  // in the Display face; the column is what the art leaves of the block ("$12.5K" on a 360 pt phone: 44 pt)
+  const aumSize = Math.max(32, Math.min(56, Math.floor((width - GUTTER * 2 - space[6] * 2 - 112 - 4) / (Math.max(1, aumText.length) * 0.58))));
   const investors = all.reduce((s, f) => s + f.investors, 0);
   const next = all
     .filter((f) => f.status === "active" && f.nextRolloverAt)
@@ -123,22 +128,22 @@ export function PammScreen() {
         <ColorBlock color="gold">
           <View style={{ flexDirection: "row", gap: space[2] }}>
             <View style={{ flex: 1, gap: space[1] }}>
-              <Text variant="label" color={colors.ink2}>
+              <Text variant="label" color={inkSoft}>
                 {t("mobileSocial.pamm.hero.aum")}
               </Text>
-              <Display size="hero" color={colors.ink} style={{ fontSize: 56, lineHeight: 60 }} numberOfLines={1} adjustsFontSizeToFit>
-                {funds.data ? compactUsd(aum) : "—"}
+              <Display size="hero" color={colors.ink} style={{ fontSize: aumSize, lineHeight: 60 }} numberOfLines={1} adjustsFontSizeToFit>
+                {aumText}
               </Display>
               <Text variant="callout" weight="700" color={colors.ink}>
                 {`${t("mobileSocial.pamm.hero.funds", { count: all.length })} · ${t("mobileSocial.pamm.hero.investors", { count: investors })}`}
               </Text>
             </View>
-            <Illustration name="pammFunds" width={112} height={100} style={{ marginEnd: -space[2], marginTop: -space[1] }} />
+            {tab === "mine" && !inv.data && inv.error ? null : <Illustration name="pammFunds" width={112} height={100} style={{ marginEnd: -space[2], marginTop: -space[1] }} />}
           </View>
           {next ? (
             <View style={{ flexDirection: "row", gap: space[2], alignItems: "center", marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: alpha(colors.ink, 0.14) }}>
               <CalendarClock size={15} color={colors.ink} />
-              <Text variant="caption" color={colors.ink2}>
+              <Text variant="caption" color={inkSoft}>
                 {`${t("mobileSocial.pamm.hero.next", { time: fmt.dateTime(next) })} · ${t("mobileSocial.serverTime")}`}
               </Text>
             </View>
@@ -161,6 +166,8 @@ export function PammScreen() {
     </View>
   );
 
+  // one illustration per screen: the hero above carries the PAMM funds art, so the list's empty states have none,
+  // and the hero drops it while the list below shows a failed load (with its own art)
   const empty =
     tab === "funds" ? (
       !funds.data ? (
@@ -170,14 +177,13 @@ export function PammScreen() {
         </View>
       ) : all.length ? (
         <EmptyState
-          illustration="pammFunds"
           title={t("mobileSocial.pamm.empty.filteredTitle")}
           body={t("mobileSocial.pamm.empty.filteredText")}
           action={t("mobileSocial.pamm.anyRollover")}
           onAction={() => setRoll("all")}
         />
       ) : (
-        <EmptyState illustration="pammFunds" title={t("mobileSocial.pamm.empty.title")} body={t("mobileSocial.pamm.empty.text")} />
+        <EmptyState title={t("mobileSocial.pamm.empty.title")} body={t("mobileSocial.pamm.empty.text")} />
       )
     ) : !inv.data ? (
       inv.error ? (
@@ -188,7 +194,7 @@ export function PammScreen() {
         </View>
       )
     ) : (
-      <EmptyState illustration="pammFunds" title={t("mobileSocial.inv.empty.title")} body={t("mobileSocial.inv.empty.text")} action={t("mobileSocial.inv.browse")} onAction={() => setTab("funds")} />
+      <EmptyState title={t("mobileSocial.inv.empty.title")} body={t("mobileSocial.inv.empty.text")} action={t("mobileSocial.inv.browse")} onAction={() => setTab("funds")} />
     );
 
   return (

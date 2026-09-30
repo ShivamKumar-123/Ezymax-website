@@ -18,6 +18,7 @@ import { StackScreen } from "./components/StackScreen";
 import { calendarDay, clientId, countryName, day } from "./format";
 import { useKyc } from "./kyc/api";
 import { kycBadge, useMeX } from "./me";
+import { inkSoft } from "./tint";
 
 export default function ProfileScreen() {
   const t = useT();
@@ -47,7 +48,7 @@ export default function ProfileScreen() {
       <View style={{ paddingHorizontal: GUTTER, flexDirection: "row", gap: space[3] }}>
         <ColorBlock color="cream" style={{ flex: 1, padding: space[5], gap: space[2] }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-            <Text variant="label" color={colors.ink2}>
+            <Text variant="label" color={inkSoft}>
               {t("profile.stat.clientId")}
             </Text>
             <IconButton tone="ghost" size={32} accessibilityLabel={t("mobileProfile.copy")} icon={<Copy size={16} color={colors.ink} />} onPress={() => void copyId()} />
@@ -58,7 +59,7 @@ export default function ProfileScreen() {
         </ColorBlock>
         <ColorBlock color="periwinkle" style={{ flex: 1, padding: space[5], gap: space[2] }}>
           <View style={{ height: 32, justifyContent: "center" }}>
-            <Text variant="label" color={colors.ink2}>
+            <Text variant="label" color={inkSoft}>
               {t("mobileProfile.profile.memberSinceLabel")}
             </Text>
           </View>

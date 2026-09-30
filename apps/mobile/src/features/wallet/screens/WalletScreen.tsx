@@ -34,7 +34,7 @@ import { Confirmations, DEPOSIT_STATUS, SectionTitle, StatusChip, WITHDRAWAL_STA
 import { HeroSkeleton, KycNotice, ViewOnlyNotice, WalletState } from "../components/states";
 import { WalletHeader } from "../components/WalletHeader";
 import { addAmounts, fmtAmount } from "../lib/money";
-import { alpha, onBlock } from "../lib/tint";
+import { alpha, inkSoft, onBlock } from "../lib/tint";
 
 /** Display size for a big number so it stays on one line. */
 const heroSize = (s: string) => (s.length > 12 ? "lg" : s.length > 9 ? "xl" : "hero");
@@ -45,7 +45,7 @@ const BalanceHero = React.memo(function BalanceHero({ currency, available, locke
   return (
     <ColorBlock color="cream" style={{ marginHorizontal: GUTTER }} testID="wallet-balance">
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text variant="label" color={colors.ink2}>
+        <Text variant="label" color={inkSoft}>
           {t("mobileWallet.balance.available")}
         </Text>
         <View style={{ height: 26, paddingHorizontal: space[3], borderRadius: radius.pill, backgroundColor: colors.ink, justifyContent: "center" }}>
@@ -57,13 +57,13 @@ const BalanceHero = React.memo(function BalanceHero({ currency, available, locke
       <Display size={heroSize(shown)} color={colors.ink} style={{ marginTop: space[3] }} numberOfLines={1} accessibilityLabel={`${shown} ${currency}`}>
         {shown}
       </Display>
-      <Text variant="caption" color={colors.ink2} style={{ marginTop: space[1] }}>
+      <Text variant="caption" color={inkSoft} style={{ marginTop: space[1] }}>
         {t("wallet.transfer.creditedNote")}
       </Text>
       <View style={{ height: 1, backgroundColor: onBlock.line, marginVertical: space[4] }} />
       <View style={{ flexDirection: "row", gap: space[8] }}>
         <View style={{ gap: 2 }}>
-          <Text variant="label" color={colors.ink3}>
+          <Text variant="label" color={inkSoft}>
             {t("wallet.inProgress")}
           </Text>
           <Mono size={17} weight="bold" color={colors.ink}>
@@ -71,7 +71,7 @@ const BalanceHero = React.memo(function BalanceHero({ currency, available, locke
           </Mono>
         </View>
         <View style={{ gap: 2 }}>
-          <Text variant="label" color={colors.ink3}>
+          <Text variant="label" color={inkSoft}>
             {t("common.total")}
           </Text>
           <Mono size={17} weight="bold" color={colors.ink}>

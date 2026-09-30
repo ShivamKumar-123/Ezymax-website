@@ -192,10 +192,10 @@ export function CopyButton({ value, label, compact, onCopied, accessibilityLabel
   if (compact)
     return (
       <PressableScale onPress={copy} accessibilityLabel={accessibilityLabel ?? `${t("common.copy")} ${label ?? ""}`.trim()} scaleTo={0.92} style={{ width: HIT, height: HIT, alignItems: "center", justifyContent: "center" }}>
-        <Icon size={18} color={done ? colors.mint : colors.text2} />
+        <Icon size={18} color={done ? CHIP.success.fg : colors.text2} />
       </PressableScale>
     );
-  return <ActionChip icon={<Icon size={17} color={done ? colors.mint : colors.text} />} label={text} onPress={copy} accessibilityLabel={accessibilityLabel ?? (label ? `${t("common.copy")} ${label}` : undefined)} />;
+  return <ActionChip icon={<Icon size={17} color={done ? CHIP.success.fg : colors.text} />} label={text} onPress={copy} accessibilityLabel={accessibilityLabel ?? (label ? `${t("common.copy")} ${label}` : undefined)} />;
 }
 
 export function ShareButton({ message, label }: { message: string; label?: string }) {

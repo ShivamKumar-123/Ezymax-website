@@ -15,7 +15,7 @@ import { useLocale, useT } from "@/i18n";
 import { fmtMoney } from "@/lib/format";
 import { useOnline } from "@/lib/net";
 import { setActiveLogin } from "@/session/activeAccount";
-import { Banner, Button, Checkbox, ColorBlock, Display, EmptyState, FormError, Mono, Pill, PressableScale, RevealToggle, Skeleton, Text, TextField, toast } from "@/ui";
+import { Banner, Button, Checkbox, ColorBlock, Display, EmptyState, FormError, Illustration, Mono, Pill, PressableScale, RevealToggle, Skeleton, Text, TextField, toast } from "@/ui";
 import { alpha } from "@/theme/alpha";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { accountError, openAccount, refreshAccounts, useAccountList, useAccountOptions, useGroups, useReadOnly } from "../api";
@@ -24,6 +24,7 @@ import { PasswordRules, SecretRow } from "../components/Credentials";
 import { GroupOption, commissionText, minDepositText, modeText, pricingText } from "../components/GroupCards";
 import { demoBalancesFor, fitDisplayDigits, fitMono, groupColor, groupMoney, lev, money, offers, passwordOk, serverOf, usedIn } from "../format";
 import { generatePassword } from "../password";
+import { inkSoft } from "../tint";
 import type { AccountKind, OpenResult } from "../types";
 
 /** A demo starting balance as offered (whole dollars). */
@@ -94,7 +95,7 @@ function KindOption({ kind, selected, onSelect, points }: { kind: AccountKind; s
         {points.map((p) => (
           <View key={p} style={{ flexDirection: "row", gap: space[2], alignItems: "flex-start" }}>
             <Check size={15} color={selected ? colors.ink : color} strokeWidth={2.6} style={{ marginTop: 2 }} />
-            <Text variant="callout" color={selected ? colors.ink2 : colors.text2} style={{ flex: 1 }}>
+            <Text variant="callout" color={selected ? inkSoft : colors.text2} style={{ flex: 1 }}>
               {p}
             </Text>
           </View>
@@ -164,13 +165,15 @@ function Created({ res, cfg, onTrade, onFund, onView }: { res: OpenResult; cfg: 
   return (
     <View style={{ gap: space[6] }}>
       <ColorBlock color="mint">
-        <Text variant="label" color={colors.ink2}>
+        {/* the founder's "welcome" art: the door into the markets, for the account that was just opened */}
+        <Illustration name="welcome" width={120} height={150} style={{ alignSelf: "center", marginBottom: space[4] }} />
+        <Text variant="label" color={inkSoft}>
           {t("mobileAccounts.created.eyebrow")}
         </Text>
         <Display size="hero" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit style={{ marginTop: space[1], fontSize: hero, lineHeight: hero }}>
           #{login}
         </Display>
-        <Text variant="callout" weight="600" color={colors.ink2} style={{ marginTop: space[2] }}>
+        <Text variant="callout" weight="600" color={inkSoft} style={{ marginTop: space[2] }}>
           {a.type === "live" ? t("mobileAccounts.kind.live") : t("mobileAccounts.kind.demo")} · {a.groupName} · {modeText(a.mode, t)} · {lev(a.leverage)}
         </Text>
       </ColorBlock>
@@ -522,7 +525,7 @@ export function OpenAccountScreen() {
                               {usd0(b)}
                             </Mono>
                             {g.cent ? (
-                              <Mono size={optSize.usc} color={on ? colors.ink2 : colors.text3} numberOfLines={1} adjustsFontSizeToFit style={{ lineHeight: 16 }}>
+                              <Mono size={optSize.usc} color={on ? inkSoft : colors.text3} numberOfLines={1} adjustsFontSizeToFit style={{ lineHeight: 16 }}>
                                 {groupMoney(b, g)}
                               </Mono>
                             ) : null}
@@ -636,7 +639,7 @@ export function OpenAccountScreen() {
                   <Display size="lg" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit style={{ marginTop: space[2] }}>
                     {g.name}
                   </Display>
-                  <Text variant="callout" weight="600" color={colors.ink2}>
+                  <Text variant="callout" weight="600" color={inkSoft}>
                     {modeText(g.mode, t)} · {pricingText(g, t)}
                   </Text>
                 </ColorBlock>

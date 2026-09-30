@@ -127,7 +127,8 @@ export default function ChartCanvas({ values, height, color, baseline, onScrub, 
             <Path path={geom.area} color={alpha(color, 0.1)} />
             <Path path={geom.line} style="stroke" strokeWidth={2} strokeJoin="round" strokeCap="round" color={color} />
             <Line p1={p1} p2={p2} color={colors.text3} strokeWidth={1} opacity={shown} />
-            <Circle cx={cx} cy={cy} r={9} color={alpha(color, 0.25)} opacity={shown} />
+            {/* matte scrub dot: a flat ring in the card's colour around the point (no halo) */}
+            <Circle cx={cx} cy={cy} r={6} color={colors.surface} opacity={shown} />
             <Circle cx={cx} cy={cy} r={4.5} color={color} opacity={shown} />
           </Canvas>
         ) : null}

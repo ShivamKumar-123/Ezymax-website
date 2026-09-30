@@ -49,6 +49,7 @@ import { ChoiceSheet, ConfirmSheet } from "@/features/profile/components/sheets"
 import { clientId } from "@/features/profile/format";
 import { fetchKyc } from "@/features/profile/kyc/api";
 import { initials, kycBadge, useMeX, type KycBadge } from "@/features/profile/me";
+import { inkSoft } from "@/features/profile/tint";
 import { prefetchAcademy } from "@/features/academy/api";
 import { prefetchAi } from "@/features/ai/api";
 import { prefetchAlerts } from "@/features/alerts/api";
@@ -264,7 +265,7 @@ export default function MoreScreen() {
             <Display size="md" color={colors.ink}>
               {t(card.title)}
             </Display>
-            <Text variant="callout" color={colors.ink2}>
+            <Text variant="callout" color={inkSoft}>
               {t(card.body)}
             </Text>
             <View style={{ alignSelf: "flex-start", marginTop: space[1], flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingHorizontal: space[4], borderRadius: radius.pill, backgroundColor: colors.ink }}>

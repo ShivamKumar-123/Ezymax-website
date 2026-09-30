@@ -6,6 +6,7 @@ import { useFormat, useLocale, useT } from "@/i18n";
 import { ColorBlock, Mono, PressableScale, Text } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { curOf, demoFull, lev, money, refillsLeft, serverOf } from "../format";
+import { inkSoft } from "../tint";
 import type { Account } from "../types";
 import { Flip, Metric, SectionTitle } from "./Chrome";
 import { SecretRow } from "./Credentials";
@@ -20,7 +21,7 @@ export const EquityHero = React.memo(function EquityHero({ a }: { a: Account }) 
   const inner = Math.min(width, 520) - GUTTER * 2 - space[6] * 2;
   return (
     <ColorBlock color={a.type === "live" ? "ember" : "periwinkle"} style={{ marginHorizontal: GUTTER }}>
-      <Text variant="label" color={colors.ink2}>
+      <Text variant="label" color={inkSoft}>
         {t("mobileAccounts.metric.equity")}
         {curOf(a) === "USC" ? " · USC" : ""}
       </Text>
@@ -38,7 +39,7 @@ export const EquityHero = React.memo(function EquityHero({ a }: { a: Account }) 
 function InkMetric({ a, label, field, width }: { a: Account; label: string; field: LiveField; width: number }) {
   return (
     <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
-      <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ fontSize: 10.5 }}>
+      <Text variant="label" color={inkSoft} numberOfLines={1} style={{ fontSize: 10.5 }}>
         {label}
       </Text>
       <LiveFigure a={a} field={field} size={16} fit={{ width, min: 11 }} weight="bold" ink />

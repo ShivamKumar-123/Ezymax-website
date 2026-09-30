@@ -7,7 +7,7 @@ import { useT, type T } from "@/i18n";
 import { Button, ColorBlock, Display, Illustration, PressableScale, Text } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { StatusChip } from "../components/bits";
-import { OK, tint } from "../tint";
+import { inkSoft, OK, tint } from "../tint";
 import { when } from "../format";
 import { hoursLabel } from "./api";
 import type { KycDocument, KycState, TimelineEvent } from "./types";
@@ -158,16 +158,16 @@ export function StatusTracker({ state, justSubmitted, onRestart, readOnly }: { s
       <ColorBlock color={head.color} style={{ marginHorizontal: GUTTER, gap: space[3] }}>
         {head.ill ? <Illustration name={head.ill} width={170} height={150} style={{ alignSelf: "center" }} /> : (
           <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: tint.inkFill, alignItems: "center", justifyContent: "center" }}>
-            <AlertTriangle size={26} color={colors.ember} />
+            <AlertTriangle size={26} color={colors.ink} />
           </View>
         )}
         <Display size={head.title.length > 26 ? "md" : "lg"} color={colors.ink}>
           {head.title}
         </Display>
-        <Text color={colors.ink2}>{head.text}</Text>
+        <Text color={inkSoft}>{head.text}</Text>
         {rejected && c.decision?.message ? (
           <View style={{ marginTop: space[1], padding: space[3], borderRadius: radius.md, backgroundColor: tint.inkFill, gap: 2 }}>
-            <Text variant="label" color={colors.ink2}>
+            <Text variant="label" color={inkSoft}>
               {t("kyc.wizard.noteFromTeam")}
             </Text>
             <Text color={colors.ink}>{c.decision.message}</Text>

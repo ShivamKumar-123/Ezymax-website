@@ -42,13 +42,13 @@ import { ActivityRow, ActivitySkeleton } from "../components/ActivityRow";
 import { ActivitySheet, type ActivitySheetHandle } from "../components/ActivitySheet";
 import { AmountInput } from "../components/AmountInput";
 import { NetworkPicker } from "../components/NetworkPicker";
-import { InfoRow, PasteButton, ProgressBar, SectionTitle, Tile } from "../components/parts";
+import { CHIP, InfoRow, PasteButton, ProgressBar, SectionTitle, Tile } from "../components/parts";
 import { CompactSummary, StepUpSheet, type StepUpSheetHandle } from "../components/StepUpSheet";
 import { FormSkeleton, HeroSkeleton, ViewOnlyNotice, WalletState } from "../components/states";
 import { WalletHeader } from "../components/WalletHeader";
 import { checkAddress, shortAddress, type AddressProblem } from "../lib/address";
 import { cents, fmtAmount, fromCents, isAmount } from "../lib/money";
-import { onBlock } from "../lib/tint";
+import { inkSoft, onBlock } from "../lib/tint";
 
 const asActivity = (w: Withdrawal): ActivityItem => ({
   type: "withdrawal",
@@ -106,23 +106,23 @@ const AvailableHero = React.memo(function AvailableHero({ o }: { o: Overview }) 
   const value = fmtAmount(b.available);
   return (
     <ColorBlock color="gold" style={{ marginHorizontal: GUTTER }} testID="withdraw-available">
-      <Text variant="label" color={colors.ink2}>
+      <Text variant="label" color={inkSoft}>
         {t("mobileWallet.withdraw.available")}
       </Text>
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: space[2], marginTop: space[2] }}>
         <Display size={value.length > 10 ? "xl" : "hero"} color={colors.ink} numberOfLines={1} style={{ flexShrink: 1 }}>
           {value}
         </Display>
-        <Text variant="headline" weight="700" color={colors.ink2} style={{ marginBottom: 8 }}>
+        <Text variant="headline" weight="700" color={inkSoft} style={{ marginBottom: 8 }}>
           USDT
         </Text>
       </View>
       <View style={{ marginTop: space[4], gap: space[2] }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", gap: space[3] }}>
-          <Text variant="caption" weight="600" color={colors.ink2} numberOfLines={1} style={{ flexShrink: 1 }}>
+          <Text variant="caption" weight="600" color={inkSoft} numberOfLines={1} style={{ flexShrink: 1 }}>
             {t("wallet.withdraw.withdrawnToday")}
           </Text>
-          <Mono size={12.5} weight="medium" color={colors.ink2}>
+          <Mono size={12.5} weight="medium" color={inkSoft}>
             {`${fmtAmount(o.limits.used_today)} / ${fmtAmount(o.limits.daily_max)}`}
           </Mono>
         </View>
@@ -260,7 +260,7 @@ const WithdrawForm = React.memo(function WithdrawForm({ cfg, o, blocked }: { cfg
         editable={!blocked}
         error={addrError}
         hint={check?.ok && chain ? t("mobileWallet.address.valid", { network: CHAIN_LABEL[chain].name }) : undefined}
-        trailing={check?.ok ? <CircleCheck size={20} color={colors.mint} /> : <PasteButton onPaste={(s) => setTo(s.replace(/\s+/g, ""))} />}
+        trailing={check?.ok ? <CircleCheck size={20} color={CHIP.success.fg} /> : <PasteButton onPaste={(s) => setTo(s.replace(/\s+/g, ""))} />}
         testID="withdraw-address"
         style={{ minWidth: 0 }}
       />

@@ -15,6 +15,10 @@ import { colors, GUTTER, radius, space } from "@/theme/tokens";
 /** A token colour at an opacity (the app's helper, re-exported for the prop components). */
 export { alpha };
 
+/** Secondary text on a colour block: ink at 78 %, at least 4.5:1 on every block colour (ember 4.7, light ember 5.7,
+ *  gold 6.7, sand 8.0, off-white 9.3). The kit's ink2 (66 %) is 3.7:1 on ember and 4.3:1 on light ember. */
+export const inkSoft = alpha(colors.ink, 0.78);
+
 export type TagTone = "ember" | "gold" | "mint" | "periwinkle" | "cream" | "neutral" | "up" | "down" | "ink";
 
 const TAG: Record<TagTone, { bg: string; fg: string }> = {
@@ -49,7 +53,7 @@ export function Tag({ label, tone = "neutral", style }: { label: string; tone?: 
 export function KV({ label, value, tone, ink, last, mono = true }: { label: string; value: React.ReactNode; tone?: "up" | "down" | "ember" | "gold" | "mint"; ink?: boolean; last?: boolean; mono?: boolean }) {
   return (
     <View style={{ minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[4], paddingVertical: space[2], borderBottomWidth: last ? 0 : 1, borderBottomColor: ink ? alpha(colors.ink, 0.12) : colors.line }}>
-      <Text variant="callout" color={ink ? colors.ink2 : colors.text3} style={{ flexShrink: 1, maxWidth: "48%" }}>
+      <Text variant="callout" color={ink ? inkSoft : colors.text3} style={{ flexShrink: 1, maxWidth: "48%" }}>
         {label}
       </Text>
       {typeof value === "string" && mono ? (
@@ -122,7 +126,7 @@ export function StackHeader({ eyebrow, title, right, sub, fallback = "/more" }: 
 export function Stat({ label, value, tone, sub, style, ink, text }: { label: string; value: string; tone?: "up" | "down" | "primary" | "ember" | "gold" | "mint"; sub?: string; style?: StyleProp<ViewStyle>; ink?: boolean; text?: boolean }) {
   return (
     <View style={[{ gap: 4, minWidth: 0 }, style]}>
-      <Text variant="label" color={ink ? colors.ink2 : colors.text3} numberOfLines={1}>
+      <Text variant="label" color={ink ? inkSoft : colors.text3} numberOfLines={1}>
         {label}
       </Text>
       {text ? (
@@ -135,7 +139,7 @@ export function Stat({ label, value, tone, sub, style, ink, text }: { label: str
         </Mono>
       )}
       {sub ? (
-        <Text variant="caption" color={ink ? colors.ink2 : colors.text3} numberOfLines={1}>
+        <Text variant="caption" color={ink ? inkSoft : colors.text3} numberOfLines={1}>
           {sub}
         </Text>
       ) : null}
@@ -165,7 +169,7 @@ export function CopyValue({ value, label, mono = true, ink }: { value: string; l
           {value}
         </Text>
       )}
-      <Copy size={13} color={ink ? colors.ink2 : colors.text3} />
+      <Copy size={13} color={ink ? inkSoft : colors.text3} />
     </PressableScale>
   );
 }

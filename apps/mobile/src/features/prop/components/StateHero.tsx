@@ -13,6 +13,7 @@ import { fmtDate, fmtDateTime, usd } from "../format";
 import type { View as RuleView } from "../rules";
 import { ruleLabel, tradable } from "../rules";
 import type { Certificate, ChallengeDetail, PhaseAccount } from "../types";
+import { inkSoft } from "./bits";
 
 /**
  * Why the phase failed. The service writes it in English with the numbers ("Daily loss limit reached: equity
@@ -39,7 +40,7 @@ function StateHero({ c, a, onCertificate, onPhase }: { c: ChallengeDetail; a: Ph
         <Display size="md" color={colors.ink}>
           {t("mobileProp.status.paymentFailed")}
         </Display>
-        <Text variant="callout" color={colors.ink2}>
+        <Text variant="callout" color={inkSoft}>
           {c.failureReason ?? t("mobileProp.error.paymentFailed")}
         </Text>
       </ColorBlock>
@@ -52,7 +53,7 @@ function StateHero({ c, a, onCertificate, onPhase }: { c: ChallengeDetail; a: Ph
         <Display size="md" color={colors.ink}>
           {t("mobileProp.hero.closed.title")}
         </Display>
-        <Text variant="callout" color={colors.ink2}>
+        <Text variant="callout" color={inkSoft}>
           {c.failureReason && i18n.locale === "en" ? t("mobileProp.hero.closed.reason", { reason: c.failureReason.replace(/\.$/, "") }) : t("mobileProp.hero.closed.body")}
         </Text>
         <Button label={t("mobileProp.action.support")} onPress={() => router.push("/support")} full={false} size="md" variant="secondary" style={{ backgroundColor: colors.ink, borderColor: colors.ink }} />
@@ -65,7 +66,7 @@ function StateHero({ c, a, onCertificate, onPhase }: { c: ChallengeDetail; a: Ph
         <Display size="md" color={colors.ink}>
           {t("mobileProp.hero.opening.title")}
         </Display>
-        <Text variant="callout" color={colors.ink2}>
+        <Text variant="callout" color={inkSoft}>
           {t("mobileProp.hero.opening.body")}
         </Text>
       </ColorBlock>
@@ -99,7 +100,7 @@ function StateHero({ c, a, onCertificate, onPhase }: { c: ChallengeDetail; a: Ph
         <Display size="lg" color={colors.ink} align="center">
           {t("mobileProp.hero.passed.title", { phase: a.phase })}
         </Display>
-        <Text variant="callout" color={colors.ink2} align="center">
+        <Text variant="callout" color={inkSoft} align="center">
           {a.endedAt ? t("mobileProp.hero.passed.on", { date: fmtDate(a.endedAt) }) + " " : ""}
           {next ? (next.login ? t("mobileProp.hero.passed.nextLogin", { phase: next.phase, login: next.login }) : t("mobileProp.hero.passed.next", { phase: next.phase })) : t("mobileProp.hero.passed.opening")}
         </Text>
@@ -119,7 +120,7 @@ function StateHero({ c, a, onCertificate, onPhase }: { c: ChallengeDetail; a: Ph
           <Display size="lg" color={colors.ink}>
             {t("mobileProp.hero.funded.title")}
           </Display>
-          <Text variant="callout" color={colors.ink2}>
+          <Text variant="callout" color={inkSoft}>
             {t("mobileProp.hero.funded.body", { split: c.split })}
           </Text>
           {cert ? (

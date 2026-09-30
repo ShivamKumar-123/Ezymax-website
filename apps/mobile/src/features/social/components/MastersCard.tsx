@@ -90,7 +90,7 @@ export function MastersCard({ style }: { style?: StyleProp<ViewStyle> }) {
             <Text variant="headline" weight="700">
               {master.nickname}
             </Text>
-            {master.house ? <Tag tone="periwinkle" label={t("mobileSocial.house.badge")} /> : <Tag tone="mint" label={t("mobileSocial.master.approved")} />}
+            {master.house ? <Tag tone="periwinkle" label={t("mobileSocial.house.badge")} /> : <Tag tone="good" label={t("mobileSocial.master.approved")} />}
           </View>
         </View>
         <StatGrid

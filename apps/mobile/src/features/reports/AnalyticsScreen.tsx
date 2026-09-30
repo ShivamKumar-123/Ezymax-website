@@ -184,7 +184,7 @@ export function AnalyticsScreen() {
       const offline = !online || q.error.code === "network";
       empty = (
         <EmptyState
-          illustration={offline ? "connectionLost" : denied ? "security" : "mascot"}
+          illustration={offline ? "connectionLost" : denied ? "security" : "maintenance"}
           title={offline ? t("mobile.state.offline.title") : denied ? t("mobileReports.state.notShared.title") : t("portfolio.an.failed")}
           body={offline ? t("mobile.state.offline.body") : q.error.message}
           action={denied ? undefined : t("mobile.action.retry")}

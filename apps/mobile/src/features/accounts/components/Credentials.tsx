@@ -5,8 +5,10 @@ import * as Clipboard from "expo-clipboard";
 import { Check, Copy, Eye, EyeOff } from "lucide-react-native";
 import { useT } from "@/i18n";
 import { Mono, PressableScale, Text, toast } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { colors, radius, space } from "@/theme/tokens";
 import { PASSWORD_RULES } from "../format";
+import { OK } from "../tint";
 
 export async function copyText(value: string, what: string, t: ReturnType<typeof useT>) {
   try {
@@ -64,9 +66,9 @@ export function PasswordRules({ password }: { password: string }) {
       {PASSWORD_RULES.map((r) => {
         const ok = r.test(password);
         return (
-          <View key={r.key} style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: space[3], borderRadius: radius.pill, backgroundColor: ok ? colors.emberSoft : colors.surface2 }} accessibilityState={{ checked: ok }}>
-            {ok ? <Check size={13} color={colors.mint} strokeWidth={3} /> : <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.text3 }} />}
-            <Text variant="caption" color={ok ? colors.mint : colors.text3}>
+          <View key={r.key} style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: space[3], borderRadius: radius.pill, backgroundColor: ok ? alpha(OK, 0.1) : colors.surface2 }} accessibilityState={{ checked: ok }}>
+            {ok ? <Check size={13} color={OK} strokeWidth={3} /> : <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.text3 }} />}
+            <Text variant="caption" color={ok ? OK : colors.text3}>
               {t.dyn(`mobileAccounts.password.rule.${r.key}`, r.key)}
             </Text>
           </View>

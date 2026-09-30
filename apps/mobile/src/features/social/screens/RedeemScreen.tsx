@@ -4,15 +4,15 @@ import * as React from "react";
 import { View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useLocalSearchParams } from "expo-router";
-import { Check, Lock } from "lucide-react-native";
+import { Lock } from "lucide-react-native";
 import { useFormat, useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
 import { invalidate, useQuery } from "@/lib/query";
-import { Banner, Button, ColorBlock, Display, EmptyState, FormError, Mono, Pill, Skeleton, Text } from "@/ui";
+import { Banner, Button, ColorBlock, Display, EmptyState, FormError, Illustration, Mono, Pill, Skeleton, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { fetchers, keys, socialPost, validId, type InvestmentView } from "../api";
 import { nav4, parseAmount, units4, usd } from "../format";
-import { alpha } from "../tint";
+import { alpha, inkSoft } from "../tint";
 import { ActionBar, FormScreen, ModalHeader, useBack } from "../components/chrome";
 import { AmountField } from "../components/controls";
 import { StatGrid } from "../components/primitives";
@@ -99,10 +99,9 @@ function Form({ inv, onClose }: { inv: InvestmentView; onClose: () => void }) {
       >
         <Animated.View entering={FadeIn.duration(200)}>
           <ColorBlock color="gold">
-            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center", marginBottom: space[4] }}>
-              <Check size={30} color={colors.gold} strokeWidth={3} />
-            </View>
-            <Text variant="label" color={colors.ink2}>
+            {/* success: the founder's "pamm funds" art on the matte block */}
+            <Illustration name="pammFunds" width={200} height={140} style={{ alignSelf: "center", marginBottom: space[4] }} />
+            <Text variant="label" color={inkSoft}>
               {f.name}
             </Text>
             <Display size="xl" color={colors.ink}>

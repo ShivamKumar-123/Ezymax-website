@@ -9,6 +9,7 @@ import { ColorBlock, Display, Mono, PressableScale, Text } from "@/ui";
 import { alpha } from "@/theme/alpha";
 import { blockColors, colors, radius, space } from "@/theme/tokens";
 import { lev, maxLeverage, type GroupColor } from "../format";
+import { inkSoft } from "../tint";
 import type { AccountKind, Group } from "../types";
 
 export const pricingText = (g: Pick<Group, "commissionPerLot">, t: T) => (g.commissionPerLot > 0 ? t("mobileAccounts.pricing.raw") : t("mobileAccounts.pricing.allIn"));
@@ -21,7 +22,7 @@ export const modeText = (mode: Group["mode"], t: T) => t.dyn(`mobileAccounts.mod
 function Spec({ label, value, ink }: { label: string; value: string; ink: boolean }) {
   return (
     <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-      <Text variant="label" color={ink ? colors.ink2 : colors.text3} numberOfLines={1} style={{ fontSize: 10 }}>
+      <Text variant="label" color={ink ? inkSoft : colors.text3} numberOfLines={1} style={{ fontSize: 10 }}>
         {label}
       </Text>
       <Mono size={14} weight="bold" color={ink ? colors.ink : colors.text} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
@@ -37,14 +38,14 @@ export const GroupBlock = React.memo(function GroupBlock({ g, color, onPress }: 
   return (
     <ColorBlock color={color} onPress={() => onPress(g.code)} padded={false} style={{ width: 232, height: 214, padding: space[5], justifyContent: "space-between" }} accessibilityLabel={`${g.name}, ${modeText(g.mode, t)}`}>
       <View style={{ gap: 2 }}>
-        <Text variant="label" color={colors.ink2} numberOfLines={1}>
+        <Text variant="label" color={inkSoft} numberOfLines={1}>
           {modeText(g.mode, t)}
           {g.cent ? " · USC" : ""}
         </Text>
         <Display size="md" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit>
           {g.name}
         </Display>
-        <Text variant="caption" color={colors.ink2} numberOfLines={2}>
+        <Text variant="caption" color={inkSoft} numberOfLines={2}>
           {pricingText(g, t)}
         </Text>
       </View>
@@ -54,7 +55,7 @@ export const GroupBlock = React.memo(function GroupBlock({ g, color, onPress }: 
           [t("mobileAccounts.spec.minDeposit"), minDepositText(g, t)],
         ].map(([label, value]) => (
           <View key={label} style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space[2], borderTopWidth: 1, borderTopColor: alpha(colors.ink, 0.14), paddingTop: space[2] }}>
-            <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ fontSize: 10, flexShrink: 1 }}>
+            <Text variant="label" color={inkSoft} numberOfLines={1} style={{ fontSize: 10, flexShrink: 1 }}>
               {label}
             </Text>
             <Mono size={14} weight="bold" color={colors.ink} numberOfLines={1}>
@@ -75,7 +76,7 @@ export const GroupOption = React.memo(function GroupOption({ g, color, kind, use
   const t = useT();
   const full = used >= g.maxAccountsPerUser;
   const ink = selected;
-  const fg2 = ink ? colors.ink2 : colors.text3;
+  const fg2 = ink ? inkSoft : colors.text3;
   return (
     <PressableScale
       onPress={() => onSelect(g.code)}
@@ -97,7 +98,7 @@ export const GroupOption = React.memo(function GroupOption({ g, color, kind, use
           <Display size="md" color={selected ? colors.ink : blockColors[color]} numberOfLines={1} adjustsFontSizeToFit>
             {g.name}
           </Display>
-          <Text variant="callout" color={ink ? colors.ink2 : colors.text2}>
+          <Text variant="callout" color={ink ? inkSoft : colors.text2}>
             {pricingText(g, t)}
           </Text>
         </View>

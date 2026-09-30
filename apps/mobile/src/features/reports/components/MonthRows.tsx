@@ -6,7 +6,7 @@ import { useT } from "@/i18n";
 import { fmtMoney } from "@/lib/format";
 import { Button, ColorBlock, Display, Mono, PressableScale, Sheet, Skeleton, Text, type SheetRef } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
-import { tint } from "../tint";
+import { inkSoft, tint } from "../tint";
 import type { MonthRow, StFormat } from "../types";
 import type { StatementRequest } from "../useStatementDownload";
 import { Flip, Label } from "./Chrome";
@@ -117,7 +117,7 @@ export const MonthSheet = React.forwardRef<SheetRef, SheetProps>(function MonthS
 function Figure({ label, value, first }: { label: string; value: string; first?: boolean }) {
   return (
     <View accessible accessibilityLabel={`${label}: ${value}`} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: space[3], borderTopWidth: first ? 0 : 1, borderTopColor: tint(colors.ink, 0.12) }}>
-      <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ flex: 1, fontSize: 10.5 }}>
+      <Text variant="label" color={inkSoft} numberOfLines={1} style={{ flex: 1, fontSize: 10.5 }}>
         {label}
       </Text>
       <Mono size={16} weight="bold" color={colors.ink} numberOfLines={1}>

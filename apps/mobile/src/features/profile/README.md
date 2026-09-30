@@ -48,6 +48,10 @@ the mobile BFF (`/api/mobile/*`, bearer session).
   (waiting, attention), ember (refused, failed) and sand (in progress). The block colours are one ember family since
   the web palette, so a light-ember "verified" would not stand apart from an ember "not approved". Tints come from
   the tokens (`tint.ts`), never fixed rgba values.
+- **Matte colour blocks:** secondary text on a block is `inkSoft` (`tint.ts`: ink at 78 %, at least 4.5:1 on every
+  block colour; the kit's `ink2` is 3.7:1 on ember). The founder's art: "kyc pending" on the verification start hero
+  (ember) and on the More card, "kyc pending" / "kyc approved" on the tracker, "security" on the Security hero and
+  the view-only empty states.
 - **Haptics** only for selection changes (switches, chips, choices) and pull-to-refresh, like the rest of the app.
 - **Privacy on a shared phone:** the photos captured for verification are kept in memory only for the review list
   and forgotten on sign-out.

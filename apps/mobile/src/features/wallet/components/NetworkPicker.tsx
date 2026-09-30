@@ -8,6 +8,7 @@ import { Display, PressableScale, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { CHAIN_LABEL, type Chain, type ChainConfig } from "../api";
 import { fmtAmount } from "../lib/money";
+import { inkSoft } from "../lib/tint";
 
 export function NetworkPicker({ chains, value, onChange, mode, disabled }: { chains: ChainConfig[]; value: Chain | null; onChange: (c: Chain) => void; mode: "deposit" | "withdraw"; disabled?: boolean }) {
   const t = useT();
@@ -17,7 +18,7 @@ export function NetworkPicker({ chains, value, onChange, mode, disabled }: { cha
         const enabled = mode === "deposit" ? c.deposits_enabled : c.withdrawals_enabled;
         const on = c.chain === value;
         const fg = on ? colors.ink : colors.text;
-        const sub = on ? colors.ink2 : colors.text3;
+        const sub = on ? inkSoft : colors.text3;
         const detail =
           mode === "deposit"
             ? t("mobileWallet.network.depositDetail", { min: fmtAmount(c.min_deposit), count: c.confirmations })

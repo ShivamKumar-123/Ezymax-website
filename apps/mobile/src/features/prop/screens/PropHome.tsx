@@ -2,18 +2,18 @@
 // certificates at a glance, and the plan catalogue with checkout. One FlashList carries the whole page, so it
 // stays smooth however many challenges a trader has run.
 import * as React from "react";
-import { RefreshControl, View } from "react-native";
+import { RefreshControl, useWindowDimensions, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useIsFocused, useRouter } from "expo-router";
 import { AlertTriangle, Award, Banknote, ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useLocale, useT } from "@/i18n";
-import { Banner, Display, EmptyState, Mono, PressableScale, Screen, Skeleton, Text, useBottomInset } from "@/ui";
+import { Banner, ColorBlock, Display, EmptyState, Illustration, Mono, PressableScale, Screen, Skeleton, Text, useBottomInset } from "@/ui";
 import { colors, GUTTER, radius, space, type BlockColor } from "@/theme/tokens";
 import { isOpenChallenge, normalizePlans, prefetchCertificates, prefetchChallenge, prefetchPayouts, sortChallenges, useCertificates, useChallenges, usePayouts, usePlans } from "../api";
 import { usd } from "../format";
 import { PLAN_COLORS } from "../rules";
 import type { Certificate, Challenge, Plan } from "../types";
-import { LoadState, SectionHead, StackHeader, useRefresh } from "../components/bits";
+import { alpha, inkSoft, LoadState, SectionHead, StackHeader, useRefresh } from "../components/bits";
 import { CheckoutSheet, type CheckoutHandle } from "../components/CheckoutSheet";
 import { OpenChallengeCard, PastChallengeRow } from "../components/ChallengeCard";
 import { CertificateSheet, CertificateTile, type CertificateSheetHandle } from "../components/Certificates";
@@ -56,6 +56,40 @@ function QuickLink({ icon, label, value, onPress, onPressIn, mono }: { icon: Rea
         )}
       </View>
     </PressableScale>
+  );
+}
+
+const HERO_ART = 128;
+
+/** The page's hero: a matte ember block with the best profit split on sale (the sentence under it says "up to") and
+ *  the founder's "prop challenge" art. */
+function Hero({ split }: { split: number }) {
+  const t = useT();
+  const { width } = useWindowDimensions();
+  const value = `${split}%`;
+  // the figure stays on one line beside the art (RN web ignores adjustsFontSizeToFit): Anton digits are about
+  // 0.56 em wide and "%" about 0.92 em; the column is what the art leaves of the block (a 360 pt phone: 144 pt)
+  const column = width - GUTTER * 2 - space[6] * 2 - HERO_ART;
+  const size = Math.max(40, Math.min(72, Math.floor((column - 4) / ((value.length - 1) * 0.56 + 0.92))));
+  return (
+    <ColorBlock color="ember" style={{ marginHorizontal: GUTTER, marginBottom: space[4], paddingBottom: space[5] }} testID="prop-hero">
+      <View style={{ flexDirection: "row", gap: space[2] }}>
+        <View style={{ flex: 1, gap: space[1] }}>
+          <Text variant="label" color={inkSoft}>
+            {t("mobileProp.profitSplit")}
+          </Text>
+          <Display size="hero" color={colors.ink} numberOfLines={1} style={{ fontSize: size, lineHeight: size + 2 }}>
+            {value}
+          </Display>
+        </View>
+        <Illustration name="propChallenge" width={HERO_ART} height={112} style={{ marginEnd: -space[2], marginTop: -space[2] }} />
+      </View>
+      <View style={{ marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: alpha(colors.ink, 0.14) }}>
+        <Text variant="callout" color={colors.ink}>
+          {t("mobileProp.home.subtitle", { split })}
+        </Text>
+      </View>
+    </ColorBlock>
   );
 }
 
@@ -233,17 +267,22 @@ export function PropHomeScreen() {
     [open, warm, buy, openCert, retryMine, retryPlans, t],
   );
 
+  // the hero carries the best split on sale; with no plans on sale the page keeps the plain subtitle (the empty
+  // catalogue below has the art then: one illustration per screen)
   const header = (
     <View>
       <StackHeader
         eyebrow={t("mobileProp.home.eyebrow")}
         title={t("mobileProp.home.title")}
         sub={
-          <Text tone="secondary" style={{ marginTop: space[1] }}>
-            {topSplit !== null ? t("mobileProp.home.subtitle", { split: topSplit }) : t("mobileProp.home.subtitleNoSplit")}
-          </Text>
+          topSplit === null ? (
+            <Text tone="secondary" style={{ marginTop: space[1] }}>
+              {t("mobileProp.home.subtitleNoSplit")}
+            </Text>
+          ) : undefined
         }
       />
+      {topSplit !== null ? <Hero split={topSplit} /> : null}
       <QuickLinks available={available} eligible={eligible.length} certs={certList.length} />
     </View>
   );

@@ -6,17 +6,17 @@ import * as React from "react";
 import { ScrollView, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { AlertTriangle, Check, ShieldCheck } from "lucide-react-native";
+import { AlertTriangle, ShieldCheck } from "lucide-react-native";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
 import { invalidate, useQuery } from "@/lib/query";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { useSession } from "@/session";
-import { Banner, Button, ColorBlock, Display, FormError, Skeleton, Text } from "@/ui";
+import { Banner, Button, ColorBlock, Display, FormError, Illustration, Skeleton, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { fetchers, keys, socialPost, validId, walletAvailable, type FollowResult, type MasterView, type SizingMode } from "../api";
 import { parseAmount, periodLabel, sizingText, usd } from "../format";
-import { alpha } from "../tint";
+import { alpha, inkSoft } from "../tint";
 import { ActionBar, FormScreen, ModalHeader, useBack } from "../components/chrome";
 import { AmountField, ChipChoice, Consent } from "../components/controls";
 import { defaultSizingValue, limitErrors, RiskLimits, SizingPicker, sizingError } from "../components/CopyForm";
@@ -324,10 +324,15 @@ function Done({ m, result, amount, onClose, onSubs }: { m: MasterView; result: F
     >
       <Animated.View entering={FadeIn.duration(200)} style={{ gap: space[5] }}>
         <ColorBlock color={funded ? "mint" : "gold"}>
-          <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center", marginBottom: space[4] }}>
-            {funded ? <Check size={30} color={colors.mint} strokeWidth={3} /> : <AlertTriangle size={28} color={colors.gold} strokeWidth={2.4} />}
-          </View>
-          <Text variant="label" color={colors.ink2}>
+          {/* copying: the founder's "copy trading" art; the copy account is open but not funded: a warning mark */}
+          {funded ? (
+            <Illustration name="copyTrading" width={200} height={140} style={{ alignSelf: "center", marginBottom: space[4] }} />
+          ) : (
+            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center", marginBottom: space[4] }}>
+              <AlertTriangle size={28} color={colors.gold} strokeWidth={2.4} />
+            </View>
+          )}
+          <Text variant="label" color={inkSoft}>
             {m.nickname}
           </Text>
           <Display size="xl" color={colors.ink} accessibilityRole="header">

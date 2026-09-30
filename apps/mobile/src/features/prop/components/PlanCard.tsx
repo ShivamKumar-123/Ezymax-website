@@ -10,7 +10,7 @@ import { defaultSize, prefetchWallet } from "../api";
 import { feeLabel, sizeLabel, usd } from "../format";
 import { targetsText, typeLabel, typeText } from "../rules";
 import type { Plan, PlanSize } from "../types";
-import { alpha, Tag } from "./bits";
+import { alpha, inkSoft, Tag } from "./bits";
 
 function SizeChip({ s, on, onPress }: { s: PlanSize; on: boolean; onPress: (n: number) => void }) {
   return (
@@ -32,7 +32,7 @@ function SizeChip({ s, on, onPress }: { s: PlanSize; on: boolean; onPress: (n: n
 function Term({ label, value }: { label: string; value: string }) {
   return (
     <View style={{ width: "50%", paddingVertical: space[2], paddingEnd: space[3], gap: 2 }}>
-      <Text variant="label" color={colors.ink2} numberOfLines={1}>
+      <Text variant="label" color={inkSoft} numberOfLines={1}>
         {label}
       </Text>
       <Mono size={15} weight="bold" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit>
@@ -59,13 +59,13 @@ export const PlanCard = React.memo(function PlanCard({ plan, color, onBuy }: { p
         <Display size="lg" color={colors.ink} numberOfLines={2}>
           {plan.name}
         </Display>
-        <Text variant="callout" color={colors.ink2}>
+        <Text variant="callout" color={inkSoft}>
           {typeText(t, plan.type)}
         </Text>
       </View>
 
       <View style={{ gap: space[2] }}>
-        <Text variant="label" color={colors.ink2}>
+        <Text variant="label" color={inkSoft}>
           {t("mobileProp.accountSize")}
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -space[6] }} contentContainerStyle={{ paddingHorizontal: space[6], gap: space[2] }} accessibilityRole="radiogroup">
@@ -77,7 +77,7 @@ export const PlanCard = React.memo(function PlanCard({ plan, color, onBuy }: { p
 
       <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: space[3] }}>
         <View style={{ flexShrink: 1 }}>
-          <Text variant="label" color={colors.ink2}>
+          <Text variant="label" color={inkSoft}>
             {t("mobileProp.plan.fee")}
           </Text>
           <Display size="hero" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit>
@@ -85,13 +85,13 @@ export const PlanCard = React.memo(function PlanCard({ plan, color, onBuy }: { p
           </Display>
         </View>
         <View style={{ alignItems: "flex-end", paddingBottom: 6 }}>
-          <Text variant="label" color={colors.ink2}>
+          <Text variant="label" color={inkSoft}>
             {t("mobileProp.plan.account")}
           </Text>
           <Mono size={18} weight="bold" color={colors.ink}>
             {usd(size.size, 0)}
           </Mono>
-          <Text variant="caption" color={colors.ink2}>
+          <Text variant="caption" color={inkSoft}>
             {t("mobileProp.plan.leverage", { n: size.leverage })}
           </Text>
         </View>

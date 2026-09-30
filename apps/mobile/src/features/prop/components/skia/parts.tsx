@@ -251,6 +251,8 @@ export const CERT_W = 1080;
 export const CERT_H = 1350;
 
 const KIND_COLOR: Record<CertArtData["kind"], string> = { pass: colors.mint, funded: colors.gold, payout: colors.ember };
+/** Secondary text on the certificate's colour block: ink at 78 % (at least 4.5:1 on ember, light ember and gold). */
+const INK_SOFT = alpha(colors.ink, 0.78);
 
 type Laid = { p: SkParagraph; x: number; y: number; w: number };
 type CertLayout = { color: string; qr: SkPath; qrX: number; qrY: number; qrSize: number; texts: Laid[]; revoked: boolean };
@@ -282,13 +284,13 @@ function layoutCert(fonts: SkTypefaceFontProvider, d: CertArtData): CertLayout {
 
   // colour block: brand line, number, headline, the big figure, what it is for
   add(para(fonts, "KALKS PROP", { family: "Mono", size: 30, color: ink, weight: FontWeight.Bold, spacing: 4 }, inner), pad, 112, inner);
-  add(para(fonts, `No. ${d.code}`, { family: "Mono", size: 28, color: colors.ink2, weight: FontWeight.Medium, align: TextAlign.Right }, inner), pad, 114, inner);
+  add(para(fonts, `No. ${d.code}`, { family: "Mono", size: 28, color: INK_SOFT, weight: FontWeight.Medium, align: TextAlign.Right }, inner), pad, 114, inner);
   const head = fit(fonts, d.headline.toUpperCase(), { family: "Anton", size: 104, color: ink, lineHeight: 1.02 }, inner, 2, 64);
   add(head, pad, 214, inner);
   const amountTop = 214 + head.getHeight() + 18;
   const amount = fit(fonts, d.amount, { family: "Anton", size: 220, color: ink, lineHeight: 1 }, inner, 1, 110);
   add(amount, pad, amountTop, inner);
-  add(para(fonts, d.sub, { family: "Mono", size: 30, color: colors.ink2, weight: FontWeight.Medium, maxLines: 2, lineHeight: 1.3 }, inner), pad, 742, inner);
+  add(para(fonts, d.sub, { family: "Mono", size: 30, color: INK_SOFT, weight: FontWeight.Medium, maxLines: 2, lineHeight: 1.3 }, inner), pad, 742, inner);
 
   // below the block: who, when, where to verify
   const qrSize = 250;

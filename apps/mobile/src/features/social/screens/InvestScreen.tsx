@@ -5,13 +5,13 @@ import * as React from "react";
 import { View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { CalendarClock, Check, Lock } from "lucide-react-native";
+import { CalendarClock, Lock } from "lucide-react-native";
 import { useFormat, useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
 import { invalidate, useQuery } from "@/lib/query";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { useSession } from "@/session";
-import { Banner, Button, ColorBlock, Display, FormError, Mono, Skeleton, Text } from "@/ui";
+import { Banner, Button, ColorBlock, Display, FormError, Illustration, Mono, Skeleton, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { fetchers, keys, socialPost, validId, walletAvailable, type FundView, type RequestView } from "../api";
 import { nav4, parseAmount, periodLabel, units4, usd } from "../format";
@@ -19,6 +19,7 @@ import { ActionBar, FormScreen, ModalHeader, useBack } from "../components/chrom
 import { AmountField, ChipChoice, Consent, Slider, SwitchRow } from "../components/controls";
 import { KeyValues } from "../components/primitives";
 import { LoadError } from "../components/states";
+import { inkSoft } from "../tint";
 
 export function InvestScreen() {
   const close = useBack("/social/pamm");
@@ -104,10 +105,9 @@ function Form({ f, available, onClose }: { f: FundView; available: number | null
       >
         <Animated.View entering={FadeIn.duration(200)} style={{ gap: space[5] }}>
           <ColorBlock color="gold">
-            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center", marginBottom: space[4] }}>
-              <Check size={30} color={colors.gold} strokeWidth={3} />
-            </View>
-            <Text variant="label" color={colors.ink2}>
+            {/* success: the founder's "pamm funds" art on the matte block */}
+            <Illustration name="pammFunds" width={200} height={140} style={{ alignSelf: "center", marginBottom: space[4] }} />
+            <Text variant="label" color={inkSoft}>
               {f.name}
             </Text>
             <Display size="xl" color={colors.ink}>

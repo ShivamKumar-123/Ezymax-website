@@ -2,7 +2,7 @@
 // and MAM, and a summary for masters (their dashboard is managed in the Client Area on the web).
 // One FlashList: the editorial header scrolls away with the list; rows are fixed-height and memoised.
 import * as React from "react";
-import { RefreshControl, View } from "react-native";
+import { RefreshControl, useWindowDimensions, View } from "react-native";
 import { useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
 import { LineChart, ShieldCheck, SlidersHorizontal } from "lucide-react-native";
@@ -14,7 +14,7 @@ import { ColorBlock, Display, Illustration, Mono, Pill, PressableScale, Screen, 
 import { blockColors, colors, GUTTER, radius, space } from "@/theme/tokens";
 import { fetchers, keys, leaderboardPath, shared, socialGet, type Leaderboard, type LbPeriod, type MasterView } from "../api";
 import { compactUsd } from "../format";
-import { alpha } from "../tint";
+import { alpha, inkSoft } from "../tint";
 import { TopBar, useBack } from "../components/chrome";
 import { LEADER_ROW_HEIGHT, LeaderRow } from "../components/LeaderRow";
 import { MastersCard } from "../components/MastersCard";
@@ -89,7 +89,7 @@ export function HubScreen() {
       </View>
       <View style={{ paddingHorizontal: GUTTER, gap: space[3] }}>
         <RestrictionBanner kinds={["social", "transfers"]} />
-        <Hero totals={data?.totals} anyHouse={hasHouse} loading={!data} />
+        <Hero totals={data?.totals} anyHouse={hasHouse} loading={!data} art={!!data || !lb.error} />
         <MineRow
           copies={subs.data?.items.filter((s) => s.status !== "stopped")}
           invested={inv.data ? inv.data.items.reduce((a, i) => a + i.value, 0) : undefined}
@@ -193,10 +193,11 @@ export function HubScreen() {
 
 const keyOf = (m: MasterView) => String(m.id);
 
+/** No masters (or none matching the filters). No art here: the hero above already carries the copy trading art
+ *  (one illustration per screen). */
 function EmptyList({ title, body, action, onAction }: { title: string; body: string; action?: string; onAction?: () => void }) {
   return (
     <View style={{ alignItems: "center", paddingHorizontal: space[8], paddingVertical: space[8], gap: space[3] }}>
-      <Illustration name="copyTrading" width={180} height={150} />
       <Display size="md" align="center">
         {title}
       </Display>
@@ -208,25 +209,34 @@ function EmptyList({ title, body, action, onAction }: { title: string; body: str
   );
 }
 
+const HERO_ART = 128;
+
 /** Ember block: the leaderboard at a glance, with the copy trading illustration. */
-function Hero({ totals, anyHouse, loading }: { totals?: Leaderboard["totals"]; anyHouse: boolean; loading: boolean }) {
+function Hero({ totals, anyHouse, loading, art }: { totals?: Leaderboard["totals"]; anyHouse: boolean; loading: boolean; /** off while the list below shows a failed load with its own art */ art: boolean }) {
   const t = useT();
   const fmt = useFormat();
+  const { width } = useWindowDimensions();
+  const count = loading || !totals ? "—" : fmt.number(totals.masters, 0);
+  // the count stays on one line beside the art (RN web ignores adjustsFontSizeToFit): Anton digits are about 0.56 em
+  // wide, group separators about 0.3 em; the column is what the art leaves of the block (a 360 pt phone: 144 pt)
+  const digits = count.replace(/[^0-9]/g, "").length;
+  const column = width - GUTTER * 2 - space[6] * 2 - HERO_ART;
+  const size = Math.max(40, Math.min(72, Math.floor((column - 4) / Math.max(0.01, digits * 0.56 + (count.length - digits) * 0.3))));
   return (
     <ColorBlock color="ember" style={{ paddingBottom: space[5] }}>
       <View style={{ flexDirection: "row", gap: space[2] }}>
         <View style={{ flex: 1, gap: space[1] }}>
-          <Text variant="label" color={colors.ink2}>
+          <Text variant="label" color={inkSoft}>
             {t("mobileSocial.hub.hero.eyebrow")}
           </Text>
-          <Display size="hero" color={colors.ink} style={{ fontSize: 72, lineHeight: 74 }}>
-            {loading || !totals ? "—" : fmt.number(totals.masters, 0)}
+          <Display size="hero" color={colors.ink} numberOfLines={1} style={{ fontSize: size, lineHeight: Math.max(size + 2, 74) }}>
+            {count}
           </Display>
           <Text variant="callout" weight="700" color={colors.ink}>
             {t("mobileSocial.hub.hero.masters", { count: totals?.masters ?? 0 })}
           </Text>
         </View>
-        <Illustration name="copyTrading" width={128} height={112} style={{ marginEnd: -space[2], marginTop: -space[2] }} />
+        {art ? <Illustration name="copyTrading" width={HERO_ART} height={112} style={{ marginEnd: -space[2], marginTop: -space[2] }} /> : null}
       </View>
       <View style={{ flexDirection: "row", gap: space[3], marginTop: space[5] }}>
         <HeroStat label={t("mobileSocial.hub.hero.aum")} value={totals ? compactUsd(totals.aum) : "—"} />
@@ -235,7 +245,7 @@ function Hero({ totals, anyHouse, loading }: { totals?: Leaderboard["totals"]; a
       </View>
       <View style={{ flexDirection: "row", gap: space[2], alignItems: "flex-start", marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: alpha(colors.ink, 0.14) }}>
         <ShieldCheck size={15} color={colors.ink} style={{ marginTop: 1 }} />
-        <Text variant="caption" color={colors.ink2} style={{ flex: 1, lineHeight: 17 }}>
+        <Text variant="caption" color={inkSoft} style={{ flex: 1, lineHeight: 17 }}>
           {anyHouse ? t("mobileSocial.hub.hero.chipClient") : t("mobileSocial.hub.hero.chipAll")}
         </Text>
       </View>
@@ -249,7 +259,7 @@ function HeroStat({ label, value }: { label: string; value: string }) {
       <Mono size={19} weight="bold" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Mono>
-      <Text variant="caption" color={colors.ink2} numberOfLines={2} style={{ fontSize: 11.5 }}>
+      <Text variant="caption" color={inkSoft} numberOfLines={2} style={{ fontSize: 11.5 }}>
         {label}
       </Text>
     </View>
@@ -320,14 +330,14 @@ function MineBlock({
       accessibilityLabel={`${title}, ${value}, ${sub}`}
       style={{ flex: 1, height: 136, paddingHorizontal: space[3], paddingVertical: space[4], borderRadius: radius.card, backgroundColor: blockColors[color], overflow: "hidden" }}
     >
-      <Text variant="label" color={colors.ink2} numberOfLines={2} style={{ letterSpacing: 0.6 }}>
+      <Text variant="label" color={inkSoft} numberOfLines={2} style={{ letterSpacing: 0.6 }}>
         {title}
       </Text>
       <View style={{ flex: 1 }} />
       <Display size="lg" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Display>
-      <Text variant="caption" color={colors.ink2} numberOfLines={2} style={{ fontSize: 11.5, lineHeight: 14, height: 28 }}>
+      <Text variant="caption" color={inkSoft} numberOfLines={2} style={{ fontSize: 11.5, lineHeight: 14, height: 28 }}>
         {sub}
       </Text>
     </PressableScale>

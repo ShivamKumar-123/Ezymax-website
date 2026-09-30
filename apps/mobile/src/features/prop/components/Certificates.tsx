@@ -12,7 +12,7 @@ import { colors, GUTTER, space, type BlockColor } from "@/theme/tokens";
 import { certArt, certMoney, sharePng, shareLink, verifyUrl } from "../certificate";
 import { fmtCertDate, sizeLabel } from "../format";
 import type { Certificate } from "../types";
-import { Tag } from "./bits";
+import { inkSoft, Tag } from "./bits";
 import { CertificateCanvas, type CertificateCanvasHandle } from "./gauges";
 
 export const KIND: Record<Certificate["kind"], { label: MessageKey; color: BlockColor }> = {
@@ -33,7 +33,7 @@ export const CertificateTile = React.memo(function CertificateTile({ c, onOpen, 
       <ColorBlock color={k.color} style={{ flex: 1, justifyContent: "space-between", opacity: c.revoked ? 0.55 : 1 }}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[2] }}>
           <Tag label={c.revoked ? t("mobileProp.certs.revoked") : t(k.label)} tone="ink" />
-          <Mono size={11} weight="medium" color={colors.ink2}>
+          <Mono size={11} weight="medium" color={inkSoft}>
             {c.code}
           </Mono>
         </View>
@@ -41,7 +41,7 @@ export const CertificateTile = React.memo(function CertificateTile({ c, onOpen, 
           <Display size="xl" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit>
             {big}
           </Display>
-          <Text variant="caption" color={colors.ink2} numberOfLines={1}>
+          <Text variant="caption" color={inkSoft} numberOfLines={1}>
             {c.phase && c.kind === "pass" ? `${c.phase} · ` : ""}
             {sizeLabel(c.size)} · {c.planName}
           </Text>
@@ -50,7 +50,7 @@ export const CertificateTile = React.memo(function CertificateTile({ c, onOpen, 
           <Text variant="callout" weight="700" color={colors.ink} numberOfLines={1} style={{ flexShrink: 1 }}>
             {c.traderName}
           </Text>
-          <Text variant="caption" color={colors.ink2}>
+          <Text variant="caption" color={inkSoft}>
             {fmtCertDate(c.issuedAt)}
           </Text>
         </View>

@@ -11,12 +11,12 @@ import { AlertTriangle, Building2, FileText, IdCard, Lock, Plus, ScanFace, Trash
 import { maxDob } from "@/features/auth/countries";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
-import { Button, Checkbox, Display, FormError, Pill, PressableScale, Text, TextField, toast } from "@/ui";
+import { Button, Checkbox, ColorBlock, Display, FormError, Illustration, Pill, PressableScale, Text, TextField, toast } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { NextArrow, Note, StatusChip } from "../components/bits";
 import { CountryField, DateField } from "../components/fields";
 import { ageDays, countryName, isYmd } from "../format";
-import { OK, tint } from "../tint";
+import { inkSoft, OK, tint } from "../tint";
 import { applyKyc, hoursLabel, kycPost } from "./api";
 import { flagged } from "./checks";
 import { DocSlot, previewFor } from "./DocSlot";
@@ -156,7 +156,18 @@ export function StartPanel({ state, onStarted, readOnly }: { state: KycState; on
         ] as const);
   return (
     <Pad gap={space[5]}>
-      <StepTitle title={again ? t("kyc.start.titleAgain") : t("kyc.start.title")} text={t("kyc.start.text", { minutes: kind === "individual" ? "3" : "10", hours: hoursLabel(t, state.review.typical_hours) })} />
+      {/* the hero: a matte ember block with the founder's "kyc pending" art, like the More tab's verification card */}
+      <ColorBlock color="ember" padded={false} style={{ padding: space[5], minHeight: 176 }} testID="kyc-start-hero">
+        <View style={{ gap: space[2], paddingEnd: 112 }}>
+          <Display size="md" color={colors.ink} accessibilityRole="header">
+            {again ? t("kyc.start.titleAgain") : t("kyc.start.title")}
+          </Display>
+          <Text variant="callout" color={inkSoft}>
+            {t("kyc.start.text", { minutes: kind === "individual" ? "3" : "10", hours: hoursLabel(t, state.review.typical_hours) })}
+          </Text>
+        </View>
+        <Illustration name="kycPending" width={132} height={132} style={{ position: "absolute", bottom: 0, end: 0 }} />
+      </ColorBlock>
       <View style={{ gap: space[2] }}>
         <Text variant="label" tone="tertiary">
           {t("mobileProfile.kyc.typeTitle")}

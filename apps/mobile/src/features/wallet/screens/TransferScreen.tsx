@@ -13,7 +13,7 @@ import { useT } from "@/i18n";
 import { haptic } from "@/lib/haptics";
 import { useSession } from "@/session";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
-import { Button, Card, Display, Divider, EmptyState, FormError, Mono, PressableScale, Screen, Sheet, Skeleton, Text, type SheetRef } from "@/ui";
+import { Button, Card, Display, Divider, EmptyState, FormError, Illustration, Mono, PressableScale, Screen, Sheet, Skeleton, Text, type SheetRef } from "@/ui";
 import { colors, GUTTER, HIT, motion, radius, space } from "@/theme/tokens";
 import {
   accountCurrencyPrefix,
@@ -290,7 +290,7 @@ export function TransferScreen() {
     </Card>
   ) : live.length === 0 ? (
     <Card>
-      <EmptyState title={t("wallet.transfer.noLiveTitle")} body={t("wallet.transfer.noLiveText")} action={viewer ? undefined : t("wallet.transfer.openLive")} onAction={viewer ? undefined : () => router.push("/accounts/new")} style={{ paddingVertical: space[4], paddingHorizontal: 0 }} />
+      <EmptyState illustration="welcome" size={160} title={t("wallet.transfer.noLiveTitle")} body={t("wallet.transfer.noLiveText")} action={viewer ? undefined : t("wallet.transfer.openLive")} onAction={viewer ? undefined : () => router.push("/accounts/new")} style={{ paddingVertical: space[4], paddingHorizontal: 0 }} />
     </Card>
   ) : (
     <AccountPicker label={dir === "to" ? t("wallet.transfer.toTradingAccount") : t("wallet.transfer.fromTradingAccount")} accounts={live} value={login} onChange={setLogin} dir={dir} />
@@ -374,6 +374,8 @@ export function TransferScreen() {
       >
         {result ? (
           <View style={{ gap: space[4], paddingTop: space[2] }} testID={`transfer-result-${result.transfer.status}`}>
+            {/* money arrived where it was sent: the founder's "deposit credited" art, as on the deposit screen */}
+            {result.transfer.status === "completed" ? <Illustration name="depositCredited" width={140} height={150} style={{ alignSelf: "center" }} /> : null}
             <Display size="md">{result.transfer.status === "completed" ? t("wallet.transferCompleted") : result.transfer.status === "failed" ? t("wallet.transfer.failed") : t("wallet.transfer.processing")}</Display>
             <Text tone="secondary">
               {result.transfer.status === "completed"

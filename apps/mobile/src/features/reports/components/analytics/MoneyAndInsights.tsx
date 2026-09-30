@@ -6,7 +6,7 @@ import { useT } from "@/i18n";
 import { Card, ColorBlock, Display, Mono, Text } from "@/ui";
 import { colors, GUTTER, radius, space, type BlockColor } from "@/theme/tokens";
 import { insightView, usd, type InsightView } from "../../format";
-import { tint } from "../../tint";
+import { inkSoft, tint } from "../../tint";
 import type { Analytics } from "../../types";
 import { SectionTitle, Tag } from "../Chrome";
 
@@ -48,7 +48,7 @@ export const MoneyFlow = React.memo(function MoneyFlow({ f, periodLabel }: { f: 
         </View>
       </Card>
       <ColorBlock color="cream" padded={false} style={{ marginTop: space[3], paddingHorizontal: space[5], paddingVertical: space[4], flexDirection: "row", alignItems: "center", gap: space[3] }}>
-        <Text variant="label" color={colors.ink2} style={{ flex: 1 }}>
+        <Text variant="label" color={inkSoft} style={{ flex: 1 }}>
           {t("mobileReports.an.flow.equityNow")}
         </Text>
         <Display size="md" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
@@ -183,7 +183,7 @@ function InsightCard({ v, width }: { v: InsightView; width: number }) {
         </Text>
       </View>
       <View style={{ marginTop: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: tint(colors.ink, 0.16), flexDirection: "row", gap: space[2] }}>
-        <Text variant="label" color={colors.ink2} style={{ fontSize: 10, marginTop: 2 }}>
+        <Text variant="label" color={inkSoft} style={{ fontSize: 10, marginTop: 2 }}>
           {t("mobileReports.insight.tip")}
         </Text>
         <Text variant="caption" color={colors.ink} style={{ flex: 1 }}>

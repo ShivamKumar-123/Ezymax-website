@@ -75,7 +75,7 @@ export function StatementsScreen() {
         <Page bar={bar}>
           {title}
           <EmptyState
-            illustration={offline ? "connectionLost" : denied ? "security" : "mascot"}
+            illustration={offline ? "connectionLost" : denied ? "security" : "maintenance"}
             title={offline ? t("mobile.state.offline.title") : denied ? t("mobileReports.state.notShared.title") : t("mobile.state.error.title")}
             body={offline ? t("mobile.state.offline.body") : accountsQ.error.message}
             action={denied ? undefined : t("mobile.action.retry")}

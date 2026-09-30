@@ -14,7 +14,7 @@ import { fmtDate, fmtDateTime, sizeLabel, usd } from "../format";
 import { blockerText, payoutFreqLabel } from "../rules";
 import { openInTrade } from "../trade";
 import type { FundedAccount, Payout, PayoutStatus, Plan } from "../types";
-import { alpha, CopyValue, KV, LoadState, SectionHead, StackHeader, Stat, Tag, useRefresh, type TagTone } from "../components/bits";
+import { alpha, CopyValue, inkSoft, KV, LoadState, SectionHead, StackHeader, Stat, Tag, useRefresh, type TagTone } from "../components/bits";
 import { PayoutSheet, type PayoutSheetHandle } from "../components/PayoutSheet";
 
 const STATUS: Record<PayoutStatus, { key: "mobileProp.payoutStatus.pending" | "mobileProp.payoutStatus.approved" | "mobileProp.payoutStatus.paid" | "mobileProp.payoutStatus.rejected" | "mobileProp.payoutStatus.failed"; tone: TagTone }> = {
@@ -44,7 +44,7 @@ function KycNotice({ status }: { status: string }) {
   if (status === "verified")
     return (
       <View style={{ marginHorizontal: GUTTER, flexDirection: "row", alignItems: "center", gap: space[2] }}>
-        <BadgeCheck size={16} color={colors.mint} />
+        <BadgeCheck size={16} color={colors.cream} />
         <Text variant="caption" tone="secondary">
           {t("mobileProp.kyc.verified")}
         </Text>
@@ -72,13 +72,13 @@ function Kpis({ payouts, funded }: { payouts: Payout[]; funded: FundedAccount[] 
   return (
     <ColorBlock color="gold" style={{ marginHorizontal: GUTTER, gap: space[4] }}>
       <View>
-        <Text variant="label" color={colors.ink2}>
+        <Text variant="label" color={inkSoft}>
           {t("mobileProp.payouts.available")}
         </Text>
         <Display size="hero" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit>
           {usd(available)}
         </Display>
-        <Text variant="callout" color={colors.ink2}>
+        <Text variant="callout" color={inkSoft}>
           {t("mobileProp.payouts.eligibleCount", { eligible: eligible.length, count: funded.length })}
         </Text>
       </View>

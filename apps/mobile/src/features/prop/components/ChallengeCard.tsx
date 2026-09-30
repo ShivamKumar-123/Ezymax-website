@@ -9,7 +9,7 @@ import { colors, GUTTER, space } from "@/theme/tokens";
 import { fmtDate, sizeLabel, usd, clamp01 } from "../format";
 import { challengeColor, stageLabel, viewOf } from "../rules";
 import type { Challenge } from "../types";
-import { alpha, Tag } from "./bits";
+import { alpha, inkSoft, Tag } from "./bits";
 
 function Meter({ share }: { share: number }) {
   return (
@@ -35,7 +35,7 @@ export const OpenChallengeCard = React.memo(function OpenChallengeCard({ c, onOp
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[2] }}>
           <Tag label={stageLabel(t, c)} tone="ink" />
           {a?.login ? (
-            <Mono size={13} weight="medium" color={colors.ink2}>
+            <Mono size={13} weight="medium" color={inkSoft}>
               #{a.login}
             </Mono>
           ) : null}
@@ -44,14 +44,14 @@ export const OpenChallengeCard = React.memo(function OpenChallengeCard({ c, onOp
           <Display size="xl" color={colors.ink}>
             {sizeLabel(c.size)}
           </Display>
-          <Text variant="callout" color={colors.ink2} numberOfLines={1}>
+          <Text variant="callout" color={inkSoft} numberOfLines={1}>
             {c.planName}
           </Text>
         </View>
         {v && a ? (
           <View style={{ gap: space[2] }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
-              <Text variant="label" color={colors.ink2}>
+              <Text variant="label" color={inkSoft}>
                 {funded || !target ? t("mobileProp.card.profit") : t("mobileProp.card.target")}
               </Text>
               <Mono size={14} weight="bold" color={colors.ink}>
@@ -60,16 +60,16 @@ export const OpenChallengeCard = React.memo(function OpenChallengeCard({ c, onOp
             </View>
             {!funded && target ? <Meter share={profit / target} /> : null}
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <Text variant="caption" color={colors.ink2}>
+              <Text variant="caption" color={inkSoft}>
                 {t("mobileProp.card.equity", { amount: usd(v.equity) })}
               </Text>
-              <Text variant="caption" color={colors.ink2}>
+              <Text variant="caption" color={inkSoft}>
                 {t("mobileProp.card.dailyLeft", { amount: usd(dailyLeft, 0) })}
               </Text>
             </View>
           </View>
         ) : (
-          <Text variant="callout" color={colors.ink2}>
+          <Text variant="callout" color={inkSoft}>
             {t("mobileProp.card.opening")}
           </Text>
         )}
