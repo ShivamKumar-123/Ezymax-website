@@ -81,8 +81,9 @@ async function viewerApi(req: NextRequest): Promise<NextResponse | null> {
 // refused is reported to the gateway, which audits it with the staff id.
 const STAFF_READ_ONLY_PREFIX = "i.";
 const STAFF_FULL_PREFIX = "s.";
-/** Changes a read-only staff session may still make: sign out / end the staff session, presence heartbeat. */
-const STAFF_ALWAYS_POST = ["/api/auth/logout", "/api/auth/heartbeat", "/api/auth/impersonation"];
+/** Changes a read-only staff session may still make: sign out / end the staff session, presence heartbeat, and the
+ *  ticket for the receive-only realtime stream (bell + chat updates; the socket accepts no commands). */
+const STAFF_ALWAYS_POST = ["/api/auth/logout", "/api/auth/heartbeat", "/api/auth/impersonation", "/api/support/stream-ticket"];
 
 function staffToken(req: NextRequest): { token: string; readOnly: boolean } | null {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -165,9 +166,13 @@ async function gate(req: NextRequest): Promise<NextResponse> {
     if (pathname !== "/") url.searchParams.set("next", pathname + search);
     return NextResponse.redirect(url);
   }
-  // pages a staff member opens as the client are audited (at most once per page every 5 minutes)
+  // pages a staff member opens as the client are audited (at most once per page every 5 minutes). Only full page
+  // loads count here: Next strips the prefetch headers before the proxy, so an in-app request could be a link
+  // prefetch of a page nobody opened. In-app navigations are reported by the staff banner (account-notices.tsx).
   const staff = staffToken(req);
-  if (staff) await staffEvent(req, staff.token, "page_view");
+  const dest = req.headers.get("sec-fetch-dest");
+  const socket = req.headers.get("upgrade")?.toLowerCase() === "websocket";
+  if (staff && !socket && (!dest || dest === "document")) await staffEvent(req, staff.token, "page_view");
   // view-only sessions only see the sections they were given
   if (isViewerToken(token)) {
     const scope = await viewerScope(req);

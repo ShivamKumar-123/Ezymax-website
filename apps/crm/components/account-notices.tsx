@@ -11,6 +11,7 @@
  */
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LogOut, ShieldAlert, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button, cn } from "@kalks/ui";
@@ -86,6 +87,15 @@ function StaffBanner({ imp, client }: { imp: StaffImpersonation; client: string 
     if (left <= 0) window.location.assign("/staff-session?state=ended");
   }, [left]);
 
+  // in-app navigations are audited too (the first page was a full load, which the proxy already reported)
+  const pathname = usePathname();
+  const firstPath = React.useRef(pathname);
+  React.useEffect(() => {
+    if (!pathname || pathname === firstPath.current) return;
+    firstPath.current = "";
+    void fetch("/api/auth/impersonation", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "page_view", path: pathname }), credentials: "same-origin" }).catch(() => null);
+  }, [pathname]);
+
   // a change refused because the staff session is read-only gets one clear message
   React.useEffect(() => {
     if (imp.mode !== "read_only") return;
@@ -130,7 +140,8 @@ function StaffBanner({ imp, client }: { imp: StaffImpersonation; client: string 
           <span className={cn("ms-2 inline-flex h-5 items-center rounded-full border px-2 text-[10.5px] font-medium", imp.mode === "full" ? "border-down/30 bg-down-soft text-down" : "border-info/30 bg-info-soft text-info")}>
             {imp.mode === "full" ? t("security.staff.full") : t("security.staff.readOnly")}
           </span>
-          <span className="k-num ms-2 text-[12px] text-fg-3" data-testid="staff-time-left">
+          {/* the countdown differs by a second between the server render and the browser */}
+          <span className="k-num ms-2 text-[12px] text-fg-3" data-testid="staff-time-left" suppressHydrationWarning>
             {t("security.staff.left", { time: mmss(left) })}
           </span>
         </span>
