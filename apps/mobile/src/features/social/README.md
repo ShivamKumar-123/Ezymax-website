@@ -42,6 +42,7 @@ The social module of the Kalks app. It uses the same server routes and rules as 
 - **Haptics.** Selection (pills, switches, radio cards, symbol chips), pull-to-refresh, and a stop / revoke that closed positions (a close, like the Trade tab). Saving settings or limits, pausing, following, investing, redeeming and connecting have no buzz: the result screen or toast says what the server did.
 - **A disabled Copy says why** (frozen by the risk team, a hidden house strategy, a master no longer approved) under the button.
 - **MAM consent names the account:** choosing another account unticks it.
+- **Sliders** (drawdown stop, investor stop-loss) run in the reading direction like the platform sliders and the partner screens: min at the start, so on the right in Arabic, Urdu and Farsi. The growth / NAV chart stays left-to-right (a time axis).
 - **Wallet check before following.** The wizard compares the amount with the wallet's available USDT. Otherwise the engine would open a copy account that the wallet then can't fund. The server stays authoritative.
 
 ## Data

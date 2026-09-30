@@ -5,6 +5,7 @@ import { Platform, Switch, View, type StyleProp, type TextInputProps, type ViewS
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { Check } from "lucide-react-native";
+import { useLocale } from "@/i18n";
 import { haptic } from "@/lib/haptics";
 import { PressableScale, Text, TextField } from "@/ui";
 import { colors, motion, radius, space } from "@/theme/tokens";
@@ -19,7 +20,9 @@ const THUMB = 28;
 
 /**
  * Integer slider (min..max, `step`). The thumb follows the finger 1:1 on the UI thread; React only hears about a
- * change when the stepped value changes. A light selection haptic marks the `ticks`. Always left-to-right.
+ * change when the stepped value changes. A light selection haptic marks the `ticks`. It runs in the reading
+ * direction like the platform sliders (and the partner screens): min at the start, so on the right in Arabic,
+ * Urdu and Farsi. The track is laid out physically (ltr) and the value is mirrored, so the finger maths stays one.
  */
 export function Slider({
   value,
@@ -44,6 +47,7 @@ export function Slider({
   accessibilityLabel: string;
   format?: (v: number) => string;
 }) {
+  const { rtl } = useLocale();
   const [width, setWidth] = React.useState(0);
   const w = useSharedValue(0);
   const x = useSharedValue(0);
@@ -51,11 +55,17 @@ export function Slider({
   const dragging = useSharedValue(0);
   const range = Math.max(1, max - min);
 
+  // thumb position on the physical track (0 = left edge) for a value
+  const at = React.useCallback((v: number, tw: number) => {
+    const f = (v - min) / range;
+    return (rtl ? 1 - f : f) * tw;
+  }, [min, range, rtl]);
+
   React.useEffect(() => {
     w.value = width;
-    if (!dragging.value) x.value = width ? ((value - min) / range) * width : 0;
+    if (!dragging.value) x.value = width ? at(value, width) : 0;
     last.value = value;
-  }, [value, width, min, range, w, x, last, dragging]);
+  }, [value, width, at, w, x, last, dragging]);
 
   const emit = React.useCallback(
     (v: number, tick: boolean) => {
@@ -72,7 +82,8 @@ export function Slider({
       "worklet";
       const nx = Math.max(0, Math.min(w.value, fx - THUMB / 2));
       x.value = fromTap ? withSpring(nx, motion.spring) : nx;
-      const v = Math.min(max, Math.max(min, Math.round((min + (nx / Math.max(1, w.value)) * range) / step) * step));
+      const frac = nx / Math.max(1, w.value);
+      const v = Math.min(max, Math.max(min, Math.round((min + (rtl ? 1 - frac : frac) * range) / step) * step));
       if (v !== last.value) {
         last.value = v;
         runOnJS(emit)(v, !fromTap && tickSet.includes(v));
@@ -81,7 +92,8 @@ export function Slider({
     const settle = () => {
       "worklet";
       dragging.value = 0;
-      x.value = withSpring(((last.value - min) / range) * w.value, motion.spring);
+      const f = (last.value - min) / range;
+      x.value = withSpring((rtl ? 1 - f : f) * w.value, motion.spring);
     };
     // horizontal drags move the thumb; vertical drags stay with the page scroll
     const pan = Gesture.Pan()
@@ -101,10 +113,11 @@ export function Slider({
         settle();
       });
     return Gesture.Race(pan, tap);
-  }, [disabled, emit, min, max, range, step, ticks, w, x, last, dragging]);
+  }, [disabled, emit, min, max, range, step, ticks, rtl, w, x, last, dragging]);
 
   const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
-  const fill = useAnimatedStyle(() => ({ width: x.value }));
+  // the fill runs from the start of the reading direction to the thumb
+  const fill = useAnimatedStyle(() => ({ width: rtl ? Math.max(0, w.value - x.value) : x.value }));
 
   return (
     <View
@@ -123,7 +136,7 @@ export function Slider({
       <GestureDetector gesture={gesture}>
         <View style={{ height: 44, justifyContent: "center", paddingHorizontal: THUMB / 2 }} collapsable={false}>
           <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} style={{ height: 6, borderRadius: 3, backgroundColor: colors.surface3 }}>
-            <Animated.View style={[{ position: "absolute", start: 0, top: 0, bottom: 0, borderRadius: 3, backgroundColor: color }, fill]} />
+            <Animated.View style={[{ position: "absolute", top: 0, bottom: 0, borderRadius: 3, backgroundColor: color }, rtl ? { end: 0 } : { start: 0 }, fill]} />
           </View>
           <Animated.View
             pointerEvents="none"
@@ -137,7 +150,12 @@ export function Slider({
       {ticks.length ? (
         <View style={{ height: 16, marginHorizontal: THUMB / 2 }}>
           {visibleTicks(ticks, min, range, width).map((tk) => (
-            <Text key={tk} variant="caption" tone="tertiary" style={{ position: "absolute", start: `${((tk - min) / range) * 100}%`, width: 40, marginStart: -20, textAlign: "center", fontSize: 11 }}>
+            <Text
+              key={tk}
+              variant="caption"
+              tone="tertiary"
+              style={{ position: "absolute", start: `${(rtl ? 1 - (tk - min) / range : (tk - min) / range) * 100}%`, width: 40, marginStart: -20, textAlign: "center", fontSize: 11 }}
+            >
               {format(tk)}
             </Text>
           ))}
