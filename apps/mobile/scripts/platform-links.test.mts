@@ -20,7 +20,8 @@ test("every link the services send opens its app screen", () => {
     ["/prop/mine?id=12", "/prop/mine?id=12"],
     ["/prop/payouts", "/prop/payouts"],
     ["/partner/payouts", "/partner/payouts"], // IB notifier
-    ["/calendar", "/calendar"], // news reminders
+    ["/calendar", "/calendar"], // news reminders sent before the event travelled in the link
+    ["/calendar?event=4812", "/calendar?event=4812"], // news reminders: the event's sheet opens
     ["/alerts", "/alerts"], // price alerts (market-data)
     ["/rewards", "/rewards"], // contest prizes (growth)
     ["/rewards/cashback", "/rewards/cashback"], // cashback paid (growth)

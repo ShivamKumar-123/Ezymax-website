@@ -329,6 +329,12 @@ fn reminder_text(title: &str, currency: &str, impact: i16, starts: DateTime<Utc>
     (head, parts.join(" · "))
 }
 
+/// Where a reminder opens: the calendar with that event's sheet (the mobile app reads `?event=`; the Client Area's
+/// calendar ignores it). Push payloads carry only the link, so the event travels in it, not just in `data`.
+fn reminder_link(event_id: i64) -> String {
+    format!("/calendar?event={event_id}")
+}
+
 async fn notify(st: &AppState, tenant: &str, users: &[i64], title: &str, body: &str, severity: &str, dedupe: &str, event_id: i64) -> anyhow::Result<()> {
     if st.cfg.support_url.is_empty() {
         anyhow::bail!("notifications service not configured");
@@ -339,7 +345,7 @@ async fn notify(st: &AppState, tenant: &str, users: &[i64], title: &str, body: &
         .header("x-kalks-internal", &st.cfg.support_token)
         .header("x-kalks-tenant", tenant)
         .header("x-kalks-service", "news")
-        .json(&json!({"type": "calendar.reminder", "title": title, "body": body, "link": "/calendar", "severity": severity,
+        .json(&json!({"type": "calendar.reminder", "title": title, "body": body, "link": reminder_link(event_id), "severity": severity,
                        "userIds": users, "dedupeKey": dedupe, "email": false, "data": {"eventId": event_id}}))
         .send()
         .await?;
@@ -412,6 +418,11 @@ pub async fn send_reminders(st: &AppState) -> anyhow::Result<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reminder_opens_the_event() {
+        assert_eq!(reminder_link(4812), "/calendar?event=4812");
+    }
 
     #[test]
     fn overlap() {
