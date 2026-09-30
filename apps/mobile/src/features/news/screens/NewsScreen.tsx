@@ -213,7 +213,7 @@ export function NewsScreen() {
   ) : lead ? null : narrowed ? (
     <EmptyState illustration="emptyHistory" title={t("mobileNews.empty.filteredTitle")} body={t("news.list.empty")} action={t("mobileNews.filter.clear")} onAction={clear} />
   ) : (
-    <EmptyState illustration={online ? "emptyHistory" : "connectionLost"} title={t("mobileNews.empty.title")} body={t("news.page.empty")} />
+    <EmptyState illustration={online ? "market" : "connectionLost"} title={t("mobileNews.empty.title")} body={t("news.page.empty")} />
   );
 
   const footer = list.length ? (

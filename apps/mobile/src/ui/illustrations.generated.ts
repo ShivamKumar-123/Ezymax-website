@@ -23,7 +23,7 @@ export const ILLUSTRATIONS: Record<IllustrationName, { source: ImageSourcePropTy
   pammFunds: { source: require("../../assets/illustrations/pammFunds.webp"), aspect: 1.1406, placeholder: true },
   propChallenge: { source: require("../../assets/illustrations/propChallenge.webp"), aspect: 1.1406, placeholder: true },
   propPassed: { source: require("../../assets/illustrations/propPassed.webp"), aspect: 1.1406, placeholder: true },
-  rewards: { source: require("../../assets/illustrations/rewards.webp"), aspect: 1.1406, placeholder: true },
-  partnerIb: { source: require("../../assets/illustrations/partnerIb.webp"), aspect: 1.1406, placeholder: true },
-  marketClosed: { source: require("../../assets/illustrations/marketClosed.webp"), aspect: 1.1406, placeholder: true },
+  rewards: { source: require("../../assets/illustrations/rewards.webp"), aspect: 1.1934, placeholder: false },
+  partnerIb: { source: require("../../assets/illustrations/partnerIb.webp"), aspect: 1.5, placeholder: false },
+  marketClosed: { source: require("../../assets/illustrations/marketClosed.webp"), aspect: 1.3333, placeholder: false },
 };

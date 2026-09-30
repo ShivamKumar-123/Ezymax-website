@@ -5,7 +5,7 @@
 // Opens on the last dashboard kept on the phone; pull to refresh. Same data and rules as the Client Area's /partner
 // (a view-only login sees the dashboard, clients and commission, but not payouts or campaign links).
 import * as React from "react";
-import { ScrollView, View } from "react-native";
+import { ScrollView, useWindowDimensions, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Banknote, Layers, Link2, Percent, Share2, Users } from "lucide-react-native";
 import { useT } from "@/i18n";
@@ -223,17 +223,17 @@ const StartCard = React.memo(function StartCard({ d, onShare }: { d: Dashboard; 
     { n: "2", title: t("mobilePartner.start.step2"), body: best > 0 ? t("mobilePartner.start.step2Body", { rate: rate(best), level: level?.name ?? "" }) : t("mobilePartner.start.step2Plain") },
     { n: "3", title: t("mobilePartner.start.step3"), body: cpa > 0 ? t(cpaText, { schedule, cpa: usdShort(cpa), min: usdShort(d.programme.cpa.minFirstDeposit) }) : t("mobilePartner.start.step3Body", { schedule }) },
   ];
+  // the founder's partner art across the card (inside the gutters, the card's padding and its hairline border)
+  const artWidth = useWindowDimensions().width - 2 * GUTTER - 2 * space[5] - 2;
   return (
     <View style={{ paddingHorizontal: GUTTER, marginTop: space[8] }}>
       <Card style={{ gap: space[5] }} testID="partner-start">
-        <View style={{ flexDirection: "row", alignItems: "center", gap: space[4] }}>
-          <Illustration name="partnerIb" width={96} height={84} />
-          <View style={{ flex: 1, gap: space[1] }}>
-            <Display size="sm">{t("mobilePartner.start.title")}</Display>
-            <Text variant="caption" tone="secondary">
-              {t("mobilePartner.start.body")}
-            </Text>
-          </View>
+        <Illustration name="partnerIb" width={artWidth} />
+        <View style={{ gap: space[1] }}>
+          <Display size="sm">{t("mobilePartner.start.title")}</Display>
+          <Text variant="caption" tone="secondary">
+            {t("mobilePartner.start.body")}
+          </Text>
         </View>
         <View style={{ gap: space[4] }}>
           {steps.map((s, i) => (

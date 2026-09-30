@@ -141,7 +141,7 @@ export function ClientsScreen() {
   ) : all.length === 0 ? (
     <EmptyState illustration="partnerIb" title={t("mobilePartner.clients.emptyTitle")} body={t("mobilePartner.clients.emptyBody")} action={link ? t("mobilePartner.action.shareLink") : undefined} onAction={link ? share : undefined} />
   ) : (
-    <EmptyState title={t("mobilePartner.clients.noMatchTitle")} body={t("mobilePartner.clients.noMatchBody")} action={t("mobilePartner.clients.clearFilters")} onAction={() => { setStatus("all"); setTier("all"); setSearch(""); }} style={{ paddingTop: space[4] }} />
+    <EmptyState illustration="emptyHistory" size={150} title={t("mobilePartner.clients.noMatchTitle")} body={t("mobilePartner.clients.noMatchBody")} action={t("mobilePartner.clients.clearFilters")} onAction={() => { setStatus("all"); setTier("all"); setSearch(""); }} style={{ paddingTop: space[4] }} />
   );
 
   const invite = link ? <IconButton tone="cream" accessibilityLabel={t("mobilePartner.clients.invite")} icon={<UserPlus size={20} color={colors.ink} />} onPress={share} /> : null;

@@ -20,7 +20,7 @@ import { Tag } from "../components/Pills";
 import { useRetryOnReconnect } from "../hooks";
 import { AcademyState, ReaderSkeleton, RiskNote } from "../components/states";
 import { TopBar } from "../components/Bar";
-import { levelLabel, phaseColor, TONE, TRACK_LABEL } from "../format";
+import { inkSoft, levelLabel, phaseColor, TONE, TRACK_LABEL } from "../format";
 import { DiagramViewer } from "../markdown/DiagramViewer";
 import { Markdown } from "../markdown/Markdown";
 import { headingsOf, parseBlocks } from "../markdown/parse";
@@ -133,7 +133,7 @@ function WayOn({ view, onGo, onPressIn }: { view: ChapterView; onGo: (slug: stri
           style={{ backgroundColor: blockColors[phaseColor(view.phase.order)], borderRadius: radius.block, padding: space[5], gap: space[2] }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-            <Text variant="label" color={colors.ink2}>
+            <Text variant="label" color={inkSoft}>
               {t("mobileAcademy.reader.upNext")}
             </Text>
             <View style={flip}>

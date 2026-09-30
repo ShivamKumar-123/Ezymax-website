@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/brand/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#0E0E10",
+    "backgroundColor": "#07070A",
     "ios": {
       "bundleIdentifier": "com.kalkstrade.app",
       "supportsTablet": false,
@@ -22,7 +22,7 @@
       "package": "com.kalkstrade.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/adaptive-icon.png",
-        "backgroundColor": "#0E0E10"
+        "backgroundColor": "#07070A"
       },
       "edgeToEdgeEnabled": true
     },
@@ -42,7 +42,7 @@
         {
           "image": "./assets/brand/splash.png",
           "imageWidth": 132,
-          "backgroundColor": "#0E0E10",
+          "backgroundColor": "#07070A",
           "resizeMode": "contain"
         }
       ],

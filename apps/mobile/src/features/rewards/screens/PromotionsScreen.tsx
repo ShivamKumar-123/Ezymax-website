@@ -18,7 +18,7 @@ import { OfferSheet } from "../components/OfferSheet";
 import { ago, date, dateTime, lots, pts, statusLabel, titleCase, usd, usdShort } from "../format";
 import type { CampaignPublic, Grant } from "../types";
 import { useOneAtATime } from "../../partner/sheet";
-import { tint } from "../../partner/tint";
+import { inkSoft, tint } from "../../partner/tint";
 import { viewerGated } from "../components/ViewerGate";
 import { RewardsBanners } from "../components/Banners";
 
@@ -120,11 +120,11 @@ const OfferCard = React.memo(function OfferCard({ c, readOnly, onClaim, onTerms 
     <View style={{ borderRadius: radius.card, overflow: "hidden", borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface }} testID={`offer-${c.id}`}>
       <View style={{ backgroundColor: c.kind === "deposit" ? colors.ember : colors.gold, padding: space[5], gap: 2 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text variant="label" color={colors.ink2}>
+          <Text variant="label" color={inkSoft}>
             {c.kind === "deposit" ? t("mobileRewards.offer.badgeDeposit") : t("mobileRewards.offer.badgeBonus")}
           </Text>
           {c.endsAt ? (
-            <Text variant="label" color={colors.ink2}>
+            <Text variant="label" color={inkSoft}>
               {t("mobileRewards.offer.until", { date: date(c.endsAt, false) })}
             </Text>
           ) : null}
@@ -132,7 +132,7 @@ const OfferCard = React.memo(function OfferCard({ c, readOnly, onClaim, onTerms 
         <Mono size={40} weight="bold" color={colors.ink}>
           {c.kind === "deposit" ? `${c.pct}%` : usdShort(c.fixedAmount)}
         </Mono>
-        <Text variant="caption" color={colors.ink2}>
+        <Text variant="caption" color={inkSoft}>
           {c.kind === "deposit" ? t("mobileRewards.offer.upTo", { cap: usdShort(c.cap), min: usdShort(c.minDeposit) }) : t("mobileRewards.offer.credited")}
         </Text>
       </View>

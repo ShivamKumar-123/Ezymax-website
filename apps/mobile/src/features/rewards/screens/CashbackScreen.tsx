@@ -17,7 +17,7 @@ import { DayBars } from "../../partner/components/DayBars";
 import { ago, date, day, lots, statusLabel, titleCase, usd } from "../format";
 import type { CashbackAccrual, CashbackMe, CashbackProgramme } from "../types";
 import { useOneAtATime } from "../../partner/sheet";
-import { tint } from "../../partner/tint";
+import { inkSoft, tint } from "../../partner/tint";
 import { viewerGated } from "../components/ViewerGate";
 import { RewardsBanners } from "../components/Banners";
 
@@ -126,13 +126,13 @@ function Hero({ d }: { d: CashbackMe }) {
   const t = useT();
   return (
     <ColorBlock color="mint" style={{ gap: space[4] }}>
-      <Text variant="label" color={colors.ink2}>
+      <Text variant="label" color={inkSoft}>
         {t("mobileRewards.cashback.pending")}
       </Text>
       <Mono size={44} weight="bold" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit>
         {usd(d.totals.accrued)}
       </Mono>
-      <Text variant="caption" color={colors.ink2}>
+      <Text variant="caption" color={inkSoft}>
         {t("mobileRewards.cashback.pendingBody")}
       </Text>
       <View style={{ flexDirection: "row", gap: space[4], paddingTop: space[3], borderTopWidth: 1, borderTopColor: tint.inkLine }}>
@@ -142,7 +142,7 @@ function Hero({ d }: { d: CashbackMe }) {
           [t("mobileRewards.cashback.lifetime"), usd(d.totals.lifetime)],
         ].map(([k, v]) => (
           <View key={k} style={{ flex: 1, gap: 2 }}>
-            <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ fontSize: 10.5 }}>
+            <Text variant="label" color={inkSoft} numberOfLines={1} style={{ fontSize: 10.5 }}>
               {k}
             </Text>
             <Mono size={15} weight="bold" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit>

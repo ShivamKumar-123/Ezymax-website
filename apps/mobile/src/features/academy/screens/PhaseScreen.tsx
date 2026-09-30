@@ -14,7 +14,7 @@ import { Directional, TopBar, useScrollY } from "../components/Bar";
 import { CertificateCard } from "../components/Certificate";
 import { Bar, StatusDot } from "../components/Pills";
 import { AcademyState, PhaseSkeleton, RiskNote } from "../components/states";
-import { fmtMin, levelLabel, nextOpenChapter, pct, phaseColor, TONE, TRACK_LABEL, TRACK_SHORT } from "../format";
+import { fmtMin, inkSoft, levelLabel, nextOpenChapter, pct, phaseColor, TONE, TRACK_LABEL, TRACK_SHORT } from "../format";
 import { usePull, useRefreshOnFocus, useRetryOnReconnect } from "../hooks";
 
 export const CHAPTER_ROW_HEIGHT = 84;
@@ -83,7 +83,7 @@ function Hero({ p, cat }: { p: PhaseT; cat: Catalog }) {
     <View style={{ paddingHorizontal: GUTTER, paddingBottom: space[5] }}>
       <View style={{ backgroundColor: blockColors[phaseColor(p.order)], borderRadius: radius.block, padding: space[6], gap: space[4] }} testID="phase-hero">
         <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
-          <Text variant="label" color={colors.ink2} style={{ flex: 1 }}>
+          <Text variant="label" color={inkSoft} style={{ flex: 1 }}>
             {`${t("academy.phase.ofTotal", { n: p.order, total: cat.phases.length })} · ${levelLabel(t, p.level)}`}
           </Text>
           {p.certificate ? (
@@ -97,7 +97,7 @@ function Hero({ p, cat }: { p: PhaseT; cat: Catalog }) {
         <Display size="lg" color={colors.ink} accessibilityRole="header">
           {p.title}
         </Display>
-        <Text variant="callout" color={colors.ink2} style={{ fontWeight: "500" }}>
+        <Text variant="callout" color={inkSoft} style={{ fontWeight: "500" }}>
           {p.summary}
         </Text>
         <View style={{ flexDirection: "row", gap: space[5] }}>
@@ -131,7 +131,7 @@ function HeroStat({ value, label }: { value: string; label: string }) {
       <Display size="sm" color={colors.ink} style={{ fontVariant: ["tabular-nums"] }}>
         {value}
       </Display>
-      <Text variant="label" color={colors.ink3} style={{ fontSize: 10 }}>
+      <Text variant="label" color={inkSoft} style={{ fontSize: 10 }}>
         {label}
       </Text>
     </View>

@@ -66,7 +66,7 @@ function PreviewNotification() {
         <Text variant="label" color={colors.ink2} style={{ flex: 1, fontSize: 10 }}>
           KALKS
         </Text>
-        <Text variant="caption" color={colors.ink3}>
+        <Text variant="caption" color={colors.ink2}>
           {t("mobilePlatform.push.ask.now")}
         </Text>
       </View>

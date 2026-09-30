@@ -1,6 +1,6 @@
 // Screen states shared by the partner and rewards screens when there is nothing cached to show: offline (the
 // connection-lost art), the broker switched the module off, outside a view-only login's access, maintenance, the
-// profile still being set up, or the service unreachable. Plus content-shaped static skeletons.
+// profile still being set up, or the service failing (the maintenance art). Plus content-shaped static skeletons.
 import * as React from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import type { ApiError } from "@/lib/api";
@@ -24,9 +24,10 @@ export function ScreenState({ error, onRetry, ns, style }: { error?: ApiError | 
   if (error?.code === "not_ready")
     return <EmptyState illustration={ns === "mobilePartner" ? "partnerIb" : "rewards"} title={t.dyn(`${ns}.state.settingUp.title`)} body={t.dyn(`${ns}.state.settingUp.body`)} action={t("mobile.action.retry")} onAction={onRetry} style={s} />;
   const clientError = !!error && (error.status ?? 0) >= 400 && (error.status ?? 0) < 500 && error.code !== "unavailable";
+  // online but the service failed or is unreachable: the "we'll be right back" art (connection lost is for offline)
   return (
     <EmptyState
-      illustration="connectionLost"
+      illustration="maintenance"
       title={t.dyn(`${ns}.state.error.title`)}
       body={clientError && error?.message ? error.message : t.dyn(`${ns}.state.error.body`)}
       action={t("mobile.action.retry")}

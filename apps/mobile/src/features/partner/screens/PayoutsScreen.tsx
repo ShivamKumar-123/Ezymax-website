@@ -14,7 +14,7 @@ import { Page, PageTitle, SectionTitle, StackBar, Stat, Tag, useRefresh, useScro
 import { BlockSkeleton, RowsSkeleton, ScreenState, ViewerBlocked } from "../components/States";
 import { date, dateTime, day, payoutStatusLabel, period, scheduleLabel, usd, usdShort } from "../format";
 import type { Payout, PayoutsResp } from "../types";
-import { tint } from "../tint";
+import { inkSoft, tint } from "../tint";
 
 const ROW_HEIGHT = 72;
 const EMPTY: Payout[] = [];
@@ -48,7 +48,7 @@ function Countdown({ to, onEnd }: { to: string; onEnd?: () => void }) {
           <Mono size={22} weight="bold" color={colors.ink}>
             {String(v).padStart(2, "0")}
           </Mono>
-          <Text variant="label" color={colors.ink2} style={{ fontSize: 9.5 }}>
+          <Text variant="label" color={inkSoft} style={{ fontSize: 9.5 }}>
             {labels[i]}
           </Text>
         </View>

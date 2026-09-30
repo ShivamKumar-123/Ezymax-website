@@ -6,6 +6,7 @@ import { useT } from "@/i18n";
 import { ColorBlock, Display, PressableScale, Text } from "@/ui";
 import { colors, space } from "@/theme/tokens";
 import type { NewsItem } from "../api";
+import { inkSoft } from "../tint";
 import { ImportanceChip, Kicker, SymbolTag, ToneChip } from "./chips";
 import { Ago } from "./StoryRow";
 
@@ -21,13 +22,13 @@ export const HeroStory = React.memo(function HeroStory({ n, onOpen, onPressIn }:
           </Text>
           <Kicker category={n.category} ink />
           <View style={{ flex: 1 }} />
-          <Ago iso={n.publishedAt} color={colors.ink2} />
+          <Ago iso={n.publishedAt} color={inkSoft} />
         </View>
         <Display size="md" color={colors.ink} numberOfLines={5}>
           {n.title}
         </Display>
         {n.summary ? (
-          <Text variant="callout" color={colors.ink2} numberOfLines={3}>
+          <Text variant="callout" color={inkSoft} numberOfLines={3}>
             {n.summary}
           </Text>
         ) : null}

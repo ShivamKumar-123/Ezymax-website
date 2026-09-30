@@ -15,6 +15,10 @@ import type { Tone } from "../format";
 /** A token colour at an opacity (flat tint for tags and quiet fills): the app's helper (@/theme/alpha). */
 export const tint = alpha;
 
+/** Secondary text on a colour block: ink at 78 %, at least 4.5:1 on every block colour (ember 4.7, light ember 5.7,
+ *  gold 6.7, sand 8.0, off-white 9.3). The kit's ink2 (66 %) is 3.7:1 on ember and 4.3:1 on light ember. */
+export const inkSoft = tint(colors.ink, 0.78);
+
 const TAG: Record<Tone, { bg: string; fg: string; border: string }> = {
   neutral: { bg: colors.surface2, fg: colors.text2, border: colors.line },
   ember: { bg: colors.emberSoft, fg: colors.ember, border: tint(colors.ember, 0.3) },
@@ -61,10 +65,10 @@ export const Tag = React.memo(function Tag({ label, tone = "neutral", icon, dot,
 });
 
 /** Small uppercase label over a value (tabular digits unless `plain`). */
-export function StatTile({ label, value, tone, color, sub, plain, size = 16, style }: { label: string; value: string; tone?: TextTone; color?: string; sub?: string; plain?: boolean; size?: number; style?: StyleProp<ViewStyle> }) {
+export function StatTile({ label, value, tone, color, sub, plain, size = 16, labelTone = "tertiary", style }: { label: string; value: string; tone?: TextTone; color?: string; sub?: string; plain?: boolean; size?: number; labelTone?: TextTone; style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[{ flex: 1, minWidth: 0, gap: 3 }, style]}>
-      <Text variant="label" tone="tertiary" numberOfLines={2} style={{ fontSize: 10.5 }}>
+      <Text variant="label" tone={labelTone} numberOfLines={2} style={{ fontSize: 10.5 }}>
         {label}
       </Text>
       {plain ? (
@@ -87,8 +91,9 @@ export function StatTile({ label, value, tone, color, sub, plain, size = 16, sty
 
 export type Stat = { label: string; value: string; tone?: TextTone; color?: string; sub?: string; plain?: boolean };
 
-/** Stat tiles in rows of `columns`, with space between rows. */
-export function StatGrid({ items, columns = 3, size }: { items: Stat[]; columns?: number; size?: number }) {
+/** Stat tiles in rows of `columns`, with space between rows. `labelTone: "secondary"` on a tinted card (the grey
+ *  tertiary labels are under 3:1 on the warm tint of the simulated backtest). */
+export function StatGrid({ items, columns = 3, size, labelTone }: { items: Stat[]; columns?: number; size?: number; labelTone?: TextTone }) {
   const rows: Stat[][] = [];
   for (let i = 0; i < items.length; i += columns) rows.push(items.slice(i, i + columns));
   return (
@@ -96,7 +101,7 @@ export function StatGrid({ items, columns = 3, size }: { items: Stat[]; columns?
       {rows.map((r, i) => (
         <View key={i} style={{ flexDirection: "row", gap: space[3] }}>
           {r.map((it) => (
-            <StatTile key={it.label} {...it} size={size} />
+            <StatTile key={it.label} {...it} size={size} labelTone={labelTone} />
           ))}
           {r.length < columns ? Array.from({ length: columns - r.length }, (_, k) => <View key={`f${k}`} style={{ flex: 1 }} />) : null}
         </View>

@@ -169,7 +169,7 @@ export function AlertsScreen() {
     const offline = !online || q.error.code === "network";
     body = (
       <EmptyState
-        illustration="connectionLost"
+        illustration={offline ? "connectionLost" : "maintenance"}
         title={offline ? t("mobile.state.offline.title") : t("mobile.state.error.title")}
         body={offline ? t("mobile.state.offline.body") : q.error.code === "unavailable" ? t("mobileDepth.alerts.unavailable") : t("mobile.state.error.body")}
         action={t("mobile.action.retry")}

@@ -54,7 +54,7 @@ function ContinueHero({ cat }: { cat: Catalog }) {
   return (
     <ColorBlock color="cream" style={{ gap: space[4] }} testID="continue-hero">
       <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
-        <Text variant="label" color={colors.ember} style={{ flex: 1 }}>
+        <Text variant="label" color={colors.ink2} style={{ flex: 1 }}>
           {label}
         </Text>
         <View style={{ height: 24, paddingHorizontal: space[3], borderRadius: radius.pill, backgroundColor: colors.ink, justifyContent: "center" }}>
@@ -82,7 +82,8 @@ function ContinueHero({ cat }: { cat: Catalog }) {
         </View>
         <Segments done={phase.progress.done} total={phase.progress.total} ink />
       </View>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: space[3], marginTop: space[1] }}>
+      {/* on a 360 pt phone "Phase overview" takes the next line instead of running off the block */}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space[3], marginTop: space[1] }}>
         <Button label={c.started ? t("academy.hero.resume") : t("academy.hero.start")} full={false} onPress={open} testID="continue-open" />
         <PressableScale onPress={() => router.push(`/academy/${phase.slug}`)} scaleTo={1} style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: space[2] }}>
           <Text variant="callout" weight="700" color={colors.ink}>

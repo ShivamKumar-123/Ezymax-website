@@ -225,7 +225,8 @@ function Inbox() {
     empty = !online ? (
       <EmptyState illustration="connectionLost" title={t("mobile.state.offline.title")} body={t("mobile.state.offline.body")} action={t("mobile.action.retry")} onAction={() => void first.refresh()} />
     ) : (
-      <EmptyState illustration="connectionLost" title={t("mobile.state.error.title")} body={first.error.message} action={t("mobile.action.retry")} onAction={() => void first.refresh()} />
+      // the server out of reach (a network error while the phone is online): the connection-lost art
+      <EmptyState illustration={first.error.code === "network" ? "connectionLost" : "maintenance"} title={t("mobile.state.error.title")} body={first.error.message} action={t("mobile.action.retry")} onAction={() => void first.refresh()} />
     );
   else if (first.data && items.length === 0)
     empty =

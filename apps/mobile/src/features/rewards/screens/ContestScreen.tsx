@@ -12,6 +12,7 @@ import { Button, Card, ColorBlock, EmptyState, Mono, Text, useBottomInset, type 
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { Label, Page, SectionTitle, StackBar, Tag, useRefresh, useScrollY } from "../../partner/components/Chrome";
 import { BlockSkeleton, RowsSkeleton, ScreenState } from "../../partner/components/States";
+import { inkSoft } from "../../partner/tint";
 import { REWARDS_KEYS, useContest, useContestsFor } from "../api";
 import { KindTag, RankBadge, STANDING_ROW_HEIGHT, StandingRow } from "../components/Contest";
 import { Countdown } from "../components/Countdown";
@@ -143,7 +144,7 @@ function ContestDetailScreen() {
       <View style={{ paddingHorizontal: GUTTER, gap: space[3] }}>
         <ColorBlock color={c.kind === "live" ? "ember" : "periwinkle"} style={{ gap: space[4] }}>
           <View style={{ gap: 2 }}>
-            <Text variant="label" color={colors.ink2}>
+            <Text variant="label" color={inkSoft}>
               {t("mobileRewards.contest.prizePool")}
             </Text>
             <Mono size={44} weight="bold" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit>
@@ -152,7 +153,7 @@ function ContestDetailScreen() {
           </View>
           <View style={{ flexDirection: "row", gap: space[4] }}>
             <View style={{ flex: 1.3, gap: 2 }}>
-              <Text variant="label" color={colors.ink2} style={{ fontSize: 10.5 }}>
+              <Text variant="label" color={inkSoft} style={{ fontSize: 10.5 }}>
                 {running ? t("mobileRewards.contest.endsIn") : isUpcoming(c) ? t("mobileRewards.contest.startsIn") : t("mobileRewards.contest.ended")}
               </Text>
               {running || isUpcoming(c) ? (
@@ -164,7 +165,7 @@ function ContestDetailScreen() {
               )}
             </View>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text variant="label" color={colors.ink2} style={{ fontSize: 10.5 }}>
+              <Text variant="label" color={inkSoft} style={{ fontSize: 10.5 }}>
                 {t("mobileRewards.contest.entrants")}
               </Text>
               <Text variant="callout" weight="700" color={colors.ink}>
@@ -172,7 +173,7 @@ function ContestDetailScreen() {
               </Text>
             </View>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text variant="label" color={colors.ink2} style={{ fontSize: 10.5 }}>
+              <Text variant="label" color={inkSoft} style={{ fontSize: 10.5 }}>
                 {t("mobileRewards.contest.rankedBy")}
               </Text>
               <Text variant="callout" weight="700" color={colors.ink} numberOfLines={1}>
@@ -180,7 +181,7 @@ function ContestDetailScreen() {
               </Text>
             </View>
           </View>
-          <Text variant="caption" color={colors.ink2}>
+          <Text variant="caption" color={inkSoft}>
             {date(c.startsAt, false)} – {date(c.endsAt)}
           </Text>
         </ColorBlock>

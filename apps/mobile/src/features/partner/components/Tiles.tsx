@@ -5,13 +5,14 @@ import * as React from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import { Display, Mono, PressableScale, Text } from "@/ui";
 import { blockColors, colors, space, type BlockColor } from "@/theme/tokens";
+import { inkSoft } from "../tint";
 
 export type TileSpec = { key: string; color: BlockColor; label: string; value: string; sub?: string; money?: boolean; onPress?: () => void; onPressIn?: () => void; testID?: string };
 
 export const Tile = React.memo(function Tile({ color, label, value, sub, money, onPress, onPressIn, testID, style }: Omit<TileSpec, "key"> & { style?: StyleProp<ViewStyle> }) {
   const body = (
     <>
-      <Text variant="label" color={colors.ink2} numberOfLines={2} style={{ fontSize: 10.5 }}>
+      <Text variant="label" color={inkSoft} numberOfLines={2} style={{ fontSize: 10.5 }}>
         {label}
       </Text>
       {money ? (
@@ -23,7 +24,7 @@ export const Tile = React.memo(function Tile({ color, label, value, sub, money, 
           {value}
         </Display>
       )}
-      <Text variant="caption" color={colors.ink2} numberOfLines={2}>
+      <Text variant="caption" color={inkSoft} numberOfLines={2}>
         {sub ?? " "}
       </Text>
     </>

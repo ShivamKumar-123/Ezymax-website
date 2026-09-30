@@ -6,7 +6,7 @@ import { useT } from "@/i18n";
 import { Display, PressableScale, Text } from "@/ui";
 import { blockColors, colors, radius, space } from "@/theme/tokens";
 import type { PhaseT } from "../api";
-import { fmtMin, levelLabel, pct, phaseColor, phaseState, PHASE_STATE_LABEL, TONE, two } from "../format";
+import { fmtMin, inkNumeral, inkSoft, levelLabel, pct, phaseColor, phaseState, PHASE_STATE_LABEL, TONE, two } from "../format";
 import { Bar } from "./Pills";
 
 export const PhaseBlock = React.memo(function PhaseBlock({ p, onOpen }: { p: PhaseT; onOpen: (slug: string) => void }) {
@@ -21,7 +21,7 @@ export const PhaseBlock = React.memo(function PhaseBlock({ p, onOpen }: { p: Pha
       style={{ backgroundColor: blockColors[phaseColor(p.order)], borderRadius: radius.block, padding: space[5], gap: space[3], overflow: "hidden" }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
-        <Text variant="label" color={colors.ink2} style={{ flex: 1 }} numberOfLines={1}>
+        <Text variant="label" color={inkSoft} style={{ flex: 1 }} numberOfLines={1}>
           {`${t("academy.phaseN", { n: p.order })} · ${levelLabel(t, p.level)}`}
         </Text>
         {state !== "notStarted" ? (
@@ -36,11 +36,11 @@ export const PhaseBlock = React.memo(function PhaseBlock({ p, onOpen }: { p: Pha
         <Display size="md" color={colors.ink} style={{ flex: 1 }} numberOfLines={3}>
           {p.title}
         </Display>
-        <Display size="hero" color={colors.ink3} style={{ marginBottom: -8 }} accessible={false}>
+        <Display size="hero" color={inkNumeral} style={{ marginBottom: -8 }} accessible={false}>
           {two(p.order)}
         </Display>
       </View>
-      <Text variant="callout" color={colors.ink2} numberOfLines={2} style={{ fontWeight: "500" }}>
+      <Text variant="callout" color={inkSoft} numberOfLines={2} style={{ fontWeight: "500" }}>
         {p.summary}
       </Text>
       <View style={{ gap: space[2], marginTop: space[1] }}>
@@ -49,7 +49,7 @@ export const PhaseBlock = React.memo(function PhaseBlock({ p, onOpen }: { p: Pha
           <Text variant="caption" color={colors.ink} weight="700" style={{ fontVariant: ["tabular-nums"] }}>
             {t("academy.stats.chapters", { done: p.progress.done, total: p.progress.total })}
           </Text>
-          <Text variant="caption" color={colors.ink2} style={{ fontVariant: ["tabular-nums"] }}>
+          <Text variant="caption" color={inkSoft} style={{ fontVariant: ["tabular-nums"] }}>
             {done && p.exam && !p.certificate ? t("academy.phaseCard.finalExam", { count: p.exam.questions }) : fmtMin(t, p.minutes)}
           </Text>
         </View>

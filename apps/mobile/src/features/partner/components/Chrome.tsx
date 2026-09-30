@@ -11,7 +11,7 @@ import { useLocale, useT } from "@/i18n";
 import { haptic } from "@/lib/haptics";
 import { Display, IconButton, Mono, PressableScale, Text } from "@/ui";
 import { blockColors, colors, GUTTER, radius, space, type BlockColor } from "@/theme/tokens";
-import { tint } from "../tint";
+import { inkSoft, tint } from "../tint";
 
 /** Safe-area page with a fixed bar on top; the body scrolls under it. */
 export function Page({ bar, children }: { bar: React.ReactNode; children: React.ReactNode }) {
@@ -80,17 +80,30 @@ function titleSize(title: string): "xl" | "lg" | "md" {
   return n > 16 ? "md" : n > 12 ? "lg" : "xl";
 }
 
-export function PageTitle({ eyebrow, title, children, style }: { eyebrow?: string; title: string; children?: React.ReactNode; style?: StyleProp<ViewStyle> }) {
-  return (
-    <View style={[{ paddingHorizontal: GUTTER, paddingTop: space[1], paddingBottom: space[5], gap: space[1] }, style]}>
+/** The eyebrow + display title; `art` (the screen's one illustration) sits at the end of the title, bottom-aligned. */
+export function PageTitle({ eyebrow, title, art, children, style }: { eyebrow?: string; title: string; art?: React.ReactNode; children?: React.ReactNode; style?: StyleProp<ViewStyle> }) {
+  const heading = (
+    <>
       {eyebrow ? (
-        <Text variant="label" tone="ember" numberOfLines={1}>
+        <Text variant="label" tone="ember" numberOfLines={art ? 2 : 1}>
           {eyebrow}
         </Text>
       ) : null}
       <Display size={titleSize(title)} accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit>
         {title}
       </Display>
+    </>
+  );
+  return (
+    <View style={[{ paddingHorizontal: GUTTER, paddingTop: space[1], paddingBottom: space[5], gap: space[1] }, style]}>
+      {art ? (
+        <View style={{ flexDirection: "row", alignItems: "flex-end", gap: space[3] }}>
+          <View style={{ flex: 1, minWidth: 0, gap: space[1] }}>{heading}</View>
+          {art}
+        </View>
+      ) : (
+        heading
+      )}
       {children}
     </View>
   );
@@ -175,7 +188,7 @@ export function Stat({ label, value, ink, size = 17, tone, align = "start", styl
   const color = ink ? colors.ink : tone === "up" ? colors.up : tone === "down" ? colors.down : colors.text;
   return (
     <View style={[{ gap: 3, minWidth: 0, justifyContent: "flex-end", alignItems: align === "end" ? "flex-end" : "flex-start" }, style]}>
-      <Label color={ink ? colors.ink2 : undefined} lines={2}>
+      <Label color={ink ? inkSoft : undefined} lines={2}>
         {label}
       </Label>
       <Mono size={size} weight="bold" color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>

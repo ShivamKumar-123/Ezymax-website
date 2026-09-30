@@ -299,7 +299,7 @@ function HouseBacktestCard({ b }: { b: HouseBacktest }) {
       <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: space[2] }}>
         <Tag tone="warn" label={t("mobileAlgo.listing.btSimulated")} />
         {s.firstBar && s.lastBar ? (
-          <Text variant="caption" tone="tertiary">
+          <Text variant="caption" tone="secondary">
             {range(f, s.firstBar, s.lastBar)}
           </Text>
         ) : null}
@@ -310,6 +310,7 @@ function HouseBacktestCard({ b }: { b: HouseBacktest }) {
       <StatGrid
         columns={4}
         size={14}
+        labelTone="secondary"
         items={[
           { label: t("mobileAlgo.market.return"), value: s.returnPct !== undefined ? pct(s.returnPct, 1) : "—" },
           { label: t("mobileAlgo.market.winRate"), value: s.winRate !== undefined ? pct(s.winRate, 1, false) : "—" },

@@ -7,7 +7,7 @@ import { ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useT } from "@/i18n";
 import { useReadOnly } from "@/features/partner/api";
-import { Banner, Button, ColorBlock, Display, EmptyState, PressableScale, Text, useBottomInset } from "@/ui";
+import { Banner, Button, ColorBlock, Display, EmptyState, Illustration, PressableScale, Text, useBottomInset } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { Bar, Page, PageTitle, SectionTitle, StackBar, useRefresh, useScrollY } from "../../partner/components/Chrome";
 import { BlockSkeleton, RowsSkeleton, ScreenState, TilesSkeleton } from "../../partner/components/States";
@@ -106,11 +106,14 @@ function RewardsHub() {
 
   const nothing = !rewards.data && !contests.data;
   const firstError = rewards.error ?? contests.error;
+  // a failed load shows an illustrated state (the whole hub, or the contests): the title's art stands aside for it
+  const stateArt = (nothing && !!firstError) || (!contests.data && !!contests.error);
 
   return (
     <Page bar={<StackBar title={t("mobileRewards.title")} scrollY={scrollY} />}>
       <ScrollView onScroll={onScroll} scrollEventThrottle={16} refreshControl={refreshControl} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottom + space[6] }}>
-        <PageTitle eyebrow={t("mobileRewards.eyebrow")} title={t("mobileRewards.title")} />
+        {/* the rewards art is the page's one illustration */}
+        <PageTitle eyebrow={t("mobileRewards.eyebrow")} title={t("mobileRewards.title")} art={stateArt ? undefined : <Illustration name="rewards" width={116} height={98} />} />
         {readOnly ? <Banner tone="info" title={t("mobile.viewOnly")} body={t("mobileRewards.viewOnlyBody")} style={{ marginHorizontal: GUTTER, marginBottom: space[4] }} /> : null}
         <RewardsBanners style={{ marginHorizontal: GUTTER, marginBottom: space[4] }} />
 
@@ -133,7 +136,7 @@ function RewardsHub() {
                   </>
                 )
               ) : !featured && past.length === 0 ? (
-                <EmptyState illustration="rewards" size={180} title={t("mobileRewards.contests.emptyTitle")} body={t("mobileRewards.contests.emptyBody")} style={{ paddingHorizontal: 0, paddingVertical: space[4] }} />
+                <EmptyState title={t("mobileRewards.contests.emptyTitle")} body={t("mobileRewards.contests.emptyBody")} style={{ paddingHorizontal: 0, paddingVertical: space[4] }} />
               ) : (
                 <>
                   {featured ? <ContestBlock c={featured} onOpen={openContest} onWarm={warmContest} /> : null}

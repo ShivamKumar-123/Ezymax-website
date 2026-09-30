@@ -25,13 +25,13 @@ function Rules({ label, lines }: { label: string; lines: RuleLine[] }) {
   const t = useT();
   return (
     <View style={{ gap: 3 }}>
-      <Text variant="label" color={colors.ink3} style={{ fontSize: 10.5 }}>
+      <Text variant="label" color={colors.ink2} style={{ fontSize: 10.5 }}>
         {label}
       </Text>
       {lines.map((l, i) => (
         <Text key={i} variant="callout" color={colors.ink} weight="600">
           {l.joiner ? (
-            <Text variant="callout" color={colors.ink3} weight="500">
+            <Text variant="callout" color={colors.ink2} weight="500">
               {`${l.joiner === "and" ? t("mobileAi.card.and") : t("mobileAi.card.or")} `}
             </Text>
           ) : null}

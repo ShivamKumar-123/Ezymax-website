@@ -11,7 +11,7 @@ export function NotFoundScreen() {
   return (
     <Screen tabBar={false} scroll={false}>
       <View style={{ flex: 1, justifyContent: "center" }} testID="screen-not-found">
-        <EmptyState illustration="emptyHistory" size={220} title={t("mobilePlatform.link.notFound.title")} body={t("mobilePlatform.link.notFound.body")} action={t("mobilePlatform.link.notFound.home")} onAction={() => router.replace("/")} />
+        <EmptyState illustration="maintenance" size={220} title={t("mobilePlatform.link.notFound.title")} body={t("mobilePlatform.link.notFound.body")} action={t("mobilePlatform.link.notFound.home")} onAction={() => router.replace("/")} />
       </View>
     </Screen>
   );

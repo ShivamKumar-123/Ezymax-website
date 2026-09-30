@@ -20,7 +20,7 @@ import { feed, feedStatus, type FeedStatus } from "@/market/feed";
 import { instrument } from "@/market/instruments";
 import { useSession } from "@/session";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
-import { Banner, Display, EmptyState, IconButton, Mono, PressableScale, PriceCell, Skeleton, Text, toast, useBottomInset, type SheetRef } from "@/ui";
+import { Banner, Display, EmptyState, IconButton, Illustration, Mono, PressableScale, PriceCell, Skeleton, Text, toast, useBottomInset, type SheetRef } from "@/ui";
 import { alpha } from "@/theme/alpha";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { placeOrder } from "../trading/actions";
@@ -163,11 +163,16 @@ export function DepthScreen() {
   );
 
   // no book for the symbol only when the quote stream is up and still sends nothing for it; a stream that is down
-  // or reconnecting is a connection state, not "depth unavailable"
+  // or reconnecting is a connection state, not "depth unavailable". Outside the symbol's trading session that is the
+  // market being closed (the founder's market-closed art), not a missing book.
   if (!valid || (live.silent && online && feedLive && !live.src)) {
     return (
       <Page bar={bar}>
-        <EmptyState illustration="market" title={t("order.dom.unavailable")} body={valid ? symbol : undefined} action={t("mobileTrade.pickSymbol")} onAction={() => symbolSheet.current?.present()} style={{ flex: 1, justifyContent: "center" }} />
+        {valid && closed ? (
+          <EmptyState illustration="marketClosed" title={t("mobileTrade.state.marketClosed.title")} body={t("mobileTrade.state.marketClosed.body", { symbol })} action={t("mobileTrade.pickSymbol")} onAction={() => symbolSheet.current?.present()} style={{ flex: 1, justifyContent: "center" }} />
+        ) : (
+          <EmptyState illustration="market" title={t("order.dom.unavailable")} body={valid ? symbol : undefined} action={t("mobileTrade.pickSymbol")} onAction={() => symbolSheet.current?.present()} style={{ flex: 1, justifyContent: "center" }} />
+        )}
         <SymbolSheet ref={symbolSheet} current={symbol} onPick={pickSymbol} />
       </Page>
     );
@@ -393,7 +398,8 @@ const TradeBar = React.memo(function TradeBar(p: {
   ) : blocked ? (
     <RestrictionBanner kinds={["trading", "close_only"]} />
   ) : closed ? (
-    <Banner tone="info" title={t("mobileTrade.state.marketClosed.title")} body={t("mobileTrade.state.marketClosed.body", { symbol: p.symbol })} />
+    // the founder's market-closed art as a small thumbnail: the ladder keeps the screen (MT5-dense), no hero here
+    <Banner tone="info" icon={<Illustration name="marketClosed" width={56} height={42} />} title={t("mobileTrade.state.marketClosed.title")} body={t("mobileTrade.state.marketClosed.body", { symbol: p.symbol })} />
   ) : null;
   const trading = !viewer && !noAccount;
   return (

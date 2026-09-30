@@ -298,7 +298,7 @@ export function SupportScreen() {
     body = !online ? (
       <EmptyState illustration="connectionLost" title={t("mobile.state.offline.title")} body={t("mobile.state.offline.body")} action={t("mobile.action.retry")} onAction={() => void q.refresh()} />
     ) : (
-      <EmptyState illustration="maintenance" title={t("support.unavailable")} body={q.error.message} action={t("mobile.action.retry")} onAction={() => void q.refresh()} />
+      <EmptyState illustration={q.error.code === "network" ? "connectionLost" : "maintenance"} title={t("support.unavailable")} body={q.error.message} action={t("mobile.action.retry")} onAction={() => void q.refresh()} />
     );
   else if (!home) body = <LoadingBubbles />;
   else

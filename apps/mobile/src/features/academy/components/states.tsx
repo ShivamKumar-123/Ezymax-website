@@ -33,7 +33,8 @@ export function AcademyState({ error, onRetry, notFound }: { error?: ApiError | 
   if (error?.code === "module_disabled") return <EmptyState illustration="maintenance" title={t("mobileAcademy.state.disabled.title")} body={t("mobileAcademy.state.disabled.body")} style={style} />;
   if (error?.code === "maintenance")
     return <EmptyState illustration="maintenance" title={t("mobile.state.maintenance.title")} body={t("mobile.state.maintenance.body")} action={t("mobile.action.retry")} onAction={onRetry} style={style} />;
-  return <EmptyState illustration="connectionLost" title={t("academy.unavailable.title")} body={t("academy.unavailable.text")} action={t("mobile.action.retry")} onAction={onRetry} style={style} />;
+  // online, but the service failed: the "we'll be right back" art (connection lost is for offline)
+  return <EmptyState illustration="maintenance" title={t("academy.unavailable.title")} body={t("academy.unavailable.text")} action={t("mobile.action.retry")} onAction={onRetry} style={style} />;
 }
 
 export function RiskNote() {

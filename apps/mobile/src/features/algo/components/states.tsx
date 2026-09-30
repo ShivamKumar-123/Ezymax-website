@@ -1,6 +1,6 @@
 // Loading, empty and error states of the Algo screens. Loading is a static skeleton shaped like the content (no
-// shimmer loop); an error says what happened (offline, switched off for the account, view-only login, not found,
-// service down) with one way forward.
+// shimmer loop); an error says what happened (offline: the connection-lost art; switched off for the account,
+// maintenance or the service down: the maintenance art; view-only login; not found) with one way forward.
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
@@ -27,10 +27,11 @@ export function LoadError({ error, onRetry, onBack, style }: { error: ApiError |
   if (error?.status === 404 || error?.code === "not_found") {
     return <EmptyState style={style} illustration="emptyHistory" title={t("mobileAlgo.state.notFound.title")} body={t("mobileAlgo.state.notFound.text")} action={onBack ? t("mobileAlgo.state.back") : undefined} onAction={onBack} />;
   }
+  // online, but the service failed or is unreachable: the "we'll be right back" art (connection lost is for offline)
   return (
     <EmptyState
       style={style}
-      illustration="connectionLost"
+      illustration="maintenance"
       title={error?.code === "unavailable" ? t("mobileAlgo.state.unavailable.title") : t("mobile.state.error.title")}
       body={error?.message || t("mobileAlgo.state.unavailable.text")}
       action={onRetry ? t("mobile.action.retry") : undefined}

@@ -1,6 +1,7 @@
 // Loading, empty and error states of the news and calendar screens. Loading is a static skeleton shaped like the
-// content (no shimmer loop); a failed first load says what happened (offline, view-only login without this section,
-// maintenance, service down) with one way forward. With cached content on screen, errors never replace it.
+// content (no shimmer loop); a failed first load says what happened (offline: the connection-lost art; view-only
+// login without this section; maintenance or the service down: the maintenance art) with one way forward. With
+// cached content on screen, errors never replace it.
 import * as React from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import { useT } from "@/i18n";
@@ -24,7 +25,8 @@ export function LoadError({ error, onRetry, onBack, notFound, style }: { error: 
   if (notFound && (error?.status === 404 || error?.code === "not_found")) {
     return <EmptyState style={style} illustration="emptyHistory" title={notFound.title} body={notFound.body} action={onBack ? notFound.action : undefined} onAction={onBack} />;
   }
-  return <EmptyState style={style} illustration="connectionLost" title={t("mobile.state.error.title")} body={error?.message || t("mobile.state.error.body")} action={onRetry ? t("mobile.action.retry") : undefined} onAction={onRetry} />;
+  // online, but the service failed: the "we'll be right back" art (connection lost is for offline)
+  return <EmptyState style={style} illustration="maintenance" title={t("mobile.state.error.title")} body={error?.message || t("mobile.state.error.body")} action={onRetry ? t("mobile.action.retry") : undefined} onAction={onRetry} />;
 }
 
 /** Skeleton of a story row (kicker, three title lines, chips). */

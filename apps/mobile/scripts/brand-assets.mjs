@@ -11,6 +11,11 @@ const out = join(here, "..", "assets", "brand");
 const mark = readFileSync(join(here, "..", "..", "..", "assets", "brand", "kalks-mark.svg"), "utf8");
 const colored = (c) => Buffer.from(mark.replace('fill="currentColor"', `fill="${c}"`));
 
+// The web platform's colour family (packages/ui/src/styles.css; src/theme/tokens.ts): the near-black canvas and Kalks
+// ember. Flat fills only (matte finish).
+const BG = "#07070A";
+const EMBER = "#FF5A1F";
+
 async function onSquare(size, bg, markColor, markScale) {
   const w = Math.round(size * markScale);
   const m = await sharp(colored(markColor), { density: 600 }).resize({ width: w }).png().toBuffer();
@@ -19,10 +24,13 @@ async function onSquare(size, bg, markColor, markScale) {
   return base.composite([{ input: m, left: Math.round((size - w) / 2), top: Math.round((size - meta.height) / 2) }]).png();
 }
 
-await (await onSquare(1024, "#0E0E10", "#F26A3D", 0.56)).toFile(join(out, "icon.png"));
-await (await onSquare(1024, { r: 0, g: 0, b: 0, alpha: 0 }, "#F26A3D", 0.42)).toFile(join(out, "adaptive-icon.png"));
-await sharp(colored("#F5EFE3"), { density: 600 }).resize({ width: 600 }).png().toFile(join(out, "splash.png"));
-await (await onSquare(96, "#0E0E10", "#F26A3D", 0.64)).toFile(join(out, "favicon.png"));
+// the store icon is opaque (iOS refuses an icon with an alpha channel)
+await sharp(await (await onSquare(1024, BG, EMBER, 0.56)).toBuffer()).removeAlpha().png().toFile(join(out, "icon.png"));
+// Android adaptive icon: the mark alone, on app.json's adaptiveIcon.backgroundColor (the same canvas colour)
+await (await onSquare(1024, { r: 0, g: 0, b: 0, alpha: 0 }, EMBER, 0.42)).toFile(join(out, "adaptive-icon.png"));
+// splash: the ember mark on app.json's splash backgroundColor (the canvas colour), like the icon
+await sharp(colored(EMBER), { density: 600 }).resize({ width: 600 }).png().toFile(join(out, "splash.png"));
+await (await onSquare(96, BG, EMBER, 0.64)).toFile(join(out, "favicon.png"));
 // Android status-bar notification icon: white mark on transparent (expo-notifications plugin, app.json)
 await (await onSquare(96, { r: 0, g: 0, b: 0, alpha: 0 }, "#FFFFFF", 0.66)).toFile(join(out, "notification-icon.png"));
 console.log("brand assets written");

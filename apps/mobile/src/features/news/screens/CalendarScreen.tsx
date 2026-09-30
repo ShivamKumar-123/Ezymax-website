@@ -337,7 +337,7 @@ export function CalendarScreen() {
   ) : nFilters ? (
     <EmptyState illustration="emptyHistory" title={t("mobileNews.cal.empty.filteredTitle")} body={t("news.cal.empty")} action={t("mobileNews.cal.filters.reset")} onAction={() => setFilters({ ...DEFAULT_CAL_FILTERS, zone })} />
   ) : (
-    <EmptyState illustration="emptyHistory" title={t("mobileNews.cal.empty.title")} body={t("mobileNews.cal.empty.body")} />
+    <EmptyState illustration="market" title={t("mobileNews.cal.empty.title")} body={t("mobileNews.cal.empty.body")} />
   );
 
   const footer = built.rows.length ? (

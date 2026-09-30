@@ -28,7 +28,7 @@ Strings live in the `mobileDepth` namespace, and the existing `order.dom.*` keys
   - on: the order is sent at once, one at a time;
   - turning it on goes through an explanation sheet (`components/OneTapSheet.tsx`).
   - Other trading screens can read the same setting (`useOneTap`).
-- **States.** Skeleton ladder until the first book, "depth unavailable" when the quote stream is up but has no price for the symbol, reconnecting (the stream is down while the phone is online; a ladder already on screen gets a Reconnecting tag instead of the source tag), offline, and view-only / no account / read-only / restricted / market closed (specs polled every minute; the controls are disabled; the server refuses anyway).
+- **States.** Skeleton ladder until the first book, "depth unavailable" when the quote stream is up but has no price for the symbol (the market art; "Market closed" with the market-closed art when that is outside the symbol's session), reconnecting (the stream is down while the phone is online; a ladder already on screen gets a Reconnecting tag instead of the source tag), offline, and view-only / no account / read-only / restricted / market closed (specs polled every minute; the controls are disabled; the server refuses anyway).
 
 ## Price alerts (`/alerts`)
 

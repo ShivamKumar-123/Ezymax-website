@@ -87,7 +87,7 @@ export function CommissionsScreen() {
       <RowsSkeleton rows={7} height={COMMISSION_ROW_HEIGHT} inset={false} />
     )
   ) : filtered ? (
-    <EmptyState title={t("mobilePartner.com.noMatchTitle")} body={t("mobilePartner.com.noMatchBody")} action={t("mobilePartner.clients.clearFilters")} onAction={() => { setStatus("all"); setKind("all"); }} style={{ paddingTop: space[4] }} />
+    <EmptyState illustration="emptyHistory" size={150} title={t("mobilePartner.com.noMatchTitle")} body={t("mobilePartner.com.noMatchBody")} action={t("mobilePartner.clients.clearFilters")} onAction={() => { setStatus("all"); setKind("all"); }} style={{ paddingTop: space[4] }} />
   ) : (
     <EmptyState illustration="emptyHistory" title={t("mobilePartner.recent.emptyTitle")} body={t("mobilePartner.recent.emptyBody")} />
   );

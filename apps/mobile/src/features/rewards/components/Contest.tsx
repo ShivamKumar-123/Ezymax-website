@@ -7,7 +7,7 @@ import { useT } from "@/i18n";
 import { ColorBlock, Display, Mono, PressableScale, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { Flip, Tag } from "../../partner/components/Chrome";
-import { tint } from "../../partner/tint";
+import { inkSoft, tint } from "../../partner/tint";
 import { date, isPast, isRunning, isUpcoming, projectedPrize, scoreText, scoreTone, scoringLabel, statusLabel, tradesHint, usdShort } from "../format";
 import type { Contest, ContestCard, Standing } from "../types";
 import { Countdown } from "./Countdown";
@@ -41,7 +41,7 @@ export const ContestBlock = React.memo(function ContestBlock({ c, onOpen, onWarm
       <PressableScale onPress={() => onOpen(c.id)} onPressIn={() => onWarm?.(c.id)} accessibilityLabel={`${c.name}, ${t("mobileRewards.contest.prizePool")} ${usdShort(c.prizePool)}`} testID={`contest-${c.id}`} style={{ padding: space[6], gap: space[4] }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
           <KindTag kind={c.kind} onColor />
-          <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ flex: 1 }}>
+          <Text variant="label" color={inkSoft} numberOfLines={1} style={{ flex: 1 }}>
             {running ? t("mobileRewards.contest.liveNow") : t("mobileRewards.contest.startsOn", { date: date(c.startsAt, false) })}
           </Text>
           <Flip>
@@ -53,7 +53,7 @@ export const ContestBlock = React.memo(function ContestBlock({ c, onOpen, onWarm
         </Display>
         <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: space[4] }}>
           <View style={{ gap: 2 }}>
-            <Text variant="label" color={colors.ink2}>
+            <Text variant="label" color={inkSoft}>
               {t("mobileRewards.contest.prizePool")}
             </Text>
             <Mono size={34} weight="bold" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit>
@@ -61,7 +61,7 @@ export const ContestBlock = React.memo(function ContestBlock({ c, onOpen, onWarm
             </Mono>
           </View>
           <View style={{ alignItems: "flex-end", gap: 2 }}>
-            <Text variant="label" color={colors.ink2}>
+            <Text variant="label" color={inkSoft}>
               {running ? t("mobileRewards.contest.endsIn") : t("mobileRewards.contest.startsIn")}
             </Text>
             <Countdown to={running ? c.endsAt : c.startsAt} size={17} color={colors.ink} />
@@ -80,7 +80,7 @@ export const ContestBlock = React.memo(function ContestBlock({ c, onOpen, onWarm
 function Mini({ label, value }: { label: string; value: string }) {
   return (
     <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
-      <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ fontSize: 10.5 }}>
+      <Text variant="label" color={inkSoft} numberOfLines={1} style={{ fontSize: 10.5 }}>
         {label}
       </Text>
       <Text variant="callout" weight="700" color={colors.ink} numberOfLines={1}>

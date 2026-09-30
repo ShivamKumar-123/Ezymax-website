@@ -16,6 +16,10 @@ import { useMethodLabel } from "./LockOverlay";
 import { TIMEOUTS } from "./policy";
 import { capability, confirmOwner, lockNow, lockStore, saveLockSettings, useLockSettings, type Capability } from "./state";
 
+/** Secondary text on a colour block: ink at 78 %, at least 4.5:1 on every block colour (ember 4.7, light ember 5.7,
+ *  gold 6.7, sand 8.0, off-white 9.3). The kit's ink2 (66 %) is 3.7:1 on ember and 4.3:1 on light ember. */
+const inkSoft = alpha(colors.ink, 0.78);
+
 export function KSwitch({ value, onValueChange, disabled, accessibilityLabel, testID }: { value: boolean; onValueChange: (v: boolean) => void; disabled?: boolean; accessibilityLabel?: string; testID?: string }) {
   const web = { activeThumbColor: colors.cream, activeTrackColor: colors.ember } as object;
   const sw = <Switch testID={testID} value={value} onValueChange={onValueChange} disabled={disabled} trackColor={{ false: colors.surface3, true: colors.ember }} thumbColor={colors.cream} ios_backgroundColor={colors.surface3} accessibilityLabel={accessibilityLabel} {...web} />;
@@ -83,7 +87,7 @@ export function AppLockScreen() {
         <View style={{ paddingHorizontal: GUTTER }}>
           <ColorBlock color={settings.enabled ? "mint" : "cream"} style={{ flexDirection: "row", alignItems: "center", gap: space[3], paddingVertical: space[5], minHeight: 156 }}>
             <View style={{ flex: 1, gap: space[2] }}>
-              <Text variant="label" color={colors.ink2}>
+              <Text variant="label" color={inkSoft}>
                 {t("mobilePlatform.settings.toggle")}
               </Text>
               {cap === null ? (
@@ -93,7 +97,7 @@ export function AppLockScreen() {
                   {t(settings.enabled ? "mobilePlatform.settings.on" : "mobilePlatform.settings.off")}
                 </Display>
               )}
-              <Text variant="caption" color={colors.ink2}>
+              <Text variant="caption" color={inkSoft}>
                 {t("mobilePlatform.settings.toggleHint", { method })}
               </Text>
             </View>

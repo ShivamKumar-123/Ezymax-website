@@ -14,7 +14,7 @@ import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { Banner, Button, ColorBlock, Display, Illustration, Mono, Pill, PressableScale, Screen, Text, useBottomInset } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { fetchers, keys, prefetchBacktest, prefetchDeployment, prefetchMarket, prefetchStrategy, type BacktestRow as Bt, type Deployment, type StrategyItem } from "../api";
-import { Note, SectionTitle } from "../components/bits";
+import { inkSoft, Note, SectionTitle } from "../components/bits";
 import { ForwardIcon, TopBar } from "../components/chrome";
 import { BacktestRow, DeploymentRow, StrategyRow } from "../components/rows";
 import { LoadError, RowSkeleton } from "../components/states";
@@ -285,7 +285,7 @@ function Hero({ running, realized, openPos, trades, loading }: { running: number
   const t = useT();
   return (
     <ColorBlock color="ember" style={{ paddingBottom: space[5] }} testID="algo-hero">
-      <Text variant="label" color={colors.ink2}>
+      <Text variant="label" color={inkSoft}>
         {t("mobileAlgo.home.heroEyebrow")}
       </Text>
       <Display size="hero" color={colors.ink} style={{ fontSize: 76, lineHeight: 78 }}>
@@ -309,7 +309,7 @@ function HeroStat({ label, value }: { label: string; value: string }) {
       <Mono size={18} weight="bold" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
         {value}
       </Mono>
-      <Text variant="label" color={colors.ink2} numberOfLines={2} style={{ fontSize: 10 }}>
+      <Text variant="label" color={inkSoft} numberOfLines={2} style={{ fontSize: 10 }}>
         {label}
       </Text>
     </View>

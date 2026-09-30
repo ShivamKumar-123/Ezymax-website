@@ -78,7 +78,7 @@ export function InkChip({ label, mono = true }: { label: string; mono?: boolean 
 export function Cell({ label, value, onBlock, style, valueColor, mono }: { label: string; value: string; onBlock?: boolean; style?: StyleProp<ViewStyle>; valueColor?: string; mono?: boolean }) {
   return (
     <View style={[{ gap: 3, minWidth: 0 }, style]}>
-      <Text variant="label" color={onBlock ? colors.ink3 : colors.text3} style={{ fontSize: 10.5 }} numberOfLines={1}>
+      <Text variant="label" color={onBlock ? colors.ink2 : colors.text3} style={{ fontSize: 10.5 }} numberOfLines={1}>
         {label}
       </Text>
       {mono ? (

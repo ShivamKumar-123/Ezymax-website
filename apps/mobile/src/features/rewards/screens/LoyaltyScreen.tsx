@@ -123,7 +123,8 @@ function Tiers({ r }: { r: Rewards }) {
                 {t("mobileRewards.tiers.multiplier", { x: x.multiplier })}
               </Mono>
             </View>
-            <Text variant="caption" tone="tertiary">
+            {/* the reader's tier sits on a gold tint: the secondary grey keeps its line readable there */}
+            <Text variant="caption" tone={on ? "secondary" : "tertiary"}>
               {x.minPoints > 0 ? t("mobileRewards.tiers.from", { points: pts(x.minPoints) }) : t("mobileRewards.tiers.entry")}
               {x.perks.length ? ` · ${x.perks.join(" · ")}` : ""}
             </Text>

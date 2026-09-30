@@ -8,7 +8,7 @@ import { Button, ColorBlock, Display, IconButton, Mono, Text } from "@/ui";
 import { colors, space } from "@/theme/tokens";
 import { copyText, shareLink } from "../share";
 import { count, shortUrl } from "../format";
-import { tint } from "../tint";
+import { inkSoft, tint } from "../tint";
 
 export const ReferralHero = React.memo(function ReferralHero({ code, link, funnel, onQr, brand }: { code: string; link: string; funnel: { clicks: number; signups: number; ftds: number } | null; onQr: () => void; brand: string }) {
   const t = useT();
@@ -17,10 +17,10 @@ export const ReferralHero = React.memo(function ReferralHero({ code, link, funne
   return (
     <ColorBlock color="ember" style={{ gap: space[4] }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[3] }}>
-        <Text variant="label" color={colors.ink2}>
+        <Text variant="label" color={inkSoft}>
           {t("mobilePartner.hero.eyebrow")}
         </Text>
-        <Text variant="label" color={colors.ink2}>
+        <Text variant="label" color={inkSoft}>
           {t("mobilePartner.hero.forLife")}
         </Text>
       </View>
@@ -28,7 +28,7 @@ export const ReferralHero = React.memo(function ReferralHero({ code, link, funne
         <Display size="xl" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit accessibilityLabel={t("mobilePartner.hero.codeA11y", { code: code.split("").join(" ") })}>
           {code}
         </Display>
-        <Mono size={13} color={colors.ink2} numberOfLines={1} style={{ writingDirection: "ltr" }}>
+        <Mono size={13} color={inkSoft} numberOfLines={1} style={{ writingDirection: "ltr" }}>
           {shortUrl(link)}
         </Mono>
       </View>
@@ -45,7 +45,7 @@ export const ReferralHero = React.memo(function ReferralHero({ code, link, funne
             [t("mobilePartner.funnel.funded"), funnel.ftds],
           ].map(([label, v]) => (
             <View key={label as string} style={{ flex: 1, gap: 2 }}>
-              <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ fontSize: 10.5 }}>
+              <Text variant="label" color={inkSoft} numberOfLines={1} style={{ fontSize: 10.5 }}>
                 {label}
               </Text>
               <Mono size={18} weight="bold" color={colors.ink}>
