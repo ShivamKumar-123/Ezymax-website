@@ -340,5 +340,6 @@ const accounts: NsMessages<"accounts"> = {
   "export.trades": "معاملات",
   "export.ledger": "دفتر تراکنش‌ها",
   "toast.exportFailed": "خروجی فایل گرفته نشد",
+  "badge.prop": "پراپ",
 };
 export default accounts;

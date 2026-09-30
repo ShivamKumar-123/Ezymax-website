@@ -10,7 +10,7 @@ import { Button, Card, CardHeader, Chip, CopyButton, EmptyState, Gauge, KeyValue
 import { STATUS_LABEL, curOf, fmtAmount, fmtDate, fmtLevel, fmtPrice, levelTone, modeLabel, serverOf, serverTime, usePoll, type AccountDetail, type EngineAccount, type EnginePosition, type EngineOrder, type HistoryPage } from "./api";
 import { DealsTable, HistoryPanel, LedgerPanel } from "./activity";
 import { CredentialsPanel, SettingsPanel } from "./manage";
-import { FundButton, KindBadge, RefillButton, StatusBadge, TradeButton } from "./ui";
+import { FundButton, KindBadge, RefillButton, StatusBadge, TradeButton, isPropAccount } from "./ui";
 import { AccountAnalyticsPanel } from "@/components/reports/live-analytics";
 import { Trans, useT } from "@kalks/i18n/react";
 
@@ -394,7 +394,7 @@ function Detail() {
           <div className="relative flex flex-col gap-6 p-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <KindBadge type={a.type} />
+                <KindBadge type={a.type} prop={isPropAccount(a)} />
                 <h1 className="text-[20px] font-medium tracking-tight">
                   {a.groupName} · {modeLabel(a.mode)}
                 </h1>
@@ -416,7 +416,7 @@ function Detail() {
               <div className="k-label mt-5">{t("common.equity")}</div>
               <div className="mt-1 flex flex-wrap items-baseline gap-3">
                 <Money value={a.equity} currency={cur} countUp={false} className="text-[40px] font-semibold leading-none tracking-[-0.02em] sm:text-[46px]" />
-                {a.type === "live" && a.balance === 0 && a.equity === 0 && <Chip tone="warn">{t("accountDetail.header.notFunded")}</Chip>}
+                {a.type === "live" && !isPropAccount(a) && a.balance === 0 && a.equity === 0 && <Chip tone="warn">{t("accountDetail.header.notFunded")}</Chip>}
               </div>
               <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-[13px]">
                 <span className="text-fg-3">
@@ -435,7 +435,7 @@ function Detail() {
             </div>
             {!readOnly && (
               <div className="flex flex-wrap items-center gap-2">
-                {a.type === "live" ? <FundButton a={a} size="md" /> : <RefillButton a={a} onDone={reload} size="md" />}
+                {a.type === "live" ? !isPropAccount(a) && <FundButton a={a} size="md" /> : <RefillButton a={a} onDone={reload} size="md" />}
                 <TradeButton a={a} size="lg" />
               </div>
             )}

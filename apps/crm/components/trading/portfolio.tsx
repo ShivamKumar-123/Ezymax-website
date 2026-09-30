@@ -9,7 +9,7 @@ import { Button, CHART_COLORS, Card, CardHeader, Chip, Donut, EmptyState, Field,
 import { accountTitle, curOf, fmtAmount, fmtPrice, isoDay, toUsd, tradingApi, useAccounts, type AccountDetail, type EngineAccount, type EnginePosition } from "./api";
 import { AccountsError, liveTotals } from "./accounts-page";
 import { HistoryPanel, LedgerPanel } from "./activity";
-import { KindBadge, TradeButton } from "./ui";
+import { KindBadge, TradeButton, isPropAccount } from "./ui";
 import { tr, useFormat, useT } from "@kalks/i18n/react";
 
 /* ------------------------------------------------------------------ */
@@ -30,7 +30,7 @@ function AccountPicker({ accounts, value, onChange }: { accounts: EngineAccount[
               onClick={() => onChange(a.login)}
               className={cn("k-row flex items-center gap-2.5 px-3.5 py-2.5 text-start transition-colors", on ? "border-ember/50 bg-ember-soft" : "hover:border-[var(--k-border-top)]")}
             >
-              <KindBadge type={a.type} />
+              <KindBadge type={a.type} prop={isPropAccount(a)} />
               <span>
                 <span className="block font-mono text-[13px] font-medium">#{a.login}</span>
                 <span className="block text-[11px] text-fg-3">{accountTitle(a)}</span>
@@ -582,7 +582,7 @@ export function LivePortfolio() {
                               <tr key={a.login} className="bg-surface-2">
                                 <td className="rounded-s-[12px] border-y border-s border-line px-3 py-2.5">
                                   <Link href={`/accounts/${a.login}`} className="flex items-center gap-2 hover:text-ember">
-                                    <KindBadge type={a.type} />
+                                    <KindBadge type={a.type} prop={isPropAccount(a)} />
                                     <span className="font-mono">#{a.login}</span>
                                     <span className="hidden text-[12px] text-fg-3 sm:inline">{a.groupName}</span>
                                   </Link>
@@ -616,7 +616,7 @@ export function LivePortfolio() {
                             <Chip size="sm" tone={p.side === "buy" ? "up" : "down"}>
                               {(p.side === "buy" ? tx("common.buy") : tx("common.sell")).toUpperCase()} {p.volume}
                             </Chip>
-                            <KindBadge type={a.type} />
+                            <KindBadge type={a.type} prop={isPropAccount(a)} />
                           </div>
                           <div dir="ltr" className="k-num mt-0.5 truncate text-start font-mono text-[11px] text-fg-3">
                             #{a.login} · {fmtPrice(p.openPrice)} → {fmtPrice(p.currentPrice)}

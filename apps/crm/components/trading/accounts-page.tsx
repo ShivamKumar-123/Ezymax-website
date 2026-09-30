@@ -8,7 +8,7 @@ import { Button, Card, CardHeader, Chip, EmptyState, KpiCard, Money, PageHeader,
 import { useT } from "@kalks/i18n/react";
 import { toUsd, useAccounts, useGroups, type EngineAccount } from "./api";
 import { EngineGroupCard } from "./group-card";
-import { LiveAccountRow, refillsLeft } from "./ui";
+import { LiveAccountRow, isPropAccount, refillsLeft } from "./ui";
 import { useReadOnly } from "@/components/session";
 
 export function AccountsError({ onRetry, message }: { onRetry: () => void; message?: string }) {
@@ -40,8 +40,9 @@ export function RowsSkeleton({ n = 2 }: { n?: number }) {
 }
 
 /** Totals over live accounts in USD (cent accounts converted from USC). */
+/** Totals of the client's own live money: prop-challenge accounts (simulated capital) are left out. */
 export function liveTotals(accounts: EngineAccount[]) {
-  const live = accounts.filter((a) => a.type === "live");
+  const live = accounts.filter((a) => a.type === "live" && !isPropAccount(a));
   return {
     live,
     demo: accounts.filter((a) => a.type === "demo"),

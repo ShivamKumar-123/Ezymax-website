@@ -9,8 +9,20 @@ import { useT } from "@kalks/i18n/react";
 import { useReadOnly } from "@/components/session";
 import { STATUS_LABEL, curOf, errorToast, fmtLevel, levelTone, openTerminal, serverOf, tradingApi, type EngineAccount } from "./api";
 
-export function KindBadge({ type }: { type: "live" | "demo" }) {
+/** Prop-challenge accounts live in engine groups named prop*: simulated capital that is never funded from the
+ * wallet (the wallet refuses transfers to them) and never counted in the client's own live equity. */
+export function isPropAccount(a: Pick<EngineAccount, "group">) {
+  return a.group.toLowerCase().startsWith("prop");
+}
+
+export function KindBadge({ type, prop }: { type: "live" | "demo"; prop?: boolean }) {
   const t = useT();
+  if (prop)
+    return (
+      <Chip tone="neutral" size="sm" className="font-semibold tracking-wider">
+        {t("accounts.badge.prop")}
+      </Chip>
+    );
   return type === "live" ? (
     <Chip tone="ember" size="sm" className="font-semibold tracking-wider">
       {t("accounts.badge.live")}
@@ -185,7 +197,7 @@ export function LiveAccountRow({ a, onChanged, compact }: { a: EngineAccount; on
   return (
     <div className="k-row group relative overflow-hidden p-4 transition-colors hover:border-[var(--k-border-top)] sm:p-5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <KindBadge type={a.type} />
+        <KindBadge type={a.type} prop={isPropAccount(a)} />
         <Link href={`/accounts/${a.login}`} className="text-[15px] font-medium text-fg hover:text-ember">
           {a.groupName} · {t.dyn(`accounts.mode.${a.mode}`, a.mode)}
         </Link>
@@ -227,7 +239,7 @@ export function LiveAccountRow({ a, onChanged, compact }: { a: EngineAccount; on
         {!readOnly && (
           <div className="col-span-full flex flex-wrap items-center justify-end gap-2 xl:col-span-1">
             <AccountActions a={a} />
-            {a.type === "live" ? <FundButton a={a} /> : <RefillButton a={a} onDone={onChanged} />}
+            {a.type === "live" ? !isPropAccount(a) && <FundButton a={a} /> : <RefillButton a={a} onDone={onChanged} />}
             <TradeButton a={a} />
           </div>
         )}

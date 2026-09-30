@@ -383,5 +383,6 @@ const accounts: NsMessages<"accounts"> = {
   "export.trades": "الصفقات",
   "export.ledger": "دفتر الحركات",
   "toast.exportFailed": "تعذّر تصدير الملف",
+  "badge.prop": "تحدي تمويل",
 };
 export default accounts;

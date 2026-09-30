@@ -333,5 +333,6 @@ const accounts: NsMessages<"accounts"> = {
   "export.trades": "டிரேடுகள்",
   "export.ledger": "லெட்ஜர்",
   "toast.exportFailed": "கோப்பை ஏற்றுமதி செய்ய முடியவில்லை",
+  "badge.prop": "ப்ராப்",
 };
 export default accounts;

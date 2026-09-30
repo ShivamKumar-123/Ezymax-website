@@ -334,5 +334,6 @@ const accounts: NsMessages<"accounts"> = {
   "export.trades": "operazioni",
   "export.ledger": "registro",
   "toast.exportFailed": "Impossibile esportare il file",
+  "badge.prop": "PROP",
 };
 export default accounts;

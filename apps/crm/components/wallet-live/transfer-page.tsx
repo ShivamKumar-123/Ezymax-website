@@ -10,6 +10,7 @@ import { useT } from "@kalks/i18n/react";
 import { toUsd, useAccounts, type EngineAccount } from "@/components/trading/api";
 import { fmt, requestId, usdtAvailable, useWallet, walletApi, type Overview, type Page, type TradingTransfer } from "./api";
 import { InlineError, StatusTag, WalletUnavailable, cleanAmount } from "./ui";
+import { isPropAccount } from "@/components/trading/ui";
 
 type Dir = "to" | "from";
 
@@ -56,7 +57,8 @@ function Inner() {
   const o = useWallet<Overview>("overview", 10000);
   const list = useWallet<Page<TradingTransfer>>("transfers?limit=15", 10000);
   const acc = useAccounts(10000);
-  const live = (acc.data?.accounts ?? []).filter((a) => a.type === "live" && a.status !== "disabled" && a.status !== "expired");
+  // prop-challenge accounts take no wallet transfers (simulated capital), so they are not offered here
+  const live = (acc.data?.accounts ?? []).filter((a) => a.type === "live" && !isPropAccount(a) && a.status !== "disabled" && a.status !== "expired");
   const account = live.find((a) => a.login === login) ?? null;
   React.useEffect(() => {
     if (!login && live.length === 1) setLogin(live[0]!.login);

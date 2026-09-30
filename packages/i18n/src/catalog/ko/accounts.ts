@@ -333,5 +333,6 @@ const accounts: NsMessages<"accounts"> = {
   "export.trades": "거래",
   "export.ledger": "원장",
   "toast.exportFailed": "파일을 내보내지 못했습니다",
+  "badge.prop": "프롭",
 };
 export default accounts;

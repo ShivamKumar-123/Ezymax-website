@@ -333,5 +333,6 @@ const accounts: NsMessages<"accounts"> = {
   "export.trades": "biashara",
   "export.ledger": "leja",
   "toast.exportFailed": "Imeshindikana kuhamisha faili",
+  "badge.prop": "PROP",
 };
 export default accounts;

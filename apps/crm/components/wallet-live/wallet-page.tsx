@@ -5,10 +5,11 @@ import Link from "next/link";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, ArrowUpRight, Bell, ChevronRight, History, Lock } from "lucide-react";
 import { Button, Card, CardHeader, Chip, EmptyState, PageHeader, Skeleton, formatDateTime } from "@kalks/ui";
 import { Trans, useT } from "@kalks/i18n/react";
-import { useSession } from "@/components/session";
+import { useReadOnly, useSession } from "@/components/session";
 import { toUsd, useAccounts } from "@/components/trading/api";
 import { CHAIN_LABEL, fmt, usdtAvailable, useWallet, walletApi, type ActivityItem, type Notification, type Overview, type Page } from "./api";
 import { ActivityRow, Confirmations, DEPOSIT_STATUS, HashLink, KycNotice, StatusTag, WITHDRAWAL_STATUS, WalletUnavailable } from "./ui";
+import { isPropAccount } from "@/components/trading/ui";
 
 function BalanceCard({ o, loading }: { o: Overview | null; loading: boolean }) {
   const t = useT();
@@ -114,7 +115,7 @@ function InProgress({ o }: { o: Overview }) {
 function FundAccounts() {
   const t = useT();
   const { data } = useAccounts(15000);
-  const live = (data?.accounts ?? []).filter((a) => a.type === "live");
+  const live = (data?.accounts ?? []).filter((a) => a.type === "live" && !isPropAccount(a));
   return (
     <Card className="h-full">
       <CardHeader
@@ -214,6 +215,8 @@ function Notifications() {
 export function LiveWalletPage() {
   const t = useT();
   const me = useSession();
+  // view-only logins (and read-only staff sessions) see balances and activity, never money actions
+  const readOnly = useReadOnly();
   const { data: o, error, loading, reload } = useWallet<Overview>("overview", 10000);
   const act = useWallet<Page<ActivityItem>>("activity?limit=8", 15000);
 
@@ -229,11 +232,13 @@ export function LiveWalletPage() {
                 <History /> {t("wallet.history")}
               </Button>
             </Link>
-            <Link href="/wallet/deposit">
-              <Button variant="ember" size="lg">
-                <ArrowDownToLine /> {t("wallet.depositUsdt")}
-              </Button>
-            </Link>
+            {!readOnly && (
+              <Link href="/wallet/deposit">
+                <Button variant="ember" size="lg">
+                  <ArrowDownToLine /> {t("wallet.depositUsdt")}
+                </Button>
+              </Link>
+            )}
           </>
         }
       />
@@ -243,17 +248,19 @@ export function LiveWalletPage() {
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <div className="xl:col-span-8">
+            <div className={readOnly ? "xl:col-span-12" : "xl:col-span-8"}>
               <BalanceCard o={o} loading={loading} />
             </div>
-            <div className="xl:col-span-4">
-              <QuickActions kyc={me.kyc_status} />
-            </div>
+            {!readOnly && (
+              <div className="xl:col-span-4">
+                <QuickActions kyc={me.kyc_status} />
+              </div>
+            )}
           </div>
-          <KycNotice status={me.kyc_status} />
+          {!readOnly && <KycNotice status={me.kyc_status} />}
           {o && <InProgress o={o} />}
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <Card className="xl:col-span-7">
+            <Card className={readOnly ? "xl:col-span-12" : "xl:col-span-7"}>
               <CardHeader
                 title={t("wallet.recent.title")}
                 subtitle={act.data ? t("wallet.recent.count", { count: act.data.total }) : undefined}
@@ -268,16 +275,18 @@ export function LiveWalletPage() {
               <div className="mt-4 space-y-2 px-4 pb-5 sm:px-6">
                 {act.loading && <Skeleton className="h-16 w-full rounded-[14px]" />}
                 {act.data && act.data.items.length === 0 && (
-                  <EmptyState art="emptyHistory" title={t("wallet.recent.emptyTitle")} text={t("wallet.recent.emptyText")} action={<Link href="/wallet/deposit"><Button variant="ember">{t("wallet.recent.firstDeposit")}</Button></Link>} />
+                  <EmptyState art="emptyHistory" title={t("wallet.recent.emptyTitle")} text={t("wallet.recent.emptyText")} action={readOnly ? undefined : <Link href="/wallet/deposit"><Button variant="ember">{t("wallet.recent.firstDeposit")}</Button></Link>} />
                 )}
                 {act.data?.items.map((a) => <ActivityRow key={`${a.type}${a.id}`} a={a} />)}
               </div>
             </Card>
-            <div className="space-y-4 xl:col-span-5">
-              <FundAccounts />
-              {/* wallet notices belong to the account holder, not to a view-only login */}
-              {!me.viewer && <Notifications />}
-            </div>
+            {!readOnly && (
+              <div className="space-y-4 xl:col-span-5">
+                <FundAccounts />
+                {/* wallet notices belong to the account holder, not to a view-only login */}
+                {!me.viewer && <Notifications />}
+              </div>
+            )}
           </div>
         </div>
       )}

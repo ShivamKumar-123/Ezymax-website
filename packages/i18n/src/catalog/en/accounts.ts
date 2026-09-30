@@ -340,5 +340,6 @@ const accounts = {
   "export.trades": "trades",
   "export.ledger": "ledger",
   "toast.exportFailed": "Couldn't export the file",
+  "badge.prop": "PROP",
 };
 export default accounts;
