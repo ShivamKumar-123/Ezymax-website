@@ -105,7 +105,9 @@ function Header({ title, hint, shown, format, scrub, rangeLabel }: { title: stri
         </Mono>
         <Tag tone={tagTone(change)} label={`${pct(change)} · ${rangeLabel}`} />
       </View>
-      <Text variant="caption" tone="tertiary">
+      {/* a fixed two-line slot: the date under the finger replaces the hint without changing the card's height, so a
+          scrub never relayouts the list around the chart (only this header re-renders) */}
+      <Text variant="caption" tone="tertiary" numberOfLines={2} style={{ minHeight: 32 }}>
         {i !== null ? fmt.date(at.t, { day: "numeric", month: "short", year: "numeric" }) : hint}
       </Text>
     </View>

@@ -52,16 +52,17 @@ The social module of the Kalks app. It uses the same server routes and rules as 
 - Polling while open: subscription and MAM link detail 5 s, my copies 10 s, my investments 15 s, leaderboard / profile / funds 60 s. There is no per-tick subscription anywhere; the engine's P&L arrives with the polls.
 - Persisted (open on cached content): leaderboard per filter, master profiles, subscriptions, funds, investments, MAM links / programmes, master summary.
 
-## Performance (web preview, Playwright probe, 2026-09-30)
+## Performance (web preview, Playwright probe, 2026-09-30, review)
+
+Fibers are counted per React commit through a DevTools hook, skipping subtrees that bailed out (their fibers keep the flags of an older render; counting them inflated earlier numbers).
 
 | What | Result |
 |---|---|
-| Leaderboard fast scroll | 60 fps, p95 frame 16.7 ms, 0 long tasks |
+| Leaderboard fast scroll | 60 fps, p95 frame 16.7 ms, 0 long tasks; 4 fibers per commit (p50), 82 when new rows come in |
 | Hub idle | 0 React commits |
-| Master profile scroll | 60 fps, 0 frames over 25 ms |
-| Growth chart scrub | Only the header re-renders (store leaf); canvas 0 renders |
-| Subscription detail, 5 s poll with nothing changed | About 48 fibers per commit (rows, header and actions memoised and skipped) |
-| Subscription detail with an open copied position, prices ticking (review) | 60 fps; commits only when a 5 s poll answers (a tick renders nothing): about 200 fibers when the equity moved (header, the changed position row, the stop sheet's summary; the action bar is memoised on its status) |
+| Master profile scroll | 60 fps; 14 fibers per commit (p50: the title in the bar) |
+| Growth / NAV chart scrub | 12–17 fibers per commit (the value, change and date above the chart; the canvas never re-renders); 60 fps from the second scrub (the first compiles CanvasKit's shaders on the CPU in headless Chromium). The date takes a fixed two-line slot, so a scrub never changes the card's height |
+| Subscription detail with an open copied position, prices ticking | 60 fps; commits only when the 5 s poll answers, none per tick: about 210 fibers when the equity moved (header figures, the changed position row, the stop sheet's summary; the action bar is memoised on its status) |
 
 ## Server rules the app relies on (review)
 
