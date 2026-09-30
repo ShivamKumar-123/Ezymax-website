@@ -179,16 +179,8 @@ export function propMessage(e: ApiError | undefined | null): string {
   return e.message || t("mobileProp.error.generic");
 }
 
-/** Soft outcomes: the request may still complete on its own (show as information, not failure). */
-export const isSoftError = (code: string | undefined) => code === "provisioning" || code === "payment_pending" || code === "wallet_pending";
-
-/**
- * A final refusal (4xx): nothing is pending on the server, so the next attempt is a new purchase with a new
- * idempotency key. Reusing the key would replay the refused purchase (the service keeps the payment_failed or
- * refunded challenge under it), so a retry after a deposit could never succeed. Unknown outcomes (network, time-out,
- * 5xx: payment_pending, provisioning, engine) keep the key: the retry must reach the same purchase.
- */
-export const isFinalRefusal = (e: ApiError) => e.status !== undefined && e.status >= 400 && e.status < 500 && !isSoftError(e.code);
+/** Soft outcomes, final refusals (a new idempotency key) and ended purchases: see ./lib (tested there). */
+export { endedPurchase, isFinalRefusal, isSoftError } from "./lib";
 
 /* ------------------------------------------------------------------ */
 /* Plans                                                               */

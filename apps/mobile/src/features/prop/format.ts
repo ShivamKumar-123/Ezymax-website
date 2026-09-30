@@ -22,7 +22,7 @@ export function sizeLabel(n: number): string {
 /** "8%", "2.5%". */
 export const pct = (v: number | null | undefined, d = 0) => (v === null || v === undefined || !Number.isFinite(v) ? "—" : `${+v.toFixed(d)}%`);
 
-export const clamp01 = (v: number) => (Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0);
+export { clamp01, hms, nextNyClose } from "./lib";
 
 export function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -50,26 +50,4 @@ export function fmtDuration(t: T, secs: number): string {
   if (secs < 3600) return t("mobileProp.duration.ms", { m: Math.floor(secs / 60), s: Math.round(secs % 60) });
   if (secs < 86400) return t("mobileProp.duration.hm", { h: Math.floor(secs / 3600), m: Math.floor((secs % 3600) / 60) });
   return t("mobileProp.duration.dh", { d: Math.floor(secs / 86400), h: Math.floor((secs % 86400) / 3600) });
-}
-
-/** "05:12:33" (countdowns; digits stay left-to-right in every language). */
-export function hms(ms: number | null): string {
-  if (ms === null || !Number.isFinite(ms)) return "--:--:--";
-  const s = Math.max(0, Math.floor(ms / 1000));
-  return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map((n) => String(n).padStart(2, "0")).join(":");
-}
-
-/** Next 17:00 New York, the prop trading day's reset (21:00 UTC during US daylight time, 22:00 UTC otherwise). */
-export function nextNyClose(now = new Date()): Date {
-  const y = now.getUTCFullYear();
-  const nthSunday = (month: number, n: number) => {
-    const first = new Date(Date.UTC(y, month, 1)).getUTCDay();
-    return 1 + ((7 - first) % 7) + (n - 1) * 7;
-  };
-  const dstStart = Date.UTC(y, 2, nthSunday(2, 2), 7);
-  const dstEnd = Date.UTC(y, 10, nthSunday(10, 1), 6);
-  const hour = now.getTime() >= dstStart && now.getTime() < dstEnd ? 21 : 22;
-  let at = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hour);
-  if (at <= now.getTime()) at += 86_400_000;
-  return new Date(at);
 }

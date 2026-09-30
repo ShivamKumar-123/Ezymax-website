@@ -4,6 +4,7 @@
 import type { MessageKey, T } from "@/i18n";
 import type { BlockColor } from "@/theme/tokens";
 import { usd, feeLabel } from "./format";
+import type { LiveParams } from "./lib";
 import type { Challenge, ChallengeStatus, LiveRules, PhaseAccount, Plan, PlanSize, PlanType } from "./types";
 
 export type View = LiveRules & { initial: number; live: boolean };
@@ -55,20 +56,10 @@ export function tradable(c: Pick<Challenge, "status" | "current">, a: PhaseAccou
 }
 
 /* ------------------------------------------------------------------ */
-/* Live maths (worklets: they run on the UI thread from shared values)  */
+/* Live maths (worklets in ./lib: they run on the UI thread from shared values) */
 /* ------------------------------------------------------------------ */
 
-/** Everything the gauges need besides live equity and balance (from the evaluator's last look). */
-export type LiveParams = {
-  initial: number;
-  dailyRef: number;
-  dailyLimit: number;
-  ddLimit: number;
-  hwm: number;
-  trailing: boolean;
-  lock: boolean;
-  target: number;
-};
+export { dailyShare, dailyUsedOf, ddFloorOf, ddShare, ddUsedOf, targetShare, type LiveParams } from "./lib";
 
 export function liveParams(v: View, plan: Pick<Plan, "ddType" | "trailingLock">): LiveParams {
   return {
@@ -81,43 +72,6 @@ export function liveParams(v: View, plan: Pick<Plan, "ddType" | "trailingLock">)
     lock: plan.trailingLock,
     target: v.targetAmount ?? 0,
   };
-}
-
-/** Daily loss used: reference at the reset minus equity (never negative). */
-export function dailyUsedOf(p: LiveParams, equity: number): number {
-  "worklet";
-  return Math.max(0, p.dailyRef - equity);
-}
-
-/** Max-drawdown floor for the high-water mark seen so far (static: initial − limit). */
-export function ddFloorOf(p: LiveParams, equity: number, balance: number): number {
-  "worklet";
-  if (!p.trailing) return p.initial - p.ddLimit;
-  const hwm = Math.max(p.hwm, equity, balance);
-  const f = hwm - p.ddLimit;
-  return p.lock ? Math.min(f, p.initial) : f;
-}
-
-export function ddUsedOf(p: LiveParams, equity: number, balance: number): number {
-  "worklet";
-  return Math.max(0, ddFloorOf(p, equity, balance) + p.ddLimit - equity);
-}
-
-/** 0–1 shares for the gauges. */
-export function dailyShare(p: LiveParams, equity: number): number {
-  "worklet";
-  return p.dailyLimit > 0 ? Math.min(1, dailyUsedOf(p, equity) / p.dailyLimit) : 0;
-}
-
-export function ddShare(p: LiveParams, equity: number, balance: number): number {
-  "worklet";
-  return p.ddLimit > 0 ? Math.min(1, ddUsedOf(p, equity, balance) / p.ddLimit) : 0;
-}
-
-/** Profit-target progress on closed profit (balance), like the rule: the target counts closed trades. */
-export function targetShare(p: LiveParams, balance: number): number {
-  "worklet";
-  return p.target > 0 ? Math.min(1, Math.max(0, balance - p.initial) / p.target) : 0;
 }
 
 /* ------------------------------------------------------------------ */

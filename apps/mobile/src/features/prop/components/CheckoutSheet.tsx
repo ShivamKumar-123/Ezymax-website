@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useT } from "@/i18n";
 import { Banner, Button, Checkbox, Display, Illustration, Mono, PillRow, PressableScale, Sheet, Skeleton, Text, toast, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
-import { ERROR_LINK, isFinalRefusal, isSoftError, propMessage, purchaseChallenge, refreshAfterMoney, useReadOnly, useWalletUsdt } from "../api";
+import { endedPurchase, ERROR_LINK, isFinalRefusal, isSoftError, propMessage, purchaseChallenge, refreshAfterMoney, useReadOnly, useWalletUsdt } from "../api";
 import { feeLabel, sizeLabel, usd } from "../format";
 import { planRules, typeText } from "../rules";
 import { openInTrade } from "../trade";
@@ -137,10 +137,10 @@ export const CheckoutSheet = React.forwardRef<CheckoutHandle, { onOpenChallenge:
     refreshAfterMoney();
     // a replayed key can answer with a purchase that ended meanwhile (payment failed, account not opened and
     // refunded): that is not a purchase to celebrate
-    const st = r.data.challenge?.status;
-    if (st === "closed" || st === "payment_failed" || st === "failed") {
+    const ended = endedPurchase(r.data.challenge?.status);
+    if (ended) {
       key.current = newKey();
-      setErr({ code: st === "closed" ? "account_unavailable" : "payment_failed", message: "", status: 422 });
+      setErr({ code: ended, message: "", status: 422 });
       return;
     }
     setDone(r.data);

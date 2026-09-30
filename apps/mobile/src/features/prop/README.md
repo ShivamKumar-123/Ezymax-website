@@ -42,6 +42,19 @@ Functional only, like the rest of the app: pull to refresh and choosing a size o
 
 The art is drawn on the phone (portrait 1080 × 1350, the post format) with the app's fonts: the kind's colour block, the headline, the figure, the trader, the issue date and a QR code of the public verify page (`<Client Area>/verify/<code>`). The same drawing is shown in the viewer and rendered off screen (`drawAsImage`) to a PNG for the share sheet (`expo-file-system` + `expo-sharing`; the web preview downloads it). Its texts stay English like the web certificate image, since it is a verifiable document; dates are UTC like the verify page.
 
+## Tests
+
+`lib.ts` holds the pure logic (no React Native): the live rule maths (worklets, same definitions as
+`services/prop/src/rules.rs`), the 17:00 New York reset clock (each day judged on its own for daylight time) and how
+a purchase answer is read (which refusals take a new idempotency key, which answers carry an ended challenge).
+
+```bash
+node --import ./apps/mobile/scripts/test-hooks.mjs --test apps/mobile/scripts/prop-lib.test.mts
+```
+
+The server side (identity from the bearer, purchase validation and idempotency key, payouts, view-only / read-only
+staff / module-off policies) is `apps/crm/tests/mobile-prop.test.mjs`.
+
 ## Strings
 
 `packages/i18n/src/catalog/en/mobileProp.ts` (English; the translation pass adds the other languages).
