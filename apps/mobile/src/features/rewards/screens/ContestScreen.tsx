@@ -12,11 +12,11 @@ import { Button, Card, ColorBlock, EmptyState, Mono, Text, useBottomInset, type 
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { Label, Page, SectionTitle, StackBar, Tag, useRefresh, useScrollY } from "../../partner/components/Chrome";
 import { BlockSkeleton, RowsSkeleton, ScreenState } from "../../partner/components/States";
-import { REWARDS_KEYS, useContest } from "../api";
+import { REWARDS_KEYS, useContest, useContestsFor } from "../api";
 import { KindTag, RankBadge, STANDING_ROW_HEIGHT, StandingRow } from "../components/Contest";
 import { Countdown } from "../components/Countdown";
 import { JoinSheet } from "../components/JoinSheet";
-import { bandLabel, canJoin, date, isFull, isPast, isRunning, isUpcoming, prizeFor, scoreText, scoreTone, scoringLabel, statusLabel, tradesHint, usdShort } from "../format";
+import { bandLabel, canJoin, date, isFull, isPast, isRunning, isUpcoming, projectedPrize, scoreText, scoreTone, scoringLabel, statusLabel, tradesHint, usdShort } from "../format";
 import type { Contest, ContestsResp, ContestDetail, Standing } from "../types";
 import { viewerGated } from "../components/ViewerGate";
 
@@ -32,7 +32,7 @@ function MyEntry({ c, me }: { c: Contest; me: Standing }) {
   const dq = me.status === "disqualified";
   const tone = scoreTone(c, me);
   const hint = dq ? t("mobileRewards.contest.dqBody") : tradesHint(t, c, me);
-  const prize = me.prize ?? prizeFor(c, me.rank);
+  const prize = projectedPrize(c, me);
   return (
     <Card style={{ gap: space[4] }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: space[4] }}>
@@ -68,9 +68,14 @@ function ContestDetailScreen() {
   const t = useT();
   const readOnly = useReadOnly();
   const { id: raw } = useLocalSearchParams<{ id: string }>();
-  const id = /^[A-Za-z0-9_-]{1,64}$/.test(raw ?? "") ? raw! : null;
+  const param = /^[A-Za-z0-9_-]{1,64}$/.test(raw ?? "") ? raw! : null;
+  // the service reads contests by id; a link by slug (a banner, a pasted Client Area URL) finds its id in the list
+  const bySlug = param !== null && !/^\d{1,18}$/.test(param);
+  const list = useContestsFor(bySlug);
+  const listed = list.data?.items.find((c) => String(c.id) === param || c.slug === param);
+  const id = bySlug ? (listed ? String(listed.id) : null) : param;
   // the list's card shows at once while the detail loads
-  const fromList = React.useMemo(() => getQueryData<ContestsResp>(REWARDS_KEYS.contests)?.items.find((c) => String(c.id) === id || c.slug === id), [id]);
+  const fromList = React.useMemo(() => listed ?? getQueryData<ContestsResp>(REWARDS_KEYS.contests)?.items.find((c) => String(c.id) === param || c.slug === param), [listed, param]);
   const [live, setLive] = React.useState(fromList ? isRunning(fromList) : true);
   const q = useContest(id, live);
   const d: ContestDetail | undefined = q.data;
@@ -86,14 +91,19 @@ function ContestDetailScreen() {
 
   const renderItem = React.useCallback<ListRenderItem<Standing>>(({ item }) => (c ? <StandingRow c={c} s={item} /> : null), [c]);
 
+  // no such contest: a bad link, a slug the list doesn't have
+  const missing = param === null || (bySlug && !!list.data && !listed);
+  const error = bySlug && !list.data ? list.error : q.error;
   if (!c) {
     return (
       <Page bar={<StackBar title={t("mobileRewards.title.contest")} scrollY={scrollY} />}>
-        {q.error ? (
-          q.error.status === 404 ? (
+        {missing ? (
+          <EmptyState illustration="rewards" title={t("mobileRewards.contest.notFoundTitle")} body={t("mobileRewards.contest.notFoundBody")} />
+        ) : error ? (
+          error.status === 404 || error.status === 400 ? (
             <EmptyState illustration="rewards" title={t("mobileRewards.contest.notFoundTitle")} body={t("mobileRewards.contest.notFoundBody")} />
           ) : (
-            <ScreenState ns="mobileRewards" error={q.error} onRetry={() => void q.refresh()} />
+            <ScreenState ns="mobileRewards" error={error} onRetry={() => void (bySlug && !list.data ? list.refresh() : q.refresh())} />
           )
         ) : (
           <View style={{ gap: space[3], paddingTop: space[4] }}>
@@ -141,7 +151,7 @@ function ContestDetailScreen() {
             </Mono>
           </View>
           <View style={{ flexDirection: "row", gap: space[4] }}>
-            <View style={{ flex: 1, gap: 2 }}>
+            <View style={{ flex: 1.3, gap: 2 }}>
               <Text variant="label" color={colors.ink2} style={{ fontSize: 10.5 }}>
                 {running ? t("mobileRewards.contest.endsIn") : isUpcoming(c) ? t("mobileRewards.contest.startsIn") : t("mobileRewards.contest.ended")}
               </Text>

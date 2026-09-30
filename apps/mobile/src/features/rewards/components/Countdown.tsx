@@ -31,7 +31,7 @@ export function Countdown({ to, size = 15, color, tone, onEnd }: { to: string; s
   const pad = (v: number) => String(v).padStart(2, "0");
   const text = underDay ? `${pad(p.h)}:${pad(p.m)}:${pad(p.s)}` : `${t("mobileRewards.countdown.days", { d: p.d })} ${pad(p.h)}:${pad(p.m)}`;
   return (
-    <Mono size={size} weight="bold" color={color} tone={tone} accessibilityLabel={t("mobileRewards.countdown.a11y", { d: p.d, h: p.h, m: p.m })} style={{ writingDirection: "ltr" }}>
+    <Mono size={size} weight="bold" color={color} tone={tone} numberOfLines={1} accessibilityLabel={t("mobileRewards.countdown.a11y", { d: p.d, h: p.h, m: p.m })} style={{ writingDirection: "ltr" }}>
       {text}
     </Mono>
   );

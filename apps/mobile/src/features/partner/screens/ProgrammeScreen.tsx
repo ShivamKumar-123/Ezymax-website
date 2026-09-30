@@ -9,6 +9,7 @@ import { useT } from "@/i18n";
 import { Button, Card, Display, FormError, Mono, PillRow, Text, toast, useBottomInset } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { partnerError, saveRates, useReadOnly, usePartnerDashboard } from "../api";
+import { useOneAtATime } from "../sheet";
 import { Bar, Label, Page, PageTitle, SectionTitle, StackBar, Tag, useRefresh, useScrollY } from "../components/Chrome";
 import { PctSlider } from "../components/PctSlider";
 import { BlockSkeleton, RowsSkeleton, ScreenState } from "../components/States";
@@ -109,7 +110,7 @@ function Rebates({ d, readOnly }: { d: Dashboard; readOnly: boolean }) {
   const saved = { rebate: d.member.rebatePct, split: d.member.splitPct };
   const [rebate, setRebate] = React.useState(saved.rebate);
   const [split, setSplit] = React.useState(saved.split);
-  const [busy, setBusy] = React.useState(false);
+  const { busy, run } = useOneAtATime();
   const [err, setErr] = React.useState<string | null>(null);
   // the saved values changed (another device, a refresh): start from them
   React.useEffect(() => {
@@ -128,10 +129,11 @@ function Rebates({ d, readOnly }: { d: Dashboard; readOnly: boolean }) {
   const gross2 = t2 !== null ? (LOTS * r * t2) / 100 : 0;
 
   const save = async () => {
-    setBusy(true);
-    setErr(null);
-    const res = await saveRates(rebate, split);
-    setBusy(false);
+    const res = await run(async () => {
+      setErr(null);
+      return saveRates(rebate, split);
+    });
+    if (!res) return;
     if (!res.ok) {
       setErr(partnerError(res.error));
       return;

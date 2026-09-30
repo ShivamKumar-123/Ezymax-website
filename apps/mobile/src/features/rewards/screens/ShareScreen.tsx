@@ -15,6 +15,7 @@ import { Button, Card, Checkbox, FormError, Mono, PillRow, PressableScale, Skele
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { Label, Page, PageTitle, SectionTitle, StackBar, Tag, useRefresh, useScrollY } from "../../partner/components/Chrome";
 import { ScreenState } from "../../partner/components/States";
+import { useOneAtATime } from "../../partner/sheet";
 import { copyText, shareLink, shareRemotePng } from "../../partner/share";
 import { createShare, rewardsError, useShares } from "../api";
 import { ago, date } from "../format";
@@ -70,20 +71,21 @@ function ShareCards() {
   const chosen = login ?? (list[0] ? String(list[0].login) : null);
   const [period, setPeriod] = React.useState<Period>("30d");
   const [amounts, setAmounts] = React.useState(false);
-  const [busy, setBusy] = React.useState(false);
+  const { busy, run } = useOneAtATime();
   const [err, setErr] = React.useState<string | null>(null);
   const [current, setCurrent] = React.useState<Share | null>(null);
-  const [imgBusy, setImgBusy] = React.useState(false);
+  const image = useOneAtATime();
 
   const accountPills = React.useMemo(() => list.map((a) => ({ key: String(a.login), label: `${a.type === "live" ? t("common.live") : t("common.demo")} #${a.login}` })), [list, t]);
   const periodPills = React.useMemo(() => (["7d", "30d", "month", "90d"] as const).map((k) => ({ key: k, label: t(`mobileRewards.share.period.${k}`) })), [t]);
 
   const create = async () => {
-    if (!chosen) return;
-    setBusy(true);
-    setErr(null);
-    const r = await createShare({ kind: "period", login: Number(chosen), ...range(period), showAmounts: amounts });
-    setBusy(false);
+    if (!chosen || readOnly) return;
+    const r = await run(async () => {
+      setErr(null);
+      return createShare({ kind: "period", login: Number(chosen), ...range(period), showAmounts: amounts });
+    });
+    if (!r) return;
     if (!r.ok) {
       setErr(rewardsError(r.error));
       return;
@@ -93,10 +95,8 @@ function ShareCards() {
 
   const shareText = (s: Share) => (s.kind === "period" ? t("mobileRewards.share.textPeriod") : s.data.symbol ? t("mobileRewards.share.textSymbol", { symbol: s.data.symbol }) : t("mobileRewards.share.textTrade"));
   const shareImage = async (s: Share) => {
-    setImgBusy(true);
-    const ok = await shareRemotePng(`${imageUrl(s)}?download=1`, `share-${s.code}.png`, shareText(s));
-    setImgBusy(false);
-    if (!ok) toast.show({ title: t("mobilePartner.qr.shareFailed"), tone: "error" });
+    const ok = await image.run(() => shareRemotePng(`${imageUrl(s)}?download=1`, `share-${s.code}.png`, shareText(s)));
+    if (ok === false) toast.show({ title: t("mobilePartner.qr.shareFailed"), tone: "error" });
   };
 
   return (
@@ -116,7 +116,7 @@ function ShareCards() {
             </Mono>
             <Button label={t("mobileRewards.share.shareLink")} icon={<Share2 size={18} color={colors.ink} />} onPress={() => void shareLink(pageUrl(current), shareText(current))} testID="share-link" />
             <View style={{ flexDirection: "row", gap: space[2] }}>
-              <Button label={t("mobileRewards.share.image")} accessibilityLabel={t("mobileRewards.share.shareImage")} variant="secondary" size="md" loading={imgBusy} icon={<ImageIcon size={17} color={colors.text} />} onPress={() => void shareImage(current)} style={{ flex: 1 }} />
+              <Button label={t("mobileRewards.share.image")} accessibilityLabel={t("mobileRewards.share.shareImage")} variant="secondary" size="md" loading={image.busy} icon={<ImageIcon size={17} color={colors.text} />} onPress={() => void shareImage(current)} style={{ flex: 1 }} />
               <Button label={t("common.copy")} variant="secondary" size="md" icon={<Copy size={17} color={colors.text} />} onPress={() => void copyText(pageUrl(current), t("mobileRewards.share.copied"))} style={{ flex: 1 }} />
             </View>
             <Button label={t("mobileRewards.share.another")} variant="ghost" size="sm" onPress={() => setCurrent(null)} />

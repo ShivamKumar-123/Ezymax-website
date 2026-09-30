@@ -22,8 +22,9 @@ const keyOf = (p: Payout) => String(p.id);
 
 const payoutTone = (s: string): TagTone => (s === "paid" ? "ok" : s === "rejected" ? "risk" : s === "processing" ? "periwinkle" : "warn");
 
-/** Days, hours and minutes until the batch closes (only this text re-renders, every 30 s). */
-function Countdown({ to }: { to: string }) {
+/** Days, hours and minutes until the batch closes (only this text re-renders, every 30 s). At the close it asks
+ *  for the next period once (the service moves `nextClose` and the accruing amount to the next batch). */
+function Countdown({ to, onEnd }: { to: string; onEnd?: () => void }) {
   const t = useT();
   const end = React.useMemo(() => Date.parse(to), [to]);
   const [now, setNow] = React.useState(() => Date.now());
@@ -32,6 +33,12 @@ function Countdown({ to }: { to: string }) {
     return () => clearInterval(id);
   }, []);
   const left = Math.max(0, end - now);
+  const endRef = React.useRef(onEnd);
+  endRef.current = onEnd;
+  const ended = left <= 0;
+  React.useEffect(() => {
+    if (ended) endRef.current?.();
+  }, [ended, end]);
   const parts = [Math.floor(left / 86_400_000), Math.floor(left / 3_600_000) % 24, Math.floor(left / 60_000) % 60];
   const labels = [t("mobilePartner.pay.days"), t("mobilePartner.pay.hrs"), t("mobilePartner.pay.min")];
   return (
@@ -80,7 +87,7 @@ function Separator() {
   return <View style={{ height: 1, backgroundColor: colors.line, marginStart: GUTTER + 38 + space[3] }} />;
 }
 
-function Hero({ d }: { d: PayoutsResp }) {
+function Hero({ d, onClosed }: { d: PayoutsResp; onClosed?: () => void }) {
   const t = useT();
   const below = d.unbatched > 0 && d.unbatched < d.minAmount;
   return (
@@ -103,7 +110,7 @@ function Hero({ d }: { d: PayoutsResp }) {
         <Text variant="label" color={colors.ink2}>
           {t("mobilePartner.pay.closesIn", { date: day(d.nextClose) })}
         </Text>
-        <Countdown to={d.nextClose} />
+        <Countdown to={d.nextClose} onEnd={onClosed} />
       </View>
     </ColorBlock>
   );
@@ -157,7 +164,7 @@ export function PayoutsScreen() {
       <PageTitle eyebrow={t("mobilePartner.eyebrow.payouts")} title={t("mobilePartner.title.payouts")} />
       {d ? (
         <View style={{ paddingHorizontal: GUTTER, gap: space[3] }}>
-          <Hero d={d} />
+          <Hero d={d} onClosed={() => void q.refresh()} />
           <Card style={{ flexDirection: "row", gap: space[4] }}>
             <Stat label={t("mobilePartner.pay.paidTotal")} value={usd(paidTotal)} size={16} tone={paidTotal > 0 ? "up" : null} style={{ flex: 1 }} />
             <Stat label={t("mobilePartner.pay.inReview")} value={usd(inReview)} size={16} style={{ flex: 1 }} />

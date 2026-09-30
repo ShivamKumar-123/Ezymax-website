@@ -22,10 +22,12 @@ export function statusTone(s: string): TagTone {
   return "muted";
 }
 
-/** "+$12.00" / "−$3.20"; struck through when the line was rejected or voided (it no longer counts). */
+/** "+$12.00" / "−$3.20"; struck through when the line was rejected or voided (it no longer counts); a line that
+ *  rounds to $0.00 is grey, never green or red. */
 export function lineAmount(e: Row) {
   const dead = e.status === "rejected" || e.status === "void";
-  return { text: usd(e.amount, true), color: dead ? colors.text3 : e.amount >= 0 ? colors.up : colors.down, dead };
+  const cents = Math.round(e.amount * 100);
+  return { text: usd(e.amount, true), color: dead || cents === 0 ? colors.text3 : cents > 0 ? colors.up : colors.down, dead };
 }
 
 /** Whose line: the client's name, or "You (rebate)" for the rebate a partner's own IB passes on (the server's text). */
@@ -49,9 +51,18 @@ export const CommissionLine = React.memo(function CommissionLine({ e, first, com
         {reason ? (
           <Tag label={reason} tone={e.status === "void" ? "muted" : "warn"} caps={false} />
         ) : (
-          <Text variant="caption" tone="tertiary" numberOfLines={1}>
-            {commissionLine(t, e, compact)} · {ago(t, e.createdAt)}
-          </Text>
+          // on a narrow phone the line gives way, the time stays whole (a row: it follows the reading direction)
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, minWidth: 0 }}>
+            <Text variant="caption" tone="tertiary" numberOfLines={1} style={{ flexShrink: 1 }}>
+              {commissionLine(t, e, compact)}
+            </Text>
+            <Text variant="caption" tone="tertiary">
+              ·
+            </Text>
+            <Text variant="caption" tone="tertiary" numberOfLines={1} style={{ flexShrink: 0 }}>
+              {ago(t, e.createdAt)}
+            </Text>
+          </View>
         )}
       </View>
       <View style={{ alignItems: "flex-end", gap: 5, maxWidth: "40%" }}>

@@ -1,15 +1,11 @@
 // Translucent colours for the partner and rewards screens, derived from the palette tokens (never hex values in
 // feature code, so everything follows tokens.ts): hairlines, tracks and cells drawn on the light colour blocks, the
-// borders of the state tags, and the highlight of the reader's own row.
+// state tags, and the highlight of the reader's own row. States use the brand palette like the wallet and social
+// screens (settled = warm off-white, waiting = gold, refused / failed = ember); green and red stay for money amounts.
+import { alpha } from "@/theme/alpha";
 import { colors } from "@/theme/tokens";
 
-/** A token colour (#rrggbb) at `a` opacity. */
-export function alpha(hex: string, a: number): string {
-  const m = /^#([0-9a-f]{6})$/i.exec(hex);
-  if (!m) return hex;
-  const n = parseInt(m[1]!, 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-}
+export { alpha };
 
 export const tint = {
   /** a hairline on a colour block (ink text sits on the blocks) */
@@ -18,10 +14,15 @@ export const tint = {
   inkFill: alpha(colors.ink, 0.1),
   /** a progress track on a colour block */
   inkTrack: alpha(colors.ink, 0.16),
-  /** tag borders: warning, money lost / refused, money paid */
-  warnBorder: alpha(colors.warn, 0.35),
-  riskBorder: alpha(colors.down, 0.4),
-  okBorder: alpha(colors.up, 0.35),
+  /** a state that waits for someone (pending, awaiting approval, opt-in, a reason a deal earned nothing) */
+  waitBg: colors.goldSoft,
+  waitBorder: alpha(colors.gold, 0.35),
+  /** refused / failed (a rejected line, a failed payout, a refused code) */
+  failBg: colors.emberSoft,
+  failBorder: alpha(colors.ember, 0.38),
+  /** settled (paid, completed, applied, claimed) */
+  doneBg: alpha(colors.cream, 0.1),
+  doneBorder: alpha(colors.cream, 0.26),
   /** the reader's own row (leaderboard), a chosen account */
   emberRow: alpha(colors.ember, 0.08),
   /** the reader's tier, an affordable reward */

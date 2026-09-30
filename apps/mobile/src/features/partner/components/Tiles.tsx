@@ -1,4 +1,5 @@
-// Big-number tiles: saturated colour blocks with a small label, a huge number and one line under it. Two per row.
+// Big-number tiles: saturated colour blocks with a small label, a huge number and a line under it. Two per row.
+// On a narrow phone the label and the line under the number take a second line instead of being cut.
 // A tile that opens a screen warms that screen's data on press-in.
 import * as React from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
@@ -10,7 +11,7 @@ export type TileSpec = { key: string; color: BlockColor; label: string; value: s
 export const Tile = React.memo(function Tile({ color, label, value, sub, money, onPress, onPressIn, testID, style }: Omit<TileSpec, "key"> & { style?: StyleProp<ViewStyle> }) {
   const body = (
     <>
-      <Text variant="label" color={colors.ink2} numberOfLines={1} style={{ fontSize: 10.5 }}>
+      <Text variant="label" color={colors.ink2} numberOfLines={2} style={{ fontSize: 10.5 }}>
         {label}
       </Text>
       {money ? (
@@ -22,7 +23,7 @@ export const Tile = React.memo(function Tile({ color, label, value, sub, money, 
           {value}
         </Display>
       )}
-      <Text variant="caption" color={colors.ink2} numberOfLines={1}>
+      <Text variant="caption" color={colors.ink2} numberOfLines={2}>
         {sub ?? " "}
       </Text>
     </>

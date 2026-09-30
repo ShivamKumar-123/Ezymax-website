@@ -33,13 +33,18 @@ the app never sends a user id.
 - **Restrictions:** the partner hub shows the `ib` restriction banner.
 - **Right-to-left:** layouts use start / end; the slider, the level ladder and the bars are rows (no absolute start offsets), so they mirror on phones and in the web preview alike, and the drag gestures read the finger from the start edge.
 - **Money actions are never optimistic:** rebate / split, links, joining, redeeming, enrolling, claiming and promo codes show the server's answer (in the reader's language, `rewardsText` maps the growth service's sentences), then the affected views refetch.
+- **One request at a time, and the answer is never lost** (`sheet.ts`): a second tap, the keyboard's return key (promo codes) or a sheet reopened while the server answers can't send a redemption, claim, entry, promo code, link, share card or rebate change twice. A sheet closed with a tap outside while its request is in flight keeps its item and comes back with the answer: a demo contest's one-time credentials, a voucher code, or the reason for a refusal (a success without a view ends on its toast). While a request is out the sheet can't be swiped away.
+- **Contest prizes:** a standing shows a prize (on track, or won) only when it is qualified and not disqualified, like the growth service's `allocate_prizes`; after finalizing, the server's own prize. An entry under the minimum trades keeps its rank but wins nothing.
+- **Links:** notifications and deep links open the sub-screens at the Client Area's paths (the platform's link map: `/partner/payouts`, `/rewards/cashback`, `/rewards/contests/<id>` …). A contest link by slug (a banner's call to action) finds the contest's id in the contests list, since the growth service reads contests by id only; an unknown slug shows "not found".
+- **States on the palette:** tags for states use the wallet and social screens' tones (settled = warm off-white, waiting = gold, refused / failed = ember); green and red are only for money amounts, and an amount that rounds to $0.00 is grey.
 
 ## Building blocks
 
 - `components/Chrome.tsx`: the stack bar whose title fades in once the display title scrolls away (UI thread), page title, section headings, tags, label-over-number stats, bars, nav rows, pull to refresh with the haptic tick. `components/States.tsx`: offline (connection-lost art), maintenance, module off, view-only, setting up, error, and content-shaped static skeletons. `components/Tiles.tsx`: big-number colour tiles. `components/DayBars.tsx`: bars with a drag-to-read gesture. The rewards screens use them too.
 - `share.ts`: the system share sheet (link + message; iOS takes the URL separately), the clipboard, and PNG files through expo-sharing (the web preview uses the Web Share API or a download).
 - `qr.ts`: QR codes from qrcode-generator (level Q): one SVG path for the screen and a 1-bit PNG encoded in the module (stored deflate blocks, CRC32, Adler-32), so sharing a QR image needs no native module.
-- `tint.ts`: translucent colours derived from the tokens (hairlines on colour blocks, tag borders), never hex values.
+- `tint.ts`: translucent colours derived from the tokens (hairlines on colour blocks, state tints), never hex values.
+- `sheet.ts`: `useSheetWrite` (one write at a time from a bottom sheet; the sheet keeps its item and comes back with the answer when it was closed meanwhile) and `useOneAtATime` (the same guard for writes sent from a screen).
 - `lib.ts` (partner) and `rewards/lib.ts`: pure helpers (money, lots, week buckets, durations, commission lines, the slug rule, contest scores and prize bands, the growth service's sentences), tested with node.
 
 ## Performance (web preview, 390 × 844, local stack)
@@ -59,4 +64,3 @@ The first checks the pure logic (week buckets, durations, commission lines, the 
 
 - The web's network tree (`/partner/network`) is not drawn on the phone; the clients list shows the tier and the sub-IB a client came through.
 - Share cards are for a period; a card for one closed trade (`kind: "trade"`, the web's "Share P&L" on trade history) can be made with `createShare()` from the portfolio history.
-- Notification links to `/partner/payouts` or `/rewards/contests/<id>` open the partner or rewards hub (the platform module's link map); the app has the sub-screens at the same paths.

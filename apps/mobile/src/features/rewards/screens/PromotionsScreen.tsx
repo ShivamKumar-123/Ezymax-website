@@ -17,6 +17,7 @@ import { applyPromo, rewardsError, rewardsText, usePromotions } from "../api";
 import { OfferSheet } from "../components/OfferSheet";
 import { ago, date, dateTime, lots, pts, statusLabel, titleCase, usd, usdShort } from "../format";
 import type { CampaignPublic, Grant } from "../types";
+import { useOneAtATime } from "../../partner/sheet";
 import { tint } from "../../partner/tint";
 import { viewerGated } from "../components/ViewerGate";
 import { RewardsBanners } from "../components/Banners";
@@ -29,17 +30,20 @@ function PromoCode({ readOnly }: { readOnly: boolean }) {
   const live = React.useMemo(() => (accounts.data?.accounts ?? []).filter((a) => a.type === "live" && (a.status === "active" || !a.status)), [accounts.data]);
   const [code, setCode] = React.useState("");
   const [login, setLogin] = React.useState<string>("any");
-  const [busy, setBusy] = React.useState(false);
+  // one code at a time: the keyboard's return key and the button can't apply it twice (a second try would be
+  // refused as "already used" and hide that the first one worked)
+  const { busy, run } = useOneAtATime();
   const [result, setResult] = React.useState<{ ok: boolean; message: string } | null>(null);
   const items = React.useMemo(() => [{ key: "any", label: t("mobileRewards.code.anyAccount") }, ...live.map((a) => ({ key: String(a.login), label: `#${a.login}` }))], [live, t]);
 
   const submit = async () => {
     const c = code.trim();
-    if (!c) return;
-    setBusy(true);
-    setResult(null);
-    const r = await applyPromo(c, login === "any" ? null : Number(login));
-    setBusy(false);
+    if (!c || readOnly) return;
+    const r = await run(async () => {
+      setResult(null);
+      return applyPromo(c, login === "any" ? null : Number(login));
+    });
+    if (!r) return;
     if (!r.ok) {
       setResult({ ok: false, message: rewardsError(r.error) });
       return;
@@ -96,9 +100,9 @@ function PromoCode({ readOnly }: { readOnly: boolean }) {
         </View>
       ) : null}
       {result ? (
-        <View accessibilityRole="alert" style={{ flexDirection: "row", gap: space[2], alignItems: "flex-start", padding: space[3], borderRadius: radius.md, backgroundColor: result.ok ? colors.upSoft : colors.warnSoft }} testID="promo-result">
-          {result.ok ? <CircleCheck size={17} color={colors.up} /> : <CircleAlert size={17} color={colors.warn} />}
-          <Text variant="callout" color={result.ok ? colors.up : colors.warn} style={{ flex: 1 }}>
+        <View accessibilityRole="alert" style={{ flexDirection: "row", gap: space[2], alignItems: "flex-start", padding: space[3], borderRadius: radius.md, borderWidth: 1, borderColor: result.ok ? tint.doneBorder : tint.waitBorder, backgroundColor: result.ok ? tint.doneBg : tint.waitBg }} testID="promo-result">
+          {result.ok ? <CircleCheck size={17} color={colors.cream} /> : <CircleAlert size={17} color={colors.gold} />}
+          <Text variant="callout" color={result.ok ? colors.cream : colors.gold} style={{ flex: 1 }}>
             {result.message}
           </Text>
         </View>
@@ -168,9 +172,9 @@ const OfferCard = React.memo(function OfferCard({ c, readOnly, onClaim, onTerms 
         ) : null}
         <View style={{ flexDirection: "row", gap: space[2] }}>
           {c.claimed ? (
-            <View style={{ flex: 1, height: 46, borderRadius: radius.pill, borderWidth: 1, borderColor: tint.okBorder, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space[2] }}>
-              <CircleCheck size={17} color={colors.up} />
-              <Text variant="callout" weight="700" tone="up">
+            <View style={{ flex: 1, height: 46, borderRadius: radius.pill, borderWidth: 1, borderColor: tint.doneBorder, backgroundColor: tint.doneBg, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space[2] }}>
+              <CircleCheck size={17} color={colors.cream} />
+              <Text variant="callout" weight="700" color={colors.cream}>
                 {t("mobileRewards.offer.claimedTag")}
               </Text>
             </View>
@@ -220,7 +224,7 @@ const GrantCard = React.memo(function GrantCard({ g }: { g: Grant }) {
             <Mono size={12.5} tone="secondary">
               {t("mobileRewards.grant.lots", { traded: lots(g.lotsTraded), required: lots(g.lotsRequired) })}
             </Mono>
-            <Mono size={12.5} tone="up">
+            <Mono size={12.5} tone={g.released > 0 ? "up" : "tertiary"}>
               {t("mobileRewards.grant.released", { amount: usd(g.released) })}
             </Mono>
           </View>
@@ -297,7 +301,7 @@ function Promotions() {
                         <Mono size={14} weight="bold">
                           {u.code}
                         </Mono>
-                        <Text variant="caption" color={u.status === "blocked" ? colors.warn : colors.text3} numberOfLines={2}>
+                        <Text variant="caption" color={u.status === "blocked" ? colors.gold : colors.text3} numberOfLines={2}>
                           {u.status === "blocked" && u.reason ? rewardsText(u.reason) : `${t.dyn(`mobileRewards.code.kind.${u.kind}`, titleCase(u.kind))} · ${ago(t, u.createdAt)}`}
                         </Text>
                       </View>

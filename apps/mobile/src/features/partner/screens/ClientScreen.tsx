@@ -43,9 +43,15 @@ const TradeRow = React.memo(function TradeRow({ x }: { x: ClientTrade }) {
         {x.reversed ? (
           <Tag label={reasonLabel(t, "reversed")} tone="muted" caps={false} />
         ) : ok ? (
-          <Mono size={14} weight="bold" color={x.earned > 0 ? colors.up : colors.text2} numberOfLines={1}>
-            {t("mobilePartner.client.toYou", { amount: usd(x.earned, true) })}
-          </Mono>
+          // the amount in tabular figures, the words under it in the body font
+          <View style={{ alignItems: "flex-end", gap: 1 }}>
+            <Mono size={14} weight="bold" color={x.earned > 0 ? colors.up : colors.text2} numberOfLines={1}>
+              {usd(x.earned, true)}
+            </Mono>
+            <Text variant="caption" tone="tertiary" numberOfLines={1}>
+              {t("mobilePartner.client.toYouShort")}
+            </Text>
+          </View>
         ) : (
           <Tag label={reasonLabel(t, x.reason)} tone="warn" caps={false} />
         )}
@@ -58,12 +64,13 @@ function Separator() {
   return <View style={{ height: 1, backgroundColor: colors.line, marginHorizontal: GUTTER }} />;
 }
 
-function Info({ label, value, money }: { label: string; value: string; money?: boolean }) {
+/** `money`: an amount earned (green when above zero, grey at $0.00). */
+function Info({ label, value, money }: { label: string; value: string; money?: number }) {
   return (
     <View style={{ width: "50%", paddingVertical: space[3], paddingEnd: space[3], gap: 3 }}>
       <Label>{label}</Label>
-      {money ? (
-        <Mono size={15} weight="bold" color={colors.up} numberOfLines={1}>
+      {money !== undefined ? (
+        <Mono size={15} weight="bold" color={Math.round(money * 100) > 0 ? colors.up : colors.text2} numberOfLines={1}>
           {value}
         </Mono>
       ) : (
@@ -88,7 +95,7 @@ export function ClientScreen() {
   const trades = useClientTrades(id, !!c && full);
   const { scrollY, onScroll } = useScrollY();
   const bottom = useBottomInset(false);
-  const refreshControl = useRefresh(() => Promise.all([list.refresh(), trades.refresh()]));
+  const refreshControl = useRefresh(() => Promise.all([list.refresh(), full ? trades.refresh() : null]));
   const minSecs = dash.data?.programme.minTradeSeconds ?? null;
 
   const renderItem = React.useCallback<ListRenderItem<ClientTrade>>(({ item }) => <TradeRow x={item} />, []);
@@ -145,7 +152,7 @@ export function ClientScreen() {
 
       <View style={{ paddingHorizontal: GUTTER }}>
         <Card style={{ flexDirection: "row", flexWrap: "wrap", paddingVertical: space[2] }}>
-          <Info label={t("mobilePartner.client.yourCommission")} value={usd(c.earned)} money />
+          <Info label={t("mobilePartner.client.yourCommission")} value={usd(c.earned)} money={c.earned} />
           <Info label={t("mobilePartner.client.kyc")} value={kycLabel(t, c.kycStatus)} />
           <Info label={t("mobilePartner.client.lotsMonth")} value={lots(c.lotsMonth)} />
           <Info label={t("mobilePartner.client.lotsTotal")} value={lots(c.lotsTotal)} />
@@ -160,7 +167,11 @@ export function ClientScreen() {
     </View>
   );
 
-  const tradesEmpty = trades.error ? (
+  const tradesEmpty = !full ? (
+    <Text tone="tertiary" style={{ paddingHorizontal: GUTTER }}>
+      {t("mobilePartner.client.notShared")}
+    </Text>
+  ) : trades.error ? (
     trades.error.status === 403 ? (
       <Text tone="tertiary" style={{ paddingHorizontal: GUTTER }}>
         {t("mobilePartner.client.notShared")}

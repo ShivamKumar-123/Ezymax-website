@@ -45,6 +45,8 @@ const fetchBanners = (placement: string) => apiGet<{ items: BannerView[] }>(`gro
 
 export const useRewards = () => useQuery(REWARDS_KEYS.rewards, fetchRewards, { persist: true, staleMs: 45_000 });
 export const useContests = () => useQuery(REWARDS_KEYS.contests, fetchContests, { persist: true, staleMs: 30_000 });
+/** The contests list only when a screen needs it (a contest opened by its slug finds its id there). */
+export const useContestsFor = (enabled: boolean) => useQuery(enabled ? REWARDS_KEYS.contests : null, fetchContests, { persist: true, staleMs: 30_000 });
 /** A running contest's leaderboard refreshes every 15 s while on screen (the service recomputes it as often). */
 export const useContest = (id: string | null, live: boolean) => useQuery(id ? REWARDS_KEYS.contest(id) : null, () => fetchContest(id!), { persist: true, staleMs: 15_000, intervalMs: live ? 15_000 : undefined });
 export const useCashback = () => useQuery(REWARDS_KEYS.cashback, fetchCashback, { persist: true, staleMs: 45_000 });

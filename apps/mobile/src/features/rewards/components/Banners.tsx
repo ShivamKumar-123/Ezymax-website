@@ -21,6 +21,11 @@ import type { BannerView } from "../types";
 
 const TONE: Record<string, string> = { ember: colors.ember, gold: colors.gold, up: colors.mint, neutral: colors.text3 };
 
+/** The broker's Client Area origin: banner paths (links, images) are relative to it, as on the web. */
+const clientArea = () => (cachedConfig()?.clientAreaUrl || API_BASE).replace(/\/+$/, "");
+/** A banner image: the growth service allows an https:// URL or a path on the Client Area ("/assets/…"). */
+const imageUri = (u: string) => (u.startsWith("/") && !u.startsWith("//") ? `${clientArea()}${u}` : u);
+
 /** Opens a banner's link: an app screen when there is one, else the web page (a Client Area path on its origin). */
 export function openBannerLink(url: string) {
   const own = ownRoute(url);
@@ -29,7 +34,7 @@ export function openBannerLink(url: string) {
     return;
   }
   if (openResolved(resolve(url))) return;
-  if (url.startsWith("/") && !url.startsWith("//")) void openWeb(`${(cachedConfig()?.clientAreaUrl || API_BASE).replace(/\/+$/, "")}${url}`);
+  if (url.startsWith("/") && !url.startsWith("//")) void openWeb(`${clientArea()}${url}`);
 }
 
 const BannerCard = React.memo(function BannerCard({ b, placement, readOnly }: { b: BannerView; placement: string; readOnly: boolean }) {
@@ -54,7 +59,7 @@ const BannerCard = React.memo(function BannerCard({ b, placement, readOnly }: { 
       <View style={{ width: 4, backgroundColor: TONE[b.tone] ?? colors.text3 }} />
       <View style={{ flex: 1, padding: space[4], paddingEnd: b.dismissible && !readOnly ? space[1] : space[4], gap: space[3] }}>
         <View style={{ flexDirection: "row", gap: space[3], alignItems: "flex-start" }}>
-          {b.imageUrl ? <Image source={{ uri: b.imageUrl }} style={{ width: 48, height: 48, borderRadius: radius.sm, backgroundColor: colors.surface2 }} contentFit="cover" cachePolicy="memory-disk" transition={0} recyclingKey={String(b.id)} accessibilityIgnoresInvertColors /> : null}
+          {b.imageUrl ? <Image source={{ uri: imageUri(b.imageUrl) }} style={{ width: 48, height: 48, borderRadius: radius.sm, backgroundColor: colors.surface2 }} contentFit="cover" cachePolicy="memory-disk" transition={0} recyclingKey={String(b.id)} accessibilityIgnoresInvertColors /> : null}
           <View style={{ flex: 1, gap: 2 }}>
             <Text variant="callout" weight="700">
               {b.title}

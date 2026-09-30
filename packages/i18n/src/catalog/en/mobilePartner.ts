@@ -91,7 +91,9 @@ const mobilePartner = {
   "start.step2Plain": "You earn on every lot they close, and a share of what your sub-IBs' clients trade.",
   "start.step3": "You get paid",
   "start.step3Body": "{schedule} payouts to your USDT wallet.",
-  "start.step3Cpa": "{schedule} payouts to your USDT wallet, plus a {cpa} bonus for each client who funds a live account.",
+  // {min}: the broker's minimum first deposit for the CPA bonus, e.g. "$500"
+  "start.step3Cpa": "{schedule} payouts to your USDT wallet, plus a {cpa} bonus for each client whose first live deposit is {min} or more.",
+  "start.step3CpaTrade": "{schedule} payouts to your USDT wallet, plus a {cpa} bonus for each client whose first live deposit is {min} or more, once they trade.",
 
   // Level card
   "level.of": "Level {n} of {total}",
@@ -206,6 +208,8 @@ const mobilePartner = {
 
   // Clients (network)
   "clients.referred": "Referred",
+  // the network three tiers deep: clients the partner referred and those who came through their sub-IBs
+  "clients.directVia": "{direct} direct · {via} via sub-IBs",
   "clients.lotsMonthShort": "Lots · {month}",
   "clients.earnedFrom": "Earned",
   "clients.maskedTitle": "Initials and totals only",
@@ -242,8 +246,9 @@ const mobilePartner = {
   "client.trades": "Closed trades",
   "client.minHold": "Trades held under {duration} don't earn commission.",
   "client.held": "held {duration}",
-  // what a trade earned the partner, e.g. "+$2.50 to you"
+  // what a trade earned the partner, e.g. "+$2.50 to you" (screen readers); on screen the amount sits over "to you"
   "client.toYou": "{amount} to you",
+  "client.toYouShort": "to you",
   "client.copy": "Copy trading",
   "client.notShared": "Your broker doesn't share clients' trades with partners.",
   "client.noTradesTitle": "No closed trades yet",

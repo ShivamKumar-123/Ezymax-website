@@ -28,6 +28,9 @@ import { count, day, lastWeeks, lots, monthName, rate, referralLink, scheduleLab
 import { shareLink } from "../share";
 import type { Dashboard } from "../types";
 
+/** Answers that mean there is no partner programme to show, not a dashboard that failed to load. */
+const BLOCKING = new Set(["module_disabled", "maintenance", "viewer_scope"]);
+
 function useLinkBase(d: Dashboard | undefined) {
   return d?.linkBase || cachedConfig()?.clientAreaUrl || API_BASE;
 }
@@ -93,7 +96,9 @@ export function PartnerScreen() {
           {d && d.member.status !== "active" ? <Banner tone="warn" title={t("mobilePartner.suspended.title")} body={t("mobilePartner.suspended.body")} /> : null}
         </View>
 
-        {!d && q.error && !code ? (
+        {/* the referral link (from the session) shows while the dashboard loads or fails, but not when the broker switched
+            the programme off, is in maintenance or doesn't share it with this login */}
+        {!d && q.error && (!code || BLOCKING.has(q.error.code)) ? (
           <ScreenState ns="mobilePartner" error={q.error} onRetry={() => void q.refresh()} />
         ) : (
           <>
@@ -149,7 +154,8 @@ const Earnings = React.memo(function Earnings({ d, onOpen, onPressIn }: { d: Das
   const due = d.earnings.pending + d.earnings.approved;
   const body = (
     <>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space[2] }}>
+      {/* the label and the batch tag share a row, and the tag drops under the label on a narrow phone */}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", columnGap: space[2], rowGap: space[2] }}>
         <Label>{t("mobilePartner.earnings.due")}</Label>
         <Tag label={t("mobilePartner.earnings.closes", { date: day(d.programme.payout.nextClose) })} tone="ember" />
       </View>
@@ -209,10 +215,13 @@ const StartCard = React.memo(function StartCard({ d, onShare }: { d: Dashboard; 
   const level = d.member.level;
   const best = level ? Math.max(0, ...Object.values(level.rates)) : 0;
   const cpa = d.programme.cpa.enabled && level && level.cpaAmount > 0 ? level.cpaAmount : 0;
+  const schedule = scheduleLabel(t, d.programme.payout.schedule);
+  // the CPA with the broker's own conditions: a first live deposit of at least the minimum (and a first trade)
+  const cpaText = d.programme.cpa.requireFirstTrade ? "mobilePartner.start.step3CpaTrade" : "mobilePartner.start.step3Cpa";
   const steps = [
     { n: "1", title: t("mobilePartner.start.step1"), body: t("mobilePartner.start.step1Body", { code: d.member.code }) },
     { n: "2", title: t("mobilePartner.start.step2"), body: best > 0 ? t("mobilePartner.start.step2Body", { rate: rate(best), level: level?.name ?? "" }) : t("mobilePartner.start.step2Plain") },
-    { n: "3", title: t("mobilePartner.start.step3"), body: cpa > 0 ? t("mobilePartner.start.step3Cpa", { schedule: scheduleLabel(t, d.programme.payout.schedule), cpa: usdShort(cpa) }) : t("mobilePartner.start.step3Body", { schedule: scheduleLabel(t, d.programme.payout.schedule) }) },
+    { n: "3", title: t("mobilePartner.start.step3"), body: cpa > 0 ? t(cpaText, { schedule, cpa: usdShort(cpa), min: usdShort(d.programme.cpa.minFirstDeposit) }) : t("mobilePartner.start.step3Body", { schedule }) },
   ];
   return (
     <View style={{ paddingHorizontal: GUTTER, marginTop: space[8] }}>

@@ -13,6 +13,7 @@ import { setActiveLogin } from "@/session/activeAccount";
 import { Banner, Button, Display, FormError, IconButton, Mono, Sheet, Text, toast, type SheetRef } from "@/ui";
 import { colors, space } from "@/theme/tokens";
 import { copyText } from "../../partner/share";
+import { useSheetWrite } from "../../partner/sheet";
 import { joinContest, rewardsError } from "../api";
 import { date, isUpcoming, scoringLabel, usdShort } from "../format";
 import type { Contest, JoinResult } from "../types";
@@ -48,41 +49,49 @@ function Credential({ label, value }: { label: string; value: string }) {
   );
 }
 
+/**
+ * One entry at a time. Closed while the server answers (a tap outside), the sheet comes back with the answer: a demo
+ * contest's credentials are shown once, so they must never arrive on a closed sheet.
+ */
 export function JoinSheet({ sheetRef, c, onJoined }: { sheetRef: React.RefObject<SheetRef | null>; c: Contest; onJoined?: () => void }) {
   const t = useT();
   const router = useRouter();
+  const w = useSheetWrite(sheetRef);
   const live = c.kind === "live";
   const [login, setLogin] = React.useState<number | null>(null);
-  const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
   const [creds, setCreds] = React.useState<JoinResult["credentials"] | null>(null);
 
   const eligible = React.useCallback((a: EngAccount) => (c.accountGroups.length === 0 || c.accountGroups.includes(a.group)) && (c.minEquity === null || usdEquity(a) >= c.minEquity), [c.accountGroups, c.minEquity]);
 
   const reset = React.useCallback(() => {
+    if (w.sending()) return;
     setLogin(null);
     setErr(null);
     setCreds(null);
-    setBusy(false);
-  }, []);
+  }, [w.sending]);
 
   const join = async () => {
     if (live && !login) return;
-    setBusy(true);
-    setErr(null);
-    const r = await joinContest(c.id, live ? login : null);
-    setBusy(false);
+    const r = await w.run(async () => {
+      setErr(null);
+      return joinContest(c.id, live ? login : null);
+    });
+    if (!r) return;
     if (!r.ok) {
       setErr(rewardsError(r.error));
+      w.bringBack();
       return;
     }
     onJoined?.();
     if (r.data.credentials) {
       setCreds(r.data.credentials);
+      w.bringBack();
       return;
     }
     toast.show({ title: t("mobileRewards.join.joinedTitle", { name: c.name }), body: live ? t("mobileRewards.join.joinedLive", { login: login ?? "", date: date(c.startsAt) }) : undefined, tone: "success" });
-    sheetRef.current?.dismiss();
+    if (w.shown.current) sheetRef.current?.dismiss();
+    else reset();
   };
 
   const tradeOnIt = async () => {
@@ -96,7 +105,7 @@ export function JoinSheet({ sheetRef, c, onJoined }: { sheetRef: React.RefObject
   };
 
   return (
-    <Sheet ref={sheetRef} onDismiss={reset}>
+    <Sheet ref={sheetRef} onDismiss={reset} enablePanDownToClose={!w.busy} {...w.sheetProps}>
       {creds ? (
         <View style={{ gap: space[4], paddingTop: space[2] }} testID="contest-credentials">
           <View style={{ gap: 2 }}>
@@ -157,7 +166,7 @@ export function JoinSheet({ sheetRef, c, onJoined }: { sheetRef: React.RefObject
             </Text>
           ) : null}
           {err ? <FormError message={err} /> : null}
-          <Button label={isUpcoming(c) ? t("mobileRewards.join.register") : t("mobileRewards.join.confirm")} onPress={() => void join()} loading={busy} disabled={live && !login} testID="contest-join-confirm" />
+          <Button label={isUpcoming(c) ? t("mobileRewards.join.register") : t("mobileRewards.join.confirm")} onPress={() => void join()} loading={w.busy} disabled={live && !login} testID="contest-join-confirm" />
         </View>
       )}
     </Sheet>

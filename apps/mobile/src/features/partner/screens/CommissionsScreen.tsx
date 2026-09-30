@@ -172,8 +172,8 @@ function LineDetail({ e }: { e: CommissionRow }) {
         </Text>
       </View>
       {e.note ? (
-        <View style={{ backgroundColor: e.status === "void" ? colors.surface2 : colors.warnSoft, borderRadius: 16, padding: space[4], gap: 4, borderWidth: 1, borderColor: e.status === "void" ? colors.line : tint.warnBorder }}>
-          <Label color={e.status === "void" ? colors.text3 : colors.warn}>{e.status === "rejected" || e.status === "void" ? t("mobilePartner.com.reason") : t("mobilePartner.com.note")}</Label>
+        <View style={{ backgroundColor: e.status === "void" ? colors.surface2 : e.status === "rejected" ? tint.failBg : tint.waitBg, borderRadius: 16, padding: space[4], gap: 4, borderWidth: 1, borderColor: e.status === "void" ? colors.line : e.status === "rejected" ? tint.failBorder : tint.waitBorder }}>
+          <Label color={e.status === "void" ? colors.text3 : e.status === "rejected" ? colors.ember : colors.gold}>{e.status === "rejected" || e.status === "void" ? t("mobilePartner.com.reason") : t("mobilePartner.com.note")}</Label>
           <Text variant="callout">{e.note}</Text>
         </View>
       ) : null}

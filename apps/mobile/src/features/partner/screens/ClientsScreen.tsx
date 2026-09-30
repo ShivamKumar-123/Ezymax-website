@@ -9,7 +9,7 @@ import { EyeOff, Search, UserPlus, X } from "lucide-react-native";
 import { useT } from "@/i18n";
 import { API_BASE } from "@/lib/config";
 import { useMe } from "@/session";
-import { Banner, Card, EmptyState, IconButton, PillRow, TextField, useBottomInset } from "@/ui";
+import { Banner, Card, EmptyState, IconButton, PillRow, Text, TextField, useBottomInset } from "@/ui";
 import { colors, GUTTER, space } from "@/theme/tokens";
 import { prefetchPartner, useNetworkClients } from "../api";
 import { Page, PageTitle, StackBar, Stat, useRefresh, useScrollY } from "../components/Chrome";
@@ -85,7 +85,7 @@ export function ClientsScreen() {
   const tierPills = React.useMemo(() => [{ key: "all" as const, label: t("mobilePartner.clients.allTiers") }, ...(["1", "2", "3"] as const).slice(0, Math.max(1, Math.min(3, tiers))).map((k) => ({ key: k, label: `L${k}` }))], [t, tiers]);
 
   const hasData = !!q.data;
-  const totals = React.useMemo(() => ({ active: all.filter((c) => c.status === "active").length, funded: all.filter((c) => c.firstDepositAt).length, lotsMonth: all.reduce((s, c) => s + c.lotsMonth, 0), earned: all.reduce((s, c) => s + c.earned, 0) }), [all]);
+  const totals = React.useMemo(() => ({ direct: all.filter((c) => c.tier === 1).length, active: all.filter((c) => c.status === "active").length, funded: all.filter((c) => c.firstDepositAt).length, lotsMonth: all.reduce((s, c) => s + c.lotsMonth, 0), earned: all.reduce((s, c) => s + c.earned, 0) }), [all]);
 
   const header = (
     <View>
@@ -98,6 +98,12 @@ export function ClientsScreen() {
               <Stat label={t("mobilePartner.clientStatus.active")} value={count(totals.active)} size={22} style={{ flex: 1 }} />
               <Stat label={t("mobilePartner.clientStatus.funded")} value={count(totals.funded)} size={22} style={{ flex: 1 }} />
             </View>
+            {/* the dashboard counts direct referrals; the network here goes three tiers deep (the Client Area says the same) */}
+            {tiers > 1 ? (
+              <Text variant="caption" tone="tertiary" style={{ marginTop: -space[2] }}>
+                {t("mobilePartner.clients.directVia", { direct: count(totals.direct), via: count(all.length - totals.direct) })}
+              </Text>
+            ) : null}
             <View style={{ flexDirection: "row", gap: space[4], paddingTop: space[4], borderTopWidth: 1, borderTopColor: colors.line }}>
               <Stat label={t("mobilePartner.clients.lotsMonthShort", { month: monthName(new Date().toISOString().slice(0, 7)) })} value={lots(totals.lotsMonth, 1)} size={15} style={{ flex: 1 }} />
               <Stat label={t("mobilePartner.clients.earnedFrom")} value={usd(totals.earned)} size={15} tone={totals.earned > 0 ? "up" : null} style={{ flex: 2 }} />

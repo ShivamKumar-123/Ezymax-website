@@ -74,8 +74,9 @@ export function TilesSkeleton({ height = 132 }: { height?: number }) {
 
 /** Rows of a card list: circle, two lines, an amount. */
 export function RowsSkeleton({ rows = 5, height = 72, inset = true }: { rows?: number; height?: number; inset?: boolean }) {
+  const t = useT();
   return (
-    <View style={{ marginHorizontal: inset ? GUTTER : 0, borderRadius: radius.card, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, overflow: "hidden" }} accessibilityLabel="Loading" accessible>
+    <View style={{ marginHorizontal: inset ? GUTTER : 0, borderRadius: radius.card, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, overflow: "hidden" }} accessibilityLabel={t("common.loading")} accessible>
       {Array.from({ length: rows }, (_, i) => (
         <View key={i} style={{ height, flexDirection: "row", alignItems: "center", paddingHorizontal: space[5], gap: space[3], borderTopWidth: i ? 1 : 0, borderTopColor: colors.line }}>
           <Skeleton w={38} h={38} r={19} />

@@ -13,7 +13,7 @@ import { createT } from "@kalks/i18n/core";
 import { campaignLink, commissionLine, held, kindLabel, lastWeeks, minHold, rateText, reasonLabel, referralLink, shortUrl, SLUG_RE, slugOf, statusLabel } from "../src/features/partner/lib.ts";
 import { QUIET, qrPath, qrPng } from "../src/features/partner/qr.ts";
 import type { CommissionRow } from "../src/features/partner/types.ts";
-import { bandLabel, canJoin, isFull, itemValue, MESSAGES, ownRoute, prizeFor, prizeZone, pts, rewardsTextWith, scoreText, scoreTone, tradesHint } from "../src/features/rewards/lib.ts";
+import { bandLabel, canJoin, isFull, itemValue, MESSAGES, ownRoute, prizeFor, prizeZone, projectedPrize, pts, rewardsTextWith, scoreText, scoreTone, tradesHint } from "../src/features/rewards/lib.ts";
 import type { Contest } from "../src/features/rewards/types.ts";
 
 const t = createT("en");
@@ -259,6 +259,18 @@ test("prize bands, the prize zone, and who may still join", () => {
   assert.equal(tradesHint(t, c, { trades: 2, qualified: false }), "1 more trade to rank");
   assert.equal(tradesHint(t, c, { trades: 3, qualified: false }), "Ranks from the next refresh");
   assert.equal(tradesHint(t, c, { trades: 5, qualified: true }), null);
+});
+
+test("a prize is on track only for a qualified, active entry (services/growth allocate_prizes); the server's own wins", () => {
+  const c = contest({});
+  const s = (p: Partial<{ prize: number | null; rank: number | null; qualified: boolean; status: string }>) => ({ prize: null, rank: 1, qualified: true, status: "active", ...p });
+  assert.equal(projectedPrize(c, s({})), 1000);
+  assert.equal(projectedPrize(c, s({ rank: 4 })), 250);
+  assert.equal(projectedPrize(c, s({ rank: 6 })), null, "outside the prize bands");
+  assert.equal(projectedPrize(c, s({ qualified: false })), null, "under the minimum trades: ranked after the qualified ones, wins nothing");
+  assert.equal(projectedPrize(c, s({ status: "disqualified", rank: null })), null);
+  assert.equal(projectedPrize(c, s({ prize: 400, rank: 2 })), 400, "after finalizing, the server's prize");
+  assert.equal(projectedPrize(c, s({ prize: 0, qualified: false })), 0);
 });
 
 test("what a reward gives, in words", () => {

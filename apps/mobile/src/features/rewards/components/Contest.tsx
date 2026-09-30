@@ -8,7 +8,7 @@ import { ColorBlock, Display, Mono, PressableScale, Text } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
 import { Flip, Tag } from "../../partner/components/Chrome";
 import { tint } from "../../partner/tint";
-import { date, isPast, isRunning, isUpcoming, prizeFor, scoreText, scoreTone, scoringLabel, statusLabel, tradesHint, usdShort } from "../format";
+import { date, isPast, isRunning, isUpcoming, projectedPrize, scoreText, scoreTone, scoringLabel, statusLabel, tradesHint, usdShort } from "../format";
 import type { Contest, ContestCard, Standing } from "../types";
 import { Countdown } from "./Countdown";
 
@@ -97,7 +97,7 @@ export const ContestRow = React.memo(function ContestRow({ c, onOpen, onWarm }: 
   const t = useT();
   const running = isRunning(c);
   const me = c.myEntry;
-  const prize = me?.prize ?? (isPast(c) ? prizeFor(c, me?.rank ?? null) : null);
+  const prize = me ? (isPast(c) ? projectedPrize(c, me) : me.prize) : null;
   return (
     <PressableScale onPress={() => onOpen(c.id)} onPressIn={() => onWarm?.(c.id)} scaleTo={0.985} accessibilityLabel={`${c.name}, ${statusLabel(t, c.status)}`} testID={`contest-${c.id}`} style={{ height: CONTEST_ROW_HEIGHT - space[3], borderRadius: radius.card, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, paddingHorizontal: space[5], flexDirection: "row", alignItems: "center", gap: space[4] }}>
       <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
@@ -131,7 +131,7 @@ export const STANDING_ROW_HEIGHT = 68;
 export const StandingRow = React.memo(function StandingRow({ c, s }: { c: Contest; s: Standing }) {
   const t = useT();
   const dq = s.status === "disqualified";
-  const prize = s.prize ?? prizeFor(c, s.rank);
+  const prize = projectedPrize(c, s);
   const tone = scoreTone(c, s);
   const hint = dq ? t("mobileRewards.status.disqualified") : tradesHint(t, c, s);
   return (

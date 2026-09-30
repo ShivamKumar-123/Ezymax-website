@@ -6,6 +6,7 @@ import { View } from "react-native";
 import { useT, type T } from "@/i18n";
 import { Button, Display, FormError, Text, toast, type SheetRef, Sheet } from "@/ui";
 import { colors, space } from "@/theme/tokens";
+import { useSheetWrite } from "../../partner/sheet";
 import { claimBonus, rewardsError } from "../api";
 import { date, usd, usdShort } from "../format";
 import type { CampaignPublic } from "../types";
@@ -33,40 +34,53 @@ export function termsRows(t: T, c: CampaignPublic): [string, string][] {
   return rows;
 }
 
-export function OfferSheet({ sheetRef, c, mode }: { sheetRef: React.RefObject<SheetRef | null>; c: CampaignPublic | null; mode: "terms" | "claim" }) {
+/**
+ * One claim at a time: closed while the server answers, the sheet keeps the offer being claimed and comes back with a
+ * refusal (a claim that went through ends on its toast); another offer's terms can't replace it meanwhile.
+ */
+export function OfferSheet({ sheetRef, c: chosen, mode: chosenMode }: { sheetRef: React.RefObject<SheetRef | null>; c: CampaignPublic | null; mode: "terms" | "claim" }) {
   const t = useT();
+  const w = useSheetWrite(sheetRef);
   const [login, setLogin] = React.useState<number | null>(null);
-  const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
+  const [pending, setPending] = React.useState<CampaignPublic | null>(null);
+  const c = pending ?? chosen;
+  const mode = pending ? "claim" : chosenMode;
   const fixed = c?.kind === "fixed";
 
   const reset = React.useCallback(() => {
+    if (w.sending()) return;
     setLogin(null);
     setErr(null);
-    setBusy(false);
-  }, []);
+    setPending(null);
+  }, [w.sending]);
 
   const claim = async () => {
     if (!c || (fixed && !login)) return;
-    setBusy(true);
-    setErr(null);
-    const r = await claimBonus(c.id, fixed ? login : null);
-    setBusy(false);
+    const offer = c;
+    const r = await w.run(async () => {
+      setPending(offer);
+      setErr(null);
+      return claimBonus(offer.id, fixed ? login : null);
+    });
+    if (!r) return;
     if (!r.ok) {
       setErr(rewardsError(r.error));
+      w.bringBack();
       return;
     }
     const g = r.data.grant;
     toast.show({
-      title: t("mobileRewards.offer.claimed", { name: c.name }),
-      body: g.status === "awaiting_deposit" ? (g.claimDeadline ? t("mobileRewards.offer.depositBy", { amount: usdShort(c.minDeposit), date: date(g.claimDeadline) }) : t("mobileRewards.offer.deposit", { amount: usdShort(c.minDeposit) })) : g.login ? t("mobileRewards.offer.bonusOn", { amount: usdShort(g.amount), login: g.login }) : undefined,
+      title: t("mobileRewards.offer.claimed", { name: offer.name }),
+      body: g.status === "awaiting_deposit" ? (g.claimDeadline ? t("mobileRewards.offer.depositBy", { amount: usdShort(offer.minDeposit), date: date(g.claimDeadline) }) : t("mobileRewards.offer.deposit", { amount: usdShort(offer.minDeposit) })) : g.login ? t("mobileRewards.offer.bonusOn", { amount: usdShort(g.amount), login: g.login }) : undefined,
       tone: "success",
     });
-    sheetRef.current?.dismiss();
+    if (w.shown.current) sheetRef.current?.dismiss();
+    else reset();
   };
 
   return (
-    <Sheet ref={sheetRef} onDismiss={reset}>
+    <Sheet ref={sheetRef} onDismiss={reset} enablePanDownToClose={!w.busy} {...w.sheetProps}>
       {c ? (
         <View style={{ gap: space[4], paddingTop: space[2] }}>
           <View style={{ gap: 2 }}>
@@ -111,7 +125,7 @@ export function OfferSheet({ sheetRef, c, mode }: { sheetRef: React.RefObject<Sh
                 {t("mobileRewards.offer.note")}
               </Text>
               {err ? <FormError message={err} /> : null}
-              <Button label={t("mobileRewards.offer.claim")} onPress={() => void claim()} loading={busy} disabled={fixed && !login} testID="bonus-claim-confirm" />
+              <Button label={t("mobileRewards.offer.claim")} onPress={() => void claim()} loading={w.busy} disabled={fixed && !login} testID="bonus-claim-confirm" />
             </>
           ) : (
             <Button label={t("common.close")} variant="secondary" size="md" onPress={() => sheetRef.current?.dismiss()} />

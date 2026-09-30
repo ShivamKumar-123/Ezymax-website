@@ -138,15 +138,16 @@ export function Label({ children, color, style, lines = 1 }: { children: React.R
 export type TagTone = BlockColor | "outline" | "muted" | "warn" | "risk" | "ok";
 
 /**
- * Small pill: a colour fill (ink text), an outline, a gold warning, or a green / red money state (paid, clawback).
- * Green and red are for money only.
+ * Small pill: a colour fill (ink text), an outline, or a state on the brand palette like the wallet and social
+ * screens: `warn` waits for someone (gold), `risk` was refused or failed (ember), `ok` is settled (warm off-white).
+ * Green and red are for money amounts only, never for a state.
+ * `caps: false` for sentences (a broker's reason) instead of a one-word state.
  */
-/** `caps: false` for sentences (a broker's reason) instead of a one-word state. */
 export function Tag({ label, tone = "outline", mono, caps = true, style }: { label: string; tone?: TagTone; mono?: boolean; caps?: boolean; style?: StyleProp<ViewStyle> }) {
   const filled = tone in blockColors;
-  const bg = filled ? blockColors[tone as BlockColor] : tone === "warn" ? colors.warnSoft : tone === "risk" ? colors.downSoft : tone === "ok" ? colors.upSoft : "transparent";
-  const border = filled ? "transparent" : tone === "warn" ? tint.warnBorder : tone === "risk" ? tint.riskBorder : tone === "ok" ? tint.okBorder : colors.lineStrong;
-  const fg = filled ? colors.ink : tone === "warn" ? colors.warn : tone === "risk" ? colors.down : tone === "ok" ? colors.up : tone === "muted" ? colors.text3 : colors.text2;
+  const bg = filled ? blockColors[tone as BlockColor] : tone === "warn" ? tint.waitBg : tone === "risk" ? tint.failBg : tone === "ok" ? tint.doneBg : "transparent";
+  const border = filled ? "transparent" : tone === "warn" ? tint.waitBorder : tone === "risk" ? tint.failBorder : tone === "ok" ? tint.doneBorder : colors.lineStrong;
+  const fg = filled ? colors.ink : tone === "warn" ? colors.gold : tone === "risk" ? colors.ember : tone === "ok" ? colors.cream : tone === "muted" ? colors.text3 : colors.text2;
   return (
     <View style={[{ height: 22, paddingHorizontal: 8, borderRadius: radius.pill, backgroundColor: bg, borderWidth: 1, borderColor: border, justifyContent: "center", alignSelf: "flex-start", maxWidth: "100%" }, style]}>
       {mono ? (
@@ -166,12 +167,17 @@ export function Tag({ label, tone = "outline", mono, caps = true, style }: { lab
   );
 }
 
-/** Label over a value (tabular). `ink` for use on colour blocks. */
+/**
+ * Label over a value (tabular). `ink` for use on colour blocks. On a narrow phone a long label takes a second line
+ * instead of being cut; the value sits at the bottom, so values in a row of stats stay on one line.
+ */
 export function Stat({ label, value, ink, size = 17, tone, align = "start", style }: { label: string; value: string; ink?: boolean; size?: number; tone?: "up" | "down" | null; align?: "start" | "end"; style?: StyleProp<ViewStyle> }) {
   const color = ink ? colors.ink : tone === "up" ? colors.up : tone === "down" ? colors.down : colors.text;
   return (
-    <View style={[{ gap: 3, minWidth: 0, alignItems: align === "end" ? "flex-end" : "flex-start" }, style]}>
-      <Label color={ink ? colors.ink2 : undefined}>{label}</Label>
+    <View style={[{ gap: 3, minWidth: 0, justifyContent: "flex-end", alignItems: align === "end" ? "flex-end" : "flex-start" }, style]}>
+      <Label color={ink ? colors.ink2 : undefined} lines={2}>
+        {label}
+      </Label>
       <Mono size={size} weight="bold" color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
         {value}
       </Mono>
@@ -199,7 +205,7 @@ export const NavRow = React.memo(function NavRow({ icon, title, subtitle, value,
           {title}
         </Text>
         {subtitle ? (
-          <Text variant="caption" tone="tertiary" numberOfLines={1}>
+          <Text variant="caption" tone="tertiary" numberOfLines={2}>
             {subtitle}
           </Text>
         ) : null}

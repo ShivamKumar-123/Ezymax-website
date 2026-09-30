@@ -16,6 +16,7 @@ import { enrolCashback, rewardsError, useCashback } from "../api";
 import { DayBars } from "../../partner/components/DayBars";
 import { ago, date, day, lots, statusLabel, titleCase, usd } from "../format";
 import type { CashbackAccrual, CashbackMe, CashbackProgramme } from "../types";
+import { useOneAtATime } from "../../partner/sheet";
 import { tint } from "../../partner/tint";
 import { viewerGated } from "../components/ViewerGate";
 import { RewardsBanners } from "../components/Banners";
@@ -58,14 +59,13 @@ function scope(t: ReturnType<typeof useT>, p: CashbackProgramme) {
 
 const Programme = React.memo(function Programme({ p, readOnly }: { p: CashbackProgramme; readOnly: boolean }) {
   const t = useT();
-  const [busy, setBusy] = React.useState(false);
+  const { busy, run } = useOneAtATime();
   const cap = p.maxPerMonth;
   const capPct = cap ? Math.min(100, (p.earnedMonth / cap) * 100) : null;
   const on = !p.optIn || p.enrolled;
   const enrol = async () => {
-    setBusy(true);
-    const r = await enrolCashback(p.id);
-    setBusy(false);
+    const r = await run(() => enrolCashback(p.id));
+    if (!r) return;
     if (!r.ok) {
       toast.show({ title: t("mobileRewards.cashback.enrolFailed"), body: rewardsError(r.error), tone: "error" });
       return;

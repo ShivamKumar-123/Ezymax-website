@@ -48,6 +48,17 @@ export function prizeFor(c: Pick<Contest, "prizes">, rank: number | null): numbe
 /** Last rank that wins a prize. */
 export const prizeZone = (c: Pick<Contest, "prizes">) => c.prizes.reduce((m, p) => Math.max(m, p.rankTo), 0);
 
+/**
+ * The prize a standing wins or is on track for: the server's own once the contest is finalized, else the band of its
+ * rank, but only for a qualified, active entry (services/growth allocate_prizes: an entry under the minimum trades or
+ * disqualified wins nothing, and its rank pays nobody).
+ */
+export function projectedPrize(c: Pick<Contest, "prizes">, s: Pick<Standing, "prize" | "rank" | "qualified" | "status">): number | null {
+  if (s.prize !== null && s.prize !== undefined) return s.prize;
+  if (!s.qualified || s.status === "disqualified") return null;
+  return prizeFor(c, s.rank);
+}
+
 /** "Needs 2 more trades to rank" while an entry is under the contest's minimum. */
 export function tradesHint(t: T, c: Pick<Contest, "minTrades">, s: Pick<Standing, "trades" | "qualified">): string | null {
   if (s.qualified || c.minTrades <= 0) return null;

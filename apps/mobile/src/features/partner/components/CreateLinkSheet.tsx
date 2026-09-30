@@ -10,52 +10,58 @@ import { Button, Display, FormError, Mono, PressableScale, Sheet, Text, toast, t
 import { colors, radius, space } from "@/theme/tokens";
 import { createCampaign, partnerError } from "../api";
 import { campaignLink, shortUrl, SLUG_RE, slugOf } from "../format";
+import { useSheetWrite } from "../sheet";
 import { copyText } from "../share";
 
 export function CreateLinkSheet({ sheetRef, base, code, onCreated }: { sheetRef: React.RefObject<SheetRef | null>; base: string; code: string; onCreated?: () => void }) {
   const t = useT();
+  // one link at a time; closed while the server answers, the form stays and a refusal brings the sheet back
+  const w = useSheetWrite(sheetRef);
   const [name, setName] = React.useState("");
   const [slug, setSlug] = React.useState("");
   const [utm, setUtm] = React.useState({ source: "", medium: "", campaign: "" });
   const [showUtm, setShowUtm] = React.useState(false);
-  const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<{ field?: string; message: string } | null>(null);
 
   const reset = React.useCallback(() => {
+    if (w.sending()) return;
     setName("");
     setSlug("");
     setUtm({ source: "", medium: "", campaign: "" });
     setShowUtm(false);
     setErr(null);
-  }, []);
+  }, [w.sending]);
 
   const eff = slug.trim() ? slug.trim().toLowerCase() : slugOf(name);
   const slugOk = !slug.trim() || SLUG_RE.test(slug.trim());
   const link = eff ? campaignLink(base, code, eff) : null;
   const fieldErr = (f: string) => (err?.field === f ? err.message : null);
-  const can = !!name.trim() && !!eff && slugOk && !busy;
+  const can = !!name.trim() && !!eff && slugOk && !w.busy;
 
   const submit = async () => {
     if (!can) return;
-    setBusy(true);
-    setErr(null);
-    const r = await createCampaign({ name: name.trim(), slug: slug.trim() || undefined, utmSource: utm.source.trim() || undefined, utmMedium: utm.medium.trim() || undefined, utmCampaign: utm.campaign.trim() || undefined });
-    setBusy(false);
+    const r = await w.run(async () => {
+      setErr(null);
+      return createCampaign({ name: name.trim(), slug: slug.trim() || undefined, utmSource: utm.source.trim() || undefined, utmMedium: utm.medium.trim() || undefined, utmCampaign: utm.campaign.trim() || undefined });
+    });
+    if (!r) return;
     if (!r.ok) {
       const field = r.error.field ?? (r.error.code === "exists" ? "slug" : undefined);
       setErr({ field, message: partnerError(r.error) });
       if (field === "utmSource" || field === "utmMedium" || field === "utmCampaign") setShowUtm(true);
+      w.bringBack();
       return;
     }
     const url = campaignLink(base, code, r.data.slug);
     const copied = await copyText(url, t("mobilePartner.links.created"), shortUrl(url));
     if (!copied) toast.show({ title: t("mobilePartner.links.created"), body: shortUrl(url), tone: "success" });
     onCreated?.();
-    sheetRef.current?.dismiss();
+    if (w.shown.current) sheetRef.current?.dismiss();
+    else reset();
   };
 
   return (
-    <Sheet ref={sheetRef} onDismiss={reset}>
+    <Sheet ref={sheetRef} onDismiss={reset} enablePanDownToClose={!w.busy} {...w.sheetProps}>
       <View style={{ gap: space[4], paddingTop: space[2] }}>
         <View style={{ gap: 2 }}>
           <Text variant="label" tone="ember">
@@ -98,7 +104,7 @@ export function CreateLinkSheet({ sheetRef, base, code, onCreated }: { sheetRef:
           </Mono>
         </View>
         {err && !err.field ? <FormError message={err.message} /> : null}
-        <Button label={busy ? t("mobilePartner.links.creating") : t("mobilePartner.links.create")} onPress={submit} disabled={!can} loading={busy} testID="link-create" />
+        <Button label={w.busy ? t("mobilePartner.links.creating") : t("mobilePartner.links.create")} onPress={submit} disabled={!can} loading={w.busy} testID="link-create" />
       </View>
     </Sheet>
   );
