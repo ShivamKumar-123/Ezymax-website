@@ -51,5 +51,43 @@ const mobilePortfolio: NsMessages<"mobilePortfolio"> = {
   "history.more": "Carregar mais",
   "confirm.close": "Fechar #{ticket}?",
   "confirm.closeBody": "{side} {volume} {symbol} a mercado.",
+
+  // Cabeçalho: análises da conta (Relatórios)
+  analytics: "Análises",
+
+  // Fechar Por (contas hedging; o botão e o título usam order.position.closeBy)
+  "closeBy.body": "Fecha esta posição contra uma oposta no mesmo símbolo, ao preço de abertura da que você escolher. Não há spread na parte sobreposta; o volume restante continua aberto.",
+  "closeBy.pick": "Posição oposta",
+  "closeBy.summary": "Fecha {volume} lotes de cada uma a {price}, o preço de abertura de #{ticket}.",
+  "closeBy.locks": "Resultado da sobreposição",
+  "closeBy.gone": "Esta posição já está fechada.",
+
+  // Detalhes da negociação fechada (Histórico)
+  "deal.position": "Posição",
+  "deal.reason": "Motivo",
+  "deal.closed": "Fechada em",
+  "reason.client": "Manual",
+  "reason.sl": "Stop loss",
+  "reason.tp": "Take profit",
+  "reason.stop_out": "Stop out",
+  "reason.close_by": "Fechar Por",
+  "reason.dealer": "Mesa de operações",
+  "reason.force": "Mesa de operações",
+  "reason.reversal": "Reversão",
+  "reason.price_correction": "Correção de preço",
+  "reason.pending_fill": "Ordem pendente",
+  "action.share": "Compartilhar L/P",
+
+  // Compartilhar L/P: uma imagem com o resultado de uma negociação fechada. {brand} é o nome da corretora (ex.: Kalks)
+  "share.title": "Compartilhar L/P",
+  "share.body": "Seu resultado em uma imagem, pronta para postar. Ela nunca mostra saldo, número de conta nem volume.",
+  "share.action": "Compartilhar imagem",
+  "share.withCode": "Adicionar meu código de indicação {code}",
+  "share.result": "Resultado",
+  "share.footerCode": "Negocie comigo na {brand}",
+  "share.footer": "Negocie na {brand}",
+  "share.failed": "Não foi possível criar a imagem. Tente novamente.",
+  "share.unavailable": "O compartilhamento não está disponível neste dispositivo.",
+  "share.a11y": "Card de L/P: {symbol}, {side}, {result}, {date}",
 };
 export default mobilePortfolio;

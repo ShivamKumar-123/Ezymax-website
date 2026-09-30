@@ -9,6 +9,8 @@ const mobileTrade: NsMessages<"mobileTrade"> = {
   searchSymbol: "Pesquisar símbolos",
   depth: "Profundidade do mercado",
   alert: "Alerta de preço",
+  news: "Notícias de {symbol}", // rótulo de acessibilidade de um botão do cabeçalho
+  calendar: "Calendário econômico de {currency}", // rótulo de acessibilidade de um botão do cabeçalho, ex.: "Calendário econômico de EUR"
   "account.chip": "{type} · #{login}",
   "account.manage": "Gerenciar contas",
   "account.open": "Abrir conta",

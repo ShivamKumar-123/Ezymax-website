@@ -27,5 +27,18 @@ const mobileHome: NsMessages<"mobileHome"> = {
   "noAccount.action": "Abrir uma conta",
   "news.empty": "Nenhuma manchete no momento.",
   "a11y.bell": "Notificações, {count} não lidas",
+
+  // Explorar: um bloco de cor por módulo (título em fonte de destaque, no máximo duas linhas curtas; dica em duas linhas)
+  "explore.title": "Explorar",
+  "explore.copy": "Copy trading",
+  "explore.copyHint": "Siga traders de sucesso",
+  "explore.prop": "Desafio Prop",
+  "explore.propHint": "Seja financiado para negociar",
+  "explore.academy": "Academia",
+  "explore.academyHint": "Aprenda a negociar, passo a passo",
+  "explore.ai": "AI Trader",
+  "explore.aiHint": "Transforme uma ideia em estratégia",
+  "explore.invite": "Convide amigos",
+  "explore.inviteHint": "Ganhe quando eles negociarem",
 };
 export default mobileHome;
