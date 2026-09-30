@@ -7,7 +7,7 @@ import { AppState, View } from "react-native";
 import { makeMutable } from "react-native-reanimated";
 import { useQuery } from "@/lib/query";
 import { useOnline } from "@/lib/net";
-import { feed } from "@/market/feed";
+import { feed, feedStatus } from "@/market/feed";
 import { useT } from "@/i18n";
 import { EmptyState, Skeleton } from "@/ui";
 import { colors, space } from "@/theme/tokens";
@@ -133,6 +133,22 @@ export function ChartView({ symbol, tf, digits, type, indicators }: ChartViewPro
     return () => sub.remove();
   }, [refresh]);
 
+  // the price stream dropped and came back: the bars it missed come from history (no gap in the candles)
+  React.useEffect(() => {
+    let prev = feedStatus.get().status;
+    let dropped = false;
+    const off = feedStatus.subscribe(() => {
+      const cur = feedStatus.get().status;
+      if (prev === "live" && cur !== "live") dropped = true;
+      else if (cur === "live" && prev !== "live" && dropped) {
+        dropped = false;
+        if (history.current.length) void refresh();
+      }
+      prev = cur;
+    });
+    return () => void off();
+  }, [refresh]);
+
   const onNeedOlder = React.useCallback(() => {
     if (exhausted.current || loadingOlder.current || !history.current.length) return;
     loadingOlder.current = true;
@@ -162,7 +178,11 @@ export function ChartView({ symbol, tf, digits, type, indicators }: ChartViewPro
       if (p.sl) out.push(p.sl, LINE.sl);
       if (p.tp) out.push(p.tp, LINE.tp);
     }
-    for (const o of orders) if (o.symbol === symbol) out.push(o.price, o.side === "buy" ? LINE.pendingBuy : LINE.pendingSell);
+    for (const o of orders) {
+      if (o.symbol !== symbol) continue;
+      const stop = o.type !== "limit";
+      out.push(o.price, o.side === "buy" ? (stop ? LINE.buyStop : LINE.pendingBuy) : stop ? LINE.sellStop : LINE.pendingSell);
+    }
     sv.lines.value = out.slice(0, 24);
     setLineCount(Math.min(12, out.length / 2));
   }, [positions, orders, symbol, sv]);
@@ -192,7 +212,7 @@ export function ChartView({ symbol, tf, digits, type, indicators }: ChartViewPro
           onNeedOlder={onNeedOlder}
         />
       ) : noHistory ? (
-        <EmptyState title={t("mobileTrade.chart.noData")} style={{ flex: 1, justifyContent: "center" }} />
+        <EmptyState illustration="emptyHistory" size={150} title={t("mobileTrade.chart.noData")} style={{ flex: 1, justifyContent: "center", paddingVertical: space[4] }} />
       ) : q.error && !q.fetching ? (
         <EmptyState illustration="connectionLost" size={170} title={online ? t("mobile.state.error.title") : t("mobile.state.offline.title")} body={online ? t("mobile.state.error.body") : t("mobile.state.offline.body")} action={t("mobile.action.retry")} onAction={() => void q.refresh()} style={{ flex: 1, justifyContent: "center", paddingVertical: space[4] }} />
       ) : (

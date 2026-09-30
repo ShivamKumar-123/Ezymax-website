@@ -8,8 +8,9 @@ import type { SymbolSpec } from "./types";
 export const SPECS_KEY = "trade/symbols";
 const fetchSpecs = () => apiGet<{ symbols: SymbolSpec[] }>("trade/symbols");
 
-export function useSpecs() {
-  return useQuery(SPECS_KEY, fetchSpecs, { persist: true, staleMs: 10 * 60_000 });
+/** `live`: poll every minute while mounted (the Trade tab: each spec's `open` flag follows the trading session). */
+export function useSpecs(opts: { live?: boolean } = {}) {
+  return useQuery(SPECS_KEY, fetchSpecs, opts.live ? { persist: true, staleMs: 60_000, intervalMs: 60_000 } : { persist: true, staleMs: 10 * 60_000 });
 }
 
 export function specOf(symbol: string): SymbolSpec | undefined {

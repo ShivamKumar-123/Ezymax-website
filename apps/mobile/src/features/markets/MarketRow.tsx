@@ -10,6 +10,8 @@ import { colors, GUTTER, space } from "@/theme/tokens";
 import { useIsFavourite } from "./favourites";
 
 export const ROW_HEIGHT = 68;
+/** Screen readers: the favourite toggle (press and hold) as an action. */
+const FAV_ACTIONS = [{ name: "longpress" }];
 
 export const MarketRow = React.memo(function MarketRow({ inst, onOpen, onPressIn, onToggleFav }: { inst: Instrument; onOpen: (symbol: string) => void; onPressIn: (symbol: string) => void; onToggleFav: (symbol: string) => void }) {
   const t = useT();
@@ -22,6 +24,8 @@ export const MarketRow = React.memo(function MarketRow({ inst, onOpen, onPressIn
       delayLongPress={350}
       scaleTo={0.985}
       accessibilityLabel={t("mobileMarkets.a11y.row", { symbol: inst.symbol, name: inst.name })}
+      accessibilityActions={FAV_ACTIONS}
+      onAccessibilityAction={(e) => e.nativeEvent.actionName === "longpress" && onToggleFav(inst.symbol)}
       style={{ height: ROW_HEIGHT, flexDirection: "row", alignItems: "center", paddingHorizontal: GUTTER, gap: space[2], borderBottomWidth: 1, borderBottomColor: colors.line }}
     >
       <View style={{ flex: 1, minWidth: 0, gap: 3 }}>

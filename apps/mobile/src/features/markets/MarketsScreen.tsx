@@ -10,8 +10,8 @@ import { haptic } from "@/lib/haptics";
 import { useOnline } from "@/lib/net";
 import { useStore } from "@/lib/store";
 import { feed, feedStatus } from "@/market/feed";
-import { instruments, onInstruments, SEGMENTS, type Instrument, type Segment } from "@/market/instruments";
-import { EmptyState, IconButton, PillRow, PressableScale, Screen, ScreenHeader, SkeletonRows, Text, toast, useBottomInset } from "@/ui";
+import { instruments, loadInstruments, onInstruments, SEGMENTS, type Instrument, type Segment } from "@/market/instruments";
+import { EmptyState, IconButton, NO_WEB_OUTLINE, PillRow, PressableScale, Screen, ScreenHeader, SkeletonRows, Text, toast, useBottomInset } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { prefetchCandles } from "../chart/data";
 import { setTradeSymbol, tradeSymbolStore } from "../trade/symbol";
@@ -91,6 +91,18 @@ export function MarketsScreen() {
 
   const items = React.useMemo(() => (["favourites", ...SEGMENTS] as Seg[]).map((k) => ({ key: k, label: t(SEG_KEYS[k]) })), [t]);
   const loading = all.length === 0;
+  // no catalogue and no price stream after a while (the service is down): say so, with a retry
+  const [stalled, setStalled] = React.useState(false);
+  React.useEffect(() => {
+    if (!loading || status === "live") return setStalled(false);
+    const id = setTimeout(() => setStalled(true), 8000);
+    return () => clearTimeout(id);
+  }, [loading, status]);
+  const retry = React.useCallback(() => {
+    setStalled(false);
+    void loadInstruments();
+    void feed.snapshot();
+  }, []);
 
   const header = (
     <View style={{ backgroundColor: colors.bg }}>
@@ -98,7 +110,7 @@ export function MarketsScreen() {
         <View style={{ paddingHorizontal: GUTTER, paddingTop: space[2], paddingBottom: space[3], flexDirection: "row", alignItems: "center", gap: space[3] }}>
           <View style={{ flex: 1, height: 48, borderRadius: radius.pill, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, flexDirection: "row", alignItems: "center", paddingHorizontal: space[4], gap: space[2] }}>
             <Search size={18} color={colors.text3} />
-            <TextInput autoFocus value={q} onChangeText={setQ} placeholder={t("market.searchPlaceholder")} placeholderTextColor={colors.text3} autoCapitalize="characters" autoCorrect={false} accessibilityLabel={t("mobileMarkets.a11y.search")} style={{ flex: 1, color: colors.text, fontSize: 16, height: "100%" }} />
+            <TextInput autoFocus value={q} onChangeText={setQ} placeholder={t("market.searchPlaceholder")} placeholderTextColor={colors.text3} selectionColor={colors.ember} autoCapitalize="characters" autoCorrect={false} accessibilityLabel={t("mobileMarkets.a11y.search")} style={[{ flex: 1, color: colors.text, fontSize: 16, height: "100%" }, NO_WEB_OUTLINE]} />
             {q ? (
               <PressableScale onPress={() => setQ("")} scaleTo={1} accessibilityLabel={t("market.clear")} style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center" }}>
                 <X size={16} color={colors.text3} />
@@ -126,12 +138,17 @@ export function MarketsScreen() {
         <Text variant="label" tone="tertiary" style={{ flex: 1 }}>
           {!online ? t("mobileMarkets.status.offline") : status !== "live" ? t("mobileMarkets.status.connecting") : t("market.col.symbol")}
         </Text>
-        <Text variant="label" tone="tertiary" style={{ width: 104, textAlign: "right" }}>
-          {t("market.col.bid")}
-        </Text>
-        <Text variant="label" tone="tertiary" style={{ width: 104 + space[2], textAlign: "right" }}>
-          {t("market.col.ask")}
-        </Text>
+        {/* aligned to the end like the price cells (which pad their text by 6), in both directions */}
+        <View style={{ width: 104, alignItems: "flex-end", paddingEnd: 6 }}>
+          <Text variant="label" tone="tertiary">
+            {t("market.col.bid")}
+          </Text>
+        </View>
+        <View style={{ width: 104 + space[2], alignItems: "flex-end", paddingEnd: 6 }}>
+          <Text variant="label" tone="tertiary">
+            {t("market.col.ask")}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -141,11 +158,13 @@ export function MarketsScreen() {
       {header}
       {loading && !online ? (
         <EmptyState illustration="connectionLost" title={t("mobile.state.offline.title")} body={t("mobile.state.offline.body")} />
+      ) : loading && stalled ? (
+        <EmptyState illustration="connectionLost" title={t("mobile.state.error.title")} body={t("mobileMarkets.status.connecting")} action={t("mobile.action.retry")} onAction={retry} />
       ) : loading ? (
         <SkeletonRows rows={9} height={ROW_HEIGHT} />
       ) : data.length === 0 ? (
         q ? (
-          <EmptyState title={t("market.empty.noMatch")} />
+          <EmptyState illustration="market" size={160} title={t("market.empty.noMatch")} />
         ) : (
           <EmptyState illustration="emptyWatchlist" title={t("mobileMarkets.empty.favourites.title")} body={t("mobileMarkets.empty.favourites.body")} action={t("mobileMarkets.empty.favourites.action")} onAction={() => setSeg("forex")} />
         )

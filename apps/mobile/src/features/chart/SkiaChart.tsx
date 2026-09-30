@@ -12,8 +12,8 @@ import { colors } from "@/theme/tokens";
 import { tailValues, type IndicatorKey, type Series } from "./indicators";
 
 export type ChartType = "candles" | "line";
-/** Line kinds for positions / orders drawn on the chart. */
-export const LINE = { buy: 0, sell: 1, sl: 2, tp: 3, pendingBuy: 4, pendingSell: 5 } as const;
+/** Line kinds for positions / orders drawn on the chart (pendingBuy / pendingSell = limit orders). */
+export const LINE = { buy: 0, sell: 1, sl: 2, tp: 3, pendingBuy: 4, pendingSell: 5, buyStop: 6, sellStop: 7 } as const;
 const MAX_LINES = 12;
 const AXIS_W = 62;
 const TIME_H = 20;
@@ -424,11 +424,11 @@ export function SkiaChart(p: ChartProps) {
           <Canvas style={{ width: size.w, height: size.h }}>
             <Path path={grid} color={colors.line} style="stroke" strokeWidth={1} />
             {/* overlays under the candles */}
-            <Path path={bbUPath} color="rgba(140,140,240,0.55)" style="stroke" strokeWidth={1} />
-            <Path path={bbMPath} color="rgba(140,140,240,0.35)" style="stroke" strokeWidth={1}>
+            <Path path={bbUPath} color={colors.periwinkle} opacity={0.55} style="stroke" strokeWidth={1} />
+            <Path path={bbMPath} color={colors.periwinkle} opacity={0.35} style="stroke" strokeWidth={1}>
               <DashPathEffect intervals={[3, 3]} />
             </Path>
-            <Path path={bbLPath} color="rgba(140,140,240,0.55)" style="stroke" strokeWidth={1} />
+            <Path path={bbLPath} color={colors.periwinkle} opacity={0.55} style="stroke" strokeWidth={1} />
             {/* candles */}
             <Path path={upWick} color={colors.up} style="stroke" strokeWidth={1} />
             <Path path={downWick} color={colors.down} style="stroke" strokeWidth={1} />
@@ -443,7 +443,7 @@ export function SkiaChart(p: ChartProps) {
             {/* position / order lines */}
             <PositionLines count={Math.min(MAX_LINES, p.lineCount)} lines={lines} vp={vp} yOf={yOf} font={small} digits={digits} />
             {/* ask + bid */}
-            <Line p1={askP1} p2={askP2} color="rgba(240,82,82,0.55)" strokeWidth={1}>
+            <Line p1={askP1} p2={askP2} color={colors.down} opacity={0.55} strokeWidth={1}>
               <DashPathEffect intervals={[2, 3]} />
             </Line>
             <Line p1={bidP1} p2={bidP2} color={colors.text2} strokeWidth={1}>
@@ -514,8 +514,8 @@ function TimeSlot({ i, levels, font, y }: { i: number; levels: SharedValue<{ x: 
 
 /* ---- position / order lines ---- */
 
-const LINE_COLORS = [colors.up, colors.down, colors.down, colors.up, "rgba(52,199,123,0.6)", "rgba(240,82,82,0.6)"];
-const LINE_LABELS = ["BUY", "SELL", "SL", "TP", "BUY LMT", "SELL LMT"];
+const LINE_COLORS = [colors.up, colors.down, colors.down, colors.up, colors.up, colors.down, colors.up, colors.down];
+const LINE_LABELS = ["BUY", "SELL", "SL", "TP", "BUY LMT", "SELL LMT", "BUY STP", "SELL STP"];
 
 function PositionLines({ count, lines, vp, yOf, font, digits }: { count: number; lines: SharedValue<number[]>; vp: SharedValue<Viewport>; yOf: (p: number, v: Viewport) => number; font: SkFont | null; digits: number }) {
   return (
@@ -536,7 +536,8 @@ function PositionLine({ i, lines, vp, yOf, font, digits }: { i: number; lines: S
     if (price === undefined || kind === undefined || price < v.lo || price > v.hi) return { on: 0, y: -50, kind: 0, text: "" };
     return { on: 1, y: yOf(price, v), kind, text: `${LINE_LABELS[kind] ?? ""} ${price.toFixed(digits)}` };
   });
-  const opacity = useDerivedValue(() => d.value.on);
+  // pending orders are drawn quieter than open positions
+  const opacity = useDerivedValue(() => (d.value.on ? (d.value.kind >= 4 ? 0.65 : 1) : 0));
   const p1 = useDerivedValue(() => vec(0, d.value.y));
   const p2 = useDerivedValue(() => vec(vp.value.plotW, d.value.y));
   const tagY = useDerivedValue(() => d.value.y - 8);

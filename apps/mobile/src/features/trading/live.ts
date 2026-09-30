@@ -120,6 +120,32 @@ export function useAccountLive(): AccountLive | null {
   return useCoalesced(sub, () => live.account);
 }
 
+/**
+ * One live account number for a leaf (e.g. `(a) => a?.freeMargin`): checked once per frame, and the component
+ * re-renders only when that value changes (return a primitive).
+ */
+export function useAccountValue<T>(select: (a: AccountLive | null) => T): T {
+  const pick = React.useRef(select);
+  pick.current = select;
+  const [v, setV] = React.useState(() => select(live.account));
+  React.useEffect(() => {
+    let raf = 0;
+    setV(pick.current(live.account));
+    const off = live.onAccount(() => {
+      if (!raf)
+        raf = requestAnimationFrame(() => {
+          raf = 0;
+          setV(pick.current(live.account));
+        });
+    });
+    return () => {
+      off();
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+  return v;
+}
+
 /* ------------------------------------------------------------------ */
 /* Stream                                                              */
 /* ------------------------------------------------------------------ */
@@ -137,8 +163,14 @@ class AccountStream {
   private offNet: (() => void) | null = null;
 
   constructor(readonly login: number) {
+    // silent for 20 s (an open socket gets a heartbeat every few seconds) or stuck connecting: drop it and retry now.
+    // Waiting for onclose is not enough: on a dead network a close handshake can take minutes to give up.
     this.watchdog = setInterval(() => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN && Date.now() - this.lastFrame > 20_000) this.ws.close();
+      const ws = this.ws;
+      if (!ws || (ws.readyState !== WebSocket.OPEN && ws.readyState !== WebSocket.CONNECTING) || Date.now() - this.lastFrame <= 20_000) return;
+      this.ws = null;
+      ws.close();
+      this.retry();
     }, 5000);
     this.subs.push(
       AppState.addEventListener("change", (s) => {
@@ -180,6 +212,7 @@ class AccountStream {
       return this.retry();
     }
     this.ws = ws;
+    this.lastFrame = Date.now();
     ws.onopen = () => {
       this.lastFrame = Date.now();
     };
@@ -269,7 +302,11 @@ function onFrame(login: number, f: StreamFrame) {
       return;
     case "deal":
       tradeStore.set((s) => ({ ...s, deals: [f.deal, ...s.deals].slice(0, 100) }));
-      if (f.deal.entry !== "in") invalidate(`trade/history/${login}`);
+      if (f.deal.entry !== "in") {
+        // closed trades: History and Home's "closed today" (both refetch only while on screen)
+        invalidate(`trade/history/${login}`);
+        invalidate(`trade/today/${login}`);
+      }
       return;
     case "account":
       live.setAccount(f.account);
@@ -327,6 +364,11 @@ export function followAccount(login: number | null) {
   live.clear();
   tradeStore.set({ ...EMPTY, login });
   if (login !== null) stream = new AccountStream(login);
+}
+
+/** Reconnect the active account's stream now (a Retry button after a failure). */
+export function retryAccountStream() {
+  stream?.reconnect();
 }
 
 /** Reload after a write when the stream isn't delivering (the engine is the source of truth). */

@@ -8,7 +8,10 @@ import { useT } from "@/i18n";
 import { haptic } from "@/lib/haptics";
 import { setActiveLogin, useActiveLogin } from "@/session/activeAccount";
 import { Button, Display, Money, PressableScale, Sheet, Text, type SheetRef } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { colors, radius, space } from "@/theme/tokens";
+
+const CHIP_ON_BLOCK = alpha(colors.ink, 0.12);
 import { useAccounts } from "./accounts";
 import type { EngAccount } from "./types";
 
@@ -28,7 +31,7 @@ export function AccountChip({ onPress, tone = "dark" }: { onPress: () => void; t
       onPress={onPress}
       haptics="select"
       accessibilityLabel={acc ? accountLabel(t, acc) : t("mobileTrade.state.noAccount.title")}
-      style={{ height: 36, paddingHorizontal: space[3], borderRadius: radius.pill, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: ink ? "rgba(14,14,16,0.12)" : colors.surface, borderWidth: ink ? 0 : 1, borderColor: colors.line }}
+      style={{ height: 36, paddingHorizontal: space[3], borderRadius: radius.pill, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: ink ? CHIP_ON_BLOCK : colors.surface, borderWidth: ink ? 0 : 1, borderColor: colors.line }}
     >
       {acc ? <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: acc.type === "live" ? colors.ember : colors.periwinkle }} /> : null}
       <Text variant="caption" weight="700" color={ink ? colors.ink : colors.text} numberOfLines={1}>
@@ -47,7 +50,7 @@ export const AccountSheet = React.forwardRef<SheetRef>(function AccountSheet(_, 
   const list = React.useMemo(() => [...(accounts.data?.accounts ?? [])].sort((a, b) => (a.type === b.type ? a.login - b.login : a.type === "live" ? -1 : 1)), [accounts.data]);
   const dismiss = () => (ref && typeof ref !== "function" ? ref.current?.dismiss() : undefined);
   return (
-    <Sheet ref={ref}>
+    <Sheet ref={ref} scrollable>
       <Display size="md" style={{ marginBottom: space[4] }}>
         {t("common.accounts")}
       </Display>

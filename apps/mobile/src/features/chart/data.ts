@@ -34,13 +34,18 @@ export async function fetchCandles(symbol: string, tf: Timeframe, limit = 500, t
   if (!cfg) return { ok: false, status: 0, error: { code: "network", message: "offline" } };
   const q = new URLSearchParams({ symbol, tf, limit: String(limit) });
   if (to) q.set("to", String(to));
+  // a stalled request would keep the chart on its skeleton: give up after 12 s and show the retry state
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12_000);
   try {
-    const res = await fetch(`${cfg.marketData.http}/v1/candles?${q}`);
+    const res = await fetch(`${cfg.marketData.http}/v1/candles?${q}`, { signal: ctrl.signal });
     if (!res.ok) return { ok: false, status: res.status, error: { code: "unavailable", message: `candles ${res.status}` } };
     const data = (await res.json()) as { bars: Candle[] };
     return { ok: true, status: 200, data: data.bars.map((b) => ({ ...b, t: toChartTime(b.t) })) };
   } catch {
     return { ok: false, status: 0, error: { code: "network", message: "offline" } };
+  } finally {
+    clearTimeout(timer);
   }
 }
 

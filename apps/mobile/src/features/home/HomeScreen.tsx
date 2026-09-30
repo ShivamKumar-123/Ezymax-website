@@ -2,18 +2,20 @@
 // P&L, the account switcher, quick actions, top movers, headlines and the notifications bell.
 import * as React from "react";
 import { ScrollView, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useIsFocused, useRouter } from "expo-router";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Bell, CandlestickChart, ChevronRight, TrendingDown, TrendingUp } from "lucide-react-native";
 import { useT } from "@/i18n";
 import { apiGet } from "@/lib/api";
 import { fmtMoney, fmtPct, fmtPrice } from "@/lib/format";
+import { useOnline } from "@/lib/net";
 import { useQuery } from "@/lib/query";
 import { feed } from "@/market/feed";
 import { instrument, instruments } from "@/market/instruments";
 import { useMe, useSession } from "@/session";
 import { useActiveLogin } from "@/session/activeAccount";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
-import { Button, Card, ColorBlock, Display, IconButton, Illustration, Mono, PressableScale, Screen, Skeleton, Text, type SheetRef } from "@/ui";
+import { Button, Card, ColorBlock, Display, EmptyState, IconButton, Illustration, Mono, PressableScale, Screen, Skeleton, Text, type SheetRef } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { colors, GUTTER, radius, space, type BlockColor } from "@/theme/tokens";
 import { serverOffset } from "../chart/data";
 import { setTradeSymbol } from "../trade/symbol";
@@ -36,6 +38,7 @@ export function HomeScreen() {
   const t = useT();
   const router = useRouter();
   const me = useMe();
+  const online = useOnline();
   const viewer = useSession((s) => !!s.viewer);
   const login = useActiveLogin();
   const accounts = useAccounts();
@@ -44,7 +47,13 @@ export function HomeScreen() {
 
   const news = useQuery("home/news", () => apiGet<{ items: NewsItem[] }>("news/feed?limit=5"), { persist: true, staleMs: 120_000 });
   const bell = useQuery("home/bell", () => apiGet<{ unread: number }>("notifications?limit=1"), { staleMs: 30_000, intervalMs: 60_000, enabled: !viewer });
-  const today = useQuery(login !== null ? `trade/today/${login}` : null, () => tradeApi<{ totals?: { profit: number; swap: number; commission: number } }>(login!, `history?limit=1&from=${serverDayStart()}`), { staleMs: 30_000, enabled: !viewer });
+  // closed today: the engine's history since the broker's day start (a view-only login reads it through the Client Area)
+  type Totals = { totals?: { profit: number; swap: number; commission: number } };
+  const today = useQuery(login !== null ? `trade/today/${login}` : null, () => (viewer ? apiGet<Totals>(`trading/accounts/${login}/history?limit=1&from=${serverDayStart()}`) : tradeApi<Totals>(login!, `history?limit=1&from=${serverDayStart()}`)), { staleMs: 30_000 });
+  // a view-only login has no engine stream: its account figures refresh every few seconds while Home is on screen
+  const focused = useIsFocused();
+  const view = useQuery<{ account: { equity: number; profit: number } }>(viewer && login !== null ? `trading/account/${login}` : null, () => apiGet(`trading/accounts/${login}`), { staleMs: 4000, intervalMs: focused ? 5000 : undefined });
+  const heroAccount = (viewer ? view.data?.account : undefined) ?? account;
 
   const liveTotal = React.useMemo(() => (accounts.data?.accounts ?? []).filter((a) => a.type === "live").reduce((s, a) => s + (a.cent ? a.equity / 100 : a.equity), 0), [accounts.data]);
   const hasLive = (accounts.data?.accounts ?? []).some((a) => a.type === "live");
@@ -78,35 +87,46 @@ export function HomeScreen() {
       <View style={{ paddingHorizontal: GUTTER, gap: space[4], marginTop: space[4] }}>
         <RestrictionBanner onContact={() => router.push("/support")} />
 
-        {/* hero: equity */}
+        {/* hero: equity (a flat ember block; the globe peeks in from the corner, below every number) */}
         {noAccount ? (
-          <ColorBlock color="periwinkle" style={{ gap: space[3] }}>
+          <ColorBlock color="periwinkle" style={{ gap: space[3], paddingBottom: 0 }}>
             <Display size="lg" color={colors.ink}>
               {t("mobileHome.noAccount.title")}
             </Display>
-            <Text color={colors.ink2}>{t("mobileHome.noAccount.body")}</Text>
-            <Button label={t("mobileHome.noAccount.action")} variant="cream" full={false} onPress={() => router.push("/accounts/new")} />
+            <Text color={colors.ink}>{t("mobileHome.noAccount.body")}</Text>
+            <View style={{ minHeight: 120, justifyContent: "flex-end", paddingBottom: space[6], paddingEnd: 96 }}>
+              <Illustration name="mascot" width={92} height={140} style={{ position: "absolute", bottom: -26, end: -4 }} />
+              <Button label={t("mobileHome.noAccount.action")} variant="primary" full={false} onPress={() => router.push("/accounts/new")} />
+            </View>
           </ColorBlock>
         ) : !account ? (
-          <Skeleton h={232} r={radius.block} />
+          accounts.error && !accounts.data ? (
+            <Card style={{ paddingVertical: space[2] }}>
+              <EmptyState illustration="connectionLost" size={170} title={online ? t("mobile.state.error.title") : t("mobile.state.offline.title")} body={online ? t("mobile.state.error.body") : t("mobile.state.offline.body")} action={t("mobile.action.retry")} onAction={() => void accounts.refresh()} style={{ paddingVertical: space[4], paddingHorizontal: space[2] }} />
+            </Card>
+          ) : (
+            <Skeleton h={286} r={radius.block} />
+          )
         ) : (
-          <ColorBlock color="ember" style={{ gap: space[5] }}>
+          <ColorBlock color="ember" style={{ gap: space[5], paddingBottom: 0 }}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text variant="label" color={colors.ink2}>
+              <Text variant="label" color={colors.ink}>
                 {t("mobileHome.equity")}
               </Text>
               {!viewer ? <AccountChip tone="ink" onPress={() => accSheet.current?.present()} /> : null}
             </View>
-            <HeroEquity currency={account.currency} fallback={account.equity} />
+            <HeroEquity currency={account.currency} fallback={heroAccount?.equity ?? account.equity} />
             <View style={{ flexDirection: "row", gap: space[4] }}>
               <Stat label={t("mobileHome.closedToday")} value={closedToday} currency={account.currency} />
-              <OpenPnl currency={account.currency} fallback={account.profit} />
+              <OpenPnl currency={account.currency} fallback={heroAccount?.profit ?? account.profit} />
             </View>
-            {hasLive ? (
-              <Text variant="caption" color={colors.ink2}>
-                {t("mobileHome.allLive", { amount: fmtMoney(liveTotal, { currency: "USD" }) })}
+            {/* the caption keeps clear of the globe in the end corner (either direction) */}
+            <View style={{ minHeight: 84, justifyContent: "flex-end", paddingEnd: 104, paddingBottom: space[6] }}>
+              <Illustration name="market" width={112} height={112} style={{ position: "absolute", bottom: -22, end: -18 }} />
+              <Text variant="caption" weight="600" color={colors.ink} numberOfLines={2}>
+                {hasLive ? t("mobileHome.allLive", { amount: fmtMoney(liveTotal, { currency: "USD" }) }) : ""}
               </Text>
-            ) : null}
+            </View>
           </ColorBlock>
         )}
 
@@ -145,7 +165,12 @@ export function HomeScreen() {
       <SectionTitle title={t("mobileHome.news")} action={t("mobileHome.allNews")} onAction={() => router.push("/news")} />
       <View style={{ paddingHorizontal: GUTTER }}>
         <Card padded={false}>
-          {news.loading ? (
+          {news.error && !news.data ? (
+            <View style={{ padding: space[5], gap: space[3], alignItems: "flex-start" }}>
+              <Text tone="tertiary">{online ? t("mobile.state.error.body") : t("mobile.state.offline.body")}</Text>
+              <Button label={t("mobile.action.retry")} variant="secondary" size="sm" full={false} onPress={() => void news.refresh()} />
+            </View>
+          ) : news.loading ? (
             <View style={{ padding: space[5], gap: space[4] }}>
               {[0, 1, 2].map((i) => (
                 <View key={i} style={{ gap: 6 }}>
@@ -223,7 +248,8 @@ function Stat({ label, value, currency }: { label: string; value: number | undef
   const Icon = value !== undefined && value < 0 ? TrendingDown : TrendingUp;
   return (
     <View style={{ flex: 1, gap: 4 }}>
-      <Text variant="label" color={colors.ink2}>
+      {/* full ink on ember: the 66% ink is under 4.5:1 at label size */}
+      <Text variant="label" color={colors.ink}>
         {label}
       </Text>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -236,11 +262,14 @@ function Stat({ label, value, currency }: { label: string; value: number | undef
   );
 }
 
+const QUICK_ICON_BG = alpha(colors.ink, 0.1);
+
 function Quick({ color, icon, label, onPress }: { color: BlockColor; icon: React.ReactNode; label: string; onPress: () => void }) {
   return (
-    <ColorBlock color={color} padded={false} onPress={onPress} style={{ flexBasis: "47%", flexGrow: 1, height: 68, borderRadius: radius.lg, paddingHorizontal: space[4], flexDirection: "row", alignItems: "center", gap: space[3] }} accessibilityRole="button" accessibilityLabel={label}>
-      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(14,14,16,0.1)", alignItems: "center", justifyContent: "center" }}>{icon}</View>
-      <Text variant="headline" weight="700" color={colors.ink} numberOfLines={1} style={{ flexShrink: 1 }}>
+    <ColorBlock color={color} padded={false} onPress={onPress} style={{ flexBasis: "47%", flexGrow: 1, height: 68, borderRadius: radius.lg, paddingHorizontal: space[3], flexDirection: "row", alignItems: "center", gap: 10 }} accessibilityRole="button" accessibilityLabel={label}>
+      <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: QUICK_ICON_BG, alignItems: "center", justifyContent: "center" }}>{icon}</View>
+      {/* fits "Withdraw" on a 360 pt phone; longer words in other languages shrink a little instead of cutting */}
+      <Text variant="headline" weight="700" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>
         {label}
       </Text>
     </ColorBlock>
@@ -250,6 +279,8 @@ function Quick({ color, icon, label, onPress }: { color: BlockColor; icon: React
 /** Biggest daily moves among the symbols with prices (re-sorted on each snapshot, prices live). */
 function Movers() {
   const router = useRouter();
+  const t = useT();
+  const online = useOnline();
   const [list, setList] = React.useState<string[]>([]);
   React.useEffect(() => {
     const pick = () => {
@@ -270,6 +301,12 @@ function Movers() {
       clearInterval(timer);
     };
   }, []);
+  if (!list.length && !online)
+    return (
+      <Text tone="tertiary" style={{ paddingHorizontal: GUTTER }}>
+        {t("mobileMarkets.status.offline")}
+      </Text>
+    );
   if (!list.length)
     return (
       <View style={{ flexDirection: "row", gap: space[3], paddingHorizontal: GUTTER }}>

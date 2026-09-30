@@ -2,15 +2,16 @@
 // the close (or cancel) button; tap to expand details and actions. P&L cells are leaf subscribers to the engine's
 // equity frames, so a price move never re-renders the list.
 import * as React from "react";
-import { View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import Animated, { interpolate, LinearTransition, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import ReanimatedSwipeable, { type SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { X } from "lucide-react-native";
-import { useT } from "@/i18n";
+import { useFormat, useT } from "@/i18n";
 import { fmtLots, fmtMoney, fmtPrice } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import { instrument } from "@/market/instruments";
-import { Mono, PressableScale, Text } from "@/ui";
+import { Mono, PressableScale, Text, useLiveQuote } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { usePositionLive } from "../trading/live";
 import type { EngOrder, EngPosition } from "../trading/types";
@@ -22,8 +23,8 @@ function SwipeAction({ label, drag, onPress }: { label: string; drag: SharedValu
   return (
     <Animated.View style={[{ width: 96, alignItems: "center", justifyContent: "center" }, anim]}>
       <PressableScale onPress={onPress} haptics="tap" accessibilityLabel={label} style={{ width: 76, height: 56, borderRadius: radius.lg, backgroundColor: colors.down, alignItems: "center", justifyContent: "center", gap: 2 }}>
-        <X size={18} color={colors.text} strokeWidth={2.5} />
-        <Text variant="label" style={{ fontSize: 10 }}>
+        <X size={18} color={colors.ink} strokeWidth={2.5} />
+        <Text variant="label" color={colors.ink} style={{ fontSize: 10 }}>
           {label}
         </Text>
       </PressableScale>
@@ -68,11 +69,20 @@ function Detail({ label, value }: { label: string; value: string }) {
 
 function ActionPill({ label, onPress, tone = "neutral" }: { label: string; onPress: () => void; tone?: "neutral" | "danger" }) {
   return (
-    <PressableScale onPress={onPress} haptics="tap" style={{ flex: 1, height: 40, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", backgroundColor: tone === "danger" ? "rgba(240,82,82,0.14)" : colors.surface3 }}>
+    <PressableScale onPress={onPress} haptics="tap" style={{ flex: 1, height: 40, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", backgroundColor: tone === "danger" ? colors.downSoft : colors.surface3 }}>
       <Text variant="callout" weight="700" tone={tone === "danger" ? "down" : "primary"}>
         {label}
       </Text>
     </PressableScale>
+  );
+}
+
+/** A close / cancel on its way to the server: the row shows a spinner in place of its number. */
+function Busy() {
+  return (
+    <View style={{ minWidth: 64, alignItems: "flex-end" }}>
+      <ActivityIndicator color={colors.text2} />
+    </View>
   );
 }
 
@@ -81,14 +91,16 @@ type PositionRowProps = {
   currency: string;
   expanded: boolean;
   readOnly: boolean;
+  busy?: boolean;
   onToggle: (ticket: number) => void;
   onClose: (p: EngPosition) => void;
   onPartial: (p: EngPosition) => void;
   onModify: (p: EngPosition) => void;
 };
 
-export const PositionRow = React.memo(function PositionRow({ p, currency, expanded, readOnly, onToggle, onClose, onPartial, onModify }: PositionRowProps) {
+export const PositionRow = React.memo(function PositionRow({ p, currency, expanded, readOnly, busy, onToggle, onClose, onPartial, onModify }: PositionRowProps) {
   const t = useT();
+  const fmt = useFormat();
   const digits = instrument(p.symbol).digits;
   const swipe = React.useRef<SwipeableMethods>(null);
   const buy = p.side === "buy";
@@ -107,19 +119,19 @@ export const PositionRow = React.memo(function PositionRow({ p, currency, expand
           </View>
           <LivePrice p={p} digits={digits} />
         </View>
-        <LivePnl p={p} currency={currency} />
+        {busy ? <Busy /> : <LivePnl p={p} currency={currency} />}
       </PressableScale>
       {expanded ? (
         <View style={{ paddingHorizontal: GUTTER, paddingBottom: space[4], gap: space[3] }}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", backgroundColor: colors.surface, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2] }}>
             <Detail label={t("mobilePortfolio.detail.ticket")} value={`#${p.ticket}`} />
-            <Detail label={t("mobilePortfolio.detail.opened")} value={new Date(p.openTime).toLocaleString()} />
+            <Detail label={t("mobilePortfolio.detail.opened")} value={fmt.dateTime(p.openTime)} />
             <Detail label={t("mobilePortfolio.detail.sl")} value={p.sl ? fmtPrice(p.sl, digits) : "—"} />
             <Detail label={t("mobilePortfolio.detail.tp")} value={p.tp ? fmtPrice(p.tp, digits) : "—"} />
-            <Detail label={t("mobilePortfolio.detail.swap")} value={fmtMoney(p.swap, { signed: true })} />
-            <Detail label={t("mobilePortfolio.detail.commission")} value={fmtMoney(-Math.abs(p.commission ?? 0), { signed: true })} />
+            <Detail label={t("mobilePortfolio.detail.swap")} value={fmtMoney(p.swap, { signed: true, currency })} />
+            <Detail label={t("mobilePortfolio.detail.commission")} value={fmtMoney(-Math.abs(p.commission ?? 0), { signed: true, currency })} />
           </View>
-          {!readOnly ? (
+          {!readOnly && !busy ? (
             <View style={{ flexDirection: "row", gap: space[2] }}>
               <ActionPill label={t("mobilePortfolio.action.modify")} onPress={() => onModify(p)} />
               <ActionPill label={t("mobilePortfolio.action.partial")} onPress={() => onPartial(p)} />
@@ -134,6 +146,7 @@ export const PositionRow = React.memo(function PositionRow({ p, currency, expand
   return (
     <ReanimatedSwipeable
       ref={swipe}
+      enabled={!busy}
       friction={1.6}
       rightThreshold={48}
       overshootRight={false}
@@ -154,17 +167,34 @@ export const PositionRow = React.memo(function PositionRow({ p, currency, expand
   );
 });
 
-type OrderRowProps = { o: EngOrder; expanded: boolean; readOnly: boolean; onToggle: (ticket: number) => void; onCancel: (o: EngOrder) => void; onEdit: (o: EngOrder) => void };
-
-export const OrderRow = React.memo(function OrderRow({ o, expanded, readOnly, onToggle, onCancel, onEdit }: OrderRowProps) {
+/** A pending order's stops and the live price it waits for (ask for buys, bid for sells): a leaf subscriber. */
+const OrderLine = React.memo(function OrderLine({ o, digits }: { o: EngOrder; digits: number }) {
   const t = useT();
+  const q = useLiveQuote(o.symbol);
+  const now = q ? (o.side === "buy" ? q.ask : q.bid) : undefined;
+  const parts = [o.sl ? `SL ${fmtPrice(o.sl, digits)}` : null, o.tp ? `TP ${fmtPrice(o.tp, digits)}` : null, now !== undefined ? t("mobilePortfolio.row.now", { price: fmtPrice(now, digits) }) : null];
+  return (
+    <Text variant="caption" tone="tertiary" numberOfLines={1}>
+      {parts.filter(Boolean).join(" · ") || " "}
+    </Text>
+  );
+});
+
+type OrderRowProps = { o: EngOrder; expanded: boolean; readOnly: boolean; busy?: boolean; onToggle: (ticket: number) => void; onCancel: (o: EngOrder) => void; onEdit: (o: EngOrder) => void };
+
+const PENDING_BUY = alpha(colors.up, 0.5);
+const PENDING_SELL = alpha(colors.down, 0.5);
+
+export const OrderRow = React.memo(function OrderRow({ o, expanded, readOnly, busy, onToggle, onCancel, onEdit }: OrderRowProps) {
+  const t = useT();
+  const fmt = useFormat();
   const digits = instrument(o.symbol).digits;
   const swipe = React.useRef<SwipeableMethods>(null);
   const label = t.dyn(`order.pending.${o.side}.${o.type === "stop_limit" ? "stop-limit" : o.type}`, `${o.side} ${o.type}`).toUpperCase();
   const row = (
     <Animated.View layout={LinearTransition.duration(180)} style={{ backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: colors.line }}>
       <PressableScale onPress={() => onToggle(o.ticket)} scaleTo={0.99} accessibilityState={{ expanded }} style={{ minHeight: POSITION_ROW_H, paddingHorizontal: GUTTER, flexDirection: "row", alignItems: "center", gap: space[3] }}>
-        <View style={{ width: 4, alignSelf: "stretch", marginVertical: 14, borderRadius: 2, backgroundColor: o.side === "buy" ? "rgba(52,199,123,0.5)" : "rgba(240,82,82,0.5)" }} />
+        <View style={{ width: 4, alignSelf: "stretch", marginVertical: 14, borderRadius: 2, backgroundColor: o.side === "buy" ? PENDING_BUY : PENDING_SELL }} />
         <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
           <View style={{ flexDirection: "row", alignItems: "baseline", gap: space[2] }}>
             <Text variant="headline" weight="700">
@@ -174,24 +204,26 @@ export const OrderRow = React.memo(function OrderRow({ o, expanded, readOnly, on
               {`${label} ${fmtLots(o.volume)}`}
             </Text>
           </View>
-          <Text variant="caption" tone="tertiary">
-            {[o.sl ? `SL ${fmtPrice(o.sl, digits)}` : null, o.tp ? `TP ${fmtPrice(o.tp, digits)}` : null].filter(Boolean).join(" · ") || " "}
-          </Text>
+          <OrderLine o={o} digits={digits} />
         </View>
-        <Mono size={15} weight="bold">
-          {fmtPrice(o.price, digits)}
-        </Mono>
+        {busy ? (
+          <Busy />
+        ) : (
+          <Mono size={15} weight="bold">
+            {fmtPrice(o.price, digits)}
+          </Mono>
+        )}
       </PressableScale>
       {expanded ? (
         <View style={{ paddingHorizontal: GUTTER, paddingBottom: space[4], gap: space[3] }}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", backgroundColor: colors.surface, borderRadius: radius.md, paddingHorizontal: space[4], paddingVertical: space[2] }}>
             <Detail label={t("mobilePortfolio.detail.ticket")} value={`#${o.ticket}`} />
-            <Detail label={t("mobilePortfolio.detail.placed")} value={new Date(o.placedAt).toLocaleString()} />
+            <Detail label={t("mobilePortfolio.detail.placed")} value={fmt.dateTime(o.placedAt)} />
             <Detail label={t("mobilePortfolio.detail.sl")} value={o.sl ? fmtPrice(o.sl, digits) : "—"} />
             <Detail label={t("mobilePortfolio.detail.tp")} value={o.tp ? fmtPrice(o.tp, digits) : "—"} />
-            <Detail label={t("mobilePortfolio.detail.expiry")} value={o.expiryAt ? new Date(o.expiryAt).toLocaleString() : o.expiry} />
+            <Detail label={t("mobilePortfolio.detail.expiry")} value={o.expiryAt ? fmt.dateTime(o.expiryAt) : o.expiry} />
           </View>
-          {!readOnly ? (
+          {!readOnly && !busy ? (
             <View style={{ flexDirection: "row", gap: space[2] }}>
               <ActionPill label={t("mobilePortfolio.action.edit")} onPress={() => onEdit(o)} />
               <ActionPill label={t("mobilePortfolio.action.cancel")} tone="danger" onPress={() => onCancel(o)} />
@@ -205,6 +237,7 @@ export const OrderRow = React.memo(function OrderRow({ o, expanded, readOnly, on
   return (
     <ReanimatedSwipeable
       ref={swipe}
+      enabled={!busy}
       friction={1.6}
       rightThreshold={48}
       overshootRight={false}

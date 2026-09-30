@@ -1,6 +1,11 @@
 // Trading actions on the active account. The engine is the source of truth: nothing is changed locally; the
 // account stream brings the result (or a state reload when the stream is down). Every rejection comes back with
-// a readable reason in the reader's language (order.reject.<code>) plus the engine's own detail.
+// a readable reason in the reader's language (order.reject.<code>), a plain-language hint for the common ones
+// (mobileTrade.reject.<code>) and the engine's own detail.
+//
+// Orders are idempotent: the ticket sends the same clientOrderId again when the reader retries after an answer
+// that never arrived (network, timeout), so the engine can't open the same trade twice ("duplicate" = it already
+// has that order).
 import { getRandomBytes } from "expo-crypto";
 import { i18n } from "@/i18n";
 import { haptic } from "@/lib/haptics";
@@ -22,29 +27,45 @@ export type OrderInput = {
   /** market: the price the client saw (requote beyond the deviation) */
   requestedPrice?: number;
   deviationPoints?: number;
+  /** idempotency key; the same key again returns the order the engine already has (newClientOrderId()) */
+  clientOrderId?: string;
 };
 
-export type ActionResult = { ok: true; data: Record<string, unknown> } | { ok: false; error: EngineError; reason: string };
+export type ActionResult =
+  | { ok: true; data: Record<string, unknown> }
+  /** `reason` = title · detail in one line (toasts); `title` / `body` for a banner (body = hint + engine detail) */
+  | { ok: false; error: EngineError; reason: string; title: string; body: string; uncertain: boolean };
 
-const cid = () => Array.from(getRandomBytes(12), (b) => b.toString(16).padStart(2, "0")).join("");
+export const newClientOrderId = () => Array.from(getRandomBytes(12), (b) => b.toString(16).padStart(2, "0")).join("");
 
-/** A rejection in words: the localized title for the engine code + the engine's detail sentence. */
-export function rejectText(e: EngineError): { title: string; detail: string } {
+/** No answer from the server: the request may or may not have been carried out. */
+export const isUncertain = (e: EngineError) => e.code === "network" || e.code === "aborted" || e.code === "unavailable" || e.status === 0 || e.status === 502 || e.status === 504;
+
+/** A rejection in words: the localized title for the engine code, a plain-language hint and the engine's detail. */
+export function rejectText(e: EngineError): { title: string; detail: string; hint: string } {
   const t = i18n.t;
-  const title = t.dyn(`order.reject.${e.code}`, e.message || e.code.replace(/_/g, " "));
+  if (isUncertain(e)) return { title: t("mobileTrade.reject.uncertain.title"), detail: "", hint: t("mobileTrade.reject.uncertain") };
+  const title = e.code === "requote" ? t("mobileTrade.reject.requote.title") : t.dyn(`order.reject.${e.code}`, e.message || e.code.replace(/_/g, " "));
   const detail = e.message && e.message !== title && !/^HTTP \d+$/.test(e.message) ? e.message : "";
-  return { title, detail };
+  const hint = t.dyn(`mobileTrade.reject.${e.code}`, "");
+  return { title, detail, hint };
 }
 
 async function run(path: string, init: { method: "POST" | "PATCH" | "DELETE"; body?: unknown }): Promise<ActionResult> {
   const login = tradeStore.get().login;
-  if (login === null) return { ok: false, error: { code: "unauthorized", message: "" }, reason: i18n.t("order.reject.unauthorized") };
+  if (login === null) {
+    const title = i18n.t("order.reject.unauthorized");
+    return { ok: false, error: { code: "unauthorized", message: "" }, reason: title, title, body: "", uncertain: false };
+  }
   const r = await tradeApi<Record<string, unknown>>(login, path, init);
   if (!r.ok) {
     const e: EngineError = { ...r.error, status: r.status };
-    const { title, detail } = rejectText(e);
+    const { title, detail, hint } = rejectText(e);
     haptic.error();
-    return { ok: false, error: e, reason: detail ? `${title} · ${detail}` : title };
+    const uncertain = isUncertain(e);
+    // after no answer, the stream may be the only one to know what happened: reload the account state
+    if (uncertain) void refreshState();
+    return { ok: false, error: e, reason: detail ? `${title} · ${detail}` : title, title, body: [hint, detail].filter(Boolean).join("\n"), uncertain };
   }
   if (!streamIsOpen()) void refreshState();
   return { ok: true, data: r.data };
@@ -53,7 +74,7 @@ async function run(path: string, init: { method: "POST" | "PATCH" | "DELETE"; bo
 export async function placeOrder(o: OrderInput): Promise<ActionResult> {
   const digits = instrument(o.symbol).digits;
   const round = (v: number | null | undefined) => (v === null || v === undefined || !Number.isFinite(v) ? undefined : +v.toFixed(digits));
-  const body: Record<string, unknown> = { symbol: o.symbol, side: o.side, type: o.type, volume: +o.volume.toFixed(2), clientOrderId: cid() };
+  const body: Record<string, unknown> = { symbol: o.symbol, side: o.side, type: o.type, volume: +o.volume.toFixed(2), clientOrderId: o.clientOrderId ?? newClientOrderId() };
   const sl = round(o.sl);
   const tp = round(o.tp);
   if (sl !== undefined) body.sl = sl;
@@ -68,11 +89,12 @@ export async function placeOrder(o: OrderInput): Promise<ActionResult> {
   const r = await run("orders", { method: "POST", body });
   if (r.ok) {
     const t = i18n.t;
-    const d = r.data as { status?: string; price?: number };
+    const d = r.data as { status?: string; price?: number; ticket?: number };
     haptic.success();
     if (d.status === "filled")
       toast.show({ title: t("mobileTrade.toast.filled", { side: t(o.side === "buy" ? "common.buy" : "common.sell"), volume: o.volume.toFixed(2), symbol: o.symbol }), body: t("mobileTrade.toast.at", { price: fmtPrice(Number(d.price), digits) }), tone: "success" });
-    else toast.show({ title: t("mobileTrade.toast.placed", { symbol: o.symbol }), body: t("mobileTrade.toast.at", { price: fmtPrice(Number(o.price), digits) }), tone: "success" });
+    else if (d.status === "duplicate") toast.show({ title: t("mobileTrade.toast.duplicate", { ticket: d.ticket ?? "" }), body: t("mobileTrade.toast.duplicateBody"), tone: "success" });
+    else toast.show({ title: t("mobileTrade.toast.placed", { symbol: o.symbol }), body: t("mobileTrade.toast.at", { price: fmtPrice(Number(d.price ?? o.price), digits) }), tone: "success" });
   }
   return r;
 }
@@ -84,7 +106,7 @@ export async function closePosition(ticket: number, volume?: number): Promise<Ac
     const profit = Number((r.data as { profit?: number }).profit ?? 0);
     haptic.success();
     const title = volume ? i18n.t("mobileTrade.toast.partial", { ticket, volume: volume.toFixed(2) }) : i18n.t("mobileTrade.toast.closed", { ticket });
-    toast.show({ title, body: fmtMoney(profit, { signed: true }), tone: profit >= 0 ? "success" : "error" });
+    toast.show({ title, body: fmtMoney(profit, { signed: true, currency: tradeStore.get().account?.currency }), tone: profit >= 0 ? "success" : "error" });
   }
   return r;
 }

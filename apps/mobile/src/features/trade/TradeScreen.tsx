@@ -3,8 +3,8 @@
 import * as React from "react";
 import { View } from "react-native";
 import { BottomSheetFlatList } from "@gorhom/bottom-sheet";
-import { useRouter } from "expo-router";
-import { Bell, ChevronDown, Layers, Minus, Plus, SlidersHorizontal } from "lucide-react-native";
+import { useIsFocused, useRouter } from "expo-router";
+import { Bell, ChevronDown, Layers, Minus, Plus, Search, SlidersHorizontal } from "lucide-react-native";
 import { useT } from "@/i18n";
 import { fmtLots, fmtPrice } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
@@ -12,7 +12,7 @@ import { kv } from "@/lib/kv";
 import { feed } from "@/market/feed";
 import { instrument, instruments, type Instrument } from "@/market/instruments";
 import { useSession } from "@/session";
-import { Banner, ChangeText, Display, EmptyState, IconButton, Mono, PressableScale, PriceCell, Screen, Sheet, Skeleton, Text, useBottomInset, useLiveQuote, type SheetRef } from "@/ui";
+import { Banner, Button, ChangeText, Display, IconButton, Illustration, Mono, PressableScale, PriceCell, Screen, Sheet, SheetTextInput, Skeleton, Text, NO_WEB_OUTLINE, useBottomInset, useLiveQuote, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { ChartLazy } from "../chart/ChartLazy";
 import { prefetchCandles, TIMEFRAMES, type Timeframe } from "../chart/data";
@@ -38,7 +38,9 @@ export function TradeScreen() {
   const indicators = useIndicators();
   const viewer = useSession((s) => !!s.viewer);
   const accounts = useAccounts();
-  useSpecs();
+  // while the tab is on screen, the contract specs refresh every minute (the market-closed notice follows them)
+  const focused = useIsFocused();
+  useSpecs({ live: focused });
   const spec = useSpec(symbol);
   const status = useTrade((s) => s.status);
   const bottom = useBottomInset();
@@ -60,6 +62,11 @@ export function TradeScreen() {
     haptic.tap();
     ticket.current?.open({ symbol, side, volume });
   };
+  const stepVolume = (dir: 1 | -1) => {
+    const next = clampLots(spec, volume + dir * (spec?.lotStep ?? 0.01));
+    setVolume(next);
+    saveVolume(symbol, next);
+  };
 
   return (
     <Screen scroll={false}>
@@ -74,11 +81,15 @@ export function TradeScreen() {
           <IconButton accessibilityLabel={t("mobileTrade.alert")} icon={<Bell size={19} color={colors.text} />} onPress={() => router.push({ pathname: "/alerts", params: { symbol } })} />
           <IconButton accessibilityLabel={t("mobileTrade.depth")} icon={<Layers size={19} color={colors.text} />} onPress={() => router.push(`/depth/${symbol}`)} />
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: space[3] }}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <QuoteStrip symbol={symbol} digits={inst.digits} />
+        {/* bid + account chip, then the day's change and range on their own line (fits a 360 pt phone) */}
+        <View style={{ gap: 2 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: space[3] }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <LiveBid symbol={symbol} digits={inst.digits} />
+            </View>
+            {canTrade ? <AccountChip onPress={() => accSheet.current?.present()} /> : null}
           </View>
-          {canTrade ? <AccountChip onPress={() => accSheet.current?.present()} /> : null}
+          <DayRange symbol={symbol} digits={inst.digits} />
         </View>
       </View>
 
@@ -120,7 +131,18 @@ export function TradeScreen() {
       <View style={{ paddingHorizontal: GUTTER, paddingTop: space[3], paddingBottom: bottom - space[2], gap: space[3] }}>
         {spec && !spec.open && !noAccount ? <Banner tone="info" title={t("mobileTrade.state.marketClosed.title")} body={t("mobileTrade.state.marketClosed.body", { symbol })} /> : null}
         {noAccount ? (
-          <EmptyState title={t("mobileTrade.state.noAccount.title")} body={t("mobileTrade.state.noAccount.body")} action={t("mobileTrade.state.noAccount.action")} onAction={() => router.push("/accounts/new")} style={{ paddingVertical: space[2] }} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: space[4], padding: space[4], borderRadius: radius.card, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line }}>
+            <Illustration name="welcome" width={64} height={88} />
+            <View style={{ flex: 1, gap: space[2] }}>
+              <Text variant="headline" weight="700">
+                {t("mobileTrade.state.noAccount.title")}
+              </Text>
+              <Text variant="caption" tone="secondary">
+                {t("mobileTrade.state.noAccount.body")}
+              </Text>
+              <Button label={t("mobileTrade.state.noAccount.action")} size="sm" full={false} onPress={() => router.push("/accounts/new")} />
+            </View>
+          </View>
         ) : (
           <View style={{ flexDirection: "row", alignItems: "stretch", gap: space[2] }}>
             <TradeButton side="sell" symbol={symbol} digits={inst.digits} disabled={!canTrade} onPress={() => openTicket("sell")} />
@@ -132,10 +154,10 @@ export function TradeScreen() {
                 {fmtLots(volume)}
               </Mono>
               <View style={{ flexDirection: "row", gap: 6 }}>
-                <PressableScale onPress={() => setVolume((v) => clampLots(spec, v - (spec?.lotStep ?? 0.01)))} haptics="select" accessibilityLabel={`${t("mobileTrade.bar.volume")} −`} style={{ width: 36, height: 26, borderRadius: 8, backgroundColor: colors.surface3, alignItems: "center", justifyContent: "center" }}>
+                <PressableScale onPress={() => stepVolume(-1)} haptics="select" accessibilityLabel={`${t("mobileTrade.bar.volume")} −`} style={{ width: 36, height: 26, borderRadius: 8, backgroundColor: colors.surface3, alignItems: "center", justifyContent: "center" }}>
                   <Minus size={14} color={colors.text} />
                 </PressableScale>
-                <PressableScale onPress={() => setVolume((v) => clampLots(spec, v + (spec?.lotStep ?? 0.01)))} haptics="select" accessibilityLabel={`${t("mobileTrade.bar.volume")} +`} style={{ width: 36, height: 26, borderRadius: 8, backgroundColor: colors.surface3, alignItems: "center", justifyContent: "center" }}>
+                <PressableScale onPress={() => stepVolume(1)} haptics="select" accessibilityLabel={`${t("mobileTrade.bar.volume")} +`} style={{ width: 36, height: 26, borderRadius: 8, backgroundColor: colors.surface3, alignItems: "center", justifyContent: "center" }}>
                   <Plus size={14} color={colors.text} />
                 </PressableScale>
               </View>
@@ -153,18 +175,24 @@ export function TradeScreen() {
   );
 }
 
-function QuoteStrip({ symbol, digits }: { symbol: string; digits: number }) {
+/** The live bid (a leaf: a tick re-renders only this text). */
+function LiveBid({ symbol, digits }: { symbol: string; digits: number }) {
+  const q = useLiveQuote(symbol);
+  return (
+    <Mono size={22} weight="bold" numberOfLines={1} accessibilityLabel={q ? `${symbol} ${fmtPrice(q.bid, digits)}` : symbol}>
+      {q ? fmtPrice(q.bid, digits) : "—"}
+    </Mono>
+  );
+}
+
+/** The day's change and high / low (a leaf). */
+function DayRange({ symbol, digits }: { symbol: string; digits: number }) {
   const t = useT();
   const q = useLiveQuote(symbol);
   return (
-    <View style={{ gap: 2 }} accessibilityLabel={q ? `${symbol} ${fmtPrice(q.bid, digits)}` : symbol}>
-      <View style={{ flexDirection: "row", alignItems: "baseline", gap: space[2] }}>
-        <Mono size={22} weight="bold">
-          {q ? fmtPrice(q.bid, digits) : "—"}
-        </Mono>
-        <ChangeText symbol={symbol} size={13} />
-      </View>
-      <Text variant="caption" tone="tertiary" numberOfLines={1}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
+      <ChangeText symbol={symbol} size={12.5} />
+      <Text variant="caption" tone="tertiary" numberOfLines={1} style={{ flexShrink: 1 }}>
         {q ? `${t("market.tip.high")} ${fmtPrice(q.high, digits)}  ${t("market.tip.low")} ${fmtPrice(q.low, digits)}` : " "}
       </Text>
     </View>
@@ -182,10 +210,11 @@ const TradeButton = React.memo(function TradeButton({ side, symbol, digits, disa
       testID={buy ? "bar-buy" : "bar-sell"}
       style={{ flex: 1, height: 76, borderRadius: radius.lg, backgroundColor: buy ? colors.up : colors.down, paddingHorizontal: space[3], justifyContent: "center", alignItems: buy ? "flex-end" : "flex-start" }}
     >
-      <Text variant="label" color={buy ? colors.ink : colors.text}>
+      {/* ink on both: light text on the web palette's green / red is under 4.5:1 */}
+      <Text variant="label" color={colors.ink}>
         {t(buy ? "common.buy" : "common.sell")}
       </Text>
-      <PriceCell symbol={symbol} side={buy ? "ask" : "bid"} digits={digits} size={19} align={buy ? "right" : "left"} style={{ paddingHorizontal: 0, backgroundColor: "transparent" }} />
+      <PriceCell symbol={symbol} side={buy ? "ask" : "bid"} digits={digits} size={19} align={buy ? "right" : "left"} flash={false} color={colors.ink} style={{ paddingHorizontal: 0 }} />
     </PressableScale>
   );
 });
@@ -193,18 +222,38 @@ const TradeButton = React.memo(function TradeButton({ side, symbol, digits, disa
 const SymbolSheet = React.forwardRef<SheetRef>(function SymbolSheet(_, ref) {
   const t = useT();
   const current = useTradeSymbol();
-  const list = React.useMemo(() => instruments().filter((i) => feed.available.size === 0 || feed.available.has(i.symbol)), []);
+  const [q, setQ] = React.useState("");
+  const all = React.useMemo(() => instruments().filter((i) => feed.available.size === 0 || feed.available.has(i.symbol)), []);
+  const list = React.useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return s ? all.filter((i) => i.symbol.toLowerCase().includes(s) || i.name.toLowerCase().includes(s)) : all;
+  }, [all, q]);
   const dismiss = () => (ref && typeof ref !== "function" ? ref.current?.dismiss() : undefined);
   return (
-    <Sheet ref={ref} enableDynamicSizing={false} snapPoints={["75%"]} scroll>
+    <Sheet ref={ref} enableDynamicSizing={false} snapPoints={["75%"]} scroll onDismiss={() => setQ("")}>
       <BottomSheetFlatList
         data={list}
         keyExtractor={(i: Instrument) => i.symbol}
         contentContainerStyle={{ paddingBottom: space[10] }}
+        keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
-          <Display size="md" style={{ paddingHorizontal: GUTTER, marginBottom: space[2] }}>
-            {t("mobileTrade.pickSymbol")}
-          </Display>
+          <View style={{ paddingHorizontal: GUTTER, marginBottom: space[2], gap: space[3] }}>
+            <Display size="md">{t("mobileTrade.pickSymbol")}</Display>
+            <View style={{ height: 44, borderRadius: radius.pill, backgroundColor: colors.surface2, flexDirection: "row", alignItems: "center", paddingHorizontal: space[4], gap: space[2] }}>
+              <Search size={17} color={colors.text3} />
+              <SheetTextInput
+                value={q}
+                onChangeText={setQ}
+                placeholder={t("mobileTrade.searchSymbol")}
+                placeholderTextColor={colors.text3}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                accessibilityLabel={t("mobileTrade.searchSymbol")}
+                selectionColor={colors.ember}
+                style={[{ flex: 1, color: colors.text, fontSize: 16, height: "100%" }, NO_WEB_OUTLINE]}
+              />
+            </View>
+          </View>
         }
         renderItem={({ item }: { item: Instrument }) => (
           <PressableScale
