@@ -1,0 +1,95 @@
+import type { NsMessages } from "../../core";
+
+// Kalks mobile app: market news (/news, /news/[id]) and the economic calendar (/calendar).
+// Shared wording (tone, impact, calendar columns, brief, alerts) comes from the `news` namespace.
+const mobileNews: NsMessages<"mobileNews"> = {
+  // News feed
+  "eyebrow": "Piyasa gündemi",
+  "title": "Haberler", // tall uppercase display title, keep it one short word
+  "latest": "Son haberler",
+  "filters": "Filtreler",
+  "filtersOn": "Filtreler · {n}", // n = number of active filters
+  "importance.all": "Tümü",
+  "importance.important": "Önemli",
+  "importance.top": "Öne çıkanlar",
+  "importance.label": "Önem",
+  // Chips on a story (importance tier)
+  "chip.top": "Öne çıkan",
+  "chip.important": "Önemli",
+  "filter.tone": "Ton",
+  "filter.anyTone": "Tüm tonlar",
+  "filter.currency": "Para birimi",
+  "filter.anyCurrency": "Tüm para birimleri",
+  "filter.symbol": "Enstrüman",
+  "filter.anySymbol": "Tüm enstrümanlar",
+  "filter.mentioned": "Bugünün başlıklarında",
+  "filter.clear": "Filtreleri temizle",
+  "filter.remove": "Filtreyi kaldır: {label}",
+  "list.loadingMore": "Daha eski haberler yükleniyor…",
+  "list.end": "Tüm haberleri gördünüz",
+  "list.endBody": "Bu filtrelerle son günlerin tüm haberleri bu kadar.",
+  "empty.title": "Henüz haber yok",
+  "empty.filteredTitle": "Eşleşen haber yok",
+  "updated": "Son güncelleme: {time}",
+
+  // Daily brief card
+  "brief.label": "Günlük özet",
+  "brief.readMore": "Özetin tamamını oku",
+  "brief.watch": "Bugün izlenecekler",
+  "brief.calendarNote": "Takvimde",
+  "brief.writtenAt": "{time} itibarıyla hazırlandı",
+
+  // Story screen
+  "story.readAt": "{source} sitesinde oku",
+  "story.noTeaser": "Yayıncı yalnızca başlığı paylaşıyor. Haberin tamamı kendi sitesinde.",
+  "story.currencies": "Para birimleri",
+  "story.calendarFor": "{currency} takvimi",
+  "story.relatedSymbol": "{symbol} hakkında daha fazla",
+  "story.relatedCurrency": "{currency} hakkında daha fazla",
+  "story.share": "Paylaş",
+  "story.notFound.title": "Haber bulunamadı",
+  "story.notFound.body": "Kaldırılmış olabilir. En son başlıklar haber akışında.",
+  "story.backToNews": "Haberlere dön",
+  "story.openChart": "{symbol} grafiğini aç",
+  "story.published": "Yayınlanma: {time}",
+
+  // Economic calendar
+  "cal.eyebrow": "Ekonomik takvim",
+  "cal.title": "Takvim", // tall uppercase display title, keep it one short word
+  "cal.summary.events": "Olaylar",
+  "cal.prevWeekShort": "Önceki",
+  "cal.nextWeekShort": "Sonraki",
+  "cal.startsNow": "Şimdi başlıyor",
+  "cal.startsIn": "Kalan süre",
+  "cal.zone.local": "Yerel saatiniz · {tz}",
+  "cal.zone.server": "Sunucu saati · {tz}",
+  "cal.zoneNote.local": "Saatler sizin saat diliminizde ({local}). İşlem hesabınızın saati olan sunucu saati {server}.",
+  "cal.zoneNote.server": "Saatler, işlem hesabınızın saati olan sunucu saatinde ({server}). Sizin saat diliminiz {local}.",
+  "cal.zone.title": "Saat gösterimi",
+  "cal.zone.myTime": "Saatim ({tz})",
+  "cal.zone.serverTime": "Sunucu saati ({tz})",
+  "cal.filters.currencies": "Para birimleri",
+  "cal.filters.allCurrencies": "Tüm para birimleri",
+  "cal.filters.reset": "Sıfırla",
+  "cal.empty.title": "Sakin bir hafta",
+  "cal.empty.body": "Bu hafta için henüz planlanmış bir açıklama yok.",
+  "cal.empty.filteredTitle": "Eşleşen olay yok",
+  "cal.impact.high": "Yüksek etki",
+  "cal.impact.medium": "Orta etki",
+  "cal.impact.low": "Düşük etki",
+  "cal.row.a11y": "{time}, {currency}, {title}, {impact}",
+  "cal.remind": "Hatırlat",
+  "cal.reminderOn": "Hatırlatıcı açık",
+  "cal.remindBefore": "Önceden hatırlat",
+  "cal.reminderSetDesc": "{currency} {title} öncesinde {minutes} dakika kala sizi bilgilendireceğiz.",
+  "cal.reminderChanged": "Hatırlatıcı {minutes} dakika önceye alındı",
+  "cal.viewOnlyRemind": "Salt görüntüleme girişleri hatırlatıcı ayarlayamaz.",
+  "cal.newsFor": "{currency} haberleri",
+  "cal.eventTime.local": "{day} · sizin saatinizle {local} · sunucu saatiyle {server} ({tz})",
+  "cal.eventTime.server": "{day} · sunucu saatiyle {server} ({tz}) · sizin saatinizle {local}",
+  "cal.eventTime.allDay": "{day} · tüm gün",
+  "cal.alertsAria": "Yüksek etkili olay uyarıları",
+  "cal.filtersAria": "Takvim filtreleri",
+  "cal.dayAria": "{day}, {count} olay",
+};
+export default mobileNews;
