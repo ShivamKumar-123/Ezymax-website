@@ -557,3 +557,79 @@ async fn mobile_push_registry_queue_tickets_receipts_and_dead_tokens() {
     assert_eq!(left, 0);
     e.drop().await;
 }
+
+#[tokio::test]
+async fn revoked_sessions_remove_their_phones() {
+    let (expo, _stub) = expo_stub().await;
+    let Some(e) = env_with(|c| {
+        c.push_enabled = true;
+        c.expo_push_url = expo.clone();
+    })
+    .await
+    else {
+        return;
+    };
+    const A: &str = "ExponentPushToken[revokeaaaaaaaaaaaaaaa1]";
+    const B: &str = "ExponentPushToken[revokebbbbbbbbbbbbbbb1]";
+    const C: &str = "ExponentPushToken[revokeccccccccccccccc1]";
+    const D: &str = "ExponentPushToken[revokeddddddddddddddd1]";
+    let dev = |c: char| c.to_string().repeat(24);
+    let dref = |c: char| support::push::device_ref(&c.to_string().repeat(24));
+    let now = || chrono::Utc::now().to_rfc3339();
+    // client 42 has two phones (a, b), client 43 one (c); client 42 of another broker has phone d
+    assert_eq!(Env::json(e.phone(42, A, &dev('a'), "ios")).await.0, 200);
+    assert_eq!(Env::json(e.phone(42, B, &dev('b'), "android")).await.0, 200);
+    assert_eq!(Env::json(e.phone(43, C, &dev('c'), "ios")).await.0, 200);
+    let (s, v) = Env::json(e.user(M::POST, "/v1/push/tokens", 42).header("x-kalks-tenant", "acme").json(&json!({"token": D, "deviceId": dev('d'), "platform": "ios"}))).await;
+    assert_eq!(s, 200, "{v}");
+    // a push is queued for both of 42's phones
+    assert_eq!(e.notify(json!({"type": "wallet.credit", "userId": 42, "title": "Bonus credited"})).await["pushed"], 2);
+    let revoke = |body: Value| e.http.post(format!("{}/v1/push/tokens/revoke", e.base)).header("x-kalks-internal", TOKEN).json(&body);
+
+    // a service route: the internal token is required; the body is checked
+    let r = e.http.post(format!("{}/v1/push/tokens/revoke", e.base)).json(&json!({"tenant": "kalks", "userId": 42, "all": true, "before": now()})).send().await.unwrap();
+    assert_eq!(r.status().as_u16(), 403);
+    for (body, field) in [
+        (json!({"userId": 42, "all": true, "before": now()}), "tenant"),
+        (json!({"tenant": "kalks", "userId": 42, "all": true}), "before"),
+        (json!({"tenant": "kalks", "userId": 42, "devices": ["not-a-reference"], "before": now()}), "devices"),
+        (json!({"tenant": "kalks", "userId": -1, "all": true, "before": now()}), "userId"),
+        (json!({"tenant": "kalks", "devices": [dref('a')], "before": now()}), "userId"),
+    ] {
+        let (s, v) = Env::json(revoke(body)).await;
+        assert_eq!((s, v["error"]["field"].as_str()), (422, Some(field)), "{v}");
+    }
+    assert_eq!(e.has_token(A).await, Some(42));
+
+    // one of 42's sessions ended (sign out other devices, a staff revoke): phone a goes with its queued push
+    let (s, v) = Env::json(revoke(json!({"tenant": "kalks", "userId": 42, "devices": [dref('a'), dref('z')], "before": now()}))).await;
+    assert_eq!((s, v["removed"].as_u64()), (200, Some(1)), "{v}");
+    assert_eq!(e.has_token(A).await, None);
+    assert_eq!(e.has_token(B).await, Some(42));
+    assert_eq!(e.pushes(A).await[0].0, "dropped");
+    assert_eq!(e.pushes(B).await[0].0, "pending");
+    // another client's phone is never matched by 42's revocation
+    let (_, v) = Env::json(revoke(json!({"tenant": "kalks", "userId": 42, "devices": [dref('c')], "before": now()}))).await;
+    assert_eq!(v["removed"], 0);
+    assert_eq!(e.has_token(C).await, Some(43));
+
+    // a phone registered again after the revocation keeps its registration
+    let earlier = (chrono::Utc::now() - chrono::Duration::seconds(60)).to_rfc3339();
+    let (_, v) = Env::json(revoke(json!({"tenant": "kalks", "userId": 42, "all": true, "before": earlier}))).await;
+    assert_eq!(v["removed"], 0);
+    // a revocation "in the future" counts as now
+    assert_eq!(Env::json(e.phone(42, A, &dev('a'), "ios")).await.0, 200);
+    let (_, v) = Env::json(revoke(json!({"tenant": "kalks", "userId": 42, "all": true, "before": (chrono::Utc::now() + chrono::Duration::days(1)).to_rfc3339()}))).await;
+    // signed out everywhere: every phone of 42 at this broker, never the other broker's
+    assert_eq!(v["removed"], 2);
+    assert_eq!((e.has_token(A).await, e.has_token(B).await), (None, None));
+    assert_eq!(e.has_token(D).await, Some(42));
+    assert_eq!(e.notify(json!({"type": "wallet.credit", "userId": 42, "title": "Bonus credited", "dedupeKey": "after"})).await["pushed"], 0);
+
+    // the broker was suspended: every phone of its clients
+    let (_, v) = Env::json(revoke(json!({"tenant": "kalks", "all": true, "before": now()}))).await;
+    assert_eq!(v["removed"], 1);
+    assert_eq!(e.has_token(C).await, None);
+    assert_eq!(e.has_token(D).await, Some(42), "another broker");
+    e.drop().await;
+}

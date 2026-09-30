@@ -16,6 +16,10 @@
 //!   (15 min), 1000 ids per call: `DeviceNotRegistered` drops the token, `MessageRateExceeded` sends again later.
 //! - **Clean-up** ([`sweep`]). Messages still pending after a day fail, finished rows go after 7 days, phones not
 //!   seen for [`STALE_DAYS`] days are removed.
+//! - **Revoked sessions** ([`revoke`]). When the gateway revokes sessions (sign out other devices or one session,
+//!   password change or reset, staff revoke, block, closure, a suspended broker) it names the phones that lost
+//!   their session by [`device_ref`], or all of a client's (or the broker's) phones: their rows go, with any push
+//!   still queued for them.
 //!
 //! Behind `SUPPORT_PUSH_ENABLED` (default on in production). The text is the notification's title and body,
 //! shortened to fit the 4 KB payload; `data` carries the notification id, type, app link and the client id, so the
@@ -23,7 +27,9 @@
 
 use crate::notify::Item;
 use crate::state::AppState;
+use chrono::{DateTime, Utc};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use sqlx::Row;
 use std::time::Duration;
 
@@ -47,6 +53,18 @@ pub fn valid_token(t: &str) -> bool {
 /// The app's installation id (`X-Kalks-Device`): base64url, 16 to 64 characters.
 pub fn valid_device(d: &str) -> bool {
     (16..=64).contains(&d.len()) && d.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+}
+
+/// The reference to a phone's installation id that the gateway keeps on each session (`sessions.device_ref`): hex
+/// SHA-256 of `kalks-push-device:<id>`. The gateway never stores the id itself (it recognises devices by a keyed
+/// hash); with this reference it can name the phones whose sessions it revoked ([`revoke`]).
+pub fn device_ref(device_id: &str) -> String {
+    Sha256::digest(format!("kalks-push-device:{device_id}").as_bytes()).iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// A `device_ref`: 64 lowercase hex digits.
+pub fn valid_device_ref(r: &str) -> bool {
+    r.len() == 64 && r.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 
 /// Seconds to wait after failure number `attempts` (1-based): 15, 30, 60 … at most 30 minutes.
@@ -216,6 +234,46 @@ pub async fn forget(st: &AppState, token: &str, device_id: &str) -> anyhow::Resu
         drop_pending(st, &r.get::<String, _>("tenant"), token, "signed out on the phone").await?;
     }
     Ok(rows.len() as u64)
+}
+
+/// Whose phones a session revocation removes ([`revoke`]).
+#[derive(Debug, Clone, Copy)]
+pub enum Revoked<'a> {
+    /// Every phone of the broker's clients (the broker was suspended: every session ended).
+    Tenant,
+    /// Every phone of one client (signed out everywhere: blocked, password reset, closure, staff "sign out all").
+    User(i64),
+    /// The phones of one client whose sessions ended and that have no other live session, by [`device_ref`].
+    Devices(i64, &'a [String]),
+}
+
+/// The gateway revoked sessions: those phones stop receiving pushes (their rows go, with any push still queued for
+/// them). Only registrations older than the revocation (`before`, the gateway's time of it) are removed, so a phone
+/// that signed in again since keeps its new one. Returns how many phones were removed.
+pub async fn revoke(st: &AppState, tenant: &str, who: Revoked<'_>, before: DateTime<Utc>) -> anyhow::Result<u64> {
+    let removed: Vec<String> = match who {
+        Revoked::Tenant => sqlx::query_scalar("DELETE FROM push_tokens WHERE tenant = $1 AND last_seen_at <= $2 RETURNING token").bind(tenant).bind(before).fetch_all(&st.pool).await?,
+        Revoked::User(user) => {
+            sqlx::query_scalar("DELETE FROM push_tokens WHERE tenant = $1 AND user_id = $2 AND last_seen_at <= $3 RETURNING token").bind(tenant).bind(user).bind(before).fetch_all(&st.pool).await?
+        }
+        Revoked::Devices(user, refs) => {
+            // a client has at most MAX_DEVICES phones: match their installation ids here
+            let phones: Vec<(i64, String)> = sqlx::query_as("SELECT id, device_id FROM push_tokens WHERE tenant = $1 AND user_id = $2 AND last_seen_at <= $3").bind(tenant).bind(user).bind(before).fetch_all(&st.pool).await?;
+            let ids: Vec<i64> = phones.iter().filter(|(_, d)| refs.contains(&device_ref(d))).map(|(id, _)| *id).collect();
+            if ids.is_empty() {
+                vec![]
+            } else {
+                sqlx::query_scalar("DELETE FROM push_tokens WHERE id = ANY($1) AND user_id = $2 AND last_seen_at <= $3 RETURNING token").bind(&ids).bind(user).bind(before).fetch_all(&st.pool).await?
+            }
+        }
+    };
+    for token in &removed {
+        drop_pending(st, tenant, token, "signed out: the session was revoked").await?;
+    }
+    if !removed.is_empty() {
+        tracing::info!(%tenant, phones = removed.len(), "push registrations removed: sessions revoked");
+    }
+    Ok(removed.len() as u64)
 }
 
 /// Queues `item` for every phone of `user_id` seen in the last [`STALE_DAYS`] days. Returns how many.
@@ -495,6 +553,16 @@ mod tests {
         assert!(valid_device("AbCdEfGhIjKlMnOpQrStUvWx"));
         assert!(!valid_device("short"));
         assert!(!valid_device("has spaces in it, sixteen+"));
+    }
+
+    #[test]
+    fn device_refs_match_the_gateway() {
+        // the same vector is asserted in services/gateway src/push_revoke.rs
+        assert_eq!(device_ref("AbCdEfGhIjKlMnOpQrStUvWx"), "e53524511f4ac4100ef53c6238fc293d65bd8f1cbfc63284d8007d9d669b06a1");
+        assert!(valid_device_ref(&device_ref("x")));
+        assert!(!valid_device_ref("E53524511F4AC4100EF53C6238FC293D65BD8F1CBFC63284D8007D9D669B06A1"));
+        assert!(!valid_device_ref("e5352451"));
+        assert!(!valid_device_ref(&"g".repeat(64)));
     }
 
     #[test]

@@ -47,6 +47,8 @@ impl TestDb {
             super_admin_email: String::new(),
             super_admin_password: String::new(),
             super_admin_name: String::new(),
+            support_url: String::new(),
+            support_token: String::new(),
         };
         let st = AppState { pool, keys: Keys::new(&cfg.session_secret), cfg: Arc::new(cfg), limiter: Default::default(), mailer: None };
         Some(Self { st, admin, name })

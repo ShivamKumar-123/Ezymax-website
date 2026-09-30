@@ -147,6 +147,22 @@ out on the phone: `POST /v1/push/tokens/delete` with the session, or, when the s
 push token and its installation id). One row per phone: a sign-in by someone else on the same phone moves the row, and
 pushes still queued for the previous client are dropped. At most 10 phones per client.
 
+Sessions revoked elsewhere end the phone's pushes too. The gateway keeps each session's app installation as a
+`device_ref` (hex SHA-256 of `kalks-push-device:<installation id>`, `push::device_ref`) and, after it revokes sessions
+(sign out other devices or one session, a password change or reset, a staff revoke, a sign-in block, an account
+closure, a suspended broker), calls the service route `POST /v1/push/tokens/revoke` from an outbox with retries
+(services/gateway `src/push_revoke.rs`):
+
+| Body | Removes |
+|---|---|
+| `{tenant, userId, devices: [device_ref…], before}` | the client's phones among those (sessions that ended; phones still signed in with another session are left out by the gateway) |
+| `{tenant, userId, all: true, before}` | every phone of the client (signed out everywhere) |
+| `{tenant, all: true, before}` | every phone of the broker's clients (suspended broker) |
+
+`before` (RFC 3339, capped at now) is when the sessions were revoked: only registrations older than that go, so a
+phone that signed in again since keeps its new one. Pushes still queued for a removed phone are dropped. Answers
+`{removed}`.
+
 `deliver` (every producer: `/v1/notify`, adapters, support replies, broadcasts) queues a push for each of the client's
 phones seen in the last 90 days when the in-app notification is on for the category and so is its `push` preference.
 `push` defaults to on for every category except News and offers (marketing pushes are opt-in, App Store guideline

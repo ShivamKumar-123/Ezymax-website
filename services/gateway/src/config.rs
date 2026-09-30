@@ -30,6 +30,10 @@ pub struct Config {
     pub super_admin_email: String,
     pub super_admin_password: String,
     pub super_admin_name: String,
+    /// Support service (services/support): the phones of revoked sessions stop receiving pushes (push_revoke.rs).
+    /// Empty URL = not told.
+    pub support_url: String,
+    pub support_token: String,
 }
 
 /// Masks the password in a connection URL (`postgres://user:secret@host` → `postgres://user:***@host`).
@@ -70,6 +74,8 @@ impl fmt::Debug for Config {
             .field("trade_url", &self.trade_url)
             .field("super_admin_email", &self.super_admin_email)
             .field("super_admin_password", &redact(&self.super_admin_password))
+            .field("support_url", &self.support_url)
+            .field("support_token", &redact(&self.support_token))
             .finish()
     }
 }
@@ -109,6 +115,8 @@ impl Config {
             super_admin_email: var("SUPER_ADMIN_EMAIL", "").to_lowercase(),
             super_admin_password: var("SUPER_ADMIN_PASSWORD", ""),
             super_admin_name: var("SUPER_ADMIN_NAME", "Kalks Admin"),
+            support_url: var("SUPPORT_URL", "http://127.0.0.1:8100").trim().trim_end_matches('/').to_string(),
+            support_token: var("SUPPORT_INTERNAL_TOKEN", "").trim().to_string(),
         })
     }
 }

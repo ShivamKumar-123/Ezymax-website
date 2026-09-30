@@ -49,6 +49,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/push/tokens", post(push::register))
         .route("/v1/push/tokens/delete", post(push::unregister))
         .route("/v1/push/tokens/forget", post(push::forget))
+        .route("/v1/push/tokens/revoke", post(push::revoked))
         // Back Office
         .route("/v1/support/admin/conversations", get(admin::conversations))
         .route("/v1/support/admin/conversations/{id}", get(admin::conversation))

@@ -359,12 +359,18 @@ pub async fn change_password(State(st): State<AppState>, ctx: Ctx, req: Result<J
         .execute(&st.pool)
         .await?;
     let revoked = if r.sign_out_others {
-        sqlx::query("UPDATE sessions SET revoked_at = now() WHERE subject_kind = 'user' AND subject_id = $1 AND id <> $2 AND revoked_at IS NULL")
-            .bind(s.subject_id)
-            .bind(s.session_id)
-            .execute(&st.pool)
-            .await?
-            .rows_affected()
+        let ended: Vec<Option<String>> = sqlx::query_scalar(
+            "UPDATE sessions SET revoked_at = now() WHERE subject_kind = 'user' AND subject_id = $1 AND id <> $2 AND revoked_at IS NULL
+             RETURNING CASE WHEN viewer_id IS NULL AND impersonator_id IS NULL THEN device_ref END",
+        )
+        .bind(s.subject_id)
+        .bind(s.session_id)
+        .fetch_all(&st.pool)
+        .await?;
+        let n = ended.len() as u64;
+        // the phones of the other sessions stop receiving pushes
+        crate::push_revoke::sessions_ended(&st.pool, s.tenant_id, s.subject_id, &ended.into_iter().flatten().collect::<Vec<_>>()).await;
+        n
     } else {
         0
     };

@@ -188,9 +188,10 @@ pub async fn create_session_as(st: &AppState, ctx: &Ctx, kind: Kind, tenant_id: 
     };
     let ttl = if viewer.is_some() { Duration::hours(VIEWER_SESSION_TTL_HOURS) } else { policy(kind).session_ttl };
     let expires_at = Utc::now() + ttl;
+    // device_ref: which app installation holds the session, so its phone's pushes can end with it (push_revoke.rs)
     sqlx::query(
-        "INSERT INTO sessions (tenant_id, subject_kind, subject_id, token_hash, ip, user_agent, expires_at, viewer_id, country)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+        "INSERT INTO sessions (tenant_id, subject_kind, subject_id, token_hash, ip, user_agent, expires_at, viewer_id, country, device_ref)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
     )
     .bind(tenant_id)
     .bind(kind.as_str())
@@ -201,6 +202,7 @@ pub async fn create_session_as(st: &AppState, ctx: &Ctx, kind: Kind, tenant_id: 
     .bind(expires_at)
     .bind(viewer)
     .bind(request_country())
+    .bind(ctx.device.as_deref().map(crate::push_revoke::device_ref))
     .execute(&st.pool)
     .await?;
     Ok(NewSession { token, expires_at })
@@ -332,12 +334,18 @@ pub async fn revoke_token(st: &AppState, token: &str, kind: Kind) -> ApiResult<O
     Ok(row.map(|r| (r.get("tenant_id"), r.get("subject_id"))))
 }
 
+/// Signs a client or staff member out everywhere. A client's phones stop receiving pushes too (push_revoke.rs).
 pub async fn revoke_all(pool: &PgPool, kind: Kind, subject_id: i64) -> ApiResult<()> {
     sqlx::query("UPDATE sessions SET revoked_at = now() WHERE subject_kind = $1 AND subject_id = $2 AND revoked_at IS NULL")
         .bind(kind.as_str())
         .bind(subject_id)
         .execute(pool)
         .await?;
+    if kind == Kind::User
+        && let Some(tenant_id) = sqlx::query_scalar::<_, i64>("SELECT tenant_id FROM users WHERE id = $1").bind(subject_id).fetch_optional(pool).await?
+    {
+        crate::push_revoke::client_signed_out(pool, tenant_id, subject_id).await;
+    }
     Ok(())
 }
 
