@@ -113,9 +113,9 @@ phone's system browser, with the app's own Google OAuth client.
   and email_verified. Then the gateway signs in, links the Google account, or starts the profile step (`/v1/auth/google`).
 - **A new person** completes the profile on `/google-profile`: country, phone, date of birth, terms and an optional
   partner code. This calls `POST /api/mobile/auth/google/complete`.
-- **For the sign-in / sign-up screens:** include `<GoogleSignIn />` (or `mode="signUp" referral={ref}`). It renders
-  nothing until the build has a client id for the platform. It is also hidden in Expo Go, whose bundle id Google
-  wouldn't accept.
+- **On the sign-in / sign-up screens:** `<GoogleSignIn />` sits above the email form (`mode="signUp"` with the
+  referral code on sign-up). It renders nothing until the build has a client id for the platform. It is also hidden
+  in Expo Go, whose bundle id Google wouldn't accept.
 
 ### Founder steps (Google)
 
@@ -155,8 +155,10 @@ phone's system browser, with the app's own Google OAuth client.
   `/portfolio/analytics` → Reports, `/social/copy` → My copies, `/social/investments` → PAMM › My investments,
   `/developer/webhooks` → Algo › API keys, `/academy/phase/<slug>` → the phase …, `links.ts`). Screens that only act
   (deploy, subscribe, invest, edit) are never link targets. Only the query parameters a screen reads survive
-  (`?symbol=`, `?login=&period=`, `?intent=` …). From a notification, `/trade?symbol=X` opens the Trade tab on X.
-- **Signed out:** a link to a signed-in screen shows sign-in first, then opens right after it.
+  (`?symbol=`, `?login=&period=`, `?intent=` …). `/trade?symbol=X` opens the Trade tab on X, from a notification and
+  from `kalks://trade?symbol=X` alike (`+native-intent` sets the Trade symbol).
+- **Signed out:** a link to a signed-in screen shows sign-in first, then opens right after it (through the same
+  resolver: a tab is switched to, a Trade link sets its symbol).
 - **Unknown paths** show "Nothing to open here" with a way Home.
 - **Google's OAuth redirect** is left to the auth session (the router ignores it).
 - **https links** of the app's own Client Area host are already mapped the same way (`+native-intent`). They start opening

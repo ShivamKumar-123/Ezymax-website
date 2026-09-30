@@ -1,6 +1,6 @@
 // Sign up: the Client Area's register fields (name, email, country, phone, date of birth, referral code,
 // password, terms, marketing consent) -> emailed code -> welcome. A partner link (kalks://sign-up?ref=CODE)
-// pre-fills the referral code. Google sign-up stays on the web for now (README › Phase 2).
+// pre-fills the referral code. "Sign up with Google" (src/features/platform/google) carries the same code.
 import * as React from "react";
 import { TextInput, View } from "react-native";
 import { BottomSheetFlatList } from "@gorhom/bottom-sheet";
@@ -9,6 +9,7 @@ import { CalendarDays, Check, ChevronDown, Gift, Lock, Mail, UserRound } from "l
 import { authPost, type OtpChallenge, type SessionAnswer } from "@/features/auth/api";
 import { COUNTRIES, maskDob } from "@/features/auth/countries";
 import { AuthScaffold, DevCodeHint, FooterLink, PasswordStrength, ResendLink } from "@/features/auth/parts";
+import { GoogleSignIn } from "@/features/platform/google/GoogleSignIn";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
@@ -129,6 +130,8 @@ export default function SignUp() {
       subtitle={t("auth.register.subtitle")}
       footer={<FooterLink lead={t("mobileAuth.signUp.haveAccount")} action={t("mobileAuth.signUp.signIn")} onPress={() => router.replace("/sign-in")} />}
     >
+      {/* "Sign up with Google" with the partner code (renders nothing without this build's Google client) */}
+      <GoogleSignIn mode="signUp" referral={form.referral_code.trim() || null} />
       <FormError message={err && !err.field ? err.message : null} />
       <View style={{ flexDirection: "row", gap: space[3] }}>
         <View style={{ flex: 1 }}>

@@ -20,6 +20,7 @@ import { useActiveLogin } from "@/session/activeAccount";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { Banner, EmptyState, IconButton, Mono, PressableScale, Screen, ScreenHeader, SkeletonRows, Text, toast, useBottomInset } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
+import { prefetchStatements } from "../reports/api";
 import { accountLabel } from "../trading/AccountSwitcher";
 import { useAccounts } from "../trading/accounts";
 import { cancelOrder, closePosition } from "../trading/actions";
@@ -35,6 +36,8 @@ type AccountView = { account: EngAccount; positions: EngPosition[]; orders: EngO
 
 const EMPTY_POS: EngPosition[] = [];
 const EMPTY_ORD: EngOrder[] = [];
+/** Press-in on the Statements button: the months of the account it opens on. */
+const warmStatements = () => prefetchStatements();
 
 export function PortfolioScreen() {
   const t = useT();
@@ -137,7 +140,7 @@ export function PortfolioScreen() {
       <ScreenHeader
         eyebrow={account ? accountLabel(t, account) : undefined}
         title={t("mobile.tab.portfolio")}
-        right={<IconButton accessibilityLabel={t("mobilePortfolio.statements")} icon={<FileText size={19} color={colors.text} />} onPress={() => router.push("/reports/statements")} />}
+        right={<IconButton accessibilityLabel={t("mobilePortfolio.statements")} icon={<FileText size={19} color={colors.text} />} onPress={() => router.push("/reports/statements")} onPressIn={warmStatements} />}
       />
       {summaryFallback ? <Summary currency={currency} fallback={summaryFallback} live={!viewer} /> : null}
       <View style={{ paddingHorizontal: GUTTER, gap: space[3], marginTop: space[4] }}>

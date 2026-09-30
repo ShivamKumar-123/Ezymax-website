@@ -6,6 +6,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Lock, Mail } from "lucide-react-native";
 import { authPost, type OtpChallenge, type SessionAnswer } from "@/features/auth/api";
 import { AuthScaffold, DevCodeHint, FooterLink, ResendLink } from "@/features/auth/parts";
+import { GoogleSignIn } from "@/features/platform/google/GoogleSignIn";
 import { useT } from "@/i18n";
 import type { ApiError } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
@@ -122,6 +123,8 @@ export default function SignIn() {
       footer={<FooterLink lead={t("mobileAuth.signIn.newHere")} action={t("mobileAuth.signIn.create")} onPress={() => router.push("/sign-up")} />}
     >
       {expired ? <Banner tone="info" title={t("mobile.state.sessionExpired")} /> : null}
+      {/* "Continue with Google" and its "or with email" divider (renders nothing without this build's Google client) */}
+      <GoogleSignIn />
       <FormError message={err && !err.field ? err.message : null} />
       <TextField
         label={t("auth.field.emailOrViewer")}

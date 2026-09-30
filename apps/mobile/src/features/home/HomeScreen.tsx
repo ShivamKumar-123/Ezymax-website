@@ -19,6 +19,7 @@ import { alpha } from "@/theme/alpha";
 import { colors, GUTTER, radius, space, type BlockColor } from "@/theme/tokens";
 import { serverOffset } from "../chart/data";
 import { setTradeSymbol } from "../trade/symbol";
+import { prefetchWallet } from "../wallet/api";
 import { AccountChip, AccountSheet } from "../trading/AccountSwitcher";
 import { useAccounts } from "../trading/accounts";
 import { useAccountLive } from "../trading/live";
@@ -133,9 +134,9 @@ export function HomeScreen() {
         {/* quick actions */}
         {!viewer ? (
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space[3] }}>
-            <Quick color="mint" icon={<ArrowDownLeft size={20} color={colors.ink} strokeWidth={2.2} />} label={t("mobileHome.quick.deposit")} onPress={() => router.push("/wallet/deposit")} />
-            <Quick color="periwinkle" icon={<ArrowUpRight size={20} color={colors.ink} strokeWidth={2.2} />} label={t("mobileHome.quick.withdraw")} onPress={() => router.push("/wallet/withdraw")} />
-            <Quick color="gold" icon={<ArrowLeftRight size={20} color={colors.ink} strokeWidth={2.2} />} label={t("mobileHome.quick.transfer")} onPress={() => router.push("/wallet/transfer")} />
+            <Quick color="mint" icon={<ArrowDownLeft size={20} color={colors.ink} strokeWidth={2.2} />} label={t("mobileHome.quick.deposit")} onPress={() => router.push("/wallet/deposit")} onPressIn={prefetchWallet.deposit} />
+            <Quick color="periwinkle" icon={<ArrowUpRight size={20} color={colors.ink} strokeWidth={2.2} />} label={t("mobileHome.quick.withdraw")} onPress={() => router.push("/wallet/withdraw")} onPressIn={prefetchWallet.withdraw} />
+            <Quick color="gold" icon={<ArrowLeftRight size={20} color={colors.ink} strokeWidth={2.2} />} label={t("mobileHome.quick.transfer")} onPress={() => router.push("/wallet/transfer")} onPressIn={prefetchWallet.transfer} />
             <Quick color="cream" icon={<CandlestickChart size={20} color={colors.ink} strokeWidth={2.2} />} label={t("mobileHome.quick.trade")} onPress={() => router.navigate("/trade")} />
           </View>
         ) : null}
@@ -264,9 +265,9 @@ function Stat({ label, value, currency }: { label: string; value: number | undef
 
 const QUICK_ICON_BG = alpha(colors.ink, 0.1);
 
-function Quick({ color, icon, label, onPress }: { color: BlockColor; icon: React.ReactNode; label: string; onPress: () => void }) {
+function Quick({ color, icon, label, onPress, onPressIn }: { color: BlockColor; icon: React.ReactNode; label: string; onPress: () => void; onPressIn?: () => void }) {
   return (
-    <ColorBlock color={color} padded={false} onPress={onPress} style={{ flexBasis: "47%", flexGrow: 1, height: 68, borderRadius: radius.lg, paddingHorizontal: space[3], flexDirection: "row", alignItems: "center", gap: 10 }} accessibilityRole="button" accessibilityLabel={label}>
+    <ColorBlock color={color} padded={false} onPress={onPress} onPressIn={onPressIn} style={{ flexBasis: "47%", flexGrow: 1, height: 68, borderRadius: radius.lg, paddingHorizontal: space[3], flexDirection: "row", alignItems: "center", gap: 10 }} accessibilityRole="button" accessibilityLabel={label}>
       <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: QUICK_ICON_BG, alignItems: "center", justifyContent: "center" }}>{icon}</View>
       {/* fits "Withdraw" on a 360 pt phone; longer words in other languages shrink a little instead of cutting */}
       <Text variant="headline" weight="700" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>

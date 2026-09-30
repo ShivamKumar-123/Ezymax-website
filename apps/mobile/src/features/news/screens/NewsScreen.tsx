@@ -15,10 +15,9 @@ import { haptic } from "@/lib/haptics";
 import { kv } from "@/lib/kv";
 import { useOnline } from "@/lib/net";
 import { invalidate, useQuery } from "@/lib/query";
-import { onSignOut } from "@/session";
 import { Button, Display, EmptyState, Pill, PressableScale, Screen, Text, useBottomInset, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
-import { activeFilters, cleanCurrency, cleanSymbol, fetchFeed, fetchOlder, keys, NO_FILTERS, prefetchRelated, primeStory, type Feed, type Importance, type NewsFilters, type NewsItem } from "../api";
+import { activeFilters, cleanCurrency, cleanSymbol, fetchFeed, fetchOlder, keys, NEWS_FILTERS_KEY as FILTERS_KEY, NO_FILTERS, prefetchRelated, primeStory, savedNewsFilters as savedFilters, type Feed, type Importance, type NewsFilters, type NewsItem } from "../api";
 import { BriefCard } from "../components/BriefCard";
 import { FilterButton, SectionTitle, TopBar } from "../components/chrome";
 import { HeroStory } from "../components/HeroStory";
@@ -26,25 +25,11 @@ import { NewsFiltersSheet } from "../components/NewsFiltersSheet";
 import { LoadError, StoryRowsSkeleton } from "../components/states";
 import { charsPerLine, linesOf, storyRowHeight, StoryRow } from "../components/StoryRow";
 
-const FILTERS_KEY = "kalks.news.filters";
-onSignOut(() => kv.remove(FILTERS_KEY));
-
 const IMPORTANCE: [Importance, MessageKey][] = [
   ["all", "mobileNews.importance.all"],
   ["important", "mobileNews.importance.important"],
   ["top", "mobileNews.importance.top"],
 ];
-
-function savedFilters(): NewsFilters {
-  const s = kv.getJSON<Partial<NewsFilters>>(FILTERS_KEY);
-  if (!s) return NO_FILTERS;
-  return {
-    importance: s.importance === "important" || s.importance === "top" ? s.importance : "all",
-    tone: s.tone === "bullish" || s.tone === "bearish" || s.tone === "neutral" ? s.tone : null,
-    currency: cleanCurrency(s.currency),
-    symbol: cleanSymbol(s.symbol),
-  };
-}
 
 const newest = (a: NewsItem, b: NewsItem) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt) || b.id - a.id;
 function mergeUnique(...lists: NewsItem[][]): NewsItem[] {

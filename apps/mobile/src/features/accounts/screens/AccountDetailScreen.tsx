@@ -15,6 +15,8 @@ import { setActiveLogin, useActiveLogin } from "@/session/activeAccount";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
 import { Banner, Button, EmptyState, IconButton, Skeleton, Text, toast, useBottomInset, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
+import { prefetchMonths } from "@/features/reports/api";
+import { prefetchWallet } from "@/features/wallet/api";
 import { LOGIN_RE, accountError, cachedAccount, refetchList, refillDemo, useAccountDetail, useReadOnly } from "../api";
 import { copyText } from "../components/Credentials";
 import { KindTag, Page, PageTitle, StatusTag, StackBar, Tag } from "../components/Chrome";
@@ -85,6 +87,7 @@ const DetailBody = React.memo(function DetailBody({ a, readOnly, active, restric
   const kind = live ? t("mobileAccounts.kind.live") : t("mobileAccounts.kind.demo");
   const transfer = () => router.push({ pathname: "/wallet/transfer", params: { to: String(a.login) } });
   const statement = () => router.push({ pathname: "/reports/statements", params: { login: String(a.login) } });
+  const warmStatement = () => prefetchMonths(a.login);
   return (
     <>
       <PageTitle eyebrow={t("mobileAccounts.detail.eyebrow", { kind, server: serverOf(a.type) })} title={`#${a.login}`}>
@@ -117,16 +120,16 @@ const DetailBody = React.memo(function DetailBody({ a, readOnly, active, restric
           ) : null}
           <View style={{ flexDirection: "row", gap: space[3] }}>
             {live ? (
-              <Button label={t("mobileAccounts.detail.transfer")} variant="secondary" size="md" full={false} style={HALF} icon={<ArrowLeftRight size={17} color={colors.text} />} onPress={transfer} />
+              <Button label={t("mobileAccounts.detail.transfer")} variant="secondary" size="md" full={false} style={HALF} icon={<ArrowLeftRight size={17} color={colors.text} />} onPress={transfer} onPressIn={prefetchWallet.transfer} />
             ) : (
               <Button label={t("mobileAccounts.detail.refill")} variant="secondary" size="md" full={false} style={HALF} icon={<RotateCcw size={17} color={colors.text} />} disabled={refillBlocked} loading={refilling} onPress={onRefill} testID="refill" />
             )}
-            <Button label={t("mobileAccounts.detail.statement")} variant="secondary" size="md" full={false} style={HALF} icon={<FileText size={17} color={colors.text} />} onPress={statement} />
+            <Button label={t("mobileAccounts.detail.statement")} variant="secondary" size="md" full={false} style={HALF} icon={<FileText size={17} color={colors.text} />} onPress={statement} onPressIn={warmStatement} />
           </View>
         </View>
       ) : (
         <View style={{ paddingHorizontal: GUTTER, marginTop: space[4] }}>
-          <Button label={t("mobileAccounts.detail.statement")} variant="secondary" size="md" icon={<FileText size={17} color={colors.text} />} onPress={statement} />
+          <Button label={t("mobileAccounts.detail.statement")} variant="secondary" size="md" icon={<FileText size={17} color={colors.text} />} onPress={statement} onPressIn={warmStatement} />
         </View>
       )}
 

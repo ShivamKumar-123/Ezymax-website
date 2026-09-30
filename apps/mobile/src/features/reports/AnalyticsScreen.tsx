@@ -19,7 +19,7 @@ import { useSession } from "@/session";
 import { useActiveLogin } from "@/session/activeAccount";
 import { Banner, Button, EmptyState, Pill, Skeleton, Text, type SheetRef } from "@/ui";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
-import { ACCOUNTS_KEY, allowsAll, analyticsKey, analyticsRange, ANALYTICS_STALE_MS, defaultScope, fetchAccounts, fetchAnalytics, isoDay, PERIOD_DAYS, PERIODS, prefetchAnalytics, prefetchMonths } from "./api";
+import { ACCOUNTS_KEY, allowsAll, analyticsKey, analyticsRange, ANALYTICS_STALE_MS, defaultScope, fetchAccounts, fetchAnalytics, isoDay, isPeriod, PERIOD_DAYS, PERIOD_PREF, PERIODS, prefetchAnalytics, prefetchMonths } from "./api";
 import { AccountCard, AccountSheet } from "./components/AccountPicker";
 import { Page, PageTitle, StackBar, useRefresh } from "./components/Chrome";
 import { BySession, ByHour, BySymbol, ByWeekday, LongShort } from "./components/analytics/Breakdowns";
@@ -30,11 +30,8 @@ import { PnlCalendar } from "./components/analytics/PnlCalendar";
 import { CURVE_H } from "./components/charts/layout";
 import type { Analytics, Period, ReportAccount, Scope } from "./types";
 
-const PERIOD_PREF = "kalks.reports.period";
 type Item = "hero" | "tiles" | "curve" | "calendar" | "symbol" | "weekday" | "hour" | "session" | "side" | "flow" | "charges" | "insights" | "empty" | "footer";
 const FULL: Item[] = ["hero", "tiles", "curve", "calendar", "symbol", "weekday", "hour", "session", "side", "flow", "charges", "insights", "footer"];
-
-const isPeriod = (v: unknown): v is Period => typeof v === "string" && (PERIODS as string[]).includes(v);
 
 export function AnalyticsScreen() {
   const t = useT();

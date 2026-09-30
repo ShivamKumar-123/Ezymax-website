@@ -2,7 +2,7 @@
 // list, the triggered history, and changes. Every change shows the server's answer; only a delete is shown at once
 // (and put back if the server refuses it).
 import { api, apiGet, apiPost, type ApiError } from "@/lib/api";
-import { getQueryData, setQueryData } from "@/lib/query";
+import { getQueryData, prefetch, setQueryData } from "@/lib/query";
 
 export type AlertCondition = "above" | "below" | "change_up" | "change_down";
 export type AlertBasis = "bid" | "ask";
@@ -66,6 +66,8 @@ export const ALERTS_KEY = "alerts/list";
 export const HISTORY_KEY = "alerts/history";
 
 export const fetchAlerts = () => apiGet<AlertList>("alerts");
+/** Press-in on a link to the alerts list (the More tab): the list opens on fresh data. */
+export const prefetchAlerts = () => prefetch(ALERTS_KEY, fetchAlerts, { persist: true, staleMs: 5_000 });
 export const fetchHistory = (before?: number) => apiGet<AlertHistory>(`alerts/history?limit=50${before ? `&before=${before}` : ""}`);
 
 const isLive = (s: AlertStatus) => s === "active" || s === "paused";

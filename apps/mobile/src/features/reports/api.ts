@@ -5,7 +5,10 @@
 // The BFF resolves the client from the bearer session and enforces ownership and view-only scopes; the service
 // answers 404 for accounts the client doesn't own. Periods are [from, to) in server days (YYYY-MM-DD).
 import { apiFile, apiGet } from "@/lib/api";
-import { prefetch } from "@/lib/query";
+import { kv } from "@/lib/kv";
+import { getQueryData, prefetch } from "@/lib/query";
+import { sessionStore } from "@/session";
+import { getActiveLogin } from "@/session/activeAccount";
 import type { Analytics, Months, Period, ReportAccount, Scope, StFormat, StOptions, StPeriod } from "./types";
 
 /** The app-wide accounts cache entry (same key and shape as the Accounts and Trade screens). */
@@ -131,3 +134,26 @@ export function defaultScope(accounts: ReportAccount[] | undefined, viewerAccoun
 
 /** "All live accounts" is for the account owner; a view-only login picks one of its shared accounts. */
 export const allowsAll = (viewerAccounts: number[] | null) => viewerAccounts === null;
+
+/* ------------------------------------------------------------------ */
+/* Warm-ups for links from other screens (More, Portfolio, Accounts)    */
+/* ------------------------------------------------------------------ */
+
+/** The reader's last Analytics period (kept on this phone). */
+export const PERIOD_PREF = "kalks.reports.period";
+export const isPeriod = (v: unknown): v is Period => typeof v === "string" && (PERIODS as string[]).includes(v);
+
+/** Press-in on a link to Statements: the months of the account it will open on (`login`, else its default). */
+export function prefetchStatements(login?: number) {
+  const accounts = getQueryData<{ accounts: ReportAccount[] }>(ACCOUNTS_KEY)?.accounts ?? [];
+  const a = pickStatementAccount(accounts, login ?? null, getActiveLogin());
+  if (a) prefetchMonths(a.login);
+}
+
+/** Press-in on a link to Analytics without a login: the scope and period the screen will open on. */
+export function prefetchDefaultAnalytics() {
+  const viewer = sessionStore.get().viewer;
+  const accounts = getQueryData<{ accounts: ReportAccount[] }>(ACCOUNTS_KEY)?.accounts;
+  const saved = kv.get(PERIOD_PREF);
+  prefetchAnalytics(defaultScope(accounts, viewer ? viewer.accounts.filter(Boolean).map(Number) : null, getActiveLogin()), isPeriod(saved) ? saved : "90D");
+}

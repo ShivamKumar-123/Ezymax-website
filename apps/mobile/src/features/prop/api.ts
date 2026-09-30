@@ -86,6 +86,12 @@ export function useReadOnly(): boolean {
   return viewer || staffReadOnly;
 }
 
+/** Warm Prop home (the plans and the client's challenges) from a link elsewhere (the More tab), on press-in. */
+export function prefetchHome() {
+  prefetch(PROP_KEY.plans, fetchPlans, { persist: true, staleMs: 5 * 60_000 });
+  prefetch(PROP_KEY.challenges, fetchChallenges, { persist: true, staleMs: 10_000 });
+}
+
 /** Warm a challenge before its dashboard opens (press-in on a card). */
 export function prefetchChallenge(id: number) {
   prefetch(PROP_KEY.challenge(id), () => fetchChallenge(id), { persist: true, staleMs: 3_000 });

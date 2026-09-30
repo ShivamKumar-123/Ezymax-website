@@ -7,6 +7,7 @@
 // Structural sharing: a poll that brings back the same stories / events keeps the previous objects, so the memoised
 // rows below the list skip their render (a refresh with nothing new re-renders nothing but the screen shell).
 import { api, apiGet, type ApiResult } from "@/lib/api";
+import { kv } from "@/lib/kv";
 import { getQueryData, prefetch, setQueryData } from "@/lib/query";
 import { onSignOut } from "@/session";
 
@@ -243,6 +244,34 @@ export function fetchCalendar(from: string | null) {
 }
 
 export const fetchNext = () => apiGet<NextEvent>("news/calendar/next?impact=3");
+
+/** The reader's News filters (kept on this phone, forgotten on sign-out; a filter from a link is never saved). */
+export const NEWS_FILTERS_KEY = "kalks.news.filters";
+onSignOut(() => kv.remove(NEWS_FILTERS_KEY));
+
+export function savedNewsFilters(): NewsFilters {
+  const s = kv.getJSON<Partial<NewsFilters>>(NEWS_FILTERS_KEY);
+  if (!s) return NO_FILTERS;
+  return {
+    importance: s.importance === "important" || s.importance === "top" ? s.importance : "all",
+    tone: s.tone === "bullish" || s.tone === "bearish" || s.tone === "neutral" ? s.tone : null,
+    currency: cleanCurrency(s.currency),
+    symbol: cleanSymbol(s.symbol),
+  };
+}
+
+/** Press-in on a link to News (the More tab): the brief and the first page for the reader's filters. */
+export function prefetchNews() {
+  prefetch(keys.brief, fetchBrief, { persist: true, staleMs: 10 * 60_000 });
+  const f = savedNewsFilters();
+  prefetch(keys.feed(f), fetchFeed(f), { persist: true, staleMs: 60_000 });
+}
+
+/** Press-in on a link to the calendar (the More tab): this week and the next high-impact event. */
+export function prefetchCalendar() {
+  prefetch(keys.calendar(null), fetchCalendar(null), { persist: true, staleMs: 60_000 });
+  prefetch(keys.next, fetchNext, { persist: true, staleMs: 60_000 });
+}
 export const fetchEvent = (id: number) => () => apiGet<CalDetail>(`news/calendar/${id}`);
 export const prefetchEvent = (id: number) => prefetch(keys.event(id), fetchEvent(id), { staleMs: 120_000 });
 

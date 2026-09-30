@@ -7,7 +7,7 @@
 // Renders only overlays; a price tick never re-renders it (only SoftAsk follows the route).
 import * as React from "react";
 import { AppState } from "react-native";
-import { router, usePathname, type Href } from "expo-router";
+import { router, usePathname } from "expo-router";
 import { invalidate } from "@/lib/query";
 import { onSignOut, sessionStore, useSession } from "@/session";
 import { watchAppState, useLocked, lockStore } from "./lock/state";
@@ -60,7 +60,8 @@ export const PlatformRoot = React.memo(function PlatformRoot() {
     watchAppState();
     // a link that arrived while signed out (this session started with a sign-in just now)
     const href = takePendingLink();
-    if (href) setTimeout(() => router.push(href as Href), 0);
+    // through the resolver: a tab is switched to (not pushed) and a Trade link sets its symbol
+    if (href) setTimeout(() => openResolved(resolve(href)), 0);
   }, []);
 
   // push registration now and whenever the app comes back (the permission may have changed in Settings)
@@ -79,6 +80,8 @@ export const PlatformRoot = React.memo(function PlatformRoot() {
       invalidate("platform:inbox");
       if (p.badge !== null) setUnread(p.badge);
       else invalidate("home/bell");
+      // a price alert fired: the alerts list and its history (src/features/alerts, keys "alerts/…") refresh now
+      if (p.type?.startsWith("alerts.")) invalidate("alerts/");
       // the inbox shows it in the list already; a locked app shows nothing
       if (!lockStore.get().locked && currentPath !== "/notifications") showPushBanner(p);
     });

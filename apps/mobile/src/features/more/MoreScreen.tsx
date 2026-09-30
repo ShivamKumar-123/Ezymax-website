@@ -1,6 +1,7 @@
 // The More tab: who is signed in (name, client ID, verification chip), the broker's restriction notices, the
 // verification call-to-action, and a grouped menu to every module of the app. Modules the broker switched off are
 // hidden (GET /api/mobile/menu, like the Client Area navigation); view-only logins see only what they were shared.
+// Every row warms its screen's data on press-in (each module's prefetch helper), so it opens on fresh content.
 import * as React from "react";
 import { View } from "react-native";
 import { useRouter, type Href } from "expo-router";
@@ -48,8 +49,18 @@ import { ChoiceSheet, ConfirmSheet } from "@/features/profile/components/sheets"
 import { clientId } from "@/features/profile/format";
 import { fetchKyc } from "@/features/profile/kyc/api";
 import { initials, kycBadge, useMeX, type KycBadge } from "@/features/profile/me";
+import { prefetchAcademy } from "@/features/academy/api";
 import { prefetchAi } from "@/features/ai/api";
+import { prefetchAlerts } from "@/features/alerts/api";
+import { prefetchHome as prefetchAlgo } from "@/features/algo/api";
+import { prefetchCalendar, prefetchNews } from "@/features/news/api";
+import { prefetchPartner } from "@/features/partner/api";
+import { prefetchHome as prefetchProp } from "@/features/prop/api";
+import { prefetchDefaultAnalytics, prefetchStatements } from "@/features/reports/api";
+import { prefetchRewards } from "@/features/rewards/api";
+import { prefetchSocial } from "@/features/social/prefetch";
 import { prefetchSupport } from "@/features/support/api";
+import { prefetchWallet } from "@/features/wallet/api";
 
 type Item = {
   key: string;
@@ -68,6 +79,10 @@ type Item = {
 type GroupDef = { key: string; label: MessageKey; items: Item[] };
 
 const warmKyc = () => prefetch(QK.kyc, fetchKyc, { persist: true, staleMs: 10_000 });
+const warmRewards = () => {
+  prefetchRewards.rewards();
+  prefetchRewards.contests();
+};
 
 const GROUPS: GroupDef[] = [
   {
@@ -75,36 +90,36 @@ const GROUPS: GroupDef[] = [
     label: "mobileProfile.more.group.trading",
     items: [
       { key: "accounts", icon: Layers, label: "mobileProfile.more.item.accounts", href: "/accounts", section: "accounts" },
-      { key: "wallet", icon: Wallet, label: "mobileProfile.more.item.wallet", href: "/wallet", module: "wallet", section: "wallet" },
-      { key: "statements", icon: FileText, label: "mobileProfile.more.item.statements", href: "/reports/statements", section: "history" },
-      { key: "analytics", icon: ChartColumn, label: "mobileProfile.more.item.analytics", href: "/reports/analytics", section: "history" },
+      { key: "wallet", icon: Wallet, label: "mobileProfile.more.item.wallet", href: "/wallet", module: "wallet", section: "wallet", prefetch: prefetchWallet.overview },
+      { key: "statements", icon: FileText, label: "mobileProfile.more.item.statements", href: "/reports/statements", section: "history", prefetch: () => prefetchStatements() },
+      { key: "analytics", icon: ChartColumn, label: "mobileProfile.more.item.analytics", href: "/reports/analytics", section: "history", prefetch: prefetchDefaultAnalytics },
     ],
   },
   {
     key: "social",
     label: "mobileProfile.more.group.social",
     items: [
-      { key: "copy", icon: Users, label: "mobileProfile.more.item.copy", hint: "mobileProfile.more.hint.copy", href: "/social", module: "copy_trading" },
-      { key: "pamm", icon: PiggyBank, label: "mobileProfile.more.item.pamm", hint: "mobileProfile.more.hint.pamm", href: "/social/pamm", module: "pamm" },
-      { key: "mam", icon: Briefcase, label: "mobileProfile.more.item.mam", hint: "mobileProfile.more.hint.mam", href: "/social/mam", module: "copy_trading" },
+      { key: "copy", icon: Users, label: "mobileProfile.more.item.copy", hint: "mobileProfile.more.hint.copy", href: "/social", module: "copy_trading", prefetch: prefetchSocial.hub },
+      { key: "pamm", icon: PiggyBank, label: "mobileProfile.more.item.pamm", hint: "mobileProfile.more.hint.pamm", href: "/social/pamm", module: "pamm", prefetch: prefetchSocial.pamm },
+      { key: "mam", icon: Briefcase, label: "mobileProfile.more.item.mam", hint: "mobileProfile.more.hint.mam", href: "/social/mam", module: "copy_trading", prefetch: prefetchSocial.mam },
     ],
   },
   {
     key: "earn",
     label: "mobileProfile.more.group.earn",
     items: [
-      { key: "prop", icon: Trophy, label: "mobileProfile.more.item.prop", hint: "mobileProfile.more.hint.prop", href: "/prop", module: "prop" },
-      { key: "partner", icon: Handshake, label: "mobileProfile.more.item.partner", hint: "mobileProfile.more.hint.partner", href: "/partner", module: "ib", section: "partner" },
-      { key: "rewards", icon: Gift, label: "mobileProfile.more.item.rewards", href: "/rewards", module: "rewards" },
+      { key: "prop", icon: Trophy, label: "mobileProfile.more.item.prop", hint: "mobileProfile.more.hint.prop", href: "/prop", module: "prop", prefetch: prefetchProp },
+      { key: "partner", icon: Handshake, label: "mobileProfile.more.item.partner", hint: "mobileProfile.more.hint.partner", href: "/partner", module: "ib", section: "partner", prefetch: prefetchPartner.dash },
+      { key: "rewards", icon: Gift, label: "mobileProfile.more.item.rewards", href: "/rewards", module: "rewards", prefetch: warmRewards },
     ],
   },
   {
     key: "learn",
     label: "mobileProfile.more.group.learn",
     items: [
-      { key: "academy", icon: GraduationCap, label: "mobileProfile.more.item.academy", href: "/academy", module: "academy" },
-      { key: "news", icon: Newspaper, label: "mobileProfile.more.item.news", href: "/news", section: "dashboard" },
-      { key: "calendar", icon: CalendarDays, label: "mobileProfile.more.item.calendar", href: "/calendar", section: "dashboard" },
+      { key: "academy", icon: GraduationCap, label: "mobileProfile.more.item.academy", href: "/academy", module: "academy", prefetch: prefetchAcademy.catalog },
+      { key: "news", icon: Newspaper, label: "mobileProfile.more.item.news", href: "/news", section: "dashboard", prefetch: prefetchNews },
+      { key: "calendar", icon: CalendarDays, label: "mobileProfile.more.item.calendar", href: "/calendar", section: "dashboard", prefetch: prefetchCalendar },
     ],
   },
   {
@@ -112,8 +127,8 @@ const GROUPS: GroupDef[] = [
     label: "mobileProfile.more.group.tools",
     items: [
       { key: "ai", icon: Bot, label: "mobileProfile.more.item.ai", hint: "mobileProfile.more.hint.ai", href: "/ai", module: "algo", prefetch: prefetchAi },
-      { key: "algo", icon: Workflow, label: "mobileProfile.more.item.algo", href: "/algo", module: "algo" },
-      { key: "alerts", icon: BellRing, label: "mobileProfile.more.item.alerts", href: "/alerts" },
+      { key: "algo", icon: Workflow, label: "mobileProfile.more.item.algo", href: "/algo", module: "algo", prefetch: prefetchAlgo },
+      { key: "alerts", icon: BellRing, label: "mobileProfile.more.item.alerts", href: "/alerts", prefetch: prefetchAlerts },
     ],
   },
   {
