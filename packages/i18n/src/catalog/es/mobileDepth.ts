@@ -67,7 +67,7 @@ const mobileDepth: NsMessages<"mobileDepth"> = {
   "alerts.history.empty.title": "Aún no se ha activado nada",
   "alerts.history.empty.body": "Las alertas activadas aparecen aquí con el precio que las hizo saltar.",
   "alerts.history.clear": "Borrar",
-  "alerts.history.clearTitle": "¿Borrar la lista de activadas?",
+  "alerts.history.clearTitle": "¿Borrar las activadas?",
   "alerts.history.clearBody": "Sus alertas se mantienen tal cual; solo se borra esta lista.",
   "alerts.history.price": "{basis} {price}",
   "alerts.history.pending": "Enviando…",

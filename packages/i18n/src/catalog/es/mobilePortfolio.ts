@@ -51,5 +51,43 @@ const mobilePortfolio: NsMessages<"mobilePortfolio"> = {
   "history.more": "Cargar más",
   "confirm.close": "¿Cerrar #{ticket}?",
   "confirm.closeBody": "{side} {volume} {symbol} a mercado.",
+
+  // Cabecera: la analítica de la cuenta (Informes)
+  analytics: "Analítica",
+
+  // Cerrar por (cuentas con cobertura; el botón y el título usan order.position.closeBy)
+  "closeBy.body": "Cierra esta posición contra una opuesta del mismo símbolo, al precio de apertura de la que elija. No se paga spread por el volumen compensado; el volumen sobrante sigue abierto.",
+  "closeBy.pick": "Posición opuesta",
+  "closeBy.summary": "Cierra {volume} lotes de cada una a {price}, el precio de apertura de #{ticket}.",
+  "closeBy.locks": "Resultado del volumen compensado",
+  "closeBy.gone": "Esta posición ya está cerrada.",
+
+  // Detalles de una operación cerrada (Historial)
+  "deal.position": "Posición",
+  "deal.reason": "Motivo",
+  "deal.closed": "Cerrada",
+  "reason.client": "Manual",
+  "reason.sl": "Stop loss",
+  "reason.tp": "Take profit",
+  "reason.stop_out": "Stop out",
+  "reason.close_by": "Cerrar por",
+  "reason.dealer": "Mesa de operaciones",
+  "reason.force": "Mesa de operaciones",
+  "reason.reversal": "Reversión",
+  "reason.price_correction": "Corrección de precio",
+  "reason.pending_fill": "Orden pendiente",
+  "action.share": "Compartir P&L",
+
+  // Compartir P&L: una imagen del resultado de una operación cerrada. {brand} es el nombre del bróker (p. ej. Kalks)
+  "share.title": "Compartir P&L",
+  "share.body": "Su resultado en una imagen, lista para publicar. Nunca muestra el balance, el número de cuenta ni el volumen.",
+  "share.action": "Compartir imagen",
+  "share.withCode": "Añadir mi código de referido {code}",
+  "share.result": "Resultado",
+  "share.footerCode": "Opere conmigo en {brand}",
+  "share.footer": "Opere en {brand}",
+  "share.failed": "No se pudo crear la imagen. Inténtelo de nuevo.",
+  "share.unavailable": "Compartir no está disponible en este dispositivo.",
+  "share.a11y": "Tarjeta de P&L: {symbol}, {side}, {result}, {date}",
 };
 export default mobilePortfolio;

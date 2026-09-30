@@ -4,7 +4,7 @@ import type { NsMessages } from "../../core";
 const mobileAuth: NsMessages<"mobileAuth"> = {
   eyebrow: "Kalks",
   "signIn.create": "Crear una cuenta",
-  "signIn.newHere": "¿Es nuevo en Kalks?",
+  "signIn.newHere": "¿Primera vez en Kalks?",
   "signUp.eyebrow": "Abra su cuenta",
   "signUp.haveAccount": "¿Ya tiene una cuenta?",
   "signUp.signIn": "Iniciar sesión",

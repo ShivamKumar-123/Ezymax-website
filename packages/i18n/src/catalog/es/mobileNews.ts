@@ -94,6 +94,6 @@ const mobileNews: NsMessages<"mobileNews"> = {
   "cal.eventTime.allDay": "{day} · todo el día",
   "cal.alertsAria": "Alertas de alto impacto",
   "cal.filtersAria": "Filtros del calendario",
-  "cal.dayAria": "{day}, {count} eventos",
+  "cal.dayAria": "{day}, eventos: {count}",
 };
 export default mobileNews;

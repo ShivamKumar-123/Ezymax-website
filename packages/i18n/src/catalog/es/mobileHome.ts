@@ -23,9 +23,22 @@ const mobileHome: NsMessages<"mobileHome"> = {
   "kyc.pendingBody": "Estamos revisando sus documentos. Recibirá una notificación cuando terminemos.",
   "kyc.action": "Continuar",
   "noAccount.title": "Abra su primera cuenta",
-  "noAccount.body": "Una cuenta demo con fondos virtuales está lista en segundos. Pase a real cuando esté listo.",
+  "noAccount.body": "Una cuenta demo con fondos virtuales está lista en segundos. Pase a real cuando quiera.",
   "noAccount.action": "Abrir una cuenta",
   "news.empty": "No hay titulares en este momento.",
   "a11y.bell": "Notificaciones, {count} sin leer",
+
+  // Explorar: un bloque de color por módulo (título en mayúsculas grandes, dos líneas cortas como máximo; pista en dos líneas)
+  "explore.title": "Explorar",
+  "explore.copy": "Copy trading",
+  "explore.copyHint": "Siga a traders con trayectoria",
+  "explore.prop": "Desafío prop",
+  "explore.propHint": "Consiga una cuenta financiada",
+  "explore.academy": "Academia",
+  "explore.academyHint": "Aprenda a operar paso a paso",
+  "explore.ai": "AI Trader",
+  "explore.aiHint": "Convierta una idea en estrategia",
+  "explore.invite": "Invite a amigos",
+  "explore.inviteHint": "Gane cuando operen",
 };
 export default mobileHome;

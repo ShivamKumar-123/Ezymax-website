@@ -133,7 +133,7 @@ const mobileRewards: NsMessages<"mobileRewards"> = {
   "tile.noPrizes": "Aún sin premios",
 
   // Concursos
-  "contests.stats": "Disputados {entered} · {finishes} puestos con premio",
+  "contests.stats": "Disputados: {entered} · con premio: {finishes}",
   "contests.past": "Concursos anteriores",
   "contests.showPast": "Ver los {count} anteriores",
   "contests.emptyTitle": "No hay concursos en este momento",
@@ -152,7 +152,7 @@ const mobileRewards: NsMessages<"mobileRewards"> = {
   "contest.yourRank": "Su puesto",
   "contest.prizes": "Premios",
   "contest.youAre": "Puesto #{rank}",
-  "contest.joined": "Está inscrito",
+  "contest.joined": "Ya participa",
   "contest.yourPrize": "Su premio",
   "contest.onTrack": "Premio previsto",
   "contest.yourEntry": "Su inscripción",
@@ -243,7 +243,7 @@ const mobileRewards: NsMessages<"mobileRewards"> = {
   "cashback.ends": "termina el {date}",
   "cashback.cap": "Límite mensual",
   "cashback.enrol": "Inscribirse",
-  "cashback.enrolled": "Inscrito en {name}",
+  "cashback.enrolled": "Se ha inscrito en {name}",
   "cashback.enrolledBody": "A partir de ahora recupera {amount} por cada lote válido.",
   "cashback.enrolFailed": "No se pudo realizar la inscripción",
   "cashback.paidOn": "Pagado el {date}",

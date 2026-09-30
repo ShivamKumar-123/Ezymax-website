@@ -10,7 +10,7 @@ const mobileAlgo: NsMessages<"mobileAlgo"> = {
   never: "nunca",
   // {n} días, compacto
   days: "{n} d",
-  lot: "lote",
+  lot: "lotes",
   // Tiempo que se mantuvo una operación: min = minutos, h = horas, d = días (compacto)
   "dur.m": "{m} min",
   "dur.h": "{h} h",
@@ -48,7 +48,7 @@ const mobileAlgo: NsMessages<"mobileAlgo"> = {
   "error.queueFull": "Ya tiene 3 backtests en cola o en ejecución. Espere a que termine uno.",
   "error.dailyLimit": "Ha alcanzado el límite de hoy de {n} backtests.",
   "error.ownListing": "No puede suscribirse a su propia estrategia.",
-  "error.subscribed": "Ya está suscrito a esta estrategia.",
+  "error.subscribed": "Ya tiene una suscripción a esta estrategia.",
   "error.cloneNotAllowed": "El autor no permite clonarla; cópiela en su cuenta en su lugar.",
   // {amount} en USDT
   "error.insufficientFunds": "El saldo de su billetera es inferior a {amount} USDT. Deposite USDT para suscribirse.",
@@ -99,7 +99,7 @@ const mobileAlgo: NsMessages<"mobileAlgo"> = {
   "home.newWithAi": "Nueva con IA",
   // (display)
   "home.backtests": "Backtests",
-  "home.backtestsSub": "Las últimas ejecuciones, de la más reciente a la más antigua",
+  "home.backtestsSub": "Las últimas ejecuciones, las más recientes primero",
   "home.emptyDeps": "Aún no se ha ejecutado nada. Abra una de sus estrategias abajo y despliéguela primero en una cuenta demo.",
   "home.emptyActive": "No hay nada en ejecución ahora. Las estrategias detenidas están en Todos.",
   "home.showAll": "Mostrar todo",
@@ -336,9 +336,9 @@ const mobileAlgo: NsMessages<"mobileAlgo"> = {
   "rules.window": "Horario de trading",
   "rules.limits": "Límites",
   "rules.none": "Ninguno",
-  "rules.lots": "{lots} lote",
+  "rules.lots": "{lots} lotes",
   "rules.riskPct": "{pct}% de riesgo por operación",
-  "rules.maxLots": "máx. {lots} lote",
+  "rules.maxLots": "máx. {lots} lotes",
   // puntos: mover el stop a la entrada + {o} tras {v} puntos de beneficio
   "rules.breakeven": "breakeven a {v} puntos (+{o})",
   "rules.allDay": "Las 24 horas",
@@ -432,7 +432,7 @@ const mobileAlgo: NsMessages<"mobileAlgo"> = {
   // {account} = "Demo 50000083"
   "deploy.confirm": "Desplegar en {account}",
   // (display)
-  "deploy.doneTitle": "En ejecución",
+  "deploy.doneTitle": "En marcha",
   "deploy.doneBody": "“{name}” v{version} se está ejecutando en {account}.",
   "deploy.warmup": "La primera barra cerrada de {tf} es de calentamiento; las órdenes pueden empezar desde la siguiente.",
   "deploy.open": "Abrir despliegue",
@@ -471,7 +471,7 @@ const mobileAlgo: NsMessages<"mobileAlgo"> = {
   "bt.sharpe": "Sharpe",
   "bt.sortino": "Sortino {v}",
   "bt.trades": "Operaciones",
-  "bt.longShort": "{long} largas · {short} cortas",
+  "bt.longShort": "Largas: {long} · cortas: {short}",
   "bt.expectancy": "Esperanza",
   "bt.perTrade": "por operación",
   // (display)
@@ -491,8 +491,8 @@ const mobileAlgo: NsMessages<"mobileAlgo"> = {
   "bt.statistics": "Estadísticas",
   // (display)
   "bt.tradeList": "Operaciones",
-  "bt.tradeListSub": "De la más reciente a la más antigua, netas de costes",
-  "bt.truncated": "Las primeras {n} operaciones, de la más reciente a la más antigua",
+  "bt.tradeListSub": "Las más recientes primero, netas de costes",
+  "bt.truncated": "Las primeras {n} operaciones, las más recientes primero",
   "bt.fAll": "Todas · {n}",
   "bt.fWins": "Ganadoras · {n}",
   "bt.fLosses": "Perdedoras · {n}",
@@ -502,7 +502,7 @@ const mobileAlgo: NsMessages<"mobileAlgo"> = {
   "bt.m1Bars": "Barras de minutos (intrabarra)",
   "bt.since": "desde {date}",
   "bt.signals": "Señales",
-  "bt.signalsValue": "{buy} compra · {sell} venta · {exits} salida",
+  "bt.signalsValue": "Compra: {buy} · venta: {sell} · salida: {exits}",
   "bt.skipped": "Omitidas: {reason}",
   "bt.model": "Modelo",
   "bt.group": "Tipo de cuenta",
@@ -780,7 +780,7 @@ const mobileAlgo: NsMessages<"mobileAlgo"> = {
   "keys.writes": "Órdenes",
   // (display)
   "keys.keys": "Claves API",
-  "keys.keysSub": "{n} activas · hasta 20",
+  "keys.keysSub": "Activas: {n} de un máximo de 20",
   "keys.none": "No hay claves API. Cree una en el Área de clientes web.",
   "keys.status.active": "Activa",
   "keys.status.revoked": "Revocada",
@@ -831,7 +831,7 @@ const mobileAlgo: NsMessages<"mobileAlgo"> = {
   "hooks.status.failed": "Fallida",
   "hooks.status.received": "Recibida",
   "hooks.status.rejected": "Rechazada",
-  "hooks.status.blocked": "Bloqueada (interruptor de emergencia)",
+  "hooks.status.blocked": "Bloqueada (interruptor)",
   // Resultado de una alerta en cada cuenta (valores del servidor)
   "hooks.result.filled": "ejecutada",
   "hooks.result.pending": "orden colocada",

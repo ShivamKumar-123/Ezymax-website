@@ -53,7 +53,7 @@ const mobilePartner: NsMessages<"mobilePartner"> = {
   "kpi.newThisMonth": "+{n} este mes",
   "kpi.funded": "{n} con depósito",
   "kpi.active": "Activos · {month}",
-  "kpi.neededFor": "{n} necesarios para {name}",
+  "kpi.neededFor": "Necesarios para {name}: {n}",
   "kpi.topLevel": "Nivel máximo",
   "kpi.lots": "Lotes · {month}",
   "kpi.lotsPrev": "{lots} en {month}",
@@ -147,7 +147,7 @@ const mobilePartner: NsMessages<"mobilePartner"> = {
   "nav.programmeSub": "Tabla de tarifas, niveles, CPA y su reembolso",
 
   // Líneas de comisión
-  "line.lots": "{lots} lote",
+  "line.lots": "{lots} lotes",
   "line.trade": "Operación",
   "kind.lot": "Comisión por lote",
   "kind.split": "Reparto sub-IB",
@@ -218,7 +218,7 @@ const mobilePartner: NsMessages<"mobilePartner"> = {
   // Clientes (red)
   "clients.referred": "Referidos",
   // la red en tres niveles: los clientes que refirió el socio y los que llegaron a través de sus sub-IB
-  "clients.directVia": "{direct} directos · {via} a través de sub-IB",
+  "clients.directVia": "Directos: {direct} · vía sub-IB: {via}",
   "clients.lotsMonthShort": "Lotes · {month}",
   "clients.earnedFrom": "Ganado",
   "clients.maskedTitle": "Solo iniciales y totales",
@@ -368,7 +368,7 @@ const mobilePartner: NsMessages<"mobilePartner"> = {
   "prog.class.stocks": "acciones",
   "prog.entryLevel": "Todos los socios empiezan aquí.",
   "prog.needs": "Requiere {clients} clientes activos y {lots} lotes de la red en un mes.",
-  "prog.rateNote": "Las cuentas cent cuentan 0.01 lote por lote.",
+  "prog.rateNote": "En las cuentas cent, cada lote cuenta como 0.01 lotes.",
   "prog.rebatesTitle": "Reembolso y reparto",
   "prog.rebatesSub": "Comparta su comisión con clientes y sub-IB",
   "prog.rebate": "Reembolso a sus clientes",

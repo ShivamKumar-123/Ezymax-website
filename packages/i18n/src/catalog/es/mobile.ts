@@ -17,7 +17,7 @@ const mobile: NsMessages<"mobile"> = {
   "onboarding.welcome.title": "Entre en los mercados",
   "onboarding.welcome.body": "Forex, metales, índices, energías, cripto y acciones en una sola cuenta, con financiación instantánea en USDT.",
   "onboarding.markets.title": "Cada tick, en vivo",
-  "onboarding.markets.body": "Precios bid y ask reales, sus propios gráficos y compra y venta con un solo toque, pensado para el móvil.",
+  "onboarding.markets.body": "Precios bid y ask reales, sus propios gráficos y compra y venta con un solo toque, todo pensado para el móvil.",
   "onboarding.security.title": "Todo bajo llave",
   "onboarding.security.body": "Códigos por correo en dispositivos nuevos, códigos de confirmación para los retiros y una bóveda segura para su sesión.",
   // Contador de diapositivas, p. ej. "1 de 3"

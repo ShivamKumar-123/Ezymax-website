@@ -296,7 +296,7 @@ const mobileAi: NsMessages<"mobileAi"> = {
   /* ---------------------------------------------------------------- */
   /* Chat de soporte (la mayoría de textos vienen de `support`)        */
   /* ---------------------------------------------------------------- */
-  "support.hero": "¿En qué podemos ayudarle?",
+  "support.hero": "¿Necesita ayuda?",
   "support.instant": "Kalks AI responde en segundos",
   "support.teamOnline": "Nuestro equipo está conectado",
   "support.teamAway": "Nuestro equipo responde aquí y por correo",
@@ -330,7 +330,7 @@ const mobileAi: NsMessages<"mobileAi"> = {
   "support.continue": "Continuar en el chat",
   // Notas del sistema en el chat (el servicio las escribe en inglés; estas son para los demás idiomas)
   "support.sys.queued": "Está en la cola. Un agente de soporte se unirá en breve.",
-  "support.sys.handover": "Le estamos conectando con un agente de soporte. Verá esta conversación, así que no tendrá que repetir nada.",
+  "support.sys.handover": "Le estamos conectando con un agente de soporte. El agente verá esta conversación, así que no tendrá que repetir nada.",
   // {name} es el nombre del agente
   "support.sys.join": "{name} se ha unido al chat",
   "support.sys.endedByYou": "Ha finalizado el chat",

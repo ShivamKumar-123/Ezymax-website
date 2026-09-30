@@ -109,7 +109,7 @@ const mobileProfile: NsMessages<"mobileProfile"> = {
   "profile.addressNone": "Se añade al verificar su identidad",
   "profile.phoneNone": "No añadido",
   "profile.rules.title": "Cómo cambiar sus datos",
-  "profile.rules.name": "Nombre y fecha de nacimiento: corríjalos durante la verificación. Una vez verificado, quedan vinculados a sus documentos y nuestro equipo solo los cambia con documentos nuevos.",
+  "profile.rules.name": "Nombre y fecha de nacimiento: corríjalos durante la verificación. Una vez verificada su identidad, quedan vinculados a sus documentos y nuestro equipo solo los cambia con documentos nuevos.",
   "profile.rules.phone": "Número de teléfono: solicítelo a nuestro equipo de soporte. Confirmamos el cambio por correo antes de aplicarlo.",
   "profile.rules.address": "Dirección: envíe un comprobante de domicilio de los últimos 3 meses que muestre la nueva dirección. Nuestro equipo la actualiza tras revisarlo.",
   "profile.rules.email": "Correo electrónico: escriba a soporte desde su dirección registrada. Verificamos la nueva dirección con un código.",
@@ -170,7 +170,7 @@ const mobileProfile: NsMessages<"mobileProfile"> = {
   "slot.pickFailed": "No se pudo abrir ese archivo. Pruebe con otro.",
 
   // Cámara
-  "camera.permissionTitle": "Permita el acceso a la cámara",
+  "camera.permissionTitle": "Acceso a la cámara",
   "camera.permissionBody": "La app usa la cámara solo para fotografiar sus documentos y hacer su selfie de verificación. También puede subir una foto o un archivo.",
   "camera.allow": "Permitir cámara",
   "camera.openSettings": "Abrir ajustes",
