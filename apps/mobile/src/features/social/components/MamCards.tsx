@@ -16,7 +16,7 @@ export const MANAGER_ROW = 124;
 
 /** A MAM programme: name and 1Y return, the manager and the allocation method with the state (Connect / Linked /
  *  Frozen), the fee terms in full, then max drawdown, linked accounts and the risk meter. */
-export const ManagerRow = React.memo(function ManagerRow({ m, linked, onPress }: { m: ManagerView; linked: boolean; onPress: (m: ManagerView) => void }) {
+export const ManagerRow = React.memo(function ManagerRow({ m, linked, onPress, onPressIn }: { m: ManagerView; linked: boolean; onPress: (m: ManagerView) => void; onPressIn?: (m: ManagerView) => void }) {
   const t = useT();
   const r1y = m.track?.return1y ?? 0;
   const who = [m.nickname, methodLabel(m.method, t)].filter(Boolean).join(" · ");
@@ -24,6 +24,7 @@ export const ManagerRow = React.memo(function ManagerRow({ m, linked, onPress }:
     <PressableScale
       testID={`mam-manager-${m.id}`}
       onPress={() => onPress(m)}
+      onPressIn={onPressIn ? () => onPressIn(m) : undefined}
       scaleTo={0.985}
       accessibilityLabel={`${m.name}, ${who}, ${mamFeesText(m, t)}`}
       style={{ height: MANAGER_ROW, marginHorizontal: GUTTER, flexDirection: "row", alignItems: "center", gap: space[3], borderBottomWidth: 1, borderBottomColor: colors.line }}
@@ -64,7 +65,7 @@ export const ManagerRow = React.memo(function ManagerRow({ m, linked, onPress }:
   );
 });
 
-export const LinkCard = React.memo(function LinkCard({ l, onOpen }: { l: LinkView; onOpen: (id: number) => void }) {
+export const LinkCard = React.memo(function LinkCard({ l, onOpen, onPressIn }: { l: LinkView; onOpen: (id: number) => void; onPressIn?: (id: number) => void }) {
   const t = useT();
   const fmt = useFormat();
   const active = l.status === "active";
@@ -78,6 +79,7 @@ export const LinkCard = React.memo(function LinkCard({ l, onOpen }: { l: LinkVie
       <PressableScale
         testID={`mam-link-${l.id}`}
         onPress={() => onOpen(l.id)}
+        onPressIn={onPressIn ? () => onPressIn(l.id) : undefined}
         scaleTo={0.985}
         accessibilityLabel={`${l.manager?.name ?? ""}, ${t("mobileSocial.mam.account", { login: l.login })}, ${status}`}
         style={{

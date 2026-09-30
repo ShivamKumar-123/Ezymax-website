@@ -65,16 +65,22 @@ export function MamScreen() {
   }, [links.data, managers.data, managers.error, all.length, active, ended]);
 
   const openLink = React.useCallback((id: number) => router.push(`/social/mam/links/${id}`), [router]);
+  // warmed on press-in: the managed account, or the programme's current terms (never cached on the device)
+  const warmLink = React.useCallback((id: number) => prefetch(keys.link(id), fetchers.link(id), { persist: true }), []);
   const onManager = React.useCallback(
     (m: ManagerView) => {
       const linkId = linkedTo.get(m.id);
-      if (linkId) router.push(`/social/mam/links/${linkId}`);
-      else {
-        prefetch(keys.manager(m.id), fetchers.manager(m.id), { staleMs: 0 });
-        router.push(`/social/mam/connect/${m.id}`);
-      }
+      router.push(linkId ? `/social/mam/links/${linkId}` : `/social/mam/connect/${m.id}`);
     },
     [linkedTo, router],
+  );
+  const warmManager = React.useCallback(
+    (m: ManagerView) => {
+      const linkId = linkedTo.get(m.id);
+      if (linkId) prefetch(keys.link(linkId), fetchers.link(linkId), { persist: true });
+      else prefetch(keys.manager(m.id), fetchers.manager(m.id), { staleMs: 0 });
+    },
+    [linkedTo],
   );
 
   const onRefresh = React.useCallback(async () => {
@@ -166,7 +172,7 @@ export function MamScreen() {
                 </Text>
               );
             case "link":
-              return <LinkCard l={item.l} onOpen={openLink} />;
+              return <LinkCard l={item.l} onOpen={openLink} onPressIn={warmLink} />;
             case "ended":
               return (
                 <Text variant="label" tone="tertiary" style={{ paddingHorizontal: GUTTER, paddingVertical: space[2] }}>
@@ -180,7 +186,7 @@ export function MamScreen() {
                 </View>
               );
             case "manager":
-              return <ManagerRow m={item.m} linked={linkedTo.has(item.m.id)} onPress={onManager} />;
+              return <ManagerRow m={item.m} linked={linkedTo.has(item.m.id)} onPress={onManager} onPressIn={warmManager} />;
             case "noProg":
               return <EmptyState illustration="partnerIb" title={t("mobileSocial.mam.noProgrammes")} body={t("mobileSocial.mam.noProgrammesText")} />;
             case "progLoading":
