@@ -621,3 +621,47 @@ async fn marketplace_one_subscription_one_charge() {
     assert!(mock.wallet_calls.load(SeqCst) > mock.transfers.lock().unwrap().len(), "replays reached the wallet and were not booked");
     teardown(&st).await;
 }
+
+#[tokio::test]
+async fn marketplace_renewal_retries_an_unconfirmed_payment() {
+    use std::sync::atomic::Ordering::SeqCst;
+    let Some((base, st, mock)) = setup_with(Some(std::time::Duration::from_millis(1000))).await else { return };
+    let c = C { base, http: reqwest::Client::new() };
+    let lid = paid_listing(&c, &st).await;
+    *mock.wallet_balance.lock().unwrap() = 10_000.0;
+    let (s, v) = c.user(3, M::POST, &format!("/v1/market/listings/{lid}/subscribe"), Some(json!({"mode": "copy", "login": 50000103}))).await;
+    assert_eq!(s, 200, "{v}");
+    let sub = v["id"].as_i64().unwrap();
+    let dep = v["deploymentId"].as_i64().unwrap();
+    let state = || {
+        let pool = st.pool.clone();
+        async move {
+            let (status, end): (String, chrono::DateTime<chrono::Utc>) = sqlx::query_as("SELECT status, period_end FROM subscriptions WHERE id = $1").bind(sub).fetch_one(&pool).await.unwrap();
+            let paid: i64 = sqlx::query_scalar("SELECT count(*) FROM subscription_payments WHERE subscription_id = $1 AND status = 'completed'").bind(sub).fetch_one(&pool).await.unwrap();
+            (status, end, paid)
+        }
+    };
+    let (_, end, _) = state().await;
+    let later = end + chrono::Duration::hours(1);
+
+    // the wallet books the renewal but its answer is lost: the copy keeps running and the period waits
+    mock.wallet_delay_ms.store(2500, SeqCst);
+    assert_eq!(algo::api::market::renew_due(&st, later).await, 1);
+    assert_eq!(state().await, ("active".to_string(), end, 1));
+    assert_eq!(debits(&mock, 3), 2, "the first period and the renewal, booked once each");
+    // next pass: the same transfer, answered this time (a replay, nothing booked again); the period moves on
+    mock.wallet_delay_ms.store(0, SeqCst);
+    assert_eq!(algo::api::market::renew_due(&st, later).await, 1);
+    assert_eq!(state().await, ("active".to_string(), end + chrono::Duration::days(30), 2));
+    assert_eq!(debits(&mock, 3), 2);
+    assert_eq!(algo::api::market::renew_due(&st, later).await, 0, "nothing due until the next period ends");
+
+    // a refused renewal still ends the copy
+    *mock.wallet_balance.lock().unwrap() = 0.0;
+    assert_eq!(algo::api::market::renew_due(&st, end + chrono::Duration::days(30) + chrono::Duration::hours(1)).await, 1);
+    let (status, _, paid) = state().await;
+    assert_eq!((status.as_str(), paid), ("past_due", 2));
+    let dep_status: String = sqlx::query_scalar("SELECT status FROM deployments WHERE id = $1").bind(dep).fetch_one(&st.pool).await.unwrap();
+    assert_eq!(dep_status, "stopped");
+    teardown(&st).await;
+}

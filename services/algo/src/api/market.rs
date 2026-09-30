@@ -662,8 +662,55 @@ pub async fn mine(State(st): State<AppState>, u: User) -> Res {
     Ok(Json(json!({"items": rows.iter().map(listing_view).collect::<Vec<_>>(), "earned": earn.get::<f64, _>("earned"), "platformFees": earn.get::<f64, _>("fees"), "payments": earn.get::<i64, _>("payments")})))
 }
 
-/// Renewal loop: charges due paid subscriptions, expires cancelled ones at the period end. Also the janitor that
-/// finishes interrupted subscription setups (every minute).
+/// How long past the period end a renewal payment the wallet didn't confirm is tried again (the copy keeps running
+/// meanwhile) before the subscription goes `past_due` like a refused one.
+const RENEWAL_GRACE_HOURS: i64 = 24;
+
+/// Renews due paid subscriptions (charges the new period) and expires cancelled ones at the period end, as of `now`.
+/// A renewal payment the wallet didn't confirm is tried again on the next pass with the same transfer (never a
+/// second one) for up to `RENEWAL_GRACE_HOURS`; a refused one sets `past_due` and stops the copy. Returns how many
+/// subscriptions were due.
+pub async fn renew_due(st: &AppState, now: DateTime<Utc>) -> usize {
+    let due = sqlx::query(
+        "SELECT s.id, s.tenant_id, s.user_id, s.auto_renew, s.period_end, s.deployment_id, s.request, l.price_monthly, l.author_user_id, l.title, l.status AS lstatus, s.listing_id
+         FROM subscriptions s JOIN listings l ON l.id = s.listing_id WHERE s.status = 'active' AND s.period_end IS NOT NULL AND s.period_end <= $1",
+    )
+    .bind(now)
+    .fetch_all(&st.pool)
+    .await
+    .unwrap_or_default();
+    for r in &due {
+        let (sub, tenant): (i64, String) = (r.get("id"), r.get("tenant_id"));
+        let renew = r.get::<bool, _>("auto_renew") && r.get::<String, _>("lstatus") == "approved";
+        let pe: DateTime<Utc> = r.get("period_end");
+        if renew {
+            // booked with the title the subscription was taken under: the same transfer on every try of a period
+            let req: Value = r.get("request");
+            let title = req.get("title").and_then(Value::as_str).map(str::to_string).unwrap_or_else(|| r.get("title"));
+            match charge(st, &tenant, sub, r.get("user_id"), r.get("author_user_id"), r.get("price_monthly"), pe, &title).await {
+                Ok(()) => {
+                    let _ = sqlx::query("UPDATE subscriptions SET period_start = $2, period_end = $3, price = $4 WHERE id = $1").bind(sub).bind(pe).bind(pe + chrono::Duration::days(30)).bind(r.get::<Decimal, _>("price_monthly")).execute(&st.pool).await;
+                    continue;
+                }
+                Err(e) if e.code() == Some("payment_pending") && now - pe < chrono::Duration::hours(RENEWAL_GRACE_HOURS) => {
+                    tracing::warn!(sub, "renewal payment not confirmed by the wallet; the same payment is tried again next pass");
+                    continue;
+                }
+                Err(_) => {}
+            }
+        }
+        let status = if renew { "past_due" } else { "expired" };
+        let _ = sqlx::query("UPDATE subscriptions SET status = $2 WHERE id = $1").bind(sub).bind(status).execute(&st.pool).await;
+        if let Some(d) = r.get::<Option<i64>, _>("deployment_id") {
+            let _ = crate::api::deployments::stop(st, d, "stopped", &format!("subscription {status}"), false).await;
+        }
+        let _ = sqlx::query("UPDATE listings SET subscribers = (SELECT count(*) FROM subscriptions WHERE listing_id = $1 AND status = 'active') WHERE id = $1").bind(r.get::<i64, _>("listing_id")).execute(&st.pool).await;
+    }
+    due.len()
+}
+
+/// Renewal loop (every 5 minutes, `renew_due`) and the janitor that finishes interrupted subscription setups (every
+/// minute, `finish_setups`).
 pub fn spawn_renewals(st: AppState) {
     let janitor = st.clone();
     tokio::spawn(async move {
@@ -677,26 +724,7 @@ pub fn spawn_renewals(st: AppState) {
     tokio::spawn(async move {
         loop {
             tokio::time::sleep(std::time::Duration::from_secs(300)).await;
-            let due = sqlx::query("SELECT s.id, s.tenant_id, s.user_id, s.auto_renew, s.period_end, s.deployment_id, l.price_monthly, l.author_user_id, l.title, l.status AS lstatus, s.listing_id FROM subscriptions s JOIN listings l ON l.id = s.listing_id WHERE s.status = 'active' AND s.period_end IS NOT NULL AND s.period_end <= now()")
-                .fetch_all(&st.pool)
-                .await
-                .unwrap_or_default();
-            for r in due {
-                let (sub, tenant): (i64, String) = (r.get("id"), r.get("tenant_id"));
-                let renew = r.get::<bool, _>("auto_renew") && r.get::<String, _>("lstatus") == "approved";
-                let pe: chrono::DateTime<chrono::Utc> = r.get("period_end");
-                let ok = renew && charge(&st, &tenant, sub, r.get("user_id"), r.get("author_user_id"), r.get("price_monthly"), pe, &r.get::<String, _>("title")).await.is_ok();
-                if ok {
-                    let _ = sqlx::query("UPDATE subscriptions SET period_start = $2, period_end = $3, price = $4 WHERE id = $1").bind(sub).bind(pe).bind(pe + chrono::Duration::days(30)).bind(r.get::<Decimal, _>("price_monthly")).execute(&st.pool).await;
-                } else {
-                    let status = if renew { "past_due" } else { "expired" };
-                    let _ = sqlx::query("UPDATE subscriptions SET status = $2 WHERE id = $1").bind(sub).bind(status).execute(&st.pool).await;
-                    if let Some(d) = r.get::<Option<i64>, _>("deployment_id") {
-                        let _ = crate::api::deployments::stop(&st, d, "stopped", &format!("subscription {status}"), false).await;
-                    }
-                    let _ = sqlx::query("UPDATE listings SET subscribers = (SELECT count(*) FROM subscriptions WHERE listing_id = $1 AND status = 'active') WHERE id = $1").bind(r.get::<i64, _>("listing_id")).execute(&st.pool).await;
-                }
-            }
+            renew_due(&st, Utc::now()).await;
         }
     });
 }
