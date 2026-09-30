@@ -219,5 +219,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "Laraskan penapis anda dan cuba lagi.",
   "export.done": "{file} dieksport",
   "export.doneDesc": "{count} baris · masa dalam GMT+3",
+  "st.preparing": "Menyediakan penyata anda…",
+  "st.downloadFailed": "Penyata tidak dapat dimuat turun",
 };
 export default portfolio;

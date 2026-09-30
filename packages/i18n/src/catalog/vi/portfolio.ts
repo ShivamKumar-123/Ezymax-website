@@ -219,5 +219,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "Hãy điều chỉnh bộ lọc và thử lại.",
   "export.done": "Đã xuất {file}",
   "export.doneDesc": "{count} dòng · thời gian theo GMT+3",
+  "st.preparing": "Đang chuẩn bị sao kê của bạn…",
+  "st.downloadFailed": "Không thể tải sao kê",
 };
 export default portfolio;

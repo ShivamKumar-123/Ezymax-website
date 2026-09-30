@@ -237,5 +237,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "Измените фильтры и повторите попытку.",
   "export.done": "{file} экспортирован",
   "export.doneDesc": "Строк: {count} · время в GMT+3",
+  "st.preparing": "Готовим вашу выписку…",
+  "st.downloadFailed": "Не удалось скачать выписку",
 };
 export default portfolio;

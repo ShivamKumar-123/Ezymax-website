@@ -219,5 +219,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "Rekebisha vichujio vyako kisha ujaribu tena.",
   "export.done": "{file} imehamishwa",
   "export.doneDesc": "Safu {count} · muda kwa GMT+3",
+  "st.preparing": "Tunaandaa taarifa yako…",
+  "st.downloadFailed": "Imeshindikana kupakua taarifa",
 };
 export default portfolio;

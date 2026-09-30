@@ -219,5 +219,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "فیلترها را تغییر دهید و دوباره تلاش کنید.",
   "export.done": "{file} خروجی گرفته شد",
   "export.doneDesc": "{count} ردیف · زمان‌ها به GMT+3",
+  "st.preparing": "در حال آماده‌سازی صورت‌حساب شما…",
+  "st.downloadFailed": "دانلود صورت‌حساب انجام نشد",
 };
 export default portfolio;

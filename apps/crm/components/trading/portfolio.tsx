@@ -160,14 +160,29 @@ function stUrl(login: number, from: string, to: string, f: StFormat, opts?: { op
   return `/api/reports/accounts/${login}/statement?${q}`;
 }
 
-function download(url: string, what: string) {
-  const a = document.createElement("a");
-  a.href = url;
-  a.rel = "noopener";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  toast.success(tr("portfolio.st.downloadStarted"), { description: what });
+/** Fetches the statement first, so a service error shows as a message instead of replacing the page with raw JSON. */
+async function download(url: string, what: string) {
+  const id = toast.loading(tr("portfolio.st.preparing"), { description: what });
+  try {
+    const r = await fetch(url, { credentials: "same-origin" });
+    if (!r.ok) {
+      const body = (await r.json().catch(() => null)) as { error?: { message?: string } } | null;
+      throw new Error(body?.error?.message || tr("common.errorRetry"));
+    }
+    const blob = await r.blob();
+    const name = /filename="?([^";]+)"?/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? "statement";
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 10_000);
+    toast.success(tr("portfolio.st.downloadStarted"), { id, description: what });
+  } catch (e) {
+    toast.error(tr("portfolio.st.downloadFailed"), { id, description: e instanceof Error ? e.message : undefined });
+  }
 }
 
 function Statements({ a }: { a: EngineAccount }) {
@@ -305,7 +320,7 @@ function Statements({ a }: { a: EngineAccount }) {
                 <Button
                   variant="ember"
                   disabled={!range}
-                  onClick={() => range && download(stUrl(a.login, range.from, range.to, format, { open: withOpen, charges: withCharges, deals: withDeals }), `#${a.login} · ${range.label} · ${ST_FORMATS[format].label}`)}
+                  onClick={() => range && void download(stUrl(a.login, range.from, range.to, format, { open: withOpen, charges: withCharges, deals: withDeals }), `#${a.login} · ${range.label} · ${ST_FORMATS[format].label}`)}
                 >
                   <Download /> {t("portfolio.st.download")}
                 </Button>
@@ -372,7 +387,7 @@ function Statements({ a }: { a: EngineAccount }) {
                   </div>
                   <div className="flex items-center gap-1.5 md:justify-end">
                     {(["pdf", "xlsx", "csv"] as const).map((f) => (
-                      <Button key={f} size="xs" variant="surface" onClick={() => download(stUrl(a.login, m.from, m.to, f), `#${a.login} · ${label} · ${ST_FORMATS[f].label}`)}>
+                      <Button key={f} size="xs" variant="surface" onClick={() => void download(stUrl(a.login, m.from, m.to, f), `#${a.login} · ${label} · ${ST_FORMATS[f].label}`)}>
                         {f === "pdf" && <Download />} {f === "xlsx" ? "XLSX" : f.toUpperCase()}
                       </Button>
                     ))}

@@ -218,5 +218,7 @@ const portfolio = {
   "export.nothingDesc": "Adjust your filters and try again.",
   "export.done": "{file} exported",
   "export.doneDesc": "{count} rows · times in GMT+3",
+  "st.preparing": "Preparing your statement…",
+  "st.downloadFailed": "Couldn't download the statement",
 };
 export default portfolio;

@@ -219,5 +219,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "Filtrelerinizi değiştirip tekrar deneyin.",
   "export.done": "{file} dışa aktarıldı",
   "export.doneDesc": "{count} satır · saatler GMT+3",
+  "st.preparing": "Hesap ekstreniz hazırlanıyor…",
+  "st.downloadFailed": "Hesap ekstresi indirilemedi",
 };
 export default portfolio;

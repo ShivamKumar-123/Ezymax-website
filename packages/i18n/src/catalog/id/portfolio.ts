@@ -219,5 +219,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "Sesuaikan filter Anda dan coba lagi.",
   "export.done": "{file} diekspor",
   "export.doneDesc": "{count} baris · waktu dalam GMT+3",
+  "st.preparing": "Menyiapkan laporan Anda…",
+  "st.downloadFailed": "Laporan tidak dapat diunduh",
 };
 export default portfolio;

@@ -219,5 +219,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "请调整筛选条件后重试。",
   "export.done": "已导出 {file}",
   "export.doneDesc": "{count} 行 · 时间为 GMT+3",
+  "st.preparing": "正在生成您的对账单…",
+  "st.downloadFailed": "无法下载对账单",
 };
 export default portfolio;

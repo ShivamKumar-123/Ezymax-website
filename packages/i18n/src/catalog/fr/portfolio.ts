@@ -219,5 +219,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "Ajustez vos filtres et réessayez.",
   "export.done": "{file} exporté",
   "export.doneDesc": "{count} lignes · heures en GMT+3",
+  "st.preparing": "Préparation de votre relevé…",
+  "st.downloadFailed": "Impossible de télécharger le relevé",
 };
 export default portfolio;

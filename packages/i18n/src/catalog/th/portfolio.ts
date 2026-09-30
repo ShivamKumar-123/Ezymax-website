@@ -219,5 +219,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "ปรับตัวกรองแล้วลองอีกครั้ง",
   "export.done": "ส่งออก {file} แล้ว",
   "export.doneDesc": "{count} แถว · เวลาเป็น GMT+3",
+  "st.preparing": "กำลังเตรียมรายการเดินบัญชีของคุณ…",
+  "st.downloadFailed": "ไม่สามารถดาวน์โหลดรายการเดินบัญชีได้",
 };
 export default portfolio;

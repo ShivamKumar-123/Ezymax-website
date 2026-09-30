@@ -219,5 +219,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "필터를 조정한 후 다시 시도하세요.",
   "export.done": "{file} 내보내기 완료",
   "export.doneDesc": "{count}행 · 시간은 GMT+3 기준",
+  "st.preparing": "거래 명세서를 준비하고 있습니다…",
+  "st.downloadFailed": "거래 명세서를 다운로드하지 못했습니다",
 };
 export default portfolio;

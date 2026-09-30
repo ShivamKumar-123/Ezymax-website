@@ -219,5 +219,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "உங்கள் வடிப்பான்களை மாற்றி மீண்டும் முயற்சிக்கவும்.",
   "export.done": "{file} ஏற்றுமதி செய்யப்பட்டது",
   "export.doneDesc": "{count} வரிசைகள் · நேரங்கள் GMT+3 இல்",
+  "st.preparing": "உங்கள் அறிக்கை தயாராகிறது…",
+  "st.downloadFailed": "அறிக்கையைப் பதிவிறக்க முடியவில்லை",
 };
 export default portfolio;

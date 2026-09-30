@@ -219,5 +219,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "اپنے فلٹرز تبدیل کریں اور دوبارہ کوشش کریں۔",
   "export.done": "{file} ایکسپورٹ ہو گئی",
   "export.doneDesc": "{count} قطاریں · اوقات GMT+3 میں",
+  "st.preparing": "آپ کا اسٹیٹمنٹ تیار ہو رہا ہے…",
+  "st.downloadFailed": "اسٹیٹمنٹ ڈاؤن لوڈ نہیں ہو سکا",
 };
 export default portfolio;

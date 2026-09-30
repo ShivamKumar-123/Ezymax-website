@@ -247,5 +247,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "عدّل عوامل التصفية وحاول مرة أخرى.",
   "export.done": "تم تصدير {file}",
   "export.doneDesc": "{count} صف · الأوقات بتوقيت GMT+3",
+  "st.preparing": "جارٍ تجهيز كشف الحساب…",
+  "st.downloadFailed": "تعذّر تنزيل كشف الحساب",
 };
 export default portfolio;

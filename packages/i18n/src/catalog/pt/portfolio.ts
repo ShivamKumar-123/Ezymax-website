@@ -219,5 +219,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "export.nothingDesc": "Ajuste os filtros e tente novamente.",
   "export.done": "{file} exportado",
   "export.doneDesc": "{count} linhas · horários em GMT+3",
+  "st.preparing": "Preparando seu extrato…",
+  "st.downloadFailed": "Não foi possível baixar o extrato",
 };
 export default portfolio;
