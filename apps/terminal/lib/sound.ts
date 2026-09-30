@@ -15,9 +15,19 @@ function tone(freq: number, start: number, dur: number, gain = 0.06) {
   o.stop(ctx.currentTime + start + dur + 0.02);
 }
 
-export function beep(kind: "fill" | "close" | "alert" | "error" = "fill") {
+type Kind = "fill" | "close" | "alert" | "error";
+
+/**
+ * Plays after the next paint: the first sound creates the AudioContext, which can block the main thread for
+ * tens to hundreds of milliseconds, and the fill toast / new position row must be on screen first.
+ */
+export function beep(kind: Kind = "fill") {
+  if (typeof window === "undefined") return;
+  requestAnimationFrame(() => setTimeout(() => play(kind), 0));
+}
+
+function play(kind: Kind) {
   try {
-    if (typeof window === "undefined") return;
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return;
     ctx ??= new AC();
