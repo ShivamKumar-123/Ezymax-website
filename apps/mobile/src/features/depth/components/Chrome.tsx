@@ -9,7 +9,10 @@ import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useLocale, useT } from "@/i18n";
 import { Display, IconButton, PressableScale, Text } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { blockColors, colors, GUTTER, radius, space, type BlockColor } from "@/theme/tokens";
+
+const WARN_BORDER = alpha(colors.gold, 0.35);
 
 export function Page({ bar, children }: { bar: React.ReactNode; children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
@@ -82,7 +85,7 @@ export type TagTone = BlockColor | "outline" | "muted" | "warn";
 export function Tag({ label, tone = "outline", style }: { label: string; tone?: TagTone; style?: StyleProp<ViewStyle> }) {
   const filled = tone in blockColors;
   const fg = filled ? colors.ink : tone === "muted" ? colors.text3 : tone === "warn" ? colors.gold : colors.text2;
-  const border = filled ? "transparent" : tone === "warn" ? "rgba(242,184,75,0.35)" : colors.lineStrong;
+  const border = filled ? "transparent" : tone === "warn" ? WARN_BORDER : colors.lineStrong;
   return (
     <View style={[{ height: 22, paddingHorizontal: 8, borderRadius: radius.pill, backgroundColor: filled ? blockColors[tone as BlockColor] : "transparent", borderWidth: filled ? 0 : 1, borderColor: border, justifyContent: "center", alignSelf: "flex-start" }, style]}>
       <Text variant="label" color={fg} numberOfLines={1} style={{ fontSize: 10, letterSpacing: 0.8 }}>

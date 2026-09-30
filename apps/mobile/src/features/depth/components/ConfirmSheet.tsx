@@ -1,6 +1,8 @@
 // Review sheet for a ladder order when one-tap trading is off: the tapped level (limit) or the live price (market),
 // lots, the margin it takes and one confirm button. The order goes through the same path as the Trade tab's ticket
 // (placeOrder → /api/mobile/trade/orders → engine); the engine decides, and a rejection is shown in words.
+// Idempotent like the ticket: one key per order, sent again after an answer that never arrived, so a second tap or a
+// retry can't open the trade twice.
 import * as React from "react";
 import { View } from "react-native";
 import { X } from "lucide-react-native";
@@ -10,7 +12,7 @@ import { feed } from "@/market/feed";
 import { instrument } from "@/market/instruments";
 import { Banner, Button, Display, Mono, PressableScale, PriceCell, Sheet, Text, useLiveQuote, type SheetRef } from "@/ui";
 import { colors, radius, space } from "@/theme/tokens";
-import { placeOrder } from "../../trading/actions";
+import { newClientOrderId, placeOrder } from "../../trading/actions";
 import { useTrade } from "../../trading/live";
 import { clampLots, marginFor, useSpec } from "../../trading/specs";
 import type { SymbolSpec } from "../../trading/types";
@@ -30,8 +32,9 @@ export const ConfirmSheet = React.forwardRef<ConfirmSheetHandle, { symbol: strin
       requestAnimationFrame(() => sheet.current?.present());
     },
   }));
+  // scrollable: with a refusal and the marketable-price warning the review can be taller than a small phone
   return (
-    <Sheet ref={sheet} onDismiss={() => setOrder(null)}>
+    <Sheet ref={sheet} scrollable onDismiss={() => setOrder(null)}>
       {order ? <Review key={key} symbol={symbol} order={order} onDone={() => sheet.current?.dismiss()} onVolume={onVolume} /> : null}
     </Sheet>
   );
@@ -51,26 +54,41 @@ function Review({ symbol, order, onDone, onVolume }: { symbol: string; order: Re
   const [volume, setVolume] = React.useState(order.volume);
   const [price, setPrice] = React.useState(order.price ?? 0);
   const [busy, setBusy] = React.useState(false);
-  const [err, setErr] = React.useState<string | null>(null);
+  const [err, setErr] = React.useState<{ title: string; body: string } | null>(null);
   const buy = order.side === "buy";
   const limit = order.type === "limit";
   const step = spec?.point ?? 1 / 10 ** digits;
   const lotStep = spec?.lotStep ?? 0.01;
+  // one idempotency key per order: kept for a retry after no answer, new as soon as the order changes
+  const cid = React.useRef(newClientOrderId());
+  React.useEffect(() => {
+    cid.current = newClientOrderId();
+  }, [volume, price]);
+  // a second tap before the button shows its spinner must not send again
+  const sending = React.useRef(false);
 
   async function submit() {
+    if (sending.current) return;
+    sending.current = true;
     setErr(null);
     setBusy(true);
+    const vol = clampLots(spec, volume);
     const q = feed.quote(symbol);
     const r = await placeOrder(
       limit
-        ? { symbol, side: order.side, type: "limit", volume, price }
-        : { symbol, side: order.side, type: "market", volume, requestedPrice: q ? (buy ? q.ask : q.bid) : undefined, deviationPoints: 50 },
+        ? { symbol, side: order.side, type: "limit", volume: vol, price: +price.toFixed(digits), clientOrderId: cid.current }
+        : { symbol, side: order.side, type: "market", volume: vol, requestedPrice: q ? (buy ? q.ask : q.bid) : undefined, deviationPoints: 50, clientOrderId: cid.current },
     );
+    sending.current = false;
     setBusy(false);
     if (r.ok) {
-      onVolume(volume);
+      onVolume(vol);
       onDone();
-    } else setErr(r.reason);
+      return;
+    }
+    // a clear answer: the next confirm is a new order; no answer: the same key again, so it can't fill twice
+    if (!r.uncertain) cid.current = newClientOrderId();
+    setErr({ title: r.title, body: r.uncertain ? `${r.body}\n${t("mobileTrade.reject.uncertain.ticket")}` : r.body });
   }
 
   const title = limit ? t(buy ? "order.dom.buyLimit" : "order.dom.sellLimit") : t(buy ? "common.buy" : "common.sell");
@@ -110,7 +128,7 @@ function Review({ symbol, order, onDone, onVolume }: { symbol: string; order: Re
 
       <Margin symbol={symbol} side={order.side} volume={volume} spec={spec} leverage={account?.leverage ?? 100} cent={account?.cent} currency={account?.currency ?? "USD"} />
 
-      {err ? <Banner tone="error" title={err} /> : null}
+      {err ? <Banner tone="error" title={err.title} body={err.body || undefined} /> : null}
 
       <ConfirmButton symbol={symbol} side={order.side} limit={limit} price={price} spec={spec} label={label} busy={busy} onPress={() => void submit()} />
     </View>

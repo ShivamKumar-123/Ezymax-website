@@ -26,6 +26,7 @@ const mobileDepth = {
   "confirm.wrongSide.sell": "This price is at or below the bid, so a sell limit would fill at once. Use Sell for a market order.",
   "busy": "Sending…",
   "loading": "Loading the ladder…",
+  "reconnectingBody": "Prices are reconnecting. The ladder comes back on its own.",
   "a11y.ladder": "Depth of market for {symbol}",
   "a11y.askLevel": "Ask level {n}: sell limit",
   "a11y.bidLevel": "Bid level {n}: buy limit",
@@ -72,6 +73,7 @@ const mobileDepth = {
   "alerts.delivery.action": "Settings",
   "alerts.limitReached": "You have {max} alerts, the most you can keep. Delete one to add another.",
   "alerts.unavailable": "Price alerts are unavailable right now. Please try again shortly.",
+  "alerts.staffReadOnly": "Read-only staff session: you can see the client's alerts but not change them.",
 
   // Alert sheet
   "basis.bid": "bid", // inside sentences: "Fires when the {basis} reaches…"

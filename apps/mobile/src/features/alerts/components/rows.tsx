@@ -51,7 +51,7 @@ function DeleteAction({ drag, onPress, label }: { drag: SharedValue<number>; onP
   const anim = useAnimatedStyle(() => ({ opacity: interpolate(-drag.value, [0, 40, 88], [0, 0.6, 1], "clamp"), transform: [{ scale: interpolate(-drag.value, [0, 88], [0.85, 1], "clamp") }] }));
   return (
     <Animated.View style={[{ width: 96, alignItems: "center", justifyContent: "center" }, anim]}>
-      <PressableScale onPress={onPress} haptics="tap" accessibilityLabel={label} style={{ width: 76, height: 56, borderRadius: radius.lg, backgroundColor: colors.ember, alignItems: "center", justifyContent: "center", gap: 2 }}>
+      <PressableScale onPress={onPress} accessibilityLabel={label} style={{ width: 76, height: 56, borderRadius: radius.lg, backgroundColor: colors.ember, alignItems: "center", justifyContent: "center", gap: 2 }}>
         <Trash2 size={18} color={colors.ink} strokeWidth={2.2} />
         <Text variant="label" color={colors.ink} style={{ fontSize: 10 }}>
           {label}
@@ -72,16 +72,12 @@ export const AlertRow = React.memo(function AlertRow({ a, readOnly, onOpen, onDe
   const cond = conditionText(t, a, digits);
   const extras = [a.repeat ? t("mobileDepth.alerts.row.repeat") : null, a.expiresAt && live ? t("mobileDepth.alerts.row.until", { date: fmt.date(a.expiresAt, { day: "numeric", month: "short" }) }) : null, a.triggerCount > 0 && a.repeat ? t("mobileDepth.alerts.row.fired", { count: a.triggerCount }) : null].filter(Boolean).join(" · ");
   const status = a.status === "paused" ? t("mobileDepth.alerts.status.paused") : a.status === "triggered" ? t("mobileDepth.alerts.status.triggered") : a.status === "expired" ? t("mobileDepth.alerts.status.expired") : null;
-  const row = (
-    <PressableScale
-      onPress={() => onOpen(a)}
-      scaleTo={0.99}
-      accessibilityLabel={[a.symbol, cond, status, extras].filter(Boolean).join(", ")}
-      accessibilityActions={readOnly ? undefined : [{ name: "delete", label: t("mobileDepth.alerts.swipe.delete") }]}
-      onAccessibilityAction={(e) => e.nativeEvent.actionName === "delete" && onDelete(a)}
-      testID={`alert-${a.id}`}
-      style={{ height: ALERT_ROW_H, paddingHorizontal: GUTTER, flexDirection: "row", alignItems: "center", gap: space[3], backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: colors.line }}
-    >
+  const label = [a.symbol, cond, status, extras].filter(Boolean).join(", ");
+  const style = { height: ALERT_ROW_H, paddingHorizontal: GUTTER, flexDirection: "row", alignItems: "center", gap: space[3], backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: colors.line } as const;
+  // read-only (staff session): a plain row, no press feedback that promises an editor. The same content either way
+  // (a component made inside render would be a new type each time and remount the live leaves).
+  const content = (
+    <>
       <View style={{ width: 4, height: 36, borderRadius: 2, backgroundColor: live ? (a.status === "paused" ? colors.surface3 : colors.gold) : colors.surface2 }} />
       <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
@@ -116,6 +112,23 @@ export const AlertRow = React.memo(function AlertRow({ a, readOnly, onOpen, onDe
           </>
         )}
       </View>
+    </>
+  );
+  const row = readOnly ? (
+    <View accessible accessibilityLabel={label} testID={`alert-${a.id}`} style={style}>
+      {content}
+    </View>
+  ) : (
+    <PressableScale
+      onPress={() => onOpen(a)}
+      scaleTo={0.99}
+      accessibilityLabel={label}
+      accessibilityActions={[{ name: "delete", label: t("mobileDepth.alerts.swipe.delete") }]}
+      onAccessibilityAction={(e) => e.nativeEvent.actionName === "delete" && onDelete(a)}
+      testID={`alert-${a.id}`}
+      style={style}
+    >
+      {content}
     </PressableScale>
   );
   if (readOnly) return row;

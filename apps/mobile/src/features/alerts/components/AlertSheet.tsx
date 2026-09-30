@@ -92,6 +92,8 @@ function Form({ mode, max, onDone }: { mode: Mode; max: number; onDone: () => vo
   const [expiry, setExpiry] = React.useState<ExpiryChoice>(edit?.expiresAt ? "keep" : "never");
   const [note, setNote] = React.useState(edit?.note ?? "");
   const [busy, setBusy] = React.useState<null | "save" | "toggle" | "delete">(null);
+  // taps before `busy` has rendered (a double tap) must not send twice: one request at a time
+  const sending = React.useRef(false);
   const [err, setErr] = React.useState<string | null>(null);
   const symbolSheet = React.useRef<SheetRef>(null);
 
@@ -129,13 +131,15 @@ function Form({ mode, max, onDone }: { mode: Mode; max: number; onDone: () => vo
   };
 
   async function save() {
-    if (check !== "ok" || busy) return;
+    if (check !== "ok" || busy || sending.current) return;
+    sending.current = true;
     setErr(null);
     setBusy("save");
     const body: AlertBody = { condition: cond, value, basis, repeat, note: note.trim(), group: feedStatus.get().group };
     const exp = expiryValue(expiry);
     if (exp !== undefined) body.expiresAt = exp;
     const r = edit ? await updateAlert(edit.id, finished ? { ...body, active: true } : body) : await createAlert({ ...body, symbol });
+    sending.current = false;
     setBusy(null);
     if (!r.ok) return fail(r.error);
     toast.show({ title: edit ? t("mobileDepth.toast.saved") : t("mobileDepth.toast.created", { symbol }), tone: "success" });
@@ -143,11 +147,14 @@ function Form({ mode, max, onDone }: { mode: Mode; max: number; onDone: () => vo
   }
 
   async function toggle() {
-    if (!edit || busy) return;
+    if (!edit || busy || sending.current) return;
+    sending.current = true;
     setErr(null);
     setBusy("toggle");
     const resume = edit.status === "paused";
-    const r = await updateAlert(edit.id, { active: resume, group: feedStatus.get().group });
+    // resuming re-arms on the active account's prices; pausing changes nothing else (a % alert keeps its reference)
+    const r = await updateAlert(edit.id, resume ? { active: true, group: feedStatus.get().group } : { active: false });
+    sending.current = false;
     setBusy(null);
     if (!r.ok) return fail(r.error);
     toast.show({ title: t(resume ? "mobileDepth.toast.resumed" : "mobileDepth.toast.paused") });
@@ -155,9 +162,11 @@ function Form({ mode, max, onDone }: { mode: Mode; max: number; onDone: () => vo
   }
 
   async function remove() {
-    if (!edit || busy) return;
+    if (!edit || busy || sending.current) return;
+    sending.current = true;
     setBusy("delete");
     const r = await deleteAlert(edit.id);
+    sending.current = false;
     setBusy(null);
     if (!r.ok && r.error.code !== "not_found") return fail(r.error);
     toast.show({ title: t("mobileDepth.toast.deleted") });

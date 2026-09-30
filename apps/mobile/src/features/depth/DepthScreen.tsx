@@ -15,11 +15,13 @@ import { useLocale, useT } from "@/i18n";
 import { fmtLots } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import { useOnline } from "@/lib/net";
-import { feed } from "@/market/feed";
+import { useStore } from "@/lib/store";
+import { feed, feedStatus, type FeedStatus } from "@/market/feed";
 import { instrument } from "@/market/instruments";
 import { useSession } from "@/session";
 import { RestrictionBanner } from "@/shell/RestrictionBanner";
-import { Banner, Display, EmptyState, IconButton, Mono, PressableScale, PriceCell, Skeleton, Text, toast, type SheetRef } from "@/ui";
+import { Banner, Display, EmptyState, IconButton, Mono, PressableScale, PriceCell, Skeleton, Text, toast, useBottomInset, type SheetRef } from "@/ui";
+import { alpha } from "@/theme/alpha";
 import { colors, GUTTER, radius, space } from "@/theme/tokens";
 import { placeOrder } from "../trading/actions";
 import { useAccounts } from "../trading/accounts";
@@ -36,6 +38,8 @@ import { setOneTap, useOneTap } from "./oneTap";
 import { useLadderVolume } from "./volume";
 
 const SYMBOL_RE = /^[A-Z0-9._]{2,20}$/;
+const PRESSED = alpha(colors.text, 0.08);
+const feedLiveOf = (s: { status: FeedStatus }) => s.status === "live";
 
 export function DepthScreen() {
   const t = useT();
@@ -46,6 +50,8 @@ export function DepthScreen() {
   const valid = SYMBOL_RE.test(symbol);
   const inst = instrument(symbol);
   const online = useOnline();
+  // the quote stream itself (the phone can be online while market-data is being reconnected)
+  const feedLive = useStore(feedStatus, feedLiveOf);
   const live = useDepthBook(valid ? symbol : "");
 
   // trading state (the server decides; these only shape the controls)
@@ -56,7 +62,8 @@ export function DepthScreen() {
   const account = useTrade((s) => s.account);
   const readOnly = useTrade((s) => s.readOnly);
   const orders = useTrade((s) => s.orders);
-  useSpecs();
+  // polled every minute like the Trade tab, so the market-closed state follows the trading session
+  useSpecs({ live: true });
   const spec = useSpec(symbol);
   const closed = !!spec && !spec.open;
   const blocked = readOnly || restricted.includes("trading") || restricted.includes("close_only") || !!account?.controls?.tradingDisabled || !!account?.controls?.closeOnly;
@@ -101,6 +108,7 @@ export function DepthScreen() {
       busyRef.current = true;
       setBusy(true);
       const q = feed.quote(symbol);
+      // every tap is a new order (its own idempotency key, placeOrder's default)
       const r = await placeOrder(
         o.type === "limit"
           ? { symbol, side: o.side, type: "limit", volume, price: o.price }
@@ -108,10 +116,14 @@ export function DepthScreen() {
       );
       busyRef.current = false;
       setBusy(false);
-      if (!r.ok) toast.show({ title: r.reason, tone: "error" }, 4000);
+      // the engine's reason with its hint; no answer: say it may have gone through (check before tapping again)
+      if (!r.ok) toast.show({ title: r.title, body: r.body || undefined, tone: "error" }, r.uncertain ? 7000 : 4000);
     },
     [canTrade, oneTap, volume, symbol, t],
   );
+  // the ladder's tap targets get one stable handler: a new volume or setting doesn't re-render the ladder
+  const sendRef = React.useRef(send);
+  sendRef.current = send;
 
   const onRow = React.useCallback(
     (r: number) => {
@@ -122,15 +134,24 @@ export function DepthScreen() {
       const lvl = ask ? d.asks[k] : d.bids[k];
       if (!lvl) return;
       haptic.select();
-      void send({ side: ask ? "sell" : "buy", type: "limit", price: lvl[0] });
+      void sendRef.current({ side: ask ? "sell" : "buy", type: "limit", price: lvl[0] });
     },
-    [live.latest, send],
+    [live.latest],
   );
 
   const pickSymbol = React.useCallback((s: string) => router.setParams({ symbol: s }), [router]);
   const onSell = React.useCallback(() => void send({ side: "sell", type: "market" }), [send]);
   const onBuy = React.useCallback(() => void send({ side: "buy", type: "market" }), [send]);
-  const onOneTap = React.useCallback((v: boolean) => (v ? oneTapSheet.current?.present() : setOneTap(false)), []);
+  const onOneTap = React.useCallback(
+    (v: boolean) => {
+      if (v) oneTapSheet.current?.present();
+      else {
+        setOneTap(false);
+        toast.show({ title: t("mobileDepth.oneTap.off") });
+      }
+    },
+    [t],
+  );
   const onOpenAccount = React.useCallback(() => router.push("/accounts/new"), [router]);
   const tradeState = React.useMemo(() => ({ viewer, noAccount, closed, blocked, readOnly }), [viewer, noAccount, closed, blocked, readOnly]);
 
@@ -141,7 +162,9 @@ export function DepthScreen() {
     />
   );
 
-  if (!valid || (live.silent && online && !live.src)) {
+  // no book for the symbol only when the quote stream is up and still sends nothing for it; a stream that is down
+  // or reconnecting is a connection state, not "depth unavailable"
+  if (!valid || (live.silent && online && feedLive && !live.src)) {
     return (
       <Page bar={bar}>
         <EmptyState illustration="market" title={t("order.dom.unavailable")} body={valid ? symbol : undefined} action={t("mobileTrade.pickSymbol")} onAction={() => symbolSheet.current?.present()} style={{ flex: 1, justifyContent: "center" }} />
@@ -149,10 +172,15 @@ export function DepthScreen() {
       </Page>
     );
   }
-  if (!online && !live.src) {
+  if (!live.src && (!online || (live.silent && !feedLive))) {
     return (
       <Page bar={bar}>
-        <EmptyState illustration="connectionLost" title={t("mobile.state.offline.title")} body={t("mobile.state.offline.body")} style={{ flex: 1, justifyContent: "center" }} />
+        <EmptyState
+          illustration="connectionLost"
+          title={online ? t("mobile.state.reconnecting") : t("mobile.state.offline.title")}
+          body={online ? t("mobileDepth.reconnectingBody") : t("mobile.state.offline.body")}
+          style={{ flex: 1, justifyContent: "center" }}
+        />
       </Page>
     );
   }
@@ -160,8 +188,8 @@ export function DepthScreen() {
   return (
     <Page bar={bar}>
       {/* symbol + source */}
-      <View style={{ paddingHorizontal: GUTTER, paddingBottom: space[3], flexDirection: "row", alignItems: "center", gap: space[3] }}>
-        <PressableScale onPress={() => symbolSheet.current?.present()} haptics="select" accessibilityLabel={t("mobileTrade.pickSymbol")} style={{ flexShrink: 1, minHeight: 44, justifyContent: "center" }}>
+      <View style={{ paddingHorizontal: GUTTER, paddingTop: space[2], paddingBottom: space[3], flexDirection: "row", alignItems: "center", gap: space[3] }}>
+        <PressableScale onPress={() => symbolSheet.current?.present()} haptics="select" accessibilityLabel={t("mobileTrade.pickSymbol")} style={{ flexShrink: 1, minHeight: 44, justifyContent: "center", alignItems: "flex-start" }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <Display size="lg" numberOfLines={1}>
               {symbol}
@@ -173,20 +201,32 @@ export function DepthScreen() {
           </Text>
         </PressableScale>
         <View style={{ flex: 1 }} />
-        {live.src ? <Tag label={live.src === "feed" ? t("mobileDepth.title") : t("order.dom.indicative")} tone={live.src === "feed" ? "mint" : "outline"} /> : null}
+        {/* a stale ladder says so while the quote stream reconnects (the phone-offline case has the app's banner) */}
+        {live.src && online && !feedLive ? (
+          <Tag label={t("mobile.state.reconnecting")} tone="warn" />
+        ) : live.src ? (
+          <Tag label={live.src === "feed" ? t("mobileDepth.title") : t("order.dom.indicative")} tone={live.src === "feed" ? "mint" : "outline"} />
+        ) : null}
       </View>
 
-      {/* column heads */}
+      {/* column heads: aligned with flex (start / centre / end), which follows the layout direction on every
+          platform; a physical textAlign is swapped by React Native under a native right-to-left layout */}
       <View style={{ flexDirection: "row", paddingHorizontal: GUTTER, height: 26, alignItems: "center", borderBottomWidth: 1, borderBottomColor: colors.line }}>
-        <Text variant="label" tone="tertiary" style={{ flex: 1, fontSize: 10 }}>
-          {t("order.dom.bidVol")}
-        </Text>
-        <Text variant="label" tone="tertiary" align="center" style={{ width: 118, fontSize: 10 }}>
-          {t("order.dom.price")}
-        </Text>
-        <Text variant="label" tone="tertiary" style={{ flex: 1, fontSize: 10, textAlign: rtl ? "left" : "right" }}>
-          {t("order.dom.askVol")}
-        </Text>
+        <View style={{ flex: 1, alignItems: "flex-start" }}>
+          <Text variant="label" tone="tertiary" numberOfLines={1} style={{ fontSize: 10 }}>
+            {t("order.dom.bidVol")}
+          </Text>
+        </View>
+        <View style={{ width: PRICE_W, alignItems: "center" }}>
+          <Text variant="label" tone="tertiary" numberOfLines={1} style={{ fontSize: 10 }}>
+            {t("order.dom.price")}
+          </Text>
+        </View>
+        <View style={{ flex: 1, alignItems: "flex-end" }}>
+          <Text variant="label" tone="tertiary" numberOfLines={1} style={{ fontSize: 10 }}>
+            {t("order.dom.askVol")}
+          </Text>
+        </View>
       </View>
 
       <LadderArea symbol={symbol} digits={inst.digits} rtl={rtl} live={live} mine={mine} canTrade={canTrade} onRow={onRow} />
@@ -241,7 +281,7 @@ const LadderArea = React.memo(function LadderArea({ symbol, digits, rtl, live, m
       {size.w > 0 && live.src ? (
         <ScrollView ref={scroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ height: LADDER_H }} testID="depth-ladder">
           <LadderLazy width={size.w} book={live.book} mine={mine} digits={digits} rtl={rtl} fallback={fallback} />
-          <SpreadWords width={size.w} rtl={rtl} />
+          <SpreadWords width={size.w} />
           <LadderTouch onRow={onRow} disabled={!canTrade} />
         </ScrollView>
       ) : (
@@ -251,20 +291,28 @@ const LadderArea = React.memo(function LadderArea({ symbol, digits, rtl, live, m
   );
 });
 
-/** The words of the spread row, over the canvas (its numbers are drawn in Skia beside them). Static. Placed with
- *  the same explicit mirroring as the canvas (which knows nothing of the layout direction). */
-const SpreadWords = React.memo(function SpreadWords({ width, rtl }: { width: number; rtl: boolean }) {
+/** The words of the spread row, over the canvas (its numbers are drawn in Skia beside them). Static. Laid out as a
+ *  row [start column | price column | end column] so they land on the side the canvas mirrors to in right-to-left
+ *  languages: a flex row flips with the layout direction on phones and on the web alike, whereas a physical left /
+ *  right is swapped by React Native under a native right-to-left layout (I18nManager) and a logical start / end is
+ *  not resolved by the web preview. "Spread" sits at the outer edge of the start column (its points are drawn at the
+ *  inner edge), "Mid" next to the price column on the end side. */
+const SpreadWords = React.memo(function SpreadWords({ width }: { width: number }) {
   const t = useT();
   const side = width / 2 - PRICE_W / 2;
-  const at = (x: number) => (rtl ? { right: x } : { left: x });
   return (
-    <View pointerEvents="none" style={{ position: "absolute", top: LEVELS * ROW_H, left: 0, right: 0, height: ROW_H }} importantForAccessibility="no-hide-descendants">
-      <Text variant="label" tone="tertiary" numberOfLines={1} style={{ position: "absolute", top: 15, maxWidth: side - 64, fontSize: 10, ...at(EDGE) }}>
-        {t("order.dom.spread")}
-      </Text>
-      <Text variant="label" tone="tertiary" numberOfLines={1} style={{ position: "absolute", top: 15, maxWidth: side - 20, fontSize: 10, ...at(side + PRICE_W + 10) }}>
-        {t("mobileDepth.mid")}
-      </Text>
+    <View pointerEvents="none" style={{ position: "absolute", top: LEVELS * ROW_H, left: 0, right: 0, height: ROW_H, flexDirection: "row", alignItems: "center" }} importantForAccessibility="no-hide-descendants">
+      <View style={{ width: side, flexDirection: "row", paddingHorizontal: EDGE }}>
+        <Text variant="label" tone="tertiary" numberOfLines={1} style={{ maxWidth: side - 64, fontSize: 10 }}>
+          {t("order.dom.spread")}
+        </Text>
+      </View>
+      <View style={{ width: PRICE_W }} />
+      <View style={{ width: side, flexDirection: "row", paddingHorizontal: 10 }}>
+        <Text variant="label" tone="tertiary" numberOfLines={1} style={{ maxWidth: side - 20, fontSize: 10 }}>
+          {t("mobileDepth.mid")}
+        </Text>
+      </View>
     </View>
   );
 });
@@ -286,7 +334,7 @@ const LadderTouch = React.memo(function LadderTouch({ onRow, disabled }: { onRow
             accessibilityState={{ disabled }}
             accessibilityLabel={r < LEVELS ? t("mobileDepth.a11y.askLevel", { n: LEVELS - r }) : t("mobileDepth.a11y.bidLevel", { n: r - LEVELS })}
             testID={`depth-row-${r}`}
-            style={({ pressed }) => ({ height: ROW_H, backgroundColor: pressed ? "rgba(245,239,227,0.08)" : "transparent" })}
+            style={({ pressed }) => ({ height: ROW_H, backgroundColor: pressed ? PRESSED : "transparent" })}
           />
         ),
       )}
@@ -333,6 +381,8 @@ const TradeBar = React.memo(function TradeBar(p: {
   onOpenAccount: () => void;
 }) {
   const t = useT();
+  // a stack screen without the tab bar: the bar clears the home indicator itself
+  const bottom = useBottomInset(false);
   const { viewer, noAccount, closed, blocked, readOnly } = p.state;
   const notice = viewer ? (
     <Banner tone="info" title={t("mobile.viewOnly")} body={t("mobile.viewOnlyBody")} />
@@ -347,7 +397,7 @@ const TradeBar = React.memo(function TradeBar(p: {
   ) : null;
   const trading = !viewer && !noAccount;
   return (
-    <View style={{ paddingHorizontal: GUTTER, paddingTop: space[3], paddingBottom: space[3], gap: space[3], borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.bg }}>
+    <View style={{ paddingHorizontal: GUTTER, paddingTop: space[3], paddingBottom: bottom, gap: space[3], borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.bg }}>
       {p.src ? (
         <Text variant="caption" tone="tertiary" numberOfLines={2}>
           {t(p.src === "feed" ? "mobileDepth.src.feedBody" : "mobileDepth.src.indicativeBody")}
@@ -404,10 +454,12 @@ const MarketButton = React.memo(function MarketButton({ side, symbol, digits, di
       testID={buy ? "depth-buy" : "depth-sell"}
       style={{ flex: 1, height: 68, borderRadius: radius.lg, backgroundColor: buy ? colors.up : colors.down, paddingHorizontal: space[3], justifyContent: "center", alignItems: buy ? "flex-end" : "flex-start" }}
     >
-      <Text variant="label" color={buy ? colors.ink : colors.text}>
+      {/* ink on both fills (light text on the palette's red is under 4.5:1), and no tick flash: a green / red flash
+          on a green / red button reads as a glitch (the Trade tab's Sell / Buy bar does the same) */}
+      <Text variant="label" color={colors.ink}>
         {t(buy ? "common.buy" : "common.sell")}
       </Text>
-      <PriceCell symbol={symbol} side={buy ? "ask" : "bid"} digits={digits} size={18} align={buy ? "right" : "left"} style={{ paddingHorizontal: 0, backgroundColor: "transparent" }} />
+      <PriceCell symbol={symbol} side={buy ? "ask" : "bid"} digits={digits} size={18} align={buy ? "right" : "left"} flash={false} color={colors.ink} style={{ paddingHorizontal: 0 }} />
     </PressableScale>
   );
 });

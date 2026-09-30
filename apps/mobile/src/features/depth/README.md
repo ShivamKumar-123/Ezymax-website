@@ -14,6 +14,7 @@ Strings live in the `mobileDepth` namespace, and the existing `order.dom.*` keys
   - `Ladder.tsx` records the whole ladder as one Skia picture on the UI thread: asks above, bids below, lots with bars, the client's own pending orders tagged on the nearest level, and the spread and mid.
   - A tick never re-renders React. Measured on the web build: 0 commits from the ladder, only the Sell / Buy price leaves; 60 fps idle and while scrolling.
   - The canvas draws only digits and Latin text; the spread row's words are React text laid over it.
+  - Right-to-left: the canvas mirrors itself (`rtl`). The React text on and above it (spread-row words, column heads) is placed with flex rows and cross-axis alignment only. Never a physical `left` / `right` / `textAlign` (React Native swaps those under a native right-to-left layout, `I18nManager`) nor an absolute `start` / `end` (the web preview resolves those left to right).
   - On the web, Skia loads after CanvasKit (`LadderLazy.web.tsx`), so layout constants live in `layout.ts`. Don't import `Ladder.tsx` statically.
 - **Trading**, the Kalks Trader rules:
   - tap a bid level → buy limit at that price;
@@ -21,12 +22,13 @@ Strings live in the `mobileDepth` namespace, and the existing `order.dom.*` keys
   - Sell / Buy → market order;
   - lots in between, remembered per symbol.
   - Orders go through `placeOrder` (`src/features/trading/actions`), the same path as the Trade tab's ticket, so every engine and BFF rule applies. A limit price that has turned marketable is flagged before sending (the engine's rule, stops level included).
+  - The review sheet is idempotent like the ticket: one `clientOrderId` per order, sent again after an answer that never arrived (the engine answers "duplicate", toast "Already placed"), a new one once the price or lots change. A refusal shows the engine's reason with its hint; no answer says the order may have gone through.
 - **One-tap trading** (`oneTap.ts`) is a setting on this phone, off by default and reset on sign-out:
   - off: every tap opens a review sheet (`components/ConfirmSheet.tsx`);
   - on: the order is sent at once, one at a time;
   - turning it on goes through an explanation sheet (`components/OneTapSheet.tsx`).
   - Other trading screens can read the same setting (`useOneTap`).
-- **States.** Skeleton ladder until the first book, "depth unavailable" when the service has no price for the symbol, offline, and view-only / no account / read-only / restricted / market closed (the controls are disabled; the server refuses anyway).
+- **States.** Skeleton ladder until the first book, "depth unavailable" when the quote stream is up but has no price for the symbol, reconnecting (the stream is down while the phone is online; a ladder already on screen gets a Reconnecting tag instead of the source tag), offline, and view-only / no account / read-only / restricted / market closed (specs polled every minute; the controls are disabled; the server refuses anyway).
 
 ## Price alerts (`/alerts`)
 
@@ -37,9 +39,9 @@ Strings live in the `mobileDepth` namespace, and the existing `order.dom.*` keys
 - **Screen.**
   - The list (FlashList, fixed-height memo rows) shows the live price and the distance to the trigger as leaf subscribers. Swipe to delete (Delete is also an accessibility action); tap to edit.
   - The Triggered tab shows the history with delivery status, paging and Clear (with a confirmation).
-  - Both lists open on cached data and refresh; pull to refresh; the list polls every 30 s while open.
+  - Both lists open on cached data and refresh; pull to refresh. A trigger shows at once: its `alerts.price` notification arrives over the app's realtime socket (`supportStream`, as in the notifications inbox) and refreshes both lists; otherwise the list polls every 30 s while the screen is in front.
 - **Sheet** (`components/AlertSheet.tsx`):
   - the symbol picker and the live price it will be judged on;
   - the condition, and the level or % with quick picks;
   - the level is checked against the live price as you type, with a one-line "what will fire" hint. The server checks again (`level_reached`, `limit`, `no_price`).
-- View-only logins don't see the owner's alerts (the BFF refuses them too).
+- View-only logins don't see the owner's alerts (the BFF refuses them too). A read-only staff session sees the list with a notice and no New alert, edit, delete or Clear (the proxy refuses its writes too).

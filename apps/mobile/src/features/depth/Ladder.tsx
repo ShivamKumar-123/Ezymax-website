@@ -6,6 +6,7 @@
 import * as React from "react";
 import { Canvas, Picture, Skia, createPicture, useFont } from "@shopify/react-native-skia";
 import { useDerivedValue, type SharedValue } from "react-native-reanimated";
+import { alpha } from "@/theme/alpha";
 import { colors } from "@/theme/tokens";
 import { LEVELS } from "./book";
 import { EDGE, LADDER_H, PRICE_W, ROW_H, ROWS } from "./layout";
@@ -16,6 +17,9 @@ const MONO = require("@expo-google-fonts/jetbrains-mono/400Regular/JetBrainsMono
 /** Own pending orders by kind (buy limit, sell limit, buy stop, sell stop): Latin, like MT5, so the mono face can draw
  *  them in every language. */
 const TAGS = ["BL", "SL", "BS", "SS"];
+/** Lots bars: the side's money colour, faint (tokens, so they follow the palette). */
+const ASK_BAR = alpha(colors.down, 0.2);
+const BID_BAR = alpha(colors.up, 0.2);
 
 export type LadderProps = {
   width: number;
@@ -56,8 +60,8 @@ export function Ladder({ width, book, mine, digits, rtl }: LadderProps) {
           const bidText = paint(colors.up);
           const sizeText = paint(colors.text2);
           const dim = paint(colors.text3);
-          const askBar = paint("rgba(240,82,82,0.2)");
-          const bidBar = paint("rgba(52,199,123,0.2)");
+          const askBar = paint(ASK_BAR);
+          const bidBar = paint(BID_BAR);
           const best = paint(colors.surface);
           const line = paint(colors.line);
           const spreadBg = paint(colors.bgRaised);
