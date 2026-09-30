@@ -14,7 +14,8 @@
     "./catalog/*": "./src/catalog/*.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check": "node scripts/check-parity.mjs"
   },
   "peerDependencies": {
     "next": "^16",
