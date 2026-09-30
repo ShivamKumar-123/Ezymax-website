@@ -1,0 +1,111 @@
+import type { NsMessages } from "../../core";
+
+// Kalks mobile app: notifications inbox, push notifications, app lock, "Continue with Google" and links that open the app.
+// Brand and product names stay as they are: Kalks, Face ID, Touch ID, Google.
+const mobilePlatform: NsMessages<"mobilePlatform"> = {
+  // Notifications inbox (/notifications)
+  "inbox.eyebrow": "இன்பாக்ஸ்",
+  "inbox.unread": { one: "{count} படிக்காதது", other: "{count} படிக்காதவை" },
+  "inbox.caughtUp": "அனைத்தும் படிக்கப்பட்டன",
+  "inbox.filter.unread": "படிக்காதவை",
+  "inbox.markedAll": "அனைத்தும் படித்ததாகக் குறிக்கப்பட்டன",
+  "inbox.emptyUnread.title": "அனைத்தும் படிக்கப்பட்டன",
+  "inbox.emptyUnread.body": "ஒவ்வொரு அறிவிப்பையும் படித்துவிட்டீர்கள். புதியவை வரும்போது இங்கே தோன்றும்.",
+  "inbox.loadMoreFailed": "பழைய அறிவிப்புகளை ஏற்ற முடியவில்லை. மீண்டும் முயலத் தட்டவும்.",
+  "inbox.offlineCached": "நீங்கள் ஆஃப்லைனில் உள்ளீர்கள். இவை இந்த ஃபோனில் சேமிக்கப்பட்ட அறிவிப்புகள்.",
+  "inbox.a11y.unread": "படிக்காதது",
+  "inbox.a11y.settings": "அறிவிப்பு அமைப்புகள்",
+  // Detail sheet of a notification without a screen to open
+  "inbox.detail.openWeb": "இணைப்பைத் திற",
+  "inbox.detail.received": "பெறப்பட்டது: {time}",
+
+  // Asking for push permission: a sheet on Home and a card in the inbox
+  "push.ask.eyebrow": "அறிவிப்புகள்",
+  "push.ask.title": "நடக்கும் தருணமே தெரிந்துகொள்ளுங்கள்",
+  "push.ask.body": "வரவு வைக்கப்பட்ட டெபாசிட்கள், அனுப்பப்பட்ட பணம் எடுத்தல்கள், மார்ஜின் கால்கள், ஸ்டாப் அவுட்கள் மற்றும் உதவிக் குழுவின் பதில்கள், நேரடியாக உங்கள் பூட்டுத் திரைக்கு.",
+  "push.ask.point.money": "டெபாசிட்கள் மற்றும் பணம் எடுத்தல்கள்",
+  "push.ask.point.risk": "மார்ஜின் கால்கள் மற்றும் ஸ்டாப் அவுட்கள்",
+  "push.ask.point.support": "உதவிக் குழுவின் பதில்கள்",
+  "push.ask.allow": "அறிவிப்புகளை இயக்கு",
+  "push.ask.later": "இப்போது வேண்டாம்",
+  "push.ask.note": "தலைப்புகளை சுயவிவரம் › அறிவிப்புகள் பகுதியில் தேர்வுசெய்யலாம். நீங்கள் இயக்கினால் மட்டுமே சலுகைகள் அனுப்பப்படும்.",
+  // The sample notification drawn in the ask, as it would look on the lock screen
+  "push.ask.now": "இப்போது",
+  "push.ask.sampleTitle": "டெபாசிட் வரவு வைக்கப்பட்டது",
+  "push.ask.sampleBody": "250.00 USDT உங்கள் வாலட்டில் வரவு வைக்கப்பட்டது.",
+  "push.card.title": "புஷ் அறிவிப்புகளை இயக்குங்கள்",
+  "push.card.body": "டெபாசிட்கள், நிறைவேற்றங்கள் மற்றும் மார்ஜின் கால்களை உங்கள் பூட்டுத் திரையில் பெறுங்கள்.",
+  "push.card.action": "இயக்கு",
+  "push.card.deniedTitle": "புஷ் அறிவிப்புகள் முடக்கத்தில் உள்ளன",
+  "push.card.deniedBody": "உங்கள் பூட்டுத் திரையில் அறிவிப்புகளைப் பெற, ஃபோன் அமைப்புகளில் Kalks க்கு அறிவிப்புகளை அனுமதியுங்கள்.",
+  "push.card.deniedAction": "அமைப்புகளைத் திற",
+  "push.card.dismiss": "மறை",
+  "push.enabled": "புஷ் அறிவிப்புகள் இயக்கத்தில் உள்ளன",
+  // Android notification channels (shown in the phone's settings for the app)
+  "push.channel.alerts": "மார்ஜின் கால்கள் மற்றும் பாதுகாப்பு",
+  "push.channel.alertsHint": "மார்ஜின் கால் மற்றும் ஸ்டாப் அவுட் எச்சரிக்கைகள், உங்கள் விலை அலர்ட்கள், புதிய உள்நுழைவுகள்",
+  "push.channel.activity": "கணக்குச் செயல்பாடு",
+  "push.channel.activityHint": "டெபாசிட்கள், பணம் எடுத்தல்கள், நிறைவேற்றங்கள், சரிபார்ப்பு மற்றும் உதவிக் குழுவின் பதில்கள்",
+  "push.channel.news": "செய்திகள் மற்றும் சலுகைகள்",
+  "push.channel.newsHint": "நீங்கள் ஒப்புக்கொண்ட சலுகைகள் மற்றும் தயாரிப்புச் செய்திகள்",
+  // In-app banner for a push that arrives while the app is open
+  "push.banner.a11y": "புதிய அறிவிப்பு: {title}. திறக்க இருமுறை தட்டவும்.",
+
+  // App lock screen
+  "lock.eyebrow": "பூட்டப்பட்டது",
+  "lock.title": "மீண்டும் வரவேற்கிறோம்",
+  "lock.subtitle": "உங்கள் கணக்குகளையும் பேலன்ஸ்களையும் பார்க்கத் திறங்கள்.",
+  // {method}: Face ID, Touch ID, fingerprint, face unlock or passcode
+  "lock.unlockWith": "{method} மூலம் திற",
+  "lock.unlock": "திற",
+  "lock.prompt": "Kalks ஐத் திற",
+  "lock.promptSubtitle": "இது நீங்கள்தான் என உறுதிப்படுத்துங்கள்",
+  "lock.failed": "அது வேலை செய்யவில்லை. மீண்டும் முயலவும்.",
+  "lock.lockout": "அதிகமான முயற்சிகள். உங்கள் ஃபோனை அதன் கடவுக்குறியீட்டால் திறந்து, பின்னர் மீண்டும் முயலவும்.",
+  "lock.noScreenLock": "உங்கள் ஃபோனில் இப்போது திரைப் பூட்டு இல்லை, எனவே இது நீங்கள்தான் என Kalks ஆல் உறுதிப்படுத்த முடியாது. வெளியேறி, உங்கள் கடவுச்சொல்லுடன் உள்நுழையுங்கள்.",
+  "lock.notYou": "நீங்கள் இல்லையா, அல்லது திறக்க முடியவில்லையா?",
+  "lock.signOut": "வெளியேறு",
+  "lock.signOutTitle": "Kalks இலிருந்து வெளியேறவா?",
+  "lock.signOutBody": "உங்கள் மின்னஞ்சல் மற்றும் கடவுச்சொல்லுடன் மீண்டும் உள்நுழைவீர்கள். உங்கள் பொசிஷன்களும் நிதியும் பாதிக்கப்படாது.",
+  "lock.method.faceId": "Face ID",
+  "lock.method.touchId": "Touch ID",
+  "lock.method.fingerprint": "கைரேகை",
+  "lock.method.face": "முக அன்லாக்",
+  "lock.method.iris": "கருவிழி",
+  "lock.method.passcode": "கடவுக்குறியீடு",
+
+  // Settings › App lock (/settings/app-lock)
+  "settings.eyebrow": "பாதுகாப்பு",
+  "settings.title": "ஆப் பூட்டு",
+  "settings.subtitle": "Kalks திறக்கும்போதும் பின்னணியில் இருந்த பிறகும் {method} மூலம் பூட்டியே வைத்திருங்கள்.",
+  "settings.toggle": "Kalks ஐப் பூட்டு",
+  "settings.toggleHint": "{method} ஐப் பயன்படுத்தும், மாற்றாக உங்கள் ஃபோனின் கடவுக்குறியீடு",
+  "settings.on": "ஆப் பூட்டு இயக்கத்தில்",
+  "settings.off": "ஆப் பூட்டு முடக்கத்தில்",
+  "settings.after": "மீண்டும் பூட்டும் நேரம்",
+  "settings.afterHint": "மீண்டும் கேட்கும் முன் Kalks எவ்வளவு நேரம் பின்னணியில் இருக்கலாம். தொடங்கும்போது எப்போதும் கேட்கும்.",
+  "settings.timeout.0": "உடனே",
+  "settings.timeout.60": "1 நிமிடம்",
+  "settings.timeout.300": "5 நிமிடங்கள்",
+  "settings.timeout.900": "15 நிமிடங்கள்",
+  "settings.timeout.3600": "1 மணிநேரம்",
+  "settings.privacy": "ஆப் பூட்டு இயக்கத்தில் இருக்கும்போது, ஆப் ஸ்விட்சரில் உங்கள் பேலன்ஸ்களுக்குப் பதிலாக ஒரு மறைப்பு காட்டப்படும்.",
+  "settings.lockNow": "இப்போதே பூட்டு",
+  "settings.confirmOn": "ஆப் பூட்டை இயக்க உறுதிப்படுத்துங்கள்",
+  "settings.confirmOff": "ஆப் பூட்டை முடக்க உறுதிப்படுத்துங்கள்",
+  "settings.confirmTimeout": "Kalks பூட்டும் நேரத்தை மாற்ற உறுதிப்படுத்துங்கள்",
+  "settings.turnedOffNoScreenLock": "இந்த ஃபோனில் திரைப் பூட்டு இல்லை, எனவே இது நீங்கள்தான் என Kalks ஆல் உறுதிப்படுத்த முடியாது. ஆப் பூட்டை மீண்டும் பயன்படுத்த ஃபோன் அமைப்புகளில் ஒன்றை அமையுங்கள்.",
+  "settings.notConfirmed": "உறுதிப்படுத்தப்படவில்லை, எதுவும் மாறவில்லை",
+  "settings.unavailableTitle": "முதலில் திரைப் பூட்டை அமையுங்கள்",
+  "settings.unavailableBody": "ஆப் பூட்டு உங்கள் ஃபோனின் Face ID, கைரேகை அல்லது கடவுக்குறியீட்டைப் பயன்படுத்துகிறது. ஃபோன் அமைப்புகளில் ஒன்றை இயக்கி, பின்னர் திரும்பி வாருங்கள்.",
+  "settings.webTitle": "ஆப்பில் கிடைக்கும்",
+  "settings.webBody": "ஆப் பூட்டு iPhone மற்றும் Android க்கான Kalks ஆப்பில் செயல்படும்.",
+  "settings.thisPhone": "இந்த ஃபோனுக்கு மட்டும் பொருந்தும்",
+
+  // Links that open the app but match no screen
+  "link.notFound.title": "இங்கே திறக்க எதுவும் இல்லை",
+  "link.notFound.body": "இந்த இணைப்பு ஆப்பில் உள்ள எந்தத் திரையுடனும் பொருந்தவில்லை. இது பழையதாக இருக்கலாம், அல்லது இணையத்தில் உள்ள கிளையன்ட் ஏரியாவுக்கானதாக இருக்கலாம்.",
+  "link.notFound.home": "முகப்புக்குச் செல்",
+  "link.openFailed": "இந்த இணைப்பைத் திறக்க முடியவில்லை.",
+};
+export default mobilePlatform;
