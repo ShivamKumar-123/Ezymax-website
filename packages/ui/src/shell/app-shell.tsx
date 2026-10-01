@@ -81,6 +81,9 @@ function IconRail({ modules, footer, side = "right" }: { modules: NavModule[]; f
       <Link href="/" className="grid size-11 place-items-center rounded-2xl border border-line bg-surface-3 shadow-[inset_0_1px_0_var(--k-border-top)]">
         <LogoMark size={20} className="text-fg" />
       </Link>
+      {/* navigation links prefetch their route in full (prefetch={true}): the Client Area and Back Office routes are
+          dynamic (session cookie), which Next otherwise never prefetches, so every click waited a server round trip.
+          Their pages are client components with no server data, so the prefetched payload stays valid. */}
       <nav ref={navRef} className={cn("mt-5 flex min-h-0 w-full flex-1 flex-col items-center overflow-y-auto px-2 [scrollbar-width:none]", dense ? "gap-1" : "gap-1.5")} style={fade ? { maskImage: fade, WebkitMaskImage: fade } : undefined}>
         {modules.map((m) => {
           const active = isActive(pathname, m);
@@ -93,6 +96,7 @@ function IconRail({ modules, footer, side = "right" }: { modules: NavModule[]; f
               <Tooltip content={m.label} side={railSide}>
                 <Link
                   href={m.href}
+                  prefetch={m.external ? false : true}
                   target={m.external ? "_blank" : undefined}
                   data-rail-active={active || undefined}
                   className={cn("relative grid shrink-0 place-items-center rounded-full transition-colors", dense ? "size-10" : "size-11", active ? "text-ember" : "text-fg-3 hover:bg-surface-3 hover:text-fg")}
@@ -215,7 +219,7 @@ function PillNav({ items, variant, fit = false }: { items: SubNavItem[]; variant
           const active = s === items[activeIdx];
           const iconOnly = variant === "icons" && !active && !!s.icon;
           const link = (
-            <Link key={s.href} href={s.href} className={itemClass(iconOnly, active)}>
+            <Link key={s.href} href={s.href} prefetch className={itemClass(iconOnly, active)}>
               {active && (
                 <motion.span
                   layoutId="pill-active"
@@ -263,7 +267,7 @@ function MobileBar({ modules }: { modules: NavModule[] }) {
       {primary.map((m) => {
         const active = isActive(pathname, m);
         return (
-          <Link key={m.key} href={m.href} className={cn("flex flex-1 flex-col items-center gap-1 rounded-2xl py-2 text-[10.5px] font-medium", active ? "bg-ember-soft text-ember" : "text-fg-3")}>
+          <Link key={m.key} href={m.href} prefetch={m.external ? false : true} className={cn("flex flex-1 flex-col items-center gap-1 rounded-2xl py-2 text-[10.5px] font-medium", active ? "bg-ember-soft text-ember" : "text-fg-3")}>
             <m.icon className="size-5" strokeWidth={1.7} />
             {m.label.split(" ")[0]}
           </Link>

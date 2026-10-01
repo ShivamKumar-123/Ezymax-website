@@ -3,6 +3,7 @@
 import * as React from "react";
 import { IS_DEMO } from "@kalks/mock/mode";
 import type { GatewayStaff } from "@/lib/gateway";
+import { setReadCacheOwner } from "@kalks/ui/swr-cache";
 import { isTradingPerm, tradingAllows } from "@/lib/trading-perms";
 import { isWalletPerm, walletAllows } from "@/lib/wallet-perms";
 
@@ -11,6 +12,9 @@ export type StaffUser = GatewayStaff;
 const StaffContext = React.createContext<StaffUser | null>(null);
 
 export function StaffProvider({ staff, children }: { staff: StaffUser; children: React.ReactNode }) {
+  // cached reads (show-then-refresh on revisits) belong to this staff member; set during render so the first page
+  // already reads with the right owner (idempotent; demo builds cache nothing)
+  setReadCacheOwner(IS_DEMO ? null : `${staff.id}:${staff.tenant?.slug ?? ""}`);
   return <StaffContext.Provider value={staff}>{children}</StaffContext.Provider>;
 }
 

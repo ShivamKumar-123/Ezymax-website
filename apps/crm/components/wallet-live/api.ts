@@ -6,6 +6,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { tr } from "@kalks/i18n/react";
 import type { MessageKey } from "@kalks/i18n";
+import { readCached, writeCached } from "@kalks/ui/swr-cache";
 
 export type Chain = "bsc" | "tron";
 
@@ -205,14 +206,17 @@ export function walletToast(title: string, e: unknown) {
   toast.error(title, { description: e instanceof Error ? e.message : tr("common.errorRetry") });
 }
 
-/** Polls a wallet BFF path every `ms` while the tab is visible (ms = 0: once). */
+/** Polls a wallet BFF path every `ms` while the tab is visible (ms = 0: once).
+ *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
 export function useWallet<T>(path: string | null, ms = 0) {
-  const [data, setData] = React.useState<T | null>(null);
+  const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`wallet:${path}`) ?? null) : null));
   const [error, setError] = React.useState<WalletError | null>(null);
   const [tick, setTick] = React.useState(0);
   const reload = React.useCallback(() => setTick((t) => t + 1), []);
   React.useEffect(() => {
     if (!path) return;
+    const cached = readCached<T>(`wallet:${path}`);
+    if (cached !== undefined) setData(cached);
     let stop = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const ctl = new AbortController();
@@ -223,6 +227,7 @@ export function useWallet<T>(path: string | null, ms = 0) {
           const d = await walletApi<T>(path, { signal: ctl.signal });
           if (stop) return;
           setData(d);
+          writeCached(`wallet:${path}`, d);
           setError(null);
         } catch (e) {
           if (stop || (e as Error).name === "AbortError") return;

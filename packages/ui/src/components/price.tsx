@@ -126,11 +126,14 @@ export function useFeedMode() {
 /**
  * Re-mounts its children once when live market data first arrives, so anything computed from reference
  * data at mount (sorted movers, heat maps, sparklines) is rebuilt from real prices.
+ * `remount={false}`: pages whose market views follow the feed mode themselves (live builds) keep their state —
+ * a remount would drop data they already loaded and fetch it again, and on a slow link the feed (another origin)
+ * often goes live after the page's own data has arrived.
  */
-export function MarketBoundary({ children }: { children: React.ReactNode }) {
+export function MarketBoundary({ children, remount = true }: { children: React.ReactNode; remount?: boolean }) {
   const mode = useFeedMode();
   React.useEffect(() => priceFeed().markHydrated(), []);
-  return <React.Fragment key={mode === "live" ? "live" : "ref"}>{children}</React.Fragment>;
+  return <React.Fragment key={remount && mode === "live" ? "live" : "ref"}>{children}</React.Fragment>;
 }
 
 /**

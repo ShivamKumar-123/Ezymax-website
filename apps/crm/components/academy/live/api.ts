@@ -5,6 +5,7 @@
 import * as React from "react";
 import { createFormatter } from "@kalks/i18n";
 import { tr } from "@kalks/i18n/react";
+import { readCached, writeCached } from "@kalks/ui/swr-cache";
 
 export type Level = "Beginner" | "Intermediate" | "Advanced" | "Professional";
 export type Track = "fundamental" | "technical";
@@ -111,18 +112,22 @@ export async function academyApi<T>(path: string, init?: { body?: unknown; signa
   return data as T;
 }
 
-/** Loads `path` once (and again on `reload()`); `path = null` waits. */
+/** Loads `path` once (and again on `reload()`); `path = null` waits.
+ *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
 export function useAcademy<T>(path: string | null) {
-  const [data, setData] = React.useState<T | null>(null);
+  const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`academy:${path}`) ?? null) : null));
   const [error, setError] = React.useState<AcademyError | null>(null);
   const [tick, setTick] = React.useState(0);
   const reload = React.useCallback(() => setTick((t) => t + 1), []);
   React.useEffect(() => {
     if (!path) return;
+    const cached = readCached<T>(`academy:${path}`);
+    if (cached !== undefined) setData(cached);
     const ctl = new AbortController();
     academyApi<T>(path, { signal: ctl.signal })
       .then((d) => {
         setData(d);
+        writeCached(`academy:${path}`, d);
         setError(null);
       })
       .catch((e) => {

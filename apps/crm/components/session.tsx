@@ -3,6 +3,7 @@
 import * as React from "react";
 import { IS_DEMO, ME } from "@kalks/mock";
 import type { GatewayUser } from "@/lib/gateway";
+import { setReadCacheOwner } from "@kalks/ui/swr-cache";
 
 export type SessionUser = GatewayUser;
 
@@ -28,6 +29,9 @@ const SessionContext = React.createContext<SessionUser | null>(null);
 
 /** `user` is the gateway client; demo builds pass nothing and get DEMO_USER. */
 export function SessionProvider({ user, children }: { user?: SessionUser; children: React.ReactNode }) {
+  // cached reads (show-then-refresh on revisits) belong to this session; set during render so the first page
+  // already reads with the right owner (idempotent; demo builds cache nothing)
+  setReadCacheOwner(user && !IS_DEMO ? `${user.id}:${user.session?.id ?? ""}:${user.viewer?.id ?? ""}` : null);
   return <SessionContext.Provider value={user ?? (IS_DEMO ? DEMO_USER : null)}>{children}</SessionContext.Provider>;
 }
 

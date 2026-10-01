@@ -4,6 +4,7 @@
 
 import * as React from "react";
 import { tr } from "@kalks/i18n/react";
+import { readCached, writeCached } from "@kalks/ui/swr-cache";
 
 export type Sentiment = "bullish" | "bearish" | "neutral";
 export type NewsItem = {
@@ -93,18 +94,22 @@ export async function newsApi<T>(path: string, init?: { method?: "GET" | "POST" 
   return data as T;
 }
 
-/** Loads `path` (again on `reload()` and every `refreshMs` while the tab is visible); `path = null` waits. */
+/** Loads `path` (again on `reload()` and every `refreshMs` while the tab is visible); `path = null` waits.
+ *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
 export function useNewsApi<T>(path: string | null, refreshMs = 0) {
-  const [data, setData] = React.useState<T | null>(null);
+  const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`news:${path}`) ?? null) : null));
   const [error, setError] = React.useState<NewsError | null>(null);
   const [tick, setTick] = React.useState(0);
   const reload = React.useCallback(() => setTick((t) => t + 1), []);
   React.useEffect(() => {
     if (!path) return;
+    const cached = readCached<T>(`news:${path}`);
+    if (cached !== undefined) setData(cached);
     const ctl = new AbortController();
     newsApi<T>(path, { signal: ctl.signal })
       .then((d) => {
         setData(d);
+        writeCached(`news:${path}`, d);
         setError(null);
       })
       .catch((e) => {

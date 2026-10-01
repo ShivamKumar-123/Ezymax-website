@@ -5,6 +5,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { tr } from "@kalks/i18n/react";
+import { readCached, writeCached } from "@kalks/ui/swr-cache";
 
 /* ------------------------------------------------------------------ */
 /* Strategy spec (visual builder)                                      */
@@ -398,14 +399,17 @@ export function algoError(title: string, e: unknown) {
   toast.error(title, { description: e instanceof Error ? e.message : tr("common.errorRetry") });
 }
 
-/** Polls `path` every `ms` (0 = once) while the tab is visible. */
+/** Polls `path` every `ms` (0 = once) while the tab is visible.
+ *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
 export function useAlgo<T>(path: string | null, ms = 0) {
-  const [data, setData] = React.useState<T | null>(null);
+  const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`algo:${path}`) ?? null) : null));
   const [error, setError] = React.useState<AlgoError | null>(null);
   const [tick, setTick] = React.useState(0);
   const reload = React.useCallback(() => setTick((t) => t + 1), []);
   React.useEffect(() => {
     if (!path) return;
+    const cached = readCached<T>(`algo:${path}`);
+    if (cached !== undefined) setData(cached);
     let stop = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const ctl = new AbortController();
@@ -416,6 +420,7 @@ export function useAlgo<T>(path: string | null, ms = 0) {
           const d = await algoApi<T>(path, { signal: ctl.signal });
           if (stop) return;
           setData(d);
+          writeCached(`algo:${path}`, d);
           setError(null);
         } catch (e) {
           if (stop || (e as Error).name === "AbortError") return;

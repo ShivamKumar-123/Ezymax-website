@@ -8,6 +8,7 @@ import * as React from "react";
 import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, EmptyState, IconButton, Skeleton, cn, formatDateTime, type ChipTone } from "@kalks/ui";
+import { readCached, writeCached } from "@kalks/ui/swr-cache";
 
 export type ApiErr = { code: string; message: string; field?: string };
 
@@ -16,9 +17,11 @@ function expired() {
   window.location.assign(`/api/auth/expired?next=${encodeURIComponent(next)}`);
 }
 
-/** GET a BFF endpoint. `url = null` skips the request. Re-fetches when `url` changes; `reload()` forces it. */
+/** GET a BFF endpoint. `url = null` skips the request. Re-fetches when `url` changes; `reload()` forces it.
+ *  A page opened again starts from the last answer of this tab (dimmed as `loading`, like a poll) while it refetches
+ *  (@kalks/ui/swr-cache: per signed-in staff member, cleared by any write). */
 export function useApi<T>(url: string | null, opts: { refreshMs?: number } = {}) {
-  const [data, setData] = React.useState<T | null>(null);
+  const [data, setData] = React.useState<T | null>(() => (url ? (readCached<T>(url) ?? null) : null));
   const [error, setError] = React.useState<ApiErr | null>(null);
   const [loading, setLoading] = React.useState(!!url);
   const [tick, setTick] = React.useState(0);
@@ -26,6 +29,9 @@ export function useApi<T>(url: string | null, opts: { refreshMs?: number } = {})
     if (!url) return;
     let alive = true;
     setLoading(true);
+    // a different URL (filter, page, record) starts from its own last answer when this tab has one
+    const cached = readCached<T>(url);
+    if (cached !== undefined) setData(cached);
     fetch(url, { cache: "no-store", credentials: "same-origin" })
       .then(async (r) => {
         const body = await r.json().catch(() => ({}));
@@ -37,6 +43,7 @@ export function useApi<T>(url: string | null, opts: { refreshMs?: number } = {})
         }
         setError(null);
         setData(body as T);
+        writeCached(url, body);
       })
       .catch(() => alive && setError({ code: "network", message: "Can't reach the Back Office server." }))
       .finally(() => alive && setLoading(false));

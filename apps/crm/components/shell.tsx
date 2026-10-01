@@ -136,7 +136,8 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           </>
         }
       >
-        <MarketBoundary>
+        {/* demo builds rebuild their sample views from live prices once; live pages follow the feed mode themselves */}
+        <MarketBoundary remount={IS_DEMO}>
           {/* staff session banner, account restrictions, presence heartbeat */}
           <AccountNotices />
           {viewer && <ViewerBar viewer={viewer} owner={me.name} />}

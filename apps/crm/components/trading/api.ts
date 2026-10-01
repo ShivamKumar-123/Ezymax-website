@@ -7,6 +7,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { tr } from "@kalks/i18n/react";
 import type { MessageKey } from "@kalks/i18n";
+import { readCached, writeCached } from "@kalks/ui/swr-cache";
 
 /* ------------------------------------------------------------------ */
 /* Engine shapes (services/trading/README.md, client-safe subset)       */
@@ -222,15 +223,19 @@ export function errorToast(title: string, e: unknown) {
   toast.error(title, { description: e instanceof Error ? e.message : tr("common.errorRetry") });
 }
 
-/** Polls `path` every `ms` while the tab is visible. `reload()` refetches at once. */
+/** Polls `path` every `ms` while the tab is visible. `reload()` refetches at once.
+ *  A page opened again starts from this tab's last answer while it refetches (@kalks/ui/swr-cache: per session,
+ *  cleared by any write, so nothing from before a change the client just made is shown). */
 export function usePoll<T>(path: string | null, ms: number) {
-  const [data, setData] = React.useState<T | null>(null);
+  const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`trading:${path}`) ?? null) : null));
   const [error, setError] = React.useState<ApiError | null>(null);
   const [tick, setTick] = React.useState(0);
   const reload = React.useCallback(() => setTick((t) => t + 1), []);
 
   React.useEffect(() => {
     if (!path) return;
+    const cached = readCached<T>(`trading:${path}`);
+    if (cached !== undefined) setData(cached);
     let stop = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const ctl = new AbortController();
@@ -242,6 +247,7 @@ export function usePoll<T>(path: string | null, ms: number) {
           if (stop) return;
           setData(d);
           setError(null);
+          writeCached(`trading:${path}`, d);
         } catch (e) {
           if (stop || (e as Error).name === "AbortError") return;
           setError(e instanceof ApiError ? e : new ApiError(0, "error", tr("common.error")));

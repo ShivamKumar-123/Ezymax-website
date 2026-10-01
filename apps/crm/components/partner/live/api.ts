@@ -8,6 +8,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { tr } from "@kalks/i18n/react";
 import { intlTag } from "@kalks/i18n/locales";
+import { readCached, writeCached } from "@kalks/ui/swr-cache";
 
 /* ------------------------------------------------------------------ */
 /* Shapes                                                              */
@@ -329,15 +330,18 @@ export function errorToast(title: string, e: unknown) {
   });
 }
 
-/** Loads `path` once (and again on `reload()`); refreshes quietly every `ms` while the tab is visible. */
+/** Loads `path` once (and again on `reload()`); refreshes quietly every `ms` while the tab is visible.
+ *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
 export function usePartner<T>(path: string | null, ms = 0) {
-  const [data, setData] = React.useState<T | null>(null);
+  const [data, setData] = React.useState<T | null>(() => (path !== null ? (readCached<T>(`partner:${path}`) ?? null) : null));
   const [error, setError] = React.useState<PartnerApiError | null>(null);
   const [tick, setTick] = React.useState(0);
   const reload = React.useCallback(() => setTick((t) => t + 1), []);
 
   React.useEffect(() => {
     if (!path && path !== "") return;
+    const cached = readCached<T>(`partner:${path}`);
+    if (cached !== undefined) setData(cached);
     let stop = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const ctl = new AbortController();
@@ -351,6 +355,7 @@ export function usePartner<T>(path: string | null, ms = 0) {
           const d = await partnerApi<T>(path, { signal: ctl.signal });
           if (stop) return;
           setData(d);
+          writeCached(`partner:${path}`, d);
           setError(null);
         } catch (e) {
           if (stop || (e as Error).name === "AbortError") return;

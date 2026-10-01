@@ -12,6 +12,7 @@
     "./providers": "./src/shell/providers.tsx",
     "./logo": "./src/shell/logo.tsx",
     "./primitives": "./src/components/primitives.tsx",
+    "./swr-cache": "./src/lib/swr-cache.ts",
     "./illustration": "./src/components/illustration.tsx",
     "./*": "./src/*"
   },

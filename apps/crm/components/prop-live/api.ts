@@ -7,6 +7,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { intlTag, type MessageKey } from "@kalks/i18n";
 import { tr } from "@kalks/i18n/react";
+import { readCached, writeCached } from "@kalks/ui/swr-cache";
 
 /* ------------------------------------------------------------------ */
 /* Service shapes                                                      */
@@ -344,15 +345,18 @@ export function errorToast(title: string, e: unknown) {
   toast.error(title, { description: e instanceof Error ? e.message : tr("prop.error.generic") });
 }
 
-/** Polls `path` every `ms` while the tab is visible (0 = once). `reload()` refetches at once. */
+/** Polls `path` every `ms` while the tab is visible (0 = once). `reload()` refetches at once.
+ *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
 export function usePropPoll<T>(path: string | null, ms: number) {
-  const [data, setData] = React.useState<T | null>(null);
+  const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`prop:${path}`) ?? null) : null));
   const [error, setError] = React.useState<PropError | null>(null);
   const [tick, setTick] = React.useState(0);
   const reload = React.useCallback(() => setTick((t) => t + 1), []);
 
   React.useEffect(() => {
     if (!path) return;
+    const cached = readCached<T>(`prop:${path}`);
+    if (cached !== undefined) setData(cached);
     let stop = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const ctl = new AbortController();
@@ -363,6 +367,7 @@ export function usePropPoll<T>(path: string | null, ms: number) {
           const d = await propApi<T>(path, { signal: ctl.signal });
           if (stop) return;
           setData(d);
+          writeCached(`prop:${path}`, d);
           setError(null);
         } catch (e) {
           if (stop || (e as Error).name === "AbortError") return;

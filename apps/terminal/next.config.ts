@@ -8,6 +8,11 @@ const config: NextConfig = {
   allowedDevOrigins: ["*.localhost", "*.*.localhost", "*.test", "*.*.test", ...(process.env.KALKS_DEV_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean) ?? [])],
   agentRules: false,
   images: { unoptimized: true },
+  // Static images (public/assets: logos, coins, flags, photos) have no content hash: a day fresh, then served from
+  // cache while revalidating for a week, instead of a revalidation round trip on every page load (max-age=0).
+  async headers() {
+    return [{ source: "/assets/:file*", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] }];
+  },
 };
 
 export default config;

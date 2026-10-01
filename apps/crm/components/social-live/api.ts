@@ -7,6 +7,7 @@ import * as React from "react";
 import { tr } from "@kalks/i18n/react";
 import { ApiError } from "@/components/trading/api";
 import type { EngineOrder, EnginePosition } from "@/components/trading/api";
+import { readCached, writeCached } from "@kalks/ui/swr-cache";
 
 export { ApiError };
 
@@ -371,15 +372,18 @@ export async function socialApi<T>(path: string, init?: { method?: "GET" | "POST
   return data as T;
 }
 
-/** Polls `path` every `ms` (0 = once) while the tab is visible. `reload()` refetches at once. */
+/** Polls `path` every `ms` (0 = once) while the tab is visible. `reload()` refetches at once.
+ *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
 export function useSocial<T>(path: string | null, ms = 0) {
-  const [data, setData] = React.useState<T | null>(null);
+  const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`social:${path}`) ?? null) : null));
   const [error, setError] = React.useState<ApiError | null>(null);
   const [tick, setTick] = React.useState(0);
   const reload = React.useCallback(() => setTick((t) => t + 1), []);
 
   React.useEffect(() => {
     if (!path) return;
+    const cached = readCached<T>(`social:${path}`);
+    if (cached !== undefined) setData(cached);
     let stop = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const ctl = new AbortController();
@@ -390,6 +394,7 @@ export function useSocial<T>(path: string | null, ms = 0) {
           const d = await socialApi<T>(path, { signal: ctl.signal });
           if (stop) return;
           setData(d);
+          writeCached(`social:${path}`, d);
           setError(null);
         } catch (e) {
           if (stop || (e as Error).name === "AbortError") return;
