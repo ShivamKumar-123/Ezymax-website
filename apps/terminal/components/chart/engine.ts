@@ -77,6 +77,12 @@ function loadHistory(symbol: string, tf: Timeframe): Promise<History> {
   return p;
 }
 
+/** Starts loading a chart's history before the chart mounts (Kalks Trader start-up: the saved layout's charts are
+ *  requested while the session check is still in flight); the chart then picks up the same request. */
+export function prefetchHistory(symbol: string, tf: Timeframe) {
+  void loadHistory(symbol, tf);
+}
+
 /**
  * Candle history for a chart: real bars from our database (or the simulator when the service is offline).
  * A cached history is returned synchronously, so switching symbol/timeframe draws instantly; the engine then

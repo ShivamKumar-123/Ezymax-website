@@ -244,6 +244,12 @@ function loadWorkspace(guest: boolean): Workspace {
   return guestSafe(readWorkspace(), guest);
 }
 
+/** The charts the saved layout shows (symbol + timeframe), for warming their history at start-up. */
+export function savedCharts(): { symbol: string; tf: Timeframe }[] {
+  const w = readWorkspace();
+  return w.slots.map((id) => w.tabs.find((t) => t.id === id)).filter((t): t is ChartTab => !!t).map((t) => ({ symbol: t.symbol, tf: t.tf }));
+}
+
 function readWorkspace(): Workspace {
   const d = defaultWorkspace();
   try {

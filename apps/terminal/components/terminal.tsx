@@ -6,7 +6,8 @@ import { ACCOUNTS, INSTRUMENTS, priceFeed } from "@kalks/mock";
 import { LogoMark } from "@kalks/ui";
 import { tr, useT } from "@kalks/i18n/react";
 import { toast } from "@/lib/notify";
-import { TerminalProvider, engineSession, guestSession, readActive, readSession, useTerminal, writeActive, writeSession, type Session } from "@/lib/store";
+import { TerminalProvider, engineSession, guestSession, readActive, readSession, savedCharts, useTerminal, writeActive, writeSession, type Session } from "@/lib/store";
+import { prefetchHistory } from "@/components/chart/engine";
 import { GUEST_MODE } from "@/lib/guest";
 import { engineApi } from "@/lib/engine/client";
 import type { SessionInfo } from "@/lib/engine/types";
@@ -104,6 +105,8 @@ export function Terminal() {
       let alive = true;
       const feed = priceFeed();
       feed.markHydrated();
+      // chart history doesn't depend on the session: request the saved layout's charts now, not after sign-in
+      for (const c of savedCharts()) prefetchHistory(c.symbol, c.tf);
       void liveEntry(new URLSearchParams(sp.toString())).then(async (r) => {
         if (!alive) return;
         if (window.location.search) window.history.replaceState(null, "", "/");
