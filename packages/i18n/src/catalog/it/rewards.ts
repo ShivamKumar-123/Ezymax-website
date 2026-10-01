@@ -584,5 +584,7 @@ const rewards: NsMessages<"rewards"> = {
   "public.unavailableText": "Riprova tra un momento.",
   "public.notFoundText": "Il link potrebbe essere errato o la scheda è stata rimossa.",
   "public.disclaimer": "Il trading di CFD e forex comporta un alto livello di rischio e potrebbe non essere adatto a tutti gli investitori. I risultati passati non sono un indicatore affidabile dei risultati futuri. Condiviso da un cliente Kalks; non costituisce consulenza sugli investimenti.",
+  "earn.subtitleNoHold": "Punti per lotto standard sulle operazioni reali chiuse · i punti scadono dopo {months} mesi senza trading",
+  "loyalty.howTextNoHold": "I punti vengono accreditati sulle operazioni reali chiuse, moltiplicati per il tuo livello. 1 punto ≈ {value}. I punti scadono dopo {months} mesi senza nuovi guadagni.",
 };
 export default rewards;

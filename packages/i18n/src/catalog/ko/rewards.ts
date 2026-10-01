@@ -584,5 +584,7 @@ const rewards: NsMessages<"rewards"> = {
   "public.unavailableText": "잠시 후 다시 시도해 주세요.",
   "public.notFoundText": "링크가 잘못 입력되었거나 카드가 삭제되었을 수 있습니다.",
   "public.disclaimer": "CFD 및 외환 거래는 높은 수준의 위험을 수반하며 모든 투자자에게 적합하지 않을 수 있습니다. 과거 성과는 미래 결과를 보장하지 않습니다. Kalks 고객이 공유한 내용이며 투자 조언이 아닙니다.",
+  "earn.subtitleNoHold": "청산된 실계좌 거래의 표준 랏당 포인트 · {months}개월 동안 거래가 없으면 포인트 소멸",
+  "loyalty.howTextNoHold": "포인트는 청산된 실계좌 거래에 대해 등급 배수를 곱해 적립됩니다. 1포인트 ≈ {value}. {months}개월 동안 적립이 없으면 포인트가 소멸됩니다.",
 };
 export default rewards;

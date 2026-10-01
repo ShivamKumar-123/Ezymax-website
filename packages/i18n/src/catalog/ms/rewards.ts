@@ -584,5 +584,7 @@ const rewards: NsMessages<"rewards"> = {
   "public.unavailableText": "Sila cuba lagi sebentar nanti.",
   "public.notFoundText": "Pautan mungkin tersalah taip atau kad telah dialih keluar.",
   "public.disclaimer": "Dagangan CFD dan forex membawa risiko yang tinggi dan mungkin tidak sesuai untuk semua pelabur. Prestasi lalu bukan petunjuk yang boleh dipercayai bagi hasil masa hadapan. Dikongsi oleh pelanggan Kalks; bukan nasihat pelaburan.",
+  "earn.subtitleNoHold": "Mata setiap lot standard bagi dagangan sebenar ditutup · mata tamat tempoh selepas {months} bulan tanpa dagangan",
+  "loyalty.howTextNoHold": "Mata dikreditkan bagi dagangan sebenar ditutup, didarab dengan peringkat anda. 1 mata ≈ {value}. Mata tamat tempoh selepas {months} bulan tanpa perolehan.",
 };
 export default rewards;

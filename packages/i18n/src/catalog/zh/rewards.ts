@@ -584,5 +584,7 @@ const rewards: NsMessages<"rewards"> = {
   "public.unavailableText": "请稍后重试。",
   "public.notFoundText": "链接可能输入有误，或卡片已被删除。",
   "public.disclaimer": "差价合约和外汇交易具有高风险，可能并不适合所有投资者。过往表现并非未来结果的可靠指标。由 Kalks 客户分享，不构成投资建议。",
+  "earn.subtitleNoHold": "已平仓真实交易，每标准手可得积分 · 连续 {months} 个月未交易积分将过期",
+  "loyalty.howTextNoHold": "已平仓真实交易将获得积分，并按您的等级倍数计算。1 积分 ≈ {value}。连续 {months} 个月未赚取积分，积分将过期。",
 };
 export default rewards;

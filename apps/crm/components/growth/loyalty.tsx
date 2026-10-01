@@ -59,7 +59,7 @@ function BalanceHero({ r }: { r: Rewards }) {
         <div className="mt-6 grid max-w-[340px] grid-cols-2 gap-2">
           <div className="rounded-[14px] border border-line bg-surface-2/70 px-3.5 py-3">
             <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.loyalty.thisMonth")}</div>
-            <div className="k-num mt-1 text-[16px] font-semibold text-up">+{fmtPoints(r.points.earnedThisMonth)}</div>
+            <div className={cn("k-num mt-1 text-[16px] font-semibold", r.points.earnedThisMonth > 0 ? "text-up" : "text-fg")}>{r.points.earnedThisMonth > 0 ? "+" : ""}{fmtPoints(r.points.earnedThisMonth)}</div>
             {last7.some((v) => v > 0) ? <MiniBars data={last7} className="mt-2 h-6" /> : <div className="mt-2 h-6 text-[11px] leading-6 text-fg-3">{t("rewards.loyalty.noTradesWeek")}</div>}
           </div>
           <div className="rounded-[14px] border border-line bg-surface-2/70 px-3.5 py-3">
@@ -235,7 +235,7 @@ function EarnRules({ r }: { r: Rewards }) {
     <Card className="h-full">
       <CardHeader
         title={t("rewards.earn.title")}
-        subtitle={t("rewards.earn.subtitle", { seconds: r.minHoldSeconds, months: r.pointsExpiryMonths })}
+        subtitle={r.minHoldSeconds > 0 ? t("rewards.earn.subtitle", { seconds: r.minHoldSeconds, months: r.pointsExpiryMonths }) : t("rewards.earn.subtitleNoHold", { months: r.pointsExpiryMonths })}
         icon={<Sparkles />}
       />
       {rules.length === 0 ? (
@@ -633,7 +633,7 @@ export function LiveLoyaltyPage() {
             variant="surface"
             onClick={() =>
               toast(t("rewards.loyalty.howTitle"), {
-                description: t("rewards.loyalty.howText", { seconds: r.minHoldSeconds, value: fmtUsd(r.pointValue, 2), months: r.pointsExpiryMonths }),
+                description: r.minHoldSeconds > 0 ? t("rewards.loyalty.howText", { seconds: r.minHoldSeconds, value: fmtUsd(r.pointValue, 2), months: r.pointsExpiryMonths }) : t("rewards.loyalty.howTextNoHold", { value: fmtUsd(r.pointValue, 2), months: r.pointsExpiryMonths }),
               })
             }
           >

@@ -584,5 +584,7 @@ const rewards: NsMessages<"rewards"> = {
   "public.unavailableText": "Tafadhali jaribu tena baada ya muda mfupi.",
   "public.notFoundText": "Huenda kiungo kimeandikwa vibaya au kadi imeondolewa.",
   "public.disclaimer": "Biashara ya CFD na forex ina hatari kubwa na huenda isiwafae wawekezaji wote. Utendaji wa zamani si kiashiria cha kuaminika cha matokeo ya baadaye. Imeshirikiwa na mteja wa Kalks; si ushauri wa uwekezaji.",
+  "earn.subtitleNoHold": "Pointi kwa kila loti ya kawaida kwenye biashara halisi zilizofungwa · pointi huisha muda baada ya miezi {months} bila biashara",
+  "loyalty.howTextNoHold": "Pointi huwekwa kwa biashara halisi zilizofungwa, zikizidishwa kwa daraja lako. Pointi 1 ≈ {value}. Pointi huisha muda baada ya miezi {months} bila kupata pointi.",
 };
 export default rewards;

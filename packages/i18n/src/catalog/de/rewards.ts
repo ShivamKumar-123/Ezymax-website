@@ -584,5 +584,7 @@ const rewards: NsMessages<"rewards"> = {
   "public.unavailableText": "Bitte versuchen Sie es gleich noch einmal.",
   "public.notFoundText": "Der Link ist möglicherweise fehlerhaft oder die Karte wurde entfernt.",
   "public.disclaimer": "Der Handel mit CFDs und Forex ist mit einem hohen Risiko verbunden und möglicherweise nicht für alle Anleger geeignet. Vergangene Wertentwicklungen sind kein verlässlicher Indikator für zukünftige Ergebnisse. Von einem Kalks-Kunden geteilt; keine Anlageberatung.",
+  "earn.subtitleNoHold": "Punkte pro Standard-Lot für geschlossene Live-Trades · Punkte verfallen nach {months} Monaten ohne Handel",
+  "loyalty.howTextNoHold": "Punkte werden für geschlossene Live-Trades gutgeschrieben, multipliziert mit Ihrer Stufe. 1 Punkt ≈ {value}. Punkte verfallen nach {months} Monaten ohne neue Punkte.",
 };
 export default rewards;

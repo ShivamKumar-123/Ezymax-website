@@ -584,5 +584,7 @@ const rewards: NsMessages<"rewards"> = {
   "public.unavailableText": "Lütfen birazdan tekrar deneyin.",
   "public.notFoundText": "Bağlantı yanlış yazılmış olabilir veya kart kaldırılmış olabilir.",
   "public.disclaimer": "CFD ve forex işlemleri yüksek düzeyde risk taşır ve tüm yatırımcılar için uygun olmayabilir. Geçmiş performans gelecekteki sonuçların güvenilir bir göstergesi değildir. Bir Kalks müşterisi tarafından paylaşılmıştır; yatırım tavsiyesi değildir.",
+  "earn.subtitleNoHold": "Kapanmış gerçek işlemlerde standart lot başına puan · işlem yapılmayan {months} ayın ardından puanların süresi dolar",
+  "loyalty.howTextNoHold": "Puanlar, kapanan gerçek işlemler için seviyenizin çarpanıyla hesaplanarak eklenir. 1 puan ≈ {value}. Puan kazanılmayan {months} ayın ardından puanların süresi dolar.",
 };
 export default rewards;

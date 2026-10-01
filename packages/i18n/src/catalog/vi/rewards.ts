@@ -584,5 +584,7 @@ const rewards: NsMessages<"rewards"> = {
   "public.unavailableText": "Vui lòng thử lại sau giây lát.",
   "public.notFoundText": "Liên kết có thể bị gõ sai hoặc thẻ đã bị xóa.",
   "public.disclaimer": "Giao dịch CFD và forex có mức rủi ro cao và có thể không phù hợp với mọi nhà đầu tư. Hiệu suất trong quá khứ không phải là chỉ báo đáng tin cậy cho kết quả tương lai. Được chia sẻ bởi khách hàng Kalks; không phải lời khuyên đầu tư.",
+  "earn.subtitleNoHold": "Điểm trên mỗi lot tiêu chuẩn cho giao dịch thực đã đóng · điểm hết hạn sau {months} tháng không giao dịch",
+  "loyalty.howTextNoHold": "Điểm được ghi có cho các giao dịch thực đã đóng, nhân theo hạng của bạn. 1 điểm ≈ {value}. Điểm hết hạn sau {months} tháng không tích lũy.",
 };
 export default rewards;

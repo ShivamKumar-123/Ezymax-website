@@ -584,5 +584,7 @@ const rewards: NsMessages<"rewards"> = {
   "public.unavailableText": "Tente novamente em instantes.",
   "public.notFoundText": "O link pode ter sido digitado incorretamente ou o card foi removido.",
   "public.disclaimer": "Negociar CFDs e forex envolve alto nível de risco e pode não ser adequado a todos os investidores. Resultados passados não são indicador confiável de resultados futuros. Compartilhado por um cliente da Kalks; não é recomendação de investimento.",
+  "earn.subtitleNoHold": "Pontos por lote padrão em negociações reais fechadas · os pontos expiram após {months} meses sem negociar",
+  "loyalty.howTextNoHold": "Os pontos são creditados em negociações reais fechadas, multiplicados pelo seu nível. 1 ponto ≈ {value}. Os pontos expiram após {months} meses sem novos ganhos.",
 };
 export default rewards;

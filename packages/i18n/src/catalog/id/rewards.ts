@@ -584,5 +584,7 @@ const rewards: NsMessages<"rewards"> = {
   "public.unavailableText": "Silakan coba lagi sebentar lagi.",
   "public.notFoundText": "Tautan mungkin salah ketik atau kartu telah dihapus.",
   "public.disclaimer": "Trading CFD dan forex memiliki tingkat risiko tinggi dan mungkin tidak cocok untuk semua investor. Kinerja masa lalu bukan indikator yang dapat diandalkan untuk hasil di masa depan. Dibagikan oleh klien Kalks; bukan saran investasi.",
+  "earn.subtitleNoHold": "Poin per lot standar pada transaksi live tertutup · poin kedaluwarsa setelah {months} bulan tanpa trading",
+  "loyalty.howTextNoHold": "Poin dikreditkan untuk transaksi live tertutup, dikalikan dengan tingkat Anda. 1 poin ≈ {value}. Poin kedaluwarsa setelah {months} bulan tanpa perolehan.",
 };
 export default rewards;

@@ -584,5 +584,7 @@ const rewards: NsMessages<"rewards"> = {
   "public.unavailableText": "しばらくしてから再度お試しください。",
   "public.notFoundText": "リンクが間違っているか、カードが削除された可能性があります。",
   "public.disclaimer": "CFDおよび外国為替取引には高いリスクが伴い、すべての投資家に適しているとは限りません。過去の実績は将来の結果を保証するものではありません。Kalksのお客様によるシェアであり、投資助言ではありません。",
+  "earn.subtitleNoHold": "決済済みリアル取引の1スタンダードロットあたりのポイント · {months}か月間取引がない場合ポイントは失効",
+  "loyalty.howTextNoHold": "ポイントは決済済みのリアル取引に対して、ティアの倍率を掛けて付与されます。1ポイント ≈ {value}。{months}か月間ポイントの獲得がない場合、ポイントは失効します。",
 };
 export default rewards;

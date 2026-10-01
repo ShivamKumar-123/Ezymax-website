@@ -583,5 +583,7 @@ const rewards = {
   "public.unavailableText": "Please try again in a moment.",
   "public.notFoundText": "The link may be mistyped or the card was removed.",
   "public.disclaimer": "Trading CFDs and forex carries a high level of risk and may not be suitable for all investors. Past performance is not a reliable indicator of future results. Shared by a Kalks client; not investment advice.",
+  "earn.subtitleNoHold": "Points per standard lot on closed live trades · points expire after {months} months without trading",
+  "loyalty.howTextNoHold": "Points are credited on closed live trades, multiplied by your tier. 1 point ≈ {value}. Points expire after {months} months without earning.",
 };
 export default rewards;
