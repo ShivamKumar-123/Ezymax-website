@@ -4,12 +4,13 @@ import * as React from "react";
 import { motion } from "motion/react";
 import { cn, formatCompact, formatMoney } from "@kalks/ui";
 import { tr } from "@kalks/i18n/react";
+import { intlTag } from "@kalks/i18n/locales";
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
-const fmtDate = (t: number) => new Date(t * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit", timeZone: "UTC" });
+const fmtDate = (t: number) => new Date(t * 1000).toLocaleDateString(intlTag(tr.locale), { day: "2-digit", month: "short", year: "2-digit", timeZone: "UTC" });
 
 function niceTicks(min: number, max: number, n = 4) {
   const span = max - min || 1;

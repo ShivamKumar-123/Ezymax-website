@@ -6,6 +6,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { tr } from "@kalks/i18n/react";
+import { intlTag } from "@kalks/i18n/locales";
 import type { MessageKey } from "@kalks/i18n";
 import { readCached, writeCached } from "@kalks/ui/swr-cache";
 
@@ -341,7 +342,7 @@ export function serverTime(iso: string | null | undefined, withYear = true) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
   const shifted = new Date(d.getTime() + serverOffset(d) * 3600_000);
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(intlTag(tr.locale), {
     day: "2-digit",
     month: "short",
     ...(withYear ? { year: "numeric" } : {}),
@@ -355,7 +356,7 @@ export function serverTime(iso: string | null | undefined, withYear = true) {
 export function fmtDate(iso: string | null | undefined) {
   if (!iso) return "—";
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString(intlTag(tr.locale), { day: "2-digit", month: "short", year: "numeric" });
 }
 
 /** Digits for price display when no instrument spec is at hand. */

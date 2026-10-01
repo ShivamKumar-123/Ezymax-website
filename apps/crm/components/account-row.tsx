@@ -8,6 +8,7 @@ import { freeMargin, marginLevel, type TradingAccount } from "@kalks/mock";
 import { useT } from "@kalks/i18n/react";
 import type { T } from "@kalks/i18n";
 import { TERMINAL_URL } from "@/lib/live";
+import { intlTag } from "@kalks/i18n/locales";
 
 export function AccountBadge({ a }: { a: TradingAccount }) {
   const t = useT();
@@ -122,7 +123,7 @@ export function AccountRow({ a, compact }: { a: TradingAccount; compact?: boolea
           </Link>
         </div>
       </div>
-      {a.type === "demo" && a.expiresAt && <div className="mt-3 text-[11.5px] text-fg-3">{t("accounts.row.demoExpires", { date: new Date(a.expiresAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }), count: a.refillsLeft })}</div>}
+      {a.type === "demo" && a.expiresAt && <div className="mt-3 text-[11.5px] text-fg-3">{t("accounts.row.demoExpires", { date: new Date(a.expiresAt).toLocaleDateString(intlTag(t.locale), { day: "2-digit", month: "short" }), count: a.refillsLeft })}</div>}
     </div>
   );
 }
