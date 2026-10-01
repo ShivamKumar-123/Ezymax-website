@@ -1,3 +1,4 @@
+import { preconnect } from "react-dom";
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
@@ -22,10 +23,21 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export const viewport: Viewport = { themeColor: "#07070a", width: "device-width", initialScale: 1 };
 
+/** Browser-side market-data origin (another host in production), when it is one. */
+const MARKET_DATA_ORIGIN = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_MARKET_DATA_URL ?? "").origin;
+  } catch {
+    return null;
+  }
+})();
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // quotes, candles and the stream come from the market-data origin: start its DNS + TCP + TLS handshake while the
+  // page loads instead of after hydration (the browser fetches it without credentials, hence "anonymous")
+  if (MARKET_DATA_ORIGIN) preconnect(MARKET_DATA_ORIGIN, { crossOrigin: "anonymous" });
   // language from the kalks_locale cookie (set by the switcher) or the browser's Accept-Language
-  const { locale, dir, messages } = await getI18n();
-  const brand = await tenantBrand();
+  const [{ locale, dir, messages }, brand] = await Promise.all([getI18n(), tenantBrand()]);
   const css = brandCss(brand);
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
