@@ -1,15 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { geoEqualEarth, geoContains } from "d3-geo";
-import { feature } from "topojson-client";
-import type { FeatureCollection, Geometry } from "geojson";
-import countries110 from "world-atlas/countries-110m.json";
+import { geoEqualEarth, type GeoProjection } from "d3-geo";
 import { cn } from "../lib/cn";
 import { useT } from "@kalks/i18n/react";
+import { WORLD_H, WORLD_ROWS, WORLD_SCALE, WORLD_STEP, WORLD_TRANSLATE, WORLD_W } from "./world-dots";
 
-const W = 960;
-const H = 470;
+const W = WORLD_W;
+const H = WORLD_H;
 
 /** ISO numeric (world-atlas ids) for pins we care about. */
 const COUNTRY_CENTROIDS: Record<string, [number, number]> = {
@@ -27,31 +25,33 @@ const COUNTRY_CENTROIDS: Record<string, [number, number]> = {
   sd: [30, 15], ly: [17, 27], so: [46, 6], ss: [30, 7.5], cf: [21, 6.6], cd: [23, -3], ro: [25, 46], hu: [19.5, 47.2], cz: [15.5, 49.8],
 };
 
-type Dot = [number, number];
-let DOT_CACHE: Dot[] | null = null;
-
-function buildDots(step = 7.5): Dot[] {
-  if (DOT_CACHE) return DOT_CACHE;
-  const topo = countries110 as unknown as Parameters<typeof feature>[0];
-  const land = feature(topo, (topo as any).objects.countries) as unknown as FeatureCollection<Geometry>;
-  const proj = geoEqualEarth().fitSize([W, H], land);
-  const dots: Dot[] = [];
-  for (let y = step / 2; y < H; y += step) {
-    for (let x = step / 2; x < W; x += step) {
-      const ll = proj.invert?.([x, y]);
-      if (!ll) continue;
-      if (land.features.some((f) => geoContains(f, ll))) dots.push([x, y]);
+/** The land dots as one SVG path of zero-length round-capped segments (same look as a circle per dot, one element
+ *  instead of ~2 300). Precomputed by scripts/gen-world-dots.mjs: testing the grid against every country polygon
+ *  in the browser cost seconds of main-thread time on each page with the map. */
+let DOTS_PATH: string | null = null;
+function dotsPath(): string {
+  if (DOTS_PATH) return DOTS_PATH;
+  let d = "";
+  WORLD_ROWS.forEach((row, j) => {
+    const y = WORLD_STEP / 2 + j * WORLD_STEP;
+    let i = 0;
+    let land = false;
+    for (const run of row.split(".")) {
+      const n = parseInt(run, 36);
+      if (land) for (let k = 0; k < n; k++) d += `M${WORLD_STEP / 2 + (i + k) * WORLD_STEP} ${y}h0`;
+      i += n;
+      land = !land;
     }
-  }
-  DOT_CACHE = dots;
-  return dots;
+  });
+  DOTS_PATH = d;
+  return d;
 }
 
+/** geoEqualEarth fitted to the land (same scale / translate as fitSize([W, H], land)). */
+let PROJ: GeoProjection | null = null;
 function project(lonlat: [number, number]) {
-  const topo = countries110 as unknown as Parameters<typeof feature>[0];
-  const land = feature(topo, (topo as any).objects.countries) as unknown as FeatureCollection<Geometry>;
-  const proj = geoEqualEarth().fitSize([W, H], land);
-  return proj(lonlat) ?? [0, 0];
+  PROJ ??= geoEqualEarth().scale(WORLD_SCALE).translate(WORLD_TRANSLATE);
+  return PROJ(lonlat) ?? [0, 0];
 }
 
 export interface MapPin {
@@ -63,13 +63,9 @@ export interface MapPin {
 
 /** Dotted/halftone world map with glowing news pins (dashboard + admin). */
 export function WorldMap({ pins, heat, className, onPin }: { pins: MapPin[]; heat?: Record<string, number>; className?: string; onPin?: (p: MapPin) => void }) {
-  const [dots, setDots] = React.useState<Dot[]>([]);
+  const [dots, setDots] = React.useState("");
   const [hover, setHover] = React.useState<MapPin | null>(null);
-  React.useEffect(() => {
-    // computed client-side once (≈ 60ms), then cached
-    const id = requestAnimationFrame(() => setDots(buildDots()));
-    return () => cancelAnimationFrame(id);
-  }, []);
+  React.useEffect(() => setDots(dotsPath()), []);
   const pinPos = React.useMemo(() => pins.filter((p) => COUNTRY_CENTROIDS[p.country]).map((p) => ({ ...p, xy: project(COUNTRY_CENTROIDS[p.country]!) })), [pins]);
   const heatPos = React.useMemo(
     () => Object.entries(heat ?? {}).filter(([c]) => COUNTRY_CENTROIDS[c]).map(([c, v]) => ({ c, v, xy: project(COUNTRY_CENTROIDS[c]!) })),
@@ -98,11 +94,7 @@ export function WorldMap({ pins, heat, className, onPin }: { pins: MapPin[]; hea
         {heatPos.map((h) => (
           <circle key={h.c} cx={h.xy[0]} cy={h.xy[1]} r={40 + Math.abs(h.v) * 18} fill={`url(#heat-${h.v >= 0 ? "up" : "down"})`} />
         ))}
-        <g fill="var(--k-fg-3)" opacity={0.55}>
-          {dots.map(([x, y], i) => (
-            <circle key={i} cx={x} cy={y} r={1.55} />
-          ))}
-        </g>
+        <path d={dots} fill="none" stroke="var(--k-fg-3)" strokeWidth={3.1} strokeLinecap="round" opacity={0.55} />
         {pinPos.map((p) => (
           <g key={p.country} transform={`translate(${p.xy[0]},${p.xy[1]})`} className="cursor-pointer" onMouseEnter={() => setHover(p)} onMouseLeave={() => setHover(null)} onClick={() => onPin?.(p)}>
             <circle r={26} fill="url(#pin-glow)">
