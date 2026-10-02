@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { motion } from "motion/react";
 import { cn } from "../lib/cn";
 
 /**
@@ -49,8 +48,9 @@ export function Starfield(_props: { density?: number; className?: string }) {
 /** Fade-up container for page sections. */
 export function Reveal({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
-    <motion.div className={className} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay, ease: [0.16, 1, 0.3, 1] }}>
+    // CSS entrance (styles.css .k-reveal): visible from the server-rendered HTML, no wait for hydration
+    <div className={cn("k-reveal", className)} style={delay ? ({ "--k-reveal-delay": `${delay}s` } as React.CSSProperties) : undefined}>
       {children}
-    </motion.div>
+    </div>
   );
 }

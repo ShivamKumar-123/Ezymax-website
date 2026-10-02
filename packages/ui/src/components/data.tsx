@@ -41,7 +41,7 @@ export function KpiCard({
   delay?: number;
 }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }} className={cn("min-w-0", className)}>
+    <div className={cn("k-reveal min-w-0", className)} style={{ "--k-reveal-y": "14px", "--k-reveal-ms": "500ms", ...(delay ? { "--k-reveal-delay": `${delay}s` } : {}) } as React.CSSProperties}>
       <SpotlightCard hot={hot} className="flex h-full flex-col">
         <div className="relative flex flex-1 flex-col px-6 pb-5 pt-6">
           {/* min-h keeps the value on the same line in a row of cards with and without an icon */}
@@ -62,7 +62,7 @@ export function KpiCard({
           </div>
         )}
       </SpotlightCard>
-    </motion.div>
+    </div>
   );
 }
 

@@ -98,6 +98,15 @@
   0% { box-shadow: 0 0 0 0 currentColor; }
   100% { box-shadow: 0 0 0 6px transparent; }
 }
+/* Entrance fade-up (Reveal, PageHeader, KpiCard). A CSS animation, not a JS one: server-rendered content paints and
+   animates with the first frame, instead of staying invisible (opacity 0) until the page's scripts have loaded and
+   hydrated. Same curve, distance and timing as before; `backwards` holds the start state during the delay. */
+@keyframes k-reveal {
+  from { opacity: 0; transform: translateY(var(--k-reveal-y, 12px)); }
+}
+.k-reveal {
+  animation: k-reveal var(--k-reveal-ms, 450ms) cubic-bezier(0.16, 1, 0.3, 1) var(--k-reveal-delay, 0s) backwards;
+}
 @keyframes flash-up { from { color: var(--k-up); text-shadow: 0 0 10px var(--k-up-soft); } }
 @keyframes flash-down { from { color: var(--k-down); text-shadow: 0 0 10px var(--k-down-soft); } }
 @keyframes tick-bg-up { from { background-color: color-mix(in oklab, var(--k-up) 30%, transparent); } to { background-color: transparent; } }
