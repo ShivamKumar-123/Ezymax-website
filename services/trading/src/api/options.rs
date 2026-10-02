@@ -564,6 +564,8 @@ pub async fn rerun(State(st): State<AppState>, s: StaffCtx, Path(expiry): Path<S
     for d in todo {
         by_login.entry(d.login).or_default().push(d.clone());
     }
+    // crosses: one conversion rate for every account of the re-run (settle.rs)
+    let usdq = settle::conversion(&st, &symbol, date).await;
     let mut rep = crate::shard::SettleReport::default();
     let mut audit = Vec::new();
     let mut failed = Vec::new();
@@ -572,7 +574,7 @@ pub async fn rerun(State(st): State<AppState>, s: StaffCtx, Path(expiry): Path<S
         let staff_reason = reason.clone();
         let op: Op = Box::new(move |tx, env| {
             let before = tx.st.balance;
-            let out = eopt::rerun(tx, env, &k, &ds, fixing, run, None)?;
+            let out = eopt::rerun(tx, env, &k, &ds, fixing, run, usdq)?;
             crate::engine::risk::check_margin(tx, env);
             tx.audit.push(AuditDraft {
                 action: "options.settlement_rerun",
@@ -597,6 +599,10 @@ pub async fn rerun(State(st): State<AppState>, s: StaffCtx, Path(expiry): Path<S
                 failed.push(json!({"login": login, "error": format!("{e:?}")}));
             }
         }
+    }
+    // the rounding the re-run left in the expiry's clearing account (book positions)
+    if rep.failures == 0 {
+        settle::sweep_clearing(&st.hub, &symbol, date, run).await;
     }
     settle::record(&st, &rep, &key, &symbol, date, run, fixing, source.as_deref(), "rerun", &reason, &s.staff.name).await;
     settle::notify(&st, &rep, &key, run, fixing, true).await;

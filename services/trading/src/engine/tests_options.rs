@@ -412,6 +412,38 @@ fn settlement_is_idempotent_reruns_net_and_holds_the_proceeds_for_an_hour() {
     h.assert_replay();
 }
 
+/// A barrier whose level the fixing itself reached was touched in the fixing window even when no knock was seen
+/// (the engine was down, a gap): the knock-out settles at its rebate, the knock-in as the vanilla.
+#[test]
+fn a_barrier_the_fixing_reached_settles_as_touched() {
+    let mut kit2 = kit();
+    let mut kit = kit();
+    let mut h = Harness::live(&kit, "hedge", "10000");
+    let uo = LegReq { barrier: Some(BarrierReq { kind: BarrierKind::UO, level: d("1.18"), rebate: d("0.0005") }), ..leg(C116, Side::Buy, "2") };
+    let di = LegReq { barrier: Some(BarrierReq { kind: BarrierKind::DI, level: d("1.14"), rebate: d("0.0002") }), ..leg(P115, Side::Buy, "1") };
+    filled(place(&mut h, &kit, req(vec![uo], "t1")).unwrap());
+    filled(place(&mut h, &kit, req(vec![di], "t2")).unwrap());
+    kit.now = t("2026-10-02T14:05:00Z");
+    // fixing 1.185 ≥ the UO level 1.18: rebate 0.0005 × 2 × 10 000 = 10 (not the 1.185 − 1.16 intrinsic)
+    let bal = h.st.balance;
+    let s = h.run(&kit, |tx, env| Ok(options::settle(tx, env, KEY, d("1.185"), 1, None))).unwrap();
+    assert_eq!(s.tickets.len(), 2);
+    // + the DI put that never knocked in (1.185 > 1.14): its rebate 0.0002 × 10 000 = 2
+    assert_eq!(h.st.balance - bal, d("12.00"));
+    h.assert_ledger();
+
+    let mut h2 = Harness::live(&kit2, "hedge", "10000");
+    let di = LegReq { barrier: Some(BarrierReq { kind: BarrierKind::DI, level: d("1.14"), rebate: d("0.0002") }), ..leg(P115, Side::Buy, "1") };
+    filled(place(&mut h2, &kit2, req(vec![di], "t3")).unwrap());
+    kit2.now = t("2026-10-02T14:05:00Z");
+    // fixing 1.135 ≤ the DI level 1.14, never knocked in: it is the vanilla put, (1.15 − 1.135) × 10 000 = 150
+    let bal = h2.st.balance;
+    h2.run(&kit2, |tx, env| Ok(options::settle(tx, env, KEY, d("1.135"), 1, None))).unwrap();
+    assert_eq!(h2.st.balance - bal, d("150.00"));
+    h2.assert_ledger();
+    h2.assert_replay();
+}
+
 #[test]
 fn a_short_itm_settlement_charges_the_client_and_nbp_covers_a_deficit() {
     let mut kit = kit();

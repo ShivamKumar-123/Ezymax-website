@@ -81,6 +81,10 @@ impl World {
     }
 
     /// Σ of every posting on an account code across all accounts' ledger events.
+    fn postings_to(&self, code: &str) -> Vec<crate::model::Posting> {
+        self.accts.values().flat_map(|h| h.log.iter()).filter_map(|e| if let Event::Ledger { txn } = e { Some(txn) } else { None }).flat_map(|t| t.postings.iter()).filter(|p| p.account == code).cloned().collect()
+    }
+
     fn ledger_sum(&self, code: &str) -> D {
         self.accts.values().flat_map(|h| h.log.iter()).filter_map(|e| if let Event::Ledger { txn } = e { Some(txn) } else { None }).flat_map(|t| t.postings.iter()).filter(|p| p.account == code).map(|p| p.amount).sum()
     }
@@ -371,9 +375,9 @@ fn the_mark_clamps_inside_the_published_book_and_values_positions() {
 }
 
 /// Book positions settle at the fixing like house ones (docs §9): at cut − closeOnlyMinutes `Expire` cancels the
-/// expiry's working orders (reserves released), each side is paid / charged its payoff against
-/// `house:options_settlement`, which nets to 0 because every long has a short, settling again books nothing, and the
-/// purge drops the series from the book.
+/// expiry's working orders (reserves released), each side is paid / charged its payoff against the expiry's
+/// clearing account (not `house:options_settlement`), which nets to 0 because every long has a short, settling
+/// again books nothing, and the purge drops the series from the book.
 #[test]
 fn book_positions_settle_at_the_fixing_and_both_sides_net_to_zero() {
     let kit = kit();
@@ -409,8 +413,9 @@ fn book_positions_settle_at_the_fixing_and_both_sides_net_to_zero() {
         let deal = w.accts[&l].log.iter().rev().find_map(|e| if let Event::PositionClosed { deal, .. } = e { Some(deal.clone()) } else { None }).unwrap();
         assert_eq!((deal.reason, deal.price), (crate::model::DealReason::Expiry, d("0.01")));
     }
-    assert_eq!(w.ledger_sum("house:options_settlement:USD"), ZERO, "long payouts = short charges");
-    assert_eq!(w.ledger_sum(CLEARING), ZERO);
+    assert_eq!(w.ledger_sum(CLEARING), ZERO, "long payouts = short charges, through the clearing account");
+    assert!(w.postings_to("house:options_settlement:USD").is_empty(), "book positions do not settle against the house");
+    assert_eq!(w.postings_to(CLEARING).len(), 2 * 2 + 3, "2 fills (both sides each) and 3 settlements");
     // a repeat (crash catch-up, scheduler pass) books nothing
     for l in [a, b, c] {
         let v = w.st(l).version;
@@ -425,5 +430,98 @@ fn book_positions_settle_at_the_fixing_and_both_sides_net_to_zero() {
     for h in w.accts.values() {
         h.assert_ledger();
         h.assert_replay();
+    }
+}
+
+/// The cross-currency case of docs §9: a USD account short and a cent account long the same book series. Each
+/// settles against the expiry's clearing account in USD (the cent side in the 4-leg form through `house:fx`, like
+/// its fill), so the clearing account nets to 0 per ledger code; nothing touches `house:options_settlement`; a
+/// re-run at a corrected fixing reverses both sides through the same accounts and the clearing still nets to 0;
+/// the payout is held for the re-run window; every account replays to its live state.
+#[test]
+fn usd_and_cent_book_positions_settle_through_clearing_and_net_to_zero() {
+    let kit = kit();
+    let (a, c, b) = (10_000_001, 10_000_003, 10_000_002);
+    let mut w = World::new(kit, vec![]);
+    w.accts.insert(a, account(&w.kit, a, 7, "hedge", "10000"));
+    w.accts.insert(c, account(&w.kit, c, 9, "cent", "1000"));
+    w.accts.insert(b, account(&w.kit, b, 8, "cent", "1000"));
+    // A (USD) sells 3: C (cent) buys 2, B (cent) buys 1
+    w.order(a, limit(Side::Sell, "3", "0.0051")).unwrap();
+    w.order(c, limit(Side::Buy, "2", "0.0051")).unwrap();
+    w.order(b, limit(Side::Buy, "1", "0.0051")).unwrap();
+    assert_eq!(w.ledger_sum(CLEARING), ZERO);
+    w.kit.now = chrono::DateTime::parse_from_rfc3339("2026-10-02T14:05:00Z").unwrap().with_timezone(&chrono::Utc);
+    let settle = |w: &mut World, login: i64, fixing: &str, run: i32| w.accts.get_mut(&login).unwrap().run(&w.kit, |tx, env| Ok(super::options::settle(tx, env, "EURUSD:2026-10-02", d(fixing), run, None))).unwrap();
+    let before: BTreeMap<i64, D> = [a, c, b].into_iter().map(|l| (l, w.st(l).balance)).collect();
+    // 1.16 call at 1.16733: 0.00733 × 10 000 = 73.30 USD per contract (cent: 7 330 USC)
+    for (l, cash) in [(a, "-219.90"), (c, "14660.00"), (b, "7330.00")] {
+        let s = settle(&mut w, l, "1.16733", 1);
+        assert_eq!((s.tickets.len(), s.cash), (1, d(cash)), "login {l}");
+        assert_eq!(w.st(l).balance - before[&l], d(cash), "login {l}");
+    }
+    assert_eq!(w.ledger_sum(CLEARING), ZERO, "USD short = cent longs, per ledger code");
+    assert!(w.postings_to("house:options_settlement:USD").is_empty() && w.postings_to("house:options_settlement:USC").is_empty());
+    let cent_settle = w.accts[&c].log.iter().find_map(|e| match e {
+        Event::Ledger { txn } if txn.idempotency_key.starts_with("settle:") => Some(txn.clone()),
+        _ => None,
+    });
+    let cent_settle = cent_settle.unwrap();
+    assert_eq!(cent_settle.postings.len(), 4, "4-leg form via house:fx: {cent_settle:?}");
+    assert!(cent_settle.is_balanced());
+    assert_eq!(cent_settle.postings.iter().find(|p| p.account == CLEARING).unwrap().amount, d("-146.60"));
+    // house:fx carries the conversion: USC −, USD + by the same value
+    assert_eq!(w.ledger_sum("house:fx:USC") / D::from(100) + w.ledger_sum("house:fx:USD"), ZERO);
+    // the payout is held for the re-run window
+    assert_eq!(metrics(&w.kit.env(w.st(c)), w.st(c)).held, d("14660.00"));
+    // re-run at a corrected fixing 1.16700 (run 2): both sides are reversed through the clearing account
+    let deals = |w: &World, l: i64| -> Vec<crate::model::Deal> { w.accts[&l].log.iter().filter_map(|e| if let Event::PositionClosed { deal, .. } = e { Some(deal.clone()) } else { None }).filter(|d| d.reason == crate::model::DealReason::Expiry).collect() };
+    let mid: BTreeMap<i64, D> = [a, c, b].into_iter().map(|l| (l, w.st(l).balance)).collect();
+    for (l, diff) in [(a, "9.90"), (c, "-660.00"), (b, "-330.00")] {
+        let ds = deals(&w, l);
+        let s = w.accts.get_mut(&l).unwrap().run(&w.kit, |tx, env| super::options::rerun(tx, env, "EURUSD:2026-10-02", &ds, d("1.16700"), 2, None)).unwrap();
+        assert_eq!(s.tickets.len(), 1, "login {l}");
+        assert_eq!(w.st(l).balance - mid[&l], d(diff), "login {l}: the re-run moves the balance by exactly the difference");
+    }
+    assert_eq!(w.ledger_sum(CLEARING), ZERO, "still nets to 0 after the re-run");
+    assert!(w.postings_to("house:options_settlement:USD").is_empty() && w.postings_to("house:options_settlement:USC").is_empty());
+    let rev = w.accts[&c].log.iter().find_map(|e| match e {
+        Event::Ledger { txn } if txn.idempotency_key.starts_with("settle-rev:") => Some(txn.clone()),
+        _ => None,
+    });
+    assert_eq!(rev.unwrap().postings.len(), 4, "the cent reversal mirrors the 4-leg settlement");
+    // the hold follows the corrected payout (14 660 − 14 660 + 14 000)
+    assert_eq!(metrics(&w.kit.env(w.st(c)), w.st(c)).held, d("14000.00"));
+    w.kit.now += chrono::Duration::seconds(crate::state::SETTLEMENT_HOLD_SECS + 1);
+    assert_eq!(metrics(&w.kit.env(w.st(c)), w.st(c)).held, ZERO, "released after the re-run window");
+    for h in w.accts.values() {
+        h.assert_ledger();
+        h.assert_replay();
+    }
+}
+
+/// Rounding: a payoff that is not a whole cent per position (XAU-like decimals) leaves at most 0.005 USD per settled
+/// position in the clearing account; the sweep (settle.rs) moves exactly that and refuses anything larger.
+#[test]
+fn per_position_rounding_stays_within_the_sweep_limit() {
+    let kit = kit();
+    let (a, b, c) = (10_000_001, 10_000_002, 10_000_004);
+    let mut w = World::new(kit, vec![]);
+    for (l, u) in [(a, 7), (b, 8), (c, 9)] {
+        w.accts.insert(l, account(&w.kit, l, u, "hedge", "10000"));
+    }
+    w.order(a, limit(Side::Sell, "3", "0.0051")).unwrap();
+    w.order(b, limit(Side::Buy, "1", "0.0051")).unwrap();
+    w.order(c, limit(Side::Buy, "2", "0.0051")).unwrap();
+    w.kit.now = chrono::DateTime::parse_from_rfc3339("2026-10-02T14:05:00Z").unwrap().with_timezone(&chrono::Utc);
+    // a fixing with 7 decimals: 0.0073333 × 10 000 = 73.333 per contract → 3 × = 219.999 → −220.00; 73.33; 146.67
+    for l in [a, b, c] {
+        w.accts.get_mut(&l).unwrap().run(&w.kit, |tx, env| Ok(super::options::settle(tx, env, "EURUSD:2026-10-02", d("1.1673333"), 1, None))).unwrap();
+    }
+    let net = w.ledger_sum(CLEARING);
+    assert_eq!(net, d("0.00"), "220.00 − 73.33 − 146.67");
+    // the general bound: |net| ≤ 0.005 × settled positions
+    for (n, settled, ok) in [(d("0.01"), 3, true), (d("0.015"), 3, true), (d("0.02"), 3, false)] {
+        assert_eq!(crate::options::settle::sweep_amount(n, settled).is_some(), ok, "{n} over {settled}");
     }
 }

@@ -101,10 +101,11 @@ async fn ledger_sum(pool: &sqlx::PgPool, code: &str) -> D {
     sqlx::query_scalar::<_, Option<D>>("SELECT sum(amount) FROM ledger_postings WHERE account_code = $1").bind(code).fetch_one(pool).await.unwrap().unwrap_or_default()
 }
 
-/// (series code, cut) of the nearest-ATM call of the first EURUSD expiry whose cut is at least `min_hours` away.
-fn pick(snap: &trading::options::OptSnapshot, spot: f64, min_hours: i64, max_hours: Option<i64>) -> Option<(String, chrono::DateTime<Utc>)> {
+/// (series code, cut) of the nearest-ATM call of the first EURUSD expiry whose cut is at least `min_minutes` away
+/// (and less than `max_hours`).
+fn pick(snap: &trading::options::OptSnapshot, spot: f64, min_minutes: i64, max_hours: Option<i64>) -> Option<(String, chrono::DateTime<Utc>)> {
     let now = Utc::now();
-    let mut ex: Vec<_> = snap.expiries.iter().filter(|e| e.symbol == "EURUSD" && e.status == "listed" && e.cut_at > now + chrono::Duration::hours(min_hours) && max_hours.is_none_or(|h| e.cut_at < now + chrono::Duration::hours(h))).collect();
+    let mut ex: Vec<_> = snap.expiries.iter().filter(|e| e.symbol == "EURUSD" && e.status == "listed" && e.cut_at > now + chrono::Duration::minutes(min_minutes) && max_hours.is_none_or(|h| e.cut_at < now + chrono::Duration::hours(h))).collect();
     ex.sort_by_key(|e| e.cut_at);
     let e = ex.first()?;
     let s = snap.series.values().filter(|s| s.expiry_id == e.id && s.kind == "call" && s.status == "active").min_by(|a, b| (a.strike - spot).abs().total_cmp(&(b.strike - spot).abs()))?;
@@ -194,7 +195,7 @@ async fn order_book_end_to_end_against_the_real_services() {
     // dormant until enabled: the book refuses, the house-priced options are untouched
     let order = |series: &str, side: &str, kind: &str, qty: i64, price: Option<D>, cid: &str| json!({"series": series, "side": side, "type": kind, "qty": qty, "price": price.map(|p| p.to_string()), "tif": if kind == "market" { "ioc" } else { "gtc" }, "clientOrderId": cid});
     let snap = options.snapshot().unwrap();
-    let (series, cut) = pick(&snap, spot, 24, None).expect("a EURUSD expiry more than a day out");
+    let (series, cut) = pick(&snap, spot, 24 * 60, None).expect("a EURUSD expiry more than a day out");
     eprintln!("series {series} (cut {cut})");
     let e = api::options_book::place(State(st.clone()), ctx(&ta), body(order(&series, "sell", "limit", 2, Some(D::new(1, 2)), "x0"))).await.unwrap_err();
     assert!(format!("{e:?}").contains("book_disabled"), "{e:?}");
@@ -285,7 +286,7 @@ async fn order_book_end_to_end_against_the_real_services() {
         async move { hub.read(l, Box::new(|x| json!(x.unwrap().0.positions.values().filter(|p| p.on_book()).map(|p| (p.volume * p.side.sign()).to_string()).collect::<Vec<_>>()))).await }
     };
     assert_eq!((book_pos(a).await, book_pos(b).await), (json!(["-1"]), json!(["1"])));
-    let clearing = format!("house:options_clearing.EURUSD.{}:USD", cut.date_naive().format("%Y%m%d"));
+    let clearing = format!("house:options_clearing.EURUSD.{}:USD", snap.expiry_by_id(snap.series[&series].expiry_id).unwrap().expiry_date.format("%Y%m%d"));
     assert_eq!(ledger_sum(&pool, &clearing).await, D::ZERO);
     let prem = trading::money::r2(px * D::from(10_000));
     assert!(ledger_sum(&pool, &format!("acct:{b}:balance")).await <= D::from(10_000) - prem, "B paid the premium and the fee");
@@ -340,10 +341,12 @@ async fn order_book_end_to_end_against_the_real_services() {
 
     // ---------- optional: a real 0DTE fixing settles ----------
     let wait: u64 = env("BOOK_E2E_FIXING_WAIT_SECS", "0").parse().unwrap_or(0);
+    let mut fixing_leg = false;
     if wait > 0
-        && let Some((s0, cut0)) = pick(&snap, spot, 0, Some(24)).filter(|(_, c)| *c > Utc::now() + chrono::Duration::minutes(16))
+        && let Some((s0, cut0)) = pick(&snap, spot, 16, Some(24))
     {
         eprintln!("0DTE {s0}, cut {cut0}: trading, then waiting for the fixing");
+        fixing_leg = true;
         let m0 = (options.price("kalks", "*", &trading::engine::options_book::terms_of(&snap, &s0).unwrap().0, Utc::now()).unwrap().mark / tick).floor() * tick;
         let p0 = m0.max(tick);
         let _ = api::options_book::place(State(st.clone()), ctx(&ta), body(order(&s0, "sell", "limit", 3, Some(p0), "z1"))).await.unwrap();
@@ -362,12 +365,27 @@ async fn order_book_end_to_end_against_the_real_services() {
             tokio::time::sleep(Duration::from_secs(10)).await;
         }
         assert!(settled, "the 0DTE fixing was not published within {wait} s");
-        let c0 = format!("house:options_clearing.EURUSD.{}:USD", cut0.date_naive().format("%Y%m%d"));
+        let snap0 = options.snapshot().unwrap();
+        let e0 = snap0.expiry_by_id(snap.series[&s0].expiry_id).map(|e| (e.key(), e.fixing, e.fixing_run, e.fixing_source.clone()));
+        let cash: Vec<(String, D)> = sqlx::query_as("SELECT t.idempotency_key, p.amount FROM ledger_txns t JOIN ledger_postings p ON p.txn_id = t.id WHERE t.idempotency_key LIKE 'settle:%' AND p.account_code LIKE 'acct:%' ORDER BY 1")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+        eprintln!("0DTE settled: expiry {e0:?}, traded 3 at {p0}, settlement cash {cash:?}");
+        // the clearing account is named by the expiry DATE (= the cut's date for real listings, not for the
+        // weekend-dated test expiries of OPTIONS_TEST_EXPIRIES)
+        let d0 = snap.expiry_by_id(snap.series[&s0].expiry_id).unwrap().expiry_date;
+        let c0 = format!("house:options_clearing.EURUSD.{}:USD", d0.format("%Y%m%d"));
+        let n0: i64 = sqlx::query_scalar("SELECT count(*) FROM ledger_postings WHERE account_code = $1").bind(&c0).fetch_one(&pool).await.unwrap();
+        assert!(n0 > 0, "the 0DTE fills went through {c0}");
         assert_eq!(ledger_sum(&pool, &c0).await, D::ZERO, "the expiry's clearing nets to 0");
         assert_eq!(ledger_sum(&pool, "house:options_settlement:USD").await, D::ZERO, "long payouts = short charges");
         assert_eq!((book_pos(a).await, book_pos(b).await), (json!([]), json!([])));
     }
 
+    if wait > 0 && !fixing_leg {
+        eprintln!("0DTE fixing leg SKIPPED: no listed EURUSD expiry 16 min to 24 h ahead");
+    }
     // money: every transaction balances and nets per currency; the account replay = live
     let nets: Vec<(String, D)> = sqlx::query_as("SELECT currency, sum(amount) FROM ledger_postings GROUP BY currency").fetch_all(&pool).await.unwrap();
     assert!(nets.iter().all(|(_, v)| v.is_zero()), "{nets:?}");

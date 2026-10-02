@@ -1278,6 +1278,71 @@ pub async fn refix(State(st): State<AppState>, h: HeaderMap, Path(id): Path<i64>
     Ok(Json(json!({"expiry": rd.expiries.iter().find(|e| e.id == id)})))
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TestExpiryPost {
+    symbol: String,
+    /// Minutes from now to the cut (20..=360).
+    cut_in_minutes: i64,
+    /// TWAP window; default the underlying's.
+    twap_minutes: Option<i64>,
+    reason: Option<String>,
+}
+
+/// The first Saturday or Sunday from `from` without an expiry of `symbol` (the listing job never lists a weekend,
+/// so a test expiry cannot collide with a real one).
+pub fn test_expiry_date(from: NaiveDate, taken: &[NaiveDate]) -> NaiveDate {
+    use chrono::Datelike;
+    let mut d = from;
+    loop {
+        if matches!(d.weekday(), chrono::Weekday::Sat | chrono::Weekday::Sun) && !taken.contains(&d) {
+            return d;
+        }
+        d = d.succ_opt().expect("date in range");
+    }
+}
+
+/// `POST /v1/admin/options/test/expiries {symbol, cutInMinutes, twapMinutes?, reason?}`: LOCAL TESTING ONLY. The
+/// route exists only with `OPTIONS_TEST_EXPIRIES=1` outside production (config.rs). Lists an ad-hoc expiry of
+/// `symbol` whose cut is `cutInMinutes` ahead, dated the next free weekend day (never a real listing date), and
+/// its strikes from the live mid; the TWAP sampler and the fixing job then treat it like any other expiry.
+pub async fn test_expiry(State(st): State<AppState>, h: HeaderMap, Json(p): Json<TestExpiryPost>) -> R {
+    if !st.cfg.test_expiries || !st.cfg.dev_mode {
+        return Err(ApiError::not_found("Route"));
+    }
+    let s = who(&h)?;
+    s.require_platform()?;
+    let symbol = p.symbol.trim().to_ascii_uppercase();
+    let rd = st.refdata().await;
+    let u = rd.underlying(&symbol).filter(|u| u.enabled).ok_or_else(|| ApiError::not_found("Underlying"))?;
+    if !(20..=360).contains(&p.cut_in_minutes) {
+        return Err(ApiError::bad("cutInMinutes must be 20..=360."));
+    }
+    let twap = p.twap_minutes.unwrap_or(u.twap_minutes as i64).clamp(1, p.cut_in_minutes - 1);
+    let now = Utc::now();
+    let cut = chrono::DateTime::<Utc>::from_timestamp(now.timestamp() / 60 * 60, 0).unwrap_or(now) + chrono::Duration::minutes(p.cut_in_minutes);
+    let taken: Vec<NaiveDate> = sqlx::query_scalar("SELECT expiry_date FROM expiries WHERE symbol = $1").bind(&symbol).fetch_all(&st.pool).await?;
+    let date = test_expiry_date(now.date_naive(), &taken);
+    let reason = opt_reason(&p.reason);
+    let mut tx = st.pool.begin().await?;
+    let id: i64 = sqlx::query_scalar("INSERT INTO expiries (symbol, expiry_date, kinds, cut_at, twap_start) VALUES ($1,$2,$3,$4,$5) RETURNING id")
+        .bind(&symbol)
+        .bind(date)
+        .bind(vec!["daily".to_string(), "test".to_string()])
+        .bind(cut)
+        .bind(cut - chrono::Duration::minutes(twap))
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(db_err)?;
+    store::audit(&mut tx, &s.tenant, &s.actor, "expiry.test", &format!("{symbol}:{date}"), None, Some(json!({"cutAt": cut, "twapMinutes": twap})), &reason).await?;
+    finish(&st, tx).await?;
+    // strikes now (from the live mid), not at the next listing pass
+    let rep = jobs::list_series(&st).await?;
+    let n: i64 = sqlx::query_scalar("SELECT count(*) FROM series WHERE expiry_id = $1").bind(id).fetch_one(&st.pool).await?;
+    tracing::warn!(%symbol, %date, %cut, twap, series = n, "TEST expiry listed (OPTIONS_TEST_EXPIRIES)");
+    Ok(Json(json!({"expiry": {"id": id, "symbol": symbol, "date": date, "key": format!("{symbol}:{date}"), "cutAt": cut, "twapStart": cut - chrono::Duration::minutes(twap), "series": n}, "listing": rep})))
+}
+
 /// `POST /v1/admin/options/listing/run` (Kalks): runs the listing job now.
 pub async fn listing_run(State(st): State<AppState>, h: HeaderMap) -> R {
     let s = who(&h)?;
@@ -1331,5 +1396,20 @@ mod tests {
         assert!(validate_mm(&MmSettings { base_size: 2.5, ..ok.clone() }).unwrap_err().contains("baseSize"));
         assert!(validate_mm(&MmSettings { min_spread_ticks: 0, ..ok.clone() }).unwrap_err().contains("minSpreadTicks"));
         assert!(validate_mm(&MmSettings { max_vega: 0.0, ..ok.clone() }).unwrap_err().contains("maxVega"));
+    }
+
+    #[test]
+    fn test_expiries_never_take_a_listing_date() {
+        let d = |m, dd| NaiveDate::from_ymd_opt(2026, m, dd).unwrap();
+        // Friday 2026-10-02 -> Saturday 10-03; taken -> Sunday 10-04; both taken -> next Saturday
+        assert_eq!(test_expiry_date(d(10, 2), &[]), d(10, 3));
+        assert_eq!(test_expiry_date(d(10, 2), &[d(10, 3)]), d(10, 4));
+        assert_eq!(test_expiry_date(d(10, 2), &[d(10, 3), d(10, 4)]), d(10, 10));
+        assert_eq!(test_expiry_date(d(10, 4), &[]), d(10, 4));
+    }
+
+    #[test]
+    fn test_expiries_are_off_unless_asked_and_never_in_production() {
+        assert!(!crate::config::Config::for_tests("postgres://x/y").test_expiries);
     }
 }

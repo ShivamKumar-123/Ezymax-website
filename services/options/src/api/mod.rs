@@ -154,8 +154,10 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/options/listing/run", post(admin::listing_run))
         .route("/v1/admin/options/audit", get(admin::audit))
         .route("/v1/admin/options/mm-settings", get(admin::mm_settings))
-        .route("/v1/admin/options/mm-settings/{tenant}/{kind}/{underlying}", put(admin::mm_put).delete(admin::mm_delete))
-        .layer(middleware::from_fn_with_state(st.clone(), require_internal));
+        .route("/v1/admin/options/mm-settings/{tenant}/{kind}/{underlying}", put(admin::mm_put).delete(admin::mm_delete));
+    // LOCAL TESTING ONLY: ad-hoc expiries a few minutes ahead (OPTIONS_TEST_EXPIRIES=1, never in production)
+    let internal = if st.cfg.test_expiries && st.cfg.dev_mode { internal.route("/v1/admin/options/test/expiries", post(admin::test_expiry)) } else { internal };
+    let internal = internal.layer(middleware::from_fn_with_state(st.clone(), require_internal));
     // order book public market data: 10 requests / s per client IP
     let public_book = Router::new()
         .route("/v1/public/options/book/{series}", get(public_book::book))

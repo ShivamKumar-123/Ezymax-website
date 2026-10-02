@@ -9,8 +9,11 @@
 //!   cash of the remaining contracts, so unrealised P&L = value + premium and realised P&L = cash at the exit +
 //!   the premium share.
 //! * Closing sells a long at the bid / buys a short back at the ask. Expiry pays the payoff at the fixing
-//!   (`option_settlement`, against `house:options_settlement`, key `settle:{SYMBOL:DATE}:{run}:{ticket}`); a
-//!   knock-out pays its rebate at the hit (key `knock:{ticket}`).
+//!   (`option_settlement`, key `settle:{SYMBOL:DATE}:{run}:{ticket}`): a house-venue position against
+//!   `house:options_settlement`, an order book position against its expiry's clearing account in USD
+//!   (`house:options_clearing.{U}.{YYYYMMDD}:USD`; cent accounts through `house:fx`, like the fills;
+//!   docs/OPTIONS-EXCHANGE.md §9), so the clearing account nets to 0 per ledger code across USD and cent accounts;
+//!   a knock-out pays its rebate at the hit (key `knock:{ticket}`).
 //! * Margin = CFD margin + per underlying the scenario (SPAN-like) worst loss of the option legs, as far as the
 //!   same-underlying CFD exposure does not already cover it (offsets only ever reduce option margin), times the
 //!   weekend add-on on Fridays. Long options carry no margin (an underlying without short options has none).
@@ -29,8 +32,8 @@ use std::sync::Arc;
 use super::trade::{DealerCtx, apply_nbp, gate};
 use super::{Env, Metrics, Reject, Tx, metrics};
 use crate::model::{
-    Account, AccountKind, BarrierKind, BarrierTerms, Book, Deal, DealEntry, DealOption, DealReason, Expiry, OptLeg, OptRight, OptionOrder, OptionTerms, Order, OrderStatus, OrderType, Position, RouteEvent, Side, Source,
-    Trigger, TxnKind,
+    Account, AccountKind, BarrierKind, BarrierTerms, Book, Deal, DealEntry, DealOption, DealReason, Expiry, LedgerTxn, OptLeg, OptRight, OptionOrder, OptionTerms, Order, OrderStatus, OrderType, Position, Posting,
+    RouteEvent, Side, Source, Trigger, TxnKind, acct_code, house_code,
 };
 use crate::money::{D, HUNDRED, ONE, ZERO, num, r2, rdp};
 use crate::options::snapshot::{OptSnapshot, Underlying};
@@ -46,6 +49,40 @@ pub const NOT_ELIGIBLE: &str = "One quick step: read the 1-minute options intro 
 /// House accounts of the options book.
 pub const HOUSE_PREMIUM: &str = "options_premium";
 pub const HOUSE_SETTLEMENT: &str = "options_settlement";
+
+/// The other side of an option cash flow.
+#[derive(Clone, Copy, Debug)]
+pub enum Counter<'a> {
+    /// A house account in the account currency (`house:{name}:{ccy}`): the house-priced B-book.
+    House(&'a str),
+    /// An order book position: the expiry's clearing account in USD (docs §9), cent accounts through `house:fx`.
+    Clearing(&'a OptionTerms),
+}
+
+/// Books `amount` (account currency, + = to the client) against the expiry's clearing account in USD: 2 legs for a
+/// USD account, the 4-leg form through `house:fx:USC/USD` for a cent account (as `options_book::apply_fill` does
+/// for the premium). Each currency balances on its own; the clearing leg is `amount / usd_factor`.
+#[allow(clippy::too_many_arguments)]
+pub fn post_clearing(tx: &mut Tx, env: &Env, kind: TxnKind, idem: String, terms: &OptionTerms, amount: D, reference: Option<String>, reason_code: Option<String>, note: Option<String>) -> Option<i64> {
+    let amount = r2(amount);
+    if amount.is_zero() {
+        return None;
+    }
+    let acc = &tx.st.account;
+    let (login, ccy) = (acc.login, acc.ccy());
+    let usd = amount / acc.usd_factor();
+    let mut postings = vec![Posting { account: acct_code(login, "balance"), ccy: ccy.into(), amount }];
+    if acc.cent {
+        postings.push(Posting { account: house_code("fx", "USC"), ccy: "USC".into(), amount: -amount });
+        postings.push(Posting { account: house_code("fx", "USD"), ccy: "USD".into(), amount: usd });
+    }
+    postings.push(Posting { account: house_code(&super::options_book::clearing_name(terms), "USD"), ccy: "USD".into(), amount: -usd });
+    let txn = LedgerTxn { id: env.ids.txn(), tenant_id: acc.tenant_id, idempotency_key: idem, kind, login, reference, reason_code, note, at: env.now, postings };
+    assert!(txn.is_balanced(), "unbalanced clearing transaction");
+    let id = txn.id;
+    tx.emit(Event::Ledger { txn });
+    Some(id)
+}
 
 fn rej(code: &'static str, message: impl Into<String>) -> Reject {
     Reject::new(code, message)
@@ -97,6 +134,21 @@ pub fn usd_per_quote_at(env: &Env, acc: &Account, t: &OptionTerms, fixing: D) ->
         return Some(ONE / fixing);
     }
     usd_per_quote(env, acc, &t.quote_ccy)
+}
+
+/// The quote → USD rate of a settlement: 1 for a USD-quoted underlying, 1 / fixing for USDxxx; for a cross the
+/// rate the settlement pass fixed for the whole expiry (`usdq`, settle.rs `conversion`: the conversion pair's own
+/// fixing of the same expiry, else the live mid when the pass started), so every account of the expiry converts
+/// at one rate and a book expiry's clearing nets; the live mid only without one. None = no rate at all: the
+/// position waits for the next pass instead of being paid a quote-currency amount as if it were USD.
+pub fn settle_usd_per_quote(env: &Env, acc: &Account, t: &OptionTerms, fixing: D, usdq: Option<D>) -> Option<D> {
+    if t.quote_ccy == "USD" {
+        return Some(ONE);
+    }
+    if t.underlying == format!("USD{}", t.quote_ccy) && fixing > ZERO {
+        return Some(ONE / fixing);
+    }
+    usdq.filter(|q| *q > ZERO).or_else(|| usd_per_quote(env, acc, &t.quote_ccy))
 }
 
 /// Signed units of the underlying a position holds (+ long).
@@ -1069,7 +1121,7 @@ pub fn close(tx: &mut Tx, env: &Env, ticket: i64, c: OptClose) -> Result<(i64, D
     let cash = if p.side == Side::Buy { amount } else { -amount };
     let comm = commission(env, &snap, &acc, &t.underlying, volume, premium_usd);
     let reason = c.reason;
-    exit(tx, env, &p, volume, px, cash, comm, q.usd_per_quote, Some(q.spot), None, None, reason, TxnKind::OptionPremium, HOUSE_PREMIUM, None, c.dealer.as_ref(), &c.comment)
+    exit(tx, env, &p, volume, px, cash, comm, q.usd_per_quote, Some(q.spot), None, None, reason, TxnKind::OptionPremium, Counter::House(HOUSE_PREMIUM), None, c.dealer.as_ref(), &c.comment)
 }
 
 /// Books an exit of `volume` contracts with `cash` on the balance (commission `comm` charged separately).
@@ -1088,7 +1140,7 @@ fn exit(
     run: Option<i32>,
     reason: DealReason,
     kind: TxnKind,
-    house: &str,
+    counter: Counter<'_>,
     key: Option<String>,
     dealer: Option<&DealerCtx>,
     comment: &str,
@@ -1101,7 +1153,15 @@ fn exit(
     let deal_id = env.ids.deal();
     let cash = r2(cash);
     let key = key.unwrap_or_else(|| format!("deal:{deal_id}:premium"));
-    let txn = if cash.is_zero() { None } else { tx.post(env, kind, key, "balance", house, cash, Some(format!("deal:{deal_id}")), dealer.map(|d| d.reason_code.clone()), Some(format!("{} {} {}", reason.as_str(), volume.normalize(), t.series))) };
+    let note = Some(format!("{} {} {}", reason.as_str(), volume.normalize(), t.series));
+    let txn = if cash.is_zero() {
+        None
+    } else {
+        match counter {
+            Counter::House(house) => tx.post(env, kind, key, "balance", house, cash, Some(format!("deal:{deal_id}")), dealer.map(|d| d.reason_code.clone()), note),
+            Counter::Clearing(terms) => post_clearing(tx, env, kind, key, terms, cash, Some(format!("deal:{deal_id}")), dealer.map(|d| d.reason_code.clone()), note),
+        }
+    };
     if !comm.is_zero() {
         tx.post(env, TxnKind::Commission, format!("deal:{deal_id}:commission"), "balance", "commission", -comm, Some(format!("deal:{deal_id}")), None, None);
     }
@@ -1208,9 +1268,11 @@ pub fn knocks(tx: &mut Tx, env: &Env, underlying: &str) -> Vec<i64> {
             out.push(ticket);
         } else {
             let acc = tx.st.account.clone();
-            let usdq = usd_per_quote(env, &acc, &t.quote_ccy).unwrap_or(ONE);
+            // the rebate in USD at the knock (USDxxx: 1 / spot); without a rate a non-zero rebate waits for the next
+            // tick instead of paying a quote-currency amount as if it were USD
+            let Some(usdq) = usd_per_quote_at(env, &acc, &t, spot).or(b.rebate.is_zero().then_some(ONE)) else { continue };
             let cash = units(&p, &t) * b.rebate * usdq * acc.usd_factor();
-            if exit(tx, env, &p, p.volume, b.rebate, cash, ZERO, usdq, Some(spot), None, None, DealReason::KnockOut, TxnKind::OptionSettlement, HOUSE_SETTLEMENT, Some(format!("knock:{ticket}")), None, &format!("knock-out at {}", spot.normalize())).is_ok() {
+            if exit(tx, env, &p, p.volume, b.rebate, cash, ZERO, usdq, Some(spot), None, None, DealReason::KnockOut, TxnKind::OptionSettlement, Counter::House(HOUSE_SETTLEMENT), Some(format!("knock:{ticket}")), None, &format!("knock-out at {}", spot.normalize())).is_ok() {
                 out.push(ticket);
             }
         }
@@ -1246,11 +1308,13 @@ pub fn settle(tx: &mut Tx, env: &Env, key: &str, fixing: D, run: i32, usdq: Opti
     for ticket in due {
         let p = tx.st.positions[&ticket].clone();
         let t = p.option.clone().unwrap();
-        let q = usd_per_quote_at(env, &acc, &t, fixing).or(usdq).unwrap_or(ONE);
-        let payout = t.payoff(fixing);
-        let cash = units(&p, &t) * payout * q * acc.usd_factor();
+        let Some(q) = settle_usd_per_quote(env, &acc, &t, fixing, usdq) else { continue };
+        let payout = settle_payoff(&t, fixing);
+        // an order book position settles against its clearing account in USD, rounded once in USD (the cent
+        // account gets exactly 100 ×, like a fill's premium), so a cent long and a USD short net to 0 per code
+        let (cash, counter) = if p.on_book() { (r2(units(&p, &t) * payout * q) * acc.usd_factor(), Counter::Clearing(&t)) } else { (units(&p, &t) * payout * q * acc.usd_factor(), Counter::House(HOUSE_SETTLEMENT)) };
         let comment = format!("expiry fixing {} (run {run})", fixing.normalize());
-        if let Ok(_) = exit(tx, env, &p, p.volume, payout, cash, ZERO, q, Some(fixing), Some(fixing), Some(run), DealReason::Expiry, TxnKind::OptionSettlement, HOUSE_SETTLEMENT, Some(format!("settle:{key}:{run}:{ticket}")), None, &comment) {
+        if let Ok(_) = exit(tx, env, &p, p.volume, payout, cash, ZERO, q, Some(fixing), Some(fixing), Some(run), DealReason::Expiry, TxnKind::OptionSettlement, counter, Some(format!("settle:{key}:{run}:{ticket}")), None, &comment) {
             out.tickets.push(ticket);
             out.cash += r2(cash);
         }
@@ -1264,6 +1328,17 @@ pub fn settle(tx: &mut Tx, env: &Env, key: &str, fixing: D, run: i32, usdq: Opti
         apply_nbp(tx, env);
     }
     out
+}
+
+/// The payoff per unit at expiry. A barrier still alive whose level the FIXING itself has reached was touched in
+/// the fixing window (the fixing is an average of the window's mids, so some mid reached the level), even if no
+/// knock was seen (an engine outage, a gap): a knock-out pays its rebate, a knock-in pays as the vanilla it became.
+pub fn settle_payoff(t: &OptionTerms, fixing: D) -> D {
+    match &t.barrier {
+        Some(b) if !b.kind.is_in() && b.kind.hit(fixing, b.level) => b.rebate,
+        Some(b) if b.kind.is_in() && !b.knocked_in && b.kind.hit(fixing, b.level) => t.right.intrinsic(fixing, t.strike),
+        _ => t.payoff(fixing),
+    }
 }
 
 /// Re-runs a settlement at a corrected fixing: every earlier settlement deal of `key` is reversed (cash and deal),
@@ -1287,7 +1362,13 @@ pub fn rerun(tx: &mut Tx, env: &Env, key: &str, prev: &[Deal], fixing: D, run: i
             continue;
         }
         if !o.cash.is_zero() {
-            tx.post(env, TxnKind::Reversal, format!("settle-rev:{key}:{}:{}", o.run.unwrap_or(0), d.position_ticket), "balance", HOUSE_SETTLEMENT, -o.cash, Some(format!("deal:{}", d.id)), Some("SETTLEMENT-RERUN".into()), Some(format!("settlement re-run: fixing {} replaced", o.fixing.map(|x| x.normalize().to_string()).unwrap_or_default())));
+            // reversed against the account it was settled against (the clearing account for a book position)
+            let (idem, reference, note) = (format!("settle-rev:{key}:{}:{}", o.run.unwrap_or(0), d.position_ticket), Some(format!("deal:{}", d.id)), Some(format!("settlement re-run: fixing {} replaced", o.fixing.map(|x| x.normalize().to_string()).unwrap_or_default())));
+            if snap.on_book() {
+                post_clearing(tx, env, TxnKind::Reversal, idem, &o.terms, -o.cash, reference, Some("SETTLEMENT-RERUN".into()), note);
+            } else {
+                tx.post(env, TxnKind::Reversal, idem, "balance", HOUSE_SETTLEMENT, -o.cash, reference, Some("SETTLEMENT-RERUN".into()), note);
+            }
         }
         tx.emit(Event::DealReversed { deal_id: d.id });
         tx.emit(Event::PositionUpdated { position: snap, change: format!("settlement re-run of deal {}", d.id), deal: None });

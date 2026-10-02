@@ -385,12 +385,14 @@ pub async fn recover(hub: &Hub) -> anyhow::Result<Recovery> {
 /// Actor positions == account book positions + pending fills, per (series, login). None = consistent.
 pub async fn reconcile(hub: &Hub, h: &actor::Handle, pending: &[outbox::Row]) -> Option<String> {
     let key = h.key.clone();
+    let now_ms = hub.shared.clock.now().timestamp_millis();
     let actor_pos = h
-        .read(Box::new(|b| {
+        .read(Box::new(move |b| {
             let mut m = serde_json::Map::new();
             for (s, sb) in &b.series {
-                if sb.state == types::SeriesState::Closed {
-                    // expired: settlement removes the positions on both sides
+                // expired (or past its cut: a restart in the middle of a settlement pass may come before the
+                // cut-off `Expire` was journaled): settlement removes the positions on both sides
+                if sb.state == types::SeriesState::Closed || sb.spec.terms.expiry_at.timestamp_millis() <= now_ms {
                     m.insert(format!("{s}|closed"), json!(true));
                     continue;
                 }

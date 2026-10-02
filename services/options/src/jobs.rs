@@ -298,9 +298,26 @@ async fn m1_bars(st: &AppState, symbol: &str, start: DateTime<Utc>, end: DateTim
         .collect())
 }
 
-/// Fixes every expiry whose cut has passed. Returns the number fixed.
+/// The TWAP sampler writes its buffer every 5 s: the automatic fixing waits this long after the cut so the
+/// window's last seconds are stored before the TWAP is computed (fixing right at the cut missed up to 5 s of
+/// samples, 2 of 900 in a 15-minute window on 2026-10-02).
+pub const FIXING_GRACE_SECS: i64 = 8;
+
+/// Fixes every expiry whose cut has passed (by `FIXING_GRACE_SECS`). Returns the number fixed.
 pub async fn run_fixings(st: &AppState) -> anyhow::Result<usize> {
-    let due = sqlx::query("SELECT id, symbol, expiry_date, cut_at, twap_start, status, fixing_run FROM expiries WHERE status IN ('listed', 'fixing') AND cut_at <= now() ORDER BY cut_at")
+    // the status flips to `fixing` at the cut (no more trading); the TWAP is computed after the grace
+    let closing = sqlx::query("SELECT id FROM expiries WHERE status = 'listed' AND cut_at <= now()").fetch_all(&st.pool).await?;
+    if !closing.is_empty() {
+        let ids: Vec<i64> = closing.iter().map(|r| r.get("id")).collect();
+        let mut tx = st.pool.begin().await?;
+        sqlx::query("UPDATE expiries SET status = 'fixing' WHERE id = ANY($1) AND status = 'listed'").bind(&ids).execute(&mut *tx).await?;
+        sqlx::query("UPDATE series SET status = 'expired' WHERE expiry_id = ANY($1) AND status = 'active'").bind(&ids).execute(&mut *tx).await?;
+        store::bump(&mut tx).await?;
+        tx.commit().await?;
+        st.reload(true).await?;
+    }
+    let due = sqlx::query("SELECT id, symbol, expiry_date, cut_at, twap_start, status, fixing_run FROM expiries WHERE status IN ('listed', 'fixing') AND cut_at <= now() - make_interval(secs => $1) ORDER BY cut_at")
+        .bind(FIXING_GRACE_SECS as f64)
         .fetch_all(&st.pool)
         .await?;
     let mut fixed = 0;

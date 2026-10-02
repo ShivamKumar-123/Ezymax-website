@@ -29,6 +29,10 @@ pub struct Config {
     pub trading_token: String,
     /// Consume the engine's order book feed (with `workers`). Off = house model quotes only.
     pub book_feed: bool,
+    /// LOCAL TESTING ONLY (`OPTIONS_TEST_EXPIRIES=1`, ignored when `OPTIONS_ENV=production`): exposes
+    /// `POST /v1/admin/options/test/expiries`, which lists an ad-hoc expiry whose cut is minutes ahead so a real
+    /// TWAP fixing can run on live prices outside the 14:00 UTC cut (services/trading/tests/expiry_e2e.rs).
+    pub test_expiries: bool,
 }
 
 fn redact_url(url: &str) -> String {
@@ -60,6 +64,7 @@ impl fmt::Debug for Config {
             .field("trading_url", &redact_url(&self.trading_url))
             .field("trading_token", &if self.trading_token.is_empty() { "<empty>" } else { "<redacted>" })
             .field("book_feed", &self.book_feed)
+            .field("test_expiries", &self.test_expiries)
             .finish()
     }
 }
@@ -97,6 +102,10 @@ impl Config {
                 .unwrap_or_else(|| "postgres://postgres@127.0.0.1:5433/kalks_options".into()),
         };
         let default_holidays = concat!(env!("CARGO_MANIFEST_DIR"), "/../../config/holidays");
+        let test_expiries = flag("OPTIONS_TEST_EXPIRIES", false);
+        if test_expiries && !dev_mode {
+            eprintln!("OPTIONS_TEST_EXPIRIES is ignored in production");
+        }
         Ok(Self {
             bind: var("OPTIONS_BIND", "127.0.0.1:8104"),
             database_url,
@@ -112,6 +121,7 @@ impl Config {
             trading_url: var("TRADING_URL", "http://127.0.0.1:8090").trim_end_matches('/').to_string(),
             trading_token: var("TRADING_INTERNAL_TOKEN", ""),
             book_feed: flag("OPTIONS_BOOK_FEED", true),
+            test_expiries: test_expiries && dev_mode,
         })
     }
 
@@ -132,6 +142,7 @@ impl Config {
             trading_url: "http://127.0.0.1:9".into(),
             trading_token: String::new(),
             book_feed: false,
+            test_expiries: false,
         }
     }
 }

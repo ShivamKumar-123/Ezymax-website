@@ -360,8 +360,27 @@ async fn twap_fixing_and_m1_fallback_path() {
         .fetch_one(pool)
         .await
         .unwrap();
+    // A third expiry whose cut was 2 s ago: closed for trading at once, but its TWAP waits for the sampler's last
+    // flush (FIXING_GRACE_SECS) so the window's final seconds are in it.
+    let cut3 = Utc.timestamp_opt((Utc::now() - Duration::seconds(2)).timestamp(), 0).unwrap();
+    let id3: i64 = sqlx::query_scalar("INSERT INTO expiries (symbol, expiry_date, kinds, cut_at, twap_start) VALUES ('EURUSD', '2026-01-03', '{daily}', $1, $2) RETURNING id")
+        .bind(cut3)
+        .bind(cut3 - Duration::minutes(1))
+        .fetch_one(pool)
+        .await
+        .unwrap();
+    jobs::flush_samples(&t.st, &(0..55).map(|i| (id3, cut3 - Duration::minutes(1) + Duration::seconds(i), 1.10)).collect::<Vec<_>>()).await.unwrap();
     let fixed = jobs::run_fixings(&t.st).await.unwrap();
     assert_eq!(fixed, 1);
+    let st3: (String, Option<f64>) = sqlx::query_as("SELECT status, fixing FROM expiries WHERE id = $1").bind(id3).fetch_one(pool).await.unwrap();
+    assert_eq!(st3, ("fixing".to_string(), None), "closed at the cut, not fixed inside the grace");
+    // the sampler's last flush lands; after the grace the fixing sees all 60 samples
+    jobs::flush_samples(&t.st, &(55..60).map(|i| (id3, cut3 - Duration::minutes(1) + Duration::seconds(i), 1.10)).collect::<Vec<_>>()).await.unwrap();
+    sqlx::query("UPDATE expiries SET cut_at = cut_at - interval '10 seconds', twap_start = twap_start - interval '10 seconds' WHERE id = $1").bind(id3).execute(pool).await.unwrap();
+    sqlx::query("UPDATE twap_samples SET t = t - interval '10 seconds' WHERE expiry_id = $1").bind(id3).execute(pool).await.unwrap();
+    assert_eq!(jobs::run_fixings(&t.st).await.unwrap(), 1);
+    let (n3, e3): (i32, i32) = sqlx::query_as("SELECT samples, expected FROM fixings WHERE expiry_id = $1").bind(id3).fetch_one(pool).await.unwrap();
+    assert_eq!((n3, e3), (60, 60));
     let fx = t.get("/v1/internal/options/fixings?expiry=2026-01-02").await;
     let f = fx["fixings"].as_array().unwrap().iter().find(|f| f["expiryId"] == id).unwrap().clone();
     assert_eq!((f["status"].as_str(), f["source"].as_str(), f["run"].as_i64()), (Some("fixed"), Some("twap"), Some(1)));

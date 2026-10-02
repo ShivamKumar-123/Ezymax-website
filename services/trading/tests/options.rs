@@ -417,7 +417,8 @@ async fn options_through_the_api_shards_and_postgres() {
     assert!(keys.iter().all(|(_, n)| *n == 1), "exactly once per ticket: {keys:?}");
     assert_eq!(keys.len(), 3, "{keys:?}");
     let runs: Vec<(String, i32, i32)> = sqlx::query_as("SELECT kind, run, positions FROM option_settlement_runs WHERE expiry_key = $1").bind(KEY).fetch_all(&pool).await.unwrap();
-    assert_eq!(runs, vec![("settle".to_string(), 1, 2)]);
+    // the run's record counts the whole run from the ledger, the demo position settled before the crash included
+    assert_eq!(runs, vec![("settle".to_string(), 1, 3)]);
     // the proceeds are held for the re-run window
     let acc = api::terminal::account_view(&st, live_ok).await;
     assert_eq!(acc["settlementHold"].as_f64(), Some(100.0));

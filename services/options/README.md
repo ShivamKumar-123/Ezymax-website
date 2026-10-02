@@ -14,7 +14,7 @@ This service holds the reference data and runs the market side of **Kalks FX Opt
 | vol surfaces | append-only versions per underlying: pillars `{tenor, days, atm, rr25, bf25, rr10?, bf10?}` plus `blendWeight`. A publish is rejected on a calendar arbitrage or a non-positive wing. |
 | realized vol | every 15 min from market-data D1 candles: Yang-Zhang 20/60, Garman-Klass 20, close-to-close 20, EWMA (λ 0.94), annualized with 260. Pricing prefers YZ20. |
 | listing | every 30 s: daily (next 5 business days), weekly (next 4 Fridays, rolled), monthly (next 3 last Fridays, rolled), cut 10:00 New York (DST-aware). Strikes are ATM ± max(configured, about 2.5 σ√t) steps, up to 40 per side. When spot comes within `extend_threshold` steps of an edge, strikes are added. Strikes are never removed. Series code `EURUSD-20261009-1.1650-C`. |
-| fixings | 1 s raw mids in `[cut − 30 min, cut)` go to `twap_samples`. At the cut the expiry status becomes `fixing`, then the TWAP is computed (gaps hold the last mid). With coverage < 50 % (`OPTIONS_MIN_TWAP_COVERAGE`) it falls back to M1 candles after cut + 90 s. Each run is a `fixings` row recording samples, expected samples, coverage and the longest gap. Kalks staff can re-fix within 1 h, with a reason. |
+| fixings | 1 s raw mids in `[cut − 30 min, cut)` go to `twap_samples`. At the cut the expiry status becomes `fixing`; 8 s later (`FIXING_GRACE_SECS`: the sampler writes every 5 s, so the window's last seconds are stored first) the TWAP is computed (gaps hold the last mid). With coverage < 50 % (`OPTIONS_MIN_TWAP_COVERAGE`) it falls back to M1 candles after cut + 90 s. Each run is a `fixings` row recording samples, expected samples, coverage and the longest gap. Kalks staff can re-fix within 1 h, with a reason. |
 | chain | bid / ask / mark / IV / Greeks per strike for calls and puts, with the group's vol spread and minimum USD spread. REST, a 1 s cached public route, and a WebSocket that sends changed rows only, at most 4 frames/s per chain. |
 | premium candles | an option series' model mid premium (USD per contract) per underlying bar from market-data candles, for the Kalks Trader chart: it moves when the underlying moves, by the option's amount, and melts toward intrinsic as the cut approaches. History is cached 30 s; the latest bar is the live price. See [Premium candles](#premium-candles). |
 | EOD marks | after 17:00 New York on weekdays, the model marks of every active series go to `marks_eod`. |
@@ -39,6 +39,7 @@ market-data is optional in development. Without it the feed polls REST, logs one
 | `TRADING_URL` | `http://127.0.0.1:8090` | the engine's order book feed (`/v1/internal/options/book/*`) |
 | `TRADING_INTERNAL_TOKEN` | — | the engine's internal token, sent as `X-Kalks-Internal` to the book feed |
 | `OPTIONS_BOOK_FEED` | `true` | consume the book feed (with `OPTIONS_WORKERS`); off = house model quotes only |
+| `OPTIONS_TEST_EXPIRIES` | `false` | LOCAL TESTING ONLY: exposes `POST /v1/admin/options/test/expiries` (ad-hoc expiry minutes ahead); ignored when `OPTIONS_ENV=production` |
 | `OPTIONS_LOG_FORMAT` | `text` (dev) / `json` (prod) | |
 
 Apps / engine: `OPTIONS_URL=http://127.0.0.1:8104` and `OPTIONS_INTERNAL_TOKEN` (`deploy/deploy.sh` writes both).
@@ -226,6 +227,7 @@ These routes need the internal token plus `X-Kalks-Staff` (the admin BFF checks 
 | `GET /v1/admin/options/controls?all=` · `POST …/controls {tenant?, scope, target, mode, manualVol?, frozenSpot?, expiresAt?, reason}` · `DELETE …/controls/{id}?reason=` | halt / close_only / freeze / manual_vol; `tenant: "*"` is Kalks only |
 | `GET /v1/admin/options/limits` · `PUT …/limits/{userId} {maxContracts?, maxShortContracts?, closeOnly?, blocked?, reason}` · `DELETE …/limits/{userId}?reason=` | per client |
 | `GET /v1/admin/options/expiries?u=&status=&limit=` · `POST …/expiries/{id}/refix {price?, reason}` **P** | settlement monitor; re-fix within 1 h |
+| `POST /v1/admin/options/test/expiries {symbol, cutInMinutes, twapMinutes?, reason?}` **P**, LOCAL TESTING ONLY | the route exists only with `OPTIONS_TEST_EXPIRIES=1` and `OPTIONS_ENV` ≠ `production` (ignored there): lists an ad-hoc expiry whose cut is 20–360 min ahead, dated the next free Saturday / Sunday (never a real listing date), with strikes from the live mid; the TWAP sampler and fixing job treat it like any other (services/trading/tests/expiry_e2e.rs) |
 | `POST /v1/admin/options/listing/run` **P** | run the listing now |
 | `GET /v1/admin/options/audit?limit=&before=&all=` | |
 
