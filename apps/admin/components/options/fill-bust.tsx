@@ -47,7 +47,11 @@ type BustAnswer = FourEyesPending | BustDone;
 type AnyAnswer = (FourEyesPending | BustDone | EnableDone) | null;
 
 /** Plain fill details (prefilled from a trade print when the caller knows it). */
-export type BustTarget = { fillId: number; trade?: (BookTrade & { series?: string }) | null };
+export type BustTarget = { fillId: string; trade?: (BookTrade & { series?: string }) | null };
+
+/** Engine fill id: `{UNDERLYING}.{L|D}{seq}.{n}` (e.g. EURUSD.L1042.0), as on the tape and in the client's deals. */
+export const FILL_ID_RE = /^[A-Z0-9]{2,12}\.[LD]\d{1,18}\.\d{1,4}$/;
+const fillIdInput = (v: string) => v.toUpperCase().replace(/[^A-Z0-9.]/g, "").slice(0, 40);
 
 function BustWarning({ fillId }: { fillId: string }) {
   return (
@@ -88,7 +92,7 @@ export function Fact({ label, value, tone, className }: { label: string; value: 
 
 /**
  * Bust a fill: reason + note → the first four-eyes call. Shows "Waiting for a second approver" afterwards (or the
- * reversal when the engine busts at once). `target = null` closes it; `fillId: 0` opens it with an empty id field.
+ * reversal when the engine busts at once). `target = null` closes it; `fillId: ""` opens it with an empty id field.
  */
 export function FillBustDialog({ target, onClose, onDone }: { target: BustTarget | null; onClose: () => void; onDone?: () => void }) {
   const perms = useOptPerms();
@@ -106,7 +110,7 @@ export function FillBustDialog({ target, onClose, onDone }: { target: BustTarget
     got.current = null;
   }, [target]);
   if (!target) return null;
-  const valid = /^\d{1,18}$/.test(id);
+  const valid = FILL_ID_RE.test(id);
   const close = () => {
     got.current = null;
     setPhase("form");
@@ -147,7 +151,7 @@ export function FillBustDialog({ target, onClose, onDone }: { target: BustTarget
         <div className="space-y-4">
           {!target.fillId && (
             <Field label="Fill id" hint="from the trade tape or the client's deal">
-              <Input value={id} onChange={(e) => setId(e.target.value.replace(/\D/g, "").slice(0, 18))} className="font-mono" placeholder="e.g. 8400123" aria-label="Fill id" autoFocus />
+              <Input value={id} onChange={(e) => setId(fillIdInput(e.target.value))} className="font-mono" placeholder="e.g. EURUSD.L1042.0" aria-label="Fill id" autoFocus />
             </Field>
           )}
           <TradeFacts trade={target.trade} />
@@ -384,7 +388,7 @@ export function BustFillCard({ onDone, className }: { onDone?: () => void; class
   const perms = useOptPerms();
   const [id, setId] = React.useState("");
   const [target, setTarget] = React.useState<BustTarget | null>(null);
-  const ok = /^\d{1,18}$/.test(id);
+  const ok = FILL_ID_RE.test(id);
   return (
     <Card className={cn("pb-5", className)}>
       <CardHeader title="Bust a fill" subtitle="Reverse a book fill on both sides (premium, fees / rebates, positions). Four-eyes." icon={<Gavel />} />
@@ -392,9 +396,9 @@ export function BustFillCard({ onDone, className }: { onDone?: () => void; class
         {perms.settle ? (
           <>
             <Field label="Fill id">
-              <Input value={id} onChange={(e) => setId(e.target.value.replace(/\D/g, "").slice(0, 18))} className="font-mono" placeholder="e.g. 8400123" aria-label="Fill id" />
+              <Input value={id} onChange={(e) => setId(fillIdInput(e.target.value))} className="font-mono" placeholder="e.g. EURUSD.L1042.0" aria-label="Fill id" />
             </Field>
-            <Button variant="down-outline" size="sm" disabled={!ok} onClick={() => setTarget({ fillId: Number(id) })}>
+            <Button variant="down-outline" size="sm" disabled={!ok} onClick={() => setTarget({ fillId: id })}>
               <Gavel /> Bust fill…
             </Button>
           </>

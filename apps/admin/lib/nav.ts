@@ -103,6 +103,7 @@ export const ADMIN_NAV: NavModule[] = [
       { href: "/options/pricing", label: "Spreads, fees & limits" },
       { href: "/options/market-maker", label: "Market maker" },
       { href: "/options/books", label: "Order books" },
+      { href: "/options/rfqs", label: "Combo RFQs" },
       { href: "/options/controls", label: "Dealer controls" },
       { href: "/options/clearing", label: "Clearing & liquidations" },
       { href: "/options/settlements", label: "Settlements" },

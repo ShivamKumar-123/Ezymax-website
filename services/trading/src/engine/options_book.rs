@@ -46,6 +46,9 @@ pub enum ReqKind {
     Limit,
     /// An IOC limit at the band, stamped here.
     Market,
+    /// One leg of an accepted combo RFQ (docs §5): the leg price comes from the quote's split (may be 0), never
+    /// rests, no band (the price is the responder's firm quote, not the book's).
+    Rfq,
 }
 
 /// A book order request (terminal, stops, closes, SL / TP, market maker).
@@ -76,6 +79,8 @@ pub struct BookReq {
     pub lp: bool,
     /// Ephemeral market-maker quote.
     pub ephemeral: bool,
+    /// A liquidation order (docs §8): its fills print as `liquidation`.
+    pub liquidation: bool,
 }
 
 impl BookReq {
@@ -98,6 +103,7 @@ impl BookReq {
             id: None,
             lp: false,
             ephemeral: false,
+            liquidation: false,
         }
     }
     pub fn market(series: &str, side: Side, qty: D) -> Self {
@@ -198,6 +204,21 @@ pub fn clearing_name(t: &OptionTerms) -> String {
 
 /// Gates, price, reservation; stores the working order. The caller sends the returned command to the book.
 pub fn enter(tx: &mut Tx, env: &Env, req: BookReq) -> Result<Entered, Reject> {
+    let mut agg = reserve::Agg::of(&tx.st.book);
+    let mut m0 = None;
+    enter_with(tx, env, req, &mut agg, &mut m0)
+}
+
+/// The account's metrics before the next entry: computed once per transaction, then moved by the reserve the
+/// entries since added (`order_reserve` is the only part of the metrics working orders change).
+fn metrics_now(env: &Env, tx: &Tx, cache: &mut Option<super::Metrics>, added: D) -> super::Metrics {
+    let base = cache.get_or_insert_with(|| metrics(env, &tx.st)).clone();
+    super::Metrics { order_reserve: base.order_reserve + added, free_margin: base.free_margin - added, ..base }
+}
+
+/// `enter` for many entries in one transaction (a mass quote): `agg` holds the per-series sums of the account's
+/// working orders and is updated with every order entered; `m0` caches the metrics. Refusals change nothing.
+pub fn enter_with(tx: &mut Tx, env: &Env, req: BookReq, agg: &mut reserve::Agg, m0c: &mut Option<super::Metrics>) -> Result<Entered, Reject> {
     if let Some(c) = &req.client_order_id {
         if c.is_empty() || c.len() > 64 {
             return Err(rej("invalid_client_order_id", "clientOrderId must be 1–64 characters"));
@@ -226,7 +247,7 @@ pub fn enter(tx: &mut Tx, env: &Env, req: BookReq) -> Result<Entered, Reject> {
     }
     // closing / opening split against the book position and the working orders on the same side
     let net = book_net(&tx.st, &terms.series);
-    let working_same = D::from(tx.st.book.working(&terms.series, req.side)) * step;
+    let working_same = D::from(agg.working(&terms.series, req.side)) * step;
     let reducible = match req.side {
         Side::Sell => net.max(ZERO),
         Side::Buy => (-net).max(ZERO),
@@ -285,21 +306,22 @@ pub fn enter(tx: &mut Tx, env: &Env, req: BookReq) -> Result<Entered, Reject> {
             return Err(rej("stale_prices", "The underlying price is stale: options trading is paused"));
         }
     }
-    if tx.st.book.count_series(&terms.series) >= MAX_PER_SERIES {
+    if agg.count_series(&terms.series) >= MAX_PER_SERIES {
         return Err(rej("too_many_orders", format!("At most {MAX_PER_SERIES} working orders per series")));
     }
     // market-maker quotes (ephemeral, replaced per series) are not counted against the per-account cap: the MM
     // quotes the full chain both sides
-    if !req.ephemeral && tx.st.book.orders.values().filter(|w| w.flags & EPHEMERAL == 0).count() >= MAX_PER_ACCOUNT {
+    if !req.ephemeral && agg.durable >= MAX_PER_ACCOUNT {
         return Err(rej("too_many_orders", format!("At most {MAX_PER_ACCOUNT} working book orders per account")));
     }
-    // per-client contract limits, counting working opening quantity as if filled
-    if opens {
+    // per-client contract limits, counting working opening quantity as if filled (a market-maker programme
+    // account quotes the whole chain under its own published limits instead: maxContractsPerSeries, Greeks)
+    if opens && !req.lp {
         let (mut long, mut short) = req.others;
         for p in tx.st.positions.values().filter(|p| p.option.is_some()) {
             if p.side == Side::Buy { long += p.volume } else { short += p.volume }
         }
-        let (wl, ws) = tx.st.book.opening_contracts();
+        let (wl, ws) = agg.opening;
         let add = D::from(opening) * step;
         let gs = snap.group(&env.tenant.slug, &env.group.code, &u.symbol);
         let cl = snap.client_limit(&env.tenant.slug, acc.user_id);
@@ -321,6 +343,11 @@ pub fn enter(tx: &mut Tx, env: &Env, req: BookReq) -> Result<Entered, Reject> {
     // price: tick, band (aggressive side), market = IOC at the band
     let mark = mark_of(env, &acc, &terms).map(|m| m.mark).filter(|m| *m > ZERO);
     let (px, tif) = match req.kind {
+        ReqKind::Rfq => {
+            let p = req.price.unwrap_or(ZERO);
+            let px = if p.is_zero() { 0 } else { whole(p, tick).ok_or_else(|| rej("invalid_price", "A combo leg price must be a multiple of the premium tick"))? };
+            (px, Tif::Ioc)
+        }
         ReqKind::Market => {
             let m = mark.ok_or_else(|| rej("no_price", format!("There is no mark for {} right now", terms.series)))?;
             (market_px(m, tick, &u, req.side), Tif::Ioc)
@@ -342,7 +369,9 @@ pub fn enter(tx: &mut Tx, env: &Env, req: BookReq) -> Result<Entered, Reject> {
     // fees stamped now (maker < 0 = rebate)
     let gs = snap.group(&env.tenant.slug, &env.group.code, &u.symbol);
     let (maker, taker) = gs.book_fees();
-    let (fee_maker, fee_taker) = (dec(maker), dec(taker));
+    // the market-maker programme tier (docs §4, §7): liquidity providers' quotes trade at 0 / 0 (for the Kalks MM
+    // a house-to-house wash)
+    let (fee_maker, fee_taker) = if req.lp && req.ephemeral { (ZERO, ZERO) } else { (dec(maker), dec(taker)) };
     let fee_wc = fee_maker.max(fee_taker).max(ZERO);
     let factor = acc.usd_factor();
     // reserve (§3)
@@ -353,12 +382,13 @@ pub fn enter(tx: &mut Tx, env: &Env, req: BookReq) -> Result<Entered, Reject> {
             reserve::sell_per_step(steps, step, factor, fee_wc, margin)
         }
     };
-    let id = req.id.unwrap_or_else(|| env.ids.ticket());
-    if tx.st.book.orders.contains_key(&id) {
+    if let Some(id) = req.id
+        && tx.st.book.orders.contains_key(&id)
+    {
         return Ok(Entered::Duplicate { key: None, id });
     }
-    let m0 = metrics(env, &tx.st);
-    let before = tx.st.book.series_reserve(&terms.series);
+    let m0 = metrics_now(env, tx, m0c, agg.added);
+    let before = agg.series_reserve(&terms.series);
     let mut flags = 0u8;
     if req.post_only {
         flags |= POST_ONLY;
@@ -378,11 +408,19 @@ pub fn enter(tx: &mut Tx, env: &Env, req: BookReq) -> Result<Entered, Reject> {
         source: req.source.as_str().into(),
         ccy: acc.ccy().into(),
         created_ms: env.now.timestamp_millis(),
-        kind: if req.kind == ReqKind::Market { "market".into() } else { "limit".into() },
+        kind: match req.kind {
+            ReqKind::Market => "market".into(),
+            ReqKind::Rfq => "rfq".into(),
+            ReqKind::Limit => "limit".into(),
+        },
         opening,
         step,
     };
-    let w = Working {
+    if req.liquidation {
+        flags |= LIQUIDATION;
+    }
+    let id = req.id.unwrap_or(0);
+    let mut w = Working {
         id,
         underlying: u.symbol.clone(),
         series: terms.series.clone(),
@@ -402,8 +440,12 @@ pub fn enter(tx: &mut Tx, env: &Env, req: BookReq) -> Result<Entered, Reject> {
         opening,
         created: env.now,
     };
-    tx.st.book.orders.insert(id, w);
-    let inc = (tx.st.book.series_reserve(&terms.series) - before).max(ZERO);
+    let after = {
+        let e = agg.series.get(&terms.series).cloned().unwrap_or((0, ZERO, ZERO, 0, 0));
+        let r = w.reserved();
+        if req.side == Side::Buy { (e.1 + r).max(e.2) } else { e.1.max(e.2 + r) }
+    };
+    let inc = (after - before).max(ZERO);
     let ccy = acc.ccy();
     match req.side {
         Side::Buy => {
@@ -425,6 +467,12 @@ pub fn enter(tx: &mut Tx, env: &Env, req: BookReq) -> Result<Entered, Reject> {
             }
         }
     }
+    // accepted: the order works from now on (an id only once nothing can refuse it any more)
+    let id = if id == 0 { env.ids.ticket() } else { id };
+    w.id = id;
+    agg.add(&w);
+    agg.added += inc;
+    tx.st.book.orders.insert(id, w);
     if let Some(c) = &req.client_order_id {
         tx.st.book.client_ids.insert(c.clone(), id);
     }
@@ -462,6 +510,9 @@ pub fn enter_mass(tx: &mut Tx, env: &Env, lines: Vec<QuoteLine>) -> Result<(BTre
     let acc = tx.st.account.clone();
     let mut books: BTreeMap<BookKey, (Vec<String>, Vec<QuoteIn>)> = BTreeMap::new();
     let mut refused = Vec::new();
+    // one pass over the working orders and one metrics computation for the whole mass quote
+    let mut agg = reserve::Agg::of(&tx.st.book);
+    let mut m0 = None;
     for (series, bid, ask) in lines {
         let Ok((terms, _)) = terms_of(&snap, &series) else {
             refused.push(json!({"series": series, "code": "unknown_series"}));
@@ -480,7 +531,7 @@ pub fn enter_mass(tx: &mut Tx, env: &Env, lines: Vec<QuoteLine>) -> Result<(BTre
             req.origin = "mm".into();
             req.source = Source::Strategy;
             req.lp = true;
-            match try_enter(tx, env, req) {
+            match enter_with(tx, env, req, &mut agg, &mut m0) {
                 Ok(Entered::New { cmd: Cmd::New { series, spec, order, .. }, .. }) => {
                     e.1.push(QuoteIn { series, spec, id: order.id, side, px: order.px, qty: order.qty, reserve_per_step: order.reserve_per_step, ext: order.ext });
                 }
@@ -638,21 +689,53 @@ fn split(total: D, weights: &[D]) -> Vec<D> {
 
 /// One side of a fill on this account. Never refuses for money (it was reserved); idempotent per (fill, role).
 pub fn apply_fill(tx: &mut Tx, env: &Env, fill: &Fill, role: Role) -> Result<Value, Reject> {
+    let v = book_fill(tx, env, fill, role, false)?;
+    risk::check_margin(tx, env);
+    Ok(v)
+}
+
+/// Every leg of a combo RFQ fill on this account in ONE transaction (docs §5: atomic per account), then the
+/// responder's hold on the quote is released and the margin checked once.
+pub fn apply_fills(tx: &mut Tx, env: &Env, fills: &[Fill], role: Role, quote: Option<i64>) -> Result<Value, Reject> {
+    let mut legs = Vec::with_capacity(fills.len());
+    for f in fills {
+        legs.push(book_fill(tx, env, f, role, false)?);
+    }
+    if let Some(q) = quote
+        && tx.st.book.rfq_holds.remove(&q).is_some()
+    {
+        tx.book_dirty = true;
+    }
+    risk::check_margin(tx, env);
+    Ok(json!({"combo": fills.first().and_then(|f| f.combo), "role": role.as_str(), "legs": legs}))
+}
+
+/// A busted fill (docs §12, four-eyes): this account's side is reversed at the fill price — premium, fee or
+/// rebate and the position change — with keys `bust:{fillId}:{login}:prem|fee|rebate`. Shown as a correction.
+pub fn apply_bust(tx: &mut Tx, env: &Env, fill: &Fill, role: Role) -> Result<Value, Reject> {
+    let v = book_fill(tx, env, fill, role, true)?;
+    risk::check_margin(tx, env);
+    Ok(v)
+}
+
+fn book_fill(tx: &mut Tx, env: &Env, fill: &Fill, role: Role, bust: bool) -> Result<Value, Reject> {
     let party = fill.party(role).clone();
     let login = tx.st.account.login;
     if party.login != login {
         return Err(rej("wrong_account", format!("Fill {} {} is for {}, not {login}", fill.id, role.as_str(), party.login)));
     }
-    let fkey = fill_key(&fill.id, role.as_str());
+    let fkey = if bust { reserve::bust_key(&fill.id, role.as_str()) } else { fill_key(&fill.id, role.as_str()) };
     if tx.st.book.applied.contains(&fkey) {
         return Ok(json!({"fillId": fill.id, "role": role.as_str(), "duplicate": true}));
     }
+    let prefix = if bust { "bust" } else { "fill" };
     let acc = tx.st.account.clone();
     let factor = acc.usd_factor();
     let terms = fill.spec.terms.clone();
     let contracts = fill.spec.contracts(fill.qty);
     let price = fill.spec.price(fill.px);
-    let side = party.side;
+    // a bust trades the fill back: the buyer sells it back to the seller at the same price
+    let side = if bust { party.side.opposite() } else { party.side };
     let sign = if side == Side::Buy { -ONE } else { ONE };
     let p_usd = fill.premium_usd;
     let p_acct = r2(p_usd * factor);
@@ -671,12 +754,16 @@ pub fn apply_fill(tx: &mut Tx, env: &Env, fill: &Fill, role: Role) -> Result<Val
         let txn = LedgerTxn {
             id: env.ids.txn(),
             tenant_id: acc.tenant_id,
-            idempotency_key: format!("fill:{}:{login}:prem", fill.id),
+            idempotency_key: format!("{prefix}:{}:{login}:prem", fill.id),
             kind: TxnKind::OptionPremium,
             login,
-            reference: Some(format!("fill:{}", fill.id)),
+            reference: Some(format!("{prefix}:{}", fill.id)),
             reason_code: None,
-            note: Some(format!("{} {} {} at {} (order book, {})", side.as_str(), contracts.normalize(), terms.series, price.normalize(), role.as_str())),
+            note: Some(if bust {
+                format!("Correction: order book fill {} busted ({} {} {} at {} reversed)", fill.id, party.side.as_str(), contracts.normalize(), terms.series, price.normalize())
+            } else {
+                format!("{} {} {} at {} (order book, {})", side.as_str(), contracts.normalize(), terms.series, price.normalize(), role.as_str())
+            }),
             at: env.now,
             postings,
         };
@@ -694,15 +781,18 @@ pub fn apply_fill(tx: &mut Tx, env: &Env, fill: &Fill, role: Role) -> Result<Val
     let fee_usd = (rate.abs() * contracts).min(ext.fee_cap_pct.max(ZERO) / HUNDRED * p_usd.abs());
     let fee_amt = r2(fee_usd * factor);
     let (fee, rebate) = if rate >= ZERO { (fee_amt, ZERO) } else { (ZERO, fee_amt) };
+    // a bust gives the fee back and takes the rebate back
+    let dir = if bust { -ONE } else { ONE };
     if fee > ZERO {
-        tx.post(env, TxnKind::Commission, format!("fill:{}:{login}:fee", fill.id), "balance", "commission", -fee, Some(format!("fill:{}", fill.id)), None, Some(format!("order book {} fee", role.as_str())));
+        tx.post(env, TxnKind::Commission, format!("{prefix}:{}:{login}:fee", fill.id), "balance", "commission", -fee * dir, Some(format!("{prefix}:{}", fill.id)), None, Some(format!("order book {} fee{}", role.as_str(), if bust { " refunded (bust)" } else { "" })));
     }
     if rebate > ZERO {
-        tx.post(env, TxnKind::OptionRebate, format!("fill:{}:{login}:rebate", fill.id), "balance", "options_rebates", rebate, Some(format!("fill:{}", fill.id)), None, Some("order book maker rebate".into()));
+        tx.post(env, TxnKind::OptionRebate, format!("{prefix}:{}:{login}:rebate", fill.id), "balance", "options_rebates", rebate * dir, Some(format!("{prefix}:{}", fill.id)), None, Some(if bust { "order book maker rebate reversed (bust)".into() } else { "order book maker rebate".into() }));
     }
+    let (fee, rebate) = (fee * dir, rebate * dir);
     let order_id = party.order.as_ref().map(|o| o.id);
-    let fref = FillRef { id: fill.id.clone(), role: role.as_str().into(), kind: fill.kind.as_str().into(), combo: fill.combo, order: order_id };
-    let reason = reason_for(role, fill.kind, &ext.origin);
+    let fref = FillRef { id: fill.id.clone(), role: role.as_str().into(), kind: if bust { "bust".into() } else { fill.kind.as_str().into() }, combo: fill.combo, order: order_id };
+    let reason = if bust { DealReason::Dealer } else { reason_for(role, fill.kind, &ext.origin) };
     let source = Source::parse_client(&ext.source).unwrap_or(if ext.origin == "mm" { Source::Strategy } else { Source::Manual });
     // FIFO netting against this account's book positions in the series
     let mut book_pos: Vec<Position> = tx.st.positions.values().filter(|p| p.on_book() && p.symbol == fill.series && p.option.as_ref().is_some_and(|t| t.barrier.is_none())).cloned().collect();
@@ -756,7 +846,7 @@ pub fn apply_fill(tx: &mut Tx, env: &Env, fill: &Fill, role: Role) -> Result<Val
             open_price: p.open_price,
             open_time: p.open_time,
             source,
-            comment: format!("book fill {}", fill.id),
+            comment: if bust { format!("bust of book fill {} (correction)", fill.id) } else { format!("book fill {}", fill.id) },
             price_correction: false,
             ledger_txn: prem_txn,
             staff: None,
@@ -845,7 +935,7 @@ pub fn apply_fill(tx: &mut Tx, env: &Env, fill: &Fill, role: Role) -> Result<Val
             open_price: price,
             open_time: env.now,
             source,
-            comment: format!("book fill {}", fill.id),
+            comment: if bust { format!("bust of book fill {} (correction)", fill.id) } else { format!("book fill {}", fill.id) },
             price_correction: false,
             ledger_txn: prem_txn,
             staff: None,
@@ -866,19 +956,27 @@ pub fn apply_fill(tx: &mut Tx, env: &Env, fill: &Fill, role: Role) -> Result<Val
     // the fill is booked (the deals carry option.fill, so replay knows it too)
     debug_assert!(tx.st.book.applied.contains(&fkey));
     // release pro rata: the order's working quantity is at most what the book says is left after this fill
-    if let Some(o) = &party.order
+    if !bust
+        && let Some(o) = &party.order
         && let Some(w) = tx.st.book.orders.get_mut(&o.id)
     {
         w.left = w.left.min((o.left - fill.qty).max(0));
         tx.book_dirty = true;
     }
-    tx.note(
-        "fill",
-        format!("Order book: {} {} {} at {} ({})", if side == Side::Buy { "bought" } else { "sold" }, contracts.normalize(), terms.series, price.normalize(), role.as_str()),
-        json!({"fillId": fill.id, "orderId": order_id, "role": role.as_str(), "series": terms.series, "price": num(price), "contracts": num(contracts), "fee": num(fee), "rebate": num(rebate), "positionTicket": ticket_out, "options": true, "book": true}),
-    );
-    risk::check_margin(tx, env);
-    Ok(json!({"fillId": fill.id, "role": role.as_str(), "positionTicket": ticket_out, "fee": num(fee), "rebate": num(rebate), "premium": num(p_acct), "deals": deals}))
+    if bust {
+        tx.note(
+            "correction",
+            format!("Correction: order book fill {} ({} {} {} at {}) was busted by the dealing desk and reversed", fill.id, party.side.as_str(), contracts.normalize(), terms.series, price.normalize()),
+            json!({"fillId": fill.id, "role": role.as_str(), "series": terms.series, "price": num(price), "contracts": num(contracts), "fee": num(fee), "rebate": num(rebate), "positionTicket": ticket_out, "options": true, "book": true, "bust": true}),
+        );
+    } else {
+        tx.note(
+            "fill",
+            format!("Order book: {} {} {} at {} ({})", if side == Side::Buy { "bought" } else { "sold" }, contracts.normalize(), terms.series, price.normalize(), role.as_str()),
+            json!({"fillId": fill.id, "orderId": order_id, "role": role.as_str(), "series": terms.series, "price": num(price), "contracts": num(contracts), "fee": num(fee), "rebate": num(rebate), "positionTicket": ticket_out, "options": true, "book": true, "kind": fill.kind.as_str(), "combo": fill.combo}),
+        );
+    }
+    Ok(json!({"fillId": fill.id, "role": role.as_str(), "positionTicket": ticket_out, "fee": num(fee), "rebate": num(rebate), "premium": num(p_acct), "deals": deals, "series": fill.series, "price": num(price), "qty": num(contracts), "side": side.as_str()}))
 }
 
 /// An order left the book: release what it still reserves.
@@ -1079,6 +1177,7 @@ fn stop_req(o: &Order, st: &crate::state::AccountState) -> Option<BookReq> {
         id: Some(o.ticket),
         lp: false,
         ephemeral: false,
+        liquidation: false,
     })
 }
 
@@ -1240,6 +1339,219 @@ pub async fn open_bands(hub: &crate::shard::Hub, h: &crate::book::actor::Handle,
         }
     }
     out
+}
+
+/* ------------------------------------------------------------------ */
+/* Combo RFQ (docs §5)                                                 */
+/* ------------------------------------------------------------------ */
+
+/// One leg of an accepted combo as the requester trades it: (series, side, contracts, leg price per unit).
+#[derive(Clone, Debug)]
+pub struct RfqLegReq {
+    pub series: String,
+    pub side: Side,
+    pub contracts: D,
+    pub price: D,
+}
+
+/// The requester's leg orders of an accepted RFQ: every leg through `enter` (gates, limits, reservation at its
+/// leg price; all legs or none), returned as the orders `Cmd::RfqAccept` fills.
+pub fn rfq_legs(tx: &mut Tx, env: &Env, legs: &[RfqLegReq], base: &BookReq) -> Result<(BookKey, Vec<Resting>, D), Reject> {
+    let mut agg = reserve::Agg::of(&tx.st.book);
+    let mut m0 = None;
+    let mut key = None;
+    let mut usdq = ZERO;
+    let mut out = Vec::with_capacity(legs.len());
+    for l in legs {
+        let req = BookReq { series: l.series.clone(), side: l.side, kind: ReqKind::Rfq, qty: l.contracts, price: Some(l.price), tif: Tif::Ioc, client_order_id: None, ..base.clone() };
+        match enter_with(tx, env, req, &mut agg, &mut m0)? {
+            Entered::New { key: k, cmd: Cmd::New { order, usd_per_quote, .. }, .. } => {
+                if key.as_ref().is_some_and(|x| *x != k) {
+                    return Err(rej("rfq_underlyings", "Every leg of a combo must be on the same underlying"));
+                }
+                key = Some(k);
+                usdq = usd_per_quote;
+                out.push(order);
+            }
+            _ => return Err(rej("invalid_order", "A combo leg could not be entered")),
+        }
+    }
+    let key = key.ok_or_else(|| rej("invalid_order", "A combo needs at least one leg"))?;
+    Ok((key, out, usdq))
+}
+
+/// The responder's hold on a firm combo quote (docs §5): the reserve of its worst side — buying the strategy as
+/// built at the bid (premium of the legs it buys) or selling it at the ask (scenario margin of the legs it sells,
+/// standalone), plus nothing for fees (the MM tier is 0 / 0). Checked against its free funds.
+#[allow(clippy::too_many_arguments)]
+pub fn rfq_hold(tx: &mut Tx, env: &Env, quote: i64, legs: &[(OptionTerms, Side, D)], prices: &[D], usdq: D, until_ms: i64) -> Result<D, Reject> {
+    let acc = tx.st.account.clone();
+    let snap = snapshot(env)?;
+    let side_cost = |buy_as_built: bool| -> D {
+        let mut cost = ZERO;
+        for ((t, side, contracts), price) in legs.iter().zip(prices) {
+            let mm_side = if buy_as_built { *side } else { side.opposite() };
+            match mm_side {
+                Side::Buy => cost += *price * *contracts * t.contract_size * usdq * acc.usd_factor(),
+                Side::Sell => {
+                    if let Some(u) = snap.underlying(&t.underlying) {
+                        cost += opening_margin(env, &acc, t, u, *contracts);
+                    }
+                }
+            }
+        }
+        cost
+    };
+    let amount = reserve::ceil8(side_cost(true).max(side_cost(false)));
+    let m = metrics(env, &tx.st);
+    let free = m.equity - m.credit - m.bonus - m.margin - m.order_reserve;
+    if amount > free {
+        return Err(rej("insufficient_margin", format!("The market maker cannot hold {} {} for this quote ({} free)", r2(amount).normalize(), acc.ccy(), r2(free.max(ZERO)).normalize())));
+    }
+    tx.st.book.rfq_holds.insert(quote, (amount, until_ms));
+    tx.book_dirty = true;
+    Ok(amount)
+}
+
+/// Drops RFQ holds whose quote has lapsed (and a given one, e.g. a quote the book refused).
+pub fn release_rfq_holds(tx: &mut Tx, now_ms: i64, quote: Option<i64>) -> Result<Value, Reject> {
+    let before = tx.st.book.rfq_holds.len();
+    tx.st.book.rfq_holds.retain(|q, (_, until)| *until > now_ms && Some(*q) != quote);
+    let n = before - tx.st.book.rfq_holds.len();
+    if n > 0 {
+        tx.book_dirty = true;
+    }
+    Ok(json!({"released": n}))
+}
+
+/* ------------------------------------------------------------------ */
+/* Liquidation (docs §8)                                               */
+/* ------------------------------------------------------------------ */
+
+/// One leg the liquidator closes: (position ticket, series, closing side, contracts, mark, premium tick, liquidation
+/// band %, backstop fee %, USD per quote unit, contract units).
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct LiqLeg {
+    pub ticket: i64,
+    pub series: String,
+    pub underlying: String,
+    pub side: Side,
+    pub contracts: D,
+    pub mark: D,
+    pub tick: D,
+    pub step: D,
+    pub band_pct: D,
+    pub fee_pct: D,
+    pub usd_per_quote: D,
+    pub spec: SeriesSpec,
+}
+
+/// What the liquidator does next for an account past its stop-out level.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct LiqPlan {
+    /// `option` | `combo`.
+    pub unit: String,
+    pub combo: Option<i64>,
+    pub legs: Vec<LiqLeg>,
+    pub level: Option<D>,
+    pub freed: D,
+    pub user_id: i64,
+}
+
+/// The order-book unit whose closing frees the most margin (strategies with all their legs), or None when the
+/// account is above its stop-out level or has nothing on the book that can close now.
+pub fn liq_plan(tx: &mut Tx, env: &Env, skip: &[i64]) -> Result<Option<LiqPlan>, Reject> {
+    let m = metrics(env, &tx.st);
+    match m.level {
+        Some(l) if l <= env.group.stop_out_pct => {}
+        _ => return Ok(None),
+    }
+    let snap = snapshot(env)?;
+    let acc = tx.st.account.clone();
+    let mut best: Option<(D, D, LiqPlan)> = None;
+    for unit in super::options::units_of(&tx.st) {
+        let tickets: Vec<i64> = unit.tickets(&tx.st);
+        if tickets.iter().any(|t| skip.contains(t)) || !tickets.iter().any(|t| tx.st.positions.get(t).is_some_and(|p| p.on_book())) {
+            continue;
+        }
+        let set: std::collections::BTreeSet<i64> = tickets.iter().copied().collect();
+        let freed = m.margin - super::margin_without(env, &tx.st, &set);
+        let mut legs = Vec::new();
+        let mut ok = true;
+        for t in &tickets {
+            let Some(p) = tx.st.positions.get(t) else { continue };
+            let Some(terms) = p.option.clone() else {
+                ok = false;
+                break;
+            };
+            if !p.on_book() {
+                continue; // a house leg of a mixed strategy: stop-out closes it at the house price
+            }
+            let Ok((_, u)) = terms_of(&snap, &p.symbol) else {
+                ok = false;
+                break;
+            };
+            let (tick, step) = units(&u);
+            let Some(q) = mark_of(env, &acc, &terms) else {
+                ok = false;
+                break;
+            };
+            let open = env.specs.get(&u.symbol).is_some_and(|s| s.is_open(env.now));
+            if !open || env.now >= terms.expiry_at - chrono::Duration::minutes(u.close_only_minutes.max(0) as i64) {
+                ok = false;
+                break;
+            }
+            legs.push(LiqLeg {
+                ticket: *t,
+                series: p.symbol.clone(),
+                underlying: u.symbol.clone(),
+                side: p.side.opposite(),
+                contracts: p.volume,
+                mark: q.mark,
+                tick,
+                step,
+                band_pct: dec(u.liq_band_pct.max(0.0)),
+                fee_pct: dec(u.liq_fee_pct.max(0.0)),
+                usd_per_quote: q.usd_per_quote,
+                spec: SeriesSpec { terms: terms.clone(), tick, step },
+            });
+        }
+        if !ok || legs.is_empty() {
+            continue;
+        }
+        let floating: D = tickets.iter().filter_map(|t| tx.st.positions.get(t)).filter_map(|p| super::position_floating(env, &acc, p)).sum();
+        let combo = match unit {
+            super::options::Unit::Combo(c) => Some(c),
+            _ => None,
+        };
+        let plan = LiqPlan { unit: if combo.is_some() { "combo".into() } else { "option".into() }, combo, legs, level: m.level, freed: freed.max(ZERO), user_id: acc.user_id };
+        let better = match &best {
+            None => true,
+            Some((bf, bl, _)) => freed > *bf || (freed == *bf && floating < *bl),
+        };
+        if better {
+            best = Some((freed, floating, plan));
+        }
+    }
+    Ok(best.map(|b| b.2))
+}
+
+/// Limit of the book step of a liquidation: a reduce-only IOC at mark × (1 ∓ liqBandPct) (ticks, ≥ 1).
+pub fn liq_limit(l: &LiqLeg) -> Ticks {
+    let pct = l.band_pct / HUNDRED;
+    match l.side {
+        Side::Sell => floor_ticks(l.mark * (ONE - pct).max(ZERO), l.tick).max(1),
+        Side::Buy => ceil_ticks(l.mark * (ONE + pct), l.tick).max(1),
+    }
+}
+
+/// Price of the backstop: mark ∓ max(liqFeePct × mark, 1 tick) (ticks; a liquidated long sells lower).
+pub fn backstop_px(l: &LiqLeg) -> Ticks {
+    let fee = (l.mark * l.fee_pct / HUNDRED).max(l.tick);
+    match l.side {
+        Side::Sell => floor_ticks((l.mark - fee).max(ZERO), l.tick).max(1),
+        Side::Buy => ceil_ticks(l.mark + fee, l.tick).max(1),
+    }
 }
 
 #[cfg(test)]

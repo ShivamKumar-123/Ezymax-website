@@ -540,8 +540,174 @@ fn halt_expire_seed_backstop_timer_and_restart_cancel() {
     assert!(e.done.iter().all(|d| d.status == DoneStatus::Expired) && b.book(S).unwrap().state == SeriesState::Closed);
     apply(&mut b, &Cmd::Expire { expiry: spec().terms.expiry, purge: true, at: AT });
     assert!(b.book(S).is_none());
-    // RFQ is the next milestone
-    assert_eq!(apply(&mut b, &Cmd::RfqQuote { rfq: 1, payload: serde_json::Value::Null, at: AT }).code.as_deref(), Some("not_implemented"));
+}
+
+/* ------------------------------------------------------------------ */
+/* Combo RFQ, bust, liquidation prints                                  */
+/* ------------------------------------------------------------------ */
+
+const S2: &str = "EURUSD-20261009-1.1700-C";
+
+fn spec2() -> SeriesSpec {
+    let mut s = spec();
+    s.terms.series = S2.into();
+    s.terms.strike = d("1.17");
+    s
+}
+
+fn leg(series: &str, side: Side, ratio: i64) -> RfqLeg {
+    RfqLeg { series: series.into(), spec: if series == S { spec() } else { spec2() }, side, ratio }
+}
+
+/// A call spread quoted by responder 9 (user 19) to requester 3 (user 13): buy 1× 1.1650 C, sell 1× 1.1700 C.
+fn spread_quote(rfq: i64, quote: i64, qty: Steps, valid_until: i64) -> RfqQuoteIn {
+    RfqQuoteIn {
+        rfq,
+        quote,
+        requester: 3,
+        requester_stp: user(3),
+        login: 9,
+        stp: user(9),
+        legs: vec![leg(S, Side::Buy, 1), leg(S2, Side::Sell, 1)],
+        qty,
+        reduce_only: false,
+        bid: Some(190),
+        ask: Some(210),
+        theos: vec![520, 320],
+        valid_until,
+        usd_per_quote: D::ONE,
+    }
+}
+
+fn leg_order(id: i64, login: i64, side: Side, qty: Steps) -> Resting {
+    order(id, login, side, 0, qty, Tif::Ioc, 0)
+}
+
+#[test]
+fn rfq_split_hits_the_net_on_ticks_without_negative_legs() {
+    let legs = vec![leg(S, Side::Buy, 1), leg(S2, Side::Sell, 1)];
+    // theo net 200, ask 210: the 10 ticks are spread pro rata to ratio × theo, the sum is exact
+    let p = super::matching::rfq_split(&legs, &[520, 320], 210, Side::Buy);
+    assert_eq!(rfq_net(&legs, &p), 210);
+    assert!(p.iter().all(|x| *x >= 0));
+    // a butterfly 1:2:1 (buy, sell 2, buy)
+    let fly = vec![leg(S, Side::Buy, 1), leg(S2, Side::Sell, 2), RfqLeg { series: "X".into(), spec: spec(), side: Side::Buy, ratio: 1 }];
+    for net in [-7, 0, 1, 3, 40, 41] {
+        let p = super::matching::rfq_split(&fly, &[500, 300, 150], net, Side::Buy);
+        assert!(p.iter().all(|x| *x >= 0), "{p:?}");
+        assert_eq!(rfq_net(&fly, &p), net, "butterfly at {net}: {p:?}");
+    }
+    // 2:2 ratios cannot make an odd net: the last tick goes the taker's way
+    let two = vec![leg(S, Side::Buy, 2), leg(S2, Side::Sell, 2)];
+    let p = super::matching::rfq_split(&two, &[500, 300], 401, Side::Buy);
+    assert!(rfq_net(&two, &p) <= 401 && rfq_net(&two, &p) >= 399, "a buyer never pays above the net: {p:?}");
+    let p = super::matching::rfq_split(&two, &[500, 300], 401, Side::Sell);
+    assert!(rfq_net(&two, &p) >= 401 && rfq_net(&two, &p) <= 403, "a seller never receives below it: {p:?}");
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig { cases: 512, ..ProptestConfig::default() })]
+
+    /// Every split is on whole ticks and never below 0; it errs from the net only in the taker's favour and by
+    /// less than one leg's ratio; with every leg above 0 and a ratio-1 leg it makes the net exactly.
+    #[test]
+    fn rfq_split_properties(n in 1usize..5, theos in prop::collection::vec(0i64..5_000, 5), ratios in prop::collection::vec(1i64..4, 5), sides in prop::collection::vec(any::<bool>(), 5), shift in -500i64..500, buy in any::<bool>()) {
+        let mut legs: Vec<RfqLeg> = (0..n).map(|i| RfqLeg { series: format!("L{i}"), spec: spec(), side: if sides[i] { Side::Buy } else { Side::Sell }, ratio: ratios[i] }).collect();
+        legs[0].ratio = 1;
+        let th = &theos[..n];
+        let net = rfq_net(&legs, th) + shift;
+        let side = if buy { Side::Buy } else { Side::Sell };
+        let p = super::matching::rfq_split(&legs, th, net, side);
+        prop_assert!(p.iter().all(|x| *x >= 0));
+        let made = rfq_net(&legs, &p);
+        if made != net {
+            // a ratio-1 leg takes any remainder: only a leg held at 0 can leave the net out of reach
+            prop_assert!(p.iter().any(|x| *x == 0), "{p:?} {made} vs {net}");
+        }
+        // a net between the legs' theos ± their prices (what a quote around the theo is) is always made exactly
+        if th.iter().all(|t| *t > 600) && shift.abs() < 500 {
+            prop_assert_eq!(made, net, "{:?}", p);
+        }
+    }
+}
+
+#[test]
+fn rfq_accept_fills_every_leg_atomically_and_replays() {
+    let mut b = UnderlyingBooks::new(key());
+    let mut j = Vec::new();
+    let mut go = |b: &mut UnderlyingBooks, c: Cmd| {
+        let o = apply(b, &c);
+        j.push(Entry { seq: o.seq, cmd: c, out: o.clone() });
+        o
+    };
+    // a resting outright order is never touched by a combo
+    go(&mut b, new(order(1, 4, Side::Sell, 600, 5, Tif::Gtc, 0)));
+    assert!(go(&mut b, Cmd::RfqQuote { quote: spread_quote(77, 501, 2, AT + 5_000), at: AT }).ok);
+    // limit / size mismatch / wrong requester: rejected, every leg order released (Done rejected)
+    let orders = vec![leg_order(11, 3, Side::Buy, 2), leg_order(12, 3, Side::Sell, 2)];
+    let x = go(&mut b, Cmd::RfqAccept { rfq: 77, quote: 501, login: 3, stp: user(3), side: Side::Buy, limit_net: 209, orders: orders.clone(), at: AT + 10 });
+    assert_eq!((x.ok, x.code.as_deref(), x.fills.len()), (false, Some("price_moved"), 0));
+    assert_eq!(x.done.iter().map(|d| (d.id, d.status)).collect::<Vec<_>>(), vec![(11, DoneStatus::Rejected), (12, DoneStatus::Rejected)]);
+    let x = go(&mut b, Cmd::RfqAccept { rfq: 77, quote: 501, login: 3, stp: user(3), side: Side::Buy, limit_net: 210, orders: vec![leg_order(13, 3, Side::Buy, 3), leg_order(14, 3, Side::Sell, 3)], at: AT + 10 });
+    assert_eq!(x.code.as_deref(), Some("invalid_order"), "the size must be ratio × qty");
+    let x = go(&mut b, Cmd::RfqAccept { rfq: 77, quote: 501, login: 5, stp: user(5), side: Side::Buy, limit_net: 210, orders: vec![leg_order(15, 5, Side::Buy, 2), leg_order(16, 5, Side::Sell, 2)], at: AT + 10 });
+    assert_eq!(x.code.as_deref(), Some("quote_expired"), "only the requester can accept");
+    // accepted: both legs, one seq, combo id, positions both ways, the outright book untouched
+    let x = go(&mut b, Cmd::RfqAccept { rfq: 77, quote: 501, login: 3, stp: user(3), side: Side::Buy, limit_net: 210, orders: orders.clone(), at: AT + 20 });
+    assert!(x.ok, "{x:?}");
+    assert_eq!(x.fills.len(), 2);
+    assert!(x.fills.iter().all(|f| f.kind == FillKind::Rfq && f.combo == Some(77) && f.seq == x.seq && f.maker.login == 9 && f.taker.login == 3 && f.maker.order.is_none()));
+    assert_eq!(rfq_net(&[leg(S, Side::Buy, 1), leg(S2, Side::Sell, 1)], &[x.fills[0].px, x.fills[1].px]), 210);
+    assert_eq!((b.book(S).unwrap().position(3), b.book(S2).unwrap().position(3), b.book(S).unwrap().position(9), b.book(S2).unwrap().position(9)), (2, -2, -2, 2));
+    assert_eq!((b.book(S).unwrap().orders.len(), b.book(S).unwrap().last), (1, None), "outright book and last trade untouched");
+    assert_eq!(x.done.iter().filter(|d| d.status == DoneStatus::Filled).count(), 2);
+    // the quote is consumed: a second accept is refused
+    let x = go(&mut b, Cmd::RfqAccept { rfq: 77, quote: 501, login: 3, stp: user(3), side: Side::Buy, limit_net: 210, orders: vec![leg_order(17, 3, Side::Buy, 2), leg_order(18, 3, Side::Sell, 2)], at: AT + 30 });
+    assert_eq!(x.code.as_deref(), Some("quote_expired"));
+    // an expired quote; reduce-only that would grow a position (all legs or none); self trade
+    go(&mut b, Cmd::RfqQuote { quote: spread_quote(78, 502, 1, AT + 100), at: AT + 40 });
+    let x = go(&mut b, Cmd::RfqAccept { rfq: 78, quote: 502, login: 3, stp: user(3), side: Side::Sell, limit_net: 190, orders: vec![leg_order(19, 3, Side::Sell, 1), leg_order(20, 3, Side::Buy, 1)], at: AT + 101 });
+    assert_eq!(x.code.as_deref(), Some("quote_expired"));
+    let mut q = spread_quote(79, 503, 3, AT + 5_000);
+    q.reduce_only = true;
+    go(&mut b, Cmd::RfqQuote { quote: q, at: AT + 50 });
+    let x = go(&mut b, Cmd::RfqAccept { rfq: 79, quote: 503, login: 3, stp: user(3), side: Side::Sell, limit_net: 190, orders: vec![leg_order(21, 3, Side::Sell, 3), leg_order(22, 3, Side::Buy, 3)], at: AT + 60 });
+    assert_eq!((x.code.as_deref(), x.fills.len()), (Some("reduce_only"), 0), "3 would flip the 2 held: nothing fills");
+    assert_eq!(b.book(S).unwrap().position(3), 2);
+    let mut q = spread_quote(80, 504, 1, AT + 5_000);
+    q.requester = 1;
+    q.requester_stp = user(1);
+    q.stp = user(2);
+    go(&mut b, Cmd::RfqQuote { quote: q, at: AT + 60 });
+    let x = go(&mut b, Cmd::RfqAccept { rfq: 80, quote: 504, login: 1, stp: user(1), side: Side::Buy, limit_net: 210, orders: vec![leg_order(23, 1, Side::Buy, 1), leg_order(24, 1, Side::Sell, 1)], at: AT + 70 });
+    assert_eq!(x.code.as_deref(), Some("self_trade"), "accounts 1 and 2 belong to one client");
+    // Σ positions per series stays 0
+    for (_, (sum, _)) in super::journal::position_sums(&b) {
+        assert_eq!(sum, 0);
+    }
+    // the journal replays to byte-identical outputs and the same state
+    let r = replay(UnderlyingBooks::new(key()), &j).expect("replay identical");
+    assert_eq!(fingerprint(&r), fingerprint(&b));
+    // a restart forgets the quotes (like market-maker quotes)
+    apply(&mut b, &Cmd::RfqQuote { quote: spread_quote(81, 505, 1, AT + 9_000), at: AT + 80 });
+    apply(&mut b, &Cmd::RestartCancel { at: AT + 90 });
+    assert!(b.rfqs.is_empty());
+}
+
+#[test]
+fn bust_moves_the_positions_back_and_liquidation_orders_print_as_liquidation() {
+    let mut b = UnderlyingBooks::new(key());
+    run(&mut b, vec![new(order(1, 3, Side::Sell, 500, 4, Tif::Gtc, 0))]);
+    let x = apply(&mut b, &new(order(2, 4, Side::Buy, 500, 3, Tif::Ioc, LIQUIDATION)));
+    assert_eq!((x.fills[0].kind, x.fills[0].qty), (FillKind::Liquidation, 3));
+    let f = x.fills[0].clone();
+    assert_eq!((b.book(S).unwrap().position(3), b.book(S).unwrap().position(4)), (-3, 3));
+    let y = apply(&mut b, &Cmd::Bust { fill: f.clone(), reason: "off market".into(), at: AT });
+    assert!(y.ok && y.busted == vec![f.clone()]);
+    assert_eq!((b.book(S).unwrap().position(3), b.book(S).unwrap().position(4)), (0, 0));
+    // an expired series cannot be busted
+    apply(&mut b, &Cmd::Expire { expiry: spec().terms.expiry, purge: false, at: AT });
+    assert_eq!(apply(&mut b, &Cmd::Bust { fill: f, reason: "late".into(), at: AT }).code.as_deref(), Some("series_closed"));
 }
 
 /// Same-rules guarantee 2: the matching engine and the actor never refer to a market-maker login or group.
@@ -592,5 +758,98 @@ fn book_matching_cost() {
     }
     times.sort();
     let p = |q: f64| times[((times.len() as f64) * q) as usize] as f64 / 1000.0;
-    eprintln!("orders resting {}, apply incl. CoW clone: p50 {:.1} µs, p99 {:.1} µs, p99.9 {:.1} µs", b.resting(), p(0.5), p(0.99), p(0.999));
+    eprintln!("random flow: orders resting {}, apply incl. CoW clone: p50 {:.1} µs, p99 {:.1} µs, p99.9 {:.1} µs", b.resting(), p(0.5), p(0.99), p(0.999));
+
+    // a deep book: 200 series, each quoted by the market maker (2 sides) and holding 20 passive client orders per
+    // side, then client flow (passive adds, cancels, IOC takes) and MM requotes of 40 series at a time
+    let mut b = UnderlyingBooks::new(key());
+    let series: Vec<(String, SeriesSpec)> = (0..200)
+        .map(|k| {
+            let mut sp = spec();
+            sp.terms.series = format!("EURUSD-20261009-{}-C", 1000 + k);
+            (sp.terms.series.clone(), sp)
+        })
+        .collect();
+    let mut id = 1_000_000i64;
+    let mut seq_ids: Vec<Vec<i64>> = vec![vec![]; series.len()];
+    for (k, (s, sp)) in series.iter().enumerate() {
+        for j in 0..20 {
+            for side in [Side::Buy, Side::Sell] {
+                id += 1;
+                let px = if side == Side::Buy { 900 - j } else { 1100 + j };
+                let mut o = order(id, 3 + (j % 50), side, px, 2, Tif::Gtc, 0);
+                o.prio = 0;
+                apply(&mut b, &Cmd::New { series: s.clone(), spec: sp.clone(), order: o, usd_per_quote: D::ONE, at: AT });
+                seq_ids[k].push(id);
+            }
+        }
+    }
+    let mq = |b: &mut UnderlyingBooks, from: usize, id: &mut i64, shift: i64| {
+        let names: Vec<String> = series[from..from + 40].iter().map(|x| x.0.clone()).collect();
+        let quotes: Vec<QuoteIn> = series[from..from + 40]
+            .iter()
+            .flat_map(|(s, sp)| {
+                *id += 2;
+                [
+                    QuoteIn { series: s.clone(), spec: sp.clone(), id: *id - 1, side: Side::Buy, px: 990 + shift, qty: 10, reserve_per_step: D::ONE, ext: OrderExt::default() },
+                    QuoteIn { series: s.clone(), spec: sp.clone(), id: *id, side: Side::Sell, px: 1010 + shift, qty: 10, reserve_per_step: D::ONE, ext: OrderExt::default() },
+                ]
+            })
+            .collect();
+        apply(b, &Cmd::MassQuote { login: 999, stp: 9_999, series: names, quotes, at: AT })
+    };
+    for from in (0..200).step_by(40) {
+        mq(&mut b, from, &mut id, 0);
+    }
+    let resting = b.resting();
+    let (mut flow, mut quotes) = (Vec::with_capacity(100_000), Vec::with_capacity(5_000));
+    for i in 0..100_000i64 {
+        let r = next();
+        let k = (r % series.len() as u64) as usize;
+        let (s, sp) = &series[k];
+        let t = std::time::Instant::now();
+        let mut w = b.clone();
+        if i % 20 == 0 {
+            mq(&mut w, ((r >> 8) % 5) as usize * 40, &mut id, (r >> 16) as i64 % 3);
+            b = w;
+            quotes.push(t.elapsed().as_nanos() as u64);
+            continue;
+        }
+        let cmd = match (r >> 32) % 10 {
+            0..=3 => {
+                id += 1;
+                let side = if r & 1 == 0 { Side::Buy } else { Side::Sell };
+                let px = if side == Side::Buy { 980 - ((r >> 40) % 60) as i64 } else { 1020 + ((r >> 40) % 60) as i64 };
+                new_in(s, sp, order(id, 3 + ((r >> 12) % 150) as i64, side, px, 1 + ((r >> 50) % 3) as i64, Tif::Gtc, 0))
+            }
+            4..=6 => match w.book(s).and_then(|sb| sb.orders.values().find(|o| !o.ephemeral()).map(|o| (o.id, o.login))) {
+                Some((oid, login)) => Cmd::Cancel { series: s.clone(), id: oid, login, reason: "x".into(), at: AT },
+                None => continue,
+            },
+            _ => {
+                id += 1;
+                let side = if r & 1 == 0 { Side::Buy } else { Side::Sell };
+                new_in(s, sp, order(id, 3 + ((r >> 12) % 150) as i64, side, if side == Side::Buy { 1015 } else { 985 }, 1, Tif::Ioc, 0))
+            }
+        };
+        let _ = apply(&mut w, &cmd);
+        b = w;
+        flow.push(t.elapsed().as_nanos() as u64);
+    }
+    flow.sort();
+    quotes.sort();
+    let q = |v: &Vec<u64>, x: f64| v[((v.len() as f64) * x) as usize] as f64 / 1000.0;
+    eprintln!(
+        "deep book: 200 series, {resting} orders resting at the start, {} at the end; client command incl. CoW clone p50 {:.1} µs, p99 {:.1} µs, p99.9 {:.1} µs; mass quote of 40 series (80 quotes) p50 {:.1} µs, p99 {:.1} µs",
+        b.resting(),
+        q(&flow, 0.5),
+        q(&flow, 0.99),
+        q(&flow, 0.999),
+        q(&quotes, 0.5),
+        q(&quotes, 0.99)
+    );
+}
+
+fn new_in(series: &str, sp: &SeriesSpec, o: Resting) -> Cmd {
+    Cmd::New { series: series.into(), spec: sp.clone(), order: o, usd_per_quote: D::ONE, at: AT }
 }

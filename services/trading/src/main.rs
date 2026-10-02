@@ -131,6 +131,12 @@ async fn main() -> anyhow::Result<()> {
         // options order book housekeeping: GTD expiry, deadman switches, expiry cut-off, session-open band check,
         // the throttled market-data feed
         trading::book::spawn_scheduler(hub.clone());
+        // the liquidator of order-book positions at stop-out (docs §8) and the Kalks market maker (docs §4): it
+        // quotes only where a tenant's order book is enabled
+        trading::book::liquidator::spawn(st.clone());
+        if options.configured() {
+            tokio::spawn(trading::book::mm::run(st.clone()));
+        }
         // option expiry settlement (single-instance job, like the rollover) and the house delta hedger
         if options.configured() {
             tokio::spawn(trading::options::settle::scheduler(st.clone()));

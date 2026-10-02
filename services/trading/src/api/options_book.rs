@@ -760,6 +760,222 @@ pub async fn book_close(st: &AppState, s: &terminal::Session, ticket: i64, volum
     }))
 }
 
+/* ------------------------------------------------------------------ */
+/* Combo RFQ (docs §5)                                                 */
+/* ------------------------------------------------------------------ */
+
+impl From<crate::book::rfq::RfqError> for ApiError {
+    fn from(e: crate::book::rfq::RfqError) -> Self {
+        match e {
+            crate::book::rfq::RfqError::Exec(x) => x.into(),
+            crate::book::rfq::RfqError::Code("validation", m) => ApiError::Validation { field: "legs", message: m },
+            crate::book::rfq::RfqError::Code(code, m) => ApiError::Status { status: 422, code, message: m },
+            crate::book::rfq::RfqError::NotFound => ApiError::NotFound("Request not found".into()),
+        }
+    }
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RfqLegBody {
+    pub series: String,
+    pub side: String,
+    pub ratio: i64,
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RfqBody {
+    pub legs: Vec<RfqLegBody>,
+    #[serde(deserialize_with = "de_dec")]
+    pub qty: D,
+    #[serde(default)]
+    pub reduce_only: Option<bool>,
+}
+
+fn rfq_id(id: &str) -> ApiResult<i64> {
+    id.trim().parse::<i64>().map_err(|_| ApiError::NotFound("Request not found".into()))
+}
+
+/// `POST /v1/terminal/options/rfq {legs[{series, side, ratio}], qty, reduceOnly?}` → `{rfq: {id, expiresAt, legs, qty,
+/// status}, quotes: [...]}`. The Kalks market maker answers at once.
+pub async fn rfq_open(State(st): State<AppState>, ctx: Ctx, Body(b): Body<RfqBody>) -> ApiResult<Json<Value>> {
+    let s = terminal::session(&st, &ctx).await?;
+    s.writable()?;
+    let reduce = b.reduce_only.unwrap_or(false);
+    terminal::copy_guard(&st, &s, !reduce)?;
+    let kind = venue(&st, &s)?;
+    st.limiter.hit(&format!("book:{}", s.login), RATE_PER_SEC, Duration::from_secs(1)).map_err(ApiError::RateLimited)?;
+    if b.qty <= ZERO {
+        return Err(validation("qty", "qty must be above 0"));
+    }
+    let mut legs = Vec::new();
+    for l in &b.legs {
+        legs.push((l.series.trim().to_string(), parse_side(&l.side)?, l.ratio));
+    }
+    let r = crate::book::rfq::open(&st.hub, &st.pool, s.tenant_id, kind, s.login, s.user_id, legs, b.qty, reduce).await?;
+    let now_ms = st.hub.shared.clock.now().timestamp_millis();
+    Ok(Json(json!({"rfq": r.json(), "quotes": r.quotes_json(now_ms), "note": r.note})))
+}
+
+/// `GET /v1/terminal/options/rfq/{id}` → `{rfq, quotes: [{quoteId, responder, bid, ask, qty, validUntil}]}` (a lapsed
+/// quote is replaced by a new firm one while the request is open).
+pub async fn rfq_get(State(st): State<AppState>, ctx: Ctx, Path(id): Path<String>) -> ApiResult<Json<Value>> {
+    let s = terminal::session(&st, &ctx).await?;
+    let id = rfq_id(&id)?;
+    let r = st.hub.shared.books.rfqs.get(id).filter(|r| r.login == s.login).ok_or_else(|| ApiError::NotFound("Request not found".into()))?;
+    let r = if r.status == "open" { crate::book::rfq::refresh(&st.hub, r.id).await.unwrap_or(r) } else { r };
+    let now_ms = st.hub.shared.clock.now().timestamp_millis();
+    Ok(Json(json!({"rfq": r.json(), "quotes": r.quotes_json(now_ms), "note": r.note})))
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RfqAcceptBody {
+    pub quote_id: String,
+    pub side: String,
+    #[serde(deserialize_with = "de_dec")]
+    pub limit_net: D,
+}
+
+/// `POST /v1/terminal/options/rfq/{id}/accept {quoteId, side, limitNet}` → `{status: "filled", comboId, fills, net}`:
+/// every leg fills at once or nothing does (422 with the reason: `quote_expired`, `price_moved`, …).
+pub async fn rfq_accept(State(st): State<AppState>, ctx: Ctx, Path(id): Path<String>, Body(b): Body<RfqAcceptBody>) -> ApiResult<Json<Value>> {
+    let s = terminal::session(&st, &ctx).await?;
+    s.writable()?;
+    venue(&st, &s)?;
+    st.limiter.hit(&format!("book:{}", s.login), RATE_PER_SEC, Duration::from_secs(1)).map_err(ApiError::RateLimited)?;
+    settling_gate(&st, s.login)?;
+    let id = rfq_id(&id)?;
+    let quote = b.quote_id.trim().parse::<i64>().map_err(|_| status("quote_expired", "The quote has expired. Accept the new one."))?;
+    let side = parse_side(&b.side)?;
+    let r = st.hub.shared.books.rfqs.get(id).filter(|r| r.login == s.login).ok_or_else(|| ApiError::NotFound("Request not found".into()))?;
+    terminal::copy_guard(&st, &s, !r.reduce_only)?;
+    let mut base = BookReq::limit("", side, ZERO, ZERO);
+    base.eligible = super::options::eligible(&st, &s).await;
+    base.others = st.hub.shared.index.read().unwrap().other_contracts(s.tenant_id, s.user_id, s.login);
+    base.lp = st.hub.meta(s.login).is_some_and(|m| st.hub.shared.books.is_lp(m.user_id, &m.group));
+    let a = crate::book::rfq::accept(&st.hub, id, s.login, &terminal::actor_of(&s), quote, side, b.limit_net, base).await?;
+    let tick = a.rfq.tick();
+    if !a.out.ok {
+        let code: &'static str = match a.out.code.as_deref() {
+            Some("quote_expired") => "quote_expired",
+            Some("price_moved") => "price_moved",
+            Some("reduce_only") => "reduce_only",
+            Some("self_trade") => "self_trade",
+            Some("series_cancel_only") => "series_cancel_only",
+            Some("series_closed") => "series_closed",
+            Some("no_price") => "no_price",
+            _ => "rejected",
+        };
+        crate::book::rfq::record(&st.pool, &a.rfq, json!({"rejected": a.out.code})).await;
+        return Err(ApiError::Status { status: 422, code, message: a.out.message.clone().unwrap_or_else(|| "The combo was not filled".into()) });
+    }
+    // this account's legs as booked (one outbox item for all of them)
+    let booked: BTreeMap<String, Value> = a.applied.iter().flat_map(|x| x.value["legs"].as_array().cloned().unwrap_or_default()).filter_map(|l| Some((l["fillId"].as_str()?.to_string(), l))).collect();
+    let fills: Vec<Value> = a
+        .out
+        .fills
+        .iter()
+        .map(|f| {
+            let b = booked.get(&f.id);
+            json!({
+                "fillId": f.id, "series": f.series, "side": f.taker.side.as_str(), "role": "taker", "price": num(f.spec.price(f.px)), "qty": num(f.spec.contracts(f.qty)),
+                "fee": b.map(|v| v["fee"].clone()).unwrap_or(json!(0)), "rebate": b.map(|v| v["rebate"].clone()).unwrap_or(json!(0)),
+                "positionTicket": b.map(|v| v["positionTicket"].clone()).unwrap_or(Value::Null), "kind": "rfq", "comboId": f.combo.map(|c| c.to_string()), "at": chrono::DateTime::from_timestamp_millis(f.at),
+            })
+        })
+        .collect();
+    crate::book::rfq::record(&st.pool, &a.rfq, json!({"filled": {"quote": quote, "side": side.as_str(), "net": num(D::from(a.net) * tick), "fills": fills.len()}})).await;
+    let mut v = json!({"status": "filled", "comboId": a.rfq.id.to_string(), "net": num(D::from(a.net) * tick), "fills": fills});
+    if !a.settled {
+        v["settling"] = json!(true);
+    }
+    Ok(Json(v))
+}
+
+/// `DELETE /v1/terminal/options/rfq/{id}` → `{status: "cancelled"}`.
+pub async fn rfq_cancel(State(st): State<AppState>, ctx: Ctx, Path(id): Path<String>) -> ApiResult<Json<Value>> {
+    let s = terminal::session(&st, &ctx).await?;
+    let id = rfq_id(&id)?;
+    let r = crate::book::rfq::cancel(&st.hub, id, s.login)?;
+    crate::book::rfq::record(&st.pool, &r, json!({})).await;
+    Ok(Json(json!({"status": r.status, "rfq": r.json()})))
+}
+
+/// `POST /v1/terminal/options/combos/{comboId}/close` on a strategy held on the order book (docs §5): one
+/// reduce-only combo RFQ to the market maker, accepted at its firm quote — every leg closes at once or none does.
+/// None when the strategy is not on the book (the house close handles it).
+pub async fn book_close_combo(st: &AppState, s: &terminal::Session, combo: i64) -> ApiResult<Option<Value>> {
+    let v = st
+        .hub
+        .read(
+            s.login,
+            Box::new(move |x| {
+                let Some((a, _)) = x else { return Value::Null };
+                json!(a.positions.values().filter(|p| p.combo_id == Some(combo) && p.option.is_some()).map(|p| json!({"ticket": p.ticket, "series": p.symbol, "side": p.side.as_str(), "contracts": p.volume.to_string(), "book": p.on_book()})).collect::<Vec<_>>())
+            }),
+        )
+        .await;
+    let legs = v.as_array().cloned().unwrap_or_default();
+    if legs.is_empty() || !legs.iter().any(|l| l["book"] == true) {
+        return Ok(None);
+    }
+    if legs.iter().any(|l| l["book"] != true) {
+        return Err(status("mixed_venue", "This strategy has legs on the order book and Kalks-quoted legs: close them one by one"));
+    }
+    let kind = venue(st, s)?;
+    settling_gate(st, s.login)?;
+    // per series: the contracts to close (a strategy holds one position per series and side)
+    let mut per: BTreeMap<String, D> = BTreeMap::new();
+    for l in &legs {
+        let c: D = l["contracts"].as_str().and_then(|x| x.parse().ok()).unwrap_or(ZERO);
+        let sign = if l["side"] == "buy" { D::ONE } else { -D::ONE };
+        *per.entry(l["series"].as_str().unwrap_or_default().to_string()).or_default() += c * sign;
+    }
+    per.retain(|_, c| !c.is_zero());
+    fn gcd(a: i64, b: i64) -> i64 {
+        if b == 0 { a.abs() } else { gcd(b, a % b) }
+    }
+    let whole: Vec<(String, Side, i64)> = per.iter().map(|(s, c)| (s.clone(), if *c > ZERO { Side::Sell } else { Side::Buy }, rust_decimal::prelude::ToPrimitive::to_i64(&c.abs().trunc()).unwrap_or(0))).collect();
+    if whole.iter().any(|w| w.2 <= 0) || per.values().any(|c| !c.fract().is_zero()) {
+        return Err(status("invalid_volume", "Only whole contracts close as a strategy: close the legs one by one"));
+    }
+    let g = whole.iter().fold(0, |a, w| gcd(a, w.2)).max(1);
+    let legs_in: Vec<(String, Side, i64)> = whole.iter().map(|(s, side, n)| (s.clone(), *side, n / g)).collect();
+    let r = crate::book::rfq::open(&st.hub, &st.pool, s.tenant_id, kind, s.login, s.user_id, legs_in, D::from(g), true).await?;
+    let q = r.quote.clone().ok_or_else(|| status("no_liquidity", r.note.clone().unwrap_or_else(|| "The market maker cannot price this strategy right now".into())))?;
+    let ask = q.ask.ok_or_else(|| status("no_liquidity", "The market maker has no price to close this strategy"))?;
+    let mut base = BookReq::limit("", Side::Buy, ZERO, ZERO);
+    base.reduce_only = true;
+    base.origin = format!("close-combo:{combo}");
+    let a = crate::book::rfq::accept(&st.hub, r.id, s.login, &terminal::actor_of(s), q.id, Side::Buy, D::from(ask) * r.tick(), base).await?;
+    if !a.out.ok {
+        let code: &'static str = match a.out.code.as_deref() {
+            Some("quote_expired") => "quote_expired",
+            Some("price_moved") => "price_moved",
+            Some("reduce_only") => "reduce_only",
+            _ => "rejected",
+        };
+        return Err(ApiError::Status { status: 422, code, message: a.out.message.clone().unwrap_or_else(|| "The strategy was not closed".into()) });
+    }
+    crate::book::rfq::record(&st.pool, &a.rfq, json!({"filled": {"quote": q.id, "side": "buy", "net": num(D::from(a.net) * r.tick()), "fills": a.out.fills.len(), "closeCombo": combo}})).await;
+    // the deals each leg booked (profit of the closed share)
+    let mut profit = ZERO;
+    let mut out_legs = Vec::new();
+    for x in &a.applied {
+        for l in x.value["legs"].as_array().cloned().unwrap_or_default() {
+            for d in l["deals"].as_array().cloned().unwrap_or_default() {
+                if d["entry"] == "out" {
+                    profit += d["profit"].as_f64().and_then(crate::money::from_f64).unwrap_or(ZERO);
+                    out_legs.push(json!({"ticket": d["ticket"], "dealId": d["dealId"], "profit": d["profit"], "fillId": l["fillId"], "series": l["series"], "price": l["price"], "qty": l["qty"]}));
+                }
+            }
+        }
+    }
+    Ok(Some(json!({"status": "closed", "comboId": combo, "legs": out_legs, "profit": num(r2(profit)), "net": num(D::from(a.net) * r.tick()), "rfq": r.id.to_string(), "venue": "book", "settling": !a.settled})))
+}
+
 /// Is `ticket` an order-book position of the session's account?
 pub async fn is_book_position(st: &AppState, login: i64, ticket: i64) -> bool {
     st.hub.read(login, Box::new(move |x| json!(x.is_some_and(|(a, _)| a.positions.get(&ticket).is_some_and(|p| p.on_book()))))).await.as_bool() == Some(true)

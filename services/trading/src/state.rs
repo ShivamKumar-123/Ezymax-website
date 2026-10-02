@@ -216,7 +216,8 @@ impl AccountState {
         if let Some(d) = deal
             && let Some(f) = d.option.as_ref().and_then(|o| o.fill.as_ref())
         {
-            self.book.remember_fill(crate::book::reserve::fill_key(&f.id, &f.role));
+            // a bust's reversal deals carry the busted fill with kind `bust`
+            self.book.remember_fill(if f.kind == "bust" { crate::book::reserve::bust_key(&f.id, &f.role) } else { crate::book::reserve::fill_key(&f.id, &f.role) });
         }
     }
 

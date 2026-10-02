@@ -301,6 +301,10 @@ pub async fn close_combo(State(st): State<AppState>, ctx: Ctx, Path(combo): Path
     s.writable()?;
     terminal::copy_guard(&st, &s, false)?;
     let combo = parse_ticket(&combo)?;
+    // a strategy on the order book closes by a reduce-only combo RFQ to the market maker (docs §5)
+    if let Some(v) = super::options_book::book_close_combo(&st, &s, combo).await? {
+        return Ok(Json(v));
+    }
     let delay = terminal::exec_delay(&st, &ctx.tenant, s.login).await;
     let op: Op = Box::new(move |tx, env| {
         let legs = eopt::close_combo(tx, env, combo, None)?;

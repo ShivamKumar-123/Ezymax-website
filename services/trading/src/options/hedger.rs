@@ -88,6 +88,30 @@ pub async fn client_delta(st: &AppState, tenant_id: i64, exclude: Option<i64>) -
     out
 }
 
+/// Option delta of the tenant's live market-maker account per underlying (units of the underlying).
+pub async fn mm_delta(st: &AppState, tenant_id: i64) -> BTreeMap<String, f64> {
+    let Some(login) = st.hub.shared.books.mm.login(tenant_id, AccountKind::Live) else { return BTreeMap::new() };
+    let v = st
+        .hub
+        .read(
+            login,
+            Box::new(move |x| {
+                let Some((a, env)) = x else { return Value::Null };
+                let mut m = serde_json::Map::new();
+                for p in a.positions.values() {
+                    let Some(t) = p.option.as_ref() else { continue };
+                    let Some(q) = env.options.mark(&env.tenant.slug, &env.group.code, t, env.now) else { continue };
+                    let d = q.delta * super::f(p.volume * t.contract_size * p.side.sign());
+                    let cur = m.get(&t.underlying).and_then(Value::as_f64).unwrap_or(0.0);
+                    m.insert(t.underlying.clone(), json!(cur + d));
+                }
+                Value::Object(m)
+            }),
+        )
+        .await;
+    v.as_object().map(|o| o.iter().filter_map(|(k, v)| v.as_f64().map(|x| (k.clone(), x))).collect()).unwrap_or_default()
+}
+
 /// The hedge account's net CFD units per symbol.
 pub async fn hedge_units(st: &AppState, login: i64) -> BTreeMap<String, f64> {
     let specs = st.hub.shared.specs.clone();
@@ -119,7 +143,12 @@ pub async fn hedge_tenant(st: &AppState, t: &TenantConfig) -> anyhow::Result<usi
     if !snap.enabled(&t.slug, true) || opts.stale(now) {
         return Ok(0);
     }
-    let clients = client_delta(st, t.tenant_id, None).await;
+    let mut clients = client_delta(st, t.tenant_id, None).await;
+    // the Kalks market maker's order-book positions are the house's own exposure (docs §4 "delta hedge"): the
+    // house holds −clients (house venue) + the MM's delta
+    for (u, d) in mm_delta(st, t.tenant_id).await {
+        *clients.entry(u).or_default() -= d;
+    }
     if clients.is_empty() {
         return Ok(0);
     }

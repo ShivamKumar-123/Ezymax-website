@@ -15,12 +15,16 @@
 //! without it every option keeps trading at the house price exactly as before.
 
 pub mod actor;
+pub mod enable;
 pub mod entry;
 pub mod journal;
+pub mod liquidator;
 pub mod matching;
 pub mod md;
+pub mod mm;
 pub mod outbox;
 pub mod reserve;
+pub mod rfq;
 pub mod types;
 
 use chrono::{DateTime, Utc};
@@ -55,6 +59,11 @@ pub struct Hooks {
     pub crash_after_journal: AtomicBool,
     /// > 0: the dispatcher stops right after applying that many more items, before marking the last one.
     pub crash_after_apply: AtomicI64,
+    /// The next enable stops after seeding the first series and booking the market maker's side, before the
+    /// clients' positions move (a crash during novation).
+    pub crash_in_novation: AtomicBool,
+    /// The process "dies": every actor stops at once without flushing its buffered quote journal (tests).
+    pub dead: AtomicBool,
 }
 
 impl Hooks {
@@ -96,6 +105,59 @@ pub struct Books {
     pending: Mutex<HashMap<BookKey, Vec<outbox::Row>>>,
     /// The hub (set by `Hub::start`): shards hand committed book commands to the actors through it.
     pub hub: std::sync::OnceLock<Hub>,
+    /// Accounts the stop-out handed to the liquidator (docs §8); None until the liquidator runs.
+    pub liquidator: Mutex<Option<tokio::sync::mpsc::UnboundedSender<i64>>>,
+    /// The Kalks market maker (docs §4): accounts, pauses, live status.
+    pub mm: mm::Mm,
+    /// Open combo RFQs (docs §5).
+    pub rfqs: rfq::Registry,
+    /// The last replay audit: (when, books that differed).
+    pub last_audit: Mutex<Option<(DateTime<Utc>, usize)>>,
+    /// Latency samples (load test, monitor): actor batch time and outbox lag.
+    pub perf: Perf,
+}
+
+/// Rings of latency samples in µs (the most recent `PERF_SAMPLES`).
+#[derive(Default)]
+pub struct Perf {
+    /// Actor: apply + group commit + publish of one batch.
+    pub actor_batch_us: Mutex<std::collections::VecDeque<u64>>,
+    /// Commands per actor batch.
+    pub actor_batch_cmds: Mutex<std::collections::VecDeque<u64>>,
+    /// Outbox: from the commit to the item applied on its account.
+    pub outbox_lag_us: Mutex<std::collections::VecDeque<u64>>,
+    /// The group commit alone (Postgres), and the buffered quote-journal entries it carried.
+    pub commit_us: Mutex<std::collections::VecDeque<u64>>,
+    pub commit_quotes: Mutex<std::collections::VecDeque<u64>>,
+}
+
+pub const PERF_SAMPLES: usize = 200_000;
+
+impl Perf {
+    pub fn push(ring: &Mutex<std::collections::VecDeque<u64>>, v: u64) {
+        let mut r = ring.lock().unwrap();
+        if r.len() >= PERF_SAMPLES {
+            r.pop_front();
+        }
+        r.push_back(v);
+    }
+    /// (count, p50, p99, max) of a ring.
+    pub fn stats(ring: &Mutex<std::collections::VecDeque<u64>>) -> (usize, u64, u64, u64) {
+        let mut v: Vec<u64> = ring.lock().unwrap().iter().copied().collect();
+        if v.is_empty() {
+            return (0, 0, 0, 0);
+        }
+        v.sort_unstable();
+        let p = |q: f64| v[((v.len() - 1) as f64 * q) as usize];
+        (v.len(), p(0.5), p(0.99), *v.last().unwrap())
+    }
+    pub fn clear(&self) {
+        self.actor_batch_us.lock().unwrap().clear();
+        self.actor_batch_cmds.lock().unwrap().clear();
+        self.outbox_lag_us.lock().unwrap().clear();
+        self.commit_us.lock().unwrap().clear();
+        self.commit_quotes.lock().unwrap().clear();
+    }
 }
 
 impl Default for Books {
@@ -113,6 +175,11 @@ impl Default for Books {
             spawn: tokio::sync::Mutex::new(()),
             pending: Default::default(),
             hub: std::sync::OnceLock::new(),
+            liquidator: Mutex::new(None),
+            mm: Default::default(),
+            rfqs: Default::default(),
+            last_audit: Mutex::new(None),
+            perf: Default::default(),
         }
     }
 }
@@ -121,6 +188,13 @@ impl Default for Books {
 pub const SETTLING_MS: i64 = 2_000;
 
 impl Books {
+    /// Hands an account past its stop-out level to the liquidator (never blocks; repeated hands are merged).
+    pub fn liquidate(&self, login: i64) {
+        if let Some(tx) = self.liquidator.lock().unwrap().as_ref() {
+            let _ = tx.send(login);
+        }
+    }
+
     pub fn venue_enabled(&self, tenant_id: i64, kind: AccountKind) -> bool {
         self.venues.read().unwrap().contains(&(tenant_id, kind))
     }
@@ -450,8 +524,8 @@ pub async fn reconcile(hub: &Hub, h: &actor::Handle, pending: &[outbox::Row]) ->
     // before the row was marked)
     let mut by_login: BTreeMap<i64, Vec<String>> = BTreeMap::new();
     for r in pending {
-        if let outbox::Item::Fill { fill, role } = &r.item {
-            by_login.entry(r.login).or_default().push(reserve::fill_key(&fill.id, role.as_str()));
+        if let Some(k) = r.item.applied_key() {
+            by_login.entry(r.login).or_default().push(k);
         }
     }
     let mut booked: std::collections::BTreeSet<(i64, String)> = std::collections::BTreeSet::new();
@@ -464,12 +538,13 @@ pub async fn reconcile(hub: &Hub, h: &actor::Handle, pending: &[outbox::Row]) ->
         }
     }
     for r in pending {
-        if let outbox::Item::Fill { fill, role } = &r.item {
-            if booked.contains(&(r.login, reserve::fill_key(&fill.id, role.as_str()))) || closed.contains(&fill.series) {
+        if r.item.applied_key().is_some_and(|k| booked.contains(&(r.login, k))) {
+            continue;
+        }
+        for (fill, _, d) in r.item.deltas() {
+            if closed.contains(&fill.series) {
                 continue;
             }
-            let side = fill.party(*role).side;
-            let d = if side == crate::model::Side::Buy { fill.qty } else { -fill.qty };
             *expected.entry((fill.series.clone(), r.login)).or_default() += d;
         }
     }
@@ -552,6 +627,7 @@ pub async fn scheduler_pass(hub: &Hub, now: DateTime<Utc>, slow: bool, was_open:
         }
         tracing::warn!(login, "options book deadman fired: orders cancelled");
     }
+    rfq::sweep(hub);
     let snap = crate::options::OptionPricing::snapshot(hub.shared.options.as_ref());
     for h in books.handles() {
         let due = h
@@ -622,6 +698,7 @@ pub async fn replay_audit(hub: &Hub) -> Vec<(String, Result<u64, String>)> {
         }
         out.push((key.label(), res));
     }
+    *hub.shared.books.last_audit.lock().unwrap() = Some((Utc::now(), out.iter().filter(|r| r.1.is_err()).count()));
     out
 }
 

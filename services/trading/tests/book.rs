@@ -343,3 +343,162 @@ async fn order_book_through_the_actor_outbox_shards_and_postgres() {
     let mut admin = server.database("postgres").connect().await.unwrap();
     let _ = sqlx::query(sqlx::AssertSqlSafe(format!("DROP DATABASE IF EXISTS \"{db}\" WITH (FORCE)"))).execute(&mut admin).await;
 }
+
+const SERIES2: &str = "EURUSD-20991218-1.1700-C";
+
+fn spec2() -> SeriesSpec {
+    let mut s = spec();
+    s.terms.series = SERIES2.into();
+    s.terms.strike = d("1.17");
+    s
+}
+
+/// A leg order of an accepted combo, held (reserved) on the account like `enter` would.
+async fn hold_leg(hub: &Hub, login: i64, user: i64, series: &str, side: Side, qty: i64) -> Resting {
+    let id = hub.shared.ids.ticket();
+    let rps = d("2");
+    let order = Resting {
+        id,
+        login,
+        stp: user,
+        side,
+        px: 0,
+        qty,
+        left: qty,
+        filled: 0,
+        notional: 0,
+        prio: 0,
+        tif: Tif::Ioc,
+        flags: 0,
+        expire_ms: None,
+        reserve_per_step: rps,
+        ext: OrderExt { origin: "rfq".into(), source: "manual".into(), ccy: "USD".into(), created_ms: Utc::now().timestamp_millis(), kind: "rfq".into(), opening: qty, fee_taker: d("0.25"), fee_cap_pct: d("10"), ..Default::default() },
+    };
+    let w = Working {
+        id,
+        underlying: "EURUSD".into(),
+        series: series.into(),
+        side,
+        px: 0,
+        price: D::ZERO,
+        tick: spec().tick,
+        qty,
+        left: qty,
+        step: D::ONE,
+        reserve_per_step: rps,
+        hold: None,
+        tif: Tif::Ioc,
+        flags: 0,
+        expire_ms: None,
+        ext: order.ext.clone(),
+        opening: qty,
+        created: Utc::now(),
+    };
+    let op: Op = Box::new(move |tx, _| {
+        tx.st.book.orders.insert(w.id, w);
+        tx.book_dirty = true;
+        Ok(Value::Null)
+    });
+    hub.exec(login, "client", None, "", "", None, op).await.unwrap();
+    order
+}
+
+/// Combo RFQ and bust through the real actor, journal, outbox and PostgreSQL (no market data): every leg of a
+/// combo in ONE outbox item per account, booked exactly once across a crash between applying and marking it
+/// (kill point 2); a bust reversed on both sides exactly once across the same crash; ledger keys once, clearing 0,
+/// positions = book, reserves 0, journal replay and account replay identical.
+#[tokio::test]
+async fn combo_rfq_and_bust_book_exactly_once_across_crashes() {
+    let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
+    let db = format!("kalks_trading_book_rfq_{}", std::process::id());
+    let Ok(server) = PgConnectOptions::from_str(&base) else { return };
+    if server.clone().database("postgres").connect().await.is_err() {
+        eprintln!("SKIP: PostgreSQL not reachable at {base}");
+        return;
+    }
+    let url = server.clone().database(&db).to_url_lossy().to_string();
+    let pool = trading::persist::connect(&url).await.expect("connect + migrate");
+    let hub = boot(&pool, Default::default()).await;
+    let (t, m, ut, um) = (50_000_911i64, 50_000_912i64, 911i64, 912i64);
+    hub.open(account(t, ut), ("h".into(), "i".into()), "test").await.unwrap();
+    hub.open(account(m, um), ("h".into(), "i".into()), "test").await.unwrap();
+    hub.shared.books.enable_venue(&pool, 1, AccountKind::Demo, "test", "rfq test").await.unwrap();
+    let at = Utc::now().timestamp_millis();
+    // the responder's firm quote on a call spread (buy 1.16 C, sell 1.17 C), 3 units
+    let legs = vec![RfqLeg { series: SERIES.into(), spec: spec(), side: Side::Buy, ratio: 1 }, RfqLeg { series: SERIES2.into(), spec: spec2(), side: Side::Sell, ratio: 1 }];
+    let quote = RfqQuoteIn { rfq: 7001, quote: 7002, requester: t, requester_stp: ut, login: m, stp: um, legs, qty: 3, reduce_only: false, bid: Some(190), ask: Some(210), theos: vec![520, 320], valid_until: at + 60_000, usd_per_quote: D::ONE };
+    let (o, _, _) = entry::call(&hub, m, &key(), Cmd::RfqQuote { quote, at }).await.unwrap();
+    assert!(o.ok, "{o:?}");
+    // the requester's leg orders (reserved), then the accept — the dispatcher dies after applying one item
+    let l1 = hold_leg(&hub, t, ut, SERIES, Side::Buy, 3).await;
+    let l2 = hold_leg(&hub, t, ut, SERIES2, Side::Sell, 3).await;
+    assert_eq!(read(&hub, t).await["reserve"], "12", "3 × 2 per leg, two series");
+    hub.shared.books.hooks.crash_after_apply.store(1, Ordering::SeqCst);
+    let (o, _, _) = entry::call(&hub, t, &key(), Cmd::RfqAccept { rfq: 7001, quote: 7002, login: t, stp: ut, side: Side::Buy, limit_net: 210, orders: vec![l1, l2], at: at + 10 }).await.unwrap();
+    assert!(o.ok && o.fills.len() == 2, "{o:?}");
+    assert_eq!(o.fills[0].px - o.fills[1].px, 210, "the legs sum to the accepted net");
+    let items: Vec<(String,)> = sqlx::query_as("SELECT item_kind FROM book_outbox ORDER BY seq").fetch_all(&pool).await.unwrap();
+    assert_eq!(items.iter().filter(|x| x.0 == "fills").count(), 2, "one item per account holds both legs");
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    drop(hub);
+    let (hub, rep) = restart(&pool).await;
+    assert!(rep.mismatches.is_empty(), "{rep:?}");
+    drained(&pool).await;
+    for f in &o.fills {
+        for l in [t, m] {
+            let n: i64 = sqlx::query_scalar("SELECT count(*) FROM ledger_txns WHERE idempotency_key = $1").bind(format!("fill:{}:{l}:prem", f.id)).fetch_one(&pool).await.unwrap();
+            assert_eq!(n, 1, "{} booked once on {l}", f.id);
+        }
+    }
+    let pos = |v: Value| -> Vec<String> {
+        let mut x: Vec<String> = v["book"].as_array().unwrap().iter().map(|s| s.as_str().unwrap().to_string()).collect();
+        x.sort();
+        x
+    };
+    assert_eq!(pos(read(&hub, t).await), vec!["-3".to_string(), "3".to_string()]);
+    assert_eq!(pos(read(&hub, m).await), vec!["-3".to_string(), "3".to_string()]);
+    assert_eq!(read(&hub, t).await["reserve"], "0", "the leg reservations are released");
+    let clearing2: D = sqlx::query_scalar::<_, Option<D>>("SELECT sum(amount) FROM ledger_postings WHERE account_code LIKE 'house:options_clearing.%'").fetch_one(&pool).await.unwrap().unwrap_or_default();
+    assert_eq!(clearing2, D::ZERO);
+    let fee: i64 = sqlx::query_scalar("SELECT count(*) FROM ledger_txns WHERE login = $1 AND idempotency_key LIKE 'fill:%:fee'").bind(t).fetch_one(&pool).await.unwrap();
+    assert_eq!(fee, 2, "the taker fee on each leg");
+    let balance_t = read(&hub, t).await["balance"].as_str().unwrap().to_string();
+
+    // ---------- bust the first leg; the dispatcher dies after one side ----------
+    let fill = o.fills[0].clone();
+    hub.shared.books.hooks.crash_after_apply.store(1, Ordering::SeqCst);
+    let (b, _, _) = entry::call(&hub, t, &key(), Cmd::Bust { fill: fill.clone(), reason: "test".into(), at: at + 20 }).await.unwrap();
+    assert!(b.ok && b.busted.len() == 1);
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    drop(hub);
+    let (hub, rep) = restart(&pool).await;
+    assert!(rep.mismatches.is_empty(), "{rep:?}");
+    drained(&pool).await;
+    for l in [t, m] {
+        let n: i64 = sqlx::query_scalar("SELECT count(*) FROM ledger_txns WHERE idempotency_key = $1").bind(format!("bust:{}:{l}:prem", fill.id)).fetch_one(&pool).await.unwrap();
+        assert_eq!(n, 1, "bust booked once on {l}");
+    }
+    let refund: i64 = sqlx::query_scalar("SELECT count(*) FROM ledger_txns WHERE idempotency_key = $1").bind(format!("bust:{}:{t}:fee", fill.id)).fetch_one(&pool).await.unwrap();
+    assert_eq!(refund, 1, "the taker fee of the busted leg is refunded");
+    assert_eq!(read(&hub, t).await["book"], json!(["-3"]), "the bought leg is gone, the sold one stays");
+    assert_eq!(read(&hub, m).await["book"], json!(["3"]));
+    assert_ne!(read(&hub, t).await["balance"].as_str().unwrap(), balance_t, "premium and fee came back");
+    let clearing2: D = sqlx::query_scalar::<_, Option<D>>("SELECT sum(amount) FROM ledger_postings WHERE account_code LIKE 'house:options_clearing.%'").fetch_one(&pool).await.unwrap().unwrap_or_default();
+    assert_eq!(clearing2, D::ZERO);
+    // replay: the journal (quote, accept, bust, restarts) and the accounts
+    let entries = journal::entries(&pool, &key(), 1).await.unwrap();
+    let replayed = journal::replay(UnderlyingBooks::new(key()), &entries).expect("replay identical");
+    let live = hub.shared.books.handle(&key()).unwrap().read(Box::new(|b| journal::fingerprint(b))).await.unwrap();
+    assert_eq!(journal::fingerprint(&replayed), live);
+    let unbalanced: i64 = sqlx::query_scalar("SELECT count(*) FROM (SELECT txn_id FROM ledger_postings GROUP BY txn_id, currency HAVING sum(amount) <> 0) x").fetch_one(&pool).await.unwrap();
+    assert_eq!(unbalanced, 0);
+    let replayed = trading::persist::replay_all(&pool).await.unwrap();
+    for l in [t, m] {
+        let live = hub.read(l, Box::new(|x| x.map(|(s, _)| serde_json::to_value(s).unwrap()).unwrap_or(Value::Null))).await;
+        assert_eq!(serde_json::to_value(&replayed[&l]).unwrap(), live, "replay diverged for {l}");
+    }
+    drop(hub);
+    pool.close().await;
+    let mut admin = server.database("postgres").connect().await.unwrap();
+    let _ = sqlx::query(sqlx::AssertSqlSafe(format!("DROP DATABASE IF EXISTS \"{db}\" WITH (FORCE)"))).execute(&mut admin).await;
+}

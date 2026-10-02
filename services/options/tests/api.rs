@@ -418,7 +418,13 @@ async fn stream_sends_changed_rows_at_most_four_times_a_second() {
     let (mut ws, _) = tokio_tungstenite::connect_async(format!("ws://{addr}/v1/options/stream?ticket={}", tk["ticket"].as_str().unwrap())).await.unwrap();
     let date = t.st.refdata().await.expiries.iter().filter(|e| e.symbol == "EURUSD" && e.status == "listed").map(|e| e.expiry_date).max().unwrap();
     ws.send(tokio_tungstenite::tungstenite::Message::text(json!({"op": "subscribe", "u": "EURUSD", "expiry": date}).to_string())).await.unwrap();
-    let first: Value = serde_json::from_str(ws.next().await.unwrap().unwrap().to_text().unwrap()).unwrap();
+    // A heartbeat can arrive before the snapshot; skip it.
+    let first: Value = loop {
+        let v: Value = serde_json::from_str(ws.next().await.unwrap().unwrap().to_text().unwrap()).unwrap();
+        if v["type"] != "hb" {
+            break v;
+        }
+    };
     assert_eq!(first["type"], "chain");
     let rows_total = first["rows"].as_array().unwrap().len();
     // Tick the spot every 10 ms for 2 s.

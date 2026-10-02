@@ -35,7 +35,7 @@ import { ApprovalsPanel, Fact, FillBustDialog, FillKindChip, type BustTarget } f
 const SERIES_RE = /^[A-Z0-9]{3,12}-\d{8}-[0-9.]{1,16}-[CP](-[A-Z0-9._]{1,24})?$/;
 const SCOPE_LABEL: Record<string, string> = { all: "Everything", underlying: "Underlying", expiry: "Expiry", series: "Series" };
 const HALT_MODE: Record<string, { label: string; tone: "down" | "warn"; text: string }> = {
-  halt: { label: "Halt", tone: "down", text: "The book freezes as it is: no new orders, no amends or cancels, no matching. For a price or system error." },
+  halt: { label: "Halt", tone: "down", text: "Every resting order in scope is cancelled (reservations go back to the clients) and only cancels are accepted until it is lifted. For a price or system error." },
   cancel_only: { label: "Cancel-only", tone: "warn", text: "Resting orders can be cancelled; nothing new is accepted and nothing matches. The gentler kill switch." },
 };
 const LAG_WARN_MS = 2000;

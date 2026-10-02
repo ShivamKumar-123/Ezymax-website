@@ -33,38 +33,67 @@ fn ts(ms: i64) -> chrono::DateTime<chrono::Utc> {
     chrono::DateTime::from_timestamp_millis(ms).unwrap_or_default()
 }
 
+/// Journal rows of a batch in ONE statement per table (arrays through UNNEST: one round trip however many
+/// commands the batch holds).
 async fn insert_entries(tx: &mut Transaction<'_, Postgres>, key: &BookKey, entries: &[Entry], quote: bool) -> anyhow::Result<()> {
+    if entries.is_empty() {
+        return Ok(());
+    }
+    let mut seq = Vec::with_capacity(entries.len());
+    let mut kinds = Vec::with_capacity(entries.len());
+    let mut cmds = Vec::with_capacity(entries.len());
+    let mut outs = Vec::with_capacity(entries.len());
+    let mut logins: Vec<Option<i64>> = Vec::with_capacity(entries.len());
+    let mut orders: Vec<Option<i64>> = Vec::with_capacity(entries.len());
+    let mut cids: Vec<Option<String>> = Vec::with_capacity(entries.len());
+    let mut ats = Vec::with_capacity(entries.len());
     for e in entries {
         let (login, order_id, cid) = e.cmd.order_ref();
-        if quote {
-            sqlx::query("INSERT INTO book_quote_journal (tenant_id, kind, underlying, seq, cmd_kind, cmd, out, login, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING")
-                .bind(key.tenant_id)
-                .bind(kind_str(key))
-                .bind(&key.underlying)
-                .bind(e.seq as i64)
-                .bind(e.cmd.kind())
-                .bind(sqlx::types::Json(&e.cmd))
-                .bind(sqlx::types::Json(&e.out))
-                .bind(login)
-                .bind(ts(e.cmd.at()))
-                .execute(&mut **tx)
-                .await?;
-        } else {
-            sqlx::query("INSERT INTO book_journal (tenant_id, kind, underlying, seq, cmd_kind, cmd, out, login, order_id, client_order_id, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)")
-                .bind(key.tenant_id)
-                .bind(kind_str(key))
-                .bind(&key.underlying)
-                .bind(e.seq as i64)
-                .bind(e.cmd.kind())
-                .bind(sqlx::types::Json(&e.cmd))
-                .bind(sqlx::types::Json(&e.out))
-                .bind(login)
-                .bind(order_id)
-                .bind(cid)
-                .bind(ts(e.cmd.at()))
-                .execute(&mut **tx)
-                .await?;
-        }
+        seq.push(e.seq as i64);
+        kinds.push(e.cmd.kind().to_string());
+        cmds.push(serde_json::to_string(&e.cmd)?);
+        outs.push(serde_json::to_string(&e.out)?);
+        logins.push(login);
+        orders.push(order_id);
+        cids.push(cid);
+        ats.push(ts(e.cmd.at()));
+    }
+    if quote {
+        sqlx::query(
+            "INSERT INTO book_quote_journal (tenant_id, kind, underlying, seq, cmd_kind, cmd, out, login, created_at)
+             SELECT $1, $2, $3, s, k, c::jsonb, o::jsonb, l, t FROM UNNEST($4::bigint[], $5::text[], $6::text[], $7::text[], $8::bigint[], $9::timestamptz[]) AS x(s, k, c, o, l, t)
+             ON CONFLICT DO NOTHING",
+        )
+        .bind(key.tenant_id)
+        .bind(kind_str(key))
+        .bind(&key.underlying)
+        .bind(&seq)
+        .bind(&kinds)
+        .bind(&cmds)
+        .bind(&outs)
+        .bind(&logins)
+        .bind(&ats)
+        .execute(&mut **tx)
+        .await?;
+    } else {
+        sqlx::query(
+            "INSERT INTO book_journal (tenant_id, kind, underlying, seq, cmd_kind, cmd, out, login, order_id, client_order_id, created_at)
+             SELECT $1, $2, $3, s, k, c::jsonb, o::jsonb, l, oi, ci, t
+               FROM UNNEST($4::bigint[], $5::text[], $6::text[], $7::text[], $8::bigint[], $9::bigint[], $10::text[], $11::timestamptz[]) AS x(s, k, c, o, l, oi, ci, t)",
+        )
+        .bind(key.tenant_id)
+        .bind(kind_str(key))
+        .bind(&key.underlying)
+        .bind(&seq)
+        .bind(&kinds)
+        .bind(&cmds)
+        .bind(&outs)
+        .bind(&logins)
+        .bind(&orders)
+        .bind(&cids)
+        .bind(&ats)
+        .execute(&mut **tx)
+        .await?;
     }
     Ok(())
 }
@@ -142,6 +171,10 @@ fn touched(entries: &[Entry]) -> Touched {
                 }
             }
         }
+        for f in &e.out.busted {
+            t.positions.insert((f.series.clone(), f.maker.login));
+            t.positions.insert((f.series.clone(), f.taker.login));
+        }
         for d in &e.out.done {
             t.done.insert(d.id, (d.series.clone(), d.order.clone(), d.status, d.reason.clone()));
         }
@@ -204,55 +237,72 @@ pub async fn commit(pool: &PgPool, key: &BookKey, entries: &[Entry], quotes: &[E
         let Some(spec) = spec else { continue };
         upsert_order(&mut tx, key, series, &spec, o, status.as_str(), Some(reason), at).await?;
     }
+    // positions: zeros deleted, the rest upserted (one statement each)
+    let (mut del_s, mut del_l, mut up_s, mut up_l, mut up_q) = (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
     for (series, login) in &t.positions {
         let steps = books.book(series).map(|b| b.position(*login)).unwrap_or(0);
         if steps == 0 {
-            sqlx::query("DELETE FROM book_positions WHERE tenant_id = $1 AND kind = $2 AND underlying = $3 AND series = $4 AND login = $5")
-                .bind(key.tenant_id)
-                .bind(kind_str(key))
-                .bind(&key.underlying)
-                .bind(series)
-                .bind(login)
-                .execute(&mut *tx)
-                .await?;
+            del_s.push(series.clone());
+            del_l.push(*login);
         } else {
-            sqlx::query(
-                "INSERT INTO book_positions (tenant_id, kind, underlying, series, login, steps, updated_seq) VALUES ($1,$2,$3,$4,$5,$6,$7)
-                 ON CONFLICT (tenant_id, kind, underlying, series, login) DO UPDATE SET steps = EXCLUDED.steps, updated_seq = EXCLUDED.updated_seq, updated_at = now()",
-            )
+            up_s.push(series.clone());
+            up_l.push(*login);
+            up_q.push(steps);
+        }
+    }
+    if !del_s.is_empty() {
+        sqlx::query("DELETE FROM book_positions p USING UNNEST($4::text[], $5::bigint[]) AS x(s, l) WHERE p.tenant_id = $1 AND p.kind = $2 AND p.underlying = $3 AND p.series = x.s AND p.login = x.l")
             .bind(key.tenant_id)
             .bind(kind_str(key))
             .bind(&key.underlying)
-            .bind(series)
-            .bind(login)
-            .bind(steps)
-            .bind(books.seq as i64)
+            .bind(&del_s)
+            .bind(&del_l)
             .execute(&mut *tx)
             .await?;
-        }
+    }
+    if !up_s.is_empty() {
+        sqlx::query(
+            "INSERT INTO book_positions (tenant_id, kind, underlying, series, login, steps, updated_seq)
+             SELECT $1, $2, $3, s, l, q, $4 FROM UNNEST($5::text[], $6::bigint[], $7::bigint[]) AS x(s, l, q)
+             ON CONFLICT (tenant_id, kind, underlying, series, login) DO UPDATE SET steps = EXCLUDED.steps, updated_seq = EXCLUDED.updated_seq, updated_at = now()",
+        )
+        .bind(key.tenant_id)
+        .bind(kind_str(key))
+        .bind(&key.underlying)
+        .bind(books.seq as i64)
+        .bind(&up_s)
+        .bind(&up_l)
+        .bind(&up_q)
+        .execute(&mut *tx)
+        .await?;
+    }
+    // series state (one statement for the live ones)
+    let live: Vec<&SeriesBook> = t.series.iter().filter_map(|s| books.book(s)).collect();
+    if !live.is_empty() {
+        let specs: Vec<String> = live.iter().map(|sb| serde_json::to_string(&sb.spec)).collect::<Result<_, _>>()?;
+        sqlx::query(
+            "INSERT INTO book_series (tenant_id, kind, underlying, series, state, spec, last_px, last_qty, vol_day, vol, updated_seq)
+             SELECT $1, $2, $3, s, st, sp::jsonb, lp, lq, vd, v, $4 FROM UNNEST($5::text[], $6::text[], $7::text[], $8::bigint[], $9::bigint[], $10::bigint[], $11::bigint[]) AS x(s, st, sp, lp, lq, vd, v)
+             ON CONFLICT (tenant_id, kind, underlying, series) DO UPDATE SET state = EXCLUDED.state, spec = EXCLUDED.spec, last_px = EXCLUDED.last_px,
+                last_qty = EXCLUDED.last_qty, vol_day = EXCLUDED.vol_day, vol = EXCLUDED.vol, updated_seq = EXCLUDED.updated_seq, updated_at = now()",
+        )
+        .bind(key.tenant_id)
+        .bind(kind_str(key))
+        .bind(&key.underlying)
+        .bind(books.seq as i64)
+        .bind(live.iter().map(|sb| sb.series.clone()).collect::<Vec<_>>())
+        .bind(live.iter().map(|sb| sb.state.as_str().to_string()).collect::<Vec<_>>())
+        .bind(&specs)
+        .bind(live.iter().map(|sb| sb.last.map(|l| l.0)).collect::<Vec<_>>())
+        .bind(live.iter().map(|sb| sb.last.map(|l| l.1)).collect::<Vec<_>>())
+        .bind(live.iter().map(|sb| sb.vol_day.0).collect::<Vec<_>>())
+        .bind(live.iter().map(|sb| sb.vol_day.1).collect::<Vec<_>>())
+        .execute(&mut *tx)
+        .await?;
     }
     for series in &t.series {
         match books.book(series) {
-            Some(sb) => {
-                sqlx::query(
-                    "INSERT INTO book_series (tenant_id, kind, underlying, series, state, spec, last_px, last_qty, vol_day, vol, updated_seq) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-                     ON CONFLICT (tenant_id, kind, underlying, series) DO UPDATE SET state = EXCLUDED.state, spec = EXCLUDED.spec, last_px = EXCLUDED.last_px,
-                        last_qty = EXCLUDED.last_qty, vol_day = EXCLUDED.vol_day, vol = EXCLUDED.vol, updated_seq = EXCLUDED.updated_seq, updated_at = now()",
-                )
-                .bind(key.tenant_id)
-                .bind(kind_str(key))
-                .bind(&key.underlying)
-                .bind(series)
-                .bind(sb.state.as_str())
-                .bind(sqlx::types::Json(&sb.spec))
-                .bind(sb.last.map(|l| l.0))
-                .bind(sb.last.map(|l| l.1))
-                .bind(sb.vol_day.0)
-                .bind(sb.vol_day.1)
-                .bind(books.seq as i64)
-                .execute(&mut *tx)
-                .await?;
-            }
+            Some(_) => {}
             None => {
                 // purged after settlement: the series and its positions are gone
                 for table in ["book_series", "book_positions"] {
@@ -267,56 +317,64 @@ pub async fn commit(pool: &PgPool, key: &BookKey, entries: &[Entry], quotes: &[E
             }
         }
     }
-    for e in entries {
-        for f in &e.out.fills {
-            sqlx::query(
-                "INSERT INTO book_fills (tenant_id, fill_id, kind, underlying, seq, series, px, price, qty, contracts, maker_login, taker_login, maker_order, taker_order,
-                                         aggressor, fill_kind, combo, usd_per_quote, premium_usd, at, data)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)",
-            )
-            .bind(key.tenant_id)
-            .bind(&f.id)
-            .bind(kind_str(key))
-            .bind(&key.underlying)
-            .bind(f.seq as i64)
-            .bind(&f.series)
-            .bind(f.px)
-            .bind(f.spec.price(f.px))
-            .bind(f.qty)
-            .bind(f.spec.contracts(f.qty))
-            .bind(f.maker.login)
-            .bind(f.taker.login)
-            .bind(f.maker.order.as_ref().map(|o| o.id))
-            .bind(f.taker.order.as_ref().map(|o| o.id))
-            .bind(f.aggressor().as_str())
-            .bind(f.kind.as_str())
-            .bind(f.combo)
-            .bind(f.usd_per_quote)
-            .bind(f.premium_usd)
-            .bind(ts(f.at))
-            .bind(sqlx::types::Json(f))
-            .execute(&mut *tx)
-            .await?;
-        }
+    // the fills (the tape) in one statement
+    let fills: Vec<&Fill> = entries.iter().flat_map(|e| e.out.fills.iter()).collect();
+    if !fills.is_empty() {
+        let s = |f: &dyn Fn(&Fill) -> String| fills.iter().map(|x| f(x)).collect::<Vec<String>>();
+        let i = |f: &dyn Fn(&Fill) -> i64| fills.iter().map(|x| f(x)).collect::<Vec<i64>>();
+        let oi = |f: &dyn Fn(&Fill) -> Option<i64>| fills.iter().map(|x| f(x)).collect::<Vec<Option<i64>>>();
+        let d = |f: &dyn Fn(&Fill) -> crate::money::D| fills.iter().map(|x| f(x)).collect::<Vec<crate::money::D>>();
+        let data: Vec<String> = fills.iter().map(|f| serde_json::to_string(f)).collect::<Result<_, _>>()?;
+        sqlx::query(
+            "INSERT INTO book_fills (tenant_id, fill_id, kind, underlying, seq, series, px, price, qty, contracts, maker_login, taker_login, maker_order, taker_order,
+                                     aggressor, fill_kind, combo, usd_per_quote, premium_usd, at, data)
+             SELECT $1, fid, $2, $3, sq, se, px, pr, q, c, ml, tl, mo, tor, ag, fk, cb, uq, pu, t, dt::jsonb
+               FROM UNNEST($4::text[], $5::bigint[], $6::text[], $7::bigint[], $8::numeric[], $9::bigint[], $10::numeric[], $11::bigint[], $12::bigint[], $13::bigint[], $14::bigint[],
+                           $15::text[], $16::text[], $17::bigint[], $18::numeric[], $19::numeric[], $20::timestamptz[], $21::text[])
+                    AS x(fid, sq, se, px, pr, q, c, ml, tl, mo, tor, ag, fk, cb, uq, pu, t, dt)",
+        )
+        .bind(key.tenant_id)
+        .bind(kind_str(key))
+        .bind(&key.underlying)
+        .bind(s(&|f| f.id.clone()))
+        .bind(i(&|f| f.seq as i64))
+        .bind(s(&|f| f.series.clone()))
+        .bind(i(&|f| f.px))
+        .bind(d(&|f| f.spec.price(f.px)))
+        .bind(i(&|f| f.qty))
+        .bind(d(&|f| f.spec.contracts(f.qty)))
+        .bind(i(&|f| f.maker.login))
+        .bind(i(&|f| f.taker.login))
+        .bind(oi(&|f| f.maker.order.as_ref().map(|o| o.id)))
+        .bind(oi(&|f| f.taker.order.as_ref().map(|o| o.id)))
+        .bind(s(&|f| f.aggressor().as_str().to_string()))
+        .bind(s(&|f| f.kind.as_str().to_string()))
+        .bind(oi(&|f| f.combo))
+        .bind(d(&|f| f.usd_per_quote))
+        .bind(d(&|f| f.premium_usd))
+        .bind(fills.iter().map(|f| ts(f.at)).collect::<Vec<_>>())
+        .bind(&data)
+        .execute(&mut *tx)
+        .await?;
     }
-    for r in rows.iter().filter(|r| r.persist) {
-        let kind = match &r.item {
-            Item::Fill { .. } => "fill",
-            Item::Done { .. } => "done",
-            Item::Amended { .. } => "amended",
-            Item::Release { .. } => "release",
-        };
-        sqlx::query("INSERT INTO book_outbox (tenant_id, kind, underlying, seq, book_seq, login, item_kind, item) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)")
-            .bind(key.tenant_id)
-            .bind(kind_str(key))
-            .bind(&key.underlying)
-            .bind(r.seq as i64)
-            .bind(r.book_seq as i64)
-            .bind(r.login)
-            .bind(kind)
-            .bind(sqlx::types::Json(&r.item))
-            .execute(&mut *tx)
-            .await?;
+    // the outbox rows in one statement
+    let persist: Vec<&OutRow> = rows.iter().filter(|r| r.persist).collect();
+    if !persist.is_empty() {
+        let items: Vec<String> = persist.iter().map(|r| serde_json::to_string(&r.item)).collect::<Result<_, _>>()?;
+        sqlx::query(
+            "INSERT INTO book_outbox (tenant_id, kind, underlying, seq, book_seq, login, item_kind, item)
+             SELECT $1, $2, $3, s, b, l, k, i::jsonb FROM UNNEST($4::bigint[], $5::bigint[], $6::bigint[], $7::text[], $8::text[]) AS x(s, b, l, k, i)",
+        )
+        .bind(key.tenant_id)
+        .bind(kind_str(key))
+        .bind(&key.underlying)
+        .bind(persist.iter().map(|r| r.seq as i64).collect::<Vec<_>>())
+        .bind(persist.iter().map(|r| r.book_seq as i64).collect::<Vec<_>>())
+        .bind(persist.iter().map(|r| r.login).collect::<Vec<_>>())
+        .bind(persist.iter().map(|r| r.item.kind().to_string()).collect::<Vec<_>>())
+        .bind(&items)
+        .execute(&mut *tx)
+        .await?;
     }
     tx.commit().await?;
     Ok(())

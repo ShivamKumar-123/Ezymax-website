@@ -99,7 +99,7 @@ async fn a_new_broker_is_provisioned_on_its_first_request() {
         json_logs: false, rollover_enabled: false, wallet_url: String::new(), wallet_token: String::new(), ib_url: String::new(), ib_token: String::new(),
         gateway_url: format!("http://{addr}"), gateway_token: "t".into(),
         options_url: String::new(), options_token: String::new(), options_hedger: false, options_hedge_user: 0,
-        options_hedge_group: "standard".into(), options_hedge_capital: 1_000_000, options_hedge_limit_usd: 250_000, options_mm_user: 0,
+        options_hedge_group: "standard".into(), options_hedge_capital: 1_000_000, options_hedge_limit_usd: 250_000, options_mm_user: 0, options_mm_capital: 25_000_000,
     };
     let st = AppState {
         hub: hub.clone(), pool: pool.clone(), keys: Keys::new(&cfg.session_secret), cfg: Arc::new(cfg.clone()), limiter: Limiter::default(),
