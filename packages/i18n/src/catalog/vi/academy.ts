@@ -33,8 +33,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Phân tích cơ bản",
   "track.technical": "Phân tích kỹ thuật",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "Giao dịch quyền chọn",
   "trackShort.fundamental": "Cơ bản",
   "trackShort.technical": "Kỹ thuật",
+  "trackShort.options": "Quyền chọn",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "Tự chọn",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count} phút",
@@ -42,11 +47,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h} giờ {m} phút",
 
   // Home
-  "home.subtitle": "Tám giai đoạn từ pip đầu tiên đến giao dịch chuyên nghiệp · {count} chương về phân tích cơ bản và kỹ thuật, kèm bài kiểm tra, bài thi và chứng chỉ.",
+  "home.subtitle": "Tám giai đoạn chính từ pip đầu tiên đến giao dịch chuyên nghiệp, cùng các khóa tự chọn · {count} chương kèm bài kiểm tra, bài thi và chứng chỉ.",
   "home.glossary": "Thuật ngữ",
   "home.myProgress": "Tiến độ của tôi",
   "home.pathTitle": "Lộ trình học của bạn",
-  "home.pathText": "Mỗi giai đoạn có một nhánh phân tích cơ bản và một nhánh phân tích kỹ thuật, một bài thi cuối và một chứng chỉ.",
+  "home.pathText": "Mỗi giai đoạn chính có một nhánh phân tích cơ bản và một nhánh phân tích kỹ thuật, một bài thi cuối và một chứng chỉ.",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "Khóa tự chọn",
+  "home.electivesText": "Các khóa học về sản phẩm của Kalks. Học bất cứ lúc nào: mỗi khóa có bài thi cuối và chứng chỉ riêng.",
   "hero.allDone": "Đã hoàn thành tất cả các chương",
   "hero.continue": "Tiếp tục học",
   "hero.upNext": "Tiếp theo",
@@ -73,6 +81,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "Chưa bắt đầu",
   "phaseCard.fundamental": "{count} cơ bản",
   "phaseCard.technical": "{count} kỹ thuật",
+  "phaseCard.options": { other: "{count} chương quyền chọn" },
   "phaseCard.certificate": "Chứng chỉ {date}",
   "phaseCard.finalExam": "Bài thi cuối · {count} câu hỏi",
   "glossaryTeaser.subtitle": "Thuật ngữ giao dịch bằng ngôn ngữ dễ hiểu",
@@ -98,6 +107,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "Các chương",
   "phase.chaptersText": "Mỗi chương kết thúc bằng một bài kiểm tra ngắn; vượt qua để hoàn thành chương.",
   "phase.bothTracks": "Cả hai nhánh",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "Tất cả các nhánh",
 
   // Final exam (phase page card and exam page)
   "exam.final": "Bài thi cuối",
@@ -107,6 +118,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "Điểm cao nhất",
   "exam.passedText": "Bạn đã vượt qua bài thi này. Bạn có thể thi lại để luyện tập; chứng chỉ của bạn vẫn còn hiệu lực.",
   "exam.unlockedText": "Câu hỏi bao gồm cả hai nhánh. Vượt qua để nhận chứng chỉ cho giai đoạn này.",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "Câu hỏi bao gồm tất cả các chương của giai đoạn này. Vượt qua để nhận chứng chỉ của bạn.",
   "exam.lockedText": {
     other: "Mở khóa khi hoàn thành mọi chương của giai đoạn này: còn {count} chương.",
   },
@@ -115,6 +128,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "Đã khóa",
   "exam.pageTitle": "Bài thi giai đoạn {n}: {title}",
   "exam.intro": "{count} câu hỏi thuộc cả hai nhánh · điểm đạt {pass}% · cứ từ từ, không giới hạn thời gian.",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "{count} câu hỏi từ tất cả các chương · điểm đạt {pass}% · cứ từ từ, không giới hạn thời gian.",
   "exam.lockedTitle": "Bài thi sẽ mở khóa khi hoàn thành mọi chương",
   "exam.lockedBody": "Bạn đã hoàn thành {done} / {total} chương trong giai đoạn này. Vượt qua bài kiểm tra của từng chương để hoàn thành chương đó.",
   "exam.backToChapters": "Quay lại các chương",
@@ -181,7 +196,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "Liên quan:",
 
   // My progress page
-  "progress.subtitle": "Các chương, điểm kiểm tra, bài thi và chứng chỉ trong cả tám giai đoạn.",
+  "progress.subtitle": "Các chương, điểm kiểm tra, bài thi và chứng chỉ trong tám giai đoạn chính và các khóa tự chọn.",
   "progress.chaptersComplete": "Chương đã hoàn thành",
   "progress.ofCourse": "{pct}% khóa học",
   "progress.onePerPhase": "Mỗi giai đoạn một chứng chỉ",
@@ -189,7 +204,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { other: "{count} ngày" },
   "progress.studied": "Đã học {time}",
   "progress.byPhase": "Theo giai đoạn",
-  "progress.byPhaseSub": "Phải hoàn thành cả hai nhánh để mở khóa bài thi giai đoạn",
+  "progress.byPhaseSub": "Hoàn thành tất cả các chương của một giai đoạn để mở khóa bài thi",
   "progress.col.phase": "Giai đoạn",
   "progress.col.exam": "Bài thi",
   "progress.col.certificate": "Chứng chỉ",

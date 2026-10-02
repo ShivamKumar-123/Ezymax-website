@@ -6,7 +6,7 @@ import { Award, BookOpen, Clock, Copy, Download, Flame, GraduationCap, ShieldChe
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Progress, Reveal, cn } from "@kalks/ui";
 import { tr, useT } from "@kalks/i18n/react";
-import { LEVEL_TONE, TRACK_SHORT, fmtDay, fmtMin, levelLabel, pct, useAcademy, type Catalog, type Certificate } from "./api";
+import { LEVEL_TONE, fmtDay, fmtMin, isElective, levelLabel, pct, trackShort, trackTallies, tracksOf, useAcademy, type Catalog, type Certificate } from "./api";
 import { AcademyUnavailable, BackLink, PageSkeleton } from "./shared";
 
 function CertificateTile({ c }: { c: Certificate }) {
@@ -67,6 +67,8 @@ export function LiveProgress() {
   if (cat.error) return <AcademyUnavailable error={cat.error} onRetry={cat.reload} />;
   if (!cat.data) return <PageSkeleton />;
   const { me, phases } = cat.data;
+  // one column per track any phase has (core tracks, then product tracks such as options)
+  const tracks = tracksOf(phases.flatMap((p) => p.sections));
   return (
     <div className="pb-16">
       <BackLink href="/academy">{t("academy.title")}</BackLink>
@@ -82,13 +84,13 @@ export function LiveProgress() {
         <Card>
           <CardHeader title={t("academy.progress.byPhase")} subtitle={t("academy.progress.byPhaseSub")} icon={<GraduationCap />} />
           <div className="overflow-x-auto px-2 pb-4 pt-3 sm:px-4">
-            <table className="w-full min-w-[720px] text-[13px]" data-testid="progress-table">
+            <table className={cn("w-full text-[13px]", tracks.length > 2 ? "min-w-[860px]" : "min-w-[720px]")} data-testid="progress-table">
               <thead>
                 <tr className="text-start text-[11.5px] uppercase tracking-wider text-fg-3">
                   <th className="px-3 py-2 font-medium">{t("academy.progress.col.phase")}</th>
-                  {(["fundamental", "technical"] as const).map((tk) => (
+                  {tracks.map((tk) => (
                     <th key={tk} className="px-3 py-2 font-medium">
-                      {t(TRACK_SHORT[tk])}
+                      {trackShort(t, tk)}
                     </th>
                   ))}
                   <th className="px-3 py-2 font-medium">{t("academy.progress.col.exam")}</th>
@@ -96,45 +98,56 @@ export function LiveProgress() {
                 </tr>
               </thead>
               <tbody>
-                {phases.map((p) => (
-                  <tr key={p.slug} className="border-t border-line">
-                    <td className="px-3 py-3">
-                      <Link href={`/academy/phase/${p.slug}`} className="font-medium hover:text-ember">
-                        {p.order}. {p.title}
-                      </Link>
-                      <div className="text-[11.5px] text-fg-3">{levelLabel(p.level)}</div>
-                    </td>
-                    {(["fundamental", "technical"] as const).map((tk) => {
-                      const s = p.sections.find((x) => x.track === tk);
-                      const d = s?.chapters.filter((c) => c.progress.completed).length ?? 0;
-                      const n = s?.chapters.length ?? 0;
-                      return (
-                        <td key={tk} className="px-3 py-3">
-                          <div className="k-num mb-1 text-[12px] text-fg-2">
-                            {d}/{n}
-                          </div>
-                          <Progress value={pct(d, n)} tone={d === n && n > 0 ? "up" : "ember"} className="max-w-[140px]" />
-                        </td>
-                      );
-                    })}
-                    <td className="px-3 py-3">
-                      {p.exam?.passed ? (
-                        <Chip tone="up">{t("academy.progress.examPassed", { pct: p.exam.best_pct })}</Chip>
-                      ) : p.exam?.unlocked ? (
-                        <Link href={`/academy/phase/${p.slug}/exam`}>
-                          <Chip tone="gold">{t("academy.progress.ready")}</Chip>
+                {phases.map((p) => {
+                  const tally = new Map(trackTallies(p.sections).map((x) => [x.track, x]));
+                  return (
+                    <tr key={p.slug} className="border-t border-line">
+                      <td className="px-3 py-3">
+                        <Link href={`/academy/phase/${p.slug}`} className="font-medium hover:text-ember">
+                          {p.order}. {p.title}
                         </Link>
-                      ) : p.exam?.attempts ? (
-                        <Chip tone="warn">{t("academy.progress.best", { pct: p.exam.best_pct })}</Chip>
-                      ) : (
-                        <span className="text-fg-3">{t("academy.exam.locked")}</span>
-                      )}
-                    </td>
-                    <td className={cn("px-3 py-3", !p.certificate && "text-fg-3")}>
-                      {p.certificate ? <span className="k-num text-fg-2">{p.certificate.code}</span> : "–"}
-                    </td>
-                  </tr>
-                ))}
+                        <div className="text-[11.5px] text-fg-3">
+                          {levelLabel(p.level)}
+                          {isElective(p) && ` · ${t("academy.elective")}`}
+                        </div>
+                      </td>
+                      {tracks.map((tk) => {
+                        const x = tally.get(tk);
+                        // a phase without this track (e.g. the options elective has no technical section)
+                        if (!x)
+                          return (
+                            <td key={tk} className="px-3 py-3 text-fg-3">
+                              –
+                            </td>
+                          );
+                        return (
+                          <td key={tk} className="px-3 py-3">
+                            <div className="k-num mb-1 text-[12px] text-fg-2">
+                              {x.done}/{x.total}
+                            </div>
+                            <Progress value={pct(x.done, x.total)} tone={x.done === x.total && x.total > 0 ? "up" : "ember"} className="max-w-[140px]" />
+                          </td>
+                        );
+                      })}
+                      <td className="px-3 py-3">
+                        {p.exam?.passed ? (
+                          <Chip tone="up">{t("academy.progress.examPassed", { pct: p.exam.best_pct })}</Chip>
+                        ) : p.exam?.unlocked ? (
+                          <Link href={`/academy/phase/${p.slug}/exam`}>
+                            <Chip tone="gold">{t("academy.progress.ready")}</Chip>
+                          </Link>
+                        ) : p.exam?.attempts ? (
+                          <Chip tone="warn">{t("academy.progress.best", { pct: p.exam.best_pct })}</Chip>
+                        ) : (
+                          <span className="text-fg-3">{t("academy.exam.locked")}</span>
+                        )}
+                      </td>
+                      <td className={cn("px-3 py-3", !p.certificate && "text-fg-3")}>
+                        {p.certificate ? <span className="k-num text-fg-2">{p.certificate.code}</span> : "–"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

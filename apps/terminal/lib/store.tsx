@@ -40,6 +40,7 @@ import { AccountStream } from "./engine/stream";
 import { liveStore, useLiveEquity, useLivePosition } from "./engine/live";
 import { mapAccount, mapHistory, mapOrder, mapPosition, rejectReason, serverName, type EngineTradingAccount } from "./engine/map";
 import type { EngAccount, EngDeal, EngState, SessionInfo, StreamFrame } from "./engine/types";
+import { routeOptionFrame, splitOptionState } from "./options/book";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -109,7 +110,7 @@ export interface ChartTab {
 export type Layout = "1" | "2h" | "2v" | "4";
 export const LAYOUT_COUNT: Record<Layout, number> = { "1": 1, "2h": 2, "2v": 2, "4": 4 };
 
-export type ToolboxTab = "trade" | "history" | "exposure" | "news" | "calendar" | "alerts" | "journal" | "ai" | "mam";
+export type ToolboxTab = "trade" | "history" | "exposure" | "news" | "calendar" | "alerts" | "journal" | "ai" | "mam" | "options" | "settlements";
 export type RightTab = "order" | "depth" | "info";
 export type MwTab = "symbols" | "details" | "favourites";
 /** Instrument list filter: an asset class, everything, or favourites (Market Watch, symbol search). */
@@ -944,7 +945,8 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
 
   /** Replace the active account's book with an engine state (initial load, reconnect, stream `resync`). */
   const applyState = React.useCallback(
-    (login: string, st: EngState) => {
+    (login: string, full: EngState) => {
+      const st = splitOptionState(login, full); // option positions/orders live in lib/options/book.ts
       const acc = mapAccount(st.account);
       setEngAccounts((m) => ({ ...m, [login]: acc }));
       liveStore.setAccount(login, st.account);
@@ -1017,9 +1019,11 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   );
 
   const onFrame = React.useCallback(
-    (login: string, f: StreamFrame, reconnected: boolean) => {
+    (login: string, frame: StreamFrame, reconnected: boolean) => {
       if (sessionRef.current.login !== login) return;
       const cent = engAccRef.current[login]?.cent ?? false;
+      const f = routeOptionFrame(login, frame, cent); // option entries go to the option book
+      if (!f) return;
       switch (f.type) {
         case "snapshot": {
           const acc = mapAccount(f.account);

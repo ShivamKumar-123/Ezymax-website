@@ -31,8 +31,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "فنڈامینٹل اینالیسس",
   "track.technical": "ٹیکنیکل اینالیسس",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "آپشنز ٹریڈنگ",
   "trackShort.fundamental": "فنڈامینٹل",
   "trackShort.technical": "ٹیکنیکل",
+  "trackShort.options": "آپشنز",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "اختیاری",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count} منٹ",
@@ -40,11 +45,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h} گھنٹے {m} منٹ",
 
   // Home
-  "home.subtitle": "آپ کے پہلے پِپ سے پروفیشنل ٹریڈنگ تک آٹھ مراحل · فنڈامینٹل اور ٹیکنیکل اینالیسس کے {count} ابواب، کوئزز، امتحانات اور سرٹیفکیٹس کے ساتھ۔",
+  "home.subtitle": "آپ کے پہلے پِپ سے پروفیشنل ٹریڈنگ تک آٹھ بنیادی مراحل، ساتھ میں اختیاری کورسز · کوئزز، امتحانات اور سرٹیفکیٹس کے ساتھ {count} ابواب۔",
   "home.glossary": "اصطلاحات",
   "home.myProgress": "میری پیش رفت",
   "home.pathTitle": "آپ کا تعلیمی سفر",
-  "home.pathText": "ہر مرحلے میں ایک فنڈامینٹل اور ایک ٹیکنیکل ٹریک، ایک فائنل امتحان اور ایک سرٹیفکیٹ ہے۔",
+  "home.pathText": "ہر بنیادی مرحلے میں ایک فنڈامینٹل اور ایک ٹیکنیکل ٹریک، ایک فائنل امتحان اور ایک سرٹیفکیٹ ہے۔",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "اختیاری کورسز",
+  "home.electivesText": "Kalks پروڈکٹس پر کورسز۔ انہیں کسی بھی وقت پڑھیں: ہر کورس کا اپنا فائنل امتحان اور سرٹیفکیٹ ہے۔",
   "hero.allDone": "تمام ابواب مکمل",
   "hero.continue": "سیکھنا جاری رکھیں",
   "hero.upNext": "اگلا",
@@ -71,6 +79,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "شروع نہیں ہوا",
   "phaseCard.fundamental": "{count} فنڈامینٹل",
   "phaseCard.technical": "{count} ٹیکنیکل",
+  "phaseCard.options": { one: "آپشنز کا {count} باب", other: "آپشنز کے {count} ابواب" },
   "phaseCard.certificate": "سرٹیفکیٹ {date}",
   "phaseCard.finalExam": "فائنل امتحان · {count} سوالات",
   "glossaryTeaser.subtitle": "ٹریڈنگ کی اصطلاحات آسان زبان میں",
@@ -96,6 +105,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "ابواب",
   "phase.chaptersText": "ہر باب ایک مختصر کوئز پر ختم ہوتا ہے؛ باب مکمل کرنے کے لیے اسے پاس کریں۔",
   "phase.bothTracks": "دونوں ٹریکس",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "تمام ٹریکس",
 
   // Final exam (phase page card and exam page)
   "exam.final": "فائنل امتحان",
@@ -105,6 +116,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "بہترین اسکور",
   "exam.passedText": "آپ نے یہ امتحان پاس کر لیا ہے۔ مشق کے لیے آپ اسے دوبارہ دے سکتے ہیں؛ آپ کا سرٹیفکیٹ درست رہے گا۔",
   "exam.unlockedText": "سوالات دونوں ٹریکس پر مشتمل ہیں۔ اس مرحلے کا سرٹیفکیٹ حاصل کرنے کے لیے اسے پاس کریں۔",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "سوالات اس مرحلے کے تمام ابواب پر مشتمل ہیں۔ اپنا سرٹیفکیٹ حاصل کرنے کے لیے اسے پاس کریں۔",
   "exam.lockedText": {
     one: "اس مرحلے کے تمام ابواب مکمل ہونے پر کھلے گا: {count} باب باقی ہے۔",
     other: "اس مرحلے کے تمام ابواب مکمل ہونے پر کھلے گا: {count} ابواب باقی ہیں۔",
@@ -114,6 +127,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "مقفل",
   "exam.pageTitle": "مرحلہ {n} کا امتحان: {title}",
   "exam.intro": "دونوں ٹریکس سے {count} سوالات · پاسنگ مارکس {pass}% · آرام سے حل کریں، کوئی ٹائمر نہیں ہے۔",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "تمام ابواب سے {count} سوالات · پاسنگ مارکس {pass}% · آرام سے حل کریں، کوئی ٹائمر نہیں ہے۔",
   "exam.lockedTitle": "تمام ابواب مکمل ہونے پر امتحان کھلے گا",
   "exam.lockedBody": "آپ نے اس مرحلے کے {total} میں سے {done} ابواب مکمل کیے ہیں۔ ہر باب مکمل کرنے کے لیے اس کا کوئز پاس کریں۔",
   "exam.backToChapters": "ابواب پر واپس",
@@ -180,7 +195,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "متعلقہ:",
 
   // My progress page
-  "progress.subtitle": "تمام آٹھ مراحل کے ابواب، کوئز اسکورز، امتحانات اور سرٹیفکیٹس۔",
+  "progress.subtitle": "آٹھ بنیادی مراحل اور اختیاری کورسز کے ابواب، کوئز اسکورز، امتحانات اور سرٹیفکیٹس۔",
   "progress.chaptersComplete": "مکمل ابواب",
   "progress.ofCourse": "کورس کا {pct}%",
   "progress.onePerPhase": "ہر مرحلے کا ایک",
@@ -188,7 +203,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { one: "{count} دن", other: "{count} دن" },
   "progress.studied": "{time} مطالعہ",
   "progress.byPhase": "مرحلے کے لحاظ سے",
-  "progress.byPhaseSub": "مرحلے کا امتحان کھولنے کے لیے دونوں ٹریکس مکمل ہونا ضروری ہیں",
+  "progress.byPhaseSub": "مرحلے کا امتحان کھولنے کے لیے اس کے تمام ابواب مکمل کریں",
   "progress.col.phase": "مرحلہ",
   "progress.col.exam": "امتحان",
   "progress.col.certificate": "سرٹیفکیٹ",

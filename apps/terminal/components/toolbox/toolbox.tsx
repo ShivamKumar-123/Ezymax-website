@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import { BarChart3, ChevronDown, ChevronsDown, History, Layers, Maximize2, Minimize2, PieChart } from "lucide-react";
 import { cn } from "@kalks/ui";
 import { useTerminal, type ToolboxTab } from "@/lib/store";
@@ -15,6 +16,12 @@ import { LiveCalendarTab, LiveNewsTab } from "./news-live";
 import { ShareControls } from "@/components/share/share-dialogs";
 import { GuestNotice } from "@/components/shell/guest";
 import { useT } from "@kalks/i18n/react";
+import { useTradeMode } from "@/lib/options/mode";
+import { useOptionBook } from "@/lib/options/book";
+
+// Kalks FX Options tabs: their own chunk (loaded when the tab first shows)
+const OptionsPositionsTab = dynamic(() => import("@/components/options/positions-tab").then((m) => m.OptionsPositionsTab), { ssr: false });
+const SettlementsTab = dynamic(() => import("@/components/options/settlements-tab").then((m) => m.SettlementsTab), { ssr: false });
 
 /** Guest mode: account-only tabs explain what they show once a trading account is logged in. */
 const GUEST_TABS: Partial<Record<ToolboxTab, { icon: React.ReactNode; textKey: "toolbox.guest.trade" | "toolbox.guest.history" | "toolbox.guest.exposure" }>> = {
@@ -26,11 +33,24 @@ const GUEST_TABS: Partial<Record<ToolboxTab, { icon: React.ReactNode; textKey: "
 export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: () => void; onMaximize?: () => void; maximized?: boolean }) {
   const T = useTerminal();
   const t = useT();
-  const tab = T.ws.toolboxTab;
   const ai = useAi();
   const mam = useMam();
+  const mode = useTradeMode();
+  const book = useOptionBook(T.guest ? null : T.account.login);
+  const optCount = book.positions.length + book.orders.length;
+  const optionTabs: { value: ToolboxTab; label: string; count?: number }[] =
+    mode === "options"
+      ? [
+          { value: "options", label: t("trader.opt.pos.tab"), count: optCount },
+          { value: "settlements", label: t("trader.opt.set.tab") },
+        ]
+      : optCount
+        ? [{ value: "options", label: t("trader.opt.pos.tab"), count: optCount }]
+        : [];
   const tabs: { value: ToolboxTab; label: string; count?: number }[] = [
+    ...(mode === "options" ? optionTabs : []),
     { value: "trade", label: t("toolbox.tab.trade"), count: T.positions.length + T.pendings.length },
+    ...(mode === "options" ? [] : optionTabs),
     { value: "history", label: t("toolbox.tab.history") },
     { value: "exposure", label: t("toolbox.tab.exposure") },
     // live builds: real headlines and calendar (services/news); demo builds: sample content
@@ -41,6 +61,8 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
     // MAM master account or linked client account (live engine only)
     ...(mam?.role ? [{ value: "mam" as const, label: "MAM", count: mam.role === "manager" ? mam.accounts : undefined }] : []),
   ];
+  // a tab that isn't offered here (Settlements after switching back to CFD…) shows the Trade tab
+  const tab: ToolboxTab = tabs.some((x) => x.value === T.ws.toolboxTab) ? T.ws.toolboxTab : "trade";
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-line bg-panel">
       <header className="flex h-8 shrink-0 items-stretch gap-1 border-b border-line bg-panel-2 ps-2.5 pe-1">
@@ -78,6 +100,8 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
       <div className="min-h-0 flex-1">
         {T.guest && GUEST_TABS[tab] ? (
           <GuestNotice icon={GUEST_TABS[tab]!.icon} text={t(GUEST_TABS[tab]!.textKey)} />
+        ) : T.guest && (tab === "options" || tab === "settlements") ? (
+          <GuestNotice icon={<Layers />} text={t("trader.opt.guest.text")} />
         ) : (
           <ToolboxBody tab={tab} live={T.live} />
         )}
@@ -98,6 +122,8 @@ function ToolboxBody({ tab, live }: { tab: ToolboxTab; live: boolean }) {
         {tab === "journal" && <JournalTab />}
         {tab === "ai" && <AiTraderTab />}
         {tab === "mam" && <MamTab />}
+        {tab === "options" && <OptionsPositionsTab />}
+        {tab === "settlements" && <SettlementsTab />}
     </>
   );
 }

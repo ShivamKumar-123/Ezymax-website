@@ -16,6 +16,7 @@ import {
   Building2,
   Globe2,
   Settings,
+  Sigma,
 } from "lucide-react";
 import type { NavModule } from "@kalks/ui";
 
@@ -85,6 +86,25 @@ export const ADMIN_NAV: NavModule[] = [
       { href: "/config/margin", label: "Margin schedules" },
       { href: "/config/sessions", label: "Sessions & holidays" },
       { href: "/config/demo", label: "Demo rules" },
+    ],
+  },
+  {
+    key: "options",
+    label: "Options",
+    icon: Sigma,
+    href: "/options",
+    section: "ops",
+    sub: [
+      { href: "/options", label: "Overview & risk desk" },
+      { href: "/options/underlyings", label: "Underlyings & series" },
+      { href: "/options/surfaces", label: "Vol surfaces" },
+      { href: "/options/rates", label: "Rates" },
+      { href: "/options/holidays", label: "Holidays" },
+      { href: "/options/pricing", label: "Spreads, fees & limits" },
+      { href: "/options/controls", label: "Dealer controls" },
+      { href: "/options/settlements", label: "Settlements" },
+      { href: "/options/brokers", label: "Brokers access" },
+      { href: "/options/audit", label: "Audit" },
     ],
   },
   {

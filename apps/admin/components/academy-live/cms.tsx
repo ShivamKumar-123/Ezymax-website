@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, EmptyState, KpiCard, PageHeader, Progress, Reveal, Segmented, Skeleton, Toggle, cn } from "@kalks/ui";
 import { useStaff } from "@/components/staff-session";
 import { contentAllows } from "@/lib/academy";
-import { CmsError, LEVELS, cms, fmtWhen, useCms, type AuditRow, type Kind, type NodeData, type NodeFull, type QuizQ, type Stats, type Tree, type TreePhase } from "./api";
+import { CmsError, LEVELS, TRACK_ORDER, cms, fmtWhen, trackText, useCms, type AuditRow, type Kind, type NodeData, type NodeFull, type QuizQ, type Stats, type Track, type Tree, type TreePhase } from "./api";
 import { Markdown } from "./markdown";
 import { QuizEditor, inputCls } from "./quiz-editor";
 import { useConfirm } from "@/components/confirm";
@@ -69,6 +69,7 @@ function CourseTree({ tree, sel, onSelect, canWrite, onReordered }: { tree: Tree
                 </div>
                 <div className="k-num ml-3.5 text-[11px] text-fg-3">
                   {p.level} · {chapters} chapters
+                  {p.elective && " · elective"}
                 </div>
               </button>
               {SOURCE_CHIP[p.source] && (
@@ -85,7 +86,7 @@ function CourseTree({ tree, sel, onSelect, canWrite, onReordered }: { tree: Tree
                     <div key={s.slug}>
                       <button type="button" onClick={() => onSelect({ kind: "section", slug: s.slug })} className={cn("flex w-full items-center gap-2 rounded-[10px] px-2 py-1.5 text-left", isSel("section", s.slug) ? "bg-surface-3 text-fg" : "hover:bg-surface-3/60")}>
                         <StatusDot on={s.published} />
-                        <span className={cn("text-[10.5px] font-semibold uppercase tracking-wider", s.track === "fundamental" ? "text-info" : "text-ember")}>{s.track}</span>
+                        <span className={cn("text-[10.5px] font-semibold uppercase tracking-wider", trackText(s.track))}>{s.track}</span>
                         <span className="truncate text-[12.5px] text-fg-2">{s.title}</span>
                       </button>
                       <ol className="mt-0.5 space-y-0.5">
@@ -454,6 +455,18 @@ function LearnerStats({ stats, audit }: { stats: Stats; audit: AuditRow[] }) {
 /* Page                                                                */
 /* ------------------------------------------------------------------ */
 
+/** "9 phases (1 elective) · fundamental, technical and options tracks · EN" */
+function courseSummary(t: Tree) {
+  const electives = t.phases.filter((p) => p.elective).length;
+  const rank = (k: string) => {
+    const i = TRACK_ORDER.indexOf(k as Track);
+    return i < 0 ? TRACK_ORDER.length : i;
+  };
+  const tracks = [...new Set(t.phases.flatMap((p) => p.sections.map((s) => s.track)))].filter(Boolean).sort((a, b) => rank(a) - rank(b));
+  const list = tracks.length > 1 ? `${tracks.slice(0, -1).join(", ")} and ${tracks.at(-1)}` : (tracks[0] ?? "no");
+  return `${t.phases.length} phases${electives ? ` (${electives} elective)` : ""} · ${list} ${tracks.length === 1 ? "track" : "tracks"} · ${t.lang.toUpperCase()}`;
+}
+
 function NewChapter({ tree, open, onOpenChange, onCreated, defaultSection }: { tree: Tree; open: boolean; onOpenChange: (o: boolean) => void; onCreated: (slug: string) => void; defaultSection?: string }) {
   const sections = tree.phases.flatMap((p) => p.sections.map((s) => ({ slug: s.slug, label: `Phase ${p.order} · ${s.track} · ${s.title}` })));
   const [section, setSection] = React.useState(defaultSection ?? sections[0]?.slug ?? "");
@@ -578,7 +591,7 @@ export function LiveAcademyCms() {
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal className="xl:col-span-4">
           <Card className="h-full">
-            <CardHeader title="Course" subtitle={t ? `${t.phases.length} phases · fundamental and technical tracks · ${t.lang.toUpperCase()}` : "Loading"} />
+            <CardHeader title="Course" subtitle={t ? courseSummary(t) : "Loading"} />
             <div className="max-h-[1120px] overflow-y-auto px-3 pb-4 pt-3 sm:px-4">
               {t ? <CourseTree tree={t} sel={sel} onSelect={setSel} canWrite={canWrite} onReordered={refresh} /> : <Skeleton className="h-[480px] w-full rounded-[16px]" />}
             </div>

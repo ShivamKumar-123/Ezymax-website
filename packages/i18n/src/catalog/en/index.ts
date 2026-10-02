@@ -23,7 +23,8 @@ import news from "./news";
 import portfolio from "./portfolio";
 import chart from "./chart";
 import aiTrader from "./aiTrader";
+import options from "./options";
 
 /** English: the source language and the fallback for every missing translation. */
-export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader };
+export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, options };
 export type EnCatalog = typeof en;

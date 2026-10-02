@@ -51,6 +51,7 @@ import {
   Eye,
   SlidersHorizontal,
   Bell,
+  ChartSpline,
 } from "lucide-react";
 import type { NavModule } from "@kalks/ui";
 import { IS_DEMO } from "@kalks/mock/mode";
@@ -111,6 +112,7 @@ export const CRM_NAV: NavModule[] = [
       { href: "/portfolio/statements", label: "Statements", icon: FileText },
     ],
   },
+  { key: "options", label: "Options", icon: ChartSpline, href: "/options", section: "main" },
   {
     key: "partner",
     label: "Partner (IB)",
@@ -257,6 +259,7 @@ const MODULE_KEYS: Record<string, MessageKey> = {
   academy: IS_DEMO ? "shell.nav.academy" : "shell.nav.academyLive",
   profile: "shell.nav.profileSecurity",
   support: "shell.nav.support",
+  options: "options.nav.title",
 };
 
 const SUB_KEYS: Record<string, MessageKey> = {

@@ -2,13 +2,13 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, BarChart3, BookOpen, CheckCircle2, Clock, GraduationCap, Landmark, Lightbulb, MonitorPlay } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, GraduationCap, Lightbulb, MonitorPlay } from "lucide-react";
 import { Button, Card, Chip, cn } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
-import { LEVEL_TONE, TRACK_LABEL, academyApi, levelLabel, useAcademy, type ChapterView, type QuizReply } from "./api";
+import { LEVEL_TONE, academyApi, isElective, levelLabel, trackLabel, trackTone, useAcademy, type ChapterView, type QuizReply } from "./api";
 import { Markdown, headingsOf } from "./markdown";
 import { ChapterQuiz } from "./quiz";
-import { AcademyUnavailable, BackLink, PracticeButton, RISK_NOTE, StatusDot } from "./shared";
+import { AcademyUnavailable, BackLink, PracticeButton, RISK_NOTE, StatusDot, TrackIcon } from "./shared";
 
 /** Reports how far through the article the reader has scrolled (max so far), throttled. */
 function useReadingProgress(slug: string, articleRef: React.RefObject<HTMLElement | null>, initial: number) {
@@ -128,7 +128,7 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[240px_minmax(0,1fr)_200px]">
         <aside className="hidden xl:block">
           <div className="sticky top-24">
-            <div className="k-label mb-1">{t(TRACK_LABEL[section.track])}</div>
+            <div className="k-label mb-1">{trackLabel(t, section.track)}</div>
             <div className="mb-3 text-[13.5px] font-medium">{section.title}</div>
             <ol className="space-y-1">
               {chapters.map((x, i) => (
@@ -145,11 +145,12 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
 
         <article ref={ref} className="min-w-0 max-w-[760px]" data-testid="chapter-article">
           <div className="flex flex-wrap items-center gap-2">
-            <Chip tone={section.track === "fundamental" ? "info" : "ember"}>
-              {section.track === "fundamental" ? <Landmark className="size-3" /> : <BarChart3 className="size-3" />}
-              {t(TRACK_LABEL[section.track])}
+            <Chip tone={trackTone(section.track)}>
+              <TrackIcon track={section.track} className="size-3" />
+              {trackLabel(t, section.track)}
             </Chip>
             <Chip tone={LEVEL_TONE[phase.level]}>{levelLabel(phase.level)}</Chip>
+            {isElective(phase) && <Chip>{t("academy.elective")}</Chip>}
             {completed && (
               <Chip tone="up" dot>
                 {t("common.completed")}

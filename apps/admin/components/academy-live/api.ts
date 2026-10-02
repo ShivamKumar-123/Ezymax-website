@@ -9,8 +9,13 @@ export type Source = "default" | "override" | "custom";
 type Meta = { slug: string; published: boolean; source: Source; updated_at: string; updated_by: string; lang: string; order: number; parent: string };
 
 export type TreeChapter = Meta & { title: string; summary: string; words: number; minutes: number; questions: number; learners: number; completed: number; quiz_avg: number | null };
-export type TreeSection = Meta & { title: string; summary: string; track: "fundamental" | "technical"; chapters: TreeChapter[] };
-export type TreePhase = Meta & { title: string; level: string; summary: string; exam: (Meta & { pass_mark: number; questions: number }) | null; sections: TreeSection[] };
+/** Tracks this build knows (services/academy/src/content.rs TRACKS): core tracks, then product tracks. */
+export type Track = "fundamental" | "technical" | "options";
+/** A section's track as served; the service may add tracks this build doesn't know yet. */
+export type TrackKey = Track | (string & {});
+export type TreeSection = Meta & { title: string; summary: string; track: TrackKey; chapters: TreeChapter[] };
+/** `elective`: a product phase (e.g. phase 9 "Kalks FX Options", one `options` section). Older builds don't send it. */
+export type TreePhase = Meta & { title: string; level: string; summary: string; elective?: boolean; exam: (Meta & { pass_mark: number; questions: number }) | null; sections: TreeSection[] };
 export type Tree = { tenant: string; lang: string; languages: string[]; phases: TreePhase[] };
 
 export type QuizQ = { question: string; options: string[]; answer: number; explanation: string; chapter?: string };
@@ -97,6 +102,12 @@ export function useCms<T>(path: string | null) {
   }, [path, tick]);
   return { data, error, reload };
 }
+
+/** Text colour of a track label in the course tree; unknown tracks are muted. */
+const TRACK_TEXT: Record<Track, string> = { fundamental: "text-info", technical: "text-ember", options: "text-gold" };
+export const trackText = (k: TrackKey) => (Object.prototype.hasOwnProperty.call(TRACK_TEXT, k) ? TRACK_TEXT[k as Track] : "text-fg-3");
+/** Display order of tracks (core, then product, then unknown). */
+export const TRACK_ORDER: readonly Track[] = ["fundamental", "technical", "options"];
 
 export const fmtWhen = (iso: string) => new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 export const LEVELS = ["Beginner", "Intermediate", "Advanced", "Professional"] as const;

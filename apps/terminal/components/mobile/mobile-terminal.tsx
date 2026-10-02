@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { toast } from "@/lib/notify";
 import { ArrowUpRight, BarChart2, CandlestickChart, ChevronDown, History, Languages, List, LogOut, Moon, RefreshCw, Search, Sun, UserRound, Wallet, X, Zap } from "lucide-react";
@@ -19,6 +20,11 @@ import { SegmentChips, inSegment } from "@/components/market/segments";
 import { NotificationBell } from "@/components/shell/notifications";
 import { REGISTER_URL } from "@/lib/guest";
 import { DomLadder } from "@/components/order/dom-ladder";
+import { ModeSwitch } from "@/components/shell/mode-switch";
+import { useTradeMode } from "@/lib/options/mode";
+
+// Options mode: its own chunk, downloaded the first time a trader switches to Options
+const OptionsMobile = dynamic(() => import("@/components/options/mobile").then((m) => m.OptionsMobile), { ssr: false, loading: () => <div className="h-full animate-pulse bg-panel" /> });
 
 type MTab = "watch" | "chart" | "trade" | "history" | "account";
 
@@ -35,6 +41,7 @@ export function MobileTerminal() {
   }, []);
   const a = T.account;
   const m = useMetrics();
+  const options = useTradeMode() === "options";
   const tabs: { id: MTab; label: string; icon: React.ReactNode }[] = [
     { id: "watch", label: t("trader.mobile.tab.watch"), icon: <List /> },
     { id: "chart", label: t("trader.mobile.tab.chart"), icon: <CandlestickChart /> },
@@ -47,9 +54,10 @@ export function MobileTerminal() {
   return (
     <div dir="ltr" className="flex h-dvh flex-col overflow-hidden bg-page">
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-line bg-panel px-3">
-        <span className="grid size-7 place-items-center rounded-[7px] border border-line-top bg-surface-3">
+        <span className="hidden size-7 shrink-0 place-items-center rounded-[7px] border border-line-top bg-surface-3 min-[420px]:grid">
           <LogoMark size={12} className="text-fg" />
         </span>
+        <ModeSwitch size="sm" />
         {T.guest ? (
           <>
             <div className="min-w-0 leading-tight">
@@ -86,13 +94,19 @@ export function MobileTerminal() {
         )}
       </header>
       <main className="min-h-0 flex-1 overflow-hidden">
+        {options ? (
+          <OptionsMobile />
+        ) : (
+          <>
         {tab === "watch" && <MWatch onPick={() => setTab("chart")} />}
         {tab === "chart" && <MChart />}
         {tab === "trade" && (T.guest ? <GuestNotice icon={<BarChart2 />} text={t("trader.mobile.guestTrade")} /> : <MTrade />)}
         {tab === "history" && (T.guest ? <GuestNotice icon={<History />} text={t("trader.mobile.guestHistory")} /> : <MHistory />)}
         {tab === "account" && (T.guest ? <MGuestAccount /> : <MAccount />)}
+          </>
+        )}
       </main>
-      <nav className="grid h-[58px] shrink-0 grid-cols-5 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)]">
+      <nav className={cn("h-[58px] shrink-0 grid-cols-5 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)]", options ? "hidden" : "grid")}>
         {tabs.map((x) => (
           <button key={x.id} onClick={() => setTab(x.id)} className={cn("relative flex flex-col items-center justify-center gap-0.5 text-[10.5px] [&_svg]:size-[18px]", tab === x.id ? "text-ember" : "text-fg-3")}>
             {tab === x.id && <span className="absolute inset-x-5 top-0 h-[2px] rounded-full bg-ember" />}

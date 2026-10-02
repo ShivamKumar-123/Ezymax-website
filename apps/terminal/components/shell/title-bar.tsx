@@ -47,6 +47,8 @@ import { CLIENT_AREA, openRegister, openSignIn } from "@/lib/guest";
 import { GuestAccountChip, GuestUserMenu } from "./guest";
 import { NotificationBell } from "./notifications";
 import { LanguageMenu } from "./language-menu";
+import { ModeSwitch } from "./mode-switch";
+import { useTradeMode } from "@/lib/options/mode";
 
 export { CLIENT_AREA };
 
@@ -352,6 +354,7 @@ export function TitleBar() {
   React.useEffect(() => setMounted(true), []);
   const dark = !mounted || resolvedTheme !== "light";
   const a = T.account;
+  const options = useTradeMode() === "options";
   return (
     <header className="relative z-20 flex h-11 shrink-0 items-center gap-2 border-b border-line bg-panel px-2.5">
       <div className="flex shrink-0 items-center gap-2 pe-1.5">
@@ -363,6 +366,7 @@ export function TitleBar() {
         </span>
       </div>
       <MenuBar />
+      <ModeSwitch className="ms-1" />
 
       <div className="ms-auto flex min-w-0 items-center gap-1.5">
         {a.cent && <Badge tone="info">{t("trader.badge.cent")}</Badge>}
@@ -391,7 +395,7 @@ export function TitleBar() {
               {t("trader.newOrder")}
               <span className="rounded-[3px] bg-white/20 px-1 font-mono text-[9.5px]">F9</span>
             </button>
-            <button
+            {!options && <button
               onClick={() => T.setWs({ oneClick: !T.ws.oneClick })}
               title={t("trader.oneClick.title")}
               className={cn("flex h-8 items-center gap-1.5 rounded-[7px] border px-2.5 text-[11.5px] font-medium transition-colors", T.ws.oneClick ? "border-ember/40 bg-ember-soft text-ember" : "border-line text-fg-3 hover:text-fg-2")}
@@ -399,16 +403,16 @@ export function TitleBar() {
               <Zap className={cn("size-3.5", T.ws.oneClick && "fill-ember")} />
               <span className="hidden 2xl:inline">{t("trader.oneClick.short")}</span>
               <span className="font-mono text-[10px]">{T.ws.oneClick ? t("trader.oneClick.on") : t("trader.oneClick.off")}</span>
-            </button>
+            </button>}
           </>
         )}
-        <div className="flex items-center rounded-[7px] border border-line bg-surface-2 p-0.5">
+        {!options && <div className="flex items-center rounded-[7px] border border-line bg-surface-2 p-0.5">
           {LAYOUTS.map((l) => (
             <button key={l.id} title={`${t(l.label)} (${l.hint})`} aria-label={`${t(l.label)} (${l.hint})`} onClick={() => T.setLayout(l.id)} className={cn("grid size-6 place-items-center rounded-[5px] [&_svg]:size-3.5", T.ws.layout === l.id ? "bg-surface-3 text-ember" : "text-fg-3 hover:text-fg")}>
               {l.icon}
             </button>
           ))}
-        </div>
+        </div>}
         <NotificationBell />
         <LanguageMenu />
         <button onClick={() => setTheme(dark ? "light" : "dark")} className="grid size-8 place-items-center rounded-[7px] text-fg-2 hover:bg-surface-3 hover:text-fg" aria-label={t("trader.toggleTheme")} title={t("trader.menu.theme")}>

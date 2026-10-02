@@ -31,8 +31,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "基本面分析",
   "track.technical": "技术分析",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "期权交易",
   "trackShort.fundamental": "基本面",
   "trackShort.technical": "技术面",
+  "trackShort.options": "期权",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "选修",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count} 分钟",
@@ -40,11 +45,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h} 小时 {m} 分钟",
 
   // Home
-  "home.subtitle": "从第一个点到专业交易的八个阶段 · 涵盖基本面和技术分析的 {count} 个章节，配有测验、考试和证书。",
+  "home.subtitle": "从第一个点到专业交易的八个核心阶段，外加选修课程 · {count} 个章节，配有测验、考试和证书。",
   "home.glossary": "术语表",
   "home.myProgress": "我的进度",
   "home.pathTitle": "您的学习路径",
-  "home.pathText": "每个阶段包含基本面和技术面两条学习线、一次结业考试和一份证书。",
+  "home.pathText": "每个核心阶段包含基本面和技术面两条学习线、一次结业考试和一份证书。",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "选修课程",
+  "home.electivesText": "关于 Kalks 产品的课程。随时可以学习，每门课程都有各自的结业考试和证书。",
   "hero.allDone": "所有章节已完成",
   "hero.continue": "继续学习",
   "hero.upNext": "下一章",
@@ -71,6 +79,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "未开始",
   "phaseCard.fundamental": "{count} 章基本面",
   "phaseCard.technical": "{count} 章技术面",
+  "phaseCard.options": { other: "{count} 章期权" },
   "phaseCard.certificate": "证书 {date}",
   "phaseCard.finalExam": "结业考试 · {count} 道题",
   "glossaryTeaser.subtitle": "通俗易懂的交易术语",
@@ -96,6 +105,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "章节",
   "phase.chaptersText": "每章结尾都有一个简短测验，通过即可完成该章。",
   "phase.bothTracks": "两条学习线",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "全部学习线",
 
   // Final exam (phase page card and exam page)
   "exam.final": "结业考试",
@@ -105,6 +116,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "最高分",
   "exam.passedText": "您已通过本考试。您可以重考以作练习，您的证书仍然有效。",
   "exam.unlockedText": "题目涵盖两条学习线。通过即可获得本阶段证书。",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "题目涵盖本阶段所有章节。通过即可获得证书。",
   "exam.lockedText": {
     other: "完成本阶段所有章节后解锁：还剩 {count} 章。",
   },
@@ -113,6 +126,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "已锁定",
   "exam.pageTitle": "第 {n} 阶段考试：{title}",
   "exam.intro": "{count} 道题，涵盖两条学习线 · 及格线 {pass}% · 不限时，请从容作答。",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "{count} 道题，涵盖所有章节 · 及格线 {pass}% · 不限时，请从容作答。",
   "exam.lockedTitle": "完成所有章节后即可解锁考试",
   "exam.lockedBody": "您已完成本阶段 {total} 章中的 {done} 章。通过每章测验即可完成该章。",
   "exam.backToChapters": "返回章节",
@@ -179,7 +194,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "相关：",
 
   // My progress page
-  "progress.subtitle": "全部八个阶段的章节、测验成绩、考试和证书。",
+  "progress.subtitle": "八个核心阶段及选修课程的章节、测验成绩、考试和证书。",
   "progress.chaptersComplete": "已完成章节",
   "progress.ofCourse": "占课程的 {pct}%",
   "progress.onePerPhase": "每阶段一份",
@@ -187,7 +202,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { other: "{count} 天" },
   "progress.studied": "已学习 {time}",
   "progress.byPhase": "按阶段",
-  "progress.byPhaseSub": "两条学习线均完成后才能解锁阶段考试",
+  "progress.byPhaseSub": "完成某一阶段的所有章节即可解锁该阶段考试",
   "progress.col.phase": "阶段",
   "progress.col.exam": "考试",
   "progress.col.certificate": "证书",

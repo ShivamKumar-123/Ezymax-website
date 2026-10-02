@@ -30,8 +30,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Analyse fondamentale",
   "track.technical": "Analyse technique",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "Trading d'options",
   "trackShort.fundamental": "Fondamentale",
   "trackShort.technical": "Technique",
+  "trackShort.options": "Options",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "Facultative",
 
   // Durations (h = heures, min = minutes)
   "duration.min": "{count} min",
@@ -39,11 +44,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h} h {m} min",
 
   // Home
-  "home.subtitle": "Huit phases, de votre premier pip au trading professionnel · {count} chapitres d'analyse fondamentale et technique, avec quiz, examens et certificats.",
+  "home.subtitle": "Huit phases principales, de votre premier pip au trading professionnel, plus des modules facultatifs · {count} chapitres avec quiz, examens et certificats.",
   "home.glossary": "Glossaire",
   "home.myProgress": "Ma progression",
   "home.pathTitle": "Votre parcours d'apprentissage",
-  "home.pathText": "Chaque phase comprend un parcours fondamental et un parcours technique, un examen final et un certificat.",
+  "home.pathText": "Chaque phase principale comprend un parcours fondamental et un parcours technique, un examen final et un certificat.",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "Modules facultatifs",
+  "home.electivesText": "Des cours sur les produits Kalks, à suivre quand vous le souhaitez : chacun a son propre examen final et son certificat.",
   "hero.allDone": "Tous les chapitres terminés",
   "hero.continue": "Poursuivre l'apprentissage",
   "hero.upNext": "À suivre",
@@ -69,6 +77,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "Non commencé",
   "phaseCard.fundamental": "{count} fondamentaux",
   "phaseCard.technical": "{count} techniques",
+  "phaseCard.options": { one: "{count} chapitre sur les options", other: "{count} chapitres sur les options" },
   "phaseCard.certificate": "Certificat {date}",
   "phaseCard.finalExam": "Examen final · {count} questions",
   "glossaryTeaser.subtitle": "Les termes du trading en langage simple",
@@ -94,6 +103,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "Chapitres",
   "phase.chaptersText": "Chaque chapitre se termine par un court quiz ; réussissez-le pour terminer le chapitre.",
   "phase.bothTracks": "Les deux parcours",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "Tous les parcours",
 
   // Final exam (phase page card and exam page)
   "exam.final": "Examen final",
@@ -103,6 +114,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "Meilleur score",
   "exam.passedText": "Vous avez réussi cet examen. Vous pouvez le repasser pour vous entraîner ; votre certificat reste valide.",
   "exam.unlockedText": "Les questions portent sur les deux parcours. Réussissez-le pour obtenir le certificat de cette phase.",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "Les questions portent sur tous les chapitres de cette phase. Réussissez-le pour obtenir votre certificat.",
   "exam.lockedText": {
     one: "Se débloque lorsque tous les chapitres de cette phase sont terminés : encore {count} chapitre.",
     other: "Se débloque lorsque tous les chapitres de cette phase sont terminés : encore {count} chapitres.",
@@ -112,6 +125,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "Verrouillé",
   "exam.pageTitle": "Examen de la phase {n} : {title}",
   "exam.intro": "{count} questions sur les deux parcours · note de réussite {pass} % · prenez votre temps, il n'y a pas de chrono.",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "{count} questions sur tous les chapitres · note de réussite {pass} % · prenez votre temps, il n'y a pas de chrono.",
   "exam.lockedTitle": "L'examen se débloque lorsque tous les chapitres sont terminés",
   "exam.lockedBody": "Vous avez terminé {done} chapitres sur {total} dans cette phase. Réussissez le quiz de chaque chapitre pour le terminer.",
   "exam.backToChapters": "Retour aux chapitres",
@@ -178,7 +193,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "Voir aussi :",
 
   // My progress page
-  "progress.subtitle": "Chapitres, scores aux quiz, examens et certificats des huit phases.",
+  "progress.subtitle": "Chapitres, scores aux quiz, examens et certificats des huit phases principales et des modules facultatifs.",
   "progress.chaptersComplete": "Chapitres terminés",
   "progress.ofCourse": "{pct} % du cours",
   "progress.onePerPhase": "Un par phase",
@@ -186,7 +201,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { one: "{count} jour", other: "{count} jours" },
   "progress.studied": "{time} d'étude",
   "progress.byPhase": "Par phase",
-  "progress.byPhaseSub": "Les deux parcours doivent être terminés pour débloquer l'examen d'une phase",
+  "progress.byPhaseSub": "Terminez tous les chapitres d'une phase pour débloquer son examen",
   "progress.col.phase": "Phase",
   "progress.col.exam": "Examen",
   "progress.col.certificate": "Certificat",

@@ -31,8 +31,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Analisis fundamental",
   "track.technical": "Analisis teknikal",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "Dagangan opsyen",
   "trackShort.fundamental": "Fundamental",
   "trackShort.technical": "Teknikal",
+  "trackShort.options": "Opsyen",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "Elektif",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count} min",
@@ -40,11 +45,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h}j {m}m",
 
   // Home
-  "home.subtitle": "Lapan fasa daripada pip pertama anda hingga dagangan profesional · {count} bab merangkumi analisis fundamental dan teknikal, dengan kuiz, peperiksaan dan sijil.",
+  "home.subtitle": "Lapan fasa teras daripada pip pertama anda hingga dagangan profesional, serta kursus elektif · {count} bab dengan kuiz, peperiksaan dan sijil.",
   "home.glossary": "Glosari",
   "home.myProgress": "Kemajuan saya",
   "home.pathTitle": "Laluan pembelajaran anda",
-  "home.pathText": "Setiap fasa mempunyai trek fundamental dan teknikal, peperiksaan akhir dan sijil.",
+  "home.pathText": "Setiap fasa teras mempunyai trek fundamental dan teknikal, peperiksaan akhir dan sijil.",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "Kursus elektif",
+  "home.electivesText": "Kursus tentang produk Kalks. Ambil pada bila-bila masa: setiap satu mempunyai peperiksaan akhir dan sijilnya sendiri.",
   "hero.allDone": "Semua bab selesai",
   "hero.continue": "Teruskan belajar",
   "hero.upNext": "Seterusnya",
@@ -71,6 +79,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "Belum dimulakan",
   "phaseCard.fundamental": "{count} fundamental",
   "phaseCard.technical": "{count} teknikal",
+  "phaseCard.options": { other: "{count} bab opsyen" },
   "phaseCard.certificate": "Sijil {date}",
   "phaseCard.finalExam": "Peperiksaan akhir · {count} soalan",
   "glossaryTeaser.subtitle": "Istilah dagangan dalam bahasa mudah",
@@ -96,6 +105,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "Bab",
   "phase.chaptersText": "Setiap bab diakhiri dengan kuiz ringkas; lulus kuiz tersebut untuk menyelesaikan bab.",
   "phase.bothTracks": "Kedua-dua trek",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "Semua trek",
 
   // Final exam (phase page card and exam page)
   "exam.final": "Peperiksaan akhir",
@@ -105,6 +116,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "Skor terbaik",
   "exam.passedText": "Anda telah lulus peperiksaan ini. Anda boleh mengambilnya semula untuk berlatih; sijil anda kekal sah.",
   "exam.unlockedText": "Soalan merangkumi kedua-dua trek. Lulus untuk memperoleh sijil anda bagi fasa ini.",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "Soalan merangkumi setiap bab dalam fasa ini. Lulus untuk memperoleh sijil anda.",
   "exam.lockedText": {
     other: "Dibuka apabila setiap bab dalam fasa ini selesai: tinggal {count} bab lagi.",
   },
@@ -113,6 +126,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "Dikunci",
   "exam.pageTitle": "Peperiksaan Fasa {n}: {title}",
   "exam.intro": "{count} soalan merangkumi kedua-dua trek · markah lulus {pass}% · ambil masa anda, tiada pemasa.",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "{count} soalan merangkumi setiap bab · markah lulus {pass}% · ambil masa anda, tiada pemasa.",
   "exam.lockedTitle": "Peperiksaan dibuka apabila setiap bab selesai",
   "exam.lockedBody": "Anda telah menyelesaikan {done} daripada {total} bab dalam fasa ini. Lulus kuiz setiap bab untuk menyelesaikannya.",
   "exam.backToChapters": "Kembali ke bab",
@@ -179,7 +194,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "Berkaitan:",
 
   // My progress page
-  "progress.subtitle": "Bab, skor kuiz, peperiksaan dan sijil merentasi kesemua lapan fasa.",
+  "progress.subtitle": "Bab, skor kuiz, peperiksaan dan sijil merentasi lapan fasa teras dan kursus elektif.",
   "progress.chaptersComplete": "Bab selesai",
   "progress.ofCourse": "{pct}% daripada kursus",
   "progress.onePerPhase": "Satu bagi setiap fasa",
@@ -187,7 +202,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { other: "{count} hari" },
   "progress.studied": "{time} belajar",
   "progress.byPhase": "Mengikut fasa",
-  "progress.byPhaseSub": "Kedua-dua trek mesti selesai untuk membuka peperiksaan fasa",
+  "progress.byPhaseSub": "Selesaikan setiap bab dalam fasa untuk membuka peperiksaannya",
   "progress.col.phase": "Fasa",
   "progress.col.exam": "Peperiksaan",
   "progress.col.certificate": "Sijil",

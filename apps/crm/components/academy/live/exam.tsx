@@ -6,7 +6,7 @@ import { Award, Download, GraduationCap, Lock, RotateCcw, ShieldCheck } from "lu
 import { toast } from "sonner";
 import { Button, Card, Chip, Progress, cn } from "@kalks/ui";
 import { tr, useT } from "@kalks/i18n/react";
-import { LEVEL_TONE, academyApi, fmtDay, levelLabel, pct, useAcademy, type ExamReply, type ExamView } from "./api";
+import { LEVEL_TONE, academyApi, fmtDay, isElective, levelLabel, pct, useAcademy, type ExamReply, type ExamView } from "./api";
 import { LETTERS, OptionButton } from "./quiz";
 import { AcademyUnavailable, BackLink, PageSkeleton, RISK_NOTE } from "./shared";
 
@@ -57,12 +57,14 @@ export function LiveExam({ phase }: { phase: string }) {
       <div className="flex flex-wrap items-center gap-2">
         <Chip tone="ember">{t("academy.exam.final")}</Chip>
         <Chip tone={LEVEL_TONE[p.level]}>{levelLabel(p.level)}</Chip>
+        {isElective(p) && <Chip>{t("academy.elective")}</Chip>}
       </div>
       <h1 className="mt-3 text-[28px] font-medium leading-tight tracking-[-0.02em] sm:text-[32px]">
         {t("academy.exam.pageTitle", { n: p.order, title: p.title })}
       </h1>
       <p className="mt-2 text-[14px] text-fg-2">
-        {t("academy.exam.intro", { count: total, pass: data.exam.pass_mark })}
+        {/* an elective is a single product track, so its exam doesn't span "both tracks" */}
+        {t(isElective(p) ? "academy.exam.introOneTrack" : "academy.exam.intro", { count: total, pass: data.exam.pass_mark })}
       </p>
 
       {!data.unlocked ? (

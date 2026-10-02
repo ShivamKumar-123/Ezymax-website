@@ -23,6 +23,7 @@ import { IndicatorDialogs } from "./chart/indicators/dialogs";
 import { ShareLayer } from "./share/share-dialogs";
 import { ControlsBanner } from "./shell/controls-banner";
 import { CopyBanner } from "./shell/copy-banner";
+import { applyLinkMode } from "@/lib/options/mode";
 
 function useIsMobile() {
   const [m, setM] = React.useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches);
@@ -97,7 +98,9 @@ export function Terminal() {
   const router = useRouter();
   const [session, setSession] = React.useState<Session | null>(null);
   const [sessions, setSessions] = React.useState<SessionInfo[]>([]);
-  const [intent] = React.useState(() => ({ symbol: sp.get("symbol")?.toUpperCase() ?? null, side: sp.get("side") }));
+  // read before liveEntry() / the demo SSO wipe the query string (`?sso=…&mode=options` from the Client Area's
+  // Options page, `?mode=options&u=EURUSD` from the public option chain)
+  const [intent] = React.useState(() => ({ symbol: sp.get("symbol")?.toUpperCase() ?? null, side: sp.get("side"), mode: sp.get("mode"), u: sp.get("u") }));
 
   React.useEffect(() => {
     const acc = sp.get("account");
@@ -163,11 +166,13 @@ export function Terminal() {
   );
 }
 
-function Shell({ intent }: { intent: { symbol: string | null; side: string | null } }) {
+function Shell({ intent }: { intent: { symbol: string | null; side: string | null; mode: string | null; u: string | null } }) {
   const T = useTerminal();
   const mobile = useIsMobile();
   useHotkeys();
   React.useEffect(() => {
+    // CFD | Options from the link; Options opens with its toolbox tab in front
+    if (applyLinkMode(intent.mode, intent.u) && intent.mode?.toLowerCase() === "options" && ["trade", "history", "exposure"].includes(T.ws.toolboxTab)) T.setWs({ toolboxTab: "options" });
     const sym = intent.symbol && INSTRUMENTS.some((i) => i.symbol === intent.symbol) ? intent.symbol : null;
     if (sym) T.openSymbol(sym);
     if (intent.side === "buy" || intent.side === "sell") T.openNewOrder({ symbol: sym ?? T.activeSymbol, side: intent.side, type: "market" });

@@ -15,6 +15,7 @@ export const PAGE_PERMS: Record<string, readonly string[]> = {
   "/trading/closures": ["accounts.close", "accounts.close.approve"],
   "/config": ["accounts.read", "spreads.read"],
   "/config/spreads": ["spreads.read"],
+  "/options": ["options.read"],
   "/finance": ["finance.read"],
   "/finance/adjustments": ["finance.adjust", "finance.credit", "finance.adjust_approve", "finance.read"],
   "/partners": ["partners.read"],

@@ -31,8 +31,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "ফান্ডামেন্টাল অ্যানালাইসিস",
   "track.technical": "টেকনিক্যাল অ্যানালাইসিস",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "অপশন ট্রেডিং",
   "trackShort.fundamental": "ফান্ডামেন্টাল",
   "trackShort.technical": "টেকনিক্যাল",
+  "trackShort.options": "অপশন",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "ঐচ্ছিক",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count} মিনিট",
@@ -40,11 +45,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h} ঘ {m} মি",
 
   // Home
-  "home.subtitle": "আপনার প্রথম পিপ থেকে পেশাদার ট্রেডিং পর্যন্ত আটটি ধাপ · ফান্ডামেন্টাল ও টেকনিক্যাল অ্যানালাইসিস জুড়ে {count}টি অধ্যায়, সাথে কুইজ, পরীক্ষা ও সার্টিফিকেট।",
+  "home.subtitle": "আপনার প্রথম পিপ থেকে পেশাদার ট্রেডিং পর্যন্ত আটটি মূল ধাপ, সাথে ঐচ্ছিক কোর্স · কুইজ, পরীক্ষা ও সার্টিফিকেটসহ {count}টি অধ্যায়।",
   "home.glossary": "শব্দকোষ",
   "home.myProgress": "আমার অগ্রগতি",
   "home.pathTitle": "আপনার শেখার পথ",
-  "home.pathText": "প্রতিটি ধাপে একটি ফান্ডামেন্টাল ও একটি টেকনিক্যাল ট্র্যাক, একটি চূড়ান্ত পরীক্ষা এবং একটি সার্টিফিকেট রয়েছে।",
+  "home.pathText": "প্রতিটি মূল ধাপে একটি ফান্ডামেন্টাল ও একটি টেকনিক্যাল ট্র্যাক, একটি চূড়ান্ত পরীক্ষা এবং একটি সার্টিফিকেট রয়েছে।",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "ঐচ্ছিক কোর্স",
+  "home.electivesText": "Kalks-এর পণ্য নিয়ে কোর্স। যেকোনো সময় নিতে পারেন: প্রতিটির নিজস্ব চূড়ান্ত পরীক্ষা ও সার্টিফিকেট আছে।",
   "hero.allDone": "সব অধ্যায় সম্পন্ন",
   "hero.continue": "শেখা চালিয়ে যান",
   "hero.upNext": "এরপর",
@@ -71,6 +79,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "শুরু হয়নি",
   "phaseCard.fundamental": "{count}টি ফান্ডামেন্টাল",
   "phaseCard.technical": "{count}টি টেকনিক্যাল",
+  "phaseCard.options": { one: "{count}টি অপশন অধ্যায়", other: "{count}টি অপশন অধ্যায়" },
   "phaseCard.certificate": "সার্টিফিকেট {date}",
   "phaseCard.finalExam": "চূড়ান্ত পরীক্ষা · {count}টি প্রশ্ন",
   "glossaryTeaser.subtitle": "সহজ ভাষায় ট্রেডিং পরিভাষা",
@@ -96,6 +105,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "অধ্যায়সমূহ",
   "phase.chaptersText": "প্রতিটি অধ্যায় একটি ছোট কুইজ দিয়ে শেষ হয়; অধ্যায়টি সম্পন্ন করতে এতে পাস করুন।",
   "phase.bothTracks": "উভয় ট্র্যাক",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "সব ট্র্যাক",
 
   // Final exam (phase page card and exam page)
   "exam.final": "চূড়ান্ত পরীক্ষা",
@@ -105,6 +116,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "সেরা স্কোর",
   "exam.passedText": "আপনি এই পরীক্ষায় পাস করেছেন। অনুশীলনের জন্য আবার দিতে পারেন; আপনার সার্টিফিকেট বৈধ থাকবে।",
   "exam.unlockedText": "প্রশ্নগুলো উভয় ট্র্যাক থেকে। এই ধাপের সার্টিফিকেট অর্জন করতে পাস করুন।",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "প্রশ্নগুলো এই ধাপের সব অধ্যায় থেকে। আপনার সার্টিফিকেট অর্জন করতে পাস করুন।",
   "exam.lockedText": {
     one: "এই ধাপের সব অধ্যায় সম্পন্ন হলে আনলক হবে: আর {count}টি অধ্যায় বাকি।",
     other: "এই ধাপের সব অধ্যায় সম্পন্ন হলে আনলক হবে: আর {count}টি অধ্যায় বাকি।",
@@ -114,6 +127,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "লক করা",
   "exam.pageTitle": "ধাপ {n}-এর পরীক্ষা: {title}",
   "exam.intro": "উভয় ট্র্যাক থেকে {count}টি প্রশ্ন · পাস মার্ক {pass}% · সময় নিন, কোনো টাইমার নেই।",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "সব অধ্যায় থেকে {count}টি প্রশ্ন · পাস মার্ক {pass}% · সময় নিন, কোনো টাইমার নেই।",
   "exam.lockedTitle": "সব অধ্যায় সম্পন্ন হলে পরীক্ষা আনলক হবে",
   "exam.lockedBody": "আপনি এই ধাপের {total}টির মধ্যে {done}টি অধ্যায় সম্পন্ন করেছেন। প্রতিটি অধ্যায় সম্পন্ন করতে এর কুইজে পাস করুন।",
   "exam.backToChapters": "অধ্যায়ে ফিরে যান",
@@ -180,7 +195,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "সম্পর্কিত:",
 
   // My progress page
-  "progress.subtitle": "আটটি ধাপ জুড়ে অধ্যায়, কুইজ স্কোর, পরীক্ষা ও সার্টিফিকেট।",
+  "progress.subtitle": "আটটি মূল ধাপ ও ঐচ্ছিক কোর্স জুড়ে অধ্যায়, কুইজ স্কোর, পরীক্ষা ও সার্টিফিকেট।",
   "progress.chaptersComplete": "সম্পন্ন অধ্যায়",
   "progress.ofCourse": "কোর্সের {pct}%",
   "progress.onePerPhase": "প্রতি ধাপে একটি",
@@ -188,7 +203,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { one: "{count} দিন", other: "{count} দিন" },
   "progress.studied": "{time} অধ্যয়ন",
   "progress.byPhase": "ধাপ অনুযায়ী",
-  "progress.byPhaseSub": "ধাপের পরীক্ষা আনলক করতে উভয় ট্র্যাক সম্পন্ন হতে হবে",
+  "progress.byPhaseSub": "ধাপের পরীক্ষা আনলক করতে সেই ধাপের সব অধ্যায় সম্পন্ন করুন",
   "progress.col.phase": "ধাপ",
   "progress.col.exam": "পরীক্ষা",
   "progress.col.certificate": "সার্টিফিকেট",

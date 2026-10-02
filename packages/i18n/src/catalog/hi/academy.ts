@@ -31,8 +31,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "फ़ंडामेंटल एनालिसिस",
   "track.technical": "टेक्निकल एनालिसिस",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "ऑप्शंस ट्रेडिंग",
   "trackShort.fundamental": "फ़ंडामेंटल",
   "trackShort.technical": "टेक्निकल",
+  "trackShort.options": "ऑप्शंस",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "वैकल्पिक",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count} मिनट",
@@ -40,11 +45,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h}घं {m}मि",
 
   // Home
-  "home.subtitle": "आपके पहले पिप से प्रोफ़ेशनल ट्रेडिंग तक आठ फ़ेज़ · फ़ंडामेंटल और टेक्निकल एनालिसिस के {count} चैप्टर, क्विज़, परीक्षा और सर्टिफ़िकेट के साथ।",
+  "home.subtitle": "आपके पहले पिप से प्रोफ़ेशनल ट्रेडिंग तक आठ मुख्य फ़ेज़, साथ में वैकल्पिक कोर्स · क्विज़, परीक्षा और सर्टिफ़िकेट के साथ {count} चैप्टर।",
   "home.glossary": "शब्दावली",
   "home.myProgress": "मेरी प्रगति",
   "home.pathTitle": "आपका लर्निंग पाथ",
-  "home.pathText": "हर फ़ेज़ में एक फ़ंडामेंटल और एक टेक्निकल ट्रैक, एक अंतिम परीक्षा और एक सर्टिफ़िकेट है।",
+  "home.pathText": "हर मुख्य फ़ेज़ में एक फ़ंडामेंटल और एक टेक्निकल ट्रैक, एक अंतिम परीक्षा और एक सर्टिफ़िकेट है।",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "वैकल्पिक कोर्स",
+  "home.electivesText": "Kalks प्रोडक्ट्स पर कोर्स। इन्हें कभी भी करें: हर कोर्स की अपनी अंतिम परीक्षा और सर्टिफ़िकेट है।",
   "hero.allDone": "सभी चैप्टर पूरे",
   "hero.continue": "सीखना जारी रखें",
   "hero.upNext": "अगला",
@@ -71,6 +79,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "शुरू नहीं हुआ",
   "phaseCard.fundamental": "{count} फ़ंडामेंटल",
   "phaseCard.technical": "{count} टेक्निकल",
+  "phaseCard.options": { one: "{count} ऑप्शंस चैप्टर", other: "{count} ऑप्शंस चैप्टर" },
   "phaseCard.certificate": "सर्टिफ़िकेट {date}",
   "phaseCard.finalExam": "अंतिम परीक्षा · {count} प्रश्न",
   "glossaryTeaser.subtitle": "ट्रेडिंग शब्द सरल भाषा में",
@@ -96,6 +105,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "चैप्टर",
   "phase.chaptersText": "हर चैप्टर एक छोटे क्विज़ के साथ खत्म होता है; चैप्टर पूरा करने के लिए उसे पास करें।",
   "phase.bothTracks": "दोनों ट्रैक",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "सभी ट्रैक",
 
   // Final exam (phase page card and exam page)
   "exam.final": "अंतिम परीक्षा",
@@ -105,6 +116,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "सबसे अच्छा स्कोर",
   "exam.passedText": "आपने यह परीक्षा पास कर ली है। अभ्यास के लिए आप इसे दोबारा दे सकते हैं; आपका सर्टिफ़िकेट मान्य रहेगा।",
   "exam.unlockedText": "प्रश्न दोनों ट्रैक से हैं। इस फ़ेज़ का सर्टिफ़िकेट पाने के लिए इसे पास करें।",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "प्रश्न इस फ़ेज़ के सभी चैप्टर से हैं। अपना सर्टिफ़िकेट पाने के लिए इसे पास करें।",
   "exam.lockedText": {
     one: "इस फ़ेज़ के सभी चैप्टर पूरे होने पर अनलॉक होगी: {count} चैप्टर बाकी।",
     other: "इस फ़ेज़ के सभी चैप्टर पूरे होने पर अनलॉक होगी: {count} चैप्टर बाकी।",
@@ -114,6 +127,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "लॉक",
   "exam.pageTitle": "फ़ेज़ {n} परीक्षा: {title}",
   "exam.intro": "दोनों ट्रैक से {count} प्रश्न · पास मार्क {pass}% · आराम से करें, कोई टाइमर नहीं है।",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "सभी चैप्टर से {count} प्रश्न · पास मार्क {pass}% · आराम से करें, कोई टाइमर नहीं है।",
   "exam.lockedTitle": "सभी चैप्टर पूरे होने पर परीक्षा अनलॉक होती है",
   "exam.lockedBody": "आपने इस फ़ेज़ के {total} में से {done} चैप्टर पूरे किए हैं। हर चैप्टर पूरा करने के लिए उसका क्विज़ पास करें।",
   "exam.backToChapters": "चैप्टर पर वापस जाएँ",
@@ -180,7 +195,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "संबंधित:",
 
   // My progress page
-  "progress.subtitle": "सभी आठ फ़ेज़ के चैप्टर, क्विज़ स्कोर, परीक्षाएँ और सर्टिफ़िकेट।",
+  "progress.subtitle": "आठ मुख्य फ़ेज़ और वैकल्पिक कोर्स के चैप्टर, क्विज़ स्कोर, परीक्षाएँ और सर्टिफ़िकेट।",
   "progress.chaptersComplete": "पूरे चैप्टर",
   "progress.ofCourse": "कोर्स का {pct}%",
   "progress.onePerPhase": "हर फ़ेज़ के लिए एक",
@@ -188,7 +203,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { one: "{count} दिन", other: "{count} दिन" },
   "progress.studied": "{time} पढ़ाई",
   "progress.byPhase": "फ़ेज़ के अनुसार",
-  "progress.byPhaseSub": "फ़ेज़ परीक्षा अनलॉक करने के लिए दोनों ट्रैक पूरे होने चाहिए",
+  "progress.byPhaseSub": "फ़ेज़ परीक्षा अनलॉक करने के लिए उस फ़ेज़ के सभी चैप्टर पूरे करें",
   "progress.col.phase": "फ़ेज़",
   "progress.col.exam": "परीक्षा",
   "progress.col.certificate": "सर्टिफ़िकेट",

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelHandle } from "react-resizable-panels";
 import { useTerminal } from "@/lib/store";
 import { useT } from "@kalks/i18n/react";
@@ -12,6 +13,20 @@ import { RightPanel } from "@/components/order/right-panel";
 import { Toolbox } from "@/components/toolbox/toolbox";
 import { TitleBar } from "./title-bar";
 import { StatusBar } from "./status-bar";
+import { useTradeMode } from "@/lib/options/mode";
+
+// Options workspace: its own chunk, downloaded the first time a trader switches to Options
+const OptionsMain = dynamic(() => import("@/components/options/desktop").then((m) => m.OptionsMain), { ssr: false, loading: () => <OptionsLoading /> });
+
+function OptionsLoading() {
+  return (
+    <div className="flex h-full flex-col gap-1">
+      <div className="h-11 animate-pulse rounded-[8px] border border-line bg-panel" />
+      <div className="h-10 animate-pulse rounded-[8px] border border-line bg-panel" />
+      <div className="min-h-0 flex-1 animate-pulse rounded-[8px] border border-line bg-panel" />
+    </div>
+  );
+}
 
 function Handle() {
   return <PanelResizeHandle className="t-handle" />;
@@ -50,7 +65,7 @@ function useViewportWidth() {
  * Toasts sit at the top-right of the chart area: below the chart tabs + toolbar and left of the
  * order panel, so they never cover the chart header or the ticket (see providers.tsx).
  */
-function useToastPlacement(ref: React.RefObject<HTMLDivElement | null>) {
+function useToastPlacement(ref: React.RefObject<HTMLDivElement | null>, mode: string) {
   React.useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -70,7 +85,7 @@ function useToastPlacement(ref: React.RefObject<HTMLDivElement | null>) {
       root.removeProperty("--t-toast-top");
       root.removeProperty("--t-toast-right");
     };
-  }, [ref]);
+  }, [ref, mode]);
 }
 
 const pct = (px: number, w: number) => Math.min(45, Math.ceil((px / Math.max(w, 1)) * 100));
@@ -92,7 +107,8 @@ export function DesktopTerminal() {
   const rightMin = pct(268, vw);
   const toolboxRef = React.useRef<ImperativePanelHandle>(null);
   const center = React.useRef<HTMLDivElement>(null);
-  useToastPlacement(center);
+  const mode = useTradeMode();
+  useToastPlacement(center, mode);
   const [maxed, setMaxed] = React.useState(false);
   // dir="ltr": the workspace keeps the MT5 arrangement (Market Watch left, order panel right, chart and
   // price columns left-to-right) in Arabic/Urdu/Persian as well. Only the text is translated; RTL scripts
@@ -103,6 +119,9 @@ export function DesktopTerminal() {
       <div className="flex min-h-0 flex-1 flex-col p-1">
         <PanelGroup direction="vertical" autoSaveId="kalks.terminal.v" className="min-h-0 flex-1">
           <Panel id="main" order={1} minSize={30}>
+            {mode === "options" ? (
+              <OptionsMain />
+            ) : (
             <div className="flex h-full min-h-0 gap-1">
               {!p.watch && <Rail label={t("trader.panel.marketWatch")} side="left" onClick={() => T.togglePanel("watch", true)} />}
               <PanelGroup direction="horizontal" autoSaveId="kalks.terminal.h" className="min-w-0 flex-1">
@@ -150,6 +169,7 @@ export function DesktopTerminal() {
               </PanelGroup>
               {!p.right && <Rail label={T.guest ? t("trader.panel.orderInfo") : t("trader.panel.orderDom")} side="right" onClick={() => T.togglePanel("right", true)} />}
             </div>
+            )}
           </Panel>
           {p.toolbox && (
             <>

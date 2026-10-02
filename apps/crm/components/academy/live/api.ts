@@ -3,16 +3,21 @@
 // Browser client for the Academy BFF (/api/academy/*, see app/api/academy/[...path]/route.ts).
 
 import * as React from "react";
-import { createFormatter } from "@kalks/i18n";
+import { createFormatter, type T } from "@kalks/i18n";
 import { tr } from "@kalks/i18n/react";
+import type { ChipTone } from "@kalks/ui";
 import { readCached, writeCached } from "@kalks/ui/swr-cache";
 
 export type Level = "Beginner" | "Intermediate" | "Advanced" | "Professional";
-export type Track = "fundamental" | "technical";
+/** Tracks this build knows (services/academy/src/content.rs TRACKS): two core tracks, then product tracks. */
+export type Track = "fundamental" | "technical" | "options";
+/** A section's track as served. The service may add tracks this build doesn't know yet: look labels up with
+ *  trackLabel() / trackShort() / trackTone(), never by indexing TRACK_LABEL directly. */
+export type TrackKey = Track | (string & {});
 
 export type ChapterProgress = { read_pct: number; quiz_best: number | null; quiz_total: number | null; completed: boolean; completed_at: string | null };
 export type ChapterCard = { slug: string; title: string; summary: string; minutes: number; order: number; questions: number; progress: ChapterProgress };
-export type SectionT = { slug: string; track: Track; title: string; summary: string; chapters: ChapterCard[] };
+export type SectionT = { slug: string; track: TrackKey; title: string; summary: string; chapters: ChapterCard[] };
 export type ExamState = { questions: number; pass_mark: number; unlocked: boolean; best_pct: number | null; passed: boolean; attempts: number };
 export type CertRef = { code: string; issued_at: string };
 export type PhaseT = {
@@ -21,6 +26,9 @@ export type PhaseT = {
   title: string;
   level: Level;
   summary: string;
+  /** Product (elective) phase, e.g. phase 9 "Kalks FX Options": a single section on a product track, studied at
+   *  any time. Optional: older Academy builds don't send it. */
+  elective?: boolean;
   minutes: number;
   progress: { done: number; total: number };
   sections: SectionT[];
@@ -44,8 +52,8 @@ export type Question = { question: string; options: string[] };
 export type Practice = { label: string; symbol?: string | null } | null;
 export type ChapterView = {
   chapter: { slug: string; title: string; summary: string; body: string; takeaways: string[]; practice: Practice; minutes: number; words: number; quiz: Question[]; updated_at: string; lang: string };
-  phase: { slug: string; order: number; title: string; level: Level };
-  section: { slug: string; track: Track; title: string; index: number; count: number; chapters: { slug: string; title: string; completed: boolean }[] };
+  phase: { slug: string; order: number; title: string; level: Level; elective?: boolean };
+  section: { slug: string; track: TrackKey; title: string; index: number; count: number; chapters: { slug: string; title: string; completed: boolean }[] };
   prev: { slug: string; title: string } | null;
   next: { slug: string; title: string } | null;
   progress: ChapterProgress;
@@ -63,7 +71,7 @@ export type QuizReply = {
   phase: { slug: string; done: number; total: number; exam_unlocked: boolean };
 };
 export type ExamView = {
-  phase: { slug: string; order: number; title: string; level: Level };
+  phase: { slug: string; order: number; title: string; level: Level; elective?: boolean };
   exam: { pass_mark: number; questions: Question[]; count: number };
   unlocked: boolean;
   chapters_done: number;
@@ -140,15 +148,66 @@ export function useAcademy<T>(path: string | null) {
 }
 
 export const LEVEL_TONE: Record<Level, "up" | "gold" | "ember" | "info"> = { Beginner: "up", Intermediate: "gold", Advanced: "ember", Professional: "info" };
-// translation keys; render with t(TRACK_LABEL[track])
-export const TRACK_LABEL = { fundamental: "academy.track.fundamental", technical: "academy.track.technical" } as const satisfies Record<Track, string>;
-export const TRACK_SHORT = { fundamental: "academy.trackShort.fundamental", technical: "academy.trackShort.technical" } as const satisfies Record<Track, string>;
-/** Translated level label (levels are English enums from the service). */
-export const levelLabel = (l: Level) => tr.dyn(`academy.level.${l.toLowerCase()}`, l);
+// translation keys of the known tracks; render through trackLabel() / trackShort(), which also cope with unknown tracks
+export const TRACK_LABEL = { fundamental: "academy.track.fundamental", technical: "academy.track.technical", options: "academy.track.options" } as const satisfies Record<Track, string>;
+export const TRACK_SHORT = { fundamental: "academy.trackShort.fundamental", technical: "academy.trackShort.technical", options: "academy.trackShort.options" } as const satisfies Record<Track, string>;
+/** "{count} fundamental" etc. on the phase cards. */
+export const TRACK_COUNT = { fundamental: "academy.phaseCard.fundamental", technical: "academy.phaseCard.technical", options: "academy.phaseCard.options" } as const satisfies Record<Track, string>;
+/** Chip tone per track (the section badge and the reader chip use the same colour). */
+export const TRACK_TONE = { fundamental: "info", technical: "ember", options: "gold" } as const satisfies Record<Track, ChipTone>;
+/** Display order of tracks: core tracks first, then product tracks; unknown tracks go last. */
+const TRACK_ORDER: readonly Track[] = ["fundamental", "technical", "options"];
 
-/** Cover photo per phase (by order). */
-export const PHASE_COVER = ["/assets/photos/finance.jpg", "/assets/photos/trading-screen.jpg", "/assets/photos/charts.jpg", "/assets/photos/nyc.jpg", "/assets/photos/analytics.jpg", "/assets/photos/dashboard.jpg", "/assets/photos/gold.jpg", "/assets/photos/skyscrapers.jpg"];
-export const coverOf = (order: number) => PHASE_COVER[(order - 1 + PHASE_COVER.length) % PHASE_COVER.length]!;
+export const isTrack = (k: unknown): k is Track => typeof k === "string" && Object.prototype.hasOwnProperty.call(TRACK_LABEL, k);
+/** Full track name ("Technical analysis"); an unknown track shows its raw key. */
+export const trackLabel = (t: T, k: TrackKey): string => (isTrack(k) ? t(TRACK_LABEL[k]) : t.dyn(`academy.track.${k}`, k));
+/** Short track name ("Technical"); an unknown track shows its raw key. */
+export const trackShort = (t: T, k: TrackKey): string => (isTrack(k) ? t(TRACK_SHORT[k]) : t.dyn(`academy.trackShort.${k}`, k));
+/** "{count} technical" for the phase cards; an unknown track shows "{count} {key}". */
+export const trackCount = (t: T, k: TrackKey, count: number): string => (isTrack(k) ? t(TRACK_COUNT[k], { count }) : t.dyn(`academy.phaseCard.${k}`, `${count} ${k}`, { count }));
+export const trackTone = (k: TrackKey): ChipTone => (isTrack(k) ? TRACK_TONE[k] : "neutral");
+
+export type TrackTally = { track: TrackKey; done: number; total: number };
+/** Chapters per track of a phase (sections on the same track are added up), in track display order. */
+export function trackTallies(sections: SectionT[]): TrackTally[] {
+  const by = new Map<string, TrackTally>();
+  for (const s of sections) {
+    const k = s.track || "";
+    const row = by.get(k) ?? { track: k, done: 0, total: 0 };
+    row.done += s.chapters.filter((c) => c.progress.completed).length;
+    row.total += s.chapters.length;
+    by.set(k, row);
+  }
+  return [...by.values()].sort((a, b) => trackRank(a.track) - trackRank(b.track));
+}
+/** Distinct tracks across sections, in display order. */
+export const tracksOf = (sections: SectionT[]): TrackKey[] => trackTallies(sections).map((x) => x.track);
+function trackRank(k: TrackKey) {
+  const i = TRACK_ORDER.indexOf(k as Track);
+  return i < 0 ? TRACK_ORDER.length : i;
+}
+/** Elective (product) phase. */
+export const isElective = (p: { elective?: boolean }) => p.elective === true;
+/** Translated level label (levels are English enums from the service). */
+export const levelLabel = (l: Level) => (typeof l === "string" && l ? tr.dyn(`academy.level.${l.toLowerCase()}`, l) : "");
+
+/** Cover photo per phase (by order); phase 9 (Kalks FX Options) gets a live price screen. */
+export const PHASE_COVER = [
+  "/assets/photos/finance.jpg",
+  "/assets/photos/trading-screen.jpg",
+  "/assets/photos/charts.jpg",
+  "/assets/photos/nyc.jpg",
+  "/assets/photos/analytics.jpg",
+  "/assets/photos/dashboard.jpg",
+  "/assets/photos/gold.jpg",
+  "/assets/photos/skyscrapers.jpg",
+  "/assets/photos/stock-market.jpg",
+];
+export const coverOf = (order: number) => {
+  const n = PHASE_COVER.length;
+  const i = Number.isFinite(order) ? (((Math.trunc(order) - 1) % n) + n) % n : 0;
+  return PHASE_COVER[i]!;
+};
 
 // evaluated at render time, so they follow the current language
 export const fmtMin = (m: number) => (m >= 60 ? (m % 60 ? tr("academy.duration.hoursMin", { h: Math.floor(m / 60), m: m % 60 }) : tr("academy.duration.hours", { h: Math.floor(m / 60) })) : tr("academy.duration.min", { count: m }));

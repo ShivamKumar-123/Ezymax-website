@@ -31,8 +31,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "การวิเคราะห์ปัจจัยพื้นฐาน",
   "track.technical": "การวิเคราะห์ทางเทคนิค",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "การเทรดออปชัน",
   "trackShort.fundamental": "ปัจจัยพื้นฐาน",
   "trackShort.technical": "เทคนิค",
+  "trackShort.options": "ออปชัน",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "วิชาเลือก",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count} นาที",
@@ -40,11 +45,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h} ชม. {m} นาที",
 
   // Home
-  "home.subtitle": "แปดระยะตั้งแต่ pip แรกจนถึงการเทรดระดับมืออาชีพ · {count} บท ครอบคลุมการวิเคราะห์ปัจจัยพื้นฐานและทางเทคนิค พร้อมแบบทดสอบ การสอบ และใบรับรอง",
+  "home.subtitle": "แปดระยะหลักตั้งแต่ pip แรกจนถึงการเทรดระดับมืออาชีพ พร้อมวิชาเลือก · {count} บท พร้อมแบบทดสอบ การสอบ และใบรับรอง",
   "home.glossary": "อภิธานศัพท์",
   "home.myProgress": "ความคืบหน้าของฉัน",
   "home.pathTitle": "เส้นทางการเรียนรู้ของคุณ",
-  "home.pathText": "แต่ละระยะมีสายปัจจัยพื้นฐานและสายเทคนิค การสอบปลายระยะ และใบรับรอง",
+  "home.pathText": "แต่ละระยะหลักมีสายปัจจัยพื้นฐานและสายเทคนิค การสอบปลายระยะ และใบรับรอง",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "วิชาเลือก",
+  "home.electivesText": "หลักสูตรเกี่ยวกับผลิตภัณฑ์ของ Kalks เรียนได้ทุกเมื่อ แต่ละหลักสูตรมีการสอบปลายภาคและใบรับรองของตัวเอง",
   "hero.allDone": "เรียนครบทุกบทแล้ว",
   "hero.continue": "เรียนต่อ",
   "hero.upNext": "ถัดไป",
@@ -71,6 +79,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "ยังไม่เริ่ม",
   "phaseCard.fundamental": "ปัจจัยพื้นฐาน {count} บท",
   "phaseCard.technical": "เทคนิค {count} บท",
+  "phaseCard.options": { other: "ออปชัน {count} บท" },
   "phaseCard.certificate": "ใบรับรอง {date}",
   "phaseCard.finalExam": "สอบปลายระยะ · {count} ข้อ",
   "glossaryTeaser.subtitle": "ศัพท์การเทรดในภาษาที่เข้าใจง่าย",
@@ -96,6 +105,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "บทเรียน",
   "phase.chaptersText": "แต่ละบทจบด้วยแบบทดสอบสั้นๆ ทำให้ผ่านเพื่อจบบทเรียน",
   "phase.bothTracks": "ทั้งสองสาย",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "ทุกสาย",
 
   // Final exam (phase page card and exam page)
   "exam.final": "สอบปลายระยะ",
@@ -105,6 +116,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "คะแนนสูงสุด",
   "exam.passedText": "คุณสอบผ่านแล้ว สามารถสอบซ้ำเพื่อฝึกฝนได้ ใบรับรองของคุณยังคงมีผล",
   "exam.unlockedText": "ข้อสอบครอบคลุมทั้งสองสาย สอบให้ผ่านเพื่อรับใบรับรองของระยะนี้",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "ข้อสอบครอบคลุมทุกบทของระยะนี้ สอบให้ผ่านเพื่อรับใบรับรองของคุณ",
   "exam.lockedText": {
     other: "จะปลดล็อกเมื่อเรียนครบทุกบทของระยะนี้: เหลืออีก {count} บท",
   },
@@ -113,6 +126,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "ล็อกอยู่",
   "exam.pageTitle": "การสอบระยะที่ {n}: {title}",
   "exam.intro": "{count} ข้อจากทั้งสองสาย · เกณฑ์ผ่าน {pass}% · ใช้เวลาได้เต็มที่ ไม่มีการจับเวลา",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "{count} ข้อจากทุกบท · เกณฑ์ผ่าน {pass}% · ใช้เวลาได้เต็มที่ ไม่มีการจับเวลา",
   "exam.lockedTitle": "การสอบจะปลดล็อกเมื่อเรียนครบทุกบท",
   "exam.lockedBody": "คุณเรียนจบแล้ว {done} จาก {total} บทในระยะนี้ ทำแบบทดสอบของแต่ละบทให้ผ่านเพื่อจบบทเรียน",
   "exam.backToChapters": "กลับไปที่บทเรียน",
@@ -179,7 +194,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "ที่เกี่ยวข้อง:",
 
   // My progress page
-  "progress.subtitle": "บทเรียน คะแนนแบบทดสอบ การสอบ และใบรับรองในทั้งแปดระยะ",
+  "progress.subtitle": "บทเรียน คะแนนแบบทดสอบ การสอบ และใบรับรองในแปดระยะหลักและวิชาเลือก",
   "progress.chaptersComplete": "บทที่เรียนจบ",
   "progress.ofCourse": "{pct}% ของหลักสูตร",
   "progress.onePerPhase": "ระยะละหนึ่งใบ",
@@ -187,7 +202,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { other: "{count} วัน" },
   "progress.studied": "เรียนไป {time}",
   "progress.byPhase": "ตามระยะ",
-  "progress.byPhaseSub": "ต้องเรียนจบทั้งสองสายเพื่อปลดล็อกการสอบปลายระยะ",
+  "progress.byPhaseSub": "เรียนให้ครบทุกบทของระยะเพื่อปลดล็อกการสอบ",
   "progress.col.phase": "ระยะ",
   "progress.col.exam": "การสอบ",
   "progress.col.certificate": "ใบรับรอง",

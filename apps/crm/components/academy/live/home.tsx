@@ -7,7 +7,7 @@ import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, Flame, GraduationCap,
 import { Button, Card, CardHeader, Chip, PageHeader, Progress, Reveal, cn } from "@kalks/ui";
 import type { T } from "@kalks/i18n";
 import { useFormat, useT } from "@kalks/i18n/react";
-import { LEVEL_TONE, coverOf, fmtDay, fmtMin, levelLabel, pct, useAcademy, type Catalog, type PhaseT } from "./api";
+import { LEVEL_TONE, coverOf, fmtDay, fmtMin, isElective, levelLabel, pct, trackCount, trackTallies, useAcademy, type Catalog, type PhaseT } from "./api";
 import { AcademyUnavailable, PageSkeleton, PracticeButton, RISK_NOTE, Segments } from "./shared";
 
 function ContinueHero({ cat }: { cat: Catalog }) {
@@ -145,7 +145,7 @@ function phaseState(p: PhaseT, t: T): { label: string; tone: "up" | "ember" | "n
 function PhaseCard({ p }: { p: PhaseT }) {
   const t = useT();
   const s = phaseState(p, t);
-  const count = (tr: string) => p.sections.find((x) => x.track === tr)?.chapters.length ?? 0;
+  const tracks = trackTallies(p.sections);
   const done = p.progress.done === p.progress.total && p.progress.total > 0;
   return (
     <Link href={`/academy/phase/${p.slug}`} className="group block h-full" data-testid={`phase-card-${p.slug}`}>
@@ -158,6 +158,11 @@ function PhaseCard({ p }: { p: PhaseT }) {
             <Chip size="sm" tone={LEVEL_TONE[p.level]} className="bg-black/60">
               {levelLabel(p.level)}
             </Chip>
+            {isElective(p) && (
+              <Chip size="sm" className="bg-black/60">
+                {t("academy.elective")}
+              </Chip>
+            )}
           </div>
           <div className="absolute end-3.5 top-3.5">
             <Chip size="sm" tone={s.tone} dot className="bg-black/60">
@@ -171,12 +176,11 @@ function PhaseCard({ p }: { p: PhaseT }) {
           <div className="mt-0.5 text-[15.5px] font-medium leading-snug tracking-tight">{p.title}</div>
           <p className="mt-1 line-clamp-2 text-[12.5px] text-fg-3">{p.summary}</p>
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-fg-3">
-            <span className="inline-flex items-center gap-1">
-              <BookOpen className="size-3.5" /> <span className="k-num">{t("academy.phaseCard.fundamental", { count: count("fundamental") })}</span>
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <BookOpen className="size-3.5" /> <span className="k-num">{t("academy.phaseCard.technical", { count: count("technical") })}</span>
-            </span>
+            {tracks.map((x) => (
+              <span key={x.track} className="inline-flex items-center gap-1">
+                <BookOpen className="size-3.5" /> <span className="k-num">{trackCount(t, x.track, x.total)}</span>
+              </span>
+            ))}
             <span className="inline-flex items-center gap-1">
               <Clock className="size-3.5" /> <span className="k-num">{fmtMin(p.minutes)}</span>
             </span>
@@ -296,6 +300,9 @@ export function LiveAcademyHome() {
   if (error) return <AcademyUnavailable error={error} onRetry={reload} />;
   if (!data) return <PageSkeleton />;
   const chapters = data.me.chapters_total;
+  // core phases form the learning path; electives (product courses) are listed after it
+  const core = data.phases.filter((p) => !isElective(p));
+  const electives = data.phases.filter(isElective);
   return (
     <div className="pb-16">
       <PageHeader
@@ -334,10 +341,23 @@ export function LiveAcademyHome() {
           </div>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" data-testid="phase-grid">
-          {data.phases.map((p) => (
+          {core.map((p) => (
             <PhaseCard key={p.slug} p={p} />
           ))}
         </div>
+        {electives.length > 0 && (
+          <>
+            <div className="mb-4 mt-8">
+              <h2 className="text-[19px] font-medium tracking-tight">{t("academy.home.electivesTitle")}</h2>
+              <p className="text-[13px] text-fg-3">{t("academy.home.electivesText")}</p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" data-testid="elective-grid">
+              {electives.map((p) => (
+                <PhaseCard key={p.slug} p={p} />
+              ))}
+            </div>
+          </>
+        )}
       </Reveal>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">

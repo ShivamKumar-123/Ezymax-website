@@ -2,12 +2,29 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUpRight, Check, ChevronLeft, Lock, RotateCw } from "lucide-react";
+import { ArrowUpRight, BarChart3, BookOpen, ChartSpline, Check, ChevronLeft, Landmark, Lock, RotateCw, type LucideIcon } from "lucide-react";
 import { Button, Card, EmptyState, Skeleton, cn } from "@kalks/ui";
 import { useAccounts, openTerminal } from "@/components/trading/api";
 import { TERMINAL_URL } from "@/lib/live";
 import { useT } from "@kalks/i18n/react";
-import type { AcademyError } from "./api";
+import { isTrack, type AcademyError, type Track, type TrackKey } from "./api";
+
+const TRACK_ICON: Record<Track, LucideIcon> = { fundamental: Landmark, technical: BarChart3, options: ChartSpline };
+/** Round badge colours per track (same hues as TRACK_TONE). */
+const TRACK_BADGE: Record<Track, string> = {
+  fundamental: "border-info/25 bg-info-soft text-info",
+  technical: "border-ember/30 bg-ember-soft text-ember",
+  options: "border-gold/30 bg-gold-soft text-gold",
+};
+
+/** Icon of a track; an unknown track gets a book. */
+export function TrackIcon({ track, className }: { track: TrackKey; className?: string }) {
+  const Icon = isTrack(track) ? TRACK_ICON[track] : BookOpen;
+  return <Icon className={className} />;
+}
+
+/** Border / fill / text classes for a track's round badge; neutral for an unknown track. */
+export const trackBadge = (track: TrackKey) => (isTrack(track) ? TRACK_BADGE[track] : "border-line bg-surface-2 text-fg-2");
 
 export function AcademyUnavailable({ error, onRetry, notFound: nf }: { error: AcademyError | null; onRetry: () => void; notFound?: boolean }) {
   const t = useT();

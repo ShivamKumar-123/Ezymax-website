@@ -31,8 +31,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "التحليل الأساسي",
   "track.technical": "التحليل الفني",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "تداول الخيارات",
   "trackShort.fundamental": "أساسي",
   "trackShort.technical": "فني",
+  "trackShort.options": "الخيارات",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "اختياري",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count} دقيقة",
@@ -40,11 +45,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h} س {m} د",
 
   // Home
-  "home.subtitle": "ثماني مراحل من أول نقطة إلى التداول الاحترافي · {count} فصلًا في التحليل الأساسي والفني، مع اختبارات قصيرة وامتحانات وشهادات.",
+  "home.subtitle": "ثماني مراحل أساسية من أول نقطة إلى التداول الاحترافي، بالإضافة إلى مقررات اختيارية · {count} فصلًا مع اختبارات قصيرة وامتحانات وشهادات.",
   "home.glossary": "المسرد",
   "home.myProgress": "تقدّمي",
   "home.pathTitle": "مسار التعلم الخاص بك",
-  "home.pathText": "تحتوي كل مرحلة على مسار أساسي ومسار فني وامتحان نهائي وشهادة.",
+  "home.pathText": "تحتوي كل مرحلة أساسية على مسار أساسي ومسار فني وامتحان نهائي وشهادة.",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "المقررات الاختيارية",
+  "home.electivesText": "دورات عن منتجات Kalks. يمكنك دراستها في أي وقت، ولكل منها امتحان نهائي وشهادة خاصة بها.",
   "hero.allDone": "اكتملت جميع الفصول",
   "hero.continue": "تابع التعلم",
   "hero.upNext": "التالي",
@@ -71,6 +79,14 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "لم يبدأ",
   "phaseCard.fundamental": "{count} أساسي",
   "phaseCard.technical": "{count} فني",
+  "phaseCard.options": {
+    zero: "{count} فصل عن الخيارات",
+    one: "فصل واحد عن الخيارات",
+    two: "فصلان عن الخيارات",
+    few: "{count} فصول عن الخيارات",
+    many: "{count} فصلًا عن الخيارات",
+    other: "{count} فصل عن الخيارات",
+  },
   "phaseCard.certificate": "شهادة {date}",
   "phaseCard.finalExam": "الامتحان النهائي · {count} سؤال",
   "glossaryTeaser.subtitle": "مصطلحات التداول بلغة بسيطة",
@@ -103,6 +119,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "الفصول",
   "phase.chaptersText": "ينتهي كل فصل باختبار قصير؛ اجتزه لإكمال الفصل.",
   "phase.bothTracks": "كلا المسارين",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "جميع المسارات",
 
   // Final exam (phase page card and exam page)
   "exam.final": "الامتحان النهائي",
@@ -112,6 +130,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "أفضل نتيجة",
   "exam.passedText": "لقد اجتزت هذا الامتحان. يمكنك إعادته للتدرّب؛ وتبقى شهادتك سارية.",
   "exam.unlockedText": "تغطي الأسئلة كلا المسارين. اجتزه لتحصل على شهادة هذه المرحلة.",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "تغطي الأسئلة جميع فصول هذه المرحلة. اجتزه لتحصل على شهادتك.",
   "exam.lockedText": {
     zero: "يُفتح عند إكمال جميع فصول هذه المرحلة: لم يتبقَّ أي فصل.",
     one: "يُفتح عند إكمال جميع فصول هذه المرحلة: تبقّى فصل واحد.",
@@ -125,6 +145,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "مقفل",
   "exam.pageTitle": "امتحان المرحلة {n}: {title}",
   "exam.intro": "{count} سؤال في كلا المسارين · علامة النجاح {pass}% · خذ وقتك، لا يوجد مؤقت.",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "{count} سؤال من جميع الفصول · علامة النجاح {pass}% · خذ وقتك، لا يوجد مؤقت.",
   "exam.lockedTitle": "يُفتح الامتحان عند إكمال جميع الفصول",
   "exam.lockedBody": "لقد أكملت {done} من {total} فصول في هذه المرحلة. اجتز اختبار كل فصل لإكماله.",
   "exam.backToChapters": "العودة إلى الفصول",
@@ -198,7 +220,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "ذات صلة:",
 
   // My progress page
-  "progress.subtitle": "الفصول ونتائج الاختبارات والامتحانات والشهادات عبر المراحل الثماني.",
+  "progress.subtitle": "الفصول ونتائج الاختبارات والامتحانات والشهادات عبر المراحل الأساسية الثماني والمقررات الاختيارية.",
   "progress.chaptersComplete": "الفصول المكتملة",
   "progress.ofCourse": "{pct}% من الدورة",
   "progress.onePerPhase": "شهادة لكل مرحلة",
@@ -213,7 +235,7 @@ const academy: NsMessages<"academy"> = {
   },
   "progress.studied": "{time} من الدراسة",
   "progress.byPhase": "حسب المرحلة",
-  "progress.byPhaseSub": "يجب إكمال كلا المسارين لفتح امتحان المرحلة",
+  "progress.byPhaseSub": "أكمل جميع فصول المرحلة لفتح امتحانها",
   "progress.col.phase": "المرحلة",
   "progress.col.exam": "الامتحان",
   "progress.col.certificate": "الشهادة",

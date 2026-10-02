@@ -1,0 +1,180 @@
+"use client";
+
+// Small shared pieces of the options workspace: avatars for every underlying (NZDUSD has no CFD instrument), state and
+// expiry-kind badges, a call/put tag, the flashing number cell, the "launching soon" and error panels.
+import * as React from "react";
+import { ArrowUpRight, Clock3, Hourglass, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
+import { INSTRUMENT_MAP } from "@kalks/mock";
+import { OPTION_SPEC } from "@kalks/mock/options";
+import { SymbolAvatar, cn, useTickGlow } from "@kalks/ui";
+import { useT } from "@kalks/i18n/react";
+import { ONBOARDING_URL, needsOnboarding, optionErrorText } from "@/lib/options/errors";
+import type { ExpiryKind, OptionRight, OptionTradeState, Side } from "@/lib/options/types";
+
+const CCY_FLAG: Record<string, string> = { EUR: "eu", USD: "us", GBP: "gb", JPY: "jp", AUD: "au", CAD: "ca", CHF: "ch", NZD: "nz" };
+
+/** Symbol avatar for any options underlying (falls back to the currency flags). */
+export function OptAvatar({ symbol, size = 16 }: { symbol: string; size?: number }) {
+  if (INSTRUMENT_MAP[symbol]) return <SymbolAvatar symbol={symbol} size={size} />;
+  const spec = OPTION_SPEC[symbol];
+  const base = spec ? CCY_FLAG[spec.baseCcy] : undefined;
+  const quote = spec ? CCY_FLAG[spec.quoteCcy] : undefined;
+  if (!base || !quote) return <span className="inline-block shrink-0 rounded-full bg-surface-3" style={{ width: size, height: size }} />;
+  return (
+    <span className="relative inline-block shrink-0" style={{ width: size * 1.45, height: size }}>
+      <span className={cn("fi fis absolute left-0 top-0 rounded-full ring-2 ring-surface", `fi-${base}`)} style={{ width: size, height: size }} />
+      <span className={cn("fi fis absolute right-0 top-0 rounded-full ring-2 ring-surface", `fi-${quote}`)} style={{ width: size, height: size }} />
+    </span>
+  );
+}
+
+export function RightTag({ right, className }: { right: OptionRight; className?: string }) {
+  const t = useT();
+  return (
+    <span className={cn("inline-flex h-[17px] min-w-[17px] items-center justify-center rounded-[4px] px-1 font-mono text-[10px] font-semibold", right === "call" ? "bg-up-soft text-up" : "bg-down-soft text-down", className)} title={right === "call" ? t("trader.opt.call") : t("trader.opt.put")}>
+      {right === "call" ? "C" : "P"}
+    </span>
+  );
+}
+
+export function SideTag({ side, className }: { side: Side; className?: string }) {
+  const t = useT();
+  return <span className={cn("text-[10.5px] font-semibold uppercase tracking-[0.06em]", side === "buy" ? "text-up" : "text-down", className)}>{side === "buy" ? t("common.buy") : t("common.sell")}</span>;
+}
+
+const KIND: Record<ExpiryKind, { letter: string; cls: string }> = {
+  daily: { letter: "D", cls: "bg-surface-3 text-fg-2" },
+  weekly: { letter: "W", cls: "bg-info-soft text-info" },
+  monthly: { letter: "M", cls: "bg-gold-soft text-gold" },
+};
+
+export function KindBadges({ kinds }: { kinds: ExpiryKind[] }) {
+  const t = useT();
+  return (
+    <span className="inline-flex gap-0.5">
+      {kinds.map((k) => (
+        <span key={k} title={t.dyn(`trader.opt.kind.${k}`, k)} className={cn("grid h-[14px] min-w-[14px] place-items-center rounded-[3px] px-0.5 font-mono text-[9px] font-semibold", KIND[k]?.cls ?? "bg-surface-3 text-fg-3")}>
+          {KIND[k]?.letter ?? k[0]?.toUpperCase()}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+export function StateBadge({ state, className }: { state: OptionTradeState; className?: string }) {
+  const t = useT();
+  if (state === "open") return null;
+  const tone = state === "halted" ? "border-down/30 bg-down-soft text-down" : state === "closed" ? "border-line bg-surface-3 text-fg-3" : "border-warn/30 bg-warn-soft text-warn";
+  return <span className={cn("inline-flex h-[17px] shrink-0 items-center rounded-[4px] border px-1.5 text-[9.5px] font-semibold uppercase tracking-[0.05em]", tone, className)}>{t.dyn(`trader.opt.state.${state}`, state)}</span>;
+}
+
+/** A number that glows green / red when it changes (chain prices). */
+export function Flash({ value, children, className }: { value: number; children: React.ReactNode; className?: string }) {
+  const ref = useTickGlow<HTMLSpanElement>(value, { strength: 18, duration: 700 });
+  return (
+    <span ref={ref} className={cn("k-num rounded-[3px] px-0.5", className)}>
+      {children}
+    </span>
+  );
+}
+
+/** Compact segmented control (ticket / builder style). */
+export function Seg<T extends string>({ value, onChange, options, className, size = "md" }: { value: T; onChange: (v: T) => void; options: readonly { value: T; label: React.ReactNode; title?: string; tone?: "up" | "down" }[]; className?: string; size?: "sm" | "md" }) {
+  return (
+    <div className={cn("grid gap-0.5 rounded-[7px] border border-line bg-surface-2 p-0.5", className)} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            title={o.title}
+            aria-pressed={on}
+            onClick={() => onChange(o.value)}
+            className={cn(
+              "whitespace-nowrap rounded-[5px] px-1.5 font-medium tracking-tight transition-colors",
+              size === "sm" ? "h-5 text-[10.5px]" : "h-6 text-[11px]",
+              on ? (o.tone === "up" ? "bg-up text-white" : o.tone === "down" ? "bg-down text-white" : "bg-surface-3 text-fg shadow-[inset_0_1px_0_var(--k-border-top)]") : "text-fg-3 hover:text-fg-2",
+            )}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Full-panel state: the module is off here ("launching soon"), or the price server is down. */
+export function OptionsUnavailable({ kind, onRetry, compact }: { kind: "soon" | "error"; onRetry?: () => void; compact?: boolean }) {
+  const t = useT();
+  return (
+    <div className={cn("grid h-full place-items-center text-center", compact ? "p-4" : "p-8")}>
+      <div className="max-w-[420px]">
+        <div className={cn("mx-auto mb-3 grid size-11 place-items-center rounded-full border [&>svg]:size-5", kind === "soon" ? "border-ember/30 bg-ember-soft text-ember" : "border-warn/30 bg-warn-soft text-warn")}>{kind === "soon" ? <Hourglass /> : <TriangleAlert />}</div>
+        <div className="text-[14px] font-semibold text-fg">{kind === "soon" ? t("trader.opt.soon.title") : t("trader.opt.error.title")}</div>
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-fg-3">{kind === "soon" ? t("trader.opt.soon.text") : t("trader.opt.error.text")}</p>
+        {kind === "soon" && (
+          <ul className="mx-auto mt-3 grid max-w-[340px] gap-1 text-start text-[11.5px] text-fg-2">
+            {(["trader.opt.soon.point1", "trader.opt.soon.point2", "trader.opt.soon.point3"] as const).map((k) => (
+              <li key={k} className="flex items-start gap-2">
+                <span className="mt-[5px] size-1.5 shrink-0 rounded-full bg-ember" />
+                {t(k)}
+              </li>
+            ))}
+          </ul>
+        )}
+        {onRetry && (
+          <button onClick={onRetry} className="mx-auto mt-4 inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-line px-3 text-[12px] font-medium text-fg-2 transition-colors hover:border-fg-3/50 hover:text-fg">
+            <RefreshCw className="size-3.5" /> {t("trader.opt.soon.retry")}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** A rejection with what to do about it (onboarding link for `not_eligible`). */
+export function ErrorNote({ code, message, className }: { code: string; message?: string; className?: string }) {
+  const t = useT();
+  if (needsOnboarding(code))
+    return (
+      <div role="alert" className={cn("rounded-[7px] border border-ember/30 bg-ember-soft/50 px-2.5 py-2 text-[11.5px]", className)}>
+        <div className="flex items-center gap-1.5 font-semibold text-fg">
+          <ShieldCheck className="size-3.5 text-ember" /> {t("trader.opt.err.not_eligible")}
+        </div>
+        <p className="mt-0.5 leading-relaxed text-fg-3">{t("trader.opt.onboarding.text")}</p>
+        <a href={ONBOARDING_URL} target="_blank" rel="noreferrer" className="mt-1.5 inline-flex h-6 items-center gap-1 rounded-[5px] bg-ember px-2 text-[11px] font-semibold text-white hover:brightness-110">
+          {t("trader.opt.onboarding.cta")} <ArrowUpRight className="size-3" />
+        </a>
+      </div>
+    );
+  return (
+    <div role="alert" className={cn("flex items-start gap-1.5 rounded-[7px] border border-down/30 bg-down-soft/60 px-2.5 py-1.5 text-[11.5px] text-down", className)}>
+      <TriangleAlert className="mt-px size-3.5 shrink-0" />
+      <span className="leading-snug">{optionErrorText(code, message)}</span>
+    </div>
+  );
+}
+
+/** Live countdown to an instant (re-renders once a second while mounted). */
+export function Countdown({ to, className, prefix }: { to: number; className?: string; prefix?: React.ReactNode }) {
+  const [now, setNow] = React.useState(() => Date.now());
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const left = to - now;
+  const d = Math.floor(left / 86_400_000);
+  const h = Math.floor((left % 86_400_000) / 3_600_000);
+  const m = Math.floor((left % 3_600_000) / 60_000);
+  const s = Math.floor((left % 60_000) / 1000);
+  const text = left <= 0 ? "0s" : d ? `${d}d ${h}h` : h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m ${String(s).padStart(2, "0")}s`;
+  return (
+    <span className={cn("k-num inline-flex items-center gap-1 font-mono", left < 3_600_000 && left > 0 && "text-warn", className)}>
+      <Clock3 className="size-3 shrink-0 opacity-70" />
+      {prefix}
+      {text}
+    </span>
+  );
+}

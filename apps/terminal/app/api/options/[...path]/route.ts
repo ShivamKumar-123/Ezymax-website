@@ -1,0 +1,93 @@
+import type { NextRequest } from "next/server";
+import { csrf, error, reply, soft } from "@/lib/engine/server";
+import { actingAccount, options, optionsStreamUrl, publicChain, tenantOf } from "@/lib/options/server";
+
+// Kalks FX Options BFF (read side). Browser -> /api/options/<route> (same origin; `X-Kalks-Login` names the acting
+// account, whose engine session is in the HttpOnly cookie) -> services/options /v1/options/… with the internal
+// token, the broker (X-Kalks-Tenant) and the account's kind (X-Kalks-Account-Kind) + group (pricing). Trading
+// (preview, orders, closes, settlements) goes through the engine BFF: /api/engine/options/*.
+//
+//   GET  underlyings                      {underlyings[], version}
+//   GET  expiries?u=                      {underlying, expiries[], version}
+//   GET  chain?u=&expiry=                 chain header + rows[] (the account group's spreads)
+//   GET  series/{code}                    {series, expiry, quote, …}
+//   GET  smile?u=&expiry=                 {points[], pillars[], termStructure[], atmVol}
+//   POST stream-ticket                    {ticket, expiresIn, url}: one-time WebSocket ticket for the chain stream
+//   GET  public/chain/{u}?expiry=         guest chain (no session; 404 options_disabled until the public chain is on)
+//   GET  public/stream-url                {url}: guest chain stream (no ticket)
+//
+// The service answers 404 `options_disabled` while the module is off for this broker / account kind: the terminal
+// shows "Options launching soon".
+
+type Ctx = { params: Promise<{ path: string[] }> };
+
+const U_RE = /^[A-Z]{3,8}$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const SERIES_RE = /^[A-Z0-9]{3,12}-\d{8}-[0-9.]{1,16}-[CP](-[A-Z0-9._]{1,24})?$/;
+
+function q(req: NextRequest, needU: boolean): { u?: string; expiry?: string } | null {
+  const sp = req.nextUrl.searchParams;
+  const u = sp.get("u")?.toUpperCase() ?? undefined;
+  const expiry = sp.get("expiry") ?? undefined;
+  if ((needU && !u) || (u && !U_RE.test(u)) || (expiry && !DATE_RE.test(expiry))) return null;
+  return { u, expiry };
+}
+
+const relay = (r: { status: number; data: unknown }) => reply(r.status, r.data);
+
+async function handle(req: NextRequest, { params }: Ctx, method: "GET" | "POST") {
+  const path = (await params).path;
+  const [a, b, c] = path;
+
+  // ---- public (guests, the SEO chain page)
+  if (a === "public") {
+    if (method === "GET" && b === "chain" && path.length === 3 && U_RE.test((c ?? "").toUpperCase())) {
+      const expiry = req.nextUrl.searchParams.get("expiry");
+      if (expiry && !DATE_RE.test(expiry)) return error(400, "bad_request", "Invalid expiry.");
+      const r = await publicChain(c!.toUpperCase(), expiry);
+      return reply(r.status, r.data, { headers: r.status === 200 ? { "cache-control": "public, max-age=1" } : {} });
+    }
+    if (method === "GET" && b === "stream-url" && path.length === 2) return reply(200, { url: optionsStreamUrl(req) });
+    return error(404, "not_found", "Not found.");
+  }
+
+  // ---- signed-in reads: the acting account picks the module switch (live/demo) and the group's pricing
+  if (method === "POST") {
+    const blocked = csrf(req);
+    if (blocked) return blocked;
+  }
+  const who = await actingAccount(req);
+  if (!who.ok) return error(who.status, who.code, who.message);
+  const { kind, group } = who.account;
+  const tenant = await tenantOf(req);
+  const call = (p: string, body?: unknown) => options(p, { tenant, kind, body, method: body !== undefined ? "POST" : "GET" });
+  const g = encodeURIComponent(group || "*");
+
+  if (method === "GET" && a === "underlyings" && path.length === 1) return relay(await call("/v1/options/underlyings"));
+  if (method === "GET" && a === "expiries" && path.length === 1) {
+    const x = q(req, true);
+    if (!x) return error(400, "bad_request", "Invalid underlying.");
+    return relay(await call(`/v1/options/expiries?u=${x.u}`));
+  }
+  if (method === "GET" && a === "chain" && path.length === 1) {
+    const x = q(req, true);
+    if (!x) return error(400, "bad_request", "Invalid underlying or expiry.");
+    return relay(await call(`/v1/options/chain?u=${x.u}${x.expiry ? `&expiry=${x.expiry}` : ""}&group=${g}`));
+  }
+  if (method === "GET" && a === "smile" && path.length === 1) {
+    const x = q(req, true);
+    if (!x) return error(400, "bad_request", "Invalid underlying or expiry.");
+    return relay(await call(`/v1/options/smile?u=${x.u}${x.expiry ? `&expiry=${x.expiry}` : ""}`));
+  }
+  if (method === "GET" && a === "series" && path.length === 2 && SERIES_RE.test(b ?? "")) return relay(await call(`/v1/options/series/${encodeURIComponent(b!)}?group=${g}`));
+  if (method === "POST" && a === "stream-ticket" && path.length === 1) {
+    const r = await call("/v1/options/stream/ticket", { group: group || "*" });
+    if (r.status !== 200) return relay(r);
+    return reply(200, { ticket: r.data.ticket, expiresIn: r.data.expiresIn, url: optionsStreamUrl(req) });
+  }
+  return error(404, "not_found", "Not found.");
+}
+
+export const dynamic = "force-dynamic";
+export const GET = async (req: NextRequest, ctx: Ctx) => soft(req, await handle(req, ctx, "GET"));
+export const POST = async (req: NextRequest, ctx: Ctx) => soft(req, await handle(req, ctx, "POST"));

@@ -31,8 +31,13 @@ const academy: NsMessages<"academy"> = {
   // 트랙
   "track.fundamental": "기본적 분석",
   "track.technical": "기술적 분석",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "옵션 거래",
   "trackShort.fundamental": "기본적",
   "trackShort.technical": "기술적",
+  "trackShort.options": "옵션",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "선택 과정",
 
   // 소요 시간
   "duration.min": "{count}분",
@@ -40,11 +45,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h}시간 {m}분",
 
   // 홈
-  "home.subtitle": "첫 핍부터 전문 트레이딩까지 8단계 · 기본적 분석과 기술적 분석에 걸친 {count}개 챕터, 퀴즈, 시험 및 수료증 제공.",
+  "home.subtitle": "첫 핍부터 전문 트레이딩까지 8개 핵심 단계와 선택 과정 · 퀴즈, 시험 및 수료증이 포함된 {count}개 챕터.",
   "home.glossary": "용어집",
   "home.myProgress": "내 진행 상황",
   "home.pathTitle": "나의 학습 경로",
-  "home.pathText": "각 단계에는 기본적 분석 트랙과 기술적 분석 트랙, 최종 시험 및 수료증이 있습니다.",
+  "home.pathText": "각 핵심 단계에는 기본적 분석 트랙과 기술적 분석 트랙, 최종 시험 및 수료증이 있습니다.",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "선택 과정",
+  "home.electivesText": "Kalks 상품에 관한 과정입니다. 언제든지 수강할 수 있으며, 과정마다 최종 시험과 수료증이 있습니다.",
   "hero.allDone": "모든 챕터 완료",
   "hero.continue": "학습 계속하기",
   "hero.upNext": "다음 학습",
@@ -71,6 +79,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "시작 전",
   "phaseCard.fundamental": "기본적 분석 {count}개",
   "phaseCard.technical": "기술적 분석 {count}개",
+  "phaseCard.options": { other: "옵션 챕터 {count}개" },
   "phaseCard.certificate": "수료증 {date}",
   "phaseCard.finalExam": "최종 시험 · {count}문항",
   "glossaryTeaser.subtitle": "알기 쉽게 풀어 쓴 트레이딩 용어",
@@ -96,6 +105,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "챕터",
   "phase.chaptersText": "각 챕터는 짧은 퀴즈로 마무리되며, 퀴즈를 통과하면 챕터가 완료됩니다.",
   "phase.bothTracks": "두 트랙 모두",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "모든 트랙",
 
   // 최종 시험 (단계 페이지 카드 및 시험 페이지)
   "exam.final": "최종 시험",
@@ -105,6 +116,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "최고 점수",
   "exam.passedText": "이 시험에 합격하셨습니다. 연습을 위해 다시 응시할 수 있으며, 수료증은 계속 유효합니다.",
   "exam.unlockedText": "문항은 두 트랙 모두에서 출제됩니다. 합격하면 이 단계의 수료증을 받을 수 있습니다.",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "문항은 이 단계의 모든 챕터에서 출제됩니다. 합격하면 수료증을 받을 수 있습니다.",
   "exam.lockedText": {
     other: "이 단계의 모든 챕터를 완료하면 잠금 해제됩니다: {count}개 챕터 남음.",
   },
@@ -113,6 +126,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "잠김",
   "exam.pageTitle": "{n}단계 시험: {title}",
   "exam.intro": "두 트랙에 걸친 {count}문항 · 합격 기준 {pass}% · 시간 제한이 없으니 천천히 풀어 보세요.",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "모든 챕터에 걸친 {count}문항 · 합격 기준 {pass}% · 시간 제한이 없으니 천천히 풀어 보세요.",
   "exam.lockedTitle": "모든 챕터를 완료하면 시험이 잠금 해제됩니다",
   "exam.lockedBody": "이 단계의 {total}개 챕터 중 {done}개를 완료하셨습니다. 각 챕터 퀴즈를 통과하면 챕터가 완료됩니다.",
   "exam.backToChapters": "챕터로 돌아가기",
@@ -179,7 +194,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "관련 용어:",
 
   // 내 진행 상황 페이지
-  "progress.subtitle": "8단계 전체의 챕터, 퀴즈 점수, 시험 및 수료증.",
+  "progress.subtitle": "8개 핵심 단계와 선택 과정 전체의 챕터, 퀴즈 점수, 시험 및 수료증.",
   "progress.chaptersComplete": "완료한 챕터",
   "progress.ofCourse": "과정의 {pct}%",
   "progress.onePerPhase": "단계별 1개",
@@ -187,7 +202,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { other: "{count}일" },
   "progress.studied": "{time} 학습",
   "progress.byPhase": "단계별",
-  "progress.byPhaseSub": "단계 시험을 잠금 해제하려면 두 트랙을 모두 완료해야 합니다",
+  "progress.byPhaseSub": "단계 시험을 잠금 해제하려면 해당 단계의 모든 챕터를 완료하세요",
   "progress.col.phase": "단계",
   "progress.col.exam": "시험",
   "progress.col.certificate": "수료증",

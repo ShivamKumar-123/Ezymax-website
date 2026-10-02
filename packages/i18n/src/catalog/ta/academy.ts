@@ -31,8 +31,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "அடிப்படைப் பகுப்பாய்வு",
   "track.technical": "தொழில்நுட்பப் பகுப்பாய்வு",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "ஆப்ஷன் டிரேடிங்",
   "trackShort.fundamental": "அடிப்படை",
   "trackShort.technical": "தொழில்நுட்பம்",
+  "trackShort.options": "ஆப்ஷன்கள்",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "விருப்பப் பாடம்",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count} நிமி.",
@@ -40,11 +45,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h} மணி. {m} நிமி.",
 
   // Home
-  "home.subtitle": "உங்கள் முதல் பிப் முதல் தொழில்முறை டிரேடிங் வரை எட்டு கட்டங்கள் · அடிப்படை மற்றும் தொழில்நுட்பப் பகுப்பாய்வில் {count} அத்தியாயங்கள், வினாடி வினாக்கள், தேர்வுகள் மற்றும் சான்றிதழ்களுடன்.",
+  "home.subtitle": "உங்கள் முதல் பிப் முதல் தொழில்முறை டிரேடிங் வரை எட்டு முக்கியக் கட்டங்கள், கூடவே விருப்பப் பாடநெறிகள் · வினாடி வினாக்கள், தேர்வுகள் மற்றும் சான்றிதழ்களுடன் {count} அத்தியாயங்கள்.",
   "home.glossary": "சொற்களஞ்சியம்",
   "home.myProgress": "எனது முன்னேற்றம்",
   "home.pathTitle": "உங்கள் கற்றல் பாதை",
-  "home.pathText": "ஒவ்வொரு கட்டத்திலும் ஒரு அடிப்படை மற்றும் ஒரு தொழில்நுட்பப் பிரிவு, இறுதித் தேர்வு மற்றும் சான்றிதழ் உள்ளன.",
+  "home.pathText": "ஒவ்வொரு முக்கியக் கட்டத்திலும் ஒரு அடிப்படை மற்றும் ஒரு தொழில்நுட்பப் பிரிவு, இறுதித் தேர்வு மற்றும் சான்றிதழ் உள்ளன.",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "விருப்பப் பாடநெறிகள்",
+  "home.electivesText": "Kalks தயாரிப்புகள் பற்றிய பாடநெறிகள். எப்போது வேண்டுமானாலும் படிக்கலாம்: ஒவ்வொன்றுக்கும் தனி இறுதித் தேர்வும் சான்றிதழும் உண்டு.",
   "hero.allDone": "அனைத்து அத்தியாயங்களும் முடிந்தன",
   "hero.continue": "கற்றலைத் தொடர்க",
   "hero.upNext": "அடுத்தது",
@@ -71,6 +79,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "தொடங்கப்படவில்லை",
   "phaseCard.fundamental": "{count} அடிப்படை",
   "phaseCard.technical": "{count} தொழில்நுட்பம்",
+  "phaseCard.options": { one: "{count} ஆப்ஷன் அத்தியாயம்", other: "{count} ஆப்ஷன் அத்தியாயங்கள்" },
   "phaseCard.certificate": "சான்றிதழ் {date}",
   "phaseCard.finalExam": "இறுதித் தேர்வு · {count} கேள்விகள்",
   "glossaryTeaser.subtitle": "எளிய மொழியில் டிரேடிங் சொற்கள்",
@@ -96,6 +105,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "அத்தியாயங்கள்",
   "phase.chaptersText": "ஒவ்வொரு அத்தியாயமும் ஒரு சிறிய வினாடி வினாவுடன் முடிகிறது; அத்தியாயத்தை முடிக்க அதில் தேர்ச்சி பெறவும்.",
   "phase.bothTracks": "இரு பிரிவுகளும்",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "அனைத்துப் பிரிவுகளும்",
 
   // Final exam (phase page card and exam page)
   "exam.final": "இறுதித் தேர்வு",
@@ -105,6 +116,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "சிறந்த மதிப்பெண்",
   "exam.passedText": "இந்தத் தேர்வில் நீங்கள் தேர்ச்சி பெற்றுவிட்டீர்கள். பயிற்சிக்காக மீண்டும் எழுதலாம்; உங்கள் சான்றிதழ் செல்லுபடியாகவே இருக்கும்.",
   "exam.unlockedText": "கேள்விகள் இரு பிரிவுகளையும் உள்ளடக்கும். இந்தக் கட்டத்திற்கான சான்றிதழைப் பெற இதில் தேர்ச்சி பெறவும்.",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "கேள்விகள் இந்தக் கட்டத்தின் அனைத்து அத்தியாயங்களையும் உள்ளடக்கும். உங்கள் சான்றிதழைப் பெற இதில் தேர்ச்சி பெறவும்.",
   "exam.lockedText": {
     one: "இந்தக் கட்டத்தின் அனைத்து அத்தியாயங்களும் முடிந்ததும் திறக்கும்: இன்னும் {count} அத்தியாயம் உள்ளது.",
     other: "இந்தக் கட்டத்தின் அனைத்து அத்தியாயங்களும் முடிந்ததும் திறக்கும்: இன்னும் {count} அத்தியாயங்கள் உள்ளன.",
@@ -114,6 +127,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "பூட்டப்பட்டது",
   "exam.pageTitle": "கட்டம் {n} தேர்வு: {title}",
   "exam.intro": "இரு பிரிவுகளிலிருந்தும் {count} கேள்விகள் · தேர்ச்சி மதிப்பெண் {pass}% · நேர வரம்பு இல்லை, நிதானமாக எழுதுங்கள்.",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "அனைத்து அத்தியாயங்களிலிருந்தும் {count} கேள்விகள் · தேர்ச்சி மதிப்பெண் {pass}% · நேர வரம்பு இல்லை, நிதானமாக எழுதுங்கள்.",
   "exam.lockedTitle": "அனைத்து அத்தியாயங்களும் முடிந்ததும் தேர்வு திறக்கும்",
   "exam.lockedBody": "இந்தக் கட்டத்தில் {total} இல் {done} அத்தியாயங்களை முடித்துள்ளீர்கள். ஒவ்வொரு அத்தியாயத்தையும் முடிக்க அதன் வினாடி வினாவில் தேர்ச்சி பெறவும்.",
   "exam.backToChapters": "அத்தியாயங்களுக்குத் திரும்பு",
@@ -180,7 +195,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "தொடர்புடையவை:",
 
   // My progress page
-  "progress.subtitle": "எட்டு கட்டங்களிலும் அத்தியாயங்கள், வினாடி வினா மதிப்பெண்கள், தேர்வுகள் மற்றும் சான்றிதழ்கள்.",
+  "progress.subtitle": "எட்டு முக்கியக் கட்டங்கள் மற்றும் விருப்பப் பாடநெறிகளில் அத்தியாயங்கள், வினாடி வினா மதிப்பெண்கள், தேர்வுகள் மற்றும் சான்றிதழ்கள்.",
   "progress.chaptersComplete": "முடிந்த அத்தியாயங்கள்",
   "progress.ofCourse": "பாடநெறியில் {pct}%",
   "progress.onePerPhase": "ஒவ்வொரு கட்டத்திற்கும் ஒன்று",
@@ -188,7 +203,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { one: "{count} நாள்", other: "{count} நாட்கள்" },
   "progress.studied": "{time} படித்தது",
   "progress.byPhase": "கட்டவாரியாக",
-  "progress.byPhaseSub": "கட்டத் தேர்வைத் திறக்க இரு பிரிவுகளும் முடிந்திருக்க வேண்டும்",
+  "progress.byPhaseSub": "கட்டத் தேர்வைத் திறக்க அந்தக் கட்டத்தின் அனைத்து அத்தியாயங்களையும் முடிக்கவும்",
   "progress.col.phase": "கட்டம்",
   "progress.col.exam": "தேர்வு",
   "progress.col.certificate": "சான்றிதழ்",

@@ -32,8 +32,13 @@ const academy = {
   // Tracks
   "track.fundamental": "Fundamental analysis",
   "track.technical": "Technical analysis",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "Options trading",
   "trackShort.fundamental": "Fundamental",
   "trackShort.technical": "Technical",
+  "trackShort.options": "Options",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "Elective",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count} min",
@@ -41,11 +46,14 @@ const academy = {
   "duration.hoursMin": "{h}h {m}m",
 
   // Home
-  "home.subtitle": "Eight phases from your first pip to professional trading · {count} chapters across fundamental and technical analysis, with quizzes, exams and certificates.",
+  "home.subtitle": "Eight core phases from your first pip to professional trading, plus electives · {count} chapters with quizzes, exams and certificates.",
   "home.glossary": "Glossary",
   "home.myProgress": "My progress",
   "home.pathTitle": "Your learning path",
-  "home.pathText": "Each phase has a fundamental and a technical track, a final exam and a certificate.",
+  "home.pathText": "Each core phase has a fundamental and a technical track, a final exam and a certificate.",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "Electives",
+  "home.electivesText": "Courses on Kalks products. Take them at any time: each has its own final exam and certificate.",
   "hero.allDone": "All chapters complete",
   "hero.continue": "Continue learning",
   "hero.upNext": "Up next",
@@ -72,6 +80,7 @@ const academy = {
   "state.notStarted": "Not started",
   "phaseCard.fundamental": "{count} fundamental",
   "phaseCard.technical": "{count} technical",
+  "phaseCard.options": { one: "{count} options chapter", other: "{count} options chapters" },
   "phaseCard.certificate": "Certificate {date}",
   "phaseCard.finalExam": "Final exam · {count} questions",
   "glossaryTeaser.subtitle": "Trading terms in plain language",
@@ -97,6 +106,8 @@ const academy = {
   "phase.chaptersTitle": "Chapters",
   "phase.chaptersText": "Each chapter ends with a short quiz; pass it to complete the chapter.",
   "phase.bothTracks": "Both tracks",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "All tracks",
 
   // Final exam (phase page card and exam page)
   "exam.final": "Final exam",
@@ -106,6 +117,8 @@ const academy = {
   "exam.bestScore": "Best score",
   "exam.passedText": "You passed this exam. You can retake it to practise; your certificate stays valid.",
   "exam.unlockedText": "Questions cover both tracks. Pass it to earn your certificate for this phase.",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "Questions cover every chapter of this phase. Pass it to earn your certificate.",
   "exam.lockedText": {
     one: "Unlocks when every chapter of this phase is complete: {count} chapter to go.",
     other: "Unlocks when every chapter of this phase is complete: {count} chapters to go.",
@@ -115,6 +128,8 @@ const academy = {
   "exam.locked": "Locked",
   "exam.pageTitle": "Phase {n} exam: {title}",
   "exam.intro": "{count} questions across both tracks · pass mark {pass}% · take your time, there is no timer.",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "{count} questions across every chapter · pass mark {pass}% · take your time, there is no timer.",
   "exam.lockedTitle": "The exam unlocks when every chapter is complete",
   "exam.lockedBody": "You have completed {done} of {total} chapters in this phase. Pass each chapter quiz to complete it.",
   "exam.backToChapters": "Back to the chapters",
@@ -181,7 +196,7 @@ const academy = {
   "glossary.related": "Related:",
 
   // My progress page
-  "progress.subtitle": "Chapters, quiz scores, exams and certificates across all eight phases.",
+  "progress.subtitle": "Chapters, quiz scores, exams and certificates across the eight core phases and the electives.",
   "progress.chaptersComplete": "Chapters complete",
   "progress.ofCourse": "{pct}% of the course",
   "progress.onePerPhase": "One per phase",
@@ -189,7 +204,7 @@ const academy = {
   "progress.streakDays": { one: "{count} day", other: "{count} days" },
   "progress.studied": "{time} studied",
   "progress.byPhase": "By phase",
-  "progress.byPhaseSub": "Both tracks must be complete to unlock a phase exam",
+  "progress.byPhaseSub": "Complete every chapter of a phase to unlock its exam",
   "progress.col.phase": "Phase",
   "progress.col.exam": "Exam",
   "progress.col.certificate": "Certificate",

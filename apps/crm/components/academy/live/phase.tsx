@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, Award, BarChart3, Clock, Download, GraduationCap, Landmark, Lock, PlayCircle, ShieldCheck } from "lucide-react";
+import { ArrowRight, Award, Clock, Download, GraduationCap, Lock, PlayCircle, ShieldCheck } from "lucide-react";
 import { Button, Card, Chip, Progress, Reveal, Segmented, cn } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
-import { LEVEL_TONE, TRACK_LABEL, coverOf, fmtDay, fmtMin, levelLabel, pct, useAcademy, type Catalog, type PhaseT, type SectionT, type Track } from "./api";
-import { AcademyUnavailable, BackLink, PageSkeleton, RISK_NOTE, StatusDot } from "./shared";
+import { LEVEL_TONE, coverOf, fmtDay, fmtMin, isElective, levelLabel, pct, trackLabel, trackShort, tracksOf, useAcademy, type Catalog, type PhaseT, type SectionT, type TrackKey } from "./api";
+import { AcademyUnavailable, BackLink, PageSkeleton, RISK_NOTE, StatusDot, TrackIcon, trackBadge } from "./shared";
 
 function SectionCard({ s, phase }: { s: SectionT; phase: PhaseT }) {
   const t = useT();
@@ -15,11 +15,11 @@ function SectionCard({ s, phase }: { s: SectionT; phase: PhaseT }) {
   return (
     <Card className="h-full" data-testid={`section-${s.track}`}>
       <div className="flex items-start gap-3 px-6 pt-5">
-        <span className={cn("grid size-10 shrink-0 place-items-center rounded-full border", s.track === "fundamental" ? "border-info/25 bg-info-soft text-info" : "border-ember/30 bg-ember-soft text-ember")}>
-          {s.track === "fundamental" ? <Landmark className="size-4" /> : <BarChart3 className="size-4" />}
+        <span className={cn("grid size-10 shrink-0 place-items-center rounded-full border", trackBadge(s.track))}>
+          <TrackIcon track={s.track} className="size-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-medium uppercase tracking-wider text-fg-3">{t(TRACK_LABEL[s.track])}</div>
+          <div className="text-[11px] font-medium uppercase tracking-wider text-fg-3">{trackLabel(t, s.track)}</div>
           <h3 className="text-[17px] font-medium tracking-tight">{s.title}</h3>
           <p className="mt-0.5 text-[13px] text-fg-3">{s.summary}</p>
         </div>
@@ -68,6 +68,7 @@ function ExamCard({ p }: { p: PhaseT }) {
   const e = p.exam;
   if (!e) return null;
   const left = p.progress.total - p.progress.done;
+  const oneTrack = tracksOf(p.sections).length < 2;
   return (
     <Card className="flex h-full flex-col p-6" data-testid="exam-card">
       <div className="flex items-start justify-between gap-3">
@@ -97,7 +98,7 @@ function ExamCard({ p }: { p: PhaseT }) {
         {e.passed
           ? t("academy.exam.passedText")
           : e.unlocked
-            ? t("academy.exam.unlockedText")
+            ? t(oneTrack ? "academy.exam.unlockedTextOneTrack" : "academy.exam.unlockedText")
             : t("academy.exam.lockedText", { count: left })}
       </p>
       <div className="mt-auto pt-5">
@@ -165,7 +166,7 @@ function CertificateCard({ p }: { p: PhaseT }) {
 export function LivePhase({ slug }: { slug: string }) {
   const t = useT();
   const { data, error, reload } = useAcademy<Catalog>("catalog");
-  const [track, setTrack] = React.useState<"all" | Track>("all");
+  const [track, setTrack] = React.useState<"all" | TrackKey>("all");
   if (error) return <AcademyUnavailable error={error} onRetry={reload} />;
   if (!data) return <PageSkeleton />;
   const p = data.phases.find((x) => x.slug === slug);
@@ -173,7 +174,12 @@ export function LivePhase({ slug }: { slug: string }) {
   const next = p.sections.flatMap((s) => s.chapters).find((c) => !c.progress.completed);
   const prev = data.phases.find((x) => x.order === p.order - 1);
   const nextPhase = data.phases.find((x) => x.order === p.order + 1);
-  const sections = p.sections.filter((s) => track === "all" || s.track === track);
+  // the filter offers the tracks this phase actually has (an elective has one, so it shows no filter)
+  const tracks = tracksOf(p.sections);
+  const shown = track !== "all" && tracks.includes(track) ? track : "all";
+  const sections = p.sections.filter((s) => shown === "all" || s.track === shown);
+  const elective = isElective(p);
+  const coreCount = data.phases.filter((x) => !isElective(x)).length;
   return (
     <div className="pb-16">
       <BackLink href="/academy">{t("academy.title")}</BackLink>
@@ -185,8 +191,10 @@ export function LivePhase({ slug }: { slug: string }) {
           <div className="relative flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <div className="flex flex-wrap items-center gap-2">
-                <Chip tone="ember">{t("academy.phase.ofTotal", { n: p.order, total: data.phases.length })}</Chip>
+                {/* core phases count among themselves ("Phase 3 of 8"); an elective stands alone */}
+                <Chip tone="ember">{elective ? t("academy.phaseN", { n: p.order }) : t("academy.phase.ofTotal", { n: p.order, total: coreCount })}</Chip>
                 <Chip tone={LEVEL_TONE[p.level]}>{levelLabel(p.level)}</Chip>
+                {elective && <Chip>{t("academy.elective")}</Chip>}
                 {p.certificate && (
                   <Chip tone="up" dot>
                     {t("academy.state.certified")}
@@ -240,16 +248,14 @@ export function LivePhase({ slug }: { slug: string }) {
           <h2 className="text-[19px] font-medium tracking-tight">{t("academy.phase.chaptersTitle")}</h2>
           <p className="text-[13px] text-fg-3">{t("academy.phase.chaptersText")}</p>
         </div>
-        <Segmented
-          size="xs"
-          value={track}
-          onChange={setTrack}
-          options={[
-            { value: "all", label: t("academy.phase.bothTracks") },
-            { value: "fundamental", label: t("academy.trackShort.fundamental") },
-            { value: "technical", label: t("academy.trackShort.technical") },
-          ]}
-        />
+        {tracks.length > 1 && (
+          <Segmented<"all" | TrackKey>
+            size="xs"
+            value={shown}
+            onChange={setTrack}
+            options={[{ value: "all", label: t(tracks.length === 2 ? "academy.phase.bothTracks" : "academy.phase.allTracks") }, ...tracks.map((k) => ({ value: k, label: trackShort(t, k) }))]}
+          />
+        )}
       </div>
       <div className={cn("grid grid-cols-1 gap-4", sections.length > 1 && "xl:grid-cols-2")}>
         {sections.map((s, i) => (

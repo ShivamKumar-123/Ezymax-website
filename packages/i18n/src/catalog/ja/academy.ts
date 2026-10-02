@@ -31,8 +31,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "ファンダメンタル分析",
   "track.technical": "テクニカル分析",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "オプション取引",
   "trackShort.fundamental": "ファンダメンタル",
   "trackShort.technical": "テクニカル",
+  "trackShort.options": "オプション",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "選択科目",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count}分",
@@ -40,11 +45,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h}時間{m}分",
 
   // Home
-  "home.subtitle": "最初のpipからプロの取引まで8つのフェーズ · ファンダメンタル分析とテクニカル分析にわたる{count}章、クイズ、試験、修了証付き。",
+  "home.subtitle": "最初のpipからプロの取引までの8つのコアフェーズと選択科目 · クイズ、試験、修了証付きの{count}章。",
   "home.glossary": "用語集",
   "home.myProgress": "学習状況",
   "home.pathTitle": "あなたの学習パス",
-  "home.pathText": "各フェーズにはファンダメンタルとテクニカルのトラック、最終試験、修了証があります。",
+  "home.pathText": "各コアフェーズにはファンダメンタルとテクニカルのトラック、最終試験、修了証があります。",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "選択科目",
+  "home.electivesText": "Kalksの商品について学ぶコースです。いつでも受講でき、それぞれに最終試験と修了証があります。",
   "hero.allDone": "全章修了",
   "hero.continue": "学習を続ける",
   "hero.upNext": "次の章",
@@ -71,6 +79,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "未開始",
   "phaseCard.fundamental": "ファンダメンタル {count}",
   "phaseCard.technical": "テクニカル {count}",
+  "phaseCard.options": { other: "オプション {count}章" },
   "phaseCard.certificate": "修了証 {date}",
   "phaseCard.finalExam": "最終試験 · {count}問",
   "glossaryTeaser.subtitle": "取引用語をわかりやすく解説",
@@ -96,6 +105,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "章",
   "phase.chaptersText": "各章の最後に短いクイズがあります。合格すると章が修了します。",
   "phase.bothTracks": "両トラック",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "すべてのトラック",
 
   // Final exam (phase page card and exam page)
   "exam.final": "最終試験",
@@ -105,6 +116,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "最高スコア",
   "exam.passedText": "この試験に合格しました。練習のために再受験できます。修了証は引き続き有効です。",
   "exam.unlockedText": "問題は両トラックから出題されます。合格するとこのフェーズの修了証を取得できます。",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "問題はこのフェーズの全章から出題されます。合格すると修了証を取得できます。",
   "exam.lockedText": {
     other: "このフェーズの全章を修了すると解除されます：残り{count}章。",
   },
@@ -113,6 +126,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "ロック中",
   "exam.pageTitle": "フェーズ {n} の試験：{title}",
   "exam.intro": "両トラックから{count}問 · 合格ライン {pass}% · 制限時間はありません。落ち着いて取り組んでください。",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "全章から{count}問 · 合格ライン {pass}% · 制限時間はありません。落ち着いて取り組んでください。",
   "exam.lockedTitle": "全章を修了すると試験が解除されます",
   "exam.lockedBody": "このフェーズの{total}章のうち{done}章を修了しています。各章のクイズに合格すると章が修了します。",
   "exam.backToChapters": "章に戻る",
@@ -179,7 +194,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "関連：",
 
   // My progress page
-  "progress.subtitle": "全8フェーズの章、クイズのスコア、試験、修了証。",
+  "progress.subtitle": "8つのコアフェーズと選択科目の章、クイズのスコア、試験、修了証。",
   "progress.chaptersComplete": "修了した章",
   "progress.ofCourse": "コースの{pct}%",
   "progress.onePerPhase": "フェーズごとに1枚",
@@ -187,7 +202,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { other: "{count}日" },
   "progress.studied": "学習時間 {time}",
   "progress.byPhase": "フェーズ別",
-  "progress.byPhaseSub": "フェーズ試験を解除するには両トラックの修了が必要です",
+  "progress.byPhaseSub": "フェーズ試験を解除するには、そのフェーズの全章を修了してください",
   "progress.col.phase": "フェーズ",
   "progress.col.exam": "試験",
   "progress.col.certificate": "修了証",

@@ -31,8 +31,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Temel analiz",
   "track.technical": "Teknik analiz",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "Opsiyon işlemleri",
   "trackShort.fundamental": "Temel",
   "trackShort.technical": "Teknik",
+  "trackShort.options": "Opsiyonlar",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "Seçmeli",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count} dk",
@@ -40,11 +45,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h} sa {m} dk",
 
   // Home
-  "home.subtitle": "İlk pip'inizden profesyonel işlemciliğe sekiz aşama · temel ve teknik analizde {count} bölüm; testler, sınavlar ve sertifikalarla.",
+  "home.subtitle": "İlk pip'inizden profesyonel işlemciliğe sekiz ana aşama ve seçmeli kurslar · testler, sınavlar ve sertifikalarla {count} bölüm.",
   "home.glossary": "Sözlük",
   "home.myProgress": "İlerlemem",
   "home.pathTitle": "Öğrenme yolunuz",
-  "home.pathText": "Her aşamada bir temel ve bir teknik bölüm, bir final sınavı ve bir sertifika bulunur.",
+  "home.pathText": "Her ana aşamada bir temel ve bir teknik bölüm, bir final sınavı ve bir sertifika bulunur.",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "Seçmeli kurslar",
+  "home.electivesText": "Kalks ürünleriyle ilgili kurslar. İstediğiniz zaman alın: her birinin kendi final sınavı ve sertifikası vardır.",
   "hero.allDone": "Tüm bölümler tamamlandı",
   "hero.continue": "Öğrenmeye devam edin",
   "hero.upNext": "Sıradaki",
@@ -71,6 +79,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "Başlanmadı",
   "phaseCard.fundamental": "{count} temel",
   "phaseCard.technical": "{count} teknik",
+  "phaseCard.options": { one: "{count} opsiyon bölümü", other: "{count} opsiyon bölümü" },
   "phaseCard.certificate": "Sertifika {date}",
   "phaseCard.finalExam": "Final sınavı · {count} soru",
   "glossaryTeaser.subtitle": "İşlem terimleri, sade bir dille",
@@ -96,6 +105,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "Bölümler",
   "phase.chaptersText": "Her bölüm kısa bir testle biter; bölümü tamamlamak için testi geçin.",
   "phase.bothTracks": "Her iki alan",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "Tüm alanlar",
 
   // Final exam (phase page card and exam page)
   "exam.final": "Final sınavı",
@@ -105,6 +116,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "En iyi puan",
   "exam.passedText": "Bu sınavı geçtiniz. Pratik için tekrar girebilirsiniz; sertifikanız geçerliliğini korur.",
   "exam.unlockedText": "Sorular her iki alanı kapsar. Bu aşamanın sertifikasını kazanmak için sınavı geçin.",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "Sorular bu aşamanın tüm bölümlerini kapsar. Sertifikanızı kazanmak için sınavı geçin.",
   "exam.lockedText": {
     one: "Bu aşamanın tüm bölümleri tamamlandığında açılır: {count} bölüm kaldı.",
     other: "Bu aşamanın tüm bölümleri tamamlandığında açılır: {count} bölüm kaldı.",
@@ -114,6 +127,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "Kilitli",
   "exam.pageTitle": "Aşama {n} sınavı: {title}",
   "exam.intro": "Her iki alandan {count} soru · geçme notu %{pass} · acele etmeyin, süre sınırı yok.",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "Tüm bölümlerden {count} soru · geçme notu %{pass} · acele etmeyin, süre sınırı yok.",
   "exam.lockedTitle": "Sınav, tüm bölümler tamamlandığında açılır",
   "exam.lockedBody": "Bu aşamadaki {total} bölümden {done} tanesini tamamladınız. Her bölümü tamamlamak için bölüm testini geçin.",
   "exam.backToChapters": "Bölümlere dön",
@@ -180,7 +195,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "İlgili:",
 
   // My progress page
-  "progress.subtitle": "Sekiz aşamanın tamamında bölümler, test puanları, sınavlar ve sertifikalar.",
+  "progress.subtitle": "Sekiz ana aşamanın ve seçmeli kursların tamamında bölümler, test puanları, sınavlar ve sertifikalar.",
   "progress.chaptersComplete": "Tamamlanan bölümler",
   "progress.ofCourse": "Kursun %{pct} kadarı",
   "progress.onePerPhase": "Aşama başına bir tane",
@@ -188,7 +203,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { one: "{count} gün", other: "{count} gün" },
   "progress.studied": "{time} çalışıldı",
   "progress.byPhase": "Aşamaya göre",
-  "progress.byPhaseSub": "Aşama sınavının açılması için her iki alan da tamamlanmalıdır",
+  "progress.byPhaseSub": "Aşama sınavını açmak için aşamanın tüm bölümlerini tamamlayın",
   "progress.col.phase": "Aşama",
   "progress.col.exam": "Sınav",
   "progress.col.certificate": "Sertifika",

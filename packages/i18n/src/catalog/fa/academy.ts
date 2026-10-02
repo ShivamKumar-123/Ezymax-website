@@ -31,8 +31,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "تحلیل بنیادی",
   "track.technical": "تحلیل تکنیکال",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "معاملات اختیار معامله",
   "trackShort.fundamental": "بنیادی",
   "trackShort.technical": "تکنیکال",
+  "trackShort.options": "اختیار معامله",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "اختیاری",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count} دقیقه",
@@ -40,11 +45,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h} ساعت {m} دقیقه",
 
   // Home
-  "home.subtitle": "هشت مرحله از اولین پیپ تا معامله‌گری حرفه‌ای · {count} فصل در تحلیل بنیادی و تکنیکال، همراه با آزمونک، آزمون و گواهینامه.",
+  "home.subtitle": "هشت مرحله اصلی از اولین پیپ تا معامله‌گری حرفه‌ای، به‌علاوه دوره‌های اختیاری · {count} فصل همراه با آزمونک، آزمون و گواهینامه.",
   "home.glossary": "واژه‌نامه",
   "home.myProgress": "پیشرفت من",
   "home.pathTitle": "مسیر یادگیری شما",
-  "home.pathText": "هر مرحله یک مسیر بنیادی و یک مسیر تکنیکال، یک آزمون نهایی و یک گواهینامه دارد.",
+  "home.pathText": "هر مرحله اصلی یک مسیر بنیادی و یک مسیر تکنیکال، یک آزمون نهایی و یک گواهینامه دارد.",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "دوره‌های اختیاری",
+  "home.electivesText": "دوره‌هایی درباره محصولات Kalks. هر زمان که بخواهید می‌توانید آن‌ها را بگذرانید: هر کدام آزمون نهایی و گواهینامه خود را دارد.",
   "hero.allDone": "همه فصل‌ها تکمیل شد",
   "hero.continue": "ادامه یادگیری",
   "hero.upNext": "بعدی",
@@ -71,6 +79,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "شروع نشده",
   "phaseCard.fundamental": "{count} بنیادی",
   "phaseCard.technical": "{count} تکنیکال",
+  "phaseCard.options": { one: "{count} فصل اختیار معامله", other: "{count} فصل اختیار معامله" },
   "phaseCard.certificate": "گواهینامه {date}",
   "phaseCard.finalExam": "آزمون نهایی · {count} سؤال",
   "glossaryTeaser.subtitle": "اصطلاحات معاملاتی به زبان ساده",
@@ -96,6 +105,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "فصل‌ها",
   "phase.chaptersText": "هر فصل با یک آزمونک کوتاه به پایان می‌رسد؛ برای تکمیل فصل در آن قبول شوید.",
   "phase.bothTracks": "هر دو مسیر",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "همه مسیرها",
 
   // Final exam (phase page card and exam page)
   "exam.final": "آزمون نهایی",
@@ -105,6 +116,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "بهترین نمره",
   "exam.passedText": "در این آزمون قبول شده‌اید. می‌توانید برای تمرین دوباره در آن شرکت کنید؛ گواهینامه شما معتبر باقی می‌ماند.",
   "exam.unlockedText": "سؤالات هر دو مسیر را پوشش می‌دهند. با قبولی، گواهینامه این مرحله را دریافت می‌کنید.",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "سؤالات همه فصل‌های این مرحله را پوشش می‌دهند. با قبولی، گواهینامه خود را دریافت می‌کنید.",
   "exam.lockedText": {
     one: "پس از تکمیل همه فصل‌های این مرحله باز می‌شود: {count} فصل باقی مانده.",
     other: "پس از تکمیل همه فصل‌های این مرحله باز می‌شود: {count} فصل باقی مانده.",
@@ -114,6 +127,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "قفل",
   "exam.pageTitle": "آزمون مرحله {n}: {title}",
   "exam.intro": "{count} سؤال از هر دو مسیر · حد نصاب قبولی {pass}% · عجله نکنید، محدودیت زمانی وجود ندارد.",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "{count} سؤال از همه فصل‌ها · حد نصاب قبولی {pass}% · عجله نکنید، محدودیت زمانی وجود ندارد.",
   "exam.lockedTitle": "آزمون پس از تکمیل همه فصل‌ها باز می‌شود",
   "exam.lockedBody": "{done} از {total} فصل این مرحله را تکمیل کرده‌اید. برای تکمیل هر فصل در آزمونک آن قبول شوید.",
   "exam.backToChapters": "بازگشت به فصل‌ها",
@@ -180,7 +195,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "مرتبط:",
 
   // My progress page
-  "progress.subtitle": "فصل‌ها، نمرات آزمونک، آزمون‌ها و گواهینامه‌ها در هر هشت مرحله.",
+  "progress.subtitle": "فصل‌ها، نمرات آزمونک، آزمون‌ها و گواهینامه‌ها در هشت مرحله اصلی و دوره‌های اختیاری.",
   "progress.chaptersComplete": "فصل‌های تکمیل‌شده",
   "progress.ofCourse": "{pct}% از دوره",
   "progress.onePerPhase": "یکی برای هر مرحله",
@@ -188,7 +203,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { one: "{count} روز", other: "{count} روز" },
   "progress.studied": "{time} مطالعه",
   "progress.byPhase": "به تفکیک مرحله",
-  "progress.byPhaseSub": "برای باز شدن آزمون یک مرحله، هر دو مسیر باید تکمیل شوند",
+  "progress.byPhaseSub": "برای باز شدن آزمون یک مرحله، همه فصل‌های آن را تکمیل کنید",
   "progress.col.phase": "مرحله",
   "progress.col.exam": "آزمون",
   "progress.col.certificate": "گواهینامه",

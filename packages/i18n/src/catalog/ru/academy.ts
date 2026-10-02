@@ -30,8 +30,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Фундаментальный анализ",
   "track.technical": "Технический анализ",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "Торговля опционами",
   "trackShort.fundamental": "Фундаментальный",
   "trackShort.technical": "Технический",
+  "trackShort.options": "Опционы",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "Факультатив",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "{count} мин",
@@ -39,11 +44,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "{h} ч {m} мин",
 
   // Home
-  "home.subtitle": "Восемь этапов — от первого пункта до профессиональной торговли · {count} глав по фундаментальному и техническому анализу с тестами, экзаменами и сертификатами.",
+  "home.subtitle": "Восемь основных этапов — от первого пункта до профессиональной торговли, а также факультативы · {count} глав с тестами, экзаменами и сертификатами.",
   "home.glossary": "Глоссарий",
   "home.myProgress": "Мой прогресс",
   "home.pathTitle": "Ваш путь обучения",
-  "home.pathText": "На каждом этапе есть фундаментальный и технический курс, итоговый экзамен и сертификат.",
+  "home.pathText": "На каждом основном этапе есть фундаментальный и технический курс, итоговый экзамен и сертификат.",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "Факультативы",
+  "home.electivesText": "Курсы о продуктах Kalks. Проходите их в любое время: у каждого свой итоговый экзамен и сертификат.",
   "hero.allDone": "Все главы пройдены",
   "hero.continue": "Продолжить обучение",
   "hero.upNext": "Далее",
@@ -79,6 +87,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "Не начат",
   "phaseCard.fundamental": "Фундаментальный: {count}",
   "phaseCard.technical": "Технический: {count}",
+  "phaseCard.options": "Опционы: {count}",
   "phaseCard.certificate": "Сертификат {date}",
   "phaseCard.finalExam": "Итоговый экзамен · вопросов: {count}",
   "glossaryTeaser.subtitle": "Торговые термины простым языком",
@@ -109,6 +118,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "Главы",
   "phase.chaptersText": "Каждая глава заканчивается коротким тестом; сдайте его, чтобы завершить главу.",
   "phase.bothTracks": "Оба курса",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "Все курсы",
 
   // Final exam (phase page card and exam page)
   "exam.final": "Итоговый экзамен",
@@ -118,6 +129,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "Лучший результат",
   "exam.passedText": "Вы сдали этот экзамен. Его можно пересдать для практики — Ваш сертификат останется действительным.",
   "exam.unlockedText": "Вопросы охватывают оба курса. Сдайте экзамен, чтобы получить сертификат этого этапа.",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "Вопросы охватывают все главы этого этапа. Сдайте экзамен, чтобы получить сертификат.",
   "exam.lockedText": {
     one: "Откроется, когда будут пройдены все главы этапа: осталась {count} глава.",
     few: "Откроется, когда будут пройдены все главы этапа: осталось {count} главы.",
@@ -129,6 +142,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "Закрыт",
   "exam.pageTitle": "Экзамен этапа {n}: {title}",
   "exam.intro": "Вопросов по обоим курсам: {count} · проходной балл {pass}% · не торопитесь, ограничения по времени нет.",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "Вопросов по всем главам: {count} · проходной балл {pass}% · не торопитесь, ограничения по времени нет.",
   "exam.lockedTitle": "Экзамен откроется, когда будут пройдены все главы",
   "exam.lockedBody": "Вы прошли {done} из {total} глав этого этапа. Сдайте тест каждой главы, чтобы завершить её.",
   "exam.backToChapters": "Вернуться к главам",
@@ -200,7 +215,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "См. также:",
 
   // My progress page
-  "progress.subtitle": "Главы, результаты тестов, экзамены и сертификаты по всем восьми этапам.",
+  "progress.subtitle": "Главы, результаты тестов, экзамены и сертификаты по восьми основным этапам и факультативам.",
   "progress.chaptersComplete": "Пройдено глав",
   "progress.ofCourse": "{pct}% курса",
   "progress.onePerPhase": "По одному за этап",
@@ -213,7 +228,7 @@ const academy: NsMessages<"academy"> = {
   },
   "progress.studied": "Время обучения: {time}",
   "progress.byPhase": "По этапам",
-  "progress.byPhaseSub": "Чтобы открыть экзамен этапа, нужно пройти оба курса",
+  "progress.byPhaseSub": "Чтобы открыть экзамен этапа, пройдите все его главы",
   "progress.col.phase": "Этап",
   "progress.col.exam": "Экзамен",
   "progress.col.certificate": "Сертификат",

@@ -18,12 +18,23 @@ import { clientAccount, csrf, engine, error, readSessions, reply, sessionFor, so
 //   POST   stream-ticket                    {ticket, expiresIn, url}: one-time WebSocket ticket (30 s)
 //   POST   demo-refill                      demo accounts: top the balance back up (Client Area API, owner resolved here)
 //   GET    mam?symbol&volume                MAM role of the account + allocation summary (manager) / managing programme (client)
+//
+// Kalks FX Options (same account, same session; investor sessions are read-only):
+//   POST   options/preview                  {legs:[{series, side, contracts}], type, limitPremium?} -> margin / P&L preview
+//   POST   options/orders                   {legs, type, limitPremium?, sl?, tp?, trigger?:{symbol, op, price}, tif?, clientOrderId}
+//   POST   options/combos/{comboId}/close   close every leg of a strategy at once (all-or-nothing)
+//   GET    options/settlements?limit        expiry settlements (fixing, payout, run)
+//   (closing one option position, also partially: positions/{ticket}/close {volume})
 
 type Ctx = { params: Promise<{ path: string[] }> };
 
 const TICKET_RE = /^\d{1,12}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:\d{2})?)?$/;
 const SYMBOL_RE = /^[A-Z0-9._]{2,20}$/;
+/** Option series code, e.g. EURUSD-20261009-1.1650-C (barrier series may carry a suffix). */
+const SERIES_RE = /^[A-Z0-9]{3,12}-\d{8}-[0-9.]{1,16}-[CP](-[A-Z0-9._]{1,24})?$/;
+const COMBO_RE = /^[A-Za-z0-9_-]{1,64}$/;
+const MAX_LEGS = 8;
 
 /** Dealing details never reach the browser (book, routing, ledger ids, dealer controls). */
 const HIDDEN = new Set(["book", "route", "userId", "ledgerTxn", "parentTicket", "childTickets", "priceCorrected", "version", "tenantId"]);
@@ -77,6 +88,49 @@ function orderBody(b: Obj): Obj | NextResponse {
   o.platform = "Web";
   if (typeof o.comment === "string") o.comment = o.comment.slice(0, 31);
   return o;
+}
+
+/** Option legs + order type of a preview / order (the engine re-checks everything; this keeps junk out). */
+function optionBody(b: Obj, order: boolean): Obj | NextResponse {
+  if (!Array.isArray(b.legs) || b.legs.length < 1 || b.legs.length > MAX_LEGS) return error(422, "validation", `Give 1 to ${MAX_LEGS} legs.`);
+  const legs: Obj[] = [];
+  for (const raw of b.legs as unknown[]) {
+    const l = (raw ?? {}) as Obj;
+    const contracts = num(l.contracts);
+    if (typeof l.series !== "string" || !SERIES_RE.test(l.series)) return error(422, "validation", "Invalid series.");
+    if (l.side !== "buy" && l.side !== "sell") return error(422, "validation", "Invalid side.");
+    if (contracts === undefined || contracts <= 0 || contracts > 100_000) return error(422, "validation", "Invalid contracts.");
+    legs.push({ series: l.series, side: l.side, contracts });
+  }
+  if (new Set(legs.map((l) => l.series)).size !== legs.length) return error(422, "validation", "Each series may appear once.");
+  const type = b.type === "limit" ? "limit" : b.type === "market" || b.type === undefined ? "market" : null;
+  if (!type) return error(422, "validation", "Invalid order type.");
+  const out: Obj = { legs, type };
+  if (type === "limit") {
+    const lp = num(b.limitPremium);
+    if (lp === undefined || lp < 0) return error(422, "validation", "Invalid limit premium.");
+    out.limitPremium = lp;
+  }
+  if (!order) return out;
+  for (const k of ["sl", "tp"] as const) {
+    if (b[k] === undefined || b[k] === null) continue;
+    const v = num(b[k]);
+    if (v === undefined || v < 0) return error(422, "validation", `Invalid ${k}.`);
+    out[k] = v;
+  }
+  if (b.trigger !== undefined && b.trigger !== null) {
+    const t = b.trigger as Obj;
+    const price = num(t.price);
+    if (typeof t.symbol !== "string" || !SYMBOL_RE.test(t.symbol) || (t.op !== "above" && t.op !== "below") || price === undefined || price <= 0) return error(422, "validation", "Invalid trigger.");
+    out.trigger = { symbol: t.symbol, op: t.op, price };
+  }
+  if (b.tif !== undefined) {
+    if (b.tif !== "gtc" && b.tif !== "day") return error(422, "validation", "Invalid time in force.");
+    out.tif = b.tif;
+  }
+  if (typeof b.clientOrderId !== "string" || !/^[A-Za-z0-9_-]{8,64}$/.test(b.clientOrderId)) return error(422, "validation", "Invalid clientOrderId.");
+  out.clientOrderId = b.clientOrderId;
+  return out;
 }
 
 function pageQuery(req: NextRequest): string | NextResponse {
@@ -197,6 +251,29 @@ async function handle(req: NextRequest, { params }: Ctx, method: "GET" | "POST" 
     const acc = (st.data.account ?? {}) as Obj;
     const r = await engine<Obj>(`/v1/accounts/${s.l}/demo-refill`, { method: "POST", req, headers: { "x-kalks-user-id": String(acc.userId ?? "") } });
     return reply(r.status, scrub(r.data));
+  }
+  // ---- Kalks FX Options
+  if (a === "options") {
+    if (method === "POST" && b === "preview" && path.length === 2) {
+      const o = optionBody(body, false);
+      if (o instanceof Response) return o;
+      return done(await forward(req, s, "/v1/terminal/options/preview", { method: "POST", body: o }));
+    }
+    if (method === "POST" && b === "orders" && path.length === 2) {
+      if (s.r) return error(403, "read_only", "Trading is disabled with the investor password.");
+      const o = optionBody(body, true);
+      if (o instanceof Response) return o;
+      return done(await forward(req, s, "/v1/terminal/options/orders", { method: "POST", body: o }));
+    }
+    if (method === "POST" && b === "combos" && path.length === 4 && COMBO_RE.test(c ?? "") && path[3] === "close") {
+      if (s.r) return error(403, "read_only", "Trading is disabled with the investor password.");
+      return done(await forward(req, s, `/v1/terminal/options/combos/${encodeURIComponent(c!)}/close`, { method: "POST" }));
+    }
+    if (method === "GET" && b === "settlements" && path.length === 2) {
+      const n = Number(req.nextUrl.searchParams.get("limit") ?? 100);
+      const limit = Number.isInteger(n) && n >= 1 && n <= 500 ? n : 100;
+      return done(await forward(req, s, `/v1/terminal/options/settlements?limit=${limit}`));
+    }
   }
   return error(404, "not_found", "Not found.");
 }

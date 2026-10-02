@@ -31,8 +31,13 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Uchambuzi wa kimsingi",
   "track.technical": "Uchambuzi wa kiufundi",
+  // Product track of the Kalks FX Options elective (phase 9)
+  "track.options": "Biashara ya options",
   "trackShort.fundamental": "Kimsingi",
   "trackShort.technical": "Kiufundi",
+  "trackShort.options": "Options",
+  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  elective: "Hiari",
 
   // Durations (h = hours, m = minutes)
   "duration.min": "dak {count}",
@@ -40,11 +45,14 @@ const academy: NsMessages<"academy"> = {
   "duration.hoursMin": "saa {h} dak {m}",
 
   // Home
-  "home.subtitle": "Awamu nane kutoka pip yako ya kwanza hadi biashara ya kitaalamu · sura {count} za uchambuzi wa kimsingi na wa kiufundi, pamoja na maswali, mitihani na vyeti.",
+  "home.subtitle": "Awamu nane kuu kutoka pip yako ya kwanza hadi biashara ya kitaalamu, pamoja na kozi za hiari · sura {count} pamoja na maswali, mitihani na vyeti.",
   "home.glossary": "Kamusi",
   "home.myProgress": "Maendeleo yangu",
   "home.pathTitle": "Njia yako ya kujifunza",
-  "home.pathText": "Kila awamu ina mkondo wa kimsingi na wa kiufundi, mtihani wa mwisho na cheti.",
+  "home.pathText": "Kila awamu kuu ina mkondo wa kimsingi na wa kiufundi, mtihani wa mwisho na cheti.",
+  // Section under the learning path listing the electives
+  "home.electivesTitle": "Kozi za hiari",
+  "home.electivesText": "Kozi kuhusu bidhaa za Kalks. Zisome wakati wowote: kila moja ina mtihani wake wa mwisho na cheti.",
   "hero.allDone": "Sura zote zimekamilika",
   "hero.continue": "Endelea kujifunza",
   "hero.upNext": "Inayofuata",
@@ -71,6 +79,7 @@ const academy: NsMessages<"academy"> = {
   "state.notStarted": "Haijaanza",
   "phaseCard.fundamental": "{count} za kimsingi",
   "phaseCard.technical": "{count} za kiufundi",
+  "phaseCard.options": { one: "Sura {count} ya options", other: "Sura {count} za options" },
   "phaseCard.certificate": "Cheti {date}",
   "phaseCard.finalExam": "Mtihani wa mwisho · maswali {count}",
   "glossaryTeaser.subtitle": "Istilahi za biashara kwa lugha rahisi",
@@ -96,6 +105,8 @@ const academy: NsMessages<"academy"> = {
   "phase.chaptersTitle": "Sura",
   "phase.chaptersText": "Kila sura inaishia na maswali mafupi; yafaulu ili ukamilishe sura.",
   "phase.bothTracks": "Mikondo yote miwili",
+  // Track filter of a phase with three or more tracks
+  "phase.allTracks": "Mikondo yote",
 
   // Final exam (phase page card and exam page)
   "exam.final": "Mtihani wa mwisho",
@@ -105,6 +116,8 @@ const academy: NsMessages<"academy"> = {
   "exam.bestScore": "Alama bora",
   "exam.passedText": "Umefaulu mtihani huu. Unaweza kuurudia kwa mazoezi; cheti chako kinabaki halali.",
   "exam.unlockedText": "Maswali yanahusu mikondo yote miwili. Faulu ili upate cheti chako cha awamu hii.",
+  // Same, for a phase with a single track (an elective)
+  "exam.unlockedTextOneTrack": "Maswali yanahusu sura zote za awamu hii. Faulu ili upate cheti chako.",
   "exam.lockedText": {
     one: "Hufunguka kila sura ya awamu hii ikikamilika: imebaki sura {count}.",
     other: "Hufunguka kila sura ya awamu hii ikikamilika: zimebaki sura {count}.",
@@ -114,6 +127,8 @@ const academy: NsMessages<"academy"> = {
   "exam.locked": "Imefungwa",
   "exam.pageTitle": "Mtihani wa Awamu {n}: {title}",
   "exam.intro": "Maswali {count} ya mikondo yote miwili · alama ya kufaulu {pass}% · chukua muda wako, hakuna kipima muda.",
+  // Same, for a phase with a single track (an elective)
+  "exam.introOneTrack": "Maswali {count} kutoka sura zote · alama ya kufaulu {pass}% · chukua muda wako, hakuna kipima muda.",
   "exam.lockedTitle": "Mtihani hufunguka kila sura ikikamilika",
   "exam.lockedBody": "Umekamilisha sura {done} kati ya {total} katika awamu hii. Faulu maswali ya kila sura ili uikamilishe.",
   "exam.backToChapters": "Rudi kwenye sura",
@@ -180,7 +195,7 @@ const academy: NsMessages<"academy"> = {
   "glossary.related": "Zinazohusiana:",
 
   // My progress page
-  "progress.subtitle": "Sura, alama za maswali, mitihani na vyeti katika awamu zote nane.",
+  "progress.subtitle": "Sura, alama za maswali, mitihani na vyeti katika awamu nane kuu na kozi za hiari.",
   "progress.chaptersComplete": "Sura zilizokamilika",
   "progress.ofCourse": "{pct}% ya kozi",
   "progress.onePerPhase": "Kimoja kwa kila awamu",
@@ -188,7 +203,7 @@ const academy: NsMessages<"academy"> = {
   "progress.streakDays": { one: "Siku {count}", other: "Siku {count}" },
   "progress.studied": "{time} za kusoma",
   "progress.byPhase": "Kwa awamu",
-  "progress.byPhaseSub": "Mikondo yote miwili lazima ikamilike ili kufungua mtihani wa awamu",
+  "progress.byPhaseSub": "Kamilisha sura zote za awamu ili kufungua mtihani wake",
   "progress.col.phase": "Awamu",
   "progress.col.exam": "Mtihani",
   "progress.col.certificate": "Cheti",

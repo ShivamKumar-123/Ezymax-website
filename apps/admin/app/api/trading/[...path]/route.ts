@@ -3,6 +3,7 @@ import { clientIp, gateway } from "@/lib/gateway";
 import { apiError, mutationAllowed, requireStaff } from "@/lib/bff";
 import { TRADING_STREAM_URL, engine, tradingConfigured } from "@/lib/trading";
 import { tradingAllows, type TradingPerm } from "@/lib/trading-perms";
+import { optionsAllows, type OptionsPerm } from "@/lib/options-perms";
 
 // Trading BFF: browser -> /api/trading/<path> (same origin, staff cookie) -> trading engine.
 // The staff session is verified with the gateway on every call; the permission for the route is checked here
@@ -57,6 +58,15 @@ const ROUTES: Route[] = [
   { method: "GET", re: /^admin\/ledger\/accounts$/, perm: "finance.adjust" },
 ];
 
+/** FX Options on the engine (the option book, settlement re-runs, voids); checked with lib/options-perms.ts. The
+ *  options reference data (series, surfaces, controls, fixings) lives in the options service: /api/options. */
+const OPTION_ROUTES: { method: Method; re: RegExp; perm: OptionsPerm }[] = [
+  { method: "GET", re: /^admin\/options\/book$/, perm: "options.read" },
+  // {expiry}: the expiry key SYMBOL:YYYY-MM-DD
+  { method: "POST", re: /^admin\/options\/settlements\/[A-Za-z0-9:._-]{1,64}\/rerun$/, perm: "options.settle" },
+  { method: "POST", re: new RegExp(`^admin/options/trades/${T}/void$`), perm: "options.dealing" },
+];
+
 const json = (data: unknown, status = 200) => NextResponse.json(data, { status, headers: { "cache-control": "no-store" } });
 
 async function handle(req: NextRequest, parts: string[], method: Method) {
@@ -69,6 +79,9 @@ async function handle(req: NextRequest, parts: string[], method: Method) {
   if (method === "GET" && path === "clients") return clientNames(req);
   const hist = method === "GET" ? path.match(new RegExp(`^accounts/${T}/(history|ledger)$`)) : null;
   if (hist) return accountStatement(req, hist[1]!, hist[2]!);
+
+  const optRoute = OPTION_ROUTES.find((r) => r.method === method && r.re.test(path));
+  if (optRoute) return optionsRoute(req, path, method, optRoute.perm);
 
   const route = ROUTES.find((r) => r.method === method && r.re.test(path));
   if (!route) return apiError(404, "not_found", "Not found.");
@@ -91,6 +104,32 @@ async function handle(req: NextRequest, parts: string[], method: Method) {
 
   const target = route.to ? route.to(path.match(route.re)!) : `/v1/${path}${method === "GET" ? req.nextUrl.search : ""}`;
   const r = await engine(target, { method, body, staff: who.staff, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });
+  return json(r.data, r.status);
+}
+
+/** Option routes on the engine. Writes carry a reason (`reason`, or `reasonCode` + `note` for a void). */
+async function optionsRoute(req: NextRequest, path: string, method: Method, perm: OptionsPerm) {
+  let body: unknown;
+  if (method !== "GET") {
+    const blocked = mutationAllowed(req);
+    if (blocked) return blocked;
+    body = await req.json().catch(() => null);
+    if (body === null || typeof body !== "object" || Array.isArray(body)) return apiError(400, "bad_request", "Invalid request body.");
+    const b = body as { reason?: unknown; reasonCode?: unknown };
+    const reason = typeof b.reason === "string" ? b.reason.trim() : typeof b.reasonCode === "string" ? b.reasonCode.trim() : "";
+    if (reason.length < 3) return apiError(422, "validation", "Add a reason for the audit log.");
+  }
+  const who = await requireStaff(req);
+  if (who instanceof NextResponse) return who;
+  if (!optionsAllows(who.staff, perm)) return apiError(403, "forbidden", "Your role doesn't allow this.");
+  // the book takes ?kind=live|demo|all (live by default)
+  const kind = method === "GET" ? req.nextUrl.searchParams.get("kind") : null;
+  const qs = kind && /^(live|demo|all)$/.test(kind) ? `?kind=${kind}` : "";
+  const r = await engine(`/v1/${path}${qs}`, { method, body, staff: who.staff, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });
+  // an engine without the option routes answers its generic 404 (or an empty one): say so instead of "Not found"
+  const err = (r.data as { error?: { code?: string; message?: string } } | null)?.error;
+  if (r.status === 404 && (!err || (err.code === "not_found" && err.message === "Not found.")))
+    return apiError(404, "engine_pending", "Available after the engine update.");
   return json(r.data, r.status);
 }
 
