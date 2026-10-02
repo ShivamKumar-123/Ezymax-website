@@ -1,0 +1,10 @@
+slug: "phase-9"
+order: 9
+title: "Kalks FX Options"
+level: "Intermediate"
+summary: "An elective course on Kalks FX Options that you can take at any time: what calls and puts are, how premiums, expiries and settlement work, payoffs and the Greeks, common strategies, barrier options and the real risks of selling options."
+sections:
+  - slug: "p9-options"
+    track: "options"
+    title: "Trading options on Kalks"
+    summary: "European, cash-settled options on 9 FX pairs, gold, silver and oil: premiums, payoffs, breakevens, Greeks, strategies, barriers, margin for sellers and sizing rules, with worked examples in USD per contract."

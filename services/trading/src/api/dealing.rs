@@ -696,6 +696,9 @@ pub async fn bulk(State(st): State<AppState>, s: StaffCtx, Body(b): Body<BulkBod
                 tx.audit.push(draft(if d.force { "position.force_close" } else { "position.close" }, vec![ticket], Some(p.symbol.clone()), Some(json!({"volume": num(p.volume), "book": p.book.as_str()})), Some(json!({"closedVolume": num(p.volume), "profit": num(pr), "deal": deal.to_string()})), flags));
                 return Ok(json!(pr.to_string()));
             }
+            if p.option.is_some() {
+                return Err(crate::engine::Reject::new("not_supported", "SL / TP in % of the price is for CFD positions; set an option's premium SL / TP on the position"));
+            }
             let q = env.live_quote(&tx.st.account, &p.symbol)?;
             let spec = env.spec(&p.symbol)?.clone();
             let refp = q.close_price(p.side);

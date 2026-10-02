@@ -291,6 +291,13 @@ impl TreePhase {
     pub fn chapters(&self) -> impl Iterator<Item = &Node> {
         self.sections.iter().flat_map(|s| s.chapters.iter())
     }
+
+    /// A product phase (e.g. phase 9, Kalks FX Options: a single `options` section) rather than a core
+    /// fundamental + technical phase. Shown to clients as an elective; it never depends on earlier phases.
+    pub fn is_elective(&self) -> bool {
+        let tracks: Vec<String> = self.sections.iter().map(|s| s.node.s("track")).collect();
+        content::is_product_phase(tracks.iter().map(String::as_str))
+    }
 }
 
 /// Builds phase > section > chapter from effective nodes. `published_only` hides unpublished nodes and

@@ -5,7 +5,9 @@
 //!
 //! Needs the local Postgres (127.0.0.1:5433). Uses a throw-away database `kalks_academy_test_<pid>`; skipped
 //! with a message when Postgres is not reachable. Override with ACADEMY_TEST_DATABASE_URL (a server URL).
-//! Also lints the real content/academy tree (the same check as `academy-lint`).
+//! Also lints the real content/academy tree (the same check as `academy-lint`) and checks the shape of the
+//! phase 9 elective (Kalks FX Options: one `options` section, examined chapter by chapter). The fixture has a
+//! core phase and an options-only product phase, which is studied, examined and certified independently.
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
@@ -13,6 +15,7 @@ use http_body_util::BodyExt;
 use serde_json::{Value, json};
 use sqlx::ConnectOptions;
 use sqlx::postgres::PgConnectOptions;
+use std::collections::HashSet;
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -50,6 +53,18 @@ fn fixture(root: &Path) {
     .unwrap();
     let qs: Vec<String> = (0..10).map(|i| format!("  - question: \"E{i}?\"\n    options: [\"a\", \"b\", \"c\", \"d\"]\n    answer: {}\n    explanation: \"x\"\n", i % 4)).collect();
     std::fs::write(p.join("exam.yaml"), format!("pass_mark: 70\nquestions:\n{}", qs.join(""))).unwrap();
+    // product phase: a single options section (no fundamental / technical)
+    let o = root.join("en/phase-9");
+    std::fs::create_dir_all(o.join("options")).unwrap();
+    for i in 1..=6 {
+        std::fs::write(o.join("options").join(format!("0{i}-c.md")), chapter(&format!("p9-o-c{i}"), i, (i as usize) % 4)).unwrap();
+    }
+    std::fs::write(
+        o.join("phase.yaml"),
+        "slug: \"phase-9\"\norder: 9\ntitle: \"Options\"\nlevel: \"Intermediate\"\nsummary: \"S.\"\nsections:\n  - slug: \"p9-options\"\n    track: \"options\"\n    title: \"O\"\n    summary: \"O.\"\n",
+    )
+    .unwrap();
+    std::fs::write(o.join("exam.yaml"), format!("pass_mark: 70\nquestions:\n{}", qs.join(""))).unwrap();
     let terms: Vec<String> = (0..150).map(|i| format!("  - slug: \"term-{i}\"\n    term: \"Term {i}\"\n    category: \"Markets\"\n    definition: \"Definition {i}.\"\n    related: [\"term-{}\"]\n", (i + 1) % 150)).collect();
     std::fs::write(root.join("en/glossary.yaml"), format!("terms:\n{}", terms.join(""))).unwrap();
 }
@@ -115,7 +130,28 @@ async fn real_content_passes_lint() {
         let (errors, _) = content::lint(&b);
         assert!(errors.is_empty(), "content lint errors in {lang}:\n{}", errors.join("\n"));
         let c = content::counts(&b);
-        assert!(c.phases >= 8 && c.sections >= 16 && c.chapters >= 96 && c.glossary_terms >= 150, "{c:?}");
+        assert!(c.phases >= 9 && c.sections >= 17 && c.chapters >= 103 && c.glossary_terms >= 150, "{c:?}");
+        // core phases keep exactly one fundamental and one technical section
+        for p in b.phases.iter().filter(|p| p.order <= 8) {
+            let tracks: Vec<&str> = p.sections.iter().map(|s| s.def.track.as_str()).collect();
+            assert_eq!(tracks, ["fundamental", "technical"], "{}", p.dir);
+        }
+        // phase 9: the Kalks FX Options elective, one options section, every chapter examined
+        let p9 = b.phases.iter().find(|p| p.slug == "phase-9").expect("phase-9 is missing");
+        assert_eq!((p9.order, p9.sections.len()), (9, 1));
+        assert_eq!(p9.sections[0].def.track, "options");
+        assert!(content::is_product_phase(p9.sections.iter().map(|s| s.def.track.as_str())));
+        let chapters: HashSet<&str> = p9.sections[0].chapters.iter().map(|c| c.slug.as_str()).collect();
+        assert!(chapters.len() >= 7, "{chapters:?}");
+        assert!(p9.sections[0].chapters.iter().all(|c| c.slug.starts_with("p9-o-") && !c.quiz.is_empty()));
+        let exam = p9.exam.as_ref().expect("phase-9 exam");
+        assert!(exam.questions.len() >= 15 && exam.pass_mark == 70);
+        for q in &exam.questions {
+            assert!(q.chapter.as_deref().is_some_and(|c| chapters.contains(c)), "exam question without a phase-9 chapter: {}", q.question);
+        }
+        for c in &chapters {
+            assert!(exam.questions.iter().any(|q| q.chapter.as_deref() == Some(*c)), "{c} has no exam question");
+        }
     }
 }
 
@@ -126,7 +162,7 @@ async fn academy_end_to_end() {
     fixture(dir.path());
     let pool = store::connect(&url).await.unwrap();
     let seeded = store::seed_all(&pool, dir.path()).await.unwrap();
-    assert_eq!(seeded[0].1.inserted, 1 + 2 + 12 + 1 + 150);
+    assert_eq!(seeded[0].1.inserted, (1 + 2 + 12 + 1) + (1 + 1 + 6 + 1) + 150);
     // idempotent: second run changes nothing
     let again = store::seed_all(&pool, dir.path()).await.unwrap();
     assert_eq!((again[0].1.inserted, again[0].1.updated), (0, 0));
@@ -150,7 +186,12 @@ async fn academy_end_to_end() {
     let (s, cat, _) = c.call("GET", "/v1/catalog", U, None).await;
     assert_eq!(s, StatusCode::OK, "{cat}");
     assert_eq!(cat["phases"][0]["sections"].as_array().unwrap().len(), 2);
-    assert_eq!(cat["me"]["chapters_total"], 12);
+    assert_eq!(cat["phases"][0]["elective"], false);
+    assert_eq!(cat["phases"][1]["slug"], "phase-9");
+    assert_eq!(cat["phases"][1]["elective"], true);
+    assert_eq!(cat["phases"][1]["sections"].as_array().unwrap().len(), 1);
+    assert_eq!(cat["phases"][1]["sections"][0]["track"], "options");
+    assert_eq!(cat["me"]["chapters_total"], 18);
     assert_eq!(cat["phases"][0]["exam"]["unlocked"], false);
     assert_eq!(cat["me"]["continue"]["slug"], "p1-f-c1");
 
@@ -180,6 +221,21 @@ async fn academy_end_to_end() {
     // exam still locked
     let (s, e, _) = c.call("POST", "/v1/exams/phase-1", U, Some(json!({"answers": [0,1,2,3,0,1,2,3,0,1]}))).await;
     assert_eq!(s, StatusCode::CONFLICT, "{e}");
+
+    // the options elective does not wait for phase 1: finish its chapters, its exam unlocks, pass it
+    let (_, ch, _) = c.call("GET", "/v1/chapters/p9-o-c1", U, None).await;
+    assert_eq!((ch["section"]["track"].clone(), ch["phase"]["elective"].clone()), (json!("options"), json!(true)));
+    for i in 1..=6 {
+        let a = (i % 4) as i64;
+        let (s, r, _) = c.call("POST", &format!("/v1/chapters/p9-o-c{i}/quiz"), U, Some(json!({"answers": [a, 0, 2]}))).await;
+        assert_eq!((s, r["completed"].clone()), (StatusCode::OK, json!(true)), "{r}");
+    }
+    let (_, cat, _) = c.call("GET", "/v1/catalog", U, None).await;
+    assert_eq!((cat["phases"][1]["exam"]["unlocked"].clone(), cat["phases"][0]["exam"]["unlocked"].clone()), (json!(true), json!(false)));
+    let (_, r, _) = c.call("POST", "/v1/exams/phase-9", U, Some(json!({"answers": [0,1,2,3,0,1,2,3,0,1]}))).await;
+    assert_eq!((r["passed"].clone(), r["certificate_issued"].clone()), (json!(true), json!(true)), "{r}");
+    let (_, cat, _) = c.call("GET", "/v1/catalog", U, None).await;
+    assert!(cat["phases"][1]["certificate"]["code"].is_string() && cat["phases"][0]["certificate"].is_null());
 
     // pass every chapter quiz
     for t in ["f", "t"] {
@@ -213,6 +269,7 @@ async fn academy_end_to_end() {
 
     let (_, mine, _) = c.call("GET", "/v1/me/certificates", U, None).await;
     assert_eq!(mine["certificates"][0]["verify_url"], format!("https://my.example.com/certificate/{code}"));
+    assert_eq!(mine["certificates"][1]["phase_order"], 9);
     let (s, v, _) = c.call("GET", &format!("/v1/public/certificates/{code}"), &[], None).await;
     assert_eq!(s, StatusCode::OK);
     assert_eq!((v["learner_name"].clone(), v["valid"].clone()), (json!("Ana López"), json!(true)));
@@ -231,6 +288,16 @@ async fn academy_end_to_end() {
     let (_, tree, _) = c.call("GET", "/v1/admin/tree", S, None).await;
     assert_eq!(tree["phases"][0]["sections"][0]["chapters"][0]["source"], "default");
     assert_eq!(tree["phases"][0]["sections"][0]["chapters"][0]["completed"], 1);
+    assert_eq!((tree["phases"][0]["elective"].clone(), tree["phases"][1]["elective"].clone()), (json!(false), json!(true)));
+
+    // a section's track can't be changed (it decides the phase's shape); other edits still work
+    let (s, r, _) = c.call("PUT", "/v1/admin/nodes/section/p9-options", S, Some(json!({"data": {"track": "technical"}}))).await;
+    assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
+    let (s, r, _) = c.call("PUT", "/v1/admin/nodes/section/p9-options", S, Some(json!({"data": {"title": "Options on Kalks", "track": "options"}}))).await;
+    assert_eq!(s, StatusCode::OK, "{r}");
+    // chapters created in the options section get the phase prefix, like the core tracks
+    let (s, r, _) = c.call("POST", "/v1/admin/chapters", S, Some(json!({"lang": "en", "section": "p9-options", "title": "Choosing a strike"}))).await;
+    assert_eq!((s, r["slug"].clone()), (StatusCode::OK, json!("p9-choosing-a-strike")), "{r}");
 
     // edit = tenant override; another tenant still sees the default
     let (s, r, _) = c.call("PUT", "/v1/admin/nodes/chapter/p1-f-c2", S, Some(json!({"lang": "en", "data": {"title": "Edited title"}}))).await;
@@ -286,7 +353,7 @@ async fn academy_end_to_end() {
     assert_eq!(cat["phases"][0]["progress"]["total"], 13);
 
     let (_, st, _) = c.call("GET", "/v1/admin/stats", S, None).await;
-    assert_eq!((st["learners"].clone(), st["certificates"].clone(), st["exam_attempts"].clone()), (json!(1), json!(1), json!(3)), "{st}");
+    assert_eq!((st["learners"].clone(), st["certificates"].clone(), st["exam_attempts"].clone()), (json!(1), json!(2), json!(4)), "{st}");
     let (_, au, _) = c.call("GET", "/v1/admin/audit", S, None).await;
     assert!(au["audit"].as_array().unwrap().len() >= 5);
 

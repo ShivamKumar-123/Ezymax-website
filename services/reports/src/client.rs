@@ -186,14 +186,7 @@ pub async fn analytics(app: &App, tenant: &str, user_id: i64, login: Option<i64>
         let key = if sub != "balance" {
             "bonus"
         } else {
-            match kind.as_str() {
-                "transfer_in" | "deposit" | "demo_initial" | "demo_refill" => "deposits",
-                "transfer_out" | "withdrawal" => "withdrawals",
-                "trade_pnl" => "tradingPnl",
-                "commission" => "commission",
-                "perf_fee" => "performanceFees",
-                _ => "adjustments",
-            }
+            flow_key(&kind)
         };
         *flow.entry(key).or_default() += amt;
     }
@@ -273,6 +266,7 @@ pub async fn analytics(app: &App, tenant: &str, user_id: i64, login: Option<i64>
         "moneyFlow": {
             "deposits": g("deposits"), "withdrawals": g("withdrawals"), "tradingPnl": g("tradingPnl"), "commission": g("commission"),
             "performanceFees": g("performanceFees"), "bonus": g("bonus"), "adjustments": g("adjustments"), "earnings": round2(earnings),
+            "optionPremiums": g("optionPremiums"), "optionSettlements": g("optionSettlements"),
             "equityNow": round2(equity_now),
         },
         "charges": {
@@ -284,7 +278,23 @@ pub async fn analytics(app: &App, tenant: &str, user_id: i64, login: Option<i64>
     }))
 }
 
-/// Calendar months (server time) since the account opened, newest first, with the month's figures.
+/// Money-flow bucket of a balance ledger kind. Kalks FX Options premiums and settlements are trading flows with
+/// their own buckets: never deposits, withdrawals or adjustments.
+pub fn flow_key(kind: &str) -> &'static str {
+    match kind {
+        "transfer_in" | "deposit" | "demo_initial" | "demo_refill" => "deposits",
+        "transfer_out" | "withdrawal" => "withdrawals",
+        "trade_pnl" => "tradingPnl",
+        "commission" => "commission",
+        "perf_fee" => "performanceFees",
+        "option_premium" => "optionPremiums",
+        "option_settlement" => "optionSettlements",
+        _ => "adjustments",
+    }
+}
+
+/// Calendar months (server time) since the account opened, newest first, with the month's figures. `net` is the
+/// realised result: CFD trade results + realised option P&L (from the option exit deals) + commission + fees.
 pub async fn months(app: &App, tenant: &str, login: i64) -> ApiResult<Value> {
     let a = statement::account_info(app, tenant, login).await?;
     let rows = sqlx::query(
@@ -295,7 +305,11 @@ pub async fn months(app: &App, tenant: &str, login: i64) -> ApiResult<Value> {
     .bind(login)
     .fetch_all(&app.pool)
     .await?;
-    let trades = sqlx::query("SELECT to_char(time AT TIME ZONE 'UTC' + interval '3 hours', 'YYYY-MM') AS m, count(*) AS n FROM deals WHERE tenant = $1 AND login = $2 AND entry <> 'in' AND NOT reversed GROUP BY 1")
+    let trades = sqlx::query(
+        "SELECT to_char(time AT TIME ZONE 'UTC' + interval '3 hours', 'YYYY-MM') AS m, count(*) AS n,
+                COALESCE(sum(profit) FILTER (WHERE option IS NOT NULL), 0) AS opt_pnl
+         FROM deals WHERE tenant = $1 AND login = $2 AND entry <> 'in' AND NOT reversed GROUP BY 1",
+    )
         .bind(tenant)
         .bind(login)
         .fetch_all(&app.pool)
@@ -312,7 +326,10 @@ pub async fn months(app: &App, tenant: &str, login: i64) -> ApiResult<Value> {
         }
     }
     for r in trades {
-        by.entry(r.get("m")).or_default().3 = r.get("n");
+        let e = by.entry(r.get("m")).or_default();
+        e.3 = r.get("n");
+        // option premiums / settlements are cash; the month's result counts the realised option P&L
+        e.0 += r.get::<Decimal, _>("opt_pnl").to_f64().unwrap_or(0.0);
     }
     let mut out = vec![];
     let mut m = time::month_start(time::server_day(a.created_at));
@@ -326,4 +343,18 @@ pub async fn months(app: &App, tenant: &str, login: i64) -> ApiResult<Value> {
     }
     out.reverse();
     Ok(json!({"login": login, "currency": a.currency, "months": out}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn option_flows_have_their_own_buckets() {
+        assert_eq!(flow_key("option_premium"), "optionPremiums");
+        assert_eq!(flow_key("option_settlement"), "optionSettlements");
+        assert_eq!(flow_key("transfer_in"), "deposits");
+        assert_eq!(flow_key("withdrawal"), "withdrawals");
+        assert_eq!(flow_key("reversal"), "adjustments");
+    }
 }

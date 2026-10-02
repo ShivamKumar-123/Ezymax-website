@@ -42,6 +42,7 @@ pub const MODULES: &[ModuleDef] = &[
     ModuleDef { key: "social", label: "Copy trading & PAMM", description: "Masters, funds, applications, fee payouts" },
     ModuleDef { key: "prop", label: "Prop firm", description: "Plans, challenges, funded traders, payouts" },
     ModuleDef { key: "algo", label: "Algo & API", description: "Strategies, deployments, API keys, marketplace" },
+    ModuleDef { key: "options", label: "FX Options", description: "Options risk desk, series, vol surfaces, dealer controls, settlements" },
     ModuleDef { key: "content", label: "Content & Academy", description: "Academy, news, legal, templates" },
     ModuleDef { key: "marketing", label: "Marketing & rewards", description: "Bonuses, contests, promo codes, notifications" },
     ModuleDef { key: "support", label: "Support desk", description: "Tickets, canned replies, knowledge base" },
@@ -96,6 +97,10 @@ pub const PERMS: &[PermDef] = &[
     PermDef { key: "algo.read", module: "algo", action: "view", label: "View strategies, deployments, keys" },
     PermDef { key: "algo.write", module: "algo", action: "edit", label: "Kill switches, moderation, revoke keys" },
     PermDef { key: "algo.settings", module: "algo", action: "approve", label: "Platform kill switch and ALGO settings" },
+    PermDef { key: "options.read", module: "options", action: "view", label: "View the options risk desk, series, surfaces and settlements" },
+    PermDef { key: "options.config", module: "options", action: "edit", label: "Underlyings, vol surfaces, rates, holidays, spreads / fees and broker switches" },
+    PermDef { key: "options.dealing", module: "options", action: "create", label: "Halt / close-only / freeze / manual vol, client limits, void option trades" },
+    PermDef { key: "options.settle", module: "options", action: "approve", label: "Re-fix expiries and re-run option settlements (within 1 hour)" },
     PermDef { key: "content.read", module: "content", action: "view", label: "View content" },
     PermDef { key: "content.write", module: "content", action: "edit", label: "Edit and publish content" },
     PermDef { key: "marketing.read", module: "marketing", action: "view", label: "View campaigns and rewards" },
@@ -197,6 +202,7 @@ pub const BUILTIN_ROLES: &[RoleDef] = &[
     RoleDef { key: "partner_manager", name: "IB Manager", description: "IB programme: partners, plans, levels, batches.", kind: "preset" },
     RoleDef { key: "marketing", name: "Marketing", description: "Content, Academy, campaigns and notifications.", kind: "preset" },
     RoleDef { key: "viewer", name: "Viewer", description: "Read-only access to trading and programme pages.", kind: "preset" },
+    RoleDef { key: "options_risk", name: "Options Risk", description: "FX Options risk desk: Greeks, vol surfaces, spreads and fees, dealer controls and settlements.", kind: "preset" },
 ];
 
 pub fn builtin(key: &str) -> Option<&'static RoleDef> {
@@ -213,7 +219,7 @@ pub fn preset_perms(key: &str) -> Option<Vec<&'static str>> {
         "admin" => tenant_perms().into_iter().filter(|k| *k != "finance.adjust_force").collect(),
         "dealer" => vec![
             "stats.read", "clients.read", "spreads.read", "spreads.write", "dealing.read", "dealing.write", "accounts.read", "accounts.write",
-            "social.read", "prop.read", "prop.write", "algo.read", "algo.write",
+            "social.read", "prop.read", "prop.write", "algo.read", "algo.write", "options.read", "options.dealing",
         ],
         "risk_manager" => vec![
             "stats.read", "clients.read", "spreads.read", "spreads.write", "dealing.read", "dealing.write", "accounts.read", "accounts.write",
@@ -238,6 +244,9 @@ pub fn preset_perms(key: &str) -> Option<Vec<&'static str>> {
         "partner_manager" => vec!["stats.read", "clients.read", "partners.read", "partners.write", "partners.export", "content.read", "marketing.read", "reports.read"],
         "marketing" => vec!["stats.read", "content.read", "content.write", "marketing.read", "marketing.write", "notifications.write", "reports.read"],
         "viewer" => vec!["stats.read", "spreads.read", "dealing.read", "accounts.read", "partners.read", "social.read", "prop.read", "algo.read", "content.read", "marketing.read"],
+        "options_risk" => vec![
+            "stats.read", "clients.read", "dealing.read", "accounts.read", "options.read", "options.config", "options.dealing", "options.settle",
+        ],
         _ => return None,
     };
     Some(v)
@@ -260,14 +269,18 @@ pub fn effective(kind: &str, key: &str, customised: bool, stored: &[String]) -> 
 
 /// Permissions that downstream services check by role name.
 fn service_relevant(k: &str) -> bool {
-    ["dealing.", "accounts.", "finance.", "groups.", "partners.", "social.", "prop.", "algo.", "content.", "spreads.", "marketing."].iter().any(|p| k.starts_with(p))
+    // options.* reach the trading engine (option book, void, settlement re-run)
+    ["dealing.", "accounts.", "finance.", "groups.", "partners.", "social.", "prop.", "algo.", "content.", "spreads.", "marketing.", "options."].iter().any(|p| k.starts_with(p))
 }
+
+/// Built-in roles the downstream services don't know by name: they are always mapped to a covering legacy role.
+const NOT_DOWNSTREAM: &[&str] = &["sales", "options_risk"];
 
 /// Built-in role sent to downstream services as `x-kalks-staff-role`: the least-privileged legacy role whose
 /// service permissions cover this role's; `admin` when none does. The BFF has already enforced the exact key.
 pub fn service_role(key: &str, perms: &[String]) -> &'static str {
     if let Some(b) = builtin(key)
-        && key != "sales"
+        && !NOT_DOWNSTREAM.contains(&key)
         && perms.iter().filter(|p| service_relevant(p)).all(|p| preset_perms(key).unwrap_or_default().contains(&p.as_str()))
     {
         return b.key;
@@ -313,7 +326,7 @@ pub async fn seed_tenant_roles(pool: &PgPool, tenant_id: i64) -> anyhow::Result<
         }
         sqlx::query(
             "INSERT INTO roles (tenant_id, key, name, description, kind) VALUES ($1,$2,$3,$4,$5)
-             ON CONFLICT (tenant_id, key) DO NOTHING",
+             ON CONFLICT DO NOTHING",
         )
         .bind(tenant_id)
         .bind(r.key)
@@ -435,6 +448,7 @@ mod tests {
             "finance.credit", "finance.adjust_approve", "finance.adjust_force", "finance.read", "finance.write", "finance.approve", "finance.settings", "partners.read", "partners.write", "partners.approve",
             "social.read", "social.write", "social.approve", "prop.read", "prop.write", "prop.approve", "algo.read", "algo.write", "algo.settings",
             "content.read", "content.write", "support.read", "support.write", "notifications.write", "marketing.read", "marketing.write",
+            "options.read", "options.config", "options.dealing", "options.settle",
         ] {
             assert!(perm(k).is_some(), "missing {k}");
         }
@@ -462,6 +476,31 @@ mod tests {
             assert!(has(r, "accounts.close") && has(r, "accounts.close.approve"), "{r}");
         }
         assert!(!has("dealer", "accounts.close.approve") && !has("support", "accounts.close") && !has("finance", "accounts.close"));
+    }
+
+    #[test]
+    fn options_permissions() {
+        let has = |r: &str, k: &str| preset_perms(r).unwrap().contains(&k);
+        let all = ["options.read", "options.config", "options.dealing", "options.settle"];
+        for r in ["platform_owner", "super_admin", "admin", "options_risk"] {
+            for k in all {
+                assert!(has(r, k), "{r} {k}");
+            }
+        }
+        // dealers watch the book and use the dealer controls, but don't configure or settle
+        assert!(has("dealer", "options.read") && has("dealer", "options.dealing"));
+        assert!(!has("dealer", "options.config") && !has("dealer", "options.settle"));
+        for r in ["risk_manager", "finance", "compliance", "support", "sales", "partner_manager", "marketing", "viewer"] {
+            assert!(!all.iter().any(|k| has(r, k)), "{r}");
+        }
+        // any options key implies options.read
+        assert_eq!(normalize(&["options.settle"]).unwrap(), vec!["options.read", "options.settle"]);
+        // the preset is new: downstream services get a legacy role that covers it
+        let s = |v: &[&str]| v.iter().map(|x| x.to_string()).collect::<Vec<_>>();
+        let svc = service_role("options_risk", &s(&preset_perms("options_risk").unwrap()));
+        assert!(svc != "options_risk" && builtin(svc).is_some());
+        assert_eq!(service_role("dealer", &s(&preset_perms("dealer").unwrap())), "dealer");
+        assert_eq!(service_role("c-opt", &s(&["options.read", "options.dealing"])), "dealer");
     }
 
     #[test]

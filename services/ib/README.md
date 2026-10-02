@@ -57,6 +57,7 @@ On first start the service creates the `kalks_ib` database, runs `migrations/`, 
 | Attribution (D63) | The upline is the gateway's `referred_by` at sign-up, set once. Only an admin reassignment changes it (audited, loop-checked). The campaign (`referral_campaign`) is attributed when it is one of that IB's campaign slugs |
 | Qualifying deal (D54, D59) | Closed deal on a **live** account, not in an excluded group (default `prop`), not reopened, not a price-correction deal, held ≥ `minTradeSeconds` (default 120 s), client has an upline and no self-referral block, symbol maps to a symbol group |
 | Lots | Deal volume in lots; cent accounts × `centLotFactor` (0.01) |
+| Options (O34) | A Kalks FX Options deal (`instrument: "option"` / `option` in the engine feed, or an option series symbol `EURUSD-20261009-1.1650-C`) is paid **per contract**: tier *k* IB earns `contracts × optionsRate(its level) × tiers[k] %`, with the same rebates, splits, caps and filters as CFD deals. `optionsRate` (USD per contract, round turn, paid on the closing deal: close, expiry or knock-out) is set per level in the Back Office and is **0 by default**, so options earn nothing until the broker sets it. CFD per-lot rates are never applied to an option deal. Contracts are not scaled on cent accounts and are **never lots**: option deals have 0 lots, so they never count toward `minMonthlyLots` or lot statistics (they do make a client active) |
 | Symbol groups | Explicit symbol lists first (forex majors), then the asset class from `config/instruments.json` |
 | Tier amounts (D55) | Tier *k* IB: `lots × rate(its level, symbol group) × tiers[k] %`, rounded to cents. Default tiers 100 / 20 / 10 |
 | Splits (D60) | An IB at tier *k ≥ 2* passes `splitPct` of its own tier amount to the IB below it in that chain |
@@ -82,12 +83,12 @@ Database `kalks_ib` (`migrations/0001_ib.sql`). Every row has `tenant` (gateway 
 | Table | Contents |
 |---|---|
 | `settings` | programme settings per tenant (JSON, versioned) |
-| `levels` | name, rank, rates per symbol group, CPA amount, upgrade targets, perks |
+| `levels` | name, rank, rates per symbol group, `options_rate` (USD per option contract, default 0), CPA amount, upgrade targets, perks |
 | `members` | every client: upline (`parent_id`, source signup/admin), campaign, level, rebate/split %, status, self-referral state, identity/device/IP signals, first deposit / first trade |
 | `campaigns`, `clicks` | campaign links per IB; clicks with a keyed visitor hash (no raw IP), unique per visitor per 24 h |
 | `accounts` | engine account kind / group / cent cache |
-| `deals` | every processed deal, qualified or not, with the reason; `(source, deal_id, user_id)` primary key = idempotency |
-| `commissions` | lines: `lot`, `split`, `rebate`, `cpa`, `clawback`, `adjustment`; status `pending → approved → paid` or `rejected` / `void`; unique per (deal, client, beneficiary, kind) and one CPA per client |
+| `deals` | every processed deal, qualified or not, with the reason; `(source, deal_id, user_id)` primary key = idempotency; `instrument` (`cfd` / `option`), `lots` (0 for options) and `contracts` |
+| `commissions` | lines: `lot`, `split`, `rebate`, `cpa`, `clawback`, `adjustment`; status `pending → approved → paid` or `rejected` / `void`; unique per (deal, client, beneficiary, kind) and one CPA per client. Option lines: `symbol_group = 'options'`, `lots` 0, `contracts`, `rate` = the per-contract rate |
 | `payout_batches`, `payouts` | batches and one payout per payee, with transfer attempts, last error, wallet txn |
 | `fraud_flags` | open / confirmed / dismissed, deduplicated |
 | `reassignments`, `level_history` | append-only history |
@@ -126,7 +127,7 @@ Every route except `GET /health` needs `X-Kalks-Internal: $IB_INTERNAL_TOKEN`. T
 |---|---|
 | `GET /v1/ib/admin/overview` | KPIs, 12 months by tier / split / rebate / CPA / clawback + lots, 30-day funnel, level distribution, top partners |
 | `GET/PUT /v1/ib/admin/settings` | `{settings, version, updatedAt, updatedBy, nextPayoutClose}`; PUT `{settings, reason}` |
-| `GET/PUT /v1/ib/admin/levels` | levels with member counts; PUT `{levels, reason}` replaces the table (members on removed levels move to the entry level) |
+| `GET/PUT /v1/ib/admin/levels` | levels with member counts (each with `optionsRate`, USD per option contract); PUT `{levels, reason}` replaces the table (members on removed levels move to the entry level). A level sent without `optionsRate` keeps its current options rate (0–1000) |
 | `GET /v1/ib/admin/partners?q&level&scope=ibs\|all&page&limit` | partners with clients, active clients, commission month / pending / paid, open flags |
 | `GET/PATCH /v1/ib/admin/partners/{id}` | detail: upline chain, tree, commissions, payouts, flags, reassignments, level history; PATCH `{level?, levelLocked?, status?, rebatePct?, splitPct?, reason}` |
 | `POST /v1/ib/admin/partners/{id}/reassign` | `{parentId \| null, reason}` |
@@ -176,8 +177,8 @@ Production runs `deploy/systemd/kalks-ib.service`. `deploy/deploy.sh` builds it,
 cargo test -p ib
 ```
 
-- **Unit** (`calc`, `model`): per-lot amounts, three tiers with shares, rebate + split within the IB's own amount, caps, suspended IBs, rounding conservation, tiny deals, anti-abuse filters (demo, excluded group, reopened, price correction, minimum duration), cent lots, level evaluation (both targets, lock, demotion), wash-pair matching, payout periods, backoff, symbol groups, settings validation.
-- **Database** (`tests/programme.rs`, throw-away `kalks_ib_test_*` database, skipped without PostgreSQL): multi-tier lines with rebate and split, the same deal twice (no double pay), a three-tier chain, short / demo / prop / no-referrer deals, PAMM lots, deals that arrive before the client is mirrored; self-referral block and admin clearing, loopback IPs ignored, wash-pair flag; CPA only after a deposit ≥ minimum and a trade, once; batch creation with carry-over, approval, a wallet that fails once (pending transfer, same idempotency key on retry, then paid), clawback after a paid deal is reopened, void of an unpaid one; batch rejection releasing lines; click tracking (unique per visitor, unknown campaign, unknown code).
+- **Unit** (`calc`, `model`): option deals per contract and never lots, the options rate (default 0, validation, kept when absent), option series codes, per-lot amounts, three tiers with shares, rebate + split within the IB's own amount, caps, suspended IBs, rounding conservation, tiny deals, anti-abuse filters (demo, excluded group, reopened, price correction, minimum duration), cent lots, level evaluation (both targets, lock, demotion), wash-pair matching, payout periods, backoff, symbol groups, settings validation.
+- **Database** (`tests/programme.rs`, throw-away `kalks_ib_test_*` database, skipped without PostgreSQL): option deals paid per contract only (rate 0 by default = no lines; the Back Office rate card through `PUT levels`, kept when a PUT omits it; tier %, rebate; short / demo / reopened filters; 0 lots, so level upgrades ignore them; a series pushed as PAMM / copy lots; feed parsing), multi-tier lines with rebate and split, the same deal twice (no double pay), a three-tier chain, short / demo / prop / no-referrer deals, PAMM lots, deals that arrive before the client is mirrored; self-referral block and admin clearing, loopback IPs ignored, wash-pair flag; CPA only after a deposit ≥ minimum and a trade, once; batch creation with carry-over, approval, a wallet that fails once (pending transfer, same idempotency key on retry, then paid), clawback after a paid deal is reopened, void of an unpaid one; batch rejection releasing lines; click tracking (unique per visitor, unknown campaign, unknown code).
 
 ## Known gaps
 

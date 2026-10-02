@@ -9,6 +9,11 @@
 //! content/academy/en/phase-N/exam.yaml                 pass_mark, version?, questions[] (quiz shape + chapter)
 //! ```
 //! The same loader feeds the service seed (idempotent upsert on start) and the `academy-lint` binary.
+//!
+//! Phases come in two shapes. A **core** phase (1-8) has exactly one `fundamental` and one `technical`
+//! section. A **product** (elective) phase covers one Kalks product and consists of a single section on a
+//! product track, e.g. phase 9 "Kalks FX Options" = one `options` section. Phases are independent: nothing
+//! in the service locks a phase behind an earlier one (only the phase's own exam waits for its chapters).
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -20,7 +25,12 @@ pub const MIN_WORDS: usize = 600;
 pub const MAX_WORDS: usize = 1200;
 pub const MIN_GLOSSARY_TERMS: usize = 150;
 pub const WORDS_PER_MINUTE: usize = 200;
-pub const TRACKS: [&str; 2] = ["fundamental", "technical"];
+/// Every valid section track.
+pub const TRACKS: [&str; 3] = ["fundamental", "technical", "options"];
+/// The two tracks every core phase must have.
+pub const CORE_TRACKS: [&str; 2] = ["fundamental", "technical"];
+/// Product tracks: a phase on one of these is an elective made of that single section.
+pub const PRODUCT_TRACKS: [&str; 1] = ["options"];
 pub const LEVELS: [&str; 4] = ["Beginner", "Intermediate", "Advanced", "Professional"];
 pub const CATEGORIES: [&str; 7] = ["Markets", "Trading mechanics", "Technical analysis", "Fundamental analysis", "Risk management", "Psychology", "Platform"];
 
@@ -295,6 +305,53 @@ pub fn load_lang(root: &Path, lang: &str) -> Bundle {
     b
 }
 
+pub fn is_track(t: &str) -> bool {
+    TRACKS.contains(&t)
+}
+
+pub fn is_product_track(t: &str) -> bool {
+    PRODUCT_TRACKS.contains(&t)
+}
+
+/// A product (elective) phase: it has sections and every one of them is on a product track.
+pub fn is_product_phase<'a>(tracks: impl IntoIterator<Item = &'a str>) -> bool {
+    let mut any = false;
+    for t in tracks {
+        if !is_product_track(t) {
+            return false;
+        }
+        any = true;
+    }
+    any
+}
+
+/// Track-shape problems of one phase (lint and tests): unknown or duplicate tracks, a core phase without both
+/// core tracks, or a product track mixed with other sections.
+pub fn check_phase_tracks(ctx: &str, tracks: &[&str], out: &mut Vec<String>) {
+    let mut seen = HashSet::new();
+    for t in tracks {
+        if !is_track(t) {
+            out.push(format!("{ctx}: section track `{t}` must be one of {}", TRACKS.join(", ")));
+        }
+        if !seen.insert(*t) {
+            out.push(format!("{ctx}: more than one {t} section"));
+        }
+    }
+    match tracks.iter().find(|t| is_product_track(t)) {
+        Some(product) if tracks.len() > 1 => {
+            out.push(format!("{ctx}: a {product} phase must consist of the {product} section alone (found {})", tracks.join(", ")));
+        }
+        Some(_) => {}
+        None => {
+            for t in CORE_TRACKS {
+                if !seen.contains(t) {
+                    out.push(format!("{ctx}: missing the {t} section"));
+                }
+            }
+        }
+    }
+}
+
 pub fn is_slug(s: &str) -> bool {
     !s.is_empty() && s.len() <= 96 && s.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') && !s.starts_with('-') && !s.ends_with('-')
 }
@@ -449,18 +506,11 @@ pub fn lint(b: &Bundle) -> (Vec<String>, Vec<String>) {
         if p.title.trim().is_empty() || p.summary.trim().is_empty() {
             errors.push(format!("{}: phase title and summary are required", p.dir));
         }
-        let tracks: HashSet<&str> = p.sections.iter().map(|s| s.def.track.as_str()).collect();
-        for t in TRACKS {
-            if !tracks.contains(t) {
-                errors.push(format!("{}: missing the {t} section", p.dir));
-            }
-        }
+        let tracks: Vec<&str> = p.sections.iter().map(|s| s.def.track.as_str()).collect();
+        check_phase_tracks(&p.dir, &tracks, &mut errors);
         let mut phase_chapters = HashSet::new();
         for s in &p.sections {
             claim(&s.def.slug, format!("{} section {}", p.dir, s.def.track), &mut errors);
-            if !TRACKS.contains(&s.def.track.as_str()) {
-                errors.push(format!("{}: section track `{}` must be fundamental or technical", p.dir, s.def.track));
-            }
             if s.chapters.len() < MIN_CHAPTERS_PER_SECTION {
                 errors.push(format!("{}/{}: {} chapters (minimum {MIN_CHAPTERS_PER_SECTION})", p.dir, s.def.track, s.chapters.len()));
             }
@@ -582,5 +632,67 @@ mod tests {
         assert!(!is_slug("P1"));
         assert!(!is_slug("-a"));
         assert!(!is_slug(""));
+    }
+
+    fn check(tracks: &[&str]) -> Vec<String> {
+        let mut out = vec![];
+        check_phase_tracks("p", tracks, &mut out);
+        out
+    }
+
+    #[test]
+    fn phase_track_rules() {
+        // core phase: both core tracks, nothing else
+        assert!(check(&["fundamental", "technical"]).is_empty());
+        assert_eq!(check(&["fundamental"]), vec!["p: missing the technical section".to_string()]);
+        assert_eq!(check(&[]), vec!["p: missing the fundamental section".to_string(), "p: missing the technical section".to_string()]);
+        let e = check(&["fundamental", "fundamental", "technical"]);
+        assert_eq!(e, vec!["p: more than one fundamental section".to_string()]);
+        // product phase: the options section alone
+        assert!(check(&["options"]).is_empty(), "an options-only phase is valid");
+        let e = check(&["fundamental", "technical", "options"]);
+        assert!(e.len() == 1 && e[0].contains("options phase must consist of the options section alone"), "{e:?}");
+        let e = check(&["options", "options"]);
+        assert!(e.iter().any(|x| x == "p: more than one options section"), "{e:?}");
+        // unknown tracks are rejected and do not count as a core track
+        let e = check(&["fundamental", "macro"]);
+        assert!(e.iter().any(|x| x == "p: section track `macro` must be one of fundamental, technical, options"), "{e:?}");
+        assert!(e.iter().any(|x| x == "p: missing the technical section"), "{e:?}");
+    }
+
+    #[test]
+    fn product_phase_detection() {
+        assert!(is_product_phase(["options"]));
+        assert!(!is_product_phase(["fundamental", "technical"]));
+        assert!(!is_product_phase(["options", "technical"]));
+        assert!(!is_product_phase(Vec::<&str>::new()));
+        assert!(is_track("options") && !is_track("macro") && !is_product_track("technical"));
+    }
+
+    fn bare_phase(slug: &str, order: i32, tracks: &[&str]) -> Phase {
+        let sections = tracks
+            .iter()
+            .enumerate()
+            .map(|(i, t)| Section { def: SectionDef { slug: format!("{slug}-{t}"), track: t.to_string(), title: "S".into(), summary: "S.".into() }, order: i as i32 + 1, chapters: vec![] })
+            .collect();
+        Phase { slug: slug.into(), order, title: "T".into(), level: "Intermediate".into(), summary: "S.".into(), version: 1, sections, exam: None, dir: slug.into() }
+    }
+
+    #[test]
+    fn lint_accepts_an_options_phase_and_rejects_unknown_tracks() {
+        let b = Bundle {
+            lang: "en".into(),
+            phases: vec![bare_phase("phase-1", 1, &["fundamental", "technical"]), bare_phase("phase-9", 9, &["options"]), bare_phase("phase-10", 10, &["macro"])],
+            ..Default::default()
+        };
+        let (errors, _) = lint(&b);
+        let track_issue = |e: &&String| e.contains("track") || e.contains(" section");
+        let p1: Vec<&String> = errors.iter().filter(|e| e.starts_with("phase-1:")).filter(track_issue).collect();
+        let p9: Vec<&String> = errors.iter().filter(|e| e.starts_with("phase-9:")).filter(track_issue).collect();
+        assert!(p1.is_empty() && p9.is_empty(), "{errors:?}");
+        // the empty options section is still held to the chapter minimum
+        assert!(errors.iter().any(|e| e == &format!("phase-9/options: 0 chapters (minimum {MIN_CHAPTERS_PER_SECTION})")), "{errors:?}");
+        assert!(errors.iter().any(|e| e == "phase-10: section track `macro` must be one of fundamental, technical, options"), "{errors:?}");
+        assert!(errors.iter().any(|e| e == "phase-10: missing the fundamental section"), "{errors:?}");
     }
 }

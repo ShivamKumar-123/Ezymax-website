@@ -96,7 +96,102 @@ fn deal(id: i64, user: i64, symbol: &str, lots: &str, secs: i64) -> DealInput {
         kind: "close".into(),
         reversed: false,
         account: Some(AccountInfo { login: 10_000_000 + user, user_id: user, kind: "live".into(), group: "standard".into(), cent: false }),
+        option: false,
     }
+}
+
+/// A Kalks FX Options closing deal: volume = contracts.
+fn option_deal(id: i64, user: i64, contracts: &str, secs: i64) -> DealInput {
+    DealInput { symbol: "EURUSD-20261009-1.1650-C".into(), option: true, ..deal(id, user, "EURUSD-20261009-1.1650-C", contracts, secs) }
+}
+
+#[tokio::test]
+async fn option_deals_earn_per_contract_at_the_options_rate_never_per_lot() {
+    let Some(e) = env(None).await else { return };
+    // A (gold) ← B (silver) ← C (client)
+    e.member(60, None, "gold").await;
+    e.member(61, Some(60), "silver").await;
+    e.member(62, Some(61), "bronze").await;
+    sqlx::query("UPDATE members SET rebate_pct = 10 WHERE user_id = 61").execute(&e.st.pool).await.unwrap();
+
+    // default options rate 0: the deal qualifies but pays nothing — the CFD fx-major rate is never applied
+    let out = deals::ingest(&e.st, &option_deal(9601, 62, "5", 600)).await.unwrap();
+    assert_eq!(out, Outcome::Recorded { qualified: true, reason: None, lines: 0 });
+    assert_eq!(e.count("SELECT count(*) FROM commissions WHERE deal_id = 9601").await, 0);
+    let row: (String, D, D, Option<String>) = sqlx::query_as("SELECT instrument, lots, contracts, symbol_group FROM deals WHERE deal_id = 9601").fetch_one(&e.st.pool).await.unwrap();
+    assert_eq!(row, ("option".into(), D::ZERO, dec("5"), Some("options".into())), "contracts are never lots");
+
+    // the broker sets per-contract rates in the Back Office (PUT levels); a level sent without the field keeps it
+    let staff = || ib::api::StaffCtx { tenant: "kalks".into(), id: "1".into(), name: "Partner manager".into(), role: "partner_manager".into() };
+    let mut levels = serde_json::to_value(db::levels(&e.st.pool, "kalks").await.unwrap()).unwrap();
+    for l in levels.as_array_mut().unwrap() {
+        let rate = match l["key"].as_str().unwrap() {
+            "silver" => json!(2),
+            "gold" => json!("3"),
+            _ => json!(0),
+        };
+        l["optionsRate"] = rate;
+    }
+    let body = serde_json::from_value(json!({"levels": levels, "reason": "Options launch rate card"})).unwrap();
+    let v = ib::api::admin::put_levels(State(e.st.clone()), staff(), Json(body)).await.unwrap().0;
+    let silver = v["levels"].as_array().unwrap().iter().find(|l| l["key"] == "silver").unwrap().clone();
+    assert_eq!(silver["optionsRate"], json!(2.0));
+    let mut stripped = levels.clone();
+    for l in stripped.as_array_mut().unwrap() {
+        l.as_object_mut().unwrap().remove("optionsRate");
+    }
+    let body = serde_json::from_value(json!({"levels": stripped, "reason": "Edit by an older Back Office build"})).unwrap();
+    let _ = ib::api::admin::put_levels(State(e.st.clone()), staff(), Json(body)).await.unwrap();
+    let lv = db::levels(&e.st.pool, "kalks").await.unwrap();
+    assert_eq!(lv.iter().find(|l| l.key == "gold").unwrap().option_rate(), dec("3"), "kept, never reset to 0");
+
+    // 4 contracts: B (tier 1, silver $2) 4 × 2 × 100% = 8, of which 10% (0.80) rebated to C; A (tier 2, gold $3) 4 × 3 × 20% = 2.40
+    let out = deals::ingest(&e.st, &option_deal(9602, 62, "4", 600)).await.unwrap();
+    assert!(matches!(out, Outcome::Recorded { qualified: true, .. }), "{out:?}");
+    assert_eq!(e.sum("SELECT sum(amount) FROM commissions WHERE deal_id = 9602 AND beneficiary_id = 61 AND kind = 'lot'").await, dec("7.2"));
+    assert_eq!(e.sum("SELECT sum(amount) FROM commissions WHERE deal_id = 9602 AND beneficiary_id = 62 AND kind = 'rebate'").await, dec("0.8"));
+    assert_eq!(e.sum("SELECT sum(amount) FROM commissions WHERE deal_id = 9602 AND beneficiary_id = 60").await, dec("2.4"));
+    assert_eq!(e.sum("SELECT sum(amount) FROM commissions WHERE deal_id = 9602").await, dec("10.4"));
+    assert_eq!(e.count("SELECT count(*) FROM commissions WHERE deal_id = 9602 AND (lots <> 0 OR contracts <> 4 OR symbol_group <> 'options')").await, 0);
+    assert_eq!(e.sum("SELECT sum(rate) FROM commissions WHERE deal_id = 9602 AND beneficiary_id = 61 AND kind = 'lot'").await, dec("2"), "the per-contract rate");
+
+    // the usual filters apply: a scalp, a demo account, a reopened (voided) deal
+    let short = deals::ingest(&e.st, &option_deal(9603, 62, "4", 30)).await.unwrap();
+    assert_eq!(short, Outcome::Recorded { qualified: false, reason: Some("short_duration".into()), lines: 0 });
+    let mut demo = option_deal(9604, 62, "4", 600);
+    demo.account.as_mut().unwrap().kind = "demo".into();
+    assert!(matches!(deals::ingest(&e.st, &demo).await.unwrap(), Outcome::Recorded { qualified: false, .. }));
+    deals::reverse_deal(&e.st, "kalks", "engine", 9602).await.unwrap();
+    assert_eq!(e.count("SELECT count(*) FROM commissions WHERE deal_id = 9602 AND status = 'void'").await, 3);
+
+    // a CFD deal of the same client still earns per lot (fx-major: silver $7, gold $9 × 20%)
+    deals::ingest(&e.st, &deal(9605, 62, "EURUSD", "1", 600)).await.unwrap();
+    assert_eq!(e.sum("SELECT sum(amount) FROM commissions WHERE deal_id = 9605").await, dec("8.8"));
+
+    // level upgrades count lots only: the option contracts never add to the network's monthly lots
+    let (m0, m1) = ib::calc::month_bounds(Utc::now());
+    assert_eq!(ib::stats::network_lots(&e.st.pool, "kalks", 61, 3, m0 - Duration::days(1), m1).await.unwrap(), dec("1"));
+    // an option series pushed through the PAMM / copy lots route is treated as contracts too
+    let mut pushed = option_deal(9606, 62, "3", 600);
+    pushed.source = "copy".into();
+    pushed.option = ib::model::is_option_series(&pushed.symbol);
+    deals::ingest(&e.st, &pushed).await.unwrap();
+    assert_eq!(e.sum("SELECT sum(lots) FROM deals WHERE deal_id = 9606").await, D::ZERO);
+    assert_eq!(e.sum("SELECT sum(amount) FROM commissions WHERE deal_id = 9606").await, dec("7.8"));
+
+    // the engine feed parser recognises option deals by `option`, `instrument` or the series code
+    let base = json!({"id": 1, "login": 10000062, "clientId": 62, "symbol": "EURUSD", "side": "buy", "volume": 1, "openTime": "2026-10-01T10:00:00Z", "closeTime": "2026-10-01T11:00:00Z"});
+    assert!(!ib::clients::parse_deal(&base).unwrap().option);
+    let mut o = base.clone();
+    o["option"] = json!({"series": "EURUSD-20261009-1.1650-C"});
+    assert!(ib::clients::parse_deal(&o).unwrap().option);
+    let mut o = base.clone();
+    o["instrument"] = json!("option");
+    assert!(ib::clients::parse_deal(&o).unwrap().option);
+    let mut o = base.clone();
+    o["symbol"] = json!("USDJPY-20261009-150.00-P");
+    assert!(ib::clients::parse_deal(&o).unwrap().option);
+    e.drop().await;
 }
 
 #[tokio::test]

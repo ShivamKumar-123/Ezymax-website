@@ -328,9 +328,22 @@ async fn project(tx: &mut Transaction<'_, Postgres>, tenant: i64, ev: &Event, re
             if let Some(d) = deal {
                 insert_deal(tx, tenant, d).await?;
             }
+            if let Event::PositionUpdated { change, .. } = ev
+                && change == "knocked_in"
+                && let Some(t) = &position.option
+                && let Some(b) = &t.barrier
+            {
+                insert_knock(tx, tenant, position.ticket, position.login, t, b, b.knock_spot, "knock_in", None, b.knocked_at.unwrap_or_else(Utc::now)).await?;
+            }
         }
         Event::PositionClosed { deal, position } => {
             insert_deal(tx, tenant, deal).await?;
+            if deal.reason == crate::model::DealReason::KnockOut
+                && let Some(o) = &deal.option
+                && let Some(b) = &o.terms.barrier
+            {
+                insert_knock(tx, tenant, deal.position_ticket, deal.login, &o.terms, b, o.spot, "knock_out", Some(deal.id), deal.time).await?;
+            }
             match position {
                 Some(p) => upsert_position(tx, tenant, p, "open", None).await?,
                 None => {
@@ -394,13 +407,38 @@ async fn insert_txn(tx: &mut Transaction<'_, Postgres>, t: &LedgerTxn, request: 
     Ok(())
 }
 
+/// A barrier knock, recorded once per position (risk desk, audit).
+#[allow(clippy::too_many_arguments)]
+async fn insert_knock(tx: &mut Transaction<'_, Postgres>, tenant: i64, ticket: i64, login: i64, t: &crate::model::OptionTerms, b: &crate::model::BarrierTerms, spot: Option<D>, effect: &str, deal: Option<i64>, at: DateTime<Utc>) -> anyhow::Result<()> {
+    sqlx::query(
+        "INSERT INTO option_knocks (ticket, tenant_id, login, series, underlying, kind, level, rebate, spot, effect, deal_id, knocked_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT (ticket) DO NOTHING",
+    )
+    .bind(ticket)
+    .bind(tenant)
+    .bind(login)
+    .bind(&t.series)
+    .bind(&t.underlying)
+    .bind(b.kind.as_str())
+    .bind(b.level)
+    .bind(b.rebate)
+    .bind(spot)
+    .bind(effect)
+    .bind(deal)
+    .bind(at)
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}
+
 async fn upsert_order(tx: &mut Transaction<'_, Postgres>, tenant: i64, o: &Order) -> anyhow::Result<()> {
     sqlx::query(
         "INSERT INTO orders (ticket, tenant_id, login, symbol, side, kind, status, volume, price, stop_limit, sl, tp, triggered, expiry, expiry_at, oco,
-                             source, platform, comment, book, client_order_id, placed_at, data)
-         VALUES ($1,$2,$3,$4,$5,$6,'pending',$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+                             source, platform, comment, book, client_order_id, placed_at, data, option, combo_id, trigger)
+         VALUES ($1,$2,$3,$4,$5,$6,'pending',$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
          ON CONFLICT (ticket) DO UPDATE SET volume = EXCLUDED.volume, price = EXCLUDED.price, stop_limit = EXCLUDED.stop_limit, sl = EXCLUDED.sl, tp = EXCLUDED.tp,
-            triggered = EXCLUDED.triggered, expiry = EXCLUDED.expiry, expiry_at = EXCLUDED.expiry_at, oco = EXCLUDED.oco, book = EXCLUDED.book, data = EXCLUDED.data, updated_at = now()",
+            triggered = EXCLUDED.triggered, expiry = EXCLUDED.expiry, expiry_at = EXCLUDED.expiry_at, oco = EXCLUDED.oco, book = EXCLUDED.book, data = EXCLUDED.data,
+            option = EXCLUDED.option, combo_id = EXCLUDED.combo_id, trigger = EXCLUDED.trigger, updated_at = now()",
     )
     .bind(o.ticket)
     .bind(tenant)
@@ -424,6 +462,9 @@ async fn upsert_order(tx: &mut Transaction<'_, Postgres>, tenant: i64, o: &Order
     .bind(&o.client_order_id)
     .bind(o.placed_at)
     .bind(sqlx::types::Json(o))
+    .bind(o.option.as_ref().map(sqlx::types::Json))
+    .bind(o.combo_id)
+    .bind(o.trigger.as_ref().map(sqlx::types::Json))
     .execute(&mut **tx)
     .await?;
     Ok(())
@@ -431,10 +472,11 @@ async fn upsert_order(tx: &mut Transaction<'_, Postgres>, tenant: i64, o: &Order
 
 async fn upsert_position(tx: &mut Transaction<'_, Postgres>, tenant: i64, p: &Position, status: &str, closed_at: Option<DateTime<Utc>>) -> anyhow::Result<()> {
     sqlx::query(
-        "INSERT INTO positions (ticket, tenant_id, login, symbol, side, volume, open_price, open_time, sl, tp, swap, commission, source, book, parent_ticket, status, closed_at, data)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+        "INSERT INTO positions (ticket, tenant_id, login, symbol, side, volume, open_price, open_time, sl, tp, swap, commission, source, book, parent_ticket, status, closed_at, data, option, combo_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
          ON CONFLICT (ticket) DO UPDATE SET volume = EXCLUDED.volume, open_price = EXCLUDED.open_price, sl = EXCLUDED.sl, tp = EXCLUDED.tp, swap = EXCLUDED.swap,
-            commission = EXCLUDED.commission, book = EXCLUDED.book, status = EXCLUDED.status, closed_at = EXCLUDED.closed_at, data = EXCLUDED.data, updated_at = now()",
+            commission = EXCLUDED.commission, book = EXCLUDED.book, status = EXCLUDED.status, closed_at = EXCLUDED.closed_at, data = EXCLUDED.data,
+            option = EXCLUDED.option, combo_id = EXCLUDED.combo_id, updated_at = now()",
     )
     .bind(p.ticket)
     .bind(tenant)
@@ -454,6 +496,8 @@ async fn upsert_position(tx: &mut Transaction<'_, Postgres>, tenant: i64, p: &Po
     .bind(status)
     .bind(closed_at)
     .bind(sqlx::types::Json(p))
+    .bind(p.option.as_ref().map(sqlx::types::Json))
+    .bind(p.combo_id)
     .execute(&mut **tx)
     .await?;
     Ok(())
@@ -462,8 +506,8 @@ async fn upsert_position(tx: &mut Transaction<'_, Postgres>, tenant: i64, p: &Po
 async fn insert_deal(tx: &mut Transaction<'_, Postgres>, tenant: i64, d: &Deal) -> anyhow::Result<()> {
     sqlx::query(
         "INSERT INTO deals (id, tenant_id, login, position_ticket, order_ticket, symbol, side, position_side, entry, volume, price, profit, swap, commission,
-                            reason, book, time, open_price, open_time, source, comment, price_correction, ledger_txn, staff, reason_code, data)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)",
+                            reason, book, time, open_price, open_time, source, comment, price_correction, ledger_txn, staff, reason_code, data, option)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)",
     )
     .bind(d.id)
     .bind(tenant)
@@ -491,6 +535,7 @@ async fn insert_deal(tx: &mut Transaction<'_, Postgres>, tenant: i64, d: &Deal) 
     .bind(&d.staff)
     .bind(&d.reason_code)
     .bind(sqlx::types::Json(d))
+    .bind(d.option.as_ref().map(sqlx::types::Json))
     .execute(&mut **tx)
     .await?;
     Ok(())

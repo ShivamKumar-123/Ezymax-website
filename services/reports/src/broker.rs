@@ -4,7 +4,11 @@
 //! Revenue model (per closed exit deal / entry deal):
 //! - **B-book P&L** = −(client price P&L) on B-book exits.
 //! - **Swap** = −(client swap) on exits (all books: the engine executes every trade internally).
-//! - **Commission** = entry-deal commission (the booked charge).
+//! - **Commission** = entry-deal commission (the booked charge). Kalks FX Options charge commission on every
+//!   trade (open and close; none on expiry / knock-out): each option deal's own `commissionCharged`.
+//! - **Options** (B-book, the house is the counterparty): broker P&L = −(client realised option P&L) on option
+//!   exits (closes, expiries, knock-outs). Premiums and settlements are trading cash, never money in / out, and
+//!   option contracts are never counted as lots.
 //! - **Spread markup** = group markup × volume per deal side (estimate). It is part of the B-book P&L already,
 //!   so net revenue adds it only for A-book volume.
 //! - **IB cost** = IB commission lines (lot, split, rebate, CPA, clawback) created in the period, excluding
@@ -47,11 +51,15 @@ pub struct D {
     pub swap: f64,
     pub commission: f64,
     pub book: String,
+    /// Kalks FX Options deal: `volume` is contracts (`lots` = 0), `charged` its own commission.
+    pub option: bool,
+    /// USD commission this deal charged: the entry deal's commission for CFDs, `commissionCharged` for options.
+    pub charged: f64,
 }
 
 pub async fn deals(app: &App, tenant: &str, from: DateTime<Utc>, to: DateTime<Utc>) -> ApiResult<Vec<D>> {
     let rows = sqlx::query(
-        "SELECT d.time, d.login, a.user_id, a.group_code, a.cent, d.symbol, d.entry, d.volume, d.price, d.profit, d.swap, d.commission, d.book
+        "SELECT d.time, d.login, a.user_id, a.group_code, a.cent, d.symbol, d.entry, d.volume, d.price, d.profit, d.swap, d.commission, d.book, d.option
          FROM deals d JOIN accounts a ON a.tenant = d.tenant AND a.login = d.login
          WHERE d.tenant = $1 AND a.kind = 'live' AND a.group_code NOT LIKE 'prop%' AND NOT d.reversed AND d.time >= $2 AND d.time < $3 ORDER BY d.time",
     )
@@ -65,20 +73,28 @@ pub async fn deals(app: &App, tenant: &str, from: DateTime<Utc>, to: DateTime<Ut
         .map(|r| {
             let k = if r.get::<bool, _>("cent") { 0.01 } else { 1.0 };
             let vol = f(r.get("volume"));
+            let symbol: String = r.get("symbol");
+            let opt: Option<sqlx::types::Json<Value>> = r.try_get("option").ok().flatten();
+            let option = opt.is_some() || crate::statement::is_option_series(&symbol);
+            let entry: String = r.get("entry");
+            let commission = f(r.get("commission")) * k;
+            let charged = if option { opt.as_ref().map(|o| crate::upstream::num(&o.0["commissionCharged"])).unwrap_or(0.0) * k } else if entry == "in" { commission } else { 0.0 };
             D {
                 time: r.get("time"),
                 login: r.get("login"),
                 user_id: r.get("user_id"),
                 group: r.get("group_code"),
-                symbol: r.get("symbol"),
-                entry: r.get("entry"),
-                lots: vol * k,
+                symbol,
+                entry,
+                lots: if option { 0.0 } else { vol * k },
                 volume: vol,
                 price: f(r.get("price")),
                 profit: f(r.get("profit")) * k,
                 swap: f(r.get("swap")) * k,
-                commission: f(r.get("commission")) * k,
+                commission,
                 book: r.get("book"),
+                option,
+                charged,
             }
         })
         .collect())
@@ -96,10 +112,18 @@ pub struct Rev {
     pub lots: f64,
     pub lots_a: f64,
     pub trades: usize,
+    /// Option contracts opened (never lots).
+    pub contracts: f64,
+    /// The house's realised P&L on option exits (part of `bbook`).
+    pub options_pnl: f64,
 }
 
 impl Rev {
     pub fn add(&mut self, app: &App, d: &D) {
+        if d.option {
+            self.add_option(d);
+            return;
+        }
         let markup = app.specs.deal_markup_usd(&app.specs.spread_group(&d.group), &d.symbol, d.volume, d.price) * if d.lots < d.volume { 0.01 } else { 1.0 };
         self.spread += markup;
         if d.book == "A" {
@@ -121,6 +145,16 @@ impl Rev {
             }
         }
     }
+    /// A Kalks FX Options deal: commission on every trade, the house's P&L on exits; no lots, no CFD markup.
+    pub fn add_option(&mut self, d: &D) {
+        self.commission += d.charged;
+        self.contracts += if d.entry == "in" { d.volume } else { 0.0 };
+        if d.entry != "in" {
+            self.trades += 1;
+            self.options_pnl -= d.profit;
+            self.bbook -= d.profit;
+        }
+    }
     pub fn fees(&self) -> f64 {
         self.commission + self.swap + self.spread_a
     }
@@ -132,6 +166,7 @@ impl Rev {
             "bbook": round2(self.bbook), "swap": round2(self.swap), "commission": round2(self.commission), "spread": round2(self.spread),
             "spreadA": round2(self.spread_a), "ibCost": round2(self.ib_cost), "net": round2(self.net()), "lots": round2(self.lots),
             "lotsA": round2(self.lots_a), "trades": self.trades, "abookClientPnl": round2(self.abook_client),
+            "optionContracts": round2(self.contracts), "optionsPnl": round2(self.options_pnl),
         })
     }
 }
@@ -665,7 +700,7 @@ pub async fn cohorts(app: &App, tenant: &str, months: i32) -> ApiResult<(Value, 
 pub async fn activity(app: &App, tenant: &str, from: DateTime<Utc>, to: DateTime<Utc>) -> ApiResult<(Value, Vec<Table>)> {
     let accts = sqlx::query("SELECT login, user_id, kind, group_code, cent, balance, equity, positions, created_at, status FROM accounts WHERE tenant = $1").bind(tenant).fetch_all(&app.pool).await?;
     let all_deals = sqlx::query(
-        "SELECT d.login, d.time, d.entry, d.volume, a.cent, a.kind FROM deals d JOIN accounts a ON a.tenant = d.tenant AND a.login = d.login WHERE d.tenant = $1 AND d.time >= $2 AND d.time < $3 AND NOT d.reversed",
+        "SELECT d.login, d.time, d.entry, d.volume, d.symbol, (d.option IS NOT NULL) AS is_option, a.cent, a.kind FROM deals d JOIN accounts a ON a.tenant = d.tenant AND a.login = d.login WHERE d.tenant = $1 AND d.time >= $2 AND d.time < $3 AND NOT d.reversed",
     )
     .bind(tenant)
     .bind(from)
@@ -685,7 +720,9 @@ pub async fn activity(app: &App, tenant: &str, from: DateTime<Utc>, to: DateTime
         let t: DateTime<Utc> = r.get("time");
         let login: i64 = r.get("login");
         let k = if r.get::<bool, _>("cent") { 0.01 } else { 1.0 };
-        let lots = f(r.get("volume")) * k;
+        // option contracts are not lots
+        let option = r.get::<bool, _>("is_option") || crate::statement::is_option_series(&r.get::<String, _>("symbol"));
+        let lots = if option { 0.0 } else { f(r.get("volume")) * k };
         let live = r.get::<String, _>("kind") == "live";
         let e = by_day.entry(time::server_day(t)).or_default();
         if live {
@@ -940,7 +977,7 @@ pub async fn client_list(app: &App, tenant: &str) -> ApiResult<Vec<Table>> {
 
 pub async fn trades_export(app: &App, tenant: &str, from: DateTime<Utc>, to: DateTime<Utc>) -> ApiResult<Vec<Table>> {
     let nm = names(app, tenant).await?;
-    let mut t = Table::new("Deals", &["Time (server)", "Deal", "Account", "User", "Client", "Country", "Group", "Symbol", "Direction", "Entry", "Volume", "Price", "Profit", "Swap", "Commission", "Book", "Reason", "Source"]);
+    let mut t = Table::new("Deals", &["Time (server)", "Deal", "Account", "User", "Client", "Country", "Group", "Symbol", "Direction", "Entry", "Volume", "Price", "Profit", "Swap", "Commission", "Book", "Reason", "Source", "Instrument"]);
     for r in sqlx::query(
         "SELECT d.*, a.user_id, a.group_code FROM deals d JOIN accounts a ON a.tenant = d.tenant AND a.login = d.login WHERE d.tenant = $1 AND a.kind = 'live' AND d.time >= $2 AND d.time < $3 ORDER BY d.time, d.id",
     )
@@ -971,6 +1008,8 @@ pub async fn trades_export(app: &App, tenant: &str, from: DateTime<Utc>, to: Dat
             Cell::text(r.get::<String, _>("book")),
             Cell::text(r.get::<String, _>("reason")),
             Cell::text(if r.get::<bool, _>("reversed") { "reversed".to_string() } else { r.get::<String, _>("source") }),
+            // option deals: volume = contracts, price = premium per unit
+            Cell::text(if r.try_get::<Option<sqlx::types::Json<Value>>, _>("option").ok().flatten().is_some() || crate::statement::is_option_series(&r.get::<String, _>("symbol")) { "option" } else { "cfd" }),
         ]);
     }
     Ok(vec![t])
@@ -1145,4 +1184,44 @@ pub async fn client_facts(app: &App, tenant: &str) -> ApiResult<Value> {
         .map(|u| json!({"userId": u, "firstDepositAt": first.get(u).map(|x| x.0), "firstLiveAccountAt": accounts.get(u), "firstTradeAt": traded.get(u)}))
         .collect();
     Ok(json!({"tenant": tenant, "items": items}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn deal(entry: &str, option: bool, volume: f64, profit: f64, commission: f64, charged: f64) -> D {
+        D {
+            time: Utc::now(),
+            login: 1,
+            user_id: 1,
+            group: "standard".into(),
+            symbol: if option { "EURUSD-20261009-1.1650-C".into() } else { "EURUSD".into() },
+            entry: entry.into(),
+            lots: if option { 0.0 } else { volume },
+            price: 0.0052,
+            volume,
+            profit,
+            swap: 0.0,
+            commission,
+            book: "B".into(),
+            option,
+            charged,
+        }
+    }
+
+    #[test]
+    fn option_deals_book_commission_on_every_trade_and_never_lots() {
+        let mut r = Rev::default();
+        // open 2 contracts (commission 0.50), close them for a client profit of 8 (commission 0.50 on the close;
+        // the exit deal's `commission` also carries the entry share, which must not be counted twice)
+        r.add_option(&deal("in", true, 2.0, 0.0, 0.5, 0.5));
+        r.add_option(&deal("out", true, 2.0, 8.0, 1.0, 0.5));
+        // a short that expired worthless: the client keeps the premium (profit 50), no commission on expiry
+        r.add_option(&deal("out", true, 1.0, 50.0, 0.25, 0.0));
+        assert_eq!((r.commission, r.lots, r.contracts, r.trades), (1.0, 0.0, 2.0, 2));
+        assert_eq!((r.bbook, r.options_pnl), (-58.0, -58.0));
+        assert_eq!(r.net(), -57.0);
+        assert_eq!(r.swap, 0.0);
+    }
 }

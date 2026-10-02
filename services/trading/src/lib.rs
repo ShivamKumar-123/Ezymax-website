@@ -10,6 +10,7 @@ pub mod feed;
 pub mod model;
 pub mod money;
 pub mod notify;
+pub mod options;
 pub mod persist;
 pub mod rules;
 pub mod shard;

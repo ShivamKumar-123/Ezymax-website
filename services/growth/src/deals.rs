@@ -39,6 +39,9 @@ pub struct DealIn {
     pub kind: String,
     pub reversed: bool,
     pub account: AccountFacts,
+    /// Kalks FX Options deal (volume = contracts): recorded once, earns nothing (O34: no loyalty points,
+    /// cashback, bonus lot-release or contest results for options).
+    pub option: bool,
 }
 
 impl DealIn {
@@ -57,6 +60,7 @@ impl DealIn {
             kind: d.kind.clone(),
             reversed: d.reversed,
             account,
+            option: d.option,
         }
     }
 }
@@ -101,13 +105,15 @@ pub async fn earned_12m<'e, E: sqlx::PgExecutor<'e>>(ex: E, tenant: &str, user_i
 
 /// Processes one deal once. Returns None when the deal was already seen.
 pub async fn ingest(st: &AppState, p: &Programme, d: &DealIn) -> anyhow::Result<Option<Produced>> {
-    let lots = calc::lots(d.volume, d.account.cent);
+    // option contracts are never lots: an option deal has 0 lots and no asset class of a CFD
+    let option = d.option || calc::is_option_series(&d.symbol);
+    let lots = if option { ZERO } else { calc::lots(d.volume, d.account.cent) };
     let profit_usd = if d.account.cent { d.profit / HUNDRED } else { d.profit };
-    let asset_class = st.instruments.class_of(&d.symbol);
+    let asset_class = if option { Some("options".to_string()) } else { st.instruments.class_of(&d.symbol) };
     let mut tx = st.pool.begin().await?;
     let inserted = sqlx::query(
-        "INSERT INTO deals (deal_id, tenant, login, user_id, account_kind, account_group, symbol, asset_class, side, volume, lots, profit, deal_kind, open_time, close_time, reversed)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) ON CONFLICT (deal_id) DO NOTHING",
+        "INSERT INTO deals (deal_id, tenant, login, user_id, account_kind, account_group, symbol, asset_class, side, volume, lots, profit, deal_kind, open_time, close_time, reversed, instrument)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) ON CONFLICT (deal_id) DO NOTHING",
     )
     .bind(d.deal_id)
     .bind(&d.tenant)
@@ -125,6 +131,7 @@ pub async fn ingest(st: &AppState, p: &Programme, d: &DealIn) -> anyhow::Result<
     .bind(d.open_time)
     .bind(d.close_time)
     .bind(d.reversed)
+    .bind(if option { "option" } else { "cfd" })
     .execute(&mut *tx)
     .await?
     .rows_affected();
@@ -132,7 +139,8 @@ pub async fn ingest(st: &AppState, p: &Programme, d: &DealIn) -> anyhow::Result<
         return Ok(None);
     }
     let mut out = Produced::default();
-    if d.reversed || d.kind == "price-correction" || lots <= ZERO {
+    // options: no points, cashback, bonus release or contest trade (a dedicated options contest may come later)
+    if option || d.reversed || d.kind == "price-correction" || lots <= ZERO {
         tx.commit().await?;
         return Ok(Some(out));
     }

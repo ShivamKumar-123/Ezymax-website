@@ -418,7 +418,7 @@ pub async fn exec_delay(st: &AppState, tenant: &TenantConfig, login: i64) -> u32
     d
 }
 
-fn with_notes(mut v: Value, notes: &[crate::engine::Note]) -> Value {
+pub(crate) fn with_notes(mut v: Value, notes: &[crate::engine::Note]) -> Value {
     if !notes.is_empty() {
         v["notifications"] = json!(notes.iter().map(|n| json!({"kind": n.kind, "message": n.message, "data": n.data})).collect::<Vec<_>>());
     }
@@ -427,7 +427,7 @@ fn with_notes(mut v: Value, notes: &[crate::engine::Note]) -> Value {
 
 /// D70: an account that is copying a master is managed by the copier; the follower stops copying instead
 /// of closing or changing copied trades one by one.
-fn copy_guard(st: &AppState, s: &Session, opening: bool) -> ApiResult<()> {
+pub(crate) fn copy_guard(st: &AppState, s: &Session, opening: bool) -> ApiResult<()> {
     match st.social.terminal_guard(s.login, opening) {
         Some((code, message)) => Err(ApiError::Status { status: 422, code, message }),
         None => Ok(()),
@@ -436,14 +436,14 @@ fn copy_guard(st: &AppState, s: &Session, opening: bool) -> ApiResult<()> {
 
 /// MAM: trades a manager placed on a linked client account are managed by the manager; the client sees them
 /// (source `mam`) but cannot change or close them one by one (see social::mam).
-async fn mam_guard(st: &AppState, s: &Session, tickets: Vec<i64>, bulk: bool) -> ApiResult<()> {
+pub(crate) async fn mam_guard(st: &AppState, s: &Session, tickets: Vec<i64>, bulk: bool) -> ApiResult<()> {
     match st.social.mam_terminal_guard(s.login, tickets, bulk).await {
         Some((code, message)) => Err(ApiError::Status { status: 422, code, message }),
         None => Ok(()),
     }
 }
 
-async fn run(st: &AppState, s: &Session, op: Op) -> ApiResult<Value> {
+pub(crate) async fn run(st: &AppState, s: &Session, op: Op) -> ApiResult<Value> {
     // a staff member acting as the client (full access) is recorded as such in the event stream
     let actor = match &s.staff {
         Some((id, _)) => format!("staff:{id}"),

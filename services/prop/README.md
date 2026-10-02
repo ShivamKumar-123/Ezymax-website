@@ -259,6 +259,8 @@ cargo test -p prop
 
 ## Known gaps
 
+- **Options.** The engine refuses Kalks FX Options on prop groups (`prop*`), so prop accounts are CFD only. Defensively, option deals and positions (engine `option` / `instrument: "option"`, or an option series symbol) are flagged and their contracts never count as lots in the trading statistics; their P&L (real money on the account) still counts in equity, day profits and the rules.
+
 - **Polling, not streaming** (see [latency](#latency)). A server-to-server account stream in the engine would cut detection to the tick.
 - **Wallet transfers out of prop accounts.** The engine lets the wallet move `withdrawable` funds from any live account. The wallet must refuse transfers for accounts in prop groups (group `prop`, or any plan's `group`), otherwise simulated capital could be withdrawn.
 - **Account limit per group.** The engine's `maxAccountsPerUser` applies to prop groups too (seeded `prop`: 5). Raise it for the prop group in Back Office → Config → Account groups; a refused open refunds the fee.

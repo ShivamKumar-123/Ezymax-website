@@ -94,6 +94,13 @@ pub async fn put_levels(State(st): State<AppState>, s: StaffCtx, Json(r): Json<P
     let settings = db::settings(&st.pool, &s.tenant).await?;
     model::validate_levels(&r.levels, &settings).map_err(|(f, m)| invalid(f, m))?;
     let before = db::levels(&st.pool, &s.tenant).await?;
+    // a level sent without `optionsRate` keeps its current per-contract options rate (0 for a new level)
+    let mut r = r;
+    for l in r.levels.iter_mut() {
+        if l.options_rate.is_none() {
+            l.options_rate = Some(before.iter().find(|b| b.key == l.key).map(|b| b.option_rate()).unwrap_or(ZERO));
+        }
+    }
     let entry = r.levels.iter().min_by_key(|l| l.rank).map(|l| l.key.clone()).unwrap();
     let keys: Vec<String> = r.levels.iter().map(|l| l.key.clone()).collect();
     let mut tx = st.pool.begin().await?;
@@ -564,7 +571,7 @@ pub async fn commissions(State(st): State<AppState>, s: StaffCtx, Query(q): Quer
             json!({
                 "id": r.get::<i64, _>("id"), "kind": r.get::<String, _>("kind"), "status": r.get::<String, _>("status"), "amount": num(r.get("amount")),
                 "tier": r.get::<i32, _>("tier"), "rate": num(r.get("rate")), "sharePct": num(r.get("share_pct")), "lots": num(r.get("lots")),
-                "symbol": r.get::<Option<String>, _>("symbol"), "symbolGroup": r.get::<Option<String>, _>("symbol_group"), "levelKey": r.get::<Option<String>, _>("level_key"),
+                "contracts": num(r.get("contracts")), "symbol": r.get::<Option<String>, _>("symbol"), "symbolGroup": r.get::<Option<String>, _>("symbol_group"), "levelKey": r.get::<Option<String>, _>("level_key"),
                 "dealId": r.get::<Option<i64>, _>("deal_id"), "source": r.get::<Option<String>, _>("deal_source"), "login": r.get::<Option<i64>, _>("login"),
                 "beneficiary": {"id": r.get::<i64, _>("beneficiary_id"), "name": nm(r.get("b_first"), r.get("b_last"))},
                 "client": {"id": r.get::<i64, _>("client_id"), "name": nm(r.get("c_first"), r.get("c_last"))},

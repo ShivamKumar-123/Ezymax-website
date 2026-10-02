@@ -15,14 +15,32 @@ pub struct DealFacts {
     /// Engine deal kind: close | partial | force | stop-out | price-correction
     pub kind: String,
     pub reversed: bool,
+    /// CFD: lots. Option deal: contracts.
     pub volume: D,
     pub open_time: DateTime<Utc>,
     pub close_time: DateTime<Utc>,
+    /// Kalks FX Options deal (O34): volume is contracts, paid per contract at the level's options rate.
+    pub option: bool,
 }
 
-/// Standard lots of a deal (cent accounts scaled by `cent_lot_factor`).
+/// Standard lots of a deal (cent accounts scaled by `cent_lot_factor`). Option contracts are never lots: an
+/// option deal has 0 lots, so it never adds to lot statistics or the lot-based level-upgrade volume.
 pub fn std_lots(f: &DealFacts, s: &Settings) -> D {
+    if f.option {
+        return ZERO;
+    }
     r4(if f.cent { f.volume * s.cent_lot_factor } else { f.volume })
+}
+
+/// Option contracts of a deal (0 for CFDs). A contract has the same USD notional on a cent account (only the
+/// premium is booked in USC), so contracts are never scaled.
+pub fn contracts(f: &DealFacts) -> D {
+    if f.option { r4(f.volume) } else { ZERO }
+}
+
+/// What the commission is paid on: standard lots (CFD per-lot rates) or contracts (the options rate).
+pub fn commission_units(f: &DealFacts, s: &Settings) -> D {
+    if f.option { contracts(f) } else { std_lots(f, s) }
 }
 
 /// Why a deal does not earn commission, or `None` when it qualifies on its own facts.
@@ -318,7 +336,7 @@ mod tests {
 
     fn facts(kind: &str, secs: i64) -> DealFacts {
         let t = Utc::now();
-        DealFacts { account_kind: kind.into(), group: "standard".into(), cent: false, kind: "close".into(), reversed: false, volume: dec("1"), open_time: t - Duration::seconds(secs), close_time: t }
+        DealFacts { account_kind: kind.into(), group: "standard".into(), cent: false, kind: "close".into(), reversed: false, volume: dec("1"), open_time: t - Duration::seconds(secs), close_time: t, option: false }
     }
 
     #[test]
@@ -352,6 +370,32 @@ mod tests {
         f.cent = true;
         f.volume = dec("2");
         assert_eq!(std_lots(&f, &s), dec("0.02"));
+    }
+
+    #[test]
+    fn option_deals_are_paid_per_contract_never_per_lot() {
+        let s = Settings::default();
+        let mut f = facts("live", 600);
+        f.option = true;
+        f.volume = dec("7");
+        // contracts are never lots (level upgrades, lot statistics), and never scaled on cent accounts
+        assert_eq!((std_lots(&f, &s), contracts(&f), commission_units(&f, &s)), (ZERO, dec("7"), dec("7")));
+        f.cent = true;
+        assert_eq!((std_lots(&f, &s), contracts(&f)), (ZERO, dec("7")));
+        // the same filters apply as to CFD deals
+        assert_eq!(disqualify(&f, &s), None);
+        f.reversed = true;
+        assert_eq!(disqualify(&f, &s), Some("reversed"));
+        // CFD: lots, no contracts
+        let c = facts("live", 600);
+        assert_eq!((std_lots(&c, &s), contracts(&c), commission_units(&c, &s)), (dec("1"), ZERO, dec("1")));
+        // 7 contracts at $1.50 per contract: tier 1 100% → 10.50, tier 2 20% → 2.10 (per-contract rate × tier %)
+        let chain = [up(1, "1.5", "0", "0"), up(2, "1.5", "0", "0")];
+        let ls = commission_lines(9, dec("7"), &chain, &tiers(), dec("50"), dec("50"));
+        assert_eq!((amount(&ls, 1, LineKind::Lot), amount(&ls, 2, LineKind::Lot)), (dec("10.5"), dec("2.1")));
+        // the default options rate (0) pays nothing at all
+        let ls = commission_lines(9, dec("7"), &[up(1, "0", "10", "0"), up(2, "0", "0", "25")], &tiers(), dec("50"), dec("50"));
+        assert!(ls.is_empty());
     }
 
     #[test]

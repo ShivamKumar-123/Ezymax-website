@@ -248,6 +248,27 @@ pub fn in_session(spec: &crate::spec::StrategySpec, t: i64) -> bool {
     })
 }
 
+/// Whether an engine deal / position JSON is a Kalks FX Options one (`option` object, `instrument`, or the
+/// series code `EURUSD-20261009-1.1650-C`). Strategies only ever trade CFDs.
+pub fn is_option(v: &Value) -> bool {
+    if v.get("option").is_some_and(Value::is_object) || v.get("instrument").and_then(Value::as_str) == Some("option") {
+        return true;
+    }
+    let sym = v.get("symbol").and_then(Value::as_str).unwrap_or("");
+    let p: Vec<&str> = sym.split('-').collect();
+    p.len() == 4 && p[1].len() == 8 && p[1].bytes().all(|b| b.is_ascii_digit()) && !p[2].is_empty() && p[2].bytes().all(|b| b.is_ascii_digit() || b == b'.') && matches!(p[3], "C" | "P")
+}
+
+/// The exit deals of a tracked position in an account history: CFD exits only. A deployment only tracks the
+/// CFD tickets it opened itself, so an option deal (premium cash, contracts) can never be booked into its
+/// realised P&L, daily loss or track record.
+pub fn exits_of(deals: &[Value], ticket: i64) -> Vec<&Value> {
+    deals
+        .iter()
+        .filter(|x| x.get("positionTicket").and_then(Value::as_i64) == Some(ticket) && x.get("entry").and_then(Value::as_str) != Some("in") && !is_option(x))
+        .collect()
+}
+
 /// Books positions of this deployment that the engine has closed (SL/TP/trailing, manual, stop-out, kill).
 pub async fn sync_closed(st: &AppState, d: &Dep, open_now: &HashSet<i64>) -> anyhow::Result<()> {
     let rows = sqlx::query("SELECT ticket, opened_at FROM deployment_positions WHERE deployment_id = $1 AND closed_at IS NULL").bind(d.id).fetch_all(&st.pool).await?;
@@ -263,7 +284,7 @@ pub async fn sync_closed(st: &AppState, d: &Dep, open_now: &HashSet<i64>) -> any
     }
     let deals = h.body.get("deals").and_then(Value::as_array).cloned().unwrap_or_default();
     for (ticket, _) in gone {
-        let exits: Vec<&Value> = deals.iter().filter(|x| x.get("positionTicket").and_then(Value::as_i64) == Some(ticket) && x.get("entry").and_then(Value::as_str) != Some("in")).collect();
+        let exits = exits_of(&deals, ticket);
         if exits.is_empty() {
             continue; // not in the history yet
         }
@@ -600,4 +621,24 @@ async fn manage(st: &AppState, d: &Dep) -> anyhow::Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn option_deals_never_reach_a_deployment() {
+        let deals = vec![
+            json!({"id": 1, "positionTicket": 7, "entry": "in", "symbol": "EURUSD", "profit": 0}),
+            json!({"id": 2, "positionTicket": 7, "entry": "out", "symbol": "EURUSD", "profit": 12, "option": null, "instrument": "cfd"}),
+            // an option deal that (impossibly) shares the ticket: never booked
+            json!({"id": 3, "positionTicket": 7, "entry": "out", "symbol": "EURUSD-20261009-1.1650-C", "profit": 500, "instrument": "option", "option": {"series": "EURUSD-20261009-1.1650-C"}}),
+            json!({"id": 4, "positionTicket": 7, "entry": "out", "symbol": "EURUSD-20261009-1.1650-P", "profit": 900}),
+        ];
+        let ex = exits_of(&deals, 7);
+        assert_eq!(ex.len(), 1);
+        assert_eq!(ex[0]["id"], 2);
+        assert!(!is_option(&json!({"symbol": "BTC-USD"})) && !is_option(&json!({"symbol": "US30"})));
+    }
 }

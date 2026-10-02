@@ -366,6 +366,9 @@ pub fn place_order(tx: &mut Tx, env: &Env, req: OrderReq) -> Result<PlaceResult,
         placed_at: env.now,
         triggered: false,
         client_order_id: req.client_order_id.clone(),
+        option: None,
+        combo_id: None,
+        trigger: None,
     };
     tx.emit(Event::OrderPlaced { order });
     if let Some(o) = req.oco_with {
@@ -521,6 +524,7 @@ fn entry_deal(env: &Env, st: &AccountState, id: i64, p: &Position, f: &Fill, vol
         snapshot: None,
         client_order_id: f.client_order_id.clone(),
         partial: false,
+        option: None,
     }
 }
 
@@ -559,6 +563,9 @@ fn open_position(tx: &mut Tx, env: &Env, _spec: &Spec, f: &Fill, volume: D, comm
         last_swap_day: None,
         client_order_id: f.client_order_id.clone(),
         reversed_from,
+        option: None,
+        combo_id: None,
+        premium: ZERO,
     };
     let deal = entry_deal(env, &tx.st, deal_id, &p, f, volume, comm, txn);
     tx.emit(Event::PositionOpened { position: p, deal: Some(deal) });
@@ -595,6 +602,10 @@ impl CloseMeta {
 /// on the balance (one ledger transaction), records the exit deal. Returns (deal id, profit).
 pub fn close_part(tx: &mut Tx, env: &Env, ticket: i64, volume: D, price: D, meta: CloseMeta) -> Result<(i64, D), Reject> {
     let p = tx.st.positions.get(&ticket).cloned().ok_or_else(|| Reject::new("not_found", format!("Position #{ticket} not found")))?;
+    if p.option.is_some() {
+        // option exits are priced by the options pricer (engine::options::close), never at a CFD price
+        return Err(Reject::new("not_supported", format!("#{ticket} is an option position")));
+    }
     let spec = env.spec(&p.symbol)?.clone();
     let acc = tx.st.account.clone();
     let volume = volume.min(p.volume);
@@ -641,6 +652,7 @@ pub fn close_part(tx: &mut Tx, env: &Env, ticket: i64, volume: D, price: D, meta
         snapshot: Some(Box::new(snapshot)),
         client_order_id: meta.client_order_id,
         partial: !full,
+        option: None,
     };
     let rest = if full {
         None
@@ -676,6 +688,24 @@ pub struct CloseReq {
 
 pub fn close_position(tx: &mut Tx, env: &Env, ticket: i64, req: CloseReq) -> Result<(i64, D), Reject> {
     let p = tx.st.positions.get(&ticket).cloned().ok_or_else(|| Reject::new("not_found", format!("Position #{ticket} not found")))?;
+    if p.option.is_some() {
+        if req.price.is_some_and(|x| x > ZERO) {
+            return Err(Reject::new("not_supported", "Options are always closed at the model price; void an erroneous option trade instead"));
+        }
+        let reason = if req.stop_out {
+            DealReason::StopOut
+        } else if req.dealer.as_ref().is_some_and(|d| d.force) {
+            DealReason::Force
+        } else if req.dealer.is_some() {
+            DealReason::Dealer
+        } else {
+            DealReason::Client
+        };
+        let c = super::options::OptClose { volume: req.volume, reason, dealer: req.dealer.clone(), system: req.stop_out, comment: String::new() };
+        let out = super::options::close(tx, env, ticket, c)?;
+        apply_nbp(tx, env);
+        return Ok(out);
+    }
     let spec = env.spec(&p.symbol)?.clone();
     let dealer = req.dealer.as_ref();
     gate(env, &tx.st, &p.symbol, false, ZERO, dealer)?;
@@ -754,6 +784,9 @@ pub fn close_by(tx: &mut Tx, env: &Env, ticket: i64, by: i64) -> Result<Vec<i64>
     }
     let a = tx.st.positions.get(&ticket).cloned().ok_or_else(|| Reject::new("not_found", format!("Position #{ticket} not found")))?;
     let b = tx.st.positions.get(&by).cloned().ok_or_else(|| Reject::new("not_found", format!("Position #{by} not found")))?;
+    if a.option.is_some() || b.option.is_some() {
+        return Err(Reject::new("not_supported", "Close By is not available for options"));
+    }
     if a.symbol != b.symbol || a.side == b.side || ticket == by {
         return Err(Reject::new("invalid_close_by", "Close By needs two opposite positions on the same symbol"));
     }
@@ -784,6 +817,20 @@ pub struct PositionPatch {
 
 pub fn modify_position(tx: &mut Tx, env: &Env, ticket: i64, patch: PositionPatch, dealer: Option<&DealerCtx>) -> Result<(Position, Position), Reject> {
     let p = tx.st.positions.get(&ticket).cloned().ok_or_else(|| Reject::new("not_found", format!("Position #{ticket} not found")))?;
+    if p.option.is_some() {
+        if dealer.is_none() {
+            match tx.st.account.status {
+                Status::Active | Status::CloseOnly => {}
+                s => return Err(Reject::new("account_status", format!("Account {} is {} — trading not allowed", tx.st.account.login, s.as_str()))),
+            }
+            if let Some(r) = env.restrictions
+                && let Some(rej) = crate::controls::trading_reject(r, tx.st.account.user_id, false, env.now)
+            {
+                return Err(rej);
+            }
+        }
+        return super::options::modify_position(tx, env, ticket, patch.sl, patch.tp, patch.trailing_points);
+    }
     let spec = env.spec(&p.symbol)?.clone();
     if dealer.is_none() {
         match tx.st.account.status {
@@ -834,6 +881,15 @@ pub struct OrderPatch {
 
 pub fn modify_order(tx: &mut Tx, env: &Env, ticket: i64, patch: OrderPatch, dealer: Option<&DealerCtx>) -> Result<(Order, Order), Reject> {
     let o = tx.st.orders.get(&ticket).cloned().ok_or_else(|| Reject::new("not_found", format!("Order #{ticket} not found")))?;
+    if o.option.is_some() {
+        if dealer.is_none()
+            && let Some(r) = env.restrictions
+            && let Some(rej) = crate::controls::trading_reject(r, tx.st.account.user_id, true, env.now)
+        {
+            return Err(rej);
+        }
+        return super::options::modify_order(tx, env, ticket, &patch);
+    }
     let spec = env.spec(&o.symbol)?.clone();
     if dealer.is_none() {
         gate(env, &tx.st, &o.symbol, true, patch.volume.unwrap_or(o.volume), None)?;

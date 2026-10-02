@@ -156,6 +156,8 @@ async fn following_lifecycle_end_to_end() {
         lp: Arc::new(NullLp),
         max_quote_age_ms: 0,
         restrictions: Default::default(),
+        options: Arc::new(trading::options::OptionsCtx::disabled(quotes.clone())),
+        clock: Default::default(),
     });
     let hub = Hub::start(shared, 4, Default::default());
     set_btc(&quotes, "80000", "80020");

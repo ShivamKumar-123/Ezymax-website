@@ -101,14 +101,19 @@ pub fn trade_stats(deals: &[Deal], snap: &AccountSnap, since: DateTime<Utc>) -> 
             losses += 1;
             gross_loss += -d.profit;
         }
-        lots += d.volume;
+        // option contracts are never lots (prop groups cannot trade options; defensive)
+        if !d.option {
+            lots += d.volume;
+        }
         trades.push(Trade { ticket: d.ticket.clone(), symbol: d.symbol.clone(), side: d.side.clone(), open_time: d.open_time, close_time: Some(d.close_time), profit: Some(d.profit) });
     }
     for p in &snap.positions {
         if p.open_time >= since {
             days.insert(server_date(p.open_time));
         }
-        lots += p.volume;
+        if !p.option {
+            lots += p.volume;
+        }
         trades.push(Trade { ticket: p.ticket.clone(), symbol: p.symbol.clone(), side: p.side.clone(), open_time: p.open_time, close_time: None, profit: None });
     }
     let closed = wins + losses;
@@ -337,5 +342,44 @@ pub async fn cross_account(app: &App) {
                 upsert_flag(app, a, &f).await;
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::Pos;
+
+    #[test]
+    fn option_contracts_never_count_as_lots() {
+        let t = Utc::now() - Duration::hours(2);
+        let deal = |option: bool, volume: i64, profit: i64| Deal {
+            id: "1".into(),
+            ticket: "1".into(),
+            symbol: if option { "EURUSD-20261009-1.1650-C".into() } else { "EURUSD".into() },
+            side: "buy".into(),
+            volume: D::from(volume),
+            open_time: t,
+            close_time: t + Duration::minutes(30),
+            open_price: ZERO,
+            close_price: ZERO,
+            profit: D::from(profit),
+            option,
+        };
+        let snap = AccountSnap {
+            login: 1,
+            user_id: 1,
+            status: "active".into(),
+            group: "prop-50k".into(),
+            balance: D::from(50_000),
+            equity: D::from(50_000),
+            version: 1,
+            positions: vec![Pos { ticket: "9".into(), symbol: "EURUSD-20261009-1.1650-P".into(), side: "sell".into(), volume: D::from(40), open_time: t, profit: ZERO, option: true }],
+            orders: vec![],
+        };
+        let st = trade_stats(&[deal(false, 2, 30), deal(true, 50, 100)], &snap, t - Duration::hours(1));
+        assert_eq!(st.json["lots"], num(D::from(2)), "{}", st.json);
+        // the P&L is real money on the account and still counts
+        assert_eq!(st.day_profits.values().copied().sum::<D>(), D::from(130));
     }
 }

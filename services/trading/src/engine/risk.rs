@@ -32,7 +32,7 @@ pub fn on_tick(tx: &mut Tx, env: &Env, symbol: &str) {
     expire_orders(tx, env);
 
     // 1. pending orders
-    let tickets: Vec<i64> = tx.st.orders.values().filter(|o| o.symbol == symbol).map(|o| o.ticket).collect();
+    let tickets: Vec<i64> = tx.st.orders.values().filter(|o| o.symbol == symbol && o.option.is_none()).map(|o| o.ticket).collect();
     for t in tickets {
         let Some(mut o) = tx.st.orders.get(&t).cloned() else { continue }; // OCO partner may be gone
         if o.kind == OrderType::StopLimit && !o.triggered && reached(OrderType::Stop, o.side, o.price, &q) {
@@ -49,7 +49,7 @@ pub fn on_tick(tx: &mut Tx, env: &Env, symbol: &str) {
     }
 
     // 2. positions: trailing stop, then SL / TP
-    let tickets: Vec<i64> = tx.st.positions.values().filter(|p| p.symbol == symbol).map(|p| p.ticket).collect();
+    let tickets: Vec<i64> = tx.st.positions.values().filter(|p| p.symbol == symbol && p.option.is_none()).map(|p| p.ticket).collect();
     let mut closed_any = false;
     for t in tickets {
         let Some(p) = tx.st.positions.get(&t).cloned() else { continue };
@@ -185,8 +185,13 @@ pub fn check_margin(tx: &mut Tx, env: &Env) {
     }
 }
 
-/// Closes the largest losing position first until the margin level is back above the stop-out level.
+/// Closes the largest losing position first until the margin level is back above the stop-out level. An account
+/// holding options closes by units instead: the unit (strategy, option or CFD position) that frees the most
+/// margin first, strategies with all their legs together (engine::options::stop_out).
 pub fn stop_out(tx: &mut Tx, env: &Env) {
+    if tx.st.positions.values().any(|p| p.option.is_some()) {
+        return super::options::stop_out(tx, env);
+    }
     let acc = tx.st.account.clone();
     let start = metrics(env, &tx.st).level;
     tx.emit(Event::StopOut { level: start.map(r2) });
@@ -230,7 +235,8 @@ pub fn rollover(tx: &mut Tx, env: &Env, day: NaiveDate, at: DateTime<Utc>) {
     let mut total = ZERO;
     for t in tickets {
         let p = tx.st.positions[&t].clone();
-        if p.open_time >= at || p.last_swap_day.is_some_and(|d| d >= day) {
+        // options pay no swap: the premium is paid in full
+        if p.option.is_some() || p.open_time >= at || p.last_swap_day.is_some_and(|d| d >= day) {
             continue;
         }
         let Some(spec) = env.specs.get(&p.symbol) else { continue };

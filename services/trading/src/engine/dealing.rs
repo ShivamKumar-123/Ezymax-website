@@ -8,12 +8,21 @@ use crate::model::{Book, Deal, DealEntry, DealReason, Position, RouteEvent, TxnK
 use crate::money::{D, ZERO, num, r2, rdp};
 use crate::state::Event;
 
+/// Dealer position tools that only make sense for CFDs (options: the options desk routes).
+fn not_option(p: &Position) -> Result<(), Reject> {
+    if p.option.is_some() {
+        return Err(Reject::new("not_supported", format!("#{} is an option position: this tool is for CFD positions", p.ticket)));
+    }
+    Ok(())
+}
+
 pub fn snap(p: &Position) -> Value {
     json!({"volume": num(p.volume), "openPrice": num(p.open_price), "sl": p.sl.map(num), "tp": p.tp.map(num), "book": p.book.as_str(), "swap": num(p.swap), "commission": num(p.commission)})
 }
 
 pub fn add_volume(tx: &mut Tx, env: &Env, ticket: i64, volume: D, dealer: &DealerCtx) -> Result<(Value, Value), Reject> {
     let p = tx.st.positions.get(&ticket).cloned().ok_or_else(|| Reject::new("not_found", format!("Position #{ticket} not found")))?;
+    not_option(&p)?;
     let spec = env.spec(&p.symbol)?.clone();
     if let Some(e) = spec.volume_error(volume).or_else(|| spec.volume_error(p.volume + volume)) {
         return Err(Reject::new("invalid_volume", e));
@@ -63,6 +72,7 @@ pub fn add_volume(tx: &mut Tx, env: &Env, ticket: i64, volume: D, dealer: &Deale
         snapshot: None,
         client_order_id: None,
         partial: false,
+        option: None,
     };
     tx.emit(Event::PositionUpdated { position: np, change: "volume_added".into(), deal: Some(deal) });
     Ok((json!({"volume": num(p.volume), "openPrice": num(p.open_price)}), json!({"volume": num(total), "openPrice": num(avg), "addedAt": num(px), "added": num(volume)})))
@@ -71,6 +81,7 @@ pub fn add_volume(tx: &mut Tx, env: &Env, ticket: i64, volume: D, dealer: &Deale
 /// Error correction of the open price (flagged "price correction" on the client statement).
 pub fn price_correction(tx: &mut Tx, env: &Env, ticket: i64, open_price: D) -> Result<(Value, Value), Reject> {
     let p = tx.st.positions.get(&ticket).cloned().ok_or_else(|| Reject::new("not_found", format!("Position #{ticket} not found")))?;
+    not_option(&p)?;
     let spec = env.spec(&p.symbol)?;
     if open_price <= ZERO {
         return Err(Reject::new("invalid_price", "Enter the corrected open price"));
@@ -92,6 +103,7 @@ pub fn price_correction(tx: &mut Tx, env: &Env, ticket: i64, open_price: D) -> R
 /// so a commission change books the difference; swap is still unrealised and just changes.
 pub fn adjust_charges(tx: &mut Tx, env: &Env, ticket: i64, swap: Option<D>, commission: Option<D>, dealer: &DealerCtx) -> Result<(Value, Value), Reject> {
     let p = tx.st.positions.get(&ticket).cloned().ok_or_else(|| Reject::new("not_found", format!("Position #{ticket} not found")))?;
+    not_option(&p)?;
     let sw = r2(swap.unwrap_or(p.swap));
     let cm = r2(commission.unwrap_or(p.commission));
     if cm < ZERO {
@@ -113,6 +125,9 @@ pub fn adjust_charges(tx: &mut Tx, env: &Env, ticket: i64, swap: Option<D>, comm
 /// Removes a position as if it never existed: no P&L is booked and the entry commission is refunded.
 pub fn void_position(tx: &mut Tx, env: &Env, ticket: i64, dealer: &DealerCtx) -> Result<Value, Reject> {
     let p = tx.st.positions.get(&ticket).cloned().ok_or_else(|| Reject::new("not_found", format!("Position #{ticket} not found")))?;
+    if p.option.is_some() {
+        return Err(Reject::new("not_supported", "Void option trades through the options desk (POST /v1/admin/options/trades/{ticket}/void): it reverses the premium too"));
+    }
     if !p.commission.is_zero() {
         tx.post(env, TxnKind::Reversal, format!("void:{ticket}"), "balance", "commission", p.commission, Some(format!("position:{ticket}")), Some(dealer.reason_code.clone()), Some("void: commission refund".into()));
     }
@@ -122,6 +137,9 @@ pub fn void_position(tx: &mut Tx, env: &Env, ticket: i64, dealer: &DealerCtx) ->
 
 /// Reverses a closing deal: the booked P&L is taken back and the closed volume is open again.
 pub fn reopen_deal(tx: &mut Tx, env: &Env, deal: &Deal, dealer: &DealerCtx) -> Result<(Value, Value), Reject> {
+    if deal.option.is_some() {
+        return Err(Reject::new("not_supported", "Option deals can't be reopened; void the trade or re-run the settlement instead"));
+    }
     if tx.st.reversed_deals.contains(&deal.id) {
         return Err(Reject::new("already_reversed", format!("Deal {} was already reversed", deal.id)));
     }
@@ -161,6 +179,7 @@ pub enum BookMove {
 /// transfer price.
 pub fn transfer_book(tx: &mut Tx, env: &Env, ticket: i64, to: Book, mv: BookMove, dealer: &DealerCtx) -> Result<(Option<i64>, Value, Value, bool), Reject> {
     let p = tx.st.positions.get(&ticket).cloned().ok_or_else(|| Reject::new("not_found", format!("Position #{ticket} not found")))?;
+    not_option(&p)?;
     if p.book == to {
         return Err(Reject::new("same_book", format!("already on {}-book", to.as_str())));
     }
@@ -243,6 +262,9 @@ pub fn transfer_book(tx: &mut Tx, env: &Env, ticket: i64, to: Book, mv: BookMove
 pub fn fill_order(tx: &mut Tx, env: &Env, ticket: i64, dealer: &DealerCtx) -> Result<(Option<i64>, D, Book), Reject> {
     use super::trade::{Fill, fill, is_opening};
     let o = tx.st.orders.get(&ticket).cloned().ok_or_else(|| Reject::new("not_found", format!("Order #{ticket} not found")))?;
+    if o.option.is_some() {
+        return Err(Reject::new("not_supported", "Option orders fill at the model price when their limit or trigger is reached"));
+    }
     let spec = env.spec(&o.symbol)?.clone();
     gate(env, &tx.st, &o.symbol, is_opening(&tx.st, &o.symbol, o.side, o.volume), o.volume, Some(dealer))?;
     market_open(env, &spec)?;

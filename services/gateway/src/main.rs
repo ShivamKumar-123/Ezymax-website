@@ -30,6 +30,7 @@ mod shares;
 mod staff_admin;
 mod staff_auth;
 mod state;
+mod suitability;
 mod tenancy;
 mod stepup;
 #[cfg(test)]
@@ -284,6 +285,11 @@ fn router(st: AppState) -> Router {
         .route("/v1/admin/kyc/cases/{id}/request-info", post(kyc::staff::request_info))
         .route("/v1/admin/kyc/cases/{id}/notes", post(kyc::staff::note))
         .route("/v1/admin/kyc/documents/{id}/file", get(kyc::staff::file))
+        // suitability for complex products: KYC + risk disclosure + knowledge quiz (suitability.rs)
+        .route("/v1/suitability/{product}", get(suitability::get))
+        .route("/v1/suitability/{product}/accept", post(suitability::accept))
+        .route("/v1/suitability/{product}/quiz", post(suitability::quiz))
+        .route("/v1/internal/suitability/{user_id}", get(suitability::internal))
         .route("/v1/shares", post(shares::create))
         .route("/v1/shares/lookup", post(shares::lookup))
         .route("/v1/shares/{code}/trades", patch(shares::update_trades))

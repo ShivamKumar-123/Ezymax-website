@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use crate::logo;
 use crate::pdf::{A4_H, A4_W, Doc, Font, Page, Rgb, fit, text_width};
-use crate::statement::{DealRow, Statement};
+use crate::statement::{DealRow, Statement, reason_label};
 use crate::time;
 use crate::upstream::num;
 
@@ -149,10 +149,14 @@ pub fn statement_tables(s: &Statement, sections: &Sections) -> Vec<Table> {
     add(&mut sum, "Closed trade results (incl. swap)", m.trade_results);
     add(&mut sum, "Commission", m.commission);
     add(&mut sum, "Performance fees", m.performance_fees);
+    if has_options(s) {
+        add(&mut sum, "Option premiums (paid - / received +)", m.option_premiums);
+        add(&mut sum, "Option settlements", m.option_settlements);
+    }
     add(&mut sum, "Adjustments", m.adjustments);
     add(&mut sum, "Closing balance", m.closing_balance);
     add(&mut sum, "Credit and bonus", m.closing_credit);
-    add(&mut sum, "Net trading result", m.net_pnl);
+    add(&mut sum, "Net trading result (realised)", m.net_pnl);
     v.push(sum);
 
     let mut tr = Table::new("Closed trades", &["Close time", "Deal", "Position", "Symbol", "Type", "Volume", "Open time", "Open price", "Close price", "Commission", "Swap", "Profit", "Net", "Reason"]);
@@ -171,14 +175,55 @@ pub fn statement_tables(s: &Statement, sections: &Sections) -> Vec<Table> {
             Cell::money(d.swap),
             Cell::money(d.profit),
             Cell::money(d.net()),
-            Cell::text(&d.reason),
+            Cell::text(reason_label(&d.reason)),
         ]);
     }
     v.push(tr);
 
+    if has_options(s) {
+        let o = &s.options;
+        let mut os = Table::new("Options summary", &["Item", "Amount", "Currency"]);
+        add(&mut os, "Premiums paid", o.premiums_paid);
+        add(&mut os, "Premiums received", o.premiums_received);
+        add(&mut os, "Settlements received (expiry payouts and knock-out rebates)", o.settlements_received);
+        add(&mut os, "Settlements paid (sold options expired in the money)", o.settlements_paid);
+        add(&mut os, "Option commission", o.commission);
+        add(&mut os, "Realised option P&L", o.realised_pnl);
+        add(&mut os, "Net option result (P&L - commission)", o.net);
+        v.push(os);
+        let mut ot = Table::new(
+            "Options",
+            &["Time", "Deal", "Position", "Series", "Underlying", "Type", "Strike", "Expiry", "Side", "Event", "Contracts", "Premium", "Fixing", "Cash", "Commission", "Realised P&L", "Note"],
+        );
+        for d in &o.deals {
+            ot.rows.push(vec![
+                Cell::Time(d.time),
+                Cell::Int(d.id),
+                Cell::Int(d.position_ticket),
+                Cell::text(&d.symbol),
+                Cell::text(d.option_text("underlying")),
+                Cell::text(option_right(d)),
+                Cell::text(d.option_text("strike")),
+                Cell::text(d.option_text("expiry")),
+                Cell::text(&d.side),
+                Cell::text(option_event(d)),
+                Cell::Num(d.volume.to_f64().unwrap_or(0.0), 2),
+                Cell::Num(d.price.to_f64().unwrap_or(0.0), 5),
+                d.option_fixing().map(|x| Cell::Num(x.to_f64().unwrap_or(0.0), 5)).unwrap_or(Cell::Empty),
+                Cell::money(d.option_cash()),
+                Cell::money(-d.option_commission()),
+                if d.is_exit() { Cell::money(d.profit) } else { Cell::Empty },
+                Cell::text(if d.reversed { "reversed (correction)" } else { "" }),
+            ]);
+        }
+        v.push(ot);
+    }
+
     if sections.deals {
-        let mut dt = Table::new("Deals", &["Time", "Deal", "Position", "Symbol", "Direction", "Entry", "Volume", "Price", "Commission", "Swap", "Profit", "Comment"]);
+        let mut dt = Table::new("Deals", &["Time", "Deal", "Position", "Symbol", "Direction", "Entry", "Volume", "Price", "Commission", "Swap", "Profit", "Reason", "Comment"]);
         for d in &s.deals {
+            // CFD commission is booked on the entry deal; an option deal charges its own (opens and closes)
+            let comm = if d.is_option() { d.option_commission() } else if d.entry == "in" { d.commission } else { Decimal::ZERO };
             dt.rows.push(vec![
                 Cell::Time(d.time),
                 Cell::Int(d.id),
@@ -188,9 +233,10 @@ pub fn statement_tables(s: &Statement, sections: &Sections) -> Vec<Table> {
                 Cell::text(&d.entry),
                 Cell::Num(d.volume.to_f64().unwrap_or(0.0), 2),
                 Cell::Num(d.price.to_f64().unwrap_or(0.0), 5),
-                Cell::money(if d.entry == "in" { -d.commission } else { Decimal::ZERO }),
+                Cell::money(-comm),
                 Cell::money(d.swap),
                 Cell::money(d.profit),
+                Cell::text(reason_label(&d.reason)),
                 Cell::text(if d.reversed { format!("reversed {}", d.comment) } else { d.comment.clone() }),
             ]);
         }
@@ -216,7 +262,7 @@ pub fn statement_tables(s: &Statement, sections: &Sections) -> Vec<Table> {
         let c = &s.charges;
         let mut ch = Table::new("Charges", &["Charge", "Amount", "Currency", "Note"]);
         let mut row = |k: &str, d: Decimal, note: &str| ch.rows.push(vec![Cell::text(k), Cell::money(d), Cell::text(cur.clone()), Cell::text(note)]);
-        row("Commission", c.commission, "Round turn per lot, charged when a position opens");
+        row("Commission", c.commission, "CFDs: round turn per lot, charged when a position opens. Options: per contract on every trade (open and close)");
         row("Swap paid", c.swap_paid, "Overnight financing charged on closed positions");
         row("Swap earned", c.swap_earned, "Positive overnight financing");
         row("Performance fees", c.performance_fees, "Copy trading / PAMM");
@@ -260,6 +306,34 @@ pub fn statement_tables(s: &Statement, sections: &Sections) -> Vec<Table> {
         v.push(po);
     }
     v
+}
+
+/// The statement has options activity: option deals, option ledger postings or open option positions.
+pub fn has_options(s: &Statement) -> bool {
+    !s.options.is_empty() || !s.summary.option_premiums.is_zero() || !s.summary.option_settlements.is_zero() || s.positions.iter().any(|p| p["option"].is_object())
+}
+
+fn option_right(d: &DealRow) -> &'static str {
+    match d.option_text("right").as_str() {
+        "call" | "C" => "Call",
+        "put" | "P" => "Put",
+        _ => match d.symbol.rsplit('-').next() {
+            Some("C") => "Call",
+            Some("P") => "Put",
+            _ => "",
+        },
+    }
+}
+
+/// What an option deal was: an open (buy / sell), a close, or the expiry / knock-out / stop-out that ended it.
+fn option_event(d: &DealRow) -> String {
+    if !d.is_exit() {
+        return if d.side == "buy" { "Bought (open)".into() } else { "Sold (open)".into() };
+    }
+    match d.reason.as_str() {
+        "client" => "Closed".into(),
+        r => reason_label(r).into(),
+    }
 }
 
 fn order_type(o: &Value) -> String {
@@ -470,6 +544,63 @@ fn f64dec(x: f64) -> Decimal {
     Decimal::from_f64_retain(x).unwrap_or_default().round_dp(2)
 }
 
+/// The Options section (O46): premiums paid / received, settlements with their fixing, commission and realised
+/// P&L, then every option deal of the period.
+fn options_pdf(w: &mut Writer, s: &Statement, cur: &str) {
+    let o = &s.options;
+    w.section("Options", &format!("Kalks FX Options, amounts in {cur}"));
+    w.kv_grid(&[
+        ("Premiums paid", fmt_money(o.premiums_paid), None),
+        ("Premiums received", fmt_money(o.premiums_received), None),
+        ("Settlements received", fmt_money(o.settlements_received), None),
+        ("Settlements paid", fmt_money(o.settlements_paid), None),
+        ("Commission", fmt_money(o.commission), None),
+        ("Realised option P&L", fmt_money(o.realised_pnl), tone(o.realised_pnl)),
+        ("Positions opened / closed", format!("{} / {}", o.opened, o.closed), None),
+        ("Expired / knocked out", format!("{} / {}", o.expired, o.knocked_out), None),
+        ("Net option result (P&L - commission)", fmt_money(o.net), tone(o.net)),
+    ]);
+    let cols = [
+        Col { head: "Time", w: 60.0, align: Align::L },
+        Col { head: "Deal", w: 38.0, align: Align::L },
+        Col { head: "Series", w: 92.0, align: Align::L },
+        Col { head: "Event", w: 52.0, align: Align::L },
+        Col { head: "Contracts", w: 34.0, align: Align::R },
+        Col { head: "Premium", w: 40.0, align: Align::R },
+        Col { head: "Fixing", w: 40.0, align: Align::R },
+        Col { head: "Cash", w: 48.0, align: Align::R },
+        Col { head: "Commission", w: 42.0, align: Align::R },
+        Col { head: "P&L", w: 44.0, align: Align::R },
+    ];
+    let rows: Vec<Vec<(String, Option<Rgb>)>> = o
+        .deals
+        .iter()
+        .map(|d| {
+            let cash = d.option_cash();
+            vec![
+                (time::fmt_server(d.time), None),
+                (d.id.to_string(), None),
+                (d.symbol.clone(), Some(INK)),
+                (if d.reversed { format!("{} (reversed)", option_event(d)) } else { option_event(d) }, None),
+                (fnum(d.volume.to_f64().unwrap_or(0.0), 2), None),
+                (if d.is_settlement() { String::new() } else { price(d.price) }, None),
+                (d.option_fixing().map(price).unwrap_or_default(), None),
+                (fmt_money(cash), tone(cash)),
+                (fmt_money(-d.option_commission()), None),
+                (if d.is_exit() { fmt_money(d.profit) } else { String::new() }, if d.is_exit() { tone(d.profit) } else { None }),
+            ]
+        })
+        .collect();
+    let live: Vec<&DealRow> = o.deals.iter().filter(|d| !d.reversed).collect();
+    let cash: Decimal = live.iter().map(|d| d.option_cash()).sum();
+    let blank = || (String::new(), None);
+    w.table(
+        &cols,
+        &rows,
+        Some(vec![("Total".into(), None), blank(), blank(), blank(), blank(), blank(), blank(), (fmt_money(cash), tone(cash)), (fmt_money(-o.commission), None), (fmt_money(o.realised_pnl), tone(o.realised_pnl))]),
+    );
+}
+
 pub fn statement_pdf(s: &Statement, company: &str, site: &str, support: &str, sections: &Sections) -> Vec<u8> {
     let cur = s.account.currency.clone();
     let period = format!("{} - {}", time::fmt_server(s.from), time::fmt_server(s.to - chrono::Duration::seconds(1)));
@@ -513,13 +644,19 @@ pub fn statement_pdf(s: &Statement, company: &str, site: &str, support: &str, se
         ("Commission", fmt_money(m.commission), tone(m.commission)),
         ("Performance fees", fmt_money(m.performance_fees), tone(m.performance_fees)),
         ("Adjustments", fmt_money(m.adjustments), None),
-        ("Net trading result", fmt_money(m.net_pnl), tone(m.net_pnl)),
+        ("Net trading result (realised)", fmt_money(m.net_pnl), tone(m.net_pnl)),
         ("Credit and bonus", fmt_money(m.closing_credit), None),
         ("Floating P&L (now)", s.floating.map(fmt_money).unwrap_or_else(|| "-".into()), s.floating.and_then(tone)),
         ("Equity (now)", s.equity.map(fmt_money).unwrap_or_else(|| "-".into()), None),
         ("Margin (now)", s.margin.map(fmt_money).unwrap_or_else(|| "-".into()), None),
         ("Free margin (now)", s.free_margin.map(fmt_money).unwrap_or_else(|| "-".into()), None),
     ]);
+    if has_options(s) {
+        w.kv_grid(&[
+            ("Option premiums (paid - / received +)", fmt_money(m.option_premiums), tone(m.option_premiums)),
+            ("Option settlements", fmt_money(m.option_settlements), tone(m.option_settlements)),
+        ]);
+    }
     let st = &s.stats;
     let k = if s.account.cent { 100.0 } else { 1.0 };
     w.kv_grid(&[
@@ -577,6 +714,10 @@ pub fn statement_pdf(s: &Statement, company: &str, site: &str, support: &str, se
         &rows,
         Some(vec![("Total".into(), None), blank(), blank(), (fnum(tv, 2), None), blank(), blank(), blank(), blank(), (fmt_money(-tc), None), (fmt_money(ts), None), (fmt_money(tp), tone(tp))]),
     );
+
+    if has_options(s) {
+        options_pdf(&mut w, s, &cur);
+    }
 
     if sections.open {
         w.section("Open positions", "at generation time");
@@ -709,12 +850,14 @@ pub fn statement_pdf(s: &Statement, company: &str, site: &str, support: &str, se
         w.page().text(M, y + 8.0, &fit(n, Font::Regular, 7.5, A4_W - 2.0 * M), Font::Regular, 7.5, DOWN);
         w.y += 12.0;
     }
-    w.ensure(40.0);
+    w.ensure(52.0);
     let y = w.y + 8.0;
     let lines = [
         "Times are server time (GMT+3 during US daylight saving time, GMT+2 otherwise). Open positions, pending orders, equity and margin",
         "are shown as at the time this statement was generated. The spread cost is an estimate for information; it is already included in",
-        "the prices of your trades. Trading leveraged products carries a high level of risk and may not be suitable for all investors.",
+        "the prices of your trades. Option premiums are paid / received in cash when a trade opens or closes; option results are realised",
+        "when a position is closed, expires or knocks out. Trading leveraged products and options carries a high level of risk and may not",
+        "be suitable for all investors.",
     ];
     for (i, l) in lines.iter().enumerate() {
         w.page().text(M, y + i as f64 * 10.0, l, Font::Regular, 6.8, INK3);
@@ -752,6 +895,141 @@ mod tests {
         t.rows.push(vec![Cell::Num(1.25, 2)]);
         let b = xlsx(&[t]).unwrap();
         assert_eq!(&b[..2], b"PK");
+    }
+
+    /// A statement with a CFD round trip and an option bought, partly sold back and expired in the money.
+    fn options_statement() -> Statement {
+        use crate::statement::{AccountInfo, DealRow, Input, build};
+        use chrono::TimeZone;
+        use std::str::FromStr;
+        let d = |x: &str| Decimal::from_str(x).unwrap();
+        let t = |h: u32| Utc.with_ymd_and_hms(2026, 10, 9, h, 0, 0).unwrap();
+        let account = AccountInfo {
+            login: 10000001,
+            user_id: 1,
+            kind: "live".into(),
+            group: "standard".into(),
+            group_name: "Standard".into(),
+            currency: "USD".into(),
+            cent: false,
+            leverage: 500,
+            mode: "hedging".into(),
+            name: "Test".into(),
+            status: "active".into(),
+            created_at: t(0),
+        };
+        let row = |id: i64, entry: &str, side: &str, reason: &str, vol: &str, price: &str, profit: &str, comm: &str, option: Option<Value>, h: u32| DealRow {
+            id,
+            position_ticket: if option.is_some() { 500 } else { 600 },
+            symbol: if option.is_some() { "EURUSD-20261009-1.1650-C".into() } else { "EURUSD".into() },
+            side: side.into(),
+            position_side: "buy".into(),
+            entry: entry.into(),
+            volume: d(vol),
+            price: d(price),
+            profit: d(profit),
+            swap: Decimal::ZERO,
+            commission: d(comm),
+            reason: reason.into(),
+            time: t(h),
+            open_price: Some(d("0.0052")),
+            open_time: Some(t(1)),
+            comment: String::new(),
+            reversed: false,
+            option,
+        };
+        let o = |cash: f64, charged: f64, fixing: Value| Some(serde_json::json!({"series": "EURUSD-20261009-1.1650-C", "underlying": "EURUSD", "right": "call", "strike": 1.165, "expiry": "2026-10-09", "cash": cash, "fixing": fixing, "commissionCharged": charged}));
+        let l = |h, txn, kind: &str, amt: &str| (t(h), txn, "balance".to_string(), kind.to_string(), d(amt), None, None);
+        let (summary, charges, reconciliation, ledger, trades, deals, options) = build(Input {
+            account: account.clone(),
+            from: t(0),
+            to: t(23),
+            opening_balance: d("1000"),
+            opening_credit: Decimal::ZERO,
+            ledger: vec![
+                l(1, 1, "option_premium", "-104"),
+                l(1, 2, "commission", "-0.50"),
+                l(2, 3, "commission", "-7"),
+                l(3, 4, "option_premium", "60"),
+                l(3, 5, "commission", "-0.25"),
+                l(4, 6, "trade_pnl", "20"),
+                l(14, 7, "option_settlement", "62"),
+            ],
+            deals: vec![
+                row(10, "in", "buy", "client", "2", "0.0052", "0", "0.50", o(-104.0, 0.5, Value::Null), 1),
+                row(20, "in", "buy", "client", "1", "1.16", "0", "7", None, 2),
+                row(11, "out", "sell", "client", "1", "0.0060", "8", "0.50", o(60.0, 0.25, Value::Null), 3),
+                row(21, "out", "sell", "client", "1", "1.162", "20", "7", None, 4),
+                row(12, "out", "sell", "expiry", "1", "0.0062", "10", "0.25", o(62.0, 0.0, serde_json::json!(1.1712)), 14),
+            ],
+            spread: Decimal::ZERO,
+        });
+        assert!(reconciliation.ok, "{:?}", reconciliation.notes);
+        let tr = crate::statement::to_trades(1, &deals.iter().filter(|x| x.is_exit()).cloned().collect::<Vec<_>>(), false, |_| 0.0);
+        Statement {
+            account,
+            client_name: "Test Client".into(),
+            client_email: "t@example.com".into(),
+            from: t(0),
+            to: t(23),
+            generated_at: t(23),
+            summary,
+            charges,
+            reconciliation,
+            stats: crate::metrics::trade_stats(&tr),
+            trades,
+            options,
+            deals,
+            ledger,
+            positions: vec![],
+            orders: vec![],
+            equity: None,
+            margin: None,
+            floating: None,
+            free_margin: None,
+        }
+    }
+
+    #[test]
+    fn statement_tables_and_pdf_have_an_options_section() {
+        let s = options_statement();
+        assert!(has_options(&s));
+        let tables = statement_tables(&s, &Sections::default());
+        let names: Vec<&str> = tables.iter().map(|t| t.name.as_str()).collect();
+        assert!(names.contains(&"Options") && names.contains(&"Options summary"), "{names:?}");
+        let csv = String::from_utf8(csv(&tables)).unwrap();
+        for needle in ["Option premiums (paid - / received +),-44.00", "Option settlements,62.00", "Premiums paid,104.00", "Premiums received,60.00", "Settlements received (expiry payouts and knock-out rebates),62.00", "Realised option P&L,18.00", "Option premium", "Option settlement", "Bought (open)", "Expired", "Call", "1.17120"] {
+            assert!(csv.contains(needle), "missing {needle:?} in\n{csv}");
+        }
+        // the closed-trades table is CFD only; premiums are never deposits / withdrawals / adjustments
+        let closed = tables.iter().find(|t| t.name == "Closed trades").unwrap();
+        assert_eq!(closed.rows.len(), 1);
+        assert!(csv.contains("Deposits,0.00") && csv.contains("Withdrawals,0.00") && csv.contains("Adjustments,0.00"));
+        assert!(csv.contains("Net trading result (realised),30.25"), "{csv}"); // CFD 20 + options 18 − commission 7.75
+        // the PDF: decompress the content streams and look for the section
+        let pdf = statement_pdf(&s, "Kalks", "kalks.com", "support@kalks.com", &Sections::default());
+        let mut text = String::new();
+        let mut i = 0;
+        while let Some(p) = pdf[i..].windows(7).position(|w| w == b"stream\n") {
+            let start = i + p + 7;
+            let end = start + pdf[start..].windows(9).position(|w| w == b"endstream").unwrap();
+            let mut dec = flate2::read::ZlibDecoder::new(&pdf[start..end]);
+            let mut out = Vec::new();
+            if std::io::Read::read_to_end(&mut dec, &mut out).is_ok() {
+                text.push_str(&String::from_utf8_lossy(&out));
+            }
+            i = end + 9; // past "endstream"
+        }
+        for needle in ["(Options) Tj", "(Premiums paid) Tj", "(Settlements received) Tj", "(Realised option P&L) Tj", "(Expired) Tj", "(Option premium) Tj", "(Option settlement) Tj", "(1.1712) Tj"] {
+            assert!(text.contains(needle), "PDF is missing {needle}");
+        }
+        // a CFD-only statement has no options section
+        let mut plain = s.clone();
+        plain.options = Default::default();
+        plain.summary.option_premiums = Decimal::ZERO;
+        plain.summary.option_settlements = Decimal::ZERO;
+        assert!(!has_options(&plain));
+        assert!(!statement_tables(&plain, &Sections::default()).iter().any(|t| t.name.starts_with("Options")));
     }
 
     #[test]

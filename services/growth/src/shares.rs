@@ -77,7 +77,14 @@ pub async fn create(st: &AppState, tenant: &str, user_id: i64, req: &ShareReq, p
             v["openTime"] = d["openTime"].clone();
             v["closeTime"] = d["time"].clone();
             v["movePct"] = num(mv);
-            v["lots"] = num(r4(if acc.cent { f(d, "volume") / HUNDRED } else { f(d, "volume") }));
+            if crate::calc::is_option_deal(d) {
+                // an option trade: volume is contracts (never lots), prices are premiums per unit
+                v["instrument"] = json!("option");
+                v["contracts"] = num(r4(f(d, "volume")));
+                v["lots"] = Value::Null;
+            } else {
+                v["lots"] = num(r4(if acc.cent { f(d, "volume") / HUNDRED } else { f(d, "volume") }));
+            }
             v["profit"] = if req.show_amounts { num(r2(usd(net(d)))) } else { Value::Null };
             v["win"] = json!(net(d) > ZERO);
             (v, Some(deal_id))
@@ -95,7 +102,9 @@ pub async fn create(st: &AppState, tenant: &str, user_id: i64, req: &ShareReq, p
             }
             let total: D = closes.iter().map(|d| net(d)).sum();
             let wins = closes.iter().filter(|d| net(d) > ZERO).count();
-            let lots: D = closes.iter().map(|d| f(d, "volume")).sum();
+            // option contracts are not lots
+            let lots: D = closes.iter().filter(|d| !crate::calc::is_option_deal(d)).map(|d| f(d, "volume")).sum();
+            let contracts: D = closes.iter().filter(|d| crate::calc::is_option_deal(d)).map(|d| f(d, "volume")).sum();
             let start_balance = acc.balance - total;
             let ret = (start_balance > ZERO).then(|| r2(total / start_balance * HUNDRED));
             let mut v = base.clone();
@@ -105,6 +114,9 @@ pub async fn create(st: &AppState, tenant: &str, user_id: i64, req: &ShareReq, p
             v["trades"] = json!(closes.len());
             v["winRate"] = num(r2(D::from(wins as i64) / D::from(closes.len() as i64) * HUNDRED));
             v["lots"] = num(r4(if acc.cent { lots / HUNDRED } else { lots }));
+            if contracts > ZERO {
+                v["optionContracts"] = num(r4(contracts));
+            }
             v["returnPct"] = ret.map(num).unwrap_or(Value::Null);
             v["profit"] = if req.show_amounts { num(r2(usd(total))) } else { Value::Null };
             v["win"] = json!(total > ZERO);

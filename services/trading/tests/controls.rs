@@ -111,6 +111,8 @@ async fn restrictions_and_staff_sessions_through_the_api() {
         lp: Arc::new(NullLp),
         max_quote_age_ms: 0,
         restrictions: Default::default(),
+        options: Arc::new(trading::options::OptionsCtx::disabled(quotes.clone())),
+        clock: Default::default(),
     });
     let hub = Hub::start(shared, 2, Default::default());
     let t = Utc::now().timestamp_millis();
@@ -142,6 +144,8 @@ async fn restrictions_and_staff_sessions_through_the_api() {
         market_data_ws: String::new(), instruments_file: String::new(), specs_file: String::new(), shards: 2, max_quote_age_ms: 0, session_ttl_hours: 12,
         json_logs: false, rollover_enabled: false, wallet_url: String::new(), wallet_token: String::new(), ib_url: String::new(), ib_token: String::new(),
         gateway_url: format!("http://{addr}"), gateway_token: "t".into(),
+        options_url: String::new(), options_token: String::new(), options_hedger: false, options_hedge_user: 0,
+        options_hedge_group: "standard".into(), options_hedge_capital: 1_000_000, options_hedge_limit_usd: 250_000,
     };
     let st = AppState {
         hub: hub.clone(), pool: pool.clone(), keys: Keys::new(&cfg.session_secret), cfg: Arc::new(cfg.clone()), limiter: Limiter::default(),

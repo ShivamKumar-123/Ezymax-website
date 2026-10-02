@@ -337,6 +337,225 @@ pub struct Position {
     pub client_order_id: Option<String>,
     /// Set when this position was opened by a netting reversal of `ticket`.
     pub reversed_from: Option<i64>,
+    /// Kalks FX Options: the contract this position holds (None = a CFD position). `symbol` is then the series
+    /// code, `volume` the contracts and `open_price` the premium per unit of the underlying (quote currency).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub option: Option<OptionTerms>,
+    /// Options: the multi-leg order (strategy) this leg was opened with; legs of one combo close together.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub combo_id: Option<i64>,
+    /// Options: signed premium cash booked at open for the remaining contracts (account currency: paid −,
+    /// received +). Realised P&L = cash at close / expiry + this basis.
+    #[serde(default, skip_serializing_if = "D::is_zero")]
+    pub premium: D,
+}
+
+impl Position {
+    pub fn is_option(&self) -> bool {
+        self.option.is_some()
+    }
+}
+
+/// Call or put.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OptRight {
+    Call,
+    Put,
+}
+
+impl OptRight {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            OptRight::Call => "call",
+            OptRight::Put => "put",
+        }
+    }
+    pub fn parse(s: &str) -> Option<OptRight> {
+        match s.to_ascii_lowercase().as_str() {
+            "call" | "c" => Some(OptRight::Call),
+            "put" | "p" => Some(OptRight::Put),
+            _ => None,
+        }
+    }
+    /// Intrinsic value per unit at `s`.
+    pub fn intrinsic(self, s: D, strike: D) -> D {
+        match self {
+            OptRight::Call => (s - strike).max(ZERO),
+            OptRight::Put => (strike - s).max(ZERO),
+        }
+    }
+}
+
+/// Barrier type: up/down and out/in.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum BarrierKind {
+    UO,
+    DO,
+    UI,
+    DI,
+}
+
+impl BarrierKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            BarrierKind::UO => "UO",
+            BarrierKind::DO => "DO",
+            BarrierKind::UI => "UI",
+            BarrierKind::DI => "DI",
+        }
+    }
+    pub fn parse(s: &str) -> Option<BarrierKind> {
+        match s.to_ascii_uppercase().as_str() {
+            "UO" | "UP_OUT" | "UP-AND-OUT" => Some(BarrierKind::UO),
+            "DO" | "DOWN_OUT" | "DOWN-AND-OUT" => Some(BarrierKind::DO),
+            "UI" | "UP_IN" | "UP-AND-IN" => Some(BarrierKind::UI),
+            "DI" | "DOWN_IN" | "DOWN-AND-IN" => Some(BarrierKind::DI),
+            _ => None,
+        }
+    }
+    pub fn is_up(self) -> bool {
+        matches!(self, BarrierKind::UO | BarrierKind::UI)
+    }
+    pub fn is_in(self) -> bool {
+        matches!(self, BarrierKind::UI | BarrierKind::DI)
+    }
+    /// Has the underlying reached the barrier?
+    pub fn hit(self, spot: D, level: D) -> bool {
+        if self.is_up() { spot >= level } else { spot <= level }
+    }
+}
+
+/// Knock-in / knock-out terms of a barrier option (continuous monitoring on the raw mid).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct BarrierTerms {
+    pub kind: BarrierKind,
+    pub level: D,
+    /// Cash rebate per unit of the underlying (quote currency): a knock-out pays it at the hit, a knock-in that
+    /// never knocked in pays it at expiry.
+    #[serde(default)]
+    pub rebate: D,
+    #[serde(default)]
+    pub knocked_in: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub knocked_at: Option<DateTime<Utc>>,
+    /// Raw mid that knocked it in.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub knock_spot: Option<D>,
+}
+
+/// The contract of an option position (copied from the options service snapshot when the trade is made, so a
+/// position stays self-describing after its series leaves the snapshot).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct OptionTerms {
+    /// Vanilla series code, e.g. `EURUSD-20261009-1.1650-C`.
+    pub series: String,
+    pub underlying: String,
+    pub right: OptRight,
+    pub strike: D,
+    /// Expiry date and the cut instant (European, cash-settled at the fixing).
+    pub expiry: NaiveDate,
+    pub expiry_at: DateTime<Utc>,
+    /// Units of the underlying per contract.
+    pub contract_size: D,
+    /// Premium currency (the underlying's quote currency).
+    pub quote_ccy: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub barrier: Option<BarrierTerms>,
+}
+
+impl OptionTerms {
+    /// `SYMBOL:YYYY-MM-DD` (the options service's expiry key).
+    pub fn expiry_key(&self) -> String {
+        format!("{}:{}", self.underlying, self.expiry)
+    }
+    pub fn style(&self) -> &'static str {
+        if self.barrier.is_some() { "barrier" } else { "vanilla" }
+    }
+    /// A barrier that has not knocked in / out yet (it still prices as a barrier).
+    pub fn alive_barrier(&self) -> Option<&BarrierTerms> {
+        self.barrier.as_ref().filter(|b| !(b.kind.is_in() && b.knocked_in))
+    }
+    /// Payoff per unit at expiry for fixing `f` (a knock-in that never knocked in pays its rebate).
+    pub fn payoff(&self, f: D) -> D {
+        match &self.barrier {
+            Some(b) if b.kind.is_in() && !b.knocked_in => b.rebate,
+            _ => self.right.intrinsic(f, self.strike),
+        }
+    }
+}
+
+/// An underlying price condition that arms a pending order (raw mid).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Trigger {
+    pub symbol: String,
+    pub op: TriggerOp,
+    pub price: D,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TriggerOp {
+    Above,
+    Below,
+}
+
+impl TriggerOp {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            TriggerOp::Above => "above",
+            TriggerOp::Below => "below",
+        }
+    }
+    pub fn fired(self, px: D, level: D) -> bool {
+        match self {
+            TriggerOp::Above => px >= level,
+            TriggerOp::Below => px <= level,
+        }
+    }
+}
+
+/// One leg of a pending option order.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct OptLeg {
+    pub terms: OptionTerms,
+    pub side: Side,
+    pub contracts: D,
+}
+
+/// A pending option order: its legs fill together (all or nothing).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct OptionOrder {
+    pub legs: Vec<OptLeg>,
+    /// Limit on the premium: a single leg buys at or below it (sells at or above it); a multi-leg order fills
+    /// when its net debit per combo unit is at or below it (a credit order: its net credit at or above it).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub limit_premium: Option<D>,
+}
+
+/// Option facts of a deal.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct DealOption {
+    pub terms: OptionTerms,
+    /// Signed cash booked on the balance by this deal, commission excluded (account currency): premium paid −,
+    /// premium received +, sale / buy-back proceeds, expiry payout, knock-out rebate.
+    pub cash: D,
+    /// Quote currency → USD rate used for the cash.
+    pub usd_per_quote: D,
+    /// Raw mid of the underlying at the fill (fixing for an expiry).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spot: Option<D>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fixing: Option<D>,
+    /// Fixing run of an expiry settlement.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub run: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub combo_id: Option<i64>,
+    /// Commission charged by this deal (an exit deal's `commission` also carries the closed share of the entry
+    /// commission, like CFD exits).
+    #[serde(default)]
+    pub charged: D,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -367,9 +586,20 @@ pub struct Order {
     /// Stop-limit whose stop has triggered: now a limit order at `stop_limit`.
     pub triggered: bool,
     pub client_order_id: Option<String>,
+    /// Kalks FX Options pending order (legs, premium limit). `symbol` is then the first leg's series code.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub option: Option<OptionOrder>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub combo_id: Option<i64>,
+    /// Arms the order when the underlying's raw mid crosses a level (`triggered` turns true).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub trigger: Option<Trigger>,
 }
 
 impl Order {
+    pub fn is_option(&self) -> bool {
+        self.option.is_some()
+    }
     /// The price the order currently waits for.
     pub fn active_price(&self) -> D {
         if self.kind == OrderType::StopLimit && self.triggered { self.stop_limit.unwrap_or(self.price) } else { self.price }
@@ -433,6 +663,10 @@ pub enum DealReason {
     Force,
     PriceCorrection,
     PendingFill,
+    /// Option settled at expiry against the fixing.
+    Expiry,
+    /// Barrier option knocked out (closed at its rebate).
+    KnockOut,
 }
 
 impl DealReason {
@@ -448,6 +682,8 @@ impl DealReason {
             DealReason::Force => "force",
             DealReason::PriceCorrection => "price_correction",
             DealReason::PendingFill => "pending_fill",
+            DealReason::Expiry => "expiry",
+            DealReason::KnockOut => "knock_out",
         }
     }
 }
@@ -490,6 +726,9 @@ pub struct Deal {
     /// Exit deal that left part of the position open.
     #[serde(default)]
     pub partial: bool,
+    /// Kalks FX Options deal: terms, the cash booked, fixing / run of a settlement.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub option: Option<DealOption>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -521,6 +760,10 @@ pub enum TxnKind {
     /// Platform capital booked on (or withdrawn from) a house account (services/algo "House accounts"):
     /// `house:house_capital` ↔ balance. Not a client deposit: deposit / FTD reports never count it.
     HouseCapital,
+    /// Kalks FX Options premium paid / received (opens and closes): balance ↔ `house:options_premium`.
+    OptionPremium,
+    /// Kalks FX Options expiry payout or knock-out rebate: balance ↔ `house:options_settlement`.
+    OptionSettlement,
 }
 
 impl TxnKind {
@@ -542,6 +785,8 @@ impl TxnKind {
             TxnKind::Reversal => "reversal",
             TxnKind::PerformanceFee => "perf_fee",
             TxnKind::HouseCapital => "house_capital",
+            TxnKind::OptionPremium => "option_premium",
+            TxnKind::OptionSettlement => "option_settlement",
         }
     }
 }

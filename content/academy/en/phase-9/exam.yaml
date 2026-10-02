@@ -1,0 +1,82 @@
+pass_mark: 70
+questions:
+  - question: "Which statement about the seller, or writer, of an option is correct?"
+    options: ["They pay the premium and gain the right to the payoff", "They receive the premium and must pay the payout if the option finishes in the money", "Their maximum loss is the premium received", "They must deliver the underlying at expiry"]
+    answer: 1
+    explanation: "The seller collects the premium upfront and must pay the payout if the option ends in the money. The gain is capped at the premium, while the loss can be far larger. Kalks options are cash-settled, so nothing is delivered."
+    chapter: "p9-o-what-are-options"
+  - question: "How does buying a Kalks option differ from opening a CFD position?"
+    options: ["The buyer pays the full premium upfront with no leverage, and that premium is the maximum loss", "Options use more leverage than CFDs", "Options never lose value over time", "Options can be held indefinitely without an expiry"]
+    answer: 0
+    explanation: "A bought option is paid for in full, so there is no leverage and the premium is the most you can lose. A CFD uses margin and leverage, and its loss can exceed a planned stop. Options lose time value and always have an expiry."
+    chapter: "p9-o-what-are-options"
+  - question: "EURUSD trades at 1.1650. Which of these options is in the money?"
+    options: ["The 1.1700 call", "The 1.1600 put", "The 1.1700 put", "The 1.1750 call"]
+    answer: 2
+    explanation: "A put is in the money when the price is below its strike. At 1.1650 the 1.1700 put would pay 0.0050 now. The 1.1700 and 1.1750 calls and the 1.1600 put would pay nothing."
+    chapter: "p9-o-calls-and-puts"
+  - question: "You buy one XAUUSD 3,900 call for 85 USD. Gold settles at 3,960. What is your result?"
+    options: ["+60 USD", "-25 USD", "+145 USD", "-85 USD"]
+    answer: 1
+    explanation: "The call pays (3,960 - 3,900) x 1 ounce = 60 USD. After the 85 USD premium the result is 60 - 85 = -25 USD: the option finished in the money, but not by enough to cover its cost."
+    chapter: "p9-o-calls-and-puts"
+  - question: "EURUSD is at 1.1650 and a 1.1700 put costs 0.0070. How does that premium split?"
+    options: ["Intrinsic value 0.0050, time value 0.0020", "Intrinsic value 0, time value 0.0070", "Intrinsic value 0.0070, time value 0", "Intrinsic value 0.0020, time value 0.0050"]
+    answer: 0
+    explanation: "Put intrinsic value is strike minus spot: 1.1700 - 1.1650 = 0.0050. The rest of the premium, 0.0070 - 0.0050 = 0.0020, is time value, which falls to zero at the cut."
+    chapter: "p9-o-premium-strike-expiry"
+  - question: "A weekly expiry falls on a Friday that is a holiday. When do those options expire?"
+    options: ["On the following Monday at the cut", "At the Friday close regardless of the holiday", "They are cancelled and the premium is refunded", "On the previous business day, at the 10:00 New York cut"]
+    answer: 3
+    explanation: "Expiries that fall on a holiday move to the previous business day, usually the Thursday, and settle at the normal cut against the 30-minute average of the mid price."
+    chapter: "p9-o-premium-strike-expiry"
+  - question: "You buy one XAUUSD 3,850 put for 54 USD. Gold settles at 3,700. What is your result?"
+    options: ["+150 USD", "-54 USD", "+204 USD", "+96 USD"]
+    answer: 3
+    explanation: "The put pays (3,850 - 3,700) x 1 ounce = 150 USD. Subtracting the 54 USD premium gives +96 USD. The breakeven was 3,850 - 54 = 3,796."
+    chapter: "p9-o-payoff-and-breakeven"
+  - question: "What is the breakeven at expiry of a short EURUSD 1.1600 put sold for 0.0030?"
+    options: ["1.1630", "1.1600", "1.1570", "1.1300"]
+    answer: 2
+    explanation: "A put breaks even at the strike minus the premium: 1.1600 - 0.0030 = 1.1570. Buyer and seller share the same breakeven; below it, the seller loses."
+    chapter: "p9-o-payoff-and-breakeven"
+  - question: "Before a central-bank decision you buy a straddle. After the decision the price barely moves and implied volatility drops sharply. What is the most likely outcome?"
+    options: ["The straddle gains, because event days always pay option buyers", "The straddle loses value through falling implied volatility and time decay", "The straddle's value stays unchanged until expiry", "The straddle is knocked out"]
+    answer: 1
+    explanation: "Without a large move, the straddle loses through vega as implied volatility collapses, and through theta as time passes. This volatility crush is a common surprise for option buyers around events."
+    chapter: "p9-o-greeks"
+  - question: "A EURUSD put has a delta of -0.30. For small moves, one contract behaves most like which CFD position?"
+    options: ["A long position of about 3,000 euros", "A short position of about 10,000 euros", "A short position of about 3,000 euros, or 0.03 lot", "No exposure until expiry"]
+    answer: 2
+    explanation: "Equivalent exposure is delta x contract size: -0.30 x 10,000 = -3,000 euros, a short position of about 0.03 lot. It changes as the price moves, because of gamma."
+    chapter: "p9-o-greeks"
+  - question: "You buy a XAUUSD 3,900 put at 76 USD and sell a 3,800 put at 35 USD, same expiry. Gold settles at 3,750. What is the result?"
+    options: ["+59 USD", "+109 USD", "-41 USD", "+150 USD"]
+    answer: 0
+    explanation: "The bought put pays 150 USD and the sold put costs 50 USD, a net payout of 100 USD, the maximum for this bear put spread. After the 41 USD net premium, the result is +59 USD."
+    chapter: "p9-o-strategies"
+  - question: "You expect EURUSD to stay in a range and want your maximum loss fixed in advance. Which strategy fits best?"
+    options: ["Long straddle", "Short strangle", "Long call", "Iron condor"]
+    answer: 3
+    explanation: "An iron condor earns its credit if the price stays between the sold strikes, and the bought wings cap the loss. A short strangle also profits from a range, but its loss is unlimited; a long straddle needs a large move."
+    chapter: "p9-o-strategies"
+  - question: "You hold a XAUUSD 3,850 down-and-in put with a barrier at 3,700. Gold falls to a low of 3,720 and settles at 3,760. What does the option pay?"
+    options: ["90 USD", "Nothing, because the barrier was never touched", "150 USD", "The premium back"]
+    answer: 1
+    explanation: "A knock-in only comes alive if the barrier is touched. Gold never reached 3,700, so the option expires worthless even though a standard 3,850 put would have paid 90 USD."
+    chapter: "p9-o-barrier-options"
+  - question: "Which price does Kalks use to decide whether a barrier has been touched?"
+    options: ["The underlying's mid price, monitored continuously until the cut", "The daily closing bid", "The settlement average at the cut only", "The ask price, checked once an hour"]
+    answer: 0
+    explanation: "The barrier is watched continuously on the mid price. Because charts normally plot the bid, the mid can touch an up-barrier slightly before the bid line on your chart does."
+    chapter: "p9-o-barrier-options"
+  - question: "Why is margin for sold options higher on Fridays?"
+    options: ["Because spreads are always wider on Fridays", "Because options cannot be closed on Fridays", "Because premiums are only paid on Fridays", "To cover the risk of a gap when the market reopens after the weekend"]
+    answer: 3
+    explanation: "A weekend add-on is applied on Fridays because prices can reopen far from Friday's close, and a short option cannot be closed or protected while the market is shut."
+    chapter: "p9-o-selling-risk-and-margin"
+  - question: "Which statement about Kalks FX Options is true?"
+    options: ["A seller can be assigned at any time before expiry", "In-the-money options are settled by delivering the currency", "There is no early exercise or assignment, because the options are European and cash-settled", "Sellers need no margin because they receive the premium"]
+    answer: 2
+    explanation: "European, cash-settled options can only settle at expiry, in USD, so there is no assignment. Sellers still post scenario-based margin, because their potential loss can be far larger than the premium."
+    chapter: "p9-o-selling-risk-and-margin"

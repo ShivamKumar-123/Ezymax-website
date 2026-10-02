@@ -86,7 +86,15 @@ pub struct AccountState {
     pub reversed_deals: BTreeSet<i64>,
     /// client_order_id → ticket (duplicate-submission guard).
     pub client_ids: BTreeMap<String, i64>,
+    /// Option expiry payouts of the last hours (booked at, amount; a re-run's take-back negative): they stay out of
+    /// the withdrawable amount for `SETTLEMENT_HOLD_SECS` (the settlement re-run window). Derived from the ledger
+    /// events only, so replay rebuilds it exactly.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub holds: Vec<(DateTime<Utc>, D)>,
 }
+
+/// How long option settlement proceeds stay out of the withdrawable amount (the settlement re-run window).
+pub const SETTLEMENT_HOLD_SECS: i64 = 3600;
 
 impl AccountState {
     pub fn new(account: Account) -> Self {
@@ -103,6 +111,7 @@ impl AccountState {
             refills: 0,
             reversed_deals: BTreeSet::new(),
             client_ids: BTreeMap::new(),
+            holds: Vec::new(),
         }
     }
 
@@ -130,9 +139,19 @@ impl AccountState {
             Event::AccountOpened { account } => self.account = account.clone(),
             Event::AccountUpdated { account, .. } => self.account = account.clone(),
             Event::Ledger { txn } => {
-                self.balance += txn.effect(login, "balance");
+                let bal = txn.effect(login, "balance");
+                self.balance += bal;
                 self.credit += txn.effect(login, "credit");
                 self.bonus += txn.effect(login, "bonus");
+                // held: settlement payouts credited (settle:) less the payouts a re-run took back (settle-rev:);
+                // charges of short settlements and the refunds of reversed charges are never held
+                let held = (txn.idempotency_key.starts_with("settle:") && bal > ZERO) || (txn.idempotency_key.starts_with("settle-rev:") && bal < ZERO);
+                if held {
+                    // keep only what can still be inside the hold window (by event time: deterministic on replay)
+                    let horizon = txn.at - chrono::Duration::seconds(2 * SETTLEMENT_HOLD_SECS);
+                    self.holds.retain(|(at, _)| *at > horizon);
+                    self.holds.push((txn.at, bal));
+                }
             }
             Event::OrderPlaced { order } => {
                 if let Some(c) = &order.client_order_id {
@@ -194,7 +213,33 @@ impl AccountState {
         self.positions.values().find(|p| p.symbol == symbol)
     }
 
+    /// CFD symbols with a position or pending order (option series are not CFD symbols: see `option_keys`).
     pub fn symbols(&self) -> BTreeSet<String> {
-        self.positions.values().map(|p| p.symbol.clone()).chain(self.orders.values().map(|o| o.symbol.clone())).collect()
+        self.positions.values().filter(|p| p.option.is_none()).map(|p| p.symbol.clone()).chain(self.orders.values().filter(|o| o.option.is_none()).map(|o| o.symbol.clone())).collect()
+    }
+
+    /// Raw-feed symbols this account's options depend on: underlyings of option positions and orders, and the
+    /// symbols of order triggers.
+    pub fn option_keys(&self) -> BTreeSet<String> {
+        let mut out: BTreeSet<String> = self.positions.values().filter_map(|p| p.option.as_ref().map(|o| o.underlying.clone())).collect();
+        for o in self.orders.values() {
+            if let Some(oo) = &o.option {
+                out.extend(oo.legs.iter().map(|l| l.terms.underlying.clone()));
+            }
+            if let Some(t) = &o.trigger {
+                out.insert(t.symbol.clone());
+            }
+        }
+        out
+    }
+
+    /// Settlement proceeds still inside the hold window at `now` (never negative).
+    pub fn held(&self, now: DateTime<Utc>) -> D {
+        let from = now - chrono::Duration::seconds(SETTLEMENT_HOLD_SECS);
+        self.holds.iter().filter(|(at, _)| *at > from).map(|(_, v)| *v).sum::<D>().max(ZERO)
+    }
+
+    pub fn has_options(&self) -> bool {
+        self.positions.values().any(|p| p.option.is_some()) || self.orders.values().any(|o| o.option.is_some())
     }
 }

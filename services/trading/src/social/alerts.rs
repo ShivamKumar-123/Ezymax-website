@@ -29,7 +29,8 @@ pub fn alert_worthy_skip(e: &LogEntry) -> bool {
         return false;
     }
     let m = e.message.as_str();
-    !(m.starts_with("already") || m.contains("copying is paused") || m.contains("pending copy already filled"))
+    // a master's option trades are logged as skipped (options are not copied) but never alerted: not a problem to fix
+    !(m.starts_with("already") || m.contains("copying is paused") || m.contains("pending copy already filled") || m.contains("are not copied"))
 }
 
 /// What a fee change means for one follower: Applied (lower fee, same period), Pending (needs acceptance) or
@@ -321,6 +322,7 @@ mod tests {
         assert!(alert_worthy_skip(&skip("EURUSD is excluded")));
         assert!(!alert_worthy_skip(&skip("already copied")));
         assert!(!alert_worthy_skip(&skip("copying is paused")));
+        assert!(!alert_worthy_skip(&skip("EURUSD-20261009-1.1650-C: options are not copied")));
         assert!(alert_worthy_skip(&LogEntry::new("order", Some(1), "failed", "no_money: Not enough free margin")));
         assert!(!alert_worthy_skip(&LogEntry::new("close", Some(1), "failed", "market_closed")), "closes are retried by the follower's own stop; not alerted as skips");
     }

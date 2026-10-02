@@ -58,11 +58,17 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!(accounts = states.len(), events, ms = started.elapsed().as_millis() as u64, "state rebuilt from events; ledger verified");
 
     let (ticket, deal, txn, live, demo) = persist::max_ids(&pool).await?;
+    let quotes = Arc::new(QuoteBook::default());
+    // Kalks FX Options: snapshot from the options service, raw spots from market-data (src/options)
+    let options = Arc::new(trading::options::OptionsCtx::new(&cfg.options_url, &cfg.options_token, quotes.clone()));
+    if options.configured() {
+        let _ = options.load_stored(&pool).await;
+    }
     let shared = Arc::new(Shared {
         pool: pool.clone(),
         registry: registry.clone(),
         specs: specs.clone(),
-        quotes: Arc::new(QuoteBook::default()),
+        quotes: quotes.clone(),
         ids: Arc::new(Ids::new(ticket, deal, txn)),
         index: Arc::new(RwLock::new(Index::default())),
         streams: Streams::default(),
@@ -70,9 +76,15 @@ async fn main() -> anyhow::Result<()> {
         lp: Arc::new(NullLp),
         max_quote_age_ms: cfg.max_quote_age_ms,
         restrictions: Default::default(),
+        options: options.clone(),
+        clock: Default::default(),
     });
     let hub = Hub::start(shared, cfg.shards, states);
     feed::spawn(hub.clone(), cfg.market_data_ws.clone(), specs.symbols());
+    if options.configured() {
+        feed::spawn_raw(hub.clone(), cfg.market_data_ws.clone(), specs.symbols());
+        options.spawn_poller(pool.clone());
+    }
 
     let logins = Arc::new(LoginAlloc { live: AtomicI64::new(live), demo: AtomicI64::new(demo) });
     let wallet = trading::social::wallet::WalletClient::new(&cfg.wallet_url, &cfg.wallet_token);
@@ -100,6 +112,13 @@ async fn main() -> anyhow::Result<()> {
 
     if cfg.rollover_enabled {
         tokio::spawn(rollovers(hub.clone(), pool.clone(), registry.clone()));
+        // option expiry settlement (single-instance job, like the rollover) and the house delta hedger
+        if options.configured() {
+            tokio::spawn(trading::options::settle::scheduler(st.clone()));
+            if cfg.options_hedger {
+                tokio::spawn(trading::options::hedger::run(st.clone()));
+            }
+        }
     }
     tokio::spawn(housekeeping(hub.clone(), pool.clone(), st.limiter.clone()));
     // account jobs (api/lifecycle.rs): expired-demo auto-archive, dormancy flag + auto-archive, retention anonymiser

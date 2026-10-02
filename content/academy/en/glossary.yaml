@@ -54,6 +54,11 @@ terms:
     category: "Technical analysis"
     definition: "A chart where each period is drawn as a vertical line from high to low, with a small tick on the left for the open and on the right for the close. It carries the same OHLC information as a candlestick chart but without the coloured body."
     related: ["ohlc", "candlestick", "line-chart"]
+  - slug: "barrier-option"
+    term: "Barrier option"
+    category: "Trading mechanics"
+    definition: "A call or put with an extra price level, the barrier, that cancels the option (knock-out) or activates it (knock-in) if the underlying touches it. Barrier options cost less than standard options because they pay in fewer scenarios. On Kalks the barrier is watched continuously on the mid price until the cut."
+    related: ["knock-out", "knock-in", "option"]
   - slug: "base-currency"
     term: "Base currency"
     category: "Markets"
@@ -94,6 +99,11 @@ terms:
     category: "Trading mechanics"
     definition: "Moving a stop loss to the entry price once a trade has moved sufficiently in your favour, so the worst outcome becomes roughly zero before costs. Moving it too early often gets the trade stopped out by normal fluctuations before the planned move develops."
     related: ["stop-loss", "trailing-stop", "risk-reward-ratio"]
+  - slug: "option-breakeven"
+    term: "Breakeven (options)"
+    category: "Trading mechanics"
+    definition: "The settlement price at which an option trade neither makes nor loses money at expiry: the strike plus the premium for a call, the strike minus the premium for a put. A EURUSD 1.1700 call bought for 0.0024 breaks even at 1.1724."
+    related: ["option-premium", "strike-price", "break-even-stop"]
   - slug: "breakout"
     term: "Breakout"
     category: "Technical analysis"
@@ -124,6 +134,11 @@ terms:
     category: "Trading mechanics"
     definition: "A pending order to buy at a price above the current market, triggered when the ask reaches that level. With XAUUSD at 2,350.40, a buy stop at 2,365.00 enters only if gold rallies through that price, which suits breakout entries."
     related: ["stop-order", "sell-stop", "breakout"]
+  - slug: "call-option"
+    term: "Call option"
+    category: "Trading mechanics"
+    definition: "An option that pays the amount by which the settlement price finishes above the strike, multiplied by the contract size. A EURUSD 1.1700 call settling at 1.1760 pays 0.0060 x 10,000 = 60 USD per contract. Buyers use calls to profit from a rise with a loss limited to the premium."
+    related: ["put-option", "strike-price", "option-premium", "option"]
   - slug: "candlestick"
     term: "Candlestick"
     category: "Technical analysis"
@@ -269,6 +284,11 @@ terms:
     category: "Trading mechanics"
     definition: "A style in which positions are opened and closed within the same trading day, avoiding overnight swap charges and weekend gap risk. Day traders typically use charts from one minute to one hour and must account for spreads and commission, which weigh more heavily on short holding periods."
     related: ["scalping", "swing-trading", "swap"]
+  - slug: "delta"
+    term: "Delta"
+    category: "Trading mechanics"
+    definition: "How much an option's premium changes for a small move in the underlying, between 0 and 1 for calls and between 0 and -1 for puts. A EURUSD call with a delta of 0.33 gains about 6.60 USD per contract on a 20-pip rise and behaves like about 3,300 euros of exposure. At-the-money options have a delta near 0.5."
+    related: ["theta", "implied-volatility", "call-option"]
   - slug: "demo-account"
     term: "Demo account"
     category: "Platform"
@@ -499,6 +519,16 @@ terms:
     category: "Psychology"
     definition: "The feeling, after an event, that it was obvious and predictable. Looking at a completed chart, every move seems clear, which leads traders to overestimate their skill. Journaling your reasoning before a trade gives a truthful record to compare against."
     related: ["outcome-bias", "trading-journal", "overconfidence"]
+  - slug: "implied-volatility"
+    term: "Implied volatility"
+    category: "Markets"
+    definition: "The volatility figure that, put into an option pricing model, gives the option's market price: the movement the market expects, quoted as an annual percentage. Higher implied volatility makes both calls and puts more expensive. It often rises before major events and drops after them."
+    related: ["volatility", "vix", "option-premium"]
+  - slug: "in-the-money"
+    term: "In the money (ITM)"
+    category: "Trading mechanics"
+    definition: "An option that would pay something if it expired now: a call with the price above its strike, or a put with the price below it. At the money means the strike is at the current price; out of the money means the option would pay nothing. An in-the-money option is only profitable if the payout exceeds the premium."
+    related: ["strike-price", "intrinsic-value", "option-breakeven"]
   - slug: "indecision"
     term: "Indecision"
     category: "Technical analysis"
@@ -524,11 +554,26 @@ terms:
     category: "Fundamental analysis"
     definition: "The gap between the interest rates of two currencies in a pair. It drives the direction and size of the overnight swap and is a long-term influence on exchange rates. A widening differential in favour of the US typically supports USDJPY."
     related: ["carry-trade", "swap", "interest-rate"]
+  - slug: "intrinsic-value"
+    term: "Intrinsic value"
+    category: "Trading mechanics"
+    definition: "The part of an option's premium that it would pay if it expired now: spot minus strike for a call, strike minus spot for a put, and never less than zero. With EURUSD at 1.1650, a 1.1600 call has 0.0050 of intrinsic value."
+    related: ["time-value", "option-premium", "in-the-money"]
   - slug: "kalks-trader"
     term: "Kalks Trader"
     category: "Platform"
     definition: "The Kalks web trading terminal where you view charts and quotes, place and manage orders and monitor positions, margin and account history. It supports market and pending orders, stop loss, take profit, trailing stops, OCO pairs, partial close and Close By on hedging accounts."
     related: ["client-area", "demo-account", "contract-specification"]
+  - slug: "knock-in"
+    term: "Knock-in"
+    category: "Trading mechanics"
+    definition: "A barrier option that only becomes a standard option once the underlying touches the barrier. If the barrier is never touched, it expires worthless even if it would have been in the money. A knock-in and a knock-out with the same terms together cost the same as the standard option."
+    related: ["barrier-option", "knock-out"]
+  - slug: "knock-out"
+    term: "Knock-out"
+    category: "Trading mechanics"
+    definition: "A barrier option that ceases to exist as soon as the underlying touches the barrier, even for a moment or through a gap at the open. Once knocked out it is worthless, with no refund of the premium, even if the price later returns."
+    related: ["barrier-option", "knock-in", "gap"]
   - slug: "leverage"
     term: "Leverage"
     category: "Trading mechanics"
@@ -719,6 +764,21 @@ terms:
     category: "Platform"
     definition: "A linked pair of pending orders where filling one automatically cancels the other. A trader expecting a breakout from a gold range between 2,340 and 2,360 could place a buy stop above and a sell stop below as an OCO pair."
     related: ["pending-order", "buy-stop", "sell-stop"]
+  - slug: "option"
+    term: "Option"
+    category: "Trading mechanics"
+    definition: "A contract that gives its buyer the right, but not the obligation, to a payoff based on a fixed strike price at expiry, in exchange for a premium paid to the seller. Kalks FX Options are European style and cash-settled in USD on FX pairs, gold, silver and oil. Buyers can lose at most the premium; sellers can lose much more."
+    related: ["call-option", "put-option", "option-premium", "strike-price"]
+  - slug: "option-expiry"
+    term: "Option expiry and cut"
+    category: "Trading mechanics"
+    definition: "The date and time at which an option is settled. Kalks lists daily, weekly (Friday) and monthly (last Friday) expiries, moved to the previous business day for holidays, with a default cut of 10:00 New York time (17:00 server time). New positions cannot be opened in the last 15 minutes before the cut."
+    related: ["twap", "option", "server-time"]
+  - slug: "option-premium"
+    term: "Option premium"
+    category: "Trading mechanics"
+    definition: "The price of an option, paid in full by the buyer to the seller when the trade is opened. On Kalks it is shown in USD per contract alongside pips or points, with a bid and an ask. The premium is made up of intrinsic value plus time value."
+    related: ["intrinsic-value", "time-value", "implied-volatility"]
   - slug: "order-expiry"
     term: "Order expiry"
     category: "Trading mechanics"
@@ -854,6 +914,11 @@ terms:
     category: "Fundamental analysis"
     definition: "A monthly survey-based indicator of business activity in manufacturing or services. A reading above 50 indicates expansion and below 50 contraction. Because PMIs arrive early and are forward-looking, they often move currencies more than GDP."
     related: ["gdp", "business-cycle", "economic-calendar"]
+  - slug: "put-option"
+    term: "Put option"
+    category: "Trading mechanics"
+    definition: "An option that pays the amount by which the settlement price finishes below the strike, multiplied by the contract size. A XAUUSD 3,850 put settling at 3,760 pays 90 USD per one-ounce contract. Buyers use puts to profit from a fall or to protect a long position."
+    related: ["call-option", "strike-price", "hedging"]
   - slug: "quantitative-easing"
     term: "Quantitative easing (QE)"
     category: "Fundamental analysis"
@@ -1089,6 +1154,11 @@ terms:
     category: "Platform"
     definition: "A Kalks Client Area tool, under Developer, Strategies, for defining trading rules such as entry conditions, exits and filters without writing code. Strategies can then be tested in Developer, Backtests. Results are hypothetical and exclude real-world emotions."
     related: ["backtesting", "trading-system", "client-area"]
+  - slug: "strike-price"
+    term: "Strike price"
+    category: "Trading mechanics"
+    definition: "The fixed price in an option contract against which the payoff is measured at expiry. Strikes are listed at regular steps around the current price, for example every 0.0025 on EURUSD. Whether an option is in, at or out of the money depends on where the price is compared with the strike."
+    related: ["in-the-money", "call-option", "put-option"]
   - slug: "sunk-cost-fallacy"
     term: "Sunk-cost fallacy"
     category: "Psychology"
@@ -1134,6 +1204,11 @@ terms:
     category: "Trading mechanics"
     definition: "An order that closes a position automatically once a target is reached, locking in gains. Buying XAUUSD at 2,350.40 with a take profit at 2,370.40 closes the trade after a $20 rise, worth $2,000 on 1.00 lot."
     related: ["stop-loss", "limit-order", "risk-reward-ratio"]
+  - slug: "theta"
+    term: "Theta (time decay)"
+    category: "Trading mechanics"
+    definition: "How much value an option loses per day if nothing else changes, usually shown in USD per contract. Time decay speeds up as expiry approaches and is fastest for at-the-money options. It is a cost for option buyers and a source of income for sellers."
+    related: ["time-value", "delta", "option-premium"]
   - slug: "tick"
     term: "Tick"
     category: "Trading mechanics"
@@ -1149,6 +1224,11 @@ terms:
     category: "Psychology"
     definition: "An emotional state, usually after losses or a frustrating trade, in which decisions become impulsive and rules are ignored. Recognising your own signs, such as rising size or skipped checklists, and stopping for the day is the most effective response."
     related: ["revenge-trading", "overtrading", "discipline"]
+  - slug: "time-value"
+    term: "Time value"
+    category: "Trading mechanics"
+    definition: "The part of an option's premium above its intrinsic value: what buyers pay for the chance of a better outcome before expiry. It shrinks every day through time decay and is zero at expiry. Out-of-the-money options consist entirely of time value."
+    related: ["intrinsic-value", "theta", "option-premium"]
   - slug: "timeframe"
     term: "Timeframe"
     category: "Technical analysis"
@@ -1214,6 +1294,11 @@ terms:
     category: "Trading mechanics"
     definition: "The three-day swap charge applied once a week to cover the weekend. On Kalks, forex and metals incur triple swap on Wednesday night, while indices, energies and stocks incur it on Friday night. Crypto is charged every night."
     related: ["swap", "rollover", "server-time"]
+  - slug: "twap"
+    term: "TWAP (time-weighted average price)"
+    category: "Trading mechanics"
+    definition: "The average of prices sampled evenly over a period of time. Kalks options settle at the TWAP of the mid price over the 30 minutes before the cut, which makes the settlement price much harder to distort with a single spike."
+    related: ["option-expiry", "vwap"]
   - slug: "underlying-asset"
     term: "Underlying asset"
     category: "Markets"

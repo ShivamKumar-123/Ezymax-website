@@ -10,6 +10,7 @@ pub mod dealing;
 pub mod ledger;
 pub mod lifecycle;
 pub mod mam;
+pub mod options;
 pub mod social;
 pub mod social_admin;
 pub mod social_house;
@@ -76,6 +77,16 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/terminal/bulk-close", post(terminal::bulk_close))
         .route("/v1/terminal/stream-ticket", post(terminal::stream_ticket))
         .route("/v1/terminal/mam", get(mam::terminal))
+        // Kalks FX Options (api/options.rs; closing one position: /v1/terminal/positions/{ticket}/close)
+        .route("/v1/terminal/options/preview", post(options::preview))
+        .route("/v1/terminal/options/orders", post(options::place))
+        .route("/v1/terminal/options/combos/{combo}/close", post(options::close_combo))
+        .route("/v1/terminal/options/settlements", get(options::settlements))
+        .route("/v1/admin/options/book", get(options::book))
+        .route("/v1/admin/options/status", get(options::status))
+        .route("/v1/admin/options/settlements", get(options::settlement_list))
+        .route("/v1/admin/options/settlements/{expiry}/rerun", post(options::rerun))
+        .route("/v1/admin/options/trades/{ticket}/void", post(options::void))
         .route("/v1/terminal/controls", get(controls::terminal_controls))
         // client controls: staff sessions in Kalks Trader, restriction refresh (Back Office BFF)
         .route("/v1/admin/accounts/{login}/staff-sso", post(controls::staff_sso))
@@ -253,6 +264,12 @@ async fn health(State(st): State<AppState>) -> impl IntoResponse {
         "lagMs": stats.last_tick_lag_ms.load(Ordering::Relaxed),
         "maxLagMs": stats.max_tick_lag_ms.swap(0, Ordering::Relaxed),
         "lp": {"name": st.hub.shared.lp.name(), "connected": st.hub.shared.lp.connected()},
+        "options": {
+            "configured": st.hub.shared.options.configured(),
+            "version": st.hub.shared.options.version(),
+            "stale": crate::options::OptionPricing::stale(st.hub.shared.options.as_ref(), st.hub.shared.clock.now()),
+            "lastOkAt": chrono::DateTime::from_timestamp_millis(st.hub.shared.options.last_ok_ms()),
+        },
     }))
 }
 

@@ -1,6 +1,6 @@
 # trading
 
-The Kalks trading engine: trading accounts, orders and positions (netting and hedging, cent), margin, margin call and stop-out, swaps, the double-entry ledger for balance / credit / bonus, wallet transfers, and the Back Office dealing desk. It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8090`.
+The Kalks trading engine: trading accounts, orders and positions (netting and hedging, cent), margin, margin call and stop-out, swaps, the double-entry ledger for balance / credit / bonus, wallet transfers, the Back Office dealing desk, and [Kalks FX Options](#kalks-fx-options) (European cash-settled options in the same account as CFDs). It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8090`.
 
 The engine executes B-book only. A/B routing is decided and recorded on every ticket. A-book trades are passed to an LP adapter, which is a stub until an LP is signed (D2, D25).
 
@@ -17,6 +17,7 @@ The engine executes B-book only. A/B routing is decided and recorded on every ti
 - [Copy trading and PAMM](#copy-trading-and-pamm)
 - [MAM (multi-account manager)](#mam-multi-account-manager)
 - [Client controls](#client-controls)
+- [Kalks FX Options](#kalks-fx-options)
 - [Streams](#streams)
 - [How the apps integrate](#how-the-apps-integrate)
 - [Environment](#environment)
@@ -77,6 +78,8 @@ Source layout:
 | `src/views.rs` | JSON views (terminal and Back Office shapes) |
 | `src/social/` | copy trading and PAMM: `math` (sizing, HWM fees, NAV, statistics), `mirror` (follower side of a master event), `copier` (event tap, catch-up, guard, scheduler), `pamm`, `stats`, `wallet` (client + outbox) |
 | `src/api/social.rs`, `src/api/social_admin.rs` | Client Area and Back Office social routes |
+| `src/options/` | Kalks FX Options link: `OptionsCtx` (snapshot poller, raw spots, mark / scenario caches, suitability), `snapshot` (parsed reference data, gates), `pricing` (same maths as services/options), `settle` (expiry scheduler), `hedger` (house delta hedge) |
+| `src/engine/options.rs`, `src/api/options.rs` | option orders, combos, closes, knocks, settlement, re-run, void, scenario margin, stop-out by units; the options HTTP routes |
 
 ## Data model
 
@@ -110,6 +113,9 @@ Ledger accounts and legs (amounts in the account currency; cent accounts use USC
 | negative balance protection (`nbp`) | `acct:L:balance +|neg|` · `house:nbp −|neg|` |
 | demo funding / refill | `acct:L:balance +x` · `house:demo_funding −x` |
 | reopen deal / void (`reversal`) | exact negation of the original legs |
+| option premium (`option_premium`) | buy: `acct:L:balance −P` · `house:options_premium +P`; sell / close: the reverse direction |
+| option expiry payout, knock-out rebate (`option_settlement`) | `acct:L:balance ±X` · `house:options_settlement ∓X` (key `settle:{SYMBOL:DATE}:{run}:{ticket}` / `knock:{ticket}`) |
+| option settlement re-run, option void (`reversal`) | exact negation (`settle-rev:…`, `void:{ticket}:{deal}`), then the new settlement |
 
 Balance = Σ postings on `acct:L:balance`. Every transaction sums to 0 per currency; this is enforced by the engine, the tests, and the database trigger.
 
@@ -648,6 +654,60 @@ The Back Office sets per-client restrictions in the gateway (`services/gateway/s
 - **Presence.** Every Kalks Trader stream of the client's own session is reported to the gateway (`POST /v1/internal/presence/trader`, every 15 s and ~1 s after a change). Staff sessions are never reported.
 - **Staff sessions ("log in as client").** `POST /v1/admin/accounts/{login}/staff-sso {userId, readOnly, minutes}` (staff headers; the BFF checked `clients.impersonate` / `clients.impersonate_full` with the gateway and audited it) returns a one-time SSO token. The session it opens is read-only unless full access was granted, lasts `minutes` (30), carries `staff` in `/v1/terminal/state` and `GET /v1/terminal/controls`, and full-access trades are recorded with the actor `staff:<id>`.
 
+## Kalks FX Options
+
+European, cash-settled (USD) options on FX, metals and oil, B-book, in the **same account as CFDs** (cross-margin). The options service (`services/options`, :8104) owns the reference data (underlyings, holidays, rates, vol surfaces, series, fixings) and publishes a versioned snapshot; the engine is the system of record for the money: premiums, positions, margin, settlement. Both price with `crates/optmath`, with the same conventions, so a fill equals the chain the client saw.
+
+### How it works
+
+- **Snapshot.** `GET {OPTIONS_URL}/v1/internal/options/snapshot` every 2 s with `If-None-Match` (`X-Kalks-Internal: OPTIONS_INTERNAL_TOKEN`). The last good snapshot stays in memory and in `option_snapshot`, so a restart while the options service is down still has it. Once the last successful poll is older than `staleAfterSecs`, options are **close-only** (`stale_prices`).
+- **Prices.** Raw mids from a second market-data socket (`group=raw`, kept in the QuoteBook under `raw`). Fills, SL/TP and limit checks are always **priced fresh**; marks (equity, margin, views, streams) are cached for at most 250 ms (the cache key carries the spot, the USD rate and the snapshot version). Bid/ask follow the group's vol spread and minimum USD spread (snapshot `groups`). A position is never dropped from `metrics()`: without a model price it is valued at its intrinsic value (a short at least at its premium), after the cut at the payoff at the fixing.
+- **Units.** A position's `symbol` is the series code (`EURUSD-20261009-1.1650-C`), `volume` the contracts, `openPrice` / `currentPrice` / `mark` the premium **per unit of the underlying in its quote currency** (the chain's `bid`/`ask`/`mark`). One contract = `contractSize` units (EURUSD 10 000 EUR). Money (premium, P&L, margin) is in the account currency.
+- **Premium in cash.** A buy pays the full premium at once, a sell receives it (`option_premium` ↔ `house:options_premium`). Equity = balance + credit + bonus + CFD P&L + swap + **`optionValue`** (the options at their mark, long +, short −). `profit` includes the options' unrealised P&L (`optionPnl` = value + premium basis). `Position.premium` is the premium cash of the remaining contracts; realised P&L = exit cash + that basis.
+- **Commission.** `min(commissionPerContract × contracts, commissionCapPct % × premium)` on every trade (open and close), none on expiry or knock-out.
+- **Margin.** CFD margin + per underlying the optmath 16-scenario grid (`priceScan`, `volScan`, extreme move, one business day) of the option legs. Same-underlying CFD positions are offsets that **can only reduce** the option margin: `clamp(worst(options + CFD) − worst(CFD), 0, worst(options))`. Long options carry **no margin** (an underlying without a short option has none). Fridays (New York) and weekends add `weekendMarginPct`.
+- **Cash only.** Premium debits + commission must fit `min(balance, free margin − credit − bonus)` (`insufficient_cash`); the margin of new short exposure must be covered by equity and by own funds (equity − credit − bonus) (`insufficient_margin`).
+- **Orders.** Market, limit on the premium (`limitPremium`: a single leg buys at or below / sells at or above it; a multi-leg order fills when its net debit per combo unit — legs scaled to the smallest leg — is at or below it; an all-sell order when its net credit is at or above it), and underlying triggers (`trigger {symbol, op, price}` on the raw mid; then market, or the limit). Pending orders expire at `tif` (`day` = end of the server day) and at the latest when opening ends before the cut. Every order **opens** new positions (one per leg, never netted). A multi-leg order (1–8 legs, one underlying) fills in **one transaction, all or nothing**; its legs share a `comboId` and `POST …/combos/{comboId}/close` closes them together. SL/TP are on the premium (single-leg).
+- **Gates** (opening): never on system-managed groups — prop (`prop*`), copy-trading followers (`copy`, `copy-netting`, `copy-demo`, `copy-*`), PAMM funds (`pamm*`) and MAM block accounts (`mam*`) → `options_disabled`, whatever the snapshot's group settings say; tenant switch for the account kind (`tenants[].enabledLive / enabledDemo`), underlying allow-list and group setting (`options_disabled`); suitability for **live** accounts (`not_eligible`); Back Office client limits (`blocked` → `not_eligible`, `closeOnly` → `close_only`, `maxContracts` / `maxShortContracts` and the group's `maxContractsPerClient` across the client's accounts → `limit_contracts`); the underlying's session (`market_closed`); the series state: no opens in the last `noOpenMinutes` (15) before the cut, no trading at all from `closeOnlyMinutes` (1) before it (`cutoff`), controls `halt` (`series_halted`, closes too; the engine's own closes still run) and `close_only` (`close_only`); stale snapshot or stale spot (`stale_prices`); and the usual account status, dealer controls, client restrictions and CFD symbol controls of the underlying.
+- **Suitability.** `GET {GATEWAY_URL}/v1/internal/suitability/{userId}?product=options` → `{eligible, kycVerified, disclosureAccepted, quizPassed}`, cached 60 s. A 404 (not deployed) or an error = not eligible: live accounts are refused, demo accounts never need it.
+- **Barriers.** Any listed series can be bought / sold with `barrier {kind: UO|DO|UI|DI, level, rebate?}` (rebate per unit, quote currency), priced with Reiner-Rubinstein on the smile vol at the strike. The raw mid is watched on **every** tick (never throttled): a knock-out closes at its rebate (`knock_out`, `option_settlement`), a knock-in becomes its vanilla (`knockedIn`). Each knock happens once and is recorded in `option_knocks`. A barrier already reached, or a knock-out that can never pay, is refused (`invalid_barrier`).
+- **Settlement.** Every 15 s (the instance running the rollover) every expiry with open positions whose cut has passed and whose fixing is published (`expiries[].fixing`, status `fixed`; older expiries through `/v1/internal/options/fixings`) settles in every shard (`Cmd::Settle`): the payoff at the fixing is paid or charged (`expiry` deals, key `settle:{SYMBOL:DATE}:{run}:{ticket}`). Settled positions are gone and the key is unique, so a crash in the middle is caught up **exactly once**. Each pass is recorded per tenant in `option_settlement_runs`, and clients are notified (`options.settlement`). Payouts stay out of `withdrawable` for an hour (`settlementHold`), the re-run window.
+- **Re-run.** After the options service re-fixed an expiry (Back Office there), `POST /v1/admin/options/settlements/{SYMBOL:DATE}/rerun {reason}` (within 1 h of the first settlement) reverses every settlement deal of the expiry (`settle-rev:`), reopens the position from the deal's snapshot and settles it again at the new fixing: each balance moves by exactly the difference. Audited (`options.settlement_rerun`), clients notified (`options.settlement_rerun`).
+- **Void.** `POST /v1/admin/options/trades/{ticket}/void {reasonCode, note}` reverses every cash flow of the trade (premium, proceeds, payouts) and every commission it paid, marks its deals reversed (corrections on the statement) and removes the position if it is open.
+- **Stop-out.** An account holding options closes by **units** — a whole strategy (all legs), one option position or one CFD position — the unit that frees the most margin first, until the margin level is above the group's stop-out level or nothing closable frees margin. Nothing is recorded when nothing can be closed (closed market, series past its cut). Accounts without options keep the CFD rule (largest loser first).
+- **Interest and throttling.** Accounts with options follow the raw mid of their underlyings (and their triggers' symbols). Pending option orders, premium SL/TP and the margin check run at most every 250 ms per account and underlying (a skipped tick is evaluated on the next 250 ms timer); every 5 s all accounts with options are evaluated again (time decay).
+- **House delta hedge.** Every 10 s, per tenant with live options on, the house's delta per underlying (minus the live clients' option delta, in units of the underlying) plus the CFD position of the tenant's **hedge account** is brought back to zero with a CFD market order when it is worth more than `OPTIONS_HEDGE_LIMIT_USD`. The hedge account is a normal live account of the house user `OPTIONS_HEDGE_USER_ID`, opened on first use with house capital (`house_capital`, never a client deposit). Orders are recorded in `option_hedges`.
+- **Copy / PAMM / MAM.** Option trades of a master are logged as skipped ("options are not copied") and never mirrored; followers are not alerted for it.
+
+### Options API
+
+Terminal (Kalks Trader session):
+
+| Route | Body → answer |
+|---|---|
+| `POST /v1/terminal/options/preview` | `{legs: [{series, side: "buy"\|"sell", contracts, barrier?: {kind, level, rebate?}}], type: "market"\|"limit", limitPremium?, sl?, tp?}` → `{ok, reasons: [{code, message}], legs: [{series, side, contracts, price, premium, commission, bid, ask, mark, iv, state, option}], netPremium, commission, marginBefore, marginAfter, freeMarginAfter, cashAfter, maxProfit, maxLoss, breakevens: [], greeks: {delta, gamma, theta, vega}, currency}`. `netPremium` + = the client pays (debit), − = receives. `maxProfit` / `maxLoss` include the commission; `null` = unlimited (barrier legs: path-dependent, not computed). Never changes the account. |
+| `POST /v1/terminal/options/orders` | the preview body + `trigger?: {symbol, op: "above"\|"below", price}`, `tif?: "gtc"\|"day"`, **`clientOrderId`** (required) → `{status: "filled", comboId, positions: [...], fills: [{ticket, dealId, series, side, contracts, price, premium, commission}]}` or `{status: "pending", order: {...}}`; a repeated `clientOrderId` answers the same with `duplicate: true`. |
+| `POST /v1/terminal/positions/{ticket}/close {volume?}` | the generic close route closes an option position (partial allowed) at the bid (long) / ask (short). |
+| `POST /v1/terminal/options/combos/{comboId}/close` | `{status: "closed", comboId, legs: [{ticket, dealId, profit}], profit}` — all legs or none. |
+| `GET /v1/terminal/options/settlements?from&to&limit` | `{items: [{ticket, dealId, series, underlying, expiry, side, contracts, fixing, payout, profit, at, run, reversed}]}` (`payout` = the cash booked). |
+| `PATCH /v1/terminal/positions/{ticket}`, `PATCH` / `DELETE /v1/terminal/orders/{ticket}` | premium SL/TP of a position; the limit premium, SL/TP, expiry of a pending option order; cancel. |
+
+Position JSON (terminal, account detail, dealing, streams) gains `option: {series, underlying, right, strike, expiry, expiryAt, style: "vanilla"\|"barrier", barrier?: {kind, level, rebate, knockedIn, knockedAt}, contractSize, quoteCurrency}`, `mark` (per unit), `markValue` (signed, account currency), `premium` (basis), `greeks: {delta, gamma, theta, vega}`, `comboId`, `iv`, `underlyingPrice`, `state` (`open` / `close_only` / `halted` / `closed`). CFD positions carry `option: null, mark: null, greeks: null, comboId: null`. Greeks: delta = delta-weighted contracts, gamma = change of that delta per 1 % spot move, vega = USD per vol point, theta = USD per day. Orders gain `option: {legs, limitPremium}`, `trigger`, `comboId`; deals gain `option: {series, underlying, right, strike, expiry, style, cash, usdPerQuote, spot, fixing, run, comboId, commissionCharged}` and `instrument: "option" | "cfd"` (every deal view: client history, `GET /v1/dealing/deals`, streams), so downstream consumers (IB, growth, reports, prop, algo) never read contracts as lots. Account metrics gain `optionValue`, `optionPnl`, `optionMargin`, `settlementHold`.
+
+Error codes: `options_disabled`, `not_eligible`, `market_closed`, `cutoff`, `series_halted`, `close_only`, `limit_contracts`, `insufficient_cash`, `insufficient_margin`, `stale_prices`, plus `unknown_series`, `invalid_volume`, `invalid_barrier`, `invalid_order`, `invalid_price`, `invalid_sl` / `invalid_tp`, `invalid_trigger`, `no_price`, `not_found` (HTTP 422, `not_found` 404).
+
+Back Office (staff headers; `X-Kalks-Staff-Perms` checked when sent):
+
+| Route | Permission (role fallback) | |
+|---|---|---|
+| `GET /v1/admin/options/book?kind=live\|demo\|all` | `options.read` (dealing roles) | `{underlyings: [{symbol, netDelta, netDeltaUnits, clientDelta, gamma, vega, theta, longContracts, shortContracts, clients, hedgeContracts, hedgeUnits, deltaAfterHedgeUnits}], topClients: [{userId, login, pnl, contracts, todayPnl}], settlements: [runs], snapshot, hedgeAccount}`. Greeks are the **house's** (minus the clients' sum), same units as positions; `pnl` = clients' open option P&L (USD), `todayPnl` = their realised option P&L of the server day. Default `kind=live`. |
+| `GET /v1/admin/options/settlements?limit` | `options.read` | settlement runs |
+| `POST /v1/admin/options/settlements/{SYMBOL:DATE}/rerun {reason}` | `options.settle` (owner, super admin, admin, risk manager) | `{expiry, run, fixing, accounts, positions, cashChange, failed, audit}`; 409 `not_fixed`, `nothing_to_rerun`, `rerun_window_closed` |
+| `POST /v1/admin/options/trades/{ticket}/void {reasonCode, note}` | `options.dealing` (dealing roles) | `{data: {ticket, deals, cashReversed, commissionRefunded, wasOpen}, audit}` |
+| `GET /v1/admin/options/status` | dealing / config roles | snapshot version, staleness, switches, spots |
+
+Data (`migrations/20261003000000_options.sql`): `option`, `combo_id` (and `trigger` on orders) columns on `positions` / `orders` / `deals`; `option_knocks`, `option_settlement_runs`, `option_hedge_accounts`, `option_hedges`, `option_snapshot`. No new event types: option terms ride on `Position.option`, `Order.option`, `Deal.option` (`serde(default)`, absent on CFD events, so old streams replay unchanged). **Do not roll the engine back below this version once an option has been traded**: older code cannot read the new deal reasons and ledger kinds and refuses to start.
+
 ## Streams
 
 Browsers connect directly with a one-time ticket, so the internal token never reaches the browser. The flow is:
@@ -700,6 +760,12 @@ The dealing stream sends `snapshot` (`positions` as DeskPosition[], `orders` as 
 | `WALLET_URL` | `http://127.0.0.1:8095` | wallet service (copy allocations, PAMM invest / redeem, fee payouts) |
 | `WALLET_INTERNAL_TOKEN` | – | sent as `X-Kalks-Internal` to the wallet |
 | `IB_URL` / `IB_INTERNAL_TOKEN` | `http://127.0.0.1:8096` / – | IB service (PAMM lots allocated to investors) |
+| `GATEWAY_URL` / `GATEWAY_INTERNAL_TOKEN` | `http://127.0.0.1:8080` / – | client restrictions, presence, options suitability |
+| `OPTIONS_URL` / `OPTIONS_INTERNAL_TOKEN` | – / – | Kalks FX Options service (snapshot, fixings); empty = options off. `deploy.sh` writes both |
+| `OPTIONS_HEDGER` | `true` | house delta hedger (with `TRADING_ROLLOVER`; needs `OPTIONS_URL`) |
+| `OPTIONS_HEDGE_USER_ID` / `OPTIONS_HEDGE_GROUP` | `0` / `standard` | the house user and the group of the per-tenant hedge accounts |
+| `OPTIONS_HEDGE_CAPITAL` | `1000000` | house capital (USD) booked on a new hedge account |
+| `OPTIONS_HEDGE_LIMIT_USD` | `250000` | house delta (USD notional) per underlying carried before hedging |
 | `RUST_LOG` | `info,sqlx=warn` | |
 
 The config is logged at start with every secret and the DB password redacted.
@@ -735,6 +801,8 @@ cargo test -p trading
   - `social::allocation`: equity / balance share, rounding down to the lot step with the remainder reported, the minimum lot, accounts without equity, account and symbol max lot, multiplier and percent, the MAM performance fee above the HWM and the pro-rata management fee.
   - `tests/mam.rs` (PostgreSQL): a MAM programme through the real shards, tap and copier. Stale consent refused; a 0.50 block split 0.30 / 0.20 by equity with the allocation audit row; the terminal guard refuses MAM tickets and a bulk close but allows the client's own trade; partial and full close follow; exact performance fee (20 % of +300 = 60) with the balance after the debit; revoke settles the other link's fee and the next block goes only to the remaining account; the equity stop closes the MAM trade and stops the link; replay of every account and balanced ledger.
   - `tests/social.rs` (PostgreSQL): shards + tap + copier + a mock wallet. It covers mirroring with the right size, partial close, the fee above HWM, stop and return of funds, a stop that keeps the copied position (no guard, no more mirroring; a second stop closes nothing and returns only the free margin), a PAMM seed → invest → rollover → profit → fee + redemption with exact figures, units = Σ unit ledger, and replay of every account from `events`.
+- **Options (engine, `src/engine/tests_options.rs`, a `FixedPricer` over a test snapshot).** Premium, commission and realised P&L of buy / partial close / close; a short's premium and scenario margin; premiums from cash only (credit refused); short margin from own funds; long options without margin and CFD offsets that never raise the option margin (covered call lower); combos all or nothing (fill and close); no opens in the last 15 min, closes until 1 min before the cut; gates (switch, suitability live vs demo, blocked, contract limits incl. other accounts, halt, close-only, stale, weekend, account status); prop / copy / PAMM / MAM groups refused (market, pending, preview) while look-alike group names still trade; option deals flagged `instrument: "option"` with `option` in the dealing feed and the client history, CFD deals `"cfd"`; pending limit and underlying-trigger orders; premium TP; knock-out once at the rebate, knock-in once; settlement idempotent, re-run nets the difference, the one-hour hold; a short ITM settlement; void; USDJPY premium in USD; preview = fill; stop-out by units keeps strategies whole and records nothing when nothing can close; `metrics()` counts every position (fallback valuation); old CFD events unchanged; a proptest over random option sequences (ledger balanced, equity identity, replay).
+- **Options (PostgreSQL, `tests/options.rs`, mock options service + gateway).** Suitability 404 = live refused / demo allowed, preview vs fill, the position JSON contract, duplicate `clientOrderId`, combo fill and close, all-or-nothing, partial close through the generic route, a raw tick knocking a barrier out once (`option_knocks`, one `knock:` ledger key), void through the Back Office, the options book, the delta hedger, the settlement scheduler after a simulated crash (exactly one `settle:` key per ticket, idempotent, run record, hold), the client settlement list, re-run (window, nets, once, audited), replay + verify_balances + ledger nets. The snapshot poller: ETag / 304, staleness.
 - **Integration test** (`tests/replay.rs`). This runs against a throw-away database `kalks_trading_test_<pid>` on the local Postgres; it is skipped when Postgres is unreachable. It runs trades, reversal, pending fills, a partial close, a book split, swaps, a demo refill, credit and manual adjustments (a repeated adjustment key books once) through the shards. It then checks that `replay_all` from the `events` table equals the live state. It also checks the database guarantees: a reused ledger idempotency key is refused, an unbalanced transaction cannot commit, and `events` / `ledger_postings` are append-only.
 
 ## Known gaps
@@ -752,6 +820,13 @@ cargo test -p trading
   - The MAM result counts MAM positions opened after the link started. MAM trades left open after an earlier link to another manager are not part of the new link's result.
   - Changing the volume of a master pending order does not resize the allocated pending orders.
 
+- **Options.**
+  - Copy / PAMM / MAM mirroring of option trades, IB per-contract rates and the public API scopes are later milestones (M9): masters' option trades are skipped by followers.
+  - Per-client contract limits read the client's other accounts from the in-memory index when the order is placed; two simultaneous orders on two accounts of one client can both pass. Pending orders recheck limits on their own account only.
+  - The settlement re-run must be triggered here after the fixing was re-run in the options service (two steps, both audited).
+  - Suitability is checked when an order is placed (a pending order is not re-checked when it fills).
+  - Short-option minimum margin floors and event-vol bumps (top risk 1) are not implemented; the scenario grid and the weekend add-on are.
+  - Statements (services/reports) still label `option_premium` / `option_settlement` as "Other" / adjustments until they learn the new kinds; contests (growth) treat them as trading, as intended.
 - **A-book.** A-book routing is recorded and the LP adapter is called, but the only adapter is `NullLp` (not connected), so every trade is executed internally.
 - **Routing conditions.** Rules on risk score, hold time, win rate, news window, country or equity never match yet.
 - **Swaps.** Swaps are in points only (no percentage or money mode). There is no admin fee for swap-free groups (D19 optional fee). There is no holiday calendar, and sessions do not cover NSE/MCX.

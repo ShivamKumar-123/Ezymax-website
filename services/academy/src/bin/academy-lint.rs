@@ -1,6 +1,8 @@
 //! Content lint for content/academy: `cargo run -p academy --bin academy-lint [-- <content dir>] [--json]`.
 //! Exits 1 on any error (section < 6 chapters, chapter without a quiz, empty / duplicate slugs, word counts
-//! outside 600-1200, invalid quiz answers, unsafe svg, glossary < 150 terms, …).
+//! outside 600-1200, invalid quiz answers, unsafe svg, glossary < 150 terms, a core phase without both a
+//! fundamental and a technical section, a product track such as `options` mixed with other sections, unknown
+//! tracks, …).
 
 use academy::content::{counts, languages, lint, load_lang};
 use std::path::PathBuf;

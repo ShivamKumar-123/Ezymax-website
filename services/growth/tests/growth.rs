@@ -171,8 +171,33 @@ impl Env {
             kind: "close".into(),
             reversed: false,
             account: AccountFacts { kind: kind.into(), group: "standard".into(), cent: false },
+            option: false,
         };
         deals::ingest(&self.st, &p, &d).await.unwrap()
+    }
+
+    /// A Kalks FX Options closing deal (volume = contracts).
+    async fn option_deal(&self, login: i64, user: i64, contracts: &str, profit: &str, opened_ago_min: i64) -> (i64, Option<deals::Produced>) {
+        let p = Programme::load(&self.st, "kalks").await.unwrap();
+        let now = Utc::now();
+        let id = DEAL.fetch_add(1, Ordering::SeqCst);
+        let d = DealIn {
+            deal_id: id,
+            tenant: "kalks".into(),
+            login,
+            user_id: user,
+            symbol: "EURUSD-20261009-1.1650-C".into(),
+            side: "buy".into(),
+            volume: dec(contracts),
+            profit: dec(profit),
+            open_time: now - Duration::minutes(opened_ago_min),
+            close_time: now,
+            kind: "expiry".into(),
+            reversed: false,
+            account: AccountFacts { kind: "live".into(), group: "standard".into(), cent: false },
+            option: true,
+        };
+        (id, deals::ingest(&self.st, &p, &d).await.unwrap())
     }
 
     async fn one<T: for<'r> sqlx::Decode<'r, sqlx::Postgres> + sqlx::Type<sqlx::Postgres> + Send + Unpin>(&self, sql: &str) -> T {
@@ -208,6 +233,7 @@ async fn deals_earn_points_and_cashback_once() {
         kind: "close".into(),
         reversed: false,
         account: AccountFacts { kind: "live".into(), group: "standard".into(), cent: false },
+        option: false,
     };
     assert_eq!(deals::ingest(&e.st, &prog, &again).await.unwrap().unwrap().points, 20);
     assert!(deals::ingest(&e.st, &prog, &again).await.unwrap().is_none());
@@ -435,5 +461,108 @@ async fn redemption_pays_wallet_with_retry() {
     let disc: i64 = e.one("SELECT id FROM catalogue WHERE kind = 'fee_discount'").await;
     let r = loyalty::redeem(&e.st, "kalks", 9, disc, None).await.unwrap();
     assert!(r["redemption"]["voucherCode"].as_str().unwrap().starts_with("KV-"));
+    e.drop().await;
+}
+
+#[tokio::test]
+async fn option_deals_and_premiums_earn_no_rewards_and_never_move_contests() {
+    let Some(e) = env().await else { return };
+    let login = 10000031;
+    e.add_account(login, 51, "live");
+    // every reward is switched on for this client: FX cashback, a bonus releasing per lot, a running live contest
+    sqlx::query("INSERT INTO cashback_programmes (tenant, name, usd_per_lot) VALUES ('kalks', 'All cashback', 3)").execute(&e.st.pool).await.unwrap();
+    let cid: i64 = sqlx::query_scalar("INSERT INTO bonus_campaigns (tenant, name, kind, fixed_amount, release_per_lot, expiry_days, status) VALUES ('kalks','Welcome $100','fixed',100,10,30,'active') RETURNING id")
+        .fetch_one(&e.st.pool)
+        .await
+        .unwrap();
+    let acc = clients::account(&e.st, "kalks", login).await.unwrap().unwrap();
+    let mut tx = e.st.pool.begin().await.unwrap();
+    let opts = ClaimOpts { source: "claim", require_public: true, amount_override: None, note: None, skip_limits: false };
+    let gid = bonus::claim_in(&mut tx, "kalks", 51, cid, Some(&acc), &Segment::default(), &opts).await.unwrap();
+    tx.commit().await.unwrap();
+    bonus::post_tick(&e.st).await.unwrap();
+    sqlx::query("UPDATE bonus_grants SET granted_at = now() - interval '1 hour'").execute(&e.st.pool).await.unwrap();
+    let contest: i64 = sqlx::query_scalar(
+        "INSERT INTO contests (tenant, slug, name, kind, starts_at, ends_at, scoring, min_trades) VALUES ('kalks','opt','Live sprint','live', now() - interval '2 hours', now() + interval '1 hour','profit',0) RETURNING id",
+    )
+    .fetch_one(&e.st.pool)
+    .await
+    .unwrap();
+    let entry: i64 = sqlx::query_scalar("INSERT INTO contest_entries (contest_id, tenant, user_id, login, display_name, start_equity, joined_at) VALUES ($1,'kalks',51,$2,'T51',1000, now() - interval '90 minutes') RETURNING id")
+        .bind(contest)
+        .bind(login)
+        .fetch_one(&e.st.pool)
+        .await
+        .unwrap();
+
+    // 20 contracts settled with a big profit, held long enough: nothing at all
+    let (oid, p) = e.option_deal(login, 51, "20", "450", 60).await;
+    assert_eq!(p.unwrap(), deals::Produced::default(), "no points, cashback, bonus release or contest entry");
+    assert_eq!(e.one::<i64>(&format!("SELECT count(*) FROM deals WHERE deal_id = {oid} AND instrument = 'option' AND lots = 0 AND asset_class = 'options'")).await, 1);
+    assert_eq!(e.one::<i64>("SELECT count(*) FROM points_ledger WHERE user_id = 51").await, 0);
+    assert_eq!(e.one::<i64>("SELECT count(*) FROM cashback_accruals WHERE user_id = 51").await, 0);
+    assert_eq!(e.one::<i64>("SELECT count(*) FROM contest_trades").await, 0);
+    assert_eq!(e.one::<D>(&format!("SELECT lots_traded FROM bonus_grants WHERE id = {gid}")).await, D::ZERO);
+    assert_eq!(e.one::<D>(&format!("SELECT released FROM bonus_grants WHERE id = {gid}")).await, D::ZERO);
+    // seen once (the poller overlap re-reads it), and its reversal (an options void) is harmless
+    let prog = Programme::load(&e.st, "kalks").await.unwrap();
+    let again = DealIn {
+        deal_id: oid,
+        tenant: "kalks".into(),
+        login,
+        user_id: 51,
+        symbol: "EURUSD-20261009-1.1650-C".into(),
+        side: "buy".into(),
+        volume: dec("20"),
+        profit: dec("450"),
+        open_time: Utc::now() - Duration::minutes(60),
+        close_time: Utc::now(),
+        kind: "expiry".into(),
+        reversed: false,
+        account: AccountFacts { kind: "live".into(), group: "standard".into(), cent: false },
+        option: false, // even without the flag, the series code gives it away
+    };
+    assert!(deals::ingest(&e.st, &prog, &again).await.unwrap().is_none());
+    deals::reverse_deal(&e.st, oid).await.unwrap();
+    assert_eq!(e.one::<i64>("SELECT count(*) FROM points_ledger WHERE user_id = 51").await, 0);
+    // an unflagged deal with an option series code is still treated as an option
+    let p = Programme::load(&e.st, "kalks").await.unwrap();
+    let sneaky = DealIn { deal_id: DEAL.fetch_add(1, Ordering::SeqCst), ..again.clone() };
+    assert_eq!(deals::ingest(&e.st, &p, &sneaky).await.unwrap().unwrap(), deals::Produced::default());
+
+    // a CFD deal of the same client still earns everything (cashback 2 × 3, release 2 × 10, contest trade)
+    let pr = e.deal(login, 51, "live", "EURUSD", "2", "35", 60).await.unwrap();
+    assert_eq!((pr.cashback, pr.bonus_released, pr.contest_entries), (dec("6"), dec("20"), 1));
+    assert!(pr.points > 0);
+
+    // the contest score: the client holds a bought option worth 300 in equity (the premium already left the
+    // balance) plus a CFD floating +10. Only the CFD part counts; premium / settlement postings are no balance change.
+    {
+        let mut g = e.m.lock().unwrap();
+        let a = g.accounts.get_mut(&login).unwrap();
+        // equity = balance 700 + bonus 100 + CFD floating 10 + options 300
+        a["balance"] = json!(700.0);
+        a["bonus"] = json!(100.0);
+        a["equity"] = json!(1110.0);
+        a["optionValue"] = json!(300.0);
+        g.ledgers.insert(
+            login,
+            vec![
+                json!({"txn": 41, "kind": "option_premium", "subLedger": "balance", "amount": -300.0, "currency": "USD", "at": Utc::now().to_rfc3339()}),
+                json!({"txn": 42, "kind": "option_settlement", "subLedger": "balance", "amount": 450.0, "currency": "USD", "at": Utc::now().to_rfc3339()}),
+            ],
+        );
+    }
+    let acc = clients::account(&e.st, "kalks", login).await.unwrap().unwrap();
+    assert_eq!((acc.floating_usd(), acc.equity_ex_options_usd()), (dec("10"), dec("810")));
+    contests::refresh(&e.st, contest).await.unwrap();
+    let (realised, floating, score, status): (D, D, D, String) = sqlx::query_as("SELECT realised, floating, score, status FROM contest_entries WHERE id = $1").bind(entry).fetch_one(&e.st.pool).await.unwrap();
+    assert_eq!((realised, floating, score), (dec("35"), dec("10"), dec("45")), "the CFD trade only");
+    assert_eq!(status, "active", "option premiums and settlements are not deposits or withdrawals");
+    assert_eq!(e.one::<i64>(&format!("SELECT count(*) FROM contest_flags WHERE entry_id = {entry} AND kind = 'balance_change'")).await, 0);
+    // nor do they forfeit the bonus like a withdrawal would
+    sqlx::query("UPDATE bonus_grants SET ledger_checked = NULL").execute(&e.st.pool).await.unwrap();
+    assert_eq!(bonus::lifecycle_tick(&e.st).await.unwrap(), 0);
+    assert_eq!(e.one::<String>(&format!("SELECT status FROM bonus_grants WHERE id = {gid}")).await, "active");
     e.drop().await;
 }

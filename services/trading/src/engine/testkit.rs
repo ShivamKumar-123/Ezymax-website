@@ -4,7 +4,8 @@
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::str::FromStr;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
 use super::{Env, Ids, Quote, Quotes, Tx};
 use crate::model::{Account, AccountKind, Book, Controls, DemoCfg, Mode, Status};
@@ -63,6 +64,114 @@ pub struct Kit {
     pub ids: Ids,
     pub now: DateTime<Utc>,
     pub restrictions: crate::controls::Restrictions,
+    pub options: FixedPricer,
+}
+
+/* ------------------------------------------------------------------ */
+/* Options: a pricer with fixed prices over a test snapshot            */
+/* ------------------------------------------------------------------ */
+
+use crate::model::OptionTerms;
+use crate::options::{OptPrice, OptSnapshot, OptionPricing, PriceError, ScenLeg, ScenOut, compute_price, compute_scenario};
+
+/// Options pricer for tests: a snapshot (`opt_snapshot`), raw spots set by the test, and optional fixed
+/// bid / ask per series (the mark is their middle) so money assertions are exact. Without a fixed price a series
+/// is priced by the real model; scenario margin always runs the real optmath grid.
+#[derive(Default)]
+pub struct FixedPricer {
+    pub snap: Mutex<Option<Arc<OptSnapshot>>>,
+    pub spots: Mutex<HashMap<String, (f64, i64)>>,
+    pub prices: Mutex<HashMap<String, (D, D)>>,
+    pub stale: AtomicBool,
+}
+
+impl FixedPricer {
+    pub fn set_snapshot(&self, v: serde_json::Value) {
+        *self.snap.lock().unwrap() = Some(Arc::new(OptSnapshot::from_json(v).unwrap()));
+    }
+    pub fn spot(&self, symbol: &str, mid: &str, t: DateTime<Utc>) {
+        self.spots.lock().unwrap().insert(symbol.into(), (d(mid).to_string().parse().unwrap(), t.timestamp_millis()));
+    }
+    /// Fixes the bid / ask of a series (every barrier variant of it too).
+    pub fn fix(&self, series: &str, bid: &str, ask: &str) {
+        self.prices.lock().unwrap().insert(series.into(), (d(bid), d(ask)));
+    }
+    pub fn unfix(&self, series: &str) {
+        self.prices.lock().unwrap().remove(series);
+    }
+}
+
+impl OptionPricing for FixedPricer {
+    fn snapshot(&self) -> Option<Arc<OptSnapshot>> {
+        self.snap.lock().unwrap().clone()
+    }
+    fn stale(&self, _now: DateTime<Utc>) -> bool {
+        self.snapshot().is_none() || self.stale.load(Ordering::SeqCst)
+    }
+    fn spot(&self, symbol: &str) -> Option<(f64, i64)> {
+        self.spots.lock().unwrap().get(symbol).copied()
+    }
+    fn price(&self, tenant: &str, group: &str, terms: &OptionTerms, now: DateTime<Utc>) -> Result<OptPrice, PriceError> {
+        let snap = self.snapshot().ok_or(PriceError::NoVol)?;
+        let fixed = self.prices.lock().unwrap().get(&terms.series).copied();
+        let mut p = compute_price(&snap, &|s| OptionPricing::spot(self, s), &|c| self.usd_per(c), tenant, group, terms, now)?;
+        if let Some((bid, ask)) = fixed {
+            p.bid = bid;
+            p.ask = ask;
+            p.mark = (bid + ask) / D::TWO;
+        }
+        Ok(p)
+    }
+    fn scenario(&self, tenant: &str, underlying: &str, legs: &[ScenLeg], cfd_units: f64, now: DateTime<Utc>) -> Option<ScenOut> {
+        let snap = self.snapshot()?;
+        compute_scenario(&snap, &|s| OptionPricing::spot(self, s), &|c| self.usd_per(c), tenant, underlying, legs, cfd_units, now)
+    }
+}
+
+/// Test snapshot: EURUSD (GK, 10 000 EUR per contract) and USDJPY (GK, quote JPY) with a flat-ish surface, both
+/// tenants switches on, expiry 1 = Friday 2026-10-02 14:00 UTC, expiry 2 = Monday 2026-09-28 14:00 UTC (the kit's
+/// "today"); strikes 1.1500–1.1700 (EURUSD) and 148–152 (USDJPY), calls and puts.
+pub fn opt_snapshot() -> serde_json::Value {
+    let mut series = Vec::new();
+    for (id, date) in [(1, "20261002"), (2, "20260928")] {
+        for k in ["1.1500", "1.1550", "1.1600", "1.1650", "1.1700"] {
+            for (kind, c) in [("call", "C"), ("put", "P")] {
+                series.push(serde_json::json!({"code": format!("EURUSD-{date}-{k}-{c}"), "symbol": "EURUSD", "expiryId": id, "strike": k.parse::<f64>().unwrap(), "kind": kind, "status": "active"}));
+            }
+        }
+    }
+    for k in ["148.00", "150.00", "152.00"] {
+        for (kind, c) in [("call", "C"), ("put", "P")] {
+            series.push(serde_json::json!({"code": format!("USDJPY-20261002-{k}-{c}"), "symbol": "USDJPY", "expiryId": 3, "strike": k.parse::<f64>().unwrap(), "kind": kind, "status": "active"}));
+        }
+    }
+    let und = |sym: &str, base: &str, quote: &str, digits: i32| {
+        serde_json::json!({"symbol": sym, "model": "gk", "baseCcy": base, "quoteCcy": quote, "calendarCodes": [base, quote], "contractSize": 10000, "digits": digits,
+            "pipSize": 0.0001, "cutTime": "10:00", "cutZone": "America/New_York", "noOpenMinutes": 15, "closeOnlyMinutes": 1, "weekendVolWeight": 0.15,
+            "holidayVolWeight": 0.5, "priceScan": 0.03, "volScan": 0.03, "extremeMultiple": 3, "extremeCover": 0.35, "minContracts": 1, "maxContracts": 100,
+            "contractStep": 1, "barriersEnabled": true, "enabled": true, "deltaConvention": "spot"})
+    };
+    serde_json::json!({
+        "version": 1, "staleAfterSecs": 300,
+        "underlyings": [und("EURUSD", "EUR", "USD", 5), und("USDJPY", "USD", "JPY", 3)],
+        "rates": [{"ccy": "USD", "rate": 0.04}, {"ccy": "EUR", "rate": 0.02}, {"ccy": "JPY", "rate": 0.005}],
+        "holidays": {"USD": [], "EUR": [], "JPY": []},
+        "surfaces": [
+            {"symbol": "EURUSD", "version": 1, "blendWeight": 1.0, "pillars": [{"tenor": "1W", "days": 7, "atm": 0.07, "rr25": -0.002, "bf25": 0.002}, {"tenor": "1M", "days": 30, "atm": 0.075, "rr25": -0.003, "bf25": 0.0025}]},
+            {"symbol": "USDJPY", "version": 1, "blendWeight": 1.0, "pillars": [{"tenor": "1W", "days": 7, "atm": 0.1, "rr25": -0.01, "bf25": 0.003}, {"tenor": "1M", "days": 30, "atm": 0.1, "rr25": -0.01, "bf25": 0.003}]}
+        ],
+        "expiries": [
+            {"id": 1, "symbol": "EURUSD", "expiryDate": "2026-10-02", "cutAt": "2026-10-02T14:00:00Z", "status": "listed", "fixingRun": 0},
+            {"id": 2, "symbol": "EURUSD", "expiryDate": "2026-09-28", "cutAt": "2026-09-28T14:00:00Z", "status": "listed", "fixingRun": 0},
+            {"id": 3, "symbol": "USDJPY", "expiryDate": "2026-10-02", "cutAt": "2026-10-02T14:00:00Z", "status": "listed", "fixingRun": 0}
+        ],
+        "series": series,
+        "tenants": [{"tenant": "kalks", "enabledDemo": true, "enabledLive": true}],
+        "groups": [{"tenant": "kalks", "groupCode": "*", "symbol": "*", "volSpread": 0.004, "minSpreadUsd": 0.5, "commissionPerContract": 0.25,
+                    "commissionCapPct": 10, "maxContractsPerClient": 200, "weekendMarginPct": 25, "enabled": true}],
+        "controls": [],
+        "clientLimits": []
+    })
 }
 
 impl Kit {
@@ -78,7 +187,12 @@ impl Kit {
         ecn.commission_per_lot = d("7");
         tenant.groups.insert("ecn".into(), ecn);
         // Monday 2026-09-28 12:00 UTC: FX open
-        Self { specs: crate::specs::test_specs(), tenant, quotes: MapQuotes::default(), ids: Ids::new(1000, 5000, 9000), now: t("2026-09-28T12:00:00Z"), restrictions: Default::default() }
+        let now = t("2026-09-28T12:00:00Z");
+        let options = FixedPricer::default();
+        options.set_snapshot(opt_snapshot());
+        options.spot("EURUSD", "1.16", now);
+        options.spot("USDJPY", "150", now);
+        Self { specs: crate::specs::test_specs(), tenant, quotes: MapQuotes::default(), ids: Ids::new(1000, 5000, 9000), now, restrictions: Default::default(), options }
     }
 
     pub fn quote(&self, symbol: &str, bid: &str, ask: &str) {
@@ -86,7 +200,17 @@ impl Kit {
     }
 
     pub fn env<'a>(&'a self, st: &AccountState) -> Env<'a> {
-        Env { specs: &self.specs, tenant: &self.tenant, group: &self.tenant.groups[&st.account.group], quotes: &self.quotes, ids: &self.ids, now: self.now, max_quote_age_ms: 0, restrictions: Some(&self.restrictions) }
+        Env {
+            specs: &self.specs,
+            tenant: &self.tenant,
+            group: &self.tenant.groups[&st.account.group],
+            quotes: &self.quotes,
+            ids: &self.ids,
+            now: self.now,
+            max_quote_age_ms: 0,
+            restrictions: Some(&self.restrictions),
+            options: &self.options,
+        }
     }
 
     pub fn account(&self, login: i64, group: &str, kind: AccountKind) -> Account {

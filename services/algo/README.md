@@ -434,6 +434,8 @@ cargo test -p algo
 
 ## Known gaps
 
+- **Options.** Strategies, webhooks and the public order route trade CFDs only (`/v1/terminal/orders`); Kalks FX Options orders through the algo API (O35) are not built yet. A deployment books only the exits of CFD tickets it opened itself and ignores option deals (`option` / `instrument: "option"` / series symbol), so premiums and contracts never reach its P&L, daily-loss limit or track record.
+
 - **Sandbox.** The DSL is an interpreted expression language. It is not WASM (D82 said "compiled to WASM"); the grammar, the limits and the deadline make it safe. User-defined functions, loops and state across bars are intentionally absent.
 - **Data.** Tick data is not available (D80 "tick-level later"). The intrabar model uses M1 bars where market-data has them (14 days locally by default) and bar OHLC elsewhere. Margin and stop-out are not modelled in backtests.
 - **Runtime.** Evaluation runs on closed bars only; the terminal's `exitIntrabar` option is not supported server-side. The runtime polls candles, not the WebSocket. One instance must run the workers (no leader election).

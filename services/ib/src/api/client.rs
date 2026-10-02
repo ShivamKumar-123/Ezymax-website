@@ -63,6 +63,7 @@ pub fn level_json(l: &Level) -> Value {
         "key": l.key, "name": l.name, "rank": l.rank, "icon": l.icon, "perks": l.perks,
         "minActiveClients": l.min_active_clients, "minMonthlyLots": num(l.min_monthly_lots), "cpaAmount": num(l.cpa_amount),
         "rates": l.rates.iter().map(|(k, v)| (k.clone(), num(*v))).collect::<serde_json::Map<_, _>>(),
+        "optionsRate": num(l.option_rate()),
     })
 }
 
@@ -388,6 +389,7 @@ pub async fn clients(State(st): State<AppState>, u: UserCtx, Query(q): Query<Cli
                 (SELECT count(*) FROM members x WHERE x.parent_id = m.user_id) AS referrals,
                 (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = m.user_id AND x.qualified AND NOT x.reversed AND x.close_time >= $4) AS lots_month,
                 (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = m.user_id AND x.qualified AND NOT x.reversed) AS lots_total,
+                (SELECT coalesce(sum(x.contracts), 0) FROM deals x WHERE x.user_id = m.user_id AND x.qualified AND NOT x.reversed AND x.close_time >= $4) AS contracts_month,
                 (SELECT max(x.close_time) FROM deals x WHERE x.user_id = m.user_id AND x.tenant = $1 AND x.qualified) AS last_trade,
                 (SELECT coalesce(sum(k.amount), 0) FROM commissions k WHERE k.beneficiary_id = $2 AND k.client_id = m.user_id AND k.status NOT IN ('void','rejected')) AS earned
          FROM down d JOIN members m ON m.user_id = d.user_id LEFT JOIN campaigns c ON c.id = m.campaign_id
@@ -409,7 +411,8 @@ pub async fn clients(State(st): State<AppState>, u: UserCtx, Query(q): Query<Cli
         .map(|r| {
             let lots_month: D = r.get("lots_month");
             let funded = r.get::<Option<DateTime<Utc>>, _>("first_deposit_at").is_some();
-            let status = if lots_month > ZERO { "active" } else if funded { "funded" } else { "registered" };
+            let contracts_month: D = r.get("contracts_month");
+            let status = if lots_month > ZERO || contracts_month > ZERO { "active" } else if funded { "funded" } else { "registered" };
             json!({
                 "id": r.get::<i64, _>("user_id"), "tier": r.get::<i32, _>("tier"),
                 "name": shown_name(&r.get::<String, _>("first_name"), &r.get::<String, _>("last_name"), full),
@@ -420,7 +423,7 @@ pub async fn clients(State(st): State<AppState>, u: UserCtx, Query(q): Query<Cli
                 "firstDepositAt": r.get::<Option<DateTime<Utc>>, _>("first_deposit_at"),
                 "firstDepositAmount": if full { r.get::<Option<D>, _>("first_deposit_amount").map(num).unwrap_or(Value::Null) } else { Value::Null },
                 "firstTradeAt": r.get::<Option<DateTime<Utc>>, _>("first_trade_at"), "lastTradeAt": r.get::<Option<DateTime<Utc>>, _>("last_trade"),
-                "lotsMonth": num(lots_month), "lotsTotal": num(r.get("lots_total")), "earned": num(r.get("earned")), "status": status,
+                "lotsMonth": num(lots_month), "lotsTotal": num(r.get("lots_total")), "optionContractsMonth": num(contracts_month), "earned": num(r.get("earned")), "status": status,
             })
         })
         .collect();
@@ -450,7 +453,7 @@ pub async fn client_trades(State(st): State<AppState>, u: UserCtx, Path(id): Pat
         return Err(ApiError::NotFound);
     }
     let rows = sqlx::query(
-        "SELECT d.source, d.deal_id, d.login, d.symbol, d.side, d.volume, d.lots, d.open_time, d.close_time, d.qualified, d.reason, d.reversed,
+        "SELECT d.source, d.deal_id, d.login, d.symbol, d.side, d.volume, d.lots, d.instrument, d.contracts, d.open_time, d.close_time, d.qualified, d.reason, d.reversed,
                 (SELECT coalesce(sum(k.amount), 0) FROM commissions k WHERE k.deal_source = d.source AND k.deal_id = d.deal_id AND k.beneficiary_id = $2 AND k.status NOT IN ('void','rejected')) AS earned
          FROM deals d WHERE d.user_id = $1 AND d.tenant = $3 ORDER BY d.close_time DESC LIMIT 200",
     )
@@ -462,6 +465,7 @@ pub async fn client_trades(State(st): State<AppState>, u: UserCtx, Path(id): Pat
     Ok(Json(json!({"items": rows.iter().map(|r| json!({
         "dealId": r.get::<i64, _>("deal_id"), "source": r.get::<String, _>("source"), "login": r.get::<Option<i64>, _>("login"), "symbol": r.get::<String, _>("symbol"),
         "side": r.get::<String, _>("side"), "volume": num(r.get("volume")), "lots": num(r.get("lots")),
+        "instrument": r.get::<String, _>("instrument"), "contracts": num(r.get("contracts")),
         "openTime": r.get::<DateTime<Utc>, _>("open_time"), "closeTime": r.get::<DateTime<Utc>, _>("close_time"),
         "qualified": r.get::<bool, _>("qualified"), "reason": r.get::<Option<String>, _>("reason"), "reversed": r.get::<bool, _>("reversed"), "earned": num(r.get("earned")),
     })).collect::<Vec<_>>()})))
@@ -537,7 +541,7 @@ pub async fn commission_rows(st: &AppState, tenant: &str, me: i64, q: &CommQ, li
                 json!({
                     "id": r.get::<i64, _>("id"), "kind": r.get::<String, _>("kind"), "status": r.get::<String, _>("status"),
                     "amount": num(r.get("amount")), "tier": r.get::<i32, _>("tier"), "rate": num(r.get("rate")), "sharePct": num(r.get("share_pct")),
-                    "lots": num(r.get("lots")), "symbol": r.get::<Option<String>, _>("symbol"), "symbolGroup": r.get::<Option<String>, _>("symbol_group"),
+                    "lots": num(r.get("lots")), "contracts": num(r.get("contracts")), "symbol": r.get::<Option<String>, _>("symbol"), "symbolGroup": r.get::<Option<String>, _>("symbol_group"),
                     "dealId": r.get::<Option<i64>, _>("deal_id"), "source": r.get::<Option<String>, _>("deal_source"), "levelKey": r.get::<Option<String>, _>("level_key"),
                     "client": {
                         "id": r.get::<i64, _>("client_id"),

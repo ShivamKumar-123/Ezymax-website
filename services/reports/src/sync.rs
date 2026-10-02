@@ -23,8 +23,20 @@ use crate::state::App;
 use crate::time;
 use crate::upstream::{As, Target, dec, time as jtime};
 
-/// Ledger kinds that move money in or out of an account (not trading results or charges).
+/// Ledger kinds that move money in or out of an account (not trading results or charges). Kalks FX Options
+/// premiums (`option_premium`) and settlements (`option_settlement`) are trading flows, never deposits or
+/// withdrawals.
 pub const FLOW_KINDS: &[&str] = &["transfer_in", "transfer_out", "deposit", "withdrawal", "demo_initial", "demo_refill"];
+
+/// The `option` object of an engine deal JSON (`instrument: "option"`), or a minimal one for an option series
+/// symbol when the feed does not carry it. None for CFD deals.
+pub fn deal_option(d: &Value) -> Option<Value> {
+    if d["option"].is_object() {
+        return Some(d["option"].clone());
+    }
+    let sym = d["symbol"].as_str().unwrap_or("");
+    (d["instrument"].as_str() == Some("option") || crate::statement::is_option_series(sym)).then(|| json!({"series": sym}))
+}
 
 pub async fn run(app: App) {
     let mut pass: u64 = 0;
@@ -293,10 +305,11 @@ async fn pull_deals(app: &App, tenant: &str, login: i64, user_id: i64, from: Opt
 pub async fn upsert_deal(app: &App, tenant: &str, d: &Value) -> anyhow::Result<()> {
     sqlx::query(
         "INSERT INTO deals (tenant, id, login, position_ticket, order_ticket, symbol, side, position_side, entry, volume, price, profit, swap, commission,
-                            reason, book, time, open_price, open_time, source, comment, price_correction, reversed)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
+                            reason, book, time, open_price, open_time, source, comment, price_correction, reversed, option)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
          ON CONFLICT (tenant, id) DO UPDATE SET profit = EXCLUDED.profit, swap = EXCLUDED.swap, commission = EXCLUDED.commission, book = EXCLUDED.book,
-           open_price = EXCLUDED.open_price, price_correction = EXCLUDED.price_correction, reversed = EXCLUDED.reversed",
+           open_price = EXCLUDED.open_price, price_correction = EXCLUDED.price_correction, reversed = EXCLUDED.reversed,
+           option = COALESCE(EXCLUDED.option, deals.option)",
     )
     .bind(tenant)
     .bind(d["id"].as_i64().unwrap_or(0))
@@ -321,6 +334,7 @@ pub async fn upsert_deal(app: &App, tenant: &str, d: &Value) -> anyhow::Result<(
     .bind(d["comment"].as_str().unwrap_or(""))
     .bind(d["priceCorrection"].as_bool().unwrap_or(false))
     .bind(d["reversed"].as_bool().unwrap_or(false))
+    .bind(deal_option(d).map(sqlx::types::Json))
     .execute(&app.pool)
     .await?;
     Ok(())
@@ -600,4 +614,24 @@ pub async fn sync_ib(app: &App, tenant: &str) -> anyhow::Result<()> {
         db::set_cursor(&app.pool, tenant, "ib_full", &json!({"done": Utc::now()})).await?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn option_flows_are_never_deposits_or_withdrawals() {
+        for k in ["option_premium", "option_settlement", "trade_pnl", "commission", "reversal"] {
+            assert!(!FLOW_KINDS.contains(&k), "{k}");
+        }
+    }
+
+    #[test]
+    fn option_deals_are_recognised_in_the_feed() {
+        let o = deal_option(&json!({"symbol": "EURUSD-20261009-1.1650-C", "instrument": "option", "option": {"series": "EURUSD-20261009-1.1650-C", "cash": -104}})).unwrap();
+        assert_eq!(o["cash"], -104);
+        assert_eq!(deal_option(&json!({"symbol": "EURUSD-20261009-1.1650-C"})).unwrap()["series"], "EURUSD-20261009-1.1650-C");
+        assert!(deal_option(&json!({"symbol": "EURUSD", "option": null, "instrument": "cfd"})).is_none());
+    }
 }

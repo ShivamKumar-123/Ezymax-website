@@ -270,7 +270,7 @@ pub async fn deposit_tick(st: &AppState) -> anyhow::Result<usize> {
         let claimed: DateTime<Utc> = g.get("claimed_at");
         for acc in accounts.iter().filter(|a| a.kind == "live" && (groups.is_empty() || groups.iter().any(|x| x.eq_ignore_ascii_case(&a.group)))) {
             let ledger = clients::ledger(st, &tenant, acc.login, user, claimed).await?;
-            let dep = ledger.iter().filter(|l| matches!(l.kind.as_str(), "transfer_in" | "deposit") && l.sub_ledger == "balance" && l.amount > ZERO && l.at >= claimed).min_by_key(|l| l.txn);
+            let dep = ledger.iter().filter(|l| calc::is_deposit_kind(&l.kind) && l.sub_ledger == "balance" && l.amount > ZERO && l.at >= claimed).min_by_key(|l| l.txn);
             let Some(dep) = dep else { continue };
             let Some(bonus) = calc::deposit_bonus(dep.amount, g.get("pct"), g.get("cap"), g.get("min_deposit")) else { continue };
             let mut tx = st.pool.begin().await?;
@@ -438,7 +438,7 @@ pub async fn lifecycle_tick(st: &AppState) -> anyhow::Result<usize> {
         let (Some(login), Some(since)) = (g.get::<Option<i64>, _>("login"), g.get::<Option<DateTime<Utc>>, _>("granted_at")) else { continue };
         sqlx::query("UPDATE bonus_grants SET ledger_checked = now() WHERE id = $1").bind(id).execute(&st.pool).await?;
         let ledger = clients::ledger(st, &tenant, login, g.get("user_id"), since).await?;
-        let out = ledger.iter().find(|l| matches!(l.kind.as_str(), "transfer_out" | "withdrawal") && l.sub_ledger == "balance" && l.amount < ZERO && l.at >= since);
+        let out = ledger.iter().find(|l| calc::is_withdrawal_kind(&l.kind) && l.sub_ledger == "balance" && l.amount < ZERO && l.at >= since);
         if let Some(w) = out {
             let mut tx = st.pool.begin().await?;
             let removed = end_grant(&mut tx, id, "forfeited", "withdrawal").await?;

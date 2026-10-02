@@ -64,6 +64,9 @@ pub struct Pos {
     pub volume: D,
     pub open_time: DateTime<Utc>,
     pub profit: D,
+    /// Kalks FX Options position (volume = contracts). The engine refuses options on prop groups; this is a
+    /// defensive flag so contracts can never be counted as lots.
+    pub option: bool,
 }
 
 /// Closing deal (DeskDeal subset).
@@ -80,6 +83,26 @@ pub struct Deal {
     pub close_price: D,
     /// Net: price P&L + swap − commission.
     pub profit: D,
+    /// Kalks FX Options deal (volume = contracts, never lots). Prop groups cannot trade options (engine gate).
+    pub option: bool,
+}
+
+/// Engine option series code (`EURUSD-20261009-1.1650-C`): underlying, expiry date, strike, right.
+pub fn is_option_series(symbol: &str) -> bool {
+    let p: Vec<&str> = symbol.split('-').collect();
+    p.len() == 4
+        && !p[0].is_empty()
+        && p[1].len() == 8
+        && p[1].bytes().all(|b| b.is_ascii_digit())
+        && !p[2].is_empty()
+        && p[2].bytes().all(|b| b.is_ascii_digit() || b == b'.')
+        && matches!(p[3], "C" | "P" | "c" | "p")
+}
+
+/// Whether an engine position / deal JSON is a Kalks FX Options one (`option` object, `instrument`, or the
+/// series code).
+pub fn is_option(v: &Value) -> bool {
+    v["option"].is_object() || v["instrument"].as_str() == Some("option") || v["symbol"].as_str().is_some_and(is_option_series)
 }
 
 #[derive(Clone, Debug)]
@@ -123,6 +146,7 @@ pub fn parse_deal(v: &Value) -> Option<Deal> {
         open_price: dec(&v["openPrice"]),
         close_price: dec(&v["closePrice"]),
         profit: dec(&v["profit"]),
+        option: is_option(v),
     })
 }
 
@@ -134,6 +158,7 @@ fn parse_pos(v: &Value) -> Option<Pos> {
         volume: dec(&v["volume"]),
         open_time: time_of(&v["openTime"])?,
         profit: dec(&v["profit"]),
+        option: is_option(v),
     })
 }
 
@@ -280,4 +305,26 @@ fn urlenc(s: &str) -> String {
             _ => format!("%{b:02X}"),
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn option_deals_and_positions_are_flagged() {
+        let deal = json!({"id": "2000001", "ticket": "1000001", "symbol": "EURUSD", "side": "buy", "volume": 1, "openTime": "2026-10-01T10:00:00Z",
+                          "closeTime": "2026-10-01T11:00:00Z", "openPrice": 1.16, "closePrice": 1.17, "profit": 10, "option": null, "instrument": "cfd"});
+        assert!(!parse_deal(&deal).unwrap().option);
+        let mut o = deal.clone();
+        o["symbol"] = json!("EURUSD-20261009-1.1650-C");
+        o["option"] = json!({"series": "EURUSD-20261009-1.1650-C"});
+        assert!(parse_deal(&o).unwrap().option);
+        let mut o = deal.clone();
+        o["instrument"] = json!("option");
+        assert!(parse_deal(&o).unwrap().option);
+        let pos = json!({"ticket": "1000002", "symbol": "USDJPY-20261009-150.00-P", "side": "sell", "volume": 3, "openTime": "2026-10-01T10:00:00Z", "profit": -4});
+        assert!(parse_pos(&pos).unwrap().option);
+        assert!(!is_option_series("BTC-USD") && !is_option_series("EURUSD"));
+    }
 }

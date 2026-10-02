@@ -8,11 +8,13 @@
 
 pub mod dealing;
 pub mod funds;
+pub mod options;
 pub mod risk;
 pub mod trade;
 
 use chrono::{DateTime, Utc};
 use serde_json::Value;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::atomic::{AtomicI64, Ordering};
 
 use crate::model::{Account, LedgerTxn, Posting, Side, TxnKind, acct_code, house_code};
@@ -78,6 +80,7 @@ impl Ids {
 }
 
 /// Everything a decision may read besides the account itself.
+#[derive(Clone, Copy)]
 pub struct Env<'a> {
     pub specs: &'a Specs,
     pub tenant: &'a TenantConfig,
@@ -89,6 +92,8 @@ pub struct Env<'a> {
     pub max_quote_age_ms: i64,
     /// Client restrictions (trading disabled, close-only) set in the Back Office; None = not checked.
     pub restrictions: Option<&'a crate::controls::Restrictions>,
+    /// Kalks FX Options: snapshot, raw spots, prices, scenario margin (src/options).
+    pub options: &'a dyn crate::options::OptionPricing,
 }
 
 impl Env<'_> {
@@ -282,29 +287,41 @@ pub struct Metrics {
     pub balance: D,
     pub credit: D,
     pub bonus: D,
-    /// Price P&L of open positions.
+    /// Floating P&L of open positions: CFD price P&L plus the unrealised P&L of options (mark vs premium).
     pub profit: D,
     /// Accrued swap of open positions.
     pub swap: D,
+    /// Balance + credit + bonus + CFD price P&L + swap + `option_value`.
     pub equity: D,
     pub margin: D,
     pub free_margin: D,
     /// % (None when no margin is used).
     pub level: Option<D>,
+    /// Signed market value of the option positions at their mark (long +, short −).
+    pub option_value: D,
+    /// Unrealised P&L of the option positions (part of `profit`).
+    pub option_pnl: D,
+    /// Scenario margin of the option positions (part of `margin`).
+    pub option_margin: D,
+    /// Option settlement proceeds still in the re-run hold (not withdrawable yet).
+    pub held: D,
+    /// CFD positions that could not be valued (no quote): their P&L is missing from `profit`.
+    pub unpriced: usize,
 }
 
 impl Metrics {
-    /// What can be transferred out: the balance not needed as margin and not made of credit/bonus.
+    /// What can be transferred out: the balance not needed as margin and not made of credit/bonus, minus option
+    /// settlement proceeds still in the re-run hold.
     pub fn withdrawable(&self) -> D {
         let free_own = self.free_margin - self.credit - self.bonus;
-        self.balance.min(free_own).max(ZERO)
+        (self.balance.min(free_own) - self.held).max(ZERO)
     }
 }
 
-/// Symbol volumes per side, with an optional hypothetical trade.
-fn exposure(st: &AccountState, extra: Option<(&str, Side, D)>) -> std::collections::BTreeMap<String, (D, D)> {
-    let mut m: std::collections::BTreeMap<String, (D, D)> = Default::default();
-    for p in st.positions.values() {
+/// CFD symbol volumes per side (option positions and `exclude` left out), with an optional hypothetical trade.
+fn exposure(st: &AccountState, extra: Option<(&str, Side, D)>, exclude: &BTreeSet<i64>) -> BTreeMap<String, (D, D)> {
+    let mut m: BTreeMap<String, (D, D)> = Default::default();
+    for p in st.positions.values().filter(|p| p.option.is_none() && !exclude.contains(&p.ticket)) {
         let e = m.entry(p.symbol.clone()).or_insert((ZERO, ZERO));
         match p.side {
             Side::Buy => e.0 += p.volume,
@@ -325,46 +342,84 @@ fn exposure(st: &AccountState, extra: Option<(&str, Side, D)>) -> std::collectio
     m
 }
 
-pub fn total_margin(env: &Env, st: &AccountState, extra: Option<(&str, Side, D)>) -> D {
+fn cfd_margin(env: &Env, st: &AccountState, exp: &BTreeMap<String, (D, D)>) -> D {
     let acc = &st.account;
     let mut margin = ZERO;
-    for (sym, (long, short)) in exposure(st, extra) {
-        let Some(spec) = env.specs.get(&sym) else { continue };
-        let price = match env.quote(acc, &sym) {
+    for (sym, (long, short)) in exp {
+        let Some(spec) = env.specs.get(sym) else { continue };
+        let price = match env.quote(acc, sym) {
             Some(q) => q.mid(),
-            None => st.positions.values().find(|p| p.symbol == sym).map(|p| p.open_price).unwrap_or(ZERO),
+            None => st.positions.values().find(|p| &p.symbol == sym).map(|p| p.open_price).unwrap_or(ZERO),
         };
-        margin += symbol_margin(env, acc, spec, long, short, price);
+        margin += symbol_margin(env, acc, spec, *long, *short, price);
     }
     margin
+}
+
+/// CFD margin plus option scenario margin (with same-underlying CFD offsets), with an optional hypothetical CFD trade.
+pub fn total_margin(env: &Env, st: &AccountState, extra: Option<(&str, Side, D)>) -> D {
+    let none = BTreeSet::new();
+    let exp = exposure(st, extra, &none);
+    cfd_margin(env, st, &exp) + options::margin(env, st, &exp, &[], &none)
+}
+
+/// Margin of the account without the positions in `exclude` (what closing them would free).
+pub fn margin_without(env: &Env, st: &AccountState, exclude: &BTreeSet<i64>) -> D {
+    let exp = exposure(st, None, exclude);
+    cfd_margin(env, st, &exp) + options::margin(env, st, &exp, &[], exclude)
 }
 
 pub fn metrics(env: &Env, st: &AccountState) -> Metrics {
     let acc = &st.account;
     let mut profit = ZERO;
     let mut swap = ZERO;
+    let mut option_value = ZERO;
+    let mut option_pnl = ZERO;
+    let mut unpriced = 0;
     for p in st.positions.values() {
         swap += p.swap;
-        let (Some(spec), Some(q)) = (env.specs.get(&p.symbol), env.quote(acc, &p.symbol)) else { continue };
+        if let Some(t) = &p.option {
+            // never dropped: position_value falls back to the fixing, the intrinsic value or the premium
+            let v = options::position_value(env, acc, p, t);
+            option_value += v;
+            option_pnl += v + p.premium;
+            continue;
+        }
+        let (Some(spec), Some(q)) = (env.specs.get(&p.symbol), env.quote(acc, &p.symbol)) else {
+            unpriced += 1;
+            continue;
+        };
         profit += pnl(env, acc, spec, p.side, p.volume, p.open_price, q.close_price(p.side));
     }
-    let margin = total_margin(env, st, None);
-    let equity = st.balance + st.credit + st.bonus + profit + swap;
+    let none = BTreeSet::new();
+    let exp = exposure(st, None, &none);
+    let cfd = cfd_margin(env, st, &exp);
+    let option_margin = options::margin(env, st, &exp, &[], &none);
+    let margin = cfd + option_margin;
+    let equity = st.balance + st.credit + st.bonus + profit + swap + option_value;
     Metrics {
         balance: st.balance,
         credit: st.credit,
         bonus: st.bonus,
-        profit,
+        profit: profit + option_pnl,
         swap,
         equity,
         margin,
         free_margin: equity - margin,
         level: if margin > ZERO { Some(equity / margin * HUNDRED) } else { None },
+        option_value,
+        option_pnl,
+        option_margin,
+        held: st.held(env.now),
+        unpriced,
     }
 }
 
-/// Floating P&L of one position including swap (account currency).
+/// Floating P&L of one position including swap (account currency); options: mark vs premium.
 pub fn position_floating(env: &Env, acc: &Account, p: &crate::model::Position) -> Option<D> {
+    if let Some(t) = &p.option {
+        return Some(options::position_value(env, acc, p, t) + p.premium);
+    }
     let spec = env.specs.get(&p.symbol)?;
     let q = env.quote(acc, &p.symbol)?;
     Some(pnl(env, acc, spec, p.side, p.volume, p.open_price, q.close_price(p.side)) + p.swap)
@@ -375,3 +430,6 @@ pub mod testkit;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod tests_options;

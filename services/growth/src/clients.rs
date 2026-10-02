@@ -118,6 +118,8 @@ pub struct EngineDeal {
     pub close_time: DateTime<Utc>,
     pub kind: String,
     pub reversed: bool,
+    /// Kalks FX Options deal (volume = contracts): never earns points, cashback, bonus release or contest results.
+    pub option: bool,
 }
 
 pub fn parse_deal(v: &Value) -> Option<EngineDeal> {
@@ -133,6 +135,7 @@ pub fn parse_deal(v: &Value) -> Option<EngineDeal> {
         close_time: time(&v["closeTime"])?,
         kind: v["kind"].as_str().unwrap_or("close").to_string(),
         reversed: v["reversed"].as_bool().unwrap_or(false),
+        option: crate::calc::is_option_deal(v),
     })
 }
 
@@ -169,6 +172,8 @@ pub struct Account {
     pub credit: D,
     pub bonus: D,
     pub equity: D,
+    /// Kalks FX Options at their mark (long +, short −), included in `equity` by the engine.
+    pub option_value: D,
 }
 
 impl Account {
@@ -176,9 +181,15 @@ impl Account {
     pub fn usd(&self, v: D) -> D {
         if self.cent { v / crate::money::HUNDRED } else { v }
     }
-    /// Unrealised P&L in USD: equity − balance − credit − bonus.
+    /// Unrealised CFD P&L in USD: equity − balance − credit − bonus − option value. Options are excluded from
+    /// contests: the engine's equity carries the options at their full mark (the premium already left the
+    /// balance), so without this a bought option would look like a gain of its whole value.
     pub fn floating_usd(&self) -> D {
-        self.usd(self.equity - self.balance - self.credit - self.bonus)
+        self.usd(self.equity - self.balance - self.credit - self.bonus - self.option_value)
+    }
+    /// Equity without the options (USD): the contest starting equity and minimum-equity check.
+    pub fn equity_ex_options_usd(&self) -> D {
+        self.usd(self.equity - self.option_value)
     }
 }
 
@@ -196,6 +207,7 @@ pub fn parse_account(a: &Value) -> Option<Account> {
         credit: d("credit"),
         bonus: d("bonus"),
         equity: d("equity"),
+        option_value: d("optionValue"),
     })
 }
 

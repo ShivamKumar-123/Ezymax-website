@@ -231,9 +231,41 @@ pub fn trade_flags(trades: &[(D, i64)], ac: &AntiCheat) -> Vec<(&'static str, Va
     out
 }
 
-/// Ledger kinds that change a contest account's balance other than by trading.
+/// Ledger kinds that change a contest account's balance other than by trading. An allow-list: trading flows
+/// (`trade_pnl`, `commission`, `swap`, and the Kalks FX Options `option_premium` / `option_settlement`, which
+/// are premiums paid / received and expiry payouts, never deposits or withdrawals) are not balance changes.
 pub fn is_balance_change(kind: &str) -> bool {
     matches!(kind, "transfer_in" | "transfer_out" | "deposit" | "withdrawal" | "demo_refill" | "adjustment" | "credit" | "bonus")
+}
+
+/// Money that came into the account (deposit-matched bonuses). Option premiums received and option
+/// settlements are trading proceeds, never deposits.
+pub fn is_deposit_kind(kind: &str) -> bool {
+    matches!(kind, "transfer_in" | "deposit")
+}
+
+/// Money that left the account (bonus forfeiture on withdrawal). An option premium paid is a trade, never a
+/// withdrawal.
+pub fn is_withdrawal_kind(kind: &str) -> bool {
+    matches!(kind, "transfer_out" | "withdrawal")
+}
+
+/// Engine option series code (`EURUSD-20261009-1.1650-C`): underlying, expiry date, strike, right.
+pub fn is_option_series(symbol: &str) -> bool {
+    let p: Vec<&str> = symbol.split('-').collect();
+    p.len() == 4
+        && !p[0].is_empty()
+        && p[1].len() == 8
+        && p[1].bytes().all(|b| b.is_ascii_digit())
+        && !p[2].is_empty()
+        && p[2].bytes().all(|b| b.is_ascii_digit() || b == b'.')
+        && matches!(p[3], "C" | "P" | "c" | "p")
+}
+
+/// Whether an engine deal JSON (dealing feed or client history) is a Kalks FX Options deal: the `option`
+/// object or `instrument: "option"`, with the series code as a fallback.
+pub fn is_option_deal(v: &Value) -> bool {
+    v["option"].is_object() || v["instrument"].as_str() == Some("option") || v["symbol"].as_str().is_some_and(is_option_series)
 }
 
 #[cfg(test)]
@@ -372,5 +404,17 @@ mod tests {
         let scalps = vec![(dec("10"), 5), (dec("10"), 3), (dec("10"), 10), (dec("10"), 900)];
         assert_eq!(trade_flags(&scalps, &ac)[0].0, "short_holds");
         assert!(is_balance_change("demo_refill") && is_balance_change("transfer_in") && !is_balance_change("trade_pnl") && !is_balance_change("commission"));
+        // option premiums and settlements are trading flows: never a contest balance change, deposit or withdrawal
+        for k in ["option_premium", "option_settlement"] {
+            assert!(!is_balance_change(k) && !is_deposit_kind(k) && !is_withdrawal_kind(k), "{k}");
+        }
+        assert!(is_deposit_kind("transfer_in") && is_deposit_kind("deposit") && !is_deposit_kind("trade_pnl"));
+        assert!(is_withdrawal_kind("transfer_out") && is_withdrawal_kind("withdrawal") && !is_withdrawal_kind("commission"));
+        assert!(is_option_series("EURUSD-20261009-1.1650-C") && is_option_series("XAUUSD-20261231-2650-P"));
+        assert!(!is_option_series("EURUSD") && !is_option_series("BTC-USD") && !is_option_series("EURUSD-20261009-1.1650-Z"));
+        assert!(is_option_deal(&json!({"symbol": "EURUSD", "option": {"series": "x"}})));
+        assert!(is_option_deal(&json!({"symbol": "EURUSD", "instrument": "option"})));
+        assert!(is_option_deal(&json!({"symbol": "USDJPY-20261009-150.00-P"})));
+        assert!(!is_option_deal(&json!({"symbol": "EURUSD", "option": null, "instrument": "cfd"})));
     }
 }

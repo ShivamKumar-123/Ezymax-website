@@ -163,6 +163,9 @@ pub async fn lots_event(State(st): State<AppState>, Tenant(tenant): Tenant, Json
         kind: "close".into(),
         reversed: r.reversed,
         account: Some(AccountInfo { login: r.login.unwrap_or(0), user_id: r.user_id, kind: "live".into(), group: String::new(), cent: false }),
+        // option trades are never mirrored; should an option series ever arrive here it is paid per contract
+        // (options rate), never at a per-lot rate
+        option: crate::model::is_option_series(r.symbol.trim()),
     };
     Ok(Json(match deals::ingest(&st, &d).await? {
         Outcome::Duplicate => json!({"status": "duplicate"}),

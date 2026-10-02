@@ -23,6 +23,10 @@
 //! complete when its quiz is passed (>= 60%). A phase's final exam unlocks when every published chapter of the
 //! phase is complete; passing it (>= the exam's pass mark) issues the phase certificate.
 //!
+//! Phases are independent: no phase is locked behind an earlier one. Core phases have a fundamental and a
+//! technical section; product phases (`elective: true` in the catalogue and admin tree, e.g. phase 9 "Kalks FX
+//! Options" with a single `options` section) can be studied, examined and certified at any time.
+//!
 //! Back Office (admin BFF checks `content.read` / `content.write` and adds `X-Kalks-Staff`). Writes are
 //! copy-on-write overrides for the staff member's tenant; `DELETE` resets a node to the platform default:
 //!
@@ -332,6 +336,7 @@ async fn catalog(State(st): State<AppState>, h: HeaderMap, Query(q): Query<LangQ
         });
         phases.push(json!({
             "slug": p.node.slug, "order": p.node.ord, "title": p.node.s("title"), "level": p.node.s("level"), "summary": p.node.s("summary"),
+            "elective": p.is_elective(),
             "minutes": chapters.iter().map(|c| i64_of(&c.data, "minutes")).sum::<i64>(),
             "progress": {"done": done, "total": chapters.len()},
             "sections": p.sections.iter().map(|s| json!({
@@ -381,7 +386,7 @@ async fn chapter_view(State(st): State<AppState>, h: HeaderMap, Path(slug): Path
             "minutes": i64_of(&node.data, "minutes"), "words": i64_of(&node.data, "words"), "quiz": public_questions(&qs),
             "updated_at": node.updated_at, "lang": node.lang,
         },
-        "phase": {"slug": p.node.slug, "order": p.node.ord, "title": p.node.s("title"), "level": p.node.s("level")},
+        "phase": {"slug": p.node.slug, "order": p.node.ord, "title": p.node.s("title"), "level": p.node.s("level"), "elective": p.is_elective()},
         "section": {"slug": s.node.slug, "track": s.node.s("track"), "title": s.node.s("title"), "index": ci + 1, "count": s.chapters.len(),
                     "chapters": s.chapters.iter().map(|c| json!({"slug": c.slug, "title": c.s("title"), "completed": prog.get(&c.slug).is_some_and(|x| x.completed.is_some())})).collect::<Vec<_>>()},
         "prev": nav(if idx > 0 { flat.get(idx - 1) } else { None }),
@@ -530,7 +535,7 @@ async fn exam_view(State(st): State<AppState>, h: HeaderMap, Path(phase): Path<S
         .map(|r| json!({"pct": r.get::<i32, _>(0), "passed": r.get::<bool, _>(1), "at": r.get::<chrono::DateTime<chrono::Utc>, _>(2)}))
         .collect();
     Ok(Json(json!({
-        "phase": {"slug": p.node.slug, "order": p.node.ord, "title": p.node.s("title"), "level": p.node.s("level")},
+        "phase": {"slug": p.node.slug, "order": p.node.ord, "title": p.node.s("title"), "level": p.node.s("level"), "elective": p.is_elective()},
         "exam": {"pass_mark": i64_of(&exam.data, "pass_mark"), "questions": public_questions(&qs), "count": qs.len()},
         "unlocked": done == total && total > 0, "chapters_done": done, "chapters_total": total,
         "attempts": attempts, "certificate": cert_json(&st.pool, &t, user, &phase).await?,
@@ -744,7 +749,7 @@ async fn admin_tree(State(st): State<AppState>, h: HeaderMap, Query(q): Query<La
         .iter()
         .map(|p| {
             let mut v = meta(&p.node);
-            merge(&mut v, json!({"title": p.node.s("title"), "level": p.node.s("level"), "summary": p.node.s("summary")}));
+            merge(&mut v, json!({"title": p.node.s("title"), "level": p.node.s("level"), "summary": p.node.s("summary"), "elective": p.is_elective()}));
             v["exam"] = p.exam.as_ref().map(|e| {
                 let mut x = meta(e);
                 merge(&mut x, json!({"pass_mark": i64_of(&e.data, "pass_mark"), "questions": e.data.get("questions").and_then(Value::as_array).map(|a| a.len()).unwrap_or(0)}));
@@ -832,6 +837,9 @@ fn validate(kind: &str, data: &mut Value, publishing: bool) -> (Vec<String>, Vec
             if s("title").is_empty() {
                 errors.push("Title is required.".into());
             }
+            if !content::is_track(&s("track")) {
+                errors.push(format!("Track must be one of {}.", content::TRACKS.join(", ")));
+            }
         }
         "chapter" => {
             if s("title").is_empty() {
@@ -908,6 +916,10 @@ async fn admin_put(State(st): State<AppState>, h: HeaderMap, Path((kind, slug)):
             }
         }
         merge(&mut data, Value::Object(clean));
+    }
+    // the track decides the phase's shape (core fundamental + technical, or a product phase such as options)
+    if kind == "section" && data.get("track") != cur.data.get("track") {
+        return Err(ApiError::bad("A section's track can't be changed."));
     }
     let published = b.published.unwrap_or(cur.published);
     let mut parent = cur.parent.clone();
@@ -986,7 +998,8 @@ async fn admin_create_chapter(State(st): State<AppState>, h: HeaderMap, Json(b):
         return Err(ApiError::bad("Title is required (up to 140 characters)."));
     }
     let section = store::node(&st.pool, &t, &lang, "section", &b.section).await?.ok_or_else(|| ApiError::bad("Unknown section."))?;
-    let prefix = section.slug.trim_end_matches("-fundamental").trim_end_matches("-technical").to_string();
+    // "p1-technical" -> "p1", "p9-options" -> "p9"
+    let prefix = content::TRACKS.iter().find_map(|t| section.slug.strip_suffix(&format!("-{t}"))).unwrap_or(&section.slug).to_string();
     let base = format!("{prefix}-{}", slugify(&title));
     let base = if content::is_slug(&base) { base } else { format!("{prefix}-chapter") };
     let mut slug = base.clone();
@@ -1173,5 +1186,17 @@ mod tests {
         let mut d = json!({"title": "T", "body": "<script>x</script>", "quiz": [{"question": "q", "options": ["a", "b", "c"], "answer": 5, "explanation": "e"}]});
         let (e, _) = validate("chapter", &mut d, false);
         assert_eq!(e.len(), 2, "{e:?}");
+    }
+
+    #[test]
+    fn section_tracks() {
+        for t in ["fundamental", "technical", "options"] {
+            let (e, _) = validate("section", &mut json!({"title": "T", "track": t}), true);
+            assert!(e.is_empty(), "{t}: {e:?}");
+        }
+        let (e, _) = validate("section", &mut json!({"title": "T", "track": "macro"}), true);
+        assert_eq!(e, vec!["Track must be one of fundamental, technical, options.".to_string()]);
+        let (e, _) = validate("section", &mut json!({"title": "T"}), true);
+        assert_eq!(e.len(), 1, "{e:?}");
     }
 }

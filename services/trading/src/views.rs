@@ -4,7 +4,7 @@
 
 use serde_json::{Value, json};
 
-use crate::engine::{Env, Metrics, metrics, pnl};
+use crate::engine::{Env, Metrics, metrics, options, pnl};
 use crate::model::{Deal, DealReason, Expiry, Order, OrderType, Position, Side};
 use crate::money::{D, num, num_opt, r2};
 use crate::state::AccountState;
@@ -21,6 +21,10 @@ pub fn metrics_json(m: &Metrics) -> Value {
         "freeMargin": num(r2(m.free_margin)),
         "marginLevel": num_opt(m.level.map(r2)),
         "withdrawable": num(r2(m.withdrawable())),
+        "optionValue": num(r2(m.option_value)),
+        "optionPnl": num(r2(m.option_pnl)),
+        "optionMargin": num(r2(m.option_margin)),
+        "settlementHold": num(r2(m.held)),
     })
 }
 
@@ -72,16 +76,48 @@ pub fn account_json(env: &Env, st: &AccountState) -> Value {
     v
 }
 
-fn current(env: &Env, st: &AccountState, p: &Position) -> (Option<D>, Option<D>) {
+/// (price the position closes at now, floating P&L) — options from the mark cache.
+pub fn current(env: &Env, st: &AccountState, p: &Position) -> (Option<D>, Option<D>) {
+    if p.option.is_some() {
+        return options::position_now(env, &st.account, p);
+    }
     let Some(q) = env.quote(&st.account, &p.symbol) else { return (None, None) };
     let px = q.close_price(p.side);
     let profit = env.specs.get(&p.symbol).map(|s| r2(pnl(env, &st.account, s, p.side, p.volume, p.open_price, px)));
     (Some(px), profit)
 }
 
+/// Kalks FX Options fields of a position (`option`, `mark`, `greeks`, `comboId`; null for CFD positions).
+pub fn option_fields(env: &Env, st: &AccountState, p: &Position) -> Value {
+    match &p.option {
+        None => json!({"option": null, "mark": null, "greeks": null, "comboId": null}),
+        Some(t) => {
+            let q = env.options.mark(&env.tenant.slug, &env.group.code, t, env.now);
+            json!({
+                "option": options::terms_json(t),
+                "mark": num_opt(q.map(|q| q.mark)),
+                "markValue": num(r2(options::position_value(env, &st.account, p, t))),
+                "premium": num(p.premium),
+                "greeks": options::greeks_json(options::position_greeks(env, p)),
+                "comboId": p.combo_id,
+                "iv": q.map(|q| crate::options::pricing::round_to(q.iv, 5)),
+                "underlyingPrice": num_opt(q.map(|q| q.spot)),
+                "state": q.map(|q| q.state.as_str()),
+            })
+        }
+    }
+}
+
+fn merge(mut v: Value, extra: Value) -> Value {
+    if let (Value::Object(o), Value::Object(e)) = (&mut v, extra) {
+        o.extend(e);
+    }
+    v
+}
+
 pub fn position_json(env: &Env, st: &AccountState, p: &Position) -> Value {
     let (px, profit) = current(env, st, p);
-    json!({
+    let v = json!({
         "ticket": p.ticket,
         "login": p.login,
         "symbol": p.symbol,
@@ -104,7 +140,8 @@ pub fn position_json(env: &Env, st: &AccountState, p: &Position) -> Value {
         "childTickets": p.child_tickets,
         "priceCorrected": p.price_corrected,
         "reversedFrom": p.reversed_from,
-    })
+    });
+    merge(v, option_fields(env, st, p))
 }
 
 pub fn expiry_str(e: Expiry) -> &'static str {
@@ -115,8 +152,19 @@ pub fn expiry_str(e: Expiry) -> &'static str {
     }
 }
 
-pub fn order_json(o: &Order) -> Value {
+pub fn order_option_json(o: &Order) -> Value {
     json!({
+        "option": o.option.as_ref().map(|oo| json!({
+            "legs": oo.legs.iter().map(|l| json!({"series": l.terms.series, "side": l.side.as_str(), "contracts": num(l.contracts), "option": options::terms_json(&l.terms)})).collect::<Vec<_>>(),
+            "limitPremium": num_opt(oo.limit_premium),
+        })),
+        "trigger": o.trigger.as_ref().map(|t| json!({"symbol": t.symbol, "op": t.op.as_str(), "price": num(t.price)})),
+        "comboId": o.combo_id,
+    })
+}
+
+pub fn order_json(o: &Order) -> Value {
+    let v = json!({
         "ticket": o.ticket,
         "login": o.login,
         "symbol": o.symbol,
@@ -138,11 +186,25 @@ pub fn order_json(o: &Order) -> Value {
         "book": o.book.map(|b| b.as_str()),
         "placedAt": o.placed_at,
         "clientOrderId": o.client_order_id,
-    })
+    });
+    merge(v, order_option_json(o))
+}
+
+/// `option` (null on CFD deals) plus `instrument: "option" | "cfd"`, so downstream consumers (IB, growth,
+/// reports, prop, algo) can tell option deals (volume = contracts) from CFD deals (volume = lots).
+pub fn deal_option_json(d: &Deal) -> Value {
+    match &d.option {
+        None => json!({"option": null, "instrument": "cfd"}),
+        Some(o) => json!({"instrument": "option", "option": {
+            "series": o.terms.series, "underlying": o.terms.underlying, "right": o.terms.right.as_str(), "strike": num(o.terms.strike),
+            "expiry": o.terms.expiry.to_string(), "style": o.terms.style(), "cash": num(o.cash), "usdPerQuote": num(o.usd_per_quote),
+            "spot": num_opt(o.spot), "fixing": num_opt(o.fixing), "run": o.run, "comboId": o.combo_id, "commissionCharged": num(o.charged),
+        }}),
+    }
 }
 
 pub fn deal_json(d: &Deal) -> Value {
-    json!({
+    let v = json!({
         "id": d.id,
         "login": d.login,
         "positionTicket": d.position_ticket,
@@ -165,7 +227,8 @@ pub fn deal_json(d: &Deal) -> Value {
         "comment": d.comment,
         "priceCorrection": d.price_correction,
         "ledgerTxn": d.ledger_txn,
-    })
+    });
+    merge(v, deal_option_json(d))
 }
 
 /* ------------------------------------------------------------------ */
@@ -174,7 +237,7 @@ pub fn deal_json(d: &Deal) -> Value {
 
 pub fn desk_position_json(env: &Env, st: &AccountState, p: &Position) -> Value {
     let (px, profit) = current(env, st, p);
-    json!({
+    let v = json!({
         "ticket": p.ticket.to_string(),
         "login": p.login.to_string(),
         "clientId": st.account.user_id.to_string(),
@@ -207,7 +270,8 @@ pub fn desk_position_json(env: &Env, st: &AccountState, p: &Position) -> Value {
         "profit": num_opt(profit),
         "trailingPoints": p.trailing.as_ref().map(|t| t.distance_points),
         "currency": st.account.ccy(),
-    })
+    });
+    merge(v, option_fields(env, st, p))
 }
 
 pub fn desk_order_type(o: &Order) -> &'static str {
@@ -224,7 +288,7 @@ pub fn desk_order_type(o: &Order) -> &'static str {
 }
 
 pub fn desk_order_json(st: &AccountState, o: &Order) -> Value {
-    json!({
+    let v = json!({
         "ticket": o.ticket.to_string(),
         "login": o.login.to_string(),
         "clientId": st.account.user_id.to_string(),
@@ -243,7 +307,8 @@ pub fn desk_order_json(st: &AccountState, o: &Order) -> Value {
         "book": o.book.map(|b| b.as_str()),
         "triggered": o.triggered,
         "oco": o.oco.map(|t| t.to_string()),
-    })
+    });
+    merge(v, order_option_json(o))
 }
 
 /// DeskDeal: `profit` is the realised P&L incl. the swap and commission share of the closed volume.
@@ -252,10 +317,12 @@ pub fn desk_deal_json(d: &Deal, client_id: i64, reversed: bool) -> Value {
         DealReason::PriceCorrection => "price-correction",
         DealReason::StopOut => "stop-out",
         DealReason::Force => "force",
+        DealReason::Expiry => "expiry",
+        DealReason::KnockOut => "knock-out",
         _ if d.partial => "partial",
         _ => "close",
     };
-    json!({
+    let v = json!({
         "id": d.id.to_string(),
         "ticket": d.position_ticket.to_string(),
         "login": d.login.to_string(),
@@ -278,5 +345,6 @@ pub fn desk_deal_json(d: &Deal, client_id: i64, reversed: bool) -> Value {
         "reversed": reversed,
         "staff": d.staff.clone().unwrap_or_else(|| "system".into()),
         "reasonCode": d.reason_code.clone().unwrap_or_default(),
-    })
+    });
+    merge(v, deal_option_json(d))
 }

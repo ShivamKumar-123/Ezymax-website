@@ -35,6 +35,8 @@ pub struct DealInput {
     pub kind: String,
     pub reversed: bool,
     pub account: Option<AccountInfo>,
+    /// Kalks FX Options deal: `volume` is contracts, paid at the level's per-contract options rate (O34).
+    pub option: bool,
 }
 
 #[derive(Debug, PartialEq)]
@@ -59,12 +61,21 @@ impl DealInput {
             kind: d.kind.clone(),
             reversed: d.reversed,
             account,
+            option: d.option,
         }
     }
 }
 
+/// What a level's rate is applied to: standard lots of a symbol group (CFD per-lot rates) or option contracts
+/// (the separate per-contract options rate). A CFD per-lot rate is never applied to an option deal.
+#[derive(Clone, Copy, Debug)]
+pub enum Basis<'a> {
+    Lots(&'a str),
+    Contracts,
+}
+
 /// Upline chain of a client, tier 1 first, at most `depth` IBs, cycle-safe.
-pub async fn chain(ex: &mut sqlx::PgConnection, tenant: &str, first: Option<i64>, depth: usize, levels: &[Level], group: &str) -> anyhow::Result<Vec<Upline>> {
+pub async fn chain(ex: &mut sqlx::PgConnection, tenant: &str, first: Option<i64>, depth: usize, levels: &[Level], basis: Basis<'_>) -> anyhow::Result<Vec<Upline>> {
     let mut out = Vec::new();
     let mut seen = HashSet::new();
     let mut next = first;
@@ -81,7 +92,14 @@ pub async fn chain(ex: &mut sqlx::PgConnection, tenant: &str, first: Option<i64>
             break;
         };
         let level_key: String = r.get("level_key");
-        let rate = levels.iter().find(|l| l.key == level_key).map(|l| l.rate(group)).unwrap_or(ZERO);
+        let rate = levels
+            .iter()
+            .find(|l| l.key == level_key)
+            .map(|l| match basis {
+                Basis::Lots(group) => l.rate(group),
+                Basis::Contracts => l.option_rate(),
+            })
+            .unwrap_or(ZERO);
         out.push(Upline {
             user_id: id,
             level_key,
@@ -112,9 +130,13 @@ pub async fn ingest(st: &AppState, d: &DealInput) -> anyhow::Result<Outcome> {
         volume: d.volume,
         open_time: d.open_time,
         close_time: d.close_time,
+        option: d.option,
     };
+    // option deals: 0 lots (never in lot statistics or level upgrades), paid per contract
     let lots = calc::std_lots(&facts, &settings);
-    let group = model::symbol_group(&d.symbol, &settings, &st.instruments);
+    let contracts = calc::contracts(&facts);
+    let units = calc::commission_units(&facts, &settings);
+    let group = if d.option { Some(model::OPTIONS_GROUP.to_string()) } else { model::symbol_group(&d.symbol, &settings, &st.instruments) };
     let member = sqlx::query("SELECT parent_id, self_referral, abuse_cleared, joined_at FROM members WHERE user_id = $1 AND tenant = $2").bind(d.user_id).bind(&d.tenant).fetch_optional(&st.pool).await?;
     let parent: Option<i64> = member.as_ref().and_then(|m| m.get("parent_id"));
     let reason: Option<&str> = calc::disqualify(&facts, &settings)
@@ -128,8 +150,8 @@ pub async fn ingest(st: &AppState, d: &DealInput) -> anyhow::Result<Outcome> {
 
     let mut tx = st.pool.begin().await?;
     let inserted = sqlx::query(
-        "INSERT INTO deals (source, deal_id, user_id, tenant, login, symbol, symbol_group, side, volume, lots, open_time, close_time, qualified, reason, reversed)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) ON CONFLICT DO NOTHING",
+        "INSERT INTO deals (source, deal_id, user_id, tenant, login, symbol, symbol_group, side, volume, lots, open_time, close_time, qualified, reason, reversed, instrument, contracts)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) ON CONFLICT DO NOTHING",
     )
     .bind(&d.source)
     .bind(d.deal_id)
@@ -146,6 +168,8 @@ pub async fn ingest(st: &AppState, d: &DealInput) -> anyhow::Result<Outcome> {
     .bind(qualified)
     .bind(reason)
     .bind(d.reversed)
+    .bind(if d.option { "option" } else { "cfd" })
+    .bind(contracts)
     .execute(&mut *tx)
     .await?
     .rows_affected();
@@ -155,12 +179,13 @@ pub async fn ingest(st: &AppState, d: &DealInput) -> anyhow::Result<Outcome> {
     }
     let mut n = 0;
     if let (true, Some(group)) = (qualified, group.as_deref()) {
-        let ch = chain(&mut tx, &d.tenant, parent, settings.tiers.len(), &levels, group).await?;
-        let lines = calc::commission_lines(d.user_id, lots, &ch, &settings.tiers, settings.max_rebate_pct, settings.max_split_pct);
+        let basis = if d.option { Basis::Contracts } else { Basis::Lots(group) };
+        let ch = chain(&mut tx, &d.tenant, parent, settings.tiers.len(), &levels, basis).await?;
+        let lines = calc::commission_lines(d.user_id, units, &ch, &settings.tiers, settings.max_rebate_pct, settings.max_split_pct);
         for l in &lines {
             n += sqlx::query(
-                "INSERT INTO commissions (tenant, beneficiary_id, kind, deal_source, deal_id, client_id, login, symbol, symbol_group, lots, tier, level_key, rate, share_pct, amount, available_at)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15, now()) ON CONFLICT DO NOTHING",
+                "INSERT INTO commissions (tenant, beneficiary_id, kind, deal_source, deal_id, client_id, login, symbol, symbol_group, lots, tier, level_key, rate, share_pct, amount, available_at, contracts)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15, now(), $16) ON CONFLICT DO NOTHING",
             )
             .bind(&d.tenant)
             .bind(l.beneficiary)
@@ -177,6 +202,7 @@ pub async fn ingest(st: &AppState, d: &DealInput) -> anyhow::Result<Outcome> {
             .bind(l.rate)
             .bind(l.share_pct)
             .bind(l.amount)
+            .bind(contracts)
             .execute(&mut *tx)
             .await?
             .rows_affected() as usize;
@@ -201,7 +227,7 @@ pub async fn ingest(st: &AppState, d: &DealInput) -> anyhow::Result<Outcome> {
 pub async fn reprocess_unknown(st: &AppState, user_id: i64) -> anyhow::Result<()> {
     let rows = sqlx::query(
         "DELETE FROM deals d WHERE d.user_id = $1 AND d.reason = 'unknown_client'
-         RETURNING d.source, d.deal_id, d.tenant, d.login, d.symbol, d.side, d.volume, d.open_time, d.close_time, d.reversed",
+         RETURNING d.source, d.deal_id, d.tenant, d.login, d.symbol, d.side, d.volume, d.open_time, d.close_time, d.reversed, d.instrument",
     )
     .bind(user_id)
     .fetch_all(&st.pool)
@@ -226,6 +252,7 @@ pub async fn reprocess_unknown(st: &AppState, user_id: i64) -> anyhow::Result<()
             kind: "close".into(),
             reversed: r.get("reversed"),
             account,
+            option: r.get::<String, _>("instrument") == "option",
         };
         Box::pin(ingest(st, &d)).await?;
     }

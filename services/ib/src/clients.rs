@@ -95,6 +95,14 @@ pub struct EngineDeal {
     pub close_time: DateTime<Utc>,
     pub kind: String,
     pub reversed: bool,
+    /// Kalks FX Options deal (`option` / `instrument` in the feed, or an option series symbol): volume = contracts.
+    pub option: bool,
+}
+
+/// Whether an engine deal JSON is a Kalks FX Options deal: the `option` object or `instrument: "option"`, with
+/// the series code as a fallback for feeds that do not carry either.
+pub fn is_option_deal(v: &Value) -> bool {
+    v["option"].is_object() || v["instrument"].as_str() == Some("option") || v["symbol"].as_str().is_some_and(crate::model::is_option_series)
 }
 
 fn int(v: &Value) -> Option<i64> {
@@ -117,6 +125,7 @@ pub fn parse_deal(v: &Value) -> Option<EngineDeal> {
         close_time: time(&v["closeTime"])?,
         kind: v["kind"].as_str().unwrap_or("close").to_string(),
         reversed: v["reversed"].as_bool().unwrap_or(false),
+        option: is_option_deal(v),
     })
 }
 

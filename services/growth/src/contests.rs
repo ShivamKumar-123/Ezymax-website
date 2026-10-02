@@ -135,7 +135,7 @@ pub async fn join(st: &AppState, tenant: &str, user_id: i64, contest_id: i64, lo
         crate::deals::cache_account(st, tenant, &acc).await?;
         let mut creds = creds;
         creds["login"] = json!(acc.login);
-        (acc.login, Some(acc.usd(acc.equity.max(acc.balance))), Some(creds))
+        (acc.login, Some(acc.equity_ex_options_usd().max(acc.usd(acc.balance))), Some(creds))
     } else {
         let l = login.ok_or_else(|| crate::error::invalid("login", "Choose the live account to compete with."))?;
         let acc = clients::account(st, tenant, l).await.map_err(|e| ApiError::Unavailable(e.to_string()))?.ok_or_else(|| crate::error::invalid("login", "Account not found."))?;
@@ -146,7 +146,7 @@ pub async fn join(st: &AppState, tenant: &str, user_id: i64, contest_id: i64, lo
         if !groups.is_empty() && !groups.iter().any(|g| g.eq_ignore_ascii_case(&acc.group)) {
             return Err(crate::error::invalid("login", "This contest isn't open to that account type."));
         }
-        let eq = acc.usd(acc.equity);
+        let eq = acc.equity_ex_options_usd();
         if c.get::<Option<D>, _>("min_equity").is_some_and(|m| eq < m) {
             return Err(crate::error::invalid("login", format!("The account needs at least ${} equity.", c.get::<D, _>("min_equity").normalize())));
         }
@@ -209,9 +209,10 @@ pub async fn refresh(st: &AppState, contest_id: i64) -> anyhow::Result<()> {
         if live_now {
             match clients::account(st, &tenant, login).await {
                 Ok(Some(acc)) => {
+                    // CFD only: options are not part of contests (O34)
                     floating = acc.floating_usd();
                     if start_eq.is_none() {
-                        start_eq = Some(acc.usd(acc.equity));
+                        start_eq = Some(acc.equity_ex_options_usd());
                     }
                 }
                 Ok(None) => {}

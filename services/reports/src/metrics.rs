@@ -30,6 +30,15 @@ pub struct Trade {
     pub reason: String,
     /// Account balance (USD) just before this trade was closed; 0 = unknown.
     pub balance_before: f64,
+    /// Kalks FX Options trade: `volume` is contracts (never added to lots), prices are premiums per unit.
+    pub option: bool,
+}
+
+impl Trade {
+    /// Lots of the trade: CFD volume; option contracts are not lots.
+    pub fn lots(&self) -> f64 {
+        if self.option { 0.0 } else { self.volume }
+    }
 }
 
 impl Trade {
@@ -88,7 +97,7 @@ pub fn trade_stats(trades: &[Trade]) -> TradeStats {
     let (mut cw, mut cl) = (0usize, 0usize);
     for t in &sorted {
         hold.push(t.hold_secs());
-        s.lots += t.volume;
+        s.lots += t.lots();
         s.commission += t.commission;
         s.swap += t.swap;
         s.profit += t.profit;
@@ -243,7 +252,7 @@ pub fn group_by<F: Fn(&Trade) -> String>(trades: &[Trade], key: F) -> Vec<Group>
         let g = m.entry(k.clone()).or_insert_with(|| Group { key: k, ..Default::default() });
         g.trades += 1;
         g.net += t.net;
-        g.lots += t.volume;
+        g.lots += t.lots();
         if t.net > 0.0 {
             g.wins += 1;
         }
@@ -379,6 +388,7 @@ pub fn behaviour(trades: &[Trade]) -> Behaviour {
         if let Some(p) = prior
             && p.net < 0.0
             && (t.open_time - p.close_time).num_seconds() <= REVENGE_SECS
+            && t.option == p.option
             && t.volume >= p.volume
         {
             rv_n += 1;
@@ -506,6 +516,7 @@ mod tests {
             net,
             reason: "client".into(),
             balance_before: 1000.0,
+            option: false,
         }
     }
 

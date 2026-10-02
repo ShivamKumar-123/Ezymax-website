@@ -14,7 +14,7 @@ use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 use tokio::sync::{broadcast, mpsc, oneshot};
 
-use crate::engine::{AuditDraft, Env, Ids, Note, Reject, Tx, risk};
+use crate::engine::{AuditDraft, Env, Ids, Note, Quotes, Reject, Tx, risk};
 use crate::feed::QuoteBook;
 use crate::model::{Account, AccountKind, Book, Status};
 use crate::persist::{self, AuditRow, Batch, CommitError};
@@ -67,6 +67,30 @@ pub enum Cmd {
     Read { login: i64, f: ReadFn, reply: oneshot::Sender<Value> },
     Scan { tenant_id: i64, f: ScanFn, reply: oneshot::Sender<Vec<Value>> },
     Rollover { day: NaiveDate, at: DateTime<Utc>, reply: oneshot::Sender<usize> },
+    /// Option expiry settlement of `key` (`SYMBOL:YYYY-MM-DD`) at `fixing`, fixing run `run`.
+    Settle { key: String, fixing: crate::money::D, run: i32, usdq: Option<crate::money::D>, reply: oneshot::Sender<SettleReport> },
+}
+
+/// What one settlement pass did in one shard.
+#[derive(Clone, Debug, Default)]
+pub struct SettleReport {
+    /// (tenant, login, positions settled, cash booked in USD)
+    pub accounts: Vec<(i64, i64, usize, crate::money::D)>,
+    pub failures: usize,
+}
+
+/// The engine clock. Production reads the system clock; tests pin it.
+#[derive(Default)]
+pub struct Clock(RwLock<Option<DateTime<Utc>>>);
+
+impl Clock {
+    pub fn now(&self) -> DateTime<Utc> {
+        self.0.read().unwrap().unwrap_or_else(Utc::now)
+    }
+    /// Pins the clock (None = the system clock again).
+    pub fn set(&self, t: Option<DateTime<Utc>>) {
+        *self.0.write().unwrap() = t;
+    }
 }
 
 pub struct TickMsg {
@@ -92,6 +116,32 @@ pub struct Index {
     pub accounts: HashMap<i64, AccountMeta>,
     /// open position / pending order ticket → login
     pub tickets: HashMap<i64, i64>,
+    /// Open option contracts per login (long, short): per-client limits across a client's accounts.
+    pub option_contracts: HashMap<i64, (crate::money::D, crate::money::D)>,
+}
+
+impl Index {
+    /// Open option contracts (long, short) of `user_id`'s other accounts in the tenant.
+    pub fn other_contracts(&self, tenant_id: i64, user_id: i64, login: i64) -> (crate::money::D, crate::money::D) {
+        let mut out = (crate::money::ZERO, crate::money::ZERO);
+        for (l, (a, b)) in &self.option_contracts {
+            if *l != login && self.accounts.get(l).is_some_and(|m| m.tenant_id == tenant_id && m.user_id == user_id) {
+                out.0 += *a;
+                out.1 += *b;
+            }
+        }
+        out
+    }
+}
+
+fn option_contracts(st: &AccountState) -> Option<(crate::money::D, crate::money::D)> {
+    let mut out = (crate::money::ZERO, crate::money::ZERO);
+    let mut any = false;
+    for p in st.positions.values().filter(|p| p.option.is_some()) {
+        any = true;
+        if p.side == crate::model::Side::Buy { out.0 += p.volume } else { out.1 += p.volume }
+    }
+    any.then_some(out)
 }
 
 /// Events of one committed transaction, handed to the copy-trading tap (see `social::copier`).
@@ -206,6 +256,9 @@ pub struct Shared {
     pub max_quote_age_ms: i64,
     /// Client restrictions from the gateway (controls.rs), checked by `trade::gate` for client actions.
     pub restrictions: Arc<crate::controls::Restrictions>,
+    /// Kalks FX Options: snapshot, raw spots, pricer (src/options).
+    pub options: Arc<crate::options::OptionsCtx>,
+    pub clock: Arc<Clock>,
 }
 
 /* ------------------------------------------------------------------ */
@@ -230,6 +283,9 @@ impl Hub {
                 for t in st.positions.keys().chain(st.orders.keys()) {
                     idx.tickets.insert(*t, login);
                 }
+                if let Some(c) = option_contracts(&st) {
+                    idx.option_contracts.insert(login, c);
+                }
                 buckets[(login as u64 % n as u64) as usize].insert(login, st);
             }
         }
@@ -240,7 +296,7 @@ impl Hub {
             let (ttx, trx) = mpsc::channel(8192);
             cmds.push(ctx);
             ticks.push(ttx);
-            let mut shard = Shard { id: i, sh: shared.clone(), states, interest: HashMap::new(), keys: HashMap::new(), dirty: HashSet::new() };
+            let mut shard = Shard { id: i, sh: shared.clone(), states, interest: HashMap::new(), keys: HashMap::new(), dirty: HashSet::new(), last_eval: HashMap::new(), pending: HashSet::new() };
             for login in shard.states.keys().copied().collect::<Vec<_>>() {
                 shard.reindex(login);
             }
@@ -300,6 +356,28 @@ impl Hub {
         out
     }
 
+    /// Settles option expiry `key` in every shard; returns what each account booked.
+    pub async fn settle(&self, key: &str, fixing: crate::money::D, run: i32, usdq: Option<crate::money::D>) -> SettleReport {
+        let mut rxs = Vec::new();
+        for c in &self.cmds {
+            let (reply, rx) = oneshot::channel();
+            if c.send(Cmd::Settle { key: key.to_string(), fixing, run, usdq, reply }).await.is_ok() {
+                rxs.push(rx);
+            }
+        }
+        let mut out = SettleReport::default();
+        for rx in rxs {
+            match rx.await {
+                Ok(r) => {
+                    out.accounts.extend(r.accounts);
+                    out.failures += r.failures;
+                }
+                Err(_) => out.failures += 1,
+            }
+        }
+        out
+    }
+
     pub async fn rollover(&self, day: NaiveDate, at: DateTime<Utc>) -> usize {
         let mut rxs = Vec::new();
         for c in &self.cmds {
@@ -349,6 +427,10 @@ struct Shard {
     keys: HashMap<i64, Vec<(String, String)>>,
     /// accounts whose equity changed since the last stream push
     dirty: HashSet<i64>,
+    /// (login, underlying) → last full option evaluation on a raw tick (ms): at most one per 250 ms
+    last_eval: HashMap<(i64, String), i64>,
+    /// raw ticks skipped by the throttle, evaluated on the next timer tick
+    pending: HashSet<(i64, String)>,
 }
 
 impl Shard {
@@ -370,10 +452,14 @@ impl Shard {
                 },
                 _ = timer.tick() => {
                     n += 1;
+                    self.throttled().await;
                     self.push_equity();
                     if n % 4 == 0 {
                         self.expire().await;
                         self.push_dealing_pnl();
+                    }
+                    if n % 20 == 0 {
+                        self.options_timer().await;
                     }
                 }
             }
@@ -418,6 +504,31 @@ impl Shard {
                 }
                 let _ = reply.send(out);
             }
+            Cmd::Settle { key, fixing, run, usdq, reply } => {
+                let logins: Vec<i64> = self.states.values().filter(|s| s.positions.values().any(|p| p.option.as_ref().is_some_and(|t| t.expiry_key() == key))).map(|s| s.login()).collect();
+                let mut rep = SettleReport::default();
+                for login in logins {
+                    let k = key.clone();
+                    let op: Op = Box::new(move |tx, env| {
+                        let out = crate::engine::options::settle(tx, env, &k, fixing, run, usdq);
+                        risk::check_margin(tx, env);
+                        Ok(json!({"tickets": out.tickets, "cash": crate::money::num(out.cash)}))
+                    });
+                    match self.execute(login, "system", None, "", "", None, None, op).await {
+                        Ok(d) => {
+                            let st = &self.states[&login];
+                            let n = d.value["tickets"].as_array().map(Vec::len).unwrap_or(0);
+                            let cash = d.value["cash"].as_f64().and_then(crate::money::from_f64).unwrap_or_default() / st.account.usd_factor();
+                            rep.accounts.push((st.account.tenant_id, login, n, cash));
+                        }
+                        Err(e) => {
+                            rep.failures += 1;
+                            tracing::error!(login, error = ?e, %key, "option settlement failed for account");
+                        }
+                    }
+                }
+                let _ = reply.send(rep);
+            }
             Cmd::Rollover { day, at, reply } => {
                 let logins: Vec<i64> = self.states.values().filter(|s| !s.positions.is_empty()).map(|s| s.login()).collect();
                 let mut n = 0;
@@ -438,7 +549,17 @@ impl Shard {
     }
 
     fn env<'a>(&'a self, t: &'a crate::rules::TenantConfig, g: &'a crate::rules::Group) -> Env<'a> {
-        Env { specs: &self.sh.specs, tenant: t, group: g, quotes: self.sh.quotes.as_ref(), ids: &self.sh.ids, now: Utc::now(), max_quote_age_ms: self.sh.max_quote_age_ms, restrictions: Some(&self.sh.restrictions) }
+        Env {
+            specs: &self.sh.specs,
+            tenant: t,
+            group: g,
+            quotes: self.sh.quotes.as_ref(),
+            ids: &self.sh.ids,
+            now: self.sh.clock.now(),
+            max_quote_age_ms: self.sh.max_quote_age_ms,
+            restrictions: Some(&self.sh.restrictions),
+            options: self.sh.options.as_ref(),
+        }
     }
 
     async fn open(&mut self, account: Account, credentials: (String, String), actor: &str) -> Result<Value, ExecError> {
@@ -508,6 +629,14 @@ impl Shard {
             for t in new_st.positions.keys().chain(new_st.orders.keys()) {
                 idx.tickets.insert(*t, login);
             }
+            match option_contracts(&new_st) {
+                Some(c) => {
+                    idx.option_contracts.insert(login, c);
+                }
+                None => {
+                    idx.option_contracts.remove(&login);
+                }
+            }
             idx.accounts.insert(login, meta(&new_st));
         }
         self.states.insert(login, new_st);
@@ -530,7 +659,9 @@ impl Shard {
         let Some(st) = self.states.get(&login) else { return };
         let Some(t) = self.sh.registry.get(st.account.tenant_id) else { return };
         let Some(g) = t.groups.get(&st.account.group) else { return };
-        let keys: Vec<(String, String)> = st.symbols().into_iter().map(|s| (g.spread_group.clone(), s)).collect();
+        let mut keys: Vec<(String, String)> = st.symbols().into_iter().map(|s| (g.spread_group.clone(), s)).collect();
+        // options follow the raw mid of their underlying (and order triggers their symbol)
+        keys.extend(st.option_keys().into_iter().map(|s| (crate::options::RAW.to_string(), s)));
         for k in &keys {
             self.interest.entry(k.clone()).or_default().insert(login);
         }
@@ -540,12 +671,35 @@ impl Shard {
     async fn on_tick(&mut self, t: Arc<TickMsg>) {
         let key = (t.group.to_string(), t.symbol.to_string());
         let Some(logins) = self.interest.get(&key).cloned() else { return };
+        let raw = &*t.group == crate::options::RAW;
+        let now = self.sh.clock.now();
+        let spot = if raw { self.sh.quotes.get(crate::options::RAW, &t.symbol).map(|q| q.mid()) } else { None };
         for login in logins {
             let sym = t.symbol.clone();
-            let op: Op = Box::new(move |tx, env| {
-                risk::on_tick(tx, env, &sym);
-                Ok(Value::Null)
-            });
+            let op: Op = if raw {
+                // options: barrier knocks on every raw tick; orders, premium SL / TP and margin at most every 250 ms
+                let k = (login, sym.to_string());
+                let throttled = self.last_eval.get(&k).is_some_and(|l| now.timestamp_millis() - l < 250);
+                let knock = spot.is_some_and(|s| self.states.get(&login).is_some_and(|st| crate::engine::options::knock_due(st, &sym, s, now)));
+                if throttled && !knock {
+                    self.pending.insert(k);
+                    continue;
+                }
+                let full = !throttled;
+                if full {
+                    self.last_eval.insert(k.clone(), now.timestamp_millis());
+                    self.pending.remove(&k);
+                }
+                Box::new(move |tx, env| {
+                    crate::engine::options::on_underlying(tx, env, &sym, full);
+                    Ok(Value::Null)
+                })
+            } else {
+                Box::new(move |tx, env| {
+                    risk::on_tick(tx, env, &sym);
+                    Ok(Value::Null)
+                })
+            };
             if let Err(e) = self.execute(login, "system", None, "", "", None, None, op).await {
                 tracing::error!(login, error = ?e, "tick processing failed");
             }
@@ -557,8 +711,49 @@ impl Shard {
         self.sh.stats.max_tick_lag_ms.fetch_max(lag, Ordering::Relaxed);
     }
 
+    /// Raw ticks the throttle held back: one full option evaluation each.
+    async fn throttled(&mut self) {
+        if self.pending.is_empty() {
+            return;
+        }
+        let now = self.sh.clock.now().timestamp_millis();
+        let due: Vec<(i64, String)> = self.pending.drain().collect();
+        for (login, sym) in due {
+            self.last_eval.insert((login, sym.clone()), now);
+            let op: Op = Box::new(move |tx, env| {
+                crate::engine::options::on_underlying(tx, env, &sym, true);
+                Ok(Value::Null)
+            });
+            if let Err(e) = self.execute(login, "system", None, "", "", None, None, op).await {
+                tracing::error!(login, error = ?e, "option evaluation failed");
+            }
+            self.dirty.insert(login);
+        }
+    }
+
+    /// Every 5 s: accounts with options are re-evaluated without a tick (time decay moves marks and margin,
+    /// pending orders expire, triggers on quiet symbols).
+    async fn options_timer(&mut self) {
+        let logins: Vec<i64> = self.states.values().filter(|s| s.has_options()).map(|s| s.login()).collect();
+        if logins.is_empty() {
+            return;
+        }
+        let now = self.sh.clock.now().timestamp_millis();
+        self.last_eval.retain(|_, t| now - *t < 60_000);
+        for login in logins {
+            let op: Op = Box::new(|tx, env| {
+                crate::engine::options::on_timer(tx, env);
+                Ok(Value::Null)
+            });
+            if let Err(e) = self.execute(login, "system", None, "", "", None, None, op).await {
+                tracing::error!(login, error = ?e, "option timer evaluation failed");
+            }
+            self.dirty.insert(login);
+        }
+    }
+
     async fn expire(&mut self) {
-        let now = Utc::now();
+        let now = self.sh.clock.now();
         let due: Vec<i64> = self.states.values().filter(|s| s.orders.values().any(|o| o.expiry_at.is_some_and(|a| a <= now))).map(|s| s.login()).collect();
         for login in due {
             let op: Op = Box::new(|tx, env| {
@@ -660,10 +855,14 @@ impl Shard {
                 .positions
                 .values()
                 .map(|p| {
-                    let q = env.quote(&st.account, &p.symbol);
-                    let px = q.map(|q| q.close_price(p.side));
-                    let pr = px.and_then(|px| env.specs.get(&p.symbol).map(|s| crate::money::r2(crate::engine::pnl(&env, &st.account, s, p.side, p.volume, p.open_price, px))));
-                    json!({"ticket": p.ticket, "price": crate::money::num_opt(px), "profit": crate::money::num_opt(pr), "swap": crate::money::num(p.swap)})
+                    let (px, pr) = views::current(&env, st, p);
+                    let mut v = json!({"ticket": p.ticket, "price": crate::money::num_opt(px), "profit": crate::money::num_opt(pr), "swap": crate::money::num(p.swap)});
+                    if let Some(t) = &p.option {
+                        let q = env.options.mark(&env.tenant.slug, &env.group.code, t, env.now);
+                        v["mark"] = crate::money::num_opt(q.map(|q| q.mark));
+                        v["greeks"] = crate::engine::options::greeks_json(crate::engine::options::position_greeks(&env, p));
+                    }
+                    v
                 })
                 .collect();
             let mut f = views::metrics_json(&m);
@@ -684,10 +883,8 @@ impl Shard {
             let Some(g) = t.groups.get(&st.account.group) else { continue };
             let env = self.env(&t, g);
             for p in st.positions.values() {
-                let Some(q) = env.quote(&st.account, &p.symbol) else { continue };
-                let px = q.close_price(p.side);
-                let Some(spec) = env.specs.get(&p.symbol) else { continue };
-                let pr = crate::money::r2(crate::engine::pnl(&env, &st.account, spec, p.side, p.volume, p.open_price, px));
+                // options included: views::current prices them from the mark cache
+                let (Some(px), Some(pr)) = views::current(&env, st, p) else { continue };
                 by_tenant.entry(st.account.tenant_id).or_default().push(json!({"ticket": p.ticket.to_string(), "price": crate::money::num(px), "profit": crate::money::num(pr)}));
             }
         }

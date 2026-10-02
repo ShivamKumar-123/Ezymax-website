@@ -89,6 +89,13 @@ pub fn spawn(hub: Hub, base_url: String, symbols: Vec<String>) {
     });
 }
 
+/// Kalks FX Options: one more socket on market-data's raw book (`group=raw`, mids without any client spread).
+/// Its quotes land in the `QuoteBook` under the group `raw` and its ticks wake the accounts holding options on
+/// the underlying (barrier knocks, premium SL / TP, option orders and triggers, margin).
+pub fn spawn_raw(hub: Hub, base_url: String, symbols: Vec<String>) {
+    tokio::spawn(connection(hub, base_url, crate::options::RAW.to_string(), symbols));
+}
+
 async fn connection(hub: Hub, base_url: String, group: String, symbols: Vec<String>) {
     let url = format!("{base_url}?group={group}");
     let mut backoff = 1u64;

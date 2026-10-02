@@ -61,6 +61,7 @@ fn level_row(r: &sqlx::postgres::PgRow) -> Level {
         min_monthly_lots: r.get("min_monthly_lots"),
         perks: perks.0,
         icon: r.get("icon"),
+        options_rate: Some(r.try_get::<D, _>("options_rate").unwrap_or(D::ZERO)),
     }
 }
 
@@ -80,8 +81,8 @@ pub async fn levels(pool: &PgPool, tenant: &str) -> anyhow::Result<Vec<Level>> {
 
 pub async fn insert_level(tx: &mut sqlx::PgConnection, tenant: &str, l: &Level) -> anyhow::Result<()> {
     sqlx::query(
-        "INSERT INTO levels (tenant, key, name, rank, rates, cpa_amount, min_active_clients, min_monthly_lots, perks, icon)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (tenant, key) DO NOTHING",
+        "INSERT INTO levels (tenant, key, name, rank, rates, cpa_amount, min_active_clients, min_monthly_lots, perks, icon, options_rate)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT (tenant, key) DO NOTHING",
     )
     .bind(tenant)
     .bind(&l.key)
@@ -93,6 +94,7 @@ pub async fn insert_level(tx: &mut sqlx::PgConnection, tenant: &str, l: &Level) 
     .bind(l.min_monthly_lots)
     .bind(sqlx::types::Json(&l.perks))
     .bind(&l.icon)
+    .bind(l.option_rate())
     .execute(tx)
     .await?;
     Ok(())

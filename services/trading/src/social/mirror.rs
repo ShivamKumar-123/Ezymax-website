@@ -297,6 +297,9 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
     let mut out = Vec::new();
     match ev {
         /* ---------- opens (market fills and pending fills) ---------- */
+        Event::PositionOpened { position: p, deal: Some(_) } if p.option.is_some() => {
+            out.push(LogEntry::new("open", Some(p.ticket), "skipped", format!("{}: options are not copied", p.symbol)));
+        }
         Event::PositionOpened { position: p, deal: Some(d) } => {
             if tx.st.client_ids.contains_key(&k.open(sub, p.ticket)) {
                 return out; // already copied
@@ -418,6 +421,7 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
         }
 
         /* ---------- closes ---------- */
+        Event::PositionClosed { deal: d, .. } if d.option.is_some() => {} // options are never copied, so never linked
         Event::PositionClosed { deal: d, position: rest } => {
             let Some(f) = k.linked_position(&tx.st, sub, d.position_ticket) else { return out };
             let fv = tx.st.positions[&f].volume;
@@ -439,6 +443,9 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
         }
 
         /* ---------- pending orders ---------- */
+        Event::OrderPlaced { order: o } if o.option.is_some() => {
+            out.push(LogEntry::new("order", Some(o.ticket), "skipped", "options orders are not copied"));
+        }
         Event::OrderPlaced { order: o } => {
             let key = k.order(sub, o.ticket);
             if tx.st.client_ids.contains_key(&key) {
@@ -561,8 +568,16 @@ pub fn close_all(tx: &mut Tx, env: &Env, sub: i64, reason: &str) -> (Vec<i64>, V
             Err(e) => failed.push((t, e.message)),
         }
     }
-    let positions: Vec<(i64, D)> = tx.st.positions.values().map(|p| (p.ticket, p.volume)).collect();
-    for (t, v) in positions {
+    let positions: Vec<(i64, D, bool)> = tx.st.positions.values().map(|p| (p.ticket, p.volume, p.option.is_some())).collect();
+    for (t, v, is_option) in positions {
+        if is_option {
+            let c = crate::engine::options::OptClose { comment: format!("copy stopped: {reason}").chars().take(64).collect(), ..crate::engine::options::OptClose::client() };
+            match attempt(tx, |x| crate::engine::options::close(x, env, t, c)) {
+                Ok(_) => done.push(t),
+                Err(e) => failed.push((t, e.message)),
+            }
+            continue;
+        }
         let key = format!("cs{sub}:{t}:{}", tx.st.version);
         match attempt(tx, |x| copy_close(x, env, t, v, key, format!("copy stopped: {reason}").chars().take(64).collect())) {
             Ok(_) => done.push(t),

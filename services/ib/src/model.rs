@@ -212,6 +212,11 @@ pub struct Level {
     pub perks: Vec<String>,
     #[serde(default = "default_icon")]
     pub icon: String,
+    /// Kalks FX Options (O34): USD per option **contract** (round turn, paid on the closing deal), separate from
+    /// the CFD per-lot `rates`. 0 until the broker sets it. `None` in a PUT = keep the level's current rate (a
+    /// Back Office build that does not know the field yet can never reset it).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub options_rate: Option<D>,
 }
 
 fn default_icon() -> String {
@@ -222,6 +227,28 @@ impl Level {
     pub fn rate(&self, group: &str) -> D {
         self.rates.get(group).copied().unwrap_or(ZERO)
     }
+
+    /// USD per option contract at this level (0 when not set).
+    pub fn option_rate(&self) -> D {
+        self.options_rate.unwrap_or(ZERO).max(ZERO)
+    }
+}
+
+/// Symbol-group key recorded on option deals and their commission lines (option series never map to a CFD
+/// symbol group, and their rate is the level's `optionsRate`, never a per-lot rate).
+pub const OPTIONS_GROUP: &str = "options";
+
+/// Engine option series code (`EURUSD-20261009-1.1650-C`): underlying, expiry date, strike, right. Used as a
+/// fallback when a deal feed does not carry the `option` / `instrument` fields.
+pub fn is_option_series(symbol: &str) -> bool {
+    let p: Vec<&str> = symbol.split('-').collect();
+    p.len() == 4
+        && !p[0].is_empty()
+        && p[1].len() == 8
+        && p[1].bytes().all(|b| b.is_ascii_digit())
+        && !p[2].is_empty()
+        && p[2].bytes().all(|b| b.is_ascii_digit() || b == b'.')
+        && matches!(p[3], "C" | "P" | "c" | "p")
 }
 
 pub fn default_levels() -> Vec<Level> {
@@ -245,6 +272,7 @@ pub fn default_levels() -> Vec<Level> {
             min_monthly_lots: dec(lots),
             perks: perks.iter().map(|p| p.to_string()).collect(),
             icon: icon.to_string(),
+            options_rate: Some(ZERO),
         })
         .collect()
 }
@@ -267,6 +295,9 @@ pub fn validate_levels(levels: &[Level], settings: &Settings) -> Result<(), (&'s
         }
         if l.cpa_amount < ZERO || l.min_active_clients < 0 || l.min_monthly_lots < ZERO {
             return Err(("targets", format!("{}: amounts and targets must be ≥ 0.", l.name)));
+        }
+        if l.options_rate.is_some_and(|r| r < ZERO || r > dec("1000")) {
+            return Err(("optionsRate", format!("{}: the options rate must be 0–1000 USD per contract.", l.name)));
         }
         for (g, r) in &l.rates {
             if *r < ZERO || *r > dec("1000") {
@@ -335,6 +366,35 @@ mod tests {
         assert_eq!(symbol_group("NAS100", &s, &ins).as_deref(), Some("indices"));
         assert_eq!(symbol_group("BTCUSD", &s, &ins).as_deref(), Some("crypto"));
         assert_eq!(symbol_group("NOPE", &s, &ins), None);
+    }
+
+    #[test]
+    fn options_rate_defaults_to_zero_and_is_validated() {
+        let s = Settings::default();
+        let lv = default_levels();
+        assert!(lv.iter().all(|l| l.option_rate() == ZERO), "options earn nothing until the broker sets a rate");
+        // a PUT body without the field (older Back Office build) deserializes to None = keep the current rate
+        let mut v = serde_json::to_value(&lv[0]).unwrap();
+        v.as_object_mut().unwrap().remove("optionsRate");
+        let l: Level = serde_json::from_value(v).unwrap();
+        assert_eq!((l.options_rate, l.option_rate()), (None, ZERO));
+        let l: Level = serde_json::from_value(serde_json::json!({"key": "x", "name": "X", "rank": 1, "rates": {}, "cpaAmount": "0", "minActiveClients": 0, "minMonthlyLots": "0", "optionsRate": 1.25})).unwrap();
+        assert_eq!(l.option_rate(), dec("1.25"));
+        let mut bad = default_levels();
+        bad[0].options_rate = Some(dec("-1"));
+        assert_eq!(validate_levels(&bad, &s).unwrap_err().0, "optionsRate");
+        bad[0].options_rate = Some(dec("1000.01"));
+        assert!(validate_levels(&bad, &s).is_err());
+    }
+
+    #[test]
+    fn option_series_codes_are_recognised() {
+        assert!(is_option_series("EURUSD-20261009-1.1650-C"));
+        assert!(is_option_series("USDJPY-20261009-150.00-P"));
+        assert!(is_option_series("XAUUSD-20261231-2650-C"));
+        for s in ["EURUSD", "US30", "BTC-USD", "EURUSD-2026109-1.1-C", "EURUSD-20261009-1.1650-X", "EURUSD-20261009-abc-C"] {
+            assert!(!is_option_series(s), "{s}");
+        }
     }
 
     #[test]

@@ -33,6 +33,19 @@ pub struct Config {
     /// Gateway (client restrictions, Kalks Trader presence; controls.rs).
     pub gateway_url: String,
     pub gateway_token: String,
+    /// Kalks FX Options service (snapshot, fixings; src/options). Empty = options off in the engine.
+    pub options_url: String,
+    pub options_token: String,
+    /// House delta hedger (src/options/hedger.rs): on unless `OPTIONS_HEDGER=false`.
+    pub options_hedger: bool,
+    /// The house user that owns the per-tenant hedge accounts.
+    pub options_hedge_user: i64,
+    /// Group of the hedge accounts (a normal live USD group).
+    pub options_hedge_group: String,
+    /// House capital booked on a new hedge account (USD).
+    pub options_hedge_capital: i64,
+    /// Net delta (USD notional) the house carries per underlying before it hedges.
+    pub options_hedge_limit_usd: i64,
 }
 
 /// Masks the password in a connection URL (`postgres://user:secret@host` → `postgres://user:***@host`).
@@ -75,6 +88,13 @@ impl fmt::Debug for Config {
             .field("ib_token", &redact(&self.ib_token))
             .field("gateway_url", &redact_url(&self.gateway_url))
             .field("gateway_token", &redact(&self.gateway_token))
+            .field("options_url", &redact_url(&self.options_url))
+            .field("options_token", &redact(&self.options_token))
+            .field("options_hedger", &self.options_hedger)
+            .field("options_hedge_user", &self.options_hedge_user)
+            .field("options_hedge_group", &self.options_hedge_group)
+            .field("options_hedge_capital", &self.options_hedge_capital)
+            .field("options_hedge_limit_usd", &self.options_hedge_limit_usd)
             .finish()
     }
 }
@@ -84,6 +104,38 @@ fn var(key: &str, default: &str) -> String {
 }
 
 impl Config {
+    /// A configuration for tests and tools: development defaults, nothing external configured.
+    pub fn for_tests(database_url: &str) -> Self {
+        Self {
+            bind: String::new(),
+            database_url: database_url.to_string(),
+            internal_token: String::new(),
+            session_secret: "s".repeat(40),
+            dev_mode: true,
+            market_data_ws: String::new(),
+            instruments_file: String::new(),
+            specs_file: String::new(),
+            shards: 1,
+            max_quote_age_ms: 0,
+            session_ttl_hours: 12,
+            json_logs: false,
+            rollover_enabled: false,
+            wallet_url: String::new(),
+            wallet_token: String::new(),
+            ib_url: String::new(),
+            ib_token: String::new(),
+            gateway_url: String::new(),
+            gateway_token: String::new(),
+            options_url: String::new(),
+            options_token: String::new(),
+            options_hedger: false,
+            options_hedge_user: 0,
+            options_hedge_group: "standard".into(),
+            options_hedge_capital: 1_000_000,
+            options_hedge_limit_usd: 250_000,
+        }
+    }
+
     pub fn from_env() -> anyhow::Result<Self> {
         let dev_mode = var("TRADING_ENV", "development") != "production";
         let session_secret = var("TRADING_SESSION_SECRET", "");
@@ -114,6 +166,13 @@ impl Config {
             ib_token: var("IB_INTERNAL_TOKEN", ""),
             gateway_url: var("GATEWAY_URL", "http://127.0.0.1:8080"),
             gateway_token: var("GATEWAY_INTERNAL_TOKEN", ""),
+            options_url: var("OPTIONS_URL", ""),
+            options_token: var("OPTIONS_INTERNAL_TOKEN", ""),
+            options_hedger: var("OPTIONS_HEDGER", "true") != "false",
+            options_hedge_user: var("OPTIONS_HEDGE_USER_ID", "0").parse().unwrap_or(0),
+            options_hedge_group: var("OPTIONS_HEDGE_GROUP", "standard"),
+            options_hedge_capital: var("OPTIONS_HEDGE_CAPITAL", "1000000").parse().unwrap_or(1_000_000),
+            options_hedge_limit_usd: var("OPTIONS_HEDGE_LIMIT_USD", "250000").parse().unwrap_or(250_000),
         })
     }
 }
