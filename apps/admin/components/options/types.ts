@@ -367,7 +367,8 @@ export type DepthOrder = { id: number | string; login: number | string; userId?:
 export type DepthLevel = { price: number; qty: number; orders?: DepthOrder[] | null };
 export type FillKind = "book" | "rfq" | "liquidation" | "backstop" | "novation" | string;
 export type BookTrade = {
-  fillId: number;
+  /** engine fill id `{UNDERLYING}.{L|D}{seq}.{n}` */
+  fillId: string;
   price: number;
   qty: number;
   takerSide: "buy" | "sell" | string;

@@ -79,6 +79,8 @@ type OptQuery = keyof typeof OPT_QUERY;
 /** Option series code: SYMBOL-YYYYMMDD-STRIKE-C|P, plus an optional suffix (barrier / variant). */
 const SERIES = "[A-Z0-9]{3,12}-\\d{8}-[0-9.]{1,16}-[CP](?:-[A-Z0-9._]{1,24})?";
 const ID = "\\d{1,18}";
+/** Order book fill id: {UNDERLYING}.{L|D}{seq}.{n} (e.g. EURUSD.L1042.0). */
+const FILL = "[A-Z0-9]{2,12}\\.[LD]\\d{1,18}\\.\\d{1,4}";
 
 /** Body checks on top of the reason (the engine validates again). */
 const kindIs = (b: Record<string, unknown>, all = false) => (typeof b.kind === "string" && (all ? /^(live|demo|all)$/ : /^(live|demo)$/).test(b.kind) ? null : `kind must be live or demo${all ? " (or all)" : ""}.`);
@@ -108,8 +110,10 @@ const OPTION_ROUTES: OptRoute[] = [
   { method: "GET", re: /^admin\/options\/liquidations$/, perm: "options.read", query: ["kind", "from", "to", "login", "limit"] },
   { method: "GET", re: /^admin\/options\/clearing$/, perm: "options.read", query: ["kind", "expiry", "u"] },
   // four-eyes: bust a fill, enable the book; pending approvals
-  { method: "POST", re: new RegExp(`^admin/options/fills/${ID}/bust$`), perm: "options.settle", check: approvalOk },
+  { method: "POST", re: new RegExp(`^admin/options/fills/${FILL}/bust$`), perm: "options.settle", check: approvalOk },
   { method: "GET", re: /^admin\/options\/approvals$/, perm: "options.read", query: ["status", "kind"] },
+  // combo RFQs: open requests with the market maker's live quote, and the recent ones
+  { method: "GET", re: /^admin\/options\/rfqs$/, perm: "options.read", query: ["kind"] },
   { method: "GET", re: /^admin\/options\/book\/enable\/plan$/, perm: "options.read", query: ["kind"] },
   { method: "POST", re: /^admin\/options\/book\/enable$/, perm: "options.settle", check: (b) => kindIs(b) ?? approvalOk(b) },
 ];
