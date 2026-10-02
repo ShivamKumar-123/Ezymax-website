@@ -59,6 +59,18 @@ def margin_level_for(equity: Decimal, margin_used) -> Decimal:
     return Decimal("0") if equity <= 0 else Decimal("9999")
 
 
+# trading_accounts.margin_level is NUMERIC(10, 4): anything at or past 1e6 %
+# raises "numeric field overflow" on flush, which aborts the WHOLE monitor
+# pass (every account) — not just the outlier. Clamp only what is stored;
+# stop-out / margin-call decisions use the real value.
+MARGIN_LEVEL_STORE_MAX = Decimal("999999.9999")
+
+
+def margin_level_for_storage(margin_level: Decimal) -> Decimal:
+    ml = Decimal(str(margin_level)).quantize(Decimal("0.0001"))
+    return max(-MARGIN_LEVEL_STORE_MAX, min(MARGIN_LEVEL_STORE_MAX, ml))
+
+
 class RiskEngine:
     def __init__(self):
         self._running = False
@@ -157,7 +169,7 @@ class RiskEngine:
 
                         account.equity = equity
                         account.free_margin = equity - account.margin_used
-                        account.margin_level = margin_level
+                        account.margin_level = margin_level_for_storage(margin_level)
 
                         from packages.common.src.settings_store import get_float_setting
                         stop_out = await get_float_setting("stop_out_level", settings.STOP_OUT_LEVEL)

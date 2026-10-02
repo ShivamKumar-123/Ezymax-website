@@ -245,6 +245,14 @@ class RiskEngineTests(unittest.TestCase):
         self.assertEqual(re_mod.margin_level_for(Decimal("100"), Decimal("0")), Decimal("9999"))
         self.assertEqual(re_mod.margin_level_for(Decimal("50"), Decimal("100")), Decimal("50"))
 
+    def test_stored_margin_level_fits_numeric_10_4(self):
+        # NUMERIC(10,4) overflow on one account used to abort the whole pass.
+        re_mod = _load_risk_engine()
+        huge = re_mod.margin_level_for(Decimal("5000000"), Decimal("0.01"))
+        self.assertEqual(re_mod.margin_level_for_storage(huge), Decimal("999999.9999"))
+        self.assertEqual(re_mod.margin_level_for_storage(-huge), Decimal("-999999.9999"))
+        self.assertEqual(re_mod.margin_level_for_storage(Decimal("123.456789")), Decimal("123.4568"))
+
     def test_monitor_query_not_filtered_on_is_active(self):
         path = os.path.join(os.path.dirname(__file__), "..", "services", "risk-engine", "src", "main.py")
         src = open(path, encoding="utf-8").read()
