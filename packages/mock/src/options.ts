@@ -5,7 +5,9 @@
 // USD spread, Greeks units). Used by:
 //   * demo builds (NEXT_PUBLIC_KALKS_MODE=demo): a complete mock chain, so the options workspace works without
 //     the options service or the trading engine;
-//   * every build: the strategy builder's "today" payoff curve and the payoff maths.
+//   * every build: the strategy builder's "today" payoff curve and the payoff maths;
+//   * demo builds only: `BookSim`, a small in-browser price-time matching simulator so the order-book screens of the
+//     showcase work offline (live builds trade on the engine's book, services/trading/src/book; no test uses it).
 // Pure: no React, no browser APIs. Numbers are close to the service's, not identical (the service blends realized
 // vol, uses holiday calendars and a business-time vol clock with holiday weights).
 
@@ -43,6 +45,13 @@ export interface OptionUnderlying {
   nextExpiry: { date: string; cutAt: string } | null;
   atmVol: number | null;
   realizedVol: number | null;
+  /** order book (docs/OPTIONS-EXCHANGE.md §2): price tick in the quote currency per unit, bands in percent of the
+   *  mark, the minimum band in ticks, the RFQ quote lifetime; absent before the book ships */
+  premiumTick?: number;
+  marketBandPct?: number;
+  limitBandPct?: number;
+  bandMinTicks?: number;
+  rfqQuoteTtlSecs?: number;
 }
 
 export interface OptionExpiry {
@@ -87,6 +96,39 @@ export interface OptionQuote {
   volume?: number | null;
   ltp?: number | null;
   change?: number | null;
+  /**
+   * Order book fields (§10: the options service merges the engine's top of book into the chain row). `bid` / `ask`
+   * are then the book's best bid / offer; the service sends null for an empty side, which the terminal stores as 0
+   * with `bidQty` / `askQty` null. Absent while the broker's book isn't live (house prices).
+   */
+  book?: boolean;
+  bidQty?: number | null;
+  askQty?: number | null;
+  /** last trade per unit / USD per contract, its size in contracts */
+  last?: number | null;
+  lastUsd?: number | null;
+  lastQty?: number | null;
+  /** model value (theoretical) and its vol; `mark` is the model mid clamped inside the best bid / ask (§6) */
+  theo?: number | null;
+  theoUsd?: number | null;
+  theoIv?: number | null;
+  markIv?: number | null;
+  bidIv?: number | null;
+  askIv?: number | null;
+}
+
+/** The book of a chain (header): live for this broker and account kind, its tick, bands and fees. */
+export interface ChainBook {
+  active: boolean;
+  /** quote currency per unit */
+  premiumTick?: number;
+  marketBandPct?: number;
+  limitBandPct?: number;
+  bandMinTicks?: number;
+  /** USD per contract; negative maker = rebate */
+  makerFeePerContract?: number;
+  takerFeePerContract?: number;
+  feeCapPct?: number;
 }
 
 export interface OptionChainRow {
@@ -123,7 +165,39 @@ export interface OptionChain {
   error?: { code: string; message?: string };
   /** public chain only: the open expiries of the underlying */
   expiries?: { date: string; kinds: ExpiryKind[]; cutAt: string }[];
+  /** order book of this chain (null / absent = house prices) */
+  book?: ChainBook | null;
+  /** put / call ratio of the expiry (open interest), once the book reports it */
+  pcr?: number | null;
   rows: OptionChainRow[];
+}
+
+/** One price level of a series' book: price per unit (quote currency), contracts, resting orders. */
+export interface DepthLevel {
+  price: number;
+  qty: number;
+  orders?: number;
+}
+
+/** Depth of one series (options-service WS `depth`, 10 levels each side; public `book/{series}`). */
+export interface SeriesDepth {
+  series: string;
+  bids: DepthLevel[];
+  asks: DepthLevel[];
+  seq?: number;
+  t?: number;
+}
+
+/** A print on the trade tape (options-service WS `tape`; public `trades/{series}`): per unit, contracts, the taker's
+ *  side; `kind` combo = one print per RFQ strategy fill, liquidation = a stop-out close or the backstop. */
+export interface TapeTrade {
+  id: string;
+  series: string;
+  price: number;
+  qty: number;
+  side: "buy" | "sell";
+  t: number;
+  kind?: "book" | "combo" | "liquidation" | "rfq" | string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -703,6 +777,11 @@ export function mockUnderlyings(nowMs: number): OptionUnderlying[] {
       nextExpiry: next ? { date: next.date, cutAt: next.cutAt } : null,
       atmVol: quotesAt(u, 7).atm,
       realizedVol: +(u.atm[3] * 0.94).toFixed(4),
+      premiumTick: defaultPremiumTick(u),
+      marketBandPct: BOOK_DEFAULTS.marketBandPct,
+      limitBandPct: BOOK_DEFAULTS.limitBandPct,
+      bandMinTicks: BOOK_DEFAULTS.bandMinTicks,
+      rfqQuoteTtlSecs: BOOK_DEFAULTS.rfqQuoteTtlSecs,
     };
   });
 }
@@ -850,4 +929,424 @@ export function scenarioMargin(ctx: PricingContext, legs: MarginLeg[]): number {
   }
   for (const m of [3, -3]) worst = Math.max(worst, 0.35 * (base - value(ctx.spot * (1 + m * spec.priceScan), 0, t1, v1)));
   return worst * ctx.usdPerUnit;
+}
+
+/* ------------------------------------------------------------------ */
+/* Order book: defaults and the demo matching simulator                */
+/* ------------------------------------------------------------------ */
+
+/** §2 defaults of the per-underlying book fields and the client fee schedule (maker rebate, taker fee). */
+export const BOOK_DEFAULTS = { marketBandPct: 10, limitBandPct: 50, bandMinTicks: 5, rfqQuoteTtlSecs: 5, makerFeePerContract: -0.05, takerFeePerContract: 0.25, feeCapPct: 10 };
+
+/** Premium tick (quote currency per unit): FX pip / 10 (EURUSD 0.00001 = $0.10 per contract), XAU 0.01, JPY 0.001, oil 0.001. */
+export function defaultPremiumTick(spec: Pick<OptionUnderlyingSpec, "symbol" | "assetClass" | "pipSize">): number {
+  if (spec.symbol === "XAUUSD") return 0.01;
+  if (spec.assetClass === "energies") return 0.001;
+  if (spec.assetClass === "metals") return 0.001;
+  return +(spec.pipSize / 10).toPrecision(6);
+}
+
+/** Decimals of a tick (0.00001 → 5). */
+export const tickDecimals = (tick: number) => stepDecimals(tick);
+
+export type SimSide = "buy" | "sell";
+export type SimTif = "gtc" | "ioc" | "fok" | "gtd";
+
+/** A resting or incoming order of the simulator; prices are whole ticks. */
+export interface SimOrder {
+  id: string;
+  series: string;
+  owner: string;
+  side: SimSide;
+  px: number;
+  qty: number;
+  left: number;
+  prio: number;
+  tif: SimTif;
+  postOnly: boolean;
+  /** the market maker's ladder (ephemeral, re-quoted) */
+  mm: boolean;
+  at: number;
+  expireAt?: number;
+}
+
+export interface SimTrade {
+  id: string;
+  series: string;
+  /** ticks: the resting order's price */
+  px: number;
+  qty: number;
+  takerSide: SimSide;
+  maker: string;
+  taker: string;
+  makerOrder: string;
+  takerOrder: string;
+  makerMm: boolean;
+  at: number;
+  kind: "book" | "combo" | "liquidation";
+}
+
+export interface SimSubmit {
+  series: string;
+  owner: string;
+  side: SimSide;
+  /** limit price in ticks; null = marketable up to `px` given by the caller's band */
+  px: number;
+  qty: number;
+  tif: SimTif;
+  postOnly?: boolean;
+  /** reduce-only: the most that may fill (the net position in the series) */
+  maxFill?: number;
+  expireAt?: number;
+  /** stop-out close (prints as a liquidation) */
+  liquidation?: boolean;
+}
+
+export interface SimResult {
+  status: "working" | "filled" | "partially_filled" | "cancelled" | "rejected";
+  reason?: string;
+  order: SimOrder;
+  trades: SimTrade[];
+}
+
+interface SimSeries {
+  bids: SimOrder[];
+  asks: SimOrder[];
+  last: { px: number; qty: number; at: number } | null;
+  /** reference for the day's change: the first trade, else the theo when the series was first quoted */
+  ref: number;
+  vol: number;
+  oi: number;
+  /** signature of the MM's last ladder (requote only when it moved enough) */
+  mmSig: string;
+  mmAt: number;
+}
+
+/**
+ * Demo builds only: price-time priority matching over one book per series, FIFO per level, trades at the resting
+ * price, self-trade prevention by owner (the incoming remainder is cancelled, the resting order kept), post-only,
+ * IOC / FOK, reduce-only clipping, and a market-maker ladder quoted from the model under the same rules (post-only,
+ * ephemeral, never takes; requoted only when the price moved at least max(1 tick, ¼ of the half-spread) or the size
+ * changed). Deterministic given the inputs; the caller supplies the clock.
+ */
+export class BookSim {
+  private books = new Map<string, SimSeries>();
+  private byId = new Map<string, SimOrder>();
+  private tape: SimTrade[] = [];
+  private seq = 0;
+  private ids = 0;
+  /** every trade, as it prints (the demo account applies its own fills) */
+  onTrade: ((t: SimTrade) => void) | null = null;
+
+  constructor(private prefix = "9") {}
+
+  private book(code: string): SimSeries {
+    let b = this.books.get(code);
+    if (!b) {
+      b = { bids: [], asks: [], last: null, ref: 0, vol: 0, oi: 0, mmSig: "", mmAt: 0 };
+      this.books.set(code, b);
+    }
+    return b;
+  }
+
+  has(code: string) {
+    return this.books.has(code);
+  }
+
+  nextId() {
+    this.ids += 1 + (this.ids % 3);
+    return `${this.prefix}${String(4_200_000 + this.ids)}`;
+  }
+
+  private insert(o: SimOrder) {
+    const b = this.book(o.series);
+    const list = o.side === "buy" ? b.bids : b.asks;
+    const better = (a: SimOrder) => (o.side === "buy" ? a.px > o.px : a.px < o.px) || (a.px === o.px && a.prio < o.prio);
+    let i = 0;
+    while (i < list.length && better(list[i]!)) i++;
+    list.splice(i, 0, o);
+    this.byId.set(o.id, o);
+  }
+
+  private remove(o: SimOrder) {
+    const b = this.books.get(o.series);
+    if (!b) return;
+    const list = o.side === "buy" ? b.bids : b.asks;
+    const i = list.indexOf(o);
+    if (i >= 0) list.splice(i, 1);
+    this.byId.delete(o.id);
+  }
+
+  /** Seeds open interest, the day's reference and a few resting orders of other clients (deterministic per series). */
+  seed(code: string, theoTicks: number, oi: number, rand: () => number, now: number) {
+    const b = this.book(code);
+    if (b.ref) return;
+    b.ref = Math.max(1, theoTicks);
+    b.oi = Math.max(0, Math.round(oi));
+    b.vol = Math.round(oi * 0.12 * rand());
+    const n = Math.floor(rand() * 3);
+    for (let i = 0; i < n; i++) {
+      const side: SimSide = rand() < 0.5 ? "buy" : "sell";
+      const off = 2 + Math.floor(rand() * 8);
+      const px = side === "buy" ? theoTicks - off * Math.max(1, Math.round(theoTicks * 0.01)) : theoTicks + off * Math.max(1, Math.round(theoTicks * 0.01));
+      if (px < 1) continue;
+      const qty = 1 + Math.floor(rand() * 12);
+      this.insert({ id: this.nextId(), series: code, owner: `client-${Math.floor(rand() * 900 + 100)}`, side, px, qty, left: qty, prio: ++this.seq, tif: "gtc", postOnly: false, mm: false, at: now - Math.floor(rand() * 3_600_000) });
+    }
+    if (b.vol > 0) {
+      // the day so far: a few earlier prints around the theo (the tape and the last trade agree)
+      const n = Math.min(8, 1 + Math.floor(rand() * 6));
+      let at = now - 3_600_000 * (1 + rand() * 4);
+      for (let i = 0; i < n; i++) {
+        at += Math.floor(rand() * 1_500_000);
+        if (at >= now) break;
+        const px = Math.max(1, Math.round(theoTicks * (1 + (rand() - 0.5) * 0.08)));
+        const qty = 1 + Math.floor(rand() * 5);
+        const takerSide: SimSide = rand() < 0.5 ? "buy" : "sell";
+        this.tape.push({ id: `${this.prefix}${String(8_100_000 + ++this.seq)}`, series: code, px, qty, takerSide, maker: "mm", taker: "flow", makerOrder: "", takerOrder: "", makerMm: true, at, kind: "book" });
+        b.last = { px, qty, at };
+      }
+      this.tape.sort((x, y) => x.at - y.at);
+      if (this.tape.length > 600) this.tape.splice(0, this.tape.length - 600);
+    }
+  }
+
+  /**
+   * The market maker's ladder from the model: `bid` / `ask` in ticks (the model at σ ∓ s), `levels` deep, `size`
+   * contracts at the top growing deeper. Post-only: a level that would cross another participant's order is moved
+   * one tick inside it. A bid under 1 tick is not quoted.
+   */
+  quoteMm(code: string, bid: number, ask: number, size: number, now: number, levels = 3) {
+    const b = this.book(code);
+    const half = Math.max(1, (ask - bid) / 2);
+    const prev = b.mmSig ? b.mmSig.split("|").map(Number) : null;
+    const moved = !prev || Math.abs(prev[0]! - bid) >= Math.max(1, 0.25 * half) || Math.abs(prev[1]! - ask) >= Math.max(1, 0.25 * half);
+    const filled = [...b.bids, ...b.asks].some((o) => o.mm && o.left < o.qty);
+    if (!moved && !filled && now - b.mmAt < 5_000) return;
+    for (const o of [...b.bids, ...b.asks]) if (o.mm) this.remove(o);
+    const bestOtherAsk = b.asks.find((o) => !o.mm)?.px;
+    const bestOtherBid = b.bids.find((o) => !o.mm)?.px;
+    const step = Math.max(1, Math.round(half / 2));
+    for (let i = 0; i < levels; i++) {
+      const qty = Math.max(1, Math.round(size * (1 + i)));
+      let pb = bid - i * step;
+      if (bestOtherAsk !== undefined && pb >= bestOtherAsk) pb = bestOtherAsk - 1;
+      if (pb >= 1) this.insert({ id: this.nextId(), series: code, owner: "mm", side: "buy", px: pb, qty, left: qty, prio: ++this.seq, tif: "gtc", postOnly: true, mm: true, at: now });
+      let pa = ask + i * step;
+      if (bestOtherBid !== undefined && pa <= bestOtherBid) pa = bestOtherBid + 1;
+      this.insert({ id: this.nextId(), series: code, owner: "mm", side: "sell", px: pa, qty, left: qty, prio: ++this.seq, tif: "gtc", postOnly: true, mm: true, at: now });
+    }
+    b.mmSig = `${bid}|${ask}`;
+    b.mmAt = now;
+    if (!b.ref) b.ref = Math.max(1, Math.round((bid + ask) / 2));
+  }
+
+  /** The market maker withdraws (cutoff, stale spot, market closed). */
+  pullMm(code: string) {
+    const b = this.books.get(code);
+    if (!b) return;
+    for (const o of [...b.bids, ...b.asks]) if (o.mm) this.remove(o);
+    b.mmSig = "";
+  }
+
+  /** Available contracts at prices no worse than `px` for a taker on `side` (FOK check), excluding `owner`'s own orders. */
+  private available(code: string, side: SimSide, px: number, owner: string): number {
+    const b = this.book(code);
+    let n = 0;
+    for (const o of side === "buy" ? b.asks : b.bids) {
+      if (side === "buy" ? o.px > px : o.px < px) break;
+      if (o.owner === owner) break; // self-trade prevention stops the match here
+      n += o.left;
+    }
+    return n;
+  }
+
+  submit(req: SimSubmit, now: number): SimResult {
+    const b = this.book(req.series);
+    const order: SimOrder = { id: this.nextId(), series: req.series, owner: req.owner, side: req.side, px: req.px, qty: req.qty, left: req.qty, prio: ++this.seq, tif: req.tif, postOnly: !!req.postOnly, mm: req.owner === "mm", at: now, expireAt: req.expireAt };
+    const reject = (reason: string): SimResult => ({ status: "rejected", reason, order: { ...order, left: 0 }, trades: [] });
+    if (!(req.qty > 0)) return reject("invalid_qty");
+    if (!(req.px >= 1)) return reject("price_out_of_band");
+    const opp = req.side === "buy" ? b.asks : b.bids;
+    const crosses = (o: SimOrder) => (req.side === "buy" ? o.px <= req.px : o.px >= req.px);
+    if (req.postOnly && opp[0] && crosses(opp[0])) return reject("would_take");
+    let cap = req.qty;
+    if (req.maxFill !== undefined) {
+      cap = Math.min(cap, Math.max(0, req.maxFill));
+      if (cap <= 0) return reject("reduce_only");
+    }
+    if (req.tif === "fok" && this.available(req.series, req.side, req.px, req.owner) < cap) return { status: "cancelled", reason: "fok_not_filled", order: { ...order, left: 0 }, trades: [] };
+    const trades: SimTrade[] = [];
+    let want = cap;
+    let stp = false;
+    while (want > 0 && opp[0] && crosses(opp[0])) {
+      const m = opp[0];
+      if (m.owner === req.owner) {
+        stp = true;
+        break;
+      }
+      const q = Math.min(want, m.left);
+      m.left -= q;
+      want -= q;
+      const t: SimTrade = { id: `${this.prefix}${String(8_100_000 + ++this.seq)}`, series: req.series, px: m.px, qty: q, takerSide: req.side, maker: m.owner, taker: req.owner, makerOrder: m.id, takerOrder: order.id, makerMm: m.mm, at: now, kind: req.liquidation ? "liquidation" : "book" };
+      trades.push(t);
+      if (m.left <= 0) this.remove(m);
+    }
+    order.left = want;
+    for (const t of trades) this.print(t, !!req.maxFill);
+    const filled = cap - want;
+    // reduce-only clipped the order: the part above the position is cancelled
+    const rest = req.tif === "gtc" || req.tif === "gtd" ? want : 0;
+    if (rest > 0 && !stp) {
+      order.left = rest;
+      this.insert(order);
+      return { status: filled > 0 ? "partially_filled" : "working", order, trades };
+    }
+    order.left = 0;
+    if (filled >= req.qty) return { status: "filled", order, trades };
+    return { status: filled > 0 ? "partially_filled" : "cancelled", reason: stp ? "self_trade" : req.maxFill !== undefined && filled >= cap ? "reduce_only" : req.tif === "ioc" ? "ioc_remainder" : undefined, order, trades };
+  }
+
+  private print(t: SimTrade, reducing: boolean) {
+    const b = this.book(t.series);
+    b.last = { px: t.px, qty: t.qty, at: t.at };
+    if (!b.ref) b.ref = t.px;
+    b.vol += t.qty;
+    b.oi = reducing ? Math.max(0, b.oi - t.qty) : b.oi + t.qty;
+    this.tape.push(t);
+    if (this.tape.length > 600) this.tape.splice(0, this.tape.length - 600);
+    this.onTrade?.(t);
+  }
+
+  /** One print of a combo fill (RFQ): legs never touch the outright books. */
+  printCombo(t: Omit<SimTrade, "id">) {
+    const full: SimTrade = { ...t, id: `${this.prefix}${String(8_100_000 + ++this.seq)}` };
+    this.print(full, false);
+    return full;
+  }
+
+  cancel(id: string): SimOrder | null {
+    const o = this.byId.get(id);
+    if (!o) return null;
+    this.remove(o);
+    return o;
+  }
+
+  /** Amend: a smaller quantity keeps the time priority; a new price or a bigger quantity re-queues the order. */
+  amend(id: string, patch: { px?: number; qty?: number }, now: number): SimResult | null {
+    const o = this.byId.get(id);
+    if (!o) return null;
+    const filled = o.qty - o.left;
+    const qty = patch.qty ?? o.qty;
+    if (qty <= filled) {
+      this.remove(o);
+      return { status: "cancelled", reason: "amend_below_filled", order: { ...o, left: 0 }, trades: [] };
+    }
+    const px = patch.px ?? o.px;
+    if (px === o.px && qty <= o.qty) {
+      o.left = qty - filled;
+      o.qty = qty;
+      return { status: "working", order: o, trades: [] };
+    }
+    this.remove(o);
+    const r = this.submit({ series: o.series, owner: o.owner, side: o.side, px, qty: qty - filled, tif: o.tif, postOnly: o.postOnly, expireAt: o.expireAt }, now);
+    // keep the order id stable for the client
+    if (r.order.left > 0) {
+      this.byId.delete(r.order.id);
+      r.order.id = o.id;
+      r.order.qty = qty;
+      this.byId.set(o.id, r.order);
+    } else r.order.id = o.id;
+    return r;
+  }
+
+  /**
+   * Puts a stored order back after a reload (demo persistence): rests it when it wouldn't cross, else returns false
+   * (the caller cancels it, like the engine's session-reset cancel of orders that became marketable).
+   */
+  restore(o: Omit<SimOrder, "prio" | "mm">, now: number): boolean {
+    const b = this.book(o.series);
+    const opp = o.side === "buy" ? b.asks[0] : b.bids[0];
+    if (opp && (o.side === "buy" ? opp.px <= o.px : opp.px >= o.px)) return false;
+    if (o.expireAt !== undefined && o.expireAt <= now) return false;
+    this.insert({ ...o, prio: ++this.seq, mm: false });
+    return true;
+  }
+
+  /** Orders of one owner (resting). */
+  ordersOf(owner: string): SimOrder[] {
+    const out: SimOrder[] = [];
+    for (const o of this.byId.values()) if (o.owner === owner) out.push(o);
+    return out;
+  }
+
+  /** Cancels resting orders whose GTD time passed; returns them. */
+  expire(now: number): SimOrder[] {
+    const out: SimOrder[] = [];
+    for (const o of [...this.byId.values()]) if (o.expireAt !== undefined && o.expireAt <= now) {
+      this.remove(o);
+      out.push(o);
+    }
+    return out;
+  }
+
+  top(code: string): { bid: number | null; bidQty: number | null; ask: number | null; askQty: number | null } {
+    const b = this.books.get(code);
+    const lvl = (list: SimOrder[] | undefined) => {
+      if (!list?.[0]) return { px: null, qty: null };
+      const px = list[0].px;
+      let qty = 0;
+      for (const o of list) {
+        if (o.px !== px) break;
+        qty += o.left;
+      }
+      return { px, qty };
+    };
+    const bb = lvl(b?.bids);
+    const aa = lvl(b?.asks);
+    return { bid: bb.px, bidQty: bb.qty, ask: aa.px, askQty: aa.qty };
+  }
+
+  /** `levels` price levels each side: price (ticks), contracts, orders; `mine` = contracts of `owner` at the level. */
+  depth(code: string, levels = 10, owner?: string): { bids: { px: number; qty: number; orders: number; mine: number }[]; asks: { px: number; qty: number; orders: number; mine: number }[] } {
+    const b = this.books.get(code);
+    const agg = (list: SimOrder[]) => {
+      const out: { px: number; qty: number; orders: number; mine: number }[] = [];
+      for (const o of list) {
+        const last = out[out.length - 1];
+        if (last && last.px === o.px) {
+          last.qty += o.left;
+          last.orders++;
+          if (owner && o.owner === owner) last.mine += o.left;
+        } else {
+          if (out.length >= levels) break;
+          out.push({ px: o.px, qty: o.left, orders: 1, mine: owner && o.owner === owner ? o.left : 0 });
+        }
+      }
+      return out;
+    };
+    return { bids: agg(b?.bids ?? []), asks: agg(b?.asks ?? []) };
+  }
+
+  stats(code: string): { last: number | null; lastQty: number | null; lastAt: number | null; volume: number; oi: number; change: number | null } {
+    const b = this.books.get(code);
+    if (!b) return { last: null, lastQty: null, lastAt: null, volume: 0, oi: 0, change: null };
+    // a change against a reference of a few ticks says nothing (a 1-tick wing option "+400 %"): none
+    return { last: b.last?.px ?? null, lastQty: b.last?.qty ?? null, lastAt: b.last?.at ?? null, volume: b.vol, oi: b.oi, change: b.last && b.ref >= 20 ? (b.last.px - b.ref) / b.ref : null };
+  }
+
+  /** The latest prints of a series (or of every series with `code` = null), newest first. */
+  trades(code: string | null, limit = 50): SimTrade[] {
+    const out: SimTrade[] = [];
+    for (let i = this.tape.length - 1; i >= 0 && out.length < limit; i--) if (code === null || this.tape[i]!.series === code) out.push(this.tape[i]!);
+    return out;
+  }
+}
+
+/** Mark (§6): the model mid clamped inside the best bid / ask; one side only: max(model, bid) or min(model, ask). */
+export function clampMark(model: number, bid: number | null, ask: number | null): number {
+  if (bid !== null && ask !== null && ask >= bid) return Math.min(ask, Math.max(bid, model));
+  if (bid !== null) return Math.max(model, bid);
+  if (ask !== null) return Math.min(model, ask);
+  return model;
 }

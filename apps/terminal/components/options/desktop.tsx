@@ -4,13 +4,15 @@
 // CFD ↔ Options never moves anything (components/shell/desktop.tsx keeps the panel group, sizes and collapse state):
 //   left   (Market Watch's place)     the options instruments list: picking one sets the underlying
 //   centre (the chart's place)        two tabs, "Chart" | "Option chain", under the expiry bar (Daily | Weekly |
-//                                      Monthly + any listed date); the chart shows the selected option's premium
+//                                      Monthly + any listed date); the chart shows the selected option's premium;
+//                                      while the order book is live a third tab, "Book": the selected option's
+//                                      depth (10 levels) and trade tape
 //   right  (the CFD order panel)      the option ticket: Sell at the bid / Buy at the ask, contracts, protection,
 //                                      preview; "Simple" mode next to it
 //   bottom                            the terminal's own toolbox (Options + Settlements tabs first)
 // Loaded on demand (next/dynamic) the first time a trader switches to Options, so CFD-only traders never download it.
 import * as React from "react";
-import { CandlestickChart, ChevronsRight, ShoppingCart, Sigma, Table2, Wand2 } from "lucide-react";
+import { BookOpenText, CandlestickChart, ChevronsRight, ShoppingCart, Sigma, Table2, Wand2 } from "lucide-react";
 import { parseSeriesCode } from "@kalks/mock/options";
 import { cn } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
@@ -19,9 +21,14 @@ import { useTerminal } from "@/lib/store";
 import { PanelHeader, PanelTabs } from "@/components/ui/panel";
 import { TIcon } from "@/components/ui/primitives";
 import { optionBook } from "@/lib/options/book";
-import { onDemoOrderEvent } from "@/lib/options/mock-engine";
-import { opt, useOpt, useOptionsAttach, type CenterTab, type ChainView, type SidePanel } from "@/lib/options-store";
+import { bookOrders } from "@/lib/options/book-orders";
+import { onDemoBookEvent, onDemoOrderEvent } from "@/lib/options/mock-engine";
+import { optionErrorText } from "@/lib/options/errors";
+import { opt, useBookLive, useOpt, useOptionsAttach, type CenterTab, type ChainView, type SidePanel } from "@/lib/options-store";
 import { OptionsUnavailable, RightTag, Seg } from "./bits";
+import { BookBadge } from "./book-bits";
+import { BookPane } from "./depth";
+import { MmRulesLink } from "./mm-rules";
 import { StrategyBuilder } from "./builder";
 import { ChainHint, OptionChainTable } from "./chain";
 import { ExpiryBar } from "./expiry-bar";
@@ -63,9 +70,20 @@ export function useOptionEvents(login: string | null) {
       if (filled) toast.success(t("trader.opt.toast.workingFilled"), { description: `#${o.ticket} ${o.option.series}` });
       else toast.warning(t("trader.opt.toast.workingExpired"), { description: `#${o.ticket} ${o.option.series}` });
     });
+    // demo order book: a resting order filled, a stop fired, a GTD order expired (live: the engine's notifications)
+    const off3 = onDemoBookEvent((e) => {
+      if (e.login !== login) return;
+      void bookOrders.refresh(login);
+      const what = e.order ? `#${e.order.id} ${e.order.series}` : (e.fill?.series ?? "");
+      if (e.kind === "fill" && e.fill) toast.success(t("trader.opt.bt.toast.restingFilled", { count: e.fill.qty }), { description: what });
+      else if (e.kind === "stop_triggered") toast(t("trader.opt.bt.toast.stopFired"), { description: what });
+      else if (e.kind === "stop_rejected") toast.warning(t("trader.opt.bt.toast.stopRejected"), { description: `${what} · ${optionErrorText(e.order?.reason ?? "")}` });
+      else if (e.kind === "expired") toast(t("trader.opt.bt.toast.expired"), { description: what });
+    });
     return () => {
       off1();
       off2();
+      off3();
     };
   }, [login, t]);
 }
@@ -92,7 +110,8 @@ export function OptionsLeft({ onCollapse }: { onCollapse?: () => void }) {
 
 function CenterTabs() {
   const t = useT();
-  const tab = useOpt((s) => s.prefs.center);
+  const bookLive = useBookLive();
+  const tab = useCenterTab();
   const sel = useOpt((s) => (s.sel && parseSeriesCode(s.sel)?.underlying === s.u ? s.sel : null));
   const publicView = useOpt((s) => s.publicView);
   const sp = sel ? parseSeriesCode(sel) : null;
@@ -109,6 +128,7 @@ function CenterTabs() {
       ) : undefined,
     },
     { id: "chain", icon: <Table2 />, label: t("trader.opt.chainTitle") },
+    ...(bookLive ? [{ id: "book" as const, icon: <BookOpenText />, label: t("trader.opt.book.tab") }] : []),
   ];
   return (
     <div className="flex h-8 shrink-0 items-stretch border-b border-line bg-panel-2">
@@ -144,10 +164,18 @@ function CenterTabs() {
   );
 }
 
+/** The centre tab on screen: "book" falls back to the chain while the order book isn't live. */
+function useCenterTab(): CenterTab {
+  const bookLive = useBookLive();
+  const tab = useOpt((s) => s.prefs.center);
+  return tab === "book" && !bookLive ? "chain" : tab;
+}
+
 /** The Option chain tab: view (calls / both / puts), Greeks, the how-to, then the chain. */
 export function ChainPane() {
   const t = useT();
   const prefs = useOpt((s) => s.prefs);
+  const bookLive = useBookLive();
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-8 shrink-0 items-center gap-1.5 border-b border-line px-1.5">
@@ -165,7 +193,9 @@ export function ChainPane() {
         <button onClick={() => opt.setPrefs({ greeks: !prefs.greeks })} aria-pressed={prefs.greeks} title={t("trader.opt.greeksToggle")} className={cn("flex h-6 shrink-0 items-center gap-1 rounded-[6px] border px-2 text-[11px] font-medium transition-colors", prefs.greeks ? "border-ember/40 bg-ember-soft text-ember" : "border-line text-fg-3 hover:text-fg-2")}>
           <Sigma className="size-3.5" /> {t("trader.opt.greeks")}
         </button>
+        {bookLive && <BookBadge />}
         <ChainHint className="ms-1 flex-1" />
+        {bookLive && <MmRulesLink className="hidden shrink-0 pe-1 lg:inline-flex" />}
       </div>
       <div className="min-h-0 flex-1">
         <OptionChainTable />
@@ -178,7 +208,7 @@ export function OptionsCenter() {
   const T = useAttach();
   useOptionEvents(T.guest ? null : T.account.login);
   const avail = useOpt((s) => s.avail);
-  const tab = useOpt((s) => s.prefs.center);
+  const tab = useCenterTab();
   return (
     <section className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[8px] border border-line bg-panel">
       {avail === "soon" || avail === "error" ? (
@@ -187,7 +217,7 @@ export function OptionsCenter() {
         <>
           <CenterTabs />
           <ExpiryBar />
-          <div className="min-h-0 flex-1">{tab === "chart" ? <OptionChartPane /> : <ChainPane />}</div>
+          <div className="min-h-0 flex-1">{tab === "chart" ? <OptionChartPane /> : tab === "book" ? <BookPane /> : <ChainPane />}</div>
         </>
       )}
       <StrategyBuilder />

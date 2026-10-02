@@ -3,6 +3,8 @@
 // Strategy builder (drawer): templates filled around ATM for the selected expiry (long call / put, straddle, strangle,
 // bull call / bear put spread, iron condor, butterfly) or custom legs, the payoff at expiry and today, max profit /
 // loss, breakevens, probability of profit, Greeks and margin from the live preview, and one all-or-nothing order.
+// While the order book is live the strategy trades by request for quote (docs/OPTIONS-EXCHANGE.md §5): the Kalks
+// market maker quotes a net price for the whole strategy and every leg fills together on Accept (./rfq).
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { ArrowRightLeft, Lock, Plus, Send, Wand2, X } from "lucide-react";
@@ -15,12 +17,13 @@ import { Stepper, TSelect } from "@/components/ui/primitives";
 import { optionsApi } from "@/lib/options/api";
 import { errText, needsOnboarding } from "@/lib/options/errors";
 import { TEMPLATES, atmIndex, detectTemplate, fillOf, probProfit, templateLegs, usdPerUnitOf, type PayLeg, type TemplateId } from "@/lib/options/math";
-import { opt, useOpt } from "@/lib/options-store";
+import { opt, useBookLive, useOpt } from "@/lib/options-store";
 import type { OptionChain, OptionRight, Side } from "@/lib/options/types";
 import { ErrorNote, Flash, OptAvatar, RightTag, Seg } from "./bits";
 import { expiryLabel, pct, usd } from "./format";
 import { PayoffChart } from "./payoff-chart";
 import { PreviewSummary, usePreview } from "./preview";
+import { RfqPanel } from "./rfq";
 
 interface BLeg {
   id: string;
@@ -106,6 +109,7 @@ function BuilderBody() {
   const ticketLegs = useOpt((s) => s.ticket.legs);
   const publicView = useOpt((s) => s.publicView);
   const tradingSoon = useOpt((s) => s.tradingSoon);
+  const bookLive = useBookLive();
   const [tpl, setTpl] = React.useState<TemplateId | "custom">("straddle");
   const [width, setWidth] = React.useState(1);
   const [mult, setMult] = React.useState(1);
@@ -319,6 +323,17 @@ function BuilderBody() {
             ))}
           </div>
           <PreviewSummary state={preview} digits={chain.digits} />
+          {bookLive && !guest && !T.readOnly && (
+            <RfqPanel
+              legs={resolved.map((l) => ({ series: l.q.code, side: l.side, contracts: l.contracts }))}
+              disabled={dup || !resolved.length}
+              onDone={() => {
+                const name = tpl === "custom" ? t("trader.opt.tpl.custom.name") : t.dyn(`trader.opt.tpl.${tpl}.name`, tpl);
+                T.log("Trade", `'${T.account.login}': option strategy ${name} ${u} ${chain.expiry} filled by RFQ`);
+                opt.openBuilder(false);
+              }}
+            />
+          )}
           {lastErr && <ErrorNote code={lastErr.code} message={lastErr.message} />}
           <p className="text-[10.5px] leading-relaxed text-fg-3">{t("trader.opt.builder.note")}</p>
         </div>
@@ -334,15 +349,17 @@ function BuilderBody() {
           </div>
         ) : (
           <>
-            <span className="me-auto hidden text-[11px] text-fg-3 sm:block">{t("trader.opt.builder.atomic")}</span>
+            <span className="me-auto hidden text-[11px] text-fg-3 sm:block">{bookLive ? t("trader.opt.rfq.builderNote") : t("trader.opt.builder.atomic")}</span>
             <button onClick={toTicket} disabled={!resolved.length} className="flex h-8 items-center gap-1.5 rounded-[7px] border border-line px-3 text-[12px] font-medium text-fg-2 hover:border-fg-3/50 hover:text-fg disabled:opacity-45">
               <ArrowRightLeft className="size-3.5" /> {t("trader.opt.builder.toTicket")}
             </button>
-            <button onClick={() => void place()} disabled={!!blocked} className="flex h-8 items-center gap-1.5 rounded-[7px] bg-ember px-3.5 text-[12px] font-semibold text-white shadow-[0_6px_18px_-8px_rgba(255,90,31,0.8)] transition hover:brightness-110 disabled:bg-surface-3 disabled:text-fg-3 disabled:shadow-none">
-              <Send className="size-3.5" />
-              {busy ? t("trader.opt.ticket.sending") : tradingSoon && T.live ? t("trader.opt.ticket.soon") : t("trader.opt.builder.place")}
-              {preview.preview && <span className="k-num rounded-[4px] bg-black/15 px-1 font-mono text-[10.5px]">{usd(Math.abs(preview.preview.netPremium))}</span>}
-            </button>
+            {!bookLive && (
+              <button onClick={() => void place()} disabled={!!blocked} className="flex h-8 items-center gap-1.5 rounded-[7px] bg-ember px-3.5 text-[12px] font-semibold text-white shadow-[0_6px_18px_-8px_rgba(255,90,31,0.8)] transition hover:brightness-110 disabled:bg-surface-3 disabled:text-fg-3 disabled:shadow-none">
+                <Send className="size-3.5" />
+                {busy ? t("trader.opt.ticket.sending") : tradingSoon && T.live ? t("trader.opt.ticket.soon") : t("trader.opt.builder.place")}
+                {preview.preview && <span className="k-num rounded-[4px] bg-black/15 px-1 font-mono text-[10.5px]">{usd(Math.abs(preview.preview.netPremium))}</span>}
+              </button>
+            )}
           </>
         )}
       </div>

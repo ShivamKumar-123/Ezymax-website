@@ -94,11 +94,22 @@ export function usdPerUnitOf(chain: Pick<OptionChain, "rows" | "contractSize" | 
   for (const r of chain.rows) {
     for (const q of [r.call, r.put]) if (q && q.ask > 0 && q.askUsd > 0) return q.askUsd / q.ask;
   }
+  // an order book with no offers at all: the marks carry the same rate
+  for (const r of chain.rows) {
+    for (const q of [r.call, r.put]) if (q && q.mark > 0 && q.markUsd > 0) return q.markUsd / q.mark;
+  }
   return chain.quoteCcy === "USD" ? chain.contractSize : 0;
 }
 
-/** Fill premium per unit of a leg: the ask when buying, the bid when selling (or the limit). */
-export const fillOf = (q: Pick<OptionQuote, "bid" | "ask">, side: Side, limit?: number) => (limit !== undefined && limit > 0 ? limit : side === "buy" ? q.ask : q.bid);
+/**
+ * Fill premium per unit of a leg: the ask when buying, the bid when selling (or the limit). On the order book an
+ * empty side (0) has no price to fill at: the mark stands in for estimates (payoff, simple-mode ideas).
+ */
+export const fillOf = (q: Pick<OptionQuote, "bid" | "ask"> & Partial<Pick<OptionQuote, "mark" | "book">>, side: Side, limit?: number) => {
+  if (limit !== undefined && limit > 0) return limit;
+  const p = side === "buy" ? q.ask : q.bid;
+  return q.book && !(p > 0) && q.mark !== undefined ? q.mark : p;
+};
 
 /** Signed sum of quote Greeks over legs (delta / gamma in contracts, vega / theta in USD). */
 export function sumGreeks(legs: { side: Side; contracts: number; q: Pick<OptionQuote, "delta" | "gamma" | "vega" | "theta"> | null | undefined }[]): Required<OptGreeks> {

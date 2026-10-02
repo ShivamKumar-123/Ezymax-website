@@ -12,7 +12,7 @@ export const TRADING_STREAM_URL = process.env.TRADING_STREAM_URL ?? "";
 
 export const tradingConfigured = () => INTERNAL_TOKEN.length > 0;
 
-type Method = "GET" | "POST" | "PUT" | "PATCH";
+type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export async function engine<T = unknown>(
   path: string,

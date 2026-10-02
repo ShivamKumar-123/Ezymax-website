@@ -13,7 +13,9 @@ import { shareUi, useShareUi } from "@/lib/share";
 import { useContextMenu } from "@/components/ui/menu";
 import { Share2 } from "lucide-react";
 import { Badge, Empty, Pnl, Stepper, TButton, TInput, TSelect } from "@/components/ui/primitives";
-import { useT } from "@kalks/i18n/react";
+import { useLocale, useT } from "@kalks/i18n/react";
+import { loadOptionHistory, useOptionBook, type OptClosed } from "@/lib/options/book";
+import type { TClosed } from "@/lib/trading";
 import { sideLabel } from "./trade-tab";
 
 /* ------------------------------------------------------------------ */
@@ -30,24 +32,115 @@ const PERIODS = [
 ] as const;
 type Period = (typeof PERIODS)[number]["value"];
 
+/** "1.1" → "1.1", 3925 → "3925": a strike with the ladder's decimals (trailing zeros trimmed). */
+const strikeLabel = (k: number) => (Number.isInteger(k) ? String(k) : String(+k.toFixed(6)));
+const usd2 = (v: number) => (Number.isFinite(v) ? v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—");
+
+/** A closed option trade in the History tab: the series, contracts, open / close premium in USD per contract. */
+function OptionHistoryRow({ o, picking }: { o: OptClosed; picking: boolean }) {
+  const T = useTerminal();
+  const t = useT();
+  const { locale } = useLocale();
+  const a = T.account;
+  const k = o.usdPerUnit;
+  let expiry = o.option.expiry;
+  try {
+    expiry = new Date(`${o.option.expiry}T12:00:00Z`).toLocaleDateString(locale, { day: "2-digit", month: "short", timeZone: "UTC" });
+  } catch {
+    /* keep YYYY-MM-DD */
+  }
+  const reasonTone = o.reason === "stop_out" || o.reason === "liquidation" || o.reason === "knocked_out" ? "down" : o.reason === "expired" ? "info" : o.reason === "sl" ? "down" : o.reason === "tp" ? "up" : "neutral";
+  return (
+    <tr className="hover:bg-surface-2/70">
+      {picking && <Td className="w-7 ps-3" />}
+      <Td mono className={cn("text-fg-3", !picking && "ps-3")}>
+        {o.openTime ? fmtServer(o.openTime) : "—"}
+      </Td>
+      <Td mono className="text-fg-3">
+        {o.ticket}
+      </Td>
+      <Td>
+        <span className="flex items-center gap-1.5 font-medium" title={o.option.series}>
+          <span className="rounded-[3px] bg-ember-soft px-1 text-[9px] font-bold text-ember">{t("trader.opt.hist.tag")}</span>
+          {o.option.underlying}
+          <span className="font-mono">{strikeLabel(o.option.strike)}</span>
+          <span className={cn("rounded-[3px] px-1 font-mono text-[9.5px] font-semibold", o.option.right === "call" ? "bg-up-soft text-up" : "bg-down-soft text-down")}>{o.option.right === "call" ? t("trader.opt.call") : t("trader.opt.put")}</span>
+          <span className="text-[11px] font-normal text-fg-3">{expiry}</span>
+        </span>
+      </Td>
+      <Td>
+        <span className={o.side === "buy" ? "text-up" : "text-down"}>{sideLabel(t, o.side)}</span>
+      </Td>
+      <Td right mono>
+        <span title={t("trader.opt.hist.contracts")}>{o.contracts}</span>
+      </Td>
+      <Td right mono className="text-fg-2">
+        <span title={t("trader.opt.hist.premiumHint")}>{k > 0 ? usd2(o.openPrice * k) : "—"}</span>
+      </Td>
+      <Td right mono className="text-fg-3">
+        —
+      </Td>
+      <Td right mono className="text-fg-3">
+        —
+      </Td>
+      <Td mono className="text-fg-3">
+        {o.closeTime ? fmtServer(o.closeTime) : "—"}
+      </Td>
+      <Td right mono className="text-fg-2">
+        <span title={t("trader.opt.hist.premiumHint")}>{k > 0 ? usd2(o.closePrice * k) : "—"}</span>
+      </Td>
+      <Td right mono className="text-fg-2">
+        <span dir="ltr">{accMoney(a, o.swap)}</span>
+      </Td>
+      <Td right mono className="text-fg-2">
+        <span dir="ltr">{accMoney(a, -o.commission)}</span>
+      </Td>
+      <Td right className="font-semibold">
+        <span dir="ltr">
+          <Pnl value={o.profit} text={accMoney(a, o.profit)} />
+        </span>
+      </Td>
+      <Td className="text-fg-3">
+        {o.reason === "closed" ? <span className="text-[11px]">{t("trader.opt.hist.reason.closed")}</span> : <Badge tone={reasonTone}>{t.dyn(`trader.opt.hist.reason.${o.reason}`, o.rawReason || o.reason)}</Badge>}
+      </Td>
+    </tr>
+  );
+}
+
+/** What the History tab lists: every closed trade, CFDs only, or options only. */
+type HistKind = "all" | "cfd" | "options";
+type HistItem = { k: "cfd"; h: TClosed } | { k: "opt"; o: OptClosed };
+const closeTimeOf = (x: HistItem) => Date.parse(x.k === "cfd" ? x.h.closeTime : x.o.closeTime);
+
 export function HistoryTab() {
   const T = useTerminal();
   const t = useT();
   const a = T.account;
   const [period, setPeriod] = React.useState<Period>("month");
   const [sym, setSym] = React.useState("all");
+  const [kind, setKind] = React.useState<HistKind>("all");
   const days = PERIODS.find((p) => p.value === period)!.days;
   const now = Date.now();
   const since = period === "today" ? new Date(new Date(now + 3 * 3600e3).toISOString().slice(0, 10) + "T00:00:00Z").getTime() - 3 * 3600e3 : now - days * 86400e3;
-  const rows = T.history.filter((h) => Date.parse(h.closeTime) >= since && (sym === "all" || h.symbol === sym));
-  const syms = [...new Set(T.history.map((h) => h.symbol))].sort();
+  // closed option trades (manual closes, stop-outs, expiry settlements, knock-outs) are kept by the option book
+  const optClosed = useOptionBook(T.guest ? null : a.login).closed;
+  React.useEffect(() => {
+    // live: the engine's older history (the state carries only the latest deals)
+    if (!T.engine || T.guest || kind === "cfd") return;
+    void loadOptionHistory(a.login, !!a.cent, Math.min(365, Math.max(90, days)));
+  }, [T.engine, T.guest, a.login, a.cent, kind, days]);
+  const cfdRows = kind === "options" ? [] : T.history.filter((h) => Date.parse(h.closeTime) >= since && (sym === "all" || h.symbol === sym));
+  const optRows = kind === "cfd" ? [] : optClosed.filter((o) => Date.parse(o.closeTime) >= since && (sym === "all" || o.option.underlying === sym));
+  const rows: { profit: number }[] = [...cfdRows, ...optRows];
+  const items: HistItem[] = [...cfdRows.map((h) => ({ k: "cfd" as const, h })), ...optRows.map((o) => ({ k: "opt" as const, o }))].sort((x, y) => closeTimeOf(y) - closeTimeOf(x));
+  const syms = [...new Set([...(kind === "options" ? [] : T.history.map((h) => h.symbol)), ...(kind === "cfd" ? [] : optClosed.map((o) => o.option.underlying))])].sort();
   const wins = rows.filter((r) => r.profit > 0);
   const losses = rows.filter((r) => r.profit < 0);
   const gp = wins.reduce((s, r) => s + r.profit, 0);
   const gl = losses.reduce((s, r) => s + r.profit, 0);
   const net = gp + gl;
   const pf = gl !== 0 ? gp / Math.abs(gl) : Infinity;
-  const shown = rows.slice(0, 300);
+  const shown = items.slice(0, 300);
   const picking = useShareUi().selecting;
   const cm = useContextMenu(210);
   return (
@@ -61,6 +154,15 @@ export function HistoryTab() {
           ))}
         </div>
         <TSelect ariaLabel={t("toolbox.history.symbolFilter")} value={sym} onChange={setSym} options={[{ value: "all", label: t("toolbox.history.allSymbols") }, ...syms.map((s) => ({ value: s, label: s }))]} className="h-6 w-[130px] text-[11px]" />
+        {/* All / CFD / Options: option trades close as contracts of a series (premiums in USD per contract) */}
+        <div role="radiogroup" aria-label={t("trader.opt.hist.kind")} className="flex items-center gap-0.5 rounded-[6px] border border-line p-0.5">
+          {(["all", "cfd", "options"] as const).map((k) => (
+            <button key={k} role="radio" aria-checked={kind === k} onClick={() => setKind(k)} className={cn("h-5 rounded-[4px] px-2 text-[11px]", kind === k ? "bg-surface-3 text-fg" : "text-fg-3 hover:text-fg-2")}>
+              {t(`trader.opt.hist.${k}`)}
+              {k === "options" && optClosed.length > 0 && <span className="ms-1 font-mono text-[9.5px] text-fg-3">{optClosed.filter((o) => Date.parse(o.closeTime) >= since).length}</span>}
+            </button>
+          ))}
+        </div>
         <div className="ms-auto flex items-center gap-3 font-mono text-[11px] text-fg-3">
           <span>
             {t("toolbox.history.trades")} <span className="text-fg">{rows.length}</span>
@@ -101,7 +203,9 @@ export function HistoryTab() {
             </tr>
           </thead>
           <tbody>
-            {shown.map((h) => {
+            {shown.map((it) => {
+              if (it.k === "opt") return <OptionHistoryRow key={`o-${it.o.deal}`} o={it.o} picking={picking} />;
+              const h = it.h;
               const d = getInstrument(h.symbol).digits;
               return (
                 <tr
@@ -199,7 +303,7 @@ export function HistoryTab() {
                   <span>
                     <span className="font-sans text-fg-3">{t("toolbox.history.balance")}:</span> <span dir="ltr" className="text-fg">{accMoney(a, T.balances[a.login] ?? 0)} {accCcy(a)}</span>
                   </span>
-                  {rows.length > shown.length && <span className="font-sans text-fg-3">{t("toolbox.history.showingLatest", { shown: shown.length, total: rows.length })}</span>}
+                  {items.length > shown.length && <span className="font-sans text-fg-3">{t("toolbox.history.showingLatest", { shown: shown.length, total: items.length })}</span>}
                 </span>
               </td>
               <td dir="ltr" className="px-2 text-end text-[12px] font-semibold">

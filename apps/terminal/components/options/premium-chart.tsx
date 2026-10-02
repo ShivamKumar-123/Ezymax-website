@@ -25,6 +25,7 @@ import {
   type Time,
   type UTCTimestamp,
 } from "lightweight-charts";
+import { usdPerUnitOfQuote } from "@/lib/options/normalize";
 import { Info, MousePointerClick, Table2 } from "lucide-react";
 import { OPTION_SPEC, cutInstant, parseSeriesCode } from "@kalks/mock/options";
 import { cn } from "@kalks/ui";
@@ -260,8 +261,9 @@ function usePremiumChart(
 
       // the option's bid / ask per contract, like the bid / ask lines of the CFD charts
       const q0 = quoteOf(code);
-      const bidLine = main.createPriceLine({ price: q0?.bidUsd ?? 0, color: c.fg2, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: !!q0, title: "", axisLabelColor: c.fg2, axisLabelTextColor: c.dark ? "#0a0a0d" : "#fff" });
-      const askLine = main.createPriceLine({ price: q0?.askUsd ?? 0, color: c.down, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: !!q0, title: "", axisLabelColor: c.down, axisLabelTextColor: "#fff" });
+      // an empty side of the order book (0) has no line
+      const bidLine = main.createPriceLine({ price: q0?.bidUsd || q0?.markUsd || 0, color: c.fg2, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: !!q0 && q0.bidUsd > 0, lineVisible: !!q0 && q0.bidUsd > 0, title: "", axisLabelColor: c.fg2, axisLabelTextColor: c.dark ? "#0a0a0d" : "#fff" });
+      const askLine = main.createPriceLine({ price: q0?.askUsd || q0?.markUsd || 0, color: c.down, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: !!q0 && q0.askUsd > 0, lineVisible: !!q0 && q0.askUsd > 0, title: "", axisLabelColor: c.down, axisLabelTextColor: "#fff" });
 
       /* legend: hovered bar, else the forming one */
       let hovering = -1;
@@ -282,8 +284,8 @@ function usePremiumChart(
         if (!alive.current) return;
         const q = quoteOf(code);
         if (!q) return;
-        bidLine.applyOptions({ price: q.bidUsd, axisLabelVisible: true });
-        askLine.applyOptions({ price: q.askUsd, axisLabelVisible: true });
+        bidLine.applyOptions({ price: q.bidUsd || q.markUsd, axisLabelVisible: q.bidUsd > 0, lineVisible: q.bidUsd > 0 });
+        askLine.applyOptions({ price: q.askUsd || q.markUsd, axisLabelVisible: q.askUsd > 0, lineVisible: q.askUsd > 0 });
         const mark = q.markUsd;
         if (!(mark >= 0) || mark === lastMark) return;
         lastMark = mark;
@@ -452,7 +454,7 @@ export function PremiumChart({ code, tf, onUnavailable, className }: { code: str
     if (!engine || !engine.alive.current) return;
     if (lines.current.owner !== engine.chart) lines.current = { owner: engine.chart, map: new Map() };
     const map = lines.current.map;
-    const usdU = engine.usdPerUnit || (q && q.ask > 0 ? q.askUsd / q.ask : 0);
+    const usdU = engine.usdPerUnit || usdPerUnitOfQuote(q);
     const want = new Map(book.positions.filter((x) => x.option.series === code && usdU > 0).map((x) => [x.ticket, x]));
     for (const [id, pl] of map) {
       if (want.has(id)) continue;

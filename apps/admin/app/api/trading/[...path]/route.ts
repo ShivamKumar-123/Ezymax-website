@@ -10,7 +10,7 @@ import { optionsAllows, type OptionsPerm } from "@/lib/options-perms";
 // (lib/trading-perms.ts), then the engine is called with TRADING_INTERNAL_TOKEN and the staff identity headers
 // built from that verified session. The engine checks the role again and writes the audit log.
 
-type Method = "GET" | "POST" | "PUT" | "PATCH";
+type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 /** `perm`: the permission the route needs (any one of a list). */
 type Route = { method: Method; re: RegExp; perm: TradingPerm | readonly TradingPerm[]; to?: (m: RegExpMatchArray) => string };
 
@@ -58,13 +58,60 @@ const ROUTES: Route[] = [
   { method: "GET", re: /^admin\/ledger\/accounts$/, perm: "finance.adjust" },
 ];
 
-/** FX Options on the engine (the option book, settlement re-runs, voids); checked with lib/options-perms.ts. The
- *  options reference data (series, surfaces, controls, fixings) lives in the options service: /api/options. */
-const OPTION_ROUTES: { method: Method; re: RegExp; perm: OptionsPerm }[] = [
-  { method: "GET", re: /^admin\/options\/book$/, perm: "options.read" },
+/* ---------------- FX Options on the engine ---------------- */
+
+/** Query parameters an option route may forward, each with its validator (anything else is dropped; a listed
+ *  parameter with a bad value is refused, never passed through raw). */
+const isDay = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v));
+const isDayOrIso = (v: string) => isDay(v) || (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,9})?)?(Z|[+-]\d{2}:?\d{2})$/.test(v) && Number.isFinite(Date.parse(v)));
+const OPT_QUERY = {
+  kind: (v: string) => /^(live|demo|all)$/.test(v),
+  from: isDayOrIso,
+  to: isDayOrIso,
+  login: (v: string) => /^\d{1,18}$/.test(v),
+  limit: (v: string) => /^\d{1,4}$/.test(v) && Number(v) >= 1 && Number(v) <= 1000,
+  expiry: isDay,
+  u: (v: string) => /^[A-Z0-9._-]{1,20}$/.test(v),
+  status: (v: string) => /^(pending|approved|rejected|executed|expired|all)$/.test(v),
+} as const;
+type OptQuery = keyof typeof OPT_QUERY;
+
+/** Option series code: SYMBOL-YYYYMMDD-STRIKE-C|P, plus an optional suffix (barrier / variant). */
+const SERIES = "[A-Z0-9]{3,12}-\\d{8}-[0-9.]{1,16}-[CP](?:-[A-Z0-9._]{1,24})?";
+const ID = "\\d{1,18}";
+
+/** Body checks on top of the reason (the engine validates again). */
+const kindIs = (b: Record<string, unknown>, all = false) => (typeof b.kind === "string" && (all ? /^(live|demo|all)$/ : /^(live|demo)$/).test(b.kind) ? null : `kind must be live or demo${all ? " (or all)" : ""}.`);
+const approvalOk = (b: Record<string, unknown>) => (b.approvalId === undefined || b.approvalId === null || (typeof b.approvalId === "number" && Number.isInteger(b.approvalId) && b.approvalId > 0) || (typeof b.approvalId === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(b.approvalId)) ? null : "approvalId is not valid.");
+const scopeIs = (b: Record<string, unknown>, scopes: readonly string[]) =>
+  typeof b.scope !== "string" || !scopes.includes(b.scope) ? `scope must be ${scopes.join(", ")}.` : b.scope !== "all" && (typeof b.target !== "string" || !/^[A-Za-z0-9:._-]{1,64}$/.test(b.target)) ? "target is required for this scope." : null;
+
+type OptRoute = { method: Method; re: RegExp; perm: OptionsPerm; query?: readonly OptQuery[]; check?: (b: Record<string, unknown>) => string | null };
+
+/** FX Options on the engine (the option book, order books, market maker, clearing, settlement re-runs, voids,
+ *  busts, rollout); checked with lib/options-perms.ts. The options reference data (series, surfaces, controls,
+ *  fixings, MM settings) lives in the options service: /api/options. */
+const OPTION_ROUTES: OptRoute[] = [
+  { method: "GET", re: /^admin\/options\/book$/, perm: "options.read", query: ["kind"] },
   // {expiry}: the expiry key SYMBOL:YYYY-MM-DD
   { method: "POST", re: /^admin\/options\/settlements\/[A-Za-z0-9:._-]{1,64}\/rerun$/, perm: "options.settle" },
   { method: "POST", re: new RegExp(`^admin/options/trades/${T}/void$`), perm: "options.dealing" },
+  // market maker: status, pause / resume
+  { method: "GET", re: /^admin\/options\/mm$/, perm: "options.read", query: ["kind"] },
+  { method: "POST", re: /^admin\/options\/mm\/(pause|resume)$/, perm: "options.dealing", check: (b) => kindIs(b) ?? scopeIs(b, ["all", "underlying", "expiry"]) },
+  // order books: monitor, depth with owners (the engine audits the view), halts
+  { method: "GET", re: /^admin\/options\/books$/, perm: "options.read", query: ["kind"] },
+  { method: "POST", re: /^admin\/options\/books\/halt$/, perm: "options.dealing", check: (b) => kindIs(b) ?? scopeIs(b, ["all", "underlying", "expiry", "series"]) ?? (b.mode === "halt" || b.mode === "cancel_only" ? null : "mode must be halt or cancel_only.") },
+  { method: "DELETE", re: new RegExp(`^admin/options/books/halt/${ID}$`), perm: "options.dealing" },
+  { method: "GET", re: new RegExp(`^admin/options/books/${SERIES}$`), perm: "options.dealing", query: ["kind"] },
+  // liquidation log, clearing accounts
+  { method: "GET", re: /^admin\/options\/liquidations$/, perm: "options.read", query: ["kind", "from", "to", "login", "limit"] },
+  { method: "GET", re: /^admin\/options\/clearing$/, perm: "options.read", query: ["kind", "expiry", "u"] },
+  // four-eyes: bust a fill, enable the book; pending approvals
+  { method: "POST", re: new RegExp(`^admin/options/fills/${ID}/bust$`), perm: "options.settle", check: approvalOk },
+  { method: "GET", re: /^admin\/options\/approvals$/, perm: "options.read", query: ["status", "kind"] },
+  { method: "GET", re: /^admin\/options\/book\/enable\/plan$/, perm: "options.read", query: ["kind"] },
+  { method: "POST", re: /^admin\/options\/book\/enable$/, perm: "options.settle", check: (b) => kindIs(b) ?? approvalOk(b) },
 ];
 
 const json = (data: unknown, status = 200) => NextResponse.json(data, { status, headers: { "cache-control": "no-store" } });
@@ -81,7 +128,7 @@ async function handle(req: NextRequest, parts: string[], method: Method) {
   if (hist) return accountStatement(req, hist[1]!, hist[2]!);
 
   const optRoute = OPTION_ROUTES.find((r) => r.method === method && r.re.test(path));
-  if (optRoute) return optionsRoute(req, path, method, optRoute.perm);
+  if (optRoute) return optionsRoute(req, path, method, optRoute);
 
   const route = ROUTES.find((r) => r.method === method && r.re.test(path));
   if (!route) return apiError(404, "not_found", "Not found.");
@@ -107,24 +154,38 @@ async function handle(req: NextRequest, parts: string[], method: Method) {
   return json(r.data, r.status);
 }
 
-/** Option routes on the engine. Writes carry a reason (`reason`, or `reasonCode` + `note` for a void). */
-async function optionsRoute(req: NextRequest, path: string, method: Method, perm: OptionsPerm) {
+/**
+ * Option routes on the engine. Writes carry a reason (`reason`, or `reasonCode` + `note` for a void); DELETE takes
+ * it from the JSON body (CSRF: JSON only) and passes it on both in the body and as `?reason=`. GETs forward only the
+ * route's allow-listed query parameters, validated.
+ */
+async function optionsRoute(req: NextRequest, path: string, method: Method, route: OptRoute) {
   let body: unknown;
+  const q = new URLSearchParams();
   if (method !== "GET") {
     const blocked = mutationAllowed(req);
     if (blocked) return blocked;
     body = await req.json().catch(() => null);
     if (body === null || typeof body !== "object" || Array.isArray(body)) return apiError(400, "bad_request", "Invalid request body.");
-    const b = body as { reason?: unknown; reasonCode?: unknown };
+    const b = body as Record<string, unknown>;
     const reason = typeof b.reason === "string" ? b.reason.trim() : typeof b.reasonCode === "string" ? b.reasonCode.trim() : "";
     if (reason.length < 3) return apiError(422, "validation", "Add a reason for the audit log.");
+    if (reason.length > 500) return apiError(422, "validation", "Keep the reason under 500 characters.");
+    const problem = route.check?.(b);
+    if (problem) return apiError(422, "validation", problem);
+    if (method === "DELETE") q.set("reason", reason);
+  } else {
+    for (const k of route.query ?? []) {
+      const v = req.nextUrl.searchParams.get(k);
+      if (v === null || v === "") continue;
+      if (!OPT_QUERY[k](v)) return apiError(400, "bad_request", `Invalid ${k}.`);
+      q.set(k, v);
+    }
   }
   const who = await requireStaff(req);
   if (who instanceof NextResponse) return who;
-  if (!optionsAllows(who.staff, perm)) return apiError(403, "forbidden", "Your role doesn't allow this.");
-  // the book takes ?kind=live|demo|all (live by default)
-  const kind = method === "GET" ? req.nextUrl.searchParams.get("kind") : null;
-  const qs = kind && /^(live|demo|all)$/.test(kind) ? `?kind=${kind}` : "";
+  if (!optionsAllows(who.staff, route.perm)) return apiError(403, "forbidden", "Your role doesn't allow this.");
+  const qs = q.toString() ? `?${q}` : "";
   const r = await engine(`/v1/${path}${qs}`, { method, body, staff: who.staff, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });
   // an engine without the option routes answers its generic 404 (or an empty one): say so instead of "Not found"
   const err = (r.data as { error?: { code?: string; message?: string } } | null)?.error;
@@ -255,4 +316,7 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
 }
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   return handle(req, (await params).path, "PATCH");
+}
+export async function DELETE(req: NextRequest, { params }: Ctx) {
+  return handle(req, (await params).path, "DELETE");
 }

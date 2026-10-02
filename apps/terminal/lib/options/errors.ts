@@ -21,9 +21,31 @@ export const OPTION_ERROR_CODES = [
   "read_only",
   "unavailable",
   "session_expired",
+  // order book (docs/OPTIONS-EXCHANGE.md §2, §5): rejections and why an order stopped working
+  "price_out_of_band",
+  "would_take",
+  "reduce_only",
+  "fok_not_filled",
+  "self_trade",
+  "settling",
+  "rate_limited",
+  "limit_orders",
+  "invalid_price",
+  "invalid_trigger",
+  "post_only_gtc",
+  "bad_expiry",
+  "no_liquidity",
+  "book_closed",
+  "quote_expired",
+  "rfq_expired",
+  "price_moved",
+  "ioc_remainder",
+  "expiry",
+  "session_reset",
+  "not_found",
 ] as const;
 
-/** Where a client completes the options onboarding (KYC, risk disclosure, knowledge quiz). */
+/** Where a client takes the one quick options step: the 1-minute options intro in the Client Area ("I understand"). */
 export const ONBOARDING_URL = `${CLIENT_AREA}/options`;
 
 export function reasonCode(r: Reason): string {
@@ -44,5 +66,5 @@ export function errText(e: EngineErr): string {
   return optionErrorText(e.code, e.message);
 }
 
-/** The rejection asks the client to finish the options onboarding in the Client Area. */
+/** The rejection asks the client to read the options intro in the Client Area first (a friendly note, not an error). */
 export const needsOnboarding = (code: string) => code === "not_eligible";

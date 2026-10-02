@@ -104,6 +104,14 @@ export function optionsStreamUrl(req: NextRequest): string {
 
 const publicReads = new Memo<OptResult>(1_000, 500);
 
+/**
+ * Public order-book market data (docs/OPTIONS-EXCHANGE.md §10, no login): `book/{series}` (depth, 10 levels),
+ * `trades/{series}` (tape) and `stats/{u}` (OI / volume per strike), shared by every visitor for a second.
+ */
+export function publicBook(path: string): Promise<OptResult> {
+  return publicReads.get(`book|${path}`, () => options(`/v1/public/options/${path}`, { tenant: "kalks", internal: false, timeoutMs: 5_000 }), (v) => v.status === 200 || v.status === 404);
+}
+
 /** `GET /v1/public/options/chain/{u}?expiry=` shared by every visitor for a second (the service caches 1 s too). */
 export function publicChain(u: string, expiry?: string | null): Promise<OptResult> {
   const q = expiry ? `?expiry=${expiry}` : "";

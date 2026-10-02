@@ -3,6 +3,8 @@
 // preview, orders, settlements: services/trading, "Terminal API · options").
 
 export type {
+  ChainBook,
+  DepthLevel,
   ExpiryKind,
   OptionChain,
   OptionChainRow,
@@ -13,6 +15,8 @@ export type {
   OptionUnderlying,
   OptionCandles,
   PremiumCandle,
+  SeriesDepth,
+  TapeTrade,
 } from "@kalks/mock/options";
 import type { OptionRight } from "@kalks/mock/options";
 
@@ -58,6 +62,8 @@ export interface OptPosition {
   comboId?: string;
   sl?: number;
   tp?: number;
+  /** where the position lives: `book` (the order book, closes through it), `house` (Kalks-quoted: barriers, legacy) */
+  venue?: "book" | "house" | string;
   option: OptionInfo;
 }
 
@@ -148,4 +154,152 @@ export interface Settlement {
   payout: number;
   at: string;
   run: number;
+}
+
+/* ------------------------------------------------------------------ */
+/* Order book (docs/OPTIONS-EXCHANGE.md §2, §5, §12 "Terminal")        */
+/* ------------------------------------------------------------------ */
+
+export type BookOrderType = "limit" | "market" | "stop_market" | "stop_limit";
+export type BookTif = "gtc" | "ioc" | "fok" | "gtd";
+export type BookOrderStatus = "working" | "filled" | "partially_filled" | "cancelled" | "rejected" | "expired" | "pending" | string;
+
+/** Stop trigger: the series' mark (premium per unit) or the underlying's price crossing `price`. */
+export interface StopTrigger {
+  source: "mark" | "underlying";
+  op: "above" | "below";
+  price: number;
+}
+
+/** `POST /v1/terminal/options/book/orders` (and `…/book/preview`): prices per unit in the quote currency, on the tick. */
+export interface BookOrderRequest {
+  series: string;
+  side: Side;
+  type: BookOrderType;
+  /** contracts */
+  qty: number;
+  price?: number;
+  tif: BookTif;
+  /** ISO, tif = gtd */
+  expireAt?: string;
+  postOnly?: boolean;
+  reduceOnly?: boolean;
+  trigger?: StopTrigger;
+  clientOrderId: string;
+}
+
+export interface BookOrder {
+  id: string;
+  series: string;
+  side: Side;
+  type: BookOrderType;
+  qty: number;
+  filled: number;
+  left: number;
+  /** per unit */
+  avgPrice: number | null;
+  price: number | null;
+  tif: BookTif;
+  expireAt: string | null;
+  /** post_only, reduce_only */
+  flags: string[];
+  /** USD held for the order (order margin) */
+  reserved: number;
+  createdAt: string;
+  updatedAt: string | null;
+  status: BookOrderStatus;
+  reason?: string;
+  trigger: StopTrigger | null;
+}
+
+export interface BookFill {
+  fillId: string;
+  orderId?: string;
+  series: string;
+  side: Side;
+  /** per unit */
+  price: number;
+  qty: number;
+  role: "maker" | "taker" | string;
+  /** USD charged (≥ 0) */
+  fee: number;
+  /** USD paid to the maker (≥ 0) */
+  rebate: number;
+  positionTicket?: string;
+  kind?: string;
+  comboId?: string;
+  at: string;
+}
+
+export interface BookOrderResult {
+  status: BookOrderStatus;
+  order: BookOrder | null;
+  fills: BookFill[];
+  reason?: string;
+}
+
+/** `POST …/book/preview`: the reserve (order margin), the average price expected from the depth, the fee or rebate. */
+export interface BookPreview {
+  ok: boolean;
+  reasons: Reason[];
+  /** USD */
+  reserve: number;
+  /** per unit; null = nothing would fill now */
+  estAvgPrice: number | null;
+  /** contracts that would fill now / rest on the book */
+  estFilled: number;
+  estResting: number;
+  /** USD: fee on the part that takes, rebate on the part that rests (paid when it fills) */
+  fee: number;
+  rebate: number;
+  /** market orders: the band the order may fill in (per unit) */
+  band: { min: number | null; max: number | null } | null;
+  marginBefore?: number;
+  marginAfter?: number;
+  freeMarginAfter?: number;
+  /** client-side estimate (demo builds) */
+  estimate?: boolean;
+}
+
+/** `POST /v1/terminal/positions/{ticket}/close` on a book-venue option (reduce-only market IOC); house: {status, profit}. */
+export interface CloseResult {
+  status: "filled" | "partial" | "closed" | string;
+  filled?: number;
+  /** per unit */
+  avgPrice?: number;
+  left?: number;
+  profit?: number;
+}
+
+/* ---- combo RFQ (§5) ---- */
+
+export interface RfqLeg {
+  series: string;
+  side: Side;
+  ratio: number;
+}
+
+export interface Rfq {
+  id: string;
+  expiresAt: string;
+  legs: RfqLeg[];
+  qty: number;
+  status?: string;
+}
+
+/** A responder's firm quote: net per combo unit, per unit of the underlying (quote currency). */
+export interface RfqQuote {
+  quoteId: string;
+  responder: string;
+  bid: number | null;
+  ask: number | null;
+  qty: number;
+  validUntil: string;
+}
+
+export interface RfqAcceptResult {
+  status: string;
+  comboId?: string;
+  fills: BookFill[];
+  reason?: string;
 }

@@ -118,7 +118,7 @@ export function PublicChainView({ u, name, initial, status, cta, underlyings }: 
               {[
                 [t("trader.opt.spot"), px(chain.spot?.mid, chain.digits)],
                 [t("trader.opt.atmIv"), pct(atm?.call?.iv ?? null)],
-                [t("trader.opt.public.atmStraddle"), atm?.call && atm.put ? `${usd(atm.call.askUsd + atm.put.askUsd)} USD` : "—"],
+                [t("trader.opt.public.atmStraddle"), atm?.call && atm.put ? `${usd((atm.call.askUsd || atm.call.markUsd) + (atm.put.askUsd || atm.put.markUsd))} USD` : "—"],
                 [t("trader.opt.contract"), `${chain.contractSize.toLocaleString("en-US")} ${chain.contractUnit}`],
               ].map(([k, v]) => (
                 <div key={k} className="rounded-[10px] border border-line bg-panel px-3.5 py-2.5">
@@ -232,11 +232,11 @@ function StaticChain({ chain }: { chain: OptionChain }) {
             <tr key={r.strikeLabel}>
               <td className={cn(cell, "text-fg-2")}>{r.call ? r.call.delta.toFixed(3) : "—"}</td>
               <td className={cn(cell, "text-fg-2")}>{r.call ? pct(r.call.iv) : "—"}</td>
-              <td className={cn(cell, "text-down")}>{r.call ? usd(r.call.bidUsd) : "—"}</td>
-              <td className={cn(cell, "text-up")}>{r.call ? usd(r.call.askUsd) : "—"}</td>
+              <td className={cn(cell, "text-down")}>{r.call && r.call.bidUsd > 0 ? usd(r.call.bidUsd) : "—"}</td>
+              <td className={cn(cell, "text-up")}>{r.call && r.call.askUsd > 0 ? usd(r.call.askUsd) : "—"}</td>
               <td className={cn(cell, "border-x bg-panel-2 text-center font-semibold", r === chain.rows[i0] ? "text-ember" : "text-fg")}>{r.strikeLabel}</td>
-              <td className={cn(cell, "text-down")}>{r.put ? usd(r.put.bidUsd) : "—"}</td>
-              <td className={cn(cell, "text-up")}>{r.put ? usd(r.put.askUsd) : "—"}</td>
+              <td className={cn(cell, "text-down")}>{r.put && r.put.bidUsd > 0 ? usd(r.put.bidUsd) : "—"}</td>
+              <td className={cn(cell, "text-up")}>{r.put && r.put.askUsd > 0 ? usd(r.put.askUsd) : "—"}</td>
               <td className={cn(cell, "text-fg-2")}>{r.put ? pct(r.put.iv) : "—"}</td>
               <td className={cn(cell, "text-fg-2")}>{r.put ? r.put.delta.toFixed(3) : "—"}</td>
             </tr>

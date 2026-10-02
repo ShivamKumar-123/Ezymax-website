@@ -4,6 +4,9 @@
 // mark in USD per contract with pips under the mark, IV, Greeks (Δ always; Γ Θ Vega with the toggle), probability
 // ITM and breakeven, OI and volume once the book reports them. ATM is marked and the spot sits between its strikes;
 // in-the-money halves are tinted. Rows update in place from the stream (changed rows only) and their prices flash.
+// While the broker's order book is live, bid / ask are the book's best bid / offer with their sizes under them ("—"
+// for an empty side), plus the last trade (and its change), the mark with the theo (model value) under it, open
+// interest and today's volume.
 // Selecting, not trading: a click on a row's call half or put half selects that option (highlighted; the chart shows
 // its premium, the ticket on the right trades it once the trader chooses Buy or Sell). Shift+click, "Add leg" in the
 // ticket, or a strategy already in the ticket adds the option as a leg instead.
@@ -13,20 +16,21 @@ import { cn } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
 import { Check } from "@/components/ui/primitives";
 import { atmIndex } from "@/lib/options/math";
-import { getOpt, opt, useOpt, visibleRows } from "@/lib/options-store";
+import { getOpt, opt, useBookLive, useOpt, visibleRows } from "@/lib/options-store";
 import type { OptionChainRow, OptionQuote, OptionRight } from "@/lib/options/types";
 import { Flash, RightTag } from "./bits";
 import { greek, pct, pips, px, usd } from "./format";
 
-type Col = "bid" | "ask" | "mark" | "iv" | "delta" | "gamma" | "theta" | "vega" | "prob" | "be" | "oi" | "vol";
+type Col = "bid" | "ask" | "last" | "mark" | "iv" | "delta" | "gamma" | "theta" | "vega" | "prob" | "be" | "oi" | "vol";
 
 const RANGES = [6, 10, 20, 0] as const;
 
 /** Columns per side. Calls and puts side by side keep ITM % / breakeven optional (width); one list always shows them. */
-function columns(both: boolean, greeks: boolean, extra: boolean, book: boolean): Col[] {
+function columns(both: boolean, greeks: boolean, extra: boolean, book: boolean, live = false): Col[] {
   return [
     "bid",
     "ask",
+    ...(live ? (["last"] as Col[]) : []),
     "mark",
     "iv",
     "delta",
@@ -36,15 +40,16 @@ function columns(both: boolean, greeks: boolean, extra: boolean, book: boolean):
   ];
 }
 
-const COL_W: Record<Col, string> = { bid: "w-[64px]", ask: "w-[64px]", mark: "w-[66px]", iv: "w-[52px]", delta: "w-[54px]", gamma: "w-[58px]", theta: "w-[56px]", vega: "w-[50px]", prob: "w-[48px]", be: "w-[72px]", oi: "w-[52px]", vol: "w-[52px]" };
+const COL_W: Record<Col, string> = { bid: "w-[64px]", ask: "w-[64px]", last: "w-[60px]", mark: "w-[66px]", iv: "w-[52px]", delta: "w-[54px]", gamma: "w-[58px]", theta: "w-[56px]", vega: "w-[50px]", prob: "w-[48px]", be: "w-[72px]", oi: "w-[52px]", vol: "w-[52px]" };
 
-function useHeads(): Record<Col, { label: string; title: string }> {
+function useHeads(book: boolean): Record<Col, { label: string; title: string }> {
   const t = useT();
   return React.useMemo(
     () => ({
       bid: { label: t("trader.opt.col.bid"), title: t("trader.opt.col.bidHint") },
       ask: { label: t("trader.opt.col.ask"), title: t("trader.opt.col.askHint") },
-      mark: { label: t("trader.opt.col.mark"), title: t("trader.opt.col.markHint") },
+      last: { label: t("trader.opt.col.last"), title: t("trader.opt.col.lastHint") },
+      mark: { label: t("trader.opt.col.mark"), title: book ? t("trader.opt.col.markBookHint") : t("trader.opt.col.markHint") },
       iv: { label: t("trader.opt.col.iv"), title: t("trader.opt.col.ivHint") },
       delta: { label: "Δ", title: t("trader.opt.col.deltaHint") },
       gamma: { label: "Γ", title: t("trader.opt.col.gammaHint") },
@@ -55,7 +60,7 @@ function useHeads(): Record<Col, { label: string; title: string }> {
       oi: { label: t("trader.opt.col.oi"), title: t("trader.opt.col.oiHint") },
       vol: { label: t("trader.opt.col.vol"), title: t("trader.opt.col.volHint") },
     }),
-    [t],
+    [t, book],
   );
 }
 
@@ -66,7 +71,7 @@ interface Marks {
   put: "buy" | "sell" | null;
 }
 
-function Cell({ q, col, right, digits, itm, mark, title }: { q: OptionQuote | null; col: Col; right: OptionRight; digits: number; itm: boolean; mark: { sel: boolean; leg: boolean }; title?: string }) {
+function Cell({ q, col, right, digits, itm, mark, title, theoLabel }: { q: OptionQuote | null; col: Col; right: OptionRight; digits: number; itm: boolean; mark: { sel: boolean; leg: boolean }; title?: string; theoLabel: string }) {
   const base = cn("h-[30px] cursor-pointer whitespace-nowrap border-b border-line/50 px-1.5 text-end font-mono text-[11.5px]", COL_W[col], itm && "bg-gold-soft/25");
   const attrs = { "data-r": right === "call" ? "c" : "p", "data-sel": mark.sel || undefined, "data-leg": (!mark.sel && mark.leg) || undefined, title: q ? title : undefined };
   if (!q)
@@ -80,20 +85,31 @@ function Cell({ q, col, right, digits, itm, mark, title }: { q: OptionQuote | nu
     case "bid":
     case "ask": {
       const v = col === "bid" ? q.bidUsd : q.askUsd;
+      const size = col === "bid" ? q.bidQty : q.askQty;
       return (
         <td {...attrs} className={cn(base, "p-0")}>
-          <button type="button" tabIndex={col === "ask" ? 0 : -1} aria-label={title} className={cn("h-full w-full px-1.5 text-end outline-none focus-visible:ring-1 focus-visible:ring-ember", col === "bid" ? "text-down" : "text-up", dim)}>
+          <button type="button" tabIndex={col === "ask" ? 0 : -1} aria-label={title} className={cn("h-full w-full px-1.5 text-end outline-none focus-visible:ring-1 focus-visible:ring-ember", col === "bid" ? "text-down" : "text-up", dim, q.book && "flex flex-col items-end justify-center leading-none")}>
             <Flash value={v}>{v > 0 ? usd(v) : "—"}</Flash>
+            {q.book && <span className="mt-0.5 text-[9px] text-fg-3">{v > 0 && size ? `×${size.toLocaleString("en-US")}` : " "}</span>}
           </button>
         </td>
       );
     }
+    case "last":
+      return (
+        <td {...attrs} className={cn(base, "p-0")}>
+          <span className={cn("flex h-full w-full flex-col items-end justify-center px-1.5 leading-none text-fg-2", dim)}>
+            {q.lastUsd ? <Flash value={q.lastUsd}>{usd(q.lastUsd)}</Flash> : <span className="text-fg-3">—</span>}
+            <span className={cn("mt-0.5 text-[9px]", q.change === null || q.change === undefined ? "text-fg-3" : q.change >= 0 ? "text-up" : "text-down")}>{q.lastUsd && q.change !== null && q.change !== undefined ? `${q.change >= 0 ? "+" : ""}${(q.change * 100).toFixed(1)}%` : " "}</span>
+          </span>
+        </td>
+      );
     case "mark":
       return (
         <td {...attrs} className={cn(base, "p-0")}>
           <span className={cn("flex h-full w-full flex-col items-end justify-center px-1.5 leading-none text-fg", dim)}>
             <Flash value={q.markUsd}>{usd(q.markUsd)}</Flash>
-            <span className="mt-0.5 text-[9px] text-fg-3">{pips(q.markPips)}p</span>
+            {q.book && q.theoUsd !== null && q.theoUsd !== undefined ? <span className="mt-0.5 text-[9px] text-fg-3">{`${theoLabel} ${usd(q.theoUsd)}`}</span> : <span className="mt-0.5 text-[9px] text-fg-3">{pips(q.markPips)}p</span>}
           </span>
         </td>
       );
@@ -160,7 +176,7 @@ const ChainRow = React.memo(function ChainRow({ row, cols, view, digits, itmCall
     const itm = right === "call" ? itmCall : itmPut;
     const mark = { sel: m.sel === right, leg: !!(right === "call" ? m.call : m.put) };
     const title = interactive ? t(right === "call" ? "trader.opt.chain.selectCall" : "trader.opt.chain.selectPut", { strike: row.strikeLabel }) : undefined;
-    return list.map((c) => <Cell key={`${right}-${c}`} q={q} col={c} right={right} digits={digits} itm={itm} mark={mark} title={title} />);
+    return list.map((c) => <Cell key={`${right}-${c}`} q={q} col={c} right={right} digits={digits} itm={itm} mark={mark} title={title} theoLabel={t("trader.opt.col.theoShort")} />);
   };
   const legChip = (right: OptionRight) => {
     const s = right === "call" ? m.call : m.put;
@@ -248,7 +264,7 @@ export function OptionChainTable({ className, compact }: { className?: string; c
   const sel = useOpt((s) => s.sel);
   // the public chain page is read-only; everywhere else a click selects (guests and investors too: chart, preview)
   const interactive = useOpt((s) => !s.ctx?.publicPage);
-  const heads = useHeads();
+  const heads = useHeads(useBookLive());
   const scroller = React.useRef<HTMLDivElement>(null);
   const centred = React.useRef<string | null>(null);
 
@@ -257,8 +273,9 @@ export function OptionChainTable({ className, compact }: { className?: string; c
   const rows = chain ? visibleRows(chain, prefs.range, atmI) : [];
   const atmStrike = chain?.rows[atmI]?.strike;
   const spot = chain?.spot?.mid;
-  const book = !!chain?.rows.some((r) => [r.call?.oi, r.put?.oi].some((v) => v !== undefined && v !== null));
-  const cols = compact ? (["bid", "ask", "iv", "delta"] as Col[]) : columns(prefs.view === "both", prefs.greeks, prefs.extra, book);
+  const bookLive = useBookLive();
+  const book = bookLive || !!chain?.rows.some((r) => [r.call?.oi, r.put?.oi].some((v) => v !== undefined && v !== null));
+  const cols = compact ? (["bid", "ask", ...(bookLive ? (["last"] as Col[]) : []), "iv", "delta"] as Col[]) : columns(prefs.view === "both", prefs.greeks, prefs.extra, book, bookLive);
   // B / S chips: a strategy's legs, or the single option once Buy or Sell is chosen
   const legSide = new Map(legs.length > 1 || armed ? legs.map((l) => [l.series, l.side]) : []);
   const marksOf = (r: OptionChainRow) => {
@@ -366,6 +383,11 @@ export function OptionChainTable({ className, compact }: { className?: string; c
             ))}
           </span>
           <Check checked={prefs.extra} onChange={(v) => opt.setPrefs({ extra: v })} label={<span className="text-[10.5px] text-fg-3">{t("trader.opt.showProbBe")}</span>} />
+          {bookLive && chain.pcr !== null && chain.pcr !== undefined && (
+            <span className="hidden items-center gap-1 md:flex" title={t("trader.opt.book.pcrHint")}>
+              {t("trader.opt.book.pcr")} <span className="k-num font-mono text-fg-2">{chain.pcr.toFixed(2)}</span>
+            </span>
+          )}
           {interactive && (
             <span className="ms-auto hidden items-center gap-1 lg:flex">
               <Layers className="size-3" />

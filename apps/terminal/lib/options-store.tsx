@@ -8,16 +8,25 @@
 // the selected option), view preferences, the selected option (a strike's call or put picked in the chain: the
 // chart shows its premium, the ticket trades it), the order ticket's legs and the strategy builder. Positions
 // themselves live in lib/options/book.ts.
+//
+// Order book (docs/OPTIONS-EXCHANGE.md): when the chain says the broker's book is live (`chain.book.active`) and the
+// engine serves the book routes, `bookLive` turns on: chain quotes carry the best bid / offer with sizes, the
+// selected series' depth and trade tape stream in (`depth`, `tape`), and the ticket sends book orders. Otherwise
+// (no book, or the engine answers 404) everything stays on today's house-priced flow.
 import * as React from "react";
 import { IS_LIVE } from "@kalks/mock";
 import { mockUnderlyings, parseSeriesCode } from "@kalks/mock/options";
 import type { Timeframe } from "@/lib/trading";
 import { optionsApi, isLaunchingSoon } from "@/lib/options/api";
 import { optionBook } from "@/lib/options/book";
+import { bookApi } from "@/lib/options/book-api";
+import { bookFlag } from "@/lib/options/book-flag";
+import { bookOrders } from "@/lib/options/book-orders";
 import { demoBoot } from "@/lib/options/mock-engine";
 import { LINK_UNDERLYING_KEY } from "@/lib/options/mode";
+import { normChain, normQuote, normRow } from "@/lib/options/normalize";
 import { createOptionsStream, type OptFrame, type OptStream, type OptStreamStatus } from "@/lib/options/stream";
-import type { ExpiryKind, OptionChain, OptionChainRow, OptionExpiry, OptionQuote, OptionRight, OptionUnderlying, Side } from "@/lib/options/types";
+import type { BookTif, ExpiryKind, OptionChain, OptionChainRow, OptionExpiry, OptionQuote, OptionRight, OptionUnderlying, SeriesDepth, Side, TapeTrade } from "@/lib/options/types";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -61,12 +70,24 @@ export interface Ticket {
   triggerOp: "above" | "below";
   triggerPrice: string;
   tif: "gtc" | "day";
+  /* order book ticket (single option): limit / market / stop; the limit price is `limit` (USD per contract) */
+  bookType: "limit" | "market" | "stop";
+  stopKind: "market" | "limit";
+  bookTif: BookTif;
+  /** good-till-date: a datetime-local value (the trader's time zone) */
+  gtd: string;
+  postOnly: boolean;
+  reduceOnly: boolean;
+  /** stop trigger: the series' mark (USD per contract) or the underlying's price */
+  trigSource: "mark" | "underlying";
+  trigOp: "above" | "below";
+  trigPrice: string;
 }
 
 export type ChainView = "both" | "calls" | "puts";
 export type SidePanel = "ticket" | "simple";
-/** The two tabs of the centre panel (where the CFD chart sits). */
-export type CenterTab = "chart" | "chain";
+/** The tabs of the centre panel (where the CFD chart sits); "book" (depth + trades) while the order book is live. */
+export type CenterTab = "chart" | "chain" | "book";
 /** The chart tab: the selected option's premium, or the underlying with option levels. */
 export type ChartMode = "premium" | "underlying";
 export const EXPIRY_KINDS: ExpiryKind[] = ["daily", "weekly", "monthly"];
@@ -114,6 +135,14 @@ export interface OptState {
   focus: string | null;
   /** the selected option (series code): highlighted in the chain, charted, traded by the ticket */
   sel: string | null;
+  /** the broker's order book is live here (chain header) and the engine takes book orders */
+  bookLive: boolean;
+  /** the engine answered a book route with 404 / 405 / 501: keep the house-priced flow */
+  bookOff: boolean;
+  /** series → depth (10 levels each side), the selected series while the book is live */
+  depth: Record<string, SeriesDepth>;
+  /** series → latest trades, newest first */
+  tape: Record<string, TapeTrade[]>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -137,7 +166,31 @@ function readPrefs(): Prefs {
   }
 }
 
-const emptyTicket = (): Ticket => ({ legs: [], armed: false, adding: false, type: "market", limit: "", sl: "", tp: "", trigger: false, triggerOp: "above", triggerPrice: "", tif: "gtc" });
+const emptyTicket = (): Ticket => ({
+  legs: [],
+  armed: false,
+  adding: false,
+  type: "market",
+  limit: "",
+  sl: "",
+  tp: "",
+  trigger: false,
+  triggerOp: "above",
+  triggerPrice: "",
+  tif: "gtc",
+  bookType: "limit",
+  stopKind: "market",
+  bookTif: "gtc",
+  gtd: "",
+  postOnly: false,
+  reduceOnly: false,
+  trigSource: "mark",
+  trigOp: "below",
+  trigPrice: "",
+});
+
+/** What a fresh ticket keeps of the previous one: the order type and time in force the trader works with. */
+const keepOf = (t: Ticket): Partial<Ticket> => ({ type: t.type, tif: t.tif, bookType: t.bookType, stopKind: t.stopKind, bookTif: t.bookTif === "gtd" ? "gtc" : t.bookTif, trigSource: t.trigSource });
 
 const prefs0 = readPrefs();
 let state: OptState = {
@@ -159,12 +212,17 @@ let state: OptState = {
   builder: false,
   focus: null,
   sel: null,
+  bookLive: false,
+  bookOff: false,
+  depth: {},
+  tape: {},
 };
 
 const listeners = new Set<() => void>();
 function set(patch: Partial<OptState> | ((s: OptState) => Partial<OptState>)) {
   const p = typeof patch === "function" ? patch(state) : patch;
   state = { ...state, ...p };
+  if ("bookLive" in p || "bookOff" in p) bookFlag.setLive(state.bookLive && !state.bookOff);
   listeners.forEach((l) => l());
 }
 const subscribe = (l: () => void) => {
@@ -189,6 +247,12 @@ export function useOpt<T>(sel: (s: OptState) => T): T {
 /** The quote of a series wherever it is (chain on screen, or the series subscription). */
 export function useSeriesQuote(code: string | null | undefined): OptionQuote | null {
   return useOpt((s) => (code ? (s.index[code] ?? s.quotes[code] ?? null) : null));
+}
+
+/** The order book is live for this account: book prices, depth, book orders (else house prices). */
+export const isBookLive = (s: OptState) => s.bookLive && !s.bookOff;
+export function useBookLive(): boolean {
+  return useOpt(isBookLive);
 }
 
 export const quoteOf = (code: string) => state.index[code] ?? state.quotes[code] ?? null;
@@ -288,6 +352,7 @@ function syncSeries() {
   const login = loginOf();
   const codes = new Set<string>();
   if (login) for (const p of optionBook.get(login).positions) codes.add(p.option.series);
+  if (login && isBookLive(state)) for (const o of bookOrders.get(login).open) codes.add(o.series);
   for (const l of state.ticket.legs) codes.add(l.series);
   if (state.sel) codes.add(state.sel);
   stream.setSeries([...codes].filter((c) => !state.index[c]));
@@ -310,21 +375,38 @@ function syncStream() {
   }
   stream.setChains(state.expiry ? [{ u: state.u, expiry: state.expiry }] : []);
   syncSeries();
+  syncBookFeed();
+}
+
+/** Depth and trades of the selected series while the book is live. */
+function syncBookFeed() {
+  if (!stream) return;
+  const codes = isBookLive(state) && state.sel ? [state.sel] : [];
+  stream.setDepth(codes);
+  stream.setTape(codes);
+}
+
+/** A chain arrived: whether it trades on the book (sticky until the next chain says otherwise). */
+function bookOfChain(c: OptionChain): Partial<OptState> {
+  const live = !!c.book?.active;
+  return live === state.bookLive ? {} : { bookLive: live };
 }
 
 function onFrame(f: OptFrame) {
   switch (f.type) {
     case "chain": {
       if (f.underlying !== state.u || f.expiry !== state.expiry) return;
-      const { type: _t, ...chain } = f;
-      set({ chain: chain as OptionChain, index: indexOf(chain.rows), chainLoading: false });
+      const { type: _t, ...raw } = f;
+      const chain = normChain(raw as OptionChain);
+      set({ chain, index: indexOf(chain.rows), chainLoading: false, ...bookOfChain(chain) });
       applyRemap();
-      return syncSeries();
+      syncSeries();
+      return syncBookFeed();
     }
     case "rows": {
       const c = state.chain;
       if (!c || f.u !== state.u || f.expiry !== state.expiry) return;
-      const byLabel = new Map(f.rows.map((r) => [r.strikeLabel, r]));
+      const byLabel = new Map(f.rows.map((r) => [r.strikeLabel, normRow(r)]));
       let missing = byLabel.size;
       const rows = c.rows.map((r) => {
         const n = byLabel.get(r.strikeLabel);
@@ -338,12 +420,43 @@ function onFrame(f: OptFrame) {
     }
     case "series": {
       const quotes = { ...state.quotes };
-      for (const q of f.quotes) quotes[q.code] = q;
+      for (const raw of f.quotes) {
+        const q = normQuote(raw);
+        if (q) quotes[q.code] = q;
+      }
       return set({ quotes });
+    }
+    case "depth": {
+      const { type: _t, ...d } = f;
+      return set((s) => ({ depth: { ...s.depth, [d.series]: d } }));
+    }
+    case "tape": {
+      if (!f.trades.length) return;
+      return set((s) => {
+        const tape = { ...s.tape };
+        for (const t of f.trades) {
+          const list = tape[t.series] ?? [];
+          if (list.some((x) => x.id === t.id)) continue;
+          tape[t.series] = [t, ...list].sort((a, b) => b.t - a.t).slice(0, 120);
+        }
+        return { tape };
+      });
     }
     default:
       return;
   }
+}
+
+/** The stream is down: poll the selected series' depth and trades (public market data, 1 s cache). */
+async function pollBookFeed() {
+  const code = state.sel;
+  if (!code || !isBookLive(state)) return;
+  const [d, tr] = await Promise.all([bookApi.depth(code), bookApi.trades(code, 60)]);
+  if (state.sel !== code) return;
+  set((s) => ({
+    depth: d.ok ? { ...s.depth, [code]: d.data } : s.depth,
+    tape: tr.ok ? { ...s.tape, [code]: [...tr.data].sort((a, b) => b.t - a.t).slice(0, 120) } : s.tape,
+  }));
 }
 
 async function loadChain() {
@@ -358,8 +471,9 @@ async function loadChain() {
     else set({ chainLoading: false });
     return;
   }
-  const { expiries: pubExp, ...chain } = r.data;
-  const patch: Partial<OptState> = { chain: chain as OptionChain, index: indexOf(chain.rows), chainLoading: false };
+  const { expiries: pubExp, ...raw } = r.data;
+  const chain = normChain(raw as OptionChain);
+  const patch: Partial<OptState> = { chain, index: indexOf(chain.rows), chainLoading: false, ...bookOfChain(chain) };
   if (state.publicView && pubExp) patch.expiries = pubExp.map((e, i) => ({ id: i, date: e.date, kinds: e.kinds, cutAt: e.cutAt, twapStart: e.cutAt, status: "listed", state: "open", series: 0, secondsToCut: Math.round((Date.parse(e.cutAt) - Date.now()) / 1000) }));
   if (!expiry && chain.expiry) patch.expiry = chain.expiry;
   set(patch);
@@ -459,10 +573,12 @@ async function boot() {
       if (!isLaunchingSoon(r.err)) retryTimer = setTimeout(() => void boot(), 15_000);
       return;
     }
-    const { expiries: ex, ...chain } = r.data;
+    const { expiries: ex, ...raw } = r.data;
+    const chain = normChain(raw as OptionChain);
     set({
       avail: "ready",
-      chain: chain as OptionChain,
+      ...bookOfChain(chain),
+      chain,
       index: indexOf(chain.rows),
       expiry: chain.expiry,
       chainLoading: false,
@@ -507,6 +623,7 @@ function startTimers() {
       if (document.visibilityState === "hidden") return;
       if (state.stream !== "polling" && state.stream !== "unavailable") set({ stream: "polling" });
       void loadChain();
+      void pollBookFeed();
     }, 2_000);
 }
 
@@ -559,8 +676,17 @@ export const opt = {
       // the public page arrives with its server-rendered chain: keep it while the live data connects
       const keep = ctx.publicPage && state.publicView && state.chain;
       remap = null;
-      set(keep ? { ctx, quotes: {}, ticket: emptyTicket(), sel: null } : { ctx, avail: "loading", chain: null, index: {}, quotes: {}, expiries: [], expiry: null, ticket: emptyTicket(), tradingSoon: false, sel: null });
-      unbook = optionBook.subscribe(() => syncSeries());
+      set(
+        keep
+          ? { ctx, quotes: {}, ticket: emptyTicket(), sel: null, depth: {}, tape: {} }
+          : { ctx, avail: "loading", chain: null, index: {}, quotes: {}, expiries: [], expiry: null, ticket: emptyTicket(), tradingSoon: false, sel: null, bookOff: false, depth: {}, tape: {} },
+      );
+      const offPositions = optionBook.subscribe(() => syncSeries());
+      const offOrders = bookOrders.subscribe(() => syncSeries());
+      unbook = () => {
+        offPositions();
+        offOrders();
+      };
       void boot();
     } else if (prev.readOnly !== ctx.readOnly || prev.engine !== ctx.engine) set({ ctx });
     else if (!stream && state.avail === "ready") syncStream();
@@ -576,13 +702,15 @@ export const opt = {
   },
   /** The public chain page: start from the chain the server rendered. */
   seed(chain: OptionChain & { expiries?: { date: string; kinds: OptionExpiry["kinds"]; cutAt: string }[] }) {
-    const { expiries, ...c } = chain;
+    const { expiries, ...raw } = chain;
+    const c = normChain(raw as OptionChain);
     set({
       publicView: true,
       avail: "ready",
+      ...bookOfChain(c),
       u: c.underlying,
       expiry: c.expiry,
-      chain: c as OptionChain,
+      chain: c,
       index: indexOf(c.rows),
       chainLoading: false,
       expiries: (expiries ?? []).map((e, i) => ({ id: i, date: e.date, kinds: e.kinds, cutAt: e.cutAt, twapStart: e.cutAt, status: "listed", state: "open" as const, series: 0, secondsToCut: Math.round((Date.parse(e.cutAt) - Date.now()) / 1000) })),
@@ -602,7 +730,8 @@ export const opt = {
     remap = null;
     // like the CFD order panel following the symbol: a single option of the old underlying leaves the ticket
     const single = state.ticket.legs.length === 1 && state.ticket.legs[0]!.u !== u;
-    set((s) => ({ u, prefs, expiry: null, chain: null, index: {}, chainLoading: true, expiries: s.publicView ? [] : s.expiries, sel: null, ticket: single ? { ...emptyTicket(), type: s.ticket.type, tif: s.ticket.tif } : s.ticket }));
+    set((s) => ({ u, prefs, expiry: null, chain: null, index: {}, chainLoading: true, expiries: s.publicView ? [] : s.expiries, sel: null, ticket: single ? { ...emptyTicket(), ...keepOf(s.ticket) } : s.ticket }));
+    syncBookFeed();
     void (async () => {
       await loadExpiries(false, prev);
       await loadChain();
@@ -636,6 +765,7 @@ export const opt = {
     savePrefs(prefs);
     set({ sel: code, prefs });
     syncSeries();
+    syncBookFeed();
     return true;
   },
   setPrefs(patch: Partial<Prefs>) {
@@ -645,6 +775,12 @@ export const opt = {
   },
   setTradingSoon(v: boolean) {
     if (state.tradingSoon !== v) set({ tradingSoon: v });
+  },
+  /** The engine doesn't serve the book routes: fall back to the house-priced flow for this session. */
+  setBookOff(v = true) {
+    if (state.bookOff === v) return;
+    set({ bookOff: v });
+    syncBookFeed();
   },
   focus(ticket: string | null) {
     set({ focus: ticket });
@@ -677,10 +813,27 @@ export const opt = {
           ticket = { ...t, legs, adding: false, armed: legs.length > 1 || t.armed, type: legs.length > 1 ? "market" : t.type };
         }
       } else if (t.legs.length === 1 && t.legs[0]!.series === q.code) ticket = { ...t, adding: false };
-      else ticket = { ...emptyTicket(), type: t.type, tif: t.tif, legs: [leg] };
+      else ticket = { ...emptyTicket(), ...keepOf(t), legs: [leg] };
       return { sel: q.code, ticket, prefs: s.prefs.panel === "simple" ? { ...s.prefs, panel: "ticket" } : s.prefs };
     });
     syncSeries();
+    syncBookFeed();
+  },
+  /**
+   * A price level clicked in the depth: a limit order at that price on the selected option, the side that trades
+   * with it (an offer → Buy, a bid → Sell). `priceUsd` is USD per contract.
+   */
+  prefillLimit(series: string, side: Side, priceUsd: number) {
+    const row = state.chain?.rows.find((r) => r.call?.code === series || r.put?.code === series);
+    const one = state.ticket.legs.length === 1 && state.ticket.legs[0]!.series === series;
+    if (!one) {
+      if (!row) return;
+      opt.select(row, row.call?.code === series ? "call" : "put");
+    }
+    set((s) => ({
+      ticket: { ...s.ticket, armed: true, bookType: "limit", bookTif: s.ticket.bookTif === "ioc" || s.ticket.bookTif === "fok" ? s.ticket.bookTif : "gtc", limit: priceUsd.toFixed(2), legs: s.ticket.legs.map((l) => ({ ...l, side })) },
+      prefs: s.prefs.panel === "simple" ? { ...s.prefs, panel: "ticket" } : s.prefs,
+    }));
   },
   /** Buy or Sell on the ticket of a single option. */
   arm(side: Side) {
@@ -695,8 +848,9 @@ export const opt = {
     const row = c.rows.find((r) => Math.abs(r.strike - p.strike) < 1e-9);
     const q = row ? (right === "call" ? row.call : row.put) : null;
     if (!row || !q) return;
-    set((s) => ({ sel: q.code, ticket: base ? { ...s.ticket, armed: false, limit: "", sl: "", tp: "", legs: [{ ...base, id: uid(), series: q.code, right, strike: row.strike, strikeLabel: row.strikeLabel }] } : s.ticket }));
+    set((s) => ({ sel: q.code, ticket: base ? { ...s.ticket, armed: false, limit: "", sl: "", tp: "", trigPrice: "", legs: [{ ...base, id: uid(), series: q.code, right, strike: row.strike, strikeLabel: row.strikeLabel }] } : s.ticket }));
     syncSeries();
+    syncBookFeed();
   },
   /** "Add leg": the next strike picked in the chain is added to the ticket. */
   setAdding(v: boolean) {
@@ -707,13 +861,14 @@ export const opt = {
   },
   /** After a fill: a single option stays selected (no side, protection cleared); a strategy leaves the ticket. */
   afterFill() {
-    set((s) => (s.ticket.legs.length === 1 ? { ticket: { ...emptyTicket(), type: s.ticket.type, tif: s.ticket.tif, legs: s.ticket.legs } } : { ticket: { ...emptyTicket(), tif: s.ticket.tif } }));
+    set((s) => (s.ticket.legs.length === 1 ? { ticket: { ...emptyTicket(), ...keepOf(s.ticket), legs: s.ticket.legs } } : { ticket: { ...emptyTicket(), tif: s.ticket.tif, bookTif: keepOf(s.ticket).bookTif ?? "gtc" } }));
     syncSeries();
   },
   /** Legs from the strategy builder or simple mode (their sides are chosen). */
   setLegs(legs: Omit<TicketLeg, "id">[]) {
-    set((s) => ({ sel: legs[0]?.series ?? s.sel, ticket: { ...emptyTicket(), armed: true, tif: s.ticket.tif, legs: legs.slice(0, 8).map((l) => ({ ...l, id: uid() })) } }));
+    set((s) => ({ sel: legs[0]?.series ?? s.sel, ticket: { ...emptyTicket(), ...keepOf(s.ticket), armed: true, legs: legs.slice(0, 8).map((l) => ({ ...l, id: uid() })) } }));
     syncSeries();
+    syncBookFeed();
   },
   updateLeg(id: string, patch: Partial<Pick<TicketLeg, "side" | "contracts">>) {
     set((s) => ({ ticket: { ...s.ticket, legs: s.ticket.legs.map((l) => (l.id === id ? { ...l, ...patch } : l)) } }));
@@ -727,10 +882,17 @@ export const opt = {
     set((s) => ({ ticket: { ...s.ticket, ...patch } }));
   },
   clearTicket() {
-    set((s) => ({ ticket: { ...emptyTicket(), tif: s.ticket.tif } }));
+    set((s) => ({ ticket: { ...emptyTicket(), ...keepOf(s.ticket) } }));
+    syncSeries();
+  },
+  /** Book orders changed (placed, filled, cancelled): their series stay streamed. */
+  syncOrderSeries() {
     syncSeries();
   },
 };
+
+// an engine without the book routes: house prices for the rest of the session
+bookOrders.onMissing(() => opt.setBookOff(true));
 
 /** Keeps the options data live while the calling component is mounted. */
 export function useOptionsAttach(ctx: OptCtx) {

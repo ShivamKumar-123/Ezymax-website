@@ -6,7 +6,10 @@
  *   - the options service through the admin BFF: `/api/options/*` (services/options/README.md "Back Office"), plus
  *     the client previews `/api/options/smile` and `/api/options/chain`;
  *   - the trading engine's option routes through the trading BFF: `/api/trading/admin/options/{book, settlements/
- *     {expiry}/rerun, trades/{ticket}/void}`;
+ *     {expiry}/rerun, trades/{ticket}/void}` and the order book exchange (docs/OPTIONS-EXCHANGE.md): `mm`,
+ *     `mm/pause|resume`, `books`, `books/{series}`, `books/halt[/{id}]`, `liquidations`, `clearing`, `fills/{id}/bust`,
+ *     `approvals`, `book/enable[/plan]` (four-eyes: in the demo one browser may be both approvers);
+ *   - the options service's market-maker settings `/api/options/mm-settings[/{tenant}/{kind}/{underlying}]`;
  *   - `/api/owner/tenants` (the broker list on Brokers access).
  * Responses use the same shapes (camelCase, decimals for vols and rates) and the same validation messages, so the
  * UI exercises the real paths. State lives for the browser tab and is seeded relative to the current time, so
@@ -208,6 +211,8 @@ type State = {
   audit: Audit[];
   voided: Set<string>;
   reruns: Record<string, number>;
+  /** options service `mm_settings` (order book market maker) */
+  mm: MmRow[];
 };
 
 const ME = "demo@kalkstrade.com #0";
@@ -265,6 +270,7 @@ function seed(now: number): State {
     minContracts: 1,
     maxContracts: u.assetClass === "forex" ? 100 : 50,
     contractStep: 1,
+    ...bookDefaults(u),
     barriersEnabled: u.assetClass !== "energies",
     enabled: u.enabled ?? true,
     sort: i,
@@ -322,6 +328,8 @@ function seed(now: number): State {
     commissionCapPct: 10,
     maxContractsPerClient: 200,
     weekendMarginPct: 25,
+    makerFeePerContract: -0.05,
+    takerFeePerContract: 0.25,
     enabled: true,
     ...p,
     updatedAt: at(ago),
@@ -329,9 +337,9 @@ function seed(now: number): State {
   });
   const groups = [
     g("*", "*", {}, 21 * DAY, "seed"),
-    g("pro", "*", { volSpread: 0.0025, minSpreadUsd: 0.3, commissionPerContract: 0.15 }, 6 * DAY, "m.ivanova@kalkstrade.com #3"),
+    g("pro", "*", { volSpread: 0.0025, minSpreadUsd: 0.3, commissionPerContract: 0.15, takerFeePerContract: 0.15 }, 6 * DAY, "m.ivanova@kalkstrade.com #3"),
     g("standard", "XAUUSD", { volSpread: 0.006, minSpreadUsd: 1, weekendMarginPct: 40 }, 3 * DAY, "m.ivanova@kalkstrade.com #3"),
-    g("vip", "*", { volSpread: 0.002, commissionPerContract: 0.1, commissionCapPct: 6, maxContractsPerClient: 500 }, 8 * DAY, "owner@kalkstrade.com #1"),
+    g("vip", "*", { volSpread: 0.002, commissionPerContract: 0.1, commissionCapPct: 6, maxContractsPerClient: 500, makerFeePerContract: -0.08, takerFeePerContract: 0.1 }, 8 * DAY, "owner@kalkstrade.com #1"),
     g("cent", "*", { enabled: false, maxContractsPerClient: 20 }, 10 * DAY, "m.ivanova@kalkstrade.com #3"),
   ];
 
@@ -456,7 +464,7 @@ function seed(now: number): State {
   add("apex-fx", "risk@apexfx.com #31", "group.upsert", "*/*", "FEE-01 · Launch pricing", 3 * DAY + 5 * HOUR, null, { volSpread: 0.005 });
   audit.sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).forEach((a, i, arr) => (a.id = 5000 + arr.length - i));
 
-  return { version: 57, underlyings, rates, rateHistory, holidays, surfaces, tenants, groups, controls, limits, expiries, audit, voided: new Set(), reruns: {} };
+  return { version: 57, underlyings, rates, rateHistory, holidays, surfaces, tenants, groups, controls, limits, expiries, audit, voided: new Set(), reruns: {}, mm: mmSeed(now) };
 }
 
 function db(): State {
@@ -716,6 +724,641 @@ function checkSurface(pillars: Pillar[]): string | null {
   return bad.length ? `calendar arbitrage: ${bad.join("; ")}` : null;
 }
 
+/* ------------------------------------------------------------------ */
+/* Order book exchange (docs/OPTIONS-EXCHANGE.md, decision O49)        */
+/* ------------------------------------------------------------------ */
+
+/** §2 defaults of the per-underlying order-book fields (tick: FX pip/10, XAU 0.01, USDJPY 0.001, oil 0.001). */
+function bookDefaults(u: U) {
+  const premiumTick = u.assetClass === "forex" ? r4(u.pipSize / 10, 8) : u.symbol === "XAUUSD" ? 0.01 : 0.001;
+  return { premiumTick, marketBandPct: 10, limitBandPct: 50, bandMinTicks: 5, liqBandPct: 5, liqFeePct: 2, rfqQuoteTtlSecs: 5, markMinQty: 1, markMaxSpreadMult: 3 };
+}
+
+type MmRow = {
+  tenant: string;
+  kind: string;
+  underlying: string;
+  enabled: boolean;
+  spreadVol0dte: number;
+  spreadVol7d: number;
+  spreadVol30d: number;
+  spreadVolLong: number;
+  minSpreadTicks: number;
+  skewVol: number;
+  skewTicksPerContract: number;
+  baseSize: number;
+  maxNetDelta: number;
+  maxGamma: number;
+  maxVega: number;
+  maxContractsPerSeries: number;
+  updatedAt: string;
+  updatedBy: string;
+};
+const MM_NUM = ["spreadVol0dte", "spreadVol7d", "spreadVol30d", "spreadVolLong", "minSpreadTicks", "skewVol", "skewTicksPerContract", "baseSize", "maxNetDelta", "maxGamma", "maxVega", "maxContractsPerSeries"] as const;
+
+function mmSeed(now: number): MmRow[] {
+  const at = (ms: number) => iso(now - ms);
+  const base = { enabled: true, spreadVol0dte: 0.008, spreadVol7d: 0.005, spreadVol30d: 0.004, spreadVolLong: 0.0035, minSpreadTicks: 2, skewVol: 0.002, skewTicksPerContract: 0.05, baseSize: 10, maxNetDelta: 500, maxGamma: 150, maxVega: 25_000, maxContractsPerSeries: 2_000 };
+  return [
+    { ...base, tenant: "*", kind: "*", underlying: "*", updatedAt: at(3 * DAY), updatedBy: "seed" },
+    { ...base, tenant: "*", kind: "demo", underlying: "*", baseSize: 25, maxNetDelta: 2_000, maxGamma: 600, maxVega: 100_000, maxContractsPerSeries: 5_000, updatedAt: at(3 * DAY), updatedBy: "seed" },
+    { ...base, tenant: "*", kind: "*", underlying: "UKOIL", minSpreadTicks: 5, baseSize: 5, maxContractsPerSeries: 800, updatedAt: at(2 * DAY), updatedBy: "m.ivanova@kalkstrade.com #3" },
+    { ...base, tenant: "kalks", kind: "live", underlying: "XAUUSD", spreadVol0dte: 0.012, spreadVol7d: 0.008, spreadVol30d: 0.006, spreadVolLong: 0.005, baseSize: 5, maxVega: 15_000, updatedAt: at(20 * HOUR), updatedBy: "m.ivanova@kalkstrade.com #3" },
+  ];
+}
+
+/** The row that applies to (this broker, kind, underlying): tenant + kind + underlying > … > `*,*,*`. */
+function mmEffective(kind: string, sym: string): MmRow {
+  const rows = db().mm;
+  const score = (r: MmRow) => (r.tenant === "kalks" ? 4 : r.tenant === "*" ? 0 : -99) + (r.kind === kind ? 2 : r.kind === "*" ? 0 : -99) + (r.underlying === sym ? 1 : r.underlying === "*" ? 0 : -99);
+  return rows.filter((r) => score(r) >= 0).sort((a, b) => score(b) - score(a))[0] ?? rows[0]!;
+}
+
+type Kind = "live" | "demo";
+type Halt = { id: number; kind: Kind; scope: string; target: string; mode: "halt" | "cancel_only"; reason: string; by: string; at: string };
+type Pause = { id: number; kind: Kind; scope: string; target: string; reason: string; by: string; at: string };
+type Approval = { id: number; action: "fill_bust" | "book_enable"; target: string; kind: Kind | null; reason: string; requestedBy: string; requestedAt: string; status: "pending" | "executed" };
+type Liq = { id: number; at: string; kind: Kind; login: number; userId: number; step: number; unit: string; series: string | null; qty: number; price: number | null; route: string; marginLevelBefore: number; marginLevelAfter: number; freedMarginUsd: number; status: string; note: string | null };
+type Party = { login: number; mm: boolean; userId: number | null };
+type Fill = { fillId: number; series: string; price: number; qty: number; takerSide: "buy" | "sell"; kind: string; at: string; maker: Party; taker: Party };
+type Exch = {
+  enabledAt: Record<Kind, string | null>;
+  mmStarted: Record<Kind, number>;
+  halts: Halt[];
+  pauses: Pause[];
+  approvals: Approval[];
+  busted: Set<number>;
+  fills: Map<number, Fill>;
+  liquidations: Liq[];
+  nextId: number;
+};
+
+const BOOK_CLIENTS = [
+  { login: 7104412, userId: 20931, name: "Daniel Okoro" },
+  { login: 7102287, userId: 10517, name: "Priya Raman" },
+  { login: 7108840, userId: 44120, name: "Lukas Brandt" },
+  { login: 7103391, userId: 38211, name: "Mei Tanaka" },
+  { login: 7105526, userId: 10482, name: "Sofia Marino" },
+  { login: 7109013, userId: 51870, name: "Omar Haddad" },
+  { login: 7101174, userId: 27645, name: "Chloe Martin" },
+  { login: 7106658, userId: 33002, name: "Jonas Eriksen" },
+];
+const MM_LOGIN: Record<Kind, number> = { live: 7_000_900, demo: 9_000_900 };
+const MM_USER_ID = 1;
+const SERIES_RE = /^([A-Z0-9]{3,12})-(\d{4})(\d{2})(\d{2})-([0-9.]{1,16})-([CP])(?:-[A-Z0-9._]{1,24})?$/;
+const clientOf = (kind: Kind, i: number) => {
+  const c = BOOK_CLIENTS[((i % BOOK_CLIENTS.length) + BOOK_CLIENTS.length) % BOOK_CLIENTS.length]!;
+  return { ...c, login: kind === "demo" ? c.login + 2_000_000 : c.login };
+};
+const usdPerQuoteOf = (q: string) => (q === "USD" ? 1 : q === "JPY" ? 1 / 149.382 : q === "CAD" ? 1 / 1.35722 : q === "CHF" ? 1 / 0.84917 : 1);
+
+/** A listed series code near the money of an underlying (demo liquidations). */
+function seriesNear(sym: string, date: string, offset: number, cp: "C" | "P") {
+  const u = UNDERLYINGS.find((x) => x.symbol === sym)!;
+  const k = Math.round(u.spot / u.strikeStep) * u.strikeStep + offset * u.strikeStep;
+  return `${sym}-${date.replace(/-/g, "")}-${k.toFixed(decimalsOf(u.strikeStep))}-${cp}`;
+}
+
+let exch: Exch | null = null;
+function ex(): Exch {
+  return (exch ??= seedExchange(Date.now()));
+}
+
+function seedExchange(now: number): Exch {
+  const s = db();
+  const r = seeded(4919);
+  const listed = (sym: string) => s.expiries.filter((e) => e.symbol === sym && e.status === "listed").sort((a, b) => a.cutAt.localeCompare(b.cutAt));
+  const jpy = listed("USDJPY").find((e) => Date.parse(e.cutAt) > now + 20 * HOUR) ?? listed("USDJPY")[0];
+  const halts: Halt[] = [
+    { id: 12, kind: "live", scope: "underlying", target: "XAGUSD", mode: "halt", reason: "BOK-01 · Feed problem — silver feed gap under review", by: "j.mensah@kalkstrade.com #5", at: iso(now - 38 * MIN) },
+  ];
+  if (jpy) halts.push({ id: 13, kind: "live", scope: "expiry", target: `USDJPY:${jpy.date}`, mode: "cancel_only", reason: "BOK-02 · Disorderly market — BoJ decision overnight", by: "j.mensah@kalkstrade.com #5", at: iso(now - 2 * HOUR) });
+  const pauses: Pause[] = jpy ? [{ id: 21, kind: "live", scope: "expiry", target: `USDJPY:${jpy.date}`, reason: "MMK-04 · Market event — no quotes into the BoJ decision", by: "j.mensah@kalkstrade.com #5", at: iso(now - 2 * HOUR + 4 * MIN) }] : [];
+
+  // liquidation log: runs of 1–4 steps over the last 6 days (live)
+  const liquidations: Liq[] = [];
+  const syms = ["EURUSD", "XAUUSD", "GBPUSD", "USDJPY", "USOIL", "EURJPY"];
+  let id = 3100;
+  for (let run = 0; run < 11; run++) {
+    const c = clientOf("live", run * 3 + 1);
+    let t = now - r.range(40 * MIN, 6 * DAY);
+    // stop-out at 50 %: every step but the last leaves the level below it
+    let ml = r.range(36, 47);
+    const steps = Math.max(run === 7 ? 2 : 1, r.int(1, 4));
+    for (let k = 1; k <= steps; k++) {
+      const unit = k === 1 && run % 5 === 2 ? "cfd" : k === 2 && run % 3 === 0 ? "combo" : "option";
+      const route = unit === "cfd" ? "cfd" : unit === "combo" ? "rfq" : k === steps && run % 2 === 0 && steps > 1 ? "backstop" : "book";
+      const sym = syms[(run + k) % syms.length]!;
+      const exp = listed(sym)[(run + k) % 4];
+      const series = unit === "cfd" || !exp ? null : unit === "combo" ? `${sym} combo · ${exp.date}` : seriesNear(sym, exp.date, ((run + k) % 5) - 2, run % 2 ? "C" : "P");
+      const freed = Math.round(r.range(600, 14_000));
+      const status = run === 3 && k === steps ? "partial" : run === 7 && k === 1 ? "failed" : "done";
+      const after = k === steps ? 50 + r.range(status === "partial" ? 0.5 : 3, status === "partial" ? 2 : 24) : ml + r.range(0.6, Math.max(0.8, (49.6 - ml) * 0.7));
+      const u = UNDERLYINGS.find((x) => x.symbol === sym)!;
+      liquidations.push({
+        id: id++,
+        at: iso(t),
+        kind: "live",
+        login: c.login,
+        userId: c.userId,
+        step: k,
+        unit,
+        series,
+        qty: unit === "cfd" ? r4(r.range(0.1, 3), 2) : r.int(1, 40),
+        price: unit === "cfd" ? r4(u.spot, u.digits) : r4(u.spot * r.range(0.002, 0.012), u.digits + 1),
+        route,
+        marginLevelBefore: r4(ml, 1),
+        marginLevelAfter: status === "failed" ? r4(ml, 1) : r4(after, 1),
+        freedMarginUsd: status === "failed" ? 0 : freed,
+        status,
+        note: status === "partial" ? "Depth inside the liquidation band ran out; the rest moved to the backstop." : status === "failed" ? "RFQ quote expired before the auto-accept; retried on the next step." : null,
+      });
+      if (status !== "failed") ml = after;
+      t += r.int(300, 2400);
+    }
+  }
+  liquidations.sort((a, b) => b.at.localeCompare(a.at));
+  return {
+    // demo build: live accounts already trade on the book; demo accounts are still on house pricing (try Book rollout)
+    enabledAt: { live: iso(now - 26 * HOUR - 17 * MIN), demo: null },
+    mmStarted: { live: now - 26 * HOUR - 21 * MIN, demo: 0 },
+    halts,
+    pauses,
+    approvals: [],
+    busted: new Set(),
+    fills: new Map(),
+    liquidations,
+    nextId: 500,
+  };
+}
+
+const asKind = (v: unknown): Kind | null => (v === "live" || v === "demo" ? v : null);
+
+/** Strictest book halt that covers (underlying, expiry date, series). */
+function haltFor(kind: Kind, sym: string, date?: string, code?: string): "halt" | "cancel_only" | null {
+  const hs = ex().halts.filter((h) => h.kind === kind && (h.scope === "all" || (h.scope === "underlying" && h.target === sym) || (!!date && h.scope === "expiry" && h.target === `${sym}:${date}`) || (!!code && h.scope === "series" && h.target === code)));
+  return hs.some((h) => h.mode === "halt") ? "halt" : hs.length ? "cancel_only" : null;
+}
+const bookState = (m: "halt" | "cancel_only" | null) => (m === "halt" ? "halted" : m === "cancel_only" ? "cancel_only" : "open");
+
+/** MM quoting per underlying: coverage, inventory, Greeks against its limits (moves a little on every call). */
+function mmRows(kind: Kind, now: number) {
+  const s = db();
+  const e = ex();
+  return s.underlyings
+    .filter((u) => u.enabled)
+    .map((cfg) => {
+      const sym = cfg.symbol as string;
+      const h = hashString(`${sym}:${kind}`);
+      const listed = s.expiries.filter((x) => x.symbol === sym && x.status === "listed");
+      const seriesTotal = listed.reduce((n, x) => n + x.series, 0);
+      const pause = e.pauses.find((p) => p.kind === kind && (p.scope === "all" || (p.scope === "underlying" && p.target === sym)));
+      const pausedSeries = e.pauses.filter((p) => p.kind === kind && p.scope === "expiry" && p.target.startsWith(`${sym}:`)).reduce((n, p) => n + (listed.find((x) => `${sym}:${x.date}` === p.target)?.series ?? 0), 0);
+      const halted = haltFor(kind, sym) === "halt";
+      // the LP exemption: the MM quotes until cut − 1 min, then pulls that expiry
+      const pastCut = listed.filter((x) => Date.parse(x.cutAt) - now < MIN).reduce((n, x) => n + x.series, 0);
+      const lim = mmEffective(kind, sym);
+      const wig = (k: number) => Math.sin(now / (6000 + k * 900) + h);
+      const dUse = sym === "XAUUSD" ? 0.86 : 0.08 + (h % 50) / 100;
+      const vUse = sym === "USOIL" ? 1.04 : 0.12 + (h % 40) / 100;
+      const gUse = 0.08 + ((h >>> 3) % 45) / 100;
+      const sign = h % 2 ? 1 : -1;
+      const stopped = !!pause || halted || !lim.enabled;
+      const quoted = stopped ? 0 : Math.max(0, seriesTotal - pastCut - pausedSeries);
+      return {
+        symbol: sym,
+        status: pause ? "paused" : halted ? "halted" : !lim.enabled ? "disabled" : vUse > 1 ? "limited" : "quoting",
+        coveragePct: seriesTotal ? r4((quoted / seriesTotal) * 100, 1) : 0,
+        seriesQuoted: quoted,
+        seriesTotal,
+        inventoryContracts: Math.round(((h % 400) - 150) * (kind === "demo" ? 2 : 1) * (1 + 0.04 * wig(1))),
+        netDelta: r4(sign * dUse * lim.maxNetDelta * (1 + 0.02 * wig(2)), 2),
+        gamma: r4(-gUse * lim.maxGamma * (1 + 0.03 * wig(3)), 2),
+        vega: Math.round(-vUse * lim.maxVega * (1 + 0.01 * wig(4))),
+        theta: Math.round(vUse * lim.maxVega * 0.31 * (1 + 0.02 * wig(5))),
+        limits: { maxNetDelta: lim.maxNetDelta, maxGamma: lim.maxGamma, maxVega: lim.maxVega, maxContractsPerSeries: lim.maxContractsPerSeries },
+        // the vega limit pulls the side that would add short vega (the asks) on every quoted series
+        withdrawnSides: stopped ? null : vUse > 1 ? quoted : h % 4,
+        lastRequoteAt: stopped ? (pause?.at ?? null) : iso(now - 150 - (h % 1800)),
+        baseSize: lim.baseSize,
+        minSpreadTicks: lim.minSpreadTicks,
+      };
+    });
+}
+
+function mmState(kind: Kind) {
+  const now = Date.now();
+  const e = ex();
+  const pauses = e.pauses.filter((p) => p.kind === kind).map(({ kind: _k, ...p }) => p);
+  if (!e.enabledAt[kind])
+    return { kind, status: "stopped", startedAt: null, uptimeSecs: 0, uptimePct: null, latency: null, coveragePct: 0, quotesLive: 0, lastQuoteAt: null, account: { login: MM_LOGIN[kind], equity: 10_000_000, cash: 10_000_000, margin: 0 }, greeks: { delta: 0, gamma: 0, vega: 0, theta: 0 }, pauses, underlyings: [] };
+  const rows = mmRows(kind, now).map(({ baseSize: _b, minSpreadTicks: _m, ...r }) => r);
+  const live = rows.filter((r) => r.status !== "halted");
+  const total = live.reduce((n, r) => n + r.seriesTotal, 0);
+  const quoted = live.reduce((n, r) => n + r.seriesQuoted, 0);
+  const coverage = total ? r4((quoted / total) * 100, 1) : 0;
+  const allPaused = e.pauses.some((p) => p.kind === kind && p.scope === "all");
+  const g = rows.reduce((a, r) => ({ delta: a.delta + r.netDelta, gamma: a.gamma + r.gamma, vega: a.vega + r.vega, theta: a.theta + r.theta }), { delta: 0, gamma: 0, vega: 0, theta: 0 });
+  const w = Math.sin(now / 5000);
+  const equity = (kind === "live" ? 2_480_000 : 10_000_000) + Math.round(g.theta * 0.4 + w * 1800);
+  return {
+    kind,
+    status: allPaused ? "paused" : coverage < 95 ? "degraded" : "quoting",
+    startedAt: iso(e.mmStarted[kind]),
+    uptimeSecs: Math.floor((now - e.mmStarted[kind]) / 1000),
+    uptimePct: 99.97,
+    latency: { p50Us: Math.round(182 + w * 14), p99Us: Math.round(946 + Math.sin(now / 3100) * 70) },
+    coveragePct: allPaused ? 0 : coverage,
+    quotesLive: allPaused ? 0 : rows.reduce((n, r) => n + r.seriesQuoted * 2 - (typeof r.withdrawnSides === "number" ? r.withdrawnSides : 0), 0),
+    lastQuoteAt: allPaused ? (e.pauses.find((p) => p.kind === kind && p.scope === "all")?.at ?? null) : iso(now - 120),
+    account: { login: MM_LOGIN[kind], equity, cash: Math.round(equity * 0.87), margin: Math.round(equity * 0.24 + w * 900) },
+    greeks: { delta: r4(g.delta, 2), gamma: r4(g.gamma, 2), vega: g.vega, theta: g.theta },
+    pauses,
+    underlyings: rows,
+  };
+}
+
+/** Nightly replay audit time: 03:10 UTC today (or yesterday before that). */
+function replayAt(now: number) {
+  const d = new Date(now);
+  const t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 3, 10);
+  return iso(t <= now ? t : t - DAY);
+}
+
+function booksMonitor(kind: Kind) {
+  const e = ex();
+  const now = Date.now();
+  const halts = e.halts.filter((h) => h.kind === kind).sort((a, b) => b.at.localeCompare(a.at));
+  if (!e.enabledAt[kind]) return { kind, enabled: false, enabledAt: null, replay: null, books: [], halts };
+  const since = Date.parse(e.enabledAt[kind]!);
+  const books = mmRows(kind, now).map((m) => {
+    const h = hashString(`${m.symbol}:${kind}:book`);
+    const clientOrders = 18 + (h % 160);
+    const mmOrders = Math.max(0, m.seriesQuoted * 2 - (typeof m.withdrawnSides === "number" ? m.withdrawnSides : 0));
+    const pending = (h + Math.floor(now / 4000)) % 3;
+    const vol = Math.round((180 + (h % 2400)) * (1 + 0.1 * Math.sin(now / 60000 + h)));
+    const u = UNDERLYINGS.find((x) => x.symbol === m.symbol)!;
+    return {
+      underlying: m.symbol,
+      state: bookState(haltFor(kind, m.symbol)),
+      seq: 1_000 + (h % 5000) + Math.floor((now - since) / (80 + (h % 70))),
+      restingOrders: mmOrders + clientOrders,
+      restingContracts: mmOrders * m.baseSize + clientOrders * (3 + (h % 9)),
+      clientOrders,
+      mmCoveragePct: m.coveragePct,
+      seriesQuoted: m.seriesQuoted,
+      seriesTotal: m.seriesTotal,
+      avgSpreadTicks: r4(Math.max(m.minSpreadTicks, 3 + (h % 90) / 10 + 0.4 * Math.sin(now / 7000 + h)), 1),
+      oi: 900 + (h % 14_000),
+      volume: vol,
+      volumeUsd: Math.round(vol * u.contractSize * u.spot * usdPerQuoteOf(u.quoteCcy) * 0.006),
+      outbox: { pending, failed: 0, oldestMs: pending ? 6 + (h % 40) : null },
+      clearingUsd: 0,
+      lastTradeAt: iso(now - 3000 - (h % 240) * 1000),
+    };
+  });
+  return { kind, enabled: true, enabledAt: e.enabledAt[kind], replay: { ok: true, at: replayAt(now), mismatches: 0 }, books, halts };
+}
+
+/** Depth with owners of one series (10 levels a side) and its recent prints. */
+function seriesDepth(kind: Kind, code: string): Res {
+  const e = ex();
+  if (!e.enabledAt[kind]) return err(409, "book_not_enabled", `The order book isn't enabled for ${kind} accounts yet.`);
+  const m = code.match(SERIES_RE);
+  if (!m) return bad("series must look like EURUSD-20261009-1.0850-C");
+  const sym = m[1]!;
+  const date = `${m[2]}-${m[3]}-${m[4]}`;
+  const cp = m[6] as "C" | "P";
+  const c = chainFor(sym, date, "*");
+  if (c.status !== 200) return err(404, "series_not_found", `${code} isn't a listed series.`);
+  type Side = { code: string; bid: number; ask: number; mark: number };
+  const chain = c.data as { rows: { call: Side; put: Side }[]; contractSize: number; quoteCcy: string };
+  const side = chain.rows.map((r) => (cp === "C" ? r.call : r.put)).find((x) => x.code === code);
+  if (!side) return err(404, "series_not_found", `${code} isn't a listed series.`);
+  const now = Date.now();
+  const cfg = db().underlyings.find((x) => x.symbol === sym)!;
+  const tick = (cfg.premiumTick as number) || 0.00001;
+  const lim = mmEffective(kind, sym);
+  const exp = db().expiries.find((x) => x.symbol === sym && x.date === date);
+  const mmOff = !!e.pauses.find((p) => p.kind === kind && (p.scope === "all" || (p.scope === "underlying" && p.target === sym) || (p.scope === "expiry" && p.target === `${sym}:${date}`))) || haltFor(kind, sym, date, code) === "halt" || !lim.enabled || (!!exp && Date.parse(exp.cutAt) - now < MIN);
+  const rnd = seeded(hashString(`${code}:${kind}`) + Math.floor(now / 30_000));
+  const ticks = (p: number) => Math.round(p / tick);
+  const px = (t: number) => r4(t * tick, 8);
+  const bidT = Math.floor(side.bid / tick);
+  const askT = Math.max(bidT + Math.max(1, lim.minSpreadTicks), Math.ceil(side.ask / tick));
+  let oid = 5_100_000 + (hashString(code) % 80_000) * 10;
+  const mkLevels = (dir: 1 | -1, startT: number, mmQuotes: boolean) => {
+    const levels: { price: number; qty: number; orders: { id: number; login: number; userId: number; name: string; qty: number; left: number; at: string; flags: string[]; mm: boolean }[] }[] = [];
+    let t = startT;
+    for (let lv = 0; levels.length < 10 && lv < 30; lv++) {
+      if (t < 1) break;
+      const orders = [];
+      if (lv === 0 && mmQuotes && !mmOff) {
+        const q = Math.max(1, Math.round(lim.baseSize * rnd.range(0.6, 1.2)));
+        orders.push({ id: oid++, login: MM_LOGIN[kind], userId: MM_USER_ID, name: "Kalks MM", qty: q, left: q, at: iso(now - rnd.int(200, 4800)), flags: ["post_only"], mm: true });
+      }
+      const n = lv === 0 ? rnd.int(0, 2) : rnd.int(lv < 4 ? 1 : 0, 3);
+      for (let i = 0; i < n; i++) {
+        const cl = clientOf(kind, rnd.int(0, 99));
+        const q = rnd.int(1, 25);
+        const left = rnd.bool(0.2) ? Math.max(1, q - rnd.int(1, q)) : q;
+        orders.push({ id: oid++, login: cl.login, userId: cl.userId, name: cl.name, qty: q, left, at: iso(now - rnd.int(30, 7200) * 1000), flags: rnd.bool(0.25) ? ["post_only"] : rnd.bool(0.15) ? ["reduce_only"] : [], mm: false });
+      }
+      // FIFO within the level: the MM's requote is newer than older client orders
+      orders.sort((a, b) => a.at.localeCompare(b.at));
+      if (orders.length) levels.push({ price: px(t), qty: orders.reduce((s, o) => s + o.left, 0), orders });
+      t += dir * rnd.int(1, 3);
+    }
+    return levels;
+  };
+  // no MM bid under 1 tick (§4); clients may still bid the minimum
+  const bids = mkLevels(-1, Math.max(1, bidT), bidT >= 1);
+  const asks = mkLevels(1, Math.max(2, askT), true);
+  const base = hashString(`${code}:${kind}`) % 9_000;
+  const trades = Array.from({ length: 12 }, (_, i) => {
+    const tr = seeded(hashString(`${code}:${kind}:${i}`));
+    const fillId = 8_400_000 + base * 10 + i;
+    const fk = i === 4 ? "liquidation" : i === 9 ? "backstop" : "book";
+    const takerSide: "buy" | "sell" = tr.bool() ? "buy" : "sell";
+    const mmMaker = fk === "backstop" || tr.bool(0.7);
+    const cl = clientOf(kind, tr.int(0, 99));
+    const cl2 = clientOf(kind, tr.int(0, 99) + 1);
+    const price = px(Math.max(1, ticks(side.mark) + (takerSide === "buy" ? 1 : -1) * tr.int(0, Math.max(1, Math.round((askT - bidT) / 2)))));
+    const f: Fill = {
+      fillId,
+      series: code,
+      price,
+      qty: tr.int(1, 20),
+      takerSide,
+      kind: fk,
+      at: iso(now - (i * 7 + tr.int(0, 6)) * MIN - tr.int(0, 59) * 1000),
+      maker: mmMaker ? { login: MM_LOGIN[kind], mm: true, userId: null } : { login: cl2.login, mm: false, userId: cl2.userId },
+      taker: { login: cl.login, mm: false, userId: cl.userId },
+    };
+    e.fills.set(fillId, f);
+    return { ...f, busted: e.busted.has(fillId) };
+  });
+  const u = UNDERLYINGS.find((x) => x.symbol === sym)!;
+  const books = booksMonitor(kind).books.find((b) => b.underlying === sym);
+  audit("book.depth.view", `${kind}:${code}`, "Audited depth view (owners shown)", null, null);
+  return ok({
+    series: code,
+    kind,
+    seq: books?.seq ?? 0,
+    state: bookState(haltFor(kind, sym, date, code)),
+    mark: r4(Math.min(Math.max(side.mark, bids[0]?.price ?? 0), asks[0]?.price ?? Infinity), 8),
+    theo: side.mark,
+    premiumTick: tick,
+    usdPerUnit: r4(u.contractSize * usdPerQuoteOf(u.quoteCcy), 6),
+    bids,
+    asks,
+    trades,
+    audited: true,
+  });
+}
+
+function fillOf(id: number, kind: Kind = "live"): Fill {
+  const known = ex().fills.get(id);
+  if (known) return known;
+  const r = seeded(id);
+  const sym = r.pick(["EURUSD", "XAUUSD", "GBPUSD"]);
+  const exp = db().expiries.find((x) => x.symbol === sym && x.status === "listed");
+  const cl = clientOf(kind, r.int(0, 99));
+  return { fillId: id, series: seriesNear(sym, exp?.date ?? dayStr(Date.now()), r.int(-2, 2), "C"), price: r4(r.range(0.002, 0.01), 6), qty: r.int(1, 15), takerSide: "buy", kind: "book", at: iso(Date.now() - r.int(5, 300) * MIN), maker: { login: MM_LOGIN[kind], mm: true, userId: null }, taker: { login: cl.login, mm: false, userId: cl.userId } };
+}
+
+function clearingRows(kind: Kind, expiry: string | null, sym: string | null) {
+  const e = ex();
+  if (!e.enabledAt[kind]) return [];
+  const since = Date.parse(e.enabledAt[kind]!);
+  const now = Date.now();
+  return db()
+    .expiries.filter((x) => (x.status === "listed" || Date.parse(x.cutAt) >= since) && (!expiry || x.date === expiry) && (!sym || x.symbol === sym))
+    .filter((x) => db().underlyings.find((u) => u.symbol === x.symbol)?.enabled)
+    .map((x) => {
+      const h = hashString(`${x.symbol}:${x.date}:${kind}`);
+      const settled = x.status !== "listed";
+      const near = Date.parse(x.cutAt) - now < 3 * DAY;
+      const fills = settled ? 40 + (h % 900) : near ? 20 + (h % 600) : h % 140;
+      return {
+        account: `house:options_clearing.${x.symbol}.${x.date.replace(/-/g, "")}:USD`,
+        underlying: x.symbol,
+        expiry: x.date,
+        balanceUsd: 0,
+        pendingOutbox: 0,
+        fills,
+        lastFillAt: fills ? iso(settled ? Date.parse(x.cutAt) - 60_000 - (h % 600) * 1000 : now - 2000 - (h % 3600) * 1000) : null,
+        swept: settled ? { amountUsd: r4(((h % 9) - 4) / 1000, 3), at: iso(Date.parse(x.fixedAt ?? x.cutAt) + 3 * MIN) } : null,
+      };
+    })
+    .sort((a, b) => a.expiry.localeCompare(b.expiry) || a.underlying.localeCompare(b.underlying));
+}
+
+function enablePlan(kind: Kind) {
+  const e = ex();
+  const enabledAt = e.enabledAt[kind];
+  const pending = e.approvals.find((a) => a.status === "pending" && a.action === "book_enable" && a.kind === kind) ?? null;
+  const live = kind === "live";
+  const legacy = live ? 37 : 112;
+  const novation = live ? { positions: 1284, clients: 312, contracts: 9420, premiumUsd: 412_880.5 } : { positions: 4210, clients: 1876, contracts: 51_300, premiumUsd: 2_904_115.25 };
+  const unders = db().underlyings.filter((u) => u.enabled).length;
+  return {
+    kind,
+    enabled: !!enabledAt,
+    enabledAt,
+    mmCoverage: { pct: enabledAt ? (mmState(kind).coveragePct as number) : 97.8, required: 95 },
+    steps: [
+      { key: "halt_house_opens", label: "Halt house opens", detail: "New option opens against the house stop at once; closing keeps working.", count: null },
+      { key: "cancel_legacy_orders", label: "Cancel legacy pending option orders", detail: "Clients are notified in the terminal and by email.", count: legacy },
+      { key: "start_actors", label: "Start the book actors and the market maker", detail: `One actor per underlying (${unders}); wait until MM quote coverage reaches the required level.`, count: unders },
+      { key: "novate", label: "Novate open positions to the book", detail: "Clients keep their positions and P&L; the house's opposite moves into the MM account (key novate:{tenant}:{kind}:{series}). Cash moves house:options_premium → MM balance.", count: novation.positions },
+      { key: "write_venue", label: "Write the venue row", detail: `option_book_venues: ${kind} options trade on the order book from then on.`, count: null },
+    ],
+    legacyPendingOrders: legacy,
+    novation,
+    barriersStayHouse: live ? 46 : 203,
+    warnings: enabledAt
+      ? []
+      : live
+        ? ["3 clients have pending orders inside the 15-minute no-open window; they are cancelled with the rest.", "XAGUSD has a dealer halt: its book starts halted."]
+        : ["The demo MM account is funded from demo house capital.", "NZDUSD is disabled: no actor is started for it."],
+    blockers: [],
+    pending: pending ? { id: pending.id, requestedBy: pending.requestedBy, requestedAt: pending.requestedAt, reason: pending.reason } : null,
+  };
+}
+
+/** Engine routes of the order book exchange: `p` is the path after /api/trading/admin/options/. */
+function exchangeRequest(method: string, p: string, q: URLSearchParams, b: Record<string, unknown>): Res | null {
+  const e = ex();
+  const qKind = q.get("kind") === "demo" ? "demo" : "live";
+  if (method === "GET") {
+    if (p === "mm") return ok(mmState(qKind));
+    if (p === "books") return ok(booksMonitor(qKind));
+    const series = p.match(/^books\/([^/]+)$/);
+    if (series) return seriesDepth(qKind, decodeURIComponent(series[1]!));
+    if (p === "liquidations") {
+      const from = q.get("from") ? Date.parse(q.get("from")!) : null;
+      const toRaw = q.get("to");
+      const to = toRaw ? Date.parse(toRaw) + (/^\d{4}-\d{2}-\d{2}$/.test(toRaw) ? DAY - 1 : 0) : null;
+      const login = q.get("login");
+      const limit = Math.min(1000, Math.max(1, Number(q.get("limit") ?? 500)));
+      const kind = q.get("kind");
+      const items = e.liquidations.filter((l) => (!kind || kind === "all" || l.kind === kind) && (from === null || Date.parse(l.at) >= from) && (to === null || Date.parse(l.at) <= to) && (!login || String(l.login) === login)).slice(0, limit);
+      return ok({ items: items.map(({ kind: _k, ...l }) => l) });
+    }
+    if (p === "clearing") return ok({ items: clearingRows(qKind, q.get("expiry"), q.get("u")) });
+    if (p === "approvals") return ok({ items: e.approvals.filter((a) => a.status === "pending").map(({ status: _s, ...a }) => a) });
+    if (p === "book/enable/plan") return ok(enablePlan(qKind));
+    return null;
+  }
+
+  const reason = needReason(b);
+  if (typeof reason !== "string") return reason;
+
+  const mm = p.match(/^mm\/(pause|resume)$/);
+  if (method === "POST" && mm) {
+    const kind = asKind(b.kind);
+    if (!kind) return bad("kind must be live or demo.");
+    if (!e.enabledAt[kind]) return err(409, "book_not_enabled", `The order book isn't enabled for ${kind} accounts: the market maker isn't running.`);
+    const scope = String(b.scope ?? "");
+    if (!["all", "underlying", "expiry"].includes(scope)) return bad("scope must be all, underlying or expiry.");
+    const target = scope === "all" ? "*" : String(b.target ?? "").trim();
+    if (scope === "underlying" && !db().underlyings.some((u) => u.symbol === target && u.enabled)) return bad("Unknown or disabled underlying.");
+    if (scope === "expiry" && !/^[A-Z0-9]{3,12}:\d{4}-\d{2}-\d{2}$/.test(target)) return bad("An expiry target looks like EURUSD:2026-10-09.");
+    if (mm[1] === "pause") {
+      if (e.pauses.some((x) => x.kind === kind && x.scope === scope && x.target === target)) return err(409, "already_paused", "The market maker is already paused for that scope.");
+      const pause: Pause = { id: e.nextId++, kind, scope, target, reason, by: ME, at: new Date().toISOString() };
+      e.pauses.unshift(pause);
+      audit("mm.pause", `${kind}:${scope}:${target}`, reason, null, { scope, target });
+      return ok({ pause });
+    }
+    const hit = scope === "all" ? e.pauses.filter((x) => x.kind === kind) : e.pauses.filter((x) => x.kind === kind && x.scope === scope && x.target === target);
+    if (!hit.length) return err(404, "not_paused", "The market maker isn't paused for that scope.");
+    e.pauses = e.pauses.filter((x) => !hit.includes(x));
+    audit("mm.resume", `${kind}:${scope}:${target}`, reason, { pauses: hit.length }, null);
+    return ok({ ok: true, resumed: hit.length });
+  }
+
+  if (method === "POST" && p === "books/halt") {
+    const kind = asKind(b.kind);
+    if (!kind) return bad("kind must be live or demo.");
+    if (!e.enabledAt[kind]) return err(409, "book_not_enabled", `The order book isn't enabled for ${kind} accounts yet.`);
+    const scope = String(b.scope ?? "");
+    const mode = String(b.mode ?? "");
+    if (!["all", "underlying", "expiry", "series"].includes(scope)) return bad("scope must be all, underlying, expiry or series.");
+    if (mode !== "halt" && mode !== "cancel_only") return bad("mode must be halt or cancel_only.");
+    const target = scope === "all" ? "*" : String(b.target ?? "").trim();
+    if (scope === "underlying" && !db().underlyings.some((u) => u.symbol === target && u.enabled)) return bad("Unknown or disabled underlying.");
+    if (scope === "expiry" && !/^[A-Z0-9]{3,12}:\d{4}-\d{2}-\d{2}$/.test(target)) return bad("An expiry target looks like EURUSD:2026-10-09.");
+    if (scope === "series" && !SERIES_RE.test(target)) return bad("A series looks like EURUSD-20261009-1.0850-C.");
+    if (e.halts.some((h) => h.kind === kind && h.scope === scope && h.target === target && h.mode === mode)) return err(409, "already_halted", "That scope already has this kill switch on.");
+    const halt: Halt = { id: Math.max(10, ...e.halts.map((h) => h.id)) + 1, kind, scope, target, mode, reason, by: ME, at: new Date().toISOString() };
+    e.halts.unshift(halt);
+    audit(mode === "halt" ? "book.halt" : "book.cancel_only", `${kind}:${scope}:${target}`, reason, null, { scope, target, mode });
+    return ok({ halt });
+  }
+  const clear = p.match(/^books\/halt\/(\d+)$/);
+  if (method === "DELETE" && clear) {
+    const h = e.halts.find((x) => String(x.id) === clear[1]);
+    if (!h) return err(404, "halt_not_found", "Active halt not found (already cleared?).");
+    e.halts = e.halts.filter((x) => x !== h);
+    audit("book.halt.clear", `${h.kind}:${h.scope}:${h.target}`, reason, { mode: h.mode }, null);
+    return ok({ ok: true });
+  }
+
+  const bust = p.match(/^fills\/(\d+)\/bust$/);
+  if (method === "POST" && bust) {
+    const id = Number(bust[1]);
+    if (!/^84\d{5}$/.test(bust[1]!)) return err(404, "fill_not_found", "Fill not found. In the demo, book fill ids start with 84 (e.g. 8400123); open a series under Order books › Depth to see real ones.");
+    if (e.busted.has(id)) return err(409, "already_busted", `Fill #${id} is already busted.`);
+    const approvalId = b.approvalId;
+    if (approvalId === undefined || approvalId === null) {
+      const open = e.approvals.find((a) => a.status === "pending" && a.action === "fill_bust" && a.target === String(id));
+      if (open) return err(409, "already_requested", `A bust of fill #${id} is already waiting for a second approver (approval #${open.id}).`);
+      const a: Approval = { id: e.nextId++, action: "fill_bust", target: String(id), kind: null, reason, requestedBy: ME, requestedAt: new Date().toISOString(), status: "pending" };
+      e.approvals.unshift(a);
+      audit("fill.bust.request", String(id), reason, null, { approval: a.id });
+      return { status: 202, data: { status: "pending_approval", approval: { id: a.id, requestedBy: a.requestedBy, requestedAt: a.requestedAt } } };
+    }
+    const a = e.approvals.find((x) => String(x.id) === String(approvalId) && x.status === "pending" && x.action === "fill_bust" && x.target === String(id));
+    if (!a) return err(404, "approval_not_found", "No pending bust approval with that id for this fill.");
+    // demo: one browser plays both staff members (a live engine answers 409 four_eyes here)
+    a.status = "executed";
+    e.busted.add(id);
+    const f = fillOf(id);
+    const fu = UNDERLYINGS.find((x) => f.series.startsWith(`${x.symbol}-`));
+    const premium = r4(f.price * f.qty * (fu ? fu.contractSize * usdPerQuoteOf(fu.quoteCcy) : 10_000), 2) || 184.5;
+    audit("fill.bust", String(id), reason, { approval: a.id, requestedBy: a.requestedBy }, { busted: true });
+    return ok({
+      status: "busted",
+      fill: { ...f, busted: true },
+      reversed: [
+        { login: f.taker.login, amountUsd: f.takerSide === "buy" ? r4(premium + 0.25 * f.qty, 2) : -r4(premium - 0.25 * f.qty, 2) },
+        { login: f.maker.login, amountUsd: f.takerSide === "buy" ? -premium : premium },
+      ],
+      approvedBy: "second approver (demo: simulated)",
+    });
+  }
+
+  if (method === "POST" && p === "book/enable") {
+    const kind = asKind(b.kind);
+    if (!kind) return bad("kind must be live or demo.");
+    if (e.enabledAt[kind]) return err(409, "already_enabled", `The order book is already enabled for ${kind} accounts (forward-only).`);
+    const approvalId = b.approvalId;
+    if (approvalId === undefined || approvalId === null) {
+      const open = e.approvals.find((a) => a.status === "pending" && a.action === "book_enable" && a.kind === kind);
+      if (open) return err(409, "already_requested", `Enabling ${kind} is already waiting for a second approver (approval #${open.id}).`);
+      const a: Approval = { id: e.nextId++, action: "book_enable", target: kind, kind, reason, requestedBy: ME, requestedAt: new Date().toISOString(), status: "pending" };
+      e.approvals.unshift(a);
+      audit("book.enable.request", kind, reason, null, { approval: a.id });
+      return { status: 202, data: { status: "pending_approval", approval: { id: a.id, requestedBy: a.requestedBy, requestedAt: a.requestedAt } } };
+    }
+    const a = e.approvals.find((x) => String(x.id) === String(approvalId) && x.status === "pending" && x.action === "book_enable" && x.kind === kind);
+    if (!a) return err(404, "approval_not_found", "No pending rollout approval with that id.");
+    a.status = "executed";
+    const plan = enablePlan(kind);
+    const at = new Date().toISOString();
+    e.enabledAt[kind] = at;
+    e.mmStarted[kind] = Date.now();
+    audit("book.enable", kind, reason, { enabled: false }, { enabled: true, approval: a.id });
+    return ok({ status: "enabled", enabledAt: at, report: { cancelledOrders: plan.legacyPendingOrders, novatedPositions: plan.novation.positions, clients: plan.novation.clients, barriersStayHouse: plan.barriersStayHouse } });
+  }
+  return null;
+}
+
+/** Options service `mm-settings`: GET, PUT / DELETE {tenant}/{kind}/{underlying}. */
+function mmSettingsRequest(method: string, seg: string[], b: Record<string, unknown>, reason: string): Res {
+  const s = db();
+  const [tenant, kind, underlying] = [seg[1] ?? "", seg[2] ?? "", (seg[3] ?? "").toUpperCase()];
+  if (!/^(\*|[a-z0-9_-]{1,64})$/.test(tenant) || !/^(\*|live|demo)$/.test(kind) || !/^(\*|[A-Z0-9._-]{1,20})$/.test(underlying)) return bad("The key is tenant / kind (live, demo or *) / underlying.");
+  const i = s.mm.findIndex((r) => r.tenant === tenant && r.kind === kind && r.underlying === underlying);
+  if (method === "DELETE") {
+    if (tenant === "*" && kind === "*" && underlying === "*") return bad("The default row (*, *, *) can be edited but not deleted.");
+    if (i < 0) return err(404, "not_found", "Market-maker settings not found.");
+    const before = s.mm[i];
+    s.mm.splice(i, 1);
+    audit("mm_settings.delete", `${tenant}/${kind}/${underlying}`, reason, before, null);
+    return ok({ ok: true, version: bump() });
+  }
+  if (underlying !== "*" && !s.underlyings.some((u) => u.symbol === underlying)) return bad("Unknown underlying.");
+  const base = i >= 0 ? s.mm[i]! : mmEffective(kind === "*" ? "live" : kind, underlying);
+  const next: MmRow = { ...base, tenant, kind, underlying, enabled: typeof b.enabled === "boolean" ? b.enabled : base.enabled, updatedAt: new Date().toISOString(), updatedBy: ME };
+  for (const k of MM_NUM) {
+    if (!(k in b)) continue;
+    const v = Number(b[k]);
+    if (!Number.isFinite(v) || v < 0) return bad(`${k} must be a number ≥ 0.`);
+    next[k] = v;
+  }
+  for (const k of ["spreadVol0dte", "spreadVol7d", "spreadVol30d", "spreadVolLong"] as const) if (next[k] > 0.2) return bad(`${k} is a decimal vol of at most 0.2 (20 vol points).`);
+  if (!Number.isInteger(next.baseSize) || next.baseSize < 1) return bad("baseSize must be a whole number of contracts ≥ 1.");
+  if (!Number.isInteger(next.minSpreadTicks) || next.minSpreadTicks < 1) return bad("minSpreadTicks must be a whole number ≥ 1.");
+  for (const k of ["maxNetDelta", "maxGamma", "maxVega", "maxContractsPerSeries"] as const) if (!(next[k] > 0)) return bad(`${k} must be above 0.`);
+  if (i >= 0) s.mm[i] = next;
+  else s.mm.push(next);
+  audit("mm_settings.upsert", `${tenant}/${kind}/${underlying}`, reason, i >= 0 ? base : null, next);
+  return ok({ settings: next, version: bump() });
+}
+
 /** Answers a Back Office request in the demo build. `url` is the browser URL (`/api/options/…`, `/api/trading/…`). */
 export async function mockOptionsRequest(method: string, url: string, body?: unknown): Promise<Res> {
   await new Promise((r) => setTimeout(r, method === "GET" ? 120 : 260));
@@ -762,6 +1405,8 @@ export async function mockOptionsRequest(method: string, url: string, body?: unk
       audit("trade.void", voidM[1]!, `${code}${b.note ? ` · ${String(b.note)}` : ""}`, null, { voided: true });
       return ok({ data: { ticket: Number(voidM[1]), premiumReversedUsd: 184.5, commissionReversedUsd: 2.5 }, audit: [] });
     }
+    const x = exchangeRequest(method, p, q, b);
+    if (x) return x;
     return err(404, "engine_pending", "Available after the engine update.");
   }
 
@@ -809,6 +1454,7 @@ export async function mockOptionsRequest(method: string, url: string, body?: unk
     }
     if (p === "tenants") return ok({ tenants: Object.values(s.tenants).sort((a, b) => a.tenant.localeCompare(b.tenant)) });
     if (p === "groups") return ok({ groups: s.groups, default: s.groups.find((g) => g.groupCode === "*" && g.symbol === "*") });
+    if (p === "mm-settings") return ok({ settings: s.mm });
     if (p === "controls") {
       const all = q.get("all") === "true";
       return ok({ controls: s.controls.filter((c) => all || (c.active && (!c.expiresAt || Date.parse(c.expiresAt as string) > Date.now()))).sort((a, b) => (b.id as number) - (a.id as number)) });
@@ -850,6 +1496,7 @@ export async function mockOptionsRequest(method: string, url: string, body?: unk
   const reason = needReason(b);
   if (typeof reason !== "string") return reason;
 
+  if (seg[0] === "mm-settings" && (method === "PUT" || method === "DELETE") && seg.length === 4) return mmSettingsRequest(method, seg, b, reason);
   if (method === "PUT" && seg[0] === "underlyings") {
     const i = s.underlyings.findIndex((x) => x.symbol === seg[1]);
     if (i < 0) return err(404, "not_found", "Underlying not found.");
@@ -859,6 +1506,15 @@ export async function mockOptionsRequest(method: string, url: string, body?: unk
     if ((next.noOpenMinutes as number) < (next.closeOnlyMinutes as number)) return bad("noOpenMinutes must be at least closeOnlyMinutes.");
     if ((next.minContracts as number) > (next.maxContracts as number)) return bad("minContracts must not exceed maxContracts.");
     if (!(next.expiryKinds as string[]).length) return bad("expiryKinds must be daily, weekly and/or monthly.");
+    const nv = (k: string) => (typeof next[k] === "number" ? (next[k] as number) : null);
+    const within = (k: string, lo: number, hi: number) => nv(k) === null || (nv(k)! >= lo && nv(k)! <= hi);
+    if (nv("premiumTick") !== null && !(nv("premiumTick")! > 0)) return bad("premiumTick must be positive (quote currency per unit).");
+    if (!within("marketBandPct", 0, 100) || !within("limitBandPct", 0, 100)) return bad("marketBandPct and limitBandPct are percentages between 0 and 100.");
+    if (nv("bandMinTicks") !== null && !(Number.isInteger(nv("bandMinTicks")) && nv("bandMinTicks")! >= 0)) return bad("bandMinTicks must be a whole number ≥ 0.");
+    if (!within("liqBandPct", 0, 50) || !within("liqFeePct", 0, 50)) return bad("liqBandPct and liqFeePct are percentages between 0 and 50.");
+    if (!within("rfqQuoteTtlSecs", 1, 60)) return bad("rfqQuoteTtlSecs must be between 1 and 60 seconds.");
+    if (nv("markMinQty") !== null && nv("markMinQty")! < 0) return bad("markMinQty must be ≥ 0.");
+    if (nv("markMaxSpreadMult") !== null && nv("markMaxSpreadMult")! < 1) return bad("markMaxSpreadMult must be at least 1.");
     audit("underlying.update", seg[1]!, reason, s.underlyings[i], next);
     s.underlyings[i] = next;
     return ok({ underlying: next, version: bump() });
@@ -932,6 +1588,15 @@ export async function mockOptionsRequest(method: string, url: string, body?: unk
     const next: Record<string, unknown> = { ...base, ...patch, tenant: "kalks", groupCode: group, symbol, updatedAt: new Date().toISOString(), updatedBy: ME };
     if ((next.volSpread as number) < 0 || (next.volSpread as number) > 0.2) return bad("Value out of range (group_settings_vol_spread_check).");
     if ((next.commissionCapPct as number) < 0 || (next.commissionCapPct as number) > 100) return bad("Value out of range (group_settings_commission_cap_pct_check).");
+    const mk = next.makerFeePerContract;
+    const tk = next.takerFeePerContract;
+    if (tk !== undefined && !(typeof tk === "number" && tk >= 0 && tk <= 1000)) return bad("takerFeePerContract must be between 0 and 1000 USD per contract.");
+    if (mk !== undefined && !(typeof mk === "number" && Math.abs(mk) <= 1000)) return bad("makerFeePerContract must be between −1000 and 1000 USD per contract (negative = rebate).");
+    const rows = [...s.groups.filter((_, j) => j !== i), next];
+    const takers = rows.map((g) => g.takerFeePerContract).filter((v): v is number => typeof v === "number");
+    const rebates = rows.map((g) => g.makerFeePerContract).filter((v): v is number => typeof v === "number" && v < 0).map((v) => -v);
+    if (takers.length && rebates.length && Math.min(...takers) < Math.max(...rebates) - 1e-9)
+      return bad(`Fees: the lowest taker fee ($${Math.min(...takers).toFixed(2)}) must be at least the largest maker rebate ($${Math.max(...rebates).toFixed(2)}) across your rows (min(taker) ≥ max(|maker rebate|)).`);
     if (i >= 0) s.groups[i] = next;
     else s.groups.push(next);
     audit("group.upsert", `${group}/${symbol}`, reason, i >= 0 ? base : null, next);

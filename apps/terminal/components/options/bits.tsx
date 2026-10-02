@@ -3,7 +3,7 @@
 // Small shared pieces of the options workspace: avatars for every underlying (NZDUSD has no CFD instrument), state and
 // expiry-kind badges, a call/put tag, the flashing number cell, the "launching soon" and error panels.
 import * as React from "react";
-import { ArrowUpRight, Clock3, Hourglass, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
+import { ArrowUpRight, BookOpen, Clock3, Hourglass, RefreshCw, TriangleAlert } from "lucide-react";
 import { INSTRUMENT_MAP } from "@kalks/mock";
 import { OPTION_SPEC } from "@kalks/mock/options";
 import { SymbolAvatar, cn, useTickGlow } from "@kalks/ui";
@@ -134,17 +134,20 @@ export function OptionsUnavailable({ kind, onRetry, compact }: { kind: "soon" | 
   );
 }
 
-/** A rejection with what to do about it (onboarding link for `not_eligible`). */
+/**
+ * A rejection with what to do about it. `not_eligible` is not an error for the client: one quick step (read the
+ * 1-minute options intro in the Client Area and tick "I understand"), so it reads as a friendly info note.
+ */
 export function ErrorNote({ code, message, className }: { code: string; message?: string; className?: string }) {
   const t = useT();
   if (needsOnboarding(code))
     return (
-      <div role="alert" className={cn("rounded-[7px] border border-ember/30 bg-ember-soft/50 px-2.5 py-2 text-[11.5px]", className)}>
+      <div role="status" className={cn("rounded-[7px] border border-info/30 bg-info-soft/40 px-2.5 py-2 text-[11.5px]", className)}>
         <div className="flex items-center gap-1.5 font-semibold text-fg">
-          <ShieldCheck className="size-3.5 text-ember" /> {t("trader.opt.err.not_eligible")}
+          <BookOpen className="size-3.5 text-info" /> {t("trader.opt.err.not_eligible")}
         </div>
-        <p className="mt-0.5 leading-relaxed text-fg-3">{t("trader.opt.onboarding.text")}</p>
-        <a href={ONBOARDING_URL} target="_blank" rel="noreferrer" className="mt-1.5 inline-flex h-6 items-center gap-1 rounded-[5px] bg-ember px-2 text-[11px] font-semibold text-white hover:brightness-110">
+        <p className="mt-0.5 leading-relaxed text-fg-2">{t("trader.opt.onboarding.text")}</p>
+        <a href={ONBOARDING_URL} target="_blank" rel="noreferrer" className="mt-1.5 inline-flex h-6 items-center gap-1 rounded-[5px] border border-info/35 bg-surface-2 px-2 text-[11px] font-semibold text-info transition-colors hover:bg-info-soft">
           {t("trader.opt.onboarding.cta")} <ArrowUpRight className="size-3" />
         </a>
       </div>

@@ -24,7 +24,24 @@ import { clientAccount, csrf, engine, error, readSessions, reply, sessionFor, so
 //   POST   options/orders                   {legs, type, limitPremium?, sl?, tp?, trigger?:{symbol, op, price}, tif?, clientOrderId}
 //   POST   options/combos/{comboId}/close   close every leg of a strategy at once (all-or-nothing)
 //   GET    options/settlements?limit        expiry settlements (fixing, payout, run)
-//   (closing one option position, also partially: positions/{ticket}/close {volume})
+//   (closing one option position, also partially: positions/{ticket}/close {volume}; on a book-venue position the
+//   engine closes it reduce-only at market through the book: {status: filled|partial, filled, avgPrice, left})
+//
+// Kalks FX Options order book (docs/OPTIONS-EXCHANGE.md §2, §5, §12; prices per unit in the quote currency):
+//   POST   options/book/preview             same body as an order (clientOrderId optional) -> reserve, est. avg price, fee
+//   POST   options/book/orders              {series, side, type: limit|market|stop_market|stop_limit, qty, price?,
+//                                            tif: gtc|ioc|fok|gtd, expireAt?, postOnly?, reduceOnly?,
+//                                            trigger?: {source: mark|underlying, op: above|below, price}, clientOrderId}
+//   GET    options/book/orders?status=open|history&series=
+//   PATCH  options/book/orders/{id}         {price?, qty?}
+//   DELETE options/book/orders/{id}
+//   DELETE options/book/orders?series=&underlying=   cancel all of a series or an underlying
+//   GET    options/book/fills?from&to
+//   POST   options/rfq                      {legs:[{series, side, ratio}], qty, reduceOnly?} -> {rfq}
+//   GET    options/rfq/{id}                 {rfq, quotes:[{quoteId, responder, bid, ask, qty, validUntil}]}
+//   POST   options/rfq/{id}/accept          {quoteId, side, limitNet}
+//   DELETE options/rfq/{id}
+//   (deadman and mass-quote are for market-maker programme accounts over the API, not the browser: not forwarded)
 
 type Ctx = { params: Promise<{ path: string[] }> };
 
@@ -35,6 +52,14 @@ const SYMBOL_RE = /^[A-Z0-9._]{2,20}$/;
 const SERIES_RE = /^[A-Z0-9]{3,12}-\d{8}-[0-9.]{1,16}-[CP](-[A-Z0-9._]{1,24})?$/;
 const COMBO_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const MAX_LEGS = 8;
+/** order book order id (= engine ticket) and RFQ id */
+const ORDER_ID_RE = /^\d{1,18}$/;
+const RFQ_ID_RE = /^[A-Za-z0-9_.:-]{1,64}$/;
+const UNDERLYING_RE = /^[A-Z0-9]{3,12}$/;
+const CLIENT_ORDER_RE = /^[A-Za-z0-9_-]{8,64}$/;
+const BOOK_TYPES = ["limit", "market", "stop_market", "stop_limit"];
+const BOOK_TIFS = ["gtc", "ioc", "fok", "gtd"];
+const MAX_QTY = 100_000;
 
 /** Dealing details never reach the browser (book, routing, ledger ids, dealer controls). */
 const HIDDEN = new Set(["book", "route", "userId", "ledgerTxn", "parentTicket", "childTickets", "priceCorrected", "version", "tenantId"]);
@@ -131,6 +156,72 @@ function optionBody(b: Obj, order: boolean): Obj | NextResponse {
   if (typeof b.clientOrderId !== "string" || !/^[A-Za-z0-9_-]{8,64}$/.test(b.clientOrderId)) return error(422, "validation", "Invalid clientOrderId.");
   out.clientOrderId = b.clientOrderId;
   return out;
+}
+
+/** A book order / preview (§2): only the documented fields, each checked; the engine re-checks everything. */
+function bookOrderBody(b: Obj, order: boolean): Obj | NextResponse {
+  const bad = (m: string) => error(422, "validation", m);
+  if (typeof b.series !== "string" || !SERIES_RE.test(b.series)) return bad("Invalid series.");
+  if (b.side !== "buy" && b.side !== "sell") return bad("Invalid side.");
+  const type = String(b.type ?? "");
+  if (!BOOK_TYPES.includes(type)) return bad("Invalid order type.");
+  const qty = num(b.qty);
+  if (qty === undefined || qty <= 0 || qty > MAX_QTY) return bad("Invalid quantity.");
+  const out: Obj = { series: b.series, side: b.side, type, qty };
+  const priced = type === "limit" || type === "stop_limit";
+  if (priced) {
+    const price = num(b.price);
+    if (price === undefined || price <= 0 || price > 1e9) return bad("Invalid price.");
+    out.price = price;
+  }
+  // market orders are IOC at the band (the engine stamps the band); a stop-market fires as one
+  let tif = String(b.tif ?? (priced ? "gtc" : "ioc"));
+  if (!BOOK_TIFS.includes(tif)) return bad("Invalid time in force.");
+  if (type === "market" || type === "stop_market") tif = "ioc";
+  out.tif = tif;
+  if (tif === "gtd") {
+    if (typeof b.expireAt !== "string" || !DATE_RE.test(b.expireAt) || !(Date.parse(b.expireAt) > Date.now())) return bad("Invalid expiry time.");
+    out.expireAt = b.expireAt;
+  }
+  if (b.postOnly !== undefined && b.postOnly !== null) {
+    if (typeof b.postOnly !== "boolean") return bad("Invalid postOnly.");
+    if (b.postOnly && (type !== "limit" || tif !== "gtc")) return bad("Post-only needs a GTC limit order.");
+    if (b.postOnly) out.postOnly = true;
+  }
+  if (b.reduceOnly !== undefined && b.reduceOnly !== null) {
+    if (typeof b.reduceOnly !== "boolean") return bad("Invalid reduceOnly.");
+    if (b.reduceOnly) out.reduceOnly = true;
+  }
+  if (type === "stop_market" || type === "stop_limit") {
+    const t = (b.trigger ?? {}) as Obj;
+    const price = num(t.price);
+    if ((t.source !== "mark" && t.source !== "underlying") || (t.op !== "above" && t.op !== "below") || price === undefined || price <= 0 || price > 1e9) return bad("Invalid trigger.");
+    out.trigger = { source: t.source, op: t.op, price };
+  }
+  if (order || b.clientOrderId !== undefined) {
+    if (typeof b.clientOrderId !== "string" || !CLIENT_ORDER_RE.test(b.clientOrderId)) return bad("Invalid clientOrderId.");
+    out.clientOrderId = b.clientOrderId;
+  }
+  return out;
+}
+
+/** A combo RFQ (§5): 1–8 legs, one per series, whole ratios, a positive size. */
+function rfqBody(b: Obj): Obj | NextResponse {
+  const bad = (m: string) => error(422, "validation", m);
+  if (!Array.isArray(b.legs) || b.legs.length < 1 || b.legs.length > MAX_LEGS) return bad(`Give 1 to ${MAX_LEGS} legs.`);
+  const legs: Obj[] = [];
+  for (const raw of b.legs as unknown[]) {
+    const l = (raw ?? {}) as Obj;
+    const ratio = num(l.ratio);
+    if (typeof l.series !== "string" || !SERIES_RE.test(l.series)) return bad("Invalid series.");
+    if (l.side !== "buy" && l.side !== "sell") return bad("Invalid side.");
+    if (ratio === undefined || !Number.isInteger(ratio) || ratio < 1 || ratio > 100) return bad("Invalid ratio.");
+    legs.push({ series: l.series, side: l.side, ratio });
+  }
+  if (new Set(legs.map((l) => l.series)).size !== legs.length) return bad("Each series may appear once.");
+  const qty = num(b.qty);
+  if (qty === undefined || qty <= 0 || qty > MAX_QTY) return bad("Invalid quantity.");
+  return { legs, qty, ...(b.reduceOnly === true ? { reduceOnly: true } : {}) };
 }
 
 function pageQuery(req: NextRequest): string | NextResponse {
@@ -273,6 +364,86 @@ async function handle(req: NextRequest, { params }: Ctx, method: "GET" | "POST" 
       const n = Number(req.nextUrl.searchParams.get("limit") ?? 100);
       const limit = Number.isInteger(n) && n >= 1 && n <= 500 ? n : 100;
       return done(await forward(req, s, `/v1/terminal/options/settlements?limit=${limit}`));
+    }
+    // ---- order book
+    const readOnly = () => error(403, "read_only", "Trading is disabled with the investor password.");
+    if (b === "book") {
+      const d = path[3];
+      if (method === "POST" && c === "preview" && path.length === 3) {
+        const o = bookOrderBody(body, false);
+        if (o instanceof Response) return o;
+        return done(await forward(req, s, "/v1/terminal/options/book/preview", { method: "POST", body: o }));
+      }
+      if (c === "orders" && path.length === 3) {
+        if (method === "POST") {
+          if (s.r) return readOnly();
+          const o = bookOrderBody(body, true);
+          if (o instanceof Response) return o;
+          return done(await forward(req, s, "/v1/terminal/options/book/orders", { method: "POST", body: o }));
+        }
+        const sp = req.nextUrl.searchParams;
+        const series = sp.get("series");
+        if (series !== null && !SERIES_RE.test(series)) return error(400, "bad_request", "Invalid series.");
+        if (method === "GET") {
+          const status = sp.get("status") ?? "open";
+          if (status !== "open" && status !== "history") return error(400, "bad_request", "Invalid status.");
+          return done(await forward(req, s, `/v1/terminal/options/book/orders?status=${status}${series ? `&series=${encodeURIComponent(series)}` : ""}`));
+        }
+        if (method === "DELETE") {
+          if (s.r) return readOnly();
+          const underlying = sp.get("underlying");
+          if (underlying !== null && !UNDERLYING_RE.test(underlying)) return error(400, "bad_request", "Invalid underlying.");
+          if (!series && !underlying) return error(400, "bad_request", "Choose a series or an underlying.");
+          const q = new URLSearchParams();
+          if (series) q.set("series", series);
+          if (underlying) q.set("underlying", underlying);
+          return done(await forward(req, s, `/v1/terminal/options/book/orders?${q}`, { method: "DELETE" }));
+        }
+      }
+      if (c === "orders" && path.length === 4 && ORDER_ID_RE.test(d ?? "")) {
+        if (s.r) return readOnly();
+        if (method === "DELETE") return done(await forward(req, s, `/v1/terminal/options/book/orders/${d}`, { method: "DELETE" }));
+        if (method === "PATCH") {
+          const price = body.price === undefined ? undefined : num(body.price);
+          const qty = body.qty === undefined ? undefined : num(body.qty);
+          if ((body.price !== undefined && (price === undefined || price <= 0)) || (body.qty !== undefined && (qty === undefined || qty <= 0 || qty > MAX_QTY))) return error(422, "validation", "Invalid price or quantity.");
+          if (price === undefined && qty === undefined) return error(422, "validation", "Change the price or the quantity.");
+          return done(await forward(req, s, `/v1/terminal/options/book/orders/${d}`, { method: "PATCH", body: { ...(price !== undefined ? { price } : {}), ...(qty !== undefined ? { qty } : {}) } }));
+        }
+      }
+      if (method === "GET" && c === "fills" && path.length === 3) {
+        const q = new URLSearchParams();
+        for (const k of ["from", "to"] as const) {
+          const v = req.nextUrl.searchParams.get(k);
+          if (!v) continue;
+          if (!DATE_RE.test(v)) return error(400, "bad_request", `Invalid ${k} date.`);
+          q.set(k, v);
+        }
+        return done(await forward(req, s, `/v1/terminal/options/book/fills${q.toString() ? `?${q}` : ""}`));
+      }
+    }
+    // ---- combo RFQ
+    if (b === "rfq") {
+      if (method === "POST" && path.length === 2) {
+        if (s.r) return readOnly();
+        const o = rfqBody(body);
+        if (o instanceof Response) return o;
+        return done(await forward(req, s, "/v1/terminal/options/rfq", { method: "POST", body: o }));
+      }
+      if (path.length >= 3 && RFQ_ID_RE.test(c ?? "")) {
+        const id = encodeURIComponent(c!);
+        if (method === "GET" && path.length === 3) return done(await forward(req, s, `/v1/terminal/options/rfq/${id}`));
+        if (method === "DELETE" && path.length === 3) {
+          if (s.r) return readOnly();
+          return done(await forward(req, s, `/v1/terminal/options/rfq/${id}`, { method: "DELETE" }));
+        }
+        if (method === "POST" && path.length === 4 && path[3] === "accept") {
+          if (s.r) return readOnly();
+          const limitNet = num(body.limitNet);
+          if (typeof body.quoteId !== "string" || !RFQ_ID_RE.test(body.quoteId) || (body.side !== "buy" && body.side !== "sell") || limitNet === undefined || Math.abs(limitNet) > 1e9) return error(422, "validation", "Invalid quote, side or limit.");
+          return done(await forward(req, s, `/v1/terminal/options/rfq/${id}/accept`, { method: "POST", body: { quoteId: body.quoteId, side: body.side, limitNet } }));
+        }
+      }
     }
   }
   return error(404, "not_found", "Not found.");

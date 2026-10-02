@@ -6,6 +6,10 @@
 // optional trigger on the underlying (send when it trades above / below a price), the live preview and the order
 // button. "Add leg" / Shift+click in the chain build a strategy (several legs, all-or-nothing). Premiums are typed in
 // USD per contract (plan O8) and sent per unit of the underlying, like the chain's bid / ask.
+//
+// While the broker's order book is live (docs/OPTIONS-EXCHANGE.md) the buttons show the book's best offer / bid with
+// their sizes, a single option is traded with book orders (./book-ticket: limit GTC / IOC / FOK / GTD, post-only,
+// market in the band, reduce-only, stops) and a strategy by request for quote (./rfq). Otherwise: house prices.
 import * as React from "react";
 import { Crosshair, Lock, MousePointerClick, Plus, Table2, Trash2, Wand2, X } from "lucide-react";
 import { cn } from "@kalks/ui";
@@ -17,11 +21,14 @@ import { Check, Stepper, TSelect } from "@/components/ui/primitives";
 import { optionsApi } from "@/lib/options/api";
 import { errText, needsOnboarding } from "@/lib/options/errors";
 import { usdPerUnitOf } from "@/lib/options/math";
-import { opt, underlyingOf, useOpt, useSeriesQuote, type TicketLeg } from "@/lib/options-store";
+import { opt, underlyingOf, useBookLive, useOpt, useSeriesQuote, type TicketLeg } from "@/lib/options-store";
 import type { OptionQuote, OrderRequest } from "@/lib/options/types";
 import { Countdown, ErrorNote, Flash, OptAvatar, RightTag, Seg, StateBadge } from "./bits";
 import { expiryLabel, greek, pct, pips, px, usd } from "./format";
 import { PreviewSummary, usePreview } from "./preview";
+import { qty as qtyText } from "./book-bits";
+import { BookOrderForm } from "./book-ticket";
+import { RfqPanel } from "./rfq";
 
 function Label({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
   return (
@@ -138,6 +145,7 @@ function SideButtons({ leg, armed, pipSize, disabled }: { leg: TicketLeg; armed:
         const off = armed && leg.side !== side;
         const v = q ? (side === "buy" ? q.askUsd : q.bidUsd) : 0;
         const p = q ? (side === "buy" ? q.ask : q.bid) : 0;
+        const size = q?.book ? (side === "buy" ? q.askQty : q.bidQty) : undefined;
         return (
           <button
             key={side}
@@ -160,7 +168,9 @@ function SideButtons({ leg, armed, pipSize, disabled }: { leg: TicketLeg; armed:
             <div className="k-num font-mono text-[17px] font-semibold leading-tight">
               <Flash value={v}>{v ? usd(v) : "—"}</Flash>
             </div>
-            <div className={cn("font-mono text-[9.5px]", off ? "text-fg-3" : "opacity-80")}>{q ? `${pips(p / pipSize)} ${t("trader.opt.pips")}` : " "}</div>
+            <div className={cn("font-mono text-[9.5px]", off ? "text-fg-3" : "opacity-80")}>
+              {!q ? " " : size !== undefined ? (size ? t("trader.opt.book.size", { count: size }) : side === "buy" ? t("trader.opt.book.noOffers") : t("trader.opt.book.noBids")) : `${pips(p / pipSize)} ${t("trader.opt.pips")}`}
+            </div>
           </button>
         );
       })}
@@ -183,6 +193,7 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
   const usdPerUnit = useUsdPerUnit(q0);
   const [busy, setBusy] = React.useState(false);
   const [lastErr, setLastErr] = React.useState<{ code: string; message: string } | null>(null);
+  const bookLive = useBookLive();
   const u = legs[0]?.u;
   const spot = useOpt((s) => (s.chain && s.chain.underlying === u ? s.chain.spot?.mid : undefined));
 
@@ -194,7 +205,8 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
     legs.map((l) => ({ series: l.series, u: l.u, right: l.right, strike: l.strike, side: l.side, contracts: l.contracts })),
     single ? ticket.type : "market",
     limitPremium,
-    armed,
+    // a single option on the book previews with the book (./book-ticket)
+    armed && !(bookLive && single),
   );
   React.useEffect(() => setLastErr(null), [legs.length, single?.series]);
 
@@ -325,106 +337,149 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
         </div>
       )}
 
-      <div>
-        <Label>{t("trader.opt.ticket.orderType")}</Label>
-        <Seg
-          value={single ? ticket.type : "market"}
-          onChange={(v) => single && opt.setTicket({ type: v })}
-          options={[
-            { value: "market", label: t("trader.opt.ticket.market") },
-            { value: "limit", label: t("trader.opt.ticket.limit"), title: single ? undefined : t("trader.opt.ticket.limitSingleOnly") },
-          ]}
-        />
-        {!single && <div className="mt-1 text-[10.5px] text-fg-3">{t("trader.opt.ticket.comboMarket")}</div>}
-      </div>
-
-      {single && ticket.type === "limit" && (
-        <div>
-          <Label right={limitPremium !== undefined ? <span className="font-mono text-[10px] text-fg-3">{px(limitPremium, digits + 2)} / {cur?.contractUnit}</span> : undefined}>{t("trader.opt.ticket.limitPremium")}</Label>
-          <Stepper ariaLabel={t("trader.opt.ticket.limitPremium")} value={ticket.limit} onChange={(v) => opt.setTicket({ limit: v })} step={0.5} min={0} decimals={2} placeholder={q0 ? usd(single.side === "buy" ? q0.bidUsd : q0.askUsd) : undefined} />
-        </div>
-      )}
-
-      {single && (
-        <div>
-          <Label>{t("trader.opt.ticket.protection")}</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <div className="mb-1 text-[10.5px] text-down/90">{t("trader.opt.ticket.slPremium")}</div>
-              <Stepper ariaLabel={t("trader.opt.ticket.slPremium")} tone="down" value={ticket.sl} onChange={(v) => opt.setTicket({ sl: v })} step={0.5} min={0} decimals={2} placeholder={t("trader.opt.ticket.notSet")} />
-            </div>
-            <div>
-              <div className="mb-1 text-[10.5px] text-up/90">{t("trader.opt.ticket.tpPremium")}</div>
-              <Stepper ariaLabel={t("trader.opt.ticket.tpPremium")} tone="up" value={ticket.tp} onChange={(v) => opt.setTicket({ tp: v })} step={0.5} min={0} decimals={2} placeholder={t("trader.opt.ticket.notSet")} />
-            </div>
-          </div>
-          <div className="mt-1 text-[10px] text-fg-3">{t("trader.opt.ticket.protectionHint")}</div>
-        </div>
-      )}
-
-      <div className="space-y-1.5 rounded-[7px] border border-line bg-surface-2/40 p-2">
-        <Check
-          checked={ticket.trigger}
-          onChange={(v) => opt.setTicket({ trigger: v, triggerPrice: ticket.triggerPrice || (spot ? spot.toFixed(digits) : "") })}
-          label={
-            <span className="flex items-center gap-1">
-              <Crosshair className="size-3 text-fg-3" /> {t("trader.opt.ticket.trigger", { u: u ?? "" })}
-            </span>
-          }
-        />
-        {ticket.trigger && (
-          <div className="grid grid-cols-[96px_1fr] gap-1.5">
-            <TSelect<"above" | "below"> ariaLabel={t("trader.opt.ticket.triggerOp")} value={ticket.triggerOp} onChange={(v) => opt.setTicket({ triggerOp: v })} options={[{ value: "above", label: t("trader.opt.ticket.above") }, { value: "below", label: t("trader.opt.ticket.below") }]} />
-            <Stepper ariaLabel={t("trader.opt.ticket.triggerPrice")} value={ticket.triggerPrice} onChange={(v) => opt.setTicket({ triggerPrice: v })} step={pipSize} decimals={digits} placeholder={spot ? spot.toFixed(digits) : undefined} />
-          </div>
-        )}
-        {(ticket.trigger || (single && ticket.type === "limit")) && (
-          <div className="flex items-center justify-between gap-2 text-[11px] text-fg-3">
-            <span>{t("trader.opt.ticket.tif")}</span>
-            <Seg
-              size="sm"
-              className="w-[124px]"
-              value={ticket.tif}
-              onChange={(v) => opt.setTicket({ tif: v })}
-              options={[
-                { value: "gtc", label: t("trader.opt.ticket.gtc") },
-                { value: "day", label: t("trader.opt.ticket.day") },
-              ]}
-            />
-          </div>
-        )}
-      </div>
-
-      {armed && <PreviewSummary state={preview} digits={digits} pipsOf={single ? pipsOf : undefined} />}
-      {lastErr && <ErrorNote code={lastErr.code} message={lastErr.message} />}
-      {single && <div className="text-[10.5px] leading-snug text-fg-3">{t("trader.opt.ticket.addHint")}</div>}
-
-      {guest ? (
-        <div className="rounded-[8px] border border-ember/25 bg-ember-soft/40 px-3 py-3 text-center">
-          <div className="mx-auto mb-2 grid size-8 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember">
-            <Lock className="size-3.5" />
-          </div>
-          <div className="text-[12.5px] font-semibold text-fg">{t("trader.opt.guest.title")}</div>
-          <p className="mt-1 text-[11.5px] leading-relaxed text-fg-3">{t("trader.opt.guest.text")}</p>
-          <GuestActions className="mt-2.5" />
-        </div>
-      ) : T.readOnly ? (
-        <div className="flex items-center gap-1.5 rounded-[7px] border border-warn/30 bg-warn-soft px-2.5 py-1.5 text-[11.5px] text-warn">
-          <Lock className="size-3.5" /> {t("trader.opt.ticket.readOnly")}
-        </div>
-      ) : (
-        <button
-          onClick={() => void submit()}
-          disabled={!!blocked}
-          className={cn(
-            "flex h-10 w-full items-center justify-between gap-2 rounded-[8px] px-3 text-[12.5px] font-semibold text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100",
-            !armed ? "bg-surface-3 text-fg-3" : single ? (single.side === "buy" ? "bg-up" : "bg-down") : "bg-ember",
+      {bookLive && single ? (
+        <>
+          <BookOrderForm leg={single} onDone={onDone} />
+          <div className="text-[10.5px] leading-snug text-fg-3">{t("trader.opt.ticket.addHint")}</div>
+        </>
+      ) : bookLive ? (
+        <>
+          <PreviewSummary state={preview} digits={digits} />
+          {guest ? (
+            <GuestBox />
+          ) : T.readOnly ? (
+            <ReadOnlyBox />
+          ) : (
+            <RfqPanel legs={legs.map((l) => ({ series: l.series, side: l.side, contracts: l.contracts }))} onDone={() => (opt.afterFill(), onDone?.())} />
           )}
-        >
-          <span className="truncate">{busy ? t("trader.opt.ticket.sending") : tradingSoon && T.live ? t("trader.opt.ticket.soon") : submitLabel}</span>
-          {total !== null && <span className="k-num shrink-0 rounded-[5px] bg-black/15 px-1.5 py-0.5 font-mono text-[11px]">{usd(total)} USD</span>}
-        </button>
+        </>
+      ) : (
+        <>
+        <div>
+          <Label>{t("trader.opt.ticket.orderType")}</Label>
+          <Seg
+            value={single ? ticket.type : "market"}
+            onChange={(v) => single && opt.setTicket({ type: v })}
+            options={[
+              { value: "market", label: t("trader.opt.ticket.market") },
+              { value: "limit", label: t("trader.opt.ticket.limit"), title: single ? undefined : t("trader.opt.ticket.limitSingleOnly") },
+            ]}
+          />
+          {!single && <div className="mt-1 text-[10.5px] text-fg-3">{t("trader.opt.ticket.comboMarket")}</div>}
+        </div>
+
+        {single && ticket.type === "limit" && (
+          <div>
+            <Label right={limitPremium !== undefined ? <span className="font-mono text-[10px] text-fg-3">{px(limitPremium, digits + 2)} / {cur?.contractUnit}</span> : undefined}>{t("trader.opt.ticket.limitPremium")}</Label>
+            <Stepper ariaLabel={t("trader.opt.ticket.limitPremium")} value={ticket.limit} onChange={(v) => opt.setTicket({ limit: v })} step={0.5} min={0} decimals={2} placeholder={q0 ? usd(single.side === "buy" ? q0.bidUsd : q0.askUsd) : undefined} />
+          </div>
+        )}
+
+        {single && (
+          <div>
+            <Label>{t("trader.opt.ticket.protection")}</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <div className="mb-1 text-[10.5px] text-down/90">{t("trader.opt.ticket.slPremium")}</div>
+                <Stepper ariaLabel={t("trader.opt.ticket.slPremium")} tone="down" value={ticket.sl} onChange={(v) => opt.setTicket({ sl: v })} step={0.5} min={0} decimals={2} placeholder={t("trader.opt.ticket.notSet")} />
+              </div>
+              <div>
+                <div className="mb-1 text-[10.5px] text-up/90">{t("trader.opt.ticket.tpPremium")}</div>
+                <Stepper ariaLabel={t("trader.opt.ticket.tpPremium")} tone="up" value={ticket.tp} onChange={(v) => opt.setTicket({ tp: v })} step={0.5} min={0} decimals={2} placeholder={t("trader.opt.ticket.notSet")} />
+              </div>
+            </div>
+            <div className="mt-1 text-[10px] text-fg-3">{t("trader.opt.ticket.protectionHint")}</div>
+          </div>
+        )}
+
+        <div className="space-y-1.5 rounded-[7px] border border-line bg-surface-2/40 p-2">
+          <Check
+            checked={ticket.trigger}
+            onChange={(v) => opt.setTicket({ trigger: v, triggerPrice: ticket.triggerPrice || (spot ? spot.toFixed(digits) : "") })}
+            label={
+              <span className="flex items-center gap-1">
+                <Crosshair className="size-3 text-fg-3" /> {t("trader.opt.ticket.trigger", { u: u ?? "" })}
+              </span>
+            }
+          />
+          {ticket.trigger && (
+            <div className="grid grid-cols-[96px_1fr] gap-1.5">
+              <TSelect<"above" | "below"> ariaLabel={t("trader.opt.ticket.triggerOp")} value={ticket.triggerOp} onChange={(v) => opt.setTicket({ triggerOp: v })} options={[{ value: "above", label: t("trader.opt.ticket.above") }, { value: "below", label: t("trader.opt.ticket.below") }]} />
+              <Stepper ariaLabel={t("trader.opt.ticket.triggerPrice")} value={ticket.triggerPrice} onChange={(v) => opt.setTicket({ triggerPrice: v })} step={pipSize} decimals={digits} placeholder={spot ? spot.toFixed(digits) : undefined} />
+            </div>
+          )}
+          {(ticket.trigger || (single && ticket.type === "limit")) && (
+            <div className="flex items-center justify-between gap-2 text-[11px] text-fg-3">
+              <span>{t("trader.opt.ticket.tif")}</span>
+              <Seg
+                size="sm"
+                className="w-[124px]"
+                value={ticket.tif}
+                onChange={(v) => opt.setTicket({ tif: v })}
+                options={[
+                  { value: "gtc", label: t("trader.opt.ticket.gtc") },
+                  { value: "day", label: t("trader.opt.ticket.day") },
+                ]}
+              />
+            </div>
+          )}
+        </div>
+
+        {armed && <PreviewSummary state={preview} digits={digits} pipsOf={single ? pipsOf : undefined} />}
+        {lastErr && <ErrorNote code={lastErr.code} message={lastErr.message} />}
+        {single && <div className="text-[10.5px] leading-snug text-fg-3">{t("trader.opt.ticket.addHint")}</div>}
+
+        {guest ? (
+          <div className="rounded-[8px] border border-ember/25 bg-ember-soft/40 px-3 py-3 text-center">
+            <div className="mx-auto mb-2 grid size-8 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember">
+              <Lock className="size-3.5" />
+            </div>
+            <div className="text-[12.5px] font-semibold text-fg">{t("trader.opt.guest.title")}</div>
+            <p className="mt-1 text-[11.5px] leading-relaxed text-fg-3">{t("trader.opt.guest.text")}</p>
+            <GuestActions className="mt-2.5" />
+          </div>
+        ) : T.readOnly ? (
+          <div className="flex items-center gap-1.5 rounded-[7px] border border-warn/30 bg-warn-soft px-2.5 py-1.5 text-[11.5px] text-warn">
+            <Lock className="size-3.5" /> {t("trader.opt.ticket.readOnly")}
+          </div>
+        ) : (
+          <button
+            onClick={() => void submit()}
+            disabled={!!blocked}
+            className={cn(
+              "flex h-10 w-full items-center justify-between gap-2 rounded-[8px] px-3 text-[12.5px] font-semibold text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100",
+              !armed ? "bg-surface-3 text-fg-3" : single ? (single.side === "buy" ? "bg-up" : "bg-down") : "bg-ember",
+            )}
+          >
+            <span className="truncate">{busy ? t("trader.opt.ticket.sending") : tradingSoon && T.live ? t("trader.opt.ticket.soon") : submitLabel}</span>
+            {total !== null && <span className="k-num shrink-0 rounded-[5px] bg-black/15 px-1.5 py-0.5 font-mono text-[11px]">{usd(total)} USD</span>}
+          </button>
+        )}
+        </>
       )}
+    </div>
+  );
+}
+
+function GuestBox() {
+  const t = useT();
+  return (
+    <div className="rounded-[8px] border border-ember/25 bg-ember-soft/40 px-3 py-3 text-center">
+      <div className="mx-auto mb-2 grid size-8 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember">
+        <Lock className="size-3.5" />
+      </div>
+      <div className="text-[12.5px] font-semibold text-fg">{t("trader.opt.guest.title")}</div>
+      <p className="mt-1 text-[11.5px] leading-relaxed text-fg-3">{t("trader.opt.guest.text")}</p>
+      <GuestActions className="mt-2.5" />
+    </div>
+  );
+}
+
+function ReadOnlyBox() {
+  const t = useT();
+  return (
+    <div className="flex items-center gap-1.5 rounded-[7px] border border-warn/30 bg-warn-soft px-2.5 py-1.5 text-[11.5px] text-warn">
+      <Lock className="size-3.5" /> {t("trader.opt.ticket.readOnly")}
     </div>
   );
 }

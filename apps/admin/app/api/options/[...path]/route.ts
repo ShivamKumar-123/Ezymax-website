@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { clientIp } from "@/lib/gateway";
 import { apiError, mutationAllowed, requireStaff } from "@/lib/bff";
 import { optionsConfigured, optionsService } from "@/lib/options";
-import { optionsAllows, type OptionsPerm } from "@/lib/options-perms";
+import { PLATFORM_TENANT, optionsAllows, type OptionsPerm } from "@/lib/options-perms";
 
 // FX Options BFF: browser -> /api/options/<path> (same origin, staff cookie) -> options service (:8104).
 // Back Office routes go to /v1/admin/options/<path>; `smile` and `chain` are the client reads (/v1/options/*) used for
@@ -23,11 +23,15 @@ const DAY = "\\d{4}-\\d{2}-\\d{2}";
 const SLUG = "[a-z0-9_-]{1,64}";
 const KEY = "(?:\\*|[A-Za-z0-9._-]{1,64})"; // group code / symbol, `*` = any
 const ID = "\\d{1,18}";
+// market-maker settings key: tenant (`*` = every broker) / account kind (`*` = both) / underlying (`*` = all)
+const MM_TENANT = "(\\*|[a-z0-9_-]{1,64})";
+const MM_KIND = "(?:\\*|live|demo)";
+const MM_SYM = "(?:\\*|[A-Z0-9._-]{1,20})";
 const re = (s: string) => new RegExp(`^${s}$`);
 
 const ROUTES: Route[] = [
   // reads (Back Office)
-  { method: "GET", re: /^(overview|underlyings|rates|holidays|tenants|groups|controls|limits|expiries|audit)$/, perm: "options.read" },
+  { method: "GET", re: /^(overview|underlyings|rates|holidays|tenants|groups|controls|limits|expiries|audit|mm-settings)$/, perm: "options.read" },
   { method: "GET", re: re(`rates/${CCY}/history`), perm: "options.read" },
   { method: "GET", re: re(`surfaces/${SYM}`), perm: "options.read" },
   { method: "GET", re: re(`surfaces/${SYM}/\\d{1,6}`), perm: "options.read" },
@@ -43,6 +47,9 @@ const ROUTES: Route[] = [
   { method: "PUT", re: re(`groups/${KEY}/${KEY}`), perm: "options.config" },
   { method: "DELETE", re: re(`groups/${KEY}/${KEY}`), perm: "options.config" },
   { method: "POST", re: /^listing\/run$/, perm: "options.config", noReason: true },
+  // Kalks market maker quoting parameters (order book, docs/OPTIONS-EXCHANGE.md §4); most specific row wins
+  { method: "PUT", re: re(`mm-settings/${MM_TENANT}/${MM_KIND}/${MM_SYM}`), perm: "options.config" },
+  { method: "DELETE", re: re(`mm-settings/${MM_TENANT}/${MM_KIND}/${MM_SYM}`), perm: "options.config" },
   // dealing
   { method: "POST", re: /^controls$/, perm: "options.dealing" },
   { method: "DELETE", re: re(`controls/${ID}`), perm: "options.dealing" },
@@ -86,6 +93,11 @@ async function handle(req: NextRequest, parts: string[], method: Method) {
     if (target !== who.staff.tenant?.slug && !who.staff.permissions?.includes("owner.tenants"))
       return apiError(403, "forbidden", "Only the Platform Owner can switch Options for another broker.");
   }
+  // the market maker is Kalks's house account: a broker's staff tune only their own rows; `*` rows and other
+  // brokers' rows are Kalks staff's (the service checks again)
+  const mm = method !== "GET" ? path.match(/^mm-settings\/([^/]+)\//) : null;
+  if (mm && (who.staff.tenant?.slug || PLATFORM_TENANT) !== PLATFORM_TENANT && mm[1] !== who.staff.tenant?.slug)
+    return apiError(403, "forbidden", "Only Kalks staff change market-maker settings for every broker or for another broker.");
 
   const q = new URLSearchParams();
   if (method === "GET") {

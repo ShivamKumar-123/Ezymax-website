@@ -18,10 +18,13 @@ import { GuestNotice } from "@/components/shell/guest";
 import { useT } from "@kalks/i18n/react";
 import { useTradeMode } from "@/lib/options/mode";
 import { useOptionBook } from "@/lib/options/book";
+import { useBookFlag } from "@/lib/options/book-flag";
 
 // Kalks FX Options tabs: their own chunk (loaded when the tab first shows)
 const OptionsPositionsTab = dynamic(() => import("@/components/options/positions-tab").then((m) => m.OptionsPositionsTab), { ssr: false });
 const SettlementsTab = dynamic(() => import("@/components/options/settlements-tab").then((m) => m.SettlementsTab), { ssr: false });
+const OrdersTab = dynamic(() => import("@/components/options/orders-tab").then((m) => m.OrdersTab), { ssr: false });
+const ClosedTab = dynamic(() => import("@/components/options/closed-tab").then((m) => m.ClosedTab), { ssr: false });
 
 /** Guest mode: account-only tabs explain what they show once a trading account is logged in. */
 const GUEST_TABS: Partial<Record<ToolboxTab, { icon: React.ReactNode; textKey: "toolbox.guest.trade" | "toolbox.guest.history" | "toolbox.guest.exposure" }>> = {
@@ -37,16 +40,14 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
   const mam = useMam();
   const mode = useTradeMode();
   const book = useOptionBook(T.guest ? null : T.account.login);
+  // the options order book: an Orders tab while it is live (in CFD mode only while book orders are working)
+  const bookFlag = useBookFlag(T.guest ? null : T.account.login);
   const optCount = book.positions.length + book.orders.length;
+  const ordersTab = { value: "orders" as const, label: t("trader.opt.ord.tab"), count: bookFlag.open };
   const optionTabs: { value: ToolboxTab; label: string; count?: number }[] =
     mode === "options"
-      ? [
-          { value: "options", label: t("trader.opt.pos.tab"), count: optCount },
-          { value: "settlements", label: t("trader.opt.set.tab") },
-        ]
-      : optCount
-        ? [{ value: "options", label: t("trader.opt.pos.tab"), count: optCount }]
-        : [];
+      ? [{ value: "options", label: t("trader.opt.pos.tab"), count: optCount }, ...(bookFlag.live || bookFlag.open ? [ordersTab] : []), { value: "closed", label: t("trader.opt.hist.tab") }, { value: "settlements", label: t("trader.opt.set.tab") }]
+      : [...(optCount ? [{ value: "options" as const, label: t("trader.opt.pos.tab"), count: optCount }] : []), ...(bookFlag.open ? [ordersTab] : [])];
   const tabs: { value: ToolboxTab; label: string; count?: number }[] = [
     ...(mode === "options" ? optionTabs : []),
     { value: "trade", label: t("toolbox.tab.trade"), count: T.positions.length + T.pendings.length },
@@ -100,7 +101,7 @@ export function Toolbox({ onCollapse, onMaximize, maximized }: { onCollapse?: ()
       <div className="min-h-0 flex-1">
         {T.guest && GUEST_TABS[tab] ? (
           <GuestNotice icon={GUEST_TABS[tab]!.icon} text={t(GUEST_TABS[tab]!.textKey)} />
-        ) : T.guest && (tab === "options" || tab === "settlements") ? (
+        ) : T.guest && (tab === "options" || tab === "settlements" || tab === "orders" || tab === "closed") ? (
           <GuestNotice icon={<Layers />} text={t("trader.opt.guest.text")} />
         ) : (
           <ToolboxBody tab={tab} live={T.live} />
@@ -124,6 +125,8 @@ function ToolboxBody({ tab, live }: { tab: ToolboxTab; live: boolean }) {
         {tab === "mam" && <MamTab />}
         {tab === "options" && <OptionsPositionsTab />}
         {tab === "settlements" && <SettlementsTab />}
+        {tab === "orders" && <OrdersTab />}
+        {tab === "closed" && <ClosedTab />}
     </>
   );
 }

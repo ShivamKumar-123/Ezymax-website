@@ -155,7 +155,7 @@ function IdeaCard({ idea, chain, view, locale }: { idea: Idea; chain: OptionChai
         contractUnit: chain.contractUnit,
         legs: idea.legs.map((l) => {
           const q = (l.right === "call" ? l.row.call : l.row.put)!;
-          return { side: l.side, right: l.right, strike: l.row.strike, contracts: l.contracts, premiumUsd: l.side === "buy" ? q.askUsd : q.bidUsd, iv: q.iv, delta: q.delta };
+          return { side: l.side, right: l.right, strike: l.row.strike, contracts: l.contracts, premiumUsd: (l.side === "buy" ? q.askUsd : q.bidUsd) || (q.book ? q.markUsd : 0), iv: q.iv, delta: q.delta };
         }),
         netPremium: +idea.cost.toFixed(2),
         maxProfit: idea.maxProfit === null ? null : +idea.maxProfit.toFixed(2),

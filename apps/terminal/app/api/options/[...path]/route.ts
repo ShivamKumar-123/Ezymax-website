@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { csrf, error, reply, soft } from "@/lib/engine/server";
-import { actingAccount, options, optionsStreamUrl, publicChain, tenantOf } from "@/lib/options/server";
+import { actingAccount, options, optionsStreamUrl, publicBook, publicChain, tenantOf } from "@/lib/options/server";
 
 // Kalks FX Options BFF (read side). Browser -> /api/options/<route> (same origin; `X-Kalks-Login` names the acting
 // account, whose engine session is in the HttpOnly cookie) -> services/options /v1/options/… with the internal
@@ -17,6 +17,9 @@ import { actingAccount, options, optionsStreamUrl, publicChain, tenantOf } from 
 //   POST stream-ticket                    {ticket, expiresIn, url}: one-time WebSocket ticket for the chain stream
 //   GET  public/chain/{u}?expiry=         guest chain (no session; 404 options_disabled until the public chain is on)
 //   GET  public/stream-url                {url}: guest chain stream (no ticket)
+//   GET  public/book/{series}             order book depth, 10 levels each side (docs/OPTIONS-EXCHANGE.md §10)
+//   GET  public/trades/{series}?limit=    trade tape of a series
+//   GET  public/stats/{u}                 open interest and volume per strike of an underlying
 //
 // The service answers 404 `options_disabled` while the module is off for this broker / account kind: the terminal
 // shows "Options launching soon".
@@ -79,6 +82,21 @@ async function handle(req: NextRequest, { params }: Ctx, method: "GET" | "POST")
       return reply(r.status, r.data, { headers: r.status === 200 ? { "cache-control": "public, max-age=1" } : {} });
     }
     if (method === "GET" && b === "stream-url" && path.length === 2) return reply(200, { url: optionsStreamUrl(req) });
+    // order book market data: the stream's polling fallback (depth / tape of the selected series) and guests
+    if (method === "GET" && (b === "book" || b === "trades") && path.length === 3 && SERIES_RE.test(c ?? "")) {
+      let q = "";
+      if (b === "trades") {
+        const limit = req.nextUrl.searchParams.get("limit");
+        if (limit !== null && !/^\d{1,3}$/.test(limit)) return error(400, "bad_request", "Invalid limit.");
+        if (limit) q = `?limit=${Math.min(200, Math.max(1, Number(limit)))}`;
+      }
+      const r = await publicBook(`${b}/${encodeURIComponent(c!)}${q}`);
+      return reply(r.status, r.data, { headers: r.status === 200 ? { "cache-control": "public, max-age=1" } : {} });
+    }
+    if (method === "GET" && b === "stats" && path.length === 3 && U_RE.test((c ?? "").toUpperCase())) {
+      const r = await publicBook(`stats/${c!.toUpperCase()}`);
+      return reply(r.status, r.data, { headers: r.status === 200 ? { "cache-control": "public, max-age=1" } : {} });
+    }
     return error(404, "not_found", "Not found.");
   }
 

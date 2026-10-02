@@ -3,6 +3,9 @@
 // Toolbox › Options: open option positions grouped by strategy (combo), live mark, P&L and Greeks, close / partial
 // close per leg and close-the-whole-strategy (all-or-nothing), working option orders, and the totals. CFD and option
 // positions share one account, so the footer shows the same equity / margin as the Trade tab.
+// While the order book is live, P&L is valued at the mark (the model mid clamped inside the best bid / offer), and
+// closing a position sells / buys it back reduce-only at market through the book: when the book can't take all of it
+// inside the price band the close is partial and says what is left. Barrier positions are Kalks-quoted.
 import * as React from "react";
 import { Crosshair, Layers, Scissors, X } from "lucide-react";
 import { OPTION_SPEC } from "@kalks/mock/options";
@@ -17,12 +20,15 @@ import { LiveMoney, Pnl, Stepper } from "@/components/ui/primitives";
 import { DropMenu } from "@/components/ui/menu";
 import { optionsApi } from "@/lib/options/api";
 import { useOptionBook } from "@/lib/options/book";
+import { bookApi } from "@/lib/options/book-api";
+import { usdPerUnitOfQuote } from "@/lib/options/normalize";
 import { errText } from "@/lib/options/errors";
 import { detectTemplate } from "@/lib/options/math";
 import { setTradeMode } from "@/lib/options/mode";
-import { opt, useOptionsAttach, useSeriesQuote } from "@/lib/options-store";
+import { opt, quoteOf, useBookLive, useOptionsAttach, useSeriesQuote } from "@/lib/options-store";
 import type { OptOrder, OptPosition, OptionQuote } from "@/lib/options/types";
 import { Countdown, OptAvatar, RightTag, SideTag } from "./bits";
+import { KalksQuotedTag } from "./book-bits";
 import { expiryLabel, greek, strikeText, usd, usdSigned } from "./format";
 
 /** Live numbers of one position: USD per contract, mark, P&L, Greeks. */
@@ -34,10 +40,11 @@ export function useOptionPositionLive(p: OptPosition) {
 }
 
 function derive(p: OptPosition, q: OptionQuote | null, liveProfit?: number) {
-  const usdU = q && q.ask > 0 && q.askUsd > 0 ? q.askUsd / q.ask : p.option.contractSize || 0;
+  const usdU = usdPerUnitOfQuote(q) || p.option.contractSize || 0;
   const k = p.side === "buy" ? 1 : -1;
   const markUnit = q?.mark ?? p.mark;
-  const exitUnit = q ? (p.side === "buy" ? q.bid : q.ask) : markUnit;
+  // the book values positions at the mark; house prices at the price that closes them
+  const exitUnit = q ? (q.book ? q.mark : p.side === "buy" ? q.bid : q.ask) : markUnit;
   const computed = exitUnit !== undefined ? k * (exitUnit - p.openPrice) * usdU * p.contracts - p.commission : undefined;
   const profit = liveProfit ?? p.profit ?? computed ?? 0;
   const g = q
@@ -88,6 +95,7 @@ function PartialClose({ p, onClose }: { p: OptPosition; onClose: (n: number) => 
 
 const PositionRow = React.memo(function PositionRow({ p, indent, readOnly, report, onClose, digits, locale }: { p: OptPosition; indent?: boolean; readOnly: boolean; report: Report; onClose: (p: OptPosition, n?: number) => void; digits: number; locale: string }) {
   const t = useT();
+  const bookLive = useBookLive();
   const v = useOptionPositionLive(p);
   React.useEffect(() => report(p.ticket, v));
   const cut = Date.parse(p.option.expiryAt) || Date.parse(`${p.option.expiry}T14:00:00Z`);
@@ -100,6 +108,7 @@ const PositionRow = React.memo(function PositionRow({ p, indent, readOnly, repor
           <span className="font-mono">{strikeText(p.option.strike, digits)}</span>
           <RightTag right={p.option.right} />
           {p.option.barrier && <span className="rounded-[3px] bg-warn-soft px-1 text-[9.5px] font-semibold text-warn">{t("trader.opt.pos.barrier")}</span>}
+          {bookLive && (p.option.barrier || p.venue === "house") && <KalksQuotedTag />}
         </span>
       </Td>
       <Td mono className="text-fg-3">
@@ -146,7 +155,7 @@ const PositionRow = React.memo(function PositionRow({ p, indent, readOnly, repor
           {!readOnly && (
             <>
               <PartialClose p={p} onClose={(n) => onClose(p, n)} />
-              <button onClick={() => onClose(p)} title={t("trader.opt.pos.close")} className="grid size-6 place-items-center rounded-[5px] text-fg-3 hover:bg-down-soft hover:text-down">
+              <button onClick={() => onClose(p)} title={bookLive && !p.option.barrier ? t("trader.opt.pos.closeBook") : t("trader.opt.pos.close")} className="grid size-6 place-items-center rounded-[5px] text-fg-3 hover:bg-down-soft hover:text-down">
                 <X className="size-3.5" />
               </button>
             </>
@@ -217,7 +226,7 @@ function ComboHeader({ id, legs, totals, readOnly, onClose, locale }: { id: stri
 function OrderRow({ o, readOnly, onCancel, digits }: { o: OptOrder; readOnly: boolean; onCancel: () => void; digits: number }) {
   const t = useT();
   const q = useSeriesQuote(o.option.series);
-  const usdU = q && q.ask > 0 ? q.askUsd / q.ask : o.option.contractSize;
+  const usdU = usdPerUnitOfQuote(q) || o.option.contractSize;
   return (
     <tr className="hover:bg-surface-2/70">
       <Td className="ps-3">
@@ -255,15 +264,29 @@ function OrderRow({ o, readOnly, onCancel, digits }: { o: OptOrder; readOnly: bo
   );
 }
 
-/** Close one option position (all of it, or `n` contracts), with the toast and journal line. */
+/**
+ * Close one option position (all of it, or `n` contracts), with the toast and journal line. A book-venue position is
+ * closed reduce-only at market through the book (`{status: filled | partial, filled, avgPrice, left}`): a partial close
+ * says how much is still open; house positions close at the house price (`{status, profit}`).
+ */
 export async function closeOptionPosition(T: ReturnType<typeof useTerminal>, t: ReturnType<typeof useT>, p: OptPosition, n?: number) {
   const part = n !== undefined && n < p.contracts;
-  const r = await optionsApi.closePosition(T.account.login, p.ticket, part ? n : undefined);
+  const want = part ? n! : p.contracts;
+  const r = await bookApi.closePosition(T.account.login, p.ticket, part ? n : undefined);
   const what = `${p.option.underlying} ${strikeText(p.option.strike, OPTION_SPEC[p.option.underlying]?.digits ?? 5)} ${p.option.right === "call" ? "C" : "P"} #${p.ticket}`;
   if (!r.ok) return void toast.error(t("trader.opt.toast.closeRejected"), { description: `${what} · ${errText(r.err)}` });
-  T.log("Trade", `'${T.account.login}': option position #${p.ticket} ${p.option.series} ${part ? `partially closed (${n} of ${p.contracts})` : "closed"}`);
-  const pr = r.data.profit;
-  (pr === undefined || pr >= 0 ? toast.success : toast.error)(part ? t("trader.opt.toast.closedPartial", { count: n! }) : t("trader.opt.toast.closed"), { description: pr !== undefined ? `${what} · ${usdSigned(pr)} USD` : what });
+  const d = r.data;
+  const k = usdPerUnitOfQuote(quoteOf(p.option.series)) || p.option.contractSize;
+  const avg = d.avgPrice !== undefined && d.avgPrice !== null ? t("trader.opt.bt.toast.avg", { price: usd(d.avgPrice * k) }) : null;
+  const pr = d.profit;
+  const desc = [what, avg, pr !== undefined ? `${usdSigned(pr)} USD` : null].filter(Boolean).join(" · ");
+  if (d.status === "partial") {
+    const filled = d.filled ?? 0;
+    T.log("Trade", `'${T.account.login}': option position #${p.ticket} ${p.option.series} closed ${filled} of ${want} through the book, ${d.left ?? want - filled} left`, "warn");
+    return void toast.warning(t("trader.opt.toast.closedPartialBook", { filled, total: want, left: d.left ?? want - filled }), { description: desc, duration: 9000 });
+  }
+  T.log("Trade", `'${T.account.login}': option position #${p.ticket} ${p.option.series} ${part ? `partially closed (${n} of ${p.contracts})` : "closed"}${d.status === "filled" ? " through the book" : ""}`);
+  (pr === undefined || pr >= 0 ? toast.success : toast.error)(part ? t("trader.opt.toast.closedPartial", { count: n! }) : t("trader.opt.toast.closed"), { description: desc });
 }
 
 export function OptionsPositionsTab() {

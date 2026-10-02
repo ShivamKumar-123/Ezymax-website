@@ -4,10 +4,13 @@
  * Options section building blocks: data access (live BFFs, or the in-memory mock in demo builds), permission flags,
  * number formatting for vols / rates / Greeks, the reason dialog every change goes through, and small shared bits.
  *
- *   /api/options/*                      options service (services/options): reference data, controls, fixings, audit
- *   /api/trading/admin/options/*        trading engine: the option book, settlement re-runs, voids
+ *   /api/options/*                      options service (services/options): reference data, controls, fixings, audit,
+ *                                       market-maker settings
+ *   /api/trading/admin/options/*        trading engine: the option book, settlement re-runs, voids, the order books
+ *                                       (monitor, depth, halts), the market maker, clearing, liquidations, busts, rollout
  */
 import * as React from "react";
+import Link from "next/link";
 import { Hourglass, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, Dialog, DialogClose, EmptyState, SymbolAvatar, cn, formatNumber, type ChipTone } from "@kalks/ui";
@@ -191,6 +194,98 @@ export function TradeStateChip({ state }: { state: string }) {
   return <Chip size="sm" tone={s.tone}>{s.label}</Chip>;
 }
 
+/** Order-book state per underlying / series (engine). */
+export const BOOK_STATE: Record<string, { label: string; tone: ChipTone }> = {
+  open: { label: "Open", tone: "up" },
+  cancel_only: { label: "Cancel-only", tone: "warn" },
+  halted: { label: "Halted", tone: "down" },
+  closed: { label: "Closed", tone: "neutral" },
+};
+export function BookStateChip({ state }: { state: string }) {
+  const s = BOOK_STATE[state] ?? { label: state, tone: "neutral" as ChipTone };
+  return (
+    <Chip size="sm" tone={s.tone} dot>
+      {s.label}
+    </Chip>
+  );
+}
+
+/** live / demo switch of the order-book pages (each kind has its own books, MM account and rollout). */
+export const KIND_OPTIONS = [
+  { value: "live" as const, label: "Live" },
+  { value: "demo" as const, label: "Demo" },
+];
+export const kindLabel = (k: string) => (k === "live" ? "live" : k === "demo" ? "demo" : k === "all" ? "live and demo" : k);
+
+/** The page's account kind, kept in `?kind=` so links between the order-book pages keep it. */
+export function useKind(initial: "live" | "demo" = "live"): ["live" | "demo", (k: "live" | "demo") => void] {
+  const [kind, setKind] = React.useState<"live" | "demo">(initial);
+  React.useEffect(() => {
+    const k = new URLSearchParams(window.location.search).get("kind");
+    if (k === "live" || k === "demo") setKind(k);
+  }, []);
+  const set = React.useCallback((k: "live" | "demo") => {
+    setKind(k);
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.set("kind", k);
+      window.history.replaceState(null, "", u);
+    } catch {
+      /* the selection still applies */
+    }
+  }, []);
+  return [kind, set];
+}
+
+/** "3d 4h" / "4h 12m" / "12m 05s" for a duration in seconds. */
+export function duration(secs: number | null | undefined) {
+  if (secs === null || secs === undefined || !Number.isFinite(secs)) return "—";
+  const s = Math.max(0, Math.floor(secs));
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return d ? `${d}d ${h}h` : h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m ${String(s % 60).padStart(2, "0")}s`;
+}
+
+/** Relative time with seconds for live feeds ("4 s ago"), falling back to minutes / hours. */
+export function agoSecs(isoAt: string | null | undefined, now: number) {
+  if (!isoAt) return "—";
+  const s = Math.round((now - Date.parse(isoAt)) / 1000);
+  if (!Number.isFinite(s)) return "—";
+  if (s < 1) return "now";
+  if (s < 120) return `${s} s ago`;
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  return `${Math.floor(s / 86400)} d ago`;
+}
+
+/** Signed plain number ("+12.5" / "−3"). */
+export const signedNum = (v: number | null | undefined, d = 2) => (v === null || v === undefined || !Number.isFinite(v) ? "—" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${formatNumber(Math.abs(v), d)}`);
+
+/** Whether a `requestedBy` string ("Name #12", an email, …) is the signed-in staff member (four-eyes). */
+export function isMe(requestedBy: string | null | undefined, staff: { id: number; email: string; name: string }) {
+  if (!requestedBy) return false;
+  const s = requestedBy.toLowerCase().trim();
+  return (!!staff.email && s.includes(staff.email.toLowerCase())) || s.endsWith(`#${staff.id}`) || (!!staff.name && s === staff.name.toLowerCase());
+}
+
+/** A login with a link: the client profile when the owner is known, else the trading account. */
+export function LoginLink({ login, userId, mm, className }: { login: number | string; userId?: number | null; mm?: boolean; className?: string }) {
+  const href = userId ? `/clients/${userId}` : `/trading/accounts?login=${login}`;
+  return (
+    <span className={cn("inline-flex items-center gap-1.5", className)}>
+      <Link href={href} onClick={(e) => e.stopPropagation()} className="font-mono text-[12.5px] font-medium hover:text-ember">
+        {login}
+      </Link>
+      {mm && (
+        <Chip size="sm" tone="ember">
+          MM
+        </Chip>
+      )}
+    </span>
+  );
+}
+
 export const CONTROL_MODE: Record<string, { label: string; tone: ChipTone; text: string }> = {
   halt: { label: "Halt", tone: "down", text: "No trading at all: no opens, no closes." },
   close_only: { label: "Close-only", tone: "warn", text: "Clients can close or reduce; no new opens." },
@@ -212,6 +307,14 @@ export const REASONS = {
   limit: ["LIM-01 · Live tester allow-list", "LIM-02 · Risk limit", "LIM-03 · Toxic flow", "LIM-04 · Suitability / compliance", "LIM-99 · Other"],
   void: ["VOD-01 · Off-market price", "VOD-02 · Feed error", "VOD-03 · Duplicate fill", "VOD-04 · System error", "VOD-99 · Other"],
   settle: ["SET-01 · Feed gap in the TWAP window", "SET-02 · Wrong fixing source", "SET-03 · Off-market ticks", "SET-04 · Engine error", "SET-99 · Other"],
+  /** order-book fill busts (four-eyes) */
+  bust: ["BST-01 · Off-market price", "BST-02 · Mark / feed error", "BST-03 · Duplicate fill", "BST-04 · Matching or system error", "BST-05 · Regulator / venue instruction", "BST-99 · Other"],
+  /** market-maker pause / resume */
+  mm: ["MMK-01 · Spot or surface stale", "MMK-02 · Inventory / Greek limits", "MMK-03 · Model or pricing issue", "MMK-04 · Market event", "MMK-05 · Maintenance", "MMK-99 · Other"],
+  /** order-book halts and cancel-only */
+  book: ["BOK-01 · Feed problem", "BOK-02 · Disorderly market", "BOK-03 · Outbox / settlement lag", "BOK-04 · Price or matching error", "BOK-05 · Maintenance", "BOK-99 · Other"],
+  /** switching a kind of account to the order book (four-eyes, forward-only) */
+  rollout: ["ROL-01 · Tests passed: go-live", "ROL-02 · Staged rollout", "ROL-03 · Regulatory sign-off", "ROL-99 · Other"],
   broker: ["BRK-01 · Broker onboarding", "BRK-02 · Jurisdiction check passed", "BRK-03 · Live test (allow-list)", "BRK-04 · Public launch", "BRK-05 · Suspended / risk", "BRK-99 · Other"],
 } as const;
 
