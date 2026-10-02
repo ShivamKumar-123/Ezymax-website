@@ -758,5 +758,98 @@ fn book_matching_cost() {
     }
     times.sort();
     let p = |q: f64| times[((times.len() as f64) * q) as usize] as f64 / 1000.0;
-    eprintln!("orders resting {}, apply incl. CoW clone: p50 {:.1} µs, p99 {:.1} µs, p99.9 {:.1} µs", b.resting(), p(0.5), p(0.99), p(0.999));
+    eprintln!("random flow: orders resting {}, apply incl. CoW clone: p50 {:.1} µs, p99 {:.1} µs, p99.9 {:.1} µs", b.resting(), p(0.5), p(0.99), p(0.999));
+
+    // a deep book: 200 series, each quoted by the market maker (2 sides) and holding 20 passive client orders per
+    // side, then client flow (passive adds, cancels, IOC takes) and MM requotes of 40 series at a time
+    let mut b = UnderlyingBooks::new(key());
+    let series: Vec<(String, SeriesSpec)> = (0..200)
+        .map(|k| {
+            let mut sp = spec();
+            sp.terms.series = format!("EURUSD-20261009-{}-C", 1000 + k);
+            (sp.terms.series.clone(), sp)
+        })
+        .collect();
+    let mut id = 1_000_000i64;
+    let mut seq_ids: Vec<Vec<i64>> = vec![vec![]; series.len()];
+    for (k, (s, sp)) in series.iter().enumerate() {
+        for j in 0..20 {
+            for side in [Side::Buy, Side::Sell] {
+                id += 1;
+                let px = if side == Side::Buy { 900 - j } else { 1100 + j };
+                let mut o = order(id, 3 + (j % 50), side, px, 2, Tif::Gtc, 0);
+                o.prio = 0;
+                apply(&mut b, &Cmd::New { series: s.clone(), spec: sp.clone(), order: o, usd_per_quote: D::ONE, at: AT });
+                seq_ids[k].push(id);
+            }
+        }
+    }
+    let mq = |b: &mut UnderlyingBooks, from: usize, id: &mut i64, shift: i64| {
+        let names: Vec<String> = series[from..from + 40].iter().map(|x| x.0.clone()).collect();
+        let quotes: Vec<QuoteIn> = series[from..from + 40]
+            .iter()
+            .flat_map(|(s, sp)| {
+                *id += 2;
+                [
+                    QuoteIn { series: s.clone(), spec: sp.clone(), id: *id - 1, side: Side::Buy, px: 990 + shift, qty: 10, reserve_per_step: D::ONE, ext: OrderExt::default() },
+                    QuoteIn { series: s.clone(), spec: sp.clone(), id: *id, side: Side::Sell, px: 1010 + shift, qty: 10, reserve_per_step: D::ONE, ext: OrderExt::default() },
+                ]
+            })
+            .collect();
+        apply(b, &Cmd::MassQuote { login: 999, stp: 9_999, series: names, quotes, at: AT })
+    };
+    for from in (0..200).step_by(40) {
+        mq(&mut b, from, &mut id, 0);
+    }
+    let resting = b.resting();
+    let (mut flow, mut quotes) = (Vec::with_capacity(100_000), Vec::with_capacity(5_000));
+    for i in 0..100_000i64 {
+        let r = next();
+        let k = (r % series.len() as u64) as usize;
+        let (s, sp) = &series[k];
+        let t = std::time::Instant::now();
+        let mut w = b.clone();
+        if i % 20 == 0 {
+            mq(&mut w, ((r >> 8) % 5) as usize * 40, &mut id, (r >> 16) as i64 % 3);
+            b = w;
+            quotes.push(t.elapsed().as_nanos() as u64);
+            continue;
+        }
+        let cmd = match (r >> 32) % 10 {
+            0..=3 => {
+                id += 1;
+                let side = if r & 1 == 0 { Side::Buy } else { Side::Sell };
+                let px = if side == Side::Buy { 980 - ((r >> 40) % 60) as i64 } else { 1020 + ((r >> 40) % 60) as i64 };
+                new_in(s, sp, order(id, 3 + ((r >> 12) % 150) as i64, side, px, 1 + ((r >> 50) % 3) as i64, Tif::Gtc, 0))
+            }
+            4..=6 => match w.book(s).and_then(|sb| sb.orders.values().find(|o| !o.ephemeral()).map(|o| (o.id, o.login))) {
+                Some((oid, login)) => Cmd::Cancel { series: s.clone(), id: oid, login, reason: "x".into(), at: AT },
+                None => continue,
+            },
+            _ => {
+                id += 1;
+                let side = if r & 1 == 0 { Side::Buy } else { Side::Sell };
+                new_in(s, sp, order(id, 3 + ((r >> 12) % 150) as i64, side, if side == Side::Buy { 1015 } else { 985 }, 1, Tif::Ioc, 0))
+            }
+        };
+        let _ = apply(&mut w, &cmd);
+        b = w;
+        flow.push(t.elapsed().as_nanos() as u64);
+    }
+    flow.sort();
+    quotes.sort();
+    let q = |v: &Vec<u64>, x: f64| v[((v.len() as f64) * x) as usize] as f64 / 1000.0;
+    eprintln!(
+        "deep book: 200 series, {resting} orders resting at the start, {} at the end; client command incl. CoW clone p50 {:.1} µs, p99 {:.1} µs, p99.9 {:.1} µs; mass quote of 40 series (80 quotes) p50 {:.1} µs, p99 {:.1} µs",
+        b.resting(),
+        q(&flow, 0.5),
+        q(&flow, 0.99),
+        q(&flow, 0.999),
+        q(&quotes, 0.5),
+        q(&quotes, 0.99)
+    );
+}
+
+fn new_in(series: &str, sp: &SeriesSpec, o: Resting) -> Cmd {
+    Cmd::New { series: series.into(), spec: sp.clone(), order: o, usd_per_quote: D::ONE, at: AT }
 }

@@ -189,6 +189,8 @@ impl Dispatcher {
         let mut inflight: HashMap<tokio::task::Id, i64> = HashMap::new();
         let mut halted = false;
         let mut closed = false;
+        // when each row reached the dispatcher (outbox lag)
+        let mut queued_at: HashMap<u64, Instant> = HashMap::new();
         // recovery: wait for the go signal
         while !*self.go.borrow() {
             if self.go.changed().await.is_err() {
@@ -244,7 +246,9 @@ impl Dispatcher {
                 rows = self.rx.recv(), if !closed => match rows {
                     Some(rows) => {
                         let now_ms = Utc::now().timestamp_millis();
+                        let t = Instant::now();
                         for r in rows {
+                            queued_at.insert(r.seq, t);
                             if r.item.is_fill() {
                                 books.settling_add(r.login, &label, r.seq, now_ms);
                             }
@@ -291,6 +295,9 @@ impl Dispatcher {
                                     books.settling_remove(r.login, &label, r.seq);
                                 }
                                 let value = values.get(i).cloned().unwrap_or(Value::Null);
+                                if let Some(t) = queued_at.remove(&r.seq) {
+                                    super::Perf::push(&books.perf.outbox_lag_us, t.elapsed().as_micros() as u64);
+                                }
                                 let _ = books.applied.send(Applied { key: self.key.clone(), seq: r.seq, login: r.login, value });
                             }
                             if let Some(w) = queues.get_mut(&login) {

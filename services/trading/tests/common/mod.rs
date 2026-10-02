@@ -148,6 +148,17 @@ impl Rig {
 
     /// Opens a demo client account (eligible for options) and returns its terminal session token.
     pub async fn client(&self, login: i64, user: i64, balance: i64) -> String {
+        self.account(login, user, balance).await;
+        let ctx = || Ctx { tenant: self.tenant.clone(), ip: "198.51.100.9".into(), user_agent: "e2e".into(), bearer: None };
+        let mut h = HeaderMap::new();
+        h.insert("x-kalks-user-id", user.to_string().parse().unwrap());
+        let Json(sso) = api::accounts::sso(State(self.st.clone()), ctx(), h, Path(login), Query(serde_json::from_value(json!({})).unwrap())).await.unwrap();
+        let Json(s) = api::terminal::sso(State(self.st.clone()), ctx(), body(json!({"token": sso["token"]}))).await.unwrap();
+        s["token"].as_str().unwrap().to_string()
+    }
+
+    /// Opens a demo client account eligible for options (no terminal session).
+    pub async fn account(&self, login: i64, user: i64, balance: i64) {
         let acc = Account {
             tenant_id: 1,
             login,
@@ -167,12 +178,6 @@ impl Rig {
         };
         self.hub.open(acc, ("h".into(), "i".into()), "e2e").await.unwrap();
         self.options.set_suitability(user, Suitability { eligible: true, kyc_verified: true, disclosure_accepted: true, quiz_passed: true, source: "gateway" }, 3_600_000);
-        let ctx = || Ctx { tenant: self.tenant.clone(), ip: "198.51.100.9".into(), user_agent: "e2e".into(), bearer: None };
-        let mut h = HeaderMap::new();
-        h.insert("x-kalks-user-id", user.to_string().parse().unwrap());
-        let Json(sso) = api::accounts::sso(State(self.st.clone()), ctx(), h, Path(login), Query(serde_json::from_value(json!({})).unwrap())).await.unwrap();
-        let Json(s) = api::terminal::sso(State(self.st.clone()), ctx(), body(json!({"token": sso["token"]}))).await.unwrap();
-        s["token"].as_str().unwrap().to_string()
     }
 
     pub async fn drained(&self) {

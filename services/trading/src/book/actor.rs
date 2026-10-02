@@ -154,7 +154,12 @@ impl Actor {
     /// Commits; when the outcome is unknown, the journal decides.
     async fn commit_verified(&self, durable: &[Entry], quotes: &[Entry], work: &UnderlyingBooks, rows: &[Row]) -> bool {
         let pool = &self.hub.shared.pool;
-        match journal::commit(pool, &self.key, durable, quotes, &self.books, work, rows).await {
+        let t0 = std::time::Instant::now();
+        let res = journal::commit(pool, &self.key, durable, quotes, &self.books, work, rows).await;
+        let perf = &self.hub.shared.books.perf;
+        super::Perf::push(&perf.commit_us, t0.elapsed().as_micros() as u64);
+        super::Perf::push(&perf.commit_quotes, quotes.len() as u64);
+        match res {
             Ok(()) => true,
             Err(e) => {
                 tracing::error!(book = %self.key.label(), error = %e, "options book commit failed");
@@ -178,6 +183,18 @@ impl Actor {
 
     /// Applies a batch. Returns false when a test hook simulated a crash.
     async fn process(&mut self, msgs: Vec<Msg>) -> bool {
+        let t0 = std::time::Instant::now();
+        let r = self.process_batch(msgs).await;
+        if let Some(n) = r.1 {
+            let perf = &self.hub.shared.books.perf;
+            super::Perf::push(&perf.actor_batch_us, t0.elapsed().as_micros() as u64);
+            super::Perf::push(&perf.actor_batch_cmds, n as u64);
+        }
+        r.0
+    }
+
+    /// (keep running, commands processed).
+    async fn process_batch(&mut self, msgs: Vec<Msg>) -> (bool, Option<usize>) {
         let mut work = self.books.clone();
         let mut results: Vec<(Entry, Option<oneshot::Sender<Result<Reply, String>>>)> = Vec::new();
         for m in msgs {
@@ -192,8 +209,9 @@ impl Actor {
             }
         }
         if results.is_empty() {
-            return true;
+            return (true, None);
         }
+        let n = results.len();
         let mut rows: Vec<Row> = Vec::new();
         let mut per: Vec<Vec<(u64, i64, bool)>> = Vec::new();
         let mut oseq = self.outbox_seq;
@@ -215,10 +233,10 @@ impl Actor {
             if !self.commit_verified(&durable, &quotes, &work, &rows).await {
                 self.quotes = prev;
                 self.fail(results).await;
-                return true;
+                return (true, Some(n));
             }
             if self.hub.shared.books.hooks.crash_after_journal.swap(false, std::sync::atomic::Ordering::SeqCst) {
-                return false;
+                return (false, Some(n));
             }
         } else {
             self.quotes.extend(eph);
@@ -243,7 +261,7 @@ impl Actor {
                 let _ = r.send(Ok(Reply { out: e.out, items }));
             }
         }
-        true
+        (true, Some(n))
     }
 
     /// The batch was not committed: nothing of it happened. The accounts get back what they reserved for it.

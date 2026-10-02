@@ -108,6 +108,51 @@ pub struct Books {
     pub rfqs: rfq::Registry,
     /// The last replay audit: (when, books that differed).
     pub last_audit: Mutex<Option<(DateTime<Utc>, usize)>>,
+    /// Latency samples (load test, monitor): actor batch time and outbox lag.
+    pub perf: Perf,
+}
+
+/// Rings of latency samples in µs (the most recent `PERF_SAMPLES`).
+#[derive(Default)]
+pub struct Perf {
+    /// Actor: apply + group commit + publish of one batch.
+    pub actor_batch_us: Mutex<std::collections::VecDeque<u64>>,
+    /// Commands per actor batch.
+    pub actor_batch_cmds: Mutex<std::collections::VecDeque<u64>>,
+    /// Outbox: from the commit to the item applied on its account.
+    pub outbox_lag_us: Mutex<std::collections::VecDeque<u64>>,
+    /// The group commit alone (Postgres), and the buffered quote-journal entries it carried.
+    pub commit_us: Mutex<std::collections::VecDeque<u64>>,
+    pub commit_quotes: Mutex<std::collections::VecDeque<u64>>,
+}
+
+pub const PERF_SAMPLES: usize = 200_000;
+
+impl Perf {
+    pub fn push(ring: &Mutex<std::collections::VecDeque<u64>>, v: u64) {
+        let mut r = ring.lock().unwrap();
+        if r.len() >= PERF_SAMPLES {
+            r.pop_front();
+        }
+        r.push_back(v);
+    }
+    /// (count, p50, p99, max) of a ring.
+    pub fn stats(ring: &Mutex<std::collections::VecDeque<u64>>) -> (usize, u64, u64, u64) {
+        let mut v: Vec<u64> = ring.lock().unwrap().iter().copied().collect();
+        if v.is_empty() {
+            return (0, 0, 0, 0);
+        }
+        v.sort_unstable();
+        let p = |q: f64| v[((v.len() - 1) as f64 * q) as usize];
+        (v.len(), p(0.5), p(0.99), *v.last().unwrap())
+    }
+    pub fn clear(&self) {
+        self.actor_batch_us.lock().unwrap().clear();
+        self.actor_batch_cmds.lock().unwrap().clear();
+        self.outbox_lag_us.lock().unwrap().clear();
+        self.commit_us.lock().unwrap().clear();
+        self.commit_quotes.lock().unwrap().clear();
+    }
 }
 
 impl Default for Books {
@@ -129,6 +174,7 @@ impl Default for Books {
             mm: Default::default(),
             rfqs: Default::default(),
             last_audit: Mutex::new(None),
+            perf: Default::default(),
         }
     }
 }
