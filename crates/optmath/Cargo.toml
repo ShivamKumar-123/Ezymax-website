@@ -1,0 +1,11 @@
+[package]
+name = "optmath"
+version = "0.1.0"
+edition = "2024"
+description = "Pure-Rust option pricing maths for Kalks FX Options: generalized Black-Scholes-Merton, Greeks, implied vol, FX smile, barriers."
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
