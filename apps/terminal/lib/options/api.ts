@@ -69,8 +69,8 @@ const liveApi: OptionsApi = {
   streamTicket: (login) => call("POST", "/api/options/stream-ticket", { login }),
   publicStreamUrl: () => call("GET", "/api/options/public/stream-url"),
   preview: async (login, req, local) => {
-    const r = await call<Preview>("POST", "/api/engine/options/preview", { login, body: req, timeoutMs: 8_000 });
-    if (r.ok) return { ok: true, data: { ...r.data, reasons: r.data.reasons ?? [], breakevens: r.data.breakevens ?? [], greeks: r.data.greeks ?? {} } };
+    const r = await call<Preview & { currency?: string }>("POST", "/api/engine/options/preview", { login, body: req, timeoutMs: 8_000 });
+    if (r.ok) return { ok: true, data: previewInUsd({ ...r.data, reasons: r.data.reasons ?? [], breakevens: r.data.breakevens ?? [], greeks: r.data.greeks ?? {} }) };
     // the engine doesn't serve options yet: show the estimate (orders stay blocked until it does)
     if (isLaunchingSoon(r.err)) return { ok: true, data: { ...local(), estimate: true } };
     return r;
@@ -92,5 +92,34 @@ const liveApi: OptionsApi = {
   },
   settlements: (login) => call("GET", "/api/engine/options/settlements?limit=200", { login }),
 };
+
+/**
+ * The engine answers a preview in the account's currency (`currency`: USD, or USC on cent accounts, 100 × USD). The
+ * workspace keeps every amount in USD (like the client estimate and the positions) and shows account amounts with
+ * accMoney, so a cent account's preview is scaled back to USD here. Premiums per unit (legs' `price`) are untouched.
+ */
+export function previewInUsd(p: Preview & { currency?: string }): Preview {
+  if (p.currency !== "USC") return p;
+  const k = 100;
+  const m = (v: number) => (Number.isFinite(v) ? v / k : v);
+  const mOpt = (v: number | null) => (v === null || v === undefined ? v : v / k);
+  return {
+    ...p,
+    netPremium: m(p.netPremium),
+    commission: m(p.commission),
+    marginBefore: m(p.marginBefore),
+    marginAfter: m(p.marginAfter),
+    freeMarginAfter: m(p.freeMarginAfter),
+    cashAfter: m(p.cashAfter),
+    maxProfit: mOpt(p.maxProfit),
+    maxLoss: mOpt(p.maxLoss),
+    legs: p.legs.map((l) => ({ ...l, premium: l.premium === undefined ? undefined : l.premium / k })),
+    greeks: { ...p.greeks },
+    currency: "USD",
+  } as Preview;
+}
+
+/** Money of the engine in the account's currency → USD (cent accounts keep 100 × USD). */
+export const engineUsd = (v: number | null | undefined, cent: boolean | undefined): number | undefined => (v === null || v === undefined || !Number.isFinite(v) ? undefined : cent ? v / 100 : v);
 
 export const optionsApi: OptionsApi = IS_LIVE ? liveApi : mockApi;

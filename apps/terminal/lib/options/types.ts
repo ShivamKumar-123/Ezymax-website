@@ -123,6 +123,8 @@ export interface Preview {
   greeks: OptGreeks;
   /** client-side estimate (the engine's options API isn't live yet, or a demo build) */
   estimate?: boolean;
+  /** the engine's account currency of the money fields (USC on cent accounts; the API layer converts to USD) */
+  currency?: string;
 }
 
 export interface Trigger {
@@ -150,10 +152,16 @@ export interface Settlement {
   series: string;
   side: Side;
   contracts: number;
-  fixing: number;
+  /** the settlement price (TWAP of the mid over the 30 minutes before the cut); null while unknown */
+  fixing: number | null;
+  /** cash booked at expiry: + paid to the client, − paid by a seller, 0 = expired worthless (account currency) */
   payout: number;
+  /** realised P&L of the position at expiry, premium included (account currency; engine builds) */
+  profit?: number;
   at: string;
   run: number;
+  /** the run was reversed (a later run or a void replaced it) */
+  reversed?: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -259,6 +267,8 @@ export interface BookPreview {
   freeMarginAfter?: number;
   /** client-side estimate (demo builds) */
   estimate?: boolean;
+  /** the account's currency of `reserve` / margins (USC on cent accounts: 100 × USD) */
+  currency?: string;
 }
 
 /** `POST /v1/terminal/positions/{ticket}/close` on a book-venue option (reduce-only market IOC); house: {status, profit}. */

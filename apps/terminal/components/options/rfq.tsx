@@ -169,7 +169,7 @@ export function RfqPanel({ legs, onDone, className, disabled }: { legs: RfqLegSp
         key={s}
         onClick={() => void accept(s)}
         disabled={!quote || net === null || validMs <= 0 || phase === "accepting" || disabled}
-        className={cn("rounded-[8px] border px-2.5 py-2 text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50", s === "buy" ? "border-up bg-up text-end" : "border-down bg-down text-start")}
+        className={cn("rounded-[12px] border px-3 py-2.5 text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50", s === "buy" ? "border-up bg-up text-end" : "border-down bg-down text-start")}
       >
         <div className="text-[10px] font-semibold uppercase tracking-[0.1em] opacity-90">{s === "buy" ? t("trader.opt.rfq.buy") : t("trader.opt.rfq.sell")}</div>
         <div className="k-num font-mono text-[16px] font-semibold leading-tight">{net !== null ? usd(net * units.k) : "—"}</div>
@@ -179,7 +179,7 @@ export function RfqPanel({ legs, onDone, className, disabled }: { legs: RfqLegSp
   };
 
   return (
-    <div className={cn("space-y-2 rounded-[8px] border border-line bg-surface-2/40 p-2.5", className)}>
+    <div className={cn("space-y-2.5 rounded-[12px] border border-line bg-surface-2/40 p-3", className)}>
       <div className="flex items-center gap-1.5">
         <MessagesSquare className="size-3.5 text-ember" />
         <span className="text-[11px] font-semibold uppercase tracking-[0.07em] text-fg-2">{t("trader.opt.rfq.title")}</span>
@@ -207,14 +207,14 @@ export function RfqPanel({ legs, onDone, className, disabled }: { legs: RfqLegSp
       {phase === "idle" || phase === "expired" || phase === "done" ? (
         <>
           {phase === "expired" && <div className="flex items-center gap-1.5 text-[11px] text-warn"><Hourglass className="size-3.5" /> {t("trader.opt.rfq.expired")}</div>}
-          <button onClick={() => void request()} disabled={disabled || !legs.length} className="flex h-9 w-full items-center justify-center gap-1.5 rounded-[8px] bg-ember text-[12.5px] font-semibold text-white shadow-[0_6px_18px_-8px_rgba(255,90,31,0.8)] transition hover:brightness-110 disabled:bg-surface-3 disabled:text-fg-3 disabled:shadow-none">
+          <button onClick={() => void request()} disabled={disabled || !legs.length} className="flex h-11 w-full items-center justify-center gap-1.5 rounded-[12px] bg-ember text-[12.5px] font-semibold text-white shadow-[0_6px_18px_-8px_rgba(255,90,31,0.8)] transition hover:brightness-110 disabled:bg-surface-3 disabled:text-fg-3 disabled:shadow-none">
             {phase === "idle" ? <MessagesSquare className="size-3.5" /> : <RefreshCw className="size-3.5" />}
             {phase === "idle" ? t("trader.opt.rfq.request") : t("trader.opt.rfq.again")}
           </button>
           <p className="text-[10.5px] leading-snug text-fg-3">{t("trader.opt.rfq.note")}</p>
         </>
       ) : phase === "requesting" || (phase === "live" && !quote) ? (
-        <div className="flex h-[74px] items-center justify-center gap-2 rounded-[8px] border border-dashed border-line text-[11.5px] text-fg-3">
+        <div className="flex h-[74px] items-center justify-center gap-2 rounded-[12px] border border-dashed border-line text-[11.5px] text-fg-3">
           <RefreshCw className="size-3.5 animate-spin" /> {t("trader.opt.rfq.waiting")}
         </div>
       ) : (

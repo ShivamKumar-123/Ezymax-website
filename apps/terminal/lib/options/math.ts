@@ -285,8 +285,9 @@ export function estimatePreview(inp: EstimateInput): Preview {
     marginAfter: +(inp.account.margin + addMargin).toFixed(2),
     freeMarginAfter: +freeAfter.toFixed(2),
     cashAfter: +cashAfter.toFixed(2),
-    maxProfit: stats.maxProfit === null ? null : +stats.maxProfit.toFixed(2),
-    maxLoss: stats.maxLoss === null ? null : +stats.maxLoss.toFixed(2),
+    // like the engine's preview: the commission lowers the best case and adds to the worst case
+    maxProfit: stats.maxProfit === null ? null : +(stats.maxProfit - commission).toFixed(2),
+    maxLoss: stats.maxLoss === null ? null : +(stats.maxLoss + commission).toFixed(2),
     breakevens: stats.breakevens,
     greeks: g,
     estimate: true,

@@ -17,7 +17,7 @@ import { useTerminal } from "@/lib/store";
 import type { Timeframe } from "@/lib/trading";
 import { useOptionBook } from "@/lib/options/book";
 import { opt, useOpt } from "@/lib/options-store";
-import { strikeText } from "./format";
+import { strikeOf } from "./format";
 
 const TFS: Timeframe[] = ["M5", "M15", "H1", "H4", "D1"];
 
@@ -119,7 +119,7 @@ function ChartBody({ u, tf, login, className, bare }: { u: string; tf: Timeframe
       if (p.option.underlying !== u) continue;
       const bold = focus === p.ticket;
       const k = p.option.strike;
-      out.push({ id: `pos:${p.ticket}`, price: k, kind: "pos", title: `#${p.ticket} ${p.option.right === "call" ? "C" : "P"} ${strikeText(k, digits)}`, bold });
+      out.push({ id: `pos:${p.ticket}`, price: k, kind: "pos", title: `#${p.ticket} ${p.option.right === "call" ? "C" : "P"} ${strikeOf(p.option, digits)}`, bold });
       const be = p.option.right === "call" ? k + p.openPrice : k - p.openPrice;
       if (bold || book.positions.length <= 4) out.push({ id: `pbe:${p.ticket}`, price: be, kind: "be", title: t("trader.opt.line.beOf", { ticket: p.ticket }), bold });
       const bl = p.option.barrier?.level ?? p.option.barrier?.price;

@@ -20,22 +20,23 @@ import { errText, optionErrorText } from "@/lib/options/errors";
 import { toTick } from "@/lib/options/normalize";
 import { useBookLive, useOpt, useOptionsAttach } from "@/lib/options-store";
 import type { BookFill, BookOrder } from "@/lib/options/types";
-import { OptAvatar, RightTag, Seg, SideTag } from "./bits";
+import { OptAvatar, Seg, SideTag } from "./bits";
 import { OrderStatusChip, qty, useSeriesUnits, useTypeLabel } from "./book-bits";
 import { expiryLabel, px, usd } from "./format";
 
 type View = "open" | "history" | "fills";
 
 function SeriesCell({ code }: { code: string }) {
+  const t = useT();
   const { locale } = useLocale();
   const p = parseSeriesCode(code.split("-").slice(0, 4).join("-"));
   if (!p) return <span className="font-mono">{code}</span>;
   return (
     <span className="flex items-center gap-1.5">
-      <OptAvatar symbol={p.underlying} size={13} />
-      <span className="font-medium">{p.underlying}</span>
-      <span className="font-mono">{p.strikeLabel}</span>
-      <RightTag right={p.right} />
+      <OptAvatar symbol={p.underlying} size={14} />
+      <span className="font-semibold">{p.underlying}</span>
+      <span className={cn("rounded-[4px] px-1 text-[10px] font-semibold", p.right === "call" ? "bg-up-soft text-up" : "bg-down-soft text-down")}>{p.right === "call" ? t("trader.opt.call") : t("trader.opt.put")}</span>
+      <span className="font-mono font-semibold">{p.strikeLabel}</span>
       <span className="text-[11px] text-fg-3">{expiryLabel(p.date, locale, false)}</span>
     </span>
   );
@@ -148,7 +149,8 @@ function OpenRow({ o, readOnly }: { o: BookOrder; readOnly: boolean }) {
         {o.avgPrice !== null ? usd(o.avgPrice * units.k) : "—"}
       </Td>
       <Td right mono className="text-fg-3" >
-        {o.reserved > 0 ? usd(o.reserved) : "—"}
+        {/* order margin: the engine holds it in the account's currency (USC on cent accounts) */}
+        {o.reserved > 0 ? usd(T.account.cent ? o.reserved / 100 : o.reserved) : "—"}
       </Td>
       <Td>
         <OrderStatusChip status={o.trigger && o.status === "working" ? "pending" : o.status} />
@@ -307,10 +309,9 @@ export function OrdersTab() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-8 shrink-0 items-center gap-2 border-b border-line px-2">
+      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-line px-2.5">
         <Seg<View>
-          size="sm"
-          className="w-[250px]"
+          className="w-[280px]"
           value={view}
           onChange={setView}
           options={[
@@ -324,11 +325,11 @@ export function OrdersTab() {
           {view === "open" && !ro && (
             <>
               {selP && (
-                <button onClick={() => void cancelAll({ series: sel! })} disabled={busy || !selOpen} className="flex h-6 items-center gap-1 rounded-[5px] border border-line px-2 text-[11px] text-fg-2 hover:border-down/50 hover:text-down disabled:opacity-40">
+                <button onClick={() => void cancelAll({ series: sel! })} disabled={busy || !selOpen} className="flex h-7 items-center gap-1 rounded-[5px] border border-line px-2 text-[11px] text-fg-2 hover:border-down/50 hover:text-down disabled:opacity-40">
                   <Ban className="size-3" /> {t("trader.opt.ord.cancelSeries", { series: `${selP.strikeLabel} ${selP.right === "call" ? "C" : "P"}` })}
                 </button>
               )}
-              <button onClick={() => void cancelAll({ underlying: u })} disabled={busy || !uOpen} className="flex h-6 items-center gap-1 rounded-[5px] border border-line px-2 text-[11px] text-fg-2 hover:border-down/50 hover:text-down disabled:opacity-40">
+              <button onClick={() => void cancelAll({ underlying: u })} disabled={busy || !uOpen} className="flex h-7 items-center gap-1 rounded-[5px] border border-line px-2 text-[11px] text-fg-2 hover:border-down/50 hover:text-down disabled:opacity-40">
                 <Ban className="size-3" /> {t("trader.opt.ord.cancelUnderlying", { u })}
               </button>
             </>

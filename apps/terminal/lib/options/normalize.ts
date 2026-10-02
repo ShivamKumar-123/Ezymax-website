@@ -257,6 +257,7 @@ export function normPreview(raw: unknown, req?: { type: string; side: string; qt
     marginAfter: num(x.marginAfter),
     freeMarginAfter: num(x.freeMarginAfter),
     estimate: x.estimate === true,
+    currency: str(x.currency),
   };
 }
 

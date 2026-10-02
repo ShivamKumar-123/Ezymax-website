@@ -31,7 +31,7 @@ import { MmRulesLink } from "./mm-rules";
 
 function Label({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
   return (
-    <div className="mb-1 flex items-center justify-between text-[10.5px] font-medium uppercase tracking-[0.05em] text-fg-3">
+    <div className="mb-1.5 flex items-center justify-between text-[11px] font-medium text-fg-3">
       <span>{children}</span>
       {right && <span className="normal-case tracking-normal">{right}</span>}
     </div>
@@ -128,14 +128,17 @@ function Line({ k, v, tone, strong, sub }: { k: React.ReactNode; v: React.ReactN
 
 function BookPreviewCard({ state, req, units }: { state: PreviewState; req: BookOrderRequest; units: SeriesUnits }) {
   const t = useT();
-  const p = state.preview;
+  const raw = state.preview;
+  // the order margin and free margin come in the account's currency (USC on cent accounts): shown in USD
+  const cent = raw?.currency === "USC";
+  const p = raw && cent ? { ...raw, reserve: raw.reserve / 100, freeMarginAfter: raw.freeMarginAfter === undefined ? undefined : raw.freeMarginAfter / 100 } : raw;
   if (!p && !state.error) return null;
   if (!p) return <ErrorNote code={state.error!.code} message={state.error!.message} />;
   const stop = req.type === "stop_market" || req.type === "stop_limit";
   const reasons = (p.reasons ?? []).filter((r) => reasonCode(r) || typeof r !== "string");
   return (
     <div className="space-y-1.5">
-      <div className={cn("rounded-[7px] border border-line bg-surface-2/40 px-2.5 py-1.5 font-mono text-[11px] transition-opacity", state.loading && "opacity-80")}>
+      <div className={cn("rounded-[10px] border border-line bg-surface-2/40 px-3 py-2 font-mono text-[11px] transition-opacity", state.loading && "opacity-80")}>
         <div className="mb-0.5 flex items-center justify-between">
           <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-3">{t("trader.opt.preview.title")}</span>
           {p.estimate && (
@@ -186,7 +189,7 @@ function ResultCard({ r, units, onClose }: { r: BookOrderResult; units: SeriesUn
   const avg = filled ? r.fills.reduce((s, f) => s + f.price * f.qty, 0) / (r.fills.reduce((n, f) => n + f.qty, 0) || 1) : null;
   const resting = o && o.left > 0 && (o.status === "working" || o.status === "partially_filled") ? o.left : 0;
   return (
-    <div className="rounded-[8px] border border-line bg-surface-2/50 px-2.5 py-2 text-[11.5px]" role="status">
+    <div className="rounded-[10px] border border-line bg-surface-2/50 px-3 py-2.5 text-[11.5px]" role="status">
       <div className="flex items-center gap-1.5">
         {r.status === "filled" ? <CheckCircle2 className="size-3.5 text-up" /> : <CircleDashed className="size-3.5 text-fg-3" />}
         <span className="font-semibold text-fg">{t("trader.opt.bt.res.title")}</span>
@@ -341,7 +344,7 @@ export function BookOrderForm({ leg, onDone }: { leg: TicketLeg; onDone?: () => 
       </div>
 
       {type === "stop" && (
-        <div className="space-y-1.5 rounded-[7px] border border-line bg-surface-2/40 p-2">
+        <div className="space-y-1.5 rounded-[10px] border border-line bg-surface-2/30 p-2.5">
           <Seg<Ticket["stopKind"]>
             size="sm"
             value={ticket.stopKind}
@@ -403,7 +406,7 @@ export function BookOrderForm({ leg, onDone }: { leg: TicketLeg; onDone?: () => 
       )}
 
       {(priced || type === "market") && (
-        <div className="space-y-1.5 rounded-[7px] border border-line bg-surface-2/40 p-2">
+        <div className="space-y-1.5 rounded-[10px] border border-line bg-surface-2/30 p-2.5">
           {priced && (
             <div className="flex items-center justify-between gap-2 text-[11px] text-fg-3">
               <span>{t("trader.opt.ticket.tif")}</span>
@@ -448,7 +451,7 @@ export function BookOrderForm({ leg, onDone }: { leg: TicketLeg; onDone?: () => 
       {last && <ResultCard r={last} units={units} onClose={() => setLast(null)} />}
 
       {guest ? (
-        <div className="rounded-[8px] border border-ember/25 bg-ember-soft/40 px-3 py-3 text-center">
+        <div className="rounded-[12px] border border-ember/25 bg-ember-soft/40 px-3 py-3 text-center">
           <div className="mx-auto mb-2 grid size-8 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember">
             <Lock className="size-3.5" />
           </div>
@@ -465,12 +468,12 @@ export function BookOrderForm({ leg, onDone }: { leg: TicketLeg; onDone?: () => 
           onClick={() => void submit()}
           disabled={!!blocked}
           className={cn(
-            "flex h-10 w-full items-center justify-between gap-2 rounded-[8px] px-3 text-[12.5px] font-semibold text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100",
+            "flex h-12 w-full items-center justify-between gap-2 rounded-[12px] px-4 text-[13px] font-semibold text-white shadow-[0_10px_28px_-14px_rgba(0,0,0,0.6)] transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:shadow-none disabled:hover:brightness-100",
             !armed ? "bg-surface-3 text-fg-3" : leg.side === "buy" ? "bg-up" : "bg-down",
           )}
         >
           <span className="truncate">{busy ? t("trader.opt.ticket.sending") : label}</span>
-          {preview.preview && preview.preview.reserve > 0 && <span className="k-num shrink-0 rounded-[5px] bg-black/15 px-1.5 py-0.5 font-mono text-[11px]" title={t("trader.opt.bt.pv.reserve")}>{usd(preview.preview.reserve)} USD</span>}
+          {preview.preview && preview.preview.reserve > 0 && <span className="k-num shrink-0 rounded-[7px] bg-black/15 px-2 py-0.5 font-mono text-[11px]" title={t("trader.opt.bt.pv.reserve")}>{usd(preview.preview.currency === "USC" ? preview.preview.reserve / 100 : preview.preview.reserve)} USD</span>}
         </button>
       )}
     </div>

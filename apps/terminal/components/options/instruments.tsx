@@ -29,7 +29,7 @@ interface Item {
   listed: boolean;
 }
 
-function Row({ it, active, narrow, liveIv, mobile, onPick }: { it: Item; active: boolean; narrow: boolean; liveIv: number | null; mobile?: boolean; onPick: () => void }) {
+function Row({ it, active, narrow, liveIv, mobile, onPick, showIv }: { it: Item; active: boolean; narrow: boolean; liveIv: number | null; mobile?: boolean; onPick: () => void; showIv: boolean }) {
   const t = useT();
   const feed = !!INSTRUMENT_MAP[it.symbol];
   const iv = active && liveIv !== null ? liveIv : it.atmVol;
@@ -40,10 +40,10 @@ function Row({ it, active, narrow, liveIv, mobile, onPick }: { it: Item; active:
       aria-disabled={!it.listed || undefined}
       className={cn("group", it.listed ? "cursor-pointer" : "cursor-default opacity-55", active ? "bg-ember-soft/55" : it.listed && "hover:bg-surface-3/70")}
     >
-      <td className={cn("relative border-b border-line/50 ps-2", mobile ? "h-[46px]" : "h-[34px]")}>
+      <td className={cn("relative border-b border-line/50 ps-2.5", mobile ? "h-[52px]" : "h-[38px]")}>
         {active && <span className="absolute inset-y-1 start-0 w-[2px] rounded-full bg-ember" />}
         <span className="flex min-w-0 items-center gap-2">
-          <OptAvatar symbol={it.symbol} size={mobile ? 20 : 15} />
+          <OptAvatar symbol={it.symbol} size={mobile ? 22 : 17} />
           <span className="min-w-0 leading-tight">
             <span className={cn("block truncate font-medium text-fg", mobile ? "text-[13px]" : "text-[12px]")}>{it.symbol}</span>
             <span className={cn("block truncate text-fg-3", mobile ? "text-[10.5px]" : "text-[9.5px]")}>{it.name}</span>
@@ -53,9 +53,11 @@ function Row({ it, active, narrow, liveIv, mobile, onPick }: { it: Item; active:
       </td>
       <td className="border-b border-line/50 pe-1.5 text-end">{it.listed && feed ? <FeedPrice symbol={it.symbol} className={cn("justify-end", mobile ? "text-[12.5px]" : "text-[11.5px]")} /> : <span className="font-mono text-[11px] text-fg-3">—</span>}</td>
       {!narrow && <td className="border-b border-line/50 pe-1.5 text-end">{it.listed && feed ? <FeedChange symbol={it.symbol} /> : <span className="font-mono text-[10.5px] text-fg-3">—</span>}</td>}
-      <td className="border-b border-line/50 pe-2 text-end font-mono text-[11px] text-fg-2" title={t("trader.opt.atmIvHint")}>
-        {it.listed ? pct(iv) : "—"}
-      </td>
+      {showIv && (
+        <td className="border-b border-line/50 pe-2 text-end font-mono text-[11px] text-fg-2" title={t("trader.opt.atmIvHint")}>
+          {it.listed ? pct(iv) : "—"}
+        </td>
+      )}
     </tr>
   );
 }
@@ -68,6 +70,9 @@ export function InstrumentList({ mobile, onPick }: { mobile?: boolean; onPick?: 
   const liveIv = useOpt((s) => (s.chain && s.chain.underlying === s.u && s.chain.rows.length ? (s.chain.rows[atmIndex(s.chain)]?.call?.iv ?? null) : null));
   const [q, setQ] = React.useState("");
   const [narrow, setNarrow] = React.useState(false);
+  // implied vol is a pro figure: shown with the Pro chain columns
+  const showIv = useOpt((s) => s.prefs.colPreset === "pro" || s.prefs.cols.includes("iv"));
+  const span = (narrow ? 3 : 4) - (showIv ? 0 : 1);
   const box = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     const el = box.current;
@@ -103,17 +108,19 @@ export function InstrumentList({ mobile, onPick }: { mobile?: boolean; onPick?: 
           <colgroup>
             <col />
             <col className={mobile ? "w-[86px]" : "w-[70px]"} />
-            {!narrow && <col className={mobile ? "w-[60px]" : "w-[50px]"} />}
-            <col className={mobile ? "w-[56px]" : "w-[46px]"} />
+            {!narrow && <col className={mobile ? "w-[64px]" : "w-[56px]"} />}
+            {showIv && <col className={mobile ? "w-[56px]" : "w-[46px]"} />}
           </colgroup>
           <thead>
             <tr>
               <th className={cn(th, "ps-2 text-start")}>{t("market.col.symbol")}</th>
               <th className={cn(th, "pe-1.5 text-end")}>{t("trader.opt.spot")}</th>
               {!narrow && <th className={cn(th, "pe-1.5 text-end")}>{t("market.col.change")}</th>}
-              <th className={cn(th, "pe-2 text-end")} title={t("trader.opt.atmIvHint")}>
-                {t("trader.opt.col.iv")}
-              </th>
+              {showIv && (
+                <th className={cn(th, "pe-2 text-end")} title={t("trader.opt.atmIvHint")}>
+                  {t("trader.opt.col.iv")}
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -123,12 +130,12 @@ export function InstrumentList({ mobile, onPick }: { mobile?: boolean; onPick?: 
               return (
                 <React.Fragment key={c}>
                   <tr aria-hidden>
-                    <td colSpan={narrow ? 3 : 4} className="h-6 border-b border-line/50 bg-panel-2/50 ps-2 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">
+                    <td colSpan={span} className="h-7 border-b border-line/50 bg-panel-2/50 ps-2.5 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">
                       {t(CLASS_KEY[c])}
                     </td>
                   </tr>
                   {rows.map((x) => (
-                    <Row key={x.symbol} it={x} active={x.symbol === u} narrow={narrow} liveIv={liveIv} mobile={mobile} onPick={() => pick(x.symbol)} />
+                    <Row key={x.symbol} it={x} active={x.symbol === u} narrow={narrow} liveIv={liveIv} mobile={mobile} onPick={() => pick(x.symbol)} showIv={showIv} />
                   ))}
                 </React.Fragment>
               );
@@ -136,14 +143,14 @@ export function InstrumentList({ mobile, onPick }: { mobile?: boolean; onPick?: 
             {shown.some((x) => !x.listed) && (
               <>
                 <tr aria-hidden>
-                  <td colSpan={narrow ? 3 : 4} className="h-6 border-b border-line/50 bg-panel-2/50 ps-2 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">
+                  <td colSpan={span} className="h-7 border-b border-line/50 bg-panel-2/50 ps-2.5 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">
                     {t("trader.opt.comingSoon")}
                   </td>
                 </tr>
                 {shown
                   .filter((x) => !x.listed)
                   .map((x) => (
-                    <Row key={x.symbol} it={x} active={false} narrow={narrow} liveIv={null} mobile={mobile} onPick={() => {}} />
+                    <Row key={x.symbol} it={x} active={false} narrow={narrow} liveIv={null} mobile={mobile} onPick={() => {}} showIv={showIv} />
                   ))}
               </>
             )}

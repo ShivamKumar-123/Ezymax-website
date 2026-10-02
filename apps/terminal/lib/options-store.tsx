@@ -85,7 +85,18 @@ export interface Ticket {
 }
 
 export type ChainView = "both" | "calls" | "puts";
+/** The right panel: the guided "Quick trade" (Up or Down → date → amount → outcome) or the full order ticket. */
 export type SidePanel = "ticket" | "simple";
+/** A column of the option chain (per side). */
+export type ChainCol = "bid" | "ask" | "last" | "mark" | "iv" | "delta" | "gamma" | "theta" | "vega" | "prob" | "be" | "oi" | "vol";
+/** Column sets of the chain: Simple (the price only), Standard (+ sell price, chance, breakeven), Pro (everything). */
+export type ColPreset = "simple" | "standard" | "pro" | "custom";
+export const COL_PRESETS: Record<Exclude<ColPreset, "custom">, ChainCol[]> = {
+  simple: ["ask"],
+  standard: ["bid", "ask", "prob", "be"],
+  pro: ["bid", "ask", "last", "mark", "iv", "delta", "gamma", "theta", "vega", "prob", "be", "oi", "vol"],
+};
+export const ALL_COLS: ChainCol[] = COL_PRESETS.pro;
 /**
  * The tabs of the centre panel (where the CFD chart sits); "book" (depth + trades) while the order book is live;
  * "analytics" (smile, term structure, open interest, put / call, what-if P&L).
@@ -99,9 +110,13 @@ export const EXPIRY_KINDS: ExpiryKind[] = ["daily", "weekly", "monthly"];
 export interface Prefs {
   u: string;
   view: ChainView;
+  /** legacy (before column presets): Greeks on → the Pro columns */
   greeks: boolean;
-  /** probability ITM + breakeven columns */
+  /** legacy: probability ITM + breakeven columns */
   extra: boolean;
+  /** the chain's column set and its columns (custom = picked one by one) */
+  colPreset: ColPreset;
+  cols: ChainCol[];
   /** strikes each side of ATM (0 = all) */
   range: number;
   tf: Timeframe;
@@ -154,7 +169,7 @@ export interface OptState {
 /* ------------------------------------------------------------------ */
 
 const PREFS_KEY = "kalks.options.prefs";
-const DEFAULT_PREFS: Prefs = { u: "EURUSD", view: "both", greeks: false, extra: false, range: 10, tf: "M15", chart: true, panel: "ticket", expKind: "daily", center: "chain", chartMode: "premium" };
+const DEFAULT_PREFS: Prefs = { u: "EURUSD", view: "both", greeks: false, extra: false, colPreset: "simple", cols: COL_PRESETS.simple, range: 10, tf: "M15", chart: true, panel: "simple", expKind: "daily", center: "chain", chartMode: "premium" };
 /** timeframes of the options charts (the premium candles service serves these) */
 export const OPTION_TFS: Timeframe[] = ["M1", "M5", "M15", "M30", "H1", "H4", "D1"];
 
@@ -165,6 +180,12 @@ function readPrefs(): Prefs {
     if (!OPTION_TFS.includes(p.tf)) p.tf = DEFAULT_PREFS.tf;
     if (p.expKind !== null && !EXPIRY_KINDS.includes(p.expKind)) p.expKind = "daily";
     if (!CENTER_TABS.includes(p.center)) p.center = DEFAULT_PREFS.center;
+    // before column presets: Greeks on → Pro, the ITM % / breakeven switch → Standard, else Simple
+    const stored = raw ? (JSON.parse(raw) as Partial<Prefs>) : {};
+    if (!stored.colPreset) p.colPreset = stored.greeks ? "pro" : stored.extra ? "standard" : "simple";
+    if (p.colPreset !== "custom") p.cols = COL_PRESETS[p.colPreset] ?? COL_PRESETS.simple;
+    else p.cols = (Array.isArray(p.cols) ? p.cols : []).filter((c) => ALL_COLS.includes(c));
+    if (!p.cols.length) p.cols = COL_PRESETS.simple;
     return p;
   } catch {
     return DEFAULT_PREFS;

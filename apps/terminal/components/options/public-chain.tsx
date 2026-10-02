@@ -12,7 +12,7 @@ import { atmIndex } from "@/lib/options/math";
 import { opt, useOpt } from "@/lib/options-store";
 import type { OptionChain } from "@/lib/options/types";
 import { Countdown, KindBadges, OptAvatar, Seg } from "./bits";
-import { OptionChainTable } from "./chain";
+import { ColumnsMenu, OptionChainTable } from "./chain";
 import { expiryLabel, pct, px, usd } from "./format";
 import { ExpiryStrip } from "./header";
 
@@ -130,7 +130,7 @@ export function PublicChainView({ u, name, initial, status, cta, underlyings }: 
 
             <section className="overflow-hidden rounded-[12px] border border-line bg-panel">
               <div className="flex flex-wrap items-center gap-2 border-b border-line px-3 py-2">
-                <div className="min-w-0 flex-1">{live ? <ExpiryStrip className="h-9 border-0 bg-transparent px-0" /> : <StaticExpiries initial={initial} locale={locale} />}</div>
+                <div className="flex min-w-0 flex-1">{live ? <ExpiryStrip className="h-11 min-w-0 flex-1 border-0 bg-transparent px-0" /> : <StaticExpiries initial={initial} locale={locale} />}</div>
                 <span className="flex items-center gap-3 text-[11.5px] text-fg-3">
                   <Countdown to={Date.parse(chain.cutAt)} prefix={<span className="font-sans">{t("trader.opt.cutIn")} </span>} />
                   <Seg
@@ -144,6 +144,7 @@ export function PublicChainView({ u, name, initial, status, cta, underlyings }: 
                       { value: "puts", label: t("trader.opt.puts") },
                     ]}
                   />
+                  {live && <ColumnsMenu compact />}
                 </span>
               </div>
               <div className="h-[min(680px,72dvh)]">{live ? <OptionChainTable /> : <StaticChain chain={chain} />}</div>

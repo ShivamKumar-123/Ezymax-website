@@ -118,6 +118,8 @@ export interface OptClosed {
   rawReason: string;
   /** USD per contract for one unit of premium (0 = unknown) */
   usdPerUnit: number;
+  /** expiry settlements: the settlement price (fixing) the option was settled at */
+  fixing?: number;
   comboId?: string;
   option: OptionInfo;
 }
@@ -153,7 +155,7 @@ export function closeReasonOf(d: EngDeal | Obj): { reason: OptCloseReason; raw: 
 }
 
 /** USD per unit of a quote currency from the price feed (USD 1, JPY via USDJPY …), 0 when unknown. */
-function usdPerQuote(underlying: string): number {
+export function usdPerQuote(underlying: string): number {
   const ccy = /^(XAU|XAG)USD$|^(US|UK)OIL$/.test(underlying) || underlying.endsWith("USD") ? "USD" : underlying.slice(-3);
   if (ccy === "USD") return 1;
   try {
@@ -216,6 +218,7 @@ export function mapOptionClosed(deals: (EngDeal | Obj)[], cent: boolean): OptClo
         reason,
         rawReason: raw,
         usdPerUnit,
+        fixing: num((d.option as Obj | undefined)?.fixing) ?? (reason === "expired" ? num(d.fixing) : undefined),
         comboId: str(d.comboId) ?? (typeof d.comboId === "number" ? String(d.comboId) : undefined),
         option: info,
       };

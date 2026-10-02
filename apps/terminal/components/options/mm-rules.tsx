@@ -44,7 +44,7 @@ export function MmRulesDialog({ open, onClose }: { open: boolean; onClose: () =>
             ))}
           </ul>
         </section>
-        <section className="rounded-[8px] border border-warn/30 bg-warn-soft/50 px-3 py-2.5">
+        <section className="rounded-[10px] border border-warn/30 bg-warn-soft/50 px-3 py-2.5">
           <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-warn">{t("trader.opt.mm.lpTitle")}</h3>
           <p className="text-fg-2">{t("trader.opt.mm.lpText")}</p>
         </section>

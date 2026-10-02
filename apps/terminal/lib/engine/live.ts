@@ -15,8 +15,18 @@ export interface LiveEquity {
   margin: number;
   freeMargin: number;
   marginLevel: number | null;
-  /** ticket → engine price / profit / swap (account currency converted to USD) */
-  positions: Map<string, { price: number; profit: number; swap: number }>;
+  /** ticket → engine price / profit / swap (account currency converted to USD); options also their mark and Greeks */
+  positions: Map<string, LivePos>;
+}
+
+export interface LivePos {
+  price: number;
+  profit: number;
+  swap: number;
+  /** options: the mark per unit of the underlying (quote currency) the engine values the position at */
+  mark?: number;
+  /** options: delta / gamma in contracts, vega / theta in USD */
+  greeks?: { delta?: number; gamma?: number; vega?: number; theta?: number };
 }
 
 type Listener = () => void;
@@ -36,8 +46,13 @@ class LiveStore {
 
   setEquity(login: string, f: EngEquity, cent: boolean) {
     const k = cent ? 100 : 1;
-    const positions = new Map<string, { price: number; profit: number; swap: number }>();
-    for (const p of f.positions) positions.set(String(p.ticket), { price: p.price, profit: p.profit / k, swap: p.swap / k });
+    const positions = new Map<string, LivePos>();
+    for (const p of f.positions) {
+      const v: LivePos = { price: p.price, profit: p.profit / k, swap: p.swap / k };
+      if (typeof p.mark === "number" && Number.isFinite(p.mark)) v.mark = p.mark;
+      if (p.greeks && typeof p.greeks === "object") v.greeks = p.greeks;
+      positions.set(String(p.ticket), v);
+    }
     this.eq.set(login, {
       balance: f.balance / k,
       credit: (f.credit + (f.bonus ?? 0)) / k,

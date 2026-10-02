@@ -163,6 +163,13 @@ function load(login: string): DemoBook {
     /* storage blocked */
   }
   books.set(login, b);
+  // tickets and deal ids continue after the ones the stored book already uses (the counters restart with the page:
+  // a new position must never reuse the ticket of one kept from an earlier visit)
+  const nums = (xs: unknown[]) => xs.map((x) => Number(x)).filter((n) => Number.isFinite(n));
+  const maxTicket = Math.max(0, ...nums([...b.positions.map((p) => p.ticket), ...b.orders.map((o) => o.ticket), ...b.settlements.map((x) => x.ticket), ...b.deals.map((d) => d.positionTicket)]));
+  if (maxTicket >= seq) seq = maxTicket;
+  const maxDeal = Math.max(0, ...nums(b.deals.map((d) => d.id)));
+  if (maxDeal >= dealSeq) dealSeq = maxDeal;
   optionBook.setDeals(login, b.deals, false);
   settleExpired(login, b);
   restoreBookOrders(login, b);
@@ -191,7 +198,7 @@ let dealSeq = 61_000_000;
  * gross P&L in USD, the commission and the reason (client, expiry, stop_out …). Kept with the demo book and shown in
  * History › Options and the Closed tab.
  */
-function recordClose(login: string, b: DemoBook, p: OptPosition, qty: number, closePx: number, gross: number, commission: number, reason: string) {
+function recordClose(login: string, b: DemoBook, p: OptPosition, qty: number, closePx: number, gross: number, commission: number, reason: string, fixing?: number) {
   // the closed part carries its share of the opening commission (the engine's entry deal)
   const entryShare = p.contracts > 0 ? p.commission * Math.min(1, qty / p.contracts) : 0;
   p.commission = +(p.commission - entryShare).toFixed(2);
@@ -202,7 +209,7 @@ function recordClose(login: string, b: DemoBook, p: OptPosition, qty: number, cl
     positionTicket: Number(p.ticket) || p.ticket,
     orderTicket: null,
     symbol: p.option.series,
-    option: { ...p.option },
+    option: fixing !== undefined ? { ...p.option, fixing } : { ...p.option },
     side: p.side === "buy" ? "sell" : "buy",
     positionSide: p.side,
     entry: "out",
@@ -255,8 +262,8 @@ function settleExpired(login: string, b: DemoBook) {
     const fixing = mid(p.option.underlying) ?? p.option.strike;
     const usd = spec ? spec.contractSize * usdPerQuoteCcy(spec.quoteCcy, mid) : 0;
     const intrinsic = Math.max(0, p.option.right === "call" ? fixing - p.option.strike : p.option.strike - fixing);
-    recordClose(login, b, p, p.contracts, intrinsic, (p.side === "buy" ? 1 : -1) * (intrinsic - p.openPrice) * usd * p.contracts, 0, "expiry");
-    b.settlements.unshift({ ticket: p.ticket, series: p.option.series, side: p.side, contracts: p.contracts, fixing: spec ? +fixing.toFixed(spec.digits) : fixing, payout: +((p.side === "buy" ? 1 : -1) * intrinsic * usd * p.contracts).toFixed(2), at: p.option.expiryAt, run: 1 });
+    recordClose(login, b, p, p.contracts, intrinsic, (p.side === "buy" ? 1 : -1) * (intrinsic - p.openPrice) * usd * p.contracts, 0, "expiry", spec ? +fixing.toFixed(spec.digits) : fixing);
+    b.settlements.unshift({ ticket: p.ticket, series: p.option.series, side: p.side, contracts: p.contracts, fixing: spec ? +fixing.toFixed(spec.digits) : fixing, payout: +((p.side === "buy" ? 1 : -1) * intrinsic * usd * p.contracts).toFixed(2), profit: +((p.side === "buy" ? 1 : -1) * (intrinsic - p.openPrice) * usd * p.contracts).toFixed(2), at: p.option.expiryAt, run: 1 });
   }
   b.positions = b.positions.filter((p) => !due.includes(p));
   save(login, b);
@@ -784,6 +791,9 @@ function execute(login: string, b: DemoBook, req: BookOrderRequest, c: Extract<C
 function restoreBookOrders(login: string, b: DemoBook) {
   const now = Date.now();
   let changed = false;
+  // the simulator's order ids restart with the page: move them past the ids the stored orders already use
+  const maxId = Math.max(0, ...b.bookOrders.map((o) => Number(String(o.id).slice(1))).filter((n) => Number.isFinite(n)));
+  for (let guard = 0; guard < 5000 && maxId > 0 && Number(sim.nextId().slice(1)) <= maxId; guard++);
   for (const o of b.bookOrders) {
     if (o.left <= 0 || o.trigger || o.price === null || o.type === "market") continue;
     const tick = tickOf(o.series);

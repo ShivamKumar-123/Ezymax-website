@@ -3,17 +3,19 @@
 // The Options workspace on desktop (Kalks Trader in Options mode) fills the SAME panels as CFD mode, so switching
 // CFD ↔ Options never moves anything (components/shell/desktop.tsx keeps the panel group, sizes and collapse state):
 //   left   (Market Watch's place)     the options instruments list: picking one sets the underlying
-//   centre (the chart's place)        two tabs, "Chart" | "Option chain", under the expiry bar (Daily | Weekly |
-//                                      Monthly + any listed date); the chart shows the selected option's premium;
-//                                      while the order book is live a third tab, "Book": the selected option's
-//                                      depth (10 levels) and trade tape; "Analytics": the volatility smile, term
-//                                      structure, open interest and put / call ratios, and the what-if P&L
-//   right  (the CFD order panel)      the option ticket: Sell at the bid / Buy at the ask, contracts, protection,
-//                                      preview; "Simple" mode next to it
+//   centre (the chart's place)        tabs "Option chain" | "Chart" (| "Book" while the order book is live) |
+//                                      "Analytics", under the expiry chips (every open expiry, with the time left);
+//                                      the chain shows the price of one contract per side by default ("Columns":
+//                                      Simple / Standard / Pro); the chart shows the selected option's premium; Book
+//                                      is the selected option's depth and trade tape; Analytics the smile, term
+//                                      structure, open interest, put / call ratios and the what-if P&L
+//   right  (the CFD order panel)      "Quick trade" (the guided Up or Down → date → amount → outcome flow, the
+//                                      default for new traders) and "Order" (the full ticket: Sell / Buy, contracts,
+//                                      what happens in plain words, more order options, details)
 //   bottom                            the terminal's own toolbox (Options + Settlements tabs first)
 // Loaded on demand (next/dynamic) the first time a trader switches to Options, so CFD-only traders never download it.
 import * as React from "react";
-import { BookOpenText, CandlestickChart, ChartSpline, ChevronsRight, ShoppingCart, Sigma, Table2, Wand2 } from "lucide-react";
+import { BookOpenText, CandlestickChart, ChartSpline, ChevronsRight, ShoppingCart, Table2, Wand2 } from "lucide-react";
 import { parseSeriesCode } from "@kalks/mock/options";
 import { cn } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
@@ -25,6 +27,7 @@ import { optionBook } from "@/lib/options/book";
 import { bookOrders } from "@/lib/options/book-orders";
 import { onDemoBookEvent, onDemoOrderEvent } from "@/lib/options/mock-engine";
 import { optionErrorText } from "@/lib/options/errors";
+import { engineUsd } from "@/lib/options/api";
 import { opt, useBookLive, useOpt, useOptionsAttach, type CenterTab, type ChainView, type SidePanel } from "@/lib/options-store";
 import { AnalyticsPane } from "./analytics";
 import { OptionsUnavailable, RightTag, Seg } from "./bits";
@@ -32,8 +35,10 @@ import { BookBadge } from "./book-bits";
 import { BookPane } from "./depth";
 import { MmRulesLink } from "./mm-rules";
 import { StrategyBuilder } from "./builder";
-import { ChainHint, OptionChainTable } from "./chain";
+import { ChainHint, ColumnsMenu, OptionChainTable } from "./chain";
+import { HowItWorks } from "./explain";
 import { ExpiryBar } from "./expiry-bar";
+import { moneySigned } from "./format";
 import { UnderlyingStats } from "./header";
 import { OptionsInstruments } from "./instruments";
 import { OptionChartPane } from "./premium-chart";
@@ -55,7 +60,7 @@ export function StreamDot() {
 }
 
 /** Toasts for events the options book reports: expiry settlements, knock-outs, demo working-order fills. */
-export function useOptionEvents(login: string | null) {
+export function useOptionEvents(login: string | null, cent = false) {
   const t = useT();
   React.useEffect(() => {
     if (!login) return;
@@ -63,8 +68,9 @@ export function useOptionEvents(login: string | null) {
       if (l !== login) return;
       const reason = String((d as { reason?: unknown }).reason ?? "");
       const sym = String((d as { symbol?: unknown }).symbol ?? "");
-      const profit = Number((d as { profit?: unknown }).profit ?? 0);
-      if (reason === "expiry" || reason === "settlement") toast(t("trader.opt.toast.settled"), { description: `${sym} · ${profit >= 0 ? "+" : ""}${profit.toFixed(2)} USD` });
+      // the engine's deal money is in the account's currency (USC on cent accounts)
+      const profit = engineUsd(Number((d as { profit?: unknown }).profit ?? 0), cent) ?? 0;
+      if (reason === "expiry" || reason === "settlement") toast(t("trader.opt.toast.settled"), { description: `${sym} · ${moneySigned(profit)}` });
       else if (reason === "knock_out" || reason === "knockout") toast.warning(t("trader.opt.toast.knockedOut"), { description: sym });
     });
     const off2 = onDemoOrderEvent((l, o, filled) => {
@@ -87,7 +93,7 @@ export function useOptionEvents(login: string | null) {
       off2();
       off3();
     };
-  }, [login, t]);
+  }, [login, t, cent]);
 }
 
 /** Keeps the options data live while a panel of the workspace is on screen (reference-counted in the store). */
@@ -118,23 +124,23 @@ function CenterTabs() {
   const publicView = useOpt((s) => s.publicView);
   const sp = sel ? parseSeriesCode(sel) : null;
   const items: { id: CenterTab; icon: React.ReactNode; label: string; extra?: React.ReactNode }[] = [
+    { id: "chain", icon: <Table2 />, label: t("trader.opt.chainTitle") },
     {
       id: "chart",
       icon: <CandlestickChart />,
       label: t("trader.opt.chart"),
       extra: sp ? (
-        <span className="flex items-center gap-1 rounded-[4px] bg-surface-3 px-1 py-px font-mono text-[10px] text-fg-2">
+        <span className="flex items-center gap-1 rounded-[5px] bg-surface-3 px-1 py-px font-mono text-[10px] text-fg-2">
           <RightTag right={sp.right} className="h-[14px] min-w-[14px] text-[9px]" />
           {sp.strikeLabel}
         </span>
       ) : undefined,
     },
-    { id: "chain", icon: <Table2 />, label: t("trader.opt.chainTitle") },
     ...(bookLive ? [{ id: "book" as const, icon: <BookOpenText />, label: t("trader.opt.book.tab") }] : []),
     { id: "analytics", icon: <ChartSpline />, label: t("trader.opt.an.tab") },
   ];
   return (
-    <div className="flex h-8 shrink-0 items-stretch border-b border-line bg-panel-2">
+    <div className="flex h-10 shrink-0 items-stretch border-b border-line bg-panel-2">
       <div role="tablist" className="flex shrink-0 items-stretch">
         {items.map((x) => {
           const on = x.id === tab;
@@ -144,7 +150,7 @@ function CenterTabs() {
               role="tab"
               aria-selected={on}
               onClick={() => opt.setCenter(x.id)}
-              className={cn("relative flex shrink-0 items-center gap-1.5 border-r border-line px-3 text-[11.5px] font-medium transition-colors [&>svg]:size-3.5", on ? "bg-panel text-fg" : "text-fg-3 hover:bg-panel hover:text-fg-2")}
+              className={cn("relative flex shrink-0 items-center gap-1.5 border-e border-line px-3.5 text-[12px] font-medium transition-colors [&>svg]:size-3.5", on ? "bg-panel text-fg" : "text-fg-3 hover:bg-panel hover:text-fg-2")}
             >
               {on && <span className="absolute inset-x-0 top-0 h-[2px] bg-ember" />}
               {x.icon}
@@ -154,11 +160,11 @@ function CenterTabs() {
           );
         })}
       </div>
-      <UnderlyingStats className="min-w-0 flex-1 px-2.5" />
-      <div className="flex shrink-0 items-center gap-1 pe-1">
+      <UnderlyingStats className="min-w-0 flex-1 px-3" />
+      <div className="flex shrink-0 items-center gap-1.5 pe-1.5">
         <StreamDot />
         {!publicView && (
-          <button onClick={() => opt.openBuilder(true)} className="flex h-6 items-center gap-1.5 rounded-[6px] bg-ember px-2 text-[11px] font-semibold text-white shadow-[0_6px_18px_-10px_rgba(255,90,31,0.9)] transition hover:brightness-110">
+          <button onClick={() => opt.openBuilder(true)} title={t("trader.opt.builder.open")} className="flex h-7 items-center gap-1.5 rounded-[7px] border border-ember/40 bg-ember-soft px-2.5 text-[11.5px] font-semibold text-ember transition hover:bg-ember hover:text-white">
             <Wand2 className="size-3.5" /> <span className="hidden min-[1280px]:inline">{t("trader.opt.builder.open")}</span>
           </button>
         )}
@@ -174,17 +180,16 @@ function useCenterTab(): CenterTab {
   return tab === "book" && !bookLive ? "chain" : tab;
 }
 
-/** The Option chain tab: view (calls / both / puts), Greeks, the how-to, then the chain. */
+/** The Option chain tab: view (calls / both / puts), the columns, the how-to, then the chain. */
 export function ChainPane() {
   const t = useT();
   const prefs = useOpt((s) => s.prefs);
   const bookLive = useBookLive();
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-8 shrink-0 items-center gap-1.5 border-b border-line px-1.5">
+      <div className="flex h-10 shrink-0 items-center gap-2 border-b border-line px-2.5">
         <Seg<ChainView>
-          size="sm"
-          className="w-[168px] shrink-0"
+          className="w-[186px] shrink-0"
           value={prefs.view}
           onChange={(v) => opt.setPrefs({ view: v })}
           options={[
@@ -193,12 +198,13 @@ export function ChainPane() {
             { value: "puts", label: t("trader.opt.puts") },
           ]}
         />
-        <button onClick={() => opt.setPrefs({ greeks: !prefs.greeks })} aria-pressed={prefs.greeks} title={t("trader.opt.greeksToggle")} className={cn("flex h-6 shrink-0 items-center gap-1 rounded-[6px] border px-2 text-[11px] font-medium transition-colors", prefs.greeks ? "border-ember/40 bg-ember-soft text-ember" : "border-line text-fg-3 hover:text-fg-2")}>
-          <Sigma className="size-3.5" /> {t("trader.opt.greeks")}
-        </button>
+        <ColumnsMenu />
         {bookLive && <BookBadge />}
-        <ChainHint className="ms-1 flex-1" />
-        {bookLive && <MmRulesLink className="hidden shrink-0 pe-1 lg:inline-flex" />}
+        <ChainHint className="ms-1 hidden flex-1 lg:flex" />
+        <span className="ms-auto flex shrink-0 items-center gap-2">
+          {bookLive && <MmRulesLink className="hidden shrink-0 xl:inline-flex" />}
+          <HowItWorks />
+        </span>
       </div>
       <div className="min-h-0 flex-1">
         <OptionChainTable />
@@ -209,7 +215,7 @@ export function ChainPane() {
 
 export function OptionsCenter() {
   const T = useAttach();
-  useOptionEvents(T.guest ? null : T.account.login);
+  useOptionEvents(T.guest ? null : T.account.login, !!T.account.cent);
   const avail = useOpt((s) => s.avail);
   const tab = useCenterTab();
   return (
@@ -261,8 +267,8 @@ export function OptionsRight({ onCollapse }: { onCollapse?: () => void }) {
           value={panel}
           onChange={(v) => opt.setPrefs({ panel: v })}
           tabs={[
+            { value: "simple", label: t("trader.opt.guide.tab") },
             { value: "ticket", label: t("trader.opt.ticket.tab"), count: legs.length > 1 ? legs.length : undefined },
-            { value: "simple", label: t("trader.opt.simple.tab") },
           ]}
         />
       </div>

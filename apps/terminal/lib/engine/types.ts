@@ -125,7 +125,9 @@ export interface EngEquity {
   freeMargin: number;
   marginLevel: number | null;
   withdrawable?: number;
-  positions: { ticket: number; price: number; profit: number; swap: number }[];
+  /** options also carry the account's mark (premium per unit) and the position's Greeks (delta / gamma in contracts,
+   *  vega / theta in USD) */
+  positions: { ticket: number; price: number; profit: number; swap: number; mark?: number | null; greeks?: { delta?: number; gamma?: number; vega?: number; theta?: number } | null }[];
 }
 
 export type StreamFrame =
