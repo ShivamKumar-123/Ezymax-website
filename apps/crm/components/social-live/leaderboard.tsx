@@ -3,11 +3,13 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Crown, Landmark, LineChart, Repeat, ShieldCheck, Trophy, Users, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Menu, PageHeader, Segmented, Skeleton, Sparkline, cn, type Column } from "@kalks/ui";
+import { Check, ChevronDown, Columns3, Crown, Landmark, LineChart, Repeat, ShieldCheck, SlidersHorizontal, Trophy, Users, Wallet, X as XIcon } from "lucide-react";
+import { toast } from "sonner";
+import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Menu, PageHeader, Popover, Segmented, Skeleton, Sparkline, Toggle, Tooltip, cn, type Column } from "@kalks/ui";
 import { useFormat, useT } from "@kalks/i18n/react";
 import { compactUsd, formatAge, pct, useSocial, type Leaderboard, type MasterView } from "./api";
 import { HouseBadge, MasterIdentity, RiskBadge, SocialError } from "./bits";
+import { COMPARE_MAX, CompareDialog } from "./compare";
 import { FollowDialog } from "./follow-dialog";
 import { InvestDialog } from "./invest-dialog";
 
@@ -26,6 +28,19 @@ const TRACK = [
   { v: 180, label: "social.lb.track.180" },
   { v: 365, label: "social.lb.track.365" },
 ] as const;
+// A10 "More filters": 0 = any
+const DD_STEPS = [0, 10, 20, 30] as const;
+const FEE_STEPS = [0, 10, 20, 30] as const;
+const FOLLOWER_STEPS = [0, 10, 50, 100] as const;
+
+function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="mb-1.5 text-[12px] font-medium text-fg-2">{label}</div>
+      {children}
+    </div>
+  );
+}
 
 export function LiveDiscoverPage() {
   const t = useT();
@@ -36,17 +51,66 @@ export function LiveDiscoverPage() {
   const [program, setProgram] = React.useState<ProgramF>("all");
   const [risk, setRisk] = React.useState<RiskF>("all");
   const [track, setTrack] = React.useState(0);
+  const [maxDd, setMaxDd] = React.useState(0);
+  const [maxFee, setMaxFee] = React.useState(0);
+  const [minFollowers, setMinFollowers] = React.useState(0);
+  const [openOnly, setOpenOnly] = React.useState(false);
   const [copyM, setCopyM] = React.useState<MasterView | null>(null);
   const [investFund, setInvestFund] = React.useState<number | null>(null);
+  // A10 compare: up to 3 masters picked on the board (kept as rows so a filter change doesn't drop them)
+  const [picked, setPicked] = React.useState<MasterView[]>([]);
+  const [comparing, setComparing] = React.useState(false);
 
   const qs = new URLSearchParams({ period, program, sort, risk });
   if (track) qs.set("minDays", String(track));
+  if (maxDd) qs.set("maxDd", String(maxDd));
+  if (maxFee) qs.set("maxFee", String(maxFee));
+  if (minFollowers) qs.set("minFollowers", String(minFollowers));
+  if (openOnly) qs.set("openOnly", "true");
   const { data, error, loading, reload } = useSocial<Leaderboard>(`leaderboard?${qs}`, 30000);
   const rows = data?.items ?? [];
   const totals = data?.totals;
-  const filtered = program !== "all" || risk !== "all" || track > 0;
+  const more = (maxDd ? 1 : 0) + (maxFee ? 1 : 0) + (minFollowers ? 1 : 0) + (openOnly ? 1 : 0);
+  const filtered = program !== "all" || risk !== "all" || track > 0 || more > 0;
+  const clearMore = () => {
+    setMaxDd(0);
+    setMaxFee(0);
+    setMinFollowers(0);
+    setOpenOnly(false);
+  };
+  const isPicked = (id: number) => picked.some((x) => x.id === id);
+  const togglePick = (m: MasterView) => {
+    if (isPicked(m.id)) return setPicked((p) => p.filter((x) => x.id !== m.id));
+    if (picked.length >= COMPARE_MAX) return toast.error(t("social.compare.max", { n: COMPARE_MAX }));
+    setPicked((p) => [...p, m]);
+  };
 
   const columns: Column<MasterView>[] = [
+    {
+      key: "cmp",
+      header: <span className="sr-only">{t("social.compare.title")}</span>,
+      cell: (m) => {
+        const on = isPicked(m.id);
+        return (
+          <Tooltip content={on ? t("social.compare.remove", { name: m.nickname }) : t("social.compare.add")}>
+            <button
+              type="button"
+              aria-pressed={on}
+              aria-label={on ? t("social.compare.remove", { name: m.nickname }) : t("social.compare.add")}
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePick(m);
+              }}
+              className={cn("grid size-5 place-items-center rounded-[6px] border transition-colors", on ? "border-ember bg-ember text-white" : "border-line bg-surface-2 text-transparent hover:border-ember/50")}
+              data-testid="copy-compare-toggle"
+            >
+              <Check className="size-3.5" />
+            </button>
+          </Tooltip>
+        );
+      },
+      width: "36px",
+    },
     {
       key: "rank",
       header: "#",
@@ -72,6 +136,11 @@ export function LiveDiscoverPage() {
               {m.program === "pamm" && (
                 <Chip size="sm" tone="gold">
                   {t("social.lb.pammOnly")}
+                </Chip>
+              )}
+              {m.program !== "pamm" && m.acceptingNew === false && (
+                <Chip size="sm" tone="warn">
+                  {t("social.lb.closedChip")}
                 </Chip>
               )}
             </span>
@@ -113,10 +182,19 @@ export function LiveDiscoverPage() {
               {t("social.invest")}
             </Button>
           )}
-          {m.program !== "pamm" && !m.frozen && (
+          {m.program !== "pamm" && !m.frozen && m.acceptingNew !== false && (
             <Button size="xs" variant="ember" onClick={() => setCopyM(m)}>
               {t("social.program.copy")}
             </Button>
+          )}
+          {m.program !== "pamm" && !m.frozen && m.acceptingNew === false && (
+            <Tooltip content={t("social.notAccepting")}>
+              <span>
+                <Button size="xs" variant="surface" disabled>
+                  {t("social.program.copy")}
+                </Button>
+              </span>
+            </Tooltip>
           )}
         </div>
       ),
@@ -228,6 +306,40 @@ export function LiveDiscoverPage() {
                   }
                   items={TRACK.map((x) => ({ label: t(x.label), onSelect: () => setTrack(x.v), hint: x.v === track ? t("social.selected") : undefined }))}
                 />
+                <Popover
+                  align="start"
+                  width={340}
+                  trigger={
+                    <Button size="sm" variant={more ? "outline" : "surface"} data-testid="copy-more-filters">
+                      <SlidersHorizontal /> {t("social.lb.more.title")}
+                      {more > 0 && <span className="k-num grid size-4.5 place-items-center rounded-full bg-ember text-[10.5px] font-semibold text-white">{more}</span>}
+                    </Button>
+                  }
+                >
+                  <div className="space-y-4 p-4">
+                    <FilterRow label={t("social.lb.more.maxDd")}>
+                      <Segmented size="xs" value={String(maxDd)} onChange={(v) => setMaxDd(+v)} options={DD_STEPS.map((v) => ({ value: String(v), label: v ? `≤${v}%` : t("social.lb.more.any") }))} />
+                    </FilterRow>
+                    <FilterRow label={t("social.lb.more.maxFee")}>
+                      <Segmented size="xs" value={String(maxFee)} onChange={(v) => setMaxFee(+v)} options={FEE_STEPS.map((v) => ({ value: String(v), label: v ? `≤${v}%` : t("social.lb.more.any") }))} />
+                    </FilterRow>
+                    <FilterRow label={t("social.lb.more.minFollowers")}>
+                      <Segmented size="xs" value={String(minFollowers)} onChange={(v) => setMinFollowers(+v)} options={FOLLOWER_STEPS.map((v) => ({ value: String(v), label: v ? `${v}+` : t("social.lb.more.any") }))} />
+                    </FilterRow>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-[12.5px] font-medium text-fg-2">{t("social.lb.more.openOnly")}</div>
+                        <div className="text-[11.5px] text-fg-3">{t("social.lb.more.openOnlyHint")}</div>
+                      </div>
+                      <Toggle checked={openOnly} onChange={setOpenOnly} label={t("social.lb.more.openOnly")} />
+                    </div>
+                    {more > 0 && (
+                      <Button size="xs" variant="ghost" onClick={clearMore}>
+                        <XIcon /> {t("social.clearFilters")}
+                      </Button>
+                    )}
+                  </div>
+                </Popover>
               </div>
               {loading ? (
                 <div className="space-y-2">
@@ -249,6 +361,7 @@ export function LiveDiscoverPage() {
                           setProgram("all");
                           setRisk("all");
                           setTrack(0);
+                          clearMore();
                         }}
                       >
                         {t("social.clearFilters")}
@@ -288,6 +401,27 @@ export function LiveDiscoverPage() {
         </p>
       )}
 
+      {picked.length > 0 && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-5 z-40 flex justify-center px-4" data-testid="copy-compare-bar">
+          <div className="k-card pointer-events-auto flex max-w-full items-center gap-2 rounded-full bg-surface py-1.5 pe-1.5 ps-4 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)]">
+            <span className="hidden min-w-0 truncate text-[12.5px] text-fg-2 sm:block">{picked.map((m) => m.nickname).join(" · ")}</span>
+            <span className="text-[12px] text-fg-3 sm:hidden">{t("social.compare.picked", { n: picked.length, max: COMPARE_MAX })}</span>
+            <Button size="sm" variant="ghost" onClick={() => setPicked([])} aria-label={t("social.compare.clear")}>
+              <XIcon />
+            </Button>
+            <Button size="sm" variant="ember" disabled={picked.length < 2} onClick={() => setComparing(true)}>
+              <Columns3 /> {t("social.compare.button", { n: picked.length })}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <CompareDialog
+        masters={picked}
+        open={comparing && picked.length > 0}
+        onOpenChange={setComparing}
+        onRemove={(id) => setPicked((p) => p.filter((x) => x.id !== id))}
+      />
       <FollowDialog master={copyM} open={!!copyM} onOpenChange={(o) => !o && setCopyM(null)} />
       <InvestDialog fundId={investFund} open={investFund !== null} onOpenChange={(o) => !o && setInvestFund(null)} />
     </div>

@@ -11,6 +11,7 @@
 //! Social configuration and state live in their own tables (migrations/0002_social.sql); every trade and
 //! every money movement on a trading account still goes through the account's shard as ordinary events.
 
+pub mod alerts;
 pub mod allocation;
 pub mod copier;
 pub mod mam;
@@ -104,6 +105,13 @@ pub struct Master {
     pub approved_at: Option<DateTime<Utc>>,
     /// House account: platform-owned, runs an automated strategy (services/algo "House accounts").
     pub is_house: bool,
+    /// A11: at most this many copying followers (None = no limit).
+    pub max_followers: Option<i32>,
+    /// A11: false = no new followers (existing ones keep copying).
+    pub accept_new: bool,
+    /// A11: private copy link: hidden from the leaderboard, following needs `invite_code`.
+    pub invite_only: bool,
+    pub invite_code: Option<String>,
 }
 
 impl Master {
@@ -112,6 +120,10 @@ impl Master {
     }
     pub fn live(&self) -> bool {
         self.status == "approved" || self.status == "suspended"
+    }
+    /// The master no longer trades for followers (suspended, frozen or removed): followers get the unfollow prompt.
+    pub fn stopped(&self) -> bool {
+        self.frozen || self.status != "approved"
     }
 }
 
@@ -148,6 +160,19 @@ pub struct Sub {
     pub last_balance: Option<D>,
     pub positions: usize,
     pub orders: usize,
+    /// A9: the follower's own stop loss (pips) on every copied trade; the tighter of it and the master's SL wins.
+    pub auto_sl_pips: Option<D>,
+    /// A8: new terms of the master waiting for the follower's acceptance (until `terms_deadline`).
+    pub pending_fee_pct: Option<D>,
+    pub pending_fee_period: Option<String>,
+    pub terms_deadline: Option<DateTime<Utc>>,
+    /// Why the copy is paused by the system (`terms`); None = paused by the follower.
+    pub pause_reason: Option<String>,
+    /// `master_stopped`: the master was suspended / frozen / removed (the Client Area offers the unfollow wizard).
+    pub attention: Option<String>,
+    /// A9 trial copy on a demo copy account.
+    pub trial: bool,
+    pub trial_ends_at: Option<DateTime<Utc>>,
 }
 
 impl Sub {
@@ -292,6 +317,10 @@ fn master_from(r: &sqlx::postgres::PgRow) -> Master {
         created_at: r.get("created_at"),
         approved_at: r.get("approved_at"),
         is_house: r.try_get("is_house").unwrap_or(false),
+        max_followers: r.try_get("max_followers").unwrap_or(None),
+        accept_new: r.try_get("accept_new").unwrap_or(true),
+        invite_only: r.try_get("invite_only").unwrap_or(false),
+        invite_code: r.try_get("invite_code").unwrap_or(None),
     }
 }
 
@@ -326,6 +355,14 @@ fn sub_from(r: &sqlx::postgres::PgRow) -> Sub {
         last_balance: None,
         positions: 0,
         orders: 0,
+        auto_sl_pips: r.try_get("auto_sl_pips").unwrap_or(None),
+        pending_fee_pct: r.try_get("pending_fee_pct").unwrap_or(None),
+        pending_fee_period: r.try_get("pending_fee_period").unwrap_or(None),
+        terms_deadline: r.try_get("terms_deadline").unwrap_or(None),
+        pause_reason: r.try_get("pause_reason").unwrap_or(None),
+        attention: r.try_get("attention").unwrap_or(None),
+        trial: r.try_get("trial").unwrap_or(false),
+        trial_ends_at: r.try_get("trial_ends_at").unwrap_or(None),
     }
 }
 
@@ -443,9 +480,11 @@ impl Social {
     }
 
     pub async fn save_master(&self, m: &Master) -> anyhow::Result<()> {
+        let before = self.reg.read().unwrap().masters.get(&m.id).cloned();
         sqlx::query(
             "UPDATE social_masters SET nickname=$2, strategy=$3, description=$4, program=$5, perf_fee_pct=$6, fee_period=$7, min_allocation=$8,
-                status=$9, hidden=$10, frozen=$11, review_note=$12, reviewed_by=$13, approved_at=$14, updated_at=now() WHERE id=$1",
+                status=$9, hidden=$10, frozen=$11, review_note=$12, reviewed_by=$13, approved_at=$14, max_followers=$15, accept_new=$16,
+                invite_only=$17, invite_code=$18, updated_at=now() WHERE id=$1",
         )
         .bind(m.id)
         .bind(&m.nickname)
@@ -461,17 +500,30 @@ impl Social {
         .bind(&m.review_note)
         .bind(&m.reviewed_by)
         .bind(m.approved_at)
+        .bind(m.max_followers)
+        .bind(m.accept_new)
+        .bind(m.invite_only)
+        .bind(&m.invite_code)
         .execute(&self.pool)
         .await?;
         self.reg.write().unwrap().masters.insert(m.id, m.clone());
         self.rewatch();
+        // A8: followers learn when their master stops (or comes back)
+        if let Some(b) = before
+            && b.approved_at.is_some()
+            && b.stopped() != m.stopped()
+        {
+            self.on_master_stopped(m, m.stopped()).await;
+        }
         Ok(())
     }
 
     pub async fn save_sub(&self, s: &Sub) -> anyhow::Result<()> {
         sqlx::query(
             "UPDATE copy_subscriptions SET sizing_mode=$2, sizing_value=$3, max_lot=$4, equity_stop=$5, max_dd_pct=$6, excluded_symbols=$7, status=$8, stop_reason=$9,
-                net_deposits=$10, flows_since_fee=$11, hwm=$12, peak_equity=$13, fees_paid=$14, stopped_at=$15, last_fee_at=$16, next_fee_at=$17, updated_at=now() WHERE id=$1",
+                net_deposits=$10, flows_since_fee=$11, hwm=$12, peak_equity=$13, fees_paid=$14, stopped_at=$15, last_fee_at=$16, next_fee_at=$17,
+                auto_sl_pips=$18, pending_fee_pct=$19, pending_fee_period=$20, terms_deadline=$21, pause_reason=$22, attention=$23, perf_fee_pct=$24, fee_period=$25,
+                trial=$26, trial_ends_at=$27, updated_at=now() WHERE id=$1",
         )
         .bind(s.id)
         .bind(s.sizing.mode.as_str())
@@ -490,6 +542,16 @@ impl Social {
         .bind(s.stopped_at)
         .bind(s.last_fee_at)
         .bind(s.next_fee_at)
+        .bind(s.auto_sl_pips)
+        .bind(s.pending_fee_pct)
+        .bind(&s.pending_fee_period)
+        .bind(s.terms_deadline)
+        .bind(&s.pause_reason)
+        .bind(&s.attention)
+        .bind(s.perf_fee_pct)
+        .bind(&s.fee_period)
+        .bind(s.trial)
+        .bind(s.trial_ends_at)
         .execute(&self.pool)
         .await?;
         let mut reg = self.reg.write().unwrap();
@@ -720,6 +782,9 @@ pub fn sub_json(s: &Sub, master: Option<&Master>, risk: Option<u8>, fees_pending
         "balance": num_opt(s.last_balance.map(crate::money::r2)), "equity": num(crate::money::r2(equity)), "profit": num(crate::money::r2(profit)),
         "returnPct": if s.net_deposits > ZERO { num(crate::money::r2(profit / s.net_deposits * D::ONE_HUNDRED)) } else { json!(0) },
         "positions": s.positions, "orders": s.orders, "createdAt": s.created_at, "stoppedAt": s.stopped_at, "nextFeeAt": s.next_fee_at, "lastFeeAt": s.last_fee_at,
+        "autoSlPips": num_opt(s.auto_sl_pips), "pauseReason": s.pause_reason, "attention": s.attention,
+        "pendingTerms": s.terms_deadline.map(|d| json!({"perfFeePct": num(s.pending_fee_pct.unwrap_or(s.perf_fee_pct)), "feePeriod": s.pending_fee_period.clone().unwrap_or_else(|| s.fee_period.clone()), "deadline": d})),
+        "trial": s.trial, "trialEndsAt": s.trial_ends_at,
     })
 }
 

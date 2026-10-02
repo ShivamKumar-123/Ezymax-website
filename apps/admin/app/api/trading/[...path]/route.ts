@@ -10,7 +10,8 @@ import { tradingAllows, type TradingPerm } from "@/lib/trading-perms";
 // built from that verified session. The engine checks the role again and writes the audit log.
 
 type Method = "GET" | "POST" | "PUT" | "PATCH";
-type Route = { method: Method; re: RegExp; perm: TradingPerm; to?: (m: RegExpMatchArray) => string };
+/** `perm`: the permission the route needs (any one of a list). */
+type Route = { method: Method; re: RegExp; perm: TradingPerm | readonly TradingPerm[]; to?: (m: RegExpMatchArray) => string };
 
 const T = "(\\d{1,18})"; // ticket / deal id / login
 const ROUTES: Route[] = [
@@ -39,6 +40,17 @@ const ROUTES: Route[] = [
   { method: "POST", re: new RegExp(`^admin/accounts/${T}/(status|group|leverage)$`), perm: "accounts.write" },
   // lifecycle: archive (optionally emptied first: trades closed, balance to wallet) and restore; reason-coded, audited
   { method: "POST", re: new RegExp(`^admin/accounts/${T}/(archive|restore)$`), perm: "accounts.write" },
+  // close permanently (B12, C2, C3, C5, C11, C12): staff requests, the closure queue, reopen (Super Admin, checked by
+  // the engine), the exit-reasons report; account policy; bulk archive (C4)
+  { method: "GET", re: new RegExp(`^admin/accounts/${T}/closure-check$`), perm: ["accounts.close", "accounts.close.approve"] },
+  { method: "POST", re: new RegExp(`^admin/accounts/${T}/closure$`), perm: "accounts.close" },
+  { method: "POST", re: new RegExp(`^admin/accounts/${T}/reopen$`), perm: "accounts.close.approve" },
+  { method: "GET", re: /^admin\/closures(\/report)?$/, perm: ["accounts.close", "accounts.close.approve"] },
+  { method: "GET", re: new RegExp(`^admin/closures/${T}$`), perm: ["accounts.close", "accounts.close.approve"] },
+  { method: "POST", re: new RegExp(`^admin/closures/${T}/(approve|reject)$`), perm: "accounts.close.approve" },
+  { method: "GET", re: /^admin\/account-policy$/, perm: "accounts.read" },
+  { method: "PUT", re: /^admin\/account-policy$/, perm: "dealing.policy" },
+  { method: "POST", re: /^admin\/accounts\/bulk$/, perm: "accounts.write" },
   { method: "GET", re: /^admin\/groups$/, perm: "accounts.read" },
   { method: "POST", re: /^admin\/groups$/, perm: "groups.write" },
   { method: "PUT", re: /^admin\/groups\/[a-z0-9-]{1,40}$/, perm: "groups.write" },
@@ -70,7 +82,8 @@ async function handle(req: NextRequest, parts: string[], method: Method) {
   }
   const who = await requireStaff(req);
   if (who instanceof NextResponse) return who;
-  if (!tradingAllows(who.staff, route.perm)) return apiError(403, "forbidden", "Your role doesn't allow this.");
+  const perms: readonly TradingPerm[] = typeof route.perm === "string" ? [route.perm] : route.perm;
+  if (!perms.some((p) => tradingAllows(who.staff, p))) return apiError(403, "forbidden", "Your role doesn't allow this.");
   // balance and credit changes go through "Balance & credit" (wallet service: limits, four-eyes, client
   // notification); the direct engine route stays for bonus only
   if (/^admin\/accounts\/\d+\/balance$/.test(path) && (body as { type?: unknown }).type !== "bonus")

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { AlertTriangle, Archive, Ban, Check, Compass, HelpCircle, Layers, ListChecks, Loader2, Pause, Play, Repeat, Settings2, ShieldAlert, ShieldCheck, Sliders, Square, Wallet, X as XIcon } from "lucide-react";
+import { AlertTriangle, Archive, ArrowDownToLine, ArrowUpFromLine, Ban, Check, Compass, FileText, HelpCircle, Layers, ListChecks, Loader2, OctagonAlert, Pause, Play, Repeat, Settings2, ShieldAlert, ShieldCheck, Sliders, Square, Target, Wallet, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
   Button,
@@ -36,6 +36,7 @@ import {
   PERIOD_LABEL,
   SIZING_LABEL,
   pct,
+  pips1,
   sizingText,
   socialApi,
   usd,
@@ -47,6 +48,8 @@ import {
   type SubscriptionView,
 } from "./api";
 import { BlockSkeleton, HouseBadge, InfoBox, MasterIdentity, RiskBadge, SocialError, Tile, useNumber } from "./bits";
+import { AnnouncementList, ExecutionPanel } from "./execution";
+import { SubFundsDialog, withdrawableOf, type FundsDirection } from "./sub-funds";
 
 type Log = SubscriptionDetail["log"][number];
 
@@ -77,6 +80,7 @@ function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | nul
   const value = useNumber(1);
   const maxLot = useNumber(null);
   const equityStop = useNumber(null);
+  const autoSl = useNumber(null);
   const [ddOn, setDdOn] = React.useState(false);
   const [dd, setDd] = React.useState(30);
   const [ex, setEx] = React.useState<string[]>([]);
@@ -90,6 +94,7 @@ function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | nul
     value.set(sub.sizing.value);
     maxLot.set(sub.maxLot);
     equityStop.set(sub.equityStop);
+    autoSl.set(sub.autoSlPips ?? null);
     setDdOn(sub.maxDdPct !== null);
     setDd(sub.maxDdPct ?? 30);
     setEx(sub.excludedSymbols ?? []);
@@ -99,7 +104,8 @@ function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | nul
 
   if (!sub) return null;
   const val = mode === "equity" ? 1 : value.value;
-  const err = mode !== "equity" && !(val! > 0) ? t("social.subs.err.sizing") : maxLot.raw && !(maxLot.value! >= 0.01) ? t("social.subs.err.maxLot") : equityStop.raw && !(equityStop.value! >= 0) ? t("social.subs.err.equityStop") : undefined;
+  const autoSlErr = autoSl.raw && !(autoSl.value! >= 1 && autoSl.value! <= 5000) ? t("social.autoSl.err") : undefined;
+  const err = mode !== "equity" && !(val! > 0) ? t("social.subs.err.sizing") : maxLot.raw && !(maxLot.value! >= 0.01) ? t("social.subs.err.maxLot") : equityStop.raw && !(equityStop.value! >= 0) ? t("social.subs.err.equityStop") : autoSlErr;
   const all = symbolsQ.data?.symbols.map((s) => s.symbol) ?? [];
   const matches = add ? all.filter((s) => s.toLowerCase().includes(add.toLowerCase()) && !ex.includes(s)).slice(0, 12) : [];
 
@@ -109,7 +115,7 @@ function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | nul
     try {
       await socialApi(`subscriptions/${sub.id}`, {
         method: "PATCH",
-        body: { sizing: { mode, value: val }, maxLot: maxLot.value, equityStop: equityStop.value, maxDdPct: ddOn ? dd : null, excludedSymbols: ex },
+        body: { sizing: { mode, value: val }, maxLot: maxLot.value, equityStop: equityStop.value, maxDdPct: ddOn ? dd : null, excludedSymbols: ex, autoSlPips: autoSl.value },
       });
       toast.success(t("social.subs.toast.saved"), { description: t("social.subs.toast.savedDesc") });
       onSaved();
@@ -186,6 +192,12 @@ function SettingsDialog({ sub, onClose, onSaved }: { sub: SubscriptionView | nul
           <Field label={t("social.follow.maxLotPerTrade")} hint={t("social.subs.settings.emptyNoCap")}>
             <Input type="number" inputMode="decimal" min={0.01} step={0.01} placeholder={t("social.noCap")} value={maxLot.raw} onChange={(e) => maxLot.setRaw(e.target.value)} trailing={t("social.lotsUnit")} inputClassName="k-num" />
           </Field>
+        </div>
+        <div data-testid="copy-auto-sl">
+          <Field label={t("social.autoSl.label")} hint={t("social.subs.settings.emptyOff")} error={autoSlErr}>
+            <Input type="number" inputMode="decimal" min={1} max={5000} step={1} placeholder={t("social.autoSl.off")} value={autoSl.raw} onChange={(e) => autoSl.setRaw(e.target.value)} leading={<Target />} trailing={t("social.autoSl.pips")} inputClassName="k-num" />
+          </Field>
+          <p className="mt-1.5 text-[12px] leading-snug text-fg-3">{t("social.autoSl.hint")}</p>
         </div>
         <div>
           <div className="mb-2 flex items-center justify-between text-[12.5px] font-medium text-fg-2">
@@ -430,7 +442,7 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
 /* Detail drawer                                                       */
 /* ------------------------------------------------------------------ */
 
-type DetailTab = "positions" | "orders" | "log" | "fees";
+type DetailTab = "positions" | "orders" | "log" | "execution" | "fees" | "news";
 
 function DetailDrawer({ id, initialTab = "positions", onClose }: { id: number | null; initialTab?: DetailTab; onClose: () => void }) {
   const t = useT();
@@ -484,23 +496,34 @@ function DetailDrawer({ id, initialTab = "positions", onClose }: { id: number | 
             <Tile label={t("social.feesPending")}>{usd(d.subscription.feesPending)}</Tile>
             <Tile label={t("social.subs.detail.nextFee")}>{d.subscription.nextFeeAt ? serverTime(d.subscription.nextFeeAt, false) : "—"}</Tile>
           </div>
-          <Segmented
-            size="xs"
-            value={tab}
-            onChange={setTab}
-            options={[
-              { value: "positions", label: t("social.subs.detail.tabPositions", { n: d.positions.length }) },
-              { value: "orders", label: t("social.subs.detail.tabOrders", { n: d.orders.length }) },
-              { value: "log", label: t("social.subs.detail.tabLog") },
-              { value: "fees", label: t("social.subs.detail.tabFees", { n: d.fees.length }) },
-            ]}
-          />
+          <div className="-mx-1 overflow-x-auto px-1 pb-0.5">
+            <Segmented
+              size="xs"
+              value={tab}
+              onChange={setTab}
+              options={[
+                { value: "positions", label: t("social.subs.detail.tabPositions", { n: d.positions.length }) },
+                { value: "orders", label: t("social.subs.detail.tabOrders", { n: d.orders.length }) },
+                { value: "log", label: t("social.subs.detail.tabLog") },
+                { value: "execution", label: t("social.subs.detail.tabExecution") },
+                { value: "fees", label: t("social.subs.detail.tabFees", { n: d.fees.length }) },
+                { value: "news", label: t("social.subs.detail.tabNews", { n: d.announcements?.length ?? 0 }) },
+              ]}
+            />
+          </div>
           {tab === "positions" &&
             (d.positions.length ? <DataTable columns={posCols} rows={d.positions} dense pageSize={20} rowKey={(p) => String(p.ticket)} /> : <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">{t("social.subs.detail.noPositions")}</div>)}
           {tab === "orders" && (d.orders.length ? <DataTable columns={ordCols} rows={d.orders} dense pageSize={20} rowKey={(o) => String(o.ticket)} /> : <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">{t("social.subs.detail.noOrders")}</div>)}
           {tab === "log" && <p className="text-[12px] leading-snug text-fg-3">{t("social.subs.detail.logHint")}</p>}
           {tab === "log" && (d.log.length ? <DataTable columns={logCols} rows={d.log} dense pageSize={20} rowKey={(l, i) => `${l.at}-${i}`} /> : <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">{t("social.subs.detail.noLog")}</div>)}
+          {tab === "execution" && <ExecutionPanel id={d.subscription.id} fallback={d.execution} />}
           {tab === "fees" && <FeesTable fees={d.fees} />}
+          {tab === "news" && (
+            <>
+              <p className="text-[12px] leading-snug text-fg-3">{t("social.subs.detail.newsHint", { name: d.subscription.master.nickname })}</p>
+              <AnnouncementList items={d.announcements ?? []} empty={t("social.subs.detail.noNews")} />
+            </>
+          )}
           <InfoBox>{t("social.subs.detail.note")}</InfoBox>
         </div>
       )}
@@ -512,10 +535,57 @@ function DetailDrawer({ id, initialTab = "positions", onClose }: { id: number | 
 /* Card                                                                */
 /* ------------------------------------------------------------------ */
 
-function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionView; onChanged: () => void; onEdit: () => void; onStop: () => void; onDetail: (tab?: DetailTab) => void }) {
+/** A8: the master changed the fee terms; this follower accepts them or stops copying. */
+function TermsBanner({ s, onAccepted, onStop }: { s: SubscriptionView; onAccepted: () => void; onStop: () => void }) {
+  const t = useT();
+  const [busy, setBusy] = React.useState(false);
+  const p = s.pendingTerms!;
+  const paused = s.status === "paused" && s.pauseReason === "terms";
+  const vars = {
+    name: s.master.nickname,
+    fee: p.perfFeePct,
+    period: (PERIOD_LABEL[p.feePeriod] ?? p.feePeriod).toLowerCase(),
+    current: s.perfFeePct,
+    currentPeriod: (PERIOD_LABEL[s.feePeriod] ?? s.feePeriod).toLowerCase(),
+    date: serverTime(p.deadline, false),
+  };
+  const accept = async () => {
+    setBusy(true);
+    try {
+      await socialApi(`subscriptions/${s.id}/accept-terms`, { body: {} });
+      toast.success(t("social.subs.terms.accepted"), { description: t(paused ? "social.subs.terms.acceptedResumed" : "social.subs.terms.acceptedDesc", { fee: vars.fee, period: vars.period }) });
+      onAccepted();
+    } catch (e) {
+      toast.error(t("social.subs.terms.acceptFailed"), { description: e instanceof Error ? e.message : undefined });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mx-5 mt-2 rounded-[12px] border border-warn/30 bg-warn-soft px-3 py-2.5 text-[12px] leading-snug text-fg-2" data-testid="copy-terms-banner">
+      <div className="flex items-start gap-2">
+        <FileText className="mt-0.5 size-3.5 shrink-0 text-warn" />
+        <span>{t(paused ? "social.subs.terms.bannerPaused" : "social.subs.terms.banner", vars)}</span>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2 ps-5.5">
+        <Button size="xs" variant="ember" onClick={accept} disabled={busy} data-testid="copy-accept-terms">
+          {busy ? <Loader2 className="animate-spin" /> : <Check />} {t("social.subs.terms.accept")}
+        </Button>
+        <Button size="xs" variant="down-outline" onClick={onStop}>
+          <Square /> {t("social.subs.stopCopying")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function SubCard({ s, onChanged, onEdit, onStop, onDetail, onFunds }: { s: SubscriptionView; onChanged: () => void; onEdit: () => void; onStop: () => void; onDetail: (tab?: DetailTab) => void; onFunds: (dir: FundsDirection) => void }) {
   const t = useT();
   const [busy, setBusy] = React.useState(false);
   const stopped = s.status === "stopped";
+  const masterStopped = !stopped && s.attention === "master_stopped";
+  const pausedForTerms = s.status === "paused" && s.pauseReason === "terms";
+  const canWithdraw = withdrawableOf(s) > 0;
   const togglePause = async () => {
     setBusy(true);
     const pause = s.status !== "paused";
@@ -553,13 +623,27 @@ function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionVi
         <span>{t("social.subs.since", { date: fmtDate(s.createdAt) })}</span>
       </div>
       {stopped && s.stopReason && <div className="mt-1 px-5 text-[12px] text-down">{stopReason(s.stopReason, t)}{s.stoppedAt ? ` · ${fmtDate(s.stoppedAt)}` : ""}</div>}
-      {!stopped && s.master.frozen && <div className="mt-1 px-5 text-[12px] text-warn">{t("social.subs.frozen")}</div>}
+      {!stopped && s.master.frozen && !masterStopped && <div className="mt-1 px-5 text-[12px] text-warn">{t("social.subs.frozen")}</div>}
+      {masterStopped && (
+        <div className="mx-5 mt-2 rounded-[12px] border border-down/30 bg-down-soft px-3 py-2.5 text-[12px] leading-snug text-fg-2" data-testid="copy-master-stopped">
+          <div className="flex items-start gap-2">
+            <OctagonAlert className="mt-0.5 size-3.5 shrink-0 text-down" />
+            <span>{t("social.subs.masterStopped", { name: s.master.nickname })}</span>
+          </div>
+          <div className="mt-2 ps-5.5">
+            <Button size="xs" variant="down-outline" onClick={onStop}>
+              <Square /> {t("social.subs.stopCopying")}
+            </Button>
+          </div>
+        </div>
+      )}
       {s.status === "paused" && (
         <div className="mx-5 mt-2 flex items-start gap-2 rounded-[10px] border border-warn/30 bg-warn-soft px-3 py-2 text-[12px] leading-snug text-fg-2" data-testid="copy-paused-note">
           <Pause className="mt-0.5 size-3.5 shrink-0 text-warn" />
-          {t("social.subs.pausedNote")}
+          {pausedForTerms ? t("social.subs.pausedTermsNote", { name: s.master.nickname }) : t("social.subs.pausedNote")}
         </div>
       )}
+      {!stopped && s.pendingTerms && <TermsBanner s={s} onAccepted={onChanged} onStop={onStop} />}
       <div className="mt-4 px-5">
         <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("common.equity")}</div>
         <Money value={s.equity} countUp={false} className="text-[26px] font-semibold" />
@@ -594,6 +678,11 @@ function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionVi
           </Chip>
         )}
         {s.maxLot !== null && <Chip size="sm">{t("social.subs.maxLotChip", { lot: s.maxLot.toFixed(2) })}</Chip>}
+        {s.autoSlPips !== null && s.autoSlPips !== undefined && (
+          <Chip size="sm" tone="down">
+            <Target className="size-3" /> {t("social.subs.autoSlChip", { pips: pips1(s.autoSlPips) })}
+          </Chip>
+        )}
         {s.excludedSymbols.length > 0 ? <Chip size="sm">{t("social.subs.exclChip", { list: s.excludedSymbols.slice(0, 3).join(", ") })}{s.excludedSymbols.length > 3 ? ` +${s.excludedSymbols.length - 3}` : ""}</Chip> : <Chip size="sm">{t("social.subs.allSymbols")}</Chip>}
       </div>
       <div className="mt-2.5 px-5">
@@ -613,12 +702,23 @@ function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionVi
             <Button size="sm" variant="down-outline" onClick={onStop}>
               <Square /> {t("social.subs.stop")}
             </Button>
+            <Button size="sm" variant="surface" onClick={() => onFunds("add")} data-testid="copy-add-funds">
+              <ArrowDownToLine /> {t("social.subs.funds.add")}
+            </Button>
+            <Button size="sm" variant="surface" onClick={() => onFunds("withdraw")} data-testid="copy-withdraw">
+              <ArrowUpFromLine /> {t("social.subs.funds.withdraw")}
+            </Button>
           </>
+        )}
+        {stopped && canWithdraw && (
+          <Button size="sm" variant="surface" onClick={() => onFunds("withdraw")} data-testid="copy-withdraw">
+            <ArrowUpFromLine /> {t("social.subs.funds.withdraw")}
+          </Button>
         )}
         <Button size="sm" variant="surface" onClick={() => onDetail()} className={cn(stopped && "col-span-1")}>
           <ListChecks /> {t("common.details")}
         </Button>
-        <TradeButton a={{ login: s.login, status: "active" }} size="sm" label="Kalks Trader" className="sm:col-span-2" />
+        <TradeButton a={{ login: s.login, status: "active" }} size="sm" label="Kalks Trader" className={stopped ? (canWithdraw ? "col-span-2 sm:col-span-1" : "sm:col-span-2") : "col-span-2 sm:col-span-3"} />
       </div>
     </div>
   );
@@ -634,6 +734,7 @@ export function LiveCopyPage() {
   const [stop, setStop] = React.useState<SubscriptionView | null>(null);
   const [detail, setDetail] = React.useState<number | null>(null);
   const [detailTab, setDetailTab] = React.useState<DetailTab>("positions");
+  const [funds, setFunds] = React.useState<{ id: number; dir: FundsDirection } | null>(null);
 
   const items = data?.items ?? [];
   const current = items.filter((s) => s.status !== "stopped");
@@ -714,7 +815,14 @@ export function LiveCopyPage() {
               ) : (
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                   {list.map((s) => (
-                    <SubCard key={s.id} s={s} onChanged={reload} onEdit={() => setEdit(s)} onStop={() => setStop(s)} onDetail={(tab) => {
+                    <SubCard
+                      key={s.id}
+                      s={s}
+                      onChanged={reload}
+                      onEdit={() => setEdit(s)}
+                      onStop={() => setStop(s)}
+                      onFunds={(dir) => setFunds({ id: s.id, dir })}
+                      onDetail={(tab) => {
                         setDetailTab(tab ?? "positions");
                         setDetail(s.id);
                       }}
@@ -731,6 +839,7 @@ export function LiveCopyPage() {
       <SettingsDialog sub={edit} onClose={() => setEdit(null)} onSaved={reload} />
       <StopDialog sub={stop} onClose={() => setStop(null)} onStopped={reload} />
       <DetailDrawer id={detail} initialTab={detailTab} onClose={() => setDetail(null)} />
+      <SubFundsDialog sub={funds ? (items.find((x) => x.id === funds.id) ?? null) : null} direction={funds?.dir ?? "add"} onClose={() => setFunds(null)} onDone={reload} />
     </div>
   );
 }

@@ -158,7 +158,7 @@ export function setSessionCookie(res: NextResponse, session: { token: string; ex
 }
 
 /** Step-up actions (D20): sensitive changes confirmed with an emailed code even inside a session. */
-export type StepupAction = "trading_password" | "investor_password" | "leverage" | "withdrawal" | "account_password" | "profile_email" | "profile_phone" | "viewer_access" | "account_archive";
+export type StepupAction = "trading_password" | "investor_password" | "leverage" | "withdrawal" | "account_password" | "profile_email" | "profile_phone" | "viewer_access" | "account_archive" | "account_close" | "internal_transfer";
 
 /** The step-up token the browser got from /api/auth/stepup-verify: body field `stepup_token` or header `X-Kalks-Stepup`. */
 export function stepupTokenOf(h: Headers, body?: Record<string, unknown> | null): string {

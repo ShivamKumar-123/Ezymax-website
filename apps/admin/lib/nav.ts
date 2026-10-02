@@ -62,6 +62,7 @@ export const ADMIN_NAV: NavModule[] = [
       { href: "/trading", label: "Positions" },
       { href: "/trading/orders", label: "Orders" },
       { href: "/trading/accounts", label: "Accounts" },
+      { href: "/trading/closures", label: "Closures" },
       { href: "/trading/routing", label: "Book & routing" },
       { href: "/trading/exposure", label: "Exposure" },
       { href: "/trading/dealer", label: "Dealer desk" },
@@ -130,6 +131,7 @@ export const ADMIN_NAV: NavModule[] = [
     section: "money",
     sub: [
       { href: "/social", label: "Masters" },
+      { href: "/social/followers", label: "Followers" },
       { href: "/social/pamm", label: "PAMM funds" },
       { href: "/social/mam", label: "MAM" },
       { href: "/social/house", label: "House accounts" },

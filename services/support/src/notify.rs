@@ -31,7 +31,9 @@ pub const PREF_KEYS: &[PrefKey] = &[
     PrefKey { key: "wallet", label: "Deposits and withdrawals", hint: "Deposits credited, withdrawals approved, rejected or paid", in_app: true, email: true, locked: false, audience: &["user"] },
     PrefKey { key: "kyc", label: "Identity verification", hint: "Verification decisions and requests for documents", in_app: true, email: true, locked: false, audience: &["user"] },
     PrefKey { key: "ib", label: "Partner commissions", hint: "IB commissions, payouts and level changes", in_app: true, email: false, locked: false, audience: &["user"] },
-    PrefKey { key: "copy", label: "Copy trading and PAMM", hint: "Subscriptions, fees and fund rollovers", in_app: true, email: false, locked: false, audience: &["user"] },
+    // email on by default: copier alerts that need action (skipped trades, protection stops, new terms, a stopped
+    // master); routine fills are sent in-app only by the engine (`"email": false`)
+    PrefKey { key: "copy", label: "Copy trading and PAMM", hint: "Copied trades, skipped trades, protection stops, new terms, fees and fund rollovers", in_app: true, email: true, locked: false, audience: &["user"] },
     PrefKey { key: "prop", label: "Prop challenges", hint: "Phase passed or failed, funded account and payouts", in_app: true, email: true, locked: false, audience: &["user"] },
     PrefKey { key: "support", label: "Support replies", hint: "Replies from our support team", in_app: true, email: true, locked: false, audience: &["user", "staff"] },
     PrefKey { key: "system", label: "Platform notices", hint: "Maintenance and service announcements", in_app: true, email: true, locked: false, audience: &["user", "staff"] },

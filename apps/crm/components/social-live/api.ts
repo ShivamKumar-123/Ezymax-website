@@ -67,7 +67,19 @@ export interface MasterView {
   fund: MasterFundCard | null;
   /** House account: operated by the broker, runs an automated strategy (always shown with the disclosure label) */
   house?: boolean;
+  /** A11: the master takes new followers now (accepts new and below its follower limit) */
+  acceptingNew?: boolean;
+  /** A11: reachable through the private invite link only (hidden from the leaderboard) */
+  inviteOnly?: boolean;
+  /** A11: follower limit (null = no limit) */
+  maxFollowers?: number | null;
+  /** The minimum allocation that applies (the broker's floor or the master's, whichever is higher) */
+  minAllocationEffective?: number;
   // private (own profile only)
+  /** A11: the master's "accept new followers" switch */
+  acceptNew?: boolean;
+  /** A11: code of the private copy link (null until invite-only is turned on) */
+  inviteCode?: string | null;
   login?: number;
   kycVerified?: boolean;
   reviewNote?: string | null;
@@ -108,6 +120,79 @@ export interface SubscriptionView {
   createdAt: string;
   stoppedAt: string | null;
   nextFeeAt: string | null;
+  lastFeeAt?: string | null;
+  /** A6: free margin that can go back to the wallet now (null when the copy account can't be read) */
+  withdrawable?: number | null;
+  /** A9: stop loss set on every copied trade, in pips from its entry (null = off) */
+  autoSlPips?: number | null;
+  /** A8: why copying is paused when the client didn't pause it ("terms": the master's new terms weren't accepted) */
+  pauseReason?: "terms" | (string & {}) | null;
+  /** A8: "master_stopped": the master stopped trading for followers */
+  attention?: "master_stopped" | (string & {}) | null;
+  /** A8: the master's new terms waiting for this follower's acceptance */
+  pendingTerms?: PendingTerms | null;
+  trial?: boolean;
+  trialEndsAt?: string | null;
+}
+
+export interface PendingTerms {
+  perfFeePct: number;
+  feePeriod: FeePeriod;
+  /** accept by this time to keep copying (ISO) */
+  deadline: string;
+}
+
+/** A11: a master's message to its followers. */
+export interface Announcement {
+  id: number;
+  title: string;
+  body: string;
+  recipients: number;
+  createdAt?: string;
+}
+
+/** A10: execution quality of the copied trades (positive slippage = worse for the follower). */
+export interface ExecutionSummary {
+  trades: number;
+  avgSlippagePips: number | null;
+  avgDelayMs: number | null;
+  maxDelayMs: number | null;
+  worstSlippagePips: number | null;
+}
+
+export interface ExecutionRow {
+  at: string;
+  action: string;
+  masterTicket: number | null;
+  followerTicket: number | null;
+  volume: number | null;
+  masterPrice: number | null;
+  followerPrice: number | null;
+  slippagePips: number | null;
+  delayMs: number | null;
+}
+
+export interface ExecutionReport {
+  items: ExecutionRow[];
+  summary: ExecutionSummary;
+}
+
+/** A9: GET masters/{id}/preview, the risk of following with these settings. */
+export interface RiskPreview {
+  allocation: number;
+  masterEquity: number;
+  worstCase: { loss: number; basis: "equity_stop" | "max_dd" | "allocation"; pctOfAllocation: number };
+  master: { maxDdPct: number; currentDdPct: number; riskScore: number; volatility: number; lossAtMaxDd: number };
+  example: { symbol: string; side: "buy" | "sell"; closeTime: string; masterVolume: number; masterProfit: number; yourVolume: number | null; yourProfit: number | null; skipped: boolean }[];
+  tradeDelayMinutes: number;
+}
+
+/** A6: POST subscriptions/{id}/funds */
+export interface SubFundsResult {
+  direction: "add" | "withdraw";
+  amount: number;
+  balance: number | null;
+  subscription: SubscriptionView;
 }
 
 export type FundStatus = "active" | "frozen" | "closed";
@@ -248,20 +333,68 @@ export type DashboardFund = Omit<FundView, "investors"> & {
   pending: number | RequestView[];
 };
 
+export interface DashboardFollower {
+  subscriptionId: number;
+  since: string;
+  status: SubscriptionView["status"];
+  sizing: Sizing;
+  equity: number;
+  profit: number;
+  stoppedAt?: string | null;
+  stopReason?: string | null;
+  netDeposits?: number;
+  perfFeePct?: number;
+  /** A8: this follower hasn't accepted the master's new terms yet */
+  termsPending?: boolean;
+}
+
 export interface MasterDashboard {
   master: MasterView;
-  followers: { subscriptionId: number; since: string; status: SubscriptionView["status"]; sizing: Sizing; equity: number; profit: number }[];
+  followers: DashboardFollower[];
   funds: DashboardFund[];
   fees: FeeView[];
-  totals: { followers: number; aum: number; feesPending: number; feesPaid: number };
+  totals: {
+    followers: number;
+    aum: number;
+    feesPending: number;
+    feesPaid: number;
+    /** A11: followers who started / stopped in the last 30 days, churn % over that window, followers yet to accept new terms */
+    new30d?: number;
+    left30d?: number;
+    churn30dPct?: number;
+    termsPending?: number;
+  };
+  announcements?: Announcement[];
+}
+
+/** PATCH master/me: the profile and how a fee change reached the followers (A8). */
+export interface MasterUpdateResult {
+  master: MasterView;
+  terms?: { applied: number; pending: number };
 }
 
 export interface SubscriptionDetail {
   subscription: SubscriptionView;
   positions: EnginePosition[];
   orders: EngineOrder[];
-  log: { at: string; action: string; masterTicket: number | null; followerTicket: number | null; volume: number | null; status: string; message: string | null }[];
+  log: {
+    at: string;
+    action: string;
+    masterTicket: number | null;
+    followerTicket: number | null;
+    volume: number | null;
+    status: string;
+    message: string | null;
+    masterPrice?: number | null;
+    followerPrice?: number | null;
+    slippagePips?: number | null;
+    delayMs?: number | null;
+  }[];
   fees: FeeView[];
+  /** A10 */
+  execution?: ExecutionSummary;
+  /** A11: the master's last announcements */
+  announcements?: Announcement[];
 }
 
 export interface FundDetail {
@@ -340,7 +473,41 @@ const FRIENDLY: Record<string, string> = {
   get pamm_account() {
     return tr("social.error.pamm_account");
   },
+  get stopped() {
+    return tr("social.error.stopped");
+  },
+  get insufficient_funds() {
+    return tr("social.error.insufficient_funds");
+  },
+  get equity_stop() {
+    return tr("social.error.equity_stop");
+  },
+  get restricted() {
+    return tr("social.error.restricted");
+  },
+  get no_pending_terms() {
+    return tr("social.error.no_pending_terms");
+  },
+  get terms_pending() {
+    return tr("social.error.terms_pending");
+  },
+  get not_accepting() {
+    return tr("social.error.not_accepting");
+  },
+  get followers_full() {
+    return tr("social.error.followers_full");
+  },
+  get invite_required() {
+    return tr("social.error.invite_required");
+  },
+  get too_many() {
+    return tr("social.error.too_many");
+  },
 };
+
+// Codes whose engine message carries nothing the translation lacks: shown in the reader's language.
+// (insufficient_funds keeps the engine text: it names the amount that can be withdrawn.)
+const LOCAL_FIRST = new Set(["stopped", "equity_stop", "restricted", "no_pending_terms", "terms_pending", "not_accepting", "followers_full", "invite_required", "too_many"]);
 
 export async function socialApi<T>(path: string, init?: { method?: "GET" | "POST" | "PATCH"; body?: unknown; signal?: AbortSignal }): Promise<T> {
   const method = init?.method ?? (init?.body !== undefined ? "POST" : "GET");
@@ -364,7 +531,7 @@ export async function socialApi<T>(path: string, init?: { method?: "GET" | "POST
     }
     const code = data.error?.code ?? "error";
     // the engine's own message is more specific for validation-type errors; the map covers the terse codes
-    const msg = data.error?.message && code !== "unavailable" ? data.error.message : FRIENDLY[code] ?? tr("common.errorRetry");
+    const msg = LOCAL_FIRST.has(code) ? FRIENDLY[code]! : data.error?.message && code !== "unavailable" ? data.error.message : FRIENDLY[code] ?? tr("common.errorRetry");
     const err = new ApiError(res.status, code, res.status === 404 && code === "not_found" && !data.error?.message ? tr("social.error.notFound") : msg, data.error?.field);
     (err as ApiError & { checks?: Check[] }).checks = data.error?.checks;
     throw err;
@@ -497,5 +664,20 @@ export function sizingText(s: Sizing | null | undefined) {
 
 export const riskLabel = (r: number) => (r <= 3 ? tr("social.risk.low") : r <= 6 ? tr("social.risk.medium") : tr("social.risk.high"));
 export const riskTone = (r: number): "up" | "warn" | "down" => (r <= 3 ? "up" : r <= 6 ? "warn" : "down");
+
+/** "12 pips" style value with up to 1 decimal. */
+export const pips1 = (v: number | null | undefined) => (typeof v === "number" && Number.isFinite(v) ? String(Math.round(v * 10) / 10) : "—");
+
+/** Copy delay: "850 ms" / "1.4 s". */
+export function delayText(ms: number | null | undefined) {
+  if (typeof ms !== "number" || !Number.isFinite(ms)) return "—";
+  return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(ms < 10000 ? 1 : 0)} s`;
+}
+
+/** Amount with at most 2 decimals, above zero (the funds endpoints reject anything else). */
+export const validAmount = (v: number | null) => v !== null && v > 0 && Math.abs(Math.round(v * 100) - v * 100) < 1e-6;
+
+/** Private copy-link code: letters and digits (the BFF and the engine check it again). */
+export const INVITE_RE = /^[A-Za-z0-9]{4,32}$/;
 
 export const toneOf = (v: number | null | undefined) => (safe(v) > 0 ? "text-up" : safe(v) < 0 ? "text-down" : "text-fg-2");

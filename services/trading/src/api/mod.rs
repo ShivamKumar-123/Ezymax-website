@@ -4,6 +4,7 @@
 
 pub mod accounts;
 pub mod admin;
+pub mod closures;
 pub mod controls;
 pub mod dealing;
 pub mod ledger;
@@ -85,6 +86,13 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/accounts/{login}/archive-check", get(lifecycle::archive_check))
         .route("/v1/accounts/{login}/archive", post(lifecycle::archive))
         .route("/v1/accounts/{login}/restore", post(lifecycle::restore))
+        .route("/v1/accounts/{login}/closure", get(lifecycle::closure_status).post(lifecycle::request_closure))
+        .route("/v1/accounts/{login}/closure/cancel", post(lifecycle::cancel_closure))
+        .route("/v1/accounts/prefs", get(lifecycle::get_prefs).put(lifecycle::put_prefs).post(lifecycle::put_prefs))
+        .route("/v1/accounts/{login}/group-options", get(lifecycle::group_options))
+        .route("/v1/accounts/{login}/group", post(lifecycle::change_group))
+        .route("/v1/accounts/{login}/demo-balance", post(lifecycle::demo_balance))
+        .route("/v1/accounts/{login}/health", get(lifecycle::health))
         .route("/v1/accounts/{login}/demo-refill", post(accounts::demo_refill))
         .route("/v1/accounts/{login}/passwords", post(accounts::passwords))
         .route("/v1/accounts/{login}/leverage", post(accounts::leverage))
@@ -130,6 +138,16 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/accounts/{login}/status", post(admin::status))
         .route("/v1/admin/accounts/{login}/archive", post(admin::archive))
         .route("/v1/admin/accounts/{login}/restore", post(admin::restore))
+        .route("/v1/admin/accounts/{login}/closure-check", get(closures::account_check))
+        .route("/v1/admin/accounts/{login}/closure", post(closures::staff_request))
+        .route("/v1/admin/accounts/{login}/reopen", post(closures::reopen_request))
+        .route("/v1/admin/accounts/bulk", post(closures::bulk))
+        .route("/v1/admin/account-policy", get(closures::get_policy).put(closures::put_policy))
+        .route("/v1/admin/closures", get(closures::list))
+        .route("/v1/admin/closures/report", get(closures::report))
+        .route("/v1/admin/closures/{id}", get(closures::detail))
+        .route("/v1/admin/closures/{id}/approve", post(closures::approve))
+        .route("/v1/admin/closures/{id}/reject", post(closures::reject))
         .route("/v1/admin/accounts/{login}/group", post(admin::group))
         .route("/v1/admin/accounts/{login}/leverage", post(admin::leverage))
         .route("/v1/admin/groups", get(admin::groups).post(admin::create_group))
@@ -138,12 +156,17 @@ pub fn router(st: AppState) -> Router {
         // copy trading and PAMM: Client Area (X-Kalks-User-Id) and public reads
         .route("/v1/social/leaderboard", get(social::leaderboard))
         .route("/v1/social/masters/{id}", get(social::master_profile))
+        .route("/v1/social/masters/{id}/preview", get(social::master_preview))
         .route("/v1/social/master/me", get(social::master_me).patch(social::master_update))
         .route("/v1/social/master/apply", post(social::master_apply))
         .route("/v1/social/master/dashboard", get(social::master_dashboard))
         .route("/v1/social/subscriptions", post(social::subscribe).get(social::subscriptions))
         .route("/v1/social/subscriptions/{id}", get(social::subscription).patch(social::update_subscription))
         .route("/v1/social/subscriptions/{id}/stop", post(social::stop_subscription))
+        .route("/v1/social/subscriptions/{id}/funds", post(social::sub_funds))
+        .route("/v1/social/subscriptions/{id}/accept-terms", post(social::accept_terms))
+        .route("/v1/social/subscriptions/{id}/execution", get(social::execution))
+        .route("/v1/social/master/announcements", post(social::announce))
         .route("/v1/social/funds", get(social::funds).post(social::create_fund))
         .route("/v1/social/funds/{id}", get(social::fund).patch(social::update_fund))
         .route("/v1/social/funds/{id}/invest", post(social::invest))
@@ -160,6 +183,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/social/admin/masters/{id}/emergency", post(social_admin::emergency))
         .route("/v1/social/admin/subscriptions", get(social_admin::subscriptions))
         .route("/v1/social/admin/subscriptions/{id}/stop", post(social_admin::stop_subscription))
+        .route("/v1/social/admin/copy-dashboard", get(social_admin::copy_dashboard))
         .route("/v1/social/admin/funds", get(social_admin::funds))
         .route("/v1/social/admin/funds/{id}/freeze", post(social_admin::freeze_fund))
         .route("/v1/social/admin/funds/{id}/rollover", post(social_admin::fund_rollover))

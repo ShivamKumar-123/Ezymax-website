@@ -73,3 +73,33 @@ pub async fn redeem_voucher(State(st): State<AppState>, Tenant(tenant): Tenant, 
     tx.commit().await?;
     Ok(Json(json!({"pct": num(v.get("pct")), "voucher": loyalty::voucher_json(&v), "replayed": false})))
 }
+
+#[derive(Deserialize, Default)]
+pub struct Retired {
+    /// archived | closed
+    #[serde(default)]
+    reason: String,
+}
+
+/// `POST /v1/growth/internal/accounts/{login}/retired {reason}`: the trading engine archived or closed the account
+/// (B7). Its open bonus grants end as `forfeited`. No `remove` leg is queued: the engine already booked the bonus
+/// left on the account back to the house when it retired the account. Idempotent.
+pub async fn account_retired(State(st): State<AppState>, Tenant(tenant): Tenant, Path(login): Path<i64>, Json(b): Json<Retired>) -> ApiResult<Json<Value>> {
+    let reason = match b.reason.as_str() {
+        "closed" => "account_closed",
+        _ => "account_archived",
+    };
+    let ended = sqlx::query(
+        "UPDATE bonus_grants SET status = 'forfeited', ended_at = now(), end_reason = $3 WHERE tenant = $1 AND login = $2 AND status IN ('awaiting_deposit', 'pending', 'active')",
+    )
+    .bind(&tenant)
+    .bind(login)
+    .bind(reason)
+    .execute(&st.pool)
+    .await?
+    .rows_affected();
+    if ended > 0 {
+        tracing::info!(%tenant, login, ended, reason, "bonus grants forfeited: trading account retired");
+    }
+    Ok(Json(json!({"login": login, "ended": ended})))
+}

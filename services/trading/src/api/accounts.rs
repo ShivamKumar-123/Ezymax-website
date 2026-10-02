@@ -157,6 +157,8 @@ pub async fn list(State(st): State<AppState>, ctx: Ctx, headers: HeaderMap, Quer
             out.push(v);
         }
     }
+    // archive / close dates, dormancy, the open closure request and the starred default account
+    super::lifecycle::decorate(&st, ctx.tenant.tenant_id, &mut out).await?;
     Ok(Json(json!({"accounts": out})))
 }
 
@@ -177,6 +179,12 @@ pub async fn detail(State(st): State<AppState>, ctx: Ctx, headers: HeaderMap, Pa
             }),
         )
         .await;
+    let mut v = v;
+    if v["account"].is_object() {
+        let mut one = [v["account"].clone()];
+        super::lifecycle::decorate(&st, ctx.tenant.tenant_id, &mut one).await?;
+        v["account"] = one[0].clone();
+    }
     Ok(Json(v))
 }
 

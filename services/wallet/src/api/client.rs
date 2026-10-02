@@ -455,3 +455,101 @@ pub async fn trading_transfers(State(st): State<AppState>, ctx: Ctx, Path(user_i
     let total = rows.first().map(|r| r.get::<i64, _>("total")).unwrap_or(0);
     Ok(ok(json!({"items": rows.iter().map(trading::transfer_json).collect::<Vec<_>>(), "page": page, "limit": limit, "total": total})))
 }
+
+/* ---------------- trading account lifecycle (closure checks, own-account transfers) ---------------- */
+
+#[derive(Deserialize, Default)]
+pub struct PendingQ {
+    #[serde(default)]
+    user_id: Option<i64>,
+}
+
+/// `GET|POST /v1/internal/trading/{login}/pending[?user_id=]`: wallet operations still open on a trading account,
+/// for the engine's closure checks (C3): pending wallet <-> trading transfers of the login, pending / processing
+/// Back Office adjustments targeting it, and (informational) the owner's open wallet withdrawals.
+pub async fn trading_pending(State(st): State<AppState>, ctx: Ctx, Path(login): Path<i64>, Q(q): Q<PendingQ>) -> ApiResult<Json<Value>> {
+    if login <= 0 {
+        return Err(ApiError::validation("login", "login must be a positive integer"));
+    }
+    let transfers = sqlx::query("SELECT id, direction, amount, created_at FROM trading_transfers WHERE tenant_id = $1 AND login = $2 AND status = 'pending' ORDER BY id")
+        .bind(ctx.tenant.id)
+        .bind(login)
+        .fetch_all(&st.pool)
+        .await?;
+    let adjustments = sqlx::query("SELECT id, op, amount, status, created_at FROM adjustments WHERE tenant_id = $1 AND login = $2 AND status IN ('pending', 'processing') ORDER BY id")
+        .bind(ctx.tenant.id)
+        .bind(login)
+        .fetch_all(&st.pool)
+        .await?;
+    // the owner: the caller's user id, else the user of the latest transfer of this login
+    let owner: Option<i64> = match q.user_id.filter(|u| *u > 0) {
+        Some(u) => Some(u),
+        None => sqlx::query_scalar("SELECT user_id FROM trading_transfers WHERE tenant_id = $1 AND login = $2 ORDER BY id DESC LIMIT 1").bind(ctx.tenant.id).bind(login).fetch_optional(&st.pool).await?,
+    };
+    let withdrawals: i64 = match owner {
+        Some(u) => sqlx::query_scalar("SELECT count(*) FROM withdrawals WHERE tenant_id = $1 AND user_id = $2 AND status IN ('requested', 'approved')").bind(ctx.tenant.id).bind(u).fetch_one(&st.pool).await?,
+        None => 0,
+    };
+    let items: Vec<Value> = transfers
+        .iter()
+        .map(|r| json!({"type": "transfer", "id": r.get::<i64, _>("id"), "direction": r.get::<String, _>("direction"), "amount": s(r.get::<D, _>("amount")), "created_at": r.get::<DateTime<Utc>, _>("created_at")}))
+        .chain(adjustments.iter().map(|r| json!({"type": "adjustment", "id": r.get::<i64, _>("id"), "op": r.get::<String, _>("op"), "amount": s(r.get::<D, _>("amount")), "status": r.get::<String, _>("status"), "created_at": r.get::<DateTime<Utc>, _>("created_at")})))
+        .collect();
+    Ok(ok(json!({
+        "login": login,
+        "transfers": transfers.len(),
+        "adjustments": adjustments.len(),
+        "withdrawals": withdrawals,
+        "blocking": transfers.len() + adjustments.len(),
+        "items": items,
+    })))
+}
+
+#[derive(Deserialize)]
+pub struct TradingToTradingBody {
+    #[serde(default)]
+    from_login: i64,
+    #[serde(default)]
+    to_login: i64,
+    #[serde(deserialize_with = "de_dec")]
+    amount: D,
+    #[serde(default)]
+    idempotency_key: String,
+}
+
+/// `POST /v1/wallets/{user_id}/trading-to-trading`: moves money between two of the client's own live accounts (B9)
+/// as two idempotent legs through the wallet: `from-trading` on the source (key `<key>:out`), then `to-trading`
+/// on the destination (key `<key>:in`). Repeating the call with the same key resumes where it stopped. When the
+/// second leg is refused, the money stays in the client's wallet (never lost) and `status` says so.
+pub async fn trading_to_trading(State(st): State<AppState>, ctx: Ctx, Path(user_id): Path<i64>, Body(b): Body<TradingToTradingBody>) -> ApiResult<Json<Value>> {
+    let user_id = uid(user_id)?;
+    let key = b.idempotency_key.trim();
+    if key.is_empty() || key.len() > 120 {
+        return Err(ApiError::validation("idempotency_key", "idempotency_key must be 1–120 characters"));
+    }
+    if b.from_login <= 0 || b.to_login <= 0 {
+        return Err(ApiError::validation("from_login", "Choose both accounts"));
+    }
+    if b.from_login == b.to_login {
+        return Err(ApiError::validation("to_login", "Choose two different accounts"));
+    }
+    let out = trading::start(&st, &ctx, user_id, trading::Dir::FromTrading, b.from_login, b.amount, &format!("{key}:out")).await?;
+    if out["status"] != "completed" {
+        return Ok(ok(json!({"status": "pending", "out": out, "in": Value::Null})));
+    }
+    match trading::start(&st, &ctx, user_id, trading::Dir::ToTrading, b.to_login, b.amount, &format!("{key}:in")).await {
+        Ok(inn) => {
+            let status = if inn["status"] == "completed" { "completed" } else { "pending" };
+            Ok(ok(json!({"status": status, "out": out, "in": inn})))
+        }
+        Err(e) => {
+            let (code, message) = match e {
+                ApiError::Coded { code, message, .. } => (code.to_string(), message),
+                ApiError::Validation { field, message } => (format!("validation:{field}"), message),
+                other => return Err(other),
+            };
+            tracing::warn!(user_id, from = b.from_login, to = b.to_login, %code, "own-account transfer: the second leg was refused; the funds stay in the wallet");
+            Ok(ok(json!({"status": "in_wallet", "out": out, "in": Value::Null, "error": {"code": code, "message": message}})))
+        }
+    }
+}

@@ -27,6 +27,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/growth/public/shares/{code}", get(public::share))
         .route("/v1/growth/internal/vouchers", get(public::vouchers))
         .route("/v1/growth/internal/vouchers/redeem", post(public::redeem_voucher))
+        .route("/v1/growth/internal/accounts/{login}/retired", post(public::account_retired))
         // Client Area
         .route("/v1/growth/me/rewards", get(client::rewards))
         .route("/v1/growth/me/points", get(client::points))

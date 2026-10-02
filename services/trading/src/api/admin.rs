@@ -27,6 +27,8 @@ pub struct ListQ {
     kind: Option<String>,
     status: Option<String>,
     user_id: Option<i64>,
+    /// true: only accounts flagged dormant (B11)
+    dormant: Option<bool>,
     page: Option<i64>,
     limit: Option<i64>,
 }
@@ -39,7 +41,7 @@ pub async fn accounts(State(st): State<AppState>, s: StaffCtx, Query(q): Query<L
         "SELECT login, count(*) OVER () AS total FROM accounts WHERE tenant_id = $1
            AND ($2::text IS NULL OR login::text LIKE $2 OR name ILIKE $2 OR user_id::text LIKE $2)
            AND ($3::text IS NULL OR group_code = $3) AND ($4::text IS NULL OR kind = $4) AND ($5::text IS NULL OR status = $5)
-           AND ($6::bigint IS NULL OR user_id = $6)
+           AND ($6::bigint IS NULL OR user_id = $6) AND ($9::bool IS NOT TRUE OR dormant_since IS NOT NULL)
          ORDER BY login DESC OFFSET $7 LIMIT $8",
     )
     .bind(s.ctx.tenant.tenant_id)
@@ -50,6 +52,7 @@ pub async fn accounts(State(st): State<AppState>, s: StaffCtx, Query(q): Query<L
     .bind(q.user_id)
     .bind((page - 1) * limit)
     .bind(limit)
+    .bind(q.dormant)
     .fetch_all(&st.pool)
     .await?;
     let total = rows.first().map(|r| r.get::<i64, _>("total")).unwrap_or(0);
@@ -60,6 +63,7 @@ pub async fn accounts(State(st): State<AppState>, s: StaffCtx, Query(q): Query<L
             items.push(v);
         }
     }
+    super::lifecycle::decorate(&st, s.ctx.tenant.tenant_id, &mut items).await?;
     Ok(Json(json!({"items": items, "page": page, "limit": limit, "total": total})))
 }
 
@@ -83,6 +87,11 @@ pub async fn account(State(st): State<AppState>, s: StaffCtx, Path(login): Path<
     let last: Option<chrono::DateTime<chrono::Utc>> = sqlx::query_scalar("SELECT last_activity_at FROM accounts WHERE login = $1").bind(login).fetch_optional(&st.pool).await?;
     let mut v = v;
     v["lastActivityAt"] = json!(last);
+    if v["account"].is_object() {
+        let mut one = [v["account"].clone()];
+        super::lifecycle::decorate(&st, s.ctx.tenant.tenant_id, &mut one).await?;
+        v["account"] = one[0].clone();
+    }
     Ok(Json(v))
 }
 
@@ -398,6 +407,20 @@ pub async fn archive(State(st): State<AppState>, s: StaffCtx, Path(login): Path<
     });
     let r = staff_exec(&st, &s, login, &b.reason, "archive", op).await?;
     super::lifecycle::revoke_sessions(&st, login).await;
+    if r.0["data"]["changed"] == true
+        && let Some(m) = st.hub.meta(login)
+    {
+        super::lifecycle::retired_hooks(&st, m.tenant_id, login, m.user_id, "archived").await;
+        crate::notify::enqueue_or_log(
+            &st.pool,
+            m.tenant_id,
+            m.user_id,
+            "account.archived",
+            json!({"title": format!("Account #{login} archived"), "body": format!("Your trading account #{login} was archived by our team. Its statements stay available under Accounts › Archived.{}", if b.client_restorable { " You can restore it there." } else { " Contact support to restore it." }), "link": "/accounts?tab=archived", "severity": "info", "data": {"login": login}}),
+            &format!("archive:{login}:{}", chrono::Utc::now().timestamp()),
+        )
+        .await;
+    }
     Ok(r)
 }
 

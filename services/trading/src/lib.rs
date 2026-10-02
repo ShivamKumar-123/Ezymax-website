@@ -9,6 +9,7 @@ pub mod engine;
 pub mod feed;
 pub mod model;
 pub mod money;
+pub mod notify;
 pub mod persist;
 pub mod rules;
 pub mod shard;

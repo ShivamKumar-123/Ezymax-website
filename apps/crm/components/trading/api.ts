@@ -33,6 +33,13 @@ export interface EngineAccount {
   archivedAt?: string | null;
   closedAt?: string | null;
   updatedAt?: string | null;
+  /** The client's starred default account (B9). */
+  isDefault?: boolean;
+  /** The latest close-permanently request (B12). */
+  closureRequest?: { id: number; status: "pending" | "approved" | "rejected" | "cancelled" } | null;
+  /** Flagged dormant (no activity for the broker's dormancy period, B11). */
+  dormantSince?: string | null;
+  lastActivityAt?: string | null;
   marginCall: boolean;
   marginCallLevel: number;
   stopOutLevel: number;

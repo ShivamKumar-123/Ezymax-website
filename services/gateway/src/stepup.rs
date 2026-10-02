@@ -34,7 +34,7 @@ const K: Kind = Kind::User;
 pub const TOKEN_TTL_SECS: i64 = 300;
 
 /// Actions that need a step-up code. Unknown actions are rejected so the email always names a real change.
-pub const ACTIONS: &[&str] = &["trading_password", "investor_password", "leverage", "withdrawal", "account_password", "profile_email", "profile_phone", "viewer_access", "account_archive"];
+pub const ACTIONS: &[&str] = &["trading_password", "investor_password", "leverage", "withdrawal", "account_password", "profile_email", "profile_phone", "viewer_access", "account_archive", "account_close", "internal_transfer"];
 
 pub fn parse_action(raw: &str) -> Option<&'static str> {
     ACTIONS.iter().copied().find(|a| *a == raw.trim())
@@ -63,6 +63,8 @@ pub fn describe(action: &str, target: &str) -> String {
         "profile_phone" => "change the phone number of your Kalks account".into(),
         "viewer_access" => "create a view-only login or set a new password for one".into(),
         "account_archive" => if target.is_empty() { "delete (archive) a live trading account".into() } else { format!("delete (archive) live trading account #{target}") },
+        "account_close" => if target.is_empty() { "close a live trading account permanently".into() } else { format!("close live trading account #{target} permanently") },
+        "internal_transfer" => if target.is_empty() { "move money between your trading accounts".into() } else { format!("move money out of trading account #{target} to another of your accounts") },
         _ => "make a change to your Kalks account".into(),
     }
 }

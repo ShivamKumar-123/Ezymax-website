@@ -786,6 +786,7 @@ impl Social {
                 catch_up,
                 master_equity_usd: c.equity_usd,
                 mam: Some(MamCfg { volumes }),
+                auto_sl_pips: None,
             };
             let flag = self.link_flag(l.id);
             let at = c.at;
@@ -807,7 +808,7 @@ impl Social {
                 Ok(_) => std::mem::take(&mut *sink.lock().unwrap()),
                 Err(e) => {
                     tracing::error!(link = l.id, login = l.login, error = ?e, "MAM allocation failed");
-                    vec![(c.first_version, LogEntry { action: "allocate", master_ticket: None, follower_ticket: None, volume: None, status: "failed", message: format!("{e:?}") })]
+                    vec![(c.first_version, LogEntry::new("allocate", None, "failed", format!("{e:?}")))]
                 }
             };
             for (v, e) in entries {

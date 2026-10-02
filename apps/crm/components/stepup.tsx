@@ -15,7 +15,7 @@ import { useT, Trans } from "@kalks/i18n/react";
 import { DevCodeHint, FormError, OtpInput, ResendLink } from "@/components/auth";
 import { authPost, type ApiError, type OtpChallenge } from "@/lib/auth-client";
 
-export type StepUpAction = "trading_password" | "investor_password" | "leverage" | "withdrawal" | "account_password" | "profile_email" | "profile_phone" | "viewer_access" | "account_archive";
+export type StepUpAction = "trading_password" | "investor_password" | "leverage" | "withdrawal" | "account_password" | "profile_email" | "profile_phone" | "viewer_access" | "account_archive" | "account_close" | "internal_transfer";
 
 /** Errors from the change request that mean the confirmation has to be done again. */
 export const STEPUP_CODES = new Set(["stepup_required", "stepup_invalid"]);

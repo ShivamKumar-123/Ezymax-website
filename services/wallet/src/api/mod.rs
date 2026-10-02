@@ -32,6 +32,8 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/wallets/{user_id}/to-trading", post(client::to_trading))
         .route("/v1/wallets/{user_id}/from-trading", post(client::from_trading))
         .route("/v1/wallets/{user_id}/trading-transfers", get(client::trading_transfers))
+        .route("/v1/wallets/{user_id}/trading-to-trading", post(client::trading_to_trading))
+        .route("/v1/internal/trading/{login}/pending", get(client::trading_pending).post(client::trading_pending))
         .route("/v1/deposits/intents", post(client::create_intent))
         .route("/v1/deposits/intents/{id}", get(client::get_intent))
         .route("/v1/deposits/submit", post(client::submit_deposit))

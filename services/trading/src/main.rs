@@ -79,6 +79,8 @@ async fn main() -> anyhow::Result<()> {
     let social = trading::social::Social::new(pool.clone(), hub.clone(), wallet, logins.clone()).await?;
     let _ = social.ib.set(trading::social::wallet::WalletClient::new(&cfg.ib_url, &cfg.ib_token));
     social.start();
+    // client notifications (bell + email) through support POST /v1/notify (src/notify.rs; no-op without SUPPORT_URL)
+    trading::notify::spawn(pool.clone());
     let st = AppState {
         hub: hub.clone(),
         pool: pool.clone(),
@@ -100,6 +102,8 @@ async fn main() -> anyhow::Result<()> {
         tokio::spawn(rollovers(hub.clone(), pool.clone(), registry.clone()));
     }
     tokio::spawn(housekeeping(hub.clone(), pool.clone(), st.limiter.clone()));
+    // account jobs (api/lifecycle.rs): expired-demo auto-archive, dormancy flag + auto-archive, retention anonymiser
+    tokio::spawn(api::lifecycle::account_jobs(st.clone()));
 
     let app = api::router(st);
     // TCP_NODELAY: a fill publishes several small frames back to back (position, deal, account); Nagle would hold

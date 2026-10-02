@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Activity, AlertTriangle, ArrowLeft, ArrowRight, Check, Coins, Copy, Layers, Loader2, Pause, Percent, Scale, Search, ShieldCheck, Square, Wallet, X as XIcon } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, ArrowRight, Check, Coins, Copy, Layers, Loader2, Pause, Percent, Scale, Search, ShieldCheck, Square, Target, UserX, Wallet, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Field, Input, KeyValue, Stepper, SymbolAvatar, Toggle, cn } from "@kalks/ui";
 import { Trans, useT } from "@kalks/i18n/react";
@@ -10,6 +10,7 @@ import { Checkbox, RadioCard, RangeSlider, ToggleChip } from "@/components/socia
 import { TradeButton } from "@/components/trading/ui";
 import { ApiError, PERIOD_LABEL, SIZING_LABEL, sizingText, socialApi, usd, useSocial, type FollowResult, type MasterView, type SizingMode } from "./api";
 import { HouseBadge, InfoBox, MasterIdentity, RiskBadge, useNumber } from "./bits";
+import { RiskPreviewBox } from "./risk-preview";
 import { fmt as fmtUsdt, usdtAvailable, useWallet, type Overview } from "@/components/wallet-live/api";
 
 // Step label keys, translated at render
@@ -115,7 +116,22 @@ function Rule({ icon, title, children }: { icon: React.ReactNode; title: string;
   );
 }
 
-export function FollowDialog({ master: m, open, onOpenChange, suggested = [], onDone }: { master: MasterView | null; open: boolean; onOpenChange: (o: boolean) => void; suggested?: string[]; onDone?: () => void }) {
+export function FollowDialog({
+  master: m,
+  open,
+  onOpenChange,
+  suggested = [],
+  onDone,
+  inviteCode,
+}: {
+  master: MasterView | null;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  suggested?: string[];
+  onDone?: () => void;
+  /** A11: the private-link code an invite-only master needs */
+  inviteCode?: string | null;
+}) {
   const t = useT();
   const [step, setStep] = React.useState(0);
   const [mode, setMode] = React.useState<SizingMode>("equity");
@@ -123,6 +139,7 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
   const allocation = useNumber(null);
   const maxLot = useNumber(null);
   const equityStop = useNumber(null);
+  const autoSl = useNumber(null);
   const [ddOn, setDdOn] = React.useState(true);
   const [dd, setDd] = React.useState(30);
   const [excluded, setExcluded] = React.useState<string[]>([]);
@@ -141,6 +158,7 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
       allocation.set(Math.max(m.minAllocation, 100));
       maxLot.set(null);
       equityStop.set(null);
+      autoSl.set(null);
       setDdOn(true);
       setDd(30);
       setExcluded([]);
@@ -170,6 +188,9 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
         : undefined;
   const maxLotErr = maxLot.raw && !(maxLot.value! >= 0.01) ? t("social.follow.err.minLot") : undefined;
   const stopErr = equityStop.raw && !(equityStop.value! >= 0) ? t("social.follow.err.enterAmount") : equityStop.value !== null && alloc > 0 && equityStop.value >= alloc ? t("social.follow.err.belowAllocation") : undefined;
+  const autoSlErr = autoSl.raw && !(autoSl.value! >= 1 && autoSl.value! <= 5000) ? t("social.autoSl.err") : undefined;
+  // A11: a full or closed master takes no new followers (the engine says so too: not_accepting / followers_full)
+  const closed = m.acceptingNew === false;
 
   const all = symbolsQ.data?.symbols.map((s) => s.symbol) ?? [];
   const ordered = Array.from(new Set([...suggested, ...all]));
@@ -182,6 +203,8 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
       if (maxLot.value !== null) body.maxLot = maxLot.value;
       if (equityStop.value !== null) body.equityStop = equityStop.value;
       if (ddOn) body.maxDdPct = dd;
+      if (autoSl.value !== null) body.autoSlPips = autoSl.value;
+      if (inviteCode) body.inviteCode = inviteCode;
       const r = await socialApi<FollowResult>("subscriptions", { body });
       setResult(r);
       if (r.funding?.status === "done") toast.success(t("social.follow.nowCopying", { name: m.nickname }), { description: t("social.follow.toast.fundedDesc", { login: r.account?.login ?? r.subscription.login, amount: usd(alloc) }) });
@@ -196,7 +219,8 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
 
   const next = () => {
     if (step === 0 && sizingErr) return toast.error(sizingErr);
-    if (step === 1 && (maxLotErr || stopErr)) return toast.error(maxLotErr ?? stopErr!);
+    if (closed) return toast.error(t("social.error.not_accepting"));
+    if (step === 1 && (maxLotErr || stopErr || autoSlErr)) return toast.error(maxLotErr ?? stopErr ?? autoSlErr!);
     if (step === 2 && allocErr) return toast.error(allocErr);
     if (step < 3) setStep(step + 1);
     else if (agree) void submit();
@@ -265,7 +289,7 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
               </>
             )}
           </Button>
-          <Button variant="ember" size="md" onClick={next} disabled={busy || (step === 3 && !agree)}>
+          <Button variant="ember" size="md" onClick={next} disabled={busy || closed || (step === 3 && !agree)}>
             {busy ? <Loader2 className="animate-spin" /> : null}
             {step === 3 ? (
               t("social.follow.confirm")
@@ -286,6 +310,11 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
         </span>
       </div>
       {m.house && <InfoBox className="-mt-2 mb-5">{t("social.house.disclosure")}</InfoBox>}
+      {closed && (
+        <InfoBox tone="warn" icon={<UserX />} className="-mt-2 mb-5">
+          {t("social.notAccepting")}
+        </InfoBox>
+      )}
       {step === 0 && <HowCopyWorks name={m.nickname} fee={m.perfFeePct} />}
       <Stepper steps={STEPS.map((k) => t(k))} current={step} className="mb-6" />
 
@@ -354,6 +383,12 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
             </Field>
           </div>
           <p className="-mt-3 text-[12px] text-fg-3">{t("social.follow.limitsNote")}</p>
+          <div data-testid="copy-auto-sl">
+            <Field label={t("social.autoSl.label")} hint={t("common.optional")} error={autoSlErr}>
+              <Input type="number" inputMode="decimal" min={1} max={5000} step={1} placeholder={t("social.autoSl.off")} value={autoSl.raw} onChange={(e) => autoSl.setRaw(e.target.value)} leading={<Target />} trailing={t("social.autoSl.pips")} inputClassName="k-num" />
+            </Field>
+            <p className="mt-1.5 text-[12px] leading-snug text-fg-3">{t("social.autoSl.hint")}</p>
+          </div>
           <div>
             <div className="mb-2 flex items-center justify-between text-[12.5px] font-medium text-fg-2">
               {t("social.follow.excludeSymbols")}
@@ -405,6 +440,7 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
             {t("social.follow.amountNote", { amount: alloc > 0 ? usd(alloc) : t("social.follow.theAmount") })}
           </InfoBox>
           {alloc > 0 && <SizingExample mode={mode} val={val} alloc={alloc} masterEq={masterEq} maxLot={maxLot.value} symbol={exampleSymbol} />}
+          {alloc > 0 && !allocErr && <RiskPreviewBox masterId={m.id} allocation={alloc} equityStop={equityStop.value} maxDdPct={ddOn ? dd : null} mode={mode} value={val} invite={inviteCode} examples={false} />}
         </div>
       )}
 
@@ -421,10 +457,12 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
               [t("social.follow.ddStop"), ddOn ? t("social.follow.fromPeakEquity", { dd }) : t("common.off")],
               [t("social.equityStop"), equityStop.value !== null ? usd(equityStop.value) : t("common.off")],
               [t("social.maxLot"), maxLot.value !== null ? t("social.lotsValue", { lots: maxLot.value.toFixed(2) }) : t("social.noCap")],
+              [t("social.autoSl.label"), autoSl.value !== null ? t("social.autoSl.value", { pips: autoSl.value }) : t("common.off")],
               [t("social.follow.excludedSymbols"), excluded.length ? excluded.join(", ") : t("common.none")],
               [t("social.performanceFee"), t("social.follow.feeTerms", { fee: m.perfFeePct, period: PERIOD_LABEL[m.feePeriod].toLowerCase() })],
             ]}
           />
+          <RiskPreviewBox masterId={m.id} allocation={alloc} equityStop={equityStop.value} maxDdPct={ddOn ? dd : null} mode={mode} value={val} invite={inviteCode} />
           <div className="rounded-[16px] border border-line bg-surface-2 px-4 py-3" data-testid="copy-rules">
             <div className="mb-2 text-[13px] font-medium text-fg">{t("social.follow.rules.title")}</div>
             <ul className="space-y-1.5 text-[12.5px] leading-snug text-fg-2">

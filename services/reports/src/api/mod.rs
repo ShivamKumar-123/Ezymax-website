@@ -27,6 +27,8 @@ pub fn router(app: App) -> Router {
         .route("/v1/me/analytics", get(client::analytics))
         .route("/v1/me/accounts/{login}/months", get(client::months))
         .route("/v1/me/accounts/{login}/statement", get(client::statement))
+        .route("/v1/me/accounts/{login}/history.zip", get(client::history_zip))
+        .route("/v1/internal/accounts/{login}/final-statement", post(client::final_statement))
         .route("/v1/admin/status", get(admin::status))
         .route("/v1/admin/pnl", get(admin::pnl))
         .route("/v1/admin/deposits", get(admin::deposits))

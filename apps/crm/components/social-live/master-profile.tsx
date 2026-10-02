@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { ArrowLeft, Building2, CalendarClock, Clock, Copy as CopyIcon, Landmark, Lock, Snowflake, Users } from "lucide-react";
+import { useParams, useSearchParams } from "next/navigation";
+import { ArrowLeft, Building2, CalendarClock, Clock, Copy as CopyIcon, Landmark, Link2, Lock, Snowflake, UserX, Users } from "lucide-react";
 import {
   Avatar,
   Button,
@@ -29,7 +29,7 @@ import {
 } from "@kalks/ui";
 import { useFormat, useT } from "@kalks/i18n/react";
 import { fmtDate, fmtPrice, serverTime } from "@/components/trading/api";
-import { PERIOD_LABEL, compactUsd, formatAge, nav4, pct, riskLabel, usd, useSocial, type MasterProfile } from "./api";
+import { INVITE_RE, PERIOD_LABEL, compactUsd, formatAge, nav4, pct, riskLabel, usd, useSocial, type MasterProfile } from "./api";
 import { HouseBadge, InfoBox, ProgramTags, RiskBadge, SocialError } from "./bits";
 import { FollowDialog } from "./follow-dialog";
 import { InvestDialog } from "./invest-dialog";
@@ -340,7 +340,10 @@ export function LiveMasterProfilePage() {
   const fmt = useFormat();
   const { id } = useParams<{ id: string }>();
   const valid = /^\d{1,12}$/.test(id ?? "");
-  const { data: p, error, reload } = useSocial<MasterProfile>(valid ? `masters/${id}` : null, 60000);
+  // A11: an invite-only master opens with its private-link code (?invite=…); the code also goes with the follow request
+  const rawInvite = useSearchParams().get("invite")?.trim() ?? "";
+  const invite = INVITE_RE.test(rawInvite) ? rawInvite : null;
+  const { data: p, error, reload } = useSocial<MasterProfile>(valid ? `masters/${id}${invite ? `?invite=${encodeURIComponent(invite)}` : ""}` : null, 60000);
   const [copy, setCopy] = React.useState(false);
   const [invest, setInvest] = React.useState(false);
 
@@ -392,7 +395,8 @@ export function LiveMasterProfilePage() {
 
   const m = p.master;
   const s = m.stats;
-  const canCopy = m.program !== "pamm" && m.status === "approved" && !m.frozen && !(m.house && m.hidden);
+  const accepting = m.acceptingNew !== false;
+  const canCopy = m.program !== "pamm" && m.status === "approved" && !m.frozen && !(m.house && m.hidden) && accepting;
   const canInvest = !!m.fund && m.program !== "copy" && m.fund.status === "active";
 
   return (
@@ -415,6 +419,11 @@ export function LiveMasterProfilePage() {
               {m.frozen && (
                 <Chip tone="down" size="sm">
                   <Snowflake className="size-3" /> {t("social.profile.frozen")}
+                </Chip>
+              )}
+              {m.inviteOnly && (
+                <Chip tone="gold" size="sm">
+                  <Link2 className="size-3" /> {t("social.inviteOnly")}
                 </Chip>
               )}
             </div>
@@ -466,8 +475,14 @@ export function LiveMasterProfilePage() {
                 </Button>
               )}
             </div>
+            {m.program !== "pamm" && !accepting && (
+              <div className="flex items-center gap-1.5 text-[12.5px] font-medium text-warn" data-testid="copy-not-accepting">
+                <UserX className="size-3.5" /> {t("social.notAccepting")}
+              </div>
+            )}
             <div className="text-[12px] text-fg-3">
               {t("social.profile.feeLine", { fee: p.terms.perfFeePct, min: usd(p.terms.minAllocation, 0) })}
+              {typeof m.maxFollowers === "number" && accepting ? ` · ${t("social.profile.spotsLeft", { count: Math.max(0, m.maxFollowers - s.followers) })}` : ""}
             </div>
           </div>
         </div>
@@ -505,7 +520,7 @@ export function LiveMasterProfilePage() {
       </InfoBox>
 
       {/* terms carry the effective minimum (the broker's floor or the master's, whichever is higher) */}
-      <FollowDialog master={{ ...m, minAllocation: p.terms.minAllocation }} open={copy} onOpenChange={setCopy} suggested={p.symbols.map((x) => x.symbol)} />
+      <FollowDialog master={{ ...m, minAllocation: p.terms.minAllocation }} open={copy} onOpenChange={setCopy} suggested={p.symbols.map((x) => x.symbol)} inviteCode={invite} onDone={reload} />
       <InvestDialog fundId={m.fund?.id ?? null} open={invest} onOpenChange={setInvest} />
     </div>
   );

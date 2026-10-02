@@ -148,6 +148,7 @@ impl Social {
             catch_up,
             master_equity_usd: c.equity_usd,
             mam: None,
+            auto_sl_pips: s.auto_sl_pips,
         };
         let flag = self.flag(s.id);
         let at = c.at;
@@ -169,14 +170,18 @@ impl Social {
             Ok(_) => std::mem::take(&mut *sink.lock().unwrap()),
             Err(e) => {
                 tracing::error!(sub = s.id, login = s.login, error = ?e, "mirroring failed");
-                vec![(c.first_version, LogEntry { action: "mirror", master_ticket: None, follower_ticket: None, volume: None, status: "failed", message: format!("{e:?}") })]
+                vec![(c.first_version, LogEntry::new("mirror", None, "failed", format!("{e:?}")))]
             }
         };
-        for (v, e) in entries {
+        for (v, e) in &entries {
+            let v = *v;
             if e.status != "done" {
                 tracing::info!(sub = s.id, action = e.action, status = e.status, message = %e.message, "copy step");
             }
-            let r = sqlx::query("INSERT INTO copy_log (tenant_id, sub_id, master_login, master_version, action, master_ticket, follower_ticket, volume, status, message) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)")
+            let r = sqlx::query(
+                "INSERT INTO copy_log (tenant_id, sub_id, master_login, master_version, action, master_ticket, follower_ticket, volume, status, message, master_price, follower_price, slippage_pips, delay_ms)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)",
+            )
                 .bind(s.tenant_id)
                 .bind(s.id)
                 .bind(c.login)
@@ -187,12 +192,18 @@ impl Social {
                 .bind(e.volume)
                 .bind(e.status)
                 .bind(&e.message)
+                .bind(e.master_price)
+                .bind(e.follower_price)
+                .bind(e.slippage_pips)
+                .bind(e.delay_ms)
                 .execute(&self.pool)
                 .await;
             if let Err(err) = r {
                 tracing::warn!(error = %err, "copy log write failed");
             }
         }
+        // A7: copier alerts (opened / closed in-app; skipped with the reason by email too)
+        self.alert_steps(s, master, &entries).await;
     }
 
     /* ---------------- subscription lifecycle ---------------- */
@@ -362,8 +373,9 @@ impl Social {
             }
             if let Some(reason) = breach {
                 tracing::warn!(sub = s.id, login = s.login, reason, equity = %b.equity, "follower protection hit: stopping the subscription");
-                if let Err(e) = self.stop_sub(s.id, reason, true, false).await {
-                    tracing::error!(sub = s.id, error = %e, "protective stop failed");
+                match self.stop_sub(s.id, reason, true, false).await {
+                    Ok(_) => self.alert_protection(&s, reason, b.equity).await,
+                    Err(e) => tracing::error!(sub = s.id, error = %e, "protective stop failed"),
                 }
             }
         }
@@ -387,6 +399,8 @@ impl Social {
             n += 1;
             let now = Utc::now();
             self.run_due(now, false).await;
+            // A8: copies whose new terms were not accepted in time pause
+            self.pause_expired_terms(now).await;
             if n % 30 == 1 {
                 let w = self.snapshot_all().await;
                 tracing::debug!(written = w, "social snapshots");
@@ -472,14 +486,51 @@ impl Social {
 
     /// Recent copy log of a subscription.
     pub async fn copy_log(&self, sub: i64, limit: i64) -> Vec<Value> {
-        let rows = sqlx::query("SELECT at, action, master_ticket, follower_ticket, volume, status, message FROM copy_log WHERE sub_id = $1 ORDER BY id DESC LIMIT $2").bind(sub).bind(limit).fetch_all(&self.pool).await.unwrap_or_default();
+        let rows = sqlx::query("SELECT at, action, master_ticket, follower_ticket, volume, status, message, master_price, follower_price, slippage_pips, delay_ms FROM copy_log WHERE sub_id = $1 ORDER BY id DESC LIMIT $2")
+            .bind(sub)
+            .bind(limit)
+            .fetch_all(&self.pool)
+            .await
+            .unwrap_or_default();
         rows.iter()
             .map(|r| {
                 json!({"at": r.get::<DateTime<Utc>, _>("at"), "action": r.get::<String, _>("action"), "masterTicket": r.get::<Option<i64>, _>("master_ticket"),
                        "followerTicket": r.get::<Option<i64>, _>("follower_ticket"), "volume": crate::money::num_opt(r.get::<Option<D>, _>("volume")),
-                       "status": r.get::<String, _>("status"), "message": r.get::<String, _>("message")})
+                       "status": r.get::<String, _>("status"), "message": r.get::<String, _>("message"),
+                       "masterPrice": crate::money::num_opt(r.get::<Option<D>, _>("master_price")), "followerPrice": crate::money::num_opt(r.get::<Option<D>, _>("follower_price")),
+                       "slippagePips": crate::money::num_opt(r.get::<Option<D>, _>("slippage_pips")), "delayMs": r.get::<Option<i64>, _>("delay_ms")})
             })
             .collect()
+    }
+
+    /// A10 execution report of a subscription: copied opens / closes with the master's and the follower's price,
+    /// slippage (pips, positive = worse for the follower) and delay, plus averages.
+    pub async fn execution_report(&self, sub: i64, limit: i64) -> Value {
+        let rows = sqlx::query(
+            "SELECT at, action, master_ticket, follower_ticket, volume, master_price, follower_price, slippage_pips, delay_ms FROM copy_log
+             WHERE sub_id = $1 AND status = 'done' AND master_price IS NOT NULL ORDER BY id DESC LIMIT $2",
+        )
+        .bind(sub)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .unwrap_or_default();
+        let items: Vec<Value> = rows
+            .iter()
+            .map(|r| {
+                json!({"at": r.get::<DateTime<Utc>, _>("at"), "action": r.get::<String, _>("action"), "masterTicket": r.get::<Option<i64>, _>("master_ticket"),
+                       "followerTicket": r.get::<Option<i64>, _>("follower_ticket"), "volume": crate::money::num_opt(r.get::<Option<D>, _>("volume")),
+                       "masterPrice": crate::money::num_opt(r.get::<Option<D>, _>("master_price")), "followerPrice": crate::money::num_opt(r.get::<Option<D>, _>("follower_price")),
+                       "slippagePips": crate::money::num_opt(r.get::<Option<D>, _>("slippage_pips")), "delayMs": r.get::<Option<i64>, _>("delay_ms")})
+            })
+            .collect();
+        let slips: Vec<D> = rows.iter().filter_map(|r| r.get::<Option<D>, _>("slippage_pips")).collect();
+        let delays: Vec<i64> = rows.iter().filter_map(|r| r.get::<Option<i64>, _>("delay_ms")).collect();
+        let avg_slip = (!slips.is_empty()).then(|| crate::money::rdp(slips.iter().copied().sum::<D>() / D::from(slips.len() as i64), 2));
+        let avg_delay = (!delays.is_empty()).then(|| delays.iter().sum::<i64>() / delays.len() as i64);
+        let max_delay = delays.iter().max().copied();
+        json!({"items": items, "summary": {"trades": items.len(), "avgSlippagePips": crate::money::num_opt(avg_slip), "avgDelayMs": avg_delay, "maxDelayMs": max_delay,
+                                             "worstSlippagePips": crate::money::num_opt(slips.iter().copied().max())}})
     }
 
     /// Flows (USD) booked on `login` inside [from, to): deposits − withdrawals (and house capital on house accounts).

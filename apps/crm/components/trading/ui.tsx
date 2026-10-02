@@ -2,13 +2,15 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowDownToLine, CandlestickChart, Check, KeyRound, Loader2, MoreHorizontal, PencilLine, RefreshCcw, Gauge as GaugeIcon, Trash2, Users, Wallet } from "lucide-react";
+import { ArrowDownToLine, ArrowLeftRight, CandlestickChart, Check, Coins, KeyRound, Layers, Loader2, Lock, MoreHorizontal, PencilLine, RefreshCcw, Gauge as GaugeIcon, Star, StarOff, Trash2, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, CopyButton, Dialog, IconButton, Menu, Money, cn, type ButtonProps } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
 import { useReadOnly } from "@/components/session";
 import { STATUS_LABEL, curOf, errorToast, fmtLevel, levelTone, openTerminal, serverOf, tradingApi, type EngineAccount } from "./api";
 import { DeleteAccountDialog, FlavorChip, RenameDialog, accountFlavor, copyingName } from "./archive";
+import { CloseAccountDialog } from "./closure";
+import { ChangeTypeDialog, DefaultStar, DemoBalanceDialog, TransferBetweenDialog, setDefaultAccount } from "./extras";
 
 /** Prop-challenge accounts live in engine groups named prop*: simulated capital that is never funded from the
  * wallet (the wallet refuses transfers to them) and never counted in the client's own live equity. */
@@ -175,8 +177,23 @@ export function AccountActions({ a, onChanged }: { a: EngineAccount; onChanged?:
   const t = useT();
   const [renaming, setRenaming] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [closing, setClosing] = React.useState(false);
+  const [typing, setTyping] = React.useState(false);
+  const [moving, setMoving] = React.useState(false);
+  const [demoBal, setDemoBal] = React.useState(false);
   // prop-challenge accounts are opened and closed by the prop service, not by the client
   const prop = isPropAccount(a);
+  const live = a.type === "live";
+  const special = prop || accountFlavor(a) !== null;
+  const star = async () => {
+    try {
+      await setDefaultAccount(a.isDefault ? null : a.login);
+      toast.success(a.isDefault ? t("accounts.default.removed") : t("accounts.default.set"), { description: `#${a.login}` });
+      onChanged?.();
+    } catch (e) {
+      errorToast(t("accounts.default.failed"), e);
+    }
+  };
   return (
     <>
       <Menu
@@ -187,15 +204,30 @@ export function AccountActions({ a, onChanged }: { a: EngineAccount; onChanged?:
         }
         items={[
           { label: t("accounts.menu.details"), icon: <GaugeIcon />, href: `/accounts/${a.login}` },
+          { label: a.isDefault ? t("accounts.default.unset") : t("accounts.default.makeDefault"), icon: a.isDefault ? <StarOff /> : <Star />, onSelect: () => void star() },
           { label: t("accounts.menu.changeLeverage"), icon: <GaugeIcon />, href: `/accounts/${a.login}?tab=settings` },
+          ...(special ? [] : [{ label: t("accounts.type.menu"), icon: <Layers />, onSelect: () => setTyping(true) }]),
+          ...(live && !prop ? [{ label: t("accounts.between.menu"), icon: <ArrowLeftRight />, onSelect: () => setMoving(true) }] : []),
+          ...(!live ? [{ label: t("accounts.demoBalance.menu"), icon: <Coins />, onSelect: () => setDemoBal(true) }] : []),
           { label: t("accounts.menu.passwords"), icon: <KeyRound />, href: `/accounts/${a.login}?tab=credentials` },
           { label: t("accounts.menu.statements"), icon: <ArrowDownToLine />, href: `/accounts/${a.login}?tab=history` },
+          { label: t("accounts.history.zip"), icon: <ArrowDownToLine />, onSelect: () => window.location.assign(`/api/trading/accounts/${a.login}/history-zip`) },
           { label: t("accounts.menu.rename"), icon: <PencilLine />, onSelect: () => setRenaming(true) },
-          ...(prop ? [] : (["sep", { label: t("accounts.menu.delete"), icon: <Trash2 />, danger: true, onSelect: () => setDeleting(true) }] as const)),
+          ...(prop
+            ? []
+            : ([
+                "sep",
+                { label: t("accounts.menu.delete"), icon: <Trash2 />, danger: true, onSelect: () => setDeleting(true) },
+                ...(live ? [{ label: t("accounts.close.menu"), icon: <Lock />, danger: true, onSelect: () => setClosing(true) }] : []),
+              ] as const)),
         ]}
       />
       {renaming && <RenameDialog a={a} open={renaming} onOpenChange={setRenaming} onDone={onChanged} />}
       {deleting && <DeleteAccountDialog a={a} open={deleting} onOpenChange={setDeleting} onDone={onChanged} />}
+      {closing && <CloseAccountDialog a={a} open={closing} onOpenChange={setClosing} onDone={onChanged} />}
+      {typing && <ChangeTypeDialog a={a} open={typing} onOpenChange={setTyping} onDone={onChanged} />}
+      {moving && <TransferBetweenDialog from={a} open={moving} onOpenChange={setMoving} onDone={onChanged} />}
+      {demoBal && <DemoBalanceDialog a={a} open={demoBal} onOpenChange={setDemoBal} onDone={onChanged} />}
     </>
   );
 }
@@ -240,7 +272,18 @@ export function LiveAccountRow({ a, onChanged, compact }: { a: EngineAccount; on
             USC
           </Chip>
         )}
+        <DefaultStar a={a} />
         <StatusBadge a={a} />
+        {a.closureRequest?.status === "pending" && (
+          <Chip size="sm" tone="info">
+            {t("accounts.close.pendingChip")}
+          </Chip>
+        )}
+        {a.dormantSince && (
+          <Chip size="sm" tone="warn">
+            {t("accounts.dormant.chip")}
+          </Chip>
+        )}
         <div className="ms-auto flex items-center gap-2 text-xs text-fg-3">
           <span className="hidden font-mono sm:inline">{serverOf(a)}</span>
           <Chip size="sm">1:{a.leverage.toLocaleString("en-US")}</Chip>

@@ -21,7 +21,7 @@ use std::collections::HashMap;
 use super::math::{self, Sizing};
 use crate::engine::trade::{self, CloseMeta, DealerCtx, OrderPatch, OrderReq, PlaceResult, PositionPatch, apply_nbp, close_part, gate, market_open};
 use crate::engine::{Env, Reject, Tx, dealing, metrics};
-use crate::model::{DealEntry, DealReason, Mode, OrderStatus, Source};
+use crate::model::{DealEntry, DealReason, Mode, OrderStatus, Side, Source};
 use crate::money::{D, ZERO};
 use crate::state::{AccountState, Event};
 
@@ -45,6 +45,8 @@ pub struct MirrorCfg {
     pub master_equity_usd: D,
     /// MAM link instead of a copy subscription (`sub_id` is then the link id).
     pub mam: Option<MamCfg>,
+    /// A9: the follower's own stop loss in pips on every copied trade (the tighter of it and the master's SL).
+    pub auto_sl_pips: Option<D>,
 }
 
 /// MAM: the volume of each opening master event (by its stream version), already allocated across the
@@ -118,15 +120,50 @@ pub struct LogEntry {
     /// done | skipped | failed
     pub status: &'static str,
     pub message: String,
+    /// A10 execution report: the master's and the follower's fill price, the slippage in pips (positive = worse
+    /// for the follower) and the delay from the master's fill to the follower's (ms). Opens and closes only.
+    pub master_price: Option<D>,
+    pub follower_price: Option<D>,
+    pub slippage_pips: Option<D>,
+    pub delay_ms: Option<i64>,
 }
 
 impl LogEntry {
-    fn new(action: &'static str, master: Option<i64>, status: &'static str, message: impl Into<String>) -> Self {
-        Self { action, master_ticket: master, follower_ticket: None, volume: None, status, message: message.into() }
+    pub fn new(action: &'static str, master: Option<i64>, status: &'static str, message: impl Into<String>) -> Self {
+        Self { action, master_ticket: master, follower_ticket: None, volume: None, status, message: message.into(), master_price: None, follower_price: None, slippage_pips: None, delay_ms: None }
     }
     fn done(action: &'static str, master: i64, follower: Option<i64>, volume: Option<D>, message: impl Into<String>) -> Self {
-        Self { action, master_ticket: Some(master), follower_ticket: follower, volume, status: "done", message: message.into() }
+        Self { follower_ticket: follower, volume, ..Self::new(action, Some(master), "done", message) }
     }
+    /// Adds the execution figures of a fill: `buy` = the follower bought (an open of a buy, a close of a sell).
+    fn priced(mut self, master: D, follower: D, buy: bool, pip: D) -> Self {
+        self.master_price = Some(master);
+        self.follower_price = Some(follower);
+        if pip > ZERO {
+            let diff = if buy { follower - master } else { master - follower };
+            self.slippage_pips = Some(crate::money::rdp(diff / pip, 2));
+        }
+        self
+    }
+}
+
+/// A9: the stop loss of a copied trade entered at `price`: the master's SL, tightened by the follower's own
+/// `pips` from the entry (buy: the higher of the two; sell: the lower). Without pips the master's SL is kept.
+pub fn auto_sl(side: Side, price: D, master_sl: Option<D>, pips: Option<D>, spec: &crate::specs::Spec) -> Option<D> {
+    let Some(p) = pips.filter(|p| *p > ZERO) else { return master_sl };
+    let dist = p * spec.pip_size;
+    let own = spec.round_price(match side {
+        Side::Buy => price - dist,
+        Side::Sell => price + dist,
+    });
+    if own <= ZERO {
+        return master_sl;
+    }
+    Some(match (master_sl, side) {
+        (None, _) => own,
+        (Some(m), Side::Buy) => m.max(own),
+        (Some(m), Side::Sell) => m.min(own),
+    })
 }
 
 pub fn open_key(sub: i64, master_ticket: i64) -> String {
@@ -192,7 +229,14 @@ pub fn close_as(tx: &mut Tx, env: &Env, ticket: i64, volume: D, key: String, com
 }
 
 #[allow(clippy::too_many_arguments)]
-fn copy_open(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, key: String, master_ticket: i64, symbol: &str, side: crate::model::Side, volume: D, sl: Option<D>, tp: Option<D>, trailing: Option<i64>) -> LogEntry {
+fn copy_open(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, key: String, master_ticket: i64, master_price: Option<D>, symbol: &str, side: Side, volume: D, sl: Option<D>, tp: Option<D>, trailing: Option<i64>) -> LogEntry {
+    let spec = env.spec(symbol).ok().cloned();
+    let quote = env.live_quote(&tx.st.account, symbol).ok().map(|q| q.open_price(side));
+    // A9: the follower's own stop loss, from the price the copy is about to fill at
+    let sl = match (&spec, quote) {
+        (Some(sp), Some(px)) if cfg.auto_sl_pips.is_some() => auto_sl(side, px, sl, cfg.auto_sl_pips, sp),
+        _ => sl,
+    };
     let mut req = OrderReq::market(symbol, side, volume);
     req.sl = sl;
     req.tp = tp;
@@ -210,21 +254,36 @@ fn copy_open(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, key: String, master_ticket
         other => (other, String::new()),
     };
     match res {
-        Ok(PlaceResult::Filled { position_ticket, price, .. }) => LogEntry::done("open", master_ticket, position_ticket, Some(volume), format!("{} {} {symbol} at {}{note}", side.as_str(), volume.normalize(), price.normalize())),
+        Ok(PlaceResult::Filled { position_ticket, price, .. }) => {
+            let e = LogEntry::done("open", master_ticket, position_ticket, Some(volume), format!("{} {} {symbol} at {}{note}", side.as_str(), volume.normalize(), price.normalize()));
+            match (master_price, &spec) {
+                (Some(mp), Some(sp)) => e.priced(mp, price, side == Side::Buy, sp.pip_size),
+                _ => e,
+            }
+        }
         Ok(PlaceResult::Duplicate { ticket }) => LogEntry { follower_ticket: Some(ticket), ..LogEntry::new("open", Some(master_ticket), "skipped", "already copied") },
         Ok(PlaceResult::Pending { .. }) => LogEntry::new("open", Some(master_ticket), "failed", "unexpected pending result"),
         Err(e) => LogEntry { volume: Some(volume), ..LogEntry::new("open", Some(master_ticket), "failed", format!("{}: {}", e.code, e.message)) },
     }
 }
 
-fn close_linked(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, f: i64, volume: D, key: String, master_ticket: i64, action: &'static str) -> LogEntry {
+#[allow(clippy::too_many_arguments)]
+fn close_linked(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, f: i64, volume: D, key: String, master_ticket: i64, master_price: Option<D>, action: &'static str) -> LogEntry {
     if tx.st.client_ids.contains_key(&key) {
         return LogEntry { follower_ticket: Some(f), ..LogEntry::new(action, Some(master_ticket), "skipped", "already done") };
     }
     let comment = format!("{} #{master_ticket} {}", cfg.label(), cfg.master).chars().take(64).collect();
     let source = cfg.source();
+    // the price close_as fills at (same quote, same transaction)
+    let fill = tx.st.positions.get(&f).and_then(|p| env.live_quote(&tx.st.account, &p.symbol).ok().map(|q| (q.close_price(p.side), p.side, env.spec(&p.symbol).map(|s| s.pip_size).unwrap_or(ZERO))));
     match attempt(tx, |t| close_as(t, env, f, volume, key, comment, source)) {
-        Ok((_, profit)) => LogEntry::done(action, master_ticket, Some(f), Some(volume), format!("profit {}", profit.normalize())),
+        Ok((_, profit)) => {
+            let e = LogEntry::done(action, master_ticket, Some(f), Some(volume), format!("profit {}", profit.normalize()));
+            match (master_price, fill) {
+                (Some(mp), Some((px, side, pip))) => e.priced(mp, px, side == Side::Sell, pip),
+                _ => e,
+            }
+        }
         Err(e) => LogEntry { follower_ticket: Some(f), volume: Some(volume), ..LogEntry::new(action, Some(master_ticket), "failed", format!("{}: {}", e.code, e.message)) },
     }
 }
@@ -273,7 +332,7 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
             match cfg.open_size(version, p.volume, fe, &spec) {
                 Err(why) => out.push(LogEntry::new("open", Some(p.ticket), "skipped", why)),
                 Ok(v) => {
-                    let e = copy_open(tx, env, cfg, k.open(sub, p.ticket), p.ticket, &p.symbol, p.side, v, p.sl, p.tp, p.trailing.as_ref().map(|t| t.distance_points));
+                    let e = copy_open(tx, env, cfg, k.open(sub, p.ticket), p.ticket, Some(d.price), &p.symbol, p.side, v, p.sl, p.tp, p.trailing.as_ref().map(|t| t.distance_points));
                     out.push(e);
                 }
             }
@@ -305,7 +364,7 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
                     // (MAM: the allocation of this event covers the added volume)
                     match cfg.open_size(version, np.volume, fe, &spec) {
                         Err(why) => out.push(LogEntry::new("add", Some(np.ticket), "skipped", why)),
-                        Ok(v) => out.push(copy_open(tx, env, cfg, k.open(sub, np.ticket), np.ticket, &np.symbol, np.side, v, np.sl, np.tp, None)),
+                        Ok(v) => out.push(copy_open(tx, env, cfg, k.open(sub, np.ticket), np.ticket, Some(d.price), &np.symbol, np.side, v, np.sl, np.tp, None)),
                     }
                 }
                 Some(f) => {
@@ -342,12 +401,17 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
             let Some(f) = k.linked_position(&tx.st, sub, np.ticket) else { return out };
             let fp = &tx.st.positions[&f];
             let tr = np.trailing.as_ref().map(|t| t.distance_points);
-            if fp.sl == np.sl && fp.tp == np.tp && fp.trailing.as_ref().map(|t| t.distance_points) == tr {
+            // A9: the follower's own SL (from its entry) still caps the master's new SL
+            let sl = match env.spec(&fp.symbol) {
+                Ok(sp) if cfg.auto_sl_pips.is_some() => auto_sl(fp.side, fp.open_price, np.sl, cfg.auto_sl_pips, sp),
+                _ => np.sl,
+            };
+            if fp.sl == sl && fp.tp == np.tp && fp.trailing.as_ref().map(|t| t.distance_points) == tr {
                 return out;
             }
-            let patch = PositionPatch { sl: Some(np.sl), tp: Some(np.tp), trailing_points: Some(tr) };
+            let patch = PositionPatch { sl: Some(sl), tp: Some(np.tp), trailing_points: Some(tr) };
             out.push(match attempt(tx, |t| trade::modify_position(t, env, f, patch, None)) {
-                Ok(_) => LogEntry::done("modify", np.ticket, Some(f), None, format!("SL {} TP {}", np.sl.map(|v| v.normalize().to_string()).unwrap_or("–".into()), np.tp.map(|v| v.normalize().to_string()).unwrap_or("–".into()))),
+                Ok(_) => LogEntry::done("modify", np.ticket, Some(f), None, format!("SL {} TP {}", sl.map(|v| v.normalize().to_string()).unwrap_or("–".into()), np.tp.map(|v| v.normalize().to_string()).unwrap_or("–".into()))),
                 Err(e) if e.code == "no_change" => return out,
                 Err(e) => LogEntry { follower_ticket: Some(f), ..LogEntry::new("modify", Some(np.ticket), "failed", e.message) },
             });
@@ -364,13 +428,13 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
             };
             match vol {
                 None => out.push(LogEntry { follower_ticket: Some(f), ..LogEntry::new("partial_close", Some(d.position_ticket), "skipped", "the closed share rounds to less than one lot step") }),
-                Some(v) => out.push(close_linked(tx, env, cfg, f, v, k.step(sub, version), d.position_ticket, if v >= fv { "close" } else { action })),
+                Some(v) => out.push(close_linked(tx, env, cfg, f, v, k.step(sub, version), d.position_ticket, Some(d.price), if v >= fv { "close" } else { action })),
             }
         }
         Event::PositionRemoved { ticket, .. } => {
             if let Some(f) = k.linked_position(&tx.st, sub, *ticket) {
                 let fv = tx.st.positions[&f].volume;
-                out.push(close_linked(tx, env, cfg, f, fv, k.step(sub, version), *ticket, "close"));
+                out.push(close_linked(tx, env, cfg, f, fv, k.step(sub, version), *ticket, None, "close"));
             }
         }
 
@@ -408,7 +472,7 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
                 volume: v,
                 price: Some(o.price),
                 stop_limit: o.stop_limit,
-                sl: o.sl,
+                sl: auto_sl(o.side, o.price, o.sl, cfg.auto_sl_pips, &spec),
                 tp: o.tp,
                 trailing_points: o.trailing.as_ref().map(|t| t.distance_points),
                 expiry: o.expiry,
@@ -445,11 +509,12 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
             } else {
                 math::open_volume(&cfg.sizing, o.volume, cfg.master_equity_usd, equity_usd(tx, env), &spec, cfg.max_lot).filter(|v| *v != fo.volume)
             };
+            let osl = auto_sl(o.side, o.price, o.sl, cfg.auto_sl_pips, &spec);
             let patch = OrderPatch {
                 price: (o.price != fo.price).then_some(o.price),
                 stop_limit: o.stop_limit.filter(|l| Some(*l) != fo.stop_limit),
                 volume,
-                sl: (o.sl != fo.sl).then_some(o.sl),
+                sl: (osl != fo.sl).then_some(osl),
                 tp: (o.tp != fo.tp).then_some(o.tp),
                 trailing_points: (o.trailing != fo.trailing).then(|| o.trailing.as_ref().map(|t| t.distance_points)),
                 expiry: (o.expiry != fo.expiry || o.expiry_at != fo.expiry_at).then_some(o.expiry),
@@ -472,10 +537,14 @@ pub fn mirror(tx: &mut Tx, env: &Env, cfg: &MirrorCfg, version: i64, at: DateTim
             {
                 // the copy filled on its own but the master's order never did: close it to stay in line
                 let fv = tx.st.positions[&f].volume;
-                out.push(close_linked(tx, env, cfg, f, fv, k.step(sub, version), *ticket, "close"));
+                out.push(close_linked(tx, env, cfg, f, fv, k.step(sub, version), *ticket, None, "close"));
             }
         }
         _ => {}
+    }
+    let delay = (env.now - at).num_milliseconds().max(0);
+    for e in out.iter_mut().filter(|e| e.status == "done" && e.master_price.is_some()) {
+        e.delay_ms = Some(delay);
     }
     out
 }

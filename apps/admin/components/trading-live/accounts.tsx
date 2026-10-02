@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Archive, ArchiveRestore, ArrowLeftRight, Ban, CandlestickChart, CirclePause, CirclePlay, Coins, Gauge as GaugeIcon, Gift, Layers, List, MoreHorizontal, RefreshCw, Search, ShieldAlert, SlidersHorizontal, UserRound, Wallet } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeftRight, Ban, CandlestickChart, CirclePause, CirclePlay, Coins, Gauge as GaugeIcon, Gift, Layers, List, Lock, LockOpen, MoreHorizontal, RefreshCw, Search, ShieldAlert, SlidersHorizontal, UserRound, Wallet } from "lucide-react";
 import { Button, Card, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, Menu, PageHeader, Reveal, Segmented, SymbolCell, Tabs, Toggle, cn, formatNumber, type Column } from "@kalks/ui";
 import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
-import { useCan } from "@/components/staff-session";
+import { useCan, useStaff } from "@/components/staff-session";
+import { BulkDialog, BulkMenu, CloseAccountDialog, ReopenAccountDialog, type BulkKind } from "./account-ops";
 import { MiniClient, SideChip, fmtPrice } from "@/components/trading/shared";
 import { BookChip, DeskDialog, MetaTile } from "@/components/trading-desk/kit";
 import { CreateTradeDrawer } from "@/components/trading-desk/create-trade";
@@ -76,7 +77,12 @@ export function KindChip({ group }: { group: string }) {
 /** Archived / closed accounts are retired: no trading, no generic status change; archived ones can be restored. */
 const retired = (a: LiveAccount) => LIFECYCLE_STATUSES.includes(a.status);
 
-type Act = { k: "adjust" | "funds" | "status" | "group" | "leverage" | "trade" | "controls" | "archive" | "restore"; a: LiveAccount } | { k: "route"; a: LiveAccount; book: Book | null } | null;
+type Act = { k: "adjust" | "funds" | "status" | "group" | "leverage" | "trade" | "controls" | "archive" | "restore" | "close" | "reopen"; a: LiveAccount } | { k: "route"; a: LiveAccount; book: Book | null } | null;
+
+/** Lifecycle extras the engine adds to account rows (closure request, dormancy, default star). */
+type Extras = { dormantSince?: string | null; closureRequest?: { id: number; status: string } | null; lastActivityAt?: string | null; anonymised?: boolean };
+const ext = (a: LiveAccount) => a as LiveAccount & Extras;
+const isSuper = (role: string) => role === "super_admin" || role === "platform_owner";
 
 /* ------------------------------------------------------------------ */
 /* Page                                                                */
@@ -90,11 +96,13 @@ export function LiveAccountsPage() {
   const [status, setStatus] = React.useState<string>("all");
   const [group, setGroup] = React.useState<string>("all");
   const [kind, setKind] = React.useState<"all" | AccountKind>("all");
+  const [life, setLife] = React.useState<"all" | "dormant">("all");
+  const [bulk, setBulk] = React.useState<BulkKind | null>(null);
   const [page, setPage] = React.useState(1);
   const [open, setOpen] = React.useState<string | null>(null);
   const [act, setAct] = React.useState<Act>(null);
   const dq = useDebounced(q.trim(), 300);
-  React.useEffect(() => setPage(1), [dq, type, status, group, kind]);
+  React.useEffect(() => setPage(1), [dq, type, status, group, kind, life]);
   React.useEffect(() => {
     const l = new URLSearchParams(window.location.search).get("login");
     if (l) setOpen(l);
@@ -102,7 +110,7 @@ export function LiveAccountsPage() {
 
   // the engine has no product-kind filter: with a kind selected, the latest KIND_SCAN accounts are fetched and filtered here
   const byKind = kind !== "all";
-  const { data, error, loading, reload } = useApi<AccountsPage>(`/api/trading/admin/accounts${qs({ q: dq, type, status, group, page: byKind ? 1 : page, limit: byKind ? KIND_SCAN : PER })}`, { refreshMs: byKind ? 15_000 : 5000 });
+  const { data, error, loading, reload } = useApi<AccountsPage>(`/api/trading/admin/accounts${qs({ q: dq, type, status, group, dormant: life === "dormant" ? true : undefined, page: byKind ? 1 : page, limit: byKind ? KIND_SCAN : PER })}`, { refreshMs: byKind ? 15_000 : 5000 });
   const sum = useApi<Summary>("/api/trading/summary", { refreshMs: 15_000 });
   const fetched = React.useMemo(() => (data?.items ?? []).map(normAccount), [data]);
   React.useEffect(() => upsertAccounts(fetched), [fetched]);
@@ -141,6 +149,9 @@ export function LiveAccountsPage() {
           {r.controls.tradingDisabled && <Chip size="sm" tone="down">Dealer: off</Chip>}
           {r.controls.closeOnly && <Chip size="sm" tone="warn">Dealer: close-only</Chip>}
           {r.marginCall && <Chip size="sm" tone="warn">Margin call</Chip>}
+          {ext(r).dormantSince && <Chip size="sm" tone="warn">Dormant</Chip>}
+          {ext(r).closureRequest?.status === "pending" && <Chip size="sm" tone="info">Closure pending</Chip>}
+          {ext(r).anonymised && <Chip size="sm">Anonymised</Chip>}
         </span>
       ),
     },
@@ -157,16 +168,20 @@ export function LiveAccountsPage() {
     },
   ];
 
-  const filtered = !!dq || type !== "all" || status !== "all" || group !== "all" || byKind;
+  const filtered = !!dq || type !== "all" || status !== "all" || group !== "all" || byKind || life !== "all";
+  const filters = { q: dq, type, status, group, dormant: life === "dormant" ? true : undefined };
   return (
     <div className="pb-10">
       <PageHeader
         title="Trading accounts"
         subtitle={<span className="inline-flex flex-wrap items-center gap-2">Live and demo accounts on the trading engine — balances, margin, status, group and leverage. <DeskStatusChip /></span>}
         actions={
-          <Button variant="surface" size="lg" onClick={() => (reload(), sum.reload())}>
-            <RefreshCw /> Refresh
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <BulkMenu onPick={setBulk} />
+            <Button variant="surface" size="lg" onClick={() => (reload(), sum.reload())}>
+              <RefreshCw /> Refresh
+            </Button>
+          </div>
         }
       />
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
@@ -186,8 +201,9 @@ export function LiveAccountsPage() {
             <FilterSelect label="Group" value={group} onChange={setGroup} options={[{ value: "all", label: "All groups" }, ...dir.groups.map((g) => ({ value: g.code, label: g.name }))]} />
             <FilterSelect label="Status" value={status} onChange={setStatus} options={[{ value: "all", label: "Any status" }, ...Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label }))]} />
             <FilterSelect label="Kind" value={kind} onChange={(v) => setKind(v as typeof kind)} options={[{ value: "all", label: "All" }, ...(["copy", "pamm", "mam", "prop", "regular"] as const).map((k) => ({ value: k, label: KIND_LABEL[k] }))]} />
+            <FilterSelect label="Activity" value={life} onChange={(v) => setLife(v as typeof life)} options={[{ value: "all", label: "Any" }, { value: "dormant", label: "Dormant only" }]} />
             {filtered && (
-              <Button size="xs" variant="ghost" onClick={() => (setQ(""), setType("all"), setStatus("all"), setGroup("all"), setKind("all"))}>
+              <Button size="xs" variant="ghost" onClick={() => (setQ(""), setType("all"), setStatus("all"), setGroup("all"), setKind("all"), setLife("all"))}>
                 Clear filters
               </Button>
             )}
@@ -219,6 +235,7 @@ export function LiveAccountsPage() {
       </Reveal>
       <AccountDrawer login={open} onClose={() => setOpen(null)} onAct={setAct} />
       <AccountActions act={act} onClose={() => setAct(null)} onDone={reload} />
+      <BulkDialog kind={bulk} filters={filters} onClose={() => setBulk(null)} onDone={reload} />
     </div>
   );
 }
@@ -228,6 +245,8 @@ function AccountMenu({ a, onOpen, onAct }: { a: LiveAccount; onOpen?: () => void
   const canCredit = useCan("finance.credit");
   const canAcc = useCan("accounts.write");
   const canDeal = useCan("dealing.write");
+  const canClose = useCan("accounts.close");
+  const superAdmin = isSuper(useStaff().role);
   const items = [
     ...(onOpen ? [{ label: "Open account", icon: <UserRound />, onSelect: onOpen }] : []),
     ...(canFunds || canCredit ? [{ label: "Balance & credit", icon: <Coins />, onSelect: () => onAct({ k: "adjust", a }) }] : []),
@@ -241,6 +260,8 @@ function AccountMenu({ a, onOpen, onAct }: { a: LiveAccount; onOpen?: () => void
         ]
       : []),
     ...(canAcc && a.status === "archived" ? [{ label: "Restore account", icon: <ArchiveRestore />, onSelect: () => onAct({ k: "restore", a }) }] : []),
+    ...(canClose && a.status !== "closed" ? [{ label: "Close permanently…", icon: <Lock />, danger: true, onSelect: () => onAct({ k: "close", a }) }] : []),
+    ...(superAdmin && a.status === "closed" ? [{ label: "Reopen account…", icon: <LockOpen />, onSelect: () => onAct({ k: "reopen", a }) }] : []),
     ...(canDeal && !retired(a)
       ? [
           "sep" as const,
@@ -391,8 +412,20 @@ function AccountButtons({ a, onAct }: { a: LiveAccount; onAct: (x: Act) => void 
   const canCredit = useCan("finance.credit");
   const canAcc = useCan("accounts.write");
   const canDeal = useCan("dealing.write");
+  const canClose = useCan("accounts.close");
+  const superAdmin = isSuper(useStaff().role);
   return (
     <div className="flex w-full flex-wrap items-center justify-end gap-2">
+      {superAdmin && a.status === "closed" && (
+        <Button size="sm" variant="gold" onClick={() => onAct({ k: "reopen", a })}>
+          <LockOpen /> Reopen…
+        </Button>
+      )}
+      {canClose && a.status !== "closed" && (
+        <Button size="sm" variant="surface" onClick={() => onAct({ k: "close", a })}>
+          <Lock /> Close permanently…
+        </Button>
+      )}
       {(canFunds || canCredit) && (
         <Button size="sm" variant="gold" onClick={() => onAct({ k: "adjust", a })}>
           <Coins /> Balance & credit
@@ -681,6 +714,9 @@ export function AccountActions({ act, onClose, onDone }: { act: Act; onClose: ()
         onConfirm={async (r) => done(await tradingWrite(`admin/accounts/${a.login}/restore`, {}, r, rest))}
         success={`${a.login} restored`}
       />
+
+      <CloseAccountDialog a={a} open={act?.k === "close"} onOpenChange={close} />
+      <ReopenAccountDialog a={a} open={act?.k === "reopen"} onOpenChange={close} />
 
       <DeskDialog
         open={act?.k === "group"}

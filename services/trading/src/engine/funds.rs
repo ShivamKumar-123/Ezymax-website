@@ -423,7 +423,7 @@ pub fn archive(tx: &mut Tx, env: &Env, by: &str, reason_code: &str, client_resto
     }
     let mut a = a0.clone();
     a.status = Status::Archived;
-    a.lifecycle = Some(Lifecycle { prior_status: a0.status, archived_at: env.now, reason_code: reason_code.to_string(), by: by.to_string(), client_restorable });
+    a.lifecycle = Some(Lifecycle { prior_status: a0.status, archived_at: env.now, reason_code: reason_code.to_string(), by: by.to_string(), client_restorable, closed_at: None });
     tx.emit(Event::AccountUpdated { account: a, change: format!("status {} → archived", a0.status.as_str()) });
     Ok(true)
 }
@@ -464,4 +464,90 @@ pub fn rename(tx: &mut Tx, name: &str) -> Result<(), Reject> {
     a.name = name.to_string();
     tx.emit(Event::AccountUpdated { account: a, change: "name".into() });
     Ok(())
+}
+
+/// Closes an account permanently (B1/B12, after the closure request was approved): status `closed`, final for the
+/// client; the login is never reused. The account must be flat with no balance left (C3); credit and bonus still
+/// on it are forfeited like on archive. An archived account keeps its archive date and the status it had before
+/// archiving (what a Super Admin reopen goes back to). Ok(false) = already closed.
+pub fn close_account(tx: &mut Tx, env: &Env, by: &str, reason_code: &str) -> Result<bool, Reject> {
+    use crate::model::{Lifecycle, Status};
+    let a0 = tx.st.account.clone();
+    if a0.status == Status::Closed {
+        return Ok(false);
+    }
+    if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() {
+        return Err(Reject::new("not_empty", "Close all positions and cancel all orders before closing the account"));
+    }
+    if r2(tx.st.balance) != ZERO {
+        return Err(Reject::new("balance_remaining", format!("The account still holds {} {}; move it out first", r2(tx.st.balance).normalize(), a0.ccy())));
+    }
+    let v = tx.st.version;
+    for (sub, house, kind, amt) in [("credit", "credit_issued", TxnKind::Credit, tx.st.credit), ("bonus", "bonus_issued", TxnKind::Bonus, tx.st.bonus)] {
+        if amt > ZERO {
+            tx.post(env, kind, format!("close:{}:{sub}:{v}", a0.login), sub, house, -amt, None, Some(reason_code.to_string()), Some(format!("{sub} forfeited on closure")));
+        }
+    }
+    let (prior, archived_at) = match (&a0.lifecycle, a0.status) {
+        (Some(l), Status::Archived) => (l.prior_status, l.archived_at),
+        _ => (a0.status, env.now),
+    };
+    let mut a = a0.clone();
+    a.status = Status::Closed;
+    a.lifecycle = Some(Lifecycle { prior_status: prior, archived_at, reason_code: reason_code.to_string(), by: by.to_string(), client_restorable: false, closed_at: Some(env.now) });
+    tx.emit(Event::AccountUpdated { account: a, change: format!("status {} → closed", a0.status.as_str()) });
+    Ok(true)
+}
+
+/// Reopens a closed account (C12, Super Admin with four-eyes) to the status it had before it was retired (an
+/// expired demo comes back active).
+pub fn reopen(tx: &mut Tx) -> Result<crate::model::Status, Reject> {
+    use crate::model::Status;
+    let a0 = tx.st.account.clone();
+    if a0.status != Status::Closed {
+        return Err(Reject::new("account_status", format!("Only closed accounts can be reopened (this one is {})", a0.status.as_str())));
+    }
+    let to = match a0.lifecycle.as_ref().map(|l| l.prior_status).unwrap_or(Status::Active) {
+        Status::Expired | Status::Archived | Status::Closed => Status::Active,
+        s => s,
+    };
+    let mut a = a0;
+    a.status = to;
+    a.lifecycle = None;
+    tx.emit(Event::AccountUpdated { account: a, change: format!("status closed → {} (reopened)", to.as_str()) });
+    Ok(to)
+}
+
+/// D8 extension: refill a demo account to a chosen balance (100 – 1 000 000 USD), counted against the same daily
+/// refill limit. Topping up books `demo_refill`; a lower target books the difference back to `demo_funding` (the
+/// client can also start over with less).
+pub fn demo_refill_to(tx: &mut Tx, env: &Env, target_usd: D) -> Result<D, Reject> {
+    let acc = tx.st.account.clone();
+    let d = acc.demo.clone().ok_or_else(|| Reject::new("not_demo", "Refill is only available on demo accounts"))?;
+    if acc.status == crate::model::Status::Expired {
+        return Err(Reject::new("account_status", "This demo account has expired"));
+    }
+    if acc.status.is_retired() {
+        return Err(Reject::new("account_status", format!("This account is {}", acc.status.as_str())));
+    }
+    let target_usd = r2(target_usd);
+    if target_usd < D::from(100) || target_usd > D::from(1_000_000) {
+        return Err(Reject::new("invalid_amount", "Choose a demo balance between 100 and 1,000,000 USD"));
+    }
+    if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() {
+        return Err(Reject::new("positions_open", "Close all positions and orders before setting a new demo balance"));
+    }
+    let day = server_date(env.now);
+    let used = if tx.st.refill_day == Some(day) { tx.st.refills } else { 0 };
+    if used >= d.refills_per_day {
+        return Err(Reject::new("refill_limit", format!("Refill limit reached ({} per day)", d.refills_per_day)));
+    }
+    let amt = r2(target_usd * acc.usd_factor() - tx.st.balance);
+    if amt.is_zero() {
+        return Err(Reject::new("refill_not_needed", "The balance is already at this amount"));
+    }
+    tx.emit(Event::RefillCounted { day });
+    let kind = if amt > ZERO { TxnKind::DemoRefill } else { TxnKind::Adjustment };
+    tx.post(env, kind, format!("demo-refill:{}:{}:{}", acc.login, day, used + 1), "balance", "demo_funding", amt, None, None, Some("Demo balance reset".into()));
+    Ok(amt)
 }

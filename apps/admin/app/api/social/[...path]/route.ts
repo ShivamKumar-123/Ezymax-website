@@ -16,6 +16,7 @@ const ID = "(\\d{1,18})";
 const ROUTES: Route[] = [
   // reads
   { method: "GET", re: /^admin\/(overview|masters|subscriptions|funds|settings|fees|audit)$/, perm: "social.read" },
+  { method: "GET", re: /^admin\/copy-dashboard$/, perm: "social.read" },
   { method: "GET", re: /^admin\/mam\/(managers|links|allocations)$/, perm: "social.read" },
   { method: "GET", re: /^leaderboard$/, perm: "social.read" },
   { method: "GET", re: new RegExp(`^masters/${ID}$`), perm: "social.read" },

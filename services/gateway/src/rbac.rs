@@ -69,6 +69,8 @@ pub const PERMS: &[PermDef] = &[
     PermDef { key: "dealing.policy", module: "dealing", action: "approve", label: "Tenant dealing policy" },
     PermDef { key: "accounts.read", module: "accounts", action: "view", label: "View trading accounts" },
     PermDef { key: "accounts.write", module: "accounts", action: "edit", label: "Status, group, leverage" },
+    PermDef { key: "accounts.close", module: "accounts", action: "create", label: "Request permanent closure of trading accounts" },
+    PermDef { key: "accounts.close.approve", module: "accounts", action: "approve", label: "Approve or reject account closures (closure queue)" },
     PermDef { key: "spreads.read", module: "config", action: "view", label: "View groups and spreads" },
     PermDef { key: "groups.write", module: "config", action: "create", label: "Create / edit account groups" },
     PermDef { key: "spreads.write", module: "config", action: "edit", label: "Edit spread markups" },
@@ -225,7 +227,7 @@ pub fn preset_perms(key: &str) -> Option<Vec<&'static str>> {
         ],
         "compliance" => vec![
             "stats.read", "clients.read", "clients.export", "clients.restrict", "clients.block", "clients.impersonate", "kyc.read", "kyc.review", "audit.read", "audit.export", "sessions.read", "spreads.read",
-            "dealing.read", "accounts.read", "finance.read", "partners.read", "social.read", "social.approve", "prop.read", "algo.read",
+            "dealing.read", "accounts.read", "accounts.close", "accounts.close.approve", "finance.read", "partners.read", "social.read", "social.approve", "prop.read", "algo.read",
             "content.read", "marketing.read", "support.read", "reports.read",
         ],
         "support" => vec![
@@ -455,6 +457,11 @@ mod tests {
         assert!(has("marketing", "content.write") && !has("marketing", "clients.read"));
         assert!(has("partner_manager", "partners.write") && !has("support", "partners.write"));
         assert!(!has("viewer", "dealing.write"));
+        // account closures (C8): admins and Compliance request and approve; dealers and support don't
+        for r in ["admin", "super_admin", "compliance"] {
+            assert!(has(r, "accounts.close") && has(r, "accounts.close.approve"), "{r}");
+        }
+        assert!(!has("dealer", "accounts.close.approve") && !has("support", "accounts.close") && !has("finance", "accounts.close"));
     }
 
     #[test]

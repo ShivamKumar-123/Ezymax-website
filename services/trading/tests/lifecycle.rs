@@ -185,3 +185,237 @@ async fn archive_restore_rename_and_replay() {
     }
     assert_eq!(replayed[&extra].account.status, Status::Archived);
 }
+
+/* ------------------------------------------------------------------ */
+/* Close permanently, the closure queue, account jobs (M2 / M7)        */
+/* ------------------------------------------------------------------ */
+
+async fn setup(tag: &str) -> Option<(AppState, Arc<QuoteBook>, sqlx::PgPool)> {
+    let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
+    let db = format!("kalks_trading_{tag}_{}", std::process::id());
+    let server = PgConnectOptions::from_str(&base).ok()?;
+    if server.clone().database("postgres").connect().await.is_err() {
+        eprintln!("SKIP: PostgreSQL not reachable at {base}");
+        return None;
+    }
+    let url = server.clone().database(&db).to_url_lossy().to_string();
+    let pool = trading::persist::connect(&url).await.expect("connect + migrate");
+    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../config");
+    let specs = Arc::new(Specs::load(&format!("{root}/instruments.json"), &format!("{root}/trading-specs.json")).unwrap());
+    let registry = Registry::default();
+    for t in trading::persist::load_registry(&pool).await.unwrap() {
+        registry.put(t);
+    }
+    let (ticket, deal, txn, live, demo) = trading::persist::max_ids(&pool).await.unwrap();
+    let quotes = Arc::new(QuoteBook::default());
+    let shared = Arc::new(Shared {
+        pool: pool.clone(),
+        registry: registry.clone(),
+        specs,
+        quotes: quotes.clone(),
+        ids: Arc::new(Ids::new(ticket, deal, txn)),
+        index: Arc::new(RwLock::new(Index::default())),
+        streams: Streams::default(),
+        stats: Arc::new(Stats::default()),
+        lp: Arc::new(NullLp),
+        max_quote_age_ms: 0,
+        restrictions: Default::default(),
+    });
+    let hub = Hub::start(shared, 2, Default::default());
+    let logins = Arc::new(LoginAlloc { live: AtomicI64::new(live), demo: AtomicI64::new(demo) });
+    let social = trading::social::Social::new(pool.clone(), hub.clone(), trading::social::wallet::WalletClient::new("", ""), logins.clone()).await.unwrap();
+    let cfg = Config {
+        bind: String::new(), database_url: url.clone(), internal_token: String::new(), session_secret: "s".repeat(40), dev_mode: true,
+        market_data_ws: String::new(), instruments_file: String::new(), specs_file: String::new(), shards: 1, max_quote_age_ms: 0, session_ttl_hours: 12,
+        json_logs: false, rollover_enabled: false, wallet_url: String::new(), wallet_token: String::new(), ib_url: String::new(), ib_token: String::new(),
+        gateway_url: String::new(), gateway_token: String::new(),
+    };
+    let st = AppState {
+        hub: hub.clone(), pool: pool.clone(), keys: Keys::new(&cfg.session_secret), cfg: Arc::new(cfg.clone()), limiter: Limiter::default(),
+        tickets: StreamTickets::default(), logins, open_lock: Arc::new(tokio::sync::Mutex::new(())), social,
+        presence: Arc::new(trading::controls::Presence::default()),
+        gateway: Arc::new(trading::controls::Gateway::new(&cfg.gateway_url, &cfg.gateway_token)),
+    };
+    Some((st, quotes, pool))
+}
+
+fn staff(st: &AppState, c: Ctx, id: &str, role: &str) -> trading::api::StaffCtx {
+    let _ = st;
+    trading::api::StaffCtx { ctx: c, staff: trading::shard::Staff { id: id.into(), name: format!("Staff {id}"), role: role.into() }, perms: None }
+}
+
+async fn open_live(st: &AppState, group: &str) -> i64 {
+    let body = serde_json::from_value(json!({"type": "live", "group": group, "password": "Passw0rd!x1", "investorPassword": "Inv3stor!x2"})).unwrap();
+    let r = accounts::open(State(st.clone()), ctx(st).await, headers(), Body(body)).await.unwrap_or_else(|e| panic!("open live: {e:?}"));
+    r.0["account"]["login"].as_i64().unwrap()
+}
+
+fn err_code(e: trading::api::ApiError) -> String {
+    match e {
+        trading::api::ApiError::Conflict { code, .. } => code.into(),
+        trading::api::ApiError::Forbidden(_) => "forbidden".into(),
+        trading::api::ApiError::Validation { field, .. } => format!("field:{field}"),
+        trading::api::ApiError::StatusData { code, .. } => code.into(),
+        trading::api::ApiError::Reject { reject, .. } => reject.code.into(),
+        other => format!("{other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn closure_queue_four_eyes_reopen_and_jobs() {
+    use trading::api::closures;
+    let Some((st, _quotes, pool)) = setup("closures").await else { return };
+    let hub = st.hub.clone();
+    let c = ctx(&st).await;
+    let live_g = c.tenant.groups.values().filter(|g| g.enabled && g.allows("live") && !g.cent && !g.code.starts_with("prop") && !["copy", "copy-netting", "pamm", "mam"].contains(&g.code.as_str())).min_by_key(|g| g.code.clone()).expect("a live group").clone();
+    let a = open_live(&st, &live_g.code).await;
+
+    // policy: four-eyes above 10 USD
+    let admin = staff(&st, ctx(&st).await, "1", "admin");
+    let _ = closures::put_policy(State(st.clone()), admin, body(json!({"demoArchiveDays": 30, "dormantDays": 180, "dormantAutoArchive": true, "closeFourEyesUsd": 10, "retentionYears": 7, "reasonCode": "ACC-01", "note": "test"}))).await.unwrap();
+
+    // 50 USD credit: the request needs two approvers; the credit is forfeited on closure
+    let op: Op = Box::new(|tx, env| trading::engine::funds::adjust(tx, env, trading::engine::funds::AdjustKind::Credit, D::from(50), "t-credit", "TEST", "credit").map(|_| Value::Null));
+    hub.exec(a, "test", None, "", "", None, op).await.unwrap();
+
+    let s0 = lifecycle::closure_status(State(st.clone()), ctx(&st).await, headers(), Path(a), q()).await.unwrap().0;
+    assert_eq!((s0["canRequest"].as_bool(), s0["request"].is_null()), (Some(true), true), "{s0}");
+    // bad survey reason, missing forfeit confirmation
+    let e = lifecycle::request_closure(State(st.clone()), ctx(&st).await, headers(), Path(a), q(), body(json!({"reasonCode": "nope"}))).await.unwrap_err();
+    assert_eq!(err_code(e), "field:reasonCode");
+    let e = lifecycle::request_closure(State(st.clone()), ctx(&st).await, headers(), Path(a), q(), body(json!({"reasonCode": "costs"}))).await.unwrap_err();
+    assert_eq!(err_code(e), "field:ackForfeit");
+    let r = lifecycle::request_closure(State(st.clone()), ctx(&st).await, headers(), Path(a), q(), body(json!({"reasonCode": "costs", "survey": {"reasons": ["platform", "bogus"], "comment": "Spreads too wide"}, "ackForfeit": true}))).await.unwrap().0;
+    assert_eq!((r["ok"].as_bool(), r["request"]["status"].as_str()), (Some(true), Some("pending")), "{r}");
+    // one open request at a time
+    let e = lifecycle::request_closure(State(st.clone()), ctx(&st).await, headers(), Path(a), q(), body(json!({"reasonCode": "costs", "ackForfeit": true}))).await.unwrap_err();
+    assert_eq!(err_code(e), "request_pending");
+    let s1 = lifecycle::closure_status(State(st.clone()), ctx(&st).await, headers(), Path(a), q()).await.unwrap().0;
+    assert_eq!(s1["canRequest"], json!(false));
+
+    let list = closures::list(State(st.clone()), staff(&st, ctx(&st).await, "7", "compliance"), Query(serde_json::from_value(json!({"status": "pending"})).unwrap())).await.unwrap().0;
+    assert_eq!(list["total"], json!(1), "{list}");
+    let item = &list["items"][0];
+    assert_eq!((item["fourEyes"].as_bool(), item["survey"]["reasons"].clone()), (Some(true), json!(["costs", "platform"])));
+    let id = item["id"].as_i64().unwrap();
+    // live checks: everything passes (flat, zero balance, wallet skipped in dev, no links, no hold)
+    let d = closures::detail(State(st.clone()), staff(&st, ctx(&st).await, "7", "compliance"), Path(id)).await.unwrap().0;
+    assert_eq!(d["data"]["checksPassed"], json!(true), "{d}");
+
+    // dealers can't approve; four-eyes: the first approver can't also be the second
+    let e = closures::approve(State(st.clone()), staff(&st, ctx(&st).await, "9", "dealer"), Path(id), body(json!({}))).await.unwrap_err();
+    assert_eq!(err_code(e), "forbidden");
+    let first = closures::approve(State(st.clone()), staff(&st, ctx(&st).await, "7", "compliance"), Path(id), body(json!({"note": "ok"}))).await.unwrap().0;
+    assert_eq!(first["stage"], json!("first_approval"));
+    assert_eq!(hub.meta(a).unwrap().status, Status::Active);
+    let e = closures::approve(State(st.clone()), staff(&st, ctx(&st).await, "7", "compliance"), Path(id), body(json!({}))).await.unwrap_err();
+    assert_eq!(err_code(e), "forbidden");
+    let done = closures::approve(State(st.clone()), staff(&st, ctx(&st).await, "8", "admin"), Path(id), body(json!({"note": "second"}))).await.unwrap().0;
+    assert_eq!((done["stage"].as_str(), done["data"]["status"].as_str(), done["data"]["clientReason"].as_str()), (Some("done"), Some("approved"), Some("closed_as_requested")), "{done}");
+    let snap = snapshot(&hub, a).await;
+    assert_eq!(snap["account"]["status"], json!("closed"));
+    assert!(snap["account"]["lifecycle"]["closed_at"].is_string());
+    // decimals are JSON strings, or numbers when another workspace member turns on rust_decimal's serde-float
+    let credit: D = snap["credit"].as_str().map(|s| s.parse().unwrap()).or_else(|| snap["credit"].as_f64().map(|f| D::try_from(f).unwrap())).unwrap();
+    assert_eq!(credit, D::ZERO, "credit forfeited");
+    // closed is final for the client
+    assert!(lifecycle::restore(State(st.clone()), ctx(&st).await, headers(), Path(a), q()).await.is_err());
+    assert!(lifecycle::archive(State(st.clone()), ctx(&st).await, headers(), Path(a), q(), body(json!({}))).await.is_err());
+    let listed = accounts::list(State(st.clone()), ctx(&st).await, headers(), q()).await.unwrap().0;
+    let row = listed["accounts"].as_array().unwrap().iter().find(|x| x["login"] == json!(a)).unwrap().clone();
+    assert!(row["closedAt"].is_string() && row["closureRequest"]["status"] == json!("approved"), "{row}");
+
+    // the report counts it
+    let rep = closures::report(State(st.clone()), staff(&st, ctx(&st).await, "7", "compliance"), Query(serde_json::from_value(json!({})).unwrap())).await.unwrap().0;
+    assert_eq!((rep["data"]["total"].as_i64(), rep["data"]["byReason"][0]["reason"].as_str()), (Some(1), Some("costs")), "{rep}");
+
+    // reopen: Super Admin only, always four-eyes
+    let e = closures::reopen_request(State(st.clone()), staff(&st, ctx(&st).await, "8", "admin"), Path(a), body(json!({"reasonCode": "RST-02", "note": "closed in error"}))).await.unwrap_err();
+    assert_eq!(err_code(e), "forbidden");
+    let rq = closures::reopen_request(State(st.clone()), staff(&st, ctx(&st).await, "100", "super_admin"), Path(a), body(json!({"reasonCode": "RST-02", "note": "closed in error"}))).await.unwrap().0;
+    let rid = rq["data"]["id"].as_i64().unwrap();
+    let e = closures::approve(State(st.clone()), staff(&st, ctx(&st).await, "100", "super_admin"), Path(rid), body(json!({}))).await.unwrap_err();
+    assert_eq!(err_code(e), "forbidden");
+    let e = closures::approve(State(st.clone()), staff(&st, ctx(&st).await, "7", "compliance"), Path(rid), body(json!({}))).await.unwrap_err();
+    assert_eq!(err_code(e), "forbidden");
+    let first = closures::approve(State(st.clone()), staff(&st, ctx(&st).await, "101", "super_admin"), Path(rid), body(json!({}))).await.unwrap().0;
+    assert_eq!(first["stage"], json!("first_approval"));
+    let done = closures::approve(State(st.clone()), staff(&st, ctx(&st).await, "102", "platform_owner"), Path(rid), body(json!({}))).await.unwrap().0;
+    assert_eq!(done["stage"], json!("done"), "{done}");
+    assert_eq!(hub.meta(a).unwrap().status, Status::Active);
+
+    // a staff request, rejected with a client-facing template (the "other" template needs a message)
+    let e = closures::staff_request(State(st.clone()), staff(&st, ctx(&st).await, "7", "compliance"), Path(a), body(json!({"reasonCode": "ACC-02", "note": ""}))).await.unwrap_err();
+    assert_eq!(err_code(e), "field:note");
+    let sr = closures::staff_request(State(st.clone()), staff(&st, ctx(&st).await, "7", "compliance"), Path(a), body(json!({"reasonCode": "ACC-02", "note": "duplicate profile"}))).await.unwrap().0;
+    let sid = sr["data"]["id"].as_i64().unwrap();
+    assert_eq!(sr["data"]["fourEyes"], json!(false));
+    let e = closures::reject(State(st.clone()), staff(&st, ctx(&st).await, "8", "admin"), Path(sid), body(json!({"clientReason": "other"}))).await.unwrap_err();
+    assert_eq!(err_code(e), "field:clientMessage");
+    let rj = closures::reject(State(st.clone()), staff(&st, ctx(&st).await, "8", "admin"), Path(sid), body(json!({"clientReason": "compliance_review", "note": "hold"}))).await.unwrap().0;
+    assert_eq!(rj["data"]["status"], json!("rejected"));
+    assert!(closures::approve(State(st.clone()), staff(&st, ctx(&st).await, "8", "admin"), Path(sid), body(json!({}))).await.is_err(), "decided requests stay decided");
+
+    // a closure is refused while the account holds a balance
+    let op: Op = Box::new(|tx, env| trading::engine::funds::transfer(tx, env, trading::engine::funds::Direction::In, D::from(25), "t-in", None).map(|_| Value::Null));
+    hub.exec(a, "test", None, "", "", None, op).await.unwrap();
+    let sr = closures::staff_request(State(st.clone()), staff(&st, ctx(&st).await, "7", "compliance"), Path(a), body(json!({"reasonCode": "ACC-02", "note": "client asked by phone"}))).await.unwrap().0;
+    let sid = sr["data"]["id"].as_i64().unwrap();
+    let e = closures::approve(State(st.clone()), staff(&st, ctx(&st).await, "8", "admin"), Path(sid), body(json!({}))).await.unwrap_err();
+    assert_eq!(err_code(e), "checks_failed");
+    let _ = closures::reject(State(st.clone()), staff(&st, ctx(&st).await, "8", "admin"), Path(sid), body(json!({"clientReason": "balance_remaining"}))).await.unwrap();
+
+    // demo accounts are archived, not closed
+    let demo_g = c.tenant.groups.values().filter(|g| g.enabled && g.allows("demo") && !g.cent && !g.code.starts_with("prop")).min_by_key(|g| g.code.clone()).unwrap().clone();
+    let d1 = open_demo(&st, &demo_g.code).await.unwrap();
+    let e = lifecycle::request_closure(State(st.clone()), ctx(&st).await, headers(), Path(d1), q(), body(json!({"reasonCode": "other"}))).await.unwrap_err();
+    assert_eq!(err_code(e), "demo_account");
+
+    // B9: default star, self-service type change, B10: demo balance, health
+    let p = lifecycle::put_prefs(State(st.clone()), ctx(&st).await, headers(), q(), body(json!({"defaultLogin": a}))).await.unwrap().0;
+    assert_eq!(p["defaultLogin"], json!(a));
+    let listed = accounts::list(State(st.clone()), ctx(&st).await, headers(), q()).await.unwrap().0;
+    assert!(listed["accounts"].as_array().unwrap().iter().any(|x| x["login"] == json!(a) && x["isDefault"] == json!(true)));
+    let opts = lifecycle::group_options(State(st.clone()), ctx(&st).await, headers(), Path(a), q()).await.unwrap().0;
+    assert!(opts["groups"].as_array().unwrap().iter().all(|g| !g["code"].as_str().unwrap().starts_with("prop")), "{opts}");
+    let r = lifecycle::demo_balance(State(st.clone()), ctx(&st).await, headers(), Path(d1), q(), body(json!({"amount": 2500}))).await.unwrap().0;
+    assert_eq!(r["balance"], json!(2500.0), "{r}");
+    assert!(lifecycle::demo_balance(State(st.clone()), ctx(&st).await, headers(), Path(d1), q(), body(json!({"amount": 5}))).await.is_err());
+    let h = lifecycle::health(State(st.clone()), ctx(&st).await, headers(), Path(a), q()).await.unwrap().0;
+    assert!(h["score"].as_i64().unwrap() > 0 && h["items"].as_array().unwrap().len() == 5, "{h}");
+
+    // jobs: an expired demo past the archive window is archived; an empty dormant live account is flagged and archived
+    let op: Op = Box::new(|tx, _| trading::engine::funds::set_status(tx, Status::Expired).map(|_| Value::Null));
+    hub.exec(d1, "test", None, "", "", None, op).await.unwrap();
+    sqlx::query("UPDATE accounts SET updated_at = now() - interval '40 days' WHERE login = $1").bind(d1).execute(&pool).await.unwrap();
+    let b = open_live(&st, &live_g.code).await;
+    sqlx::query("UPDATE accounts SET last_activity_at = now() - interval '200 days' WHERE login = $1").bind(b).execute(&pool).await.unwrap();
+    let rep = lifecycle::run_account_jobs(&st).await.unwrap();
+    assert_eq!((rep.demos_archived, rep.dormant_flagged, rep.dormant_archived), (1, 1, 1), "{rep:?}");
+    assert_eq!(hub.meta(d1).unwrap().status, Status::Archived);
+    assert_eq!(hub.meta(b).unwrap().status, Status::Archived);
+    // the funded account a (activity: a transfer today) is not dormant
+    assert_eq!(hub.meta(a).unwrap().status, Status::Active);
+
+    // retention: a closed account is anonymised after the retention period
+    let op: Op = Box::new(|tx, env| trading::engine::funds::transfer(tx, env, trading::engine::funds::Direction::Out, D::from(25), "t-out", None).map(|_| Value::Null));
+    hub.exec(a, "test", None, "", "", None, op).await.unwrap();
+    let _ = lifecycle::rename(State(st.clone()), ctx(&st).await, headers(), Path(a), q(), body(json!({"name": "Old book"}))).await.unwrap();
+    let sr = closures::staff_request(State(st.clone()), staff(&st, ctx(&st).await, "7", "compliance"), Path(a), body(json!({"reasonCode": "ACC-01", "note": "client asked"}))).await.unwrap().0;
+    let sid = sr["data"]["id"].as_i64().unwrap();
+    let _ = closures::approve(State(st.clone()), staff(&st, ctx(&st).await, "8", "admin"), Path(sid), body(json!({}))).await.unwrap();
+    assert_eq!(hub.meta(a).unwrap().status, Status::Closed);
+    sqlx::query("UPDATE account_closures SET decided_at = now() - interval '8 years' WHERE id = $1").bind(sid).execute(&pool).await.unwrap();
+    let rep = lifecycle::run_account_jobs(&st).await.unwrap();
+    assert_eq!(rep.anonymised, 1, "{rep:?}");
+    assert_eq!(hub.meta(a).unwrap().name, "");
+    assert_eq!(lifecycle::run_account_jobs(&st).await.unwrap().anonymised, 0, "once");
+
+    // bulk dry run lists nothing left to archive; replay = live
+    let bulk = closures::bulk(State(st.clone()), staff(&st, ctx(&st).await, "8", "admin"), body(json!({"action": "archive", "target": "expired_demos", "dryRun": true}))).await.unwrap().0;
+    assert_eq!(bulk["data"]["count"], json!(0));
+    let replayed = trading::persist::replay_all(&pool).await.unwrap();
+    for l in [a, b, d1] {
+        assert_eq!(serde_json::to_value(&replayed[&l]).unwrap(), snapshot(&hub, l).await, "replay diverged for {l}");
+    }
+}

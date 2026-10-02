@@ -381,6 +381,11 @@ export function ArchivedAccountRow({ a, onChanged }: { a: EngineAccount; onChang
               <ArrowDownToLine /> {t("accounts.archived.statements")}
             </Button>
           </Link>
+          <a href={`/api/trading/accounts/${a.login}/history-zip`} download>
+            <Button size="sm" variant="ghost">
+              <ArrowDownToLine /> {t("accounts.history.zip")}
+            </Button>
+          </a>
           {!readOnly && a.status === "archived" && <RestoreButton a={a} onDone={onChanged} />}
         </div>
       </div>

@@ -19,3 +19,4 @@ pub mod statement;
 pub mod sync;
 pub mod time;
 pub mod upstream;
+pub mod zip;

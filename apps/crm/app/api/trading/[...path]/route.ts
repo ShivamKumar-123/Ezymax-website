@@ -4,6 +4,8 @@ import { TERMINAL_BASE, clientAccount, clientDeal, clientOrder, clientPosition, 
 import { viewerHasAccount } from "@/lib/viewer";
 import { tenantConfig } from "@/lib/tenant-config";
 import { Memo } from "@/lib/memo";
+import { wallet } from "@/lib/wallet";
+import { reportsFetch } from "@/lib/reports";
 
 // Client Area trading BFF. Browser -> /api/trading/<route> (same origin) -> trading engine /v1/…
 // The client is resolved from the HttpOnly gateway session cookie (gateway /v1/auth/me); the engine gets
@@ -31,7 +33,21 @@ import { Memo } from "@/lib/memo";
 //                                            account_archive (target = login); demo accounts don't
 //   POST accounts/{login}/restore
 //   PATCH accounts/{login}                   {name} (≤ 32 characters, empty clears it)
-// Archive / restore / rename are the owner's own: view-only logins (D90) and staff impersonation sessions are refused.
+//   GET  accounts/{login}/closure            {canRequest, needsEmpty, blockers[], surveyReasons[], request}
+//   POST accounts/{login}/closure            {reasonCode, survey: {reasons[], comment}, empty, ackForfeit, stepup_token}:
+//                                            close permanently (live only, step-up action account_close, target = login)
+//   POST accounts/{login}/closure/cancel     withdraw the pending request
+//   GET  accounts/{login}/group-options      account types the account can move to (with why not)
+//   POST accounts/{login}/group              {group}: self-service type change (flat, minimum deposit met)
+//   POST accounts/{login}/demo-balance       {amount}: demo refill to a chosen balance
+//   GET  accounts/{login}/health             health card
+//   GET  accounts/{login}/history-zip        full history ZIP (reports service: statement PDF + CSV + Excel)
+//   GET  prefs  /  POST prefs                {defaultLogin}: the starred default account
+//   POST transfers/between                   {fromLogin, toLogin, amount, idempotency_key, stepup_token}: live -> live
+//                                            between own accounts (wallet trading-to-trading; step-up internal_transfer,
+//                                            target = fromLogin)
+// Archive / restore / rename / close / prefs / transfers are the owner's own: view-only logins (D90) and staff
+// impersonation sessions are refused.
 
 type Obj = Record<string, unknown>;
 type Ctx = { params: Promise<{ path: string[] }> };
@@ -96,6 +112,11 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     return reply(200, { groups });
   }
 
+  if (path.length === 1 && path[0] === "prefs") {
+    const r = await engine<Obj>("/v1/accounts/prefs", { user, req });
+    return reply(r.status, r.data);
+  }
+
   if (path.length === 1 && path[0] === "accounts") {
     const r = await engine<{ accounts?: unknown[] }>("/v1/accounts", { user, req });
     if (r.status !== 200) return reply(r.status, r.data);
@@ -131,8 +152,19 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
   if (path.length === 3 && path[2] === "export") return exportCsv(req, user, login);
 
-  if (path.length === 3 && path[2] === "archive-check") {
-    const r = await engine<Obj>(`/v1/accounts/${login}/archive-check`, { user, req });
+  // B10: the full history as one ZIP (PDF statement + CSV + Excel) from the reports service
+  if (path.length === 3 && path[2] === "history-zip") {
+    const r = await reportsFetch(`/v1/me/accounts/${login}/history.zip`, user, 120_000);
+    if (!r) return error(503, "unavailable", "Statements are unavailable right now. Please try again shortly.");
+    if (!r.ok) return reply(r.status, await r.json().catch(() => ({ error: { code: "unavailable", message: "The history could not be prepared." } })));
+    return new NextResponse(r.body, {
+      status: 200,
+      headers: { ...NO_STORE, "content-type": "application/zip", "content-disposition": r.headers.get("content-disposition") ?? `attachment; filename="kalks-${login}-history.zip"`, "x-content-type-options": "nosniff" },
+    });
+  }
+
+  if (path.length === 3 && ["archive-check", "closure", "group-options", "health"].includes(path[2]!)) {
+    const r = await engine<Obj>(`/v1/accounts/${login}/${path[2]}`, { user, req });
     return reply(r.status, r.data);
   }
 
@@ -174,10 +206,63 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     return reply(200, { account: clientAccount(r.data.account), credentials: creds });
   }
 
+  if (path.length === 1 && path[0] === "prefs") {
+    const refused = ownerOnly(req, user);
+    if (refused) return refused;
+    const d = body.defaultLogin;
+    if (d !== null && !(Number.isInteger(d) && LOGIN_RE.test(String(d)))) return error(422, "validation", "Choose an account.");
+    const r = await engine(`/v1/accounts/prefs`, { user, req, body: { defaultLogin: d } });
+    return reply(r.status, r.data);
+  }
+
+  if (path.length === 2 && path[0] === "transfers" && path[1] === "between") return transferBetween(req, user, body);
+
   const login = path[1];
-  if (path[0] !== "accounts" || !login || !LOGIN_RE.test(login) || path.length !== 3) return error(404, "not_found", "Not found.");
+  if (path[0] !== "accounts" || !login || !LOGIN_RE.test(login)) return error(404, "not_found", "Not found.");
+  if (path.length === 4 && path[2] === "closure" && path[3] === "cancel") {
+    const refused = ownerOnly(req, user);
+    if (refused) return refused;
+    const r = await engine(`/v1/accounts/${login}/closure/cancel`, { user, req, body: {} });
+    return reply(r.status, r.data);
+  }
+  if (path.length !== 3) return error(404, "not_found", "Not found.");
 
   switch (path[2]) {
+    case "closure": {
+      const refused = ownerOnly(req, user);
+      if (refused) return refused;
+      if (typeof body.reasonCode !== "string" || typeof body.empty !== "boolean" || typeof body.ackForfeit !== "boolean") return error(422, "validation", "Invalid request body.");
+      const sv = (body.survey ?? {}) as Obj;
+      const reasons = Array.isArray(sv.reasons) ? sv.reasons.filter((x): x is string => typeof x === "string").slice(0, 10) : [];
+      const comment = typeof sv.comment === "string" ? sv.comment.slice(0, 1000) : "";
+      // checked before the one-time confirmation is spent: ownership (404), blockers, open request, emptying, forfeit
+      const chk = await engine<{ kind?: string; canRequest?: boolean; needsEmpty?: boolean; credit?: number; bonus?: number; blockers?: { code: string; message: string }[]; surveyReasons?: string[] }>(`/v1/accounts/${login}/closure`, { user, req });
+      if (chk.status !== 200) return reply(chk.status, chk.data);
+      const c = chk.data;
+      const blocker = c.blockers?.[0];
+      if (blocker) return error(409, blocker.code, blocker.message);
+      if (c.canRequest === false) return error(409, "request_pending", "A closure request for this account is already waiting for review.");
+      if (c.surveyReasons && !c.surveyReasons.includes(body.reasonCode)) return error(422, "validation", "Choose a reason.");
+      if (c.needsEmpty && !body.empty) return error(409, "needs_empty", "Close the open trades and move the money out first.");
+      if ((Number(c.credit) || 0) + (Number(c.bonus) || 0) > 0 && !body.ackForfeit) return error(422, "ack_forfeit", "Confirm that the bonus and credit will be lost.");
+      const denied = await stepup(req, user, body, "account_close", login);
+      if (denied) return denied;
+      const r = await engine(`/v1/accounts/${login}/closure`, { user, req, body: { reasonCode: body.reasonCode, survey: { reasons, comment }, empty: body.empty, ackForfeit: body.ackForfeit } });
+      return reply(r.status, r.data);
+    }
+    case "group": {
+      const refused = ownerOnly(req, user);
+      if (refused) return refused;
+      if (typeof body.group !== "string" || !/^[a-z0-9_-]{1,40}$/i.test(body.group) || isPropGroup(body.group)) return error(422, "validation", "Choose an account type.");
+      const r = await engine(`/v1/accounts/${login}/group`, { user, req, body: { group: body.group } });
+      return reply(r.status, r.data);
+    }
+    case "demo-balance": {
+      const amount = body.amount;
+      if (typeof amount !== "number" || !Number.isFinite(amount) || amount < 100 || amount > 1_000_000) return error(422, "validation", "Choose an amount between 100 and 1,000,000.");
+      const r = await engine(`/v1/accounts/${login}/demo-balance`, { user, req, body: { amount: Math.round(amount * 100) / 100 } });
+      return reply(r.status, r.data);
+    }
     case "demo-refill": {
       const r = await engine(`/v1/accounts/${login}/demo-refill`, { user, req, body: {} });
       return reply(r.status, r.data);
@@ -278,6 +363,36 @@ async function ownAccount(req: NextRequest, user: GatewayUser, login: string): P
   const r = await engine<{ account?: unknown }>(`/v1/accounts/${login}`, { user, req });
   if (r.status === 200 && r.data.account) return null;
   return reply(r.status === 200 ? 404 : r.status, r.data);
+}
+
+/** Live -> live between the client's own accounts (B9): both accounts checked first, then the emailed code
+ *  (step-up internal_transfer, target = the source login), then the wallet's two idempotent legs. */
+async function transferBetween(req: NextRequest, user: GatewayUser, body: Obj) {
+  const refused = ownerOnly(req, user);
+  if (refused) return refused;
+  const from = String(body.fromLogin ?? "");
+  const to = String(body.toLogin ?? "");
+  if (!LOGIN_RE.test(from) || !LOGIN_RE.test(to)) return error(422, "validation", "Choose both accounts.");
+  if (from === to) return error(422, "validation", "Choose two different accounts.");
+  const amount = typeof body.amount === "string" || typeof body.amount === "number" ? String(body.amount).trim() : "";
+  if (!/^\d{1,12}(\.\d{1,2})?$/.test(amount) || Number(amount) <= 0) return error(422, "validation", "Enter an amount with up to 2 decimals.");
+  const key = typeof body.idempotency_key === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(body.idempotency_key) ? body.idempotency_key : null;
+  if (!key) return error(422, "validation", "Missing request id.");
+  const list = await engine<{ accounts?: { login: number; type: string; group: string; status: string; withdrawable?: number; currency?: string }[] }>("/v1/accounts", { user, req });
+  if (list.status !== 200) return reply(list.status, list.data);
+  const mine = list.data.accounts ?? [];
+  const src = mine.find((a) => String(a.login) === from);
+  const dst = mine.find((a) => String(a.login) === to);
+  if (!src || !dst) return error(404, "not_found", "Account not found.");
+  if (src.type !== "live" || dst.type !== "live") return error(422, "live_only", "Transfers between accounts are for live accounts only.");
+  if (isPropGroup(src.group) || isPropGroup(dst.group)) return error(422, "prop_account", "Prop challenge accounts can't send or receive transfers.");
+  if (["archived", "closed"].includes(dst.status)) return error(409, "account_status", "The receiving account is archived or closed.");
+  const usd = (Number(src.withdrawable) || 0) / (src.currency === "USC" ? 100 : 1);
+  if (Number(amount) > usd + 1e-9) return error(422, "insufficient_funds", `Not enough free funds on #${from}: ${usd.toFixed(2)} USD available.`);
+  const denied = await stepup(req, user, body, "internal_transfer", from);
+  if (denied) return denied;
+  const r = await wallet(`/v1/wallets/${user.id}/trading-to-trading`, { user, req, body: { from_login: Number(from), to_login: Number(to), amount, idempotency_key: `crm:${user.id}:${key}` } });
+  return reply(r.status, r.data);
 }
 
 /** Redeems the client's step-up token (D20) for this change; null = go ahead. */

@@ -24,6 +24,8 @@ fn email_wording_names_the_change() {
     assert_eq!(describe("leverage", "10000123"), "change the leverage of trading account #10000123");
     assert_eq!(describe("account_password", ""), "change your Client Area password");
     assert_eq!(describe("account_archive", "10000123"), "delete (archive) live trading account #10000123");
+    assert_eq!(describe("account_close", "10000123"), "close live trading account #10000123 permanently");
+    assert_eq!(parse_action("internal_transfer"), Some("internal_transfer"));
     for a in ACTIONS {
         assert!(!describe(a, "1").contains("make a change"), "{a} has no wording");
     }

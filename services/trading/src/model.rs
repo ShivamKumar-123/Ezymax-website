@@ -265,6 +265,9 @@ pub struct Lifecycle {
     /// The client may restore it from the Client Area (false when staff archived it, unless they allowed it).
     #[serde(default)]
     pub client_restorable: bool,
+    /// Set when the account was closed permanently (status `closed`); `archived_at` is then when it was retired.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub closed_at: Option<DateTime<Utc>>,
 }
 
 impl Account {

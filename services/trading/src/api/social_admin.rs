@@ -198,7 +198,17 @@ pub async fn stop_subscription(State(st): State<AppState>, s: StaffCtx, Path(id)
     s.require(ROLES_SOCIAL_WRITE)?;
     let n = note(&b)?;
     let x = st.social.reg.read().unwrap().subs.get(&id).cloned().filter(|x| x.tenant_id == s.ctx.tenant.tenant_id).ok_or_else(|| ApiError::NotFound("Subscription not found".into()))?;
-    let out = st.social.stop_sub(id, "admin", true, false).await?;
+    // closes the copied trades by default; `closePositions: false` leaves them to the client, `returnFunds: true`
+    // moves the free balance back to the client's wallet
+    let close = b.get("closePositions").and_then(Value::as_bool).unwrap_or(true);
+    let ret = b.get("returnFunds").and_then(Value::as_bool).unwrap_or(false);
+    let out = st.social.stop_sub(id, "admin", close, ret).await?;
+    if x.copying() {
+        let master = st.social.reg.read().unwrap().masters.get(&x.master_id).map(|m| m.nickname.clone()).unwrap_or_default();
+        st.social
+            .alert(&x, "copy.stopped_by_admin", format!("Copying {master} was stopped by our team"), format!("Copy account #{} no longer copies {master}. Contact support if you have questions.", x.login), "warning", true, format!("copy:{id}:admin_stop"), json!({}))
+            .await;
+    }
     let a = st.social.audit(x.tenant_id, &s.staff, "social.subscription.stop", Some(x.login), &format!("subscription:{id}"), Some(json!({"subscriptionId": id, "status": x.status})), Some(json!({"subscriptionId": id, "status": "stopped", "closed": out["closed"].as_array().map(|a| a.len())})), &n).await;
     let y = st.social.reg.read().unwrap().subs.get(&id).cloned().unwrap_or(x);
     let m = st.social.reg.read().unwrap().masters.get(&y.master_id).cloned();
@@ -425,4 +435,168 @@ pub async fn audit(State(st): State<AppState>, s: StaffCtx, Query(q): Query<Audi
         })
         .collect();
     Ok(Json(json!(out)))
+}
+
+#[derive(Deserialize)]
+pub struct DashQ {
+    days: Option<i64>,
+}
+
+/// Normalised reason of a skipped / failed copy step (C7): (key, label).
+pub fn skip_reason(status: &str, message: &str) -> (String, String) {
+    let m = message.to_lowercase();
+    let k = |k: &str, l: &str| (k.to_string(), l.to_string());
+    if m.starts_with("already") || m.contains("pending copy already filled") {
+        return k("duplicate", "Already copied");
+    }
+    if m.contains("minimum lot") || m.contains("lot step") {
+        return k("below_min_lot", "Below minimum lot");
+    }
+    if m.ends_with(" is excluded") {
+        return k("excluded", "Symbol excluded by the follower");
+    }
+    if m.contains("paused") || m.contains("frozen") {
+        return k("paused", "Copy paused");
+    }
+    if m.contains("engine was down") {
+        return k("engine_restart", "Missed during an engine restart");
+    }
+    if status == "failed" {
+        let code = message.split(':').next().unwrap_or("").trim();
+        if !code.is_empty() && code.len() <= 40 && code.chars().all(|c| c.is_ascii_lowercase() || c == '_') {
+            let label = match code {
+                "no_money" | "insufficient_margin" | "not_enough_money" => "Not enough margin",
+                "market_closed" => "Market closed",
+                "invalid_volume" => "Invalid volume",
+                "trade_disabled" | "close_only" => "Trading disabled",
+                _ => code,
+            };
+            return (code.to_string(), label.to_string());
+        }
+    }
+    k("other", "Other")
+}
+
+/// C7 copy dashboard: copied AUM and followers, skipped-step rate by reason, copy fees by status, follower P&L
+/// by master, execution averages. `days` (1–365, default 30) is the window of the copy log figures.
+pub async fn copy_dashboard(State(st): State<AppState>, s: StaffCtx, Query(q): Query<DashQ>) -> ApiResult<Json<Value>> {
+    let tenant = s.ctx.tenant.tenant_id;
+    let days = q.days.unwrap_or(30).clamp(1, 365);
+    let since = Utc::now() - chrono::Duration::days(days);
+    let (subs, masters): (Vec<crate::social::Sub>, std::collections::BTreeMap<i64, Master>) = {
+        let reg = st.social.reg.read().unwrap();
+        (reg.subs.values().filter(|x| x.tenant_id == tenant).cloned().collect(), reg.masters.iter().filter(|(_, m)| m.tenant_id == tenant).map(|(k, v)| (*k, v.clone())).collect())
+    };
+    let copying: Vec<&crate::social::Sub> = subs.iter().filter(|x| x.copying()).collect();
+    let eq = |x: &crate::social::Sub| x.last_equity.unwrap_or(x.net_deposits).max(ZERO);
+    let aum: D = copying.iter().map(|x| eq(x)).sum();
+    let followers = json!({
+        "active": subs.iter().filter(|x| x.status == "active").count(), "paused": subs.iter().filter(|x| x.status == "paused").count(),
+        "stopped": subs.iter().filter(|x| x.status == "stopped").count(), "copying": copying.len(),
+        "attention": copying.iter().filter(|x| x.attention.is_some()).count(), "pendingTerms": copying.iter().filter(|x| x.terms_deadline.is_some()).count(),
+    });
+    // copy log: opens / adds / pending orders in the window
+    let rows = sqlx::query(
+        "SELECT status, message, count(*) AS n FROM copy_log WHERE tenant_id = $1 AND at >= $2 AND action IN ('open','add','order') GROUP BY status, message",
+    )
+    .bind(tenant)
+    .bind(since)
+    .fetch_all(&st.pool)
+    .await?;
+    let (mut total, mut done, mut skipped, mut failed) = (0i64, 0i64, 0i64, 0i64);
+    let mut reasons: std::collections::BTreeMap<(String, String, String), i64> = Default::default();
+    for r in &rows {
+        let (status, msg, n): (String, String, i64) = (r.get("status"), r.get("message"), r.get("n"));
+        total += n;
+        match status.as_str() {
+            "done" => done += n,
+            other => {
+                if other == "failed" {
+                    failed += n;
+                } else {
+                    skipped += n;
+                }
+                let (key, label) = skip_reason(other, &msg);
+                *reasons.entry((key, label, status.clone())).or_default() += n;
+            }
+        }
+    }
+    let mut skip_reasons: Vec<Value> = reasons.into_iter().map(|((reason, label, status), count)| json!({"reason": reason, "label": label, "status": status, "count": count})).collect();
+    skip_reasons.sort_by_key(|v| -v["count"].as_i64().unwrap_or(0));
+    let rate = if total > 0 { ((skipped + failed) as f64 / total as f64 * 10000.0).round() / 100.0 } else { 0.0 };
+    // copy fees by status
+    let mut fees = serde_json::Map::new();
+    for st_ in ["pending", "approved", "paid", "rejected", "failed"] {
+        fees.insert(st_.into(), json!({"count": 0, "amount": 0}));
+    }
+    for r in sqlx::query("SELECT status, count(*) AS n, COALESCE(sum(amount), 0) AS a FROM social_fees WHERE tenant_id = $1 AND source = 'copy' GROUP BY status").bind(tenant).fetch_all(&st.pool).await? {
+        fees.insert(r.get::<String, _>("status"), json!({"count": r.get::<i64, _>("n"), "amount": num(r2(r.get::<D, _>("a")))}));
+    }
+    // per master: P&L of the followers, fees, skips, delay
+    let per_fee: std::collections::HashMap<(i64, String), D> = sqlx::query("SELECT master_id, status, COALESCE(sum(amount), 0) AS a FROM social_fees WHERE tenant_id = $1 AND source = 'copy' GROUP BY master_id, status")
+        .bind(tenant)
+        .fetch_all(&st.pool)
+        .await?
+        .iter()
+        .map(|r| ((r.get::<i64, _>("master_id"), r.get::<String, _>("status")), r.get::<D, _>("a")))
+        .collect();
+    let per_log: std::collections::HashMap<i64, (i64, Option<f64>)> = sqlx::query(
+        "SELECT s.master_id, count(*) FILTER (WHERE l.status <> 'done' AND l.action IN ('open','add','order') AND l.message NOT LIKE 'already%') AS skipped, avg(l.delay_ms)::float8 AS delay
+         FROM copy_log l JOIN copy_subscriptions s ON s.id = l.sub_id WHERE l.tenant_id = $1 AND l.at >= $2 GROUP BY s.master_id",
+    )
+    .bind(tenant)
+    .bind(since)
+    .fetch_all(&st.pool)
+    .await?
+    .iter()
+    .map(|r| (r.get::<i64, _>("master_id"), (r.get::<i64, _>("skipped"), r.get::<Option<f64>, _>("delay"))))
+    .collect();
+    let mut by_master: Vec<Value> = Vec::new();
+    for m in masters.values() {
+        let mine: Vec<&crate::social::Sub> = subs.iter().filter(|x| x.master_id == m.id).collect();
+        if mine.is_empty() {
+            continue;
+        }
+        let live: Vec<&&crate::social::Sub> = mine.iter().filter(|x| x.copying()).collect();
+        let m_aum: D = live.iter().map(|x| eq(x)).sum();
+        let net: D = live.iter().map(|x| x.net_deposits).sum();
+        let pnl: D = live.iter().map(|x| x.last_equity.unwrap_or(x.net_deposits) - x.net_deposits).sum();
+        let fee = |k: &str| per_fee.get(&(m.id, k.to_string())).copied().unwrap_or(ZERO);
+        let (sk, delay) = per_log.get(&m.id).copied().unwrap_or((0, None));
+        by_master.push(json!({
+            "masterId": m.id, "nickname": m.nickname, "house": m.is_house, "status": m.status, "frozen": m.frozen,
+            "followers": live.len(), "followersTotal": mine.len(), "aum": num(r2(m_aum)), "netDeposits": num(r2(net)), "pnl": num(r2(pnl)),
+            "returnPct": if net > ZERO { num(r2(pnl / net * D::ONE_HUNDRED)) } else { json!(0) },
+            "feesPending": num(r2(fee("pending") + fee("approved"))), "feesPaid": num(r2(fee("paid"))), "skipped": sk, "avgDelayMs": delay.map(|d| d.round() as i64),
+        }));
+    }
+    by_master.sort_by(|a, b| b["aum"].as_f64().unwrap_or(0.0).total_cmp(&a["aum"].as_f64().unwrap_or(0.0)));
+    let ex = sqlx::query("SELECT count(*) AS n, avg(delay_ms)::float8 AS d, avg(slippage_pips)::float8 AS s FROM copy_log WHERE tenant_id = $1 AND at >= $2 AND status = 'done' AND master_price IS NOT NULL")
+        .bind(tenant)
+        .bind(since)
+        .fetch_one(&st.pool)
+        .await?;
+    let round = |v: Option<f64>| v.map(|x| (x * 100.0).round() / 100.0);
+    Ok(Json(json!({
+        "days": days, "aum": num(r2(aum)), "followers": followers,
+        "masters": masters.values().filter(|m| copying.iter().any(|x| x.master_id == m.id)).count(),
+        "steps": {"total": total, "done": done, "skipped": skipped, "failed": failed, "skipRatePct": rate},
+        "skipReasons": skip_reasons, "fees": fees, "byMaster": by_master,
+        "execution": {"trades": ex.get::<i64, _>("n"), "avgDelayMs": ex.get::<Option<f64>, _>("d").map(|d| d.round() as i64), "avgSlippagePips": round(ex.get::<Option<f64>, _>("s"))},
+    })))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::skip_reason;
+
+    #[test]
+    fn skip_reasons_are_grouped() {
+        assert_eq!(skip_reason("skipped", "below the minimum lot for your sizing").0, "below_min_lot");
+        assert_eq!(skip_reason("skipped", "XAUUSD is excluded").0, "excluded");
+        assert_eq!(skip_reason("skipped", "copying is paused").0, "paused");
+        assert_eq!(skip_reason("skipped", "missed while the engine was down (older than 60 s)").0, "engine_restart");
+        assert_eq!(skip_reason("failed", "no_money: Not enough free margin").1, "Not enough margin");
+        assert_eq!(skip_reason("failed", "Something odd").0, "other");
+    }
 }

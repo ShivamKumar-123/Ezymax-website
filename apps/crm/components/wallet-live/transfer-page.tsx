@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, EmptyState, Field, Input, PageHeader, Segmented, Skeleton, cn, formatDateTime } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
 import { toUsd, useAccounts, type EngineAccount } from "@/components/trading/api";
+import { TransferBetweenDialog } from "@/components/trading/extras";
 import { fmt, requestId, usdtAvailable, useWallet, walletApi, type Overview, type Page, type TradingTransfer } from "./api";
 import { InlineError, StatusTag, WalletUnavailable, cleanAmount } from "./ui";
 import { isPropAccount } from "@/components/trading/ui";
@@ -57,6 +58,7 @@ function Inner() {
   const o = useWallet<Overview>("overview", 10000);
   const list = useWallet<Page<TradingTransfer>>("transfers?limit=15", 10000);
   const acc = useAccounts(10000);
+  const [between, setBetween] = React.useState(false);
   // prop-challenge accounts take no wallet transfers (simulated capital), so they are not offered here
   const live = (acc.data?.accounts ?? []).filter((a) => a.type === "live" && !isPropAccount(a) && a.status !== "disabled" && a.status !== "expired");
   const account = live.find((a) => a.login === login) ?? null;
@@ -100,13 +102,22 @@ function Inner() {
         title={t("common.transfer")}
         subtitle={t("wallet.transfer.subtitle")}
         actions={
-          <Link href="/wallet">
-            <Button variant="surface">
-              <ArrowLeft className="rtl:-scale-x-100" /> {t("wallet.wallet")}
-            </Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* B9: live -> live between the client's own accounts (two idempotent legs through the wallet) */}
+            {(acc.data?.accounts ?? []).filter((x) => x.type === "live" && !x.group.toLowerCase().startsWith("prop") && x.status !== "archived" && x.status !== "closed").length >= 2 && (
+              <Button variant="surface" onClick={() => setBetween(true)}>
+                <ArrowLeftRight /> {t("accounts.between.menu")}
+              </Button>
+            )}
+            <Link href="/wallet">
+              <Button variant="surface">
+                <ArrowLeft className="rtl:-scale-x-100" /> {t("wallet.wallet")}
+              </Button>
+            </Link>
+          </div>
         }
       />
+      {between && <TransferBetweenDialog open={between} onOpenChange={setBetween} onDone={() => acc.reload()} />}
       {o.error && !o.data ? (
         <WalletUnavailable onRetry={o.reload} />
       ) : (

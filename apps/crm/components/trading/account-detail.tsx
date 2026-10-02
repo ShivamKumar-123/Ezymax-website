@@ -12,6 +12,8 @@ import { DealsTable, HistoryPanel, LedgerPanel } from "./activity";
 import { CredentialsPanel, SettingsPanel } from "./manage";
 import { AccountActions, FundButton, KindBadge, RefillButton, StatusBadge, TradeButton, isPropAccount } from "./ui";
 import { FlavorChip, RestoreButton, accountFlavor, copyingName } from "./archive";
+import { ClosureBanner } from "./closure";
+import { DefaultStar, HealthCard } from "./extras";
 import { AccountAnalyticsPanel } from "@/components/reports/live-analytics";
 import { Trans, useT } from "@kalks/i18n/react";
 
@@ -304,6 +306,11 @@ function OverviewPanel({ a, positions, onTab }: { a: EngineAccount; positions: E
           </Card>
         </Reveal>
       </div>
+      {!isArchived(a) && (
+        <Reveal delay={0.15}>
+          <HealthCard a={a} />
+        </Reveal>
+      )}
     </div>
   );
 }
@@ -402,6 +409,7 @@ function Detail() {
                   {a.groupName} · {modeLabel(a.mode)}
                 </h1>
                 {a.name && <span className="text-[14px] text-fg-3">“{a.name}”</span>}
+                <DefaultStar a={a} />
                 <StatusBadge a={a} />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-fg-2">
@@ -463,6 +471,7 @@ function Detail() {
             )}
           </div>
         </Card>
+        <ClosureBanner a={a} onChanged={reload} />
       </motion.div>
 
       <div className="-mx-4 mt-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">

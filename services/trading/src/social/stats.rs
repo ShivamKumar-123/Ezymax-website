@@ -226,6 +226,8 @@ impl Social {
             "id": m.id, "nickname": m.nickname, "strategy": m.strategy, "description": m.description, "program": m.program,
             "perfFeePct": num(m.perf_fee_pct), "feePeriod": m.fee_period, "minAllocation": num(m.min_allocation), "status": m.status, "hidden": m.hidden, "frozen": m.frozen,
             "since": m.approved_at, "ageDays": (Utc::now() - created).num_days(), "house": m.is_house,
+            "acceptingNew": m.accept_new && m.max_followers.is_none_or(|x| followers < x as i64), "inviteOnly": m.invite_only,
+            "maxFollowers": m.max_followers, "minAllocationEffective": num(m.min_allocation.max(self.settings(m.tenant_id).min_allocation)),
             "stats": stats.unwrap_or_else(|| json!({"aum": num(r2(aum)), "followers": followers, "investors": investors, "trades": trades, "winRate": win})),
             "fund": fund.map(|f| json!({"id": f.id, "name": f.name, "nav": num(crate::money::rdp(f.nav_now(), 6)), "period": f.period, "perfFeePct": num(f.perf_fee_pct),
                                          "lockInDays": f.lock_in_days, "minInvestment": num(f.min_investment), "status": f.status})),
@@ -238,6 +240,8 @@ impl Social {
             v["reviewNote"] = json!(m.review_note);
             v["reviewedBy"] = json!(m.reviewed_by);
             v["createdAt"] = json!(m.created_at);
+            v["acceptNew"] = json!(m.accept_new);
+            v["inviteCode"] = json!(m.invite_code);
         }
         v
     }

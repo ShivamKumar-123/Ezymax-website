@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUpRight, BadgeCheck, Check, Clock, Copy as CopyIcon, Crown, FileText, KeyRound, Landmark, Layers, Loader2, Pencil, Percent, Plus, Send, ShieldCheck, TriangleAlert, Users, Wallet, X as XIcon } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, Check, Clock, Copy as CopyIcon, Crown, FileText, KeyRound, Landmark, Layers, Link2, Loader2, Pencil, Percent, Plus, Send, ShieldCheck, TrendingDown, TriangleAlert, UserMinus, UserPlus, Users, UserX, Wallet, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, Money, PageHeader, Segmented, StatusChip, cn, type Column } from "@kalks/ui";
 import { Trans, useT } from "@kalks/i18n/react";
@@ -24,10 +24,12 @@ import {
   type Check as ReqCheck,
   type DashboardFund,
   type FeePeriod,
+  type DashboardFollower,
   type FeeView,
   type FundView,
   type MasterDashboard,
   type MasterMe,
+  type MasterUpdateResult,
   type MasterView,
   type Program,
   type RequestView,
@@ -36,6 +38,7 @@ import {
 import { BlockSkeleton, InfoBox, ProgramTags, RiskBadge, SocialError, Tile, useNumber } from "./bits";
 import { FundDetailDrawer, FundStatusChip } from "./funds";
 import { FEE_STATUS_TONE } from "./subscriptions";
+import { AnnouncementsCard, FollowerSettingsCard } from "./master-tools";
 
 const PERIODS: FeePeriod[] = ["daily", "weekly", "monthly"];
 const LOCKS = [0, 7, 14, 30, 60, 90];
@@ -363,8 +366,13 @@ function EditProfileDialog({ m, settings, open, onOpenChange, onSaved }: { m: Ma
     if (!Object.keys(body).length) return onOpenChange(false);
     setBusy(true);
     try {
-      await socialApi("master/me", { method: "PATCH", body });
-      toast.success(t("social.md.toast.profileUpdated"), { description: body.perfFeePct !== undefined || body.feePeriod !== undefined ? t("social.md.toast.newTerms") : undefined });
+      const r = await socialApi<MasterUpdateResult>("master/me", { method: "PATCH", body });
+      // A8: a lower fee reaches the followers at once; anything else waits for their acceptance
+      const termsChanged = body.perfFeePct !== undefined || body.feePeriod !== undefined;
+      const parts: string[] = [];
+      if (r.terms?.pending) parts.push(t("social.md.terms.pending", { count: r.terms.pending }));
+      if (r.terms?.applied) parts.push(t("social.md.terms.applied", { count: r.terms.applied }));
+      toast.success(t("social.md.toast.profileUpdated"), { description: parts.length ? parts.join(" ") : termsChanged ? (r.terms ? t("social.md.terms.newOnly") : t("social.md.toast.newTerms")) : undefined });
       onSaved();
       onOpenChange(false);
     } catch (e) {
@@ -411,6 +419,11 @@ function EditProfileDialog({ m, settings, open, onOpenChange, onSaved }: { m: Ma
           </div>
           <RangeSlider value={fee} onChange={setFee} min={settings.feeMinPct} max={settings.feeMaxPct} tone="gold" format={(v) => `${v}%`} label={t("social.performanceFee")} />
         </div>
+        {(fee !== m.perfFeePct || period !== m.feePeriod) && (
+          <InfoBox tone={fee < m.perfFeePct && period === m.feePeriod ? "up" : "warn"} icon={<FileText />}>
+            {fee < m.perfFeePct && period === m.feePeriod ? t("social.md.terms.lowerHint") : t("social.md.terms.changeHint")}
+          </InfoBox>
+        )}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <div className="mb-2 text-[12.5px] font-medium text-fg-2">{t("social.md.feeSettlement")}</div>
@@ -648,11 +661,35 @@ function Dashboard({ me, reloadMe }: { me: MasterMe; reloadMe: () => void }) {
   const m = data?.master ?? me.master!;
   const s = m.stats;
 
-  const followCols: Column<MasterDashboard["followers"][number]>[] = [
+  const followCols: Column<DashboardFollower>[] = [
     { key: "id", header: t("social.subs.detail.title"), cell: (f) => <span className="font-mono text-[12px] text-fg-2">#{f.subscriptionId}</span> },
     { key: "since", header: t("social.md.col.since"), cell: (f) => <span className="text-fg-2">{fmtDate(f.since)}</span>, sort: (f) => f.since, hideOn: "sm" },
-    { key: "st", header: t("common.status"), cell: (f) => <StatusChip status={f.status} label={t.dyn(`social.subStatus.${f.status}`, f.status)} /> },
+    {
+      key: "st",
+      header: t("common.status"),
+      cell: (f) => (
+        <span className="flex flex-col items-start gap-1">
+          <span className="flex flex-wrap items-center gap-1">
+            <StatusChip status={f.status} label={t.dyn(`social.subStatus.${f.status}`, f.status)} />
+            {f.termsPending && f.status !== "stopped" && (
+              <Chip size="sm" tone="warn">
+                {t("social.md.col.termsPending")}
+              </Chip>
+            )}
+          </span>
+          {f.status === "stopped" && (f.stoppedAt || f.stopReason) && (
+            <span className="text-[11px] text-fg-3">
+              {f.stoppedAt ? fmtDate(f.stoppedAt) : ""}
+              {f.stopReason ? `${f.stoppedAt ? " · " : ""}${t.dyn(`social.subs.stopReason.${f.stopReason}`, f.stopReason.replace(/_/g, " "))}` : ""}
+            </span>
+          )}
+        </span>
+      ),
+      sort: (f) => f.status,
+    },
     { key: "sz", header: t("social.follow.step.sizing"), cell: (f) => <span className="text-fg-2">{sizingText(f.sizing)}</span>, hideOn: "md" },
+    { key: "nd", header: t("social.subs.netDeposits"), align: "right", cell: (f) => <span className="k-num text-fg-2">{typeof f.netDeposits === "number" ? usd(f.netDeposits, 0) : "—"}</span>, sort: (f) => f.netDeposits ?? 0, hideOn: "md" },
+    { key: "fee", header: t("social.fee"), align: "right", cell: (f) => <span className="k-num text-fg-2">{typeof f.perfFeePct === "number" ? `${f.perfFeePct}%` : "—"}</span>, hideOn: "lg" },
     { key: "eq", header: t("common.equity"), align: "right", cell: (f) => <span className="k-num">{usd(f.equity)}</span>, sort: (f) => f.equity },
     { key: "pl", header: t("social.profit"), align: "right", cell: (f) => <span className={cn("k-num", f.profit > 0 ? "text-up" : f.profit < 0 ? "text-down" : "")}>{usd(f.profit, 2, true)}</span>, sort: (f) => f.profit },
   ];
@@ -678,6 +715,16 @@ function Dashboard({ me, reloadMe }: { me: MasterMe; reloadMe: () => void }) {
               </Chip>
               {m.hidden && <Chip size="sm">{t("social.md.hidden")}</Chip>}
               {m.frozen && <Chip tone="down" size="sm">{t("social.md.frozen")}</Chip>}
+              {m.inviteOnly && (
+                <Chip tone="gold" size="sm">
+                  <Link2 className="size-3" /> {t("social.inviteOnly")}
+                </Chip>
+              )}
+              {m.acceptingNew === false && (
+                <Chip tone="warn" size="sm">
+                  <UserX className="size-3" /> {t("social.notAccepting")}
+                </Chip>
+              )}
               <ProgramTags program={m.program} />
             </div>
             <div className="mt-0.5 text-[13.5px] text-fg-2">{m.strategy}</div>
@@ -713,6 +760,12 @@ function Dashboard({ me, reloadMe }: { me: MasterMe; reloadMe: () => void }) {
             <KpiCard label={t("social.lb.stat.aum")} icon={<Wallet />} value={<span className="k-num">{compactUsd(data.totals.aum)}</span>} chip={t("social.md.kpi.aumChip")} delay={0.04} />
             <KpiCard label={t("social.feesPending")} icon={<Clock />} value={<Money value={data.totals.feesPending} countUp={false} />} chip={t("social.subs.kpi.awaitingApproval")} chipTone="warn" delay={0.08} />
             <KpiCard label={t("social.inv.kpi.feesPaid")} icon={<Percent />} value={<Money value={data.totals.feesPaid} countUp={false} />} chip={t("social.md.kpi.paidChip")} chipTone="up" delay={0.12} />
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" data-testid="master-follower-kpis">
+            <KpiCard label={t("social.md.kpi.new30d")} icon={<UserPlus />} value={<span className="k-num">{data.totals.new30d ?? 0}</span>} chip={t("social.md.kpi.last30d")} chipTone="up" delay={0.04} />
+            <KpiCard label={t("social.md.kpi.left30d")} icon={<UserMinus />} value={<span className="k-num">{data.totals.left30d ?? 0}</span>} chip={t("social.md.kpi.last30d")} chipTone={(data.totals.left30d ?? 0) > 0 ? "down" : "neutral"} delay={0.08} />
+            <KpiCard label={t("social.md.kpi.churn")} icon={<TrendingDown />} value={<span className="k-num">{(data.totals.churn30dPct ?? 0).toFixed(1)}%</span>} chip={t("social.md.kpi.churnChip")} chipTone={(data.totals.churn30dPct ?? 0) >= 20 ? "down" : (data.totals.churn30dPct ?? 0) >= 10 ? "warn" : "neutral"} delay={0.12} />
+            <KpiCard label={t("social.md.kpi.termsPending")} icon={<FileText />} value={<span className="k-num">{data.totals.termsPending ?? 0}</span>} chip={t("social.md.kpi.termsChip")} chipTone={(data.totals.termsPending ?? 0) > 0 ? "warn" : "neutral"} delay={0.16} />
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
@@ -757,16 +810,29 @@ function Dashboard({ me, reloadMe }: { me: MasterMe; reloadMe: () => void }) {
             </Card>
           )}
 
-          <Card className="mt-4">
-            <CardHeader title={t("social.followers")} subtitle={t("social.md.followersSub")} icon={<Users />} />
-            <div className="px-4 pb-5 pt-4 sm:px-6">
-              {data.followers.length ? (
-                <DataTable columns={followCols} rows={data.followers} dense pageSize={10} rowKey={(f) => String(f.subscriptionId)} />
-              ) : (
-                <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">{t("social.md.noFollowers")}</div>
-              )}
-            </div>
-          </Card>
+          <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <Card className="xl:col-span-8">
+              <CardHeader title={t("social.followers")} subtitle={t("social.md.followersSub")} icon={<Users />} />
+              <div className="px-4 pb-5 pt-4 sm:px-6">
+                {data.followers.length ? (
+                  <DataTable columns={followCols} rows={data.followers} dense pageSize={10} rowKey={(f) => String(f.subscriptionId)} />
+                ) : (
+                  <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">{t("social.md.noFollowers")}</div>
+                )}
+              </div>
+            </Card>
+            <FollowerSettingsCard
+              m={m}
+              followers={data.totals.followers}
+              className="xl:col-span-4 xl:self-start"
+              onSaved={() => {
+                reload();
+                reloadMe();
+              }}
+            />
+          </div>
+
+          <AnnouncementsCard className="mt-4" items={data.announcements ?? []} onSent={reload} />
 
           <Card className="mt-4">
             <CardHeader title={t("social.md.perfFees")} subtitle={t("social.md.perfFeesSub")} icon={<Percent />} />

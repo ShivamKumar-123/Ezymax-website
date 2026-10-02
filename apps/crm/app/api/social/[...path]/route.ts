@@ -9,15 +9,20 @@ import { mamGet, mamPatch, mamPost } from "@/lib/mam-bff";
 // the gateway KYC status in X-Kalks-Kyc (D68). A user id sent by the browser is never used. CSRF: cookies are
 // SameSite=Lax, writes must be JSON with a same-origin Origin. Every body is rebuilt from known, type-checked fields.
 //
-//   GET   leaderboard?period&program&sort&risk&minDays
-//   GET   masters/{id}
+//   GET   leaderboard?period&program&sort&risk&minDays&maxDd&maxFee&minFollowers&openOnly
+//   GET   masters/{id}?invite                 (invite: the private-link code of an invite-only master)
+//   GET   masters/{id}/preview?allocation&equityStop?&maxDdPct?&sizing?&value?&invite?   (A9 risk preview before following)
 //   GET   master/me · master/dashboard
 //   POST  master/apply                        {login, nickname, strategy, description, program, perfFeePct, feePeriod, minAllocation?}
-//   PATCH master/me                           {nickname?, strategy?, description?, perfFeePct?, feePeriod?, minAllocation?}
-//   GET   subscriptions · subscriptions/{id}
-//   POST  subscriptions                       {masterId, sizing:{mode, value}, allocation, maxLot?, equityStop?, maxDdPct?, excludedSymbols?}
-//   PATCH subscriptions/{id}                  {sizing?, maxLot?, equityStop?, maxDdPct?, excludedSymbols?, paused?}
+//   PATCH master/me                           {nickname?, strategy?, description?, perfFeePct?, feePeriod?, minAllocation?,
+//                                              maxFollowers? (int|null), acceptNew?, inviteOnly?, regenerateInvite?: true}
+//   POST  master/announcements                {title, body?} (to every follower still copying; 5 a day)
+//   GET   subscriptions · subscriptions/{id} · subscriptions/{id}/execution
+//   POST  subscriptions                       {masterId, sizing:{mode, value}, allocation, maxLot?, equityStop?, maxDdPct?, excludedSymbols?, autoSlPips?, inviteCode?}
+//   PATCH subscriptions/{id}                  {sizing?, maxLot?, equityStop?, maxDdPct?, excludedSymbols?, autoSlPips? (number|null), paused?}
 //   POST  subscriptions/{id}/stop             {returnFunds?, closePositions?} (closePositions false keeps the copied positions)
+//   POST  subscriptions/{id}/funds            {direction: "add"|"withdraw", amount} (wallet <-> copy account while following)
+//   POST  subscriptions/{id}/accept-terms     {} (the master's new fee terms)
 //   GET   funds · funds/{id} · funds/{id}/statement
 //   POST  funds                               {name, period, perfFeePct, lockInDays, minInvestment, maxDdPct, seed}
 //   PATCH funds/{id}                          {name?, period?, perfFeePct?, lockInDays?, minInvestment?, maxDdPct?}
@@ -38,6 +43,10 @@ const SYMBOL_RE = /^[A-Za-z0-9._#-]{1,24}$/;
 const PERIODS = ["daily", "weekly", "monthly"] as const;
 const PROGRAMS = ["copy", "pamm", "both"] as const;
 const SIZING = ["equity", "allocation", "multiplier", "fixed_lot"] as const;
+const DIRECTIONS = ["add", "withdraw"] as const;
+const INVITE_RE = /^[A-Za-z0-9]{4,32}$/;
+/** Query-string number: plain decimal, at most 2 decimals (no exponent, sign or spaces). */
+const QNUM_RE = /^\d{1,10}(\.\d{1,2})?$/;
 
 function error(status: number, code: string, message: string, field?: string) {
   return NextResponse.json({ error: { code, message, ...(field ? { field } : {}) } }, { status, headers: NO_STORE });
@@ -161,6 +170,35 @@ function limits(body: Obj, out: Obj, nullable: boolean) {
   put(out, "equityStop", num(body, "equityStop", { min: 0, max: 1e9, label: "equity stop", nullable }));
   put(out, "maxDdPct", num(body, "maxDdPct", { min: 1, max: 99, label: "max drawdown", nullable }));
   if (body.excludedSymbols !== undefined) out.excludedSymbols = body.excludedSymbols === null && nullable ? [] : symbols(body.excludedSymbols);
+  // A9: stop loss on every copied trade, this many pips from its entry (null clears it on PATCH)
+  put(out, "autoSlPips", num(body, "autoSlPips", { min: 1, max: 5000, label: "auto stop loss", nullable }));
+}
+
+/** Private copy-link code (A11). */
+function inviteCode(v: unknown): string {
+  if (typeof v !== "string" || !INVITE_RE.test(v.trim())) throw new Invalid("Invalid invite link.", "inviteCode");
+  return v.trim();
+}
+
+/** Money amount above zero with at most 2 decimals. */
+function amount2(body: Obj, k: string, label: string): number {
+  const v = num(body, k, { min: 0.01, max: 1e9, label, required: true })!;
+  if (Math.abs(Math.round(v * 100) - v * 100) > 1e-6) throw new Invalid(`Enter ${label} with up to 2 decimals.`, k);
+  return Math.round(v * 100) / 100;
+}
+
+/** A11 follower settings on PATCH master/me. */
+function followerSettings(body: Obj, out: Obj) {
+  put(out, "maxFollowers", num(body, "maxFollowers", { int: true, min: 0, max: 100_000, label: "max followers", nullable: true }));
+  for (const k of ["acceptNew", "inviteOnly"] as const) {
+    if (body[k] === undefined) continue;
+    if (typeof body[k] !== "boolean") throw new Invalid(`Invalid ${k}.`, k);
+    out[k] = body[k];
+  }
+  if (body.regenerateInvite !== undefined) {
+    if (body.regenerateInvite !== true) throw new Invalid("Invalid regenerateInvite.", "regenerateInvite");
+    out.regenerateInvite = true;
+  }
 }
 
 function masterBody(body: Obj, apply: boolean): Obj {
@@ -229,6 +267,23 @@ export async function GET(req: NextRequest, { params }: Ctx) {
       if (!/^\d{1,5}$/.test(md)) return error(400, "bad_request", "Invalid minDays.");
       q.set("minDays", md);
     }
+    // A10 filters: max drawdown % and max fee % (0–100), min followers, accepting new followers only
+    for (const k of ["maxDd", "maxFee"] as const) {
+      const v = sp.get(k);
+      if (!v) continue;
+      if (!QNUM_RE.test(v) || Number(v) > 100) return error(400, "bad_request", `Invalid ${k}.`);
+      q.set(k, v);
+    }
+    const mf = sp.get("minFollowers");
+    if (mf) {
+      if (!/^\d{1,6}$/.test(mf)) return error(400, "bad_request", "Invalid minFollowers.");
+      q.set("minFollowers", mf);
+    }
+    const oo = sp.get("openOnly");
+    if (oo) {
+      if (oo !== "true" && oo !== "false") return error(400, "bad_request", "Invalid openOnly.");
+      if (oo === "true") q.set("openOnly", "true");
+    }
     const qs = q.toString();
     const r = await socialEngine<{ items?: unknown[] }>(`/v1/social/leaderboard${qs ? `?${qs}` : ""}`, { user, req });
     if (r.status !== 200) return reply(r.status, r.data);
@@ -236,9 +291,39 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   }
 
   if (n === 2 && a === "masters" && ID_RE.test(b!)) {
-    const r = await socialEngine<Obj>(`/v1/social/masters/${b}`, { user, req });
+    // A11: an invite-only master is found with its private-link code only (404 otherwise)
+    const inv = req.nextUrl.searchParams.get("invite");
+    if (inv && !INVITE_RE.test(inv)) return error(400, "bad_request", "Invalid invite link.");
+    const r = await socialEngine<Obj>(`/v1/social/masters/${b}${inv ? `?invite=${encodeURIComponent(inv)}` : ""}`, { user, req });
     if (r.status !== 200) return reply(r.status, r.data);
     return reply(200, { ...r.data, master: publicMaster(r.data.master) });
+  }
+
+  if (n === 3 && a === "masters" && ID_RE.test(b!) && c === "preview") {
+    // A9 risk preview: only known numeric parameters go through
+    const sp = req.nextUrl.searchParams;
+    const q = new URLSearchParams();
+    const alloc = sp.get("allocation");
+    if (!alloc || !QNUM_RE.test(alloc) || !(Number(alloc) > 0)) return error(400, "bad_request", "Invalid allocation.");
+    q.set("allocation", alloc);
+    for (const k of ["equityStop", "maxDdPct", "value"] as const) {
+      const v = sp.get(k);
+      if (!v) continue;
+      if (!QNUM_RE.test(v) || (k === "maxDdPct" && Number(v) > 99)) return error(400, "bad_request", `Invalid ${k}.`);
+      q.set(k, v);
+    }
+    const sz = sp.get("sizing");
+    if (sz) {
+      if (!(SIZING as readonly string[]).includes(sz)) return error(400, "bad_request", "Invalid sizing.");
+      q.set("sizing", sz);
+    }
+    const inv = sp.get("invite");
+    if (inv) {
+      if (!INVITE_RE.test(inv)) return error(400, "bad_request", "Invalid invite link.");
+      q.set("invite", inv);
+    }
+    const r = await socialEngine(`/v1/social/masters/${b}/preview?${q}`, { user, req });
+    return reply(r.status, r.data);
   }
 
   if (n === 2 && a === "master" && b === "me") {
@@ -255,6 +340,12 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
   if (n === 1 && a === "subscriptions") {
     const r = await socialEngine("/v1/social/subscriptions", { user, req });
+    return reply(r.status, r.data);
+  }
+
+  if (n === 3 && a === "subscriptions" && ID_RE.test(b!) && c === "execution") {
+    // A10: master vs follower price, slippage and delay of every copied trade
+    const r = await socialEngine(`/v1/social/subscriptions/${b}/execution`, { user, req });
     return reply(r.status, r.data);
   }
 
@@ -322,7 +413,29 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         allocation: num(body, "allocation", { min: 0.01, max: 1e9, label: "an allocation", required: true }),
       };
       limits(body, out, false);
+      if (body.inviteCode !== undefined && body.inviteCode !== null && body.inviteCode !== "") out.inviteCode = inviteCode(body.inviteCode);
       const r = await socialEngine("/v1/social/subscriptions", { user, req, body: out });
+      return reply(r.status, r.data);
+    }
+
+    if (n === 3 && a === "subscriptions" && ID_RE.test(b!) && c === "funds") {
+      // A6: add from the wallet / withdraw free margin to the wallet while following
+      const out = { direction: oneOf(body, "direction", DIRECTIONS, "add or withdraw", true), amount: amount2(body, "amount", "an amount") };
+      const r = await socialEngine(`/v1/social/subscriptions/${b}/funds`, { user, req, body: out });
+      return reply(r.status, r.data);
+    }
+
+    if (n === 3 && a === "subscriptions" && ID_RE.test(b!) && c === "accept-terms") {
+      // A8: accept the master's new terms (nothing from the browser is passed on)
+      const r = await socialEngine(`/v1/social/subscriptions/${b}/accept-terms`, { user, req, body: {} });
+      return reply(r.status, r.data);
+    }
+
+    if (n === 2 && a === "master" && b === "announcements") {
+      // A11: a master's message to its followers
+      const out: Obj = { title: text(body, "title", { max: 120, min: 3, label: "a title", required: true }) };
+      put(out, "body", text(body, "body", { max: 2000, label: "a message" }));
+      const r = await socialEngine("/v1/social/master/announcements", { user, req, body: out });
       return reply(r.status, r.data);
     }
 
@@ -386,7 +499,9 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   try {
     if (n === 2 && a === "master" && b === "me") {
       const out = masterBody(body, false);
+      followerSettings(body, out);
       if (!Object.keys(out).length) throw new Invalid("Nothing to update.");
+      // the reply keeps `terms` ({applied, pending}: how a fee change reached the followers, A8)
       const r = await socialEngine<Obj>("/v1/social/master/me", { method: "PATCH", user, req, body: out });
       if (r.status !== 200) return reply(r.status, r.data);
       return reply(200, { ...r.data, master: ownMaster(r.data.master) });

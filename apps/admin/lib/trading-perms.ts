@@ -19,15 +19,18 @@
  * | accounts.write   | account status, group change, leverage                                     | same as dealing.write                              |
  * | finance.adjust   | add / deduct funds (Balance & credit, wallet service) and account bonus     | platform_owner, super_admin, admin, finance        |
  * | groups.write     | create / edit account groups                                               | platform_owner, super_admin, admin                 |
+ * | accounts.close   | request permanent closure of an account (Trading › Accounts)               | platform_owner, super_admin, admin, compliance     |
+ * | accounts.close.approve | approve / reject closure requests (Trading › Closures, four-eyes)    | platform_owner, super_admin, admin, compliance     |
  */
 
-export const TRADING_PERMS = ["dealing.read", "dealing.write", "dealing.policy", "accounts.read", "accounts.write", "finance.adjust", "groups.write"] as const;
+export const TRADING_PERMS = ["dealing.read", "dealing.write", "dealing.policy", "accounts.read", "accounts.write", "accounts.close", "accounts.close.approve", "finance.adjust", "groups.write"] as const;
 export type TradingPerm = (typeof TRADING_PERMS)[number];
 
 const READERS = ["platform_owner", "super_admin", "admin", "dealer", "risk_manager", "compliance", "finance", "support", "viewer"];
 const DEALING = ["platform_owner", "super_admin", "admin", "dealer", "risk_manager"];
 const FINANCE = ["platform_owner", "super_admin", "admin", "finance"];
 const CONFIG = ["platform_owner", "super_admin", "admin"];
+const CLOSE = ["platform_owner", "super_admin", "admin", "compliance"];
 
 export const TRADING_ROLE_MAP: Record<TradingPerm, readonly string[]> = {
   "dealing.read": READERS,
@@ -35,6 +38,8 @@ export const TRADING_ROLE_MAP: Record<TradingPerm, readonly string[]> = {
   "dealing.policy": CONFIG,
   "accounts.read": READERS,
   "accounts.write": DEALING,
+  "accounts.close": CLOSE,
+  "accounts.close.approve": CLOSE,
   "finance.adjust": FINANCE,
   "groups.write": CONFIG,
 };

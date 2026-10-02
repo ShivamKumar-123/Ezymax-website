@@ -63,11 +63,17 @@ pub struct BoardQ {
     sort: Option<String>,
     risk: Option<String>,
     min_days: Option<i64>,
+    /// A10 filters: maximum drawdown (%), maximum performance fee (%), minimum followers, accepting new followers only.
+    max_dd: Option<f64>,
+    max_fee: Option<f64>,
+    min_followers: Option<i64>,
+    open_only: Option<bool>,
 }
 
 pub async fn leaderboard(State(st): State<AppState>, ctx: Ctx, Query(q): Query<BoardQ>) -> ApiResult<Json<Value>> {
     let so = social(&st);
-    let masters: Vec<Master> = so.reg.read().unwrap().masters.values().filter(|m| m.tenant_id == ctx.tenant.tenant_id && m.status == "approved" && !m.hidden).cloned().collect();
+    // A11: invite-only masters are reachable through their private link only
+    let masters: Vec<Master> = so.reg.read().unwrap().masters.values().filter(|m| m.tenant_id == ctx.tenant.tenant_id && m.status == "approved" && !m.hidden && !m.invite_only).cloned().collect();
     let logins: Vec<i64> = masters.iter().map(|m| m.login).collect();
     let mut points = so.points(&logins).await;
     let mut items: Vec<Value> = Vec::new();
@@ -92,6 +98,10 @@ pub async fn leaderboard(State(st): State<AppState>, ctx: Ctx, Query(q): Query<B
             "high" => r >= 7,
             _ => true,
         }) && v["ageDays"].as_i64().unwrap_or(0) >= min_days
+            && q.max_dd.is_none_or(|x| v["stats"]["maxDd"].as_f64().unwrap_or(0.0) <= x)
+            && q.max_fee.is_none_or(|x| v["perfFeePct"].as_f64().unwrap_or(0.0) <= x)
+            && q.min_followers.is_none_or(|x| v["stats"]["followers"].as_i64().unwrap_or(0) >= x)
+            && (q.open_only != Some(true) || v["acceptingNew"].as_bool() == Some(true))
     });
     let period_key = match q.period.as_deref().unwrap_or("1y") {
         "1m" => "return1m",
@@ -116,9 +126,31 @@ pub async fn leaderboard(State(st): State<AppState>, ctx: Ctx, Query(q): Query<B
     Ok(Json(json!({"items": items, "totals": totals})))
 }
 
-pub async fn master_profile(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i64>) -> ApiResult<Json<Value>> {
+#[derive(Deserialize)]
+pub struct ProfileQ {
+    invite: Option<String>,
+}
+
+/// A11: an invite-only master is visible with the right code, to its followers and to its owner.
+fn invite_ok(st: &AppState, m: &Master, user: Option<i64>, code: Option<&str>) -> bool {
+    if !m.invite_only {
+        return true;
+    }
+    if code.is_some_and(|c| m.invite_code.as_deref().is_some_and(|x| !x.is_empty() && x.eq_ignore_ascii_case(c.trim()))) {
+        return true;
+    }
+    match user {
+        Some(u) => u == m.user_id || st.social.reg.read().unwrap().subs.values().any(|s| s.master_id == m.id && s.user_id == u),
+        None => false,
+    }
+}
+
+pub async fn master_profile(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Path(id): Path<i64>, Query(pq): Query<ProfileQ>) -> ApiResult<Json<Value>> {
     let so = social(&st);
     let m = so.reg.read().unwrap().masters.get(&id).cloned().filter(|m| m.tenant_id == ctx.tenant.tenant_id && m.live()).ok_or_else(|| ApiError::NotFound("Master not found".into()))?;
+    if !invite_ok(&st, &m, user(&h).ok(), pq.invite.as_deref()) {
+        return Err(ApiError::NotFound("Master not found".into()));
+    }
     let pts = so.points(&[m.login]).await.remove(&m.login).unwrap_or_default();
     let s = so.stats_for(m.login, pts).await;
     let settings = so.settings(m.tenant_id);
@@ -132,6 +164,71 @@ pub async fn master_profile(State(st): State<AppState>, ctx: Ctx, Path(id): Path
         "symbols": so.symbol_mix(m.login).await,
         "tradeDelayMinutes": settings.trade_delay_minutes,
         "terms": {"perfFeePct": num(m.perf_fee_pct), "feePeriod": m.fee_period, "hwm": true, "minAllocation": num(m.min_allocation.max(settings.min_allocation)), "platformCutPct": num(settings.platform_cut_pct)},
+    })))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PreviewQ {
+    allocation: Option<f64>,
+    equity_stop: Option<f64>,
+    max_dd_pct: Option<f64>,
+    sizing: Option<String>,
+    value: Option<f64>,
+    invite: Option<String>,
+}
+
+/// A9 risk preview before following: the worst case the follower's own protection allows (equity stop, else max
+/// drawdown, else the whole allocation), what the master's worst drawdown so far would mean for this amount, the
+/// risk score, and the master's last 10 closed trades re-sized to this allocation (`GET masters/{id}/preview`).
+pub async fn master_preview(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Path(id): Path<i64>, Query(q): Query<PreviewQ>) -> ApiResult<Json<Value>> {
+    let so = social(&st);
+    let m = so.reg.read().unwrap().masters.get(&id).cloned().filter(|m| m.tenant_id == ctx.tenant.tenant_id && m.live()).ok_or_else(|| ApiError::NotFound("Master not found".into()))?;
+    if !invite_ok(&st, &m, user(&h).ok(), q.invite.as_deref()) {
+        return Err(ApiError::NotFound("Master not found".into()));
+    }
+    let f = |v: Option<f64>| v.and_then(crate::money::from_f64).filter(|d| *d > ZERO);
+    let allocation = f(q.allocation).ok_or(ApiError::Validation { field: "allocation", message: "Enter the amount to allocate".into() })?;
+    let equity_stop = f(q.equity_stop).filter(|e| *e < allocation);
+    let max_dd = f(q.max_dd_pct).filter(|d| *d <= D::from(99));
+    let sizing = match q.sizing.as_deref().and_then(SizingMode::parse) {
+        Some(SizingMode::Multiplier) => Sizing { mode: SizingMode::Multiplier, value: f(q.value).unwrap_or(D::ONE) },
+        Some(SizingMode::FixedLot) => Sizing { mode: SizingMode::FixedLot, value: f(q.value).unwrap_or(D::new(1, 2)) },
+        Some(SizingMode::Allocation) => Sizing { mode: SizingMode::Allocation, value: f(q.value).unwrap_or(allocation) },
+        _ => Sizing { mode: SizingMode::Equity, value: D::ONE },
+    };
+    let pts = so.points(&[m.login]).await.remove(&m.login).unwrap_or_default();
+    let stats = so.stats_for(m.login, pts).await;
+    let master_eq = so.account_brief(m.login).await.map(|b| b.equity).unwrap_or(ZERO);
+    let (worst, basis) = match (equity_stop, max_dd) {
+        (Some(es), _) => (allocation - es, "equity_stop"),
+        (None, Some(dd)) => (allocation * dd / D::ONE_HUNDRED, "max_dd"),
+        _ => (allocation, "allocation"),
+    };
+    let hist_dd = crate::money::from_f64(stats.max_dd).unwrap_or(ZERO);
+    let settings = so.settings(m.tenant_id);
+    let trades = so.delayed_trades(m.login, settings.trade_delay_minutes, 10).await;
+    let example: Vec<Value> = trades
+        .iter()
+        .map(|t| {
+            let vol: D = t["volume"].as_f64().and_then(crate::money::from_f64).unwrap_or(ZERO);
+            let profit: D = t["profit"].as_f64().and_then(crate::money::from_f64).unwrap_or(ZERO);
+            let sym = t["symbol"].as_str().unwrap_or_default();
+            let yours = st.hub.shared.specs.get(sym).and_then(|spec| crate::social::math::open_volume(&sizing, vol, master_eq, allocation, spec, None));
+            let your_profit = match yours {
+                Some(y) if vol > ZERO => Some(r2(profit * y / vol)),
+                _ => None,
+            };
+            json!({"symbol": sym, "side": t["side"], "closeTime": t["closeTime"], "masterVolume": t["volume"], "masterProfit": t["profit"],
+                   "yourVolume": crate::money::num_opt(yours), "yourProfit": crate::money::num_opt(your_profit), "skipped": yours.is_none()})
+        })
+        .collect();
+    Ok(Json(json!({
+        "allocation": num(allocation), "masterEquity": num(r2(master_eq)),
+        "worstCase": {"loss": num(r2(worst)), "basis": basis, "pctOfAllocation": num(r2(worst / allocation * D::ONE_HUNDRED))},
+        "master": {"maxDdPct": stats.max_dd, "currentDdPct": stats.current_dd, "riskScore": stats.risk, "volatility": stats.volatility,
+                   "lossAtMaxDd": num(r2(allocation * hist_dd / D::ONE_HUNDRED))},
+        "example": example, "tradeDelayMinutes": settings.trade_delay_minutes,
     })))
 }
 
@@ -303,8 +400,41 @@ pub async fn master_update(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, B
     if let Some(a) = dec(b.get("minAllocation"), "minAllocation")? {
         m.min_allocation = a.max(ZERO);
     }
+    // A11: follower limits and the private copy link
+    if b.contains_key("maxFollowers") {
+        m.max_followers = match b.get("maxFollowers") {
+            None | Some(Value::Null) => None,
+            Some(v) => Some(v.as_i64().filter(|x| (0..=100_000).contains(x)).ok_or(ApiError::Validation { field: "maxFollowers", message: "Max followers must be a whole number from 0 to 100000".into() })? as i32),
+        };
+    }
+    if let Some(v) = b.get("acceptNew").and_then(Value::as_bool) {
+        m.accept_new = v;
+    }
+    if let Some(v) = b.get("inviteOnly").and_then(Value::as_bool) {
+        m.invite_only = v;
+        if v && m.invite_code.is_none() {
+            m.invite_code = Some(invite_code());
+        }
+    }
+    if b.get("regenerateInvite").and_then(Value::as_bool) == Some(true) {
+        m.invite_code = Some(invite_code());
+    }
+    let old = master_of_user(&st, ctx.tenant.tenant_id, u).map(|x| (x.perf_fee_pct, x.fee_period));
     so.save_master(&m).await?;
-    Ok(Json(json!({"master": so.master_view(&m, None, true).await})))
+    // A8: new terms reach the followers (lower fee at once; anything else waits for their acceptance)
+    let (applied, pending) = match old {
+        Some((p, f)) if p != m.perf_fee_pct || f != m.fee_period => so.on_terms_changed(&m).await,
+        _ => (0, 0),
+    };
+    Ok(Json(json!({"master": so.master_view(&m, None, true).await, "terms": {"applied": applied, "pending": pending}})))
+}
+
+/// A random 10-character invite code (no look-alike characters).
+fn invite_code() -> String {
+    const A: &[u8] = b"ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    let mut b = [0u8; 10];
+    getrandom::fill(&mut b).expect("OS randomness unavailable");
+    b.iter().map(|x| A[*x as usize % A.len()] as char).collect()
 }
 
 pub async fn master_dashboard(State(st): State<AppState>, ctx: Ctx, h: HeaderMap) -> ApiResult<Json<Value>> {
@@ -316,8 +446,18 @@ pub async fn master_dashboard(State(st): State<AppState>, ctx: Ctx, h: HeaderMap
     let subs: Vec<crate::social::Sub> = so.reg.read().unwrap().subs.values().filter(|x| x.master_id == m.id).cloned().collect();
     let followers: Vec<Value> = subs
         .iter()
-        .map(|x| json!({"subscriptionId": x.id, "since": x.created_at, "status": x.status, "sizing": crate::social::sizing_json(&x.sizing), "equity": num(r2(x.last_equity.unwrap_or(ZERO))), "profit": num(r2(x.last_equity.unwrap_or(ZERO) - x.net_deposits))}))
+        .map(|x| {
+            json!({"subscriptionId": x.id, "since": x.created_at, "status": x.status, "sizing": crate::social::sizing_json(&x.sizing), "equity": num(r2(x.last_equity.unwrap_or(ZERO))), "profit": num(r2(x.last_equity.unwrap_or(ZERO) - x.net_deposits)),
+                   "stoppedAt": x.stopped_at, "stopReason": x.stop_reason, "netDeposits": num(r2(x.net_deposits)), "perfFeePct": num(x.perf_fee_pct), "termsPending": x.terms_deadline.is_some()})
+        })
         .collect();
+    // A11 followers dashboard: new / left in the last 30 days and the churn rate
+    let since = Utc::now() - chrono::Duration::days(30);
+    let new30 = subs.iter().filter(|x| x.created_at >= since).count();
+    let left30 = subs.iter().filter(|x| x.stopped_at.is_some_and(|t| t >= since)).count();
+    let copying_now = subs.iter().filter(|x| x.copying()).count();
+    let base = copying_now + left30;
+    let churn = if base > 0 { (left30 as f64 / base as f64 * 10000.0).round() / 100.0 } else { 0.0 };
     let funds_list: Vec<crate::social::Fund> = so.reg.read().unwrap().funds.values().filter(|f| f.master_id == m.id).cloned().collect();
     let mut funds = Vec::new();
     for f in &funds_list {
@@ -335,7 +475,9 @@ pub async fn master_dashboard(State(st): State<AppState>, ctx: Ctx, h: HeaderMap
     Ok(Json(json!({
         "master": so.master_view(&m, Some(&s), true).await,
         "followers": followers, "funds": funds, "fees": fees,
-        "totals": {"followers": nf, "aum": num(r2(aum)), "feesPending": (pending * 100.0).round() / 100.0, "feesPaid": (paid * 100.0).round() / 100.0},
+        "totals": {"followers": nf, "aum": num(r2(aum)), "feesPending": (pending * 100.0).round() / 100.0, "feesPaid": (paid * 100.0).round() / 100.0,
+                   "new30d": new30, "left30d": left30, "churn30dPct": churn, "termsPending": subs.iter().filter(|x| x.copying() && x.terms_deadline.is_some()).count()},
+        "announcements": announcements(&st, m.id, 20).await?,
     })))
 }
 
@@ -410,6 +552,20 @@ fn limits(b: &Map<String, Value>) -> ApiResult<(Option<Option<D>>, Option<Option
     Ok((max_lot, equity_stop, max_dd, excluded))
 }
 
+/// A9 `autoSlPips`: None = not sent, Some(None) = cleared, Some(Some(p)) = 1–5000 pips.
+fn auto_sl_pips(b: &Map<String, Value>) -> ApiResult<Option<Option<D>>> {
+    if !b.contains_key("autoSlPips") {
+        return Ok(None);
+    }
+    let v = dec(b.get("autoSlPips"), "autoSlPips")?;
+    if let Some(p) = v
+        && (p < D::ONE || p > D::from(5000))
+    {
+        return Err(ApiError::Validation { field: "autoSlPips", message: "Auto stop loss must be between 1 and 5000 pips".into() });
+    }
+    Ok(Some(v))
+}
+
 async fn fees_pending(st: &AppState, sub: i64) -> D {
     sqlx::query_scalar::<_, Option<D>>("SELECT sum(amount) FROM social_fees WHERE sub_id = $1 AND status IN ('pending','approved')").bind(sub).fetch_one(&st.pool).await.ok().flatten().unwrap_or(ZERO)
 }
@@ -417,11 +573,13 @@ async fn fees_pending(st: &AppState, sub: i64) -> D {
 async fn sub_view(st: &AppState, s: &crate::social::Sub) -> Value {
     let so = social(st);
     let mut s = s.clone();
+    let mut withdrawable = None;
     if let Some(b) = so.account_brief(s.login).await {
         s.last_equity = Some(b.equity);
         s.last_balance = Some(b.balance);
         s.positions = b.positions;
         s.orders = b.orders;
+        withdrawable = Some(crate::social::copier::returnable(b.withdrawable));
     }
     let m = so.reg.read().unwrap().masters.get(&s.master_id).cloned();
     let risk = match &m {
@@ -431,7 +589,10 @@ async fn sub_view(st: &AppState, s: &crate::social::Sub) -> Value {
         }
         None => None,
     };
-    sub_json(&s, m.as_ref(), risk, fees_pending(st, s.id).await)
+    let mut v = sub_json(&s, m.as_ref(), risk, fees_pending(st, s.id).await);
+    // A6: what can go back to the wallet now (free margin, rounded down to the cent)
+    v["withdrawable"] = crate::money::num_opt(withdrawable);
+    v
 }
 
 pub async fn subscribe(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Body(b): Body<Map<String, Value>>) -> ApiResult<Json<Value>> {
@@ -448,6 +609,19 @@ pub async fn subscribe(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Body(
     if m.user_id == u {
         return Err(bad("own_subscription", "You cannot copy yourself"));
     }
+    // A11: the master's follower limits and private link
+    if !m.accept_new {
+        return Err(bad("not_accepting", format!("{} isn't accepting new followers right now", m.nickname)));
+    }
+    if let Some(max) = m.max_followers
+        && so.reg.read().unwrap().subs_of(m.id).len() as i64 >= max as i64
+    {
+        return Err(bad("followers_full", format!("{} has reached the maximum number of followers", m.nickname)));
+    }
+    if !invite_ok(&st, &m, None, b.get("inviteCode").and_then(Value::as_str)) {
+        return Err(bad("invite_required", format!("{} takes followers by private invite only", m.nickname)));
+    }
+    let auto_sl = auto_sl_pips(&b)?.flatten();
     let allocation = dec(b.get("allocation"), "allocation")?.ok_or(ApiError::Validation { field: "allocation", message: "Enter the amount to allocate from your wallet".into() })?;
     if allocation <= ZERO || r2(allocation) != allocation {
         return Err(ApiError::Validation { field: "allocation", message: "Enter an amount above 0 (up to 2 decimals)".into() });
@@ -470,7 +644,11 @@ pub async fn subscribe(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Body(
             return Err(ApiError::Validation { field: "excludedSymbols", message: format!("Unknown symbol {s}") });
         }
     }
-    let sub = so.create_sub(tenant, u, master_id, sizing, allocation, max_lot.flatten(), equity_stop.flatten(), max_dd.flatten(), excluded).await?;
+    let mut sub = so.create_sub(tenant, u, master_id, sizing, allocation, max_lot.flatten(), equity_stop.flatten(), max_dd.flatten(), excluded).await?;
+    if auto_sl.is_some() {
+        sub.auto_sl_pips = auto_sl;
+        so.save_sub(&sub).await?;
+    }
     let key = format!("copy:alloc:{}", sub.id);
     let funding = match so.wallet.to_trading(&ctx.tenant.slug, &key, u, sub.login, allocation).await {
         Ok(_) => json!({"status": "done", "amount": num(allocation)}),
@@ -520,7 +698,91 @@ pub async fn subscription(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Pa
         "positions": detail["positions"], "orders": detail["orders"],
         "log": st.social.copy_log(id, 100).await,
         "fees": fee_rows(&st, "f.sub_id = $1", id).await?,
+        "execution": st.social.execution_report(id, 100).await["summary"].clone(),
+        "announcements": announcements(&st, s.master_id, 10).await?,
     })))
+}
+
+/// A10: execution report of a subscription (master vs follower price, slippage, delay).
+pub async fn execution(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Path(id): Path<i64>) -> ApiResult<Json<Value>> {
+    let u = user(&h)?;
+    own_sub(&st, &ctx, u, id)?;
+    Ok(Json(st.social.execution_report(id, 500).await))
+}
+
+/// A6: add funds from the wallet / withdraw free margin to the wallet while following.
+/// Body `{direction: "add" | "withdraw", amount}`.
+pub async fn sub_funds(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Path(id): Path<i64>, Body(b): Body<Map<String, Value>>) -> ApiResult<Json<Value>> {
+    let u = user(&h)?;
+    let s = own_sub(&st, &ctx, u, id)?;
+    let add = match b.get("direction").and_then(Value::as_str) {
+        Some("add") => true,
+        Some("withdraw") => false,
+        _ => return Err(ApiError::Validation { field: "direction", message: "direction must be add or withdraw".into() }),
+    };
+    if add {
+        super::controls::social_gate(&st, u)?;
+    }
+    let amount = dec(b.get("amount"), "amount")?.ok_or(ApiError::Validation { field: "amount", message: "Enter the amount".into() })?;
+    let (moved, balance) = st.social.sub_funds(s.id, add, amount).await.map_err(|e| ApiError::Status { status: e.status, code: e.code, message: e.message })?;
+    let s = own_sub(&st, &ctx, u, id)?;
+    Ok(Json(json!({"direction": if add { "add" } else { "withdraw" }, "amount": num(moved), "balance": crate::money::num_opt(balance), "subscription": sub_view(&st, &s).await})))
+}
+
+/// A8: accept the master's new terms (the fee so far is settled at the old rate first).
+pub async fn accept_terms(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Path(id): Path<i64>) -> ApiResult<Json<Value>> {
+    let u = user(&h)?;
+    let s = own_sub(&st, &ctx, u, id)?;
+    match st.social.accept_terms(s.id).await {
+        Ok(_) => {}
+        Err(e) if e.to_string() == "no_pending_terms" => return Err(bad("no_pending_terms", "There are no new terms to accept")),
+        Err(e) if e.to_string() == "settlement_failed" => return Err(ApiError::Status { status: 503, code: "unavailable", message: "The fee for the period so far could not be settled. Please try again shortly.".into() }),
+        Err(e) => return Err(e.into()),
+    }
+    let s = own_sub(&st, &ctx, u, id)?;
+    Ok(Json(json!({"subscription": sub_view(&st, &s).await})))
+}
+
+/* ------------------------------------------------------------------ */
+/* Announcements (A11)                                                 */
+/* ------------------------------------------------------------------ */
+
+async fn announcements(st: &AppState, master_id: i64, limit: i64) -> ApiResult<Vec<Value>> {
+    let rows = sqlx::query("SELECT id, title, body, recipients, created_at FROM social_announcements WHERE master_id = $1 ORDER BY id DESC LIMIT $2").bind(master_id).bind(limit).fetch_all(&st.pool).await?;
+    Ok(rows
+        .iter()
+        .map(|r| json!({"id": r.get::<i64, _>("id"), "title": r.get::<String, _>("title"), "body": r.get::<String, _>("body"), "recipients": r.get::<i32, _>("recipients"), "createdAt": r.get::<chrono::DateTime<Utc>, _>("created_at")}))
+        .collect())
+}
+
+/// A11: a master posts an announcement to every follower still copying (bell + email by preference).
+/// Body `{title, body}`; at most 5 per day.
+pub async fn announce(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Body(b): Body<Map<String, Value>>) -> ApiResult<Json<Value>> {
+    let u = user(&h)?;
+    let so = social(&st);
+    let m = master_of_user(&st, ctx.tenant.tenant_id, u).filter(|m| m.live()).ok_or_else(|| bad("not_master", "Your master profile is not approved yet"))?;
+    let title: String = b.get("title").and_then(Value::as_str).map(|s| s.trim().chars().take(120).collect()).unwrap_or_default();
+    let body: String = b.get("body").and_then(Value::as_str).map(|s| s.trim().chars().take(2000).collect()).unwrap_or_default();
+    if title.chars().count() < 3 {
+        return Err(ApiError::Validation { field: "title", message: "Title: at least 3 characters".into() });
+    }
+    let today: i64 = sqlx::query_scalar("SELECT count(*) FROM social_announcements WHERE master_id = $1 AND created_at > now() - interval '1 day'").bind(m.id).fetch_one(&st.pool).await?;
+    if today >= 5 {
+        return Err(bad("too_many", "You can post up to 5 announcements a day"));
+    }
+    let subs: Vec<crate::social::Sub> = so.reg.read().unwrap().subs_of(m.id).into_iter().cloned().collect();
+    let id: i64 = sqlx::query_scalar("INSERT INTO social_announcements (tenant_id, master_id, title, body, recipients) VALUES ($1,$2,$3,$4,$5) RETURNING id")
+        .bind(m.tenant_id)
+        .bind(m.id)
+        .bind(&title)
+        .bind(&body)
+        .bind(subs.len() as i32)
+        .fetch_one(&st.pool)
+        .await?;
+    for s in &subs {
+        so.alert(s, "copy.announcement", format!("{}: {title}", m.nickname), body.clone(), "info", true, format!("copy:announce:{id}:{}", s.id), json!({"announcementId": id, "masterId": m.id})).await;
+    }
+    Ok(Json(json!({"announcement": {"id": id, "title": title, "body": body, "recipients": subs.len()}, "items": announcements(&st, m.id, 20).await?})))
 }
 
 pub async fn update_subscription(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Path(id): Path<i64>, Body(b): Body<Map<String, Value>>) -> ApiResult<Json<Value>> {
@@ -550,8 +812,15 @@ pub async fn update_subscription(State(st): State<AppState>, ctx: Ctx, h: Header
         }
         s.excluded = v;
     }
+    if let Some(v) = auto_sl_pips(&b)? {
+        s.auto_sl_pips = v;
+    }
     if let Some(p) = b.get("paused").and_then(Value::as_bool) {
+        if !p && s.terms_deadline.is_some_and(|d| d <= Utc::now()) {
+            return Err(bad("terms_pending", "Accept the master's new terms to resume copying"));
+        }
         s.status = if p { "paused".into() } else { "active".into() };
+        s.pause_reason = None;
     }
     st.social.save_sub(&s).await?;
     Ok(Json(json!({"subscription": sub_view(&st, &s).await})))
