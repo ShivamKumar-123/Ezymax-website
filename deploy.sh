@@ -84,16 +84,28 @@ fi
 
 echo "▶ Healthcheck…"
 sleep 4
-CODE_API=$(curl -sk -o /dev/null -w "%{http_code}" https://api.swisscresta.com/health   || echo "000")
-CODE_TRD=$(curl -sk -o /dev/null -w "%{http_code}" https://trade.swisscresta.com/       || echo "000")
-echo "  api.swisscresta.com/health  → HTTP $CODE_API"
-echo "  trade.swisscresta.com       → HTTP $CODE_TRD"
-
+# The gateway / trader containers take a few seconds to boot after `up -d`,
+# so a single probe often sees a transient 502 from nginx. Retry every 3 s
+# for up to HEALTHCHECK_TIMEOUT (default 60 s) and judge the LAST result.
 # 5xx or a flat 000 (no connection) is a real failure. 4xx still means the
 # stack is up — caller can decide whether the route should exist.
-fail=0
-case "$CODE_API" in 000|5*) fail=1 ;; esac
-case "$CODE_TRD" in 000|5*) fail=1 ;; esac
+HEALTH_DEADLINE=$((SECONDS + ${HEALTHCHECK_TIMEOUT:-60}))
+while :; do
+  CODE_API=$(curl -sk --max-time 10 -o /dev/null -w "%{http_code}" https://api.swisscresta.com/health   || echo "000")
+  CODE_TRD=$(curl -sk --max-time 10 -o /dev/null -w "%{http_code}" https://trade.swisscresta.com/       || echo "000")
+  # On a connection error curl prints "000" via -w AND the fallback echo adds
+  # another "000" → "000000", which slipped past the `000` match below and
+  # passed a dead stack. Keep the 3-digit status only.
+  CODE_API=${CODE_API:0:3}; CODE_TRD=${CODE_TRD:0:3}
+  fail=0
+  case "$CODE_API" in 000|5*) fail=1 ;; esac
+  case "$CODE_TRD" in 000|5*) fail=1 ;; esac
+  [ $fail -eq 0 ] && break
+  [ $SECONDS -ge $HEALTH_DEADLINE ] && break
+  sleep 3
+done
+echo "  api.swisscresta.com/health  → HTTP $CODE_API"
+echo "  trade.swisscresta.com       → HTTP $CODE_TRD"
 
 if [ $fail -ne 0 ]; then
   echo "⚠️  Healthcheck failed. Inspect with:"

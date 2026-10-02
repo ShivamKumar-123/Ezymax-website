@@ -9,6 +9,7 @@ Usage in any FastAPI service:
     add_middleware_stack(app)
 """
 import logging
+import re
 import time
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -23,6 +24,280 @@ settings = get_settings()
 # ---------------------------------------------------------------------------
 # 1. Sentry
 # ---------------------------------------------------------------------------
+# PII / secret redaction. send_default_pii=False only stops Sentry's
+# *automatic* PII pulls; request headers, query strings, breadcrumbs, log
+# messages, `extra` / contexts and stack-frame local variables still reach
+# the event. On a money-flow API those carry JWTs, cookies, webhook secrets,
+# passwords, OTP / TOTP codes, bank account / IFSC / UPI ids, PAN numbers and
+# emails. Everything below is scrubbed in before_send / before_breadcrumb /
+# before_send_transaction, and the scrubbers are module-level so they can be
+# unit tested without a DSN.
+_REDACT = "[redacted]"
+_MAX_SCRUB_DEPTH = 12
+
+_SENSITIVE_HEADERS = frozenset({
+    "authorization", "proxy-authorization", "cookie", "set-cookie",
+    "x-api-key", "x-api-secret", "x-razorpay-signature", "hmac",
+    "x-signature", "x-webhook-signature", "x-webhook-secret", "x-hub-signature",
+    "x-hub-signature-256", "x-csrf-token", "x-xsrf-token", "x-auth-token",
+    "x-access-token", "x-refresh-token", "x-forwarded-for", "x-real-ip",
+    "cf-connecting-ip", "true-client-ip",
+})
+
+# Key names whose values are always dropped (after lower-casing and
+# normalising '-' / ' ' to '_'). Substring match for the unambiguous ones…
+_SENSITIVE_KEY_PARTS = (
+    "password", "passwd", "passphrase", "secret", "token", "api_key", "apikey",
+    "access_key", "private_key", "privkey", "mnemonic", "seed_phrase",
+    "authorization", "cookie", "session", "csrf", "credential", "signature",
+    "otp", "totp", "2fa", "mfa", "backup_code", "recovery_code", "cvv", "cvc",
+    "card_number", "bank_account", "account_number", "account_no", "acc_no",
+    "ifsc", "iban", "swift", "routing_number", "upi", "vpa", "pan_number",
+    "pan_card", "aadhaar", "aadhar", "ssn", "passport", "email", "e_mail",
+    "phone", "mobile", "date_of_birth", "jwt", "webhook_key", "dsn",
+)
+# …and exact match for short names that would over-match as substrings
+# ("code" would hit status_code, "pan" would hit company).
+_SENSITIVE_KEY_EXACT = frozenset({
+    "code", "pin", "pan", "dob", "key", "sig", "hash", "auth", "pwd", "pass",
+    "verification_code", "step_up_code", "ip", "ip_address",
+    "remote_addr", "client_ip",
+})
+
+# Value patterns redacted inside free text (exception messages, log lines,
+# breadcrumb messages, URLs). Ordered: emails before UPI ids.
+_VALUE_PATTERNS = (
+    (re.compile(r"(?i)\bbearer\s+[A-Za-z0-9\-._~+/]+=*"), "Bearer " + _REDACT),
+    (re.compile(r"\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]+"), _REDACT),  # JWT
+    (re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"), "[email]"),
+    (re.compile(r"\b[A-Za-z0-9._-]{2,}@[A-Za-z]{2,}\b"), "[upi]"),          # UPI VPA
+    (re.compile(r"\b[A-Z]{5}[0-9]{4}[A-Z]\b"), "[pan]"),                  # Indian PAN
+    (re.compile(r"\b[A-Z]{4}0[A-Z0-9]{6}\b"), "[ifsc]"),                  # IFSC
+    (re.compile(r"(?i)\b(sk|rk|pk)_(live|test)_[A-Za-z0-9]{8,}"), _REDACT),  # API keys
+    (re.compile(r"(?i)\b(rzp_(live|test)_[A-Za-z0-9]{6,})"), _REDACT),
+    # key=value / "key": "value" pairs inside free text (query strings,
+    # stringified dicts, log lines).
+    (re.compile(
+        r"(?i)\b((?:\w*password|passwd|passphrase|\w*secret|\w*token|\w*api_?key|"
+        r"otp|totp|otp_code|signature|ifsc|upi|upi_id|vpa|pan|pan_number|"
+        r"account_number|bank_account|authorization|cookie)[\"']?\s*[=:]\s*[\"']?)"
+        r"([^\s\"'&,;}]+)"),
+     r"\1" + _REDACT),
+)
+
+
+def _norm_key(key) -> str:
+    return str(key).strip().lower().replace("-", "_").replace(" ", "_")
+
+
+def is_sensitive_key(key) -> bool:
+    k = _norm_key(key)
+    if not k:
+        return False
+    if k in _SENSITIVE_KEY_EXACT:
+        return True
+    return any(part in k for part in _SENSITIVE_KEY_PARTS)
+
+
+def scrub_text(value):
+    """Redact secret / PII patterns inside a free-text string."""
+    if not isinstance(value, str) or not value:
+        return value
+    out = value
+    for pattern, repl in _VALUE_PATTERNS:
+        out = pattern.sub(repl, out)
+    return out
+
+
+def scrub_data(value, _depth: int = 0):
+    """Recursively scrub dicts / lists / strings: sensitive keys are replaced
+    wholesale, every remaining string is pattern-scrubbed."""
+    if _depth > _MAX_SCRUB_DEPTH:
+        return _REDACT
+    if isinstance(value, dict):
+        out = {}
+        for k, v in value.items():
+            if is_sensitive_key(k) and v not in (None, "", [], {}):
+                out[k] = _REDACT
+            else:
+                out[k] = scrub_data(v, _depth + 1)
+        return out
+    if isinstance(value, (list, tuple)):
+        # Sentry sends headers / query params as [[key, value], ...] pairs.
+        out_list = []
+        for item in value:
+            if (isinstance(item, (list, tuple)) and len(item) == 2
+                    and isinstance(item[0], str) and is_sensitive_key(item[0])):
+                out_list.append([item[0], _REDACT])
+            else:
+                out_list.append(scrub_data(item, _depth + 1))
+        return out_list
+    if isinstance(value, str):
+        return scrub_text(value)
+    return value
+
+
+def _scrub_headers(headers):
+    if not headers:
+        return headers
+    if isinstance(headers, dict):
+        return {
+            k: (_REDACT if (str(k).lower() in _SENSITIVE_HEADERS or is_sensitive_key(k))
+                else scrub_text(v) if isinstance(v, str) else v)
+            for k, v in headers.items()
+        }
+    return scrub_data(headers)
+
+
+def _scrub_query_string(qs):
+    if not qs:
+        return qs
+    if isinstance(qs, str):
+        try:
+            from urllib.parse import parse_qsl, urlencode
+            pairs = parse_qsl(qs, keep_blank_values=True)
+            if pairs:
+                return urlencode(
+                    [(k, _REDACT if is_sensitive_key(k) else scrub_text(v)) for k, v in pairs],
+                    safe="[]",
+                )
+        except Exception:
+            return _REDACT
+        return scrub_text(qs)
+    return scrub_data(qs)
+
+
+def _scrub_url(url):
+    if not isinstance(url, str) or "?" not in url:
+        return scrub_text(url)
+    base, _, qs = url.partition("?")
+    return f"{scrub_text(base)}?{_scrub_query_string(qs)}"
+
+
+_SENSITIVE_URL_PREFIXES = (
+    "/api/v1/webhooks/",   # Razorpay / OxaPay / on-chain IPNs
+    "/api/v1/auth/",       # passwords, OAuth tokens, 2FA codes
+    "/api/lp/",            # Corecen LP push (HMAC-signed prices)
+    "/api/v1/wallet/",     # deposit/withdraw bodies, bank / UPI details
+    "/api/v1/admin/",      # admin actions (login-as codes etc.)
+    "/api/v1/profile",     # KYC, bank, PAN
+    "/api/v1/kyc",
+)
+
+
+def _scrub_exception_values(exc_block) -> None:
+    for exc in (exc_block or {}).get("values") or []:
+        if not isinstance(exc, dict):
+            continue
+        if isinstance(exc.get("value"), str):
+            exc["value"] = scrub_text(exc["value"])
+        frames = ((exc.get("stacktrace") or {}).get("frames")) or []
+        for frame in frames:
+            if isinstance(frame, dict) and isinstance(frame.get("vars"), dict):
+                frame["vars"] = scrub_data(frame["vars"])
+
+
+def scrub_event(event, _hint=None):
+    """Sentry before_send / before_send_transaction hook. Never drops the
+    event: a redaction bug must not swallow a real exception report — but if
+    scrubbing fails we strip the riskiest parts instead of sending raw."""
+    if not isinstance(event, dict):
+        return event
+    try:
+        req = event.get("request")
+        if isinstance(req, dict):
+            url = req.get("url") or ""
+            req["headers"] = _scrub_headers(req.get("headers"))
+            if "cookies" in req:
+                req["cookies"] = _REDACT
+            if "env" in req:
+                req["env"] = scrub_data(req["env"])
+            # Drop request bodies wholesale on sensitive paths — much safer
+            # than guessing which field is a secret. Elsewhere scrub by key.
+            if "data" in req:
+                if any(p in url for p in _SENSITIVE_URL_PREFIXES):
+                    req["data"] = _REDACT
+                else:
+                    req["data"] = scrub_data(req["data"])
+            if "query_string" in req:
+                # Legacy ?token=... fallbacks have ended up on auth URLs.
+                req["query_string"] = (
+                    _REDACT if "/auth" in url else _scrub_query_string(req["query_string"])
+                )
+            req["url"] = _scrub_url(url) if url else url
+            event["request"] = req
+
+        user = event.get("user")
+        if isinstance(user, dict):
+            # Keep only the opaque id — never email / username / IP.
+            event["user"] = {k: v for k, v in user.items() if k == "id"}
+
+        for key in ("extra", "contexts", "tags", "modules_extra"):
+            if key in event:
+                event[key] = scrub_data(event[key])
+
+        if isinstance(event.get("message"), str):
+            event["message"] = scrub_text(event["message"])
+        logentry = event.get("logentry")
+        if isinstance(logentry, dict):
+            if isinstance(logentry.get("message"), str):
+                logentry["message"] = scrub_text(logentry["message"])
+            if isinstance(logentry.get("formatted"), str):
+                logentry["formatted"] = scrub_text(logentry["formatted"])
+            if "params" in logentry:
+                logentry["params"] = scrub_data(logentry["params"])
+
+        _scrub_exception_values(event.get("exception"))
+        for thread in ((event.get("threads") or {}).get("values")) or []:
+            frames = ((thread or {}).get("stacktrace") or {}).get("frames") or []
+            for frame in frames:
+                if isinstance(frame, dict) and isinstance(frame.get("vars"), dict):
+                    frame["vars"] = scrub_data(frame["vars"])
+
+        crumbs = event.get("breadcrumbs")
+        values = crumbs.get("values") if isinstance(crumbs, dict) else crumbs
+        if isinstance(values, list):
+            scrubbed = [scrub_breadcrumb(c) for c in values]
+            scrubbed = [c for c in scrubbed if c is not None]
+            if isinstance(crumbs, dict):
+                crumbs["values"] = scrubbed
+            else:
+                event["breadcrumbs"] = scrubbed
+
+        for span in event.get("spans") or []:
+            if isinstance(span, dict):
+                if isinstance(span.get("description"), str):
+                    span["description"] = scrub_text(span["description"])
+                if isinstance(span.get("data"), dict):
+                    span["data"] = scrub_data(span["data"])
+    except Exception:
+        # Fail safe: keep the stack/exception type, drop the payload parts
+        # most likely to hold secrets.
+        for key in ("request", "extra", "breadcrumbs", "user", "contexts"):
+            event.pop(key, None)
+    return event
+
+
+def scrub_breadcrumb(crumb, _hint=None):
+    """Sentry before_breadcrumb hook — scrub message + data (HTTP crumbs
+    carry full URLs with query strings, log crumbs carry formatted lines)."""
+    if not isinstance(crumb, dict):
+        return crumb
+    try:
+        if isinstance(crumb.get("message"), str):
+            crumb["message"] = scrub_text(crumb["message"])
+        data = crumb.get("data")
+        if isinstance(data, dict):
+            data = scrub_data(data)
+            if isinstance(data.get("url"), str):
+                data["url"] = _scrub_url(data["url"])
+            crumb["data"] = data
+    except Exception:
+        crumb.pop("data", None)
+        crumb["message"] = _REDACT
+    return crumb
+
+
 def init_sentry(service_name: str) -> None:
     """Initialise Sentry SDK if SENTRY_DSN is configured."""
     dsn = settings.SENTRY_DSN
@@ -34,56 +309,6 @@ def init_sentry(service_name: str) -> None:
         from sentry_sdk.integrations.fastapi import FastApiIntegration
         from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
-        # ── PII / secret redaction ───────────────────────────────────
-        # send_default_pii=False blocks Sentry's *automatic* PII pulls,
-        # but the FastAPI integration still ships request bodies +
-        # breadcrumbs that almost certainly contain sensitive data on a
-        # money-flow API: deposit amounts, tx hashes, raw webhook
-        # bodies, NOWPayments IPN secrets in error contexts, KYC field
-        # values, JWTs from headers, etc. We scrub them in before_send
-        # so an exception during webhook processing never accidentally
-        # leaks a webhook secret or a user's session cookie.
-        _REDACT = "[redacted]"
-        _SENSITIVE_HEADERS = {
-            "authorization", "cookie", "set-cookie", "x-api-key",
-            "x-api-secret", "x-razorpay-signature", "hmac",
-        }
-        _SENSITIVE_URL_PREFIXES = (
-            "/api/v1/webhooks/",   # Razorpay / OxaPay / on-chain IPNs
-            "/api/v1/auth/",       # passwords, OAuth tokens, 2FA codes
-            "/api/lp/",            # Corecen LP push (HMAC-signed prices)
-            "/api/v1/wallet/",     # deposit/withdraw bodies
-            "/api/v1/admin/",      # admin actions (login-as codes etc.)
-        )
-
-        def _scrub_headers(headers: dict | None) -> dict | None:
-            if not headers:
-                return headers
-            return {
-                k: (_REDACT if k.lower() in _SENSITIVE_HEADERS else v)
-                for k, v in headers.items()
-            }
-
-        def _before_send(event: dict, _hint: dict) -> dict | None:
-            try:
-                req = event.get("request") or {}
-                url = (req.get("url") or "")
-                req["headers"] = _scrub_headers(req.get("headers"))
-                # Drop request bodies wholesale on sensitive paths — much
-                # safer than trying to identify which field is a secret.
-                if any(p in url for p in _SENSITIVE_URL_PREFIXES):
-                    if "data" in req:
-                        req["data"] = _REDACT
-                # Always strip query strings on auth endpoints — legacy
-                # ?token=... fallbacks have ended up in URLs.
-                if "/auth" in url and "query_string" in req:
-                    req["query_string"] = _REDACT
-                event["request"] = req
-            except Exception:
-                # Never let a redaction bug drop a real exception report.
-                pass
-            return event
-
         sentry_sdk.init(
             dsn=dsn,
             traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
@@ -94,15 +319,144 @@ def init_sentry(service_name: str) -> None:
                 SqlalchemyIntegration(),
             ],
             send_default_pii=False,
-            before_send=_before_send,
+            before_send=scrub_event,
+            before_send_transaction=scrub_event,
+            before_breadcrumb=scrub_breadcrumb,
             # Don't include request bodies in event payloads by default;
             # the before_send hook is a second layer of defence in case
             # this is ignored on some SDK paths.
             max_request_body_size="never",
         )
+        sentry_sdk.set_tag("service", service_name)
+        try:
+            # report_exception() captures explicitly; don't let the logging
+            # integration send the same failure a second time.
+            from sentry_sdk.integrations.logging import ignore_logger
+            ignore_logger(_bg_logger.name)
+        except Exception:
+            pass
         logger.info("Sentry initialised for %s (env=%s)", service_name, settings.ENVIRONMENT)
     except Exception as exc:
         logger.warning("Failed to initialise Sentry: %s", exc)
+
+
+# ---------------------------------------------------------------------------
+# 1b. Background-task exception reporting
+# ---------------------------------------------------------------------------
+# Engines and fire-and-forget work run in bare `asyncio.create_task(...)`.
+# An exception there never reaches a request handler, so FastApiIntegration
+# never sees it; asyncio only logs "Task exception was never retrieved" if /
+# when the task object is garbage collected. Three layers:
+#   * report_exception()        — explicit capture (log + Sentry, tagged);
+#   * spawn()                   — create_task with a strong reference and a
+#                                 done-callback that reports the failure;
+#   * install_asyncio_exception_reporting() — loop exception handler for
+#                                 every task / callback not created by spawn().
+#     Installed automatically for ASGI apps by add_middleware_stack (on the
+#     lifespan startup message); asyncio.run() services call it at the top
+#     of main().
+_bg_logger = logging.getLogger("swisscresta.background")
+_BACKGROUND_TASKS: set = set()
+
+
+def _sentry_active() -> bool:
+    try:
+        import sentry_sdk
+        return bool(sentry_sdk.is_initialized())
+    except Exception:
+        return False
+
+
+def report_exception(exc: BaseException, *, where: str | None = None, **context) -> None:
+    """Log *exc* with its traceback and send it to Sentry (if enabled), tagged
+    with where it happened. Never raises."""
+    try:
+        label = where or "background"
+        _bg_logger.error("unhandled exception in %s: %r", label, exc,
+                         exc_info=(type(exc), exc, exc.__traceback__))
+        if not _sentry_active():
+            return
+        import sentry_sdk
+        with sentry_sdk.new_scope() as scope:
+            scope.set_tag("background", "true")
+            scope.set_tag("where", label[:200])
+            if context:
+                scope.set_context("background", scrub_data(
+                    {k: (v if isinstance(v, (str, int, float, bool, type(None))) else repr(v))
+                     for k, v in context.items()}))
+            sentry_sdk.capture_exception(exc)
+    except Exception:  # pragma: no cover - reporting must never raise
+        pass
+
+
+def _task_done(task) -> None:
+    _BACKGROUND_TASKS.discard(task)
+    if task.cancelled():
+        return
+    try:
+        exc = task.exception()  # also marks it "retrieved" → no GC warning
+    except BaseException:  # pragma: no cover
+        return
+    if exc is not None:
+        report_exception(exc, where=f"task:{task.get_name()}")
+
+
+def spawn(coro, *, name: str | None = None):
+    """asyncio.create_task() replacement for background / fire-and-forget
+    work: keeps a strong reference (so the task can't be GC'd mid-flight)
+    and reports any exception it dies with."""
+    import asyncio
+    task = asyncio.get_running_loop().create_task(coro, name=name)
+    _BACKGROUND_TASKS.add(task)
+    task.add_done_callback(_task_done)
+    return task
+
+
+def _loop_exception_handler(loop, context: dict) -> None:
+    exc = context.get("exception")
+    if isinstance(exc, BaseException):
+        task = context.get("task") or context.get("future")
+        where = "asyncio"
+        try:
+            if task is not None and hasattr(task, "get_name"):
+                where = f"task:{task.get_name()}"
+        except Exception:
+            pass
+        report_exception(exc, where=where, asyncio_message=str(context.get("message") or ""))
+        return
+    loop.default_exception_handler(context)
+
+
+def install_asyncio_exception_reporting(loop=None) -> bool:
+    """Route unhandled asyncio exceptions (tasks nobody awaited, callbacks)
+    to report_exception(). Idempotent; keeps a custom handler already set by
+    the service. Returns True if our handler is (now) installed."""
+    import asyncio
+    try:
+        loop = loop or asyncio.get_running_loop()
+    except RuntimeError:
+        return False
+    current = loop.get_exception_handler()
+    if current is _loop_exception_handler:
+        return True
+    if current is not None:
+        return False
+    loop.set_exception_handler(_loop_exception_handler)
+    return True
+
+
+class BackgroundErrorReportingMiddleware:
+    """Pure ASGI shim: on the lifespan startup message (which runs on the
+    server's event loop, before the app's own lifespan starts its engines)
+    install the asyncio exception handler. Pass-through for everything else."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "lifespan":
+            install_asyncio_exception_reporting()
+        await self.app(scope, receive, send)
 
 
 # ---------------------------------------------------------------------------
@@ -336,6 +690,9 @@ def add_middleware_stack(app, *, include_rate_limit: bool = False):
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(PrometheusMiddleware)
     app.add_middleware(RequestSizeLimitMiddleware)
+    # Outermost: installs the asyncio exception handler on lifespan startup
+    # so background-task failures reach Sentry. Pass-through for HTTP/WS.
+    app.add_middleware(BackgroundErrorReportingMiddleware)
     add_metrics_endpoint(app)
     if include_rate_limit:
         add_rate_limit_handler(app)

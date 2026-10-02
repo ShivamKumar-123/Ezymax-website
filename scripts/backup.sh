@@ -13,6 +13,11 @@
 #
 # Idempotent: safe to re-run on demand. Previous dumps are not touched
 # except by the retention sweep.
+#
+# Safety: one run at a time (flock on $DEST/.backup.lock); each artefact is
+# streamed producer → gzip → gpg → <name>.partial (plaintext never on disk
+# when BACKUP_GPG_PASSPHRASE is set), verified by decrypt + `gzip -t`, then
+# renamed atomically. A passphrase set while gpg is missing is fatal.
 set -euo pipefail
 
 # ─── Config (overridable via env or .env) ─────────────────────────────
@@ -64,46 +69,104 @@ fi
 # Colour-free, parsable log lines so cron output is easy to grep.
 log() { printf '[backup %s] %s\n' "$(date +%H:%M:%S)" "$*"; }
 
-# Encrypt $1 (path) in-place. If GPG_PASSPHRASE is empty, leaves the
-# file untouched and logs a warning. Output replaces input on success.
-encrypt_inplace() {
-  local f="$1"
-  if [[ -z "$GPG_PASSPHRASE" ]]; then
-    log "WARN: BACKUP_GPG_PASSPHRASE not set — $f is plaintext (UNSAFE in prod)"
-    return 0
-  fi
-  if ! command -v gpg >/dev/null; then
-    log "WARN: gpg not installed — install with 'apt-get install -y gnupg'; $f stays plaintext"
-    return 0
-  fi
-  local enc="$f.gpg"
-  GPG_PASSPHRASE="$GPG_PASSPHRASE" gpg \
-    --batch --yes --quiet --pinentry-mode loopback \
-    --passphrase-fd 3 \
-    --cipher-algo AES256 \
-    --symmetric --output "$enc" "$f" 3<<<"$GPG_PASSPHRASE"
-  rm -f "$f"
-  log "encrypted → $enc"
-}
+# A passphrase that is set but cannot be used is a hard failure — the old
+# behaviour (warn, keep the dump in plaintext) silently wrote PII to disk.
+if [[ -n "$GPG_PASSPHRASE" ]] && ! command -v gpg >/dev/null 2>&1; then
+  echo "[backup] FATAL: BACKUP_GPG_PASSPHRASE is set but gpg is not installed (apt-get install -y gnupg)." >&2
+  exit 1
+fi
+if [[ -z "$GPG_PASSPHRASE" ]]; then
+  log "WARN: BACKUP_GPG_PASSPHRASE not set — dumps are plaintext (UNSAFE in prod)"
+fi
 
 mkdir -p "$DEST"
 chmod 0700 "$DEST"
+umask 077
 cd "$COMPOSE_DIR"
+
+# ─── Single-run lock ──────────────────────────────────────────────────
+command -v flock >/dev/null 2>&1 || { echo "[backup] FATAL: flock (util-linux) not installed" >&2; exit 1; }
+exec 9>"$DEST/.backup.lock"
+if ! flock -n 9; then
+  echo "[backup] FATAL: another backup.sh run holds $DEST/.backup.lock" >&2
+  exit 1
+fi
+
+# The artefact currently being written; removed by the EXIT trap if the
+# run dies before the verified rename.
+CURRENT_PARTIAL=""
+trap 'if [[ -n "$CURRENT_PARTIAL" ]]; then rm -f "$CURRENT_PARTIAL"; fi' EXIT
+
+# Passphrase over an fd from a process substitution (a pipe) — never argv
+# (visible in ps) and never a temp file.
+gpg_encrypt() {
+  gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-fd 3 \
+    --symmetric --cipher-algo AES256 --compress-algo none --output - \
+    3< <(printf '%s' "$GPG_PASSPHRASE")
+}
+gpg_decrypt() {
+  gpg --batch --quiet --pinentry-mode loopback --passphrase-fd 3 \
+    --decrypt 3< <(printf '%s' "$GPG_PASSPHRASE")
+}
+
+# write_artifact <final-name-without-.gpg> <producer-fn>
+# The producer writes a gzip stream to stdout. It is piped (through gpg when
+# a passphrase is set) into <final>.partial — plaintext never touches disk —
+# then verified (decrypt + gzip -t) and atomically renamed into place.
+write_artifact() {
+  local final="$1" producer="$2" out
+  out="$final"
+  [[ -n "$GPG_PASSPHRASE" ]] && out="$final.gpg"
+  CURRENT_PARTIAL="$out.partial"
+  local wrote=1
+  if [[ -n "$GPG_PASSPHRASE" ]]; then
+    "$producer" | gpg_encrypt > "$CURRENT_PARTIAL" || wrote=0
+  else
+    "$producer" > "$CURRENT_PARTIAL" || wrote=0
+  fi
+  if [[ "$wrote" -ne 1 ]]; then
+    log "FAIL writing $out ($producer errored); partial removed"
+    exit 1
+  fi
+  local ok=1
+  if [[ -n "$GPG_PASSPHRASE" ]]; then
+    gpg_decrypt < "$CURRENT_PARTIAL" | gzip -t || ok=0
+  else
+    gzip -t < "$CURRENT_PARTIAL" || ok=0
+  fi
+  if [[ "$ok" -ne 1 ]]; then
+    log "FAIL verification of $out (decrypt + gzip -t) failed"
+    exit 1
+  fi
+  mv -f "$CURRENT_PARTIAL" "$out"
+  CURRENT_PARTIAL=""
+  log "verified → $out"
+}
+
+dump_postgres() {
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+    exec -T postgres pg_dumpall -U "${POSTGRES_USER:-swisscresta}" \
+    | gzip
+}
+archive_uploads() {
+  tar czf - -C "$COMPOSE_DIR" uploads
+}
+dump_timescale() {
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+    exec -T timescaledb pg_dumpall -U "${TIMESCALE_USER:-swisscresta}" \
+    | gzip
+}
 
 # ─── 1. Postgres ──────────────────────────────────────────────────────
 DUMP="$DEST/postgres-$STAMP.sql.gz"
 log "dumping postgres → $DUMP"
-docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-  exec -T postgres pg_dumpall -U "${POSTGRES_USER:-swisscresta}" \
-  | gzip > "$DUMP"
-encrypt_inplace "$DUMP"
+write_artifact "$DUMP" dump_postgres
 
 # ─── 2. Uploads (KYC + manual deposit screenshots) ─────────────────────
 UPLOADS="$DEST/uploads-$STAMP.tar.gz"
 if [[ -d "$COMPOSE_DIR/uploads" ]]; then
   log "archiving uploads → $UPLOADS"
-  tar czf "$UPLOADS" -C "$COMPOSE_DIR" uploads
-  encrypt_inplace "$UPLOADS"
+  write_artifact "$UPLOADS" archive_uploads
 else
   log "no uploads/ directory — skipping"
 fi
@@ -114,10 +177,7 @@ TS="$DEST/timescale-$STAMP.sql.gz"
 if docker compose -f docker-compose.yml -f docker-compose.prod.yml ps -q timescaledb >/dev/null 2>&1 \
    && [[ -n "$(docker compose -f docker-compose.yml -f docker-compose.prod.yml ps -q timescaledb)" ]]; then
   log "dumping timescaledb → $TS"
-  docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-    exec -T timescaledb pg_dumpall -U "${TIMESCALE_USER:-swisscresta}" \
-    | gzip > "$TS"
-  encrypt_inplace "$TS"
+  write_artifact "$TS" dump_timescale
 else
   log "timescaledb not running — skipping"
 fi
@@ -125,12 +185,15 @@ fi
 # ─── 4. Local retention ───────────────────────────────────────────────
 log "purging local backups older than ${RETAIN_DAYS}d"
 find "$DEST" \( -name "*.gz" -o -name "*.gz.gpg" \) -type f -mtime +"$RETAIN_DAYS" -delete
+# Stale .partial files from a killed run (never verified — not backups).
+find "$DEST" -name "*.partial" -type f -mtime +1 -delete
 
 # ─── 5. Offsite mirror ────────────────────────────────────────────────
 if [[ -n "$RCLONE_REMOTE" ]]; then
   if command -v rclone >/dev/null; then
     log "syncing to $RCLONE_REMOTE"
-    rclone copy --transfers=2 --checkers=2 --quiet "$DEST" "$RCLONE_REMOTE/"
+    rclone copy --transfers=2 --checkers=2 --quiet \
+      --exclude "*.partial" --exclude ".backup.lock" "$DEST" "$RCLONE_REMOTE/"
     # Mirror retention to remote — best-effort; an rclone failure here
     # must not fail the whole backup since the local dump is already on
     # disk and is the more important artefact.

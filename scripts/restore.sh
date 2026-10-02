@@ -12,6 +12,11 @@
 #     backups/uploads-2026-05-02_0300.tar.gz \
 #     backups/timescale-2026-05-02_0300.sql.gz
 #
+# Encrypted artefacts (*.gpg) are accepted as well; set BACKUP_GPG_PASSPHRASE.
+# They are decrypted as a stream straight into psql / tar — no plaintext copy
+# is written to disk. *.partial files (unverified, from an interrupted
+# backup) are refused.
+#
 # Brings only the postgres / timescaledb containers up before piping the
 # dump in — the rest of the stack stays down so app services don't write
 # into the DB while it's being restored. After this script exits the
@@ -29,18 +34,30 @@ GPG_PASSPHRASE="${BACKUP_GPG_PASSPHRASE:-}"
 [[ -z "$UPLOADS" || -f "$UPLOADS" ]] || { echo "[restore] $UPLOADS not found"; exit 1; }
 [[ -z "$TS_DUMP" || -f "$TS_DUMP" ]] || { echo "[restore] $TS_DUMP not found"; exit 1; }
 
-# Decrypt $1 if it ends in .gpg, write plaintext to $2. Otherwise just
-# copy the file path through. Used transparently below so the rest of
-# the restore stays the same whether or not encryption was on.
-decrypt_to() {
-  local src="$1" dst="$2"
+# Validate every input up front (before the confirmation prompt) so a
+# missing passphrase / gpg can't abort the restore half-way through.
+for f in "$DUMP" "$UPLOADS" "$TS_DUMP"; do
+  [[ -n "$f" ]] || continue
+  if [[ "$f" == *.partial ]]; then
+    echo "[restore] $f is a .partial (unverified / incomplete) file — refusing"; exit 1
+  fi
+  if [[ "$f" == *.gpg ]]; then
+    [[ -n "$GPG_PASSPHRASE" ]] || { echo "[restore] $f is encrypted but BACKUP_GPG_PASSPHRASE is not set"; exit 1; }
+    command -v gpg >/dev/null || { echo "[restore] gpg required to decrypt $f"; exit 1; }
+  fi
+done
+
+# Write $1 to stdout, decrypting first if it ends in .gpg. Used
+# transparently below so the rest of the restore stays the same whether or
+# not encryption was on. The passphrase goes over an fd from a process
+# substitution (a pipe) — never argv, never a temp file.
+decrypt_stream() {
+  local src="$1"
   if [[ "$src" == *.gpg ]]; then
-    [[ -n "$GPG_PASSPHRASE" ]] || { echo "[restore] $src is encrypted but BACKUP_GPG_PASSPHRASE is not set"; exit 1; }
-    command -v gpg >/dev/null || { echo "[restore] gpg required to decrypt $src"; exit 1; }
-    GPG_PASSPHRASE="$GPG_PASSPHRASE" gpg --batch --yes --quiet --pinentry-mode loopback \
-      --passphrase-fd 3 --decrypt --output "$dst" "$src" 3<<<"$GPG_PASSPHRASE"
+    gpg --batch --quiet --pinentry-mode loopback --passphrase-fd 3 \
+      --decrypt "$src" 3< <(printf '%s' "$GPG_PASSPHRASE")
   else
-    cp "$src" "$dst"
+    cat "$src"
   fi
 }
 
@@ -67,17 +84,8 @@ for i in $(seq 1 30); do
   sleep 1
 done
 
-# H-INF: initialise ALL temp paths before the trap. Previously the EXIT trap
-# referenced $TMP_TS / $TMP_UP which are only assigned later (and conditionally),
-# so under `set -u` the trap itself failed with "unbound variable" whenever the
-# script exited before the timescale/uploads sections.
-TMP_TS=""
-TMP_UP=""
-TMP_PG=$(mktemp --suffix=.sql.gz)
-trap 'rm -f "$TMP_PG" "$TMP_TS" "$TMP_UP"' EXIT
-decrypt_to "$DUMP" "$TMP_PG"
 echo "[restore] piping (decrypted) $DUMP → psql"
-gunzip -c "$TMP_PG" | docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+decrypt_stream "$DUMP" | gunzip -c | docker compose -f docker-compose.yml -f docker-compose.prod.yml \
   exec -T postgres psql -U "${POSTGRES_USER:-swisscresta}" -d postgres -v ON_ERROR_STOP=1
 
 # ─── TimescaleDB (optional) ───────────────────────────────────────────
@@ -91,19 +99,15 @@ if [[ -n "$TS_DUMP" ]]; then
     fi
     sleep 1
   done
-  TMP_TS=$(mktemp --suffix=.sql.gz)
-  decrypt_to "$TS_DUMP" "$TMP_TS"
   echo "[restore] piping (decrypted) $TS_DUMP → timescale psql"
-  gunzip -c "$TMP_TS" | docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+  decrypt_stream "$TS_DUMP" | gunzip -c | docker compose -f docker-compose.yml -f docker-compose.prod.yml \
     exec -T timescaledb psql -U "${TIMESCALE_USER:-swisscresta}" -d postgres -v ON_ERROR_STOP=1
 fi
 
 # ─── Uploads (optional) ───────────────────────────────────────────────
 if [[ -n "$UPLOADS" ]]; then
-  TMP_UP=$(mktemp --suffix=.tar.gz)
-  decrypt_to "$UPLOADS" "$TMP_UP"
   echo "[restore] extracting (decrypted) $UPLOADS → $COMPOSE_DIR"
-  tar xzf "$TMP_UP" -C "$COMPOSE_DIR"
+  decrypt_stream "$UPLOADS" | tar xzf - -C "$COMPOSE_DIR"
 fi
 
 echo
