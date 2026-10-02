@@ -1,43 +1,31 @@
 "use client";
 
 // Browser client for the suitability BFF (/api/suitability/*, see app/api/suitability/[...path]/route.ts) and the
-// shapes of gateway suitability.rs. Product: Kalks FX Options.
+// shapes of gateway suitability.rs. Product: Kalks FX Options: accepting the options terms is the only step.
 
 import * as React from "react";
 import { tr } from "@kalks/i18n/react";
 
 export type KycStatus = "unverified" | "pending" | "verified" | "rejected";
-export type Step = "kyc" | "disclosure" | "quiz";
+/** What is still needed before the first options trade: only the options terms (gateway suitability.rs). */
+export type Step = "disclosure";
 
 export type Disclosure = { version: number; title: string; bodyMd: string; publishedAt: string };
-export type QuizQuestion = { id: string; text: string; options: string[] };
 
 export type Suitability = {
   product: "options";
-  kycVerified: boolean;
-  kycStatus: KycStatus;
+  /** The current options terms (key points, then the full terms). */
   disclosure: Disclosure | null;
+  /** Any published version accepted: that alone makes the client eligible. */
   disclosureAccepted: boolean;
   acceptedVersion: number | null;
   acceptedAt: string | null;
-  quizPassed: boolean;
-  quizPassedAt: string | null;
-  quizScore: number | null;
-  quizAttempts: number;
   eligible: boolean;
   missing: Step[];
-  quiz: { total: number; passMark: number; questions: QuizQuestion[] };
-};
-
-export type QuizOutcome = {
-  passed: boolean;
-  score: number;
-  total: number;
-  passMark: number;
-  wrong: { id: string; explanation: string }[];
+  /** For information only: neither is needed to trade options. */
+  kycVerified: boolean;
+  kycStatus: KycStatus;
   quizPassed: boolean;
-  eligible: boolean;
-  missing: Step[];
 };
 
 export class SuitabilityError extends Error {
@@ -92,7 +80,7 @@ export function useSuitability() {
       stop = true;
     };
   }, [tick]);
-  // identity checks finish elsewhere (Verification, staff review): refresh when the tab comes back
+  // the terms may have been accepted in another tab: refresh when this one comes back
   React.useEffect(() => {
     const onVisible = () => document.visibilityState === "visible" && setTick((t) => t + 1);
     document.addEventListener("visibilitychange", onVisible);

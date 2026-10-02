@@ -43,23 +43,26 @@ fn public_questions_never_carry_answers() {
     assert_eq!(v[0]["options"].as_array().unwrap().len(), 4);
 }
 
-/// The Client Area shows the quiz in the reader's language by question id (i18n namespace `options`) and the demo
-/// build grades locally: both must mirror the questions and answers graded here.
+/// The friendly v2 disclosure (migration `20261002190000_options_onboarding_light.sql`): one short, calm paragraph of
+/// key points first, then the full terms; the demo build of the Client Area shows the same text.
 #[test]
-fn client_area_copies_match_the_server_quiz() {
-    let en = include_str!("../../../../packages/i18n/src/catalog/en/options.ts");
+fn disclosure_v2_is_short_up_front_and_the_demo_copy_matches() {
+    let sql = include_str!("../../migrations/20261002190000_options_onboarding_light.sql");
     let demo = include_str!("../../../../apps/crm/components/options/demo.ts");
-    for q in OPTIONS_QUIZ {
-        assert!(en.contains(&format!("\"quiz.{}.text\": \"{}\",", q.id, q.text)), "en/options.ts: quiz.{}.text differs", q.id);
-        for (i, o) in q.options.iter().enumerate() {
-            assert!(en.contains(&format!("\"quiz.{}.o{i}\": \"{o}\",", q.id)), "en/options.ts: quiz.{}.o{i} differs", q.id);
-        }
-        assert!(en.contains(&format!("\"quiz.{}.why\": \"{}\",", q.id, q.explanation)), "en/options.ts: quiz.{}.why differs", q.id);
-        let (quoted, bare) = (format!("\"{}\": {},", q.id, q.answer), format!(" {}: {},", q.id, q.answer));
-        assert!(demo.contains(&quoted) || demo.contains(&bare), "demo.ts: answer of {} differs", q.id);
+    let body = sql.split("$md$").nth(1).expect("v2 body between $md$ markers").trim_matches(|c| c == ' ' || c == '\n');
+    assert!(demo.contains(body), "demo.ts: the disclosure differs from migration 20261002190000");
+    let (key_points, full) = body.split_once("\n\n## Full terms\n").expect("a key-points paragraph, then ## Full terms");
+    assert!(!key_points.contains('\n') && key_points.len() < 600, "the key points stay one short paragraph");
+    for must in ["the most you can lose is what you pay", "you can lose more than you receive", "uses margin", "Kalks order book", "settle in cash at expiry"] {
+        assert!(key_points.contains(must), "key points must say: {must}");
     }
-    let explained = en.lines().filter(|l| l.trim_start().starts_with("\"quiz.") && l.contains(".why\": ") && !l.contains("\"quiz.why\"")).count();
-    assert_eq!(explained, OPTIONS_QUIZ.len(), "en/options.ts has questions the server doesn't");
+    for calm in ["high level of risk", "complex instruments", "WARNING"] {
+        assert!(!key_points.contains(calm), "key points stay calm: {calm}");
+    }
+    // the substance of v1 stays in the full terms
+    for must in ["lose the whole premium", "Losses on a sold call grow without limit", "margin call", "knock-out option is cancelled", "30 minutes before the cut", "conflict of interest", "Bonus and credit cannot be used"] {
+        assert!(full.contains(must), "full terms must say: {must}");
+    }
 }
 
 /// Answers with the first `correct` questions right and the rest wrong.
@@ -107,35 +110,35 @@ fn grading_needs_eight_of_ten() {
 }
 
 #[test]
-fn eligible_needs_kyc_disclosure_and_quiz() {
-    for k in [false, true] {
-        for d in [false, true] {
-            for q in [false, true] {
-                assert_eq!(eligible(k, d, q), k && d && q);
-            }
-        }
-    }
+fn eligible_needs_only_the_disclosure() {
     let now = Utc::now();
     let mut s = Status {
         product: "options",
-        kyc_status: "pending".into(),
+        kyc_status: "unverified".into(),
         disclosure: Some(Disclosure { version: 2, title: "t".into(), body_md: "b".into(), published_at: now }),
-        accepted_version: Some(1),
-        accepted_at: Some(now),
-        quiz_passed_at: Some(now),
-        quiz_score: Some(9),
-        quiz_attempts: 1,
+        accepted_version: None,
+        accepted_at: None,
+        quiz_passed_at: None,
+        quiz_score: None,
+        quiz_attempts: 0,
     };
-    // an older accepted version is not the current disclosure
-    assert!(!s.disclosure_accepted());
-    assert_eq!(s.missing(), vec!["kyc", "disclosure"]);
-    s.accepted_version = Some(2);
-    s.kyc_status = "verified".into();
-    assert!(s.eligible());
-    assert!(s.missing().is_empty());
-    // nothing published: nothing can be accepted
-    s.disclosure = None;
     assert!(!s.disclosure_accepted() && !s.eligible());
+    assert_eq!(s.missing(), vec!["disclosure"]);
+    // a passed quiz or verified identity alone changes nothing
+    s.quiz_passed_at = Some(now);
+    s.kyc_status = "verified".into();
+    assert!(!s.eligible());
+    assert_eq!(s.missing(), vec!["disclosure"]);
+    // any accepted version counts, also one older than the current disclosure; identity and quiz don't matter
+    s.quiz_passed_at = None;
+    s.kyc_status = "pending".into();
+    s.accepted_version = Some(1);
+    s.accepted_at = Some(now);
+    assert!(s.disclosure_accepted() && s.eligible());
+    assert!(s.missing().is_empty());
+    assert!(!s.kyc_verified() && !s.quiz_passed());
+    s.accepted_version = Some(2);
+    assert!(s.eligible());
 }
 
 // ---------- flows ----------
@@ -185,65 +188,77 @@ async fn check(db: &TestDb, uid: i64, headers: &[(&'static str, &'static str)], 
 }
 
 #[tokio::test]
-async fn onboarding_flow_kyc_disclosure_quiz() {
+async fn onboarding_flow_needs_only_the_disclosure() {
     let Some(db) = TestDb::new("suitability flow").await else { return };
     let uid = user(&db, 1, "arjun@kalks.test").await;
     let tok = session(&db, 1, uid).await;
 
-    // a fresh client: v1 of the options risk disclosure, the quiz without answers, nothing done yet
+    // a fresh client: v2 of the options disclosure (key points, then the full terms), only the disclosure to do
     let v = get_state(&db, &tok).await;
     assert_eq!(v["product"], "options");
     assert_eq!(v["kycVerified"], false);
     assert_eq!(v["kycStatus"], "unverified");
-    assert_eq!(v["disclosure"]["version"], 1);
-    assert_eq!(v["disclosure"]["title"], "Kalks FX Options: risk disclosure");
+    assert_eq!(v["disclosure"]["version"], 2);
+    assert_eq!(v["disclosure"]["title"], "Kalks FX Options: key points and terms");
     let body = v["disclosure"]["bodyMd"].as_str().unwrap();
-    for must in ["lose 100% of the premium", "much more than the premium", "knock-out option is cancelled", "30 minutes before the cut", "Kalks is your counterparty and sets the prices"] {
+    for must in ["the most you can lose is what you pay", "## Full terms", "lose the whole premium", "knock-out option is cancelled", "30 minutes before the cut", "Kalks order book"] {
         assert!(body.contains(must), "disclosure must say: {must}");
     }
     assert!(!body.starts_with('\n') && !body.ends_with('\n'));
+    // v1 stays on record
+    assert_eq!(db.count("SELECT count(*) FROM disclosures WHERE tenant_id = $1 AND product = 'options'", 1).await, 2);
     assert_eq!(v["disclosureAccepted"], false);
     assert_eq!(v["quizPassed"], false);
     assert_eq!(v["eligible"], false);
-    assert_eq!(v["missing"], json!(["kyc", "disclosure", "quiz"]));
+    assert_eq!(v["missing"], json!(["disclosure"]));
     assert_eq!(v["quiz"]["total"], 10);
     assert_eq!(v["quiz"]["passMark"], 8);
     assert_eq!(v["quiz"]["questions"].as_array().unwrap().len(), 10);
     assert!(!v["quiz"].to_string().contains("explanation"));
+    let c = check(&db, uid, &[], Some("options")).await.unwrap();
+    assert_eq!((c["eligible"].as_bool(), c["disclosureAccepted"].as_bool()), (Some(false), Some(false)));
+    assert_eq!(c["missing"], json!(["disclosure"]));
 
-    // the quiz comes after the disclosure; only the current version can be accepted
-    assert_eq!(code(&take_quiz(&db, &tok, answers(10)).await.unwrap_err()), "disclosure_required");
-    assert_eq!(code(&accept_v(&db, &tok, Some(2)).await.unwrap_err()), "disclosure_outdated");
+    // only the current version can be accepted
+    assert_eq!(code(&accept_v(&db, &tok, Some(1)).await.unwrap_err()), "disclosure_outdated");
+    assert_eq!(code(&accept_v(&db, &tok, Some(3)).await.unwrap_err()), "disclosure_outdated");
     assert_eq!(code(&accept_v(&db, &tok, None).await.unwrap_err()), "field:version");
     assert_eq!(code(&accept_v(&db, &tok, Some(0)).await.unwrap_err()), "field:version");
 
-    let v = accept_v(&db, &tok, Some(1)).await.unwrap();
+    // accepting is all it takes: identity unverified and no quiz, yet eligible
+    let v = accept_v(&db, &tok, Some(2)).await.unwrap();
     assert_eq!(v["disclosureAccepted"], true);
-    assert_eq!(v["acceptedVersion"], 1);
+    assert_eq!(v["acceptedVersion"], 2);
+    assert_eq!((v["eligible"].as_bool(), v["kycVerified"].as_bool(), v["quizPassed"].as_bool()), (Some(true), Some(false), Some(false)));
+    assert_eq!(v["missing"], json!([]));
     let (ip, ua, at1): (String, String, DateTime<Utc>) = sqlx::query_as("SELECT ip, user_agent, accepted_at FROM suitability WHERE user_id = $1").bind(uid).fetch_one(&db.st.pool).await.unwrap();
     assert_eq!(ip, "203.0.113.40");
     assert!(ua.contains("Chrome"));
     // accepting again changes nothing (first acceptance kept, one audit row)
-    accept_v(&db, &tok, Some(1)).await.unwrap();
+    accept_v(&db, &tok, Some(2)).await.unwrap();
     let at2: DateTime<Utc> = sqlx::query_scalar("SELECT accepted_at FROM suitability WHERE user_id = $1").bind(uid).fetch_one(&db.st.pool).await.unwrap();
     assert_eq!(at1, at2);
     assert_eq!(db.count("SELECT count(*) FROM audit_log WHERE actor_id = $1 AND action = 'suitability.disclosure_accepted'", uid).await, 1);
 
-    // 7 of 10: not passed, the wrong ones come back with explanations
+    // the engine's view: eligible; identity and quiz are reported for information only
+    let c = check(&db, uid, &[], Some("options")).await.unwrap();
+    assert_eq!(
+        (c["eligible"].as_bool(), c["kycVerified"].as_bool(), c["disclosureAccepted"].as_bool(), c["quizPassed"].as_bool()),
+        (Some(true), Some(false), Some(true), Some(false))
+    );
+    assert_eq!(c["missing"], json!([]));
+    assert_eq!((c["disclosureVersion"].as_i64(), c["acceptedVersion"].as_i64()), (Some(2), Some(2)));
+
+    // the quiz is an optional self-test: graded and audited, never needed
     let r = take_quiz(&db, &tok, answers(7)).await.unwrap();
-    assert_eq!(r["passed"], false);
-    assert_eq!(r["score"], 7);
-    assert_eq!(r["total"], 10);
+    assert_eq!((r["passed"].as_bool(), r["score"].as_i64(), r["total"].as_i64()), (Some(false), Some(7), Some(10)));
     let wrong = r["wrong"].as_array().unwrap();
     assert_eq!(wrong.len(), 3);
     assert_eq!(wrong[0]["id"], OPTIONS_QUIZ[7].id);
     assert_eq!(wrong[0]["explanation"], OPTIONS_QUIZ[7].explanation);
-    assert_eq!(r["quizPassed"], false);
-
-    // 8 of 10 passes; identity is still missing
+    assert_eq!((r["quizPassed"].as_bool(), r["eligible"].as_bool()), (Some(false), Some(true)));
     let r = take_quiz(&db, &tok, answers(8)).await.unwrap();
-    assert_eq!((r["passed"].as_bool(), r["quizPassed"].as_bool(), r["eligible"].as_bool()), (Some(true), Some(true), Some(false)));
-    assert_eq!(r["missing"], json!(["kyc"]));
+    assert_eq!((r["passed"].as_bool(), r["quizPassed"].as_bool(), r["eligible"].as_bool()), (Some(true), Some(true), Some(true)));
     // a later failed attempt never undoes the pass
     let r = take_quiz(&db, &tok, answers(3)).await.unwrap();
     assert_eq!((r["passed"].as_bool(), r["quizPassed"].as_bool()), (Some(false), Some(true)));
@@ -251,44 +266,54 @@ async fn onboarding_flow_kyc_disclosure_quiz() {
     assert_eq!((score, attempts), (8, 3));
     assert_eq!(db.count("SELECT count(*) FROM audit_log WHERE actor_id = $1 AND action LIKE 'suitability.quiz_%'", uid).await, 3);
 
-    // the engine's view: not eligible until identity is verified
-    let c = check(&db, uid, &[], Some("options")).await.unwrap();
-    assert_eq!((c["eligible"].as_bool(), c["kycVerified"].as_bool(), c["disclosureAccepted"].as_bool(), c["quizPassed"].as_bool()), (Some(false), Some(false), Some(true), Some(true)));
-    sqlx::query("UPDATE users SET kyc_status = 'verified' WHERE id = $1").bind(uid).execute(&db.st.pool).await.unwrap();
-    let c = check(&db, uid, &[], None).await.unwrap();
-    assert_eq!(c["eligible"], true);
-    assert_eq!(c["missing"], json!([]));
-    assert_eq!(get_state(&db, &tok).await["eligible"], true);
-
-    // a new disclosure version: eligible again only after accepting it (the quiz stays passed)
-    sqlx::query("INSERT INTO disclosures (tenant_id, product, version, title, body_md) VALUES (1, 'options', 2, 'Kalks FX Options: risk disclosure (v2)', $1)")
+    // a new disclosure version doesn't undo the acceptance; accepting it records the newer version
+    sqlx::query("INSERT INTO disclosures (tenant_id, product, version, title, body_md) VALUES (1, 'options', 3, 'Kalks FX Options: key points and terms (v3)', $1)")
         .bind("Updated text. ".repeat(10))
         .execute(&db.st.pool)
         .await
         .unwrap();
     let v = get_state(&db, &tok).await;
-    assert_eq!((v["disclosure"]["version"].as_i64(), v["disclosureAccepted"].as_bool(), v["eligible"].as_bool()), (Some(2), Some(false), Some(false)));
+    assert_eq!((v["disclosure"]["version"].as_i64(), v["acceptedVersion"].as_i64()), (Some(3), Some(2)));
+    assert_eq!((v["disclosureAccepted"].as_bool(), v["eligible"].as_bool()), (Some(true), Some(true)));
     let c = check(&db, uid, &[], None).await.unwrap();
-    assert_eq!((c["eligible"].as_bool(), c["disclosureVersion"].as_i64(), c["acceptedVersion"].as_i64()), (Some(false), Some(2), Some(1)));
-    assert_eq!(c["missing"], json!(["disclosure"]));
-    assert_eq!(code(&accept_v(&db, &tok, Some(1)).await.unwrap_err()), "disclosure_outdated");
-    assert_eq!(accept_v(&db, &tok, Some(2)).await.unwrap()["eligible"], true);
-    assert_eq!(check(&db, uid, &[], None).await.unwrap()["eligible"], true);
+    assert_eq!((c["eligible"].as_bool(), c["disclosureVersion"].as_i64(), c["acceptedVersion"].as_i64()), (Some(true), Some(3), Some(2)));
+    assert_eq!(code(&accept_v(&db, &tok, Some(2)).await.unwrap_err()), "disclosure_outdated");
+    assert_eq!(accept_v(&db, &tok, Some(3)).await.unwrap()["acceptedVersion"], 3);
+    assert_eq!(db.count("SELECT count(*) FROM audit_log WHERE actor_id = $1 AND action = 'suitability.disclosure_accepted'", uid).await, 2);
 
     // a version scheduled for later isn't current yet
-    sqlx::query("INSERT INTO disclosures (tenant_id, product, version, title, body_md, published_at) VALUES (1, 'options', 3, 'Next', $1, now() + interval '1 day')")
+    sqlx::query("INSERT INTO disclosures (tenant_id, product, version, title, body_md, published_at) VALUES (1, 'options', 4, 'Next', $1, now() + interval '1 day')")
         .bind("Future text. ".repeat(10))
         .execute(&db.st.pool)
         .await
         .unwrap();
-    assert_eq!(get_state(&db, &tok).await["disclosure"]["version"], 2);
+    assert_eq!(get_state(&db, &tok).await["disclosure"]["version"], 3);
+
+    // a client who accepted v1 before v2 was published stays eligible
+    let early = user(&db, 1, "early@kalks.test").await;
+    sqlx::query("INSERT INTO suitability (tenant_id, user_id, product, disclosure_version, accepted_at) VALUES (1, $1, 'options', 1, now() - interval '1 hour')")
+        .bind(early)
+        .execute(&db.st.pool)
+        .await
+        .unwrap();
+    let c = check(&db, early, &[], None).await.unwrap();
+    assert_eq!((c["eligible"].as_bool(), c["acceptedVersion"].as_i64(), c["missing"].clone()), (Some(true), Some(1), json!([])));
+
+    // the self-test works before the disclosure too, and never makes a client eligible on its own
+    let quizzer = user(&db, 1, "quiz-first@kalks.test").await;
+    let qtok = session(&db, 1, quizzer).await;
+    let r = take_quiz(&db, &qtok, answers(10)).await.unwrap();
+    assert_eq!((r["passed"].as_bool(), r["quizPassed"].as_bool(), r["eligible"].as_bool()), (Some(true), Some(true), Some(false)));
+    assert_eq!(r["missing"], json!(["disclosure"]));
+    assert_eq!(check(&db, quizzer, &[], None).await.unwrap()["eligible"], false);
+    assert_eq!(accept_v(&db, &qtok, Some(3)).await.unwrap()["eligible"], true);
 
     // unknown products, users and sessions
     assert_eq!(code(&get(State(db.st.clone()), ctx(Some(&tok)), Path("futures".into())).await.unwrap_err()), "not_found");
     assert_eq!(code(&check(&db, uid, &[], Some("futures")).await.unwrap_err()), "not_found");
     assert_eq!(code(&check(&db, uid + 999, &[], None).await.unwrap_err()), "not_found");
     assert_eq!(code(&get(State(db.st.clone()), ctx(None), Path(P.into())).await.unwrap_err()), "unauthorized");
-    assert_eq!(code(&accept_v(&db, "not-a-session", Some(2)).await.unwrap_err()), "unauthorized");
+    assert_eq!(code(&accept_v(&db, "not-a-session", Some(3)).await.unwrap_err()), "unauthorized");
     db.drop_db().await;
 }
 
@@ -302,8 +327,8 @@ async fn view_only_logins_can_read_but_not_attest() {
         .await
         .unwrap();
     let vtok = identity::create_session_as(&db.st, &ctx(None), Kind::User, 1, uid, Some(vid)).await.unwrap().token;
-    assert_eq!(get_state(&db, &vtok).await["disclosure"]["version"], 1);
-    assert_eq!(code(&accept_v(&db, &vtok, Some(1)).await.unwrap_err()), "viewer_read_only");
+    assert_eq!(get_state(&db, &vtok).await["disclosure"]["version"], 2);
+    assert_eq!(code(&accept_v(&db, &vtok, Some(2)).await.unwrap_err()), "viewer_read_only");
     assert_eq!(code(&take_quiz(&db, &vtok, answers(10)).await.unwrap_err()), "viewer_read_only");
     assert_eq!(db.count("SELECT count(*) FROM suitability WHERE user_id = $1", uid).await, 0);
     db.drop_db().await;
@@ -321,13 +346,13 @@ async fn brokers_are_isolated_and_disclosures_append_only() {
     // a broker created after the seed gets a copy of the platform's current disclosure on first use
     assert_eq!(db.count("SELECT count(*) FROM disclosures WHERE tenant_id = $1", t2).await, 0);
     let v = get_state(&db, &tok2).await;
-    assert_eq!(v["disclosure"]["version"], 1);
-    assert_eq!(v["disclosure"]["title"], "Kalks FX Options: risk disclosure");
+    assert_eq!(v["disclosure"]["version"], 2);
+    assert_eq!(v["disclosure"]["title"], "Kalks FX Options: key points and terms");
     assert_eq!(db.count("SELECT count(*) FROM disclosures WHERE tenant_id = $1", t2).await, 1);
     get_state(&db, &tok2).await;
     assert_eq!(db.count("SELECT count(*) FROM disclosures WHERE tenant_id = $1", t2).await, 1);
-    accept_v(&db, &tok1, Some(1)).await.unwrap();
-    accept_v(&db, &tok2, Some(1)).await.unwrap();
+    accept_v(&db, &tok1, Some(2)).await.unwrap();
+    accept_v(&db, &tok2, Some(2)).await.unwrap();
 
     // row-level security: a broker's scope sees only its own disclosures and records
     let mut tx = domains::tenant_tx(&db.st.pool, t2).await.unwrap();

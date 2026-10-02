@@ -1,10 +1,15 @@
-// Demo build (NEXT_PUBLIC_KALKS_MODE=demo): the options onboarding without the gateway. The disclosure is v2 as
-// published by services/gateway/migrations/20261002190000_options_onboarding_light.sql (a gateway test keeps the two
-// copies identical). Like the gateway (services/gateway/src/suitability.rs), accepting it is all a client needs.
+-- Options onboarding made light (founder decision 2026-10-02). A client is eligible for Kalks FX Options, demo and
+-- live, once they have accepted the options disclosure: any published version (suitability.rs). Verified identity
+-- and the knowledge quiz are no longer needed for options (withdrawals still need verified identity, kyc.rs); the
+-- quiz stays available as an optional self-test. No schema change: acceptances of v1 stay valid.
+--
+-- Disclosure v2 for every broker (append-only: a new row, v1 stays on record): one short, plain-language paragraph
+-- of key points, then the full terms (the substance of v1, updated for the Kalks order book). Brokers created later
+-- get a copy of the platform's current version on first use, as before.
 
-import type { Suitability } from "./api";
-
-const DISCLOSURE_V2 = `Options let you trade on where a price is heading. Here are the key points. When you buy an option, the most you can lose is what you pay for it. When you sell an option, you can lose more than you receive, and selling uses margin from your account. Prices are set on the Kalks order book and by Kalks. Options settle in cash at expiry, so you never deliver or receive anything. As with any trading, only use money you can afford to lose.
+INSERT INTO disclosures (tenant_id, product, version, title, body_md, published_at)
+SELECT t.id, 'options', 2, 'Kalks FX Options: key points and terms', btrim($md$
+Options let you trade on where a price is heading. Here are the key points. When you buy an option, the most you can lose is what you pay for it. When you sell an option, you can lose more than you receive, and selling uses margin from your account. Prices are set on the Kalks order book and by Kalks. Options settle in cash at expiry, so you never deliver or receive anything. As with any trading, only use money you can afford to lose.
 
 ## Full terms
 
@@ -56,20 +61,8 @@ Kalks FX Options are European-style options on 13 underlyings: forex major and c
 
 ### 8. Your confirmation
 
-By accepting these terms you confirm that you have read the key points above and understand how options work; that you can lose all the money you pay for options and, when you sell options, more than the premium you receive; and that trading options is appropriate for you given your knowledge, experience and financial situation. Past performance is not a guide to future results. Nothing Kalks provides is investment advice.`;
-
-/** A demo client who hasn't started options yet. */
-export function demoSuitability(): Suitability {
-  return {
-    product: "options",
-    disclosure: { version: 2, title: "Kalks FX Options: key points and terms", bodyMd: DISCLOSURE_V2, publishedAt: "2026-10-02T09:00:00Z" },
-    disclosureAccepted: false,
-    acceptedVersion: null,
-    acceptedAt: null,
-    eligible: false,
-    missing: ["disclosure"],
-    kycVerified: true,
-    kycStatus: "verified",
-    quizPassed: false,
-  };
-}
+By accepting these terms you confirm that you have read the key points above and understand how options work; that you can lose all the money you pay for options and, when you sell options, more than the premium you receive; and that trading options is appropriate for you given your knowledge, experience and financial situation. Past performance is not a guide to future results. Nothing Kalks provides is investment advice.
+$md$, E' \n'), now()
+FROM tenants t
+WHERE NOT EXISTS (SELECT 1 FROM disclosures d WHERE d.tenant_id = t.id AND d.product = 'options' AND d.version >= 2)
+ON CONFLICT (tenant_id, product, version) DO NOTHING;

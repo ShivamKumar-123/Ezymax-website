@@ -1,29 +1,30 @@
-//! Suitability for complex products (O41). Before the first Kalks FX Options trade a client needs:
-//! 1. verified identity (`users.kyc_status = 'verified'`, kyc.rs),
-//! 2. the **current** options risk disclosure accepted (versioned; time, IP and user agent recorded), and
-//! 3. a passed knowledge quiz ([`PASS_MARK`] of 10).
+//! Suitability for complex products (O41). Kalks FX Options onboarding is light (founder decision 2026-10-02): a
+//! client is **eligible** for options, demo and live, once they have accepted the options disclosure, any published
+//! version (time, IP and user agent recorded). Verified identity and the knowledge quiz no longer affect eligibility:
+//! the responses still carry `kycVerified` / `quizPassed` for information, and the quiz stays available as an
+//! optional self-test ([`PASS_MARK`] of 10). Withdrawals still need verified identity (kyc.rs); nothing here changes
+//! that. Every acceptance and every quiz attempt is also in the audit log.
 //!
-//! `eligible` = all three. A new disclosure version makes every earlier acceptance stale until the client accepts
-//! the new text; a passed quiz stays passed. Every acceptance and every quiz attempt is also in the audit log.
-//!
-//! Storage (migration `20261002150000_options_suitability.sql`, row-level security like every tenant table):
-//! `disclosures` (append-only versions per tenant and product) and `suitability` (one row per client and product).
-//! A broker without its own disclosure gets a copy of the platform's current one (tenant `kalks`) on first use.
+//! Storage (migrations `20261002150000_options_suitability.sql`, `20261002190000_options_onboarding_light.sql`;
+//! row-level security like every tenant table): `disclosures` (append-only versions per tenant and product) and
+//! `suitability` (one row per client and product). A broker without its own disclosure gets a copy of the platform's
+//! current one (tenant `kalks`) on first use. A newer version doesn't undo an earlier acceptance; accepting again
+//! records the newer version.
 //!
 //! Client (session bearer, via the Client Area BFF `/api/suitability/*`):
 //! * `GET  /v1/suitability/{product}`          status, current disclosure, quiz questions (never the answers)
 //! * `POST /v1/suitability/{product}/accept`   `{version}` accepts the current disclosure (409 `disclosure_outdated`
 //!   when a newer version was published meanwhile)
-//! * `POST /v1/suitability/{product}/quiz`     `{answers: {id: index}}` → `{passed, score, total, passMark,
-//!   wrong: [{id, explanation}]}`; needs the current disclosure accepted (409 `disclosure_required`)
+//! * `POST /v1/suitability/{product}/quiz`     optional self-test: `{answers: {id: index}}` → `{passed, score, total,
+//!   passMark, wrong: [{id, explanation}]}`
 //!
 //! View-only logins and staff sessions opened as the client can read the status but never accept or take the quiz:
 //! these are the client's own attestations.
 //!
 //! Internal (trading engine, before it opens an options position):
 //! * `GET /v1/internal/suitability/{user_id}?product=options` → `{eligible, kycVerified, disclosureAccepted,
-//!   quizPassed, missing[], ...}`. With `X-Kalks-Tenant` / `X-Kalks-Host` the client must belong to that broker (404
-//!   otherwise); without either the user id alone decides.
+//!   quizPassed, missing[], ...}`; `missing` is `["disclosure"]` or empty. With `X-Kalks-Tenant` / `X-Kalks-Host` the
+//!   client must belong to that broker (404 otherwise); without either the user id alone decides.
 
 #[cfg(test)]
 mod tests;
@@ -48,7 +49,7 @@ use crate::state::{AppState, Ctx};
 /// Products that need a suitability check.
 pub const PRODUCTS: &[&str] = &["options"];
 
-/// Correct answers needed to pass a quiz (of [`OPTIONS_QUIZ`]'s 10).
+/// Correct answers needed to pass the optional quiz (of [`OPTIONS_QUIZ`]'s 10).
 pub const PASS_MARK: usize = 8;
 
 /// Tenant whose current disclosure is copied to a broker that has none yet.
@@ -70,9 +71,9 @@ pub struct Question {
     pub explanation: &'static str,
 }
 
-/// Kalks FX Options knowledge check: calls and puts, premium, the buyer's and the seller's maximum loss, seller
-/// margin, breakeven, expiry and settlement, time decay, barriers and delta. The Client Area shows translations by
-/// question id (i18n namespace `options`, keys `quiz.<id>.*`), so changing a question's meaning needs a new id.
+/// Kalks FX Options knowledge check (an optional self-test; it doesn't affect eligibility): calls and puts, premium,
+/// the buyer's and the seller's maximum loss, seller margin, breakeven, expiry and settlement, time decay, barriers
+/// and delta. Changing a question's meaning needs a new id (attempts are audited by id).
 pub const OPTIONS_QUIZ: &[Question] = &[
     Question {
         id: "call-right",
@@ -260,42 +261,30 @@ pub struct Status {
     pub quiz_attempts: i32,
 }
 
-/// The rule the trading engine enforces: verified identity, current disclosure accepted, quiz passed.
-pub fn eligible(kyc_verified: bool, disclosure_accepted: bool, quiz_passed: bool) -> bool {
-    kyc_verified && disclosure_accepted && quiz_passed
-}
-
 impl Status {
+    /// For information only: identity verification isn't needed for options.
     pub fn kyc_verified(&self) -> bool {
         self.kyc_status == "verified"
     }
 
-    /// The accepted version is the current one (no disclosure published = nothing can be accepted).
+    /// Any published version accepted (the accept handler only takes the version that is current at the time).
     pub fn disclosure_accepted(&self) -> bool {
-        matches!((&self.disclosure, self.accepted_version), (Some(d), Some(v)) if v == d.version)
+        self.accepted_version.is_some_and(|v| v >= 1)
     }
 
+    /// For information only: the quiz is an optional self-test.
     pub fn quiz_passed(&self) -> bool {
         self.quiz_passed_at.is_some()
     }
 
+    /// The rule the trading engine enforces: the options disclosure accepted, nothing else.
     pub fn eligible(&self) -> bool {
-        eligible(self.kyc_verified(), self.disclosure_accepted(), self.quiz_passed())
+        self.disclosure_accepted()
     }
 
-    /// Steps still open, in order: `kyc`, `disclosure`, `quiz`.
+    /// Steps still open: `disclosure`, or nothing.
     pub fn missing(&self) -> Vec<&'static str> {
-        let mut m = Vec::new();
-        if !self.kyc_verified() {
-            m.push("kyc");
-        }
-        if !self.disclosure_accepted() {
-            m.push("disclosure");
-        }
-        if !self.quiz_passed() {
-            m.push("quiz");
-        }
-        m
+        if self.disclosure_accepted() { Vec::new() } else { vec!["disclosure"] }
     }
 
     /// What the Client Area shows.
@@ -391,7 +380,7 @@ async fn attesting_session(st: &AppState, ctx: &Ctx) -> ApiResult<SessionRef> {
         return Err(ApiError::Coded {
             status: StatusCode::FORBIDDEN,
             code: "client_only",
-            message: "Only the client can accept the risk disclosure or take the knowledge quiz.",
+            message: "Only the client can accept the options terms or take the quiz.",
         });
     }
     Ok(s)
@@ -422,18 +411,18 @@ pub async fn accept(State(st): State<AppState>, ctx: Ctx, Path(raw): Path<String
     let r = body(req)?;
     let s = attesting_session(&st, &ctx).await?;
     identity::limit(&st, format!("suitability-accept:user:{}", s.subject_id), 30, 3600)?;
-    let version = r.version.filter(|v| (1..=i32::MAX as i64).contains(v)).ok_or(ApiError::Validation { field: "version", message: "Accept the disclosure you have read." })? as i32;
+    let version = r.version.filter(|v| (1..=i32::MAX as i64).contains(v)).ok_or(ApiError::Validation { field: "version", message: "Accept the options terms you have read." })? as i32;
     let status = load_session(&st, &s, product).await?;
     let current = status.disclosure.as_ref().ok_or(ApiError::Coded {
         status: StatusCode::CONFLICT,
         code: "no_disclosure",
-        message: "The risk disclosure isn't available right now. Please try again later.",
+        message: "The options terms aren't available right now. Please try again later.",
     })?;
     if version != current.version {
         return Err(ApiError::Coded {
             status: StatusCode::CONFLICT,
             code: "disclosure_outdated",
-            message: "The risk disclosure has been updated. Please read the new version.",
+            message: "The options terms have just been updated. Please take a quick look at the new version.",
         });
     }
     let mut tx = domains::tenant_tx(&st.pool, s.tenant_id).await?;
@@ -462,7 +451,7 @@ pub async fn accept(State(st): State<AppState>, ctx: Ctx, Path(raw): Path<String
     Ok(Json(load_session(&st, &s, product).await?.client_json()))
 }
 
-// ---------- client: POST /v1/suitability/{product}/quiz ----------
+// ---------- client: POST /v1/suitability/{product}/quiz (optional self-test) ----------
 
 #[derive(Deserialize)]
 pub struct QuizReq {
@@ -476,14 +465,6 @@ pub async fn quiz(State(st): State<AppState>, ctx: Ctx, Path(raw): Path<String>,
     let s = attesting_session(&st, &ctx).await?;
     let qs = quiz_for(product);
     let graded = grade(qs, &r.answers)?;
-    let status = load_session(&st, &s, product).await?;
-    if !status.disclosure_accepted() {
-        return Err(ApiError::Coded {
-            status: StatusCode::CONFLICT,
-            code: "disclosure_required",
-            message: "Read and accept the risk disclosure before you take the quiz.",
-        });
-    }
     identity::limit(&st, format!("suitability-quiz:user:{}", s.subject_id), 20, 3600)?;
     let passed = graded.passed();
     let mut tx = domains::tenant_tx(&st.pool, s.tenant_id).await?;
