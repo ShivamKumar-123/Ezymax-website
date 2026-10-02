@@ -7,7 +7,7 @@ from packages.common.src.database import get_db
 from packages.common.src.rate_limit import rate_limit_http
 from dependencies import get_current_admin, ADMIN_COOKIE_NAME
 from packages.common.src.models import User
-from packages.common.src.admin_schemas import AdminLoginRequest, AdminLoginResponse, AdminRefreshRequest
+from packages.common.src.admin_schemas import AdminLoginRequest, AdminRefreshRequest
 from services import auth_service
 
 
@@ -26,14 +26,17 @@ def _request_is_https(request: Request) -> bool:
     return request.url.scheme == "https"
 
 
-def _set_admin_cookie(resp: Response, request: Request, token: str) -> None:
+def _set_admin_cookie(
+    resp: Response, request: Request, token: str, max_age: int | None = None,
+) -> None:
     """Drop the admin JWT into an HttpOnly cookie. SameSite=strict so the
     browser never attaches it to cross-site requests, plus Secure
     (auto-derived from request scheme) so it never crosses plain HTTP.
     Path is /admin-api so it's only sent to the admin gateway prefix —
     the trader-app domain never sees it."""
     secure = _request_is_https(request)
-    max_age = int(_settings.ADMIN_JWT_EXPIRY_HOURS) * 3600
+    if max_age is None:
+        max_age = int(_settings.ADMIN_JWT_EXPIRY_HOURS) * 3600
     resp.set_cookie(
         key=ADMIN_COOKIE_NAME,
         value=token,

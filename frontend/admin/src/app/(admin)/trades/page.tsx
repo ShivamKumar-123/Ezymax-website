@@ -282,6 +282,10 @@ export default function TradesPage() {
   // points adjustment that shifts the close against the user; the modal shows
   // the resulting effective price so whatever gets booked is never a surprise.
   const [closePriceInput, setClosePriceInput] = useState('');
+  // The market price the close-price field was seeded with. close_price is
+  // only sent when the admin actually edits the field (or adds a spread);
+  // otherwise the backend books at its own fresh market quote (C2).
+  const [closePriceSeed, setClosePriceSeed] = useState('');
   const [closeSpread, setCloseSpread] = useState('');
   const [actionReason, setActionReason] = useState('');
   const [modalSubmitting, setModalSubmitting] = useState(false);
@@ -425,6 +429,7 @@ export default function TradesPage() {
       const isBuy = (pos.side || '').toLowerCase() === 'buy';
       const mkt = tick ? (isBuy ? tick.bid : tick.ask) : null;
       setClosePriceInput(mkt != null ? String(mkt) : '');
+      setClosePriceSeed(mkt != null ? String(mkt) : '');
       setCloseSpread('');
     }
     setActionReason('');
@@ -442,6 +447,7 @@ export default function TradesPage() {
     const isBuy = (pos.side || '').toLowerCase() === 'buy';
     const mkt = tick ? (isBuy ? tick.bid : tick.ask) : null;
     setClosePriceInput(mkt != null ? String(mkt) : '');
+    setClosePriceSeed(mkt != null ? String(mkt) : '');
     setCloseSpread('');
     setModalType('close');
     setOpenActionsId(null);
@@ -497,8 +503,16 @@ export default function TradesPage() {
       const tpTrim = modifyTp.trim();
       body.stop_loss = slTrim === '' ? null : parseFloat(slTrim);
       body.take_profit = tpTrim === '' ? null : parseFloat(tpTrim);
-      if (modifyOpenPrice) body.open_price = parseFloat(modifyOpenPrice);
-      if (modifyLots) body.lots = parseFloat(modifyLots);
+      // open_price / lots / open_time / side change the trade's economics and
+      // need a risk role server-side (C2) — send them ONLY when the admin
+      // actually changed the pre-filled value, so a plain SL/TP edit works
+      // for every role with trades.modify.
+      if (modifyOpenPrice && parseFloat(modifyOpenPrice) !== Number(selectedPosition.open_price)) {
+        body.open_price = parseFloat(modifyOpenPrice);
+      }
+      if (modifyLots && parseFloat(modifyLots) !== Number(selectedPosition.lots)) {
+        body.lots = parseFloat(modifyLots);
+      }
       if (modifyCommission) body.commission = parseFloat(modifyCommission);
       if (modifySwap) body.swap = parseFloat(modifySwap);
       // Per-trade spread override: always send so clearing the input (empty)
@@ -506,7 +520,9 @@ export default function TradesPage() {
       const spTrim = modifySpread.trim();
       body.spread_override = spTrim === '' ? null : parseFloat(spTrim);
       body.spread_override_type = 'pips';
-      if (modifyOpenTime) body.open_time = localInputToUtcIso(modifyOpenTime);
+      if (modifyOpenTime && modifyOpenTime !== utcIsoToLocalInput(selectedPosition.created_at)) {
+        body.open_time = localInputToUtcIso(modifyOpenTime);
+      }
       // Only send side if admin actually flipped it — saves a write
       // on every save where the toggle wasn't touched and keeps the
       // audit log clean.
@@ -639,12 +655,17 @@ export default function TradesPage() {
     setModalSubmitting(true);
     try {
       const body: Record<string, unknown> = { reason: actionReason };
-      // Send the effective close price the modal is showing. When the admin
-      // leaves the field on the live market and no spread, this equals a plain
-      // market close; the backend falls back to market only if close_price is
-      // omitted, so we send it explicitly whenever it is a valid number.
-      const eff = effectiveClosePrice(selectedPosition, closePriceInput, closeSpread);
-      if (eff != null && Number.isFinite(eff)) body.close_price = eff;
+      // Send close_price ONLY when the admin edited the price field or added a
+      // spread. Untouched, the backend closes at its own fresh market quote —
+      // a supplied price needs a risk role and must be within 5% of market
+      // (C2), so a stale pre-filled number must never ride along.
+      const priceEdited = closePriceInput.trim() !== '' && closePriceInput.trim() !== closePriceSeed.trim();
+      const sp = parseFloat(closeSpread);
+      const spreadEdited = Number.isFinite(sp) && sp !== 0;
+      if (priceEdited || spreadEdited) {
+        const eff = effectiveClosePrice(selectedPosition, closePriceInput, closeSpread);
+        if (eff != null && Number.isFinite(eff)) body.close_price = eff;
+      }
       await adminApi.post(`/trades/position/${selectedPosition.id}/close`, body);
       toast.success('Position closed');
       closeModal();

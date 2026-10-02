@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import contextlib
 import contextvars
-from typing import Any, Optional
+from typing import Optional
 
 _current_brand: contextvars.ContextVar[Optional[dict]] = contextvars.ContextVar(
     "email_brand", default=None
@@ -92,7 +92,9 @@ async def resolve_email_brand(db, user) -> Optional[dict]:
         profile = await broker_tenancy.get_broker_profile(db, owner.id)
         if profile is None or profile.is_suspended:
             return None
-        name = (profile.brand_name or "").strip()
+        # C5: scrub < > " and CR/LF (legacy rows predating write-time
+        # validation) — the name lands in email subjects and HTML.
+        name = broker_tenancy.safe_brand_name(profile.brand_name)
         if not name:
             return None
         return {
@@ -122,7 +124,9 @@ async def resolve_email_brand_for_signup(
         profile = await broker_tenancy.get_broker_profile(db, owner.id)
         if profile is None or profile.is_suspended:
             return None
-        name = (profile.brand_name or "").strip()
+        # C5: scrub < > " and CR/LF (legacy rows predating write-time
+        # validation) — the name lands in email subjects and HTML.
+        name = broker_tenancy.safe_brand_name(profile.brand_name)
         if not name:
             return None
         return {

@@ -23,7 +23,7 @@ PERMISSION_CATALOG = {
     "Trading":     ["trades.view", "trades.modify", "trades.close", "trades.create", "positions.view", "orders.view"],
     "Social":      ["social.view", "social.manage"],
     "Banks":       ["banks.view", "banks.create", "banks.update"],
-    "IB":          ["ib.view", "ib.manage"],
+    "IB":          ["ib.view", "ib.manage", "ib.payout"],
     "Marketing":   ["banners.view", "banners.create", "banners.update", "banners.delete", "bonus.view", "bonus.create", "bonus.update"],
     "Support":     ["tickets.view", "tickets.reply", "tickets.assign"],
     "Analytics":   ["analytics.view", "exposure.view"],
@@ -144,5 +144,6 @@ async def login_as_employee(
     # reads the cookie BEFORE any Bearer header — without swapping the
     # cookie here, the caller keeps their super_admin session and the
     # impersonation token in the JSON body is never used.
-    _set_admin_cookie(response, request, result["access_token"])
+    # C5: the cookie lives exactly as long as the 1 h impersonation token.
+    _set_admin_cookie(response, request, result["access_token"], max_age=result.get("expires_in"))
     return {k: v for k, v in result.items() if k not in ("access_token", "token_type")}

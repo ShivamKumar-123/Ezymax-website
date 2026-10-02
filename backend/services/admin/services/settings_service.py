@@ -68,6 +68,9 @@ async def update_settings(
         base = url.rsplit("/", 1)[0]
         r = aioredis.from_url(f"{base}/0")
         await r.delete("system_settings_cache")
+        # Also bust every gateway process's short in-process settings copy
+        # (pub/sub channels are global across Redis logical DBs).
+        await r.publish("config:settings:reload", "1")
         await r.close()
     except Exception:
         pass

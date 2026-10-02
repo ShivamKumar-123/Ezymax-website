@@ -2,7 +2,7 @@
 import logging
 import os
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import jwt
@@ -24,7 +24,7 @@ from packages.common.src.config import get_settings
 from sqlalchemy import delete as sql_delete
 from packages.common.src.models import (
     User, TradingAccount, Position, Order, Transaction, Deposit, Withdrawal,
-    PositionStatus, OrderStatus, TradeHistory,
+    PositionStatus, TradeHistory,
     MasterAccount, InvestorAllocation, CopyTrade,
     Referral, IBProfile, IBCommission, IBApplication, Notification,
     UserSession, UserRefreshToken, UserAuditLog, PasswordResetToken,
@@ -283,6 +283,7 @@ async def add_fund(
 
     user_result = await db.execute(
         select(User).where(User.id == user_id).with_for_update()
+        .execution_options(populate_existing=True)
     )
     user_row = user_result.scalar_one_or_none()
     if not user_row:
@@ -296,7 +297,7 @@ async def add_fund(
         user_id=user_id,
         account_id=None,  # Main wallet — no trading account
         type="adjustment",
-        amount=Decimal(str(body.amount)),
+        amount=amt,
         balance_after=user_row.main_wallet_balance,
         description=body.description or "Admin fund addition to main wallet",
         created_by=admin_id,
@@ -328,8 +329,8 @@ async def add_fund(
 
     await write_audit_log(
         db, admin_id, "add_fund", "user", user_id,
-        old_values={"main_wallet_balance": float(old_balance)},
-        new_values={"main_wallet_balance": float(user_row.main_wallet_balance), "amount_added": body.amount},
+        old_values={"main_wallet_balance": old_balance},
+        new_values={"main_wallet_balance": user_row.main_wallet_balance, "amount_added": amt},
         ip_address=ip_address,
     )
     await create_notification(
@@ -337,7 +338,7 @@ async def add_fund(
         user_id,
         title="Funds Added",
         message=(
-            f"${float(body.amount):,.2f} has been added to your main wallet. "
+            f"${amt:,.2f} has been added to your main wallet. "
             "You can now transfer it to your trading account from the Wallet page."
         ),
         notif_type="deposit",
@@ -365,6 +366,7 @@ async def deduct_fund(
     # Load user (locked to prevent concurrent debits racing each other)
     user_result = await db.execute(
         select(User).where(User.id == user_id).with_for_update()
+        .execution_options(populate_existing=True)
     )
     user_row = user_result.scalar_one_or_none()
     if not user_row:
@@ -418,8 +420,8 @@ async def deduct_fund(
         ))
         await write_audit_log(
             db, admin_id, "deduct_fund", "user", user_id,
-            old_values={"main_wallet_balance": float(main_bal)},
-            new_values={"main_wallet_balance": float(user_row.main_wallet_balance), "amount_deducted": body.amount},
+            old_values={"main_wallet_balance": main_bal},
+            new_values={"main_wallet_balance": user_row.main_wallet_balance, "amount_deducted": amt},
             ip_address=ip_address,
         )
         await db.commit()
@@ -444,7 +446,7 @@ async def deduct_fund(
         select(TradingAccount).where(
             TradingAccount.id == uuid.UUID(body.account_id),
             TradingAccount.user_id == user_id,
-        ).with_for_update()
+        ).with_for_update().execution_options(populate_existing=True)
     )
     account = account_result.scalar_one_or_none()
     if not account:
@@ -486,8 +488,8 @@ async def deduct_fund(
     ))
     await write_audit_log(
         db, admin_id, "deduct_fund", "trading_account", account.id,
-        old_values={"balance": float(old_balance)},
-        new_values={"balance": float(account.balance), "amount_deducted": body.amount},
+        old_values={"balance": old_balance},
+        new_values={"balance": account.balance, "amount_deducted": amt},
         ip_address=ip_address,
     )
     await db.commit()
@@ -506,7 +508,7 @@ async def give_credit(
         select(TradingAccount).where(
             TradingAccount.id == uuid.UUID(body.account_id),
             TradingAccount.user_id == user_id,
-        ).with_for_update()
+        ).with_for_update().execution_options(populate_existing=True)
     )
     account = account_result.scalar_one_or_none()
     if not account:
@@ -514,15 +516,16 @@ async def give_credit(
     target = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     await _assert_can_target(db, admin_id, target)  # H-ADMIN-2
 
-    old_credit = float(account.credit or 0)
-    account.credit = Decimal(str(old_credit)) + Decimal(str(body.amount))
+    amt = Decimal(str(body.amount))
+    old_credit = Decimal(str(account.credit or 0))
+    account.credit = old_credit + amt
     account.equity = (account.balance or Decimal("0")) + account.credit
 
     txn = Transaction(
         user_id=user_id,
         account_id=account.id,
         type="credit",
-        amount=Decimal(str(body.amount)),
+        amount=amt,
         balance_after=account.balance,
         description=body.description or "Admin credit addition",
         created_by=admin_id,
@@ -532,7 +535,7 @@ async def give_credit(
     await write_audit_log(
         db, admin_id, "give_credit", "trading_account", account.id,
         old_values={"credit": old_credit},
-        new_values={"credit": float(account.credit), "amount": body.amount},
+        new_values={"credit": account.credit, "amount": amt},
         ip_address=ip_address,
     )
     await db.commit()
@@ -550,7 +553,7 @@ async def take_credit(
         select(TradingAccount).where(
             TradingAccount.id == uuid.UUID(body.account_id),
             TradingAccount.user_id == user_id,
-        ).with_for_update()
+        ).with_for_update().execution_options(populate_existing=True)
     )
     account = account_result.scalar_one_or_none()
     if not account:
@@ -558,18 +561,19 @@ async def take_credit(
     target = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     await _assert_can_target(db, admin_id, target)  # H-ADMIN-2
 
-    old_credit = float(account.credit or 0)
-    if old_credit < body.amount:
+    amt = Decimal(str(body.amount))
+    old_credit = Decimal(str(account.credit or 0))
+    if old_credit < amt:
         raise HTTPException(status_code=400, detail="Insufficient credit")
 
-    account.credit = Decimal(str(old_credit)) - Decimal(str(body.amount))
+    account.credit = old_credit - amt
     account.equity = (account.balance or Decimal("0")) + account.credit
 
     txn = Transaction(
         user_id=user_id,
         account_id=account.id,
         type="credit",
-        amount=-Decimal(str(body.amount)),
+        amount=-amt,
         balance_after=account.balance,
         description=body.description or "Admin credit removal",
         created_by=admin_id,
@@ -579,7 +583,7 @@ async def take_credit(
     await write_audit_log(
         db, admin_id, "take_credit", "trading_account", account.id,
         old_values={"credit": old_credit},
-        new_values={"credit": float(account.credit), "amount_removed": body.amount},
+        new_values={"credit": account.credit, "amount_removed": amt},
         ip_address=ip_address,
     )
     await db.commit()
@@ -745,15 +749,19 @@ async def login_as_user(
                 detail="Only super_admin can impersonate staff accounts.",
             )
 
-    expire = datetime.utcnow() + timedelta(hours=2)
+    # Hand-off token only: it is redeemed once (via the 60 s single-use code
+    # below) for a short, refresh-less, restricted session. It is never a
+    # bearer credential itself, so it lives 120 s, not 2 h.
+    now = datetime.now(timezone.utc)
     payload = {
         "sub": str(user.id),
         "email": user.email,
         "role": user.role,
         "type": "user",
+        "typ": "impersonation",
         "impersonated_by": str(admin_id),
-        "exp": expire,
-        "iat": datetime.utcnow(),
+        "exp": now + timedelta(seconds=120),
+        "iat": now,
     }
     # Sign with the gateway's JWT_SECRET so /auth/impersonate/redeem (which
     # uses decode_token → settings.JWT_SECRET) accepts the token.

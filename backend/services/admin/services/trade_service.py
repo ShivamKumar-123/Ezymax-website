@@ -21,7 +21,7 @@ from packages.common.src.admin_schemas import (
 )
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.instrument_pricing import resolve_commission
-from packages.common.src.redis_client import publish_instrument_config_reload
+from packages.common.src.redis_client import publish_instrument_config_reload, is_tick_stale
 from dependencies import write_audit_log
 
 # Admin uses Redis db 1, but market ticks are on db 0 (gateway).
@@ -39,6 +39,44 @@ async def _get_live_price(symbol: str) -> dict | None:
     except Exception:
         pass
     return None
+
+
+# C2: an admin-supplied close price must sit within this fraction of a fresh
+# market quote (super_admin exempt).
+ADMIN_CLOSE_PRICE_BAND = Decimal("0.05")
+
+
+async def _fresh_close_quote(symbol: str | None, side_val: str) -> Decimal | None:
+    """The price a market close would book right now (bid for a buy, ask for a
+    sell), or None when there is no FRESH quote (missing, flagged stale, or
+    older than the staleness window)."""
+    if not symbol:
+        return None
+    tick = await _get_live_price(symbol)
+    if not tick or is_tick_stale(tick):
+        return None
+    raw = tick.get("bid") if side_val == "buy" else tick.get("ask")
+    try:
+        px = Decimal(str(raw))
+    except Exception:
+        return None
+    if not px.is_finite() or px <= 0:
+        return None
+    return px
+
+
+def _same_minute(a, b) -> bool:
+    """Compare two datetimes at minute precision, tz-insensitively (the admin
+    UI's datetime-local input has no seconds, and created_at may be naive)."""
+    if a is None or b is None:
+        return a is b
+    from datetime import timezone as _tz
+
+    def _norm(d):
+        if d.tzinfo is not None:
+            d = d.astimezone(_tz.utc).replace(tzinfo=None)
+        return d.replace(second=0, microsecond=0)
+    return _norm(a) == _norm(b)
 
 
 async def list_positions(
@@ -301,8 +339,17 @@ async def list_trade_history(
 async def modify_position(
     position_id: uuid.UUID, body: ModifyPositionRequest,
     admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
+    *, allow_risk_edits: bool = False,
 ) -> dict:
-    result = await db.execute(select(Position).where(Position.id == position_id))
+    """Edit an OPEN position. SL/TP, commission, swap and the spread override
+    are open to `trades.modify`; changing the trade's economics — open_price,
+    lots, side or open_time — additionally needs a risk role (C2): the caller
+    passes allow_risk_edits=True only for super_admin / risk_manager. Values
+    equal to the current ones are not changes (the admin UI pre-fills them)."""
+    result = await db.execute(
+        select(Position).where(Position.id == position_id)
+        .with_for_update().execution_options(populate_existing=True)
+    )
     pos = result.scalar_one_or_none()
     if not pos:
         raise HTTPException(status_code=404, detail="Position not found")
@@ -325,6 +372,38 @@ async def modify_position(
 
     def _side_str(s) -> str:
         return s.value if hasattr(s, "value") else str(s)
+
+    # ── C2: which economics fields does this request ACTUALLY change? ──
+    new_open_price = Decimal(str(body.open_price)) if body.open_price is not None else None
+    new_lots = Decimal(str(body.lots)) if body.lots is not None else None
+    new_side = None
+    if body.side is not None:
+        new_side = body.side.strip().lower()
+        if new_side not in ("buy", "sell"):
+            raise HTTPException(status_code=400, detail="side must be 'buy' or 'sell'")
+    cur_side = _side_str(pos.side).lower() if pos.side is not None else None
+    open_price_changed = new_open_price is not None and (
+        pos.open_price is None or new_open_price != Decimal(str(pos.open_price))
+    )
+    lots_changed = new_lots is not None and (
+        pos.lots is None or new_lots != Decimal(str(pos.lots))
+    )
+    side_changed = new_side is not None and new_side != cur_side
+    open_time_changed = body.open_time is not None and not _same_minute(body.open_time, pos.created_at)
+    risk_fields = [
+        name for name, changed in (
+            ("open_price", open_price_changed), ("lots", lots_changed),
+            ("side", side_changed), ("open_time", open_time_changed),
+        ) if changed
+    ]
+    if risk_fields and not allow_risk_edits:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Changing " + ", ".join(risk_fields) + " on an open position "
+                "requires super_admin or risk_manager."
+            ),
+        )
 
     old_values = {
         "stop_loss": float(pos.stop_loss) if pos.stop_loss is not None else None,
@@ -350,15 +429,15 @@ async def modify_position(
         pos.stop_loss = Decimal(str(body.stop_loss)) if body.stop_loss is not None else None
     if "take_profit" in fields_set:
         pos.take_profit = Decimal(str(body.take_profit)) if body.take_profit is not None else None
-    if body.open_price is not None:
-        pos.open_price = Decimal(str(body.open_price))
+    if open_price_changed:
+        pos.open_price = new_open_price
     if body.commission is not None:
         pos.commission = Decimal(str(body.commission))
     if body.swap is not None:
         pos.swap = Decimal(str(body.swap))
-    if body.lots is not None:
-        pos.lots = Decimal(str(body.lots))
-    if body.open_time is not None:
+    if lots_changed:
+        pos.lots = new_lots
+    if open_time_changed:
         pos.created_at = body.open_time
 
     # Temporary per-trade spread override. Omitted-vs-null: present + null clears
@@ -382,11 +461,8 @@ async def modify_position(
     # sell-with-TP-below-open if admin doesn't also update the SL/TP),
     # so admins are expected to set sensible SL/TP in the same call
     # when flipping side.
-    if body.side is not None:
-        side_norm = body.side.strip().lower()
-        if side_norm not in ("buy", "sell"):
-            raise HTTPException(status_code=400, detail="side must be 'buy' or 'sell'")
-        pos.side = OrderSide.BUY if side_norm == "buy" else OrderSide.SELL
+    if side_changed:
+        pos.side = OrderSide.BUY if new_side == "buy" else OrderSide.SELL
 
     pos.is_admin_modified = True
     pos.updated_at = datetime.utcnow()
@@ -416,8 +492,8 @@ async def modify_position(
         inv_status = inv_pos.status.value if hasattr(inv_pos.status, 'value') else str(inv_pos.status)
         if inv_status != "open":
             continue
-        if body.open_price is not None:
-            inv_pos.open_price = Decimal(str(body.open_price))
+        if open_price_changed:
+            inv_pos.open_price = new_open_price
         # Same omitted-vs-null treatment for the mirrored follower:
         # clearing on master clears on follower.
         if "stop_loss" in fields_set:
@@ -426,7 +502,7 @@ async def modify_position(
             inv_pos.take_profit = Decimal(str(body.take_profit)) if body.take_profit is not None else None
         # Mirror the side flip onto the follower so the copy stays
         # aligned with the master after admin's correction.
-        if body.side is not None:
+        if side_changed:
             inv_pos.side = pos.side
         inv_pos.is_admin_modified = True
         inv_pos.updated_at = datetime.utcnow()
@@ -434,7 +510,11 @@ async def modify_position(
 
     await write_audit_log(
         db, admin_id, "modify_position", "position", position_id,
-        old_values=old_values, new_values={**new_values, "copies_updated": updated_copies},
+        old_values=old_values,
+        new_values={
+            **new_values, "copies_updated": updated_copies,
+            "risk_fields_changed": risk_fields, "reason": body.reason,
+        },
         ip_address=ip_address,
     )
     await db.commit()
@@ -451,30 +531,81 @@ async def modify_position(
 async def close_position(
     position_id: uuid.UUID, body: ClosePositionRequest,
     admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
+    *, allow_supplied_price: bool = False, enforce_price_band: bool = True,
 ) -> dict:
-    result = await db.execute(select(Position).where(Position.id == position_id))
+    """Admin close of an OPEN position (C2).
+
+    * No close_price → books at the FRESH market quote (400 if stale/missing).
+    * A supplied close_price needs a risk role (allow_supplied_price) and,
+      unless enforce_price_band=False (super_admin), must be within 5% of a
+      fresh quote — no fresh quote means no supplied-price close.
+    * A-book positions (forwarded to the LP) are never closed locally.
+    * Position then account are row-locked (same order as the trader close),
+      and the realised P&L is written to the ledger like any other close.
+    """
+    result = await db.execute(
+        select(Position).where(Position.id == position_id)
+        .with_for_update().execution_options(populate_existing=True)
+    )
     pos = result.scalar_one_or_none()
     if not pos:
         raise HTTPException(status_code=404, detail="Position not found")
     if (pos.status.value if hasattr(pos.status, 'value') else pos.status) != PositionStatus.OPEN.value:
         raise HTTPException(status_code=400, detail="Position is not open")
 
-    side_val = pos.side.value if hasattr(pos.side, "value") else str(pos.side)
+    side_val = (pos.side.value if hasattr(pos.side, "value") else str(pos.side)).lower()
+
+    acc = (
+        await db.execute(
+            select(TradingAccount).where(TradingAccount.id == pos.account_id)
+            .with_for_update().execution_options(populate_existing=True)
+        )
+    ).scalar_one_or_none()
+
+    # A-book guard — same rule as modify_position: the LP holds the risk, a
+    # local close would desync the book.
+    if acc is not None and not acc.is_demo:
+        owner = (await db.execute(select(User).where(User.id == acc.user_id))).scalar_one_or_none()
+        if owner is not None and (owner.book_type or "B").upper() == "A":
+            raise HTTPException(
+                status_code=403,
+                detail="A-book trade — forwarded to LP, cannot be closed from admin.",
+            )
 
     inst_q = await db.execute(select(Instrument).where(Instrument.id == pos.instrument_id))
     inst = inst_q.scalar_one_or_none()
-    contract_size = Decimal(str(inst.contract_size)) if inst else Decimal("100000")
+    contract_size = Decimal(str(inst.contract_size)) if inst and inst.contract_size else Decimal("100000")
 
-    if body.close_price:
+    market_px = await _fresh_close_quote(getattr(inst, "symbol", None), side_val)
+    supplied = body.close_price is not None
+    if supplied:
+        if not allow_supplied_price:
+            raise HTTPException(
+                status_code=403,
+                detail="Closing at a supplied price requires super_admin or risk_manager. "
+                       "Omit close_price to close at market.",
+            )
         close_price = Decimal(str(body.close_price))
-    elif inst:
-        tick = await _get_live_price(inst.symbol)
-        if tick:
-            close_price = Decimal(str(tick["bid"])) if side_val == "buy" else Decimal(str(tick["ask"]))
-        else:
-            raise HTTPException(status_code=400, detail="No market price available")
+        if not close_price.is_finite() or close_price <= 0:
+            raise HTTPException(status_code=422, detail="close_price must be a positive number")
+        if enforce_price_band:
+            if market_px is None:
+                raise HTTPException(
+                    status_code=409,
+                    detail="No fresh market quote to validate the supplied close price.",
+                )
+            if abs(close_price - market_px) > market_px * ADMIN_CLOSE_PRICE_BAND:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Close price {close_price} is more than "
+                        f"{int(ADMIN_CLOSE_PRICE_BAND * 100)}% away from the market ({market_px})."
+                    ),
+                )
     else:
-        raise HTTPException(status_code=400, detail="No price available")
+        if market_px is None:
+            raise HTTPException(status_code=400, detail="No fresh market price available")
+        close_price = market_px
 
     open_price = pos.open_price or Decimal("0")
     lots = pos.lots or Decimal("0")
@@ -498,8 +629,6 @@ async def close_position(
     pos.closed_at = datetime.utcnow()
     pos.is_admin_modified = True
 
-    acc_q = await db.execute(select(TradingAccount).where(TradingAccount.id == pos.account_id))
-    acc = acc_q.scalar_one_or_none()
     if acc:
         acc.balance = (acc.balance or Decimal("0")) + profit
         margin_release = (lots * contract_size * open_price) / Decimal(str(acc.leverage))
@@ -549,9 +678,33 @@ async def close_position(
     )
     db.add(trade_rec)
 
+    # C2: the realised P&L moved the balance — leave a ledger row, exactly as
+    # a trader / engine close does (type profit|loss, reference = position),
+    # stamped with the acting admin.
+    if acc:
+        db.add(Transaction(
+            user_id=acc.user_id,
+            account_id=acc.id,
+            type="profit" if profit >= 0 else "loss",
+            amount=profit,
+            balance_after=acc.balance,
+            reference_id=pos.id,
+            description=(
+                f"Admin close {getattr(inst, 'symbol', '') or ''} {side_val} {lots} lots @ {close_price}"
+                + (" (admin price)" if supplied else "")
+                + (f": {body.reason}" if body.reason else "")
+            )[:500],
+            created_by=admin_id,
+        ))
+
     await write_audit_log(
         db, admin_id, "close_position", "position", position_id,
-        new_values={"close_price": float(close_price), "profit": float(profit)},
+        new_values={
+            "close_price": str(close_price), "profit": str(profit),
+            "supplied_price": supplied,
+            "market_price": str(market_px) if market_px is not None else None,
+            "reason": body.reason,
+        },
         ip_address=ip_address,
     )
     await db.commit()
@@ -578,7 +731,7 @@ async def modify_trade_history(
         return s.value if hasattr(s, "value") else str(s)
 
     result = await db.execute(
-        select(TradeHistory).where(TradeHistory.id == history_id).with_for_update()
+        select(TradeHistory).where(TradeHistory.id == history_id).with_for_update().execution_options(populate_existing=True)
     )
     th = result.scalar_one_or_none()
     if not th:
@@ -642,7 +795,7 @@ async def modify_trade_history(
     delta = Decimal(str(new_profit)) - old_profit
 
     acc_q = await db.execute(
-        select(TradingAccount).where(TradingAccount.id == th.account_id).with_for_update()
+        select(TradingAccount).where(TradingAccount.id == th.account_id).with_for_update().execution_options(populate_existing=True)
     )
     acc = acc_q.scalar_one_or_none()
     if acc and delta != 0:

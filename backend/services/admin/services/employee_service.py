@@ -13,6 +13,9 @@ from packages.common.src.admin_schemas import (
 )
 from dependencies import write_audit_log
 
+# C5: login-as-employee session lifetime (no refresh).
+LOGIN_AS_EMPLOYEE_TTL_SECONDS = 3600
+
 VALID_EMPLOYEE_ROLES = [
     "super_admin", "trade_manager", "support", "finance", "risk_manager", "marketing"
 ]
@@ -268,25 +271,52 @@ async def login_as_employee(
     if not user:
         raise HTTPException(status_code=404, detail="Employee user not found")
 
+    if user.role not in ("admin",) or not employee.is_active or user.status != "active":
+        # Never mint an admin session for a deactivated employee (it would be
+        # refused per-request anyway) or for a non-employee account.
+        raise HTTPException(status_code=400, detail="Employee account is not active")
+
     import jwt
+    from datetime import timezone
+    from packages.common.src.auth import hash_token
     from packages.common.src.config import get_settings
+    from packages.common.src.models import UserSession
     settings = get_settings()
 
-    expire = datetime.utcnow() + timedelta(hours=8)
+    # C5: a login-as-employee session is short (1 h), bound to a revocable
+    # user_sessions row (sid), carries `impersonated_by`, and is NOT
+    # refreshable (admin_refresh refuses impersonation tokens). Every audit
+    # row written during it records impersonated_by (dependencies.write_audit_log).
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(seconds=LOGIN_AS_EMPLOYEE_TTL_SECONDS)
+    sid = uuid.uuid4()
     payload = {
         "admin_id": str(user.id),
         "role": user.role,
         "type": "admin",
         "employee_role": employee.role,
         "impersonated_by": str(admin.id),
+        "sid": str(sid),
         "exp": expire,
-        "iat": datetime.utcnow(),
+        "iat": now,
     }
     token = jwt.encode(payload, settings.ADMIN_JWT_SECRET, algorithm=settings.ADMIN_JWT_ALGORITHM)
+    db.add(UserSession(
+        id=sid,
+        user_id=user.id,
+        token_hash=hash_token(token),
+        expires_at=expire,
+    ))
 
     await write_audit_log(
         db, admin.id, "login_as_employee", "employee", employee_id,
-        new_values={"employee_email": user.email, "employee_role": employee.role},
+        new_values={
+            "employee_email": user.email,
+            "employee_role": employee.role,
+            "impersonated_by": str(admin.id),
+            "session_id": str(sid),
+            "expires_at": expire.isoformat(),
+        },
         ip_address=ip_address,
     )
     await db.commit()
@@ -296,4 +326,5 @@ async def login_as_employee(
         "token_type": "bearer",
         "employee_email": user.email,
         "employee_role": employee.role,
+        "expires_in": LOGIN_AS_EMPLOYEE_TTL_SECONDS,
     }

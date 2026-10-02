@@ -139,6 +139,7 @@ async def create_broker(
     try:
         cleaned_perms = validate_permissions_against_cap(permissions or {}, cap)
         assigned_broker_id, ancestry = resolve_creator_chain(actor)
+        brand_name = broker_tenancy.validate_brand_name(brand_name)  # C5
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
@@ -224,7 +225,10 @@ async def update_broker(
     if "last_name" in fields:
         user.last_name = (fields["last_name"] or "").strip() or None
     if "brand_name" in fields:
-        profile.brand_name = (fields["brand_name"] or "").strip() or None
+        try:
+            profile.brand_name = broker_tenancy.validate_brand_name(fields["brand_name"])  # C5
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
         profile.updated_at = datetime.utcnow()
 
     await write_audit_log(
@@ -384,6 +388,10 @@ async def set_suspended(
     profile.is_suspended = suspended
     profile.suspended_reason = (reason or "").strip() or None if suspended else None
     profile.updated_at = datetime.utcnow()
+    # C4: suspension cascades to the whole subtree at read time (ancestry
+    # check); drop the cached tenant-host allow-list so it takes effect now
+    # rather than after the 60 s TTL.
+    broker_tenancy.invalidate_tenant_hosts_cache()
     await write_audit_log(
         db, actor.id, "broker.suspend" if suspended else "broker.unsuspend",
         "User", user.id, new_values={"reason": reason},

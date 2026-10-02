@@ -1,9 +1,14 @@
 """Admin-specific Pydantic schemas — request/response models for the admin API."""
-import uuid
 from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional, Any
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field, field_validator
+
+# C5: admin money amounts are Decimal (never float), finite, > 0, capped, and
+# limited to the ledger's 8 decimal places (Numeric(18, 8)).
+ADMIN_MAX_AMOUNT = Decimal("10000000")
+# C2: bounds for admin edits of OPEN positions.
+ADMIN_MAX_LOTS = 100
 
 
 class AdminLoginRequest(BaseModel):
@@ -148,7 +153,7 @@ class PaginatedResponse(BaseModel):
 
 class FundRequest(BaseModel):
     account_id: Optional[str] = None  # Optional: add_fund goes to main wallet; deduct_fund uses this as fallback
-    amount: float = Field(gt=0)
+    amount: Decimal = Field(gt=0, le=ADMIN_MAX_AMOUNT, max_digits=18, decimal_places=8, allow_inf_nan=False)
     description: Optional[str] = None
     # For deduct_fund only: "main_wallet" → deduct only from main wallet;
     # "trading_account" → deduct only from the given account_id; omit/None → try
@@ -158,7 +163,7 @@ class FundRequest(BaseModel):
 
 class CreditRequest(BaseModel):
     account_id: str
-    amount: float = Field(gt=0)
+    amount: Decimal = Field(gt=0, le=ADMIN_MAX_AMOUNT, max_digits=18, decimal_places=8, allow_inf_nan=False)
     description: Optional[str] = None
 
 
@@ -265,12 +270,14 @@ class TradeHistoryOut(BaseModel):
 
 
 class ModifyPositionRequest(BaseModel):
-    stop_loss: Optional[float] = None
-    take_profit: Optional[float] = None
-    open_price: Optional[float] = None
-    commission: Optional[float] = None
-    swap: Optional[float] = None
-    lots: Optional[float] = None
+    # C2: prices > 0, lots in (0, 100], everything finite. open_price / lots /
+    # side / open_time changes additionally need a risk role (trade routes).
+    stop_loss: Optional[float] = Field(None, gt=0, allow_inf_nan=False)
+    take_profit: Optional[float] = Field(None, gt=0, allow_inf_nan=False)
+    open_price: Optional[float] = Field(None, gt=0, allow_inf_nan=False)
+    commission: Optional[float] = Field(None, allow_inf_nan=False)
+    swap: Optional[float] = Field(None, allow_inf_nan=False)
+    lots: Optional[float] = Field(None, gt=0, le=ADMIN_MAX_LOTS, allow_inf_nan=False)
     # Admin can flip side from buy→sell or sell→buy as a correction. When
     # set, the position direction is reversed and any open copy-trade
     # mirrors flip in sync so master and follower stay aligned. The
@@ -281,7 +288,7 @@ class ModifyPositionRequest(BaseModel):
     # Temporary per-trade spread override. Present + a number sets it (applies to
     # THIS running trade's live quote + close while open); present + null clears
     # it (revert to config spread). Omitted = leave unchanged.
-    spread_override: Optional[float] = None
+    spread_override: Optional[float] = Field(None, allow_inf_nan=False)
     spread_override_type: Optional[str] = None  # "pips" (default) | "percentage"
     reason: Optional[str] = None
 
@@ -305,7 +312,9 @@ class ModifyHistoryRequest(BaseModel):
 
 
 class ClosePositionRequest(BaseModel):
-    close_price: Optional[float] = None
+    # C2: omit to close at the fresh market quote. A supplied price needs a
+    # risk role and (non-super_admin) must sit within 5% of a fresh quote.
+    close_price: Optional[float] = Field(None, gt=0, allow_inf_nan=False)
     reason: Optional[str] = None
 
 
@@ -565,10 +574,38 @@ class IBProfileOut(BaseModel):
         from_attributes = True
 
 
+# C3: IB commission / CPA / MLM bounds.
+IB_MAX_COMMISSION_PER_LOT = 1000
+IB_MAX_COMMISSION_PER_TRADE = 1000
+IB_MAX_CPA_PER_DEPOSIT = 10000
+IB_MAX_MLM_LEVELS = 20
+
+
+def _validate_mlm_distribution(v):
+    if not isinstance(v, list):
+        raise ValueError("mlm_distribution must be a list of percentages")
+    if len(v) > IB_MAX_MLM_LEVELS:
+        raise ValueError(f"mlm_distribution supports at most {IB_MAX_MLM_LEVELS} levels")
+    out = []
+    for x in v:
+        if isinstance(x, bool):
+            raise ValueError("mlm_distribution entries must be numbers")
+        try:
+            n = float(x)
+        except (TypeError, ValueError):
+            raise ValueError("mlm_distribution entries must be numbers")
+        if not (0 <= n <= 100) or n != int(n):
+            raise ValueError("each mlm_distribution entry must be a whole percentage 0-100")
+        out.append(int(n))
+    if sum(out) > 100:
+        raise ValueError("mlm_distribution must not total more than 100%")
+    return out
+
+
 class UpdateIBCommissionIn(BaseModel):
     commission_plan_id: Optional[str] = None
-    custom_commission_per_lot: Optional[float] = None
-    custom_commission_per_trade: Optional[float] = None
+    custom_commission_per_lot: Optional[float] = Field(None, ge=0, le=IB_MAX_COMMISSION_PER_LOT, allow_inf_nan=False)
+    custom_commission_per_trade: Optional[float] = Field(None, ge=0, le=IB_MAX_COMMISSION_PER_TRADE, allow_inf_nan=False)
 
 
 class RejectIBIn(BaseModel):
@@ -594,12 +631,17 @@ class IBCommissionPlanOut(BaseModel):
 class IBCommissionPlanIn(BaseModel):
     name: str
     is_default: bool = False
-    commission_per_lot: float = 0
-    commission_per_trade: float = 0
-    spread_share_pct: float = 0
-    cpa_per_deposit: float = 0
-    mlm_levels: int = 5
+    commission_per_lot: float = Field(0, ge=0, le=IB_MAX_COMMISSION_PER_LOT, allow_inf_nan=False)
+    commission_per_trade: float = Field(0, ge=0, le=IB_MAX_COMMISSION_PER_TRADE, allow_inf_nan=False)
+    spread_share_pct: float = Field(0, ge=0, le=100, allow_inf_nan=False)
+    cpa_per_deposit: float = Field(0, ge=0, le=IB_MAX_CPA_PER_DEPOSIT, allow_inf_nan=False)
+    mlm_levels: int = Field(5, ge=1, le=IB_MAX_MLM_LEVELS)
     mlm_distribution: list = [40, 25, 15, 10, 10]
+
+    @field_validator("mlm_distribution")
+    @classmethod
+    def _check_dist(cls, v):
+        return _validate_mlm_distribution(v)
 
 
 class MLMConfigOut(BaseModel):
@@ -608,8 +650,13 @@ class MLMConfigOut(BaseModel):
 
 
 class MLMConfigIn(BaseModel):
-    mlm_levels: int
+    mlm_levels: int = Field(ge=1, le=IB_MAX_MLM_LEVELS)
     mlm_distribution: list
+
+    @field_validator("mlm_distribution")
+    @classmethod
+    def _check_dist(cls, v):
+        return _validate_mlm_distribution(v)
 
 
 class MasterAccountOut(BaseModel):
@@ -659,13 +706,15 @@ class ExposureItem(BaseModel):
 
 
 class BonusOfferIn(BaseModel):
-    name: str
+    # C3: bounded so a typo (or a compromised marketing login) can't mint a
+    # 10000% / $1e12 bonus.
+    name: str = Field(min_length=1, max_length=200)
     bonus_type: Optional[str] = None
-    percentage: Optional[float] = None
-    fixed_amount: Optional[float] = None
-    min_deposit: float = 0
-    max_bonus: Optional[float] = None
-    lots_required: float = 0
+    percentage: Optional[float] = Field(None, ge=0, le=200, allow_inf_nan=False)
+    fixed_amount: Optional[float] = Field(None, ge=0, le=100000, allow_inf_nan=False)
+    min_deposit: float = Field(0, ge=0, le=10000000, allow_inf_nan=False)
+    max_bonus: Optional[float] = Field(None, ge=0, le=1000000, allow_inf_nan=False)
+    lots_required: float = Field(0, ge=0, le=1000000, allow_inf_nan=False)
     target_audience: str = "all"
     starts_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None

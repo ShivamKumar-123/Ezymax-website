@@ -7,7 +7,7 @@ from packages.common.src.database import get_db
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from dependencies import require_permission, broker_scope_ids, assert_broker_scope
+from dependencies import require_permission, broker_scope_ids, assert_broker_scope, is_risk_role
 from packages.common.src.models import Position, TradingAccount, TradeHistory, Employee
 from packages.common.src.models import User
 from packages.common.src.admin_schemas import ModifyPositionRequest, ClosePositionRequest, CreateTradeRequest, BulkCreateTradeRequest, ModifyHistoryRequest
@@ -121,9 +121,13 @@ async def modify_position(
     db: AsyncSession = Depends(get_db),
 ):
     await _assert_position_scope(admin, position_id, db)
+    # C2: open_price / lots / side / open_time changes need a risk role; the
+    # service compares against the live row so unchanged pre-filled values
+    # from the UI don't count as edits.
     return await trade_service.modify_position(
         position_id=position_id, body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
+        allow_risk_edits=await is_risk_role(admin, db),
     )
 
 
@@ -136,9 +140,13 @@ async def close_position(
     db: AsyncSession = Depends(get_db),
 ):
     await _assert_position_scope(admin, position_id, db)
+    # C2: a supplied close price needs a risk role; it must sit within 5% of a
+    # fresh quote unless the actor is super_admin.
     return await trade_service.close_position(
         position_id=position_id, body=body, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
+        allow_supplied_price=await is_risk_role(admin, db),
+        enforce_price_band=admin.role != "super_admin",
     )
 
 

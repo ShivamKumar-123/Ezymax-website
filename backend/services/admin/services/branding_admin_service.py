@@ -110,7 +110,13 @@ async def update_branding(
 ) -> dict:
     _require_enabled()
     if brand_name is not None:
-        profile.brand_name = brand_name.strip()[:100] or None
+        # C5: reject markup / header-splitting characters (the name is
+        # rendered into email subjects + HTML).
+        from packages.common.src.broker_tenancy import validate_brand_name
+        try:
+            profile.brand_name = validate_brand_name(brand_name)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
     if support_email is not None:
         profile.support_email = support_email.strip()[:255] or None
     if support_whatsapp is not None:

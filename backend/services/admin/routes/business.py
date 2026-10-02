@@ -106,7 +106,9 @@ async def list_pending_ib_payouts(
 async def approve_ib_payout(
     agent_id: uuid.UUID,
     request: Request,
-    admin: User = Depends(require_permission("ib.manage")),
+    # C3: releasing IB commission moves money out — a finance permission
+    # (`ib.payout`), separate from marketing's `ib.manage`.
+    admin: User = Depends(require_permission("ib.payout")),
     db: AsyncSession = Depends(get_db),
 ):
     """Release this IB's pending commission into their live trading account.
@@ -125,7 +127,7 @@ async def reject_ib_payout(
     agent_id: uuid.UUID,
     request: Request,
     reason: str | None = Query(None),
-    admin: User = Depends(require_permission("ib.manage")),
+    admin: User = Depends(require_permission("ib.payout")),
     db: AsyncSession = Depends(get_db),
 ):
     """Void this IB's pending commission. Nothing is credited."""

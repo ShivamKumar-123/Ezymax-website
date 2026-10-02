@@ -295,15 +295,29 @@ async def active_tenant_hosts(db: AsyncSession) -> set[str]:
         return _tenant_hosts_cache
     rows = (
         await db.execute(
-            select(BrokerProfile.custom_domain, BrokerProfile.app_subdomain).where(
+            select(
+                BrokerProfile.custom_domain, BrokerProfile.app_subdomain,
+                User.id, User.broker_ancestry,
+            )
+            .join(User, User.id == BrokerProfile.user_id)
+            .where(
                 BrokerProfile.custom_domain.isnot(None),
                 BrokerProfile.custom_domain_status == DOMAIN_STATUS_READY,
                 BrokerProfile.is_suspended.is_(False),
             )
         )
     ).all()
+    # C4: drop tenants whose ancestor broker is suspended/inactive (or who
+    # are inactive themselves) — one extra query for the whole set.
+    chain_ids: set = set()
+    for _d, _s, uid, ancestry in rows:
+        chain_ids.add(uid)
+        chain_ids.update(ancestry or [])
+    frozen = await suspended_broker_ids(db, chain_ids)
     hosts: set[str] = set()
-    for domain, sub in rows:
+    for domain, sub, uid, ancestry in rows:
+        if frozen and (uid in frozen or any(a in frozen for a in (ancestry or []))):
+            continue
         hosts.update(served_hostnames(domain, sub))
     _tenant_hosts_cache = hosts
     _tenant_hosts_cache_at = now
@@ -321,6 +335,76 @@ async def get_broker_profile(db: AsyncSession, user_id: uuid.UUID) -> BrokerProf
     return (
         await db.execute(select(BrokerProfile).where(BrokerProfile.user_id == user_id))
     ).scalar_one_or_none()
+
+
+# ── Suspension cascade (C4) ──────────────────────────────────────────────
+# Suspending a broker freezes its WHOLE subtree: every sub-broker below it
+# loses admin access, its partner code stops collecting signups, its custom
+# domain stops resolving and drops out of the tenant-host allow-list. The
+# check walks the ancestry array (users.broker_ancestry = every broker above,
+# top first), so no write-time fan-out is needed and un-suspending the parent
+# restores the subtree automatically.
+
+def broker_chain_ids(broker: User) -> list[uuid.UUID]:
+    """The broker itself plus every broker above it."""
+    return [*list(getattr(broker, "broker_ancestry", None) or []), broker.id]
+
+
+async def suspended_broker_ids(db: AsyncSession, broker_ids) -> set[uuid.UUID]:
+    """Subset of `broker_ids` that are suspended or no longer active.
+    One query: a broker counts as frozen when its profile is suspended OR its
+    users row is not status='active' (deactivated/banned parent)."""
+    ids = list({i for i in (broker_ids or []) if i is not None})
+    if not ids:
+        return set()
+    rows = (
+        await db.execute(
+            select(User.id, User.status, BrokerProfile.is_suspended)
+            .outerjoin(BrokerProfile, BrokerProfile.user_id == User.id)
+            .where(User.id.in_(ids))
+        )
+    ).all()
+    frozen: set[uuid.UUID] = set()
+    for uid, status, is_suspended in rows:
+        if is_suspended or (status or "active") != "active":
+            frozen.add(uid)
+    return frozen
+
+
+async def broker_is_suspended(db: AsyncSession, broker: User) -> bool:
+    """True when this broker OR any broker above it is suspended/inactive,
+    or when the broker has no profile row at all."""
+    if await get_broker_profile(db, broker.id) is None:
+        return True
+    return bool(await suspended_broker_ids(db, broker_chain_ids(broker)))
+
+
+# ── Brand name validation (C5) ───────────────────────────────────────────
+
+_BRAND_NAME_FORBIDDEN = re.compile(r'[<>"\r\n]')
+
+
+def validate_brand_name(raw: str | None) -> str | None:
+    """Normalise a tenant brand name for storage. The name is rendered into
+    email subjects/HTML and the trader UI, so markup and header-splitting
+    characters are rejected outright (ValueError) rather than escaped at
+    every sink. Empty → None (platform default)."""
+    if raw is None:
+        return None
+    name = str(raw).strip()
+    if not name:
+        return None
+    if _BRAND_NAME_FORBIDDEN.search(name):
+        raise ValueError('Brand name must not contain < > " or line breaks')
+    if len(name) > 100:
+        raise ValueError("Brand name must be at most 100 characters")
+    return name
+
+
+def safe_brand_name(raw: str | None) -> str:
+    """Defensive read-side scrub for legacy rows stored before validation:
+    drops < > " and CR/LF so the value is inert in an email subject or HTML."""
+    return _BRAND_NAME_FORBIDDEN.sub("", str(raw or "")).strip()
 
 
 async def find_broker_by_partner_code(db: AsyncSession, code: str) -> User | None:
@@ -345,6 +429,9 @@ async def find_broker_by_partner_code(db: AsyncSession, code: str) -> User | Non
         )
     ).scalar_one_or_none()
     if owner is None or owner.status != "active":
+        return None
+    # C4: a sub-broker of a suspended parent collects no new users either.
+    if await suspended_broker_ids(db, owner.broker_ancestry or []):
         return None
     return owner
 
@@ -385,6 +472,9 @@ async def find_broker_by_domain(db: AsyncSession, host: str | None) -> User | No
         )
     ).scalar_one_or_none()
     if owner is None or owner.status != "active":
+        return None
+    # C4: suspension of any ancestor broker takes the domain down too.
+    if await suspended_broker_ids(db, owner.broker_ancestry or []):
         return None
     return owner
 
@@ -431,6 +521,9 @@ async def resolve_branding_owner_for_user(db: AsyncSession, user: User) -> User 
         if profile is not None and not profile.is_suspended and (
             profile.brand_name or profile.logo_url or profile.custom_domain
         ):
+            # C4: a suspended ancestor freezes the whole subtree's brand.
+            if await suspended_broker_ids(db, broker_chain_ids(owner)):
+                continue
             return owner
     return None
 
@@ -449,7 +542,7 @@ def branding_payload(profile: BrokerProfile | None) -> dict:
         }
     return {
         "is_white_label": True,
-        "brand_name": profile.brand_name,
+        "brand_name": safe_brand_name(profile.brand_name) or None,
         "logo_url": profile.logo_url,
         "support_email": profile.support_email,
         "support_whatsapp": profile.support_whatsapp,

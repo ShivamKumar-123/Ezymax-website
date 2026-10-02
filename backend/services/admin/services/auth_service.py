@@ -15,7 +15,9 @@ from packages.common.src.auth import (
 from packages.common.src.config import get_settings
 from packages.common.src.models import User, Employee, UserSession
 from packages.common.src.admin_schemas import AdminLoginRequest, AdminLoginResponse, AdminRefreshRequest
-from dependencies import EMPLOYEE_ROLE_PERMISSIONS
+from dependencies import (
+    broker_permissions_for_levels, employee_effective_permissions,
+)
 
 logger = logging.getLogger("uvicorn.error")
 settings = get_settings()
@@ -61,7 +63,6 @@ async def _enforce_admin_host_isolation(admin: User, host: str | None, db: Async
     from packages.common.src.config import get_settings as _gs
     if not _gs().BRANDING_ENABLED or not host:
         return
-    from packages.common.src import broker_tenancy
     from packages.common.src.models import BrokerProfile
     from packages.common.src.models.broker import DOMAIN_STATUS_READY
 
@@ -146,9 +147,10 @@ async def admin_login(
     if admin.role == "broker":
         # Suspended tenants (rental lapsed, ToS breach) get a clear message
         # at the door instead of a generic 403 on every subsequent call.
+        # C4: cascade — a suspended/inactive ancestor broker locks the
+        # whole subtree out.
         from packages.common.src import broker_tenancy
-        profile = await broker_tenancy.get_broker_profile(db, admin.id)
-        if profile is None or profile.is_suspended:
+        if await broker_tenancy.broker_is_suspended(db, admin):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Broker account is suspended — contact the platform",
@@ -199,6 +201,13 @@ async def admin_refresh(body: AdminRefreshRequest, db: AsyncSession) -> AdminLog
 
         admin_id = payload.get("admin_id")
         old_sid = payload.get("sid")
+        if payload.get("impersonated_by"):
+            # C5: a login-as-employee session is fixed at 1 h and never
+            # refreshable — the super admin must start a new one.
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Impersonation sessions cannot be refreshed",
+            )
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired, please sign in again")
     except jwt.PyJWTError:
@@ -285,34 +294,12 @@ async def get_admin_me(admin: User, db: AsyncSession) -> dict:
         # admin frontend can build the (scoped) sidebar. Expressed in the
         # same "<section>.<action>" vocabulary the frontend already gates
         # on: view granted at VIEW+, mutations granted at EDIT.
+        # C1: the SAME allow-list require_permission enforces, so the
+        # sidebar never offers an action the backend would 403.
         from packages.common.src import broker_tenancy
-        from packages.common.src.models.broker import (
-            PERMISSION_EDIT, PERMISSION_VIEW, permission_at_least,
-        )
         profile = await broker_tenancy.get_broker_profile(db, admin.id)
-        broker_perms: set[str] = set()
         levels = (profile.permissions or {}) if profile else {}
-        _view_map = {
-            "users": ["users.view"],
-            "kyc": ["kyc.view"],
-            "deposits": ["deposits.view"],
-            "withdrawals": ["withdrawals.view"],
-            "trades": ["trades.view", "positions.view", "orders.view"],
-            "transactions": ["transactions.view"],
-            "sub_brokers": ["sub_brokers.view"],
-        }
-        _edit_map = {
-            "users": ["users.ban", "users.block_trading"],
-            "kyc": ["kyc.manage"],
-            "deposits": ["deposits.approve", "deposits.reject"],
-            "withdrawals": ["withdrawals.approve", "withdrawals.reject"],
-            "sub_brokers": ["sub_brokers.manage"],
-        }
-        for section, level in levels.items():
-            if permission_at_least(level, PERMISSION_VIEW):
-                broker_perms.update(_view_map.get(section, []))
-            if permission_at_least(level, PERMISSION_EDIT):
-                broker_perms.update(_edit_map.get(section, []))
+        broker_perms = broker_permissions_for_levels(levels)
         return {
             "id": str(admin.id),
             "email": admin.email,
@@ -333,7 +320,9 @@ async def get_admin_me(admin: User, db: AsyncSession) -> dict:
         emp = emp_q.scalar_one_or_none()
         if emp:
             employee_role = emp.role
-            permissions = EMPLOYEE_ROLE_PERMISSIONS.get(emp.role, set())
+            # C1: role defaults + per-employee extra grants (what
+            # require_permission actually checks).
+            permissions = employee_effective_permissions(emp)
 
     return {
         "id": str(admin.id),
@@ -342,5 +331,5 @@ async def get_admin_me(admin: User, db: AsyncSession) -> dict:
         "last_name": admin.last_name,
         "role": admin.role,
         "employee_role": employee_role,
-        "permissions": list(permissions),
+        "permissions": sorted(permissions),
     }
