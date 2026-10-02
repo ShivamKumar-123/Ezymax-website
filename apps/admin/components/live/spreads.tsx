@@ -17,6 +17,8 @@ type Quote = { bid: number; ask: number; t: number };
 type SpreadsResp = { groups: string[]; markups: Markup[]; instruments: Inst[]; quotes: Record<string, Quote>; can_edit: boolean };
 
 const GROUP_LABEL: Record<string, string> = { standard: "Standard", pro: "Pro", ecn: "ECN", cent: "Cent" };
+/** "Standard" for "standard" and for a broker's own "northwind-standard" (services/trading/src/tenants.rs). */
+const groupLabel = (g: string) => GROUP_LABEL[g] ?? GROUP_LABEL[g.replace(/^[a-z0-9-]+-(?=(standard|pro|ecn|cent)$)/, "")] ?? g;
 const ALL = "*";
 
 function classLabel(c: string) {
@@ -68,7 +70,7 @@ function EditDialog({ editing, raw, onClose, onSaved }: { editing: Editing | nul
     const r = await sendJson<{ ok: boolean; audited: boolean }>("/api/admin/spreads", { group_code: editing.group, symbol: editing.symbol, markup_points: markup, min_spread_points: min, reason: reason.trim() }, "PUT");
     setBusy(false);
     if (!r.ok) return setErr(r.error.message);
-    toast.success(`${GROUP_LABEL[editing.group] ?? editing.group} · ${isDefault ? "all symbols" : editing.symbol} updated`, {
+    toast.success(`${groupLabel(editing.group)} · ${isDefault ? "all symbols" : editing.symbol} updated`, {
       description: `Markup ${markup} pts, minimum ${min} pts · live on the next quote${r.data.audited ? " · logged to the audit trail" : ""}`,
     });
     onSaved();
@@ -79,7 +81,7 @@ function EditDialog({ editing, raw, onClose, onSaved }: { editing: Editing | nul
     <Dialog
       open
       onOpenChange={(o) => !o && onClose()}
-      title={`${GROUP_LABEL[editing.group] ?? editing.group} · ${isDefault ? "All symbols" : editing.symbol}`}
+      title={`${groupLabel(editing.group)} · ${isDefault ? "All symbols" : editing.symbol}`}
       description={isDefault ? "Group default: applies to every symbol without its own override." : editing.inherited ? "This symbol uses the group default. Saving creates an override for it." : "Symbol override for this group."}
       footer={
         <>
@@ -156,7 +158,7 @@ function RecentChanges({ version }: { version: number }) {
               <div key={e.id} className="py-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[13px] font-medium">
-                    {GROUP_LABEL[m.group_code ?? ""] ?? m.group_code} · {m.symbol === ALL ? "All symbols" : m.symbol}
+                    {groupLabel(m.group_code ?? "")} · {m.symbol === ALL ? "All symbols" : m.symbol}
                   </span>
                   <span className="text-[11.5px] text-fg-3" title={when(e.created_at, true)}>
                     {ago(e.created_at, now)}
@@ -224,7 +226,7 @@ export function LiveSpreads() {
 
       <Reveal>
         <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <MiniStat label="Group defaults" value={data && groups.length ? groups.map((g) => `${resolve(markups, g, ALL).m?.markup_points ?? 0}`).join(" · ") : "—"} sub={groups.map((g) => GROUP_LABEL[g] ?? g).join(" · ") + " (pts)"} />
+          <MiniStat label="Group defaults" value={data && groups.length ? groups.map((g) => `${resolve(markups, g, ALL).m?.markup_points ?? 0}`).join(" · ") : "—"} sub={groups.map(groupLabel).join(" · ") + " (pts)"} />
           <MiniStat label="Symbol overrides" value={data ? overrides : "—"} sub="Symbols with their own markup" />
           <MiniStat label="Live symbols" value={data ? `${ticking} / ${data.instruments.length}` : "—"} sub="Quoted in the last minute" tone={data && ticking < data.instruments.length / 2 ? "warn" : undefined} />
           <MiniStat label="Your access" value={canEdit ? "Can edit" : "View only"} sub="Every change needs a reason" tone={canEdit ? "up" : undefined} />
@@ -253,7 +255,7 @@ export function LiveSpreads() {
                       <th className="border-y border-line bg-surface-2 px-3 py-3 text-right font-medium">Raw now</th>
                       {groups.map((g, i) => (
                         <th key={g} className={cn("border-y border-line bg-surface-2 px-3 py-3 text-left font-medium", i === groups.length - 1 && "rounded-r-[14px] border-r")}>
-                          {GROUP_LABEL[g] ?? g}
+                          {groupLabel(g)}
                         </th>
                       ))}
                     </tr>

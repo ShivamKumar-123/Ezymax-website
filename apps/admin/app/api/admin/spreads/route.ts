@@ -20,8 +20,15 @@ async function tenantSpreadGroups(staff: GatewayStaff): Promise<string[] | null>
   const r = await engine<{ groups?: { spreadGroup?: string }[] }>("/v1/admin/groups", { staff, timeoutMs: 8000 });
   if (r.status >= 500) return null;
   const set = new Set((r.status === 200 ? (r.data?.groups ?? []) : []).map((g) => g.spreadGroup ?? "").filter((g) => g && g !== "raw"));
-  const rank = (g: string) => (ORDER.includes(g) ? ORDER.indexOf(g) : ORDER.length);
+  const rank = (g: string) => (ORDER.includes(bare(staff, g)) ? ORDER.indexOf(bare(staff, g)) : ORDER.length);
   return [...set].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+}
+
+/** "northwind-standard" → "standard" for the broker northwind: a broker other than the platform broker prices from
+ *  its own spread groups (services/trading/src/tenants.rs), shown under the usual names. */
+function bare(staff: GatewayStaff, group: string): string {
+  const prefix = `${staff.tenant?.slug ?? ""}-`;
+  return prefix.length > 1 && group.startsWith(prefix) ? group.slice(prefix.length) : group;
 }
 const SYMBOL_RE = /^(\*|[A-Z0-9.]{2,20})$/;
 

@@ -12,7 +12,7 @@
 
 use axum::Json;
 use axum::extract::rejection::QueryRejection;
-use axum::extract::{Query, State};
+use axum::extract::{Path, Query, State};
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -118,10 +118,39 @@ pub async fn referral_users(State(st): State<AppState>, q: Result<Query<Referral
     Ok(Json(json!({ "items": items, "next": next })))
 }
 
+/// `GET /v1/internal/tenants/{slug}`: a broker's id, name and status. The trading engine and the wallet keep their
+/// own tenant rows (ids mirror this table) and provision a broker the Platform Owner created (D110) on its first
+/// request.
+pub async fn tenant(State(st): State<AppState>, Path(slug): Path<String>) -> ApiResult<Json<Value>> {
+    let slug = slug.trim().to_lowercase();
+    if slug.is_empty() || slug.len() > 64 || !slug.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') {
+        return Err(ApiError::NotFound);
+    }
+    let row = sqlx::query("SELECT id, slug, name, status FROM tenants WHERE slug = $1").bind(&slug).fetch_optional(&st.pool).await?.ok_or(ApiError::NotFound)?;
+    Ok(Json(json!({
+        "id": row.get::<i64, _>("id"),
+        "slug": row.get::<String, _>("slug"),
+        "name": row.get::<String, _>("name"),
+        "status": row.get::<String, _>("status"),
+    })))
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::error::ApiError;
     use crate::testdb::TestDb;
-    use axum::extract::{Query, State};
+    use axum::extract::{Path, Query, State};
+
+    #[tokio::test]
+    async fn looks_up_a_broker_by_slug() {
+        let Some(db) = TestDb::new("internal tenant").await else { return };
+        let v = super::tenant(State(db.st.clone()), Path("Kalks".into())).await.unwrap().0;
+        assert_eq!((v["slug"].as_str(), v["status"].as_str()), (Some("kalks"), Some("active")));
+        assert!(v["id"].as_i64().is_some_and(|id| id > 0));
+        assert!(matches!(super::tenant(State(db.st.clone()), Path("no-such-broker".into())).await, Err(ApiError::NotFound)));
+        assert!(matches!(super::tenant(State(db.st.clone()), Path("../etc".into())).await, Err(ApiError::NotFound)));
+        db.drop_db().await;
+    }
 
     #[tokio::test]
     async fn lists_users_in_keyset_order_with_signals() {

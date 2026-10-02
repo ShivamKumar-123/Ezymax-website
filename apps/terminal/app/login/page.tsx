@@ -7,6 +7,9 @@ import { ArrowRight, ArrowUpRight, CandlestickChart, Eye, EyeOff, KeyRound, Load
 import { toast } from "@/lib/notify";
 import { ACCOUNTS, INSTRUMENTS, ME } from "@kalks/mock";
 import { BrandName, LivePrice, LogoMark, SymbolAvatar, ThemeToggle, cn, useQuote } from "@kalks/ui";
+import { Trans, useT } from "@kalks/i18n/react";
+import type { MessageKey } from "@kalks/i18n";
+import { LanguageMenu } from "@/components/shell/language-menu";
 import { SAVED_KEY, writeActive, writeSession } from "@/lib/store";
 import { SERVERS } from "@/lib/trading";
 import { Badge, Check } from "@/components/ui/primitives";
@@ -37,6 +40,7 @@ function readSaved(): Saved[] {
 function LoginForm() {
   const router = useRouter();
   const sp = useSearchParams();
+  const t = useT();
   const [login, setLogin] = React.useState(sp.get("login") ?? "");
   const [password, setPassword] = React.useState("");
   const [server, setServer] = React.useState<string>("Kalks-Live01");
@@ -44,11 +48,11 @@ function LoginForm() {
   const [savePw, setSavePw] = React.useState(true);
   const [show, setShow] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(sp.get("error") === "unknown" ? `Account ${sp.get("login")} was not found. Log in manually.` : null);
+  const [error, setError] = React.useState<string | null>(sp.get("error") === "unknown" ? t("trader.login.error.notFound", { login: sp.get("login") ?? "" }) : null);
   const [saved, setSaved] = React.useState<Saved[]>([]);
   React.useEffect(() => setSaved(readSaved()), []);
   React.useEffect(() => {
-    if (sp.get("logout")) toast("You have been logged out", { description: "Your workspace is kept on this device." });
+    if (sp.get("logout")) toast(t("trader.login.loggedOut"), { description: t("trader.login.loggedOutHint") });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -64,10 +68,10 @@ function LoginForm() {
     e.preventDefault();
     setError(null);
     const a = ACCOUNTS.find((x) => x.login === login.trim());
-    if (!/^\d{6,10}$/.test(login.trim())) return setError("Enter your numeric account number (login).");
-    if (password.length < 4) return setError("Enter your master or investor password.");
-    if (!a) return setError("Invalid account: no such login on the selected server.");
-    if (a.server !== server) return setError(`Account ${a.login} is on ${a.server}, not ${server}.`);
+    if (!/^\d{6,10}$/.test(login.trim())) return setError(t("trader.login.error.loginNumeric"));
+    if (password.length < 4) return setError(t("trader.login.error.masterPassword"));
+    if (!a) return setError(t("trader.login.error.noSuchLogin"));
+    if (a.server !== server) return setError(t("trader.login.error.wrongServer", { login: a.login, expected: a.server, server }));
     setBusy(true);
     setTimeout(() => {
       writeSession({ login: a.login, investor, server: a.server, via: "login", at: Date.now() });
@@ -85,7 +89,7 @@ function LoginForm() {
   return (
     <div className="relative flex min-h-dvh overflow-y-auto bg-page lg:h-dvh lg:overflow-hidden">
       {/* left: brand */}
-      <aside className="relative hidden w-[46%] max-w-[720px] overflow-hidden border-r border-line lg:block">
+      <aside className="relative hidden w-[46%] max-w-[720px] overflow-hidden border-e border-line lg:block">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/assets/photos/trading-screen.jpg" alt="" className="absolute inset-0 size-full object-cover opacity-45" />
         <div className="absolute inset-0 bg-[linear-gradient(160deg,rgba(7,7,10,0.35),rgba(7,7,10,0.92)_62%),radial-gradient(700px_320px_at_20%_-80px,rgba(255,90,31,0.45),transparent_70%)]" />
@@ -99,9 +103,9 @@ function LoginForm() {
             </span>
           </div>
           <div className="mt-auto max-w-[460px]">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ff8a3d]">Professional trading room</div>
-            <h1 className="mt-3 text-[34px] font-medium leading-[1.12] tracking-tight">Every market. One workstation.</h1>
-            <p className="mt-3 text-[14px] leading-relaxed text-white/65">Multi-chart layouts, depth of market, one-click execution, server-side trailing stops and a full toolbox. Hedging, netting, cent and demo accounts.</p>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ff8a3d]">{t("trader.login.brandEyebrow")}</div>
+            <h1 className="mt-3 text-[34px] font-medium leading-[1.12] tracking-tight">{t("trader.login.brandTitle")}</h1>
+            <p className="mt-3 text-[14px] leading-relaxed text-white/65">{t("trader.login.brandTextDemo")}</p>
             <div className="mt-7 grid grid-cols-2 gap-2">
               {["XAUUSD", "EURUSD", "NAS100", "BTCUSD"].map((s) => (
                 <Ticker key={s} symbol={s} />
@@ -109,10 +113,10 @@ function LoginForm() {
             </div>
             <div className="mt-7 flex items-center gap-4 text-[11.5px] text-white/50">
               <span className="flex items-center gap-1.5">
-                <ShieldCheck className="size-3.5" /> TLS 1.3 · 2FA ready
+                <ShieldCheck className="size-3.5" /> TLS 1.3 · {t("trader.login.twoFaReady")}
               </span>
-              <span>{INSTRUMENTS.length} instruments</span>
-              <span>Server time GMT+3</span>
+              <span>{t("trader.login.instruments", { count: INSTRUMENTS.length })}</span>
+              <span>{t("trader.login.serverTime")}</span>
             </div>
           </div>
         </div>
@@ -132,72 +136,73 @@ function LoginForm() {
           </span>
           <div className="flex items-center gap-2">
             <a href={CLIENT_AREA} className="flex h-9 items-center gap-1 rounded-full border border-line px-3.5 text-[12.5px] text-fg-2 hover:bg-surface-3 hover:text-fg">
-              Back to Client Area <ArrowUpRight className="size-3.5" />
+              {t("trader.login.backToClientArea")} <ArrowUpRight className="size-3.5" />
             </a>
+            <LanguageMenu size="sm" />
             <ThemeToggle />
           </div>
         </div>
 
         <div className="relative mx-auto flex w-full max-w-[860px] flex-1 flex-col items-center justify-center gap-5 px-4 pb-10 lg:flex-row lg:items-start lg:pt-[8vh]">
-          <form method="post" onSubmit={submit} className="w-full max-w-[400px] rounded-[12px] border border-line bg-panel shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]" aria-label="Login to trade account">
+          <form method="post" onSubmit={submit} className="w-full max-w-[400px] rounded-[12px] border border-line bg-panel shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]" aria-label={t("trader.loginDialog.title")}>
             <div className="border-b border-line px-5 py-4">
               <div className="flex items-center gap-2 text-[15px] font-semibold">
-                <KeyRound className="size-4 text-ember" /> Login to trade account
+                <KeyRound className="size-4 text-ember" /> {t("trader.loginDialog.title")}
               </div>
-              <p className="mt-1 text-[12px] text-fg-3">Use the login and password from your account credentials in the Client Area.</p>
+              <p className="mt-1 text-[12px] text-fg-3">{t("trader.login.introDemo")}</p>
             </div>
             <div className="space-y-3.5 px-5 py-4">
-              <Field label="Login" icon={<UserRound />}>
-                <input value={login} onChange={(e) => setLogin(e.target.value.replace(/\D/g, ""))} inputMode="numeric" autoComplete="username" placeholder="e.g. 80412337" className="h-full w-full bg-transparent font-mono text-[13px] outline-none placeholder:font-sans placeholder:text-fg-3" aria-label="Login" />
+              <Field label={t("trader.login.login")} icon={<UserRound />}>
+                <input value={login} onChange={(e) => setLogin(e.target.value.replace(/\D/g, ""))} inputMode="numeric" autoComplete="username" placeholder={t("trader.login.loginExample", { login: "80412337" })} className="h-full w-full bg-transparent font-mono text-[13px] outline-none placeholder:font-sans placeholder:text-fg-3" aria-label={t("trader.login.login")} dir="ltr" />
               </Field>
               <Field
-                label={investor ? "Investor password" : "Password"}
+                label={investor ? t("trader.login.investorPassword") : t("common.password")}
                 icon={<Lock />}
                 trailing={
-                  <button type="button" onClick={() => setShow(!show)} className="text-fg-3 hover:text-fg" aria-label={show ? "Hide password" : "Show password"}>
+                  <button type="button" onClick={() => setShow(!show)} className="text-fg-3 hover:text-fg" aria-label={show ? t("trader.login.hidePassword") : t("trader.login.showPassword")}>
                     {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
                 }
               >
-                <input value={password} onChange={(e) => setPassword(e.target.value)} type={show ? "text" : "password"} autoComplete="current-password" placeholder="••••••••" className="h-full w-full bg-transparent text-[13px] outline-none placeholder:text-fg-3" aria-label="Password" />
+                <input value={password} onChange={(e) => setPassword(e.target.value)} type={show ? "text" : "password"} autoComplete="current-password" placeholder="••••••••" className="h-full w-full bg-transparent text-[13px] outline-none placeholder:text-fg-3" aria-label={t("common.password")} />
               </Field>
-              <Field label="Server" icon={<Server />}>
-                <select value={server} onChange={(e) => setServer(e.target.value)} className="t-select h-full w-full bg-transparent text-[13px] outline-none" aria-label="Server">
+              <Field label={t("trader.login.server")} icon={<Server />}>
+                <select value={server} onChange={(e) => setServer(e.target.value)} className="t-select h-full w-full bg-transparent text-[13px] outline-none" aria-label={t("trader.login.server")}>
                   {SERVERS.map((s) => (
                     <option key={s} value={s}>
-                      {s} {s.includes("Demo") ? "· Demo" : s.includes("Prop") ? "· Prop" : "· Live"}
+                      {s} · {s.includes("Demo") ? t("common.demo") : s.includes("Prop") ? t("trader.login.prop") : t("common.live")}
                     </option>
                   ))}
                 </select>
               </Field>
               <div className="space-y-2 pt-0.5">
-                <Check checked={savePw} onChange={setSavePw} label="Save password on this device" />
-                <Check checked={investor} onChange={setInvestor} label={<span>Log in with investor (read-only) password</span>} />
+                <Check checked={savePw} onChange={setSavePw} label={t("trader.login.savePassword")} />
+                <Check checked={investor} onChange={setInvestor} label={<span>{t("trader.login.investorLogin")}</span>} />
               </div>
               {error && <div className="rounded-[7px] border border-down/30 bg-down-soft px-3 py-2 text-[12px] text-down">{error}</div>}
               <button type="submit" disabled={busy} className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] bg-ember text-[13.5px] font-semibold text-white shadow-[0_10px_28px_-10px_rgba(255,90,31,0.8)] transition hover:brightness-110 disabled:opacity-70">
                 {busy ? (
                   <>
-                    <Loader2 className="size-4 animate-spin" /> Connecting to {server}…
+                    <Loader2 className="size-4 animate-spin" /> {t("trader.splash.connecting", { server })}
                   </>
                 ) : (
-                  <>Log in</>
+                  <>{t("trader.guest.logIn")}</>
                 )}
               </button>
               <div className="flex items-center justify-between text-[11.5px] text-fg-3">
                 <a href={`${CLIENT_AREA}/accounts`} className="hover:text-fg">
-                  Forgot password?
+                  {t("trader.login.forgotPassword")}
                 </a>
                 <a href={`${CLIENT_AREA}/accounts`} className="hover:text-fg">
-                  Open a new account ↗
+                  {t("trader.login.openNewAccount")} ↗
                 </a>
               </div>
             </div>
           </form>
 
-          <section className="w-full max-w-[400px] rounded-[12px] border border-line bg-panel lg:max-w-[340px]" aria-label="Saved accounts">
+          <section className="w-full max-w-[400px] rounded-[12px] border border-line bg-panel lg:max-w-[340px]" aria-label={t("trader.login.savedAccounts")}>
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-2">Saved accounts</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-2">{t("trader.login.savedAccounts")}</div>
               <span className="text-[11px] text-fg-3">{ME.name}</span>
             </div>
             <div className="p-1.5">
@@ -206,9 +211,9 @@ function LoginForm() {
                 if (!a) return null;
                 return (
                   <div key={s.login} className={cn("group flex items-center gap-2.5 rounded-[8px] px-2.5 py-2 transition-colors", login === s.login ? "bg-ember-soft/60" : "hover:bg-surface-2")}>
-                    <button type="button" onClick={() => pick(s)} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
+                    <button type="button" onClick={() => pick(s)} className="flex min-w-0 flex-1 items-center gap-2.5 text-start">
                       <Badge tone={a.type === "live" ? "ember" : "gold"} className="w-11 justify-center">
-                        {a.type}
+                        {t.dyn(`trader.accountType.${a.type}`, a.type)}
                       </Badge>
                       <span className="min-w-0">
                         <span className="block font-mono text-[12.5px] text-fg">{a.login}</span>
@@ -218,10 +223,10 @@ function LoginForm() {
                         </span>
                       </span>
                     </button>
-                    {s.savePassword && <Lock className="size-3 text-fg-3" aria-label="Password saved" />}
+                    {s.savePassword && <Lock className="size-3 text-fg-3" aria-label={t("trader.login.passwordSaved")} />}
                     <button
                       type="button"
-                      aria-label={`Forget ${a.login}`}
+                      aria-label={t("trader.login.forget", { login: a.login })}
                       onClick={() => {
                         const next = saved.filter((x) => x.login !== s.login);
                         setSaved(next);
@@ -240,7 +245,7 @@ function LoginForm() {
               })}
             </div>
             <div className="border-t border-line px-4 py-3 text-[11.5px] leading-relaxed text-fg-3">
-              Coming from the Client Area? Every <span className="text-fg-2">Trade</span> button signs you in automatically, no password needed.
+              <Trans k="trader.login.ssoNote" tags={{ b: (c) => <span className="text-fg-2">{c}</span> }} />
             </div>
           </section>
         </div>
@@ -279,9 +284,9 @@ function Ticker({ symbol }: { symbol: string }) {
   );
 }
 
-const LIVE_NOTICE: Record<string, string> = {
-  sso_expired: "That sign-in link has expired or was already used. Open Kalks Trader again from the Client Area, or log in below.",
-  sso_failed: "Signing in from the Client Area failed. Log in below.",
+const LIVE_NOTICE: Record<string, MessageKey> = {
+  sso_expired: "trader.login.notice.ssoExpired",
+  sso_failed: "trader.login.notice.ssoFailed",
 };
 
 /**
@@ -291,26 +296,28 @@ const LIVE_NOTICE: Record<string, string> = {
 function LiveLogin() {
   const router = useRouter();
   const sp = useSearchParams();
+  const t = useT();
   const [saved, setSaved] = React.useState<SavedLogin[]>([]);
   const [login, setLogin] = React.useState(sp.get("login") ?? "");
   React.useEffect(() => setSaved(readSavedLogins()), []);
   React.useEffect(() => {
-    if (sp.get("logout")) toast("You have been logged out", { description: "Your workspace is kept on this device." });
+    if (sp.get("logout")) toast(t("trader.login.loggedOut"), { description: t("trader.login.loggedOutHint") });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const notice = sp.get("expired") ? `Your session${sp.get("login") ? ` for ${sp.get("login")}` : ""} has expired. Log in again.` : LIVE_NOTICE[sp.get("error") ?? ""];
+  const noticeKey = LIVE_NOTICE[sp.get("error") ?? ""];
+  const notice = sp.get("expired") ? (sp.get("login") ? t("trader.login.notice.expiredFor", { login: sp.get("login") ?? "" }) : t("trader.login.notice.expired")) : noticeKey ? t(noticeKey) : undefined;
   return (
     <div className="relative flex min-h-dvh overflow-y-auto bg-page lg:h-dvh lg:overflow-hidden">
-      <Brand text="Multi-chart layouts, one-click execution, server-side SL/TP and trailing stops, depth of market and a full toolbox. Hedging, netting, cent and demo accounts." />
+      <Brand text={t("trader.login.brandTextLive")} />
       <main className="relative flex flex-1 flex-col">
         <TopBar />
         <div className="relative mx-auto flex w-full max-w-[860px] flex-1 flex-col items-center justify-center gap-5 px-4 pb-10 lg:flex-row lg:items-start lg:pt-[8vh]">
-          <section className="w-full max-w-[400px] rounded-[12px] border border-line bg-panel shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]" aria-label="Login to trade account">
+          <section className="w-full max-w-[400px] rounded-[12px] border border-line bg-panel shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]" aria-label={t("trader.loginDialog.title")}>
             <div className="border-b border-line px-5 py-4">
               <div className="flex items-center gap-2 text-[15px] font-semibold">
-                <KeyRound className="size-4 text-ember" /> Login to trade account
+                <KeyRound className="size-4 text-ember" /> {t("trader.loginDialog.title")}
               </div>
-              <p className="mt-1 text-[12px] text-fg-3">Use the login and password of your trading account. You find them in the Client Area under Accounts.</p>
+              <p className="mt-1 text-[12px] text-fg-3">{t("trader.login.introLive")}</p>
             </div>
             <div className="px-5 py-4">
               {notice && <div className="mb-3.5 rounded-[7px] border border-warn/30 bg-warn-soft px-3 py-2 text-[12px] text-warn">{notice}</div>}
@@ -325,10 +332,10 @@ function LiveLogin() {
                 footer={
                   <div className="flex items-center justify-between text-[11.5px] text-fg-3">
                     <a href={`${CLIENT_AREA}/accounts`} className="hover:text-fg">
-                      Forgot password?
+                      {t("trader.login.forgotPassword")}
                     </a>
                     <a href={`${CLIENT_AREA}/accounts`} className="flex items-center gap-1 hover:text-fg">
-                      Open an account <ArrowUpRight className="size-3" />
+                      {t("trader.login.openAnAccount")} <ArrowUpRight className="size-3" />
                     </a>
                   </div>
                 }
@@ -336,18 +343,18 @@ function LiveLogin() {
             </div>
           </section>
 
-          <section className="w-full max-w-[400px] rounded-[12px] border border-line bg-panel lg:max-w-[340px]" aria-label="Saved logins">
+          <section className="w-full max-w-[400px] rounded-[12px] border border-line bg-panel lg:max-w-[340px]" aria-label={t("trader.login.savedLogins")}>
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-2">Saved logins</div>
-              <span className="text-[11px] text-fg-3">this device</span>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-2">{t("trader.login.savedLogins")}</div>
+              <span className="text-[11px] text-fg-3">{t("trader.login.thisDevice")}</span>
             </div>
             <div className="p-1.5">
-              {saved.length === 0 && <div className="px-2.5 py-3 text-[12px] text-fg-3">Logins you save appear here. Passwords are never stored.</div>}
+              {saved.length === 0 && <div className="px-2.5 py-3 text-[12px] text-fg-3">{t("trader.login.savedEmpty")}</div>}
               {saved.map((s) => (
                 <div key={s.login} className={cn("group flex items-center gap-2.5 rounded-[8px] px-2.5 py-2 transition-colors", login === s.login ? "bg-ember-soft/60" : "hover:bg-surface-2")}>
-                  <button type="button" onClick={() => setLogin(s.login)} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
+                  <button type="button" onClick={() => setLogin(s.login)} className="flex min-w-0 flex-1 items-center gap-2.5 text-start">
                     <Badge tone={s.server === "Kalks-Live" ? "ember" : "gold"} className="w-11 justify-center">
-                      {s.server === "Kalks-Live" ? "live" : "demo"}
+                      {s.server === "Kalks-Live" ? t("trader.accountType.live") : t("trader.accountType.demo")}
                     </Badge>
                     <span className="min-w-0">
                       <span className="block font-mono text-[12.5px] text-fg">{s.login}</span>
@@ -356,7 +363,7 @@ function LiveLogin() {
                   </button>
                   <button
                     type="button"
-                    aria-label={`Forget ${s.login}`}
+                    aria-label={t("trader.login.forget", { login: s.login })}
                     onClick={() => {
                       const next = saved.filter((x) => x.login !== s.login);
                       setSaved(next);
@@ -371,13 +378,13 @@ function LiveLogin() {
             </div>
             <div className="space-y-2.5 border-t border-line px-4 py-3">
               <p className="text-[11.5px] leading-relaxed text-fg-3">
-                Coming from the Client Area? Every <span className="text-fg-2">Trade</span> button signs you in automatically, no password needed.
+                <Trans k="trader.login.ssoNote" tags={{ b: (c) => <span className="text-fg-2">{c}</span> }} />
               </p>
               <a href={REGISTER_URL} className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] border border-line bg-surface-2 text-[12.5px] font-medium text-fg transition-colors hover:bg-surface-3">
-                <UserPlus className="size-4" /> Open an account
+                <UserPlus className="size-4" /> {t("trader.login.openAnAccount")}
               </a>
               <button type="button" onClick={() => router.replace("/")} className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] text-[12.5px] font-medium text-fg-2 transition-colors hover:bg-surface-2 hover:text-fg">
-                <CandlestickChart className="size-4" /> Continue to charts without logging in <ArrowRight className="size-3.5" />
+                <CandlestickChart className="size-4" /> {t("trader.login.continueGuest")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
               </button>
             </div>
           </section>
@@ -388,8 +395,9 @@ function LiveLogin() {
 }
 
 function Brand({ text }: { text: string }) {
+  const t = useT();
   return (
-    <aside className="relative hidden w-[46%] max-w-[720px] overflow-hidden border-r border-line lg:block">
+    <aside className="relative hidden w-[46%] max-w-[720px] overflow-hidden border-e border-line lg:block">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/assets/photos/trading-screen.jpg" alt="" className="absolute inset-0 size-full object-cover opacity-45" />
       <div className="absolute inset-0 bg-[linear-gradient(160deg,rgba(7,7,10,0.35),rgba(7,7,10,0.92)_62%),radial-gradient(700px_320px_at_20%_-80px,rgba(255,90,31,0.45),transparent_70%)]" />
@@ -403,8 +411,8 @@ function Brand({ text }: { text: string }) {
           </span>
         </div>
         <div className="mt-auto max-w-[460px]">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ff8a3d]">Professional trading room</div>
-          <h1 className="mt-3 text-[34px] font-medium leading-[1.12] tracking-tight">Every market. One workstation.</h1>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ff8a3d]">{t("trader.login.brandEyebrow")}</div>
+          <h1 className="mt-3 text-[34px] font-medium leading-[1.12] tracking-tight">{t("trader.login.brandTitle")}</h1>
           <p className="mt-3 text-[14px] leading-relaxed text-white/65">{text}</p>
           <div className="mt-7 grid grid-cols-2 gap-2">
             {["XAUUSD", "EURUSD", "NAS100", "BTCUSD"].map((s) => (
@@ -415,7 +423,7 @@ function Brand({ text }: { text: string }) {
             <span className="flex items-center gap-1.5">
               <ShieldCheck className="size-3.5" /> TLS 1.3
             </span>
-            <span>Server time GMT+3</span>
+            <span>{t("trader.login.serverTime")}</span>
           </div>
         </div>
       </div>
@@ -424,6 +432,7 @@ function Brand({ text }: { text: string }) {
 }
 
 function TopBar() {
+  const t = useT();
   return (
     <div className="relative flex items-center justify-between px-5 py-4 sm:px-8">
       <span className="flex items-center gap-2 lg:invisible">
@@ -436,8 +445,9 @@ function TopBar() {
       </span>
       <div className="flex items-center gap-2">
         <a href={CLIENT_AREA} className="flex h-9 items-center gap-1 rounded-full border border-line px-3.5 text-[12.5px] text-fg-2 hover:bg-surface-3 hover:text-fg">
-          Client Area <ArrowUpRight className="size-3.5" />
+          {t("trader.clientArea")} <ArrowUpRight className="size-3.5" />
         </a>
+        <LanguageMenu size="sm" />
         <ThemeToggle />
       </div>
     </div>

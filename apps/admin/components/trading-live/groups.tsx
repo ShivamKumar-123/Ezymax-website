@@ -12,6 +12,13 @@ import { GRP_REASONS, tradingWrite } from "./kit";
 const LEVERAGES = [10, 20, 30, 50, 100, 200, 300, 400, 500, 1000, 2000];
 const SPREAD_GROUPS = ["standard", "pro", "ecn", "cent"];
 
+/** The spread groups this broker prices from: those its groups use (a broker other than the platform broker has
+ *  its own, `<slug>-standard` …; the engine refuses another broker's), else the platform's four. */
+function spreadGroupsOf(groups: LiveGroup[]): string[] {
+  const used = Array.from(new Set(groups.map((g) => g.spreadGroup).filter(Boolean)));
+  return used.length ? used.sort() : SPREAD_GROUPS;
+}
+
 function blank(): LiveGroup {
   return {
     code: "",
@@ -55,7 +62,7 @@ export function LiveGroupsPage() {
               <RefreshCw /> Refresh
             </Button>
             {canEdit && (
-              <Button variant="ember" size="lg" onClick={() => setEdit({ g: blank(), isNew: true })}>
+              <Button variant="ember" size="lg" onClick={() => setEdit({ g: { ...blank(), spreadGroup: spreadGroupsOf(groups).find((s) => s === "standard" || s.endsWith("-standard")) ?? spreadGroupsOf(groups)[0]! }, isNew: true })}>
                 <Plus /> New group
               </Button>
             )}
@@ -93,6 +100,7 @@ export function LiveGroupsPage() {
       )}
       <GroupEditor
         edit={edit}
+        spreadGroups={spreadGroupsOf(groups)}
         onClose={() => setEdit(null)}
         onSaved={() => {
           reload();
@@ -187,7 +195,7 @@ function Num({ label, value, onChange, suffix, hint }: { label: string; value: n
   );
 }
 
-function GroupEditor({ edit, onClose, onSaved }: { edit: { g: LiveGroup; isNew: boolean } | null; onClose: () => void; onSaved: () => void }) {
+function GroupEditor({ edit, spreadGroups, onClose, onSaved }: { edit: { g: LiveGroup; isNew: boolean } | null; spreadGroups: string[]; onClose: () => void; onSaved: () => void }) {
   const [g, setG] = React.useState<LiveGroup>(blank());
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
@@ -318,7 +326,7 @@ function GroupEditor({ edit, onClose, onSaved }: { edit: { g: LiveGroup; isNew: 
             <Segmented size="sm" value={g.route} onChange={(v) => set({ route: v })} options={[{ value: "B", label: "B-book" }, { value: "A", label: "A-book" }]} />
           </Field>
           <Field label="Spread group" hint="market-data markups">
-            <Segmented size="sm" value={g.spreadGroup} onChange={(v) => set({ spreadGroup: v })} options={Array.from(new Set([...SPREAD_GROUPS, g.spreadGroup])).map((s) => ({ value: s, label: s }))} />
+            <Segmented size="sm" value={g.spreadGroup} onChange={(v) => set({ spreadGroup: v })} options={Array.from(new Set([...spreadGroups, g.spreadGroup])).map((s) => ({ value: s, label: s }))} />
           </Field>
         </div>
         <div className="grid grid-cols-3 gap-3">

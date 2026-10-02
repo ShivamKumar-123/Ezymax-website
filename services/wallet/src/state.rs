@@ -60,6 +60,60 @@ impl Tenants {
     pub fn all(&self) -> Vec<(i64, String)> {
         self.0.read().unwrap().iter().map(|(k, v)| (*v, k.clone())).collect()
     }
+
+    /// A broker the Platform Owner created in the gateway (D110) gets its wallet rows on its first request: the
+    /// tenant (the id mirrors the gateway's) and default limits. No company addresses are copied: deposits stay
+    /// off until the broker sets its own in Wallet settings. Unknown slugs are remembered for 30 s.
+    pub async fn provision(&self, pool: &PgPool, users: &dyn crate::users::Users, slug: &str) -> Option<i64> {
+        if slug.is_empty() || slug.len() > 64 || !slug.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') || missed_recently(slug) {
+            return None;
+        }
+        let (id, name) = match users.tenant(slug).await {
+            Ok(Some(t)) => t,
+            Ok(None) => {
+                remember_miss(slug);
+                return None;
+            }
+            Err(e) => {
+                tracing::warn!(slug, error = %e, "tenant lookup failed");
+                return None;
+            }
+        };
+        let res: anyhow::Result<bool> = async {
+            let mut tx = pool.begin().await?;
+            let created = sqlx::query("INSERT INTO tenants (id, slug, name) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING").bind(id).bind(slug).bind(&name).execute(&mut *tx).await?.rows_affected() == 1;
+            sqlx::query("INSERT INTO tenant_settings (tenant_id) VALUES ($1) ON CONFLICT DO NOTHING").bind(id).execute(&mut *tx).await?;
+            tx.commit().await?;
+            Ok(created)
+        }
+        .await;
+        match res {
+            Ok(true) => tracing::info!(tenant = id, slug, "broker provisioned in the wallet (no company addresses yet)"),
+            Ok(false) => {}
+            Err(e) => {
+                tracing::error!(tenant = id, slug, error = %e, "broker could not be provisioned");
+                return None;
+            }
+        }
+        let _ = self.reload(pool).await;
+        self.get(slug).filter(|got| *got == id)
+    }
+}
+
+static MISSES: std::sync::LazyLock<std::sync::Mutex<HashMap<String, std::time::Instant>>> = std::sync::LazyLock::new(Default::default);
+
+fn missed_recently(slug: &str) -> bool {
+    let mut m = MISSES.lock().unwrap();
+    m.retain(|_, at| at.elapsed() < std::time::Duration::from_secs(30));
+    m.contains_key(slug)
+}
+
+fn remember_miss(slug: &str) {
+    let mut m = MISSES.lock().unwrap();
+    if m.len() > 1000 {
+        m.clear();
+    }
+    m.insert(slug.to_string(), std::time::Instant::now());
 }
 
 pub fn header(parts: &Parts, name: &str) -> Option<String> {
@@ -90,7 +144,10 @@ impl FromRequestParts<AppState> for Ctx {
             Some(id) => id,
             None => {
                 let _ = st.tenants.reload(&st.pool).await;
-                st.tenants.get(&slug).ok_or_else(|| ApiError::BadRequest(format!("Unknown tenant {slug}")))?
+                match st.tenants.get(&slug) {
+                    Some(id) => id,
+                    None => st.tenants.provision(&st.pool, st.users.as_ref(), &slug).await.ok_or_else(|| ApiError::BadRequest(format!("Unknown tenant {slug}")))?,
+                }
             }
         };
         let ip = header(parts, "x-forwarded-for").and_then(|v| v.split(',').next().map(|s| s.trim().to_string())).filter(|v| !v.is_empty() && v.len() <= 64);

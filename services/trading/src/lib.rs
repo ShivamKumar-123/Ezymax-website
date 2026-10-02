@@ -15,4 +15,5 @@ pub mod shard;
 pub mod social;
 pub mod specs;
 pub mod state;
+pub mod tenants;
 pub mod views;

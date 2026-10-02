@@ -24,6 +24,12 @@ pub struct UserInfo {
 pub trait Users: Send + Sync {
     /// Ok(None) = no such user; Err = gateway unreachable.
     async fn get(&self, tenant: &str, user_id: i64) -> anyhow::Result<Option<UserInfo>>;
+
+    /// A broker by slug from the gateway (`GET /v1/internal/tenants/{slug}`): Ok(Some((id, name))), Ok(None) = no
+    /// such broker, Err = gateway unreachable. Used to provision a broker the Platform Owner created (state.rs).
+    async fn tenant(&self, _slug: &str) -> anyhow::Result<Option<(i64, String)>> {
+        Ok(None)
+    }
 }
 
 pub struct GatewayUsers {
@@ -68,11 +74,29 @@ impl Users for GatewayUsers {
             restrictions: u.get("restrictions").and_then(Value::as_array).map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect()).unwrap_or_default(),
         }))
     }
+
+    async fn tenant(&self, slug: &str) -> anyhow::Result<Option<(i64, String)>> {
+        let r = self
+            .http
+            .get(format!("{}/v1/internal/tenants/{slug}", self.base))
+            .header("x-kalks-internal", &self.token)
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("gateway: {}", e.without_url()))?;
+        match r.status().as_u16() {
+            404 => return Ok(None),
+            200 => {}
+            s => anyhow::bail!("gateway: http {s}"),
+        }
+        let v: Value = r.json().await?;
+        let id = v.get("id").and_then(Value::as_i64).filter(|id| *id > 0).ok_or_else(|| anyhow::anyhow!("gateway: tenant without id"))?;
+        Ok(Some((id, v.get("name").and_then(Value::as_str).unwrap_or(slug).to_string())))
+    }
 }
 
-/// Test double: users and their KYC status set by the test.
+/// Test double: users and their KYC status set by the test; brokers the "gateway" knows in `tenants`.
 #[derive(Default)]
-pub struct MockUsers(pub Mutex<HashMap<i64, UserInfo>>);
+pub struct MockUsers(pub Mutex<HashMap<i64, UserInfo>>, pub Mutex<HashMap<String, (i64, String)>>);
 
 impl MockUsers {
     pub fn set(&self, id: i64, kyc: &str) {
@@ -91,6 +115,10 @@ impl MockUsers {
 impl Users for MockUsers {
     async fn get(&self, _tenant: &str, user_id: i64) -> anyhow::Result<Option<UserInfo>> {
         Ok(self.0.lock().unwrap().get(&user_id).cloned())
+    }
+
+    async fn tenant(&self, slug: &str) -> anyhow::Result<Option<(i64, String)>> {
+        Ok(self.1.lock().unwrap().get(slug).cloned())
     }
 }
 

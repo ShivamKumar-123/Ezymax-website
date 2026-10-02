@@ -645,3 +645,33 @@ async fn back_office_restrictions_are_enforced() {
     t.invariants().await;
     t.drop_db().await;
 }
+
+#[tokio::test]
+async fn a_new_broker_gets_its_wallet_rows_on_its_first_request() {
+    let Some(t) = T::new("broker provisioning").await else { return };
+    t.users.1.lock().unwrap().insert("qa-northwind".into(), (77_001, "QA Northwind".into()));
+    let call = |slug: &'static str| {
+        let (http, base) = (t.http.clone(), t.base.clone());
+        async move {
+            let r = http.get(format!("{base}/v1/admin/settings")).header("x-kalks-internal", "test-internal-token").header("x-kalks-tenant", slug)
+                .header("x-kalks-staff-id", "5").header("x-kalks-staff-name", "Owner").header("x-kalks-staff-role", "super_admin").send().await.unwrap();
+            let s = r.status().as_u16();
+            (s, r.json::<Value>().await.unwrap_or(Value::Null))
+        }
+    };
+    // a broker the gateway knows: provisioned with the gateway's id, default limits and no company addresses
+    let (s, v) = call("qa-northwind").await;
+    assert_eq!(s, 200, "{v}");
+    assert_eq!(t.st.tenants.get("qa-northwind"), Some(77_001));
+    let addresses: i64 = sqlx::query_scalar("SELECT count(*) FROM chain_settings WHERE tenant_id = 77001").fetch_one(&t.st.pool).await.unwrap();
+    assert_eq!(addresses, 0, "another broker's receiving addresses are never copied");
+    let limits: i64 = sqlx::query_scalar("SELECT count(*) FROM tenant_settings WHERE tenant_id = 77001").fetch_one(&t.st.pool).await.unwrap();
+    assert_eq!(limits, 1);
+    // the next request finds it without the gateway
+    let (s, _) = call("qa-northwind").await;
+    assert_eq!(s, 200);
+    // a broker the gateway doesn't know is refused
+    let (s, _) = call("qa-nobody").await;
+    assert_eq!(s, 400);
+    t.drop_db().await;
+}

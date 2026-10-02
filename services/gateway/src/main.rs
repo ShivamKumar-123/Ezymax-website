@@ -16,8 +16,8 @@ mod domains;
 mod error;
 mod flows;
 mod google_auth;
-mod identity;
 mod house;
+mod identity;
 mod kyc;
 mod internal;
 mod mail_i18n;
@@ -291,6 +291,7 @@ fn router(st: AppState) -> Router {
         .route("/v1/public/shares/{code}", get(shares::public))
         .route("/v1/internal/referrals/users", get(internal::referral_users))
         .route("/v1/internal/users/{id}", get(users_internal::user))
+        .route("/v1/internal/tenants/{slug}", get(internal::tenant))
         .route("/v1/internal/house-users", post(house::create))
         .route("/v1/internal/mail/marketing", post(marketing::send_marketing))
         .route("/v1/public/unsubscribe", post(marketing::unsubscribe))
