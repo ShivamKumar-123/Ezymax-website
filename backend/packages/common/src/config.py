@@ -203,6 +203,9 @@ class Settings(BaseSettings):
     # USD→INR conversion rate used to compute the INR charge amount. Configure
     # to a realistic live rate before going to production.
     USD_TO_INR_RATE: float = 83.0
+    # A12: the one-off IB CPA is only accrued for a referred trader's deposit
+    # of at least this many USD (a $1 deposit no longer triggers the CPA).
+    IB_CPA_MIN_DEPOSIT_USD: str = "50"
 
     # Decentralized USDT deposit flow — per-chain explorer + RPC config.
     # All optional: with no keys the chain_verifier_engine falls back to
@@ -230,6 +233,49 @@ class Settings(BaseSettings):
     # DECISION default covers loopback + the RFC1918 ranges our nginx/docker
     # network uses; tighten to the exact proxy IPs in production if desired.
     TRUSTED_PROXY_CIDRS: str = "127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+
+    # ── Section F: horizontal scale (defaults reproduce single-host behaviour) ──
+    # DB pool (per process). Defaults = the previously hard-coded values.
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_TIMEOUT: float = 30.0
+    DB_POOL_RECYCLE: int = 1800
+    # Server-side caps for API sessions. 0 = disabled (previous behaviour).
+    # Recommended in prod: 30000 / 60000. Engines/background jobs use the
+    # separate WorkerSessionLocal which never sets statement_timeout.
+    DB_STATEMENT_TIMEOUT_MS: int = 0
+    DB_IDLE_IN_TX_TIMEOUT_MS: int = 0
+    # True when DATABASE_URL points at PgBouncer (transaction pooling):
+    # disables asyncpg's prepared-statement cache and server_settings.
+    DB_PGBOUNCER: bool = False
+    TIMESCALE_POOL_SIZE: int = 10
+    TIMESCALE_MAX_OVERFLOW: int = 5
+    # Redis pools. REDIS_PUBSUB_URL empty = same server as REDIS_URL.
+    REDIS_MAX_CONNECTIONS: int = 50
+    REDIS_POOL_TIMEOUT: float = 5.0
+    REDIS_PUBSUB_URL: str = ""
+    REDIS_PUBSUB_MAX_CONNECTIONS: int = 50
+    # Run background engines (SL/TP, copy, fees, statements, bars, healer…) in
+    # this process. Default TRUE = today's single-host behaviour. Set false on
+    # pure API / WebSocket replicas and run one (or more) engine replicas.
+    RUN_ENGINES: bool = True
+    # Per-user concurrent WebSocket cap, now CLUSTER-wide via Redis leases.
+    # Was 10 per worker (x2 workers in prod), hence 20 to keep today's ceiling.
+    WS_MAX_PER_USER: int = 20
+    WS_LEASE_TTL_SEC: int = 90
+    # Per-socket outbound queue depth before a slow client is closed (1013).
+    WS_SEND_QUEUE_MAX: int = 1000
+    # Price cache entry older than this is re-read from Redis (listener stall guard).
+    PRICE_CACHE_STALE_SEC: float = 5.0
+
+    # D3: when true, every trader withdrawal endpoint requires a verified,
+    # single-use step-up challenge (action="withdrawal"; TOTP if 2FA is on,
+    # else an email OTP) passed as `step_up_challenge_id`. Off by default for
+    # rollout: ship the web + mobile clients first, then flip it on.
+    WITHDRAWAL_STEP_UP_REQUIRED: bool = False
+    # D5: lifetime of the session created by redeeming an admin impersonation
+    # hand-off (no refresh token; restricted amr).
+    IMPERSONATION_SESSION_MINUTES: int = 30
 
     class Config:
         env_file = ".env"
@@ -319,6 +365,14 @@ def _assert_production_secrets(s: Settings) -> None:
             bad.append(name)
     if s.ADMIN_PASSWORD in _KNOWN_WEAK_ADMIN_PASSWORDS:
         bad.append("ADMIN_PASSWORD")
+    # D6: the admin signing key must be distinct from the trader keys — if
+    # they are equal, any trader-token forger (or a leaked trader secret)
+    # can mint admin JWTs, and vice versa.
+    _admin_secret = getattr(s, "ADMIN_JWT_SECRET", "") or ""
+    if _admin_secret and _admin_secret in (
+        getattr(s, "JWT_SECRET", "") or "", getattr(s, "USER_JWT_SECRET", "") or "",
+    ):
+        bad.append("ADMIN_JWT_SECRET (must differ from JWT_SECRET / USER_JWT_SECRET)")
     # H-INF-9: refuse a default DB password in either DSN.
     for name in ("DATABASE_URL", "TIMESCALE_URL"):
         dsn = getattr(s, name, "") or ""

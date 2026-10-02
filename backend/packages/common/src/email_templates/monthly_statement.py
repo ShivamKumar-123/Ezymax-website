@@ -5,6 +5,8 @@ that the previous month's statement is ready to view in the trader app.
 """
 from __future__ import annotations
 
+from html import escape
+
 from .base import render_layout, platform_name
 
 
@@ -30,7 +32,7 @@ def render_monthly_statement_available(
       <strong>Wallet → Transactions</strong>.
     </p>
     <p style="margin:18px 0 0;color:#9a9a9a;font-size:12px;line-height:1.55;">
-      UID: <span style="font-family:Menlo,Consolas,monospace;color:#cfcfcf;">{user_uid}</span>
+      UID: <span style="font-family:Menlo,Consolas,monospace;color:#cfcfcf;">{escape(str(user_uid))}</span>
     </p>
     """
 

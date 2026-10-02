@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pyotp
-from fastapi import Request
+from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +25,9 @@ from packages.common.src.auth import (
 
 from packages.common.src.email_branding import apply_email_brand
 from packages.common.src.redis_client import redis_client
+from packages.common.src.user_credentials import (
+    dummy_password_check, redis_cap, verify_totp_once,
+)
 
 logger = logging.getLogger("auth_service")
 
@@ -361,6 +364,7 @@ async def issue_auth_json_response(
     audit_metadata: dict | None = None,
     amr_override: str | None = None,
     issue_refresh: bool = True,
+    access_ttl: timedelta | None = None,
 ) -> JSONResponse:
     """Create user_session + refresh row, commit, return JSON (+ HttpOnly cookies).
 
@@ -370,14 +374,17 @@ async def issue_auth_json_response(
 
     amr_override: force the session's amr (e.g. "impersonation").
     issue_refresh: False → no refresh token (session dies with the access
-    token; used for admin impersonation so it can't outlive its window)."""
+    token; used for admin impersonation so it can't outlive its window).
+    access_ttl: override the access-token / session lifetime (impersonation)."""
     # H-AUTH-3: bind the token to its user_sessions row via a sid claim (set the
     # session id explicitly so no extra flush is needed) and record how the
     # session was established (amr) — a real login vs a derived/bootstrap session.
     sid = uuid4()
     _login_actions = {"LOGIN", "WALLET_LOGIN", "OAUTH_GOOGLE_LOGIN", "OAUTH_GOOGLE_REGISTER", "REGISTER", "DEMO_LOGIN"}
     amr = amr_override or ("login" if (user_audit_action in _login_actions) else "derived")
-    token, expires = create_access_token(str(user.id), user.role, sid=str(sid), amr=amr)
+    token, expires = create_access_token(
+        str(user.id), user.role, expires_delta=access_ttl, sid=str(sid), amr=amr,
+    )
     new_session = UserSession(
         id=sid,
         user_id=user.id,
@@ -549,8 +556,10 @@ async def _enforce_2fa(user, totp_code: str | None, db: AsyncSession) -> None:
         )
     if not totp_code:
         raise AuthServiceError("2FA code required")
-    totp = pyotp.TOTP(secret)
-    ok = totp.verify(totp_code)
+    # D5: a TOTP is accepted only once (per-user last-step compare-and-set) —
+    # a code captured by a phishing proxy / shoulder-surf can't be replayed
+    # inside its validity window.
+    ok = await verify_totp_once(user.id, secret, totp_code)
     if not ok:
         ok = await consume_2fa_backup_code(user.id, totp_code, db)
     if not ok:
@@ -579,12 +588,17 @@ async def login_user(
             400,
         )
 
-    if not user or not verify_password(password, user.password_hash):
+    if not user:
+        # D5 enumeration: spend the same bcrypt work as a real check so an
+        # unknown email is not distinguishable by response time.
+        dummy_password_check(password)
+        raise AuthServiceError("Invalid credentials", 401)
+    if not verify_password(password, user.password_hash):
         raise AuthServiceError("Invalid credentials", 401)
 
     if user.status == "banned":
         raise AuthServiceError("Account has been banned", 403)
-    if user.status == "blocked":
+    if user.status in ("blocked", "suspended"):
         raise AuthServiceError("Account has been blocked", 403)
 
     # Staff accounts must log in via the admin portal — never the trader
@@ -783,7 +797,7 @@ async def google_oauth(
     # second request for the same google account can't double-insert.
     user = (
         await db.execute(
-            select(User).where(User.google_id == google_id).with_for_update()
+            select(User).where(User.google_id == google_id).with_for_update().execution_options(populate_existing=True)
         )
     ).scalar_one_or_none()
 
@@ -792,7 +806,7 @@ async def google_oauth(
         # Lock the row so concurrent google logins for the same email serialize.
         user = (
             await db.execute(
-                select(User).where(func.lower(User.email) == email).with_for_update()
+                select(User).where(func.lower(User.email) == email).with_for_update().execution_options(populate_existing=True)
             )
         ).scalar_one_or_none()
         if user is not None:
@@ -949,7 +963,7 @@ async def bootstrap_session(access_token: str, request: Request, db: AsyncSessio
         payload = decode_token(access_token.strip())
     except Exception:
         raise AuthServiceError("Invalid token", 401)
-    if payload.get("sid") or not payload.get("impersonated_by"):
+    if not _is_impersonation_handoff(payload):
         raise AuthServiceError("Invalid token", 401)
     try:
         uid = UUID(str(payload["sub"]))
@@ -962,12 +976,53 @@ async def bootstrap_session(access_token: str, request: Request, db: AsyncSessio
         raise AuthServiceError("Account has been banned", 403)
     if user.status == "blocked":
         raise AuthServiceError("Account has been blocked", 403)
+    if user.status == "suspended":
+        raise AuthServiceError("Account has been blocked", 403)
+    # D5: the redeemed support session is short (30 min by default), has no
+    # refresh token and carries amr="impersonation" (require_full_session
+    # then refuses withdrawals / credential changes).
+    minutes = int(getattr(get_settings(), "IMPERSONATION_SESSION_MINUTES", 30) or 30)
+    minutes = max(1, min(minutes, 60))
     return await issue_auth_json_response(
         user, request, db, amr_override="impersonation", issue_refresh=False,
+        access_ttl=timedelta(minutes=minutes),
     )
 
 
+# Hand-off tokens older than this are refused even if their `exp` is later.
+# The admin service wraps the token in a 60 s single-use Redis code, so a
+# legitimate redemption always happens well inside this bound.
+IMPERSONATION_HANDOFF_MAX_AGE_S = 120
+
+
+def _is_impersonation_handoff(payload: dict) -> bool:
+    """D5: accept ONLY the admin impersonation hand-off token:
+      - new form: typ="impersonation" (120 s lifetime, minted by admin svc);
+      - old form: impersonated_by set (2 h exp), accepted during rollout.
+    Either way: never a session token (no sid), must name the admin, and must
+    have been issued within the last IMPERSONATION_HANDOFF_MAX_AGE_S seconds."""
+    if payload.get("sid"):
+        return False
+    if not payload.get("impersonated_by"):
+        return False
+    iat = payload.get("iat")
+    try:
+        iat_ts = float(iat)
+    except (TypeError, ValueError):
+        return False
+    age = datetime.now(timezone.utc).timestamp() - iat_ts
+    # small negative skew tolerated (clock drift between admin + gateway hosts)
+    return -30 <= age <= IMPERSONATION_HANDOFF_MAX_AGE_S
+
+
 # ─── Forgot / Reset password ─────────────────────────────────────────────
+
+
+def _email_key(email_lower: str) -> str:
+    """Stable, non-PII Redis key fragment for an email address."""
+    import hashlib
+    return hashlib.sha256(email_lower.encode("utf-8")).hexdigest()[:32]
+
 
 def _reset_link_base(request: Request) -> str:
     """Base URL for the password-reset link in the email.
@@ -991,9 +1046,18 @@ async def forgot_password(email: str, request: Request, db: AsyncSession) -> dic
     await assert_same_origin_or_tenant(request, db)
     rate_limit_http(request, "forgot-password", 5, 600.0)
     msg = {"message": "If an account exists for this email, you will receive password reset instructions shortly."}
-    result = await db.execute(select(User).where(User.email == email))
+    email_lower = (email or "").strip().lower()
+    # D1: per-EMAIL cap independent of IP (IP rotation can't flood one inbox
+    # or churn one account's codes). Fails open: it only throttles mail; the
+    # attempt budget that guards the code itself is enforced on reset.
+    try:
+        await redis_cap(f"pwforgot_email:{_email_key(email_lower)}", 5, 3600, fail_closed=False, client=redis_client,
+                        detail="Too many reset requests for this email. Try again later.")
+    except HTTPException as e:
+        raise AuthServiceError(str(e.detail), e.status_code)
+    result = await db.execute(select(User).where(func.lower(User.email) == email_lower))
     user = result.scalar_one_or_none()
-    if not user or user.status in ("banned", "blocked"):
+    if not user or user.status in ("banned", "blocked", "suspended"):
         return msg
 
     # 6-digit numeric code — the user types it into the app's reset-password
@@ -1016,14 +1080,15 @@ async def forgot_password(email: str, request: Request, db: AsyncSession) -> dic
 
     settings = get_settings()
 
-    from packages.common.src.smtp_mail import send_password_reset_email, smtp_configured
+    from packages.common.src.smtp_mail import (
+        fire_and_forget, send_password_reset_email, smtp_configured,
+    )
     if smtp_configured():
         await apply_email_brand(db, user)
-        sent = await send_password_reset_email(user.email, raw)
-        if sent:
-            logger.info("Password reset code sent to %s", user.email)
-        else:
-            logger.error("Password reset email failed for %s", user.email)
+        # D5 enumeration: send in the background so the response time is the
+        # same whether or not the account exists.
+        fire_and_forget(send_password_reset_email(user.email, raw))
+        logger.info("Password reset code queued for user=%s", user.id)
     elif settings.ENVIRONMENT == "development":
         logger.warning("Password reset code (dev, SMTP not configured): %s", raw)
     else:
@@ -1041,33 +1106,32 @@ async def reset_password(
     token_hash = hash_token(token.strip())
     now = datetime.now(timezone.utc)
 
-    # C-AUTH-1: bind the code to a user and cap attempts in Redis, independent
-    # of IP. With the e-mail, the token lookup is scoped to that user, so a
-    # 6-digit code can only be brute-forced against ONE account, and only
-    # 10 attempts / 15 min are allowed.
-    user = None
-    if email:
-        user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
-        if user is not None:
-            try:
-                key = f"pwreset_attempts_user:{user.id}"
-                n = await redis_client.incr(key)
-                if n == 1:
-                    await redis_client.expire(key, 900)
-                if n > 10:
-                    raise AuthServiceError("Too many reset attempts. Please try again later.")
-            except AuthServiceError:
-                raise
-            except Exception:
-                pass  # Redis unavailable → fall back to DB + HTTP rate limits.
+    # D1 / C-AUTH-1: the code is ALWAYS bound to one user, looked up by
+    # lower(email). The per-email attempt budget is charged BEFORE the lookup
+    # (so unknown and known emails cost the same and the budget can't be
+    # probed), is independent of IP, and FAILS CLOSED when Redis is down.
+    email_lower = (email or "").strip().lower()
+    if not email_lower:
+        raise AuthServiceError("Invalid or expired reset code")
+    try:
+        await redis_cap(f"pwreset_attempts_email:{_email_key(email_lower)}", 10, 900,
+                        fail_closed=True, client=redis_client,
+                        detail="Too many reset attempts. Please try again later.")
+    except HTTPException as e:
+        raise AuthServiceError(str(e.detail), e.status_code)
+    user = (await db.execute(
+        select(User).where(func.lower(User.email) == email_lower)
+    )).scalar_one_or_none()
+    if user is None:
+        # Unknown email: never touch the token table.
+        raise AuthServiceError("Invalid or expired reset code")
 
     q = select(PasswordResetToken).where(
+        PasswordResetToken.user_id == user.id,
         PasswordResetToken.token_hash == token_hash,
         PasswordResetToken.used.is_(False),
         PasswordResetToken.expires_at > now,
     )
-    if user is not None:
-        q = q.where(PasswordResetToken.user_id == user.id)
     row = (await db.execute(q)).scalar_one_or_none()
     if not row:
         raise AuthServiceError("Invalid or expired reset code")
@@ -1087,10 +1151,7 @@ async def reset_password(
     except Exception:
         pass
 
-    resolved = user or await db.get(User, row.user_id)
-    if not resolved:
-        raise AuthServiceError("Invalid or expired reset code")
-
+    resolved = user
     resolved.password_hash = hash_password(new_password)
     row.used = True
 
@@ -1172,10 +1233,9 @@ async def verify_2fa(user_id: UUID, code: str, db: AsyncSession) -> dict:
 
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    if not user.two_factor_secret:
+    if user is None or not user.two_factor_secret:
         raise AuthServiceError("2FA not set up")
-    totp = pyotp.TOTP(user.two_factor_secret)
-    if not totp.verify(code):
+    if not await verify_totp_once(user_id, user.two_factor_secret, code, client=redis_client):
         raise AuthServiceError("Invalid code", 401)
     user.two_factor_enabled = True
 
@@ -1249,7 +1309,9 @@ async def regenerate_2fa_backup_codes(user_id: UUID, code: str, db: AsyncSession
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user or not user.two_factor_enabled:
         raise AuthServiceError("2FA is not enabled")
-    if not user.two_factor_secret or not pyotp.TOTP(user.two_factor_secret).verify((code or "").strip()):
+    if not user.two_factor_secret or not await verify_totp_once(
+        user_id, user.two_factor_secret, (code or "").strip(), client=redis_client,
+    ):
         raise AuthServiceError("Invalid authenticator code", 401)
 
     await db.execute(
@@ -1272,10 +1334,31 @@ async def regenerate_2fa_backup_codes(user_id: UUID, code: str, db: AsyncSession
 async def change_password(
     user_id: UUID, old_password: str, new_password: str, db: AsyncSession, keep_sid=None,
 ) -> dict:
+    # D5: per-user attempt cap (independent of IP) — a hijacked session must
+    # not be able to brute-force the current password through this endpoint.
+    try:
+        await redis_cap(f"pwchange_attempts:{user_id}", 5, 900, fail_closed=False,
+                        client=redis_client,
+                        detail="Too many password change attempts. Try again later.")
+    except HTTPException as e:
+        raise AuthServiceError(str(e.detail), e.status_code)
+    # D5: the same strength policy as register / reset (the request model of
+    # /auth/password/change predates the policy).
+    from packages.common.src.password_policy import validate_password_strength
+    try:
+        validate_password_strength(new_password or "")
+    except ValueError as e:
+        raise AuthServiceError(str(e), 400)
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
+    if user is None:
+        raise AuthServiceError("Not authenticated", 401)
+    if not user.password_hash:
+        raise AuthServiceError("No password is set on this account.", 400)
     if not verify_password(old_password, user.password_hash):
         raise AuthServiceError("Current password is incorrect")
+    if old_password == new_password:
+        raise AuthServiceError("New password must be different")
     user.password_hash = hash_password(new_password)
     # Changing the password is what a user does when they suspect compromise —
     # so sign out every OTHER device and revoke refresh tokens + algo keys.
@@ -1286,6 +1369,65 @@ async def change_password(
     for _sid in revoked_sids:
         await invalidate_session_cache(_sid)
     return {"message": "Password changed successfully. Other devices have been signed out."}
+
+
+# ─── Email change: rotate refresh credentials ────────────────────────────
+
+
+async def rotate_credentials_after_email_change(
+    user_id: UUID, request: Request, db: AsyncSession, *, keep_sid=None,
+) -> tuple[str, datetime, list]:
+    """D5: an email change is an identity change. Revoke every refresh token
+    and every OTHER session (the caller's own session survives), then mint a
+    fresh refresh token for the caller. Returns (raw_refresh, expires_at,
+    revoked_sids); the caller commits, busts the session cache for
+    revoked_sids and attaches the refresh token (cookie / JSON). Algo keys are left
+    alone: they are bound to the account, not the login identity."""
+    st = get_settings()
+    await db.execute(
+        update(UserRefreshToken)
+        .where(UserRefreshToken.user_id == user_id, UserRefreshToken.revoked.is_(False))
+        .values(revoked=True)
+    )
+    q = select(UserSession.id).where(
+        UserSession.user_id == user_id, UserSession.is_active.is_(True),
+    )
+    if keep_sid:
+        try:
+            q = q.where(UserSession.id != UUID(str(keep_sid)))
+        except (ValueError, TypeError):
+            pass
+    sids = list((await db.execute(q)).scalars().all())
+    if sids:
+        await db.execute(
+            update(UserSession).where(UserSession.id.in_(sids)).values(is_active=False)
+        )
+    raw_refresh = secrets.token_urlsafe(48)
+    ref_exp = datetime.now(timezone.utc) + timedelta(days=st.JWT_REFRESH_EXPIRY_DAYS)
+    db.add(UserRefreshToken(
+        user_id=user_id, token_hash=hash_token(raw_refresh),
+        expires_at=ref_exp, revoked=False,
+    ))
+    return raw_refresh, ref_exp, sids
+
+
+def attach_refresh_cookie(response: JSONResponse, request: Request, raw_refresh: str) -> None:
+    """Set ONLY the refresh cookie (the access cookie / session is unchanged)."""
+    st = get_settings()
+    kw: dict = {
+        "key": st.REFRESH_TOKEN_COOKIE_NAME,
+        "value": raw_refresh,
+        "httponly": True,
+        "secure": _cookie_secure_flag(request),
+        "samesite": _cookie_samesite(),
+        "path": "/",
+    }
+    domain = _cookie_domain(request)
+    if domain:
+        kw["domain"] = domain
+    if not st.JWT_REFRESH_SESSION_COOKIE:
+        kw["max_age"] = max(3600, st.JWT_REFRESH_EXPIRY_DAYS * 86400)
+    response.set_cookie(**kw)
 
 
 # ─── Get current user profile ─────────────────────────────────────────────

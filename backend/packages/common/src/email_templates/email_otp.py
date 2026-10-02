@@ -39,7 +39,9 @@ def render_email_otp(
     """
 
     pn = platform_name()
-    subject = f"{pn} verification code: {code}"
+    # D5: never put the code in the subject — subjects show up in lock-screen
+    # notifications, mail-server logs and our own send logs.
+    subject = f"Your {pn} verification code"
     html = render_layout(
         title="Verify your email",
         intro=f"Hi {name}, here's your one-time code to confirm this email on {pn}.",

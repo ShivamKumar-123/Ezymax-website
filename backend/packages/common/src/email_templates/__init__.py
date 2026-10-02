@@ -15,7 +15,7 @@ from .withdrawal import (
     render_withdrawal_rejected,
 )
 from .kyc import render_kyc_approved, render_kyc_rejected
-from .security import render_new_login
+from .security import render_new_login, render_account_exists
 from .risk import render_margin_call, render_stop_out
 from .bonus import render_bonus_credited
 from .verification import render_verification_reminder
@@ -35,6 +35,7 @@ __all__ = [
     "render_kyc_approved",
     "render_kyc_rejected",
     "render_new_login",
+    "render_account_exists",
     "render_margin_call",
     "render_stop_out",
     "render_bonus_credited",

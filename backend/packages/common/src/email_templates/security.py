@@ -60,6 +60,45 @@ def render_new_login(
     return subject, html, "\n".join(text_lines)
 
 
+def render_account_exists(
+    *,
+    first_name: str | None,
+    trader_app_url: str = "https://trade.swisscresta.com",
+) -> tuple[str, str, str]:
+    """Sent instead of a sign-up code when someone starts registration with
+    an address that already has an account (the API answers uniformly, so
+    the owner learns about it here — not the person who typed the address)."""
+    name = (first_name or "trader").strip() or "trader"
+    pn = platform_name()
+    base = (trader_app_url or "").rstrip("/") or "https://trade.swisscresta.com"
+    subject = f"Sign-up attempt for your {pn} account"
+    body = """
+    <p style="margin:0;color:#f5f5f5;font-size:14px;line-height:1.6;">
+      Someone (hopefully you) tried to create a new account with this email
+      address, but it already belongs to an account. No new account was created.
+      If you forgot your password, use "Forgot password" on the sign-in page.
+    </p>
+    """
+    html = render_layout(
+        title="You already have an account",
+        intro=f"Hi {name}, this email address is already registered on {pn}.",
+        body_html=body,
+        cta_label="Sign in",
+        cta_url=f"{base}/login",
+        footer_note="If this wasn't you, you can ignore this email — your account is unchanged.",
+    )
+    text = "\n".join([
+        f"Hi {name},",
+        "",
+        f"Someone tried to create a new {pn} account with this email address,",
+        "but it already belongs to an account. No new account was created.",
+        f"Sign in: {base}/login (use 'Forgot password' if needed).",
+        "",
+        "If this wasn't you, you can ignore this email.",
+    ])
+    return subject, html, text
+
+
 def _shorten(s: str, n: int) -> str:
     s = (s or "").strip()
     return s if len(s) <= n else s[: n - 1] + "…"

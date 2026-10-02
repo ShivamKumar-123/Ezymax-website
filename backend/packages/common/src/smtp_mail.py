@@ -126,17 +126,18 @@ async def send_email(
     misconfiguration or SMTP failure. Never raises — caller can ignore
     the result if they don't care."""
     if not smtp_configured():
-        logger.warning("SMTP not configured — skipping email to %s subj=%r", to_email, subject)
+        logger.warning("SMTP not configured — skipping email to %s", to_email)
         return False
     if not to_email or "@" not in to_email:
         logger.warning("Skipping email — bad recipient %r", to_email)
         return False
     try:
         await asyncio.to_thread(_send_sync, to_email, subject, html, text)
-        logger.info("email sent to=%s subj=%r", to_email, subject)
+        # D5: subjects are never logged (they may carry codes / amounts).
+        logger.info("email sent to=%s", to_email)
         return True
     except Exception:
-        logger.exception("Failed to send email to %s subj=%r", to_email, subject)
+        logger.exception("Failed to send email to %s", to_email)
         return False
 
 

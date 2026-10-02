@@ -4,7 +4,8 @@ on every path that SETS a password (register, reset, change), so weak
 passwords like '12345678' are rejected even when the client is bypassed.
 
 Policy (all required):
-  - 8..128 characters (length bounds enforced by the schema Field)
+  - 8..128 characters (length bounds enforced by the schema Field) and at
+    most 72 UTF-8 bytes (bcrypt's input limit)
   - at least 3 of 4 character classes (lower / upper / digit / symbol)
   - not a known-common password or a trivial sequence/repetition
 """
@@ -32,6 +33,10 @@ def validate_password_strength(pw: str) -> str:
     with a user-facing message."""
     if len(pw) < 8:
         raise ValueError("Password must be at least 8 characters.")
+    # bcrypt only hashes the first 72 UTF-8 BYTES — anything longer would be
+    # silently truncated (bcrypt<5) or rejected at hash time (bcrypt>=5).
+    if len(pw.encode("utf-8")) > 72:
+        raise ValueError("Password is too long (maximum 72 bytes).")
     classes = sum((
         bool(re.search(r"[a-z]", pw)),
         bool(re.search(r"[A-Z]", pw)),

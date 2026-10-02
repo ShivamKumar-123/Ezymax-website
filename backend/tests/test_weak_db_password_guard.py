@@ -7,6 +7,8 @@ from types import SimpleNamespace
 from packages.common.src import config
 
 _STRONG_JWT = "x" * 48
+# D6: the admin key must differ from the trader keys.
+_STRONG_ADMIN_JWT = "y" * 48
 _GOOD_DB = "postgresql+asyncpg://swisscresta:Str0ng-DB-pw@postgres:5432/swisscresta"
 _WEAK_DB = "postgresql+asyncpg://swisscresta:swisscresta_dev@postgres:5432/swisscresta"
 
@@ -14,7 +16,7 @@ _WEAK_DB = "postgresql+asyncpg://swisscresta:swisscresta_dev@postgres:5432/swiss
 def _settings(**over):
     base = dict(
         ENVIRONMENT="production",
-        JWT_SECRET=_STRONG_JWT, ADMIN_JWT_SECRET=_STRONG_JWT, USER_JWT_SECRET=_STRONG_JWT,
+        JWT_SECRET=_STRONG_JWT, ADMIN_JWT_SECRET=_STRONG_ADMIN_JWT, USER_JWT_SECRET=_STRONG_JWT,
         ADMIN_PASSWORD="Str0ng!-Admin-Passw0rd",
         DATABASE_URL=_GOOD_DB, TIMESCALE_URL=_GOOD_DB,
     )

@@ -15,15 +15,27 @@ settings = get_settings()
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
+# bcrypt only consumes the first 72 bytes of its input. bcrypt<5 silently
+# truncates longer passwords; bcrypt>=5 raises. We refuse to SET a longer
+# password (explicit error instead of silent truncation) and, on VERIFY,
+# feed bcrypt the same 72-byte prefix older versions hashed — so accounts
+# created before the limit keep working on any bcrypt version.
+BCRYPT_MAX_BYTES = 72
+
+
 def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    raw = password.encode("utf-8")
+    if len(raw) > BCRYPT_MAX_BYTES:
+        raise ValueError("Password is too long (maximum 72 bytes).")
+    return bcrypt.hashpw(raw, bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(password: str, hashed: str) -> bool:
     if not hashed:
         return False
     try:
-        return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
+        raw = (password or "").encode("utf-8")[:BCRYPT_MAX_BYTES]
+        return bcrypt.checkpw(raw, hashed.encode("utf-8"))
     except (ValueError, TypeError):
         return False
 
@@ -62,6 +74,41 @@ def decode_token(token: str) -> dict:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+
+# `typ` claim of the short-lived admin impersonation HAND-OFF token (minted by
+# the admin service, redeemed once at /auth/impersonate/redeem). Never a
+# session token on its own.
+IMPERSONATION_HANDOFF_TYP = "impersonation"
+
+
+async def verify_session_token(token: Optional[str]) -> Optional[dict]:
+    """Non-raising twin of get_current_user's token checks for transports
+    that cannot use the dependency (WebSocket handshakes). Returns
+    {user_id, role, amr, sid} or None when the token is missing, invalid,
+    sid-less, a hand-off token, its session was revoked, or the account is
+    disabled."""
+    if not token:
+        return None
+    try:
+        payload = decode_token(token)
+        sid = payload.get("sid")
+        if not sid or payload.get("typ") == IMPERSONATION_HANDOFF_TYP:
+            return None
+        user_id = UUID(str(payload["sub"]))
+        user_status = await _get_user_status(user_id)
+        if user_status is None or user_status in _BLOCKED_USER_STATUSES:
+            return None
+        if not await _session_is_active(sid):
+            return None
+        return {
+            "user_id": user_id,
+            "role": payload.get("role", "user"),
+            "amr": payload.get("amr"),
+            "sid": sid,
+        }
+    except Exception:
+        return None
 
 
 def hash_token(token: str) -> str:
@@ -178,23 +225,28 @@ async def get_current_user(
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     payload = decode_token(token)
-    user_id = UUID(payload["sub"])
+    # D5: every legitimate session token carries a `sid` (all trader tokens are
+    # minted by issue_auth_json_response — password / Google / wallet / demo /
+    # register / refresh / impersonation-redeem — for web, desktop and mobile).
+    # A sid-less token is either pre-H-AUTH-3 (long expired) or a raw admin
+    # impersonation HAND-OFF token (typ=impersonation / impersonated_by), which
+    # is only valid as input to /auth/impersonate/redeem. Used directly as a
+    # Bearer it would be an un-revocable session — refuse it.
+    sid = payload.get("sid")
+    if not sid or payload.get("typ") == IMPERSONATION_HANDOFF_TYP:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    try:
+        user_id = UUID(str(payload["sub"]))
+    except (KeyError, ValueError, TypeError):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     user_status = await _get_user_status(user_id)
     if user_status is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account not found")
     if user_status in _BLOCKED_USER_STATUSES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled")
-    # H-AUTH-3: reject a token whose session was revoked. Tokens minted before
-    # this change carry no sid and are grandfathered (they expire within the
-    # access-token lifetime); every new token carries a sid.
-    sid = payload.get("sid")
-    if sid and not await _session_is_active(sid):
+    # H-AUTH-3: reject a token whose session was revoked.
+    if not await _session_is_active(sid):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session ended. Please sign in again.")
-    # The raw admin-impersonation token (impersonated_by, no sid) is only valid as
-    # input to /auth/impersonate/redeem → bootstrap. Used directly as a Bearer it
-    # would be a 2h, un-revocable, un-flagged session — refuse it.
-    if payload.get("impersonated_by") and not sid:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     # Mark the user as online for ~5 minutes after this request. The admin
     # users list reads these keys to render an online/offline indicator.
     # 5 minutes is generous enough that brief idle stretches (reading a
@@ -210,12 +262,12 @@ async def get_current_user(
         pass
     return {
         "user_id": user_id,
-        "role": payload["role"],
+        "role": payload.get("role", "user"),
         # How this session was established: "login", "derived" (refresh),
-        # "impersonation" (admin support), or None (legacy token).
+        # "impersonation" (admin support).
         "amr": payload.get("amr"),
-        # This request's session id (None for legacy tokens) — lets "sign out
-        # other devices" style actions keep the caller's own session.
+        # This request's session id — lets "sign out other devices" style
+        # actions keep the caller's own session.
         "sid": sid,
     }
 
@@ -233,6 +285,46 @@ async def require_full_session(current_user: dict = Depends(get_current_user)) -
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This action is not allowed in an impersonation session.",
+        )
+    return current_user
+
+
+async def require_not_demo(current_user: dict = Depends(get_current_user)) -> dict:
+    """Fence identity / credential / money-request routes off from demo logins.
+
+    `/auth/demo-login` gives anonymous visitors sessions on a shared demo user
+    row; any route that mutates that identity (profile, push tokens, support
+    tickets, business/provider applications) would let one visitor act on
+    every other. Demo logins are for practice trades only."""
+    user_id = current_user["user_id"]
+    is_demo = None
+    cache_key = f"user_is_demo:{user_id}"
+    redis = None
+    try:
+        from .redis_client import redis_client as redis
+        cached = await redis.get(cache_key)
+        if cached is not None:
+            v = cached.decode() if isinstance(cached, bytes) else str(cached)
+            is_demo = v == "1"
+    except Exception:
+        redis = None
+    if is_demo is None:
+        from sqlalchemy import select
+        from .database import AsyncSessionLocal
+        from .models import User
+        async with AsyncSessionLocal() as db:
+            is_demo = bool(
+                (await db.execute(select(User.is_demo).where(User.id == user_id))).scalar_one_or_none()
+            )
+        if redis is not None:
+            try:
+                await redis.set(cache_key, "1" if is_demo else "0", ex=60)
+            except Exception:
+                pass
+    if is_demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This action is not available on a demo login. Create an account to continue.",
         )
     return current_user
 

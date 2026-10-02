@@ -5,17 +5,19 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from packages.common.src.config import get_settings
 from packages.common.src.database import get_db
 from packages.common.src.schemas import (
     RegisterRequest, LoginRequest, UserResponse,
-    ForgotPasswordRequest, ResetPasswordRequest, MessageResponse, BootstrapSessionRequest,
+    ForgotPasswordRequest, ResetPasswordRequest, MessageResponse,
     GoogleAuthRequest,
     WalletNonceRequest, WalletNonceResponse, WalletVerifyRequest,
 )
+from typing import Optional
 from packages.common.src.auth import get_current_user, require_full_session
 from ..services.auth_service import (
     AuthServiceError,
-    register_user, login_user, demo_login as _demo_login,
+    login_user, demo_login as _demo_login,
     google_oauth as _google_oauth,
     refresh_token as _refresh_token, bootstrap_session as _bootstrap_session,
     forgot_password as _forgot_password, reset_password as _reset_password,
@@ -49,6 +51,12 @@ async def platform_status():
         # Admin-enforced identity verification. When false KYC stays optional
         # (users may still verify to unlock higher leverage / card deposits).
         "kyc_required": await get_bool_setting("kyc_required", False),
+        # D3: when true, withdrawals need a verified step-up challenge
+        # (/auth/step-up/start action="withdrawal" → /auth/step-up/verify)
+        # passed as `step_up_challenge_id`. See docs/api/withdrawal-step-up.md.
+        "withdrawal_step_up_required": bool(
+            getattr(get_settings(), "WITHDRAWAL_STEP_UP_REQUIRED", False)
+        ),
     }
 
 
@@ -80,10 +88,21 @@ class _RegisterStartRequest(RegisterRequest):
 class _RegisterVerifyRequest(BaseModel):
     email: str
     otp: str
+    # D2: required when the pending entry was contested (a second
+    # /register/start with a different password). Clients should always send
+    # the password the user typed on the form.
+    password: str | None = None
 
 
 class _RegisterResendRequest(BaseModel):
     email: str
+
+
+class _RegisterCancelRequest(BaseModel):
+    email: str
+    # D2: cancelling a pending registration needs the emailed code — without
+    # it anyone could cancel anyone's in-progress signup.
+    otp: str | None = None
 
 
 @router.post("/register/start")
@@ -116,7 +135,7 @@ async def register_verify(
     the `users` row with `email_verified=true`, and issues auth
     cookies — same shape as the legacy /auth/register response."""
     return await pending_registration_service.complete_pending_registration(
-        email=req.email, otp=req.otp, request=request, db=db,
+        email=req.email, otp=req.otp, request=request, db=db, password=req.password,
     )
 
 
@@ -124,19 +143,24 @@ async def register_verify(
 async def register_resend(
     req: _RegisterResendRequest,
     request: Request,
+    db: AsyncSession = Depends(get_db),
 ):
     """Rotate the OTP for an in-progress pending registration without
-    re-collecting the form fields. Tighter rate limit than start."""
+    re-collecting the form fields. Tighter rate limit than start.
+    (D5: the request DB session is needed for tenant email branding — it
+    was previously an undefined name → 500 on every resend.)"""
     return await pending_registration_service.resend_pending_otp(
-        email=req.email, request=request,
+        email=req.email, request=request, db=db,
     )
 
 
 @router.post("/register/cancel")
-async def register_cancel(req: _RegisterResendRequest):
-    """Best-effort cleanup when the user backs out of the OTP step.
-    Idempotent — the Redis key TTLs out on its own anyway."""
-    return await pending_registration_service.cancel_pending_registration(email=req.email)
+async def register_cancel(req: _RegisterCancelRequest, request: Request):
+    """Cancel an in-progress pending registration. D2: requires the emailed
+    OTP; the Redis entry TTLs out on its own anyway."""
+    return await pending_registration_service.cancel_pending_registration(
+        email=req.email, otp=req.otp, request=request,
+    )
 
 
 @router.post("/login")
@@ -211,9 +235,15 @@ async def wallet_nonce(
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 
+class _WalletLoginRequest(WalletVerifyRequest):
+    # D5: 2FA for wallet sign-in. Sent on the retry after a
+    # "2FA code required" response (the client re-signs a fresh nonce).
+    totp_code: Optional[str] = None
+
+
 @router.post("/wallet/verify")
 async def wallet_verify(
-    req: WalletVerifyRequest, request: Request, db: AsyncSession = Depends(get_db),
+    req: _WalletLoginRequest, request: Request, db: AsyncSession = Depends(get_db),
 ):
     """Verify a SIWE signature, find or create the user, and issue cookies.
     Reuses `issue_auth_json_response()` so wallet sessions are
@@ -222,6 +252,7 @@ async def wallet_verify(
         return await wallet_auth_service.login_or_register_with_wallet(
             req.message, req.signature, request, db,
             referral_code=req.referral_code,
+            totp_code=req.totp_code,
         )
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
@@ -402,10 +433,15 @@ async def regenerate_2fa_backup_codes(
 @router.post("/password/change")
 async def change_password(
     body: _ChangePasswordRequest,
+    request: Request,
     current_user: dict = Depends(require_full_session), db: AsyncSession = Depends(get_db),
 ):
     # Phase 3: credentials arrive in the JSON body, not query params (which land
     # in access logs / browser history / Referer).
+    # D5: per-IP rate limit here + per-user cap and strength policy in the
+    # service (kept out of the request model for backward compatibility).
+    from ..services.auth_service import rate_limit_http
+    rate_limit_http(request, "password-change", 10, 600.0)
     try:
         return await _change_password(
             user_id=current_user["user_id"],
@@ -446,10 +482,12 @@ class _VerifyEmailOtpRequest(BaseModel):
 async def start_email_verification(
     body: _StartEmailVerificationRequest,
     request: Request,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
-    """Issue a fresh 6-digit OTP and email it to body.email."""
+    """Issue a fresh 6-digit OTP and email it to body.email.
+    D5: an email change is a credential change — refused for impersonation
+    sessions."""
     return await email_otp_service.start_verification(
         user_id=current_user["user_id"], target_email=body.email, db=db,
     )
@@ -459,7 +497,7 @@ async def start_email_verification(
 async def verify_email_otp(
     body: _VerifyEmailOtpRequest,
     request: Request,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
     """Consume the latest OTP and promote target_email → users.email.
@@ -467,14 +505,35 @@ async def verify_email_otp(
     Rate-limited at 5 attempts / 10 minutes per IP. 6-digit codes have
     only ~1M states; an unthrottled attacker who already has a session
     could brute-force the OTP in a few thousand seconds."""
-    from ..services.auth_service import rate_limit_http
+    from ..services.auth_service import (
+        attach_refresh_cookie, rate_limit_http, rotate_credentials_after_email_change,
+    )
+    from packages.common.src.auth import invalidate_session_cache
+    from fastapi.responses import JSONResponse
     rate_limit_http(request, "email-otp-verify", 5, 600.0)
-    return await email_otp_service.verify_otp(
+    result = await email_otp_service.verify_otp(
         user_id=current_user["user_id"],
         otp=body.otp,
         db=db,
         request_ip=client_ip_for_inet(request),
     )
+    if result.get("action") != "EMAIL_CHANGED":
+        return result
+    # D5: email change → revoke every refresh token + every other session and
+    # hand the caller a FRESH refresh token (cookie; JSON for x-token-delivery).
+    raw_refresh, ref_exp, revoked = await rotate_credentials_after_email_change(
+        current_user["user_id"], request, db, keep_sid=current_user.get("sid"),
+    )
+    await db.commit()
+    for _sid in revoked:
+        await invalidate_session_cache(_sid)
+    content = dict(result)
+    if (request.headers.get("x-token-delivery") or "").strip().lower() == "json":
+        content["refresh_token"] = raw_refresh
+        content["refresh_expires_at"] = ref_exp.isoformat()
+    resp = JSONResponse(content=content)
+    attach_refresh_cookie(resp, request, raw_refresh)
+    return resp
 
 
 # ─── Step-up authentication (async multi-roundtrip flows) ─────────────────
@@ -485,8 +544,8 @@ async def verify_email_otp(
 
 
 class _StepUpStartRequest(BaseModel):
-    action: str          # email_change | wallet_disconnect | withdrawal | …
-    method: str          # otp_old_email | siwe | totp | passkey
+    action: str          # email_change | wallet_disconnect | wallet_link | withdrawal
+    method: str = "auto"  # auto | otp_old_email (email_otp) | siwe | totp
     metadata: dict | None = None
 
 
@@ -499,13 +558,16 @@ class _StepUpVerifyRequest(BaseModel):
 async def step_up_start(
     body: _StepUpStartRequest,
     request: Request,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
     """Issue a step-up challenge. Returns a challenge_id the client uses
     on /step-up/verify. For 'otp_old_email' the OTP is sent
     immediately; for 'siwe' the response includes the wallet address
-    the client should sign with."""
+    the client should sign with. method='auto' resolves to 'totp' when 2FA
+    is enabled, else 'otp_old_email' (the resolved method is returned)."""
+    from ..services.auth_service import rate_limit_http
+    rate_limit_http(request, "step-up-start", 10, 600.0)
     return await sensitive_action_service.start_challenge(
         user_id=current_user["user_id"],
         action=body.action,
@@ -519,13 +581,15 @@ async def step_up_start(
 async def step_up_verify(
     body: _StepUpVerifyRequest,
     request: Request,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
     """Verify the proof for a previously-started challenge. On success
     sets verified_at — the row is now redeemable for one matching
     action call within 5 minutes. The action handler then uses
     consume_verified_challenge() to atomically redeem it."""
+    from ..services.auth_service import rate_limit_http
+    rate_limit_http(request, "step-up-verify", 20, 600.0)
     from uuid import UUID as _UUID
     try:
         challenge_uuid = _UUID(body.challenge_id)

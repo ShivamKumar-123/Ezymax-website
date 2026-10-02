@@ -657,6 +657,11 @@ function LeaderboardTab() {
   const [showFollowers, setShowFollowers] = useState(false);
   const [followers, setFollowers] = useState<any[]>([]);
   const [followersLoading, setFollowersLoading] = useState(false);
+  // Another provider's followers endpoint only returns the caller's OWN row
+  // (is_you) plus aggregates — other investors' data is private.
+  const [followersMeta, setFollowersMeta] = useState<{
+    isSelf: boolean; total: number; avgProfitPct: number | null;
+  }>({ isSelf: true, total: 0, avgProfitPct: null });
 
   const loadFollowers = async (e: React.MouseEvent, providerId: string, isSelf: boolean) => {
     e.stopPropagation();
@@ -664,7 +669,13 @@ function LeaderboardTab() {
     try {
       const endpoint = isSelf ? '/followers/my-followers' : `/followers/provider/${providerId}`;
       const res = await api.get<any>(endpoint);
-      setFollowers(res.followers || []);
+      const rows = Array.isArray(res?.followers) ? res.followers : [];
+      setFollowers(rows);
+      setFollowersMeta({
+        isSelf,
+        total: typeof res?.total_followers === 'number' ? res.total_followers : rows.length,
+        avgProfitPct: typeof res?.avg_profit_pct === 'number' ? res.avg_profit_pct : null,
+      });
       setShowFollowers(true);
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Failed to load followers'));
@@ -797,12 +808,28 @@ function LeaderboardTab() {
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-bg-base/75 backdrop-blur-sm p-4" onClick={() => setShowFollowers(false)}>
           <div className="w-full max-w-3xl bg-bg-secondary border border-border-glass rounded-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-border-glass">
-              <h3 className="text-base font-bold text-text-primary">Followers ({followers.length})</h3>
+              <h3 className="text-base font-bold text-text-primary">Followers ({followersMeta.total})</h3>
               <button onClick={() => setShowFollowers(false)} className="text-text-tertiary hover:text-text-primary text-lg">✕</button>
             </div>
             <div className="p-5 max-h-[70vh] overflow-y-auto">
+              {!followersMeta.isSelf && !followersLoading && (
+                <div className="mb-4 flex flex-wrap gap-4 text-xs text-text-secondary">
+                  <span>Total followers: <span className="font-mono text-text-primary">{followersMeta.total}</span></span>
+                  {followersMeta.avgProfitPct !== null && (
+                    <span>
+                      Avg. follower profit:{' '}
+                      <span className={clsx('font-mono font-bold', followersMeta.avgProfitPct >= 0 ? 'text-buy' : 'text-sell')}>
+                        {followersMeta.avgProfitPct >= 0 ? '+' : ''}{followersMeta.avgProfitPct.toFixed(2)}%
+                      </span>
+                    </span>
+                  )}
+                  <span className="text-text-tertiary">Other investors&apos; details are private — only your own position is listed.</span>
+                </div>
+              )}
               {followersLoading ? <Spinner /> : followers.length === 0 ? (
-                <div className="text-center py-12 text-sm text-text-tertiary">No followers yet</div>
+                <div className="text-center py-12 text-sm text-text-tertiary">
+                  {followersMeta.isSelf ? 'No followers yet' : 'You are not following this provider.'}
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
@@ -817,7 +844,10 @@ function LeaderboardTab() {
                       {followers.map((f: any) => (
                         <tr key={f.id} className="border-b border-border-glass/50 hover:bg-bg-hover/30">
                           <td className="px-3 py-3">
-                            <p className="text-xs font-medium text-text-primary">{f.user_name}</p>
+                            <p className="text-xs font-medium text-text-primary">
+                              {f.user_name || (f.is_you ? 'You' : '—')}
+                              {f.is_you && <span className="ml-2 rounded bg-accent/15 px-1.5 py-0.5 text-xxs text-accent">You</span>}
+                            </p>
                             {f.account_number && <p className="text-xxs text-text-tertiary">{f.account_number}</p>}
                           </td>
                           <td className="px-3 py-3 text-xs font-mono text-text-primary">${(f.allocation_amount || 0).toLocaleString()}</td>

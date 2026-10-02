@@ -9,6 +9,8 @@ interface PlatformStatus {
   allow_new_registrations: boolean;
   allow_deposits: boolean;
   allow_withdrawals: boolean;
+  /** D3: withdrawals need a verified step-up challenge (server flag). */
+  withdrawal_step_up_required: boolean;
 }
 
 interface PlatformStatusState extends PlatformStatus {
@@ -21,6 +23,7 @@ const DEFAULTS: PlatformStatus = {
   allow_new_registrations: true,
   allow_deposits: true,
   allow_withdrawals: true,
+  withdrawal_step_up_required: false,
 };
 
 export const usePlatformStatusStore = create<PlatformStatusState>()(
@@ -30,8 +33,8 @@ export const usePlatformStatusStore = create<PlatformStatusState>()(
       isLoaded: false,
       fetch: async () => {
         try {
-          const res = await api.get<PlatformStatus>('/auth/platform-status');
-          set({ ...res, isLoaded: true });
+          const res = await api.get<Partial<PlatformStatus>>('/auth/platform-status');
+          set({ ...DEFAULTS, ...res, isLoaded: true });
         } catch {
           set({ isLoaded: true });
         }
@@ -52,6 +55,7 @@ export const usePlatformStatusStore = create<PlatformStatusState>()(
         allow_new_registrations: state.allow_new_registrations,
         allow_deposits: state.allow_deposits,
         allow_withdrawals: state.allow_withdrawals,
+        withdrawal_step_up_required: state.withdrawal_step_up_required,
       }),
     },
   ),

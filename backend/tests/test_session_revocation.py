@@ -1,5 +1,5 @@
 """H-AUTH-3: access tokens carry a sid claim; get_current_user rejects a token
-whose session was revoked, while sid-less (legacy) tokens are grandfathered.
+whose session was revoked; sid-less tokens are rejected (D5).
 """
 import asyncio
 import unittest
@@ -56,16 +56,16 @@ class SessionRevocationTests(unittest.TestCase):
         out = asyncio.run(get_current_user(_req(tok), credentials=None))
         self.assertEqual(out["user_id"], uid)
 
-    def test_legacy_token_without_sid_grandfathered(self):
-        # No sid → session check skipped even if it would report inactive.
-        async def _inactive(sid):
-            return False
-        auth._session_is_active = _inactive
-        uid = uuid4()
-        tok, _ = create_access_token(str(uid), "user")  # no sid
-        out = asyncio.run(get_current_user(_req(tok), credentials=None))
-        self.assertEqual(out["user_id"], uid)
-
+    def test_legacy_token_without_sid_rejected(self):
+        # D5: sid-less tokens are no longer grandfathered — every issuer sets a
+        # sid, so a token without one is a hand-off / forged / ancient token.
+        async def _active(sid):
+            return True
+        auth._session_is_active = _active
+        tok, _ = create_access_token(str(uuid4()), "user")  # no sid
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(get_current_user(_req(tok), credentials=None))
+        self.assertEqual(ctx.exception.status_code, 401)
 
 if __name__ == "__main__":
     unittest.main()

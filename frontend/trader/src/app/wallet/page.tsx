@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { downloadWalletStatementPdf } from '@/lib/pdf/walletStatementPdf';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
+import StepUpDialog, { isStepUpError } from '@/components/security/StepUpDialog';
+import { usePlatformStatusStore } from '@/stores/platformStatusStore';
 
 // Razorpay popup integration removed — local-banking flow replaces it.
 // Admin can still attach Razorpay payment-links per request from the
@@ -318,6 +320,11 @@ function WalletPageContent() {
   const [manualWithdrawNotes, setManualWithdrawNotes] = useState('');
   const [manualWithdrawQrFile, setManualWithdrawQrFile] = useState<File | null>(null);
   const [withdrawSubmitting, setWithdrawSubmitting] = useState(false);
+  // D3 withdrawal step-up: when the server flag is on, every withdrawal is
+  // preceded by a verified single-use challenge (TOTP or email OTP) whose id
+  // travels with the request as `step_up_challenge_id`.
+  const withdrawalStepUpRequired = usePlatformStatusStore((s) => s.withdrawal_step_up_required);
+  const [withdrawStepUpOpen, setWithdrawStepUpOpen] = useState(false);
 
   // Transfer-between-accounts form (replaces the old card-level "balanceTransfer"
   // modal). Source / destination can be the synthetic main wallet (id =
@@ -861,7 +868,7 @@ function WalletPageContent() {
     void loadHistory();
   }, [tab, loadHistory]);
 
-  const submitWithdraw = async () => {
+  const submitWithdraw = async (stepUpChallengeId?: string) => {
     if (demoFundingBlocked) {
       toast.error(DEMO_FUNDING_MSG);
       return;
@@ -883,6 +890,10 @@ function WalletPageContent() {
         toast.error(`Invalid ${opt.label} address. ${opt.addressHint}`);
         return;
       }
+      if (withdrawalStepUpRequired && !stepUpChallengeId) {
+        setWithdrawStepUpOpen(true);
+        return;
+      }
       setWithdrawSubmitting(true);
       try {
         await api.post('/wallet/withdraw/onchain', {
@@ -890,6 +901,7 @@ function WalletPageContent() {
           amount: amt,
           destination_address: addr,
           source: wallet?.wallet_account ? fundTargetPreference : undefined,
+          step_up_challenge_id: stepUpChallengeId,
         });
         toast.success(`Withdrawal of $${amt.toLocaleString()} submitted — pending approval`);
         setWithdrawCryptoAddress('');
@@ -900,6 +912,9 @@ function WalletPageContent() {
         if (err instanceof Error && err.message === 'KYC_REQUIRED') {
           toast.error('Complete KYC verification to withdraw funds.');
           router.push('/kyc');
+        } else if (isStepUpError(err)) {
+          // Server requires (or rejected) the step-up — verify and retry.
+          setWithdrawStepUpOpen(true);
         } else {
           toast.error(err instanceof Error ? err.message : 'Withdrawal failed');
         }
@@ -914,6 +929,10 @@ function WalletPageContent() {
       toast.error('Enter your UPI ID and/or upload a QR code for manual payout');
       return;
     }
+    if (withdrawalStepUpRequired && !stepUpChallengeId) {
+      setWithdrawStepUpOpen(true);
+      return;
+    }
     setWithdrawSubmitting(true);
     try {
       const fd = new FormData();
@@ -922,6 +941,7 @@ function WalletPageContent() {
       fd.append('payout_notes', manualWithdrawNotes.trim());
       if (manualWithdrawQrFile) fd.append('file', manualWithdrawQrFile);
       if (wallet?.wallet_account) fd.append('source', fundTargetPreference);
+      if (stepUpChallengeId) fd.append('step_up_challenge_id', stepUpChallengeId);
       const token = api.getToken();
       // Multipart uploads bypass the api client (it sets a JSON
        // content-type) but we still need the absolute API base so the
@@ -958,6 +978,8 @@ function WalletPageContent() {
       if (err instanceof Error && err.message === 'KYC_REQUIRED') {
         toast.error('Complete KYC verification to withdraw funds.');
         router.push('/kyc');
+      } else if (isStepUpError(err)) {
+        setWithdrawStepUpOpen(true);
       } else {
         toast.error(err instanceof Error ? err.message : 'Withdrawal failed');
       }
@@ -2259,6 +2281,17 @@ function WalletPageContent() {
           </div>
         </div>
       </div>
+      <StepUpDialog
+        open={withdrawStepUpOpen}
+        action="withdrawal"
+        title="Confirm your withdrawal"
+        description="For your security, confirm this withdrawal with a one-time code."
+        onClose={() => setWithdrawStepUpOpen(false)}
+        onVerified={async (challengeId) => {
+          setWithdrawStepUpOpen(false);
+          await submitWithdraw(challengeId);
+        }}
+      />
     </DashboardShell>
   );
 }

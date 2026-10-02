@@ -166,6 +166,10 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
       await api.post('/auth/register/verify', {
         email: email.trim().toLowerCase(),
         otp: code,
+        // D2: the server requires the staged password when the pending
+        // signup was contested (someone else re-started it); always sending
+        // it keeps the legitimate user's flow seamless.
+        password,
       });
       await refreshUser();
       toast.success(`Email verified. Welcome to ${brand.name}.`);
@@ -178,16 +182,17 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
     }
   };
 
-  /** Back out of the OTP step. Tells the server to drop the pending
-   *  registration so the address is freed immediately (otherwise it
-   *  Redis-TTLs out in 10 minutes), then returns to the credentials
-   *  form so the user can fix a typo. Errors are swallowed — the
-   *  Redis key will expire even if the cancel call fails. */
+  /** Back out of the OTP step. If the user already typed the emailed code
+   *  the server drops the pending registration immediately (cancel needs
+   *  the code — D2); otherwise the Redis entry simply expires in 10
+   *  minutes. Returns to the credentials form so the user can fix a typo.
+   *  Errors are swallowed — the Redis key will expire anyway. */
   const cancelPendingRegistration = async () => {
     const normalizedEmail = email.trim().toLowerCase();
-    if (normalizedEmail) {
+    const typedCode = otp.replace(/\D/g, '');
+    if (normalizedEmail && typedCode.length === 6) {
       try {
-        await api.post('/auth/register/cancel', { email: normalizedEmail });
+        await api.post('/auth/register/cancel', { email: normalizedEmail, otp: typedCode });
       } catch {
         /* ignore — TTL will handle it */
       }

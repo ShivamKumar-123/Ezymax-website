@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from html import escape
+
 from .base import render_layout, kv_table
 
 
@@ -53,7 +55,7 @@ def render_deposit_failed(
 
     body = kv_table(rows) + f"""
     <p style="margin:16px 0 0;color:#f5f5f5;font-size:14px;line-height:1.6;">
-      {human}
+      {escape(str(human))}
     </p>
     """
     subject = "Deposit not completed"

@@ -44,7 +44,8 @@ from packages.common.src.models import User, WalletAuthNonce
 from packages.common.src.schemas import WalletNonceResponse
 
 from .auth_service import (
-    AuthServiceError, _allowed_origins, _consume_referral, client_ip_for_inet,
+    AuthServiceError, _allowed_origins, _consume_referral, _enforce_2fa,
+    apply_tenant_attribution, client_ip_for_inet,
     issue_auth_json_response, rate_limit_http,
 )
 
@@ -303,15 +304,32 @@ async def verify_message(
 
 async def resolve_or_create_user(
     siwe_address: str, db: AsyncSession,
+    *,
+    request: Optional[Request] = None,
+    referral_code: Optional[str] = None,
 ) -> Tuple[User, bool]:
     """For sign-in flows: find the user that owns this wallet, or create a
-    fresh row if none exists. Returns (user, created)."""
+    fresh row if none exists. Returns (user, created).
+
+    D5: creating a NEW account obeys the same platform gates as email
+    registration (maintenance mode, allow_new_registrations) and is placed
+    in the right white-label pool (tenant attribution) before it is
+    committed — otherwise a wallet signup on a broker domain would land in
+    the platform pool and then fail the tenant login check."""
     found = await db.execute(
         select(User).where(func.lower(User.wallet_address) == siwe_address)
     )
     user = found.scalar_one_or_none()
     if user is not None:
         return user, False
+
+    from packages.common.src.settings_store import get_bool_setting
+    if await get_bool_setting("maintenance_mode", False):
+        raise AuthServiceError(
+            "Platform is under maintenance. Registrations are temporarily disabled.", 503
+        )
+    if not await get_bool_setting("allow_new_registrations", True):
+        raise AuthServiceError("New registrations are currently disabled", 403)
 
     placeholder_email = f"wallet_{siwe_address}@{WALLET_PLACEHOLDER_EMAIL_DOMAIN}"
     user = User(
@@ -326,6 +344,8 @@ async def resolve_or_create_user(
     )
     db.add(user)
     await db.flush()
+    if request is not None:
+        await apply_tenant_attribution(db, user, referral_code, request)
     await db.commit()
     return user, True
 
@@ -340,12 +360,19 @@ async def login_or_register_with_wallet(
     db: AsyncSession,
     *,
     referral_code: Optional[str] = None,
+    totp_code: Optional[str] = None,
 ) -> JSONResponse:
-    """The endpoint handler for POST /auth/wallet/verify."""
+    """The endpoint handler for POST /auth/wallet/verify.
+
+    D5: wallet sign-in enforces the same gates as password / Google login —
+    account status, staff block, maintenance mode, white-label tenant
+    isolation and the user's 2FA (TOTP or backup code via `totp_code`)."""
     siwe_address, nonce_row = await verify_message(
         message, signature, request, db,
     )
-    user, created = await resolve_or_create_user(siwe_address, db)
+    user, created = await resolve_or_create_user(
+        siwe_address, db, request=request, referral_code=referral_code,
+    )
 
     # Phase 3: wallet sign-in must enforce the SAME account-status and staff
     # guards as password / Google login — previously it issued a session without
@@ -353,10 +380,33 @@ async def login_or_register_with_wallet(
     # in through the wallet flow.
     if user.status == "banned":
         raise AuthServiceError("Account has been banned", 403)
-    if user.status == "blocked":
+    if user.status in ("blocked", "suspended"):
         raise AuthServiceError("Account has been blocked", 403)
     if user.role in ("admin", "super_admin", "employee", "manager", "support", "broker"):
         raise AuthServiceError("Staff accounts must sign in via the admin portal.", 403)
+
+    # Maintenance mode: no trader sessions (staff were refused above).
+    from packages.common.src.settings_store import get_bool_setting
+    if await get_bool_setting("maintenance_mode", False):
+        raise AuthServiceError("Platform is under maintenance. Please try again later.", 503)
+
+    # White-label tenant isolation — same rule as login_user().
+    from packages.common.src.config import get_settings
+    if get_settings().BRANDING_ENABLED:
+        from packages.common.src import broker_tenancy
+        wl_host = broker_tenancy.host_from_request_headers(
+            request.headers.get("origin"), request.headers.get("referer")
+        )
+        wl_owner = await broker_tenancy.find_broker_by_domain(db, wl_host)
+        if not broker_tenancy.user_belongs_to_owner(user, wl_owner):
+            raise AuthServiceError(
+                "This account is not registered with this broker. "
+                "Please sign in on the platform you registered with.",
+                403,
+            )
+
+    # Second factor (a wallet signature is ONE factor, like a password).
+    await _enforce_2fa(user, totp_code, db)
 
     if created and referral_code:
         try:
