@@ -102,8 +102,10 @@ pub async fn liquidate(st: &AppState, login: i64) -> anyhow::Result<Report> {
     let mut rep = Report { run_id: format!("liq:{login}:{now_ms}"), ..Default::default() };
     // 1. every book order of the account goes first (its reservations come back)
     let at = hub.shared.clock.now().timestamp_millis();
-    for h in hub.shared.books.handles().into_iter().filter(|h| h.key.tenant_id == tenant_id && h.key.kind == kind) {
-        let _ = entry::call(hub, login, &h.key, Cmd::CancelAll { login, series: None, expiry: None, ephemeral_only: false, reason: "liquidation".into(), at }).await;
+    let working = hub.read(login, Box::new(|x| json!(x.map(|(a, _)| a.book.orders.values().map(|w| w.underlying.clone()).collect::<std::collections::BTreeSet<_>>()).unwrap_or_default()))).await;
+    for u in working.as_array().cloned().unwrap_or_default().iter().filter_map(Value::as_str) {
+        let key = BookKey::new(tenant_id, kind, u);
+        let _ = entry::call(hub, login, &key, Cmd::CancelAll { login, series: None, expiry: None, ephemeral_only: false, reason: "liquidation".into(), at }).await;
     }
     let mut skip: Vec<i64> = Vec::new();
     for step in 1..=MAX_STEPS {

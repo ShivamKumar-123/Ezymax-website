@@ -259,6 +259,8 @@ pub struct Own {
     pub balance: D,
     pub margin: D,
     pub free_margin: D,
+    /// Firm RFQ quotes whose hold has lapsed (released on the next pass).
+    pub lapsed_holds: usize,
 }
 
 pub async fn own(hub: &Hub, login: i64) -> Option<Own> {
@@ -276,7 +278,8 @@ pub async fn own(hub: &Hub, login: i64) -> Option<Own> {
                     p.into_iter().map(|(k, v)| (k, v.to_string())).collect()
                 };
                 let quotes: Vec<Value> = a.book.orders.values().filter(|w| w.flags & EPHEMERAL != 0).map(|w| json!([w.series, w.side.as_str(), w.price.to_string(), (D::from(w.left) * w.step).to_string()])).collect();
-                json!({"pos": pos, "quotes": quotes, "equity": m.equity.to_string(), "balance": m.balance.to_string(), "margin": m.margin.to_string(), "free": m.free_margin.to_string()})
+                let lapsed = a.book.rfq_holds.values().filter(|h| h.1 <= env.now.timestamp_millis()).count();
+                json!({"pos": pos, "quotes": quotes, "equity": m.equity.to_string(), "balance": m.balance.to_string(), "margin": m.margin.to_string(), "free": m.free_margin.to_string(), "lapsed": lapsed})
             }),
         )
         .await;
@@ -284,7 +287,7 @@ pub async fn own(hub: &Hub, login: i64) -> Option<Own> {
         return None;
     }
     let p = |k: &str| v[k].as_str().and_then(|s| s.parse::<D>().ok()).unwrap_or(ZERO);
-    let mut o = Own { equity: p("equity"), balance: p("balance"), margin: p("margin"), free_margin: p("free"), ..Default::default() };
+    let mut o = Own { equity: p("equity"), balance: p("balance"), margin: p("margin"), free_margin: p("free"), lapsed_holds: v["lapsed"].as_u64().unwrap_or(0) as usize, ..Default::default() };
     if let Some(m) = v["pos"].as_object() {
         for (k, x) in m {
             o.pos.insert(k.clone(), x.as_str().and_then(|s| s.parse().ok()).unwrap_or(ZERO));
@@ -544,6 +547,11 @@ pub async fn pass(st: &AppState, tenant_id: i64, kind: AccountKind) -> anyhow::R
         return Ok(());
     }
     let own = own(hub, login).await.ok_or_else(|| anyhow::anyhow!("market-maker account {login} not loaded"))?;
+    if own.lapsed_holds > 0 {
+        // RFQ quotes nobody accepted: their holds go back
+        let op: crate::shard::Op = Box::new(move |tx, _| crate::engine::options_book::release_rfq_holds(tx, now_ms, None));
+        let _ = hub.exec(login, "system:options-mm", None, "", "", None, op).await;
+    }
     let pauses = books.mm.pauses_of(tenant_id, kind);
     let mut unders: Vec<&Underlying> = snap.underlyings.values().filter(|u| u.enabled && snap.tenant_allows(&slug, &u.symbol)).collect();
     unders.sort_by(|a, b| a.symbol.cmp(&b.symbol));

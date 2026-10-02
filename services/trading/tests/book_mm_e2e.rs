@@ -186,6 +186,16 @@ async fn market_maker_rfq_liquidation_enable_and_bust_end_to_end() {
     rig.drained().await;
     assert!(rig.book_pos(d_login).await.is_empty(), "both legs closed at once");
     assert_eq!(rig.ledger_sum(&clearing).await, D::ZERO);
+    // a quote nobody accepts: the MM's hold goes back once it lapses
+    let Json(r3) = api::options_book::rfq_open(State(st.clone()), rig.ctx(&td), body(json!({"legs": [{"series": c1, "side": "buy", "ratio": 1}], "qty": 1}))).await.unwrap();
+    assert!(r3["quotes"][0]["quoteId"].is_string(), "{r3}");
+    let holds = |hub: trading::shard::Hub| async move { hub.read(mm, Box::new(|x| json!(x.unwrap().0.book.rfq_holds.len()))).await.as_u64().unwrap() };
+    assert_eq!(holds(hub.clone()).await, 1);
+    let ttl = snap.underlying("EURUSD").unwrap().rfq_quote_ttl_secs.clamp(1, 60) as u64;
+    tokio::time::sleep(Duration::from_secs(ttl + 3)).await;
+    trading::book::mm::pass(&st, 1, AccountKind::Demo).await.unwrap();
+    assert_eq!(holds(hub.clone()).await, 0, "lapsed RFQ holds are released");
+    let _ = api::options_book::rfq_cancel(State(st.clone()), rig.ctx(&td), Path(r3["rfq"]["id"].as_str().unwrap().to_string())).await.unwrap();
 
     // ---------------- 4. liquidation: book first, then the backstop ----------------
     // c sells puts to the MM's bid (opening margin), then loses most of its balance: past stop-out
