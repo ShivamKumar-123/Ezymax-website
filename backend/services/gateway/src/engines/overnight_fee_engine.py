@@ -31,6 +31,7 @@ from packages.common.src.models import (
     AccountGroup, InstrumentConfig, Position, PositionStatus,
     TradingAccount, Transaction, User,
 )
+from packages.common.src.trading_service import quote_to_account_pnl
 
 logger = logging.getLogger("overnight-fee-engine")
 
@@ -128,11 +129,13 @@ async def charge_due_positions(db: AsyncSession, now: Optional[datetime] = None)
             pos.last_swap_at = now  # mark seen so we don't re-walk it every tick
             continue
 
-        # Skip users who self-identify as Islamic (User.is_islamic) — they're
-        # exempt from overnight charges even if they wound up on a non-Islamic
-        # group. Cheap because we already loaded account → User isn't loaded
-        # eagerly here, so issue a small lookup once.
-        if account.user_id is not None:
+        # Skip users who self-identify as Islamic (User.is_islamic) — but only
+        # on a tier that offers swap-free. Pro and Prime are sold as "swap-free
+        # not available", so the flag does not exempt a position held there.
+        # An account with no tier keeps the old blanket exemption. Cheap
+        # because we already loaded account → User isn't loaded eagerly here,
+        # so issue a small lookup once.
+        if account.user_id is not None and (ag is None or bool(ag.swap_free_available)):
             is_islamic = (await db.execute(
                 select(User.is_islamic).where(User.id == account.user_id)
             )).scalar_one_or_none()
@@ -166,7 +169,18 @@ async def charge_due_positions(db: AsyncSession, now: Optional[datetime] = None)
         if instrument is None:
             continue
         contract_size = Decimal(str(instrument.contract_size or "100000"))
-        notional = Decimal(str(pos.lots or 0)) * Decimal(str(pos.open_price or 0)) * contract_size
+        open_price = Decimal(str(pos.open_price or 0))
+        # lots × price × contract size is in the QUOTE currency. Left as it
+        # was, one lot of USDJPY counted as 15.7 million "dollars" and would
+        # have been charged about $1,570 a night instead of $10 — the same
+        # trap the P&L path fell into, so use the same converter.
+        notional = quote_to_account_pnl(
+            Decimal(str(pos.lots or 0)) * open_price * contract_size,
+            getattr(instrument, "base_currency", None),
+            getattr(instrument, "quote_currency", None),
+            open_price,
+            symbol=getattr(instrument, "symbol", None),
+        )
         if notional <= 0:
             pos.last_swap_at = now
             continue

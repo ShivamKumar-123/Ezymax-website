@@ -12,6 +12,7 @@ import api from '@/lib/api/client';
 import { getDigits } from '@/lib/utils';
 import { AnimatedPrice } from '@/components/trading/AnimatedPrice';
 import { createDatafeed } from '@/lib/charting/datafeed';
+import { installOhlcTooltip } from '@/lib/charting/ohlcTooltip';
 
 // On-chart line + overlay colours.
 const CHART_BUY_COLOR = '#3b82f6';   // blue — BUY entry line / close button
@@ -161,6 +162,7 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
     let cancelled = false;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let widget: any = null;
+    let removeTooltip: (() => void) | null = null;
     setStatus('loading');
 
     loadLibrary()
@@ -205,6 +207,16 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
           widgetRef.current = widget;
           setStatus('ready');
 
+          // Hold a candle to read its OHLC. The library's own tooltip is
+          // mouse-only and switched off below 768px, so a phone needs this one.
+          if (containerRef.current) {
+            removeTooltip = installOhlcTooltip(
+              widget,
+              containerRef.current,
+              () => themeRef.current !== 'light',
+            );
+          }
+
           // "Full screen" lives INSIDE the chart's own header, next to
           // Indicators — a floating overlay button sat on top of TV's toolbar
           // instead. createButton is the library's supported way in.
@@ -245,6 +257,7 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
 
     return () => {
       cancelled = true;
+      removeTooltip?.();
       try {
         widget?.remove?.();
       } catch {
