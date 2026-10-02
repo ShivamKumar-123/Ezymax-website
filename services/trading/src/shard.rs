@@ -599,6 +599,10 @@ impl Shard {
         let old_tickets: Vec<i64> = st.positions.keys().chain(st.orders.keys()).copied().collect();
         let mut tx = Tx::new(st);
         let value = op(&mut tx, &env).map_err(ExecError::Reject)?;
+        if tx.liquidate {
+            // the liquidator re-reads the account after this transaction (it waits for its turn in this shard)
+            self.sh.books.liquidate(login);
+        }
         if tx.events.is_empty() && tx.audit.is_empty() {
             if tx.book_dirty {
                 // only the in-memory order-book state changed (working orders, reservations): nothing to commit

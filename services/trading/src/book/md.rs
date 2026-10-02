@@ -169,6 +169,16 @@ impl Top {
         for f in fills {
             let _ = self.feed.send(Arc::from(trade_json(slug, key, f).to_string()));
         }
+        // a combo RFQ fill: one `combo` print after its legs
+        let mut combos: BTreeMap<(u64, i64), Vec<&Fill>> = BTreeMap::new();
+        for f in fills.iter().filter(|f| f.kind == super::types::FillKind::Rfq) {
+            if let Some(c) = f.combo {
+                combos.entry((f.seq, c)).or_default().push(f);
+            }
+        }
+        for legs in combos.values() {
+            let _ = self.feed.send(Arc::from(combo_json(slug, key, legs).to_string()));
+        }
     }
 
     /// The throttled part of the feed: `top` + `depth` frames of the series that changed since the last call.
@@ -209,6 +219,23 @@ pub fn trade_json(slug: &str, key: &BookKey, f: &Fill) -> Value {
         "type": "trade", "tenant": slug, "kind": key.kind.as_str(), "underlying": key.underlying, "series": f.series,
         "fillId": f.id, "price": num(f.spec.price(f.px)), "qty": num(f.spec.contracts(f.qty)), "side": f.aggressor().as_str(),
         "tradeKind": f.kind.as_str(), "combo": f.combo, "at": chrono::DateTime::from_timestamp_millis(f.at), "seq": f.seq,
+    })
+}
+
+/// The `combo` print of a combo RFQ fill: its legs (taker side, price, contracts) and the net per combo unit as
+/// the taker traded it (combo units = the gcd of the legs' contracts).
+pub fn combo_json(slug: &str, key: &BookKey, legs: &[&Fill]) -> Value {
+    fn gcd(a: i64, b: i64) -> i64 {
+        if b == 0 { a.abs() } else { gcd(b, a % b) }
+    }
+    let units = legs.iter().fold(0i64, |g, f| gcd(g, f.qty)).max(1);
+    let net: i64 = legs.iter().map(|f| (f.qty / units) * f.px * if f.taker.side == crate::model::Side::Buy { 1 } else { -1 }).sum();
+    let f0 = legs[0];
+    json!({
+        "type": "trade", "tradeKind": "combo", "tenant": slug, "kind": key.kind.as_str(), "underlying": key.underlying, "series": Value::Null,
+        "combo": f0.combo, "fillId": format!("{}.{}{}.combo", key.underlying, key.kind_char(), f0.seq), "price": num(f0.spec.price(net)), "qty": num(f0.spec.contracts(units)),
+        "side": f0.taker.side.as_str(), "at": chrono::DateTime::from_timestamp_millis(f0.at), "seq": f0.seq,
+        "legs": legs.iter().map(|f| json!({"series": f.series, "side": f.taker.side.as_str(), "price": num(f.spec.price(f.px)), "qty": num(f.spec.contracts(f.qty)), "fillId": f.id})).collect::<Vec<_>>(),
     })
 }
 

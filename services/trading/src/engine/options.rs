@@ -1569,6 +1569,13 @@ pub fn stop_out(tx: &mut Tx, env: &Env) {
             }
         }
         let Some((_, _, unit)) = best else { break };
+        // order-book positions close on the book (book first within a band, then the Kalks backstop): the
+        // liquidator does that once this transaction is committed (docs §8)
+        if unit.tickets(&tx.st).iter().any(|t| tx.st.positions.get(t).is_some_and(|p| p.on_book())) {
+            tx.liquidate = true;
+            failed.insert(unit);
+            continue;
+        }
         match close_unit(tx, env, &unit) {
             Ok((x, v)) => {
                 if closed.is_empty() {
@@ -1584,6 +1591,12 @@ pub fn stop_out(tx: &mut Tx, env: &Env) {
                 failed.insert(unit);
             }
         }
+    }
+    if tx.liquidate && closed.is_empty() && !tx.st.margin_call {
+        // the account is past its stop-out level with only order-book units left: flag it as in margin call so
+        // the client sees it while the liquidator works
+        let level = metrics(env, &tx.st).level;
+        tx.emit(Event::MarginCall { entered: true, level: level.map(r2) });
     }
     if closed.is_empty() {
         return;

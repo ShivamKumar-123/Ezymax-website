@@ -13,6 +13,7 @@ pub mod lifecycle;
 pub mod mam;
 pub mod options;
 pub mod options_book;
+pub mod book_admin;
 pub mod social;
 pub mod social_admin;
 pub mod social_house;
@@ -91,6 +92,23 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/terminal/options/book/preview", post(options_book::preview))
         .route("/v1/terminal/options/book/deadman", post(options_book::deadman))
         .route("/v1/terminal/options/book/mass-quote", post(options_book::mass_quote))
+        .route("/v1/terminal/options/rfq", post(options_book::rfq_open))
+        .route("/v1/terminal/options/rfq/{id}", get(options_book::rfq_get).delete(options_book::rfq_cancel))
+        .route("/v1/terminal/options/rfq/{id}/accept", post(options_book::rfq_accept))
+        // Back Office: order books, market maker, liquidations, clearing, RFQs, busts, rollout (api/book_admin.rs)
+        .route("/v1/admin/options/books", get(book_admin::books))
+        .route("/v1/admin/options/books/halt", post(book_admin::halt))
+        .route("/v1/admin/options/books/halt/{id}", axum::routing::delete(book_admin::unhalt))
+        .route("/v1/admin/options/books/{series}", get(book_admin::depth))
+        .route("/v1/admin/options/mm", get(book_admin::mm))
+        .route("/v1/admin/options/mm/{action}", post(book_admin::mm_pause))
+        .route("/v1/admin/options/liquidations", get(book_admin::liquidations))
+        .route("/v1/admin/options/clearing", get(book_admin::clearing))
+        .route("/v1/admin/options/rfqs", get(book_admin::rfqs))
+        .route("/v1/admin/options/fills/{id}/bust", post(book_admin::bust))
+        .route("/v1/admin/options/approvals", get(book_admin::approvals))
+        .route("/v1/admin/options/book/enable/plan", get(book_admin::enable_plan))
+        .route("/v1/admin/options/book/enable", post(book_admin::enable))
         .route("/v1/internal/options/book/stream", get(book_feed::stream))
         .route("/v1/internal/options/book/{tenant}/{kind}/snapshot", get(book_feed::snapshot))
         .route("/v1/internal/options/book/{tenant}/{kind}/trades", get(book_feed::trades))

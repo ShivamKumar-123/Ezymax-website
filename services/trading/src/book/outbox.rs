@@ -34,11 +34,51 @@ pub enum Item {
     Amended { amended: Amended },
     /// An amend did not take effect: drop its extra hold.
     Release { id: i64, token: u64 },
+    /// Every leg of a combo RFQ fill on one account, applied in ONE account transaction (atomic per account).
+    /// `quote`: the responder's RFQ hold to release once its legs are booked.
+    Fills {
+        fills: Vec<Fill>,
+        role: Role,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        quote: Option<i64>,
+    },
+    /// A busted fill, reversed on this account (keys `bust:{fillId}:{login}:…`).
+    Bust { fill: Fill, role: Role },
 }
 
 impl Item {
+    /// Moves a book position (the `settling` gate and the reconcile count these).
     pub fn is_fill(&self) -> bool {
-        matches!(self, Item::Fill { .. })
+        matches!(self, Item::Fill { .. } | Item::Fills { .. } | Item::Bust { .. })
+    }
+    /// (fill, role, signed position change in steps for this account) of every position change this item makes.
+    pub fn deltas(&self) -> Vec<(&Fill, Role, Steps)> {
+        let d = |f: &Fill, r: Role| if f.party(r).side == crate::model::Side::Buy { f.qty } else { -f.qty };
+        match self {
+            Item::Fill { fill, role } => vec![(fill, *role, d(fill, *role))],
+            Item::Fills { fills, role, .. } => fills.iter().map(|f| (f, *role, d(f, *role))).collect(),
+            Item::Bust { fill, role } => vec![(fill, *role, -d(fill, *role))],
+            _ => vec![],
+        }
+    }
+    /// The `st.book.applied` key that marks this item booked on its account.
+    pub fn applied_key(&self) -> Option<String> {
+        match self {
+            Item::Fill { fill, role } => Some(super::reserve::fill_key(&fill.id, role.as_str())),
+            Item::Fills { fills, role, .. } => fills.first().map(|f| super::reserve::fill_key(&f.id, role.as_str())),
+            Item::Bust { fill, role } => Some(super::reserve::bust_key(&fill.id, role.as_str())),
+            _ => None,
+        }
+    }
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Item::Fill { .. } => "fill",
+            Item::Done { .. } => "done",
+            Item::Amended { .. } => "amended",
+            Item::Release { .. } => "release",
+            Item::Fills { .. } => "fills",
+            Item::Bust { .. } => "bust",
+        }
     }
 }
 
@@ -69,9 +109,22 @@ pub fn items_of(cmd: &Cmd, out: &Out) -> Vec<(i64, Item, bool)> {
     for a in &out.amended {
         v.push((a.login, Item::Amended { amended: a.clone() }, false));
     }
-    for f in &out.fills {
-        v.push((f.maker.login, Item::Fill { fill: f.clone(), role: Role::Maker }, true));
-        v.push((f.taker.login, Item::Fill { fill: f.clone(), role: Role::Taker }, true));
+    if let Cmd::RfqAccept { quote, .. } = cmd
+        && !out.fills.is_empty()
+    {
+        // a combo: every leg of an account in one item (atomic per account)
+        let f0 = &out.fills[0];
+        v.push((f0.maker.login, Item::Fills { fills: out.fills.clone(), role: Role::Maker, quote: Some(*quote) }, true));
+        v.push((f0.taker.login, Item::Fills { fills: out.fills.clone(), role: Role::Taker, quote: None }, true));
+    } else {
+        for f in &out.fills {
+            v.push((f.maker.login, Item::Fill { fill: f.clone(), role: Role::Maker }, true));
+            v.push((f.taker.login, Item::Fill { fill: f.clone(), role: Role::Taker }, true));
+        }
+    }
+    for f in &out.busted {
+        v.push((f.maker.login, Item::Bust { fill: f.clone(), role: Role::Maker }, true));
+        v.push((f.taker.login, Item::Bust { fill: f.clone(), role: Role::Taker }, true));
     }
     for d in &out.done {
         v.push((d.login, Item::Done { done: d.clone() }, !d.order.ephemeral()));
@@ -86,6 +139,8 @@ pub fn op_for(item: Item) -> Op {
         Item::Done { done } => Box::new(move |tx, env| crate::engine::options_book::apply_done(tx, env, &done)),
         Item::Amended { amended } => Box::new(move |tx, env| crate::engine::options_book::apply_amended(tx, env, &amended)),
         Item::Release { id, token } => Box::new(move |tx, _| crate::engine::options_book::release_hold(tx, id, token)),
+        Item::Fills { fills, role, quote } => Box::new(move |tx, env| crate::engine::options_book::apply_fills(tx, env, &fills, role, quote)),
+        Item::Bust { fill, role } => Box::new(move |tx, env| crate::engine::options_book::apply_bust(tx, env, &fill, role)),
     }
 }
 
@@ -105,6 +160,8 @@ pub fn backoff(n: u32) -> Duration {
 }
 
 pub const FAIL_AFTER: u32 = 10;
+/// In-memory items of one login applied in one account transaction at most.
+pub const MEMORY_BATCH: usize = 500;
 
 pub struct Dispatcher {
     pub key: BookKey,
@@ -128,7 +185,7 @@ impl Dispatcher {
         let mut queues: BTreeMap<i64, Waiting> = BTreeMap::new();
         let mut busy: HashSet<i64> = HashSet::new();
         let mut attempts: HashMap<u64, u32> = HashMap::new();
-        let mut set: JoinSet<(i64, Row, Result<Value, String>)> = JoinSet::new();
+        let mut set: JoinSet<(i64, Vec<Row>, Result<Vec<Value>, String>)> = JoinSet::new();
         let mut inflight: HashMap<tokio::task::Id, i64> = HashMap::new();
         let mut halted = false;
         let mut closed = false;
@@ -150,20 +207,36 @@ impl Dispatcher {
                 if busy.contains(login) || w.retry_at.is_some_and(|t| t > now) {
                     continue;
                 }
-                let Some(row) = w.queue.front().cloned() else { continue };
+                let Some(head) = w.queue.front().cloned() else { continue };
+                // in-memory items (removals of market-maker quotes, amends) at the head go together in ONE
+                // account transaction, in order; a stored item (a fill, a durable removal) goes alone
+                let batch: Vec<Row> = if head.persist { vec![head] } else { w.queue.iter().take_while(|r| !r.persist).take(MEMORY_BATCH).cloned().collect() };
                 w.retry_at = None;
                 busy.insert(*login);
                 let hub = self.hub.clone();
                 let login = *login;
                 let h = set.spawn(async move {
-                    let res = hub.exec(login, "system", None, "", "", None, op_for(row.item.clone())).await;
+                    let items: Vec<Item> = batch.iter().map(|r| r.item.clone()).collect();
+                    let op: Op = if items.len() == 1 {
+                        let op1 = op_for(items.into_iter().next().unwrap());
+                        Box::new(move |tx, env| op1(tx, env).map(|v| json!([v])))
+                    } else {
+                        Box::new(move |tx, env| {
+                            let mut vals = Vec::with_capacity(items.len());
+                            for it in items {
+                                vals.push(op_for(it)(tx, env)?);
+                            }
+                            Ok(Value::Array(vals))
+                        })
+                    };
+                    let res = hub.exec(login, "system", None, "", "", None, op).await;
                     let r = match res {
-                        Ok(d) => Ok(d.value),
+                        Ok(d) => Ok(d.value.as_array().cloned().unwrap_or_default()),
                         // the ledger key exists: this fill was booked before (crash between commit and mark)
-                        Err(ExecError::Duplicate(k)) if k.starts_with("fill:") => Ok(json!({"duplicate": true, "key": k})),
+                        Err(ExecError::Duplicate(k)) if k.starts_with("fill:") || k.starts_with("bust:") => Ok(vec![json!({"duplicate": true, "key": k})]),
                         Err(e) => Err(format!("{e:?}")),
                     };
-                    (login, row, r)
+                    (login, batch, r)
                 });
                 inflight.insert(h.id(), login);
             }
@@ -181,7 +254,7 @@ impl Dispatcher {
                     None => closed = true,
                 },
                 Some(j) = set.join_next_with_id(), if !set.is_empty() => {
-                    let (login, row, res) = match j {
+                    let (login, rows, res) = match j {
                         Ok((id, x)) => {
                             inflight.remove(&id);
                             x
@@ -199,8 +272,9 @@ impl Dispatcher {
                         }
                     };
                     busy.remove(&login);
+                    let row = rows[0].clone();
                     match res {
-                        Ok(value) => {
+                        Ok(values) => {
                             let n = attempts.remove(&row.seq).unwrap_or(0) + 1;
                             if books.hooks.crash_now_after_apply() {
                                 tracing::warn!(book = %label, seq = row.seq, "test hook: dispatcher stops after applying (simulated crash)");
@@ -212,12 +286,17 @@ impl Dispatcher {
                                 // applied but not marked: a restart re-dispatches it and the account recognises it
                                 tracing::warn!(book = %label, seq = row.seq, error = %e, "outbox row applied but not marked");
                             }
-                            if row.item.is_fill() {
-                                books.settling_remove(row.login, &label, row.seq);
+                            for (i, r) in rows.iter().enumerate() {
+                                if r.item.is_fill() {
+                                    books.settling_remove(r.login, &label, r.seq);
+                                }
+                                let value = values.get(i).cloned().unwrap_or(Value::Null);
+                                let _ = books.applied.send(Applied { key: self.key.clone(), seq: r.seq, login: r.login, value });
                             }
-                            let _ = books.applied.send(Applied { key: self.key.clone(), seq: row.seq, login: row.login, value });
                             if let Some(w) = queues.get_mut(&login) {
-                                w.queue.pop_front();
+                                for _ in 0..rows.len() {
+                                    w.queue.pop_front();
+                                }
                                 if w.queue.is_empty() {
                                     queues.remove(&login);
                                 }

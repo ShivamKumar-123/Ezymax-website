@@ -105,10 +105,69 @@ impl BookState {
 pub struct BookState {
     pub orders: BTreeMap<i64, Working>,
     /// Fill applications booked on this account (`{fillId}:{role}`), derived from the deals in the event stream.
-    pub applied: BTreeSet<String>,
-    applied_fifo: VecDeque<String>,
+    pub applied: std::sync::Arc<BTreeSet<String>>,
+    applied_fifo: std::sync::Arc<VecDeque<String>>,
     /// clientOrderId → order id of book orders.
     pub client_ids: BTreeMap<String, i64>,
+    /// A responder's firm combo-RFQ quotes (docs §5): quote id → (reserve for its worst side, valid until ms).
+    /// Released when the quote is accepted (after its legs are booked) or once it has lapsed.
+    pub rfq_holds: BTreeMap<i64, (D, i64)>,
+}
+
+/// Per-series sums of an account's working orders, for many entries in one transaction (a market maker's mass
+/// quote): the same numbers `BookState` computes per order, kept up to date as orders are added.
+#[derive(Clone, Debug, Default)]
+pub struct Agg {
+    /// series → (orders, Σ buy reserved, Σ sell reserved, working buy steps, working sell steps)
+    pub series: std::collections::HashMap<String, (usize, D, D, Steps, Steps)>,
+    /// Non-ephemeral working orders.
+    pub durable: usize,
+    /// Working opening contracts (long, short).
+    pub opening: (D, D),
+    /// Order reserve added since `BookState::reserve()` was taken.
+    pub added: D,
+}
+
+impl Agg {
+    pub fn of(b: &BookState) -> Agg {
+        let mut a = Agg::default();
+        for o in b.orders.values() {
+            a.add(o);
+        }
+        a.added = ZERO;
+        a
+    }
+    pub fn add(&mut self, o: &Working) {
+        let e = self.series.entry(o.series.clone()).or_insert((0, ZERO, ZERO, 0, 0));
+        e.0 += 1;
+        match o.side {
+            Side::Buy => {
+                e.1 += o.reserved();
+                e.3 += o.left;
+            }
+            Side::Sell => {
+                e.2 += o.reserved();
+                e.4 += o.left;
+            }
+        }
+        if o.flags & super::types::EPHEMERAL == 0 {
+            self.durable += 1;
+        }
+        let c = D::from(o.opening.min(o.left).max(0)) * o.step;
+        match o.side {
+            Side::Buy => self.opening.0 += c,
+            Side::Sell => self.opening.1 += c,
+        }
+    }
+    pub fn series_reserve(&self, series: &str) -> D {
+        self.series.get(series).map(|e| e.1.max(e.2)).unwrap_or(ZERO)
+    }
+    pub fn count_series(&self, series: &str) -> usize {
+        self.series.get(series).map(|e| e.0).unwrap_or(0)
+    }
+    pub fn working(&self, series: &str, side: Side) -> Steps {
+        self.series.get(series).map(|e| if side == Side::Buy { e.3 } else { e.4 }).unwrap_or(0)
+    }
 }
 
 /// How many applied-fill keys an account remembers in memory (older ones are caught by the ledger's unique
@@ -132,18 +191,31 @@ impl BookState {
         b.max(s)
     }
 
-    /// `order_reserve` of the account: Σ over series.
+    /// `order_reserve` of the account: Σ over series, plus the holds of firm RFQ quotes.
     pub fn reserve(&self) -> D {
-        let series: BTreeSet<&str> = self.orders.values().map(|o| o.series.as_str()).collect();
-        series.into_iter().map(|s| self.series_reserve(s)).sum()
+        let mut per: std::collections::HashMap<&str, (D, D)> = std::collections::HashMap::new();
+        for o in self.orders.values() {
+            let e = per.entry(o.series.as_str()).or_insert((ZERO, ZERO));
+            match o.side {
+                Side::Buy => e.0 += o.reserved(),
+                Side::Sell => e.1 += o.reserved(),
+            }
+        }
+        per.values().map(|(b, s)| (*b).max(*s)).sum::<D>() + self.rfq_holds.values().map(|h| h.0).sum::<D>()
+    }
+
+    pub fn is_idle_all(&self) -> bool {
+        self.orders.is_empty() && self.rfq_holds.is_empty()
     }
 
     pub fn remember_fill(&mut self, key: String) {
-        if self.applied.insert(key.clone()) {
-            self.applied_fifo.push_back(key);
-            while self.applied_fifo.len() > APPLIED_MEMORY {
-                if let Some(old) = self.applied_fifo.pop_front() {
-                    self.applied.remove(&old);
+        if !self.applied.contains(&key) {
+            std::sync::Arc::make_mut(&mut self.applied).insert(key.clone());
+            let fifo = std::sync::Arc::make_mut(&mut self.applied_fifo);
+            fifo.push_back(key);
+            while fifo.len() > APPLIED_MEMORY {
+                if let Some(old) = fifo.pop_front() {
+                    std::sync::Arc::make_mut(&mut self.applied).remove(&old);
                 }
             }
         }
@@ -174,6 +246,11 @@ impl BookState {
 
 pub fn fill_key(fill_id: &str, role: &str) -> String {
     format!("{fill_id}:{role}")
+}
+
+/// `st.book.applied` key of a busted fill's reversal.
+pub fn bust_key(fill_id: &str, role: &str) -> String {
+    format!("bust:{fill_id}:{role}")
 }
 
 #[cfg(test)]

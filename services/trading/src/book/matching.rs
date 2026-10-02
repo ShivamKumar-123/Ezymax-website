@@ -138,8 +138,8 @@ fn take(sb: &mut SeriesBook, c: &Ctx, taker: &mut Resting, out: &mut Out) -> Sto
             px,
             qty,
             maker: Party { login: maker_before.login, stp: maker_before.stp, side: maker_before.side, order: Some(maker_before) },
+            kind: if taker_before.flags & LIQUIDATION != 0 { FillKind::Liquidation } else { FillKind::Book },
             taker: Party { login: taker_before.login, stp: taker_before.stp, side: taker_before.side, order: Some(taker_before) },
-            kind: FillKind::Book,
             combo: None,
             usd_per_quote: c.usd_per_quote,
             premium_usd: premium_usd(&sb.spec, px, qty, c.usd_per_quote),
@@ -401,7 +401,138 @@ pub fn apply(b: &mut UnderlyingBooks, cmd: &Cmd) -> Out {
             }
             out
         }
-        Cmd::RfqQuote { .. } | Cmd::RfqAccept { .. } => Out::reject(seq, "not_implemented", "Combo RFQ is not available yet (docs/OPTIONS-EXCHANGE.md §5, next milestone)"),
+        Cmd::RfqQuote { quote: q, at } => {
+            if q.legs.is_empty() || q.legs.len() != q.theos.len() || q.qty <= 0 || q.legs.iter().any(|l| l.ratio < 1) || q.theos.iter().any(|t| *t < 0) {
+                return Out::reject(seq, "invalid_quote", "A quote needs legs with whole ratios, a size and a theo per leg");
+            }
+            if (q.bid.is_none() && q.ask.is_none()) || q.bid.zip(q.ask).is_some_and(|(b, a)| b > a) || q.valid_until <= *at {
+                return Out::reject(seq, "invalid_quote", "A quote needs a bid and / or an ask (bid ≤ ask) and a validity in the future");
+            }
+            for l in &q.legs {
+                match b.book(&l.series) {
+                    Some(sb) if sb.state != SeriesState::Open => {
+                        let st = sb.state;
+                        return Out::reject(seq, if st == SeriesState::Closed { "series_closed" } else { "series_cancel_only" }, format!("{} is {}", l.series, st.as_str()));
+                    }
+                    Some(sb) if !sb.spec.compatible(&l.spec) => return Out::reject(seq, "spec_changed", format!("{}: contract units changed", l.series)),
+                    _ => {}
+                }
+            }
+            for l in &q.legs {
+                if b.book(&l.series).is_none() {
+                    b.series.insert(l.series.clone(), Arc::new(SeriesBook::new(&l.series, l.spec.clone())));
+                    out.touched.insert(l.series.clone());
+                }
+            }
+            // one live quote per (RFQ, responder); quotes past their validity are dropped
+            b.rfqs.retain(|_, x| x.valid_until > *at && !(x.rfq == q.rfq && x.login == q.login));
+            b.rfqs.insert(q.quote, q.clone());
+            out
+        }
+        Cmd::RfqAccept { rfq, quote, login, stp, side, limit_net, orders, at } => {
+            let fail = |code: &str, msg: String, legs: Option<&[RfqLeg]>| {
+                let mut o = Out::reject(seq, code, msg);
+                for (i, ord) in orders.iter().enumerate() {
+                    let series = legs.and_then(|l| l.get(i)).map(|l| l.series.clone()).unwrap_or_default();
+                    o.done.push(done(ord.clone(), &series, DoneStatus::Rejected, code));
+                }
+                o
+            };
+            let Some(q) = b.rfqs.get(quote).cloned().filter(|q| q.rfq == *rfq && q.requester == *login) else {
+                return fail("quote_expired", "This quote is no longer available: ask for a new one".into(), None);
+            };
+            if *at > q.valid_until {
+                b.rfqs.remove(quote);
+                return fail("quote_expired", "The quote has expired: accept the new one".into(), Some(&q.legs));
+            }
+            if *stp == q.stp || *login == q.login {
+                return fail("self_trade", "You cannot trade with your own quote".into(), Some(&q.legs));
+            }
+            let Some(net) = (if *side == Side::Buy { q.ask } else { q.bid }) else {
+                return fail("no_price", "The quote has no price on that side".into(), Some(&q.legs));
+            };
+            if (*side == Side::Buy && net > *limit_net) || (*side == Side::Sell && net < *limit_net) {
+                return fail("price_moved", "The price moved past your limit".into(), Some(&q.legs));
+            }
+            if orders.len() != q.legs.len() {
+                return fail("invalid_order", "One order per leg".into(), Some(&q.legs));
+            }
+            for (l, o) in q.legs.iter().zip(orders) {
+                let leg_side = if *side == Side::Buy { l.side } else { l.side.opposite() };
+                if o.side != leg_side || o.qty != l.ratio * q.qty || o.login != *login || o.qty <= 0 {
+                    return fail("invalid_order", format!("The order for {} does not match the quote", l.series), Some(&q.legs));
+                }
+                match b.book(&l.series) {
+                    None => return fail("not_found", format!("{} has no book", l.series), Some(&q.legs)),
+                    Some(sb) if sb.state != SeriesState::Open => {
+                        let st = sb.state;
+                        return fail(if st == SeriesState::Closed { "series_closed" } else { "series_cancel_only" }, format!("{} is {}", l.series, st.as_str()), Some(&q.legs));
+                    }
+                    Some(sb) if (q.reduce_only || o.reduce_only()) && reduce_cap(sb, *login, o.side) < o.qty => {
+                        return fail("reduce_only", format!("{}: the combo would grow your position", l.series), Some(&q.legs));
+                    }
+                    Some(_) => {}
+                }
+            }
+            let px = rfq_split(&q.legs, &q.theos, net, *side);
+            b.rfqs.retain(|_, x| x.rfq != *rfq);
+            let day = day_of(*at);
+            for (i, (l, o)) in q.legs.iter().zip(orders).enumerate() {
+                let sb = series_mut(b, &l.series).unwrap();
+                let qty = o.qty;
+                let (buyer, seller) = if o.side == Side::Buy { (*login, q.login) } else { (q.login, *login) };
+                add_pos(sb, buyer, qty);
+                add_pos(sb, seller, -qty);
+                let mut taker = o.clone();
+                taker.prio = seq;
+                taker.left = qty;
+                taker.filled = 0;
+                taker.notional = 0;
+                let before = taker.clone();
+                taker.left = 0;
+                taker.filled = qty;
+                taker.notional = px[i] * qty;
+                out.fills.push(Fill {
+                    id: fill_id(&key, seq, i),
+                    seq,
+                    series: l.series.clone(),
+                    px: px[i],
+                    qty,
+                    maker: Party { login: q.login, stp: q.stp, side: o.side.opposite(), order: None },
+                    taker: Party { login: *login, stp: *stp, side: o.side, order: Some(before) },
+                    kind: FillKind::Rfq,
+                    combo: Some(*rfq),
+                    usd_per_quote: q.usd_per_quote,
+                    premium_usd: premium_usd(&sb.spec, px[i], qty, q.usd_per_quote),
+                    at: *at,
+                    spec: sb.spec.clone(),
+                });
+                // combo legs move positions and volume; the outright book (levels, last trade) is not touched
+                if sb.vol_day.0 != day {
+                    sb.vol_day = (day, 0);
+                }
+                sb.vol_day.1 += qty;
+                out.touched.insert(l.series.clone());
+                out.done.push(done(taker, &l.series, DoneStatus::Filled, "filled"));
+            }
+            out
+        }
+        Cmd::Bust { fill, .. } => {
+            let Some(sb) = b.book(&fill.series) else { return Out::reject(seq, "not_found", format!("{} has no book", fill.series)) };
+            if sb.state == SeriesState::Closed {
+                return Out::reject(seq, "series_closed", format!("{} has expired: a settled fill cannot be busted", fill.series));
+            }
+            if fill.qty <= 0 || fill.maker.login == fill.taker.login {
+                return Out::reject(seq, "invalid_fill", "Not a fill between two accounts");
+            }
+            let sb = series_mut(b, &fill.series).unwrap();
+            let (buyer, seller) = if fill.taker.side == Side::Buy { (fill.taker.login, fill.maker.login) } else { (fill.maker.login, fill.taker.login) };
+            add_pos(sb, buyer, -fill.qty);
+            add_pos(sb, seller, fill.qty);
+            out.busted.push(fill.clone());
+            out.touched.insert(fill.series.clone());
+            out
+        }
         Cmd::Backstop { series, spec, login, stp, side, qty, px, counterparty, counter_stp, usd_per_quote, at } => {
             if *qty <= 0 || *px <= 0 {
                 return Out::reject(seq, "invalid_order", "Quantity and price must be at least one step / tick");
@@ -492,6 +623,7 @@ pub fn apply(b: &mut UnderlyingBooks, cmd: &Cmd) -> Out {
             out
         }
         Cmd::Expire { expiry, purge, .. } => {
+            b.rfqs.retain(|_, q| q.legs.iter().all(|l| l.spec.terms.expiry != *expiry));
             let names: Vec<String> = b.series.iter().filter(|(_, sb)| sb.spec.terms.expiry == *expiry).map(|(s, _)| s.clone()).collect();
             for s in names {
                 let sb = series_mut(b, &s).unwrap();
@@ -541,6 +673,8 @@ pub fn apply(b: &mut UnderlyingBooks, cmd: &Cmd) -> Out {
             out
         }
         Cmd::RestartCancel { .. } => {
+            // RFQ quotes did not survive the restart either
+            b.rfqs.clear();
             let names: Vec<String> = b.series.iter().filter(|(_, sb)| sb.orders.values().any(|o| o.ephemeral())).map(|(s, _)| s.clone()).collect();
             for s in names {
                 let sb = series_mut(b, &s).unwrap();
@@ -554,6 +688,78 @@ pub fn apply(b: &mut UnderlyingBooks, cmd: &Cmd) -> Out {
             out
         }
     }
+}
+
+/// Leg prices (ticks) of a combo fill at `net` per combo unit, the strategy as built (docs §5): the theos shifted
+/// pro rata by ratio × theo so they sum to the net, rounded to ticks, the remainder on the largest leg (then the
+/// next ones), no leg below 0. When no whole-tick split makes the net exactly, the last tick goes the taker's way
+/// (`side`: the taker buys the strategy as built, or sells it). Integer arithmetic only.
+pub fn rfq_split(legs: &[RfqLeg], theos: &[Ticks], net: i64, side: Side) -> Vec<Ticks> {
+    let n = legs.len();
+    let sign = |i: usize| if legs[i].side == Side::Buy { 1i128 } else { -1i128 };
+    let ratio = |i: usize| legs[i].ratio.max(1) as i128;
+    let theo_net: i128 = (0..n).map(|i| sign(i) * ratio(i) * theos[i] as i128).sum();
+    let diff = net as i128 - theo_net;
+    let w: Vec<i128> = (0..n).map(|i| ratio(i) * (theos[i].max(0) as i128)).collect();
+    let total: i128 = w.iter().sum();
+    // round half away from zero
+    let rdiv = |a: i128, b: i128| -> i128 {
+        if b == 0 {
+            return 0;
+        }
+        let (a, b) = if b < 0 { (-a, -b) } else { (a, b) };
+        if a >= 0 { (2 * a + b) / (2 * b) } else { -((-2 * a + b) / (2 * b)) }
+    };
+    let mut p: Vec<i128> = (0..n).map(|i| (theos[i] as i128 + if total > 0 { rdiv(sign(i) * diff * w[i], total * ratio(i)) } else { 0 }).max(0)).collect();
+    let made = |p: &[i128]| -> i128 { (0..n).map(|i| sign(i) * ratio(i) * p[i]).sum() };
+    let mut order: Vec<usize> = (0..n).collect();
+    order.sort_by(|a, b| w[*b].cmp(&w[*a]).then(a.cmp(b)));
+    let mut r = net as i128 - made(&p);
+    // the remainder on the largest leg that takes it exactly
+    for &j in &order {
+        if r == 0 {
+            break;
+        }
+        if r % ratio(j) == 0 {
+            let np = p[j] + sign(j) * (r / ratio(j));
+            if np >= 0 {
+                p[j] = np;
+                r = 0;
+            }
+        }
+    }
+    // else as much as each leg takes, largest first
+    for &j in &order {
+        if r == 0 {
+            break;
+        }
+        let mut q = sign(j) * r / ratio(j);
+        if p[j] + q < 0 {
+            q = -p[j];
+        }
+        p[j] += q;
+        r = net as i128 - made(&p);
+    }
+    // what is left is under one tick of one leg: it goes the taker's way (a buyer never pays above the net, a
+    // seller never receives below it)
+    let mut by_ratio: Vec<usize> = (0..n).collect();
+    by_ratio.sort_by(|a, b| ratio(*a).cmp(&ratio(*b)).then(a.cmp(b)));
+    for _ in 0..64 {
+        let up_wanted = match side {
+            Side::Buy if r < 0 => false,
+            Side::Sell if r > 0 => true,
+            _ => break,
+        };
+        // a buyer pays less with a buy leg lower or a sell leg higher; a seller receives more the other way round
+        let Some(j) = by_ratio.iter().copied().find(|&j| ((sign(j) > 0) == up_wanted) || p[j] > 0) else { break };
+        if (sign(j) > 0) == up_wanted {
+            p[j] += 1;
+        } else {
+            p[j] -= 1;
+        }
+        r = net as i128 - made(&p);
+    }
+    p.into_iter().map(|x| x as i64).collect()
 }
 
 /// Preview: (steps that would fill, Σ px × qty) for an aggressive order of `qty` up to `limit`; stops at the

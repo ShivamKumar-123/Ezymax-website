@@ -19,7 +19,7 @@ pub enum Direction {
 /// Opens an account: the `account_opened` event plus the initial demo balance.
 pub fn open_account(env: &Env, account: Account) -> Tx {
     let st = AccountState::new(account.clone());
-    let mut tx = Tx { st, events: vec![Event::AccountOpened { account: account.clone() }], notes: vec![], audit: vec![], book_dirty: false, book_send: vec![] };
+    let mut tx = Tx { st, events: vec![Event::AccountOpened { account: account.clone() }], notes: vec![], audit: vec![], book_dirty: false, book_send: vec![], liquidate: false };
     if let Some(d) = &account.demo {
         let amt = d.initial_balance * account.usd_factor();
         tx.post(env, TxnKind::DemoInitial, format!("demo-initial:{}", account.login), "balance", "demo_funding", amt, None, None, None);

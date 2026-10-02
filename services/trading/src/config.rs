@@ -49,6 +49,8 @@ pub struct Config {
     /// The Kalks market-maker user (`OPTIONS_MM_USER_ID`): its accounts are options order book liquidity
     /// providers (mass quotes, no-open exemption until cut − 1 min). 0 = none (the `options-mm` group still is).
     pub options_mm_user: i64,
+    /// House capital (USD) booked on a new market-maker account (`OPTIONS_MM_CAPITAL`; demo: its demo funding).
+    pub options_mm_capital: i64,
 }
 
 /// Masks the password in a connection URL (`postgres://user:secret@host` → `postgres://user:***@host`).
@@ -99,6 +101,7 @@ impl fmt::Debug for Config {
             .field("options_hedge_capital", &self.options_hedge_capital)
             .field("options_hedge_limit_usd", &self.options_hedge_limit_usd)
             .field("options_mm_user", &self.options_mm_user)
+            .field("options_mm_capital", &self.options_mm_capital)
             .finish()
     }
 }
@@ -138,6 +141,7 @@ impl Config {
             options_hedge_capital: 1_000_000,
             options_hedge_limit_usd: 250_000,
             options_mm_user: 0,
+            options_mm_capital: 25_000_000,
         }
     }
 
@@ -179,6 +183,7 @@ impl Config {
             options_hedge_capital: var("OPTIONS_HEDGE_CAPITAL", "1000000").parse().unwrap_or(1_000_000),
             options_hedge_limit_usd: var("OPTIONS_HEDGE_LIMIT_USD", "250000").parse().unwrap_or(250_000),
             options_mm_user: var("OPTIONS_MM_USER_ID", "0").parse().unwrap_or(0),
+            options_mm_capital: var("OPTIONS_MM_CAPITAL", "25000000").parse().unwrap_or(25_000_000),
         })
     }
 }

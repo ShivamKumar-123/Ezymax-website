@@ -119,7 +119,7 @@ async fn archive_restore_rename_and_replay() {
         json_logs: false, rollover_enabled: false, wallet_url: String::new(), wallet_token: String::new(), ib_url: String::new(), ib_token: String::new(),
         gateway_url: String::new(), gateway_token: String::new(),
         options_url: String::new(), options_token: String::new(), options_hedger: false, options_hedge_user: 0,
-        options_hedge_group: "standard".into(), options_hedge_capital: 1_000_000, options_hedge_limit_usd: 250_000, options_mm_user: 0,
+        options_hedge_group: "standard".into(), options_hedge_capital: 1_000_000, options_hedge_limit_usd: 250_000, options_mm_user: 0, options_mm_capital: 25_000_000,
     };
     let st = AppState {
         hub: hub.clone(), pool: pool.clone(), keys: Keys::new(&cfg.session_secret), cfg: Arc::new(cfg.clone()), limiter: Limiter::default(),
@@ -238,7 +238,7 @@ async fn setup(tag: &str) -> Option<(AppState, Arc<QuoteBook>, sqlx::PgPool)> {
         json_logs: false, rollover_enabled: false, wallet_url: String::new(), wallet_token: String::new(), ib_url: String::new(), ib_token: String::new(),
         gateway_url: String::new(), gateway_token: String::new(),
         options_url: String::new(), options_token: String::new(), options_hedger: false, options_hedge_user: 0,
-        options_hedge_group: "standard".into(), options_hedge_capital: 1_000_000, options_hedge_limit_usd: 250_000, options_mm_user: 0,
+        options_hedge_group: "standard".into(), options_hedge_capital: 1_000_000, options_hedge_limit_usd: 250_000, options_mm_user: 0, options_mm_capital: 25_000_000,
     };
     let st = AppState {
         hub: hub.clone(), pool: pool.clone(), keys: Keys::new(&cfg.session_secret), cfg: Arc::new(cfg.clone()), limiter: Limiter::default(),

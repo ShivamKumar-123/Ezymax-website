@@ -292,6 +292,93 @@ fn yes() -> bool {
     true
 }
 
+/// The Kalks market maker's quoting parameters (options service `mm_settings`, docs §4), delivered as `mm[]`. The
+/// most specific row for (tenant, kind, underlying) wins: tenant > kind > underlying.
+#[derive(Clone, Debug, Deserialize, serde::Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct MmSettings {
+    #[serde(default = "star")]
+    pub tenant: String,
+    #[serde(default = "star")]
+    pub kind: String,
+    #[serde(default = "star")]
+    pub underlying: String,
+    #[serde(default = "yes")]
+    pub enabled: bool,
+    #[serde(rename = "spreadVol0dte", default)]
+    pub spread_vol_0dte: f64,
+    #[serde(rename = "spreadVol7d", default)]
+    pub spread_vol_7d: f64,
+    #[serde(rename = "spreadVol30d", default)]
+    pub spread_vol_30d: f64,
+    #[serde(default)]
+    pub spread_vol_long: f64,
+    #[serde(default)]
+    pub min_spread_ticks: i64,
+    #[serde(default)]
+    pub skew_vol: f64,
+    #[serde(default)]
+    pub skew_ticks_per_contract: f64,
+    #[serde(default)]
+    pub base_size: f64,
+    #[serde(default)]
+    pub max_net_delta: f64,
+    #[serde(default)]
+    pub max_gamma: f64,
+    #[serde(default)]
+    pub max_vega: f64,
+    #[serde(default)]
+    pub max_contracts_per_series: f64,
+}
+
+fn star() -> String {
+    "*".into()
+}
+
+impl MmSettings {
+    /// The options service's `*, *, *` defaults (a snapshot without `mm[]`).
+    pub fn builtin() -> Self {
+        MmSettings {
+            tenant: "*".into(),
+            kind: "*".into(),
+            underlying: "*".into(),
+            enabled: true,
+            spread_vol_0dte: 0.008,
+            spread_vol_7d: 0.005,
+            spread_vol_30d: 0.004,
+            spread_vol_long: 0.0035,
+            min_spread_ticks: 2,
+            skew_vol: 0.002,
+            skew_ticks_per_contract: 0.05,
+            base_size: 10.0,
+            max_net_delta: 500.0,
+            max_gamma: 150.0,
+            max_vega: 25_000.0,
+            max_contracts_per_series: 2_000.0,
+        }
+    }
+
+    fn score(&self, tenant: &str, kind: &str, underlying: &str) -> Option<u8> {
+        let t = if self.tenant == tenant { 4 } else if self.tenant == "*" { 0 } else { return None };
+        let k = if self.kind == kind { 2 } else if self.kind == "*" { 0 } else { return None };
+        let u = if self.underlying == underlying { 1 } else if self.underlying == "*" { 0 } else { return None };
+        Some(t + k + u)
+    }
+
+    /// Vol spread each side of the smile vol for a series `days` (calendar) from its cut; `same_day` = 0DTE.
+    pub fn spread_vol(&self, days: f64, same_day: bool) -> f64 {
+        if same_day {
+            self.spread_vol_0dte
+        } else if days <= 7.0 {
+            self.spread_vol_7d
+        } else if days <= 30.0 {
+            self.spread_vol_30d
+        } else {
+            self.spread_vol_long
+        }
+    }
+}
+
 impl GroupSettings {
     /// The options service's built-in defaults (a tenant without any row).
     pub fn builtin(tenant: &str) -> Self {
@@ -398,6 +485,8 @@ pub struct RawSnapshot {
     pub controls: Vec<Control>,
     #[serde(default)]
     pub client_limits: Vec<ClientLimit>,
+    #[serde(default)]
+    pub mm: Vec<MmSettings>,
 }
 
 /// Effective dealing state of a series for one tenant (same rules as the options service).
@@ -448,6 +537,7 @@ pub struct OptSnapshot {
     pub groups: Vec<GroupSettings>,
     pub controls: Vec<Control>,
     pub limits: Vec<ClientLimit>,
+    pub mm: Vec<MmSettings>,
 }
 
 fn to_date(d: NaiveDate) -> Option<Date> {
@@ -495,7 +585,13 @@ impl OptSnapshot {
             groups: raw.groups,
             controls: raw.controls,
             limits: raw.client_limits,
+            mm: raw.mm,
         }
+    }
+
+    /// The market maker's settings for (tenant, kind, underlying): the most specific row, else the defaults.
+    pub fn mm_for(&self, tenant: &str, kind: &str, underlying: &str) -> MmSettings {
+        self.mm.iter().filter_map(|r| r.score(tenant, kind, underlying).map(|s| (s, r))).max_by_key(|(s, _)| *s).map(|(_, r)| r.clone()).unwrap_or_else(MmSettings::builtin)
     }
 
     pub fn from_json(v: serde_json::Value) -> anyhow::Result<OptSnapshot> {

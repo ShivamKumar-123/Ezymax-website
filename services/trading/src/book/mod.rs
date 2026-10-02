@@ -15,12 +15,16 @@
 //! without it every option keeps trading at the house price exactly as before.
 
 pub mod actor;
+pub mod enable;
 pub mod entry;
 pub mod journal;
+pub mod liquidator;
 pub mod matching;
 pub mod md;
+pub mod mm;
 pub mod outbox;
 pub mod reserve;
+pub mod rfq;
 pub mod types;
 
 use chrono::{DateTime, Utc};
@@ -96,6 +100,14 @@ pub struct Books {
     pending: Mutex<HashMap<BookKey, Vec<outbox::Row>>>,
     /// The hub (set by `Hub::start`): shards hand committed book commands to the actors through it.
     pub hub: std::sync::OnceLock<Hub>,
+    /// Accounts the stop-out handed to the liquidator (docs §8); None until the liquidator runs.
+    pub liquidator: Mutex<Option<tokio::sync::mpsc::UnboundedSender<i64>>>,
+    /// The Kalks market maker (docs §4): accounts, pauses, live status.
+    pub mm: mm::Mm,
+    /// Open combo RFQs (docs §5).
+    pub rfqs: rfq::Registry,
+    /// The last replay audit: (when, books that differed).
+    pub last_audit: Mutex<Option<(DateTime<Utc>, usize)>>,
 }
 
 impl Default for Books {
@@ -113,6 +125,10 @@ impl Default for Books {
             spawn: tokio::sync::Mutex::new(()),
             pending: Default::default(),
             hub: std::sync::OnceLock::new(),
+            liquidator: Mutex::new(None),
+            mm: Default::default(),
+            rfqs: Default::default(),
+            last_audit: Mutex::new(None),
         }
     }
 }
@@ -121,6 +137,13 @@ impl Default for Books {
 pub const SETTLING_MS: i64 = 2_000;
 
 impl Books {
+    /// Hands an account past its stop-out level to the liquidator (never blocks; repeated hands are merged).
+    pub fn liquidate(&self, login: i64) {
+        if let Some(tx) = self.liquidator.lock().unwrap().as_ref() {
+            let _ = tx.send(login);
+        }
+    }
+
     pub fn venue_enabled(&self, tenant_id: i64, kind: AccountKind) -> bool {
         self.venues.read().unwrap().contains(&(tenant_id, kind))
     }
@@ -448,8 +471,8 @@ pub async fn reconcile(hub: &Hub, h: &actor::Handle, pending: &[outbox::Row]) ->
     // before the row was marked)
     let mut by_login: BTreeMap<i64, Vec<String>> = BTreeMap::new();
     for r in pending {
-        if let outbox::Item::Fill { fill, role } = &r.item {
-            by_login.entry(r.login).or_default().push(reserve::fill_key(&fill.id, role.as_str()));
+        if let Some(k) = r.item.applied_key() {
+            by_login.entry(r.login).or_default().push(k);
         }
     }
     let mut booked: std::collections::BTreeSet<(i64, String)> = std::collections::BTreeSet::new();
@@ -462,12 +485,13 @@ pub async fn reconcile(hub: &Hub, h: &actor::Handle, pending: &[outbox::Row]) ->
         }
     }
     for r in pending {
-        if let outbox::Item::Fill { fill, role } = &r.item {
-            if booked.contains(&(r.login, reserve::fill_key(&fill.id, role.as_str()))) || closed.contains(&fill.series) {
+        if r.item.applied_key().is_some_and(|k| booked.contains(&(r.login, k))) {
+            continue;
+        }
+        for (fill, _, d) in r.item.deltas() {
+            if closed.contains(&fill.series) {
                 continue;
             }
-            let side = fill.party(*role).side;
-            let d = if side == crate::model::Side::Buy { fill.qty } else { -fill.qty };
             *expected.entry((fill.series.clone(), r.login)).or_default() += d;
         }
     }
@@ -550,6 +574,7 @@ pub async fn scheduler_pass(hub: &Hub, now: DateTime<Utc>, slow: bool, was_open:
         }
         tracing::warn!(login, "options book deadman fired: orders cancelled");
     }
+    rfq::sweep(hub);
     let snap = crate::options::OptionPricing::snapshot(hub.shared.options.as_ref());
     for h in books.handles() {
         let due = h
@@ -620,6 +645,7 @@ pub async fn replay_audit(hub: &Hub) -> Vec<(String, Result<u64, String>)> {
         }
         out.push((key.label(), res));
     }
+    *hub.shared.books.last_audit.lock().unwrap() = Some((Utc::now(), out.iter().filter(|r| r.1.is_err()).count()));
     out
 }
 

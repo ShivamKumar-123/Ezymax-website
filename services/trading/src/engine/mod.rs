@@ -198,11 +198,14 @@ pub struct Tx {
     pub book_dirty: bool,
     /// Order-book commands to send once this transaction is committed (a stop that fired, an SL / TP).
     pub book_send: Vec<crate::book::Outgoing>,
+    /// Stop-out could not bring the account back above the stop-out level by itself (order-book positions close
+    /// on the book): the shard hands the account to the liquidator once this transaction is committed.
+    pub liquidate: bool,
 }
 
 impl Tx {
     pub fn new(st: &AccountState) -> Self {
-        Self { st: st.clone(), events: Vec::new(), notes: Vec::new(), audit: Vec::new(), book_dirty: false, book_send: Vec::new() }
+        Self { st: st.clone(), events: Vec::new(), notes: Vec::new(), audit: Vec::new(), book_dirty: false, book_send: Vec::new(), liquidate: false }
     }
 
     pub fn emit(&mut self, ev: Event) {

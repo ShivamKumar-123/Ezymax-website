@@ -82,6 +82,8 @@ pub const POST_ONLY: u8 = 1;
 pub const REDUCE_ONLY: u8 = 2;
 /// Market-maker quote: not persisted in `book_orders`, journaled in `book_quote_journal`, gone after a restart.
 pub const EPHEMERAL: u8 = 4;
+/// A liquidation order (docs §8): its fills print as `liquidation` on the tape. Matching treats it like any order.
+pub const LIQUIDATION: u8 = 8;
 
 pub fn flag_names(f: u8) -> Vec<&'static str> {
     let mut v = Vec::new();
@@ -93,6 +95,9 @@ pub fn flag_names(f: u8) -> Vec<&'static str> {
     }
     if f & EPHEMERAL != 0 {
         v.push("ephemeral");
+    }
+    if f & LIQUIDATION != 0 {
+        v.push("liquidation");
     }
     v
 }
@@ -322,11 +327,14 @@ pub struct UnderlyingBooks {
     /// Last command sequence number.
     pub seq: u64,
     pub series: BTreeMap<String, Arc<SeriesBook>>,
+    /// Firm combo-RFQ quotes by quote id (docs §5): registered by `RfqQuote`, consumed by `RfqAccept`, pruned once
+    /// past their validity, gone after a restart (like market-maker quotes).
+    pub rfqs: BTreeMap<i64, RfqQuoteIn>,
 }
 
 impl UnderlyingBooks {
     pub fn new(key: BookKey) -> Self {
-        UnderlyingBooks { key, seq: 0, series: BTreeMap::new() }
+        UnderlyingBooks { key, seq: 0, series: BTreeMap::new(), rfqs: BTreeMap::new() }
     }
     pub fn book(&self, series: &str) -> Option<&SeriesBook> {
         self.series.get(series).map(|b| b.as_ref())
@@ -371,6 +379,44 @@ pub struct QuoteIn {
     pub ext: OrderExt,
 }
 
+/// One leg of a combo RFQ: the strategy as built (`side`, whole `ratio`).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct RfqLeg {
+    pub series: String,
+    pub spec: SeriesSpec,
+    pub side: Side,
+    pub ratio: i64,
+}
+
+/// A firm quote on a combo RFQ (docs §5): net per combo unit in ticks (`bid` = the responder buys the strategy as
+/// built, `ask` = it sells it), the legs' theoretical prices in ticks (the leg-price split), valid until
+/// `valid_until` (ms). `qty` = combo units in steps; every leg trades `ratio × qty` steps.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct RfqQuoteIn {
+    pub rfq: i64,
+    pub quote: i64,
+    /// The requesting account (only it may accept) and its owner (self-trade prevention).
+    pub requester: i64,
+    pub requester_stp: i64,
+    /// The responder (maker of every leg).
+    pub login: i64,
+    pub stp: i64,
+    pub legs: Vec<RfqLeg>,
+    pub qty: Steps,
+    #[serde(default)]
+    pub reduce_only: bool,
+    pub bid: Option<Ticks>,
+    pub ask: Option<Ticks>,
+    pub theos: Vec<Ticks>,
+    pub valid_until: i64,
+    pub usd_per_quote: D,
+}
+
+/// The legs' net per combo unit (ticks) for leg prices `px` (the strategy as built: buy legs +, sell legs −).
+pub fn rfq_net(legs: &[RfqLeg], px: &[Ticks]) -> i64 {
+    legs.iter().zip(px).map(|(l, p)| if l.side == Side::Buy { l.ratio * p } else { -l.ratio * p }).sum()
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum HaltScope {
@@ -413,9 +459,14 @@ pub enum Cmd {
     Amend { series: String, id: i64, login: i64, px: Option<Ticks>, qty: Option<Steps>, reserve_per_step: D, token: u64, usd_per_quote: D, at: i64 },
     /// Market-maker quotes: replaces `login`'s ephemeral quotes in `series` with `quotes` (post-only, ephemeral).
     MassQuote { login: i64, stp: i64, series: Vec<String>, quotes: Vec<QuoteIn>, at: i64 },
-    /// Combo RFQ (docs §5): implemented by the RFQ milestone; rejected `not_implemented` here.
-    RfqQuote { rfq: i64, payload: serde_json::Value, at: i64 },
-    RfqAccept { rfq: i64, payload: serde_json::Value, at: i64 },
+    /// Combo RFQ (docs §5): a responder's firm quote (replaces its earlier quote on the same RFQ).
+    RfqQuote { quote: RfqQuoteIn, at: i64 },
+    /// The requester accepts a quote: every leg fills at once (one journal entry) or nothing does. `side` = buy
+    /// the strategy as built (at the ask) or sell it (at the bid); `orders` = the requester's leg orders (its
+    /// reservations), one per leg in leg order, each on the side it trades.
+    RfqAccept { rfq: i64, quote: i64, login: i64, stp: i64, side: Side, limit_net: Ticks, orders: Vec<Resting>, at: i64 },
+    /// A fill busted by the desk (four-eyes): the positions it moved move back. The accounts reverse it too.
+    Bust { fill: Fill, reason: String, at: i64 },
     /// Liquidation backstop (docs §8): `login` (liquidated, reduce-only) trades `qty` at `px` against `counterparty`.
     Backstop { series: String, spec: SeriesSpec, login: i64, stp: i64, side: Side, qty: Steps, px: Ticks, counterparty: i64, counter_stp: i64, usd_per_quote: D, at: i64 },
     Halt { scope: HaltScope, mode: HaltMode, reason: String, at: i64 },
@@ -442,6 +493,7 @@ impl Cmd {
             Cmd::MassQuote { .. } => "mass_quote",
             Cmd::RfqQuote { .. } => "rfq_quote",
             Cmd::RfqAccept { .. } => "rfq_accept",
+            Cmd::Bust { .. } => "bust",
             Cmd::Backstop { .. } => "backstop",
             Cmd::Halt { .. } => "halt",
             Cmd::OpenCheck { .. } => "open_check",
@@ -460,6 +512,7 @@ impl Cmd {
             | Cmd::MassQuote { at, .. }
             | Cmd::RfqQuote { at, .. }
             | Cmd::RfqAccept { at, .. }
+            | Cmd::Bust { at, .. }
             | Cmd::Backstop { at, .. }
             | Cmd::Halt { at, .. }
             | Cmd::OpenCheck { at, .. }
@@ -478,7 +531,8 @@ impl Cmd {
         match self {
             Cmd::New { order, .. } => (Some(order.login), Some(order.id), order.ext.client_order_id.clone()),
             Cmd::Cancel { id, login, .. } | Cmd::Amend { id, login, .. } => (Some(*login), Some(*id), None),
-            Cmd::CancelAll { login, .. } | Cmd::MassQuote { login, .. } | Cmd::Backstop { login, .. } => (Some(*login), None, None),
+            Cmd::CancelAll { login, .. } | Cmd::MassQuote { login, .. } | Cmd::Backstop { login, .. } | Cmd::RfqAccept { login, .. } => (Some(*login), None, None),
+            Cmd::RfqQuote { quote, .. } => (Some(quote.login), None, None),
             _ => (None, None, None),
         }
     }
@@ -641,6 +695,9 @@ pub struct Out {
     /// Series whose book, state or positions changed.
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     pub touched: BTreeSet<String>,
+    /// Fills busted by this command (the accounts reverse them).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub busted: Vec<Fill>,
 }
 
 impl Out {

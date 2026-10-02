@@ -142,6 +142,10 @@ fn touched(entries: &[Entry]) -> Touched {
                 }
             }
         }
+        for f in &e.out.busted {
+            t.positions.insert((f.series.clone(), f.maker.login));
+            t.positions.insert((f.series.clone(), f.taker.login));
+        }
         for d in &e.out.done {
             t.done.insert(d.id, (d.series.clone(), d.order.clone(), d.status, d.reason.clone()));
         }
@@ -300,12 +304,7 @@ pub async fn commit(pool: &PgPool, key: &BookKey, entries: &[Entry], quotes: &[E
         }
     }
     for r in rows.iter().filter(|r| r.persist) {
-        let kind = match &r.item {
-            Item::Fill { .. } => "fill",
-            Item::Done { .. } => "done",
-            Item::Amended { .. } => "amended",
-            Item::Release { .. } => "release",
-        };
+        let kind = r.item.kind();
         sqlx::query("INSERT INTO book_outbox (tenant_id, kind, underlying, seq, book_seq, login, item_kind, item) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)")
             .bind(key.tenant_id)
             .bind(kind_str(key))
