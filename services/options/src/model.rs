@@ -55,6 +55,49 @@ pub struct Underlying {
     pub notes: String,
     pub updated_at: DateTime<Utc>,
     pub updated_by: String,
+    /* ---- order book (docs/OPTIONS-EXCHANGE.md §2, §5, §6, §8) ---- */
+    /// Premium tick, quote currency per unit (default FX pip / 10, XAU 0.01, other metals and oil 0.001).
+    pub premium_tick: f64,
+    /// Market orders: IOC limit at mark × (1 ± this %), at least `band_min_ticks` away.
+    pub market_band_pct: f64,
+    /// Aggressive limits: within mark × (1 ± this %) + `band_min_ticks`.
+    pub limit_band_pct: f64,
+    pub band_min_ticks: i32,
+    /// Liquidation: reduce-only IOC at mark × (1 ∓ this %).
+    pub liq_band_pct: f64,
+    /// Liquidation backstop: the MM takes the rest at mark ∓ max(this % × mark, 1 tick).
+    pub liq_fee_pct: f64,
+    /// Combo RFQ: how long an MM quote stays firm.
+    pub rfq_quote_ttl_secs: i32,
+    /// Mark clamp: both book sides need at least this many contracts…
+    pub mark_min_qty: f64,
+    /// …and the book spread at most this × the model spread.
+    pub mark_max_spread_mult: f64,
+}
+
+/// Barrier options are not listed on the order book: RFQ only, quoted by Kalks at the model price ± spread (§5).
+pub const BARRIER_VENUE: &str = "rfq";
+pub const BARRIER_LABEL: &str = "Kalks-quoted (RFQ only)";
+
+/// §2 default premium tick: FX pip / 10, XAU 0.01, other metals and oil 0.001 (same rule as the migration's
+/// `default_premium_tick`).
+pub fn default_premium_tick(asset_class: &str, symbol: &str, pip_size: f64) -> f64 {
+    if asset_class == "forex" {
+        (pip_size / 10.0 * 1e10).round() / 1e10
+    } else if symbol.starts_with("XAU") {
+        0.01
+    } else {
+        0.001
+    }
+}
+
+/// `x` is a whole multiple of `step` (within float noise).
+pub fn is_multiple(x: f64, step: f64) -> bool {
+    if !(x.is_finite() && step.is_finite() && step > 0.0) {
+        return false;
+    }
+    let n = x / step;
+    (n - n.round()).abs() < 1e-6
 }
 
 impl Underlying {
@@ -208,7 +251,16 @@ pub struct GroupSettings {
     pub enabled: bool,
     pub updated_at: DateTime<Utc>,
     pub updated_by: String,
+    /// Order book (§7): USD per contract, negative = a rebate to the resting side. `None` = this row's
+    /// `commission_per_contract` (the engine's fallback).
+    pub maker_fee_per_contract: Option<f64>,
+    /// Order book (§7): USD per contract, ≥ 0. `None` = `commission_per_contract`.
+    pub taker_fee_per_contract: Option<f64>,
 }
+
+/// Platform default order-book fees per contract (USD): a 0.05 maker rebate and a 0.25 taker fee.
+pub const DEFAULT_MAKER_FEE: f64 = -0.05;
+pub const DEFAULT_TAKER_FEE: f64 = 0.25;
 
 impl GroupSettings {
     /// Built-in defaults when a tenant has no row at all.
@@ -226,8 +278,112 @@ impl GroupSettings {
             enabled: true,
             updated_at: DateTime::<Utc>::UNIX_EPOCH,
             updated_by: "builtin".into(),
+            maker_fee_per_contract: Some(DEFAULT_MAKER_FEE),
+            taker_fee_per_contract: Some(DEFAULT_TAKER_FEE),
         }
     }
+
+    /// Effective (maker, taker) order-book fee per contract in USD, exactly as the engine reads the snapshot: a
+    /// missing value is the row's commission per contract; the taker fee is never negative.
+    pub fn book_fees(&self) -> (f64, f64) {
+        let base = self.commission_per_contract.max(0.0);
+        let f = |x: Option<f64>| x.filter(|v| v.is_finite()).unwrap_or(base);
+        (f(self.maker_fee_per_contract), f(self.taker_fee_per_contract).max(0.0))
+    }
+}
+
+/// §7 admin rule over one broker's rows (`(label, maker, taker)` effective fees): the lowest taker fee must cover the
+/// largest maker rebate, `min(taker) ≥ max(|maker rebate|)`, so a match between two clients never costs the house.
+/// `None` when the rule holds.
+pub fn fee_rule_violation(rows: &[(String, f64, f64)]) -> Option<String> {
+    let min_taker = rows.iter().min_by(|a, b| a.2.total_cmp(&b.2))?;
+    let max_rebate = rows.iter().filter(|r| r.1 < 0.0).max_by(|a, b| (-a.1).total_cmp(&-b.1))?;
+    if min_taker.2 + 1e-9 >= -max_rebate.1 {
+        return None;
+    }
+    Some(format!(
+        "The lowest taker fee ({:.2} USD, {}) must be at least the largest maker rebate ({:.2} USD, {}): min(taker) ≥ max(|maker rebate|).",
+        min_taker.2, min_taker.0, -max_rebate.1, max_rebate.0
+    ))
+}
+
+/// The Kalks market maker's quoting parameters for (tenant or `*`, account kind `live|demo|*`, underlying or `*`)
+/// (docs/OPTIONS-EXCHANGE.md §4). Spreads are decimal vols each side of the smile vol per tenor bucket.
+#[derive(Clone, Debug, Serialize, FromRow, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct MmSettings {
+    pub tenant: String,
+    pub kind: String,
+    pub underlying: String,
+    pub enabled: bool,
+    /// 0DTE (expiring today).
+    #[serde(rename = "spreadVol0dte")]
+    pub spread_vol_0dte: f64,
+    /// Up to 7 days.
+    #[serde(rename = "spreadVol7d")]
+    pub spread_vol_7d: f64,
+    /// Up to 30 days.
+    #[serde(rename = "spreadVol30d")]
+    pub spread_vol_30d: f64,
+    /// Longer.
+    pub spread_vol_long: f64,
+    /// Bid and ask at least this many premium ticks apart.
+    pub min_spread_ticks: i32,
+    /// Vol skew by −skewVol × (net vega of the expiry / maxVega).
+    pub skew_vol: f64,
+    /// Price shifted by −skewTicksPerContract × inventory (contracts).
+    pub skew_ticks_per_contract: f64,
+    /// Contracts per quote side before moneyness / limit scaling.
+    pub base_size: f64,
+    /// Delta-weighted contracts.
+    pub max_net_delta: f64,
+    /// Contract-delta change per 1 % spot move.
+    pub max_gamma: f64,
+    /// USD per vol point.
+    pub max_vega: f64,
+    pub max_contracts_per_series: f64,
+    pub updated_at: DateTime<Utc>,
+    pub updated_by: String,
+}
+
+impl MmSettings {
+    /// The migration's `*, *, *` defaults (used when the table is empty).
+    pub fn builtin() -> Self {
+        MmSettings {
+            tenant: "*".into(),
+            kind: "*".into(),
+            underlying: "*".into(),
+            enabled: true,
+            spread_vol_0dte: 0.008,
+            spread_vol_7d: 0.005,
+            spread_vol_30d: 0.004,
+            spread_vol_long: 0.0035,
+            min_spread_ticks: 2,
+            skew_vol: 0.002,
+            skew_ticks_per_contract: 0.05,
+            base_size: 10.0,
+            max_net_delta: 500.0,
+            max_gamma: 150.0,
+            max_vega: 25_000.0,
+            max_contracts_per_series: 2_000.0,
+            updated_at: DateTime::<Utc>::UNIX_EPOCH,
+            updated_by: "builtin".into(),
+        }
+    }
+
+    /// Specificity of this row for (tenant, kind, underlying): tenant 4, kind 2, underlying 1; `None` when it does
+    /// not apply.
+    pub fn score(&self, tenant: &str, kind: &str, underlying: &str) -> Option<u8> {
+        let t = if self.tenant == tenant { 4 } else if self.tenant == "*" { 0 } else { return None };
+        let k = if self.kind == kind { 2 } else if self.kind == "*" { 0 } else { return None };
+        let u = if self.underlying == underlying { 1 } else if self.underlying == "*" { 0 } else { return None };
+        Some(t + k + u)
+    }
+}
+
+/// The most specific `mm_settings` row for (tenant, kind, underlying), else the built-in defaults.
+pub fn resolve_mm(rows: &[MmSettings], tenant: &str, kind: &str, underlying: &str) -> MmSettings {
+    rows.iter().filter_map(|r| r.score(tenant, kind, underlying).map(|s| (s, r))).max_by_key(|(s, _)| *s).map(|(_, r)| r.clone()).unwrap_or_else(MmSettings::builtin)
 }
 
 #[derive(Clone, Debug, Serialize, FromRow)]
@@ -344,6 +500,8 @@ pub struct RefData {
     pub limits: Vec<ClientLimit>,
     pub expiries: Vec<Expiry>,
     pub series: Vec<Series>,
+    /// Kalks market maker quoting parameters (§4), every row.
+    pub mm: Vec<MmSettings>,
 }
 
 /// Effective dealing state of a series for one tenant.
@@ -446,6 +604,11 @@ impl RefData {
     pub fn series_of(&self, expiry_id: i64) -> impl Iterator<Item = &Series> {
         self.series.iter().filter(move |s| s.expiry_id == expiry_id)
     }
+
+    /// The market maker's settings for (tenant, kind, underlying) (most specific row wins).
+    pub fn mm_for(&self, tenant: &str, kind: &str, underlying: &str) -> MmSettings {
+        resolve_mm(&self.mm, tenant, kind, underlying)
+    }
 }
 
 /// Loads everything (one consistent read inside a REPEATABLE READ transaction).
@@ -477,6 +640,13 @@ pub async fn load(pool: &PgPool) -> anyhow::Result<RefData> {
     .fetch_all(&mut *tx)
     .await?;
     let limits: Vec<ClientLimit> = sqlx::query_as("SELECT * FROM client_limits ORDER BY tenant, user_id").fetch_all(&mut *tx).await?;
+    let mm: Vec<MmSettings> = sqlx::query_as(
+        "SELECT tenant, kind, underlying, enabled, spread_vol_0dte, spread_vol_7d, spread_vol_30d, spread_vol_long, min_spread_ticks, skew_vol,
+                skew_ticks_per_contract, base_size, max_net_delta, max_gamma, max_vega, max_contracts_per_series, updated_at, updated_by
+           FROM mm_settings ORDER BY tenant, kind, underlying",
+    )
+    .fetch_all(&mut *tx)
+    .await?;
     let expiries: Vec<Expiry> = sqlx::query_as(
         "SELECT id, symbol, expiry_date, kinds, cut_at, twap_start, status, fixing, fixing_source, fixing_run, fixing_samples,
                 fixing_expected, fixing_coverage, fixing_max_gap_ms, fixed_at, fixing_error
@@ -544,5 +714,65 @@ pub async fn load(pool: &PgPool) -> anyhow::Result<RefData> {
     rd.limits = limits;
     rd.expiries = expiries;
     rd.series = series;
+    rd.mm = mm;
     Ok(rd)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn g(code: &str, maker: Option<f64>, taker: Option<f64>, commission: f64) -> GroupSettings {
+        GroupSettings { group_code: code.into(), maker_fee_per_contract: maker, taker_fee_per_contract: taker, commission_per_contract: commission, ..GroupSettings::builtin("kalks") }
+    }
+
+    #[test]
+    fn book_fees_fall_back_like_the_engine() {
+        assert_eq!(g("*", Some(-0.05), Some(0.25), 0.25).book_fees(), (-0.05, 0.25));
+        assert_eq!(g("vip", None, None, 0.1).book_fees(), (0.1, 0.1), "no fee set = the commission on both sides");
+        assert_eq!(g("x", Some(0.02), Some(-1.0), 0.1).book_fees(), (0.02, 0.0), "a taker fee is never negative");
+    }
+
+    #[test]
+    fn fee_rule_min_taker_covers_max_rebate() {
+        let rows = |v: &[GroupSettings]| v.iter().map(|g| (g.group_code.clone(), g.book_fees().0, g.book_fees().1)).collect::<Vec<_>>();
+        assert_eq!(fee_rule_violation(&rows(&[g("*", Some(-0.05), Some(0.25), 0.25)])), None);
+        assert_eq!(fee_rule_violation(&rows(&[g("*", Some(-0.25), Some(0.25), 0.25)])), None, "equal is fine");
+        // a cheap taker row elsewhere breaks a rebate
+        let bad = rows(&[g("*", Some(-0.05), Some(0.25), 0.25), g("vip", Some(0.0), Some(0.03), 0.1)]);
+        let msg = fee_rule_violation(&bad).unwrap();
+        assert!(msg.contains("0.03") && msg.contains("vip") && msg.contains("0.05"), "{msg}");
+        // a row without fees falls back to its commission as taker
+        assert!(fee_rule_violation(&rows(&[g("*", Some(-0.2), Some(0.25), 0.25), g("cheap", None, None, 0.1)])).is_some());
+        // no rebate anywhere: nothing to cover
+        assert_eq!(fee_rule_violation(&rows(&[g("*", Some(0.1), Some(0.0), 0.0)])), None);
+        assert_eq!(fee_rule_violation(&[]), None);
+    }
+
+    #[test]
+    fn mm_settings_most_specific_row_wins() {
+        let row = |t: &str, k: &str, u: &str, base: f64| MmSettings { tenant: t.into(), kind: k.into(), underlying: u.into(), base_size: base, ..MmSettings::builtin() };
+        let rows = vec![row("*", "*", "*", 10.0), row("*", "demo", "*", 25.0), row("*", "*", "UKOIL", 5.0), row("kalks", "live", "XAUUSD", 3.0), row("other", "*", "*", 7.0)];
+        assert_eq!(resolve_mm(&rows, "kalks", "live", "EURUSD").base_size, 10.0);
+        assert_eq!(resolve_mm(&rows, "kalks", "demo", "EURUSD").base_size, 25.0);
+        assert_eq!(resolve_mm(&rows, "kalks", "live", "UKOIL").base_size, 5.0);
+        assert_eq!(resolve_mm(&rows, "kalks", "demo", "UKOIL").base_size, 25.0, "kind (2) outranks underlying (1)");
+        assert_eq!(resolve_mm(&rows, "kalks", "live", "XAUUSD").base_size, 3.0);
+        assert_eq!(resolve_mm(&rows, "other", "demo", "UKOIL").base_size, 7.0, "tenant (4) outranks the rest");
+        assert_eq!(resolve_mm(&[], "kalks", "live", "EURUSD"), MmSettings::builtin());
+        let j = serde_json::to_value(MmSettings::builtin()).unwrap();
+        for k in ["spreadVol0dte", "spreadVol7d", "spreadVol30d", "spreadVolLong", "minSpreadTicks", "skewVol", "skewTicksPerContract", "baseSize", "maxNetDelta", "maxGamma", "maxVega", "maxContractsPerSeries", "enabled", "tenant", "kind", "underlying"] {
+            assert!(j.get(k).is_some(), "{k}: {j}");
+        }
+    }
+
+    #[test]
+    fn premium_tick_defaults_and_steps() {
+        assert_eq!(default_premium_tick("forex", "EURUSD", 0.0001), 0.00001);
+        assert_eq!(default_premium_tick("forex", "USDJPY", 0.01), 0.001);
+        assert_eq!(default_premium_tick("metals", "XAUUSD", 0.01), 0.01);
+        assert_eq!(default_premium_tick("metals", "XAGUSD", 0.001), 0.001);
+        assert_eq!(default_premium_tick("energies", "USOIL", 0.01), 0.001);
+        assert!(is_multiple(10.0, 1.0) && is_multiple(0.3, 0.1) && !is_multiple(1.5, 1.0) && !is_multiple(1.0, 0.0));
+    }
 }

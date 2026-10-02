@@ -429,7 +429,7 @@ pub fn fill(tx: &mut Tx, env: &Env, f: Fill) -> Result<FillOut, Reject> {
         let before = total_margin(env, &tx.st, None);
         let after = total_margin(env, &tx.st, Some((&f.symbol, f.side, f.volume)));
         let m = super::metrics(env, &tx.st);
-        if after > before && m.equity - comm - after < ZERO {
+        if after > before && m.equity - comm - after - m.order_reserve < ZERO {
             return Err(Reject::new("no_money", format!("Not enough money: margin {} {} needed, free margin {} {}", r2(after - before).normalize(), tx.st.account.ccy(), r2(m.free_margin).normalize(), tx.st.account.ccy())));
         }
     }
@@ -566,6 +566,7 @@ fn open_position(tx: &mut Tx, env: &Env, _spec: &Spec, f: &Fill, volume: D, comm
         option: None,
         combo_id: None,
         premium: ZERO,
+        venue: None,
     };
     let deal = entry_deal(env, &tx.st, deal_id, &p, f, volume, comm, txn);
     tx.emit(Event::PositionOpened { position: p, deal: Some(deal) });

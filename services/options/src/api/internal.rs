@@ -29,6 +29,10 @@ fn conventions() -> Value {
         "moduleSwitch": "tenants[].enabledDemo / enabledLive gate demo / live accounts; a tenant without a row is OFF",
         "scenarioMargin": "optmath::scenario::scenario_grid with ScanParams { price_range: priceScan, vol_range: volScan, extreme_multiple, extreme_cover, dt = one business day }",
         "settlement": "expiries[].fixing (status fixed) is the settlement price; fixings re-run only via the Back Office within the window (fixingRun increments)",
+        "orderBook": "per underlying: premiumTick (quote currency per unit), marketBandPct / limitBandPct (percent of the mark) + bandMinTicks, minContracts / contractStep / maxContracts per order, liqBandPct / liqFeePct (percent), rfqQuoteTtlSecs; barriers are RFQ only, Kalks-quoted (not on the book)",
+        "mark": "mark = optmath::mark::clamp_mark(model mid, model ask - model bid, best bid, best ask, markMinQty, markMaxSpreadMult): clamp(model, bid, ask) when both sides hold >= markMinQty contracts and the book spread <= markMaxSpreadMult x the model spread; one side only: max(model, bid) / min(model, ask); otherwise the model mid",
+        "bookFees": "groups[].makerFeePerContract (negative = rebate) / takerFeePerContract in USD per contract (null = commissionPerContract); fee = sign x min(|rate| x contracts, commissionCapPct / 100 x premiumUsd); admin rule over a broker's rows: min(taker) >= max(|maker rebate|)",
+        "marketMaker": "mm[]: the most specific row for (tenant, kind, underlying) wins (tenant 4, kind 2, underlying 1; '*' matches any); spreadVol0dte / 7d / 30d / Long are decimal vols each side of the smile vol per tenor bucket; minSpreadTicks; skewVol; skewTicksPerContract; baseSize contracts; maxNetDelta (delta-weighted contracts), maxGamma (contract-delta per 1 % spot), maxVega (USD per vol point), maxContractsPerSeries; enabled",
     })
 }
 
@@ -61,6 +65,7 @@ pub fn build_snapshot(rd: &RefData, stale_after: u64) -> Value {
         "groups": rd.groups,
         "controls": rd.controls,
         "clientLimits": rd.limits,
+        "mm": rd.mm,
     })
 }
 
@@ -176,5 +181,6 @@ pub async fn status(State(st): State<AppState>) -> R {
         "expiries": rd.expiries.iter().filter(|e| e.status == "listed").count(),
         "series": rd.series.iter().filter(|s| s.status == "active").count(),
         "workers": st.cfg.workers,
+        "bookFeed": st.books.status(),
     })))
 }

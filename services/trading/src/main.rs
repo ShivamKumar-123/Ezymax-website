@@ -78,6 +78,7 @@ async fn main() -> anyhow::Result<()> {
         restrictions: Default::default(),
         options: options.clone(),
         clock: Default::default(),
+        books: Default::default(),
     });
     let hub = Hub::start(shared, cfg.shards, states);
     feed::spawn(hub.clone(), cfg.market_data_ws.clone(), specs.symbols());
@@ -108,10 +109,28 @@ async fn main() -> anyhow::Result<()> {
     };
     // client controls: restrictions cache from the gateway, Kalks Trader presence reports (controls.rs)
     trading::controls::spawn(hub.clone(), pool.clone(), st.gateway.clone(), st.presence.clone());
+
+    // Kalks FX Options order book (src/book): venues, then crash recovery — load every stored book (ephemeral MM
+    // quotes are gone), rebuild the shards' reservations, reconcile book and account positions (a mismatch puts
+    // that underlying in cancel-only; CFD trading stays up), re-dispatch the outbox, resubmit fired stops
+    if cfg.options_mm_user > 0 {
+        hub.shared.books.lp_users.write().unwrap().insert(cfg.options_mm_user);
+    }
+    match trading::book::recover(&hub).await {
+        Ok(r) => {
+            for m in &r.mismatches {
+                tracing::error!(mismatch = %m, "options book reconcile mismatch: cancel-only");
+            }
+        }
+        Err(e) => tracing::error!(error = %e, "options order book recovery failed; books load on first use"),
+    }
     let _ = trading::auth::dummy_hash();
 
     if cfg.rollover_enabled {
         tokio::spawn(rollovers(hub.clone(), pool.clone(), registry.clone()));
+        // options order book housekeeping: GTD expiry, deadman switches, expiry cut-off, session-open band check,
+        // the throttled market-data feed
+        trading::book::spawn_scheduler(hub.clone());
         // option expiry settlement (single-instance job, like the rollover) and the house delta hedger
         if options.configured() {
             tokio::spawn(trading::options::settle::scheduler(st.clone()));

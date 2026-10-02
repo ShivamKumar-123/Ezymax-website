@@ -126,6 +126,11 @@ pub trait OptionPricing: Send + Sync {
     }
     /// Scenario losses of `legs` (one underlying) with a linear CFD exposure of `cfd_units` units.
     fn scenario(&self, tenant: &str, underlying: &str, legs: &[ScenLeg], cfd_units: f64, now: DateTime<Utc>) -> Option<ScenOut>;
+    /// Top of the options order book of a series for a tenant and account kind (None = no book / empty book):
+    /// the mark is clamped inside it (`engine::options::mark_of`).
+    fn book_top(&self, _tenant: &str, _kind: crate::model::AccountKind, _series: &str) -> Option<crate::book::md::TopQuote> {
+        None
+    }
 }
 
 /* ------------------------------------------------------------------ */
@@ -274,6 +279,8 @@ pub struct OptionsCtx {
     marks: Memo<OptPrice>,
     scen: Memo<ScenOut>,
     suit: Mutex<HashMap<i64, (i64, Suitability)>>,
+    /// Options order book top of book (published by the book actors after every commit; the mark clamp reads it).
+    pub top: Arc<crate::book::md::Top>,
 }
 
 const BUCKET_MS: i64 = 250;
@@ -292,6 +299,7 @@ impl OptionsCtx {
             marks: Mutex::new(HashMap::new()),
             scen: Mutex::new(HashMap::new()),
             suit: Mutex::new(HashMap::new()),
+            top: Arc::new(crate::book::md::Top::default()),
         }
     }
 
@@ -550,6 +558,10 @@ impl OptionPricing for OptionsCtx {
         }
         m.insert(key, (bucket, out));
         Some(out)
+    }
+
+    fn book_top(&self, tenant: &str, kind: crate::model::AccountKind, series: &str) -> Option<crate::book::md::TopQuote> {
+        self.top.get(tenant, kind, series)
     }
 }
 

@@ -13,7 +13,7 @@ use serde_json::{Value, json};
 use sqlx::Row;
 
 use super::{ApiError, R, staff, tenant};
-use crate::model::{GroupSettings, PLATFORM_TENANT, Pillar, build_surface};
+use crate::model::{GroupSettings, MmSettings, PLATFORM_TENANT, Pillar, build_surface, fee_rule_violation, is_multiple};
 use crate::{AppState, jobs, store};
 
 struct Staff {
@@ -83,6 +83,7 @@ pub async fn overview(State(st): State<AppState>, h: HeaderMap) -> R {
         "awaitingFixing": rd.expiries.iter().filter(|e| e.status == "fixing").count(),
         "controls": rd.controls.len(),
         "feedConnected": st.spots.connected(),
+        "bookFeed": st.books.status(),
         "jobs": jobs,
     })))
 }
@@ -144,7 +145,56 @@ pub struct UnderlyingPatch {
     enabled: Option<bool>,
     sort: Option<i32>,
     notes: Option<String>,
+    // order book (docs/OPTIONS-EXCHANGE.md §2, §5, §6, §8)
+    premium_tick: Option<f64>,
+    market_band_pct: Option<f64>,
+    limit_band_pct: Option<f64>,
+    band_min_ticks: Option<i32>,
+    liq_band_pct: Option<f64>,
+    liq_fee_pct: Option<f64>,
+    rfq_quote_ttl_secs: Option<i32>,
+    mark_min_qty: Option<f64>,
+    mark_max_spread_mult: Option<f64>,
     reason: Option<String>,
+}
+
+/// Order-book and contract-size checks of an underlying (§2, §5, §6, §8). Bands and liquidation are percent.
+pub fn validate_book_fields(u: &crate::model::Underlying) -> Result<(), String> {
+    let fin = |x: f64| x.is_finite();
+    if !(fin(u.premium_tick) && u.premium_tick > 0.0 && u.premium_tick < 1000.0) {
+        return Err("premiumTick must be a positive price per unit in the quote currency (EURUSD 0.00001).".into());
+    }
+    if !(fin(u.market_band_pct) && u.market_band_pct > 0.0 && u.market_band_pct <= 100.0) || !(fin(u.limit_band_pct) && u.limit_band_pct > 0.0 && u.limit_band_pct <= 100.0) {
+        return Err("marketBandPct and limitBandPct are percentages above 0 and at most 100.".into());
+    }
+    if !(0..=100_000).contains(&u.band_min_ticks) {
+        return Err("bandMinTicks must be a whole number of ticks, 0 or more.".into());
+    }
+    if !(fin(u.liq_band_pct) && (0.0..=50.0).contains(&u.liq_band_pct)) || !(fin(u.liq_fee_pct) && (0.0..=50.0).contains(&u.liq_fee_pct)) {
+        return Err("liqBandPct and liqFeePct are percentages between 0 and 50.".into());
+    }
+    if !(1..=60).contains(&u.rfq_quote_ttl_secs) {
+        return Err("rfqQuoteTtlSecs must be between 1 and 60 seconds.".into());
+    }
+    if !(fin(u.mark_min_qty) && u.mark_min_qty >= 0.0) {
+        return Err("markMinQty must be 0 or more contracts.".into());
+    }
+    if !(fin(u.mark_max_spread_mult) && (1.0..=100.0).contains(&u.mark_max_spread_mult)) {
+        return Err("markMaxSpreadMult must be between 1 and 100 (× the model spread).".into());
+    }
+    if !(fin(u.contract_step) && u.contract_step > 0.0) {
+        return Err("contractStep must be positive.".into());
+    }
+    if !(fin(u.min_contracts) && u.min_contracts > 0.0) || !(fin(u.max_contracts) && u.max_contracts > 0.0) {
+        return Err("minContracts and maxContracts must be positive.".into());
+    }
+    if u.min_contracts > u.max_contracts {
+        return Err("minContracts must not exceed maxContracts.".into());
+    }
+    if !is_multiple(u.min_contracts, u.contract_step) || !is_multiple(u.max_contracts, u.contract_step) {
+        return Err("minContracts and maxContracts must be whole multiples of contractStep.".into());
+    }
+    Ok(())
 }
 
 /// `PUT /v1/admin/options/underlyings/{symbol}` (platform): partial update. New cut / TWAP / cycle settings
@@ -161,6 +211,7 @@ pub async fn underlying_put(State(st): State<AppState>, h: HeaderMap, Path(symbo
     set!(name, calendars, contract_size, digits, pip_size, strike_step, strikes_each_side, extend_threshold, expiry_kinds, daily_count, weekly_count, monthly_count);
     set!(cut_time, cut_zone, twap_minutes, no_open_minutes, close_only_minutes, delta_convention, weekend_vol_weight, holiday_vol_weight);
     set!(price_scan, vol_scan, extreme_multiple, extreme_cover, min_contracts, max_contracts, contract_step, barriers_enabled, enabled, sort, notes);
+    set!(premium_tick, market_band_pct, limit_band_pct, band_min_ticks, liq_band_pct, liq_fee_pct, rfq_quote_ttl_secs, mark_min_qty, mark_max_spread_mult);
     u.calendars = u.calendars.iter().map(|c| c.trim().to_ascii_uppercase()).filter(|c| !c.is_empty()).collect();
     if u.calendars.is_empty() || u.calendars.iter().any(|c| c.len() > 8 || !c.chars().all(|x| x.is_ascii_alphanumeric())) {
         return Err(ApiError::bad("calendars must be a non-empty list of calendar codes (e.g. EUR, USD)."));
@@ -176,16 +227,15 @@ pub async fn underlying_put(State(st): State<AppState>, h: HeaderMap, Path(symbo
     if u.no_open_minutes < u.close_only_minutes {
         return Err(ApiError::bad("noOpenMinutes must be at least closeOnlyMinutes."));
     }
-    if u.min_contracts > u.max_contracts {
-        return Err(ApiError::bad("minContracts must not exceed maxContracts."));
-    }
+    validate_book_fields(&u).map_err(ApiError::bad)?;
     let mut tx = st.pool.begin().await?;
     sqlx::query(
         "UPDATE underlyings SET name=$2, calendars=$3, contract_size=$4, digits=$5, pip_size=$6, strike_step=$7, strikes_each_side=$8, extend_threshold=$9,
             expiry_kinds=$10, daily_count=$11, weekly_count=$12, monthly_count=$13, cut_time=$14, cut_zone=$15, twap_minutes=$16, no_open_minutes=$17,
             close_only_minutes=$18, delta_convention=$19, weekend_vol_weight=$20, holiday_vol_weight=$21, price_scan=$22, vol_scan=$23,
             extreme_multiple=$24, extreme_cover=$25, min_contracts=$26, max_contracts=$27, contract_step=$28, barriers_enabled=$29, enabled=$30,
-            sort=$31, notes=$32, updated_at=now(), updated_by=$33 WHERE symbol=$1",
+            sort=$31, notes=$32, updated_at=now(), updated_by=$33, premium_tick=$34, market_band_pct=$35, limit_band_pct=$36, band_min_ticks=$37,
+            liq_band_pct=$38, liq_fee_pct=$39, rfq_quote_ttl_secs=$40, mark_min_qty=$41, mark_max_spread_mult=$42 WHERE symbol=$1",
     )
     .bind(&u.symbol)
     .bind(&u.name)
@@ -220,6 +270,15 @@ pub async fn underlying_put(State(st): State<AppState>, h: HeaderMap, Path(symbo
     .bind(u.sort)
     .bind(&u.notes)
     .bind(&s.actor)
+    .bind(u.premium_tick)
+    .bind(u.market_band_pct)
+    .bind(u.limit_band_pct)
+    .bind(u.band_min_ticks)
+    .bind(u.liq_band_pct)
+    .bind(u.liq_fee_pct)
+    .bind(u.rfq_quote_ttl_secs)
+    .bind(u.mark_min_qty)
+    .bind(u.mark_max_spread_mult)
     .execute(&mut *tx)
     .await
     .map_err(db_err)?;
@@ -599,7 +658,33 @@ pub struct GroupPut {
     max_contracts_per_client: Option<f64>,
     weekend_margin_pct: Option<f64>,
     enabled: Option<bool>,
+    /// Order book (§7): USD per contract, negative = maker rebate.
+    maker_fee_per_contract: Option<f64>,
+    /// Order book (§7): USD per contract, ≥ 0.
+    taker_fee_per_contract: Option<f64>,
     reason: Option<String>,
+}
+
+/// Label of a group row in messages.
+fn row_label(g: &GroupSettings) -> String {
+    format!("{} · {}", if g.group_code == "*" { "all groups" } else { &g.group_code }, if g.symbol == "*" { "all underlyings" } else { &g.symbol })
+}
+
+/// §7 over a broker's rows with `edited` in place (and the default it falls back to when it has no `*, *` row).
+fn fee_check(rd: &crate::model::RefData, tenant: &str, edited: &GroupSettings) -> R<()> {
+    let mut rows: Vec<GroupSettings> = rd.groups.iter().filter(|g| g.tenant == tenant && !(g.group_code == edited.group_code && g.symbol == edited.symbol)).cloned().collect();
+    rows.push(edited.clone());
+    if !rows.iter().any(|g| g.group_code == "*" && g.symbol == "*") {
+        rows.push(rd.group(tenant, "*", "*"));
+    }
+    let eff: Vec<(String, f64, f64)> = rows.iter().map(|g| {
+        let (m, t) = g.book_fees();
+        (row_label(g), m, t)
+    }).collect();
+    match fee_rule_violation(&eff) {
+        Some(msg) => Err(ApiError::bad(format!("Fees: {msg}"))),
+        None => Ok(()),
+    }
 }
 
 fn key_part(s: &str) -> R<String> {
@@ -637,15 +722,30 @@ pub async fn group_put(State(st): State<AppState>, h: HeaderMap, Path((group, sy
         enabled: p.enabled.unwrap_or(base.enabled),
         updated_at: Utc::now(),
         updated_by: s.actor.clone(),
+        maker_fee_per_contract: p.maker_fee_per_contract.or(base.maker_fee_per_contract),
+        taker_fee_per_contract: p.taker_fee_per_contract.or(base.taker_fee_per_contract),
     };
+    if let Some(m) = g.maker_fee_per_contract
+        && !(m.is_finite() && (-1000.0..=1000.0).contains(&m))
+    {
+        return Err(ApiError::bad("makerFeePerContract must be between -1000 and 1000 USD per contract (negative = rebate)."));
+    }
+    if let Some(t) = g.taker_fee_per_contract
+        && !(t.is_finite() && (0.0..=1000.0).contains(&t))
+    {
+        return Err(ApiError::bad("takerFeePerContract must be between 0 and 1000 USD per contract."));
+    }
+    fee_check(&rd, &s.tenant, &g)?;
     let mut tx = st.pool.begin().await?;
     sqlx::query(
         "INSERT INTO group_settings (tenant, group_code, symbol, vol_spread, min_spread_usd, commission_per_contract, commission_cap_pct,
-            max_contracts_per_client, weekend_margin_pct, enabled, updated_at, updated_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now(),$11)
+            max_contracts_per_client, weekend_margin_pct, enabled, updated_at, updated_by, maker_fee_per_contract, taker_fee_per_contract)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now(),$11,$12,$13)
          ON CONFLICT (tenant, group_code, symbol) DO UPDATE SET vol_spread = EXCLUDED.vol_spread, min_spread_usd = EXCLUDED.min_spread_usd,
             commission_per_contract = EXCLUDED.commission_per_contract, commission_cap_pct = EXCLUDED.commission_cap_pct,
             max_contracts_per_client = EXCLUDED.max_contracts_per_client, weekend_margin_pct = EXCLUDED.weekend_margin_pct, enabled = EXCLUDED.enabled,
-            updated_at = now(), updated_by = EXCLUDED.updated_by",
+            updated_at = now(), updated_by = EXCLUDED.updated_by, maker_fee_per_contract = EXCLUDED.maker_fee_per_contract,
+            taker_fee_per_contract = EXCLUDED.taker_fee_per_contract",
     )
     .bind(&g.tenant)
     .bind(&g.group_code)
@@ -658,6 +758,8 @@ pub async fn group_put(State(st): State<AppState>, h: HeaderMap, Path((group, sy
     .bind(g.weekend_margin_pct)
     .bind(g.enabled)
     .bind(&s.actor)
+    .bind(g.maker_fee_per_contract)
+    .bind(g.taker_fee_per_contract)
     .execute(&mut *tx)
     .await
     .map_err(db_err)?;
@@ -898,6 +1000,180 @@ pub async fn limit_delete(State(st): State<AppState>, h: HeaderMap, Path(user): 
 }
 
 /* ------------------------------------------------------------------ */
+/* Kalks market maker settings (docs/OPTIONS-EXCHANGE.md §4)           */
+/* ------------------------------------------------------------------ */
+
+/// `GET /v1/admin/options/mm-settings` -> `{settings[], defaults}`: every row for Kalks staff; the platform (`*`) rows
+/// and the broker's own rows for a broker.
+pub async fn mm_settings(State(st): State<AppState>, h: HeaderMap) -> R {
+    let s = who(&h)?;
+    let rd = st.refdata().await;
+    let rows: Vec<&MmSettings> = rd.mm.iter().filter(|r| s.platform() || r.tenant == "*" || r.tenant == s.tenant).collect();
+    Ok(Json(json!({"settings": rows, "defaults": MmSettings::builtin()})))
+}
+
+#[derive(Deserialize, Default)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MmPut {
+    enabled: Option<bool>,
+    #[serde(rename = "spreadVol0dte")]
+    spread_vol_0dte: Option<f64>,
+    #[serde(rename = "spreadVol7d")]
+    spread_vol_7d: Option<f64>,
+    #[serde(rename = "spreadVol30d")]
+    spread_vol_30d: Option<f64>,
+    spread_vol_long: Option<f64>,
+    min_spread_ticks: Option<f64>,
+    skew_vol: Option<f64>,
+    skew_ticks_per_contract: Option<f64>,
+    base_size: Option<f64>,
+    max_net_delta: Option<f64>,
+    max_gamma: Option<f64>,
+    max_vega: Option<f64>,
+    max_contracts_per_series: Option<f64>,
+    reason: Option<String>,
+}
+
+/// The `(tenant, kind, underlying)` key of an `mm_settings` row (`*` = any), checked against the caller.
+fn mm_key(s: &Staff, rd: &crate::model::RefData, tenant: &str, kind: &str, underlying: &str) -> R<(String, String, String)> {
+    let t = tenant.trim().to_ascii_lowercase();
+    if t != "*" && !super::is_slug(&t) {
+        return Err(ApiError::bad("Tenant must be '*' or a broker slug."));
+    }
+    let k = kind.trim().to_ascii_lowercase();
+    if !matches!(k.as_str(), "*" | "live" | "demo") {
+        return Err(ApiError::bad("Kind must be live, demo or '*'."));
+    }
+    let u = underlying.trim().to_ascii_uppercase();
+    if u != "*" && rd.underlying(&u).is_none() {
+        return Err(ApiError::bad("Unknown underlying."));
+    }
+    if !s.platform() && t != s.tenant {
+        return Err(ApiError::forbidden("The market maker is Kalks's: a broker only tunes its own rows."));
+    }
+    Ok((t, k, u))
+}
+
+/// Range checks of an `mm_settings` row.
+pub fn validate_mm(m: &MmSettings) -> Result<(), String> {
+    for (name, v) in [("spreadVol0dte", m.spread_vol_0dte), ("spreadVol7d", m.spread_vol_7d), ("spreadVol30d", m.spread_vol_30d), ("spreadVolLong", m.spread_vol_long)] {
+        if !(v.is_finite() && (0.0..=0.2).contains(&v)) {
+            return Err(format!("{name} is a decimal vol between 0 and 0.2 (0.004 = 0.40 vol points)."));
+        }
+    }
+    if !(1..=100_000).contains(&m.min_spread_ticks) {
+        return Err("minSpreadTicks must be a whole number of ticks, at least 1.".into());
+    }
+    if !(m.skew_vol.is_finite() && (0.0..=0.2).contains(&m.skew_vol)) {
+        return Err("skewVol is a decimal vol between 0 and 0.2.".into());
+    }
+    if !(m.skew_ticks_per_contract.is_finite() && (0.0..=1000.0).contains(&m.skew_ticks_per_contract)) {
+        return Err("skewTicksPerContract must be between 0 and 1000.".into());
+    }
+    if !(m.base_size.is_finite() && m.base_size >= 1.0 && m.base_size <= 1_000_000.0 && m.base_size.fract() == 0.0) {
+        return Err("baseSize must be a whole number of contracts, at least 1.".into());
+    }
+    for (name, v) in [("maxNetDelta", m.max_net_delta), ("maxGamma", m.max_gamma), ("maxVega", m.max_vega), ("maxContractsPerSeries", m.max_contracts_per_series)] {
+        if !(v.is_finite() && v > 0.0) {
+            return Err(format!("{name} must be above 0."));
+        }
+    }
+    Ok(())
+}
+
+/// `PUT /v1/admin/options/mm-settings/{tenant}/{kind}/{underlying} {…fields, enabled?, reason}`: upsert one row; a new
+/// row starts from the settings that apply to that key today. Kalks staff any row, a broker only its own.
+pub async fn mm_put(State(st): State<AppState>, h: HeaderMap, Path((tenant, kind, underlying)): Path<(String, String, String)>, Json(p): Json<MmPut>) -> R {
+    let s = who(&h)?;
+    let reason = need_reason(&p.reason)?;
+    let rd = st.refdata().await;
+    let (t, k, u) = mm_key(&s, &rd, &tenant, &kind, &underlying)?;
+    let cur = rd.mm.iter().find(|r| r.tenant == t && r.kind == k && r.underlying == u).cloned();
+    let base = cur.clone().unwrap_or_else(|| rd.mm_for(&t, if k == "*" { "live" } else { &k }, &u));
+    let ticks = match p.min_spread_ticks {
+        Some(x) if !(x.is_finite() && x.fract() == 0.0 && (1.0..=100_000.0).contains(&x)) => return Err(ApiError::bad("minSpreadTicks must be a whole number of ticks, at least 1.")),
+        Some(x) => x as i32,
+        None => base.min_spread_ticks,
+    };
+    let m = MmSettings {
+        tenant: t.clone(),
+        kind: k.clone(),
+        underlying: u.clone(),
+        enabled: p.enabled.unwrap_or(base.enabled),
+        spread_vol_0dte: p.spread_vol_0dte.unwrap_or(base.spread_vol_0dte),
+        spread_vol_7d: p.spread_vol_7d.unwrap_or(base.spread_vol_7d),
+        spread_vol_30d: p.spread_vol_30d.unwrap_or(base.spread_vol_30d),
+        spread_vol_long: p.spread_vol_long.unwrap_or(base.spread_vol_long),
+        min_spread_ticks: ticks,
+        skew_vol: p.skew_vol.unwrap_or(base.skew_vol),
+        skew_ticks_per_contract: p.skew_ticks_per_contract.unwrap_or(base.skew_ticks_per_contract),
+        base_size: p.base_size.unwrap_or(base.base_size),
+        max_net_delta: p.max_net_delta.unwrap_or(base.max_net_delta),
+        max_gamma: p.max_gamma.unwrap_or(base.max_gamma),
+        max_vega: p.max_vega.unwrap_or(base.max_vega),
+        max_contracts_per_series: p.max_contracts_per_series.unwrap_or(base.max_contracts_per_series),
+        updated_at: Utc::now(),
+        updated_by: s.actor.clone(),
+    };
+    validate_mm(&m).map_err(ApiError::bad)?;
+    let mut tx = st.pool.begin().await?;
+    sqlx::query(
+        "INSERT INTO mm_settings (tenant, kind, underlying, enabled, spread_vol_0dte, spread_vol_7d, spread_vol_30d, spread_vol_long, min_spread_ticks,
+            skew_vol, skew_ticks_per_contract, base_size, max_net_delta, max_gamma, max_vega, max_contracts_per_series, updated_at, updated_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,now(),$17)
+         ON CONFLICT (tenant, kind, underlying) DO UPDATE SET enabled = EXCLUDED.enabled, spread_vol_0dte = EXCLUDED.spread_vol_0dte,
+            spread_vol_7d = EXCLUDED.spread_vol_7d, spread_vol_30d = EXCLUDED.spread_vol_30d, spread_vol_long = EXCLUDED.spread_vol_long,
+            min_spread_ticks = EXCLUDED.min_spread_ticks, skew_vol = EXCLUDED.skew_vol, skew_ticks_per_contract = EXCLUDED.skew_ticks_per_contract,
+            base_size = EXCLUDED.base_size, max_net_delta = EXCLUDED.max_net_delta, max_gamma = EXCLUDED.max_gamma, max_vega = EXCLUDED.max_vega,
+            max_contracts_per_series = EXCLUDED.max_contracts_per_series, updated_at = now(), updated_by = EXCLUDED.updated_by",
+    )
+    .bind(&m.tenant)
+    .bind(&m.kind)
+    .bind(&m.underlying)
+    .bind(m.enabled)
+    .bind(m.spread_vol_0dte)
+    .bind(m.spread_vol_7d)
+    .bind(m.spread_vol_30d)
+    .bind(m.spread_vol_long)
+    .bind(m.min_spread_ticks)
+    .bind(m.skew_vol)
+    .bind(m.skew_ticks_per_contract)
+    .bind(m.base_size)
+    .bind(m.max_net_delta)
+    .bind(m.max_gamma)
+    .bind(m.max_vega)
+    .bind(m.max_contracts_per_series)
+    .bind(&s.actor)
+    .execute(&mut *tx)
+    .await
+    .map_err(db_err)?;
+    store::audit(&mut tx, &s.tenant, &s.actor, "mm_settings.upsert", &format!("{t}/{k}/{u}"), cur.map(|c| json!(c)), Some(json!(m)), &reason).await?;
+    let v = finish(&st, tx).await?;
+    let rd = st.refdata().await;
+    Ok(Json(json!({"settings": rd.mm.iter().find(|r| r.tenant == t && r.kind == k && r.underlying == u), "version": v})))
+}
+
+/// `DELETE /v1/admin/options/mm-settings/{tenant}/{kind}/{underlying}?reason=` (the `*, *, *` default stays).
+pub async fn mm_delete(State(st): State<AppState>, h: HeaderMap, Path((tenant, kind, underlying)): Path<(String, String, String)>, Query(q): Query<ReasonQ>) -> R {
+    let s = who(&h)?;
+    let reason = need_reason(&q.reason)?;
+    let rd = st.refdata().await;
+    let (t, k, u) = mm_key(&s, &rd, &tenant, &kind, &underlying)?;
+    if t == "*" && k == "*" && u == "*" {
+        return Err(ApiError::bad("The default row (*, *, *) can be edited but not deleted."));
+    }
+    let before = rd.mm.iter().find(|r| r.tenant == t && r.kind == k && r.underlying == u).cloned();
+    let mut tx = st.pool.begin().await?;
+    let n = sqlx::query("DELETE FROM mm_settings WHERE tenant = $1 AND kind = $2 AND underlying = $3").bind(&t).bind(&k).bind(&u).execute(&mut *tx).await?.rows_affected();
+    if n == 0 {
+        return Err(ApiError::not_found("Market-maker settings"));
+    }
+    store::audit(&mut tx, &s.tenant, &s.actor, "mm_settings.delete", &format!("{t}/{k}/{u}"), before.map(|b| json!(b)), None, &reason).await?;
+    let v = finish(&st, tx).await?;
+    Ok(Json(json!({"ok": true, "version": v})))
+}
+
+/* ------------------------------------------------------------------ */
 /* Expiries, fixings, listing                                          */
 /* ------------------------------------------------------------------ */
 
@@ -1041,4 +1317,19 @@ pub async fn audit(State(st): State<AppState>, h: HeaderMap, Query(q): Query<Aud
         .collect();
     let next = list.last().and_then(|x| x["id"].as_i64());
     Ok(Json(json!({"audit": list, "next": next})))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mm_ranges() {
+        let ok = MmSettings::builtin();
+        assert_eq!(validate_mm(&ok), Ok(()));
+        assert!(validate_mm(&MmSettings { spread_vol_7d: 0.5, ..ok.clone() }).unwrap_err().contains("spreadVol7d"));
+        assert!(validate_mm(&MmSettings { base_size: 2.5, ..ok.clone() }).unwrap_err().contains("baseSize"));
+        assert!(validate_mm(&MmSettings { min_spread_ticks: 0, ..ok.clone() }).unwrap_err().contains("minSpreadTicks"));
+        assert!(validate_mm(&MmSettings { max_vega: 0.0, ..ok.clone() }).unwrap_err().contains("maxVega"));
+    }
 }

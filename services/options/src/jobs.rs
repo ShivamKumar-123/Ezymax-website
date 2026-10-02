@@ -38,6 +38,10 @@ pub fn spawn_all(st: AppState) {
         realized_vol(&st).await.map(|_| ())
     }));
     tokio::spawn(every(st.clone(), "marks_eod", Duration::from_secs(30), Duration::from_secs(60), |st| async move { eod_marks(&st).await.map(|_| ()) }));
+    // the engine's order book market data (docs/OPTIONS-EXCHANGE.md §10)
+    if st.cfg.book_feed {
+        crate::book_feed::spawn(st.clone());
+    }
 }
 
 async fn every<F, Fut>(st: AppState, name: &'static str, first: Duration, period: Duration, f: F)

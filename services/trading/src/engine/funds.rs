@@ -19,7 +19,7 @@ pub enum Direction {
 /// Opens an account: the `account_opened` event plus the initial demo balance.
 pub fn open_account(env: &Env, account: Account) -> Tx {
     let st = AccountState::new(account.clone());
-    let mut tx = Tx { st, events: vec![Event::AccountOpened { account: account.clone() }], notes: vec![], audit: vec![] };
+    let mut tx = Tx { st, events: vec![Event::AccountOpened { account: account.clone() }], notes: vec![], audit: vec![], book_dirty: false, book_send: vec![] };
     if let Some(d) = &account.demo {
         let amt = d.initial_balance * account.usd_factor();
         tx.post(env, TxnKind::DemoInitial, format!("demo-initial:{}", account.login), "balance", "demo_funding", amt, None, None, None);
@@ -354,7 +354,7 @@ pub fn change_group(tx: &mut Tx, new: &crate::rules::Group) -> Result<(String, S
     if !new.allows(a0.kind.as_str()) {
         return Err(Reject::new("invalid_group", format!("Group {} does not accept {} accounts", new.name, a0.kind.as_str())));
     }
-    let flat = tx.st.positions.is_empty() && tx.st.orders.is_empty();
+    let flat = tx.st.positions.is_empty() && tx.st.orders.is_empty() && tx.st.book.is_idle();
     let mode_changes = (new.mode == crate::model::Mode::Netting) != (a0.mode == crate::model::Mode::Netting);
     if mode_changes && !flat {
         return Err(Reject::new("positions_open", "Close all positions and orders before switching between netting and hedging"));
@@ -412,7 +412,7 @@ pub fn archive(tx: &mut Tx, env: &Env, by: &str, reason_code: &str, client_resto
         Status::Closed => return Err(Reject::new("account_status", "This account is closed")),
         _ => {}
     }
-    if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() {
+    if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() || !tx.st.book.is_idle() {
         return Err(Reject::new("not_empty", "Close all positions and cancel all orders before archiving"));
     }
     let v = tx.st.version;
@@ -476,7 +476,7 @@ pub fn close_account(tx: &mut Tx, env: &Env, by: &str, reason_code: &str) -> Res
     if a0.status == Status::Closed {
         return Ok(false);
     }
-    if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() {
+    if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() || !tx.st.book.is_idle() {
         return Err(Reject::new("not_empty", "Close all positions and cancel all orders before closing the account"));
     }
     if r2(tx.st.balance) != ZERO {
@@ -534,7 +534,7 @@ pub fn demo_refill_to(tx: &mut Tx, env: &Env, target_usd: D) -> Result<D, Reject
     if target_usd < D::from(100) || target_usd > D::from(1_000_000) {
         return Err(Reject::new("invalid_amount", "Choose a demo balance between 100 and 1,000,000 USD"));
     }
-    if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() {
+    if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() || !tx.st.book.is_idle() {
         return Err(Reject::new("positions_open", "Close all positions and orders before setting a new demo balance"));
     }
     let day = server_date(env.now);

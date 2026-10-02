@@ -3,6 +3,8 @@
 //! * `/health`: no auth.
 //! * `/v1/public/options/chain/{u}`: no auth, exposed on api.* by Caddy; only when tenant `kalks` has
 //!   `public_chain` on; cached 1 s.
+//! * `/v1/public/options/book/{series}`, `/trades/{series}`, `/stats/{u}` (`?kind=live|demo`, default live): the
+//!   order book's public market data (docs/OPTIONS-EXCHANGE.md §10), no auth, cached 1 s, 10 requests / s per IP.
 //! * `WS /v1/options/stream`: browsers via trade.* `/options/stream`; `?ticket=` from
 //!   `POST /v1/options/stream/ticket` (BFF) for a tenant + group, else the guest view (needs `public_chain`).
 //! * Everything else needs `X-Kalks-Internal`. `X-Kalks-Tenant` picks the broker (default `kalks`).
@@ -13,6 +15,7 @@
 pub mod admin;
 pub mod internal;
 pub mod public;
+pub mod public_book;
 pub mod stream;
 
 use axum::extract::{Request, State};
@@ -25,6 +28,7 @@ use serde_json::{Value, json};
 use subtle::ConstantTimeEq;
 
 use crate::AppState;
+use crate::book_feed::Kind;
 use crate::model::{PLATFORM_TENANT, RefData, TenantSettings};
 
 pub struct ApiError(pub StatusCode, pub &'static str, pub String);
@@ -83,6 +87,11 @@ pub fn staff(h: &HeaderMap) -> R<String> {
         .map(|s| s.trim().chars().take(120).collect::<String>())
         .filter(|s| !s.is_empty())
         .ok_or_else(|| ApiError::new(StatusCode::UNAUTHORIZED, "unauthorized", "Missing staff member."))
+}
+
+/// The account kind of the order book a client read concerns (`X-Kalks-Account-Kind`, default live).
+pub fn account_kind(h: &HeaderMap) -> Kind {
+    h.get("x-kalks-account-kind").and_then(|v| v.to_str().ok()).and_then(Kind::parse).unwrap_or(Kind::Live)
 }
 
 /// The tenant's settings, or 404 when the module is off (for the given account kind, if any).
@@ -144,11 +153,20 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/options/expiries/{id}/refix", post(admin::refix))
         .route("/v1/admin/options/listing/run", post(admin::listing_run))
         .route("/v1/admin/options/audit", get(admin::audit))
+        .route("/v1/admin/options/mm-settings", get(admin::mm_settings))
+        .route("/v1/admin/options/mm-settings/{tenant}/{kind}/{underlying}", put(admin::mm_put).delete(admin::mm_delete))
         .layer(middleware::from_fn_with_state(st.clone(), require_internal));
+    // order book public market data: 10 requests / s per client IP
+    let public_book = Router::new()
+        .route("/v1/public/options/book/{series}", get(public_book::book))
+        .route("/v1/public/options/trades/{series}", get(public_book::trades))
+        .route("/v1/public/options/stats/{u}", get(public_book::stats))
+        .layer(middleware::from_fn_with_state(st.clone(), public_book::rate_limit));
     Router::new()
         .route("/health", get(health))
         .route("/v1/public/options/chain/{u}", get(public::public_chain))
         .route("/v1/options/stream", get(stream::ws))
+        .merge(public_book)
         .merge(internal)
         .with_state(st)
 }
@@ -162,6 +180,7 @@ async fn health(State(st): State<AppState>) -> Json<Value> {
         "db": db,
         "version": rd.version,
         "feed": st.spots.connected(),
+        "bookFeed": st.books.connected(),
         "workers": st.cfg.workers,
     }))
 }

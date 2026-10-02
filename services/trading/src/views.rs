@@ -25,6 +25,7 @@ pub fn metrics_json(m: &Metrics) -> Value {
         "optionPnl": num(r2(m.option_pnl)),
         "optionMargin": num(r2(m.option_margin)),
         "settlementHold": num(r2(m.held)),
+        "orderReserve": num(r2(m.order_reserve)),
     })
 }
 
@@ -92,9 +93,10 @@ pub fn option_fields(env: &Env, st: &AccountState, p: &Position) -> Value {
     match &p.option {
         None => json!({"option": null, "mark": null, "greeks": null, "comboId": null}),
         Some(t) => {
-            let q = env.options.mark(&env.tenant.slug, &env.group.code, t, env.now);
+            let q = options::mark_of(env, &st.account, t);
             json!({
                 "option": options::terms_json(t),
+                "venue": p.venue.unwrap_or(crate::model::Venue::House).as_str(),
                 "mark": num_opt(q.map(|q| q.mark)),
                 "markValue": num(r2(options::position_value(env, &st.account, p, t))),
                 "premium": num(p.premium),

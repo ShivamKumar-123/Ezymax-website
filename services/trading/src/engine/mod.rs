@@ -9,6 +9,7 @@
 pub mod dealing;
 pub mod funds;
 pub mod options;
+pub mod options_book;
 pub mod risk;
 pub mod trade;
 
@@ -192,11 +193,16 @@ pub struct Tx {
     pub events: Vec<Event>,
     pub notes: Vec<Note>,
     pub audit: Vec<AuditDraft>,
+    /// The in-memory order-book state (`st.book`: working orders, reservations) changed: the shard swaps the
+    /// state in even when there are no events.
+    pub book_dirty: bool,
+    /// Order-book commands to send once this transaction is committed (a stop that fired, an SL / TP).
+    pub book_send: Vec<crate::book::Outgoing>,
 }
 
 impl Tx {
     pub fn new(st: &AccountState) -> Self {
-        Self { st: st.clone(), events: Vec::new(), notes: Vec::new(), audit: Vec::new() }
+        Self { st: st.clone(), events: Vec::new(), notes: Vec::new(), audit: Vec::new(), book_dirty: false, book_send: Vec::new() }
     }
 
     pub fn emit(&mut self, ev: Event) {
@@ -307,14 +313,17 @@ pub struct Metrics {
     pub held: D,
     /// CFD positions that could not be valued (no quote): their P&L is missing from `profit`.
     pub unpriced: usize,
+    /// Reserved for working options order-book orders (docs/OPTIONS-EXCHANGE.md §3): part of neither margin nor
+    /// equity, but subtracted from free margin, free cash and withdrawable. 0 when no book order works.
+    pub order_reserve: D,
 }
 
 impl Metrics {
-    /// What can be transferred out: the balance not needed as margin and not made of credit/bonus, minus option
-    /// settlement proceeds still in the re-run hold.
+    /// What can be transferred out: the balance not needed as margin or reserved for working book orders and not
+    /// made of credit/bonus, minus option settlement proceeds still in the re-run hold.
     pub fn withdrawable(&self) -> D {
         let free_own = self.free_margin - self.credit - self.bonus;
-        (self.balance.min(free_own) - self.held).max(ZERO)
+        ((self.balance - self.order_reserve).min(free_own) - self.held).max(ZERO)
     }
 }
 
@@ -397,6 +406,7 @@ pub fn metrics(env: &Env, st: &AccountState) -> Metrics {
     let option_margin = options::margin(env, st, &exp, &[], &none);
     let margin = cfd + option_margin;
     let equity = st.balance + st.credit + st.bonus + profit + swap + option_value;
+    let order_reserve = st.book.reserve();
     Metrics {
         balance: st.balance,
         credit: st.credit,
@@ -405,13 +415,15 @@ pub fn metrics(env: &Env, st: &AccountState) -> Metrics {
         swap,
         equity,
         margin,
-        free_margin: equity - margin,
+        free_margin: equity - margin - order_reserve,
+        // the margin level stays equity / position margin
         level: if margin > ZERO { Some(equity / margin * HUNDRED) } else { None },
         option_value,
         option_pnl,
         option_margin,
         held: st.held(env.now),
         unpriced,
+        order_reserve,
     }
 }
 
@@ -433,3 +445,6 @@ mod tests;
 
 #[cfg(test)]
 mod tests_options;
+
+#[cfg(test)]
+mod tests_book;

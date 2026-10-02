@@ -91,6 +91,10 @@ pub struct AccountState {
     /// events only, so replay rebuilds it exactly.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub holds: Vec<(DateTime<Utc>, D)>,
+    /// Options order book: working orders and their reservations (in memory, rebuilt from `book_orders` at start)
+    /// and the fills already booked (derived from the deals' `option.fill`, so replay rebuilds it).
+    #[serde(skip)]
+    pub book: crate::book::reserve::BookState,
 }
 
 /// How long option settlement proceeds stay out of the withdrawable amount (the settlement re-run window).
@@ -112,6 +116,7 @@ impl AccountState {
             reversed_deals: BTreeSet::new(),
             client_ids: BTreeMap::new(),
             holds: Vec::new(),
+            book: Default::default(),
         }
     }
 
@@ -206,6 +211,12 @@ impl AccountState {
             && let Some(c) = &d.client_order_id
         {
             self.client_ids.entry(c.clone()).or_insert(d.order_ticket.unwrap_or(d.position_ticket));
+        }
+        // order-book fills booked on this account (idempotent re-dispatch, also after a restart)
+        if let Some(d) = deal
+            && let Some(f) = d.option.as_ref().and_then(|o| o.fill.as_ref())
+        {
+            self.book.remember_fill(crate::book::reserve::fill_key(&f.id, &f.role));
         }
     }
 

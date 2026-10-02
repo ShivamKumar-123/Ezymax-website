@@ -208,12 +208,15 @@ fn gates_switches_suitability_limits_controls_staleness_and_sessions() {
     kit.options.set_snapshot(s);
     assert_eq!(place(&mut h, &kit, req(vec![leg(C116, Side::Buy, "1")], "g1")).unwrap_err().code, "options_disabled");
     kit.options.set_snapshot(opt_snapshot());
-    // suitability: a live account needs it, a demo account does not
+    // eligibility (the options intro accepted): live and demo accounts alike
     let r = OptOrderReq { eligible: false, ..req(vec![leg(C116, Side::Buy, "1")], "g2") };
     assert_eq!(place(&mut h, &kit, r.clone()).unwrap_err().code, "not_eligible");
     let mut demo = Harness::demo(&kit, "hedge");
-    assert!(place(&mut demo, &kit, r).is_ok());
     assert_eq!(demo.st.account.kind, AccountKind::Demo);
+    let e = place(&mut demo, &kit, r.clone()).unwrap_err();
+    assert_eq!(e.code, "not_eligible");
+    assert_eq!(e.message, options::NOT_ELIGIBLE);
+    assert!(place(&mut demo, &kit, OptOrderReq { eligible: true, ..r }).is_ok());
     // client limits from the Back Office
     let mut s = opt_snapshot();
     s["clientLimits"] = serde_json::json!([{"tenant": "kalks", "userId": 7, "blocked": true, "reason": "review"}]);

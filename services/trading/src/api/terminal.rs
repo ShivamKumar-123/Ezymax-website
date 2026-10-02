@@ -443,12 +443,17 @@ pub(crate) async fn mam_guard(st: &AppState, s: &Session, tickets: Vec<i64>, bul
     }
 }
 
-pub(crate) async fn run(st: &AppState, s: &Session, op: Op) -> ApiResult<Value> {
-    // a staff member acting as the client (full access) is recorded as such in the event stream
-    let actor = match &s.staff {
+/// The event actor of a session: the client, or a staff member acting as the client (full access).
+pub(crate) fn actor_of(s: &Session) -> String {
+    match &s.staff {
         Some((id, _)) => format!("staff:{id}"),
         None => "client".to_string(),
-    };
+    }
+}
+
+pub(crate) async fn run(st: &AppState, s: &Session, op: Op) -> ApiResult<Value> {
+    // a staff member acting as the client (full access) is recorded as such in the event stream
+    let actor = actor_of(s);
     let done = st.hub.exec(s.login, &actor, None, "", "", None, op).await?;
     Ok(with_notes(done.value, &done.notes))
 }
@@ -552,6 +557,10 @@ pub async fn close_position(State(st): State<AppState>, ctx: Ctx, Path(ticket): 
     let ticket = parse_ticket(&ticket)?;
     mam_guard(&st, &s, vec![ticket], false).await?;
     let b = body.map(|b| b.0).unwrap_or_default();
+    // an order-book option position closes through the book (reduce-only market IOC)
+    if super::options_book::is_book_position(&st, s.login, ticket).await {
+        return Ok(Json(super::options_book::book_close(&st, &s, ticket, b.volume).await?));
+    }
     let delay = exec_delay(&st, &ctx.tenant, s.login).await;
     let req = CloseReq { volume: b.volume, deviation_points: b.deviation_points, requested_price: b.requested_price, ..Default::default() };
     let op: Op = Box::new(move |tx, env| trade::close_position(tx, env, ticket, req).map(|(deal, profit)| json!({"status": "closed", "dealId": deal, "profit": num(profit)})));

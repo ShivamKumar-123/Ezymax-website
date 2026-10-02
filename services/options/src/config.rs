@@ -23,6 +23,12 @@ pub struct Config {
     pub min_twap_coverage: f64,
     /// The engine treats a snapshot older than this as stale (options go close-only); published in the snapshot.
     pub snapshot_stale_secs: u64,
+    /// Trading engine REST base (order book feed: `/v1/internal/options/book/*`, docs/OPTIONS-EXCHANGE.md §10).
+    pub trading_url: String,
+    /// The engine's `TRADING_INTERNAL_TOKEN`, sent as `X-Kalks-Internal` to the book feed.
+    pub trading_token: String,
+    /// Consume the engine's order book feed (with `workers`). Off = house model quotes only.
+    pub book_feed: bool,
 }
 
 fn redact_url(url: &str) -> String {
@@ -51,6 +57,9 @@ impl fmt::Debug for Config {
             .field("holidays_dir", &self.holidays_dir)
             .field("min_twap_coverage", &self.min_twap_coverage)
             .field("snapshot_stale_secs", &self.snapshot_stale_secs)
+            .field("trading_url", &redact_url(&self.trading_url))
+            .field("trading_token", &if self.trading_token.is_empty() { "<empty>" } else { "<redacted>" })
+            .field("book_feed", &self.book_feed)
             .finish()
     }
 }
@@ -100,6 +109,9 @@ impl Config {
             holidays_dir: var("OPTIONS_HOLIDAYS_DIR", default_holidays),
             min_twap_coverage: var("OPTIONS_MIN_TWAP_COVERAGE", "0.5").parse().unwrap_or(0.5f64).clamp(0.0, 1.0),
             snapshot_stale_secs: var("OPTIONS_SNAPSHOT_STALE_SECS", "300").parse().unwrap_or(300).max(30),
+            trading_url: var("TRADING_URL", "http://127.0.0.1:8090").trim_end_matches('/').to_string(),
+            trading_token: var("TRADING_INTERNAL_TOKEN", ""),
+            book_feed: flag("OPTIONS_BOOK_FEED", true),
         })
     }
 
@@ -117,6 +129,9 @@ impl Config {
             holidays_dir: concat!(env!("CARGO_MANIFEST_DIR"), "/../../config/holidays").into(),
             min_twap_coverage: 0.5,
             snapshot_stale_secs: 300,
+            trading_url: "http://127.0.0.1:9".into(),
+            trading_token: String::new(),
+            book_feed: false,
         }
     }
 }

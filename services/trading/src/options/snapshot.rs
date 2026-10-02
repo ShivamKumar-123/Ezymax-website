@@ -80,9 +80,59 @@ pub struct Underlying {
     pub barriers_enabled: bool,
     #[serde(default)]
     pub enabled: bool,
+    /* ---- options order book (docs/OPTIONS-EXCHANGE.md §2, §6, §8, §12); 0 / absent = the default ---- */
+    /// Premium tick, quote currency per unit (default pip / 10: EURUSD 0.00001, USDJPY 0.001, XAU 0.01).
+    #[serde(default)]
+    pub premium_tick: f64,
+    /// Market orders become an IOC limit this far (%) from the mark (default 10).
+    #[serde(default)]
+    pub market_band_pct: f64,
+    /// Aggressive limit orders must be within this % of the mark (+ `bandMinTicks`) (default 50).
+    #[serde(default)]
+    pub limit_band_pct: f64,
+    /// Minimum band width in ticks (default 5).
+    #[serde(default)]
+    pub band_min_ticks: i64,
+    #[serde(default)]
+    pub liq_band_pct: f64,
+    #[serde(default)]
+    pub liq_fee_pct: f64,
+    #[serde(default)]
+    pub rfq_quote_ttl_secs: i64,
+    /// Both book sides need at least this many contracts for the mark clamp (default 1).
+    #[serde(default)]
+    pub mark_min_qty: f64,
+    /// The book spread must be at most this × the model spread for a two-sided clamp (default 3).
+    #[serde(default)]
+    pub mark_max_spread_mult: f64,
 }
 
 impl Underlying {
+    /// Premium tick in the quote currency per unit (snapshot `premiumTick`, else pip / 10, else 10^-(digits + 1)).
+    pub fn tick(&self) -> f64 {
+        if self.premium_tick > 0.0 && self.premium_tick.is_finite() {
+            return self.premium_tick;
+        }
+        if self.pip_size > 0.0 && self.pip_size.is_finite() {
+            return self.pip_size / 10.0;
+        }
+        10f64.powi(-(self.digits.clamp(0, 10) + 1))
+    }
+    pub fn market_band(&self) -> f64 {
+        if self.market_band_pct > 0.0 { self.market_band_pct } else { 10.0 }
+    }
+    pub fn limit_band(&self) -> f64 {
+        if self.limit_band_pct > 0.0 { self.limit_band_pct } else { 50.0 }
+    }
+    pub fn band_ticks(&self) -> i64 {
+        if self.band_min_ticks > 0 { self.band_min_ticks } else { 5 }
+    }
+    pub fn mark_min(&self) -> f64 {
+        if self.mark_min_qty > 0.0 { self.mark_min_qty } else { 1.0 }
+    }
+    pub fn mark_spread_mult(&self) -> f64 {
+        if self.mark_max_spread_mult > 0.0 { self.mark_max_spread_mult } else { 3.0 }
+    }
     pub fn clock(&self) -> VolClock {
         VolClock::new(self.weekend_vol_weight, self.holiday_vol_weight)
     }
@@ -221,6 +271,21 @@ pub struct GroupSettings {
     pub weekend_margin_pct: f64,
     #[serde(default = "yes")]
     pub enabled: bool,
+    /// Options order book fees per contract (USD): maker (negative = rebate) and taker. Absent = the group's
+    /// `commissionPerContract` for both sides (today's economics); capped at `commissionCapPct` % of the premium.
+    #[serde(default)]
+    pub maker_fee_per_contract: Option<f64>,
+    #[serde(default)]
+    pub taker_fee_per_contract: Option<f64>,
+}
+
+impl GroupSettings {
+    /// (maker, taker) fee per contract in USD (maker < 0 = rebate).
+    pub fn book_fees(&self) -> (f64, f64) {
+        let base = self.commission_per_contract.max(0.0);
+        let f = |x: Option<f64>| x.filter(|v| v.is_finite()).unwrap_or(base);
+        (f(self.maker_fee_per_contract), f(self.taker_fee_per_contract).max(0.0))
+    }
 }
 
 fn yes() -> bool {
@@ -241,6 +306,8 @@ impl GroupSettings {
             max_contracts_per_client: 200.0,
             weekend_margin_pct: 25.0,
             enabled: true,
+            maker_fee_per_contract: None,
+            taker_fee_per_contract: None,
         }
     }
 }

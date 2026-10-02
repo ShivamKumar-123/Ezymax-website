@@ -489,7 +489,7 @@ pub async fn run_account_jobs(st: &AppState) -> anyhow::Result<JobReport> {
                 .await?;
             for login in due {
                 let op: Op = Box::new(|tx, env| {
-                    if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() {
+                    if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() || !tx.st.book.is_idle() {
                         close_everything(tx, env)?;
                     }
                     funds::archive(tx, env, "system", "DEMO_EXPIRED", true).map(|c| json!({"changed": c}))
@@ -765,7 +765,7 @@ pub async fn change_group(State(st): State<AppState>, ctx: Ctx, headers: HeaderM
     }
     let g2 = g.clone();
     let op: Op = Box::new(move |tx, _| {
-        if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() {
+        if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() || !tx.st.book.is_idle() {
             return Err(Reject::new("positions_open", "Close all trades and orders first"));
         }
         funds::change_group(tx, &g2).map(|(from, to)| json!({"from": from, "to": to, "leverage": tx.st.account.leverage}))

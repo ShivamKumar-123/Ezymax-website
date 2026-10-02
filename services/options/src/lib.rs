@@ -10,16 +10,21 @@
 //! - Premium candles: an option series' model mid premium per underlying bar, for the Kalks Trader chart.
 //! - The versioned **snapshot** the trading engine prices with (`GET /v1/internal/options/snapshot`).
 //! - Back Office CRUD with audit: underlyings, rates, holidays, surfaces, tenant / group settings, dealer
-//!   controls, client limits.
+//!   controls, client limits, the Kalks market maker's quoting parameters.
+//! - Order book (docs/OPTIONS-EXCHANGE.md): per-underlying tick / bands / mark rules and group maker / taker fees in
+//!   the snapshot, the engine's book feed merged into chains (best bid / offer, sizes, last, OI, volume, the clamped
+//!   mark, theo and implied vols), depth / tape on the stream and public depth / trades / stats routes.
 //!
 //! SAFETY: the module is OFF per tenant unless `tenant_settings` turns it on; demo and live are separate
 //! switches (tenant `kalks` is seeded demo ON, live OFF). The engine enforces the switch on every order.
 
 pub mod api;
+pub mod book_feed;
 pub mod candles;
 pub mod config;
 pub mod feed;
 pub mod jobs;
+pub mod limiter;
 pub mod model;
 pub mod pricing;
 pub mod seed;
@@ -38,7 +43,12 @@ use crate::model::RefData;
 pub struct StreamGrant {
     pub tenant: String,
     pub group: String,
+    /// Account kind of the order book this connection sees (guests: live).
+    pub kind: book_feed::Kind,
 }
+
+/// Cached public order-book answers: (status, body), 1 s.
+pub type PublicBookCache = HashMap<String, (Instant, axum::http::StatusCode, Arc<serde_json::Value>)>;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -58,6 +68,12 @@ pub struct AppState {
     /// Serialises the listing job with admin-triggered regeneration.
     pub listing: Arc<tokio::sync::Mutex<()>>,
     pub jobs: Arc<Mutex<HashMap<&'static str, chrono::DateTime<chrono::Utc>>>>,
+    /// The engine's order book feed (docs/OPTIONS-EXCHANGE.md §10).
+    pub books: Arc<book_feed::BookFeed>,
+    /// Public order-book routes, cached 1 s per path.
+    pub public_book_cache: Arc<Mutex<PublicBookCache>>,
+    /// Public order-book routes: 10 requests / s per client IP.
+    pub public_limiter: Arc<Mutex<limiter::Limiter<std::net::IpAddr>>>,
 }
 
 impl AppState {
@@ -80,6 +96,9 @@ impl AppState {
             candles: Default::default(),
             listing: Default::default(),
             jobs: Default::default(),
+            books: Default::default(),
+            public_book_cache: Default::default(),
+            public_limiter: Arc::new(Mutex::new(limiter::Limiter::new(10.0, 10.0))),
         })
     }
 
@@ -97,6 +116,7 @@ impl AppState {
         tracing::debug!(from = current, to = fresh.version, "reference data reloaded");
         *self.rd.write().await = Arc::new(fresh);
         self.public_cache.lock().unwrap().clear();
+        self.public_book_cache.lock().unwrap().clear();
         Ok(true)
     }
 

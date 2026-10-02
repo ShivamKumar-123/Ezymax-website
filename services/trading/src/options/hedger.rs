@@ -68,6 +68,8 @@ pub async fn client_delta(st: &AppState, tenant_id: i64, exclude: Option<i64>) -
                 }
                 a.positions
                     .values()
+                    // order-book positions have another account on the other side, not the house
+                    .filter(|p| !p.on_book())
                     .filter_map(|p| {
                         let t = p.option.as_ref()?;
                         let q = env.options.mark(&env.tenant.slug, &env.group.code, t, env.now)?;

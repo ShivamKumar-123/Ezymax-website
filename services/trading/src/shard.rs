@@ -259,6 +259,8 @@ pub struct Shared {
     /// Kalks FX Options: snapshot, raw spots, pricer (src/options).
     pub options: Arc<crate::options::OptionsCtx>,
     pub clock: Arc<Clock>,
+    /// Kalks FX Options order book: actors, venues, outbox state (src/book).
+    pub books: Arc<crate::book::Books>,
 }
 
 /* ------------------------------------------------------------------ */
@@ -302,7 +304,10 @@ impl Hub {
             }
             tokio::spawn(shard.run(crx, trx));
         }
-        Hub { cmds, ticks, shared }
+        let hub = Hub { cmds, ticks, shared };
+        // the shards hand committed order-book commands (fired stops, SL / TP) to the book through the hub
+        let _ = hub.shared.books.hub.set(hub.clone());
+        hub
     }
 
     fn shard_of(&self, login: i64) -> usize {
@@ -595,6 +600,15 @@ impl Shard {
         let mut tx = Tx::new(st);
         let value = op(&mut tx, &env).map_err(ExecError::Reject)?;
         if tx.events.is_empty() && tx.audit.is_empty() {
+            if tx.book_dirty {
+                // only the in-memory order-book state changed (working orders, reservations): nothing to commit
+                let Tx { st: new_st, notes, book_send, .. } = tx;
+                self.push_book(&env, &new_st, &notes);
+                self.send_book(book_send);
+                self.states.insert(login, new_st);
+                self.dirty.insert(login);
+                return Ok(Done { value, audit: vec![], notes });
+            }
             return Ok(Done { value, audit: vec![], notes: tx.notes });
         }
         let rows: Vec<AuditRow> = tx.audit.iter().map(|a| audit_row(&tx.st, a, staff, reason_code, note, env.now)).collect();
@@ -616,11 +630,16 @@ impl Shard {
             self.sh.streams.tap(Committed { login, tenant_id: tx.st.account.tenant_id, first_version: before_version + 1, at: env.now, events: tx.events.clone(), equity_usd });
         }
         self.publish(&env, &tx, &audit);
+        if tx.book_dirty
+            && let Some(s) = self.sh.streams.account(login)
+        {
+            let _ = s.send(Arc::from(tx.st.book.frame().to_string()));
+        }
         self.lp_hooks(&tx.events);
         for e in &tx.events {
             tracing::info!(login, version = before_version, kind = e.kind(), actor, "event");
         }
-        let Tx { st: new_st, notes, .. } = tx;
+        let Tx { st: new_st, notes, book_send, .. } = tx;
         {
             let mut idx = self.sh.index.write().unwrap();
             for t in old_tickets {
@@ -642,7 +661,29 @@ impl Shard {
         self.states.insert(login, new_st);
         self.reindex(login);
         self.dirty.insert(login);
+        self.send_book(book_send);
         Ok(Done { value, audit, notes })
+    }
+
+    /// Order-book commands of a committed transaction go to their book actors (never blocks the shard).
+    fn send_book(&self, out: Vec<crate::book::Outgoing>) {
+        if out.is_empty() {
+            return;
+        }
+        match self.sh.books.hub.get() {
+            Some(hub) => crate::book::send_outgoing(hub, out),
+            None => tracing::error!(n = out.len(), "order-book commands dropped: the hub is not registered"),
+        }
+    }
+
+    /// A book-only change (reservation, removal) still updates the account on the terminal stream.
+    fn push_book(&self, env: &Env, st: &AccountState, notes: &[Note]) {
+        let Some(s) = self.sh.streams.account(st.login()) else { return };
+        for n in notes {
+            let _ = s.send(Arc::from(json!({"type": "notification", "kind": n.kind, "message": n.message, "data": n.data}).to_string()));
+        }
+        let _ = s.send(Arc::from(st.book.frame().to_string()));
+        let _ = s.send(Arc::from(json!({"type": "account", "account": views::account_json(env, st)}).to_string()));
     }
 
     fn reindex(&mut self, login: i64) {
@@ -858,7 +899,7 @@ impl Shard {
                     let (px, pr) = views::current(&env, st, p);
                     let mut v = json!({"ticket": p.ticket, "price": crate::money::num_opt(px), "profit": crate::money::num_opt(pr), "swap": crate::money::num(p.swap)});
                     if let Some(t) = &p.option {
-                        let q = env.options.mark(&env.tenant.slug, &env.group.code, t, env.now);
+                        let q = crate::engine::options::mark_of(&env, &st.account, t);
                         v["mark"] = crate::money::num_opt(q.map(|q| q.mark));
                         v["greeks"] = crate::engine::options::greeks_json(crate::engine::options::position_greeks(&env, p));
                     }

@@ -83,6 +83,8 @@ pub struct FixedPricer {
     pub spots: Mutex<HashMap<String, (f64, i64)>>,
     pub prices: Mutex<HashMap<String, (D, D)>>,
     pub stale: AtomicBool,
+    /// Order book top of book (tests publish into it to check the mark clamp).
+    pub top: Arc<crate::book::md::Top>,
 }
 
 impl FixedPricer {
@@ -125,6 +127,9 @@ impl OptionPricing for FixedPricer {
     fn scenario(&self, tenant: &str, underlying: &str, legs: &[ScenLeg], cfd_units: f64, now: DateTime<Utc>) -> Option<ScenOut> {
         let snap = self.snapshot()?;
         compute_scenario(&snap, &|s| OptionPricing::spot(self, s), &|c| self.usd_per(c), tenant, underlying, legs, cfd_units, now)
+    }
+    fn book_top(&self, tenant: &str, kind: crate::model::AccountKind, series: &str) -> Option<crate::book::md::TopQuote> {
+        self.top.get(tenant, kind, series)
     }
 }
 

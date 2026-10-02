@@ -17,6 +17,7 @@
 //! * [`realized`]: Yang-Zhang, Garman-Klass, Rogers-Satchell, close-to-close and EWMA vol.
 //! * [`ladder`], [`twap`], [`scenario`], [`payoff`]: strike ladder, fixing TWAP with gap accounting,
 //!   SPAN-style 16-scenario grid, multi-leg payoff / breakevens.
+//! * [`mark`]: the options mark, the model mid clamped inside the order book's best bid / ask.
 //!
 //! ```
 //! use optmath::{OptionType::*, *};
@@ -45,6 +46,7 @@ pub mod calendar;
 pub mod date;
 pub mod iv;
 pub mod ladder;
+pub mod mark;
 pub mod normal;
 pub mod payoff;
 pub mod realized;

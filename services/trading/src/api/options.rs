@@ -26,7 +26,7 @@ use super::{ApiError, ApiResult, AppState, Body, Ctx, ROLES_CONFIG, ROLES_DEALIN
 use crate::engine::options::{self as eopt, BarrierReq, LegReq, OptKind, OptOrderReq, PlaceOut};
 use crate::engine::trade::DealerCtx;
 use crate::engine::{AuditDraft, Reject};
-use crate::model::{AccountKind, BarrierKind, Deal, Expiry, Source, Trigger, TriggerOp};
+use crate::model::{BarrierKind, Deal, Expiry, Source, Trigger, TriggerOp};
 use crate::money::{D, ZERO, de_dec, de_opt_dec, num, num_opt, r2};
 use crate::options::OptionPricing;
 use crate::options::settle::{self, RERUN_WINDOW_SECS};
@@ -154,12 +154,10 @@ pub fn order_req(b: &OrderBody) -> ApiResult<OptOrderReq> {
     })
 }
 
-/// Suitability for live accounts (gateway, cached 60 s); demo accounts never need it.
-async fn eligible(st: &AppState, s: &terminal::Session) -> bool {
-    match st.hub.meta(s.login).map(|m| m.kind) {
-        Some(AccountKind::Live) => st.hub.shared.options.suitability(&st.gateway, s.user_id).await.eligible,
-        _ => true,
-    }
+/// Options eligibility (gateway suitability, cached 60 s): the client accepted the options intro. Live and demo
+/// accounts alike.
+pub async fn eligible(st: &AppState, s: &terminal::Session) -> bool {
+    st.hub.meta(s.login).is_some() && st.hub.shared.options.suitability(&st.gateway, s.user_id).await.eligible
 }
 
 fn others(st: &AppState, s: &terminal::Session) -> (D, D) {
@@ -271,6 +269,14 @@ pub async fn place(State(st): State<AppState>, ctx: Ctx, Body(b): Body<OrderBody
     if req.client_order_id.as_deref().is_none_or(str::is_empty) {
         return Err(validation("clientOrderId", "clientOrderId is required (it makes a repeated submit harmless)"));
     }
+    // once the order book is live for this account kind, listed (vanilla) options trade there only; barriers stay
+    // Kalks-quoted (docs/OPTIONS-EXCHANGE.md §11: house opens halted)
+    if let Some(m) = st.hub.meta(s.login)
+        && st.hub.shared.books.venue_enabled(s.tenant_id, m.kind)
+        && req.legs.iter().any(|l| l.barrier.is_none())
+    {
+        return Err(ApiError::Status { status: 422, code: "book_venue", message: "Listed options trade on the options order book: place a book order".into() });
+    }
     if st.social.is_fund(s.login) {
         req.source = Source::Pamm;
     }
@@ -374,6 +380,8 @@ pub async fn book(State(st): State<AppState>, s: StaffCtx, Query(q): Query<BookQ
                 }
                 a.positions
                     .values()
+                    // the house's exposure: order-book positions face another account, not the house
+                    .filter(|p| !p.on_book())
                     .filter_map(|p| {
                         let t = p.option.as_ref()?;
                         let g = eopt::position_greeks(env, p).unwrap_or((0.0, 0.0, 0.0, 0.0));

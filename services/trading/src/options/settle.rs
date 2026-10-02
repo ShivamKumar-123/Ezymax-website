@@ -150,6 +150,10 @@ pub async fn notify(st: &AppState, rep: &SettleReport, key: &str, run: i32, fixi
 pub async fn settle_expiry(st: &AppState, key: &str, symbol: &str, date: NaiveDate, fixing: D, run: i32, source: Option<&str>) -> SettleReport {
     let rep = st.hub.settle(key, fixing, run, None).await;
     let n: usize = rep.accounts.iter().map(|a| a.2).sum();
+    if rep.failures == 0 {
+        // the order books drop the expired series and their positions (settled above)
+        crate::book::purge_expiry(&st.hub, symbol, date).await;
+    }
     if n > 0 || rep.failures > 0 {
         record(st, &rep, key, symbol, date, run, fixing, source, "settle", "", "system").await;
         notify(st, &rep, key, run, fixing, false).await;

@@ -40,6 +40,9 @@ use crate::state::{AccountState, Event};
 /// Most legs in one order (iron condor = 4; the builder allows custom strategies).
 pub const MAX_LEGS: usize = 8;
 
+/// `not_eligible`: the client has not accepted the options intro yet (gateway suitability).
+pub const NOT_ELIGIBLE: &str = "One quick step: read the 1-minute options intro in the Client Area (Options)";
+
 /// House accounts of the options book.
 pub const HOUSE_PREMIUM: &str = "options_premium";
 pub const HOUSE_SETTLEMENT: &str = "options_settlement";
@@ -101,6 +104,20 @@ pub fn units(p: &Position, t: &OptionTerms) -> D {
     p.volume * t.contract_size * p.side.sign()
 }
 
+/// The mark of a contract for an account: the cached model price with its `mark` clamped inside the account
+/// kind's order book (docs/OPTIONS-EXCHANGE.md §6; vanilla series only, model mid without a book).
+pub fn mark_of(env: &Env, acc: &Account, t: &OptionTerms) -> Option<OptPrice> {
+    let mut q = env.options.mark(&env.tenant.slug, &env.group.code, t, env.now)?;
+    if t.barrier.is_none()
+        && let Some(top) = env.options.book_top(&env.tenant.slug, acc.kind, &t.series)
+        && let Some(snap) = env.options.snapshot()
+        && let Some(u) = snap.underlying(&t.underlying)
+    {
+        q.mark = super::options_book::clamp(q.mark, q.ask - q.bid, Some(top), u);
+    }
+    Some(q)
+}
+
 /// Signed market value (account currency) of an option position at its mark. Never drops a position: after the
 /// cut it is the payoff at the fixing; without a model price the intrinsic value at the last spot, else the
 /// premium it was opened at.
@@ -113,7 +130,7 @@ pub fn position_value(env: &Env, acc: &Account, p: &Position, t: &OptionTerms) -
     {
         return u * t.payoff(fx) * q * factor;
     }
-    if let Some(px) = env.options.mark(&env.tenant.slug, &env.group.code, t, env.now) {
+    if let Some(px) = mark_of(env, acc, t) {
         return u * px.mark * px.usd_per_quote * factor;
     }
     // no model price: a long at its intrinsic value (the premium paid when there is no spot at all), a short at
@@ -131,7 +148,8 @@ pub fn position_value(env: &Env, acc: &Account, p: &Position, t: &OptionTerms) -
 /// (price a position closes at now, floating P&L incl. the premium basis), from the cached mark.
 pub fn position_now(env: &Env, acc: &Account, p: &Position) -> (Option<D>, Option<D>) {
     let Some(t) = &p.option else { return (None, None) };
-    let px = env.options.mark(&env.tenant.slug, &env.group.code, t, env.now).map(|q| q.close_price(p.side));
+    // a book position closes at its mark (the book decides the real price); a house position at bid / ask
+    let px = mark_of(env, acc, t).map(|q| if p.on_book() { q.mark } else { q.close_price(p.side) });
     (px, Some(r2(position_value(env, acc, p, t) + p.premium)))
 }
 
@@ -149,7 +167,7 @@ pub fn position_greeks(env: &Env, p: &Position) -> Option<(f64, f64, f64, f64)> 
 
 /// Conservative margin when no scenario can be run (no snapshot / no price): 10 % of the notional of every
 /// short contract plus its intrinsic value.
-fn fallback_margin(env: &Env, acc: &Account, legs: &[ScenLeg]) -> D {
+pub(crate) fn fallback_margin(env: &Env, acc: &Account, legs: &[ScenLeg]) -> D {
     let mut m = ZERO;
     for l in legs.iter().filter(|l| l.contracts < ZERO) {
         let t = &l.terms;
@@ -236,7 +254,7 @@ pub struct OptOrderReq {
     pub source: Source,
     pub platform: String,
     pub comment: String,
-    /// Suitability confirmed by the gateway; live accounts need it (demo accounts never do).
+    /// Suitability confirmed by the gateway (the client accepted the options intro); live and demo accounts.
     pub eligible: bool,
     /// Open contracts (long, short) on the client's other accounts (per-client limits).
     pub others: (D, D),
@@ -482,11 +500,11 @@ pub fn price_open(env: &Env, st: &AccountState, snap: &OptSnapshot, specs: &[Leg
     let acc = &st.account;
     let first = &specs[0].terms;
     push(module_gate(env, st, snap, &first.underlying));
+    // eligibility = the client accepted the options intro (gateway suitability); live and demo alike
     if let Some(ok) = g.eligible
-        && acc.kind == AccountKind::Live
         && !ok
     {
-        push(Err(rej("not_eligible", "Before your first options trade, complete the options suitability steps (verified identity, the options risk disclosure and the knowledge quiz)")));
+        push(Err(rej("not_eligible", NOT_ELIGIBLE)));
     }
     push(client_gate(env, st, snap, true));
     push(gate(env, st, &first.underlying, true, ZERO, None));
@@ -525,9 +543,10 @@ pub fn price_open(env: &Env, st: &AccountState, snap: &OptSnapshot, specs: &[Leg
     Ok((out, reasons))
 }
 
-/// Cash still free for premiums: the balance not needed as margin and not made of credit / bonus.
+/// Cash still free for premiums: the balance not needed as margin, not reserved for working book orders and not
+/// made of credit / bonus (`free_margin` already excludes the order reserve).
 pub fn free_cash(m: &Metrics) -> D {
-    m.balance.min(m.free_margin - m.credit - m.bonus).max(ZERO)
+    (m.balance - m.order_reserve).min(m.free_margin - m.credit - m.bonus).max(ZERO)
 }
 
 /// Money checks of an opening trade from the metrics before and after its events.
@@ -542,9 +561,9 @@ pub fn funds_reasons(acc: &Account, before: &Metrics, after: &Metrics, legs: &[P
         out.push(rej("insufficient_cash", format!("Not enough cash: {} {ccy} needed for premium and commission, {} {ccy} available (credit and bonus can't pay premiums)", r2(debit).normalize(), r2(cash).normalize())));
     }
     if after.margin > before.margin {
-        if after.equity - after.margin < ZERO {
+        if after.equity - after.margin - after.order_reserve < ZERO {
             out.push(rej("insufficient_margin", format!("Not enough margin: {} {ccy} needed, free margin {} {ccy}", r2(after.margin - before.margin).normalize(), r2(before.free_margin).normalize())));
-        } else if after.equity - after.credit - after.bonus - after.margin < ZERO {
+        } else if after.equity - after.credit - after.bonus - after.margin - after.order_reserve < ZERO {
             out.push(rej("insufficient_margin", "Sold options need margin from your own funds: credit and bonus can't cover it"));
         }
     }
@@ -635,6 +654,7 @@ fn book(tx: &mut Tx, env: &Env, legs: &[Priced], meta: &FillMeta) -> Filled {
             option: Some(t.clone()),
             combo_id,
             premium: l.cash,
+            venue: None,
         };
         let deal = Deal {
             id: deal_id,
@@ -664,7 +684,7 @@ fn book(tx: &mut Tx, env: &Env, legs: &[Priced], meta: &FillMeta) -> Filled {
             snapshot: None,
             client_order_id: meta.client_order_id.clone(),
             partial: false,
-            option: Some(DealOption { terms: t.clone(), cash: l.cash, usd_per_quote: l.quote.usd_per_quote, spot: Some(l.quote.spot), fixing: None, run: None, combo_id, charged: l.commission }),
+            option: Some(DealOption { terms: t.clone(), cash: l.cash, usd_per_quote: l.quote.usd_per_quote, spot: Some(l.quote.spot), fixing: None, run: None, combo_id, charged: l.commission, fill: None, rebate: ZERO }),
         };
         tx.emit(Event::PositionOpened { position: p, deal: Some(deal) });
         out.push(LegFill { ticket, deal: deal_id, series: t.series.clone(), side: l.spec.side, contracts: l.spec.contracts, price: l.price, premium: l.premium, commission: l.commission });
@@ -854,7 +874,7 @@ pub fn place(tx: &mut Tx, env: &Env, req: OptOrderReq) -> Result<PlaceOut, Rejec
         placed_at: env.now,
         triggered: false,
         client_order_id: req.client_order_id.clone(),
-        option: Some(OptionOrder { legs: specs.iter().map(|s| OptLeg { terms: s.terms.clone(), side: s.side, contracts: s.contracts }).collect(), limit_premium: req.limit_premium }),
+        option: Some(OptionOrder { legs: specs.iter().map(|s| OptLeg { terms: s.terms.clone(), side: s.side, contracts: s.contracts }).collect(), limit_premium: req.limit_premium, book: None }),
         combo_id: None,
         trigger: req.trigger.clone(),
     };
@@ -1005,6 +1025,10 @@ impl OptClose {
 pub fn close(tx: &mut Tx, env: &Env, ticket: i64, c: OptClose) -> Result<(i64, D), Reject> {
     let p = tx.st.positions.get(&ticket).cloned().ok_or_else(|| rej("not_found", format!("Position #{ticket} not found")))?;
     let t = p.option.clone().ok_or_else(|| rej("not_option", format!("#{ticket} is not an option position")))?;
+    if p.on_book() {
+        // another account holds the other side: only the order book can close it (a reduce-only order)
+        return Err(rej("book_venue", format!("#{ticket} trades on the options order book: close it with an order")));
+    }
     let snap = snapshot(env)?;
     let force = c.dealer.as_ref().is_some_and(|d| d.force);
     if !c.system {
@@ -1111,7 +1135,7 @@ fn exit(
         snapshot: Some(Box::new(snapshot)),
         client_order_id: None,
         partial: !full,
-        option: Some(DealOption { terms: t.clone(), cash, usd_per_quote: usdq, spot, fixing, run, combo_id: p.combo_id, charged: comm }),
+        option: Some(DealOption { terms: t.clone(), cash, usd_per_quote: usdq, spot, fixing, run, combo_id: p.combo_id, charged: comm, fill: None, rebate: ZERO }),
     };
     let rest = if full { None } else { Some(Position { volume: p.volume - volume, premium: p.premium - basis, commission: p.commission - entry_comm, ..p.clone() }) };
     tx.emit(Event::PositionClosed { deal, position: rest });
@@ -1285,6 +1309,9 @@ pub fn rerun(tx: &mut Tx, env: &Env, key: &str, prev: &[Deal], fixing: D, run: i
 pub fn void(tx: &mut Tx, env: &Env, ticket: i64, deals: &[Deal], dealer: &DealerCtx) -> Result<Value, Reject> {
     let mine: Vec<&Deal> = deals.iter().filter(|d| d.position_ticket == ticket && d.login == tx.st.account.login && d.option.is_some() && !tx.st.reversed_deals.contains(&d.id)).collect();
     let open = tx.st.positions.get(&ticket).cloned();
+    if open.as_ref().is_some_and(|p| p.on_book()) || mine.iter().any(|d| d.option.as_ref().is_some_and(|o| o.fill.is_some())) {
+        return Err(rej("book_venue", format!("#{ticket} traded on the options order book: bust the fill instead (both sides)")));
+    }
     if open.as_ref().is_some_and(|p| p.option.is_none()) {
         return Err(rej("not_option", format!("#{ticket} is not an option position")));
     }
@@ -1341,6 +1368,9 @@ fn transient(code: &str) -> bool {
 fn evaluate_order(tx: &mut Tx, env: &Env, ticket: i64) {
     let Some(o) = tx.st.orders.get(&ticket).cloned() else { return };
     let Some(oo) = o.option.clone() else { return };
+    if oo.book.is_some() {
+        return; // an order-book stop: options_book::eval_stops
+    }
     if o.expiry_at.is_some_and(|a| a <= env.now) {
         return; // expire_orders removes it
     }
@@ -1381,7 +1411,9 @@ fn evaluate_order(tx: &mut Tx, env: &Env, ticket: i64) {
 
 /// Premium SL / TP of the option positions on `underlying` (fresh prices).
 fn premium_stops(tx: &mut Tx, env: &Env, underlying: &str) {
-    let due: Vec<i64> = tx.st.positions.values().filter(|p| (p.sl.is_some() || p.tp.is_some()) && p.option.as_ref().is_some_and(|t| t.underlying == underlying)).map(|p| p.ticket).collect();
+    let due: Vec<i64> = tx.st.positions.values().filter(|p| !p.on_book() && (p.sl.is_some() || p.tp.is_some()) && p.option.as_ref().is_some_and(|t| t.underlying == underlying)).map(|p| p.ticket).collect();
+    // book positions: a reduce-only market order on the mark
+    super::options_book::book_sltp(tx, env, underlying);
     for ticket in due {
         let p = tx.st.positions[&ticket].clone();
         let t = p.option.clone().unwrap();
@@ -1418,6 +1450,7 @@ pub fn on_underlying(tx: &mut Tx, env: &Env, underlying: &str, full: bool) {
     for t in orders {
         evaluate_order(tx, env, t);
     }
+    super::options_book::eval_stops(tx, env, Some(underlying));
     premium_stops(tx, env, underlying);
     super::risk::check_margin(tx, env);
 }
@@ -1436,6 +1469,7 @@ pub fn on_timer(tx: &mut Tx, env: &Env) {
     for t in orders {
         evaluate_order(tx, env, t);
     }
+    super::options_book::eval_stops(tx, env, None);
     for u in tx.st.option_keys() {
         premium_stops(tx, env, &u);
     }

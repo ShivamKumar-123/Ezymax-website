@@ -139,7 +139,8 @@ pub async fn replay_all(pool: &PgPool) -> anyhow::Result<HashMap<i64, AccountSta
 /// Highest ids in use: (ticket, deal, txn, live login, demo login).
 pub async fn max_ids(pool: &PgPool) -> anyhow::Result<(i64, i64, i64, i64, i64)> {
     let r = sqlx::query(
-        "SELECT GREATEST((SELECT max(ticket) FROM orders), (SELECT max(ticket) FROM positions), 1000000) AS ticket,
+        "SELECT GREATEST((SELECT max(ticket) FROM orders), (SELECT max(ticket) FROM positions), (SELECT max(id) FROM book_orders),
+                         (SELECT max(GREATEST(maker_order, taker_order)) FROM book_fills), 1000000) AS ticket,
                 GREATEST((SELECT max(id) FROM deals), 2000000) AS deal,
                 COALESCE((SELECT max(id) FROM ledger_txns), 0) AS txn,
                 GREATEST((SELECT max(login) FROM accounts WHERE kind = 'live'), 10000000) AS live,

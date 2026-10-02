@@ -170,7 +170,15 @@ pub async fn run(pool: &PgPool, holidays_dir: &str) -> anyhow::Result<u64> {
         .execute(&mut *tx)
         .await?
         .rows_affected();
-    n += sqlx::query("INSERT INTO group_settings (tenant, group_code, symbol) VALUES ('kalks', '*', '*') ON CONFLICT DO NOTHING").execute(&mut *tx).await?.rows_affected();
+    // The platform default row, with the order book's default maker rebate / taker fee (docs/OPTIONS-EXCHANGE.md §7).
+    n += sqlx::query(
+        "INSERT INTO group_settings (tenant, group_code, symbol, maker_fee_per_contract, taker_fee_per_contract) VALUES ('kalks', '*', '*', $1, $2) ON CONFLICT DO NOTHING",
+    )
+    .bind(crate::model::DEFAULT_MAKER_FEE)
+    .bind(crate::model::DEFAULT_TAKER_FEE)
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
 
     let dir = Path::new(holidays_dir);
     match std::fs::read_dir(dir) {

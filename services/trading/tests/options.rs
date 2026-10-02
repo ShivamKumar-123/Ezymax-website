@@ -1,6 +1,6 @@
 //! Kalks FX Options through the real API handlers, shards and PostgreSQL, with a mock options service (snapshot
 //! with ETag, fixings) and a mock gateway (suitability):
-//! suitability (404 = not eligible for live, demo allowed), preview, market orders, the position JSON contract,
+//! eligibility (404 = not eligible, live and demo alike), preview, market orders, the position JSON contract,
 //! combos (fill and close together), partial close through the generic close route, a barrier knocked once by a
 //! raw tick (`option_knocks`), void, the settlement scheduler (crash catch-up exactly once, idempotent, run
 //! records), the client settlement list, a settlement re-run (nets the difference, window), the options book,
@@ -224,6 +224,7 @@ async fn options_through_the_api_shards_and_postgres() {
         restrictions: Default::default(),
         options: options.clone(),
         clock: Default::default(),
+        books: Default::default(),
     });
     // Monday of the test week, 12:00 UTC (in the past: the snapshot's freshness is measured on the wall clock)
     shared.clock.set(Some(t("2026-09-21T12:00:00Z")));
@@ -258,11 +259,12 @@ async fn options_through_the_api_shards_and_postgres() {
     let tenant = registry.by_slug("kalks").unwrap();
     let ctx = |bearer: Option<&str>| Ctx { tenant: tenant.clone(), ip: "198.51.100.7".into(), user_agent: "it".into(), bearer: bearer.map(str::to_string) };
 
-    // accounts: live (eligible client), live (suitability not deployed for this client), demo (same client)
-    let (live_ok, live_no, demo_no) = (10_000_501i64, 10_000_502i64, 50_000_501i64);
+    // accounts: live (eligible client), live (no answer for this client yet), demo of the eligible client, demo of the other
+    let (live_ok, live_no, demo_no, demo_nn) = (10_000_501i64, 10_000_502i64, 50_000_501i64, 50_000_502i64);
     hub.open(account(live_ok, ELIGIBLE, AccountKind::Live), ("h".into(), "i".into()), "test").await.unwrap();
     hub.open(account(live_no, NOT_YET, AccountKind::Live), ("h".into(), "i".into()), "test").await.unwrap();
-    hub.open(account(demo_no, NOT_YET, AccountKind::Demo), ("h".into(), "i".into()), "test").await.unwrap();
+    hub.open(account(demo_no, ELIGIBLE, AccountKind::Demo), ("h".into(), "i".into()), "test").await.unwrap();
+    hub.open(account(demo_nn, NOT_YET, AccountKind::Demo), ("h".into(), "i".into()), "test").await.unwrap();
     for (i, l) in [live_ok, live_no].iter().enumerate() {
         let key = format!("it-opt-fund-{i}");
         let op: Op = Box::new(move |tx, env| funds::transfer(tx, env, funds::Direction::In, d("10000"), &key, None).map(|_| Value::Null));
@@ -270,13 +272,16 @@ async fn options_through_the_api_shards_and_postgres() {
     }
     let tok_ok = token(&st, &tenant, live_ok, ELIGIBLE).await;
     let tok_no = token(&st, &tenant, live_no, NOT_YET).await;
-    let tok_demo = token(&st, &tenant, demo_no, NOT_YET).await;
+    let tok_demo = token(&st, &tenant, demo_no, ELIGIBLE).await;
+    let tok_demo_no = token(&st, &tenant, demo_nn, NOT_YET).await;
     let order = |legs: Value, cid: &str| json!({"legs": legs, "type": "market", "clientOrderId": cid});
     let leg = |s: &str, side: &str, c: i64| json!({"series": s, "side": side, "contracts": c});
 
-    // suitability: the gateway has no answer for this client yet (404): live refused, demo allowed
+    // eligibility: the gateway has no answer for this client yet (404): refused on live and on demo
     let e = api::options::place(State(st.clone()), ctx(Some(&tok_no)), body(order(json!([leg(C116, "buy", 1)]), "n1"))).await.unwrap_err();
     assert_eq!(code(&e), "not_eligible");
+    let e = api::options::place(State(st.clone()), ctx(Some(&tok_demo_no)), body(order(json!([leg(C116, "buy", 1)]), "n2"))).await.unwrap_err();
+    assert_eq!(code(&e), "not_eligible", "demo accounts need the options intro too");
     let Json(pv) = api::options::preview(State(st.clone()), ctx(Some(&tok_no)), body(order(json!([leg(C116, "buy", 1)]), "n1"))).await.unwrap();
     assert_eq!((pv["ok"].as_bool(), pv["reasons"][0]["code"].as_str()), (Some(false), Some("not_eligible")));
     let Json(dm) = api::options::place(State(st.clone()), ctx(Some(&tok_demo)), body(order(json!([leg(C116, "buy", 1)]), "d1"))).await.unwrap();

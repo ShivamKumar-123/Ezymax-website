@@ -4,6 +4,7 @@
 
 pub mod accounts;
 pub mod admin;
+pub mod book_feed;
 pub mod closures;
 pub mod controls;
 pub mod dealing;
@@ -11,6 +12,7 @@ pub mod ledger;
 pub mod lifecycle;
 pub mod mam;
 pub mod options;
+pub mod options_book;
 pub mod social;
 pub mod social_admin;
 pub mod social_house;
@@ -82,6 +84,16 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/terminal/options/orders", post(options::place))
         .route("/v1/terminal/options/combos/{combo}/close", post(options::close_combo))
         .route("/v1/terminal/options/settlements", get(options::settlements))
+        // Kalks FX Options order book (api/options_book.rs, api/book_feed.rs; docs/OPTIONS-EXCHANGE.md)
+        .route("/v1/terminal/options/book/orders", post(options_book::place).get(options_book::orders).delete(options_book::cancel_many))
+        .route("/v1/terminal/options/book/orders/{id}", patch(options_book::amend).delete(options_book::cancel))
+        .route("/v1/terminal/options/book/fills", get(options_book::fills))
+        .route("/v1/terminal/options/book/preview", post(options_book::preview))
+        .route("/v1/terminal/options/book/deadman", post(options_book::deadman))
+        .route("/v1/terminal/options/book/mass-quote", post(options_book::mass_quote))
+        .route("/v1/internal/options/book/stream", get(book_feed::stream))
+        .route("/v1/internal/options/book/{tenant}/{kind}/snapshot", get(book_feed::snapshot))
+        .route("/v1/internal/options/book/{tenant}/{kind}/trades", get(book_feed::trades))
         .route("/v1/admin/options/book", get(options::book))
         .route("/v1/admin/options/status", get(options::status))
         .route("/v1/admin/options/settlements", get(options::settlement_list))
@@ -490,6 +502,8 @@ pub fn user_id(parts_user: Option<String>, query_user: Option<i64>) -> ApiResult
 pub fn ok(v: Value) -> Json<Value> {
     Json(v)
 }
+
+pub use terminal::parse_time;
 
 pub fn parse_ticket(s: &str) -> ApiResult<i64> {
     s.trim().parse::<i64>().map_err(|_| ApiError::BadRequest(format!("Invalid ticket {s}")))

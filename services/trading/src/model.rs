@@ -93,7 +93,7 @@ pub enum Mode {
     Hedging,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AccountKind {
     Live,
@@ -105,6 +105,13 @@ impl AccountKind {
         match self {
             AccountKind::Live => "live",
             AccountKind::Demo => "demo",
+        }
+    }
+    pub fn parse(s: &str) -> Option<AccountKind> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "live" => Some(AccountKind::Live),
+            "demo" => Some(AccountKind::Demo),
+            _ => None,
         }
     }
 }
@@ -348,11 +355,37 @@ pub struct Position {
     /// received +). Realised P&L = cash at close / expiry + this basis.
     #[serde(default, skip_serializing_if = "D::is_zero")]
     pub premium: D,
+    /// Options: where the contract trades. None / `house` = Kalks-priced (B-book, the house is the counterparty);
+    /// `book` = the options order book (another account is the counterparty, cash through the expiry's clearing
+    /// account). Absent on every event written before the order book existed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub venue: Option<Venue>,
 }
 
 impl Position {
     pub fn is_option(&self) -> bool {
         self.option.is_some()
+    }
+    /// An option position held on the options order book (docs/OPTIONS-EXCHANGE.md).
+    pub fn on_book(&self) -> bool {
+        self.venue == Some(Venue::Book)
+    }
+}
+
+/// Where an option position trades.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Venue {
+    House,
+    Book,
+}
+
+impl Venue {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Venue::House => "house",
+            Venue::Book => "book",
+        }
     }
 }
 
@@ -531,6 +564,47 @@ pub struct OptionOrder {
     /// when its net debit per combo unit is at or below it (a credit order: its net credit at or above it).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub limit_premium: Option<D>,
+    /// Order-book stop order (`stop_market` / `stop_limit`, docs/OPTIONS-EXCHANGE.md §2): when its trigger fires it
+    /// becomes a book order (market IOC, or a limit at `limit_premium`). Never filled at the house price.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub book: Option<BookStop>,
+}
+
+/// What an order-book stop watches.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StopSource {
+    /// The series' mark (model mid clamped inside the book), never the last trade.
+    Mark,
+    /// The underlying's raw mid.
+    Underlying,
+}
+
+impl StopSource {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            StopSource::Mark => "mark",
+            StopSource::Underlying => "underlying",
+        }
+    }
+}
+
+/// Terms of an order-book stop order (kept on the account `Order`, so it survives restarts in the event stream).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct BookStop {
+    pub source: StopSource,
+    pub op: TriggerOp,
+    /// Trigger level: a premium per unit (source mark) or an underlying price.
+    pub trigger: D,
+    /// Time in force of the order it becomes (`ioc` for stop_market; gtc / gtd / ioc / fok for stop_limit).
+    pub tif: String,
+    #[serde(default)]
+    pub post_only: bool,
+    #[serde(default)]
+    pub reduce_only: bool,
+    /// Good-till-date of the resulting limit order.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expire_at: Option<DateTime<Utc>>,
 }
 
 /// Option facts of a deal.
@@ -556,6 +630,27 @@ pub struct DealOption {
     /// commission, like CFD exits).
     #[serde(default)]
     pub charged: D,
+    /// Order-book fill this deal comes from (absent on house-priced deals).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill: Option<FillRef>,
+    /// Maker rebate credited with this deal (account currency, ≥ 0; order book only).
+    #[serde(default, skip_serializing_if = "D::is_zero")]
+    pub rebate: D,
+}
+
+/// The order-book fill behind a deal: `option.fill = {id, role, kind, combo}`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct FillRef {
+    pub id: String,
+    /// `maker` | `taker`.
+    pub role: String,
+    /// `book` | `rfq` | `liquidation` | `backstop` | `novation`.
+    pub kind: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub combo: Option<i64>,
+    /// The book order (engine ticket) that traded.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub order: Option<i64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -667,6 +762,8 @@ pub enum DealReason {
     Expiry,
     /// Barrier option knocked out (closed at its rebate).
     KnockOut,
+    /// A house-priced option moved to the order book (the client keeps the position and its P&L).
+    Novation,
 }
 
 impl DealReason {
@@ -684,6 +781,7 @@ impl DealReason {
             DealReason::PendingFill => "pending_fill",
             DealReason::Expiry => "expiry",
             DealReason::KnockOut => "knock_out",
+            DealReason::Novation => "novation",
         }
     }
 }
@@ -764,6 +862,8 @@ pub enum TxnKind {
     OptionPremium,
     /// Kalks FX Options expiry payout or knock-out rebate: balance ↔ `house:options_settlement`.
     OptionSettlement,
+    /// Options order book maker rebate: `house:options_rebates` → balance.
+    OptionRebate,
 }
 
 impl TxnKind {
@@ -787,6 +887,7 @@ impl TxnKind {
             TxnKind::HouseCapital => "house_capital",
             TxnKind::OptionPremium => "option_premium",
             TxnKind::OptionSettlement => "option_settlement",
+            TxnKind::OptionRebate => "option_rebate",
         }
     }
 }

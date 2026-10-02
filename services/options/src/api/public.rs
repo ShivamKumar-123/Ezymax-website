@@ -10,9 +10,10 @@ use chrono::{DateTime, NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use super::{ApiError, R, enabled_tenant};
+use super::{ApiError, R, account_kind, enabled_tenant};
+use crate::book_feed::Kind;
 use crate::candles::{self, UsdConv};
-use crate::model::{Expiry, PLATFORM_TENANT, RefData, TenantSettings, Underlying};
+use crate::model::{BARRIER_LABEL, BARRIER_VENUE, Expiry, PLATFORM_TENANT, RefData, TenantSettings, Underlying};
 use crate::{AppState, pricing};
 
 fn visible<'a>(rd: &'a RefData, t: &TenantSettings, symbol: &str) -> R<&'a Underlying> {
@@ -35,7 +36,7 @@ fn pick_expiry<'a>(rd: &'a RefData, symbol: &'a str, expiry: Option<&str>) -> R<
     }
 }
 
-fn underlying_json(rd: &RefData, u: &Underlying) -> Value {
+fn underlying_json(rd: &RefData, u: &Underlying, book_live: bool) -> Value {
     let next = open_expiries(rd, &u.symbol).min_by_key(|e| e.cut_at);
     json!({
         "symbol": u.symbol,
@@ -61,6 +62,19 @@ fn underlying_json(rd: &RefData, u: &Underlying) -> Value {
         "nextExpiry": next.map(|e| json!({"date": e.expiry_date, "cutAt": e.cut_at})),
         "atmVol": rd.surfaces.get(&u.symbol).and_then(|s| s.surface.as_ref()).map(|s| s.atm_vol(7.0 / 365.0)),
         "realizedVol": rd.realized.get(&u.symbol).map(|r| r.value),
+        // order book (docs/OPTIONS-EXCHANGE.md §2, §5, §6)
+        "orderBook": book_live,
+        "premiumTick": u.premium_tick,
+        "marketBandPct": u.market_band_pct,
+        "limitBandPct": u.limit_band_pct,
+        "bandMinTicks": u.band_min_ticks,
+        "liqBandPct": u.liq_band_pct,
+        "liqFeePct": u.liq_fee_pct,
+        "rfqQuoteTtlSecs": u.rfq_quote_ttl_secs,
+        "markMinQty": u.mark_min_qty,
+        "markMaxSpreadMult": u.mark_max_spread_mult,
+        "barrierVenue": BARRIER_VENUE,
+        "barrierLabel": BARRIER_LABEL,
     })
 }
 
@@ -68,7 +82,8 @@ fn underlying_json(rd: &RefData, u: &Underlying) -> Value {
 pub async fn underlyings(State(st): State<AppState>, h: HeaderMap) -> R {
     let rd = st.refdata().await;
     let t = enabled_tenant(&rd, &h)?;
-    let list: Vec<Value> = rd.underlyings.iter().filter(|u| u.enabled && t.allows(&u.symbol)).map(|u| underlying_json(&rd, u)).collect();
+    let live = st.books.active(&t.tenant, account_kind(&h));
+    let list: Vec<Value> = rd.underlyings.iter().filter(|u| u.enabled && t.allows(&u.symbol)).map(|u| underlying_json(&rd, u, live)).collect();
     Ok(Json(json!({"underlyings": list, "version": rd.version})))
 }
 
@@ -112,10 +127,25 @@ pub fn group_param(g: Option<&str>) -> String {
     g.map(str::trim).filter(|g| !g.is_empty() && g.len() <= 64).unwrap_or("*").to_string()
 }
 
-pub async fn build_chain(st: &AppState, rd: &RefData, u: &Underlying, e: &Expiry, tenant: &str, group: &str) -> (Value, Vec<pricing::ChainRow>) {
+/// The tenant's live book for an account kind as pricing input: tops and previous EOD marks of `codes` (`None` while
+/// the book is not live: house model quotes).
+pub fn book_data(st: &AppState, tenant: &str, kind: Kind, codes: &[&str]) -> Option<(std::collections::HashMap<String, pricing::BookTop>, std::collections::HashMap<String, f64>)> {
+    if !st.books.active(tenant, kind) {
+        return None;
+    }
+    Some((st.books.tops(tenant, kind, codes.iter().copied()), st.books.prev_close(codes.iter().copied())))
+}
+
+/// A chain for (tenant, group) with the tenant's order book for `kind` merged in when it is live.
+pub async fn build_chain(st: &AppState, rd: &RefData, u: &Underlying, e: &Expiry, tenant: &str, group: &str, kind: Kind) -> (Value, Vec<pricing::ChainRow>) {
     let spot = st.spots.get(&u.symbol).await;
     let usd = st.spots.usd_per(&u.quote_ccy).await;
-    pricing::chain(&pricing::ChainInput { rd, u, e, spot, usd_per_quote: usd, tenant, group, now: Utc::now() })
+    let codes: Vec<&str> = rd.series_of(e.id).map(|s| s.code.as_str()).collect();
+    let data = book_data(st, tenant, kind, &codes);
+    let book = data.as_ref().map(|(tops, prev_close)| pricing::BookIn { tops, prev_close });
+    let (mut head, rows) = pricing::chain(&pricing::ChainInput { rd, u, e, spot, usd_per_quote: usd, tenant, group, now: Utc::now(), book });
+    head["book"]["kind"] = json!(kind.as_str());
+    (head, rows)
 }
 
 /// `GET /v1/options/chain?u=&expiry=&group=` -> header + `rows[{strike, strikeLabel, call{..}, put{..}}]`.
@@ -124,7 +154,7 @@ pub async fn chain(State(st): State<AppState>, h: HeaderMap, Query(q): Query<Cha
     let t = enabled_tenant(&rd, &h)?;
     let u = visible(&rd, &t, &q.u)?;
     let e = pick_expiry(&rd, &u.symbol, q.expiry.as_deref())?;
-    let (mut head, rows) = build_chain(&st, &rd, u, e, &t.tenant, &group_param(q.group.as_deref())).await;
+    let (mut head, rows) = build_chain(&st, &rd, u, e, &t.tenant, &group_param(q.group.as_deref()), account_kind(&h)).await;
     head["rows"] = json!(rows);
     Ok(Json(head))
 }
@@ -134,29 +164,63 @@ pub struct GroupQ {
     group: Option<String>,
 }
 
-/// `GET /v1/options/series/{code}?group=` -> `{series, expiry, quote|null, error?}`.
+/// A barrier series code `SYMBOL-YYYYMMDD-STRIKE-C|P-{UO|DO|UI|DI}{level}` → (vanilla code, barrier kind, level).
+pub fn split_barrier(code: &str) -> Option<(&str, &str, f64)> {
+    let mut dashes = code.match_indices('-').map(|(i, _)| i);
+    let cut = dashes.nth(3)?;
+    let (base, suffix) = (&code[..cut], &code[cut + 1..]);
+    let kind = suffix.get(..2)?;
+    if !matches!(kind, "UO" | "DO" | "UI" | "DI") {
+        return None;
+    }
+    let level: f64 = suffix[2..].parse().ok().filter(|x: &f64| x.is_finite() && *x > 0.0)?;
+    Some((base, kind, level))
+}
+
+/// `GET /v1/options/series/{code}?group=` -> `{series, expiry, venue, quote|null, error?}`. A vanilla series trades on
+/// the order book once it is live (`venue: "book"`, the quote carries the book), else at house prices. A barrier code
+/// (`…-C-UO1.1800`) answers its vanilla series with `venue: "rfq"`, `kalksQuoted: true` and the label: barriers are
+/// RFQ only, quoted by Kalks (docs/OPTIONS-EXCHANGE.md §5), never on the book.
 pub async fn series(State(st): State<AppState>, h: HeaderMap, Path(code): Path<String>, Query(q): Query<GroupQ>) -> R {
     let rd = st.refdata().await;
     let t = enabled_tenant(&rd, &h)?;
-    let s = rd.series.iter().find(|s| s.code == code).ok_or_else(|| ApiError::not_found("Series"))?;
+    let barrier = split_barrier(&code);
+    let base = barrier.map(|b| b.0).unwrap_or(&code);
+    let s = rd.series.iter().find(|s| s.code == base).ok_or_else(|| ApiError::not_found("Series"))?;
     let u = visible(&rd, &t, &s.symbol)?;
     let e = rd.expiries.iter().find(|e| e.id == s.expiry_id).ok_or_else(|| ApiError::not_found("Expiry"))?;
+    let kind = account_kind(&h);
     let spot = st.spots.get(&u.symbol).await;
     let usd = st.spots.usd_per(&u.quote_ccy).await;
     let now = Utc::now();
     let group = group_param(q.group.as_deref());
+    let book = if barrier.is_none() { book_data(&st, &t.tenant, kind, &[s.code.as_str()]) } else { None };
     let mut out = json!({
         "series": s,
         "expiry": {"id": e.id, "date": e.expiry_date, "cutAt": e.cut_at, "status": e.status, "fixing": e.fixing, "fixingSource": e.fixing_source},
         "underlying": u.symbol,
         "contractSize": u.contract_size,
         "spot": spot,
+        "venue": if barrier.is_some() { BARRIER_VENUE } else if book.is_some() { "book" } else { "house" },
         "quote": null,
     });
+    if let Some((_, kind_code, level)) = barrier {
+        out["code"] = json!(code);
+        out["barrier"] = json!({"kind": kind_code, "level": level});
+        out["kalksQuoted"] = json!(true);
+        out["orderBook"] = json!(false);
+        out["label"] = json!(BARRIER_LABEL);
+        out["barriersEnabled"] = json!(u.barriers_enabled);
+        return Ok(Json(out));
+    }
     match pricing::context(&rd, u, e, spot.map(|s| s.mid), usd, now.timestamp_millis(), Some(&t.tenant)) {
         Ok(ctx) => {
             let gs = rd.group(&t.tenant, &group, &u.symbol);
-            out["quote"] = json!(pricing::quote(&ctx, u, s, &gs, rd.trade_state(&t.tenant, u, e, Some(&s.code), now)));
+            let state = rd.trade_state(&t.tenant, u, e, Some(&s.code), now);
+            out["quote"] = match &book {
+                Some((tops, prev)) => json!(pricing::quote_book(&ctx, u, s, &gs, state, tops.get(&s.code), prev.get(&s.code).copied())),
+                None => json!(pricing::quote(&ctx, u, s, &gs, state)),
+            };
         }
         Err(err) => out["error"] = json!({"code": "no_price", "message": err.to_string()}),
     }
@@ -217,7 +281,7 @@ pub async fn public_chain(State(st): State<AppState>, Path(u): Path<String>, Que
     }
     let und = visible(&rd, &t, &sym)?;
     let e = pick_expiry(&rd, &und.symbol, q.expiry.as_deref())?;
-    let (mut head, rows) = build_chain(&st, &rd, und, e, PLATFORM_TENANT, "*").await;
+    let (mut head, rows) = build_chain(&st, &rd, und, e, PLATFORM_TENANT, "*", Kind::Live).await;
     if let Some(o) = head.as_object_mut() {
         o.remove("modelInputs");
         o.remove("group");
@@ -369,4 +433,18 @@ pub async fn candles(State(st): State<AppState>, h: HeaderMap, Query(q): Query<C
         "barrier": barrier.map(|b| json!({"kind": b.code(), "level": b.level, "rebate": b.rebate, "knockedAt": b.knocked_at_ms.map(|x| x / 1000)})),
         "candles": out,
     })))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::split_barrier;
+
+    #[test]
+    fn barrier_codes() {
+        assert_eq!(split_barrier("EURUSD-20261009-1.1650-C-UO1.1800"), Some(("EURUSD-20261009-1.1650-C", "UO", 1.18)));
+        assert_eq!(split_barrier("XAUUSD-20261030-4000-P-DI3800"), Some(("XAUUSD-20261030-4000-P", "DI", 3800.0)));
+        assert_eq!(split_barrier("EURUSD-20261009-1.1650-C"), None);
+        assert_eq!(split_barrier("EURUSD-20261009-1.1650-C-XX1.2"), None);
+        assert_eq!(split_barrier("EURUSD-20261009-1.1650-C-UO"), None);
+    }
 }

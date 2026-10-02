@@ -18,6 +18,7 @@ This service holds the reference data and runs the market side of **Kalks FX Opt
 | chain | bid / ask / mark / IV / Greeks per strike for calls and puts, with the group's vol spread and minimum USD spread. REST, a 1 s cached public route, and a WebSocket that sends changed rows only, at most 4 frames/s per chain. |
 | premium candles | an option series' model mid premium (USD per contract) per underlying bar from market-data candles, for the Kalks Trader chart: it moves when the underlying moves, by the option's amount, and melts toward intrinsic as the cut approaches. History is cached 30 s; the latest bar is the live price. See [Premium candles](#premium-candles). |
 | EOD marks | after 17:00 New York on weekdays, the model marks of every active series go to `marks_eod`. |
+| order book | docs/OPTIONS-EXCHANGE.md (O49). Per-underlying tick, bands, contract limits, liquidation / RFQ / mark parameters and the group maker / taker fees go to the engine in the snapshot, with the Kalks market maker's quoting parameters (`mm_settings` → `mm[]`). The engine's book feed is merged into chains (best bid / offer, sizes, last, change, OI, volume, the mark clamped inside the book, theo, implied vols, PCR), the stream (`depth` / `tape` ops) and public depth / trades / stats routes. Barriers stay RFQ only, Kalks-quoted. See [Order book](#order-book). |
 
 market-data is optional in development. Without it the feed polls REST, logs one warning and keeps trying. Expiries are still listed, but strikes wait for the first price, chains answer `no_price`, and the TWAP sampler records gaps.
 
@@ -35,6 +36,9 @@ market-data is optional in development. Without it the feed polls REST, logs one
 | `OPTIONS_HOLIDAYS_DIR` | `<repo>/config/holidays` | seed files |
 | `OPTIONS_MIN_TWAP_COVERAGE` | `0.5` | below it, use the M1 fallback |
 | `OPTIONS_SNAPSHOT_STALE_SECS` | `300` | published to the engine |
+| `TRADING_URL` | `http://127.0.0.1:8090` | the engine's order book feed (`/v1/internal/options/book/*`) |
+| `TRADING_INTERNAL_TOKEN` | — | the engine's internal token, sent as `X-Kalks-Internal` to the book feed |
+| `OPTIONS_BOOK_FEED` | `true` | consume the book feed (with `OPTIONS_WORKERS`); off = house model quotes only |
 | `OPTIONS_LOG_FORMAT` | `text` (dev) / `json` (prod) | |
 
 Apps / engine: `OPTIONS_URL=http://127.0.0.1:8104` and `OPTIONS_INTERNAL_TOKEN` (`deploy/deploy.sh` writes both).
@@ -48,20 +52,22 @@ Every client route answers **404 `options_disabled`** when the tenant has the mo
 
 | route | response |
 |---|---|
-| `GET /v1/options/underlyings` | `{underlyings[{symbol, name, assetClass, model, baseCcy, quoteCcy, contractSize, contractUnit, digits, pipSize, strikeStep, cut{time, zone}, twapMinutes, noOpenMinutes, closeOnlyMinutes, minContracts, maxContracts, contractStep, barriers, expiryKinds, nextExpiry{date, cutAt}, atmVol, realizedVol}], version}` |
+| `GET /v1/options/underlyings` | `{underlyings[{symbol, name, assetClass, model, baseCcy, quoteCcy, contractSize, contractUnit, digits, pipSize, strikeStep, cut{time, zone}, twapMinutes, noOpenMinutes, closeOnlyMinutes, minContracts, maxContracts, contractStep, barriers, expiryKinds, nextExpiry{date, cutAt}, atmVol, realizedVol, orderBook, premiumTick, marketBandPct, limitBandPct, bandMinTicks, liqBandPct, liqFeePct, rfqQuoteTtlSecs, markMinQty, markMaxSpreadMult, barrierVenue: "rfq", barrierLabel}], version}` (`orderBook` = the book is live for this tenant and account kind) |
 | `GET /v1/options/expiries?u=` | `{underlying, expiries[{id, date, kinds[], cutAt, twapStart, status, state, series, secondsToCut}], version}` |
 | `GET /v1/options/chain?u=&expiry=&group=` | header + `rows[]` (below); `expiry` defaults to the nearest |
-| `GET /v1/options/series/{code}?group=` | `{series, expiry{id, date, cutAt, status, fixing, fixingSource}, underlying, contractSize, spot, quote}` |
+| `GET /v1/options/series/{code}?group=` | `{series, expiry{id, date, cutAt, status, fixing, fixingSource}, underlying, contractSize, spot, venue: book\|house, quote}`. A barrier code (`…-C-UO1.1800`) answers its vanilla series with `venue: "rfq", kalksQuoted: true, orderBook: false, label: "Kalks-quoted (RFQ only)", barrier{kind, level}, quote: null` |
 | `GET /v1/options/smile?u=&expiry=` | `{underlying, expiry, atmVol, points[{strike, vol}], pillars[{callDelta, vol, strike}], termStructure[pillars], inputs}` |
 | `GET /v1/options/candles?series=&tf=&limit=&to=` | premium candles of one series, see [Premium candles](#premium-candles) |
 | `POST /v1/options/stream/ticket {group?}` | `{ticket, expiresIn: 30, path: "/options/stream?ticket=…"}` |
 
-Chain header: `{underlying, name, model, expiry, kinds, cutAt, cut, twapStart, status, state, contractSize, contractUnit, quoteCcy, digits, pipSize, group, volSpread, minSpreadUsd, commission{perContract, capPct}, spot{bid, ask, mid, t, ageMs}, fixing, version, atmStrike, modelInputs{spot, spotSource, forward, r, b, rf, tCal, tVol, atmVol, surfaceAtm, realized, blendWeight, manualVol, surfaceVersion, quotes, usdPerQuote}, error?}`. Without a price it carries `error: {code: "no_price"}` and rows that list strikes only.
+Chain header: `{underlying, name, model, expiry, kinds, cutAt, cut, twapStart, status, state, contractSize, contractUnit, quoteCcy, digits, pipSize, group, volSpread, minSpreadUsd, commission{perContract, capPct}, spot{bid, ask, mid, t, ageMs}, fixing, version, book{…}, barriers{…}, atmStrike, modelInputs{spot, spotSource, forward, r, b, rf, tCal, tVol, atmVol, surfaceAtm, realized, blendWeight, manualVol, surfaceVersion, quotes, usdPerQuote}, error?}` plus, while the book is live, `pcr`, `pcrVolume`, `oi{calls, puts}`, `volume{calls, puts}`. Without a price it carries `error: {code: "no_price"}` and rows that list strikes only. `X-Kalks-Account-Kind` (default live) picks the book; `book` and `barriers` are described under [Order book](#order-book).
 
 Row: `{strike, strikeLabel, call, put}`. Each side has:
 `{code, bid, ask, mark` (premium per unit in the quote currency)`, bidUsd, askUsd, markUsd` (per contract)`, markPips, iv, ivBid, ivAsk, delta, gamma` (delta change per 1 % spot move)`, vega` (USD per contract per vol point)`, theta` (USD per contract over the next calendar day, business-time clock)`, probItm, breakeven, state}`.
 
 `state` is one of: `open`; `close_only` (the last `noOpenMinutes` before the cut, or a control); `halted`; `closed` (the last `closeOnlyMinutes`, or after the cut).
+
+While the tenant's order book is live for the account kind, each side also has the book fields and `bid` / `ask` (and `bidUsd` / `askUsd`, `ivBid` / `ivAsk`) become the book's (null when that side is empty): see [Order book](#order-book). Otherwise the quote is exactly the house quote above.
 
 ### Premium candles
 
@@ -108,10 +114,37 @@ Same gates as `/v1/options/chain`: internal token, `X-Kalks-Tenant`, `X-Kalks-Ac
   - Client sends `{"op":"subscribe","u","expiry"}` (8 chains max), `{"op":"subscribe","series":[codes]}` (200 max), or `unsubscribe` with the same fields.
   - Server sends `{"type":"chain", …header, rows}` on subscribe, then `{"type":"rows", u, expiry, spot, state, rows:[changed]}` and `{"type":"series", quotes:[changed]}` at most every 250 ms. It also sends `{"type":"hb"}` every 10 s and `{"type":"error"}` on errors.
 
+### Order book
+
+docs/OPTIONS-EXCHANGE.md is the contract (decision O49). The engine runs the book; this service publishes its parameters and merges its market data.
+
+**Engine feed** (`src/book_feed.rs`, with `OPTIONS_WORKERS` and `OPTIONS_BOOK_FEED`):
+- `WS {TRADING_URL}/v1/internal/options/book/stream` with `X-Kalks-Internal: TRADING_INTERNAL_TOKEN`: `top` (`{tenant, kind, underlying, series, bid, bidQty, ask, askQty, last, lastQty, mark, oi, vol, state, seq}`), `depth` (10 levels, `{price, qty, orders}`), `trade` (`{fillId, price, qty, side, tradeKind, combo, at, seq}`), `hb`, `resync`. Reconnects with backoff (1 s doubling to 30 s, jittered; 60 s while the engine has no book feed).
+- `GET …/book/{tenant}/{kind}/snapshot` every 15 s for each tenant with the module on: `enabled` = the book is live for that tenant and account kind (forward-only); the series views seed the cache. 404 = no book there.
+- `GET …/book/{tenant}/{kind}/trades`: the public tape.
+- Engine absent (refused or 404): nothing is live and every chain keeps today's house quotes exactly. A dropped stream empties the cached books (empty sides, the model mark) until the reconnect replays them.
+
+**Chain merge** (only while the tenant's book is live for the account kind; otherwise the house quote, unchanged):
+- `bid` / `ask` = best bid / offer (null when that side is empty), `bidUsd` / `askUsd`, `bidQty` / `askQty` (contracts).
+- `mark` = `optmath::mark::clamp_mark(model mid, model ask − model bid, best bid, best ask, markMinQty, markMaxSpreadMult)`, the engine's rule (§6); `markSource`: `model` | `bid` | `ask`; `markUsd`, `markPips`.
+- `theo` / `theoUsd` / `theoIv`: the model mid and its smile vol. `markIv`, `bidIv`, `askIv`: implied vols of those prices on the vol clock (`iv` = `markIv`, `ivBid` / `ivAsk` = `bidIv` / `askIv`).
+- `last`, `lastQty`, `lastUsd`, `change` (last − the previous 17:00 New York EOD mark), `oi` (Σ long contracts), `volume` (today). Greeks stay the model's. `breakeven` uses the book's ask (else the mark).
+- Header `book`: `{active, kind, venue: book|house, premiumTick, bands{market, limit, minTicks}, makerFee, takerFee, feeCapPct, marketBandPct, limitBandPct, bandMinTicks, makerFeePerContract, takerFeePerContract, minContracts, contractStep, maxContracts, markMinQty, markMaxSpreadMult, rfqQuoteTtlSecs}` (fees = the group's effective §7 fees). Header `barriers`: `{enabled, venue: "rfq", quotedBy: "kalks", kalksQuoted: true, orderBook: false, label: "Kalks-quoted (RFQ only)"}`.
+
+**Stream ops** (the ticket keeps the BFF's `X-Kalks-Account-Kind`; guests see the platform's live book):
+- `{"op":"depth","series":[codes]}` (at most 20) → `{"type":"depth","series","bids":[[price,qty,orders]],"asks":[…],"seq","t"}` at once for each newly followed series, then on change (≤ 4/s per series).
+- `{"op":"tape","series":[codes]}` (at most 50) → `{"type":"tape","trades":[{id, series, time, t, price, qty, takerSide, side, kind, combo}]}` batched every 250 ms (`time` / `t` in ms).
+- Each op replaces the previous set; an empty list stops it; more than the cap → `{"type":"error","code":"too_many"}` and the first ones are kept. Chains re-price when the book changes.
+
+**Public** (no login, `?kind=live|demo`, default live, tenant `kalks`; cached 1 s; 10 requests / s per client IP = the first `X-Forwarded-For` hop, else `X-Real-IP`, else the peer; internal callers with the token or a loopback peer without forwarding headers are not limited; 429 `rate_limited` + `Retry-After: 1`; 404 `book_inactive` while the book is not live):
+- `GET /v1/public/options/book/{series}` → `{series, underlying, kind, bids:[[price, qty, orders]], asks, seq, t, bid, bidQty, ask, askQty, last, lastQty, mark (the engine's), oi, volume, state}`.
+- `GET /v1/public/options/trades/{series}?limit=` (1–200, default 50) → `{series, kind, trades[…]}` newest first.
+- `GET /v1/public/options/stats/{u}?expiry=` → `{underlying, kind, at, totals{callOi, putOi, callVolume, putVolume, pcr, pcrVolume}, expiries[{date, cutAt, …totals, strikes[{strike, strikeLabel, call{series, oi, volume, last}, put}]}]}`.
+
 ### Engine (internal)
 - `GET /v1/internal/options/snapshot`: has an `ETag: "opt-<version>"`, honours `If-None-Match` (answers 304) and sets `X-Options-Version`. The version bumps on every change the engine depends on: config, listing, fixing, realized vol, controls, settings.
 - `GET /v1/internal/options/fixings?expiry=YYYY-MM-DD&u=` returns `{fixings[{expiryId, symbol, date, cutAt, twapStart, status, fixing, source, run, samples, expected, coverage, maxGapMs, fixedAt, error, runs[{run, price, source, samples, expected, coverage, maxGapMs, windowStart, windowEnd, reason, createdBy, createdAt}]}]}`.
-- `GET /v1/internal/options/status` returns the version, feed state, spot ages and job heartbeats.
+- `GET /v1/internal/options/status` returns the version, feed state, spot ages, job heartbeats and `bookFeed{connected, engineHasBook, frames, series, venues[{tenant, kind, active}]}`.
 
 Snapshot shape (camelCase, every list complete; expiries are the open ones plus those of the last 7 days, with their series):
 
@@ -127,7 +160,9 @@ Snapshot shape (camelCase, every list complete; expiries are the open ones plus 
                     "twapMinutes": 30, "noOpenMinutes": 15, "closeOnlyMinutes": 1, "deltaConvention": "spot",
                     "weekendVolWeight": 0.15, "holidayVolWeight": 0.5, "priceScan": 0.03, "volScan": 0.03,
                     "extremeMultiple": 3, "extremeCover": 0.35, "minContracts": 1, "maxContracts": 100, "contractStep": 1,
-                    "barriersEnabled": true, "enabled": true, "sort": 0, "notes": "", "updatedAt": "…", "updatedBy": "seed" }],
+                    "barriersEnabled": true, "enabled": true, "sort": 0, "notes": "", "updatedAt": "…", "updatedBy": "seed",
+                    "premiumTick": 0.00001, "marketBandPct": 10, "limitBandPct": 50, "bandMinTicks": 5, "liqBandPct": 5, "liqFeePct": 2,
+                    "rfqQuoteTtlSecs": 5, "markMinQty": 1, "markMaxSpreadMult": 3 }],
   "rates": [{ "ccy": "USD", "rate": 0.03625, "kind": "policy", "source": "…", "asOf": "2026-10-02", "updatedAt": "…", "updatedBy": "seed" }],
   "holidays": { "USD": ["2026-01-01", "…"], "EUR": ["…"], "XAU": ["…"] },
   "surfaces": [{ "symbol": "EURUSD", "version": 1, "blendWeight": 0.7, "reason": "Initial seed", "publishedBy": "seed", "publishedAt": "…",
@@ -139,11 +174,15 @@ Snapshot shape (camelCase, every list complete; expiries are the open ones plus 
   "series": [{ "code": "EURUSD-20261009-1.1650-C", "symbol": "EURUSD", "expiryId": 12, "strike": 1.165, "strikeTicks": 466, "kind": "call", "status": "active" }],
   "tenants": [{ "tenant": "kalks", "enabledDemo": true, "enabledLive": false, "publicChain": false, "underlyings": null, "updatedAt": "…", "updatedBy": "seed" }],
   "groups": [{ "tenant": "kalks", "groupCode": "*", "symbol": "*", "volSpread": 0.004, "minSpreadUsd": 0.5, "commissionPerContract": 0.25,
-               "commissionCapPct": 10, "maxContractsPerClient": 200, "weekendMarginPct": 25, "enabled": true, "updatedAt": "…", "updatedBy": "seed" }],
+               "commissionCapPct": 10, "maxContractsPerClient": 200, "weekendMarginPct": 25, "enabled": true, "updatedAt": "…", "updatedBy": "seed",
+               "makerFeePerContract": -0.05, "takerFeePerContract": 0.25 }],
   "controls": [{ "id": 3, "tenant": "*", "scope": "expiry", "target": "EURUSD:2026-10-09", "mode": "halt", "manualVol": null, "frozenSpot": null,
                  "reason": "…", "active": true, "expiresAt": null, "createdBy": "…", "createdAt": "…" }],
   "clientLimits": [{ "tenant": "kalks", "userId": 42, "maxContracts": 5, "maxShortContracts": null, "closeOnly": false, "blocked": false,
-                     "reason": "…", "updatedAt": "…", "updatedBy": "…" }]
+                     "reason": "…", "updatedAt": "…", "updatedBy": "…" }],
+  "mm": [{ "tenant": "*", "kind": "*", "underlying": "*", "enabled": true, "spreadVol0dte": 0.008, "spreadVol7d": 0.005, "spreadVol30d": 0.004,
+           "spreadVolLong": 0.0035, "minSpreadTicks": 2, "skewVol": 0.002, "skewTicksPerContract": 0.05, "baseSize": 10, "maxNetDelta": 500,
+           "maxGamma": 150, "maxVega": 25000, "maxContractsPerSeries": 2000, "updatedAt": "…", "updatedBy": "seed" }]
 }
 ```
 
@@ -166,6 +205,10 @@ How the engine reproduces a price (also in `conventions`):
    - The spread is widened to `minSpreadUsd / (contractSize · usdPerQuote)`.
    - Commission is `min(perContract · n, capPct% · premiumUsd)`.
 6. Margin for short options: `optmath::scenario::scenario_grid` with `priceScan`, `volScan`, `extremeMultiple`, `extremeCover` and a one-business-day time step, then × (1 + `weekendMarginPct`/100) on Fridays.
+7. Order book (also in `conventions.orderBook` / `mark` / `bookFees` / `marketMaker`):
+   - Per underlying: `premiumTick` (quote currency per unit; default FX pip / 10, XAU 0.01, other metals and oil 0.001), `marketBandPct` / `limitBandPct` (percent of the mark) + `bandMinTicks`, `minContracts` / `contractStep` / `maxContracts` per order, `liqBandPct` / `liqFeePct` (percent), `rfqQuoteTtlSecs`, `markMinQty` / `markMaxSpreadMult` (the mark clamp, `optmath::mark::clamp_mark`).
+   - Groups: `makerFeePerContract` (negative = rebate) and `takerFeePerContract`, USD per contract; null = `commissionPerContract`. `fee = sign × min(|rate| × contracts, commissionCapPct % × premiumUsd)`.
+   - `mm[]`: the Kalks market maker's parameters; the most specific row wins (tenant 4, kind 2, underlying 1; `*` = any).
 
 ### Back Office
 These routes need the internal token plus `X-Kalks-Staff` (the admin BFF checks `options.read` / `options.config` / `options.dealing` / `options.settle`). **P** marks routes only tenant `kalks` may call. Every write is audited and bumps the version.
@@ -173,12 +216,13 @@ These routes need the internal token plus `X-Kalks-Staff` (the admin BFF checks 
 | route | |
 |---|---|
 | `GET /v1/admin/options/overview` | version, counts, feed, jobs |
-| `GET /v1/admin/options/underlyings` · `PUT …/underlyings/{symbol}` **P** | partial update (cut, cycles, strikes, scan, limits, enabled, …) |
+| `GET /v1/admin/options/underlyings` · `PUT …/underlyings/{symbol}` **P** | partial update (cut, cycles, strikes, scan, limits, enabled, …; order book: `premiumTick` > 0, `marketBandPct` / `limitBandPct` in (0, 100], `bandMinTicks` ≥ 0, `liqBandPct` / `liqFeePct` in [0, 50], `rfqQuoteTtlSecs` 1–60, `markMinQty` ≥ 0, `markMaxSpreadMult` 1–100; `minContracts` / `maxContracts` whole multiples of `contractStep`) |
 | `GET /v1/admin/options/rates` · `PUT …/rates/{ccy} {rate, kind?, source?, asOf?, reason}` **P** · `GET …/rates/{ccy}/history` | rate is a decimal |
 | `GET /v1/admin/options/holidays?calendar=&year=` · `PUT …/holidays/{cal}/{day} {name, active?, reason?}` **P** · `DELETE …/holidays/{cal}/{day}?reason=` **P** | delete = disable |
 | `GET /v1/admin/options/surfaces/{symbol}` · `GET …/surfaces/{symbol}/{version}` · `POST …/surfaces/{symbol} {pillars, blendWeight?, reason}` **P** | publish = new version |
 | `GET /v1/admin/options/tenants` · `PUT …/tenants/{tenant} {enabledDemo?, enabledLive?, publicChain?, underlyings?, reason}` **P** | module switches |
-| `GET /v1/admin/options/groups` · `PUT …/groups/{group}/{symbol}` · `DELETE …/groups/{group}/{symbol}` | `*` = any; the broker's own rows |
+| `GET /v1/admin/options/groups` · `PUT …/groups/{group}/{symbol}` · `DELETE …/groups/{group}/{symbol}` | `*` = any; the broker's own rows. Order book fees: `makerFeePerContract` (−1000 – 1000, negative = rebate), `takerFeePerContract` (0 – 1000); over the broker's rows (effective values, a missing fee = the row's commission) min(taker) ≥ max(\|maker rebate\|), else 422 naming both rows |
+| `GET /v1/admin/options/mm-settings` · `PUT …/mm-settings/{tenant}/{kind}/{underlying}` · `DELETE …?reason=` | the Kalks market maker (`{settings[], defaults}`; PUT `{enabled?, spreadVol0dte?, spreadVol7d?, spreadVol30d?, spreadVolLong?, minSpreadTicks?, skewVol?, skewTicksPerContract?, baseSize?, maxNetDelta?, maxGamma?, maxVega?, maxContractsPerSeries?, reason}` → `{settings, version}`, a new row starts from what applies to its key; DELETE → `{ok, version}`, not `*, *, *`). Keys: tenant or `*`, `live\|demo\|*`, underlying or `*`. Kalks staff any row; a broker reads the `*` rows and its own, writes only its own |
 | `GET /v1/admin/options/controls?all=` · `POST …/controls {tenant?, scope, target, mode, manualVol?, frozenSpot?, expiresAt?, reason}` · `DELETE …/controls/{id}?reason=` | halt / close_only / freeze / manual_vol; `tenant: "*"` is Kalks only |
 | `GET /v1/admin/options/limits` · `PUT …/limits/{userId} {maxContracts?, maxShortContracts?, closeOnly?, blocked?, reason}` · `DELETE …/limits/{userId}?reason=` | per client |
 | `GET /v1/admin/options/expiries?u=&status=&limit=` · `POST …/expiries/{id}/refix {price?, reason}` **P** | settlement monitor; re-fix within 1 h |
@@ -199,6 +243,8 @@ The schema is `migrations/20261002120000_options.sql`. It has these tables:
 - `controls`, `client_limits`
 - `marks_eod`
 - `audit_log`
+
+`migrations/20261012000000_order_book.sql` adds the order book: the per-underlying columns (`premium_tick` defaulted by `default_premium_tick()` and an insert trigger, bands, liquidation, RFQ, mark rules), `group_settings.maker_fee_per_contract` / `taker_fee_per_contract` (the platform default row: −0.05 / 0.25) and `mm_settings` (seeded `*, *, *`).
 
 ## Tests
 
@@ -227,7 +273,13 @@ The schema is `migrations/20261002120000_options.sql`. It has these tables:
   - a manual re-fix (run 2).
 - **WebSocket:** a ticket is required (guest refused); with 100 spot ticks/s it sends ≤ 9 `rows` frames in 2 s.
 
-Unit tests (`src/candles.rs`, no database) cover premium candles:
+`tests/book.rs` covers the order book side:
+- **Settings and snapshot:** the migration's tick / band defaults per underlying, admin validation, group fees and the min(taker) ≥ max(|maker rebate|) rule (per broker), `mm_settings` CRUD with broker scoping, audit, `mm[]` in the snapshot.
+- **Feed merge:** real quotes from the local market-data (:8081; the priced part is skipped when it is down) and a minimal in-test engine that speaks the documented feed contract (`top` / `depth` / `trade`, `snapshot`, `trades`, token required), with book prices placed around the real model theo: book sides and sizes, the clamped mark, theo, implied vols, OI, PCR; demo vs live; series venue and the barrier label; the stream's `depth` / `tape` ops and live rows; the public routes with their 1 s cache and 10 req/s limit.
+- **Absent engine:** refused, or no book routes (404): today's house quotes.
+- **Real engine** (`--ignored`): `TRADING_URL` / `TRADING_INTERNAL_TOKEN` against a running engine: the stream, venue flags and the chain merge.
+
+Unit tests (no database) cover the book frame parser and cache, frame shapes, the mark clamp agreeing with `optmath::mark::clamp_mark`, implied vols, fee rules, market-maker row resolution, the per-IP limiter and barrier codes. Unit tests in `src/candles.rs` cover premium candles:
 - call and put OHLC mapping (a put's high comes from the underlying low);
 - decay: with a flat underlying, a call melts bar over bar and closes on intrinsic at the cut;
 - intrinsic at the fixing (at the spot while there is no fixing);
@@ -240,6 +292,6 @@ Unit tests (`src/candles.rs`, no database) cover premium candles:
 - Engine integration (M3/M4): positions, margin, fills, settlement.
 - Risk desk, hedger, alerts, OI/LTP, strategy ideas.
 - Premium candles with historical vol / rates replayed (today's model is used for every bar).
-- Barrier series listing: barrier options are priced by the engine from the snapshot.
+- Barrier series listing: barrier options are priced by the engine from the snapshot, RFQ only and Kalks-quoted (never on the order book).
 - News-calendar mismatch alerts for holidays.
 - Intraday vol seasonality.

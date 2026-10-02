@@ -43,7 +43,8 @@ async fn main() -> anyhow::Result<()> {
     let app = api::router(st);
     let listener = tokio::net::TcpListener::bind(&bind).await?;
     tracing::info!(%bind, "http listening");
-    axum::serve(listener, app)
+    // the peer address feeds the public routes' per-IP rate limit (behind Caddy: X-Forwarded-For)
+    axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>())
         .with_graceful_shutdown(async {
             let _ = tokio::signal::ctrl_c().await;
         })
