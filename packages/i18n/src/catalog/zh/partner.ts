@@ -88,10 +88,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "CPA 奖金",
   "kind.clawback": "追回",
   "kind.adjustment": "调整",
+  "kind.option": "期权佣金",
   // Ledger line descriptions
   "line.cpa": "CPA 奖金 · 首次入金和交易",
   "line.trade": "交易",
   "line.lot": "{lots} 手",
+  "line.options": { other: "期权 · {n} 张合约" },
+  "line.optionsDeal": "期权",
 
   // Share buttons
   "share.defaultText": "在 Kalks 交易黄金、外汇、指数和加密货币——使用我的链接开立您的账户：",
@@ -428,6 +431,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "固定",
   "com.rateSplit": "{pct} 分成",
   "com.rateRebate": "{pct} 返佣",
+  "com.ratePerContract": "{rate}/张合约",
   "com.viaPamm": "通过 PAMM",
   "com.viaCopy": "通过跟单交易",
   "com.rate": "费率",

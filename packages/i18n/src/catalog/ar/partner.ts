@@ -110,10 +110,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "مكافأة CPA",
   "kind.clawback": "استرجاع",
   "kind.adjustment": "تعديل",
+  "kind.option": "عمولة الخيارات",
   // Ledger line descriptions
   "line.cpa": "مكافأة CPA · الإيداع الأول والصفقة الأولى",
   "line.trade": "صفقة",
   "line.lot": "{lots} لوت",
+  "line.options": { zero: "الخيارات · {n} عقد", one: "الخيارات · عقد واحد", two: "الخيارات · عقدان", few: "الخيارات · {n} عقود", many: "الخيارات · {n} عقدًا", other: "الخيارات · {n} عقد" },
+  "line.optionsDeal": "الخيارات",
 
   // Share buttons
   "share.defaultText": "تداول الذهب والفوركس والمؤشرات والعملات المشفرة مع Kalks — افتح حسابك عبر رابطي:",
@@ -504,6 +507,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "ثابت",
   "com.rateSplit": "حصة {pct}",
   "com.rateRebate": "استرداد {pct}",
+  "com.ratePerContract": "{rate} لكل عقد",
   "com.viaPamm": "عبر PAMM",
   "com.viaCopy": "عبر نسخ التداول",
   "com.rate": "السعر",

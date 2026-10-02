@@ -19,7 +19,7 @@ import { atmIndex } from "@/lib/options/math";
 import { getOpt, opt, useBookLive, useOpt, visibleRows } from "@/lib/options-store";
 import type { OptionChainRow, OptionQuote, OptionRight } from "@/lib/options/types";
 import { Flash, RightTag } from "./bits";
-import { greek, pct, pips, px, usd } from "./format";
+import { greek, lastChange, pct, pips, px, usd } from "./format";
 
 type Col = "bid" | "ask" | "last" | "mark" | "iv" | "delta" | "gamma" | "theta" | "vega" | "prob" | "be" | "oi" | "vol";
 
@@ -100,7 +100,7 @@ function Cell({ q, col, right, digits, itm, mark, title, theoLabel }: { q: Optio
         <td {...attrs} className={cn(base, "p-0")}>
           <span className={cn("flex h-full w-full flex-col items-end justify-center px-1.5 leading-none text-fg-2", dim)}>
             {q.lastUsd ? <Flash value={q.lastUsd}>{usd(q.lastUsd)}</Flash> : <span className="text-fg-3">—</span>}
-            <span className={cn("mt-0.5 text-[9px]", q.change === null || q.change === undefined ? "text-fg-3" : q.change >= 0 ? "text-up" : "text-down")}>{q.lastUsd && q.change !== null && q.change !== undefined ? `${q.change >= 0 ? "+" : ""}${(q.change * 100).toFixed(1)}%` : " "}</span>
+            <span className={cn("mt-0.5 text-[9px]", q.change === null || q.change === undefined ? "text-fg-3" : q.change >= 0 ? "text-up" : "text-down")}>{lastChange(q.lastUsd, q.change) ?? " "}</span>
           </span>
         </td>
       );

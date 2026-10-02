@@ -90,10 +90,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "Thưởng CPA",
   "kind.clawback": "Thu hồi",
   "kind.adjustment": "Điều chỉnh",
+  "kind.option": "Hoa hồng quyền chọn",
   // Ledger line descriptions
   "line.cpa": "Thưởng CPA · nạp tiền và giao dịch lần đầu",
   "line.trade": "Giao dịch",
   "line.lot": "{lots} lot",
+  "line.options": { other: "Quyền chọn · {n} hợp đồng" },
+  "line.optionsDeal": "Quyền chọn",
 
   // Share buttons
   "share.defaultText": "Giao dịch vàng, FX, chỉ số và tiền mã hóa cùng Kalks — mở tài khoản bằng liên kết của tôi:",
@@ -430,6 +433,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "cố định",
   "com.rateSplit": "chia {pct}",
   "com.rateRebate": "hoàn {pct}",
+  "com.ratePerContract": "{rate}/hợp đồng",
   "com.viaPamm": "qua PAMM",
   "com.viaCopy": "qua copy trading",
   "com.rate": "Mức phí",

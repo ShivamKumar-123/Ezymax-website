@@ -6,7 +6,7 @@ import { Pencil, Plus, RefreshCw, RotateCcw, Save, Trash2 } from "lucide-react";
 import { ANIM_ICONS, Button, Card, CardHeader, Chip, Dialog, DialogClose, Icon3D, IconGlyph, PageHeader, Reveal, Skeleton, cn } from "@kalks/ui";
 import { ChipList, MiniField, NumInput, SettingRow, TextInput } from "@/components/config/kit";
 import { useApi, when } from "@/components/live/kit";
-import { P, ibSend, levelBody, type Level, type LevelsDoc, type SettingsDoc } from "./api";
+import { OPTIONS_RATE_MAX, P, ibSend, levelBody, type Level, type LevelsDoc, type SettingsDoc } from "./api";
 import { PartnersError, ReadOnlyNote, int, levelStyle, lots, usd, usePerms, useReasonAction } from "./kit";
 
 const ICONS = ["coin", "crown", "1st_place_medal", "trophy", "gem_stone", "rocket", "sparkles", "handshake", "money_bag", "shield", "key", "bank"].filter((k) => k in ANIM_ICONS);
@@ -20,6 +20,7 @@ function LevelCard({ l, levels, total, edited, canEdit, onEdit }: { l: Level; le
     ["Active clients", entry ? "Entry level" : `≥ ${int(l.minActiveClients)}`],
     ["Network lots / month", entry ? "—" : `≥ ${lots(l.minMonthlyLots, 0)}`],
     ["CPA per client", usd(l.cpaAmount, 0)],
+    ...(l.optionsRate === undefined ? [] : ([["Options / contract", l.optionsRate > 0 ? usd(l.optionsRate) : "Not paid"]] as [string, string][])),
   ];
   return (
     <Card className="relative flex h-full flex-col">
@@ -111,7 +112,20 @@ function LevelDialog({
   const others = levels.filter((l) => l.key !== level?.key);
   const rankTaken = others.some((l) => l.rank === d.rank);
   const keyBad = !/^[a-z0-9_-]{1,32}$/.test(d.key) || (isNew && others.some((l) => l.key === d.key));
-  const problem = !d.name.trim() ? "Give the level a name." : d.name.length > 40 ? "Name is too long (40 max)." : keyBad ? "Key must be 1–32 lowercase letters, digits, - or _, and unique." : rankTaken ? `Rank ${d.rank} is already used.` : d.rank < 1 ? "Rank starts at 1." : null;
+  const optionsBad = d.optionsRate !== undefined && !(Number.isFinite(d.optionsRate) && d.optionsRate >= 0 && d.optionsRate <= OPTIONS_RATE_MAX);
+  const problem = !d.name.trim()
+    ? "Give the level a name."
+    : d.name.length > 40
+      ? "Name is too long (40 max)."
+      : keyBad
+        ? "Key must be 1–32 lowercase letters, digits, - or _, and unique."
+        : rankTaken
+          ? `Rank ${d.rank} is already used.`
+          : d.rank < 1
+            ? "Rank starts at 1."
+            : optionsBad
+              ? `Options rate must be 0–${OPTIONS_RATE_MAX} USD per contract.`
+              : null;
   return (
     <Dialog
       open={open}
@@ -183,10 +197,20 @@ function LevelDialog({
             <NumInput value={d.cpaAmount} onChange={(v) => set({ cpaAmount: v })} min={0} step={25} prefix="$" />
           </MiniField>
         </div>
+        {d.optionsRate !== undefined && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <MiniField label="Options (USD / contract)" hint={`0–${OPTIONS_RATE_MAX}`}>
+              <NumInput value={d.optionsRate} onChange={(v) => set({ optionsRate: v })} min={0} max={OPTIONS_RATE_MAX} step={0.25} decimals={2} prefix="$" />
+            </MiniField>
+            <div className="self-end pb-1 text-[11.5px] text-fg-3 sm:col-span-2">
+              Paid per option contract on the closing deal (close, expiry or knock-out), shared across tiers like per-lot rates. 0 = options earn no commission. Per-lot rates never apply to options.
+            </div>
+          </div>
+        )}
         <MiniField label="Perks" hint="shown to IBs">
           <ChipList values={d.perks} onChange={(v) => set({ perks: v })} placeholder="Add a perk, Enter" tone="neutral" />
         </MiniField>
-        {isNew && <div className="rounded-[12px] border border-line bg-surface-2 px-3.5 py-2.5 text-[12px] text-fg-3">Per-lot rates start as a copy of the level below. Adjust them in Commission plans after saving.</div>}
+        {isNew && <div className="rounded-[12px] border border-line bg-surface-2 px-3.5 py-2.5 text-[12px] text-fg-3">Per-lot rates{d.optionsRate !== undefined ? " and the options rate" : ""} start as a copy of the level below. Adjust them in Commission plans after saving.</div>}
       </div>
     </Dialog>
   );
@@ -211,7 +235,22 @@ export function LiveLevels() {
   const addLevel = () => {
     const top = sorted[sorted.length - 1];
     const rank = (top?.rank ?? 0) + 1;
-    setEdit({ level: { key: "", name: "", rank, icon: "trophy", perks: [], minActiveClients: top?.minActiveClients ?? 0, minMonthlyLots: top?.minMonthlyLots ?? 0, cpaAmount: top?.cpaAmount ?? 0, rates: { ...(top?.rates ?? {}) } }, isNew: true });
+    setEdit({
+      level: {
+        key: "",
+        name: "",
+        rank,
+        icon: "trophy",
+        perks: [],
+        minActiveClients: top?.minActiveClients ?? 0,
+        minMonthlyLots: top?.minMonthlyLots ?? 0,
+        cpaAmount: top?.cpaAmount ?? 0,
+        rates: { ...(top?.rates ?? {}) },
+        // the service sends optionsRate on every level once it supports options; copy it like the per-lot rates
+        ...(top && top.optionsRate !== undefined ? { optionsRate: top.optionsRate } : {}),
+      },
+      isNew: true,
+    });
   };
 
   const save = () =>
@@ -299,7 +338,7 @@ export function LiveLevels() {
                       <Button size="xs" variant="surface">Partners</Button>
                     </Link>
                   </SettingRow>
-                  <SettingRow label="Per-lot rates" hint="Rates per symbol group for each level">
+                  <SettingRow label="Per-lot and options rates" hint="Rates per symbol group, and per option contract, for each level">
                     <Link href="/partners/plans">
                       <Button size="xs" variant="surface">Rate card</Button>
                     </Link>

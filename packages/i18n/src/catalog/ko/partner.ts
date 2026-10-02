@@ -89,10 +89,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "CPA 보너스",
   "kind.clawback": "환수",
   "kind.adjustment": "조정",
+  "kind.option": "옵션 커미션",
   // 원장 항목 설명
   "line.cpa": "CPA 보너스 · 첫 입금 및 거래",
   "line.trade": "거래",
   "line.lot": "{lots}랏",
+  "line.options": { other: "옵션 · {n}계약" },
+  "line.optionsDeal": "옵션",
 
   // 공유 버튼
   "share.defaultText": "Kalks에서 금, 외환, 지수, 암호화폐를 거래하세요. 제 링크로 계좌를 개설하세요:",
@@ -429,6 +432,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "고정",
   "com.rateSplit": "배분 {pct}",
   "com.rateRebate": "리베이트 {pct}",
+  "com.ratePerContract": "계약당 {rate}",
   "com.viaPamm": "PAMM 경유",
   "com.viaCopy": "카피 트레이딩 경유",
   "com.rate": "요율",

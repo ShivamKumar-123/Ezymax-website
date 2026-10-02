@@ -25,6 +25,8 @@ export interface Level {
   cpaAmount: number;
   /** USD per standard lot, per symbol group key. */
   rates: Record<string, number>;
+  /** Kalks FX Options: USD per option contract (0 = options earn no commission). */
+  optionsRate?: number;
 }
 
 export interface SymbolGroup {
@@ -69,8 +71,12 @@ export interface CommissionRow {
   tier: number;
   rate: number;
   sharePct: number;
+  /** 0 on option lines (options are paid per contract, never per lot) */
   lots: number;
+  /** option contracts on an option line (0 otherwise); `rate` is then USD per contract */
+  contracts?: number;
   symbol: string | null;
+  /** "options" on option lines */
   symbolGroup: string | null;
   dealId: number | null;
   source: string | null;
@@ -202,7 +208,12 @@ export interface ClientTrade {
   symbol: string;
   side: string;
   volume: number;
+  /** 0 on option deals */
   lots: number;
+  /** "cfd" | "option" */
+  instrument?: string;
+  /** option contracts (0 on CFD deals) */
+  contracts?: number;
   openTime: string;
   closeTime: string;
   qualified: boolean;
@@ -517,6 +528,33 @@ export function fmtLots(v: number, digits = 2) {
   return v.toLocaleString(intlTag(tr.locale), {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
+  });
+}
+
+/** Engine option series code, e.g. EURUSD-20261009-1.1650-C (same rule as services/ib `is_option_series`). */
+export const isOptionSeries = (symbol: string | null | undefined) =>
+  !!symbol && /^[^-]+-\d{8}-[\d.]+-[CPcp]$/.test(symbol);
+
+/** A commission line or deal on an option (paid per contract): the "options" symbol group, contracts, the
+ *  deal's instrument, or an option series symbol (clawback lines carry only the symbol). */
+export const isOptionLine = (x: {
+  symbolGroup?: string | null;
+  contracts?: number | null;
+  instrument?: string | null;
+  symbol?: string | null;
+}) =>
+  x.instrument === "option" ||
+  x.symbolGroup === "options" ||
+  (x.contracts ?? 0) > 0 ||
+  isOptionSeries(x.symbol);
+
+/** "Options · 3 contracts" ("Options" when the line carries no contract count). */
+export function optionsLabel(contracts: number | null | undefined) {
+  const n = Math.abs(contracts ?? 0);
+  if (!n) return tr("partner.line.optionsDeal");
+  return tr("partner.line.options", {
+    count: n,
+    n: n.toLocaleString(intlTag(tr.locale), { maximumFractionDigits: 2 }),
   });
 }
 

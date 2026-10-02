@@ -89,10 +89,15 @@ const partner = {
   "kind.cpa": "CPA bonus",
   "kind.clawback": "Clawback",
   "kind.adjustment": "Adjustment",
+  // a per-contract line on a Kalks FX Options deal (kind "lot" in the ledger)
+  "kind.option": "Options commission",
   // Ledger line descriptions
   "line.cpa": "CPA bonus · first deposit and trade",
   "line.trade": "Trade",
   "line.lot": "{lots} lot",
+  // option lines are paid per contract, never per lot; {n} is the formatted contract count
+  "line.options": { one: "Options · {n} contract", other: "Options · {n} contracts" },
+  "line.optionsDeal": "Options",
 
   // Share buttons
   "share.defaultText": "Trade gold, FX, indices and crypto with Kalks — open your account with my link:",
@@ -430,6 +435,8 @@ const partner = {
   "com.rateFixed": "fixed",
   "com.rateSplit": "{pct} split",
   "com.rateRebate": "{pct} rebate",
+  // rate of an option line, e.g. "$2/contract" ({rate} is the USD amount)
+  "com.ratePerContract": "{rate}/contract",
   "com.viaPamm": "via PAMM",
   "com.viaCopy": "via copy trading",
   "com.rate": "Rate",

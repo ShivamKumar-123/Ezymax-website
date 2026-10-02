@@ -88,10 +88,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "Bonus CPA",
   "kind.clawback": "Clawback",
   "kind.adjustment": "Penyesuaian",
+  "kind.option": "Komisi opsi",
   // Ledger line descriptions
   "line.cpa": "Bonus CPA · deposit dan transaksi pertama",
   "line.trade": "Transaksi",
   "line.lot": "{lots} lot",
+  "line.options": { other: "Opsi · {n} kontrak" },
+  "line.optionsDeal": "Opsi",
 
   // Share buttons
   "share.defaultText": "Trading emas, FX, indeks, dan kripto bersama Kalks — buka akun Anda melalui tautan saya:",
@@ -428,6 +431,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "tetap",
   "com.rateSplit": "bagi hasil {pct}",
   "com.rateRebate": "rebate {pct}",
+  "com.ratePerContract": "{rate}/kontrak",
   "com.viaPamm": "melalui PAMM",
   "com.viaCopy": "melalui copy trading",
   "com.rate": "Tarif",

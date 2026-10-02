@@ -88,10 +88,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "Bônus CPA",
   "kind.clawback": "Estorno",
   "kind.adjustment": "Ajuste",
+  "kind.option": "Comissão por opções",
   // Descrições das linhas do extrato
   "line.cpa": "Bônus CPA · primeiro depósito e negociação",
   "line.trade": "Negociação",
   "line.lot": "{lots} lote",
+  "line.options": { one: "Opções · {n} contrato", other: "Opções · {n} contratos" },
+  "line.optionsDeal": "Opções",
 
   // Botões de compartilhamento
   "share.defaultText": "Negocie ouro, FX, índices e cripto com a Kalks — abra sua conta com o meu link:",
@@ -429,6 +432,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "fixa",
   "com.rateSplit": "divisão de {pct}",
   "com.rateRebate": "rebate de {pct}",
+  "com.ratePerContract": "{rate}/contrato",
   "com.viaPamm": "via PAMM",
   "com.viaCopy": "via copy trading",
   "com.rate": "Taxa",

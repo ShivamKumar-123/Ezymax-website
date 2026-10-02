@@ -7,7 +7,6 @@ import { MiniField, MiniStat, NumInput, Section } from "@/components/config/kit"
 import { KycChip, ago, day, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { P, ibSend, type Level, type Paged, type PartnerDetail, type PartnerRow, type SettingsDoc, type TreeNode } from "./api";
 import {
-  COMM_KIND,
   COMM_STATUS,
   EmptyNote,
   FLAG_KIND,
@@ -18,7 +17,9 @@ import {
   SEV_TONE,
   StatusPill,
   int,
+  kindLabelOf,
   lots,
+  unitsText,
   usd,
   useReasonAction,
 } from "./kit";
@@ -490,8 +491,9 @@ export function PartnerDrawer({
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-fg">{c.clientName || `#${c.clientId}`}</div>
                         <div className="truncate text-[11px] text-fg-3">
-                          {COMM_KIND[c.kind]?.label ?? c.kind}
-                          {c.symbol ? ` · ${c.symbol} ${lots(c.lots)}` : ""}
+                          {kindLabelOf(c)}
+                          {c.symbol ? ` · ${c.symbol}` : ""}
+                          {unitsText(c) ? ` · ${unitsText(c)}` : ""}
                         </div>
                       </div>
                       <span className="hidden sm:inline">

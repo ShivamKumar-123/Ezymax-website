@@ -88,10 +88,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "Bonasi ya CPA",
   "kind.clawback": "Urejeshaji",
   "kind.adjustment": "Marekebisho",
+  "kind.option": "Kamisheni ya options",
   // Ledger line descriptions
   "line.cpa": "Bonasi ya CPA · uwekaji na biashara ya kwanza",
   "line.trade": "Biashara",
   "line.lot": "Loti {lots}",
+  "line.options": { one: "Options · mkataba {n}", other: "Options · mikataba {n}" },
+  "line.optionsDeal": "Options",
 
   // Share buttons
   "share.defaultText": "Fanya biashara ya dhahabu, FX, fahirisi na crypto na Kalks — fungua akaunti yako kupitia kiungo changu:",
@@ -429,6 +432,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "maalum",
   "com.rateSplit": "mgawo {pct}",
   "com.rateRebate": "rejesho {pct}",
+  "com.ratePerContract": "{rate} kwa kila mkataba",
   "com.viaPamm": "kupitia PAMM",
   "com.viaCopy": "kupitia copy trading",
   "com.rate": "Kiwango",

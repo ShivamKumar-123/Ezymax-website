@@ -41,6 +41,31 @@ export const usdK = (v: number) => {
 };
 export const int = (v: number | null | undefined) => (v === null || v === undefined ? "—" : v.toLocaleString("en-US", { maximumFractionDigits: 0 }));
 export const lots = (v: number | null | undefined, d = 2) => (v === null || v === undefined ? "—" : v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: Math.max(d, 4) }));
+/* ------------------------------------------------------------------ */
+/* Options (Kalks FX Options): paid per contract, never per lot        */
+/* ------------------------------------------------------------------ */
+
+/** Engine option series code, e.g. EURUSD-20261009-1.1650-C (same rule as services/ib `is_option_series`). */
+export const isOptionSeries = (symbol: string | null | undefined) => !!symbol && /^[^-]+-\d{8}-[\d.]+-[CPcp]$/.test(symbol);
+
+/** An IB line or deal on an option: the service's "options" symbol group, contracts, or an option series symbol (clawbacks). */
+export const isOptionLine = (c: { symbolGroup?: string | null; contracts?: number | null; instrument?: string | null; symbol?: string | null }) =>
+  c.instrument === "option" || c.symbolGroup === "options" || (c.contracts ?? 0) > 0 || isOptionSeries(c.symbol);
+
+/** "Options · 3 contracts" ("Options" when the line carries no contract count, e.g. a clawback). */
+export const optionsLabel = (contracts: number | null | undefined) => {
+  const n = Math.abs(contracts ?? 0);
+  if (!n) return "Options";
+  return `Options · ${n.toLocaleString("en-US", { maximumFractionDigits: 2 })} contract${n === 1 ? "" : "s"}`;
+};
+
+/** Kind label of a line: "Per contract" for the per-lot kind on an option deal (options are paid per contract). */
+export const kindLabelOf = (c: { kind: CommKind; symbolGroup?: string | null; contracts?: number | null; symbol?: string | null }) =>
+  c.kind === "lot" && isOptionLine(c) ? "Per contract" : (COMM_KIND[c.kind]?.label ?? c.kind);
+
+/** Units of a line: "Options · 3 contracts" on options, else "1.50 lots" ("" when it has none, e.g. a CFD clawback). */
+export const unitsText = (c: { symbolGroup?: string | null; contracts?: number | null; symbol?: string | null; lots: number }) => (isOptionLine(c) ? optionsLabel(c.contracts) : c.lots ? `${lots(c.lots)} lots` : "");
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 /** "2026-09" → "Sep" (or "Sep 26" with year). */
 export const monthLabel = (m: string, withYear = false) => {

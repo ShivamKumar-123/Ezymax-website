@@ -14,6 +14,17 @@ export const usdSigned = (v: number, d = 2) => {
   return `${r > 0 ? "+" : r < 0 ? "−" : ""}${usd(Math.abs(r), d)}`;
 };
 export const pct = (v: number | null | undefined, d = 1) => (v === null || v === undefined || !Number.isFinite(v) ? "—" : `${(v * 100).toFixed(d)}%`);
+/**
+ * Change of an option's last price as a short label. A % on a near-zero base premium is meaningless (0.01 → 4.32
+ * reads "+43100%"), so below $0.50 the change is shown in USD instead; large moves are capped at "> +999%".
+ */
+export function lastChange(lastUsd: number | null | undefined, change: number | null | undefined): string | null {
+  if (!lastUsd || change === null || change === undefined || !Number.isFinite(change) || change <= -1) return null;
+  const base = lastUsd / (1 + change);
+  if (base < 0.5) return usdSigned(lastUsd - base);
+  const r = change * 100;
+  return r > 999 ? "> +999%" : `${r >= 0 ? "+" : ""}${r.toFixed(1)}%`;
+}
 export const pips = (v: number) => (Number.isFinite(v) ? v.toLocaleString("en-US", { maximumFractionDigits: 1, minimumFractionDigits: v < 100 ? 1 : 0 }) : "—");
 export const greek = (v: number | undefined, d = 3) => (v === undefined || !Number.isFinite(v) ? "—" : clean(v, d).toFixed(d));
 /** A price of the underlying with its digits (strikes, breakevens, spot). */

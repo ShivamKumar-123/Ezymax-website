@@ -18,7 +18,7 @@ import { opt, useBookLive, useOpt, useSeriesQuote } from "@/lib/options-store";
 import type { BookOrder, DepthLevel, TapeTrade } from "@/lib/options/types";
 import { Flash, RightTag, StateBadge } from "./bits";
 import { qty, useSeriesUnits } from "./book-bits";
-import { expiryLabel, pct, usd } from "./format";
+import { expiryLabel, lastChange, pct, usd } from "./format";
 import { MmRulesLink } from "./mm-rules";
 
 const EMPTY_LEVELS: DepthLevel[] = [];
@@ -64,7 +64,7 @@ export function SeriesBookHeader({ code, className }: { code: string; className?
       )}
       <Item label={t("trader.opt.col.last")} title={t("trader.opt.col.lastHint")}>
         {q?.lastUsd ? usd(q.lastUsd) : "—"}
-        {q?.change !== null && q?.change !== undefined && <span className={cn("ms-1 text-[10px]", q.change >= 0 ? "text-up" : "text-down")}>{`${q.change >= 0 ? "+" : ""}${(q.change * 100).toFixed(1)}%`}</span>}
+        {q && lastChange(q.lastUsd, q.change) && <span className={cn("ms-1 text-[10px]", (q.change ?? 0) >= 0 ? "text-up" : "text-down")}>{lastChange(q.lastUsd, q.change)}</span>}
       </Item>
       <Item label={t("trader.opt.col.mark")} title={t("trader.opt.col.markBookHint")}>
         {q ? usd(q.markUsd) : "—"}

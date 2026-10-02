@@ -88,10 +88,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "پاداش CPA",
   "kind.clawback": "بازپس‌گیری",
   "kind.adjustment": "اصلاحیه",
+  "kind.option": "کمیسیون اختیار معامله",
   // Ledger line descriptions
   "line.cpa": "پاداش CPA · اولین واریز و معامله",
   "line.trade": "معامله",
   "line.lot": "{lots} لات",
+  "line.options": { one: "اختیارها · {n} قرارداد", other: "اختیارها · {n} قرارداد" },
+  "line.optionsDeal": "اختیارها",
 
   // Share buttons
   "share.defaultText": "طلا، فارکس، شاخص‌ها و ارزهای دیجیتال را با Kalks معامله کنید — حساب خود را با لینک من افتتاح کنید:",
@@ -429,6 +432,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "ثابت",
   "com.rateSplit": "سهم {pct}",
   "com.rateRebate": "ریبیت {pct}",
+  "com.ratePerContract": "{rate} برای هر قرارداد",
   "com.viaPamm": "از طریق PAMM",
   "com.viaCopy": "از طریق کپی ترید",
   "com.rate": "نرخ",

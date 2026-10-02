@@ -6,7 +6,7 @@ import { Button, Card, Chip, DataTable, Money, PageHeader, Reveal, type Column }
 import { MiniStat } from "@/components/config/kit";
 import { FilterSelect, Pager, TableSkeleton, ago, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { P, ibSend, type CommissionsDoc, type Commission } from "./api";
-import { COMM_KIND, COMM_STATUS, EmptyNote, MemberLink, PartnersError, StatusPill, int, lots, usd, usePerms, useReasonAction } from "./kit";
+import { COMM_KIND, COMM_STATUS, EmptyNote, MemberLink, PartnersError, StatusPill, int, isOptionLine, kindLabelOf, lots, optionsLabel, usd, usePerms, useReasonAction } from "./kit";
 
 const PER = 50;
 type F = { status: string; kind: string; ib: string; client: string; batch: string; from: string; to: string };
@@ -69,7 +69,7 @@ export function LiveCommissions() {
   const reject = (c: Commission) =>
     act.ask({
       title: `Reject commission line #${c.id}`,
-      description: `${usd(c.amount)} to ${c.beneficiary.name || `#${c.beneficiary.id}`} (${COMM_KIND[c.kind]?.label ?? c.kind}). The line will not be paid. Only pending lines that are not in a batch can be rejected.`,
+      description: `${usd(c.amount)} to ${c.beneficiary.name || `#${c.beneficiary.id}`} (${kindLabelOf(c)}). The line will not be paid. Only pending lines that are not in a batch can be rejected.`,
       confirmLabel: "Reject line",
       confirmVariant: "sell",
       run: (reason) => ibSend(`commissions/${c.id}/reject`, { reason }),
@@ -81,15 +81,35 @@ export function LiveCommissions() {
     { key: "t", header: "Created", cell: (c) => <span className="whitespace-nowrap text-[12px] text-fg-2" title={when(c.createdAt)}>{ago(c.createdAt, now)}<span className="block font-mono text-[10.5px] text-fg-3">#{c.id}</span></span>, csv: (c) => c.createdAt },
     { key: "b", header: "Beneficiary", cell: (c) => <MemberLink id={c.beneficiary.id} name={c.beneficiary.name} className="max-w-40" />, csv: (c) => `${c.beneficiary.name} #${c.beneficiary.id}` },
     { key: "c", header: "Client", hideOn: "md", cell: (c) => <MemberLink id={c.client.id} name={c.client.name} sub={c.login ? `login ${c.login}` : undefined} className="max-w-40" />, csv: (c) => `${c.client.name} #${c.client.id}` },
-    { key: "k", header: "Kind", cell: (c) => <span className="flex flex-col items-start gap-0.5"><Chip size="sm" tone={COMM_KIND[c.kind]?.tone}>{COMM_KIND[c.kind]?.label ?? c.kind}</Chip>{c.kind !== "cpa" && c.kind !== "adjustment" && <span className="font-mono text-[10.5px] text-fg-3">Tier {c.tier}</span>}</span>, csv: (c) => `${c.kind} T${c.tier}` },
+    { key: "k", header: "Kind", cell: (c) => <span className="flex flex-col items-start gap-0.5"><Chip size="sm" tone={COMM_KIND[c.kind]?.tone}>{kindLabelOf(c)}</Chip>{c.kind !== "cpa" && c.kind !== "adjustment" && <span className="font-mono text-[10.5px] text-fg-3">Tier {c.tier}</span>}</span>, csv: (c) => `${c.kind} T${c.tier}` },
     {
       key: "d",
       header: "Deal",
       hideOn: "lg",
-      cell: (c) => (c.dealId ? <span className="whitespace-nowrap"><span className="block text-[12.5px] font-medium">{c.symbol ?? "—"} <span className="k-num font-normal text-fg-2">{lots(c.lots)}</span></span><span className="block font-mono text-[10.5px] text-fg-3">#{c.dealId}{c.symbolGroup ? ` · ${c.symbolGroup}` : ""}</span></span> : <span className="text-[12px] text-fg-3">—</span>),
-      csv: (c) => `${c.dealId ?? ""} ${c.symbol ?? ""} ${c.lots}`,
+      cell: (c) =>
+        c.dealId ? (
+          isOptionLine(c) ? (
+            <span className="whitespace-nowrap">
+              <span className="block max-w-56 truncate text-[12.5px] font-medium" title={c.symbol ?? undefined}>{c.symbol ?? "—"}</span>
+              <span className="block text-[11px] text-fg-2">{optionsLabel(c.contracts)}</span>
+              <span className="block font-mono text-[10.5px] text-fg-3">#{c.dealId}</span>
+            </span>
+          ) : (
+            <span className="whitespace-nowrap"><span className="block text-[12.5px] font-medium">{c.symbol ?? "—"} <span className="k-num font-normal text-fg-2">{lots(c.lots)}</span></span><span className="block font-mono text-[10.5px] text-fg-3">#{c.dealId}{c.symbolGroup ? ` · ${c.symbolGroup}` : ""}</span></span>
+          )
+        ) : (
+          <span className="text-[12px] text-fg-3">—</span>
+        ),
+      csv: (c) => (isOptionLine(c) ? `${c.dealId ?? ""} ${c.symbol ?? ""} ${optionsLabel(c.contracts)}` : `${c.dealId ?? ""} ${c.symbol ?? ""} ${c.lots} lots`),
     },
-    { key: "r", header: "Rate × share", align: "right", hideOn: "xl", cell: (c) => (c.kind === "cpa" || c.kind === "adjustment" ? <span className="text-fg-3">—</span> : <span className="k-num whitespace-nowrap text-[12px] text-fg-2">{usd(c.rate)} × {c.sharePct}%</span>), csv: (c) => `${c.rate} x ${c.sharePct}%` },
+    {
+      key: "r",
+      header: "Rate × share",
+      align: "right",
+      hideOn: "xl",
+      cell: (c) => (c.kind === "cpa" || c.kind === "adjustment" || c.kind === "clawback" ? <span className="text-fg-3">—</span> : <span className="k-num whitespace-nowrap text-[12px] text-fg-2">{usd(c.rate)}{isOptionLine(c) ? "/contract" : "/lot"} × {c.sharePct}%</span>),
+      csv: (c) => (c.kind === "cpa" || c.kind === "adjustment" || c.kind === "clawback" ? "" : `${c.rate}${isOptionLine(c) ? "/contract" : "/lot"} x ${c.sharePct}%`),
+    },
     { key: "a", header: "Amount", align: "right", cell: (c) => <Money value={c.amount} countUp={false} className={c.amount < 0 ? "font-medium text-down" : "font-medium"} />, csv: (c) => c.amount },
     {
       key: "s",
@@ -131,7 +151,7 @@ export function LiveCommissions() {
     <div className="pb-16">
       <PageHeader
         title="Commissions"
-        subtitle="Every commission line: per-lot tiers, sub-IB splits, client rebates, CPA and clawbacks"
+        subtitle="Every commission line: per-lot and per-contract (options) tiers, sub-IB splits, client rebates, CPA and clawbacks"
         actions={
           <Button variant="surface" onClick={reload}>
             <RefreshCw /> Refresh

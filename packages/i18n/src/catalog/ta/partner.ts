@@ -88,10 +88,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "CPA போனஸ்",
   "kind.clawback": "திரும்பப் பெறுதல்",
   "kind.adjustment": "சரிசெய்தல்",
+  "kind.option": "ஆப்ஷன் கமிஷன்",
   // Ledger line descriptions
   "line.cpa": "CPA போனஸ் · முதல் டெபாசிட் மற்றும் டிரேட்",
   "line.trade": "டிரேட்",
   "line.lot": "{lots} லாட்",
+  "line.options": { one: "ஆப்ஷன்கள் · {n} ஒப்பந்தம்", other: "ஆப்ஷன்கள் · {n} ஒப்பந்தங்கள்" },
+  "line.optionsDeal": "ஆப்ஷன்கள்",
 
   // Share buttons
   "share.defaultText": "Kalks இல் தங்கம், FX, குறியீடுகள் மற்றும் கிரிப்டோவை டிரேட் செய்யுங்கள் — என் இணைப்பு மூலம் உங்கள் கணக்கைத் திறக்கவும்:",
@@ -429,6 +432,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "நிலையானது",
   "com.rateSplit": "{pct} பங்கீடு",
   "com.rateRebate": "{pct} ரிபேட்",
+  "com.ratePerContract": "ஒரு ஒப்பந்தத்திற்கு {rate}",
   "com.viaPamm": "PAMM மூலம்",
   "com.viaCopy": "காப்பி டிரேடிங் மூலம்",
   "com.rate": "விகிதம்",

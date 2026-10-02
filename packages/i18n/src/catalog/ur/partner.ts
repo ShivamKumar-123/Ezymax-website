@@ -88,10 +88,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "CPA بونس",
   "kind.clawback": "کلا بیک",
   "kind.adjustment": "ایڈجسٹمنٹ",
+  "kind.option": "آپشنز کمیشن",
   // Ledger line descriptions
   "line.cpa": "CPA بونس · پہلا ڈپازٹ اور ٹریڈ",
   "line.trade": "ٹریڈ",
   "line.lot": "{lots} لاٹ",
+  "line.options": { one: "آپشنز · {n} کنٹریکٹ", other: "آپشنز · {n} کنٹریکٹس" },
+  "line.optionsDeal": "آپشنز",
 
   // Share buttons
   "share.defaultText": "Kalks کے ساتھ گولڈ، FX، انڈیکسز اور کرپٹو ٹریڈ کریں — میرے لنک سے اپنا اکاؤنٹ کھولیں:",
@@ -429,6 +432,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "مقررہ",
   "com.rateSplit": "{pct} اسپلٹ",
   "com.rateRebate": "{pct} ریبیٹ",
+  "com.ratePerContract": "{rate} فی کنٹریکٹ",
   "com.viaPamm": "PAMM کے ذریعے",
   "com.viaCopy": "کاپی ٹریڈنگ کے ذریعے",
   "com.rate": "ریٹ",

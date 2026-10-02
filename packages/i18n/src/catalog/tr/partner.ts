@@ -88,10 +88,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "CPA bonusu",
   "kind.clawback": "Geri alım",
   "kind.adjustment": "Düzeltme",
+  "kind.option": "Opsiyon komisyonu",
   // Ledger line descriptions
   "line.cpa": "CPA bonusu · ilk yatırım ve işlem",
   "line.trade": "İşlem",
   "line.lot": "{lots} lot",
+  "line.options": { one: "Opsiyonlar · {n} kontrat", other: "Opsiyonlar · {n} kontrat" },
+  "line.optionsDeal": "Opsiyonlar",
 
   // Share buttons
   "share.defaultText": "Kalks ile altın, FX, endeks ve kripto işlemi yapın — hesabınızı benim bağlantımla açın:",
@@ -429,6 +432,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "sabit",
   "com.rateSplit": "{pct} pay",
   "com.rateRebate": "{pct} iade",
+  "com.ratePerContract": "kontrat başına {rate}",
   "com.viaPamm": "PAMM üzerinden",
   "com.viaCopy": "copy trading üzerinden",
   "com.rate": "Oran",

@@ -88,10 +88,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "CPA बोनस",
   "kind.clawback": "क्लॉबैक",
   "kind.adjustment": "एडजस्टमेंट",
+  "kind.option": "ऑप्शन कमीशन",
   // Ledger line descriptions
   "line.cpa": "CPA बोनस · पहली जमा और ट्रेड",
   "line.trade": "ट्रेड",
   "line.lot": "{lots} लॉट",
+  "line.options": { one: "ऑप्शन · {n} कॉन्ट्रैक्ट", other: "ऑप्शन · {n} कॉन्ट्रैक्ट" },
+  "line.optionsDeal": "ऑप्शन",
 
   // Share buttons
   "share.defaultText": "Kalks के साथ गोल्ड, FX, इंडाइसेस और क्रिप्टो ट्रेड करें — मेरे लिंक से अपना अकाउंट खोलें:",
@@ -429,6 +432,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "फ़िक्स्ड",
   "com.rateSplit": "{pct} स्प्लिट",
   "com.rateRebate": "{pct} रिबेट",
+  "com.ratePerContract": "{rate}/कॉन्ट्रैक्ट",
   "com.viaPamm": "PAMM के ज़रिए",
   "com.viaCopy": "कॉपी ट्रेडिंग के ज़रिए",
   "com.rate": "रेट",

@@ -82,12 +82,18 @@ export type Level = {
   minMonthlyLots: number;
   cpaAmount: number;
   rates: Record<string, number>;
+  /** Kalks FX Options: USD per option contract (round turn, paid on the closing deal). Absent from a service that predates it. */
+  optionsRate?: number;
   members?: number;
 };
 
+/** Highest options rate the service accepts (USD per contract). */
+export const OPTIONS_RATE_MAX = 1000;
+
 export type LevelsDoc = { levels: Level[]; symbolGroups: SymbolGroup[] };
 
-/** Level as the service accepts it on PUT /levels (no member count). */
+/** Level as the service accepts it on PUT /levels (no member count). A level without `optionsRate` leaves it out,
+ *  so the service keeps the level's current options rate. */
 export function levelBody(l: Level) {
   return {
     key: l.key,
@@ -99,6 +105,7 @@ export function levelBody(l: Level) {
     minMonthlyLots: l.minMonthlyLots,
     cpaAmount: l.cpaAmount,
     rates: l.rates,
+    ...(l.optionsRate === undefined ? {} : { optionsRate: l.optionsRate }),
   };
 }
 
@@ -175,7 +182,7 @@ export type PartnerDetail = {
   partner: PartnerRow;
   upline: { id: number; name: string; level: string }[];
   tree: TreeNode[];
-  commissions: { id: number; kind: CommKind; status: CommStatus; amount: number; tier: number; symbol: string | null; lots: number; dealId: number | null; clientId: number; clientName: string; createdAt: string }[];
+  commissions: { id: number; kind: CommKind; status: CommStatus; amount: number; tier: number; symbol: string | null; lots: number; contracts?: number; symbolGroup?: string | null; dealId: number | null; clientId: number; clientName: string; createdAt: string }[];
   payouts: { id: number; batchId: number; amount: number; status: PayoutStatus; paidAt: string | null; createdAt: string; lastError: string | null }[];
   flags: FlagMin[];
   reassignments: { fromParent: number | null; toParent: number | null; fromName?: string | null; toName?: string | null; staff: string; reason: string; at: string }[];
@@ -197,8 +204,12 @@ export type Commission = {
   tier: number;
   rate: number;
   sharePct: number;
+  /** 0 on option lines (options are paid per contract and never count as lots) */
   lots: number;
+  /** option contracts on an option line (0 on CFD lines); `rate` is then USD per contract */
+  contracts?: number;
   symbol: string | null;
+  /** "options" on option lines */
   symbolGroup: string | null;
   levelKey: string | null;
   dealId: number | null;
@@ -328,6 +339,7 @@ export const FIELD_LABEL: Record<string, string> = {
   name: "Name",
   targets: "Targets",
   rates: "Rates",
+  optionsRate: "Options rate",
   level: "Level",
   status: "Status",
   rebatePct: "Client rebate",

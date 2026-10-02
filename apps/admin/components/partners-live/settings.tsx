@@ -6,13 +6,17 @@ import { Plus, RefreshCw, RotateCcw, Save, Trash2 } from "lucide-react";
 import { Button, Card, CardHeader, Chip, PageHeader, Reveal, Segmented, Skeleton, Toggle, cn } from "@kalks/ui";
 import { ChipList, MiniField, NumInput, Select, SettingRow, TextInput } from "@/components/config/kit";
 import { day, useApi, when } from "@/components/live/kit";
-import { P, ibSend, levelBody, toSettings, type Level, type LevelsDoc, type SelfRefAction, type Settings, type SettingsDoc, type SymbolGroup, type WriteResult } from "./api";
+import { OPTIONS_RATE_MAX, P, ibSend, levelBody, toSettings, type Level, type LevelsDoc, type SelfRefAction, type Settings, type SettingsDoc, type SymbolGroup, type WriteResult } from "./api";
 import { PartnersError, ReadOnlyNote, WEEKDAYS, levelStyle, usd, usePerms, useReasonAction } from "./kit";
 
 type Rates = Record<string, Record<string, number>>;
+/** Options rate per level key (USD per contract); only levels the service sent `optionsRate` for. */
+type OptRates = Record<string, number>;
 const ASSET_CLASSES = ["forex", "metals", "indices", "energies", "crypto", "stocks"];
 
 const ratesOf = (levels: Level[]): Rates => Object.fromEntries(levels.map((l) => [l.key, { ...l.rates }]));
+const optRatesOf = (levels: Level[]): OptRates => Object.fromEntries(levels.filter((l) => l.optionsRate !== undefined).map((l) => [l.key, l.optionsRate!]));
+const optionsRateOk = (v: number) => Number.isFinite(v) && v >= 0 && v <= OPTIONS_RATE_MAX;
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const slug = (s: string) =>
   s
@@ -25,11 +29,34 @@ const slug = (s: string) =>
 /* Cards                                                                */
 /* ------------------------------------------------------------------ */
 
-function RateCard({ s, levels, rates, base, edit, onRate }: { s: Settings; levels: Level[]; rates: Rates; base: Rates; edit: boolean; onRate: (lk: string, gk: string, v: number) => void }) {
-  const changed = s.symbolGroups.reduce((n, g) => n + levels.filter((l) => (rates[l.key]?.[g.key] ?? 0) !== (base[l.key]?.[g.key] ?? 0)).length, 0);
+function RateCard({
+  s,
+  levels,
+  rates,
+  base,
+  opts,
+  baseOpts,
+  edit,
+  onRate,
+  onOptRate,
+}: {
+  s: Settings;
+  levels: Level[];
+  rates: Rates;
+  base: Rates;
+  opts: OptRates;
+  baseOpts: OptRates;
+  edit: boolean;
+  onRate: (lk: string, gk: string, v: number) => void;
+  onOptRate: (lk: string, v: number) => void;
+}) {
+  const hasOptions = levels.some((l) => l.key in baseOpts);
+  const changed =
+    s.symbolGroups.reduce((n, g) => n + levels.filter((l) => (rates[l.key]?.[g.key] ?? 0) !== (base[l.key]?.[g.key] ?? 0)).length, 0) +
+    levels.filter((l) => l.key in baseOpts && opts[l.key] !== baseOpts[l.key]).length;
   return (
     <Card className="h-full min-w-0">
-      <CardHeader title="Rate card" subtitle="USD per standard lot · symbol group × level. Tier shares apply on top." action={changed > 0 ? <Chip tone="ember" dot>{changed} edited</Chip> : undefined} />
+      <CardHeader title="Rate card" subtitle={`USD per standard lot${hasOptions ? " (options: per contract)" : ""} · symbol group × level. Tier shares apply on top.`} action={changed > 0 ? <Chip tone="ember" dot>{changed} edited</Chip> : undefined} />
       <div className="overflow-x-auto px-4 pb-5 pt-4 sm:px-6">
         <table className="w-full border-separate border-spacing-0 text-[13px]" style={{ minWidth: 200 + levels.length * 112 }}>
           <thead>
@@ -67,6 +94,28 @@ function RateCard({ s, levels, rates, base, edit, onRate }: { s: Settings; level
                 })}
               </tr>
             ))}
+            {hasOptions && (
+              <tr>
+                <td className="border-b border-line px-4 py-2">
+                  <div className="font-medium text-fg">Options (USD / contract)</div>
+                  <div className="max-w-56 truncate text-[11px] text-fg-3">Every option series · per contract, round turn</div>
+                </td>
+                {levels.map((l) => {
+                  if (!(l.key in baseOpts)) return <td key={l.key} className="border-b border-line px-3.5 py-2 text-right text-fg-3">—</td>;
+                  const v = opts[l.key] ?? 0;
+                  const edited = v !== baseOpts[l.key];
+                  return (
+                    <td key={l.key} className="border-b border-line px-1.5 py-2 text-right">
+                      {edit ? (
+                        <NumInput size="sm" align="right" prefix="$" value={v} onChange={(x) => onOptRate(l.key, x)} step={0.25} min={0} max={OPTIONS_RATE_MAX} decimals={2} className={cn("ml-auto w-[100px]", edited && "border-ember/50 bg-ember-soft", !optionsRateOk(v) && "border-down/60")} />
+                      ) : (
+                        <span className={cn("k-num pr-2", v > 0 ? "text-fg-2" : "text-fg-3")}>{usd(v)}</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            )}
             <tr>
               <td className="px-4 py-2.5 text-[12px] text-fg-3">CPA per qualified client</td>
               {levels.map((l) => (
@@ -83,6 +132,7 @@ function RateCard({ s, levels, rates, base, edit, onRate }: { s: Settings; level
             Levels
           </Link>
           . New rates apply to deals closed after saving.
+          {hasOptions && <> Options are paid per contract at the level&apos;s options rate (0–{OPTIONS_RATE_MAX} USD, 0 = no commission on options); per-lot rates never apply to option deals and option contracts never count as lots.</>}
         </div>
       </div>
     </Card>
@@ -225,10 +275,13 @@ export function LiveProgrammeSettings() {
   const base = React.useMemo(() => (sd.data ? toSettings(sd.data.settings as unknown as Record<string, unknown>) : null), [sd.data]);
   const levels = React.useMemo(() => [...(ld.data?.levels ?? [])].sort((a, b) => a.rank - b.rank), [ld.data]);
   const baseRates = React.useMemo(() => ratesOf(levels), [levels]);
+  const baseOpts = React.useMemo(() => optRatesOf(levels), [levels]);
   const [s, setS] = React.useState<Settings | null>(null);
   const [rates, setRates] = React.useState<Rates>({});
+  const [opts, setOpts] = React.useState<OptRates>({});
   React.useEffect(() => setS(base), [base]);
   React.useEffect(() => setRates(baseRates), [baseRates]);
+  React.useEffect(() => setOpts(baseOpts), [baseOpts]);
 
   const edit = perms.write;
   const set = (p: Partial<Settings>) => setS((x) => (x ? { ...x, ...p } : x));
@@ -238,7 +291,9 @@ export function LiveProgrammeSettings() {
   const groupKeys = new Set(s?.symbolGroups.map((g) => g.key) ?? []);
   const baseKeys = new Set(base?.symbolGroups.map((g) => g.key) ?? []);
   const ratesDirty = levels.some((l) => s?.symbolGroups.some((g) => (rates[l.key]?.[g.key] ?? 0) !== (baseRates[l.key]?.[g.key] ?? 0)));
-  const dirty = settingsDirty || ratesDirty;
+  const optsDirty = levels.some((l) => l.key in baseOpts && opts[l.key] !== baseOpts[l.key]);
+  const optsBad = levels.find((l) => l.key in opts && !optionsRateOk(opts[l.key]!));
+  const dirty = settingsDirty || ratesDirty || optsDirty;
 
   const reload = () => {
     sd.reload();
@@ -251,6 +306,7 @@ export function LiveProgrammeSettings() {
     const sections = [
       !same(s.tiers, base.tiers) && "tiers",
       ratesDirty && "rate card",
+      optsDirty && "options rates",
       !same(s.symbolGroups, base.symbolGroups) && "symbol groups",
       (s.minTradeSeconds !== base.minTradeSeconds || s.centLotFactor !== base.centLotFactor || !same(s.excludedGroups, base.excludedGroups)) && "qualifying trades",
       !same(s.cpa, base.cpa) && "CPA rules",
@@ -264,6 +320,7 @@ export function LiveProgrammeSettings() {
       description: `Changes: ${sections.join(", ")}. They apply to deals and events processed after saving; commission already accrued is not recalculated.`,
       confirmLabel: "Save changes",
       body: removed.length ? <div className="rounded-[12px] border border-warn/30 bg-warn-soft px-3.5 py-2.5 text-[12.5px] text-fg">Removing {removed.join(", ")} also deletes its rates on every level.</div> : undefined,
+      disabled: optsBad ? `${optsBad.name}: the options rate must be 0–${OPTIONS_RATE_MAX} USD per contract.` : undefined,
       run: async (reason): Promise<WriteResult<unknown>> => {
         // 1) a removed group must first leave every level's rates (the service checks levels against the groups)
         if (settingsDirty && removed.length) {
@@ -275,9 +332,14 @@ export function LiveProgrammeSettings() {
           const r = await ibSend("settings", { settings: s, reason }, "PUT");
           if (!r.ok) return r;
         }
-        // 3) rates (after new groups exist)
-        if (ratesDirty) {
-          const r = await ibSend("levels", { levels: levels.map((l) => ({ ...levelBody(l), rates: Object.fromEntries(Object.entries({ ...l.rates, ...(rates[l.key] ?? {}) }).filter(([k]) => groupKeys.has(k))) })), reason }, "PUT");
+        // 3) rates and options rates (after new groups exist)
+        if (ratesDirty || optsDirty) {
+          const body = levels.map((l) => ({
+            ...levelBody(l),
+            rates: Object.fromEntries(Object.entries({ ...l.rates, ...(rates[l.key] ?? {}) }).filter(([k]) => groupKeys.has(k))),
+            ...(l.key in opts ? { optionsRate: opts[l.key] } : {}),
+          }));
+          const r = await ibSend("levels", { levels: body, reason }, "PUT");
           if (!r.ok) return r;
         }
         return { ok: true, data: null };
@@ -309,6 +371,7 @@ export function LiveProgrammeSettings() {
                   onClick={() => {
                     setS(base);
                     setRates(baseRates);
+                    setOpts(baseOpts);
                   }}
                 >
                   <RotateCcw /> Discard
@@ -345,7 +408,17 @@ export function LiveProgrammeSettings() {
 
           <div className="grid grid-cols-1 gap-4 2xl:grid-cols-12">
             <Reveal className="min-w-0 2xl:col-span-8">
-              <RateCard s={s} levels={levels} rates={rates} base={baseRates} edit={edit} onRate={(lk, gk, v) => setRates((r) => ({ ...r, [lk]: { ...(r[lk] ?? {}), [gk]: v } }))} />
+              <RateCard
+                s={s}
+                levels={levels}
+                rates={rates}
+                base={baseRates}
+                opts={opts}
+                baseOpts={baseOpts}
+                edit={edit}
+                onRate={(lk, gk, v) => setRates((r) => ({ ...r, [lk]: { ...(r[lk] ?? {}), [gk]: v } }))}
+                onOptRate={(lk, v) => setOpts((o) => ({ ...o, [lk]: v }))}
+              />
             </Reveal>
             <Reveal delay={0.05} className="min-w-0 2xl:col-span-4">
               <TiersCard s={s} set={set} edit={edit} levels={levels} />
@@ -497,6 +570,7 @@ export function LiveProgrammeSettings() {
                 onClick={() => {
                   setS(base);
                   setRates(baseRates);
+                  setOpts(baseOpts);
                 }}
               >
                 Discard

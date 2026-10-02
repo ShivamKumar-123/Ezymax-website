@@ -43,14 +43,18 @@ import type { SeriesPoint } from "@kalks/ui";
 import { tr, useFormat, useT } from "@kalks/i18n/react";
 import { intlTag } from "@kalks/i18n/locales";
 import { ShareButtons } from "@/components/partner/share-buttons";
+// readable names for engine symbols, including Kalks FX Options series codes
+import { symbolLabel } from "@/components/trading/instrument";
 import {
   fmtDate,
   fmtDay,
   fmtLots,
   fmtMonth,
   fmtPct,
+  isOptionLine,
   kindLabel,
   monthName,
+  optionsLabel,
   referralLink,
   relTime,
   scheduleLabel,
@@ -676,13 +680,16 @@ function TopClientsCard({ d }: { d: Dashboard }) {
 
 export function commissionLine(e: CommissionRow) {
   if (e.kind === "cpa") return tr("partner.line.cpa");
+  // option lines are paid per contract: "Options · 3 contracts" instead of lots
+  const option = isOptionLine(e);
   const lot = (v: number) => tr("partner.line.lot", { lots: fmtLots(v) });
+  const sym = e.symbol ? symbolLabel(tr, e.symbol) : null;
   if (e.kind === "lot")
-    return `${e.symbol ?? tr("partner.line.trade")} · ${lot(e.lots)} · L${e.tier}`;
+    return `${sym ?? tr("partner.line.trade")} · ${option ? optionsLabel(e.contracts) : lot(e.lots)} · L${e.tier}`;
   if (e.kind === "split")
-    return `${kindLabel("split")}${e.symbol ? ` · ${e.symbol}` : ""} · L${e.tier}`;
+    return `${kindLabel("split")}${sym ? ` · ${sym}` : ""} · L${e.tier}`;
   if (e.kind === "rebate")
-    return `${kindLabel("rebate")}${e.symbol ? ` · ${e.symbol}` : ""}${e.lots ? ` · ${lot(e.lots)}` : ""}`;
+    return `${kindLabel("rebate")}${sym ? ` · ${sym}` : ""}${option ? ` · ${optionsLabel(e.contracts)}` : e.lots ? ` · ${lot(e.lots)}` : ""}`;
   return e.note ? `${kindLabel(e.kind)} · ${e.note}` : kindLabel(e.kind);
 }
 

@@ -88,10 +88,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "CPA-Bonus",
   "kind.clawback": "Rückbuchung",
   "kind.adjustment": "Korrektur",
+  "kind.option": "Optionsprovision",
   // Ledger line descriptions
   "line.cpa": "CPA-Bonus · Ersteinzahlung und erster Trade",
   "line.trade": "Trade",
   "line.lot": "{lots} Lot",
+  "line.options": { one: "Optionen · {n} Kontrakt", other: "Optionen · {n} Kontrakte" },
+  "line.optionsDeal": "Optionen",
 
   // Share buttons
   "share.defaultText": "Handeln Sie Gold, FX, Indizes und Krypto mit Kalks — eröffnen Sie Ihr Konto über meinen Link:",
@@ -429,6 +432,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "fest",
   "com.rateSplit": "{pct} Anteil",
   "com.rateRebate": "{pct} Rückvergütung",
+  "com.ratePerContract": "{rate}/Kontrakt",
   "com.viaPamm": "über PAMM",
   "com.viaCopy": "über Copy Trading",
   "com.rate": "Satz",

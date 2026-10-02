@@ -89,10 +89,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "โบนัส CPA",
   "kind.clawback": "เรียกคืน",
   "kind.adjustment": "การปรับยอด",
+  "kind.option": "ค่าคอมมิชชันออปชัน",
   // Ledger line descriptions
   "line.cpa": "โบนัส CPA · ฝากเงินและเทรดครั้งแรก",
   "line.trade": "เทรด",
   "line.lot": "{lots} ล็อต",
+  "line.options": { other: "ออปชัน · {n} สัญญา" },
+  "line.optionsDeal": "ออปชัน",
 
   // Share buttons
   "share.defaultText": "เทรดทองคำ FX ดัชนี และคริปโตกับ Kalks — เปิดบัญชีด้วยลิงก์ของฉัน:",
@@ -429,6 +432,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "คงที่",
   "com.rateSplit": "ส่วนแบ่ง {pct}",
   "com.rateRebate": "เงินคืน {pct}",
+  "com.ratePerContract": "{rate}/สัญญา",
   "com.viaPamm": "ผ่าน PAMM",
   "com.viaCopy": "ผ่าน Copy Trading",
   "com.rate": "อัตรา",

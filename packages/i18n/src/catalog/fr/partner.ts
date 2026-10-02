@@ -86,10 +86,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "Bonus CPA",
   "kind.clawback": "Reprise",
   "kind.adjustment": "Ajustement",
+  "kind.option": "Commission sur options",
   // Ledger line descriptions
   "line.cpa": "Bonus CPA · premier dépôt et premier trade",
   "line.trade": "Trade",
   "line.lot": "{lots} lot",
+  "line.options": { one: "Options · {n} contrat", other: "Options · {n} contrats" },
+  "line.optionsDeal": "Options",
 
   // Share buttons
   "share.defaultText": "Tradez l'or, le Forex, les indices et les cryptos avec Kalks — ouvrez votre compte avec mon lien :",
@@ -412,6 +415,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "fixe",
   "com.rateSplit": "partage {pct}",
   "com.rateRebate": "remise {pct}",
+  "com.ratePerContract": "{rate}/contrat",
   "com.viaPamm": "via PAMM",
   "com.viaCopy": "via copy trading",
   "com.rate": "Taux",

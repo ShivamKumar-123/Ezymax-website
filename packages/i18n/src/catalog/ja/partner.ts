@@ -88,10 +88,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "CPAボーナス",
   "kind.clawback": "報酬の取り消し",
   "kind.adjustment": "調整",
+  "kind.option": "オプション報酬",
   // Ledger line descriptions
   "line.cpa": "CPAボーナス · 初回入金と取引",
   "line.trade": "取引",
   "line.lot": "{lots} ロット",
+  "line.options": { other: "オプション · {n}枚" },
+  "line.optionsDeal": "オプション",
 
   // Share buttons
   "share.defaultText": "Kalksで金、FX、株価指数、暗号資産を取引しましょう。私のリンクから口座を開設できます：",
@@ -428,6 +431,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "固定",
   "com.rateSplit": "分配 {pct}",
   "com.rateRebate": "リベート {pct}",
+  "com.ratePerContract": "1枚あたり{rate}",
   "com.viaPamm": "PAMM経由",
   "com.viaCopy": "コピートレード経由",
   "com.rate": "レート",

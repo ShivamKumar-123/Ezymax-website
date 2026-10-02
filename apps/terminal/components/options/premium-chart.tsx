@@ -38,7 +38,8 @@ import { optionsApi } from "@/lib/options/api";
 import { useOptionBook } from "@/lib/options/book";
 import { OPTION_TFS, getOpt, onOptChange, opt, quoteOf, useOpt, useSeriesQuote, type ChartMode } from "@/lib/options-store";
 import { Countdown, RightTag, Seg } from "./bits";
-import { expiryLabel, px, usd } from "./format";
+import { useSeriesUnits } from "./book-bits";
+import { expiryLabel, px, usd, usdSigned } from "./format";
 import { UnderlyingChart } from "./underlying-chart";
 
 const TF_MIN: Partial<Record<Timeframe, number>> = { M1: 1, M5: 5, M15: 15, M30: 30, H1: 60, H4: 240, D1: 1440 };
@@ -61,9 +62,11 @@ type Status = "loading" | "ready" | "unavailable";
 
 interface Legend {
   bar: Bar | null;
+  /** premium the change is measured from (USD per contract): the open ~1 day back, or the first bar of a younger series */
+  base: number | null;
 }
 function createLegendStore() {
-  let v: Legend = { bar: null };
+  let v: Legend = { bar: null, base: null };
   const subs = new Set<() => void>();
   return {
     get: () => v,
@@ -265,9 +268,11 @@ function usePremiumChart(
       const bidLine = main.createPriceLine({ price: q0?.bidUsd || q0?.markUsd || 0, color: c.fg2, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: !!q0 && q0.bidUsd > 0, lineVisible: !!q0 && q0.bidUsd > 0, title: "", axisLabelColor: c.fg2, axisLabelTextColor: c.dark ? "#0a0a0d" : "#fff" });
       const askLine = main.createPriceLine({ price: q0?.askUsd || q0?.markUsd || 0, color: c.down, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: !!q0 && q0.askUsd > 0, lineVisible: !!q0 && q0.askUsd > 0, title: "", axisLabelColor: c.down, axisLabelTextColor: "#fff" });
 
-      /* legend: hovered bar, else the forming one */
+      /* legend: hovered bar, else the forming one; change vs the open ~1 day back (like the CFD charts' day change) */
       let hovering = -1;
-      const legendAt = (i: number) => opts.current.legend.set({ bar: data[i] ?? null });
+      const dayBars = Math.max(1, Math.round(86400 / step));
+      const baseOf = () => (data.length ? data[Math.max(0, data.length - dayBars)]!.open : null);
+      const legendAt = (i: number) => opts.current.legend.set({ bar: data[i] ?? null, base: baseOf() });
       legendAt(data.length - 1);
       chart.subscribeCrosshairMove((p) => {
         if (p.logical === undefined || p.logical === null || !p.time) {
@@ -380,12 +385,33 @@ function usePremiumChart(
 /* Premium chart                                                       */
 /* ------------------------------------------------------------------ */
 
-function LegendOhlc({ store, digits }: { store: LegendStore; digits: number }) {
+/** % change is only shown against a base premium of at least this much (USD per contract) and this many ticks:
+ *  a premium that starts near zero (a far out-of-the-money option) would otherwise read "+43100.0%". */
+const PCT_MIN_BASE_USD = 0.5;
+const PCT_MIN_BASE_TICKS = 5;
+const PCT_CAP = 999;
+
+/** Legend change of a premium (USD per contract) from `base`: always in USD ("+4.29"), and in % ("+12.3%", capped at
+ *  "> +999%") only when the base is large enough for a percentage to mean something. */
+export function premiumChange(close: number, base: number | null, tickUsd = 0): { usd: string; pct: string | null; up: boolean } | null {
+  if (base === null || !Number.isFinite(base) || !Number.isFinite(close)) return null;
+  const d = close - base;
+  const minBase = Math.max(PCT_MIN_BASE_USD, PCT_MIN_BASE_TICKS * (tickUsd > 0 ? tickUsd : 0));
+  let pct: string | null = null;
+  if (base > 0 && base >= minBase) {
+    const r = Math.round((d / base) * 1000) / 10;
+    pct = r > PCT_CAP ? `> +${PCT_CAP}%` : `${r > 0 ? "+" : r < 0 ? "−" : ""}${Math.abs(r).toFixed(1)}%`;
+  }
+  return { usd: usdSigned(d), pct, up: Math.round(d * 100) >= 0 };
+}
+
+function LegendOhlc({ store, digits, tickUsd }: { store: LegendStore; digits: number; tickUsd: number }) {
   const t = useT();
   const v = React.useSyncExternalStore(store.subscribe, store.get, store.get);
   const b = v.bar;
   if (!b) return null;
   const up = b.close >= b.open;
+  const ch = premiumChange(b.close, v.base, tickUsd);
   return (
     <>
       {(["open", "high", "low", "close"] as const).map((k) => (
@@ -394,6 +420,12 @@ function LegendOhlc({ store, digits }: { store: LegendStore; digits: number }) {
           <span className={cn("ms-1", up ? "text-up" : "text-down")}>{usd(b[k])}</span>
         </span>
       ))}
+      {ch && (
+        <span dir="ltr" className={cn("k-num", ch.up ? "text-up" : "text-down")}>
+          {ch.usd}
+          {ch.pct && <span className="ms-1">({ch.pct})</span>}
+        </span>
+      )}
       {b.u !== null && (
         <span className="k-num">
           {t("trader.opt.col.underlying")} <span className="text-fg-2">{b.u.toFixed(digits)}</span>
@@ -419,6 +451,8 @@ export function PremiumChart({ code, tf, onUnavailable, className }: { code: str
   const p = parseSeriesCode(code);
   const digits = OPTION_SPEC[p?.underlying ?? ""]?.digits ?? 5;
   const q = useSeriesQuote(code);
+  // premium tick in USD per contract: the legend's % change needs a base of at least 5 ticks
+  const { tickUsd } = useSeriesUnits(code);
   const cutTime = useOpt((s) => s.chain?.cut.time ?? "10:00");
   const cutMs = useOpt((s) => {
     const e = s.expiries.find((x) => x.date === p?.date && s.u === p?.underlying);
@@ -485,7 +519,7 @@ export function PremiumChart({ code, tf, onUnavailable, className }: { code: str
             <span className="font-normal text-fg-3">· {p ? expiryLabel(p.date, locale) : ""}, {tf}</span>
           </span>
           <span className="font-sans text-fg-3">{t("trader.opt.chart.unit")}</span>
-          <LegendOhlc store={legend} digits={digits} />
+          <LegendOhlc store={legend} digits={digits} tickUsd={tickUsd} />
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-1 font-mono text-[10px]">
           {p && (

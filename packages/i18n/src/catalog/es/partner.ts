@@ -89,10 +89,13 @@ const partner: NsMessages<"partner"> = {
   "kind.cpa": "Bono CPA",
   "kind.clawback": "Recuperación",
   "kind.adjustment": "Ajuste",
+  "kind.option": "Comisión por opciones",
   // Descripciones de líneas del registro
   "line.cpa": "Bono CPA · primer depósito y operación",
   "line.trade": "Operación",
   "line.lot": "{lots} lote",
+  "line.options": { one: "Opciones · {n} contrato", many: "Opciones · {n} contratos", other: "Opciones · {n} contratos" },
+  "line.optionsDeal": "Opciones",
 
   // Botones para compartir
   "share.defaultText": "Opere oro, FX, índices y cripto con Kalks — abra su cuenta con mi enlace:",
@@ -431,6 +434,7 @@ const partner: NsMessages<"partner"> = {
   "com.rateFixed": "fija",
   "com.rateSplit": "reparto {pct}",
   "com.rateRebate": "reembolso {pct}",
+  "com.ratePerContract": "{rate}/contrato",
   "com.viaPamm": "vía PAMM",
   "com.viaCopy": "vía copy trading",
   "com.rate": "Tarifa",

@@ -31,11 +31,13 @@ import {
   Reveal,
   Segmented,
   Skeleton,
-  SymbolAvatar,
+  
   cn,
   formatMoney,
   type Column,
 } from "@kalks/ui";
+// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+import { TradeSymbolAvatar as SymbolAvatar, symbolLabel } from "@/components/trading/instrument";
 import { Trans, tr, useT } from "@kalks/i18n/react";
 import type { MessageKey } from "@kalks/i18n";
 import { RangeSlider } from "@/components/social/controls";
@@ -45,7 +47,9 @@ import {
   fmtLots,
   fmtPct,
   fmtRate,
+  isOptionLine,
   kindLabel,
+  optionsLabel,
   partnerApi,
   usePartner,
   type CommissionRow,
@@ -706,10 +710,19 @@ function rateText(e: CommissionRow) {
     return tr("partner.com.rateSplit", { pct: fmtPct(e.sharePct) });
   if (e.kind === "rebate")
     return tr("partner.com.rateRebate", { pct: fmtPct(e.sharePct) });
-  if (e.kind === "lot")
-    return `${fmtRate(e.rate)}${e.sharePct !== 100 ? ` × ${fmtPct(e.sharePct)}` : ""}`;
+  if (e.kind === "lot") {
+    // option lines are paid per contract at the level's options rate
+    const rate = isOptionLine(e)
+      ? tr("partner.com.ratePerContract", { rate: fmtRate(e.rate) })
+      : fmtRate(e.rate);
+    return `${rate}${e.sharePct !== 100 ? ` × ${fmtPct(e.sharePct)}` : ""}`;
+  }
   return "—";
 }
+
+/** "Lot commission", or "Options commission" for a per-contract line on an option deal. */
+const lineKindLabel = (e: CommissionRow) =>
+  e.kind === "lot" && isOptionLine(e) ? tr("partner.kind.option") : kindLabel(e.kind);
 
 function LedgerCard() {
   const t = useT();
@@ -770,9 +783,9 @@ function LedgerCard() {
           <span className="flex items-center gap-2">
             <SymbolAvatar symbol={e.symbol} size={22} />
             <span className="min-w-0">
-              <span className="block text-[13px] font-medium">{e.symbol}</span>
+              <span className="block text-[13px] font-medium">{symbolLabel(t, e.symbol)}</span>
               <span className="block text-[11px] text-fg-3">
-                {kindLabel(e.kind)}
+                {lineKindLabel(e)}
               </span>
             </span>
           </span>
@@ -793,9 +806,15 @@ function LedgerCard() {
       key: "lots",
       header: t("partner.lots"),
       align: "right",
-      cell: (e) => (
-        <span className="k-num">{e.lots ? fmtLots(e.lots) : "—"}</span>
-      ),
+      // option lines are paid per contract and carry no lots
+      cell: (e) =>
+        isOptionLine(e) ? (
+          <span className="whitespace-nowrap text-[12px] text-fg-2">
+            {optionsLabel(e.contracts)}
+          </span>
+        ) : (
+          <span className="k-num">{e.lots ? fmtLots(e.lots) : "—"}</span>
+        ),
     },
     {
       key: "tier",

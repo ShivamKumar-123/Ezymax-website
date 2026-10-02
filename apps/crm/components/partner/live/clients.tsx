@@ -15,15 +15,19 @@ import {
   Reveal,
   Segmented,
   Skeleton,
-  SymbolAvatar,
+  
   cn,
   formatMoney,
   type Column,
 } from "@kalks/ui";
+// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+import { TradeSymbolAvatar as SymbolAvatar, symbolLabel } from "@/components/trading/instrument";
 import {
   fmtDate,
   fmtLots,
+  isOptionLine,
   linkBase,
+  optionsLabel,
   partnerApi,
   referralLink,
   relTime,
@@ -162,15 +166,19 @@ function TradesList({
             <SymbolAvatar symbol={x.symbol} size={22} />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium">
-                {x.symbol}
+                {symbolLabel(t, x.symbol)}
                 <Chip size="sm" tone={x.side === "buy" ? "up" : "down"}>
                   {x.side === "buy"
                     ? t("common.buy").toUpperCase()
                     : x.side === "sell"
                       ? t("common.sell").toUpperCase()
-                      : x.side.toUpperCase()}{" "}
-                  {fmtLots(x.lots)}
+                      : x.side.toUpperCase()}
+                  {/* option deals are counted in contracts (shown next to the side), never lots */}
+                  {isOptionLine(x) ? null : <> {fmtLots(x.lots)}</>}
                 </Chip>
+                {isOptionLine(x) && (
+                  <Chip size="sm">{optionsLabel(x.contracts)}</Chip>
+                )}
                 {x.source !== "engine" && (
                   <Chip size="sm">
                     {x.source === "pamm"
