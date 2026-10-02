@@ -685,6 +685,14 @@ pub fn apply(b: &mut UnderlyingBooks, cmd: &Cmd) -> Out {
                 }
                 out.touched.insert(s);
             }
+            // a series with nothing left (no order, no position, never traded, open) goes: a series only market-maker
+            // quotes created was never stored, so the book loaded after a restart does not have it either — the
+            // replay and the live book stay identical
+            let empty: Vec<String> = b.series.iter().filter(|(_, sb)| sb.orders.is_empty() && sb.pos.is_empty() && sb.last.is_none() && sb.vol_day.1 == 0 && sb.state == SeriesState::Open).map(|(s, _)| s.clone()).collect();
+            for s in empty {
+                b.series.remove(&s);
+                out.touched.insert(s);
+            }
             out
         }
     }

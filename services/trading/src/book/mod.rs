@@ -59,6 +59,11 @@ pub struct Hooks {
     pub crash_after_journal: AtomicBool,
     /// > 0: the dispatcher stops right after applying that many more items, before marking the last one.
     pub crash_after_apply: AtomicI64,
+    /// The next enable stops after seeding the first series and booking the market maker's side, before the
+    /// clients' positions move (a crash during novation).
+    pub crash_in_novation: AtomicBool,
+    /// The process "dies": every actor stops at once without flushing its buffered quote journal (tests).
+    pub dead: AtomicBool,
 }
 
 impl Hooks {

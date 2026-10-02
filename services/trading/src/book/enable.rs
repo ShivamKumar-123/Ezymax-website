@@ -263,6 +263,9 @@ pub async fn enable(st: &AppState, tenant_id: i64, kind: AccountKind, by: &str, 
             Ok(_) | Err(crate::shard::ExecError::Duplicate(_)) => {}
             Err(e) => anyhow::bail!("novation of {series} on the market maker: {e:?}"),
         }
+        if books.hooks.crash_in_novation.swap(false, std::sync::atomic::Ordering::SeqCst) {
+            anyhow::bail!("simulated crash during the novation of {series}");
+        }
         // c. the clients' positions move to the book venue
         for p in &list {
             let ticket = p.ticket;
@@ -270,6 +273,26 @@ pub async fn enable(st: &AppState, tenant_id: i64, kind: AccountKind, by: &str, 
             hub.exec(p.login, "system:book-enable", None, "", "", None, op).await.map_err(|e| anyhow::anyhow!("novation of #{ticket}: {e:?}"))?;
         }
         novated.push(json!({"series": series, "positions": list.len(), "mmContracts": num(mm_contracts), "premiumUsd": num(r2(-usd_cash))}));
+    }
+    // a crashed earlier run left its underlyings cancel-only (the reconcile at start found book and accounts apart):
+    // now that the novation is complete, a clean reconcile lifts those system halts
+    let mut healed = Vec::new();
+    for h in books.handles().into_iter().filter(|h| h.key.tenant_id == tenant_id && h.key.kind == kind) {
+        let ids: Vec<i64> = sqlx::query_scalar("SELECT id FROM book_halts WHERE tenant_id = $1 AND kind = $2 AND underlying = $3 AND lifted_at IS NULL AND staff = 'system' AND reason LIKE 'reconcile:%'")
+            .bind(tenant_id)
+            .bind(kind.as_str())
+            .bind(&h.key.underlying)
+            .fetch_all(&st.pool)
+            .await
+            .unwrap_or_default();
+        if ids.is_empty() || super::reconcile(hub, &h, &[]).await.is_some() {
+            continue;
+        }
+        let at = hub.shared.clock.now().timestamp_millis();
+        if h.call(Cmd::Halt { scope: HaltScope::All, mode: HaltMode::Resume, reason: "novation completed: reconcile clean".into(), at }).await.is_ok() {
+            let _ = sqlx::query("UPDATE book_halts SET lifted_at = now(), lifted_by = 'book-enable' WHERE id = ANY($1)").bind(&ids).execute(&st.pool).await;
+            healed.push(h.key.underlying.clone());
+        }
     }
     // 5. the venue row
     books.enable_venue(&st.pool, tenant_id, kind, by, reason).await?;
@@ -280,7 +303,7 @@ pub async fn enable(st: &AppState, tenant_id: i64, kind: AccountKind, by: &str, 
         .execute(&st.pool)
         .await;
     tracing::warn!(tenant = tenant_id, kind = kind.as_str(), by, cancelled, series = novated.len(), coverage, "options order book ENABLED");
-    Ok(json!({"cancelledOrders": cancelled, "novated": novated, "mmLogin": mm, "coverage": coverage}))
+    Ok(json!({"cancelledOrders": cancelled, "novated": novated, "mmLogin": mm, "coverage": coverage, "healed": healed}))
 }
 
 /// The market maker's side of a novated series: a book-venue position opposite to the clients' (deal reason

@@ -292,3 +292,71 @@ async fn market_maker_rfq_liquidation_enable_and_bust_end_to_end() {
     eprintln!("book MM / RFQ / liquidation / enable / bust e2e OK");
     rig.drop_db().await;
 }
+
+/// Crash kill point DURING NOVATION (docs §13): the enable stops after the first series is seeded in the book and
+/// the market maker's side is booked, before the clients' positions move. After a restart the reconcile finds book
+/// and accounts apart (that underlying goes cancel-only, CFD and house trading stay up); running the enable again
+/// completes it exactly once (one seed per series, one `novate:` ledger key, the MM's side not doubled), the
+/// reconcile is clean, the system halt is lifted, and the ledger and both replays are identical.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the real market-data (:8081), options service (:8104) and PostgreSQL (:5433)"]
+async fn novation_survives_a_crash_and_completes_exactly_once() {
+    let mut rig = Rig::boot("book_novation_crash", 4).await;
+    let spot = rig.spot("EURUSD").await;
+    let snap = rig.options.snapshot().unwrap();
+    let (s1, _) = pick(&snap, "EURUSD", spot, 30, 0, "call").expect("an ATM call");
+    let (s2, _) = pick(&snap, "EURUSD", spot, 30, 1, "put").expect("a put");
+    let (a, b) = (50_029_301i64, 50_029_302i64);
+    let (ta, tb) = (rig.client(a, 29301, 10_000).await, rig.client(b, 29302, 10_000).await);
+    // house-priced positions in two series: a long s1 and short s2, b long s1
+    for (t, s, side, n, cid) in [(&ta, &s1, "buy", 2, "n1"), (&ta, &s2, "sell", 1, "n2"), (&tb, &s1, "buy", 3, "n3")] {
+        let Json(v) = api::options::place(State(rig.st.clone()), rig.ctx(t), body(json!({"legs": [{"series": s, "side": side, "contracts": n}], "type": "market", "clientOrderId": cid}))).await.unwrap();
+        assert_eq!(v["status"], "filled", "{v}");
+    }
+    // the first enable dies during the novation
+    rig.hub.shared.books.hooks.crash_in_novation.store(true, std::sync::atomic::Ordering::SeqCst);
+    let e = trading::book::enable::enable(&rig.st, 1, AccountKind::Demo, "e2e", "crash").await.unwrap_err();
+    assert!(e.to_string().contains("simulated crash"), "{e}");
+    let seeds: i64 = sqlx::query_scalar("SELECT count(*) FROM book_journal WHERE cmd_kind = 'seed'").fetch_one(&rig.pool).await.unwrap();
+    assert_eq!(seeds, 1, "the first series was seeded before the crash");
+    // restart: the venue row was never written; the reconcile puts EURUSD cancel-only
+    let rep = rig.restart().await;
+    eprintln!("recovery after the crash: {rep:?}");
+    assert!(!rig.hub.shared.books.venue_enabled(1, AccountKind::Demo));
+    assert_eq!(rep.mismatches.len(), 1, "{rep:?}");
+    let halts: i64 = sqlx::query_scalar("SELECT count(*) FROM book_halts WHERE lifted_at IS NULL AND reason LIKE 'reconcile:%'").fetch_one(&rig.pool).await.unwrap();
+    assert_eq!(halts, 1);
+    // the enable again: completes, once
+    let r = trading::book::enable::enable(&rig.st, 1, AccountKind::Demo, "e2e", "complete").await.unwrap();
+    eprintln!("second enable {r}");
+    assert_eq!(r["healed"], json!(["EURUSD"]), "the clean reconcile lifted the system halt");
+    let mm = rig.hub.shared.books.mm.login(1, AccountKind::Demo).unwrap();
+    rig.drained().await;
+    let seeds: Vec<(String,)> = sqlx::query_as("SELECT cmd->>'series' FROM book_journal WHERE cmd_kind = 'seed' ORDER BY seq").fetch_all(&rig.pool).await.unwrap();
+    let mut seeded: Vec<String> = seeds.into_iter().map(|x| x.0).collect();
+    seeded.sort();
+    let mut want = vec![s1.clone(), s2.clone()];
+    want.sort();
+    assert_eq!(seeded, want, "one seed per series");
+    let keys: i64 = sqlx::query_scalar("SELECT count(*) FROM ledger_txns WHERE idempotency_key LIKE 'novate:%'").fetch_one(&rig.pool).await.unwrap();
+    assert_eq!(keys, 2, "one novation cash key per series");
+    assert_eq!(rig.book_pos(a).await, [(s1.clone(), D::from(2)), (s2.clone(), D::from(-1))].into_iter().collect());
+    assert_eq!(rig.book_pos(b).await, [(s1.clone(), D::from(3))].into_iter().collect());
+    assert_eq!(rig.book_pos(mm).await, [(s1.clone(), D::from(-5)), (s2.clone(), D::from(1))].into_iter().collect(), "the MM's side is not doubled");
+    let key = trading::book::BookKey::new(1, AccountKind::Demo, "EURUSD");
+    let h = rig.hub.shared.books.handle(&key).unwrap();
+    assert!(trading::book::reconcile(&rig.hub, &h, &[]).await.is_none(), "book = accounts");
+    let state = h.read(Box::new(|b| json!(b.series.values().map(|sb| sb.state.as_str()).collect::<Vec<_>>()))).await.unwrap();
+    assert!(state.as_array().unwrap().iter().all(|s| s == "open"), "{state}");
+    // and a third run changes nothing
+    let r3 = trading::book::enable::enable(&rig.st, 1, AccountKind::Demo, "e2e", "again").await.unwrap();
+    assert!(r3["novated"].as_array().unwrap().is_empty(), "{r3}");
+    rig.money_and_replay_ok(&[a, b, mm]).await;
+    // one more restart: everything consistent, nothing re-applied
+    let rep = rig.restart().await;
+    assert!(rep.mismatches.is_empty(), "{rep:?}");
+    assert!(rig.hub.shared.books.venue_enabled(1, AccountKind::Demo));
+    rig.money_and_replay_ok(&[a, b, mm]).await;
+    eprintln!("novation crash kill point OK");
+    rig.drop_db().await;
+}

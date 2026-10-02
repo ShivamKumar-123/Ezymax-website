@@ -112,6 +112,8 @@ impl Actor {
         tracing::info!(book = %self.key.label(), seq = self.books.seq, series = self.books.series.len(), resting = self.books.resting(), "options book actor started");
         let mut flush = tokio::time::interval(Duration::from_secs(1));
         flush.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        let books = self.hub.shared.books.clone();
+        let dead = move || books.hooks.dead.load(std::sync::atomic::Ordering::SeqCst);
         loop {
             let first = tokio::select! {
                 m = rx.recv() => match m {
@@ -119,10 +121,16 @@ impl Actor {
                     None => break,
                 },
                 _ = flush.tick() => {
+                    if dead() {
+                        return;
+                    }
                     self.flush_quotes().await;
                     continue;
                 }
             };
+            if dead() {
+                return;
+            }
             let mut msgs = vec![first];
             while msgs.len() < 256 {
                 match rx.try_recv() {

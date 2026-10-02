@@ -127,6 +127,44 @@ impl Rig {
         Rig { st, hub, pool, options, tenant, db, server }
     }
 
+    /// A process restart on the same database: the account replay (checked against the ledger), new shards and an
+    /// empty book registry, then `book::recover` (books loaded, reservations rebuilt, reconcile, outbox re-dispatched).
+    /// The market-data feeds keep filling the shared quote book.
+    pub async fn restart(&mut self) -> trading::book::Recovery {
+        // the old process dies: its actors stop without flushing what they still buffer
+        self.hub.shared.books.hooks.dead.store(true, std::sync::atomic::Ordering::SeqCst);
+        tokio::time::sleep(Duration::from_millis(1_200)).await;
+        let states = trading::persist::replay_all(&self.pool).await.unwrap();
+        assert!(trading::persist::verify_balances(&self.pool, &states).await.unwrap().is_empty(), "ledger vs replay");
+        let old = self.hub.shared.clone();
+        let (ticket, deal, txn, live, demo) = trading::persist::max_ids(&self.pool).await.unwrap();
+        let shared = Arc::new(Shared {
+            pool: self.pool.clone(),
+            registry: old.registry.clone(),
+            specs: old.specs.clone(),
+            quotes: old.quotes.clone(),
+            ids: Arc::new(Ids::new(ticket, deal, txn)),
+            index: Arc::new(RwLock::new(Index::default())),
+            streams: Streams::default(),
+            stats: Arc::new(Stats::default()),
+            lp: Arc::new(NullLp),
+            max_quote_age_ms: 300_000,
+            restrictions: Default::default(),
+            options: self.options.clone(),
+            clock: Default::default(),
+            books: Default::default(),
+        });
+        let hub = Hub::start(shared, 4, states);
+        hub.shared.books.lp_users.write().unwrap().insert(MM_USER);
+        let logins = Arc::new(LoginAlloc { live: AtomicI64::new(live), demo: AtomicI64::new(demo) });
+        let social = trading::social::Social::new(self.pool.clone(), hub.clone(), trading::social::wallet::WalletClient::new("", ""), logins.clone()).await.unwrap();
+        self.st = AppState { hub: hub.clone(), logins, social, ..self.st.clone() };
+        self.hub = hub;
+        let rep = trading::book::recover(&self.hub).await.unwrap();
+        trading::book::mm::load(&self.st).await.unwrap();
+        rep
+    }
+
     /// Waits for a raw mid of `symbol` from market-data.
     pub async fn spot(&self, symbol: &str) -> f64 {
         for _ in 0..300 {
