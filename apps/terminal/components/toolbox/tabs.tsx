@@ -9,6 +9,7 @@ import { journalTime, useTerminal, type JournalLine } from "@/lib/store";
 import { accCcy, accMoney, fmtPrice, fmtServer, fmtVol, splitSymbol } from "@/lib/trading";
 import { Td, Th } from "@/components/ui/panel";
 import { PickBox } from "@/components/share/share-dialogs";
+import { OptionShareButton } from "@/components/share/option-share";
 import { shareUi, useShareUi } from "@/lib/share";
 import { useContextMenu } from "@/components/ui/menu";
 import { Share2 } from "lucide-react";
@@ -101,7 +102,10 @@ function OptionHistoryRow({ o, picking }: { o: OptClosed; picking: boolean }) {
         </span>
       </Td>
       <Td className="text-fg-3">
-        {o.reason === "closed" ? <span className="text-[11px]">{t("trader.opt.hist.reason.closed")}</span> : <Badge tone={reasonTone}>{t.dyn(`trader.opt.hist.reason.${o.reason}`, o.rawReason || o.reason)}</Badge>}
+        <span className="flex items-center gap-1.5">
+          {o.reason === "closed" ? <span className="text-[11px]">{t("trader.opt.hist.reason.closed")}</span> : <Badge tone={reasonTone}>{t.dyn(`trader.opt.hist.reason.${o.reason}`, o.rawReason || o.reason)}</Badge>}
+          {!picking && <OptionShareButton o={o} className="ms-auto" />}
+        </span>
       </Td>
     </tr>
   );

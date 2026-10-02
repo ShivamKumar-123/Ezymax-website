@@ -6,7 +6,8 @@
 // settlements). The expiry bar (Daily | Weekly | Monthly + any date) sits over the chart and the chain; once an
 // option is selected a bar with its bid and ask follows at the bottom, and Sell / Buy there opens the ticket with
 // that side chosen. Loaded on demand like the desktop workspace. While the order book is live the Chart tab also shows
-// the selected option's Book (depth + trades) and Positions lists the working book orders.
+// the selected option's Book (depth + trades) and Positions lists the working book orders. The Chart tab's toggle also
+// opens Analytics: the volatility smile, term structure, open interest, put / call and the what-if P&L.
 import * as React from "react";
 import { CandlestickChart, ChevronRight, Layers, List, ShoppingCart, Table2, Wand2 } from "lucide-react";
 import { OPTION_SPEC, parseSeriesCode } from "@kalks/mock/options";
@@ -29,6 +30,7 @@ import { Flash, OptAvatar, OptionsUnavailable, RightTag, Seg, SideTag } from "./
 import { StrategyBuilder } from "./builder";
 import { OptionChainTable } from "./chain";
 import { useOptionEvents, StreamDot } from "./desktop";
+import { AnalyticsPane } from "./analytics";
 import { ExpiryBar } from "./expiry-bar";
 import { expiryLabel, strikeText, usd, usdSigned } from "./format";
 import { FeedChange, SpotPrice } from "./header";
@@ -58,7 +60,7 @@ export function OptionsMobile() {
   const orders = useBookOrders(T.guest ? null : T.account.login, bookLive);
   const [tab, setTab] = React.useState<MTab>("chain");
   const [posView, setPosView] = React.useState<"open" | "orders" | "closed" | "settled">("open");
-  const [chartView, setChartView] = React.useState<"chart" | "book">("chart");
+  const [chartView, setChartView] = React.useState<"chart" | "book" | "analytics">("chart");
 
   const tabs: { id: MTab; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: "instruments", label: t("trader.opt.inst.title"), icon: <List /> },
@@ -94,14 +96,15 @@ export function OptionsMobile() {
         </div>
       )}
       {(tab === "chart" || tab === "chain") && <ExpiryBar compact className="bg-panel" />}
-      {tab === "chart" && bookLive && (
+      {tab === "chart" && (
         <div className="shrink-0 border-b border-line bg-panel px-2 py-1.5">
           <Seg
-            value={chartView}
+            value={chartView === "book" && !bookLive ? "chart" : chartView}
             onChange={setChartView}
             options={[
               { value: "chart", label: t("trader.opt.chart") },
-              { value: "book", label: t("trader.opt.book.tab") },
+              ...(bookLive ? [{ value: "book" as const, label: t("trader.opt.book.tab") }] : []),
+              { value: "analytics", label: t("trader.opt.an.tab") },
             ]}
           />
         </div>
@@ -120,7 +123,7 @@ export function OptionsMobile() {
       )}
       <main className="min-h-0 flex-1 overflow-hidden">
         {tab === "instruments" && <InstrumentList mobile onPick={() => setTab("chain")} />}
-        {tab === "chart" && (bookLive && chartView === "book" ? <BookPane compact /> : <OptionChartPane compact />)}
+        {tab === "chart" && (chartView === "analytics" ? <AnalyticsPane compact onOpenChain={() => setTab("chain")} /> : bookLive && chartView === "book" ? <BookPane compact /> : <OptionChartPane compact />)}
         {tab === "chain" && <OptionChainTable compact />}
         {tab === "trade" && (
           <div className="flex h-full min-h-0 flex-col">
@@ -158,7 +161,7 @@ export function OptionsMobile() {
             </div>
           ))}
       </main>
-      {(tab === "chain" || tab === "chart") && <SelectionBar onTrade={() => setTab("trade")} />}
+      {(tab === "chain" || (tab === "chart" && chartView !== "analytics")) && <SelectionBar onTrade={() => setTab("trade")} />}
       <nav className="grid h-[58px] shrink-0 grid-cols-5 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)]">
         {tabs.map((x) => (
           <button key={x.id} onClick={() => setTab(x.id)} className={cn("relative flex min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[10px] [&_svg]:size-[17px]", tab === x.id ? "text-ember" : "text-fg-3")}>

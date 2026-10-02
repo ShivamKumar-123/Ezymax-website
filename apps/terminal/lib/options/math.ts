@@ -292,3 +292,146 @@ export function estimatePreview(inp: EstimateInput): Preview {
     estimate: true,
   };
 }
+
+/* ------------------------------------------------------------------ */
+/* Analytics: smile, open interest and the what-if book                */
+/* ------------------------------------------------------------------ */
+
+/** Inverse of the standard normal CDF (Acklam's rational approximation, relative error < 1.2e-9). */
+export function normInv(p: number): number {
+  if (!(p > 0 && p < 1)) return p <= 0 ? -Infinity : Infinity;
+  const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
+  const b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+  const c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+  const d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+  const lo = 0.02425;
+  if (p < lo) {
+    const q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0]! * q + c[1]!) * q + c[2]!) * q + c[3]!) * q + c[4]!) * q + c[5]!) / ((((d[0]! * q + d[1]!) * q + d[2]!) * q + d[3]!) * q + 1);
+  }
+  if (p > 1 - lo) {
+    const q = Math.sqrt(-2 * Math.log(1 - p));
+    return -(((((c[0]! * q + c[1]!) * q + c[2]!) * q + c[3]!) * q + c[4]!) * q + c[5]!) / ((((d[0]! * q + d[1]!) * q + d[2]!) * q + d[3]!) * q + 1);
+  }
+  const q = p - 0.5;
+  const r = q * q;
+  return ((((((a[0]! * r + a[1]!) * r + a[2]!) * r + a[3]!) * r + a[4]!) * r + a[5]!) * q) / (((((b[0]! * r + b[1]!) * r + b[2]!) * r + b[3]!) * r + b[4]!) * r + 1);
+}
+
+/** Strike at a forward call delta N(d1) for a vol (the service's smile convention): K = F·exp(−N⁻¹(Δ)·σ√t + ½σ²t). */
+export function strikeAtCallDelta(forward: number, callDelta: number, vol: number, years: number): number {
+  if (!(forward > 0) || !(callDelta > 0 && callDelta < 1) || !(vol > 0) || !(years > 0)) return NaN;
+  const v = vol * Math.sqrt(years);
+  return forward * Math.exp(-normInv(callDelta) * v + 0.5 * v * v);
+}
+
+export interface SmilePillar {
+  /** forward call delta N(d1): 0.25 = the 25-delta call, 0.75 = the 25-delta put */
+  callDelta: number;
+  vol: number;
+  strike: number;
+}
+
+/** 25-delta risk reversal (call vol − put vol) and butterfly (wings over ATM) read off the smile's pillars. */
+export function skewOf(pillars: Pick<SmilePillar, "callDelta" | "vol">[], atmVol?: number | null): { rr25: number | null; bf25: number | null } {
+  const at = (d: number) => pillars.find((p) => Math.abs(p.callDelta - d) < 0.02)?.vol;
+  const c25 = at(0.25);
+  const p25 = at(0.75);
+  const atm = at(0.5) ?? atmVol ?? undefined;
+  return {
+    rr25: c25 !== undefined && p25 !== undefined ? c25 - p25 : null,
+    bf25: c25 !== undefined && p25 !== undefined && atm !== undefined ? (c25 + p25) / 2 - atm : null,
+  };
+}
+
+/** Puts over calls (open interest or volume); null without calls. */
+export const putCallRatio = (puts: number, calls: number): number | null => (calls > 0 ? puts / calls : null);
+
+/**
+ * Max pain: the listed strike where the holders of the expiry's open interest would collect the least at expiry
+ * (calls pay max(0, F − K), puts max(0, K − F) per unit). Null without open interest.
+ */
+export function maxPain(rows: { strike: number; callOi: number; putOi: number }[]): number | null {
+  if (!rows.some((r) => r.callOi > 0 || r.putOi > 0)) return null;
+  let best: number | null = null;
+  let bestPay = Infinity;
+  for (const f of rows) {
+    let pay = 0;
+    for (const r of rows) pay += r.callOi * Math.max(0, f.strike - r.strike) + r.putOi * Math.max(0, r.strike - f.strike);
+    if (pay < bestPay - 1e-12) {
+      bestPay = pay;
+      best = f.strike;
+    }
+  }
+  return best;
+}
+
+/** An option leg of the what-if book: an open position or a ticket leg. */
+export interface WhatIfLeg {
+  right: OptionRight;
+  strike: number;
+  side: Side;
+  contracts: number;
+  /** entry premium per unit (quote currency): the open price, or the fill price of a ticket leg */
+  premium: number;
+  /** implied vol of the series now (decimal, business-time clock like the chain's `iv`) */
+  iv: number;
+  /** the cut (ms) */
+  cutAtMs: number;
+  /** USD per contract for one unit of premium at today's spot */
+  usdPerUnit: number;
+}
+
+/** A linear position on the same underlying (a CFD): `units` = lots × contract size. */
+export interface WhatIfLinear {
+  side: Side;
+  units: number;
+  openPrice: number;
+}
+
+export interface WhatIfBook {
+  /** the underlying's price now: USD conversions of USD-based pairs are scaled from it */
+  spot: number;
+  /** rate and cost of carry (GK: r_quote − r_base, BS: with the lease rate, Black-76: 0) */
+  r: number;
+  b: number;
+  /** USD per unit of the quote currency moves as 1 / S (USDJPY, USDCAD, USDCHF) */
+  inverseUsd: boolean;
+  /** USD per unit of the quote currency now (linear positions) */
+  usdPerQuote: number;
+  options: WhatIfLeg[];
+  linear: WhatIfLinear[];
+}
+
+/** Each option leg's calendar and vol-clock years to its cut at an instant (volYears walks days: once per curve). */
+export function whatIfClock(book: Pick<WhatIfBook, "options">, atMs: number): { tCal: number; tVol: number }[] {
+  return book.options.map((l) => ({ tCal: Math.max(0, (l.cutAtMs - atMs) / (365 * 86_400_000)), tVol: volYears(atMs, l.cutAtMs) }));
+}
+
+/**
+ * P&L of the book in USD (against each entry) if the underlying trades at `s` at the clock's instant, with every
+ * leg's implied vol moved by `ivShift` (decimal: 0.01 = one vol point). Options are valued with the demo pricer's
+ * maths (generalized BSM: GK / BS / Black-76 by the carry), at intrinsic once past their cut; CFDs are linear.
+ * Before commissions and swaps.
+ */
+export function whatIfPnl(book: WhatIfBook, s: number, clock: { tCal: number; tVol: number }[], ivShift = 0): number {
+  if (!(s > 0)) return NaN;
+  const fx = book.inverseUsd && book.spot > 0 ? book.spot / s : 1;
+  let v = 0;
+  for (let i = 0; i < book.options.length; i++) {
+    const l = book.options[i]!;
+    const c = clock[i] ?? { tCal: 0, tVol: 0 };
+    const sigma = Math.max(0.005, l.iv + ivShift);
+    v += sgn(l.side) * l.contracts * l.usdPerUnit * fx * (legValue(l.right, s, l.strike, c.tCal, c.tVol, book.r, book.b, sigma) - l.premium);
+  }
+  const usdQ = book.inverseUsd ? 1 / s : book.usdPerQuote;
+  for (const p of book.linear) v += sgn(p.side) * p.units * (s - p.openPrice) * usdQ;
+  return v;
+}
+
+/** A "nice" ± range in percent of spot that covers `need` (fraction), for the what-if price axis and slider. */
+export function niceRangePct(need: number): number {
+  const steps = [0.25, 0.5, 1, 1.5, 2, 3, 4, 5, 7.5, 10, 15, 20, 25, 30, 40, 50];
+  const want = Math.max(0, need) * 100;
+  return steps.find((x) => x >= want) ?? 50;
+}

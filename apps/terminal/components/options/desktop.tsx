@@ -6,13 +6,14 @@
 //   centre (the chart's place)        two tabs, "Chart" | "Option chain", under the expiry bar (Daily | Weekly |
 //                                      Monthly + any listed date); the chart shows the selected option's premium;
 //                                      while the order book is live a third tab, "Book": the selected option's
-//                                      depth (10 levels) and trade tape
+//                                      depth (10 levels) and trade tape; "Analytics": the volatility smile, term
+//                                      structure, open interest and put / call ratios, and the what-if P&L
 //   right  (the CFD order panel)      the option ticket: Sell at the bid / Buy at the ask, contracts, protection,
 //                                      preview; "Simple" mode next to it
 //   bottom                            the terminal's own toolbox (Options + Settlements tabs first)
 // Loaded on demand (next/dynamic) the first time a trader switches to Options, so CFD-only traders never download it.
 import * as React from "react";
-import { BookOpenText, CandlestickChart, ChevronsRight, ShoppingCart, Sigma, Table2, Wand2 } from "lucide-react";
+import { BookOpenText, CandlestickChart, ChartSpline, ChevronsRight, ShoppingCart, Sigma, Table2, Wand2 } from "lucide-react";
 import { parseSeriesCode } from "@kalks/mock/options";
 import { cn } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
@@ -25,6 +26,7 @@ import { bookOrders } from "@/lib/options/book-orders";
 import { onDemoBookEvent, onDemoOrderEvent } from "@/lib/options/mock-engine";
 import { optionErrorText } from "@/lib/options/errors";
 import { opt, useBookLive, useOpt, useOptionsAttach, type CenterTab, type ChainView, type SidePanel } from "@/lib/options-store";
+import { AnalyticsPane } from "./analytics";
 import { OptionsUnavailable, RightTag, Seg } from "./bits";
 import { BookBadge } from "./book-bits";
 import { BookPane } from "./depth";
@@ -129,6 +131,7 @@ function CenterTabs() {
     },
     { id: "chain", icon: <Table2 />, label: t("trader.opt.chainTitle") },
     ...(bookLive ? [{ id: "book" as const, icon: <BookOpenText />, label: t("trader.opt.book.tab") }] : []),
+    { id: "analytics", icon: <ChartSpline />, label: t("trader.opt.an.tab") },
   ];
   return (
     <div className="flex h-8 shrink-0 items-stretch border-b border-line bg-panel-2">
@@ -217,7 +220,7 @@ export function OptionsCenter() {
         <>
           <CenterTabs />
           <ExpiryBar />
-          <div className="min-h-0 flex-1">{tab === "chart" ? <OptionChartPane /> : tab === "book" ? <BookPane /> : <ChainPane />}</div>
+          <div className="min-h-0 flex-1">{tab === "chart" ? <OptionChartPane /> : tab === "book" ? <BookPane /> : tab === "analytics" ? <AnalyticsPane /> : <ChainPane />}</div>
         </>
       )}
       <StrategyBuilder />

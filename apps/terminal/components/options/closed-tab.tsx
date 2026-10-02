@@ -15,6 +15,7 @@ import { Empty, Pnl } from "@/components/ui/primitives";
 import { loadOptionHistory, useOptionBook, type OptClosed } from "@/lib/options/book";
 import { useOptionsAttach } from "@/lib/options-store";
 import { OptAvatar, RightTag, SideTag } from "./bits";
+import { OptionShareButton } from "@/components/share/option-share";
 import { expiryLabel, strikeText, usd, usdSigned } from "./format";
 
 const PERIODS = [
@@ -110,6 +111,7 @@ export function ClosedTab() {
               <Th>{t("toolbox.col.reason")}</Th>
               <Th>{t("toolbox.col.openTime")}</Th>
               <Th className="pe-3">{t("toolbox.col.closeTime")}</Th>
+              <Th className="w-8 pe-2" />
             </tr>
           </thead>
           <tbody>
@@ -154,6 +156,9 @@ export function ClosedTab() {
                 <Td mono className="pe-3 text-fg-3">
                   {o.closeTime ? fmtServer(o.closeTime) : "—"}
                 </Td>
+                <Td className="pe-2">
+                  <OptionShareButton o={o} />
+                </Td>
               </tr>
             ))}
           </tbody>
@@ -167,7 +172,7 @@ export function ClosedTab() {
                 <td className="px-2 text-end text-[12px] font-semibold">
                   <Pnl value={net} text={usdSigned(net)} />
                 </td>
-                <td colSpan={3} />
+                <td colSpan={4} />
               </tr>
             </tfoot>
           )}
@@ -211,6 +216,7 @@ export function ClosedList() {
             </span>
             <CloseReason o={o} />
             <span className="ms-auto">{o.closeTime ? fmtServer(o.closeTime, false) : ""}</span>
+            <OptionShareButton o={o} />
           </div>
         </div>
       ))}

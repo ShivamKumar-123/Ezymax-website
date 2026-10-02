@@ -86,8 +86,12 @@ export interface Ticket {
 
 export type ChainView = "both" | "calls" | "puts";
 export type SidePanel = "ticket" | "simple";
-/** The tabs of the centre panel (where the CFD chart sits); "book" (depth + trades) while the order book is live. */
-export type CenterTab = "chart" | "chain" | "book";
+/**
+ * The tabs of the centre panel (where the CFD chart sits); "book" (depth + trades) while the order book is live;
+ * "analytics" (smile, term structure, open interest, put / call, what-if P&L).
+ */
+export type CenterTab = "chart" | "chain" | "book" | "analytics";
+const CENTER_TABS: CenterTab[] = ["chart", "chain", "book", "analytics"];
 /** The chart tab: the selected option's premium, or the underlying with option levels. */
 export type ChartMode = "premium" | "underlying";
 export const EXPIRY_KINDS: ExpiryKind[] = ["daily", "weekly", "monthly"];
@@ -160,6 +164,7 @@ function readPrefs(): Prefs {
     const p = raw ? ({ ...DEFAULT_PREFS, ...(JSON.parse(raw) as Partial<Prefs>) } as Prefs) : DEFAULT_PREFS;
     if (!OPTION_TFS.includes(p.tf)) p.tf = DEFAULT_PREFS.tf;
     if (p.expKind !== null && !EXPIRY_KINDS.includes(p.expKind)) p.expKind = "daily";
+    if (!CENTER_TABS.includes(p.center)) p.center = DEFAULT_PREFS.center;
     return p;
   } catch {
     return DEFAULT_PREFS;
