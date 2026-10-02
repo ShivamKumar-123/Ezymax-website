@@ -213,3 +213,14 @@ This document is the build contract for the options order book. Founder decision
 - **Crash kill points:** after the journal commit, after one side applied, during novation. Each must give exactly-once on restart and a clean reconcile.
 - **End to end** (`tests/book_e2e.rs`, `--ignored`) against the real local market-data :8081, the options service :8104 and Postgres: the MM quotes from the real snapshot, clients trade, the mark clamps, OI = positions, and a real 0DTE fixing settles with clearing at 0.
 - **Load:** full-chain MM at 4 Hz plus 200 clients. Targets: actor p99 < 5 ms, outbox lag < 50 ms.
+
+## 14. Implementation notes (second milestone, 2026-10-02)
+What the MM, RFQ, liquidator, enable and Back Office build does where this design left a choice (details in `services/trading/README.md` "Options order book"):
+- **MM spot staleness:** quotes are pulled after **10 s** without a raw tick (not 3 s): the production relay has multi-second gaps on quiet pairs and pulling the whole chain on every gap would empty the book.
+- **MM load:** at most 400 series are requoted per 250 ms pass (nearest the money first, the starting underlying rotates), in mass quotes of 40 series, so the MM account's shard stays responsive; the MM's own in-memory removals are applied in one account transaction per batch.
+- **MM tier:** liquidity-provider quotes trade at 0 / 0 fees and are exempt from the per-client contract limit (their own `maxContractsPerSeries` and Greek limits apply). MM capital: `OPTIONS_MM_CAPITAL` (default 25 M USD) must cover the order reserve of a full-chain quote.
+- **RFQ:** legs must be listed vanilla series of one underlying (`rfq_underlyings`); a barrier leg answers `kalks_quoted` (barrier strategies stay on the house ticket). The leg split is integer (`matching::rfq_split`); when no whole-tick split makes the net, the last tick goes the taker's way. RFQ fills move positions and volume but not the outright levels or the last trade price.
+- **Halt modes:** `halt` cancels the resting orders in scope (reservations released) and accepts cancels only; `cancel_only` keeps them.
+- **Bust:** a fill of an expired series cannot be busted (settlement already used it).
+- **Restart:** `RestartCancel` also drops series left empty, so a book loaded after a restart and its journal replay stay identical when only MM quotes had created a series.
+- **Enable after a crash:** re-running the enable completes it exactly once and lifts the reconcile cancel-only once book and accounts agree.

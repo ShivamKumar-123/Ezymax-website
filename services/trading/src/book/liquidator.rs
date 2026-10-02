@@ -126,7 +126,8 @@ pub async fn liquidate(st: &AppState, login: i64) -> anyhow::Result<Report> {
         }
         if closed_now.is_zero() {
             for leg in &plan.legs {
-                let (c, rows) = close_leg(st, login, tenant_id, kind, meta.user_id, leg, &rep.run_id, step, before, unit.clone()).await;
+                let share = plan.freed / D::from(plan.legs.len().max(1) as i64);
+                let (c, rows) = close_leg(st, login, tenant_id, kind, meta.user_id, leg, &rep.run_id, step, before, unit.clone(), share).await;
                 closed_now += c;
                 rep.rows.extend(rows);
             }
@@ -145,7 +146,7 @@ pub async fn liquidate(st: &AppState, login: i64) -> anyhow::Result<Report> {
 /// Book first (a reduce-only IOC within the liquidation band), then the backstop for the rest. Returns the
 /// contracts closed and the log rows.
 #[allow(clippy::too_many_arguments)]
-async fn close_leg(st: &AppState, login: i64, tenant_id: i64, kind: AccountKind, user_id: i64, leg: &LiqLeg, run: &str, step: usize, before: Option<D>, unit: Value) -> (D, Vec<Value>) {
+async fn close_leg(st: &AppState, login: i64, tenant_id: i64, kind: AccountKind, user_id: i64, leg: &LiqLeg, run: &str, step: usize, before: Option<D>, unit: Value, freed: D) -> (D, Vec<Value>) {
     let hub = &st.hub;
     let mut rows = Vec::new();
     let px = ob::liq_limit(leg);
@@ -171,7 +172,7 @@ async fn close_leg(st: &AppState, login: i64, tenant_id: i64, kind: AccountKind,
     };
     let after = level_of(st, login).await;
     let avg = if filled > ZERO { Some(num(notional / filled)) } else { None };
-    rows.push(log(st, tenant_id, kind, login, run, step, "book", with(&unit, json!({"series": leg.series, "ticket": leg.ticket})), json!({"qty": filled.to_string(), "price": avg, "limit": num(D::from(px) * leg.tick), "status": status, "note": note, "side": leg.side.as_str()}), before, after).await);
+    rows.push(log(st, tenant_id, kind, login, run, step, "book", with(&unit, json!({"series": leg.series, "ticket": leg.ticket})), json!({"qty": filled.to_string(), "price": avg, "limit": num(D::from(px) * leg.tick), "status": status, "note": note, "side": leg.side.as_str(), "freedMarginUsd": num(crate::money::r2(freed * filled / leg.contracts))}), before, after).await);
     let rest = leg.contracts - filled;
     if rest <= ZERO || after.is_some_and(|l| l > stop_out_of(st, login)) {
         return (filled, rows);
@@ -195,7 +196,7 @@ async fn close_leg(st: &AppState, login: i64, tenant_id: i64, kind: AccountKind,
         Err(e) => (ZERO, "failed", Some(format!("{e:?}"))),
     };
     let after2 = level_of(st, login).await;
-    rows.push(log(st, tenant_id, kind, login, run, step, "backstop", with(&unit, json!({"series": leg.series, "ticket": leg.ticket})), json!({"qty": bq.to_string(), "price": num(D::from(bpx) * leg.tick), "mark": num(leg.mark), "status": bstatus, "note": bnote, "side": leg.side.as_str(), "counterparty": mm}), after, after2).await);
+    rows.push(log(st, tenant_id, kind, login, run, step, "backstop", with(&unit, json!({"series": leg.series, "ticket": leg.ticket})), json!({"qty": bq.to_string(), "price": num(D::from(bpx) * leg.tick), "mark": num(leg.mark), "status": bstatus, "note": bnote, "side": leg.side.as_str(), "counterparty": mm, "freedMarginUsd": num(crate::money::r2(freed * bq / leg.contracts))}), after, after2).await);
     (filled + bq, rows)
 }
 
@@ -237,6 +238,6 @@ async fn by_rfq(st: &AppState, login: i64, tenant_id: i64, kind: AccountKind, pl
     if closed.is_zero() {
         return None;
     }
-    let row = log(st, tenant_id, kind, login, run, step, "rfq", unit, json!({"qty": closed.to_string(), "price": num(D::from(ask) * r.tick()), "status": status, "note": note, "rfq": r.id}), before, after).await;
+    let row = log(st, tenant_id, kind, login, run, step, "rfq", unit, json!({"qty": closed.to_string(), "price": num(D::from(ask) * r.tick()), "status": status, "note": note, "rfq": r.id, "freedMarginUsd": num(crate::money::r2(plan.freed))}), before, after).await;
     Some((closed, row))
 }
