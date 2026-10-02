@@ -903,6 +903,79 @@ pub async fn rfq_cancel(State(st): State<AppState>, ctx: Ctx, Path(id): Path<Str
     Ok(Json(json!({"status": r.status, "rfq": r.json()})))
 }
 
+/// `POST /v1/terminal/options/combos/{comboId}/close` on a strategy held on the order book (docs §5): one
+/// reduce-only combo RFQ to the market maker, accepted at its firm quote — every leg closes at once or none does.
+/// None when the strategy is not on the book (the house close handles it).
+pub async fn book_close_combo(st: &AppState, s: &terminal::Session, combo: i64) -> ApiResult<Option<Value>> {
+    let v = st
+        .hub
+        .read(
+            s.login,
+            Box::new(move |x| {
+                let Some((a, _)) = x else { return Value::Null };
+                json!(a.positions.values().filter(|p| p.combo_id == Some(combo) && p.option.is_some()).map(|p| json!({"ticket": p.ticket, "series": p.symbol, "side": p.side.as_str(), "contracts": p.volume.to_string(), "book": p.on_book()})).collect::<Vec<_>>())
+            }),
+        )
+        .await;
+    let legs = v.as_array().cloned().unwrap_or_default();
+    if legs.is_empty() || !legs.iter().any(|l| l["book"] == true) {
+        return Ok(None);
+    }
+    if legs.iter().any(|l| l["book"] != true) {
+        return Err(status("mixed_venue", "This strategy has legs on the order book and Kalks-quoted legs: close them one by one"));
+    }
+    let kind = venue(st, s)?;
+    settling_gate(st, s.login)?;
+    // per series: the contracts to close (a strategy holds one position per series and side)
+    let mut per: BTreeMap<String, D> = BTreeMap::new();
+    for l in &legs {
+        let c: D = l["contracts"].as_str().and_then(|x| x.parse().ok()).unwrap_or(ZERO);
+        let sign = if l["side"] == "buy" { D::ONE } else { -D::ONE };
+        *per.entry(l["series"].as_str().unwrap_or_default().to_string()).or_default() += c * sign;
+    }
+    per.retain(|_, c| !c.is_zero());
+    fn gcd(a: i64, b: i64) -> i64 {
+        if b == 0 { a.abs() } else { gcd(b, a % b) }
+    }
+    let whole: Vec<(String, Side, i64)> = per.iter().map(|(s, c)| (s.clone(), if *c > ZERO { Side::Sell } else { Side::Buy }, rust_decimal::prelude::ToPrimitive::to_i64(&c.abs().trunc()).unwrap_or(0))).collect();
+    if whole.iter().any(|w| w.2 <= 0) || per.values().any(|c| !c.fract().is_zero()) {
+        return Err(status("invalid_volume", "Only whole contracts close as a strategy: close the legs one by one"));
+    }
+    let g = whole.iter().fold(0, |a, w| gcd(a, w.2)).max(1);
+    let legs_in: Vec<(String, Side, i64)> = whole.iter().map(|(s, side, n)| (s.clone(), *side, n / g)).collect();
+    let r = crate::book::rfq::open(&st.hub, &st.pool, s.tenant_id, kind, s.login, s.user_id, legs_in, D::from(g), true).await?;
+    let q = r.quote.clone().ok_or_else(|| status("no_liquidity", r.note.clone().unwrap_or_else(|| "The market maker cannot price this strategy right now".into())))?;
+    let ask = q.ask.ok_or_else(|| status("no_liquidity", "The market maker has no price to close this strategy"))?;
+    let mut base = BookReq::limit("", Side::Buy, ZERO, ZERO);
+    base.reduce_only = true;
+    base.origin = format!("close-combo:{combo}");
+    let a = crate::book::rfq::accept(&st.hub, r.id, s.login, &terminal::actor_of(s), q.id, Side::Buy, D::from(ask) * r.tick(), base).await?;
+    if !a.out.ok {
+        let code: &'static str = match a.out.code.as_deref() {
+            Some("quote_expired") => "quote_expired",
+            Some("price_moved") => "price_moved",
+            Some("reduce_only") => "reduce_only",
+            _ => "rejected",
+        };
+        return Err(ApiError::Status { status: 422, code, message: a.out.message.clone().unwrap_or_else(|| "The strategy was not closed".into()) });
+    }
+    crate::book::rfq::record(&st.pool, &a.rfq, json!({"filled": {"quote": q.id, "side": "buy", "net": num(D::from(a.net) * r.tick()), "fills": a.out.fills.len(), "closeCombo": combo}})).await;
+    // the deals each leg booked (profit of the closed share)
+    let mut profit = ZERO;
+    let mut out_legs = Vec::new();
+    for x in &a.applied {
+        for l in x.value["legs"].as_array().cloned().unwrap_or_default() {
+            for d in l["deals"].as_array().cloned().unwrap_or_default() {
+                if d["entry"] == "out" {
+                    profit += d["profit"].as_f64().and_then(crate::money::from_f64).unwrap_or(ZERO);
+                    out_legs.push(json!({"ticket": d["ticket"], "dealId": d["dealId"], "profit": d["profit"], "fillId": l["fillId"], "series": l["series"], "price": l["price"], "qty": l["qty"]}));
+                }
+            }
+        }
+    }
+    Ok(Some(json!({"status": "closed", "comboId": combo, "legs": out_legs, "profit": num(r2(profit)), "net": num(D::from(a.net) * r.tick()), "rfq": r.id.to_string(), "venue": "book", "settling": !a.settled})))
+}
+
 /// Is `ticket` an order-book position of the session's account?
 pub async fn is_book_position(st: &AppState, login: i64, ticket: i64) -> bool {
     st.hub.read(login, Box::new(move |x| json!(x.is_some_and(|(a, _)| a.positions.get(&ticket).is_some_and(|p| p.on_book()))))).await.as_bool() == Some(true)

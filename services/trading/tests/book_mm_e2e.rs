@@ -168,6 +168,24 @@ async fn market_maker_rfq_liquidation_enable_and_bust_end_to_end() {
     let e = api::options_book::rfq_accept(State(st.clone()), rig.ctx(&tb), Path(rid.clone()), body(json!({"quoteId": quote["quoteId"], "side": "buy", "limitNet": qa.to_string()}))).await.unwrap_err();
     assert!(format!("{e:?}").contains("expired"), "a filled RFQ cannot be accepted twice: {e:?}");
     assert_eq!(rig.ledger_sum(&clearing).await, D::ZERO);
+    // a strategy on the book closes in one piece through the generic combo close (a reduce-only RFQ to the MM)
+    let d_login = 50_019_304i64;
+    let td = rig.client(d_login, 19304, 20_000).await;
+    let (c1, _) = pick(&snap, "EURUSD", spot, 30, 1, "call").unwrap();
+    let (c3, _) = pick(&snap, "EURUSD", spot, 30, 3, "call").unwrap();
+    let Json(r2) = api::options_book::rfq_open(State(st.clone()), rig.ctx(&td), body(json!({"legs": [{"series": c1, "side": "buy", "ratio": 1}, {"series": c3, "side": "sell", "ratio": 1}], "qty": 3}))).await.unwrap();
+    let q2 = r2["quotes"][0].clone();
+    let Json(a2) = api::options_book::rfq_accept(State(st.clone()), rig.ctx(&td), Path(r2["rfq"]["id"].as_str().unwrap().to_string()), body(json!({"quoteId": q2["quoteId"], "side": "buy", "limitNet": q2["ask"]}))).await.unwrap();
+    assert_eq!(a2["status"], "filled", "{a2}");
+    rig.drained().await;
+    let combo: String = a2["comboId"].as_str().unwrap().to_string();
+    assert_eq!(rig.book_pos(d_login).await.len(), 2);
+    let Json(cc) = api::options::close_combo(State(st.clone()), rig.ctx(&td), Path(combo.clone())).await.unwrap();
+    eprintln!("combo close on the book {cc}");
+    assert_eq!((cc["status"].as_str(), cc["venue"].as_str(), cc["legs"].as_array().unwrap().len()), (Some("closed"), Some("book"), 2), "{cc}");
+    rig.drained().await;
+    assert!(rig.book_pos(d_login).await.is_empty(), "both legs closed at once");
+    assert_eq!(rig.ledger_sum(&clearing).await, D::ZERO);
 
     // ---------------- 4. liquidation: book first, then the backstop ----------------
     // c sells puts to the MM's bid (opening margin), then loses most of its balance: past stop-out
@@ -285,7 +303,7 @@ async fn market_maker_rfq_liquidation_enable_and_bust_end_to_end() {
     for l in [a, b, c] {
         assert_eq!(rig.reserve(l).await, D::ZERO, "reserve 0 when idle ({l})");
     }
-    rig.money_and_replay_ok(&[a, b, c, mm]).await;
+    rig.money_and_replay_ok(&[a, b, c, d_login, mm]).await;
     for (u, d) in [("EURUSD", rig.ledger_like("house:options_clearing.EURUSD.%").await)] {
         assert_eq!(d, D::ZERO, "{u} clearing nets to 0");
     }

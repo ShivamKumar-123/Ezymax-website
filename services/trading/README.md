@@ -755,6 +755,7 @@ Terminal (Kalks Trader session; add these to the terminal BFF allow-list). Error
 | `GET /v1/terminal/options/rfq/{id}` | `{rfq, quotes}` — a lapsed quote is replaced by a new firm one while the request is open; `rfq.status` open / filled / cancelled / expired |
 | `POST /v1/terminal/options/rfq/{id}/accept` | `{quoteId, side: buy\|sell, limitNet}` → `{status: "filled", comboId, net, fills: [{fillId, series, side, role: "taker", price, qty, fee, rebate, positionTicket, kind: "rfq", comboId, at}], settling?}`; refused with 422 `quote_expired`, `price_moved`, `rfq_expired`, `reduce_only`, `self_trade`, `series_cancel_only`, … (nothing fills) |
 | `DELETE /v1/terminal/options/rfq/{id}` | `{status, rfq}` |
+| `POST /v1/terminal/options/combos/{comboId}/close` | on a strategy held on the book: one reduce-only combo RFQ to the market maker, accepted at its firm quote (every leg at once or none) → `{status: "closed", comboId, venue: "book", legs: [{ticket, dealId, profit, fillId, series, price, qty}], profit, net, rfq}` (422 `mixed_venue` when legs are on both venues, `no_liquidity` without a quote); a house strategy closes at the house price as before |
 | `POST /v1/terminal/positions/{ticket}/close` | on a book position: `{volume?}` → `{status: filled\|partial, filled, avgPrice, left, orderId, fills}` (reduce-only market IOC; 422 `no_liquidity` when nothing traded) |
 
 Internal market data (`X-Kalks-Internal`; consumed by the options service, `api/book_feed.rs`):
