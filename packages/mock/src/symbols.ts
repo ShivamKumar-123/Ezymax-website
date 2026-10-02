@@ -56,10 +56,28 @@ export const INSTRUMENTS: Instrument[] = [
 
 export const INSTRUMENT_MAP: Record<string, Instrument> = Object.fromEntries(INSTRUMENTS.map((i) => [i.symbol, i]));
 
+/** Option series code from the options service / engine, e.g. EURUSD-20261002-1.1000-C. */
+const SERIES_RE = /^([A-Z0-9.]+)-(\d{4})(\d{2})(\d{2})-([\d.]+)-([CP])$/;
+const fallbacks = new Map<string, Instrument>();
+
+/**
+ * The instrument for a symbol. Never throws: an option series resolves to its underlying's look (named
+ * "EURUSD 1.1000 Call · 2026-10-02"), any other unknown symbol (a broker's own instrument, a renamed feed code)
+ * to a neutral text avatar, so a list containing it still renders.
+ */
 export function getInstrument(symbol: string): Instrument {
   const i = INSTRUMENT_MAP[symbol];
-  if (!i) throw new Error(`Unknown instrument ${symbol}`);
-  return i;
+  if (i) return i;
+  let f = fallbacks.get(symbol);
+  if (!f) {
+    const m = SERIES_RE.exec(symbol);
+    const base = m ? INSTRUMENT_MAP[m[1]!] : undefined;
+    f = m
+      ? { ...(base ?? { assetClass: "forex", digits: 5, price: 0, spread: 0, change: 0, contractSize: 1, icon: { kind: "energy", code: m[1]!.slice(0, 3) } as SymbolIcon }), symbol, name: `${m[1]} ${m[5]} ${m[6] === "C" ? "Call" : "Put"} · ${m[2]}-${m[3]}-${m[4]}` }
+      : { symbol, name: symbol, assetClass: "forex", digits: 5, price: 0, spread: 0, change: 0, contractSize: 1, icon: { kind: "energy", code: symbol.slice(0, 3) } };
+    fallbacks.set(symbol, f);
+  }
+  return f;
 }
 
 export const ASSET_CLASS_LABEL: Record<AssetClass, string> = {

@@ -192,6 +192,7 @@ const portfolio = {
   "an.flow.earnings": "IB earnings",
   "an.flow.charges": "Charges",
   "an.flow.adjustments": "Adjustments",
+  "an.flow.options": "Options",
   "an.flow.withdrawals": "Withdrawals",
   "an.flow.net": "Net",
   // Charges

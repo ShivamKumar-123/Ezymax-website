@@ -6,7 +6,9 @@ import { CalendarClock, Coins, Loader2, Percent, TrendingUp, Wallet } from "luci
 import { toast } from "sonner";
 import type { T } from "@kalks/i18n";
 import { useT } from "@kalks/i18n/react";
-import { Button, Card, CardHeader, Chip, DataTable, KpiCard, Money, PageHeader, Reveal, SymbolCell, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, KpiCard, Money, PageHeader, Reveal,  cn, type Column } from "@kalks/ui";
+// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+import { TradeSymbolCell as SymbolCell } from "@/components/trading/instrument";
 import { BannerSlot } from "./banner-slot";
 import { errorToast, fmtDate, fmtDateTime, fmtDay, fmtLots, fmtUsd, growthApi, titleCase, useGrowth, type CashbackAccrual, type CashbackMe, type CashbackPayout, type CashbackProgramme } from "./api";
 import { CardEmpty, DayBars, GrowthStatus, PageFallback } from "./ui";

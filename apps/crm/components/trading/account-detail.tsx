@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, RotateCw, Server } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CopyButton, EmptyState, Gauge, KeyValue, Money, Reveal, Skeleton, SymbolAvatar, Tabs, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, EmptyState, Gauge, KeyValue, Money, Reveal, Skeleton, Tabs, cn } from "@kalks/ui";
 import { STATUS_LABEL, curOf, fmtAmount, isArchived, fmtDate, fmtLevel, fmtPrice, levelTone, modeLabel, serverOf, serverTime, usePoll, type AccountDetail, type EngineAccount, type EnginePosition, type EngineOrder, type HistoryPage } from "./api";
 import { DealsTable, HistoryPanel, LedgerPanel } from "./activity";
 import { CredentialsPanel, SettingsPanel } from "./manage";
@@ -16,6 +16,8 @@ import { ClosureBanner } from "./closure";
 import { DefaultStar, HealthCard } from "./extras";
 import { AccountAnalyticsPanel } from "@/components/reports/live-analytics";
 import { Trans, useT } from "@kalks/i18n/react";
+import { OptionPremium, OptionTag, TradeSymbolAvatar, fmtContracts, symbolLabel } from "./instrument";
+import { isOptionTrade, optionTerms, positionPremiumsUsd, usdFactorOf } from "./option-deal";
 
 const TAB_KEYS = ["overview", "positions", "history", "ledger", "analytics", "credentials", "settings"] as const;
 type TabKey = (typeof TAB_KEYS)[number];
@@ -35,7 +37,7 @@ function StatTile({ label, children, tone }: { label: string; children: React.Re
 
 const ORDER_TYPE = { market: "accountDetail.orderType.market", limit: "accountDetail.orderType.limit", stop: "accountDetail.orderType.stop", stop_limit: "accountDetail.orderType.stopLimit" } as const satisfies Record<EngineOrder["type"], string>;
 
-function PositionsTable({ positions, cur }: { positions: EnginePosition[]; cur: string }) {
+function PositionsTable({ positions, cur, usdFactor }: { positions: EnginePosition[]; cur: string; usdFactor: number }) {
   const t = useT();
   return (
     <div className="overflow-x-auto">
@@ -55,30 +57,42 @@ function PositionsTable({ positions, cur }: { positions: EnginePosition[]; cur: 
         <tbody>
           {positions.map((p) => {
             const d = p.openPrice >= 1000 ? 2 : p.openPrice >= 50 ? 3 : 5;
+            const isOpt = isOptionTrade(p);
+            const opt = isOpt ? optionTerms(p.symbol, p.option) : null;
+            const prem = isOpt ? positionPremiumsUsd(p, usdFactor) : null;
             return (
               <tr key={p.ticket} className="bg-surface-2">
                 <td className="rounded-s-[14px] border-y border-s border-line px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <SymbolAvatar symbol={p.symbol} size={26} />
+                    <TradeSymbolAvatar symbol={opt?.series ?? p.symbol} size={26} />
                     <div>
-                      <div className="flex items-center gap-2 font-medium">
-                        {p.symbol}
+                      <div className="flex flex-wrap items-center gap-2 font-medium">
+                        <span className="whitespace-nowrap" title={isOpt ? p.symbol : undefined}>
+                          {symbolLabel(t, p.symbol, p.option)}
+                        </span>
                         <Chip size="sm" tone={p.side === "buy" ? "up" : "down"}>
                           {p.side === "buy" ? t("accountDetail.side.buy") : t("accountDetail.side.sell")}
                         </Chip>
+                        {isOpt && <OptionTag />}
                       </div>
                       <div className="text-[11px] text-fg-3">{serverTime(p.openTime)}</div>
                     </div>
                   </div>
                 </td>
                 <td className="border-y border-line px-3 font-mono text-[12px] text-fg-3">#{p.ticket}</td>
-                <td className="k-num border-y border-line px-3 text-end">{p.volume.toFixed(2)}</td>
-                <td className="k-num border-y border-line px-3 text-end font-mono text-fg-2">{fmtPrice(p.openPrice, d)}</td>
-                <td className="k-num border-y border-line px-3 text-end font-mono">{fmtPrice(p.currentPrice, d)}</td>
+                <td className="k-num whitespace-nowrap border-y border-line px-3 text-end">{isOpt ? t("accounts.opt.contracts", { count: fmtContracts(p.volume) }) : p.volume.toFixed(2)}</td>
+                <td className="k-num border-y border-line px-3 text-end font-mono text-fg-2">{prem ? <OptionPremium usd={prem.open} unit={p.openPrice} currency={opt?.quoteCurrency} /> : fmtPrice(p.openPrice, d)}</td>
+                <td className="k-num border-y border-line px-3 text-end font-mono">{prem ? <OptionPremium usd={prem.now} unit={p.currentPrice} currency={opt?.quoteCurrency} /> : fmtPrice(p.currentPrice, d)}</td>
                 <td className="k-num border-y border-line px-3 text-end font-mono text-[12px] text-fg-3">
-                  <span className="text-down/80">{p.sl ? fmtPrice(p.sl, d) : "—"}</span> / <span className="text-up/80">{p.tp ? fmtPrice(p.tp, d) : "—"}</span>
+                  {isOpt ? (
+                    "—"
+                  ) : (
+                    <>
+                      <span className="text-down/80">{p.sl ? fmtPrice(p.sl, d) : "—"}</span> / <span className="text-up/80">{p.tp ? fmtPrice(p.tp, d) : "—"}</span>
+                    </>
+                  )}
                 </td>
-                <td className={cn("k-num border-y border-line px-3 text-end text-[12.5px]", p.swap < 0 ? "text-down" : "text-fg-2")}>{fmtAmount(p.swap, "")}</td>
+                <td className={cn("k-num border-y border-line px-3 text-end text-[12.5px]", p.swap < 0 ? "text-down" : "text-fg-2")}>{isOpt && !p.swap ? "—" : fmtAmount(p.swap, "")}</td>
                 <td className={cn("k-num rounded-e-[14px] border-y border-e border-line px-4 text-end text-[14px] font-semibold", p.profit > 0 ? "text-up" : p.profit < 0 ? "text-down" : "")}>{fmtAmount(p.profit, cur, true)}</td>
               </tr>
             );
@@ -105,12 +119,23 @@ function OrdersTable({ orders }: { orders: EngineOrder[] }) {
           </tr>
         </thead>
         <tbody>
-          {orders.map((o) => (
+          {orders.map((o) => {
+            const legs = o.option?.legs ?? [];
+            const isOpt = isOptionTrade(o);
+            const first = legs[0];
+            const opt = isOpt ? optionTerms(first?.series ?? o.symbol, first?.option) : null;
+            return (
             <tr key={o.ticket} className="bg-surface-2">
               <td className="rounded-s-[14px] border-y border-s border-line px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <SymbolAvatar symbol={o.symbol} size={24} />
-                  <span className="font-medium">{o.symbol}</span>
+                  <TradeSymbolAvatar symbol={opt?.series ?? o.symbol} size={24} />
+                  <span className="flex flex-wrap items-center gap-2 font-medium">
+                    <span className="whitespace-nowrap" title={isOpt ? o.symbol : undefined}>
+                      {symbolLabel(t, first?.series ?? o.symbol, first?.option)}
+                    </span>
+                    {legs.length > 1 && <span className="text-[11.5px] font-normal text-fg-3">{t("accounts.opt.moreLegs", { count: legs.length - 1 })}</span>}
+                    {isOpt && <OptionTag />}
+                  </span>
                 </div>
               </td>
               <td className="border-y border-line px-3 font-mono text-[12px] text-fg-3">#{o.ticket}</td>
@@ -119,11 +144,14 @@ function OrdersTable({ orders }: { orders: EngineOrder[] }) {
                   {t("accountDetail.order.label", { side: o.side === "buy" ? t("common.buy") : t("common.sell"), type: t(ORDER_TYPE[o.type]) })}
                 </Chip>
               </td>
-              <td className="k-num border-y border-line px-3 text-end">{o.volume.toFixed(2)}</td>
-              <td className="k-num border-y border-line px-3 text-end font-mono text-fg-2">{fmtPrice(o.price)}</td>
+              <td className="k-num whitespace-nowrap border-y border-line px-3 text-end">{isOpt ? t("accounts.opt.contracts", { count: fmtContracts(first?.contracts ?? o.volume) }) : o.volume.toFixed(2)}</td>
+              <td className="k-num border-y border-line px-3 text-end font-mono text-fg-2">
+                {isOpt ? (o.option?.limitPremium != null ? <OptionPremium usd={null} unit={o.option.limitPremium} currency={opt?.quoteCurrency} /> : t(ORDER_TYPE.market)) : fmtPrice(o.price)}
+              </td>
               <td className="k-num rounded-e-[14px] border-y border-e border-line px-4 text-end text-[12.5px] text-fg-3">{serverTime(o.placedAt)}</td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -161,7 +189,10 @@ function PositionsPanel({ a, positions, orders }: { a: EngineAccount; positions:
             }
             action={<TradeButton a={a} label={t("accountDetail.positions.manageInTrader")} />}
           />
-          <div className="mt-2 px-4 pb-5 sm:px-6">{positions.length ? <PositionsTable positions={positions} cur={cur} /> : <div className="py-6 text-center text-[13px] text-fg-3">{t("accountDetail.positions.none")}</div>}</div>
+          <div className="mt-2 px-4 pb-5 sm:px-6">
+            {positions.length ? <PositionsTable positions={positions} cur={cur} usdFactor={usdFactorOf(a)} /> : <div className="py-6 text-center text-[13px] text-fg-3">{t("accountDetail.positions.none")}</div>}
+            {positions.some(isOptionTrade) && <div className="mt-1 text-[11.5px] text-fg-3">{t("accounts.opt.premiumHint")}</div>}
+          </div>
         </Card>
       </Reveal>
       {orders.length > 0 && (
@@ -244,23 +275,28 @@ function OverviewPanel({ a, positions, onTab }: { a: EngineAccount; positions: E
               }
             />
             <div className="mt-4 space-y-2 px-4 pb-5 sm:px-6">
-              {positions.slice(0, 5).map((p) => (
+              {positions.slice(0, 5).map((p) => {
+                const isOpt = isOptionTrade(p);
+                const prem = isOpt ? positionPremiumsUsd(p, usdFactorOf(a)) : null;
+                return (
                 <div key={p.ticket} className="k-row flex items-center gap-3 px-4 py-2.5">
-                  <SymbolAvatar symbol={p.symbol} size={24} />
+                  <TradeSymbolAvatar symbol={p.symbol} size={24} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 text-[13.5px] font-medium">
-                      {p.symbol}
+                    <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-medium">
+                      <span className="truncate">{symbolLabel(t, p.symbol, p.option)}</span>
                       <Chip size="sm" tone={p.side === "buy" ? "up" : "down"}>
-                        {p.side === "buy" ? t("accountDetail.side.buy") : t("accountDetail.side.sell")} {p.volume}
+                        {p.side === "buy" ? t("accountDetail.side.buy") : t("accountDetail.side.sell")} {isOpt ? t("accounts.opt.contracts", { count: fmtContracts(p.volume) }) : p.volume}
                       </Chip>
+                      {isOpt && <OptionTag />}
                     </div>
                     <div className="k-num mt-0.5 truncate font-mono text-[11px] text-fg-3">
-                      {fmtPrice(p.openPrice)} → {fmtPrice(p.currentPrice)} · #{p.ticket}
+                      {prem && prem.open !== null && prem.now !== null ? `${fmtAmount(prem.open, "$")} → ${fmtAmount(prem.now, "$")} ${t("accounts.opt.perContract")}` : `${fmtPrice(p.openPrice)} → ${fmtPrice(p.currentPrice)}`} · #{p.ticket}
                     </div>
                   </div>
                   <span className={cn("k-num text-[14px] font-semibold", p.profit > 0 ? "text-up" : p.profit < 0 ? "text-down" : "")}>{fmtAmount(p.profit, cur, true)}</span>
                 </div>
-              ))}
+                );
+              })}
               {positions.length === 0 && <div className="py-8 text-center text-[13px] text-fg-3">{t("accountDetail.overview.noPositions")}</div>}
             </div>
           </Card>
@@ -281,7 +317,7 @@ function OverviewPanel({ a, positions, onTab }: { a: EngineAccount; positions: E
             />
             <div className="px-4 pb-5 pt-3 sm:px-6">
               {recent.loading && <Skeleton className="h-40 w-full rounded-[14px]" />}
-              {recent.data && recent.data.deals.length > 0 && <DealsTable deals={recent.data.deals} cur={cur} />}
+              {recent.data && recent.data.deals.length > 0 && <DealsTable deals={recent.data.deals} cur={cur} usdFactor={usdFactorOf(a)} />}
               {recent.data && recent.data.deals.length === 0 && <div className="py-8 text-center text-[13px] text-fg-3">{t("accountDetail.overview.noDeals")}</div>}
               {recent.error && !recent.data && <div className="py-8 text-center text-[13px] text-fg-3">{recent.error.message}</div>}
             </div>

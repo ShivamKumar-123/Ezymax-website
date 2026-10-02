@@ -25,7 +25,9 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CopyButton, DataTable, EmptyState, Gauge, KpiCard, Money, PageHeader, Progress, Reveal, Segmented, Skeleton, Stepper, SymbolAvatar, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, DataTable, EmptyState, Gauge, KpiCard, Money, PageHeader, Progress, Reveal, Segmented, Skeleton, Stepper,  cn, type Column } from "@kalks/ui";
+// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+import { TradeSymbolAvatar as SymbolAvatar, symbolLabel } from "@/components/trading/instrument";
 import type { T } from "@kalks/i18n";
 import { Trans, useT } from "@kalks/i18n/react";
 import {
@@ -693,7 +695,7 @@ function Trades({ c, a }: { c: ChallengeDetail; a: PhaseAccount }) {
         <span className="flex items-center gap-3">
           <SymbolAvatar symbol={r.symbol} size={24} />
           <span>
-            <span className="block text-[13px] font-medium">{r.symbol}</span>
+            <span className="block text-[13px] font-medium">{symbolLabel(t, r.symbol)}</span>
             <span className="block font-mono text-[11px] text-fg-3">#{r.ticket}</span>
           </span>
         </span>

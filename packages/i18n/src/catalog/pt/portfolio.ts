@@ -193,6 +193,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "an.flow.earnings": "Ganhos de IB",
   "an.flow.charges": "Encargos",
   "an.flow.adjustments": "Ajustes",
+  "an.flow.options": "Opções",
   "an.flow.withdrawals": "Saques",
   "an.flow.net": "Líquido",
   // Encargos

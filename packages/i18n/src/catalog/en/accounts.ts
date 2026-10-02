@@ -539,5 +539,46 @@ const accounts = {
   // Dormant (inactive) live account
   "dormant.chip": "Inactive",
   "history.zip": "Download full history (ZIP)",
+
+  // Kalks FX Options in trade history, positions, orders and exports. A series code such as EURUSD-20261002-1.1000-C
+  // reads as "EURUSD 1.1000 Call · 2 Oct" ({date} is the expiry). Option prices are premiums in USD per contract.
+  "opt.tag": "Option",
+  "opt.call": "Call",
+  "opt.put": "Put",
+  "opt.label": "{underlying} {strike} {right} · {date}",
+  "opt.contracts": { one: "{count} contract", other: "{count} contracts" },
+  "opt.moreLegs": { one: "+{count} leg", other: "+{count} legs" },
+  "opt.perContract": "per contract",
+  "opt.perUnit": "{currency} per unit",
+  "opt.perUnitPlain": "per unit",
+  "opt.openAt": "Opened at {amount}",
+  "opt.premiumHint": "Option prices are premiums in USD per contract.",
+  "opt.filter.all": "All",
+  "opt.filter.cfd": "CFD",
+  "opt.filter.options": "Options",
+  "opt.emptyOptions": "No option trades in this period",
+  "opt.emptyOptionsText": "Options you buy or sell in Kalks Trader appear here, with how each one ended: closed, expired or knocked out.",
+  "opt.emptyCfd": "No CFD trades in this period",
+  "opt.truncated": "Showing the newest {count} matching deals. Choose a shorter period to see older ones.",
+
+  // How a deal was closed (engine reasons; an option closed by the client reads "Closed")
+  "reason.client": "Closed",
+  "reason.dealer": "Dealer",
+  "reason.force": "Dealer",
+  "reason.sl": "Stop loss",
+  "reason.tp": "Take profit",
+  "reason.stop_out": "Stop-out",
+  "reason.close_by": "Close by",
+  "reason.pending_fill": "Pending order",
+  "reason.price_correction": "Price correction",
+  "reason.reversal": "Reversal",
+  "reason.expiry": "Expired",
+  "reason.knock_out": "Knocked out",
+  "reason.novation": "Moved to the order book",
+
+  // Ledger entries of option trades
+  "ledgerKind.option_premium": "Option premium",
+  "ledgerKind.option_settlement": "Option settlement",
+  "ledgerKind.option_rebate": "Maker rebate",
 };
 export default accounts;

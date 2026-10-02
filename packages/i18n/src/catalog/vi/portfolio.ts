@@ -193,6 +193,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "an.flow.earnings": "Thu nhập IB",
   "an.flow.charges": "Chi phí",
   "an.flow.adjustments": "Điều chỉnh",
+  "an.flow.options": "Quyền chọn",
   "an.flow.withdrawals": "Rút tiền",
   "an.flow.net": "Ròng",
   // Charges

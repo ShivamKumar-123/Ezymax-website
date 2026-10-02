@@ -193,6 +193,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "an.flow.earnings": "IB آمدنی",
   "an.flow.charges": "چارجز",
   "an.flow.adjustments": "ایڈجسٹمنٹس",
+  "an.flow.options": "آپشنز",
   "an.flow.withdrawals": "رقم نکالنا",
   "an.flow.net": "خالص",
   // Charges

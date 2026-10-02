@@ -193,6 +193,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "an.flow.earnings": "รายได้ IB",
   "an.flow.charges": "ค่าใช้จ่าย",
   "an.flow.adjustments": "การปรับยอด",
+  "an.flow.options": "ออปชัน",
   "an.flow.withdrawals": "ถอนเงิน",
   "an.flow.net": "สุทธิ",
   // Charges

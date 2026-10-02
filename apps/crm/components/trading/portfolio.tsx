@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BookText, Check, Download, FileSpreadsheet, FileText, History, Layers, Plus, Sheet, ShieldCheck, TrendingUp, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, CHART_COLORS, Card, CardHeader, Chip, Donut, EmptyState, Field, Input, KpiCard, Money, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, Toggle, cn } from "@kalks/ui";
+import { Button, CHART_COLORS, Card, CardHeader, Chip, Donut, EmptyState, Field, Input, KpiCard, Money, PageHeader, Reveal, Segmented, Skeleton, Toggle, cn } from "@kalks/ui";
 import { accountTitle, curOf, fmtAmount, fmtPrice, isArchived, isoDay, toUsd, tradingApi, useAccounts, type AccountDetail, type EngineAccount, type EnginePosition } from "./api";
 import { AccountsError, liveTotals } from "./accounts-page";
 import { HistoryPanel, LedgerPanel } from "./activity";
 import { KindBadge, TradeButton, isPropAccount } from "./ui";
 import { tr, useFormat, useT } from "@kalks/i18n/react";
+import { OptionTag, TradeSymbolAvatar, fmtContracts, symbolLabel } from "./instrument";
+import { isOptionTrade, positionPremiumsUsd, usdFactorOf } from "./option-deal";
 
 /* ------------------------------------------------------------------ */
 /* Account picker (history / ledger / statements)                      */
@@ -608,25 +610,32 @@ export function LivePortfolio() {
                   <div className="mt-3 space-y-2 px-4 pb-5 sm:px-6">
                     {positions === null && <Skeleton className="h-24 w-full rounded-[14px]" />}
                     {positions && positions.length === 0 && <EmptyState art="emptyPosition" title={tx("portfolio.positions.empty")} className="py-8" />}
-                    {positions?.map(({ a, p }) => (
-                      <div key={`${a.login}-${p.ticket}`} className="k-row flex flex-wrap items-center gap-3 px-4 py-2.5">
-                        <SymbolAvatar symbol={p.symbol} size={24} />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 text-[13.5px] font-medium">
-                            {p.symbol}
-                            <Chip size="sm" tone={p.side === "buy" ? "up" : "down"}>
-                              {(p.side === "buy" ? tx("common.buy") : tx("common.sell")).toUpperCase()} {p.volume}
-                            </Chip>
-                            <KindBadge type={a.type} prop={isPropAccount(a)} />
+                    {positions?.map(({ a, p }) => {
+                      const isOpt = isOptionTrade(p);
+                      const prem = isOpt ? positionPremiumsUsd(p, usdFactorOf(a)) : null;
+                      return (
+                        <div key={`${a.login}-${p.ticket}`} className="k-row flex flex-wrap items-center gap-3 px-4 py-2.5">
+                          <TradeSymbolAvatar symbol={p.symbol} size={24} />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-medium">
+                              <span className="truncate" title={isOpt ? p.symbol : undefined}>
+                                {symbolLabel(tx, p.symbol, p.option)}
+                              </span>
+                              <Chip size="sm" tone={p.side === "buy" ? "up" : "down"}>
+                                {(p.side === "buy" ? tx("common.buy") : tx("common.sell")).toUpperCase()} {isOpt ? tx("accounts.opt.contracts", { count: fmtContracts(p.volume) }) : p.volume}
+                              </Chip>
+                              {isOpt && <OptionTag />}
+                              <KindBadge type={a.type} prop={isPropAccount(a)} />
+                            </div>
+                            <div dir="ltr" className="k-num mt-0.5 truncate text-start font-mono text-[11px] text-fg-3">
+                              #{a.login} · {prem && prem.open !== null && prem.now !== null ? `${fmtAmount(prem.open, "$")} → ${fmtAmount(prem.now, "$")} ${tx("accounts.opt.perContract")}` : `${fmtPrice(p.openPrice)} → ${fmtPrice(p.currentPrice)}`}
+                            </div>
                           </div>
-                          <div dir="ltr" className="k-num mt-0.5 truncate text-start font-mono text-[11px] text-fg-3">
-                            #{a.login} · {fmtPrice(p.openPrice)} → {fmtPrice(p.currentPrice)}
-                          </div>
+                          <span className={cn("k-num text-[14px] font-semibold", p.profit > 0 ? "text-up" : p.profit < 0 ? "text-down" : "")}>{fmtAmount(p.profit, curOf(a), true)}</span>
+                          <TradeButton a={a} label="Trader" />
                         </div>
-                        <span className={cn("k-num text-[14px] font-semibold", p.profit > 0 ? "text-up" : p.profit < 0 ? "text-down" : "")}>{fmtAmount(p.profit, curOf(a), true)}</span>
-                        <TradeButton a={a} label="Trader" />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </Card>
               </Reveal>

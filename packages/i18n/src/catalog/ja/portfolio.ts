@@ -193,6 +193,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "an.flow.earnings": "IB報酬",
   "an.flow.charges": "手数料",
   "an.flow.adjustments": "調整",
+  "an.flow.options": "オプション",
   "an.flow.withdrawals": "出金",
   "an.flow.net": "純額",
   // Charges

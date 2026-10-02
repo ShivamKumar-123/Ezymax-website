@@ -6,6 +6,7 @@ import { tenantConfig } from "@/lib/tenant-config";
 import { Memo } from "@/lib/memo";
 import { wallet } from "@/lib/wallet";
 import { reportsFetch } from "@/lib/reports";
+import { dealCommission, dealPremiumsUsd, isOptionTrade, matchesInstrument, optionTerms, usdFactorOf, type DealOption } from "@/components/trading/option-deal";
 
 // Client Area trading BFF. Browser -> /api/trading/<route> (same origin) -> trading engine /v1/…
 // The client is resolved from the HttpOnly gateway session cookie (gateway /v1/auth/me); the engine gets
@@ -16,9 +17,11 @@ import { reportsFetch } from "@/lib/reports";
 //   GET  accounts                            the client's accounts (live metrics)
 //   POST accounts                            {type, group, leverage?, name?, password?, initialBalance?}
 //   GET  accounts/{login}                    {account, positions[], orders[]}
-//   GET  accounts/{login}/history?from&to&page&limit
+//   GET  accounts/{login}/history?from&to&page&limit[&instrument=option|cfd]
+//                                            instrument: only Kalks FX Options deals (or only CFD deals); the BFF pages
+//                                            through the period itself so the paging and totals match the filter
 //   GET  accounts/{login}/ledger?from&to&page&limit
-//   GET  accounts/{login}/export?kind=history|ledger&from&to   CSV download (times in UTC)
+//   GET  accounts/{login}/export?kind=history|ledger&from&to[&instrument=option|cfd]   CSV download (times in UTC)
 //   POST accounts/{login}/demo-refill
 //   POST accounts/{login}/passwords          {kind: trading|investor, password, stepup_token}
 //   POST accounts/{login}/leverage           {leverage, stepup_token}
@@ -144,6 +147,11 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   if (path.length === 3 && (path[2] === "history" || path[2] === "ledger")) {
     const q = pageQuery(req);
     if (q instanceof NextResponse) return q;
+    const inst = req.nextUrl.searchParams.get("instrument");
+    if (path[2] === "history" && inst && inst !== "all") {
+      if (inst !== "option" && inst !== "cfd") return error(400, "bad_request", "instrument must be option or cfd.");
+      return filteredHistory(req, user, login, inst);
+    }
     const r = await engine<Obj>(`/v1/accounts/${login}/${path[2]}${q}`, { user, req });
     if (r.status !== 200 || path[2] === "ledger") return reply(r.status, r.data);
     const d = r.data as { deals?: unknown[]; orders?: unknown[] };
@@ -402,6 +410,61 @@ async function stepup(req: NextRequest, user: GatewayUser, body: Obj, action: St
 }
 
 /* ------------------------------------------------------------------ */
+/* Trade history narrowed to options / CFDs                            */
+/* ------------------------------------------------------------------ */
+
+const FILTER_PAGE = 1000;
+const FILTER_MAX_PAGES = 20;
+
+type DealRow = { symbol: string; entry: string; commission: number; instrument?: string | null; option?: DealOption | null };
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : Number(v) || 0);
+const r2 = (v: number) => Math.round(v * 100) / 100;
+
+/** The engine has no instrument filter: the newest FILTER_PAGE × FILTER_MAX_PAGES deals of the period are read and
+ *  filtered here, then paged; totals follow the engine's (non-reversed deals; commission once per charge). */
+async function filteredHistory(req: NextRequest, user: GatewayUser, login: string, inst: "option" | "cfd") {
+  const sp = req.nextUrl.searchParams;
+  const range = new URLSearchParams();
+  for (const k of ["from", "to"] as const) {
+    const v = sp.get(k);
+    if (v) range.set(k, v); // validated by pageQuery
+  }
+  const page = Number(sp.get("page") ?? 1) || 1;
+  const limit = Number(sp.get("limit") ?? 100) || 100;
+  const matched: Obj[] = [];
+  let seen = 0;
+  let truncated = false;
+  for (let p = 1; p <= FILTER_MAX_PAGES; p++) {
+    const q = new URLSearchParams(range);
+    q.set("page", String(p));
+    q.set("limit", String(FILTER_PAGE));
+    const r = await engine<{ deals?: Obj[]; total?: number }>(`/v1/accounts/${login}/history?${q}`, { user, req });
+    if (r.status !== 200) return reply(r.status, r.data);
+    const batch = r.data.deals ?? [];
+    seen += batch.length;
+    for (const d of batch) if (matchesInstrument(d as unknown as DealRow, inst)) matched.push(clientDeal(d));
+    if (batch.length < FILTER_PAGE || seen >= (r.data.total ?? 0)) break;
+    if (p === FILTER_MAX_PAGES) truncated = true;
+  }
+  const totals = { profit: 0, swap: 0, commission: 0 };
+  for (const d of matched) {
+    if (d.reversed) continue;
+    totals.profit += num(d.profit);
+    totals.swap += num(d.swap);
+    totals.commission += dealCommission(d as unknown as DealRow);
+  }
+  return reply(200, {
+    deals: matched.slice((page - 1) * limit, page * limit),
+    orders: [],
+    page,
+    limit,
+    total: matched.length,
+    totals: { profit: r2(totals.profit), swap: r2(totals.swap), commission: r2(totals.commission) },
+    truncated,
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* CSV statements (D48)                                                */
 /* ------------------------------------------------------------------ */
 
@@ -419,6 +482,8 @@ async function exportCsv(req: NextRequest, user: GatewayUser, login: string) {
   const kind = req.nextUrl.searchParams.get("kind");
   if (kind !== "history" && kind !== "ledger") return error(400, "bad_request", "kind must be history or ledger.");
   const sp = req.nextUrl.searchParams;
+  const inst = sp.get("instrument") ?? "all";
+  if (inst !== "all" && inst !== "option" && inst !== "cfd") return error(400, "bad_request", "instrument must be option or cfd.");
   const range = new URLSearchParams();
   for (const k of ["from", "to"] as const) {
     const v = sp.get(k);
@@ -428,6 +493,7 @@ async function exportCsv(req: NextRequest, user: GatewayUser, login: string) {
   }
 
   const rows: Obj[] = [];
+  let seen = 0;
   for (let page = 1; page <= EXPORT_MAX_PAGES; page++) {
     const q = new URLSearchParams(range);
     q.set("page", String(page));
@@ -435,20 +501,32 @@ async function exportCsv(req: NextRequest, user: GatewayUser, login: string) {
     const r = await engine<{ deals?: Obj[]; items?: Obj[]; total?: number }>(`/v1/accounts/${login}/${kind}?${q}`, { user, req });
     if (r.status !== 200) return reply(r.status, r.data);
     const batch = (kind === "history" ? r.data.deals : r.data.items) ?? [];
-    rows.push(...batch);
-    if (batch.length < EXPORT_PAGE || rows.length >= (r.data.total ?? 0)) break;
+    rows.push(...(kind === "history" && inst !== "all" ? batch.filter((d) => matchesInstrument(d as unknown as DealRow, inst)) : batch));
+    seen += batch.length;
+    if (batch.length < EXPORT_PAGE || seen >= (r.data.total ?? 0)) break;
   }
 
   let csv: string;
   if (kind === "history") {
-    const head = ["Time (UTC)", "Deal", "Position", "Order", "Symbol", "Type", "Direction", "Volume", "Price", "Open price", "Open time (UTC)", "Commission", "Swap", "Profit", "Reason", "Comment"];
+    // Kalks FX Options deals: Volume = contracts, Price / Open price = premium per unit of the underlying (quote
+    // currency); the option columns give the terms and the premiums in USD per contract
+    const usdFactor = rows.some((d) => isOptionTrade(d as unknown as DealRow)) ? await accountUsdFactor(req, user, login) : 1;
+    const head = ["Time (UTC)", "Deal", "Position", "Order", "Symbol", "Type", "Direction", "Volume", "Price", "Open price", "Open time (UTC)", "Commission", "Swap", "Profit", "Reason", "Comment", "Instrument", "Underlying", "Call/Put", "Strike", "Expiry", "Quote currency", "Premium per contract (USD)", "Open premium per contract (USD)"];
     csv = [
       head.join(","),
-      ...rows.map((d) =>
-        [d.time, d.id, d.positionTicket, d.orderTicket, d.symbol, d.side, d.entry, d.volume, d.price, d.openPrice, d.openTime, d.commission, d.swap, d.profit, d.reason, cell(d.comment, true)]
+      ...rows.map((d) => {
+        const row = d as unknown as DealRow & { volume: number; price: number; openPrice: number | null; profit: number };
+        const isOpt = isOptionTrade(row);
+        const o = isOpt ? optionTerms(row.symbol, row.option) : null;
+        const prem = isOpt ? dealPremiumsUsd(row, usdFactor) : null;
+        const usd = (v: number | null | undefined) => (v === null || v === undefined ? "" : v.toFixed(2));
+        const opt = isOpt
+          ? ["Option", o?.underlying ?? "", o ? (o.right === "call" ? "Call" : "Put") : "", o?.strikeLabel ?? "", o?.expiry ?? "", o?.quoteCurrency ?? "", usd(prem?.own), row.entry === "in" ? "" : usd(prem?.open)]
+          : ["CFD", "", "", "", "", "", "", ""];
+        return [d.time, d.id, d.positionTicket, d.orderTicket, d.symbol, d.side, d.entry, d.volume, d.price, d.openPrice, d.openTime, d.commission, d.swap, d.profit, d.reason, cell(d.comment, true), ...opt]
           .map((v, i) => (i === 15 ? v : cell(v)))
-          .join(","),
-      ),
+          .join(",");
+      }),
     ].join("\r\n");
   } else {
     const head = ["Time (UTC)", "Transaction", "Type", "Sub-ledger", "Amount", "Currency", "Reference", "Note"];
@@ -456,9 +534,15 @@ async function exportCsv(req: NextRequest, user: GatewayUser, login: string) {
   }
 
   const span = [range.get("from"), range.get("to")].filter(Boolean).map((s) => s!.slice(0, 10)).join("_");
-  const name = `kalks-${login}-${kind === "history" ? "trades" : "ledger"}${span ? `-${span}` : ""}.csv`;
+  const name = `kalks-${login}-${kind === "history" ? (inst === "option" ? "options" : inst === "cfd" ? "cfd-trades" : "trades") : "ledger"}${span ? `-${span}` : ""}.csv`;
   return new NextResponse("﻿" + csv + "\r\n", {
     status: 200,
     headers: { ...NO_STORE, "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="${name}"`, "x-content-type-options": "nosniff" },
   });
+}
+
+/** Account-currency units per USD of an account (100 on cent accounts): option premiums in the CSV are USD. */
+async function accountUsdFactor(req: NextRequest, user: GatewayUser, login: string) {
+  const r = await engine<{ account?: { cent?: boolean; currency?: string } }>(`/v1/accounts/${login}`, { user, req });
+  return r.status === 200 ? usdFactorOf(r.data.account) : 1;
 }

@@ -20,12 +20,14 @@ import {
   PageHeader,
   Segmented,
   StatusChip,
-  SymbolAvatar,
-  SymbolCell,
+  
+  
   Toggle,
   cn,
   type Column,
 } from "@kalks/ui";
+// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+import { TradeSymbolAvatar as SymbolAvatar, TradeSymbolCell as SymbolCell } from "@/components/trading/instrument";
 import { Trans, useT } from "@kalks/i18n/react";
 import { Checkbox, RadioCard, RangeSlider, ToggleChip } from "@/components/social/controls";
 import { STEPUP_CODES, StepUpDialog } from "@/components/stepup";

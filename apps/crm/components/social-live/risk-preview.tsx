@@ -5,7 +5,9 @@
 
 import * as React from "react";
 import { ShieldAlert } from "lucide-react";
-import { Chip, Skeleton, SymbolAvatar, cn } from "@kalks/ui";
+import { Chip, Skeleton,  cn } from "@kalks/ui";
+// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+import { TradeSymbolAvatar as SymbolAvatar, symbolLabel } from "@/components/trading/instrument";
 import { Trans, useT } from "@kalks/i18n/react";
 import { usd, useSocial, type RiskPreview, type SizingMode } from "./api";
 import { RiskBadge } from "./bits";
@@ -93,7 +95,9 @@ export function RiskPreviewBox({
                 {p.example.slice(0, 5).map((x, i) => (
                   <li key={`${x.closeTime}-${i}`} className="flex items-center gap-2 text-[12px]">
                     <SymbolAvatar symbol={x.symbol} size={16} />
-                    <span className="w-16 truncate font-medium text-fg">{x.symbol}</span>
+                    <span className="min-w-16 max-w-44 truncate font-medium text-fg" title={x.symbol}>
+                      {symbolLabel(t, x.symbol)}
+                    </span>
                     <Chip size="sm" tone={x.side === "buy" ? "up" : "down"}>
                       {t.dyn(`common.${x.side}`, x.side).toUpperCase()}
                     </Chip>

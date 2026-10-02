@@ -193,6 +193,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "an.flow.earnings": "IB 수익",
   "an.flow.charges": "비용",
   "an.flow.adjustments": "조정",
+  "an.flow.options": "옵션",
   "an.flow.withdrawals": "출금",
   "an.flow.net": "순액",
   // 비용

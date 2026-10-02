@@ -193,6 +193,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "an.flow.earnings": "Mapato ya IB",
   "an.flow.charges": "Gharama",
   "an.flow.adjustments": "Marekebisho",
+  "an.flow.options": "Options",
   "an.flow.withdrawals": "Utoaji",
   "an.flow.net": "Halisi",
   // Charges

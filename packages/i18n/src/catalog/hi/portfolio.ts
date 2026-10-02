@@ -193,6 +193,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "an.flow.earnings": "IB कमाई",
   "an.flow.charges": "शुल्क",
   "an.flow.adjustments": "एडजस्टमेंट",
+  "an.flow.options": "ऑप्शन",
   "an.flow.withdrawals": "निकासी",
   "an.flow.net": "नेट",
   // Charges

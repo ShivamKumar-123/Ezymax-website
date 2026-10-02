@@ -28,7 +28,7 @@
  *   PUT    /v1/dealing/routing/rules             RoutingRule[]   · PUT /v1/dealing/routing/quick { login|group, book|null }
  *   GET    /v1/dealing/audit?staff=&action=&ticket=&from=&to=      → AuditEntry[] (append-only)
  */
-import { getInstrument, priceFeed, rebaseTrades } from "@kalks/mock";
+import { INSTRUMENT_MAP, getInstrument, priceFeed, rebaseTrades } from "@kalks/mock";
 import { ADMIN_ORDERS, ADMIN_POSITIONS, DEALER_OVERRIDES, ROUTING_RULES, type AdminOrder, type RoutingRule, type TradingGroup } from "@kalks/mock/admin-trading";
 import { getClient } from "@kalks/mock/admin-clients";
 import {
@@ -328,12 +328,9 @@ export class LocalTradingDesk implements TradingDeskApi {
     if (bad) return fail(bad);
     const acc = getAccount(input.login);
     if (!acc) return fail(`Unknown account ${input.login}`);
-    let inst;
-    try {
-      inst = getInstrument(input.symbol);
-    } catch {
-      return fail(`Unknown symbol ${input.symbol}`);
-    }
+    // getInstrument() never throws (it falls back for unknown symbols), so check the catalogue itself
+    if (!INSTRUMENT_MAP[input.symbol]) return fail(`Unknown symbol ${input.symbol}`);
+    const inst = getInstrument(input.symbol);
     const group = acc.group as TradingGroup;
     const ctl = this.state.accountControls.find((c) => c.login === input.login);
     const volErr = volumeError(input.symbol, input.volume);

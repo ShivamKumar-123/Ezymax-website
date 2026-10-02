@@ -20,13 +20,15 @@ import {
   Money,
   Segmented,
   Skeleton,
-  SymbolAvatar,
-  SymbolCell,
+  
+  
   Tooltip,
   cn,
   type Column,
   type SeriesPoint,
 } from "@kalks/ui";
+// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+import { TradeSymbolAvatar as SymbolAvatar, TradeSymbolCell as SymbolCell, symbolLabel } from "@/components/trading/instrument";
 import { useFormat, useT } from "@kalks/i18n/react";
 import { fmtDate, fmtPrice, serverTime } from "@/components/trading/api";
 import { INVITE_RE, PERIOD_LABEL, compactUsd, formatAge, nav4, pct, riskLabel, usd, useSocial, type MasterProfile } from "./api";
@@ -240,7 +242,7 @@ function SymbolsCard({ symbols }: { symbols: MasterProfile["symbols"] }) {
               <div key={i.label} className="k-row flex items-center gap-3 px-3.5 py-2">
                 <span className="size-2.5 rounded-full" style={{ background: CHART_COLORS[k % CHART_COLORS.length] }} />
                 {i.label !== other && <SymbolAvatar symbol={i.label} size={20} />}
-                <span className="flex-1 text-[13px] font-medium">{i.label}</span>
+                <span className="flex-1 text-[13px] font-medium">{i.label === other ? i.label : symbolLabel(t, i.label)}</span>
                 <span className="k-num text-[13px] text-fg-2">{((i.value / total) * 100).toFixed(1)}%</span>
               </div>
             ))}

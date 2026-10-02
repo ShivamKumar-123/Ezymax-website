@@ -2,9 +2,8 @@
 
 import * as React from "react";
 import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Download, RotateCw } from "lucide-react";
-import { Button, Card, CardHeader, Chip, EmptyState, IconButton, Input, Reveal, Segmented, Skeleton, SymbolAvatar, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, EmptyState, IconButton, Input, Reveal, Segmented, Skeleton, cn } from "@kalks/ui";
 import {
-  REASON_LABEL,
   curOf,
   downloadExport,
   fmtAmount,
@@ -20,6 +19,8 @@ import {
 } from "./api";
 import { SharePeriodButton, ShareTradeButton } from "@/components/growth/share-dialog";
 import { Trans, useT } from "@kalks/i18n/react";
+import { OptionPremium as Premium, OptionTag, TradeSymbolAvatar, fmtContracts, optionLabel, reasonLabel } from "./instrument";
+import { dealPremiumsUsd, isOptionTrade, optionTerms, usdFactorOf, type InstrumentFilter } from "./option-deal";
 
 /* ------------------------------------------------------------------ */
 /* Date range                                                          */
@@ -118,11 +119,13 @@ function TableSkeleton() {
 /* Deals (trade history)                                               */
 /* ------------------------------------------------------------------ */
 
-export function DealsTable({ deals, cur }: { deals: EngineDeal[]; cur: string }) {
+export function DealsTable({ deals, cur, usdFactor }: { deals: EngineDeal[]; cur: string; usdFactor?: number }) {
   const t = useT();
+  // cent accounts book money in US cents; option premiums are shown in USD per contract
+  const k = usdFactor ?? usdFactorOf({ currency: cur.trim() });
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[860px] border-separate border-spacing-0 text-[13.5px]">
+      <table className="w-full min-w-[900px] border-separate border-spacing-0 text-[13.5px]">
         <thead>
           <tr>
             <th className={cn(TH, "ps-5 text-start")}>{t("accountDetail.col.symbol")}</th>
@@ -142,17 +145,26 @@ export function DealsTable({ deals, cur }: { deals: EngineDeal[]; cur: string })
         <tbody>
           {deals.map((d) => {
             const exit = d.entry !== "in";
+            const opt = isOptionTrade(d) ? optionTerms(d.symbol, d.option) : null;
+            const isOpt = isOptionTrade(d);
+            const name = opt ? optionLabel(t, opt) : d.symbol;
+            const prem = isOpt ? dealPremiumsUsd(d, k) : null;
+            // an option exit always says how it ended (closed / expired / knocked out / stop-out); a CFD exit only when not closed by the client
+            const reason = exit && (isOpt || d.reason !== "client") ? reasonLabel(t, d.reason) : null;
             return (
               <tr key={d.id} className={cn("hover:bg-surface-2/60", d.reversed && "opacity-50")}>
                 <td className={cn(TD, "ps-5")}>
                   <div className="flex items-center gap-2.5">
-                    <SymbolAvatar symbol={d.symbol} size={24} />
-                    <div>
-                      <div className="flex items-center gap-2 font-medium">
-                        {d.symbol}
+                    <TradeSymbolAvatar symbol={opt?.series ?? d.symbol} size={24} />
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">
+                        <span className="whitespace-nowrap" title={isOpt ? d.symbol : undefined}>
+                          {name}
+                        </span>
                         <Chip size="sm" tone={d.side === "buy" ? "up" : "down"}>
                           {d.side === "buy" ? t("accountDetail.side.buy") : t("accountDetail.side.sell")}
                         </Chip>
+                        {isOpt && <OptionTag />}
                       </div>
                       <div className="font-mono text-[11px] text-fg-3">{t("accountDetail.deal.position", { ticket: d.positionTicket })}</div>
                     </div>
@@ -161,20 +173,35 @@ export function DealsTable({ deals, cur }: { deals: EngineDeal[]; cur: string })
                 <td className={cn(TD, "font-mono text-[12px] text-fg-3")}>#{d.id}</td>
                 <td className={TD}>
                   <span className="text-[12.5px] text-fg-2">{exit ? t("accountDetail.deal.out") : t("accountDetail.deal.in")}</span>
-                  {exit && d.reason !== "client" && <span className="ms-1.5 text-[11.5px] text-fg-3">· {REASON_LABEL[d.reason] ?? d.reason}</span>}
+                  {reason && (
+                    <span className={cn("ms-1.5 text-[11.5px]", d.reason === "stop_out" || d.reason === "knock_out" ? "text-down" : d.reason === "expiry" ? "text-gold" : "text-fg-3")}>· {reason}</span>
+                  )}
                   {d.reversed && (
                     <Chip size="sm" className="ms-1.5">
                       {t("accountDetail.deal.reversed")}
                     </Chip>
                   )}
                 </td>
-                <td className={cn(TD, "k-num text-end")}>{d.volume.toFixed(2)}</td>
-                <td className={cn(TD, "k-num text-end font-mono text-fg-2")}>{fmtPrice(d.price)}</td>
+                <td className={cn(TD, "k-num whitespace-nowrap text-end")}>{isOpt ? t("accounts.opt.contracts", { count: fmtContracts(d.volume) }) : d.volume.toFixed(2)}</td>
+                <td className={cn(TD, "k-num text-end font-mono text-fg-2")}>
+                  {prem ? (
+                    <>
+                      <Premium usd={prem.own} unit={d.price} currency={opt?.quoteCurrency} />
+                      {exit && (prem.open !== null || d.openPrice !== null) && (
+                        <div className="whitespace-nowrap font-sans text-[11px] text-fg-3">
+                          {t("accounts.opt.openAt", { amount: prem.open !== null ? fmtAmount(prem.open, "$") : `${fmtPrice(d.openPrice)}${opt?.quoteCurrency ? ` ${opt.quoteCurrency}` : ""}` })}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    fmtPrice(d.price)
+                  )}
+                </td>
                 <td className={cn(TD, "k-num whitespace-nowrap text-[12.5px] text-fg-2")}>{serverTime(d.time)}</td>
-                <td className={cn(TD, "k-num text-end text-[12.5px] text-fg-3")}>{d.commission ? fmtAmount(d.commission, "") : "—"}</td>
+                <td className={cn(TD, "k-num text-end text-[12.5px] text-fg-3")}>{d.commission ? fmtAmount(-Math.abs(d.commission), "") : "—"}</td>
                 <td className={cn(TD, "k-num text-end text-[12.5px] text-fg-3")}>{d.swap ? fmtAmount(d.swap, "") : "—"}</td>
                 <td className={cn(TD, "k-num text-end font-semibold", !exit ? "text-fg-3" : d.profit > 0 ? "text-up" : d.profit < 0 ? "text-down" : "")}>{exit ? fmtAmount(d.profit, cur, true) : "—"}</td>
-                <td className={cn(TD, "text-end")}>{exit && !d.reversed && <ShareTradeButton login={d.login} dealId={d.id} symbol={d.symbol} />}</td>
+                <td className={cn(TD, "text-end")}>{exit && !d.reversed && <ShareTradeButton login={d.login} dealId={d.id} symbol={name} />}</td>
               </tr>
             );
           })}
@@ -184,18 +211,38 @@ export function DealsTable({ deals, cur }: { deals: EngineDeal[]; cur: string })
   );
 }
 
+/** All / CFD / Options: which deals the history lists (and exports). */
+export function InstrumentPicker({ value, onChange }: { value: InstrumentFilter; onChange: (v: InstrumentFilter) => void }) {
+  const t = useT();
+  return (
+    <Segmented
+      size="xs"
+      value={value}
+      onChange={onChange}
+      options={[
+        { value: "all", label: t("accounts.opt.filter.all") },
+        { value: "cfd", label: t("accounts.opt.filter.cfd") },
+        { value: "option", label: t("accounts.opt.filter.options") },
+      ]}
+    />
+  );
+}
+
 export function HistoryPanel({ a, title }: { a: Pick<EngineAccount, "login" | "cent" | "currency">; title?: string }) {
   const t = useT();
   const cur = curOf(a);
   const [range, setRange] = React.useState<Range>({ preset: "30d" });
+  const [inst, setInst] = React.useState<InstrumentFilter>("all");
   const [page, setPage] = React.useState(1);
   const limit = 25;
   const q = rangeQuery(range);
   const invalid = range.preset === "custom" && (!range.from || !range.to || range.from > range.to);
-  const path = invalid ? null : `accounts/${a.login}/history?${qs({ ...q, page, limit })}`;
+  const path = invalid ? null : `accounts/${a.login}/history?${qs({ ...q, page, limit, instrument: inst === "all" ? undefined : inst })}`;
   const { data, error, loading, reload } = usePoll<HistoryPage>(path, 0);
-  React.useEffect(() => setPage(1), [range.preset, range.from, range.to, a.login]);
-  const net = data ? data.totals.profit + data.totals.swap + data.totals.commission : 0;
+  React.useEffect(() => setPage(1), [range.preset, range.from, range.to, a.login, inst]);
+  // commission is a charge (positive in the engine): the net result takes it off
+  const net = data ? data.totals.profit + data.totals.swap - Math.abs(data.totals.commission) : 0;
+  const hasOptions = !!data?.deals.some(isOptionTrade);
 
   return (
     <Reveal>
@@ -207,7 +254,7 @@ export function HistoryPanel({ a, title }: { a: Pick<EngineAccount, "login" | "c
               <span>
                 <Trans
                   k="accountDetail.history.summary"
-                  vars={{ count: data.total, net: fmtAmount(net, cur, true), profit: fmtAmount(data.totals.profit, cur, true), swap: fmtAmount(data.totals.swap, cur, true), commission: fmtAmount(data.totals.commission, cur, true) }}
+                  vars={{ count: data.total, net: fmtAmount(net, cur, true), profit: fmtAmount(data.totals.profit, cur, true), swap: fmtAmount(data.totals.swap, cur, true), commission: fmtAmount(-Math.abs(data.totals.commission), cur, true) }}
                   tags={{ net: (c) => <span className={cn("k-num font-medium", net > 0 ? "text-up" : net < 0 ? "text-down" : "text-fg")}>{c}</span> }}
                 />
               </span>
@@ -218,14 +265,15 @@ export function HistoryPanel({ a, title }: { a: Pick<EngineAccount, "login" | "c
           action={
             <>
               {data && data.total > 0 && !invalid && <SharePeriodButton login={a.login} from={q.from ?? isoDay(new Date(Date.now() - 5 * 365 * 86400_000))} to={q.to ?? isoDay(new Date(Date.now() + 86400_000))} />}
-              <Button size="sm" variant="surface" disabled={invalid} onClick={() => downloadExport(a.login, "history", q.from, q.to)}>
+              <Button size="sm" variant="surface" disabled={invalid} onClick={() => downloadExport(a.login, "history", q.from, q.to, inst)}>
                 <Download /> CSV
               </Button>
             </>
           }
         />
         <div className="px-4 pb-5 pt-4 sm:px-6">
-          <div className="mb-3">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <InstrumentPicker value={inst} onChange={setInst} />
             <RangePicker value={range} onChange={setRange} />
           </div>
           {loading && <TableSkeleton />}
@@ -241,10 +289,18 @@ export function HistoryPanel({ a, title }: { a: Pick<EngineAccount, "login" | "c
               }
             />
           )}
-          {data && data.deals.length === 0 && <EmptyState art="emptyHistory" title={t("accountDetail.history.emptyTitle")} text={t("accountDetail.history.emptyText")} />}
+          {data && data.deals.length === 0 && (
+            <EmptyState
+              art="emptyHistory"
+              title={inst === "option" ? t("accounts.opt.emptyOptions") : inst === "cfd" ? t("accounts.opt.emptyCfd") : t("accountDetail.history.emptyTitle")}
+              text={inst === "option" ? t("accounts.opt.emptyOptionsText") : t("accountDetail.history.emptyText")}
+            />
+          )}
           {data && data.deals.length > 0 && (
             <>
-              <DealsTable deals={data.deals} cur={cur} />
+              <DealsTable deals={data.deals} cur={cur} usdFactor={usdFactorOf(a)} />
+              {hasOptions && <div className="mt-2 text-[11.5px] text-fg-3">{t("accounts.opt.premiumHint")}</div>}
+              {data.truncated && <div className="mt-2 text-[11.5px] text-warn">{t("accounts.opt.truncated", { count: data.total })}</div>}
               <Pager page={data.page} limit={data.limit} total={data.total} onPage={setPage} />
             </>
           )}
@@ -320,13 +376,14 @@ export function LedgerPanel({ a, title }: { a: Pick<EngineAccount, "login" | "ce
                   <tbody>
                     {data.items.map((e, i) => {
                       const k = ledgerKind(e.kind);
+                      const kindLabel = t.dyn(`accounts.ledgerKind.${e.kind}`, k.label);
                       const c = e.currency === "USC" ? "USC " : e.currency === "USD" ? "$" : `${e.currency} `;
                       return (
                         <tr key={`${e.txn}-${e.subLedger}-${i}`} className="hover:bg-surface-2/60">
                           <td className={cn(TD, "k-num whitespace-nowrap ps-5 text-[12.5px] text-fg-2")}>{serverTime(e.at)}</td>
                           <td className={TD}>
                             <Chip size="sm" tone={k.tone}>
-                              {k.label}
+                              {kindLabel}
                             </Chip>
                           </td>
                           <td className={cn(TD, "max-w-[260px] truncate text-[12.5px] text-fg-3")}>

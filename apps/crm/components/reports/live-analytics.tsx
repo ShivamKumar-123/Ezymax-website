@@ -6,9 +6,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, Clock3, Download, FileText, Gauge as GaugeIcon, Percent, RefreshCw, Scale, ShieldCheck, Target, TrendingDown, Trophy, Zap } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Donut, EmptyState, KpiCard, Menu, Money, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, cn, formatMoney } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Donut, EmptyState, KpiCard, Menu, Money, PageHeader, Reveal, Segmented, Skeleton, cn, formatMoney } from "@kalks/ui";
 import { ColumnBars, DrawdownChart, HourHeatmap, MultiLineChart, PnlBars, Waterfall } from "@/components/portfolio/charts";
 import { tr, useT } from "@kalks/i18n/react";
+// engine symbols include Kalks FX Options series codes, which the static instrument list (SymbolAvatar) doesn't know
+import { TradeSymbolAvatar, symbolLabel } from "@/components/trading/instrument";
 
 /* ------------------------------------------------------------------ */
 /* Shapes (services/reports/README.md, GET /v1/me/analytics)            */
@@ -64,7 +66,20 @@ export type Analytics = {
   bySession: { session: string; hours: string; trades: number; net: number; winRate: number }[];
   hourHeatmap: number[][];
   hourTrades: number[][];
-  moneyFlow: { deposits: number; withdrawals: number; tradingPnl: number; commission: number; performanceFees: number; bonus: number; adjustments: number; earnings: number; equityNow: number };
+  moneyFlow: {
+    deposits: number;
+    withdrawals: number;
+    tradingPnl: number;
+    commission: number;
+    performanceFees: number;
+    bonus: number;
+    adjustments: number;
+    earnings: number;
+    /** Kalks FX Options premiums paid / received and expiry settlements (their own buckets in the reports service). */
+    optionPremiums?: number;
+    optionSettlements?: number;
+    equityNow: number;
+  };
   charges: { commission: number; swapPaid: number; swapEarned: number; performanceFees: number; walletFees: number; spreadEstimate: number };
   behaviour: {
     overtradingDays: number;
@@ -228,8 +243,10 @@ function StatsCard({ s, curve }: { s: Stats; curve: Analytics["curve"] }) {
             {tr ? (
               <>
                 <div className="mt-2 flex items-center gap-2">
-                  <SymbolAvatar symbol={tr.symbol} size={20} />
-                  <span className="text-[13px] font-medium">{tr.symbol}</span>
+                  <TradeSymbolAvatar symbol={tr.symbol} size={20} />
+                  <span className="truncate text-[13px] font-medium" title={tr.symbol}>
+                    {symbolLabel(t, tr.symbol)}
+                  </span>
                 </div>
                 <div className={cn("k-num mt-1 text-[15px] font-semibold", tr.net >= 0 ? "text-up" : "text-down")}>
                   {tr.net >= 0 ? "+" : "-"}
@@ -364,8 +381,10 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
                     sub: t("portfolio.an.symbol.sub", { count: g.trades, rate: Math.round(g.winRate) }),
                     label: (
                       <span className="flex items-center gap-2">
-                        <SymbolAvatar symbol={g.key} size={20} />
-                        <span className="truncate text-[13px] font-medium">{g.key}</span>
+                        <TradeSymbolAvatar symbol={g.key} size={20} />
+                        <span className="truncate text-[13px] font-medium" title={g.key}>
+                          {symbolLabel(t, g.key)}
+                        </span>
                       </span>
                     ),
                   }))}
@@ -472,6 +491,7 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
                 steps={[
                   { label: t("portfolio.an.flow.deposits"), value: mf.deposits },
                   { label: t("portfolio.an.flow.tradingPnl"), value: mf.tradingPnl },
+                  ...((mf.optionPremiums ?? 0) + (mf.optionSettlements ?? 0) ? [{ label: t("portfolio.an.flow.options"), value: (mf.optionPremiums ?? 0) + (mf.optionSettlements ?? 0) }] : []),
                   ...(mf.bonus ? [{ label: t("portfolio.an.flow.bonus"), value: mf.bonus }] : []),
                   ...(mf.earnings ? [{ label: t("portfolio.an.flow.earnings"), value: mf.earnings }] : []),
                   { label: t("portfolio.an.flow.charges"), value: mf.commission + mf.performanceFees },

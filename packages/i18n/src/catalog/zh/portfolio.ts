@@ -193,6 +193,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "an.flow.earnings": "IB 收益",
   "an.flow.charges": "费用",
   "an.flow.adjustments": "调整",
+  "an.flow.options": "期权",
   "an.flow.withdrawals": "出金",
   "an.flow.net": "净额",
   // Charges

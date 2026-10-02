@@ -9,6 +9,7 @@ import { tr } from "@kalks/i18n/react";
 import { intlTag } from "@kalks/i18n/locales";
 import type { MessageKey } from "@kalks/i18n";
 import { readCached, writeCached } from "@kalks/ui/swr-cache";
+import type { DealOption, InstrumentFilter, PositionOption } from "./option-deal";
 
 /* ------------------------------------------------------------------ */
 /* Engine shapes (services/trading/README.md, client-safe subset)       */
@@ -99,6 +100,13 @@ export interface EnginePosition {
   source: string;
   platform: string;
   comment: string;
+  /** Kalks FX Options position: `symbol` is the series code, `volume` the contracts, prices are premiums per unit
+   *  of the underlying (null on CFD positions). */
+  option?: PositionOption | null;
+  /** Options: value now and signed premium booked at open, both in the account currency. */
+  markValue?: number | null;
+  premium?: number | null;
+  mark?: number | null;
 }
 
 export interface EngineOrder {
@@ -117,6 +125,8 @@ export interface EngineOrder {
   doneAt?: string | null;
   fillPrice?: number | null;
   reason?: string | null;
+  /** Kalks FX Options pending order (`symbol` = the first leg's series code). */
+  option?: { legs?: { series: string; side: "buy" | "sell"; contracts: number; option?: PositionOption }[]; limitPremium?: number | null } | null;
 }
 
 export interface EngineDeal {
@@ -140,6 +150,9 @@ export interface EngineDeal {
   source: string;
   comment: string;
   reversed?: boolean;
+  /** "option" for Kalks FX Options deals (volume = contracts, price = premium per unit), "cfd" otherwise. */
+  instrument?: "option" | "cfd" | null;
+  option?: DealOption | null;
 }
 
 export interface HistoryPage {
@@ -149,6 +162,8 @@ export interface HistoryPage {
   limit: number;
   total: number;
   totals: { profit: number; swap: number; commission: number };
+  /** Filtered views (?instrument=option|cfd) only: the BFF scanned the newest deals of the period, not all of them. */
+  truncated?: boolean;
 }
 
 export interface LedgerItem {
@@ -415,6 +430,11 @@ export const LEDGER_KIND: Record<string, { label: string; tone: "up" | "down" | 
   demo_refill: { label: "Demo refill", tone: "gold" },
   reversal: { label: "Reversal", tone: "neutral" },
   charges: { label: "Charges", tone: "neutral" },
+  swap: { label: "Swap", tone: "neutral" },
+  perf_fee: { label: "Performance fee", tone: "neutral" },
+  option_premium: { label: "Option premium", tone: "ember" },
+  option_settlement: { label: "Option settlement", tone: "ember" },
+  option_rebate: { label: "Option rebate", tone: "up" },
 };
 
 export const ledgerKind = (k: string) => LEDGER_KIND[k] ?? { label: k.replace(/_/g, " "), tone: "neutral" as const };
@@ -431,11 +451,13 @@ export const REASON_LABEL: Record<string, string> = {
   price_correction: "Price correction",
 };
 
-/** Browser download of a server-built CSV (the BFF sets Content-Disposition). */
-export function downloadExport(login: number, kind: "history" | "ledger", from?: string, to?: string) {
+/** Browser download of a server-built CSV (the BFF sets Content-Disposition). `instrument` narrows a trades export
+ *  to CFD or option deals. */
+export function downloadExport(login: number, kind: "history" | "ledger", from?: string, to?: string, instrument: InstrumentFilter = "all") {
   const q = new URLSearchParams({ kind });
   if (from) q.set("from", from);
   if (to) q.set("to", to);
+  if (kind === "history" && instrument !== "all") q.set("instrument", instrument);
   const description = tr("accounts.toast.exportDesc", { login, kind: tr(kind === "history" ? "accounts.export.trades" : "accounts.export.ledger") });
   // fetched first: a service error becomes a message instead of replacing the page with raw JSON
   void (async () => {

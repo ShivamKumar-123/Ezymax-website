@@ -4,7 +4,9 @@ import * as React from "react";
 import Link from "next/link";
 import { Activity, AlertTriangle, ArrowLeft, ArrowRight, Check, Coins, Copy, Layers, Loader2, Pause, Percent, Scale, Search, ShieldCheck, Square, Target, UserX, Wallet, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Field, Input, KeyValue, Stepper, SymbolAvatar, Toggle, cn } from "@kalks/ui";
+import { Button, Dialog, Field, Input, KeyValue, Stepper,  Toggle, cn } from "@kalks/ui";
+// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+import { TradeSymbolAvatar as SymbolAvatar } from "@/components/trading/instrument";
 import { Trans, useT } from "@kalks/i18n/react";
 import { Checkbox, RadioCard, RangeSlider, ToggleChip } from "@/components/social/controls";
 import { TradeButton } from "@/components/trading/ui";
