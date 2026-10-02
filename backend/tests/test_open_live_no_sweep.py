@@ -22,6 +22,9 @@ class _Res:
     def scalar_one_or_none(self):
         return self._val
 
+    def scalar(self):  # outstanding_bonus() sum (A5 spendable_main_wallet)
+        return self._val
+
 
 class _DB:
     def __init__(self, results):
@@ -66,7 +69,7 @@ class OpenLiveNoSweepTests(unittest.TestCase):
                                main_wallet_balance=Decimal("500"))
         group = _group(100)
         req = SimpleNamespace(account_group_id=group.id, leverage=None, is_demo=None)
-        db = _DB([user, group])
+        db = _DB([user, group, 0])  # 0 = outstanding bonus
         asyncio.run(account_service.open_live_account(uid, req, db))
         # wallet debited by exactly min_d; exactly one transfer txn; no other
         # TradingAccount was mutated (none were even loaded).
@@ -81,7 +84,7 @@ class OpenLiveNoSweepTests(unittest.TestCase):
                                main_wallet_balance=Decimal("50"))
         group = _group(100)
         req = SimpleNamespace(account_group_id=group.id, leverage=None, is_demo=None)
-        db = _DB([user, group])
+        db = _DB([user, group, 0])  # 0 = outstanding bonus
         with self.assertRaises(HTTPException) as ctx:
             asyncio.run(account_service.open_live_account(uid, req, db))
         self.assertEqual(ctx.exception.status_code, 400)

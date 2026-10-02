@@ -24,7 +24,7 @@ from packages.common.src.models import (
 )
 from packages.common.src.schemas import AccountSummary, MessageResponse, OpenLiveAccountRequest
 from packages.common.src.row_locks import lock_user
-from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.money_guards import assert_not_managed_pool, spendable_main_wallet
 from packages.common.src.price_cache import price_cache
 from packages.common.src.trading_service import calc_position_pnl, cross_rate_for
 
@@ -185,18 +185,23 @@ async def open_live_account(
         new_balance = min_d if min_d > 0 else Decimal("10000")
     else:
         wallet_bal = user.main_wallet_balance or Decimal("0")
+        # A5: only the SPENDABLE part of the main wallet (balance minus any
+        # outstanding, un-released bonus) may fund a new account — otherwise
+        # the bonus is laundered into a trading account and withdrawn.
+        spendable = await spendable_main_wallet(db, user)
         # H-MONEY-4: a new live account is funded ONLY by an explicit transfer
         # from the main wallet — never by silently sweeping the user's other
         # trading accounts (a hidden cross-account move that surprised users and
         # drained live positions' collateral). If the wallet is short, refuse and
         # tell the user to deposit / transfer to the main wallet first.
         if min_d > 0:
-            if wallet_bal < min_d:
+            if spendable < min_d:
                 raise HTTPException(
                     status_code=400,
                     detail=(
-                        f"You need at least ${float(min_d):.2f} in your main wallet to open this "
-                        "account type. Deposit, or transfer funds to your main wallet first."
+                        f"You need at least ${float(min_d):.2f} in your main wallet (excluding "
+                        "un-released bonus) to open this account type. Deposit, or transfer funds "
+                        "to your main wallet first."
                     ),
                 )
             user.main_wallet_balance = wallet_bal - min_d
@@ -579,8 +584,10 @@ async def update_account_leverage(
 
     group = account.account_group
     if group is None:
-        # Defensive fallback for legacy rows that lost their group FK.
-        max_lev = 500
+        # Defensive fallback for legacy rows that lost their group FK and for
+        # platform-created copy / MAM sub-accounts (no group): the
+        # conservative non-KYC cap, never 1:500.
+        max_lev = DEFAULT_USER_MAX_LEVERAGE
         hints: dict = {}
     else:
         u = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
@@ -721,6 +728,9 @@ async def delete_trading_account(
         )
     )
     master = master_q.scalar_one_or_none()
+    # B1: a PAMM/MAM pool holds INVESTOR capital — the master may never close
+    # it (that swept investor money into the master's main wallet).
+    await assert_not_managed_pool(db, account_id)
     followers_refunded = 0
     total_refunded = Decimal("0")
     if master:

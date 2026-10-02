@@ -62,11 +62,13 @@ class StopCopyRealBalanceTests(unittest.TestCase):
         )
         user = SimpleNamespace(id=uid, main_wallet_balance=Decimal("0"))
         results = [
-            _Res(scalar=allocation),  # select InvestorAllocation
             _Res(scalar=user),        # lock_user (SELECT User FOR UPDATE)
-            _Res(items=[]),           # select open CopyTrade (none)
+            _Res(scalar=allocation),  # SELECT InvestorAllocation FOR UPDATE
             _Res(scalar=None),        # select MasterAccount (none)
             _Res(scalar=inv_acct),    # lock_account (SELECT TradingAccount FOR UPDATE)
+            _Res(scalar=None),        # non-copied open positions (none)
+            _Res(scalar=None),        # pending orders (none)
+            _Res(items=[]),           # select open CopyTrade (none)
         ]
         db = _DB(results, None)
         out = asyncio.run(stop_copy(allocation.id, uid, db))

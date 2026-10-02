@@ -12,16 +12,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from packages.common.src.models import (
-    Order, OrderType, OrderSide, OrderStatus, Position, PositionStatus,
-    TradingAccount, Instrument, InstrumentConfig,
+    Order, Position, TradingAccount, Instrument, InstrumentConfig,
     TradeHistory, Transaction, CopyTrade, UserAuditLog, User,
 )
 from packages.common.src.instrument_pricing import resolve_commission, resolve_user_quote, symmetric_quote_from_mid
 from packages.common.src.row_locks import lock_account
+from packages.common.src.trading_guards import assert_manual_trading_allowed
 from packages.common.src.config import get_settings as _get_settings
 from . import wallet_service
 from packages.common.src.database import AsyncSessionLocal
-from packages.common.src.redis_client import redis_client, PriceChannel, is_tick_stale, publish_instrument_config_reload
+from packages.common.src.redis_client import redis_client, is_tick_stale, publish_instrument_config_reload
 from packages.common.src.price_cache import price_cache
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src.notify import create_notification
@@ -197,6 +197,9 @@ async def place_order(
 
     # --- Sequential DB queries (AsyncSession doesn't support concurrent queries) ---
     account = await validate_account(req.account_id, user_id, db)
+    # B2: platform-created copy / MAM sub-accounts are driven by the copy
+    # engine only — a manual (or algo-key) order there is refused.
+    assert_manual_trading_allowed(account)
 
     # Re-acquire the account row WITH a lock for the margin check +
     # margin-used write below. validate_account() does the visibility
@@ -213,7 +216,7 @@ async def place_order(
         select(TradingAccount)
         .options(selectinload(TradingAccount.account_group))
         .where(TradingAccount.id == account.id)
-        .with_for_update()
+        .with_for_update().execution_options(populate_existing=True)
     )
     locked = locked_q.scalar_one_or_none()
     if locked is not None:
@@ -768,6 +771,9 @@ async def cancel_order(order_id: UUID, user_id: UUID, db: AsyncSession) -> dict:
 
 # ─── Positions ────────────────────────────────────────────────────────────
 
+CLOSED_POSITIONS_LIST_CAP = 500
+
+
 async def list_positions(account_id: UUID, user_id: UUID, status: str, db: AsyncSession) -> list[dict]:
     result = await db.execute(
         select(TradingAccount).where(
@@ -781,11 +787,29 @@ async def list_positions(account_id: UUID, user_id: UUID, status: str, db: Async
     query = select(Position).where(Position.account_id == account_id)
     if status == "open":
         query = query.where(Position.status == "open")
+        query = query.order_by(Position.created_at.desc())
     elif status == "closed":
-        query = query.where(Position.status == "closed")
+        # Closed history grows forever — cap it to the most recent N (newest
+        # closes first) instead of loading an account's entire past every poll.
+        query = (
+            query.where(Position.status == "closed")
+            .order_by(Position.closed_at.desc().nullslast(), Position.created_at.desc())
+            .limit(CLOSED_POSITIONS_LIST_CAP)
+        )
+    else:
+        query = query.order_by(Position.created_at.desc())
 
-    result = await db.execute(query.order_by(Position.created_at.desc()))
+    result = await db.execute(query)
     positions = result.scalars().all()
+
+    # One query for all copy-trade links instead of one per position (N+1).
+    copied_ids: set = set()
+    if positions:
+        copied_ids = set((await db.execute(
+            select(CopyTrade.investor_position_id).where(
+                CopyTrade.investor_position_id.in_([p.id for p in positions])
+            )
+        )).scalars().all())
 
     response = []
     for pos in positions:
@@ -802,11 +826,7 @@ async def list_positions(account_id: UUID, user_id: UUID, status: str, db: Async
             current_price = float(tick["bid"]) if sv == "buy" else float(tick["ask"])
             profit = float(await calc_pnl_live(pos.side, pos.open_price, Decimal(str(current_price)), pos.lots, contract_size, instrument=pos.instrument))
 
-        copy_trade_q = await db.execute(
-            select(CopyTrade).where(CopyTrade.investor_position_id == pos.id)
-        )
-        copy_trade = copy_trade_q.scalar_one_or_none()
-        trade_type = "copy_trade" if copy_trade else "self_trade"
+        trade_type = "copy_trade" if pos.id in copied_ids else "self_trade"
 
         pos_status_val = pos.status.value if hasattr(pos.status, 'value') else str(pos.status)
         response.append({

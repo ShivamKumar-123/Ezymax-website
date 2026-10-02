@@ -136,6 +136,49 @@ async def get_ticket(user_id: UUID, ticket_id: UUID, db: AsyncSession) -> dict:
     }
 
 
+MAX_TICKET_ATTACHMENTS = 5
+_MAX_ATTACHMENT_URL_LEN = 2048
+
+
+def validate_attachments(attachments: list | None) -> list | None:
+    """B3: ticket attachments are links only — at most 5, each an absolute
+    https:// URL (a string, or an object with a `url` key). Anything else
+    (javascript:/data:/http: links, huge payloads) is refused, because admins
+    open these links from the back office."""
+    if not attachments:
+        return None
+    if not isinstance(attachments, list):
+        raise HTTPException(status_code=400, detail="attachments must be a list")
+    if len(attachments) > MAX_TICKET_ATTACHMENTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"At most {MAX_TICKET_ATTACHMENTS} attachments are allowed",
+        )
+    from urllib.parse import urlsplit
+
+    clean: list = []
+    for item in attachments:
+        if isinstance(item, str):
+            url, entry = item, item.strip()
+        elif isinstance(item, dict) and isinstance(item.get("url"), str):
+            url = item["url"]
+            entry = {k: v for k, v in item.items() if k in ("url", "name", "type", "size")}
+            entry["url"] = url.strip()
+        else:
+            raise HTTPException(status_code=400, detail="Each attachment must be an https URL")
+        url = url.strip()
+        parts = urlsplit(url)
+        if (
+            len(url) > _MAX_ATTACHMENT_URL_LEN
+            or parts.scheme.lower() != "https"
+            or not parts.netloc
+            or any(ch.isspace() or ord(ch) < 32 for ch in url)
+        ):
+            raise HTTPException(status_code=400, detail="Attachments must be https:// links")
+        clean.append(entry)
+    return clean
+
+
 async def reply_ticket(
     user_id: UUID, ticket_id: UUID, message_text: str,
     attachments: list | None, db: AsyncSession,
@@ -151,6 +194,7 @@ async def reply_ticket(
         raise HTTPException(status_code=404, detail="Ticket not found")
     if ticket.status == "closed":
         raise HTTPException(status_code=400, detail="Cannot reply to a closed ticket")
+    attachments = validate_attachments(attachments)
 
     message = TicketMessage(
         ticket_id=ticket_id,

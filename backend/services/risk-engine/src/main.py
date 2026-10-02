@@ -24,12 +24,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
-    Position, PositionStatus, TradingAccount, Instrument,
-    OrderSide, Notification, Transaction, TradeHistory, User,
+    Position, PositionStatus, TradingAccount, OrderSide, Notification, Transaction, TradeHistory, User,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel, is_tick_stale
 from packages.common.src.row_locks import lock_account
-from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src.config import get_settings
 from packages.common.src import corecen_trade_client
 
@@ -48,6 +46,17 @@ settings = get_settings()
 # balance once they're flat and below the floor (see the NBP sweep).
 DEMO_REFILL_BALANCE = Decimal("10000")
 DEMO_REFILL_FLOOR = Decimal("100")
+
+
+def margin_level_for(equity: Decimal, margin_used) -> Decimal:
+    """Margin level in %. With no recorded margin the level is "infinite"
+    (9999) — EXCEPT when equity is already wiped out (<= 0) while positions are
+    open: then it is 0 so the stop-out fires instead of letting a margin-less
+    (drifted / zeroed margin_used) account run losses without bound."""
+    mu = Decimal(str(margin_used or 0))
+    if mu > 0:
+        return equity / mu * 100
+    return Decimal("0") if equity <= 0 else Decimal("9999")
 
 
 class RiskEngine:
@@ -74,10 +83,20 @@ class RiskEngine:
         while self._running:
             try:
                 async with AsyncSessionLocal() as db:
+                    # B2: monitor EVERY account that still carries open
+                    # exposure — regardless of is_active or a (possibly
+                    # zeroed / drifted) margin_used. Filtering on
+                    # is_active / margin_used > 0 let positions left on a
+                    # deactivated or margin-zeroed account (e.g. a stopped
+                    # copy account) run unmonitored: no margin call, no
+                    # stop-out, losses unbounded ("risk-free" trading).
                     result = await db.execute(
                         select(TradingAccount).where(
-                            TradingAccount.margin_used > 0,
-                            TradingAccount.is_active == True,
+                            TradingAccount.id.in_(
+                                select(Position.account_id).where(
+                                    Position.status == PositionStatus.OPEN,
+                                ).distinct()
+                            ),
                         )
                     )
                     accounts = result.scalars().all()
@@ -133,8 +152,8 @@ class RiskEngine:
                             )
                             unrealized_pnl += pnl
 
-                        equity = account.balance + account.credit + unrealized_pnl
-                        margin_level = (equity / account.margin_used * 100) if account.margin_used > 0 else Decimal("9999")
+                        equity = (account.balance or Decimal("0")) + (account.credit or Decimal("0")) + unrealized_pnl
+                        margin_level = margin_level_for(equity, account.margin_used)
 
                         account.equity = equity
                         account.free_margin = equity - account.margin_used
@@ -431,7 +450,7 @@ class RiskEngine:
                         select(TradingAccount).where(
                             TradingAccount.balance < 0,
                             TradingAccount.is_active == True,  # noqa: E712
-                        ).with_for_update(skip_locked=True)
+                        ).with_for_update(skip_locked=True).execution_options(populate_existing=True)
                     )).scalars().all()
                     for account in rows:
                         open_count = (await db.execute(
@@ -483,7 +502,7 @@ class RiskEngine:
                             TradingAccount.is_demo == True,  # noqa: E712
                             TradingAccount.is_active == True,  # noqa: E712
                             TradingAccount.balance < DEMO_REFILL_FLOOR,
-                        ).with_for_update(skip_locked=True)
+                        ).with_for_update(skip_locked=True).execution_options(populate_existing=True)
                     )).scalars().all()
                     for account in demo_rows:
                         open_count = (await db.execute(

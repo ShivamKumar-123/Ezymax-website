@@ -127,9 +127,18 @@ async def get_profile(user_id: UUID, db: AsyncSession) -> dict:
     }
 
 
+_SELF_EDIT_FORBIDDEN_FIELDS = frozenset({"is_islamic"})
+
+
 async def update_profile(
     user_id: UUID, update_data: dict, db: AsyncSession,
 ) -> dict:
+    # B3: fields a trader may NEVER set on themselves. `is_islamic` switches
+    # the account to swap-free groups (no overnight financing) — an admin /
+    # compliance decision, not a self-service toggle. Dropped silently so
+    # older clients that echo the whole profile back keep working.
+    update_data = {k: v for k, v in (update_data or {}).items() if k not in _SELF_EDIT_FORBIDDEN_FIELDS}
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
@@ -519,3 +528,154 @@ async def get_kyc_file(user_id: UUID, document_id: UUID, db: AsyncSession) -> Pa
         raise HTTPException(status_code=404, detail="File not found on server")
 
     return stored
+
+
+# ─── Opt-in migration to the wallet-bound trading account ──────────────────
+
+# Withdrawal statuses that are finished — anything else is still in flight.
+_FINISHED_WITHDRAWAL_STATUSES = ("completed", "paid", "rejected", "cancelled", "canceled", "failed")
+
+
+async def migrate_to_wallet_account(
+    user_id: UUID, merge_from_account_id: UUID | None, db: AsyncSession,
+) -> dict:
+    """Provision the wallet-bound account and move the user's money into it.
+
+    A5 / A6 / B1 hardening:
+      * lock the user row FIRST, then the optional source account (canonical
+        order user -> account);
+      * move only the SPENDABLE main wallet (balance - un-released bonus);
+        the bonus stays in the main wallet;
+      * the source account must be flat (no open positions, no pending
+        orders), have no in-flight withdrawals, and must not be a PAMM/MAM
+        pool (investor capital) or a copy / MAM follower sub-account;
+      * from the source only its available cash (`balance`) moves; bonus
+        `credit` stays on it (the account is kept open while it holds any).
+
+    Adds the ledger rows and flushes; the caller commits. Returns
+    {new_account, starting, main_amount, sweep_amount}.
+    """
+    from decimal import Decimal
+
+    from sqlalchemy import func
+
+    from packages.common.src.models import (
+        InvestorAllocation, Order, OrderStatus, Position, PositionStatus,
+        Transaction, Withdrawal,
+    )
+    from packages.common.src.money_guards import assert_not_managed_pool, spendable_main_wallet
+    from packages.common.src.row_locks import lock_account, lock_user
+    from packages.common.src.trading_guards import is_platform_copy_subaccount
+    from .account_service import create_wallet_bound_account
+
+    user = await lock_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Wallet must be linked first — the wallet account is meaningless
+    # without a withdrawal destination.
+    if not (user.wallet_address or "").strip():
+        raise HTTPException(status_code=400, detail="Link a wallet first, then migrate.")
+
+    source_acc = None
+    if merge_from_account_id is not None:
+        source_acc = await lock_account(db, merge_from_account_id, user_id=user_id)
+        if (
+            source_acc is None
+            or source_acc.is_active is False
+            or bool(source_acc.is_demo)
+        ):
+            raise HTTPException(status_code=404, detail="Source account not found or not eligible.")
+        if bool(getattr(source_acc, "is_wallet_account", False)):
+            raise HTTPException(status_code=400, detail="That account is already the wallet account.")
+        # B1: a PAMM/MAM pool holds investor capital.
+        await assert_not_managed_pool(db, source_acc.id)
+        # Copy / MAM follower sub-accounts are unwound via Stop Copy / Withdraw.
+        if is_platform_copy_subaccount(source_acc):
+            raise HTTPException(
+                status_code=409,
+                detail="Copy-trading accounts can't be merged — stop the copy subscription instead.",
+            )
+        copy_dest = (await db.execute(
+            select(InvestorAllocation.id).where(
+                InvestorAllocation.investor_account_id == source_acc.id,
+                InvestorAllocation.status.in_(("active", "pending")),
+            ).limit(1)
+        )).scalar_one_or_none()
+        if copy_dest is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="This account is used by a copy subscription — stop it before merging.",
+            )
+        open_pos = (await db.execute(
+            select(Position.id).where(
+                Position.account_id == source_acc.id,
+                Position.status.in_((PositionStatus.OPEN.value, PositionStatus.PARTIALLY_CLOSED.value)),
+            ).limit(1)
+        )).scalar_one_or_none()
+        if open_pos is not None:
+            raise HTTPException(status_code=409, detail="Close all open positions on that account first.")
+        pending_order = (await db.execute(
+            select(Order.id).where(
+                Order.account_id == source_acc.id,
+                Order.status.in_((OrderStatus.PENDING.value, OrderStatus.PARTIALLY_FILLED.value)),
+            ).limit(1)
+        )).scalar_one_or_none()
+        if pending_order is not None:
+            raise HTTPException(status_code=409, detail="Cancel pending orders on that account first.")
+        pending_wd = (await db.execute(
+            select(Withdrawal.id).where(
+                Withdrawal.account_id == source_acc.id,
+                func.lower(func.coalesce(Withdrawal.status, "pending")).notin_(_FINISHED_WITHDRAWAL_STATUSES),
+            ).limit(1)
+        )).scalar_one_or_none()
+        if pending_wd is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="That account has a withdrawal in progress — wait for it to finish.",
+            )
+
+    # A5: only the spendable main wallet moves; outstanding bonus stays.
+    main_amount = await spendable_main_wallet(db, user)
+    sweep_amount = Decimal(str(source_acc.balance or 0)) if source_acc else Decimal("0")
+    if sweep_amount < 0:
+        sweep_amount = Decimal("0")
+    starting = main_amount + sweep_amount
+
+    new_acc = await create_wallet_bound_account(db, user_id, starting_balance=starting)
+
+    if main_amount > 0:
+        user.main_wallet_balance = Decimal(str(user.main_wallet_balance or 0)) - main_amount
+        db.add(Transaction(
+            user_id=user_id,
+            account_id=new_acc.id,
+            type="transfer",
+            amount=main_amount,
+            balance_after=new_acc.balance,
+            description="Migration: main wallet → wallet account",
+        ))
+    if source_acc is not None:
+        remaining_credit = Decimal(str(source_acc.credit or 0))
+        if sweep_amount > 0:
+            source_acc.balance = Decimal("0")
+            source_acc.equity = remaining_credit
+            source_acc.free_margin = remaining_credit
+            db.add(Transaction(
+                user_id=user_id,
+                account_id=new_acc.id,
+                type="transfer",
+                amount=sweep_amount,
+                balance_after=new_acc.balance,
+                description=f"Migration: account {source_acc.account_number} → wallet account",
+            ))
+        # Close the source only when nothing (no bonus credit) is left on it.
+        if remaining_credit <= 0:
+            source_acc.is_active = False
+
+    await db.flush()
+    return {
+        "new_account": new_acc,
+        "starting": starting,
+        "main_amount": main_amount,
+        "sweep_amount": sweep_amount,
+    }

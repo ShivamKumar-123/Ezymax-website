@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
-from packages.common.src.auth import get_current_user
+from packages.common.src.auth import get_current_user, require_not_demo
 from ..services import social_service
 
 router = APIRouter()
@@ -124,7 +124,7 @@ async def become_provider(
     max_investors: int = Query(100, ge=1, le=1000),
     account_id: str | None = Query(None),
     strategy_info: dict | None = Body(None),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_not_demo),
     db: AsyncSession = Depends(get_db),
 ):
     # account_id is optional:
@@ -171,7 +171,7 @@ async def apply_as_master(
     min_investment: Decimal = Body(Decimal("100"), gt=0),
     max_investors: int = Body(100, ge=1, le=1000),
     external_pnl_url: str | None = Body(None),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_not_demo),
     db: AsyncSession = Depends(get_db),
 ):
     """Apply as a Master Trader. Either the user's on-platform stats meet the

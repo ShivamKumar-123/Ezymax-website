@@ -26,7 +26,7 @@ async def get_provider_followers(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Public view of a provider's followers (limited info for privacy)."""
+    """Aggregates for a provider's followers plus the caller's own row only."""
     return await social_service.get_provider_followers(
-        provider_id=provider_id, db=db,
+        provider_id=provider_id, db=db, user_id=current_user["user_id"],
     )

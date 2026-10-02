@@ -58,7 +58,7 @@ class _DB:
 
 
 def _master(mtype):
-    return SimpleNamespace(id=uuid4(), status="approved", master_type=mtype,
+    return SimpleNamespace(id=uuid4(), status="approved", master_type=mtype, user_id=uuid4(),
                            account_id=uuid4(), min_investment=Decimal("0"),
                            max_investors=100, followers_count=0)
 
@@ -74,22 +74,23 @@ def _pool():
 
 
 class ManagedInvestOneDestinationTests(unittest.TestCase):
-    def test_mamm_credits_subaccount_not_pool(self):
+    def test_mamm_new_investment_refused(self):
+        # A7: MAM ("mamm") is retired — new investments / top-ups are refused
+        # before any money moves (was: credited a sub-account).
         uid = uuid4()
         master = _master("mamm")
         user = _user(uid)
         pool = _pool()
-        db = _DB([
-            _Res(scalar=master), _Res(scalarv=0), _Res(scalar=user), _Res(scalar=None),
-        ], pool)
-        asyncio.run(ss.invest_managed_account(
-            master.id, Decimal("100"), None, Decimal("0"), uid, db,
-        ))
-        self.assertEqual(pool.balance, Decimal("500"))          # pool NOT credited
-        self.assertEqual(user.main_wallet_balance, Decimal("900"))
-        subs = [o for o in db.added if isinstance(o, TradingAccount)]
-        self.assertEqual(len(subs), 1)                          # sub-account created
-        self.assertEqual(subs[0].balance, Decimal("100"))
+        db = _DB([_Res(scalar=master)], pool)
+        from fastapi import HTTPException
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(ss.invest_managed_account(
+                master.id, Decimal("100"), None, Decimal("0"), uid, db,
+            ))
+        self.assertEqual(ctx.exception.status_code, 400)
+        self.assertEqual(pool.balance, Decimal("500"))
+        self.assertEqual(user.main_wallet_balance, Decimal("1000"))
+        self.assertEqual(db.added, [])
 
     def test_pamm_credits_pool_not_subaccount(self):
         uid = uuid4()
@@ -97,7 +98,11 @@ class ManagedInvestOneDestinationTests(unittest.TestCase):
         user = _user(uid)
         pool = _pool()
         db = _DB([
-            _Res(scalar=master), _Res(scalarv=0), _Res(scalar=user), _Res(scalar=None),
+            _Res(scalar=master), _Res(scalarv=0),
+            _Res(scalar=user),   # lock_user
+            _Res(scalarv=0),     # outstanding bonus (A5 spendable_main_wallet)
+            _Res(scalar=None),   # existing allocation
+            _Res(scalar=pool),   # lock_account(pool)
             _Res(items=[]),      # _pool_value_with_floating: open positions
             _Res(scalarv=0),     # total units before
         ], pool)

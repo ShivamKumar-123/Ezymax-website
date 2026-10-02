@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
-from packages.common.src.auth import get_current_user
+from packages.common.src.auth import get_current_user, require_not_demo
 from packages.common.src.schemas import CreateTicketRequest, ReplyTicketRequest
 from ..services import support_service
 
@@ -28,7 +28,7 @@ async def list_tickets(
 @router.post("/tickets", status_code=201)
 async def create_ticket(
     req: CreateTicketRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_not_demo),
     db: AsyncSession = Depends(get_db),
 ):
     return await support_service.create_ticket(
@@ -52,7 +52,7 @@ async def get_ticket(
 async def reply_ticket(
     ticket_id: UUID,
     req: ReplyTicketRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_not_demo),
     db: AsyncSession = Depends(get_db),
 ):
     return await support_service.reply_ticket(

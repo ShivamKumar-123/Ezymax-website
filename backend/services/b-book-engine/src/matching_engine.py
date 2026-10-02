@@ -25,6 +25,7 @@ from packages.common.src.redis_client import redis_client, PriceChannel, is_tick
 from packages.common.src.instrument_pricing import resolve_commission
 from packages.common.src.ib_commission import distribute_ib_commission
 from packages.common.src.market_hours import is_market_open
+from packages.common.src.trading_guards import is_platform_copy_subaccount
 from packages.common.src.settings_store import get_bool_setting
 from packages.common.src.trading_service import quote_to_account_pnl, cross_rate_for
 
@@ -76,7 +77,7 @@ class MatchingEngine:
                     # skipped this pass instead of being double-filled.
                     result = await db.execute(
                         select(Order).where(Order.status == OrderStatus.PENDING)
-                        .with_for_update(skip_locked=True)
+                        .with_for_update(skip_locked=True).execution_options(populate_existing=True)
                     )
                     pending_orders = result.scalars().all()
 
@@ -144,10 +145,13 @@ class MatchingEngine:
         locked_q = await db.execute(
             select(TradingAccount)
             .where(TradingAccount.id == order.account_id)
-            .with_for_update()
+            .with_for_update().execution_options(populate_existing=True)
         )
         account = locked_q.scalar_one_or_none()
-        if not account or not account.is_active:
+        # B2: platform-created copy / MAM sub-accounts only hold mirrored
+        # (market) copies — a pending order there (legacy, placed before the
+        # gateway guard existed) is never filled.
+        if not account or not account.is_active or is_platform_copy_subaccount(account):
             order.status = OrderStatus.REJECTED
             return
 

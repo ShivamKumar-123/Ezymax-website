@@ -4,16 +4,15 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
-from packages.common.src.auth import get_current_user, require_full_session
+from packages.common.src.auth import get_current_user, require_full_session, require_not_demo
 from packages.common.src.models import (
     TradingAccount,
-    Transaction,
     User,
     UserAuditLog,
 )
@@ -50,37 +49,45 @@ class PushTokenBody(BaseModel):
 @router.post("/push-token")
 async def register_push_token(
     body: PushTokenBody,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_not_demo),
     db: AsyncSession = Depends(get_db),
 ):
-    """Register/refresh this device's Expo push token. Upsert by token so a
-    device only ever maps to its current user (re-login moves it)."""
+    """Register/refresh this device's Expo push token for the caller.
+
+    B3: a token already bound to ANOTHER user is never re-bound (that let
+    anyone who learned a push token hijack the victim's notifications). The
+    owner must DELETE it (logout) first; until then this is a no-op that
+    reports `bound: false`."""
     from sqlalchemy import text
 
     tok = (body.token or "").strip()
     if not tok:
         raise HTTPException(status_code=400, detail="token is required")
-    await db.execute(
+    if len(tok) > 255:
+        raise HTTPException(status_code=400, detail="token is too long")
+    res = await db.execute(
         text(
             """
             INSERT INTO user_push_tokens (token, user_id, platform, updated_at)
             VALUES (:token, :uid, :platform, NOW())
             ON CONFLICT (token) DO UPDATE
-              SET user_id = EXCLUDED.user_id,
-                  platform = EXCLUDED.platform,
+              SET platform = EXCLUDED.platform,
                   updated_at = NOW()
+              WHERE user_push_tokens.user_id = EXCLUDED.user_id
+            RETURNING token
             """
         ),
         {"token": tok, "uid": str(current_user["user_id"]), "platform": (body.platform or "")[:20]},
     )
+    bound = res.first() is not None
     await db.commit()
-    return {"ok": True}
+    return {"ok": True, "bound": bound}
 
 
 @router.delete("/push-token")
 async def delete_push_token(
     body: PushTokenBody,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_not_demo),
     db: AsyncSession = Depends(get_db),
 ):
     """Remove a device token (e.g. on logout)."""
@@ -99,7 +106,7 @@ async def delete_push_token(
 @router.put("")
 async def update_profile(
     req: UpdateProfileRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_not_demo),
     db: AsyncSession = Depends(get_db),
 ):
     return await profile_service.update_profile(
@@ -112,9 +119,15 @@ async def update_profile(
 @router.put("/password")
 async def change_password(
     req: ChangePasswordRequest,
+    request: Request,
     current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
+    # D5: same caps as /auth/password/change — per-IP plus a per-user budget,
+    # so a hijacked session can't brute-force the current password here.
+    from packages.common.src.user_credentials import redis_cap
+    rate_limit_http(request, "password-change", 10, 600.0)
+    await redis_cap(f"pwchange_attempts:{current_user['user_id']}", 5, 900, fail_closed=False)
     return await profile_service.change_password(
         user_id=current_user["user_id"],
         current_password=req.current_password,
@@ -226,6 +239,7 @@ async def link_wallet_nonce(
 @router.post("/wallet/link")
 async def link_wallet(
     req: WalletVerifyRequest, request: Request,
+    challenge_id: str | None = None,
     current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
@@ -279,6 +293,12 @@ async def link_wallet(
             status_code=409,
             detail="This wallet is already linked to another account.",
         )
+
+    # D4: the FIRST wallet link on a verified-email account sets the payout
+    # destination, so it needs a verified step-up (action="wallet_link").
+    # No-op otherwise. Done after the validation checks above so a rejected
+    # link never burns the user's challenge.
+    await sensitive_action_service.require_wallet_link_step_up(db, user, challenge_id)
 
     user.wallet_address = addr_lower
     db.add(UserAuditLog(
@@ -400,105 +420,41 @@ async def migrate_to_wallet_account(
     Atomically:
       1. Provision a wallet-bound trading account (fails 409 if one
          already exists).
-      2. Move users.main_wallet_balance into account.balance.
-      3. Optionally sweep one existing live account's balance into the
-         new account (caller passes `merge_from_account_id`), then
-         deactivate that source account.
+      2. Move the SPENDABLE main wallet (balance minus un-released bonus)
+         into account.balance — the bonus stays in the main wallet.
+      3. Optionally sweep one existing live account's available cash into
+         the new account (caller passes `merge_from_account_id`), then
+         deactivate that source account (kept open while it holds bonus
+         credit). The source must be flat, have no withdrawal in flight and
+         must not be a PAMM/MAM pool or a copy sub-account.
       4. Write Transaction audit rows for each move.
 
     All changes flushed in one DB transaction so a failure midway
     leaves the user's funds exactly where they started.
     """
     user_id = current_user["user_id"]
-    user_q = await db.execute(
-        select(User).where(User.id == user_id).with_for_update()
-    )
-    user = user_q.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Wallet must be linked first — the wallet account is meaningless
-    # without a withdrawal destination.
-    if not (user.wallet_address or "").strip():
-        raise HTTPException(
-            status_code=400,
-            detail="Link a wallet first, then migrate.",
-        )
-
-    # Optional source-account validation up-front.
-    source_acc: TradingAccount | None = None
-    if body.merge_from_account_id is not None:
-        src_q = await db.execute(
-            select(TradingAccount).where(
-                TradingAccount.id == body.merge_from_account_id,
-                TradingAccount.user_id == user_id,
-                TradingAccount.is_active.is_(True),
-                TradingAccount.is_demo.is_(False),
-            ).with_for_update()
-        )
-        source_acc = src_q.scalar_one_or_none()
-        if source_acc is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Source account not found or not eligible.",
-            )
-        if bool(getattr(source_acc, "is_wallet_account", False)):
-            raise HTTPException(
-                status_code=400,
-                detail="That account is already the wallet account.",
-            )
-
-    # Compute starting balance from main_wallet + optional source acc.
-    main_amount = Decimal(str(user.main_wallet_balance or 0))
-    sweep_amount = Decimal(str(source_acc.balance or 0)) if source_acc else Decimal("0")
-    starting = main_amount + sweep_amount
-
-    from ..services.account_service import create_wallet_bound_account
+    # A5 / A6 / B1: locking, eligibility checks (flat source, no pending
+    # withdrawals, not a managed pool / copy sub-account) and the
+    # spendable-only (bonus stays) move live in profile_service.
     try:
-        new_acc = await create_wallet_bound_account(
-            db, user_id, starting_balance=starting,
+        res = await profile_service.migrate_to_wallet_account(
+            user_id, body.merge_from_account_id, db,
         )
-    except HTTPException:
-        raise
     except IntegrityError:
         await db.rollback()
         raise HTTPException(
             status_code=409,
             detail="Wallet account already exists — migration already complete.",
         )
-
-    # Zero out the legacy sources + ledger rows.
-    if main_amount > 0:
-        user.main_wallet_balance = Decimal("0")
-        db.add(Transaction(
-            user_id=user_id,
-            account_id=new_acc.id,
-            type="transfer",
-            amount=main_amount,
-            balance_after=new_acc.balance,
-            description="Migration: main wallet → wallet account",
-        ))
-    if source_acc is not None and sweep_amount > 0:
-        source_acc.balance = Decimal("0")
-        source_acc.equity = Decimal("0")
-        source_acc.free_margin = Decimal("0")
-        source_acc.is_active = False
-        db.add(Transaction(
-            user_id=user_id,
-            account_id=new_acc.id,
-            type="transfer",
-            amount=sweep_amount,
-            balance_after=new_acc.balance,
-            description=f"Migration: account {source_acc.account_number} → wallet account (account closed)",
-        ))
+    new_acc = res["new_account"]
 
     db.add(UserAuditLog(
         user_id=user_id,
         action_type="WALLET_ACCOUNT_MIGRATED",
         ip_address=client_ip_for_inet(request),
         device_info=(
-            f"new_account={new_acc.account_number} starting=${float(starting):.2f} "
-            f"main=${float(main_amount):.2f} sweep=${float(sweep_amount):.2f}"
+            f"new_account={new_acc.account_number} starting=${float(res['starting']):.2f} "
+            f"main=${float(res['main_amount']):.2f} sweep=${float(res['sweep_amount']):.2f}"
         ),
     ))
 
