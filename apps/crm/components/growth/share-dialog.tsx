@@ -5,10 +5,11 @@ import { Download, Loader2, Share2 } from "lucide-react";
 import { Button, CopyButton, Dialog, IconButton, Skeleton, Toggle, cn, type ButtonProps } from "@kalks/ui";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { useT } from "@kalks/i18n/react";
-import { errorToast, growthApi, linkBase, type Share } from "./api";
+import { errorToast, growthApi, linkBase, optionStrikeLabel, type Share } from "./api";
 
 // Share P&L cards (D136). The client picks whether money amounts are shown (off by default: only symbol, side,
-// prices and % move / % return are stored). The card is a public page + PNG at /s/<code> with the client's
+// prices and % move / % return are stored). A closed option trade becomes an options card (O36): contract, side,
+// premiums per contract, return on premium and a payoff sketch. The card is a public page + PNG at /s/<code> with the client's
 // referral code, so shares double as referral links.
 
 type Target = { kind: "trade"; login: number; dealId: number } | { kind: "period"; login: number; from: string; to: string };
@@ -53,7 +54,17 @@ export function ShareDialog({ target, open, onOpenChange, title }: { target: Tar
   };
 
   const url = share ? `${linkBase()}/s/${share.code}` : "";
-  const text = share?.kind === "period" ? t("rewards.share.textPeriod") : share?.data.symbol ? t("rewards.share.textSymbol", { symbol: share.data.symbol }) : t("rewards.share.textTrade");
+  const opt = share?.kind === "trade" ? share.data.option : undefined;
+  // an options share card (O36) names the contract ("EURUSD 1.165 Call"), never the raw series code
+  const contract = opt ? `${opt.underlying} ${optionStrikeLabel(opt)} ${opt.right === "put" ? t("rewards.public.optPut") : t("rewards.public.optCall")}`.replace(/\s+/g, " ").trim() : "";
+  const text =
+    share?.kind === "period"
+      ? t("rewards.share.textPeriod")
+      : opt
+        ? t("rewards.share.textOption", { contract })
+        : share?.data.symbol
+          ? t("rewards.share.textSymbol", { symbol: share.data.symbol })
+          : t("rewards.share.textTrade");
 
   return (
     <Dialog

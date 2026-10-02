@@ -157,8 +157,9 @@ pub fn check_limits(l: &Limits, seg: &Segment, now: DateTime<Utc>) -> Result<(),
 
 // ---------------------------------------------------------------- contests (D135)
 
-/// (score, return %) for a contest scoring mode.
-pub fn contest_score(scoring: &str, realised: D, floating: D, lots: D, start_equity: Option<D>) -> (D, D) {
+/// (score, return %) for a contest scoring mode. `volume` is lots in a CFD contest and contracts in an options
+/// contest (scoring `lots` / `contracts`).
+pub fn contest_score(scoring: &str, realised: D, floating: D, volume: D, start_equity: Option<D>) -> (D, D) {
     let pnl = realised + floating;
     let ret = match start_equity {
         Some(s) if s > ZERO => r2(pnl / s * HUNDRED),
@@ -166,10 +167,107 @@ pub fn contest_score(scoring: &str, realised: D, floating: D, lots: D, start_equ
     };
     let score = match scoring {
         "profit" => r2(pnl),
-        "lots" => r4(lots),
+        "lots" | "contracts" => r4(volume),
         _ => ret,
     };
     (score, ret)
+}
+
+// ---------------------------------------------------------------- options contests (O36)
+
+/// What a contest is traded on: CFDs (lots) or Kalks FX Options (contracts).
+pub const CONTEST_INSTRUMENTS: &[&str] = &["cfd", "options"];
+
+/// Scoring modes per instrument: the same P&L modes, and volume in the instrument's own unit (lots for CFDs,
+/// contracts for options: an option contract is never a lot).
+pub fn scoring_allowed(instrument: &str, scoring: &str) -> bool {
+    match instrument {
+        "options" => matches!(scoring, "return_pct" | "profit" | "contracts"),
+        _ => matches!(scoring, "return_pct" | "profit" | "lots"),
+    }
+}
+
+/// System-managed account groups that never trade options (same rule as the engine's `options::system_group`):
+/// prop (`prop*`), copy-trading followers (`copy`, `copy-*`), PAMM (`pamm`, `pamm-*`) and MAM (`mam`, `mam-*`).
+pub fn options_system_group(code: &str) -> bool {
+    let g = code.trim().to_ascii_lowercase();
+    g.starts_with("prop") || matches!(g.as_str(), "copy" | "copy-netting" | "copy-demo" | "pamm" | "mam") || g.starts_with("copy-") || g.starts_with("pamm-") || g.starts_with("mam-")
+}
+
+/// Opening premium (USD, unsigned) of an option exit. The engine books an exit's realised price P&L as the cash of
+/// the exit plus the premium booked at open (`profit = cash + basis`), so the premium is |price P&L − cash|: what
+/// the closed contracts cost (long) or brought in (short) when they were opened.
+pub fn option_premium(price_profit: D, cash: D) -> D {
+    r2((price_profit - cash).abs())
+}
+
+/// One leg (position, or part of one) in an option series, for self-trade detection between a client's accounts.
+/// `side` is the position's direction (`buy` = long); `close` is None while the position is open.
+#[derive(Clone, Debug)]
+pub struct OptLeg {
+    pub login: i64,
+    pub symbol: String,
+    pub side: String,
+    pub open: DateTime<Utc>,
+    pub close: Option<DateTime<Utc>>,
+    pub fill_id: Option<String>,
+}
+
+/// Two fills of one client within this many seconds are treated as one cross between the accounts.
+pub const SELF_TRADE_WINDOW_SECS: i64 = 2;
+
+impl OptLeg {
+    /// (time, direction) of the leg's trades: the open (its side) and the close (the opposite side).
+    fn events(&self) -> Vec<(DateTime<Utc>, bool)> {
+        let long = self.side.eq_ignore_ascii_case("buy");
+        let mut v = vec![(self.open, long)];
+        if let Some(c) = self.close {
+            v.push((c, !long));
+        }
+        v
+    }
+}
+
+/// Whether a contest option trade `t` is a self-trade (wash) with another account of the same client. `others`
+/// are that client's other legs in option series (any account but the entered one). It is when:
+/// * the same order-book fill appears on both accounts (the client was on both sides of one trade), or
+/// * the other account held the opposite side of the same series at the same time (a hedge across the client's
+///   own accounts: one wins what the other loses), or
+/// * the other account traded the same series in the opposite direction within [`SELF_TRADE_WINDOW_SECS`] of this
+///   trade's open or close (a cross between the accounts, e.g. one closes a long while the other opens one at an
+///   off-market premium).
+pub fn is_self_trade(t: &OptLeg, others: &[OptLeg]) -> bool {
+    let far = DateTime::<Utc>::MAX_UTC;
+    others.iter().filter(|o| o.login != t.login).any(|o| {
+        if let (Some(a), Some(b)) = (&t.fill_id, &o.fill_id)
+            && !a.is_empty()
+            && a == b
+        {
+            return true;
+        }
+        if !o.symbol.eq_ignore_ascii_case(&t.symbol) {
+            return false;
+        }
+        let opposite = !o.side.eq_ignore_ascii_case(&t.side);
+        if opposite && o.open < t.close.unwrap_or(far) && t.open < o.close.unwrap_or(far) {
+            return true;
+        }
+        let w = Duration::seconds(SELF_TRADE_WINDOW_SECS);
+        t.events().iter().any(|(ta, td)| o.events().iter().any(|(oa, od)| td != od && (*ta - *oa).abs() <= w))
+    })
+}
+
+/// Why an options-contest trade does not count (None = it counts): `self_trade` (no P&L, volume or trade count)
+/// wins over `min_premium` (opening premium below the contest minimum: no volume and no trade count, but its P&L
+/// still counts so a loss can't be hidden). A trade whose premium is unknown is below any minimum that is set.
+pub fn option_exclusion(self_trade: bool, premium: Option<D>, min_premium: Option<D>) -> Option<&'static str> {
+    if self_trade {
+        return Some("self_trade");
+    }
+    match min_premium {
+        Some(m) if m > ZERO && premium.is_none_or(|p| p < m) => Some("min_premium"),
+        _ => None,
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -416,5 +514,65 @@ mod tests {
         assert!(is_option_deal(&json!({"symbol": "EURUSD", "instrument": "option"})));
         assert!(is_option_deal(&json!({"symbol": "USDJPY-20261009-150.00-P"})));
         assert!(!is_option_deal(&json!({"symbol": "EURUSD", "option": null, "instrument": "cfd"})));
+    }
+
+    #[test]
+    fn options_contest_rules() {
+        // scoring per instrument: volume is lots for CFDs and contracts for options
+        assert!(scoring_allowed("cfd", "lots") && scoring_allowed("cfd", "return_pct") && !scoring_allowed("cfd", "contracts"));
+        assert!(scoring_allowed("options", "contracts") && scoring_allowed("options", "profit") && !scoring_allowed("options", "lots"));
+        assert_eq!(contest_score("contracts", dec("90"), ZERO, dec("35"), Some(dec("1000"))), (dec("35"), dec("9")));
+        // system groups never trade options
+        for g in ["prop-50k", "copy", "copy-demo", "pamm", "pamm-a", "mam", "MAM-1", " prop "] {
+            assert!(options_system_group(g), "{g}");
+        }
+        for g in ["standard", "raw", "vip", "pro-copyless", "demo"] {
+            assert!(!options_system_group(g), "{g}");
+        }
+        // premium of an exit: long bought for 120, sold for 310 (+190); short sold for 120, bought back for 310 (−190)
+        assert_eq!(option_premium(dec("190"), dec("310")), dec("120"));
+        assert_eq!(option_premium(dec("-190"), dec("-310")), dec("120"));
+        // a long that expired worthless: no cash, the whole premium lost
+        assert_eq!(option_premium(dec("-75.5"), ZERO), dec("75.5"));
+
+        // exclusions
+        assert_eq!(option_exclusion(true, Some(dec("500")), Some(dec("10"))), Some("self_trade"));
+        assert_eq!(option_exclusion(false, Some(dec("9.99")), Some(dec("10"))), Some("min_premium"));
+        assert_eq!(option_exclusion(false, Some(dec("10")), Some(dec("10"))), None);
+        assert_eq!(option_exclusion(false, None, Some(dec("10"))), Some("min_premium"), "unknown premium never passes a minimum");
+        assert_eq!(option_exclusion(false, None, None), None);
+        assert_eq!(option_exclusion(false, Some(dec("0.01")), Some(ZERO)), None, "0 = no minimum");
+    }
+
+    #[test]
+    fn self_trades_between_own_accounts() {
+        let t0 = Utc::now() - Duration::hours(3);
+        let m = |x: i64| t0 + Duration::minutes(x);
+        let leg = |login, symbol: &str, side: &str, open, close: Option<DateTime<Utc>>, fill: Option<&str>| OptLeg { login, symbol: symbol.into(), side: side.into(), open, close, fill_id: fill.map(str::to_string) };
+        const S: &str = "EURUSD-20261009-1.1650-C";
+        // the contest trade: long on 1001 from minute 10 to minute 60
+        let t = leg(1001, S, "buy", m(10), Some(m(60)), None);
+        // a hedge: short the same series on another account at the same time
+        assert!(is_self_trade(&t, &[leg(2002, S, "sell", m(30), Some(m(90)), None)]));
+        // still open short on the other account
+        assert!(is_self_trade(&t, &[leg(2002, S, "sell", m(5), None, None)]));
+        // a cross: the other account buys (opens long) the moment this one sells to close
+        assert!(is_self_trade(&t, &[leg(2002, S, "buy", m(60) + Duration::seconds(1), Some(m(120)), None)]));
+        // the other account sells (closes its long) the moment this one buys to open
+        assert!(is_self_trade(&t, &[leg(2002, S, "buy", m(0), Some(m(10)), None)]));
+        // one order-book fill on both accounts
+        let filled = leg(1001, S, "buy", m(10), Some(m(60)), Some("F-77"));
+        assert!(is_self_trade(&filled, &[leg(2002, "GBPUSD-20261009-1.3400-P", "buy", m(200), Some(m(300)), Some("F-77"))]));
+
+        // not self-trades: same direction at another time, another series, opposite side after this one closed,
+        // the same account, and same-direction trades at the same moment (no value can move between them)
+        assert!(!is_self_trade(&t, &[leg(2002, S, "buy", m(20), Some(m(50)), None)]));
+        assert!(!is_self_trade(&t, &[leg(2002, "EURUSD-20261009-1.1700-C", "sell", m(20), Some(m(50)), None)]));
+        assert!(!is_self_trade(&t, &[leg(2002, S, "sell", m(61), Some(m(90)), None)]));
+        assert!(!is_self_trade(&t, &[leg(1001, S, "sell", m(20), Some(m(50)), None)]));
+        assert!(!is_self_trade(&t, &[leg(2002, S, "buy", m(10), Some(m(60)), None)]));
+        assert!(!is_self_trade(&t, &[leg(2002, S, "buy", m(60) + Duration::seconds(3), Some(m(120)), None)]), "outside the window");
+        assert!(!is_self_trade(&filled, &[leg(2002, S, "buy", m(100), Some(m(110)), Some("F-78"))]));
+        assert!(!is_self_trade(&t, &[]));
     }
 }

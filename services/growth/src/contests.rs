@@ -1,5 +1,13 @@
 //! Trading contests (D135): join (dedicated demo account or a chosen live account), live scores from engine
 //! deals + floating P&L, ranks, anti-cheat flags, finalize and prize payout (wallet or trading credit).
+//!
+//! Options contests (O36, `instrument = 'options'`): only Kalks FX Options exits count (manual closes, stop-outs,
+//! expiry settlements, knock-outs), scored on realised option P&L (no floating part), volume in contracts. Open
+//! to clients who may trade options (gateway suitability) on accounts outside the system groups. Trades whose
+//! opening premium is below the contest minimum add no volume or trade count; self-trades between a client's own
+//! accounts (one order-book fill on both, an opposite position in the same series at the same time, or a cross at
+//! the same moment) don't count at all and raise a `self_trade` flag. CFD contests are unchanged and never see
+//! option deals.
 
 use crate::audit::{self, Actor};
 use crate::bonus::REASON_PRIZE;
@@ -36,6 +44,8 @@ pub fn contest_json(r: &sqlx::postgres::PgRow) -> Value {
         "name": r.get::<String, _>("name"),
         "description": r.get::<String, _>("description"),
         "kind": r.get::<String, _>("kind"),
+        "instrument": r.get::<String, _>("instrument"),
+        "minPremium": opt_num(r.get("min_premium")),
         "status": status_of(r),
         "startsAt": r.get::<DateTime<Utc>, _>("starts_at"),
         "endsAt": r.get::<DateTime<Utc>, _>("ends_at"),
@@ -79,7 +89,11 @@ pub fn standing_json(r: &sqlx::postgres::PgRow, me: Option<i64>, staff: bool, mi
         "returnPct": num(r.get("return_pct")),
         "profit": num(r.get::<D, _>("realised") + r.get::<D, _>("floating")),
         "lots": num(r.get("lots")),
+        "contracts": num(r.get("contracts")),
         "trades": trades,
+        // options contests: trades left out of the score (own entry and staff only)
+        "selfTrades": if show { json!(r.get::<i32, _>("self_trades")) } else { Value::Null },
+        "smallTrades": if show { json!(r.get::<i32, _>("small_trades")) } else { Value::Null },
         "qualified": trades >= min_trades,
         "status": r.get::<String, _>("status"),
         "disqualifyReason": if show { json!(r.get::<Option<String>, _>("disqualify_reason")) } else { Value::Null },
@@ -125,6 +139,20 @@ pub async fn join(st: &AppState, tenant: &str, user_id: i64, contest_id: i64, lo
     }
     let kind: String = c.get("kind");
     let name: String = c.get("name");
+    let options = c.get::<String, _>("instrument") == "options";
+    if options {
+        // only clients who may trade Kalks FX Options (the options intro accepted), checked before any account opens
+        match clients::options_eligible(st, tenant, user_id).await {
+            Ok(true) => {}
+            Ok(false) => {
+                return Err(ApiError::Conflict {
+                    code: "options_intro_required",
+                    message: "Options contests are for clients who can trade Kalks FX Options. Take the 1-minute options intro in the Client Area first.".into(),
+                });
+            }
+            Err(e) => return Err(ApiError::Unavailable(format!("Options eligibility can't be checked right now ({e}). Please try again shortly."))),
+        }
+    }
     let running = status == "running";
     let (acc_login, start_equity, credentials) = if kind == "demo" {
         let balance: D = c.get::<Option<D>, _>("starting_balance").unwrap_or(D::from(10_000));
@@ -145,6 +173,9 @@ pub async fn join(st: &AppState, tenant: &str, user_id: i64, contest_id: i64, lo
         let groups: Vec<String> = c.get("account_groups");
         if !groups.is_empty() && !groups.iter().any(|g| g.eq_ignore_ascii_case(&acc.group)) {
             return Err(crate::error::invalid("login", "This contest isn't open to that account type."));
+        }
+        if options && calc::options_system_group(&acc.group) {
+            return Err(crate::error::invalid("login", "Options aren't available on copy-trading, PAMM, MAM or prop accounts. Choose another live account."));
         }
         let eq = acc.equity_ex_options_usd();
         if c.get::<Option<D>, _>("min_equity").is_some_and(|m| eq < m) {
@@ -196,6 +227,9 @@ pub async fn refresh(st: &AppState, contest_id: i64) -> anyhow::Result<()> {
     let ends: DateTime<Utc> = c.get("ends_at");
     let scoring: String = c.get("scoring");
     let min_trades: i32 = c.get("min_trades");
+    let options = c.get::<String, _>("instrument") == "options";
+    let min_premium: Option<D> = c.get("min_premium");
+    let account_kind: String = c.get("kind");
     let ac = anti_of(&c);
     let live_now = Utc::now() < ends;
     let entries = sqlx::query("SELECT * FROM contest_entries WHERE contest_id = $1").bind(contest_id).fetch_all(&st.pool).await?;
@@ -206,11 +240,14 @@ pub async fn refresh(st: &AppState, contest_id: i64) -> anyhow::Result<()> {
         let user: i64 = e.get("user_id");
         let mut start_eq: Option<D> = e.get("start_equity");
         let mut floating: D = e.get("floating");
-        if live_now {
+        // options contests score realised option P&L only: the account is read just for the start snapshot
+        if live_now && (!options || start_eq.is_none()) {
             match clients::account(st, &tenant, login).await {
                 Ok(Some(acc)) => {
-                    // CFD only: options are not part of contests (O34)
-                    floating = acc.floating_usd();
+                    // CFD contests: CFD floating only (options are excluded from CFD contests, O34)
+                    if !options {
+                        floating = acc.floating_usd();
+                    }
                     if start_eq.is_none() {
                         start_eq = Some(acc.equity_ex_options_usd());
                     }
@@ -219,25 +256,46 @@ pub async fn refresh(st: &AppState, contest_id: i64) -> anyhow::Result<()> {
                 Err(e) => tracing::debug!(error = %e, login, "contest account read failed"),
             }
         }
-        let trades = sqlx::query("SELECT profit, lots, hold_seconds FROM contest_trades WHERE entry_id = $1").bind(id).fetch_all(&st.pool).await?;
-        let realised: D = trades.iter().map(|t| t.get::<D, _>("profit")).sum();
-        let lots: D = trades.iter().map(|t| t.get::<D, _>("lots")).sum();
-        let (score, ret) = calc::contest_score(&scoring, realised, floating, lots, start_eq);
-        sqlx::query("UPDATE contest_entries SET start_equity = $2, realised = $3, floating = $4, lots = $5, trades = $6, score = $7, return_pct = $8, updated_at = now() WHERE id = $1")
-            .bind(id)
-            .bind(start_eq)
-            .bind(realised)
-            .bind(floating)
-            .bind(lots)
-            .bind(trades.len() as i32)
-            .bind(score)
-            .bind(ret)
-            .execute(&st.pool)
-            .await?;
+        if options {
+            floating = ZERO;
+            classify_option_trades(st, &tenant, id, user, login, &account_kind, starts, !live_now, min_premium).await?;
+        }
+        let rows = sqlx::query("SELECT deal_id, profit, lots, contracts, hold_seconds, excluded FROM contest_trades WHERE entry_id = $1").bind(id).fetch_all(&st.pool).await?;
+        let excluded = |t: &sqlx::postgres::PgRow| t.get::<Option<String>, _>("excluded");
+        // P&L: every trade but self-trades; volume and trade count: only trades that fully count
+        let pnl_rows: Vec<&sqlx::postgres::PgRow> = rows.iter().filter(|t| excluded(t).as_deref() != Some("self_trade")).collect();
+        let counted: Vec<&sqlx::postgres::PgRow> = rows.iter().filter(|t| excluded(t).is_none()).collect();
+        let self_deals: Vec<i64> = rows.iter().filter(|t| excluded(t).as_deref() == Some("self_trade")).map(|t| t.get::<i64, _>("deal_id")).collect();
+        let small = rows.iter().filter(|t| excluded(t).as_deref() == Some("min_premium")).count();
+        let realised: D = pnl_rows.iter().map(|t| t.get::<D, _>("profit")).sum();
+        let lots: D = counted.iter().map(|t| t.get::<D, _>("lots")).sum();
+        let contracts: D = counted.iter().map(|t| t.get::<D, _>("contracts")).sum();
+        let (score, ret) = calc::contest_score(&scoring, realised, floating, if options { contracts } else { lots }, start_eq);
+        sqlx::query(
+            "UPDATE contest_entries SET start_equity = $2, realised = $3, floating = $4, lots = $5, trades = $6, score = $7, return_pct = $8, contracts = $9,
+               self_trades = $10, small_trades = $11, updated_at = now() WHERE id = $1",
+        )
+        .bind(id)
+        .bind(start_eq)
+        .bind(realised)
+        .bind(floating)
+        .bind(lots)
+        .bind(counted.len() as i32)
+        .bind(score)
+        .bind(ret)
+        .bind(contracts)
+        .bind(self_deals.len() as i32)
+        .bind(small as i32)
+        .execute(&st.pool)
+        .await?;
         // anti-cheat
-        let facts: Vec<(D, i64)> = trades.iter().map(|t| (t.get::<D, _>("profit"), t.get::<i64, _>("hold_seconds"))).collect();
+        let facts: Vec<(D, i64)> = pnl_rows.iter().map(|t| (t.get::<D, _>("profit"), t.get::<i64, _>("hold_seconds"))).collect();
         for (kind, details) in calc::trade_flags(&facts, &ac) {
             add_flag(st, contest_id, id, kind, "medium", details).await?;
+        }
+        if !self_deals.is_empty() {
+            let shown: Vec<i64> = self_deals.iter().take(20).copied().collect();
+            add_flag(st, contest_id, id, "self_trade", "high", json!({"trades": self_deals.len(), "deals": shown})).await?;
         }
         let mut disqualified = e.get::<String, _>("status") == "disqualified";
         if live_now && !disqualified {
@@ -256,12 +314,70 @@ pub async fn refresh(st: &AppState, contest_id: i64) -> anyhow::Result<()> {
                 }
             }
         }
-        rank_in.push(RankInput { entry_id: id, score, trades: trades.len() as i64, disqualified, joined_at: e.get("joined_at") });
+        rank_in.push(RankInput { entry_id: id, score, trades: counted.len() as i64, disqualified, joined_at: e.get("joined_at") });
     }
     for (id, rank, _) in calc::rank(&rank_in, min_trades as i64) {
         sqlx::query("UPDATE contest_entries SET rank = $2 WHERE id = $1").bind(id).bind(rank).execute(&st.pool).await?;
     }
     sqlx::query("UPDATE contests SET refreshed_at = now(), status = CASE WHEN status IN ('scheduled','running') THEN $2 ELSE status END WHERE id = $1").bind(contest_id).bind(&status).execute(&st.pool).await?;
+    Ok(())
+}
+
+/// Options contests: decides for each trade of an entry whether it counts (`excluded` = NULL), is a self-trade or
+/// is below the minimum premium, from the client's option legs on their other accounts of the same type (live / demo):
+/// every closed leg growth has recorded, plus (`open_legs`, once the contest has ended) the legs still open in the
+/// engine. Re-run at every refresh, so a self-trade is caught once the other account's leg closes.
+#[allow(clippy::too_many_arguments)]
+async fn classify_option_trades(st: &AppState, tenant: &str, entry_id: i64, user_id: i64, login: i64, account_kind: &str, starts: DateTime<Utc>, open_legs: bool, min_premium: Option<D>) -> anyhow::Result<()> {
+    let trades = sqlx::query(
+        "SELECT t.deal_id, t.premium, t.excluded, d.symbol, d.side, d.open_time, d.close_time, d.fill_id FROM contest_trades t JOIN deals d ON d.deal_id = t.deal_id WHERE t.entry_id = $1",
+    )
+    .bind(entry_id)
+    .fetch_all(&st.pool)
+    .await?;
+    if trades.is_empty() {
+        return Ok(());
+    }
+    let symbols: Vec<String> = trades.iter().map(|t| t.get::<String, _>("symbol")).collect();
+    let fills: Vec<String> = trades.iter().filter_map(|t| t.get::<Option<String>, _>("fill_id")).collect();
+    let mut others: Vec<calc::OptLeg> = sqlx::query(
+        "SELECT login, symbol, side, open_time, close_time, fill_id FROM deals
+         WHERE tenant = $1 AND user_id = $2 AND login <> $3 AND instrument = 'option' AND NOT reversed AND account_kind = $4
+           AND close_time >= $5 AND (symbol = ANY($6) OR fill_id = ANY($7))",
+    )
+    .bind(tenant)
+    .bind(user_id)
+    .bind(login)
+    .bind(account_kind)
+    .bind(starts - chrono::Duration::seconds(calc::SELF_TRADE_WINDOW_SECS))
+    .bind(&symbols)
+    .bind(&fills)
+    .fetch_all(&st.pool)
+    .await?
+    .iter()
+    .map(|r| calc::OptLeg { login: r.get("login"), symbol: r.get("symbol"), side: r.get("side"), open: r.get("open_time"), close: Some(r.get("close_time")), fill_id: r.get("fill_id") })
+    .collect();
+    if open_legs {
+        // the other leg may still be open when the contest ends: ask the engine (an error stops the refresh, so a
+        // contest is never finalized without this check)
+        for acc in clients::accounts_of(st, tenant, user_id, Some(account_kind)).await? {
+            if acc.login == login {
+                continue;
+            }
+            for (symbol, side, open) in clients::open_positions(st, tenant, acc.login).await? {
+                if symbols.iter().any(|s| s.eq_ignore_ascii_case(&symbol)) {
+                    others.push(calc::OptLeg { login: acc.login, symbol, side, open, close: None, fill_id: None });
+                }
+            }
+        }
+    }
+    for t in &trades {
+        let leg = calc::OptLeg { login, symbol: t.get("symbol"), side: t.get("side"), open: t.get("open_time"), close: Some(t.get("close_time")), fill_id: t.get("fill_id") };
+        let want = calc::option_exclusion(calc::is_self_trade(&leg, &others), t.get("premium"), min_premium);
+        if want != t.get::<Option<String>, _>("excluded").as_deref() {
+            sqlx::query("UPDATE contest_trades SET excluded = $3 WHERE entry_id = $1 AND deal_id = $2").bind(entry_id).bind(t.get::<i64, _>("deal_id")).bind(want).execute(&st.pool).await?;
+        }
+    }
     Ok(())
 }
 
@@ -300,7 +416,8 @@ pub async fn finalize(st: &AppState, contest_id: i64, actor: &Actor) -> ApiResul
     if status_of(&c) != "ended" {
         return Err(ApiError::Conflict { code: "state", message: "A contest can be finalized only after it ends.".into() });
     }
-    refresh(st, contest_id).await?;
+    // the last scores (options contests: with the open-leg self-trade check, which needs the engine)
+    refresh(st, contest_id).await.map_err(|e| ApiError::Unavailable(format!("Scores could not be refreshed before finalizing ({e}). Please try again shortly.")))?;
     let min_trades: i32 = c.get("min_trades");
     let entries = sqlx::query("SELECT id, score, trades, status, joined_at FROM contest_entries WHERE contest_id = $1").bind(contest_id).fetch_all(&st.pool).await?;
     let input: Vec<RankInput> = entries

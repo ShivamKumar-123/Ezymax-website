@@ -89,6 +89,27 @@ pub async fn gateway_users(st: &AppState, since: Option<&str>, after_id: i64, li
     Ok(res.json::<R>().await?.items)
 }
 
+/// Whether the client may trade Kalks FX Options (gateway suitability, O41: the options intro accepted). `Ok(false)`
+/// for an unknown client; `Err` when the gateway can't answer (the caller must not guess).
+pub async fn options_eligible(st: &AppState, tenant: &str, user_id: i64) -> anyhow::Result<bool> {
+    let res = st
+        .http
+        .get(format!("{}/v1/internal/suitability/{user_id}?product=options", st.cfg.gateway_url))
+        .header("x-kalks-internal", &st.cfg.gateway_token)
+        .header("x-kalks-tenant", tenant)
+        .timeout(std::time::Duration::from_secs(5))
+        .send()
+        .await?;
+    if res.status() == reqwest::StatusCode::NOT_FOUND {
+        return Ok(false);
+    }
+    if !res.status().is_success() {
+        anyhow::bail!("gateway suitability returned {}", res.status());
+    }
+    let v: Value = res.json().await?;
+    Ok(v["eligible"].as_bool().unwrap_or(false))
+}
+
 // ---------------------------------------------------------------- trading engine
 
 /// Staff identity for engine admin calls. `finance` may post balance, credit and bonus.
@@ -118,11 +139,20 @@ pub struct EngineDeal {
     pub close_time: DateTime<Utc>,
     pub kind: String,
     pub reversed: bool,
-    /// Kalks FX Options deal (volume = contracts): never earns points, cashback, bonus release or contest results.
+    /// Kalks FX Options deal (volume = contracts): never earns points, cashback or bonus release; counts only in
+    /// options contests (O36).
     pub option: bool,
+    /// Options: opening premium of the closed contracts (account currency, unsigned) = |price P&L − exit cash|.
+    pub premium: Option<D>,
+    /// Options: the order-book fill this deal came from (absent on house-priced deals and older engines).
+    pub fill_id: Option<String>,
 }
 
 pub fn parse_deal(v: &Value) -> Option<EngineDeal> {
+    let option = crate::calc::is_option_deal(v);
+    // DeskDeal: `priceProfit` = realised price P&L (cash + premium basis), `option.cash` = cash booked by the exit
+    let premium = if option { value_dec(&v["priceProfit"]).zip(value_dec(&v["option"]["cash"])).map(|(p, c)| crate::calc::option_premium(p, c)) } else { None };
+    let fill_id = v["option"]["fill"]["id"].as_str().or(v["option"]["fillId"].as_str()).map(str::trim).filter(|s| !s.is_empty()).map(|s| s.chars().take(64).collect());
     Some(EngineDeal {
         id: int(&v["id"])?,
         login: int(&v["login"])?,
@@ -135,7 +165,9 @@ pub fn parse_deal(v: &Value) -> Option<EngineDeal> {
         close_time: time(&v["closeTime"])?,
         kind: v["kind"].as_str().unwrap_or("close").to_string(),
         reversed: v["reversed"].as_bool().unwrap_or(false),
-        option: crate::calc::is_option_deal(v),
+        option,
+        premium,
+        fill_id,
     })
 }
 
@@ -221,6 +253,22 @@ pub async fn account(st: &AppState, tenant: &str, login: i64) -> anyhow::Result<
     }
     let v: Value = res.json().await?;
     Ok(parse_account(&v["account"]))
+}
+
+/// Open positions of an account from the dealing desk (`GET /v1/dealing/positions?login=`): (symbol, side, open
+/// time). Used for self-trade detection in options contests (the other leg may still be open).
+pub async fn open_positions(st: &AppState, tenant: &str, login: i64) -> anyhow::Result<Vec<(String, String, DateTime<Utc>)>> {
+    let res = engine_staff(st, tenant, st.http.get(format!("{}/v1/dealing/positions?login={login}", st.cfg.trading_url))).send().await?;
+    if !res.status().is_success() {
+        anyhow::bail!("engine positions of {login} returned {}", res.status());
+    }
+    let v: Value = res.json().await?;
+    Ok(v.as_array()
+        .into_iter()
+        .flatten()
+        .filter(|p| int(&p["login"]) == Some(login))
+        .filter_map(|p| Some((p["symbol"].as_str()?.to_string(), p["side"].as_str()?.to_string(), time(&p["openTime"])?)))
+        .collect())
 }
 
 /// A client's accounts (`kind` = live | demo | None for both).

@@ -70,7 +70,40 @@ export type ShareData = {
   to: string | null;
   referralCode: string | null;
   brand: string;
+  /** "option" on an options share card (O36): then `contracts` and `option` are set and `lots` is null. */
+  instrument?: "option" | string;
+  contracts?: number | null;
+  option?: ShareOption;
 };
+
+/** Options share card terms and premiums (services/growth shares.rs option_card). Premiums are USD per contract;
+ *  `pnlPct` is the P&L on the opening premium; `breakeven` / `settle` are underlying prices for the payoff sketch. */
+export type ShareOption = {
+  series: string;
+  underlying: string;
+  right: "call" | "put";
+  strike: number | null;
+  expiry: string | null;
+  style: string;
+  side: "buy" | "sell" | string;
+  contracts: number;
+  entryPremium: number | null;
+  exitPremium: number | null;
+  pnlPct: number | null;
+  reason: "closed" | "expired" | "knocked_out" | "stop_out" | "sl" | "tp" | string;
+  openPremiumUnit?: number | null;
+  closePremiumUnit?: number | null;
+  breakeven: number | null;
+  settle: number | null;
+};
+
+/** The strike of an options share card as its series code writes it ("1.1650", "150.00"), else the number. */
+export function optionStrikeLabel(o: Pick<ShareOption, "series" | "strike">): string {
+  const m = /^[A-Za-z0-9]+-\d{8}-(\d+(?:\.\d+)?)-[CPcp]$/.exec(o.series ?? "");
+  if (m && o.strike !== null && Math.abs(Number(m[1]) - o.strike) < 1e-9) return m[1]!;
+  if (o.strike === null || !Number.isFinite(o.strike)) return "";
+  return String(+o.strike.toFixed(6));
+}
 
 export type PublicShare = {
   code: string;

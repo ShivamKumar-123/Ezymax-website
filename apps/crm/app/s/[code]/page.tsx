@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { ArrowUpRight, ImageOff } from "lucide-react";
 import { Logo } from "@kalks/ui/logo";
-import { publicShare, type PublicShare } from "@/lib/growth";
+import { optionStrikeLabel, publicShare, type PublicShare, type ShareOption } from "@/lib/growth";
 import type { T } from "@kalks/i18n";
 import { intlTag } from "@kalks/i18n/locales";
 import { getT } from "@kalks/i18n/server";
@@ -28,8 +28,29 @@ function pct(v: number | null | undefined) {
   return `${v > 0 ? "+" : ""}${v.toFixed(2)}%`;
 }
 
+/** "EURUSD 1.165 Call" in the reader's language. */
+function contractLabel(o: ShareOption, t: T) {
+  return `${o.underlying} ${optionStrikeLabel(o)} ${o.right === "put" ? t("rewards.public.optPut") : t("rewards.public.optCall")}`.replace(/\s+/g, " ").trim();
+}
+
+function usd(v: number | null | undefined, locale: string) {
+  if (v === null || v === undefined || !Number.isFinite(v)) return "—";
+  return `$${v.toLocaleString(intlTag(locale), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/** The option of an options share card (O36), when it is one. */
+const optionOf = (s: PublicShare) => (s.kind === "trade" && s.data.option ? s.data.option : null);
+
+const OPT_REASONS = ["closed", "expired", "knocked_out", "stop_out", "sl", "tp"] as const;
+function reasonText(o: ShareOption, t: T) {
+  const r = (OPT_REASONS as readonly string[]).includes(o.reason) ? (o.reason as (typeof OPT_REASONS)[number]) : "closed";
+  return t(`rewards.public.optReason.${r}`);
+}
+
 function headline(s: PublicShare, t: T) {
   const d = s.data;
+  const o = optionOf(s);
+  if (o) return `${d.name} · ${contractLabel(o, t)} ${pct(o.pnlPct ?? d.movePct)}`;
   if (s.kind === "trade") return `${d.name} · ${d.symbol ?? t("rewards.public.trade")} ${d.side ? d.side.toUpperCase() : ""} ${pct(d.movePct)}`.replace(/\s+/g, " ").trim();
   return t("rewards.public.headlinePeriod", { name: d.name, pct: pct(d.returnPct) });
 }
@@ -37,6 +58,16 @@ function headline(s: PublicShare, t: T) {
 /** One-line summary without the closing call to action. */
 function summaryText(s: PublicShare, t: T) {
   const d = s.data;
+  const o = optionOf(s);
+  if (o)
+    return t("rewards.public.summaryOption", {
+      side: (o.side ?? "buy").toLowerCase() === "sell" ? t("rewards.public.optSold") : t("rewards.public.optBought"),
+      contract: contractLabel(o, t),
+      expiry: day(o.expiry, t.locale) || "—",
+      entry: usd(o.entryPremium, t.locale),
+      exit: usd(o.exitPremium, t.locale),
+      pct: pct(o.pnlPct ?? d.movePct),
+    });
   if (s.kind === "trade") return t("rewards.public.summaryTrade", { symbol: d.symbol ?? t("rewards.public.trade"), date: day(d.closeTime, t.locale), pct: pct(d.movePct) });
   const parts = [d.trades !== null ? t("rewards.public.trades", { count: d.trades }) : "", d.winRate !== null ? t("rewards.public.winRate", { pct: d.winRate.toFixed(1) }) : ""].filter(Boolean).join(" · ");
   const from = day(d.from, t.locale);
@@ -79,6 +110,7 @@ export default async function SharePage({ params }: Props) {
   const [s, t] = await Promise.all([publicShare(code, true), getT()]);
   const share = s && s !== "unavailable" ? s : null;
   const d = share?.data;
+  const o = share ? optionOf(share) : null;
   const cta = d?.referralCode ? `/r/${encodeURIComponent(d.referralCode)}` : "/register";
 
   return (
@@ -95,9 +127,13 @@ export default async function SharePage({ params }: Props) {
           <>
             <div className="k-card flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between" data-testid="share-page">
               <div className="min-w-0">
-                <div className="text-[13px] font-medium text-ember">{share.kind === "trade" ? t("rewards.public.sharedTrade") : t("rewards.public.sharedResults")}</div>
+                <div className="text-[13px] font-medium text-ember">{o ? t("rewards.public.sharedOption") : share.kind === "trade" ? t("rewards.public.sharedTrade") : t("rewards.public.sharedResults")}</div>
                 <h1 className="mt-1 text-[24px] font-medium leading-tight tracking-tight">
-                  {share.kind === "trade" ? t("rewards.public.closedSymbol", { name: d.name, symbol: d.symbol ?? t("rewards.public.aTrade") }) : t("rewards.public.results", { name: d.name })}
+                  {o
+                    ? t("rewards.public.closedOption", { name: d.name, contract: contractLabel(o, t) })
+                    : share.kind === "trade"
+                      ? t("rewards.public.closedSymbol", { name: d.name, symbol: d.symbol ?? t("rewards.public.aTrade") })
+                      : t("rewards.public.results", { name: d.name })}
                 </h1>
                 <p className="mt-1 text-[14px] text-fg-2">{summaryText(share, t)}</p>
               </div>
@@ -107,6 +143,27 @@ export default async function SharePage({ params }: Props) {
                 </span>
               </Link>
             </div>
+            {o && (
+              <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" data-testid="share-option">
+                {(
+                  [
+                    [t("rewards.public.optContract"), contractLabel(o, t)],
+                    [t("rewards.public.optSide"), (o.side ?? "buy").toLowerCase() === "sell" ? t("rewards.public.optSold") : t("rewards.public.optBought")],
+                    [t("rewards.public.optExpiry"), day(o.expiry, t.locale) || "—"],
+                    [t("rewards.public.optPremium"), `${usd(o.entryPremium, t.locale)} → ${usd(o.exitPremium, t.locale)}`],
+                    [t("rewards.public.optReturn"), pct(o.pnlPct ?? d.movePct)],
+                    [t("rewards.public.optClosedBy"), reasonText(o, t)],
+                  ] as const
+                ).map(([k, v]) => (
+                  <div key={k} className="k-row min-w-0 px-3.5 py-2.5">
+                    <dt className="truncate text-[10.5px] uppercase tracking-wider text-fg-3">{k}</dt>
+                    <dd dir="ltr" className="k-num mt-1 truncate text-start text-[14px] font-medium">
+                      {v}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={`/s/${share.code}/image`} alt={headline(share, t)} width={1200} height={630} className="mt-6 block h-auto w-full rounded-[16px] border border-line" data-testid="share-image" />
           </>
@@ -124,7 +181,7 @@ export default async function SharePage({ params }: Props) {
         )}
 
         <p className="mx-auto mt-8 max-w-2xl text-center text-[11.5px] leading-relaxed text-fg-3">
-          {t("rewards.public.disclaimer")}
+          {o ? t("rewards.public.disclaimerOptions") : t("rewards.public.disclaimer")}
         </p>
       </div>
     </main>

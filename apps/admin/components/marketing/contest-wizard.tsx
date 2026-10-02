@@ -17,6 +17,7 @@ export function ContestWizard({ open, onOpenChange }: { open: boolean; onOpenCha
   const [step, setStep] = React.useState(0);
   const [name, setName] = React.useState("October FX Masters");
   const [type, setType] = React.useState<"demo" | "live">("live");
+  const [instrument, setInstrument] = React.useState<"cfd" | "options">("cfd");
   const [metric, setMetric] = React.useState<"gain" | "profit" | "sharpe">("gain");
   const [start, setStart] = React.useState("2026-10-01");
   const [end, setEnd] = React.useState("2026-10-31");
@@ -57,7 +58,7 @@ export function ContestWizard({ open, onOpenChange }: { open: boolean; onOpenCha
               size="sm"
               variant="ember"
               onClick={() => {
-                toast.success(`${name} scheduled`, { description: `${type === "live" ? "Live" : "Demo"} · $${fmtInt(pool)} pool · starts ${start}` });
+                toast.success(`${name} scheduled`, { description: `${type === "live" ? "Live" : "Demo"}${instrument === "options" ? " · Options" : ""} · $${fmtInt(pool)} pool · starts ${start}` });
                 onOpenChange(false);
               }}
             >
@@ -93,6 +94,19 @@ export function ContestWizard({ open, onOpenChange }: { open: boolean; onOpenCha
                 <SectionLabel>Ranking metric</SectionLabel>
                 <Segmented size="md" value={metric} onChange={setMetric} options={[{ value: "gain", label: "Gain %" }, { value: "profit", label: "Net profit" }, { value: "sharpe", label: "Sharpe" }]} />
               </div>
+            </div>
+            <div>
+              <SectionLabel>Instrument</SectionLabel>
+              <Segmented
+                size="md"
+                value={instrument}
+                onChange={setInstrument}
+                options={[
+                  { value: "cfd", label: "CFD (lots)" },
+                  { value: "options", label: "Options (contracts)" },
+                ]}
+              />
+              {instrument === "options" && <div className="mt-1.5 text-[11.5px] text-fg-3">Only Kalks FX Options trades count, on realised P&L, volume in contracts. Clients need the options intro.</div>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Starts (GMT+3)">

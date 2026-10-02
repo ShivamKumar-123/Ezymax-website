@@ -7,8 +7,8 @@ import { Button, Card, CardHeader, Chip, KeyValue, Money, PageHeader, Reveal, cn
 import { TERMINAL_URL } from "@/lib/live";
 import { Countdown } from "@/components/rewards/countdown";
 import { useT } from "@kalks/i18n/react";
-import { bandLabel, fmtCount, fmtDate, fmtDateTime, fmtLots, fmtPct, fmtUsd, projectedPrize, scoringLabel, useGrowth, type ContestDetail } from "./api";
-import { JoinContestButton, Leaderboard, canJoin, isPast, isRunning, isUpcoming, kindChip, scoreText, tradesHint } from "./contests";
+import { bandLabel, fmtCount, fmtDate, fmtDateTime, fmtPct, fmtUsd, isOptionsContest, projectedPrize, scoringLabel, useGrowth, type ContestDetail } from "./api";
+import { JoinContestButton, Leaderboard, canJoin, isPast, isRunning, isUpcoming, kindChip, scoreText, tradesHint, volumeText } from "./contests";
 import { CardEmpty, GrowthStatus, PageFallback, RankBadge } from "./ui";
 
 function Stat({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
@@ -35,6 +35,7 @@ function MyEntry({ d }: { d: ContestDetail }) {
     );
   const dq = me.status === "disqualified";
   const hint = tradesHint(c, me);
+  const options = isOptionsContest(c);
   const good = (v: number) => (v > 0 ? "text-up" : v < 0 ? "text-down" : "");
   return (
     <Card className="h-full" data-testid="contest-my-entry">
@@ -56,8 +57,18 @@ function MyEntry({ d }: { d: ContestDetail }) {
           <Stat label={t("rewards.detail.return")} value={fmtPct(+me.returnPct.toFixed(2), true)} className={good(me.returnPct)} />
           <Stat label={t("rewards.detail.profit")} value={fmtUsd(me.profit)} className={good(me.profit)} />
           <Stat label={t("rewards.hero.trades")} value={me.trades} />
-          <Stat label={t("rewards.detail.lots")} value={fmtLots(me.lots)} />
+          <Stat label={options ? t("rewards.detail.contracts") : t("rewards.detail.lots")} value={volumeText(c, me)} />
         </div>
+        {options && !!me.selfTrades && (
+          <div className="rounded-[12px] border border-warn/25 bg-warn-soft px-3 py-2 text-[12.5px] text-warn" data-testid="contest-self-trades">
+            {t("rewards.options.excludedSelf", { count: me.selfTrades })}
+          </div>
+        )}
+        {options && !!me.smallTrades && (
+          <div className="rounded-[12px] border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-fg-2" data-testid="contest-small-trades">
+            {t("rewards.options.excludedSmall", { count: me.smallTrades, amount: fmtUsd(c.minPremium ?? 0) })}
+          </div>
+        )}
         {hint && !dq && (
           <div className="flex items-center justify-between rounded-[12px] border border-warn/25 bg-warn-soft px-3 py-2 text-[12.5px] text-warn" data-testid="contest-trades-hint">
             <span>{t("rewards.detail.belowMin", { hint })}</span>
@@ -91,8 +102,24 @@ function Rules({ d }: { d: ContestDetail }) {
     .split(/\n+/)
     .map((l) => l.replace(/^\s*[-*•]\s*/, "").trim())
     .filter(Boolean);
+  const options = isOptionsContest(c);
+  const ranked = options
+    ? t(c.scoring === "return_pct" ? "rewards.detail.ruleRankedReturnOptions" : c.scoring === "profit" ? "rewards.detail.ruleRankedProfitOptions" : "rewards.detail.ruleRankedContracts")
+    : t(c.scoring === "return_pct" ? "rewards.detail.ruleRankedReturn" : c.scoring === "profit" ? "rewards.detail.ruleRankedProfit" : "rewards.detail.ruleRankedLots", { scoring: scoringLabel(c.scoring).toLowerCase() });
+  // options contests (O36): what counts, the minimum premium, self-trades, who may join, no loyalty / cashback
+  const optionRules = options
+    ? [
+        t("rewards.detail.ruleOptionsOnly"),
+        t("rewards.detail.ruleOptionsRealised"),
+        c.minPremium ? t("rewards.detail.ruleMinPremium", { amount: fmtUsd(c.minPremium) }) : null,
+        t("rewards.detail.ruleSelfTrade"),
+        t("rewards.detail.ruleOptionsEligibility"),
+        t("rewards.detail.ruleOptionsNoRewards"),
+      ]
+    : [];
   const auto = [
-    t(c.scoring === "return_pct" ? "rewards.detail.ruleRankedReturn" : c.scoring === "profit" ? "rewards.detail.ruleRankedProfit" : "rewards.detail.ruleRankedLots", { scoring: scoringLabel(c.scoring).toLowerCase() }),
+    ranked,
+    ...optionRules,
     t("rewards.detail.ruleWindow"),
     c.minTrades > 0 ? t("rewards.detail.ruleMinTrades", { count: c.minTrades }) : null,
     t("rewards.detail.ruleTies"),
@@ -115,6 +142,8 @@ function Rules({ d }: { d: ContestDetail }) {
         <KeyValue
           rows={[
             [t("rewards.detail.type"), c.kind === "demo" ? (c.startingBalance ? t("rewards.detail.typeDemoBalance", { amount: fmtUsd(c.startingBalance, 0) }) : t("rewards.detail.typeDemo")) : t("rewards.detail.typeLive")],
+            [t("rewards.detail.instrument"), options ? t("rewards.detail.instrumentOptions") : t("rewards.detail.instrumentCfd")],
+            ...(options && c.minPremium ? ([[t("rewards.detail.minPremium"), fmtUsd(c.minPremium)]] as [string, string][]) : []),
             [t("rewards.detail.window"), `${fmtDateTime(c.startsAt)} – ${fmtDateTime(c.endsAt)}`],
             ...(c.accountGroups.length ? ([[t("rewards.detail.accountTypes"), c.accountGroups.join(", ")]] as [string, string][]) : []),
             ...(c.minEquity ? ([[t("rewards.detail.minEquity"), fmtUsd(c.minEquity, 0)]] as [string, string][]) : []),

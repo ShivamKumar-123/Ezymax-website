@@ -10,8 +10,10 @@ import { Countdown } from "@/components/rewards/countdown";
 import { tr, useT } from "@kalks/i18n/react";
 import { BannerSlot } from "./banner-slot";
 import {
+  GrowthApiError,
   bandLabel,
   errorToast,
+  fmtContracts,
   fmtCount,
   fmtDate,
   fmtLots,
@@ -19,6 +21,8 @@ import {
   fmtPoints,
   fmtUsd,
   growthApi,
+  isOptionsContest,
+  optionsSystemGroup,
   prizeZone,
   projectedPrize,
   scoringLabel,
@@ -43,28 +47,42 @@ export const isUpcoming = (c: Pick<Contest, "status">) => c.status === "schedule
 export const isPast = (c: Pick<Contest, "status">) => ["ended", "finalized", "paid", "cancelled"].includes(c.status);
 export const canJoin = (c: Pick<Contest, "status" | "maxEntrants" | "entrants">) => (isRunning(c) || isUpcoming(c)) && (c.maxEntrants === null || c.entrants < c.maxEntrants);
 
-/** Main score of a standing in the contest's scoring unit. */
-export function scoreText(c: Pick<Contest, "scoring">, s: Pick<Standing, "returnPct" | "profit" | "lots" | "score">) {
+/** Main score of a standing in the contest's scoring unit (volume: lots in a CFD contest, contracts in an options one). */
+export function scoreText(c: Pick<Contest, "scoring">, s: Pick<Standing, "returnPct" | "profit" | "lots" | "score" | "contracts">) {
   if (c.scoring === "profit") return fmtUsd(s.profit);
   if (c.scoring === "lots") return tr("rewards.value.lots", { lots: fmtLots(s.lots) });
+  if (c.scoring === "contracts") return tr("rewards.value.contracts", { contracts: fmtContracts(s.contracts ?? s.score) });
   return fmtPct(+s.returnPct.toFixed(2), true);
 }
 
+/** The volume column of a standing: contracts in an options contest, lots otherwise. */
+export const volumeText = (c: Pick<Contest, "instrument">, s: Pick<Standing, "lots" | "contracts">) => (isOptionsContest(c) ? fmtContracts(s.contracts ?? 0) : fmtLots(s.lots));
+
 const scoreTone = (c: Pick<Contest, "scoring">, s: Pick<Standing, "returnPct" | "profit">) => {
-  if (c.scoring === "lots") return "text-fg";
+  if (c.scoring === "lots" || c.scoring === "contracts") return "text-fg";
   const v = c.scoring === "profit" ? s.profit : s.returnPct;
   return v > 0 ? "text-up" : v < 0 ? "text-down" : "text-fg";
 };
 
-export function kindChip(c: Pick<Contest, "kind">) {
-  return c.kind === "live" ? (
-    <Chip tone="ember" size="sm" className="font-semibold tracking-wider">
-      {tr("rewards.contest.badge.live")}
-    </Chip>
-  ) : (
-    <Chip tone="gold" size="sm" className="font-semibold tracking-wider">
-      {tr("rewards.contest.badge.demo")}
-    </Chip>
+export function kindChip(c: Pick<Contest, "kind" | "instrument">) {
+  const kind =
+    c.kind === "live" ? (
+      <Chip tone="ember" size="sm" className="font-semibold tracking-wider">
+        {tr("rewards.contest.badge.live")}
+      </Chip>
+    ) : (
+      <Chip tone="gold" size="sm" className="font-semibold tracking-wider">
+        {tr("rewards.contest.badge.demo")}
+      </Chip>
+    );
+  if (!isOptionsContest(c)) return kind;
+  return (
+    <>
+      {kind}
+      <Chip tone="info" size="sm" className="font-semibold tracking-wider">
+        {tr("rewards.contest.badge.options")}
+      </Chip>
+    </>
   );
 }
 
@@ -120,6 +138,7 @@ export function JoinContestButton({ c, onJoined, size = "lg", className }: { c: 
   const [busy, setBusy] = React.useState(false);
   const [creds, setCreds] = React.useState<JoinResult["credentials"] | null>(null);
   const live = c.kind === "live";
+  const options = isOptionsContest(c);
   const t = useT();
 
   const join = async () => {
@@ -134,13 +153,17 @@ export function JoinContestButton({ c, onJoined, size = "lg", className }: { c: 
         toast.success(t("rewards.join.toastJoined", { name: c.name }), { description: live ? t("rewards.join.toastLive", { login, date: fmtDate(c.startsAt) }) : t("rewards.join.toastDemo") });
       }
     } catch (e) {
-      errorToast(t("rewards.join.error"), e);
+      if (e instanceof GrowthApiError && e.code === "options_intro_required") {
+        // the options intro is a 1-minute step in the Client Area (/options)
+        toast.error(t("rewards.join.error"), { description: e.message, action: { label: t("rewards.options.openIntro"), onClick: () => window.location.assign("/options") } });
+      } else errorToast(t("rewards.join.error"), e);
     } finally {
       setBusy(false);
     }
   };
 
-  const groupsOk = (g: string) => c.accountGroups.length === 0 || c.accountGroups.includes(g);
+  // options contests: copy-trading, PAMM, MAM and prop accounts never trade options
+  const groupsOk = (g: string) => (c.accountGroups.length === 0 || c.accountGroups.includes(g)) && !(options && optionsSystemGroup(g));
 
   return (
     <Dialog
@@ -192,6 +215,8 @@ export function JoinContestButton({ c, onJoined, size = "lg", className }: { c: 
             rows={[
               [t("rewards.join.runs"), `${fmtDate(c.startsAt)} – ${fmtDate(c.endsAt)}`],
               [t("rewards.join.rankedBy"), scoringLabel(c.scoring)],
+              ...(options ? ([[t("rewards.detail.instrument"), t("rewards.detail.instrumentOptions")]] as [string, string][]) : []),
+              ...(options && c.minPremium ? ([[t("rewards.detail.minPremium"), fmtUsd(c.minPremium)]] as [string, string][]) : []),
               [t("rewards.join.prizePool"), fmtUsd(c.prizePool, 0)],
               ...(c.minTrades > 0 ? ([[t("rewards.join.minTrades"), String(c.minTrades)]] as [string, string][]) : []),
               ...(!live && c.startingBalance ? ([[t("rewards.join.startingBalance"), fmtUsd(c.startingBalance, 0)]] as [string, string][]) : []),
@@ -211,6 +236,17 @@ export function JoinContestButton({ c, onJoined, size = "lg", className }: { c: 
             </div>
           )}
           {c.kycRequired && <p className="text-[12px] text-fg-3">{t("rewards.join.kycOnly")}</p>}
+          {options && (
+            <div className="rounded-[12px] border border-info/25 bg-info-soft px-3.5 py-2.5 text-[12.5px] leading-relaxed text-fg-2" data-testid="contest-options-note">
+              <p>{t("rewards.options.joinNote")}</p>
+              <p className="mt-1 text-fg-3">
+                {t("rewards.options.eligibility")}{" "}
+                <Link href="/options" className="font-medium text-info underline-offset-2 hover:underline">
+                  {t("rewards.options.openIntro")}
+                </Link>
+              </p>
+            </div>
+          )}
         </div>
       )}
     </Dialog>
@@ -266,7 +302,7 @@ function StandingRow({ c, s }: { c: Contest; s: Standing }) {
           </div>
         </div>
       </div>
-      <div className="k-num hidden text-end text-[12.5px] text-fg-2 sm:block">{fmtLots(s.lots)}</div>
+      <div className="k-num hidden text-end text-[12.5px] text-fg-2 sm:block">{volumeText(c, s)}</div>
       <div className="text-end">
         <span className={cn("k-num text-[14px] font-semibold", scoreTone(c, s))}>{scoreText(c, s)}</span>
         <span className="k-num block text-[11px] text-fg-3 sm:hidden">{prize ? fmtUsd(prize, 0) : ""}</span>
@@ -347,7 +383,7 @@ export function Leaderboard({ d, limit, title, podium = true }: { d: ContestDeta
           <div className={cn(ROW_GRID, "mt-5 hidden gap-3 px-8 text-[10.5px] font-medium uppercase tracking-[0.06em] text-fg-3 sm:grid")}>
             <span className="text-center">#</span>
             <span>{t("rewards.board.colTrader")}</span>
-            <span className="text-end">{t("rewards.board.colLots")}</span>
+            <span className="text-end">{isOptionsContest(c) ? t("rewards.board.colContracts") : t("rewards.board.colLots")}</span>
             <span className="text-end">{scoringLabel(c.scoring)}</span>
             <span className="text-end">{t("rewards.board.colProfit")}</span>
             <span className="text-end">{t("rewards.board.colPrize")}</span>

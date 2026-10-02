@@ -137,12 +137,12 @@ for app in apps/crm apps/admin apps/terminal; do
   grep -q '^SUPPORT_INTERNAL_TOKEN=' "$f" || printf 'SUPPORT_INTERNAL_TOKEN=%s\n' "$(grep '^SUPPORT_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
 done
 # growth (rewards + marketing) secrets: internal token generated once, database kalks_growth next to the gateway's;
-# the Client Area and Back Office BFFs reach the service with the same token
+# the Client Area, Back Office and Kalks Trader BFFs reach the service with the same token (Kalks Trader: option share cards)
 grep -q '^GROWTH_INTERNAL_TOKEN=' .env.local || printf 'GROWTH_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
 if ! grep -q '^GROWTH_DATABASE_URL=' .env.local && grep -q '^GATEWAY_DATABASE_URL=' .env.local; then
   printf 'GROWTH_DATABASE_URL=%s\n' "$(grep '^GATEWAY_DATABASE_URL=' .env.local | cut -d= -f2- | sed -E 's#/[^/?]+([?].*)?$#/kalks_growth\1#')" >> .env.local
 fi
-for app in apps/crm apps/admin; do
+for app in apps/crm apps/admin apps/terminal; do
   f="$app/.env.production.local"; touch "$f"
   grep -q '^GROWTH_URL=' "$f" || printf 'GROWTH_URL=http://127.0.0.1:8101\n' >> "$f"
   grep -q '^GROWTH_INTERNAL_TOKEN=' "$f" || printf 'GROWTH_INTERNAL_TOKEN=%s\n' "$(grep '^GROWTH_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"

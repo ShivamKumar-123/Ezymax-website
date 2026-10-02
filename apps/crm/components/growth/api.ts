@@ -245,10 +245,14 @@ export interface Contest {
   name: string;
   description: string;
   kind: "demo" | "live";
+  /** What is traded: CFDs (lots) or Kalks FX Options (contracts, O36). Older services omit it (= cfd). */
+  instrument?: "cfd" | "options" | string;
+  /** Options contests: minimum opening premium per trade (USD) for a trade to add volume and count; null = none. */
+  minPremium?: number | null;
   status: ContestStatus | string;
   startsAt: string;
   endsAt: string;
-  scoring: "return_pct" | "profit" | "lots" | string;
+  scoring: "return_pct" | "profit" | "lots" | "contracts" | string;
   minTrades: number;
   maxEntrants: number | null;
   entrants: number;
@@ -275,7 +279,12 @@ export interface Standing {
   returnPct: number;
   profit: number;
   lots: number;
+  /** Options contests: contracts of the trades that count. */
+  contracts?: number;
   trades: number;
+  /** Options contests, own entry only: trades left out as self-trades, and below the minimum premium. */
+  selfTrades?: number | null;
+  smallTrades?: number | null;
   qualified: boolean;
   status: "active" | "disqualified" | string;
   prize: number | null;
@@ -315,6 +324,24 @@ export interface BannerView {
   dismissible: boolean;
 }
 
+/** Options share card (services/growth shares.rs option_card): premiums in USD per contract. */
+export interface ShareOption {
+  series: string;
+  underlying: string;
+  right: "call" | "put";
+  strike: number | null;
+  expiry: string | null;
+  style: string;
+  side: "buy" | "sell" | string;
+  contracts: number;
+  entryPremium: number | null;
+  exitPremium: number | null;
+  pnlPct: number | null;
+  reason: "closed" | "expired" | "knocked_out" | "stop_out" | "sl" | "tp" | string;
+  breakeven: number | null;
+  settle: number | null;
+}
+
 export interface ShareData {
   name: string;
   symbol: string | null;
@@ -334,6 +361,10 @@ export interface ShareData {
   to: string | null;
   referralCode: string | null;
   brand: string;
+  /** "option" on an options share card (then `contracts` and `option` are set, `lots` is null). */
+  instrument?: "option" | string;
+  contracts?: number | null;
+  option?: ShareOption;
 }
 
 export interface Share {
@@ -369,7 +400,10 @@ const FRIENDLY: Record<string, MessageKey> = {
   already_claimed: "rewards.error.alreadyClaimed",
   contest_closed: "rewards.error.contestClosed",
   limit_reached: "rewards.error.limitReached",
+  options_intro_required: "rewards.error.optionsIntro",
 };
+/** Codes whose translated text is shown instead of the service's English message. */
+const FRIENDLY_FIRST = new Set(["options_intro_required"]);
 
 export async function growthApi<T>(path: string, init?: { method?: "GET" | "POST"; body?: unknown; signal?: AbortSignal }): Promise<T> {
   const method = init?.method ?? (init?.body !== undefined ? "POST" : "GET");
@@ -396,7 +430,9 @@ export async function growthApi<T>(path: string, init?: { method?: "GET" | "POST
     const msg =
       code === "unavailable" || res.status >= 500
         ? tr("rewards.error.unavailable")
-        : (data.error?.message ?? (FRIENDLY[code] ? tr(FRIENDLY[code]) : tr("common.errorRetry")));
+        : FRIENDLY_FIRST.has(code) && FRIENDLY[code]
+          ? tr(FRIENDLY[code])
+          : (data.error?.message ?? (FRIENDLY[code] ? tr(FRIENDLY[code]) : tr("common.errorRetry")));
     throw new GrowthApiError(res.status, code, msg, data.error?.field);
   }
   return data as T;
@@ -497,6 +533,26 @@ export function fmtPct(v: number, signed = false) {
 
 export const fmtLots = (v: number) => v.toLocaleString(tag(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+/** Option contracts: whole numbers without decimals, fractional steps as needed (an option contract is never a lot). */
+export const fmtContracts = (v: number) => v.toLocaleString(tag(), { maximumFractionDigits: 4 });
+
+/** The strike of an options share card as its series code writes it ("1.1650"), else the number. */
+export function optionStrikeLabel(o: Pick<ShareOption, "series" | "strike">): string {
+  const m = /^[A-Za-z0-9]+-\d{8}-(\d+(?:\.\d+)?)-[CPcp]$/.exec(o.series ?? "");
+  if (m && o.strike !== null && Math.abs(Number(m[1]) - o.strike) < 1e-9) return m[1]!;
+  if (o.strike === null || !Number.isFinite(o.strike)) return "";
+  return String(+o.strike.toFixed(6));
+}
+
+/** A Kalks FX Options contest (O36): only option trades count, volume in contracts. */
+export const isOptionsContest = (c: Pick<Contest, "instrument">) => c.instrument === "options";
+
+/** Groups that never trade options (copy-trading followers, PAMM, MAM, prop), same rule as the engine. */
+export function optionsSystemGroup(code: string) {
+  const g = code.trim().toLowerCase();
+  return g.startsWith("prop") || g === "copy" || g.startsWith("copy-") || g === "pamm" || g.startsWith("pamm-") || g === "mam" || g.startsWith("mam-");
+}
+
 export const titleCase = (s: string) => s.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 
 /** "#1", "#2–5" for a prize band. */
@@ -522,7 +578,7 @@ export function projectedPrize(c: Pick<Contest, "prizes">, s: Pick<Standing, "pr
   return prizeFor(c, s.rank);
 }
 
-export const SCORING_LABEL: Record<string, MessageKey> = { return_pct: "rewards.scoring.returnPct", profit: "rewards.scoring.profit", lots: "rewards.scoring.lots" };
+export const SCORING_LABEL: Record<string, MessageKey> = { return_pct: "rewards.scoring.returnPct", profit: "rewards.scoring.profit", lots: "rewards.scoring.lots", contracts: "rewards.scoring.contracts" };
 export const scoringLabel = (s: string) => (SCORING_LABEL[s] ? tr(SCORING_LABEL[s]) : titleCase(s));
 
 /** Public origin for share links: NEXT_PUBLIC_APP_URL, else this page's origin. */

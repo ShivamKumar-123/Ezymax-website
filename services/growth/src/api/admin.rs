@@ -7,7 +7,7 @@
 use super::{ROLES_APPROVE, ROLES_READ, ROLES_WRITE, StaffCtx, paging, parse_time};
 use crate::audit;
 use crate::bonus;
-use crate::calc::Segment;
+use crate::calc::{self, Segment};
 use crate::cashback;
 use super::client::{BANNER_LIVE, banner_matches, banner_view};
 use crate::contests::{self, CONTEST_SELECT};
@@ -1350,6 +1350,9 @@ pub struct ContestIn {
     #[serde(default)]
     description: String,
     kind: String,
+    /// cfd (default) | options (O36)
+    #[serde(default = "cfd")]
+    instrument: String,
     starts_at: String,
     ends_at: String,
     #[serde(default = "ret")]
@@ -1374,12 +1377,18 @@ pub struct ContestIn {
     rules: String,
     #[serde(default)]
     anti_cheat: AntiCheat,
+    /// Options contests: minimum opening premium per trade (USD) for a trade to add volume and count as a trade.
+    #[serde(default, deserialize_with = "de_opt_dec")]
+    min_premium: Option<D>,
     #[serde(default = "scheduled")]
     status: String,
 }
 
 fn ret() -> String {
     "return_pct".into()
+}
+fn cfd() -> String {
+    "cfd".into()
 }
 fn scheduled() -> String {
     "scheduled".into()
@@ -1404,8 +1413,20 @@ async fn write_contest(st: &AppState, s: &StaffCtx, id: Option<i64>, mut c: Cont
     if !matches!(c.kind.as_str(), "demo" | "live") {
         return Err(invalid("kind", "demo or live."));
     }
-    if !matches!(c.scoring.as_str(), "return_pct" | "profit" | "lots") {
-        return Err(invalid("scoring", "return_pct, profit or lots."));
+    if !calc::CONTEST_INSTRUMENTS.contains(&c.instrument.as_str()) {
+        return Err(invalid("instrument", "cfd or options."));
+    }
+    let options = c.instrument == "options";
+    if !calc::scoring_allowed(&c.instrument, &c.scoring) {
+        return Err(invalid("scoring", if options { "Options contests score return_pct, profit or contracts." } else { "return_pct, profit or lots." }));
+    }
+    if options {
+        if c.min_premium.is_some_and(|m| m < ZERO || m > D::from(1_000_000)) {
+            return Err(invalid("minPremium", "Minimum premium must be 0 – 1 000 000 USD."));
+        }
+        c.min_premium = c.min_premium.filter(|m| *m > ZERO);
+    } else {
+        c.min_premium = None;
     }
     let starts = time_req(&Some(c.starts_at.clone()), "startsAt")?.ok_or_else(|| invalid("startsAt", "Required."))?;
     let ends = time_req(&Some(c.ends_at.clone()), "endsAt")?.ok_or_else(|| invalid("endsAt", "Required."))?;
@@ -1429,6 +1450,9 @@ async fn write_contest(st: &AppState, s: &StaffCtx, id: Option<i64>, mut c: Cont
         c.starting_balance = Some(b);
         c.demo_group = Some(c.demo_group.clone().map(|g| g.trim().to_lowercase()).filter(|g| !g.is_empty()).unwrap_or_else(|| "standard".into()));
         c.min_equity = None;
+        if options && c.demo_group.as_deref().is_some_and(calc::options_system_group) {
+            return Err(invalid("demoGroup", "Options can't be traded in copy-trading, PAMM, MAM or prop groups. Choose a demo group with options."));
+        }
     } else {
         c.starting_balance = None;
         c.demo_group = None;
@@ -1437,6 +1461,9 @@ async fn write_contest(st: &AppState, s: &StaffCtx, id: Option<i64>, mut c: Cont
         }
     }
     c.account_groups = clean_list(&c.account_groups, false);
+    if options && let Some(g) = c.account_groups.iter().find(|g| calc::options_system_group(g)) {
+        return Err(invalid("accountGroups", format!("Options can't be traded in the {g} group (copy-trading, PAMM, MAM and prop accounts never trade options).")));
+    }
     validate_prizes(&c.prizes).map_err(|m| invalid("prizes", m))?;
     if c.anti_cheat.max_single_trade_pct <= ZERO || c.anti_cheat.max_single_trade_pct > D::from(100) || c.anti_cheat.min_hold_seconds < 0 {
         return Err(invalid("antiCheat", "Single-trade share 1–100%, hold ≥ 0 s."));
@@ -1453,12 +1480,14 @@ async fn write_contest(st: &AppState, s: &StaffCtx, id: Option<i64>, mut c: Cont
             }
             sqlx::query(
                 "INSERT INTO contests (tenant, slug, name, description, kind, status, starts_at, ends_at, scoring, min_trades, max_entrants, starting_balance, demo_group, account_groups,
-                   kyc_required, min_equity, prizes, rules, anti_cheat, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING *",
+                   kyc_required, min_equity, prizes, rules, anti_cheat, created_by, instrument, min_premium)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$22,$23) RETURNING *",
             )
         }
         Some(_) => sqlx::query(
             "UPDATE contests SET slug = $2, name = $3, description = $4, kind = $5, status = $6, starts_at = $7, ends_at = $8, scoring = $9, min_trades = $10, max_entrants = $11,
-               starting_balance = $12, demo_group = $13, account_groups = $14, kyc_required = $15, min_equity = $16, prizes = $17, rules = $18, anti_cheat = $19, updated_at = now()
+               starting_balance = $12, demo_group = $13, account_groups = $14, kyc_required = $15, min_equity = $16, prizes = $17, rules = $18, anti_cheat = $19,
+               instrument = $22, min_premium = $23, updated_at = now()
              WHERE id = $21 AND tenant = $1 AND $20::text IS NOT NULL RETURNING *",
         ),
     }
@@ -1483,6 +1512,8 @@ async fn write_contest(st: &AppState, s: &StaffCtx, id: Option<i64>, mut c: Cont
     .bind(sqlx::types::Json(&c.anti_cheat))
     .bind(s.actor().label())
     .bind(id.unwrap_or(0))
+    .bind(&c.instrument)
+    .bind(c.min_premium)
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| match &e {
@@ -1559,7 +1590,7 @@ pub async fn patch_contest(State(st): State<AppState>, s: StaffCtx, Path(id): Pa
         if matches!(effective.as_str(), "finalized" | "paid" | "cancelled") {
             return Err(ApiError::Conflict { code: "state", message: "This contest can no longer be edited.".into() });
         }
-        const LOCKED: &[&str] = &["kind", "startsAt", "endsAt", "scoring", "minTrades", "startingBalance", "demoGroup", "accountGroups", "prizes", "minEquity", "status", "slug"];
+        const LOCKED: &[&str] = &["kind", "instrument", "startsAt", "endsAt", "scoring", "minTrades", "minPremium", "startingBalance", "demoGroup", "accountGroups", "prizes", "minEquity", "status", "slug"];
         if let Some(o) = body.as_object()
             && let Some(k) = o.keys().find(|k| LOCKED.contains(&k.as_str()) && o[k.as_str()] != before[k.as_str()])
         {

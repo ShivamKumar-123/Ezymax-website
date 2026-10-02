@@ -39,9 +39,13 @@ pub struct DealIn {
     pub kind: String,
     pub reversed: bool,
     pub account: AccountFacts,
-    /// Kalks FX Options deal (volume = contracts): recorded once, earns nothing (O34: no loyalty points,
-    /// cashback, bonus lot-release or contest results for options).
+    /// Kalks FX Options deal (volume = contracts): recorded once, earns no loyalty points, cashback or bonus
+    /// lot-release (O34); counts only in options contests (O36), never in CFD contests.
     pub option: bool,
+    /// Options: opening premium of the closed contracts (account currency, unsigned), for the contest minimum.
+    pub premium: Option<D>,
+    /// Options: the order-book fill the deal came from (self-trade detection across a client's accounts).
+    pub fill_id: Option<String>,
 }
 
 impl DealIn {
@@ -61,6 +65,8 @@ impl DealIn {
             reversed: d.reversed,
             account,
             option: d.option,
+            premium: d.premium,
+            fill_id: d.fill_id.clone(),
         }
     }
 }
@@ -110,10 +116,11 @@ pub async fn ingest(st: &AppState, p: &Programme, d: &DealIn) -> anyhow::Result<
     let lots = if option { ZERO } else { calc::lots(d.volume, d.account.cent) };
     let profit_usd = if d.account.cent { d.profit / HUNDRED } else { d.profit };
     let asset_class = if option { Some("options".to_string()) } else { st.instruments.class_of(&d.symbol) };
+    let premium_usd = if option { d.premium.map(|p| if d.account.cent { p / HUNDRED } else { p }) } else { None };
     let mut tx = st.pool.begin().await?;
     let inserted = sqlx::query(
-        "INSERT INTO deals (deal_id, tenant, login, user_id, account_kind, account_group, symbol, asset_class, side, volume, lots, profit, deal_kind, open_time, close_time, reversed, instrument)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) ON CONFLICT (deal_id) DO NOTHING",
+        "INSERT INTO deals (deal_id, tenant, login, user_id, account_kind, account_group, symbol, asset_class, side, volume, lots, profit, deal_kind, open_time, close_time, reversed, instrument, premium, fill_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) ON CONFLICT (deal_id) DO NOTHING",
     )
     .bind(d.deal_id)
     .bind(&d.tenant)
@@ -132,6 +139,8 @@ pub async fn ingest(st: &AppState, p: &Programme, d: &DealIn) -> anyhow::Result<
     .bind(d.close_time)
     .bind(d.reversed)
     .bind(if option { "option" } else { "cfd" })
+    .bind(premium_usd)
+    .bind(d.fill_id.as_deref().filter(|f| option && !f.is_empty()))
     .execute(&mut *tx)
     .await?
     .rows_affected();
@@ -139,12 +148,19 @@ pub async fn ingest(st: &AppState, p: &Programme, d: &DealIn) -> anyhow::Result<
         return Ok(None);
     }
     let mut out = Produced::default();
-    // options: no points, cashback, bonus release or contest trade (a dedicated options contest may come later)
-    if option || d.reversed || d.kind == "price-correction" || lots <= ZERO {
+    let hold = (d.close_time - d.open_time).num_seconds();
+    // options: no points, cashback or bonus release (O34). They count only in options contests (O36).
+    if option {
+        if !d.reversed && d.kind != "price-correction" && d.volume > ZERO {
+            out.contest_entries = option_contest_trades(&mut tx, d, profit_usd, premium_usd, hold).await?;
+        }
         tx.commit().await?;
         return Ok(Some(out));
     }
-    let hold = (d.close_time - d.open_time).num_seconds();
+    if d.reversed || d.kind == "price-correction" || lots <= ZERO {
+        tx.commit().await?;
+        return Ok(Some(out));
+    }
 
     // ---- loyalty points
     let demo_ok = d.account.kind == "live" || p.settings.demo_points;
@@ -258,10 +274,10 @@ pub async fn ingest(st: &AppState, p: &Programme, d: &DealIn) -> anyhow::Result<
         }
     }
 
-    // ---- contests: deals closed inside the window on an entered account
+    // ---- contests (CFD ones): deals closed inside the window on an entered account
     let entries = sqlx::query(
         "SELECT e.id, e.contest_id FROM contest_entries e JOIN contests c ON c.id = e.contest_id
-         WHERE e.login = $1 AND e.status = 'active' AND c.status NOT IN ('draft','cancelled','finalized','paid')
+         WHERE e.login = $1 AND e.status = 'active' AND c.instrument = 'cfd' AND c.status NOT IN ('draft','cancelled','finalized','paid')
            AND c.starts_at <= $2 AND c.ends_at > $2 AND $3 >= c.starts_at",
     )
     .bind(d.login)
@@ -287,6 +303,42 @@ pub async fn ingest(st: &AppState, p: &Programme, d: &DealIn) -> anyhow::Result<
         st.wake.notify_one();
     }
     Ok(Some(out))
+}
+
+/// Options contests (O36): an option exit closed inside the window on an entered account, opened at or after the
+/// start (like CFD contests). Volume is contracts, never lots. A trade whose opening premium is below the contest's
+/// minimum is kept with `excluded = 'min_premium'` (no volume, no trade count; its P&L counts). Self-trades are
+/// decided at each leaderboard refresh, once the other account's leg is known. Returns the entries it counted in.
+async fn option_contest_trades(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>, d: &DealIn, profit_usd: D, premium_usd: Option<D>, hold: i64) -> anyhow::Result<usize> {
+    let entries = sqlx::query(
+        "SELECT e.id, e.contest_id, c.min_premium FROM contest_entries e JOIN contests c ON c.id = e.contest_id
+         WHERE e.login = $1 AND e.status = 'active' AND c.instrument = 'options' AND c.status NOT IN ('draft','cancelled','finalized','paid')
+           AND c.starts_at <= $2 AND c.ends_at > $2 AND $3 >= c.starts_at",
+    )
+    .bind(d.login)
+    .bind(d.close_time)
+    .bind(d.open_time)
+    .fetch_all(&mut **tx)
+    .await?;
+    for e in &entries {
+        let excluded = calc::option_exclusion(false, premium_usd, e.get("min_premium"));
+        sqlx::query(
+            "INSERT INTO contest_trades (contest_id, entry_id, deal_id, profit, lots, contracts, premium, excluded, hold_seconds, close_time) VALUES ($1,$2,$3,$4,0,$5,$6,$7,$8,$9)
+             ON CONFLICT DO NOTHING",
+        )
+        .bind(e.get::<i64, _>("contest_id"))
+        .bind(e.get::<i64, _>("id"))
+        .bind(d.deal_id)
+        .bind(profit_usd)
+        .bind(d.volume)
+        .bind(premium_usd)
+        .bind(excluded)
+        .bind(hold)
+        .bind(d.close_time)
+        .execute(&mut **tx)
+        .await?;
+    }
+    Ok(entries.len())
 }
 
 // ---------------------------------------------------------------- engine poller

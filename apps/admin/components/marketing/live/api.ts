@@ -159,7 +159,10 @@ export type BannerView = { id: number; title: string; body: string; ctaLabel: st
 /* ------------------------------------------------------------------ */
 
 export type ContestStatus = "draft" | "scheduled" | "running" | "ended" | "finalized" | "paid" | "cancelled";
-export type Scoring = "return_pct" | "profit" | "lots";
+/** Volume scoring is `lots` in a CFD contest and `contracts` in an options contest (O36). */
+export type Scoring = "return_pct" | "profit" | "lots" | "contracts";
+/** What the contest is traded on: CFDs (default) or Kalks FX Options. */
+export type ContestInstrument = "cfd" | "options";
 export type Prize = { rankFrom: number; rankTo: number; amount: number; payout: "wallet" | "credit" };
 export type AntiCheat = { minHoldSeconds: number; maxSingleTradePct: number; disqualifyOnBalanceChange: boolean };
 
@@ -168,6 +171,7 @@ export type ContestInput = {
   name: string;
   description: string;
   kind: "demo" | "live";
+  instrument: ContestInstrument;
   startsAt: string;
   endsAt: string;
   scoring: Scoring;
@@ -181,6 +185,8 @@ export type ContestInput = {
   prizes: Prize[];
   rules: string;
   antiCheat: AntiCheat;
+  /** Options contests: minimum opening premium per trade (USD) for volume and trade count; null = none. */
+  minPremium: number | null;
   status: "draft" | "scheduled";
 };
 
@@ -197,7 +203,12 @@ export type Standing = {
   returnPct: number;
   profit: number;
   lots: number;
+  /** Options contests: contracts of the trades that count. */
+  contracts?: number;
   trades: number;
+  /** Options contests: trades left out as self-trades (no P&L, volume or count) and below the minimum premium (P&L only). */
+  selfTrades?: number | null;
+  smallTrades?: number | null;
   qualified: boolean;
   status: "active" | "disqualified";
   prize: number | null;
@@ -211,7 +222,7 @@ export type Standing = {
 export type ContestFlag = {
   id: number;
   entryId: number;
-  kind: "balance_change" | "single_trade" | "short_holds" | string;
+  kind: "balance_change" | "single_trade" | "short_holds" | "self_trade" | string;
   severity?: string;
   details?: Record<string, unknown>;
   status: "open" | "cleared" | "disqualified";
@@ -371,6 +382,10 @@ export const FIELD_LABEL: Record<string, string> = {
   prizes: "Prizes",
   demoGroup: "Demo group",
   minEquity: "Minimum equity",
+  instrument: "Instrument",
+  scoring: "Scoring",
+  minPremium: "Minimum premium",
+  accountGroups: "Account groups",
   tiers: "Tiers",
   pointsPerLot: "Points per lot",
   costPoints: "Cost",
