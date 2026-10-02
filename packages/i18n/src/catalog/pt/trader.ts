@@ -400,9 +400,9 @@ const trader: NsMessages<"trader"> = {
   "opt.col.underlying": "Subjacente",
   "opt.col.strike": "Strike",
   "opt.col.bid": "Bid",
-  "opt.col.bidHint": "Bid em USD por contrato: clique para vender",
+  "opt.col.bidHint": "Bid em USD por contrato: o que você recebe ao vender. Clique para selecionar esta opção.",
   "opt.col.ask": "Ask",
-  "opt.col.askHint": "Ask em USD por contrato: clique para comprar",
+  "opt.col.askHint": "Ask em USD por contrato: o que você paga ao comprar. Clique para selecionar esta opção.",
   "opt.col.mark": "Mark",
   "opt.col.markHint": "Preço médio do modelo em USD por contrato (em pips abaixo), usado para o P&L e a margem",
   "opt.col.iv": "IV",
@@ -438,7 +438,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.flipSide": "Alternar entre compra e venda",
   "opt.ticket.contracts": "Contratos",
   "opt.ticket.removeLeg": "Remover perna",
-  "opt.ticket.addHint": "Shift+clique em outro preço da grade para montar uma estratégia.",
+  "opt.ticket.addHint": "Use \"Adicionar perna\" ou Shift+clique em outro strike da grade para montar uma estratégia.",
   "opt.ticket.payoff": "Payoff",
   "opt.ticket.clear": "Limpar",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -473,7 +473,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.whatCombo": "Estratégia em {u}, {n} pernas",
   "opt.ticket.review": "Revisar",
   "opt.ticket.emptyTitle": "Escolha uma opção",
-  "opt.ticket.emptyText": "Clique em um bid ou ask da grade para negociar uma opção, ou use Shift+clique em vários preços para montar uma estratégia.",
+  "opt.ticket.emptyText": "Selecione um strike na grade de opções (lado call ou put) e depois escolha Comprar ou Vender aqui. Shift+clique em mais strikes para montar uma estratégia.",
 
   // Live preview
   "opt.preview.title": "Prévia",
@@ -672,5 +672,27 @@ const trader: NsMessages<"trader"> = {
   "opt.public.how5": "Todo vencimento é liquidado às 10:00 de Nova York pelo preço médio de 30 minutos; dentro do dinheiro, o pagamento é automático.",
   "opt.public.riskTitle": "Aviso de risco",
   "opt.public.riskText": "Opções são complexas e envolvem alto risco de perda de dinheiro. Compradores podem perder todo o prêmio que pagam; vendedores podem perder mais do que o prêmio que recebem. Negocie apenas com dinheiro que você pode se dar ao luxo de perder e certifique-se de entender como as opções funcionam.",
+
+  // Options workspace layout (same panels as CFD mode)
+  "opt.inst.title": "Instrumentos",
+  "opt.exp.other": "Outras datas",
+  "opt.exp.pickTitle": "Todos os vencimentos listados",
+  "opt.exp.none": "Nenhum listado",
+  "opt.exp.rollHint": "Sempre o vencimento mais próximo deste tipo: após o corte, passa sozinho para a data seguinte.",
+  "opt.chart.premium": "Prêmio",
+  "opt.chart.premiumHint": "O preço da opção selecionada em USD por contrato. Ele acompanha o subjacente e perde valor à medida que o corte se aproxima.",
+  "opt.chart.selectHint": "Selecione um strike na grade de opções para ver o gráfico do prêmio",
+  "opt.chart.fallback": "Os gráficos de prêmio ainda não estão disponíveis. Exibindo o subjacente.",
+  "opt.chart.loading": "Carregando o histórico do prêmio…",
+  "opt.chart.empty": "Ainda não há histórico de prêmio para esta opção.",
+  "opt.chart.unit": "USD por contrato",
+  "opt.chain.hint": "Clique no lado call ou put de um strike para selecioná-lo e depois escolha Comprar ou Vender.",
+  "opt.chain.selectCall": "Selecionar a call {strike}",
+  "opt.chain.selectPut": "Selecionar a put {strike}",
+  "opt.chain.adding": "Clique em um strike para adicioná-lo como perna.",
+  "opt.chain.strategy": "Montando uma estratégia: cada strike clicado é adicionado como perna.",
+  "opt.ticket.chooseSide": "Escolha Comprar ou Vender",
+  "opt.m.chain": "Grade",
+  "opt.m.positions": "Posições",
 };
 export default trader;

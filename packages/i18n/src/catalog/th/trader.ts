@@ -396,9 +396,9 @@ const trader: NsMessages<"trader"> = {
   "opt.col.underlying": "สินทรัพย์อ้างอิง",
   "opt.col.strike": "ราคาใช้สิทธิ",
   "opt.col.bid": "Bid",
-  "opt.col.bidHint": "ราคา Bid เป็น USD ต่อสัญญา: คลิกเพื่อขาย",
+  "opt.col.bidHint": "ราคา Bid เป็น USD ต่อสัญญา: ราคาที่คุณได้รับเมื่อขาย คลิกเพื่อเลือกออปชันนี้",
   "opt.col.ask": "Ask",
-  "opt.col.askHint": "ราคา Ask เป็น USD ต่อสัญญา: คลิกเพื่อซื้อ",
+  "opt.col.askHint": "ราคา Ask เป็น USD ต่อสัญญา: ราคาที่คุณจ่ายเมื่อซื้อ คลิกเพื่อเลือกออปชันนี้",
   "opt.col.mark": "ราคาประเมิน",
   "opt.col.markHint": "ราคากลางจากโมเดลเป็น USD ต่อสัญญา (pips อยู่ด้านล่าง) ใช้คำนวณ P&L และมาร์จิ้น",
   "opt.col.iv": "IV",
@@ -434,7 +434,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.flipSide": "สลับระหว่างซื้อและขาย",
   "opt.ticket.contracts": "สัญญา",
   "opt.ticket.removeLeg": "ลบขา",
-  "opt.ticket.addHint": "Shift+คลิกราคาอื่นในตารางออปชันเพื่อสร้างกลยุทธ์",
+  "opt.ticket.addHint": "ใช้ \"เพิ่มขา\" หรือ Shift+คลิกราคาใช้สิทธิอื่นในตารางออปชัน เพื่อสร้างกลยุทธ์",
   "opt.ticket.payoff": "ผลตอบแทน",
   "opt.ticket.clear": "ล้าง",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -469,7 +469,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.whatCombo": "กลยุทธ์ {u} {n} ขา",
   "opt.ticket.review": "ตรวจสอบ",
   "opt.ticket.emptyTitle": "เลือกออปชัน",
-  "opt.ticket.emptyText": "คลิกราคา Bid หรือ Ask ในตารางออปชันเพื่อเทรดออปชันเดียว หรือ Shift+คลิกหลายราคาเพื่อสร้างกลยุทธ์",
+  "opt.ticket.emptyText": "เลือกราคาใช้สิทธิในตารางออปชัน (ฝั่งคอลหรือพุท) แล้วเลือกซื้อหรือขายที่นี่ Shift+คลิกราคาใช้สิทธิเพิ่มเพื่อสร้างกลยุทธ์",
 
   // Live preview
   "opt.preview.title": "ตัวอย่าง",
@@ -668,5 +668,27 @@ const trader: NsMessages<"trader"> = {
   "opt.public.how5": "ทุกวันหมดอายุชำระราคาเวลา 10:00 ตามเวลานิวยอร์กด้วยราคาเฉลี่ย 30 นาที ออปชันที่อยู่ในสถานะ In the Money จะได้รับเงินโดยอัตโนมัติ",
   "opt.public.riskTitle": "คำเตือนความเสี่ยง",
   "opt.public.riskText": "ออปชันเป็นตราสารที่ซับซ้อนและมีความเสี่ยงสูงที่จะขาดทุน ผู้ซื้ออาจสูญเสียค่าพรีเมียมที่จ่ายไปทั้งหมด ผู้ขายอาจขาดทุนมากกว่าค่าพรีเมียมที่ได้รับ เทรดด้วยเงินที่คุณยอมรับการสูญเสียได้เท่านั้น และตรวจสอบให้แน่ใจว่าคุณเข้าใจวิธีการทำงานของออปชัน",
+
+  // Options workspace layout (same panels as CFD mode)
+  "opt.inst.title": "ตราสาร",
+  "opt.exp.other": "วันอื่น",
+  "opt.exp.pickTitle": "วันหมดอายุทั้งหมดที่เปิดซื้อขาย",
+  "opt.exp.none": "ไม่มีรายการ",
+  "opt.exp.rollHint": "เป็นวันหมดอายุที่ใกล้ที่สุดของประเภทนี้เสมอ: หลังตัดรอบจะเลื่อนไปวันถัดไปโดยอัตโนมัติ",
+  "opt.chart.premium": "ค่าพรีเมียม",
+  "opt.chart.premiumHint": "ราคาของออปชันที่เลือกเป็น USD ต่อสัญญา เคลื่อนไหวตามสินทรัพย์อ้างอิงและมูลค่าลดลงเมื่อใกล้เวลาตัดรอบ",
+  "opt.chart.selectHint": "เลือกราคาใช้สิทธิในตารางออปชันเพื่อดูกราฟค่าพรีเมียม",
+  "opt.chart.fallback": "กราฟค่าพรีเมียมยังไม่พร้อมใช้งาน กำลังแสดงสินทรัพย์อ้างอิง",
+  "opt.chart.loading": "กำลังโหลดประวัติค่าพรีเมียม…",
+  "opt.chart.empty": "ยังไม่มีประวัติค่าพรีเมียมของออปชันนี้",
+  "opt.chart.unit": "USD ต่อสัญญา",
+  "opt.chain.hint": "คลิกฝั่งคอลหรือพุทของราคาใช้สิทธิเพื่อเลือก จากนั้นเลือกซื้อหรือขาย",
+  "opt.chain.selectCall": "เลือกคอล {strike}",
+  "opt.chain.selectPut": "เลือกพุท {strike}",
+  "opt.chain.adding": "คลิกราคาใช้สิทธิเพื่อเพิ่มเป็นขา",
+  "opt.chain.strategy": "กำลังสร้างกลยุทธ์: ราคาใช้สิทธิที่คุณคลิกจะถูกเพิ่มเป็นขา",
+  "opt.ticket.chooseSide": "เลือกซื้อหรือขาย",
+  "opt.m.chain": "ตาราง",
+  "opt.m.positions": "สถานะ",
 };
 export default trader;

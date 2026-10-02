@@ -11,6 +11,8 @@ import { actingAccount, options, optionsStreamUrl, publicChain, tenantOf } from 
 //   GET  expiries?u=                      {underlying, expiries[], version}
 //   GET  chain?u=&expiry=                 chain header + rows[] (the account group's spreads)
 //   GET  series/{code}                    {series, expiry, quote, …}
+//   GET  candles?series=&tf=&limit=&to=   premium candles of one series, USD per contract (tf minutes: 1 5 15 30 60 240 1440;
+//                                         + barrier=&level=&rebate=&knockedAt= for a barrier position)
 //   GET  smile?u=&expiry=                 {points[], pillars[], termStructure[], atmVol}
 //   POST stream-ticket                    {ticket, expiresIn, url}: one-time WebSocket ticket for the chain stream
 //   GET  public/chain/{u}?expiry=         guest chain (no session; 404 options_disabled until the public chain is on)
@@ -24,6 +26,35 @@ type Ctx = { params: Promise<{ path: string[] }> };
 const U_RE = /^[A-Z]{3,8}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const SERIES_RE = /^[A-Z0-9]{3,12}-\d{8}-[0-9.]{1,16}-[CP](-[A-Z0-9._]{1,24})?$/;
+const CANDLE_TFS = new Set(["1", "5", "15", "30", "60", "240", "1440"]);
+
+const NUM_RE = /^\d{1,12}(\.\d{1,10})?$/;
+
+/**
+ * `candles?series=&tf=&limit=&to=` (+ `barrier=UO|DO|UI|DI&level=&rebate=&knockedAt=` for a barrier position) → the
+ * service's query (validated), or null.
+ */
+function candlesQuery(req: NextRequest): string | null {
+  const sp = req.nextUrl.searchParams;
+  const series = sp.get("series") ?? "";
+  const tf = sp.get("tf") ?? "";
+  const limit = sp.get("limit");
+  const to = sp.get("to");
+  if (!SERIES_RE.test(series) || !CANDLE_TFS.has(tf)) return null;
+  if (limit !== null && !/^\d{1,4}$/.test(limit)) return null;
+  if (to !== null && !/^\d{9,11}$/.test(to)) return null;
+  const n = limit === null ? null : Math.min(1500, Math.max(1, Number(limit)));
+  let q = `series=${encodeURIComponent(series)}&tf=${tf}${n ? `&limit=${n}` : ""}${to ? `&to=${to}` : ""}`;
+  const barrier = sp.get("barrier");
+  if (barrier !== null) {
+    const level = sp.get("level") ?? "";
+    const rebate = sp.get("rebate");
+    const knockedAt = sp.get("knockedAt");
+    if (!/^(UO|DO|UI|DI)$/.test(barrier) || !NUM_RE.test(level) || (rebate !== null && !NUM_RE.test(rebate)) || (knockedAt !== null && !/^\d{9,11}$/.test(knockedAt))) return null;
+    q += `&barrier=${barrier}&level=${level}${rebate !== null ? `&rebate=${rebate}` : ""}${knockedAt !== null ? `&knockedAt=${knockedAt}` : ""}`;
+  }
+  return q;
+}
 
 function q(req: NextRequest, needU: boolean): { u?: string; expiry?: string } | null {
   const sp = req.nextUrl.searchParams;
@@ -80,6 +111,11 @@ async function handle(req: NextRequest, { params }: Ctx, method: "GET" | "POST")
     return relay(await call(`/v1/options/smile?u=${x.u}${x.expiry ? `&expiry=${x.expiry}` : ""}`));
   }
   if (method === "GET" && a === "series" && path.length === 2 && SERIES_RE.test(b ?? "")) return relay(await call(`/v1/options/series/${encodeURIComponent(b!)}?group=${g}`));
+  if (method === "GET" && a === "candles" && path.length === 1) {
+    const cq = candlesQuery(req);
+    if (!cq) return error(400, "bad_request", "Invalid series, timeframe, limit or time.");
+    return relay(await call(`/v1/options/candles?${cq}`));
+  }
   if (method === "POST" && a === "stream-ticket" && path.length === 1) {
     const r = await call("/v1/options/stream/ticket", { group: group || "*" });
     if (r.status !== 200) return relay(r);

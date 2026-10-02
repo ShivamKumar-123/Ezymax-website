@@ -391,9 +391,9 @@ const trader: NsMessages<"trader"> = {
   "opt.col.underlying": "Mali ya msingi",
   "opt.col.strike": "Strike",
   "opt.col.bid": "Bid",
-  "opt.col.bidHint": "Bid kwa USD kwa kila mkataba: bofya ili kuuza",
+  "opt.col.bidHint": "Bid kwa USD kwa kila mkataba: unachopata unapouza. Bofya ili kuchagua option hii.",
   "opt.col.ask": "Ask",
-  "opt.col.askHint": "Ask kwa USD kwa kila mkataba: bofya ili kununua",
+  "opt.col.askHint": "Ask kwa USD kwa kila mkataba: unacholipa unaponunua. Bofya ili kuchagua option hii.",
   "opt.col.mark": "Mark",
   "opt.col.markHint": "Bei ya kati ya modeli kwa USD kwa kila mkataba (pips chini yake), inatumika kwa P&L na margin",
   "opt.col.iv": "IV",
@@ -429,7 +429,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.flipSide": "Badilisha kati ya kununua na kuuza",
   "opt.ticket.contracts": "Mikataba",
   "opt.ticket.removeLeg": "Ondoa sehemu",
-  "opt.ticket.addHint": "Shift+bofya bei nyingine kwenye jedwali ili kujenga mkakati.",
+  "opt.ticket.addHint": "Tumia Ongeza sehemu, au Shift+bofya strike nyingine kwenye jedwali, ili kujenga mkakati.",
   "opt.ticket.payoff": "Faida/hasara",
   "opt.ticket.clear": "Futa",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -464,7 +464,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.whatCombo": "Mkakati wa {u}, sehemu {n}",
   "opt.ticket.review": "Kagua",
   "opt.ticket.emptyTitle": "Chagua option",
-  "opt.ticket.emptyText": "Bofya bid au ask kwenye jedwali ili kufanya biashara ya option moja, au Shift+bofya bei kadhaa ili kujenga mkakati.",
+  "opt.ticket.emptyText": "Chagua strike kwenye jedwali la options (upande wa call au put), kisha uchague Nunua au Uza hapa. Shift+bofya strike zaidi ili kujenga mkakati.",
 
   // Live preview
   "opt.preview.title": "Hakiki",
@@ -663,5 +663,27 @@ const trader: NsMessages<"trader"> = {
   "opt.public.how5": "Kila tarehe ya kuisha hulipwa saa 10:00 New York kwa wastani wa bei ya dakika 30; in the money hulipa kiotomatiki.",
   "opt.public.riskTitle": "Onyo la hatari",
   "opt.public.riskText": "Options ni ngumu na zina hatari kubwa ya kupoteza pesa. Wanunuzi wanaweza kupoteza premium yote wanayolipa; wauzaji wanaweza kupoteza zaidi ya premium wanayopokea. Fanya biashara kwa pesa unazoweza kumudu kupoteza tu, na hakikisha unaelewa jinsi options zinavyofanya kazi.",
+
+  // Options workspace layout (same panels as CFD mode)
+  "opt.inst.title": "Vyombo",
+  "opt.exp.other": "Tarehe nyingine",
+  "opt.exp.pickTitle": "Tarehe zote za kuisha zilizoorodheshwa",
+  "opt.exp.none": "Hakuna iliyoorodheshwa",
+  "opt.exp.rollHint": "Daima tarehe ya kuisha iliyo karibu zaidi ya aina hii: baada ya cut yake, inahamia tarehe inayofuata yenyewe.",
+  "opt.chart.premium": "Premium",
+  "opt.chart.premiumHint": "Bei ya option uliyochagua kwa USD kwa kila mkataba. Inasonga pamoja na mali ya msingi na hupoteza thamani kadri cut inavyokaribia.",
+  "opt.chart.selectHint": "Chagua strike kwenye jedwali la options ili kuona chati ya premium yake",
+  "opt.chart.fallback": "Chati za premium bado hazipatikani. Inaonyesha mali ya msingi.",
+  "opt.chart.loading": "Inapakia historia ya premium…",
+  "opt.chart.empty": "Bado hakuna historia ya premium kwa option hii.",
+  "opt.chart.unit": "USD kwa kila mkataba",
+  "opt.chain.hint": "Bofya upande wa call au put wa strike ili kuichagua, kisha uchague Nunua au Uza.",
+  "opt.chain.selectCall": "Chagua call ya {strike}",
+  "opt.chain.selectPut": "Chagua put ya {strike}",
+  "opt.chain.adding": "Bofya strike ili kuiongeza kama sehemu.",
+  "opt.chain.strategy": "Unajenga mkakati: kila strike unayobofya inaongezwa kama sehemu.",
+  "opt.ticket.chooseSide": "Chagua Nunua au Uza",
+  "opt.m.chain": "Jedwali",
+  "opt.m.positions": "Nafasi",
 };
 export default trader;

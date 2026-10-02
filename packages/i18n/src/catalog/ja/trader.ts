@@ -397,9 +397,9 @@ const trader: NsMessages<"trader"> = {
   "opt.col.underlying": "原資産",
   "opt.col.strike": "行使価格",
   "opt.col.bid": "Bid",
-  "opt.col.bidHint": "1枚あたりのBid（USD）：クリックで売り",
+  "opt.col.bidHint": "1枚あたりのBid（USD）：売るときに受け取る価格。クリックでこのオプションを選択。",
   "opt.col.ask": "Ask",
-  "opt.col.askHint": "1枚あたりのAsk（USD）：クリックで買い",
+  "opt.col.askHint": "1枚あたりのAsk（USD）：買うときに支払う価格。クリックでこのオプションを選択。",
   "opt.col.mark": "理論値",
   "opt.col.markHint": "1枚あたりのモデル仲値（USD、下段はpips）。P&Lと証拠金の計算に使用されます",
   "opt.col.iv": "IV",
@@ -435,7 +435,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.flipSide": "買い／売りを切り替え",
   "opt.ticket.contracts": "枚数",
   "opt.ticket.removeLeg": "レッグを削除",
-  "opt.ticket.addHint": "チェーン内の別の価格をShift+クリックすると戦略を組めます。",
+  "opt.ticket.addHint": "「レッグを追加」またはチェーン内の別の行使価格をShift+クリックすると戦略を組めます。",
   "opt.ticket.payoff": "ペイオフ",
   "opt.ticket.clear": "クリア",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -470,7 +470,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.whatCombo": "{u}の戦略、{n}レッグ",
   "opt.ticket.review": "確認",
   "opt.ticket.emptyTitle": "オプションを選択",
-  "opt.ticket.emptyText": "チェーンのBidまたはAskをクリックして単一のオプションを取引するか、複数の価格をShift+クリックして戦略を組みます。",
+  "opt.ticket.emptyText": "オプションチェーンで行使価格（コール側またはプット側）を選び、ここで買いか売りを選択します。他の行使価格をShift+クリックすると戦略を組めます。",
 
   // Live preview
   "opt.preview.title": "プレビュー",
@@ -669,5 +669,27 @@ const trader: NsMessages<"trader"> = {
   "opt.public.how5": "すべての満期はニューヨーク時間10:00に30分間の平均価格で決済され、イン・ザ・マネーの場合は自動的に支払われます。",
   "opt.public.riskTitle": "リスク警告",
   "opt.public.riskText": "オプションは複雑な商品であり、損失を被るリスクが高い取引です。買い手は支払ったプレミアムの全額を失う可能性があり、売り手は受け取ったプレミアムを上回る損失を被る可能性があります。失っても問題のない資金でのみ取引し、オプションの仕組みを十分に理解したうえで取引してください。",
+
+  // Options workspace layout (same panels as CFD mode)
+  "opt.inst.title": "銘柄",
+  "opt.exp.other": "その他の日付",
+  "opt.exp.pickTitle": "上場中のすべての満期",
+  "opt.exp.none": "上場なし",
+  "opt.exp.rollHint": "常にこの種類で最も近い満期です。カットオフ後は自動的に次の日付に切り替わります。",
+  "opt.chart.premium": "プレミアム",
+  "opt.chart.premiumHint": "選択したオプションの価格（1枚あたりUSD）。原資産とともに動き、カットオフが近づくにつれて価値が減っていきます。",
+  "opt.chart.selectHint": "オプションチェーンで行使価格を選ぶと、そのプレミアムのチャートが表示されます",
+  "opt.chart.fallback": "プレミアムチャートはまだ利用できません。原資産を表示しています。",
+  "opt.chart.loading": "プレミアムの履歴を読み込み中…",
+  "opt.chart.empty": "このオプションのプレミアム履歴はまだありません。",
+  "opt.chart.unit": "1枚あたりUSD",
+  "opt.chain.hint": "行使価格のコール側またはプット側をクリックして選択し、買いか売りを選びます。",
+  "opt.chain.selectCall": "{strike} のコールを選択",
+  "opt.chain.selectPut": "{strike} のプットを選択",
+  "opt.chain.adding": "行使価格をクリックするとレッグとして追加されます。",
+  "opt.chain.strategy": "戦略を作成中：クリックした行使価格がレッグとして追加されます。",
+  "opt.ticket.chooseSide": "買いか売りを選択",
+  "opt.m.chain": "チェーン",
+  "opt.m.positions": "ポジション",
 };
 export default trader;

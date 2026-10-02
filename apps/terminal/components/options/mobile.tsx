@@ -1,31 +1,37 @@
 "use client";
 
-// Options mode on phones and small tablets (< 1024 px): underlying + expiry on top, then the chain (calls or puts,
-// compact columns), positions as cards, simple mode or settlements, with a bottom bar of its own. Picking a price
-// opens the ticket as a bottom sheet. Loaded on demand like the desktop workspace.
+// Options mode on phones and small tablets (< 1024 px), the same idea as the desktop panels in tabs: Instruments
+// (pick the underlying) · Chart (the selected option's premium, or the underlying) · Chain (pick a strike's call or
+// put) · Trade (the ticket: Sell at the bid / Buy at the ask, or simple mode) · Positions (open options and
+// settlements). The expiry bar (Daily | Weekly | Monthly + any date) sits over the chart and the chain; once an
+// option is selected a bar with its bid and ask follows at the bottom, and Sell / Buy there opens the ticket with
+// that side chosen. Loaded on demand like the desktop workspace.
 import * as React from "react";
-import { CalendarCheck2, Layers, Lightbulb, Table2, Wand2, X } from "lucide-react";
-import { OPTION_SPEC } from "@kalks/mock/options";
+import { CandlestickChart, ChevronRight, Layers, List, ShoppingCart, Table2, Wand2 } from "lucide-react";
+import { OPTION_SPEC, parseSeriesCode } from "@kalks/mock/options";
 import { cn } from "@kalks/ui";
 import { useLocale, useT } from "@kalks/i18n/react";
 import { useTerminal } from "@/lib/store";
 import { Pnl } from "@/components/ui/primitives";
 import { GuestNotice } from "@/components/shell/guest";
 import { useOptionBook } from "@/lib/options/book";
-import { opt, useOpt, useOptionsAttach } from "@/lib/options-store";
+import { opt, useOpt, useOptionsAttach, useSeriesQuote, type SidePanel } from "@/lib/options-store";
 import type { OptPosition } from "@/lib/options/types";
-import { OptAvatar, OptionsUnavailable, RightTag, Seg, SideTag } from "./bits";
+import { Flash, OptAvatar, OptionsUnavailable, RightTag, Seg, SideTag } from "./bits";
 import { StrategyBuilder } from "./builder";
 import { OptionChainTable } from "./chain";
 import { useOptionEvents, StreamDot } from "./desktop";
+import { ExpiryBar } from "./expiry-bar";
 import { expiryLabel, strikeText, usd, usdSigned } from "./format";
-import { ExpiryStrip, SpotPrice, UnderlyingPicker } from "./header";
+import { FeedChange, SpotPrice } from "./header";
+import { InstrumentList } from "./instruments";
 import { closeOptionPosition, useOptionPositionLive } from "./positions-tab";
+import { OptionChartPane } from "./premium-chart";
 import { SettlementsTab } from "./settlements-tab";
 import { SimpleMode } from "./simple";
 import { OptionTicket } from "./ticket";
 
-type MTab = "chain" | "positions" | "simple" | "settlements";
+type MTab = "instruments" | "chart" | "chain" | "trade" | "positions";
 
 export function OptionsMobile() {
   const T = useTerminal();
@@ -35,102 +41,175 @@ export function OptionsMobile() {
   const avail = useOpt((s) => s.avail);
   const u = useOpt((s) => s.u);
   const view = useOpt((s) => s.prefs.view);
+  const panel = useOpt((s) => s.prefs.panel);
   const legs = useOpt((s) => s.ticket.legs);
   const chainSpot = useOpt((s) => s.chain?.spot?.mid);
+  const publicView = useOpt((s) => s.publicView);
   const book = useOptionBook(T.guest ? null : T.account.login);
   const [tab, setTab] = React.useState<MTab>("chain");
-  const [sheet, setSheet] = React.useState(false);
-  const prevLegs = React.useRef(legs.length);
-  React.useEffect(() => {
-    if (legs.length > prevLegs.current) setSheet(true);
-    if (!legs.length) setSheet(false);
-    prevLegs.current = legs.length;
-  }, [legs.length]);
+  const [posView, setPosView] = React.useState<"open" | "settled">("open");
 
   const tabs: { id: MTab; label: string; icon: React.ReactNode; count?: number }[] = [
-    { id: "chain", label: t("trader.opt.chainTitle"), icon: <Table2 /> },
-    { id: "positions", label: t("trader.opt.pos.tab"), icon: <Layers />, count: book.positions.length },
-    { id: "simple", label: t("trader.opt.simple.tab"), icon: <Lightbulb /> },
-    { id: "settlements", label: t("trader.opt.set.tab"), icon: <CalendarCheck2 /> },
+    { id: "instruments", label: t("trader.opt.inst.title"), icon: <List /> },
+    { id: "chart", label: t("trader.opt.chart"), icon: <CandlestickChart /> },
+    { id: "chain", label: t("trader.opt.m.chain"), icon: <Table2 /> },
+    { id: "trade", label: t("trader.mobile.tab.trade"), icon: <ShoppingCart />, count: legs.length > 1 ? legs.length : undefined },
+    { id: "positions", label: t("trader.opt.m.positions"), icon: <Layers />, count: book.positions.length },
   ];
 
   if (avail === "soon" || avail === "error") return <OptionsUnavailable kind={avail} onRetry={() => opt.retry()} />;
 
+  const withHeader = tab === "chart" || tab === "chain" || tab === "trade";
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {(tab === "chain" || tab === "simple") && (
-        <div className="shrink-0 space-y-1.5 border-b border-line bg-panel p-2">
-          <div className="flex items-center gap-2">
-            <UnderlyingPicker compact />
-            <SpotPrice symbol={u} className="text-[14px]" fallback={chainSpot} />
-            <span className="ms-auto flex items-center gap-1">
-              <StreamDot />
+      {withHeader && (
+        <div className="flex h-11 shrink-0 items-center gap-2 border-b border-line bg-panel px-2">
+          <button onClick={() => setTab("instruments")} aria-label={t("trader.opt.pickUnderlying")} className="flex h-8 min-w-0 items-center gap-2 rounded-[7px] border border-line bg-surface-2 ps-2 pe-1.5">
+            <OptAvatar symbol={u} size={15} />
+            <span className="text-[13px] font-semibold">{u}</span>
+            <SpotPrice symbol={u} className="text-[12.5px]" fallback={chainSpot} />
+            <FeedChange symbol={u} />
+            <ChevronRight className="size-3.5 text-fg-3" />
+          </button>
+          <span className="ms-auto flex items-center gap-1">
+            <StreamDot />
+            {!publicView && (
               <button onClick={() => opt.openBuilder(true)} aria-label={t("trader.opt.builder.open")} className="grid size-8 place-items-center rounded-[7px] bg-ember text-white">
                 <Wand2 className="size-4" />
               </button>
-            </span>
-          </div>
-          <ExpiryStrip className="h-9 border-0 bg-transparent px-0" />
-          {tab === "chain" && (
-            <Seg
-              value={view === "puts" ? "puts" : "calls"}
-              onChange={(v) => opt.setPrefs({ view: v })}
-              options={[
-                { value: "calls", label: t("trader.opt.calls"), tone: "up" },
-                { value: "puts", label: t("trader.opt.puts"), tone: "down" },
-              ]}
-            />
-          )}
+            )}
+          </span>
+        </div>
+      )}
+      {(tab === "chart" || tab === "chain") && <ExpiryBar compact className="bg-panel" />}
+      {tab === "chain" && (
+        <div className="shrink-0 border-b border-line bg-panel px-2 py-1.5">
+          <Seg
+            value={view === "puts" ? "puts" : "calls"}
+            onChange={(v) => opt.setPrefs({ view: v })}
+            options={[
+              { value: "calls", label: t("trader.opt.calls"), tone: "up" },
+              { value: "puts", label: t("trader.opt.puts"), tone: "down" },
+            ]}
+          />
         </div>
       )}
       <main className="min-h-0 flex-1 overflow-hidden">
+        {tab === "instruments" && <InstrumentList mobile onPick={() => setTab("chain")} />}
+        {tab === "chart" && <OptionChartPane compact />}
         {tab === "chain" && <OptionChainTable compact />}
-        {tab === "simple" && (
-          <div className="t-scroll h-full overflow-y-auto">
-            <SimpleMode />
+        {tab === "trade" && (
+          <div className="flex h-full min-h-0 flex-col">
+            <div className="shrink-0 border-b border-line px-2 py-1.5">
+              <Seg<SidePanel>
+                value={panel}
+                onChange={(v) => opt.setPrefs({ panel: v })}
+                options={[
+                  { value: "ticket", label: t("trader.opt.ticket.tab") },
+                  { value: "simple", label: t("trader.opt.simple.tab") },
+                ]}
+              />
+            </div>
+            <div className="t-scroll min-h-0 flex-1 overflow-y-auto">{panel === "simple" ? <SimpleMode /> : <OptionTicket onAddLeg={() => setTab("chain")} onOpenChain={() => setTab("chain")} />}</div>
           </div>
         )}
-        {tab === "positions" && (T.guest ? <GuestNotice icon={<Layers />} text={t("trader.opt.guest.text")} /> : <MPositions positions={book.positions} />)}
-        {tab === "settlements" && (T.guest ? <GuestNotice icon={<CalendarCheck2 />} text={t("trader.opt.guest.text")} /> : <SettlementsTab />)}
+        {tab === "positions" &&
+          (T.guest ? (
+            <GuestNotice icon={<Layers />} text={t("trader.opt.guest.text")} />
+          ) : (
+            <div className="flex h-full min-h-0 flex-col">
+              <div className="shrink-0 border-b border-line px-2 py-1.5">
+                <Seg
+                  value={posView}
+                  onChange={setPosView}
+                  options={[
+                    { value: "open", label: `${t("trader.opt.m.positions")}${book.positions.length ? ` · ${book.positions.length}` : ""}` },
+                    { value: "settled", label: t("trader.opt.set.tab") },
+                  ]}
+                />
+              </div>
+              <div className="min-h-0 flex-1">{posView === "open" ? <MPositions positions={book.positions} onOpenChain={() => setTab("chain")} /> : <SettlementsTab />}</div>
+            </div>
+          ))}
       </main>
-      {legs.length > 0 && !sheet && (
-        <button onClick={() => setSheet(true)} className="mx-2 mb-2 flex h-10 shrink-0 items-center justify-between rounded-[9px] bg-ember px-3 text-[12.5px] font-semibold text-white shadow-[0_10px_30px_-12px_rgba(255,90,31,0.9)]">
-          <span>{legs.length === 1 ? t("trader.opt.ticket.single") : t("trader.opt.ticket.strategy", { count: legs.length })}</span>
-          <span>{t("trader.opt.ticket.review")}</span>
-        </button>
-      )}
-      <nav className="grid h-[58px] shrink-0 grid-cols-4 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)]">
+      {(tab === "chain" || tab === "chart") && <SelectionBar onTrade={() => setTab("trade")} />}
+      <nav className="grid h-[58px] shrink-0 grid-cols-5 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)]">
         {tabs.map((x) => (
-          <button key={x.id} onClick={() => setTab(x.id)} className={cn("relative flex flex-col items-center justify-center gap-0.5 text-[10.5px] [&_svg]:size-[17px]", tab === x.id ? "text-ember" : "text-fg-3")}>
-            {tab === x.id && <span className="absolute inset-x-5 top-0 h-[2px] rounded-full bg-ember" />}
+          <button key={x.id} onClick={() => setTab(x.id)} className={cn("relative flex min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[10px] [&_svg]:size-[17px]", tab === x.id ? "text-ember" : "text-fg-3")}>
+            {tab === x.id && <span className="absolute inset-x-4 top-0 h-[2px] rounded-full bg-ember" />}
             {x.icon}
-            {x.label}
-            {!!x.count && <span className="absolute right-[22%] top-1 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-ember px-1 font-mono text-[9px] text-white">{x.count}</span>}
+            <span className="max-w-full truncate">{x.label}</span>
+            {!!x.count && <span className="absolute right-[18%] top-1 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-ember px-1 font-mono text-[9px] text-white">{x.count}</span>}
           </button>
         ))}
       </nav>
-      {sheet && (
-        <div className="fixed inset-0 z-[60] flex flex-col justify-end" role="dialog" aria-modal dir="ltr">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setSheet(false)} />
-          <div className="t-sheet relative max-h-[88dvh] overflow-y-auto rounded-t-[14px] border-t border-line-top bg-panel pb-[env(safe-area-inset-bottom)]">
-            <div className="sticky top-0 z-[1] flex items-center justify-between border-b border-line bg-panel px-3 py-2">
-              <span className="text-[12.5px] font-semibold">{t("trader.opt.ticket.title")}</span>
-              <button onClick={() => setSheet(false)} aria-label={t("common.close")} className="grid size-7 place-items-center rounded-md text-fg-3 hover:bg-surface-3">
-                <X className="size-4" />
-              </button>
-            </div>
-            <OptionTicket onDone={() => setSheet(false)} />
-          </div>
-        </div>
-      )}
       <StrategyBuilder />
     </div>
   );
 }
 
-function MPositions({ positions }: { positions: OptPosition[] }) {
+/** The selected option with its bid and ask: Sell / Buy open the ticket with that side chosen. */
+function SelectionBar({ onTrade }: { onTrade: () => void }) {
   const t = useT();
-  if (!positions.length) return <div className="p-8 text-center text-[12.5px] text-fg-3">{t("trader.opt.pos.empty")}</div>;
+  const { locale } = useLocale();
+  const legs = useOpt((s) => s.ticket.legs);
+  const sel = useOpt((s) => s.sel);
+  const one = legs.length === 1 ? legs[0]! : null;
+  const code = one?.series ?? null;
+  const q = useSeriesQuote(code);
+  if (legs.length > 1)
+    return (
+      <button onClick={onTrade} className="mx-2 mb-2 flex h-10 shrink-0 items-center justify-between rounded-[9px] bg-ember px-3 text-[12.5px] font-semibold text-white shadow-[0_10px_30px_-12px_rgba(255,90,31,0.9)]">
+        <span>{t("trader.opt.ticket.strategy", { count: legs.length })}</span>
+        <span>{t("trader.opt.ticket.review")}</span>
+      </button>
+    );
+  const p = parseSeriesCode(code ?? sel ?? "");
+  if (!one || !p) return null;
+  const side = (s: "buy" | "sell") => {
+    opt.arm(s);
+    onTrade();
+  };
+  return (
+    <div className="grid shrink-0 grid-cols-[1fr_auto_auto] items-center gap-1.5 border-t border-line bg-panel px-2 py-1.5">
+      <button onClick={onTrade} className="flex min-w-0 items-center gap-1.5 text-start">
+        <RightTag right={p.right} />
+        <span className="min-w-0 leading-tight">
+          <span className="block truncate font-mono text-[12.5px] font-semibold">
+            {p.underlying} {p.strikeLabel}
+          </span>
+          <span className="block truncate text-[10px] text-fg-3">{expiryLabel(p.date, locale)}</span>
+        </span>
+      </button>
+      <button onClick={() => side("sell")} disabled={!q} title={t("trader.opt.clickSell")} className="min-w-[86px] rounded-[8px] bg-down px-2 py-1 text-start text-white disabled:opacity-50">
+        <div className="text-[9px] font-semibold uppercase tracking-[0.1em] opacity-85">{t("common.sell")}</div>
+        <div className="k-num font-mono text-[13.5px] font-semibold leading-tight">
+          <Flash value={q?.bidUsd ?? 0}>{q ? usd(q.bidUsd) : "—"}</Flash>
+        </div>
+      </button>
+      <button onClick={() => side("buy")} disabled={!q} title={t("trader.opt.clickBuy")} className="min-w-[86px] rounded-[8px] bg-up px-2 py-1 text-end text-white disabled:opacity-50">
+        <div className="text-[9px] font-semibold uppercase tracking-[0.1em] opacity-85">{t("common.buy")}</div>
+        <div className="k-num font-mono text-[13.5px] font-semibold leading-tight">
+          <Flash value={q?.askUsd ?? 0}>{q ? usd(q.askUsd) : "—"}</Flash>
+        </div>
+      </button>
+    </div>
+  );
+}
+
+function MPositions({ positions, onOpenChain }: { positions: OptPosition[]; onOpenChain: () => void }) {
+  const t = useT();
+  if (!positions.length)
+    return (
+      <div className="p-8 text-center text-[12.5px] text-fg-3">
+        {t("trader.opt.pos.empty")}
+        <div className="mt-3">
+          <button onClick={onOpenChain} className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-ember px-3 text-[12px] font-semibold text-white">
+            <Table2 className="size-3.5" /> {t("trader.opt.pos.openWorkspace")}
+          </button>
+        </div>
+      </div>
+    );
   return (
     <div className="t-scroll h-full space-y-1.5 overflow-y-auto p-2">
       {positions.map((p) => (

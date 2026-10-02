@@ -157,6 +157,32 @@ export function ErrorNote({ code, message, className }: { code: string; message?
   );
 }
 
+/* one shared 1-second clock for every countdown on screen */
+let nowMs = Date.now();
+const nowSubs = new Set<() => void>();
+let nowTimer: ReturnType<typeof setInterval> | null = null;
+function subscribeNow(l: () => void) {
+  nowMs = Date.now();
+  nowSubs.add(l);
+  if (!nowTimer)
+    nowTimer = setInterval(() => {
+      nowMs = Date.now();
+      nowSubs.forEach((f) => f());
+    }, 1000);
+  return () => {
+    nowSubs.delete(l);
+    if (!nowSubs.size && nowTimer) {
+      clearInterval(nowTimer);
+      nowTimer = null;
+    }
+  };
+}
+
+/** The time now, updated once a second while mounted (countdowns, expiry tabs). */
+export function useNow(): number {
+  return React.useSyncExternalStore(subscribeNow, () => nowMs, () => nowMs);
+}
+
 /** Live countdown to an instant (re-renders once a second while mounted). */
 export function Countdown({ to, className, prefix }: { to: number; className?: string; prefix?: React.ReactNode }) {
   const [now, setNow] = React.useState(() => Date.now());

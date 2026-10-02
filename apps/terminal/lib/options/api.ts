@@ -7,7 +7,7 @@
 import { IS_LIVE } from "@kalks/mock";
 import type { EngineErr } from "@/lib/engine/map";
 import type { Result } from "@/lib/engine/client";
-import type { OptionChain, OptionExpiry, OptionUnderlying, OrderRequest, OrderResult, Preview, PreviewRequest, Settlement } from "./types";
+import type { OptionCandles, OptionChain, OptionExpiry, OptionUnderlying, OrderRequest, OrderResult, Preview, PreviewRequest, Settlement } from "./types";
 import { mockApi } from "./mock-engine";
 
 async function call<T>(method: "GET" | "POST", path: string, opts: { login?: string; body?: unknown; timeoutMs?: number } = {}): Promise<Result<T>> {
@@ -46,6 +46,8 @@ export interface OptionsApi {
   expiries: (login: string, u: string) => Promise<Result<{ underlying: string; expiries: OptionExpiry[] }>>;
   chain: (login: string, u: string, expiry?: string | null) => Promise<Result<OptionChain>>;
   publicChain: (u: string, expiry?: string | null) => Promise<Result<OptionChain>>;
+  /** premium candles of one series (`tf` in minutes: 1, 5, 15, 30, 60, 240, 1440; `to` unix seconds, inclusive) */
+  candles: (login: string, series: string, tf: number, opts?: { limit?: number; to?: number }) => Promise<Result<OptionCandles>>;
   streamTicket: (login: string) => Promise<Result<{ ticket: string; expiresIn: number; url: string }>>;
   publicStreamUrl: () => Promise<Result<{ url: string }>>;
   /** `local` computes the client-side estimate (demo builds; live while the engine doesn't answer) */
@@ -62,6 +64,8 @@ const liveApi: OptionsApi = {
   expiries: (login, u) => call("GET", `/api/options/expiries?u=${encodeURIComponent(u)}`, { login }),
   chain: (login, u, expiry) => call("GET", `/api/options/chain?u=${encodeURIComponent(u)}${expiry ? `&expiry=${expiry}` : ""}`, { login }),
   publicChain: (u, expiry) => call("GET", `/api/options/public/chain/${encodeURIComponent(u)}${expiry ? `?expiry=${expiry}` : ""}`),
+  candles: (login, series, tf, opts = {}) =>
+    call("GET", `/api/options/candles?series=${encodeURIComponent(series)}&tf=${tf}${opts.limit ? `&limit=${opts.limit}` : ""}${opts.to ? `&to=${opts.to}` : ""}`, { login, timeoutMs: 10_000 }),
   streamTicket: (login) => call("POST", "/api/options/stream-ticket", { login }),
   publicStreamUrl: () => call("GET", "/api/options/public/stream-url"),
   preview: async (login, req, local) => {

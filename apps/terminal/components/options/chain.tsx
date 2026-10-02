@@ -4,15 +4,17 @@
 // mark in USD per contract with pips under the mark, IV, Greeks (Δ always; Γ Θ Vega with the toggle), probability
 // ITM and breakeven, OI and volume once the book reports them. ATM is marked and the spot sits between its strikes;
 // in-the-money halves are tinted. Rows update in place from the stream (changed rows only) and their prices flash.
-// Click a price: bid sells, ask (or mark) buys; Shift+click adds a leg to the ticket instead of replacing it.
+// Selecting, not trading: a click on a row's call half or put half selects that option (highlighted; the chart shows
+// its premium, the ticket on the right trades it once the trader chooses Buy or Sell). Shift+click, "Add leg" in the
+// ticket, or a strategy already in the ticket adds the option as a leg instead.
 import * as React from "react";
-import { Layers } from "lucide-react";
+import { Layers, MousePointerClick, X } from "lucide-react";
 import { cn } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
 import { Check } from "@/components/ui/primitives";
 import { atmIndex } from "@/lib/options/math";
 import { getOpt, opt, useOpt, visibleRows } from "@/lib/options-store";
-import type { OptionChainRow, OptionQuote, OptionRight, Side } from "@/lib/options/types";
+import type { OptionChainRow, OptionQuote, OptionRight } from "@/lib/options/types";
 import { Flash, RightTag } from "./bits";
 import { greek, pct, pips, px, usd } from "./format";
 
@@ -57,35 +59,30 @@ function useHeads(): Record<Col, { label: string; title: string }> {
   );
 }
 
-/** Click on a price: replace the ticket with this leg, or add it (Shift, or a strategy already being built). */
-function pick(row: OptionChainRow, right: OptionRight, side: Side, e: React.MouseEvent) {
-  opt.addLeg(row, right, side, { replace: !e.shiftKey && getOpt().ticket.legs.length <= 1 });
+/** Ticket legs and the selection on one row, as a cheap memo key: "c" / "p" selected, "cb" "cs" "pb" "ps" legs. */
+interface Marks {
+  sel: OptionRight | null;
+  call: "buy" | "sell" | null;
+  put: "buy" | "sell" | null;
 }
 
-function Cell({ q, col, right, row, digits, picked, readOnly, itm }: { q: OptionQuote | null; col: Col; right: OptionRight; row: OptionChainRow; digits: number; picked: boolean; readOnly: boolean; itm: boolean }) {
-  const t = useT();
-  const base = cn("h-[30px] whitespace-nowrap border-b border-line/50 px-1.5 text-end font-mono text-[11.5px]", COL_W[col], itm && "bg-gold-soft/25");
-  if (!q) return <td className={cn(base, "text-fg-3")}>—</td>;
-  const tradable = q.state === "open" && !readOnly;
+function Cell({ q, col, right, digits, itm, mark, title }: { q: OptionQuote | null; col: Col; right: OptionRight; digits: number; itm: boolean; mark: { sel: boolean; leg: boolean }; title?: string }) {
+  const base = cn("h-[30px] cursor-pointer whitespace-nowrap border-b border-line/50 px-1.5 text-end font-mono text-[11.5px]", COL_W[col], itm && "bg-gold-soft/25");
+  const attrs = { "data-r": right === "call" ? "c" : "p", "data-sel": mark.sel || undefined, "data-leg": (!mark.sel && mark.leg) || undefined, title: q ? title : undefined };
+  if (!q)
+    return (
+      <td {...attrs} className={cn(base, "cursor-default text-fg-3")}>
+        —
+      </td>
+    );
+  const dim = q.state !== "open" && "opacity-60";
   switch (col) {
     case "bid":
     case "ask": {
-      const side: Side = col === "bid" ? "sell" : "buy";
       const v = col === "bid" ? q.bidUsd : q.askUsd;
       return (
-        <td className={cn(base, "p-0")}>
-          <button
-            onClick={(e) => tradable && pick(row, right, side, e)}
-            disabled={!tradable}
-            title={tradable ? t(col === "bid" ? "trader.opt.clickSell" : "trader.opt.clickBuy") : undefined}
-            className={cn(
-              "h-full w-full px-1.5 text-end transition-colors disabled:cursor-default",
-              col === "bid" ? "text-down hover:bg-down-soft" : "text-up hover:bg-up-soft",
-              picked && "bg-ember-soft/70 shadow-[inset_0_0_0_1px_var(--k-ember)]",
-              !tradable && "hover:bg-transparent",
-              q.state !== "open" && "opacity-60",
-            )}
-          >
+        <td {...attrs} className={cn(base, "p-0")}>
+          <button type="button" tabIndex={col === "ask" ? 0 : -1} aria-label={title} className={cn("h-full w-full px-1.5 text-end outline-none focus-visible:ring-1 focus-visible:ring-ember", col === "bid" ? "text-down" : "text-up", dim)}>
             <Flash value={v}>{v > 0 ? usd(v) : "—"}</Flash>
           </button>
         </td>
@@ -93,31 +90,31 @@ function Cell({ q, col, right, row, digits, picked, readOnly, itm }: { q: Option
     }
     case "mark":
       return (
-        <td className={cn(base, "p-0")}>
-          <button onClick={(e) => tradable && pick(row, right, "buy", e)} disabled={!tradable} title={`${pips(q.markPips)} ${t("trader.opt.pips")}`} className="flex h-full w-full flex-col items-end justify-center px-1.5 leading-none text-fg hover:bg-surface-3/60 disabled:cursor-default disabled:hover:bg-transparent">
+        <td {...attrs} className={cn(base, "p-0")}>
+          <span className={cn("flex h-full w-full flex-col items-end justify-center px-1.5 leading-none text-fg", dim)}>
             <Flash value={q.markUsd}>{usd(q.markUsd)}</Flash>
             <span className="mt-0.5 text-[9px] text-fg-3">{pips(q.markPips)}p</span>
-          </button>
+          </span>
         </td>
       );
     case "iv":
-      return <td className={cn(base, "text-fg-2")}>{pct(q.iv, 1)}</td>;
+      return <td {...attrs} className={cn(base, "text-fg-2")}>{pct(q.iv, 1)}</td>;
     case "delta":
-      return <td className={cn(base, "text-fg-2")}>{greek(q.delta, 3)}</td>;
+      return <td {...attrs} className={cn(base, "text-fg-2")}>{greek(q.delta, 3)}</td>;
     case "gamma":
-      return <td className={cn(base, "text-fg-3")}>{greek(q.gamma, 4)}</td>;
+      return <td {...attrs} className={cn(base, "text-fg-3")}>{greek(q.gamma, 4)}</td>;
     case "theta":
-      return <td className={cn(base, q.theta < 0 ? "text-down/80" : "text-fg-3")}>{usd(q.theta)}</td>;
+      return <td {...attrs} className={cn(base, q.theta < 0 ? "text-down/80" : "text-fg-3")}>{usd(q.theta)}</td>;
     case "vega":
-      return <td className={cn(base, "text-fg-3")}>{usd(q.vega)}</td>;
+      return <td {...attrs} className={cn(base, "text-fg-3")}>{usd(q.vega)}</td>;
     case "prob":
-      return <td className={cn(base, "text-fg-2")}>{pct(q.probItm, 0)}</td>;
+      return <td {...attrs} className={cn(base, "text-fg-2")}>{pct(q.probItm, 0)}</td>;
     case "be":
-      return <td className={cn(base, "text-fg-3")}>{px(q.breakeven, digits)}</td>;
+      return <td {...attrs} className={cn(base, "text-fg-3")}>{px(q.breakeven, digits)}</td>;
     case "oi":
-      return <td className={cn(base, "text-fg-3")}>{q.oi === null || q.oi === undefined ? "—" : q.oi.toLocaleString("en-US")}</td>;
+      return <td {...attrs} className={cn(base, "text-fg-3")}>{q.oi === null || q.oi === undefined ? "—" : q.oi.toLocaleString("en-US")}</td>;
     case "vol":
-      return <td className={cn(base, "text-fg-3")}>{q.volume === null || q.volume === undefined ? "—" : q.volume.toLocaleString("en-US")}</td>;
+      return <td {...attrs} className={cn(base, "text-fg-3")}>{q.volume === null || q.volume === undefined ? "—" : q.volume.toLocaleString("en-US")}</td>;
   }
 }
 
@@ -129,28 +126,61 @@ interface RowProps {
   itmCall: boolean;
   itmPut: boolean;
   atm: boolean;
-  /** series codes in the ticket, joined (a cheap memo key) */
-  picked: string;
-  readOnly: boolean;
+  /** selection + legs on this row (Marks, joined: a cheap memo key) */
+  marks: string;
+  interactive: boolean;
 }
 
-const ChainRow = React.memo(function ChainRow({ row, cols, view, digits, itmCall, itmPut, atm, picked, readOnly }: RowProps) {
-  const set = new Set(picked ? picked.split(",") : []);
+const parseMarks = (m: string): Marks => {
+  const [sel, call, put] = m.split("|");
+  return { sel: sel === "c" ? "call" : sel === "p" ? "put" : null, call: call === "b" ? "buy" : call === "s" ? "sell" : null, put: put === "b" ? "buy" : put === "s" ? "sell" : null };
+};
+
+/** Click anywhere on a half selects that option; the strike cell picks the side on screen (or the selected one). */
+function onRowClick(e: React.MouseEvent<HTMLTableRowElement>, row: OptionChainRow, view: "both" | "calls" | "puts") {
+  const td = (e.target as HTMLElement).closest<HTMLElement>("td[data-r]");
+  const r = td?.dataset.r;
+  let right: OptionRight;
+  if (r === "c") right = "call";
+  else if (r === "p") right = "put";
+  else if (view !== "both") right = view === "calls" ? "call" : "put";
+  else {
+    const s = getOpt().sel;
+    right = s && (row.call?.code === s || row.put?.code === s) ? (row.put?.code === s ? "put" : "call") : "call";
+  }
+  if (!(right === "call" ? row.call : row.put)) return;
+  opt.select(row, right, { add: e.shiftKey });
+}
+
+const ChainRow = React.memo(function ChainRow({ row, cols, view, digits, itmCall, itmPut, atm, marks, interactive }: RowProps) {
+  const t = useT();
+  const m = parseMarks(marks);
   const side = (right: OptionRight, list: Col[]) => {
     const q = right === "call" ? row.call : row.put;
     const itm = right === "call" ? itmCall : itmPut;
-    return list.map((c) => <Cell key={`${right}-${c}`} q={q} col={c} right={right} row={row} digits={digits} picked={!!q && set.has(q.code)} readOnly={readOnly} itm={itm} />);
+    const mark = { sel: m.sel === right, leg: !!(right === "call" ? m.call : m.put) };
+    const title = interactive ? t(right === "call" ? "trader.opt.chain.selectCall" : "trader.opt.chain.selectPut", { strike: row.strikeLabel }) : undefined;
+    return list.map((c) => <Cell key={`${right}-${c}`} q={q} col={c} right={right} digits={digits} itm={itm} mark={mark} title={title} />);
+  };
+  const legChip = (right: OptionRight) => {
+    const s = right === "call" ? m.call : m.put;
+    if (!s) return null;
+    return <span className={cn("rounded-[3px] px-[3px] font-sans text-[8.5px] font-bold leading-[13px]", s === "buy" ? "bg-up-soft text-up" : "bg-down-soft text-down")}>{s === "buy" ? t("trader.opt.b") : t("trader.opt.s")}</span>;
   };
   const strike = (
-    <td className={cn("h-[30px] w-[86px] whitespace-nowrap border-x border-b border-line/60 bg-panel-2 px-2 text-center font-mono text-[12px] font-semibold", view !== "both" && "sticky left-0 z-[1]", atm ? "text-ember" : "text-fg")}>
+    <td data-r="k" className={cn("h-[30px] w-[86px] cursor-pointer whitespace-nowrap border-x border-b border-line/60 bg-panel-2 px-1 text-center font-mono text-[12px] font-semibold", view !== "both" && "sticky left-0 z-[1]", atm ? "text-ember" : "text-fg", m.sel && "bg-ember-soft text-fg")}>
       <span className="inline-flex items-center gap-1">
-        {atm && <span className="size-1.5 rounded-full bg-ember" title="ATM" />}
+        {view === "both" && legChip("call")}
+        {m.sel === "call" && view === "both" && <span className="text-[9px] text-ember">◀</span>}
+        {atm && !m.sel && <span className="size-1.5 rounded-full bg-ember" title="ATM" />}
         {row.strikeLabel}
+        {m.sel === "put" && view === "both" && <span className="text-[9px] text-ember">▶</span>}
+        {view === "both" ? legChip("put") : legChip(view === "calls" ? "call" : "put")}
       </span>
     </td>
   );
   return (
-    <tr data-atm={atm || undefined}>
+    <tr data-atm={atm || undefined} data-sel={m.sel ? "" : undefined} onClick={interactive ? (e) => onRowClick(e, row, view) : undefined} className={cn(!interactive && "[&_td]:!cursor-default")}>
       {view === "both" ? (
         <>
           {side("call", [...cols].reverse())}
@@ -180,13 +210,44 @@ function SpotRow({ span, label, both }: { span: number; label: string; both: boo
   );
 }
 
+/** "Add leg" armed, or a strategy in the ticket: what the next click does. */
+function ModeBanner() {
+  const t = useT();
+  const adding = useOpt((s) => s.ticket.adding);
+  const legs = useOpt((s) => s.ticket.legs.length);
+  if (!adding && legs < 2) return null;
+  return (
+    <div className="flex shrink-0 items-center gap-2 border-b border-ember/30 bg-ember-soft/50 px-2.5 py-1 text-[11.5px] text-fg-2">
+      <Layers className="size-3.5 shrink-0 text-ember" />
+      <span className="min-w-0 flex-1 truncate">{adding ? t("trader.opt.chain.adding") : t("trader.opt.chain.strategy")}</span>
+      <button onClick={() => (adding ? opt.setAdding(false) : opt.clearTicket())} className="inline-flex h-5 shrink-0 items-center gap-1 rounded-[4px] px-1.5 text-[11px] text-fg-3 hover:bg-surface-3 hover:text-fg">
+        <X className="size-3" /> {adding ? t("common.cancel") : t("trader.opt.ticket.clear")}
+      </button>
+    </div>
+  );
+}
+
+/** One-line how-to above the chain (desktop): select first, then Buy or Sell. */
+export function ChainHint({ className }: { className?: string }) {
+  const t = useT();
+  return (
+    <span className={cn("flex min-w-0 items-center gap-1.5 text-[11px] text-fg-3", className)}>
+      <MousePointerClick className="size-3.5 shrink-0 text-ember" />
+      <span className="truncate">{t("trader.opt.chain.hint")}</span>
+    </span>
+  );
+}
+
 export function OptionChainTable({ className, compact }: { className?: string; compact?: boolean }) {
   const t = useT();
   const chain = useOpt((s) => s.chain);
   const loading = useOpt((s) => s.chainLoading);
   const prefs = useOpt((s) => s.prefs);
   const legs = useOpt((s) => s.ticket.legs);
-  const readOnly = useOpt((s) => !!s.ctx?.readOnly || s.publicView);
+  const armed = useOpt((s) => s.ticket.armed);
+  const sel = useOpt((s) => s.sel);
+  // the public chain page is read-only; everywhere else a click selects (guests and investors too: chart, preview)
+  const interactive = useOpt((s) => !s.ctx?.publicPage);
   const heads = useHeads();
   const scroller = React.useRef<HTMLDivElement>(null);
   const centred = React.useRef<string | null>(null);
@@ -198,13 +259,20 @@ export function OptionChainTable({ className, compact }: { className?: string; c
   const spot = chain?.spot?.mid;
   const book = !!chain?.rows.some((r) => [r.call?.oi, r.put?.oi].some((v) => v !== undefined && v !== null));
   const cols = compact ? (["bid", "ask", "iv", "delta"] as Col[]) : columns(prefs.view === "both", prefs.greeks, prefs.extra, book);
-  const picked = legs.map((l) => l.series).join(",");
+  // B / S chips: a strategy's legs, or the single option once Buy or Sell is chosen
+  const legSide = new Map(legs.length > 1 || armed ? legs.map((l) => [l.series, l.side]) : []);
+  const marksOf = (r: OptionChainRow) => {
+    const s = sel && r.call?.code === sel ? "c" : sel && r.put?.code === sel ? "p" : "";
+    const c = r.call ? legSide.get(r.call.code) : undefined;
+    const p = r.put ? legSide.get(r.put.code) : undefined;
+    return `${s}|${c ? c[0] : ""}|${p ? p[0] : ""}`;
+  };
   const spotIdx = spot === undefined ? -1 : rows.findIndex((r) => r.strike > spot);
 
   // centre the ATM strike when a chain first shows
   React.useEffect(() => {
     if (!key || centred.current === key || !scroller.current) return;
-    const el = scroller.current.querySelector<HTMLElement>("tr[data-atm]");
+    const el = scroller.current.querySelector<HTMLElement>("tr[data-sel]") ?? scroller.current.querySelector<HTMLElement>("tr[data-atm]");
     if (!el) return;
     centred.current = key;
     const box = scroller.current;
@@ -222,7 +290,7 @@ export function OptionChainTable({ className, compact }: { className?: string; c
   }
 
   const both = prefs.view === "both" && !compact;
-  const view = compact ? prefs.view === "puts" ? "puts" : "calls" : prefs.view;
+  const view = compact ? (prefs.view === "puts" ? "puts" : "calls") : prefs.view;
   const span = both ? cols.length * 2 + 1 : cols.length + 1;
   const thBase = "sticky z-[2] whitespace-nowrap border-b border-line bg-panel-2";
   const head = (list: Col[]) =>
@@ -235,8 +303,9 @@ export function OptionChainTable({ className, compact }: { className?: string; c
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {chain.error && <div className="shrink-0 border-b border-warn/30 bg-warn-soft px-3 py-1 text-[11.5px] text-warn">{t("trader.opt.noPrice")}</div>}
+      {interactive && <ModeBanner />}
       <div ref={scroller} className="t-scroll relative min-h-0 flex-1 overflow-auto">
-        <table className="w-full min-w-max border-separate border-spacing-0">
+        <table className={cn("w-full min-w-max border-separate border-spacing-0", interactive && "opt-chain")}>
           <thead>
             <tr>
               {both ? (
@@ -280,7 +349,7 @@ export function OptionChainTable({ className, compact }: { className?: string; c
             {rows.map((r, i) => (
               <React.Fragment key={r.strikeLabel}>
                 {i === spotIdx && i > 0 && spot !== undefined && <SpotRow span={span} both={both} label={`${t("trader.opt.spot")} ${px(spot, chain.digits)}`} />}
-                <ChainRow row={r} cols={cols} view={view} digits={chain.digits} itmCall={spot !== undefined && r.strike < spot} itmPut={spot !== undefined && r.strike > spot} atm={r.strike === atmStrike} picked={picked} readOnly={readOnly} />
+                <ChainRow row={r} cols={cols} view={view} digits={chain.digits} itmCall={spot !== undefined && r.strike < spot} itmPut={spot !== undefined && r.strike > spot} atm={r.strike === atmStrike} marks={marksOf(r)} interactive={interactive} />
               </React.Fragment>
             ))}
           </tbody>
@@ -297,11 +366,13 @@ export function OptionChainTable({ className, compact }: { className?: string; c
             ))}
           </span>
           <Check checked={prefs.extra} onChange={(v) => opt.setPrefs({ extra: v })} label={<span className="text-[10.5px] text-fg-3">{t("trader.opt.showProbBe")}</span>} />
-          <span className="ms-auto hidden items-center gap-1 lg:flex">
-            <Layers className="size-3" />
-            {t("trader.opt.shiftHint")}
-          </span>
-          <span className="hidden items-center gap-1 md:flex">
+          {interactive && (
+            <span className="ms-auto hidden items-center gap-1 lg:flex">
+              <Layers className="size-3" />
+              {t("trader.opt.shiftHint")}
+            </span>
+          )}
+          <span className={cn("hidden items-center gap-1 md:flex", !interactive && "ms-auto")}>
             <span className="inline-block size-2 rounded-[2px] bg-gold-soft" /> {t("trader.opt.itm")}
           </span>
         </div>

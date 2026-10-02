@@ -398,9 +398,9 @@ const trader: NsMessages<"trader"> = {
   "opt.col.underlying": "Sottostante",
   "opt.col.strike": "Strike",
   "opt.col.bid": "Bid",
-  "opt.col.bidHint": "Bid in USD per contratto: clicca per vendere",
+  "opt.col.bidHint": "Bid in USD per contratto: ciò che incassi quando vendi. Clicca per selezionare questa opzione.",
   "opt.col.ask": "Ask",
-  "opt.col.askHint": "Ask in USD per contratto: clicca per comprare",
+  "opt.col.askHint": "Ask in USD per contratto: ciò che paghi quando compri. Clicca per selezionare questa opzione.",
   "opt.col.mark": "Mark",
   "opt.col.markHint": "Prezzo medio del modello in USD per contratto (sotto, in pip), usato per P&L e margine",
   "opt.col.iv": "IV",
@@ -436,7 +436,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.flipSide": "Passa da acquisto a vendita e viceversa",
   "opt.ticket.contracts": "Contratti",
   "opt.ticket.removeLeg": "Rimuovi gamba",
-  "opt.ticket.addHint": "Shift+clic su un altro prezzo della catena per costruire una strategia.",
+  "opt.ticket.addHint": "Usa «Aggiungi gamba» o Shift+clic su un altro strike della catena per costruire una strategia.",
   "opt.ticket.payoff": "Payoff",
   "opt.ticket.clear": "Svuota",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -471,7 +471,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.whatCombo": "Strategia su {u}, {n} gambe",
   "opt.ticket.review": "Rivedi",
   "opt.ticket.emptyTitle": "Scegli un'opzione",
-  "opt.ticket.emptyText": "Clicca su un bid o un ask della catena per negoziare un'opzione, oppure usa Shift+clic su più prezzi per costruire una strategia.",
+  "opt.ticket.emptyText": "Seleziona uno strike nella catena di opzioni (lato call o put), poi scegli Compra o Vendi qui. Shift+clic su altri strike per costruire una strategia.",
 
   // Live preview
   "opt.preview.title": "Anteprima",
@@ -670,5 +670,27 @@ const trader: NsMessages<"trader"> = {
   "opt.public.how5": "Ogni scadenza viene regolata alle 10:00 ora di New York al prezzo medio di 30 minuti; in the money paga automaticamente.",
   "opt.public.riskTitle": "Avvertenza sui rischi",
   "opt.public.riskText": "Le opzioni sono strumenti complessi e comportano un alto rischio di perdere denaro. Chi compra può perdere l'intero premio pagato; chi vende può perdere più del premio incassato. Fai trading solo con denaro che puoi permetterti di perdere e assicurati di capire come funzionano le opzioni.",
+
+  // Options workspace layout (same panels as CFD mode)
+  "opt.inst.title": "Strumenti",
+  "opt.exp.other": "Altre date",
+  "opt.exp.pickTitle": "Tutte le scadenze quotate",
+  "opt.exp.none": "Nessuna quotata",
+  "opt.exp.rollHint": "Sempre la scadenza più vicina di questo tipo: dopo il cut passa da sola alla data successiva.",
+  "opt.chart.premium": "Premio",
+  "opt.chart.premiumHint": "Il prezzo dell'opzione selezionata in USD per contratto. Si muove con il sottostante e perde valore man mano che il cut si avvicina.",
+  "opt.chart.selectHint": "Seleziona uno strike nella catena di opzioni per vedere il grafico del suo premio",
+  "opt.chart.fallback": "I grafici del premio non sono ancora disponibili. Viene mostrato il sottostante.",
+  "opt.chart.loading": "Caricamento dello storico del premio…",
+  "opt.chart.empty": "Ancora nessuno storico del premio per questa opzione.",
+  "opt.chart.unit": "USD per contratto",
+  "opt.chain.hint": "Clicca sul lato call o put di uno strike per selezionarlo, poi scegli Compra o Vendi.",
+  "opt.chain.selectCall": "Seleziona il call {strike}",
+  "opt.chain.selectPut": "Seleziona il put {strike}",
+  "opt.chain.adding": "Clicca su uno strike per aggiungerlo come gamba.",
+  "opt.chain.strategy": "Strategia in costruzione: ogni strike che clicchi viene aggiunto come gamba.",
+  "opt.ticket.chooseSide": "Scegli Compra o Vendi",
+  "opt.m.chain": "Catena",
+  "opt.m.positions": "Posizioni",
 };
 export default trader;

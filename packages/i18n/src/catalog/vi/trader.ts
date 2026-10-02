@@ -397,9 +397,9 @@ const trader: NsMessages<"trader"> = {
   "opt.col.underlying": "Tài sản cơ sở",
   "opt.col.strike": "Strike",
   "opt.col.bid": "Bid",
-  "opt.col.bidHint": "Giá Bid tính bằng USD mỗi hợp đồng: nhấp để bán",
+  "opt.col.bidHint": "Giá Bid tính bằng USD mỗi hợp đồng: số tiền bạn nhận khi bán. Nhấp để chọn quyền chọn này.",
   "opt.col.ask": "Ask",
-  "opt.col.askHint": "Giá Ask tính bằng USD mỗi hợp đồng: nhấp để mua",
+  "opt.col.askHint": "Giá Ask tính bằng USD mỗi hợp đồng: số tiền bạn trả khi mua. Nhấp để chọn quyền chọn này.",
   "opt.col.mark": "Mark",
   "opt.col.markHint": "Giá giữa theo mô hình, tính bằng USD mỗi hợp đồng (pip ở bên dưới), dùng để tính P&L và ký quỹ",
   "opt.col.iv": "IV",
@@ -435,7 +435,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.flipSide": "Chuyển giữa mua và bán",
   "opt.ticket.contracts": "Hợp đồng",
   "opt.ticket.removeLeg": "Xóa chân",
-  "opt.ticket.addHint": "Shift+nhấp vào một giá khác trong chuỗi để xây dựng chiến lược.",
+  "opt.ticket.addHint": "Dùng Thêm chân, hoặc Shift+nhấp vào một strike khác trong chuỗi, để xây dựng chiến lược.",
   "opt.ticket.payoff": "Lãi/lỗ",
   "opt.ticket.clear": "Xóa",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -470,7 +470,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.whatCombo": "Chiến lược {u}, {n} chân",
   "opt.ticket.review": "Xem lại",
   "opt.ticket.emptyTitle": "Chọn một quyền chọn",
-  "opt.ticket.emptyText": "Nhấp vào giá Bid hoặc Ask trong chuỗi để giao dịch một quyền chọn, hoặc Shift+nhấp vào nhiều giá để xây dựng chiến lược.",
+  "opt.ticket.emptyText": "Chọn một strike trong chuỗi quyền chọn (phía call hoặc put), rồi chọn Mua hoặc Bán tại đây. Shift+nhấp thêm strike để xây dựng chiến lược.",
 
   // Live preview
   "opt.preview.title": "Xem trước",
@@ -669,5 +669,27 @@ const trader: NsMessages<"trader"> = {
   "opt.public.how5": "Mọi kỳ đáo hạn đều được thanh toán lúc 10:00 giờ New York theo giá trung bình 30 phút; quyền chọn có lãi được chi trả tự động.",
   "opt.public.riskTitle": "Cảnh báo rủi ro",
   "opt.public.riskText": "Quyền chọn là sản phẩm phức tạp và có rủi ro thua lỗ cao. Người mua có thể mất toàn bộ phí quyền chọn đã trả; người bán có thể lỗ nhiều hơn phí quyền chọn đã nhận. Chỉ giao dịch bằng số tiền bạn có thể chấp nhận mất, và hãy đảm bảo bạn hiểu cách quyền chọn hoạt động.",
+
+  // Options workspace layout (same panels as CFD mode)
+  "opt.inst.title": "Công cụ",
+  "opt.exp.other": "Ngày khác",
+  "opt.exp.pickTitle": "Tất cả ngày đáo hạn đang niêm yết",
+  "opt.exp.none": "Không có",
+  "opt.exp.rollHint": "Luôn là kỳ đáo hạn gần nhất của loại này: sau giờ chốt sẽ tự chuyển sang ngày tiếp theo.",
+  "opt.chart.premium": "Phí quyền chọn",
+  "opt.chart.premiumHint": "Giá của quyền chọn đã chọn, tính bằng USD mỗi hợp đồng. Giá biến động theo tài sản cơ sở và giảm dần khi giờ chốt đến gần.",
+  "opt.chart.selectHint": "Chọn một strike trong chuỗi quyền chọn để xem biểu đồ phí quyền chọn",
+  "opt.chart.fallback": "Biểu đồ phí quyền chọn chưa khả dụng. Đang hiển thị tài sản cơ sở.",
+  "opt.chart.loading": "Đang tải lịch sử phí quyền chọn…",
+  "opt.chart.empty": "Chưa có lịch sử phí cho quyền chọn này.",
+  "opt.chart.unit": "USD mỗi hợp đồng",
+  "opt.chain.hint": "Nhấp vào phía call hoặc put của một strike để chọn, rồi chọn Mua hoặc Bán.",
+  "opt.chain.selectCall": "Chọn call {strike}",
+  "opt.chain.selectPut": "Chọn put {strike}",
+  "opt.chain.adding": "Nhấp vào một strike để thêm làm chân.",
+  "opt.chain.strategy": "Đang xây dựng chiến lược: mỗi strike bạn nhấp sẽ được thêm làm chân.",
+  "opt.ticket.chooseSide": "Chọn Mua hoặc Bán",
+  "opt.m.chain": "Chuỗi",
+  "opt.m.positions": "Vị thế",
 };
 export default trader;

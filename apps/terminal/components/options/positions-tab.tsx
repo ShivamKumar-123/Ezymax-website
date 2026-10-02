@@ -140,7 +140,7 @@ const PositionRow = React.memo(function PositionRow({ p, indent, readOnly, repor
       </Td>
       <Td className="w-[92px] pe-2">
         <span className="flex items-center justify-end gap-0.5">
-          <button onClick={() => (opt.selectUnderlying(p.option.underlying), opt.focus(p.ticket), setTradeMode("options"))} title={t("trader.opt.pos.showOnChart")} className="grid size-6 place-items-center rounded-[5px] text-fg-3 hover:bg-surface-3 hover:text-fg">
+          <button onClick={() => (opt.showSeries(p.option.series) || opt.selectUnderlying(p.option.underlying), opt.focus(p.ticket), setTradeMode("options"))} title={t("trader.opt.pos.showOnChart")} className="grid size-6 place-items-center rounded-[5px] text-fg-3 hover:bg-surface-3 hover:text-fg">
             <Crosshair className="size-3.5" />
           </button>
           {!readOnly && (

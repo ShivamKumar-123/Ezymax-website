@@ -412,9 +412,9 @@ const trader = {
   "opt.col.underlying": "Underlying",
   "opt.col.strike": "Strike",
   "opt.col.bid": "Bid",
-  "opt.col.bidHint": "Bid in USD per contract: click to sell",
+  "opt.col.bidHint": "Bid in USD per contract: what you receive when you sell. Click to select this option.",
   "opt.col.ask": "Ask",
-  "opt.col.askHint": "Ask in USD per contract: click to buy",
+  "opt.col.askHint": "Ask in USD per contract: what you pay when you buy. Click to select this option.",
   "opt.col.mark": "Mark",
   "opt.col.markHint": "Model mid price in USD per contract (pips under it), used for P&L and margin",
   "opt.col.iv": "IV",
@@ -450,7 +450,7 @@ const trader = {
   "opt.ticket.flipSide": "Switch between buy and sell",
   "opt.ticket.contracts": "Contracts",
   "opt.ticket.removeLeg": "Remove leg",
-  "opt.ticket.addHint": "Shift+click another price in the chain to build a strategy.",
+  "opt.ticket.addHint": "Use Add leg, or Shift+click another strike in the chain, to build a strategy.",
   "opt.ticket.payoff": "Payoff",
   "opt.ticket.clear": "Clear",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -485,7 +485,7 @@ const trader = {
   "opt.ticket.whatCombo": "{u} strategy, {n} legs",
   "opt.ticket.review": "Review",
   "opt.ticket.emptyTitle": "Pick an option",
-  "opt.ticket.emptyText": "Click a bid or ask in the chain to trade one option, or Shift+click several prices to build a strategy.",
+  "opt.ticket.emptyText": "Select a strike in the Option chain (its call or put side), then choose Buy or Sell here. Shift+click more strikes to build a strategy.",
 
   // Live preview
   "opt.preview.title": "Preview",
@@ -684,5 +684,32 @@ const trader = {
   "opt.public.how5": "Every expiry settles at 10:00 New York at the 30-minute average price; in the money pays automatically.",
   "opt.public.riskTitle": "Risk warning",
   "opt.public.riskText": "Options are complex and carry a high risk of losing money. Buyers can lose the whole premium they pay; sellers can lose more than the premium they receive. Trade only with money you can afford to lose, and make sure you understand how options work.",
+
+  // Workspace layout (same panels as CFD mode): instruments on the left, Chart | Option chain in the centre, the
+  // ticket on the right. "Option chain" is the name of the centre tab (trader.opt.chainTitle).
+  "opt.inst.title": "Instruments",
+  // Expiry tabs: Daily | Weekly | Monthly always show the nearest expiry of that kind; the picker lists every date
+  "opt.exp.other": "Other dates",
+  "opt.exp.pickTitle": "All listed expiries",
+  "opt.exp.none": "None listed",
+  "opt.exp.rollHint": "Always the nearest expiry of this kind: after its cut it moves to the next date by itself.",
+  // Chart tab: the selected option's premium (price of the option) or the underlying
+  "opt.chart.premium": "Premium",
+  "opt.chart.premiumHint": "The selected option's price in USD per contract. It moves with the underlying and loses value as the cut gets closer.",
+  "opt.chart.selectHint": "Select a strike in Option chain to see its premium chart",
+  "opt.chart.fallback": "Premium charts aren't available yet. Showing the underlying.",
+  "opt.chart.loading": "Loading the premium history…",
+  "opt.chart.empty": "No premium history for this option yet.",
+  "opt.chart.unit": "USD per contract",
+  // Option chain tab: pick a strike's call or put first, then Buy or Sell on the ticket
+  "opt.chain.hint": "Click the call or put side of a strike to select it, then choose Buy or Sell.",
+  "opt.chain.selectCall": "Select the {strike} call",
+  "opt.chain.selectPut": "Select the {strike} put",
+  "opt.chain.adding": "Click a strike to add it as a leg.",
+  "opt.chain.strategy": "Building a strategy: each strike you click is added as a leg.",
+  "opt.ticket.chooseSide": "Choose Buy or Sell",
+  // Phone tabs of Options mode (short)
+  "opt.m.chain": "Chain",
+  "opt.m.positions": "Positions",
 };
 export default trader;

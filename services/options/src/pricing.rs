@@ -17,7 +17,7 @@
 use chrono::{DateTime, Utc};
 use optmath::OptionType::{self, Call, Put};
 use optmath::volclock::{calendar_years, effective_vol, rates_in_vol_time};
-use optmath::{DeltaConvention, Smile, SmileQuotes, greeks, norm_cdf, price};
+use optmath::{BarrierType, DeltaConvention, HolidayCalendar, Smile, SmileQuotes, VolClock, VolSurface, barrier_price, greeks, norm_cdf, price};
 use serde::Serialize;
 use serde_json::{Value, json};
 
@@ -94,6 +94,101 @@ pub fn model_rates(rd: &RefData, u: &Underlying) -> (f64, f64, f64) {
     }
 }
 
+/// The part of a pricing context that depends on neither the instant nor the spot: rates, the pair calendar and
+/// vol clock, the latest surface, realized vol and a manual-vol override. `context` builds the live price from it;
+/// premium candles (`crate::candles`) evaluate the same model at past instants and spots.
+pub struct Model<'a> {
+    pub cut_ms: i64,
+    pub cal: HolidayCalendar,
+    pub clock: VolClock,
+    pub r: f64,
+    pub b: f64,
+    pub rf: f64,
+    pub surface: Option<&'a VolSurface>,
+    pub surface_version: Option<i32>,
+    pub blend_weight: f64,
+    pub realized: Option<f64>,
+    pub manual_vol: Option<f64>,
+    pub delta_convention: DeltaConvention,
+}
+
+impl<'a> Model<'a> {
+    /// The model of one (underlying, expiry). `manual_vol` comes from a dealer control (`RefData::overrides`).
+    pub fn new(rd: &'a RefData, u: &Underlying, e: &Expiry, manual_vol: Option<f64>) -> Result<Self, PriceError> {
+        let surf = rd.surfaces.get(&u.symbol);
+        let surface = surf.and_then(|s| s.surface.as_ref());
+        let realized = rd.realized.get(&u.symbol).map(|r| r.value);
+        if surface.is_none() && realized.is_none() {
+            return Err(PriceError::NoVol);
+        }
+        let (r, b, rf) = model_rates(rd, u);
+        Ok(Model {
+            cut_ms: e.cut_at.timestamp_millis(),
+            cal: rd.pair_calendar(&u.symbol),
+            clock: u.clock(),
+            r,
+            b,
+            rf,
+            surface,
+            surface_version: surf.map(|s| s.version),
+            blend_weight: surf.map(|s| s.blend_weight).unwrap_or(0.0),
+            realized,
+            manual_vol,
+            delta_convention: if u.delta_convention == "forward" { DeltaConvention::Forward } else { DeltaConvention::Spot },
+        })
+    }
+
+    /// `(t_cal, t_vol)` from `now_ms` to the cut: ACT/365 and the business-time vol clock.
+    pub fn times(&self, now_ms: i64) -> (f64, f64) {
+        (calendar_years(now_ms, self.cut_ms), self.clock.vol_years(now_ms, self.cut_ms, &self.cal))
+    }
+
+    /// The context at `spot` with `t_cal` / `t_vol` left to the cut (from `times`). The theta times `t_cal_1d` /
+    /// `t_vol_1d` are left at 0: `context` fills them in, callers that only need `mid_price` do not.
+    pub fn ctx(&self, spot: f64, spot_source: &'static str, usd_per_quote: f64, t_cal: f64, t_vol: f64) -> Ctx {
+        let (r, b) = (self.r, self.b);
+        let quotes = self.surface.map(|s| s.quotes_at(t_cal.max(1.0 / 365.0 / 24.0)));
+        let surface_atm = quotes.map(|q| q.atm);
+        let mut atm = match (surface_atm, self.realized) {
+            (Some(s), Some(rv)) => self.blend_weight * s + (1.0 - self.blend_weight) * rv,
+            (Some(s), None) => s,
+            // `new` guarantees a surface or a realized vol
+            (None, rv) => rv.unwrap_or(0.0),
+        };
+        if let Some(m) = self.manual_vol {
+            atm = m;
+        }
+        let quotes = quotes.map(|q| SmileQuotes { atm, ..q }).unwrap_or(SmileQuotes { atm, rr25: 0.0, bf25: 0.0, rr10: None, bf10: None });
+        let smile = if t_vol > 0.0 && t_cal > 0.0 {
+            let (r2, b2) = rates_in_vol_time(r, b, t_cal, t_vol);
+            Smile::new(quotes, spot, t_vol, r2, r2 - b2, self.delta_convention).ok()
+        } else {
+            None
+        };
+        Ctx {
+            spot,
+            spot_source,
+            forward: spot * (b * t_cal).exp(),
+            r,
+            b,
+            rf: self.rf,
+            t_cal,
+            t_vol,
+            t_cal_1d: 0.0,
+            t_vol_1d: 0.0,
+            atm_vol: atm,
+            surface_atm,
+            realized: self.realized,
+            blend_weight: self.blend_weight,
+            manual_vol: self.manual_vol,
+            surface_version: self.surface_version,
+            quotes: Some(quotes.into()),
+            usd_per_quote,
+            smile,
+        }
+    }
+}
+
 /// Builds the pricing context. `spot` is the live mid (a freeze control overrides it).
 pub fn context(rd: &RefData, u: &Underlying, e: &Expiry, spot: Option<f64>, usd_per_quote: Option<f64>, now_ms: i64, tenant: Option<&str>) -> Result<Ctx, PriceError> {
     let (manual_vol, frozen) = rd.overrides(tenant, &u.symbol, &e.key());
@@ -103,58 +198,11 @@ pub fn context(rd: &RefData, u: &Underlying, e: &Expiry, spot: Option<f64>, usd_
         _ => return Err(PriceError::NoSpot),
     };
     let usd_per_quote = usd_per_quote.filter(|x| *x > 0.0).ok_or_else(|| PriceError::NoUsdRate(u.quote_ccy.clone()))?;
-    let cut_ms = e.cut_at.timestamp_millis();
-    let cal = rd.pair_calendar(&u.symbol);
-    let clock = u.clock();
-    let t_cal = calendar_years(now_ms, cut_ms);
-    let t_vol = clock.vol_years(now_ms, cut_ms, &cal);
-    let next_day = now_ms + 86_400_000;
-    let (t_cal_1d, t_vol_1d) = (calendar_years(next_day, cut_ms), clock.vol_years(next_day, cut_ms, &cal));
-    let (r, b, rf) = model_rates(rd, u);
-
-    let surf = rd.surfaces.get(&u.symbol);
-    let quotes = surf.and_then(|s| s.surface.as_ref()).map(|s| s.quotes_at(t_cal.max(1.0 / 365.0 / 24.0)));
-    let realized = rd.realized.get(&u.symbol).map(|r| r.value);
-    let blend_weight = surf.map(|s| s.blend_weight).unwrap_or(0.0);
-    let surface_atm = quotes.map(|q| q.atm);
-    let mut atm = match (surface_atm, realized) {
-        (Some(s), Some(rv)) => blend_weight * s + (1.0 - blend_weight) * rv,
-        (Some(s), None) => s,
-        (None, Some(rv)) => rv,
-        (None, None) => return Err(PriceError::NoVol),
-    };
-    if let Some(m) = manual_vol {
-        atm = m;
-    }
-    let quotes = quotes.map(|q| SmileQuotes { atm, ..q }).unwrap_or(SmileQuotes { atm, rr25: 0.0, bf25: 0.0, rr10: None, bf10: None });
-    let smile = if t_vol > 0.0 && t_cal > 0.0 {
-        let (r2, b2) = rates_in_vol_time(r, b, t_cal, t_vol);
-        let conv = if u.delta_convention == "forward" { DeltaConvention::Forward } else { DeltaConvention::Spot };
-        Smile::new(quotes, spot, t_vol, r2, r2 - b2, conv).ok()
-    } else {
-        None
-    };
-    Ok(Ctx {
-        spot,
-        spot_source,
-        forward: spot * (b * t_cal).exp(),
-        r,
-        b,
-        rf,
-        t_cal,
-        t_vol,
-        t_cal_1d,
-        t_vol_1d,
-        atm_vol: atm,
-        surface_atm,
-        realized,
-        blend_weight,
-        manual_vol,
-        surface_version: surf.map(|s| s.version),
-        quotes: Some(quotes.into()),
-        usd_per_quote,
-        smile,
-    })
+    let model = Model::new(rd, u, e, manual_vol)?;
+    let (t_cal, t_vol) = model.times(now_ms);
+    let mut ctx = model.ctx(spot, spot_source, usd_per_quote, t_cal, t_vol);
+    (ctx.t_cal_1d, ctx.t_vol_1d) = model.times(now_ms + 86_400_000);
+    Ok(ctx)
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -181,7 +229,7 @@ pub struct OptQuote {
     pub state: TradeState,
 }
 
-fn round_to(x: f64, decimals: i32) -> f64 {
+pub fn round_to(x: f64, decimals: i32) -> f64 {
     if !x.is_finite() {
         return 0.0;
     }
@@ -197,7 +245,7 @@ fn sig_round(x: f64, digits: i32) -> f64 {
     round_to(x, (digits - 1 - mag).clamp(0, 12))
 }
 
-fn intrinsic(kind: OptionType, s: f64, k: f64) -> f64 {
+pub fn intrinsic(kind: OptionType, s: f64, k: f64) -> f64 {
     (kind.sign() * (s - k)).max(0.0)
 }
 
@@ -213,6 +261,22 @@ pub fn mid_price(ctx: &Ctx, kind: OptionType, k: f64) -> (f64, f64) {
         return (intrinsic(kind, ctx.spot, k), sig);
     }
     (price(kind, ctx.spot, k, ctx.t_cal, ctx.r, ctx.b, effective_vol(sig, ctx.t_vol, ctx.t_cal)), sig)
+}
+
+/// Model mid per unit (quote currency) of a continuously monitored single-barrier option on the vanilla's smile vol
+/// at the strike (Reiner-Rubinstein, `optmath::barrier_price`), exactly as the trading engine values barrier
+/// positions. `rebate` is per unit in the quote currency. A breached knock-out is worth its rebate, a breached
+/// knock-in its vanilla; with no time left: intrinsic if (knock-in and breached) or (knock-out and not), else the
+/// rebate.
+pub fn barrier_mid(ctx: &Ctx, kind: OptionType, k: f64, barrier: BarrierType, level: f64, rebate: f64) -> f64 {
+    let s = ctx.spot;
+    if ctx.t_cal <= 0.0 || ctx.t_vol <= 0.0 {
+        let breached = if barrier.is_down() { s <= level } else { s >= level };
+        return if barrier.is_in() == breached { intrinsic(kind, s, k) } else { rebate };
+    }
+    let sig = vol_at(ctx, k);
+    let v = barrier_price(kind, barrier, s, k, level, rebate, ctx.t_cal, ctx.r, ctx.b, effective_vol(sig, ctx.t_vol, ctx.t_cal));
+    if v.is_finite() { v.max(0.0) } else { 0.0 }
 }
 
 /// Full quote of one series for a group.

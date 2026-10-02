@@ -396,9 +396,9 @@ const trader: NsMessages<"trader"> = {
   "opt.col.underlying": "标的",
   "opt.col.strike": "行权价",
   "opt.col.bid": "卖价",
-  "opt.col.bidHint": "每份合约的卖价（USD）：点击卖出",
+  "opt.col.bidHint": "每份合约的卖价（USD）：卖出时您获得的价格。点击选择此期权。",
   "opt.col.ask": "买价",
-  "opt.col.askHint": "每份合约的买价（USD）：点击买入",
+  "opt.col.askHint": "每份合约的买价（USD）：买入时您支付的价格。点击选择此期权。",
   "opt.col.mark": "标记价",
   "opt.col.markHint": "每份合约的模型中间价（USD，下方为点数），用于计算 P&L 和预付款",
   "opt.col.iv": "IV",
@@ -434,7 +434,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.flipSide": "切换买入/卖出",
   "opt.ticket.contracts": "合约数",
   "opt.ticket.removeLeg": "移除该腿",
-  "opt.ticket.addHint": "Shift+点击期权链中的其他价格以构建策略。",
+  "opt.ticket.addHint": "使用“添加腿”，或在期权链中 Shift+点击其他行权价，以构建策略。",
   "opt.ticket.payoff": "损益图",
   "opt.ticket.clear": "清除",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -469,7 +469,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.whatCombo": "{u} 策略，{n} 条腿",
   "opt.ticket.review": "核对",
   "opt.ticket.emptyTitle": "选择期权",
-  "opt.ticket.emptyText": "点击期权链中的卖价或买价即可交易单个期权，或 Shift+点击多个价格来构建策略。",
+  "opt.ticket.emptyText": "在期权链中选择一个行权价（看涨或看跌一侧），然后在此选择买入或卖出。Shift+点击更多行权价可构建策略。",
 
   // Live preview
   "opt.preview.title": "预览",
@@ -668,5 +668,27 @@ const trader: NsMessages<"trader"> = {
   "opt.public.how5": "每个到期日均于纽约时间 10:00 按 30 分钟平均价格结算；实值期权自动获得赔付。",
   "opt.public.riskTitle": "风险警告",
   "opt.public.riskText": "期权是复杂的金融工具，亏损风险很高。买方可能损失所支付的全部权利金；卖方的亏损可能超过所收取的权利金。请仅使用您能够承受损失的资金进行交易，并确保您了解期权的运作方式。",
+
+  // Options workspace layout (same panels as CFD mode)
+  "opt.inst.title": "交易品种",
+  "opt.exp.other": "其他日期",
+  "opt.exp.pickTitle": "所有已挂牌到期日",
+  "opt.exp.none": "暂无挂牌",
+  "opt.exp.rollHint": "始终为此类别最近的到期日：截止后会自动切换到下一个日期。",
+  "opt.chart.premium": "权利金",
+  "opt.chart.premiumHint": "所选期权的价格，以每份合约 USD 计。它随标的波动，并随着截止时间临近而逐渐贬值。",
+  "opt.chart.selectHint": "在期权链中选择一个行权价，即可查看其权利金图表",
+  "opt.chart.fallback": "权利金图表暂不可用，正在显示标的。",
+  "opt.chart.loading": "正在加载权利金历史…",
+  "opt.chart.empty": "此期权暂无权利金历史。",
+  "opt.chart.unit": "每份合约 USD",
+  "opt.chain.hint": "点击行权价的看涨或看跌一侧进行选择，然后选择买入或卖出。",
+  "opt.chain.selectCall": "选择 {strike} 看涨期权",
+  "opt.chain.selectPut": "选择 {strike} 看跌期权",
+  "opt.chain.adding": "点击行权价将其添加为一条腿。",
+  "opt.chain.strategy": "正在构建策略：您点击的每个行权价都会添加为一条腿。",
+  "opt.ticket.chooseSide": "选择买入或卖出",
+  "opt.m.chain": "期权链",
+  "opt.m.positions": "持仓",
 };
 export default trader;

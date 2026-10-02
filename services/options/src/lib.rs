@@ -7,6 +7,7 @@
 //! - Fixings: 1-second raw mids in the 30 minutes before each cut, TWAP at the cut with gap accounting and
 //!   an M1-candle fallback.
 //! - Chain REST + WebSocket for Kalks Trader and the public chain page.
+//! - Premium candles: an option series' model mid premium per underlying bar, for the Kalks Trader chart.
 //! - The versioned **snapshot** the trading engine prices with (`GET /v1/internal/options/snapshot`).
 //! - Back Office CRUD with audit: underlyings, rates, holidays, surfaces, tenant / group settings, dealer
 //!   controls, client limits.
@@ -15,6 +16,7 @@
 //! switches (tenant `kalks` is seeded demo ON, live OFF). The engine enforces the switch on every order.
 
 pub mod api;
+pub mod candles;
 pub mod config;
 pub mod feed;
 pub mod jobs;
@@ -51,6 +53,8 @@ pub struct AppState {
     pub public_cache: Arc<Mutex<HashMap<String, (Instant, Arc<serde_json::Value>)>>>,
     /// Serialized engine snapshot per version.
     pub snapshot_cache: Arc<Mutex<Option<(i64, Arc<Vec<u8>>)>>>,
+    /// Premium candles: underlying bars and computed series history, 30 s.
+    pub candles: Arc<candles::Cache>,
     /// Serialises the listing job with admin-triggered regeneration.
     pub listing: Arc<tokio::sync::Mutex<()>>,
     pub jobs: Arc<Mutex<HashMap<&'static str, chrono::DateTime<chrono::Utc>>>>,
@@ -73,6 +77,7 @@ impl AppState {
             tickets: Default::default(),
             public_cache: Default::default(),
             snapshot_cache: Default::default(),
+            candles: Default::default(),
             listing: Default::default(),
             jobs: Default::default(),
         })

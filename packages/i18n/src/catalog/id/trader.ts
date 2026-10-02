@@ -398,9 +398,9 @@ const trader: NsMessages<"trader"> = {
   "opt.col.underlying": "Aset dasar",
   "opt.col.strike": "Strike",
   "opt.col.bid": "Bid",
-  "opt.col.bidHint": "Bid dalam USD per kontrak: klik untuk menjual",
+  "opt.col.bidHint": "Bid dalam USD per kontrak: yang Anda terima saat menjual. Klik untuk memilih opsi ini.",
   "opt.col.ask": "Ask",
-  "opt.col.askHint": "Ask dalam USD per kontrak: klik untuk membeli",
+  "opt.col.askHint": "Ask dalam USD per kontrak: yang Anda bayar saat membeli. Klik untuk memilih opsi ini.",
   "opt.col.mark": "Mark",
   "opt.col.markHint": "Harga tengah model dalam USD per kontrak (pip di bawahnya), digunakan untuk P&L dan margin",
   "opt.col.iv": "IV",
@@ -436,7 +436,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.flipSide": "Beralih antara beli dan jual",
   "opt.ticket.contracts": "Kontrak",
   "opt.ticket.removeLeg": "Hapus leg",
-  "opt.ticket.addHint": "Shift+klik harga lain di rantai opsi untuk menyusun strategi.",
+  "opt.ticket.addHint": "Gunakan Tambah leg, atau Shift+klik strike lain di rantai opsi, untuk menyusun strategi.",
   "opt.ticket.payoff": "Payoff",
   "opt.ticket.clear": "Hapus",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -471,7 +471,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.whatCombo": "Strategi {u}, {n} leg",
   "opt.ticket.review": "Tinjau",
   "opt.ticket.emptyTitle": "Pilih opsi",
-  "opt.ticket.emptyText": "Klik bid atau ask di rantai opsi untuk memperdagangkan satu opsi, atau Shift+klik beberapa harga untuk menyusun strategi.",
+  "opt.ticket.emptyText": "Pilih strike di rantai opsi (sisi call atau put), lalu pilih Buy atau Sell di sini. Shift+klik strike lainnya untuk menyusun strategi.",
 
   // Live preview
   "opt.preview.title": "Pratinjau",
@@ -670,5 +670,27 @@ const trader: NsMessages<"trader"> = {
   "opt.public.how5": "Setiap jatuh tempo diselesaikan pukul 10:00 waktu New York pada harga rata-rata 30 menit; opsi in the money dibayar otomatis.",
   "opt.public.riskTitle": "Peringatan risiko",
   "opt.public.riskText": "Opsi adalah instrumen yang kompleks dan berisiko tinggi menimbulkan kerugian. Pembeli dapat kehilangan seluruh premi yang dibayar; penjual dapat rugi lebih besar daripada premi yang diterima. Lakukan trading hanya dengan dana yang sanggup Anda tanggung kehilangannya, dan pastikan Anda memahami cara kerja opsi.",
+
+  // Options workspace layout (same panels as CFD mode)
+  "opt.inst.title": "Instrumen",
+  "opt.exp.other": "Tanggal lain",
+  "opt.exp.pickTitle": "Semua jatuh tempo yang terdaftar",
+  "opt.exp.none": "Tidak ada",
+  "opt.exp.rollHint": "Selalu jatuh tempo terdekat dari jenis ini: setelah batas waktunya lewat, otomatis pindah ke tanggal berikutnya.",
+  "opt.chart.premium": "Premi",
+  "opt.chart.premiumHint": "Harga opsi yang dipilih dalam USD per kontrak. Bergerak bersama aset dasar dan nilainya berkurang saat batas waktu makin dekat.",
+  "opt.chart.selectHint": "Pilih strike di rantai opsi untuk melihat grafik preminya",
+  "opt.chart.fallback": "Grafik premi belum tersedia. Menampilkan aset dasar.",
+  "opt.chart.loading": "Memuat riwayat premi…",
+  "opt.chart.empty": "Belum ada riwayat premi untuk opsi ini.",
+  "opt.chart.unit": "USD per kontrak",
+  "opt.chain.hint": "Klik sisi call atau put dari sebuah strike untuk memilihnya, lalu pilih Buy atau Sell.",
+  "opt.chain.selectCall": "Pilih call {strike}",
+  "opt.chain.selectPut": "Pilih put {strike}",
+  "opt.chain.adding": "Klik sebuah strike untuk menambahkannya sebagai leg.",
+  "opt.chain.strategy": "Menyusun strategi: setiap strike yang Anda klik ditambahkan sebagai leg.",
+  "opt.ticket.chooseSide": "Pilih Buy atau Sell",
+  "opt.m.chain": "Rantai",
+  "opt.m.positions": "Posisi",
 };
 export default trader;

@@ -323,22 +323,25 @@ export function smileAtDelta(q: SmileQuotes, callDelta: number): number {
 /* ------------------------------------------------------------------ */
 
 const YEAR_MS = 365 * 86_400_000;
+const DAY_MS = 86_400_000;
 const WEEKEND_WEIGHT = 0.15;
 const AVG_WEIGHT = (5 + 2 * WEEKEND_WEIGHT) / 7;
 
-/** Business-time years to the cut: weekend hours count 15 %, normalised so a full week equals a calendar week. */
+/**
+ * Business-time years to the cut: weekend hours (UTC Saturday and Sunday) count 15 %, normalised so a full week
+ * equals a calendar week. Walks whole UTC days (a few hundred steps at most), so pricing a candle history is cheap.
+ */
 export function volYears(nowMs: number, cutMs: number): number {
   if (cutMs <= nowMs) return 0;
-  const HOUR = 3_600_000;
-  let w = 0;
+  let hours = 0;
   let t = nowMs;
   while (t < cutMs) {
-    const step = Math.min(HOUR, cutMs - t);
+    const end = Math.min(cutMs, (Math.floor(t / DAY_MS) + 1) * DAY_MS);
     const day = new Date(t).getUTCDay();
-    w += (step / HOUR) * (day === 0 || day === 6 ? WEEKEND_WEIGHT : 1);
-    t += step;
+    hours += ((end - t) / 3_600_000) * (day === 0 || day === 6 ? WEEKEND_WEIGHT : 1);
+    t = end;
   }
-  return (w / 24 / AVG_WEIGHT) / 365;
+  return (hours / 24 / AVG_WEIGHT) / 365;
 }
 
 export interface PricingContext {
@@ -702,6 +705,108 @@ export function mockUnderlyings(nowMs: number): OptionUnderlying[] {
       realizedVol: +(u.atm[3] * 0.94).toFixed(4),
     };
   });
+}
+
+/* ------------------------------------------------------------------ */
+/* Premium candles (`GET /v1/options/candles`)                         */
+/* ------------------------------------------------------------------ */
+
+/** One bar of an option's premium: `t` unix seconds (bar open, UTC), o/h/l/c USD per contract, `u` underlying close. */
+export interface PremiumCandle {
+  t: number;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  u: number;
+}
+
+/**
+ * `GET /v1/options/candles?series=&tf=&limit=&to=` (tf in minutes: 1, 5, 15, 30, 60, 240, 1440; services/options
+ * README "Premium candles"). `usdPerUnit` is the USD value of one unit of the quote currency: premium per unit of
+ * the underlying = c / (contractSize × usdPerUnit).
+ */
+export interface OptionCandles {
+  series: string;
+  underlying: string;
+  right: OptionRight;
+  strike: number;
+  expiryAt: string;
+  expiryTs?: number;
+  status?: string;
+  tf: number;
+  contractSize: number;
+  usdPerUnit: number;
+  unit: "usd_per_contract";
+  /** earliest bar time the window allows (unix s) */
+  from?: number;
+  candles: PremiumCandle[];
+}
+
+/** Model premium per unit of the underlying at `spot`, `atMs` (the smile and the vol clock of that moment). */
+export function premiumAt(spec: OptionUnderlyingSpec, right: OptionRight, strike: number, spot: number, atMs: number, cutMs: number): number {
+  if (atMs >= cutMs) return Math.max(0, sign(right) * (spot - strike));
+  const { r, b } = carryOf(spec);
+  const tCal = (cutMs - atMs) / YEAR_MS;
+  const tVol = volYears(atMs, cutMs);
+  const ctx: PricingContext = { spec, spot, tCal, tVol, tCal1d: 0, tVol1d: 0, r, b, quotes: quotesAt(spec, (cutMs - atMs) / DAY_MS), usdPerQuote: 1, usdPerUnit: spec.contractSize };
+  return legValue(right, spot, strike, tCal, tVol, r, b, volAtStrike(ctx, strike));
+}
+
+export interface MockPremiumInput {
+  /** series code, `EURUSD-20261009-1.1650-C` */
+  code: string;
+  tfMinutes: number;
+  /** underlying bars, oldest first: `t` unix seconds (bar open, UTC) */
+  bars: { t: number; o: number; h: number; l: number; c: number }[];
+  /** USD per unit of the quote currency (1 for USD; 1 / USDJPY for JPY …) */
+  usdPerQuote: number;
+  /** the series is listed this long before its cut (default 35 days): no bars before that */
+  listedDays?: number;
+}
+
+/**
+ * Demo builds: an option's premium history priced bar by bar from the underlying's candles with the same GK / BS /
+ * Black-76 maths as the chain (smile and business-time vol clock at each bar's own time to the cut), so the chart
+ * moves with the underlying and visibly decays towards the expiry. Like the service: `o` at the bar open, `c` at its
+ * close; the high side is valued at the open and the low side at the close over the underlying's extremes (a put is
+ * worth most at the underlying's low), which brackets the premium inside the bar because time value only melts.
+ */
+export function mockPremiumCandles(inp: MockPremiumInput): OptionCandles | null {
+  const p = parseSeriesCode(inp.code);
+  const spec = p ? OPTION_SPEC[p.underlying] : undefined;
+  if (!p || !spec) return null;
+  const cut = cutInstant(p.date);
+  const step = inp.tfMinutes * 60_000;
+  const from = cut - (inp.listedDays ?? 35) * DAY_MS;
+  const usd = inp.usdPerQuote * spec.contractSize;
+  const at = (s: number, ms: number) => roundTo(premiumAt(spec, p.right, p.strike, s, ms, cut) * usd, 2);
+  const out: PremiumCandle[] = [];
+  for (const b of inp.bars) {
+    const t0 = b.t * 1000;
+    if (t0 >= cut) break;
+    if (t0 + step <= from || !(b.o > 0 && b.c > 0)) continue;
+    const t1 = Math.min(t0 + step, cut);
+    const o = at(b.o, t0);
+    const c = at(b.c, t1);
+    const hi = Math.max(at(b.h, t0), at(b.l, t0));
+    const lo = Math.min(at(b.h, t1), at(b.l, t1));
+    out.push({ t: b.t, o, h: Math.max(o, c, hi), l: Math.min(o, c, lo), c, u: b.c });
+  }
+  return {
+    series: inp.code,
+    underlying: p.underlying,
+    right: p.right,
+    strike: p.strike,
+    expiryAt: new Date(cut).toISOString(),
+    expiryTs: Math.floor(cut / 1000),
+    status: "listed",
+    tf: inp.tfMinutes,
+    contractSize: spec.contractSize,
+    usdPerUnit: roundTo(inp.usdPerQuote, 10),
+    unit: "usd_per_contract",
+    candles: out,
+  };
 }
 
 /** USD per unit of a quote currency from a mid-price lookup (USD 1; JPY / CAD / CHF via the USD pair). */

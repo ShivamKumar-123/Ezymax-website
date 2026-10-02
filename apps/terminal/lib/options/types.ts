@@ -11,6 +11,8 @@ export type {
   OptionRight,
   OptionTradeState,
   OptionUnderlying,
+  OptionCandles,
+  PremiumCandle,
 } from "@kalks/mock/options";
 import type { OptionRight } from "@kalks/mock/options";
 

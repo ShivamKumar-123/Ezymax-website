@@ -412,9 +412,9 @@ const trader: NsMessages<"trader"> = {
   "opt.col.underlying": "الأصل الأساسي",
   "opt.col.strike": "سعر التنفيذ",
   "opt.col.bid": "Bid",
-  "opt.col.bidHint": "Bid بـ USD لكل عقد: انقر للبيع",
+  "opt.col.bidHint": "Bid بـ USD لكل عقد: ما تحصل عليه عند البيع. انقر لاختيار هذا الخيار.",
   "opt.col.ask": "Ask",
-  "opt.col.askHint": "Ask بـ USD لكل عقد: انقر للشراء",
+  "opt.col.askHint": "Ask بـ USD لكل عقد: ما تدفعه عند الشراء. انقر لاختيار هذا الخيار.",
   "opt.col.mark": "التقييم",
   "opt.col.markHint": "السعر الوسطي للنموذج بـ USD لكل عقد (والنقاط تحته)، ويُستخدم لحساب P&L والهامش",
   "opt.col.iv": "IV",
@@ -457,7 +457,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.flipSide": "التبديل بين الشراء والبيع",
   "opt.ticket.contracts": "العقود",
   "opt.ticket.removeLeg": "إزالة الساق",
-  "opt.ticket.addHint": "اضغط Shift وانقر على سعر آخر في السلسلة لبناء استراتيجية.",
+  "opt.ticket.addHint": "استخدم «إضافة ساق» أو اضغط Shift وانقر على سعر تنفيذ آخر في السلسلة لبناء استراتيجية.",
   "opt.ticket.payoff": "العائد",
   "opt.ticket.clear": "مسح",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -499,7 +499,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.whatCombo": "استراتيجية على {u}، عدد السيقان: {n}",
   "opt.ticket.review": "مراجعة",
   "opt.ticket.emptyTitle": "اختر خيارًا",
-  "opt.ticket.emptyText": "انقر على Bid أو Ask في السلسلة لتداول خيار واحد، أو اضغط Shift وانقر على عدة أسعار لبناء استراتيجية.",
+  "opt.ticket.emptyText": "اختر سعر تنفيذ في سلسلة الخيارات (جانب خيار الشراء أو خيار البيع)، ثم اختر شراء أو بيع هنا. اضغط Shift وانقر على أسعار تنفيذ أخرى لبناء استراتيجية.",
 
   // Live preview
   "opt.preview.title": "معاينة",
@@ -740,5 +740,27 @@ const trader: NsMessages<"trader"> = {
   "opt.public.how5": "يُسوّى كل تاريخ انتهاء عند الساعة 10:00 New York بمتوسط السعر خلال 30 دقيقة؛ والخيار داخل النقود يدفع تلقائيًا.",
   "opt.public.riskTitle": "تحذير من المخاطر",
   "opt.public.riskText": "الخيارات أدوات معقدة وتنطوي على مخاطر عالية لخسارة الأموال. قد يخسر المشترون العلاوة التي يدفعونها بالكامل؛ وقد يخسر البائعون أكثر من العلاوة التي يحصلون عليها. لا تتداول إلا بأموال يمكنك تحمّل خسارتها، وتأكد من فهمك لطريقة عمل الخيارات.",
+
+  // Options workspace layout (same panels as CFD mode)
+  "opt.inst.title": "الأدوات",
+  "opt.exp.other": "تواريخ أخرى",
+  "opt.exp.pickTitle": "كل تواريخ الانتهاء المدرجة",
+  "opt.exp.none": "لا يوجد تاريخ مدرج",
+  "opt.exp.rollHint": "دائمًا أقرب تاريخ انتهاء من هذا النوع: بعد وقت القطع ينتقل تلقائيًا إلى التاريخ التالي.",
+  "opt.chart.premium": "العلاوة",
+  "opt.chart.premiumHint": "سعر الخيار المحدد بـ USD لكل عقد. يتحرك مع الأصل الأساسي ويفقد من قيمته كلما اقترب وقت القطع.",
+  "opt.chart.selectHint": "اختر سعر تنفيذ في سلسلة الخيارات لعرض الرسم البياني لعلاوته",
+  "opt.chart.fallback": "الرسوم البيانية للعلاوة غير متاحة بعد. يتم عرض الأصل الأساسي.",
+  "opt.chart.loading": "جارٍ تحميل سجل العلاوة…",
+  "opt.chart.empty": "لا يوجد سجل علاوة لهذا الخيار بعد.",
+  "opt.chart.unit": "USD لكل عقد",
+  "opt.chain.hint": "انقر على جانب خيار الشراء أو خيار البيع لسعر تنفيذ لاختياره، ثم اختر شراء أو بيع.",
+  "opt.chain.selectCall": "اختيار خيار الشراء {strike}",
+  "opt.chain.selectPut": "اختيار خيار البيع {strike}",
+  "opt.chain.adding": "انقر على سعر تنفيذ لإضافته كساق.",
+  "opt.chain.strategy": "جارٍ بناء استراتيجية: كل سعر تنفيذ تنقر عليه يُضاف كساق.",
+  "opt.ticket.chooseSide": "اختر شراء أو بيع",
+  "opt.m.chain": "السلسلة",
+  "opt.m.positions": "الصفقات",
 };
 export default trader;

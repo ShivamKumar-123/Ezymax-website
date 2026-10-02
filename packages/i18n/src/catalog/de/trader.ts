@@ -408,9 +408,9 @@ const trader: NsMessages<"trader"> = {
   "opt.col.underlying": "Basiswert",
   "opt.col.strike": "Strike",
   "opt.col.bid": "Bid",
-  "opt.col.bidHint": "Bid in USD pro Kontrakt: zum Verkaufen klicken",
+  "opt.col.bidHint": "Bid in USD pro Kontrakt: was Sie beim Verkauf erhalten. Klicken, um diese Option auszuwählen.",
   "opt.col.ask": "Ask",
-  "opt.col.askHint": "Ask in USD pro Kontrakt: zum Kaufen klicken",
+  "opt.col.askHint": "Ask in USD pro Kontrakt: was Sie beim Kauf zahlen. Klicken, um diese Option auszuwählen.",
   "opt.col.mark": "Mark",
   "opt.col.markHint": "Modell-Mittelkurs in USD pro Kontrakt (darunter in Pips), Grundlage für P&L und Margin",
   "opt.col.iv": "IV",
@@ -446,7 +446,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.flipSide": "Zwischen Kauf und Verkauf wechseln",
   "opt.ticket.contracts": "Kontrakte",
   "opt.ticket.removeLeg": "Leg entfernen",
-  "opt.ticket.addHint": "Shift+Klick auf einen weiteren Preis in der Kette, um eine Strategie aufzubauen.",
+  "opt.ticket.addHint": "Mit „Leg hinzufügen“ oder Shift+Klick auf einen weiteren Strike in der Kette bauen Sie eine Strategie auf.",
   "opt.ticket.payoff": "Auszahlungsprofil",
   "opt.ticket.clear": "Leeren",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -481,7 +481,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.whatCombo": "{u}-Strategie, {n} Legs",
   "opt.ticket.review": "Prüfen",
   "opt.ticket.emptyTitle": "Option wählen",
-  "opt.ticket.emptyText": "Klicken Sie auf einen Bid oder Ask in der Kette, um eine Option zu handeln, oder per Shift+Klick auf mehrere Preise, um eine Strategie aufzubauen.",
+  "opt.ticket.emptyText": "Wählen Sie einen Strike in der Optionskette (Call- oder Put-Seite) und dann hier Kaufen oder Verkaufen. Mit Shift+Klick auf weitere Strikes bauen Sie eine Strategie auf.",
 
   // Live preview
   "opt.preview.title": "Vorschau",
@@ -680,5 +680,27 @@ const trader: NsMessages<"trader"> = {
   "opt.public.how5": "Jeder Verfallstermin wird um 10:00 Uhr New Yorker Zeit zum 30-Minuten-Durchschnittskurs abgerechnet; im Geld wird automatisch ausgezahlt.",
   "opt.public.riskTitle": "Risikohinweis",
   "opt.public.riskText": "Optionen sind komplex und mit einem hohen Verlustrisiko verbunden. Käufer können die gesamte gezahlte Prämie verlieren; Verkäufer können mehr als die erhaltene Prämie verlieren. Handeln Sie nur mit Geld, dessen Verlust Sie sich leisten können, und stellen Sie sicher, dass Sie verstehen, wie Optionen funktionieren.",
+
+  // Options workspace layout (same panels as CFD mode)
+  "opt.inst.title": "Instrumente",
+  "opt.exp.other": "Andere Termine",
+  "opt.exp.pickTitle": "Alle gelisteten Verfallstermine",
+  "opt.exp.none": "Keiner gelistet",
+  "opt.exp.rollHint": "Immer der nächste Verfallstermin dieser Art: Nach dem Cut wechselt er automatisch zum nächsten Datum.",
+  "opt.chart.premium": "Prämie",
+  "opt.chart.premiumHint": "Der Preis der ausgewählten Option in USD pro Kontrakt. Er bewegt sich mit dem Basiswert und verliert an Wert, je näher der Cut rückt.",
+  "opt.chart.selectHint": "Wählen Sie einen Strike in der Optionskette, um den Prämien-Chart zu sehen",
+  "opt.chart.fallback": "Prämien-Charts sind noch nicht verfügbar. Angezeigt wird der Basiswert.",
+  "opt.chart.loading": "Prämienverlauf wird geladen…",
+  "opt.chart.empty": "Für diese Option gibt es noch keinen Prämienverlauf.",
+  "opt.chart.unit": "USD pro Kontrakt",
+  "opt.chain.hint": "Klicken Sie auf die Call- oder Put-Seite eines Strikes, um ihn auszuwählen, und wählen Sie dann Kaufen oder Verkaufen.",
+  "opt.chain.selectCall": "Call {strike} auswählen",
+  "opt.chain.selectPut": "Put {strike} auswählen",
+  "opt.chain.adding": "Klicken Sie auf einen Strike, um ihn als Leg hinzuzufügen.",
+  "opt.chain.strategy": "Strategie im Aufbau: Jeder angeklickte Strike wird als Leg hinzugefügt.",
+  "opt.ticket.chooseSide": "Kaufen oder Verkaufen wählen",
+  "opt.m.chain": "Kette",
+  "opt.m.positions": "Positionen",
 };
 export default trader;

@@ -1,11 +1,13 @@
 "use client";
 
-// Option order ticket: the legs picked from the chain (one series = a single order; several = a strategy that fills
-// all-or-nothing), buy / sell, contracts, market or limit premium, stop loss / take profit on the premium, an
-// optional trigger on the underlying (send when it trades above / below a price), and the live preview. Premiums
-// are typed in USD per contract (plan O8) and sent per unit of the underlying, like the chain's bid / ask.
+// Option order ticket (the right panel, where the CFD order panel sits): the option selected in the chain (a strike's
+// call or put; Call / Put switch), then the trader chooses SELL at the bid or BUY at the ask (big buttons, USD per
+// contract with pips under them), contracts, market or limit premium, stop loss / take profit on the premium, an
+// optional trigger on the underlying (send when it trades above / below a price), the live preview and the order
+// button. "Add leg" / Shift+click in the chain build a strategy (several legs, all-or-nothing). Premiums are typed in
+// USD per contract (plan O8) and sent per unit of the underlying, like the chain's bid / ask.
 import * as React from "react";
-import { Crosshair, Lock, MousePointerClick, Trash2, Wand2, X } from "lucide-react";
+import { Crosshair, Lock, MousePointerClick, Plus, Table2, Trash2, Wand2, X } from "lucide-react";
 import { cn } from "@kalks/ui";
 import { useLocale, useT } from "@kalks/i18n/react";
 import { toast } from "@/lib/notify";
@@ -17,8 +19,8 @@ import { errText, needsOnboarding } from "@/lib/options/errors";
 import { usdPerUnitOf } from "@/lib/options/math";
 import { opt, underlyingOf, useOpt, useSeriesQuote, type TicketLeg } from "@/lib/options-store";
 import type { OptionQuote, OrderRequest } from "@/lib/options/types";
-import { ErrorNote, Flash, RightTag, Seg, StateBadge } from "./bits";
-import { expiryLabel, pips, px, usd } from "./format";
+import { Countdown, ErrorNote, Flash, OptAvatar, RightTag, Seg, StateBadge } from "./bits";
+import { expiryLabel, greek, pct, pips, px, usd } from "./format";
 import { PreviewSummary, usePreview } from "./preview";
 
 function Label({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
@@ -71,32 +73,94 @@ function LegRow({ leg, multi, locale }: { leg: TicketLeg; multi: boolean; locale
   );
 }
 
-/** Buy / Sell buttons of a single-leg ticket, with the live ask / bid per contract. */
-function SideButtons({ leg, pipSize }: { leg: TicketLeg; pipSize: number }) {
+/** The selected option: underlying, strike, call / put switch, expiry with the cut countdown, IV and delta. */
+function SelectedOption({ leg, locale }: { leg: TicketLeg; locale: string }) {
+  const t = useT();
+  const q = useSeriesQuote(leg.series);
+  const cutAt = useOpt((s) => s.expiries.find((e) => e.date === leg.expiry && s.u === leg.u)?.cutAt ?? (s.chain?.expiry === leg.expiry && s.chain.underlying === leg.u ? s.chain.cutAt : null));
+  // the switch needs the strike in the chain on screen
+  const flippable = useOpt((s) => !!s.chain && s.chain.expiry === leg.expiry && s.chain.underlying === leg.u && s.chain.rows.some((r) => Math.abs(r.strike - leg.strike) < 1e-9 && r.call && r.put));
+  return (
+    <div className="rounded-[8px] border border-line bg-surface-2/50 px-2.5 py-2">
+      <div className="flex items-center gap-2">
+        <OptAvatar symbol={leg.u} size={16} />
+        <span className="text-[13px] font-semibold text-fg">{leg.u}</span>
+        <span className="font-mono text-[13px] font-semibold text-fg">{leg.strikeLabel}</span>
+        <RightTag right={leg.right} />
+        {q && <StateBadge state={q.state} className="ms-auto" />}
+      </div>
+      <div className="mt-1.5 flex items-center gap-2">
+        <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-[10.5px] text-fg-3">
+          {expiryLabel(leg.expiry, locale)}
+          {cutAt && <Countdown to={Date.parse(cutAt)} className="text-[10px]" />}
+        </span>
+        {flippable && (
+          <Seg<"call" | "put">
+            size="sm"
+            className="w-[96px] shrink-0"
+            value={leg.right}
+            onChange={(v) => opt.flipRight(v)}
+            options={[
+              { value: "call", label: t("trader.opt.call"), tone: "up" },
+              { value: "put", label: t("trader.opt.put"), tone: "down" },
+            ]}
+          />
+        )}
+      </div>
+      {q && (
+        <div className="mt-1.5 grid grid-cols-3 gap-1 font-mono text-[10.5px]">
+          <span className="rounded-[4px] bg-panel/70 px-1.5 py-0.5" title={t("trader.opt.col.markHint")}>
+            <span className="font-sans text-fg-3">{t("trader.opt.col.mark")}</span> <span className="text-fg">{usd(q.markUsd)}</span>
+          </span>
+          <span className="rounded-[4px] bg-panel/70 px-1.5 py-0.5" title={t("trader.opt.col.ivHint")}>
+            <span className="font-sans text-fg-3">{t("trader.opt.col.iv")}</span> <span className="text-fg">{pct(q.iv, 1)}</span>
+          </span>
+          <span className="rounded-[4px] bg-panel/70 px-1.5 py-0.5" title={t("trader.opt.col.deltaHint")}>
+            <span className="font-sans text-fg-3">Δ</span> <span className="text-fg">{greek(q.delta, 2)}</span>
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * SELL at the bid | BUY at the ask, USD per contract with pips under them (the CFD panel's big buttons). The trader
+ * chooses one: the preview and the order button follow; until then both stay lit.
+ */
+function SideButtons({ leg, armed, pipSize, disabled }: { leg: TicketLeg; armed: boolean; pipSize: number; disabled?: boolean }) {
   const t = useT();
   const q = useSeriesQuote(leg.series);
   return (
     <div className="grid grid-cols-2 gap-1.5">
       {(["sell", "buy"] as const).map((side) => {
-        const on = leg.side === side;
+        const on = armed && leg.side === side;
+        const off = armed && leg.side !== side;
         const v = q ? (side === "buy" ? q.askUsd : q.bidUsd) : 0;
         const p = q ? (side === "buy" ? q.ask : q.bid) : 0;
         return (
           <button
             key={side}
-            onClick={() => opt.updateLeg(leg.id, { side })}
+            onClick={() => opt.arm(side)}
+            disabled={disabled}
             aria-pressed={on}
+            title={side === "buy" ? t("trader.opt.clickBuy") : t("trader.opt.clickSell")}
             className={cn(
-              "rounded-[7px] border px-2.5 py-1.5 transition",
+              "rounded-[8px] border px-2.5 py-2 transition disabled:cursor-not-allowed disabled:opacity-50",
               side === "buy" ? "text-end" : "text-start",
-              on ? (side === "buy" ? "border-up bg-up text-white" : "border-down bg-down text-white") : "border-line bg-surface-2 text-fg-2 hover:bg-surface-3",
+              off
+                ? "border-line bg-surface-2 text-fg-2 hover:bg-surface-3"
+                : side === "buy"
+                  ? "border-up bg-up text-white hover:brightness-110"
+                  : "border-down bg-down text-white hover:brightness-110",
+              on && (side === "buy" ? "ring-2 ring-up/45 ring-offset-1 ring-offset-panel" : "ring-2 ring-down/45 ring-offset-1 ring-offset-panel"),
             )}
           >
-            <div className={cn("text-[10px] font-semibold uppercase tracking-[0.1em]", on ? "opacity-90" : side === "buy" ? "text-up" : "text-down")}>{side === "buy" ? t("common.buy") : t("common.sell")}</div>
-            <div className="k-num font-mono text-[15px] font-semibold">
+            <div className={cn("text-[10px] font-semibold uppercase tracking-[0.1em]", off ? (side === "buy" ? "text-up" : "text-down") : "opacity-90")}>{side === "buy" ? t("common.buy") : t("common.sell")}</div>
+            <div className="k-num font-mono text-[17px] font-semibold leading-tight">
               <Flash value={v}>{v ? usd(v) : "—"}</Flash>
             </div>
-            <div className={cn("font-mono text-[9.5px]", on ? "opacity-80" : "text-fg-3")}>{q ? `${pips(p / pipSize)} ${t("trader.opt.pips")}` : " "}</div>
+            <div className={cn("font-mono text-[9.5px]", off ? "text-fg-3" : "opacity-80")}>{q ? `${pips(p / pipSize)} ${t("trader.opt.pips")}` : " "}</div>
           </button>
         );
       })}
@@ -104,7 +168,7 @@ function SideButtons({ leg, pipSize }: { leg: TicketLeg; pipSize: number }) {
   );
 }
 
-export function OptionTicket({ onDone, className }: { onDone?: () => void; className?: string }) {
+export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onDone?: () => void; onAddLeg?: () => void; onOpenChain?: () => void; className?: string }) {
   const T = useTerminal();
   const t = useT();
   const { locale } = useLocale();
@@ -124,14 +188,17 @@ export function OptionTicket({ onDone, className }: { onDone?: () => void; class
 
   const limitUsd = parseFloat(ticket.limit);
   const limitPremium = ticket.type === "limit" && single && limitUsd > 0 && usdPerUnit > 0 ? limitUsd / usdPerUnit : undefined;
+  // a single option shows its numbers once the trader chose Buy or Sell
+  const armed = !single || ticket.armed;
   const preview = usePreview(
     legs.map((l) => ({ series: l.series, u: l.u, right: l.right, strike: l.strike, side: l.side, contracts: l.contracts })),
     single ? ticket.type : "market",
     limitPremium,
+    armed,
   );
   React.useEffect(() => setLastErr(null), [legs.length, single?.series]);
 
-  if (!legs.length) return <EmptyTicket className={className} />;
+  if (!legs.length) return <EmptyTicket className={className} onOpenChain={onOpenChain} />;
 
   const guest = T.guest || publicView;
   const minC = cur?.minContracts ?? 1;
@@ -140,7 +207,7 @@ export function OptionTicket({ onDone, className }: { onDone?: () => void; class
   const triggerPrice = parseFloat(ticket.triggerPrice);
   const pipSize = cur?.pipSize ?? 10 ** -digits;
   const pipsOf = (amount: number) => (usdPerUnit > 0 && single ? amount / single.contracts / usdPerUnit / pipSize : null);
-  const blocked = guest || T.readOnly || busy || !preview.preview || !preview.preview.ok || (preview.preview.estimate && T.live) || (single && q0 && q0.state !== "open") || (single && ticket.type === "limit" && limitPremium === undefined);
+  const blocked = !armed || guest || T.readOnly || busy || !preview.preview || !preview.preview.ok || (preview.preview.estimate && T.live) || (single && q0 && q0.state !== "open") || (single && ticket.type === "limit" && limitPremium === undefined);
 
   const submit = async () => {
     if (blocked || !preview.preview) return;
@@ -172,13 +239,16 @@ export function OptionTicket({ onDone, className }: { onDone?: () => void; class
     const placed = r.data.status === "placed";
     T.log("Trade", `'${T.account.login}': option order ${legs.map((l) => `${l.side} ${l.contracts} ${l.series}`).join(", ")} ${placed ? "placed" : "filled"}`);
     toast.success(placed ? t("trader.opt.toast.placed") : t("trader.opt.toast.filled"), { description: what });
-    opt.clearTicket();
+    // the option stays selected (no side, protection cleared), like the CFD panel staying on its symbol
+    opt.afterFill();
     onDone?.();
   };
 
-  const submitLabel = single
-    ? `${single.side === "buy" ? t("common.buy") : t("common.sell")} ${single.contracts} × ${single.strikeLabel} ${single.right === "call" ? t("trader.opt.call") : t("trader.opt.put")}`
-    : t("trader.opt.ticket.placeStrategy", { count: legs.length });
+  const submitLabel = !armed
+    ? t("trader.opt.ticket.chooseSide")
+    : single
+      ? `${single.side === "buy" ? t("common.buy") : t("common.sell")} ${single.contracts} × ${single.strikeLabel} ${single.right === "call" ? t("trader.opt.call") : t("trader.opt.put")}`
+      : t("trader.opt.ticket.placeStrategy", { count: legs.length });
   const total = preview.preview ? Math.abs(preview.preview.netPremium) : null;
 
   return (
@@ -186,6 +256,19 @@ export function OptionTicket({ onDone, className }: { onDone?: () => void; class
       <div className="flex items-center justify-between">
         <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">{single ? t("trader.opt.ticket.single") : t("trader.opt.ticket.strategy", { count: legs.length })}</span>
         <span className="flex items-center gap-1">
+          {!T.readOnly && !publicView && (
+            <button
+              onClick={() => {
+                opt.setAdding(!ticket.adding);
+                if (!ticket.adding) onAddLeg?.();
+              }}
+              aria-pressed={ticket.adding}
+              title={t("trader.opt.chain.adding")}
+              className={cn("flex h-6 items-center gap-1 rounded-[5px] px-1.5 text-[11px]", ticket.adding ? "bg-ember-soft text-ember" : "text-fg-2 hover:bg-surface-3 hover:text-fg")}
+            >
+              <Plus className="size-3" /> {t("trader.opt.builder.addLeg")}
+            </button>
+          )}
           {legs.length > 1 && (
             <button onClick={() => opt.openBuilder(true)} className="flex h-6 items-center gap-1 rounded-[5px] px-1.5 text-[11px] text-fg-2 hover:bg-surface-3 hover:text-fg">
               <Wand2 className="size-3" /> {t("trader.opt.ticket.payoff")}
@@ -197,14 +280,27 @@ export function OptionTicket({ onDone, className }: { onDone?: () => void; class
         </span>
       </div>
 
-      <div className="space-y-1">
-        {legs.map((l) => (
-          <LegRow key={l.id} leg={l} multi={!single} locale={locale} />
-        ))}
-        {single && <div className="text-[10.5px] text-fg-3">{t("trader.opt.ticket.addHint")}</div>}
-      </div>
+      {single ? (
+        <SelectedOption leg={single} locale={locale} />
+      ) : (
+        <div className="space-y-1">
+          {legs.map((l) => (
+            <LegRow key={l.id} leg={l} multi locale={locale} />
+          ))}
+        </div>
+      )}
 
-      {single && <SideButtons leg={single} pipSize={pipSize} />}
+      {single && (
+        <div>
+          <SideButtons leg={single} armed={ticket.armed} pipSize={pipSize} disabled={!q0} />
+          {!ticket.armed && (
+            <div className="mt-1.5 text-center leading-snug">
+              <div className="text-[11.5px] font-semibold text-ember">{t("trader.opt.ticket.chooseSide")}</div>
+              <div className="mt-0.5 text-[10.5px] text-fg-3">{t("trader.opt.public.how2")}</div>
+            </div>
+          )}
+        </div>
+      )}
 
       {single && (
         <div>
@@ -299,8 +395,9 @@ export function OptionTicket({ onDone, className }: { onDone?: () => void; class
         )}
       </div>
 
-      <PreviewSummary state={preview} digits={digits} pipsOf={single ? pipsOf : undefined} />
+      {armed && <PreviewSummary state={preview} digits={digits} pipsOf={single ? pipsOf : undefined} />}
       {lastErr && <ErrorNote code={lastErr.code} message={lastErr.message} />}
+      {single && <div className="text-[10.5px] leading-snug text-fg-3">{t("trader.opt.ticket.addHint")}</div>}
 
       {guest ? (
         <div className="rounded-[8px] border border-ember/25 bg-ember-soft/40 px-3 py-3 text-center">
@@ -321,7 +418,7 @@ export function OptionTicket({ onDone, className }: { onDone?: () => void; class
           disabled={!!blocked}
           className={cn(
             "flex h-10 w-full items-center justify-between gap-2 rounded-[8px] px-3 text-[12.5px] font-semibold text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100",
-            single ? (single.side === "buy" ? "bg-up" : "bg-down") : "bg-ember",
+            !armed ? "bg-surface-3 text-fg-3" : single ? (single.side === "buy" ? "bg-up" : "bg-down") : "bg-ember",
           )}
         >
           <span className="truncate">{busy ? t("trader.opt.ticket.sending") : tradingSoon && T.live ? t("trader.opt.ticket.soon") : submitLabel}</span>
@@ -332,8 +429,9 @@ export function OptionTicket({ onDone, className }: { onDone?: () => void; class
   );
 }
 
-function EmptyTicket({ className }: { className?: string }) {
+function EmptyTicket({ className, onOpenChain }: { className?: string; onOpenChain?: () => void }) {
   const t = useT();
+  const center = useOpt((s) => s.prefs.center);
   return (
     <div className={cn("grid h-full min-h-[260px] place-items-center p-5 text-center", className)}>
       <div className="max-w-[260px]">
@@ -343,7 +441,12 @@ function EmptyTicket({ className }: { className?: string }) {
         <div className="text-[13px] font-semibold text-fg">{t("trader.opt.ticket.emptyTitle")}</div>
         <p className="mt-1 text-[11.5px] leading-relaxed text-fg-3">{t("trader.opt.ticket.emptyText")}</p>
         <div className="mt-3 flex flex-col items-center gap-1.5">
-          <button onClick={() => opt.openBuilder(true)} className="inline-flex h-7 items-center gap-1.5 rounded-[7px] bg-ember px-3 text-[12px] font-semibold text-white hover:brightness-110">
+          {(onOpenChain || center !== "chain") && (
+            <button onClick={() => (onOpenChain ? onOpenChain() : opt.setCenter("chain"))} className="inline-flex h-7 items-center gap-1.5 rounded-[7px] bg-ember px-3 text-[12px] font-semibold text-white hover:brightness-110">
+              <Table2 className="size-3.5" /> {t("trader.opt.chainTitle")}
+            </button>
+          )}
+          <button onClick={() => opt.openBuilder(true)} className="inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-line px-3 text-[12px] font-medium text-fg-2 hover:border-fg-3/50 hover:text-fg">
             <Wand2 className="size-3.5" /> {t("trader.opt.builder.open")}
           </button>
           <button onClick={() => opt.setPrefs({ panel: "simple" })} className="text-[11.5px] text-fg-2 underline-offset-2 hover:text-fg hover:underline">

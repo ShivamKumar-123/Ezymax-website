@@ -400,9 +400,9 @@ const trader: NsMessages<"trader"> = {
   "opt.col.underlying": "انڈرلائنگ",
   "opt.col.strike": "اسٹرائیک",
   "opt.col.bid": "بِڈ",
-  "opt.col.bidHint": "فی کنٹریکٹ USD میں بِڈ: فروخت کے لیے کلک کریں",
+  "opt.col.bidHint": "فی کنٹریکٹ USD میں بِڈ: بیچنے پر آپ کو جو ملتا ہے۔ یہ آپشن منتخب کرنے کے لیے کلک کریں۔",
   "opt.col.ask": "آسک",
-  "opt.col.askHint": "فی کنٹریکٹ USD میں آسک: خریدنے کے لیے کلک کریں",
+  "opt.col.askHint": "فی کنٹریکٹ USD میں آسک: خریدنے پر آپ جو ادا کرتے ہیں۔ یہ آپشن منتخب کرنے کے لیے کلک کریں۔",
   "opt.col.mark": "مارک",
   "opt.col.markHint": "فی کنٹریکٹ USD میں ماڈل مڈ پرائس (نیچے پِپس میں)، P&L اور مارجن کے لیے استعمال ہوتی ہے",
   "opt.col.iv": "IV",
@@ -438,7 +438,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.flipSide": "خرید اور فروخت کے درمیان تبدیل کریں",
   "opt.ticket.contracts": "کنٹریکٹس",
   "opt.ticket.removeLeg": "لیگ ہٹائیں",
-  "opt.ticket.addHint": "اسٹریٹجی بنانے کے لیے چین میں کسی اور قیمت پر Shift+کلک کریں۔",
+  "opt.ticket.addHint": "اسٹریٹجی بنانے کے لیے «لیگ شامل کریں» استعمال کریں، یا چین میں کسی اور اسٹرائیک پر Shift+کلک کریں۔",
   "opt.ticket.payoff": "پے آف",
   "opt.ticket.clear": "صاف کریں",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -473,7 +473,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.whatCombo": "{u} اسٹریٹجی، {n} لیگز",
   "opt.ticket.review": "جائزہ",
   "opt.ticket.emptyTitle": "آپشن منتخب کریں",
-  "opt.ticket.emptyText": "ایک آپشن ٹریڈ کرنے کے لیے چین میں بِڈ یا آسک پر کلک کریں، یا اسٹریٹجی بنانے کے لیے کئی قیمتوں پر Shift+کلک کریں۔",
+  "opt.ticket.emptyText": "آپشن چین میں کوئی اسٹرائیک (کال یا پٹ والی سائیڈ) منتخب کریں، پھر یہاں خریدیں یا فروخت کریں چنیں۔ اسٹریٹجی بنانے کے لیے مزید اسٹرائیکس پر Shift+کلک کریں۔",
 
   // Live preview
   "opt.preview.title": "پیش منظر",
@@ -672,5 +672,27 @@ const trader: NsMessages<"trader"> = {
   "opt.public.how5": "ہر ایکسپائری 10:00 New York پر 30 منٹ کی اوسط قیمت پر سیٹل ہوتی ہے؛ اِن دی منی آپشن خودکار طور پر ادائیگی کرتا ہے۔",
   "opt.public.riskTitle": "رسک وارننگ",
   "opt.public.riskText": "آپشنز پیچیدہ ہیں اور ان میں پیسہ کھونے کا زیادہ خطرہ ہوتا ہے۔ خریدار اپنا ادا کیا ہوا پورا پریمیم کھو سکتے ہیں؛ فروخت کنندگان ملنے والے پریمیم سے زیادہ کھو سکتے ہیں۔ صرف اتنی رقم سے ٹریڈ کریں جسے کھونا آپ برداشت کر سکیں، اور یقینی بنائیں کہ آپ سمجھتے ہیں کہ آپشنز کیسے کام کرتے ہیں۔",
+
+  // Options workspace layout (same panels as CFD mode)
+  "opt.inst.title": "انسٹرومنٹس",
+  "opt.exp.other": "دیگر تاریخیں",
+  "opt.exp.pickTitle": "تمام لسٹڈ ایکسپائریز",
+  "opt.exp.none": "کوئی لسٹڈ نہیں",
+  "opt.exp.rollHint": "ہمیشہ اس قسم کی قریب ترین ایکسپائری: کٹ کے بعد یہ خود بخود اگلی تاریخ پر چلی جاتی ہے۔",
+  "opt.chart.premium": "پریمیم",
+  "opt.chart.premiumHint": "منتخب آپشن کی قیمت، فی کنٹریکٹ USD میں۔ یہ انڈرلائنگ کے ساتھ حرکت کرتی ہے اور کٹ قریب آنے پر اس کی قدر کم ہوتی جاتی ہے۔",
+  "opt.chart.selectHint": "پریمیم چارٹ دیکھنے کے لیے آپشن چین میں کوئی اسٹرائیک منتخب کریں",
+  "opt.chart.fallback": "پریمیم چارٹس ابھی دستیاب نہیں۔ انڈرلائنگ دکھایا جا رہا ہے۔",
+  "opt.chart.loading": "پریمیم کی ہسٹری لوڈ ہو رہی ہے…",
+  "opt.chart.empty": "اس آپشن کی ابھی کوئی پریمیم ہسٹری نہیں۔",
+  "opt.chart.unit": "فی کنٹریکٹ USD",
+  "opt.chain.hint": "کسی اسٹرائیک کی کال یا پٹ سائیڈ پر کلک کر کے اسے منتخب کریں، پھر خریدیں یا فروخت کریں چنیں۔",
+  "opt.chain.selectCall": "{strike} کال منتخب کریں",
+  "opt.chain.selectPut": "{strike} پٹ منتخب کریں",
+  "opt.chain.adding": "کسی اسٹرائیک کو لیگ کے طور پر شامل کرنے کے لیے اس پر کلک کریں۔",
+  "opt.chain.strategy": "اسٹریٹجی بن رہی ہے: جس اسٹرائیک پر آپ کلک کریں گے وہ لیگ کے طور پر شامل ہو جائے گا۔",
+  "opt.ticket.chooseSide": "خریدیں یا فروخت کریں منتخب کریں",
+  "opt.m.chain": "چین",
+  "opt.m.positions": "پوزیشنز",
 };
 export default trader;

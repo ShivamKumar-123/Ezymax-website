@@ -396,9 +396,9 @@ const trader: NsMessages<"trader"> = {
   "opt.col.underlying": "기초자산",
   "opt.col.strike": "행사가",
   "opt.col.bid": "Bid",
-  "opt.col.bidHint": "계약당 Bid(USD): 클릭하여 매도",
+  "opt.col.bidHint": "계약당 Bid(USD): 매도할 때 받는 가격입니다. 클릭하면 이 옵션을 선택합니다.",
   "opt.col.ask": "Ask",
-  "opt.col.askHint": "계약당 Ask(USD): 클릭하여 매수",
+  "opt.col.askHint": "계약당 Ask(USD): 매수할 때 지불하는 가격입니다. 클릭하면 이 옵션을 선택합니다.",
   "opt.col.mark": "평가가",
   "opt.col.markHint": "계약당 모델 중간가격(USD, 아래는 핍)으로, P&L과 증거금 계산에 사용됩니다",
   "opt.col.iv": "IV",
@@ -434,7 +434,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.flipSide": "매수/매도 전환",
   "opt.ticket.contracts": "계약 수",
   "opt.ticket.removeLeg": "레그 삭제",
-  "opt.ticket.addHint": "체인에서 다른 가격을 Shift+클릭하여 전략을 구성하세요.",
+  "opt.ticket.addHint": "'레그 추가'를 누르거나 체인에서 다른 행사가를 Shift+클릭하여 전략을 구성하세요.",
   "opt.ticket.payoff": "손익 구조",
   "opt.ticket.clear": "지우기",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -469,7 +469,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.whatCombo": "{u} 전략, 레그 {n}개",
   "opt.ticket.review": "검토",
   "opt.ticket.emptyTitle": "옵션 선택",
-  "opt.ticket.emptyText": "체인에서 Bid 또는 Ask를 클릭해 단일 옵션을 거래하거나, 여러 가격을 Shift+클릭해 전략을 구성하세요.",
+  "opt.ticket.emptyText": "옵션 체인에서 행사가(콜 또는 풋 쪽)를 선택한 다음 여기에서 매수 또는 매도를 고르세요. 다른 행사가를 Shift+클릭하면 전략을 구성할 수 있습니다.",
 
   // Live preview
   "opt.preview.title": "미리보기",
@@ -668,5 +668,27 @@ const trader: NsMessages<"trader"> = {
   "opt.public.how5": "모든 만기는 뉴욕 시간 10:00에 30분 평균 가격으로 결제되며, 내가격이면 자동으로 지급됩니다.",
   "opt.public.riskTitle": "위험 경고",
   "opt.public.riskText": "옵션은 복잡한 상품이며 손실 위험이 높습니다. 매수자는 지불한 프리미엄 전액을 잃을 수 있고, 매도자는 받은 프리미엄보다 더 큰 손실을 입을 수 있습니다. 잃어도 감당할 수 있는 자금으로만 거래하고, 옵션의 작동 방식을 충분히 이해한 후 거래하세요.",
+
+  // Options workspace layout (same panels as CFD mode)
+  "opt.inst.title": "종목",
+  "opt.exp.other": "다른 날짜",
+  "opt.exp.pickTitle": "상장된 모든 만기",
+  "opt.exp.none": "상장 없음",
+  "opt.exp.rollHint": "항상 이 유형의 가장 가까운 만기입니다. 마감 후에는 자동으로 다음 날짜로 넘어갑니다.",
+  "opt.chart.premium": "프리미엄",
+  "opt.chart.premiumHint": "선택한 옵션의 가격(계약당 USD)입니다. 기초자산과 함께 움직이며 마감이 다가올수록 가치가 줄어듭니다.",
+  "opt.chart.selectHint": "옵션 체인에서 행사가를 선택하면 프리미엄 차트가 표시됩니다",
+  "opt.chart.fallback": "프리미엄 차트는 아직 제공되지 않습니다. 기초자산을 표시합니다.",
+  "opt.chart.loading": "프리미엄 내역을 불러오는 중…",
+  "opt.chart.empty": "이 옵션의 프리미엄 내역이 아직 없습니다.",
+  "opt.chart.unit": "계약당 USD",
+  "opt.chain.hint": "행사가의 콜 또는 풋 쪽을 클릭해 선택한 다음 매수 또는 매도를 고르세요.",
+  "opt.chain.selectCall": "{strike} 콜 선택",
+  "opt.chain.selectPut": "{strike} 풋 선택",
+  "opt.chain.adding": "행사가를 클릭하면 레그로 추가됩니다.",
+  "opt.chain.strategy": "전략 구성 중: 클릭하는 행사가가 레그로 추가됩니다.",
+  "opt.ticket.chooseSide": "매수 또는 매도 선택",
+  "opt.m.chain": "체인",
+  "opt.m.positions": "포지션",
 };
 export default trader;

@@ -15,17 +15,15 @@ import { TitleBar } from "./title-bar";
 import { StatusBar } from "./status-bar";
 import { useTradeMode } from "@/lib/options/mode";
 
-// Options workspace: its own chunk, downloaded the first time a trader switches to Options
-const OptionsMain = dynamic(() => import("@/components/options/desktop").then((m) => m.OptionsMain), { ssr: false, loading: () => <OptionsLoading /> });
+// Options workspace: its own chunk (one module, three panels), downloaded the first time a trader switches to
+// Options. It fills the same panels as CFD mode: instruments where Market Watch is, Chart | Option chain where the
+// chart is, the option ticket where the order panel is, so switching modes never moves a panel.
+const OptionsLeft = dynamic(() => import("@/components/options/desktop").then((m) => m.OptionsLeft), { ssr: false, loading: () => <PanelLoading /> });
+const OptionsCenter = dynamic(() => import("@/components/options/desktop").then((m) => m.OptionsCenter), { ssr: false, loading: () => <PanelLoading framed /> });
+const OptionsRight = dynamic(() => import("@/components/options/desktop").then((m) => m.OptionsRight), { ssr: false, loading: () => <PanelLoading /> });
 
-function OptionsLoading() {
-  return (
-    <div className="flex h-full flex-col gap-1">
-      <div className="h-11 animate-pulse rounded-[8px] border border-line bg-panel" />
-      <div className="h-10 animate-pulse rounded-[8px] border border-line bg-panel" />
-      <div className="min-h-0 flex-1 animate-pulse rounded-[8px] border border-line bg-panel" />
-    </div>
-  );
+function PanelLoading({ framed }: { framed?: boolean }) {
+  return <div className={framed ? "h-full animate-pulse rounded-[8px] border border-line bg-panel" : "h-full animate-pulse bg-panel"} />;
 }
 
 function Handle() {
@@ -70,9 +68,11 @@ function useToastPlacement(ref: React.RefObject<HTMLDivElement | null>, mode: st
     const el = ref.current;
     if (!el) return;
     const root = document.documentElement.style;
+    // Options: below the Chart | Option chain tabs, the expiry bar and the tab's own toolbar
+    const below = mode === "options" ? 112 : 74;
     const place = () => {
       const r = el.getBoundingClientRect();
-      root.setProperty("--t-toast-top", `${Math.round(r.top + 74)}px`);
+      root.setProperty("--t-toast-top", `${Math.round(r.top + below)}px`);
       root.setProperty("--t-toast-right", `${Math.round(window.innerWidth - r.right + 76)}px`);
     };
     place();
@@ -108,6 +108,7 @@ export function DesktopTerminal() {
   const toolboxRef = React.useRef<ImperativePanelHandle>(null);
   const center = React.useRef<HTMLDivElement>(null);
   const mode = useTradeMode();
+  const options = mode === "options";
   useToastPlacement(center, mode);
   const [maxed, setMaxed] = React.useState(false);
   // dir="ltr": the workspace keeps the MT5 arrangement (Market Watch left, order panel right, chart and
@@ -119,16 +120,18 @@ export function DesktopTerminal() {
       <div className="flex min-h-0 flex-1 flex-col p-1">
         <PanelGroup direction="vertical" autoSaveId="kalks.terminal.v" className="min-h-0 flex-1">
           <Panel id="main" order={1} minSize={30}>
-            {mode === "options" ? (
-              <OptionsMain />
-            ) : (
+            {/* one layout for both modes: the same panels (ids, sizes, collapse state) with CFD or Options content */}
             <div className="flex h-full min-h-0 gap-1">
-              {!p.watch && <Rail label={t("trader.panel.marketWatch")} side="left" onClick={() => T.togglePanel("watch", true)} />}
+              {!p.watch && <Rail label={options ? t("trader.opt.inst.title") : t("trader.panel.marketWatch")} side="left" onClick={() => T.togglePanel("watch", true)} />}
               <PanelGroup direction="horizontal" autoSaveId="kalks.terminal.h" className="min-w-0 flex-1">
                 {p.watch && (
                   <>
                     <Panel id="left" order={1} defaultSize={Math.max(19, leftMin)} minSize={leftMin} maxSize={Math.max(32, leftMin + 8)}>
-                      {p.navigator ? (
+                      {options ? (
+                        <TPanel>
+                          <OptionsLeft onCollapse={() => T.togglePanel("watch", false)} />
+                        </TPanel>
+                      ) : p.navigator ? (
                         <PanelGroup direction="vertical" autoSaveId="kalks.terminal.left">
                           <Panel id="mw" order={1} minSize={30} defaultSize={66}>
                             <TPanel>
@@ -153,23 +156,20 @@ export function DesktopTerminal() {
                 )}
                 <Panel id="center" order={2} minSize={30}>
                   <div ref={center} className="h-full min-h-0 min-w-0">
-                    <ChartWorkspace />
+                    {options ? <OptionsCenter /> : <ChartWorkspace />}
                   </div>
                 </Panel>
                 {p.right && (
                   <>
                     <Handle />
                     <Panel id="right" order={3} defaultSize={Math.max(18, rightMin)} minSize={rightMin} maxSize={Math.max(32, rightMin + 8)}>
-                      <TPanel>
-                        <RightPanel onCollapse={() => T.togglePanel("right", false)} />
-                      </TPanel>
+                      <TPanel>{options ? <OptionsRight onCollapse={() => T.togglePanel("right", false)} /> : <RightPanel onCollapse={() => T.togglePanel("right", false)} />}</TPanel>
                     </Panel>
                   </>
                 )}
               </PanelGroup>
-              {!p.right && <Rail label={T.guest ? t("trader.panel.orderInfo") : t("trader.panel.orderDom")} side="right" onClick={() => T.togglePanel("right", true)} />}
+              {!p.right && <Rail label={options ? t("trader.opt.ticket.title") : T.guest ? t("trader.panel.orderInfo") : t("trader.panel.orderDom")} side="right" onClick={() => T.togglePanel("right", true)} />}
             </div>
-            )}
           </Panel>
           {p.toolbox && (
             <>

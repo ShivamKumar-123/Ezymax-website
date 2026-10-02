@@ -62,3 +62,9 @@ body { background: var(--t-page); }
 
 /* Options workspace: strategy builder drawer */
 @keyframes opt-drawer { from { transform: translateX(28px); opacity: 0; } }
+
+/* Options chain: the hovered half of a row (call or put side) lights up as one block; the selected half stays lit */
+.opt-chain tr:has(> td[data-r="c"]:hover) > td[data-r="c"],
+.opt-chain tr:has(> td[data-r="p"]:hover) > td[data-r="p"] { background-color: var(--k-surface-3); }
+.opt-chain tr > td[data-leg] { background-color: color-mix(in srgb, var(--k-ember) 8%, transparent); }
+.opt-chain tr > td[data-sel] { background-color: color-mix(in srgb, var(--k-ember) 17%, transparent) !important; }

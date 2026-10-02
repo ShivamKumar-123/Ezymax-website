@@ -400,9 +400,9 @@ const trader: NsMessages<"trader"> = {
   "opt.col.underlying": "Dayanak",
   "opt.col.strike": "Strike",
   "opt.col.bid": "Bid",
-  "opt.col.bidHint": "Kontrat başına USD cinsinden bid: satmak için tıklayın",
+  "opt.col.bidHint": "Kontrat başına USD cinsinden bid: satarken aldığınız tutar. Bu opsiyonu seçmek için tıklayın.",
   "opt.col.ask": "Ask",
-  "opt.col.askHint": "Kontrat başına USD cinsinden ask: almak için tıklayın",
+  "opt.col.askHint": "Kontrat başına USD cinsinden ask: alırken ödediğiniz tutar. Bu opsiyonu seçmek için tıklayın.",
   "opt.col.mark": "İşaret",
   "opt.col.markHint": "Kontrat başına USD cinsinden model orta fiyatı (altında pip olarak); P&L ve teminat için kullanılır",
   "opt.col.iv": "IV",
@@ -438,7 +438,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.flipSide": "Alış ve satış arasında geçiş yap",
   "opt.ticket.contracts": "Kontrat",
   "opt.ticket.removeLeg": "Bacağı kaldır",
-  "opt.ticket.addHint": "Strateji oluşturmak için zincirde başka bir fiyata Shift+tıklayın.",
+  "opt.ticket.addHint": "Strateji oluşturmak için Bacak ekle'yi kullanın veya zincirde başka bir strike'a Shift+tıklayın.",
   "opt.ticket.payoff": "Getiri profili",
   "opt.ticket.clear": "Temizle",
   // {n} {unit}: e.g. "Covers 10,000 EUR"
@@ -473,7 +473,7 @@ const trader: NsMessages<"trader"> = {
   "opt.ticket.whatCombo": "{u} stratejisi, {n} bacak",
   "opt.ticket.review": "İncele",
   "opt.ticket.emptyTitle": "Bir opsiyon seçin",
-  "opt.ticket.emptyText": "Tek bir opsiyonla işlem yapmak için zincirde bir bid veya ask fiyatına tıklayın ya da strateji oluşturmak için birkaç fiyata Shift+tıklayın.",
+  "opt.ticket.emptyText": "Opsiyon zincirinde bir strike seçin (call ya da put tarafı), ardından burada Al veya Sat'ı seçin. Strateji oluşturmak için başka strike'lara Shift+tıklayın.",
 
   // Live preview
   "opt.preview.title": "Önizleme",
@@ -672,5 +672,27 @@ const trader: NsMessages<"trader"> = {
   "opt.public.how5": "Her vade New York saatiyle 10:00'da 30 dakikalık ortalama fiyattan uzlaşılır; kârdaki opsiyonlar otomatik olarak ödenir.",
   "opt.public.riskTitle": "Risk uyarısı",
   "opt.public.riskText": "Opsiyonlar karmaşık ürünlerdir ve yüksek para kaybı riski taşır. Alıcılar ödedikleri primin tamamını kaybedebilir; satıcılar aldıkları primden fazlasını kaybedebilir. Yalnızca kaybetmeyi göze alabileceğiniz parayla işlem yapın ve opsiyonların nasıl çalıştığını anladığınızdan emin olun.",
+
+  // Options workspace layout (same panels as CFD mode)
+  "opt.inst.title": "Enstrümanlar",
+  "opt.exp.other": "Diğer tarihler",
+  "opt.exp.pickTitle": "Listelenen tüm vadeler",
+  "opt.exp.none": "Listelenmiş yok",
+  "opt.exp.rollHint": "Her zaman bu türün en yakın vadesi: kesimden sonra kendiliğinden bir sonraki tarihe geçer.",
+  "opt.chart.premium": "Prim",
+  "opt.chart.premiumHint": "Seçili opsiyonun kontrat başına USD cinsinden fiyatı. Dayanakla birlikte hareket eder ve kesim yaklaştıkça değer kaybeder.",
+  "opt.chart.selectHint": "Prim grafiğini görmek için opsiyon zincirinde bir strike seçin",
+  "opt.chart.fallback": "Prim grafikleri henüz kullanılamıyor. Dayanak gösteriliyor.",
+  "opt.chart.loading": "Prim geçmişi yükleniyor…",
+  "opt.chart.empty": "Bu opsiyon için henüz prim geçmişi yok.",
+  "opt.chart.unit": "Kontrat başına USD",
+  "opt.chain.hint": "Seçmek için bir strike'ın call veya put tarafına tıklayın, ardından Al veya Sat'ı seçin.",
+  "opt.chain.selectCall": "{strike} call'unu seç",
+  "opt.chain.selectPut": "{strike} put'unu seç",
+  "opt.chain.adding": "Bacak olarak eklemek için bir strike'a tıklayın.",
+  "opt.chain.strategy": "Strateji oluşturuluyor: tıkladığınız her strike bacak olarak eklenir.",
+  "opt.ticket.chooseSide": "Al veya Sat'ı seçin",
+  "opt.m.chain": "Zincir",
+  "opt.m.positions": "Pozisyonlar",
 };
 export default trader;

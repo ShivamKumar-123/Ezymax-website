@@ -4,12 +4,14 @@
 // browser. Chains come from the GK / BS / Black-76 pricer in @kalks/mock/options on the live (or simulated) quotes;
 // fills, closes, working orders and expiry settlements are kept per demo login in localStorage and shown through the
 // same option book as engine positions.
-import { isMarketOpen, priceFeed } from "@kalks/mock";
-import { OPTION_SPEC, mockChain, mockExpiries, mockUnderlyings, parseSeriesCode, pricingContext, quoteSeries, tradeState, usdPerQuoteCcy, cutInstant, seriesCode, type OptionExpiry } from "@kalks/mock/options";
+import { INSTRUMENT_MAP, fetchCandles, isMarketOpen, priceFeed } from "@kalks/mock";
+import { OPTION_SPEC, mockChain, mockExpiries, mockPremiumCandles, mockUnderlyings, parseSeriesCode, pricingContext, quoteSeries, tradeState, usdPerQuoteCcy, cutInstant, seriesCode, type OptionExpiry } from "@kalks/mock/options";
+import { buildHistory, fromChartTime } from "@/components/chart/engine";
+import type { Timeframe } from "@/lib/trading";
 import type { Result } from "@/lib/engine/client";
 import type { OptionsApi } from "./api";
 import { optionBook } from "./book";
-import type { OptionChain, OptionInfo, OptionQuote, OptOrder, OptPosition, OrderRequest, Settlement } from "./types";
+import type { OptionCandles, OptionChain, OptionInfo, OptionQuote, OptOrder, OptPosition, OrderRequest, Settlement } from "./types";
 
 const ok = <T>(data: T): Result<T> => ({ ok: true, data });
 const fail = (code: string, message: string, status = 422): Result<never> => ({ ok: false, err: { status, code, message } });
@@ -43,6 +45,57 @@ export function demoQuote(code: string): OptionQuote | null {
   const now = Date.now();
   const ctx = pricingContext(spec, (q.bid + q.ask) / 2, cut, now, usdPerQuoteCcy(spec.quoteCcy, mid));
   return quoteSeries(ctx, p.right, p.strike, code, tradeState(cut, now));
+}
+
+const TF_OF_MINUTES: Record<number, Timeframe> = { 1: "M1", 5: "M5", 15: "M15", 30: "M30", 60: "H1", 240: "H4", 1440: "D1" };
+
+/**
+ * The simulator's chart history is scaled for looks and swings far more than the options' implied vol, which would
+ * bury the time decay under moneyness: its moves around the current price are scaled down to the 1-week ATM vol
+ * (same shape, same last price). Market-data candles are used as they are.
+ */
+function toImpliedVol(bars: { t: number; o: number; h: number; l: number; c: number }[], tfMinutes: number, atmVol: number) {
+  if (bars.length < 3) return bars;
+  const rets: number[] = [];
+  for (let i = 1; i < bars.length; i++) if (bars[i - 1]!.c > 0 && bars[i]!.c > 0) rets.push(Math.log(bars[i]!.c / bars[i - 1]!.c));
+  const mean = rets.reduce((a, b) => a + b, 0) / Math.max(1, rets.length);
+  const sd = Math.sqrt(rets.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(1, rets.length - 1));
+  const realized = sd * Math.sqrt((260 * 1440) / tfMinutes);
+  const k = realized > 0 ? Math.min(1, Math.max(0.05, atmVol / realized)) : 1;
+  if (k >= 0.999) return bars;
+  const last = bars[bars.length - 1]!.c;
+  const f = (x: number) => last * Math.exp(k * Math.log(x / last));
+  return bars.map((b) => ({ t: b.t, o: f(b.o), h: f(b.h), l: f(b.l), c: f(b.c) }));
+}
+
+/**
+ * Premium candles of one series, priced bar by bar from the underlying's own history (market-data candles when the
+ * feed is live, else the simulator's history the chart shows, at the option's vol) with the demo pricer.
+ */
+async function demoCandles(code: string, tf: number, opts: { limit?: number; to?: number } = {}): Promise<Result<OptionCandles>> {
+  const p = parseSeriesCode(code);
+  const spec = p && OPTION_SPEC[p.underlying];
+  const tfName = TF_OF_MINUTES[tf];
+  if (!p || !spec || !tfName) return fail("bad_request", "Unknown series or timeframe.", 400);
+  if (!INSTRUMENT_MAP[p.underlying]) return fail("not_found", "No history for this underlying.", 404);
+  let bars: { t: number; o: number; h: number; l: number; c: number }[] | null = null;
+  if (priceFeed().mode === "live") {
+    const live = await fetchCandles(p.underlying, tfName, Math.min(1500, opts.limit ?? 600), opts.to);
+    if (live?.length) bars = live.map((b) => ({ t: b.time, o: b.open, h: b.high, l: b.low, c: b.close }));
+  }
+  if (!bars) {
+    // the simulator's history is one page: nothing older than it
+    if (opts.to) return ok({ ...mockPremiumCandles({ code, tfMinutes: tf, bars: [], usdPerQuote: 1 })!, candles: [] });
+    bars = toImpliedVol(
+      buildHistory(p.underlying, tfName).map((b) => ({ t: fromChartTime(b.time), o: b.open, h: b.high, l: b.low, c: b.close })),
+      tf,
+      spec.atm[1],
+    );
+  }
+  if (opts.to) bars = bars.filter((b) => b.t <= opts.to!);
+  const r = mockPremiumCandles({ code, tfMinutes: tf, bars, usdPerQuote: usdPerQuoteCcy(spec.quoteCcy, mid) });
+  if (!r) return fail("not_found", "Series not found.", 404);
+  return ok(opts.limit ? { ...r, candles: r.candles.slice(-opts.limit) } : r);
 }
 
 /* ------------------------------------------------------------------ */
@@ -211,6 +264,7 @@ export const mockApi: OptionsApi = {
     const c = demoChain(u, expiry);
     return c ? ok({ ...c, expiries: demoExpiries(u).map((e) => ({ date: e.date, kinds: e.kinds, cutAt: e.cutAt })) }) : fail("no_price", "No price for this underlying yet.", 503);
   },
+  candles: (_login, code, tf, opts) => demoCandles(code, tf, opts),
   streamTicket: async () => fail("unavailable", "Demo builds price in the browser.", 503),
   publicStreamUrl: async () => fail("unavailable", "Demo builds price in the browser.", 503),
   preview: async (_login, _req, local) => ok({ ...local(), estimate: false }),

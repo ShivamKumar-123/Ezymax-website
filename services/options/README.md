@@ -16,6 +16,7 @@ This service holds the reference data and runs the market side of **Kalks FX Opt
 | listing | every 30 s: daily (next 5 business days), weekly (next 4 Fridays, rolled), monthly (next 3 last Fridays, rolled), cut 10:00 New York (DST-aware). Strikes are ATM ± max(configured, about 2.5 σ√t) steps, up to 40 per side. When spot comes within `extend_threshold` steps of an edge, strikes are added. Strikes are never removed. Series code `EURUSD-20261009-1.1650-C`. |
 | fixings | 1 s raw mids in `[cut − 30 min, cut)` go to `twap_samples`. At the cut the expiry status becomes `fixing`, then the TWAP is computed (gaps hold the last mid). With coverage < 50 % (`OPTIONS_MIN_TWAP_COVERAGE`) it falls back to M1 candles after cut + 90 s. Each run is a `fixings` row recording samples, expected samples, coverage and the longest gap. Kalks staff can re-fix within 1 h, with a reason. |
 | chain | bid / ask / mark / IV / Greeks per strike for calls and puts, with the group's vol spread and minimum USD spread. REST, a 1 s cached public route, and a WebSocket that sends changed rows only, at most 4 frames/s per chain. |
+| premium candles | an option series' model mid premium (USD per contract) per underlying bar from market-data candles, for the Kalks Trader chart: it moves when the underlying moves, by the option's amount, and melts toward intrinsic as the cut approaches. History is cached 30 s; the latest bar is the live price. See [Premium candles](#premium-candles). |
 | EOD marks | after 17:00 New York on weekdays, the model marks of every active series go to `marks_eod`. |
 
 market-data is optional in development. Without it the feed polls REST, logs one warning and keeps trying. Expiries are still listed, but strikes wait for the first price, chains answer `no_price`, and the TWAP sampler records gaps.
@@ -52,6 +53,7 @@ Every client route answers **404 `options_disabled`** when the tenant has the mo
 | `GET /v1/options/chain?u=&expiry=&group=` | header + `rows[]` (below); `expiry` defaults to the nearest |
 | `GET /v1/options/series/{code}?group=` | `{series, expiry{id, date, cutAt, status, fixing, fixingSource}, underlying, contractSize, spot, quote}` |
 | `GET /v1/options/smile?u=&expiry=` | `{underlying, expiry, atmVol, points[{strike, vol}], pillars[{callDelta, vol, strike}], termStructure[pillars], inputs}` |
+| `GET /v1/options/candles?series=&tf=&limit=&to=` | premium candles of one series, see [Premium candles](#premium-candles) |
 | `POST /v1/options/stream/ticket {group?}` | `{ticket, expiresIn: 30, path: "/options/stream?ticket=…"}` |
 
 Chain header: `{underlying, name, model, expiry, kinds, cutAt, cut, twapStart, status, state, contractSize, contractUnit, quoteCcy, digits, pipSize, group, volSpread, minSpreadUsd, commission{perContract, capPct}, spot{bid, ask, mid, t, ageMs}, fixing, version, atmStrike, modelInputs{spot, spotSource, forward, r, b, rf, tCal, tVol, atmVol, surfaceAtm, realized, blendWeight, manualVol, surfaceVersion, quotes, usdPerQuote}, error?}`. Without a price it carries `error: {code: "no_price"}` and rows that list strikes only.
@@ -60,6 +62,45 @@ Row: `{strike, strikeLabel, call, put}`. Each side has:
 `{code, bid, ask, mark` (premium per unit in the quote currency)`, bidUsd, askUsd, markUsd` (per contract)`, markPips, iv, ivBid, ivAsk, delta, gamma` (delta change per 1 % spot move)`, vega` (USD per contract per vol point)`, theta` (USD per contract over the next calendar day, business-time clock)`, probItm, breakeven, state}`.
 
 `state` is one of: `open`; `close_only` (the last `noOpenMinutes` before the cut, or a control); `halted`; `closed` (the last `closeOnlyMinutes`, or after the cut).
+
+### Premium candles
+
+`GET /v1/options/candles?series={code}&tf={1|5|15|30|60|240|1440}&limit={1..1500, default 500}&to={unix seconds, optional}`
+
+Same gates as `/v1/options/chain`: internal token, `X-Kalks-Tenant`, `X-Kalks-Account-Kind`, and 404 `options_disabled` when the module is off. `tf` is in minutes (`M1`…`D1` names are accepted too). A `limit` outside 1..1500 is clamped. `to` pages back: it returns the bars that open at or before `to`.
+
+```jsonc
+{
+  "series": "EURUSD-20261009-1.1700-C", "underlying": "EURUSD", "right": "call", "strike": 1.17,
+  "expiryAt": "2026-10-09T14:00:00Z", "expiryTs": 1791554400, "status": "listed", "fixing": null,
+  "tf": 60, "contractSize": 10000, "quoteCcy": "USD", "usdPerUnit": 1.0, "unit": "usd_per_contract", "price": "mid",
+  "from": 1789000000,           // earliest bar time the window allows (unix s)
+  "barrier": null,              // {kind, level, rebate, knockedAt} when barrier params were given
+  "candles": [{ "t": 1791460800, "o": 61.2034, "h": 63.9101, "l": 59.877, "c": 62.4410, "u": 1.17012 }]
+}
+```
+
+- `t` is the open time of the underlying bar (unix seconds). `o h l c` are the **model mid** premium in **USD per contract**, the unit of the chain's `markUsd`, rounded to 4 decimals. `u` is the underlying close. `usdPerUnit` is the USD value of one unit of the quote currency, so `premium per unit = c / (contractSize · usdPerUnit)`.
+- **Source:** the underlying's market-data candles (`GET {MARKET_DATA_URL}/v1/candles?symbol&tf&limit&to`).
+- **Time:** each bar is valued with the time to the cut measured from that bar's instants, on the same business-time vol clock and ACT/365 as live pricing. `o` uses the bar open. `c` uses the bar close (`now` for the forming bar).
+- **Model:** today's model. That means the latest surface (interpolated at that bar's time to the cut), the realized-vol blend, the smile, the rates and any manual-vol control. Historical vol and rates are **not** replayed, so the chart shows how today's model values the option along the real underlying path. A freeze control is not applied to history.
+- **OHLC:** a call rises with spot, so `o/h/l/c = f(open/high/low/close)`. A put falls with spot, so `h = f(low)` and `l = f(high)`. The high side is valued at the bar open and the low side at the bar close; that brackets the premium inside the bar, because time value only melts. `h ≥ max(o, c)` and `l ≤ min(o, c)` always hold. With a flat underlying every candle is a small red body: theta.
+- **Latest bar:** on the latest page (no `to`, or `to` in the future) until the cut, the live mid closes the forming bar. If the tick has moved past that bar, it opens the next bar. That bar's `c` is the chain's `markUsd`, give or take rounding: same mid, same instant, same model.
+- **Expiry:** at and after the cut, the value is intrinsic at the fixing (or at the spot while the fixing is pending). Bars stop at the bar that holds the cut.
+- **Window:** bars start at the series' listing time. Up to 30 days of earlier history is added when useful, but never before `cut − tenor`. The tenor is the listing horizon of the expiry's longest cycle: daily = configured business days plus a weekend, weekly = weeks, monthly = 31-day months. Bars end at `min(now, cut)`.
+- **USD:** XXXUSD = 1. USDXXX (USDJPY, USDCAD, USDCHF) converts each point at its own spot (1 / S). Crosses (EURJPY, GBPJPY) use today's USD rate.
+- **Barrier positions** (the engine prices barriers on a vanilla series; this service lists none): add `barrier=UO|DO|UI|DI&level=&rebate=` (rebate per unit in the quote currency, as in the engine's `BarrierTerms`). You can also add `knockedAt=` (unix s, the engine's knock time).
+  - Pricing is Reiner-Rubinstein on the vanilla's smile vol at the strike, like the engine.
+  - Without `knockedAt`, the first bar whose range touches the level knocks. After that a knock-out is worth its rebate and a knock-in prices as the vanilla.
+  - A barrier premium is not monotone in spot, so `h`/`l` are the max/min over the bar's spots.
+  - A touch before the window is only known through `knockedAt`.
+- **Caching:** market-data bars are cached 30 s per (symbol, tf, limit, to), and every series of an underlying shares them. Computed history is cached 30 s per (tenant, series, tf, limit, to, barrier, refdata version). The latest candle is recomputed on every call.
+- **Errors:**
+  - 422 `validation`: bad `tf`, missing `series`, or bad barrier params.
+  - 404: unknown series.
+  - 503 `no_price`: no volatility, or no USD rate for a cross.
+  - 503 `candles_unavailable`: market-data is down.
+- **Kalks Trader:** the terminal's options BFF must allow-list `GET /v1/options/candles` (the BFF is not changed here).
 
 ### Public
 - `GET /v1/public/options/chain/{u}?expiry=`: guest chain (tenant `kalks`, default group, without `modelInputs`) plus `expiries[]`, cached for 1 s. It answers 404 until `publicChain` is switched on. Caddy exposes it on `api.*`.
@@ -186,9 +227,19 @@ The schema is `migrations/20261002120000_options.sql`. It has these tables:
   - a manual re-fix (run 2).
 - **WebSocket:** a ticket is required (guest refused); with 100 spot ticks/s it sends ≤ 9 `rows` frames in 2 s.
 
+Unit tests (`src/candles.rs`, no database) cover premium candles:
+- call and put OHLC mapping (a put's high comes from the underlying low);
+- decay: with a flat underlying, a call melts bar over bar and closes on intrinsic at the cut;
+- intrinsic at the fixing (at the spot while there is no fixing);
+- the forming bar valued at `now`, and the vol time accumulated backwards matching the direct clock;
+- USDXXX conversion;
+- knock-out to rebate after the touching bar (and the engine's `knockedAt` winning), knock-in to the vanilla;
+- the history window and the live-bar overlay.
+
 ## Not here yet (later milestones)
 - Engine integration (M3/M4): positions, margin, fills, settlement.
-- Risk desk, hedger, alerts, synthetic premium candles, OI/LTP, strategy ideas.
+- Risk desk, hedger, alerts, OI/LTP, strategy ideas.
+- Premium candles with historical vol / rates replayed (today's model is used for every bar).
 - Barrier series listing: barrier options are priced by the engine from the snapshot.
 - News-calendar mismatch alerts for holidays.
 - Intraday vol seasonality.

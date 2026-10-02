@@ -115,6 +115,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/options/chain", get(public::chain))
         .route("/v1/options/series/{code}", get(public::series))
         .route("/v1/options/smile", get(public::smile))
+        .route("/v1/options/candles", get(public::candles))
         .route("/v1/options/stream/ticket", post(stream::ticket))
         // engine
         .route("/v1/internal/options/snapshot", get(internal::snapshot))
