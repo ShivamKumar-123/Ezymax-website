@@ -73,7 +73,7 @@ export function installOhlcTooltip(
     for (const v of vals) {
       const title = String(v.title || '');
       const value = String(v.value == null ? '' : v.value);
-      if (!value || value === 'n/a' || value === '\u2205') continue;
+      if (!value || value === 'n/a' || value.charCodeAt(0) === 8709) continue;
       byKey[title.toLowerCase()] = { title, value };
     }
     const rows = ORDER.map((k) => byKey[k]).filter(Boolean);
@@ -81,8 +81,18 @@ export function installOhlcTooltip(
 
     // Colour by the bar's direction, as the desktop tooltip does.
     const change = byKey['change']?.value ?? '';
-    const down = /^[\s\u200e\u200f]*[\u2212-]/.test(change);
-    const up = /^\s*\+/.test(change) || (!!change && !down && /[1-9]/.test(change));
+    // The sign TradingView prints is U+2212, sometimes behind a direction
+    // mark. Read it by character code — the app runs this same logic inside
+    // a quoted script, where a literal or an escape cannot be relied on.
+    let lead = 0;
+    for (let c = 0; c < change.length; c++) {
+      const code = change.charCodeAt(c);
+      if (code === 32 || code === 160 || code === 9 || code === 8206 || code === 8207) continue;
+      lead = code;
+      break;
+    }
+    const down = lead === 8722 || lead === 45;
+    const up = lead === 43 || (!!change && !down && /[1-9]/.test(change));
     const tone = down ? '#f23645' : up ? '#089981' : 'inherit';
 
     tip.innerHTML = rows
