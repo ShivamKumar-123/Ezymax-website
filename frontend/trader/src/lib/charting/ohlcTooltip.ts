@@ -59,13 +59,11 @@ export function installOhlcTooltip(
   host.appendChild(tip);
 
   let last: CrosshairParams | null = null;
-  let lastAt = 0;
   let holding = false;
   let holdTimer: ReturnType<typeof setTimeout> | null = null;
   let hideTimer: ReturnType<typeof setTimeout> | null = null;
   let startX = 0;
   let startY = 0;
-  let startAt = 0;
 
   const render = () => {
     const vals = last?.entityValues?.['_seriesId']?.values;
@@ -75,7 +73,7 @@ export function installOhlcTooltip(
     for (const v of vals) {
       const title = String(v.title || '');
       const value = String(v.value == null ? '' : v.value);
-      if (!value || value === 'n/a' || value === '∅') continue;
+      if (!value || value === 'n/a' || value === '\u2205') continue;
       byKey[title.toLowerCase()] = { title, value };
     }
     const rows = ORDER.map((k) => byKey[k]).filter(Boolean);
@@ -83,7 +81,7 @@ export function installOhlcTooltip(
 
     // Colour by the bar's direction, as the desktop tooltip does.
     const change = byKey['change']?.value ?? '';
-    const down = /^\s*[−-]/.test(change);
+    const down = /^[\s\u200e\u200f]*[\u2212-]/.test(change);
     const up = /^\s*\+/.test(change) || (!!change && !down && /[1-9]/.test(change));
     const tone = down ? '#f23645' : up ? '#089981' : 'inherit';
 
@@ -140,14 +138,16 @@ export function installOhlcTooltip(
     holding = false;
     startX = x;
     startY = y;
-    startAt = Date.now();
     hide();
     holdTimer = setTimeout(() => {
       holdTimer = null;
       holding = true;
-      // Only draw what the crosshair reported for THIS touch; anything older
-      // belongs to wherever the finger was last time.
-      if (lastAt >= startAt) render();
+      // Draw whatever bar the crosshair is on. Do NOT wait for it to report
+      // again: a mouse held still sends nothing after the press, and neither
+      // does a second hold on a candle the crosshair is already sitting on —
+      // both left the box blank. If the hold does move the crosshair, the
+      // subscription below redraws it.
+      if (last) render();
     }, HOLD_MS);
   };
 
@@ -196,7 +196,6 @@ export function installOhlcTooltip(
 
   const sub = (params: CrosshairParams) => {
     last = params;
-    lastAt = Date.now();
     if (holding) render();
   };
   try {
