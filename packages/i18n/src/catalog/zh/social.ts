@@ -951,5 +951,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "以 {name} 身份。系统将为您开立专用的 MAM 主账户。",
   "follow.walletAvailable": "钱包余额 {balance} USDT",
   "follow.err.overBalance": "您的钱包余额为 {balance} USDT。请降低金额或先入金。",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "跟单如何运作",
+  "follow.how.s1T": "从您的钱包注资",
+  "follow.how.s1S": "您的资金将转入专为该策略提供者创建的新跟单账户。",
+  "follow.how.s2T": "策略提供者交易",
+  "follow.how.s2S": "{name} 照常开仓、修改和平仓。",
+  "follow.how.s3T": "按您的规模跟单",
+  "follow.how.s3S": "每笔交易都会在您的跟单账户中开仓，手数按您选择的规则计算。",
+  "follow.how.s4T": "仅对新增盈利收费",
+  "follow.how.s4S": "对超过您最高水位线的盈利收取 {fee}%。亏损或已收过费的盈利不收费。",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "按您的设置举例",
+  "follow.example.line": "策略提供者开仓 <b>{master} 手 {symbol}</b> → 您开仓 <lot>{lot} 手</lot>",
+  "follow.example.lineSkipped": "策略提供者开仓 <b>{master} 手 {symbol}</b> → <lot>跳过</lot>（低于最小手数）",
+  "follow.example.why.equity": "您的 {alloc} ÷ 策略提供者的 {equity} 净值 = 策略提供者手数的 {ratio}×，每笔交易都会重新计算。",
+  "follow.example.why.fixedLot": "无论策略提供者交易多大手数，每笔跟单交易均以 {lot} 手开仓。",
+  "follow.example.why.multiplier": "策略提供者的手数 × {value}。",
+  "follow.example.why.allocation": "{amount} ÷ 策略提供者的 {equity} 净值 = 策略提供者手数的 {ratio}×。",
+  "follow.example.why.noEquity": "确切手数取决于交易时策略提供者的净值。",
+  // Short rules list on the review step
+  "follow.rules.title": "规则简述",
+  "follow.rules.copiedT": "会跟单的内容",
+  "follow.rules.copied": "新开仓、平仓、部分平仓、SL/TP 修改和挂单。",
+  "follow.rules.notT": "不可操作",
+  "follow.rules.noManual": "跟单期间，您不能自行在此跟单账户上交易。",
+  "follow.rules.skipped": "计算后低于最小手数的交易会被跳过，并显示在跟单日志中。",
+  "follow.rules.pausedT": "已暂停",
+  "follow.rules.paused": "不再跟单新交易；已开仓的交易仍跟随策略提供者的平仓和 SL/TP。",
+  "follow.rules.stopT": "停止",
+  "follow.rules.stop": "由您选择：立即全部平仓，或保留持仓并自行管理。余额可转回您的钱包。",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "我了解跟单的运作方式",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "已暂停：不再跟单新交易；已开仓的交易仍跟随策略提供者的平仓和 SL/TP。",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "为什么某笔交易没有被跟单？",
+  "subs.detail.logHint": "策略提供者的每笔交易都会列在此处，被跳过的交易会注明原因（例如低于最小手数或被排除的品种）。",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "跟单账户应如何处理？",
+  "subs.stop.deleteAcc": "删除",
+  "subs.stop.deleteAccS": "归档；历史记录和对账单将保留",
+  "subs.stop.keepAcc": "保留",
+  "subs.stop.keepAccS": "继续保留在您的账户列表中",
+  "subs.stop.archived": "跟单账户 #{login} 已删除（归档）。其历史记录和对账单已保留。",
+  "subs.stop.archiveFailed": "跟单账户 #{login} 因暂时无法删除而被保留。您可以稍后在账户页面中删除。",
+  "subs.stop.archiving": "正在删除跟单账户…",
+  "subs.stop.archiveTitle": "删除跟单账户 #{login}",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "删除跟单账户 #{login}",
+  "subs.stop.archiveConfirm": "删除账户",
 };
 export default social;

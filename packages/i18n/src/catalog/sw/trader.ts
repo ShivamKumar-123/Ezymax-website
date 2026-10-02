@@ -321,5 +321,9 @@ const trader: NsMessages<"trader"> = {
   "mobile.sound": "Sauti",
   "mobile.darkTheme": "Mandhari ya giza",
   "mobile.refill": "Jaza upya",
+  // Banner when the signed-in account is a copy-trading account; {master} = the master's nickname
+  "copyBanner.text": "Akaunti ya kunakili — biashara zinasimamiwa na {master}; unaweza kufuatilia P&L hapa.",
+  "copyBanner.textNoName": "Akaunti ya kunakili — biashara zinasimamiwa na master unayemnakili; unaweza kufuatilia P&L hapa.",
+  "copyBanner.manage": "Simamia kunakili katika Client Area",
 };
 export default trader;

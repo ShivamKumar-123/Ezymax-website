@@ -342,5 +342,9 @@ const trader: NsMessages<"trader"> = {
   "mobile.sound": "الصوت",
   "mobile.darkTheme": "المظهر الداكن",
   "mobile.refill": "إعادة تعبئة",
+  // Banner when the signed-in account is a copy-trading account; {master} = the master's nickname
+  "copyBanner.text": "حساب نسخ — تُدار الصفقات بواسطة {master}؛ يمكنك متابعة P&L هنا.",
+  "copyBanner.textNoName": "حساب نسخ — تُدار الصفقات بواسطة مزوّد الاستراتيجية الذي تنسخه؛ يمكنك متابعة P&L هنا.",
+  "copyBanner.manage": "إدارة النسخ في منطقة العملاء",
 };
 export default trader;

@@ -330,5 +330,9 @@ const trader: NsMessages<"trader"> = {
   "mobile.sound": "آواز",
   "mobile.darkTheme": "ڈارک تھیم",
   "mobile.refill": "دوبارہ بھریں",
+  // Banner when the signed-in account is a copy-trading account; {master} = the master's nickname
+  "copyBanner.text": "کاپی اکاؤنٹ — ٹریڈز {master} سنبھالتا ہے؛ آپ یہاں P&L دیکھ سکتے ہیں۔",
+  "copyBanner.textNoName": "کاپی اکاؤنٹ — ٹریڈز وہ ماسٹر سنبھالتا ہے جسے آپ کاپی کرتے ہیں؛ آپ یہاں P&L دیکھ سکتے ہیں۔",
+  "copyBanner.manage": "Client Area میں کاپی کا انتظام کریں",
 };
 export default trader;

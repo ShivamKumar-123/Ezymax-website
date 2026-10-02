@@ -952,5 +952,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "Kama {name}. Akaunti maalum ya master ya MAM inafunguliwa kwa ajili yako.",
   "follow.walletAvailable": "{balance} USDT kwenye pochi yako",
   "follow.err.overBalance": "Pochi yako ina {balance} USDT. Punguza kiasi au weka pesa kwanza.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "Jinsi kunakili kunavyofanya kazi",
+  "follow.how.s1T": "Weka fedha kutoka wallet yako",
+  "follow.how.s1S": "Kiasi chako huhamia kwenye akaunti mpya ya kunakili kwa ajili ya master huyu pekee.",
+  "follow.how.s2T": "Master anafanya biashara",
+  "follow.how.s2S": "{name} hufungua, hubadilisha na kufunga biashara kama kawaida.",
+  "follow.how.s3T": "Unanakili kwa ukubwa wako",
+  "follow.how.s3S": "Kila biashara hufunguliwa kwenye akaunti yako ya kunakili, kwa ukubwa kulingana na kanuni uliyochagua.",
+  "follow.how.s4T": "Ada kwa faida mpya pekee",
+  "follow.how.s4S": "{fee}% ya faida iliyo juu ya kiwango chako cha juu zaidi (high-water mark). Hakuna ada kwa hasara wala kwa faida iliyokwisha tozwa.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "Mfano kwa mipangilio yako",
+  "follow.example.line": "Master anafungua <b>lot {master} {symbol}</b> → unafungua <lot>lot {lot}</lot>",
+  "follow.example.lineSkipped": "Master anafungua <b>lot {master} {symbol}</b> → <lot>imerukwa</lot> (chini ya lot ya chini kabisa)",
+  "follow.example.why.equity": "{alloc} yako ÷ equity ya master ya {equity} = mara {ratio}× ya ukubwa wa master, hukokotolewa upya kwa kila biashara.",
+  "follow.example.why.fixedLot": "Kila biashara iliyonakiliwa hufunguliwa kwa lot {lot}, bila kujali ukubwa anaofanyia master.",
+  "follow.example.why.multiplier": "Ukubwa wa master × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ equity ya master ya {equity} = mara {ratio}× ya ukubwa wa master.",
+  "follow.example.why.noEquity": "Ukubwa kamili hutegemea equity ya master wakati wa biashara.",
+  // Short rules list on the review step
+  "follow.rules.title": "Kanuni kwa ufupi",
+  "follow.rules.copiedT": "Hunakiliwa",
+  "follow.rules.copied": "Biashara mpya, ufungaji, ufungaji wa sehemu, mabadiliko ya SL/TP na oda zinazosubiri.",
+  "follow.rules.notT": "Haiwezekani",
+  "follow.rules.noManual": "Huwezi kufanya biashara mwenyewe kwenye akaunti hii ya kunakili wakati unanakili.",
+  "follow.rules.skipped": "Biashara zinazotokea chini ya lot ya chini kabisa huruka na huonyeshwa kwenye kumbukumbu ya kunakili.",
+  "follow.rules.pausedT": "Imesitishwa",
+  "follow.rules.paused": "Hakuna biashara mpya zinazonakiliwa; biashara zilizo wazi bado zinafuata ufungaji na SL/TP za master.",
+  "follow.rules.stopT": "Simamisha",
+  "follow.rules.stop": "Unachagua: funga kila kitu sasa au weka biashara na uzisimamie mwenyewe. Salio linaweza kurudi kwenye wallet yako.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "Naelewa jinsi kunakili kunavyofanya kazi",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "Imesitishwa: hakuna biashara mpya zinazonakiliwa; biashara zilizo wazi bado zinafuata ufungaji na SL/TP za master.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "Kwa nini biashara haikunakiliwa?",
+  "subs.detail.logHint": "Kila biashara ya master imeorodheshwa hapa, pamoja na zilizorukwa na sababu (kwa mfano chini ya lot ya chini kabisa au alama iliyotengwa).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "Akaunti ya kunakili ifanywe nini?",
+  "subs.stop.deleteAcc": "Ifute",
+  "subs.stop.deleteAccS": "Huhifadhiwa kwenye kumbukumbu; historia na taarifa hubaki",
+  "subs.stop.keepAcc": "Iweke",
+  "subs.stop.keepAccS": "Hubaki kwenye orodha ya akaunti zako",
+  "subs.stop.archived": "Akaunti ya kunakili #{login} imefutwa (imehifadhiwa kwenye kumbukumbu). Historia na taarifa zake zimehifadhiwa.",
+  "subs.stop.archiveFailed": "Akaunti ya kunakili #{login} imebaki kwa sababu haikuweza kufutwa sasa hivi. Unaweza kuifuta baadaye kutoka Akaunti.",
+  "subs.stop.archiving": "Inafuta akaunti ya kunakili…",
+  "subs.stop.archiveTitle": "Futa akaunti ya kunakili #{login}",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "kufuta akaunti ya kunakili #{login}",
+  "subs.stop.archiveConfirm": "Futa akaunti",
 };
 export default social;

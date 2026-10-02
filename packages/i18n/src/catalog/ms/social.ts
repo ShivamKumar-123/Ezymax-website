@@ -951,5 +951,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "Sebagai {name}. Akaun master MAM khusus dibuka untuk anda.",
   "follow.walletAvailable": "{balance} USDT dalam dompet anda",
   "follow.err.overBalance": "Dompet anda mempunyai {balance} USDT. Kurangkan jumlah atau buat deposit dahulu.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "Cara salinan berfungsi",
+  "follow.how.s1T": "Biayai daripada wallet anda",
+  "follow.how.s1S": "Jumlah anda dipindahkan ke akaun salinan baharu khusus untuk master ini.",
+  "follow.how.s2T": "Master berdagang",
+  "follow.how.s2S": "{name} membuka, mengubah dan menutup dagangan seperti biasa.",
+  "follow.how.s3T": "Anda menyalin mengikut saiz anda",
+  "follow.how.s3S": "Setiap dagangan dibuka pada akaun salinan anda, dengan saiz mengikut peraturan yang anda pilih.",
+  "follow.how.s4T": "Yuran hanya atas keuntungan baharu",
+  "follow.how.s4S": "{fee}% daripada keuntungan di atas high-water mark anda. Tiada yuran atas kerugian atau keuntungan yang telah dikenakan yuran.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "Contoh dengan tetapan anda",
+  "follow.example.line": "Master membuka <b>{master} lot {symbol}</b> → anda membuka <lot>{lot} lot</lot>",
+  "follow.example.lineSkipped": "Master membuka <b>{master} lot {symbol}</b> → <lot>dilangkau</lot> (di bawah lot minimum)",
+  "follow.example.why.equity": "{alloc} anda ÷ ekuiti master {equity} = {ratio}× saiz master, dikira semula pada setiap dagangan.",
+  "follow.example.why.fixedLot": "Setiap dagangan yang disalin dibuka pada {lot} lot, walau berapa pun saiz dagangan master.",
+  "follow.example.why.multiplier": "Saiz master × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ ekuiti master {equity} = {ratio}× saiz master.",
+  "follow.example.why.noEquity": "Saiz tepat bergantung pada ekuiti master pada masa dagangan.",
+  // Short rules list on the review step
+  "follow.rules.title": "Peraturan secara ringkas",
+  "follow.rules.copiedT": "Disalin",
+  "follow.rules.copied": "Dagangan baharu, penutupan, penutupan separa, perubahan SL/TP dan pesanan tertunda.",
+  "follow.rules.notT": "Tidak boleh",
+  "follow.rules.noManual": "Anda tidak boleh berdagang sendiri pada akaun salinan ini semasa menyalin.",
+  "follow.rules.skipped": "Dagangan yang saiznya di bawah lot minimum dilangkau dan dipaparkan dalam log salinan.",
+  "follow.rules.pausedT": "Dijeda",
+  "follow.rules.paused": "Tiada dagangan baharu disalin; dagangan terbuka masih mengikut penutupan dan SL/TP master.",
+  "follow.rules.stopT": "Henti",
+  "follow.rules.stop": "Anda yang memilih: tutup semuanya sekarang atau kekalkan dagangan dan urus sendiri. Baki boleh dikembalikan ke wallet anda.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "Saya faham cara penyalinan berfungsi",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "Dijeda: tiada dagangan baharu disalin; dagangan terbuka masih mengikut penutupan dan SL/TP master.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "Mengapa dagangan tidak disalin?",
+  "subs.detail.logHint": "Setiap dagangan daripada master disenaraikan di sini, termasuk yang dilangkau beserta sebabnya (contohnya di bawah lot minimum atau simbol yang dikecualikan).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "Apakah yang perlu berlaku pada akaun salinan?",
+  "subs.stop.deleteAcc": "Padamkannya",
+  "subs.stop.deleteAccS": "Diarkibkan; sejarah dan penyata dikekalkan",
+  "subs.stop.keepAcc": "Kekalkannya",
+  "subs.stop.keepAccS": "Kekal dalam senarai akaun anda",
+  "subs.stop.archived": "Akaun salinan #{login} telah dipadam (diarkibkan). Sejarah dan penyatanya dikekalkan.",
+  "subs.stop.archiveFailed": "Akaun salinan #{login} dikekalkan kerana tidak dapat dipadam buat masa ini. Anda boleh memadamkannya kemudian daripada Akaun.",
+  "subs.stop.archiving": "Memadam akaun salinan…",
+  "subs.stop.archiveTitle": "Padam akaun salinan #{login}",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "memadam akaun salinan #{login}",
+  "subs.stop.archiveConfirm": "Padam akaun",
 };
 export default social;

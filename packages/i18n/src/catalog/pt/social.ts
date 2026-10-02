@@ -953,5 +953,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "Como {name}. Uma conta master MAM dedicada é aberta para você.",
   "follow.walletAvailable": "{balance} USDT na sua carteira",
   "follow.err.overBalance": "Sua carteira tem {balance} USDT. Reduza o valor ou deposite primeiro.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "Como funciona a cópia",
+  "follow.how.s1T": "Financie a partir da sua carteira",
+  "follow.how.s1S": "O seu valor é movido para uma nova conta de cópia exclusiva deste master.",
+  "follow.how.s2T": "O master negocia",
+  "follow.how.s2S": "{name} abre, altera e fecha operações como de costume.",
+  "follow.how.s3T": "Você copia no seu tamanho",
+  "follow.how.s3S": "Cada operação é aberta na sua conta de cópia, com tamanho definido pela regra que você escolher.",
+  "follow.how.s4T": "Taxa só sobre lucro novo",
+  "follow.how.s4S": "{fee}% do lucro acima do seu high-water mark. Sem taxa sobre perdas nem sobre lucro já cobrado.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "Exemplo com as suas configurações",
+  "follow.example.line": "O master abre <b>{master} lote {symbol}</b> → você abre <lot>{lot} lote</lot>",
+  "follow.example.lineSkipped": "O master abre <b>{master} lote {symbol}</b> → <lot>ignorada</lot> (abaixo do lote mínimo)",
+  "follow.example.why.equity": "Seu {alloc} ÷ patrimônio do master {equity} = {ratio}× o tamanho do master, recalculado a cada operação.",
+  "follow.example.why.fixedLot": "Cada operação copiada abre {lot} lote, seja qual for o tamanho do master.",
+  "follow.example.why.multiplier": "O tamanho do master × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ patrimônio do master {equity} = {ratio}× o tamanho do master.",
+  "follow.example.why.noEquity": "O tamanho exato depende do patrimônio do master no momento da operação.",
+  // Short rules list on the review step
+  "follow.rules.title": "As regras em resumo",
+  "follow.rules.copiedT": "Copiado",
+  "follow.rules.copied": "Novas operações, fechamentos, fechamentos parciais, alterações de SL/TP e ordens pendentes.",
+  "follow.rules.notT": "Não é possível",
+  "follow.rules.noManual": "Você não pode operar esta conta de cópia por conta própria enquanto copia.",
+  "follow.rules.skipped": "Operações que resultam abaixo do lote mínimo são ignoradas e aparecem no log de cópia.",
+  "follow.rules.pausedT": "Pausado",
+  "follow.rules.paused": "Nenhuma nova operação é copiada; as operações abertas continuam seguindo os fechamentos e o SL/TP do master.",
+  "follow.rules.stopT": "Parar",
+  "follow.rules.stop": "Você escolhe: fechar tudo agora ou manter as operações e gerenciá-las por conta própria. O saldo pode voltar para a sua carteira.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "Entendo como a cópia funciona",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "Pausado: nenhuma nova operação é copiada; as operações abertas continuam seguindo os fechamentos e o SL/TP do master.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "Por que uma operação não foi copiada?",
+  "subs.detail.logHint": "Todas as operações do master são listadas aqui, inclusive as ignoradas, com o motivo (por exemplo, abaixo do lote mínimo ou símbolo excluído).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "O que deve acontecer com a conta de cópia?",
+  "subs.stop.deleteAcc": "Excluir",
+  "subs.stop.deleteAccS": "Arquivada; histórico e extratos são mantidos",
+  "subs.stop.keepAcc": "Manter",
+  "subs.stop.keepAccS": "Continua na sua lista de contas",
+  "subs.stop.archived": "A conta de cópia #{login} foi excluída (arquivada). O histórico e os extratos são mantidos.",
+  "subs.stop.archiveFailed": "A conta de cópia #{login} foi mantida porque não pôde ser excluída agora. Você pode excluí-la depois em Contas.",
+  "subs.stop.archiving": "Excluindo a conta de cópia…",
+  "subs.stop.archiveTitle": "Excluir conta de cópia #{login}",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "excluir a conta de cópia #{login}",
+  "subs.stop.archiveConfirm": "Excluir conta",
 };
 export default social;

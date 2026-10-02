@@ -951,5 +951,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "Sebagai {name}. Akun master MAM khusus dibuka untuk Anda.",
   "follow.walletAvailable": "{balance} USDT di dompet Anda",
   "follow.err.overBalance": "Dompet Anda berisi {balance} USDT. Kurangi jumlahnya atau lakukan deposit terlebih dahulu.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "Cara kerja salin",
+  "follow.how.s1T": "Danai dari wallet Anda",
+  "follow.how.s1S": "Jumlah Anda dipindahkan ke akun salin baru khusus untuk master ini.",
+  "follow.how.s2T": "Master bertrading",
+  "follow.how.s2S": "{name} membuka, mengubah, dan menutup trade seperti biasa.",
+  "follow.how.s3T": "Anda menyalin sesuai ukuran Anda",
+  "follow.how.s3S": "Setiap trade dibuka di akun salin Anda, dengan ukuran sesuai aturan yang Anda pilih.",
+  "follow.how.s4T": "Biaya hanya atas profit baru",
+  "follow.how.s4S": "{fee}% dari profit di atas high-water mark Anda. Tanpa biaya atas kerugian atau profit yang sudah dikenai biaya.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "Contoh dengan pengaturan Anda",
+  "follow.example.line": "Master membuka <b>{master} lot {symbol}</b> → Anda membuka <lot>{lot} lot</lot>",
+  "follow.example.lineSkipped": "Master membuka <b>{master} lot {symbol}</b> → <lot>dilewati</lot> (di bawah lot minimum)",
+  "follow.example.why.equity": "{alloc} Anda ÷ ekuitas master {equity} = {ratio}× ukuran master, dihitung ulang di setiap trade.",
+  "follow.example.why.fixedLot": "Setiap trade yang disalin dibuka sebesar {lot} lot, berapa pun ukuran trade master.",
+  "follow.example.why.multiplier": "Ukuran master × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ ekuitas master {equity} = {ratio}× ukuran master.",
+  "follow.example.why.noEquity": "Ukuran pastinya bergantung pada ekuitas master saat trade dilakukan.",
+  // Short rules list on the review step
+  "follow.rules.title": "Aturan singkat",
+  "follow.rules.copiedT": "Disalin",
+  "follow.rules.copied": "Trade baru, penutupan, penutupan sebagian, perubahan SL/TP, dan order pending.",
+  "follow.rules.notT": "Tidak bisa",
+  "follow.rules.noManual": "Anda tidak dapat bertrading sendiri di akun salin ini selama menyalin.",
+  "follow.rules.skipped": "Trade yang ukurannya di bawah lot minimum dilewati dan ditampilkan di log salinan.",
+  "follow.rules.pausedT": "Dijeda",
+  "follow.rules.paused": "Tidak ada trade baru yang disalin; trade terbuka tetap mengikuti penutupan dan SL/TP master.",
+  "follow.rules.stopT": "Berhenti",
+  "follow.rules.stop": "Anda yang memilih: tutup semuanya sekarang atau pertahankan trade dan kelola sendiri. Saldo dapat kembali ke wallet Anda.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "Saya memahami cara kerja penyalinan",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "Dijeda: tidak ada trade baru yang disalin; trade terbuka tetap mengikuti penutupan dan SL/TP master.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "Mengapa trade tidak disalin?",
+  "subs.detail.logHint": "Setiap trade dari master tercantum di sini, termasuk yang dilewati beserta alasannya (misalnya di bawah lot minimum atau simbol yang dikecualikan).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "Apa yang harus dilakukan pada akun salin?",
+  "subs.stop.deleteAcc": "Hapus",
+  "subs.stop.deleteAccS": "Diarsipkan; riwayat dan laporan tetap disimpan",
+  "subs.stop.keepAcc": "Pertahankan",
+  "subs.stop.keepAccS": "Tetap ada di daftar akun Anda",
+  "subs.stop.archived": "Akun salin #{login} telah dihapus (diarsipkan). Riwayat dan laporannya tetap disimpan.",
+  "subs.stop.archiveFailed": "Akun salin #{login} dipertahankan karena saat ini tidak dapat dihapus. Anda dapat menghapusnya nanti dari Akun.",
+  "subs.stop.archiving": "Menghapus akun salin…",
+  "subs.stop.archiveTitle": "Hapus akun salin #{login}",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "menghapus akun salin #{login}",
+  "subs.stop.archiveConfirm": "Hapus akun",
 };
 export default social;

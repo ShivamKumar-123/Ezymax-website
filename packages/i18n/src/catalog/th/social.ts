@@ -951,5 +951,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "ในชื่อ {name} ระบบจะเปิดบัญชีมาสเตอร์ MAM เฉพาะให้คุณ",
   "follow.walletAvailable": "{balance} USDT ในกระเป๋าเงินของคุณ",
   "follow.err.overBalance": "กระเป๋าเงินของคุณมี {balance} USDT โปรดลดจำนวนเงินหรือฝากเงินก่อน",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "การคัดลอกทำงานอย่างไร",
+  "follow.how.s1T": "เติมเงินจากกระเป๋าเงินของคุณ",
+  "follow.how.s1S": "จำนวนเงินของคุณจะย้ายไปยังบัญชีคัดลอกใหม่ที่ใช้เฉพาะกับมาสเตอร์รายนี้",
+  "follow.how.s2T": "มาสเตอร์เทรด",
+  "follow.how.s2S": "{name} เปิด แก้ไข และปิดการเทรดตามปกติ",
+  "follow.how.s3T": "คัดลอกตามขนาดของคุณ",
+  "follow.how.s3S": "ทุกการเทรดจะเปิดในบัญชีคัดลอกของคุณ โดยคำนวณขนาดตามกฎที่คุณเลือก",
+  "follow.how.s4T": "คิดค่าธรรมเนียมเฉพาะกำไรใหม่",
+  "follow.how.s4S": "{fee}% ของกำไรที่สูงกว่า High-water mark ของคุณ ไม่คิดค่าธรรมเนียมจากการขาดทุน หรือจากกำไรที่เคยถูกคิดไปแล้ว",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "ตัวอย่างตามการตั้งค่าของคุณ",
+  "follow.example.line": "มาสเตอร์เปิด <b>{master} ล็อต {symbol}</b> → คุณเปิด <lot>{lot} ล็อต</lot>",
+  "follow.example.lineSkipped": "มาสเตอร์เปิด <b>{master} ล็อต {symbol}</b> → <lot>ข้าม</lot> (ต่ำกว่าล็อตขั้นต่ำ)",
+  "follow.example.why.equity": "{alloc} ของคุณ ÷ อิควิตี้ของมาสเตอร์ {equity} = {ratio}× ของขนาดมาสเตอร์ คำนวณใหม่ทุกการเทรด",
+  "follow.example.why.fixedLot": "ทุกการเทรดที่คัดลอกจะเปิดที่ {lot} ล็อต ไม่ว่ามาสเตอร์จะเทรดขนาดเท่าใด",
+  "follow.example.why.multiplier": "ขนาดของมาสเตอร์ × {value}",
+  "follow.example.why.allocation": "{amount} ÷ อิควิตี้ของมาสเตอร์ {equity} = {ratio}× ของขนาดมาสเตอร์",
+  "follow.example.why.noEquity": "ขนาดที่แน่นอนขึ้นอยู่กับอิควิตี้ของมาสเตอร์ ณ เวลาที่เทรด",
+  // Short rules list on the review step
+  "follow.rules.title": "สรุปกฎ",
+  "follow.rules.copiedT": "สิ่งที่คัดลอก",
+  "follow.rules.copied": "การเทรดใหม่ การปิด การปิดบางส่วน การแก้ไข SL/TP และคำสั่งรอดำเนินการ",
+  "follow.rules.notT": "สิ่งที่ทำไม่ได้",
+  "follow.rules.noManual": "คุณไม่สามารถเทรดในบัญชีคัดลอกนี้ด้วยตนเองขณะคัดลอกอยู่",
+  "follow.rules.skipped": "การเทรดที่คำนวณแล้วต่ำกว่าล็อตขั้นต่ำจะถูกข้ามและแสดงในบันทึกการคัดลอก",
+  "follow.rules.pausedT": "หยุดชั่วคราว",
+  "follow.rules.paused": "ไม่คัดลอกการเทรดใหม่ การเทรดที่เปิดอยู่ยังคงตามการปิดและ SL/TP ของมาสเตอร์",
+  "follow.rules.stopT": "หยุด",
+  "follow.rules.stop": "คุณเลือกได้: ปิดทุกอย่างทันที หรือเก็บการเทรดไว้และจัดการเอง ยอดคงเหลือสามารถโอนกลับไปยังกระเป๋าเงินของคุณได้",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "ฉันเข้าใจวิธีการทำงานของการคัดลอก",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "หยุดชั่วคราว: ไม่คัดลอกการเทรดใหม่ การเทรดที่เปิดอยู่ยังคงตามการปิดและ SL/TP ของมาสเตอร์",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "ทำไมการเทรดจึงไม่ถูกคัดลอก",
+  "subs.detail.logHint": "การเทรดทุกรายการของมาสเตอร์จะแสดงที่นี่ รวมถึงรายการที่ถูกข้ามพร้อมเหตุผล (เช่น ต่ำกว่าล็อตขั้นต่ำ หรือสัญลักษณ์ที่ถูกยกเว้น)",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "ควรทำอย่างไรกับบัญชีคัดลอก",
+  "subs.stop.deleteAcc": "ลบ",
+  "subs.stop.deleteAccS": "เก็บเข้าคลัง ประวัติและใบแจ้งยอดยังคงอยู่",
+  "subs.stop.keepAcc": "เก็บไว้",
+  "subs.stop.keepAccS": "ยังอยู่ในรายการบัญชีของคุณ",
+  "subs.stop.archived": "บัญชีคัดลอก #{login} ถูกลบ (เก็บเข้าคลัง) แล้ว ประวัติและใบแจ้งยอดยังคงอยู่",
+  "subs.stop.archiveFailed": "บัญชีคัดลอก #{login} ถูกเก็บไว้เพราะไม่สามารถลบได้ในขณะนี้ คุณลบได้ภายหลังจากหน้าบัญชี",
+  "subs.stop.archiving": "กำลังลบบัญชีคัดลอก…",
+  "subs.stop.archiveTitle": "ลบบัญชีคัดลอก #{login}",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "ลบบัญชีคัดลอก #{login}",
+  "subs.stop.archiveConfirm": "ลบบัญชี",
 };
 export default social;

@@ -951,5 +951,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "{name} olarak. Sizin için özel bir MAM master hesabı açılır.",
   "follow.walletAvailable": "Cüzdanınızda {balance} USDT",
   "follow.err.overBalance": "Cüzdanınızda {balance} USDT var. Tutarı düşürün veya önce para yatırın.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "Kopyalama nasıl çalışır",
+  "follow.how.s1T": "Cüzdanınızdan fonlayın",
+  "follow.how.s1S": "Tutarınız, yalnızca bu master için açılan yeni bir kopya hesaba aktarılır.",
+  "follow.how.s2T": "Master işlem yapar",
+  "follow.how.s2S": "{name} işlemleri her zamanki gibi açar, değiştirir ve kapatır.",
+  "follow.how.s3T": "Kendi büyüklüğünüzle kopyalarsınız",
+  "follow.how.s3S": "Her işlem kopya hesabınızda, seçtiğiniz kurala göre boyutlandırılarak açılır.",
+  "follow.how.s4T": "Ücret yalnızca yeni kârdan",
+  "follow.how.s4S": "En yüksek seviyenizin (high-water mark) üzerindeki kârın %{fee} kadarı. Zararlardan veya daha önce ücretlendirilmiş kârdan ücret alınmaz.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "Ayarlarınızla örnek",
+  "follow.example.line": "Master <b>{master} lot {symbol}</b> açar → siz <lot>{lot} lot</lot> açarsınız",
+  "follow.example.lineSkipped": "Master <b>{master} lot {symbol}</b> açar → <lot>atlanır</lot> (minimum lotun altında)",
+  "follow.example.why.equity": "Sizin {alloc} ÷ master'ın {equity} özsermayesi = master büyüklüğünün {ratio}× katı, her işlemde yeniden hesaplanır.",
+  "follow.example.why.fixedLot": "Master hangi büyüklükte işlem yaparsa yapsın, kopyalanan her işlem {lot} lot açılır.",
+  "follow.example.why.multiplier": "Master'ın büyüklüğü × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ master'ın {equity} özsermayesi = master büyüklüğünün {ratio}× katı.",
+  "follow.example.why.noEquity": "Kesin büyüklük, işlem anındaki master özsermayesine bağlıdır.",
+  // Short rules list on the review step
+  "follow.rules.title": "Kısaca kurallar",
+  "follow.rules.copiedT": "Kopyalananlar",
+  "follow.rules.copied": "Yeni işlemler, kapanışlar, kısmi kapanışlar, SL/TP değişiklikleri ve bekleyen emirler.",
+  "follow.rules.notT": "Mümkün değil",
+  "follow.rules.noManual": "Kopyalama sürerken bu kopya hesapta kendiniz işlem yapamazsınız.",
+  "follow.rules.skipped": "Minimum lotun altında kalan işlemler atlanır ve kopya günlüğünde gösterilir.",
+  "follow.rules.pausedT": "Duraklatıldı",
+  "follow.rules.paused": "Yeni işlem kopyalanmaz; açık işlemler master'ın kapanışlarını ve SL/TP'sini izlemeye devam eder.",
+  "follow.rules.stopT": "Durdur",
+  "follow.rules.stop": "Siz seçersiniz: her şeyi şimdi kapatın ya da işlemleri tutup kendiniz yönetin. Bakiye cüzdanınıza dönebilir.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "Kopyalamanın nasıl çalıştığını anlıyorum",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "Duraklatıldı: yeni işlem kopyalanmaz; açık işlemler master'ın kapanışlarını ve SL/TP'sini izlemeye devam eder.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "Bir işlem neden kopyalanmadı?",
+  "subs.detail.logHint": "Master'ın her işlemi burada listelenir; atlananlar nedeniyle birlikte gösterilir (örneğin minimum lotun altında veya hariç tutulan sembol).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "Kopya hesaba ne olsun?",
+  "subs.stop.deleteAcc": "Sil",
+  "subs.stop.deleteAccS": "Arşivlenir; geçmiş ve ekstreler saklanır",
+  "subs.stop.keepAcc": "Tut",
+  "subs.stop.keepAccS": "Hesaplar listenizde kalır",
+  "subs.stop.archived": "#{login} kopya hesabı silindi (arşivlendi). Geçmişi ve ekstreleri saklanıyor.",
+  "subs.stop.archiveFailed": "#{login} kopya hesabı şu anda silinemediği için tutuldu. Daha sonra Hesaplar bölümünden silebilirsiniz.",
+  "subs.stop.archiving": "Kopya hesap siliniyor…",
+  "subs.stop.archiveTitle": "#{login} kopya hesabını sil",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "#{login} kopya hesabını silmek",
+  "subs.stop.archiveConfirm": "Hesabı sil",
 };
 export default social;

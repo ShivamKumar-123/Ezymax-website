@@ -327,5 +327,9 @@ const trader: NsMessages<"trader"> = {
   "mobile.sound": "Bunyi",
   "mobile.darkTheme": "Tema gelap",
   "mobile.refill": "Isi semula",
+  // Banner when the signed-in account is a copy-trading account; {master} = the master's nickname
+  "copyBanner.text": "Akaun salinan — dagangan diurus oleh {master}; anda boleh memantau P&L di sini.",
+  "copyBanner.textNoName": "Akaun salinan — dagangan diurus oleh master yang anda salin; anda boleh memantau P&L di sini.",
+  "copyBanner.manage": "Urus salinan di Kawasan Pelanggan",
 };
 export default trader;

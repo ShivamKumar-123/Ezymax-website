@@ -954,5 +954,55 @@ const social = {
   "mm.page.openSub": "As {name}. A dedicated MAM master account is opened for you.",
   "follow.walletAvailable": "{balance} USDT in your wallet",
   "follow.err.overBalance": "Your wallet has {balance} USDT. Lower the amount or deposit first.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "How copy works",
+  "follow.how.s1T": "Fund from your wallet",
+  "follow.how.s1S": "Your amount moves into a new copy account just for this master.",
+  "follow.how.s2T": "The master trades",
+  "follow.how.s2S": "{name} opens, changes and closes trades as usual.",
+  "follow.how.s3T": "You copy at your size",
+  "follow.how.s3S": "Each trade is opened on your copy account, sized by the rule you choose.",
+  "follow.how.s4T": "Fee only on new profit",
+  "follow.how.s4S": "{fee}% of profit above your high-water mark. No fee on losses or on profit already charged.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "Example with your settings",
+  "follow.example.line": "Master opens <b>{master} lot {symbol}</b> → you open <lot>{lot} lot</lot>",
+  "follow.example.lineSkipped": "Master opens <b>{master} lot {symbol}</b> → <lot>skipped</lot> (below the minimum lot)",
+  "follow.example.why.equity": "Your {alloc} ÷ the master's {equity} equity = {ratio}× the master's size, recalculated at every trade.",
+  "follow.example.why.fixedLot": "Every copied trade opens {lot} lot, whatever size the master trades.",
+  "follow.example.why.multiplier": "The master's size × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ the master's {equity} equity = {ratio}× the master's size.",
+  "follow.example.why.noEquity": "The exact size depends on the master's equity at the time of the trade.",
+  // Short rules list on the review step
+  "follow.rules.title": "The rules in short",
+  "follow.rules.copiedT": "Copied",
+  "follow.rules.copied": "New trades, closes, partial closes, SL/TP changes and pending orders.",
+  "follow.rules.notT": "Not possible",
+  "follow.rules.noManual": "You can't trade this copy account yourself while copying.",
+  "follow.rules.skipped": "Trades that work out below the minimum lot are skipped and shown in the copy log.",
+  "follow.rules.pausedT": "Paused",
+  "follow.rules.paused": "No new trades are copied; open trades still follow the master's closes and SL/TP.",
+  "follow.rules.stopT": "Stop",
+  "follow.rules.stop": "You choose: close everything now or keep the trades and manage them yourself. The balance can go back to your wallet.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "I understand how copying works",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "Paused: no new trades are copied; open trades still follow the master's closes and SL/TP.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "Why wasn't a trade copied?",
+  "subs.detail.logHint": "Every trade from the master is listed here, including skipped ones with the reason (for example below the minimum lot or an excluded symbol).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "What should happen to the copy account?",
+  "subs.stop.deleteAcc": "Delete it",
+  "subs.stop.deleteAccS": "Archived; history and statements are kept",
+  "subs.stop.keepAcc": "Keep it",
+  "subs.stop.keepAccS": "Stays in your accounts list",
+  "subs.stop.archived": "Copy account #{login} was deleted (archived). Its history and statements are kept.",
+  "subs.stop.archiveFailed": "Copy account #{login} was kept because it couldn't be deleted right now. You can delete it later from Accounts.",
+  "subs.stop.archiving": "Deleting the copy account…",
+  "subs.stop.archiveTitle": "Delete copy account #{login}",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "delete copy account #{login}",
+  "subs.stop.archiveConfirm": "Delete account",
 };
 export default social;

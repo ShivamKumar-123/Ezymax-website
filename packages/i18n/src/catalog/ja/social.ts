@@ -951,5 +951,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "{name} として開設します。専用のMAMマスター口座が開設されます。",
   "follow.walletAvailable": "ウォレット残高 {balance} USDT",
   "follow.err.overBalance": "ウォレット残高は {balance} USDT です。金額を減らすか、先に入金してください。",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "コピーの仕組み",
+  "follow.how.s1T": "ウォレットから入金",
+  "follow.how.s1S": "ご指定の金額が、このマスター専用の新しいコピー口座に移されます。",
+  "follow.how.s2T": "マスターが取引",
+  "follow.how.s2S": "{name} がいつも通りに取引を開き、変更し、決済します。",
+  "follow.how.s3T": "ご自身のサイズでコピー",
+  "follow.how.s3S": "各取引はコピー口座で、選択したルールに基づくサイズで開かれます。",
+  "follow.how.s4T": "手数料は新たな利益にのみ",
+  "follow.how.s4S": "ハイウォーターマークを超えた利益の {fee}%。損失や、すでに課金済みの利益には手数料はかかりません。",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "設定に基づく例",
+  "follow.example.line": "マスターが <b>{master} ロット {symbol}</b> を開く → あなたは <lot>{lot} ロット</lot> を開く",
+  "follow.example.lineSkipped": "マスターが <b>{master} ロット {symbol}</b> を開く → <lot>スキップ</lot>（最小ロット未満）",
+  "follow.example.why.equity": "あなたの {alloc} ÷ マスターの有効証拠金 {equity} = マスターのサイズの {ratio} 倍。取引ごとに再計算されます。",
+  "follow.example.why.fixedLot": "マスターの取引サイズに関係なく、コピーされるすべての取引は {lot} ロットで開かれます。",
+  "follow.example.why.multiplier": "マスターのサイズ × {value}。",
+  "follow.example.why.allocation": "{amount} ÷ マスターの有効証拠金 {equity} = マスターのサイズの {ratio} 倍。",
+  "follow.example.why.noEquity": "正確なサイズは、取引時のマスターの有効証拠金によって決まります。",
+  // Short rules list on the review step
+  "follow.rules.title": "ルールの要点",
+  "follow.rules.copiedT": "コピーされるもの",
+  "follow.rules.copied": "新規取引、決済、一部決済、SL/TPの変更、待機注文。",
+  "follow.rules.notT": "できないこと",
+  "follow.rules.noManual": "コピー中は、このコピー口座でご自身で取引することはできません。",
+  "follow.rules.skipped": "計算結果が最小ロット未満になる取引はスキップされ、コピーログに表示されます。",
+  "follow.rules.pausedT": "一時停止",
+  "follow.rules.paused": "新規取引はコピーされません。保有中の取引はマスターの決済とSL/TPに引き続き従います。",
+  "follow.rules.stopT": "停止",
+  "follow.rules.stop": "選択できます：今すぐすべて決済するか、取引を保持してご自身で管理するか。残高はウォレットに戻せます。",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "コピーの仕組みを理解しました",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "一時停止中：新規取引はコピーされません。保有中の取引はマスターの決済とSL/TPに引き続き従います。",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "なぜ取引がコピーされなかったのですか？",
+  "subs.detail.logHint": "マスターのすべての取引がここに一覧表示されます。スキップされたものも理由付きで表示されます（例：最小ロット未満、除外されたシンボル）。",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "コピー口座をどうしますか？",
+  "subs.stop.deleteAcc": "削除する",
+  "subs.stop.deleteAccS": "アーカイブされ、履歴と取引報告書は保持されます",
+  "subs.stop.keepAcc": "残す",
+  "subs.stop.keepAccS": "口座一覧に残ります",
+  "subs.stop.archived": "コピー口座 #{login} を削除（アーカイブ）しました。履歴と取引報告書は保持されます。",
+  "subs.stop.archiveFailed": "コピー口座 #{login} は現在削除できなかったため、保持されました。後で口座ページから削除できます。",
+  "subs.stop.archiving": "コピー口座を削除しています…",
+  "subs.stop.archiveTitle": "コピー口座 #{login} を削除",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "コピー口座 #{login} を削除",
+  "subs.stop.archiveConfirm": "口座を削除",
 };
 export default social;

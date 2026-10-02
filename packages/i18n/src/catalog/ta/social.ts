@@ -952,5 +952,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "{name} ஆக. உங்களுக்காகப் பிரத்யேக MAM மாஸ்டர் கணக்கு திறக்கப்படும்.",
   "follow.walletAvailable": "உங்கள் வாலெட்டில் {balance} USDT",
   "follow.err.overBalance": "உங்கள் வாலெட்டில் {balance} USDT உள்ளது. தொகையைக் குறைக்கவும் அல்லது முதலில் டெபாசிட் செய்யவும்.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "காப்பி செய்தல் எப்படிச் செயல்படுகிறது",
+  "follow.how.s1T": "உங்கள் வாலட்டிலிருந்து நிதியளியுங்கள்",
+  "follow.how.s1S": "உங்கள் தொகை, இந்த மாஸ்டருக்கென்றே உருவாக்கப்பட்ட புதிய காப்பி கணக்கிற்கு மாற்றப்படும்.",
+  "follow.how.s2T": "மாஸ்டர் டிரேட் செய்கிறார்",
+  "follow.how.s2S": "{name} வழக்கம்போல டிரேடுகளைத் திறந்து, மாற்றி, மூடுகிறார்.",
+  "follow.how.s3T": "உங்கள் அளவில் காப்பி செய்கிறீர்கள்",
+  "follow.how.s3S": "ஒவ்வொரு டிரேடும் நீங்கள் தேர்ந்தெடுத்த விதியின்படி அளவிடப்பட்டு உங்கள் காப்பி கணக்கில் திறக்கப்படும்.",
+  "follow.how.s4T": "புதிய லாபத்திற்கு மட்டுமே கட்டணம்",
+  "follow.how.s4S": "உங்கள் ஹை-வாட்டர் மார்க்கிற்கு மேலான லாபத்தில் {fee}%. நஷ்டத்திற்கோ ஏற்கனவே கட்டணம் வசூலிக்கப்பட்ட லாபத்திற்கோ கட்டணம் இல்லை.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "உங்கள் அமைப்புகளுடன் எடுத்துக்காட்டு",
+  "follow.example.line": "மாஸ்டர் <b>{master} லாட் {symbol}</b> திறக்கிறார் → நீங்கள் <lot>{lot} லாட்</lot> திறக்கிறீர்கள்",
+  "follow.example.lineSkipped": "மாஸ்டர் <b>{master} லாட் {symbol}</b> திறக்கிறார் → <lot>தவிர்க்கப்பட்டது</lot> (குறைந்தபட்ச லாட்டிற்குக் கீழ்)",
+  "follow.example.why.equity": "உங்கள் {alloc} ÷ மாஸ்டரின் {equity} ஈக்விட்டி = மாஸ்டர் அளவின் {ratio}×, ஒவ்வொரு டிரேடிலும் மறுகணக்கிடப்படும்.",
+  "follow.example.why.fixedLot": "மாஸ்டர் எந்த அளவில் டிரேட் செய்தாலும், காப்பி செய்யப்படும் ஒவ்வொரு டிரேடும் {lot} லாட்டில் திறக்கும்.",
+  "follow.example.why.multiplier": "மாஸ்டரின் அளவு × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ மாஸ்டரின் {equity} ஈக்விட்டி = மாஸ்டர் அளவின் {ratio}×.",
+  "follow.example.why.noEquity": "சரியான அளவு, டிரேட் நேரத்தில் மாஸ்டரின் ஈக்விட்டியைப் பொறுத்தது.",
+  // Short rules list on the review step
+  "follow.rules.title": "சுருக்கமான விதிகள்",
+  "follow.rules.copiedT": "காப்பி செய்யப்படுபவை",
+  "follow.rules.copied": "புதிய டிரேடுகள், மூடல்கள், பகுதி மூடல்கள், SL/TP மாற்றங்கள் மற்றும் பெண்டிங் ஆர்டர்கள்.",
+  "follow.rules.notT": "சாத்தியமில்லை",
+  "follow.rules.noManual": "காப்பி செய்யும்போது இந்த காப்பி கணக்கில் நீங்களே டிரேட் செய்ய முடியாது.",
+  "follow.rules.skipped": "குறைந்தபட்ச லாட்டிற்குக் கீழ் வரும் டிரேடுகள் தவிர்க்கப்பட்டு காப்பி லாக்கில் காட்டப்படும்.",
+  "follow.rules.pausedT": "இடைநிறுத்தப்பட்டது",
+  "follow.rules.paused": "புதிய டிரேடுகள் காப்பி செய்யப்படாது; திறந்துள்ள டிரேடுகள் மாஸ்டரின் மூடல்கள் மற்றும் SL/TP-ஐ தொடர்ந்து பின்பற்றும்.",
+  "follow.rules.stopT": "நிறுத்து",
+  "follow.rules.stop": "நீங்களே தேர்வு செய்யலாம்: இப்போதே அனைத்தையும் மூடலாம் அல்லது டிரேடுகளை வைத்துக்கொண்டு நீங்களே நிர்வகிக்கலாம். இருப்பு உங்கள் வாலட்டிற்குத் திரும்பலாம்.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "காப்பி செய்தல் எப்படிச் செயல்படுகிறது என்பதைப் புரிந்துகொண்டேன்",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "இடைநிறுத்தப்பட்டது: புதிய டிரேடுகள் காப்பி செய்யப்படாது; திறந்துள்ள டிரேடுகள் மாஸ்டரின் மூடல்கள் மற்றும் SL/TP-ஐ தொடர்ந்து பின்பற்றும்.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "ஒரு டிரேட் ஏன் காப்பி செய்யப்படவில்லை?",
+  "subs.detail.logHint": "மாஸ்டரின் ஒவ்வொரு டிரேடும் இங்கே பட்டியலிடப்படும்; தவிர்க்கப்பட்டவை காரணத்துடன் காட்டப்படும் (எ.கா. குறைந்தபட்ச லாட்டிற்குக் கீழ் அல்லது விலக்கப்பட்ட சின்னம்).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "காப்பி கணக்கை என்ன செய்யலாம்?",
+  "subs.stop.deleteAcc": "நீக்கு",
+  "subs.stop.deleteAccS": "காப்பகப்படுத்தப்படும்; வரலாறும் அறிக்கைகளும் வைக்கப்படும்",
+  "subs.stop.keepAcc": "வைத்துக்கொள்",
+  "subs.stop.keepAccS": "உங்கள் கணக்குகள் பட்டியலில் இருக்கும்",
+  "subs.stop.archived": "காப்பி கணக்கு #{login} நீக்கப்பட்டது (காப்பகப்படுத்தப்பட்டது). அதன் வரலாறும் அறிக்கைகளும் வைக்கப்பட்டுள்ளன.",
+  "subs.stop.archiveFailed": "காப்பி கணக்கு #{login} இப்போது நீக்க முடியாததால் வைக்கப்பட்டது. பின்னர் கணக்குகள் பகுதியிலிருந்து நீக்கலாம்.",
+  "subs.stop.archiving": "காப்பி கணக்கை நீக்குகிறது…",
+  "subs.stop.archiveTitle": "காப்பி கணக்கு #{login}-ஐ நீக்கு",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "காப்பி கணக்கு #{login}-ஐ நீக்க",
+  "subs.stop.archiveConfirm": "கணக்கை நீக்கு",
 };
 export default social;

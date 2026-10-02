@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, Coins, Layers, Loader2, Percent, Scale, Search, ShieldCheck, X as XIcon } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, ArrowRight, Check, Coins, Copy, Layers, Loader2, Pause, Percent, Scale, Search, ShieldCheck, Square, Wallet, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Field, Input, KeyValue, Stepper, SymbolAvatar, Toggle, cn } from "@kalks/ui";
 import { Trans, useT } from "@kalks/i18n/react";
@@ -22,13 +22,97 @@ const MODES = [
   { key: "allocation", icon: <Coins />, text: "social.follow.mode.allocation" },
 ] as const satisfies readonly { key: SizingMode; text: string; icon: React.ReactNode }[];
 
-/** Follower lot for a 1.00-lot master trade (rounded down to 0.01, capped by max lot). */
-function exampleLot(mode: SizingMode, value: number, allocation: number, masterEquity: number, maxLot: number | null) {
+/** Follower lot for a master trade of `masterLot` (default 1.00; rounded down to 0.01, capped by max lot). 0 = skipped (below the minimum lot). */
+function exampleLot(mode: SizingMode, value: number, allocation: number, masterEquity: number, maxLot: number | null, masterLot = 1) {
   const me = masterEquity > 0 ? masterEquity : 0;
-  let v = mode === "equity" ? (me ? allocation / me : 0) : mode === "allocation" ? (me ? value / me : 0) : mode === "multiplier" ? value : value;
+  let v = mode === "equity" ? (me ? (allocation / me) * masterLot : 0) : mode === "allocation" ? (me ? (value / me) * masterLot : 0) : mode === "multiplier" ? value * masterLot : value;
   v = Math.floor(v * 100 + 1e-9) / 100;
   if (maxLot && v > maxLot) v = maxLot;
   return v;
+}
+
+/** "How copy works" in four steps, shown at the start of the follow dialog. */
+function HowCopyWorks({ name, fee }: { name: string; fee: number }) {
+  const t = useT();
+  const steps = [
+    { icon: <Wallet />, title: t("social.follow.how.s1T"), text: t("social.follow.how.s1S") },
+    { icon: <Activity />, title: t("social.follow.how.s2T"), text: t("social.follow.how.s2S", { name }) },
+    { icon: <Copy />, title: t("social.follow.how.s3T"), text: t("social.follow.how.s3S") },
+    { icon: <Percent />, title: t("social.follow.how.s4T"), text: t("social.follow.how.s4S", { fee }) },
+  ];
+  return (
+    <section aria-label={t("social.follow.how.title")} className="mb-5 rounded-[16px] border border-line bg-surface-2 px-4 py-3" data-testid="copy-how-card">
+      <div className="mb-2.5 text-[13px] font-medium text-fg">{t("social.follow.how.title")}</div>
+      <ol className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+        {steps.map((s, i) => (
+          <li key={i} className="flex gap-2.5 sm:flex-col sm:gap-1.5">
+            <span className="relative grid size-8 shrink-0 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember [&_svg]:size-4">
+              {s.icon}
+              <span className="absolute -end-1 -top-1 grid size-4 place-items-center rounded-full bg-ember text-[10px] font-semibold text-white">{i + 1}</span>
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[12.5px] font-medium text-fg">{s.title}</span>
+              <span className="block text-[11.5px] leading-snug text-fg-3">{s.text}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+const ratioText = (x: number) => String(Number(x.toPrecision(3)));
+
+/** Live sizing example in plain words, from the mode, value and amount the client entered. */
+function SizingExample({ mode, val, alloc, masterEq, maxLot, symbol }: { mode: SizingMode; val: number; alloc: number; masterEq: number; maxLot: number | null; symbol: string }) {
+  const t = useT();
+  const me = masterEq > 0 ? masterEq : 0;
+  if (!me && (mode === "equity" || mode === "allocation")) {
+    return (
+      <InfoBox tone="gold">
+        {t("social.follow.example.why.noEquity")} {t("social.follow.example.roundingLogged")}
+      </InfoBox>
+    );
+  }
+  const why =
+    mode === "equity"
+      ? t("social.follow.example.why.equity", { alloc: usd(alloc, 0), equity: usd(me, 0), ratio: ratioText(alloc / me) })
+      : mode === "allocation"
+        ? t("social.follow.example.why.allocation", { amount: usd(val, 0), equity: usd(me, 0), ratio: ratioText(val / me) })
+        : mode === "multiplier"
+          ? t("social.follow.example.why.multiplier", { value: val })
+          : t("social.follow.example.why.fixedLot", { lot: val.toFixed(2) });
+  const rows = [1, 0.1].map((ml) => ({ ml, lot: exampleLot(mode, val, alloc, masterEq, maxLot, ml) }));
+  return (
+    <div className="rounded-[14px] border border-gold/25 bg-gold-soft px-4 py-3 text-[12.5px] leading-relaxed text-fg-2" data-testid="copy-sizing-example">
+      <div className="mb-1 text-[12px] font-medium uppercase tracking-wide text-fg-3">{t("social.follow.example.title")}</div>
+      <ul className="space-y-0.5 text-[13.5px]">
+        {rows.map(({ ml, lot }) => (
+          <li key={ml}>
+            <Trans
+              k={lot > 0 ? "social.follow.example.line" : "social.follow.example.lineSkipped"}
+              vars={{ master: ml.toFixed(2), symbol, lot: lot.toFixed(2) }}
+              tags={{ b: (c) => <b className="text-fg">{c}</b>, lot: (c) => <b className={cn("k-num", lot > 0 ? "text-ember" : "text-fg-3")}>{c}</b> }}
+            />
+            {maxLot !== null && lot > 0 && lot === maxLot && mode !== "fixed_lot" ? t("social.follow.example.capped") : null}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1.5">{why}</p>
+      <p className="mt-1 text-[12px] text-fg-3">{t("social.follow.example.rounding")}</p>
+    </div>
+  );
+}
+
+function Rule({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <li className="flex gap-2.5">
+      <span className="mt-0.5 shrink-0 [&_svg]:size-4">{icon}</span>
+      <span>
+        <b className="font-medium text-fg">{title}:</b> {children}
+      </span>
+    </li>
+  );
 }
 
 export function FollowDialog({ master: m, open, onOpenChange, suggested = [], onDone }: { master: MasterView | null; open: boolean; onOpenChange: (o: boolean) => void; suggested?: string[]; onDone?: () => void }) {
@@ -72,7 +156,7 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
   const alloc = allocation.value ?? 0;
   const val = mode === "equity" ? 1 : value.value ?? 0;
   const masterEq = m.stats.equity;
-  const lot = exampleLot(mode, val, alloc, masterEq, maxLot.value);
+  const exampleSymbol = suggested[0] ?? "EURUSD";
 
   const sizingErr = mode === "equity" ? undefined : !(val > 0) ? t("social.follow.err.aboveZero") : mode === "fixed_lot" && val < 0.01 ? t("social.follow.err.minLot") : undefined;
   // the allocation moves from the USDT wallet: show what is there and stop an amount above it before the review step
@@ -202,6 +286,7 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
         </span>
       </div>
       {m.house && <InfoBox className="-mt-2 mb-5">{t("social.house.disclosure")}</InfoBox>}
+      {step === 0 && <HowCopyWorks name={m.nickname} fee={m.perfFeePct} />}
       <Stepper steps={STEPS.map((k) => t(k))} current={step} className="mb-6" />
 
       {step === 0 && (
@@ -238,19 +323,7 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
               </Field>
             </div>
           )}
-          <InfoBox tone="gold">
-            {masterEq > 0 ? (
-              <>
-                <Trans k="social.follow.example.lead" vars={{ name: m.nickname, equity: usd(masterEq, 0), lot: lot.toFixed(2) }} tags={{ b: (c) => <b className="text-fg">{c}</b>, lot: (c) => <b className="k-num text-ember">{c}</b> }} />
-                {mode === "equity" && <> {t("social.follow.example.equity", { alloc: usd(alloc, 0), equity: usd(masterEq, 0) })}</>}
-                {mode === "allocation" && <> ({usd(val, 0)} ÷ {usd(masterEq, 0)})</>}
-                {mode === "multiplier" && <> (1.00 × {val})</>}
-                {maxLot.value !== null && lot === maxLot.value && <>{t("social.follow.example.capped")}</>}. {t("social.follow.example.rounding")}
-              </>
-            ) : (
-              <>{t("social.follow.example.roundingLogged")}</>
-            )}
-          </InfoBox>
+          <SizingExample mode={mode} val={val} alloc={alloc} masterEq={masterEq} maxLot={maxLot.value} symbol={exampleSymbol} />
         </div>
       )}
 
@@ -331,6 +404,7 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
           <InfoBox tone="gold">
             {t("social.follow.amountNote", { amount: alloc > 0 ? usd(alloc) : t("social.follow.theAmount") })}
           </InfoBox>
+          {alloc > 0 && <SizingExample mode={mode} val={val} alloc={alloc} masterEq={masterEq} maxLot={maxLot.value} symbol={exampleSymbol} />}
         </div>
       )}
 
@@ -351,11 +425,31 @@ export function FollowDialog({ master: m, open, onOpenChange, suggested = [], on
               [t("social.performanceFee"), t("social.follow.feeTerms", { fee: m.perfFeePct, period: PERIOD_LABEL[m.feePeriod].toLowerCase() })],
             ]}
           />
+          <div className="rounded-[16px] border border-line bg-surface-2 px-4 py-3" data-testid="copy-rules">
+            <div className="mb-2 text-[13px] font-medium text-fg">{t("social.follow.rules.title")}</div>
+            <ul className="space-y-1.5 text-[12.5px] leading-snug text-fg-2">
+              <Rule icon={<Check className="text-up" />} title={t("social.follow.rules.copiedT")}>
+                {t("social.follow.rules.copied")}
+              </Rule>
+              <Rule icon={<XIcon className="text-down" />} title={t("social.follow.rules.notT")}>
+                {t("social.follow.rules.noManual")} {t("social.follow.rules.skipped")}
+              </Rule>
+              <Rule icon={<Pause className="text-warn" />} title={t("social.follow.rules.pausedT")}>
+                {t("social.follow.rules.paused")}
+              </Rule>
+              <Rule icon={<Square className="text-fg-3" />} title={t("social.follow.rules.stopT")}>
+                {t("social.follow.rules.stop")}
+              </Rule>
+            </ul>
+          </div>
           <InfoBox>
             {t("social.follow.mirrorNote")}
           </InfoBox>
           <Checkbox checked={agree} onChange={setAgree}>
-            {t("social.follow.agree")}
+            <span data-testid="copy-understand">
+              <b className="block font-medium text-fg">{t("social.follow.understand")}</b>
+              <span className="text-[12px] text-fg-3">{t("social.follow.agree")}</span>
+            </span>
           </Checkbox>
         </div>
       )}

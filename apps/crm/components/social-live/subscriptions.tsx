@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { AlertTriangle, Ban, Check, Compass, Layers, ListChecks, Loader2, Pause, Play, Repeat, Settings2, ShieldAlert, ShieldCheck, Sliders, Square, Wallet, X as XIcon } from "lucide-react";
+import { AlertTriangle, Archive, Ban, Check, Compass, HelpCircle, Layers, ListChecks, Loader2, Pause, Play, Repeat, Settings2, ShieldAlert, ShieldCheck, Sliders, Square, Wallet, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
   Button,
@@ -28,6 +28,8 @@ import {
 } from "@kalks/ui";
 import { Trans, useT } from "@kalks/i18n/react";
 import { Checkbox, RadioCard, RangeSlider, ToggleChip } from "@/components/social/controls";
+import { STEPUP_CODES, StepUpDialog } from "@/components/stepup";
+import { ApiError as TradingApiError, tradingApi } from "@/components/trading/api";
 import { TradeButton } from "@/components/trading/ui";
 import { fmtDate, fmtPrice, serverTime, type EngineOrder, type EnginePosition } from "@/components/trading/api";
 import {
@@ -235,22 +237,47 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
   // close every copied position and order at market (default), or keep them open as the client's own trades
   const [close, setClose] = React.useState(true);
   const [returnFunds, setReturnFunds] = React.useState(true);
+  // last choice (only when everything closes and the balance goes back to the wallet): archive the copy account or keep it
+  const [delAcc, setDelAcc] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [res, setRes] = React.useState<{ r: StopResult; kept: boolean } | null>(null);
+  // archive after the stop: running, done, failed (account kept), or waiting for the e-mailed step-up code (live accounts)
+  const [archive, setArchive] = React.useState<"running" | "done" | "failed" | "stepup" | null>(null);
   React.useEffect(() => {
     setClose(true);
     setReturnFunds(true);
+    setDelAcc(false);
     setRes(null);
+    setArchive(null);
   }, [sub?.id]);
   if (!sub) return null;
   const open = sub.positions + sub.orders > 0;
   const keep = open && !close;
+  const canDelete = !keep && returnFunds;
+  const login = sub.login;
+
+  /** Client Area trading BFF: empty (if anything is left) and archive the copy account; history and statements are kept. */
+  const archiveAccount = async (token?: string) => {
+    await tradingApi(`accounts/${login}/archive`, { body: { empty: true, ackForfeit: true, ...(token ? { stepup_token: token } : {}) } });
+    setArchive("done");
+  };
+  const runArchive = async () => {
+    setArchive("running");
+    try {
+      await archiveAccount();
+    } catch (e) {
+      // live accounts need an e-mailed code first (the same step-up as a leverage change)
+      if (e instanceof TradingApiError && STEPUP_CODES.has(e.code)) setArchive("stepup");
+      else setArchive("failed");
+    }
+  };
 
   const stop = async () => {
     setBusy(true);
     try {
       const r = await socialApi<StopResult>(`subscriptions/${sub.id}/stop`, { body: { ...(returnFunds ? { returnFunds: true } : {}), ...(keep ? { closePositions: false } : {}) } });
       setRes({ r, kept: keep });
+      if (canDelete && delAcc) void runArchive();
       const back = r.returned ? t("social.subs.stop.backToWallet", { amount: usd(r.returned) }) : "";
       toast.success(t("social.subs.stop.stopped"), { description: keep ? back || undefined : `${t("social.subs.stop.closedCount", { count: r.closed?.length ?? 0 })}${back ? ` · ${back}` : ""}` });
       onStopped();
@@ -297,7 +324,42 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
           )}
           {returnFunds && r.returned === null && <InfoBox tone="warn">{t("social.subs.stop.notMoved", { login: sub.login })}</InfoBox>}
           {!returnFunds && <InfoBox>{t("social.subs.stop.stays", { login: sub.login })}</InfoBox>}
+          {(archive === "running" || archive === "stepup") && (
+            <InfoBox icon={<Loader2 className="animate-spin" />}>{t("social.subs.stop.archiving")}</InfoBox>
+          )}
+          {archive === "done" && (
+            <InfoBox tone="up" icon={<Archive />}>
+              <span data-testid="copy-archive-done">{t("social.subs.stop.archived", { login })}</span>
+            </InfoBox>
+          )}
+          {archive === "failed" && (
+            <InfoBox tone="warn" icon={<AlertTriangle />}>
+              <span data-testid="copy-archive-failed">{t("social.subs.stop.archiveFailed", { login })}</span>{" "}
+              <Link href="/accounts" className="font-medium text-ember hover:underline">
+                {t("common.accounts")}
+              </Link>
+            </InfoBox>
+          )}
         </div>
+        <StepUpDialog
+          open={archive === "stepup"}
+          onOpenChange={(o) => {
+            // closing the code dialog without confirming keeps the account
+            if (!o) setArchive((a) => (a === "stepup" ? "failed" : a));
+          }}
+          action="account_archive"
+          target={String(login)}
+          title={t("social.subs.stop.archiveTitle", { login })}
+          what={t("social.subs.stop.archiveWhat", { login })}
+          confirmLabel={t("social.subs.stop.archiveConfirm")}
+          onConfirmed={async (token) => {
+            try {
+              await archiveAccount(token);
+            } catch {
+              setArchive("failed");
+            }
+          }}
+        />
       </Dialog>
     );
   }
@@ -350,6 +412,15 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
           </Checkbox>
           {keep && returnFunds && <p className="ps-[30px] text-[12px] leading-snug text-fg-3">{t("social.subs.stop.keepFunds")}</p>}
         </div>
+        {canDelete && (
+          <div className="space-y-2" data-testid="copy-stop-account">
+            <div className="text-[12.5px] font-medium text-fg">{t("social.subs.stop.accountQ")}</div>
+            <div role="radiogroup" aria-label={t("social.subs.stop.accountQ")} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <RadioCard selected={delAcc} onSelect={() => setDelAcc(true)} title={t("social.subs.stop.deleteAcc")} text={t("social.subs.stop.deleteAccS")} icon={<Archive />} className="p-3" />
+              <RadioCard selected={!delAcc} onSelect={() => setDelAcc(false)} title={t("social.subs.stop.keepAcc")} text={t("social.subs.stop.keepAccS")} icon={<Wallet />} className="p-3" />
+            </div>
+          </div>
+        )}
       </div>
     </Dialog>
   );
@@ -359,11 +430,13 @@ function StopDialog({ sub, onClose, onStopped }: { sub: SubscriptionView | null;
 /* Detail drawer                                                       */
 /* ------------------------------------------------------------------ */
 
-function DetailDrawer({ id, onClose }: { id: number | null; onClose: () => void }) {
+type DetailTab = "positions" | "orders" | "log" | "fees";
+
+function DetailDrawer({ id, initialTab = "positions", onClose }: { id: number | null; initialTab?: DetailTab; onClose: () => void }) {
   const t = useT();
   const { data, error } = useSocial<SubscriptionDetail>(id ? `subscriptions/${id}` : null, 5000);
-  const [tab, setTab] = React.useState<"positions" | "orders" | "log" | "fees">("positions");
-  React.useEffect(() => setTab("positions"), [id]);
+  const [tab, setTab] = React.useState<DetailTab>(initialTab);
+  React.useEffect(() => setTab(initialTab), [id, initialTab]);
   const d = data && data.subscription.id === id ? data : null;
 
   const posCols: Column<EnginePosition>[] = [
@@ -425,6 +498,7 @@ function DetailDrawer({ id, onClose }: { id: number | null; onClose: () => void 
           {tab === "positions" &&
             (d.positions.length ? <DataTable columns={posCols} rows={d.positions} dense pageSize={20} rowKey={(p) => String(p.ticket)} /> : <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">{t("social.subs.detail.noPositions")}</div>)}
           {tab === "orders" && (d.orders.length ? <DataTable columns={ordCols} rows={d.orders} dense pageSize={20} rowKey={(o) => String(o.ticket)} /> : <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">{t("social.subs.detail.noOrders")}</div>)}
+          {tab === "log" && <p className="text-[12px] leading-snug text-fg-3">{t("social.subs.detail.logHint")}</p>}
           {tab === "log" && (d.log.length ? <DataTable columns={logCols} rows={d.log} dense pageSize={20} rowKey={(l, i) => `${l.at}-${i}`} /> : <div className="k-row px-4 py-8 text-center text-[13px] text-fg-3">{t("social.subs.detail.noLog")}</div>)}
           {tab === "fees" && <FeesTable fees={d.fees} />}
           <InfoBox>{t("social.subs.detail.note")}</InfoBox>
@@ -438,7 +512,7 @@ function DetailDrawer({ id, onClose }: { id: number | null; onClose: () => void 
 /* Card                                                                */
 /* ------------------------------------------------------------------ */
 
-function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionView; onChanged: () => void; onEdit: () => void; onStop: () => void; onDetail: () => void }) {
+function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionView; onChanged: () => void; onEdit: () => void; onStop: () => void; onDetail: (tab?: DetailTab) => void }) {
   const t = useT();
   const [busy, setBusy] = React.useState(false);
   const stopped = s.status === "stopped";
@@ -480,6 +554,12 @@ function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionVi
       </div>
       {stopped && s.stopReason && <div className="mt-1 px-5 text-[12px] text-down">{stopReason(s.stopReason, t)}{s.stoppedAt ? ` · ${fmtDate(s.stoppedAt)}` : ""}</div>}
       {!stopped && s.master.frozen && <div className="mt-1 px-5 text-[12px] text-warn">{t("social.subs.frozen")}</div>}
+      {s.status === "paused" && (
+        <div className="mx-5 mt-2 flex items-start gap-2 rounded-[10px] border border-warn/30 bg-warn-soft px-3 py-2 text-[12px] leading-snug text-fg-2" data-testid="copy-paused-note">
+          <Pause className="mt-0.5 size-3.5 shrink-0 text-warn" />
+          {t("social.subs.pausedNote")}
+        </div>
+      )}
       <div className="mt-4 px-5">
         <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("common.equity")}</div>
         <Money value={s.equity} countUp={false} className="text-[26px] font-semibold" />
@@ -516,6 +596,11 @@ function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionVi
         {s.maxLot !== null && <Chip size="sm">{t("social.subs.maxLotChip", { lot: s.maxLot.toFixed(2) })}</Chip>}
         {s.excludedSymbols.length > 0 ? <Chip size="sm">{t("social.subs.exclChip", { list: s.excludedSymbols.slice(0, 3).join(", ") })}{s.excludedSymbols.length > 3 ? ` +${s.excludedSymbols.length - 3}` : ""}</Chip> : <Chip size="sm">{t("social.subs.allSymbols")}</Chip>}
       </div>
+      <div className="mt-2.5 px-5">
+        <button type="button" onClick={() => onDetail("log")} className="inline-flex items-center gap-1 text-[12px] font-medium text-ember hover:underline" data-testid="copy-why-not-copied">
+          <HelpCircle className="size-3.5" /> {t("social.subs.whyNotCopied")}
+        </button>
+      </div>
       <div className="mt-auto grid grid-cols-2 gap-2 px-5 pb-5 pt-4 sm:grid-cols-3">
         {!stopped && (
           <>
@@ -530,7 +615,7 @@ function SubCard({ s, onChanged, onEdit, onStop, onDetail }: { s: SubscriptionVi
             </Button>
           </>
         )}
-        <Button size="sm" variant="surface" onClick={onDetail} className={cn(stopped && "col-span-1")}>
+        <Button size="sm" variant="surface" onClick={() => onDetail()} className={cn(stopped && "col-span-1")}>
           <ListChecks /> {t("common.details")}
         </Button>
         <TradeButton a={{ login: s.login, status: "active" }} size="sm" label="Kalks Trader" className="sm:col-span-2" />
@@ -548,6 +633,7 @@ export function LiveCopyPage() {
   const [edit, setEdit] = React.useState<SubscriptionView | null>(null);
   const [stop, setStop] = React.useState<SubscriptionView | null>(null);
   const [detail, setDetail] = React.useState<number | null>(null);
+  const [detailTab, setDetailTab] = React.useState<DetailTab>("positions");
 
   const items = data?.items ?? [];
   const current = items.filter((s) => s.status !== "stopped");
@@ -628,7 +714,11 @@ export function LiveCopyPage() {
               ) : (
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                   {list.map((s) => (
-                    <SubCard key={s.id} s={s} onChanged={reload} onEdit={() => setEdit(s)} onStop={() => setStop(s)} onDetail={() => setDetail(s.id)} />
+                    <SubCard key={s.id} s={s} onChanged={reload} onEdit={() => setEdit(s)} onStop={() => setStop(s)} onDetail={(tab) => {
+                        setDetailTab(tab ?? "positions");
+                        setDetail(s.id);
+                      }}
+                    />
                   ))}
                 </div>
               )}
@@ -640,7 +730,7 @@ export function LiveCopyPage() {
 
       <SettingsDialog sub={edit} onClose={() => setEdit(null)} onSaved={reload} />
       <StopDialog sub={stop} onClose={() => setStop(null)} onStopped={reload} />
-      <DetailDrawer id={detail} onClose={() => setDetail(null)} />
+      <DetailDrawer id={detail} initialTab={detailTab} onClose={() => setDetail(null)} />
     </div>
   );
 }

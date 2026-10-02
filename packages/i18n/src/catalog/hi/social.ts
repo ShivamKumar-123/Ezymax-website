@@ -952,5 +952,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "{name} के रूप में। आपके लिए एक अलग MAM मास्टर अकाउंट खोला जाता है।",
   "follow.walletAvailable": "आपके वॉलेट में {balance} USDT",
   "follow.err.overBalance": "आपके वॉलेट में {balance} USDT है। राशि कम करें या पहले जमा करें।",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "कॉपी कैसे काम करती है",
+  "follow.how.s1T": "अपने वॉलेट से फ़ंड करें",
+  "follow.how.s1S": "आपकी राशि सिर्फ़ इस मास्टर के लिए बने नए कॉपी अकाउंट में जाती है।",
+  "follow.how.s2T": "मास्टर ट्रेड करता है",
+  "follow.how.s2S": "{name} हमेशा की तरह ट्रेड खोलता, बदलता और बंद करता है।",
+  "follow.how.s3T": "आप अपने साइज़ में कॉपी करते हैं",
+  "follow.how.s3S": "हर ट्रेड आपके कॉपी अकाउंट पर खुलता है, और उसका साइज़ आपके चुने नियम से तय होता है।",
+  "follow.how.s4T": "फ़ीस सिर्फ़ नए मुनाफ़े पर",
+  "follow.how.s4S": "आपके हाई-वॉटर मार्क से ऊपर के मुनाफ़े का {fee}%। नुकसान पर या पहले से चार्ज किए गए मुनाफ़े पर कोई फ़ीस नहीं।",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "आपकी सेटिंग के साथ उदाहरण",
+  "follow.example.line": "मास्टर <b>{master} लॉट {symbol}</b> खोलता है → आप <lot>{lot} लॉट</lot> खोलते हैं",
+  "follow.example.lineSkipped": "मास्टर <b>{master} लॉट {symbol}</b> खोलता है → <lot>छोड़ा गया</lot> (न्यूनतम लॉट से कम)",
+  "follow.example.why.equity": "आपका {alloc} ÷ मास्टर की {equity} इक्विटी = मास्टर के साइज़ का {ratio}×, हर ट्रेड पर दोबारा गणना होती है।",
+  "follow.example.why.fixedLot": "हर कॉपी किया गया ट्रेड {lot} लॉट खुलता है, चाहे मास्टर किसी भी साइज़ में ट्रेड करे।",
+  "follow.example.why.multiplier": "मास्टर का साइज़ × {value}।",
+  "follow.example.why.allocation": "{amount} ÷ मास्टर की {equity} इक्विटी = मास्टर के साइज़ का {ratio}×।",
+  "follow.example.why.noEquity": "सटीक साइज़ ट्रेड के समय मास्टर की इक्विटी पर निर्भर करता है।",
+  // Short rules list on the review step
+  "follow.rules.title": "संक्षेप में नियम",
+  "follow.rules.copiedT": "कॉपी होता है",
+  "follow.rules.copied": "नए ट्रेड, क्लोज़, आंशिक क्लोज़, SL/TP बदलाव और पेंडिंग ऑर्डर।",
+  "follow.rules.notT": "संभव नहीं",
+  "follow.rules.noManual": "कॉपी करते समय आप इस कॉपी अकाउंट पर खुद ट्रेड नहीं कर सकते।",
+  "follow.rules.skipped": "जिन ट्रेड का साइज़ न्यूनतम लॉट से कम निकलता है, उन्हें छोड़ दिया जाता है और कॉपी लॉग में दिखाया जाता है।",
+  "follow.rules.pausedT": "रोका गया",
+  "follow.rules.paused": "कोई नया ट्रेड कॉपी नहीं होता; खुले ट्रेड मास्टर के क्लोज़ और SL/TP को फ़ॉलो करते रहते हैं।",
+  "follow.rules.stopT": "बंद करें",
+  "follow.rules.stop": "आप चुनते हैं: अभी सब बंद करें या ट्रेड रखकर खुद मैनेज करें। बैलेंस आपके वॉलेट में वापस जा सकता है।",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "कॉपी कैसे काम करती है, यह मुझे समझ आ गया है",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "रोका गया: कोई नया ट्रेड कॉपी नहीं होता; खुले ट्रेड मास्टर के क्लोज़ और SL/TP को फ़ॉलो करते रहते हैं।",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "कोई ट्रेड कॉपी क्यों नहीं हुआ?",
+  "subs.detail.logHint": "मास्टर का हर ट्रेड यहाँ सूचीबद्ध है, छोड़े गए ट्रेड भी कारण के साथ (जैसे न्यूनतम लॉट से कम या बाहर रखा गया सिंबल)।",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "कॉपी अकाउंट का क्या किया जाए?",
+  "subs.stop.deleteAcc": "हटाएँ",
+  "subs.stop.deleteAccS": "आर्काइव हो जाता है; हिस्ट्री और स्टेटमेंट सुरक्षित रहते हैं",
+  "subs.stop.keepAcc": "रखें",
+  "subs.stop.keepAccS": "आपकी अकाउंट सूची में बना रहता है",
+  "subs.stop.archived": "कॉपी अकाउंट #{login} हटा दिया गया (आर्काइव किया गया)। इसकी हिस्ट्री और स्टेटमेंट सुरक्षित हैं।",
+  "subs.stop.archiveFailed": "कॉपी अकाउंट #{login} रखा गया क्योंकि अभी उसे हटाया नहीं जा सका। आप बाद में अकाउंट्स से उसे हटा सकते हैं।",
+  "subs.stop.archiving": "कॉपी अकाउंट हटाया जा रहा है…",
+  "subs.stop.archiveTitle": "कॉपी अकाउंट #{login} हटाएँ",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "कॉपी अकाउंट #{login} हटाने",
+  "subs.stop.archiveConfirm": "अकाउंट हटाएँ",
 };
 export default social;

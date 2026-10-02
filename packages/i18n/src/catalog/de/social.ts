@@ -952,5 +952,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "Als {name}. Ein eigenes MAM-Master-Konto wird für Sie eröffnet.",
   "follow.walletAvailable": "{balance} USDT in Ihrer Wallet",
   "follow.err.overBalance": "Ihre Wallet enthält {balance} USDT. Verringern Sie den Betrag oder zahlen Sie zuerst ein.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "So funktioniert Kopieren",
+  "follow.how.s1T": "Aus Ihrer Wallet einzahlen",
+  "follow.how.s1S": "Ihr Betrag wird auf ein neues Kopierkonto nur für diesen Master übertragen.",
+  "follow.how.s2T": "Der Master handelt",
+  "follow.how.s2S": "{name} eröffnet, ändert und schließt Trades wie gewohnt.",
+  "follow.how.s3T": "Sie kopieren in Ihrer Größe",
+  "follow.how.s3S": "Jeder Trade wird auf Ihrem Kopierkonto eröffnet, in der Größe nach der von Ihnen gewählten Regel.",
+  "follow.how.s4T": "Gebühr nur auf neuen Gewinn",
+  "follow.how.s4S": "{fee}% des Gewinns über Ihrer High-Water-Mark. Keine Gebühr auf Verluste oder bereits abgerechneten Gewinn.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "Beispiel mit Ihren Einstellungen",
+  "follow.example.line": "Master eröffnet <b>{master} Lot {symbol}</b> → Sie eröffnen <lot>{lot} Lot</lot>",
+  "follow.example.lineSkipped": "Master eröffnet <b>{master} Lot {symbol}</b> → <lot>übersprungen</lot> (unter dem Mindest-Lot)",
+  "follow.example.why.equity": "Ihre {alloc} ÷ das Eigenkapital des Masters von {equity} = {ratio}× die Größe des Masters, bei jedem Trade neu berechnet.",
+  "follow.example.why.fixedLot": "Jeder kopierte Trade eröffnet {lot} Lot, egal in welcher Größe der Master handelt.",
+  "follow.example.why.multiplier": "Die Größe des Masters × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ das Eigenkapital des Masters von {equity} = {ratio}× die Größe des Masters.",
+  "follow.example.why.noEquity": "Die genaue Größe hängt vom Eigenkapital des Masters zum Zeitpunkt des Trades ab.",
+  // Short rules list on the review step
+  "follow.rules.title": "Die Regeln in Kürze",
+  "follow.rules.copiedT": "Kopiert",
+  "follow.rules.copied": "Neue Trades, Schließungen, Teilschließungen, SL/TP-Änderungen und Pending Orders.",
+  "follow.rules.notT": "Nicht möglich",
+  "follow.rules.noManual": "Solange Sie kopieren, können Sie auf diesem Kopierkonto nicht selbst handeln.",
+  "follow.rules.skipped": "Trades, die unter dem Mindest-Lot liegen, werden übersprungen und im Kopierprotokoll angezeigt.",
+  "follow.rules.pausedT": "Pausiert",
+  "follow.rules.paused": "Es werden keine neuen Trades kopiert; offene Trades folgen weiterhin den Schließungen und SL/TP des Masters.",
+  "follow.rules.stopT": "Beenden",
+  "follow.rules.stop": "Sie entscheiden: jetzt alles schließen oder die Trades behalten und selbst verwalten. Das Guthaben kann zurück in Ihre Wallet.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "Ich verstehe, wie Kopieren funktioniert",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "Pausiert: Es werden keine neuen Trades kopiert; offene Trades folgen weiterhin den Schließungen und SL/TP des Masters.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "Warum wurde ein Trade nicht kopiert?",
+  "subs.detail.logHint": "Hier ist jeder Trade des Masters aufgeführt, auch übersprungene mit Begründung (zum Beispiel unter dem Mindest-Lot oder ein ausgeschlossenes Symbol).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "Was soll mit dem Kopierkonto geschehen?",
+  "subs.stop.deleteAcc": "Löschen",
+  "subs.stop.deleteAccS": "Archiviert; Verlauf und Kontoauszüge bleiben erhalten",
+  "subs.stop.keepAcc": "Behalten",
+  "subs.stop.keepAccS": "Bleibt in Ihrer Kontenliste",
+  "subs.stop.archived": "Kopierkonto #{login} wurde gelöscht (archiviert). Verlauf und Kontoauszüge bleiben erhalten.",
+  "subs.stop.archiveFailed": "Kopierkonto #{login} wurde behalten, weil es gerade nicht gelöscht werden konnte. Sie können es später unter Konten löschen.",
+  "subs.stop.archiving": "Kopierkonto wird gelöscht…",
+  "subs.stop.archiveTitle": "Kopierkonto #{login} löschen",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "das Kopierkonto #{login} zu löschen",
+  "subs.stop.archiveConfirm": "Konto löschen",
 };
 export default social;

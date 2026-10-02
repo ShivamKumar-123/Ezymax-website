@@ -951,5 +951,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "Với tên {name}. Một tài khoản master MAM riêng sẽ được mở cho bạn.",
   "follow.walletAvailable": "{balance} USDT trong ví của bạn",
   "follow.err.overBalance": "Ví của bạn có {balance} USDT. Hãy giảm số tiền hoặc nạp tiền trước.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "Cách sao chép hoạt động",
+  "follow.how.s1T": "Nạp tiền từ ví của bạn",
+  "follow.how.s1S": "Số tiền của bạn được chuyển vào một tài khoản sao chép mới dành riêng cho master này.",
+  "follow.how.s2T": "Master giao dịch",
+  "follow.how.s2S": "{name} mở, thay đổi và đóng giao dịch như bình thường.",
+  "follow.how.s3T": "Bạn sao chép theo quy mô của mình",
+  "follow.how.s3S": "Mỗi giao dịch được mở trên tài khoản sao chép của bạn, với khối lượng tính theo quy tắc bạn chọn.",
+  "follow.how.s4T": "Chỉ tính phí trên lợi nhuận mới",
+  "follow.how.s4S": "{fee}% lợi nhuận vượt mức đỉnh (high-water mark) của bạn. Không tính phí khi lỗ hoặc trên lợi nhuận đã bị tính phí.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "Ví dụ với cài đặt của bạn",
+  "follow.example.line": "Master mở <b>{master} lot {symbol}</b> → bạn mở <lot>{lot} lot</lot>",
+  "follow.example.lineSkipped": "Master mở <b>{master} lot {symbol}</b> → <lot>bỏ qua</lot> (dưới lot tối thiểu)",
+  "follow.example.why.equity": "{alloc} của bạn ÷ vốn chủ sở hữu {equity} của master = {ratio}× khối lượng của master, được tính lại ở mỗi giao dịch.",
+  "follow.example.why.fixedLot": "Mỗi giao dịch được sao chép mở {lot} lot, bất kể master giao dịch khối lượng bao nhiêu.",
+  "follow.example.why.multiplier": "Khối lượng của master × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ vốn chủ sở hữu {equity} của master = {ratio}× khối lượng của master.",
+  "follow.example.why.noEquity": "Khối lượng chính xác phụ thuộc vào vốn chủ sở hữu của master tại thời điểm giao dịch.",
+  // Short rules list on the review step
+  "follow.rules.title": "Quy tắc tóm tắt",
+  "follow.rules.copiedT": "Được sao chép",
+  "follow.rules.copied": "Giao dịch mới, lệnh đóng, đóng một phần, thay đổi SL/TP và lệnh chờ.",
+  "follow.rules.notT": "Không thể",
+  "follow.rules.noManual": "Bạn không thể tự giao dịch trên tài khoản sao chép này khi đang sao chép.",
+  "follow.rules.skipped": "Các giao dịch có khối lượng tính ra dưới lot tối thiểu sẽ bị bỏ qua và hiển thị trong nhật ký sao chép.",
+  "follow.rules.pausedT": "Tạm dừng",
+  "follow.rules.paused": "Không sao chép giao dịch mới; các giao dịch đang mở vẫn theo lệnh đóng và SL/TP của master.",
+  "follow.rules.stopT": "Dừng",
+  "follow.rules.stop": "Bạn chọn: đóng tất cả ngay hoặc giữ các giao dịch và tự quản lý. Số dư có thể chuyển về ví của bạn.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "Tôi hiểu cách sao chép hoạt động",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "Tạm dừng: không sao chép giao dịch mới; các giao dịch đang mở vẫn theo lệnh đóng và SL/TP của master.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "Tại sao giao dịch không được sao chép?",
+  "subs.detail.logHint": "Mọi giao dịch của master đều được liệt kê ở đây, kể cả những giao dịch bị bỏ qua kèm lý do (ví dụ dưới lot tối thiểu hoặc symbol bị loại trừ).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "Nên xử lý tài khoản sao chép như thế nào?",
+  "subs.stop.deleteAcc": "Xóa",
+  "subs.stop.deleteAccS": "Được lưu trữ; lịch sử và sao kê được giữ lại",
+  "subs.stop.keepAcc": "Giữ lại",
+  "subs.stop.keepAccS": "Vẫn nằm trong danh sách tài khoản của bạn",
+  "subs.stop.archived": "Tài khoản sao chép #{login} đã bị xóa (lưu trữ). Lịch sử và sao kê của tài khoản được giữ lại.",
+  "subs.stop.archiveFailed": "Tài khoản sao chép #{login} được giữ lại vì hiện chưa thể xóa. Bạn có thể xóa sau trong mục Tài khoản.",
+  "subs.stop.archiving": "Đang xóa tài khoản sao chép…",
+  "subs.stop.archiveTitle": "Xóa tài khoản sao chép #{login}",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "xóa tài khoản sao chép #{login}",
+  "subs.stop.archiveConfirm": "Xóa tài khoản",
 };
 export default social;

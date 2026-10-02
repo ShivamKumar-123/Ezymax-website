@@ -27,7 +27,26 @@ export interface EngineAccountExtra {
   swap: number;
   freeMargin: number;
   marginLevel: number | null;
+  /** copy trading: the account is a follower's copy account (group `copy` / `copy-netting`, or the engine's `role`) */
+  copy?: boolean;
 }
+
+/** Copy accounts are named "Copy · <master>" by the engine (social/copier.rs). */
+const COPY_NAME = /^Copy\s*·\s*/;
+
+/** True for a copy-trading follower account: system group `copy` / `copy-*`, or `role` copy/follower when the engine sends it. */
+export function isCopyGroup(group: string | undefined, role?: string | null) {
+  const g = (group ?? "").toLowerCase();
+  return g === "copy" || g.startsWith("copy-") || role === "copy" || role === "follower";
+}
+
+/** The master's nickname from a copy account's name ("Copy · Alpha" -> "Alpha"); null when unknown. */
+export function copyMasterName(name: string | null | undefined) {
+  return name && COPY_NAME.test(name) ? name.replace(COPY_NAME, "").trim() || null : null;
+}
+
+/** Fired in the browser when the engine rejects a request with `copy_account` (the account is managed by copy trading). */
+export const COPY_ACCOUNT_EVENT = "kalks:copy-account";
 
 export type EngineTradingAccount = TradingAccount & { engine: EngineAccountExtra };
 
@@ -63,6 +82,7 @@ export function mapAccount(a: EngAccount): EngineTradingAccount {
       swap: a.swap,
       freeMargin: a.freeMargin,
       marginLevel: a.marginLevel,
+      copy: isCopyGroup(a.group, (a as { role?: string | null }).role),
     },
   };
 }
@@ -209,5 +229,6 @@ export interface EngineErr {
 
 /** Short MT5-style reason for a rejected request ("Market closed", "Not enough money", "Requote"…). */
 export function rejectReason(e: EngineErr): string {
+  if (e.code === "copy_account" && typeof window !== "undefined") window.dispatchEvent(new CustomEvent(COPY_ACCOUNT_EVENT));
   return REJECT[e.code] ?? (e.message || e.code.replace(/_/g, " "));
 }

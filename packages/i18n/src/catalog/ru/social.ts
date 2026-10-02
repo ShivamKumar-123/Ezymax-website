@@ -1044,5 +1044,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "От имени {name}. Для Вас будет открыт отдельный мастер-счёт MAM.",
   "follow.walletAvailable": "{balance} USDT на кошельке",
   "follow.err.overBalance": "На кошельке {balance} USDT. Уменьшите сумму или сначала пополните кошелёк.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "Как работает копирование",
+  "follow.how.s1T": "Пополните из кошелька",
+  "follow.how.s1S": "Ваша сумма переводится на новый счёт копирования, созданный только для этого мастера.",
+  "follow.how.s2T": "Мастер торгует",
+  "follow.how.s2S": "{name} открывает, изменяет и закрывает сделки как обычно.",
+  "follow.how.s3T": "Вы копируете в своём объёме",
+  "follow.how.s3S": "Каждая сделка открывается на вашем счёте копирования с объёмом по выбранному вами правилу.",
+  "follow.how.s4T": "Комиссия только с новой прибыли",
+  "follow.how.s4S": "{fee}% от прибыли выше вашей high-water mark. Без комиссии с убытков и с уже облагавшейся прибыли.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "Пример с вашими настройками",
+  "follow.example.line": "Мастер открывает <b>{master} лот {symbol}</b> → вы открываете <lot>{lot} лот</lot>",
+  "follow.example.lineSkipped": "Мастер открывает <b>{master} лот {symbol}</b> → <lot>пропущено</lot> (меньше минимального лота)",
+  "follow.example.why.equity": "Ваши {alloc} ÷ средства мастера {equity} = {ratio}× от объёма мастера, пересчитывается при каждой сделке.",
+  "follow.example.why.fixedLot": "Каждая скопированная сделка открывается объёмом {lot} лот, независимо от объёма мастера.",
+  "follow.example.why.multiplier": "Объём мастера × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ средства мастера {equity} = {ratio}× от объёма мастера.",
+  "follow.example.why.noEquity": "Точный объём зависит от средств мастера на момент сделки.",
+  // Short rules list on the review step
+  "follow.rules.title": "Правила вкратце",
+  "follow.rules.copiedT": "Копируется",
+  "follow.rules.copied": "Новые сделки, закрытия, частичные закрытия, изменения SL/TP и отложенные ордера.",
+  "follow.rules.notT": "Недоступно",
+  "follow.rules.noManual": "Пока вы копируете, торговать на этом счёте копирования самостоятельно нельзя.",
+  "follow.rules.skipped": "Сделки, объём которых получается меньше минимального лота, пропускаются и отображаются в журнале копирования.",
+  "follow.rules.pausedT": "Пауза",
+  "follow.rules.paused": "Новые сделки не копируются; открытые сделки по-прежнему следуют закрытиям и SL/TP мастера.",
+  "follow.rules.stopT": "Остановка",
+  "follow.rules.stop": "Выбор за вами: закрыть всё сейчас или оставить сделки и управлять ими самостоятельно. Баланс можно вернуть в кошелёк.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "Я понимаю, как работает копирование",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "Пауза: новые сделки не копируются; открытые сделки по-прежнему следуют закрытиям и SL/TP мастера.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "Почему сделка не была скопирована?",
+  "subs.detail.logHint": "Здесь перечислены все сделки мастера, включая пропущенные, с указанием причины (например, меньше минимального лота или исключённый инструмент).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "Что сделать со счётом копирования?",
+  "subs.stop.deleteAcc": "Удалить",
+  "subs.stop.deleteAccS": "Архивируется; история и выписки сохраняются",
+  "subs.stop.keepAcc": "Оставить",
+  "subs.stop.keepAccS": "Останется в списке ваших счетов",
+  "subs.stop.archived": "Счёт копирования #{login} удалён (архивирован). История и выписки сохранены.",
+  "subs.stop.archiveFailed": "Счёт копирования #{login} оставлен, так как сейчас его не удалось удалить. Вы сможете удалить его позже в разделе «Счета».",
+  "subs.stop.archiving": "Удаление счёта копирования…",
+  "subs.stop.archiveTitle": "Удалить счёт копирования #{login}",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "удалить счёт копирования #{login}",
+  "subs.stop.archiveConfirm": "Удалить счёт",
 };
 export default social;

@@ -342,5 +342,9 @@ const trader = {
   "mobile.sound": "Sound",
   "mobile.darkTheme": "Dark theme",
   "mobile.refill": "Refill",
+  // Banner when the signed-in account is a copy-trading account; {master} = the master's nickname
+  "copyBanner.text": "Copy account — trades are managed by {master}; you can watch P&L here.",
+  "copyBanner.textNoName": "Copy account — trades are managed by the master you copy; you can watch P&L here.",
+  "copyBanner.manage": "Manage copy in the Client Area",
 };
 export default trader;

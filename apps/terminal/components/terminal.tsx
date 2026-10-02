@@ -22,6 +22,7 @@ import { AboutDialog, OptionsDialog, ShortcutsDialog, SpecDialog, SymbolSearch }
 import { IndicatorDialogs } from "./chart/indicators/dialogs";
 import { ShareLayer } from "./share/share-dialogs";
 import { ControlsBanner } from "./shell/controls-banner";
+import { CopyBanner } from "./shell/copy-banner";
 
 function useIsMobile() {
   const [m, setM] = React.useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches);
@@ -177,6 +178,7 @@ function Shell({ intent }: { intent: { symbol: string | null; side: string | nul
       {/* staff session / account restrictions banner above the terminal (shell/controls-banner.tsx) */}
       <div className="flex h-dvh flex-col">
         <ControlsBanner />
+        <CopyBanner />
         <div className="min-h-0 flex-1 [&>div]:h-full">{mobile ? <MobileTerminal /> : <DesktopTerminal />}</div>
       </div>
       <NewOrderDialog />

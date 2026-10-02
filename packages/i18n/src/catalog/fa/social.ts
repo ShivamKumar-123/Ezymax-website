@@ -953,5 +953,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "به‌عنوان {name}. یک حساب مستر MAM اختصاصی برای شما افتتاح می‌شود.",
   "follow.walletAvailable": "{balance} USDT در کیف پول شما",
   "follow.err.overBalance": "کیف پول شما {balance} USDT دارد. مبلغ را کم کنید یا ابتدا واریز کنید.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "کپی چگونه کار می‌کند",
+  "follow.how.s1T": "از کیف پول خود شارژ کنید",
+  "follow.how.s1S": "مبلغ شما به یک حساب کپی جدید فقط برای این مستر منتقل می‌شود.",
+  "follow.how.s2T": "مستر معامله می‌کند",
+  "follow.how.s2S": "{name} مثل همیشه معاملات را باز، ویرایش و بسته می‌کند.",
+  "follow.how.s3T": "با حجم خودتان کپی می‌کنید",
+  "follow.how.s3S": "هر معامله در حساب کپی شما باز می‌شود و حجم آن طبق قانونی که انتخاب می‌کنید تعیین می‌شود.",
+  "follow.how.s4T": "کارمزد فقط روی سود جدید",
+  "follow.how.s4S": "{fee}% از سود بالاتر از High-water mark شما. روی ضرر یا سودی که قبلاً کارمزدش کسر شده، کارمزدی نیست.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "نمونه با تنظیمات شما",
+  "follow.example.line": "مستر <b>{master} لات {symbol}</b> باز می‌کند → شما <lot>{lot} لات</lot> باز می‌کنید",
+  "follow.example.lineSkipped": "مستر <b>{master} لات {symbol}</b> باز می‌کند → <lot>رد شد</lot> (کمتر از حداقل لات)",
+  "follow.example.why.equity": "{alloc} شما ÷ اکوییتی {equity} مستر = {ratio}× حجم مستر که در هر معامله دوباره محاسبه می‌شود.",
+  "follow.example.why.fixedLot": "هر معامله کپی‌شده {lot} لات باز می‌شود، حجم معامله مستر هرچه باشد.",
+  "follow.example.why.multiplier": "حجم مستر × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ اکوییتی {equity} مستر = {ratio}× حجم مستر.",
+  "follow.example.why.noEquity": "حجم دقیق به اکوییتی مستر در زمان معامله بستگی دارد.",
+  // Short rules list on the review step
+  "follow.rules.title": "قوانین در یک نگاه",
+  "follow.rules.copiedT": "کپی می‌شود",
+  "follow.rules.copied": "معاملات جدید، بستن‌ها، بستن‌های جزئی، تغییرات SL/TP و سفارش‌های در انتظار.",
+  "follow.rules.notT": "ممکن نیست",
+  "follow.rules.noManual": "تا زمانی که کپی می‌کنید، نمی‌توانید خودتان در این حساب کپی معامله کنید.",
+  "follow.rules.skipped": "معاملاتی که حجمشان کمتر از حداقل لات می‌شود رد می‌شوند و در گزارش کپی نمایش داده می‌شوند.",
+  "follow.rules.pausedT": "متوقف‌شده",
+  "follow.rules.paused": "معامله جدیدی کپی نمی‌شود؛ معاملات باز همچنان از بستن‌ها و SL/TP مستر پیروی می‌کنند.",
+  "follow.rules.stopT": "توقف",
+  "follow.rules.stop": "شما انتخاب می‌کنید: همه‌چیز را همین حالا ببندید یا معاملات را نگه دارید و خودتان مدیریت کنید. موجودی می‌تواند به کیف پول شما برگردد.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "متوجه می‌شوم کپی چگونه کار می‌کند",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "متوقف‌شده: معامله جدیدی کپی نمی‌شود؛ معاملات باز همچنان از بستن‌ها و SL/TP مستر پیروی می‌کنند.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "چرا یک معامله کپی نشد؟",
+  "subs.detail.logHint": "همهٔ معاملات مستر اینجا فهرست شده‌اند، از جمله معاملات ردشده همراه با دلیل (مثلاً کمتر از حداقل لات یا نماد مستثنا).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "با حساب کپی چه شود؟",
+  "subs.stop.deleteAcc": "حذف شود",
+  "subs.stop.deleteAccS": "بایگانی می‌شود؛ تاریخچه و صورت‌حساب‌ها حفظ می‌شوند",
+  "subs.stop.keepAcc": "نگه داشته شود",
+  "subs.stop.keepAccS": "در فهرست حساب‌های شما می‌ماند",
+  "subs.stop.archived": "حساب کپی #{login} حذف (بایگانی) شد. تاریخچه و صورت‌حساب‌های آن حفظ می‌شوند.",
+  "subs.stop.archiveFailed": "حساب کپی #{login} نگه داشته شد چون اکنون امکان حذف آن نبود. بعداً می‌توانید آن را از بخش حساب‌ها حذف کنید.",
+  "subs.stop.archiving": "در حال حذف حساب کپی…",
+  "subs.stop.archiveTitle": "حذف حساب کپی #{login}",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "حذف حساب کپی #{login}",
+  "subs.stop.archiveConfirm": "حذف حساب",
 };
 export default social;

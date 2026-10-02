@@ -326,5 +326,9 @@ const trader: NsMessages<"trader"> = {
   "mobile.sound": "เสียง",
   "mobile.darkTheme": "ธีมมืด",
   "mobile.refill": "เติมยอด",
+  // Banner when the signed-in account is a copy-trading account; {master} = the master's nickname
+  "copyBanner.text": "บัญชีคัดลอก — การเทรดจัดการโดย {master} คุณดู P&L ได้ที่นี่",
+  "copyBanner.textNoName": "บัญชีคัดลอก — การเทรดจัดการโดยมาสเตอร์ที่คุณคัดลอก คุณดู P&L ได้ที่นี่",
+  "copyBanner.manage": "จัดการการคัดลอกใน Client Area",
 };
 export default trader;

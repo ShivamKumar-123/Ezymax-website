@@ -326,5 +326,9 @@ const trader: NsMessages<"trader"> = {
   "mobile.sound": "声音",
   "mobile.darkTheme": "深色主题",
   "mobile.refill": "充值",
+  // Banner when the signed-in account is a copy-trading account; {master} = the master's nickname
+  "copyBanner.text": "跟单账户 — 交易由 {master} 管理；您可以在此查看 P&L。",
+  "copyBanner.textNoName": "跟单账户 — 交易由您所跟随的策略提供者管理；您可以在此查看 P&L。",
+  "copyBanner.manage": "在 Client Area 中管理跟单",
 };
 export default trader;

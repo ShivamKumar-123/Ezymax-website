@@ -968,5 +968,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "Como {name}. Se abre para usted una cuenta maestra MAM exclusiva.",
   "follow.walletAvailable": "{balance} USDT en su billetera",
   "follow.err.overBalance": "Su billetera tiene {balance} USDT. Reduzca el importe o deposite primero.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "Cómo funciona la copia",
+  "follow.how.s1T": "Financie desde su billetera",
+  "follow.how.s1S": "Su importe pasa a una nueva cuenta de copia exclusiva para este máster.",
+  "follow.how.s2T": "El máster opera",
+  "follow.how.s2S": "{name} abre, modifica y cierra operaciones como siempre.",
+  "follow.how.s3T": "Usted copia a su tamaño",
+  "follow.how.s3S": "Cada operación se abre en su cuenta de copia, con el tamaño que defina la regla que elija.",
+  "follow.how.s4T": "Comisión solo sobre ganancias nuevas",
+  "follow.how.s4S": "{fee}% de la ganancia por encima de su high-water mark. Sin comisión sobre pérdidas ni sobre ganancias ya cobradas.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "Ejemplo con su configuración",
+  "follow.example.line": "El máster abre <b>{master} lote {symbol}</b> → usted abre <lot>{lot} lote</lot>",
+  "follow.example.lineSkipped": "El máster abre <b>{master} lote {symbol}</b> → <lot>omitida</lot> (por debajo del lote mínimo)",
+  "follow.example.why.equity": "Su {alloc} ÷ el equity de {equity} del máster = {ratio}× el tamaño del máster, recalculado en cada operación.",
+  "follow.example.why.fixedLot": "Cada operación copiada abre {lot} lote, sea cual sea el tamaño que opere el máster.",
+  "follow.example.why.multiplier": "El tamaño del máster × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ el equity de {equity} del máster = {ratio}× el tamaño del máster.",
+  "follow.example.why.noEquity": "El tamaño exacto depende del equity del máster en el momento de la operación.",
+  // Short rules list on the review step
+  "follow.rules.title": "Las reglas en breve",
+  "follow.rules.copiedT": "Se copia",
+  "follow.rules.copied": "Nuevas operaciones, cierres, cierres parciales, cambios de SL/TP y órdenes pendientes.",
+  "follow.rules.notT": "No es posible",
+  "follow.rules.noManual": "No puede operar usted mismo en esta cuenta de copia mientras copia.",
+  "follow.rules.skipped": "Las operaciones cuyo tamaño resulta inferior al lote mínimo se omiten y aparecen en el registro de copia.",
+  "follow.rules.pausedT": "En pausa",
+  "follow.rules.paused": "No se copian operaciones nuevas; las abiertas siguen los cierres y el SL/TP del máster.",
+  "follow.rules.stopT": "Detener",
+  "follow.rules.stop": "Usted decide: cerrar todo ahora o conservar las operaciones y gestionarlas por su cuenta. El saldo puede volver a su billetera.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "Entiendo cómo funciona la copia",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "En pausa: no se copian operaciones nuevas; las abiertas siguen los cierres y el SL/TP del máster.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "¿Por qué no se copió una operación?",
+  "subs.detail.logHint": "Aquí figura cada operación del máster, incluidas las omitidas con su motivo (por ejemplo, por debajo del lote mínimo o un símbolo excluido).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "¿Qué debe pasar con la cuenta de copia?",
+  "subs.stop.deleteAcc": "Eliminarla",
+  "subs.stop.deleteAccS": "Archivada; se conservan el historial y los extractos",
+  "subs.stop.keepAcc": "Conservarla",
+  "subs.stop.keepAccS": "Sigue en su lista de cuentas",
+  "subs.stop.archived": "La cuenta de copia #{login} se eliminó (archivada). Se conservan su historial y sus extractos.",
+  "subs.stop.archiveFailed": "La cuenta de copia #{login} se conservó porque no se pudo eliminar en este momento. Puede eliminarla más tarde desde Cuentas.",
+  "subs.stop.archiving": "Eliminando la cuenta de copia…",
+  "subs.stop.archiveTitle": "Eliminar la cuenta de copia #{login}",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "eliminar la cuenta de copia #{login}",
+  "subs.stop.archiveConfirm": "Eliminar cuenta",
 };
 export default social;

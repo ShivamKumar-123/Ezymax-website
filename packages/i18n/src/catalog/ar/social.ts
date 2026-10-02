@@ -1082,5 +1082,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "باسم {name}. يُفتح لك حساب MAM رئيسي مخصص.",
   "follow.walletAvailable": "{balance} USDT في محفظتك",
   "follow.err.overBalance": "رصيد محفظتك {balance} USDT. خفّض المبلغ أو أودِع أولًا.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "كيف يعمل النسخ",
+  "follow.how.s1T": "موّل من محفظتك",
+  "follow.how.s1S": "ينتقل مبلغك إلى حساب نسخ جديد مخصص لمزوّد الاستراتيجية هذا فقط.",
+  "follow.how.s2T": "مزوّد الاستراتيجية يتداول",
+  "follow.how.s2S": "يفتح {name} الصفقات ويعدّلها ويغلقها كالمعتاد.",
+  "follow.how.s3T": "تنسخ بحجمك أنت",
+  "follow.how.s3S": "تُفتح كل صفقة على حساب النسخ الخاص بك بحجم تحدده القاعدة التي تختارها.",
+  "follow.how.s4T": "رسوم على الربح الجديد فقط",
+  "follow.how.s4S": "{fee}% من الربح فوق أعلى قيمة مسجّلة لديك. لا رسوم على الخسائر ولا على أرباح سبق احتساب رسومها.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "مثال بإعداداتك",
+  "follow.example.line": "يفتح مزوّد الاستراتيجية <b>{master} لوت {symbol}</b> → تفتح أنت <lot>{lot} لوت</lot>",
+  "follow.example.lineSkipped": "يفتح مزوّد الاستراتيجية <b>{master} لوت {symbol}</b> → <lot>تم التخطي</lot> (أقل من الحد الأدنى للوت)",
+  "follow.example.why.equity": "{alloc} الخاص بك ÷ حقوق الملكية لدى مزوّد الاستراتيجية البالغة {equity} = {ratio}× حجم مزوّد الاستراتيجية، ويُعاد احتسابها عند كل صفقة.",
+  "follow.example.why.fixedLot": "تُفتح كل صفقة منسوخة بحجم {lot} لوت، مهما كان حجم صفقة مزوّد الاستراتيجية.",
+  "follow.example.why.multiplier": "حجم مزوّد الاستراتيجية × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ حقوق الملكية لدى مزوّد الاستراتيجية البالغة {equity} = {ratio}× حجم مزوّد الاستراتيجية.",
+  "follow.example.why.noEquity": "يعتمد الحجم الدقيق على حقوق ملكية مزوّد الاستراتيجية وقت الصفقة.",
+  // Short rules list on the review step
+  "follow.rules.title": "القواعد باختصار",
+  "follow.rules.copiedT": "يُنسخ",
+  "follow.rules.copied": "الصفقات الجديدة والإغلاقات والإغلاقات الجزئية وتعديلات SL/TP والأوامر المعلّقة.",
+  "follow.rules.notT": "غير ممكن",
+  "follow.rules.noManual": "لا يمكنك التداول بنفسك على حساب النسخ هذا أثناء النسخ.",
+  "follow.rules.skipped": "تُتخطى الصفقات التي يقل حجمها الناتج عن الحد الأدنى للوت، وتظهر في سجل النسخ.",
+  "follow.rules.pausedT": "متوقف مؤقتًا",
+  "follow.rules.paused": "لا تُنسخ صفقات جديدة؛ وتظل الصفقات المفتوحة تتبع إغلاقات مزوّد الاستراتيجية وSL/TP الخاصة به.",
+  "follow.rules.stopT": "إيقاف",
+  "follow.rules.stop": "أنت تختار: إغلاق كل شيء الآن أو إبقاء الصفقات وإدارتها بنفسك. ويمكن إعادة الرصيد إلى محفظتك.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "أفهم كيف يعمل النسخ",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "متوقف مؤقتًا: لا تُنسخ صفقات جديدة؛ وتظل الصفقات المفتوحة تتبع إغلاقات مزوّد الاستراتيجية وSL/TP الخاصة به.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "لماذا لم تُنسخ صفقة؟",
+  "subs.detail.logHint": "تُدرج هنا كل صفقة لمزوّد الاستراتيجية، بما فيها المتخطاة مع السبب (مثل أقل من الحد الأدنى للوت أو رمز مستبعد).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "ماذا يجب أن يحدث لحساب النسخ؟",
+  "subs.stop.deleteAcc": "حذفه",
+  "subs.stop.deleteAccS": "يُؤرشف؛ يبقى السجل والكشوف محفوظة",
+  "subs.stop.keepAcc": "إبقاؤه",
+  "subs.stop.keepAccS": "يبقى في قائمة حساباتك",
+  "subs.stop.archived": "تم حذف (أرشفة) حساب النسخ #{login}. السجل والكشوف محفوظة.",
+  "subs.stop.archiveFailed": "تم إبقاء حساب النسخ #{login} لأنه تعذّر حذفه الآن. يمكنك حذفه لاحقًا من الحسابات.",
+  "subs.stop.archiving": "جارٍ حذف حساب النسخ…",
+  "subs.stop.archiveTitle": "حذف حساب النسخ #{login}",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "حذف حساب النسخ #{login}",
+  "subs.stop.archiveConfirm": "حذف الحساب",
 };
 export default social;

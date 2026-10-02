@@ -946,5 +946,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "{name}(으)로 개설합니다. 전용 MAM 마스터 계좌가 개설됩니다.",
   "follow.walletAvailable": "지갑 잔액 {balance} USDT",
   "follow.err.overBalance": "지갑 잔액은 {balance} USDT입니다. 금액을 줄이거나 먼저 입금하세요.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "복사 방식",
+  "follow.how.s1T": "지갑에서 입금",
+  "follow.how.s1S": "입력한 금액이 이 마스터 전용 새 복사 계좌로 이동합니다.",
+  "follow.how.s2T": "마스터가 거래합니다",
+  "follow.how.s2S": "{name}님이 평소처럼 거래를 열고, 변경하고, 청산합니다.",
+  "follow.how.s3T": "내 규모로 복사",
+  "follow.how.s3S": "모든 거래는 내 복사 계좌에서, 선택한 규칙에 따른 규모로 열립니다.",
+  "follow.how.s4T": "새 수익에만 수수료",
+  "follow.how.s4S": "고점(high-water mark)을 넘은 수익의 {fee}%. 손실이나 이미 수수료가 부과된 수익에는 수수료가 없습니다.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "내 설정으로 본 예시",
+  "follow.example.line": "마스터가 <b>{master} 랏 {symbol}</b> 진입 → 나는 <lot>{lot} 랏</lot> 진입",
+  "follow.example.lineSkipped": "마스터가 <b>{master} 랏 {symbol}</b> 진입 → <lot>건너뜀</lot> (최소 랏 미만)",
+  "follow.example.why.equity": "내 {alloc} ÷ 마스터의 자산 {equity} = 마스터 규모의 {ratio}배이며, 거래마다 다시 계산됩니다.",
+  "follow.example.why.fixedLot": "마스터의 거래 규모와 관계없이 복사되는 모든 거래는 {lot} 랏으로 열립니다.",
+  "follow.example.why.multiplier": "마스터의 규모 × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ 마스터의 자산 {equity} = 마스터 규모의 {ratio}배.",
+  "follow.example.why.noEquity": "정확한 규모는 거래 시점의 마스터 자산에 따라 달라집니다.",
+  // Short rules list on the review step
+  "follow.rules.title": "규칙 요약",
+  "follow.rules.copiedT": "복사됨",
+  "follow.rules.copied": "신규 거래, 청산, 부분 청산, SL/TP 변경, 대기 주문.",
+  "follow.rules.notT": "불가능",
+  "follow.rules.noManual": "복사 중에는 이 복사 계좌에서 직접 거래할 수 없습니다.",
+  "follow.rules.skipped": "계산 결과가 최소 랏 미만인 거래는 건너뛰며 복사 로그에 표시됩니다.",
+  "follow.rules.pausedT": "일시 중지",
+  "follow.rules.paused": "새 거래는 복사되지 않으며, 보유 중인 거래는 계속 마스터의 청산과 SL/TP를 따릅니다.",
+  "follow.rules.stopT": "중지",
+  "follow.rules.stop": "선택하세요: 지금 모두 청산하거나, 거래를 유지하고 직접 관리할 수 있습니다. 잔액은 지갑으로 돌려받을 수 있습니다.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "복사 방식을 이해했습니다",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "일시 중지됨: 새 거래는 복사되지 않으며, 보유 중인 거래는 계속 마스터의 청산과 SL/TP를 따릅니다.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "거래가 복사되지 않은 이유는?",
+  "subs.detail.logHint": "마스터의 모든 거래가 여기에 표시되며, 건너뛴 거래는 사유와 함께 표시됩니다(예: 최소 랏 미만 또는 제외된 종목).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "복사 계좌는 어떻게 할까요?",
+  "subs.stop.deleteAcc": "삭제",
+  "subs.stop.deleteAccS": "보관 처리되며 내역과 명세서는 유지됩니다",
+  "subs.stop.keepAcc": "유지",
+  "subs.stop.keepAccS": "내 계좌 목록에 남습니다",
+  "subs.stop.archived": "복사 계좌 #{login}이(가) 삭제(보관)되었습니다. 내역과 명세서는 유지됩니다.",
+  "subs.stop.archiveFailed": "지금은 삭제할 수 없어 복사 계좌 #{login}이(가) 유지되었습니다. 나중에 계좌 메뉴에서 삭제할 수 있습니다.",
+  "subs.stop.archiving": "복사 계좌를 삭제하는 중…",
+  "subs.stop.archiveTitle": "복사 계좌 #{login} 삭제",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "복사 계좌 #{login} 삭제",
+  "subs.stop.archiveConfirm": "계좌 삭제",
 };
 export default social;

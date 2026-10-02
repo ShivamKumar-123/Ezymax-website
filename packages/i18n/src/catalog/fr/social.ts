@@ -952,5 +952,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "En tant que {name}. Un compte master MAM dédié est ouvert pour vous.",
   "follow.walletAvailable": "{balance} USDT dans votre portefeuille",
   "follow.err.overBalance": "Votre portefeuille contient {balance} USDT. Réduisez le montant ou effectuez d'abord un dépôt.",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "Comment fonctionne la copie",
+  "follow.how.s1T": "Alimentez depuis votre portefeuille",
+  "follow.how.s1S": "Votre montant est transféré vers un nouveau compte de copie dédié à ce master.",
+  "follow.how.s2T": "Le master trade",
+  "follow.how.s2S": "{name} ouvre, modifie et ferme des trades comme d'habitude.",
+  "follow.how.s3T": "Vous copiez à votre taille",
+  "follow.how.s3S": "Chaque trade est ouvert sur votre compte de copie, dimensionné selon la règle que vous choisissez.",
+  "follow.how.s4T": "Commission uniquement sur les nouveaux profits",
+  "follow.how.s4S": "{fee}% du profit au-dessus de votre high-water mark. Aucune commission sur les pertes ni sur les profits déjà facturés.",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "Exemple avec vos paramètres",
+  "follow.example.line": "Le master ouvre <b>{master} lot {symbol}</b> → vous ouvrez <lot>{lot} lot</lot>",
+  "follow.example.lineSkipped": "Le master ouvre <b>{master} lot {symbol}</b> → <lot>ignoré</lot> (sous le lot minimum)",
+  "follow.example.why.equity": "Votre {alloc} ÷ l'equity du master de {equity} = {ratio}× la taille du master, recalculé à chaque trade.",
+  "follow.example.why.fixedLot": "Chaque trade copié ouvre {lot} lot, quelle que soit la taille du trade du master.",
+  "follow.example.why.multiplier": "La taille du master × {value}.",
+  "follow.example.why.allocation": "{amount} ÷ l'equity du master de {equity} = {ratio}× la taille du master.",
+  "follow.example.why.noEquity": "La taille exacte dépend de l'equity du master au moment du trade.",
+  // Short rules list on the review step
+  "follow.rules.title": "Les règles en bref",
+  "follow.rules.copiedT": "Copié",
+  "follow.rules.copied": "Nouveaux trades, clôtures, clôtures partielles, modifications de SL/TP et ordres en attente.",
+  "follow.rules.notT": "Impossible",
+  "follow.rules.noManual": "Vous ne pouvez pas trader vous-même sur ce compte de copie pendant la copie.",
+  "follow.rules.skipped": "Les trades dont la taille calculée est inférieure au lot minimum sont ignorés et affichés dans le journal de copie.",
+  "follow.rules.pausedT": "En pause",
+  "follow.rules.paused": "Aucun nouveau trade n'est copié ; les trades ouverts suivent toujours les clôtures et les SL/TP du master.",
+  "follow.rules.stopT": "Arrêt",
+  "follow.rules.stop": "Vous choisissez : tout fermer maintenant ou garder les trades et les gérer vous-même. Le solde peut retourner sur votre portefeuille.",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "Je comprends comment fonctionne la copie",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "En pause : aucun nouveau trade n'est copié ; les trades ouverts suivent toujours les clôtures et les SL/TP du master.",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "Pourquoi un trade n'a-t-il pas été copié ?",
+  "subs.detail.logHint": "Chaque trade du master est listé ici, y compris ceux ignorés avec la raison (par exemple sous le lot minimum ou un symbole exclu).",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "Que doit devenir le compte de copie ?",
+  "subs.stop.deleteAcc": "Le supprimer",
+  "subs.stop.deleteAccS": "Archivé ; l'historique et les relevés sont conservés",
+  "subs.stop.keepAcc": "Le garder",
+  "subs.stop.keepAccS": "Reste dans votre liste de comptes",
+  "subs.stop.archived": "Le compte de copie #{login} a été supprimé (archivé). Son historique et ses relevés sont conservés.",
+  "subs.stop.archiveFailed": "Le compte de copie #{login} a été conservé car il n'a pas pu être supprimé pour le moment. Vous pourrez le supprimer plus tard depuis Comptes.",
+  "subs.stop.archiving": "Suppression du compte de copie…",
+  "subs.stop.archiveTitle": "Supprimer le compte de copie #{login}",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "supprimer le compte de copie #{login}",
+  "subs.stop.archiveConfirm": "Supprimer le compte",
 };
 export default social;

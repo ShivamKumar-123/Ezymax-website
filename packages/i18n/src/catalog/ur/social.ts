@@ -952,5 +952,55 @@ const social: NsMessages<"social"> = {
   "mm.page.openSub": "بطور {name}۔ آپ کے لیے ایک مخصوص MAM ماسٹر اکاؤنٹ کھولا جاتا ہے۔",
   "follow.walletAvailable": "آپ کے والیٹ میں {balance} USDT",
   "follow.err.overBalance": "آپ کے والیٹ میں {balance} USDT ہیں۔ رقم کم کریں یا پہلے جمع کریں۔",
+  // "How copy works" card at the start of the follow dialog: four steps, title (T) + short line (S)
+  "follow.how.title": "کاپی کیسے کام کرتی ہے",
+  "follow.how.s1T": "اپنے والیٹ سے فنڈ کریں",
+  "follow.how.s1S": "آپ کی رقم صرف اس ماسٹر کے لیے بنائے گئے نئے کاپی اکاؤنٹ میں منتقل ہوتی ہے۔",
+  "follow.how.s2T": "ماسٹر ٹریڈ کرتا ہے",
+  "follow.how.s2S": "{name} معمول کے مطابق ٹریڈز کھولتا، تبدیل کرتا اور بند کرتا ہے۔",
+  "follow.how.s3T": "آپ اپنے سائز میں کاپی کرتے ہیں",
+  "follow.how.s3S": "ہر ٹریڈ آپ کے کاپی اکاؤنٹ میں، آپ کے منتخب کردہ اصول کے مطابق سائز کے ساتھ کھلتی ہے۔",
+  "follow.how.s4T": "فیس صرف نئے منافع پر",
+  "follow.how.s4S": "آپ کے ہائی واٹر مارک سے اوپر منافع کا {fee}%۔ نقصان پر یا جس منافع پر فیس لی جا چکی ہو اس پر کوئی فیس نہیں۔",
+  // Live sizing example: <b>…</b> and <lot>…</lot> are bold; {symbol} e.g. EURUSD, {master} and {lot} are lot sizes like 1.00
+  "follow.example.title": "آپ کی سیٹنگز کے ساتھ مثال",
+  "follow.example.line": "ماسٹر <b>{master} لاٹ {symbol}</b> کھولتا ہے → آپ <lot>{lot} لاٹ</lot> کھولتے ہیں",
+  "follow.example.lineSkipped": "ماسٹر <b>{master} لاٹ {symbol}</b> کھولتا ہے → <lot>چھوڑ دی گئی</lot> (کم از کم لاٹ سے کم)",
+  "follow.example.why.equity": "آپ کا {alloc} ÷ ماسٹر کی {equity} ایکویٹی = ماسٹر کے سائز کا {ratio}×، ہر ٹریڈ پر دوبارہ حساب ہوتا ہے۔",
+  "follow.example.why.fixedLot": "ماسٹر جس سائز پر بھی ٹریڈ کرے، ہر کاپی شدہ ٹریڈ {lot} لاٹ پر کھلتی ہے۔",
+  "follow.example.why.multiplier": "ماسٹر کا سائز × {value}۔",
+  "follow.example.why.allocation": "{amount} ÷ ماسٹر کی {equity} ایکویٹی = ماسٹر کے سائز کا {ratio}×۔",
+  "follow.example.why.noEquity": "درست سائز ٹریڈ کے وقت ماسٹر کی ایکویٹی پر منحصر ہے۔",
+  // Short rules list on the review step
+  "follow.rules.title": "مختصر اصول",
+  "follow.rules.copiedT": "کاپی ہوتا ہے",
+  "follow.rules.copied": "نئی ٹریڈز، کلوزز، جزوی کلوزز، SL/TP تبدیلیاں اور پینڈنگ آرڈرز۔",
+  "follow.rules.notT": "ممکن نہیں",
+  "follow.rules.noManual": "کاپی کے دوران آپ اس کاپی اکاؤنٹ پر خود ٹریڈ نہیں کر سکتے۔",
+  "follow.rules.skipped": "جو ٹریڈز کم از کم لاٹ سے کم بنیں وہ چھوڑ دی جاتی ہیں اور کاپی لاگ میں دکھائی جاتی ہیں۔",
+  "follow.rules.pausedT": "موقوف",
+  "follow.rules.paused": "نئی ٹریڈز کاپی نہیں ہوتیں؛ کھلی ٹریڈز ماسٹر کے کلوزز اور SL/TP کی پیروی کرتی رہتی ہیں۔",
+  "follow.rules.stopT": "بند کریں",
+  "follow.rules.stop": "آپ منتخب کرتے ہیں: ابھی سب کچھ بند کریں یا ٹریڈز رکھ کر خود سنبھالیں۔ بیلنس آپ کے والیٹ میں واپس جا سکتا ہے۔",
+  // Required tick before confirming; the existing risk text follows it in smaller type
+  "follow.understand": "میں سمجھتا ہوں کہ کاپی کیسے کام کرتی ہے",
+  // Subscriptions list: shown on a paused subscription
+  "subs.pausedNote": "موقوف: نئی ٹریڈز کاپی نہیں ہوتیں؛ کھلی ٹریڈز ماسٹر کے کلوزز اور SL/TP کی پیروی کرتی رہتی ہیں۔",
+  // Link that opens the subscription details on the Copy log tab
+  "subs.whyNotCopied": "ٹریڈ کاپی کیوں نہیں ہوئی؟",
+  "subs.detail.logHint": "ماسٹر کی ہر ٹریڈ یہاں درج ہے، چھوڑی گئی ٹریڈز وجہ کے ساتھ (مثلاً کم از کم لاٹ سے کم یا خارج کردہ سمبل)۔",
+  // Stop (unfollow) wizard: last choice, what happens to the copy account
+  "subs.stop.accountQ": "کاپی اکاؤنٹ کا کیا کیا جائے؟",
+  "subs.stop.deleteAcc": "حذف کریں",
+  "subs.stop.deleteAccS": "آرکائیو ہو جاتا ہے؛ ہسٹری اور اسٹیٹمنٹس محفوظ رہتی ہیں",
+  "subs.stop.keepAcc": "رکھیں",
+  "subs.stop.keepAccS": "آپ کی اکاؤنٹس کی فہرست میں رہتا ہے",
+  "subs.stop.archived": "کاپی اکاؤنٹ #{login} حذف (آرکائیو) ہو گیا۔ اس کی ہسٹری اور اسٹیٹمنٹس محفوظ ہیں۔",
+  "subs.stop.archiveFailed": "کاپی اکاؤنٹ #{login} رکھ لیا گیا کیونکہ اسے ابھی حذف نہیں کیا جا سکا۔ آپ بعد میں اکاؤنٹس سے حذف کر سکتے ہیں۔",
+  "subs.stop.archiving": "کاپی اکاؤنٹ حذف ہو رہا ہے…",
+  "subs.stop.archiveTitle": "کاپی اکاؤنٹ #{login} حذف کریں",
+  // completes "To …, enter the code"
+  "subs.stop.archiveWhat": "کاپی اکاؤنٹ #{login} حذف کرنا",
+  "subs.stop.archiveConfirm": "اکاؤنٹ حذف کریں",
 };
 export default social;
