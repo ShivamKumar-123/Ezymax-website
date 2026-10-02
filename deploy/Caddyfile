@@ -33,12 +33,17 @@ app.kalkstrade.com {
 	reverse_proxy 127.0.0.1:3000
 }
 
-# Kalks Trader. /engine/stream = trading-engine account stream (one-time ticket from the terminal BFF).
+# Kalks Trader. /engine/stream = trading-engine account stream (one-time ticket from the terminal BFF);
+# /options/stream = options chain stream (one-time ticket from the terminal BFF, or the guest public chain).
 trade.kalkstrade.com {
 	import common
 	handle /engine/stream {
 		rewrite * /v1/terminal/stream?{query}
 		reverse_proxy 127.0.0.1:8090
+	}
+	handle /options/stream {
+		rewrite * /v1/options/stream?{query}
+		reverse_proxy 127.0.0.1:8104
 	}
 	handle {
 		reverse_proxy 127.0.0.1:3002
@@ -75,6 +80,10 @@ api.kalkstrade.com {
 			reverse_proxy 127.0.0.1:8099
 		}
 		respond 404
+	}
+	# Kalks FX Options public chain (read-only; the service answers 404 until the public chain is switched on)
+	handle /v1/public/options/* {
+		reverse_proxy 127.0.0.1:8104
 	}
 	# admin (spreads) and internal (service-to-service) endpoints stay on the server
 	@admin path /v1/admin* /v1/internal*
@@ -153,6 +162,10 @@ demo-trade.kalkstrade.com {
 # 		handle /engine/stream {
 # 			rewrite * /v1/terminal/stream?{query}
 # 			reverse_proxy 127.0.0.1:8090
+# 		}
+# 		handle /options/stream {
+# 			rewrite * /v1/options/stream?{query}
+# 			reverse_proxy 127.0.0.1:8104
 # 		}
 # 		reverse_proxy 127.0.0.1:3002
 # 	}

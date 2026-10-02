@@ -10,6 +10,13 @@
 //! * [`iv`]: implied volatility (Newton with bisection fallback).
 //! * [`smile`]: FX smile from ATM + 25D/10D RR/BF, strike to vol.
 //! * [`barrier`]: Reiner-Rubinstein single barriers with rebate.
+//! * [`date`], [`calendar`]: civil dates, New York / London / Tokyo DST, holiday calendars, the
+//!   daily / weekly / monthly expiry rules and the expiry cut.
+//! * [`volclock`]: business-time vol clock (weekend / holiday weights).
+//! * [`term`]: term structure in total variance with a calendar-arbitrage check.
+//! * [`realized`]: Yang-Zhang, Garman-Klass, Rogers-Satchell, close-to-close and EWMA vol.
+//! * [`ladder`], [`twap`], [`scenario`], [`payoff`]: strike ladder, fixing TWAP with gap accounting,
+//!   SPAN-style 16-scenario grid, multi-leg payoff / breakevens.
 //!
 //! ```
 //! use optmath::{OptionType::*, *};
@@ -34,9 +41,18 @@
 
 pub mod barrier;
 pub mod bsm;
+pub mod calendar;
+pub mod date;
 pub mod iv;
+pub mod ladder;
 pub mod normal;
+pub mod payoff;
+pub mod realized;
+pub mod scenario;
 pub mod smile;
+pub mod term;
+pub mod twap;
+pub mod volclock;
 
 pub use barrier::{BarrierType, barrier_price};
 pub use bsm::{
@@ -45,3 +61,7 @@ pub use bsm::{
 pub use iv::{IvError, black76_implied_vol, bs_implied_vol, gk_implied_vol, implied_vol};
 pub use normal::{norm_cdf, norm_inv, norm_pdf};
 pub use smile::{DeltaConvention, Smile, SmileError, SmileQuotes};
+pub use calendar::{Cut, ExpiryKind, HolidayCalendar, expiry_dates, monthly_expiry, next_expiries, weekly_expiry};
+pub use date::{Date, Weekday, Zone};
+pub use term::{CalendarViolation, SurfaceError, TenorQuotes, VolSurface};
+pub use volclock::{VolClock, calendar_years, effective_vol};

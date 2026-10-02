@@ -1,0 +1,22 @@
+{
+  "calendar": "EUR",
+  "description": "Euro area TARGET2 (T2) closing days",
+  "rules": "TARGET2 / T2 closing days: New Year's Day, Good Friday, Easter Monday, Labour Day (May 1), Christmas Day, Dec 26. Easter by the Anonymous Gregorian (Meeus) algorithm. No substitute days.",
+  "generatedBy": "scripts/gen-holidays.mjs",
+  "years": [2026, 2027, 2028],
+  "holidays": [
+    { "date": "2026-01-01", "name": "New Year's Day" },
+    { "date": "2026-04-03", "name": "Good Friday" },
+    { "date": "2026-04-06", "name": "Easter Monday" },
+    { "date": "2026-05-01", "name": "Labour Day" },
+    { "date": "2026-12-25", "name": "Christmas Day" },
+    { "date": "2027-01-01", "name": "New Year's Day" },
+    { "date": "2027-03-26", "name": "Good Friday" },
+    { "date": "2027-03-29", "name": "Easter Monday" },
+    { "date": "2028-04-14", "name": "Good Friday" },
+    { "date": "2028-04-17", "name": "Easter Monday" },
+    { "date": "2028-05-01", "name": "Labour Day" },
+    { "date": "2028-12-25", "name": "Christmas Day" },
+    { "date": "2028-12-26", "name": "Christmas Holiday (Dec 26)" }
+  ]
+}

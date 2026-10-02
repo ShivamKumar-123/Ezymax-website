@@ -1,0 +1,30 @@
+{
+  "calendar": "CHF",
+  "description": "Switzerland (Zurich / SIX SIC) settlement holidays",
+  "rules": "SIC / Zurich: New Year's Day, Berchtold's Day (Jan 2), Good Friday, Easter Monday, Labour Day (May 1), Ascension Day (Easter + 39), Whit Monday (Easter + 50), Swiss National Day (Aug 1), Christmas Day, St. Stephen's Day (Dec 26). No substitute days.",
+  "generatedBy": "scripts/gen-holidays.mjs",
+  "years": [2026, 2027, 2028],
+  "holidays": [
+    { "date": "2026-01-01", "name": "New Year's Day" },
+    { "date": "2026-01-02", "name": "Berchtold's Day" },
+    { "date": "2026-04-03", "name": "Good Friday" },
+    { "date": "2026-04-06", "name": "Easter Monday" },
+    { "date": "2026-05-01", "name": "Labour Day" },
+    { "date": "2026-05-14", "name": "Ascension Day" },
+    { "date": "2026-05-25", "name": "Whit Monday" },
+    { "date": "2026-12-25", "name": "Christmas Day" },
+    { "date": "2027-01-01", "name": "New Year's Day" },
+    { "date": "2027-03-26", "name": "Good Friday" },
+    { "date": "2027-03-29", "name": "Easter Monday" },
+    { "date": "2027-05-06", "name": "Ascension Day" },
+    { "date": "2027-05-17", "name": "Whit Monday" },
+    { "date": "2028-04-14", "name": "Good Friday" },
+    { "date": "2028-04-17", "name": "Easter Monday" },
+    { "date": "2028-05-01", "name": "Labour Day" },
+    { "date": "2028-05-25", "name": "Ascension Day" },
+    { "date": "2028-06-05", "name": "Whit Monday" },
+    { "date": "2028-08-01", "name": "Swiss National Day" },
+    { "date": "2028-12-25", "name": "Christmas Day" },
+    { "date": "2028-12-26", "name": "St. Stephen's Day" }
+  ]
+}
