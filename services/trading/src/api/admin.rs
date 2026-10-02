@@ -343,14 +343,76 @@ pub struct StatusBody {
 pub async fn status(State(st): State<AppState>, s: StaffCtx, Path(login): Path<i64>, Body(b): Body<StatusBody>) -> ApiResult<Json<Value>> {
     s.require(ROLES_DEALING)?;
     check_reason(&b.reason)?;
-    let status = Status::parse(&b.status).ok_or(ApiError::Validation { field: "status", message: "status must be active, disabled, close_only, read_only or expired".into() })?;
+    let status = Status::parse(&b.status).filter(|x| !x.is_retired()).ok_or(ApiError::Validation { field: "status", message: "status must be active, disabled, close_only, read_only or expired (use archive / restore for archived accounts)".into() })?;
     let op: Op = Box::new(move |tx, _| {
         let before = tx.st.account.status;
+        if before.is_retired() {
+            return Err(crate::engine::Reject::new("account_status", format!("The account is {}; use restore", before.as_str())));
+        }
         funds::set_status(tx, status)?;
         tx.audit.push(draft("account.status", json!({"status": before.as_str()}), json!({"status": status.as_str()}), vec![]));
         Ok(json!({"status": status.as_str()}))
     });
     staff_exec(&st, &s, login, &b.reason, "status", op).await
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ArchiveBody {
+    #[serde(default)]
+    client_restorable: bool,
+    /// Cancel orders and close positions first (as a dealer close). Without it the account must be flat.
+    #[serde(default)]
+    empty: bool,
+    #[serde(flatten)]
+    reason: Reason,
+}
+
+/// Staff archive (C1): reason code + note, audited. The balance stays on the account (no wallet transfer);
+/// credit and bonus are forfeited.
+pub async fn archive(State(st): State<AppState>, s: StaffCtx, Path(login): Path<i64>, Body(b): Body<ArchiveBody>) -> ApiResult<Json<Value>> {
+    s.require(ROLES_DEALING)?;
+    check_reason(&b.reason)?;
+    let by = format!("staff:{}", s.staff.id);
+    let dealer = crate::engine::trade::DealerCtx { staff: s.staff.name.clone(), reason_code: b.reason.reason_code.clone(), force: false };
+    let (code, restorable, empty) = (b.reason.reason_code.clone(), b.client_restorable, b.empty);
+    let op: Op = Box::new(move |tx, env| {
+        let before = json!({"status": tx.st.account.status.as_str(), "positions": tx.st.positions.len(), "orders": tx.st.orders.len(), "credit": num(tx.st.credit), "bonus": num(tx.st.bonus)});
+        let mut closed = 0;
+        if empty {
+            let orders: Vec<i64> = tx.st.orders.keys().copied().collect();
+            for t in orders {
+                crate::engine::trade::cancel_order(tx, env, t, "account archived")?;
+            }
+            let tickets: Vec<i64> = tx.st.positions.keys().copied().collect();
+            for t in tickets {
+                crate::engine::trade::close_position(tx, env, t, crate::engine::trade::CloseReq { dealer: Some(dealer.clone()), ..Default::default() })?;
+                closed += 1;
+            }
+        }
+        let changed = funds::archive(tx, env, &by, &code, restorable)?;
+        if changed {
+            tx.audit.push(draft("account.archive", before, json!({"status": "archived", "clientRestorable": restorable, "closed": closed}), vec![]));
+        }
+        Ok(json!({"status": "archived", "changed": changed, "closed": closed}))
+    });
+    let r = staff_exec(&st, &s, login, &b.reason, "archive", op).await?;
+    super::lifecycle::revoke_sessions(&st, login).await;
+    Ok(r)
+}
+
+/// Staff restore (C1) to the prior status, whoever archived it. The account limit is not enforced for staff.
+pub async fn restore(State(st): State<AppState>, s: StaffCtx, Path(login): Path<i64>, Body(r): Body<Reason>) -> ApiResult<Json<Value>> {
+    s.require(ROLES_DEALING)?;
+    check_reason(&r)?;
+    let op: Op = Box::new(move |tx, _| {
+        let to = funds::restore(tx, false)?;
+        tx.audit.push(draft("account.restore", json!({"status": "archived"}), json!({"status": to.as_str()}), vec![]));
+        Ok(json!({"status": to.as_str()}))
+    });
+    let out = staff_exec(&st, &s, login, &r, "restore", op).await?;
+    let _ = sqlx::query("UPDATE accounts SET last_activity_at = now() WHERE login = $1").bind(login).execute(&st.pool).await;
+    Ok(out)
 }
 
 #[derive(Deserialize)]
@@ -421,6 +483,21 @@ pub struct GroupWrite {
     group: Group,
     #[serde(flatten)]
     reason: Reason,
+}
+
+/// Spread markups are keyed by spread group across all brokers (market-data): a broker other than the platform
+/// broker prices only from its own spread groups (`<slug>-…`, tenants.rs), and the platform broker never from
+/// another broker's, so no broker can read or change another broker's client prices.
+fn check_spread_group(st: &AppState, t: &crate::rules::TenantConfig, g: &Group) -> ApiResult<()> {
+    let bad = |m: String| Err(ApiError::Validation { field: "spreadGroup", message: m });
+    if t.tenant_id != crate::tenants::TEMPLATE_TENANT {
+        if !crate::tenants::owns_spread_group(&t.slug, &g.spread_group) {
+            return bad(format!("spreadGroup must be one of this broker's spread groups ({}-…)", t.slug));
+        }
+    } else if st.hub.shared.registry.all().iter().any(|o| o.tenant_id != t.tenant_id && crate::tenants::owns_spread_group(&o.slug, &g.spread_group)) {
+        return bad("spreadGroup belongs to another broker".into());
+    }
+    Ok(())
 }
 
 fn validate_group(g: &Group) -> ApiResult<()> {
@@ -520,6 +597,7 @@ pub async fn create_group(State(st): State<AppState>, s: StaffCtx, Body(b): Body
     s.require(ROLES_CONFIG)?;
     check_reason(&b.reason)?;
     validate_group(&b.group)?;
+    check_spread_group(&st, &s.ctx.tenant, &b.group)?;
     save_group(&st, &s, &b.group, &b.reason, true).await
 }
 
@@ -530,6 +608,7 @@ pub async fn update_group(State(st): State<AppState>, s: StaffCtx, Path(code): P
     check_reason(&b.reason)?;
     b.group.code = code.clone();
     validate_group(&b.group)?;
+    check_spread_group(&st, &s.ctx.tenant, &b.group)?;
     let cur = s.ctx.tenant.groups.get(&code).ok_or_else(|| ApiError::NotFound(format!("Group {code} not found")))?;
     let used: i64 = sqlx::query_scalar("SELECT count(*) FROM accounts WHERE tenant_id = $1 AND group_code = $2").bind(s.ctx.tenant.tenant_id).bind(&code).fetch_one(&st.pool).await?;
     if used > 0 && (cur.mode != b.group.mode || cur.cent != b.group.cent) {

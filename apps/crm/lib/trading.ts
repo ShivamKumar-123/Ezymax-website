@@ -19,7 +19,7 @@ export type EngineResult<T = Record<string, unknown>> = { status: number; data: 
 
 export async function engine<T = Record<string, unknown>>(
   path: string,
-  init: { method?: "GET" | "POST"; body?: unknown; user: GatewayUser; req: NextRequest },
+  init: { method?: "GET" | "POST" | "PATCH"; body?: unknown; user: GatewayUser; req: NextRequest },
 ): Promise<EngineResult<T>> {
   const headers: Record<string, string> = {
     "x-kalks-internal": TRADING_TOKEN,

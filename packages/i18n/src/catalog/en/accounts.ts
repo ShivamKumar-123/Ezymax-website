@@ -95,7 +95,7 @@ const accounts = {
   "error.unavailableTitle": "Trading accounts are unavailable",
   "error.unavailableText": "We couldn't reach the trading service. Your accounts and balances are safe; please try again in a moment.",
 
-  // Archived accounts (demo build)
+  // Archived accounts (Archived tab; the demo build uses some of these too)
   "archived.onExpiry": "archived on expiry",
   "archived.byYou": "archived by you",
   "archived.finalBalance": "Final balance",
@@ -341,5 +341,72 @@ const accounts = {
   "export.ledger": "ledger",
   "toast.exportFailed": "Couldn't export the file",
   "badge.prop": "PROP",
+
+  // Archived / closed accounts (live Archived tab)
+  "status.archived": "Archived",
+  "status.closed": "Closed",
+  // {date} is a localized date, e.g. "2 Oct 2026"
+  "archived.on": "Archived {date}",
+  "archived.closedOn": "Closed {date}",
+  "archived.statements": "Statements",
+  "archived.restored": "Account restored",
+  "archived.restoredDesc": "#{login} is active again.",
+  "archived.restoreFailed": "Couldn't restore the account",
+  "archived.none": "No archived accounts",
+  "archived.noneText": "Accounts you delete are kept here with their statements.",
+
+  // Copy trading / PAMM / MAM account chips (uppercase)
+  "badge.copy": "COPY",
+  "badge.pamm": "PAMM",
+  "badge.mam": "MAM",
+  // {name} is the strategy being copied
+  "copy.copying": "Copying: {name}",
+  "copy.watchPnl": "Watch P&L",
+  "copy.manage": "Manage copy",
+
+  // Row menu: rename / delete ("menu.rename" is above)
+  "menu.delete": "Delete account",
+  "rename.title": "Rename #{login}",
+  "rename.label": "Account name",
+  "rename.hint": "Up to 32 characters. Leave it empty to remove the name.",
+  "rename.save": "Save name",
+  "rename.saved": "Name saved",
+  "rename.failed": "Couldn't rename the account",
+
+  // Delete (archive) account dialog
+  "delete.title": "Delete account #{login}",
+  "delete.subtitle": "The account stops trading and moves to Archived. Its statements stay available.",
+  "delete.checking": "Checking the account…",
+  "delete.checkFailed": "Couldn't check the account",
+  "delete.blocked": "This account can't be deleted right now",
+  "delete.stepsTitle": "We'll do this in one go",
+  "delete.stepClose": { one: "Close {count} open trade or order", other: "Close {count} open trades and orders" },
+  // {amount} is money, e.g. "$1,250.00"
+  "delete.stepMove": "Move {amount} to your wallet",
+  "delete.stepArchive": "Archive the account",
+  "delete.ready": "No open trades and no money on the account. It can be archived right away.",
+  "delete.demoNote": "Demo funds are virtual: nothing is moved to your wallet.",
+  "delete.forfeitTitle": "Bonus and credit will be lost",
+  "delete.forfeitText": "{amount} of bonus and credit on this account is removed when it is deleted and can't be recovered.",
+  "delete.forfeitAck": "I understand the bonus and credit will be lost",
+  "delete.confirm": "Delete account",
+  "delete.confirmAll": "Close, move funds and delete",
+  "delete.stepUpTitle": "Confirm deleting the account",
+  // completes "To …, enter the code"
+  "delete.stepUpWhat": "delete trading account #{login}",
+  "delete.done": "Account deleted",
+  "delete.doneDesc": "#{login} is archived. You'll find it under Archived.",
+  "delete.failed": "Couldn't delete the account",
+  "delete.partial": "Not every step finished",
+  "delete.resultTitle": "Result",
+  "delete.step.close_positions": "Close open trades",
+  "delete.step.return_balance": "Move balance to wallet",
+  "delete.step.archive": "Archive the account",
+  "delete.stepOk": "Done",
+  "delete.stepFailed": "Failed",
+  // Blockers from the server (fallback is the server's own message)
+  "blocker.prop_account": "Prop-challenge accounts are closed by the prop programme, not here.",
+  "blocker.already_archived": "This account is already archived.",
+  "blocker.account_disabled": "The account is disabled. Please contact support.",
 };
 export default accounts;

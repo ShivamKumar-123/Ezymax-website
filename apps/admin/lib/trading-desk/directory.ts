@@ -28,7 +28,7 @@ export interface LiveAccount {
   currency: "USD" | "USC";
   leverage: number;
   leverages: number[];
-  status: "active" | "close_only" | "read_only" | "disabled" | "expired";
+  status: "active" | "close_only" | "read_only" | "disabled" | "expired" | "archived" | "closed";
   name: string;
   route: Book;
   marginCall: boolean;

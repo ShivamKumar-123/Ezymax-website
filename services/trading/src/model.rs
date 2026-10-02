@@ -121,6 +121,10 @@ pub enum Status {
     ReadOnly,
     /// Demo account past its expiry.
     Expired,
+    /// Hidden from the client's lists, restorable (client or staff). History and ledger are kept.
+    Archived,
+    /// Closed permanently: final for the client; the login is never reused.
+    Closed,
 }
 
 impl Status {
@@ -131,7 +135,13 @@ impl Status {
             Status::CloseOnly => "close_only",
             Status::ReadOnly => "read_only",
             Status::Expired => "expired",
+            Status::Archived => "archived",
+            Status::Closed => "closed",
         }
+    }
+    /// Archived or closed: no login, no money in, no trading, not counted towards the account limit.
+    pub fn is_retired(self) -> bool {
+        matches!(self, Status::Archived | Status::Closed)
     }
     pub fn parse(s: &str) -> Option<Status> {
         Some(match s {
@@ -140,6 +150,8 @@ impl Status {
             "close_only" | "close-only" => Status::CloseOnly,
             "read_only" | "read-only" => Status::ReadOnly,
             "expired" => Status::Expired,
+            "archived" => Status::Archived,
+            "closed" => Status::Closed,
             _ => return None,
         })
     }
@@ -235,6 +247,24 @@ pub struct Account {
     pub controls: Controls,
     pub demo: Option<DemoCfg>,
     pub created_at: DateTime<Utc>,
+    /// Archive / close bookkeeping (absent on accounts that were never retired; old events lack it).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lifecycle: Option<Lifecycle>,
+}
+
+/// Why and by whom an account was archived, and what to restore it to.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Lifecycle {
+    pub prior_status: Status,
+    pub archived_at: DateTime<Utc>,
+    #[serde(default)]
+    pub reason_code: String,
+    /// `user:{id}` or `staff:{id}`.
+    #[serde(default)]
+    pub by: String,
+    /// The client may restore it from the Client Area (false when staff archived it, unless they allowed it).
+    #[serde(default)]
+    pub client_restorable: bool,
 }
 
 impl Account {

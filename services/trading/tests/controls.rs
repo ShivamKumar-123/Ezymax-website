@@ -130,7 +130,7 @@ async fn restrictions_and_staff_sessions_through_the_api() {
     let hash = |p: &str| trading::auth::hash_password(p).unwrap();
     let account = Account {
         tenant_id: 1, login: LOGIN, user_id: USER, kind: AccountKind::Live, group: "standard".into(), mode: Mode::Hedging, cent: false, leverage: 100,
-        status: Status::Active, name: "Controls".into(), route_override: None, controls: Controls::default(), demo: None, created_at: Utc::now(),
+        status: Status::Active, name: "Controls".into(), route_override: None, controls: Controls::default(), demo: None, created_at: Utc::now(), lifecycle: None,
     };
     hub.open(account, (hash("Trade2026x"), hash("Watch2026x")), "test").await.unwrap();
     hub.exec(LOGIN, "test", None, "", "", None, Box::new(|tx, env| funds::transfer(tx, env, funds::Direction::In, d("50000"), "ctl-fund", None).map(|_| Value::Null))).await.unwrap();

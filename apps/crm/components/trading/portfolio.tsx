@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { BookText, Check, Download, FileSpreadsheet, FileText, History, Layers, Plus, Sheet, ShieldCheck, TrendingUp, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button, CHART_COLORS, Card, CardHeader, Chip, Donut, EmptyState, Field, Input, KpiCard, Money, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, Toggle, cn } from "@kalks/ui";
-import { accountTitle, curOf, fmtAmount, fmtPrice, isoDay, toUsd, tradingApi, useAccounts, type AccountDetail, type EngineAccount, type EnginePosition } from "./api";
+import { accountTitle, curOf, fmtAmount, fmtPrice, isArchived, isoDay, toUsd, tradingApi, useAccounts, type AccountDetail, type EngineAccount, type EnginePosition } from "./api";
 import { AccountsError, liveTotals } from "./accounts-page";
 import { HistoryPanel, LedgerPanel } from "./activity";
 import { KindBadge, TradeButton, isPropAccount } from "./ui";
@@ -49,7 +49,8 @@ function useSelectedAccount(base: string) {
   const { data, error, loading, reload } = useAccounts(10000);
   const accounts = data?.accounts ?? [];
   const wanted = Number(sp.get("account"));
-  const a = accounts.find((x) => x.login === wanted) ?? accounts.find((x) => x.type === "live") ?? accounts[0];
+  // archived accounts stay selectable for their statements, but are never the default
+  const a = accounts.find((x) => x.login === wanted) ?? accounts.find((x) => x.type === "live" && !isArchived(x)) ?? accounts.find((x) => !isArchived(x)) ?? accounts[0];
   const select = (login: number) => router.replace(`${base}?account=${login}`, { scroll: false });
   return { accounts, a, select, error: error && !data ? error : null, loading, reload };
 }
@@ -448,7 +449,7 @@ function useOpenPositions(accounts: EngineAccount[]) {
 
 export function LivePortfolio() {
   const { data, error, loading, reload } = useAccounts(5000);
-  const accounts = data?.accounts ?? [];
+  const accounts = React.useMemo(() => (data?.accounts ?? []).filter((a) => !isArchived(a)), [data]);
   const t = liveTotals(accounts);
   const positions = useOpenPositions(accounts);
   const alloc = t.live.filter((a) => a.equity > 0).map((a, i) => ({ label: `#${a.login}`, value: toUsd(a, a.equity), color: CHART_COLORS[i % CHART_COLORS.length]! }));

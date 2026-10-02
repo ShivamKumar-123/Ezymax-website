@@ -70,6 +70,9 @@ pub async fn staff_sso(State(st): State<AppState>, sc: StaffCtx, Path(login): Pa
     if m.status == Status::Expired {
         return Err(ApiError::Forbidden("This demo account has expired.".into()));
     }
+    if m.status.is_retired() {
+        return Err(ApiError::Forbidden(format!("This account is {}.", m.status.as_str())));
+    }
     login_gate(&st, login)?;
     let staff_id: i64 = sc.staff.id.parse().map_err(|_| ApiError::BadRequest("Invalid staff id".into()))?;
     let minutes = r.minutes.unwrap_or(30).clamp(1, 60);

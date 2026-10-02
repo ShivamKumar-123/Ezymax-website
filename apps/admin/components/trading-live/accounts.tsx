@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeftRight, Ban, CandlestickChart, CirclePause, CirclePlay, Coins, Gauge as GaugeIcon, Gift, Layers, List, MoreHorizontal, RefreshCw, Search, ShieldAlert, SlidersHorizontal, UserRound, Wallet } from "lucide-react";
-import { Button, Card, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, Menu, PageHeader, Reveal, Segmented, SymbolCell, Tabs, cn, formatNumber, type Column } from "@kalks/ui";
+import { Archive, ArchiveRestore, ArrowLeftRight, Ban, CandlestickChart, CirclePause, CirclePlay, Coins, Gauge as GaugeIcon, Gift, Layers, List, MoreHorizontal, RefreshCw, Search, ShieldAlert, SlidersHorizontal, UserRound, Wallet } from "lucide-react";
+import { Button, Card, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, Menu, PageHeader, Reveal, Segmented, SymbolCell, Tabs, Toggle, cn, formatNumber, type Column } from "@kalks/ui";
 import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { MiniClient, SideChip, fmtPrice } from "@/components/trading/shared";
@@ -30,9 +30,10 @@ import {
   type LiveAccount,
 } from "@/lib/trading-desk";
 import { AdjustDialog } from "@/components/clients/adjust-dialog";
-import { ACC_REASONS, FIN_REASONS, LEDGER_KIND, STATUS_LABEL, STATUS_TONE, money2, signed2, tradingWrite, type History, type Ledger } from "./kit";
+import { ACC_ARCHIVE_REASONS, ACC_REASONS, ACC_RESTORE_REASONS, FIN_REASONS, KIND_LABEL, KIND_TONE, LEDGER_KIND, LIFECYCLE_STATUSES, SETTABLE_STATUS, STATUS_LABEL, STATUS_TONE, accountKind, money2, signed2, tradingWrite, type AccountKind, type History, type Ledger } from "./kit";
 
 const PER = 50;
+const KIND_SCAN = 500; // engine maximum page size
 type RawAccount = Parameters<typeof normAccount>[0];
 type AccountsPage = { items: RawAccount[]; page: number; limit: number; total: number };
 type Summary = { accounts: { live: number; demo: number }; positions: { total: number; demo: number; A: { positions: number; lots: number; floating: number }; B: { positions: number; lots: number; floating: number } } };
@@ -61,7 +62,21 @@ export function StatusChip({ status }: { status: string }) {
   );
 }
 
-type Act = { k: "adjust" | "funds" | "status" | "group" | "leverage" | "trade" | "controls"; a: LiveAccount } | { k: "route"; a: LiveAccount; book: Book | null } | null;
+/** Product chip (Copy / PAMM / MAM / Prop) from the group code; nothing for regular accounts. */
+export function KindChip({ group }: { group: string }) {
+  const k = accountKind(group);
+  if (k === "regular") return null;
+  return (
+    <Chip size="sm" tone={KIND_TONE[k]}>
+      {KIND_LABEL[k]}
+    </Chip>
+  );
+}
+
+/** Archived / closed accounts are retired: no trading, no generic status change; archived ones can be restored. */
+const retired = (a: LiveAccount) => LIFECYCLE_STATUSES.includes(a.status);
+
+type Act = { k: "adjust" | "funds" | "status" | "group" | "leverage" | "trade" | "controls" | "archive" | "restore"; a: LiveAccount } | { k: "route"; a: LiveAccount; book: Book | null } | null;
 
 /* ------------------------------------------------------------------ */
 /* Page                                                                */
@@ -74,20 +89,24 @@ export function LiveAccountsPage() {
   const [type, setType] = React.useState<"all" | "live" | "demo">("all");
   const [status, setStatus] = React.useState<string>("all");
   const [group, setGroup] = React.useState<string>("all");
+  const [kind, setKind] = React.useState<"all" | AccountKind>("all");
   const [page, setPage] = React.useState(1);
   const [open, setOpen] = React.useState<string | null>(null);
   const [act, setAct] = React.useState<Act>(null);
   const dq = useDebounced(q.trim(), 300);
-  React.useEffect(() => setPage(1), [dq, type, status, group]);
+  React.useEffect(() => setPage(1), [dq, type, status, group, kind]);
   React.useEffect(() => {
     const l = new URLSearchParams(window.location.search).get("login");
     if (l) setOpen(l);
   }, []);
 
-  const { data, error, loading, reload } = useApi<AccountsPage>(`/api/trading/admin/accounts${qs({ q: dq, type, status, group, page, limit: PER })}`, { refreshMs: 5000 });
+  // the engine has no product-kind filter: with a kind selected, the latest KIND_SCAN accounts are fetched and filtered here
+  const byKind = kind !== "all";
+  const { data, error, loading, reload } = useApi<AccountsPage>(`/api/trading/admin/accounts${qs({ q: dq, type, status, group, page: byKind ? 1 : page, limit: byKind ? KIND_SCAN : PER })}`, { refreshMs: byKind ? 15_000 : 5000 });
   const sum = useApi<Summary>("/api/trading/summary", { refreshMs: 15_000 });
-  const rows = React.useMemo(() => (data?.items ?? []).map(normAccount), [data]);
-  React.useEffect(() => upsertAccounts(rows), [rows]);
+  const fetched = React.useMemo(() => (data?.items ?? []).map(normAccount), [data]);
+  React.useEffect(() => upsertAccounts(fetched), [fetched]);
+  const rows = React.useMemo(() => (byKind ? fetched.filter((a) => accountKind(a.group) === kind) : fetched), [fetched, byKind, kind]);
   const all = [...dir.accounts.values()];
   const atRisk = all.filter((a) => level(a) <= a.marginCallLevel).length;
   const liveEquity = all.filter((a) => a.type === "live").reduce((s, a) => s + toUsdOf(a.equity, a.currency), 0);
@@ -100,6 +119,7 @@ export function LiveAccountsPage() {
         <span className="flex items-center gap-1.5">
           <span className="font-mono text-[12.5px] font-medium">{r.login}</span>
           {r.type === "demo" && <Chip size="sm" tone="info">Demo</Chip>}
+          <KindChip group={r.group} />
         </span>
       ),
     },
@@ -137,7 +157,7 @@ export function LiveAccountsPage() {
     },
   ];
 
-  const filtered = !!dq || type !== "all" || status !== "all" || group !== "all";
+  const filtered = !!dq || type !== "all" || status !== "all" || group !== "all" || byKind;
   return (
     <div className="pb-10">
       <PageHeader
@@ -165,8 +185,9 @@ export function LiveAccountsPage() {
             <Segmented size="xs" value={type} onChange={setType} options={[{ value: "all", label: "Live + demo" }, { value: "live", label: "Live" }, { value: "demo", label: "Demo" }]} />
             <FilterSelect label="Group" value={group} onChange={setGroup} options={[{ value: "all", label: "All groups" }, ...dir.groups.map((g) => ({ value: g.code, label: g.name }))]} />
             <FilterSelect label="Status" value={status} onChange={setStatus} options={[{ value: "all", label: "Any status" }, ...Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label }))]} />
+            <FilterSelect label="Kind" value={kind} onChange={(v) => setKind(v as typeof kind)} options={[{ value: "all", label: "All" }, ...(["copy", "pamm", "mam", "prop", "regular"] as const).map((k) => ({ value: k, label: KIND_LABEL[k] }))]} />
             {filtered && (
-              <Button size="xs" variant="ghost" onClick={() => (setQ(""), setType("all"), setStatus("all"), setGroup("all"))}>
+              <Button size="xs" variant="ghost" onClick={() => (setQ(""), setType("all"), setStatus("all"), setGroup("all"), setKind("all"))}>
                 Clear filters
               </Button>
             )}
@@ -187,7 +208,11 @@ export function LiveAccountsPage() {
                 exportName="trading-accounts"
                 empty={filtered ? <EmptyState title="No accounts match" text="Try a different search or clear the filters." illustration="magnifying_glass_tilted_left" /> : <EmptyState title="No trading accounts yet" text="Accounts opened in the Client Area appear here." illustration="bank" />}
               />
-              <Pager page={data.page} perPage={data.limit} total={data.total} onPage={setPage} />
+              {byKind ? (
+                data.total > data.items.length && <p className="mt-3 text-[11.5px] text-fg-3">{KIND_LABEL[kind as AccountKind]} accounts among the latest {formatNumber(data.items.length, 0)} of {formatNumber(data.total, 0)} — narrow it with search, group or status to reach older accounts.</p>
+              ) : (
+                <Pager page={data.page} perPage={data.limit} total={data.total} onPage={setPage} />
+              )}
             </div>
           )}
         </Card>
@@ -207,14 +232,16 @@ function AccountMenu({ a, onOpen, onAct }: { a: LiveAccount; onOpen?: () => void
     ...(onOpen ? [{ label: "Open account", icon: <UserRound />, onSelect: onOpen }] : []),
     ...(canFunds || canCredit ? [{ label: "Balance & credit", icon: <Coins />, onSelect: () => onAct({ k: "adjust", a }) }] : []),
     ...(canFunds ? [{ label: "Bonus", icon: <Gift />, onSelect: () => onAct({ k: "funds", a }) }] : []),
-    ...(canAcc
+    ...(canAcc && !retired(a)
       ? [
           { label: "Change status", icon: <CirclePause />, onSelect: () => onAct({ k: "status", a }) },
           { label: "Change group", icon: <Layers />, onSelect: () => onAct({ k: "group", a }) },
           { label: "Change leverage", icon: <SlidersHorizontal />, onSelect: () => onAct({ k: "leverage", a }) },
+          { label: "Archive account", icon: <Archive />, onSelect: () => onAct({ k: "archive", a }) },
         ]
       : []),
-    ...(canDeal
+    ...(canAcc && a.status === "archived" ? [{ label: "Restore account", icon: <ArchiveRestore />, onSelect: () => onAct({ k: "restore", a }) }] : []),
+    ...(canDeal && !retired(a)
       ? [
           "sep" as const,
           { label: "Create trade", icon: <CandlestickChart />, onSelect: () => onAct({ k: "trade", a }) },
@@ -278,6 +305,7 @@ export function AccountDrawer({ login, onClose, onAct }: { login: string | null;
           Account <span className="font-mono">{login}</span>
           {a && <StatusChip status={a.status} />}
           {a?.type === "demo" && <Chip size="sm" tone="info">Demo</Chip>}
+          {a && <KindChip group={a.group} />}
         </span>
       }
       description={a ? `${clientName(a.userId, a.login)}${liveClientEmail(a.userId) ? ` · ${liveClientEmail(a.userId)}` : ""} · client #${a.userId}` : "Loading…"}
@@ -370,8 +398,16 @@ function AccountButtons({ a, onAct }: { a: LiveAccount; onAct: (x: Act) => void 
           <Coins /> Balance & credit
         </Button>
       )}
-      {canAcc && (
+      {canAcc && a.status === "archived" && (
+        <Button size="sm" variant="gold" onClick={() => onAct({ k: "restore", a })}>
+          <ArchiveRestore /> Restore account
+        </Button>
+      )}
+      {canAcc && !retired(a) && (
         <>
+          <Button size="sm" variant="surface" onClick={() => onAct({ k: "archive", a })}>
+            <Archive /> Archive
+          </Button>
           <Button size="sm" variant="surface" onClick={() => onAct({ k: "status", a })}>
             <CirclePause /> Status
           </Button>
@@ -383,7 +419,7 @@ function AccountButtons({ a, onAct }: { a: LiveAccount; onAct: (x: Act) => void 
           </Button>
         </>
       )}
-      {canDeal && (
+      {canDeal && !retired(a) && (
         <>
           <Button size="sm" variant="surface" onClick={() => onAct({ k: "controls", a })}>
             <Ban /> Controls
@@ -508,13 +544,17 @@ export function AccountActions({ act, onClose, onDone }: { act: Act; onClose: ()
   const [grp, setGrp] = React.useState("");
   const [lev, setLev] = React.useState("");
   const [ctl, setCtl] = React.useState({ tradingDisabled: false, closeOnly: false, maxLot: "", execDelayMs: "0", markupPips: "0" });
+  const [empty, setEmpty] = React.useState(false);
+  const [clientRestorable, setClientRestorable] = React.useState(true);
   React.useEffect(() => {
     if (!a) return;
     setFType("bonus");
     setDirn("add");
     setAmount("");
     setIdem(typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now()));
-    setStatus(a.status);
+    setStatus(LIFECYCLE_STATUSES.includes(a.status) ? "active" : a.status);
+    setEmpty(false);
+    setClientRestorable(true);
     setGrp(a.group);
     setLev(String(a.leverage));
     setCtl({ tradingDisabled: a.controls.tradingDisabled, closeOnly: a.controls.closeOnly, maxLot: a.controls.maxLot ? String(a.controls.maxLot) : "", execDelayMs: String(a.controls.execDelayMs), markupPips: String(a.controls.markupPips) });
@@ -589,8 +629,58 @@ export function AccountActions({ act, onClose, onDone }: { act: Act; onClose: ()
         onConfirm={async (r) => done(await tradingWrite(`admin/accounts/${a.login}/status`, { status }, r, rest))}
         success={`${a.login} is now ${STATUS_LABEL[status]?.toLowerCase() ?? status}`}
       >
-        <Segmented size="sm" value={status} onChange={setStatus} options={Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label }))} />
+        <Segmented size="sm" value={status} onChange={setStatus} options={SETTABLE_STATUS} />
       </DeskDialog>
+
+      <DeskDialog
+        open={act?.k === "archive"}
+        onOpenChange={close}
+        title={`Archive account · ${a.login}`}
+        description={`${clientName(a.userId, a.login)} · ${a.groupName} · ${a.type}. An archived account can't trade, receive transfers or sign in to the terminal; history and statements are kept. The client is notified with the client-facing reason; your note stays internal.`}
+        codes={ACC_ARCHIVE_REASONS}
+        confirmLabel="Archive account"
+        confirmVariant="sell"
+        disabled={!empty && (a.positions > 0 || a.orders > 0) ? `${a.positions} open position(s) · ${a.orders} order(s): turn on “Close open trades” or close them first` : false}
+        onConfirm={async (r) => done(await tradingWrite(`admin/accounts/${a.login}/archive`, { empty, clientRestorable }, r, rest))}
+        success={`${a.login} archived${empty ? " · trades closed, balance moved to the wallet" : ""}`}
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            <MetaTile label="Balance" value={money2(a.balance, ccy)} />
+            <MetaTile label="Credit · bonus" value={`${money2(a.credit, ccy)} · ${money2(a.bonus, ccy)}`} />
+            <MetaTile label="Open" value={`${a.positions} pos · ${a.orders} ord`} tone={a.positions || a.orders ? "warn" : undefined} />
+          </div>
+          <label className="flex items-start justify-between gap-3 rounded-[12px] border border-line bg-surface-2/60 px-3 py-2.5 text-[12.5px]">
+            <span>
+              <span className="block font-medium">Close open trades and move balance to wallet first</span>
+              <span className="block text-[11.5px] text-fg-3">
+                {a.type === "demo" ? "Closes positions and cancels orders at market; the demo balance is virtual and is not moved." : `Closes positions and cancels orders at market, then moves the balance to the client's wallet. Credit and bonus are forfeited${a.credit || a.bonus ? ` (${money2(a.credit + a.bonus, ccy)})` : ""}.`}
+              </span>
+            </span>
+            <Toggle checked={empty} onChange={setEmpty} label="Close open trades and move balance to wallet first" />
+          </label>
+          <label className="flex items-start justify-between gap-3 rounded-[12px] border border-line bg-surface-2/60 px-3 py-2.5 text-[12.5px]">
+            <span>
+              <span className="block font-medium">Client may restore it themselves</span>
+              <span className="block text-[11.5px] text-fg-3">Shown under Archived in the Client Area with a Restore button. Turn off for compliance or duplicate archives — then only staff can restore it.</span>
+            </span>
+            <Toggle checked={clientRestorable} onChange={setClientRestorable} label="Client may restore it themselves" />
+          </label>
+        </div>
+      </DeskDialog>
+
+      <DeskDialog
+        open={act?.k === "restore"}
+        onOpenChange={close}
+        title={`Restore account · ${a.login}`}
+        description={`${clientName(a.userId, a.login)} · ${a.groupName}. The account becomes active again with its previous group and leverage; the client is notified.`}
+        codes={ACC_RESTORE_REASONS}
+        confirmLabel="Restore account"
+        confirmVariant="gold"
+        disabled={a.status !== "archived" ? "Only archived accounts can be restored here" : false}
+        onConfirm={async (r) => done(await tradingWrite(`admin/accounts/${a.login}/restore`, {}, r, rest))}
+        success={`${a.login} restored`}
+      />
 
       <DeskDialog
         open={act?.k === "group"}

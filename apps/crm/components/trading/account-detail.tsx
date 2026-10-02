@@ -7,10 +7,11 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, RotateCw, Server } from "lucide-react";
 import { Button, Card, CardHeader, Chip, CopyButton, EmptyState, Gauge, KeyValue, Money, Reveal, Skeleton, SymbolAvatar, Tabs, cn } from "@kalks/ui";
-import { STATUS_LABEL, curOf, fmtAmount, fmtDate, fmtLevel, fmtPrice, levelTone, modeLabel, serverOf, serverTime, usePoll, type AccountDetail, type EngineAccount, type EnginePosition, type EngineOrder, type HistoryPage } from "./api";
+import { STATUS_LABEL, curOf, fmtAmount, isArchived, fmtDate, fmtLevel, fmtPrice, levelTone, modeLabel, serverOf, serverTime, usePoll, type AccountDetail, type EngineAccount, type EnginePosition, type EngineOrder, type HistoryPage } from "./api";
 import { DealsTable, HistoryPanel, LedgerPanel } from "./activity";
 import { CredentialsPanel, SettingsPanel } from "./manage";
-import { FundButton, KindBadge, RefillButton, StatusBadge, TradeButton, isPropAccount } from "./ui";
+import { AccountActions, FundButton, KindBadge, RefillButton, StatusBadge, TradeButton, isPropAccount } from "./ui";
+import { FlavorChip, RestoreButton, accountFlavor, copyingName } from "./archive";
 import { AccountAnalyticsPanel } from "@/components/reports/live-analytics";
 import { Trans, useT } from "@kalks/i18n/react";
 
@@ -378,6 +379,7 @@ function Detail() {
   const a = data.account;
   const cur = curOf(a);
   const lt = a.margin > 0 ? levelTone(a.marginLevel) : undefined;
+  const archived = isArchived(a);
 
   return (
     <div className="pb-16">
@@ -395,6 +397,7 @@ function Detail() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <KindBadge type={a.type} prop={isPropAccount(a)} />
+                <FlavorChip a={a} />
                 <h1 className="text-[20px] font-medium tracking-tight">
                   {a.groupName} · {modeLabel(a.mode)}
                 </h1>
@@ -412,6 +415,8 @@ function Detail() {
                 </span>
                 <Chip size="sm">1:{a.leverage.toLocaleString("en-US")}</Chip>
                 <span className="text-fg-3">{a.cent ? t("accountDetail.header.centCurrency") : a.currency}</span>
+                {accountFlavor(a) === "copy" && copyingName(a) && <span className="font-medium text-fg">{t("accounts.copy.copying", { name: copyingName(a)! })}</span>}
+                {archived && (a.archivedAt ?? a.closedAt) && <span className="text-fg-3">{t(a.status === "closed" ? "accounts.archived.closedOn" : "accounts.archived.on", { date: fmtDate(a.archivedAt ?? a.closedAt) })}</span>}
               </div>
               <div className="k-label mt-5">{t("common.equity")}</div>
               <div className="mt-1 flex flex-wrap items-baseline gap-3">
@@ -433,10 +438,27 @@ function Detail() {
                 </span>
               </div>
             </div>
-            {!readOnly && (
+            {!readOnly && archived && a.status === "archived" && (
               <div className="flex flex-wrap items-center gap-2">
+                <RestoreButton a={a} onDone={reload} />
+              </div>
+            )}
+            {!readOnly && !archived && (
+              <div className="flex flex-wrap items-center gap-2">
+                <AccountActions a={a} onChanged={reload} />
                 {a.type === "live" ? !isPropAccount(a) && <FundButton a={a} size="md" /> : <RefillButton a={a} onDone={reload} size="md" />}
-                <TradeButton a={a} size="lg" />
+                {accountFlavor(a) === "copy" ? (
+                  <>
+                    <Link href="/social/copy">
+                      <Button size="md" variant="surface">
+                        {t("accounts.copy.manage")}
+                      </Button>
+                    </Link>
+                    <TradeButton a={a} size="lg" variant="surface" label={t("accounts.copy.watchPnl")} />
+                  </>
+                ) : (
+                  <TradeButton a={a} size="lg" />
+                )}
               </div>
             )}
           </div>
@@ -455,7 +477,7 @@ function Detail() {
             { value: "ledger", label: t("accountDetail.tab.ledger") },
             { value: "analytics", label: t("accountDetail.tab.analytics") },
             // a view-only login (D90) never sees credentials or settings
-            ...(readOnly ? [] : [{ value: "credentials" as const, label: t("accountDetail.tab.credentials") }, { value: "settings" as const, label: t("accountDetail.tab.settings") }]),
+            ...(readOnly || archived ? [] : [{ value: "credentials" as const, label: t("accountDetail.tab.credentials") }, { value: "settings" as const, label: t("accountDetail.tab.settings") }]),
           ]}
         />
       </div>
@@ -468,8 +490,8 @@ function Detail() {
             {tab === "history" && <HistoryPanel a={a} />}
             {tab === "ledger" && <LedgerPanel a={a} />}
             {tab === "analytics" && <AccountAnalyticsPanel login={a.login} />}
-            {tab === "credentials" && !readOnly && <CredentialsPanel a={a} />}
-            {tab === "settings" && !readOnly && <SettingsPanel a={a} onChanged={reload} />}
+            {tab === "credentials" && !readOnly && !archived && <CredentialsPanel a={a} />}
+            {tab === "settings" && !readOnly && !archived && <SettingsPanel a={a} onChanged={reload} />}
           </motion.div>
         </AnimatePresence>
       </div>

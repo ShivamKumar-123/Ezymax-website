@@ -626,6 +626,7 @@ impl Social {
             controls: Controls::default(),
             demo: None,
             created_at: Utc::now(),
+            lifecycle: None,
         };
         self.hub.open(account, (th, ih), &format!("user:{user}")).await?;
         Ok((login, pw, inv))

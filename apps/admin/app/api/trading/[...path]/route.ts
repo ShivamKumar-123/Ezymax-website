@@ -37,6 +37,8 @@ const ROUTES: Route[] = [
   { method: "GET", re: new RegExp(`^admin/accounts/${T}$`), perm: "accounts.read" },
   { method: "POST", re: new RegExp(`^admin/accounts/${T}/balance$`), perm: "finance.adjust" },
   { method: "POST", re: new RegExp(`^admin/accounts/${T}/(status|group|leverage)$`), perm: "accounts.write" },
+  // lifecycle: archive (optionally emptied first: trades closed, balance to wallet) and restore; reason-coded, audited
+  { method: "POST", re: new RegExp(`^admin/accounts/${T}/(archive|restore)$`), perm: "accounts.write" },
   { method: "GET", re: /^admin\/groups$/, perm: "accounts.read" },
   { method: "POST", re: /^admin\/groups$/, perm: "groups.write" },
   { method: "PUT", re: /^admin\/groups\/[a-z0-9-]{1,40}$/, perm: "groups.write" },

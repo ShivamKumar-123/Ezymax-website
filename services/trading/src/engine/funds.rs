@@ -47,6 +47,8 @@ pub fn transfer(tx: &mut Tx, env: &Env, dir: Direction, amount_usd: D, idem: &st
         }
     } else if acc.status == crate::model::Status::Expired {
         return Err(Reject::new("account_status", "Account is expired"));
+    } else if acc.status.is_retired() {
+        return Err(Reject::new("account_status", format!("Account is {}", acc.status.as_str())));
     }
     let s = if dir == Direction::In { D::ONE } else { -D::ONE };
     let ccy = acc.ccy();
@@ -303,6 +305,9 @@ pub fn demo_refill(tx: &mut Tx, env: &Env) -> Result<D, Reject> {
     if acc.status == crate::model::Status::Expired {
         return Err(Reject::new("account_status", "This demo account has expired"));
     }
+    if acc.status.is_retired() {
+        return Err(Reject::new("account_status", format!("This account is {}", acc.status.as_str())));
+    }
     let day = server_date(env.now);
     let used = if tx.st.refill_day == Some(day) { tx.st.refills } else { 0 };
     if used >= d.refills_per_day {
@@ -395,4 +400,68 @@ pub fn set_route(tx: &mut Tx, book: Option<Book>) -> Result<Option<Book>, Reject
     a.route_override = book;
     tx.emit(Event::AccountUpdated { account: a, change: format!("route {:?} → {:?}", before, book) });
     Ok(before)
+}
+
+/// Archives a flat account (B1): status `archived`, with the prior status kept for restore. Credit and bonus
+/// still on the account are forfeited (booked back to the house). Ok(false) = already archived (no change).
+pub fn archive(tx: &mut Tx, env: &Env, by: &str, reason_code: &str, client_restorable: bool) -> Result<bool, Reject> {
+    use crate::model::{Lifecycle, Status};
+    let a0 = tx.st.account.clone();
+    match a0.status {
+        Status::Archived => return Ok(false),
+        Status::Closed => return Err(Reject::new("account_status", "This account is closed")),
+        _ => {}
+    }
+    if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() {
+        return Err(Reject::new("not_empty", "Close all positions and cancel all orders before archiving"));
+    }
+    let v = tx.st.version;
+    for (sub, house, kind, amt) in [("credit", "credit_issued", TxnKind::Credit, tx.st.credit), ("bonus", "bonus_issued", TxnKind::Bonus, tx.st.bonus)] {
+        if amt > ZERO {
+            tx.post(env, kind, format!("archive:{}:{sub}:{v}", a0.login), sub, house, -amt, None, Some(reason_code.to_string()), Some(format!("{sub} forfeited on archive")));
+        }
+    }
+    let mut a = a0.clone();
+    a.status = Status::Archived;
+    a.lifecycle = Some(Lifecycle { prior_status: a0.status, archived_at: env.now, reason_code: reason_code.to_string(), by: by.to_string(), client_restorable });
+    tx.emit(Event::AccountUpdated { account: a, change: format!("status {} → archived", a0.status.as_str()) });
+    Ok(true)
+}
+
+/// Restores an archived account to its prior status (an expired demo comes back active). `client` = the
+/// account owner asks, which needs `client_restorable`.
+pub fn restore(tx: &mut Tx, client: bool) -> Result<crate::model::Status, Reject> {
+    use crate::model::Status;
+    let a0 = tx.st.account.clone();
+    if a0.status != Status::Archived {
+        return Err(Reject::new("account_status", format!("Only archived accounts can be restored (this one is {})", a0.status.as_str())));
+    }
+    let lc = a0.lifecycle.clone();
+    if client && !lc.as_ref().is_some_and(|l| l.client_restorable) {
+        return Err(Reject::new("not_restorable", "This account was archived by the broker; contact support to restore it"));
+    }
+    let to = match lc.map(|l| l.prior_status).unwrap_or(Status::Active) {
+        Status::Expired | Status::Archived | Status::Closed => Status::Active,
+        s => s,
+    };
+    let mut a = a0;
+    a.status = to;
+    a.lifecycle = None;
+    tx.emit(Event::AccountUpdated { account: a, change: format!("status archived → {} (restored)", to.as_str()) });
+    Ok(to)
+}
+
+/// Client nickname (≤ 32 characters).
+pub fn rename(tx: &mut Tx, name: &str) -> Result<(), Reject> {
+    let name = name.trim();
+    if name.chars().count() > 32 {
+        return Err(Reject::new("invalid_name", "The name can be at most 32 characters"));
+    }
+    if tx.st.account.name == name {
+        return Ok(());
+    }
+    let mut a = tx.st.account.clone();
+    a.name = name.to_string();
+    tx.emit(Event::AccountUpdated { account: a, change: "name".into() });
+    Ok(())
 }

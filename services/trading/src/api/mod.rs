@@ -7,6 +7,7 @@ pub mod admin;
 pub mod controls;
 pub mod dealing;
 pub mod ledger;
+pub mod lifecycle;
 pub mod mam;
 pub mod social;
 pub mod social_admin;
@@ -80,7 +81,10 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/internal/restrictions/refresh", post(controls::refresh))
         // Client Area (CRM BFF, with the gateway user id)
         .route("/v1/accounts", post(accounts::open).get(accounts::list))
-        .route("/v1/accounts/{login}", get(accounts::detail))
+        .route("/v1/accounts/{login}", get(accounts::detail).patch(lifecycle::rename))
+        .route("/v1/accounts/{login}/archive-check", get(lifecycle::archive_check))
+        .route("/v1/accounts/{login}/archive", post(lifecycle::archive))
+        .route("/v1/accounts/{login}/restore", post(lifecycle::restore))
         .route("/v1/accounts/{login}/demo-refill", post(accounts::demo_refill))
         .route("/v1/accounts/{login}/passwords", post(accounts::passwords))
         .route("/v1/accounts/{login}/leverage", post(accounts::leverage))
@@ -124,6 +128,8 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/accounts/{login}/balance", post(admin::balance))
         .route("/v1/admin/accounts/{login}/adjust", post(admin::adjust))
         .route("/v1/admin/accounts/{login}/status", post(admin::status))
+        .route("/v1/admin/accounts/{login}/archive", post(admin::archive))
+        .route("/v1/admin/accounts/{login}/restore", post(admin::restore))
         .route("/v1/admin/accounts/{login}/group", post(admin::group))
         .route("/v1/admin/accounts/{login}/leverage", post(admin::leverage))
         .route("/v1/admin/groups", get(admin::groups).post(admin::create_group))
@@ -358,7 +364,11 @@ impl FromRequestParts<AppState> for Ctx {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Self, Self::Rejection> {
         let slug = header(parts, "x-kalks-tenant").unwrap_or_else(|| "kalks".into()).to_lowercase();
-        let tenant = st.hub.shared.registry.by_slug(&slug).ok_or_else(|| ApiError::BadRequest(format!("Unknown tenant {slug}")))?;
+        // a broker created in the Owner panel is provisioned here on its first request (tenants.rs)
+        let tenant = match st.hub.shared.registry.by_slug(&slug) {
+            Some(t) => t,
+            None => crate::tenants::provision(st, &slug).await.ok_or_else(|| ApiError::BadRequest(format!("Unknown tenant {slug}")))?,
+        };
         let ip = header(parts, "x-forwarded-for").and_then(|v| v.split(',').next().map(|s| s.trim().to_string())).filter(|v| v.len() <= 64).unwrap_or_else(|| "unknown".into());
         let user_agent: String = header(parts, "user-agent").unwrap_or_default().chars().take(400).collect();
         let bearer = header(parts, "authorization").and_then(|v| v.strip_prefix("Bearer ").map(|t| t.trim().to_string())).filter(|t| !t.is_empty() && t.len() <= 128);

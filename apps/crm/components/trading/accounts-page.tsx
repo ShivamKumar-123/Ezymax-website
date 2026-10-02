@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, FlaskConical, Layers, Plus, RotateCw, ShieldCheck, TrendingUp } from "lucide-react";
 import { Button, Card, CardHeader, Chip, EmptyState, KpiCard, Money, PageHeader, Reveal, Segmented, Skeleton } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
-import { toUsd, useAccounts, useGroups, type EngineAccount } from "./api";
+import { isArchived, toUsd, useAccounts, useGroups, type EngineAccount } from "./api";
+import { ArchivedAccountRow } from "./archive";
 import { EngineGroupCard } from "./group-card";
 import { LiveAccountRow, isPropAccount, refillsLeft } from "./ui";
 import { useReadOnly } from "@/components/session";
@@ -40,12 +41,15 @@ export function RowsSkeleton({ n = 2 }: { n?: number }) {
 }
 
 /** Totals over live accounts in USD (cent accounts converted from USC). */
-/** Totals of the client's own live money: prop-challenge accounts (simulated capital) are left out. */
-export function liveTotals(accounts: EngineAccount[]) {
+/** Totals of the client's own live money: prop-challenge accounts (simulated capital) are left out.
+ *  Archived / closed accounts are listed apart (`archived`) and count nowhere else. */
+export function liveTotals(all: EngineAccount[]) {
+  const accounts = all.filter((a) => !isArchived(a));
   const live = accounts.filter((a) => a.type === "live" && !isPropAccount(a));
   return {
     live,
     demo: accounts.filter((a) => a.type === "demo"),
+    archived: all.filter(isArchived),
     equity: live.reduce((s, a) => s + toUsd(a, a.equity), 0),
     balance: live.reduce((s, a) => s + toUsd(a, a.balance), 0),
     free: live.reduce((s, a) => s + toUsd(a, a.freeMargin), 0),
@@ -60,17 +64,20 @@ function Inner() {
   const tt = useT();
   const { data, error, loading, reload } = useAccounts();
   const groups = useGroups();
-  const accounts = data?.accounts ?? [];
-  const t = liveTotals(accounts);
-  const initialTab = sp.get("tab") === "demo" ? "demo" : sp.get("tab") === "live" ? "live" : null;
-  const [tab, setTabState] = React.useState<"live" | "demo" | null>(initialTab);
+  const all = data?.accounts ?? [];
+  const t = liveTotals(all);
+  const accounts = all.filter((a) => !isArchived(a));
+  type Tab = "live" | "demo" | "archived";
+  const q = sp.get("tab");
+  const initialTab: Tab | null = q === "demo" || q === "live" || q === "archived" ? q : null;
+  const [tab, setTabState] = React.useState<Tab | null>(initialTab);
   // default to the tab that has accounts (live first)
-  const active: "live" | "demo" = tab ?? (t.live.length === 0 && t.demo.length > 0 ? "demo" : "live");
-  const setTab = (v: "live" | "demo") => {
+  const active: Tab = tab ?? (t.live.length === 0 && t.demo.length > 0 ? "demo" : "live");
+  const setTab = (v: Tab) => {
     setTabState(v);
     router.replace(`/accounts?tab=${v}`, { scroll: false });
   };
-  const list = active === "live" ? t.live : t.demo;
+  const list = active === "live" ? t.live : active === "demo" ? t.demo : t.archived;
   const refills = t.demo.reduce((s, a) => s + refillsLeft(a), 0);
   const readOnly = useReadOnly();
 
@@ -139,7 +146,7 @@ function Inner() {
             <Card>
               <CardHeader
                 title={tt("accounts.list.myAccounts")}
-                subtitle={tt("accounts.list.liveHint")}
+                subtitle={active === "archived" ? tt("accounts.list.archivedHint") : tt("accounts.list.liveHint")}
                 action={
                   <Segmented
                     size="xs"
@@ -148,13 +155,17 @@ function Inner() {
                     options={[
                       { value: "live", label: <>{tt("common.live")} <span className="text-fg-3">{t.live.length}</span></> },
                       { value: "demo", label: <>{tt("common.demo")} <span className="text-fg-3">{t.demo.length}</span></> },
+                      ...(t.archived.length || active === "archived" ? [{ value: "archived" as const, label: <>{tt("accounts.tab.archived")} <span className="text-fg-3">{t.archived.length}</span></> }] : []),
                     ]}
                   />
                 }
               />
               <div className="mt-4 space-y-3 px-4 pb-5 sm:px-6">
                 {loading && <RowsSkeleton />}
-                {!loading && list.length === 0 && (
+                {!loading && list.length === 0 && active === "archived" && (
+                  <EmptyState art="welcome" title={tt("accounts.archived.none")} text={tt("accounts.archived.noneText")} />
+                )}
+                {!loading && list.length === 0 && active !== "archived" && (
                   <EmptyState
                     art="welcome"
                     title={active === "live" ? tt("accounts.empty.noLive") : tt("accounts.empty.noDemo")}
@@ -165,10 +176,10 @@ function Inner() {
                     }
                   />
                 )}
-                {list.map((a) => (
-                  <LiveAccountRow key={a.login} a={a} onChanged={reload} />
-                ))}
-                {!readOnly && <Link
+                {list.map((a) =>
+                  active === "archived" ? <ArchivedAccountRow key={a.login} a={a} onChanged={reload} /> : <LiveAccountRow key={a.login} a={a} onChanged={reload} />,
+                )}
+                {!readOnly && active !== "archived" && <Link
                   href={`/accounts/new?type=${active}`}
                   className="flex items-center justify-center gap-2 rounded-[14px] border border-dashed border-line py-4 text-[13.5px] text-fg-3 transition-colors hover:border-ember/40 hover:bg-ember-soft hover:text-ember"
                 >

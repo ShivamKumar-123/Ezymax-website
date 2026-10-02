@@ -76,6 +76,7 @@ fn account(login: i64, user: i64, group: &str) -> Account {
         controls: Controls::default(),
         demo: None,
         created_at: Utc::now() - chrono::Duration::days(60),
+        lifecycle: None,
     }
 }
 

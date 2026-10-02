@@ -145,8 +145,12 @@ pub async fn login(State(st): State<AppState>, ctx: Ctx, Body(r): Body<LoginReq>
         .await?;
         return Err(invalid_credentials());
     }
-    if row.get::<String, _>("status") == Status::Expired.as_str() {
+    let status: String = row.get("status");
+    if status == Status::Expired.as_str() {
         return Err(ApiError::Forbidden("This demo account has expired.".into()));
+    }
+    if Status::parse(&status).is_some_and(Status::is_retired) {
+        return Err(ApiError::Forbidden(format!("This account is {status}.")));
     }
     super::controls::login_gate(&st, r.login)?;
     sqlx::query("UPDATE account_credentials SET failed_logins = 0, locked_until = NULL WHERE login = $1").bind(r.login).execute(&st.pool).await?;

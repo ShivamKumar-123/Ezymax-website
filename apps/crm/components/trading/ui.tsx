@@ -2,12 +2,13 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowDownToLine, CandlestickChart, Check, KeyRound, Loader2, MoreHorizontal, RefreshCcw, Gauge as GaugeIcon, Wallet } from "lucide-react";
+import { ArrowDownToLine, CandlestickChart, Check, KeyRound, Loader2, MoreHorizontal, PencilLine, RefreshCcw, Gauge as GaugeIcon, Trash2, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, CopyButton, Dialog, IconButton, Menu, Money, cn, type ButtonProps } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
 import { useReadOnly } from "@/components/session";
 import { STATUS_LABEL, curOf, errorToast, fmtLevel, levelTone, openTerminal, serverOf, tradingApi, type EngineAccount } from "./api";
+import { DeleteAccountDialog, FlavorChip, RenameDialog, accountFlavor, copyingName } from "./archive";
 
 /** Prop-challenge accounts live in engine groups named prop*: simulated capital that is never funded from the
  * wallet (the wallet refuses transfers to them) and never counted in the client's own live equity. */
@@ -49,7 +50,7 @@ export function StatusBadge({ a }: { a: Pick<EngineAccount, "status"> }) {
 export function TradeButton({ a, size = "sm", label, ...rest }: { a: Pick<EngineAccount, "login" | "status"> } & Omit<ButtonProps, "onClick"> & { label?: string }) {
   const t = useT();
   const [busy, setBusy] = React.useState(false);
-  const blocked = a.status === "disabled" || a.status === "expired";
+  const blocked = a.status === "disabled" || a.status === "expired" || a.status === "archived" || a.status === "closed";
   return (
     <Button
       size={size}
@@ -170,22 +171,47 @@ export function RefillButton({ a, onDone, size = "sm" }: { a: EngineAccount; onD
 /* Account row (accounts list, dashboard)                              */
 /* ------------------------------------------------------------------ */
 
-export function AccountActions({ a }: { a: EngineAccount }) {
+export function AccountActions({ a, onChanged }: { a: EngineAccount; onChanged?: () => void }) {
+  const t = useT();
+  const [renaming, setRenaming] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+  // prop-challenge accounts are opened and closed by the prop service, not by the client
+  const prop = isPropAccount(a);
+  return (
+    <>
+      <Menu
+        trigger={
+          <IconButton size="sm" aria-label={t("accounts.menu.actions")}>
+            <MoreHorizontal />
+          </IconButton>
+        }
+        items={[
+          { label: t("accounts.menu.details"), icon: <GaugeIcon />, href: `/accounts/${a.login}` },
+          { label: t("accounts.menu.changeLeverage"), icon: <GaugeIcon />, href: `/accounts/${a.login}?tab=settings` },
+          { label: t("accounts.menu.passwords"), icon: <KeyRound />, href: `/accounts/${a.login}?tab=credentials` },
+          { label: t("accounts.menu.statements"), icon: <ArrowDownToLine />, href: `/accounts/${a.login}?tab=history` },
+          { label: t("accounts.menu.rename"), icon: <PencilLine />, onSelect: () => setRenaming(true) },
+          ...(prop ? [] : (["sep", { label: t("accounts.menu.delete"), icon: <Trash2 />, danger: true, onSelect: () => setDeleting(true) }] as const)),
+        ]}
+      />
+      {renaming && <RenameDialog a={a} open={renaming} onOpenChange={setRenaming} onDone={onChanged} />}
+      {deleting && <DeleteAccountDialog a={a} open={deleting} onOpenChange={setDeleting} onDone={onChanged} />}
+    </>
+  );
+}
+
+/** Kalks Trader for a copy-trading account: the copy service trades it, the client watches P&L and manages the copy. */
+function CopyActions({ a }: { a: EngineAccount }) {
   const t = useT();
   return (
-    <Menu
-      trigger={
-        <IconButton size="sm" aria-label={t("accounts.menu.actions")}>
-          <MoreHorizontal />
-        </IconButton>
-      }
-      items={[
-        { label: t("accounts.menu.details"), icon: <GaugeIcon />, href: `/accounts/${a.login}` },
-        { label: t("accounts.menu.changeLeverage"), icon: <GaugeIcon />, href: `/accounts/${a.login}?tab=settings` },
-        { label: t("accounts.menu.passwords"), icon: <KeyRound />, href: `/accounts/${a.login}?tab=credentials` },
-        { label: t("accounts.menu.statements"), icon: <ArrowDownToLine />, href: `/accounts/${a.login}?tab=history` },
-      ]}
-    />
+    <>
+      <Link href="/social/copy">
+        <Button size="sm" variant="surface">
+          <Users /> {t("accounts.copy.manage")}
+        </Button>
+      </Link>
+      <TradeButton a={a} variant="surface" label={t("accounts.copy.watchPnl")} />
+    </>
   );
 }
 
@@ -194,10 +220,13 @@ export function LiveAccountRow({ a, onChanged, compact }: { a: EngineAccount; on
   const cur = curOf(a);
   const tone = levelTone(a.marginLevel);
   const readOnly = useReadOnly();
+  const flavor = accountFlavor(a);
+  const copying = flavor === "copy" ? copyingName(a) : null;
   return (
     <div className="k-row group relative overflow-hidden p-4 transition-colors hover:border-[var(--k-border-top)] sm:p-5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <KindBadge type={a.type} prop={isPropAccount(a)} />
+        <FlavorChip a={a} />
         <Link href={`/accounts/${a.login}`} className="text-[15px] font-medium text-fg hover:text-ember">
           {a.groupName} · {t.dyn(`accounts.mode.${a.mode}`, a.mode)}
         </Link>
@@ -238,13 +267,14 @@ export function LiveAccountRow({ a, onChanged, compact }: { a: EngineAccount; on
         </div>
         {!readOnly && (
           <div className="col-span-full flex flex-wrap items-center justify-end gap-2 xl:col-span-1">
-            <AccountActions a={a} />
+            <AccountActions a={a} onChanged={onChanged} />
             {a.type === "live" ? !isPropAccount(a) && <FundButton a={a} /> : <RefillButton a={a} onDone={onChanged} />}
-            <TradeButton a={a} />
+            {flavor === "copy" ? <CopyActions a={a} /> : <TradeButton a={a} />}
           </div>
         )}
       </div>
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-fg-3">
+        {copying && <span className="font-medium text-fg-2">{t("accounts.copy.copying", { name: copying })}</span>}
         {a.positions > 0 || a.orders > 0 ? (
           <span>
             {t("accounts.row.openPositions", { count: a.positions })} · {t("accounts.row.pendingOrders", { count: a.orders })} · {t("accounts.row.floating")}{" "}

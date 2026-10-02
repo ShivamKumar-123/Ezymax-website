@@ -44,6 +44,7 @@ fn account(login: i64, group: &str, kind: AccountKind, cent: bool, mode: trading
         controls: Controls::default(),
         demo: (kind == AccountKind::Demo).then(|| DemoCfg { initial_balance: d("10000"), refills_per_day: 3, expiry_days: 10 }),
         created_at: Utc::now(),
+        lifecycle: None,
     }
 }
 

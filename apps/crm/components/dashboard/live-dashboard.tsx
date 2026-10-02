@@ -9,7 +9,7 @@ import { INSTRUMENTS, isMarketOpen } from "@kalks/mock";
 import { KYC_CHIP, useSession, type SessionUser } from "@/components/session";
 import { FeedGuard } from "@/components/feed-guard";
 import { SUPPORT_EMAIL, TERMINAL_URL } from "@/lib/live";
-import { useAccounts, type EngineAccount } from "@/components/trading/api";
+import { isArchived, useAccounts, type EngineAccount } from "@/components/trading/api";
 import { liveTotals } from "@/components/trading/accounts-page";
 import { LiveAccountRow } from "@/components/trading/ui";
 import { useWalletFunded, walletStep } from "@/components/wallet-live/onboarding";
@@ -420,7 +420,8 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
   const me = useSession();
   const t = useT();
   const acc = useAccounts(10000);
-  const accounts = acc.data?.accounts ?? null;
+  // Archived / closed accounts live on the Accounts page's Archived tab only.
+  const accounts = React.useMemo(() => acc.data?.accounts.filter((a) => !isArchived(a)) ?? null, [acc.data]);
   const [hour, setHour] = React.useState<string>("welcome");
   React.useEffect(() => setHour(greeting()), []);
   const verified = me.kyc_status === "verified";

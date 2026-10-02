@@ -22,10 +22,10 @@ use crate::views;
 
 #[derive(Deserialize)]
 pub struct UserQ {
-    user_id: Option<i64>,
+    pub user_id: Option<i64>,
 }
 
-fn user_of(h: &HeaderMap, q: Option<i64>) -> ApiResult<i64> {
+pub fn user_of(h: &HeaderMap, q: Option<i64>) -> ApiResult<i64> {
     super::user_id(h.get("x-kalks-user-id").and_then(|v| v.to_str().ok()).map(str::to_string), q)
 }
 
@@ -108,7 +108,7 @@ pub async fn open(State(st): State<AppState>, ctx: Ctx, headers: HeaderMap, Body
     let _guard = st.open_lock.lock().await;
     let used = {
         let idx = st.hub.shared.index.read().unwrap();
-        idx.accounts.values().filter(|m| m.tenant_id == ctx.tenant.tenant_id && m.user_id == user && m.kind == kind && m.group == g.code).count()
+        idx.accounts.values().filter(|m| m.tenant_id == ctx.tenant.tenant_id && m.user_id == user && m.kind == kind && m.group == g.code && !m.status.is_retired()).count()
     };
     if used as u32 >= g.max_accounts_per_user {
         return Err(ApiError::Conflict { code: "account_limit", message: format!("You can have at most {} {} account(s) in {}", g.max_accounts_per_user, kind.as_str(), g.name) });
@@ -132,6 +132,7 @@ pub async fn open(State(st): State<AppState>, ctx: Ctx, headers: HeaderMap, Body
         controls: Controls::default(),
         demo,
         created_at: Utc::now(),
+        lifecycle: None,
     };
     let v = st.hub.open(account, (th, ih), &format!("user:{user}")).await?;
     tracing::info!(login, user, kind = kind.as_str(), group = %g.code, "account opened");
@@ -347,6 +348,9 @@ pub async fn sso(State(st): State<AppState>, ctx: Ctx, headers: HeaderMap, Path(
     let m = owned(&st, &ctx, login, user)?;
     if m.status == Status::Expired {
         return Err(ApiError::Forbidden("This demo account has expired.".into()));
+    }
+    if m.status.is_retired() {
+        return Err(ApiError::Forbidden(format!("This account is {}.", m.status.as_str())));
     }
     super::controls::login_gate(&st, login)?;
     let token = auth::random_token(32);

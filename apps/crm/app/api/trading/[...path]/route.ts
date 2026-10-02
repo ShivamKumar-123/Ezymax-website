@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { consumeStepup, stepupTokenOf, type GatewayUser, type StepupAction } from "@/lib/gateway";
+import { SESSION_COOKIE, consumeStepup, stepupTokenOf, type GatewayUser, type StepupAction } from "@/lib/gateway";
 import { TERMINAL_BASE, clientAccount, clientDeal, clientOrder, clientPosition, engine, sameOrigin, sessionUser } from "@/lib/trading";
 import { viewerHasAccount } from "@/lib/viewer";
 import { tenantConfig } from "@/lib/tenant-config";
@@ -26,6 +26,12 @@ import { Memo } from "@/lib/memo";
 // as `stepup_token` (or X-Kalks-Stepup). It is checked against the account first, then redeemed once with the
 // gateway, and only then does the engine make the change.
 //   POST accounts/{login}/sso                {url, expiresAt}: url = NEXT_PUBLIC_TERMINAL_URL + "/?sso=<token>"
+//   GET  accounts/{login}/archive-check      {canArchive, needsEmpty, positions, orders, balance, credit, bonus, blockers[]}
+//   POST accounts/{login}/archive            {empty, ackForfeit, stepup_token?}: live accounts need step-up action
+//                                            account_archive (target = login); demo accounts don't
+//   POST accounts/{login}/restore
+//   PATCH accounts/{login}                   {name} (≤ 32 characters, empty clears it)
+// Archive / restore / rename are the owner's own: view-only logins (D90) and staff impersonation sessions are refused.
 
 type Obj = Record<string, unknown>;
 type Ctx = { params: Promise<{ path: string[] }> };
@@ -125,6 +131,11 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
   if (path.length === 3 && path[2] === "export") return exportCsv(req, user, login);
 
+  if (path.length === 3 && path[2] === "archive-check") {
+    const r = await engine<Obj>(`/v1/accounts/${login}/archive-check`, { user, req });
+    return reply(r.status, r.data);
+  }
+
   return error(404, "not_found", "Not found.");
 }
 
@@ -198,6 +209,32 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       const r = await engine(`/v1/accounts/${login}/leverage`, { user, req, body: { leverage: body.leverage } });
       return reply(r.status, r.data);
     }
+    case "archive": {
+      const refused = ownerOnly(req, user);
+      if (refused) return refused;
+      if (typeof body.empty !== "boolean" || typeof body.ackForfeit !== "boolean") return error(422, "validation", "Invalid request body.");
+      // checked before the one-time confirmation is spent: ownership (404), blockers, emptying, forfeit
+      const chk = await engine<{ kind?: string; canArchive?: boolean; needsEmpty?: boolean; credit?: number; bonus?: number; blockers?: { code: string; message: string }[] }>(`/v1/accounts/${login}/archive-check`, { user, req });
+      if (chk.status !== 200) return reply(chk.status, chk.data);
+      const c = chk.data;
+      const blocker = c.blockers?.[0];
+      if (blocker || c.canArchive === false) return error(409, blocker?.code ?? "cannot_archive", blocker?.message ?? "This account can't be deleted right now.");
+      if (c.needsEmpty && !body.empty) return error(409, "needs_empty", "Close the open trades and move the money out first.");
+      if ((Number(c.credit) || 0) + (Number(c.bonus) || 0) > 0 && !body.ackForfeit) return error(422, "ack_forfeit", "Confirm that the bonus and credit will be lost.");
+      // deleting a live account (it may move money and close trades) needs the emailed code (D20); demo doesn't
+      if (c.kind !== "demo") {
+        const denied = await stepup(req, user, body, "account_archive", login);
+        if (denied) return denied;
+      }
+      const r = await engine(`/v1/accounts/${login}/archive`, { user, req, body: { empty: body.empty, ackForfeit: body.ackForfeit } });
+      return reply(r.status, r.data);
+    }
+    case "restore": {
+      const refused = ownerOnly(req, user);
+      if (refused) return refused;
+      const r = await engine(`/v1/accounts/${login}/restore`, { user, req, body: {} });
+      return reply(r.status, r.data);
+    }
     case "sso": {
       const r = await engine<{ token?: string; expiresAt?: string }>(`/v1/accounts/${login}/sso`, { user, req, body: {} });
       if (r.status !== 200 || !r.data.token) return reply(r.status === 200 ? 502 : r.status, r.data);
@@ -205,6 +242,35 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     }
   }
   return error(404, "not_found", "Not found.");
+}
+
+export async function PATCH(req: NextRequest, { params }: Ctx) {
+  const path = (await params).path;
+  if (!sameOrigin(req)) return error(403, "forbidden", "Cross-site request blocked.");
+  if (!req.headers.get("content-type")?.includes("application/json")) return error(415, "bad_request", "Expected JSON.");
+  const body = (await req.json().catch(() => null)) as Obj | null;
+  if (body === null || typeof body !== "object" || Array.isArray(body)) return error(400, "bad_request", "Invalid request body.");
+  const user = await auth(req);
+  if (user instanceof NextResponse) return user;
+  const login = path[1];
+  if (path.length !== 2 || path[0] !== "accounts" || !login || !LOGIN_RE.test(login)) return error(404, "not_found", "Not found.");
+  const refused = ownerOnly(req, user);
+  if (refused) return refused;
+  if (typeof body.name !== "string") return error(422, "validation", "Enter a name.");
+  const name = body.name.trim();
+  if ([...name].length > 32) return error(422, "validation", "Use up to 32 characters.");
+  if (/[\u0000-\u001f\u007f]/.test(name)) return error(422, "validation", "The name contains characters that aren't allowed.");
+  const r = await engine(`/v1/accounts/${login}`, { method: "PATCH", user, req, body: { name } });
+  return reply(r.status, r.data);
+}
+
+/** Archive / restore / rename are for the account owner only: not a view-only login, not a staff session. */
+function ownerOnly(req: NextRequest, user: GatewayUser): NextResponse | null {
+  if (user.viewer) return error(403, "viewer_read_only", "This is a view-only login. Changes are not allowed.");
+  // staff sign-in-as sessions ("i." read-only, "s." full) may not delete, restore or rename a client's accounts
+  const token = req.cookies.get(SESSION_COOKIE)?.value ?? "";
+  if (token.startsWith("i.") || token.startsWith("s.")) return error(403, "staff_read_only", "Staff sessions can't archive, restore or rename a client's accounts.");
+  return null;
 }
 
 /** 404 unless the account exists and belongs to the client (the engine checks ownership). */

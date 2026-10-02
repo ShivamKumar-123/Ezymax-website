@@ -27,8 +27,12 @@ export interface EngineAccount {
   baseCurrency: string;
   leverage: number;
   leverages: number[];
-  status: "active" | "close_only" | "read_only" | "disabled" | "expired";
+  status: "active" | "close_only" | "read_only" | "disabled" | "expired" | "archived" | "closed";
   name: string;
+  /** When the account was archived / closed (engine; absent on older engines). */
+  archivedAt?: string | null;
+  closedAt?: string | null;
+  updatedAt?: string | null;
   marginCall: boolean;
   marginCallLevel: number;
   stopOutLevel: number;
@@ -194,14 +198,14 @@ const FRIENDLY: Record<string, MessageKey> = {
   unavailable: "accounts.error.unavailable",
 };
 
-export async function tradingApi<T>(path: string, init?: { method?: "GET" | "POST"; body?: unknown; signal?: AbortSignal }): Promise<T> {
+export async function tradingApi<T>(path: string, init?: { method?: "GET" | "POST" | "PATCH"; body?: unknown; signal?: AbortSignal }): Promise<T> {
   const method = init?.method ?? (init?.body !== undefined ? "POST" : "GET");
   let res: Response;
   try {
     res = await fetch(`/api/trading/${path}`, {
       method,
-      headers: method === "POST" ? { "content-type": "application/json" } : undefined,
-      body: method === "POST" ? JSON.stringify(init?.body ?? {}) : undefined,
+      headers: method !== "GET" ? { "content-type": "application/json" } : undefined,
+      body: method !== "GET" ? JSON.stringify(init?.body ?? {}) : undefined,
       cache: "no-store",
       signal: init?.signal,
     });
@@ -322,7 +326,12 @@ export const STATUS_LABEL: Record<EngineAccount["status"], { label: string; tone
   read_only: { label: "Read only", tone: "warn" },
   disabled: { label: "Disabled", tone: "down" },
   expired: { label: "Expired", tone: "neutral" },
+  archived: { label: "Archived", tone: "neutral" },
+  closed: { label: "Closed", tone: "neutral" },
 };
+
+/** Archived / closed accounts sit in the Archived tab: out of the Live / Demo lists and the live totals. */
+export const isArchived = (a: Pick<EngineAccount, "status">) => a.status === "archived" || a.status === "closed";
 
 /** Server time offset in hours: GMT+3 while US DST is on, GMT+2 otherwise (same rule as the engine). */
 export function serverOffset(t: Date) {

@@ -106,6 +106,7 @@ impl Kit {
             controls: Controls::default(),
             demo: (kind == AccountKind::Demo).then(|| DemoCfg { initial_balance: g.demo_initial_balance, refills_per_day: g.demo_refills_per_day, expiry_days: 10 }),
             created_at: self.now,
+            lifecycle: None,
         }
     }
 }
