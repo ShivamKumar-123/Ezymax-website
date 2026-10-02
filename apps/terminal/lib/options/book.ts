@@ -94,7 +94,12 @@ export function mapOptionOrder(o: EngOrder | Obj): OptOrder {
 }
 
 /** Why an option position (or part of it) closed. */
-export type OptCloseReason = "closed" | "expired" | "knocked_out" | "stop_out" | "liquidation" | "sl" | "tp" | "dealer" | "other";
+/**
+ * Why an option position (or part of it) closed. `liquidation`: risk control closed it on the order book (a
+ * reduce-only order, or the Kalks market maker's backstop: `fillKind`), `bust`: the dealing desk cancelled the fill
+ * and reversed it (a correction).
+ */
+export type OptCloseReason = "closed" | "expired" | "knocked_out" | "stop_out" | "liquidation" | "bust" | "sl" | "tp" | "dealer" | "other";
 
 /** A closed option trade (one exit deal): premiums per unit in the quote currency, money in USD. */
 export interface OptClosed {
@@ -116,6 +121,8 @@ export interface OptClosed {
   reason: OptCloseReason;
   /** the engine's own reason code (shown when it maps to "other") */
   rawReason: string;
+  /** order-book deals: the fill kind (book, rfq, liquidation, backstop, bust, novation) */
+  fillKind?: string;
   /** USD per contract for one unit of premium (0 = unknown) */
   usdPerUnit: number;
   /** expiry settlements: the settlement price (fixing) the option was settled at */
@@ -141,6 +148,7 @@ export function closeReasonOf(d: EngDeal | Obj): { reason: OptCloseReason; raw: 
   const raw = String(x.reason ?? "");
   const fill = ((x.option as Obj | undefined)?.fill ?? null) as Obj | null;
   const kind = String(fill?.kind ?? "").toLowerCase();
+  if (kind === "bust") return { reason: "bust", raw };
   if (kind === "liquidation" || kind === "backstop") return { reason: "liquidation", raw };
   const r = raw.toLowerCase();
   if (r === "expiry" || r === "expired" || r === "settlement" || r === "settle" || r === "exercise") return { reason: "expired", raw };
@@ -217,6 +225,7 @@ export function mapOptionClosed(deals: (EngDeal | Obj)[], cent: boolean): OptClo
         profit: +(gross + swap - commission).toFixed(2),
         reason,
         rawReason: raw,
+        fillKind: str(((d.option as Obj | undefined)?.fill as Obj | undefined)?.kind),
         usdPerUnit,
         fixing: num((d.option as Obj | undefined)?.fixing) ?? (reason === "expired" ? num(d.fixing) : undefined),
         comboId: str(d.comboId) ?? (typeof d.comboId === "number" ? String(d.comboId) : undefined),

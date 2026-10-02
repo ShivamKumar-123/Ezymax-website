@@ -4,7 +4,10 @@
 // ratios) and a size go out as one RFQ (`POST …/rfq`, open 30 s); the Kalks market maker answers with a firm net
 // bid / ask per strategy unit (valid a few seconds, refreshed after that); accepting (`POST …/rfq/{id}/accept`
 // {quoteId, side, limitNet}) fills every leg at once in one journal entry, or nothing. "Buy" trades the strategy as
-// built at the ask, "Sell" the reverse at the bid. Barrier legs are Kalks-quoted, never on the order book.
+// built at the ask, "Sell" the reverse at the bid. Barrier legs are Kalks-quoted, never on the order book: the engine
+// answers an RFQ with a barrier leg with 422 `kalks_quoted`, and `onKalksQuoted` hands the strategy to the house ticket
+// (one order at Kalks prices). Refusals read in plain words (./errors rfqErrorText), with "Get a new price" when only
+// the price went stale and "Request a new quote" once the request itself expired.
 import * as React from "react";
 import { Hourglass, MessagesSquare, RefreshCw, X } from "lucide-react";
 import { parseSeriesCode } from "@kalks/mock/options";
@@ -13,10 +16,11 @@ import { useT } from "@kalks/i18n/react";
 import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
 import { bookApi, bookMissing } from "@/lib/options/book-api";
-import { errText, needsOnboarding } from "@/lib/options/errors";
+import { needsOnboarding, rfqErrorText, rfqRequotable } from "@/lib/options/errors";
 import { opt } from "@/lib/options-store";
 import type { Rfq, RfqAcceptResult, RfqQuote, Side } from "@/lib/options/types";
 import { ErrorNote, RightTag } from "./bits";
+import { TriangleAlert } from "lucide-react";
 import { isBarrierSeries, KalksQuotedTag, qty, useSeriesUnits } from "./book-bits";
 import { usd } from "./format";
 import { MmRulesLink } from "./mm-rules";
@@ -25,7 +29,12 @@ export interface RfqLegSpec {
   series: string;
   side: Side;
   contracts: number;
+  /** a barrier leg (Kalks-quoted): such a strategy never goes out as an RFQ */
+  barrier?: boolean;
 }
+
+/** A strategy with a barrier leg is Kalks-quoted: it trades on the house ticket, not by RFQ. */
+export const hasBarrierLeg = (legs: { series: string; barrier?: unknown }[]) => legs.some((l) => !!l.barrier || isBarrierSeries(l.series));
 
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : Math.abs(a));
 
@@ -48,7 +57,7 @@ function useNowTick(active: boolean, ms = 250) {
 
 type Phase = "idle" | "requesting" | "live" | "accepting" | "expired" | "done";
 
-export function RfqPanel({ legs, onDone, className, disabled }: { legs: RfqLegSpec[]; onDone?: (r: RfqAcceptResult) => void; className?: string; disabled?: boolean }) {
+export function RfqPanel({ legs, onDone, className, disabled, onKalksQuoted }: { legs: RfqLegSpec[]; onDone?: (r: RfqAcceptResult) => void; className?: string; disabled?: boolean; onKalksQuoted?: () => void }) {
   const T = useTerminal();
   const t = useT();
   const login = T.account.login;
@@ -59,6 +68,8 @@ export function RfqPanel({ legs, onDone, className, disabled }: { legs: RfqLegSp
   const [rfq, setRfq] = React.useState<Rfq | null>(null);
   const [quote, setQuote] = React.useState<RfqQuote | null>(null);
   const [err, setErr] = React.useState<{ code: string; message: string } | null>(null);
+  // bumped to ask the market maker for a fresh price at once ("Get a new price")
+  const [pollKey, setPollKey] = React.useState(0);
   const live = phase === "live" || phase === "accepting";
   const now = useNowTick(live || phase === "requesting");
   const rfqRef = React.useRef<Rfq | null>(null);
@@ -94,6 +105,7 @@ export function RfqPanel({ legs, onDone, className, disabled }: { legs: RfqLegSp
       if (r.ok) {
         const best = [...r.data.quotes].sort((a, b) => Date.parse(b.validUntil) - Date.parse(a.validUntil))[0] ?? null;
         setQuote(best);
+        if (r.data.rfq?.note !== rfqRef.current?.note && r.data.rfq) setRfq((cur) => (cur ? { ...cur, note: r.data.rfq?.note } : cur));
         const st = r.data.rfq?.status;
         if (st === "expired" || st === "cancelled" || Date.parse(r.data.rfq?.expiresAt ?? rfq.expiresAt) <= Date.now()) {
           setPhase("expired");
@@ -108,7 +120,8 @@ export function RfqPanel({ legs, onDone, className, disabled }: { legs: RfqLegSp
       alive = false;
       clearTimeout(timer);
     };
-  }, [rfq, phase, login]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rfq?.id, phase, login, pollKey]);
 
   const request = async () => {
     setErr(null);
@@ -121,6 +134,8 @@ export function RfqPanel({ legs, onDone, className, disabled }: { legs: RfqLegSp
         opt.setBookOff(true);
         return;
       }
+      // a barrier leg: barrier strategies are Kalks-quoted, the house ticket places them
+      if (!r.ok && r.err.code === "kalks_quoted") onKalksQuoted?.();
       if (!r.ok) setErr({ code: r.err.code, message: r.err.message });
       return;
     }
@@ -144,15 +159,32 @@ export function RfqPanel({ legs, onDone, className, disabled }: { legs: RfqLegSp
     setErr(null);
     const r = await bookApi.rfqAccept(login, rfq.id, { quoteId: quote.quoteId, side, limitNet: net });
     if (!r.ok) {
-      setPhase("live");
-      setErr({ code: r.err.code, message: r.err.message });
-      if (!needsOnboarding(r.err.code)) toast.error(t("trader.opt.toast.rejected"), { description: errText(r.err) });
+      const code = r.err.code;
+      T.log("Trade", `'${login}': RFQ ${rfq.id} accept ${side} @ ${net} refused [${code}]`, "warn");
+      setErr({ code, message: r.err.message });
+      if (code === "rfq_expired") {
+        // the request itself lapsed (30 s): a new one is needed
+        setPhase("expired");
+        setRfq(null);
+        setQuote(null);
+      } else {
+        setPhase("live");
+        // a stale price: ask for a fresh one straight away
+        if (rfqRequotable(code)) {
+          setQuote(null);
+          setPollKey((k) => k + 1);
+        }
+      }
+      if (!needsOnboarding(code) && !rfqRequotable(code)) toast.error(t("trader.opt.toast.rejected"), { description: rfqErrorText(code, r.err.message) });
       return;
     }
     setPhase("done");
     setRfq(null);
-    T.log("Trade", `'${login}': RFQ ${rfq.id} accepted ${side} @ ${net} (${r.data.status}${r.data.comboId ? `, combo ${r.data.comboId}` : ""})`);
-    toast.success(t("trader.opt.rfq.toast.filled"), { description: t("trader.opt.rfq.toast.desc", { count: r.data.fills.length || spec.legs.length, price: usd(Math.abs(net) * units.k * spec.qty) }) });
+    // the net actually filled (per strategy unit, per unit of the underlying), else the accepted quote's
+    const filledNet = r.data.net ?? net;
+    T.log("Trade", `'${login}': RFQ ${rfq.id} accepted ${side} @ ${filledNet} (${r.data.status}${r.data.comboId ? `, strategy ${r.data.comboId}` : ""}${r.data.settling ? ", booking" : ""})`);
+    const desc = t("trader.opt.rfq.toast.desc", { count: r.data.fills.length || spec.legs.length, price: usd(Math.abs(filledNet) * units.k * spec.qty) });
+    toast.success(t("trader.opt.rfq.toast.filled"), { description: r.data.settling ? `${desc} · ${t("trader.opt.toast.settling")}` : desc });
     onDone?.(r.data);
   };
 
@@ -214,8 +246,11 @@ export function RfqPanel({ legs, onDone, className, disabled }: { legs: RfqLegSp
           <p className="text-[10.5px] leading-snug text-fg-3">{t("trader.opt.rfq.note")}</p>
         </>
       ) : phase === "requesting" || (phase === "live" && !quote) ? (
-        <div className="flex h-[74px] items-center justify-center gap-2 rounded-[12px] border border-dashed border-line text-[11.5px] text-fg-3">
-          <RefreshCw className="size-3.5 animate-spin" /> {t("trader.opt.rfq.waiting")}
+        <div className="flex min-h-[74px] flex-col items-center justify-center gap-1 rounded-[12px] border border-dashed border-line px-3 py-2 text-center text-[11.5px] text-fg-3">
+          <span className="flex items-center gap-2">
+            <RefreshCw className="size-3.5 animate-spin" /> {t("trader.opt.rfq.waiting")}
+          </span>
+          {rfq?.note && <span className="text-[10.5px] leading-snug text-warn" dir="auto">{rfq.note}</span>}
         </div>
       ) : (
         <>
@@ -239,7 +274,26 @@ export function RfqPanel({ legs, onDone, className, disabled }: { legs: RfqLegSp
           </div>
         </>
       )}
-      {err && <ErrorNote code={err.code} message={err.message} />}
+      {err && (needsOnboarding(err.code) ? <ErrorNote code={err.code} message={err.message} /> : <RfqError code={err.code} message={err.message} live={phase === "live" || phase === "accepting"} onNewPrice={() => (setErr(null), setPollKey((k) => k + 1))} onAskAgain={() => void request()} />)}
+    </div>
+  );
+}
+
+/** A refusal in plain words, with the next step: a fresh price, a new request, or the house ticket's note. */
+function RfqError({ code, message, live, onNewPrice, onAskAgain }: { code: string; message?: string; live: boolean; onNewPrice: () => void; onAskAgain: () => void }) {
+  const t = useT();
+  const requote = rfqRequotable(code);
+  return (
+    <div role="alert" className={cn("rounded-[10px] border px-3 py-2 text-[11.5px] leading-snug", code === "kalks_quoted" ? "border-gold/35 bg-gold-soft text-fg-2" : requote ? "border-warn/35 bg-warn-soft text-fg-2" : "border-down/30 bg-down-soft/60 text-fg-2")} dir="auto">
+      <div className="flex items-start gap-1.5">
+        <TriangleAlert className={cn("mt-px size-3.5 shrink-0", code === "kalks_quoted" ? "text-gold" : requote ? "text-warn" : "text-down")} />
+        <span>{rfqErrorText(code, message)}</span>
+      </div>
+      {(requote || code === "rfq_expired") && (
+        <button onClick={requote && live ? onNewPrice : onAskAgain} className="mt-1.5 inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-line bg-surface-2 px-2.5 text-[11.5px] font-medium text-fg hover:border-fg-3/50">
+          <RefreshCw className="size-3" /> {requote && live ? t("trader.opt.rfq.newPrice") : t("trader.opt.rfq.again")}
+        </button>
+      )}
     </div>
   );
 }

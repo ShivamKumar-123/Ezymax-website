@@ -978,9 +978,18 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
 
   /** Stream notifications: server-side events (SL/TP, pending fills, margin call, stop out…) become toasts. */
   const onNotice = React.useCallback(
-    (login: string, kind: string, message: string) => {
+    (login: string, kind: string, message: string, data?: Record<string, unknown>) => {
       const who = `'${login}': `;
       switch (kind) {
+        case "correction": {
+          log("Trade", `${who}${message}`, "warn");
+          // an options order-book fill the dealing desk cancelled (bust): the trade was reversed, the fee refunded
+          if (data?.options !== true && data?.bust !== true) return;
+          const m = /^([A-Z0-9]{3,12})-\d{8}-([0-9.]+)-([CP])/.exec(String(data?.series ?? ""));
+          const what = m ? `${m[1]} ${m[2]} ${m[3] === "C" ? tr("trader.opt.call") : tr("trader.opt.put")}` : String(data?.series ?? "");
+          toast.warning(tr("trader.opt.bust.title"), { description: tr("trader.opt.bust.text", { what, n: String(data?.contracts ?? "") }), duration: 15_000 });
+          return notify("alert");
+        }
         case "fill":
         case "close":
         case "close_by":
@@ -1062,7 +1071,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
         case "equity":
           return liveStore.setEquity(login, f, cent);
         case "notification":
-          return onNotice(login, f.kind, f.message);
+          return onNotice(login, f.kind, f.message, f.data);
         case "ledger":
           if (!["trade_pnl", "commission", "swap"].includes(f.txn.kind)) log("Account", `'${login}': ${f.txn.kind.replace(/_/g, " ")} ${f.txn.amount >= 0 ? "+" : ""}${(cent ? f.txn.amount / 100 : f.txn.amount).toFixed(2)}`);
           return;

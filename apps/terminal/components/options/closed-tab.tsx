@@ -36,6 +36,7 @@ const REASON_TONE: Record<OptClosed["reason"], string> = {
   knocked_out: "bg-warn-soft text-warn",
   stop_out: "bg-down-soft text-down",
   liquidation: "bg-down-soft text-down",
+  bust: "bg-warn-soft text-warn",
   sl: "bg-down-soft text-down",
   tp: "bg-up-soft text-up",
   dealer: "bg-gold-soft text-gold",
@@ -63,6 +64,10 @@ function useClosedText() {
         const payout = o.usdPerUnit > 0 ? k * o.closePrice * o.usdPerUnit * o.contracts : 0;
         return settled({ fixing: o.fixing ?? null, payout, side: o.side }, digitsOfU(o.option.underlying));
       }
+      // risk control and dealing-desk corrections in plain words
+      if (o.reason === "bust") return t("trader.opt.hist.closedBust", iso({ close }));
+      if (o.reason === "liquidation" && o.fillKind === "backstop") return t("trader.opt.hist.closedBackstop", iso({ close }));
+      if (o.reason === "liquidation" || o.reason === "stop_out") return t("trader.opt.hist.closedRisk", iso({ close }));
       return o.side === "buy" ? t("trader.opt.hist.boughtSold", iso({ open, close })) : t("trader.opt.hist.soldBought", iso({ open, close }));
     },
     [t, settled],

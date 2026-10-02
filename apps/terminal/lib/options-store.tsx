@@ -26,7 +26,7 @@ import { demoBoot } from "@/lib/options/mock-engine";
 import { LINK_UNDERLYING_KEY } from "@/lib/options/mode";
 import { normChain, normQuote, normRow } from "@/lib/options/normalize";
 import { createOptionsStream, type OptFrame, type OptStream, type OptStreamStatus } from "@/lib/options/stream";
-import type { BookTif, ExpiryKind, OptionChain, OptionChainRow, OptionExpiry, OptionQuote, OptionRight, OptionUnderlying, SeriesDepth, Side, TapeTrade } from "@/lib/options/types";
+import type { BarrierSpec, BookTif, ExpiryKind, OptionChain, OptionChainRow, OptionExpiry, OptionQuote, OptionRight, OptionUnderlying, SeriesDepth, Side, TapeTrade } from "@/lib/options/types";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -54,6 +54,8 @@ export interface TicketLeg {
   strikeLabel: string;
   side: Side;
   contracts: number;
+  /** a barrier leg (Kalks-quoted): the strategy is placed on the house ticket, never as an RFQ */
+  barrier?: BarrierSpec;
 }
 
 export interface Ticket {

@@ -27,7 +27,7 @@ import { engineUsd, optionsApi } from "@/lib/options/api";
 import { usdPerQuote, useOptionBook } from "@/lib/options/book";
 import { bookApi } from "@/lib/options/book-api";
 import { usdPerUnitOfQuote } from "@/lib/options/normalize";
-import { errText } from "@/lib/options/errors";
+import { errText, rfqErrorText, rfqRequotable } from "@/lib/options/errors";
 import { detectTemplate } from "@/lib/options/math";
 import { breakevenOf, expiryCash } from "@/lib/options/plain";
 import { setTradeMode } from "@/lib/options/mode";
@@ -143,12 +143,38 @@ export async function closeOptionPosition(T: ReturnType<typeof useTerminal>, t: 
   (pr === undefined || pr >= 0 ? toast.success : toast.error)(part ? t("trader.opt.toast.closedPartial", { count: n! }) : t("trader.opt.toast.closed"), { description: desc });
 }
 
-async function closeCombo(T: ReturnType<typeof useTerminal>, t: ReturnType<typeof useT>, id: string) {
+/**
+ * Close a whole strategy. House strategies close at the house prices; a strategy held on the order book closes through
+ * a reduce-only combo RFQ to the Kalks market maker (`venue: "book"`, the `net` paid or received per strategy unit),
+ * every leg at once or none. Refusals read in plain words; a stale price or no quote offers "Try again".
+ * The engine's money is in the account's currency (USC on cent accounts): shown in USD.
+ */
+async function closeCombo(T: ReturnType<typeof useTerminal>, t: ReturnType<typeof useT>, id: string, legs: OptPosition[]): Promise<void> {
   const r = await optionsApi.closeCombo(T.account.login, id);
-  if (!r.ok) return void toast.error(t("trader.opt.toast.closeRejected"), { description: errText(r.err) });
+  if (!r.ok) {
+    const code = r.err.code;
+    T.log("Trade", `'${T.account.login}': option strategy ${id} close refused [${code}]`, "warn");
+    return void toast.error(t("trader.opt.toast.closeRejected"), {
+      description: rfqErrorText(code, r.err.message),
+      duration: 10_000,
+      action: rfqRequotable(code) ? { label: t("trader.opt.toast.tryAgain"), onClick: () => void closeCombo(T, t, id, legs) } : undefined,
+    });
+  }
+  const d = r.data;
+  const pr = engineUsd(d.profit, T.account.cent);
+  if (d.venue === "book") {
+    // the net per strategy unit (per unit of the underlying) × USD per unit × the strategy's size
+    const usdU = legs.length ? usdUnitOfPosition(legs[0]!, quoteOf(legs[0]!.option.series)) : 0;
+    const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : Math.abs(a));
+    const size = legs.reduce((g, l) => gcd(g, Math.round(l.contracts)), 0) || 1;
+    const amount = d.net !== undefined && usdU > 0 ? Math.abs(d.net) * usdU * size : undefined;
+    T.log("Trade", `'${T.account.login}': option strategy ${id} closed through the order book (RFQ ${d.rfq ?? "?"}, net ${d.net ?? "?"})${d.settling ? ", booking" : ""}`);
+    const pnl = pr !== undefined ? moneySigned(pr) : "—";
+    const desc = amount !== undefined ? t((d.net ?? 0) >= 0 ? "trader.opt.pos.closedNetPaid" : "trader.opt.pos.closedNetGot", iso({ amount: money(amount), pnl })) : pr !== undefined ? `${pnl}` : undefined;
+    return void (pr === undefined || pr >= 0 ? toast.success : toast.error)(t("trader.opt.toast.strategyClosedBook"), { description: d.settling && desc ? `${desc} · ${t("trader.opt.toast.settling")}` : desc });
+  }
   T.log("Trade", `'${T.account.login}': option strategy ${id} closed`);
-  const pr = engineUsd(r.data.profit, T.account.cent);
-  toast.success(t("trader.opt.toast.strategyClosed"), { description: pr !== undefined ? `${usdSigned(pr)} USD` : undefined });
+  (pr === undefined || pr >= 0 ? toast.success : toast.error)(t("trader.opt.toast.strategyClosed"), { description: pr !== undefined ? moneySigned(pr) : undefined });
 }
 
 function PartialClose({ p, onClose, className }: { p: OptPosition; onClose: (n: number) => void; className?: string }) {
@@ -479,7 +505,7 @@ function StrategyCard({ id, legs, readOnly, report, totals, locale }: { id: stri
       </div>
       <div className="mt-auto flex items-center gap-1.5 px-3 pb-2.5 pt-2">
         {!readOnly && (
-          <button disabled={busy} onClick={() => (confirm ? (setConfirm(false), setBusy(true), void closeCombo(T, t, id).finally(() => setBusy(false))) : setConfirm(true))} className={cn("h-8 rounded-[8px] border px-3 text-[12px] font-medium transition-colors disabled:opacity-50", confirm ? "border-down bg-down text-white" : "border-line bg-surface-2 text-fg hover:border-down/50 hover:text-down")}>
+          <button disabled={busy} onClick={() => (confirm ? (setConfirm(false), setBusy(true), void closeCombo(T, t, id, legs).finally(() => setBusy(false))) : setConfirm(true))} className={cn("h-8 rounded-[8px] border px-3 text-[12px] font-medium transition-colors disabled:opacity-50", confirm ? "border-down bg-down text-white" : "border-line bg-surface-2 text-fg hover:border-down/50 hover:text-down")}>
             {confirm ? t("trader.opt.pos.confirmClose") : t("trader.opt.pos.closeStrategy")}
           </button>
         )}

@@ -37,7 +37,8 @@ import { cutWhen, expiryLabel, iso, money, pips, px, usd } from "./format";
 import { commissionOf, OutcomeCard, OutcomeSkeleton } from "./outcome";
 import { PreviewSummary, usePreview } from "./preview";
 import { BookOrderForm } from "./book-ticket";
-import { RfqPanel } from "./rfq";
+import { hasBarrierLeg, RfqPanel } from "./rfq";
+import { KalksQuotedTag } from "./book-bits";
 
 function Label({ children, right, help }: { children: React.ReactNode; right?: React.ReactNode; help?: React.ReactNode }) {
   return (
@@ -226,7 +227,14 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
   const usdPerUnit = useUsdPerUnit(q0);
   const [busy, setBusy] = React.useState(false);
   const [lastErr, setLastErr] = React.useState<{ code: string; message: string } | null>(null);
-  const bookLive = useBookLive();
+  const bookLiveRaw = useBookLive();
+  // barrier options are Kalks-quoted, never on the order book: a strategy with a barrier leg (or one the engine
+  // refused as an RFQ with `kalks_quoted`) is placed on the house ticket, one order at Kalks prices
+  const [houseRoute, setHouseRoute] = React.useState(false);
+  const legKey = legs.map((l) => `${l.series}:${l.side}:${l.contracts}`).join("|");
+  React.useEffect(() => setHouseRoute(false), [legKey]);
+  const barrierLegs = hasBarrierLeg(legs);
+  const bookLive = bookLiveRaw && !barrierLegs && !houseRoute;
   const u = legs[0]?.u;
   const chainOfU = useOpt((s) => (s.chain && s.chain.underlying === u ? s.chain : null));
   const spot = chainOfU?.spot?.mid;
@@ -240,7 +248,7 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
   // a single option shows its numbers once the trader chose Buy or Sell
   const armed = !single || ticket.armed;
   const preview = usePreview(
-    legs.map((l) => ({ series: l.series, u: l.u, right: l.right, strike: l.strike, side: l.side, contracts: l.contracts })),
+    legs.map((l) => ({ series: l.series, u: l.u, right: l.right, strike: l.strike, side: l.side, contracts: l.contracts, barrier: l.barrier })),
     single ? ticket.type : "market",
     limitPremium,
     // a single option on the book previews with the book (./book-ticket)
@@ -281,7 +289,7 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
   const submit = async () => {
     if (blocked || !preview.preview) return;
     const req: OrderRequest = {
-      legs: legs.map((l) => ({ series: l.series, side: l.side, contracts: l.contracts })),
+      legs: legs.map((l) => ({ series: l.series, side: l.side, contracts: l.contracts, ...(l.barrier ? { barrier: l.barrier } : {}) })),
       type: single ? ticket.type : "market",
       limitPremium,
       clientOrderId: `opt${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`,
@@ -415,11 +423,17 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
           ) : T.readOnly ? (
             <ReadOnlyBox />
           ) : (
-            <RfqPanel legs={legs.map((l) => ({ series: l.series, side: l.side, contracts: l.contracts }))} onDone={() => (opt.afterFill(), onDone?.())} />
+            <RfqPanel legs={legs.map((l) => ({ series: l.series, side: l.side, contracts: l.contracts, barrier: !!l.barrier }))} onDone={() => (opt.afterFill(), onDone?.())} onKalksQuoted={() => setHouseRoute(true)} />
           )}
         </>
       ) : (
         <>
+          {bookLiveRaw && (barrierLegs || houseRoute) && (
+            <div className="flex items-start gap-2 rounded-[10px] border border-gold/35 bg-gold-soft px-3 py-2 text-[11.5px] leading-snug text-fg-2" dir="auto">
+              <KalksQuotedTag className="mt-px shrink-0" />
+              <span>{t("trader.opt.rfq.houseNote")}</span>
+            </div>
+          )}
           <Fold title={t("trader.opt.ticket.more")} hint={t("trader.opt.ticket.moreHint")} open={more} onToggle={() => setMore((v) => !v)} active={advancedOn}>
             <div>
               <Label>{t("trader.opt.ticket.orderType")}</Label>

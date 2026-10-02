@@ -24,6 +24,7 @@ import { expiryLabel, pct, usd } from "./format";
 import { PayoffChart } from "./payoff-chart";
 import { PreviewSummary, usePreview } from "./preview";
 import { RfqPanel } from "./rfq";
+import { KalksQuotedTag } from "./book-bits";
 
 interface BLeg {
   id: string;
@@ -109,7 +110,10 @@ function BuilderBody() {
   const ticketLegs = useOpt((s) => s.ticket.legs);
   const publicView = useOpt((s) => s.publicView);
   const tradingSoon = useOpt((s) => s.tradingSoon);
-  const bookLive = useBookLive();
+  const bookLiveRaw = useBookLive();
+  // a strategy the engine refuses as an RFQ with `kalks_quoted` (a barrier leg) is placed at Kalks prices instead
+  const [houseRoute, setHouseRoute] = React.useState(false);
+  const bookLive = bookLiveRaw && !houseRoute;
   const [tpl, setTpl] = React.useState<TemplateId | "custom">("straddle");
   const [width, setWidth] = React.useState(1);
   const [mult, setMult] = React.useState(1);
@@ -160,6 +164,9 @@ function BuilderBody() {
       return row && q ? { ...l, row, q } : null;
     })
     .filter((x): x is NonNullable<typeof x> => !!x);
+  // other legs: ask the book again
+  const legKey = resolved.map((l) => `${l.q.code}:${l.side}:${l.contracts}`).join("|");
+  React.useEffect(() => setHouseRoute(false), [legKey]);
   const usdPerUnit = usdPerUnitOf(chain);
   const pay: PayLeg[] = resolved.map((l) => ({ right: l.right, strike: l.row.strike, side: l.side, contracts: l.contracts, premium: fillOf(l.q, l.side), iv: l.q.iv }));
   const preview = usePreview(
@@ -323,10 +330,17 @@ function BuilderBody() {
             ))}
           </div>
           <PreviewSummary state={preview} digits={chain.digits} />
+          {bookLiveRaw && houseRoute && (
+            <div className="flex items-start gap-2 rounded-[10px] border border-gold/35 bg-gold-soft px-3 py-2 text-[11.5px] leading-snug text-fg-2" dir="auto">
+              <KalksQuotedTag className="mt-px shrink-0" />
+              <span>{t("trader.opt.rfq.houseNote")}</span>
+            </div>
+          )}
           {bookLive && !guest && !T.readOnly && (
             <RfqPanel
               legs={resolved.map((l) => ({ series: l.q.code, side: l.side, contracts: l.contracts }))}
               disabled={dup || !resolved.length}
+              onKalksQuoted={() => setHouseRoute(true)}
               onDone={() => {
                 const name = tpl === "custom" ? t("trader.opt.tpl.custom.name") : t.dyn(`trader.opt.tpl.${tpl}.name`, tpl);
                 T.log("Trade", `'${T.account.login}': option strategy ${name} ${u} ${chain.expiry} filled by RFQ`);

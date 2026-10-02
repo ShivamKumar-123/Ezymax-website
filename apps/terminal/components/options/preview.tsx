@@ -17,7 +17,7 @@ import { useOptionBook } from "@/lib/options/book";
 import { estimatePreview, type EstimateLeg } from "@/lib/options/math";
 import { getOpt, opt, quoteOf, useOpt } from "@/lib/options-store";
 import { reasonCode, reasonText } from "@/lib/options/errors";
-import type { LegInput, OptionChain, OptionRight, Preview, Side } from "@/lib/options/types";
+import type { BarrierSpec, LegInput, OptionChain, OptionRight, Preview, Side } from "@/lib/options/types";
 import { ErrorNote } from "./bits";
 import { greek, pips, px, usd, usdSigned } from "./format";
 import { isMarketOpen } from "@kalks/mock";
@@ -29,6 +29,7 @@ export interface PreviewLegSpec {
   strike: number;
   side: Side;
   contracts: number;
+  barrier?: BarrierSpec;
 }
 
 export interface PreviewState {
@@ -46,7 +47,7 @@ export function usePreview(legs: PreviewLegSpec[], type: "market" | "limit", lim
   const book = useOptionBook(guest ? null : login);
   const [state, setState] = React.useState<PreviewState>({ preview: null, loading: false, error: null });
   const req = React.useMemo(
-    () => ({ legs: legs.map((l): LegInput => ({ series: l.series, side: l.side, contracts: l.contracts })), type, limitPremium: type === "limit" ? limitPremium : undefined }),
+    () => ({ legs: legs.map((l): LegInput => ({ series: l.series, side: l.side, contracts: l.contracts, ...(l.barrier ? { barrier: l.barrier } : {}) })), type, limitPremium: type === "limit" ? limitPremium : undefined }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [JSON.stringify(legs), type, limitPremium],
   );

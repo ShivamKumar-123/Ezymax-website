@@ -5,7 +5,7 @@
 // from the mark's own USD rate when the service leaves them out, and `book` marks a quote that came from the book.
 // Engine answers (orders, fills, previews) are parsed defensively: the engine is new and fields may be added.
 import { defaultPremiumTick, OPTION_SPEC, parseSeriesCode } from "@kalks/mock/options";
-import type { BookFill, BookOrder, BookOrderResult, BookPreview, ChainBook, OptionChain, OptionChainRow, OptionQuote, OptionUnderlying, Rfq, RfqQuote, SeriesDepth, StopTrigger, TapeTrade } from "./types";
+import type { BookFill, BookOrder, BookOrderResult, BookPreview, ChainBook, OptionChain, OptionChainRow, OptionQuote, OptionUnderlying, Rfq, RfqAcceptResult, RfqQuote, SeriesDepth, StopTrigger, TapeTrade } from "./types";
 
 type Obj = Record<string, unknown>;
 
@@ -264,6 +264,8 @@ export function normPreview(raw: unknown, req?: { type: string; side: string; qt
 export function normRfq(raw: unknown): Rfq | null {
   const x = (raw && typeof raw === "object" ? ((raw as Obj).rfq ?? raw) : null) as Obj | null;
   if (!x) return null;
+  // the engine sends the market maker's note next to the request (`{rfq, quotes, note}`)
+  const note = raw && typeof raw === "object" ? str((raw as Obj).note) : undefined;
   const id = str(x.id);
   if (!id) return null;
   return {
@@ -275,6 +277,20 @@ export function normRfq(raw: unknown): Rfq | null {
     }),
     qty: num(x.qty) ?? 1,
     status: str(x.status),
+    note: note ?? str(x.note),
+  };
+}
+
+/** `POST …/rfq/{id}/accept` → `{status: "filled", comboId, net, fills[], settling?}` (ids are numeric strings). */
+export function normRfqAccept(raw: unknown): RfqAcceptResult {
+  const x = (raw && typeof raw === "object" ? raw : {}) as Obj;
+  return {
+    status: str(x.status) ?? "filled",
+    comboId: str(x.comboId),
+    fills: (Array.isArray(x.fills) ? x.fills : []).map((f) => normFill(f)).filter((f): f is BookFill => !!f),
+    net: num(x.net),
+    settling: x.settling === true || undefined,
+    reason: str(x.reason),
   };
 }
 

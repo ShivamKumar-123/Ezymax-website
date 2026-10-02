@@ -10,7 +10,7 @@ import { IS_LIVE } from "@kalks/mock";
 import type { EngineErr } from "@/lib/engine/map";
 import type { Result } from "@/lib/engine/client";
 import { mockBookApi } from "./mock-engine";
-import { normDepth, normFill, normOrder, normOrderResult, normPreview, normRfq, normRfqQuote, normTrade } from "./normalize";
+import { normDepth, normFill, normOrder, normOrderResult, normPreview, normRfq, normRfqAccept, normRfqQuote, normTrade } from "./normalize";
 import type { BookFill, BookOrder, BookOrderRequest, BookOrderResult, BookPreview, CloseResult, Rfq, RfqAcceptResult, RfqLeg, RfqQuote, SeriesDepth, Side, TapeTrade } from "./types";
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
@@ -110,13 +110,7 @@ const liveBookApi: BookApi = {
       rfq: normRfq(d.rfq),
       quotes: (d.quotes ?? []).map(normRfqQuote).filter((q): q is RfqQuote => !!q),
     })),
-  rfqAccept: async (login, id, body) =>
-    map(await call<{ status?: string; comboId?: unknown; fills?: unknown[]; reason?: string }>("POST", `${E}/rfq/${encodeURIComponent(id)}/accept`, { login, body, timeoutMs: 20_000 }), (d) => ({
-      status: d.status ?? "filled",
-      comboId: d.comboId === undefined || d.comboId === null ? undefined : String(d.comboId),
-      fills: (d.fills ?? []).map((f) => normFill(f)).filter((f): f is BookFill => !!f),
-      reason: d.reason,
-    })),
+  rfqAccept: async (login, id, body) => map(await call<unknown>("POST", `${E}/rfq/${encodeURIComponent(id)}/accept`, { login, body, timeoutMs: 20_000 }), normRfqAccept),
   rfqCancel: async (login, id) => map(await call<{ status?: string }>("DELETE", `${E}/rfq/${encodeURIComponent(id)}`, { login }), (d) => ({ status: d.status ?? "cancelled" })),
   depth: async (series) => {
     const r = await call<unknown>("GET", `/api/options/public/book/${encodeURIComponent(series)}`, { timeoutMs: 6_000 });

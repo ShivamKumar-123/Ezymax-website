@@ -405,6 +405,38 @@ export const mockApi: OptionsApi = {
     const b = load(login);
     const legs = b.positions.filter((p) => p.comboId === comboId);
     if (!legs.length) return fail("not_found", "Strategy not found.", 404);
+    // like the engine (docs/OPTIONS-EXCHANGE.md §5): a strategy held on the order book closes through a reduce-only
+    // combo RFQ to the market maker, all legs at once; one with book and Kalks-quoted legs can't close in one go
+    const onBook = legs.filter((p) => p.venue === "book");
+    if (onBook.length && onBook.length < legs.length) return fail("mixed_venue", "This strategy has legs on the order book and Kalks-quoted legs: close them one by one");
+    if (onBook.length) {
+      const gcd = (a: number, c: number): number => (c ? gcd(c, a % c) : Math.abs(a));
+      const size = legs.reduce((g, p) => gcd(g, Math.round(p.contracts)), 0) || 1;
+      const priced = legs.map((p) => {
+        const q = modelQuote(p.option.series);
+        // the market maker buys back what the client sold and buys what the client holds: its bid / ask
+        const px = q ? (p.side === "buy" ? q.bid : q.ask) || q.mark : 0;
+        return { p, q, px };
+      });
+      if (priced.some((x) => !x.q || !(x.px > 0))) return fail("no_liquidity", "The market maker cannot price this strategy right now");
+      if (legs.some((p) => !isMarketOpen(p.option.underlying))) return fail("market_closed", "Market closed.");
+      const rfqId = String(Date.now() % 10_000_000);
+      let net = 0;
+      let total = 0;
+      const out: { ticket: string; dealId: number; profit: number; series: string; price: number; qty: number }[] = [];
+      for (const { p, q, px } of priced) {
+        const k = q!.ask > 0 ? q!.askUsd / q!.ask : q!.mark > 0 ? q!.markUsd / q!.mark : 0;
+        const legProfit = (p.side === "buy" ? 1 : -1) * (px - p.openPrice) * k * p.contracts;
+        // closing a long sells (receives), closing a short buys (pays)
+        net += (p.side === "buy" ? -1 : 1) * px * (p.contracts / size);
+        total += legProfit;
+        recordClose(login, b, p, p.contracts, px, legProfit, commissionOf(q!, p.contracts, px), "client");
+        out.push({ ticket: p.ticket, dealId: dealSeq, profit: +legProfit.toFixed(2), series: p.option.series, price: px, qty: p.contracts });
+      }
+      b.positions = b.positions.filter((p) => p.comboId !== comboId);
+      save(login, b);
+      return ok({ status: "closed", comboId, legs: out, profit: +total.toFixed(2), net: +net.toFixed(8), rfq: rfqId, venue: "book" });
+    }
     let profit = 0;
     for (const p of legs) {
       const q = modelQuote(p.option.series);
@@ -1080,6 +1112,9 @@ export const mockBookApi: BookApi = {
   },
   rfq: async (login, req) => {
     if (login === "guest") return fail("unauthorized", "Log in to a trading account.", 401);
+    // like the engine: barrier legs are Kalks-quoted (house ticket), and every leg is on one underlying
+    if (req.legs.some((l) => l.series.split("-").length > 4)) return fail("kalks_quoted", "Barrier strategies are Kalks-quoted (not order book): use the strategy ticket");
+    if (new Set(req.legs.map((l) => parseSeriesCode(l.series)?.underlying ?? l.series)).size > 1) return fail("rfq_underlyings", "Every leg of a combo must be on the same underlying");
     if (!req.legs.length || req.legs.length > 8 || req.legs.some((l) => !specOfCode(l.series))) return fail("bad_request", "Give 1 to 8 legs.", 422);
     const id = `rfq${Date.now().toString(36)}${++rfqSeq}`;
     const r: DemoRfq = { id, login, expiresAt: new Date(Date.now() + 30_000).toISOString(), legs: req.legs, qty: req.qty, status: "open", quote: null };
@@ -1123,7 +1158,7 @@ export const mockBookApi: BookApi = {
     r.status = "filled";
     const fills = b.fills.filter((f) => f.comboId === comboId);
     save(login, b);
-    return okB({ status: "filled", comboId, fills });
+    return okB({ status: "filled", comboId, fills, net });
   },
   rfqCancel: async (login, id) => {
     const r = rfqs.get(id);

@@ -50,7 +50,16 @@ function OptionHistoryRow({ o, picking }: { o: OptClosed; picking: boolean }) {
   } catch {
     /* keep YYYY-MM-DD */
   }
-  const reasonTone = o.reason === "stop_out" || o.reason === "liquidation" || o.reason === "knocked_out" ? "down" : o.reason === "expired" ? "info" : o.reason === "sl" ? "down" : o.reason === "tp" ? "up" : "neutral";
+  const reasonTone = o.reason === "stop_out" || o.reason === "liquidation" || o.reason === "knocked_out" ? "down" : o.reason === "bust" ? "warn" : o.reason === "expired" ? "info" : o.reason === "sl" ? "down" : o.reason === "tp" ? "up" : "neutral";
+  // risk control and dealing-desk corrections, in plain words (the badge's tooltip)
+  const why =
+    o.reason === "bust"
+      ? t("trader.opt.hist.why.bust")
+      : o.reason === "liquidation" && o.fillKind === "backstop"
+        ? t("trader.opt.hist.why.backstop")
+        : o.reason === "liquidation" || o.reason === "stop_out"
+          ? t("trader.opt.hist.why.risk")
+          : undefined;
   return (
     <tr className="hover:bg-surface-2/70">
       {picking && <Td className="w-7 ps-3" />}
@@ -103,7 +112,13 @@ function OptionHistoryRow({ o, picking }: { o: OptClosed; picking: boolean }) {
       </Td>
       <Td className="text-fg-3">
         <span className="flex items-center gap-1.5">
-          {o.reason === "closed" ? <span className="text-[11px]">{t("trader.opt.hist.reason.closed")}</span> : <Badge tone={reasonTone}>{t.dyn(`trader.opt.hist.reason.${o.reason}`, o.rawReason || o.reason)}</Badge>}
+          {o.reason === "closed" ? (
+            <span className="text-[11px]">{t("trader.opt.hist.reason.closed")}</span>
+          ) : (
+            <span title={why} className={why ? "cursor-help" : undefined}>
+              <Badge tone={reasonTone}>{t.dyn(`trader.opt.hist.reason.${o.reason}`, o.rawReason || o.reason)}</Badge>
+            </span>
+          )}
           {!picking && <OptionShareButton o={o} className="ms-auto" />}
         </span>
       </Td>

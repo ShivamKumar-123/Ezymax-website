@@ -125,7 +125,16 @@ function optionBody(b: Obj, order: boolean): Obj | NextResponse {
     if (typeof l.series !== "string" || !SERIES_RE.test(l.series)) return error(422, "validation", "Invalid series.");
     if (l.side !== "buy" && l.side !== "sell") return error(422, "validation", "Invalid side.");
     if (contracts === undefined || contracts <= 0 || contracts > 100_000) return error(422, "validation", "Invalid contracts.");
-    legs.push({ series: l.series, side: l.side, contracts });
+    const leg: Obj = { series: l.series, side: l.side, contracts };
+    // a barrier leg (Kalks-quoted, house ticket): {kind: UO|DO|UI|DI, level, rebate?}
+    if (l.barrier !== undefined && l.barrier !== null) {
+      const x = l.barrier as Obj;
+      const level = num(x.level);
+      const rebate = x.rebate === undefined || x.rebate === null ? undefined : num(x.rebate);
+      if (!["UO", "DO", "UI", "DI"].includes(String(x.kind)) || level === undefined || level <= 0 || level > 1e9 || (x.rebate !== undefined && x.rebate !== null && (rebate === undefined || rebate < 0))) return error(422, "validation", "Invalid barrier.");
+      leg.barrier = { kind: x.kind, level, ...(rebate !== undefined ? { rebate } : {}) };
+    }
+    legs.push(leg);
   }
   if (new Set(legs.map((l) => l.series)).size !== legs.length) return error(422, "validation", "Each series may appear once.");
   const type = b.type === "limit" ? "limit" : b.type === "market" || b.type === undefined ? "market" : null;

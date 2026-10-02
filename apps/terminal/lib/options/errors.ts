@@ -43,7 +43,29 @@ export const OPTION_ERROR_CODES = [
   "expiry",
   "session_reset",
   "not_found",
+  // combo RFQ and strategy closes (docs/OPTIONS-EXCHANGE.md §5, §14)
+  "series_cancel_only",
+  "series_closed",
+  "rfq_underlyings",
+  "kalks_quoted",
+  "mixed_venue",
+  "book_venue",
 ] as const;
+
+/**
+ * Rejections of a strategy request for quote (or of closing a strategy on the order book) that read better in that
+ * context than the order-book wording: the price was a firm quote from the market maker, not a resting order.
+ */
+const RFQ_ERROR_CODES = ["quote_expired", "price_moved", "rfq_expired", "reduce_only", "self_trade", "no_price", "no_liquidity", "rejected"] as const;
+
+/** A strategy (RFQ / strategy close) rejection in plain words. */
+export function rfqErrorText(code: string, message?: string): string {
+  if ((RFQ_ERROR_CODES as readonly string[]).includes(code)) return tr.dyn(`trader.opt.rfq.err.${code}`, message ?? code);
+  return optionErrorText(code, message);
+}
+
+/** The price only went stale: a fresh quote fixes it (offer "Get a new price"). */
+export const rfqRequotable = (code: string) => code === "quote_expired" || code === "price_moved" || code === "no_price" || code === "no_liquidity";
 
 /** Where a client takes the one quick options step: the 1-minute options intro in the Client Area ("I understand"). */
 export const ONBOARDING_URL = `${CLIENT_AREA}/options`;

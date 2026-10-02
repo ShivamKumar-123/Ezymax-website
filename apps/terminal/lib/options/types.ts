@@ -82,10 +82,21 @@ export interface OptOrder {
   option: OptionInfo;
 }
 
+/** Knock-in / knock-out terms of a barrier leg (Kalks-quoted, never on the order book). */
+export interface BarrierSpec {
+  kind: "UO" | "DO" | "UI" | "DI";
+  /** barrier level, a price of the underlying */
+  level: number;
+  /** cash rebate per unit of the underlying (quote currency) */
+  rebate?: number;
+}
+
 export interface LegInput {
   series: string;
   side: Side;
   contracts: number;
+  /** a barrier leg: the strategy is placed at Kalks prices (house ticket), never as an RFQ */
+  barrier?: BarrierSpec;
 }
 
 export interface PreviewRequest {
@@ -295,6 +306,8 @@ export interface Rfq {
   legs: RfqLeg[];
   qty: number;
   status?: string;
+  /** why the market maker isn't quoting right now (e.g. no price for a leg) */
+  note?: string;
 }
 
 /** A responder's firm quote: net per combo unit, per unit of the underlying (quote currency). */
@@ -311,5 +324,27 @@ export interface RfqAcceptResult {
   status: string;
   comboId?: string;
   fills: BookFill[];
+  /** the net price filled, per strategy unit and per unit of the underlying (quote currency): + paid, − received */
+  net?: number;
+  /** the fills are still being booked on the account (final numbers in a moment) */
+  settling?: boolean;
   reason?: string;
+}
+
+/**
+ * `POST …/combos/{id}/close`. House strategies: `{status, comboId, legs, profit}`. A strategy held on the order book
+ * closes through a reduce-only combo RFQ to the market maker and adds `venue: "book"`, the `net` paid (+) or received
+ * (−) per strategy unit and per unit of the underlying, the `rfq` id and the legs' fills. `profit` is in the account's
+ * currency (USC on cent accounts).
+ */
+export interface ComboCloseResult {
+  status: string;
+  comboId?: string | number;
+  profit?: number;
+  closed?: number[];
+  legs?: { ticket?: number | string; dealId?: number | string; profit?: number; fillId?: string; series?: string; price?: number; qty?: number }[];
+  venue?: "book" | "house" | string;
+  net?: number;
+  rfq?: string;
+  settling?: boolean;
 }

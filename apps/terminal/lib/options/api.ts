@@ -7,7 +7,7 @@
 import { IS_LIVE } from "@kalks/mock";
 import type { EngineErr } from "@/lib/engine/map";
 import type { Result } from "@/lib/engine/client";
-import type { OptionCandles, OptionChain, OptionExpiry, OptionUnderlying, OrderRequest, OrderResult, Preview, PreviewRequest, Settlement } from "./types";
+import type { ComboCloseResult, OptionCandles, OptionChain, OptionExpiry, OptionUnderlying, OrderRequest, OrderResult, Preview, PreviewRequest, Settlement } from "./types";
 import { mockApi } from "./mock-engine";
 
 async function call<T>(method: "GET" | "POST", path: string, opts: { login?: string; body?: unknown; timeoutMs?: number } = {}): Promise<Result<T>> {
@@ -54,7 +54,7 @@ export interface OptionsApi {
   preview: (login: string, req: PreviewRequest, local: () => Preview) => Promise<Result<Preview>>;
   order: (login: string, req: OrderRequest) => Promise<Result<OrderResult>>;
   closePosition: (login: string, ticket: string, contracts?: number) => Promise<Result<{ status: string; profit?: number }>>;
-  closeCombo: (login: string, comboId: string) => Promise<Result<{ status: string; profit?: number; closed?: number[] }>>;
+  closeCombo: (login: string, comboId: string) => Promise<Result<ComboCloseResult>>;
   cancelOrder: (login: string, ticket: string) => Promise<Result<{ status: string }>>;
   settlements: (login: string) => Promise<Result<{ items: Settlement[] }>>;
 }
