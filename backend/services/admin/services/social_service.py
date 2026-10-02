@@ -9,11 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
     User, MasterAccount, TradingAccount, InvestorAllocation,
-    CopyTrade, TradeHistory, Transaction, Position, AccountGroup,
+    CopyTrade, TradeHistory, Transaction, Position,
 )
 from dependencies import write_audit_log
 from packages.common.src.admin_fees import credit_admin_fee
-from packages.common.src.row_locks import lock_account
+from packages.common.src.row_locks import for_update, lock_account, lock_user
 
 
 def _generate_pool_account_number(prefix: str = "PM") -> str:
@@ -110,12 +110,20 @@ async def distribute_pamm_profit(
     ip_address: str | None,
     db: AsyncSession,
 ) -> dict:
+    """Pay each ACTIVE allocation its not-yet-paid share of the pool's
+    realised P&L, minus the performance fee.
+
+    A12 (locking): the MasterAccount row is locked first so two concurrent
+    distributions serialise (the second sees the updated total_profit), then
+    every user involved (investors + the master) in ascending id, then every
+    trading account (investor accounts + the pool) in ascending id — the
+    canonical user → accounts order. All money math is Decimal."""
     master_result = await db.execute(
-        select(MasterAccount).where(
+        for_update(select(MasterAccount).where(
             MasterAccount.id == master_id,
             MasterAccount.master_type == "pamm",
             MasterAccount.status == "approved",
-        )
+        ))
     )
     master = master_result.scalar_one_or_none()
     if not master:
@@ -126,10 +134,12 @@ async def distribute_pamm_profit(
             TradeHistory.account_id == master.account_id
         )
     )
-    master_total_pnl = float(master_pnl_result.scalar() or 0)
+    master_total_pnl = Decimal(str(master_pnl_result.scalar() or 0))
     if master_total_pnl <= 0:
         raise HTTPException(status_code=400, detail="No profit to distribute")
 
+    # Only ACTIVE allocations take part (withdrawn / stopped ones were settled
+    # when they left the pool).
     alloc_result = await db.execute(
         select(InvestorAllocation, TradingAccount)
         .join(TradingAccount, InvestorAllocation.investor_account_id == TradingAccount.id)
@@ -139,45 +149,61 @@ async def distribute_pamm_profit(
     if not allocations:
         raise HTTPException(status_code=400, detail="No active investors in this pool")
 
-    total_pool = sum(float(alloc.allocation_amount or 0) for alloc, _ in allocations)
+    total_pool = sum(
+        (Decimal(str(alloc.allocation_amount or 0)) for alloc, _ in allocations), Decimal("0"),
+    )
     if total_pool <= 0:
         raise HTTPException(status_code=400, detail="No capital in pool")
 
-    perf_fee_pct = float(master.performance_fee_pct or 0)
-    admin_commission_pct = float(master.admin_commission_pct or 0)
+    # ── Canonical lock order: users ascending, then accounts ascending ──
+    user_ids = {alloc.investor_user_id for alloc, _ in allocations if alloc.investor_user_id}
+    if master.user_id:
+        user_ids.add(master.user_id)
+    for uid in sorted(user_ids, key=lambda x: uuid.UUID(str(x))):
+        await lock_user(db, uid)
+    account_ids = {alloc.investor_account_id for alloc, _ in allocations if alloc.investor_account_id}
+    if master.account_id:
+        account_ids.add(master.account_id)
+    locked_accounts: dict = {}
+    for aid in sorted(account_ids, key=lambda x: uuid.UUID(str(x))):
+        locked_accounts[aid] = await lock_account(db, aid)
+
+    q8 = Decimal("0.00000001")
+    perf_fee_pct = Decimal(str(master.performance_fee_pct or 0))
+    admin_commission_pct = Decimal(str(master.admin_commission_pct or 0))
 
     distributions = []
-    total_perf_fee = 0.0
-    total_admin_fee = 0.0
+    total_perf_fee = Decimal("0")
+    total_admin_fee = Decimal("0")
 
-    for alloc, investor_account in allocations:
-        share_pct = float(alloc.allocation_amount or 0) / total_pool
-        gross_due = master_total_pnl * share_pct
-        already_paid = float(alloc.total_profit or 0)
+    for alloc, _unlocked_account in allocations:
+        share = Decimal(str(alloc.allocation_amount or 0)) / total_pool
+        gross_due = master_total_pnl * share
+        already_paid = Decimal(str(alloc.total_profit or 0))
         new_gross = gross_due - already_paid
 
         if new_gross <= 0:
             continue
 
-        perf_fee = new_gross * perf_fee_pct / 100
-        admin_fee = perf_fee * admin_commission_pct / 100
-        net_profit = new_gross - perf_fee
+        perf_fee = (new_gross * perf_fee_pct / Decimal("100")).quantize(q8)
+        admin_fee = (perf_fee * admin_commission_pct / Decimal("100")).quantize(q8)
+        net_profit = (new_gross - perf_fee).quantize(q8)
 
-        # C-TRADE-4 (Medium): lock the investor account before crediting the
-        # settlement so it can't race a concurrent close / transfer / withdrawal.
-        investor_account = await lock_account(db, alloc.investor_account_id)
+        # Credit the LOCKED investor row, never the unlocked join row.
+        investor_account = locked_accounts.get(alloc.investor_account_id)
         if investor_account is None:
             continue
-        investor_account.balance = (investor_account.balance or Decimal("0")) + Decimal(str(round(net_profit, 8)))
+        investor_account.balance = (investor_account.balance or Decimal("0")) + net_profit
         investor_account.equity = investor_account.balance + (investor_account.credit or Decimal("0"))
-        alloc.total_profit = (alloc.total_profit or Decimal("0")) + Decimal(str(round(net_profit, 8)))
+        alloc.total_profit = (alloc.total_profit or Decimal("0")) + net_profit
 
         db.add(Transaction(
             user_id=alloc.investor_user_id,
             account_id=alloc.investor_account_id,
             type="performance_fee",
-            amount=Decimal(str(round(net_profit, 8))),
-            description=f"PAMM profit distribution — {share_pct * 100:.2f}% share",
+            amount=net_profit,
+            balance_after=investor_account.balance,
+            description=f"PAMM profit distribution — {(share * 100):.2f}% share",
             created_by=admin_id,
         ))
 
@@ -186,37 +212,36 @@ async def distribute_pamm_profit(
         distributions.append({
             "allocation_id": str(alloc.id),
             "investor_user_id": str(alloc.investor_user_id),
-            "share_pct": round(share_pct * 100, 2),
-            "gross_profit": round(new_gross, 2),
-            "performance_fee": round(perf_fee, 2),
-            "net_profit": round(net_profit, 2),
+            "share_pct": round(float(share * 100), 2),
+            "gross_profit": round(float(new_gross), 2),
+            "performance_fee": round(float(perf_fee), 2),
+            "net_profit": round(float(net_profit), 2),
         })
 
     master_cut = total_perf_fee - total_admin_fee
     if master_cut > 0:
-        # C-TRADE-4 (Medium): lock the master pool before crediting its cut.
-        master_acct = await lock_account(db, master.account_id)
+        master_acct = locked_accounts.get(master.account_id)
         if master_acct:
-            master_acct.balance = (master_acct.balance or Decimal("0")) + Decimal(str(round(master_cut, 8)))
+            master_acct.balance = (master_acct.balance or Decimal("0")) + master_cut
             master_acct.equity = master_acct.balance + (master_acct.credit or Decimal("0"))
             master_acct.free_margin = master_acct.equity - (master_acct.margin_used or Decimal("0"))
             db.add(Transaction(
                 user_id=master.user_id,
                 account_id=master.account_id,
                 type="ib_commission",
-                amount=Decimal(str(round(master_cut, 8))),
+                amount=master_cut,
                 balance_after=master_acct.balance,
                 description="PAMM manager performance fee earnings",
                 created_by=admin_id,
             ))
 
         # Track master's total fee earned
-        master.total_fee_earned = (master.total_fee_earned or Decimal("0")) + Decimal(str(round(master_cut, 8)))
+        master.total_fee_earned = (master.total_fee_earned or Decimal("0")) + master_cut
 
     # Credit admin platform fee
     if total_admin_fee > 0:
         await credit_admin_fee(
-            db, Decimal(str(round(total_admin_fee, 8))),
+            db, total_admin_fee,
             description=f"Platform commission from PAMM profit distribution (master {master_id})",
         )
 
@@ -226,7 +251,7 @@ async def distribute_pamm_profit(
         new_values={
             "distributions_count": len(distributions),
             "total_distributed": round(total_net, 2),
-            "total_performance_fees": round(total_perf_fee, 2),
+            "total_performance_fees": round(float(total_perf_fee), 2),
         },
         ip_address=ip_address,
     )
@@ -235,8 +260,8 @@ async def distribute_pamm_profit(
     return {
         "message": f"Distributed profit to {len(distributions)} investor(s)",
         "total_distributed": round(total_net, 2),
-        "total_performance_fees": round(total_perf_fee, 2),
-        "total_admin_fees": round(total_admin_fee, 2),
+        "total_performance_fees": round(float(total_perf_fee), 2),
+        "total_admin_fees": round(float(total_admin_fee), 2),
         "distributions": distributions,
     }
 

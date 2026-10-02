@@ -24,7 +24,7 @@ import logging
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import (
@@ -36,6 +36,21 @@ logger = logging.getLogger("ib-engine")
 
 DEFAULT_MLM_DISTRIBUTION = [40, 25, 15, 10, 10]
 
+
+
+async def _accrue_pending_payout(db: AsyncSession, ib_id, amount: Decimal) -> None:
+    """Atomically add to IBProfile.pending_payout.
+
+    A read-modify-write (`ib.pending_payout = ib.pending_payout + x`) loses an
+    increment when two trades accrue to the same IB concurrently (both read the
+    same old value). One SQL UPDATE ... SET pending_payout = pending_payout + x
+    serialises on the row instead."""
+    await db.execute(
+        update(IBProfile)
+        .where(IBProfile.id == ib_id)
+        .values(pending_payout=func.coalesce(IBProfile.pending_payout, 0) + amount)
+        .execution_options(synchronize_session=False)
+    )
 
 async def get_mlm_distribution(db: AsyncSession) -> list[int]:
     result = await db.execute(
@@ -159,7 +174,7 @@ async def distribute_ib_commission(
             status="pending",
         ))
 
-        current_ib.pending_payout = (current_ib.pending_payout or Decimal("0")) + share
+        await _accrue_pending_payout(db, current_ib.id, share)
 
         logger.info(f"IB commission L{level}: ${share:.2f} accrued (pending) to {current_ib.referral_code} ({instrument_symbol} {lots} lots)")
 
@@ -291,7 +306,7 @@ async def distribute_ib_cpa(
         mlm_level=1,
         status="pending",
     ))
-    direct_ib.pending_payout = (direct_ib.pending_payout or Decimal("0")) + amount
+    await _accrue_pending_payout(db, direct_ib.id, amount)
     logger.info(f"IB CPA: ${amount:.2f} accrued (pending) to {direct_ib.referral_code}")
 
 

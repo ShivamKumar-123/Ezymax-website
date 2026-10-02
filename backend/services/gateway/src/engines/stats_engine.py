@@ -17,6 +17,7 @@ from uuid import UUID
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from packages.common.src.instrumentation import spawn
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.engine_lock import engine_lock
 from packages.common.src.models import (
@@ -24,6 +25,7 @@ from packages.common.src.models import (
 )
 from packages.common.src.admin_fees import credit_admin_fee
 from packages.common.src.row_locks import lock_account
+from packages.common.src.money_tx import post_ledger_entry, run_money_unit
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("stats-engine")
@@ -40,7 +42,7 @@ class StatsEngine:
     async def start(self):
         self._running = True
         logger.info("Stats Engine started (interval=%ds)", STATS_INTERVAL)
-        asyncio.create_task(self._run())
+        spawn(self._run(), name="stats_engine")
 
     async def stop(self):
         self._running = False
@@ -67,9 +69,10 @@ class StatsEngine:
                 try:
                     async with engine_lock("stats_mgmt_fee", ttl_seconds=300) as is_leader:
                         if is_leader:
-                            async with AsyncSessionLocal() as db:
-                                await self._collect_management_fees(db)
-                                await db.commit()
+                            # A8: bounded-retry unit with lock/statement
+                            # timeouts; the per-day ledger key makes a
+                            # second worker / a restart a no-op.
+                            await run_money_unit(self._collect_management_fees)
                             self._mgmt_fee_last_run = now
                 except Exception as e:
                     logger.error("Management fee collection error: %s", e, exc_info=True)
@@ -216,7 +219,15 @@ class StatsEngine:
 
         management_fee_pct is annual. Daily charge = (annual_pct / 365) * allocation_amount.
         Deducted from investor account balance, credited to master account.
+
+        A8 — charged at most ONCE per allocation per UTC day, however many
+        gateway workers run this loop or how often the process restarts: the
+        investor's ledger row is posted FIRST with the idempotency key
+        ``mgmt_fee:{allocation}:{YYYY-MM-DD}``; balances only move when that
+        key was newly claimed. Locks: pool + investor accounts in ascending id.
         """
+        today = datetime.now(timezone.utc).date().isoformat()
+        q8 = Decimal("0.00000001")
         result = await db.execute(
             select(MasterAccount).where(
                 MasterAccount.status.in_(["approved", "active"]),
@@ -227,14 +238,8 @@ class StatsEngine:
         masters = result.scalars().all()
 
         for master in masters:
-            daily_rate = float(master.management_fee_pct) / 365 / 100
+            daily_rate = Decimal(str(master.management_fee_pct or 0)) / Decimal("365") / Decimal("100")
             if daily_rate <= 0:
-                continue
-
-            # C-TRADE-4 (Medium): lock the master pool row before crediting the
-            # management-fee share (held for the whole allocations loop below).
-            master_account = await lock_account(db, master.account_id)
-            if not master_account:
                 continue
 
             allocs_q = await db.execute(
@@ -244,16 +249,28 @@ class StatsEngine:
                 )
             )
             allocations = allocs_q.scalars().all()
+            if not allocations:
+                continue
+
+            # Canonical order: every account this master's run touches
+            # (pool + investors), ascending id.
+            account_ids = {master.account_id}
+            account_ids.update(a.investor_account_id for a in allocations if a.investor_account_id)
+            locked: dict = {}
+            for aid in sorted((a for a in account_ids if a), key=lambda x: UUID(str(x))):
+                locked[aid] = await lock_account(db, aid)
+            master_account = locked.get(master.account_id)
+            if not master_account:
+                continue
+
+            admin_pct = Decimal(str(master.admin_commission_pct or 0)) / Decimal("100")
 
             for alloc in allocations:
-                fee = Decimal(str(round(float(alloc.allocation_amount or 0) * daily_rate, 8)))
+                fee = (Decimal(str(alloc.allocation_amount or 0)) * daily_rate).quantize(q8)
                 if fee <= 0:
                     continue
 
-                # C-TRADE-4 (Medium): lock the investor account, then re-check
-                # balance >= fee under the lock before debiting, so the mgmt-fee
-                # debit can't race a concurrent close / transfer / withdrawal.
-                investor_account = await lock_account(db, alloc.investor_account_id)
+                investor_account = locked.get(alloc.investor_account_id)
                 if not investor_account or (investor_account.balance or Decimal("0")) < fee:
                     logger.info(
                         "Skip mgmt fee: insufficient balance investor=%s fee=%s",
@@ -261,37 +278,45 @@ class StatsEngine:
                     )
                     continue
 
-                # Deduct from investor
-                investor_account.balance = (investor_account.balance or Decimal("0")) - fee
-                investor_account.equity = investor_account.balance + (investor_account.credit or Decimal("0"))
-                investor_account.free_margin = investor_account.equity - (investor_account.margin_used or Decimal("0"))
-
-                db.add(Transaction(
+                # Claim today's key BEFORE moving any balance.
+                new_investor_balance = (investor_account.balance or Decimal("0")) - fee
+                claimed = await post_ledger_entry(
+                    db,
+                    idempotency_key=f"mgmt_fee:{alloc.id}:{today}",
                     user_id=alloc.investor_user_id,
                     account_id=investor_account.id,
                     type="commission",
                     amount=-fee,
-                    balance_after=investor_account.balance,
+                    balance_after=new_investor_balance,
                     description=f"Management fee ({master.management_fee_pct}% annual) for managed account",
-                ))
+                )
+                if claimed is None:
+                    logger.info("Mgmt fee already charged today: allocation=%s day=%s", alloc.id, today)
+                    continue
+
+                # Deduct from investor
+                investor_account.balance = new_investor_balance
+                investor_account.equity = investor_account.balance + (investor_account.credit or Decimal("0"))
+                investor_account.free_margin = investor_account.equity - (investor_account.margin_used or Decimal("0"))
 
                 # Credit to master (minus admin cut)
-                admin_pct = float(master.admin_commission_pct or 0) / 100
-                admin_fee = Decimal(str(round(float(fee) * admin_pct, 8)))
+                admin_fee = (fee * admin_pct).quantize(q8)
                 master_share = fee - admin_fee
 
                 master_account.balance = (master_account.balance or Decimal("0")) + master_share
                 master_account.equity = master_account.balance + (master_account.credit or Decimal("0"))
                 master_account.free_margin = master_account.equity - (master_account.margin_used or Decimal("0"))
 
-                db.add(Transaction(
+                await post_ledger_entry(
+                    db,
+                    idempotency_key=f"mgmt_fee_master:{alloc.id}:{today}",
                     user_id=master.user_id,
                     account_id=master_account.id,
                     type="ib_commission",
                     amount=master_share,
                     balance_after=master_account.balance,
                     description=f"Management fee earned from investor allocation {alloc.id}",
-                ))
+                )
 
                 # Credit admin fee to platform
                 if admin_fee > 0:

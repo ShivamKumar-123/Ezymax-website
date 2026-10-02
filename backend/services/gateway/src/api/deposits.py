@@ -2,7 +2,7 @@
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
@@ -19,10 +19,20 @@ from packages.common.src.schemas import (
     TxHashSaveRequest,
     WithdrawalRequest,
 )
+from packages.common.src.schemas.wallet import validate_money_amount
 from packages.common.src.auth import get_current_user, require_full_session
 from ..services import wallet_service, onchain_deposit_service, onchain_withdraw_service
 
 router = APIRouter()
+
+
+def _money(value, *, allow_zero: bool = False) -> Decimal:
+    """A12: Form / ad-hoc amounts get the same validation as the JSON schemas
+    (finite Decimal, > 0, ≤ 10,000,000, ≤ 8 decimals)."""
+    try:
+        return validate_money_amount(value, allow_zero=allow_zero)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 
 @router.post("/deposit/bank-details")
@@ -88,7 +98,7 @@ async def create_manual_deposit(
     return await wallet_service.create_manual_deposit(
         user_id=current_user["user_id"],
         account_id=account_id,
-        amount=amount,
+        amount=_money(amount),
         transaction_id=transaction_id,
         file=file,
         db=db,
@@ -102,20 +112,24 @@ async def create_manual_withdrawal(
     upi_id: str = Form(""),
     payout_notes: str = Form(""),
     file: UploadFile | None = File(None),
+    step_up_challenge_id: str | None = Form(None),
     current_user: dict = Depends(require_full_session),
     db: AsyncSession = Depends(get_db),
 ):
     """Manual UPI / QR-payout withdrawal: user submits UPI ID and/or a QR
     image; goes to admin queue for manual payout. Multipart body.
-    403s with KYC_REQUIRED unless the user's KYC is approved."""
+    403s with KYC_REQUIRED unless the user's KYC is approved.
+    `step_up_challenge_id` (optional form field) is required when
+    WITHDRAWAL_STEP_UP_REQUIRED is on."""
     rate_limit_http(request, "wallet-withdraw-manual", 10, 60.0)
     return await wallet_service.create_manual_withdrawal(
         user_id=current_user["user_id"],
-        amount=amount,
+        amount=_money(amount),
         upi_id=upi_id,
         payout_notes=payout_notes,
         file=file,
         db=db,
+        step_up_challenge_id=step_up_challenge_id,
     )
 
 
@@ -135,7 +149,7 @@ async def create_local_banking_request(
     verified at withdrawal time instead."""
     rate_limit_http(request, "wallet-deposit-lb", 20, 60.0)
     return await wallet_service.create_local_banking_request(
-        amount=amount,
+        amount=_money(amount, allow_zero=True),
         user_id=current_user["user_id"],
         db=db,
     )
@@ -157,7 +171,7 @@ async def confirm_local_banking_payment(
     return await wallet_service.confirm_local_banking_payment(
         deposit_id=deposit_id,
         user_id=current_user["user_id"],
-        amount=amount,
+        amount=_money(amount),
         transaction_id=transaction_id,
         file=file,
         db=db,
@@ -191,11 +205,7 @@ async def create_razorpay_order_on_lb_deposit(
     button after admin has approved the LB request — admin doesn't pick
     an amount, the user picks it here at pay time."""
     raw = body.get("amount") if isinstance(body, dict) else None
-    try:
-        amount = Decimal(str(raw)) if raw is not None else Decimal("0")
-    except Exception:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=400, detail="Invalid amount")
+    amount = _money(raw if raw is not None else "0")
     return await wallet_service.create_razorpay_order_on_lb_deposit(
         deposit_id=deposit_id,
         amount=amount,
@@ -218,23 +228,26 @@ async def get_razorpay_order_meta(
     from ..services import razorpay_service
 
     if not razorpay_service.razorpay_configured():
-        from fastapi import HTTPException
         raise HTTPException(status_code=503, detail="Razorpay is not configured")
 
     q = await db.execute(
         select(Deposit).where(
-            Deposit.transaction_id == order_id,
+            Deposit.razorpay_order_id == order_id,
             Deposit.user_id == current_user["user_id"],
         )
     )
     deposit = q.scalar_one_or_none()
     if not deposit:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Order not found on your account")
 
     from packages.common.src.config import get_settings
-    rate = await razorpay_service.get_usd_to_inr_rate()
-    amount_paise = razorpay_service.usd_to_inr_paise(deposit.amount, rate)
+    # The order was created for a fixed paise amount — report THAT, not a
+    # re-quote at today's FX rate (which would disagree with Checkout).
+    if deposit.razorpay_amount_paise is not None:
+        amount_paise = int(deposit.razorpay_amount_paise)
+    else:
+        rate = await razorpay_service.get_usd_to_inr_rate()
+        amount_paise = razorpay_service.usd_to_inr_paise(deposit.amount, rate)
     return {
         "key_id": get_settings().RAZORPAY_KEY_ID,
         "amount_paise": amount_paise,
@@ -257,7 +270,7 @@ async def create_razorpay_order(
 
     Honours the `Idempotency-Key` header — a network-blip retry of the same
     key returns the same order instead of creating a second Razorpay order."""
-    from packages.common.src.idempotency import get_cached_response, store_response
+    from packages.common.src.idempotency import get_cached_response, store_response, release_claim
 
     cached = await get_cached_response(
         request, scope="deposit_razorpay_order",
@@ -266,12 +279,22 @@ async def create_razorpay_order(
     if cached is not None:
         return cached
 
-    result = await wallet_service.create_razorpay_deposit(
-        amount=req.amount,
-        account_target=req.account_target,
-        user_id=current_user["user_id"],
-        db=db,
-    )
+    # get_cached_response CLAIMED this Idempotency-Key. If the handler fails,
+    # release the claim so the client's retry runs now instead of getting 409
+    # "request in progress" until the claim goes stale (~60 s).
+    try:
+        result = await wallet_service.create_razorpay_deposit(
+            amount=req.amount,
+            account_target=req.account_target,
+            user_id=current_user["user_id"],
+            db=db,
+        )
+    except BaseException:
+        try:
+            await release_claim(request, scope="deposit_razorpay_order", user_id=current_user["user_id"])
+        except Exception:
+            pass
+        raise
     await store_response(
         request, scope="deposit_razorpay_order",
         user_id=current_user["user_id"], response_json=result,
@@ -283,12 +306,15 @@ async def create_razorpay_order(
 @router.post("/deposit/razorpay/verify")
 async def verify_razorpay_deposit(
     req: RazorpayVerifyRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Verify the Razorpay Checkout signature and idempotently credit the
     deposit. Safe to race with the webhook — whichever lands first credits
-    once, the other is a no-op."""
+    once, the other is a no-op. Returns ``status: credited|not_credited``
+    (A3) plus ``credited_now``."""
+    rate_limit_http(request, "wallet-razorpay-verify", 10, 60.0)
     return await wallet_service.verify_and_credit_razorpay(
         razorpay_order_id=req.razorpay_order_id,
         razorpay_payment_id=req.razorpay_payment_id,
@@ -392,6 +418,7 @@ async def create_onchain_withdrawal(
         destination_address=req.destination_address,
         db=db,
         source=req.source,
+        step_up_challenge_id=req.step_up_challenge_id,
     )
 
 

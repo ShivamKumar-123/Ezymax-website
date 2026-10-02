@@ -192,4 +192,7 @@ async def verify_usdt_transfer(
                     "reason": f"awaiting_confs:{confs}/{min_confs}",
                     "final_failure": False}
         return {"ok": True, "confirmations": confs, "reason": None,
-                "final_failure": False}
+                "final_failure": False,
+                # A11: the value actually transferred (base units) so the
+                # verifier credits min(claimed, on-chain) instead of the claim.
+                "value": value}

@@ -7,10 +7,11 @@ and enforces **one bonus per offer per user** (app-level check + a DB unique
 index, migration 0069). A UserBonus row is written for each grant so the amount
 is tracked (for later release / clawback).
 
-DECISION: the bonus is still credited to `main_wallet_balance` and no wagering
-release logic is added in this pass. Making the granted amount non-withdrawable
-(a main-wallet credit bucket + release-after-lots) is tracked as an open item in
-REMEDIATION.md.
+The bonus is credited to `main_wallet_balance` ONCE, here. While the
+UserBonus row is 'active' the amount is excluded from every main-wallet debit
+(money_guards.spendable_main_wallet); wagering release
+(wallet_service.release_bonuses_after_trade) only flips the status — it must
+never credit the amount again (spec A4).
 """
 from __future__ import annotations
 
@@ -83,6 +84,8 @@ async def apply_deposit_bonus(db: AsyncSession, user_row, deposit) -> list[tuple
             amount=amount,
             balance_after=user_row.main_wallet_balance,
             description=f"Bonus: {offer.name} ({offer.percentage or 0}%)",
+            # A1 backstop next to the (user_id, offer_id) unique index.
+            idempotency_key=f"bonus:{user_row.id}:{offer.id}",
         ))
         db.add(UserBonus(
             user_id=user_row.id,

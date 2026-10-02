@@ -13,13 +13,14 @@ from packages.common.src.models import (
     User, IBApplication, IBProfile, IBCommission, Referral,
     IBCommissionPlan, SystemSetting,
     MasterAccount, InvestorAllocation, CopyTrade,
-    TradingAccount, Position, PositionStatus, TradeHistory, Transaction,
+    TradingAccount, Position, PositionStatus, Transaction,
 )
 from packages.common.src.admin_schemas import (
     IBApplicationOut, IBProfileOut, PaginatedResponse,
     MLMConfigOut, MLMConfigIn, UpdateIBCommissionIn, RejectIBIn,
     IBCommissionPlanOut, IBCommissionPlanIn,
 )
+from packages.common.src.row_locks import lock_account
 from dependencies import write_audit_log
 
 
@@ -668,7 +669,7 @@ async def _build_ib_node(ib, db: AsyncSession, depth: int = 0) -> dict:
 
 async def get_unassigned_users(page: int, per_page: int, db: AsyncSession) -> dict:
     """Users who are not referred under any active IB."""
-    from sqlalchemy import not_, exists
+    from sqlalchemy import not_
     subq = select(Referral.referred_id).where(Referral.ib_profile_id.isnot(None)).scalar_subquery()
     query = select(User).where(
         User.role.notin_(["ib", "sub_broker", "admin", "super_admin", "employee"]),
@@ -1043,6 +1044,7 @@ async def approve_ib_payout(
     """Release everything pending for one IB into their live trading account."""
     ib = (await db.execute(
         select(IBProfile).where(IBProfile.id == ib_id).with_for_update()
+        .execution_options(populate_existing=True)
     )).scalar_one_or_none()
     if not ib:
         raise HTTPException(status_code=404, detail="IB not found")
@@ -1050,7 +1052,7 @@ async def approve_ib_payout(
     pending = (await db.execute(
         select(IBCommission).where(
             IBCommission.ib_id == ib_id, IBCommission.status == "pending"
-        ).with_for_update()
+        ).with_for_update().execution_options(populate_existing=True)
     )).scalars().all()
     if not pending:
         raise HTTPException(status_code=400, detail="Nothing pending for this IB")
@@ -1061,13 +1063,17 @@ async def approve_ib_payout(
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Pending total is zero")
 
-    account = (await db.execute(
-        select(TradingAccount).where(
+    account_id = (await db.execute(
+        select(TradingAccount.id).where(
             TradingAccount.user_id == ib.user_id,
             TradingAccount.is_demo == False,  # noqa: E712
             TradingAccount.is_active == True,  # noqa: E712
-        ).limit(1)
+        ).order_by(TradingAccount.created_at.asc()).limit(1)
     )).scalar_one_or_none()
+    # Lock the account row (fresh from the DB) before crediting it — an unlocked
+    # read-modify-write here raced every concurrent trade close / transfer on
+    # the same account and could silently drop the payout or the other change.
+    account = await lock_account(db, account_id) if account_id else None
     if not account:
         raise HTTPException(
             status_code=400,
@@ -1120,6 +1126,7 @@ async def reject_ib_payout(
     """Void everything pending for one IB. Nothing is credited."""
     ib = (await db.execute(
         select(IBProfile).where(IBProfile.id == ib_id).with_for_update()
+        .execution_options(populate_existing=True)
     )).scalar_one_or_none()
     if not ib:
         raise HTTPException(status_code=404, detail="IB not found")
@@ -1127,7 +1134,7 @@ async def reject_ib_payout(
     pending = (await db.execute(
         select(IBCommission).where(
             IBCommission.ib_id == ib_id, IBCommission.status == "pending"
-        ).with_for_update()
+        ).with_for_update().execution_options(populate_existing=True)
     )).scalars().all()
     if not pending:
         raise HTTPException(status_code=400, detail="Nothing pending for this IB")

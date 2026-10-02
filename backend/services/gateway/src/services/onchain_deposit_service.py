@@ -178,8 +178,11 @@ async def confirm_tx_hash(
     if not th or len(th) < 10 or len(th) > 200:
         raise HTTPException(status_code=400, detail="Invalid tx hash")
 
+    # Lock the row: two concurrent confirm calls (or a confirm racing the
+    # verifier) must serialise on it; populate_existing per A2.
+    from packages.common.src.row_locks import for_update
     deposit = (await db.execute(
-        select(Deposit).where(Deposit.id == deposit_id)
+        for_update(select(Deposit).where(Deposit.id == deposit_id))
     )).scalar_one_or_none()
     if not deposit:
         raise HTTPException(status_code=404, detail="Deposit not found")

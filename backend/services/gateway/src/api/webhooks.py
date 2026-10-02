@@ -79,6 +79,15 @@ async def _release_webhook_claim(
         )
 
 
+def _dedup_external_id(external_id: str, raw_body: bytes) -> str:
+    """A9: the webhook dedup key includes a hash of the exact payload, so a
+    byte-identical re-delivery is suppressed while a DIFFERENT callback that
+    happens to share (order, status) is still processed (the handler's own
+    status guard + ledger idempotency key decide what it may do)."""
+    digest = hashlib.sha256(raw_body or b"").hexdigest()[:32]
+    return f"{str(external_id)[:80]}:{digest}"
+
+
 @router.post("/oxapay")
 async def oxapay_webhook(
     request: Request,
@@ -107,8 +116,9 @@ async def oxapay_webhook(
 
     logger.info("OxaPay webhook: order=%s status=%s track=%s", order_id, status, track_id)
 
+    dedup_id = _dedup_external_id(str(order_id), raw_body)
     if not await _claim_webhook(
-        db, provider="oxapay", external_id=str(order_id), status=str(status),
+        db, provider="oxapay", external_id=dedup_id, status=str(status),
         raw_body=raw_body,
     ):
         return {"status": "duplicate"}
@@ -125,7 +135,7 @@ async def oxapay_webhook(
         # Processing failed after the claim was committed — release the claim so
         # the provider's retry re-processes instead of being deduped away.
         await _release_webhook_claim(
-            db, provider="oxapay", external_id=str(order_id), status=str(status),
+            db, provider="oxapay", external_id=dedup_id, status=str(status),
         )
         raise
 
@@ -173,6 +183,9 @@ async def razorpay_webhook(
     )
     order_id = entity.get("order_id")
     payment_id = entity.get("id")
+    # A3: cross-checked against the order we created (paise + INR).
+    captured_amount = entity.get("amount")
+    captured_currency = entity.get("currency")
 
     if not order_id or not payment_id:
         logger.info("Razorpay webhook: missing order_id/payment_id, ignoring")
@@ -185,8 +198,9 @@ async def razorpay_webhook(
 
     # Dedup on the payment id so a re-delivered payment.captured can't
     # double-credit even before the deposit's status guard kicks in.
+    dedup_id = _dedup_external_id(str(payment_id), raw_body)
     if not await _claim_webhook(
-        db, provider="razorpay", external_id=str(payment_id), status="captured",
+        db, provider="razorpay", external_id=dedup_id, status="captured",
         raw_body=raw_body,
     ):
         return {"ok": True}
@@ -196,10 +210,12 @@ async def razorpay_webhook(
             order_id=str(order_id),
             payment_id=str(payment_id),
             db=db,
+            amount_paise=captured_amount,
+            currency=captured_currency,
         )
     except Exception:
         await _release_webhook_claim(
-            db, provider="razorpay", external_id=str(payment_id), status="captured",
+            db, provider="razorpay", external_id=dedup_id, status="captured",
         )
         raise
 

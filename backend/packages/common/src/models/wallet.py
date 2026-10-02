@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    Column, String, Boolean, Integer, DateTime, ForeignKey, Text, Numeric,
+    Column, String, Boolean, Integer, BigInteger, DateTime, ForeignKey, Text, Numeric,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
@@ -62,6 +62,15 @@ class Deposit(Base):
     # KYC then drops in a payment URL here (Razorpay link / bank instructions /
     # UPI VPA / anything). Stays NULL until the admin populates it.
     payment_link = Column(Text, nullable=True)
+    # A3 (migration 0072): Razorpay identifiers live in their own UNIQUE
+    # columns, written ONLY by the server (order id at order creation, payment
+    # id at settlement) and never overwritten. `transaction_id` is no longer
+    # used to find a Razorpay row — a client could put anything there.
+    razorpay_order_id = Column(String(64), nullable=True, unique=True)
+    razorpay_payment_id = Column(String(64), nullable=True, unique=True)
+    # Exact order amount in paise, so the webhook can cross-check what was
+    # actually captured against what we asked Razorpay to charge.
+    razorpay_amount_paise = Column(BigInteger, nullable=True)
     approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     approved_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
@@ -144,6 +153,12 @@ class Transaction(Base):
     description = Column(Text)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    # A1 (migration 0072): ledger idempotency. A credit/debit that must happen
+    # at most once (gateway settlement, daily fee, bonus release marker…)
+    # carries a deterministic key; the UNIQUE index makes a replay a no-op
+    # (see packages.common.src.money_tx.post_ledger_entry). NULL for ordinary
+    # rows — NULLs never collide.
+    idempotency_key = Column(String(160), nullable=True, unique=True)
 
 
 class AdminDepositWallet(Base):

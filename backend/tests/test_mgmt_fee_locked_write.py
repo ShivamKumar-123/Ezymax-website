@@ -40,9 +40,20 @@ class _DB:
 class MgmtFeeLockedWriteTests(unittest.TestCase):
     def setUp(self):
         self._orig = se.lock_account
+        self._orig_post = se.post_ledger_entry
+        self.keys = []
+
+        async def _post(db, *, idempotency_key, **kw):
+            # A8: the fee is now claimed through a ledger idempotency key.
+            if idempotency_key in self.keys:
+                return None
+            self.keys.append(idempotency_key)
+            return uuid4()
+        se.post_ledger_entry = _post
 
     def tearDown(self):
         se.lock_account = self._orig
+        se.post_ledger_entry = self._orig_post
 
     def test_debit_credit_on_locked_rows(self):
         macct_id, inv_id, uid = uuid4(), uuid4(), uuid4()

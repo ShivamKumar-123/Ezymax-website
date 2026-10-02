@@ -1,4 +1,13 @@
-"""Admin Finance Service — deposit/withdrawal listing, approval, rejection, screenshots."""
+"""Admin Finance Service — deposit/withdrawal listing, approval, rejection, screenshots.
+
+Hardening (spec A1/A2/A10/A12): every lock refreshes stale rows
+(``row_locks.for_update``), balance moves carry ledger idempotency keys
+(``deposit:{id}``, ``withdrawal:{id}``, ``withdrawal_refund:{id}``), gateway
+deposits may only be hand-approved from 'manual_review', deposit bonuses go
+through the single dedup-guarded ``apply_deposit_bonus``, and user/admin text
+is HTML-escaped before it reaches an email body."""
+import html as _html
+import logging
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -7,15 +16,39 @@ from pathlib import Path
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from packages.common.src.models import User, TradingAccount, Deposit, Withdrawal, Transaction, BonusOffer
+from packages.common.src.models import User, TradingAccount, Deposit, Withdrawal, Transaction
+from packages.common.src.bonus_service import apply_deposit_bonus
+from packages.common.src.money_guards import assert_not_managed_pool, spendable_main_wallet
+from packages.common.src.money_tx import credit_main_wallet, credit_trading_account
+from packages.common.src.row_locks import for_update
 from packages.common.src.notify import create_notification
 from packages.common.src.email_branding import apply_email_brand
 from packages.common.src.admin_schemas import DepositOut, WithdrawalOut, PaginatedResponse
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
 from packages.common.src.withdrawal_limits import available_to_withdraw
 from dependencies import write_audit_log
+
+logger = logging.getLogger("admin.deposits")
+
+# A10: deposits settled by a payment provider / the chain. An admin may only
+# hand-approve one of these once it has been parked in 'manual_review' (amount
+# mismatch, unverifiable sender, …) — never a 'pending' row, which is simply
+# an invoice the user may not have paid.
+GATEWAY_DEPOSIT_METHODS = frozenset({"oxapay", "razorpay", "wallet_connect", "nowpayments"})
+
+
+def _esc(v) -> str:
+    return _html.escape("" if v is None else str(v))
+
+
+def _normalize_payout_ref(ref: str) -> str:
+    """A11: one canonical form for payout tx hashes / references so the
+    (lower(crypto_tx_hash)) unique index dedupes reliably."""
+    return (ref or "").strip().lower()
+
 
 # C-ADMIN-1: only proof/QR image + PDF uploads may ever be served back, and each
 # with its real content type (never a generic octet-stream that a browser might
@@ -71,7 +104,9 @@ def _withdrawal_to_out(w: Withdrawal, user: User = None) -> WithdrawalOut:
 
 async def list_pending_deposits(page: int, per_page: int, db: AsyncSession,
                                 user_ids: list | None = None):
-    query = select(Deposit).where(Deposit.status == "pending")
+    # A10: gateway deposits parked in 'manual_review' need an admin decision
+    # too, so they surface in the same queue.
+    query = select(Deposit).where(Deposit.status.in_(["pending", "manual_review"]))
     # White-label pool scoping (broker actors); None = unscoped.
     if user_ids is not None:
         query = query.where(Deposit.user_id.in_(user_ids))
@@ -197,7 +232,7 @@ async def set_payment_link(
         )
 
     result = await db.execute(
-        select(Deposit).where(Deposit.id == deposit_id).with_for_update()
+        for_update(select(Deposit).where(Deposit.id == deposit_id))
     )
     deposit = result.scalar_one_or_none()
     if not deposit:
@@ -254,7 +289,7 @@ async def set_payment_link(
             <p>We've reviewed your deposit request and attached a payment link below.
             Click through to complete payment with your bank or card. Once you've paid,
             our team will confirm and your wallet will be credited.</p>
-            {('<p><em>' + note + '</em></p>') if note else ''}
+            {('<p><em>' + _esc(note) + '</em></p>') if note else ''}
             """
             html = render_layout(
                 title="Your deposit payment link is ready",
@@ -282,6 +317,24 @@ async def set_payment_link(
     }
 
 
+def _cpa_min_deposit() -> Decimal:
+    from packages.common.src.config import get_settings
+    raw = getattr(get_settings(), "IB_CPA_MIN_DEPOSIT_USD", "0") or "0"
+    try:
+        v = Decimal(str(raw))
+    except Exception:
+        return Decimal("0")
+    return v if v.is_finite() and v > 0 else Decimal("0")
+
+
+def _approvable_deposit_status(deposit) -> bool:
+    """A10: manual methods are approvable while 'pending'; gateway methods
+    ONLY once parked in 'manual_review'."""
+    if (deposit.method or "") in GATEWAY_DEPOSIT_METHODS:
+        return deposit.status == "manual_review"
+    return deposit.status == "pending"
+
+
 async def approve_deposit(
     deposit_id: uuid.UUID, admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
 ) -> dict:
@@ -289,13 +342,24 @@ async def approve_deposit(
     # moment can't both flip pending → approved and credit twice. The
     # status guard below then makes the second one fail cleanly.
     result = await db.execute(
-        select(Deposit).where(Deposit.id == deposit_id).with_for_update()
+        for_update(select(Deposit).where(Deposit.id == deposit_id))
     )
     deposit = result.scalar_one_or_none()
     if not deposit:
         raise HTTPException(status_code=404, detail="Deposit not found")
-    if deposit.status != "pending":
+    if not _approvable_deposit_status(deposit):
+        if (deposit.method or "") in GATEWAY_DEPOSIT_METHODS and deposit.status == "pending":
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "This deposit is settled by its payment provider; it can only be "
+                    "approved manually once it is in manual review."
+                ),
+            )
         raise HTTPException(status_code=400, detail="Deposit is not pending")
+    amount = Decimal(str(deposit.amount or 0))
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Deposit amount must be greater than zero")
 
     deposit.status = "approved"
     deposit.approved_by = admin_id
@@ -304,7 +368,7 @@ async def approve_deposit(
     # Lock the user row too — concurrent transactions touching
     # main_wallet_balance must serialise to avoid lost-update writes.
     user_q = await db.execute(
-        select(User).where(User.id == deposit.user_id).with_for_update()
+        for_update(select(User).where(User.id == deposit.user_id))
     )
     user_row = user_q.scalar_one_or_none()
     if not user_row:
@@ -316,108 +380,68 @@ async def approve_deposit(
     wallet_acc = None
     if getattr(deposit, "account_id", None):
         tagged_q = await db.execute(
-            select(TradingAccount).where(
+            for_update(select(TradingAccount).where(
                 TradingAccount.id == deposit.account_id,
                 TradingAccount.user_id == deposit.user_id,
                 TradingAccount.is_active.is_(True),
-            ).with_for_update().limit(1)
+            ).limit(1))
         )
         wallet_acc = tagged_q.scalar_one_or_none()
     if wallet_acc is None:
         wallet_acc_q = await db.execute(
-            select(TradingAccount).where(
+            for_update(select(TradingAccount).where(
                 TradingAccount.user_id == deposit.user_id,
                 TradingAccount.is_wallet_account.is_(True),
                 TradingAccount.is_active.is_(True),
-            ).with_for_update().limit(1)
+            ).limit(1))
         )
         wallet_acc = wallet_acc_q.scalar_one_or_none()
 
+    # A1: the credit claims ledger key deposit:{id}; a replay is a no-op.
     if wallet_acc is not None:
-        wallet_acc.balance = (wallet_acc.balance or Decimal("0")) + deposit.amount
-        wallet_acc.equity = (wallet_acc.equity or Decimal("0")) + deposit.amount
-        wallet_acc.free_margin = (wallet_acc.free_margin or Decimal("0")) + deposit.amount
-        db.add(
-            Transaction(
-                user_id=deposit.user_id,
-                account_id=wallet_acc.id,
-                type="deposit",
-                amount=deposit.amount,
-                balance_after=wallet_acc.balance,
-                reference_id=deposit.id,
-                description=f"Deposit to wallet account - {deposit.method or 'manual'}",
-                created_by=admin_id,
-            )
+        credited = await credit_trading_account(
+            db, wallet_acc, amount,
+            user_id=deposit.user_id,
+            idempotency_key=f"deposit:{deposit.id}",
+            type="deposit",
+            reference_id=deposit.id,
+            description=f"Deposit to wallet account - {deposit.method or 'manual'}",
+            created_by=admin_id,
         )
     else:
-        user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + deposit.amount
-        db.add(
-            Transaction(
-                user_id=deposit.user_id,
-                account_id=None,
-                type="deposit",
-                amount=deposit.amount,
-                balance_after=user_row.main_wallet_balance,
-                reference_id=deposit.id,
-                description=f"Deposit to main wallet - {deposit.method or 'manual'}",
-                created_by=admin_id,
-            )
+        credited = await credit_main_wallet(
+            db, user_row, amount,
+            idempotency_key=f"deposit:{deposit.id}",
+            type="deposit",
+            reference_id=deposit.id,
+            description=f"Deposit to main wallet - {deposit.method or 'manual'}",
+            created_by=admin_id,
         )
+    if not credited:
+        raise HTTPException(status_code=409, detail="This deposit has already been credited")
 
     # CPA to the referring IB, if their plan carries one. This is the only
     # trigger for it: the commission engine was previously only ever called
     # from the fill path, so IBCommissionPlan.cpa_per_deposit could be set in
-    # admin and would never pay anything. Charged once per referred trader.
+    # admin and would never pay anything. Charged once per referred trader,
+    # and (A12) only for a deposit of at least IB_CPA_MIN_DEPOSIT_USD.
     # Best-effort — a CPA problem must never block crediting a deposit.
-    try:
-        from packages.common.src.ib_commission import distribute_ib_cpa
-        await distribute_ib_cpa(db, deposit.user_id, deposit.amount)
-    except Exception as _cpa_exc:
-        import logging as _lg
-        _lg.getLogger("admin-deposits").error(
-            "IB CPA accrual failed for deposit %s: %s", deposit.id, _cpa_exc
-        )
+    if amount >= _cpa_min_deposit():
+        try:
+            from packages.common.src.ib_commission import distribute_ib_cpa
+            await distribute_ib_cpa(db, deposit.user_id, amount)
+        except Exception as _cpa_exc:
+            logger.error("IB CPA accrual failed for deposit %s: %s", deposit.id, _cpa_exc)
 
-    bonus_msg = ""
-    applied_bonuses: list[tuple[str, Decimal]] = []
-    now = datetime.utcnow()
-    offers_q = await db.execute(
-        select(BonusOffer).where(
-            BonusOffer.is_active == True,
-            BonusOffer.bonus_type.in_(["deposit", "welcome"]),
-            BonusOffer.min_deposit <= deposit.amount,
-        )
+    # H-MONEY-2 / A4: the single, dedup-guarded bonus implementation (one
+    # grant per offer per user, recorded as an outstanding UserBonus so it
+    # stays non-withdrawable until released). The inline copy that used to
+    # live here granted every offer on every approved deposit and never
+    # recorded a UserBonus row.
+    applied_bonuses = await apply_deposit_bonus(db, user_row, deposit)
+    bonus_msg = "".join(
+        f" + ${float(a):.2f} bonus ({n})" for n, a in applied_bonuses
     )
-    for offer in offers_q.scalars().all():
-        if offer.starts_at and offer.starts_at > now:
-            continue
-        if offer.expires_at and offer.expires_at < now:
-            continue
-
-        if offer.percentage and offer.percentage > 0:
-            bonus_amount = deposit.amount * offer.percentage / Decimal("100")
-        elif offer.fixed_amount and offer.fixed_amount > 0:
-            bonus_amount = offer.fixed_amount
-        else:
-            continue
-
-        if offer.max_bonus and bonus_amount > offer.max_bonus:
-            bonus_amount = offer.max_bonus
-
-        user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + bonus_amount
-        db.add(
-            Transaction(
-                user_id=deposit.user_id,
-                account_id=None,
-                type="bonus",
-                amount=bonus_amount,
-                balance_after=user_row.main_wallet_balance,
-                description=f"Bonus: {offer.name} ({offer.percentage or 0}%)",
-                created_by=admin_id,
-            )
-        )
-        bonus_msg = f" + ${float(bonus_amount):.2f} bonus ({offer.name})"
-        applied_bonuses.append((offer.name, bonus_amount))
 
     await write_audit_log(
         db, admin_id, "approve_deposit", "deposit", deposit_id,
@@ -432,7 +456,8 @@ async def approve_deposit(
         deposit.user_id,
         title="Deposit approved",
         message=(
-            f"Your deposit of ${float(deposit.amount):,.2f} was approved and added to your main wallet.{bonus_msg}"
+            f"Your deposit of ${float(deposit.amount):,.2f} was approved and added to your "
+            f"{'wallet account' if wallet_acc is not None else 'main wallet'}.{bonus_msg}"
         ),
         notif_type="deposit",
         action_url="/wallet",
@@ -473,9 +498,7 @@ async def approve_deposit(
                 )
                 fire_and_forget(send_email(user_row.email, bsubject, bhtml, text=btext))
     except Exception as _e:
-        # Logger isn't always imported at module top here; deferred lookup.
-        import logging as _logging
-        _logging.getLogger("admin.deposit").warning("deposit email failed: %s", _e)
+        logger.warning("deposit email failed: %s", _e)
     return {"message": f"Deposit approved successfully{bonus_msg}"}
 
 
@@ -486,12 +509,13 @@ async def reject_deposit(
     # Phase 3: lock the row like approve_deposit does, so a reject can't race a
     # concurrent approve/auto-approve (both passing the pending check).
     result = await db.execute(
-        select(Deposit).where(Deposit.id == deposit_id).with_for_update()
+        for_update(select(Deposit).where(Deposit.id == deposit_id))
     )
     deposit = result.scalar_one_or_none()
     if not deposit:
         raise HTTPException(status_code=404, detail="Deposit not found")
-    if deposit.status != "pending":
+    # A10: a gateway deposit parked in manual_review can be rejected too.
+    if deposit.status not in ("pending", "manual_review"):
         raise HTTPException(status_code=400, detail="Deposit is not pending")
 
     deposit.status = "rejected"
@@ -526,7 +550,7 @@ async def approve_withdrawal(
     # "not pending" on the second click; the user row + account row are
     # then locked so balance reads are consistent with the debit.
     result = await db.execute(
-        select(Withdrawal).where(Withdrawal.id == withdrawal_id).with_for_update()
+        for_update(select(Withdrawal).where(Withdrawal.id == withdrawal_id))
     )
     withdrawal = result.scalar_one_or_none()
     if not withdrawal:
@@ -542,11 +566,16 @@ async def approve_withdrawal(
 
     if withdrawal.account_id:
         acc_q = await db.execute(
-            select(TradingAccount).where(TradingAccount.id == withdrawal.account_id).with_for_update()
+            for_update(select(TradingAccount).where(TradingAccount.id == withdrawal.account_id))
         )
         account = acc_q.scalar_one_or_none()
+        if account is None and not already_debited:
+            # Never approve a payout that can't be debited from its source.
+            raise HTTPException(status_code=400, detail="Withdrawal source account not found")
         if account:
             if not already_debited:
+                # B1: a managed (PAMM/MAM) pool holds investor capital.
+                await assert_not_managed_pool(db, account.id)
                 # C-MONEY-3: withdrawable = balance − margin_used (capped by
                 # free_margin), NOT the raw balance — otherwise an admin approval
                 # could pull out funds collateralising open positions and push the
@@ -577,19 +606,25 @@ async def approve_withdrawal(
                 reference_id=withdrawal.id,
                 description=f"Withdrawal approved - {withdrawal.method or 'manual'}",
                 created_by=admin_id,
+                idempotency_key=f"withdrawal:{withdrawal.id}",  # A1 backstop
             )
             db.add(txn)
     else:
         uw = await db.execute(
-            select(User).where(User.id == withdrawal.user_id).with_for_update()
+            for_update(select(User).where(User.id == withdrawal.user_id))
         )
         user_row = uw.scalar_one_or_none()
         if not user_row:
             raise HTTPException(status_code=400, detail="User not found")
         if not already_debited:
             main_bal = user_row.main_wallet_balance or Decimal("0")
-            if main_bal < withdrawal.amount:
-                raise HTTPException(status_code=400, detail="Insufficient main wallet balance")
+            # A5: an approval may only pay out the spendable balance
+            # (main - outstanding bonus), never un-released bonus credit.
+            if await spendable_main_wallet(db, user_row) < withdrawal.amount:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Insufficient main wallet balance (bonus credit is not withdrawable)",
+                )
             user_row.main_wallet_balance = main_bal - withdrawal.amount
         db.add(
             Transaction(
@@ -601,6 +636,7 @@ async def approve_withdrawal(
                 reference_id=withdrawal.id,
                 description=f"Withdrawal approved (main wallet) - {withdrawal.method or 'manual'}",
                 created_by=admin_id,
+                idempotency_key=f"withdrawal:{withdrawal.id}",  # A1 backstop
             )
         )
 
@@ -667,7 +703,7 @@ async def reject_withdrawal(
     # Row-lock so the refund branch (below) is safe against a concurrent
     # approve on the same row.
     result = await db.execute(
-        select(Withdrawal).where(Withdrawal.id == withdrawal_id).with_for_update()
+        for_update(select(Withdrawal).where(Withdrawal.id == withdrawal_id))
     )
     withdrawal = result.scalar_one_or_none()
     if not withdrawal:
@@ -686,9 +722,9 @@ async def reject_withdrawal(
     if (withdrawal.method or "") == "wallet_connect":
         if withdrawal.account_id:
             acc_q = await db.execute(
-                select(TradingAccount).where(
+                for_update(select(TradingAccount).where(
                     TradingAccount.id == withdrawal.account_id
-                ).with_for_update()
+                ))
             )
             acc = acc_q.scalar_one_or_none()
             if acc is not None:
@@ -706,11 +742,12 @@ async def reject_withdrawal(
                         reference_id=withdrawal.id,
                         description="Withdrawal rejected — wallet account refunded",
                         created_by=admin_id,
+                        idempotency_key=f"withdrawal_refund:{withdrawal.id}",
                     )
                 )
         else:
             uw = await db.execute(
-                select(User).where(User.id == withdrawal.user_id).with_for_update()
+                for_update(select(User).where(User.id == withdrawal.user_id))
             )
             user_row = uw.scalar_one_or_none()
             if user_row:
@@ -727,6 +764,7 @@ async def reject_withdrawal(
                         reference_id=withdrawal.id,
                         description="Withdrawal rejected — main wallet refunded",
                         created_by=admin_id,
+                        idempotency_key=f"withdrawal_refund:{withdrawal.id}",
                     )
                 )
 
@@ -794,12 +832,15 @@ async def mark_withdrawal_paid(
     completed_at so the user sees an explorer-linkable hash in their
     transaction history.
     """
-    tx_hash = (tx_hash or "").strip()
+    # A11: canonical (trimmed, lower-case) hash, unique across withdrawals.
+    tx_hash = _normalize_payout_ref(tx_hash)
     if not tx_hash:
         raise HTTPException(status_code=400, detail="tx_hash is required")
+    if len(tx_hash) > 200:
+        raise HTTPException(status_code=400, detail="tx_hash is too long")
 
     result = await db.execute(
-        select(Withdrawal).where(Withdrawal.id == withdrawal_id).with_for_update()
+        for_update(select(Withdrawal).where(Withdrawal.id == withdrawal_id))
     )
     withdrawal = result.scalar_one_or_none()
     if not withdrawal:
@@ -808,6 +849,18 @@ async def mark_withdrawal_paid(
         raise HTTPException(
             status_code=400,
             detail=f"Withdrawal must be 'approved' before marking paid (current: {withdrawal.status})",
+        )
+
+    reused = (await db.execute(
+        select(Withdrawal.id).where(
+            func.lower(Withdrawal.crypto_tx_hash) == tx_hash,
+            Withdrawal.id != withdrawal.id,
+        ).limit(1)
+    )).first()
+    if reused is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="This transaction hash is already recorded on another withdrawal",
         )
 
     withdrawal.crypto_tx_hash = tx_hash
@@ -832,7 +885,15 @@ async def mark_withdrawal_paid(
         action_url="/wallet",
         commit=False,
     )
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # uq_withdrawals_tx_hash caught a concurrent re-use of the hash.
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="This transaction hash is already recorded on another withdrawal",
+        )
 
     # Payout email — fire-and-forget. Falls back to a plain email if no
     # dedicated template exists for paid withdrawals yet.
@@ -844,12 +905,12 @@ async def mark_withdrawal_paid(
         if smtp_configured() and u and u.email:
             subject = f"Your withdrawal of ${float(withdrawal.amount):,.2f} has been paid"
             html = (
-                f"<p>Hi {u.first_name or 'Trader'},</p>"
+                f"<p>Hi {_esc(u.first_name or 'Trader')},</p>"
                 f"<p>Your withdrawal request has been processed and the funds have been sent.</p>"
                 f"<ul>"
                 f"<li><strong>Amount:</strong> ${float(withdrawal.amount):,.2f}</li>"
-                f"<li><strong>Method:</strong> {withdrawal.method or 'manual'}</li>"
-                f"<li><strong>Reference / TX:</strong> {tx_hash}</li>"
+                f"<li><strong>Method:</strong> {_esc(withdrawal.method or 'manual')}</li>"
+                f"<li><strong>Reference / TX:</strong> {_esc(tx_hash)}</li>"
                 f"</ul>"
                 f"<p>If you don't see the funds within the expected confirmation window, "
                 f"contact support and quote request ID {withdrawal.id}.</p>"
@@ -951,7 +1012,7 @@ async def approve_with_razorpay(
     """
     _ = amount_override  # unused — see docstring
     result = await db.execute(
-        select(Deposit).where(Deposit.id == deposit_id).with_for_update()
+        for_update(select(Deposit).where(Deposit.id == deposit_id))
     )
     deposit = result.scalar_one_or_none()
     if not deposit:
@@ -965,10 +1026,6 @@ async def approve_with_razorpay(
         raise HTTPException(status_code=400, detail="Deposit is not pending")
 
     deposit.payment_link = "razorpay:awaiting"
-
-    user_row = (
-        await db.execute(select(User).where(User.id == deposit.user_id))
-    ).scalar_one_or_none()
 
     await create_notification(
         db, deposit.user_id,

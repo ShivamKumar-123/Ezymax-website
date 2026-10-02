@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from typing import Optional
 
 import httpx
 
@@ -222,4 +221,7 @@ async def verify_usdt_transfer(
                             "final_failure": True}
 
         return {"ok": True, "confirmations": confs, "reason": None,
-                "final_failure": False}
+                "final_failure": False,
+                # A11: the value actually transferred (base units) so the
+                # verifier credits min(claimed, on-chain) instead of the claim.
+                "value": value}

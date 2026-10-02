@@ -18,7 +18,18 @@ order", not "always lock every row". Skipping is fine; reordering is not.
 When in doubt, mirror
 `services/admin/services/deposit_service.approve_deposit` — the
 canonical reference (Deposit → User → tagged TradingAccount, all with
-`with_for_update()`)."""
+`with_for_update()`).
+
+Hardening (spec A1/A2/A5, B1/B2):
+  * every lock goes through ``row_locks.for_update`` / ``lock_user`` /
+    ``lock_account`` so it refreshes stale identity-map copies
+    (``populate_existing``);
+  * gateway credits go through ``money_tx`` with a ledger idempotency key;
+  * main-wallet debits are capped at ``money_guards.spendable_main_wallet``
+    (balance − outstanding bonus);
+  * withdrawal / transfer-out sources must be active and must not be a
+    managed (PAMM/MAM) pool."""
+import html as _html
 import logging
 import uuid as uuid_lib
 from pathlib import Path
@@ -31,7 +42,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
-    BankAccount, BonusOffer, Deposit, Transaction, TradingAccount, User,
+    BankAccount, Deposit, Transaction, TradingAccount, User,
     UserBonus, Withdrawal,
 )
 from packages.common.src.notify import create_notification
@@ -39,7 +50,12 @@ from packages.common.src.config import get_settings
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
 from packages.common.src.email_branding import apply_email_brand
 from packages.common.src.withdrawal_limits import available_to_withdraw
-from packages.common.src.bonus_service import apply_deposit_bonus, outstanding_bonus
+from packages.common.src.bonus_service import apply_deposit_bonus
+from packages.common.src.money_guards import assert_transfer_out_allowed, spendable_main_wallet
+from packages.common.src.money_tx import (
+    credit_main_wallet, credit_trading_account, post_ledger_entry,
+)
+from packages.common.src.row_locks import for_update, lock_account, lock_user
 from . import oxapay_service, razorpay_service
 
 logger = logging.getLogger("wallet_service")
@@ -111,11 +127,11 @@ async def _credit_from_deposit_row(db, deposit, user_row):
     if getattr(deposit, "account_id", None):
         from packages.common.src.models import TradingAccount as _TA
         acc = (await db.execute(
-            select(_TA).where(
+            for_update(select(_TA).where(
                 _TA.id == deposit.account_id,
                 _TA.user_id == deposit.user_id,
                 _TA.is_active.is_(True),
-            ).with_for_update().limit(1)
+            ).limit(1))
         )).scalar_one_or_none()
         if acc is not None:
             return ("trading", acc)
@@ -125,7 +141,95 @@ async def _credit_from_deposit_row(db, deposit, user_row):
             "Deposit %s tagged account_id=%s no longer active; falling back to resolver",
             deposit.id, deposit.account_id,
         )
-    return await _resolve_credit_target(db, deposit.user_id)
+    kind, row = await _resolve_credit_target(db, deposit.user_id)
+    if kind == "trading" and row is not None:
+        # The resolver's lookup is unlocked — re-take it FOR UPDATE (A2) so
+        # the credit can't lost-update a concurrent debit on the account.
+        locked = await lock_account(db, row.id, user_id=deposit.user_id)
+        if locked is not None:
+            return ("trading", locked)
+        return ("main_wallet", user_row)
+    # Always hand back the caller's LOCKED user row, never an unlocked copy.
+    return ("main_wallet", user_row if user_row is not None else row)
+
+
+async def _apply_gateway_credit(
+    db, deposit, user_row, *, idempotency_key: str, label: str,
+    amount: Decimal | None = None,
+) -> tuple[bool, str]:
+    """A1: credit a gateway deposit through the ledger idempotency key.
+
+    Caller holds the Deposit lock and the User lock (in that order). Resolves
+    the credit target (tagged/wallet account or main wallet), then moves the
+    balance only if ``idempotency_key`` was newly claimed. Returns
+    ``(credited, target_kind)``; ``credited`` is False on a replay."""
+    amt = Decimal(str(amount if amount is not None else deposit.amount))
+    target_kind, target_row = await _credit_from_deposit_row(db, deposit, user_row)
+    if target_kind == "trading":
+        credited = await credit_trading_account(
+            db, target_row, amt,
+            user_id=deposit.user_id,
+            idempotency_key=idempotency_key,
+            type="deposit",
+            reference_id=deposit.id,
+            description=f"Deposit to wallet account - {label} (auto)",
+        )
+    else:
+        credited = await credit_main_wallet(
+            db, target_row, amt,
+            idempotency_key=idempotency_key,
+            type="deposit",
+            reference_id=deposit.id,
+            description=f"Deposit to main wallet - {label} (auto)",
+        )
+    return credited, target_kind
+
+
+async def enforce_withdrawal_step_up(db, user_id, challenge_id) -> None:
+    """D3 wiring: when WITHDRAWAL_STEP_UP_REQUIRED is on, consume a verified,
+    single-use step-up challenge inside the caller's withdrawal transaction
+    (it rolls back with the withdrawal if anything later fails). Lazy import
+    so the wallet module never depends on the auth module at import time."""
+    if not getattr(get_settings(), "WITHDRAWAL_STEP_UP_REQUIRED", False):
+        return
+    from .sensitive_action_service import consume_withdrawal_step_up
+    await consume_withdrawal_step_up(db, user_id, challenge_id)
+
+
+async def lock_withdrawal_source(db, user_id, preference: str | None = None):
+    """Lock everything a withdrawal / transfer-out needs, in canonical order,
+    and validate the source (A2, B1, B2).
+
+    Returns ``(user_row, source_kind, source_row)`` where source_kind is
+    "trading" (wallet-bound account, LOCKED) or "main_wallet" (source_row is
+    the locked user). Raises 404 when the user is gone, 409 for an inactive
+    source or a managed (PAMM/MAM) pool."""
+    user_row = await lock_user(db, user_id)
+    if user_row is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    pref = (preference or "").strip().lower() or None
+    if pref == "main":
+        return user_row, "main_wallet", user_row
+    from .account_service import get_wallet_account
+    wallet_acc = await get_wallet_account(user_id, db)
+    if wallet_acc is None:
+        return user_row, "main_wallet", user_row
+    account = await lock_account(db, wallet_acc.id, user_id=user_id)
+    # B1/B2: active, not a managed pool, not an actively-copied sub-account.
+    await assert_transfer_out_allowed(db, account)
+    return user_row, "trading", account
+
+
+def _withdrawable(source_kind: str, source_row, spendable_main: Decimal | None) -> Decimal:
+    if source_kind == "trading":
+        # C-MONEY-3 / H-MONEY-1: only funds NOT backing open positions.
+        return available_to_withdraw(
+            "trading",
+            balance=source_row.balance,
+            margin_used=source_row.margin_used,
+            free_margin=source_row.free_margin,
+        )
+    return spendable_main if spendable_main is not None else Decimal("0")
 
 
 async def _resolve_deposit_target_account_id(db, user_id, target: str | None):
@@ -219,6 +323,16 @@ METHOD_MAP = {
     "razorpay": "razorpay",
     "manual": "manual",
 }
+
+# Deposit methods settled automatically by a payment provider / the chain.
+# These can only be credited by their provider flow, or by an admin once the
+# row is in 'manual_review' (A10).
+GATEWAY_DEPOSIT_METHODS = frozenset({"oxapay", "razorpay", "wallet_connect", "nowpayments"})
+
+# A3: request methods the generic POST /wallet/deposit accepts — the manual
+# (admin-reviewed) ones plus the OxaPay invoice bootstrap. Razorpay and
+# on-chain have dedicated endpoints.
+GENERIC_DEPOSIT_METHODS = frozenset(k for k in METHOD_MAP if k != "razorpay")
 
 
 # ─── Email helpers (best-effort, fire-and-forget) ─────────────────────────
@@ -371,6 +485,20 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
     if not await get_bool_setting("allow_deposits", True):
         raise HTTPException(status_code=403, detail="Deposits are currently disabled")
 
+    # A3: the generic endpoint only files MANUAL requests (admin-reviewed,
+    # proof-based) plus the OxaPay invoice bootstrap. Gateway rows that settle
+    # automatically (Razorpay, on-chain) have dedicated endpoints and must
+    # never be created here — a client-chosen transaction_id on such a row
+    # was a replayable "already paid" credential.
+    raw_method = (req.method or "").strip().lower()
+    if raw_method not in GENERIC_DEPOSIT_METHODS:
+        if raw_method in ("razorpay", "wallet_connect"):
+            raise HTTPException(
+                status_code=400,
+                detail="Use the dedicated deposit flow for this payment method.",
+            )
+        raise HTTPException(status_code=400, detail="Unsupported deposit method")
+
     if req.account_id is not None:
         acct = await db.execute(
             select(TradingAccount).where(
@@ -383,7 +511,7 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
             raise HTTPException(status_code=404, detail="Account not found")
 
     bank = await _get_bank_for_tier(req.amount, db)
-    db_method = METHOD_MAP.get(req.method, "bank_transfer")
+    db_method = METHOD_MAP[raw_method]
 
     # For automated crypto methods, use 'initiated' status until payment is
     # actually started. This prevents showing incomplete payment attempts in
@@ -400,7 +528,11 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
         account_id=req.account_id if req.account_id else None,
         amount=req.amount,
         method=db_method,
-        transaction_id=req.transaction_id,
+        # Never store a client reference on a gateway row (A3) — OxaPay's
+        # track id is written server-side from the provider response.
+        transaction_id=None if db_method in GATEWAY_DEPOSIT_METHODS else (
+            (req.transaction_id or "").strip()[:100] or None
+        ),
         screenshot_url=_safe_stored_upload(req.screenshot_url),
         crypto_tx_hash=getattr(req, "crypto_tx_hash", None),
         crypto_address=getattr(req, "crypto_address", None),
@@ -569,6 +701,39 @@ async def create_manual_deposit(
 
 # ─── OxaPay Webhook ──────────────────────────────────────────────────────
 
+OXAPAY_MAX_OVERPAY_MULTIPLE = Decimal("3")
+
+
+def _amount_key(amount) -> str:
+    """Stable textual form of a Decimal for ledger keys (100 == 100.00)."""
+    d = Decimal(str(amount or 0)).normalize()
+    return format(d, "f")
+
+
+def _oxapay_received(payload: dict) -> tuple[Decimal | None, str | None]:
+    """(received amount, callback currency upper-cased) from an OxaPay
+    callback, tolerant of the field spellings OxaPay has used."""
+    received = None
+    for k in ("receivedAmount", "received_amount", "amount", "price_amount", "priceAmount"):
+        v = payload.get(k) if isinstance(payload, dict) else None
+        if v is None:
+            continue
+        try:
+            d = Decimal(str(v))
+        except (InvalidOperation, ValueError, TypeError):
+            continue
+        if d.is_finite():
+            received = d
+            break
+    currency = None
+    for k in ("currency", "price_currency", "priceCurrency"):
+        v = payload.get(k) if isinstance(payload, dict) else None
+        if v:
+            currency = str(v).strip().upper()
+            break
+    return received, currency
+
+
 async def handle_oxapay_webhook(
     order_id: str,
     oxapay_status: str,
@@ -576,7 +741,14 @@ async def handle_oxapay_webhook(
     payload: dict,
     db: AsyncSession,
 ) -> None:
-    """Process OxaPay webhook callback. Auto-approve on 'paid', reject on 'expired'/'failed'."""
+    """Process OxaPay webhook callback. Auto-approve on 'paid', reject on 'expired'/'failed'.
+
+    A9: a 'paid' callback whose currency is not USD, whose received amount is
+    more than 3x the invoice, or that otherwise disagrees with the invoice is
+    parked in 'manual_review' with ``amount`` = what was actually received
+    (the invoice figure is kept in rejection_reason). An already-credited
+    deposit is never flipped back (status guard below), and the credit itself
+    is keyed ``oxapay:{deposit}:{cumulative}`` in the ledger (A1)."""
     from uuid import UUID as UUIDType
 
     try:
@@ -584,26 +756,28 @@ async def handle_oxapay_webhook(
     except ValueError:
         logger.warning("OxaPay webhook: invalid order_id=%s", order_id)
         return
+    oxapay_status = (oxapay_status or "").strip().lower()
 
     # Lock the Deposit row so a concurrent admin "approve" (or a
     # re-delivered IPN — payment providers retry routinely) can't both
     # flip pending → auto_approved and credit twice. The status guard
     # below makes the second writer fail cleanly.
     result = await db.execute(
-        select(Deposit).where(Deposit.id == deposit_uuid).with_for_update()
+        for_update(select(Deposit).where(Deposit.id == deposit_uuid))
     )
     deposit = result.scalar_one_or_none()
     if not deposit:
         logger.warning("OxaPay webhook: deposit not found order_id=%s", order_id)
         return
-
-    # Idempotent — skip if already processed (but allow 'initiated' to transition)
+    # Idempotent — skip if already processed (but allow 'initiated' to transition).
+    # This is also what keeps a credited deposit from ever being flipped back
+    # to rejected by a late 'expired'/'failed' callback.
     if deposit.status not in ("initiated", "pending"):
         logger.info("OxaPay webhook: deposit %s already %s, skipping", order_id, deposit.status)
         return
 
-    if track_id:
-        deposit.transaction_id = track_id
+    if track_id and not deposit.transaction_id:
+        deposit.transaction_id = str(track_id)[:100]
 
     # 'waiting' fires as soon as the invoice is CREATED — the user may just
     # have opened (or immediately abandoned) the payment page, no money moved.
@@ -627,76 +801,48 @@ async def handle_oxapay_webhook(
         return
 
     if oxapay_status == "paid":
-        # Phase 3 (OxaPay amount binding): the credited amount is always the
-        # recorded deposit.amount, never a client value. As a tamper check, if
-        # the callback echoes a USD invoice amount that does NOT match our
-        # record, do not auto-credit — route to manual review. (OxaPay only
-        # sends 'paid' on full settlement; underpayment arrives as a different
-        # status and is not credited here.)
-        _cb_amount = None
-        for _k in ("amount", "price_amount", "priceAmount"):
-            if payload.get(_k) is not None:
-                try:
-                    _cb_amount = Decimal(str(payload.get(_k)))
-                    break
-                except (InvalidOperation, ValueError, TypeError):
-                    continue
-        if _cb_amount is not None and abs(_cb_amount - (deposit.amount or Decimal("0"))) > Decimal("0.01"):
+        invoice = Decimal(str(deposit.amount or 0))
+        received, cb_currency = _oxapay_received(payload)
+        review_reason = None
+        if cb_currency and cb_currency != "USD":
+            review_reason = f"oxapay_non_usd currency={cb_currency}"
+        elif received is not None and received > invoice * OXAPAY_MAX_OVERPAY_MULTIPLE:
+            review_reason = "oxapay_overpaid_gt_3x"
+        elif received is not None and abs(received - invoice) > Decimal("0.01"):
+            review_reason = "oxapay_amount_mismatch"
+        if review_reason:
             deposit.status = "manual_review"
+            if received is not None and received > 0:
+                deposit.amount = received
             deposit.rejection_reason = (
-                f"oxapay_amount_mismatch callback={_cb_amount} expected={deposit.amount}"
-            )
+                f"{review_reason} callback={received} invoice={invoice}"
+            )[:1000]
             await db.commit()
             logger.error(
-                "OxaPay webhook: amount mismatch deposit=%s callback=%s expected=%s → manual_review",
-                order_id, _cb_amount, deposit.amount,
+                "OxaPay webhook: %s deposit=%s callback=%s %s invoice=%s → manual_review",
+                review_reason, order_id, received, cb_currency, invoice,
             )
             return
 
-        deposit.status = "auto_approved"
-        deposit.approved_at = datetime.utcnow()
-
-        # Lock User row BEFORE crediting main_wallet_balance — see
-        # NOWPayments handler for full rationale. Lock order is Deposit
-        # (above) → User → tagged TradingAccount.
-        user_q = await db.execute(
-            select(User).where(User.id == deposit.user_id).with_for_update()
-        )
-        user_row = user_q.scalar_one_or_none()
+        # Lock User row BEFORE crediting. Lock order is Deposit (above) →
+        # User → tagged TradingAccount.
+        user_row = await lock_user(db, deposit.user_id)
         if not user_row:
             logger.error("OxaPay webhook: user not found for deposit %s", order_id)
             return
 
-        # If the deposit row was tagged with a target account_id at
-        # submit time (user picked "Wallet Account" in the UI), honor
-        # that explicit choice. Otherwise auto-route via the resolver.
-        target_kind, target_row = await _credit_from_deposit_row(
+        credited, _kind = await _apply_gateway_credit(
             db, deposit, user_row,
+            idempotency_key=f"oxapay:{deposit.id}:{_amount_key(deposit.amount)}",
+            label="oxapay",
         )
-        if target_kind == "trading":
-            target_row.balance = (target_row.balance or Decimal("0")) + deposit.amount
-            target_row.equity = (target_row.equity or Decimal("0")) + deposit.amount
-            target_row.free_margin = (target_row.free_margin or Decimal("0")) + deposit.amount
-            db.add(Transaction(
-                user_id=deposit.user_id,
-                account_id=target_row.id,
-                type="deposit",
-                amount=deposit.amount,
-                balance_after=target_row.balance,
-                reference_id=deposit.id,
-                description="Deposit to wallet account - oxapay (auto)",
-            ))
-        else:
-            user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + deposit.amount
-            db.add(Transaction(
-                user_id=deposit.user_id,
-                account_id=None,
-                type="deposit",
-                amount=deposit.amount,
-                balance_after=user_row.main_wallet_balance,
-                reference_id=deposit.id,
-                description="Deposit to main wallet - oxapay (auto)",
-            ))
+        deposit.status = "auto_approved"
+        deposit.approved_at = datetime.utcnow()
+        if not credited:
+            # Ledger key already claimed — this deposit was credited before.
+            await db.commit()
+            logger.warning("OxaPay webhook: deposit %s ledger key already claimed — no credit", order_id)
+            return
 
         # H-MONEY-2: single, dedup-guarded bonus application (was an inline copy).
         applied_bonuses = await apply_deposit_bonus(db, user_row, deposit)
@@ -901,8 +1047,10 @@ async def _email_admins_local_banking_event(
         return
 
     admin_app_url = (_gs().ADMIN_APP_URL or "https://admin.swisscresta.com").rstrip("/")
+    # A10: body lines carry user-controlled text (email, UTR reference) —
+    # escape before it lands in admin HTML.
     body_html = (
-        "<p>" + "</p><p>".join(body_lines) + "</p>"
+        "<p>" + "</p><p>".join(_html.escape(str(line)) for line in body_lines) + "</p>"
     )
     html = render_layout(
         title=heading,
@@ -940,17 +1088,25 @@ async def confirm_local_banking_payment(
     payment link in the first place.
     """
     deposit_q = await db.execute(
-        select(Deposit).where(
+        for_update(select(Deposit).where(
             Deposit.id == deposit_id,
             Deposit.user_id == user_id,
             Deposit.method == "local_banking",
-        ).with_for_update()
+        ))
     )
     deposit = deposit_q.scalar_one_or_none()
     if not deposit:
         raise HTTPException(status_code=404, detail="Deposit not found")
     if deposit.status != "pending":
         raise HTTPException(status_code=400, detail="Deposit already finalised")
+    # A10: confirmation is one-shot. Once proof + amount are on the row the
+    # admin reviews THAT evidence; letting the user re-submit would let them
+    # swap the amount/proof under an admin who is mid-review.
+    if deposit.screenshot_url or deposit.transaction_id:
+        raise HTTPException(
+            status_code=409,
+            detail="Payment for this request was already confirmed.",
+        )
     if not deposit.payment_link:
         raise HTTPException(
             status_code=400,
@@ -1081,11 +1237,12 @@ async def create_razorpay_deposit(
     """Create a *pending* Deposit row + a Razorpay order.
 
     The user enters a USD amount (`amount`); the order is charged in INR by
-    razorpay_service.create_order. The order id is stamped onto the deposit's
-    `transaction_id` so the verify endpoint and the webhook can both look the
-    row up by Razorpay order id. Balance is never credited here — it settles
-    via verify_and_credit_razorpay / handle_razorpay_webhook (whichever
-    arrives first credits exactly once).
+    razorpay_service.create_order. A3: the order id is written ONLY by the
+    server into the UNIQUE `razorpay_order_id` column (and mirrored into
+    `transaction_id` for the trader UI); verify + webhook find the row by
+    `razorpay_order_id`, never by a client-writable field. Balance is never
+    credited here — it settles via verify_and_credit_razorpay /
+    handle_razorpay_webhook (whichever arrives first credits exactly once).
     """
     from packages.common.src.settings_store import get_bool_setting
     if await get_bool_setting("maintenance_mode", False):
@@ -1141,9 +1298,7 @@ async def create_razorpay_deposit(
         await db.commit()
         raise HTTPException(status_code=502, detail=f"Razorpay order creation failed: {e}")
 
-    # Map the Razorpay order id onto the deposit so verify + webhook can find
-    # this row by order id.
-    deposit.transaction_id = order["order_id"]
+    _stamp_razorpay_order(deposit, order)
     await db.commit()
     await db.refresh(deposit)
 
@@ -1159,6 +1314,43 @@ async def create_razorpay_deposit(
     }
 
 
+def _stamp_razorpay_order(deposit, order: dict) -> None:
+    """Record a freshly created Razorpay order on its deposit (server-side
+    only). The order id is never overwritten once set."""
+    if getattr(deposit, "razorpay_order_id", None):
+        raise HTTPException(status_code=409, detail="A Razorpay order already exists for this deposit")
+    deposit.razorpay_order_id = order["order_id"]
+    deposit.razorpay_amount_paise = int(order["amount_paise"])
+    # Mirrored for the trader UI, which launches Checkout with it.
+    deposit.transaction_id = order["order_id"]
+
+
+async def _claim_razorpay_payment_id(db, deposit, payment_id: str) -> bool:
+    """Bind a Razorpay payment id to this deposit — once. Refuses (False) when
+    the deposit already carries a different payment id or another deposit
+    already holds this one. The UNIQUE column is the backstop."""
+    pid = (payment_id or "").strip()
+    if not pid:
+        return False
+    current = getattr(deposit, "razorpay_payment_id", None)
+    if current:
+        return current == pid
+    other = (await db.execute(
+        select(Deposit.id).where(
+            Deposit.razorpay_payment_id == pid,
+            Deposit.id != deposit.id,
+        ).limit(1)
+    )).first()
+    if other is not None:
+        logger.error(
+            "Razorpay payment %s already settled deposit %s — refusing to bind to %s",
+            pid, other[0], deposit.id,
+        )
+        return False
+    deposit.razorpay_payment_id = pid[:64]
+    return True
+
+
 async def _credit_razorpay_deposit_locked(
     *, deposit: Deposit, payment_id: str | None, db: AsyncSession,
 ) -> bool:
@@ -1166,10 +1358,9 @@ async def _credit_razorpay_deposit_locked(
     `with_for_update()` lock on the Deposit row.
 
     Returns True when this call performed the credit, False when the deposit
-    was already settled (no-op). Reuses the exact lock-order + credit +
-    Transaction + bonus pattern from the OxaPay/NOWPayments webhook handlers
-    so the wallet is credited exactly once regardless of whether the client
-    `verify` call or the webhook arrives first.
+    was already settled (no-op). The balance move is keyed
+    ``razorpay:{payment_id}`` in the ledger (A1), so even a missed status
+    guard can't credit one payment twice.
     """
     # Idempotency guard — already-settled rows are left alone. This is the
     # primary defence against double-crediting: the first writer flips the
@@ -1179,48 +1370,28 @@ async def _credit_razorpay_deposit_locked(
         logger.info("Razorpay credit: deposit %s already %s, skipping", deposit.id, deposit.status)
         return False
 
-    if payment_id:
-        deposit.transaction_id = str(payment_id)
-    deposit.status = "auto_approved"
-    deposit.approved_at = datetime.utcnow()
+    pid = (str(payment_id) if payment_id else "").strip()
+    if not await _claim_razorpay_payment_id(db, deposit, pid):
+        logger.error("Razorpay credit: payment id %s not bindable to deposit %s", pid, deposit.id)
+        return False
 
-    # Lock the User row BEFORE crediting main_wallet_balance. Lock order:
-    # Deposit (held by caller) → User → tagged TradingAccount (inside
-    # _credit_from_deposit_row). Prevents a lost-update if verify + webhook
-    # ever race on the same user.
-    user_q = await db.execute(
-        select(User).where(User.id == deposit.user_id).with_for_update()
-    )
-    user_row = user_q.scalar_one_or_none()
+    # Lock the User row BEFORE crediting. Lock order: Deposit (held by
+    # caller) → User → tagged TradingAccount (inside _credit_from_deposit_row).
+    user_row = await lock_user(db, deposit.user_id)
     if not user_row:
         logger.error("Razorpay credit: user not found for deposit %s", deposit.id)
         raise HTTPException(status_code=404, detail="User not found")
 
-    target_kind, target_row = await _credit_from_deposit_row(db, deposit, user_row)
-    if target_kind == "trading":
-        target_row.balance = (target_row.balance or Decimal("0")) + deposit.amount
-        target_row.equity = (target_row.equity or Decimal("0")) + deposit.amount
-        target_row.free_margin = (target_row.free_margin or Decimal("0")) + deposit.amount
-        db.add(Transaction(
-            user_id=deposit.user_id,
-            account_id=target_row.id,
-            type="deposit",
-            amount=deposit.amount,
-            balance_after=target_row.balance,
-            reference_id=deposit.id,
-            description="Deposit to wallet account - razorpay (auto)",
-        ))
-    else:
-        user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + deposit.amount
-        db.add(Transaction(
-            user_id=deposit.user_id,
-            account_id=None,
-            type="deposit",
-            amount=deposit.amount,
-            balance_after=user_row.main_wallet_balance,
-            reference_id=deposit.id,
-            description="Deposit to main wallet - razorpay (auto)",
-        ))
+    credited, _kind = await _apply_gateway_credit(
+        db, deposit, user_row,
+        idempotency_key=f"razorpay:{pid}",
+        label="razorpay",
+    )
+    deposit.status = "auto_approved"
+    deposit.approved_at = datetime.utcnow()
+    if not credited:
+        logger.warning("Razorpay credit: ledger key razorpay:%s already claimed", pid)
+        return False
 
     # H-MONEY-2: single, dedup-guarded bonus application (was an inline copy).
     applied_bonuses = await apply_deposit_bonus(db, user_row, deposit)
@@ -1261,6 +1432,9 @@ async def _credit_razorpay_deposit_locked(
     return True
 
 
+_CREDITED_DEPOSIT_STATUSES = ("auto_approved", "approved")
+
+
 async def verify_and_credit_razorpay(
     *,
     razorpay_order_id: str,
@@ -1271,24 +1445,28 @@ async def verify_and_credit_razorpay(
 ) -> dict:
     """Client-side settlement: verify the Checkout handler signature then
     idempotently credit the deposit. Safe to call concurrently with the
-    webhook — the row lock + status guard in _credit_razorpay_deposit_locked
-    ensure exactly-once crediting."""
+    webhook — the row lock + status guard + ledger key ensure exactly-once
+    crediting.
+
+    Response: ``status`` is "credited" when the deposit is (now) credited —
+    by this call or an earlier webhook — else "not_credited" (e.g. parked in
+    manual_review). ``credited_now`` says whether THIS call moved money."""
     if not razorpay_service.verify_checkout_signature(
         razorpay_order_id, razorpay_payment_id, razorpay_signature
     ):
         logger.warning("Razorpay verify: bad signature order=%s", razorpay_order_id)
         raise HTTPException(status_code=400, detail="Invalid payment signature")
 
-    # Look the deposit up by the Razorpay order id stamped at order-creation,
-    # scoped to the authenticated user so one user can't settle another's row.
+    # A3: look the deposit up by the SERVER-written order id column, scoped
+    # to the authenticated user so one user can't settle another's row.
     result = await db.execute(
-        select(Deposit)
-        .where(
-            Deposit.transaction_id == razorpay_order_id,
-            Deposit.user_id == user_id,
-            Deposit.method == "razorpay",
+        for_update(
+            select(Deposit).where(
+                Deposit.razorpay_order_id == razorpay_order_id,
+                Deposit.user_id == user_id,
+                Deposit.method == "razorpay",
+            )
         )
-        .with_for_update()
     )
     deposit = result.scalar_one_or_none()
     if not deposit:
@@ -1303,28 +1481,59 @@ async def verify_and_credit_razorpay(
         "Razorpay verify: deposit %s order=%s credited=%s",
         deposit.id, razorpay_order_id, credited,
     )
-    return {"status": "credited", "amount": float(deposit.amount)}
+    return {
+        "status": "credited" if deposit.status in _CREDITED_DEPOSIT_STATUSES else "not_credited",
+        "credited_now": bool(credited),
+        "deposit_status": deposit.status,
+        "amount": float(deposit.amount),
+    }
 
 
 async def handle_razorpay_webhook(
     *, order_id: str, payment_id: str, db: AsyncSession,
+    amount_paise: int | None = None, currency: str | None = None,
 ) -> None:
     """Server-side settlement from the Razorpay `payment.captured` webhook.
     Performs the SAME idempotent credit as verify_and_credit_razorpay so
     whichever arrives first (client verify or webhook) credits once; the
-    second is a no-op."""
+    second is a no-op.
+
+    A3: the captured amount and currency are cross-checked against the order
+    we created; any mismatch parks the deposit in 'manual_review' instead of
+    auto-crediting."""
     result = await db.execute(
-        select(Deposit)
-        .where(
-            Deposit.transaction_id == order_id,
-            Deposit.method == "razorpay",
+        for_update(
+            select(Deposit).where(
+                Deposit.razorpay_order_id == order_id,
+                Deposit.method == "razorpay",
+            )
         )
-        .with_for_update()
     )
     deposit = result.scalar_one_or_none()
     if not deposit:
         logger.warning("Razorpay webhook: deposit not found order=%s", order_id)
         return
+
+    if deposit.status in ("initiated", "pending"):
+        mismatch = None
+        if currency is not None and str(currency).strip().upper() != "INR":
+            mismatch = f"razorpay_currency_mismatch currency={currency}"
+        elif amount_paise is not None and deposit.razorpay_amount_paise is not None:
+            try:
+                if int(amount_paise) != int(deposit.razorpay_amount_paise):
+                    mismatch = (
+                        f"razorpay_amount_mismatch captured={amount_paise} "
+                        f"expected={deposit.razorpay_amount_paise}"
+                    )
+            except (TypeError, ValueError):
+                mismatch = f"razorpay_amount_unparseable captured={amount_paise!r}"
+        if mismatch:
+            await _claim_razorpay_payment_id(db, deposit, str(payment_id or ""))
+            deposit.status = "manual_review"
+            deposit.rejection_reason = mismatch[:1000]
+            await db.commit()
+            logger.error("Razorpay webhook: %s deposit=%s → manual_review", mismatch, deposit.id)
+            return
 
     credited = await _credit_razorpay_deposit_locked(
         deposit=deposit, payment_id=payment_id, db=db,
@@ -1348,19 +1557,23 @@ async def release_bonuses_after_trade(
 
     Lot accounting (FIFO): traded lots are consumed by the OLDEST active
     bonus first; once that bonus's `lots_required` is reached, the
-    remainder flows to the next-oldest. A bonus is released the instant
-    its `lots_traded >= lots_required` — its locked amount is credited
-    to `user.main_wallet_balance` and a Transaction row of
-    `type='bonus_release'` is written so the credit appears in the
-    user's transaction history.
+    remainder flows to the next-oldest.
+
+    A4 — release ONLY flips the status. The bonus amount was already added
+    to `main_wallet_balance` when it was granted (bonus_service.
+    apply_deposit_bonus); while 'active' it is excluded from the spendable
+    balance (money_guards.spendable_main_wallet). Releasing simply stops
+    excluding it. Crediting it again here paid every bonus twice. A
+    zero-amount `bonus_release` marker row (ledger key
+    ``bonus_release:{user_bonus_id}``) keeps the event in the history.
 
     Real accounts only — demo trades do NOT count toward wagering
     (otherwise users could trade demo to release real bonus money).
 
     Caller MUST be inside an open DB transaction. This function only
-    flushes; it does not commit. Errors propagate; the caller should
-    wrap in try/except if a release failure must not block the trade
-    close.
+    flushes; it does not commit. It takes no User lock (the close path
+    already holds account locks; locking the user after them would invert
+    the canonical lock order).
     """
     if is_demo_account:
         return
@@ -1368,23 +1581,18 @@ async def release_bonuses_after_trade(
         return
 
     q = await db.execute(
-        select(UserBonus)
-        .where(UserBonus.user_id == user_id, UserBonus.status == "active")
-        .order_by(UserBonus.created_at.asc())
-        .with_for_update()
+        for_update(
+            select(UserBonus)
+            .where(UserBonus.user_id == user_id, UserBonus.status == "active")
+            .order_by(UserBonus.created_at.asc())
+        )
     )
     active = list(q.scalars().all())
     if not active:
         return
 
-    user_q = await db.execute(
-        select(User).where(User.id == user_id).with_for_update()
-    )
-    user = user_q.scalar_one_or_none()
-    if not user:
-        return
-
     remaining = Decimal(str(traded_lots))
+    released = []
     for bonus in active:
         if remaining <= 0:
             break
@@ -1406,20 +1614,26 @@ async def release_bonuses_after_trade(
         if bonus.lots_traded >= required:
             bonus.status = "released"
             bonus.released_at = datetime.utcnow()
-            bonus_amount = Decimal(str(bonus.amount or 0))
-            if bonus_amount > 0:
-                user.main_wallet_balance = (
-                    Decimal(str(user.main_wallet_balance or 0)) + bonus_amount
-                )
-                db.add(Transaction(
-                    user_id=user_id,
-                    account_id=None,
-                    type="bonus_release",
-                    amount=bonus_amount,
-                    balance_after=user.main_wallet_balance,
-                    reference_id=bonus.id,
-                    description="Bonus released — wagering requirement met",
-                ))
+            released.append(bonus)
+
+    if released:
+        balance_now = (await db.execute(
+            select(User.main_wallet_balance).where(User.id == user_id)
+        )).scalar()
+        for bonus in released:
+            await post_ledger_entry(
+                db,
+                idempotency_key=f"bonus_release:{bonus.id}",
+                user_id=user_id,
+                type="bonus_release",
+                amount=Decimal("0"),
+                balance_after=balance_now,
+                reference_id=bonus.id,
+                description=(
+                    f"Bonus released — wagering requirement met; "
+                    f"${Decimal(str(bonus.amount or 0)):.2f} is now withdrawable"
+                ),
+            )
     await db.flush()
 
 
@@ -1450,35 +1664,18 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
     if not await get_bool_setting("allow_withdrawals", True):
         raise HTTPException(status_code=403, detail="Withdrawals are currently disabled")
 
-    user_q = await db.execute(select(User).where(User.id == user_id))
-    user_row = user_q.scalar_one_or_none()
-    if not user_row:
-        raise HTTPException(status_code=404, detail="User not found")
+    # A2: no unlocked User read before the lock — the locked rows (user, then
+    # the wallet-bound source account) are taken first, with
+    # populate_existing, and every check below runs on them. B1/B2: the
+    # source must be active and must not be a managed pool.
+    pref = getattr(req, "source", None)
+    user_row, source_kind, source_row = await lock_withdrawal_source(db, user_id, pref)
     if (user_row.kyc_status or "").lower() not in ("approved", "verified"):
         raise HTTPException(status_code=403, detail="KYC_REQUIRED")
 
-    # Resolve debit source — honor explicit user choice if provided
-    # (`req.source`), else auto-route (wallet-bound when present, else
-    # main_wallet). Balance check uses whichever source is authoritative.
-    pref = getattr(req, "source", None)
-    source_kind, source_row = await _resolve_debit_source(db, user_id, preference=pref)
-    # C-MONEY-3 / H-MONEY-1: for a trading account, only funds NOT backing open
-    # positions are withdrawable — never the raw balance (which includes margin
-    # locked in live trades). Routed through the shared helper so every
-    # withdrawal path agrees.
-    if source_kind == "trading":
-        available = available_to_withdraw(
-            "trading",
-            balance=source_row.balance,
-            margin_used=source_row.margin_used,
-            free_margin=source_row.free_margin,
-        )
-    else:
-        available = available_to_withdraw(
-            "main",
-            main_wallet_balance=source_row.main_wallet_balance if source_row else None,
-            outstanding_bonus=await outstanding_bonus(db, user_id),  # H-MONEY-2
-        )
+    # A5: main-wallet withdrawals may only spend balance − outstanding bonus.
+    spendable = await spendable_main_wallet(db, user_row) if source_kind != "trading" else None
+    available = _withdrawable(source_kind, source_row, spendable)
     if available < req.amount:
         if source_kind == "trading":
             detail = (
@@ -1509,6 +1706,9 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
             status_code=400,
             detail="Withdrawals can only be sent to your linked wallet.",
         )
+
+    # D3: single-use step-up, consumed inside this transaction.
+    await enforce_withdrawal_step_up(db, user_id, getattr(req, "step_up_challenge_id", None))
 
     withdrawal = Withdrawal(
         user_id=user_id,
@@ -1565,6 +1765,7 @@ async def create_manual_withdrawal(
     payout_notes: str,
     file: UploadFile | None,
     db: AsyncSession,
+    step_up_challenge_id: str | None = None,
 ) -> dict:
     from packages.common.src.settings_store import get_bool_setting
     if not await get_bool_setting("allow_withdrawals", True):
@@ -1609,28 +1810,10 @@ async def create_manual_withdrawal(
             detail="Provide a UPI ID and/or upload a QR code image for manual payout.",
         )
 
-    user_q = await db.execute(select(User).where(User.id == user_id))
-    user_row = user_q.scalar_one_or_none()
-    if not user_row:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Resolve debit source — same logic as create_withdrawal.
-    source_kind, source_row = await _resolve_debit_source(db, user_id)
-    # C-MONEY-3 / H-MONEY-1: trading-account withdrawals exclude margin-backed
-    # funds via the shared helper (see create_withdrawal).
-    if source_kind == "trading":
-        available = available_to_withdraw(
-            "trading",
-            balance=source_row.balance,
-            margin_used=source_row.margin_used,
-            free_margin=source_row.free_margin,
-        )
-    else:
-        available = available_to_withdraw(
-            "main",
-            main_wallet_balance=source_row.main_wallet_balance if source_row else None,
-            outstanding_bonus=await outstanding_bonus(db, user_id),  # H-MONEY-2
-        )
+    # A2/B1/B2: lock user → wallet-bound source (validated) before any check.
+    user_row, source_kind, source_row = await lock_withdrawal_source(db, user_id)
+    spendable = await spendable_main_wallet(db, user_row) if source_kind != "trading" else None
+    available = _withdrawable(source_kind, source_row, spendable)
     if available < amount:
         if source_kind == "trading":
             raise HTTPException(
@@ -1644,6 +1827,9 @@ async def create_manual_withdrawal(
                 "Transfer profit from trading accounts first."
             ),
         )
+
+    # D3: single-use step-up, consumed inside this transaction.
+    await enforce_withdrawal_step_up(db, user_id, step_up_challenge_id)
 
     bank_details: dict = {
         "manual": True,
@@ -1703,6 +1889,12 @@ async def create_manual_withdrawal(
 
 # ─── Transfers ────────────────────────────────────────────────────────────
 
+def _require_active(account, label: str) -> None:
+    """B2: transfers and withdrawals require an active account."""
+    if not getattr(account, "is_active", False):
+        raise HTTPException(status_code=409, detail=f"The {label} account is not active")
+
+
 async def internal_wallet_transfer(req, user_id: UUID, db: AsyncSession) -> dict:
     if req.from_account_id == req.to_account_id:
         raise HTTPException(status_code=400, detail="Choose two different accounts")
@@ -1716,20 +1908,25 @@ async def internal_wallet_transfer(req, user_id: UUID, db: AsyncSession) -> dict
     # We acquire the locks in ascending UUID order regardless of which
     # is the source / destination, so a second transfer in the opposite
     # direction can never deadlock with us (both processes will request
-    # locks in the same canonical order).
+    # locks in the same canonical order). populate_existing (A2) so a
+    # previously-loaded copy can't mask a concurrent debit.
     id_a, id_b = sorted([req.from_account_id, req.to_account_id])
     locked_q = await db.execute(
-        select(TradingAccount).where(
+        for_update(select(TradingAccount).where(
             TradingAccount.id.in_([id_a, id_b]),
             TradingAccount.user_id == user_id,
-            TradingAccount.is_demo == False,
-        ).with_for_update().order_by(TradingAccount.id)
+            TradingAccount.is_demo == False,  # noqa: E712
+        ).order_by(TradingAccount.id))
     )
     locked = {a.id: a for a in locked_q.scalars().all()}
     from_a = locked.get(req.from_account_id)
     to_a = locked.get(req.to_account_id)
     if not from_a or not to_a:
         raise HTTPException(status_code=404, detail="Account not found")
+    _require_active(to_a, "destination")
+    # B1/B2: active source, never a PAMM/MAM pool (investor capital) and
+    # never an actively-copied CF/IF sub-account (use Stop Copy).
+    await assert_transfer_out_allowed(db, from_a)
 
     free = (from_a.balance or Decimal("0")) - (from_a.margin_used or Decimal("0"))
     if free < amt:
@@ -1776,23 +1973,23 @@ async def transfer_trading_to_main(req, user_id: UUID, db: AsyncSession) -> dict
     # concurrent transfers from the same trading account both read the
     # pre-debit balance, both pass the free-margin check, and both
     # deduct — the trading account overdraws and main_wallet over-credits.
-    user_q = await db.execute(
-        select(User).where(User.id == user_id).with_for_update()
-    )
-    user_row = user_q.scalar_one_or_none()
+    user_row = await lock_user(db, user_id)
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
 
     acc_q = await db.execute(
-        select(TradingAccount).where(
+        for_update(select(TradingAccount).where(
             TradingAccount.id == req.from_account_id,
             TradingAccount.user_id == user_id,
-            TradingAccount.is_demo == False,
-        ).with_for_update()
+            TradingAccount.is_demo == False,  # noqa: E712
+        ))
     )
     account = acc_q.scalar_one_or_none()
     if not account:
         raise HTTPException(status_code=404, detail="Trading account not found")
+    # B1/B2: active source, never a managed pool, never an actively-copied
+    # sub-account.
+    await assert_transfer_out_allowed(db, account)
 
     free = (account.balance or Decimal("0")) - (account.margin_used or Decimal("0"))
     if free < amt:
@@ -1836,21 +2033,15 @@ async def transfer_main_to_trading(req, user_id: UUID, db: AsyncSession) -> dict
     # Without the User lock, two concurrent transfers of the available
     # main_wallet balance both read the pre-debit value and both deduct,
     # overdrawing main_wallet into the negative.
-    user_q = await db.execute(
-        select(User).where(User.id == user_id).with_for_update()
-    )
-    user_row = user_q.scalar_one_or_none()
+    user_row = await lock_user(db, user_id)
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # H-MONEY-2: bonus credit is non-withdrawable, and moving it to a trading
-    # account would launder it into withdrawable balance (trading withdrawals
-    # ignore bonus). Only the real (non-bonus) main balance may be transferred.
+    # A5 / H-MONEY-2: bonus credit is non-withdrawable, and moving it to a
+    # trading account would launder it into withdrawable balance (trading
+    # withdrawals ignore bonus). Only the spendable main balance may move.
     main_bal = user_row.main_wallet_balance or Decimal("0")
-    available = available_to_withdraw(
-        "main", main_wallet_balance=main_bal,
-        outstanding_bonus=await outstanding_bonus(db, user_id),
-    )
+    available = await spendable_main_wallet(db, user_row)
     if available < amt:
         raise HTTPException(
             status_code=400,
@@ -1858,15 +2049,16 @@ async def transfer_main_to_trading(req, user_id: UUID, db: AsyncSession) -> dict
         )
 
     acc_q = await db.execute(
-        select(TradingAccount).where(
+        for_update(select(TradingAccount).where(
             TradingAccount.id == req.to_account_id,
             TradingAccount.user_id == user_id,
-            TradingAccount.is_demo == False,
-        ).with_for_update()
+            TradingAccount.is_demo == False,  # noqa: E712
+        ))
     )
     account = acc_q.scalar_one_or_none()
     if not account:
         raise HTTPException(status_code=404, detail="Trading account not found")
+    _require_active(account, "destination")
 
     user_row.main_wallet_balance = main_bal - amt
     account.balance = (account.balance or Decimal("0")) + amt
@@ -2205,10 +2397,10 @@ async def create_razorpay_order_on_lb_deposit(
         raise HTTPException(status_code=400, detail="Enter a valid amount")
 
     result = await db.execute(
-        select(Deposit).where(
+        for_update(select(Deposit).where(
             Deposit.id == deposit_id,
             Deposit.user_id == user_id,
-        ).with_for_update()
+        ))
     )
     deposit = result.scalar_one_or_none()
     if not deposit:
@@ -2223,7 +2415,24 @@ async def create_razorpay_order_on_lb_deposit(
             detail="This deposit is not approved for Razorpay yet",
         )
 
-    deposit.amount = amount
+    # A3: an order id, once issued, is never overwritten — a retry (popup
+    # closed, page reloaded) gets the SAME order back instead of re-pricing
+    # the deposit under a new order id.
+    if getattr(deposit, "razorpay_order_id", None):
+        from packages.common.src.config import get_settings as _gs
+        paise = deposit.razorpay_amount_paise
+        if paise is None:
+            raise HTTPException(status_code=409, detail="A Razorpay order already exists for this deposit")
+        return {
+            "deposit_id": str(deposit.id),
+            "order_id": deposit.razorpay_order_id,
+            "amount_paise": int(paise),
+            "amount_inr": float(Decimal(int(paise)) / Decimal("100")),
+            "key_id": _gs().RAZORPAY_KEY_ID,
+            "currency": "INR",
+        }
+    if (deposit.method or "") != "local_banking":
+        raise HTTPException(status_code=400, detail="This deposit can't be paid via Razorpay")
 
     order = await razorpay_service.create_order(
         amount_usd=amount,
@@ -2235,7 +2444,8 @@ async def create_razorpay_order_on_lb_deposit(
         },
     )
 
-    deposit.transaction_id = order["order_id"]
+    deposit.amount = amount
+    _stamp_razorpay_order(deposit, order)
     deposit.payment_link = f"razorpay:{order['order_id']}"
     deposit.method = "razorpay"  # so the existing webhook handler matches
     await db.commit()

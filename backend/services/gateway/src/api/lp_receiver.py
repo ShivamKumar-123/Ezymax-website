@@ -22,6 +22,7 @@ import hashlib
 import hmac
 import json
 import logging
+import math
 import time
 from typing import Any
 
@@ -35,6 +36,41 @@ logger = logging.getLogger("lp-receiver")
 
 LP_TICK_QUEUE = "lp:incoming_ticks"  # consumed by market-data CorecenLPFeed
 LP_LAST_BATCH_AT_KEY = "lp:last_batch_at"  # monotonic heartbeat
+LP_SIG_SEEN_PREFIX = "lp:sig_seen:"  # A12: one-shot signature registry
+# A12: a signed batch is only accepted within 5 s of its timestamp (the
+# configured tolerance can only tighten this, never widen it).
+LP_MAX_TIMESTAMP_SKEW_MS = 5_000
+
+
+def _tolerance_ms(settings) -> int:
+    configured = int(getattr(settings, "CORECEN_LP_TIMESTAMP_TOLERANCE_MS", LP_MAX_TIMESTAMP_SKEW_MS) or 0)
+    if configured <= 0:
+        return LP_MAX_TIMESTAMP_SKEW_MS
+    return min(configured, LP_MAX_TIMESTAMP_SKEW_MS)
+
+
+async def _claim_signature(signature: str, ttl_ms: int) -> bool:
+    """A12: each signature is accepted exactly once (Redis SET NX). A replay
+    of a captured batch inside the timestamp window is refused. Fails closed
+    if Redis can't record the claim."""
+    key = LP_SIG_SEEN_PREFIX + hashlib.sha256(signature.encode("utf-8")).hexdigest()
+    ttl_s = max(1, int(math.ceil((2 * ttl_ms) / 1000.0)))
+    try:
+        ok = await redis_client.set(key, "1", ex=ttl_s, nx=True)
+    except Exception as e:
+        logger.error("LP signature claim failed (redis): %s", e)
+        raise HTTPException(status_code=503, detail="Replay protection unavailable")
+    return bool(ok)
+
+
+def _finite_positive(v) -> float | None:
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(f) or f <= 0:
+        return None
+    return f
 
 
 def _verify(settings, method: str, path: str, timestamp: str, body: str, signature: str, api_key: str) -> bool:
@@ -47,7 +83,7 @@ def _verify(settings, method: str, path: str, timestamp: str, body: str, signatu
     except (TypeError, ValueError):
         return False
     now_ms = int(time.time() * 1000)
-    if abs(now_ms - ts_ms) > settings.CORECEN_LP_TIMESTAMP_TOLERANCE_MS:
+    if abs(now_ms - ts_ms) > _tolerance_ms(settings):
         return False
 
     message = f"{method.upper()}{path}{timestamp}{body}".encode("utf-8")
@@ -90,6 +126,10 @@ async def receive_prices_batch(
         logger.warning("LP push rejected: bad HMAC (path=%s)", path)
         raise HTTPException(status_code=401, detail="Invalid signature")
 
+    if not await _claim_signature(x_signature, _tolerance_ms(settings)):
+        logger.warning("LP push rejected: replayed signature (path=%s)", path)
+        raise HTTPException(status_code=401, detail="Replayed signature")
+
     try:
         payload: Any = json.loads(body_str) if body_str else {}
     except json.JSONDecodeError:
@@ -105,16 +145,14 @@ async def receive_prices_batch(
         if not isinstance(raw_tick, dict):
             continue
         symbol = str(raw_tick.get("symbol") or "").strip().upper()
-        try:
-            bid = float(raw_tick.get("bid"))
-            ask = float(raw_tick.get("ask"))
-        except (TypeError, ValueError):
-            continue
-        if not symbol or bid <= 0 or ask <= 0 or ask < bid:
+        # A12: reject NaN / ±inf / non-positive prices outright.
+        bid = _finite_positive(raw_tick.get("bid"))
+        ask = _finite_positive(raw_tick.get("ask"))
+        if not symbol or bid is None or ask is None or ask < bid:
             continue
 
         ts_ms = raw_tick.get("timestamp")
-        if isinstance(ts_ms, (int, float)) and ts_ms > 0:
+        if isinstance(ts_ms, (int, float)) and math.isfinite(ts_ms) and ts_ms > 0:
             ts_num = float(ts_ms)
         else:
             ts_num = time.time() * 1000.0

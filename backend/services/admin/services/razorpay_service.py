@@ -29,16 +29,19 @@ RAZORPAY_ORDERS_URL = "https://api.razorpay.com/v1/orders"
 # hammering the endpoint. Each uvicorn worker caches independently.
 FX_RATE_URL = "https://open.er-api.com/v6/latest/USD"
 _FX_TTL_SECONDS = 3600
+# Last-good live rate may be reused this long while the feed is down.
+_FX_MAX_STALE_SECONDS = 6 * 3600
 _fx_cache: dict[str, float] = {"rate": 0.0, "fetched_at": 0.0}
 
 
 async def get_usd_to_inr_rate() -> Decimal:
     """Return the current USD→INR rate.
 
-    Fetches the live mid-market rate and caches it for an hour. Falls back to
-    the last good cached value, then to the configured `USD_TO_INR_RATE`, so a
-    deposit never fails just because the FX feed blipped. The configured value
-    is now only a safety net — the live rate is authoritative.
+    Fetches the live mid-market rate and caches it for an hour. If the feed
+    is down, the last good live rate is reused for up to
+    ``_FX_MAX_STALE_SECONDS``. A12 — fail CLOSED after that: there is no
+    hard-coded fallback rate any more (a stale constant mis-prices every
+    charge), so a 503 is raised and the deposit is simply not offered.
     """
     now = time.time()
     cached = _fx_cache["rate"]
@@ -50,7 +53,7 @@ async def get_usd_to_inr_rate() -> Decimal:
             resp = await client.get(FX_RATE_URL)
         data = resp.json()
         rate = float(data.get("rates", {}).get("INR", 0) or 0)
-        if resp.status_code == 200 and rate > 0:
+        if resp.status_code == 200 and 1.0 < rate < 10000.0:  # finite, sane
             _fx_cache["rate"] = rate
             _fx_cache["fetched_at"] = now
             logger.info("USD→INR rate refreshed: %s", rate)
@@ -59,9 +62,14 @@ async def get_usd_to_inr_rate() -> Decimal:
     except Exception as e:
         logger.warning("FX feed fetch failed, falling back: %s", e)
 
-    if cached > 0:
+    if cached > 0 and (now - _fx_cache["fetched_at"]) < _FX_MAX_STALE_SECONDS:
         return Decimal(str(cached))
-    return Decimal(str(get_settings().USD_TO_INR_RATE))
+    from fastapi import HTTPException
+    logger.error("USD→INR rate unavailable (feed down, no recent cached rate) — failing closed")
+    raise HTTPException(
+        status_code=503,
+        detail="Card / UPI deposits are temporarily unavailable (exchange rate unavailable). Please try again shortly.",
+    )
 
 
 def razorpay_configured() -> bool:

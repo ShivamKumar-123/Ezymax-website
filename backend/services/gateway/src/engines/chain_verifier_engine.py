@@ -34,9 +34,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
-    Deposit, User, Transaction, BonusOffer, AdminDepositWallet,
+    Deposit, User, AdminDepositWallet,
 )
+from packages.common.src.row_locks import for_update, lock_user
 from packages.common.src.redis_client import redis_client
+from packages.common.src.engine_lock import engine_lock
+from packages.common.src.instrumentation import spawn
 from packages.common.src.chain_clients import (
     USDT_CONTRACTS, USDT_DECIMALS,
     verify_eth_usdt_transfer,
@@ -69,7 +72,7 @@ class ChainVerifierEngine:
     async def start(self):
         self._running = True
         logger.info("Chain verifier engine started (tick=%ds)", TICK_INTERVAL)
-        asyncio.create_task(self._run())
+        spawn(self._run(), name="chain_verifier")
 
     async def stop(self):
         self._running = False
@@ -77,8 +80,13 @@ class ChainVerifierEngine:
     async def _run(self):
         while self._running:
             try:
-                async with AsyncSessionLocal() as db:
-                    await _verify_pending_deposits(db)
+                # Leader election: with uvicorn --workers N every process runs
+                # this loop; only the lease holder polls the chains per tick
+                # (the per-deposit locks below still guard each credit).
+                async with engine_lock("chain_verifier", ttl_seconds=LOCK_TTL_SECONDS * 2) as lease:
+                    if lease:
+                        async with AsyncSessionLocal() as db:
+                            await _verify_pending_deposits(db)
             except Exception as e:
                 logger.error("chain verifier tick error: %s", e, exc_info=True)
             await asyncio.sleep(TICK_INTERVAL)
@@ -120,7 +128,7 @@ async def _verify_one(deposit_id) -> None:
         # lock, the loser blocks here until the winner commits, then the
         # status recheck sees 'auto_approved' and bails.
         deposit = (await db.execute(
-            select(Deposit).where(Deposit.id == deposit_id).with_for_update()
+            for_update(select(Deposit).where(Deposit.id == deposit_id))
         )).scalar_one_or_none()
         if not deposit or deposit.status != "submitted":
             return  # something else moved it already
@@ -208,7 +216,7 @@ async def _verify_one(deposit_id) -> None:
         )
 
         if result["ok"]:
-            await _credit_deposit(db, deposit)
+            await _credit_deposit(db, deposit, onchain_value=_onchain_value(result), decimals=decimals)
             await db.commit()
             return
 
@@ -292,33 +300,74 @@ async def _verify_via_vault_event(
     }
 
 
-async def _credit_deposit(db: AsyncSession, deposit: Deposit) -> None:
+def _onchain_value(result: dict) -> int | None:
+    """Base-unit token amount the chain client actually observed, when it
+    reports one (vault path: ``amount_received``; plain transfer: ``value``)."""
+    for k in ("amount_received", "value", "onchain_value"):
+        v = result.get(k)
+        if v is None:
+            continue
+        try:
+            iv = int(v)
+        except (TypeError, ValueError):
+            continue
+        if iv >= 0:
+            return iv
+    return None
+
+
+def credit_amount_for(claimed: Decimal, onchain_value: int | None, decimals: int) -> Decimal:
+    """A11: credit min(claimed, on-chain value). The chain clients accept a
+    ±0.5% tolerance, so crediting the claimed figure let a user claim $1000
+    and send $995. When the client doesn't report the observed value we fall
+    back to the claimed amount (still inside the tolerance check)."""
+    claimed = Decimal(str(claimed or 0))
+    if onchain_value is None:
+        return claimed
+    observed = Decimal(onchain_value) / (Decimal(10) ** int(decimals))
+    return min(claimed, observed)
+
+
+async def _credit_deposit(
+    db: AsyncSession, deposit: Deposit, *, onchain_value: int | None = None, decimals: int = 6,
+) -> None:
     """Mirror the credit logic used by the existing oxapay/razorpay
     webhook handlers so balances, transactions, bonuses, and emails all
-    behave the same way regardless of which deposit method was used."""
-    # Row-lock the user so concurrent credits (another deposit, an oxapay
-    # webhook) can't lost-update main_wallet_balance.
-    user = (await db.execute(
-        select(User).where(User.id == deposit.user_id).with_for_update()
-    )).scalar_one_or_none()
+    behave the same way regardless of which deposit method was used.
+
+    A1: the balance moves through the ledger key ``onchain:{deposit_id}`` and
+    honours the deposit's credit target (tagged / wallet-bound account or main
+    wallet) exactly like the other gateways. A11: credits min(claimed,
+    on-chain value)."""
+    # Row-lock the user (Deposit → User → account) so concurrent credits can't
+    # lost-update the balance.
+    user = await lock_user(db, deposit.user_id)
     if not user:
         logger.error("user not found for deposit %s", deposit.id)
         return
 
+    claimed = Decimal(str(deposit.amount or 0))
+    credit_amt = credit_amount_for(claimed, onchain_value, decimals)
+    if credit_amt < claimed:
+        logger.warning(
+            "deposit %s: on-chain value %s below claimed %s — crediting the on-chain amount",
+            deposit.id, credit_amt, claimed,
+        )
+        deposit.rejection_reason = f"claimed={claimed} onchain={credit_amt}"
+        deposit.amount = credit_amt
+
+    from ..services.wallet_service import _apply_gateway_credit
+    credited, _kind = await _apply_gateway_credit(
+        db, deposit, user,
+        idempotency_key=f"onchain:{deposit.id}",
+        label=f"USDT {(deposit.network or '').upper()}",
+        amount=credit_amt,
+    )
     deposit.status = "auto_approved"
     deposit.approved_at = datetime.utcnow()
-
-    user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + deposit.amount
-
-    db.add(Transaction(
-        user_id=deposit.user_id,
-        account_id=None,
-        type="deposit",
-        amount=deposit.amount,
-        balance_after=user.main_wallet_balance,
-        reference_id=deposit.id,
-        description=f"Deposit to main wallet - USDT {(deposit.network or '').upper()} (auto)",
-    ))
+    if not credited:
+        logger.warning("deposit %s: ledger key onchain:%s already claimed — no credit", deposit.id, deposit.id)
+        return
 
     # H-MONEY-2: single, dedup-guarded bonus application (was an inline copy).
     from packages.common.src.bonus_service import apply_deposit_bonus

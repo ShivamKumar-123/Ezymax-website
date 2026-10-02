@@ -26,7 +26,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from packages.common.src.models import User, Withdrawal
+from packages.common.src.models import Withdrawal
 
 logger = logging.getLogger("onchain_withdraw")
 
@@ -72,6 +72,7 @@ async def create_onchain_withdrawal(
     db: AsyncSession,
     *,
     source: str | None = None,
+    step_up_challenge_id: str | None = None,
 ) -> dict:
     """Open a USDT withdrawal request.
 
@@ -107,17 +108,15 @@ async def create_onchain_withdrawal(
 
     destination = _validate_destination(net, destination_address or "")
 
-    user = (await db.execute(
-        select(User).where(User.id == user_id).with_for_update()
-    )).scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Resolve debit source — honor explicit user choice if provided,
-    # else auto-route (wallet-bound when present, else main_wallet).
-    from .wallet_service import _resolve_debit_source
+    # A2 / A11 / B1 / B2: lock the user, then the wallet-bound trading
+    # source (canonical order, populate_existing), and validate the source
+    # is active and not a managed pool — all BEFORE reading any balance.
+    # The previous version debited an UNLOCKED trading-account row, so two
+    # concurrent requests could both pass the balance check.
+    from .wallet_service import lock_withdrawal_source, enforce_withdrawal_step_up
+    from packages.common.src.money_guards import spendable_main_wallet
     from packages.common.src.withdrawal_limits import available_to_withdraw
-    source_kind, source_row = await _resolve_debit_source(db, user_id, preference=source)
+    user, source_kind, source_row = await lock_withdrawal_source(db, user_id, source)
     if source_kind == "trading":
         # C-MONEY-3 / H-MONEY-1: only funds NOT backing open positions are
         # withdrawable — via the shared helper so every withdrawal path agrees.
@@ -128,13 +127,10 @@ async def create_onchain_withdrawal(
             free_margin=source_row.free_margin,
         )
     else:
-        from packages.common.src.bonus_service import outstanding_bonus
-        available = available_to_withdraw(
-            "main",
-            main_wallet_balance=user.main_wallet_balance,
-            outstanding_bonus=await outstanding_bonus(db, user_id),  # H-MONEY-2
-        )
-    if available < amount:
+        # A5: balance − outstanding bonus, on the LOCKED user row.
+        available = await spendable_main_wallet(db, user)
+    amt = Decimal(amount)
+    if available < amt:
         if source_kind == "trading":
             raise HTTPException(
                 status_code=400,
@@ -148,16 +144,20 @@ async def create_onchain_withdrawal(
             ),
         )
 
+    # D3: single-use step-up, consumed inside this transaction.
+    await enforce_withdrawal_step_up(db, user_id, step_up_challenge_id)
+
     # Debit immediately (frozen). Admin re-credits on reject.
-    amt = Decimal(amount)
     if source_kind == "trading":
         # Debit the real balance by the withdrawn amount (NOT `available`,
-        # which is now the free-margin-capped withdrawable figure).
+        # which is the free-margin-capped withdrawable figure).
         source_row.balance = (source_row.balance or Decimal("0")) - amt
         source_row.equity = (source_row.equity or Decimal("0")) - amt
         source_row.free_margin = (source_row.free_margin or Decimal("0")) - amt
     else:
-        user.main_wallet_balance = available - amt
+        # Debit the REAL balance. (This used to write `available - amt`,
+        # i.e. it silently wiped the user's outstanding bonus as well.)
+        user.main_wallet_balance = Decimal(str(user.main_wallet_balance or 0)) - amt
 
     withdrawal = Withdrawal(
         user_id=user.id,
