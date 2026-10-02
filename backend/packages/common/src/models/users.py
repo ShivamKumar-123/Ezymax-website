@@ -116,10 +116,23 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    accounts = relationship("TradingAccount", back_populates="user", lazy="selectin")
+    # NOTE (Section F): users.last_statement_month (VARCHAR(7), migration
+    # 0076) is the monthly-statement engine's durable per-user claim. It is
+    # deliberately NOT mapped here — only that engine touches it, via raw
+    # SQL — so ORM INSERT/SELECT of users never depends on the column.
+
+    # Section F: these collections used to be lazy="selectin", so EVERY User
+    # load (including the selectin'd MasterAccount.user / Deposit.user /
+    # Employee.user …) also fetched all of the user's trading accounts,
+    # refresh tokens and reset tokens. Nothing in the backend reads them
+    # through the relationship (all access is by explicit query on user_id),
+    # so they are now raise_on_sql: an accidental lazy load fails loudly in
+    # tests instead of silently issuing N extra queries per request. Use
+    # selectinload(User.accounts) explicitly if a caller ever needs them.
+    accounts = relationship("TradingAccount", back_populates="user", lazy="raise_on_sql")
     sessions = relationship("UserSession", back_populates="user")
-    password_reset_tokens = relationship("PasswordResetToken", back_populates="user", lazy="selectin")
-    refresh_tokens = relationship("UserRefreshToken", back_populates="user", lazy="selectin")
+    password_reset_tokens = relationship("PasswordResetToken", back_populates="user", lazy="raise_on_sql")
+    refresh_tokens = relationship("UserRefreshToken", back_populates="user", lazy="raise_on_sql")
 
 
 class UserSession(Base):

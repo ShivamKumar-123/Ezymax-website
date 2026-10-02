@@ -21,6 +21,7 @@ import logging
 
 import httpx
 
+from packages.common.src.instrumentation import spawn
 from packages.common.src.config import get_settings
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.engine_lock import engine_lock
@@ -59,7 +60,7 @@ class ReconcileEngine:
             return
         self._running = True
         self._client = httpx.AsyncClient(timeout=20.0)
-        self._task = asyncio.create_task(self._loop())
+        self._task = spawn(self._loop(), name="reconcile_engine")
         logger.info("reconcile engine started (1 call / %.1fs, %d-bar lookback)",
                     self._interval, RECONCILE_LOOKBACK_BARS)
 

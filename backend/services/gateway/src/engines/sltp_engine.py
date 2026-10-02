@@ -13,10 +13,11 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from packages.common.src.instrumentation import spawn
 from packages.common.src.database import AsyncSessionLocal
-from packages.common.src.redis_client import redis_client, PriceChannel, is_tick_stale
+from packages.common.src.redis_client import redis_client, is_tick_stale, get_latest_ticks
 from packages.common.src.models import (
-    Position, TradingAccount, Transaction, TradeHistory, Instrument, User,
+    Position, Transaction, TradeHistory, User,
 )
 from packages.common.src.notify import create_notification
 from packages.common.src import corecen_trade_client
@@ -41,7 +42,7 @@ class SLTPEngine:
 
     async def start(self):
         self._running = True
-        self._task = asyncio.create_task(self._run())
+        self._task = spawn(self._run(), name="sltp_engine")
         logger.info("SL/TP engine started")
 
     async def stop(self):
@@ -67,16 +68,17 @@ class SLTPEngine:
                 await asyncio.sleep(3)
 
     async def _load_prices(self):
-        """Load latest prices directly from Redis keys instead of pubsub."""
+        """Load latest prices from Redis (one HGETALL of ticks:latest).
+
+        Section F: no keyspace SCAN every second — publish_price maintains the
+        ticks:latest hash. Entries there never expire, but stale ones are
+        rejected per position by is_tick_stale() (ts_ms age / stale flag), the
+        same guard the TTL'd tick: keys relied on."""
         try:
-            # Phase 3: SCAN, not KEYS. KEYS is O(N) over the entire keyspace and
-            # blocks the single-threaded Redis for every SL/TP tick; scan_iter
-            # walks the keyspace in small cursored batches without blocking.
-            keys = [k async for k in redis_client.scan_iter(match="tick:*", count=500)]
-            if not keys:
+            latest = await get_latest_ticks()
+            if not latest:
                 return
-            values = await redis_client.mget(keys)
-            for val in values:
+            for val in latest.values():
                 if val:
                     try:
                         data = json.loads(val)
@@ -114,6 +116,7 @@ class SLTPEngine:
                     (Position.stop_loss.isnot(None)) | (Position.take_profit.isnot(None))
                 )
                 .with_for_update(skip_locked=True)
+                .execution_options(populate_existing=True)
             )
             positions = result.scalars().all()
 
@@ -198,6 +201,7 @@ class SLTPEngine:
         # BOTH write a TradeHistory row.
         locked_q = await db.execute(
             select(Position).where(Position.id == pos.id).with_for_update()
+            .execution_options(populate_existing=True)
         )
         locked = locked_q.scalar_one_or_none()
         if not locked:
@@ -338,7 +342,7 @@ class SLTPEngine:
             except Exception as exc:
                 logger.error("[A-BOOK] SL/TP close forward failed: %s", exc)
 
-        asyncio.create_task(_forward_sltp_close())
+        spawn(_forward_sltp_close(), name="sltp_abook_forward")
 
 
 sltp_engine = SLTPEngine()

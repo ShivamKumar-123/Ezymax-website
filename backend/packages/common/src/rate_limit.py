@@ -6,16 +6,27 @@ sliding-window + Redis cross-process semantics. Anything that needs an
 HTTP-bound rate limit should depend on this module instead of redefining
 its own bucket.
 
-Local in-memory buckets are per-process; the Redis pipeline is best-
-effort cross-process sync (multi-worker / multi-pod deployments rely on
-it for cluster-wide counting). A Redis blip never makes the request
-slower than the local check.
+Section F (horizontal scale):
+
+* ``rate_limit_http_async`` — **Redis-authoritative** sliding window: one Lua
+  script (trim → count → admit/deny → TTL) keyed on WALL-CLOCK milliseconds,
+  so every worker / replica shares one exact window. The process-local bucket
+  is used only when Redis errors.
+* ``rate_limit_http`` (sync, legacy signature kept for existing call sites) —
+  local bucket for the immediate decision plus the same Lua script run in the
+  background; a Redis "deny" marks the local bucket full so the next request
+  on this process fails too. Call sites should migrate to the async variant
+  for exact cluster-wide limits.
+* ``incr_with_ttl`` — atomic INCR + first-hit EXPIRE for simple counters
+  (OTP attempts, per-email caps …), replacing racy INCR-then-EXPIRE pairs.
 """
 from __future__ import annotations
 
 import asyncio
 import ipaddress
-from time import monotonic
+import logging
+import uuid
+from time import monotonic, time as wall_time
 
 from fastapi import HTTPException, Request
 
@@ -107,7 +118,74 @@ def client_ip_for_inet(request: Request) -> str | None:
     return _parse_one_ip(str(host)) if host else None
 
 
+logger = logging.getLogger("rate_limit")
+
 # ─── Sliding-window rate limit ───────────────────────────────────────────
+
+# KEYS[1]=zset  ARGV[1]=now_ms ARGV[2]=window_ms ARGV[3]=max ARGV[4]=member
+# -> {allowed(1|0), count_after, retry_after_s}
+_SLIDING_WINDOW_LUA = """
+local now = tonumber(ARGV[1])
+local window = tonumber(ARGV[2])
+local limit = tonumber(ARGV[3])
+redis.call('zremrangebyscore', KEYS[1], '-inf', now - window)
+local n = redis.call('zcard', KEYS[1])
+if n >= limit then
+  local oldest = redis.call('zrange', KEYS[1], 0, 0, 'WITHSCORES')
+  local retry = 1
+  if oldest[2] then
+    retry = math.ceil((tonumber(oldest[2]) + window - now) / 1000)
+    if retry < 1 then retry = 1 end
+  end
+  redis.call('pexpire', KEYS[1], window + 1000)
+  return {0, n, retry}
+end
+redis.call('zadd', KEYS[1], now, ARGV[4])
+redis.call('pexpire', KEYS[1], window + 1000)
+return {1, n + 1, 0}
+"""
+
+# KEYS[1]=counter ARGV[1]=ttl_seconds -> new value (TTL set on first hit only)
+_INCR_TTL_LUA = """
+local v = redis.call('incr', KEYS[1])
+if v == 1 then
+  redis.call('expire', KEYS[1], ARGV[1])
+end
+return v
+"""
+
+
+def _redis():
+    from packages.common.src.redis_client import redis_client
+    return redis_client
+
+
+async def _redis_sliding_window(key: str, max_requests: int, window_sec: float) -> tuple[bool, int]:
+    """Run the shared Lua window. Returns (allowed, retry_after_s). Raises on
+    Redis errors so callers can choose their fallback."""
+    now_ms = int(wall_time() * 1000)
+    res = await _redis().eval(
+        _SLIDING_WINDOW_LUA, 1, key,
+        now_ms, int(float(window_sec) * 1000), int(max_requests),
+        f"{now_ms}:{uuid.uuid4().hex[:12]}",
+    )
+    allowed = bool(int(res[0]))
+    retry = int(res[2]) if len(res) > 2 else 1
+    return allowed, max(1, retry)
+
+
+async def incr_with_ttl(key: str, ttl_seconds: int) -> int:
+    """Atomically INCR ``key`` and set its TTL on the first increment.
+    Raises on Redis errors (callers decide fail-open vs fail-closed)."""
+    return int(await _redis().eval(_INCR_TTL_LUA, 1, key, int(ttl_seconds)))
+
+
+def _too_many(retry_after: int) -> HTTPException:
+    return HTTPException(
+        status_code=429,
+        detail=f"Too many requests — retry after {retry_after}s.",
+        headers={"Retry-After": str(retry_after)},
+    )
 
 _LOCAL_RATE_BUCKETS: dict[str, list[float]] = {}
 
@@ -163,30 +241,52 @@ def rate_limit_http(
         )
     arr.append(now)
 
-    # Best-effort Redis cross-process sync — fire-and-forget so a Redis
-    # blip never makes the request slower than it already is.
-    try:
-        from packages.common.src.redis_client import redis_client
-
-        async def _sync() -> None:
-            try:
-                pipe = redis_client.pipeline()
-                pipe.zremrangebyscore(key, 0, floor)
-                pipe.zadd(key, {f"{now}:{ip}": now})
-                pipe.zcard(key)
-                pipe.expire(key, int(window_sec) + 5)
-                _, _, count, _ = await pipe.execute()
-                if count > max_requests:
-                    # Cross-process counter saw too many — bump the local
-                    # bucket so the next request from this pod also fails
-                    # without re-querying Redis.
-                    _LOCAL_RATE_BUCKETS[key] = [now] * max_requests
-            except Exception:
-                pass
-
+    # Cross-process sync: the SAME wall-clock Lua window the async variant
+    # uses (the old pipeline scored entries with each process's monotonic
+    # clock, so different workers' entries were not comparable). Runs in the
+    # background so a Redis blip never slows the request; a cluster-wide
+    # "deny" fills the local bucket so this process's next request fails
+    # without re-querying Redis.
+    async def _sync() -> None:
         try:
-            asyncio.create_task(_sync())
-        except RuntimeError:
+            allowed, _retry = await _redis_sliding_window(key, max_requests, window_sec)
+            if not allowed:
+                _LOCAL_RATE_BUCKETS[key] = [monotonic()] * max_requests
+        except Exception:
             pass
-    except Exception:
+
+    try:
+        asyncio.get_running_loop().create_task(_sync())
+    except RuntimeError:
         pass
+
+
+async def rate_limit_http_async(
+    request: Request,
+    bucket: str,
+    max_requests: int,
+    window_sec: float,
+) -> None:
+    """Redis-authoritative sliding-window limit scoped to (bucket, client IP).
+
+    Exact across every worker / replica. Falls back to the process-local
+    bucket ONLY when Redis errors (so a Redis outage degrades to per-process
+    limiting instead of no limiting). Raises ``HTTPException(429)``."""
+    ip = client_ip_for_inet(request) or "anon"
+    key = f"rl:{bucket}:{ip}"
+    try:
+        allowed, retry = await _redis_sliding_window(key, max_requests, window_sec)
+    except Exception as exc:
+        logger.debug("rate_limit: redis unavailable for %s (%s) — local fallback", bucket, exc)
+        now = monotonic()
+        _maybe_gc(now)
+        floor = now - window_sec
+        arr = _LOCAL_RATE_BUCKETS.setdefault(key, [])
+        while arr and arr[0] < floor:
+            arr.pop(0)
+        if len(arr) >= max_requests:
+            raise _too_many(max(1, int(arr[0] + window_sec - now)))
+        arr.append(now)
+        return
+    if not allowed:
+        raise _too_many(retry)

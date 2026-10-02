@@ -80,6 +80,12 @@ services:
       # Fills use the same per-user spread the /ws/prices stream shows.
       # Overridable from .env; defaults ON in production.
       USER_SPREAD_AT_EXECUTION: ${USER_SPREAD_AT_EXECUTION:-true}
+      # Section F: background engines (SL/TP, copy, fees, statements, bars,
+      # trade-history healer) run in this process. Every engine is leader-
+      # locked, so N workers / replicas are safe. On a split deployment set
+      # false on API/WS replicas and true on the engine replica(s) — see
+      # docs/architecture/cloud-scale-blueprint.md.
+      RUN_ENGINES: ${RUN_ENGINES:-true}
     command: ["uvicorn", "services.gateway.src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--proxy-headers", "--forwarded-allow-ips", "*"]
     # Prod runs the code baked into the image — drop the dev source bind
     # mounts from the base file. Keep ONLY the uploads data mount.

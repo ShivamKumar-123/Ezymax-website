@@ -27,6 +27,7 @@ from decimal import Decimal
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from packages.common.src.instrumentation import spawn
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.engine_lock import engine_lock
 from packages.common.src.models import (
@@ -58,7 +59,7 @@ class AIStrategyEngine:
 
     async def start(self):
         self._running = True
-        asyncio.create_task(self._run())
+        spawn(self._run(), name="ai_strategy_engine")
         logger.info("AI strategy engine started (tick=%ds)", TICK_INTERVAL)
 
     async def stop(self):
@@ -93,6 +94,7 @@ class AIStrategyEngine:
             select(AIStrategyInstance)
             .where(AIStrategyInstance.id == instance_id)
             .with_for_update()
+            .execution_options(populate_existing=True)
         )).scalar_one_or_none()
         if not instance or instance.status != "running":
             return

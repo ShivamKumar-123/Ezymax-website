@@ -5,7 +5,7 @@ import time
 from datetime import datetime, timezone
 from collections import defaultdict
 
-from packages.common.src.redis_client import redis_client, BARS_UPDATES_CHANNEL
+from packages.common.src.redis_client import redis_client, BARS_UPDATES_CHANNEL, BARS_INDEX_SET
 
 logger = logging.getLogger("market-data.aggregator")
 
@@ -140,11 +140,16 @@ class BarAggregator:
         }
 
         bar_key = f"bar:{symbol}:{timeframe}"
-        await redis_client.set(bar_key, json.dumps(bar_data))
-
         list_key = f"bars:{symbol}:{timeframe}"
-        await redis_client.lpush(list_key, json.dumps(bar_data))
-        await redis_client.ltrim(list_key, 0, 999)
+        payload = json.dumps(bar_data)
+        # One round trip; SADD keeps the bars:index registry so the gateway's
+        # persist engine never has to SCAN the keyspace for bar lists.
+        pipe = redis_client.pipeline(transaction=False)
+        pipe.set(bar_key, payload)
+        pipe.lpush(list_key, payload)
+        pipe.ltrim(list_key, 0, 999)
+        pipe.sadd(BARS_INDEX_SET, list_key)
+        await pipe.execute()
 
         # Fan out the CLOSED bar so live charts finalize it and open the next
         # candle without waiting for a poll. `closed=True` is informational;

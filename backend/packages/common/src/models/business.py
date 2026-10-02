@@ -4,6 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     Column, String, Boolean, Integer, DateTime, ForeignKey, Text, Numeric,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
@@ -150,6 +151,16 @@ class InvestorAllocation(Base):
 
 class CopyTrade(Base):
     __tablename__ = "copy_trades"
+    # Section F: one mirror per (master position, allocation) EVER — in any
+    # status — so a leader change / restart can never re-open a copy the
+    # follower already had (migration 0076 creates the unique index after a
+    # duplicate check).
+    __table_args__ = (
+        UniqueConstraint(
+            "master_position_id", "investor_allocation_id",
+            name="uq_copy_trades_master_pos_alloc",
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     master_position_id = Column(UUID(as_uuid=True), ForeignKey("positions.id"))

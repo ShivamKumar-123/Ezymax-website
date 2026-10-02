@@ -633,6 +633,9 @@ class MarketDataService:
 
 
 async def main():
+    # Report exceptions from fire-and-forget tasks / callbacks (Section E/F).
+    from packages.common.src.instrumentation import install_asyncio_exception_reporting
+    install_asyncio_exception_reporting()
     service = MarketDataService()
     try:
         await service.start()

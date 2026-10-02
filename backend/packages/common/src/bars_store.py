@@ -77,8 +77,16 @@ def is_forex_market_closed(epoch_s: int) -> bool:
 
 
 async def ensure_bars_table(db: AsyncSession) -> None:
-    """Create the durable bars table if it doesn't exist. Idempotent — safe to
-    call on every gateway boot (mirrors the other _ensure_* startup helpers)."""
+    """Create the durable bars table if it doesn't exist.
+
+    Section F: the table is owned by Alembic (0058). On a migrated database
+    this is now a single catalog lookup — no DDL at boot. (A bare
+    ``CREATE INDEX IF NOT EXISTS`` still takes a SHARE lock on ohlc_bars
+    before noticing the index exists, blocking the live bar writers.) The
+    CREATE path only runs on an un-migrated dev database."""
+    exists = (await db.execute(text("SELECT to_regclass('public.ohlc_bars')"))).scalar()
+    if exists is not None:
+        return
     await db.execute(text(
         """
         CREATE TABLE IF NOT EXISTS ohlc_bars (

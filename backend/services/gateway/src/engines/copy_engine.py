@@ -2,8 +2,13 @@
 
 Architecture:
 - Manager trades one master TradingAccount; positions live as Position rows.
-- This engine polls ~every 2s, diffs master open positions vs in-memory snapshot,
-  opens/closes child positions on each linked investor account.
+- This engine polls ~every 1s and reconciles master open positions against the
+  DURABLE CopyTrade table (no in-memory snapshot): every (open master position,
+  active allocation) pair without a CopyTrade row in ANY status is mirrored
+  once; mirrors whose master position closed are closed by the orphan sweeps.
+  Pairs that were attempted but skipped (e.g. insufficient margin) are recorded
+  in Redis so they are not retried every second -- exactly like the old
+  one-shot diff, but shared by every worker / replica.
 - Lot scaling is driven by InvestorAllocation.copy_type (signal | pamm | mam), not mixed.
 - Master positions are never modified by this engine.
 
@@ -15,23 +20,23 @@ import logging
 from decimal import Decimal
 from datetime import datetime, timezone
 from uuid import UUID
-from collections import defaultdict
 from typing import Optional, Tuple
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from packages.common.src.instrumentation import spawn
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
     MasterAccount, InvestorAllocation, CopyTrade, Position, PositionStatus,
     TradingAccount, TradeHistory, Transaction, Order,
 )
-from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.redis_client import redis_client
 from packages.common.src.price_cache import price_cache
 from packages.common.src.admin_fees import credit_admin_fee
 from packages.common.src.copy_fees import apply_hwm_fee
 from packages.common.src.engine_lock import engine_lock
-from packages.common.src.row_locks import lock_account
+from packages.common.src.row_locks import for_update, lock_account, lock_user
 from packages.common.src.notify import create_notification
 
 logging.basicConfig(level=logging.INFO)
@@ -43,6 +48,34 @@ COPY_COMMENT_PREFIX = "Copy of master position "
 # time — with --workers=N each worker would otherwise duplicate every mirror.
 COPY_ENGINE_LOCK_KEY = "copy_engine:cycle_lock"
 COPY_ENGINE_LOCK_TTL = 10
+# A master position this young (and opened after the follower joined) is a
+# real-time mirror at the master's own entry; anything older is a catch-up at
+# the CURRENT market price (C-TRADE-3). Covers a leader failover (lock TTL).
+FRESH_MIRROR_WINDOW_SEC = 15
+# Redis set per master position of allocation ids already ATTEMPTED (opened or
+# deliberately skipped) so a skip isn't retried every cycle by any worker.
+CONSIDERED_KEY_PREFIX = "copy_engine:considered:"
+CONSIDERED_TTL_SEC = 30 * 24 * 3600
+
+
+def _aware(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt is not None and dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def is_catch_up(master_pos, allocation, now: Optional[datetime] = None) -> bool:
+    """True when the follower must enter at the CURRENT market price: the
+    master position predates the allocation, or is older than the real-time
+    mirror window (engine was down / leader changed / follower just joined)."""
+    now = now or datetime.now(timezone.utc)
+    opened = _aware(getattr(master_pos, "created_at", None))
+    if opened is None:
+        return True
+    joined = _aware(getattr(allocation, "created_at", None))
+    if joined is not None and opened < joined:
+        return True
+    return (now - opened).total_seconds() > FRESH_MIRROR_WINDOW_SEC
 
 
 def resolve_copy_type(allocation: InvestorAllocation, master: MasterAccount) -> str:
@@ -63,13 +96,9 @@ def resolve_copy_type(allocation: InvestorAllocation, master: MasterAccount) -> 
 class CopyTradeEngine:
     def __init__(self):
         self._running = False
-        self._master_positions: dict[str, set[str]] = defaultdict(set)
-        # Allocations that have already been "seeded" with the master's
-        # currently-open positions (catch-up for followers who subscribe
-        # mid-trade). Keyed by master_id -> set of allocation_ids. In-memory
-        # only; a process restart re-seeds, but the _open_copy dedup guard
-        # makes that a no-op for copies that already exist.
-        self._seeded_allocations: dict[str, set[str]] = defaultdict(set)
+        # (master_position_id, allocation_id) pairs attempted this cycle --
+        # recorded in Redis only AFTER the cycle commits.
+        self._pending_considered: list[tuple[str, str]] = []
         # Real-time WS events queued during a cycle and published to the
         # follower's `account:{id}` channel AFTER db.commit() — so the
         # follower's terminal refreshes open positions + history the instant
@@ -144,7 +173,7 @@ class CopyTradeEngine:
     async def start(self):
         self._running = True
         logger.info("Copy Trade Engine started")
-        asyncio.create_task(self._run())
+        spawn(self._run(), name="copy_engine")
 
     async def stop(self):
         self._running = False
@@ -164,6 +193,7 @@ class CopyTradeEngine:
                         continue
 
                     self._pending_events = []  # fresh per cycle
+                    self._pending_considered = []
                     async with AsyncSessionLocal() as db:
                         # Global orphan sweep — close any follower mirror whose
                         # master position is already closed, even if the master
@@ -200,9 +230,11 @@ class CopyTradeEngine:
                     # Durably committed — now fan out the real-time events so
                     # followers' terminals update without a manual refresh.
                     await self._flush_events()
+                    await self._flush_considered()
             except Exception as e:
                 logger.error("Copy engine error: %s", e, exc_info=True)
                 self._pending_events = []  # don't publish a half-rolled-back cycle
+                self._pending_considered = []
 
             await asyncio.sleep(1)
 
@@ -214,6 +246,42 @@ class CopyTradeEngine:
                 await redis_client.publish(channel, payload)
             except Exception as e:
                 logger.warning("copy-engine publish failed on %s: %s", channel, e)
+
+    async def _flush_considered(self) -> None:
+        """Record attempted pairs (post-commit, best-effort, one round trip)."""
+        pairs, self._pending_considered = self._pending_considered, []
+        if not pairs:
+            return
+        try:
+            pipe = redis_client.pipeline(transaction=False)
+            for mpos, alloc in pairs:
+                key = f"{CONSIDERED_KEY_PREFIX}{mpos}"
+                pipe.sadd(key, alloc)
+                pipe.expire(key, CONSIDERED_TTL_SEC)
+            await pipe.execute()
+        except Exception as e:
+            # Worst case a skipped pair is re-attempted next cycle; a pair that
+            # WAS opened is still deduped by its CopyTrade row.
+            logger.warning("copy-engine: recording considered pairs failed: %s", e)
+
+    async def _load_considered(self, master_pos_ids: list[str]) -> set[tuple[str, str]]:
+        if not master_pos_ids:
+            return set()
+        try:
+            pipe = redis_client.pipeline(transaction=False)
+            for mpos in master_pos_ids:
+                pipe.smembers(f"{CONSIDERED_KEY_PREFIX}{mpos}")
+            results = await pipe.execute()
+        except Exception as e:
+            # Fail closed: without the record we can't tell a deliberate skip
+            # from a never-tried pair, so skip opens this cycle.
+            logger.warning("copy-engine: loading considered pairs failed: %s", e)
+            raise
+        out: set[tuple[str, str]] = set()
+        for mpos, members in zip(master_pos_ids, results):
+            for alloc in members or ():
+                out.add((mpos, alloc.decode() if isinstance(alloc, bytes) else str(alloc)))
+        return out
 
     async def _global_orphan_sweep(self, db: AsyncSession) -> None:
         """Close any open CopyTrade whose master Position is already closed,
@@ -250,7 +318,13 @@ class CopyTradeEngine:
         return float(q.scalar() or 0)
 
     async def process_master(self, master: MasterAccount, db: AsyncSession) -> None:
-        """One full sync cycle for a single master: read, diff, open/close children."""
+        """One full sync cycle for a single master, reconciled against the DB.
+
+        No in-memory snapshot: a pair (open master position, active
+        allocation) is mirrored iff no CopyTrade row exists for it in ANY
+        status and it hasn't already been attempted (Redis "considered" set).
+        A leader change, restart or second replica therefore can never
+        re-open a copy the follower already had, nor miss one."""
         master_id_str = str(master.id)
 
         master_positions_q = await db.execute(
@@ -259,15 +333,13 @@ class CopyTradeEngine:
                 Position.status == PositionStatus.OPEN,
             )
         )
-        master_open = {}
+        master_open: dict[str, Position] = {}
         for p in master_positions_q.scalars().all():
             if p.comment and COPY_COMMENT_PREFIX in (p.comment or ""):
                 continue
             if p.comment and "Copy of master" in p.comment:
                 continue
             master_open[str(p.id)] = p
-        current_master_pos_ids = set(master_open.keys())
-        prev_master_pos_ids = self._master_positions.get(master_id_str, set())
 
         investors = await db.execute(
             select(InvestorAllocation).where(
@@ -278,7 +350,6 @@ class CopyTradeEngine:
         active_investors = investors.scalars().all()
         if not active_investors:
             logger.debug("process_master skip master=%s: no active allocations", master_id_str)
-            self._master_positions[master_id_str] = current_master_pos_ids
             return
 
         master_account = await db.get(TradingAccount, master.account_id)
@@ -295,87 +366,56 @@ class CopyTradeEngine:
                 master_id_str,
             )
 
-        # ── Catch-up for newly-joined followers ─────────────────────────────
-        # The new_positions diff below only mirrors trades the master opens
-        # AFTER this cycle. A follower who subscribes while the master already
-        # holds open positions would otherwise never receive them (the master
-        # position is already in prev_master_pos_ids, so it's never "new").
-        # Seed each allocation once with the master's currently-open positions.
-        seeded = self._seeded_allocations[master_id_str]
-        for investor in active_investors:
-            alloc_key = str(investor.id)
-            if alloc_key in seeded:
-                continue
-            # PAMM investors pool on the master account — no sub-account opens.
-            if resolve_copy_type(investor, master) == "pamm":
-                seeded.add(alloc_key)
-                continue
-            investor_account = await db.get(TradingAccount, investor.investor_account_id)
-            if not investor_account or not investor_account.is_active:
-                # Account not ready yet — retry next cycle, don't mark seeded.
-                continue
-            for pos_id in current_master_pos_ids:
-                await self._open_copy(
-                    master,
-                    master_open[pos_id],
-                    investor,
-                    investor_account,
-                    master_account,
-                    total_pool,
-                    db,
-                    catch_up=True,
+        if master_open:
+            # Batch: every existing mirror (ANY status) of these master
+            # positions, in one query.
+            existing_q = await db.execute(
+                select(CopyTrade.master_position_id, CopyTrade.investor_allocation_id).where(
+                    CopyTrade.master_position_id.in_([p.id for p in master_open.values()])
                 )
-            seeded.add(alloc_key)
-            if current_master_pos_ids:
-                logger.info(
-                    "Catch-up: seeded allocation=%s with %d open master position(s)",
-                    investor.id, len(current_master_pos_ids),
-                )
+            )
+            existing_pairs = {(str(mp), str(ia)) for mp, ia in existing_q.all()}
+            considered = await self._load_considered(list(master_open.keys()))
+            now = datetime.now(timezone.utc)
 
-        new_positions = current_master_pos_ids - prev_master_pos_ids
-        closed_positions = prev_master_pos_ids - current_master_pos_ids
-
-        for pos_id in new_positions:
-            master_pos = master_open[pos_id]
             for investor in active_investors:
-                # PAMM investors have no sub-account — funds are pooled on the
-                # master's account directly. Profit is distributed to their main
-                # wallet when the master closes the trade (see trading_service).
+                # PAMM investors pool on the master account -- no sub-account opens.
                 if resolve_copy_type(investor, master) == "pamm":
+                    continue
+                alloc_key = str(investor.id)
+                todo = [
+                    (pid, mp) for pid, mp in master_open.items()
+                    if (pid, alloc_key) not in existing_pairs
+                    and (pid, alloc_key) not in considered
+                ]
+                if not todo:
                     continue
                 investor_account = await db.get(TradingAccount, investor.investor_account_id)
                 if not investor_account or not investor_account.is_active:
+                    # Not ready yet -- retried next cycle (not marked considered).
                     logger.info(
                         "Skip copy open: inactive or missing investor account allocation=%s",
                         investor.id,
                     )
                     continue
-                await self._open_copy(
-                    master,
-                    master_pos,
-                    investor,
-                    investor_account,
-                    master_account,
-                    total_pool,
-                    db,
-                )
+                for pid, master_pos in todo:
+                    await self._open_copy(
+                        master,
+                        master_pos,
+                        investor,
+                        investor_account,
+                        master_account,
+                        total_pool,
+                        db,
+                        catch_up=is_catch_up(master_pos, investor, now),
+                    )
+                    self._pending_considered.append((pid, alloc_key))
+                    if investor.status != "active":
+                        break  # paused by the drawdown guard inside _open_copy
 
-        for closed_id in closed_positions:
-            copies = await db.execute(
-                select(CopyTrade).where(
-                    CopyTrade.master_position_id == UUID(closed_id),
-                    CopyTrade.status == "open",
-                )
-            )
-            for copy in copies.scalars().all():
-                await self._close_copy(copy, master, db)
-
-        # ── Orphan catch-up ────────────────────────────────────────────────
-        # In-memory diff (prev vs current) misses closes that happened while
-        # the engine was not running (gateway restart, crash, leader rotation
-        # when --workers=N + redis lock). Self-heal by closing any CopyTrade
-        # whose master position is no longer open but whose follower mirror
-        # is still marked open.
+        # -- Close mirrors whose master position is no longer open ------------
+        # (replaces the old in-memory "closed since last cycle" diff; also
+        # self-heals closes that happened while the engine was not running).
         orphan_copies_q = await db.execute(
             select(CopyTrade)
             .join(Position, CopyTrade.master_position_id == Position.id)
@@ -398,8 +438,6 @@ class CopyTradeEngine:
             )
             await self._close_copy(copy, master, db)
 
-        self._master_positions[master_id_str] = current_master_pos_ids
-
     async def _open_copy(
         self,
         master: MasterAccount,
@@ -416,12 +454,16 @@ class CopyTradeEngine:
             logger.warning("Skip copy open: no instrument on master position %s", master_pos.id)
             return
 
+        # Dedupe against a CopyTrade in ANY status (open OR closed): once a
+        # pair has been mirrored it is never mirrored again -- the old
+        # status=="open" filter re-opened a copy the follower had already
+        # closed whenever a fresh leader re-seeded. Backed by the unique index
+        # uq_copy_trades_master_pos_alloc (migration 0076).
         existing_q = await db.execute(
-            select(CopyTrade).where(
+            select(CopyTrade.id).where(
                 CopyTrade.master_position_id == master_pos.id,
                 CopyTrade.investor_allocation_id == investor.id,
-                CopyTrade.status == "open",
-            )
+            ).limit(1)
         )
         if existing_q.scalar_one_or_none():
             return
@@ -526,6 +568,13 @@ class CopyTradeEngine:
                     instrument.symbol,
                 )
 
+        # Lock the follower account and re-read it before the free-margin check
+        # and the margin update (a concurrent manual trade / transfer on the
+        # same account would otherwise lose-update margin_used).
+        locked_acct = await lock_account(db, investor_account.id)
+        if locked_acct is not None:
+            investor_account = locked_acct
+
         contract_size = float(instrument.contract_size or 100000)
         required_margin = Decimal(
             str(copy_lots * contract_size * float(open_price) / investor_account.leverage)
@@ -629,7 +678,13 @@ class CopyTradeEngine:
         ))
 
     async def _close_copy(self, copy: CopyTrade, master: MasterAccount, db: AsyncSession):
-        investor_pos = await db.get(Position, copy.investor_position_id)
+        # Lock the mirror position FIRST (same order as every other close path:
+        # position → account) and refresh it from the row, so a concurrent
+        # manual / SL-TP close that already closed it is seen and we never
+        # write a second TradeHistory / P&L credit.
+        investor_pos = (await db.execute(
+            for_update(select(Position).where(Position.id == copy.investor_position_id))
+        )).scalar_one_or_none()
         if not investor_pos:
             copy.status = "closed"
             logger.info("Close copy: investor position missing, marking copy closed")
@@ -718,10 +773,26 @@ class CopyTradeEngine:
         investor_pos.profit = net_profit
         investor_pos.closed_at = datetime.now(timezone.utc)
 
-        # C-TRADE-4: lock the CF account row before crediting the mirror-close
-        # P&L, so this can't race a manual close / transfer / withdrawal on the
-        # same account (each of which also mutates balance under its own lock).
-        investor_account = await lock_account(db, investor_pos.account_id)
+        # C-TRADE-4 / A12: lock order USERS (ascending id) → ACCOUNTS (ascending
+        # id). When a performance fee moves money between follower and master,
+        # both users are locked first; then the follower's mirror account and
+        # (fee only) the master pool account, in ascending id order, so two
+        # closes touching the same pair can never deadlock on lock order.
+        fee_user_ids = set()
+        if performance_fee > 0:
+            if alloc_for_fee is not None and alloc_for_fee.investor_user_id:
+                fee_user_ids.add(alloc_for_fee.investor_user_id)
+            if master.user_id:
+                fee_user_ids.add(master.user_id)
+        for uid in sorted(fee_user_ids, key=str):
+            await lock_user(db, uid)
+        acct_ids = {investor_pos.account_id}
+        if performance_fee > 0 and master.account_id:
+            acct_ids.add(master.account_id)
+        locked_accounts = {}
+        for aid in sorted(acct_ids, key=str):
+            locked_accounts[aid] = await lock_account(db, aid)
+        investor_account = locked_accounts.get(investor_pos.account_id)
         if investor_account:
             investor_account.balance = (investor_account.balance or Decimal("0")) + net_profit
             margin_release = (investor_pos.lots * contract_size * investor_pos.open_price) / Decimal(
@@ -769,10 +840,9 @@ class CopyTradeEngine:
                 )
 
         if performance_fee > 0:
-            # C-TRADE-4: lock the master pool row before crediting its
-            # performance-fee share (mirrors the investor-side lock above), so it
-            # can't race a concurrent close / transfer / withdrawal on that account.
-            master_account = await lock_account(db, master.account_id)
+            # Master pool row was locked above (ascending-id order with the
+            # follower's account) before crediting its performance-fee share.
+            master_account = locked_accounts.get(master.account_id)
             if master_account:
                 master_share = performance_fee - admin_fee
                 master_account.balance = (master_account.balance or Decimal("0")) + master_share

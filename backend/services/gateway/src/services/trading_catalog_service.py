@@ -12,8 +12,13 @@ from packages.common.src.instrument_pricing import (
     resolve_spread_config,
     resolve_commission,
 )
-from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.price_cache import price_cache
+from packages.common.src.cache import TTLCache
+
+# Section F: the catalog runs 3+ queries PER instrument (config, spread,
+# commission); cache the rendered list briefly per process. Busted on
+# `config:instruments:reload` via the gateway hub.
+_catalog_cache = TTLCache("trading_catalog", ttl=10.0, maxsize=16)
 
 
 async def _mid_price(symbol: str) -> Decimal:
@@ -25,6 +30,13 @@ async def _mid_price(symbol: str) -> Decimal:
 
 
 async def list_trading_instruments(segment: str | None, db: AsyncSession) -> list[dict]:
+    return await _catalog_cache.get_or_load(
+        ("list", (segment or "").lower() or None),
+        lambda: _list_trading_instruments_uncached(segment, db),
+    )
+
+
+async def _list_trading_instruments_uncached(segment: str | None, db: AsyncSession) -> list[dict]:
     q = (
         select(Instrument)
         .where(Instrument.is_active == True)

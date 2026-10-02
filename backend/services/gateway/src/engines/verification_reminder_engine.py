@@ -16,9 +16,10 @@ import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from packages.common.src.instrumentation import spawn
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.engine_lock import engine_lock
 from packages.common.src.models import User
@@ -27,6 +28,8 @@ from packages.common.src.email_branding import apply_email_brand
 logger = logging.getLogger("verification-reminder")
 
 TICK_INTERVAL = 3600  # check hourly so a deploy mid-day still triggers
+# Per-run cap; the rest go out on the next hourly tick.
+REMINDER_BATCH_LIMIT = 5000
 
 
 class VerificationReminderEngine:
@@ -37,7 +40,7 @@ class VerificationReminderEngine:
     async def start(self):
         self._running = True
         logger.info("Verification reminder engine started (tick=%ds)", TICK_INTERVAL)
-        asyncio.create_task(self._run())
+        spawn(self._run(), name="verification_reminder_engine")
 
     async def stop(self):
         self._running = False
@@ -58,7 +61,9 @@ class VerificationReminderEngine:
                             async with AsyncSessionLocal() as db:
                                 sent = await send_due_reminders(db)
                                 await db.commit()
-                            self._last_run_day = today
+                            # A full batch means more may be due — re-run next tick.
+                            if sent < REMINDER_BATCH_LIMIT:
+                                self._last_run_day = today
                             if sent:
                                 logger.info("KYC reminder: emailed %d users", sent)
             except Exception as e:
@@ -87,11 +92,25 @@ async def send_due_reminders(db: AsyncSession) -> int:
     threshold_7d = now - timedelta(days=7)
     app_url = (get_settings().TRADER_APP_URL or "https://trade.swisscresta.com")
 
+    # Section F: the stage/cohort filter runs in SQL (partial index
+    # ix_users_kyc_reminder, migration 0076). The old query loaded EVERY
+    # pending/rejected user older than 3 days — including everyone already at
+    # stage 2 who will never be emailed again — and filtered in Python.
     candidates = (await db.execute(
         select(User).where(
             User.kyc_status.in_(("pending", "rejected")),
-            User.created_at <= threshold_3d,
+            User.kyc_reminder_stage < 2,
+            or_(
+                and_(User.kyc_reminder_stage == 0, User.created_at <= threshold_3d),
+                and_(User.kyc_reminder_stage == 1, User.created_at <= threshold_7d),
+            ),
+            or_(User.is_demo.is_(None), User.is_demo == False),  # noqa: E712
+            User.email.isnot(None),
         )
+        .order_by(User.created_at)
+        .limit(REMINDER_BATCH_LIMIT)
+        .with_for_update(skip_locked=True)
+        .execution_options(populate_existing=True)
     )).scalars().all()
 
     sent = 0

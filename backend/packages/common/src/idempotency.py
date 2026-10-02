@@ -1,18 +1,33 @@
 """Idempotency-Key helper for mutating endpoints.
 
 Pattern: an authenticated client passes a unique `Idempotency-Key`
-header on POST /wallet/deposit / POST /wallet/withdraw / POST /orders.
-We hash (user_id || header) and look it up against a unique row in
-`idempotency_keys`. First call stores the cached response body+status;
-any retry of the same key returns that exact same response from cache,
-so a network-blip retry never creates a second deposit / withdrawal /
-order.
+header on a mutating POST. We hash (user_id || header) and key a row in
+`idempotency_keys` (UNIQUE (scope, key_hash)).
 
-Pattern intentionally lives outside FastAPI middleware — call it
-explicitly from each handler so the cached body is exactly the
-response shape that handler returns. Middleware-level interception
-makes it easy to cache a serialised pydantic model that doesn't quite
-match the on-the-wire JSON.
+Section F — claim-first (safe with N workers / replicas)
+--------------------------------------------------------
+The old flow was "SELECT; if absent run the handler; INSERT the response".
+Two concurrent requests with the same key both saw "absent" and BOTH ran the
+handler (two Razorpay orders, two deposits …); the UNIQUE clash only fired
+afterwards. Now:
+
+1. ``get_cached_response`` first CLAIMS the key: ``INSERT … ON CONFLICT DO
+   NOTHING RETURNING`` a placeholder row (``response_status = 0``) and commits
+   it in its OWN short session, so the claim is visible cluster-wide before the
+   handler runs and is independent of the handler's transaction.
+2. The loser of the race sees the existing row:
+     * finished (status != 0)  → the stored response is replayed;
+     * still in progress       → **409 Conflict** (retry later);
+     * an abandoned claim (in progress for > ``CLAIM_STALE_SECONDS``, e.g. the
+       winner crashed) is taken over atomically and the request proceeds.
+3. ``store_response`` fills the claimed row with the real body/status.
+4. ``release_claim`` deletes an unfinished claim — call it when the handler
+   fails so the client can retry immediately (otherwise the claim becomes
+   re-claimable after ``CLAIM_STALE_SECONDS``).
+
+Pattern intentionally lives outside FastAPI middleware — call it explicitly
+from each handler so the cached body is exactly the response shape that
+handler returns.
 """
 from __future__ import annotations
 
@@ -22,14 +37,13 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import HTTPException, Request, Response
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from .models import IdempotencyKey
 
 
 _HEADER = "Idempotency-Key"
+_IN_PROGRESS = 0
+CLAIM_STALE_SECONDS = 60
 
 
 def _hash(user_id: UUID | str | None, header_value: str) -> str:
@@ -37,41 +51,99 @@ def _hash(user_id: UUID | str | None, header_value: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+def _header(request: Request) -> str:
+    header_value = (request.headers.get(_HEADER) or "").strip()
+    if header_value and (len(header_value) < 8 or len(header_value) > 200):
+        raise HTTPException(
+            status_code=400,
+            detail="Idempotency-Key must be 8–200 characters.",
+        )
+    return header_value
+
+
+def _session_factory():
+    # Own short-lived session: the claim must commit independently of the
+    # handler's transaction (and survive its rollback).
+    from .database import AsyncSessionLocal
+    return AsyncSessionLocal
+
+
+_CLAIM_SQL = text(
+    """
+    INSERT INTO idempotency_keys (id, scope, key_hash, user_id, response_status, response_json, created_at)
+    VALUES (gen_random_uuid(), :scope, :key_hash, :user_id, 0, '', now())
+    ON CONFLICT (scope, key_hash) DO NOTHING
+    RETURNING id
+    """
+)
+
+_TAKEOVER_SQL = text(
+    """
+    UPDATE idempotency_keys
+       SET created_at = now()
+     WHERE scope = :scope AND key_hash = :key_hash
+       AND response_status = 0
+       AND created_at < now() - make_interval(secs => :stale)
+    RETURNING id
+    """
+)
+
+_LOOKUP_SQL = text(
+    """
+    SELECT response_status, response_json
+      FROM idempotency_keys
+     WHERE scope = :scope AND key_hash = :key_hash
+    """
+)
+
+
 async def get_cached_response(
     request: Request,
     *,
     scope: str,
     user_id: UUID | None,
-    db: AsyncSession,
+    db: AsyncSession | None = None,  # kept for call-site compatibility
 ) -> Response | None:
-    """Return a cached Response if this Idempotency-Key was already used
-    by this user under this scope. Returns None when:
-      - no header was provided (caller proceeds normally)
-      - header was provided but never seen before (caller proceeds and
-        should call `store_response` afterwards)
+    """Claim this request's Idempotency-Key, or replay / refuse a duplicate.
+
+    Returns:
+      * ``None`` — no header (proceed normally), or the key was claimed by this
+        request (proceed, then call ``store_response``);
+      * a ``Response`` replaying the stored result of a finished duplicate.
+    Raises ``HTTPException(409)`` while another request with the same key is
+    still in flight.
     """
-    header_value = (request.headers.get(_HEADER) or "").strip()
+    header_value = _header(request)
     if not header_value:
         return None
-    if len(header_value) < 8 or len(header_value) > 200:
-        raise HTTPException(
-            status_code=400,
-            detail="Idempotency-Key must be 8–200 characters.",
-        )
+    params = {
+        "scope": scope,
+        "key_hash": _hash(user_id, header_value),
+        "user_id": user_id,
+        "stale": CLAIM_STALE_SECONDS,
+    }
+    async with _session_factory()() as s:
+        claimed = (await s.execute(_CLAIM_SQL, params)).first()
+        if claimed is None:
+            claimed = (await s.execute(_TAKEOVER_SQL, params)).first()
+        await s.commit()
+        if claimed is not None:
+            return None
+        row = (await s.execute(_LOOKUP_SQL, params)).first()
 
-    key_hash = _hash(user_id, header_value)
-    res = await db.execute(
-        select(IdempotencyKey).where(
-            IdempotencyKey.scope == scope,
-            IdempotencyKey.key_hash == key_hash,
-        )
-    )
-    row = res.scalar_one_or_none()
     if row is None:
-        return None
+        # Deleted between our INSERT attempt and the lookup (released claim).
+        # Treat as in-flight; the client's retry will claim it.
+        raise HTTPException(status_code=409, detail="A request with this Idempotency-Key is in progress. Retry shortly.")
+    status_code, body = int(row[0] or 0), row[1]
+    if status_code == _IN_PROGRESS:
+        raise HTTPException(
+            status_code=409,
+            detail="A request with this Idempotency-Key is in progress. Retry shortly.",
+        )
     return Response(
-        content=row.response_json,
-        status_code=row.response_status,
+        content=body,
+        status_code=status_code,
         media_type="application/json",
         headers={"Idempotency-Replay": "true"},
     )
@@ -84,25 +156,67 @@ async def store_response(
     user_id: UUID | None,
     response_json: Any,
     status_code: int = 200,
-    db: AsyncSession,
+    db: AsyncSession | None = None,  # kept for call-site compatibility
 ) -> None:
-    """Persist `response_json` against the request's Idempotency-Key so
-    a retry returns the same body. No-op when the client didn't send
-    a header. Safe to call after the mutation has already committed —
-    a UNIQUE-constraint clash means another concurrent caller stored
-    a row first, in which case the next retry will see theirs."""
-    header_value = (request.headers.get(_HEADER) or "").strip()
+    """Persist ``response_json`` on the claimed row so a retry replays it.
+    No-op when the client didn't send a header."""
+    header_value = _header(request)
     if not header_value:
         return
     body = json.dumps(response_json, default=str)
-    db.add(IdempotencyKey(
-        scope=scope,
-        key_hash=_hash(user_id, header_value),
-        user_id=user_id,
-        response_status=status_code,
-        response_json=body,
-    ))
+    params = {
+        "scope": scope,
+        "key_hash": _hash(user_id, header_value),
+        "user_id": user_id,
+        "status": int(status_code) or 200,
+        "body": body,
+    }
+    async with _session_factory()() as s:
+        res = await s.execute(
+            text(
+                """
+                UPDATE idempotency_keys
+                   SET response_status = :status, response_json = :body
+                 WHERE scope = :scope AND key_hash = :key_hash
+                RETURNING id
+                """
+            ),
+            params,
+        )
+        if res.first() is None:
+            # Claim row vanished (released / never claimed) — store fresh.
+            await s.execute(
+                text(
+                    """
+                    INSERT INTO idempotency_keys (id, scope, key_hash, user_id, response_status, response_json, created_at)
+                    VALUES (gen_random_uuid(), :scope, :key_hash, :user_id, :status, :body, now())
+                    ON CONFLICT (scope, key_hash) DO NOTHING
+                    """
+                ),
+                params,
+            )
+        await s.commit()
+
+
+async def release_claim(
+    request: Request,
+    *,
+    scope: str,
+    user_id: UUID | None,
+) -> None:
+    """Drop an unfinished claim (handler failed) so the client can retry now."""
+    header_value = (request.headers.get(_HEADER) or "").strip()
+    if not header_value:
+        return
     try:
-        await db.commit()
-    except IntegrityError:
-        await db.rollback()
+        async with _session_factory()() as s:
+            await s.execute(
+                text(
+                    "DELETE FROM idempotency_keys WHERE scope = :scope "
+                    "AND key_hash = :key_hash AND response_status = 0"
+                ),
+                {"scope": scope, "key_hash": _hash(user_id, header_value)},
+            )
+            await s.commit()
+    except Exception:
+        pass

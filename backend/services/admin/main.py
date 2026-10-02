@@ -37,114 +37,17 @@ _cors_methods = [m.strip() for m in app_settings.CORS_ALLOW_METHODS.split(",") i
 _cors_headers = [h.strip() for h in app_settings.CORS_ALLOW_HEADERS.split(",") if h.strip()]
 
 
-async def _apply_startup_ddl():
-    """Idempotent ALTERs that unblock admin endpoints when manual migrations
-    haven't been run yet on a host (Render/Vercel/etc.). Safe to re-run."""
-    from sqlalchemy import text
-    try:
-        async with engine.begin() as conn:
-            await conn.execute(text(
-                "ALTER TABLE employees ADD COLUMN IF NOT EXISTS extra_permissions JSONB DEFAULT '[]'::jsonb"
-            ))
-            # Book-management LP settings read/write this table. Create if the
-            # baseline migration hasn't been applied so GET/PUT don't 500.
-            await conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS system_settings (
-                    key VARCHAR(100) PRIMARY KEY,
-                    value JSONB NOT NULL,
-                    description TEXT,
-                    updated_by UUID REFERENCES users(id),
-                    updated_at TIMESTAMPTZ DEFAULT now()
-                )
-            """))
-            # Algo Connector — per-account API keys for external bots. Bootstrap
-            # so key generation works even if alembic 0055 hasn't run on a host.
-            await conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS algo_api_keys (
-                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-                    account_id UUID REFERENCES trading_accounts(id) ON DELETE CASCADE,
-                    api_key VARCHAR(64) UNIQUE NOT NULL,
-                    secret_hash VARCHAR(128) NOT NULL,
-                    label VARCHAR(100) DEFAULT '',
-                    is_active BOOLEAN DEFAULT true,
-                    last_used_at TIMESTAMPTZ,
-                    trades_count INTEGER DEFAULT 0,
-                    created_at TIMESTAMPTZ DEFAULT now()
-                )
-            """))
-            await conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_algo_api_keys_api_key ON algo_api_keys(api_key)"
-            ))
-            # Plaintext secret storage was removed (alembic 0056) — auth only
-            # ever compares secret_hash. Drop the column here too so hosts that
-            # never run alembic also stop holding plaintext trading credentials.
-            await conn.execute(text(
-                "ALTER TABLE algo_api_keys DROP COLUMN IF EXISTS api_secret"
-            ))
-            # White-label brokers (alembic 0062) — tenancy columns + profile
-            # table so broker endpoints work even before alembic runs.
-            await conn.execute(text(
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_broker_id UUID "
-                "REFERENCES users(id) ON DELETE SET NULL"
-            ))
-            await conn.execute(text(
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS broker_ancestry UUID[] NOT NULL DEFAULT '{}'"
-            ))
-            await conn.execute(text(
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS signup_origin VARCHAR(20)"
-            ))
-            await conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_users_broker_ancestry ON users USING GIN (broker_ancestry)"
-            ))
-            await conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS broker_profiles (
-                    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-                    partner_code VARCHAR(20) UNIQUE NOT NULL,
-                    permissions JSONB NOT NULL DEFAULT '{}'::jsonb,
-                    brand_name VARCHAR(100),
-                    logo_url TEXT,
-                    support_email VARCHAR(255),
-                    support_whatsapp VARCHAR(32),
-                    custom_domain VARCHAR(255),
-                    app_subdomain VARCHAR(63),
-                    custom_domain_status VARCHAR(20),
-                    custom_domain_last_error TEXT,
-                    custom_domain_provisioned_at TIMESTAMPTZ,
-                    rental_plan VARCHAR(50),
-                    rental_amount NUMERIC(18,2) NOT NULL DEFAULT 0,
-                    rental_currency VARCHAR(10) NOT NULL DEFAULT 'USD',
-                    rental_period VARCHAR(20) NOT NULL DEFAULT 'monthly',
-                    rental_next_due DATE,
-                    rental_notes TEXT,
-                    is_suspended BOOLEAN NOT NULL DEFAULT false,
-                    suspended_reason TEXT,
-                    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
-                    created_at TIMESTAMPTZ DEFAULT now(),
-                    updated_at TIMESTAMPTZ DEFAULT now()
-                )
-            """))
-            await conn.execute(text(
-                "CREATE UNIQUE INDEX IF NOT EXISTS uq_broker_profiles_custom_domain "
-                "ON broker_profiles (custom_domain) WHERE custom_domain IS NOT NULL"
-            ))
-            # The baseline schema whitelists role values; white-label
-            # tenants use role='broker' (alembic 0063). Recreate the CHECK
-            # with 'broker' included — idempotent (same definition each run).
-            await conn.execute(text(
-                "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check"
-            ))
-            await conn.execute(text(
-                "ALTER TABLE users ADD CONSTRAINT users_role_check CHECK "
-                "(role IN ('user','admin','super_admin','ib','sub_broker','master_trader','broker'))"
-            ))
-    except Exception as e:
-        logger.warning("startup DDL skipped: %s", e)
+# Section F: the former _apply_startup_ddl() ran ALTER/CREATE statements on
+# every admin boot — including DROP + ADD CONSTRAINT users_role_check, which
+# took an ACCESS EXCLUSIVE lock on users and re-validated the whole table each
+# start (x2 workers). Every statement already lives in an Alembic migration
+# (0055/0056 algo keys, 0062 broker tenancy, 0063 users_role_check, 0070
+# employees.extra_permissions, baseline system_settings) and deploy.sh runs
+# `alembic upgrade head` before restarting services, so it is gone (see 0076).
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await _apply_startup_ddl()
     yield
     await engine.dispose()
 

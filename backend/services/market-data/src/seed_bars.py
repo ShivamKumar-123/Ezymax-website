@@ -12,11 +12,10 @@ Other symbols: generates simulated bars anchored to the current live price.
 import asyncio
 import json
 import logging
-import time
 
 import httpx
 
-from packages.common.src.redis_client import redis_client
+from packages.common.src.redis_client import redis_client, BARS_INDEX_SET
 
 logger = logging.getLogger("seed-bars")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s %(message)s")
@@ -196,6 +195,7 @@ async def seed(force: bool = False):
                 bar["timeframe"] = tf_name
                 pipe.lpush(list_key, json.dumps(bar))
             pipe.ltrim(list_key, 0, 999)
+            pipe.sadd(BARS_INDEX_SET, list_key)
             await pipe.execute()
             logger.info("  %s:%s → %d bars seeded", sym, tf_name, len(bars))
 

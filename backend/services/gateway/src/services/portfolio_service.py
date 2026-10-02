@@ -16,8 +16,30 @@ from packages.common.src.models import (
     TradingAccount, Position, PositionStatus, OrderSide,
     TradeHistory, Instrument, CopyTrade,
 )
-from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.price_cache import price_cache
+
+
+def _display_close_reason(
+    reason: str | None, side: str, close_price, sl, tp,
+) -> str | None:
+    """Read-time SL/TP relabel (Section F — replaces the UPDATE that every
+    history page load used to run). A row still labelled manual/copy whose
+    close price crossed the position's SL/TP is SHOWN as 'sl'/'tp' — exactly
+    the label the old write-on-read relabel stored (SL checked first). The
+    stored row is not modified; migration 0076 relabelled history once."""
+    r = (reason or "manual").lower()
+    if r not in ("manual", "copy_close", "copy") or close_price is None:
+        return reason
+    s = (side or "").lower()
+    try:
+        cp = float(close_price)
+    except (TypeError, ValueError):
+        return reason
+    if sl is not None and ((s == "buy" and cp <= sl) or (s == "sell" and cp >= sl)):
+        return "sl"
+    if tp is not None and ((s == "buy" and cp >= tp) or (s == "sell" and cp <= tp)):
+        return "tp"
+    return reason
 
 
 def _public_close_reason(reason: str | None) -> str:
@@ -277,44 +299,10 @@ async def trade_history(
             raise HTTPException(status_code=404, detail="Account not found")
         account_ids = [account_id]
 
-    # H-TRADE-6: relabel still-'manual' history rows whose close_price crossed
-    # the position's SL/TP. This MUST be scoped to the requesting user's accounts
-    # — the previous statement had no account filter, so every history page load
-    # issued a table-wide UPDATE across ALL users' rows (lock contention + a huge
-    # write on a read path). Scoped + idempotent, it self-extinguishes to 0 rows
-    # after the first load per account. (A global one-off relabel belongs in a
-    # migration / nightly job, not the request path.)
-    from sqlalchemy import text
-    if account_ids:
-        try:
-            await db.execute(
-                text(
-                    """
-                    UPDATE trade_history th
-                    SET close_reason = CASE
-                        WHEN p.stop_loss IS NOT NULL AND (
-                            (LOWER(CAST(p.side AS TEXT)) = 'buy'  AND th.close_price <= p.stop_loss)
-                         OR (LOWER(CAST(p.side AS TEXT)) = 'sell' AND th.close_price >= p.stop_loss)
-                        ) THEN 'sl'
-                        WHEN p.take_profit IS NOT NULL AND (
-                            (LOWER(CAST(p.side AS TEXT)) = 'buy'  AND th.close_price >= p.take_profit)
-                         OR (LOWER(CAST(p.side AS TEXT)) = 'sell' AND th.close_price <= p.take_profit)
-                        ) THEN 'tp'
-                        ELSE th.close_reason
-                    END
-                    FROM positions p
-                    WHERE th.position_id = p.id
-                      AND th.account_id = ANY(:account_ids)
-                      AND COALESCE(th.close_reason, 'manual') IN ('manual', 'copy_close', 'copy')
-                      AND (p.stop_loss IS NOT NULL OR p.take_profit IS NOT NULL)
-                    """
-                ),
-                {"account_ids": account_ids},
-            )
-            await db.commit()
-        except Exception:
-            # Never break trade_history if the backfill fails — just serve what's there.
-            await db.rollback()
+    # Section F: no UPDATE on this read path any more. The SL/TP relabel the
+    # old code wrote here on every page load (H-TRADE-6) is now derived at
+    # read time (_display_close_reason) and was applied to existing rows once
+    # by migration 0076.
 
     base_filter = [TradeHistory.account_id.in_(account_ids)]
     if symbol:
@@ -369,16 +357,23 @@ async def trade_history(
             select(_AITrade.position_id).where(_AITrade.position_id.in_(pos_ids))
         )).scalars().all())
 
+    # Batched (was one CopyTrade query per row): which positions are copies.
+    copy_pos_ids: set = set()
+    if pos_ids:
+        copy_pos_ids = set((await db.execute(
+            select(CopyTrade.investor_position_id).where(
+                CopyTrade.investor_position_id.in_(pos_ids)
+            )
+        )).scalars().all())
+
     items = []
     for t in trades:
         side_val = t.side.value if hasattr(t.side, 'value') else str(t.side)
-        copy_trade_q = await db.execute(
-            select(CopyTrade).where(CopyTrade.investor_position_id == t.position_id)
-        )
-        copy_trade = copy_trade_q.scalar_one_or_none()
+        is_copy = t.position_id in copy_pos_ids
         is_ai = t.position_id in ai_pos_ids
-        trade_type = "copy_trade" if copy_trade else ("ai_strategy" if is_ai else "self_trade")
+        trade_type = "copy_trade" if is_copy else ("ai_strategy" if is_ai else "self_trade")
         sl_val, tp_val = pos_sltp.get(t.position_id, (None, None))
+        shown_reason = _display_close_reason(t.close_reason, side_val, t.close_price, sl_val, tp_val)
         items.append({
             "id": str(t.id), "symbol": t.instrument.symbol if t.instrument else None,
             "side": side_val, "lots": float(t.lots),
@@ -397,7 +392,7 @@ async def trade_history(
             # shouldn't see "Admin closed your trade" in their own
             # history — they see "Manual" the same as if they'd
             # clicked Close themselves.
-            "close_reason": _public_close_reason(t.close_reason),
+            "close_reason": _public_close_reason(shown_reason),
             "trade_type": trade_type,
             "is_ai": is_ai,
             "opened_at": t.opened_at.isoformat() if t.opened_at else None,

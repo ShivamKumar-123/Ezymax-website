@@ -7,12 +7,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import Instrument, InstrumentSegment
 from packages.common.src.schemas import InstrumentResponse, TickData
-from packages.common.src.redis_client import redis_client, PriceChannel
+from packages.common.src.redis_client import get_latest_ticks
 from packages.common.src.price_cache import price_cache
+from packages.common.src.cache import TTLCache
 from packages.common.src.market_hours import market_status_dict
 
 
+# Section F: small per-process caches for read-mostly instrument data. Busted
+# on `config:instruments:reload` (gateway lifespan wires it via the hub).
+_instruments_cache = TTLCache("instruments", ttl=10.0, maxsize=32)
+_market_status_cache = TTLCache("market_status", ttl=5.0, maxsize=4)
+
+
 async def list_instruments(
+    segment: str | None, active_only: bool, db: AsyncSession,
+) -> list[InstrumentResponse]:
+    return await _instruments_cache.get_or_load(
+        ("list", segment, bool(active_only)),
+        lambda: _list_instruments_uncached(segment, active_only, db),
+    )
+
+
+async def _list_instruments_uncached(
     segment: str | None, active_only: bool, db: AsyncSession,
 ) -> list[InstrumentResponse]:
     query = select(Instrument)
@@ -48,6 +64,13 @@ async def list_instruments(
 
 
 async def get_market_status(db: AsyncSession) -> list[dict]:
+    # market_status_dict depends on wall-clock time, hence the short TTL.
+    return await _market_status_cache.get_or_load(
+        "all", lambda: _get_market_status_uncached(db),
+    )
+
+
+async def _get_market_status_uncached(db: AsyncSession) -> list[dict]:
     result = await db.execute(
         select(Instrument).where(Instrument.is_active == True)
     )
@@ -80,41 +103,21 @@ async def get_symbol_market_status(symbol: str, db: AsyncSession) -> dict:
 
 
 async def get_all_prices() -> list[dict]:
-    # Live ticks first — authoritative whenever present.
-    live_keys = []
-    async for key in redis_client.scan_iter(f"{PriceChannel.TICK_PREFIX}*"):
-        live_keys.append(key)
+    """Latest quote for every symbol.
 
+    Section F: one HGETALL of the ticks:latest hash (maintained by
+    publish_price) instead of two keyspace SCANs + MGETs per call — this
+    endpoint is polled sub-second by clients. The hash holds the newest
+    publish per symbol, i.e. the live tick while quoting and the last-known
+    price once a market closes (same result the tick:/last_price: pair gave).
+    """
+    latest = await get_latest_ticks()
     prices: list[dict] = []
-    seen: set[str] = set()
-    if live_keys:
-        for v in await redis_client.mget(live_keys):
-            if v:
-                rec = json.loads(v)
-                sym = (rec.get("symbol") or "").upper()
-                if sym:
-                    seen.add(sym)
-                prices.append(rec)
-
-    # Fall back to the durable last-known price for any symbol whose live tick
-    # has expired — e.g. forex / indices / metals whose market is closed over the
-    # weekend. Without this they'd drop off the list and show "-" instead of the
-    # last price. Live ticks (above) always win for symbols that are still quoting.
-    last_keys = []
-    async for key in redis_client.scan_iter(f"{PriceChannel.LAST_PRICE_PREFIX}*"):
-        last_keys.append(key)
-    if last_keys:
-        for v in await redis_client.mget(last_keys):
-            if not v:
-                continue
-            rec = json.loads(v)
-            sym = (rec.get("symbol") or "").upper()
-            if sym and sym in seen:
-                continue
-            if sym:
-                seen.add(sym)
-            prices.append(rec)
-
+    for v in latest.values():
+        try:
+            prices.append(json.loads(v))
+        except (ValueError, TypeError):
+            continue
     return prices
 
 
