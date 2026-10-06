@@ -21,6 +21,7 @@
  * + QR remain rendered — they can pay from any external wallet/exchange.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { QRCodeCanvas } from 'qrcode.react';
 import {
@@ -168,6 +169,12 @@ export default function WalletDepositModal({
 
   if (!open) return null;
 
+  // Rendered into <body> through a portal. Inside the dashboard shell an
+  // ancestor carries a transform, which makes `position: fixed` resolve
+  // against that ancestor instead of the viewport — so the sheet was drawn
+  // at the top of the PAGE, and someone who pressed "Pay with Crypto" at the
+  // bottom of a long wallet page had to scroll all the way up to find it.
+  //
   // Layering and layout: the sheet is taller than a phone screen. Centred
   // with flexbox inside a non-scrolling overlay, its top third — the title
   // and the close button — went off the top of the viewport behind the
@@ -175,7 +182,7 @@ export default function WalletDepositModal({
   // back into view. The overlay now scrolls, the sheet centres with auto
   // margins (which never clip), it stacks above the navbar like the other
   // modals, and the header with the close button sticks to the top.
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[120] overflow-y-auto overscroll-contain bg-bg-base/80 backdrop-blur-sm"
       onClick={onClose}
@@ -237,7 +244,8 @@ export default function WalletDepositModal({
         )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
