@@ -68,7 +68,7 @@ const nextConfig = {
      * CSP starts in REPORT-ONLY mode: the admin's confirmed origins are all
      * same-origin (API via the /api rewrite, Inter self-hosted through
      * next/font, local images) plus a cross-origin price WebSocket
-     * (NEXT_PUBLIC_WS_URL, e.g. wss://api.swisscresta.com — hence the bare
+     * (NEXT_PUBLIC_WS_URL, e.g. wss://api.ezymex.com — hence the bare
      * wss: in connect-src). 'unsafe-inline'/'unsafe-eval' stay because the
      * beforeInteractive ThemeInitScript is an inline <script> and the Next.js
      * client runtime needs them (same rationale as the trader config).

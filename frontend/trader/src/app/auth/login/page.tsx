@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Sign-in page (SwissCresta) — thin wrapper around the shared
+ * Sign-in page (Ezymex) — thin wrapper around the shared
  * FullScreenSignup card. The card itself owns the form state, validation
  * and auth-store wiring; this page just selects the `login` variant.
  */

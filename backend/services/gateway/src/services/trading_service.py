@@ -29,6 +29,7 @@ from packages.common.src.market_hours import is_market_open
 from packages.common.src import corecen_trade_client
 
 from packages.common.src.email_branding import apply_email_brand
+from packages.common.src.wallet_placeholder import is_wallet_placeholder_email
 logger = logging.getLogger("trading_service")
 
 
@@ -548,7 +549,7 @@ async def place_order(
                 await apply_email_brand(bg_db, u)
             if not u or not u.email:
                 return
-            if u.email.lower().endswith("@wallet.swisscresta.local"):
+            if is_wallet_placeholder_email(u.email):
                 return
             st = get_settings()
             subject, html, text = render_trade_placed(
@@ -563,7 +564,7 @@ async def place_order(
                 stop_loss=_email_payload["stop_loss"],
                 take_profit=_email_payload["take_profit"],
                 when_utc=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
-                trader_app_url=st.TRADER_APP_URL or "https://trade.swisscresta.com",
+                trader_app_url=st.TRADER_APP_URL or "https://trade.ezymex.com",
             )
             await send_email(u.email, subject, html, text=text)
         except Exception as e:

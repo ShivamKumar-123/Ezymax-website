@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# SwissCresta — restore Postgres (and optionally uploads + timescaledb) from
+# Ezymex — restore Postgres (and optionally uploads + timescaledb) from
 # backup files produced by scripts/backup.sh.
 #
 # Usage:
@@ -27,7 +27,7 @@ set -euo pipefail
 DUMP="${1:?postgres dump path required (e.g. backups/postgres-...sql.gz or .sql.gz.gpg)}"
 UPLOADS="${2:-}"
 TS_DUMP="${3:-}"
-COMPOSE_DIR="${SWISSCRESTA_DIR:-/opt/swisscresta}"
+COMPOSE_DIR="${EZYMEX_DIR:-/opt/ezymex}"
 GPG_PASSPHRASE="${BACKUP_GPG_PASSPHRASE:-}"
 
 [[ -f "$DUMP" ]] || { echo "[restore] $DUMP not found"; exit 1; }
@@ -78,7 +78,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d postgres
 # pg_isready loop — wait up to 30s for the container's healthcheck
 for i in $(seq 1 30); do
   if docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres \
-       pg_isready -U "${POSTGRES_USER:-swisscresta}" >/dev/null 2>&1; then
+       pg_isready -U "${POSTGRES_USER:-ezymex}" >/dev/null 2>&1; then
     break
   fi
   sleep 1
@@ -86,7 +86,7 @@ done
 
 echo "[restore] piping (decrypted) $DUMP → psql"
 decrypt_stream "$DUMP" | gunzip -c | docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-  exec -T postgres psql -U "${POSTGRES_USER:-swisscresta}" -d postgres -v ON_ERROR_STOP=1
+  exec -T postgres psql -U "${POSTGRES_USER:-ezymex}" -d postgres -v ON_ERROR_STOP=1
 
 # ─── TimescaleDB (optional) ───────────────────────────────────────────
 if [[ -n "$TS_DUMP" ]]; then
@@ -94,14 +94,14 @@ if [[ -n "$TS_DUMP" ]]; then
   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d timescaledb
   for i in $(seq 1 30); do
     if docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T timescaledb \
-         pg_isready -U "${TIMESCALE_USER:-swisscresta}" >/dev/null 2>&1; then
+         pg_isready -U "${TIMESCALE_USER:-ezymex}" >/dev/null 2>&1; then
       break
     fi
     sleep 1
   done
   echo "[restore] piping (decrypted) $TS_DUMP → timescale psql"
   decrypt_stream "$TS_DUMP" | gunzip -c | docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-    exec -T timescaledb psql -U "${TIMESCALE_USER:-swisscresta}" -d postgres -v ON_ERROR_STOP=1
+    exec -T timescaledb psql -U "${TIMESCALE_USER:-ezymex}" -d postgres -v ON_ERROR_STOP=1
 fi
 
 # ─── Uploads (optional) ───────────────────────────────────────────────

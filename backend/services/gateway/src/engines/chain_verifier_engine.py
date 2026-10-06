@@ -50,6 +50,7 @@ from packages.common.src.chain_clients import (
 
 from packages.common.src import notify
 from packages.common.src.email_branding import apply_email_brand
+from packages.common.src.wallet_placeholder import is_wallet_placeholder_email
 
 logger = logging.getLogger("chain-verifier")
 
@@ -397,9 +398,7 @@ async def _credit_deposit(
         from packages.common.src.email_templates import render_deposit_confirmed
         from packages.common.src.config import get_settings
         await apply_email_brand(db, user)
-        if smtp_configured() and user.email and not user.email.lower().endswith(
-            "@wallet.swisscresta.local"
-        ):
+        if smtp_configured() and user.email and not is_wallet_placeholder_email(user.email):
             subject, html, text = render_deposit_confirmed(
                 first_name=user.first_name,
                 amount=deposit.amount,
@@ -407,7 +406,7 @@ async def _credit_deposit(
                 method=f"USDT-{(deposit.network or '').upper()}",
                 reference=str(deposit.id),
                 new_balance=user.main_wallet_balance,
-                trader_app_url=(get_settings().TRADER_APP_URL or "https://trade.swisscresta.com"),
+                trader_app_url=(get_settings().TRADER_APP_URL or "https://trade.ezymex.com"),
             )
             fire_and_forget(send_email(user.email, subject, html, text=text))
     except Exception as e:
@@ -436,7 +435,7 @@ async def _send_rejected_email(deposit: Deposit) -> None:
             )).scalar_one_or_none()
         async with AsyncSessionLocal() as db3:
             await apply_email_brand(db3, user)
-        if not user or not user.email or user.email.lower().endswith("@wallet.swisscresta.local"):
+        if not user or not user.email or is_wallet_placeholder_email(user.email):
             return
         subject, html, text = render_deposit_failed(
             first_name=user.first_name,
@@ -445,7 +444,7 @@ async def _send_rejected_email(deposit: Deposit) -> None:
             method=f"USDT-{(deposit.network or '').upper()}",
             reason_code=deposit.rejection_reason or "verification failed",
             reference=str(deposit.id),
-            trader_app_url=(get_settings().TRADER_APP_URL or "https://trade.swisscresta.com"),
+            trader_app_url=(get_settings().TRADER_APP_URL or "https://trade.ezymex.com"),
         )
         fire_and_forget(send_email(user.email, subject, html, text=text))
     except Exception as e:

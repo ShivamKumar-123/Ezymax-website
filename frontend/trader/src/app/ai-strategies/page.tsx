@@ -77,10 +77,10 @@ function StrategyCard({
         <span
           className={clsx(
             'shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide',
-            isRunning ? 'bg-emerald-500/15 text-emerald-500' : hasBacktest ? 'bg-crx-yellow-soft text-[#C73E11]' : 'bg-bg-card-nested text-text-secondary',
+            isRunning ? 'bg-emerald-500/15 text-emerald-500' : hasBacktest ? 'bg-crx-yellow-soft text-[#8A0000]' : 'bg-bg-card-nested text-text-secondary',
           )}
         >
-          <span className={clsx('h-1.5 w-1.5 rounded-full', isRunning ? 'bg-emerald-500 animate-pulse' : hasBacktest ? 'bg-[#E94E1B]' : 'bg-text-tertiary')} />
+          <span className={clsx('h-1.5 w-1.5 rounded-full', isRunning ? 'bg-emerald-500 animate-pulse' : hasBacktest ? 'bg-[#CC0000]' : 'bg-text-tertiary')} />
           {isRunning ? `Live · ${running.length}` : hasBacktest ? 'Backtested' : 'Draft'}
         </span>
       </div>
@@ -147,7 +147,7 @@ function RenameDialog({ open, initial, busy, onClose, onSave }: { open: boolean;
           value={v}
           onChange={(e) => setV(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && v.trim()) onSave(v.trim()); }}
-          className="mt-4 w-full rounded-xl border border-border-secondary bg-bg-card-nested px-3 py-2.5 text-sm text-text-primary focus:border-[#E94E1B]/50 focus:outline-none"
+          className="mt-4 w-full rounded-xl border border-border-secondary bg-bg-card-nested px-3 py-2.5 text-sm text-text-primary focus:border-[#CC0000]/50 focus:outline-none"
         />
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-full px-4 py-2 text-xs font-semibold text-text-secondary hover:bg-bg-hover">Cancel</button>
@@ -239,7 +239,7 @@ export default function AiStrategiesPage() {
           title="My Strategies"
           description="Everything you built with the AI Strategy Maker — backtest, deploy to any account, watch ROI, pause or refine."
           actions={
-            <Link href="/ai-strategies/new" className="inline-flex items-center gap-2 rounded-full bg-[#E94E1B] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#C73E11] transition-colors">
+            <Link href="/ai-strategies/new" className="inline-flex items-center gap-2 rounded-full bg-[#CC0000] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#8A0000] transition-colors">
               <Sparkles size={14} /> Build with AI
             </Link>
           }
@@ -258,7 +258,7 @@ export default function AiStrategiesPage() {
             title="No strategies yet"
             description="Describe a strategy in plain language and the AI Strategy Maker turns it into rules you can backtest and deploy."
             action={
-              <Link href="/ai-strategies/new" className="inline-flex items-center gap-2 rounded-full bg-[#E94E1B] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#C73E11] transition-colors">
+              <Link href="/ai-strategies/new" className="inline-flex items-center gap-2 rounded-full bg-[#CC0000] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#8A0000] transition-colors">
                 <Sparkles size={14} /> Create your first strategy
               </Link>
             }

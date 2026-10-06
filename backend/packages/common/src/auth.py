@@ -10,6 +10,7 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .config import get_settings
+from .wallet_placeholder import is_wallet_placeholder_email
 
 settings = get_settings()
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -373,7 +374,7 @@ async def require_onboarded(
     if bool(getattr(user, "is_demo", False)):
         return current_user
 
-    is_placeholder = (user.email or "").lower().endswith("@wallet.swisscresta.local")
+    is_placeholder = is_wallet_placeholder_email(user.email)
     profile_complete = bool(
         (user.first_name or "").strip()
         and (user.last_name or "").strip()

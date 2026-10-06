@@ -1,5 +1,5 @@
 /*
- * SwissCresta on-chart position overlay — desktop port of the web terminal's
+ * Ezymex on-chart position overlay — desktop port of the web terminal's
  * ChartingLibraryChart position layer (vxness_trade/frontend/src/components/
  * ChartingLibraryChart.jsx is the reference for the SL/TP interaction).
  *
@@ -37,7 +37,7 @@
  * has moved over the chart — which it has by the time you go to drag one.
  *
  * Only the dragged bracket is sent. Unlike the vxness backend (which wipes an
- * omitted leg, so its web build re-sends both), the SwissCresta modify endpoint does
+ * omitted leg, so its web build re-sends both), the Ezymex modify endpoint does
  * a PARTIAL update — re-sending the other bracket from a stale snapshot would
  * silently revert it. Keep this single-bracket.
  */

@@ -1,5 +1,5 @@
 /**
- * Loads the SwissCresta logo for embedding into generated PDFs (jsPDF
+ * Loads the Ezymex logo for embedding into generated PDFs (jsPDF
  * addImage needs a data-URL + the natural size to keep the aspect ratio).
  * Returns null on any failure — statements must still generate without the
  * logo (offline tab, missing asset) rather than fail.
@@ -8,7 +8,7 @@ export type PdfLogo = { dataUrl: string; w: number; h: number };
 
 export async function loadPdfLogo(): Promise<PdfLogo | null> {
   try {
-    const res = await fetch('/marketing/swisscresta-logo.png');
+    const res = await fetch('/marketing/ezymex-logo.png');
     if (!res.ok) return null;
     const blob = await res.blob();
     const dataUrl: string = await new Promise((resolve, reject) => {

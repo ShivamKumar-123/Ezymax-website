@@ -11,7 +11,7 @@ class QTimer;
 // terminal trades (rate decisions, CPI, NFP, GDP), as a tab beside
 // Trade / Pending / History / News.
 //
-// Built the same way NewsPanel is, and for the same reason: the SwissCresta
+// Built the same way NewsPanel is, and for the same reason: the Ezymex
 // gateway serves prices and trading, not macro data, so rather than stand up a
 // calendar service both clients could drift apart on, this embeds TradingView's
 // public events widget. It is free and needs no API key — the same terms the
@@ -25,7 +25,7 @@ class QTimer;
 //
 // Consequences worth knowing, inherited from the news panel:
 //   * It needs to reach tradingview-widget.com. Everything else in the terminal
-//     talks only to the SwissCresta API, so this tab can be blank on a network that
+//     talks only to the Ezymex API, so this tab can be blank on a network that
 //     permits one and not the other. It says so rather than showing white.
 //   * The renderer process (~150 MB) is only paid for once the tab is opened.
 class CalendarPanel : public QWidget {
@@ -45,7 +45,7 @@ private:
     // Country codes the widget should show, as its comma-separated
     // `countryFilter`. Derived from the symbol when the filter asks for it.
     QString countryFilter() const;
-    // SwissCresta ticker -> the economies behind it. "EURUSD" -> "eu,us".
+    // Ezymex ticker -> the economies behind it. "EURUSD" -> "eu,us".
     static QString countriesForSymbol(const QString& symbol);
 
     QWebEngineView* m_view   = nullptr;

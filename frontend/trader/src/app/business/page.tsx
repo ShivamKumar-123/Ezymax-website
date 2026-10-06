@@ -41,7 +41,7 @@ function fmtDate(d: string) {
 function Spinner() {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16">
-      <div className="h-9 w-9 animate-spin rounded-full border-[3px] border-[#E94E1B] border-t-transparent" />
+      <div className="h-9 w-9 animate-spin rounded-full border-[3px] border-[#CC0000] border-t-transparent" />
       <span className="text-xs font-medium text-text-tertiary">Loading…</span>
     </div>
   );
@@ -57,7 +57,7 @@ function StatCard({ label, value, icon: Icon, tone = 'default' }: {
     default: { bg: 'bg-bg-input', icon: 'text-text-primary' },
     success: { bg: 'bg-emerald-50', icon: 'text-emerald-600' },
     warning: { bg: 'bg-amber-50', icon: 'text-amber-600' },
-    accent: { bg: 'bg-[#FCE6DD]', icon: 'text-[#E94E1B]' },
+    accent: { bg: 'bg-[#FBE4E4]', icon: 'text-[#CC0000]' },
   }[tone];
   return (
     <div className="rounded-2xl border border-border-primary bg-bg-card p-4">
@@ -108,17 +108,17 @@ export default function BusinessPage() {
         {/* Hero header */}
         <div className="relative overflow-hidden rounded-2xl border border-border-primary bg-bg-card p-6 sm:p-8">
           <div
-            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#FCE6DD] via-white to-white"
+            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#FBE4E4] via-white to-white"
             aria-hidden
           />
           <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="max-w-xl">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FCE6DD] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#E94E1B]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FBE4E4] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#CC0000]">
                 <Award size={12} strokeWidth={2.5} />
                 Partner Programs
               </span>
               <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
-                Grow with SwissCresta
+                Grow with Ezymex
               </h1>
               <p className="mt-2 text-sm text-[#4B5563] leading-relaxed">
                 Refer traders, build a team, or partner as a sub-broker. Earn revenue share on every trade your network places.
@@ -140,14 +140,14 @@ export default function BusinessPage() {
                   onClick={() => setTab(t.id)}
                   className={clsx(
                     'relative flex flex-1 items-center justify-center gap-2 px-2 sm:px-4 py-3.5 text-xs sm:text-sm font-semibold transition-colors',
-                    active ? 'text-[#E94E1B]' : 'text-text-tertiary hover:text-text-primary',
+                    active ? 'text-[#CC0000]' : 'text-text-tertiary hover:text-text-primary',
                   )}
                 >
                   <Icon size={15} strokeWidth={2.2} />
                   <span className="truncate">{t.label}</span>
                   {active && (
                     <span
-                      className="pointer-events-none absolute inset-x-3 -bottom-px h-[3px] rounded-t-full bg-[#E94E1B]"
+                      className="pointer-events-none absolute inset-x-3 -bottom-px h-[3px] rounded-t-full bg-[#CC0000]"
                       aria-hidden
                     />
                   )}
@@ -222,7 +222,7 @@ function IBTab() {
       <CtaCard
         eyebrow="IB Program"
         title="Become an Introducing Broker"
-        subtitle="Refer traders to SwissCresta and earn a lifetime share of their trading commissions — up to 5 levels deep."
+        subtitle="Refer traders to Ezymex and earn a lifetime share of their trading commissions — up to 5 levels deep."
         benefits={[
           'Lifetime commission on every trade your referrals place',
           'Multi-level network — earn from sub-referrals too',
@@ -248,7 +248,7 @@ function IBTab() {
       {dashboard?.referral_link && (
         <div className="rounded-2xl border border-border-primary bg-bg-card p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Share2 size={15} className="text-[#E94E1B]" strokeWidth={2.4} />
+            <Share2 size={15} className="text-[#CC0000]" strokeWidth={2.4} />
             <p className="text-sm font-semibold text-text-primary">Your Referral Link</p>
           </div>
           <div className="flex items-center gap-2">
@@ -268,7 +268,7 @@ function IBTab() {
             </button>
           </div>
           <p className="mt-2 text-xs text-text-tertiary">
-            Code: <span className="font-mono font-bold text-[#E94E1B]">{dashboard.referral_code}</span>
+            Code: <span className="font-mono font-bold text-[#CC0000]">{dashboard.referral_code}</span>
           </p>
         </div>
       )}
@@ -374,11 +374,11 @@ function SubBrokerTab() {
 
         <div className="rounded-2xl border border-border-primary bg-bg-card p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Share2 size={15} className="text-[#E94E1B]" strokeWidth={2.4} />
+            <Share2 size={15} className="text-[#CC0000]" strokeWidth={2.4} />
             <p className="text-sm font-semibold text-text-primary">Your Referral Code</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="rounded-lg bg-bg-input px-4 py-2.5 text-lg font-bold font-mono text-[#E94E1B]">
+            <span className="rounded-lg bg-bg-input px-4 py-2.5 text-lg font-bold font-mono text-[#CC0000]">
               {dashboard.referral_code}
             </span>
             <button
@@ -448,7 +448,7 @@ function SubBrokerTab() {
             value={companyName}
             onChange={e => setCompanyName(e.target.value)}
             placeholder="Your company name"
-            className="w-full rounded-xl border border-border-primary bg-bg-card px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:border-[#E94E1B] focus:ring-2 focus:ring-[#E94E1B]/15"
+            className="w-full rounded-xl border border-border-primary bg-bg-card px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:border-[#CC0000] focus:ring-2 focus:ring-[#CC0000]/15"
           />
         </div>
       )}
@@ -490,14 +490,14 @@ function NetworkTab() {
       <div className="rounded-2xl border border-border-primary bg-bg-card p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Network size={16} className="text-[#E94E1B]" strokeWidth={2.4} />
+            <Network size={16} className="text-[#CC0000]" strokeWidth={2.4} />
             <h3 className="text-sm font-semibold text-text-primary">Your MLM Network</h3>
           </div>
           <span className="text-xs text-text-tertiary">{tree.total_nodes || 0} members</span>
         </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
           <span className="text-text-tertiary">
-            Your Code: <span className="font-mono font-bold text-[#E94E1B]">{tree.root?.referral_code}</span>
+            Your Code: <span className="font-mono font-bold text-[#CC0000]">{tree.root?.referral_code}</span>
           </span>
           <span className="text-text-tertiary">
             Level: <span className="font-bold text-text-primary">L{tree.root?.level}</span>
@@ -544,7 +544,7 @@ function TreeNode({ node, depth }: { node: any; depth: number }) {
           <span className="w-[13px] text-center text-[#D1D5DB]">•</span>
         )}
         <span className="font-medium text-text-primary">{node.name || node.email}</span>
-        <span className="rounded-md bg-[#FCE6DD] px-1.5 py-0.5 text-[10px] font-mono font-bold text-[#E94E1B]">L{node.depth}</span>
+        <span className="rounded-md bg-[#FBE4E4] px-1.5 py-0.5 text-[10px] font-mono font-bold text-[#CC0000]">L{node.depth}</span>
         <span className="ml-auto font-mono tabular-nums text-text-tertiary">${fmt(node.total_earned || 0)}</span>
         {!node.is_active && (
           <span className="rounded-full bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-600">inactive</span>
@@ -598,11 +598,11 @@ function CtaCard({
       <div className="overflow-hidden rounded-2xl border border-border-primary bg-bg-card">
         <div className="relative px-6 sm:px-8 pt-8 pb-6 text-center">
           <div
-            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#FCE6DD]/60 to-transparent"
+            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#FBE4E4]/60 to-transparent"
             aria-hidden
           />
           <div className="relative">
-            <span className="inline-flex items-center rounded-full bg-[#FCE6DD] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#E94E1B]">
+            <span className="inline-flex items-center rounded-full bg-[#FBE4E4] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#CC0000]">
               {eyebrow}
             </span>
             <h3 className="mt-3 text-xl sm:text-2xl font-bold text-text-primary">{title}</h3>
@@ -620,10 +620,10 @@ function CtaCard({
               onClick={onClick}
               disabled={disabled}
               className={clsx(
-                'inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition-colors shadow-[0_2px_8px_rgba(233,78,27,0.25)] min-w-[200px]',
+                'inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition-colors shadow-[0_2px_8px_rgba(204,0,0,0.25)] min-w-[200px]',
                 disabled
-                  ? 'bg-[#E94E1B]/60 cursor-not-allowed'
-                  : 'bg-[#E94E1B] hover:bg-[#C73E11]',
+                  ? 'bg-[#CC0000]/60 cursor-not-allowed'
+                  : 'bg-[#CC0000] hover:bg-[#8A0000]',
               )}
             >
               {cta}

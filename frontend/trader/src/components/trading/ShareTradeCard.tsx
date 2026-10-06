@@ -115,7 +115,7 @@ export default function ShareTradeCard({
         <div className="flex flex-col items-center justify-center pt-1 pb-3 gap-1.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={brand.logoUrl || '/marketing/swisscresta_fevicon.png'}
+            src={brand.logoUrl || '/marketing/ezymex_fevicon.png'}
             alt={brand.name}
             width={40}
             height={40}

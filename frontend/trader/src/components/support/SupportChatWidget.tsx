@@ -49,7 +49,7 @@ const MAX_STORED = 60;
 let seq = 0;
 const mid = () => `${Date.now().toString(36)}-${(seq++).toString(36)}`;
 
-const greeting = (firstName?: string | null, brandName = 'SwissCresta'): Msg[] => [
+const greeting = (firstName?: string | null, brandName = 'Ezymex'): Msg[] => [
   { id: mid(), role: 'bot', kind: 'text', text: `Hi${firstName ? ` ${firstName}` : ''}! 👋 Welcome to ${brandName}. What can I help you with today?` },
   { id: mid(), role: 'bot', kind: 'sections' },
 ];

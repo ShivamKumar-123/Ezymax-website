@@ -49,7 +49,7 @@ class ApiClient {
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('token');
-        localStorage.removeItem('swisscresta-auth');
+        localStorage.removeItem('ezymex-auth');
       } catch {
         /* ignore */
       }

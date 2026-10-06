@@ -240,7 +240,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
           <span
             aria-hidden
             className="absolute inset-x-0 top-0 h-[3px]"
-            style={{ background: 'linear-gradient(90deg, #E94E1B 0%, #F59E0B 55%, rgba(233,78,27,0) 100%)' }}
+            style={{ background: 'linear-gradient(90deg, #CC0000 0%, #F59E0B 55%, rgba(204,0,0,0) 100%)' }}
           />
           <h2 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">Open Account</h2>
           <button
@@ -297,7 +297,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
           {/* Account type picker — 2-column grid of group cards. */}
           <section>
             <h3 className="flex items-center gap-2 text-sm font-bold text-text-primary mb-3">
-              <span aria-hidden className="h-3.5 w-[3px] rounded-full" style={{ background: '#E94E1B' }} />
+              <span aria-hidden className="h-3.5 w-[3px] rounded-full" style={{ background: '#CC0000' }} />
               Choose An Account Type
             </h3>
             {loading ? (
@@ -328,14 +328,14 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                         'transition-[transform,box-shadow,border-color] duration-200 ease-out',
                         'motion-safe:animate-drawer-card',
                         'hover:-translate-y-[3px] hover:shadow-[0_10px_24px_rgba(0,0,0,0.10)]',
-                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E94E1B]/50',
+                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CC0000]/50',
                         sel
-                          ? 'ring-2 ring-[#E94E1B]/55 shadow-[0_8px_22px_rgba(233,78,27,0.18)]'
-                          : 'hover:border-[#E94E1B]/45',
+                          ? 'ring-2 ring-[#CC0000]/55 shadow-[0_8px_22px_rgba(204,0,0,0.18)]'
+                          : 'hover:border-[#CC0000]/45',
                       )}
                       style={{
                         background: 'var(--bg-card-nested)',
-                        border: `1px solid ${sel ? '#E94E1B' : 'var(--border-primary)'}`,
+                        border: `1px solid ${sel ? '#CC0000' : 'var(--border-primary)'}`,
                         // Cards arrive one after another rather than all at once.
                         animationDelay: `${Math.min(i, 8) * 45}ms`,
                       }}
@@ -350,16 +350,16 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                         )}
                         style={{
                           background:
-                            'linear-gradient(135deg, rgba(233,78,27,0.10) 0%, rgba(245,158,11,0.05) 45%, transparent 75%)',
+                            'linear-gradient(135deg, rgba(204,0,0,0.10) 0%, rgba(245,158,11,0.05) 45%, transparent 75%)',
                         }}
                       />
                       {sel && (
                         <span
                           aria-hidden
                           className="absolute top-3 right-3 grid h-5 w-5 place-items-center rounded-full
-                                     text-white shadow-[0_2px_6px_rgba(233,78,27,0.45)]
+                                     text-white shadow-[0_2px_6px_rgba(204,0,0,0.45)]
                                      motion-safe:animate-check-pop"
-                          style={{ background: '#E94E1B' }}
+                          style={{ background: '#CC0000' }}
                         >
                           <Check size={12} strokeWidth={3} />
                         </span>
@@ -406,7 +406,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
           {/* Leverage */}
           <section>
             <h3 className="flex items-center gap-2 text-sm font-bold text-text-primary mb-3">
-              <span aria-hidden className="h-3.5 w-[3px] rounded-full" style={{ background: '#E94E1B' }} />
+              <span aria-hidden className="h-3.5 w-[3px] rounded-full" style={{ background: '#CC0000' }} />
               Leverage
             </h3>
             <div className="relative">
@@ -446,13 +446,13 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
             disabled={creating || !selected}
             className="group/sbm relative w-full overflow-hidden inline-flex items-center justify-center gap-2
                        px-6 py-3 rounded-xl text-sm font-bold text-white
-                       shadow-[0_4px_14px_rgba(233,78,27,0.30)]
+                       shadow-[0_4px_14px_rgba(204,0,0,0.30)]
                        transition-[transform,box-shadow,filter] duration-200 ease-out
-                       hover:-translate-y-[2px] hover:shadow-[0_8px_22px_rgba(233,78,27,0.42)]
+                       hover:-translate-y-[2px] hover:shadow-[0_8px_22px_rgba(204,0,0,0.42)]
                        active:translate-y-0 active:scale-[0.99]
                        disabled:opacity-50 disabled:cursor-not-allowed
-                       disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_14px_rgba(233,78,27,0.30)]"
-            style={{ background: 'linear-gradient(135deg, #F2622A 0%, #E94E1B 55%, #C73E11 100%)' }}
+                       disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_14px_rgba(204,0,0,0.30)]"
+            style={{ background: 'linear-gradient(135deg, #F2622A 0%, #CC0000 55%, #8A0000 100%)' }}
           >
             {/* Shine sweep — purely decorative, skipped under reduced motion. */}
             <span
@@ -494,7 +494,7 @@ function TypePill({
       // thumb owns the active background now, so this only animates colour.
       className="relative z-10 py-2.5 text-sm font-semibold rounded-full select-none
                  transition-colors duration-200 focus:outline-none
-                 focus-visible:ring-2 focus-visible:ring-[#E94E1B]/40"
+                 focus-visible:ring-2 focus-visible:ring-[#CC0000]/40"
       style={{
         background: 'transparent',
         color: active ? 'var(--text-primary)' : 'var(--text-secondary)',

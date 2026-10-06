@@ -295,7 +295,7 @@ export default function AccountsPage() {
             <Link
               href="/auth/register"
               onClick={() => setDemoUpgradeOpen(false)}
-              className="px-5 py-2.5 rounded-lg bg-[#E94E1B] text-white text-sm font-bold hover:bg-[#C73E11] transition-colors text-center"
+              className="px-5 py-2.5 rounded-lg bg-[#CC0000] text-white text-sm font-bold hover:bg-[#8A0000] transition-colors text-center"
             >
               Register Real Account
             </Link>
@@ -530,7 +530,7 @@ function FilterDropdown({
 
 /* ----------------------------------------------------------------------------
    "Build your strategy with AI" card — spans both columns at md+. Dual-tone
-   (Vantablack shell, orange accents) with the Claude mark; routes to the
+   (Vantablack shell, red accents) with the Claude mark; routes to the
    AI Strategy Maker. Replaces the old Join-Copy-Trading promo.
    ------------------------------------------------------------------------ */
 function ClaudeMark({ className }: { className?: string }) {
@@ -564,21 +564,21 @@ function BuildStrategyCard({ onStart }: { onStart: () => void }) {
           : 'bg-white text-text-primary ring-1 ring-black/[0.06] shadow-[0_14px_36px_-18px_rgba(0,0,0,0.22)]',
       )}
     >
-      {/* soft orange glow behind the mark */}
+      {/* soft red glow behind the mark */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#E94E1B]/25 blur-3xl"
+        className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#CC0000]/25 blur-3xl"
       />
       <div className="relative z-[1] flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-4 min-w-0">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#E94E1B] text-white">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#CC0000] text-white">
             <ClaudeMark className="h-8 w-8" />
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-bold tracking-tight">Build your strategy with AI</h3>
-              <span className={clsx('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide', t.dark ? 'bg-white/10 text-white/80' : 'bg-[#E94E1B]/10 text-[#C73E11]')}>
-                <ClaudeMark className={clsx('h-3 w-3', t.dark ? 'text-[#F7A17F]' : 'text-[#E94E1B]')} /> Powered by Claude
+              <span className={clsx('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide', t.dark ? 'bg-white/10 text-white/80' : 'bg-[#CC0000]/10 text-[#8A0000]')}>
+                <ClaudeMark className={clsx('h-3 w-3', t.dark ? 'text-[#F7A17F]' : 'text-[#CC0000]')} /> Powered by Claude
               </span>
             </div>
             <p className={clsx('mt-1.5 max-w-xl text-sm leading-relaxed', t.muted)}>
@@ -590,7 +590,7 @@ function BuildStrategyCard({ onStart }: { onStart: () => void }) {
         <button
           type="button"
           onClick={onStart}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#E94E1B] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#C73E11] transition-colors"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#CC0000] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#8A0000] transition-colors"
         >
           Build with AI
           <span aria-hidden>→</span>
@@ -655,8 +655,8 @@ function AccountCard({
   // is a known copy/pool prefix (CF/IF followers, CT/PM/MM pools).
   const isManagedAccount = !!row.is_copy_trading || /^(CF|IF|CT|PM|MM)/.test(row.account_number);
   const groupName = row.account_group?.name?.trim() || 'Standard';
-  /* SwissCresta has a single server — Live for real, Demo for demo accounts. */
-  const serverLabel = row.is_demo ? 'SwissCresta-Demo' : 'SwissCresta-Live';
+  /* Ezymex has a single server — Live for real, Demo for demo accounts. */
+  const serverLabel = row.is_demo ? 'Ezymex-Demo' : 'Ezymex-Live';
   /* Avatar mark — first letter of the group name; falls back to "S". */
 
   const balance = Number.isFinite(row.balance) ? row.balance : 0;
@@ -783,7 +783,7 @@ function AccountCard({
       {/* Inner summary tile */}
       <div>
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#E94E1B]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#CC0000]">
             <Wallet size={20} className="text-white" />
           </div>
           <div className="min-w-0 flex-1">
@@ -806,7 +806,7 @@ function AccountCard({
             <button
               type="button"
               onClick={onDeposit}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#E94E1B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#C73E11] transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#CC0000] px-4 py-2 text-sm font-semibold text-white hover:bg-[#8A0000] transition-colors"
             >
               <ArrowDownToLine size={15} />
               Deposit

@@ -136,7 +136,7 @@ export default function StrategyTradesPanel({
     return (
       <div className="space-y-4">
         <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-bg-secondary border border-border-primary text-xs text-text-secondary">
-          <History size={14} className="text-[#E94E1B] shrink-0 mt-0.5" />
+          <History size={14} className="text-[#CC0000] shrink-0 mt-0.5" />
           <p>
             <span className="font-semibold text-text-primary">Simulated fills.</span> The numbers
             above come from a backtest — no money moved. Deploy the strategy to record real fills
@@ -160,7 +160,7 @@ export default function StrategyTradesPanel({
         <div className="rounded-xl border border-border-primary bg-card overflow-hidden">
           <div className="px-4 py-3 border-b border-border-primary">
             <p className="text-sm font-semibold text-text-primary flex items-center gap-2">
-              <LineChart size={14} className="text-[#E94E1B]" /> Open trades
+              <LineChart size={14} className="text-[#CC0000]" /> Open trades
             </p>
           </div>
           <div className="overflow-x-auto">
@@ -196,7 +196,7 @@ export default function StrategyTradesPanel({
         <div className="rounded-xl border border-border-primary bg-card overflow-hidden">
           <div className="px-4 py-3 border-b border-border-primary">
             <p className="text-sm font-semibold text-text-primary flex items-center gap-2">
-              <History size={14} className="text-[#E94E1B]" /> Closed trades
+              <History size={14} className="text-[#CC0000]" /> Closed trades
             </p>
           </div>
           <div className="max-h-[420px] overflow-y-auto overflow-x-auto">

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Support — SwissCresta',
+  title: 'Support — Ezymex',
   description: 'Contact support, browse FAQs, and find platform documentation.',
 }
 

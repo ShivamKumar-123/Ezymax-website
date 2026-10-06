@@ -10,13 +10,13 @@ class QLabel;
 //
 // The feed is TradingView's public timeline widget, embedded the same way the
 // web terminal embeds it (frontend/trader/src/components/charts/
-// TradingViewNewsTimeline.tsx). There is no SwissCresta news endpoint to call —
+// TradingViewNewsTimeline.tsx). There is no Ezymex news endpoint to call —
 // the gateway serves prices and trading, not headlines — so rather than invent
 // one, both clients point at the same free widget and stay consistent.
 //
 // Consequences worth knowing:
 //   * It needs internet reachability to tradingview-widget.com. The rest of the
-//     terminal talks only to the SwissCresta API, so this is the one panel that can
+//     terminal talks only to the Ezymex API, so this is the one panel that can
 //     be blank on a network that allows the former but not the latter. It fails
 //     to a message rather than an empty white box.
 //   * Symbols are TradingView's, not ours: XAUUSD is OANDA:XAUUSD, BTCUSD is
@@ -34,7 +34,7 @@ public slots:
 private:
     void reload();
 
-    // SwissCresta ticker -> TradingView's exchange-qualified symbol.
+    // Ezymex ticker -> TradingView's exchange-qualified symbol.
     static QString toTradingViewSymbol(const QString& symbol);
 
     QWebEngineView* m_view = nullptr;

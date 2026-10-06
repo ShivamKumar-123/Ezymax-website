@@ -5,7 +5,7 @@
 # not us. build-macos.sh alone produces an ad-hoc signed app: it runs on the
 # machine that built it and nowhere else. Anything downloaded from the web
 # carries a quarantine flag, and macOS refuses to launch a quarantined app
-# that Apple has not notarised — with "SwissCresta Terminal is damaged and can't
+# that Apple has not notarised — with "Ezymex Terminal is damaged and can't
 # be opened", which reads as a corrupt download rather than a missing
 # certificate. Apple's own syspolicy_check calls it out in as many words:
 #
@@ -28,14 +28,14 @@
 #
 # Alternatively store the credentials once in the keychain and skip three of
 # the four variables:
-#   xcrun notarytool store-credentials swisscresta-notary \
+#   xcrun notarytool store-credentials ezymex-notary \
 #       --apple-id <id> --team-id <TEAMID> --password <app-specific-pw>
-#   SC_SIGN_ID="..." SC_NOTARY_PROFILE=swisscresta-notary ./notarize-macos.sh
+#   SC_SIGN_ID="..." SC_NOTARY_PROFILE=ezymex-notary ./notarize-macos.sh
 set -euo pipefail
 
 src="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 build="$src/build-macos"
-app_name="SwissCresta Terminal"
+app_name="Ezymex Terminal"
 app="$build/$app_name.app"
 
 die() { echo "error: $*" >&2; exit 1; }
@@ -114,7 +114,7 @@ xcrun stapler staple "$app"
 echo "==> Packaging the dmg…"
 "$src/package-macos.sh"
 
-dmg="$(ls -t "$src/dist"/SwissCrestaTerminal-*.dmg 2>/dev/null | head -1)"
+dmg="$(ls -t "$src/dist"/EzymexTerminal-*.dmg 2>/dev/null | head -1)"
 [[ -n "$dmg" && -f "$dmg" ]] || die "package-macos.sh produced no dmg in $src/dist"
 
 # ── 4. notarise the dmg ─────────────────────────────────────────────────────
@@ -145,5 +145,5 @@ fi
 echo
 echo "==> Done: $dmg"
 echo "    This one opens on any Mac, with no Terminal commands."
-echo "    Upload it to /opt/swisscresta/downloads/ under exactly the name the"
+echo "    Upload it to /opt/ezymex/downloads/ under exactly the name the"
 echo "    navbar links to, or the download 404s."

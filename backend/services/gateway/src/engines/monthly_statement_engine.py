@@ -34,6 +34,7 @@ from packages.common.src.instrumentation import spawn
 from packages.common.src.database import WorkerSessionLocal
 from packages.common.src.engine_lock import engine_lock
 from packages.common.src.email_branding import apply_email_brand
+from packages.common.src.wallet_placeholder import not_placeholder_sql
 
 logger = logging.getLogger("monthly-statement")
 
@@ -98,13 +99,13 @@ class MonthlyStatementEngine:
 
 
 _CANDIDATES_SQL = text(
-    """
+    f"""
     SELECT id FROM users
      WHERE status = 'active'
        AND id > :after
        AND COALESCE(is_demo, false) = false
        AND email IS NOT NULL
-       AND lower(email) NOT LIKE '%@wallet.swisscresta.local'
+       AND {not_placeholder_sql('email')}
        AND last_statement_month IS DISTINCT FROM :ym
      ORDER BY id
      LIMIT :lim
@@ -165,7 +166,7 @@ async def send_monthly_statements(
     if not smtp_configured():
         return 0
 
-    app_url = (get_settings().TRADER_APP_URL or "https://trade.swisscresta.com")
+    app_url = (get_settings().TRADER_APP_URL or "https://trade.ezymex.com")
     semaphore = asyncio.Semaphore(SEND_CONCURRENCY)
     sent_total = 0
     after = uuid.UUID(int=0)  # keyset start: smallest UUID

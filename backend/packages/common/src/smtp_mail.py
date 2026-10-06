@@ -26,9 +26,9 @@ logger = logging.getLogger(__name__)
 # the recipient's client has remote-image loading enabled. The CID below
 # must match LOGO_CID in email_templates/base.py.
 _LOGO_PATH = (
-    Path(__file__).parent / "email_templates" / "assets" / "swisscresta-logo.png"
+    Path(__file__).parent / "email_templates" / "assets" / "ezymex-logo.png"
 )
-_LOGO_CID = "swisscresta-logo"
+_LOGO_CID = "ezymex-logo"
 _LOGO_BYTES: bytes | None = None
 
 
@@ -88,7 +88,7 @@ def _send_sync(to_email: str, subject: str, html: str, text: Optional[str]) -> N
             maintype="image",
             subtype="png",
             cid=f"<{_LOGO_CID}>",
-            filename="swisscresta-logo.png",
+            filename="ezymex-logo.png",
         )
 
     host = str(s.SMTP_HOST).strip()
@@ -173,7 +173,7 @@ def _strip_tags(html: str) -> str:
 
 
 async def send_password_reset_email(
-    to_email: str, code: str, *, app_name: str = "SwissCresta",
+    to_email: str, code: str, *, app_name: str = "Ezymex",
 ) -> bool:
     from .email_templates import render_password_reset
     subject, html, text = render_password_reset(app_name=app_name, code=code)

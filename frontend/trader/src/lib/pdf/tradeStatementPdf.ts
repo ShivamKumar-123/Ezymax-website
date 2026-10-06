@@ -94,12 +94,12 @@ export async function downloadTradeStatementPdf(
   const margin = 14;
   let y = 16;
 
-  doc.setFillColor(41, 98, 255);
+  doc.setFillColor(11, 47, 82);
   doc.rect(0, 0, pageW, 10, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('SwissCresta', margin, 7);
+  doc.text('Ezymex', margin, 7);
 
   // Brand logo, top-right under the band (best-effort — never blocks export).
   const { loadPdfLogo, stampPdfLogo } = await import('./pdfLogo');
@@ -197,7 +197,7 @@ export async function downloadTradeStatementPdf(
     showFoot: 'lastPage',
     theme: 'striped',
     headStyles: {
-      fillColor: [41, 98, 255],
+      fillColor: [11, 47, 82],
       textColor: 255,
       fontStyle: 'bold',
       fontSize: 8,
@@ -228,7 +228,7 @@ export async function downloadTradeStatementPdf(
         doc.internal.pageSize.getHeight() - 6,
       );
       doc.text(
-        'SwissCresta — for information only. Not tax or legal advice.',
+        'Ezymex — for information only. Not tax or legal advice.',
         margin,
         doc.internal.pageSize.getHeight() - 6,
       );
@@ -236,5 +236,5 @@ export async function downloadTradeStatementPdf(
   });
 
   const safeDate = new Date().toISOString().slice(0, 10);
-  doc.save(`swisscresta-trade-statement-${safeDate}.pdf`);
+  doc.save(`ezymex-trade-statement-${safeDate}.pdf`);
 }

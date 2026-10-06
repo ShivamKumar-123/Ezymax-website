@@ -9,9 +9,9 @@
 # so the gateway is exposed on 8002 here instead. Inter-container
 # traffic is unaffected — frontends still reach it at http://gateway:8000.
 # ── Local-dev cookie/CORS overrides ───────────────────────────────────
-# The root .env carries PRODUCTION values (COOKIE_DOMAIN=.swisscresta.com,
+# The root .env carries PRODUCTION values (COOKIE_DOMAIN=.ezymex.com,
 # COOKIE_SECURE=true, prod CORS origins). A browser on http://localhost
-# silently DROPS a cookie scoped to Domain=.swisscresta.com, so no trader
+# silently DROPS a cookie scoped to Domain=.ezymex.com, so no trader
 # session (login OR admin "login as user") can ever persist locally.
 # These overrides scope cookies to the request host and allow localhost
 # origins — dev only; the override file is never loaded in prod.
@@ -32,7 +32,7 @@ services:
       <<: *dev-cookie-env
       # The trader app is published on host port 3010 locally (not 3000), so
       # IB referral links must point there. The root .env carries the prod
-      # value (https://trade.swisscresta.com); override it for local dev.
+      # value (https://trade.ezymex.com); override it for local dev.
       TRADER_APP_URL: "http://localhost:3010"
 
   admin-api:

@@ -130,7 +130,7 @@ export default function DeployDialog({
                 className={clsx(
                   'w-full flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left transition-colors',
                   accountId === a.id
-                    ? 'border-[#E94E1B]/60 bg-[#E94E1B]/5'
+                    ? 'border-[#CC0000]/60 bg-[#CC0000]/5'
                     : 'border-border-primary hover:bg-bg-hover',
                 )}
               >
@@ -165,7 +165,7 @@ export default function DeployDialog({
             type="button"
             onClick={() => void submit()}
             disabled={deploying || !accountId}
-            className="flex-1 py-2.5 rounded-lg bg-[#E94E1B] text-white text-xs font-bold hover:bg-[#C73E11] disabled:opacity-50 transition-colors"
+            className="flex-1 py-2.5 rounded-lg bg-[#CC0000] text-white text-xs font-bold hover:bg-[#8A0000] disabled:opacity-50 transition-colors"
           >
             {deploying ? 'Deploying…' : 'Confirm Deploy'}
           </button>

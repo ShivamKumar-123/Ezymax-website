@@ -126,7 +126,7 @@ export default function AiTradesTab() {
       <div className="bg-card border border-border-primary rounded-xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
         <div className="px-4 py-3 border-b border-border-primary flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-text-primary flex items-center gap-2">
-            <LineChart size={15} className="text-[#E94E1B]" /> Open AI Trades
+            <LineChart size={15} className="text-[#CC0000]" /> Open AI Trades
           </p>
           {openRows.length > 0 && (
             <p className="text-xs">Floating P&amp;L: <Pnl value={openTotal} /></p>
@@ -134,7 +134,7 @@ export default function AiTradesTab() {
         </div>
         {openLoading ? (
           <div className="flex items-center justify-center py-10">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#E94E1B] border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#CC0000] border-t-transparent" />
           </div>
         ) : openRows.length === 0 ? (
           <p className="text-sm text-text-tertiary text-center py-10">No open AI trades right now</p>
@@ -177,12 +177,12 @@ export default function AiTradesTab() {
       <div className="bg-card border border-border-primary rounded-xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
         <div className="px-4 py-3 border-b border-border-primary">
           <p className="text-sm font-semibold text-text-primary flex items-center gap-2">
-            <History size={15} className="text-[#E94E1B]" /> Trade History
+            <History size={15} className="text-[#CC0000]" /> Trade History
           </p>
         </div>
         {closedLoading ? (
           <div className="flex items-center justify-center py-10">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#E94E1B] border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#CC0000] border-t-transparent" />
           </div>
         ) : closed.length === 0 ? (
           <p className="text-sm text-text-tertiary text-center py-10">No closed AI trades yet</p>

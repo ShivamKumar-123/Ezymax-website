@@ -1,4 +1,4 @@
-# SwissCresta — Alembic Migrations
+# Ezymex — Alembic Migrations
 
 Schema evolution is managed via Alembic. All migration files live in `versions/`.
 
@@ -12,7 +12,7 @@ current DB and the ORM models in `packages/common/src/models.py`.
 
 ```bash
 # From the backend/ root (where packages/ is visible)
-export DATABASE_URL=postgresql+asyncpg://swisscresta:swisscresta_dev@localhost:5432/swisscresta
+export DATABASE_URL=postgresql+asyncpg://ezymex:ezymex_dev@localhost:5432/ezymex
 ```
 
 Alembic must be installed (it is included in `packages/common` dependencies):

@@ -1,8 +1,8 @@
 # ============================================================
-# SwissCresta — Production overrides
+# Ezymex — Production overrides
 # Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 # ============================================================
-name: swisscresta
+name: ezymex
 
 services:
   # ── Infrastructure — restart policy only (no host ports needed) ──
@@ -16,7 +16,7 @@ services:
     restart: always
     # Phase 3: require a password in production. Redis has no host port, but a
     # compromised container on the docker network could otherwise read every
-    # session/tick/lock. REDIS_PASSWORD lives in /opt/swisscresta/.env and is
+    # session/tick/lock. REDIS_PASSWORD lives in /opt/ezymex/.env and is
     # embedded in each service's REDIS_URL. The healthcheck must authenticate or
     # redis never reports healthy and dependents won't start.
     command: >-
@@ -43,9 +43,9 @@ services:
       - ./backend/uploads:/app/uploads
     environment:
       # Admin API is reached exclusively from the admin SPA — never from
-      # the trader or marketing domain. Lock CORS to admin.swisscresta.com
+      # the trader or marketing domain. Lock CORS to admin.ezymex.com
       # so a compromise of the other surfaces can't pivot here.
-      CORS_ORIGINS: https://admin.swisscresta.com
+      CORS_ORIGINS: https://admin.ezymex.com
       # Phase 3: admin-api uses Redis db 1, now password-authenticated. Overrides
       # the base compose's plaintext redis://redis:6379/1.
       REDIS_URL: redis://:${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}@redis:6379/1
@@ -56,26 +56,26 @@ services:
       - "127.0.0.1:8002:8000"
     restart: always
     environment:
-      # swisscresta.com is the apex marketing host and ALSO serves the
+      # ezymex.com is the apex marketing host and ALSO serves the
       # auth pages (see frontend/trader/src/middleware.ts file header) —
       # so a login POST from /auth/login on the apex carries
-      # Origin: https://swisscresta.com and gateway must accept it.
+      # Origin: https://ezymex.com and gateway must accept it.
       # Removing the apex broke login entirely (403 "Origin not allowed").
       #
       # The C1 audit risk this re-enables — XSS on the marketing site
       # pivoting to credentialed API calls — is mitigated properly by
       # moving the auth flow off the apex (TODO: redirect /auth/* on
-      # swisscresta.com to trade.swisscresta.com so the apex no longer
+      # ezymex.com to trade.ezymex.com so the apex no longer
       # needs gateway access). Until that's done we keep parity with
       # the pre-audit allow-list.
-      CORS_ORIGINS: https://swisscresta.com,https://trade.swisscresta.com,https://admin.swisscresta.com
+      CORS_ORIGINS: https://ezymex.com,https://trade.ezymex.com,https://admin.ezymex.com
       # C1 fix: credentialed cross-origin REST (CORSMiddleware) is limited to the
       # app hosts. CORS_ORIGINS above still drives the login CSRF Origin check and
       # the WS allow-list, so apex login + apex live prices keep working, but the
       # marketing apex can no longer READ credentialed gateway responses
       # cross-origin. Browsers use the same-origin /api/v1 proxy anyway.
-      API_CORS_ORIGINS: https://trade.swisscresta.com,https://admin.swisscresta.com
-      COOKIE_DOMAIN: .swisscresta.com
+      API_CORS_ORIGINS: https://trade.ezymex.com,https://admin.ezymex.com
+      COOKIE_DOMAIN: .ezymex.com
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       # Fills use the same per-user spread the /ws/prices stream shows.
       # Overridable from .env; defaults ON in production.
@@ -114,9 +114,9 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-production}
-        NEXT_PUBLIC_WS_URL: wss://api.swisscresta.com
-        NEXT_PUBLIC_MARKETING_HOST: swisscresta.com
-        NEXT_PUBLIC_TRADE_HOST: trade.swisscresta.com
+        NEXT_PUBLIC_WS_URL: wss://api.ezymex.com
+        NEXT_PUBLIC_MARKETING_HOST: ezymex.com
+        NEXT_PUBLIC_TRADE_HOST: trade.ezymex.com
         # Baked into the bundle at build time so the Google Sign-In button can render.
         # Same value as backend GOOGLE_CLIENT_ID. Leave blank to hide the button.
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
@@ -130,10 +130,10 @@ services:
       INTERNAL_API_URL: http://gateway:8000/api/v1
       TRADER_API_PROXY_TARGET: http://gateway:8000
       # Browser WebSocket connects directly to api subdomain
-      NEXT_PUBLIC_WS_URL: wss://api.swisscresta.com
+      NEXT_PUBLIC_WS_URL: wss://api.ezymex.com
       # Host pair for the marketing/app domain split (read by src/middleware.ts)
-      NEXT_PUBLIC_MARKETING_HOST: swisscresta.com
-      NEXT_PUBLIC_TRADE_HOST: trade.swisscresta.com
+      NEXT_PUBLIC_MARKETING_HOST: ezymex.com
+      NEXT_PUBLIC_TRADE_HOST: trade.ezymex.com
       # DO NOT set NEXT_PUBLIC_GATEWAY_URL — browser uses same-origin /api/v1 proxy (avoids CORS)
     restart: always
 

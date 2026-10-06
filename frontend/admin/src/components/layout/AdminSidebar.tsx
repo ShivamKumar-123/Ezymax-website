@@ -190,10 +190,12 @@ export default function AdminSidebar({
             </span>
           )
         ) : !showLabels ? (
-          <img src="/logo.png" alt="SwissCresta" className="w-7 h-7 object-contain mx-auto" />
+          /* Collapsed rail is 28px square — the wide lockup would shrink to an
+             illegible smudge, so the emblem is used on its own here. */
+          <img src="/ezymex-mark.png" alt="Ezymex" className="w-7 h-7 object-contain mx-auto" />
         ) : (
           <Link href="/" className="flex items-center min-w-0">
-            <img src="/swisscresta-logo.png" alt="SwissCresta" className="h-7 w-auto object-contain shrink-0" />
+            <img src="/ezymex-logo.png" alt="Ezymex" className="h-7 w-auto object-contain shrink-0" />
           </Link>
         )}
         {/* Desktop collapse toggle */}

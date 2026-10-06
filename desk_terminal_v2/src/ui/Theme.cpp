@@ -16,8 +16,8 @@ const Palette DARK = {
     /* muted        */ "#7c828c",
     /* dim          */ "#6b7280",
 
-    /* accent       */ "#3b82f6",
-    /* accentHover  */ "#2563eb",
+    /* accent       */ "#2E7FC2",
+    /* accentHover  */ "#14538C",
     /* up           */ "#26a269",
     /* down         */ "#e01b24",
     /* warn         */ "#f59e0b",
@@ -29,7 +29,7 @@ const Palette DARK = {
     /* cardBorder   */ "#23262e",
     /* cardHover    */ "#3a4358",
     /* cardSelBg    */ "#172033",
-    /* cardSelBorder*/ "#3b82f6",
+    /* cardSelBorder*/ "#2E7FC2",
 
     /* tableBg      */ "#0f1115",
     /* tableAlt     */ "#12141a",
@@ -67,8 +67,8 @@ const Palette LIGHT = {
     /* muted        */ "#5a6472",
     /* dim          */ "#8a94a3",
 
-    /* accent       */ "#1a5fb4",
-    /* accentHover  */ "#14498a",
+    /* accent       */ "#14538C",
+    /* accentHover  */ "#0B2F52",
     /* up           */ "#127a35",
     /* down         */ "#c01c28",
     /* warn         */ "#b45309",

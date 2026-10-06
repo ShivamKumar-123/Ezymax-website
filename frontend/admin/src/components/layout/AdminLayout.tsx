@@ -54,7 +54,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Re-assert the broker's tab identity after EVERY navigation: Next.js
   // re-applies the layout metadata title on route changes, which was
-  // stomping the brand back to "SwissCresta Admin".
+  // stomping the brand back to "Ezymex Admin".
   useEffect(() => {
     if (!wlBrand) return;
     document.title = `${wlBrand.name} Admin`;

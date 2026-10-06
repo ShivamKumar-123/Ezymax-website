@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SwissCresta health watchdog — the 3am pager.
+"""Ezymex health watchdog — the 3am pager.
 
 Runs from cron every 5 minutes on the HOST and checks the things that
 have actually broken in production:
@@ -20,12 +20,12 @@ FLIPS to failing, is repeated at most every REPEAT_HOURS while it stays
 broken, and a RECOVERED email is sent when it clears. State lives in
 STATE_FILE.
 
-Email uses the platform's own SMTP credentials from /opt/swisscresta/.env
+Email uses the platform's own SMTP credentials from /opt/ezymex/.env
 (no new service, no API key). Exit code is always 0 so cron stays quiet;
 everything is written to the log.
 
 Install:  sudo ./scripts/install-watchdog-cron.sh
-Log:      /var/log/swisscresta-watchdog.log
+Log:      /var/log/ezymex-watchdog.log
 Test now: sudo python3 scripts/health-watchdog.py --test-email
 """
 from __future__ import annotations
@@ -43,9 +43,9 @@ from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from pathlib import Path
 
-REPO_DIR = Path(os.environ.get("SWISSCRESTA_DIR", "/opt/swisscresta"))
+REPO_DIR = Path(os.environ.get("EZYMEX_DIR", "/opt/ezymex"))
 ENV_FILE = REPO_DIR / ".env"
-STATE_FILE = Path("/var/lib/swisscresta-watchdog.json")
+STATE_FILE = Path("/var/lib/ezymex-watchdog.json")
 COMPOSE = [
     "docker", "compose",
     "-f", str(REPO_DIR / "docker-compose.yml"),
@@ -225,8 +225,8 @@ def check_disk() -> tuple[bool, str]:
 
 
 CHECKS = [
-    ("api", lambda: check_http("https://api.swisscresta.com/health", "api.swisscresta.com/health")),
-    ("trader", lambda: check_http("https://trade.swisscresta.com", "trade.swisscresta.com")),
+    ("api", lambda: check_http("https://api.ezymex.com/health", "api.ezymex.com/health")),
+    ("trader", lambda: check_http("https://trade.ezymex.com", "trade.ezymex.com")),
     ("containers", check_containers),
     ("prices", check_prices),
     ("backup", check_backup),
@@ -283,8 +283,8 @@ def save_state(state: dict) -> None:
 def main() -> int:
     if "--test-email" in sys.argv:
         ok = send_email(
-            "[SwissCresta] Watchdog test",
-            "This is a test alert from the SwissCresta health watchdog.\n"
+            "[Ezymex] Watchdog test",
+            "This is a test alert from the Ezymex health watchdog.\n"
             "If you received this, 3am pages will reach you.\n",
         )
         return 0 if ok else 1
@@ -325,17 +325,17 @@ def main() -> int:
         lines += [
             "",
             "Useful commands:",
-            "  cd /opt/swisscresta && docker compose logs --tail 50 market-data",
+            "  cd /opt/ezymex && docker compose logs --tail 50 market-data",
             "  docker compose ps",
             "  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate market-data",
             "",
-            "Full log: /var/log/swisscresta-watchdog.log",
+            "Full log: /var/log/ezymex-watchdog.log",
         ]
-        send_email(f"[SwissCresta] ALERT: {failing[0][0]} failing", "\n".join(lines))
+        send_email(f"[Ezymex] ALERT: {failing[0][0]} failing", "\n".join(lines))
 
     if recovered:
         lines = ["Recovered:", ""] + [f"  [{k}] {d}" for k, d in recovered]
-        send_email(f"[SwissCresta] Recovered: {recovered[0][0]}", "\n".join(lines))
+        send_email(f"[Ezymex] Recovered: {recovered[0][0]}", "\n".join(lines))
 
     save_state(state)
     return 0

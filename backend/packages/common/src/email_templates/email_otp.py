@@ -15,7 +15,7 @@ def render_email_otp(
     first_name: str | None,
     code: str,
     ttl_minutes: int = 10,
-    trader_app_url: str = "https://trade.swisscresta.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     base = trader_app_url.rstrip("/")

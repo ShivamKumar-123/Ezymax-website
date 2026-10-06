@@ -18,7 +18,7 @@ def render_withdrawal_requested(
     method: str | None = None,
     destination: str | None = None,
     request_id: str | None = None,
-    trader_app_url: str = "https://trade.swisscresta.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     rows: list[tuple[str, str]] = [
@@ -63,7 +63,7 @@ def render_withdrawal_requested(
         "",
         f"Track in wallet: {trader_app_url.rstrip('/')}/wallet",
         "",
-        "Didn't make this request? Email support@swisscresta.com immediately.",
+        "Didn't make this request? Email support@ezymex.com immediately.",
     ]
     return subject, html, "\n".join(text_lines)
 
@@ -77,7 +77,7 @@ def render_withdrawal_approved(
     destination: str | None = None,
     transaction_hash: str | None = None,
     request_id: str | None = None,
-    trader_app_url: str = "https://trade.swisscresta.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     rows: list[tuple[str, str]] = [
@@ -138,7 +138,7 @@ def render_withdrawal_rejected(
     currency: str = "USD",
     reason: str | None = None,
     request_id: str | None = None,
-    trader_app_url: str = "https://trade.swisscresta.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     rows: list[tuple[str, str]] = [
@@ -163,7 +163,7 @@ def render_withdrawal_rejected(
         intro=f"Hi {name}, we couldn't process this withdrawal — see details below.",
         body_html=body,
         cta_label="Contact Support",
-        cta_url="mailto:support@swisscresta.com",
+        cta_url="mailto:support@ezymex.com",
     )
     text_lines = [
         f"Hi {name},",
@@ -180,6 +180,6 @@ def render_withdrawal_rejected(
     text_lines += [
         "",
         "Your funds have been returned to your main wallet. Submit a new request",
-        "once the issue is resolved, or email support@swisscresta.com for help.",
+        "once the issue is resolved, or email support@ezymex.com for help.",
     ]
     return subject, html, "\n".join(text_lines)

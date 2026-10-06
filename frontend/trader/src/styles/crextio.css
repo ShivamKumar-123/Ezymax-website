@@ -31,7 +31,7 @@
 
   --border-primary: rgba(35, 33, 26, 0.08);
   --border-secondary: rgba(35, 33, 26, 0.06);
-  --border-accent: #E94E1B;
+  --border-accent: #CC0000;
   --border-glass: rgba(35, 33, 26, 0.06);
   --border-glass-bright: rgba(35, 33, 26, 0.1);
 
@@ -40,10 +40,10 @@
   --text-tertiary: #A6A093;
   --text-inverse: #FFFFFF;
 
-  /* SwissCresta brand orange stays the accent inside the app shell */
-  --accent: #E94E1B;
-  --accent-hover: #C73E11;
-  --accent-soft: #FCE6DD;
+  /* Ezymex brand red stays the accent inside the app shell */
+  --accent: #CC0000;
+  --accent-hover: #8A0000;
+  --accent-soft: #FBE4E4;
 
   --scrollbar-track: #ECE9E1;
   --scrollbar-thumb: #D6D1C4;
@@ -52,11 +52,11 @@
   --input-bg: #FDFCF9;
   --input-border: rgba(35, 33, 26, 0.1);
   --input-shadow: 0 1px 2px rgba(35, 33, 26, 0.04);
-  --input-focus-border: #E94E1B;
-  --input-focus-shadow: 0 0 0 3px rgba(233, 78, 27, 0.15);
+  --input-focus-border: #CC0000;
+  --input-focus-shadow: 0 0 0 3px rgba(204, 0, 0, 0.15);
   --input-placeholder: #A6A093;
 
-  --selection-bg: rgba(233, 78, 27, 0.16);
+  --selection-bg: rgba(204, 0, 0, 0.16);
 
   --toast-bg: #FDFCF9;
   --toast-fg: #23211A;
@@ -66,8 +66,8 @@
   --crx-charcoal: #26241E;        /* primary pills, dark cards */
   --crx-charcoal-hover: #383530;
   --crx-charcoal-ink: #F5F3EC;    /* text on charcoal */
-  --crx-yellow: #E94E1B;          /* brand orange — chips, gauges, highlights */
-  --crx-yellow-soft: #FCE6DD;     /* soft peach — icon chip backgrounds */
+  --crx-yellow: #CC0000;          /* brand red — chips, gauges, highlights */
+  --crx-yellow-soft: #FBE4E4;     /* soft peach — icon chip backgrounds */
   --crx-pill: rgba(255, 255, 255, 0.72);  /* frosted nav pills */
 }
 
@@ -94,7 +94,7 @@
 /* ─────────────────────────────────────────────────────────────────────
    DARK VARIANT — `.theme-warm-dark` on the same wrapper (after the
    light block so equal-specificity overrides win). Same Crextio
-   language on a warm charcoal canvas: dark frosted cards, brand-orange
+   language on a warm charcoal canvas: dark frosted cards, brand red
    accent, cream ink. Primary pills invert to cream-on-charcoal.
    ──────────────────────────────────────────────────────────────────── */
 .theme-warm-dark {
@@ -125,7 +125,7 @@
   --text-tertiary: #6E6E6E;
   --text-inverse: #000000;
 
-  --accent-soft: rgba(233, 78, 27, 0.18);
+  --accent-soft: rgba(204, 0, 0, 0.18);
 
   --scrollbar-track: #0a0a0a;
   --scrollbar-thumb: #2a2a2a;
@@ -144,7 +144,7 @@
   --crx-charcoal: #FFFFFF;
   --crx-charcoal-hover: #E8E8E8;
   --crx-charcoal-ink: #0a0a0a;
-  --crx-yellow-soft: rgba(233, 78, 27, 0.16);
+  --crx-yellow-soft: rgba(204, 0, 0, 0.16);
   --crx-pill: rgba(255, 255, 255, 0.06);
 }
 

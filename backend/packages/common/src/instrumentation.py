@@ -313,7 +313,7 @@ def init_sentry(service_name: str) -> None:
             dsn=dsn,
             traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
             environment=settings.ENVIRONMENT,
-            release=f"swisscresta-{service_name}@1.0.0",
+            release=f"ezymex-{service_name}@1.0.0",
             integrations=[
                 FastApiIntegration(transaction_style="endpoint"),
                 SqlalchemyIntegration(),
@@ -355,7 +355,7 @@ def init_sentry(service_name: str) -> None:
 #     Installed automatically for ASGI apps by add_middleware_stack (on the
 #     lifespan startup message); asyncio.run() services call it at the top
 #     of main().
-_bg_logger = logging.getLogger("swisscresta.background")
+_bg_logger = logging.getLogger("ezymex.background")
 _BACKGROUND_TASKS: set = set()
 
 
@@ -628,7 +628,7 @@ def add_metrics_endpoint(app):
         # (nginx/Cloudflare add it); a Prometheus scraper hitting the container
         # directly on the internal network / loopback does not. Deny the
         # forwarded ones so the full route inventory + traffic stats aren't
-        # exposed publicly on api.swisscresta.com/metrics. (The gateway binds
+        # exposed publicly on api.ezymex.com/metrics. (The gateway binds
         # 127.0.0.1 in prod, so non-forwarded requests are internal-only.)
         if request.headers.get("x-forwarded-for") or request.headers.get("x-forwarded-host"):
             return Response(status_code=404)
@@ -640,7 +640,7 @@ def add_metrics_endpoint(app):
 # ---------------------------------------------------------------------------
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Assert baseline security headers on every API response. The nginx blocks
-    for the trader/admin hosts already set these, but the api.swisscresta.com
+    for the trader/admin hosts already set these, but the api.ezymex.com
     JSON host was missing HSTS / Referrer-Policy / Permissions-Policy — set them
     at the app so they hold regardless of the (host-managed) proxy config."""
     async def dispatch(self, request: Request, call_next):

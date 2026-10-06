@@ -6,12 +6,12 @@
  *
  *   • Light  — clean white card, soft grey tile inside, hairline ring,
  *              gentle shadow. No brand gradient: keeps the cream canvas calm.
- *   • Dark   — the brand look: light, luminous orange fading into deep
- *              black, Vantablack tile inside, heavy orange + black shadow.
+ *   • Dark   — the brand look: light, luminous red fading into deep
+ *              black, Vantablack tile inside, heavy red + black shadow.
  *
  * `useBrandTone()` exposes the same light/dark flag plus ready-made class
  * strings for text, pills and buttons that sit on the shell, so callers
- * never hard-code white-on-orange.
+ * never hard-code white-on-red.
  */
 
 import type { ReactNode } from 'react';

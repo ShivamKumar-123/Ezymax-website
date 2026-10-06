@@ -8,11 +8,11 @@
 # decrypted as a stream straight into pg_restore — no plaintext temp file.
 #
 # Usage:
-#   deploy/scripts/restore-db.sh /opt/swisscresta/backups/db/daily/swisscresta-YYYYMMDD-HHMMSS.dump
-#   BACKUP_GPG_PASSPHRASE=... deploy/scripts/restore-db.sh .../swisscresta-YYYYMMDD-HHMMSS.dump.gpg
+#   deploy/scripts/restore-db.sh /opt/ezymex/backups/db/daily/ezymex-YYYYMMDD-HHMMSS.dump
+#   BACKUP_GPG_PASSPHRASE=... deploy/scripts/restore-db.sh .../ezymex-YYYYMMDD-HHMMSS.dump.gpg
 set -euo pipefail
 
-REPO_DIR="${REPO_DIR:-/opt/swisscresta}"
+REPO_DIR="${REPO_DIR:-/opt/ezymex}"
 COMPOSE="docker compose -f $REPO_DIR/docker-compose.yml -f $REPO_DIR/docker-compose.prod.yml"
 
 FILE="${1:-}"

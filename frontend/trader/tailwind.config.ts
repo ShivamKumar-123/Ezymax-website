@@ -50,13 +50,30 @@ const config: Config = {
           bg: 'rgba(220,38,38,0.1)',
           glow: 'rgba(220,38,38,0.2)',
         },
-        /* Vantage-style accent — orange #E94E1B for CTAs, brand marks, NEW badges. */
+        /* Ezymex brand red — taken from the logo wordmark. Drives CTAs,
+           brand marks and NEW badges.
+
+           Note it is deliberately DEEPER than `sell` (#DC2626): the brand
+           red is the saturated crimson of the mark, the sell red is the
+           brighter signal red. Keeping them apart is what stops a primary
+           button from reading as a sell action. */
         accent: {
-          DEFAULT: '#E94E1B',
-          hover: '#C73E11',
-          soft: '#FCE6DD',
-          light: '#F58A60',
-          dark: '#C73E11',
+          DEFAULT: '#CC0000',
+          hover: '#8A0000',
+          soft: '#FBE4E4',
+          light: '#E63A3A',
+          dark: '#8A0000',
+        },
+        /* The logo's other half — the steel-blue swoosh and tagline.
+           Used for deep brand surfaces, hero gradients and the reversed
+           wordmark's accent, so the platform reads as the full two-colour
+           mark rather than red alone. */
+        navy: {
+          DEFAULT: '#0B2F52',
+          deep: '#06182B',
+          mid: '#14538C',
+          light: '#2E7FC2',
+          soft: '#E6EFF7',
         },
         success: '#10B981',
         warning: '#F59E0B',
@@ -71,12 +88,12 @@ const config: Config = {
           purple: '#9775FA',
           pink: '#F06595',
         },
-        /* Landing-page palette — SwissCresta brand */
+        /* Landing-page palette — Ezymex brand */
         'primary': {
           bg: '#FFFFFF',
           secondary: '#FAFAFA',
-          accent: '#E94E1B',
-          purple: '#C73E11',
+          accent: '#CC0000',
+          purple: '#8A0000',
         },
         /* ─────────────────────────────────────────────────────────
            Marketing site palette (`mkt.*` namespace)
@@ -153,7 +170,11 @@ const config: Config = {
         },
       },
       backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, #F58A60 0%, #E94E1B 50%, #C73E11 100%)',
+        'gradient-primary': 'linear-gradient(135deg, #E63A3A 0%, #CC0000 50%, #8A0000 100%)',
+        /* Signature two-colour sweep: the logo's red into its steel blue.
+           For hero bands and brand-forward panels. */
+        'gradient-brand': 'linear-gradient(135deg, #CC0000 0%, #8A0000 48%, #0B2F52 100%)',
+        'gradient-navy': 'linear-gradient(135deg, #14538C 0%, #0B2F52 55%, #06182B 100%)',
         'gradient-hero': 'linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 50%, #F5F5F5 100%)',
         'gradient-section': 'linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%)',
         'gradient-section-alt': 'linear-gradient(180deg, #FAFAFA 0%, #FFFFFF 100%)',

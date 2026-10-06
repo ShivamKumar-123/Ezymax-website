@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(SwissCrestaTerminal VERSION 0.2.0 LANGUAGES CXX)
+project(EzymexTerminal VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -119,15 +119,15 @@ endif()
 
 if (APPLE)
     # A mac app is a bundle named after its executable, so the binary is
-    # "SwissCresta Terminal" here rather than the bare "terminal" Windows ships —
+    # "Ezymex Terminal" here rather than the bare "terminal" Windows ships —
     # that name is what Finder, the Dock and ⌘-Tab all show.
-    set(SC_APP_NAME "SwissCresta Terminal")
-    set(SC_BUNDLE_ID "com.swisscresta.terminal")
+    set(SC_APP_NAME "Ezymex Terminal")
+    set(SC_BUNDLE_ID "com.ezymex.terminal")
 
-    set(SC_ICNS "${CMAKE_SOURCE_DIR}/resources/swisscresta.icns")
+    set(SC_ICNS "${CMAKE_SOURCE_DIR}/resources/ezymex.icns")
     if (NOT EXISTS "${SC_ICNS}")
         message(FATAL_ERROR
-            "resources/swisscresta.icns is missing. Generate it first:\n"
+            "resources/ezymex.icns is missing. Generate it first:\n"
             "    ./resources/make-icns.sh")
     endif()
     # MACOSX_PACKAGE_LOCATION puts the file in Contents/Resources, which is

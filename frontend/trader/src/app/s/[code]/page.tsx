@@ -151,7 +151,7 @@ export default function SharedTradePage() {
           <path d="M12 2L3 6V12C3 17.5 6.8 22.3 12 23C17.2 22.3 21 17.5 21 12V6L12 2Z" stroke="white" strokeWidth="1.6" fill="none" />
           <path d="M9 12L11 14L15 10" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span className="text-white text-sm font-bold tracking-[0.25em]">SWISSCRESTA</span>
+        <span className="text-white text-sm font-bold tracking-[0.25em]">EZYMEX</span>
       </div>
 
       {loading ? (
@@ -322,7 +322,7 @@ export default function SharedTradePage() {
             </div>
           )}
 
-          <p className="text-white/40 text-xs mt-10">SwissCresta © {new Date().getFullYear()}. All rights reserved.</p>
+          <p className="text-white/40 text-xs mt-10">Ezymex © {new Date().getFullYear()}. All rights reserved.</p>
         </>
       )}
     </div>

@@ -75,7 +75,7 @@ export async function GET(req: Request) {
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`;
   try {
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (SwissCresta dashboard news)' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (Ezymex dashboard news)' },
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) throw new Error(`upstream ${res.status}`);

@@ -9,7 +9,7 @@
   function overridesFor(theme, compact) {
     const light = theme === "light";
     return {
-      // Split view: drop the "Bitcoin / US Dollar · 5 · SwissCresta" line from the
+      // Split view: drop the "Bitcoin / US Dollar · 5 · Ezymex" line from the
       // legend. The pane header above it already names the instrument, so in a
       // half or quarter pane it is a second copy of the same fact sitting on
       // top of the candles. The OHLC row underneath is left alone — that IS
@@ -36,7 +36,7 @@
   const surfaceFor = (t) => (t === "light" ? "#ffffff" : "#0e0f13");
 
   /*
-   * SwissCresta watermark, centred on the chart canvas.
+   * Ezymex watermark, centred on the chart canvas.
    *
    * Built as our own DOM layer rather than through the library: the charting
    * library's symbolWatermark only draws the SYMBOL text, and there is no hook
@@ -66,7 +66,7 @@
 
       const txt = document.createElement("span");
       txt.id = "sc_watermark_text";
-      txt.textContent = "SwissCresta";
+      txt.textContent = "Ezymex";
       txt.style.cssText =
         "font:800 44px -apple-system,'Segoe UI',sans-serif;letter-spacing:0.5px;";
 
@@ -76,7 +76,7 @@
     }
     // Faint enough that candles and grid lines stay fully readable through it.
     el.style.opacity = theme === "light" ? "0.09" : "0.12";
-    document.getElementById("sc_watermark_mark").src = "swisscresta-mark.png";
+    document.getElementById("sc_watermark_mark").src = "ezymex-mark.png";
     document.getElementById("sc_watermark_text").style.color =
       theme === "light" ? "#0d1117" : "#e6e8ec";
   }

@@ -9,7 +9,7 @@
 #   ./deploy.sh
 set -euo pipefail
 
-REPO_DIR="${REPO_DIR:-/opt/swisscresta}"
+REPO_DIR="${REPO_DIR:-/opt/ezymex}"
 COMPOSE="docker compose -f $REPO_DIR/docker-compose.yml -f $REPO_DIR/docker-compose.prod.yml"
 
 cd "$REPO_DIR"
@@ -72,7 +72,7 @@ fi
 
 if [ $NEEDS_NGINX -eq 1 ]; then
   echo "▶ Reloading nginx…"
-  sudo cp deploy/nginx/swisscresta.conf /etc/nginx/sites-available/swisscresta.conf
+  sudo cp deploy/nginx/ezymex.conf /etc/nginx/sites-available/ezymex.conf
   # cloudflare-real-ip.conf is dropped into conf.d once at install time;
   # we re-copy it on each deploy so edits to the file flow through.
   if [ -f deploy/nginx/cloudflare-real-ip.conf ]; then
@@ -91,8 +91,8 @@ sleep 4
 # stack is up — caller can decide whether the route should exist.
 HEALTH_DEADLINE=$((SECONDS + ${HEALTHCHECK_TIMEOUT:-60}))
 while :; do
-  CODE_API=$(curl -sk --max-time 10 -o /dev/null -w "%{http_code}" https://api.swisscresta.com/health   || echo "000")
-  CODE_TRD=$(curl -sk --max-time 10 -o /dev/null -w "%{http_code}" https://trade.swisscresta.com/       || echo "000")
+  CODE_API=$(curl -sk --max-time 10 -o /dev/null -w "%{http_code}" https://api.ezymex.com/health   || echo "000")
+  CODE_TRD=$(curl -sk --max-time 10 -o /dev/null -w "%{http_code}" https://trade.ezymex.com/       || echo "000")
   # On a connection error curl prints "000" via -w AND the fallback echo adds
   # another "000" → "000000", which slipped past the `000` match below and
   # passed a dead stack. Keep the 3-digit status only.
@@ -104,8 +104,8 @@ while :; do
   [ $SECONDS -ge $HEALTH_DEADLINE ] && break
   sleep 3
 done
-echo "  api.swisscresta.com/health  → HTTP $CODE_API"
-echo "  trade.swisscresta.com       → HTTP $CODE_TRD"
+echo "  api.ezymex.com/health  → HTTP $CODE_API"
+echo "  trade.ezymex.com       → HTTP $CODE_TRD"
 
 if [ $fail -ne 0 ]; then
   echo "⚠️  Healthcheck failed. Inspect with:"

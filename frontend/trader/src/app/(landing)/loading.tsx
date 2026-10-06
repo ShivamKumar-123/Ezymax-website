@@ -25,14 +25,14 @@ export default function LandingLoading() {
           <span
             className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
             style={{
-              borderTopColor: '#e32219',
-              borderRightColor: 'rgba(227, 34, 25, 0.35)',
+              borderTopColor: '#CC0000',
+              borderRightColor: 'rgba(204, 0, 0, 0.35)',
               animationDuration: '1.05s',
             }}
             aria-hidden="true"
           />
           <span
-            className="absolute inset-0 grid place-items-center font-display text-[#e32219] font-bold text-xl"
+            className="absolute inset-0 grid place-items-center font-display text-[#CC0000] font-bold text-xl"
             aria-hidden="true"
           >
             {BRAND_NAME.charAt(0)}

@@ -40,7 +40,7 @@ static const char* MASK = "••••••";
 
 MainWindow::MainWindow(const Config& cfg, QWidget* parent)
     : QMainWindow(parent), m_cfg(cfg) {
-    setWindowTitle(tr("SwissCresta Terminal"));
+    setWindowTitle(tr("Ezymex Terminal"));
     setMinimumSize(980, 600);
     // Fallback only, for a first run whose saveGeometry() blob is missing or
     // unusable. showRestored() is what actually sizes the window.

@@ -26,7 +26,7 @@ def _get_frontend_url() -> str:
     # Fallback: derive from CORS origins (prod domain first, else first origin).
     origins = [o.strip() for o in s.CORS_ORIGINS.split(",") if o.strip()]
     for o in origins:
-        if "swisscresta.com" in o:
+        if "ezymex.com" in o:
             return o
     return origins[0] if origins else "http://localhost:3010"
 

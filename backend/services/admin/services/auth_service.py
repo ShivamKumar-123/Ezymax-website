@@ -56,7 +56,7 @@ async def _enforce_admin_host_isolation(admin: User, host: str | None, db: Async
         (support/debug). Anyone else is refused.
       * platform / unknown host → a broker whose custom domain is LIVE is
         refused with a pointer to their own admin domain (they must never
-        work out of admin.swisscresta.com once their panel exists). A
+        work out of admin.ezymex.com once their panel exists). A
         broker with no live domain yet may still use the platform host —
         otherwise a fresh tenant could never log in to set things up.
     """

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# SwissCresta — white-label domain agent (HOST side).
+# Ezymex — white-label domain agent (HOST side).
 #
 # The admin-api container cannot touch host nginx/certbot, so it only
 # marks a tenant domain custom_domain_status='provisioning' in Postgres.
@@ -15,10 +15,10 @@
 #      certificate deleted (this covers the dashboard's Disconnect).
 #
 # Install once with:  sudo ./scripts/install-wl-agent-cron.sh
-# Logs: /var/log/swisscresta-wl-agent.log
+# Logs: /var/log/ezymex-wl-agent.log
 set -euo pipefail
 
-REPO_DIR="${SWISSCRESTA_DIR:-/opt/swisscresta}"
+REPO_DIR="${EZYMEX_DIR:-/opt/ezymex}"
 cd "$REPO_DIR"
 
 # .env is a dotenv file, NOT a shell script — values like
@@ -34,7 +34,7 @@ env_get() {  # $1 key, $2 default
   printf '%s' "${v:-$2}"
 }
 
-TENANTS_FILE="$(env_get BRANDING_NGINX_TENANTS_FILE /etc/nginx/conf.d/swisscresta-tenants.conf)"
+TENANTS_FILE="$(env_get BRANDING_NGINX_TENANTS_FILE /etc/nginx/conf.d/ezymex-tenants.conf)"
 TRADER_UP="$(env_get BRANDING_TRADER_UPSTREAM 127.0.0.1:3012)"
 ADMIN_UP="$(env_get BRANDING_ADMIN_UPSTREAM 127.0.0.1:3013)"
 CERTBOT="$(env_get BRANDING_CERTBOT_BIN /usr/bin/certbot)"
@@ -45,11 +45,11 @@ CERTBOT_EMAIL="$(env_get BRANDING_CERTBOT_EMAIL "")"
 # never re-attempt the same domain more often than this even if it keeps getting
 # re-queued (rapid Verify clicks, a stuck 'provisioning' row).
 CERTBOT_COOLDOWN="$(env_get BRANDING_CERTBOT_COOLDOWN_SECS 600)"
-POSTGRES_USER="$(env_get POSTGRES_USER swisscresta)"
-POSTGRES_DB="$(env_get POSTGRES_DB swisscresta)"
+POSTGRES_USER="$(env_get POSTGRES_USER ezymex)"
+POSTGRES_DB="$(env_get POSTGRES_DB ezymex)"
 
 # One agent at a time — a slow certbot run must not overlap the next tick.
-exec 9>/var/lock/swisscresta-wl-agent.lock
+exec 9>/var/lock/ezymex-wl-agent.lock
 flock -n 9 || exit 0
 
 touch "$TENANTS_FILE"
@@ -84,10 +84,10 @@ write_block() {  # $1 domain  $2 app_subdomain
     certname="${domain}"
   fi
   # Idempotent: skip when the block already exists.
-  grep -qF "# BEGIN swisscresta-tenant ${domain}" "$TENANTS_FILE" && return 0
+  grep -qF "# BEGIN ezymex-tenant ${domain}" "$TENANTS_FILE" && return 0
   cat >> "$TENANTS_FILE" <<EOF
 
-# BEGIN swisscresta-tenant ${domain}
+# BEGIN ezymex-tenant ${domain}
 # CERTNAME ${certname}
 server {
     listen 80;
@@ -124,13 +124,13 @@ server {
         proxy_read_timeout 86400;
     }
 }
-# END swisscresta-tenant ${domain}
+# END ezymex-tenant ${domain}
 EOF
 }
 
 remove_block() {  # $1 domain
   local domain="$1"
-  sed -i "/# BEGIN swisscresta-tenant ${domain}\$/,/# END swisscresta-tenant ${domain}\$/d" "$TENANTS_FILE"
+  sed -i "/# BEGIN ezymex-tenant ${domain}\$/,/# END ezymex-tenant ${domain}\$/d" "$TENANTS_FILE"
 }
 
 reload_nginx() {
@@ -153,14 +153,14 @@ for row in $pending; do
   if ! reload_nginx; then
     remove_block "$domain"
     reload_nginx || true
-    psql_q "UPDATE broker_profiles SET custom_domain_status='failed', custom_domain_last_error='nginx config test failed — see /var/log/swisscresta-wl-agent.log' WHERE custom_domain='${domain}';" >/dev/null
+    psql_q "UPDATE broker_profiles SET custom_domain_status='failed', custom_domain_last_error='nginx config test failed — see /var/log/ezymex-wl-agent.log' WHERE custom_domain='${domain}';" >/dev/null
     continue
   fi
 
   # Throttle: skip certbot for this domain if we attempted it within the
   # cooldown window, so a re-queued domain can't burn the Let's Encrypt
   # failed-authorisation budget.
-  _cb_marker="/var/lock/swisscresta-certbot-$(printf '%s' "$domain" | tr -c 'a-z0-9.-' '_')"
+  _cb_marker="/var/lock/ezymex-certbot-$(printf '%s' "$domain" | tr -c 'a-z0-9.-' '_')"
   if [[ -f "$_cb_marker" ]]; then
     _cb_age=$(( $(date +%s) - $(stat -c %Y "$_cb_marker" 2>/dev/null || echo 0) ))
     if (( _cb_age < CERTBOT_COOLDOWN )); then
@@ -180,28 +180,28 @@ for row in $pending; do
   [[ -n "$CERTBOT_EMAIL" ]] && email_args=(-m "$CERTBOT_EMAIL")
 
   if "$CERTBOT" --nginx --non-interactive --agree-tos --redirect \
-       "${email_args[@]}" "${cert_args[@]}" >> /var/log/swisscresta-wl-agent.log 2>&1; then
+       "${email_args[@]}" "${cert_args[@]}" >> /var/log/ezymex-wl-agent.log 2>&1; then
     reload_nginx || true
     psql_q "UPDATE broker_profiles SET custom_domain_status='ready', custom_domain_last_error=NULL, custom_domain_provisioned_at=now() WHERE custom_domain='${domain}';" >/dev/null
     log "READY ${domain}"
   else
-    psql_q "UPDATE broker_profiles SET custom_domain_status='failed', custom_domain_last_error='SSL issuance failed — check DNS is not proxied (grey cloud) and retry Verify. Details: /var/log/swisscresta-wl-agent.log' WHERE custom_domain='${domain}';" >/dev/null
+    psql_q "UPDATE broker_profiles SET custom_domain_status='failed', custom_domain_last_error='SSL issuance failed — check DNS is not proxied (grey cloud) and retry Verify. Details: /var/log/ezymex-wl-agent.log' WHERE custom_domain='${domain}';" >/dev/null
     log "FAILED ${domain} (certbot)"
   fi
 done
 
 # ── 2. Reconcile teardown (Disconnect from the dashboard) ────────────
 active="$(psql_q "SELECT custom_domain FROM broker_profiles WHERE custom_domain IS NOT NULL AND custom_domain_status IN ('provisioning','ready');")"
-mapfile -t block_domains < <(grep -oP '^# BEGIN swisscresta-tenant \K.+$' "$TENANTS_FILE" || true)
+mapfile -t block_domains < <(grep -oP '^# BEGIN ezymex-tenant \K.+$' "$TENANTS_FILE" || true)
 for domain in "${block_domains[@]:-}"; do
   [[ -z "$domain" ]] && continue
   if ! grep -qxF "$domain" <<< "$active"; then
     log "teardown ${domain} (no longer active)"
-    certname="$(sed -n "/# BEGIN swisscresta-tenant ${domain}\$/,/# END swisscresta-tenant ${domain}\$/p" "$TENANTS_FILE" | grep -oP '^# CERTNAME \K.+$' | head -1 || true)"
+    certname="$(sed -n "/# BEGIN ezymex-tenant ${domain}\$/,/# END ezymex-tenant ${domain}\$/p" "$TENANTS_FILE" | grep -oP '^# CERTNAME \K.+$' | head -1 || true)"
     remove_block "$domain"
     reload_nginx || true
     if [[ -n "${certname:-}" ]]; then
-      "$CERTBOT" delete --non-interactive --cert-name "$certname" >> /var/log/swisscresta-wl-agent.log 2>&1 || true
+      "$CERTBOT" delete --non-interactive --cert-name "$certname" >> /var/log/ezymex-wl-agent.log 2>&1 || true
     fi
   fi
 done

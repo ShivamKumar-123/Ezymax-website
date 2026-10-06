@@ -67,7 +67,7 @@ export default function InstancesTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E94E1B] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#CC0000] border-t-transparent" />
       </div>
     );
   }

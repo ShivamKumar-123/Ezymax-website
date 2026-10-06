@@ -248,7 +248,7 @@ export default function TransactionsPage() {
         { header: 'Description' }, { header: 'Admin By' }, { header: 'Date', mono: true },
       ],
       rows: exportRows(),
-      filename: `swisscresta-transactions-${new Date().toISOString().slice(0, 10)}.pdf`,
+      filename: `ezymex-transactions-${new Date().toISOString().slice(0, 10)}.pdf`,
     });
   };
 
@@ -276,7 +276,7 @@ export default function TransactionsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `swisscresta-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `ezymex-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

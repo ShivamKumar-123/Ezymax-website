@@ -36,12 +36,12 @@ export default function EmptyHero({ onPick }: { onPick: (prompt: string) => void
       {/* Orb */}
       <motion.div variants={item} className="relative mb-7" aria-hidden>
         <motion.span
-          className="absolute inset-0 rounded-full bg-[#E94E1B]/25 blur-2xl"
+          className="absolute inset-0 rounded-full bg-[#CC0000]/25 blur-2xl"
           animate={{ scale: [1, 1.3, 1], opacity: [0.45, 0.85, 0.45] }}
           transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.span
-          className="relative block h-20 w-20 rounded-full bg-[radial-gradient(circle_at_30%_30%,#FFE3D6_0%,#F58A60_45%,#E94E1B_75%,#7a2a0e_100%)] shadow-[0_12px_40px_rgba(233,78,27,0.35)]"
+          className="relative block h-20 w-20 rounded-full bg-[radial-gradient(circle_at_30%_30%,#FFE3D6_0%,#E63A3A_45%,#CC0000_75%,#7a2a0e_100%)] shadow-[0_12px_40px_rgba(204,0,0,0.35)]"
           animate={{ rotate: [0, 360] }}
           transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
         />
@@ -66,9 +66,9 @@ export default function EmptyHero({ onPick }: { onPick: (prompt: string) => void
               variants={item}
               type="button"
               onClick={() => onPick(s.prompt)}
-              className="inline-flex items-center gap-2 rounded-full border border-border-primary bg-bg-card-nested px-3.5 py-2 text-xs font-medium text-text-secondary transition-colors hover:border-[#E94E1B]/40 hover:text-text-primary"
+              className="inline-flex items-center gap-2 rounded-full border border-border-primary bg-bg-card-nested px-3.5 py-2 text-xs font-medium text-text-secondary transition-colors hover:border-[#CC0000]/40 hover:text-text-primary"
             >
-              <Icon size={13} className="text-[#E94E1B]" aria-hidden />
+              <Icon size={13} className="text-[#CC0000]" aria-hidden />
               {s.label}
             </motion.button>
           );

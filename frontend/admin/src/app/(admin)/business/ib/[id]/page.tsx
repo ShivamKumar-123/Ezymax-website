@@ -120,7 +120,7 @@ export default function IBDetailPage() {
 
       // ── Row 1: Logo only (centered, nothing on its left or right) ──
       try {
-        const res = await fetch('/swisscresta-logo.png');
+        const res = await fetch('/ezymex-logo.png');
         const blob = await res.blob();
         const logoData: string = await new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -181,7 +181,7 @@ export default function IBDetailPage() {
           r.source_trade_id ? r.source_trade_id.slice(0, 12) + '...' : '-',
         ]),
         styles: { fontSize: 8, cellPadding: 4 },
-        headStyles: { fillColor: [255, 138, 0], textColor: 255 },  // orange to match the UI accent
+        headStyles: { fillColor: [204, 0, 0], textColor: 255 },  // brand red to match the UI accent
         columnStyles: {
           4: { halign: 'right' },
           5: { halign: 'right', fontStyle: 'bold' },
@@ -193,7 +193,7 @@ export default function IBDetailPage() {
           doc.setFontSize(8);
           doc.setTextColor(140);
           doc.text(`Page ${d.pageNumber}`, w - 40, h - 20, { align: 'right' });
-          doc.text(`SwissCresta - confidential`, 40, h - 20);
+          doc.text(`Ezymex - confidential`, 40, h - 20);
         },
       });
 

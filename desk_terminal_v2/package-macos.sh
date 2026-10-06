@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Package the built .app into dist/SwissCrestaTerminal-<version>-<arch>.dmg —
+# Package the built .app into dist/EzymexTerminal-<version>-<arch>.dmg —
 # the macOS counterpart of the Inno Setup installer built by installer.iss.
 #
 # Usage:  ./build-macos.sh && ./package-macos.sh
@@ -12,7 +12,7 @@ set -euo pipefail
 src="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 build="$src/build-macos"
 dist="$src/dist"
-app_name="SwissCresta Terminal"
+app_name="Ezymex Terminal"
 app="$build/$app_name.app"
 
 die() { echo "error: $*" >&2; exit 1; }
@@ -42,7 +42,7 @@ elif (( has_arm64 ));               then arch="arm64"
 elif (( has_x86_64 ));              then arch="x86_64"
 else die "cannot read architectures from $app/Contents/MacOS/$app_name (lipo said: '$archs')"
 fi
-dmg="$dist/SwissCrestaTerminal-$version-$arch.dmg"
+dmg="$dist/EzymexTerminal-$version-$arch.dmg"
 
 # The arch stays in the filename even when universal: the website links to a
 # specific name, and a single-arch build slipping out under a name that promised
@@ -73,7 +73,7 @@ echo "==> Wrote $dmg ($(du -h "$dmg" | cut -f1))"
 # Gatekeeper reality check. An ad-hoc signature is enough to RUN the app on the
 # machine that built it, but anything downloaded carries a quarantine flag and
 # Gatekeeper rejects an app that is not signed with a Developer ID AND
-# notarised — with "SwissCresta Terminal is damaged and can't be opened", which
+# notarised — with "Ezymex Terminal is damaged and can't be opened", which
 # sounds like a corrupt download rather than a missing certificate.
 #
 # The signature is read into a variable first instead of being piped straight
@@ -91,7 +91,7 @@ case "$sig" in
     will say "damaged and can't be opened". Two ways forward:
 
     a) For testers — they run this once after copying it to Applications:
-           xattr -dr com.apple.quarantine "/Applications/SwissCresta Terminal.app"
+           xattr -dr com.apple.quarantine "/Applications/Ezymex Terminal.app"
 
     b) For the website download — sign and notarise properly with an Apple
        Developer account ($99/yr), then staple the ticket:

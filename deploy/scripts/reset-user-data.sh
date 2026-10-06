@@ -17,12 +17,12 @@
 # aborts the whole script instead of marching past the rollback.
 #
 # Usage:
-#   /opt/swisscresta/deploy/scripts/reset-user-data.sh          # keep admins
-#   /opt/swisscresta/deploy/scripts/reset-user-data.sh --full   # wipe admins too
+#   /opt/ezymex/deploy/scripts/reset-user-data.sh          # keep admins
+#   /opt/ezymex/deploy/scripts/reset-user-data.sh --full   # wipe admins too
 #
 set -euo pipefail
 
-REPO_DIR="${REPO_DIR:-/opt/swisscresta}"
+REPO_DIR="${REPO_DIR:-/opt/ezymex}"
 COMPOSE="docker compose -f $REPO_DIR/docker-compose.yml -f $REPO_DIR/docker-compose.prod.yml"
 
 MODE="keep-admins"
@@ -144,7 +144,7 @@ fi
 
 echo
 echo "[3/4] Wiping user data ($MODE)..."
-$COMPOSE exec -T postgres psql -v ON_ERROR_STOP=1 -U swisscresta -d swisscresta <<SQL
+$COMPOSE exec -T postgres psql -v ON_ERROR_STOP=1 -U ezymex -d ezymex <<SQL
 BEGIN;
 
 DO \$\$

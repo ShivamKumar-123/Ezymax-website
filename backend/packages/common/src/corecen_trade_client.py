@@ -1,6 +1,6 @@
 """Corecen Broker API client — forwards A-Book trades to Corecen LP.
 
-When an SwissCresta user with book_type='A' opens, closes, or modifies a
+When an Ezymex user with book_type='A' opens, closes, or modifies a
 position, this client pushes the event to Corecen's broker API so Corecen
 can route it to the real LP.
 
@@ -162,7 +162,7 @@ async def forward_trade_close(
 
     `close_price` and `pnl` accept Decimal | float | str. Decimals are
     preserved by serialising to their canonical string form (no float
-    round-trip). For reconciliation between SwissCresta records and the
+    round-trip). For reconciliation between Ezymex records and the
     LP's records, every fractional digit matters."""
     from decimal import Decimal
 

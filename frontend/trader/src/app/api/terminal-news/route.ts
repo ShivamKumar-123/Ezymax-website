@@ -28,7 +28,7 @@ export interface TerminalNewsItem {
 type Topic = 'forex' | 'crypto' | 'commodities' | 'markets';
 type TopicFilter = Topic | 'all';
 
-const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36 SwissCresta-terminal';
+const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36 Ezymex-terminal';
 
 const FEEDS: { url: string; source: string; topic: Topic }[] = [
   { url: 'https://www.fxstreet.com/rss/news', source: 'FXStreet', topic: 'forex' },

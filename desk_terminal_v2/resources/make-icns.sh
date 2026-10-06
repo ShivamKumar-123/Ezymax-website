@@ -1,30 +1,31 @@
 #!/usr/bin/env bash
-# Builds resources/swisscresta.icns — the macOS app icon — from a square PNG master.
+# Builds resources/ezymex.icns — the macOS app icon — from a square PNG master.
 #
 # macOS will not take the .ico (that is a Windows container) and CMake needs a
 # real .icns to drop into Contents/Resources, so this is the mac equivalent of
 # what app.rc does on Windows.
 #
 # Source preference:
-#   1. resources/swisscresta-1024.png   (ideal — every slot is a true downscale)
-#   2. resources/swisscresta-256.png    (what the repo ships; 512/1024 are upscaled)
+#   1. resources/ezymex-1024.png   (what the repo ships — every slot is a
+#                                   true downscale)
+#   2. resources/ezymex-256.png    (fallback; 512/1024 would be upscaled)
 #
-# The 256px master is the app-icon artwork proper: the dark rounded-square tile,
-# NOT frontend/trader/public/marketing/swisscresta_fevicon.png, which is 512px but a
-# bare mark on white — correct as a favicon, wrong as a macOS app icon, which is
-# always a tile. Upscaling the right artwork beats downscaling the wrong one.
-# Drop a 1024px tile in as swisscresta-1024.png and this script picks it up with no
-# other change.
+# Both are the Ezymex emblem — the circled CX monogram — on a TRANSPARENT
+# background, cut from the master logo. macOS renders that fine, but the
+# platform convention for a Dock icon is an opaque rounded-square tile with
+# the mark inset. If the Dock icon ever needs to match that convention,
+# composite the emblem onto a tile and drop the result in as
+# ezymex-1024.png; this script needs no other change.
 #
 # Only sips + iconutil are used, both of which ship with macOS — no Homebrew,
 # no ImageMagick.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-out="$here/swisscresta.icns"
+out="$here/ezymex.icns"
 
 src=""
-for cand in "$here/swisscresta-1024.png" "$here/swisscresta-256.png"; do
+for cand in "$here/ezymex-1024.png" "$here/ezymex-256.png"; do
     if [[ -f "$cand" ]]; then src="$cand"; break; fi
 done
 [[ -n "$src" ]] || { echo "error: no icon master found in $here" >&2; exit 1; }
@@ -33,12 +34,12 @@ master_px="$(sips -g pixelWidth "$src" | awk '/pixelWidth/{print $2}')"
 echo "==> icon master: $(basename "$src") (${master_px}px)"
 if (( master_px < 1024 )); then
     echo "    note: slots above ${master_px}px are upscaled. Add a 1024x1024"
-    echo "          resources/swisscresta-1024.png for a sharper Dock icon."
+    echo "          resources/ezymex-1024.png for a sharper Dock icon."
 fi
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
-set="$work/swisscresta.iconset"
+set="$work/ezymex.iconset"
 mkdir -p "$set"
 
 # iconutil requires exactly these names; the @2x entries are what Retina Macs

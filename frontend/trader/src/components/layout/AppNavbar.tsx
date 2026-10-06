@@ -218,8 +218,8 @@ export default function AppNavbar() {
                on the Vantablack canvas, so dark mode uses the generated
                white-text variant (same red mark, wordmark recoloured). */
             <Image
-              src={dark ? '/marketing/swisscresta-logo-dark.png' : '/marketing/swisscresta-logo.png'}
-              alt="SwissCresta"
+              src={dark ? '/marketing/ezymex-logo-dark.png' : '/marketing/ezymex-logo.png'}
+              alt="Ezymex"
               width={195}
               height={36}
               priority

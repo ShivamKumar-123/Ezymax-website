@@ -46,7 +46,7 @@ function renderInline(text: string, keyBase: string): ReactNode[] {
       out.push(
         <code
           key={`${keyBase}-c${i}`}
-          className="rounded bg-bg-secondary px-1 py-0.5 font-mono text-[0.92em] text-[#C73E11]"
+          className="rounded bg-bg-secondary px-1 py-0.5 font-mono text-[0.92em] text-[#8A0000]"
         >
           {token.slice(1, -1)}
         </code>,
@@ -88,7 +88,7 @@ export function MarkdownLite({ text }: { text: string }) {
           <ul key={i} className="space-y-1 pl-1">
             {b.items.map((item, j) => (
               <li key={j} className="flex gap-2 text-md leading-relaxed text-text-primary">
-                <span className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-[#E94E1B]" aria-hidden />
+                <span className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-[#CC0000]" aria-hidden />
                 <span className="min-w-0 break-words">{renderInline(item, `l${i}-${j}`)}</span>
               </li>
             ))}
@@ -178,7 +178,7 @@ export function TimeDivider({ label }: { label: string }) {
 function AssistantAvatar() {
   return (
     <span
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#FCE6DD] to-[#F8CDB9] text-[#E94E1B] shadow-[inset_0_0_0_1px_rgba(233,78,27,0.15)]"
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#FBE4E4] to-[#F8CDB9] text-[#CC0000] shadow-[inset_0_0_0_1px_rgba(204,0,0,0.15)]"
       aria-hidden
     >
       <Sparkles size={13} />
@@ -213,12 +213,12 @@ export function InlineStrategyCard({
       initial={animate ? { opacity: 0, y: 10 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="group max-w-xl rounded-2xl bg-gradient-to-br from-[#E94E1B]/45 via-border-primary to-[#E94E1B]/10 p-px transition-shadow duration-200 hover:shadow-[0_6px_24px_rgba(233,78,27,0.12)]"
+      className="group max-w-xl rounded-2xl bg-gradient-to-br from-[#CC0000]/45 via-border-primary to-[#CC0000]/10 p-px transition-shadow duration-200 hover:shadow-[0_6px_24px_rgba(204,0,0,0.12)]"
     >
       <div className="rounded-[15px] bg-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-[#E94E1B]">
+            <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-[#CC0000]">
               <Sparkles size={11} aria-hidden /> Strategy ready
             </p>
             <p className="mt-1 truncate text-md font-bold text-text-primary">{name}</p>
@@ -254,7 +254,7 @@ export function InlineStrategyCard({
             <button
               type="button"
               onClick={onView}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border-primary px-3 py-1.5 text-[11px] font-semibold text-text-secondary transition-colors hover:border-border-secondary hover:bg-bg-hover hover:text-text-primary active:bg-bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border-primary px-3 py-1.5 text-[11px] font-semibold text-text-secondary transition-colors hover:border-border-secondary hover:bg-bg-hover hover:text-text-primary active:bg-bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#CC0000]"
             >
               <Eye size={12} aria-hidden /> View in panel
             </button>
@@ -263,7 +263,7 @@ export function InlineStrategyCard({
             <button
               type="button"
               onClick={onSave}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#E94E1B] px-3 py-1.5 text-[11px] font-bold text-white transition-[background-color,transform] hover:bg-[#C73E11] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#CC0000] px-3 py-1.5 text-[11px] font-bold text-white transition-[background-color,transform] hover:bg-[#8A0000] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CC0000]"
             >
               <Save size={12} aria-hidden /> Save draft
             </button>
@@ -297,11 +297,11 @@ export function MessageItem({
   const animated = Boolean(reveal) && !isUser && !message.error;
   const { revealed, done } = useWordReveal(message.content, animated, onRevealDone);
 
-  // ── User: compact right-aligned bubble, brand-orange tint ────────────────
+  // ── User: compact right-aligned bubble, brand red tint ────────────────
   if (isUser) {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-2xl rounded-br-md border border-[#E94E1B]/15 bg-[#E94E1B]/[0.08] px-3.5 py-2.5 sm:max-w-[75%]">
+        <div className="max-w-[85%] rounded-2xl rounded-br-md border border-[#CC0000]/15 bg-[#CC0000]/[0.08] px-3.5 py-2.5 sm:max-w-[75%]">
           <p className="whitespace-pre-wrap break-words text-md leading-relaxed text-[#7C2D12]">
             {message.content}
           </p>

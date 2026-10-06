@@ -3,7 +3,7 @@
 // instead of falling back to the generic Qt/exe icon.
 // IDI_ICON1 (id 1) is the lowest icon id, which is what Explorer picks as the
 // executable's display icon.
-1 ICON "swisscresta.ico"
+1 ICON "ezymex.ico"
 
 1 VERSIONINFO
 // Keep in step with AppVersion in installer.iss and the version in the
@@ -17,12 +17,12 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName",      "SwissCresta"
-            VALUE "FileDescription",  "SwissCresta Terminal"
+            VALUE "CompanyName",      "Ezymex"
+            VALUE "FileDescription",  "Ezymex Terminal"
             VALUE "FileVersion",      "1.1.2.0"
             VALUE "InternalName",     "terminal"
             VALUE "OriginalFilename", "terminal.exe"
-            VALUE "ProductName",      "SwissCresta Terminal"
+            VALUE "ProductName",      "Ezymex Terminal"
             VALUE "ProductVersion",   "1.1.2.0"
         END
     END

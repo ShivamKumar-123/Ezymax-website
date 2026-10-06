@@ -2,10 +2,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 /**
  * Domain split (asymmetric, by design):
- *   - swisscresta.com (apex): marketing + auth + every user-app page.
+ *   - ezymex.com (apex): marketing + auth + every user-app page.
  *     If the user lands on the apex with /trading/terminal, we bounce
  *     them to the trade subdomain so the terminal has a clean origin.
- *   - trade.swisscresta.com: hosts the trading terminal canonically, but
+ *   - trade.ezymex.com: hosts the trading terminal canonically, but
  *     ALSO serves every other page. Previously we redirected non-
  *     terminal traffic back to the apex, but that caused two persistent
  *     production issues: (1) RSC prefetches and TradingView chart
@@ -16,7 +16,7 @@ import { NextResponse, type NextRequest } from 'next/server';
  *     adds no real cost — they're authenticated app pages, not
  *     marketing pages with SEO concerns.
  *
- * The auth cookie is Domain=.swisscresta.com so a single session works on
+ * The auth cookie is Domain=.ezymex.com so a single session works on
  * apex AND subdomain. If NEXT_PUBLIC_MARKETING_HOST or
  * NEXT_PUBLIC_TRADE_HOST is unset (local dev), this middleware no-ops.
  *
@@ -104,7 +104,7 @@ function checkRateLimit(
 }
 
 /* ── White-label tenant marketing block-list ─────────────────────
- * The (landing) route group = SwissCresta's marketing + platform legal
+ * The (landing) route group = Ezymex's marketing + platform legal
  * pages. On a tenant's custom domain these must redirect to the login
  * page. Kept in sync with src/app/(landing)/ — top-level segments only;
  * matching is exact-or-prefix per segment.
@@ -211,12 +211,12 @@ export function middleware(req: NextRequest) {
     // ── White-label tenant host ────────────────────────────────────
     // Any other host reaching this app is a broker's custom domain
     // (nginx only routes provisioned tenant server_names here). Those
-    // visitors must never see the SwissCresta marketing site or the
+    // visitors must never see the Ezymex marketing site or the
     // platform's legal pages — a tenant's site starts at their login.
     // App pages (/dashboard, /trading/terminal, /auth/*, …) serve
     // normally; only the (landing) marketing group is intercepted.
     // The apex '/' REWRITES (address bar keeps the broker's domain) to
-    // the generated tenant landing page; every other SwissCresta
+    // the generated tenant landing page; every other Ezymex
     // marketing/legal path redirects to the branded login.
     if (req.nextUrl.pathname === '/') {
       return NextResponse.rewrite(new URL('/tenant-home', req.url));

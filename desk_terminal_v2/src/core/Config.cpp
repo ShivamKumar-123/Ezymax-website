@@ -37,7 +37,7 @@ QString protectSecret(const QString& plain) {
     inBlob.pbData = reinterpret_cast<BYTE*>(in.data());
     inBlob.cbData = static_cast<DWORD>(in.size());
     DATA_BLOB outBlob{};
-    if (CryptProtectData(&inBlob, L"SwissCresta Terminal", nullptr, nullptr, nullptr,
+    if (CryptProtectData(&inBlob, L"Ezymex Terminal", nullptr, nullptr, nullptr,
                          CRYPTPROTECT_UI_FORBIDDEN, &outBlob)) {
         const QByteArray enc(reinterpret_cast<const char*>(outBlob.pbData),
                              static_cast<int>(outBlob.cbData));
@@ -78,18 +78,18 @@ QString unprotectSecret(const QString& stored) {
 QString Config::filePath() {
     QString dir = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
     if (dir.isEmpty())
-        dir = QDir::homePath() + "/.swisscresta-terminal";
+        dir = QDir::homePath() + "/.ezymex-terminal";
     QDir().mkpath(dir);
     return dir + "/config.json";
 }
 
 // NO legacy config migration — deliberately.
 //
-// This build is the SwissCresta white-label of the TuskaEx terminal, and those
+// This build is the Ezymex white-label of the TuskaEx terminal, and those
 // are two *different platforms*, not a rename of one. A TuskaEx token or API
-// key authenticates nothing against api.swisscresta.com, and adopting one would
+// key authenticates nothing against api.ezymex.com, and adopting one would
 // also drag its endpoints in, pointing this build at another broker's API. So a
-// SwissCresta install starts with a clean config and a real sign-in.
+// Ezymex install starts with a clean config and a real sign-in.
 //
 // For the same reason nothing deletes those files either: the TuskaEx terminal
 // may still be installed on this machine and its config is its own. The two

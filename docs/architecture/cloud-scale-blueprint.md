@@ -1,4 +1,4 @@
-# SwissCresta — Cloud Scale Blueprint (target: 10M registered users)
+# Ezymex — Cloud Scale Blueprint (target: 10M registered users)
 
 Status: design + the code-level prerequisites shipped in the Section F
 hardening (wave 1). Object storage (S3) is wave 2.

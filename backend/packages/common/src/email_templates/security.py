@@ -10,7 +10,7 @@ def render_new_login(
     user_agent: str | None,
     location: str | None,
     when_utc: str,
-    trader_app_url: str = "https://trade.swisscresta.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     rows: list[tuple[str, str]] = [("When (UTC)", when_utc)]
@@ -63,14 +63,14 @@ def render_new_login(
 def render_account_exists(
     *,
     first_name: str | None,
-    trader_app_url: str = "https://trade.swisscresta.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     """Sent instead of a sign-up code when someone starts registration with
     an address that already has an account (the API answers uniformly, so
     the owner learns about it here — not the person who typed the address)."""
     name = (first_name or "trader").strip() or "trader"
     pn = platform_name()
-    base = (trader_app_url or "").rstrip("/") or "https://trade.swisscresta.com"
+    base = (trader_app_url or "").rstrip("/") or "https://trade.ezymex.com"
     subject = f"Sign-up attempt for your {pn} account"
     body = """
     <p style="margin:0;color:#f5f5f5;font-size:14px;line-height:1.6;">

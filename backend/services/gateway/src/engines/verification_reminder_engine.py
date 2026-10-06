@@ -90,7 +90,7 @@ async def send_due_reminders(db: AsyncSession) -> int:
     now = datetime.now(timezone.utc)
     threshold_3d = now - timedelta(days=3)
     threshold_7d = now - timedelta(days=7)
-    app_url = (get_settings().TRADER_APP_URL or "https://trade.swisscresta.com")
+    app_url = (get_settings().TRADER_APP_URL or "https://trade.ezymex.com")
 
     # Section F: the stage/cohort filter runs in SQL (partial index
     # ix_users_kyc_reminder, migration 0076). The old query loaded EVERY

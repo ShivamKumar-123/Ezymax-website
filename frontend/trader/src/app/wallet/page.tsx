@@ -622,9 +622,9 @@ function WalletPageContent() {
       order_id: order.order_id,
       amount: Math.round(order.amount_inr * 100),
       currency: 'INR',
-      name: 'SwissCresta',
+      name: 'Ezymex',
       description: `Deposit ${deposit.id.slice(0, 8)}`,
-      theme: { color: '#E94E1B' },
+      theme: { color: '#CC0000' },
       handler: async (resp: Record<string, string>) => {
         try {
           await api.post('/wallet/deposit/razorpay/verify', {
@@ -711,10 +711,10 @@ function WalletPageContent() {
       order_id: orderId,
       amount: amountInr ? Math.round(amountInr * 100) : undefined,
       currency: 'INR',
-      name: 'SwissCresta',
+      name: 'Ezymex',
       description: `Deposit ${deposit.id.slice(0, 8)}`,
       prefill: {},
-      theme: { color: '#E94E1B' },
+      theme: { color: '#CC0000' },
       handler: async (resp: Record<string, string>) => {
         // Verify the signature server-side so the row credits via the
         // same locked path the webhook uses. Webhook will also catch
@@ -945,7 +945,7 @@ function WalletPageContent() {
       const token = api.getToken();
       // Multipart uploads bypass the api client (it sets a JSON
        // content-type) but we still need the absolute API base so the
-       // request lands on the gateway (api.swisscresta.com) and not on
+       // request lands on the gateway (api.ezymex.com) and not on
        // whichever marketing apex / trader subdomain the user is on.
       const res = await fetch(`${getApiBase()}/wallet/withdraw/manual`, {
         method: 'POST',
@@ -1294,7 +1294,7 @@ function WalletPageContent() {
     return (
       <DashboardShell>
         <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 py-16">
-          <div className="w-10 h-10 border-[3px] border-[#E94E1B] border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-[3px] border-[#CC0000] border-t-transparent rounded-full animate-spin" />
           <span className="text-sm font-medium text-text-tertiary">Loading wallet…</span>
         </div>
       </DashboardShell>
@@ -1412,7 +1412,7 @@ function WalletPageContent() {
               placeholder="Enter an amount"
               className={clsx(
                 'w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none transition-shadow',
-                'focus:ring-2 focus:ring-[#E94E1B]/40',
+                'focus:ring-2 focus:ring-[#CC0000]/40',
               )}
             />
             {depositAmount && !depositAmountValid && depositMinDeposit > 0 && (
@@ -1522,7 +1522,7 @@ function WalletPageContent() {
                                 navigator.clipboard?.writeText(addr);
                                 toast.success('Address copied');
                               }}
-                              className="text-[11px] font-semibold text-[#E94E1B] hover:underline"
+                              className="text-[11px] font-semibold text-[#CC0000] hover:underline"
                             >
                               Copy address
                             </button>
@@ -1573,7 +1573,7 @@ function WalletPageContent() {
                     value={depositTxId}
                     onChange={(e) => setDepositTxId(e.target.value)}
                     placeholder="On-chain tx hash, UTR, or transfer reference"
-                    className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                    className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#CC0000]/40"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1654,7 +1654,7 @@ function WalletPageContent() {
                                   <button
                                     type="button"
                                     onClick={() => void openRazorpayCheckout(r)}
-                                    className="inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
+                                    className="inline-flex items-center justify-center rounded-lg bg-[#CC0000] hover:bg-[#8A0000] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
                                   >
                                     Pay with Razorpay
                                   </button>
@@ -1664,7 +1664,7 @@ function WalletPageContent() {
                                       href={r.payment_link as string}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
+                                      className="inline-flex items-center justify-center rounded-lg bg-[#CC0000] hover:bg-[#8A0000] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
                                     >
                                       Pay now
                                     </a>
@@ -1708,7 +1708,7 @@ function WalletPageContent() {
                                     setRzpPayAmountByDeposit((prev) => ({ ...prev, [r.id]: e.target.value }))
                                   }
                                   placeholder="e.g. 100"
-                                  className="w-full rounded-lg bg-bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                                  className="w-full rounded-lg bg-bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#CC0000]/40"
                                 />
                               </div>
                               <button
@@ -1718,7 +1718,7 @@ function WalletPageContent() {
                                   rzpCreatingForId === r.id ||
                                   !(parseFloat(rzpPayAmountByDeposit[r.id] || '0') > 0)
                                 }
-                                className="inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="inline-flex items-center justify-center rounded-lg bg-[#CC0000] hover:bg-[#8A0000] text-white text-xs font-semibold px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {rzpCreatingForId === r.id ? 'Opening…' : 'Pay with Razorpay'}
                               </button>
@@ -1738,7 +1738,7 @@ function WalletPageContent() {
                                 value={confirmAmount}
                                 onChange={(e) => setConfirmAmount(e.target.value)}
                                 placeholder="e.g. 100"
-                                className="w-full rounded-lg bg-bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                                className="w-full rounded-lg bg-bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#CC0000]/40"
                               />
                             </div>
                             <div className="space-y-1">
@@ -1748,7 +1748,7 @@ function WalletPageContent() {
                                 value={confirmTxId}
                                 onChange={(e) => setConfirmTxId(e.target.value)}
                                 placeholder="Transaction reference from your bank / UPI app"
-                                className="w-full rounded-lg bg-bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                                className="w-full rounded-lg bg-bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#CC0000]/40"
                               />
                             </div>
                             <div className="space-y-1">
@@ -1764,7 +1764,7 @@ function WalletPageContent() {
                               type="button"
                               onClick={() => void submitLocalBankingProof(r.id)}
                               disabled={confirmSubmitting}
-                              className="w-full rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] disabled:opacity-60 text-white text-sm font-semibold py-2 transition-colors"
+                              className="w-full rounded-lg bg-[#CC0000] hover:bg-[#8A0000] disabled:opacity-60 text-white text-sm font-semibold py-2 transition-colors"
                             >
                               {confirmSubmitting ? 'Submitting…' : 'Submit proof'}
                             </button>
@@ -1850,7 +1850,7 @@ function WalletPageContent() {
             value={withdrawAmount}
             onChange={(e) => setWithdrawAmount(e.target.value)}
             placeholder="Enter an amount"
-            className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+            className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#CC0000]/40"
           />
         </div>
 
@@ -1858,14 +1858,14 @@ function WalletPageContent() {
             the user fills in the whole form. The backend enforces this
             regardless (403 KYC_REQUIRED on submit). */}
         {!kycApproved && (
-          <div className="rounded-xl border border-[#E94E1B]/40 bg-[#FCE6DD] px-4 py-3 text-sm text-text-primary flex flex-wrap items-center justify-between gap-3">
+          <div className="rounded-xl border border-[#CC0000]/40 bg-[#FBE4E4] px-4 py-3 text-sm text-text-primary flex flex-wrap items-center justify-between gap-3">
             <span className="leading-relaxed">
               Withdrawals require <span className="font-semibold">verified KYC</span>. Your KYC status is checked when you submit a request.
             </span>
             <button
               type="button"
               onClick={() => router.push('/kyc')}
-              className="shrink-0 inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
+              className="shrink-0 inline-flex items-center justify-center rounded-lg bg-[#CC0000] hover:bg-[#8A0000] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
             >
               Complete KYC
             </button>
@@ -1954,7 +1954,7 @@ function WalletPageContent() {
                   'w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm font-mono text-text-primary placeholder:text-text-tertiary outline-none break-all',
                   withdrawAddrTrimmed && !withdrawAddrValid
                     ? 'ring-2 ring-red-500/60'
-                    : 'focus:ring-2 focus:ring-[#E94E1B]/40',
+                    : 'focus:ring-2 focus:ring-[#CC0000]/40',
                 )}
               />
               <p className="text-xs text-text-tertiary leading-relaxed">
@@ -1973,7 +1973,7 @@ function WalletPageContent() {
                 value={manualWithdrawUpi}
                 onChange={(e) => setManualWithdrawUpi(e.target.value)}
                 placeholder="yourname@upi"
-                className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#CC0000]/40"
               />
             </div>
             <div className="space-y-1.5">
@@ -1992,7 +1992,7 @@ function WalletPageContent() {
                 value={manualWithdrawNotes}
                 onChange={(e) => setManualWithdrawNotes(e.target.value)}
                 placeholder="Any context for finance"
-                className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#CC0000]/40"
               />
             </div>
           </>
@@ -2079,7 +2079,7 @@ function WalletPageContent() {
               value={transferAmount}
               onChange={(e) => setTransferAmount(e.target.value)}
               placeholder="Enter an amount"
-              className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+              className="w-full rounded-xl bg-bg-input px-4 py-3.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-[#CC0000]/40"
             />
             <p className="text-xs text-text-tertiary leading-relaxed">
               Transfers between accounts are instant. Trading-account ↔ trading-account routes via your main wallet automatically.
@@ -2350,7 +2350,7 @@ function FundsDropdown({
         aria-expanded={open}
         className={clsx(
           'flex w-full items-center justify-between gap-2 rounded-xl bg-bg-input px-4 py-3.5 text-left text-sm outline-none transition-shadow',
-          'focus:ring-2 focus:ring-[#E94E1B]/40',
+          'focus:ring-2 focus:ring-[#CC0000]/40',
           disabled && 'opacity-60 cursor-not-allowed',
         )}
       >
@@ -2489,7 +2489,7 @@ export default function WalletPage() {
       fallback={
         <DashboardShell>
           <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 py-16">
-            <div className="w-10 h-10 border-[3px] border-[#E94E1B] border-t-transparent rounded-full animate-spin" />
+            <div className="w-10 h-10 border-[3px] border-[#CC0000] border-t-transparent rounded-full animate-spin" />
             <span className="text-sm font-medium text-text-tertiary">Loading wallet…</span>
           </div>
         </DashboardShell>

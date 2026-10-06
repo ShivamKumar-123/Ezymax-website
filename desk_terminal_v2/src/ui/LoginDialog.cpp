@@ -59,11 +59,11 @@ QComboBox#input QAbstractItemView {
     background: %CARDBG%; color: %TEXTSTRONG%; border: 1px solid %BORDER%;
     border-radius: 8px; padding: 4px; selection-background-color: %MENUSEL%; outline: none;
 }
-/* SwissCresta orange, to match the brand panel beside it. Safe here and only
+/* Ezymex orange, to match the brand panel beside it. Safe here and only
    here: #primary is the sign-in button and nothing else, so this warm hue does
    not bleed into the trading UI, where red means SELL. */
 QPushButton#primary {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #e94e1b, stop:1 #c73e11);
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #CC0000, stop:1 #8A0000);
     color: #ffffff; border: none; border-radius: 10px;
     font-size: 13px; font-weight: 800; letter-spacing: 0.3px;
 }
@@ -138,7 +138,7 @@ static QWidget* bullet(const QString& text) {
     tick->setAlignment(Qt::AlignCenter);
     tick->setStyleSheet(QString("background:%1; color:%2;"
                                 "border-radius:9px; font-size:11px; font-weight:800;")
-                        .arg(dark ? "rgba(233,78,27,0.24)" : "rgba(255,255,255,0.22)",
+                        .arg(dark ? "rgba(204,0,0,0.24)" : "rgba(255,255,255,0.22)",
                              dark ? "#f5a081" : "#ffffff"));
     auto* t = new QLabel(text);
     t->setWordWrap(true);
@@ -151,7 +151,7 @@ static QWidget* bullet(const QString& text) {
 
 LoginDialog::LoginDialog(const Config& cfg, QWidget* parent)
     : QDialog(parent), m_cfg(cfg), m_net(new QNetworkAccessManager(this)) {
-    setWindowTitle(tr("SwissCresta Terminal — Sign in"));
+    setWindowTitle(tr("Ezymex Terminal — Sign in"));
     setModal(true);
     // Frameless + translucent so the card can have rounded corners and a real
     // drop shadow. The card is draggable by any empty area (see mouseMoveEvent).
@@ -188,7 +188,7 @@ LoginDialog::LoginDialog(const Config& cfg, QWidget* parent)
     // Preselect the profile matching the saved endpoints.
     {
         QSignalBlocker b(m_profile);
-        if (m_cfg.restBase == SC_REST)         m_profile->setCurrentText(tr("SwissCresta"));
+        if (m_cfg.restBase == SC_REST)         m_profile->setCurrentText(tr("Ezymex"));
         else if (m_cfg.restBase == LOCAL_REST) m_profile->setCurrentText(tr("Local dev"));
         else                                   m_profile->setCurrentText(tr("Custom"));
     }
@@ -199,7 +199,7 @@ QWidget* LoginDialog::buildBrandPanel() {
     auto* p = new QFrame;
     p->setObjectName("brand");
     p->setFixedWidth(290);
-    // SwissCresta orange on black: a deep burnt ember bleeding into the app's
+    // Ezymex orange on black: a deep burnt ember bleeding into the app's
     // darkest surface in dark mode, the brand orange itself in light mode. Both
     // keep the white/near-white brand type readable.
     //
@@ -209,7 +209,7 @@ QWidget* LoginDialog::buildBrandPanel() {
     // recolouring those would make every primary action read as a sell.
     const QString grad = Theme::isDark()
         ? "stop:0 #5c2110, stop:0.55 #2a0f07, stop:1 #0f1116"
-        : "stop:0 #e94e1b, stop:0.55 #c73e11, stop:1 #8f2a0b";
+        : "stop:0 #CC0000, stop:0.55 #8A0000, stop:1 #0B2F52";
     p->setStyleSheet(QString("#brand{background:qlineargradient(x1:0,y1:0,x2:0.7,y2:1,%1);"
                              "border-top-left-radius:16px;border-bottom-left-radius:16px;}")
                      .arg(grad));
@@ -223,13 +223,13 @@ QWidget* LoginDialog::buildBrandPanel() {
     // used here — the full wordmark's type is black and would disappear against
     // this panel's gradient.
     auto* mark = new QLabel;
-    mark->setPixmap(QPixmap(":/swisscresta-256.png")
+    mark->setPixmap(QPixmap(":/ezymex-256.png")
                     .scaled(46, 46, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     mark->setStyleSheet("background:transparent;");
     v->addWidget(mark);
     v->addSpacing(12);
 
-    auto* name = new QLabel(QStringLiteral("SwissCresta"));
+    auto* name = new QLabel(QStringLiteral("Ezymex"));
     name->setStyleSheet("background:transparent; color:#ffffff; font-size:26px;"
                         "font-weight:800; letter-spacing:0.4px;");
     v->addWidget(name);
@@ -297,7 +297,7 @@ QWidget* LoginDialog::buildFormPanel() {
     v->addWidget(m_stepTitle);
     v->addSpacing(6);
 
-    m_stepSub = new QLabel(tr("Sign in with your SwissCresta account — the same email and "
+    m_stepSub = new QLabel(tr("Sign in with your Ezymex account — the same email and "
                               "password as the website."));
     m_stepSub->setWordWrap(true);
     m_stepSub->setStyleSheet(QString("background:transparent; color:%1; font-size:12px;")
@@ -309,7 +309,7 @@ QWidget* LoginDialog::buildFormPanel() {
     m_profile = new QComboBox;
     m_profile->setObjectName("input");
     m_profile->setCursor(Qt::PointingHandCursor);
-    m_profile->addItems({tr("SwissCresta"), tr("Local dev"), tr("Custom")});
+    m_profile->addItems({tr("Ezymex"), tr("Local dev"), tr("Custom")});
     connect(m_profile, &QComboBox::currentTextChanged, this,
             [this](const QString& n) { applyProfile(n); });
 
@@ -495,7 +495,7 @@ void LoginDialog::mouseMoveEvent(QMouseEvent* e) {
 // --- behaviour --------------------------------------------------------------
 
 void LoginDialog::applyProfile(const QString& name) {
-    if (name == tr("SwissCresta"))        { m_rest->setText(SC_REST);    m_ws->setText(SC_WS); }
+    if (name == tr("Ezymex"))        { m_rest->setText(SC_REST);    m_ws->setText(SC_WS); }
     else if (name == tr("Local dev")) { m_rest->setText(LOCAL_REST); m_ws->setText(LOCAL_WS); }
     else if (m_advanced->isHidden())  { m_advancedBtn->click(); }   // Custom → reveal
 }
@@ -539,9 +539,9 @@ void LoginDialog::toggleAuthMode() {
     m_modeBtn->setText(m_keyMode ? tr("✉  Use email and password instead")
                                  : tr("🔑  Use an API key instead"));
     m_stepSub->setText(m_keyMode
-        ? tr("Sign in with an API key and secret generated in your SwissCresta "
+        ? tr("Sign in with an API key and secret generated in your Ezymex "
              "dashboard. The key already identifies one trading account.")
-        : tr("Sign in with your SwissCresta account — the same email and "
+        : tr("Sign in with your Ezymex account — the same email and "
              "password as the website."));
     adjustSize();
 }
@@ -807,7 +807,7 @@ void LoginDialog::mintAlgoKey() {
 
     QJsonObject body;
     body["account_id"] = m_cfg.accountId;
-    body["label"]      = QStringLiteral("SwissCresta Terminal");
+    body["label"]      = QStringLiteral("Ezymex Terminal");
 
     QNetworkReply* reply = m_net->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {

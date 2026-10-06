@@ -343,7 +343,7 @@ function BrokerHome() {
               thirds. With equal thirds a large balance could not fit its cell
               and, having nothing to clip it, painted straight over the next
               stat's icon — while the clock cell sat on unused slack. */}
-          <div className="grid grid-cols-1 sm:grid-cols-[auto_auto_auto] max-w-full overflow-x-auto divide-y sm:divide-y-0 sm:divide-x divide-border-primary rounded-[22px] bg-bg-card ring-1 ring-[#E94E1B]/25 shadow-[0_22px_50px_-20px_rgba(233,78,27,0.55),0_6px_18px_-10px_rgba(233,78,27,0.35)] backdrop-blur">
+          <div className="grid grid-cols-1 sm:grid-cols-[auto_auto_auto] max-w-full overflow-x-auto divide-y sm:divide-y-0 sm:divide-x divide-border-primary rounded-[22px] bg-bg-card ring-1 ring-[#CC0000]/25 shadow-[0_22px_50px_-20px_rgba(204,0,0,0.55),0_6px_18px_-10px_rgba(204,0,0,0.35)] backdrop-blur">
             <div className="px-5 py-3.5 sm:px-6 min-w-0">
               <BigStat
                 icon={<WalletIcon strokeWidth={1.9} />}
@@ -422,7 +422,7 @@ function BrokerHome() {
   );
 }
 
-/** Quick-action shortcut card: soft-orange icon chip, title/subtitle,
+/** Quick-action shortcut card: soft red icon chip, title/subtitle,
  *  charcoal circular arrow. */
 function QuickAction({
   icon, title, subtitle, onClick,
@@ -478,7 +478,7 @@ function TradesSection({ trades, accounts }: { trades: PositionRow[]; accounts: 
                 <span
                   className={clsx(
                     'text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full',
-                    buy ? 'bg-crx-yellow-soft text-[#C73E11]' : 'bg-crx-charcoal text-crx-charcoal-ink',
+                    buy ? 'bg-crx-yellow-soft text-[#8A0000]' : 'bg-crx-charcoal text-crx-charcoal-ink',
                   )}
                 >
                   {buy ? 'Buy' : 'Sell'}
@@ -712,7 +712,7 @@ function AccountBalanceCard({
               className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
               style={a?.is_demo
                 ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }
-                : { color: '#C73E11', background: 'rgba(233,78,27,0.12)', border: '1px solid rgba(233,78,27,0.35)' }}
+                : { color: '#8A0000', background: 'rgba(204,0,0,0.12)', border: '1px solid rgba(204,0,0,0.35)' }}
             >
               {a?.is_demo ? 'Demo' : 'Real'}
             </span>
@@ -742,7 +742,7 @@ function AccountBalanceCard({
                     className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
                     style={acc.is_demo
                       ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' }
-                      : { color: '#C73E11', background: 'rgba(233,78,27,0.12)' }}
+                      : { color: '#8A0000', background: 'rgba(204,0,0,0.12)' }}
                   >
                     {acc.is_demo ? 'Demo' : 'Real'}
                   </span>
@@ -829,7 +829,7 @@ function Stat({ label, value, highlight }: { label: string; value: string; highl
   );
 }
 
-/** Tiny intraday sparkline — last ~60 closes, orange when up. */
+/** Tiny intraday sparkline — last ~60 closes, red when up. */
 function Sparkline({ data, up }: { data: number[]; up: boolean }) {
   if (data.length < 2) return <span className="hidden sm:block h-7 w-24" aria-hidden />;
   const W = 96, H = 28, P = 2;

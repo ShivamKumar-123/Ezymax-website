@@ -1,4 +1,4 @@
-"""SwissCresta Gateway — REST + WebSocket API Server."""
+"""Ezymex Gateway — REST + WebSocket API Server."""
 import asyncio
 import collections
 import contextlib
@@ -224,7 +224,7 @@ async def lifespan(app: FastAPI):
 # for explicitly tagged dev/local environments.
 _EXPOSE_DOCS = settings.ENVIRONMENT in ("development", "local")
 app = FastAPI(
-    title="SwissCresta Gateway",
+    title="Ezymex Gateway",
     version="1.0.0",
     description="Forex CFD B-Book Trading Platform API",
     lifespan=lifespan,
@@ -375,8 +375,8 @@ def _verify_admin_ws_token(token: str | None) -> dict | None:
 
 def _normalize_origin(raw: str) -> str:
     """Lower-case + strip trailing slash + drop the port if it's the
-    default for the scheme. Lets `https://trade.swisscresta.com:443/`
-    compare equal to `https://trade.swisscresta.com`."""
+    default for the scheme. Lets `https://trade.ezymex.com:443/`
+    compare equal to `https://trade.ezymex.com`."""
     o = raw.strip().rstrip("/").lower()
     if o.startswith("https://") and o.endswith(":443"):
         o = o[:-4]

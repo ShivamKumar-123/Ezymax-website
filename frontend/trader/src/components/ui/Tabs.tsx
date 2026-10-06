@@ -25,7 +25,7 @@ export function Tabs({ tabs, active, onChange, className }: TabsProps) {
           className={clsx(
             'px-3 py-2 text-xs font-medium transition-fast relative',
             active === tab.id
-              ? 'text-[#E94E1B]'
+              ? 'text-[#CC0000]'
               : 'text-text-secondary hover:text-text-primary',
           )}
         >
@@ -36,7 +36,7 @@ export function Tabs({ tabs, active, onChange, className }: TabsProps) {
             </span>
           )}
           {active === tab.id && (
-            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#E94E1B]" />
+            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#CC0000]" />
           )}
         </button>
       ))}

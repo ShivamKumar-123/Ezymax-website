@@ -44,7 +44,7 @@ interface ChatHistoryPanelProps {
 const iconBtnCls =
   'flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary transition-colors ' +
   'hover:bg-bg-hover hover:text-text-primary active:bg-bg-active ' +
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]';
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#CC0000]';
 
 function SessionRow({
   session,
@@ -88,7 +88,7 @@ function SessionRow({
           onBlur={commitRename}
           aria-label="Rename conversation"
           // Kill the global input chrome; this is a compact inline field.
-          className="w-full rounded-lg border border-[#E94E1B]/50 bg-card px-2.5 py-2 text-xs font-medium text-text-primary shadow-none outline-none focus:border-[#E94E1B] focus:shadow-[0_0_0_2px_rgba(233,78,27,0.12)]"
+          className="w-full rounded-lg border border-[#CC0000]/50 bg-card px-2.5 py-2 text-xs font-medium text-text-primary shadow-none outline-none focus:border-[#CC0000] focus:shadow-[0_0_0_2px_rgba(204,0,0,0.12)]"
         />
       </li>
     );
@@ -106,13 +106,13 @@ function SessionRow({
           isActive
             ? 'bg-crx-yellow-soft/60'
             : 'hover:bg-bg-hover active:bg-bg-active',
-          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]',
+          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#CC0000]',
         )}
       >
         {/* Active-row brand accent bar */}
         {isActive && (
           <span
-            className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-[#E94E1B]"
+            className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-[#CC0000]"
             aria-hidden
           />
         )}
@@ -151,7 +151,7 @@ function SessionRow({
               type="button"
               aria-label="Cancel delete"
               onClick={() => setMode('idle')}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-bg-active hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E94E1B]"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-bg-active hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#CC0000]"
             >
               <X size={12} aria-hidden />
             </button>
@@ -165,7 +165,7 @@ function SessionRow({
                 setDraft(session.title || '');
                 setMode('renaming');
               }}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-bg-active hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E94E1B]"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-bg-active hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#CC0000]"
             >
               <Pencil size={11} aria-hidden />
             </button>
@@ -215,7 +215,7 @@ export default function ChatHistoryPanel({
           onClick={onNew}
           aria-label="New chat"
           title="New chat"
-          className={clsx(iconBtnCls, 'text-[#E94E1B] hover:bg-crx-yellow-soft hover:text-[#E94E1B]')}
+          className={clsx(iconBtnCls, 'text-[#CC0000] hover:bg-crx-yellow-soft hover:text-[#CC0000]')}
         >
           <Plus size={16} aria-hidden />
         </button>
@@ -234,7 +234,7 @@ export default function ChatHistoryPanel({
               className={clsx(
                 iconBtnCls,
                 'shrink-0',
-                s.id === activeId && 'bg-crx-yellow-soft text-[#E94E1B] hover:bg-crx-yellow-soft hover:text-[#E94E1B]',
+                s.id === activeId && 'bg-crx-yellow-soft text-[#CC0000] hover:bg-crx-yellow-soft hover:text-[#CC0000]',
               )}
             >
               <MessageSquare size={14} aria-hidden />
@@ -270,10 +270,10 @@ export default function ChatHistoryPanel({
           type="button"
           onClick={onNew}
           className={clsx(
-            'flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#E94E1B]/30 bg-crx-yellow-soft/50 py-2',
-            'text-xs font-bold text-[#E94E1B] transition-colors',
-            'hover:border-[#E94E1B]/50 hover:bg-crx-yellow-soft active:bg-crx-yellow-soft',
-            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]',
+            'flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#CC0000]/30 bg-crx-yellow-soft/50 py-2',
+            'text-xs font-bold text-[#CC0000] transition-colors',
+            'hover:border-[#CC0000]/50 hover:bg-crx-yellow-soft active:bg-crx-yellow-soft',
+            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#CC0000]',
           )}
         >
           <Plus size={13} aria-hidden /> New chat

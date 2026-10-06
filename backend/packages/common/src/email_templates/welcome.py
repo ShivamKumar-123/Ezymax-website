@@ -43,8 +43,8 @@ def render_welcome(
         cta_url=f"{trader_app_url.rstrip('/')}/accounts",
         footer_note=(
             "If you didn't create this account, contact support immediately."
-            if pn != "SwissCresta"
-            else "If you didn't create this account, contact support@swisscresta.com immediately."
+            if pn != "Ezymex"
+            else "If you didn't create this account, contact support@ezymex.com immediately."
         ),
     )
     text = (
@@ -57,8 +57,8 @@ def render_welcome(
         f"Open your dashboard: {trader_app_url.rstrip('/')}/accounts\n\n"
         + (
             "Didn't create this account? Contact your broker's support immediately.\n"
-            if pn != "SwissCresta"
-            else "Didn't create this account? Email support@swisscresta.com immediately.\n"
+            if pn != "Ezymex"
+            else "Didn't create this account? Email support@ezymex.com immediately.\n"
         )
     )
     return subject, html, text

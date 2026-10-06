@@ -23,7 +23,7 @@ import {
 export const SIGNUP_HREF = '/company/contact';
 
 /** Direct Android APK download (served from public/downloads). */
-export const APK_HREF = '/downloads/swisscresta.apk';
+export const APK_HREF = '/downloads/ezymex.apk';
 
 export const BRAND = {
   name: BRAND_NAME,
@@ -64,7 +64,7 @@ export const NAV_ITEMS: NavItem[] = [
       { label: 'Admin & Back Office', href: '/platforms/super-admin' },
     ],
   },
-  { label: 'Liquidity', href: 'https://liquidity.swisscresta.com', external: true },
+  { label: 'Liquidity', href: 'https://liquidity.ezymex.com', external: true },
   {
     label: 'Solutions',
     href: '/services/market-research',

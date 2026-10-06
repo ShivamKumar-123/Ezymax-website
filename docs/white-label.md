@@ -1,6 +1,6 @@
 # White-Label Brokers (rental model)
 
-SwissCresta can be rented out to partner brokers under **their own brand**:
+Ezymex can be rented out to partner brokers under **their own brand**:
 their own user pool, their own branding (name / logo / support contacts),
 optionally their own domain — while the platform owner keeps full control
 and charges a flat rental fee. The design is a faithful port of the
@@ -12,7 +12,7 @@ Stock4x tenant system, minus its P&L-share/settlement economics.
 |---|---|
 | **Broker** | A `users` row with `role='broker'` + a `broker_profiles` row. Logs into the **admin panel** with a scoped, permission-gated view. |
 | **Pool** | Every user whose `broker_ancestry` array contains the broker's id — covers sub-brokers and their clients via one GIN-indexed query. |
-| **Platform pool** | Users with `assigned_broker_id IS NULL` (plain swisscresta.com signups). |
+| **Platform pool** | Users with `assigned_broker_id IS NULL` (plain ezymex.com signups). |
 | **Partner code** | `WL-XXXXXXXX` — the broker's signup handle. `?ref=<code>` links (and signups on the broker's domain) drop the user into the broker's pool. Distinct from IB referral codes. |
 | **Rental terms** | Plan label, amount/currency/period, next-due date, notes — record-keeping on the broker profile, editable only by the super-admin. Suspension freezes the tenant's admin access + branding instantly. |
 
@@ -61,17 +61,17 @@ set domain → pending_dns → (verify: A records == PLATFORM_PUBLIC_IP)
 ## Server setup (one-time, production)
 
 1. Set in `.env`: `BRANDING_ENABLED=true`, `PLATFORM_PUBLIC_IP=<origin ip>`,
-   `BRANDING_NGINX_TENANTS_FILE=/etc/nginx/conf.d/swisscresta-tenants.conf`,
+   `BRANDING_NGINX_TENANTS_FILE=/etc/nginx/conf.d/ezymex-tenants.conf`,
    `BRANDING_TRADER_UPSTREAM=127.0.0.1:3012`,
    `BRANDING_ADMIN_UPSTREAM=127.0.0.1:3013`.
-2. `touch /etc/nginx/conf.d/swisscresta-tenants.conf` and ensure nginx's
+2. `touch /etc/nginx/conf.d/ezymex-tenants.conf` and ensure nginx's
    `http {}` block includes `conf.d/*.conf` (default on Debian/Ubuntu).
 3. **Install the host domain agent** (the admin-api container cannot run
    host nginx/certbot; the agent completes provisioning within a minute):
    ```
    sudo ./scripts/install-wl-agent-cron.sh
    ```
-   Log: `/var/log/swisscresta-wl-agent.log`. The agent also reconciles
+   Log: `/var/log/ezymex-wl-agent.log`. The agent also reconciles
    Disconnects (removes the nginx block + deletes the certificate).
 4. Migrations 0062/0063 run via `deploy.sh`; the admin service also
    bootstraps the DDL idempotently on start.
@@ -83,7 +83,7 @@ set domain → pending_dns → (verify: A records == PLATFORM_PUBLIC_IP)
 
 1. Admin panel → **Brokers** → *Add Broker*: email/password, brand name,
    permissions, rental terms. Copy the partner code / referral link.
-2. Give the broker their admin login (`admin.swisscresta.com`). They see
+2. Give the broker their admin login (`admin.ezymex.com`). They see
    only the sections granted, scoped to their pool, plus a **Branding**
    page.
 3. Broker (or super-admin via the Brokers page) uploads logo, sets brand

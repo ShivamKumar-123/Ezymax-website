@@ -1,6 +1,6 @@
 /**
  * Shared client-side PDF report builder for the admin panel.
- * SwissCresta-branded header + jspdf-autotable body + page footer.
+ * Ezymex-branded header + jspdf-autotable body + page footer.
  * jspdf is dynamically imported so it isn't in the initial bundle.
  */
 
@@ -62,12 +62,12 @@ export async function downloadReportPdf(opts: ReportPdfOptions): Promise<void> {
   let y = 16;
 
   // Brand bar
-  doc.setFillColor(41, 98, 255);
+  doc.setFillColor(11, 47, 82);
   doc.rect(0, 0, pageW, 10, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('SwissCresta', margin, 7);
+  doc.text('Ezymex', margin, 7);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.text('Admin report', pageW - margin, 7, { align: 'right' });
@@ -108,7 +108,7 @@ export async function downloadReportPdf(opts: ReportPdfOptions): Promise<void> {
     foot: opts.totalsRow ? [opts.totalsRow.map((v) => (v == null ? '' : String(v)))] : undefined,
     showFoot: opts.totalsRow ? 'lastPage' : 'never',
     theme: 'striped',
-    headStyles: { fillColor: [41, 98, 255], textColor: 255, fontStyle: 'bold', fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [11, 47, 82], textColor: 255, fontStyle: 'bold', fontSize: 8, cellPadding: 2 },
     bodyStyles: { fontSize: 7, cellPadding: 1.5, textColor: [40, 40, 40] },
     footStyles: { fillColor: [245, 245, 245], fontSize: 8, fontStyle: 'bold', textColor: [30, 30, 30] },
     alternateRowStyles: { fillColor: [252, 252, 252] },
@@ -119,7 +119,7 @@ export async function downloadReportPdf(opts: ReportPdfOptions): Promise<void> {
       doc.setFontSize(7);
       doc.setTextColor(140, 140, 140);
       doc.text(`Page ${data.pageNumber} of ${pageCount}`, pageW - margin - 24, pageH - 6);
-      doc.text('SwissCresta — internal report. Confidential.', margin, pageH - 6);
+      doc.text('Ezymex — internal report. Confidential.', margin, pageH - 6);
     },
   });
 

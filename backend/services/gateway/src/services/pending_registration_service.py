@@ -190,7 +190,7 @@ async def _notify_existing_owner(db, request: Request, email_lower: str, referra
         )
         subject, html, text = render_account_exists(
             first_name=None,
-            trader_app_url=get_settings().TRADER_APP_URL or "https://trade.swisscresta.com",
+            trader_app_url=get_settings().TRADER_APP_URL or "https://trade.ezymex.com",
         )
         _send_in_background(email_lower, subject, html, text)
     except HTTPException:

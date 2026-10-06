@@ -17,7 +17,7 @@ R = "[redacted]"
 def _event():
     return {
         "request": {
-            "url": "https://api.swisscresta.com/api/v1/positions?token=abc123&page=2",
+            "url": "https://api.ezymex.com/api/v1/positions?token=abc123&page=2",
             "method": "POST",
             "headers": {
                 "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig",
@@ -92,13 +92,13 @@ class ScrubEventTests(unittest.TestCase):
 
     def test_sensitive_path_drops_body_wholesale(self):
         ev = _event()
-        ev["request"]["url"] = "https://api.swisscresta.com/api/v1/wallet/withdraw"
+        ev["request"]["url"] = "https://api.ezymex.com/api/v1/wallet/withdraw"
         ev["request"]["data"] = {"amount": "1"}
         self.assertEqual(inst.scrub_event(ev, {})["request"]["data"], R)
 
     def test_auth_query_string_dropped(self):
         ev = _event()
-        ev["request"]["url"] = "https://api.swisscresta.com/api/v1/auth/google?page=1"
+        ev["request"]["url"] = "https://api.ezymex.com/api/v1/auth/google?page=1"
         self.assertEqual(inst.scrub_event(ev, {})["request"]["query_string"], R)
 
     def test_user_reduced_to_id(self):

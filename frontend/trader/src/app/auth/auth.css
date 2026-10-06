@@ -6,9 +6,9 @@
   --auth-bg: #FFFFFF;
   --auth-input-bg: #FFFFFF;
   --auth-border: #E5E5E5;
-  --auth-accent: #E94E1B;        /* SwissCresta orange */
-  --auth-accent-light: #F58A60;
-  --auth-accent-dark: #C73E11;
+  --auth-accent: #CC0000;        /* Ezymex red */
+  --auth-accent-light: #E63A3A;
+  --auth-accent-dark: #8A0000;
   --auth-text: #0A0A0A;
   --auth-muted: #5B5B5B;
   --auth-radius-md: 12px;

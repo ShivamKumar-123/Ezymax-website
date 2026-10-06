@@ -596,7 +596,7 @@ export default function OrderPanel({
                 )}
               >
                 {label}
-                {ticketTab === k && <span className="absolute inset-x-2 -bottom-px h-[3px] rounded-full bg-[#E94E1B]" />}
+                {ticketTab === k && <span className="absolute inset-x-2 -bottom-px h-[3px] rounded-full bg-[#CC0000]" />}
               </button>
             ))}
             <span className="ml-auto text-text-tertiary" title="Market: fills at the current price. Limit: fills at your price or better. Stop: triggers once price passes your level."><Info size={15} /></span>
@@ -693,7 +693,7 @@ export default function OrderPanel({
               type="checkbox"
               checked={slEnabled || tpEnabled}
               onChange={(e) => { setSlEnabled(e.target.checked); setTpEnabled(e.target.checked); if (!e.target.checked) { setStopLoss(''); setTakeProfit(''); } }}
-              className="h-4 w-4 rounded border-border-primary accent-[#E94E1B]"
+              className="h-4 w-4 rounded border-border-primary accent-[#CC0000]"
             />
             TP/SL
           </label>

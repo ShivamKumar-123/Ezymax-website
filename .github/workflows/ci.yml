@@ -107,13 +107,13 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: swisscresta
-          POSTGRES_PASSWORD: swisscresta_ci
-          POSTGRES_DB: swisscresta
+          POSTGRES_USER: ezymex
+          POSTGRES_PASSWORD: ezymex_ci
+          POSTGRES_DB: ezymex
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U swisscresta -d swisscresta"
+          --health-cmd "pg_isready -U ezymex -d ezymex"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
@@ -140,10 +140,10 @@ jobs:
         # lives at infra/migrations/ and expects to run from backend/.
         working-directory: backend
         env:
-          DATABASE_URL: postgresql+asyncpg://swisscresta:swisscresta_ci@localhost:5432/swisscresta
+          DATABASE_URL: postgresql+asyncpg://ezymex:ezymex_ci@localhost:5432/ezymex
           # H-INF-8: provide a strong admin credential so any bootstrap/seed the
           # migration path touches doesn't fall back to a weak default.
-          ADMIN_EMAIL: ci-admin@swisscresta.local
+          ADMIN_EMAIL: ci-admin@ezymex.local
           ADMIN_PASSWORD: ci-$RANDOM-$RANDOM-Str0ng!pw
         run: alembic -c infra/migrations/alembic.ini upgrade head
 
@@ -156,13 +156,13 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: swisscresta
-          POSTGRES_PASSWORD: swisscresta_ci
-          POSTGRES_DB: swisscresta
+          POSTGRES_USER: ezymex
+          POSTGRES_PASSWORD: ezymex_ci
+          POSTGRES_DB: ezymex
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U swisscresta -d swisscresta"
+          --health-cmd "pg_isready -U ezymex -d ezymex"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
@@ -193,8 +193,8 @@ jobs:
         working-directory: backend
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql+asyncpg://swisscresta:swisscresta_ci@localhost:5432/swisscresta
-          TIMESCALE_URL: postgresql+asyncpg://swisscresta:swisscresta_ci@localhost:5432/swisscresta
+          DATABASE_URL: postgresql+asyncpg://ezymex:ezymex_ci@localhost:5432/ezymex
+          TIMESCALE_URL: postgresql+asyncpg://ezymex:ezymex_ci@localhost:5432/ezymex
           REDIS_URL: redis://localhost:6379/0
           ENVIRONMENT: development
           JWT_SECRET: ci-stub-secret-1234567890123456789012

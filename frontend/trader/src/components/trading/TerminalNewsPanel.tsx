@@ -257,7 +257,7 @@ function TerminalNewsPanelInner({ className }: { className?: string }) {
 
   return (
     <div className={clsx('flex h-full min-h-0 w-full flex-col bg-bg-base', className)}>
-      {/* Tabs: News | Calendar — same orange-underline language as the Markets rail */}
+      {/* Tabs: News | Calendar — same red-underline language as the Markets rail */}
       <div className="shrink-0 flex items-center gap-5 px-3 pt-1">
         {([['news', 'News', Newspaper], ['calendar', 'Calendar', CalendarDays]] as const).map(([id, label, Icon]) => (
           <button

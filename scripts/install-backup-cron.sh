@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 #
-# SwissCresta — install the daily backup cron entry for the current user.
+# Ezymex — install the daily backup cron entry for the current user.
 #
-# Idempotent: re-runs replace any prior swisscresta backup line in the
+# Idempotent: re-runs replace any prior ezymex backup line in the
 # crontab so multiple invocations don't stack up duplicate jobs.
 #
 # Run once per server (typically as root, since `docker compose` and
 # /var/log writes need root on a default Docker install).
 set -euo pipefail
 
-COMPOSE_DIR="${SWISSCRESTA_DIR:-/opt/swisscresta}"
+COMPOSE_DIR="${EZYMEX_DIR:-/opt/ezymex}"
 SCRIPT="$COMPOSE_DIR/scripts/backup.sh"
-LOG="/var/log/swisscresta-backup.log"
+LOG="/var/log/ezymex-backup.log"
 
 [[ -x "$SCRIPT" ]] || { echo "[install] $SCRIPT not executable — chmod +x scripts/*.sh"; exit 1; }
 [[ -f "$COMPOSE_DIR/.env" ]] || { echo "[install] $COMPOSE_DIR/.env missing"; exit 1; }
@@ -22,7 +22,7 @@ LOG="/var/log/swisscresta-backup.log"
 # cron failures are diagnosable.
 LINE="0 3 * * * $SCRIPT >> $LOG 2>&1"
 
-# Strip any prior swisscresta line, then append the new one.
+# Strip any prior ezymex line, then append the new one.
 ( crontab -l 2>/dev/null | grep -v -F "$SCRIPT"; echo "$LINE" ) | crontab -
 
 # Ensure the log file exists and is writable so the first run doesn't
