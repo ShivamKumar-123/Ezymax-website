@@ -133,7 +133,17 @@ def check_containers() -> tuple[bool, str]:
 def _tick_age(symbol: str) -> float | None:
     """Seconds since the last published tick for `symbol`, or None when the
     key is missing/unparseable."""
-    code, out = run(COMPOSE + ["exec", "-T", "redis", "redis-cli", "GET",
+    # docker-compose.prod.yml starts redis with --requirepass, so an
+    # unauthenticated redis-cli gets "NOAUTH Authentication required" and
+    # this check reported BOTH feeds dead on every single run while prices
+    # were in fact flowing normally. A monitor that cries wolf every five
+    # minutes is worse than no monitor, so authenticate when a password is
+    # configured and stay silent when it is not (dev/local).
+    auth = []
+    _pw = env_get("REDIS_PASSWORD")
+    if _pw:
+        auth = ["-a", _pw, "--no-auth-warning"]
+    code, out = run(COMPOSE + ["exec", "-T", "redis", "redis-cli", *auth, "GET",
                                f"tick:{symbol}"], timeout=45)
     if code != 0 or not out.strip():
         return None
@@ -174,18 +184,34 @@ def check_prices() -> tuple[bool, str]:
 
 
 def check_backup() -> tuple[bool, str]:
-    d = REPO_DIR / "backups" / "db" / "daily"
-    dumps = sorted(d.glob("*.dump"), key=lambda p: p.stat().st_mtime, reverse=True) if d.is_dir() else []
+    """Freshness of the newest Postgres dump written by scripts/backup.sh.
+
+    This used to look for ``backups/db/daily/*.dump``, a layout backup.sh has
+    never produced -- it writes ``backups/postgres-<stamp>.sql.gz`` (plus
+    ``.gpg`` when BACKUP_GPG_PASSPHRASE is set, which production requires).
+    The check therefore failed on every run of every deployment, which is
+    indistinguishable from the backup genuinely being broken. Globbing both
+    spellings keeps it working encrypted or not.
+    """
+    d = Path(env_get("BACKUP_LOCAL_DIR") or (REPO_DIR / "backups"))
+    dumps = sorted(
+        (*d.glob("postgres-*.sql.gz"), *d.glob("postgres-*.sql.gz.gpg")),
+        key=lambda p: p.stat().st_mtime, reverse=True,
+    ) if d.is_dir() else []
     if not dumps:
-        return False, "no database backups found in backups/db/daily"
+        return False, f"no database backups found in {d}"
     newest = dumps[0]
     age_h = (time.time() - newest.stat().st_mtime) / 3600
-    size_mb = newest.stat().st_size / 1e6
+    size_kb = newest.stat().st_size / 1024
     if age_h > BACKUP_MAX_AGE_HOURS:
         return False, f"newest backup is {age_h:.0f}h old ({newest.name}) — nightly backup not running"
-    if size_mb < 1:
-        return False, f"newest backup is only {size_mb:.1f}MB ({newest.name}) — likely truncated"
-    return True, f"backup {newest.name} ({size_mb:.0f}MB, {age_h:.0f}h old)"
+    # Truncation floor in KB, not MB: a gzipped+encrypted dump of a young
+    # database is legitimately ~100KB, so the old 1MB floor would have called
+    # every healthy backup truncated for months after launch. Anything under
+    # 20KB cannot hold a real schema.
+    if size_kb < 20:
+        return False, f"newest backup is only {size_kb:.0f}KB ({newest.name}) — likely truncated"
+    return True, f"backup {newest.name} ({size_kb:.0f}KB, {age_h:.1f}h old)"
 
 
 def check_certs() -> tuple[bool, str]:

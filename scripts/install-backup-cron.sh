@@ -23,7 +23,14 @@ LOG="/var/log/ezymex-backup.log"
 LINE="0 3 * * * $SCRIPT >> $LOG 2>&1"
 
 # Strip any prior ezymex line, then append the new one.
-( crontab -l 2>/dev/null | grep -v -F "$SCRIPT"; echo "$LINE" ) | crontab -
+#
+# Both `crontab -l` (no crontab yet) and `grep -v` (no lines left after the
+# filter) exit non-zero on a FRESH server, and `set -e` then killed this
+# subshell before `echo "$LINE"` ran -- piping an EMPTY crontab to
+# `crontab -` and reporting nothing. The installer only ever worked on a
+# host that already had a crontab. `|| true` on both keeps the filter
+# advisory, which is all it was meant to be.
+( crontab -l 2>/dev/null | grep -v -F "$SCRIPT" || true; echo "$LINE" ) | crontab -
 
 # Ensure the log file exists and is writable so the first run doesn't
 # silently fail before we get a chance to tail it.

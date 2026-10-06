@@ -149,7 +149,7 @@ dump_postgres() {
     | gzip
 }
 archive_uploads() {
-  tar czf - -C "$COMPOSE_DIR" uploads
+  tar czf - -C "$UPLOADS_PARENT" uploads
 }
 dump_timescale() {
   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
@@ -164,11 +164,22 @@ write_artifact "$DUMP" dump_postgres
 
 # ─── 2. Uploads (KYC + manual deposit screenshots) ─────────────────────
 UPLOADS="$DEST/uploads-$STAMP.tar.gz"
-if [[ -d "$COMPOSE_DIR/uploads" ]]; then
-  log "archiving uploads → $UPLOADS"
+# The uploads tree lives at backend/uploads -- that is the path
+# docker-compose bind-mounts to /app/uploads. This used to look for
+# "$COMPOSE_DIR/uploads", which has never existed, so every run logged
+# "no uploads/ directory - skipping" and quietly backed up NOTHING: no KYC
+# documents, no deposit proofs, no banners, no tenant branding. Those are
+# the only artifacts here that cannot be regenerated from the database.
+# Kept as a search so a future layout change does not silently re-break it.
+UPLOADS_PARENT=""
+for cand in "$COMPOSE_DIR/backend" "$COMPOSE_DIR"; do
+  if [[ -d "$cand/uploads" ]]; then UPLOADS_PARENT="$cand"; break; fi
+done
+if [[ -n "$UPLOADS_PARENT" ]]; then
+  log "archiving uploads → $UPLOADS (from $UPLOADS_PARENT/uploads)"
   write_artifact "$UPLOADS" archive_uploads
 else
-  log "no uploads/ directory — skipping"
+  log "WARN: no uploads/ directory found under $COMPOSE_DIR — nothing archived"
 fi
 
 # ─── 3. TimescaleDB (separate DB, separate dump) ──────────────────────
