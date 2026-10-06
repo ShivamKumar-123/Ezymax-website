@@ -544,7 +544,7 @@ function PortfolioPageContent() {
 
       <DashboardShell mainClassName="flex items-center justify-center bg-bg-base">
         <div className="flex flex-col items-center gap-3 py-12">
-          <div className="w-8 h-8 border-2 border-[#E94E1B] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-[#888]">Loading portfolio...</span>
         </div>
       </DashboardShell>
@@ -610,7 +610,7 @@ function PortfolioPageContent() {
                     )}
                   >
                     {opt.id ? (
-                      <span className={clsx('rounded px-1 py-px text-[9px] font-bold uppercase tracking-wider', active ? 'bg-white/15 text-current' : opt.is_demo ? 'bg-amber-500/15 text-amber-600' : 'bg-[#E94E1B]/12 text-[#C73E11]')}>
+                      <span className={clsx('rounded px-1 py-px text-[9px] font-bold uppercase tracking-wider', active ? 'bg-white/15 text-current' : opt.is_demo ? 'bg-amber-500/15 text-amber-600' : 'bg-[#CC0000]/12 text-[#8A0000]')}>
                         {opt.is_demo ? 'Demo' : 'Live'}
                       </span>
                     ) : null}
@@ -624,7 +624,7 @@ function PortfolioPageContent() {
         {invalidAccountParam ? (
           <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm text-text-primary">
             Invalid account id in the URL — showing your full portfolio.{' '}
-            <Link href="/portfolio" className="font-semibold text-[#E94E1B] underline underline-offset-2 hover:text-[#C73E11]">
+            <Link href="/portfolio" className="font-semibold text-[#CC0000] underline underline-offset-2 hover:text-[#8A0000]">
               Reset
             </Link>
           </div>
@@ -987,7 +987,7 @@ function PortfolioPageContent() {
                       className={clsx(
                         'min-w-[32px] h-8 px-2 rounded-md text-xs font-semibold transition-colors border',
                         n === page
-                          ? 'bg-[#E94E1B] text-text-inverse border-[#E94E1B]'
+                          ? 'bg-[#CC0000] text-text-inverse border-[#CC0000]'
                           : 'bg-bg-card text-text-secondary border-border-primary hover:bg-bg-hover',
                       )}
                     >
@@ -1025,7 +1025,7 @@ export default function PortfolioPage() {
       fallback={(
         <DashboardShell mainClassName="flex items-center justify-center bg-bg-base">
           <div className="flex flex-col items-center gap-3 py-12">
-            <div className="w-8 h-8 border-2 border-[#E94E1B] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" />
             <span className="text-sm text-[#888]">Loading portfolio...</span>
           </div>
         </DashboardShell>

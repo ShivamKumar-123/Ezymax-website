@@ -63,7 +63,7 @@ export default function EarningsTab() {
           { icon: Crown, title: 'Become a Master trader', body: 'Let others copy your trades and earn performance fees.', href: '/social' },
         ].map(({ icon: Icon, title, body, href }) => (
           <div key={title} className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--bg-card-nested)' }}>
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-crx-yellow-soft text-[#C73E11]"><Icon size={20} /></div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-crx-yellow-soft text-[#8A0000]"><Icon size={20} /></div>
             <p className="text-sm font-bold text-text-primary">{title}</p>
             <p className="text-xs text-text-secondary">{body}</p>
             <Link href={href} className="mt-auto inline-flex w-fit items-center gap-1.5 rounded-full bg-crx-charcoal px-4 py-2 text-xs font-semibold text-crx-charcoal-ink hover:bg-crx-charcoal-hover">Learn more <ArrowRight size={13} /></Link>

@@ -71,7 +71,7 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function 
         className={clsx(
           'relative flex flex-col gap-2 rounded-[22px] border border-border-primary bg-bg-card-nested p-3',
           'transition-[border-color,box-shadow] duration-150',
-          'focus-within:border-[#E94E1B]/50 focus-within:shadow-[0_0_0_3px_rgba(233,78,27,0.10)]',
+          'focus-within:border-[#CC0000]/50 focus-within:shadow-[0_0_0_3px_rgba(204,0,0,0.10)]',
         )}
       >
         <textarea
@@ -107,7 +107,7 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function 
               <Plus size={14} aria-hidden />
             </button>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border-primary px-2.5 py-1 text-[11px] font-medium text-text-secondary">
-              <Sparkles size={12} className="text-[#E94E1B]" aria-hidden /> Claude
+              <Sparkles size={12} className="text-[#CC0000]" aria-hidden /> Claude
             </span>
           </div>
           {isSubmitting ? (
@@ -117,7 +117,7 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(function 
               disabled={!onStop}
               aria-label="Stop generating"
               title="Stop generating"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E94E1B] text-white shadow-[0_2px_8px_rgba(233,78,27,0.35)] transition-transform hover:bg-[#C73E11] active:scale-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#CC0000] text-white shadow-[0_2px_8px_rgba(204,0,0,0.35)] transition-transform hover:bg-[#8A0000] active:scale-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Square size={12} fill="currentColor" aria-hidden />
             </button>

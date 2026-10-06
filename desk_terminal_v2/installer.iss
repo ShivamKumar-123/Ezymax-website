@@ -1,10 +1,10 @@
-; Inno Setup script — packages the built SwissCresta Terminal into a single
-; SwissCrestaTerminal-Setup.exe installer. Installs per-user (no admin / no UAC).
+; Inno Setup script — packages the built Ezymex Terminal into a single
+; EzymexTerminal-Setup.exe installer. Installs per-user (no admin / no UAC).
 ;
 ; Paths are relative to this script ({#SourcePath}) rather than absolute: the
 ; previous version hard-coded "D:\setupfx codes\trading terminal", which broke
 ; the moment the repo was cloned anywhere else.
-#define MyApp "SwissCresta Terminal"
+#define MyApp "Ezymex Terminal"
 #define MyExe "terminal.exe"
 #define BuildDir SourcePath + "build-msvc"
 
@@ -21,14 +21,14 @@ AppName={#MyApp}
 ; (frontend/trader/src/landing/marketing/Navbar.tsx). Bump both together, and
 ; the site's href with them, or the link 404s.
 AppVersion=1.1.2
-AppPublisher=SwissCresta
-DefaultDirName={autopf}\SwissCresta Terminal
-DefaultGroupName=SwissCresta Terminal
+AppPublisher=Ezymex
+DefaultDirName={autopf}\Ezymex Terminal
+DefaultGroupName=Ezymex Terminal
 DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\{#MyExe}
 OutputDir={#SourcePath}dist
-OutputBaseFilename=SwissCrestaTerminal-Setup-1.1.2
-SetupIconFile={#SourcePath}resources\swisscresta.ico
+OutputBaseFilename=EzymexTerminal-Setup-1.1.2
+SetupIconFile={#SourcePath}resources\ezymex.ico
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -54,10 +54,10 @@ CloseApplicationsFilter=*.*
 ; and reopening it silently mid-install races the file copy.
 RestartApplications=no
 ; Belt and braces: the app holds this mutex while it runs (see src/main.cpp),
-; so Setup can say "close SwissCresta Terminal" up front instead of relying on
+; so Setup can say "close Ezymex Terminal" up front instead of relying on
 ; Restart Manager alone. Renaming it breaks that detection on installed
 ; versions, so leave it alone.
-AppMutex=SwissCrestaTerminal.SingleInstance
+AppMutex=EzymexTerminal.SingleInstance
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -87,8 +87,8 @@ Source: "{#BuildDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdir
   Excludes: "CMakeFiles\*,terminal_autogen\*,*.obj,*.pdb,*.ilk,*.cmake,CMakeCache.txt,build.ninja,.ninja_deps,.ninja_log,*.ninja_deps,*.ninja_log,chart-diag.log"
 
 [Icons]
-Name: "{group}\SwissCresta Terminal"; Filename: "{app}\{#MyExe}"
-Name: "{autodesktop}\SwissCresta Terminal"; Filename: "{app}\{#MyExe}"; Tasks: desktopicon
+Name: "{group}\Ezymex Terminal"; Filename: "{app}\{#MyExe}"
+Name: "{autodesktop}\Ezymex Terminal"; Filename: "{app}\{#MyExe}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyExe}"; Description: "Launch SwissCresta Terminal"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyExe}"; Description: "Launch Ezymex Terminal"; Flags: nowait postinstall skipifsilent

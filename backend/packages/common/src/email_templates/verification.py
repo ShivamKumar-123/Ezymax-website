@@ -7,7 +7,7 @@ def render_verification_reminder(
     *,
     first_name: str | None,
     days_since_signup: int,
-    trader_app_url: str = "https://trade.swisscresta.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     pn = platform_name()
     name = (first_name or "trader").strip() or "trader"

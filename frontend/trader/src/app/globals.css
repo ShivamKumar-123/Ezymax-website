@@ -26,7 +26,7 @@
 
   --border-primary: #E5E5E5;
   --border-secondary: #EDEDED;
-  --border-accent: #E94E1B;
+  --border-accent: #CC0000;
   --border-glass: rgba(0, 0, 0, 0.06);
   --border-glass-bright: rgba(0, 0, 0, 0.10);
 
@@ -35,9 +35,21 @@
   --text-tertiary: #9A9A9A;
   --text-inverse: #FFFFFF;
 
-  --accent: #E94E1B;
-  --accent-hover: #C73E11;
-  --accent-soft: #FCE6DD;
+  --accent: #CC0000;
+  --accent-hover: #8A0000;
+  --accent-soft: #FBE4E4;
+  --accent-light: #E63A3A;
+  --accent-dark: #8A0000;
+
+  /* Logo's second colour — the steel-blue swoosh / tagline. Deep brand
+     surfaces, hero bands and brand gradients pull from these so the UI
+     carries the whole two-colour mark, not just the red half. */
+  --brand-navy: #0B2F52;
+  --brand-navy-deep: #06182B;
+  --brand-navy-mid: #14538C;
+  --brand-navy-light: #2E7FC2;
+  --brand-navy-soft: #E6EFF7;
+  --gradient-brand: linear-gradient(135deg, #CC0000 0%, #8A0000 48%, #0B2F52 100%);
 
   --scrollbar-track: #F5F5F5;
   --scrollbar-thumb: #D4D4D4;
@@ -46,11 +58,11 @@
   --input-bg: #FFFFFF;
   --input-border: #E5E5E5;
   --input-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  --input-focus-border: #E94E1B;
-  --input-focus-shadow: 0 0 0 3px rgba(233, 78, 27, 0.12);
+  --input-focus-border: #CC0000;
+  --input-focus-shadow: 0 0 0 3px rgba(204, 0, 0, 0.12);
   --input-placeholder: #9A9A9A;
 
-  --selection-bg: rgba(233, 78, 27, 0.14);
+  --selection-bg: rgba(204, 0, 0, 0.14);
 
   --noise-opacity: 0;
   --emboss-bg: rgba(0, 0, 0, 0.03);
@@ -61,7 +73,7 @@
   --toast-border: rgba(0, 0, 0, 0.1);
 }
 
-/* SwissCresta marketing tokens (`--mkt-*`) live in
+/* Ezymex marketing tokens (`--mkt-*`) live in
  * `src/styles/marketing.css`, scoped under `[data-mkt]`. */
 
 /* ======================================= */
@@ -72,6 +84,11 @@
 
 [data-theme="dark"], .theme-dark {
   --bg-page: #050707;
+
+  /* Dark surfaces need the inverse of the light soft tints: a wash of the
+     brand colour on near-black rather than a pale wash on white. */
+  --accent-soft: rgba(204, 0, 0, 0.14);
+  --brand-navy-soft: rgba(46, 127, 194, 0.14);
   --bg-base: #0a0a0a;
   --bg-primary: #0a0a0a;
   --bg-secondary: #111111;
@@ -193,7 +210,7 @@
 
   --border-primary: #E5E5E5;
   --border-secondary: #EDEDED;
-  --border-accent: #E94E1B;
+  --border-accent: #CC0000;
   --border-glass: rgba(0, 0, 0, 0.06);
   --border-glass-bright: rgba(0, 0, 0, 0.10);
 
@@ -202,9 +219,21 @@
   --text-tertiary: #9A9A9A;
   --text-inverse: #FFFFFF;
 
-  --accent: #E94E1B;
-  --accent-hover: #C73E11;
-  --accent-soft: #FCE6DD;
+  --accent: #CC0000;
+  --accent-hover: #8A0000;
+  --accent-soft: #FBE4E4;
+  --accent-light: #E63A3A;
+  --accent-dark: #8A0000;
+
+  /* Logo's second colour — the steel-blue swoosh / tagline. Deep brand
+     surfaces, hero bands and brand gradients pull from these so the UI
+     carries the whole two-colour mark, not just the red half. */
+  --brand-navy: #0B2F52;
+  --brand-navy-deep: #06182B;
+  --brand-navy-mid: #14538C;
+  --brand-navy-light: #2E7FC2;
+  --brand-navy-soft: #E6EFF7;
+  --gradient-brand: linear-gradient(135deg, #CC0000 0%, #8A0000 48%, #0B2F52 100%);
 
   --scrollbar-track: #F5F5F5;
   --scrollbar-thumb: #D4D4D4;
@@ -213,11 +242,11 @@
   --input-bg: #FFFFFF;
   --input-border: #E5E5E5;
   --input-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  --input-focus-border: #E94E1B;
-  --input-focus-shadow: 0 0 0 3px rgba(233, 78, 27, 0.12);
+  --input-focus-border: #CC0000;
+  --input-focus-shadow: 0 0 0 3px rgba(204, 0, 0, 0.12);
   --input-placeholder: #9A9A9A;
 
-  --selection-bg: rgba(233, 78, 27, 0.14);
+  --selection-bg: rgba(204, 0, 0, 0.14);
 
   --noise-opacity: 0;
   --emboss-bg: rgba(0, 0, 0, 0.03);
@@ -287,6 +316,11 @@
 
 .theme-dark {
   --bg-base: #0a0a0a;
+
+  /* Dark surfaces need the inverse of the light soft tints: a wash of the
+     brand colour on near-black rather than a pale wash on white. */
+  --accent-soft: rgba(204, 0, 0, 0.14);
+  --brand-navy-soft: rgba(46, 127, 194, 0.14);
   --bg-primary: #0a0a0a;
   --bg-secondary: #111111;
   --bg-tertiary: #0d0d0d;
@@ -336,26 +370,38 @@
   --bg-glass-heavy: rgba(255, 255, 255, 0.92);
   --border-primary: #E5E5E5;
   --border-secondary: #EDEDED;
-  --border-accent: #E94E1B;
+  --border-accent: #CC0000;
   --border-glass: rgba(0, 0, 0, 0.06);
   --border-glass-bright: rgba(0, 0, 0, 0.10);
   --text-primary: #0A0A0A;
   --text-secondary: #5B5B5B;
   --text-tertiary: #9A9A9A;
   --text-inverse: #FFFFFF;
-  --accent: #E94E1B;
-  --accent-hover: #C73E11;
-  --accent-soft: #FCE6DD;
+  --accent: #CC0000;
+  --accent-hover: #8A0000;
+  --accent-soft: #FBE4E4;
+  --accent-light: #E63A3A;
+  --accent-dark: #8A0000;
+
+  /* Logo's second colour — the steel-blue swoosh / tagline. Deep brand
+     surfaces, hero bands and brand gradients pull from these so the UI
+     carries the whole two-colour mark, not just the red half. */
+  --brand-navy: #0B2F52;
+  --brand-navy-deep: #06182B;
+  --brand-navy-mid: #14538C;
+  --brand-navy-light: #2E7FC2;
+  --brand-navy-soft: #E6EFF7;
+  --gradient-brand: linear-gradient(135deg, #CC0000 0%, #8A0000 48%, #0B2F52 100%);
   --scrollbar-track: #F5F5F5;
   --scrollbar-thumb: #D4D4D4;
   --scrollbar-hover: #9CA3AF;
   --input-bg: #FFFFFF;
   --input-border: #E5E5E5;
   --input-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  --input-focus-border: #E94E1B;
-  --input-focus-shadow: 0 0 0 3px rgba(233, 78, 27, 0.12);
+  --input-focus-border: #CC0000;
+  --input-focus-shadow: 0 0 0 3px rgba(204, 0, 0, 0.12);
   --input-placeholder: #9A9A9A;
-  --selection-bg: rgba(233, 78, 27, 0.14);
+  --selection-bg: rgba(204, 0, 0, 0.14);
   --noise-opacity: 0;
   --emboss-bg: rgba(0, 0, 0, 0.03);
   --emboss-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
@@ -664,17 +710,17 @@ html {
 @keyframes flashRed { 0% { background-color: rgba(239,68,68,0.2); } 100% { background-color: transparent; } }
 
 /* react-hot-toast — library defaults are washed-out white squares; reskin
- * to the SwissCresta dark surface with proper padding, gap, and typography so
+ * to the Ezymex dark surface with proper padding, gap, and typography so
  * single-line errors don't wrap mid-word and the icon doesn't crash into
  * the text. */
 /* The container the lib generates also needs to be clamped — it sits
  * fixed at the top and absolutely-positions each toast, so if its width
  * is unbounded the toasts can spill past the modal regardless of the
  * inner max-width. */
-.swisscresta-toaster,
-.swisscresta-toaster > div,
-.swisscresta-toaster div[role="status"],
-.swisscresta-toaster * {
+.ezymex-toaster,
+.ezymex-toaster > div,
+.ezymex-toaster div[role="status"],
+.ezymex-toaster * {
   max-width: min(440px, calc(100vw - 32px)) !important;
   box-sizing: border-box;
 }
@@ -682,7 +728,7 @@ html {
 /* Override the inline transform-positioning wrapper react-hot-toast
  * generates per-toast. The lib computes width: auto on it so the toast
  * grows to content; clamp it here too. */
-.swisscresta-toaster > div > div {
+.ezymex-toaster > div > div {
   max-width: min(440px, calc(100vw - 32px)) !important;
   width: auto !important;
   white-space: normal !important;
@@ -690,7 +736,7 @@ html {
   word-break: break-word !important;
 }
 
-.swisscresta-hot-toast {
+.ezymex-hot-toast {
   background: var(--toast-bg) !important;
   color: var(--toast-fg) !important;
   border: 1px solid var(--toast-border) !important;
@@ -718,7 +764,7 @@ html {
  * width — that's exactly what let long backend error strings stretch the
  * toast past its max-width and spill outside the box. flex:1 1 auto +
  * min-width:0 + overflow-wrap force the text to wrap inside the bounds. */
-.swisscresta-hot-toast > div[role="status"] {
+.ezymex-hot-toast > div[role="status"] {
   flex: 1 1 auto;
   min-width: 0 !important;
   margin: 0 !important;
@@ -729,19 +775,19 @@ html {
 
 /* The status icon (✓ / ✕ / spinner) — the non-role child. Keep it at its
  * natural size so it never shrinks or wraps. */
-.swisscresta-hot-toast > div:not([role="status"]) {
+.ezymex-hot-toast > div:not([role="status"]) {
   flex-shrink: 0;
   margin-right: 2px;
 }
 
 /* Tighten the close-button (×) for toasts that ship with one. */
-.swisscresta-hot-toast button {
+.ezymex-hot-toast button {
   flex-shrink: 0;
   color: var(--toast-fg) !important;
   opacity: 0.55;
   transition: opacity 0.15s ease;
 }
-.swisscresta-hot-toast button:hover {
+.ezymex-hot-toast button:hover {
   opacity: 1;
 }
 
@@ -769,7 +815,7 @@ html {
 
 .resize-handle-h { cursor: col-resize; }
 .resize-handle-v { cursor: row-resize; }
-.focus-ring:focus { outline: 1px solid #E94E1B; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid #CC0000; outline-offset: -1px; }
 .no-drag { -webkit-user-drag: none; user-select: none; }
 
 @layer components {

@@ -58,7 +58,7 @@ export default function InsurancePage() {
 
       {/* Hero banner. The previous image came from the cloned site and was
           deleted with its other assets; this reserves the same footprint
-          until SwissCresta artwork replaces it. */}
+          until Ezymex artwork replaces it. */}
       <Section>
         <div className="mk-media mk-media--ratio-21x9">
           Trade insurance — 2560×1100

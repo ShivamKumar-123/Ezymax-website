@@ -7,8 +7,8 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
-    DATABASE_URL: str = "postgresql+asyncpg://swisscresta:swisscresta_dev@localhost:5432/swisscresta"
-    TIMESCALE_URL: str = "postgresql+asyncpg://swisscresta:swisscresta_dev@localhost:5433/marketdata"
+    DATABASE_URL: str = "postgresql+asyncpg://ezymex:ezymex_dev@localhost:5432/ezymex"
+    TIMESCALE_URL: str = "postgresql+asyncpg://ezymex:ezymex_dev@localhost:5433/marketdata"
     REDIS_URL: str = "redis://localhost:6379/0"
     # KAFKA_BOOTSTRAP_SERVERS retained as a settings field for now so any
     # downstream IaC / .env that still defines it doesn't fail validation
@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: str = "strict"  # lax | strict | none
     # If None, Secure flag follows the incoming request (HTTPS / X-Forwarded-Proto).
     COOKIE_SECURE: bool | None = None
-    # Cookie Domain attribute. Set to a parent domain (e.g. ".swisscresta.com") to share
+    # Cookie Domain attribute. Set to a parent domain (e.g. ".ezymex.com") to share
     # the auth session across the apex and subdomains (trade.*, etc.). Leave empty to
     # let the browser set a host-only cookie (works for single-host dev/local setups).
     COOKIE_DOMAIN: str = ""
@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     ADMIN_JWT_ALGORITHM: str = "HS256"
     ADMIN_JWT_EXPIRY_HOURS: int = 8
 
-    ADMIN_EMAIL: str = "admin@swisscresta.com"
+    ADMIN_EMAIL: str = "admin@ezymex.com"
     # Initial seed password for the super-admin row created by the
     # `migrate` profile. Empty by default so prod operators are forced
     # to set a strong value in their .env before the first migration —
@@ -88,14 +88,14 @@ class Settings(BaseSettings):
     # A login/signup arriving from one of these hosts is never attributed
     # to a tenant, and tenant login-isolation fails OPEN for them.
     # Phase 3: api. and admin. are reserved so a broker can't claim them as a
-    # custom domain (is_platform_domain also blocks any *.swisscresta.com).
-    PLATFORM_HOSTS: str = "swisscresta.com,www.swisscresta.com,trade.swisscresta.com,api.swisscresta.com,admin.swisscresta.com,localhost,127.0.0.1"
+    # custom domain (is_platform_domain also blocks any *.ezymex.com).
+    PLATFORM_HOSTS: str = "ezymex.com,www.ezymex.com,trade.ezymex.com,api.ezymex.com,admin.ezymex.com,localhost,127.0.0.1"
     # The origin IP tenants must point their A record at (shown in the
     # domain-connect wizard and checked by DNS verification).
     PLATFORM_PUBLIC_IP: str = ""
     # SSL/nginx provisioning (server-side; leave empty on dev — the
     # provisioner then only records status transitions without shelling out).
-    BRANDING_NGINX_TENANTS_FILE: str = ""   # e.g. /etc/nginx/conf.d/swisscresta-tenants.conf
+    BRANDING_NGINX_TENANTS_FILE: str = ""   # e.g. /etc/nginx/conf.d/ezymex-tenants.conf
     BRANDING_TRADER_UPSTREAM: str = "127.0.0.1:3000"
     # Upstream for the admin panel served on tenant admin domains
     # (admin.<broker-domain>). Prod: 127.0.0.1:3013 (see nginx upstreams).
@@ -155,16 +155,16 @@ class Settings(BaseSettings):
     # market-data service stops running its own Infoway / simulator feed and
     # consumes ticks pushed from Corecen via POST /api/lp/prices/batch (HMAC).
     CORECEN_LP_ENABLED: bool = False
-    # HMAC credentials — must match SWISSCRESTA_API_KEY / SWISSCRESTA_API_SECRET in the Corecen .env.
+    # HMAC credentials — must match EZYMEX_API_KEY / EZYMEX_API_SECRET in the Corecen .env.
     CORECEN_LP_API_KEY: str = ""
     CORECEN_LP_API_SECRET: str = ""
     # Reject pushes older than this many ms (same tolerance as Corecen's HMAC middleware).
     CORECEN_LP_TIMESTAMP_TOLERANCE_MS: int = 60_000
 
     # Corecen Broker API (A-Book trade forwarding). When an A-Book user opens/closes
-    # a position, SwissCresta pushes the trade to Corecen's broker API for LP routing.
+    # a position, Ezymex pushes the trade to Corecen's broker API for LP routing.
     # These credentials are the API key/secret registered in Corecen's admin panel
-    # for the SwissCresta broker account.
+    # for the Ezymex broker account.
     CORECEN_BROKER_API_URL: str = ""       # e.g. https://api.corecen.com
     CORECEN_BROKER_API_KEY: str = ""       # ck_... from Corecen broker API keys
     CORECEN_BROKER_API_SECRET: str = ""    # cs_... from Corecen broker API keys
@@ -215,7 +215,7 @@ class Settings(BaseSettings):
     TRONGRID_API_KEY: str = ""         # https://www.trongrid.io
     ALCHEMY_API_URL: str = ""          # full URL incl key, e.g. https://eth-mainnet.g.alchemy.com/v2/<KEY>
     BSC_RPC_URL: str = ""              # public default fallback used if blank
-    # BSC testnet RPC for the SwissCrestaVaultV1 testnet deploy. Falls back
+    # BSC testnet RPC for the EzymexVaultV1 testnet deploy. Falls back
     # to the public binance.org seed if blank. Used by the bscscan vault
     # event verifier to fetch eth_blockNumber for confirmations.
     BSC_TESTNET_RPC_URL: str = ""
@@ -302,8 +302,8 @@ _KNOWN_WEAK_ADMIN_PASSWORDS = {
     # Any deployment running with one of these is effectively unpassworded —
     # an attacker who knows the project can guess it on day one. Keep ALL
     # historical values forever; never delete, only append.
-    "SwissCrestaAdmin2026!",  # current .env.example default
-    "SwissCrestaAdmin2025!",  # earlier SwissCresta-era default
+    "EzymexAdmin2026!",  # current .env.example default
+    "EzymexAdmin2025!",  # earlier Ezymex-era default
     "NovaFxAdmin2026!",       # NovaFX-era default
     "NovaFXAdmin2025!",       # earlier NovaFX-era default
     "FXArthaAdmin2025!",      # pre-rebrand default
@@ -317,8 +317,13 @@ _KNOWN_WEAK_ADMIN_PASSWORDS = {
 # config defaults. A production deploy that never overrode POSTGRES_PASSWORD /
 # TIMESCALE_PASSWORD ships with a publicly-known DB password — treat it like a
 # default JWT secret and refuse to boot. Matched as a substring of the DSN.
+# Only ever GROWS. A password that shipped as a default under an older brand
+# is still publicly known, and a server that was stood up under that brand is
+# very likely still using it — dropping the entry on a rebrand would silently
+# stop catching exactly the deployments most at risk.
 _WEAK_DB_PASSWORDS = {
-    "swisscresta_dev",
+    "ezymex_dev",        # current compose/config fallback
+    "swisscresta_dev",   # SwissCresta-era default
 }
 
 
@@ -333,7 +338,7 @@ def _assert_production_secrets(s: Settings) -> None:
         # Dev hygiene: warn but don't refuse to boot — local devs need
         # the convenience of running with no env file at all.
         import logging
-        log = logging.getLogger("swisscresta.config")
+        log = logging.getLogger("ezymex.config")
         weak_jwt = [
             n for n in ("JWT_SECRET", "ADMIN_JWT_SECRET", "USER_JWT_SECRET")
             if getattr(s, n, "") in _DEFAULT_JWT_SECRETS
@@ -353,7 +358,7 @@ def _assert_production_secrets(s: Settings) -> None:
         if any(f":{pw}@" in (getattr(s, n, "") or "")
                for n in ("DATABASE_URL", "TIMESCALE_URL") for pw in _WEAK_DB_PASSWORDS):
             log.warning(
-                "Using the DEFAULT dev DB password (swisscresta_dev). Acceptable "
+                "Using the DEFAULT dev DB password (ezymex_dev). Acceptable "
                 "for local dev; production deploys MUST set POSTGRES_PASSWORD / "
                 "TIMESCALE_PASSWORD to strong values."
             )
@@ -385,7 +390,7 @@ def _assert_production_secrets(s: Settings) -> None:
             + ", ".join(bad)
             + ". Generate strong JWT secrets with `openssl rand -hex 32` and "
             "a strong ADMIN_PASSWORD with `openssl rand -base64 24`, then "
-            "set them in /opt/swisscresta/.env before deploying."
+            "set them in /opt/ezymex/.env before deploying."
         )
 
 

@@ -323,7 +323,7 @@ export default function AiStrategyDetailPage() {
               <button
                 type="button"
                 onClick={() => setBacktestOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#E94E1B]/40 text-[#E94E1B] text-xs font-bold hover:bg-[#E94E1B]/10 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#CC0000]/40 text-[#CC0000] text-xs font-bold hover:bg-[#CC0000]/10 transition-colors"
               >
                 <TrendingUp size={13} /> Run backtest
               </button>
@@ -340,7 +340,7 @@ export default function AiStrategyDetailPage() {
                   onClick={() => setDeployOpen(true)}
                   disabled={!hasBacktest}
                   title={!hasBacktest ? 'Run a backtest first' : undefined}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#CC0000] hover:bg-[#8A0000] text-white text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Rocket size={13} /> Deploy
                 </button>
@@ -435,7 +435,7 @@ export default function AiStrategyDetailPage() {
                     <button
                       type="button"
                       onClick={() => setBacktestOpen(true)}
-                      className="px-4 py-2.5 rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-bold transition-colors"
+                      className="px-4 py-2.5 rounded-lg bg-[#CC0000] hover:bg-[#8A0000] text-white text-xs font-bold transition-colors"
                     >
                       Run a backtest
                     </button>
@@ -527,7 +527,7 @@ export default function AiStrategyDetailPage() {
                 type="button"
                 onClick={() => void saveRisk()}
                 disabled={configSaving}
-                className="mt-3 px-3.5 py-2 rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-bold transition-colors disabled:opacity-50"
+                className="mt-3 px-3.5 py-2 rounded-lg bg-[#CC0000] hover:bg-[#8A0000] text-white text-xs font-bold transition-colors disabled:opacity-50"
               >
                 {configSaving ? 'Saving…' : 'Save changes'}
               </button>

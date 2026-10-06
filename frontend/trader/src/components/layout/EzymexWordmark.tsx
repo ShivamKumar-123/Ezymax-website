@@ -5,7 +5,14 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useBrandDisplay } from '@/components/providers/BrandingProvider';
 
-const LOGO_SRC = '/marketing/swisscresta-logo.png';
+/* The lockup is red + deep navy, so it needs both tonal cuts: the navy half
+ * disappears on the terminal's near-black surface, and the reversed cut's
+ * bright steel blue is washed out on the light dashboard. Both are rendered
+ * and the inactive one is hidden by the theme — `darkMode` in
+ * tailwind.config.ts is ['class', '[data-theme="dark"]'], the same switch
+ * ThemeProvider sets, so this follows the user's theme with no JS. */
+const LOGO_SRC_LIGHT_BG = '/marketing/ezymex-logo.png';       // dark ink
+const LOGO_SRC_DARK_BG = '/marketing/ezymex-logo-dark.png';   // reversed
 
 type Props = {
   href?: string;
@@ -14,7 +21,7 @@ type Props = {
   textClassName?: string;
   /** Default: sidebar / header. Rail: tiny terminal left bar. */
   variant?: 'default' | 'rail';
-  /** Hide the Swiss-flag mark and render the wordmark only. Useful in
+  /** Hide the emblem and render the EX monogram instead. Useful in
    *  contexts where the mark would clash (small badge embeds). */
   hideFlag?: boolean;
 };
@@ -22,12 +29,12 @@ type Props = {
 
 /**
  * Brand wordmark for dashboard chrome. On platform hosts this is the
- * SwissCresta lockup; on a white-label tenant domain it renders the
+ * Ezymex lockup; on a white-label tenant domain it renders the
  * broker's logo (if uploaded) and/or brand name instead — this ONE
  * component is what re-brands most of the app chrome, so never
  * hard-code the platform logo at a call-site.
  */
-export function SwissCrestaWordmark({
+export function EzymexWordmark({
   href = '/dashboard',
   className,
   textClassName,
@@ -45,7 +52,7 @@ export function SwissCrestaWordmark({
         title="Trading home"
         className={cn(
           'flex items-center justify-center rounded-md hover:bg-bg-hover w-9 h-9 transition-colors',
-          'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]',
+          'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#CC0000]',
           className,
         )}
       >
@@ -66,13 +73,13 @@ export function SwissCrestaWordmark({
           )
         ) : hideFlag ? (
           <span className="inline-flex items-baseline font-bold tracking-tight text-base select-none">
-            <span className="text-text-primary">S</span>
-            <span className="text-[#E94E1B]">C</span>
+            <span className="text-[#CC0000]">E</span>
+            <span className="text-text-primary">X</span>
           </span>
         ) : (
           <Image
-            src="/marketing/swisscresta_fevicon.png"
-            alt="SwissCresta"
+            src="/marketing/ezymex_fevicon.png"
+            alt="Ezymex"
             width={28}
             height={28}
             priority
@@ -92,7 +99,7 @@ export function SwissCrestaWordmark({
       href={href}
       aria-label={`${brand.name} home`}
       className={cn(
-        'inline-flex items-center min-w-0 gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]/60 focus-visible:rounded-md',
+        'inline-flex items-center min-w-0 gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CC0000]/60 focus-visible:rounded-md',
         className,
       )}
     >
@@ -114,14 +121,25 @@ export function SwissCrestaWordmark({
           )}
         </>
       ) : (
-        <Image
-          src={LOGO_SRC}
-          alt="SwissCresta"
-          width={220}
-          height={48}
-          priority
-          className="h-9 sm:h-10 w-auto"
-        />
+        <>
+          <Image
+            src={LOGO_SRC_LIGHT_BG}
+            alt="Ezymex"
+            width={220}
+            height={48}
+            priority
+            className="h-9 sm:h-10 w-auto dark:hidden"
+          />
+          <Image
+            src={LOGO_SRC_DARK_BG}
+            alt=""
+            aria-hidden
+            width={220}
+            height={48}
+            priority
+            className="h-9 sm:h-10 w-auto hidden dark:block"
+          />
+        </>
       )}
     </Link>
   );

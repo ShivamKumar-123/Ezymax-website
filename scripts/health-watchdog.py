@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SwissCresta health watchdog — the 3am pager.
+"""Ezymex health watchdog — the 3am pager.
 
 Runs from cron every 5 minutes on the HOST and checks the things that
 have actually broken in production:
@@ -20,12 +20,12 @@ FLIPS to failing, is repeated at most every REPEAT_HOURS while it stays
 broken, and a RECOVERED email is sent when it clears. State lives in
 STATE_FILE.
 
-Email uses the platform's own SMTP credentials from /opt/swisscresta/.env
+Email uses the platform's own SMTP credentials from /opt/ezymex/.env
 (no new service, no API key). Exit code is always 0 so cron stays quiet;
 everything is written to the log.
 
 Install:  sudo ./scripts/install-watchdog-cron.sh
-Log:      /var/log/swisscresta-watchdog.log
+Log:      /var/log/ezymex-watchdog.log
 Test now: sudo python3 scripts/health-watchdog.py --test-email
 """
 from __future__ import annotations
@@ -43,9 +43,9 @@ from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from pathlib import Path
 
-REPO_DIR = Path(os.environ.get("SWISSCRESTA_DIR", "/opt/swisscresta"))
+REPO_DIR = Path(os.environ.get("EZYMEX_DIR", "/opt/ezymex"))
 ENV_FILE = REPO_DIR / ".env"
-STATE_FILE = Path("/var/lib/swisscresta-watchdog.json")
+STATE_FILE = Path("/var/lib/ezymex-watchdog.json")
 COMPOSE = [
     "docker", "compose",
     "-f", str(REPO_DIR / "docker-compose.yml"),
@@ -133,7 +133,17 @@ def check_containers() -> tuple[bool, str]:
 def _tick_age(symbol: str) -> float | None:
     """Seconds since the last published tick for `symbol`, or None when the
     key is missing/unparseable."""
-    code, out = run(COMPOSE + ["exec", "-T", "redis", "redis-cli", "GET",
+    # docker-compose.prod.yml starts redis with --requirepass, so an
+    # unauthenticated redis-cli gets "NOAUTH Authentication required" and
+    # this check reported BOTH feeds dead on every single run while prices
+    # were in fact flowing normally. A monitor that cries wolf every five
+    # minutes is worse than no monitor, so authenticate when a password is
+    # configured and stay silent when it is not (dev/local).
+    auth = []
+    _pw = env_get("REDIS_PASSWORD")
+    if _pw:
+        auth = ["-a", _pw, "--no-auth-warning"]
+    code, out = run(COMPOSE + ["exec", "-T", "redis", "redis-cli", *auth, "GET",
                                f"tick:{symbol}"], timeout=45)
     if code != 0 or not out.strip():
         return None
@@ -174,18 +184,34 @@ def check_prices() -> tuple[bool, str]:
 
 
 def check_backup() -> tuple[bool, str]:
-    d = REPO_DIR / "backups" / "db" / "daily"
-    dumps = sorted(d.glob("*.dump"), key=lambda p: p.stat().st_mtime, reverse=True) if d.is_dir() else []
+    """Freshness of the newest Postgres dump written by scripts/backup.sh.
+
+    This used to look for ``backups/db/daily/*.dump``, a layout backup.sh has
+    never produced -- it writes ``backups/postgres-<stamp>.sql.gz`` (plus
+    ``.gpg`` when BACKUP_GPG_PASSPHRASE is set, which production requires).
+    The check therefore failed on every run of every deployment, which is
+    indistinguishable from the backup genuinely being broken. Globbing both
+    spellings keeps it working encrypted or not.
+    """
+    d = Path(env_get("BACKUP_LOCAL_DIR") or (REPO_DIR / "backups"))
+    dumps = sorted(
+        (*d.glob("postgres-*.sql.gz"), *d.glob("postgres-*.sql.gz.gpg")),
+        key=lambda p: p.stat().st_mtime, reverse=True,
+    ) if d.is_dir() else []
     if not dumps:
-        return False, "no database backups found in backups/db/daily"
+        return False, f"no database backups found in {d}"
     newest = dumps[0]
     age_h = (time.time() - newest.stat().st_mtime) / 3600
-    size_mb = newest.stat().st_size / 1e6
+    size_kb = newest.stat().st_size / 1024
     if age_h > BACKUP_MAX_AGE_HOURS:
         return False, f"newest backup is {age_h:.0f}h old ({newest.name}) — nightly backup not running"
-    if size_mb < 1:
-        return False, f"newest backup is only {size_mb:.1f}MB ({newest.name}) — likely truncated"
-    return True, f"backup {newest.name} ({size_mb:.0f}MB, {age_h:.0f}h old)"
+    # Truncation floor in KB, not MB: a gzipped+encrypted dump of a young
+    # database is legitimately ~100KB, so the old 1MB floor would have called
+    # every healthy backup truncated for months after launch. Anything under
+    # 20KB cannot hold a real schema.
+    if size_kb < 20:
+        return False, f"newest backup is only {size_kb:.0f}KB ({newest.name}) — likely truncated"
+    return True, f"backup {newest.name} ({size_kb:.0f}KB, {age_h:.1f}h old)"
 
 
 def check_certs() -> tuple[bool, str]:
@@ -225,8 +251,8 @@ def check_disk() -> tuple[bool, str]:
 
 
 CHECKS = [
-    ("api", lambda: check_http("https://api.swisscresta.com/health", "api.swisscresta.com/health")),
-    ("trader", lambda: check_http("https://trade.swisscresta.com", "trade.swisscresta.com")),
+    ("api", lambda: check_http("https://api.ezymex.com/health", "api.ezymex.com/health")),
+    ("trader", lambda: check_http("https://trade.ezymex.com", "trade.ezymex.com")),
     ("containers", check_containers),
     ("prices", check_prices),
     ("backup", check_backup),
@@ -283,8 +309,8 @@ def save_state(state: dict) -> None:
 def main() -> int:
     if "--test-email" in sys.argv:
         ok = send_email(
-            "[SwissCresta] Watchdog test",
-            "This is a test alert from the SwissCresta health watchdog.\n"
+            "[Ezymex] Watchdog test",
+            "This is a test alert from the Ezymex health watchdog.\n"
             "If you received this, 3am pages will reach you.\n",
         )
         return 0 if ok else 1
@@ -325,17 +351,17 @@ def main() -> int:
         lines += [
             "",
             "Useful commands:",
-            "  cd /opt/swisscresta && docker compose logs --tail 50 market-data",
+            "  cd /opt/ezymex && docker compose logs --tail 50 market-data",
             "  docker compose ps",
             "  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate market-data",
             "",
-            "Full log: /var/log/swisscresta-watchdog.log",
+            "Full log: /var/log/ezymex-watchdog.log",
         ]
-        send_email(f"[SwissCresta] ALERT: {failing[0][0]} failing", "\n".join(lines))
+        send_email(f"[Ezymex] ALERT: {failing[0][0]} failing", "\n".join(lines))
 
     if recovered:
         lines = ["Recovered:", ""] + [f"  [{k}] {d}" for k, d in recovered]
-        send_email(f"[SwissCresta] Recovered: {recovered[0][0]}", "\n".join(lines))
+        send_email(f"[Ezymex] Recovered: {recovered[0][0]}", "\n".join(lines))
 
     save_state(state)
     return 0

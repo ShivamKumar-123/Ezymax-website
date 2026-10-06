@@ -7,7 +7,7 @@
  * TradingView news timeline for that market's benchmark index.
  *
  * Theme-aware: dots use the foreground token at low opacity (grey on cream,
- * soft white on Vantablack); markers are brand orange; the news iframe
+ * soft white on Vantablack); markers are brand red; the news iframe
  * follows the warm theme's light/dark toggle.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';

@@ -23,7 +23,7 @@ export default function KycTab({ status }: { status?: string | null }) {
     <div className="p-5 sm:p-6 space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-2xl p-5" style={{ background: 'var(--bg-card-nested)' }}>
         <div className="flex items-start gap-3">
-          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${verified ? 'bg-emerald-500/15 text-emerald-500' : 'bg-crx-yellow-soft text-[#C73E11]'}`}>
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${verified ? 'bg-emerald-500/15 text-emerald-500' : 'bg-crx-yellow-soft text-[#8A0000]'}`}>
             {verified ? <ShieldCheck size={20} /> : <ShieldAlert size={20} />}
           </div>
           <div>
@@ -54,8 +54,8 @@ export default function KycTab({ status }: { status?: string | null }) {
       </div>
 
       {required === true && !verified && (
-        <div className="flex items-start gap-2.5 rounded-2xl border border-[#E94E1B]/30 bg-crx-yellow-soft px-4 py-3 text-xs text-text-primary">
-          <Info size={14} className="mt-0.5 shrink-0 text-[#C73E11]" />
+        <div className="flex items-start gap-2.5 rounded-2xl border border-[#CC0000]/30 bg-crx-yellow-soft px-4 py-3 text-xs text-text-primary">
+          <Info size={14} className="mt-0.5 shrink-0 text-[#8A0000]" />
           Verification is enforced by the broker for all live accounts. Demo accounts are unaffected.
         </div>
       )}

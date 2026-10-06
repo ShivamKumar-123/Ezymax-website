@@ -18,7 +18,7 @@
      home + landing component at once without editing their markup. */
   --ink:           0 0% 4%;         /* #0b0b0c — near-black ink */
   --paper:         0 0% 100%;       /* #ffffff — page canvas */
-  --brand-red:     2 80% 49%;       /* #e32219 — single action colour */
+  --brand-red:     2 80% 49%;       /* #CC0000 — single action colour */
   --brand-blue:   226 78% 49%;      /* #1b4ae0 — editorial accent */
 
   --background:               var(--paper);

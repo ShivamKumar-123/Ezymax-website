@@ -24,14 +24,14 @@ export default function RuleCard({ dsl, className }: { dsl: StrategyDsl; classNa
           <div key={s.title} className="rounded-lg border border-border-primary bg-card px-3 py-2.5">
             <div className="flex items-center justify-between gap-2 mb-1.5">
               <p className="text-[10px] font-bold uppercase tracking-wide text-text-tertiary">{s.title}</p>
-              <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-crx-yellow-soft text-[#E94E1B]">
+              <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-crx-yellow-soft text-[#CC0000]">
                 {s.join === 'ALL' ? 'All must match' : 'Any can match'}
               </span>
             </div>
             <ul className="space-y-1">
               {s.rules.map((r, i) => (
                 <li key={i} className="text-[11.5px] text-text-primary leading-snug flex gap-1.5">
-                  <span className="text-[#E94E1B] shrink-0">•</span>
+                  <span className="text-[#CC0000] shrink-0">•</span>
                   <span>{r}</span>
                 </li>
               ))}

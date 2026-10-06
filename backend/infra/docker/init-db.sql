@@ -1,4 +1,4 @@
--- SwissCresta Main Database Schema
+-- Ezymex Main Database Schema
 
 -- Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -794,7 +794,7 @@ INSERT INTO account_groups (name, description, leverage_default, is_demo) VALUES
 -- hashes a freshly generated bcrypt at runtime.
 --
 -- This file used to seed a hard-coded bcrypt hash for the historical
--- default password "SwissCrestaAdmin2025!". That meant ANY deployment that
+-- default password "EzymexAdmin2025!". That meant ANY deployment that
 -- ran init-db.sql but skipped migration 0002 ended up with a back-door
 -- super-admin login that the operator had no way to know about. The
 -- hash has been removed; provision the super-admin by running:

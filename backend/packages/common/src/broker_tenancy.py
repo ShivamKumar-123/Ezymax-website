@@ -2,7 +2,7 @@
 
 Faithful port of the stock4x broker logic (dependencies.scoped_admin_filter,
 assert_user_in_scope, branding_service.user_belongs_to_owner /
-pool_assignment_for_owner / find_admin_by_domain) onto SwissCresta's
+pool_assignment_for_owner / find_admin_by_domain) onto Ezymex's
 SQLAlchemy stack, with the P&L-share economics removed (rental model).
 
 Shared by the gateway (signup pool assignment, login isolation, public
@@ -14,7 +14,7 @@ Vocabulary:
   * "pool"    — the set of users a broker owns: everyone whose
     broker_ancestry contains the broker's id (sub-brokers included).
   * "platform pool" — users with assigned_broker_id IS NULL; owned by
-    SwissCresta itself.
+    Ezymex itself.
 """
 import re
 import uuid
@@ -77,7 +77,7 @@ def platform_hosts() -> set[str]:
 
 def is_platform_domain(domain: str) -> bool:
     """A broker must not claim a platform host OR any subdomain of one — e.g.
-    api.swisscresta.com / admin.swisscresta.com would hijack the platform's own
+    api.ezymex.com / admin.ezymex.com would hijack the platform's own
     API / admin routing. Blocks exact matches and any `*.that-host` subdomain."""
     d = (domain or "").strip().lower().strip(".")
     for h in platform_hosts():
@@ -110,7 +110,7 @@ def admin_hostname(domain: str) -> str:
     """The tenant's admin-panel hostname. Convention-based: every
     connected domain also serves the (scoped) admin panel on
     admin.<domain>, so brokers log in on THEIR domain, never on
-    admin.swisscresta.com."""
+    admin.ezymex.com."""
     return f"admin.{domain}"
 
 
@@ -236,7 +236,7 @@ async def assert_user_in_broker_scope(
 ) -> User | None:
     """Raises PermissionError when a broker actor targets a user outside
     their pool. Platform admins pass through untouched (their scope is
-    everything — SwissCresta's existing behaviour, deliberately kept;
+    everything — Ezymex's existing behaviour, deliberately kept;
     returns None without the extra lookup). Broker actors can never touch
     admin-tier rows through this path."""
     if actor.role != "broker":

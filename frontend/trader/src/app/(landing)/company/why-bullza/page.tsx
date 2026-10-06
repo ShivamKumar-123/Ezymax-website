@@ -33,7 +33,7 @@ export default function WhyUsPage() {
   return (
     <main>
       <PageHero
-        kicker="Why SwissCresta"
+        kicker="Why Ezymex"
         title={`Why Brokers Choose ${BRAND_NAME}`}
         lead={`The white-label trading technology brokers and prop firms launch under their own brand.`}
         primary={{ label: 'Book a demo', href: '/company/contact' }}

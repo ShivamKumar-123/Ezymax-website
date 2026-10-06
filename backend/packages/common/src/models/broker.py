@@ -1,6 +1,6 @@
 """White-label broker (tenant) profile.
 
-Ported from the stock4x broker model, adapted to SwissCresta's Postgres
+Ported from the stock4x broker model, adapted to Ezymex's Postgres
 stack and to a RENTAL business model: the platform rents the white-label
 out to a broker for a flat fee — there is no P&L-share / settlement
 machinery.

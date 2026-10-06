@@ -1,23 +1,23 @@
-# SwissCresta Algo Trading API
+# Ezymex Algo Trading API
 
-Connect any algo bot / EA / script / trading dashboard to a SwissCresta trading account over a simple HTTPS JSON API.
+Connect any algo bot / EA / script / trading dashboard to a Ezymex trading account over a simple HTTPS JSON API.
 
 ### Endpoints at a glance
 
 | Method | URL                                        | Purpose                                      |
 |--------|--------------------------------------------|----------------------------------------------|
-| POST   | `https://api.swisscresta.com/api/algo/trade`   | Place a BUY / SELL / CLOSE order             |
-| GET    | `https://api.swisscresta.com/api/algo/account` | Read balance, equity, margin                 |
-| GET    | `https://api.swisscresta.com/api/algo/positions`| List every open position                     |
-| GET    | `https://api.swisscresta.com/api/algo/symbols` | List every supported instrument              |
-| GET    | `https://api.swisscresta.com/api/algo/price`   | Live bid/ask snapshot for one symbol         |
-| GET    | `https://api.swisscresta.com/api/algo/prices`  | Live bid/ask snapshot for many symbols       |
-| GET    | `https://api.swisscresta.com/api/algo/bars`    | Historical OHLC bars (1m–1d)                 |
-| WS     | `wss://api.swisscresta.com/ws/algo/prices`     | Live tick stream (all symbols, push)         |
+| POST   | `https://api.ezymex.com/api/algo/trade`   | Place a BUY / SELL / CLOSE order             |
+| GET    | `https://api.ezymex.com/api/algo/account` | Read balance, equity, margin                 |
+| GET    | `https://api.ezymex.com/api/algo/positions`| List every open position                     |
+| GET    | `https://api.ezymex.com/api/algo/symbols` | List every supported instrument              |
+| GET    | `https://api.ezymex.com/api/algo/price`   | Live bid/ask snapshot for one symbol         |
+| GET    | `https://api.ezymex.com/api/algo/prices`  | Live bid/ask snapshot for many symbols       |
+| GET    | `https://api.ezymex.com/api/algo/bars`    | Historical OHLC bars (1m–1d)                 |
+| WS     | `wss://api.ezymex.com/ws/algo/prices`     | Live tick stream (all symbols, push)         |
 
-**Market data = same feed as the SwissCresta web platform.** Whatever the internal charts show, your bot sees — same LP source, same spread, same timestamps.
+**Market data = same feed as the Ezymex web platform.** Whatever the internal charts show, your bot sees — same LP source, same spread, same timestamps.
 
-> **Host note:** all algo endpoints live on the `api.` subdomain (`api.swisscresta.com`). The main `trade.swisscresta.com` host serves the web frontend and proxies REST requests to the gateway, but it **cannot** handle WebSocket connections — the `wss://` stream must use `api.swisscresta.com` directly.
+> **Host note:** all algo endpoints live on the `api.` subdomain (`api.ezymex.com`). The main `trade.ezymex.com` host serves the web frontend and proxies REST requests to the gateway, but it **cannot** handle WebSocket connections — the `wss://` stream must use `api.ezymex.com` directly.
 
 ---
 
@@ -33,7 +33,7 @@ Every request must include these headers:
 
 Each key is linked to **one trading account**. Keep the secret private — anyone with it can place trades on that account.
 
-Generate / rotate keys from your SwissCresta dashboard.
+Generate / rotate keys from your Ezymex dashboard.
 
 ---
 
@@ -159,7 +159,7 @@ that symbol is closed.
 ## 4. Account Info (balance, equity, margin)
 
 ```
-GET https://api.swisscresta.com/api/algo/account
+GET https://api.ezymex.com/api/algo/account
 ```
 
 No request body. Just send the auth headers. Returns the current state of the trading account linked to your API key.
@@ -203,7 +203,7 @@ No request body. Just send the auth headers. Returns the current state of the tr
 ## 4b. Open Positions
 
 ```
-GET https://api.swisscresta.com/api/algo/positions
+GET https://api.ezymex.com/api/algo/positions
 ```
 
 No body — just the auth headers. Every open position on the trading account
@@ -276,7 +276,7 @@ Error body format:
 ### BUY
 
 ```bash
-curl -X POST https://api.swisscresta.com/api/algo/trade \
+curl -X POST https://api.ezymex.com/api/algo/trade \
   -H "X-Api-Key: YOUR_KEY" \
   -H "X-Api-Secret: YOUR_SECRET" \
   -H "Content-Type: application/json" \
@@ -286,7 +286,7 @@ curl -X POST https://api.swisscresta.com/api/algo/trade \
 ### CLOSE
 
 ```bash
-curl -X POST https://api.swisscresta.com/api/algo/trade \
+curl -X POST https://api.ezymex.com/api/algo/trade \
   -H "X-Api-Key: YOUR_KEY" \
   -H "X-Api-Secret: YOUR_SECRET" \
   -H "Content-Type: application/json" \
@@ -296,7 +296,7 @@ curl -X POST https://api.swisscresta.com/api/algo/trade \
 ### Account info
 
 ```bash
-curl https://api.swisscresta.com/api/algo/account \
+curl https://api.ezymex.com/api/algo/account \
   -H "X-Api-Key: YOUR_KEY" \
   -H "X-Api-Secret: YOUR_SECRET"
 ```
@@ -308,7 +308,7 @@ curl https://api.swisscresta.com/api/algo/account \
 ```python
 import requests
 
-BASE = "https://api.swisscresta.com/api/algo"
+BASE = "https://api.ezymex.com/api/algo"
 HEADERS = {
     "X-Api-Key": "YOUR_KEY",
     "X-Api-Secret": "YOUR_SECRET",
@@ -342,7 +342,7 @@ print(r.status_code, r.json())
 ## 8. Market Data — Symbol List
 
 ```
-GET https://api.swisscresta.com/api/algo/symbols
+GET https://api.ezymex.com/api/algo/symbols
 ```
 
 No body. Send the standard auth headers. Returns every instrument the platform supports along with its trading spec. Call this once at bot startup and cache the result — it doesn't change often.
@@ -383,7 +383,7 @@ No body. Send the standard auth headers. Returns every instrument the platform s
 ## 9. Market Data — Single-symbol snapshot
 
 ```
-GET https://api.swisscresta.com/api/algo/price?symbol=XAUUSD
+GET https://api.ezymex.com/api/algo/price?symbol=XAUUSD
 ```
 
 Current bid/ask for one symbol, served from Redis (sub-millisecond). Safe to poll at up to a few per second.
@@ -412,7 +412,7 @@ Current bid/ask for one symbol, served from Redis (sub-millisecond). Safe to pol
 ## 10. Market Data — Multi-symbol snapshot
 
 ```
-GET https://api.swisscresta.com/api/algo/prices?symbols=XAUUSD,EURUSD,BTCUSD
+GET https://api.ezymex.com/api/algo/prices?symbols=XAUUSD,EURUSD,BTCUSD
 ```
 
 One call for many symbols. `symbols` is optional — omit it to receive every supported instrument.
@@ -445,7 +445,7 @@ One call for many symbols. `symbols` is optional — omit it to receive every su
 ## 11. Market Data — Historical OHLC bars
 
 ```
-GET https://api.swisscresta.com/api/algo/bars?symbol=XAUUSD&timeframe=1m&limit=500
+GET https://api.ezymex.com/api/algo/bars?symbol=XAUUSD&timeframe=1m&limit=500
 ```
 
 ### Query params
@@ -485,10 +485,10 @@ Bars are returned **newest first**. Up to 1000 most-recent bars are kept per (sy
 ## 12. Market Data — Live tick stream (WebSocket)
 
 ```
-wss://api.swisscresta.com/ws/algo/prices
+wss://api.ezymex.com/ws/algo/prices
 ```
 
-The easiest way to keep a bot's internal state in sync with the market — the server pushes every tick as soon as the LP delivers it. Same data the internal SwissCresta charts use.
+The easiest way to keep a bot's internal state in sync with the market — the server pushes every tick as soon as the LP delivers it. Same data the internal Ezymex charts use.
 
 ### Authentication (first-message)
 
@@ -533,7 +533,7 @@ Every 30 seconds the server sends `{"type": "ping"}`. Client pongs are optional 
 import asyncio, json, websockets
 
 async def stream():
-    async with websockets.connect("wss://api.swisscresta.com/ws/algo/prices") as ws:
+    async with websockets.connect("wss://api.ezymex.com/ws/algo/prices") as ws:
         await ws.send(json.dumps({
             "action": "auth",
             "api_key":    "YOUR_KEY",
@@ -557,7 +557,7 @@ asyncio.run(stream())
 ### Testing in Postman
 
 1. **New → WebSocket Request** (not HTTP).
-2. URL: `wss://api.swisscresta.com/ws/algo/prices` → **Connect**.
+2. URL: `wss://api.ezymex.com/ws/algo/prices` → **Connect**.
 3. In the Message box paste and send:
    ```json
    {"action":"auth","api_key":"YOUR_KEY","api_secret":"YOUR_SECRET"}
@@ -578,5 +578,5 @@ asyncio.run(stream())
 - **Market data endpoints** (`/symbols`, `/price`, `/prices`, `/bars`) share the same auth headers as the trading endpoints — one key, everything.
 - **Prefer the WebSocket stream** over polling `/price` or `/prices` — pushes are free, polling is wasted CPU.
 - **Bar history** is capped at the most-recent 1000 bars per (symbol, timeframe). Older history is rolled off automatically.
-- **Market data matches the SwissCresta web platform** — same LP feed, same spread widening, same timestamps. If your bot shows a different price than the web chart, check your clock sync and timezone handling before blaming the feed.
+- **Market data matches the Ezymex web platform** — same LP feed, same spread widening, same timestamps. If your bot shows a different price than the web chart, check your clock sync and timezone handling before blaming the feed.
 - Keep the secret out of git, logs, and client-side code. If leaked, rotate it immediately from the dashboard.

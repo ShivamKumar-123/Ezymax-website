@@ -132,10 +132,10 @@ export default function AlgoConnectorPage() {
       <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
 
         {/* ─── Hero Header ─── */}
-        <div className="relative overflow-hidden rounded-2xl border border-[#F3D9CE] bg-gradient-to-br from-[#FFF6F2] to-[#FCE6DD] px-6 py-7 sm:px-8 sm:py-9 text-center shadow-sm">
-          <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-[#E94E1B]/10 blur-2xl" />
+        <div className="relative overflow-hidden rounded-2xl border border-[#F3D9CE] bg-gradient-to-br from-[#FFF6F2] to-[#FBE4E4] px-6 py-7 sm:px-8 sm:py-9 text-center shadow-sm">
+          <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-[#CC0000]/10 blur-2xl" />
           <div className="relative space-y-2.5">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#E94E1B] text-white shadow-lg shadow-[#E94E1B]/25 mb-1">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#CC0000] text-white shadow-lg shadow-[#CC0000]/25 mb-1">
               <Plug size={26} />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight">Algo Connector</h1>
@@ -143,7 +143,7 @@ export default function AlgoConnectorPage() {
               Generate API credentials for any trading account and connect your algorithmic trading bot.
             </p>
             <div className="flex items-center justify-center gap-2 pt-1">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E94E1B]/20 bg-bg-card/70 px-3 py-1 text-xs font-semibold text-[#C73E11]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#CC0000]/20 bg-bg-card/70 px-3 py-1 text-xs font-semibold text-[#8A0000]">
                 <Key size={12} /> {accounts.length} account{accounts.length === 1 ? '' : 's'}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/25 bg-bg-card/70 px-3 py-1 text-xs font-semibold text-green-600">
@@ -157,7 +157,7 @@ export default function AlgoConnectorPage() {
         <div className="rounded-2xl border border-border-primary bg-card shadow-sm">
           <div className="px-5 py-4 border-b border-border-primary">
             <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-              <Key size={14} className="text-[#E94E1B]" /> Select Trading Account
+              <Key size={14} className="text-[#CC0000]" /> Select Trading Account
             </h2>
             <p className="text-xs text-text-tertiary mt-0.5">Choose an account to generate or manage API keys</p>
           </div>
@@ -260,7 +260,7 @@ export default function AlgoConnectorPage() {
           <div className="rounded-2xl border border-border-primary bg-card overflow-hidden shadow-sm">
             <div className="px-5 py-4 border-b border-border-primary">
               <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                <Radio size={14} className="text-[#E94E1B]" /> Connected Accounts ({connectedKeys.length})
+                <Radio size={14} className="text-[#CC0000]" /> Connected Accounts ({connectedKeys.length})
               </h2>
             </div>
             <div className="divide-y divide-border-primary">
@@ -321,7 +321,7 @@ export default function AlgoConnectorPage() {
         <div className="rounded-2xl border border-border-primary bg-card shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-border-primary">
             <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-              <Terminal size={14} className="text-[#E94E1B]" /> Connect Your Bot
+              <Terminal size={14} className="text-[#CC0000]" /> Connect Your Bot
             </h2>
             <p className="text-xs text-text-tertiary mt-0.5">Paste the credentials above into your bot, then point it at these endpoints.</p>
           </div>
@@ -335,8 +335,8 @@ export default function AlgoConnectorPage() {
               ].map(s => (
                 <div key={s.n} className="rounded-xl border border-border-primary bg-bg-secondary/40 p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#E94E1B] text-white text-[10px] font-bold">{s.n}</span>
-                    <s.icon size={13} className="text-[#E94E1B]" />
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#CC0000] text-white text-[10px] font-bold">{s.n}</span>
+                    <s.icon size={13} className="text-[#CC0000]" />
                     <span className="text-xs font-semibold text-text-primary">{s.t}</span>
                   </div>
                   <p className="text-[11px] leading-snug text-text-tertiary">{s.d}</p>

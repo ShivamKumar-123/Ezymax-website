@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Risk Calculator — SwissCresta',
+  title: 'Risk Calculator — Ezymex',
   description: 'Calculate position size, pip value, and margin requirements.',
 }
 

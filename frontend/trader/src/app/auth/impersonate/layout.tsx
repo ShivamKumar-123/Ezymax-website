@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Impersonate — SwissCresta',
+  title: 'Impersonate — Ezymex',
   description: 'Operator impersonation handoff.',
   robots: { index: false, follow: false },
 }

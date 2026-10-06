@@ -12,7 +12,7 @@ const inter = Inter({
 });
 
 // Host-aware: on a white-label tenant's admin domain
-// (admin.<broker-domain>) the tab must not say SwissCresta. The server
+// (admin.<broker-domain>) the tab must not say Ezymex. The server
 // only knows the host here, not the brand — it sends a neutral title
 // and the client (login page / AdminLayout) upgrades it to
 // "<Brand> Admin" as soon as the brand is known.
@@ -20,13 +20,13 @@ export async function generateMetadata(): Promise<Metadata> {
   const { headers } = await import('next/headers');
   const h = await headers();
   const host = (h.get('x-forwarded-host') || h.get('host') || '').split(':')[0].toLowerCase();
-  const platformHosts = new Set(['admin.swisscresta.com', 'localhost', '127.0.0.1']);
+  const platformHosts = new Set(['admin.ezymex.com', 'localhost', '127.0.0.1']);
   if (host && !platformHosts.has(host)) {
     return { title: 'Admin Panel', description: 'Broker administration panel' };
   }
   return {
-    title: 'SwissCresta Admin',
-    description: 'SwissCresta broker administration panel',
+    title: 'Ezymex Admin',
+    description: 'Ezymex broker administration panel',
   };
 }
 

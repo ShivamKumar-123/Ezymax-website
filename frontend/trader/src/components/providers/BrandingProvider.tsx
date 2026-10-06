@@ -6,7 +6,7 @@
  *
  * On a broker's custom domain, the whole app should carry the broker's
  * identity (name, logo, favicon, support contacts) instead of
- * SwissCresta's. Resolution:
+ * Ezymex's. Resolution:
  *
  *   1. Platform hosts (static allowlist below) → platform branding,
  *      no lookup. NEVER add `window.location.hostname` dynamically —
@@ -57,7 +57,7 @@ export function useBranding(): Ctx {
 
 /**
  * Display-ready brand values with platform defaults baked in — the one
- * hook UI chrome should use. On platform hosts: SwissCresta identity.
+ * hook UI chrome should use. On platform hosts: Ezymex identity.
  * On a white-label tenant domain: the broker's name/logo, and
  * `isWhiteLabel` so components can hide platform-specific artwork.
  */
@@ -67,7 +67,7 @@ export function useBrandDisplay() {
   return {
     isWhiteLabel,
     /** Brand name for copy ("Welcome to X", footer, alt text). */
-    name: (isWhiteLabel && branding.brand_name) ? branding.brand_name : 'SwissCresta',
+    name: (isWhiteLabel && branding.brand_name) ? branding.brand_name : 'Ezymex',
     /** Tenant logo URL (same-origin /api/v1 path) or null → use the
      *  platform's bundled logo assets. */
     logoUrl: isWhiteLabel ? (branding.logo_url || null) : null,
@@ -79,9 +79,9 @@ export function useBrandDisplay() {
 /** Static platform-host allowlist. Update alongside PLATFORM_HOSTS in
  *  the backend .env when the platform gains a new hostname. */
 const PLATFORM_HOSTS = new Set<string>([
-  'swisscresta.com',
-  'www.swisscresta.com',
-  'trade.swisscresta.com',
+  'ezymex.com',
+  'www.ezymex.com',
+  'trade.ezymex.com',
   process.env.NEXT_PUBLIC_MARKETING_HOST || '',
   process.env.NEXT_PUBLIC_TRADE_HOST || '',
   'localhost',

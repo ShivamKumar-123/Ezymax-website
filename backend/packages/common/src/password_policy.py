@@ -16,7 +16,7 @@ _COMMON_PASSWORDS = {
     "password123", "passw0rd", "qwerty123", "qwertyuiop", "1q2w3e4r", "1qaz2wsx",
     "abc12345", "abcd1234", "iloveyou", "sunshine", "football", "monkey123",
     "letmein1", "admin123", "welcome1", "dragon123", "11111111", "00000000",
-    "aa123456", "a1234567", "qwer1234", "asdf1234", "zaq12wsx", "swisscresta",
+    "aa123456", "a1234567", "qwer1234", "asdf1234", "zaq12wsx", "ezymex",
 }
 
 

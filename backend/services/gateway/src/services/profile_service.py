@@ -18,6 +18,7 @@ from packages.common.src.config import get_settings
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
 from packages.common.src.notify import create_notification
 from packages.common.src.email_branding import apply_email_brand
+from packages.common.src.wallet_placeholder import is_wallet_placeholder_email
 
 logger = logging.getLogger("profile_service")
 
@@ -104,7 +105,7 @@ async def get_profile(user_id: UUID, db: AsyncSession) -> dict:
         "id": str(user.id),
         "email": user.email,
         "email_verified": bool(getattr(user, "email_verified", False)),
-        "is_wallet_placeholder": (user.email or "").lower().endswith("@wallet.swisscresta.local"),
+        "is_wallet_placeholder": is_wallet_placeholder_email(user.email),
         "first_name": user.first_name,
         "last_name": user.last_name,
         "phone": user.phone,

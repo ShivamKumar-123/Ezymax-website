@@ -179,7 +179,7 @@ const DEFAULT_WATCHLIST = [
 ];
 
 const DEFAULT_SYMBOL = 'XAUUSD';
-const SYMBOL_STORAGE_KEY = 'swisscresta-selected-symbol';
+const SYMBOL_STORAGE_KEY = 'ezymex-selected-symbol';
 
 function getPersistedSymbol(): string {
   if (typeof window === 'undefined') return DEFAULT_SYMBOL;

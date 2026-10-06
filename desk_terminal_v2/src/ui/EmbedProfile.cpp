@@ -12,7 +12,7 @@ QWebEngineProfile* embedProfile() {
     // silently keeps nothing, which is the bug this function exists to fix.
     // Parented to the application so it outlives every page built on it —
     // destroying a profile while a page still uses it crashes the renderer.
-    profile = new QWebEngineProfile(QStringLiteral("swisscresta-embeds"),
+    profile = new QWebEngineProfile(QStringLiteral("ezymex-embeds"),
                                     QCoreApplication::instance());
 
     // CacheLocation, not AppDataLocation. On Windows the latter is the ROAMING

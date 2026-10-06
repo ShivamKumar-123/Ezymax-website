@@ -1,6 +1,6 @@
-# SwissCresta
+# Ezymex
 
-A premium multi-page Forex brokerage website by SwissCresta, built with React, Vite, Tailwind CSS, and Framer Motion.
+A premium multi-page Forex brokerage website by Ezymex, built with React, Vite, Tailwind CSS, and Framer Motion.
 
 ## Setup
 
@@ -59,27 +59,27 @@ no extra service.
 ```bash
 sudo ./scripts/install-watchdog-cron.sh                    # one-time
 sudo python3 scripts/health-watchdog.py --test-email       # prove delivery
-tail -f /var/log/swisscresta-watchdog.log
+tail -f /var/log/ezymex-watchdog.log
 ```
 
 **Restore drills.** Verifying a dump *is* the backup — restore the
 newest into a scratch database and compare row counts against live
-(never into `swisscresta`):
+(never into `ezymex`):
 
 ```bash
 CID=$(docker compose ps -q postgres)
 NEW=$(ls -t backups/db/daily/*.dump | head -1)
 docker cp "$NEW" $CID:/tmp/drill.dump
-docker exec $CID psql -U swisscresta -d postgres -c 'CREATE DATABASE restore_drill;'
-docker exec $CID pg_restore -U swisscresta -d restore_drill --no-owner --no-privileges /tmp/drill.dump
-docker exec $CID psql -U swisscresta -d restore_drill -c 'SELECT count(*) FROM users;'
-docker exec $CID psql -U swisscresta -d postgres -c 'DROP DATABASE restore_drill;'
+docker exec $CID psql -U ezymex -d postgres -c 'CREATE DATABASE restore_drill;'
+docker exec $CID pg_restore -U ezymex -d restore_drill --no-owner --no-privileges /tmp/drill.dump
+docker exec $CID psql -U ezymex -d restore_drill -c 'SELECT count(*) FROM users;'
+docker exec $CID psql -U ezymex -d postgres -c 'DROP DATABASE restore_drill;'
 ```
 
 ## Backups & disaster recovery
 
 Daily snapshots of Postgres, TimescaleDB, and the `uploads/` directory are
-written to `/opt/swisscresta/backups/` and (optionally) mirrored to an offsite
+written to `/opt/ezymex/backups/` and (optionally) mirrored to an offsite
 `rclone` remote (Backblaze B2 / Cloudflare R2 / S3 / DO Spaces).
 
 **One-time setup on a server:**

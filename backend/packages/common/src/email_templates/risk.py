@@ -19,7 +19,7 @@ def render_margin_call(
     used_margin: Decimal | float,
     free_margin: Decimal | float,
     currency: str = "USD",
-    trader_app_url: str = "https://trade.swisscresta.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     rows: list[tuple[str, str]] = [
@@ -75,7 +75,7 @@ def render_stop_out(
     realized_pnl: Decimal | float,
     new_equity: Decimal | float,
     currency: str = "USD",
-    trader_app_url: str = "https://trade.swisscresta.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     pnl_label = _fmt_money(realized_pnl, currency)

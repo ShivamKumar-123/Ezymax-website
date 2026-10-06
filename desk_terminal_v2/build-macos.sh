@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the SwissCresta Terminal as a macOS .app bundle.
+# Build the Ezymex Terminal as a macOS .app bundle.
 # Usage:  ./build-macos.sh            (Release, ad-hoc signed, ready to run)
 #
 # The mac counterpart of build-msvc.ps1, and it follows the same rule: the
@@ -18,7 +18,7 @@ set -euo pipefail
 
 src="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 build="$src/build-macos"
-app_name="SwissCresta Terminal"
+app_name="Ezymex Terminal"
 app="$build/$app_name.app"
 
 die() { echo "error: $*" >&2; exit 1; }
@@ -121,7 +121,7 @@ echo "    Host      : $(uname -m)"
 echo "    Building  : $archs"
 
 # ── icon ────────────────────────────────────────────────────────────────────
-[[ -f "$src/resources/swisscresta.icns" ]] || "$src/resources/make-icns.sh"
+[[ -f "$src/resources/ezymex.icns" ]] || "$src/resources/make-icns.sh"
 
 # ── stale build tree ────────────────────────────────────────────────────────
 # A build tree records the absolute source path it was configured from, so a

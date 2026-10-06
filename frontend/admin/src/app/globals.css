@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════
-   SwissCresta Admin — light + orange (matches the trader app's
+   Ezymex Admin — light + red (matches the trader app's
    Vantage palette). The dark token block is preserved as a
    fallback for anything that explicitly opts in via .dark, but
    :root is light by default so the whole admin renders white.
@@ -30,6 +30,20 @@
   --c-text-inverse: 255 255 255;
   --shadow-modal: 0 8px 40px rgba(0, 0, 0, 0.12);
   --shadow-dropdown: 0 4px 20px rgba(0, 0, 0, 0.08);
+
+  /* —— Ezymex brand (from the logo) ——
+     Red is the wordmark, navy is the swoosh + tagline. Both are exposed
+     so admin chrome can use the full mark instead of red alone. */
+  --accent: #CC0000;
+  --accent-hover: #8A0000;
+  --accent-light: #E63A3A;
+  --accent-soft: #FBE4E4;
+  --brand-navy: #0B2F52;
+  --brand-navy-deep: #06182B;
+  --brand-navy-mid: #14538C;
+  --brand-navy-light: #2E7FC2;
+  --brand-navy-soft: #E6EFF7;
+  --gradient-brand: linear-gradient(135deg, #CC0000 0%, #8A0000 48%, #0B2F52 100%);
 }
 
 html.light, [data-theme='light'] {
@@ -57,6 +71,11 @@ html.dark, [data-theme='dark'] {
   --c-text-inverse: 10 10 10;
   --shadow-modal: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
   --shadow-dropdown: 0 4px 20px rgba(0, 0, 0, 0.5);
+
+  /* Soft tints invert on dark: a wash of the brand colour on near-black
+     rather than a pale wash on white. */
+  --accent-soft: rgba(204, 0, 0, 0.14);
+  --brand-navy-soft: rgba(46, 127, 194, 0.14);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -91,16 +110,16 @@ input, select, textarea {
   transition: border-color 200ms ease, box-shadow 200ms ease;
 }
 input:focus, select:focus, textarea:focus {
-  border-color: rgba(233, 78, 27, 0.5);
-  box-shadow: 0 0 0 3px rgba(233, 78, 27, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  border-color: rgba(204, 0, 0, 0.5);
+  box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
-::selection { background-color: rgba(233, 78, 27, 0.2); }
+::selection { background-color: rgba(204, 0, 0, 0.2); }
 
 /* ── Utility ── */
 .transition-fast { transition: all 150ms ease; }
-.focus-ring:focus { outline: 1px solid #E94E1B; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid #CC0000; outline-offset: -1px; }
 
 /* ═══════════════════════════════════════════════════════════
    Glassmorphism
@@ -133,16 +152,16 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .skeu-btn-accent {
-  background: linear-gradient(180deg, #FB7B4E 0%, #E94E1B 50%, #C73E11 100%);
-  border: 1px solid rgba(233,78,27,0.5);
-  box-shadow: 0 2px 8px rgba(233,78,27,0.3), 0 1px 2px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.2);
+  background: linear-gradient(180deg, #E63A3A 0%, #CC0000 50%, #8A0000 100%);
+  border: 1px solid rgba(204,0,0,0.5);
+  box-shadow: 0 2px 8px rgba(204,0,0,0.3), 0 1px 2px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.2);
   color: #ffffff;
   font-weight: 700;
   border-radius: 10px;
   transition: all 200ms ease;
 }
 .skeu-btn-accent:hover {
-  box-shadow: 0 4px 16px rgba(233,78,27,0.4), 0 1px 2px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.25);
+  box-shadow: 0 4px 16px rgba(204,0,0,0.4), 0 1px 2px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.25);
   transform: translateY(-1px);
 }
 .skeu-btn-danger {
@@ -166,8 +185,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(233,78,27,0.15); }
-  50%      { box-shadow: 0 0 20px rgba(233,78,27,0.3); }
+  0%, 100% { box-shadow: 0 0 8px rgba(204,0,0,0.15); }
+  50%      { box-shadow: 0 0 20px rgba(204,0,0,0.3); }
 }
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
@@ -187,10 +206,10 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
    Sidebar nav glow for active item
    ═══════════════════════════════════════════════════════════ */
 .nav-active {
-  background: rgba(233,78,27,0.08);
-  border-left: 2px solid #E94E1B;
-  color: #E94E1B;
-  box-shadow: inset 3px 0 12px rgba(233,78,27,0.06);
+  background: rgba(204,0,0,0.08);
+  border-left: 2px solid #CC0000;
+  color: #CC0000;
+  box-shadow: inset 3px 0 12px rgba(204,0,0,0.06);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -208,8 +227,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
    Stat glow badge
    ═══════════════════════════════════════════════════════════ */
 .stat-glow {
-  box-shadow: 0 0 0 1px rgba(233,78,27,0.1), 0 2px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 0 0 1px rgba(204,0,0,0.1), 0 2px 12px rgba(0,0,0,0.3);
 }
 .stat-glow:hover {
-  box-shadow: 0 0 0 1px rgba(233,78,27,0.2), 0 4px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 0 0 1px rgba(204,0,0,0.2), 0 4px 20px rgba(0,0,0,0.4);
 }

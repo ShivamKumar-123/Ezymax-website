@@ -1,6 +1,6 @@
 /* Loaded INSIDE the charting-library iframe via `custom_css_url`.
-   SwissCresta terminal: Vantablack canvas + hide the library's own logo
-   link (the SwissCresta mark is overlaid by TradingViewChart.tsx). */
+   Ezymex terminal: Vantablack canvas + hide the library's own logo
+   link (the Ezymex mark is overlaid by TradingViewChart.tsx). */
 html, body { background: #000 !important; }
 a[href*="tradingview.com"],
 [class*="tv-logo"],

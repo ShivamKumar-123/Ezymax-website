@@ -10,7 +10,7 @@ import type { MetadataRoute } from 'next'
 export default function robots(): MetadataRoute.Robots {
   const host = process.env.NEXT_PUBLIC_MARKETING_HOST
     ? `https://${process.env.NEXT_PUBLIC_MARKETING_HOST}`
-    : 'https://swisscresta.com'
+    : 'https://ezymex.com'
 
   return {
     rules: [

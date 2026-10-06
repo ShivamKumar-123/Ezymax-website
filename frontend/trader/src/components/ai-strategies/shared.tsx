@@ -3,7 +3,7 @@
 /**
  * Small shared building blocks for the AI Strategies pages — page header,
  * status pills, empty states, metric tiles, collapsible sections. Follows the
- * SwissCresta light-theme tokens (bg-card / border-border-primary / text-*).
+ * Ezymex light-theme tokens (bg-card / border-border-primary / text-*).
  */
 
 import { useState } from 'react';
@@ -43,7 +43,7 @@ export function Spinner({ size = 8 }: { size?: 6 | 8 }) {
   return (
     <div
       className={clsx(
-        'animate-spin rounded-full border-2 border-[#E94E1B] border-t-transparent',
+        'animate-spin rounded-full border-2 border-[#CC0000] border-t-transparent',
         size === 8 ? 'h-8 w-8' : 'h-6 w-6',
       )}
     />
@@ -176,7 +176,7 @@ export function CollapsibleSection({
         className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-bg-hover transition-colors"
       >
         <span className="flex items-center gap-2 min-w-0">
-          {Icon && <Icon size={15} className="text-[#E94E1B] shrink-0" aria-hidden />}
+          {Icon && <Icon size={15} className="text-[#CC0000] shrink-0" aria-hidden />}
           <span className="text-sm font-semibold text-text-primary">{title}</span>
           {subtitle && <span className="text-xs text-text-tertiary truncate">{subtitle}</span>}
         </span>

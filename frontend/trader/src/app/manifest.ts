@@ -6,15 +6,15 @@ import type { MetadataRoute } from 'next'
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'SwissCresta — Professional Trading Platform',
-    short_name: 'SwissCresta',
+    name: 'Ezymex — Professional Trading Platform',
+    short_name: 'Ezymex',
     description: 'Professional forex and CFD trading platform',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
-    theme_color: '#E94E1B',
+    theme_color: '#CC0000',
     icons: [
-      { src: '/marketing/swisscresta_fevicon.png', sizes: 'any', type: 'image/png' },
+      { src: '/marketing/ezymex_fevicon.png', sizes: 'any', type: 'image/png' },
     ],
   }
 }

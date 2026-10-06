@@ -87,7 +87,7 @@ export default function BacktestDialog({
                 onClick={() => setDays(d)}
                 className={clsx(
                   'px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors',
-                  days === d ? 'bg-[#E94E1B] text-white' : 'text-text-secondary hover:text-text-primary',
+                  days === d ? 'bg-[#CC0000] text-white' : 'text-text-secondary hover:text-text-primary',
                 )}
               >
                 {d} days
@@ -124,7 +124,7 @@ export default function BacktestDialog({
             type="button"
             onClick={() => void run()}
             disabled={running}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-[#E94E1B] text-white text-xs font-bold hover:bg-[#C73E11] disabled:opacity-50 transition-colors"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-[#CC0000] text-white text-xs font-bold hover:bg-[#8A0000] disabled:opacity-50 transition-colors"
           >
             <Play size={12} /> {running ? 'Running…' : 'Run backtest'}
           </button>

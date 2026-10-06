@@ -65,12 +65,12 @@ export async function downloadWalletStatementPdf(
   const margin = 14;
   let y = 16;
 
-  doc.setFillColor(41, 98, 255);
+  doc.setFillColor(11, 47, 82);
   doc.rect(0, 0, pageW, 10, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('SwissCresta', margin, 7);
+  doc.text('Ezymex', margin, 7);
 
   // Brand logo, top-right under the band (best-effort — never blocks export).
   const { loadPdfLogo, stampPdfLogo } = await import('./pdfLogo');
@@ -116,7 +116,7 @@ export async function downloadWalletStatementPdf(
       titleCase(r.status),
     ]),
     theme: 'striped',
-    headStyles: { fillColor: [41, 98, 255], textColor: 255, fontStyle: 'bold', fontSize: 9, cellPadding: 2 },
+    headStyles: { fillColor: [11, 47, 82], textColor: 255, fontStyle: 'bold', fontSize: 9, cellPadding: 2 },
     bodyStyles: { fontSize: 8, cellPadding: 1.8, textColor: [40, 40, 40] },
     alternateRowStyles: { fillColor: [252, 252, 252] },
     columnStyles: {
@@ -132,9 +132,9 @@ export async function downloadWalletStatementPdf(
       doc.setFontSize(7);
       doc.setTextColor(140, 140, 140);
       doc.text(`Page ${data.pageNumber} of ${pageCount}`, pageW - margin - 24, pageH - 6);
-      doc.text('SwissCresta — for information only. Not tax or legal advice.', margin, pageH - 6);
+      doc.text('Ezymex — for information only. Not tax or legal advice.', margin, pageH - 6);
     },
   });
 
-  doc.save(`swisscresta-wallet-statement-${new Date().toISOString().slice(0, 10)}.pdf`);
+  doc.save(`ezymex-wallet-statement-${new Date().toISOString().slice(0, 10)}.pdf`);
 }

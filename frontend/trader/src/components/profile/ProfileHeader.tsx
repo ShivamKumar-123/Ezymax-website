@@ -121,7 +121,7 @@ export default function ProfileHeader({
             <span
               className={clsx(
                 'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold',
-                verified ? 'bg-emerald-500/15 text-emerald-500' : 'bg-crx-yellow-soft text-[#C73E11]',
+                verified ? 'bg-emerald-500/15 text-emerald-500' : 'bg-crx-yellow-soft text-[#8A0000]',
               )}
             >
               {verified ? <ShieldCheck size={13} /> : <ShieldAlert size={13} />}

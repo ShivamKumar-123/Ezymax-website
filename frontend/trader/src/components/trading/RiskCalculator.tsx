@@ -341,7 +341,7 @@ export default function RiskCalculator() {
         </button>
       </div>
 
-      {/* Tabs — orange underline, same language as Markets / News */}
+      {/* Tabs — red underline, same language as Markets / News */}
       <div className="shrink-0 flex gap-5 px-3">
         {TABS.map((t) => (
           <button
@@ -476,7 +476,7 @@ export default function RiskCalculator() {
               calculated. Otherwise a placeholder that says what to do next,
               never a $0.00 that reads like a real answer. */}
           {showResult && activeResult ? (
-            <div className="rounded-2xl p-4 text-white ring-1 ring-[#E94E1B]/35 shadow-[0_14px_40px_-12px_rgba(233,78,27,0.5),inset_0_1px_0_rgba(255,255,255,0.12)] bg-[linear-gradient(165deg,#E94E1B_0%,#7a2a0e_28%,#1a0b06_62%,#0a0a0a_100%)]">
+            <div className="rounded-2xl p-4 text-white ring-1 ring-[#CC0000]/35 shadow-[0_14px_40px_-12px_rgba(204,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.12)] bg-[linear-gradient(165deg,#CC0000_0%,#7a2a0e_28%,#1a0b06_62%,#0a0a0a_100%)]">
               <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-white/70">{resultLabel}</p>
               <p className="mt-1 text-[26px] font-bold leading-none tabular-nums">{resultValue}</p>
               {resultDetails.length > 0 && (

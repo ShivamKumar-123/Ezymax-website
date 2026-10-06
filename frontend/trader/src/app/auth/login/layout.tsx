@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Sign In — SwissCresta',
-  description: 'Sign in to your SwissCresta trading account.',
+  title: 'Sign In — Ezymex',
+  description: 'Sign in to your Ezymex trading account.',
 }
 
 export default function Layout({ children }: { children: ReactNode }) {

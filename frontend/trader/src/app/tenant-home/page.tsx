@@ -89,7 +89,7 @@ export default function TenantHomePage() {
           </Link>
           <Link
             href="/auth/register"
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#E94E1B] hover:bg-[#E94E1B]/90 transition-colors"
+            className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#CC0000] hover:bg-[#CC0000]/90 transition-colors"
           >
             Open account
           </Link>
@@ -98,13 +98,13 @@ export default function TenantHomePage() {
 
       {/* Hero */}
       <section className="flex-1 flex flex-col items-center justify-center text-center px-6 py-16 md:py-24 relative overflow-hidden">
-        <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#E94E1B] rounded-full opacity-15 blur-3xl pointer-events-none" />
-        <p className="text-xs md:text-sm uppercase tracking-[0.3em] text-[#E94E1B] font-semibold mb-4">
+        <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#CC0000] rounded-full opacity-15 blur-3xl pointer-events-none" />
+        <p className="text-xs md:text-sm uppercase tracking-[0.3em] text-[#CC0000] font-semibold mb-4">
           Online trading
         </p>
         <h1 className="text-4xl md:text-6xl font-semibold tracking-tight leading-tight max-w-3xl">
           Trade the markets with{' '}
-          <span className="text-[#E94E1B]">{brand.name}</span>
+          <span className="text-[#CC0000]">{brand.name}</span>
         </h1>
         <p className="mt-5 max-w-xl text-white/60 text-base md:text-lg">
           Forex, metals, indices and crypto on a fast, professional trading
@@ -113,7 +113,7 @@ export default function TenantHomePage() {
         <div className="mt-9 flex flex-col sm:flex-row items-center gap-3">
           <Link
             href="/auth/register"
-            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#E94E1B] hover:bg-[#E94E1B]/90 font-semibold text-base transition-colors"
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#CC0000] hover:bg-[#CC0000]/90 font-semibold text-base transition-colors"
           >
             Start trading <ArrowRight size={18} />
           </Link>
@@ -134,7 +134,7 @@ export default function TenantHomePage() {
               key={f.title}
               className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 hover:bg-white/[0.05] transition-colors"
             >
-              <f.icon size={22} className="text-[#E94E1B] mb-3" />
+              <f.icon size={22} className="text-[#CC0000] mb-3" />
               <h3 className="font-semibold mb-1.5">{f.title}</h3>
               <p className="text-sm text-white/55 leading-relaxed">{f.body}</p>
             </div>

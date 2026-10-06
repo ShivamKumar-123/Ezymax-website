@@ -3,7 +3,7 @@
 Used for two flows:
 
   1. Wallet-first signup: user signed in via SIWE with a placeholder email
-     (`wallet_<addr>@wallet.swisscresta.local`). They land on the onboarding gate,
+     (`wallet_<addr>@wallet.ezymex.local`). They land on the onboarding gate,
      enter their real email, get a 6-digit OTP via SMTP, and verify.
 
   2. Change email: any user (password / Google / wallet) can request a new
@@ -37,6 +37,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import EmailOtpCode, User, UserAuditLog
 from packages.common.src.email_branding import apply_email_brand
+from packages.common.src.wallet_placeholder import WALLET_PLACEHOLDER_DOMAIN
 
 logger = logging.getLogger("email_otp")
 
@@ -44,7 +45,9 @@ OTP_TTL_MINUTES = 10
 OTP_MAX_ATTEMPTS = 5
 SEND_COOLDOWN_SECONDS = 60        # min seconds between two sends to the same user
 SEND_HOURLY_CAP = 3               # max sends per user per rolling hour
-WALLET_PLACEHOLDER_DOMAIN = "wallet.swisscresta.local"
+# Minted domain for NEW placeholders. Recognition of older brands'
+# addresses lives in packages.common.src.wallet_placeholder.
+WALLET_PLACEHOLDER_DOMAIN = WALLET_PLACEHOLDER_DOMAIN
 
 _EMAIL_RE_HINT = "user@example.com"
 

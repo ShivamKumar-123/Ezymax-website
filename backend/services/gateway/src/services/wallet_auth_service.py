@@ -43,6 +43,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.models import User, WalletAuthNonce
 from packages.common.src.schemas import WalletNonceResponse
 
+from packages.common.src.wallet_placeholder import WALLET_PLACEHOLDER_DOMAIN
+
 from .auth_service import (
     AuthServiceError, _allowed_origins, _consume_referral, _enforce_2fa,
     apply_tenant_attribution, client_ip_for_inet,
@@ -54,9 +56,11 @@ logger = logging.getLogger("wallet_auth_service")
 NONCE_TTL_SECONDS = 300
 ALLOWED_CHAIN_IDS = {1, 56, 137, 42161}  # mainnet, bsc, polygon, arbitrum
 SIWE_STATEMENT = (
-    "Sign in to SwissCresta. This signature does not authorise any transaction."
+    "Sign in to Ezymex. This signature does not authorise any transaction."
 )
-WALLET_PLACEHOLDER_EMAIL_DOMAIN = "wallet.swisscresta.local"
+# Minted domain for NEW placeholders. Recognition of older brands'
+# addresses lives in packages.common.src.wallet_placeholder.
+WALLET_PLACEHOLDER_EMAIL_DOMAIN = WALLET_PLACEHOLDER_DOMAIN
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────

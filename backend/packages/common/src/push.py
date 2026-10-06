@@ -43,7 +43,7 @@ async def send_push_to_user(user_id, title: str, body: str, data: dict | None = 
         messages = [
             {
                 "to": tok,
-                "title": title or "SwissCresta",
+                "title": title or "Ezymex",
                 "body": body or "",
                 "data": data or {},
                 "sound": "default",

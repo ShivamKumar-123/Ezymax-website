@@ -28,7 +28,7 @@ export interface CalendarEvent {
 const SOURCE = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const RETRY_BACKOFF_MS = 10 * 60 * 1000; // after an upstream failure, don't hammer again for 10 min
-const DISK_CACHE = path.join(os.tmpdir(), 'swisscresta-ff-calendar.json');
+const DISK_CACHE = path.join(os.tmpdir(), 'ezymex-ff-calendar.json');
 
 type CacheShape = { at: number; events: CalendarEvent[] };
 let memCache: CacheShape | null = null;
@@ -73,7 +73,7 @@ export async function GET() {
 
   try {
     const res = await fetch(SOURCE, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (SwissCresta terminal calendar)' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (Ezymex terminal calendar)' },
       signal: AbortSignal.timeout(9000),
       cache: 'no-store',
     });

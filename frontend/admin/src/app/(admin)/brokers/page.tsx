@@ -616,7 +616,7 @@ export default function BrokersPage() {
               </div>
               <div className="md:col-span-2">
                 <label className={labelCls}>Brand name</label>
-                <input className={inputCls} value={createForm.brand_name} onChange={(e) => setCreateForm({ ...createForm, brand_name: e.target.value })} placeholder="Shown to their users instead of SwissCresta" />
+                <input className={inputCls} value={createForm.brand_name} onChange={(e) => setCreateForm({ ...createForm, brand_name: e.target.value })} placeholder="Shown to their users instead of Ezymex" />
               </div>
               <div>
                 <label className={labelCls}>Rental plan</label>

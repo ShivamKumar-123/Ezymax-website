@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Profile — SwissCresta',
+  title: 'Profile — Ezymex',
   description: 'Personal information, security settings, and account preferences.',
 }
 

@@ -4,11 +4,11 @@
 # container in custom format (compressed binary, restorable with pg_restore).
 #
 # Layout:
-#   /opt/swisscresta/backups/db/daily/   — kept 14 days
-#   /opt/swisscresta/backups/db/weekly/  — Sunday's daily, kept 8 weeks
-#   /opt/swisscresta/backups/db/monthly/ — 1st-of-month, kept 12 months
+#   /opt/ezymex/backups/db/daily/   — kept 14 days
+#   /opt/ezymex/backups/db/weekly/  — Sunday's daily, kept 8 weeks
+#   /opt/ezymex/backups/db/monthly/ — 1st-of-month, kept 12 months
 #
-# File names: swisscresta-YYYYMMDD-HHMMSS.dump, or .dump.gpg when
+# File names: ezymex-YYYYMMDD-HHMMSS.dump, or .dump.gpg when
 # BACKUP_GPG_PASSPHRASE is set (env, or the same key in $REPO_DIR/.env).
 #
 # Safety (ops hardening):
@@ -23,17 +23,17 @@
 #     a silent plaintext fallback.
 #
 # Cron (3:15 AM IST as the `swiss` user):
-#   15 3 * * * /opt/swisscresta/deploy/scripts/backup-db.sh
+#   15 3 * * * /opt/ezymex/deploy/scripts/backup-db.sh
 #
 # Restore with deploy/scripts/restore-db.sh <file>.
 #
 # Off-server copy (optional but recommended): rclone to Hostinger Object
-# Storage / S3 / Backblaze. Set RCLONE_REMOTE in /opt/swisscresta/.env and
+# Storage / S3 / Backblaze. Set RCLONE_REMOTE in /opt/ezymex/.env and
 # uncomment the rclone block at the bottom.
 set -euo pipefail
 umask 077
 
-REPO_DIR="${REPO_DIR:-/opt/swisscresta}"
+REPO_DIR="${REPO_DIR:-/opt/ezymex}"
 BACKUP_ROOT="${BACKUP_ROOT:-$REPO_DIR/backups/db}"
 COMPOSE="docker compose -f $REPO_DIR/docker-compose.yml -f $REPO_DIR/docker-compose.prod.yml"
 
@@ -81,7 +81,7 @@ else
   EXT="dump"
 fi
 
-FILE="$BACKUP_ROOT/daily/swisscresta-$STAMP.$EXT"
+FILE="$BACKUP_ROOT/daily/ezymex-$STAMP.$EXT"
 PARTIAL="$FILE.partial"
 PROMO_PARTIAL=""
 
@@ -149,7 +149,7 @@ log "ok daily ($SIZE bytes, verified)"
 # .partial in the target dir, then rename, so a half-written copy never
 # carries the final name.
 promote() {
-  local dest="$BACKUP_ROOT/$1/swisscresta-$STAMP.$EXT"
+  local dest="$BACKUP_ROOT/$1/ezymex-$STAMP.$EXT"
   PROMO_PARTIAL="$dest.partial"
   cp -a "$FILE" "$PROMO_PARTIAL"
   mv -f "$PROMO_PARTIAL" "$dest"
@@ -168,11 +168,11 @@ fi
 # window. Numbers tuned for a small wallet DB; bump if disk pressure builds.
 # Covers both plain (.dump) and encrypted (.dump.gpg) archives; stale
 # .partial files from a killed run are swept after a day.
-find "$BACKUP_ROOT/daily"   -type f \( -name 'swisscresta-*.dump' -o -name 'swisscresta-*.dump.gpg' \) -mtime +14 -delete
-find "$BACKUP_ROOT/weekly"  -type f \( -name 'swisscresta-*.dump' -o -name 'swisscresta-*.dump.gpg' \) -mtime +56 -delete
-find "$BACKUP_ROOT/monthly" -type f \( -name 'swisscresta-*.dump' -o -name 'swisscresta-*.dump.gpg' \) -mtime +365 -delete
+find "$BACKUP_ROOT/daily"   -type f \( -name 'ezymex-*.dump' -o -name 'ezymex-*.dump.gpg' \) -mtime +14 -delete
+find "$BACKUP_ROOT/weekly"  -type f \( -name 'ezymex-*.dump' -o -name 'ezymex-*.dump.gpg' \) -mtime +56 -delete
+find "$BACKUP_ROOT/monthly" -type f \( -name 'ezymex-*.dump' -o -name 'ezymex-*.dump.gpg' \) -mtime +365 -delete
 find "$BACKUP_ROOT/daily" "$BACKUP_ROOT/weekly" "$BACKUP_ROOT/monthly" \
-  -type f -name 'swisscresta-*.partial' -mtime +1 -delete
+  -type f -name 'ezymex-*.partial' -mtime +1 -delete
 log "rotation done"
 
 # ── Off-server upload (uncomment after configuring rclone) ───────────────

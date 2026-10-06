@@ -90,15 +90,15 @@ function PaneToggle({
       aria-pressed={active}
       className={clsx(
         'inline-flex h-7 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-semibold transition-colors',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#CC0000]',
         active
-          ? 'border-[#E94E1B]/40 bg-crx-yellow-soft text-[#E94E1B]'
+          ? 'border-[#CC0000]/40 bg-crx-yellow-soft text-[#CC0000]'
           : 'border-border-primary text-text-secondary hover:bg-bg-hover hover:text-text-primary active:bg-bg-active',
         className,
       )}
     >
       <Icon size={12} aria-hidden /> {label}
-      {dot && <span className="h-1.5 w-1.5 rounded-full bg-[#E94E1B]" aria-hidden />}
+      {dot && <span className="h-1.5 w-1.5 rounded-full bg-[#CC0000]" aria-hidden />}
     </button>
   );
 }
@@ -455,7 +455,7 @@ export default function AiStrategyMakerPage() {
         <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border-primary px-3 py-2 sm:px-4 lg:px-6">
           <Link
             href="/ai-strategies"
-            className="inline-flex items-center gap-1.5 rounded-md text-xs font-semibold text-text-tertiary transition-colors hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]"
+            className="inline-flex items-center gap-1.5 rounded-md text-xs font-semibold text-text-tertiary transition-colors hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CC0000]"
           >
             <ArrowLeft size={13} aria-hidden /> All strategies
           </Link>
@@ -495,8 +495,8 @@ export default function AiStrategyMakerPage() {
           <section className="flex min-w-0 flex-1 flex-col">
             <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border-primary px-3 sm:px-4">
               <span className="flex items-center gap-1.5 text-[10px] text-text-tertiary">
-                <Sparkles size={11} className="text-[#E94E1B]" aria-hidden />
-                Powered by SwissCresta AI
+                <Sparkles size={11} className="text-[#CC0000]" aria-hidden />
+                Powered by Ezymex AI
               </span>
               <div className="flex items-center gap-2">
                 <PaneToggle
@@ -552,7 +552,7 @@ export default function AiStrategyMakerPage() {
                       scrollToBottom();
                     }}
                     aria-label="Scroll to bottom"
-                    className="absolute bottom-3 left-1/2 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full border border-border-primary bg-card text-text-secondary shadow-[0_4px_14px_rgba(0,0,0,0.12)] transition-colors hover:text-text-primary active:bg-bg-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]"
+                    className="absolute bottom-3 left-1/2 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full border border-border-primary bg-card text-text-secondary shadow-[0_4px_14px_rgba(0,0,0,0.12)] transition-colors hover:text-text-primary active:bg-bg-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CC0000]"
                   >
                     <ArrowDown size={14} aria-hidden />
                   </motion.button>
@@ -593,12 +593,12 @@ export default function AiStrategyMakerPage() {
                   onClick={() => setPreviewCollapsed(false)}
                   aria-label="Show strategy preview"
                   title="Show strategy preview"
-                  className="relative flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary active:bg-bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]"
+                  className="relative flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary active:bg-bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#CC0000]"
                 >
                   <PanelRightOpen size={15} aria-hidden />
                   {activeConfig && (
                     <span
-                      className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[#E94E1B]"
+                      className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[#CC0000]"
                       aria-hidden
                     />
                   )}
@@ -643,7 +643,7 @@ export default function AiStrategyMakerPage() {
                   type="button"
                   onClick={() => setHistoryDrawerOpen(false)}
                   aria-label="Close history"
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#CC0000]"
                 >
                   <X size={14} aria-hidden />
                 </button>

@@ -1,7 +1,7 @@
 """Custom-domain SSL/nginx provisioner.
 
 Port of stock4x's `workers/tasks/branding.py` Celery task as an asyncio
-background job (SwissCresta has no Celery; the admin service's event
+background job (Ezymex has no Celery; the admin service's event
 loop runs it via asyncio.create_task, shelling out in a thread executor
 so the loop never blocks).
 
@@ -45,8 +45,8 @@ from packages.common.src.models.broker import (
 logger = logging.getLogger("branding-provisioner")
 settings = get_settings()
 
-_BLOCK_BEGIN = "# BEGIN swisscresta-tenant {domain}"
-_BLOCK_END = "# END swisscresta-tenant {domain}"
+_BLOCK_BEGIN = "# BEGIN ezymex-tenant {domain}"
+_BLOCK_END = "# END ezymex-tenant {domain}"
 
 
 def _server_block(server_names: str, upstream: str) -> str:

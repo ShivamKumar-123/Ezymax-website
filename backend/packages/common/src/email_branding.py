@@ -1,7 +1,7 @@
 """Per-tenant branding for transactional email.
 
 White-label rule: a tenant's user must never receive email carrying the
-platform's (SwissCresta) identity. Rather than threading a brand
+platform's (Ezymex) identity. Rather than threading a brand
 parameter through every render_* signature and call site, the brand
 rides a contextvar:
 
@@ -13,7 +13,7 @@ rides a contextvar:
 brand is set, the header shows the brand NAME (no platform logo) and the
 footer carries the brand name + the tenant's support address (or drops
 the support line when they have none). No brand set → the classic
-SwissCresta shell, byte-identical to before.
+Ezymex shell, byte-identical to before.
 
 The contextvar is task-local, so concurrent requests can't leak each
 other's brand as long as the `with` block wraps the RENDER call (sending

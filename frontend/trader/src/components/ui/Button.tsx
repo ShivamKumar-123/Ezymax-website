@@ -14,10 +14,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<Variant, string> = {
-  // Brand orange — used for every CTA outside the trading terminal. `buy`
+  // Brand red — used for every CTA outside the trading terminal. `buy`
   // stays blue because in trading-context blue=buy is a semantic convention,
   // not a brand choice.
-  primary: 'bg-[#E94E1B] hover:bg-[#C73E11] active:bg-[#A6320A] text-white font-semibold transition-colors',
+  primary: 'bg-[#CC0000] hover:bg-[#8A0000] active:bg-[#A6320A] text-white font-semibold transition-colors',
   buy: 'skeu-btn-buy text-white font-semibold',
   sell: 'skeu-btn-sell text-white font-semibold',
   ghost: 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-hover/50 skeu-btn',

@@ -40,7 +40,7 @@ def render_deposit_failed(
     method: str | None = None,
     reason_code: str,
     reference: str | None = None,
-    trader_app_url: str = "https://trade.swisscresta.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     human = _HUMAN_REASON.get(reason_code, f"The deposit was rejected ({reason_code}).")

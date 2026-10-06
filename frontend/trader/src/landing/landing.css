@@ -23,10 +23,10 @@
   --fx-line:         rgba(11, 11, 12, 0.10);
   --fx-line-strong:  rgba(11, 11, 12, 0.20);
 
-  --fx-gold:         #e32219;   /* primary action colour */
+  --fx-gold:         #CC0000;   /* primary action colour */
   --fx-gold-light:   #f0342b;   /* highlight */
-  --fx-gold-dark:    #c11a12;   /* pressed / deep */
-  --fx-gold-soft:    rgba(227, 34, 25, 0.07);
+  --fx-gold-dark:    #8A0000;   /* pressed / deep */
+  --fx-gold-soft:    rgba(204, 0, 0, 0.07);
 
   --fx-text:         #0b0b0c;
   --fx-text-2:       rgba(11, 11, 12, 0.68);
@@ -81,7 +81,7 @@
 
   .fx-card-gold {
     background: var(--fx-gold-soft);
-    border: 1px solid rgba(227, 34, 25, 0.18);
+    border: 1px solid rgba(204, 0, 0, 0.18);
     border-radius: 1rem;
   }
 
@@ -101,7 +101,7 @@
   }
   .fx-btn-primary:hover {
     background: var(--fx-gold-dark);
-    box-shadow: 0 8px 22px rgba(227, 34, 25, 0.22);
+    box-shadow: 0 8px 22px rgba(204, 0, 0, 0.22);
   }
   .fx-btn-primary:active { transform: scale(.985); }
 
@@ -194,7 +194,7 @@
     inset: 0;
     pointer-events: none;
     background:
-      radial-gradient(60% 50% at 80% 30%, rgba(227, 34, 25, 0.035) 0%, rgba(227, 34, 25, 0) 60%),
+      radial-gradient(60% 50% at 80% 30%, rgba(204, 0, 0, 0.035) 0%, rgba(204, 0, 0, 0) 60%),
       radial-gradient(40% 40% at 20% 90%, rgba(11, 11, 12, 0.03) 0%, rgba(11, 11, 12, 0) 60%);
   }
 
@@ -272,7 +272,7 @@
   }
   .btn-primary:hover {
     background: var(--fx-gold-dark);
-    box-shadow: 0 8px 22px rgba(227, 34, 25, 0.22);
+    box-shadow: 0 8px 22px rgba(204, 0, 0, 0.22);
   }
   .btn-primary:active { transform: scale(.985); }
 

@@ -83,7 +83,7 @@ export default function SaveStrategyDialog({
             type="button"
             onClick={onSave}
             disabled={saving || !name.trim()}
-            className="flex-1 rounded-lg bg-[#E94E1B] py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#C73E11] disabled:opacity-50"
+            className="flex-1 rounded-lg bg-[#CC0000] py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#8A0000] disabled:opacity-50"
           >
             {saving ? 'Saving…' : 'Save draft'}
           </button>

@@ -38,7 +38,7 @@
   --mkt-line-dark:   #2A2A2A;   /* hairlines on deep */
 
   /* ── Accent + signal ────────────────────────────────────── */
-  --mkt-accent:      #E94E1B;   /* Vantage orange — primary accent */
+  --mkt-accent:      #CC0000;   /* Ezymex brand red — primary accent */
   --mkt-positive:    #10B981;   /* up-moves on quote tables */
   --mkt-negative:    #DC2626;   /* down-moves on quote tables */
 
@@ -125,7 +125,7 @@
    Selecting text shows the accent in a low-opacity wash on the
    ink-primary text. Subtle but cohesive with the palette. */
 [data-mkt] ::selection {
-  background-color: rgba(233, 78, 27, 0.18);
+  background-color: rgba(204, 0, 0, 0.18);
   color: var(--mkt-ink-primary);
 }
 

@@ -404,7 +404,7 @@ class RiskEngine:
                 used_margin=used_margin,
                 free_margin=free_margin,
                 currency=account.currency or "USD",
-                trader_app_url=getattr(st, "TRADER_APP_URL", None) or "https://trade.swisscresta.com",
+                trader_app_url=getattr(st, "TRADER_APP_URL", None) or "https://trade.ezymex.com",
             )
             fire_and_forget(send_email(user.email, subject, html, text=text))
         except Exception as e:
@@ -438,7 +438,7 @@ class RiskEngine:
                 realized_pnl=realized_pnl,
                 new_equity=new_equity,
                 currency=account.currency or "USD",
-                trader_app_url=getattr(st, "TRADER_APP_URL", None) or "https://trade.swisscresta.com",
+                trader_app_url=getattr(st, "TRADER_APP_URL", None) or "https://trade.ezymex.com",
             )
             fire_and_forget(send_email(user.email, subject, html, text=text))
         except Exception as e:

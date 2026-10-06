@@ -20,7 +20,7 @@ class User(Base):
     #   • Google sign-in (Google verifies upstream — backfilled by 0041)
     #   • User completes /auth/email/verify-otp
     # Stays FALSE for password-only signups (until OTP) and for wallet-first
-    # signups with the placeholder @wallet.swisscresta.local email.
+    # signups with the placeholder @wallet.ezymex.local email.
     email_verified = Column(Boolean, nullable=False, default=False, server_default="false")
     email_verified_at = Column(DateTime(timezone=True), nullable=True)
     # Flips True the first time profile completion finishes successfully so
@@ -77,7 +77,7 @@ class User(Base):
     # broker_profiles row (branding, permissions, rental terms).
     #
     # assigned_broker_id: the broker that owns/minted this user. NULL means
-    # the user belongs to the platform pool (plain swisscresta.com signup).
+    # the user belongs to the platform pool (plain ezymex.com signup).
     # For a sub-broker row it points at the parent broker.
     assigned_broker_id = Column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"),
@@ -93,7 +93,7 @@ class User(Base):
         ARRAY(UUID(as_uuid=True)), nullable=False,
         default=list, server_default="{}",
     )
-    # Signup origin breadcrumb: 'platform' (direct swisscresta signup),
+    # Signup origin breadcrumb: 'platform' (direct ezymex signup),
     # 'broker_referral' (?ref=<partner_code> link), 'custom_domain'
     # (signed up on a white-label tenant's own domain). NULL for rows
     # created before the white-label feature.

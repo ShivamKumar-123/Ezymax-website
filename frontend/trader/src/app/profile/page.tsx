@@ -34,7 +34,7 @@ interface Profile {
   // Onboarding flag from /profile (mirror /auth/me) — drives the
   // EmailVerificationCard's "verified" badge and the Change-Email
   // button. `is_wallet_placeholder` removed with the wallet-integration
-  // purge: no SIWE flow means no @wallet.swisscresta.local placeholder
+  // purge: no SIWE flow means no @wallet.ezymex.local placeholder
   // emails any more.
   email_verified?: boolean;
 }
@@ -256,7 +256,7 @@ export default function ProfilePage() {
     `${(profile?.first_name?.[0] ?? '').toUpperCase()}${(profile?.last_name?.[0] ?? '').toUpperCase()}` || 'U';
   const username = profile?.email ? profile.email.split('@')[0] : '';
 
-  const inputCls = 'w-full rounded-xl border border-border-secondary bg-bg-card-nested px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary transition-colors focus:border-[#E94E1B]/50 focus:outline-none disabled:opacity-60';
+  const inputCls = 'w-full rounded-xl border border-border-secondary bg-bg-card-nested px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary transition-colors focus:border-[#CC0000]/50 focus:outline-none disabled:opacity-60';
   const labelCls = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-text-tertiary';
 
   const tabIndex = TABS.findIndex((t) => t.id === tab);
@@ -308,7 +308,7 @@ export default function ProfilePage() {
                       {active && (
                         <motion.span
                           layoutId="profile-tab-pill"
-                          className="absolute inset-0 rounded-xl bg-[#E94E1B] shadow-[0_6px_18px_rgba(233,78,27,0.35)]"
+                          className="absolute inset-0 rounded-xl bg-[#CC0000] shadow-[0_6px_18px_rgba(204,0,0,0.35)]"
                           transition={{ type: 'spring', stiffness: 420, damping: 34, mass: 0.8 }}
                         />
                       )}

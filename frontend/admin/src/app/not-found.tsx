@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { LayoutDashboard, ArrowLeft } from 'lucide-react';
 
-export const metadata = { title: 'Page Not Found — SwissCresta Admin' };
+export const metadata = { title: 'Page Not Found — Ezymex Admin' };
 
 /** Root-level 404 for any admin path that doesn't match a route. */
 export default function NotFound() {

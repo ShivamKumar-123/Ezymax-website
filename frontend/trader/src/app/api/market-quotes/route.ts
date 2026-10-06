@@ -37,7 +37,7 @@ const SPECS: readonly Spec[] = [
   { symbol: 'EURUSD', name: 'EUR / USD', digits: 4, src: 'yahoo', id: 'EURUSD=X' },
 ];
 
-const UA = { 'User-Agent': 'Mozilla/5.0 (SwissCresta dashboard)' };
+const UA = { 'User-Agent': 'Mozilla/5.0 (Ezymex dashboard)' };
 const CACHE_TTL_MS = 60_000;
 let cache: { at: number; items: PublicQuote[] } | null = null;
 

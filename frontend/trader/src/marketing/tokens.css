@@ -43,10 +43,10 @@
   --mk-text-invert:   #ffffff;   /* copy on black bands */
   --mk-text-invert-muted: rgba(255, 255, 255, 0.66);
 
-  --mk-accent:        #e32219;   /* action red — CTAs only, never decoration */
-  --mk-accent-hover:  #c11a12;
-  --mk-accent-soft:   rgba(227, 34, 25, 0.07);   /* tinted fills */
-  --mk-accent-line:   rgba(227, 34, 25, 0.30);
+  --mk-accent:        #CC0000;   /* action red — CTAs only, never decoration */
+  --mk-accent-hover:  #8A0000;
+  --mk-accent-soft:   rgba(204, 0, 0, 0.07);   /* tinted fills */
+  --mk-accent-line:   rgba(204, 0, 0, 0.30);
 
   /* Secondary editorial colour for feature tiles. Used sparingly — the
      reference pairs one blue tile against the red CTA so the CTA keeps
@@ -55,7 +55,7 @@
   --mk-info-soft:     #e8edfd;
 
   --mk-up:            #0f9d58;   /* semantic: gains — never brand */
-  --mk-down:          #e32219;   /* semantic: losses */
+  --mk-down:          #CC0000;   /* semantic: losses */
 
   /* ── Type scale (fluid: clamp(min, preferred, max)) ─────────────── */
   /* Inter across the marketing site: a neo-grotesque reads as neutral
@@ -107,7 +107,7 @@
      on white, anything heavier than this reads as dirt. */
   --mk-shadow-card: 0 1px 2px rgba(11, 11, 12, 0.05);
   --mk-shadow-lift: 0 14px 38px rgba(11, 11, 12, 0.10);
-  --mk-shadow-glow: 0 8px 22px rgba(227, 34, 25, 0.22);
+  --mk-shadow-glow: 0 8px 22px rgba(204, 0, 0, 0.22);
 
   --mk-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
 

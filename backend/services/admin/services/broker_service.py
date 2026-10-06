@@ -1,5 +1,5 @@
 """White-label broker (tenant) management — port of stock4x's
-broker_management_service onto SwissCresta, rental model.
+broker_management_service onto Ezymex, rental model.
 
 Brokers are users rows with role='broker' plus a broker_profiles row.
 The super-admin (or a full admin) mints top-level brokers; a broker with

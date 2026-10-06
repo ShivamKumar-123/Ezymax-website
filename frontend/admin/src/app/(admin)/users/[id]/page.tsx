@@ -314,7 +314,7 @@ export default function UserDetailPage() {
         a.account_number, fmtMoney(a.balance), fmtMoney(a.credit), fmtMoney(a.equity),
         fmtMoney(a.margin_used), fmtMoney(a.free_margin), `1:${a.leverage}`, a.is_demo ? 'Demo' : 'Real',
       ]),
-      filename: `swisscresta-statement-${name.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.pdf`,
+      filename: `ezymex-statement-${name.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.pdf`,
     });
   };
 

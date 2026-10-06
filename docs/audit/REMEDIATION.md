@@ -64,7 +64,7 @@ them load the module by file path via `importlib` (see `test_upload_path_safety.
 | H-ADMIN-3 | 2000a61b | closed-trade edit: broker scope + super_admin/risk_manager + adjustment Transaction. | test_modify_history_txn |
 | H-TRADE-9 | d8e81a1f | b-book pending orders `FOR UPDATE SKIP LOCKED` + status recheck. | AST + review |
 | H-MONEY-4 | c7cfe566 | new live account funded from main wallet only (no cross-account sweep). | test_open_live_no_sweep |
-| H-INF-9 | f4851e5f | production boot refuses default DB password `swisscresta_dev`. | test_weak_db_password_guard |
+| H-INF-9 | f4851e5f | production boot refuses default DB password `ezymex_dev`. | test_weak_db_password_guard |
 | H-TRADE-7 | 88a8e75e | `/instruments/{symbol}/bars`: auth + symbol validation + per-user rate-limit. | test_bars_auth_validation |
 | H-TRADE-5 | 61bc0422 | AI backtest in worker thread, ≤20k bars, 30s wall-time, per-user concurrency 1. | test_backtest_concurrency |
 | H-MONEY-2 | 64d93847 | one bonus per offer per user + single `bonus_service` (migration 0069). | test_bonus_once_per_offer |
@@ -152,11 +152,11 @@ them load the module by file path via `importlib` (see `test_upload_path_safety.
 **Phase 3 remaining (OPS-only):**
 - **Redis `requirepass`** — DONE + LIVE (commit 6d9f3bdf): prod override runs
   `redis-server --requirepass $REDIS_PASSWORD` with an auth-aware healthcheck;
-  `REDIS_PASSWORD` set in `/opt/swisscresta/.env` and embedded in
+  `REDIS_PASSWORD` set in `/opt/ezymex/.env` and embedded in
   `REDIS_URL`/`ADMIN_REDIS_URL`. Verified in prod: no-auth `redis-cli ping` →
   `NOAUTH Authentication required`; all services healthy, api/trade/admin 200.
 - **Cron script relocation** (H-INF-1 second half) — copy cron target scripts to
-  a root-owned `/usr/local/lib/swisscresta/` at install time so a repo-writer
+  a root-owned `/usr/local/lib/ezymex/` at install time so a repo-writer
   can't alter what root's cron runs. Install-procedure change (operator re-runs
   install-*-cron.sh as root).
 - **Backup path consolidation + custom-format `pg_restore`** — DR-critical; the
@@ -181,7 +181,7 @@ them load the module by file path via `importlib` (see `test_upload_path_safety.
 4. **H-AUTH-1** — set `TRUSTED_PROXY_CIDRS` to the exact nginx / LB addresses in
    production (default covers loopback + RFC1918).
 5. **H-INF-9** — set strong `POSTGRES_PASSWORD` / `TIMESCALE_PASSWORD` (production
-   now refuses to boot with the default `swisscresta_dev`).
+   now refuses to boot with the default `ezymex_dev`).
 6. **fx_admin** — done in code (proxy forwards `X-Forwarded-Proto`); if an nginx
    fronts the Next app, confirm it sets `X-Forwarded-Proto $scheme` (standard).
 7. **Redis requirepass** — add `--requirepass $REDIS_PASSWORD` to the redis

@@ -1,4 +1,4 @@
-# SwissCresta Trader — Pre-Deploy Status
+# Ezymex Trader — Pre-Deploy Status
 
 **Generated:** End of pre-deploy audit cycle
 **Build:** ✅ PASS (65 routes, ~10–15s)
@@ -119,8 +119,8 @@ NEXT_TELEMETRY_DISABLED=1
 NEXT_PUBLIC_APP_VERSION=$(git rev-parse HEAD)
 
 # Host split — BOTH required, middleware silently no-ops if either is empty
-NEXT_PUBLIC_MARKETING_HOST=swisscresta.com
-NEXT_PUBLIC_TRADE_HOST=trade.swisscresta.com
+NEXT_PUBLIC_MARKETING_HOST=ezymex.com
+NEXT_PUBLIC_TRADE_HOST=trade.ezymex.com
 
 # Google OAuth client ID
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=
@@ -140,8 +140,8 @@ Run AGAINST a prod-built container before promoting to live.
 ### Build verification (CI also runs these)
 - [ ] `cd fxartha/frontend/trader && rm -rf .next && npm run build` → exit 0, 65 routes
 - [ ] `npx tsc --noEmit` → 0 errors
-- [ ] `docker build -t swisscresta-trader-test .` → completes
-- [ ] `docker run -p 3000:3000 --env-file .env.production swisscresta-trader-test` → container starts, no startup errors
+- [ ] `docker build -t ezymex-trader-test .` → completes
+- [ ] `docker run -p 3000:3000 --env-file .env.production ezymex-trader-test` → container starts, no startup errors
 
 ### Routes (light marketing theme)
 - [ ] `/` — home page, white background, ticker tape at bottom, navbar links work
@@ -155,7 +155,7 @@ Run AGAINST a prod-built container before promoting to live.
 ### Routes (dark trader/sub-marketing theme)
 - [ ] `/trading/overview`, `/protocol`, `/insurance/overview` — dark chrome, legacy navbar
 - [ ] `/platforms/copy-trading`, `/platforms/web`, `/platforms/prop-trading`, `/platforms/ib-management`, `/platforms/super-admin` — dark
-- [ ] `/company/why-swisscresta` — dark
+- [ ] `/company/why-ezymex` — dark
 - [ ] `/accounts/standard`, `/accounts/pro`, `/accounts/demo` — dark
 
 ### Authentication flows (CRITICAL — proxy + rate limiter coverage)
@@ -186,8 +186,8 @@ Run AGAINST a prod-built container before promoting to live.
 - [ ] `curl https://<host>/robots.txt` → 200, allows `/`, disallows `/dashboard`, `/wallet`, etc.
 - [ ] `curl https://<host>/sitemap.xml` → 200, valid XML, includes 26 marketing URLs
 - [ ] `curl https://<host>/manifest.webmanifest` → 200, valid JSON
-- [ ] View page source on `/dashboard` — `<title>Dashboard — SwissCresta</title>` (not generic)
-- [ ] View page source on `/wallet` — title is "Wallet — SwissCresta"
+- [ ] View page source on `/dashboard` — `<title>Dashboard — Ezymex</title>` (not generic)
+- [ ] View page source on `/wallet` — title is "Wallet — Ezymex"
 
 ### Security headers (curl from outside the box)
 - [ ] `curl -I https://<host>/` shows: `Strict-Transport-Security`, `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: ...`, `Content-Security-Policy-Report-Only: ...`
@@ -244,17 +244,17 @@ git log --oneline -1 main   # capture commit SHA
 ```
 
 ### Docker
-- **Build tag convention:** `swisscresta-trader:<git-sha>`
+- **Build tag convention:** `ezymex-trader:<git-sha>`
 - **Keep the previous image** in your registry for 30 days minimum
 - **Rollback procedure:**
-  1. `docker pull swisscresta-trader:<previous-sha>`
+  1. `docker pull ezymex-trader:<previous-sha>`
   2. Update `docker-compose.prod.yml` `image:` to previous tag
   3. `docker compose up -d trader` (or your orchestrator equivalent)
   4. Verify `/dashboard` loads + a test trade executes
 
 ### Stickiness warnings (cannot rollback cleanly)
 - **HSTS** is set to `max-age=31536000; includeSubDomains` — browsers cache this for 1 year. Once the header ships, you cannot serve HTTP to that browser for 12 months. **Pre-deploy verification: every subdomain MUST be on HTTPS before first deploy.**
-- **`localStorage` migration script** writes `swisscresta-ui` key. Users who load even once will have this set; rollback to a prior brand name would need a separate cleanup script.
+- **`localStorage` migration script** writes `ezymex-ui` key. Users who load even once will have this set; rollback to a prior brand name would need a separate cleanup script.
 
 ---
 
@@ -283,7 +283,7 @@ git log --oneline -1 main   # capture commit SHA
 
 **Pre-deploy actions required:**
 1. ✅ Set production env vars per section 2 above
-2. ✅ Verify HTTPS is enabled on `swisscresta.com` AND `trade.swisscresta.com` (HSTS is sticky once shipped)
+2. ✅ Verify HTTPS is enabled on `ezymex.com` AND `trade.ezymex.com` (HSTS is sticky once shipped)
 3. ✅ Tag the current commit (`pre-deploy-audit-v1`)
 4. ✅ Run section 3 smoke-test checklist against staging
 5. ✅ Have rollback Docker image ready in registry

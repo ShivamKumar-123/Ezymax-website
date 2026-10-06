@@ -156,7 +156,7 @@ export default function AccountTypesPage() {
         secondary={{ label: 'View platforms', href: '/platforms/web' }}
         image={{
           src: '/images/trading page banner.png',
-          alt: 'SwissCresta brand banner',
+          alt: 'Ezymex brand banner',
           width: 2400,
           height: 1000,
           priority: true,

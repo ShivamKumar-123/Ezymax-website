@@ -24,7 +24,7 @@
   <script src="charting_library/charting_library.standalone.js"></script>
   <script>
   /* ─────────────────────────────────────────────────────────────────────
-   * SwissCresta self-contained mobile chart.
+   * Ezymex self-contained mobile chart.
    *
    * The WebView makes NO network calls of its own (CORS from a file:// origin
    * would block them). Instead the React-Native host does ALL data work with
@@ -358,7 +358,7 @@
             intraday_multipliers: INTRADAY,
             has_weekly_and_monthly: false,
             supports_time: true, supports_marks: false, supports_timescale_marks: false,
-            exchanges: [{ value: 'SwissCresta', name: 'SwissCresta', desc: 'SwissCresta' }],
+            exchanges: [{ value: 'Ezymex', name: 'Ezymex', desc: 'Ezymex' }],
             symbols_types: [{ name: 'All', value: '' }],
           });
         }, 0);
@@ -372,7 +372,7 @@
           onResolve({
             name: symbolName, ticker: symbolName, description: symbolName,
             type: (info && info.type) || 'forex', session: '24x7', timezone: 'Etc/UTC',
-            exchange: 'SwissCresta', listed_exchange: 'SwissCresta', format: 'price',
+            exchange: 'Ezymex', listed_exchange: 'Ezymex', format: 'price',
             minmov: 1, pricescale: Math.pow(10, digits),
             has_intraday: true, intraday_multipliers: INTRADAY,
             has_daily: true, daily_multipliers: ['1'], has_weekly_and_monthly: false,

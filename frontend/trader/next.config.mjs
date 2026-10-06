@@ -104,8 +104,8 @@ const nextConfig = {
       // api.qrserver.com) all render through plain <img>, which bypasses the
       // optimizer — so own-domain coverage is sufficient. Add specific hosts
       // here if a next/image ever needs a third-party origin.
-      { protocol: 'https', hostname: 'swisscresta.com' },
-      { protocol: 'https', hostname: '**.swisscresta.com' },
+      { protocol: 'https', hostname: 'ezymex.com' },
+      { protocol: 'https', hostname: '**.ezymex.com' },
     ],
   },
   async headers() {
@@ -134,7 +134,7 @@ const nextConfig = {
       // 'unsafe-inline' needed for: layout.tsx inline bootloader,
       // framer-motion inline styles, TradingView widget script.innerHTML.
       // 'unsafe-eval' needed for: Next.js client runtime in some configs.
-      // Kept in sync with the enforced nginx CSP (deploy/nginx/swisscresta.conf).
+      // Kept in sync with the enforced nginx CSP (deploy/nginx/ezymex.conf).
       // *.razorpay.com covers checkout.js + the cdn.razorpay.com risk script.
       // blob: required by the self-hosted TradingView Charting Library, which
       // spins up Web Workers (and loads some code) from blob: URLs.

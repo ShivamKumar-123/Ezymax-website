@@ -261,7 +261,7 @@ export function ChatBot() {
             <span
               aria-hidden
               className="absolute inset-0 rounded-full animate-ping"
-              style={{ background: 'rgba(227, 34, 25, 0.35)' }}
+              style={{ background: 'rgba(204, 0, 0, 0.35)' }}
             />
           </motion.button>
         )}

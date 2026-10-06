@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {SwissCrestaVaultV1} from "../src/SwissCrestaVaultV1.sol";
+import {EzymexVaultV1} from "../src/EzymexVaultV1.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
@@ -31,8 +31,8 @@ contract MockOtherToken is ERC20 {
     function mint(address to, uint256 amount) external { _mint(to, amount); }
 }
 
-contract SwissCrestaVaultV1Test is Test {
-    SwissCrestaVaultV1 internal vault;
+contract EzymexVaultV1Test is Test {
+    EzymexVaultV1 internal vault;
     MockUSDT internal usdt;
     MockOtherToken internal other;
 
@@ -51,7 +51,7 @@ contract SwissCrestaVaultV1Test is Test {
     function setUp() public {
         usdt = new MockUSDT();
         other = new MockOtherToken();
-        vault = new SwissCrestaVaultV1(address(usdt), admin);
+        vault = new EzymexVaultV1(address(usdt), admin);
 
         // Seed test wallets with USDT and approve vault.
         usdt.mint(alice, 1_000 * 1e6);
@@ -64,12 +64,12 @@ contract SwissCrestaVaultV1Test is Test {
 
     function test_Constructor_RevertsWhenUSDTZero() public {
         vm.expectRevert(bytes("FXAV1: usdt=0"));
-        new SwissCrestaVaultV1(address(0), admin);
+        new EzymexVaultV1(address(0), admin);
     }
 
     function test_Constructor_RevertsWhenAdminZero() public {
         vm.expectRevert(bytes("FXAV1: admin=0"));
-        new SwissCrestaVaultV1(address(usdt), address(0));
+        new EzymexVaultV1(address(usdt), address(0));
     }
 
     function test_Constructor_GrantsAllRolesToAdmin() public view {

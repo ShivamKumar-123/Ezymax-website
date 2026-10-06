@@ -28,16 +28,16 @@ const config: Config = {
           tertiary: 'rgb(var(--c-text-tertiary) / <alpha-value>)',
           inverse: 'rgb(var(--c-text-inverse) / <alpha-value>)',
         },
-        /* SwissCresta brand orange. Admin generic UI accents resolve
-         * through `accent.*`, and `buy` was historically used as a
-         * generic primary too — so it's repointed to the brand orange
-         * to keep every button/icon on-theme (sell stays red). */
+        /* Ezymex brand red (logo wordmark). Admin generic UI accents
+         * resolve through `accent.*`, and `buy` was historically used as a
+         * generic primary too — so it's repointed to the brand red
+         * to keep every button/icon on-theme (sell stays signal red). */
         buy: {
-          DEFAULT: '#E94E1B',
-          light: '#FB7B4E',
-          dark: '#C73E11',
-          bg: 'rgba(233,78,27,0.08)',
-          glow: 'rgba(233,78,27,0.25)',
+          DEFAULT: '#CC0000',
+          light: '#E63A3A',
+          dark: '#8A0000',
+          bg: 'rgba(204,0,0,0.08)',
+          glow: 'rgba(204,0,0,0.25)',
         },
         sell: {
           DEFAULT: '#ef4444',
@@ -45,7 +45,15 @@ const config: Config = {
           dark: '#dc2626',
           bg: 'rgba(239,68,68,0.07)',
         },
-        accent: { DEFAULT: '#E94E1B', light: '#FB7B4E', dark: '#C73E11' },
+        accent: { DEFAULT: '#CC0000', light: '#E63A3A', dark: '#8A0000' },
+        /* The logo's steel-blue half — deep brand surfaces, headers. */
+        navy: {
+          DEFAULT: '#0B2F52',
+          deep: '#06182B',
+          mid: '#14538C',
+          light: '#2E7FC2',
+          soft: '#E6EFF7',
+        },
         success: '#22c55e',
         warning: '#FFB300',
         info: '#29B6F6',

@@ -164,8 +164,8 @@ export default function ShareTradeModal({
       const link = document.createElement('a');
       link.download =
         scope === 'single'
-          ? `swisscresta-${position!.symbol}-${position!.side}.png`
-          : `swisscresta-${scope === 'open' ? 'open-positions' : 'trading-history'}.png`;
+          ? `ezymex-${position!.symbol}-${position!.side}.png`
+          : `ezymex-${scope === 'open' ? 'open-positions' : 'trading-history'}.png`;
       link.href = dataUrl;
       link.click();
       toast.success('Image downloaded');
@@ -202,14 +202,14 @@ export default function ShareTradeModal({
                   displayMode={displayMode}
                   pipSize={pipSize}
                   status="active"
-                  shortUrl={shareUrl ?? 'swisscresta.com/s/xxxxxx'}
+                  shortUrl={shareUrl ?? 'ezymex.com/s/xxxxxx'}
                 />
               ) : preview ? (
                 <SharePortfolioCard
                   scope={preview.scope}
                   summary={preview.summary}
                   displayMode={displayMode}
-                  shortUrl={shareUrl ?? 'swisscresta.com/s/xxxxxx'}
+                  shortUrl={shareUrl ?? 'ezymex.com/s/xxxxxx'}
                 />
               ) : (
                 <div className="w-full aspect-[4/5] rounded-2xl border border-border-glass bg-bg-tertiary flex items-center justify-center">

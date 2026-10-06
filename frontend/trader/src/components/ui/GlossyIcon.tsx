@@ -20,7 +20,7 @@ export default function GlossyIcon({
         'relative inline-flex shrink-0 items-center justify-center overflow-hidden',
         box,
         active
-          ? 'bg-[linear-gradient(160deg,#ff8a5c_0%,#E94E1B_45%,#9c3210_100%)] shadow-[0_6px_18px_rgba(233,78,27,0.35),inset_0_1px_0_rgba(255,255,255,0.35)]'
+          ? 'bg-[linear-gradient(160deg,#ff8a5c_0%,#CC0000_45%,#9c3210_100%)] shadow-[0_6px_18px_rgba(204,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)]'
           : 'bg-[linear-gradient(160deg,#34343a_0%,#1c1c20_55%,#0e0e10_100%)] shadow-[0_4px_14px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(0,0,0,0.6)]',
         className,
       )}

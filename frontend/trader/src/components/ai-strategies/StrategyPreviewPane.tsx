@@ -51,7 +51,7 @@ interface StrategyPreviewPaneProps {
 
 function JoinBadge({ join }: { join: 'ALL' | 'ANY' }) {
   return (
-    <span className="rounded bg-crx-yellow-soft px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#E94E1B]">
+    <span className="rounded bg-crx-yellow-soft px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#CC0000]">
       {join === 'ALL' ? 'All must match' : 'Any can match'}
     </span>
   );
@@ -70,7 +70,7 @@ function RuleSection({
   return (
     <section>
       <h3 className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-text-tertiary">
-        <Icon size={11} className="text-[#E94E1B]" aria-hidden />
+        <Icon size={11} className="text-[#CC0000]" aria-hidden />
         {title}
       </h3>
       <div className="space-y-2">
@@ -86,7 +86,7 @@ function RuleSection({
                   key={i}
                   className="flex items-start gap-2 rounded-lg bg-card px-2.5 py-1.5 text-[11.5px] leading-snug text-text-primary"
                 >
-                  <span className="mt-[5px] h-1 w-1 shrink-0 rounded-full bg-[#E94E1B]" aria-hidden />
+                  <span className="mt-[5px] h-1 w-1 shrink-0 rounded-full bg-[#CC0000]" aria-hidden />
                   <span className="min-w-0 break-words">{r}</span>
                 </li>
               ))}
@@ -135,7 +135,7 @@ export default function StrategyPreviewPane({
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary active:bg-bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]"
+              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary active:bg-bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#CC0000]"
             >
               <RefreshCw size={11} aria-hidden /> Start over
             </button>
@@ -145,7 +145,7 @@ export default function StrategyPreviewPane({
               type="button"
               onClick={onClose}
               aria-label="Close preview"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary active:bg-bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#E94E1B]"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-bg-hover hover:text-text-primary active:bg-bg-active focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#CC0000]"
             >
               <X size={14} aria-hidden />
             </button>
@@ -155,10 +155,10 @@ export default function StrategyPreviewPane({
 
       <div className="min-h-0 flex-1 overflow-y-auto p-3.5">
         {aiUnavailable && (
-          <div className="mb-3.5 flex items-start gap-2.5 rounded-xl border border-[#E94E1B]/25 bg-crx-yellow-soft px-3 py-2.5 text-[12px] text-text-primary">
-            <Info size={14} className="mt-0.5 shrink-0 text-[#E94E1B]" aria-hidden />
+          <div className="mb-3.5 flex items-start gap-2.5 rounded-xl border border-[#CC0000]/25 bg-crx-yellow-soft px-3 py-2.5 text-[12px] text-text-primary">
+            <Info size={14} className="mt-0.5 shrink-0 text-[#CC0000]" aria-hidden />
             <div>
-              <p className="font-semibold text-[#E94E1B]">AI generation unavailable</p>
+              <p className="font-semibold text-[#CC0000]">AI generation unavailable</p>
               <p className="mt-0.5">{aiUnavailable}</p>
               <p className="mt-0.5 text-text-secondary">
                 A ready-made example strategy has been loaded in the preview — you can save it
@@ -179,7 +179,7 @@ export default function StrategyPreviewPane({
             {/* Meta — symbol · timeframe · direction */}
             <section>
               <h3 className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-text-tertiary">
-                <Globe size={11} className="text-[#E94E1B]" aria-hidden />
+                <Globe size={11} className="text-[#CC0000]" aria-hidden />
                 Market
               </h3>
               <div className="grid grid-cols-3 gap-2">
@@ -214,7 +214,7 @@ export default function StrategyPreviewPane({
             {desc.risk.length > 0 && (
               <section>
                 <h3 className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-text-tertiary">
-                  <Shield size={11} className="text-[#E94E1B]" aria-hidden />
+                  <Shield size={11} className="text-[#CC0000]" aria-hidden />
                   Risk
                 </h3>
                 <ul className="space-y-1">
@@ -232,7 +232,7 @@ export default function StrategyPreviewPane({
             )}
 
             <div className="flex items-start gap-2.5 rounded-xl border border-border-primary bg-bg-secondary px-3 py-2.5 text-xs text-text-secondary">
-              <TrendingUp size={14} className="mt-0.5 shrink-0 text-[#E94E1B]" aria-hidden />
+              <TrendingUp size={14} className="mt-0.5 shrink-0 text-[#CC0000]" aria-hidden />
               <p>
                 <span className="font-semibold text-text-primary">Not tested yet.</span> These
                 rules have not been run against historical data. Save the strategy, then
@@ -264,14 +264,14 @@ export default function StrategyPreviewPane({
                 value={name ?? ''}
                 onChange={(e) => onNameChange(e.target.value)}
                 placeholder="e.g. EURUSD 1h trend rider"
-                className="w-full rounded-xl border border-border-secondary bg-bg-card-nested px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-[#E94E1B]/50 focus:outline-none"
+                className="w-full rounded-xl border border-border-secondary bg-bg-card-nested px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-[#CC0000]/50 focus:outline-none"
               />
             </label>
           )}
           <button
             type="button"
             onClick={onSave}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#E94E1B] py-2.5 text-xs font-bold text-white transition-[background-color,transform] hover:bg-[#C73E11] active:scale-[0.99]"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#CC0000] py-2.5 text-xs font-bold text-white transition-[background-color,transform] hover:bg-[#8A0000] active:scale-[0.99]"
           >
             <Save size={13} aria-hidden /> Save to My Strategies
           </button>

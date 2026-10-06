@@ -1,4 +1,4 @@
-# Build the SwissCresta Terminal with MSVC + official Qt (WebEngine).
+# Build the Ezymex Terminal with MSVC + official Qt (WebEngine).
 # Usage:  powershell -ExecutionPolicy Bypass -File build-msvc.ps1
 #
 # The toolchain is DISCOVERED, not hard-coded. The previous version pinned

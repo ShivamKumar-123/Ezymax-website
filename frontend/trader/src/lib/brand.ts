@@ -1,18 +1,23 @@
 /** Dashboard / in-app product name. */
-export const BRAND_NAME = 'SwissCresta';
+export const BRAND_NAME = 'Ezymex';
 
 /** Lowercase machine-safe slug (storage keys, ids). */
-export const BRAND_SLUG = 'swisscresta';
+export const BRAND_SLUG = 'ezymex';
 
-/** Public web domain (no scheme), e.g. "swisscresta.com". */
-export const BRAND_DOMAIN = 'swisscresta.com';
+/** Public web domain (no scheme), e.g. "ezymex.com". */
+export const BRAND_DOMAIN = 'ezymex.com';
 
 /**
  * Logo image path used by the marketing Navbar. Empty string means
  * "no image logo" — components fall back to the styled text wordmark so
  * a fresh build never ships the previous brand's artwork.
+ *
+ * Points at the dark-ink artwork because every consumer renders it on a
+ * light marketing surface (`--mk-surface-2`). On dark bands use
+ * BRAND_LOGO_LIGHT instead — the deep navy in this file disappears
+ * against near-black.
  */
-export const BRAND_LOGO = '';
+export const BRAND_LOGO = '/marketing/ezymex-logo.png';
 
 /**
  * Marketing-site artwork, in the two tones the site actually needs.
@@ -28,7 +33,7 @@ export const BRAND_SUPPORT_EMAIL = `support@${BRAND_DOMAIN}`;
 export const BRAND_COPYRIGHT = `${BRAND_NAME} © ${new Date().getFullYear()}. All rights reserved.`;
 
 /** Zustand persist key for UI preferences (theme, terminal layout). */
-export const STORAGE_KEY_UI = 'swisscresta-ui';
+export const STORAGE_KEY_UI = 'ezymex-ui';
 
 /** Legacy localStorage keys from earlier brand iterations. The inline
  * migration shim in `app/layout.tsx` checks each in turn on first load
@@ -38,7 +43,7 @@ export const STORAGE_KEY_UI = 'swisscresta-ui';
  * Order: most recent → oldest. Safe to drop entries once every live
  * user has hit the app at least once on the new brand and had their
  * preferences migrated. */
-export const STORAGE_KEY_UI_LEGACY_KEYS = ['novafx-ui', 'fxartha-ui'] as const;
+export const STORAGE_KEY_UI_LEGACY_KEYS = ['swisscresta-ui', 'novafx-ui', 'fxartha-ui'] as const;
 
 /** @deprecated kept so existing imports compile; prefer
  *  STORAGE_KEY_UI_LEGACY_KEYS which surfaces the full chain. */

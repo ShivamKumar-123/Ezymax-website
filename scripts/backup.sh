@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# SwissCresta — daily backup of Postgres + TimescaleDB + uploads/.
+# Ezymex — daily backup of Postgres + TimescaleDB + uploads/.
 #
 # Runs on the host (NOT inside a container) and shells into the running
 # postgres / timescaledb containers via `docker compose exec` to take
@@ -21,7 +21,7 @@
 set -euo pipefail
 
 # ─── Config (overridable via env or .env) ─────────────────────────────
-COMPOSE_DIR="${SWISSCRESTA_DIR:-/opt/swisscresta}"
+COMPOSE_DIR="${EZYMEX_DIR:-/opt/ezymex}"
 
 # H-INF-2: load .env WITHOUT `source` — sourcing executes any command
 # substitution / backticks embedded in a value (arbitrary code as whoever runs
@@ -46,7 +46,7 @@ load_env_file "$COMPOSE_DIR/.env"
 
 DEST="${BACKUP_LOCAL_DIR:-${COMPOSE_DIR}/backups}"
 RETAIN_DAYS="${BACKUP_RETENTION_DAYS:-14}"
-# rclone remote — empty = local-only (NOT recommended for prod). Example: "b2:swisscresta-backups"
+# rclone remote — empty = local-only (NOT recommended for prod). Example: "b2:ezymex-backups"
 RCLONE_REMOTE="${BACKUP_RCLONE_REMOTE:-}"
 # GPG passphrase for symmetric encryption (`gpg --symmetric --cipher-algo
 # AES256`). MUST be set in production — KYC documents, password hashes,
@@ -145,15 +145,15 @@ write_artifact() {
 
 dump_postgres() {
   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-    exec -T postgres pg_dumpall -U "${POSTGRES_USER:-swisscresta}" \
+    exec -T postgres pg_dumpall -U "${POSTGRES_USER:-ezymex}" \
     | gzip
 }
 archive_uploads() {
-  tar czf - -C "$COMPOSE_DIR" uploads
+  tar czf - -C "$UPLOADS_PARENT" uploads
 }
 dump_timescale() {
   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-    exec -T timescaledb pg_dumpall -U "${TIMESCALE_USER:-swisscresta}" \
+    exec -T timescaledb pg_dumpall -U "${TIMESCALE_USER:-ezymex}" \
     | gzip
 }
 
@@ -164,11 +164,22 @@ write_artifact "$DUMP" dump_postgres
 
 # ─── 2. Uploads (KYC + manual deposit screenshots) ─────────────────────
 UPLOADS="$DEST/uploads-$STAMP.tar.gz"
-if [[ -d "$COMPOSE_DIR/uploads" ]]; then
-  log "archiving uploads → $UPLOADS"
+# The uploads tree lives at backend/uploads -- that is the path
+# docker-compose bind-mounts to /app/uploads. This used to look for
+# "$COMPOSE_DIR/uploads", which has never existed, so every run logged
+# "no uploads/ directory - skipping" and quietly backed up NOTHING: no KYC
+# documents, no deposit proofs, no banners, no tenant branding. Those are
+# the only artifacts here that cannot be regenerated from the database.
+# Kept as a search so a future layout change does not silently re-break it.
+UPLOADS_PARENT=""
+for cand in "$COMPOSE_DIR/backend" "$COMPOSE_DIR"; do
+  if [[ -d "$cand/uploads" ]]; then UPLOADS_PARENT="$cand"; break; fi
+done
+if [[ -n "$UPLOADS_PARENT" ]]; then
+  log "archiving uploads → $UPLOADS (from $UPLOADS_PARENT/uploads)"
   write_artifact "$UPLOADS" archive_uploads
 else
-  log "no uploads/ directory — skipping"
+  log "WARN: no uploads/ directory found under $COMPOSE_DIR — nothing archived"
 fi
 
 # ─── 3. TimescaleDB (separate DB, separate dump) ──────────────────────

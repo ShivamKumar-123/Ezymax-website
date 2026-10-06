@@ -6,9 +6,9 @@
   --auth-bg: #08090b;
   --auth-input-bg: #14151a;
   --auth-border: #232428;
-  --auth-accent: #E94E1B;        /* SwissCresta orange */
-  --auth-accent-light: #FB7B4E;
-  --auth-accent-dark: #C73E11;
+  --auth-accent: #CC0000;        /* Ezymex red */
+  --auth-accent-light: #E63A3A;
+  --auth-accent-dark: #8A0000;
   --auth-text: #ffffff;
   --auth-muted: #8a8a92;
   --auth-radius-md: 12px;
@@ -137,7 +137,8 @@
 .auth-left__mandala {
   position: absolute;
   inset: 0;
-  background-image: url('/logo.png');
+  /* Watermark sits on the dark left panel, so it takes the reversed cut. */
+  background-image: url('/ezymex-logo-dark.png');
   background-repeat: no-repeat;
   background-position: center 38%;
   background-size: 90% auto;

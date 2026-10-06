@@ -8,10 +8,10 @@ export default function LandingFooter() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
           <div className="lg:col-span-2">
-            <Link href="/" aria-label="SwissCresta home" className="inline-flex items-center gap-2 mb-4">
+            <Link href="/" aria-label="Ezymex home" className="inline-flex items-center gap-2 mb-4">
               <Image
-                src="/marketing/swisscresta-logo.png"
-                alt="SwissCresta"
+                src="/marketing/ezymex-logo.png"
+                alt="Ezymex"
                 width={1947}
                 height={361}
                 className="h-9 w-auto"

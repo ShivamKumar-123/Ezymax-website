@@ -1,7 +1,7 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource prefix="/">
-        <file>swisscresta-256.png</file>
-        <file>swisscresta.ico</file>
+        <file>ezymex-256.png</file>
+        <file>ezymex.ico</file>
     </qresource>
 </RCC>

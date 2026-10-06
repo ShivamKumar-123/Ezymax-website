@@ -1,4 +1,4 @@
-"""H-INF-9: production boot must refuse a default DB password (swisscresta_dev)
+"""H-INF-9: production boot must refuse a default DB password (ezymex_dev)
 in DATABASE_URL / TIMESCALE_URL, like it already refuses default JWT secrets.
 """
 import unittest
@@ -9,8 +9,8 @@ from packages.common.src import config
 _STRONG_JWT = "x" * 48
 # D6: the admin key must differ from the trader keys.
 _STRONG_ADMIN_JWT = "y" * 48
-_GOOD_DB = "postgresql+asyncpg://swisscresta:Str0ng-DB-pw@postgres:5432/swisscresta"
-_WEAK_DB = "postgresql+asyncpg://swisscresta:swisscresta_dev@postgres:5432/swisscresta"
+_GOOD_DB = "postgresql+asyncpg://ezymex:Str0ng-DB-pw@postgres:5432/ezymex"
+_WEAK_DB = "postgresql+asyncpg://ezymex:ezymex_dev@postgres:5432/ezymex"
 
 
 def _settings(**over):

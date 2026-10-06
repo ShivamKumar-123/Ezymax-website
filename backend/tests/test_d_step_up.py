@@ -197,7 +197,7 @@ class WalletLinkStepUpTests(unittest.TestCase):
         self.assertFalse(sas.wallet_link_requires_step_up(
             SimpleNamespace(email="a@x.com", email_verified=False, wallet_address=None)))
         self.assertFalse(sas.wallet_link_requires_step_up(
-            SimpleNamespace(email="w@wallet.swisscresta.local", email_verified=True, wallet_address=None)))
+            SimpleNamespace(email="w@wallet.ezymex.local", email_verified=True, wallet_address=None)))
         asyncio.run(sas.require_wallet_link_step_up(
             _DB(), SimpleNamespace(email="a@x.com", email_verified=False, wallet_address=None), None))
 

@@ -183,7 +183,7 @@ export default function ReferralPage() {
           </div>
           {/* Reserved illustration area. The previous artwork came from the
               cloned site and was deleted with the rest of its images, so
-              this holds the exact footprint until SwissCresta artwork exists. */}
+              this holds the exact footprint until Ezymex artwork exists. */}
           <div className="mk-media mk-media--ratio-3x2">
             Referral programme — 1120×740
           </div>

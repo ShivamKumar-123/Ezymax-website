@@ -53,6 +53,7 @@ from packages.common.src.models import (
 from packages.common.src.email_branding import apply_email_brand
 from packages.common.src.redis_client import redis_client
 from packages.common.src.user_credentials import redis_cap, verify_totp_once
+from packages.common.src.wallet_placeholder import is_wallet_placeholder_email
 
 logger = logging.getLogger("sensitive_action")
 
@@ -106,7 +107,7 @@ def _aware(dt: Optional[datetime]) -> Optional[datetime]:
 
 
 def _is_wallet_placeholder(email: Optional[str]) -> bool:
-    return (email or "").lower().endswith("@wallet.swisscresta.local")
+    return is_wallet_placeholder_email(email)
 
 
 async def _wallet_linked_at(db: AsyncSession, user_id: UUID) -> Optional[datetime]:

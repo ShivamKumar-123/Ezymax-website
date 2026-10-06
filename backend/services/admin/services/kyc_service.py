@@ -225,7 +225,7 @@ async def approve_kyc(
             await apply_email_brand(db, user)
             subject, html, text = render_kyc_approved(
                 first_name=user.first_name,
-                trader_app_url=getattr(settings, "TRADER_APP_URL", "https://trade.swisscresta.com"),
+                trader_app_url=getattr(settings, "TRADER_APP_URL", "https://trade.ezymex.com"),
             )
             fire_and_forget(send_email(user.email, subject, html, text=text))
     except Exception:
@@ -289,7 +289,7 @@ async def reject_kyc(
             subject, html, text = render_kyc_rejected(
                 first_name=user.first_name,
                 reason=reason_str or None,
-                trader_app_url=getattr(settings, "TRADER_APP_URL", "https://trade.swisscresta.com"),
+                trader_app_url=getattr(settings, "TRADER_APP_URL", "https://trade.ezymex.com"),
             )
             fire_and_forget(send_email(user.email, subject, html, text=text))
     except Exception:

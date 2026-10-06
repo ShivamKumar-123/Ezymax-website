@@ -19,7 +19,7 @@
     <key>CFBundleIdentifier</key>
     <string>@SC_BUNDLE_ID@</string>
     <key>CFBundleIconFile</key>
-    <string>swisscresta.icns</string>
+    <string>ezymex.icns</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleInfoDictionaryVersion</key>
@@ -47,6 +47,6 @@
     <false/>
 
     <key>NSHumanReadableCopyright</key>
-    <string>© SwissCresta</string>
+    <string>© Ezymex</string>
 </dict>
 </plist>
