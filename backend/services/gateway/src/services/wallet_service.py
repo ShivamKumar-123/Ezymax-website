@@ -1,10 +1,11 @@
 """Wallet Service — Deposits, withdrawals, transfers, wallet summary."""
+import asyncio
 import logging
 import uuid as uuid_lib
 from pathlib import Path
 from decimal import Decimal
 from uuid import UUID
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import func, select
@@ -599,15 +600,18 @@ async def handle_oxapay_webhook(
         logger.info("OxaPay webhook: deposit %s → pending (payment started)", order_id)
         return
 
+    # Needed on the failure path too, which used to reach for it unbound and
+    # 500 — the same fault the NOWPayments handler had.
+    user_q = await db.execute(select(User).where(User.id == deposit.user_id))
+    user_row = user_q.scalar_one_or_none()
+    if not user_row:
+        logger.error("OxaPay webhook: user not found for deposit %s", order_id)
+        return
+    deposit.provider_status = str(oxapay_status or "").lower() or None
+
     if oxapay_status == "paid":
         deposit.status = "auto_approved"
         deposit.approved_at = datetime.utcnow()
-
-        user_q = await db.execute(select(User).where(User.id == deposit.user_id))
-        user_row = user_q.scalar_one_or_none()
-        if not user_row:
-            logger.error("OxaPay webhook: user not found for deposit %s", order_id)
-            return
 
         # If the deposit row was tagged with a target account_id at
         # submit time (user picked "Wallet Account" in the UI), honor
@@ -1103,24 +1107,63 @@ async def handle_nowpayments_webhook(
 
     in_flight = ("waiting", "confirming", "sending")
     success = ("confirmed", "finished")
-    failure = ("failed", "expired", "refunded", "partially_paid")
+    failure = ("failed", "expired", "refunded")
+    short = ("partially_paid",)
 
-    # Move 'initiated' → 'pending' on first signal that the user actually paid.
-    if status in in_flight and deposit.status == "initiated":
-        deposit.status = "pending"
+    if status not in in_flight + success + failure + short:
+        # Unknown / informational — log and bail without mutating state.
+        logger.info("NOWPayments webhook: deposit %s status=%s (no action)", order_id, status)
+        return
+
+    deposit.provider_status = status
+
+    # The user is needed on every path that tells them something. It used
+    # to be loaded on the success path only, so the failure branch below
+    # referenced a name that was never bound: every `expired` webhook died
+    # with a 500 — after the event had been claimed, so the provider's
+    # retry was waved through as a duplicate — and the unpaid invoice sat
+    # `pending` for good, with an Approve button in the admin queue.
+    user_q = await db.execute(select(User).where(User.id == deposit.user_id))
+    user_row = user_q.scalar_one_or_none()
+    if not user_row:
+        logger.error("NOWPayments webhook: user not found for deposit %s", order_id)
+        return
+
+    if status in in_flight:
+        # `waiting` means the invoice is open, not that anything was paid.
+        # The row goes `pending` so the trader's wallet page shows progress;
+        # the admin queue filters gateway deposits out by provider_status.
+        if deposit.status == "initiated":
+            deposit.status = "pending"
         await db.commit()
         logger.info("NOWPayments webhook: deposit %s → pending (status=%s)", order_id, status)
+        return
+
+    if status in short:
+        # Funds arrived, but less than the invoice. Neither a failure nor a
+        # settlement: it stays pending with the detail attached, and this is
+        # the one gateway state the admin queue surfaces for a decision.
+        cur = str(payload.get("pay_currency") or deposit.pay_currency or "").upper()
+        received = payload.get("actually_paid")
+        expected = payload.get("pay_amount") or deposit.pay_amount
+        deposit.status = "pending"
+        deposit.provider_note = f"Received {received} {cur} of {expected} {cur} expected"
+        await create_notification(
+            db, deposit.user_id,
+            title="Deposit received short",
+            message=(
+                f"We received {received} {cur} for your ${float(deposit.amount):,.2f} deposit, "
+                "which is less than the invoice. Our team will review it shortly."
+            ),
+            notif_type="deposit", action_url="/wallet",
+        )
+        await db.commit()
+        logger.info("NOWPayments webhook: deposit %s partially paid (%s)", order_id, deposit.provider_note)
         return
 
     if status in success:
         deposit.status = "auto_approved"
         deposit.approved_at = datetime.utcnow()
-
-        user_q = await db.execute(select(User).where(User.id == deposit.user_id))
-        user_row = user_q.scalar_one_or_none()
-        if not user_row:
-            logger.error("NOWPayments webhook: user not found for deposit %s", order_id)
-            return
 
         # If the deposit row was tagged at submit time, honor it.
         target_kind, target_row = await _credit_from_deposit_row(
@@ -1237,13 +1280,85 @@ async def handle_nowpayments_webhook(
             notif_type="deposit", action_url="/wallet",
         )
 
-    else:
-        # Unknown / informational — log and bail without mutating state.
-        logger.info("NOWPayments webhook: deposit %s status=%s (no action)", order_id, status)
-        return
 
     await db.commit()
     logger.info("NOWPayments webhook: deposit %s → %s", order_id, deposit.status)
+
+
+async def reconcile_nowpayments_deposits(db: AsyncSession, *, max_rows: int = 200) -> dict:
+    """Ask NOWPayments about every open deposit and apply what it says.
+
+    A webhook is delivered once; if we failed while handling it the deposit
+    stays open forever (see handle_nowpayments_webhook). This walks the open
+    rows, fetches the provider's current state and feeds it through the same
+    handler, so a missed `finished` credits the trader and a missed `expired`
+    closes the row. Rows younger than 30 minutes are left to the webhook.
+    """
+    settings = get_settings()
+    if not settings.NOWPAYMENTS_API_KEY:
+        return {"checked": 0}
+
+    now = datetime.now(timezone.utc)
+    rows = (await db.execute(
+        select(Deposit).where(
+            Deposit.method == "nowpayments",
+            Deposit.status.in_(("initiated", "pending")),
+            Deposit.created_at <= now - timedelta(minutes=30),
+        ).order_by(Deposit.created_at.asc()).limit(max_rows)
+    )).scalars().all()
+
+    stats = {"checked": 0, "settled": 0, "closed": 0, "review": 0, "open": 0, "not_found": 0, "errors": 0}
+    for dep in rows:
+        stats["checked"] += 1
+        created = dep.created_at if dep.created_at.tzinfo else dep.created_at.replace(tzinfo=timezone.utc)
+        stale = (now - created) > timedelta(hours=24)
+
+        if not dep.transaction_id:
+            # The provider call at creation never produced a payment, and a
+            # day later nobody is going to pay an invoice that does not exist.
+            if stale:
+                dep.status = "rejected"
+                dep.provider_status = "not_created"
+                dep.rejection_reason = "No payment was created at NOWPayments for this deposit"
+                await db.commit()
+                stats["closed"] += 1
+            continue
+
+        try:
+            data = await nowpayments_service.get_payment_status(dep.transaction_id)
+        except Exception as e:
+            if "404" in str(e) and stale:
+                dep.status = "rejected"
+                dep.provider_status = "not_found"
+                dep.rejection_reason = "Payment not found at NOWPayments"
+                await db.commit()
+                stats["not_found"] += 1
+            else:
+                stats["errors"] += 1
+                logger.warning("NOWPayments reconcile: status fetch failed for %s: %s", dep.id, e)
+            await asyncio.sleep(0.3)
+            continue
+
+        np_status = str(data.get("payment_status") or "").lower()
+        await handle_nowpayments_webhook(
+            order_id=str(dep.id),
+            np_status=np_status,
+            payment_id=str(data.get("payment_id") or dep.transaction_id),
+            payload=data,
+            db=db,
+        )
+        await db.refresh(dep)
+        if dep.status == "auto_approved":
+            stats["settled"] += 1
+        elif dep.status == "rejected":
+            stats["closed"] += 1
+        elif dep.provider_status == "partially_paid":
+            stats["review"] += 1
+        else:
+            stats["open"] += 1
+        await asyncio.sleep(0.3)  # be a polite API client
+
+    return stats
 
 
 # ─── Withdrawals ──────────────────────────────────────────────────────────

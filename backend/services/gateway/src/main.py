@@ -39,6 +39,7 @@ from .engines.chain_verifier_engine import chain_verifier_engine
 from .engines.cleanup_engine import cleanup_engine
 from .engines.rms_engine import rms_engine
 from .engines.hedge_recorder_engine import hedge_recorder_engine
+from .engines.nowpayments_reconcile_engine import nowpayments_reconcile_engine
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s")
 logger = logging.getLogger("gateway")
@@ -225,12 +226,14 @@ async def lifespan(app: FastAPI):
     await cleanup_engine.start()
     await rms_engine.start()
     await hedge_recorder_engine.start()
+    await nowpayments_reconcile_engine.start()
     yield
     healer_task.cancel()
     try:
         await healer_task
     except asyncio.CancelledError:
         pass
+    await nowpayments_reconcile_engine.stop()
     await hedge_recorder_engine.stop()
     await rms_engine.stop()
     await cleanup_engine.stop()

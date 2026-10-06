@@ -5,6 +5,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
@@ -53,6 +54,26 @@ async def _claim_webhook(
         return False
 
 
+async def _release_claim(db: AsyncSession, *, provider: str, external_id: str, status: str) -> None:
+    """Undo a claim whose handler failed.
+
+    The claim is committed before the handler runs, so a handler that raises
+    leaves the event marked as processed: the provider's retry is answered
+    "duplicate" and the deposit never moves. That is how every NOWPayments
+    `expired` sat unapplied for months. Dropping the claim lets the retry
+    through; the handler itself is idempotent."""
+    try:
+        await db.rollback()
+        await db.execute(delete(WebhookEvent).where(
+            WebhookEvent.provider == provider,
+            WebhookEvent.external_id == external_id,
+            WebhookEvent.status == status,
+        ))
+        await db.commit()
+    except Exception:
+        logger.exception("could not release webhook claim %s/%s/%s", provider, external_id, status)
+
+
 @router.post("/oxapay")
 async def oxapay_webhook(
     request: Request,
@@ -87,13 +108,18 @@ async def oxapay_webhook(
     ):
         return {"status": "duplicate"}
 
-    await wallet_service.handle_oxapay_webhook(
-        order_id=order_id,
-        oxapay_status=status,
-        track_id=track_id,
-        payload=payload,
-        db=db,
-    )
+    try:
+        await wallet_service.handle_oxapay_webhook(
+            order_id=order_id,
+            oxapay_status=status,
+            track_id=track_id,
+            payload=payload,
+            db=db,
+        )
+    except Exception:
+        logger.exception("OxaPay webhook: handler failed for order=%s status=%s — releasing claim", order_id, status)
+        await _release_claim(db, provider="oxapay", external_id=str(order_id), status=str(status))
+        raise
 
     return {"status": "ok"}
 
@@ -147,13 +173,18 @@ async def nowpayments_webhook(
     ):
         return {"status": "duplicate"}
 
-    await wallet_service.handle_nowpayments_webhook(
-        order_id=str(order_id),
-        np_status=str(status),
-        payment_id=str(payment_id) if payment_id else None,
-        payload=payload,
-        db=db,
-    )
+    try:
+        await wallet_service.handle_nowpayments_webhook(
+            order_id=str(order_id),
+            np_status=str(status),
+            payment_id=str(payment_id) if payment_id else None,
+            payload=payload,
+            db=db,
+        )
+    except Exception:
+        logger.exception("NOWPayments webhook: handler failed for order=%s status=%s — releasing claim", order_id, status)
+        await _release_claim(db, provider="nowpayments", external_id=str(order_id), status=str(status))
+        raise
 
     return {"status": "ok"}
 

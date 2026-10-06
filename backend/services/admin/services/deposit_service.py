@@ -6,13 +6,53 @@ from pathlib import Path
 
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import User, TradingAccount, Deposit, Withdrawal, Transaction, BonusOffer
 from packages.common.src.notify import create_notification
 from packages.common.src.admin_schemas import DepositOut, WithdrawalOut, PaginatedResponse
 from dependencies import write_audit_log
+
+
+# Deposits these providers settle on their own, via webhook. An admin never
+# approves them by hand: a `pending` one is an unpaid invoice, and approving
+# it would credit money that never arrived. The one exception is a payment
+# the provider reports as partially paid — funds came in, short of the
+# invoice — which does need a person to decide.
+GATEWAY_METHODS = ("nowpayments", "oxapay")
+REVIEWABLE_PROVIDER_STATUS = "partially_paid"
+
+
+def deposit_needs_review(d: Deposit) -> bool:
+    if d.status != "pending":
+        return False
+    if (d.method or "") not in GATEWAY_METHODS:
+        return True
+    return (d.provider_status or "") == REVIEWABLE_PROVIDER_STATUS
+
+
+def _reviewable_filter():
+    """SQL form of deposit_needs_review, minus the status test."""
+    return or_(
+        Deposit.method.notin_(GATEWAY_METHODS),
+        Deposit.method.is_(None),
+        Deposit.provider_status == REVIEWABLE_PROVIDER_STATUS,
+    )
+
+
+def _refuse_if_gateway_settled(deposit: Deposit) -> None:
+    if deposit_needs_review(deposit):
+        return
+    if (deposit.method or "") in GATEWAY_METHODS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"This deposit is settled by {deposit.method} automatically once the "
+                f"payment confirms (provider status: {deposit.provider_status or 'awaiting payment'}). "
+                "It cannot be approved or rejected by hand."
+            ),
+        )
 
 
 def _deposit_to_out(d: Deposit, user: User = None) -> DepositOut:
@@ -27,6 +67,9 @@ def _deposit_to_out(d: Deposit, user: User = None) -> DepositOut:
         transaction_id=d.transaction_id,
         screenshot_url=d.screenshot_url,
         rejection_reason=d.rejection_reason,
+        provider_status=d.provider_status,
+        provider_note=d.provider_note,
+        needs_review=deposit_needs_review(d),
         created_at=d.created_at,
         user_email=user.email if user else None,
         user_name=f"{user.first_name or ''} {user.last_name or ''}".strip() if user else None,
@@ -56,7 +99,11 @@ def _withdrawal_to_out(w: Withdrawal, user: User = None) -> WithdrawalOut:
 
 
 async def list_pending_deposits(page: int, per_page: int, db: AsyncSession):
-    query = select(Deposit).where(Deposit.status == "pending")
+    # The queue holds what a person has to act on — not every `pending` row.
+    # A gateway deposit is `pending` from the moment its invoice opens, so
+    # without this filter every unpaid crypto invoice sat here with an
+    # Approve button (63 of them, $100k, none of it received).
+    query = select(Deposit).where(Deposit.status == "pending", _reviewable_filter())
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
@@ -159,6 +206,7 @@ async def approve_deposit(
         raise HTTPException(status_code=404, detail="Deposit not found")
     if deposit.status != "pending":
         raise HTTPException(status_code=400, detail="Deposit is not pending")
+    _refuse_if_gateway_settled(deposit)
 
     deposit.status = "approved"
     deposit.approved_by = admin_id
@@ -337,6 +385,7 @@ async def reject_deposit(
         raise HTTPException(status_code=404, detail="Deposit not found")
     if deposit.status != "pending":
         raise HTTPException(status_code=400, detail="Deposit is not pending")
+    _refuse_if_gateway_settled(deposit)
 
     deposit.status = "rejected"
     deposit.rejection_reason = reason

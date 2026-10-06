@@ -54,6 +54,15 @@ class Deposit(Base):
     network = Column(String(20), nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=True)
     rejection_reason = Column(Text)
+    # What the payment provider last said about this deposit (NOWPayments:
+    # waiting / confirming / finished / expired / partially_paid …). Only a
+    # gateway deposit has one. A `pending` gateway deposit is an invoice the
+    # trader has not paid yet — the admin panel must not offer to approve it,
+    # or money is credited that never arrived. The one state where a human IS
+    # needed is partially_paid: funds came in, but short of the invoice.
+    provider_status = Column(String(30), nullable=True)
+    # Human-readable detail for the admin, e.g. the amount actually received.
+    provider_note = Column(Text, nullable=True)
     approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     approved_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)

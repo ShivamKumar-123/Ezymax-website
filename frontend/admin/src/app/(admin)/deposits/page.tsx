@@ -30,9 +30,37 @@ interface Deposit {
   transaction_id: string;
   screenshot_url: string;
   status: 'pending' | 'approved' | 'auto_approved' | 'rejected';
+  /** Gateway deposits only: what the provider last reported. */
+  provider_status?: string | null;
+  provider_note?: string | null;
+  /** Set by the API: a person has to act on this one. A `pending` gateway
+   *  deposit is an unpaid invoice and must NOT get an Approve button. */
+  needs_review?: boolean;
   created_at: string;
   note?: string;
   reason?: string;
+}
+
+const GATEWAY_METHODS = ['nowpayments', 'oxapay'];
+
+function isGateway(d: Deposit) {
+  return GATEWAY_METHODS.includes((d.method || '').toLowerCase());
+}
+
+/** The API says whether a person has to act; an older API without the
+ *  field is treated the old way for manual methods and never for a gateway. */
+function needsReview(d: Deposit) {
+  if (d.status !== 'pending') return false;
+  if (typeof d.needs_review === 'boolean') return d.needs_review;
+  return !isGateway(d);
+}
+
+/** The badge for a deposit row — a gateway invoice nobody has paid reads
+ *  "Awaiting payment", not "pending", which admins read as "waiting for me". */
+function depositStatusLabel(d: Deposit) {
+  if (d.status === 'pending' && isGateway(d) && !needsReview(d)) return 'Awaiting payment';
+  if (d.status === 'pending' && d.provider_status === 'partially_paid') return 'Paid short — review';
+  return statusLabel(d.status);
 }
 
 interface WithdrawalBankDetails {
@@ -499,7 +527,15 @@ export default function DepositsPage() {
                             <td className="px-4 py-2.5 text-xs text-text-primary text-right font-mono tabular-nums">
                               ${formatMoney(d.amount)}
                             </td>
-                            <td className="px-4 py-2.5 text-xs text-text-secondary">{d.method}</td>
+                            <td className="px-4 py-2.5 text-xs text-text-secondary">
+                              {d.method}
+                              {d.provider_status ? (
+                                <p className="text-xxs text-text-tertiary">provider: {d.provider_status}</p>
+                              ) : null}
+                              {d.provider_note ? (
+                                <p className="text-xxs text-warning">{d.provider_note}</p>
+                              ) : null}
+                            </td>
                             <td className="px-4 py-2.5 text-xs text-text-secondary font-mono tabular-nums">
                               {d.transaction_id}
                             </td>
@@ -522,14 +558,17 @@ export default function DepositsPage() {
                                   statusBadge(d.status),
                                 )}
                               >
-                                {statusLabel(d.status)}
+                                {depositStatusLabel(d)}
                               </span>
                             </td>
                             <td className="px-4 py-2.5 text-xs text-text-tertiary font-mono tabular-nums whitespace-nowrap">
                               {formatDate(d.created_at)}
                             </td>
                             <td className="px-4 py-2.5 text-right">
-                              {d.status === 'pending' && (
+                              {d.status === 'pending' && !needsReview(d) && (
+                                <span className="text-xxs text-text-tertiary">auto-settles via {d.method}</span>
+                              )}
+                              {d.status === 'pending' && needsReview(d) && (
                                 <div className="flex items-center justify-end gap-1.5">
                                   <button
                                     type="button"

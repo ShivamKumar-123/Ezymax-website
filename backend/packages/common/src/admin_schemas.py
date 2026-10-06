@@ -343,6 +343,12 @@ class DepositOut(BaseModel):
     transaction_id: Optional[str] = None
     screenshot_url: Optional[str] = None
     rejection_reason: Optional[str] = None
+    # Gateway deposits only: the provider's own lifecycle state and detail.
+    provider_status: Optional[str] = None
+    provider_note: Optional[str] = None
+    # True when a human must act on it: a manual-method deposit awaiting
+    # review, or a gateway deposit the provider reports as partially paid.
+    needs_review: bool = False
     created_at: Optional[datetime] = None
     user_email: Optional[str] = None
     user_name: Optional[str] = None
