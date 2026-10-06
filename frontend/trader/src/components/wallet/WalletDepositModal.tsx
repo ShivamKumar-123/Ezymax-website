@@ -150,34 +150,62 @@ export default function WalletDepositModal({
     };
   }, [open, deposit, onSettled]);
 
+  // Escape closes; the page behind stops scrolling while the sheet is up,
+  // so a swipe scrolls the sheet and not the wallet underneath it.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open, onClose]);
+
   if (!open) return null;
 
+  // Layering and layout: the sheet is taller than a phone screen. Centred
+  // with flexbox inside a non-scrolling overlay, its top third — the title
+  // and the close button — went off the top of the viewport behind the
+  // navbar (which also sat above the old z-80) and could not be scrolled
+  // back into view. The overlay now scrolls, the sheet centres with auto
+  // margins (which never clip), it stacks above the navbar like the other
+  // modals, and the header with the close button sticks to the top.
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-bg-base/80 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[120] overflow-y-auto overscroll-contain bg-bg-base/80 backdrop-blur-sm"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="wallet-deposit-title"
     >
-      <div
-        className="relative w-full max-w-md rounded-2xl border border-[#ccff00]/30 bg-bg-secondary shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-3 right-3 text-text-tertiary hover:text-text-primary p-1.5 rounded-full hover:bg-bg-hover z-10"
-          aria-label="Close"
+      <div className="flex min-h-full p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div
+          className="relative m-auto w-full max-w-md rounded-2xl border border-[#ccff00]/30 bg-bg-secondary shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
         >
-          <X size={16} />
-        </button>
-
-        <div className="px-6 pt-6 pb-3 border-b border-border-primary">
-          <h2 className="text-base font-semibold text-text-primary flex items-center gap-2">
-            <Wallet size={16} className="text-[#ccff00]" /> Crypto deposit
-          </h2>
-          <p className="text-xs text-text-tertiary mt-1">
-            ${amountUsd.toFixed(2)} via {labelForAsset(cryptoAsset)}
-          </p>
-        </div>
+          <div className="sticky top-0 z-10 rounded-t-2xl bg-bg-secondary px-6 pt-5 pb-3 border-b border-border-primary flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 id="wallet-deposit-title" className="text-base font-semibold text-text-primary flex items-center gap-2">
+                <Wallet size={16} className="text-[#ccff00]" /> Crypto deposit
+              </h2>
+              <p className="text-xs text-text-tertiary mt-1">
+                ${amountUsd.toFixed(2)} via {labelForAsset(cryptoAsset)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="shrink-0 -mr-2 -mt-1 inline-flex items-center gap-1 rounded-full border border-border-primary px-2.5 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-hover"
+              aria-label="Close"
+            >
+              <X size={14} /> Close
+            </button>
+          </div>
 
         {creating && (
           <div className="px-6 py-10 flex items-center gap-2 text-sm text-text-secondary justify-center">
@@ -207,6 +235,7 @@ export default function WalletDepositModal({
             onClose={onClose}
           />
         )}
+        </div>
       </div>
     </div>
   );
