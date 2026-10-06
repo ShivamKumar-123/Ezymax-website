@@ -102,3 +102,18 @@ backend/services/market_data/
 # Machine-local Compose overrides (host port remaps etc.) — never shared,
 # because what is free on one machine is taken on another.
 docker-compose.override.yml
+
+# Encrypted database dumps written by scripts/backup.sh. Never tracked:
+# they are the whole database, and on the server /opt/ezymex is a git
+# checkout that deploy.sh pulls into — a stray `git clean` there must not
+# be able to take the backups with it.
+/backups/
+
+# Runtime uploads (KYC documents, deposit proofs, banners, tenant
+# branding). User data, not source. The .gitkeep below preserves the
+# directory so the bind mount has something to attach to.
+backend/uploads/*
+!backend/uploads/.gitkeep
+!backend/uploads/*/
+backend/uploads/*/*
+!backend/uploads/*/.gitkeep
