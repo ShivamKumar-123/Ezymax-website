@@ -90,11 +90,15 @@ build/
 # Client reference mockups dropped at the repo root (kept locally only)
 /ChatGPT Image*.png
 /ChatGPT Image*.jpg
-swisscresta_web/
+ezymex_web/
 
 # Source APK drop-zone — redundant with the served copy at
-# frontend/trader/public/downloads/swisscresta1.apk. Keep locally, don't track.
+# frontend/trader/public/downloads/ezymex1.apk. Keep locally, don't track.
 # (Scoped to the root folder only so the served public/ APK stays tracked.)
 /apk/
 
 backend/services/market_data/
+
+# Machine-local Compose overrides (host port remaps etc.) — never shared,
+# because what is free on one machine is taken on another.
+docker-compose.override.yml
