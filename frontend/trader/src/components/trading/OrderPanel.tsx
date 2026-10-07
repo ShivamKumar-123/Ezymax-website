@@ -167,14 +167,10 @@ export default function OrderPanel() {
   const usd = (n: number) =>
     `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
 
-  // Account-tier minimum-balance gate (Micro $10 / Standard $100 /
-  // Pro $500 / Elite $1000). Server rejects trades when
-  // account.balance < group.minimum_deposit; mirror it client-side so
-  // the Buy/Sell button visibly disables and the user reads the
-  // requirement up-front instead of after tapping.
-  const minDepositGate = activeAccount?.account_group?.minimum_deposit ?? 0;
-  const accountBalance = activeAccount?.balance ?? 0;
-  const meetsMinBalance = minDepositGate <= 0 || accountBalance >= minDepositGate;
+  // The tier's minimum deposit applies when the account is OPENED, not to
+  // every trade after it. It used to be mirrored here as a balance gate,
+  // which locked a $1,000 Elite account out of trading the moment one
+  // loss took it to $995. Margin is the only balance check a trade needs.
 
   /** Pending tab requires a positive trigger price. Stop-limit also
    *  requires the second (limit/target) price. Side-vs-mid validity is
@@ -264,16 +260,6 @@ export default function OrderPanel() {
     }
     if (!hasEnoughMargin) {
       toast.error(`Insufficient margin`);
-      return;
-    }
-    // Preflight the server-side "Account balance must be ≥ min_deposit
-    // for this account type" gate (trading_service.py:141-150). Catching
-    // it client-side means the user gets a clean toast IMMEDIATELY,
-    // without the optimistic UI / "orderPlaced" sound / success message
-    // racing the rejection.
-    const minDeposit = activeAccount.account_group?.minimum_deposit ?? 0;
-    if (minDeposit > 0 && (activeAccount.balance ?? 0) < minDeposit) {
-      toast.error(`Minimum $${minDeposit.toFixed(0)} balance required for this account. Deposit funds first.`);
       return;
     }
     // Pending orders require a trigger price + must be on the correct
@@ -633,11 +619,6 @@ export default function OrderPanel() {
               {submitting ? 'Placing…' : side === 'buy' ? 'Buy' : 'Sell'}
             </button>
             {!hasEnoughMargin && <p className="text-center text-[12px] font-semibold text-[#E5484D]">Insufficient margin</p>}
-            {hasEnoughMargin && !meetsMinBalance && (
-              <p className="text-center text-[12px] font-semibold text-[#E5484D]">
-                Min ${minDepositGate.toFixed(0)} balance required
-              </p>
-            )}
             {!marketStatus.isOpen && orderTab === 'market' && (
               <p className="rounded-xl px-3 py-2 text-center text-[12px] text-[#E5484D]" style={{ background: 'rgba(229,72,77,0.1)' }}>
                 {marketStatus.reason}
@@ -1222,17 +1203,12 @@ export default function OrderPanel() {
                     ⚠ Insufficient margin
                   </div>
                 )}
-                {hasEnoughMargin && !meetsMinBalance && (
-                  <div className="text-[11px] text-red-500 font-bold text-center pt-2 mt-2 leading-snug" style={{ borderTop: '1px solid rgba(239,83,80,0.15)' }}>
-                    ⚠ Minimum ${minDepositGate.toFixed(0)} balance required
-                  </div>
-                )}
               </div>
               <div className="py-2" />
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!hasEnoughMargin || !meetsMinBalance || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid}
+                disabled={!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid}
                 className="w-full py-4 rounded-xl text-[15px] font-black tracking-wide uppercase transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
                 style={{
                   background: side === 'buy' ? '#2962FF' : '#ef5350',
@@ -1261,15 +1237,10 @@ export default function OrderPanel() {
             {!hasEnoughMargin && (
               <div className="text-[10px] text-red-500 font-semibold text-center leading-tight">Insufficient margin</div>
             )}
-            {hasEnoughMargin && !meetsMinBalance && (
-              <div className="text-[10px] text-red-500 font-semibold text-center leading-tight">
-                Min ${minDepositGate.toFixed(0)} balance required
-              </div>
-            )}
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!hasEnoughMargin || !meetsMinBalance || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid}
+              disabled={!hasEnoughMargin || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid}
               className="w-full py-3 rounded-lg text-[15px] font-bold tracking-wide transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
               style={{
                 background: side === 'buy' ? '#2962FF' : '#ef5350',

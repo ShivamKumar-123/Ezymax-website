@@ -142,16 +142,12 @@ async def place_order(
     # --- Sequential DB queries (AsyncSession doesn't support concurrent queries) ---
     account = await validate_account(req.account_id, user_id, db)
 
-    if not account.is_demo and account.account_group:
-        min_bal = account.account_group.minimum_deposit or Decimal("0")
-        if min_bal > 0 and (account.balance or Decimal("0")) < min_bal:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"Account balance must be at least ${float(min_bal):.2f} for this account type "
-                    "before you can trade. Please deposit funds."
-                ),
-            )
+    # The tier's minimum deposit is a condition for OPENING the account
+    # (account_service.open_live_account), not for every trade after it.
+    # This used to be re-checked here against the live balance, so one
+    # losing trade on a $1,000 Elite account left it at $995 and locked
+    # the trader out — "Min $1000 balance required" — until they topped
+    # up. Margin is the only balance check a trade needs.
 
     instrument = await get_instrument(req.symbol, db)
 
