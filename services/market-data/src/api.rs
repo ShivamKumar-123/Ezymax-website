@@ -87,8 +87,12 @@ async fn health(State(s): State<AppState>) -> Json<Value> {
     let stale: Vec<&String> = st.last_tick_ms.iter().filter(|(k, t)| now - **t > 60_000 && streaming.contains(*k)).map(|(k, _)| k).collect();
     let limits = s.market.demand.lock().unwrap().limits.clone();
     Json(json!({
-        "ok": !st.connected_markets.is_empty(),
+        // false when an expected provider business has been missing for more than 5 minutes
+        "ok": st.healthy(Utc::now()),
         "provider_streams": st.connected_markets,
+        "provider_streams_missing": st.missing(),
+        "provider_missing_since": st.missing_since,
+        "provider_refused_since": st.refused_since,
         "ticks_total": st.ticks_total,
         "symbols_ticking": st.last_tick_ms.len(),
         "stale_over_60s": stale,

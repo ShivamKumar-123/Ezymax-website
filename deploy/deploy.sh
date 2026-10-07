@@ -190,12 +190,38 @@ grep -q '^NEXT_PUBLIC_MARKET_DATA_URL=' "$f" || printf 'NEXT_PUBLIC_MARKET_DATA_
 grep -q '^NEXT_PUBLIC_TERMINAL_URL=' "$f" || printf 'NEXT_PUBLIC_TERMINAL_URL=https://trade.kalkstrade.com\n' >> "$f"
 pnpm turbo run build --filter=@kalks/crm --filter=@kalks/admin --filter=@kalks/terminal --concurrency=1
 
+# market-data holds the price provider's WebSocket connections, which the provider limits per key and keeps
+# counting for a while after a restart (reconnects are then refused with HTTP 429). So it restarts only when what it
+# runs changed: its binary, its config inputs (instruments, holiday calendars, its unit file, its .env.local
+# settings). The fingerprint of what it was last started with is kept in ~/.kalks-deploy.
+md_fingerprint() {
+  {
+    if [ -f target/release/market-data ]; then sha256sum target/release/market-data | cut -d' ' -f1; else echo no-binary; fi
+    find config/instruments.json config/holidays -type f -print0 | sort -z | xargs -0 sha256sum
+    sha256sum deploy/systemd/kalks-market-data.service
+    grep -E '^(INFOWAY_|MARKET_DATA_|INSTRUMENTS_FILE=|HOLIDAYS_DIR=|DATABASE_URL=|STORE_TICKS=|TICKS_RETENTION_HOURS=|BACKFILL_|RUST_LOG=)' .env.local 2>/dev/null | sha256sum
+  } | sha256sum | cut -d' ' -f1
+}
+MD_FP_FILE="$HOME/.kalks-deploy/market-data.fingerprint"
+mkdir -p "$(dirname "$MD_FP_FILE")"
+
 # service units + edge config (idempotent)
 sudo cp deploy/systemd/*.service /etc/systemd/system/
 sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
 sudo systemctl daemon-reload
 sudo systemctl enable kalks-market-data kalks-gateway kalks-trading kalks-ib kalks-prop kalks-crm kalks-admin kalks-terminal >/dev/null
-sudo systemctl restart kalks-market-data kalks-gateway kalks-trading kalks-ib kalks-prop kalks-crm kalks-admin kalks-terminal
+md_now="$(md_fingerprint)"
+if [ "$md_now" != "$(cat "$MD_FP_FILE" 2>/dev/null || true)" ]; then
+  echo "market-data changed: restarting it (it closes its provider connections first)"
+  sudo systemctl restart kalks-market-data
+  printf '%s\n' "$md_now" > "$MD_FP_FILE"
+elif ! sudo systemctl is-active --quiet kalks-market-data; then
+  echo "market-data unchanged but not running: starting it"
+  sudo systemctl start kalks-market-data
+else
+  echo "market-data unchanged: not restarted (provider connections untouched)"
+fi
+sudo systemctl restart kalks-gateway kalks-trading kalks-ib kalks-prop kalks-crm kalks-admin kalks-terminal
 sudo systemctl enable kalks-academy >/dev/null && sudo systemctl restart kalks-academy
 sudo systemctl enable kalks-algo >/dev/null && sudo systemctl restart kalks-algo
 sudo systemctl enable kalks-wallet >/dev/null && sudo systemctl restart kalks-wallet

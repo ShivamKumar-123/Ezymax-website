@@ -89,6 +89,29 @@ pub struct Stats {
     pub ticks_last_min: u64,
     pub connected_markets: HashSet<String>,
     pub last_tick_ms: HashMap<String, i64>,
+    /// Provider businesses that should be connected (they have symbols to stream) and since when each has been
+    /// missing (absent = connected or not expected).
+    pub expected: HashSet<String>,
+    pub missing_since: HashMap<String, DateTime<Utc>>,
+    /// Businesses the provider refuses (HTTP 429 at connect), since the first refusal of the episode.
+    pub refused_since: HashMap<String, DateTime<Utc>>,
+}
+
+/// A business missing for longer than this makes `/health` not ok.
+pub const MISSING_ALERT_SECS: i64 = 300;
+
+impl Stats {
+    /// Expected businesses not connected now.
+    pub fn missing(&self) -> Vec<String> {
+        let mut v: Vec<String> = self.expected.iter().filter(|b| !self.connected_markets.contains(*b)).cloned().collect();
+        v.sort();
+        v
+    }
+
+    /// Healthy: something is connected and no expected business has been missing for more than 5 minutes.
+    pub fn healthy(&self, now: DateTime<Utc>) -> bool {
+        !self.connected_markets.is_empty() && self.missing().iter().all(|b| self.missing_since.get(b).is_none_or(|t| (now - *t).num_seconds() <= MISSING_ALERT_SECS))
+    }
 }
 
 impl Market {
@@ -200,8 +223,38 @@ impl Market {
         let mut s = self.stats.lock().unwrap();
         if up {
             s.connected_markets.insert(market.to_string());
+            s.missing_since.remove(market);
         } else {
             s.connected_markets.remove(market);
+            if s.expected.contains(market) {
+                s.missing_since.entry(market.to_string()).or_insert_with(Utc::now);
+            }
+        }
+    }
+
+    /// A business has symbols to stream (it should be connected) or not.
+    pub fn set_expected(&self, market: &str, expected: bool) {
+        let mut s = self.stats.lock().unwrap();
+        if expected {
+            if s.expected.insert(market.to_string()) && !s.connected_markets.contains(market) {
+                s.missing_since.entry(market.to_string()).or_insert_with(Utc::now);
+            }
+        } else {
+            s.expected.remove(market);
+            s.missing_since.remove(market);
+        }
+    }
+
+    /// The provider refuses this business since `since` (None = no longer).
+    pub fn set_refused(&self, market: &str, since: Option<DateTime<Utc>>) {
+        let mut s = self.stats.lock().unwrap();
+        match since {
+            Some(t) => {
+                s.refused_since.insert(market.to_string(), t);
+            }
+            None => {
+                s.refused_since.remove(market);
+            }
         }
     }
 

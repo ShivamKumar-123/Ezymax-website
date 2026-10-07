@@ -1,6 +1,12 @@
 //! Live provider ingest: one WebSocket per Infoway market (common / crypto / stock).
 //! Subscribes to trades (10000 → pushes 10002) and depth (10003 → pushes 10005), sends the
-//! 10010 heartbeat every 20s and reconnects with backoff (reset after a healthy session).
+//! 10010 heartbeat every 20s and reconnects with backoff (`Backoff`: reset only after a connection held 60 s).
+//!
+//! The provider counts connections per key, and keeps counting one that vanished without a close handshake until
+//! it times out; reconnecting meanwhile is refused with HTTP 429. So: on SIGTERM / SIGINT every connection
+//! unsubscribes and closes properly (`shutdown`, at most 3 s each) before the process exits, a 429 at connect backs
+//! off 15 s → 300 s with jitter, alerting once per episode (`/health` `provider_refused_since`), and at start the
+//! markets connect one at a time, `CONNECT_STAGGER` apart, never all at once.
 //!
 //! What each connection subscribes to follows the planner (demand.rs): the symbols someone needs, within the plan's
 //! limit. A plan change is applied on the open connection (`apply_plan`); a market with nothing to stream does not
@@ -13,6 +19,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::watch;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
+use tokio_tungstenite::tungstenite::protocol::{CloseFrame, frame::coding::CloseCode};
 
 use crate::config::Config;
 use crate::state::{HistoryJob, Market};
@@ -28,20 +35,33 @@ fn num(v: &Value) -> Option<f64> {
 /// Provider codes to subscribe per market (the planner's output).
 pub type Plans = BTreeMap<String, watch::Receiver<Arc<BTreeSet<String>>>>;
 
-pub fn spawn_all(cfg: &Config, market: Arc<Market>) {
+/// Shutdown signal: true once the process is stopping.
+pub type Stop = watch::Receiver<bool>;
+
+/// Starts the planner and one connection task per provider market; the returned tasks finish once `stop` turns
+/// true and every connection has unsubscribed and closed.
+pub fn spawn_all(cfg: &Config, market: Arc<Market>, stop: Stop) -> Vec<tokio::task::JoinHandle<()>> {
     let plans = spawn_planner(market.clone());
     if !cfg.upstream.is_empty() {
         let (url, mk) = (cfg.upstream.clone(), market.clone());
         let all = plans.values().cloned().collect::<Vec<_>>();
-        tokio::spawn(async move { relay(url, mk, all).await });
-        return;
+        return vec![tokio::spawn(async move { relay(url, mk, all, stop).await })];
     }
-    for (m, plan) in plans {
-        let url = format!("{}?business={}&apikey={}", cfg.infoway_ws, m, cfg.infoway_key);
-        let mk = market.clone();
-        tokio::spawn(async move { run(m, url, plan, mk).await });
-    }
+    plans
+        .into_iter()
+        .enumerate()
+        .map(|(i, (m, plan))| {
+            let url = format!("{}?business={}&apikey={}", cfg.infoway_ws, m, cfg.infoway_key);
+            let (mk, st) = (market.clone(), stop.clone());
+            // gentle start: one market at a time
+            let first = CONNECT_STAGGER * i as u32;
+            tokio::spawn(async move { run(m, url, plan, mk, st, first).await })
+        })
+        .collect()
 }
+
+/// Delay between the first connections of the markets at start.
+pub const CONNECT_STAGGER: Duration = Duration::from_secs(5);
 
 /// Recomputes the plan whenever demand changes (and every 5 s for grace periods), publishes each market's
 /// provider codes, and asks for history of catalogue symbols that start streaming (their bars have a gap).
@@ -122,51 +142,169 @@ pub fn subscription_messages(business: &str, current: &BTreeSet<String>, want: &
 /// Plan changes are applied to a connection at most this often (frames are rate-limited by the provider).
 const PLAN_MIN_INTERVAL: Duration = Duration::from_secs(10);
 
-/// Minimum uptime for a session to count as healthy (resets the reconnect backoff).
-const HEALTHY_SESSION: Duration = Duration::from_secs(30);
+/// A connection must hold this long before the reconnect backoff starts over.
+const HEALTHY_SESSION: Duration = Duration::from_secs(60);
 
-async fn run(business: String, url: String, mut plan: watch::Receiver<Arc<BTreeSet<String>>>, market: Arc<Market>) {
-    let mut backoff = 1u64;
+/// How a session ended (decides the reconnect delay).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Outcome {
+    /// The provider refused the connection (HTTP 429: too many connections for the key).
+    Refused,
+    /// Any other error or a close.
+    Dropped,
+}
+
+/// Reconnect delays. A 429 starts at 15 s and doubles to 300 s; other drops start at 1 s and double to 30 s (or follow
+/// the 429 schedule while a refusal episode lasts). ±20 % jitter. Only a connection that held for 60 s starts over.
+#[derive(Debug, Default)]
+pub struct Backoff {
+    attempt: u32,
+    /// first refusal of the current episode
+    pub refused_since: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+impl Backoff {
+    pub const REFUSED_BASE: Duration = Duration::from_secs(15);
+    pub const REFUSED_CAP: Duration = Duration::from_secs(300);
+    pub const ERROR_BASE: Duration = Duration::from_secs(1);
+    pub const ERROR_CAP: Duration = Duration::from_secs(30);
+
+    /// The delay before the next attempt after a session that ended with `outcome` having held `held`; `jitter` in
+    /// [0, 1) (0.5 = no jitter). Returns the delay and whether a refusal episode just started (alert once).
+    pub fn next(&mut self, outcome: Outcome, held: Duration, jitter: f64, now: chrono::DateTime<chrono::Utc>) -> (Duration, bool) {
+        if held >= HEALTHY_SESSION {
+            self.attempt = 0;
+            self.refused_since = None;
+        }
+        self.attempt = self.attempt.saturating_add(1);
+        let mut new_episode = false;
+        if outcome == Outcome::Refused && self.refused_since.is_none() {
+            self.refused_since = Some(now);
+            new_episode = true;
+        }
+        let (base, cap) = if self.refused_since.is_some() { (Self::REFUSED_BASE, Self::REFUSED_CAP) } else { (Self::ERROR_BASE, Self::ERROR_CAP) };
+        let raw = base.saturating_mul(1u32 << (self.attempt - 1).min(16)).min(cap);
+        let factor = 0.8 + 0.4 * jitter.clamp(0.0, 1.0);
+        (raw.mul_f64(factor), new_episode)
+    }
+}
+
+/// Is `e` the provider refusing the connection (HTTP 429 at the WebSocket handshake)?
+pub fn is_refused(e: &anyhow::Error) -> bool {
+    use tokio_tungstenite::tungstenite::Error;
+    matches!(e.downcast_ref::<Error>(), Some(Error::Http(r)) if r.status().as_u16() == 429)
+}
+
+/// A cheap jitter in [0, 1) (no RNG dependency).
+fn jitter() -> f64 {
+    let n = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.subsec_nanos()).unwrap_or(0);
+    (n.wrapping_mul(2_654_435_761) % 1_000_000) as f64 / 1_000_000.0
+}
+
+/// Waits `d` unless the process stops first (true = stopping).
+async fn sleep_or_stop(d: Duration, stop: &mut Stop) -> bool {
+    if *stop.borrow() {
+        return true;
+    }
+    tokio::select! {
+        _ = tokio::time::sleep(d) => *stop.borrow(),
+        _ = stop.changed() => true,
+    }
+}
+
+async fn run(business: String, url: String, mut plan: watch::Receiver<Arc<BTreeSet<String>>>, market: Arc<Market>, mut stop: Stop, first: Duration) {
+    let mut backoff = Backoff::default();
+    if sleep_or_stop(first, &mut stop).await {
+        return;
+    }
     loop {
         // nothing to stream on this market: stay disconnected until there is
         while plan.borrow_and_update().is_empty() {
-            if plan.changed().await.is_err() {
-                return;
+            market.set_expected(&business, false);
+            tokio::select! {
+                changed = plan.changed() => if changed.is_err() { return },
+                _ = stop.changed() => return,
             }
         }
+        if *stop.borrow() {
+            return;
+        }
+        market.set_expected(&business, true);
         let started = Instant::now();
         // run each session in its own task so a panic inside it becomes a reconnect, never a silent stop
-        let (b, u, p, m) = (business.clone(), url.clone(), plan.clone(), market.clone());
-        let joined = tokio::spawn(async move {
-            let mut subscribed = false;
-            let r = session(&b, &u, p, &m, &mut subscribed).await;
-            (r, subscribed)
-        })
-        .await;
-        let (res, subscribed) = match joined {
+        let (b, u, p, m, st) = (business.clone(), url.clone(), plan.clone(), market.clone(), stop.clone());
+        let joined = tokio::spawn(async move { session(&b, &u, p, &m, st).await }).await;
+        let res = match joined {
             Ok(v) => v,
-            Err(e) => (Err(anyhow::anyhow!("provider session task crashed: {e}")), false),
+            Err(e) => Err(anyhow::anyhow!("provider session task crashed: {e}")),
         };
-        // a session that subscribed and stayed up was healthy: the next drop starts over at 1s
-        if subscribed && started.elapsed() >= HEALTHY_SESSION {
-            backoff = 1;
-        }
-        match res {
-            Ok(()) => tracing::warn!(%business, "provider stream closed; reconnecting in {backoff}s"),
-            Err(e) => tracing::warn!(%business, error = %e, "provider stream error; reconnecting in {backoff}s"),
-        }
         market.set_connected(&business, false);
-        tokio::time::sleep(Duration::from_secs(backoff)).await;
-        backoff = (backoff * 2).min(30);
+        if *stop.borrow() {
+            market.set_expected(&business, false);
+            return;
+        }
+        let outcome = match &res {
+            Err(e) if is_refused(e) => Outcome::Refused,
+            _ => Outcome::Dropped,
+        };
+        let was_refused = backoff.refused_since.is_some();
+        let now = chrono::Utc::now();
+        let (delay, new_episode) = backoff.next(outcome, started.elapsed(), jitter(), now);
+        if was_refused && backoff.refused_since.is_none() {
+            tracing::info!(%business, "provider connection accepted again after refusals");
+        }
+        market.set_refused(&business, backoff.refused_since);
+        if new_episode {
+            tracing::error!(%business, since = %now.to_rfc3339(), "ALERT provider connection refused (429) business={business} since={}", now.to_rfc3339());
+        }
+        let secs = delay.as_secs_f64().round();
+        match res {
+            Ok(()) => tracing::warn!(%business, "provider stream closed; reconnecting in {secs}s"),
+            Err(e) => tracing::warn!(%business, error = %e, "provider stream error; reconnecting in {secs}s"),
+        }
+        if sleep_or_stop(delay, &mut stop).await {
+            market.set_expected(&business, false);
+            return;
+        }
     }
 }
+
+/// Unsubscribes everything and closes the connection with a close handshake (the provider then frees the slot at
+/// once instead of counting a dead connection until it times out). At most `CLOSE_WAIT`.
+pub async fn shutdown<S, R>(business: &str, tx: &mut S, rx: &mut R, current: &BTreeSet<String>) -> anyhow::Result<()>
+where
+    S: futures_util::Sink<Message> + Unpin,
+    S::Error: std::error::Error + Send + Sync + 'static,
+    R: futures_util::Stream<Item = Result<Message, tokio_tungstenite::tungstenite::Error>> + Unpin,
+{
+    let work = async {
+        for m in subscription_messages(business, current, &BTreeSet::new()) {
+            tx.send(Message::text(m)).await?;
+        }
+        tx.send(Message::Close(Some(CloseFrame { code: CloseCode::Normal, reason: "kalks market-data shutting down".into() }))).await?;
+        // the provider answers with its own close frame (or just drops the socket)
+        while let Some(m) = rx.next().await {
+            if matches!(m, Ok(Message::Close(_)) | Err(_)) {
+                break;
+            }
+        }
+        anyhow::Ok(())
+    };
+    match tokio::time::timeout(CLOSE_WAIT, work).await {
+        Ok(r) => r,
+        Err(_) => anyhow::bail!("no close handshake within {}s", CLOSE_WAIT.as_secs()),
+    }
+}
+
+/// How long a connection may take to close on shutdown.
+pub const CLOSE_WAIT: Duration = Duration::from_secs(3);
 
 /// No frame at all for this long while the market is open = dead connection.
 const IDLE_TIMEOUT: Duration = Duration::from_secs(25);
 /// Crypto trades around the clock: this long without a single trade means the stream has silently stalled.
 const CRYPTO_TRADE_TIMEOUT: Duration = Duration::from_secs(15);
 
-async fn session(business: &str, url: &str, mut plan: watch::Receiver<Arc<BTreeSet<String>>>, market: &Arc<Market>, subscribed: &mut bool) -> anyhow::Result<()> {
+async fn session(business: &str, url: &str, mut plan: watch::Receiver<Arc<BTreeSet<String>>>, market: &Arc<Market>, mut stop: Stop) -> anyhow::Result<()> {
     let (ws, _) = tokio::time::timeout(Duration::from_secs(10), connect_async(url)).await.map_err(|_| anyhow::anyhow!("connect timeout"))??;
     if let tokio_tungstenite::MaybeTlsStream::Rustls(s) = ws.get_ref() {
         let _ = s.get_ref().0.set_nodelay(true);
@@ -180,7 +318,6 @@ async fn session(business: &str, url: &str, mut plan: watch::Receiver<Arc<BTreeS
     current = (*want).clone();
     tracing::info!(%business, symbols = current.len(), "subscribed to provider stream");
     market.set_connected(business, true);
-    *subscribed = true;
 
     // the provider times a connection out after 90 s without a frame and counts every frame (60 a minute)
     let mut heartbeat = tokio::time::interval(Duration::from_secs(20));
@@ -190,6 +327,14 @@ async fn session(business: &str, url: &str, mut plan: watch::Receiver<Arc<BTreeS
     let (mut last_frame, mut last_trade) = (Instant::now(), Instant::now());
     loop {
         tokio::select! {
+            _ = stop.changed() => {
+                let r = shutdown(business, &mut tx, &mut rx, &current).await;
+                match &r {
+                    Ok(()) => tracing::info!(%business, "provider stream unsubscribed and closed"),
+                    Err(e) => tracing::warn!(%business, error = %e, "provider stream close incomplete"),
+                }
+                return Ok(());
+            }
             _ = heartbeat.tick() => {
                 tx.send(Message::text(json!({"code": 10010, "trace": format!("kalks-{business}-hb")}).to_string())).await?;
             }
@@ -290,9 +435,14 @@ fn handle(business: &str, text: &str, market: &Arc<Market>) -> bool {
 /// Relay mode: mirror quotes from another Kalks market-data stream (`{"type":"quote","s","b","a","l","t"}`).
 /// Every catalogue symbol is subscribed passively (whatever the upstream streams arrives here); the symbols wanted
 /// locally (this service's own plan) are subscribed actively, so the upstream streams them too.
-async fn relay(url: String, market: Arc<Market>, mut plans: Vec<watch::Receiver<Arc<BTreeSet<String>>>>) {
+async fn relay(url: String, market: Arc<Market>, mut plans: Vec<watch::Receiver<Arc<BTreeSet<String>>>>, mut stop: Stop) {
     let mut backoff = 1u64;
+    market.set_expected("relay", true);
     loop {
+        if *stop.borrow() {
+            return;
+        }
+        let mut stop_in = stop.clone();
         let symbols: Vec<String> = market.cat.list.iter().map(|i| i.symbol.clone()).collect();
         let res: anyhow::Result<()> = async {
             let (ws, _) = tokio::time::timeout(Duration::from_secs(15), connect_async(&url)).await??;
@@ -310,6 +460,10 @@ async fn relay(url: String, market: Arc<Market>, mut plans: Vec<watch::Receiver<
             let mut check = tokio::time::interval(Duration::from_secs(1));
             loop {
                 let msg = tokio::select! {
+                    _ = stop_in.changed() => {
+                        let _ = tx.send(Message::Close(None)).await;
+                        return Ok(());
+                    }
                     m = tokio::time::timeout(Duration::from_secs(30), rx.next()) => m?,
                     _ = check.tick() => {
                         // the local plan changed: upstream demand follows it
@@ -368,7 +522,9 @@ async fn relay(url: String, market: Arc<Market>, mut plans: Vec<watch::Receiver<
         if let Err(e) = res {
             tracing::warn!(error = %e, "relay stream error; reconnecting in {backoff}s");
         }
-        tokio::time::sleep(Duration::from_secs(backoff)).await;
+        if sleep_or_stop(Duration::from_secs(backoff), &mut stop).await {
+            return;
+        }
         backoff = (backoff * 2).min(15);
     }
 }
@@ -397,5 +553,154 @@ mod tests {
         assert_eq!(codes(&f).iter().map(|c| c.0).collect::<Vec<_>>(), vec![11000, 11001]);
         // nothing changed: nothing sent (every frame counts against the provider's 60 a minute)
         assert!(subscription_messages("common", &set(&["EURUSD"]), &set(&["EURUSD"])).is_empty());
+    }
+}
+
+#[cfg(test)]
+mod shutdown_tests {
+    use super::*;
+    use chrono::TimeZone;
+
+    fn t0() -> chrono::DateTime<chrono::Utc> {
+        chrono::Utc.with_ymd_and_hms(2026, 10, 8, 18, 44, 0).unwrap()
+    }
+
+    #[test]
+    fn refused_backoff_schedule_caps_and_resets_only_after_a_held_connection() {
+        let mut b = Backoff::default();
+        let short = Duration::from_secs(2);
+        // 429s: 15, 30, 60, 120, 240, 300, 300 s (no jitter), the alert only on the first
+        let mut delays = Vec::new();
+        let mut alerts = 0;
+        for _ in 0..7 {
+            let (d, alert) = b.next(Outcome::Refused, Duration::ZERO, 0.5, t0());
+            delays.push(d.as_secs());
+            alerts += alert as u32;
+        }
+        assert_eq!(delays, vec![15, 30, 60, 120, 240, 300, 300]);
+        assert_eq!(alerts, 1, "one alert per episode");
+        assert_eq!(b.refused_since, Some(t0()));
+        // a connection that drops after 2 s does not end the episode or reset the schedule
+        let (d, _) = b.next(Outcome::Dropped, short, 0.5, t0());
+        assert_eq!(d.as_secs(), 300);
+        assert!(b.refused_since.is_some());
+        // one that held 60 s does: back to the 1 s error schedule, and a new 429 starts a new episode (alert again)
+        let (d, _) = b.next(Outcome::Dropped, Duration::from_secs(60), 0.5, t0());
+        assert_eq!(d, Duration::from_secs(1));
+        assert!(b.refused_since.is_none());
+        let (d, alert) = b.next(Outcome::Refused, short, 0.5, t0());
+        assert!(alert);
+        assert_eq!(d.as_secs(), 30, "the second attempt of the run, now on the 429 schedule");
+        // plain drops: 1, 2, 4 … capped at 30 s
+        let mut e = Backoff::default();
+        let v: Vec<u64> = (0..7).map(|_| e.next(Outcome::Dropped, short, 0.5, t0()).0.as_secs()).collect();
+        assert_eq!(v, vec![1, 2, 4, 8, 16, 30, 30]);
+        // jitter stays within ±20 %
+        let mut j = Backoff::default();
+        assert_eq!(j.next(Outcome::Refused, short, 0.0, t0()).0, Duration::from_secs(12));
+        let mut j = Backoff::default();
+        assert_eq!(j.next(Outcome::Refused, short, 0.999_999, t0()).0.as_secs(), 17);
+        let x = jitter();
+        assert!((0.0..1.0).contains(&x));
+    }
+
+    /// A provider stand-in: accepts one WebSocket, records every frame until the client closes.
+    async fn mock_provider() -> (String, tokio::task::JoinHandle<Vec<Message>>) {
+        let l = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("ws://{}/ws?business=crypto", l.local_addr().unwrap());
+        let h = tokio::spawn(async move {
+            let (tcp, _) = l.accept().await.unwrap();
+            let mut ws = tokio_tungstenite::accept_async(tcp).await.unwrap();
+            let mut got = Vec::new();
+            while let Some(Ok(m)) = ws.next().await {
+                let close = matches!(m, Message::Close(_));
+                got.push(m);
+                if close {
+                    break; // tungstenite answers the close handshake itself
+                }
+            }
+            got
+        });
+        (url, h)
+    }
+
+    fn market() -> Arc<Market> {
+        let cat = Catalogue::load(concat!(env!("CARGO_MANIFEST_DIR"), "/../../config/instruments.json"), concat!(env!("CARGO_MANIFEST_DIR"), "/../../config/holidays")).unwrap();
+        let pool = sqlx::postgres::PgPoolOptions::new().connect_lazy("postgres://nobody@127.0.0.1:1/none").unwrap();
+        Market::new(cat, pool, crate::spreads::Spreads::default(), false, crate::demand::Demand::new(Vec::<String>::new(), Default::default()))
+    }
+
+    use crate::instruments::Catalogue;
+
+    #[tokio::test]
+    async fn stop_unsubscribes_and_closes_with_a_handshake() {
+        let (url, server) = mock_provider().await;
+        let mk = market();
+        let (_plan_tx, plan) = watch::channel(Arc::new(["BTCUSDT".to_string(), "BNBUSDT".to_string()].into_iter().collect::<BTreeSet<_>>()));
+        let (stop_tx, stop) = watch::channel(false);
+        let (m2, u) = (mk.clone(), url.clone());
+        let task = tokio::spawn(async move { session("crypto", &u, plan, &m2, stop).await });
+        // connected and subscribed
+        for _ in 0..50 {
+            if mk.stats().connected_markets.contains("crypto") {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+        assert!(mk.stats().connected_markets.contains("crypto"));
+        let t = Instant::now();
+        stop_tx.send(true).unwrap();
+        task.await.unwrap().unwrap();
+        assert!(t.elapsed() < CLOSE_WAIT, "closed promptly ({:?})", t.elapsed());
+        let frames = server.await.unwrap();
+        let codes: Vec<i64> = frames.iter().filter_map(|m| if let Message::Text(t) = m { serde_json::from_str::<Value>(t).ok()?["code"].as_i64() } else { None }).collect();
+        assert_eq!(codes, vec![10000, 10003, 11000, 11001], "subscribe, then unsubscribe both on stop");
+        let unsub: Vec<String> = frames.iter().filter_map(|m| if let Message::Text(t) = m { let v: Value = serde_json::from_str(t).ok()?; (v["code"] == 11000).then(|| v["data"]["codes"].as_str().unwrap().to_string()) } else { None }).collect();
+        assert_eq!(unsub, vec!["BNBUSDT,BTCUSDT".to_string()]);
+        assert!(matches!(frames.last(), Some(Message::Close(Some(f))) if f.code == CloseCode::Normal), "ends with a close frame: {:?}", frames.last());
+    }
+
+    #[tokio::test]
+    async fn a_429_at_connect_is_recognised_and_backs_off() {
+        // a provider that refuses the WebSocket handshake with 429
+        let l = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("ws://{}/ws?business=crypto", l.local_addr().unwrap());
+        tokio::spawn(async move {
+            use tokio::io::{AsyncReadExt, AsyncWriteExt};
+            let (mut tcp, _) = l.accept().await.unwrap();
+            let mut buf = [0u8; 2048];
+            let _ = tcp.read(&mut buf).await;
+            let _ = tcp.write_all(b"HTTP/1.1 429 Too Many Requests\r\nContent-Length: 0\r\n\r\n").await;
+        });
+        let mk = market();
+        let (_plan_tx, plan) = watch::channel(Arc::new(["BTCUSDT".to_string()].into_iter().collect::<BTreeSet<_>>()));
+        let (_stop_tx, stop) = watch::channel(false);
+        let e = session("crypto", &url, plan, &mk, stop).await.unwrap_err();
+        assert!(is_refused(&e), "{e}");
+        assert!(!is_refused(&anyhow::anyhow!("connect timeout")));
+        let mut b = Backoff::default();
+        let (d, alert) = b.next(Outcome::Refused, Duration::ZERO, 0.5, t0());
+        assert!(alert && d == Backoff::REFUSED_BASE);
+    }
+
+    #[tokio::test]
+    async fn health_reports_missing_and_refused_markets() {
+        let mk = market();
+        mk.set_expected("common", true);
+        mk.set_expected("crypto", true);
+        mk.set_connected("common", true);
+        mk.set_refused("crypto", Some(t0()));
+        let st = mk.stats();
+        assert_eq!(st.missing(), vec!["crypto".to_string()]);
+        assert!(st.healthy(chrono::Utc::now()), "missing for less than 5 minutes");
+        assert!(!st.healthy(chrono::Utc::now() + chrono::Duration::minutes(6)), "missing for more than 5 minutes");
+        assert_eq!(st.refused_since.get("crypto"), Some(&t0()));
+        mk.set_connected("crypto", true);
+        assert!(mk.stats().missing().is_empty());
+        assert!(mk.stats().healthy(chrono::Utc::now() + chrono::Duration::minutes(6)));
+        // a market with nothing to stream is not expected
+        mk.set_connected("crypto", false);
+        mk.set_expected("crypto", false);
+        assert!(mk.stats().missing().is_empty());
     }
 }

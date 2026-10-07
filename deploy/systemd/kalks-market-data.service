@@ -11,6 +11,8 @@ Environment=RUST_LOG=info
 ExecStart=/home/kalks/kalks/target/release/market-data
 Restart=always
 RestartSec=3
+# on stop / restart it unsubscribes and closes every provider connection (at most 3 s each) before exiting
+TimeoutStopSec=20
 NoNewPrivileges=true
 LimitNOFILE=65536
 

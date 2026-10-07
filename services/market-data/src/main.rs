@@ -53,7 +53,9 @@ async fn main() -> anyhow::Result<()> {
     market.restore().await?;
     tracing::info!(instruments = market.cat.list.len(), core, ?limits, "market-data starting (last prices restored)");
 
-    ingest::spawn_all(&cfg, market.clone());
+    // stop signal for the provider connections: they unsubscribe and close before the process exits
+    let (stop_tx, stop_rx) = tokio::sync::watch::channel(false);
+    let ingest_tasks = ingest::spawn_all(&cfg, market.clone(), stop_rx.clone());
     if cfg.upstream.is_empty() {
         backfill::spawn(&cfg, market.clone());
     } else {
@@ -106,9 +108,42 @@ async fn main() -> anyhow::Result<()> {
         let _ = tcp.set_nodelay(true);
     });
     tracing::info!(bind = %cfg.bind, "http listening");
-    axum::serve(listener, app).with_graceful_shutdown(async {
-        let _ = tokio::signal::ctrl_c().await;
-    })
-    .await?;
+    // SIGTERM (systemd stop / restart) or SIGINT: stop the provider connections first (unsubscribe + close
+    // handshake, so the provider frees the slots at once and the next start is not refused), stop accepting HTTP,
+    // give open client streams a moment, flush the last bars, exit
+    let mut stopping = stop_rx.clone();
+    let server = axum::serve(listener, app).with_graceful_shutdown(async move {
+        let _ = stopping.wait_for(|s| *s).await;
+    });
+    let server = tokio::spawn(async move { server.await });
+    shutdown_signal().await;
+    tracing::info!("stopping: closing provider connections");
+    let _ = stop_tx.send(true);
+    let closing = futures_util::future::join_all(ingest_tasks);
+    if tokio::time::timeout(ingest::CLOSE_WAIT + Duration::from_secs(2), closing).await.is_err() {
+        tracing::warn!("provider connections did not all close in time");
+    }
+    // browser / engine streams stay open until they go: they reconnect to the next process anyway
+    let _ = tokio::time::timeout(Duration::from_secs(2), server).await;
+    if let Err(e) = market.flush().await {
+        tracing::warn!(error = %e, "final flush failed");
+    }
+    tracing::info!("market-data stopped");
     Ok(())
+}
+
+/// SIGTERM (systemd) or SIGINT (Ctrl-C).
+async fn shutdown_signal() {
+    #[cfg(unix)]
+    {
+        let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()).expect("SIGTERM handler");
+        tokio::select! {
+            _ = term.recv() => {}
+            _ = tokio::signal::ctrl_c() => {}
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = tokio::signal::ctrl_c().await;
+    }
 }
