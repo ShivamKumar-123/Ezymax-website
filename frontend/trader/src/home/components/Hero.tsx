@@ -81,26 +81,42 @@ function RotatingHeadline() {
   return (
     <h1
       className="mk-display"
-      style={{ display: 'grid', textAlign: 'left' }}
+      style={{
+        display: 'grid',
+        textAlign: 'left',
+        /* .mk-display is sized for a centred, full-width headline. In a
+           ~560px column that overflowed into the artwork, so the hero
+           caps it rather than inheriting --mk-text-display. */
+        fontSize: 'clamp(2.1rem, 1.3rem + 2.3vw, 3.4rem)',
+        lineHeight: 1.04,
+      }}
       /* The headline rewrites itself on a timer. Announcing every frame
          would hijack a screen reader, so the live region is off and the
          full offering is stated once in the visually-hidden summary at
          the foot of this section. */
       aria-live="off"
     >
-      <AnimatePresence mode="wait" initial={false}>
+      {/* No mode="wait": that holds the incoming frame until the
+          outgoing one has finished leaving, so the headline is BLANK
+          for the length of the transition — every four seconds, in the
+          largest text on the page. Both frames share grid cell 1/1, so
+          the default sync mode crossfades them in place instead. */}
+      <AnimatePresence initial={false}>
         <motion.span
           key={i}
-          /* Both frames share one grid cell, so the taller of the two
-             sets the height and nothing below ever moves. */
+          /* Both frames occupy the same cell, so they crossfade on top of
+             each other and the taller one sets the block height — nothing
+             below ever moves as the text changes. */
           style={{ gridArea: '1 / 1' }}
           initial={reduced ? false : { opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           exit={reduced ? undefined : { opacity: 0, y: -16 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         >
-          {lead}{' '}
-          <span style={{ color: 'var(--mk-accent)' }}>{accent}</span>
+          {lead}
+          {/* Own line: the design breaks the two tones, and inline the
+              red ran up against the artwork mid-word. */}
+          <span className="block" style={{ color: 'var(--mk-accent)' }}>{accent}</span>
         </motion.span>
       </AnimatePresence>
     </h1>
@@ -124,18 +140,21 @@ export function Hero() {
       />
 
       <div
-        className="mk-container relative"
+        className="mk-container mk-container--wide relative"
         style={{
-          paddingTop: 'clamp(5rem, 3.5rem + 6vw, 7.5rem)',
-          paddingBottom: 'var(--mk-space-7)',
+          paddingTop: 'clamp(4rem, 3rem + 4vw, 6rem)',
+          paddingBottom: 0,
         }}
       >
         {/* Text left, artwork right. The artwork column is given the larger
             share because the cutout is 2.16:1 — at an even split it shrinks
             to the point the laptop screen is unreadable. */}
-        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-6">
+        {/* Text is capped at a readable measure; the artwork takes
+            whatever is left and is bottom-aligned so she stands on the
+            fold instead of floating in it. */}
+        <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,38rem)_minmax(0,1fr)] lg:gap-4">
           {/* ── Left: copy ─────────────────────────────────────────── */}
-          <div className="text-left">
+          <div className="text-left" style={{ paddingBottom: 'var(--mk-space-8)' }}>
             <motion.span
               {...rise(0.05)}
               className="mk-kicker"
@@ -161,7 +180,7 @@ export function Hero() {
             {/* ── Feature strip ──────────────────────────────────── */}
             <motion.ul
               {...rise(0.26)}
-              className="grid grid-cols-2 sm:grid-cols-4"
+              className="grid grid-cols-2 xl:grid-cols-4"
               style={{
                 gap: 'var(--mk-space-4)',
                 marginTop: 'var(--mk-space-6)',
@@ -189,7 +208,7 @@ export function Hero() {
                     <span className="min-w-0">
                       <span
                         className="block font-bold leading-tight"
-                        style={{ fontSize: 'var(--mk-text-sm)' }}
+                        style={{ fontSize: 'var(--mk-text-sm)', textWrap: 'balance' }}
                       >
                         {label}
                       </span>
@@ -228,8 +247,8 @@ export function Hero() {
           {/* ── Right: artwork + floating chips ────────────────────── */}
           <motion.div
             {...rise(0.2)}
-            className="relative mx-auto w-full"
-            style={{ maxWidth: 760 }}
+            className="relative w-full self-end"
+            style={{ marginBottom: '-1px', marginRight: 'calc(var(--mk-gutter) * -1)' }}
           >
             <Image
               src="/images/hero-trader.png"
@@ -239,7 +258,7 @@ export function Hero() {
               /* Above the fold and the LCP candidate — preload rather than
                  letting it lazy-load. */
               priority
-              sizes="(max-width: 1024px) 92vw, 760px"
+              sizes="(max-width: 1024px) 100vw, 56vw"
               className="h-auto w-full"
             />
 

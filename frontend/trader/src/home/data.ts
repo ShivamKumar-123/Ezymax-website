@@ -167,10 +167,13 @@ export const HERO_ROTATE_MS = 4000;
  * `icon` keys map to lucide components in Hero.tsx.
  */
 export const HERO_FEATURES = [
-  { icon: 'Gauge',             label: 'Instant Fills',     sub: 'Market orders at live bid/ask' },
-  { icon: 'Lock',              label: 'Ledgered Balances', sub: 'Every movement auditable' },
-  { icon: 'ShieldCheck',       label: 'Server-Side Risk',  sub: 'Stops fire without your browser' },
-  { icon: 'MonitorSmartphone', label: 'Multi-Platform',    sub: 'Web, desktop & mobile' },
+  // Subs stay to roughly three words: at four-across in the hero column
+  // each item gets ~110px of text width, and anything longer wraps to a
+  // third line and breaks the row's baseline.
+  { icon: 'Gauge',             label: 'Instant Fills',     sub: 'At live bid/ask' },
+  { icon: 'Lock',              label: 'Ledgered Balances', sub: 'Fully auditable' },
+  { icon: 'ShieldCheck',       label: 'Server-Side Risk',  sub: 'Stops always armed' },
+  { icon: 'MonitorSmartphone', label: 'Multi-Platform',    sub: 'Web, desktop, mobile' },
 ] as const;
 
 /**
@@ -180,10 +183,12 @@ export const HERO_FEATURES = [
  * artwork box so they track it as it scales.
  */
 export const HERO_ASSET_CHIPS = [
-  { label: 'GOLD',   glyph: 'Au', tone: 'gold',   top: '16%', left: '-5%' },
-  { label: 'EURUSD', glyph: 'EU', tone: 'blue',   top: '39%', left: '-10%' },
-  { label: 'BTC',    glyph: 'B',  tone: 'orange', top: '20%', left: '33%' },
-  { label: 'US30',   glyph: 'US', tone: 'navy',   top: '44%', left: '35%' },
+  // Clustered around the open palm in the artwork (~10% / 58% of the
+  // image box) so they read as being presented, not pasted over her.
+  { label: 'GOLD',   glyph: 'Au', tone: 'gold',   top: '30%', left: '6%'  },
+  { label: 'EURUSD', glyph: 'EU', tone: 'blue',   top: '46%', left: '-7%' },
+  { label: 'BTC',    glyph: 'B',  tone: 'orange', top: '63%', left: '3%'  },
+  { label: 'US30',   glyph: 'US', tone: 'navy',   top: '17%', left: '4%'  },
 ] as const;
 
 /**

@@ -24,9 +24,9 @@ export function Rewards() {
   return (
     <Section raised>
       <SectionHeading
-        kicker="White label"
-        title="Launch under your own brand"
-        lead="A fully branded platform on your domain, delivered fast and supported after launch."
+        kicker="Start free"
+        title="Practise before you fund"
+        lead="A demo account runs the same engine and the same live prices as a funded one. Judge the platform on how it behaves before you put money on it."
       />
 
       <div

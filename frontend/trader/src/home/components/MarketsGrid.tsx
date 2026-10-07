@@ -23,9 +23,9 @@ export function MarketsGrid() {
     // as dead space.
     <Section id="markets" className="mk-section--tight-top">
       <SectionHeading
-        kicker="What ships with it"
-        title="Everything a trading business runs on"
-        lead={`Liquidity routing, managed accounts and copy trading -- all administered from one back office, all shipped white-label under your brand.`}
+        kicker="What you can trade"
+        title="Markets, and ways to trade them"
+        lead="Forex, metals, indices and crypto from one balance -- traded yourself, copied from someone you rate, or allocated to a managed pool."
       />
 
       <div className="mt-4 flex justify-center">

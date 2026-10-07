@@ -20,7 +20,7 @@ export function Process() {
     <Section id="process">
       <SectionHeading
         kicker="How It Works"
-        title="From first call to live platform"
+        title="From sign-up to first trade"
         lead="From registration to your first live position on the currency markets."
       />
 
