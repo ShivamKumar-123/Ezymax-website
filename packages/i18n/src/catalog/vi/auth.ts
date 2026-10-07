@@ -53,6 +53,9 @@ const auth: NsMessages<"auth"> = {
   "demo.title": "Đây là bản demo Kalks",
   "demo.body": "Không cần tài khoản. Mọi màn hình đều chạy trên dữ liệu mẫu.",
   "demo.enter": "Vào bản demo",
+  "demo.tryTitle": "Bạn mới? Hãy dùng thử bản demo trước",
+  "demo.tryBody": "Khám phá tài khoản demo đầy đủ với dữ liệu mẫu: bảng điều khiển, ví, copy trading, Kalks Trader và quyền chọn. Không cần đăng ký.",
+  "demo.tryCta": "Dùng thử demo",
 
   // Auth layout brand panel
   "brand.headline": "Giao dịch thị trường toàn cầu với độ chính xác chuẩn tổ chức.",

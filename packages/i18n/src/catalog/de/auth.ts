@@ -53,6 +53,9 @@ const auth: NsMessages<"auth"> = {
   "demo.title": "Dies ist die Kalks-Demo",
   "demo.body": "Kein Konto erforderlich. Alle Ansichten laufen mit Beispieldaten.",
   "demo.enter": "Demo starten",
+  "demo.tryTitle": "Neu hier? Testen Sie zuerst die Demo",
+  "demo.tryBody": "Entdecken Sie ein vollständiges Demokonto mit Beispieldaten: Dashboard, Wallet, Copy-Trading, Kalks Trader und Optionen. Ohne Registrierung.",
+  "demo.tryCta": "Demo ausprobieren",
 
   // Auth layout brand panel
   "brand.headline": "Handeln Sie globale Märkte mit institutioneller Präzision.",

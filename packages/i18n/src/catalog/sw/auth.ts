@@ -53,6 +53,9 @@ const auth: NsMessages<"auth"> = {
   "demo.title": "Hii ni demo ya Kalks",
   "demo.body": "Huhitaji akaunti. Kila skrini inatumia data ya mfano.",
   "demo.enter": "Ingia kwenye demo",
+  "demo.tryTitle": "Mgeni hapa? Jaribu demo kwanza",
+  "demo.tryBody": "Gundua akaunti kamili ya demo yenye data ya mfano: dashibodi, pochi, copy trading, Kalks Trader na chaguo (options). Hakuna haja ya kujisajili.",
+  "demo.tryCta": "Jaribu demo",
 
   // Auth layout brand panel
   "brand.headline": "Fanya biashara katika masoko ya dunia kwa usahihi wa kitaasisi.",

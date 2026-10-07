@@ -53,6 +53,9 @@ const auth: NsMessages<"auth"> = {
   "demo.title": "Ini adalah demo Kalks",
   "demo.body": "Tidak perlu akun. Setiap layar menggunakan data contoh.",
   "demo.enter": "Masuk demo",
+  "demo.tryTitle": "Baru di sini? Coba demo dulu",
+  "demo.tryBody": "Jelajahi akun demo lengkap dengan data contoh: dasbor, dompet, copy trading, Kalks Trader, dan opsi. Tanpa pendaftaran.",
+  "demo.tryCta": "Coba demo",
 
   // Auth layout brand panel
   "brand.headline": "Trading di pasar global dengan presisi institusional.",

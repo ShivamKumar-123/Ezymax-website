@@ -53,6 +53,9 @@ const auth: NsMessages<"auth"> = {
   "demo.title": "Kalksデモ版です",
   "demo.body": "アカウントは不要です。すべての画面がサンプルデータで動作します。",
   "demo.enter": "デモを開く",
+  "demo.tryTitle": "はじめてですか？まずはデモをお試しください",
+  "demo.tryBody": "サンプルデータで完全なデモ口座をお試しください：ダッシュボード、ウォレット、コピートレード、Kalks Trader、オプション。登録は不要です。",
+  "demo.tryCta": "デモを試す",
 
   // Auth layout brand panel
   "brand.headline": "機関投資家レベルの精度で世界の市場を取引。",

@@ -53,6 +53,9 @@ const auth: NsMessages<"auth"> = {
   "demo.title": "Kalks 데모입니다",
   "demo.body": "계정이 필요 없습니다. 모든 화면은 샘플 데이터로 실행됩니다.",
   "demo.enter": "데모 시작",
+  "demo.tryTitle": "처음이신가요? 먼저 데모를 체험해 보세요",
+  "demo.tryBody": "샘플 데이터로 전체 데모 계정을 둘러보세요: 대시보드, 지갑, 카피 트레이딩, Kalks Trader, 옵션. 가입이 필요 없습니다.",
+  "demo.tryCta": "데모 체험하기",
 
   // 인증 화면 브랜드 패널
   "brand.headline": "기관 수준의 정밀함으로 글로벌 시장을 거래하세요.",

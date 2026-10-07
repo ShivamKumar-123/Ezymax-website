@@ -53,6 +53,9 @@ const auth: NsMessages<"auth"> = {
   "demo.title": "这是 Kalks 演示版",
   "demo.body": "无需注册账户。所有页面均使用示例数据运行。",
   "demo.enter": "进入演示",
+  "demo.tryTitle": "第一次来？先试试演示",
+  "demo.tryBody": "使用示例数据体验完整的演示账户：仪表盘、钱包、跟单交易、Kalks Trader 和期权。无需注册。",
+  "demo.tryCta": "试用演示",
 
   // Auth layout brand panel
   "brand.headline": "以机构级精准度交易全球市场。",

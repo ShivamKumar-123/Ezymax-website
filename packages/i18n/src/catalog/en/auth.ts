@@ -53,6 +53,9 @@ const auth = {
   "demo.title": "This is the Kalks demo",
   "demo.body": "No account needed. Every screen runs on sample data.",
   "demo.enter": "Enter demo",
+  "demo.tryTitle": "New here? Try the demo first",
+  "demo.tryBody": "Explore a full demo account with sample data: dashboard, wallet, copy trading, Kalks Trader and options. No sign-up needed.",
+  "demo.tryCta": "Try the demo",
 
   // Auth layout brand panel
   "brand.headline": "Trade global markets with institutional precision.",
