@@ -56,7 +56,7 @@ function InstrumentPicker({
       <button
         type="button"
         onClick={() => { setOpen(!open); setSearch(''); }}
-        className="w-full flex items-center justify-between rounded-xl border border-border-primary bg-bg-secondary px-3 py-2.5 text-sm font-medium text-text-primary cursor-pointer hover:border-[#ccff00]/40 focus:border-[#ccff00]/50 outline-none transition-colors"
+        className="w-full flex items-center justify-between rounded-xl border border-border-primary bg-bg-secondary px-3 py-2.5 text-sm font-medium text-text-primary cursor-pointer hover:border-[#1E88FF]/40 focus:border-[#1E88FF]/50 outline-none transition-colors"
       >
         <span className="truncate">{current ? `${current.symbol} — ${current.display_name}` : 'Select Instrument'}</span>
         <ChevronDown size={14} className={clsx('text-text-tertiary shrink-0 transition-transform', open && 'rotate-180')} />
@@ -87,7 +87,7 @@ function InstrumentPicker({
                 onClick={() => { onChange(inst.symbol); setOpen(false); setSearch(''); }}
                 className={clsx(
                   'w-full flex items-center justify-between px-3 py-2 text-left text-sm transition-colors',
-                  inst.symbol === value ? 'bg-[#ccff00]/10 text-[#ccff00]' : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
+                  inst.symbol === value ? 'bg-[#1E88FF]/10 text-[#1E88FF]' : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
                 )}
               >
                 <div className="flex flex-col">
@@ -140,7 +140,7 @@ function SelectField({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="flex-1 rounded-xl border border-border-primary bg-bg-secondary px-3 py-2.5 text-sm text-text-primary outline-none focus:border-[#ccff00]/50 transition-colors appearance-none cursor-pointer font-medium"
+        className="flex-1 rounded-xl border border-border-primary bg-bg-secondary px-3 py-2.5 text-sm text-text-primary outline-none focus:border-[#1E88FF]/50 transition-colors appearance-none cursor-pointer font-medium"
       >
         {placeholder && <option value="">{placeholder}</option>}
         {options.map((o) => (
@@ -175,7 +175,7 @@ function InputField({
         {label}
         {tip && <Tip text={tip} />}
       </label>
-      <div className="flex-1 flex items-center rounded-xl border border-border-primary bg-bg-secondary overflow-hidden transition-colors focus-within:border-[#ccff00]/50">
+      <div className="flex-1 flex items-center rounded-xl border border-border-primary bg-bg-secondary overflow-hidden transition-colors focus-within:border-[#1E88FF]/50">
         <input
           type={type}
           value={value}
@@ -194,19 +194,19 @@ function InputField({
 /* ─── Result panel (premium result card + stat tiles) ─── */
 function ResultPanel({ label, value, details }: { label: string; value: string; details?: { l: string; v: string }[] }) {
   const isNegative = /^-|^\+?-|-\$/.test(value.trim());
-  const valueColor = isNegative ? 'text-red-400' : 'text-[#ccff00]';
+  const valueColor = isNegative ? 'text-red-400' : 'text-[#1E88FF]';
   return (
     <div
       className="relative w-full rounded-2xl border overflow-hidden flex flex-col p-5 sm:p-6 pl-5 min-h-[220px]"
       style={{
-        background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.14), transparent 55%), var(--bg-card)',
-        borderColor: 'rgba(204,255,0,0.22)',
+        background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.14), transparent 55%), var(--bg-card)',
+        borderColor: 'rgba(30,136,255,0.22)',
         boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
       }}
     >
       <div
         className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
-        style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+        style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
         aria-hidden
       />
       {/* Hero value */}
@@ -388,9 +388,9 @@ export default function RiskCalculatorPage() {
         <div className="flex items-start gap-3">
           <div
             className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+            style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
           >
-            <Calculator className="w-5 h-5 text-[#ccff00]" />
+            <Calculator className="w-5 h-5 text-[#1E88FF]" />
           </div>
           <div className="min-w-0">
             <h1 className="text-xl md:text-2xl font-bold text-text-primary">Risk Management</h1>
@@ -410,7 +410,7 @@ export default function RiskCalculatorPage() {
               className={clsx(
                 'flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all whitespace-nowrap',
                 tab === t.id
-                  ? 'bg-[#ccff00] text-[#0a0a0a] shadow-lg shadow-[#ccff00]/20'
+                  ? 'bg-[#1E88FF] text-[#0a0a0a] shadow-lg shadow-[#1E88FF]/20'
                   : 'text-text-secondary hover:text-text-primary',
               )}
             >
@@ -423,8 +423,8 @@ export default function RiskCalculatorPage() {
         <div
           className="rounded-2xl border relative overflow-hidden"
           style={{
-            background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.08), transparent 55%), var(--bg-card)',
-            borderColor: 'rgba(204,255,0,0.16)',
+            background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.08), transparent 55%), var(--bg-card)',
+            borderColor: 'rgba(30,136,255,0.16)',
             boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
           }}
         >
@@ -458,7 +458,7 @@ export default function RiskCalculatorPage() {
                     Account Balance
                     <Tip text="Your trading account balance" />
                   </label>
-                  <div className="flex-1 rounded-xl border border-border-primary bg-bg-secondary px-3 py-2.5 text-sm font-mono font-bold text-[#ccff00]">
+                  <div className="flex-1 rounded-xl border border-border-primary bg-bg-secondary px-3 py-2.5 text-sm font-mono font-bold text-[#1E88FF]">
                     ${balance.toFixed(2)}
                   </div>
                 </div>
@@ -570,7 +570,7 @@ export default function RiskCalculatorPage() {
                 <button
                   type="button"
                   onClick={handleCalculate}
-                  className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-3 rounded-xl bg-[#ccff00] hover:bg-[#a6d600] text-[#0a0a0a] text-sm font-semibold transition-all active:scale-[0.98] shadow-lg shadow-[#ccff00]/15"
+                  className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-3 rounded-xl bg-[#1E88FF] hover:bg-[#0B5BD3] text-[#0a0a0a] text-sm font-semibold transition-all active:scale-[0.98] shadow-lg shadow-[#1E88FF]/15"
                 >
                   <Calculator size={16} />
                   Calculate

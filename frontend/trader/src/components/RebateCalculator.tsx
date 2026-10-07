@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api/client';
 
-const LIME = '#ccff00';
+const LIME = '#1E88FF';
 
 interface Tier {
   tier: string;

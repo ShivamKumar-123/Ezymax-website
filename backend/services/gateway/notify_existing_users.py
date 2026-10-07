@@ -1,8 +1,8 @@
 """One-off: email existing users a "log in here" notice.
 
-Context: the marketing site (fxartha.com) is now invite-only — new visitors
+Context: the marketing site (ezymex.com) is now invite-only — new visitors
 see only "Join Waitlist", no prominent Login button. Existing users should be
-told they can still log in at trade.fxartha.com/auth/login. This script sends
+told they can still log in at trade.ezymex.com/auth/login. This script sends
 that notice.
 
 SAFE BY DEFAULT — running it with no flags only PRINTS the recipient count and
@@ -31,7 +31,7 @@ from packages.common.src.config import get_settings
 from packages.common.src.smtp_mail import send_email, email_configured
 from packages.common.src.email_templates import render_existing_user_login_notice
 
-WALLET_PLACEHOLDER = "%@wallet.fxartha.local"
+WALLET_PLACEHOLDER = "%@wallet.ezymax.local"
 
 
 def _eligible_query():
@@ -56,7 +56,7 @@ async def _count(db) -> int:
 
 
 def _trader_url() -> str:
-    return getattr(get_settings(), "TRADER_APP_URL", "https://trade.fxartha.com")
+    return getattr(get_settings(), "TRADER_APP_URL", "https://trade.ezymex.com")
 
 
 async def dry_run() -> None:

@@ -1,4 +1,4 @@
-"""FXArtha IB rebate model — Milele-style per-closed-lot, tiered, multi-level.
+"""Ezymax IB rebate model — Milele-style per-closed-lot, tiered, multi-level.
 
 Replaces the legacy instant flat-rate IB commission with an **accrual** model:
 each IB accumulates eligible closed lots over a calendar month, a daily

@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ibGet } from '@/lib/api';
 
-const LIME = '#ccff00';
+const LIME = '#1E88FF';
 
 interface Tier {
   tier: string;

@@ -317,7 +317,7 @@ export const particleVertexShader = /* glsl */ `
         vEdgeFade *= smoothstep(0.0, 0.2, uIntro);
 
         // --- COLORS ---
-        // FX Artha's palette, not the source project's blue-to-orange. Both ends
+        // Ezymax's palette, not the source project's blue-to-orange. Both ends
         // are tokens from globals.css so the ring reads as the same brand as the
         // rest of the page:
         //   emerald-500 #10b981 -> the deep end

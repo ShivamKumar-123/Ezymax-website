@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { FXArthaWordmark } from '@/components/layout/FXArthaWordmark';
+import { EzymaxWordmark } from '@/components/layout/EzymaxWordmark';
 import {
   Search,
   Plus,
@@ -75,7 +75,7 @@ function RailBtn({
       className={clsx(
         'w-9 h-9 rounded-md flex items-center justify-center transition-colors shrink-0',
         active
-          ? 'bg-accent/15 text-accent shadow-[inset_0_0_0_1px_rgba(204,255,0,0.25)]'
+          ? 'bg-accent/15 text-accent shadow-[inset_0_0_0_1px_rgba(30,136,255,0.25)]'
           : 'text-text-tertiary hover:text-text-primary hover:bg-bg-hover',
       )}
     >
@@ -134,7 +134,7 @@ export default function TerminalLeftRail({
     >
       <div className="flex flex-col items-center gap-0.5 pt-2 pb-1 px-1.5 border-b border-border-primary">
         <div className="mb-1 flex justify-center w-full">
-          <FXArthaWordmark href="/accounts" variant="rail" />
+          <EzymaxWordmark href="/accounts" variant="rail" />
         </div>
         {/* Search — opens the Markets panel with the instrument search focused. */}
         <RailBtn title="Search symbols" onClick={onFocusSymbolSearch}>

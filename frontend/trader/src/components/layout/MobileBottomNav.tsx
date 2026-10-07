@@ -192,7 +192,7 @@ export default function MobileBottomNav() {
       >
         <div className="relative bg-bg-base">
           {/* Top border glow */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ccff00]/20 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#1E88FF]/20 to-transparent" />
 
           <div className="flex items-end justify-around h-[62px] px-1">
             {/* Home */}
@@ -224,7 +224,7 @@ export default function MobileBottomNav() {
               <div className={clsx(
                 'w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all',
                 isChart
-                  ? 'bg-accent text-text-inverse shadow-[0_4px_20px_rgba(204,255,0,0.4)]'
+                  ? 'bg-accent text-text-inverse shadow-[0_4px_20px_rgba(30,136,255,0.4)]'
                   : 'bg-bg-secondary text-text-secondary border border-border-primary',
               )}>
                 <IconChart />
@@ -272,8 +272,8 @@ export default function MobileBottomNav() {
           >
             {/* Landing-style animated lime aurora behind the grid */}
             <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-              <div className="absolute -top-10 left-[10%] h-40 w-40 rounded-full blur-3xl" style={{ background: 'rgba(204,255,0,0.18)', animation: 'qaAurora 7s ease-in-out infinite' }} />
-              <div className="absolute top-1/3 right-[8%] h-44 w-44 rounded-full blur-3xl" style={{ background: 'rgba(204,255,0,0.12)', animation: 'qaAurora 9s ease-in-out infinite 1.5s' }} />
+              <div className="absolute -top-10 left-[10%] h-40 w-40 rounded-full blur-3xl" style={{ background: 'rgba(30,136,255,0.18)', animation: 'qaAurora 7s ease-in-out infinite' }} />
+              <div className="absolute top-1/3 right-[8%] h-44 w-44 rounded-full blur-3xl" style={{ background: 'rgba(30,136,255,0.12)', animation: 'qaAurora 9s ease-in-out infinite 1.5s' }} />
               <div className="absolute -top-px inset-x-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
             </div>
 
@@ -301,7 +301,7 @@ export default function MobileBottomNav() {
                   >
                     <div
                       className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                      style={{ background: 'rgba(204,255,0,0.10)', boxShadow: '0 0 0 1px rgba(204,255,0,0.22)' }}
+                      style={{ background: 'rgba(30,136,255,0.10)', boxShadow: '0 0 0 1px rgba(30,136,255,0.22)' }}
                     >
                       <Icon size={22} strokeWidth={1.75} style={{ color: 'var(--accent-ink)' }} />
                     </div>

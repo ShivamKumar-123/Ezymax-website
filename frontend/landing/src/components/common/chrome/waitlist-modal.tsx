@@ -140,7 +140,7 @@ export const WaitlistModal = () => {
                 Request access
               </span>
               <h2 className="text-2xl font-bold tracking-display sm:text-3xl">
-                Join the FX Artha waitlist
+                Join the Ezymax waitlist
               </h2>
               <p className="mt-1 text-sm text-foreground/55">
                 We&apos;re invite-only. Tell us who you are and we&apos;ll email your login

@@ -196,7 +196,7 @@ async def update_config(
     if existing is None:
         db.add(SystemSetting(
             key=COST_KEY, value=body.spin_cost_ac,
-            description="Artha Coins charged per Spin & Win spin",
+            description="Ezymax Coins charged per Spin & Win spin",
             updated_by=admin.id, updated_at=datetime.now(timezone.utc),
         ))
     else:

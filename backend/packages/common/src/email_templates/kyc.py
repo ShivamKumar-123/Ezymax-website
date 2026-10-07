@@ -6,7 +6,7 @@ from .base import render_layout, kv_table
 def render_kyc_approved(
     *,
     first_name: str | None,
-    trader_app_url: str = "https://trade.fxartha.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     body = """
@@ -44,7 +44,7 @@ def render_kyc_rejected(
     *,
     first_name: str | None,
     reason: str | None = None,
-    trader_app_url: str = "https://trade.fxartha.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     rows: list[tuple[str, str]] = []

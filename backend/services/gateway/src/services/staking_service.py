@@ -510,7 +510,7 @@ async def weekly_digest(db: AsyncSession, now: Optional[datetime] = None) -> int
         return 0
 
     sent = 0
-    app_url = (get_settings().TRADER_APP_URL or "https://trade.fxartha.com")
+    app_url = (get_settings().TRADER_APP_URL or "https://trade.ezymex.com")
     period_label = "Weekly"
     period_end_str = period_end.strftime("%Y-%m-%d")
 

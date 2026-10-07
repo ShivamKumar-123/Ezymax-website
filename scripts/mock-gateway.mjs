@@ -19,7 +19,7 @@ const PORT = 8000;
 /* ── demo user ── */
 const user = {
   id: "u-demo-0001",
-  email: "demo@fxartha.dev",
+  email: "demo@ezymax.dev",
   first_name: "Demo",
   last_name: "Trader",
   phone: "+10000000000",
@@ -98,7 +98,7 @@ const routes = {
     issued_at: new Date().toISOString(),
     expires_at: new Date(Date.now() + 600_000).toISOString(),
     domain: "localhost:3001",
-    statement: `Sign in to FXArtha (demo) as ${body?.address ?? "0x…"}`,
+    statement: `Sign in to Ezymax (demo) as ${body?.address ?? "0x…"}`,
   }),
   "POST /api/v1/auth/wallet/verify": () => token(),
   "GET /api/v1/auth/platform-status": () => ({
@@ -322,7 +322,7 @@ const routes = {
     { id: "st-3", slug: "priority-support", category: "perk", label: "Priority Support (1 mo)", description: "Skip the queue with the priority desk.", ac_price: 150 },
     { id: "st-4", slug: "ai-analysis", category: "tool", label: "AI Trade Analysis (10)", description: "Ten AI-generated reviews of your closed trades.", ac_price: 200 },
     { id: "st-5", slug: "tradingview-1mo", category: "tool", label: "TradingView Pro (1 mo)", description: "One month of TradingView Pro on us.", ac_price: 320 },
-    { id: "st-6", slug: "event-ticket", category: "lifestyle", label: "Trading Summit Ticket", description: "Entry to the next FXArtha community summit.", ac_price: 500, min_ps: 700 },
+    { id: "st-6", slug: "event-ticket", category: "lifestyle", label: "Trading Summit Ticket", description: "Entry to the next Ezymax community summit.", ac_price: 500, min_ps: 700 },
   ],
   "GET /api/v1/rewards/missions": () => [],
   "GET /api/v1/rewards/leaderboard": () => [],

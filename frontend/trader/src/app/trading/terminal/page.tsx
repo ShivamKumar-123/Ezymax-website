@@ -302,7 +302,7 @@ export default function TradingTerminalPage() {
         <button
           type="button"
           onClick={onPanelsSelectOrder}
-          className="inline-flex h-10 items-center gap-2 rounded-full bg-[#ccff00] px-5 text-[13px] font-bold text-[#0a0a0a] shadow-[0_2px_12px_-3px_rgba(204,255,0,0.75)] transition-transform hover:scale-[1.03] active:scale-95 whitespace-nowrap"
+          className="inline-flex h-10 items-center gap-2 rounded-full bg-[#1E88FF] px-5 text-[13px] font-bold text-[#0a0a0a] shadow-[0_2px_12px_-3px_rgba(30,136,255,0.75)] transition-transform hover:scale-[1.03] active:scale-95 whitespace-nowrap"
           title="Show the order ticket"
         >
           <CandlestickChart className="w-4 h-4 shrink-0" aria-hidden />

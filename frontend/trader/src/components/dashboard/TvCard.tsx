@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Volume2, VolumeX } from 'lucide-react';
 
 /**
- * Full-width commercial banner at the top of the dashboard: the FXArtha film
+ * Full-width commercial banner at the top of the dashboard: the Ezymax film
  * (the landing hero's former loop) slides in from the RIGHT to its resting
  * place, playing muted on repeat, with a pulsing channel badge and a sound
  * toggle.
@@ -24,13 +24,13 @@ export default function TvCard() {
     >
       <video
         ref={videoRef}
-        src="/videos/fxartha-commercial.mp4"
+        src="/videos/ezymax-commercial.mp4"
         autoPlay
         muted={muted}
         loop
         playsInline
         preload="metadata"
-        aria-label="FXArtha commercial"
+        aria-label="Ezymax commercial"
         className="block h-36 w-full object-cover sm:h-48 lg:h-56"
       />
 
@@ -42,14 +42,14 @@ export default function TvCard() {
 
       <span className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em] text-white uppercase backdrop-blur-sm">
         <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#ccff00] opacity-75" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#ccff00]" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#1E88FF] opacity-75" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#1E88FF]" />
         </span>
-        FXArtha TV
+        Ezymax TV
       </span>
 
       <p className="absolute bottom-3 left-3 max-w-[60%] text-xs font-medium text-white/90 sm:text-sm">
-        Trade the markets at full speed — the FXArtha film.
+        Trade the markets at full speed — the Ezymax film.
       </p>
 
       <button

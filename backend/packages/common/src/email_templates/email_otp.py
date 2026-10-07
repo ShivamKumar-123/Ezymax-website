@@ -15,7 +15,7 @@ def render_email_otp(
     first_name: str | None,
     code: str,
     ttl_minutes: int = 10,
-    trader_app_url: str = "https://trade.fxartha.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     base = trader_app_url.rstrip("/")
@@ -38,21 +38,21 @@ def render_email_otp(
     </p>
     """
 
-    subject = f"FXArtha verification code: {code}"
+    subject = f"Ezymax verification code: {code}"
     html = render_layout(
         title="Verify your email",
-        intro=f"Hi {name}, here's your one-time code to confirm this email on FXArtha.",
+        intro=f"Hi {name}, here's your one-time code to confirm this email on Ezymax.",
         body_html=body,
         footer_note=(
             "This code is valid for one verification only. Do not share it "
-            "with anyone — FXArtha staff will never ask you for it."
+            "with anyone — Ezymax staff will never ask you for it."
         ),
     )
 
     text_lines = [
         f"Hi {name},",
         "",
-        "Here's your FXArtha email verification code:",
+        "Here's your Ezymax email verification code:",
         "",
         f"   {code}",
         "",
@@ -60,6 +60,6 @@ def render_email_otp(
         "",
         "If you didn't ask for this code, ignore this email.",
         "",
-        f"— FXArtha team    {base}",
+        f"— Ezymax team    {base}",
     ]
     return subject, html, "\n".join(text_lines)

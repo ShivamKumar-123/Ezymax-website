@@ -151,10 +151,10 @@ export const headerCta = {
 } as const;
 
 export const footerContent = {
-  brand: "FX Artha",
+  brand: "Ezymax",
   tagline:
     "A protocol-driven trading ecosystem with automated settlement. Funds stay under your control; execution and settlement run on system-defined logic.",
-  email: "support@fxartha.com",
+  email: "support@ezymex.com",
   columns: [
     {
       title: "Trade",
@@ -202,10 +202,10 @@ export const footerContent = {
   ],
   riskTitle: "Risk Warning",
   riskBody:
-    "Trading forex and contracts for difference (CFDs) carries a high level of risk and may not be suitable for all investors. You could lose more than your initial investment. Past performance is not indicative of future results. Please ensure you fully understand the risks involved and seek independent advice if necessary. FX Artha does not provide investment advice.",
+    "Trading forex and contracts for difference (CFDs) carries a high level of risk and may not be suitable for all investors. You could lose more than your initial investment. Past performance is not indicative of future results. Please ensure you fully understand the risks involved and seek independent advice if necessary. Ezymax does not provide investment advice.",
   riskNote:
     "Withdrawal of free balance is executed by the trading contract under published platform rules and applicable legal and compliance requirements.",
-  legal: "© 2026 FX Artha Ltd. All rights reserved.",
+  legal: "© 2026 Ezymax Ltd. All rights reserved.",
   legalLinks: [
     { label: "Privacy Policy", href: "/privacy" },
     { label: "Terms of Service", href: "/terms" },

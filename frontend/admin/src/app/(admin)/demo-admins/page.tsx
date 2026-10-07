@@ -238,7 +238,7 @@ export default function DemoAdminsPage() {
                 label="Email"
                 value={form.email}
                 onChange={(v) => setForm((f) => ({ ...f, email: v }))}
-                placeholder="demo-client-x@fxartha.com"
+                placeholder="demo-client-x@ezymex.com"
               />
               <div className="flex items-end gap-2">
                 <div className="flex-1">

@@ -16,10 +16,10 @@
 --
 -- Apply once on the TimescaleDB instance. The DB name is taken from
 -- the TIMESCALE_DB env var (default 'marketdata' per docker-compose.yml).
--- If you've overridden TIMESCALE_DB in /opt/fxartha/.env, substitute it
+-- If you've overridden TIMESCALE_DB in /opt/ezymax/.env, substitute it
 -- into the -d flag below.
 --
---   docker exec -i fxartha-timescaledb-1 psql -U fxartha -d marketdata \
+--   docker exec -i ezymax-timescaledb-1 psql -U ezymax -d marketdata \
 --     < backend/infra/docker/migrations-manual/008_timescale_compression_retention.sql
 --
 -- Idempotent: every ALTER and add_*_policy is guarded so re-running is safe.

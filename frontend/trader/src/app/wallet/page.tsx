@@ -693,7 +693,7 @@ function WalletPageContent() {
     return (
       <DashboardShell mainClassName="flex items-center justify-center">
         <div className="flex flex-col items-center gap-3 py-12">
-          <div className="w-8 h-8 border-2 border-[#ccff00] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#1E88FF] border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-text-secondary">Loading wallet...</span>
         </div>
       </DashboardShell>
@@ -781,13 +781,13 @@ function WalletPageContent() {
                     at deposit time). */}
                 <div
                   className="group relative overflow-hidden rounded-2xl p-4 pl-5 border flex flex-col transition-all duration-300 hover:-translate-y-1"
-                  style={{ background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.13), transparent 55%), var(--bg-card)', borderColor: 'rgba(204,255,0,0.20)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}
+                  style={{ background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.13), transparent 55%), var(--bg-card)', borderColor: 'rgba(30,136,255,0.20)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}
                 >
-                  <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5" style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }} aria-hidden />
+                  <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5" style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }} aria-hidden />
                   <div className="flex items-center gap-2.5 mb-3">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.28)' }}
+                      style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.28)' }}
                     >
                       <WalletIcon size={18} style={{ color: 'var(--accent-ink)' }} />
                     </div>
@@ -801,7 +801,7 @@ function WalletPageContent() {
                       type="button"
                       onClick={() => { setFundMainTab('deposit'); setFundTargetPreference('main'); scrollToFundPanel(); }}
                       className="py-2 rounded-lg text-xs font-bold transition-transform hover:brightness-105 active:scale-[0.98]"
-                      style={{ background: '#ccff00', color: '#0a0a0a' }}
+                      style={{ background: '#1E88FF', color: '#0a0a0a' }}
                     >
                       Deposit
                     </button>
@@ -823,12 +823,12 @@ function WalletPageContent() {
                 {wallet?.wallet_account && (
                   <div
                     className="rounded-2xl p-4 border flex flex-col"
-                    style={{ background: 'rgba(204,255,0,0.08)', borderColor: 'rgba(204,255,0,0.40)' }}
+                    style={{ background: 'rgba(30,136,255,0.08)', borderColor: 'rgba(30,136,255,0.40)' }}
                   >
                     <div className="flex items-center gap-2.5 mb-3">
                       <div
                         className="w-10 h-10 rounded-xl border flex items-center justify-center"
-                        style={{ background: 'rgba(204,255,0,0.15)', borderColor: 'rgba(204,255,0,0.35)' }}
+                        style={{ background: 'rgba(30,136,255,0.15)', borderColor: 'rgba(30,136,255,0.35)' }}
                       >
                         <WalletIcon size={18} style={{ color: 'var(--accent-ink)' }} />
                       </div>
@@ -847,7 +847,7 @@ function WalletPageContent() {
                         type="button"
                         onClick={() => { setFundMainTab('deposit'); setFundTargetPreference('wallet'); scrollToFundPanel(); }}
                         className="py-2 rounded-lg text-xs font-bold transition-colors"
-                        style={{ background: '#ccff00', color: 'var(--bg-base)' }}
+                        style={{ background: '#1E88FF', color: 'var(--bg-base)' }}
                       >
                         Deposit
                       </button>
@@ -866,13 +866,13 @@ function WalletPageContent() {
                     a trading account as credit (consumed before real balance on loss). */}
                 <div
                   className="group relative overflow-hidden rounded-2xl p-4 pl-5 border flex flex-col transition-all duration-300 hover:-translate-y-1"
-                  style={{ background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)', borderColor: 'rgba(204,255,0,0.20)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}
+                  style={{ background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)', borderColor: 'rgba(30,136,255,0.20)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}
                 >
-                  <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5" style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }} aria-hidden />
+                  <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5" style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }} aria-hidden />
                   <div className="flex items-center gap-2.5 mb-3">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.28)' }}
+                      style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.28)' }}
                     >
                       <Gift size={18} style={{ color: 'var(--accent-ink)' }} />
                     </div>
@@ -885,7 +885,7 @@ function WalletPageContent() {
                     type="button"
                     onClick={() => router.push('/transfer')}
                     className="mt-3 w-full py-2 rounded-lg text-xs font-bold transition-transform hover:brightness-105 active:scale-[0.98]"
-                    style={{ background: '#ccff00', color: '#0a0a0a' }}
+                    style={{ background: '#1E88FF', color: '#0a0a0a' }}
                   >
                     Transfer to Account
                   </button>
@@ -924,14 +924,14 @@ function WalletPageContent() {
                   boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
                 }}
               >
-                <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[60px] bg-[#ccff00]/[0.04] group-hover:bg-[#ccff00]/[0.08] transition-colors duration-500" />
+                <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[60px] bg-[#1E88FF]/[0.04] group-hover:bg-[#1E88FF]/[0.08] transition-colors duration-500" />
                 <div className="relative p-3 sm:p-4 md:p-5 flex flex-col gap-2.5 sm:gap-3">
                   <div className="flex items-center justify-between">
                     <div
-                      className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center border border-[#ccff00]/25"
-                      style={{ background: 'linear-gradient(135deg, rgba(204,255,0,0.18) 0%, rgba(204,255,0,0.05) 100%)' }}
+                      className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center border border-[#1E88FF]/25"
+                      style={{ background: 'linear-gradient(135deg, rgba(30,136,255,0.18) 0%, rgba(30,136,255,0.05) 100%)' }}
                     >
-                      <WalletIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#ccff00]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(204,255,0,0.5))' }} />
+                      <WalletIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#1E88FF]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(30,136,255,0.5))' }} />
                     </div>
                     {(wallet?.pending_withdrawals ?? 0) > 0 && (
                       <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
@@ -940,7 +940,7 @@ function WalletPageContent() {
                     )}
                   </div>
                   <div>
-                    <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#ccff00]/60 mb-0.5 sm:mb-1">
+                    <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#1E88FF]/60 mb-0.5 sm:mb-1">
                       {wallet?.wallet_account ? 'Wallet Account' : 'Main Wallet'}
                     </p>
                     <p className="text-sm sm:text-lg md:text-xl font-bold tabular-nums font-mono text-text-primary truncate">
@@ -953,7 +953,7 @@ function WalletPageContent() {
                       onClick={() => openTransferFromMain(liveAccounts.length === 1 ? liveAccounts[0].id : null)}
                       disabled={demoFundingBlocked}
                       title="Add to trading account"
-                      className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-bold transition-all bg-[#ccff00]/10 text-[#ccff00] border border-[#ccff00]/20 hover:bg-[#ccff00]/20 hover:border-[#ccff00]/40 disabled:opacity-40 disabled:pointer-events-none"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-bold transition-all bg-[#1E88FF]/10 text-[#1E88FF] border border-[#1E88FF]/20 hover:bg-[#1E88FF]/20 hover:border-[#1E88FF]/40 disabled:opacity-40 disabled:pointer-events-none"
                     >
                       <ArrowUpFromLine className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
                       To Trading
@@ -979,7 +979,7 @@ function WalletPageContent() {
                 // `ink` = the on-white-readable foreground. Lime is invisible as
                 // text/icon in light mode, so it maps to the theme-aware token
                 // (lime on dark, dark olive-lime on light); amber/purple read fine.
-                const ac = isManaged ? { r: '245,158,11', hex: '#f59e0b', ink: '#f59e0b' } : isPool ? { r: '168,85,247', hex: '#a855f7', ink: '#a855f7' } : { r: '204,255,0', hex: '#ccff00', ink: 'var(--accent-ink)' };
+                const ac = isManaged ? { r: '245,158,11', hex: '#f59e0b', ink: '#f59e0b' } : isPool ? { r: '168,85,247', hex: '#a855f7', ink: '#a855f7' } : { r: '30,136,255', hex: '#1E88FF', ink: 'var(--accent-ink)' };
 
                 return (
                   <div
@@ -991,7 +991,7 @@ function WalletPageContent() {
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedAccountId(a.id); } }}
                     className={clsx(
                       'relative group rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer outline-none hover:scale-[1.02]',
-                      isSel && 'ring-2 ring-[#ccff00]/30',
+                      isSel && 'ring-2 ring-[#1E88FF]/30',
                     )}
                     style={{
                       background: 'var(--bg-card)',
@@ -1105,7 +1105,7 @@ function WalletPageContent() {
                     {active ? (
                       <span
                         key={fundMainTab}
-                        className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(204,255,0,0.7)]"
+                        className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(30,136,255,0.7)]"
                       >
                         {t === 'deposit' ? 'Deposit' : 'Withdraw'}
                       </span>
@@ -1143,7 +1143,7 @@ function WalletPageContent() {
                     onClick={() => setFundTargetPreference('wallet')}
                     className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-colors ${
                       fundTargetPreference === 'wallet'
-                        ? 'bg-[#ccff00] text-bg-base'
+                        ? 'bg-[#1E88FF] text-bg-base'
                         : 'text-text-tertiary hover:text-text-primary'
                     }`}
                   >
@@ -1169,7 +1169,7 @@ function WalletPageContent() {
                     <p className="text-xs text-text-tertiary mb-2 font-medium uppercase tracking-wide">Deposit To</p>
                     <button
                       type="button"
-                      className="w-full py-3.5 rounded-xl bg-[#ccff00] text-black font-bold text-sm flex items-center justify-center gap-2"
+                      className="w-full py-3.5 rounded-xl bg-[#1E88FF] text-black font-bold text-sm flex items-center justify-center gap-2"
                     >
                       <WalletIcon className="w-4 h-4" />
                       Wallet
@@ -1392,7 +1392,7 @@ function WalletPageContent() {
                                 onClick={() =>
                                   setWithdrawAmount(String(Math.max(0, wallet?.wallet_account?.balance ?? wallet?.main_wallet_balance ?? 0)))
                                 }
-                                className="text-xs font-bold text-[#ccff00] hover:underline"
+                                className="text-xs font-bold text-[#1E88FF] hover:underline"
                               >
                                 Max
                               </button>
@@ -1418,7 +1418,7 @@ function WalletPageContent() {
                                 <button
                                   type="button"
                                   onClick={() => setWithdrawCryptoAddress(linkedWalletAddress)}
-                                  className="text-[11px] font-bold text-[#ccff00] hover:underline"
+                                  className="text-[11px] font-bold text-[#1E88FF] hover:underline"
                                 >
                                   Use linked wallet
                                 </button>
@@ -1484,7 +1484,7 @@ function WalletPageContent() {
                             onClick={() =>
                               setWithdrawAmount(String(Math.max(0, wallet?.wallet_account?.balance ?? wallet?.main_wallet_balance ?? 0)))
                             }
-                            className="text-xs font-bold text-[#ccff00] hover:underline"
+                            className="text-xs font-bold text-[#1E88FF] hover:underline"
                           >
                             Max
                           </button>
@@ -1571,28 +1571,28 @@ function WalletPageContent() {
 
           <div className="grid grid-cols-2 gap-3 md:gap-4">
             <Card variant="glass" className="flex flex-col gap-1 border-border-glass/30 relative overflow-hidden group">
-              <div className="flex items-center gap-2 text-[#ccff00] text-[10px] md:text-xs font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-[#1E88FF] text-[10px] md:text-xs font-bold uppercase tracking-wider">
                 <ArrowDownLeft className="w-3 h-3" /> Total Deposits
               </div>
               <div className="text-base md:text-xl font-bold text-text-primary tabular-nums font-mono">
                 {fmt(wallet?.total_deposited || 0)}
               </div>
-              <div className="absolute top-0 right-0 w-12 h-12 bg-[#ccff00]/5 rounded-bl-full group-hover:bg-[#ccff00]/10 transition-colors" />
+              <div className="absolute top-0 right-0 w-12 h-12 bg-[#1E88FF]/5 rounded-bl-full group-hover:bg-[#1E88FF]/10 transition-colors" />
             </Card>
             <Card variant="glass" className="flex flex-col gap-1 border-border-glass/30 relative overflow-hidden group">
-              <div className="flex items-center gap-2 text-[#ccff00] text-[10px] md:text-xs font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-[#1E88FF] text-[10px] md:text-xs font-bold uppercase tracking-wider">
                 <ArrowUpRight className="w-3 h-3" /> Total Withdrawals
               </div>
               <div className="text-base md:text-xl font-bold text-text-primary tabular-nums font-mono">
                 {fmt(wallet?.total_withdrawn || 0)}
               </div>
-              <div className="absolute top-0 right-0 w-12 h-12 bg-[#ccff00]/5 rounded-bl-full group-hover:bg-[#ccff00]/10 transition-colors" />
+              <div className="absolute top-0 right-0 w-12 h-12 bg-[#1E88FF]/5 rounded-bl-full group-hover:bg-[#1E88FF]/10 transition-colors" />
             </Card>
           </div>
 
           <div className="bg-bg-secondary/50 border border-border-glass/20 rounded-xl p-4 flex gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#ccff00]/10 flex items-center justify-center shrink-0">
-              <Clock className="w-4 h-4 text-[#ccff00]" />
+            <div className="w-8 h-8 rounded-lg bg-[#1E88FF]/10 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4 text-[#1E88FF]" />
             </div>
             <div>
               <h5 className="text-text-primary font-bold text-xs uppercase tracking-wide">Processing Time</h5>
@@ -1742,7 +1742,7 @@ export default function WalletPage() {
       fallback={
         <DashboardShell mainClassName="flex items-center justify-center">
           <div className="flex flex-col items-center gap-3 py-12">
-            <div className="w-8 h-8 border-2 border-[#ccff00] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#1E88FF] border-t-transparent rounded-full animate-spin" />
             <span className="text-sm text-text-secondary">Loading wallet…</span>
           </div>
         </DashboardShell>

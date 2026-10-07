@@ -49,7 +49,7 @@ class ApiClient {
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('token');
-        localStorage.removeItem('fxartha-auth');
+        localStorage.removeItem('ezymax-auth');
       } catch {
         /* ignore */
       }

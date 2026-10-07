@@ -68,7 +68,7 @@ export const insuranceApi = {
 };
 
 /* ─────────────────────────────────────────────────────────────────────
- * FXArtha Shield — aggregate period-plan insurance (separate product).
+ * Ezymax Shield — aggregate period-plan insurance (separate product).
  * Backed by /api/v1/insurance/shield/* (backend/services/gateway/src/api/shield.py).
  * Unlike per-trade insurance, the user buys ONE period plan (Daily/Weekly/
  * Monthly) that covers a share of their cumulative loss over that window.

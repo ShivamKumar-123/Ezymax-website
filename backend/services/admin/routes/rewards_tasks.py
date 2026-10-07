@@ -42,8 +42,8 @@ def _row(m: RewardsMission) -> dict:
         "action_kind": m.action_kind,
         "target_count": int(m.target_count or 0),
         "xp_reward": int(m.xp_reward or 0),
-        # ac_reward is the AC (Artha Coin) payout. The UI briefly called the coin
-        # "FXA"; AC is the one name used everywhere now.
+        # ac_reward is the AC (Ezymax Coin) payout. The UI briefly called the coin
+        # "EZC"; AC is the one name used everywhere now.
         "fxa_reward": float(m.ac_reward) if m.ac_reward is not None else 0.0,
         # Power Score paid on claim. Defaults to 100 — the flat amount every
         # claim paid before this became per-task.

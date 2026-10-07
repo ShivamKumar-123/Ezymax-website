@@ -72,7 +72,7 @@ export default function LifestylePage() {
       <header className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl font-semibold text-text-primary flex items-center gap-2">
-            Lifestyle Fulfillment <Package size={18} className="text-[#ccff00]" />
+            Lifestyle Fulfillment <Package size={18} className="text-[#1E88FF]" />
           </h1>
           <p className="text-xs text-text-tertiary mt-0.5">Ship physical rewards / book travel for PS-gated redemptions.</p>
         </div>
@@ -93,7 +93,7 @@ export default function LifestylePage() {
             onClick={() => setFilter(s)}
             className={
               'px-3 py-1.5 rounded-md text-xs font-medium capitalize whitespace-nowrap transition-colors ' +
-              (filter === s ? 'bg-[#ccff00]/15 text-text-primary border border-[#ccff00]/40' : 'text-text-secondary hover:text-text-primary border border-transparent')
+              (filter === s ? 'bg-[#1E88FF]/15 text-text-primary border border-[#1E88FF]/40' : 'text-text-secondary hover:text-text-primary border border-transparent')
             }
           >
             {s}

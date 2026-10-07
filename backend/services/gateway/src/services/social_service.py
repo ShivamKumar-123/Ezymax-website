@@ -951,7 +951,7 @@ async def withdraw_managed_account(
 #
 # Two paths:
 #   1. Verified external P&L  — submit a track-record URL; admin reviews.
-#   2. Qualify via FXArtha    — meet all four criteria below over the
+#   2. Qualify via Ezymax    — meet all four criteria below over the
 #      user's lifetime trading on the platform.
 
 MASTER_MIN_ACTIVE_DAYS = 30

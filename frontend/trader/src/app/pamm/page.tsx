@@ -119,7 +119,7 @@ type Tab = 'browse' | 'investments' | 'apply' | 'dashboard';
 
 function TypeBadge({ type }: { type: string }) {
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#ccff00]/10 border border-[#ccff00]/20 text-[#ccff00] text-[10px] font-bold uppercase tracking-wide">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#1E88FF]/10 border border-[#1E88FF]/20 text-[#1E88FF] text-[10px] font-bold uppercase tracking-wide">
       {type}
     </span>
   );
@@ -127,19 +127,19 @@ function TypeBadge({ type }: { type: string }) {
 
 function PnlText({ value, suffix = '' }: { value: number; suffix?: string }) {
   return (
-    <span className={value >= 0 ? 'text-[#ccff00]' : 'text-red-400'}>
+    <span className={value >= 0 ? 'text-[#1E88FF]' : 'text-red-400'}>
       {value >= 0 ? '+' : ''}{fmt(value)}{suffix}
     </span>
   );
 }
 
 function Spinner() {
-  return <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#ccff00] border-t-transparent" />;
+  return <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1E88FF] border-t-transparent" />;
 }
 
 function TradeRow({ t }: { t: { symbol: string; side: string; lots: number; open_price: number; close_price?: number; master_pnl: number; your_share: number; status: string; opened_at?: string; closed_at?: string } }) {
   const isBuy = t.side?.toLowerCase() === 'buy';
-  const pnlColor = t.master_pnl >= 0 ? 'text-[#ccff00]' : 'text-red-400';
+  const pnlColor = t.master_pnl >= 0 ? 'text-[#1E88FF]' : 'text-red-400';
   return (
     <div className="rounded-lg bg-bg-secondary border border-border-primary px-3 py-2">
       <div className="flex items-center justify-between gap-2">
@@ -161,7 +161,7 @@ function TradeRow({ t }: { t: { symbol: string; side: string; lots: number; open
           {t.close_price != null && ` → ${t.close_price.toFixed(5)}`}
         </span>
         <span>
-          Your share: <span className={clsx('font-mono font-semibold', t.your_share >= 0 ? 'text-[#ccff00]' : 'text-red-400')}>
+          Your share: <span className={clsx('font-mono font-semibold', t.your_share >= 0 ? 'text-[#1E88FF]' : 'text-red-400')}>
             {t.your_share >= 0 ? '+' : ''}${fmt(t.your_share)}
           </span>
         </span>
@@ -473,9 +473,9 @@ export default function PammPage() {
         <div className="flex items-center gap-3">
           <div
             className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+            style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
           >
-            <Landmark className="w-5 h-5 text-[#ccff00]" />
+            <Landmark className="w-5 h-5 text-[#1E88FF]" />
           </div>
           <div className="min-w-0">
             <h1 className="text-xl md:text-2xl font-bold text-text-primary leading-tight">PAM Accounts</h1>
@@ -696,12 +696,12 @@ export default function PammPage() {
               <div
                 className="flex flex-col items-center justify-center py-20 px-6 text-center rounded-2xl border"
                 style={{
-                  background: 'radial-gradient(130% 120% at 50% -25%, rgba(204,255,0,0.08), transparent 55%), var(--bg-card)',
-                  borderColor: 'rgba(204,255,0,0.16)',
+                  background: 'radial-gradient(130% 120% at 50% -25%, rgba(30,136,255,0.08), transparent 55%), var(--bg-card)',
+                  borderColor: 'rgba(30,136,255,0.16)',
                 }}
               >
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}>
-                  <Landmark size={24} className="text-[#ccff00]" />
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}>
+                  <Landmark size={24} className="text-[#1E88FF]" />
                 </div>
                 <p className="text-text-primary font-semibold text-lg">No managed accounts available</p>
                 <p className="text-sm text-text-tertiary mt-1">PAMM managers will appear here once approved. Check back soon.</p>
@@ -717,21 +717,21 @@ export default function PammPage() {
                     key={a.id}
                     className="group relative rounded-2xl border overflow-hidden transition-all duration-300 hover:-translate-y-1 flex flex-col"
                     style={{
-                      background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)',
-                      borderColor: 'rgba(204,255,0,0.16)',
+                      background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)',
+                      borderColor: 'rgba(30,136,255,0.16)',
                       boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
                     }}
                   >
                     <div
                       className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
-                      style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+                      style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
                     />
                     <div className="relative z-10 p-5 pl-6 flex flex-col flex-1">
                       <div className="flex items-start justify-between gap-2 mb-4">
                         <div className="flex items-center gap-3 min-w-0">
                           <div
                             className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold text-[#0a0a0a] shrink-0"
-                            style={{ background: 'linear-gradient(135deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 4px 14px rgba(204,255,0,0.28)' }}
+                            style={{ background: 'linear-gradient(135deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 4px 14px rgba(30,136,255,0.28)' }}
                           >
                             {initials}
                           </div>
@@ -743,22 +743,22 @@ export default function PammPage() {
                         <button
                           type="button"
                           onClick={() => openInvest(a)}
-                          className="shrink-0 px-4 py-1.5 text-xs font-semibold rounded-xl bg-[#ccff00] hover:bg-[#a6d600] text-[#0a0a0a] transition-colors"
+                          className="shrink-0 px-4 py-1.5 text-xs font-semibold rounded-xl bg-[#1E88FF] hover:bg-[#0B5BD3] text-[#0a0a0a] transition-colors"
                         >
                           Invest
                         </button>
                       </div>
 
                       {/* Hero ROI stat */}
-                      <div className="rounded-xl border p-3 mb-3" style={{ background: 'rgba(204,255,0,0.05)', borderColor: 'rgba(204,255,0,0.14)' }}>
+                      <div className="rounded-xl border p-3 mb-3" style={{ background: 'rgba(30,136,255,0.05)', borderColor: 'rgba(30,136,255,0.14)' }}>
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)' }}>
-                              <TrendingUp className="w-4 h-4 text-[#ccff00]" />
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(30,136,255,0.10)' }}>
+                              <TrendingUp className="w-4 h-4 text-[#1E88FF]" />
                             </div>
                             <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Total ROI</span>
                           </div>
-                          <p className={clsx('text-2xl font-bold font-mono tabular-nums', roiPositive ? 'text-[#ccff00]' : 'text-red-400')}>
+                          <p className={clsx('text-2xl font-bold font-mono tabular-nums', roiPositive ? 'text-[#1E88FF]' : 'text-red-400')}>
                             {roiPositive ? '+' : ''}{a.total_return_pct.toFixed(2)}%
                           </p>
                         </div>
@@ -783,8 +783,8 @@ export default function PammPage() {
                       </div>
 
                       <div className="flex items-center justify-between mt-2.5 text-[10px] text-text-tertiary">
-                        <span className="flex items-center gap-1"><Percent className="w-3 h-3 text-[#ccff00]" /> Fee {a.performance_fee_pct}%</span>
-                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3 text-[#ccff00]" /> Min ${a.min_investment.toLocaleString()}</span>
+                        <span className="flex items-center gap-1"><Percent className="w-3 h-3 text-[#1E88FF]" /> Fee {a.performance_fee_pct}%</span>
+                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3 text-[#1E88FF]" /> Min ${a.min_investment.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -806,8 +806,8 @@ export default function PammPage() {
                     {[
                       { label: 'Total Invested', value: `$${fmt(summary.total_invested)}`, color: undefined },
                       { label: 'Current Value', value: `$${fmt(summary.total_current_value)}`, color: undefined },
-                      { label: 'Total P&L', value: `${summary.total_pnl >= 0 ? '+' : ''}$${fmt(summary.total_pnl)}`, color: summary.total_pnl >= 0 ? 'text-[#ccff00]' : 'text-red-400' },
-                      { label: 'P&L %', value: `${summary.overall_pnl_pct >= 0 ? '+' : ''}${summary.overall_pnl_pct.toFixed(2)}%`, color: summary.overall_pnl_pct >= 0 ? 'text-[#ccff00]' : 'text-red-400' },
+                      { label: 'Total P&L', value: `${summary.total_pnl >= 0 ? '+' : ''}$${fmt(summary.total_pnl)}`, color: summary.total_pnl >= 0 ? 'text-[#1E88FF]' : 'text-red-400' },
+                      { label: 'P&L %', value: `${summary.overall_pnl_pct >= 0 ? '+' : ''}${summary.overall_pnl_pct.toFixed(2)}%`, color: summary.overall_pnl_pct >= 0 ? 'text-[#1E88FF]' : 'text-red-400' },
                     ].map((s) => (
                       <div key={s.label} className="bg-card border border-border-primary rounded-xl px-4 py-3 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
                         <p className="text-[10px] text-text-tertiary mb-1">{s.label}</p>
@@ -821,19 +821,19 @@ export default function PammPage() {
                   <div
                     className="flex flex-col items-center justify-center py-20 px-6 text-center rounded-2xl border"
                     style={{
-                      background: 'radial-gradient(130% 120% at 50% -25%, rgba(204,255,0,0.08), transparent 55%), var(--bg-card)',
-                      borderColor: 'rgba(204,255,0,0.16)',
+                      background: 'radial-gradient(130% 120% at 50% -25%, rgba(30,136,255,0.08), transparent 55%), var(--bg-card)',
+                      borderColor: 'rgba(30,136,255,0.16)',
                     }}
                   >
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}>
-                      <Wallet size={24} className="text-[#ccff00]" />
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}>
+                      <Wallet size={24} className="text-[#1E88FF]" />
                     </div>
                     <p className="text-text-primary font-semibold text-lg">No active investments</p>
                     <p className="text-sm text-text-tertiary mt-1">Browse managers and invest to get started</p>
                     <button
                       type="button"
                       onClick={() => setActiveTab('browse')}
-                      className="mt-4 px-4 py-2 rounded-xl bg-[#ccff00] text-[#0a0a0a] text-xs font-semibold hover:bg-[#a6d600] transition-colors"
+                      className="mt-4 px-4 py-2 rounded-xl bg-[#1E88FF] text-[#0a0a0a] text-xs font-semibold hover:bg-[#0B5BD3] transition-colors"
                     >
                       Browse Managers
                     </button>
@@ -852,7 +852,7 @@ export default function PammPage() {
                               <button
                                 type="button"
                                 onClick={() => openRefill(a)}
-                                className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[#ccff00]/40 text-[#ccff00] hover:bg-[#ccff00]/10 transition-colors"
+                                className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[#1E88FF]/40 text-[#1E88FF] hover:bg-[#1E88FF]/10 transition-colors"
                               >
                                 + Refill
                               </button>
@@ -885,11 +885,11 @@ export default function PammPage() {
                           </div>
                           <div className="flex items-center justify-between text-[11px]">
                             <span className="text-text-tertiary">Realized</span>
-                            <span className={a.realized_pnl >= 0 ? 'text-[#ccff00]/70' : 'text-red-400/70'}>${fmt(Math.abs(a.realized_pnl))}</span>
+                            <span className={a.realized_pnl >= 0 ? 'text-[#1E88FF]/70' : 'text-red-400/70'}>${fmt(Math.abs(a.realized_pnl))}</span>
                           </div>
                           <div className="flex items-center justify-between text-[11px]">
                             <span className="text-text-tertiary">Unrealized</span>
-                            <span className={a.unrealized_pnl >= 0 ? 'text-[#ccff00]/70' : 'text-red-400/70'}>${fmt(Math.abs(a.unrealized_pnl))}</span>
+                            <span className={a.unrealized_pnl >= 0 ? 'text-[#1E88FF]/70' : 'text-red-400/70'}>${fmt(Math.abs(a.unrealized_pnl))}</span>
                           </div>
                         </div>
 
@@ -902,7 +902,7 @@ export default function PammPage() {
                           <button
                             type="button"
                             onClick={() => void toggleAllocTrades(a)}
-                            className="mt-3 w-full text-center text-xs font-semibold text-[#ccff00] hover:bg-[#ccff00]/10 rounded-lg py-2 transition-colors"
+                            className="mt-3 w-full text-center text-xs font-semibold text-[#1E88FF] hover:bg-[#1E88FF]/10 rounded-lg py-2 transition-colors"
                           >
                             {expandedAlloc === a.id ? 'Hide Master Trades' : 'View Master Trades'}
                           </button>
@@ -952,23 +952,23 @@ export default function PammPage() {
             ) : myProvider ? (
               myProvider.status === 'pending' ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-[#ccff00]/10 border border-[#ccff00]/20 flex items-center justify-center mb-4">
-                    <Clock size={24} className="text-[#ccff00]" />
+                  <div className="w-16 h-16 rounded-2xl bg-[#1E88FF]/10 border border-[#1E88FF]/20 flex items-center justify-center mb-4">
+                    <Clock size={24} className="text-[#1E88FF]" />
                   </div>
                   <p className="text-text-primary font-semibold text-lg">Application Under Review</p>
                   <p className="text-sm text-text-tertiary mt-2 max-w-sm">Your PAMM manager application has been submitted. Our team will review it shortly.</p>
                 </div>
               ) : myProvider.status === 'approved' && ['pamm', 'mamm'].includes(myProvider.master_type) ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-[#ccff00]/10 border border-[#ccff00]/20 flex items-center justify-center mb-4">
-                    <CheckCircle size={24} className="text-[#ccff00]" />
+                  <div className="w-16 h-16 rounded-2xl bg-[#1E88FF]/10 border border-[#1E88FF]/20 flex items-center justify-center mb-4">
+                    <CheckCircle size={24} className="text-[#1E88FF]" />
                   </div>
                   <p className="text-text-primary font-semibold text-lg">You&apos;re an Approved Manager</p>
                   <p className="text-sm text-text-tertiary mt-2">View your investor stats and performance data</p>
                   <button
                     type="button"
                     onClick={() => setActiveTab('dashboard')}
-                    className="mt-4 px-4 py-2 rounded-lg bg-[#ccff00] text-black text-xs font-bold hover:bg-[#a6d600] transition-colors"
+                    className="mt-4 px-4 py-2 rounded-lg bg-[#1E88FF] text-black text-xs font-bold hover:bg-[#0B5BD3] transition-colors"
                   >
                     View Dashboard
                   </button>
@@ -996,7 +996,7 @@ export default function PammPage() {
 
                   <div>
                     <label className="block text-xs text-text-secondary mb-1.5">Manager Type</label>
-                    <div className="py-2.5 rounded-lg border border-[#ccff00]/40 bg-[#ccff00]/10 text-[#ccff00] text-sm font-semibold text-center">
+                    <div className="py-2.5 rounded-lg border border-[#1E88FF]/40 bg-[#1E88FF]/10 text-[#1E88FF] text-sm font-semibold text-center">
                       PAMM
                     </div>
                     <p className="text-[10px] text-text-tertiary mt-1.5">
@@ -1061,7 +1061,7 @@ export default function PammPage() {
                     type="button"
                     disabled={applying || liveAccounts.length === 0}
                     onClick={submitApply}
-                    className="w-full py-3 rounded-lg bg-[#ccff00] text-black font-bold text-sm hover:bg-[#a6d600] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full py-3 rounded-lg bg-[#1E88FF] text-black font-bold text-sm hover:bg-[#0B5BD3] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {applying ? 'Submitting…' : 'Submit Application'}
                   </button>
@@ -1079,19 +1079,19 @@ export default function PammPage() {
               <div
                 className="flex flex-col items-center justify-center py-20 px-6 text-center rounded-2xl border"
                 style={{
-                  background: 'radial-gradient(130% 120% at 50% -25%, rgba(204,255,0,0.08), transparent 55%), var(--bg-card)',
-                  borderColor: 'rgba(204,255,0,0.16)',
+                  background: 'radial-gradient(130% 120% at 50% -25%, rgba(30,136,255,0.08), transparent 55%), var(--bg-card)',
+                  borderColor: 'rgba(30,136,255,0.16)',
                 }}
               >
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}>
-                  <BarChart2 size={24} className="text-[#ccff00]" />
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}>
+                  <BarChart2 size={24} className="text-[#1E88FF]" />
                 </div>
                 <p className="text-text-primary font-semibold text-lg">No manager dashboard available</p>
                 <p className="text-sm text-text-tertiary mt-1">Apply as a PAMM manager to access this tab</p>
                 <button
                   type="button"
                   onClick={() => setActiveTab('apply')}
-                  className="mt-4 px-4 py-2 rounded-xl bg-[#ccff00] text-[#0a0a0a] text-xs font-semibold hover:bg-[#a6d600] transition-colors"
+                  className="mt-4 px-4 py-2 rounded-xl bg-[#1E88FF] text-[#0a0a0a] text-xs font-semibold hover:bg-[#0B5BD3] transition-colors"
                 >
                   Apply Now
                 </button>
@@ -1104,8 +1104,8 @@ export default function PammPage() {
                   {[
                     { label: 'Total AUM', value: `$${fmt(performance.total_aum)}`, color: undefined },
                     { label: 'Investors', value: `${performance.total_investors} / ${performance.max_investors}`, color: undefined },
-                    { label: 'Fee Earnings', value: `$${fmt(performance.fee_earnings)}`, color: 'text-[#ccff00]' },
-                    { label: 'Total ROI', value: `${performance.total_return_pct >= 0 ? '+' : ''}${performance.total_return_pct.toFixed(2)}%`, color: performance.total_return_pct >= 0 ? 'text-[#ccff00]' : 'text-red-400' },
+                    { label: 'Fee Earnings', value: `$${fmt(performance.fee_earnings)}`, color: 'text-[#1E88FF]' },
+                    { label: 'Total ROI', value: `${performance.total_return_pct >= 0 ? '+' : ''}${performance.total_return_pct.toFixed(2)}%`, color: performance.total_return_pct >= 0 ? 'text-[#1E88FF]' : 'text-red-400' },
                   ].map((s) => (
                     <div key={s.label} className="bg-card border border-border-primary rounded-xl px-4 py-4 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
                       <p className="text-[10px] text-text-tertiary mb-1">{s.label}</p>
@@ -1231,9 +1231,9 @@ export default function PammPage() {
             <div className="rounded-lg border border-accent/30 bg-bg-secondary p-3 flex items-center justify-between">
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">From Main Wallet</div>
-                <div className="text-lg font-bold text-[#ccff00] font-mono tabular-nums">${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div className="text-lg font-bold text-[#1E88FF] font-mono tabular-nums">${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               </div>
-              <button type="button" onClick={() => setInvestAmount(String(Math.max(0, walletBalance)))} className="text-xs font-bold text-[#ccff00] hover:underline">Max</button>
+              <button type="button" onClick={() => setInvestAmount(String(Math.max(0, walletBalance)))} className="text-xs font-bold text-[#1E88FF] hover:underline">Max</button>
             </div>
 
             <div className="rounded-lg border border-border-primary bg-bg-secondary p-3 text-[11px] text-text-tertiary">
@@ -1283,7 +1283,7 @@ export default function PammPage() {
                 type="button"
                 onClick={submitInvest}
                 disabled={investing}
-                className="flex-1 py-2.5 rounded-lg bg-[#ccff00] text-black text-xs font-bold hover:bg-[#a6d600] disabled:opacity-50 transition-colors"
+                className="flex-1 py-2.5 rounded-lg bg-[#1E88FF] text-black text-xs font-bold hover:bg-[#0B5BD3] disabled:opacity-50 transition-colors"
               >
                 {investing ? 'Investing…' : 'Confirm Invest'}
               </button>
@@ -1366,11 +1366,11 @@ export default function PammPage() {
             <div className="rounded-lg border border-accent/30 bg-bg-secondary p-3 flex items-center justify-between">
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Wallet Balance</div>
-                <div className="text-lg font-bold text-[#ccff00] font-mono tabular-nums">
+                <div className="text-lg font-bold text-[#1E88FF] font-mono tabular-nums">
                   ${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
-              <button type="button" onClick={() => setRefillAmount(String(walletBalance))} className="text-xs font-bold text-[#ccff00] hover:underline">Max</button>
+              <button type="button" onClick={() => setRefillAmount(String(walletBalance))} className="text-xs font-bold text-[#1E88FF] hover:underline">Max</button>
             </div>
 
             <div>
@@ -1389,7 +1389,7 @@ export default function PammPage() {
                 Cancel
               </button>
               <button type="button" onClick={submitRefill} disabled={refilling || !refillAmount}
-                className="flex-1 py-2.5 rounded-lg bg-[#ccff00] text-black text-xs font-bold hover:bg-[#a6d600] disabled:opacity-50 transition-colors">
+                className="flex-1 py-2.5 rounded-lg bg-[#1E88FF] text-black text-xs font-bold hover:bg-[#0B5BD3] disabled:opacity-50 transition-colors">
                 {refilling ? 'Adding…' : 'Add Funds'}
               </button>
             </div>

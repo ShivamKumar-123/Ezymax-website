@@ -18,7 +18,7 @@
 
   /* Obsidian & Lime palette — glassmorphism reference adoption (ADR-0020).
      Obsidian base #0a0a0a with #0c0c0c surfaces, neon-lime primary accent
-     #ccff00, emerald secondary #10b981, and rgba-white glass fills/borders
+     #1E88FF, emerald secondary #10b981, and rgba-white glass fills/borders
      straight from the reference spec. */
   --raw-color-black: #000000;
   --raw-color-ink-950: #0a0a0a;
@@ -27,14 +27,14 @@
   --raw-color-grey-500: #8d8d8d;
   --raw-color-grey-400: #b6b6b6;
   --raw-color-lime-300: #deff4d;
-  --raw-color-lime-400: #ccff00;
+  --raw-color-lime-400: #1E88FF;
   --raw-color-lime-600: #9ec700;
   --raw-color-emerald-500: #10b981;
   --raw-color-glass-fill: rgba(255, 255, 255, 0.03);
   --raw-color-glass-border: rgba(255, 255, 255, 0.1);
 
   --raw-blur-glass: 16px;
-  --raw-shadow-glow: 0 0 30px rgba(204, 255, 0, 0.3);
+  --raw-shadow-glow: 0 0 30px rgba(30, 136, 255, 0.3);
 
   --raw-radius-pill: 9999px;
   --raw-radius-card: 2.5rem;
@@ -232,11 +232,11 @@ body {
    The experience components in src/views/home/experience/ use a viewport-fluid
    type scale + frosted-glass surfaces from the source project. Added here so
    they render correctly. The display font is mapped to Space Grotesk (FX
-   Artha's display face) instead of the source's Assistant.
+   Ezymax's display face) instead of the source's Assistant.
    ───────────────────────────────────────────────────────────────────────── */
 :root {
   /* Ported from the source project as salmon/periwinkle; retuned to the FX
-     Artha palette so the intro experience matches the rest of the site.
+     Ezymax palette so the intro experience matches the rest of the site.
      Warm = the lime accent family, cool = emerald. */
   --accent-warm: var(--raw-color-lime-300);
   --accent-cool: var(--raw-color-emerald-500);

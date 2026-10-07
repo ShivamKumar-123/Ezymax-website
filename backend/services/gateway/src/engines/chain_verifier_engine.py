@@ -335,7 +335,7 @@ async def _credit_deposit(db: AsyncSession, deposit: Deposit) -> None:
         from packages.common.src.email_templates import render_deposit_confirmed
         from packages.common.src.config import get_settings
         if smtp_configured() and user.email and not user.email.lower().endswith(
-            "@wallet.fxartha.local"
+            "@wallet.ezymax.local"
         ):
             subject, html, text = render_deposit_confirmed(
                 first_name=user.first_name,
@@ -344,7 +344,7 @@ async def _credit_deposit(db: AsyncSession, deposit: Deposit) -> None:
                 method=f"USDT-{(deposit.network or '').upper()}",
                 reference=str(deposit.id),
                 new_balance=user.main_wallet_balance,
-                trader_app_url=(get_settings().TRADER_APP_URL or "https://trade.fxartha.com"),
+                trader_app_url=(get_settings().TRADER_APP_URL or "https://trade.ezymex.com"),
             )
             fire_and_forget(send_email(user.email, subject, html, text=text))
     except Exception as e:
@@ -371,7 +371,7 @@ async def _send_rejected_email(deposit: Deposit) -> None:
             user = (await db2.execute(
                 select(User).where(User.id == deposit.user_id)
             )).scalar_one_or_none()
-        if not user or not user.email or user.email.lower().endswith("@wallet.fxartha.local"):
+        if not user or not user.email or user.email.lower().endswith("@wallet.ezymax.local"):
             return
         subject, html, text = render_deposit_failed(
             first_name=user.first_name,
@@ -380,7 +380,7 @@ async def _send_rejected_email(deposit: Deposit) -> None:
             method=f"USDT-{(deposit.network or '').upper()}",
             reason_code=deposit.rejection_reason or "verification failed",
             reference=str(deposit.id),
-            trader_app_url=(get_settings().TRADER_APP_URL or "https://trade.fxartha.com"),
+            trader_app_url=(get_settings().TRADER_APP_URL or "https://trade.ezymex.com"),
         )
         fire_and_forget(send_email(user.email, subject, html, text=text))
     except Exception as e:

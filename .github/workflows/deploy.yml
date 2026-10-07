@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://fxartha.com
+      url: https://ezymex.com
     steps:
       - name: Check out (for the workflow's own scripts)
         uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
           FORCE_ALL: ${{ inputs.force_all && '1' || '0' }}
         run: |
           ssh -o StrictHostKeyChecking=yes "$USER@$HOST" \
-            "FORCE_ALL=$FORCE_ALL /opt/fxartha/deploy/deploy.sh '$REF'"
+            "FORCE_ALL=$FORCE_ALL /opt/ezymax/deploy/deploy.sh '$REF'"
 
       - name: Report what is live
         if: always()
@@ -60,4 +60,4 @@ jobs:
           USER: ${{ secrets.DEPLOY_USER }}
         run: |
           ssh -o StrictHostKeyChecking=yes "$USER@$HOST" \
-            "cd /opt/fxartha && git --no-pager log -1 --format='%h %s'"
+            "cd /opt/ezymax && git --no-pager log -1 --format='%h %s'"

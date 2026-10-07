@@ -22,7 +22,7 @@ def _get_frontend_url() -> str:
     s = get_settings()
     origins = [o.strip() for o in s.CORS_ORIGINS.split(",") if o.strip()]
     for o in origins:
-        if "fxartha.com" in o:
+        if "ezymex.com" in o:
             return o
     for o in origins:
         if ":3000" in o:

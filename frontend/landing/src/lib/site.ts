@@ -7,7 +7,7 @@
 import { publicEnv } from "@/env";
 
 export const siteConfig = {
-  name: "FX Artha",
+  name: "Ezymax",
   description:
     "A protocol-driven trading ecosystem with automated settlement. Trade CFDs while your funds stay in a smart contract you control — only open-trade margin is locked, the rest stays withdrawable.",
   /**
@@ -17,8 +17,8 @@ export const siteConfig = {
   url: publicEnv.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   /** Default Open Graph / Twitter share image (path under `public/`). */
   ogImage: "/open-graph.png",
-  twitterHandle: "@fxartha",
-  author: "FXArtha Ltd.",
+  twitterHandle: "@ezymax",
+  author: "Ezymax Ltd.",
   /** Browser theme-color (address bar / PWA). */
   themeColor: "#0a0a0a",
 } as const;
@@ -26,7 +26,7 @@ export const siteConfig = {
 const tradeUrl = publicEnv.NEXT_PUBLIC_TRADE_URL ?? "http://localhost:3001";
 
 /**
- * The trader platform this landing site funnels into (the fxartha monorepo's
+ * The trader platform this landing site funnels into (the ezymax monorepo's
  * `frontend/trader` app). Set `NEXT_PUBLIC_TRADE_URL` in production.
  */
 export const tradeConfig = {

@@ -76,8 +76,8 @@ const tradeUrl = (accountId: string) => {
 type IconType = React.ComponentType<{ className?: string; size?: number | string }>;
 
 const PREMIUM_CARD_STYLE: React.CSSProperties = {
-  background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)',
-  borderColor: 'rgba(204,255,0,0.16)',
+  background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)',
+  borderColor: 'rgba(30,136,255,0.16)',
   boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
 };
 
@@ -85,7 +85,7 @@ function AccentBar() {
   return (
     <div
       className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
-      style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+      style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
     />
   );
 }
@@ -98,9 +98,9 @@ function SectionHeader({ icon: Icon, title, subtitle, action }: {
       <div className="flex items-center gap-3 min-w-0">
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+          style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
         >
-          <Icon className="w-5 h-5 text-[#ccff00]" />
+          <Icon className="w-5 h-5 text-[#1E88FF]" />
         </div>
         <div className="min-w-0">
           <h2 className="text-base font-bold text-text-primary truncate">{title}</h2>
@@ -117,12 +117,12 @@ function StatTile({ icon: Icon, label, value, negative }: {
 }) {
   return (
     <div
-      className="rounded-xl p-3.5 min-w-0 transition-colors hover:border-[rgba(204,255,0,0.3)]"
+      className="rounded-xl p-3.5 min-w-0 transition-colors hover:border-[rgba(30,136,255,0.3)]"
       style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
     >
       <div className="flex items-center gap-2 mb-2 min-w-0">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)' }}>
-          <Icon className="w-4 h-4 text-[#ccff00]" />
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(30,136,255,0.10)' }}>
+          <Icon className="w-4 h-4 text-[#1E88FF]" />
         </div>
         <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider truncate">{label}</span>
       </div>
@@ -343,7 +343,7 @@ function BrokerHome() {
 
   return (
     <div className="space-y-4 pb-8 max-w-6xl mx-auto w-full">
-      {/* ── FXArtha TV banner — the commercial, full width, slides in R→L ── */}
+      {/* ── Ezymax TV banner — the commercial, full width, slides in R→L ── */}
       <TvCard />
 
       {/* ── Greeting bar ── */}
@@ -360,7 +360,7 @@ function BrokerHome() {
             onClick={() => setShowLevel(true)}
             title="See your level progress"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
-            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: 'var(--accent-ink)' }}>
+            style={{ border: '1px solid rgba(30,136,255,0.30)', background: 'rgba(30,136,255,0.07)', color: 'var(--accent-ink)' }}>
             <BadgeCheck size={13} /> Lvl {level} · {levelLabel}
           </button>
           {/* XP — total experience, drives your level. Opens the XP details popup. */}
@@ -369,7 +369,7 @@ function BrokerHome() {
             onClick={() => setShowXp(true)}
             title="Experience points — earn XP to level up"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
-            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: 'var(--accent-ink)' }}>
+            style={{ border: '1px solid rgba(30,136,255,0.30)', background: 'rgba(30,136,255,0.07)', color: 'var(--accent-ink)' }}>
             <Zap size={13} /> {xpTotal.toLocaleString()} XP
           </button>
           {/* AC — reward coins. Opens the "where AC come from" popup. */}
@@ -378,7 +378,7 @@ function BrokerHome() {
             onClick={() => setShowFxa(true)}
             title="Where your AC come from"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
-            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: 'var(--accent-ink)' }}>
+            style={{ border: '1px solid rgba(30,136,255,0.30)', background: 'rgba(30,136,255,0.07)', color: 'var(--accent-ink)' }}>
             <Coins size={13} /> {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })} AC
           </button>
           {/* PS — prestige score + rank. Opens the PS details popup. */}
@@ -387,7 +387,7 @@ function BrokerHome() {
             onClick={() => setShowPs(true)}
             title={psRank ? `Prestige score — ${psRank}` : 'Prestige score'}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
-            style={{ border: '1px solid rgba(204,255,0,0.30)', background: 'rgba(204,255,0,0.07)', color: 'var(--accent-ink)' }}>
+            style={{ border: '1px solid rgba(30,136,255,0.30)', background: 'rgba(30,136,255,0.07)', color: 'var(--accent-ink)' }}>
             <Gem size={13} /> {psScore.toLocaleString()} PS
           </button>
         </div>
@@ -440,14 +440,14 @@ function BrokerHome() {
             className="group relative w-full rounded-2xl border p-4 flex items-center gap-3 text-left overflow-hidden transition-all duration-300 hover:-translate-y-1"
             style={PREMIUM_CARD_STYLE}
           >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}>
-              <Users className="w-5 h-5 text-[#ccff00]" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}>
+              <Users className="w-5 h-5 text-[#1E88FF]" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-text-primary">Copy Trading</p>
               <p className="text-[11px] text-text-tertiary mt-0.5">Mirror top traders automatically</p>
             </div>
-            <ArrowRight size={18} className="text-[#ccff00] group-hover:translate-x-1 transition-transform shrink-0" />
+            <ArrowRight size={18} className="text-[#1E88FF] group-hover:translate-x-1 transition-transform shrink-0" />
           </button>
           <StatusProgramCard level={level} xp={rewardsState?.xp ?? 0} xpNext={rewardsState?.xp_for_next_level ?? 100} />
         </div>
@@ -540,7 +540,7 @@ function PortfolioHero({
             <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
               style={a?.is_demo
                 ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' }
-                : { color: 'var(--accent-ink)', background: 'rgba(204,255,0,0.12)' }}>
+                : { color: 'var(--accent-ink)', background: 'rgba(30,136,255,0.12)' }}>
               {a?.is_demo ? 'Demo' : 'Real'}
             </span>
             <span className="text-sm font-semibold tabular-nums text-text-primary">
@@ -557,7 +557,7 @@ function PortfolioHero({
                   className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm hover:bg-bg-hover"
                   style={{ color: 'var(--text-primary)' }}>
                   <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
-                    style={acc.is_demo ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' } : { color: 'var(--accent-ink)', background: 'rgba(204,255,0,0.12)' }}>
+                    style={acc.is_demo ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' } : { color: 'var(--accent-ink)', background: 'rgba(30,136,255,0.12)' }}>
                     {acc.is_demo ? 'Demo' : 'Real'}
                   </span>
                   <span className="font-semibold tabular-nums">#{acc.account_number}</span>
@@ -569,21 +569,21 @@ function PortfolioHero({
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" data-tour={TOUR_TARGETS.DASHBOARD_DEPOSIT} onClick={onDeposit}
-            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold text-[#0a0a0a] bg-[#ccff00] hover:bg-[#a6d600] transition-all hover:-translate-y-0.5">
+            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold text-[#0a0a0a] bg-[#1E88FF] hover:bg-[#0B5BD3] transition-all hover:-translate-y-0.5">
             <ArrowDownToLine size={14} /> Deposit
           </button>
           <button type="button" data-tour={TOUR_TARGETS.DASHBOARD_TRADE_NOW} onClick={onTrade}
-            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:text-[#ccff00] hover:border-[rgba(204,255,0,0.4)]"
+            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:text-[#1E88FF] hover:border-[rgba(30,136,255,0.4)]"
             style={{ border: '1px solid var(--border-primary)', background: 'var(--bg-card-nested)' }}>
             <BarChart3 size={14} /> Trade
           </button>
           <button type="button" onClick={onWithdraw}
-            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:text-[#ccff00] hover:border-[rgba(204,255,0,0.4)]"
+            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:text-[#1E88FF] hover:border-[rgba(30,136,255,0.4)]"
             style={{ border: '1px solid var(--border-primary)', background: 'var(--bg-card-nested)' }}>
             <ArrowUpFromLine size={14} /> Withdraw
           </button>
           <button type="button" onClick={onDetails}
-            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:text-[#ccff00] hover:border-[rgba(204,255,0,0.4)]"
+            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:text-[#1E88FF] hover:border-[rgba(30,136,255,0.4)]"
             style={{ border: '1px solid var(--border-primary)', background: 'var(--bg-card-nested)' }}>
             <ExternalLink size={14} /> Details
           </button>
@@ -607,7 +607,7 @@ function PortfolioHero({
           {PERIODS.map((p) => (
             <button key={p.id} type="button" onClick={() => onPeriod(p.id)}
               className={clsx('px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors',
-                period === p.id ? 'bg-[#ccff00] text-black' : 'text-text-tertiary hover:text-text-primary')}>
+                period === p.id ? 'bg-[#1E88FF] text-black' : 'text-text-tertiary hover:text-text-primary')}>
               {p.label}
             </button>
           ))}
@@ -694,7 +694,7 @@ function MarketsTable({ movers, series, onTrade }: {
           subtitle="Top daily movers"
           action={
             <button type="button" onClick={onTrade}
-              className="inline-flex items-center gap-1 text-[11px] font-bold text-[#ccff00] hover:gap-1.5 transition-all">
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1E88FF] hover:gap-1.5 transition-all">
               Open terminal <ArrowRight size={12} />
             </button>
           }
@@ -708,9 +708,9 @@ function MarketsTable({ movers, series, onTrade }: {
             const upTick = m.pct >= 0;
             const hasPrice = Number.isFinite(m.price) && m.price > 0;
             return (
-              <li key={m.symbol} className="flex items-center gap-3 px-4 py-3 border-t first:border-t-0 transition-colors hover:bg-[rgba(204,255,0,0.04)]" style={{ borderColor: 'var(--border-primary)' }}>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.18)' }}>
-                  <span className="text-[10px] font-bold text-[#ccff00]">{m.symbol.slice(0, 3)}</span>
+              <li key={m.symbol} className="flex items-center gap-3 px-4 py-3 border-t first:border-t-0 transition-colors hover:bg-[rgba(30,136,255,0.04)]" style={{ borderColor: 'var(--border-primary)' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(30,136,255,0.10)', border: '1px solid rgba(30,136,255,0.18)' }}>
+                  <span className="text-[10px] font-bold text-[#1E88FF]">{m.symbol.slice(0, 3)}</span>
                 </div>
                 <span className="w-16 text-sm font-semibold text-text-primary">{m.symbol}</span>
                 <div className="flex-1 hidden sm:block"><Sparkline data={series[i] || []} up={upTick} /></div>
@@ -816,7 +816,7 @@ function HeroBalanceCard({
                       className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
                       style={acc.is_demo
                         ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' }
-                        : { color: 'var(--accent-ink)', background: 'rgba(204,255,0,0.12)' }}
+                        : { color: 'var(--accent-ink)', background: 'rgba(30,136,255,0.12)' }}
                     >
                       {acc.is_demo ? 'Demo' : 'Real'}
                     </span>
@@ -970,7 +970,7 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
           type="button"
           onClick={() => setTab('challenges')}
           className={clsx('px-3 py-1.5 text-xs font-semibold rounded-md transition-colors',
-            tab === 'challenges' ? 'bg-[#ccff00] text-[#0a0a0a]' : 'text-text-tertiary hover:text-text-primary')}
+            tab === 'challenges' ? 'bg-[#1E88FF] text-[#0a0a0a]' : 'text-text-tertiary hover:text-text-primary')}
         >
           Challenges
         </button>
@@ -978,7 +978,7 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
           type="button"
           onClick={() => setTab('rewards')}
           className={clsx('px-3 py-1.5 text-xs font-semibold rounded-md transition-colors',
-            tab === 'rewards' ? 'bg-[#ccff00] text-[#0a0a0a]' : 'text-text-tertiary hover:text-text-primary')}
+            tab === 'rewards' ? 'bg-[#1E88FF] text-[#0a0a0a]' : 'text-text-tertiary hover:text-text-primary')}
         >
           My rewards
         </button>
@@ -992,37 +992,37 @@ function StatusProgramCard({ level, xp, xpNext }: { level: number; xp: number; x
       <div className="h-2 rounded-full bg-bg-hover overflow-hidden">
         <div
           className="h-full rounded-full transition-all"
-          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 10px rgba(204,255,0,0.5)' }}
+          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 10px rgba(30,136,255,0.5)' }}
         />
       </div>
 
       {tab === 'challenges' ? (
         <div
-          className="mt-4 rounded-xl p-4 flex items-center gap-3 transition-colors hover:border-[rgba(204,255,0,0.3)]"
+          className="mt-4 rounded-xl p-4 flex items-center gap-3 transition-colors hover:border-[rgba(30,136,255,0.3)]"
           style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
         >
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.2)' }}>
-            <BarChart3 size={18} className="text-[#ccff00]" />
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(30,136,255,0.10)', border: '1px solid rgba(30,136,255,0.2)' }}>
+            <BarChart3 size={18} className="text-[#1E88FF]" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-text-primary">Complete your first trade</p>
             <p className="text-xs text-text-tertiary mt-0.5">Open and close any position to earn your first reward.</p>
           </div>
-          <span className="text-xs font-bold text-[#ccff00] shrink-0">+50 XP</span>
+          <span className="text-xs font-bold text-[#1E88FF] shrink-0">+50 XP</span>
         </div>
       ) : (
         <div
-          className="mt-4 rounded-xl p-4 flex items-center gap-3 transition-colors hover:border-[rgba(204,255,0,0.3)]"
+          className="mt-4 rounded-xl p-4 flex items-center gap-3 transition-colors hover:border-[rgba(30,136,255,0.3)]"
           style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}
         >
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.2)' }}>
-            <Coins size={18} className="text-[#ccff00]" />
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(30,136,255,0.10)', border: '1px solid rgba(30,136,255,0.2)' }}>
+            <Coins size={18} className="text-[#1E88FF]" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-text-primary">Reward balance</p>
             <p className="text-xs text-text-tertiary mt-0.5">Redeem your AC coins in the rewards store.</p>
           </div>
-          <Link href="/rewards" className="text-xs font-semibold text-[#ccff00] hover:underline shrink-0">Open →</Link>
+          <Link href="/rewards" className="text-xs font-semibold text-[#1E88FF] hover:underline shrink-0">Open →</Link>
         </div>
       )}
     </Card>
@@ -1039,9 +1039,9 @@ function InviteFriendsCard() {
       <div className="flex items-center gap-4">
         <div
           className="shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
-          style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+          style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
         >
-          <ShieldCheck size={26} className="text-[#ccff00]" />
+          <ShieldCheck size={26} className="text-[#1E88FF]" />
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-bold text-text-primary">Invite friends, earn together</h3>
@@ -1050,7 +1050,7 @@ function InviteFriendsCard() {
           </p>
           <Link
             href="/business"
-            className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-[#ccff00] hover:gap-2 transition-all"
+            className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-[#1E88FF] hover:gap-2 transition-all"
           >
             Learn details <ArrowRight size={12} />
           </Link>
@@ -1086,7 +1086,7 @@ function BannerStrip({ banners }: { banners: Banner[] }) {
             <span
               key={i}
               className="w-1.5 h-1.5 rounded-full transition-colors"
-              style={{ background: i === index ? '#ccff00' : 'rgba(255,255,255,0.4)' }}
+              style={{ background: i === index ? '#1E88FF' : 'rgba(255,255,255,0.4)' }}
             />
           ))}
         </div>

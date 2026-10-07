@@ -265,7 +265,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
       {/* ═══ Header ═══ */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border-primary bg-bg-secondary">
         <div className="flex items-center gap-2.5">
-          <div className="w-2 h-2 rounded-full" style={{ background: marketStatus.isOpen ? '#ccff00' : '#ef5350' }} />
+          <div className="w-2 h-2 rounded-full" style={{ background: marketStatus.isOpen ? '#1E88FF' : '#ef5350' }} />
           <span className="text-sm font-bold text-text-primary tracking-tight">Trade</span>
           <span className="text-[11px] text-text-tertiary font-mono">#{account.account_number}</span>
         </div>
@@ -296,8 +296,8 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                   )}
                   {isConnected ? (
                     <span className="flex items-center gap-1" title="Live prices">
-                      <Wifi size={10} className="text-[#ccff00]" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00] animate-pulse" />
+                      <Wifi size={10} className="text-[#1E88FF]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1E88FF] animate-pulse" />
                     </span>
                   ) : (
                     <span className="flex items-center gap-1" title="Disconnected">
@@ -322,13 +322,13 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                           'w-full flex items-center justify-between px-3 py-2 text-left transition-colors',
                           sym === selectedSymbol ? 'bg-accent/[0.08]' : 'hover:bg-bg-hover',
                         )}
-                        style={{ borderLeft: sym === selectedSymbol ? '2px solid #ccff00' : '2px solid transparent' }}
+                        style={{ borderLeft: sym === selectedSymbol ? '2px solid #1E88FF' : '2px solid transparent' }}
                       >
                         <span className="text-xs font-bold text-text-primary font-mono">{sym}</span>
                         {t && (
                           <div className="flex items-center gap-3">
                             <span className="text-[10px] font-mono text-red-400">{t.bid.toFixed(d)}</span>
-                            <span className="text-[10px] font-mono text-[#ccff00]">{t.ask.toFixed(d)}</span>
+                            <span className="text-[10px] font-mono text-[#1E88FF]">{t.ask.toFixed(d)}</span>
                           </div>
                         )}
                       </button>
@@ -347,7 +347,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                   onClick={() => setOrderTab(t)}
                   className="flex-1 py-2 text-xs font-semibold capitalize transition-all"
                   style={{
-                    borderBottom: orderTab === t ? '2px solid var(--accent, #ccff00)' : '2px solid transparent',
+                    borderBottom: orderTab === t ? '2px solid var(--accent, #1E88FF)' : '2px solid transparent',
                     color: orderTab === t ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   }}
                 >
@@ -398,7 +398,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                   <div className="text-[9px] text-text-tertiary">Spread</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xs font-mono font-semibold text-[#ccff00]"><AnimatedPrice value={tick.ask} digits={digits} /></div>
+                  <div className="text-xs font-mono font-semibold text-[#1E88FF]"><AnimatedPrice value={tick.ask} digits={digits} /></div>
                   <div className="text-[9px] text-text-tertiary">Ask</div>
                 </div>
               </div>
@@ -420,7 +420,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                 <div
                   onClick={() => { setTpEnabled((p) => !p); if (tpEnabled) setTakeProfit(''); }}
                   className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer"
-                  style={{ background: tpEnabled ? '#ccff00' : 'var(--bg-secondary)' }}
+                  style={{ background: tpEnabled ? '#1E88FF' : 'var(--bg-secondary)' }}
                 >
                   <div className="absolute top-[3px] w-3 h-3 rounded-full bg-white transition-all" style={{ left: tpEnabled ? '16px' : '3px' }} />
                 </div>
@@ -475,7 +475,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
             {/* TP input */}
             {tpEnabled && (
               <div>
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#ccff00] mb-1 block">Take Profit</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#1E88FF] mb-1 block">Take Profit</span>
                 <input
                   type="number"
                   value={takeProfit}
@@ -483,7 +483,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                   step={execPrice > 100 ? 0.01 : 0.00001}
                   placeholder={`e.g. ${(execPrice * (side === 'buy' ? 1.02 : 0.98)).toFixed(digits)}`}
                   className="w-full text-sm font-mono py-2 px-3 rounded-lg focus:outline-none"
-                  style={{ background: 'var(--bg-secondary)', border: '1px solid rgba(204,255,0,0.25)', color: 'var(--accent-ink)' }}
+                  style={{ background: 'var(--bg-secondary)', border: '1px solid rgba(30,136,255,0.25)', color: 'var(--accent-ink)' }}
                 />
               </div>
             )}
@@ -493,8 +493,8 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
               {[
                 { label: 'Exec. Price', value: execPrice > 0 ? execPrice.toFixed(digits) : '—', color: 'var(--text-primary)' },
                 { label: 'Margin Required', value: `$${marginRequired.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : 'var(--text-primary)' },
-                { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#ccff00' },
-                { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#ccff00' : '#f57c00' },
+                { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#1E88FF' },
+                { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#1E88FF' : '#f57c00' },
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between">
                   <span className="text-[10px] text-text-tertiary">{row.label}</span>
@@ -540,7 +540,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
 
           {posLoading && positions.length === 0 ? (
             <div className="flex items-center justify-center py-6">
-              <div className="w-4 h-4 border-2 border-[#ccff00] border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-[#1E88FF] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : positions.length === 0 ? (
             <div className="text-center py-6 text-[11px] text-text-tertiary">No open positions</div>
@@ -556,7 +556,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                     ? (cp - pos.open_price) * pos.lots * cs
                     : (pos.open_price - cp) * pos.lots * cs
                   : pos.profit;
-                const pnlColor = livePnl >= 0 ? '#ccff00' : '#ef5350';
+                const pnlColor = livePnl >= 0 ? '#1E88FF' : '#ef5350';
                 const d = getDigits(pos.symbol);
 
                 return (

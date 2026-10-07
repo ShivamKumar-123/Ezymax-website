@@ -1,14 +1,14 @@
-# FXArtha Contracts — Phase 1 Vault
+# Ezymax Contracts — Phase 1 Vault
 
-Foundry workspace for the **FXArthaVaultV1** custody vault.
+Foundry workspace for the **EzymaxVaultV1** custody vault.
 Spec lives at [`docs/vault-phase1-spec.md`](../../docs/vault-phase1-spec.md).
 
 ## Layout
 
 ```
 backend/contracts/
-├── src/FXArthaVaultV1.sol       # the contract
-├── test/FXArthaVaultV1.t.sol    # Foundry unit + fuzz + invariant tests
+├── src/EzymaxVaultV1.sol       # the contract
+├── test/EzymaxVaultV1.t.sol    # Foundry unit + fuzz + invariant tests
 ├── script/Deploy.s.sol          # forge script Deploy.s.sol --broadcast
 ├── foundry.toml                 # solc 0.8.24, optimizer on, fuzz=1024
 ├── remappings.txt               # @openzeppelin + forge-std paths
@@ -82,7 +82,7 @@ Output ends with:
 
 ```
 === DEPLOYED ===
-FXArthaVaultV1: 0x….
+EzymaxVaultV1: 0x….
 ```
 
 Save that address — it goes into `VAULT_CONTRACT_ADDRESS` in the
@@ -93,7 +93,7 @@ new `admin_deposit_wallets` row.
 
 ```bash
 forge verify-contract <DEPLOYED_ADDRESS> \
-  src/FXArthaVaultV1.sol:FXArthaVaultV1 \
+  src/EzymaxVaultV1.sol:EzymaxVaultV1 \
   --chain-id 97 \
   --watch \
   --constructor-args $(cast abi-encode 'constructor(address,address)' $USDT_ADDRESS $ADMIN_ADDRESS)

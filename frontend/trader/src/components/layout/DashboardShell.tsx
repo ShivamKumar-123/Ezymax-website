@@ -41,7 +41,7 @@ export default function DashboardShell({
             'dashboard-main-scroll min-h-0 flex-1 overflow-y-auto p-2.5 sm:p-4 md:p-6 page-fade-in',
             mainClassName,
           )}
-          style={{ background: 'radial-gradient(70% 45% at 50% 0%, rgba(204,255,0,0.045), transparent 60%), var(--bg-base)' }}
+          style={{ background: 'radial-gradient(70% 45% at 50% 0%, rgba(30,136,255,0.045), transparent 60%), var(--bg-base)' }}
         >
           {/* Sticky-footer wrapper: `min-h-full` (a MINIMUM height, never a
               cap) makes the column at least as tall as the viewport, so on
@@ -59,7 +59,7 @@ export default function DashboardShell({
       </div>
       <Link
         href="/support"
-        className="fixed bottom-20 md:bottom-6 right-6 z-[75] w-12 h-12 rounded-full bg-[#ccff00] hover:bg-[#a6d600] shadow-lg shadow-[#ccff00]/20 flex items-center justify-center transition-colors"
+        className="fixed bottom-20 md:bottom-6 right-6 z-[75] w-12 h-12 rounded-full bg-[#1E88FF] hover:bg-[#0B5BD3] shadow-lg shadow-[#1E88FF]/20 flex items-center justify-center transition-colors"
         aria-label="Support"
       >
         <MessageSquare size={20} className="text-[#0a0a0a]" />

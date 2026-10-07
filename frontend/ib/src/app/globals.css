@@ -13,7 +13,7 @@
 /* CSS VARIABLES — DARK (Vantablack) THEME */
 /* ======================================= */
 
-/* Dark theme — aligned with crucial-ui (SetupFX): #0a0a0a base, #111 cards, #ccff00 accent */
+/* Dark theme — aligned with crucial-ui (SetupFX): #0a0a0a base, #111 cards, #1E88FF accent */
 [data-theme="dark"], .theme-dark {
   --bg-page: #050707;
   --bg-base: #0a0a0a;
@@ -47,11 +47,11 @@
   --input-bg: #111111;
   --input-border: #1f1f1f;
   --input-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.02);
-  --input-focus-border: rgba(204, 255, 0, 0.55);
-  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(204, 255, 0, 0.12), 0 0 0 3px rgba(204, 255, 0, 0.12);
+  --input-focus-border: rgba(30, 136, 255, 0.55);
+  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(30, 136, 255, 0.12), 0 0 0 3px rgba(30, 136, 255, 0.12);
   --input-placeholder: #555555;
 
-  --selection-bg: rgba(204, 255, 0, 0.22);
+  --selection-bg: rgba(30, 136, 255, 0.22);
 
   --noise-opacity: 0.012;
   --emboss-bg: rgba(0, 0, 0, 0.5);
@@ -60,7 +60,7 @@
   /* react-hot-toast — always dark surface (readable on charts + light UI) */
   --toast-bg: #111111;
   --toast-fg: #f0f0f0;
-  --toast-border: rgba(204, 255, 0, 0.28);
+  --toast-border: rgba(30, 136, 255, 0.28);
 
   /* Colored stat-card surfaces. The trader/admin UIs lean heavily on
    * gradient stat cards (Total Balance, Bonus, Trade Now, etc.).
@@ -252,12 +252,12 @@
   --scrollbar-hover: #3a3a3a;
   --input-bg: #111111;
   --input-border: #1f1f1f;
-  --input-focus-border: rgba(204, 255, 0, 0.55);
-  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(204, 255, 0, 0.12);
-  --selection-bg: rgba(204, 255, 0, 0.22);
+  --input-focus-border: rgba(30, 136, 255, 0.55);
+  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(30, 136, 255, 0.12);
+  --selection-bg: rgba(30, 136, 255, 0.22);
   --toast-bg: #111111;
   --toast-fg: #f0f0f0;
-  --toast-border: rgba(204, 255, 0, 0.28);
+  --toast-border: rgba(30, 136, 255, 0.28);
   color-scheme: dark;
 }
 
@@ -497,30 +497,30 @@ html {
 }
 
 .skeu-btn-buy {
-  background: linear-gradient(180deg, #eaff8a 0%, #ccff00 50%, #a6d600 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.15), 0 4px 16px rgba(204,255,0,0.28), 0 2px 4px rgba(0,0,0,0.15);
+  background: linear-gradient(180deg, #7CC9FF 0%, #1E88FF 50%, #0B5BD3 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.15), 0 4px 16px rgba(30,136,255,0.28), 0 2px 4px rgba(0,0,0,0.15);
   color: #ffffff;
 }
 .skeu-btn-buy:hover {
-  background: linear-gradient(180deg, #f2ff9e 0%, #eaff8a 50%, #ccff00 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.12), 0 6px 24px rgba(204,255,0,0.38);
+  background: linear-gradient(180deg, #f2ff9e 0%, #7CC9FF 50%, #1E88FF 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.12), 0 6px 24px rgba(30,136,255,0.38);
 }
 .skeu-btn-buy:active {
-  background: linear-gradient(180deg, #ccff00 0%, #a6d600 100%);
-  box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(204,255,0,0.2);
+  background: linear-gradient(180deg, #1E88FF 0%, #0B5BD3 100%);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(30,136,255,0.2);
   transform: translateY(1px);
 }
 [data-theme="light"] .skeu-btn-buy,
 .theme-light .skeu-btn-buy {
-  background: #ccff00;
+  background: #1E88FF;
   color: #ffffff;
   border: none;
-  box-shadow: 0 2px 8px rgba(204, 255, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(30, 136, 255, 0.3);
 }
 [data-theme="light"] .skeu-btn-buy:hover,
 .theme-light .skeu-btn-buy:hover {
-  background: #a6d600;
-  box-shadow: 0 4px 12px rgba(204, 255, 0, 0.4);
+  background: #0B5BD3;
+  box-shadow: 0 4px 12px rgba(30, 136, 255, 0.4);
 }
 
 .skeu-btn-sell {
@@ -597,14 +597,14 @@ html {
 
 .flash-blue { animation: flashAccent 0.15s ease-out; }
 .flash-red { animation: flashRed 0.15s ease-out; }
-@keyframes flashAccent { 0% { background-color: rgba(204,255,0,0.22); } 100% { background-color: transparent; } }
+@keyframes flashAccent { 0% { background-color: rgba(30,136,255,0.22); } 100% { background-color: transparent; } }
 @keyframes flashRed { 0% { background-color: rgba(239,68,68,0.2); } 100% { background-color: transparent; } }
 
 /* react-hot-toast — library defaults are washed-out white squares; reskin
- * to the FXArtha dark surface with proper padding, gap, and typography so
+ * to the Ezymax dark surface with proper padding, gap, and typography so
  * single-line errors don't wrap mid-word and the icon doesn't crash into
  * the text. */
-.fxartha-hot-toast {
+.ezymax-hot-toast {
   background: var(--toast-bg) !important;
   color: var(--toast-fg) !important;
   border: 1px solid var(--toast-border) !important;
@@ -625,27 +625,27 @@ html {
 
 /* The internal status icon (✓ / ✕) — give it a soft circular halo so it
  * reads as a status badge rather than a punched-out hole. */
-.fxartha-hot-toast > div[role="status"] {
+.ezymax-hot-toast > div[role="status"] {
   flex-shrink: 0;
   margin-right: 2px;
 }
 
 /* The text container — react-hot-toast wraps content in a child div; make
  * sure long error strings flow nicely instead of orphaning a single word. */
-.fxartha-hot-toast > div:not([role="status"]) {
+.ezymax-hot-toast > div:not([role="status"]) {
   flex: 1 1 auto;
   margin: 0 !important;
   word-break: break-word;
 }
 
 /* Tighten the close-button (×) for toasts that ship with one. */
-.fxartha-hot-toast button {
+.ezymax-hot-toast button {
   flex-shrink: 0;
   color: var(--toast-fg) !important;
   opacity: 0.55;
   transition: opacity 0.15s ease;
 }
-.fxartha-hot-toast button:hover {
+.ezymax-hot-toast button:hover {
   opacity: 1;
 }
 
@@ -658,8 +658,8 @@ html {
 
 /* Sidebar icon glow pulse */
 @keyframes iconGlowPulse {
-  0%, 100% { filter: drop-shadow(0 0 4px rgba(204,255,0,0.15)); }
-  50%      { filter: drop-shadow(0 0 10px rgba(204,255,0,0.55)); }
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(30,136,255,0.15)); }
+  50%      { filter: drop-shadow(0 0 10px rgba(30,136,255,0.55)); }
 }
 .sidebar-icon-glow {
   animation: iconGlowPulse 2.5s ease-in-out infinite;
@@ -673,7 +673,7 @@ html {
 
 .resize-handle-h { cursor: col-resize; }
 .resize-handle-v { cursor: row-resize; }
-.focus-ring:focus { outline: 1px solid #ccff00; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid #1E88FF; outline-offset: -1px; }
 .no-drag { -webkit-user-drag: none; user-select: none; }
 
 @layer components {
@@ -830,8 +830,8 @@ html {
     box-shadow: none !important;
   }
   .accounts-native-select:focus {
-    border-color: rgba(204, 255, 0, 0.55) !important;
-    box-shadow: 0 0 0 2px rgba(204, 255, 0, 0.2) !important;
+    border-color: rgba(30, 136, 255, 0.55) !important;
+    box-shadow: 0 0 0 2px rgba(30, 136, 255, 0.2) !important;
   }
   .accounts-native-select option {
     background-color: var(--bg-secondary);
@@ -902,7 +902,7 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
   z-index: -1;
   pointer-events: none;
   background-image:
-    radial-gradient(120% 60% at 50% -8%, rgba(204, 255, 0, 0.06), transparent 60%),
+    radial-gradient(120% 60% at 50% -8%, rgba(30, 136, 255, 0.06), transparent 60%),
     linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 100% 100%, 56px 56px, 56px 56px;
@@ -918,7 +918,7 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
 }
 
-/* Positive "success" text — IB's success token is lime (#a6d600), invisible
+/* Positive "success" text — IB's success token is lime (#0B5BD3), invisible
    on the white light-mode surfaces. Darken it (and any light emerald shades)
    to a readable green as a foreground only in light mode. */
 [data-theme="light"] .text-success,

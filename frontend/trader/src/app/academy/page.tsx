@@ -19,8 +19,8 @@ const PREMIUM_CARD =
   'rounded-2xl border relative overflow-hidden transition-all duration-300 hover:-translate-y-1';
 const PREMIUM_STYLE = {
   background:
-    'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)',
-  borderColor: 'rgba(204,255,0,0.16)',
+    'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)',
+  borderColor: 'rgba(30,136,255,0.16)',
   boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
 } as const;
 
@@ -50,12 +50,12 @@ export default function AcademyPage() {
         <div className="flex items-center gap-3">
           <div
             className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+            style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
           >
-            <GraduationCap className="w-5 h-5 text-[#ccff00]" />
+            <GraduationCap className="w-5 h-5 text-[#1E88FF]" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xl md:text-2xl font-bold text-text-primary">FXArtha Forex Academy</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-text-primary">Ezymax Forex Academy</h1>
             <p className="text-sm text-text-tertiary">Master forex trading from beginner to professional</p>
           </div>
         </div>
@@ -64,8 +64,8 @@ export default function AcademyPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {stats.map((s) => (
             <div key={s.label} className={clsx(PREMIUM_CARD, 'p-4')} style={PREMIUM_STYLE}>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3" style={{ background: 'rgba(204,255,0,0.10)' }}>
-                <s.icon className="w-4 h-4 text-[#ccff00]" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3" style={{ background: 'rgba(30,136,255,0.10)' }}>
+                <s.icon className="w-4 h-4 text-[#1E88FF]" />
               </div>
               <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">{s.label}</p>
               <p className="text-xl sm:text-2xl font-bold tabular-nums text-text-primary mt-0.5 truncate">{s.value}</p>
@@ -77,18 +77,18 @@ export default function AcademyPage() {
         <div className={clsx(PREMIUM_CARD, 'p-5 pl-6')} style={PREMIUM_STYLE}>
           <div
             className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
-            style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+            style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
           />
           <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
             <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Overall Progress</p>
-            <p className="text-sm font-semibold text-[#ccff00] tabular-nums">
+            <p className="text-sm font-semibold text-[#1E88FF] tabular-nums">
               {pct}% Complete ({done}/44)
             </p>
           </div>
           <div className="h-2.5 rounded-full bg-bg-secondary overflow-hidden border border-border-primary">
             <div
               className="h-full rounded-full transition-all"
-              style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #eaff8a, #ccff00 60%, #a6d600)' }}
+              style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #7CC9FF, #1E88FF 60%, #0B5BD3)' }}
             />
           </div>
 
@@ -99,7 +99,7 @@ export default function AcademyPage() {
                 <div
                   className={clsx(
                     'w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold mb-1 transition-colors',
-                    i === 0 ? 'border-[#ccff00] text-[#ccff00] bg-[#ccff00]/10' : 'border-border-secondary text-text-tertiary',
+                    i === 0 ? 'border-[#1E88FF] text-[#1E88FF] bg-[#1E88FF]/10' : 'border-border-secondary text-text-tertiary',
                   )}
                 >
                   {i + 1}
@@ -126,16 +126,16 @@ export default function AcademyPage() {
                 {/* Thumbnail band */}
                 <div
                   className="relative h-24 flex items-center justify-between px-5 overflow-hidden"
-                  style={{ background: 'radial-gradient(120% 140% at 85% -20%, rgba(204,255,0,0.18), transparent 60%)' }}
+                  style={{ background: 'radial-gradient(120% 140% at 85% -20%, rgba(30,136,255,0.18), transparent 60%)' }}
                 >
                   <div
                     className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
-                    style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+                    style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
                   />
                   <div className="flex items-center gap-3">
                     <div
                       className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0"
-                      style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.22)', color: phase.color }}
+                      style={{ background: 'rgba(30,136,255,0.10)', border: '1px solid rgba(30,136,255,0.22)', color: phase.color }}
                     >
                       {glyph}
                     </div>
@@ -146,7 +146,7 @@ export default function AcademyPage() {
                       <Lock className="w-3 h-3" /> Locked
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-[9px] px-2 py-1 rounded-full bg-[#ccff00]/15 border border-[#ccff00]/30 text-[#ccff00] uppercase tracking-wider font-bold">
+                    <span className="inline-flex items-center gap-1 text-[9px] px-2 py-1 rounded-full bg-[#1E88FF]/15 border border-[#1E88FF]/30 text-[#1E88FF] uppercase tracking-wider font-bold">
                       <PlayCircle className="w-3 h-3" /> Active
                     </span>
                   )}
@@ -155,7 +155,7 @@ export default function AcademyPage() {
                 {/* Body */}
                 <div className="flex-1 flex flex-col p-5 pt-4">
                   <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <span className="text-[10px] font-bold tracking-wider text-[#ccff00] uppercase">Phase {phase.num}</span>
+                    <span className="text-[10px] font-bold tracking-wider text-[#1E88FF] uppercase">Phase {phase.num}</span>
                     <span className="w-1 h-1 rounded-full bg-border-secondary" />
                     <span className="text-[10px] text-text-tertiary">{phase.duration}</span>
                     <span className="text-[9px] px-1.5 py-0.5 rounded bg-bg-secondary border border-border-glass text-text-tertiary uppercase tracking-wider">
@@ -172,17 +172,17 @@ export default function AcademyPage() {
                       <span className="text-[10px] text-text-tertiary tabular-nums">0%</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-bg-secondary overflow-hidden border border-border-primary">
-                      <div className="h-full rounded-full bg-[#ccff00]" style={{ width: '0%' }} />
+                      <div className="h-full rounded-full bg-[#1E88FF]" style={{ width: '0%' }} />
                     </div>
                   </div>
 
                   {/* CTA */}
                   <div className="mt-4 pt-3 border-t border-border-primary/60 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-text-secondary group-hover:text-[#ccff00] transition-colors">
+                    <span className="text-xs font-semibold text-text-secondary group-hover:text-[#1E88FF] transition-colors">
                       {locked ? 'Preview phase' : 'Start learning'}
                     </span>
-                    <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#ccff00]/10 group-hover:bg-[#ccff00] transition-colors">
-                      <ArrowRight size={16} className="text-[#ccff00] group-hover:text-[#0a0a0a] transition-colors" />
+                    <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#1E88FF]/10 group-hover:bg-[#1E88FF] transition-colors">
+                      <ArrowRight size={16} className="text-[#1E88FF] group-hover:text-[#0a0a0a] transition-colors" />
                     </span>
                   </div>
                 </div>
@@ -192,7 +192,7 @@ export default function AcademyPage() {
         </div>
 
         <div className="flex items-center justify-between text-[10px] uppercase tracking-widest text-text-tertiary pt-2">
-          <span>FXArtha Forex Academy</span>
+          <span>Ezymax Forex Academy</span>
           <span>8 Phases · 44 Modules</span>
         </div>
       </div>

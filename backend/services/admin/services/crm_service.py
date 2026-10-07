@@ -414,7 +414,7 @@ async def list_customers(
             phone=r["phone"], email=r["email"], country=r["country"],
             source=_source(r["utm_source"], r["has_referrer"]),
             assigned_rm=None,
-            broker="FXArtha",
+            broker="Ezymax",
             account_number=r["account_number"],
             account_type=r["account_type"],
             currency=r["currency"],

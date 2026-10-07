@@ -6,7 +6,7 @@ import { RiskView } from "@/views/risk";
 export const metadata: Metadata = generateMetadata({
   title: "Risk Disclosure",
   description:
-    "Trading leveraged instruments carries a high level of risk. Read FX Artha's full risk disclosure before opening an account.",
+    "Trading leveraged instruments carries a high level of risk. Read Ezymax's full risk disclosure before opening an account.",
   url: "/risk",
 });
 

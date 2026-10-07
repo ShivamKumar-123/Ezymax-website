@@ -8,7 +8,7 @@ from .base import render_layout
 def render_existing_user_login_notice(
     *,
     full_name: str | None,
-    trader_app_url: str = "https://trade.fxartha.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     """One-off notice to existing users: the marketing site is now invite-only
     (waitlist) for new signups, so point returning users straight at login."""
@@ -19,7 +19,7 @@ def render_existing_user_login_notice(
 
     body = f"""
     <p style="margin:0 0 12px;color:#f5f5f5;font-size:14px;line-height:1.6;">
-      We've refreshed FX Artha. Your account, balances and positions are exactly
+      We've refreshed Ezymax. Your account, balances and positions are exactly
       where you left them — nothing has changed for you.
     </p>
     <p style="margin:0 0 12px;color:#f5f5f5;font-size:14px;line-height:1.6;">
@@ -34,10 +34,10 @@ def render_existing_user_login_notice(
       <a href="{escape(register_url, quote=True)}" style="color:#d6a93d;text-decoration:none;">{escape(register_url)}</a>
     </p>
     """
-    subject = "Log in to FX Artha"
+    subject = "Log in to Ezymax"
     html = render_layout(
         title="Welcome back",
-        intro=f"Hi {name}, here's your quick link back into FX Artha.",
+        intro=f"Hi {name}, here's your quick link back into Ezymax.",
         body_html=body,
         cta_label="Log in",
         cta_url=login_url,
@@ -48,7 +48,7 @@ def render_existing_user_login_notice(
     )
     text = (
         f"Hi {name},\n\n"
-        "We've refreshed FX Artha. Your account, balances and positions are "
+        "We've refreshed Ezymax. Your account, balances and positions are "
         "exactly where you left them.\n\n"
         f"Log in:              {login_url}\n"
         f"Create a new account: {register_url}\n\n"

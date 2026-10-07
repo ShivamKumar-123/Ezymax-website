@@ -1,4 +1,4 @@
-# FXArtha — Alembic Migrations
+# Ezymax — Alembic Migrations
 
 Schema evolution is managed via Alembic. All migration files live in `versions/`.
 
@@ -12,7 +12,7 @@ current DB and the ORM models in `packages/common/src/models.py`.
 
 ```bash
 # From the backend/ root (where packages/ is visible)
-export DATABASE_URL=postgresql+asyncpg://fxartha:fxartha_dev@localhost:5432/fxartha
+export DATABASE_URL=postgresql+asyncpg://ezymax:ezymax_dev@localhost:5432/ezymax
 ```
 
 Alembic must be installed (it is included in `packages/common` dependencies):

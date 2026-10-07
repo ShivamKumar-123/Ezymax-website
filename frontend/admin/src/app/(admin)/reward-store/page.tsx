@@ -15,7 +15,7 @@ import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Loader2, Save, RefreshCw, Plus, Trash2, Store } from 'lucide-react';
 
-const LIME = '#ccff00';
+const LIME = '#1E88FF';
 const CATEGORIES = ['cashback', 'bonus', 'perk', 'tool', 'lifestyle'] as const;
 type Category = (typeof CATEGORIES)[number];
 
@@ -159,7 +159,7 @@ export default function AdminRewardStorePage() {
             <RefreshCw className="w-3.5 h-3.5" /> Reload
           </button>
           <button type="button" onClick={() => setAdding((v) => !v)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#ccff00]/40">
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#1E88FF]/40">
             <Plus className="w-3.5 h-3.5" /> Add item
           </button>
           <button type="button" onClick={() => void save()} disabled={saving}
@@ -254,7 +254,7 @@ export default function AdminRewardStorePage() {
         </table>
       </div>
       <p className="text-[11px] text-text-tertiary">
-        AC price = Artha Coins a trader spends. <span className="font-bold text-text-secondary">Min PS</span> only
+        AC price = Ezymax Coins a trader spends. <span className="font-bold text-text-secondary">Min PS</span> only
         applies to <span style={{ color: CAT_COLOR.lifestyle }}>lifestyle</span> items (Power-Score gate). Turn
         <b> Active</b> off to hide an item from the store. Edits are live after <b>Save changes</b>.
       </p>

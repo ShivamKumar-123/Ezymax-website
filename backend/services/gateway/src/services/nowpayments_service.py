@@ -85,8 +85,8 @@ async def create_payment(
         "ipn_callback_url": ipn_url,
         # NOWPayments shows these on the hosted page so the user can return
         # to our app after paying or cancelling.
-        "success_url": success_url or "https://trade.fxartha.com/wallet",
-        "cancel_url": cancel_url or "https://trade.fxartha.com/wallet",
+        "success_url": success_url or "https://trade.ezymex.com/wallet",
+        "cancel_url": cancel_url or "https://trade.ezymex.com/wallet",
         "is_fixed_rate": False,
         "is_fee_paid_by_user": True,
     }
@@ -120,7 +120,7 @@ async def create_payment(
 #
 # /v1/payment returns a single pay_address + pay_amount + expires_at,
 # rather than redirecting the user to NOWPayments' hosted page. The
-# trader keeps the user on FXArtha and shows the address + a wallet-
+# trader keeps the user on Ezymax and shows the address + a wallet-
 # connect button (wagmi/RainbowKit) that signs the transfer.
 
 # Frontend network IDs we surface back to the wallet-connect layer so

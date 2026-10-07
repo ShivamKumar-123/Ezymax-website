@@ -37,7 +37,7 @@ export default function DashboardFooter() {
           <p className="sm:hidden">
             <span className="font-semibold text-text-secondary">Risk warning:</span>{' '}
             Trading leveraged products is high-risk; you can lose more than your deposit.{' '}
-            <Link href="/risk-disclosure" className="text-[#ccff00] hover:underline whitespace-nowrap">
+            <Link href="/risk-disclosure" className="text-[#1E88FF] hover:underline whitespace-nowrap">
               Read more
             </Link>
           </p>
@@ -55,20 +55,20 @@ export default function DashboardFooter() {
             wraps on narrow viewports. */}
         <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 text-[11px]">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-text-tertiary">
-            <span>© {YEAR} FXArtha. All rights reserved.</span>
-            <Link href="/terms" className="hover:text-[#ccff00] transition-colors">
+            <span>© {YEAR} Ezymax. All rights reserved.</span>
+            <Link href="/terms" className="hover:text-[#1E88FF] transition-colors">
               Terms &amp; Conditions
             </Link>
-            <Link href="/privacy" className="hover:text-[#ccff00] transition-colors">
+            <Link href="/privacy" className="hover:text-[#1E88FF] transition-colors">
               Privacy Policy
             </Link>
-            <Link href="/risk-disclosure" className="hover:text-[#ccff00] transition-colors">
+            <Link href="/risk-disclosure" className="hover:text-[#1E88FF] transition-colors">
               Risk Disclosure
             </Link>
-            <Link href="/how-it-works" className="hover:text-[#ccff00] transition-colors">
+            <Link href="/how-it-works" className="hover:text-[#1E88FF] transition-colors">
               How It Works
             </Link>
-            <Link href="/support" className="hover:text-[#ccff00] transition-colors">
+            <Link href="/support" className="hover:text-[#1E88FF] transition-colors">
               Support
             </Link>
           </div>

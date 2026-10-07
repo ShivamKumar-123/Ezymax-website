@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Admin · FXArtha Shield — aggregate period-plan insurance.
+ * Admin · Ezymax Shield — aggregate period-plan insurance.
  *
  * Separate product from the per-trade insurance config above it. Two blocks:
  *   1. Reserve dashboard — premium collected vs claims paid, reserve balance,
@@ -16,7 +16,7 @@ import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Loader2, Save, RefreshCw, ShieldCheck } from 'lucide-react';
 
-const LIME = '#ccff00';
+const LIME = '#1E88FF';
 
 type Period = 'daily' | 'weekly' | 'monthly';
 type Tier = 'basic' | 'plus' | 'pro' | 'elite';
@@ -114,7 +114,7 @@ export default function ShieldAdminSection() {
             <ShieldCheck className="w-5 h-5" style={{ color: LIME }} />
           </div>
           <div>
-            <h2 className="text-lg md:text-xl font-bold text-text-primary">FXArtha Shield — Period Plans</h2>
+            <h2 className="text-lg md:text-xl font-bold text-text-primary">Ezymax Shield — Period Plans</h2>
             <p className="text-xs text-text-secondary mt-0.5">
               A <strong>separate product</strong> from the per-trade cover above: users buy a plan that
               covers a share of their cumulative loss over a Daily / Weekly / Monthly window.

@@ -214,7 +214,7 @@ function TerminalPositionStaticCard({
             className={clsx(
               'inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold tabular-nums border',
               pnl >= 0
-                ? 'bg-green-500/10 border-green-500/20 text-[#ccff00]'
+                ? 'bg-green-500/10 border-green-500/20 text-[#1E88FF]'
                 : 'bg-red-500/10 border-red-500/20 text-[#ff5252]',
             )}
           >
@@ -248,7 +248,7 @@ function TerminalPositionStaticCard({
               (priceDown ? (
                 <TrendingDown className="w-3 h-3 text-[#ff5252]" aria-hidden />
               ) : (
-                <TrendingUp className="w-3 h-3 text-[#ccff00]" aria-hidden />
+                <TrendingUp className="w-3 h-3 text-[#1E88FF]" aria-hidden />
               ))}
           </div>
         </div>
@@ -973,7 +973,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                           <div className="min-w-0 flex-1 space-y-1.5">
                             {([
                               ['Balance', `$${activeAccount.balance.toFixed(2)}`, undefined],
-                              ['Floating P&L', fmtPnl(totalPnl), totalPnl >= 0 ? 'text-[#ccff00]' : 'text-[#ef5350]'],
+                              ['Floating P&L', fmtPnl(totalPnl), totalPnl >= 0 ? 'text-[#1E88FF]' : 'text-[#ef5350]'],
                               ['Equity', `$${equity.toFixed(2)}`, undefined],
                               ['Margin Used', `$${activeAccount.margin_used.toFixed(2)}`, undefined],
                               ['Free Margin', `$${freeMarginCalc.toFixed(2)}`, undefined],
@@ -1102,7 +1102,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     className={clsx(
                       'flex-1 min-w-0 py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-bold transition-colors border-b-2 -mb-px',
                       activeTab === tab.id
-                        ? clsx('text-text-primary border-[#ccff00]', 'bg-bg-secondary/70')
+                        ? clsx('text-text-primary border-[#1E88FF]', 'bg-bg-secondary/70')
                         : clsx(
                             'text-text-tertiary border-transparent hover:text-text-secondary',
                             'hover:bg-bg-hover/40',

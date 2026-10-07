@@ -5,7 +5,7 @@ import { ApiError, handle } from "@/lib/api";
 
 /**
  * Waitlist proxy — the browser calls this same-origin route; it forwards to
- * the gateway's public waitlist endpoints server-side (keeps api.fxartha.com
+ * the gateway's public waitlist endpoints server-side (keeps api.ezymex.com
  * off the browser and avoids CORS). See AGENTS.md rule #9.
  */
 

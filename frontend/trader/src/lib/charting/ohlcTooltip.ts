@@ -9,7 +9,7 @@
  * what the legend and the desktop tooltip show.
  *
  * The mobile app runs the same logic inside its chart WebView
- * (fxartha_app/src/screens/MainTradingScreen.js) — keep the two in step.
+ * (ezymax_app/src/screens/MainTradingScreen.js) — keep the two in step.
  */
 
 const HOLD_MS = 350; // how long a finger rests before it counts as a hold

@@ -1,7 +1,7 @@
 """Add is_testnet flag and approval_id idempotency key for vault integration.
 
 Two additive changes preparing the gateway for the BSC-testnet vault
-(commit `feat(contracts): FXArthaVaultV1 + Foundry repo`):
+(commit `feat(contracts): EzymaxVaultV1 + Foundry repo`):
 
 1. `admin_deposit_wallets.is_testnet` BOOLEAN — distinguishes a
    testnet deposit wallet from a mainnet one. Same `network` slug

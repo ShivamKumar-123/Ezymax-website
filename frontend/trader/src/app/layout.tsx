@@ -19,17 +19,17 @@ const SHARE_DESCRIPTION =
 export const metadata: Metadata = {
   // Makes the relative share image below resolve to an absolute URL, which
   // every social scraper requires.
-  metadataBase: new URL('https://trade.fxartha.com'),
-  title: 'FXArtha',
-  description: 'FXArtha — professional forex and CFD trading platform',
-  applicationName: 'FXArtha',
+  metadataBase: new URL('https://trade.ezymex.com'),
+  title: 'Ezymax',
+  description: 'Ezymax — professional forex and CFD trading platform',
+  applicationName: 'Ezymax',
   manifest: '/manifest.webmanifest',
   // Without these, a shared link showed whatever image the scraper found first
   // on the page.
   openGraph: {
     type: 'website',
-    siteName: 'FXArtha',
-    title: 'FXArtha — trade with your funds still yours',
+    siteName: 'Ezymax',
+    title: 'Ezymax — trade with your funds still yours',
     description: SHARE_DESCRIPTION,
     url: '/',
     images: [{ url: '/open-graph.png', width: 1200, height: 630 }],
@@ -37,21 +37,21 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'FXArtha — trade with your funds still yours',
+    title: 'Ezymax — trade with your funds still yours',
     description: SHARE_DESCRIPTION,
     images: ['/open-graph.png'],
   },
   // Drives iOS "Add to Home Screen": standalone launch, app title, status bar.
   appleWebApp: {
     capable: true,
-    title: 'FXArtha',
+    title: 'Ezymax',
     // 'default' = the iOS status bar keeps its own space (does NOT overlay
     // content), so no page's top is ever hidden under the notch/clock.
     statusBarStyle: 'default',
   },
   icons: {
-    icon: [{ url: '/images/fxartha_icon.png', type: 'image/png' }],
-    apple: [{ url: '/images/fxartha_icon.png' }],
+    icon: [{ url: '/images/ezymax_icon.png', type: 'image/png' }],
+    apple: [{ url: '/images/ezymax_icon.png' }],
   },
 };
 
@@ -73,11 +73,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/images/fxartha_icon.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/images/fxartha_icon.png" />
+        <link rel="icon" href="/images/ezymax_icon.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/images/ezymax_icon.png" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var L='fxartha-ui',N='fxartha-ui';var o=localStorage.getItem(L),n=localStorage.getItem(N);if(o&&!n){localStorage.setItem(N,o);localStorage.removeItem(L);}var s=localStorage.getItem(N);var t='dark';if(s){var j=JSON.parse(s);t=(j&&j.state&&j.state.theme)||(j&&j.theme)||'dark';}var d=document.documentElement;d.setAttribute('data-theme',t);d.classList.add(t==='light'?'theme-light':'theme-dark');if(t==='light'){d.style.backgroundColor='#ffffff';d.style.color='#111827';}else{d.style.backgroundColor='#0a0a0a';d.style.color='#ffffff';}}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.backgroundColor='#ffffff';document.documentElement.style.color='#111827';}})();`,
+            __html: `(function(){try{var L='ezymax-ui',N='ezymax-ui';var o=localStorage.getItem(L),n=localStorage.getItem(N);if(o&&!n){localStorage.setItem(N,o);localStorage.removeItem(L);}var s=localStorage.getItem(N);var t='dark';if(s){var j=JSON.parse(s);t=(j&&j.state&&j.state.theme)||(j&&j.theme)||'dark';}var d=document.documentElement;d.setAttribute('data-theme',t);d.classList.add(t==='light'?'theme-light':'theme-dark');if(t==='light'){d.style.backgroundColor='#ffffff';d.style.color='#111827';}else{d.style.backgroundColor='#0a0a0a';d.style.color='#ffffff';}}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.backgroundColor='#ffffff';document.documentElement.style.color='#111827';}})();`,
           }}
         />
       </head>
@@ -108,11 +108,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Suspense>
             <Toaster
               position="top-center"
-              containerClassName="fxartha-toaster"
+              containerClassName="ezymax-toaster"
               gutter={10}
               toastOptions={{
                 duration: 2500,
-                className: 'fxartha-hot-toast',
+                className: 'ezymax-hot-toast',
                 // maxWidth caps the toast at a readable column so long
                 // backend error messages (e.g. balance-gate copy) wrap
                 // onto a second line instead of stretching across the
@@ -127,22 +127,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 },
                 success: {
                   duration: 2200,
-                  className: 'fxartha-hot-toast',
+                  className: 'ezymax-hot-toast',
                   // White check on a gold disc reads as "good" instantly on
                   // dark surface without losing the brand accent.
-                  iconTheme: { primary: '#ccff00', secondary: '#1a1408' },
+                  iconTheme: { primary: '#1E88FF', secondary: '#1a1408' },
                 },
                 error: {
                   duration: 4000,
-                  className: 'fxartha-hot-toast',
+                  className: 'ezymax-hot-toast',
                   // White X on a saturated red disc — high contrast on the
                   // dark toast background, no fade-out into the BG colour.
                   iconTheme: { primary: '#ef4444', secondary: '#ffffff' },
                 },
                 loading: {
                   duration: Infinity,
-                  className: 'fxartha-hot-toast',
-                  iconTheme: { primary: '#ccff00', secondary: 'var(--toast-bg)' },
+                  className: 'ezymax-hot-toast',
+                  iconTheme: { primary: '#1E88FF', secondary: 'var(--toast-bg)' },
                 },
               }}
             />

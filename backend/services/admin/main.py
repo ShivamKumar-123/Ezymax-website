@@ -290,7 +290,7 @@ async def _apply_startup_ddl():
                 ON CONFLICT (key) DO NOTHING
             """))
 
-            # ── FXArtha Shield — aggregate period-plan insurance ──────────────
+            # ── Ezymax Shield — aggregate period-plan insurance ──────────────
             # Separate product from the per-trade micro-insurance. Mirrors the
             # models in packages/common/src/models/insurance_shield.py so the
             # Shield endpoints + close-time settlement work even where Alembic
@@ -498,7 +498,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="FXArtha Admin API",
+    title="Ezymax Admin API",
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs" if app_settings.ENVIRONMENT == "development" else None,

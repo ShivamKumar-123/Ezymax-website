@@ -141,7 +141,7 @@ export default function ConnectWalletFlow({ variant = 'login', disabled }: Props
       } else if (status === 401 && lower.includes('signature')) {
         toast.error('Signature did not match the connected wallet.');
       } else if (status === 409) {
-        toast.error('This wallet is already linked to another FXArtha account.');
+        toast.error('This wallet is already linked to another Ezymax account.');
       } else if (status === 404 && variant === 'login') {
         // Shouldn't happen for login variant (auto-creates), but defensive.
         toast.error(detail || 'No account found for this wallet.');

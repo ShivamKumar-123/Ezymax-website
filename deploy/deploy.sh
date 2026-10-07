@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Deploy FXArtha to the production host.
+# Deploy Ezymax to the production host.
 #
-# Run on the server, from /opt/fxartha. CI calls it over SSH; a human can call
+# Run on the server, from /opt/ezymax. CI calls it over SSH; a human can call
 # it by hand the same way. Decides what to touch from what actually changed
 # between the deployed commit and the one being deployed, because rebuilding
 # four Next.js images to ship a backend one-liner costs twenty minutes for
@@ -14,10 +14,10 @@
 #
 set -Eeuo pipefail
 
-REPO_DIR="${REPO_DIR:-/opt/fxartha}"
+REPO_DIR="${REPO_DIR:-/opt/ezymax}"
 COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
 TARGET_REF="${1:-origin/main}"
-HEALTH_URL="${HEALTH_URL:-https://api.fxartha.com/api/v1/auth/platform-status}"
+HEALTH_URL="${HEALTH_URL:-https://api.ezymex.com/api/v1/auth/platform-status}"
 
 cd "$REPO_DIR"
 
@@ -140,7 +140,7 @@ code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$HEALTH_URL" || ec
 echo "  gateway: $code"
 
 # Frontends answer through nginx on their own vhosts.
-for host in fxartha.com trade.fxartha.com admin.fxartha.com ib.fxartha.com; do
+for host in ezymex.com trade.ezymex.com admin.ezymex.com ib.ezymex.com; do
   code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "https://$host/" || echo 000)"
   case "$code" in
     200|301|302|307|308) echo "  $host: $code" ;;

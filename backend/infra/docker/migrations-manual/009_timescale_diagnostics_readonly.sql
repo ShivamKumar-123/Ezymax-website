@@ -12,7 +12,7 @@
 --   6. Recent compression job runs (success / failure)
 --
 -- Run:
---   docker exec -i fxartha-timescaledb-1 psql -U fxartha -d marketdata \
+--   docker exec -i ezymax-timescaledb-1 psql -U ezymax -d marketdata \
 --     < backend/infra/docker/migrations-manual/009_timescale_diagnostics_readonly.sql
 --
 -- Nothing mutates. Safe to re-run any time. Output goes to the psql

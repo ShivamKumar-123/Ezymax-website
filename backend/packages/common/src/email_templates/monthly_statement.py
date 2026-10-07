@@ -13,7 +13,7 @@ def render_monthly_statement_available(
     first_name: str | None,
     statement_month_label: str,
     user_uid: str,
-    trader_app_url: str = "https://trade.fxartha.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     base = trader_app_url.rstrip("/")
@@ -36,7 +36,7 @@ def render_monthly_statement_available(
     subject = f"Your account statement for {statement_month_label} is now available"
     html = render_layout(
         title=f"Your account statement for {statement_month_label} is ready",
-        intro=f"Hi {name}, your latest FXArtha account statement is now available.",
+        intro=f"Hi {name}, your latest Ezymax account statement is now available.",
         body_html=body,
         cta_label="Download statement",
         cta_url=f"{base}/portfolio",
@@ -49,7 +49,7 @@ def render_monthly_statement_available(
     text_lines = [
         f"Hi {name},",
         "",
-        f"Your FXArtha account statement for {statement_month_label} is now available.",
+        f"Your Ezymax account statement for {statement_month_label} is now available.",
         "",
         "Open Portfolio in the trader dashboard and click 'Download PDF statement'.",
         "Funding history (deposits / withdrawals) lives under Wallet → Transactions.",

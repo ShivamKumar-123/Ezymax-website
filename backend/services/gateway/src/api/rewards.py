@@ -1,4 +1,4 @@
-"""Rewards API — XP / Artha Coins / Power Score, missions, store, leaderboard.
+"""Rewards API — XP / Ezymax Coins / Power Score, missions, store, leaderboard.
 
 Mission progress is bumped automatically by the platform (e.g. trade close).
 This router exposes read endpoints + claim/redeem write endpoints.

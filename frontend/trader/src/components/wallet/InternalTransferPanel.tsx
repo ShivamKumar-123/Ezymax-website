@@ -136,12 +136,12 @@ export default function InternalTransferPanel() {
   return (
     <div
       className="relative overflow-hidden rounded-2xl border border-accent/25 p-5 sm:p-6"
-      style={{ background: 'radial-gradient(120% 90% at 85% -10%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)' }}
+      style={{ background: 'radial-gradient(120% 90% at 85% -10%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)' }}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" aria-hidden />
       <div className="relative flex items-start gap-3 mb-6">
         <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-          style={{ background: 'linear-gradient(135deg, #eaff8a, #ccff00 60%, #a6d600)', color: '#0a0a0a', boxShadow: '0 8px 22px rgba(204,255,0,0.35)' }}>
+          style={{ background: 'linear-gradient(135deg, #7CC9FF, #1E88FF 60%, #0B5BD3)', color: '#0a0a0a', boxShadow: '0 8px 22px rgba(30,136,255,0.35)' }}>
           <ArrowLeftRight size={22} strokeWidth={2.5} />
         </div>
         <div>
@@ -168,7 +168,7 @@ export default function InternalTransferPanel() {
             </select>
             {fromOpt && (
               <div className="rounded-xl border border-accent/35 bg-bg-base p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#ccff00]/12 flex items-center justify-center text-[#ccff00] shrink-0">
+                <div className="w-10 h-10 rounded-full bg-[#1E88FF]/12 flex items-center justify-center text-[#1E88FF] shrink-0">
                   {uniFrom === 'wallet' ? <Wallet size={20} /> : uniFrom === 'bonus' ? <Gift size={20} /> : <Landmark size={20} />}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -198,7 +198,7 @@ export default function InternalTransferPanel() {
             </select>
             {toOpt && (
               <div className="rounded-xl border border-border-primary bg-bg-base p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#ccff00]/12 flex items-center justify-center text-[#ccff00] shrink-0">
+                <div className="w-10 h-10 rounded-full bg-[#1E88FF]/12 flex items-center justify-center text-[#1E88FF] shrink-0">
                   {uniTo === 'wallet' ? <Wallet size={20} /> : <Landmark size={20} />}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -215,7 +215,7 @@ export default function InternalTransferPanel() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <label className="text-sm font-medium text-text-primary">Amount</label>
               <button type="button" onClick={() => setAmount(fromBalance > 0 ? fromBalance.toFixed(2) : '')} disabled={fromBalance <= 0}
-                className="text-sm font-bold text-[#ccff00] hover:underline disabled:opacity-40 disabled:pointer-events-none">
+                className="text-sm font-bold text-[#1E88FF] hover:underline disabled:opacity-40 disabled:pointer-events-none">
                 Max: {fmt(fromBalance)}
               </button>
             </div>
@@ -245,7 +245,7 @@ export default function InternalTransferPanel() {
           <button type="button" onClick={submit}
             disabled={submitting || !amount.trim() || fromBalance <= 0 || uniFrom === uniTo}
             className="w-full py-4 rounded-xl text-base font-extrabold disabled:opacity-45 disabled:pointer-events-none transition-transform hover:brightness-105 active:scale-[0.99] flex items-center justify-center gap-2"
-            style={{ background: 'linear-gradient(90deg, #eaff8a, #ccff00)', color: '#0a0a0a', boxShadow: '0 10px 28px rgba(204,255,0,0.30)' }}>
+            style={{ background: 'linear-gradient(90deg, #7CC9FF, #1E88FF)', color: '#0a0a0a', boxShadow: '0 10px 28px rgba(30,136,255,0.30)' }}>
             <ArrowLeftRight size={20} />
             {submitting ? 'Transferring…' : 'Transfer'}
           </button>

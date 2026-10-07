@@ -135,7 +135,7 @@ override; a light mode would be a different brand.
 
 - **Tier 1:** obsidian ink ramp (`--raw-color-ink-950/900/800` =
   `#0a0a0a/#0c0c0c/#161616`), neon lime `--raw-color-lime-300/400/600`
-  (primary `#ccff00`), `--raw-color-emerald-500` (`#10b981`), glass literals
+  (primary `#1E88FF`), `--raw-color-emerald-500` (`#10b981`), glass literals
   (`--raw-color-glass-fill` rgba-white 3%, `--raw-color-glass-border`
   rgba-white 10%), `--raw-blur-glass` (16px), `--raw-shadow-glow` (lime CTA
   glow), radii (card **2.5rem**, card-sm 1.5rem — the reference mandates ≥2rem

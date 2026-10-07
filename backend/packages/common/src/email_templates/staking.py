@@ -19,7 +19,7 @@ def render_staking_digest(
     apy_pct: float,
     period_end: str,
     currency: str = "USD",
-    trader_app_url: str = "https://trade.fxartha.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     rows: list[tuple[str, str]] = [

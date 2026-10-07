@@ -104,15 +104,15 @@ function EmptyState({ message }: { message: string }) {
     <div
       className="flex flex-col items-center justify-center text-center rounded-2xl border py-16 px-6"
       style={{
-        background: 'radial-gradient(130% 120% at 50% -25%, rgba(204,255,0,0.08), transparent 55%), var(--bg-card)',
-        borderColor: 'rgba(204,255,0,0.16)',
+        background: 'radial-gradient(130% 120% at 50% -25%, rgba(30,136,255,0.08), transparent 55%), var(--bg-card)',
+        borderColor: 'rgba(30,136,255,0.16)',
       }}
     >
       <div
         className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
-        style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+        style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
       >
-        <Users className="w-5 h-5 text-[#ccff00]" />
+        <Users className="w-5 h-5 text-[#1E88FF]" />
       </div>
       <p className="text-sm font-semibold text-text-primary">{message}</p>
       <p className="text-xs text-text-tertiary mt-1">Check back soon as new master traders join.</p>
@@ -187,15 +187,15 @@ function TraderCard({
       onClick={onClick}
       className="group relative rounded-2xl border overflow-hidden transition-all duration-300 hover:-translate-y-1 min-h-[220px] flex flex-col cursor-pointer"
       style={{
-        background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)',
-        borderColor: 'rgba(204,255,0,0.16)',
+        background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)',
+        borderColor: 'rgba(30,136,255,0.16)',
         boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
       }}
     >
       {/* Left accent bar (hero-card treatment) */}
       <div
         className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
-        style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+        style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
       />
 
       <div className="relative z-10 p-4 pl-5 flex flex-col flex-1">
@@ -203,18 +203,18 @@ function TraderCard({
           <div className="flex items-center gap-3 min-w-0">
             <div
               className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-sm font-bold text-[#0a0a0a] shrink-0"
-              style={{ background: 'linear-gradient(135deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 4px 14px rgba(204,255,0,0.28)' }}
+              style={{ background: 'linear-gradient(135deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 4px 14px rgba(30,136,255,0.28)' }}
             >
               {initials}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-sm font-semibold text-text-primary truncate">{provider.provider_name}</span>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0" style={{ background: 'rgba(204,255,0,0.14)', color: 'var(--accent-ink)' }}>Master</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0" style={{ background: 'rgba(30,136,255,0.14)', color: 'var(--accent-ink)' }}>Master</span>
                 {isSelf && <span className="px-1.5 py-0.5 rounded bg-buy/15 text-buy text-[9px] font-bold uppercase shrink-0">You</span>}
               </div>
               <div className="text-[11px] text-text-tertiary mt-1 flex items-center gap-1.5">
-                <Users className="w-3 h-3 text-[#ccff00]" />
+                <Users className="w-3 h-3 text-[#1E88FF]" />
                 <span className="tabular-nums">{provider.followers_count.toLocaleString()} followers</span>
               </div>
             </div>
@@ -255,7 +255,7 @@ function TraderCard({
             <button
               type="button"
               onClick={onCopy}
-              className="shrink-0 px-4 py-1.5 text-xs font-semibold rounded-xl bg-[#ccff00] hover:bg-[#a6d600] text-[#0a0a0a] transition-all"
+              className="shrink-0 px-4 py-1.5 text-xs font-semibold rounded-xl bg-[#1E88FF] hover:bg-[#0B5BD3] text-[#0a0a0a] transition-all"
             >
               Copy
             </button>
@@ -265,16 +265,16 @@ function TraderCard({
         {/* Hero ROI stat */}
         <div
           className="rounded-xl border p-3 mb-3"
-          style={{ background: 'rgba(204,255,0,0.05)', borderColor: 'rgba(204,255,0,0.14)' }}
+          style={{ background: 'rgba(30,136,255,0.05)', borderColor: 'rgba(30,136,255,0.14)' }}
         >
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(204,255,0,0.10)' }}>
-                <TrendingUp className="w-4 h-4 text-[#ccff00]" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(30,136,255,0.10)' }}>
+                <TrendingUp className="w-4 h-4 text-[#1E88FF]" />
               </div>
               <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Total ROI</span>
             </div>
-            <div className={clsx('text-2xl font-bold tabular-nums', roiPositive ? 'text-[#ccff00]' : 'text-sell')}>
+            <div className={clsx('text-2xl font-bold tabular-nums', roiPositive ? 'text-[#1E88FF]' : 'text-sell')}>
               {roiPositive ? '+' : ''}{provider.total_return_pct.toFixed(2)}%
             </div>
           </div>
@@ -283,7 +283,7 @@ function TraderCard({
         {provider.strategy_info?.strategy_name && (
           <div className="mb-3 flex flex-wrap gap-1.5">
             {provider.strategy_info.market && (
-              <span className="px-2 py-0.5 rounded-full bg-[#ccff00]/10 border border-[#ccff00]/25 text-[10px] font-medium text-[#ccff00]">{provider.strategy_info.market}</span>
+              <span className="px-2 py-0.5 rounded-full bg-[#1E88FF]/10 border border-[#1E88FF]/25 text-[10px] font-medium text-[#1E88FF]">{provider.strategy_info.market}</span>
             )}
             {provider.strategy_info.risk_profile && (
               <span className={clsx('px-2 py-0.5 rounded-full text-[10px] font-medium',
@@ -315,8 +315,8 @@ function TraderCard({
         </div>
 
         <div className="mt-2.5 flex items-center justify-between text-[10px] text-text-tertiary">
-          <span className="flex items-center gap-1"><DollarSign className="w-3 h-3 text-[#ccff00]" /> Min ${Number(provider.min_investment).toLocaleString()}</span>
-          <span className="text-[#ccff00] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">View details →</span>
+          <span className="flex items-center gap-1"><DollarSign className="w-3 h-3 text-[#1E88FF]" /> Min ${Number(provider.min_investment).toLocaleString()}</span>
+          <span className="text-[#1E88FF] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">View details →</span>
         </div>
       </div>
     </div>
@@ -1334,15 +1334,15 @@ function SocialPageInner() {
           <div className="flex items-center gap-3 mb-3 sm:mb-5">
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+              style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
             >
-              <Copy className="w-5 h-5 text-[#ccff00]" />
+              <Copy className="w-5 h-5 text-[#1E88FF]" />
             </div>
             <div className="min-w-0">
               <h1 className="text-xl md:text-2xl font-bold text-text-primary leading-tight">Copy Trading</h1>
               <p className="text-sm text-text-tertiary hidden sm:block">
                 Follow top traders and earn by copying their trades. For pooled funds, use{' '}
-                <span className="text-[#ccff00] font-medium">PAMM</span> in the sidebar.
+                <span className="text-[#1E88FF] font-medium">PAMM</span> in the sidebar.
               </p>
             </div>
           </div>
@@ -1383,23 +1383,23 @@ function SocialPageInner() {
                 key={s.label}
                 className="group relative overflow-hidden rounded-2xl p-4 pl-5 border transition-all duration-300 hover:-translate-y-1"
                 style={{
-                  background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.12), transparent 55%), var(--bg-card)',
-                  borderColor: 'rgba(204,255,0,0.16)',
+                  background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.12), transparent 55%), var(--bg-card)',
+                  borderColor: 'rgba(30,136,255,0.16)',
                   boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
                 }}
               >
                 {/* left lime accent bar */}
                 <div
                   className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5"
-                  style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+                  style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
                   aria-hidden
                 />
                 <div className="flex items-start gap-3">
                   <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+                    style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
                   >
-                    <s.icon size={18} className="text-[#ccff00]" />
+                    <s.icon size={18} className="text-[#1E88FF]" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] uppercase tracking-wide text-text-tertiary font-semibold">{s.label}</p>

@@ -1,7 +1,7 @@
 """Per-task PS reward on reward missions.
 
 Claiming a mission used to bump Power Score by a hard-coded +100 regardless of
-which task it was, so PS could not be tuned per task the way FXA and XP can.
+which task it was, so PS could not be tuned per task the way EZC and XP can.
 This adds `rewards_missions.ps_reward`, defaulted to 100 so every existing task
 keeps paying exactly what it paid before this migration.
 

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * FXArtha Shield — aggregate period-plan insurance panel.
+ * Ezymax Shield — aggregate period-plan insurance panel.
  *
  * Separate product from the per-trade micro-insurance. The user buys ONE plan
  * (Daily / Weekly / Monthly) at a tier; it covers a share of their *cumulative*
@@ -22,7 +22,7 @@ import {
   type ShieldTier,
 } from '@/lib/api/insurance';
 
-const LIME = '#ccff00';
+const LIME = '#1E88FF';
 
 const PERIOD_LABEL: Record<ShieldPeriod, string> = {
   daily: 'Daily',

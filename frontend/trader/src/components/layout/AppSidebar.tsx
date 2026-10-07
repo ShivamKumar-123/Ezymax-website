@@ -77,7 +77,7 @@ export const SECTIONS: NavSection[] = [
         ],
       },
       { label: 'Affiliates', href: '/business', icon: Users },
-      { label: 'FXArtha Academy', href: '/academy', icon: GraduationCap },
+      { label: 'Ezymax Academy', href: '/academy', icon: GraduationCap },
       { label: 'Economic News', href: '/news', icon: Newspaper },
     ],
   },
@@ -123,10 +123,10 @@ function ActivePill() {
   return (
     <motion.span
       layoutId="sidebar-active-pill"
-      className="absolute inset-0 rounded-lg bg-gradient-to-r from-accent/16 via-accent/8 to-accent/[0.03] border border-accent/25 shadow-[0_0_18px_-6px_rgba(204,255,0,0.55)]"
+      className="absolute inset-0 rounded-lg bg-gradient-to-r from-accent/16 via-accent/8 to-accent/[0.03] border border-accent/25 shadow-[0_0_18px_-6px_rgba(30,136,255,0.55)]"
       transition={PILL_SPRING}
     >
-      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-[55%] w-[3px] rounded-full bg-[#ccff00] shadow-[0_0_8px_1px_rgba(204,255,0,0.85)]" />
+      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-[55%] w-[3px] rounded-full bg-[#1E88FF] shadow-[0_0_8px_1px_rgba(30,136,255,0.85)]" />
     </motion.span>
   );
 }
@@ -182,12 +182,12 @@ export default function AppSidebar() {
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-3 gap-2">
           <Link href="/dashboard" className="flex items-center min-w-0 group">
-            {/* FXArtha logo image (no text — the asset carries the branding).
+            {/* Ezymax logo image (no text — the asset carries the branding).
                 Height-based sizing keeps the horizontal logo's aspect ratio. */}
             <img
-              src="/images/fxartha-logo.png"
-              alt="FXArtha"
-              className="h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(204,255,0,0.12)] transition-transform duration-300 group-hover:scale-[1.03]"
+              src="/images/ezymax-logo.png"
+              alt="Ezymax"
+              className="h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(30,136,255,0.12)] transition-transform duration-300 group-hover:scale-[1.03]"
             />
           </Link>
           <button
@@ -239,10 +239,10 @@ export default function AppSidebar() {
                       size={17}
                       strokeWidth={1.85}
                       className={cn(
-                        'relative z-10 shrink-0 transition-[filter,color,transform] duration-300 sidebar-icon-glow text-[#ccff00] group-hover:scale-110',
+                        'relative z-10 shrink-0 transition-[filter,color,transform] duration-300 sidebar-icon-glow text-[#1E88FF] group-hover:scale-110',
                         groupActive
-                          ? 'drop-shadow-[0_0_8px_rgba(204,255,0,0.55)]'
-                          : 'drop-shadow-[0_0_6px_rgba(204,255,0,0.35)]',
+                          ? 'drop-shadow-[0_0_8px_rgba(30,136,255,0.55)]'
+                          : 'drop-shadow-[0_0_6px_rgba(30,136,255,0.35)]',
                       )}
                     />
                     <span className="relative z-10 truncate flex-1 text-left transition-transform duration-300 group-hover:translate-x-0.5">{entry.label}</span>
@@ -283,7 +283,7 @@ export default function AppSidebar() {
                                 )}
                               >
                                 {isActive && <ActivePill />}
-                                <child.icon size={14} strokeWidth={1.85} className="relative z-10 shrink-0 text-[#ccff00]/85 transition-transform duration-300 group-hover:scale-110" />
+                                <child.icon size={14} strokeWidth={1.85} className="relative z-10 shrink-0 text-[#1E88FF]/85 transition-transform duration-300 group-hover:scale-110" />
                                 <span className="relative z-10 truncate transition-transform duration-300 group-hover:translate-x-0.5">{child.label}</span>
                               </Link>
                             );
@@ -320,10 +320,10 @@ export default function AppSidebar() {
                     size={17}
                     strokeWidth={1.85}
                     className={cn(
-                      'relative z-10 shrink-0 transition-[filter,color,transform] duration-300 sidebar-icon-glow text-[#ccff00] group-hover:scale-110',
+                      'relative z-10 shrink-0 transition-[filter,color,transform] duration-300 sidebar-icon-glow text-[#1E88FF] group-hover:scale-110',
                       isActive
-                        ? 'drop-shadow-[0_0_8px_rgba(204,255,0,0.55)]'
-                        : 'drop-shadow-[0_0_6px_rgba(204,255,0,0.35)]',
+                        ? 'drop-shadow-[0_0_8px_rgba(30,136,255,0.55)]'
+                        : 'drop-shadow-[0_0_6px_rgba(30,136,255,0.35)]',
                     )}
                   />
                   <span className="relative z-10 truncate transition-transform duration-300 group-hover:translate-x-0.5">{entry.label}</span>

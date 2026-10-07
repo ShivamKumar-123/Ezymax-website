@@ -31,7 +31,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
             backdropFilter: 'blur(14px)',
             WebkitBackdropFilter: 'blur(14px)',
             borderRight: '1px solid rgba(255,255,255,0.07)',
-            boxShadow: 'inset -14px 0 28px -22px rgba(204,255,0,0.22)',
+            boxShadow: 'inset -14px 0 28px -22px rgba(30,136,255,0.22)',
           }}
         >
           <Sidebar />

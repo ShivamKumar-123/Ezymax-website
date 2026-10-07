@@ -10,7 +10,7 @@ This is a human-curated log — not a mirror of `git log`.
 
 ## 2026-08-01 (evening) — Hero typewriter + subline crawl + split comparison
 
-- **Landing wired into the fxartha trader platform (2026-08-03)** — new
+- **Landing wired into the ezymax trader platform (2026-08-03)** — new
   `NEXT_PUBLIC_TRADE_URL` public env (default `http://localhost:3001`) +
   `tradeConfig` in `src/lib/site.ts`; every conversion CTA now links into the
   platform (`/auth/register` / `/auth/login`): drawer Open-account/Log-in,
@@ -110,9 +110,9 @@ This is a human-curated log — not a mirror of `git log`.
   `background: { src, side }` prop for this; the margin calculator renders
   its own. `heroContent.beforeSrc/afterSrc` removed. **`LiquidReveal` is now
   unused** (kept in `components/common/`, see [[components/common]]).
-- **Opening film replaced with the new FXARTHA intro** — user-supplied
-  `FXARTHA Intro.mp4` (1.8 MB) moved from the repo root to
-  `public/assets/intro/fxartha-intro.mp4` and wired via `introContent.src`;
+- **Opening film replaced with the new EZYMAX intro** — user-supplied
+  `EZYMAX Intro.mp4` (1.8 MB) moved from the repo root to
+  `public/assets/intro/ezymax-intro.mp4` and wired via `introContent.src`;
   the previous `opening.mp4` (936 KB) remains on disk unused. `IntroVideo`
   behaviour unchanged (muted autoplay, sound toggle, skip, `ready` gate,
   self-skips mid-session).
@@ -146,7 +146,7 @@ This is a human-curated log — not a mirror of `git log`.
 - **Problem/Solution rebuilt as hero-scale alternating split rows** — the two
   image-backed cards became full-width rows: content column (mono kicker,
   4–6xl bold title, numbered steps at body-large, closing line) beside a big
-  `75lvh` image column; broker row = image right, FX Artha row = image left
+  `75lvh` image column; broker row = image right, Ezymax row = image left
   (`lg:order-*` swap), watermark row number on the art. `StoryCard`/`Hover`
   lift dropped in favour of `SplitRow`.
 
@@ -186,7 +186,7 @@ This is a human-curated log — not a mirror of `git log`.
   (user-supplied design spec, adopted directly onto the existing layouts) —
   executed almost entirely as a Tier 1/2 token swap in `globals.css`, which is
   exactly what the three-tier convention exists for. Obsidian ink ramp
-  (#0a0a0a/#0c0c0c/#161616), neon-lime accent #ccff00 (+ #deff4d / #9ec700),
+  (#0a0a0a/#0c0c0c/#161616), neon-lime accent #1E88FF (+ #deff4d / #9ec700),
   emerald `--accent-positive` #10b981, glass tokens (`--glass` rgba-white 3% +
   `--glass-blur` 16px + `--line` → rgba-white 10% border), `--shadow-glow` lime
   CTA glow, card radii bumped to 2.5rem/1.5rem. See [[decisions-log]] ADR-0020
@@ -206,7 +206,7 @@ This is a human-curated log — not a mirror of `git log`.
   `body::before/::after` pseudo-elements (`@layer components`, ADR-0012 case)
   at z-index 1, visible through translucent sections.
 - **Canvas palettes repainted** — `TubesCursor` tube/light colours and its
-  click re-roll now lime/emerald; `AnimatedGradient` `Artha` preset now black →
+  click re-roll now lime/emerald; `AnimatedGradient` `Ezymax` preset now black →
   deep olive → lime. Hero's gold radial wash → lime. `--ease-entrance` updated
   to the reference curve `cubic-bezier(0.4, 0, 0.2, 1)`.
 - **Not adapted verbatim:** the reference's `@keyframes float/pulse` (banned —
@@ -249,7 +249,7 @@ This is a human-curated log — not a mirror of `git log`.
   Automatic Settlement section, honest trading-mode trade-offs, insurance FAQ
   (funding source named), Gamification renamed **Rewards** (`rewards.tsx`,
   `gamification.tsx` deleted) with an XP ladder table, staking/referral
-  tightened, and a "Why traders choose FX Artha" five-point block.
+  tightened, and a "Why traders choose Ezymax" five-point block.
 - **Unverifiable copy-trading statistics removed** — the 500+/72% ROI/$40M/4.8⭐
   scroll-counter stat cards were placeholder numbers; replaced with verifiable
   process claims + a risk disclaimer. (`StatValue`/`ProgressTrigger` counter

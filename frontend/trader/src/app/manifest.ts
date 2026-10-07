@@ -7,9 +7,9 @@ import type { MetadataRoute } from 'next';
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'FXArtha — Trading Platform',
-    short_name: 'FXArtha',
-    description: 'FXArtha — professional forex and CFD trading platform',
+    name: 'Ezymax — Trading Platform',
+    short_name: 'Ezymax',
+    description: 'Ezymax — professional forex and CFD trading platform',
     start_url: '/dashboard',
     scope: '/',
     display: 'standalone',
@@ -17,9 +17,9 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: '#0a0a0a',
     theme_color: '#0a0a0a',
     icons: [
-      { src: '/images/fxartha_icon.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-      { src: '/images/fxartha_icon.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-      { src: '/images/fxartha_icon.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      { src: '/images/ezymax_icon.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/images/ezymax_icon.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/images/ezymax_icon.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
   };
 }

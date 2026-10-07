@@ -16,7 +16,7 @@ export const platformWeb = {
   eyebrow: "Web platform",
   heading: "Trade from the browser. Nothing to install.",
   body: [
-    "The FX Artha web platform puts your wallet, your trading account and the contract on one screen. Charting, order tickets, insurance toggles — and your locked-versus-free balance, visible at all times.",
+    "The Ezymax web platform puts your wallet, your trading account and the contract on one screen. Charting, order tickets, insurance toggles — and your locked-versus-free balance, visible at all times.",
     "Every cost on every ticket — spread, swap, commission, margin — is itemised before you confirm. What you see is what settles.",
   ],
   points: [

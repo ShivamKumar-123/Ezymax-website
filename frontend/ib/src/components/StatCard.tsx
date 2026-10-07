@@ -22,7 +22,7 @@ export type StatVariant = 'lime' | 'green' | 'amber' | 'blue' | 'purple' | 'neut
 // Each variant maps to the theme-aware gradient card tokens in globals.css
 // (--card-*), except `lime` which is the brand accent (no --card-lime token).
 const VARIANTS: Record<StatVariant, { bg: string; border: string; iconBg: string; iconBorder: string; icon: string; blob: string }> = {
-  lime:    { bg: 'linear-gradient(135deg, rgba(204,255,0,0.13) 0%, rgba(204,255,0,0.03) 60%, transparent 100%)', border: 'rgba(204,255,0,0.30)', iconBg: 'rgba(204,255,0,0.14)', iconBorder: 'rgba(204,255,0,0.32)', icon: '#ccff00', blob: 'rgba(204,255,0,0.22)' },
+  lime:    { bg: 'linear-gradient(135deg, rgba(30,136,255,0.13) 0%, rgba(30,136,255,0.03) 60%, transparent 100%)', border: 'rgba(30,136,255,0.30)', iconBg: 'rgba(30,136,255,0.14)', iconBorder: 'rgba(30,136,255,0.32)', icon: '#1E88FF', blob: 'rgba(30,136,255,0.22)' },
   green:   { bg: 'var(--card-green-bg)',  border: 'var(--card-green-border)',  iconBg: 'var(--card-green-icon-bg)',  iconBorder: 'var(--card-green-icon-border)',  icon: 'var(--card-green-icon)',  blob: 'var(--card-green-icon-bg)' },
   amber:   { bg: 'var(--card-amber-bg)',  border: 'var(--card-amber-border)',  iconBg: 'var(--card-amber-icon-bg)',  iconBorder: 'var(--card-amber-icon-border)',  icon: 'var(--card-amber-icon)',  blob: 'var(--card-amber-icon-bg)' },
   blue:    { bg: 'var(--card-blue-bg)',   border: 'var(--card-blue-border)',   iconBg: 'var(--card-blue-icon-bg)',   iconBorder: 'var(--card-blue-icon-border)',   icon: 'var(--card-blue-icon)',   blob: 'var(--card-blue-icon-bg)' },

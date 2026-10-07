@@ -25,13 +25,13 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       {/* Brand */}
       <div className="mb-3 flex items-center gap-2.5 px-2 pt-2">
         <img
-          src="/fxartha_icon.png"
+          src="/ezymax_icon.png"
           alt=""
           className="h-8 w-8 shrink-0 object-contain drop-shadow-[0_0_10px_rgba(214,169,61,0.45)]"
         />
         <div className="min-w-0">
           <span className="block text-base font-bold leading-none tracking-tight">
-            <span className="text-accent">FX</span><span className="text-text-primary">Artha</span>
+            <span className="text-accent">EZY</span><span className="text-text-primary">MAX</span>
           </span>
           <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.22em] text-text-tertiary">IB Portal</p>
         </div>
@@ -49,8 +49,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               active ? 'text-black' : 'text-text-secondary hover:bg-white/[0.045] hover:text-text-primary',
             )}
             style={active ? {
-              background: 'linear-gradient(90deg, #ccff00 0%, #a6d600 100%)',
-              boxShadow: '0 8px 20px -8px rgba(204,255,0,0.55)',
+              background: 'linear-gradient(90deg, #1E88FF 0%, #0B5BD3 100%)',
+              boxShadow: '0 8px 20px -8px rgba(30,136,255,0.55)',
             } : undefined}
           >
             <span

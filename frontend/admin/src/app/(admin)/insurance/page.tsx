@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Admin · FXArtha Shield.
+ * Admin · Ezymax Shield.
  *
  * The per-trade Trade Insurance product (tier multipliers, coverage %, fee
  * caps, cover-duration pricing, anti-abuse and dynamic surcharges) was removed

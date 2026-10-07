@@ -11,7 +11,7 @@ def render_welcome(
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     intro = (
-        "Welcome to FXArtha. Your account is ready — your funds stay in "
+        "Welcome to Ezymax. Your account is ready — your funds stay in "
         "your wallet, the system handles execution."
     )
     next_steps = """
@@ -33,7 +33,7 @@ def render_welcome(
             "</p>"
         ) + next_steps
 
-    subject = "Welcome to FXArtha"
+    subject = "Welcome to Ezymax"
     html = render_layout(
         title=f"Welcome aboard, {name}.",
         intro=intro,
@@ -41,17 +41,17 @@ def render_welcome(
         cta_label="Open Dashboard",
         cta_url=f"{trader_app_url.rstrip('/')}/accounts",
         footer_note=(
-            "If you didn't create this account, contact support@fxartha.com immediately."
+            "If you didn't create this account, contact support@ezymex.com immediately."
         ),
     )
     text = (
-        f"Welcome to FXArtha, {name}.\n\n"
+        f"Welcome to Ezymax, {name}.\n\n"
         "Your account is ready. Get started:\n"
         "  - Open your first trading account from the dashboard\n"
         "  - Complete KYC to unlock higher leverage tiers\n"
         "  - Visit the Earn hub for tasks, spin, and staking\n"
         "  - Try the demo account if you want to practise risk-free\n\n"
         f"Open your dashboard: {trader_app_url.rstrip('/')}/accounts\n\n"
-        "Didn't create this account? Email support@fxartha.com immediately.\n"
+        "Didn't create this account? Email support@ezymex.com immediately.\n"
     )
     return subject, html, text

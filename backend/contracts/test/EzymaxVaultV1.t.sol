@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {FXArthaVaultV1} from "../src/FXArthaVaultV1.sol";
+import {EzymaxVaultV1} from "../src/EzymaxVaultV1.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
@@ -31,8 +31,8 @@ contract MockOtherToken is ERC20 {
     function mint(address to, uint256 amount) external { _mint(to, amount); }
 }
 
-contract FXArthaVaultV1Test is Test {
-    FXArthaVaultV1 internal vault;
+contract EzymaxVaultV1Test is Test {
+    EzymaxVaultV1 internal vault;
     MockUSDT internal usdt;
     MockOtherToken internal other;
 
@@ -51,7 +51,7 @@ contract FXArthaVaultV1Test is Test {
     function setUp() public {
         usdt = new MockUSDT();
         other = new MockOtherToken();
-        vault = new FXArthaVaultV1(address(usdt), admin);
+        vault = new EzymaxVaultV1(address(usdt), admin);
 
         // Seed test wallets with USDT and approve vault.
         usdt.mint(alice, 1_000 * 1e6);
@@ -63,13 +63,13 @@ contract FXArthaVaultV1Test is Test {
     // ── Constructor ────────────────────────────────────────────────────
 
     function test_Constructor_RevertsWhenUSDTZero() public {
-        vm.expectRevert(bytes("FXAV1: usdt=0"));
-        new FXArthaVaultV1(address(0), admin);
+        vm.expectRevert(bytes("EZMV1: usdt=0"));
+        new EzymaxVaultV1(address(0), admin);
     }
 
     function test_Constructor_RevertsWhenAdminZero() public {
-        vm.expectRevert(bytes("FXAV1: admin=0"));
-        new FXArthaVaultV1(address(usdt), address(0));
+        vm.expectRevert(bytes("EZMV1: admin=0"));
+        new EzymaxVaultV1(address(usdt), address(0));
     }
 
     function test_Constructor_GrantsAllRolesToAdmin() public view {
@@ -110,7 +110,7 @@ contract FXArthaVaultV1Test is Test {
 
     function test_Deposit_RevertsWhenAmountZero() public {
         vm.prank(alice);
-        vm.expectRevert(bytes("FXAV1: amount=0"));
+        vm.expectRevert(bytes("EZMV1: amount=0"));
         vault.deposit(0);
     }
 
@@ -175,19 +175,19 @@ contract FXArthaVaultV1Test is Test {
 
     function test_Withdraw_RevertsWhenAmountZero() public {
         vm.prank(admin);
-        vm.expectRevert(bytes("FXAV1: amount=0"));
+        vm.expectRevert(bytes("EZMV1: amount=0"));
         vault.withdraw(alice, 0, APPROVAL_1);
     }
 
     function test_Withdraw_RevertsWhenToZero() public {
         vm.prank(admin);
-        vm.expectRevert(bytes("FXAV1: to=0"));
+        vm.expectRevert(bytes("EZMV1: to=0"));
         vault.withdraw(address(0), 50 * 1e6, APPROVAL_1);
     }
 
     function test_Withdraw_RevertsWhenApprovalIdZero() public {
         vm.prank(admin);
-        vm.expectRevert(bytes("FXAV1: approvalId=0"));
+        vm.expectRevert(bytes("EZMV1: approvalId=0"));
         vault.withdraw(alice, 50 * 1e6, bytes32(0));
     }
 
@@ -198,7 +198,7 @@ contract FXArthaVaultV1Test is Test {
 
         // Same approvalId, second attempt — must revert.
         vm.prank(admin);
-        vm.expectRevert(bytes("FXAV1: approval already used"));
+        vm.expectRevert(bytes("EZMV1: approval already used"));
         vault.withdraw(alice, 100 * 1e6, APPROVAL_1);
     }
 
@@ -261,7 +261,7 @@ contract FXArthaVaultV1Test is Test {
 
     function test_RecoverToken_RevertsWhenUSDT() public {
         vm.prank(admin);
-        vm.expectRevert(bytes("FXAV1: cannot recover USDT"));
+        vm.expectRevert(bytes("EZMV1: cannot recover USDT"));
         vault.recoverToken(address(usdt), 100 * 1e6);
     }
 
@@ -293,13 +293,13 @@ contract FXArthaVaultV1Test is Test {
 
     function test_RecoverToken_RevertsWhenZeroAddress() public {
         vm.prank(admin);
-        vm.expectRevert(bytes("FXAV1: token=0"));
+        vm.expectRevert(bytes("EZMV1: token=0"));
         vault.recoverToken(address(0), 1);
     }
 
     function test_RecoverToken_RevertsWhenAmountZero() public {
         vm.prank(admin);
-        vm.expectRevert(bytes("FXAV1: amount=0"));
+        vm.expectRevert(bytes("EZMV1: amount=0"));
         vault.recoverToken(address(other), 0);
     }
 
@@ -357,7 +357,7 @@ contract FXArthaVaultV1Test is Test {
         vm.prank(admin); vault.withdraw(alice, amount, approvalId);
 
         vm.prank(admin);
-        vm.expectRevert(bytes("FXAV1: approval already used"));
+        vm.expectRevert(bytes("EZMV1: approval already used"));
         vault.withdraw(alice, amount, approvalId);
     }
 }

@@ -4,7 +4,7 @@ import { BookOpen, BarChart3, DollarSign, Info, PieChart, TrendingUp, Wallet } f
 import { clsx } from 'clsx';
 import type { TradingJournalBlock } from '@/lib/trading-dashboard';
 
-const NEON = '#ccff00';
+const NEON = '#1E88FF';
 const CARD = 'var(--bg-card)';
 const BORDER = 'var(--border-primary)';
 
@@ -55,7 +55,7 @@ function RingGauge({
             strokeWidth={6}
             strokeLinecap="round"
             strokeDasharray={`${dash} ${c}`}
-            className="drop-shadow-[0_0_6px_rgba(204,255,0,0.45)]"
+            className="drop-shadow-[0_0_6px_rgba(30,136,255,0.45)]"
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -77,42 +77,42 @@ export default function TradingJournalSection({
   return (
     <section className="text-text-primary">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-[#ccff00]/12 border border-[#ccff00]/25 flex items-center justify-center">
-          <BookOpen className="w-5 h-5 text-[#ccff00]" />
+        <div className="w-10 h-10 rounded-xl bg-[#1E88FF]/12 border border-[#1E88FF]/25 flex items-center justify-center">
+          <BookOpen className="w-5 h-5 text-[#1E88FF]" />
         </div>
         <h2 className="text-lg md:text-xl font-bold tracking-tight">{title}</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-        <div className="group rounded-2xl p-4 pl-5 border relative overflow-hidden transition-all duration-300 hover:-translate-y-1" style={{ background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.14), transparent 55%), var(--bg-card)', borderColor: 'rgba(204,255,0,0.22)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}>
-          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5" style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }} aria-hidden />
+        <div className="group rounded-2xl p-4 pl-5 border relative overflow-hidden transition-all duration-300 hover:-translate-y-1" style={{ background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.14), transparent 55%), var(--bg-card)', borderColor: 'rgba(30,136,255,0.22)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}>
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5" style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }} aria-hidden />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent opacity-70 transition-opacity group-hover:opacity-100" aria-hidden />
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1E88FF]" />
                 Balance
               </p>
               <p className="text-2xl md:text-3xl font-bold mt-1 tabular-nums">{fmtUsd(j.balance)}</p>
             </div>
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.28)' }}>
-              <Wallet className="w-5 h-5 text-[#ccff00]" />
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.28)' }}>
+              <Wallet className="w-5 h-5 text-[#1E88FF]" />
             </div>
           </div>
         </div>
-        <div className="group rounded-2xl p-4 pl-5 border relative overflow-hidden transition-all duration-300 hover:-translate-y-1" style={{ background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.14), transparent 55%), var(--bg-card)', borderColor: 'rgba(204,255,0,0.22)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}>
-          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5" style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }} aria-hidden />
+        <div className="group rounded-2xl p-4 pl-5 border relative overflow-hidden transition-all duration-300 hover:-translate-y-1" style={{ background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.14), transparent 55%), var(--bg-card)', borderColor: 'rgba(30,136,255,0.22)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}>
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5" style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }} aria-hidden />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent opacity-70 transition-opacity group-hover:opacity-100" aria-hidden />
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1E88FF]" />
                 Equity
               </p>
               <p className="text-2xl md:text-3xl font-bold mt-1 tabular-nums">{fmtUsd(j.equity)}</p>
             </div>
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.28)' }}>
-              <DollarSign className="w-5 h-5 text-[#ccff00]" />
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.28)' }}>
+              <DollarSign className="w-5 h-5 text-[#1E88FF]" />
             </div>
           </div>
         </div>
@@ -124,14 +124,14 @@ export default function TradingJournalSection({
             label: 'Net P&L',
             icon: DollarSign,
             value: fmtCompactSigned(j.netPl),
-            valueClass: j.netPl >= 0 ? 'text-[#ccff00]' : 'text-red-400',
+            valueClass: j.netPl >= 0 ? 'text-[#1E88FF]' : 'text-red-400',
             sub: `${j.netPlTradeCount} trades`,
           },
           {
             label: 'Profit factor',
             icon: TrendingUp,
             value: String(j.profitFactor),
-            valueClass: 'text-[#ccff00]',
+            valueClass: 'text-[#1E88FF]',
             sub: j.profitFactorNote,
           },
           {
@@ -149,10 +149,10 @@ export default function TradingJournalSection({
             sub: `${j.wins} win, ${j.losses} losses`,
           },
         ].map((m) => (
-          <div key={m.label} className="group rounded-2xl p-3.5 border transition-all duration-300 hover:-translate-y-0.5 hover:border-[#ccff00]/30" style={{ background: 'radial-gradient(130% 100% at 90% -25%, rgba(204,255,0,0.05), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
+          <div key={m.label} className="group rounded-2xl p-3.5 border transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1E88FF]/30" style={{ background: 'radial-gradient(130% 100% at 90% -25%, rgba(30,136,255,0.05), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
             <div className="flex items-center gap-1.5 text-[10px] font-bold text-text-tertiary uppercase tracking-wide mb-1.5">
-              <span className="grid place-items-center w-6 h-6 rounded-lg" style={{ background: 'rgba(204,255,0,0.10)' }}>
-                <m.icon className="w-3.5 h-3.5 text-[#ccff00]" />
+              <span className="grid place-items-center w-6 h-6 rounded-lg" style={{ background: 'rgba(30,136,255,0.10)' }}>
+                <m.icon className="w-3.5 h-3.5 text-[#1E88FF]" />
               </span>
               {m.label}
             </div>
@@ -163,7 +163,7 @@ export default function TradingJournalSection({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="lg:col-span-2 rounded-2xl p-4 border" style={{ background: 'radial-gradient(120% 100% at 92% -20%, rgba(204,255,0,0.045), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
+        <div className="lg:col-span-2 rounded-2xl p-4 border" style={{ background: 'radial-gradient(120% 100% at 92% -20%, rgba(30,136,255,0.045), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
           <div className="flex items-center gap-2 text-[10px] font-bold text-text-tertiary uppercase tracking-wider mb-4">
             Current streak
             <Info className="w-3.5 h-3.5 text-text-tertiary" />
@@ -178,9 +178,9 @@ export default function TradingJournalSection({
             />
           </div>
         </div>
-        <div className="rounded-2xl p-4 border" style={{ background: 'radial-gradient(120% 100% at 92% -20%, rgba(204,255,0,0.045), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
+        <div className="rounded-2xl p-4 border" style={{ background: 'radial-gradient(120% 100% at 92% -20%, rgba(30,136,255,0.045), transparent 60%), var(--bg-card)', borderColor: BORDER }}>
           <div className="flex items-center gap-2 text-sm font-semibold text-text-primary mb-3">
-            <PieChart className="w-4 h-4 text-[#ccff00]" />
+            <PieChart className="w-4 h-4 text-[#1E88FF]" />
             Account stats
           </div>
           <ul className="space-y-2.5 text-sm">

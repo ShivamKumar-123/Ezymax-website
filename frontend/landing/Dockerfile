@@ -1,4 +1,4 @@
-# ── Marketing landing site (fxartha.com) ────────────────────────
+# ── Marketing landing site (ezymex.com) ────────────────────────
 # Separate Next.js app (Next 16 / React 19 / Tailwind v4, yarn). Kept
 # apart from the trader app on purpose — its only coupling is the
 # NEXT_PUBLIC_TRADE_URL link into the trader platform's auth pages.
@@ -18,13 +18,13 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Public site origin (canonical URLs / OG / robots / sitemap / JSON-LD).
-ARG NEXT_PUBLIC_SITE_URL=https://fxartha.com
+ARG NEXT_PUBLIC_SITE_URL=https://ezymex.com
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 # Trader platform origin — every landing CTA links to <url>/auth/login
 # and <url>/auth/register. NEXT_PUBLIC_* are inlined at BUILD time, so
 # this must be present when `yarn build` runs (it is — passed as a
 # build arg from docker-compose).
-ARG NEXT_PUBLIC_TRADE_URL=https://trade.fxartha.com
+ARG NEXT_PUBLIC_TRADE_URL=https://trade.ezymex.com
 ENV NEXT_PUBLIC_TRADE_URL=$NEXT_PUBLIC_TRADE_URL
 # Bust Next's build cache and prove a fresh deploy.
 ARG NEXT_PUBLIC_APP_VERSION=docker

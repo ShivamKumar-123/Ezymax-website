@@ -44,7 +44,7 @@ export const ROUTES = {
   // ── Landing ──
   HOME: '/',
   ABOUT: '/company/about',
-  WHY_FXARTHA: '/company/why-fxartha',
+  WHY_EZYMAX: '/company/why-ezymax',
   CONTACT: '/company/contact',
   PLATFORMS: '/platforms',
 

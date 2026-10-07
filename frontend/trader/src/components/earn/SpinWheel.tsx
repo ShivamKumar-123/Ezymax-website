@@ -29,9 +29,9 @@ type SpinResult = {
 // Obsidian & Lime palette. The single "jackpot" slice (largest payout) gets
 // the saturated lime with near-black text; the rest cycle dark obsidian tones
 // with light-lime text so adjacent slices always contrast.
-const JACKPOT_FILL = '#ccff00';
+const JACKPOT_FILL = '#1E88FF';
 const SLICE_FILLS = ['#171717', '#242424', '#1c1c1c'];
-const SLICE_TEXT = '#eaff8a';
+const SLICE_TEXT = '#7CC9FF';
 
 const SIZE = 300; // SVG viewBox size; wheel scales responsively via CSS
 const C = SIZE / 2; // center
@@ -166,7 +166,7 @@ export default function SpinWheel({
           style={{
             background: 'linear-gradient(180deg, #1c1c1c 0%, #0e0e0e 100%)',
             boxShadow:
-              '0 10px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(204,255,0,0.35), 0 0 22px rgba(204,255,0,0.15), inset 0 -4px 10px rgba(0,0,0,0.5)',
+              '0 10px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(30,136,255,0.35), 0 0 22px rgba(30,136,255,0.15), inset 0 -4px 10px rgba(0,0,0,0.5)',
           }}
         >
           {Array.from({ length: RIM_DOTS }).map((_, i) => {
@@ -181,8 +181,8 @@ export default function SpinWheel({
                 style={{
                   left: `${x}%`,
                   top: `${y}%`,
-                  background: i % 2 === 0 ? '#ccff00' : '#eaff8a',
-                  boxShadow: '0 0 6px rgba(204,255,0,0.9)',
+                  background: i % 2 === 0 ? '#1E88FF' : '#7CC9FF',
+                  boxShadow: '0 0 6px rgba(30,136,255,0.9)',
                   animation: `fx-rim-blink 1.2s ease-in-out ${i % 2 === 0 ? '0s' : '0.6s'} infinite`,
                 }}
               />
@@ -197,7 +197,7 @@ export default function SpinWheel({
           style={{
             transform: `rotate(${angle}deg)`,
             transition: spinning ? 'transform 3.4s cubic-bezier(0.17, 0.67, 0.30, 0.99)' : 'none',
-            boxShadow: 'inset 0 0 24px rgba(204,255,0,0.14)',
+            boxShadow: 'inset 0 0 24px rgba(30,136,255,0.14)',
           }}
         >
           <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full h-full block">
@@ -249,8 +249,8 @@ export default function SpinWheel({
             className="w-[76px] h-[76px] rounded-full flex items-center justify-center"
             style={{
               background: 'linear-gradient(180deg, #1c1c1c 0%, #0a0a0a 100%)',
-              border: '3px solid #ccff00',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.5), 0 0 0 5px rgba(204,255,0,0.15), 0 0 16px rgba(204,255,0,0.4)',
+              border: '3px solid #1E88FF',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.5), 0 0 0 5px rgba(30,136,255,0.15), 0 0 16px rgba(30,136,255,0.4)',
             }}
           >
             <Sparkles size={26} style={{ color: 'var(--accent-ink)' }} />
@@ -268,7 +268,7 @@ export default function SpinWheel({
         >
           <path
             d="M18 47 C 10 33 1 26.5 1 16.5 A 17 16 0 1 1 35 16.5 C 35 26.5 26 33 18 47 Z"
-            fill="#ccff00"
+            fill="#1E88FF"
             stroke="#0a0a0a"
             strokeWidth="2"
           />
@@ -283,8 +283,8 @@ export default function SpinWheel({
         disabled={spinning || acBalance < costAc}
         className="inline-flex items-center justify-center gap-2 w-full max-w-[320px] px-8 py-3.5 rounded-full text-base font-extrabold text-[#0a0a0a] disabled:opacity-60 transition-all active:scale-[0.98]"
         style={{
-          background: 'linear-gradient(180deg, #eaff8a 0%, #ccff00 55%, #a6d600 100%)',
-          boxShadow: '0 6px 18px rgba(204,255,0,0.40), inset 0 1px 0 rgba(255,255,255,0.35)',
+          background: 'linear-gradient(180deg, #7CC9FF 0%, #1E88FF 55%, #0B5BD3 100%)',
+          boxShadow: '0 6px 18px rgba(30,136,255,0.40), inset 0 1px 0 rgba(255,255,255,0.35)',
         }}
       >
         {spinning ? (

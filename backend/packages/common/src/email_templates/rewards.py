@@ -17,7 +17,7 @@ def render_mission_completed(
     reward_xp: int | None,
     reward_amount: Decimal | float | None,
     reward_currency: str = "USD",
-    trader_app_url: str = "https://trade.fxartha.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     rows: list[tuple[str, str]] = [("Mission", mission_title)]
@@ -61,7 +61,7 @@ def render_tier_upgraded(
     new_tier: str,
     previous_tier: str | None,
     perks: list[str] | None = None,
-    trader_app_url: str = "https://trade.fxartha.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     perks = perks or []

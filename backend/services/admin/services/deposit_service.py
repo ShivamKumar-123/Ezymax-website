@@ -347,7 +347,7 @@ async def approve_deposit(
         )
         from packages.common.src.config import get_settings as _get_settings
         if smtp_configured() and user_row.email:
-            app_url = (_get_settings().TRADER_APP_URL or "https://trade.fxartha.com")
+            app_url = (_get_settings().TRADER_APP_URL or "https://trade.ezymex.com")
             subject, html, text = render_deposit_confirmed(
                 first_name=user_row.first_name,
                 amount=deposit.amount,
@@ -528,7 +528,7 @@ async def approve_withdrawal(
                 method=withdrawal.method or "Manual",
                 destination=destination_str,
                 request_id=str(withdrawal.id),
-                trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
+                trader_app_url=(_gs().TRADER_APP_URL or "https://trade.ezymex.com"),
             )
             fire_and_forget(send_email(u.email, subject, html, text=text))
     except Exception as _e:
@@ -644,7 +644,7 @@ async def reject_withdrawal(
                 currency="USD",
                 reason=reason_str or None,
                 request_id=str(withdrawal.id),
-                trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
+                trader_app_url=(_gs().TRADER_APP_URL or "https://trade.ezymex.com"),
             )
             fire_and_forget(send_email(u.email, subject, html, text=text))
     except Exception as _e:

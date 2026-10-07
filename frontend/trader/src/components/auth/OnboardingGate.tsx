@@ -9,7 +9,7 @@
  *      the screen.
  *   2. wallet_linked     →  user must connect a wallet via SIWE.
  *   3. email_verified    →  if the user signed in with a wallet they have
- *      a placeholder @wallet.fxartha.local email; they must add a real
+ *      a placeholder @wallet.ezymax.local email; they must add a real
  *      email and verify via OTP. Same applies to email/password users
  *      who never went through OTP.
  *
@@ -81,12 +81,12 @@ export default function OnboardingGate() {
       aria-labelledby="onboarding-gate-title"
     >
       <div
-        className="relative w-full max-w-lg my-auto rounded-2xl border border-[#ccff00]/40 bg-bg-secondary shadow-2xl"
+        className="relative w-full max-w-lg my-auto rounded-2xl border border-[#1E88FF]/40 bg-bg-secondary shadow-2xl"
         // Stop clicks inside the card from closing the page-level UI.
         onClick={(e) => e.stopPropagation()}
       >
         <header className="px-6 pt-6 pb-3 border-b border-border-primary">
-          <div className="flex items-center gap-2 text-[#ccff00] mb-2">
+          <div className="flex items-center gap-2 text-[#1E88FF] mb-2">
             <ShieldCheck size={16} />
             <span className="text-[10px] uppercase tracking-wider font-semibold">
               Account setup required
@@ -97,7 +97,7 @@ export default function OnboardingGate() {
           </h2>
           <p className="text-xs text-text-secondary mt-1 leading-relaxed">
             {decision === 'wallet'
-              ? "Every FXArtha account must have a verified wallet linked. We'll use it for withdrawals, so make sure you control it."
+              ? "Every Ezymax account must have a verified wallet linked. We'll use it for withdrawals, so make sure you control it."
               : "We need a verified email on file before you can use the platform. Enter the address you want to use and we'll send you a one-time code."}
           </p>
         </header>

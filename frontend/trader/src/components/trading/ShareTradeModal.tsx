@@ -82,7 +82,7 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
     try {
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
       const link = document.createElement('a');
-      link.download = `fxartha-${position.symbol}-${position.side}.png`;
+      link.download = `ezymax-${position.symbol}-${position.side}.png`;
       link.href = dataUrl;
       link.click();
       toast.success('Image downloaded');
@@ -118,7 +118,7 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
                 displayMode={displayMode}
                 pipSize={pipSize}
                 status={status}
-                shortUrl={shareUrl ?? 'fxartha.com/s/xxxxxx'}
+                shortUrl={shareUrl ?? 'ezymex.com/s/xxxxxx'}
               />
             </div>
           </div>

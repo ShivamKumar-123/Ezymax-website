@@ -1,4 +1,4 @@
-"""FXArtha Shield API — aggregate period-plan trade insurance.
+"""Ezymax Shield API — aggregate period-plan trade insurance.
 
 Separate product from the per-trade micro-insurance in `insurance.py`.
 

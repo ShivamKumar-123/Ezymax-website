@@ -1,20 +1,20 @@
-# FXArtha stack (project name → container/volume prefix).
-name: fxartha
+# Ezymax stack (project name → container/volume prefix).
+name: ezymax
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-fxartha}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fxartha_dev}
-      POSTGRES_DB: ${POSTGRES_DB:-fxartha}
+      POSTGRES_USER: ${POSTGRES_USER:-ezymax}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ezymax_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-ezymax}
     # No host port binding — all services connect via Docker network (postgres:5432)
-    # For local dev access: docker compose exec postgres psql -U fxartha
+    # For local dev access: docker compose exec postgres psql -U ezymax
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./backend/infra/docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fxartha"]
+      test: ["CMD-SHELL", "pg_isready -U ezymax"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -25,15 +25,15 @@ services:
     # breaking SQL changes during a routine docker pull.
     image: timescale/timescaledb:2.17.2-pg16
     environment:
-      POSTGRES_USER: ${TIMESCALE_USER:-fxartha}
-      POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-fxartha_dev}
+      POSTGRES_USER: ${TIMESCALE_USER:-ezymax}
+      POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-ezymax_dev}
       POSTGRES_DB: ${TIMESCALE_DB:-marketdata}
     # No host port binding — all services connect via Docker network (timescaledb:5432)
     volumes:
       - ts_data:/var/lib/postgresql/data
       - ./backend/infra/docker/init-timescale.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fxartha"]
+      test: ["CMD-SHELL", "pg_isready -U ezymax"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -76,7 +76,7 @@ services:
     environment:
       # Override: shared backend/.env uses REDIS_URL for gateway (db 0); admin service must use db 1
       REDIS_URL: redis://redis:6379/1
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-fxartha}:${POSTGRES_PASSWORD:-fxartha_dev}@postgres:5432/${POSTGRES_DB:-fxartha}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-ezymax}:${POSTGRES_PASSWORD:-ezymax_dev}@postgres:5432/${POSTGRES_DB:-ezymax}
       ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?Set ADMIN_JWT_SECRET in .env}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       BANNERS_UPLOAD_DIR: /app/uploads/banners
@@ -278,7 +278,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://fxartha:fxartha_dev@postgres:5432/fxartha}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://ezymax:ezymax_dev@postgres:5432/ezymax}
     volumes:
       - ./backend:/app
     profiles:

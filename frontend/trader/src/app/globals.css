@@ -13,7 +13,7 @@
 /* CSS VARIABLES — DARK (Vantablack) THEME */
 /* ======================================= */
 
-/* Dark theme — aligned with crucial-ui (SetupFX): #0a0a0a base, #111 cards, #ccff00 accent */
+/* Dark theme — aligned with crucial-ui (SetupFX): #0a0a0a base, #111 cards, #1E88FF accent */
 [data-theme="dark"], .theme-dark {
   --bg-page: #050707;
   --bg-base: #0a0a0a;
@@ -47,11 +47,11 @@
   --input-bg: #111111;
   --input-border: #1f1f1f;
   --input-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.02);
-  --input-focus-border: rgba(204, 255, 0, 0.55);
-  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(204, 255, 0, 0.12), 0 0 0 3px rgba(204, 255, 0, 0.12);
+  --input-focus-border: rgba(30, 136, 255, 0.55);
+  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(30, 136, 255, 0.12), 0 0 0 3px rgba(30, 136, 255, 0.12);
   --input-placeholder: #555555;
 
-  --selection-bg: rgba(204, 255, 0, 0.22);
+  --selection-bg: rgba(30, 136, 255, 0.22);
 
   --noise-opacity: 0.012;
   --emboss-bg: rgba(0, 0, 0, 0.5);
@@ -60,7 +60,7 @@
   /* react-hot-toast — always dark surface (readable on charts + light UI) */
   --toast-bg: #111111;
   --toast-fg: #f0f0f0;
-  --toast-border: rgba(204, 255, 0, 0.28);
+  --toast-border: rgba(30, 136, 255, 0.28);
 
   /* Colored stat-card surfaces. The trader/admin UIs lean heavily on
    * gradient stat cards (Total Balance, Bonus, Trade Now, etc.).
@@ -252,12 +252,12 @@
   --scrollbar-hover: #3a3a3a;
   --input-bg: #111111;
   --input-border: #1f1f1f;
-  --input-focus-border: rgba(204, 255, 0, 0.55);
-  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(204, 255, 0, 0.12);
-  --selection-bg: rgba(204, 255, 0, 0.22);
+  --input-focus-border: rgba(30, 136, 255, 0.55);
+  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(30, 136, 255, 0.12);
+  --selection-bg: rgba(30, 136, 255, 0.22);
   --toast-bg: #111111;
   --toast-fg: #f0f0f0;
-  --toast-border: rgba(204, 255, 0, 0.28);
+  --toast-border: rgba(30, 136, 255, 0.28);
   color-scheme: dark;
 }
 
@@ -385,10 +385,10 @@ html {
 }
 
 .glass-card {
-  background: radial-gradient(120% 100% at 92% -15%, rgba(204, 255, 0, 0.05), transparent 55%), var(--bg-glass);
+  background: radial-gradient(120% 100% at 92% -15%, rgba(30, 136, 255, 0.05), transparent 55%), var(--bg-glass);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(204, 255, 0, 0.12);
+  border: 1px solid rgba(30, 136, 255, 0.12);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
@@ -396,10 +396,10 @@ html {
    (`bg-card` is used on ~all cards). `background-color` from the Tailwind
    utility stays the dark base; this only adds the gradient sheen on top. */
 .bg-card {
-  background-image: radial-gradient(120% 100% at 93% -12%, rgba(204, 255, 0, 0.05), transparent 55%);
+  background-image: radial-gradient(120% 100% at 93% -12%, rgba(30, 136, 255, 0.05), transparent 55%);
 }
 .bg-card:hover {
-  background-image: radial-gradient(120% 100% at 93% -12%, rgba(204, 255, 0, 0.08), transparent 58%);
+  background-image: radial-gradient(120% 100% at 93% -12%, rgba(30, 136, 255, 0.08), transparent 58%);
 }
 
 .glass-panel {
@@ -507,30 +507,30 @@ html {
 }
 
 .skeu-btn-buy {
-  background: linear-gradient(180deg, #eaff8a 0%, #ccff00 50%, #a6d600 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.15), 0 4px 16px rgba(204,255,0,0.28), 0 2px 4px rgba(0,0,0,0.15);
+  background: linear-gradient(180deg, #7CC9FF 0%, #1E88FF 50%, #0B5BD3 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.15), 0 4px 16px rgba(30,136,255,0.28), 0 2px 4px rgba(0,0,0,0.15);
   color: #ffffff;
 }
 .skeu-btn-buy:hover {
-  background: linear-gradient(180deg, #f2ff9e 0%, #eaff8a 50%, #ccff00 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.12), 0 6px 24px rgba(204,255,0,0.38);
+  background: linear-gradient(180deg, #f2ff9e 0%, #7CC9FF 50%, #1E88FF 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.12), 0 6px 24px rgba(30,136,255,0.38);
 }
 .skeu-btn-buy:active {
-  background: linear-gradient(180deg, #ccff00 0%, #a6d600 100%);
-  box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(204,255,0,0.2);
+  background: linear-gradient(180deg, #1E88FF 0%, #0B5BD3 100%);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(30,136,255,0.2);
   transform: translateY(1px);
 }
 [data-theme="light"] .skeu-btn-buy,
 .theme-light .skeu-btn-buy {
-  background: #ccff00;
+  background: #1E88FF;
   color: #ffffff;
   border: none;
-  box-shadow: 0 2px 8px rgba(204, 255, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(30, 136, 255, 0.3);
 }
 [data-theme="light"] .skeu-btn-buy:hover,
 .theme-light .skeu-btn-buy:hover {
-  background: #a6d600;
-  box-shadow: 0 4px 12px rgba(204, 255, 0, 0.4);
+  background: #0B5BD3;
+  box-shadow: 0 4px 12px rgba(30, 136, 255, 0.4);
 }
 
 .skeu-btn-sell {
@@ -607,14 +607,14 @@ html {
 
 .flash-blue { animation: flashAccent 0.15s ease-out; }
 .flash-red { animation: flashRed 0.15s ease-out; }
-@keyframes flashAccent { 0% { background-color: rgba(204,255,0,0.22); } 100% { background-color: transparent; } }
+@keyframes flashAccent { 0% { background-color: rgba(30,136,255,0.22); } 100% { background-color: transparent; } }
 @keyframes flashRed { 0% { background-color: rgba(239,68,68,0.2); } 100% { background-color: transparent; } }
 
 /* react-hot-toast — library defaults are washed-out white squares; reskin
- * to the FXArtha dark surface with proper padding, gap, and typography so
+ * to the Ezymax dark surface with proper padding, gap, and typography so
  * single-line errors don't wrap mid-word and the icon doesn't crash into
  * the text. */
-.fxartha-hot-toast {
+.ezymax-hot-toast {
   background: var(--toast-bg) !important;
   color: var(--toast-fg) !important;
   border: 1px solid var(--toast-border) !important;
@@ -635,27 +635,27 @@ html {
 
 /* The internal status icon (✓ / ✕) — give it a soft circular halo so it
  * reads as a status badge rather than a punched-out hole. */
-.fxartha-hot-toast > div[role="status"] {
+.ezymax-hot-toast > div[role="status"] {
   flex-shrink: 0;
   margin-right: 2px;
 }
 
 /* The text container — react-hot-toast wraps content in a child div; make
  * sure long error strings flow nicely instead of orphaning a single word. */
-.fxartha-hot-toast > div:not([role="status"]) {
+.ezymax-hot-toast > div:not([role="status"]) {
   flex: 1 1 auto;
   margin: 0 !important;
   word-break: break-word;
 }
 
 /* Tighten the close-button (×) for toasts that ship with one. */
-.fxartha-hot-toast button {
+.ezymax-hot-toast button {
   flex-shrink: 0;
   color: var(--toast-fg) !important;
   opacity: 0.55;
   transition: opacity 0.15s ease;
 }
-.fxartha-hot-toast button:hover {
+.ezymax-hot-toast button:hover {
   opacity: 1;
 }
 
@@ -672,8 +672,8 @@ html {
 
 /* Sidebar icon glow pulse */
 @keyframes iconGlowPulse {
-  0%, 100% { filter: drop-shadow(0 0 4px rgba(204,255,0,0.15)); }
-  50%      { filter: drop-shadow(0 0 10px rgba(204,255,0,0.55)); }
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(30,136,255,0.15)); }
+  50%      { filter: drop-shadow(0 0 10px rgba(30,136,255,0.55)); }
 }
 .sidebar-icon-glow {
   animation: iconGlowPulse 2.5s ease-in-out infinite;
@@ -687,7 +687,7 @@ html {
 
 .resize-handle-h { cursor: col-resize; }
 .resize-handle-v { cursor: row-resize; }
-.focus-ring:focus { outline: 1px solid #ccff00; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid #1E88FF; outline-offset: -1px; }
 .no-drag { -webkit-user-drag: none; user-select: none; }
 
 @layer components {
@@ -844,8 +844,8 @@ html {
     box-shadow: none !important;
   }
   .accounts-native-select:focus {
-    border-color: rgba(204, 255, 0, 0.55) !important;
-    box-shadow: 0 0 0 2px rgba(204, 255, 0, 0.2) !important;
+    border-color: rgba(30, 136, 255, 0.55) !important;
+    box-shadow: 0 0 0 2px rgba(30, 136, 255, 0.2) !important;
   }
   .accounts-native-select option {
     background-color: var(--bg-secondary);
@@ -954,20 +954,20 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
 
 /* ═══════════════════════════════════════════════════════════════════
    LIGHT-MODE ACCENT-TEXT LEGIBILITY (client bug fix)
-   The brand accent is lime #ccff00 — perfect on the dark theme, but as a
+   The brand accent is lime #1E88FF — perfect on the dark theme, but as a
    TEXT / ICON color it is nearly invisible on the white light-mode
    surfaces (labels, account ids, pill text disappeared). We darken lime
    ONLY when it is used as a foreground color in light mode, via a single
    theme-aware token so lime BACKGROUNDS/buttons stay bright lime.
      --accent-ink : lime on dark, dark olive-lime (5.2:1 on white) on light.
-   Covers the Tailwind text utilities (text-accent / text-[#ccff00] and
-   their opacity variants); inline `color: '#ccff00'` spots are swapped to
+   Covers the Tailwind text utilities (text-accent / text-[#1E88FF] and
+   their opacity variants); inline `color: '#1E88FF'` spots are swapped to
    var(--accent-ink) in the components so they inherit the same behaviour.
    ═══════════════════════════════════════════════════════════════════ */
 :root,
 .theme-dark,
 [data-theme="dark"] {
-  --accent-ink: #ccff00;
+  --accent-ink: #1E88FF;
 }
 .theme-light,
 [data-theme="light"] {
@@ -982,28 +982,28 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
 .theme-light .text-accent\/80,
 .theme-light .text-accent\/70,
 .theme-light .text-accent\/60,
-.theme-light .text-\[\#ccff00\],
-.theme-light .text-\[\#ccff00\]\/80,
-.theme-light .text-\[\#ccff00\]\/85,
-.theme-light .text-\[\#ccff00\]\/70,
-.theme-light .text-\[\#ccff00\]\/60,
+.theme-light .text-\[\#1E88FF\],
+.theme-light .text-\[\#1E88FF\]\/80,
+.theme-light .text-\[\#1E88FF\]\/85,
+.theme-light .text-\[\#1E88FF\]\/70,
+.theme-light .text-\[\#1E88FF\]\/60,
 [data-theme="light"] .text-accent,
 [data-theme="light"] .text-accent\/80,
 [data-theme="light"] .text-accent\/70,
 [data-theme="light"] .text-accent\/60,
-[data-theme="light"] .text-\[\#ccff00\],
-[data-theme="light"] .text-\[\#ccff00\]\/80,
-[data-theme="light"] .text-\[\#ccff00\]\/85,
-[data-theme="light"] .text-\[\#ccff00\]\/70,
-[data-theme="light"] .text-\[\#ccff00\]\/60 {
+[data-theme="light"] .text-\[\#1E88FF\],
+[data-theme="light"] .text-\[\#1E88FF\]\/80,
+[data-theme="light"] .text-\[\#1E88FF\]\/85,
+[data-theme="light"] .text-\[\#1E88FF\]\/70,
+[data-theme="light"] .text-\[\#1E88FF\]\/60 {
   color: var(--accent-ink) !important;
 }
 
 /* Same treatment for hover states that flip text to lime. */
 .theme-light .hover\:text-accent:hover,
-.theme-light .hover\:text-\[\#ccff00\]:hover,
+.theme-light .hover\:text-\[\#1E88FF\]:hover,
 [data-theme="light"] .hover\:text-accent:hover,
-[data-theme="light"] .hover\:text-\[\#ccff00\]:hover {
+[data-theme="light"] .hover\:text-\[\#1E88FF\]:hover {
   color: var(--accent-ink) !important;
 }
 
@@ -1019,8 +1019,8 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
 [data-theme="light"] .text-emerald-300\/80,
 [data-theme="light"] .text-green-400,
 [data-theme="light"] .text-green-500,
-[data-theme="light"] .text-\[\#a6d600\],
-.theme-light .text-\[\#a6d600\],
+[data-theme="light"] .text-\[\#0B5BD3\],
+.theme-light .text-\[\#0B5BD3\],
 .theme-light .text-emerald-200,
 .theme-light .text-emerald-300,
 .theme-light .text-emerald-400,
@@ -1055,7 +1055,7 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
   height: 2px; border-radius: 2px;
   background:
     radial-gradient(circle, var(--text-tertiary) 0 2.5px, transparent 3px) 0 50% / 25% 100% repeat-x,
-    linear-gradient(#ccff00, #ccff00) 0 0 / var(--pct, 0%) 100% no-repeat,
+    linear-gradient(#1E88FF, #1E88FF) 0 0 / var(--pct, 0%) 100% no-repeat,
     var(--border-primary);
 }
 .crx-range::-webkit-slider-thumb {
@@ -1064,7 +1064,7 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
   box-shadow: 0 2px 8px rgba(0,0,0,0.35);
 }
 .crx-range::-moz-range-track { height: 2px; background: var(--border-primary); border-radius: 2px; }
-.crx-range::-moz-range-progress { height: 2px; background: #ccff00; }
+.crx-range::-moz-range-progress { height: 2px; background: #1E88FF; }
 .crx-range::-moz-range-thumb { width: 16px; height: 16px; border: 0; background: var(--text-primary); border-radius: 3px; transform: rotate(45deg); }
 
 .ticket-input {

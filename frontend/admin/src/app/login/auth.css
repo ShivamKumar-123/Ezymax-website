@@ -1,5 +1,5 @@
 /* ============================================================
-   FX Artha auth — flat 50/50 split login/signup.
+   Ezymax auth — flat 50/50 split login/signup.
    Left: solid ink brand panel (faint dot-grid, lime accents).
    Right: white form column. Deliberately anti-glass: no blur,
    no gradients-as-decoration, two flat surfaces, hard contrast.
@@ -15,10 +15,10 @@
   --auth-hairline: #e6e8ee;
   --auth-panel: #0a0a0a;
   --auth-panel-dot: #1f1f1f;
-  --auth-accent: #ccff00;
+  --auth-accent: #1E88FF;
   --auth-accent-soft: #deff4d;
   --auth-accent-deep: #5f7800; /* legible lime-family link colour on white */
-  --auth-ring: rgba(204, 255, 0, 0.28);
+  --auth-ring: rgba(30, 136, 255, 0.28);
   --auth-font-display: "Space Grotesk", system-ui, sans-serif;
   --auth-font-ui: "Inter", system-ui, sans-serif;
 }
@@ -586,8 +586,8 @@
   font-size: 0.8rem;
   font-weight: 700;
   color: var(--auth-accent);
-  background: rgba(204, 255, 0, 0.06);
-  border: 1px solid rgba(204, 255, 0, 0.28);
+  background: rgba(30, 136, 255, 0.06);
+  border: 1px solid rgba(30, 136, 255, 0.28);
 }
 
 /* Admin console — left-panel highlights + wordmark (fill the panel nicely). */
@@ -620,8 +620,8 @@
   height: 40px;
   border-radius: 12px;
   color: var(--auth-accent);
-  background: rgba(204, 255, 0, 0.10);
-  border: 1px solid rgba(204, 255, 0, 0.25);
+  background: rgba(30, 136, 255, 0.10);
+  border: 1px solid rgba(30, 136, 255, 0.25);
   flex-shrink: 0;
 }
 .admin-wordmark {

@@ -28,8 +28,8 @@ export default function ProfileBonusCard() {
     <div
       className="relative overflow-hidden rounded-2xl border p-5"
       style={{
-        background: 'radial-gradient(120% 90% at 85% -10%, rgba(204,255,0,0.08), transparent 55%), var(--bg-card)',
-        borderColor: 'rgba(204,255,0,0.18)',
+        background: 'radial-gradient(120% 90% at 85% -10%, rgba(30,136,255,0.08), transparent 55%), var(--bg-card)',
+        borderColor: 'rgba(30,136,255,0.18)',
       }}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/45 to-transparent" aria-hidden />
@@ -37,7 +37,7 @@ export default function ProfileBonusCard() {
         <div className="flex items-center gap-3">
           <span
             className="grid size-11 place-items-center rounded-xl"
-            style={{ background: 'linear-gradient(135deg, #eaff8a, #ccff00 60%, #a6d600)', color: '#0a0a0a', boxShadow: '0 8px 20px rgba(204,255,0,0.3)' }}
+            style={{ background: 'linear-gradient(135deg, #7CC9FF, #1E88FF 60%, #0B5BD3)', color: '#0a0a0a', boxShadow: '0 8px 20px rgba(30,136,255,0.3)' }}
           >
             <Gift size={20} />
           </span>
@@ -51,7 +51,7 @@ export default function ProfileBonusCard() {
         <Link
           href="/accounts"
           className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold transition-transform hover:brightness-105 active:scale-[0.98]"
-          style={{ background: '#ccff00', color: '#0a0a0a' }}
+          style={{ background: '#1E88FF', color: '#0a0a0a' }}
         >
           Transfer to account <ArrowRight size={15} />
         </Link>

@@ -57,10 +57,10 @@ export default function StreakStrip() {
   const today = state?.streak_checked_in_today ?? false;
 
   return (
-    <div className="rounded-xl border border-[#ccff00]/25 bg-gradient-to-br from-[#ccff00]/5 via-bg-secondary to-bg-secondary p-4 mb-6">
+    <div className="rounded-xl border border-[#1E88FF]/25 bg-gradient-to-br from-[#1E88FF]/5 via-bg-secondary to-bg-secondary p-4 mb-6">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <Flame size={16} className="text-[#ccff00]" />
+          <Flame size={16} className="text-[#1E88FF]" />
           <span className="text-sm font-semibold text-text-primary">Daily Streak</span>
           {busy ? (
             <Loader2 size={14} className="animate-spin text-text-tertiary" />
@@ -71,7 +71,7 @@ export default function StreakStrip() {
           )}
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-text-tertiary">
-          <Gift size={12} className="text-[#ccff00]" />
+          <Gift size={12} className="text-[#1E88FF]" />
           <span>
             Day {total} bonus: +{state?.streak_bonus_xp ?? 50} XP, +{state?.streak_bonus_ac ?? 20} AC
           </span>
@@ -106,9 +106,9 @@ export default function StreakStrip() {
               className={
                 'flex-1 h-9 rounded-md border flex items-center justify-center text-[10px] font-medium cursor-default select-none ' +
                 (done
-                  ? 'border-[#ccff00]/55 bg-[#ccff00]/15 text-[#ccff00]'
+                  ? 'border-[#1E88FF]/55 bg-[#1E88FF]/15 text-[#1E88FF]'
                   : isToday
-                    ? 'border-[#ccff00]/45 bg-[#ccff00]/[0.04] text-[#ccff00]/80'
+                    ? 'border-[#1E88FF]/45 bg-[#1E88FF]/[0.04] text-[#1E88FF]/80'
                     : 'border-border-primary bg-bg-base text-text-tertiary')
               }
             >

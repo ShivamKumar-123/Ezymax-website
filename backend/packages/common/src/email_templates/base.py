@@ -27,7 +27,7 @@ def render_layout(
     cta_url: str | None = None,
     footer_note: str | None = None,
 ) -> str:
-    """Wraps body content in the standard FXArtha email shell.
+    """Wraps body content in the standard Ezymax email shell.
 
     Args:
       title:       big headline at the top of the card (escaped)
@@ -77,7 +77,7 @@ def render_layout(
           <tr>
             <td style="padding:28px 32px 12px;border-bottom:1px solid {_BORDER};">
               <span style="font-weight:700;font-size:20px;letter-spacing:0.2px;">
-                <span style="color:{_TEXT};">FX</span><span style="color:{_GOLD};">Artha</span>
+                <span style="color:{_TEXT};">EZY</span><span style="color:{_GOLD};">MAX</span>
               </span>
             </td>
           </tr>
@@ -97,11 +97,11 @@ def render_layout(
           <tr>
             <td style="padding:20px 32px;border-top:1px solid {_BORDER};
                        color:{_TEXT_DIM};font-size:12px;line-height:1.5;">
-              FXArtha — Trade without giving your money to any broker.<br>
-              You received this because of activity on your FXArtha account.
+              Ezymax — Trade without giving your money to any broker.<br>
+              You received this because of activity on your Ezymax account.
               Need help? Reply to this email or contact
-              <a href="mailto:support@fxartha.com" style="color:{_GOLD};text-decoration:none;">
-                support@fxartha.com</a>.
+              <a href="mailto:support@ezymex.com" style="color:{_GOLD};text-decoration:none;">
+                support@ezymex.com</a>.
             </td>
           </tr>
         </table>

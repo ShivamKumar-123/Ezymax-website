@@ -87,7 +87,7 @@ async def approve_request(
             subject, html, text = render_waitlist_approved(
                 full_name=row.full_name,
                 email=row.email,
-                trader_app_url=getattr(settings, "TRADER_APP_URL", "https://trade.fxartha.com"),
+                trader_app_url=getattr(settings, "TRADER_APP_URL", "https://trade.ezymex.com"),
             )
             fire_and_forget(send_email(row.email, subject, html, text=text))
     except Exception:

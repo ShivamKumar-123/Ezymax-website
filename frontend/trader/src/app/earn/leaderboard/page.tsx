@@ -63,8 +63,8 @@ function Inner() {
 
   const rankStyles: Record<number, { ring: string; badgeBg: string; badgeText: string; icon: ReactNode; label: string }> = {
     1: {
-      ring: 'rgba(204,255,0,0.55)',
-      badgeBg: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)',
+      ring: 'rgba(30,136,255,0.55)',
+      badgeBg: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)',
       badgeText: '#0a0a0a',
       icon: <Crown className="w-4 h-4" />,
       label: 'Champion',
@@ -91,9 +91,9 @@ function Inner() {
       <header className="flex items-center gap-3">
         <div
           className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+          style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
         >
-          <Trophy className="w-5 h-5 text-[#ccff00]" />
+          <Trophy className="w-5 h-5 text-[#1E88FF]" />
         </div>
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-text-primary">Leaderboard</h1>
@@ -111,7 +111,7 @@ function Inner() {
             className={
               'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ' +
               (tab === k
-                ? 'bg-[#ccff00] text-[#0a0a0a]'
+                ? 'bg-[#1E88FF] text-[#0a0a0a]'
                 : 'text-text-secondary hover:text-text-primary')
             }
           >
@@ -146,18 +146,18 @@ function Inner() {
                     }
                     style={{
                       background: isFirst
-                        ? 'radial-gradient(130% 120% at 50% -25%, rgba(204,255,0,0.18), transparent 60%), var(--bg-card)'
-                        : 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.08), transparent 55%), var(--bg-card)',
+                        ? 'radial-gradient(130% 120% at 50% -25%, rgba(30,136,255,0.18), transparent 60%), var(--bg-card)'
+                        : 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.08), transparent 55%), var(--bg-card)',
                       borderColor: rs.ring,
                       boxShadow: isFirst
-                        ? '0 12px 34px rgba(0,0,0,0.34), 0 0 22px rgba(204,255,0,0.12)'
+                        ? '0 12px 34px rgba(0,0,0,0.34), 0 0 22px rgba(30,136,255,0.12)'
                         : '0 8px 26px rgba(0,0,0,0.28)',
                     }}
                   >
                     {isFirst && (
                       <div
                         className="pointer-events-none absolute inset-x-0 top-0 h-1"
-                        style={{ background: 'linear-gradient(90deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+                        style={{ background: 'linear-gradient(90deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
                       />
                     )}
                     <div className="flex flex-col items-center text-center px-4 pt-6 pb-5 gap-3">
@@ -171,7 +171,7 @@ function Inner() {
                           style={{
                             background: 'var(--bg-secondary)',
                             border: `2px solid ${rs.ring}`,
-                            boxShadow: isFirst ? '0 0 18px rgba(204,255,0,0.22)' : 'none',
+                            boxShadow: isFirst ? '0 0 18px rgba(30,136,255,0.22)' : 'none',
                           }}
                         >
                           {initials(r.name)}
@@ -185,7 +185,7 @@ function Inner() {
                         </div>
                       </div>
                       <div className="mt-1.5">
-                        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: isFirst ? '#ccff00' : 'var(--text-tertiary)' }}>
+                        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: isFirst ? '#1E88FF' : 'var(--text-tertiary)' }}>
                           {rs.label}
                         </p>
                         <p className="text-sm font-semibold text-text-primary truncate max-w-[12rem]">{r.name}</p>
@@ -193,8 +193,8 @@ function Inner() {
                       <div
                         className="px-3 py-1.5 rounded-lg text-sm font-bold tabular-nums"
                         style={{
-                          background: isFirst ? 'rgba(204,255,0,0.14)' : 'rgba(204,255,0,0.08)',
-                          border: '1px solid rgba(204,255,0,0.22)',
+                          background: isFirst ? 'rgba(30,136,255,0.14)' : 'rgba(30,136,255,0.08)',
+                          border: '1px solid rgba(30,136,255,0.22)',
                           color: 'var(--accent-ink)',
                         }}
                       >
@@ -211,7 +211,7 @@ function Inner() {
           {rest.length > 0 && (
             <div
               className="rounded-2xl border overflow-hidden"
-              style={{ background: 'var(--bg-card)', borderColor: 'rgba(204,255,0,0.16)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}
+              style={{ background: 'var(--bg-card)', borderColor: 'rgba(30,136,255,0.16)', boxShadow: '0 8px 26px rgba(0,0,0,0.28)' }}
             >
               <ul className="divide-y divide-border-primary">
                 {rest.map((r) => (
@@ -228,7 +228,7 @@ function Inner() {
                     <span className="flex-1 text-sm text-text-primary truncate">{r.name}</span>
                     <span
                       className="text-sm font-semibold tabular-nums px-2.5 py-1 rounded-lg"
-                      style={{ background: 'rgba(204,255,0,0.07)', border: '1px solid rgba(204,255,0,0.16)', color: 'var(--accent-ink)' }}
+                      style={{ background: 'rgba(30,136,255,0.07)', border: '1px solid rgba(30,136,255,0.16)', color: 'var(--accent-ink)' }}
                     >
                       {scoreOf(r)}
                     </span>

@@ -13,7 +13,7 @@ import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Loader2, Save, RefreshCw, Play, Plus, Trash2, Network, AlertTriangle } from 'lucide-react';
 
-const LIME = '#ccff00';
+const LIME = '#1E88FF';
 
 interface Tier { tier: string; min_lots: number; min_clients: number; rate: number }
 interface Config {

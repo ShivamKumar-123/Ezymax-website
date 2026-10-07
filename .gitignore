@@ -86,3 +86,13 @@ build/
 # Client reference mockups dropped at the repo root (kept locally only)
 /ChatGPT Image*.png
 /ChatGPT Image*.jpg
+
+# Runtime uploads — KYC documents, deposit and withdrawal proofs, banners.
+# This is user identity data: passports and payment screenshots. It must
+# never be committed, and 19 such files WERE tracked here (7 of them ID
+# scans belonging to one real user). Only the .gitkeep placeholders that
+# the docker bind mount needs are kept.
+backend/uploads/*
+!backend/uploads/*/
+backend/uploads/*/*
+!backend/uploads/*/.gitkeep

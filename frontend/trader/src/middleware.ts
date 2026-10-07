@@ -2,10 +2,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 /**
  * Domain split (asymmetric, by design):
- *   - fxartha.com (apex): marketing + auth + every user-app page.
+ *   - ezymex.com (apex): marketing + auth + every user-app page.
  *     If the user lands on the apex with /trading/terminal, we bounce
  *     them to the trade subdomain so the terminal has a clean origin.
- *   - trade.fxartha.com: hosts the trading terminal canonically, but
+ *   - trade.ezymex.com: hosts the trading terminal canonically, but
  *     ALSO serves every other page. Previously we redirected non-
  *     terminal traffic back to the apex, but that caused two persistent
  *     production issues: (1) RSC prefetches and TradingView chart
@@ -16,7 +16,7 @@ import { NextResponse, type NextRequest } from 'next/server';
  *     adds no real cost — they're authenticated app pages, not
  *     marketing pages with SEO concerns.
  *
- * The auth cookie is Domain=.fxartha.com so a single session works on
+ * The auth cookie is Domain=.ezymex.com so a single session works on
  * apex AND subdomain. If NEXT_PUBLIC_MARKETING_HOST or
  * NEXT_PUBLIC_TRADE_HOST is unset (local dev), this middleware no-ops.
  */
@@ -47,7 +47,7 @@ export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   if (isNeutral(pathname)) return NextResponse.next();
 
-  // PWA identity: the installable app is trade.fxartha.com. Don't serve the
+  // PWA identity: the installable app is trade.ezymex.com. Don't serve the
   // web manifest on the marketing apex, so "Add to Home Screen" / install
   // resolves to the trade app rather than the marketing site.
   if (onMarketing && pathname === '/manifest.webmanifest') {
@@ -90,7 +90,7 @@ export function middleware(req: NextRequest) {
   }
   // Trade subdomain → serve every page. We deliberately do NOT redirect
   // back to apex anymore (see the file-level comment for context). Mark it
-  // noindex so search engines only index the apex (fxartha.com) — the two
+  // noindex so search engines only index the apex (ezymex.com) — the two
   // hosts serving the same pages must not compete as duplicate content.
   if (onTrade) {
     const res = NextResponse.next();

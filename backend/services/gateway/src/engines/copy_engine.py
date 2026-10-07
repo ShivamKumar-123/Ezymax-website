@@ -735,7 +735,7 @@ class CopyTradeEngine:
         copy.status = "closed"
 
         # XP_Reward_mechanism slide 6 — "Follower earns profits + XP +
-        # ARTC + PS". Award the follower exactly as they would for an
+        # EZC + PS". Award the follower exactly as they would for an
         # own trade, with the slide-12 PS haircut (70% of own-trade PS).
         # Best-effort: a rewards-service failure must not roll back the
         # trade close itself.

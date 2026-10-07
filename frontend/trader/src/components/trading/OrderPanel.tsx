@@ -407,7 +407,7 @@ export default function OrderPanel() {
      A direct port of the reference terminal's order panel: no header,
      an angled Sell / spread / Buy strip, a day-change bar, flat order-type
      tabs, card-style price + volume inputs, a lot slider, one TP/SL
-     checkbox, then Margin and Assets readouts. FXArtha's own Fully Funded
+     checkbox, then Margin and Assets readouts. Ezymax's own Fully Funded
      control is kept, placed where it fits.
      The dashboard layout below is untouched.
      ══════════════════════════════════════════════════════════════════ */
@@ -497,7 +497,7 @@ export default function OrderPanel() {
                   )}
                 >
                   {label}
-                  {ticketTab === k && <span className="absolute inset-x-2 -bottom-px h-[3px] rounded-full bg-[#ccff00]" />}
+                  {ticketTab === k && <span className="absolute inset-x-2 -bottom-px h-[3px] rounded-full bg-[#1E88FF]" />}
                 </button>
               ))}
               <span
@@ -589,7 +589,7 @@ export default function OrderPanel() {
                   setTpEnabled(e.target.checked);
                   if (!e.target.checked) { setStopLoss(''); setTakeProfit(''); }
                 }}
-                className="h-4 w-4 rounded border-border-primary accent-[#ccff00]"
+                className="h-4 w-4 rounded border-border-primary accent-[#1E88FF]"
               />
               TP/SL
             </label>
@@ -673,10 +673,10 @@ export default function OrderPanel() {
               </dl>
             </div>
 
-            {/* FXArtha-only extras live BELOW Assets so the ticket's
+            {/* Ezymax-only extras live BELOW Assets so the ticket's
                 top half matches the reference exactly. */}
             <div className="space-y-2 border-t border-border-primary pt-2">
-            {/* Fully Funded — FXArtha-only. No leverage, no overnight fee. */}
+            {/* Fully Funded — Ezymax-only. No leverage, no overnight fee. */}
             <label className={clsx('flex items-center justify-between gap-2 rounded-xl px-3 py-1.5 border', fullyFunded ? 'border-buy/40 bg-buy/10' : 'border-transparent bg-card-nested')} title="No leverage. No overnight cost.">
               <span className="flex flex-col">
                 <span className="text-[12px] font-medium text-text-primary">Fully Funded</span>
@@ -802,11 +802,11 @@ export default function OrderPanel() {
         >
           <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
             {marketStatus.isOpen && isConnected && (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#ccff00] opacity-60" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#1E88FF] opacity-60" />
             )}
             <span
               className="relative inline-flex h-1.5 w-1.5 rounded-full"
-              style={{ background: marketStatus.isOpen ? '#ccff00' : '#f57c00' }}
+              style={{ background: marketStatus.isOpen ? '#1E88FF' : '#f57c00' }}
             />
           </span>
           <span
@@ -819,7 +819,7 @@ export default function OrderPanel() {
             {marketStatus.isOpen ? 'Open' : 'Closed'}
           </span>
           {isConnected ? (
-            <Wifi size={isTradingTerminal ? 11 : 12} className="shrink-0 text-[#ccff00]" />
+            <Wifi size={isTradingTerminal ? 11 : 12} className="shrink-0 text-[#1E88FF]" />
           ) : (
             <WifiOff size={isTradingTerminal ? 11 : 12} className="shrink-0 text-[#f57c00]" />
           )}
@@ -870,7 +870,7 @@ export default function OrderPanel() {
                     <span
                       aria-hidden
                       className="absolute inset-x-1 -bottom-px h-0.5 rounded-full"
-                      style={{ background: isTradingTerminal ? '#2962FF' : '#ccff00' }}
+                      style={{ background: isTradingTerminal ? '#2962FF' : '#1E88FF' }}
                     />
                   )}
                 </button>
@@ -983,7 +983,7 @@ export default function OrderPanel() {
               <div
                 onClick={() => { setTpEnabled((p) => !p); if (tpEnabled) setTakeProfit(''); }}
                 className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer border border-border-primary"
-                style={{ background: tpEnabled ? '#ccff00' : 'var(--bg-secondary)' }}
+                style={{ background: tpEnabled ? '#1E88FF' : 'var(--bg-secondary)' }}
               >
                 <div className="absolute top-[3px] w-2.5 h-2.5 rounded-full bg-white transition-all shadow-sm" style={{ left: tpEnabled ? '18px' : '3px' }} />
               </div>
@@ -1170,14 +1170,14 @@ export default function OrderPanel() {
           {/* TP input */}
           {tpEnabled && (
             <div className="pt-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#ccff00] mb-1.5 block">Take Profit</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#1E88FF] mb-1.5 block">Take Profit</span>
               <input
                 type="number"
                 value={takeProfit}
                 onChange={(e) => setTakeProfit(e.target.value)}
                 step={execPrice > 100 ? 0.01 : 0.00001}
                 placeholder={`e.g. ${(execPrice * (side === 'buy' ? 1.02 : 0.98)).toFixed(digits)}`}
-                className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-[#ccff00]/30 text-[#ccff00]"
+                className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-[#1E88FF]/30 text-[#1E88FF]"
               />
             </div>
           )}
@@ -1190,8 +1190,8 @@ export default function OrderPanel() {
                 {[
                   { label: 'Exec. Price', value: execPrice > 0 ? execPrice.toFixed(digits) : '—', color: 'var(--text-primary)' },
                   { label: 'Margin Required', value: `$${marginRequired.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : 'var(--text-secondary)' },
-                  { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#ccff00' },
-                  { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#ccff00' : '#f57c00' },
+                  { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#1E88FF' },
+                  { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#1E88FF' : '#f57c00' },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between">
                     <span className="text-[11px] text-text-tertiary">{row.label}</span>
@@ -1351,7 +1351,7 @@ function LeveragePicker({
                 className={clsx(
                   'w-full text-left px-2 py-1 text-[11px] font-mono transition-colors',
                   v === account.leverage
-                    ? 'bg-[#ccff00]/15 text-[#ccff00] font-bold'
+                    ? 'bg-[#1E88FF]/15 text-[#1E88FF] font-bold'
                     : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
                 )}
               >

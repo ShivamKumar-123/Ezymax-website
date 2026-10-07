@@ -16,7 +16,7 @@ import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Loader2, Save, RefreshCw, Plus, Trash2, Sparkles } from 'lucide-react';
 
-const LIME = '#ccff00';
+const LIME = '#1E88FF';
 const KINDS = ['ac', 'cashback', 'xp', 'nothing'] as const;
 type Kind = (typeof KINDS)[number];
 
@@ -159,7 +159,7 @@ export default function AdminSpinWheelPage() {
             <RefreshCw className="w-3.5 h-3.5" /> Reload
           </button>
           <button type="button" onClick={() => setAdding((v) => !v)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#ccff00]/40">
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#1E88FF]/40">
             <Plus className="w-3.5 h-3.5" /> Add slot
           </button>
           <button type="button" onClick={() => void save()} disabled={saving}
@@ -273,7 +273,7 @@ export default function AdminSpinWheelPage() {
         <span className="font-bold text-text-secondary">Weight</span> sets each slot&apos;s draw chance —
         <span className="font-bold"> Win %</span> = weight ÷ total active weight (recomputes live as you edit).
         <span style={{ color: KIND_COLOR.ac }}> ac</span>/<span style={{ color: KIND_COLOR.cashback }}>cashback</span> credit
-        Artha Coins, <span style={{ color: KIND_COLOR.xp }}>xp</span> credits XP, <span style={{ color: KIND_COLOR.nothing }}>nothing</span> = no reward.
+        Ezymax Coins, <span style={{ color: KIND_COLOR.xp }}>xp</span> credits XP, <span style={{ color: KIND_COLOR.nothing }}>nothing</span> = no reward.
         Turn <b>Active</b> off to remove a slot from the wheel. Edits are live after <b>Save changes</b>.
       </p>
 

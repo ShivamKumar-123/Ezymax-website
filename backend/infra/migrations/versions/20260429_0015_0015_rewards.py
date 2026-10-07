@@ -99,7 +99,7 @@ def upgrade() -> None:
         ("daily_copy_trade", "daily", "Copy a Trade",
          "Copy any top trader's trade.", "copy_trade", 1, 15, 10, 2),
         ("daily_refer_friend", "daily", "Refer a Friend",
-         "Invite a friend to join FXArtha.", "refer_friend", 1, 30, 20, 3),
+         "Invite a friend to join Ezymax.", "refer_friend", 1, 30, 20, 3),
         ("daily_trade_volume", "daily", "Trade Volume",
          "Achieve $1,000 trading volume.", "trade_volume_usd", 1000, 25, 15, 4),
         ("weekly_win_streak", "weekly", "Win Streak x5",

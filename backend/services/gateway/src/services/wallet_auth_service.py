@@ -53,9 +53,9 @@ logger = logging.getLogger("wallet_auth_service")
 NONCE_TTL_SECONDS = 300
 ALLOWED_CHAIN_IDS = {1, 56, 137, 42161}  # mainnet, bsc, polygon, arbitrum
 SIWE_STATEMENT = (
-    "Sign in to FXArtha. This signature does not authorise any transaction."
+    "Sign in to Ezymax. This signature does not authorise any transaction."
 )
-WALLET_PLACEHOLDER_EMAIL_DOMAIN = "wallet.fxartha.local"
+WALLET_PLACEHOLDER_EMAIL_DOMAIN = "wallet.ezymax.local"
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────

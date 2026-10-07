@@ -121,15 +121,15 @@ async def _send_via_sendgrid(
     content.append({"type": "text/html", "value": html})
     payload = {
         "personalizations": [{"to": [{"email": to_email}]}],
-        "from": {"email": _from_address(), "name": "FXArtha"},
+        "from": {"email": _from_address(), "name": "Ezymax"},
         "subject": subject,
         "content": content,
         # Disable SendGrid link/open tracking. By default SendGrid rewrites
         # every href through its click-tracking domain (e.g.
-        # url3100.fxartha.com/ls/click?...), which on this account has no TLS
+        # url3100.ezymex.com/ls/click?...), which on this account has no TLS
         # cert — so recipients hit a "site doesn't support a secure
         # connection" page instead of the real link. Turning it off keeps
-        # our hrefs (https://trade.fxartha.com/...) intact.
+        # our hrefs (https://trade.ezymex.com/...) intact.
         "tracking_settings": {
             "click_tracking": {"enable": False, "enable_text": False},
             "open_tracking": {"enable": False},
@@ -288,7 +288,7 @@ def _strip_tags(html: str) -> str:
 
 
 async def send_password_reset_email(
-    to_email: str, reset_link: str, *, app_name: str = "FXArtha",
+    to_email: str, reset_link: str, *, app_name: str = "Ezymax",
 ) -> bool:
     from .email_templates import render_password_reset
     subject, html, text = render_password_reset(app_name=app_name, reset_link=reset_link)

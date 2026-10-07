@@ -66,8 +66,8 @@ function fmt(n: number) {
 // Shared "Obsidian & Lime" premium card surface used across settings sections.
 const PREMIUM_CARD = 'relative overflow-hidden rounded-2xl border';
 const PREMIUM_CARD_STYLE: React.CSSProperties = {
-  background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.07), transparent 55%), var(--bg-card)',
-  borderColor: 'rgba(204,255,0,0.16)',
+  background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.07), transparent 55%), var(--bg-card)',
+  borderColor: 'rgba(30,136,255,0.16)',
   boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
 };
 
@@ -76,9 +76,9 @@ function SectionHeader({ icon: Icon, title, sub }: { icon: React.ElementType; ti
     <div className="flex items-center gap-3 mb-5">
       <div
         className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+        style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
       >
-        <Icon size={18} className="text-[#ccff00]" />
+        <Icon size={18} className="text-[#1E88FF]" />
       </div>
       <div className="min-w-0">
         <h3 className="text-sm font-bold text-text-primary tracking-tight">{title}</h3>
@@ -263,9 +263,9 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3 mb-1">
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+              style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
             >
-              <Settings className="w-5 h-5 text-[#ccff00]" />
+              <Settings className="w-5 h-5 text-[#1E88FF]" />
             </div>
             <div className="min-w-0">
               <h1 className="text-xl md:text-2xl font-bold text-text-primary tracking-tight">Settings</h1>
@@ -341,7 +341,7 @@ export default function ProfilePage() {
                 <div className="relative">
                   <div
                     className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold text-[#0a0a0a]"
-                    style={{ background: 'linear-gradient(135deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 8px 20px rgba(204,255,0,0.28)' }}
+                    style={{ background: 'linear-gradient(135deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 8px 20px rgba(30,136,255,0.28)' }}
                   >
                     {initials}
                   </div>
@@ -443,7 +443,7 @@ export default function ProfilePage() {
                   {accounts.map((acc) => (
                     <li
                       key={acc.id}
-                      className="rounded-2xl border border-border-primary bg-bg-secondary/40 px-4 py-3.5 flex items-center justify-between gap-3 transition-colors hover:border-[#ccff00]/30"
+                      className="rounded-2xl border border-border-primary bg-bg-secondary/40 px-4 py-3.5 flex items-center justify-between gap-3 transition-colors hover:border-[#1E88FF]/30"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
@@ -451,7 +451,7 @@ export default function ProfilePage() {
                           style={
                             acc.is_demo
                               ? { background: 'rgba(255,255,255,0.04)', borderColor: 'var(--border-primary)', color: 'var(--text-tertiary)' }
-                              : { background: 'rgba(204,255,0,0.12)', borderColor: 'rgba(204,255,0,0.25)', color: 'var(--accent-ink)' }
+                              : { background: 'rgba(30,136,255,0.12)', borderColor: 'rgba(30,136,255,0.25)', color: 'var(--accent-ink)' }
                           }
                         >
                           {acc.is_demo ? 'D' : 'L'}
@@ -583,7 +583,7 @@ export default function ProfilePage() {
                 ].map((n) => (
                   <div
                     key={n.key}
-                    className="rounded-2xl border border-border-primary bg-bg-secondary/40 px-4 py-3 flex items-center justify-between gap-3 transition-colors hover:border-[#ccff00]/25"
+                    className="rounded-2xl border border-border-primary bg-bg-secondary/40 px-4 py-3 flex items-center justify-between gap-3 transition-colors hover:border-[#1E88FF]/25"
                   >
                     <div className="min-w-0">
                       <div className="text-sm font-medium text-text-primary">{n.label}</div>
@@ -594,9 +594,9 @@ export default function ProfilePage() {
                       onClick={() => toggleNotifPref(n.key)}
                       className={clsx(
                         'relative w-10 h-5 rounded-full transition-all flex-shrink-0 border',
-                        notifPrefs[n.key] ? 'bg-[#ccff00] border-[#ccff00]' : 'bg-bg-secondary border-border-primary',
+                        notifPrefs[n.key] ? 'bg-[#1E88FF] border-[#1E88FF]' : 'bg-bg-secondary border-border-primary',
                       )}
-                      style={notifPrefs[n.key] ? { boxShadow: '0 0 12px rgba(204,255,0,0.4)' } : undefined}
+                      style={notifPrefs[n.key] ? { boxShadow: '0 0 12px rgba(30,136,255,0.4)' } : undefined}
                       aria-pressed={!!notifPrefs[n.key]}
                     >
                       <div
@@ -639,7 +639,7 @@ export default function ProfilePage() {
                     <div className="flex h-[calc(100%-12px)]">
                       <div className="w-1/4 border-r" style={{ borderColor: '#2a2a2a', background: '#0d0d0d' }} />
                       <div className="flex-1 p-1.5">
-                        <div className="h-1.5 w-3/4 rounded-full mb-1" style={{ background: '#ccff00' }} />
+                        <div className="h-1.5 w-3/4 rounded-full mb-1" style={{ background: '#1E88FF' }} />
                         <div className="h-1 w-1/2 rounded-full" style={{ background: '#333' }} />
                       </div>
                     </div>
@@ -650,7 +650,7 @@ export default function ProfilePage() {
                   </div>
                   <p className="text-[10px] text-text-tertiary mt-0.5 ml-[22px]">Dark background with blue accents</p>
                   {theme === 'dark' && (
-                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#ccff00] flex items-center justify-center">
+                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#1E88FF] flex items-center justify-center">
                       <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#0a0a0a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
                   )}
@@ -687,7 +687,7 @@ export default function ProfilePage() {
                   </div>
                   <p className="text-[10px] text-text-tertiary mt-0.5 ml-[22px]">Clean white with black text</p>
                   {theme === 'light' && (
-                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#ccff00] flex items-center justify-center">
+                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#1E88FF] flex items-center justify-center">
                       <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#0a0a0a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </div>
                   )}
@@ -709,14 +709,14 @@ export default function ProfilePage() {
                   {sessions.map((s) => (
                     <div
                       key={s.id}
-                      className="bg-bg-secondary/40 border border-border-primary rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap transition-colors hover:border-[#ccff00]/25"
+                      className="bg-bg-secondary/40 border border-border-primary rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap transition-colors hover:border-[#1E88FF]/25"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
                           className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ background: 'rgba(204,255,0,0.10)' }}
+                          style={{ background: 'rgba(30,136,255,0.10)' }}
                         >
-                          <Monitor size={16} className="text-[#ccff00]" />
+                          <Monitor size={16} className="text-[#1E88FF]" />
                         </div>
                         <div className="min-w-0">
                           <div className="text-sm font-semibold text-text-primary truncate">{s.device_info || s.user_agent || 'Unknown Device'}</div>

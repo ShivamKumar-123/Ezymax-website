@@ -178,10 +178,10 @@ export default function TradesPage() {
 
   useEffect(() => {
     // Resolve the prices WebSocket URL. Order:
-    //  1. NEXT_PUBLIC_WS_URL — explicit override, e.g. wss://api.fxartha.com
+    //  1. NEXT_PUBLIC_WS_URL — explicit override, e.g. wss://api.ezymex.com
     //  2. NEXT_PUBLIC_GATEWAY_URL — http(s) → ws(s) shim for legacy configs
     //  3. Derive from current origin: replace `admin.` with `api.` so the
-    //     admin app loaded from admin.fxartha.com talks to api.fxartha.com.
+    //     admin app loaded from admin.ezymex.com talks to api.ezymex.com.
     //     Local dev (localhost:30xx) falls through to step 4.
     //  4. Last-resort dev fallback: ws://localhost:8000
     function resolveWsBase(): string {

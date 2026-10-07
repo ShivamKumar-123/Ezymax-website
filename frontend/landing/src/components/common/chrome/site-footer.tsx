@@ -17,7 +17,7 @@ export const SiteFooter = ({ content }: SiteFooterProps) => (
       aria-hidden
       className="pointer-events-none absolute inset-x-0 bottom-0 h-72 opacity-70 [mask-image:linear-gradient(to_top,black,transparent)]"
     >
-      <AnimatedGradient config={{ preset: "Artha" }} noise={{ opacity: 0.35 }} />
+      <AnimatedGradient config={{ preset: "Ezymax" }} noise={{ opacity: 0.35 }} />
     </div>
 
     <div className="relative shell px-5 pt-20 pb-10 sm:px-8 lg:pt-24">

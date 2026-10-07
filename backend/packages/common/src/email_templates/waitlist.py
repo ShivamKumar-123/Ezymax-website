@@ -9,7 +9,7 @@ def render_waitlist_approved(
     *,
     full_name: str | None,
     email: str,
-    trader_app_url: str = "https://trade.fxartha.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     """Sent when an admin approves a waitlist request. Welcomes the user and
     links to the register + login pages so they can get started."""
@@ -20,7 +20,7 @@ def render_waitlist_approved(
 
     body = kv_table([("Your email", email)]) + f"""
     <p style="margin:16px 0 0;color:#f5f5f5;font-size:14px;line-height:1.6;">
-      Welcome to FX Artha! Your access request has been approved. Create your
+      Welcome to Ezymax! Your access request has been approved. Create your
       account to get started — use the email above when you sign up.
     </p>
     <p style="margin:16px 0 0;color:#9a9a9a;font-size:13px;line-height:1.6;">
@@ -29,10 +29,10 @@ def render_waitlist_approved(
         Log in here</a>.
     </p>
     """
-    subject = "Welcome to FX Artha — you're approved"
+    subject = "Welcome to Ezymax — you're approved"
     html = render_layout(
         title="You're approved 🎉",
-        intro=f"Hi {name}, welcome to FX Artha. Your access request has been approved.",
+        intro=f"Hi {name}, welcome to Ezymax. Your access request has been approved.",
         body_html=body,
         cta_label="Create your account",
         cta_url=register_url,
@@ -40,7 +40,7 @@ def render_waitlist_approved(
     )
     text = (
         f"Hi {name},\n\n"
-        "Welcome to FX Artha! Your access request has been approved.\n\n"
+        "Welcome to Ezymax! Your access request has been approved.\n\n"
         f"  Your email: {email}\n\n"
         f"Create your account: {register_url}\n"
         f"Log in:              {login_url}\n\n"
@@ -61,21 +61,21 @@ def render_waitlist_rejected(
         rows.append(("Reason", reason))
     body = (kv_table(rows) if rows else "") + """
     <p style="margin:16px 0 0;color:#f5f5f5;font-size:14px;line-height:1.6;">
-      Thank you for your interest in FX Artha. We're unable to grant access at
+      Thank you for your interest in Ezymax. We're unable to grant access at
       this time. You're welcome to reach out if you believe this was a mistake.
     </p>
     """
-    subject = "Update on your FX Artha access request"
+    subject = "Update on your Ezymax access request"
     html = render_layout(
         title="Access request update",
-        intro=f"Hi {name}, thanks for requesting access to FX Artha.",
+        intro=f"Hi {name}, thanks for requesting access to Ezymax.",
         body_html=body,
         footer_note="Reply to this email if you have any questions.",
     )
     text_lines = [
         f"Hi {name},",
         "",
-        "Thank you for your interest in FX Artha. We're unable to grant access "
+        "Thank you for your interest in Ezymax. We're unable to grant access "
         "at this time.",
     ]
     if reason:

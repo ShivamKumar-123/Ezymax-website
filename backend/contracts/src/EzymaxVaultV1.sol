@@ -7,8 +7,8 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
- * @title FXArthaVaultV1
- * @notice Custody vault for FXArtha — holds a single ERC20 stablecoin
+ * @title EzymaxVaultV1
+ * @notice Custody vault for Ezymax — holds a single ERC20 stablecoin
  *         (USDT in production) on behalf of all platform users.
  *
  * Design intent (Phase 1):
@@ -35,7 +35,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
  *
  * Reference: docs/vault-phase1-spec.md
  */
-contract FXArthaVaultV1 is AccessControl, Pausable {
+contract EzymaxVaultV1 is AccessControl, Pausable {
     using SafeERC20 for IERC20;
 
     /// @notice The stablecoin this vault custodies. Set in constructor; never changes.
@@ -93,8 +93,8 @@ contract FXArthaVaultV1 is AccessControl, Pausable {
      * script's role-revocation step runs.
      */
     constructor(address _usdt, address _admin) {
-        require(_usdt != address(0), "FXAV1: usdt=0");
-        require(_admin != address(0), "FXAV1: admin=0");
+        require(_usdt != address(0), "EZMV1: usdt=0");
+        require(_admin != address(0), "EZMV1: admin=0");
 
         USDT = IERC20(_usdt);
 
@@ -117,7 +117,7 @@ contract FXArthaVaultV1 is AccessControl, Pausable {
      * @param  amount  USDT base units (6 decimals on most chains).
      */
     function deposit(uint256 amount) external whenNotPaused {
-        require(amount > 0, "FXAV1: amount=0");
+        require(amount > 0, "EZMV1: amount=0");
 
         // Effects before interaction not strictly required (transferFrom
         // can revert; if it does, the state change rolls back), but
@@ -160,10 +160,10 @@ contract FXArthaVaultV1 is AccessControl, Pausable {
         uint256 amount,
         bytes32 approvalId
     ) external onlyRole(WITHDRAWER_ROLE) whenNotPaused {
-        require(amount > 0, "FXAV1: amount=0");
-        require(to != address(0), "FXAV1: to=0");
-        require(approvalId != bytes32(0), "FXAV1: approvalId=0");
-        require(!usedApprovalIds[approvalId], "FXAV1: approval already used");
+        require(amount > 0, "EZMV1: amount=0");
+        require(to != address(0), "EZMV1: to=0");
+        require(approvalId != bytes32(0), "EZMV1: approvalId=0");
+        require(!usedApprovalIds[approvalId], "EZMV1: approval already used");
 
         // Effects BEFORE interactions — Checks-Effects-Interactions.
         // Setting the bit before the external transfer makes replay
@@ -207,9 +207,9 @@ contract FXArthaVaultV1 is AccessControl, Pausable {
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        require(token != address(USDT), "FXAV1: cannot recover USDT");
-        require(token != address(0), "FXAV1: token=0");
-        require(amount > 0, "FXAV1: amount=0");
+        require(token != address(USDT), "EZMV1: cannot recover USDT");
+        require(token != address(0), "EZMV1: token=0");
+        require(amount > 0, "EZMV1: amount=0");
 
         IERC20(token).safeTransfer(msg.sender, amount);
         emit TokenRecovered(token, amount, msg.sender);

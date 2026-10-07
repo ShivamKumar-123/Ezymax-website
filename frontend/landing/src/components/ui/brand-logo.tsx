@@ -22,7 +22,7 @@ export const BrandLogo = ({ tone = "light", className }: BrandLogoProps) => {
   return (
     <Image
       src={variant.src}
-      alt="fxartha"
+      alt="ezymax"
       width={variant.width}
       height={variant.height}
       priority

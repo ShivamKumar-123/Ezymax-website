@@ -6,8 +6,8 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
-    DATABASE_URL: str = "postgresql+asyncpg://fxartha:fxartha_dev@localhost:5432/fxartha"
-    TIMESCALE_URL: str = "postgresql+asyncpg://fxartha:fxartha_dev@localhost:5433/marketdata"
+    DATABASE_URL: str = "postgresql+asyncpg://ezymax:ezymax_dev@localhost:5432/ezymax"
+    TIMESCALE_URL: str = "postgresql+asyncpg://ezymax:ezymax_dev@localhost:5433/marketdata"
     REDIS_URL: str = "redis://localhost:6379/0"
     # KAFKA_BOOTSTRAP_SERVERS retained as a settings field for now so any
     # downstream IaC / .env that still defines it doesn't fail validation
@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: str = "strict"  # lax | strict | none
     # If None, Secure flag follows the incoming request (HTTPS / X-Forwarded-Proto).
     COOKIE_SECURE: bool | None = None
-    # Cookie Domain attribute. Set to a parent domain (e.g. ".fxartha.com") to share
+    # Cookie Domain attribute. Set to a parent domain (e.g. ".ezymex.com") to share
     # the auth session across the apex and subdomains (trade.*, etc.). Leave empty to
     # let the browser set a host-only cookie (works for single-host dev/local setups).
     COOKIE_DOMAIN: str = ""
@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     ADMIN_JWT_ALGORITHM: str = "HS256"
     ADMIN_JWT_EXPIRY_HOURS: int = 8
 
-    ADMIN_EMAIL: str = "admin@fxartha.com"
+    ADMIN_EMAIL: str = "admin@ezymex.com"
     # Initial seed password for the super-admin row created by the
     # `migrate` profile. Empty by default so prod operators are forced
     # to set a strong value in their .env before the first migration —
@@ -102,7 +102,7 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     RESEND_API_URL: str = "https://api.resend.com/emails"
 
-    # SendGrid — the client's provider of record for fxartha.com (domain
+    # SendGrid — the client's provider of record for ezymex.com (domain
     # verified via CNAMEs in Cloudflare). Tried FIRST when set; Resend and
     # SMTP remain as fallbacks. Key needs only the "Mail Send" permission.
     SENDGRID_API_KEY: str = ""
@@ -146,7 +146,7 @@ class Settings(BaseSettings):
     # market-data service stops running its own Infoway / simulator feed and
     # consumes ticks pushed from Corecen via POST /api/lp/prices/batch (HMAC).
     CORECEN_LP_ENABLED: bool = False
-    # HMAC credentials — must match FXARTHA_API_KEY / FXARTHA_API_SECRET in the Corecen .env.
+    # HMAC credentials — must match EZYMAX_API_KEY / EZYMAX_API_SECRET in the Corecen .env.
     CORECEN_LP_API_KEY: str = ""
     CORECEN_LP_API_SECRET: str = ""
     # Reject pushes older than this many ms (same tolerance as Corecen's HMAC middleware).
@@ -163,9 +163,9 @@ class Settings(BaseSettings):
     CRM_API_IP_ALLOWLIST: str = ""
 
     # Corecen Broker API (A-Book trade forwarding). When an A-Book user opens/closes
-    # a position, FXArtha pushes the trade to Corecen's broker API for LP routing.
+    # a position, Ezymax pushes the trade to Corecen's broker API for LP routing.
     # These credentials are the API key/secret registered in Corecen's admin panel
-    # for the FXArtha broker account.
+    # for the Ezymax broker account.
     CORECEN_BROKER_API_URL: str = ""       # e.g. https://api.corecen.com
     CORECEN_BROKER_API_KEY: str = ""       # ck_... from Corecen broker API keys
     CORECEN_BROKER_API_SECRET: str = ""    # cs_... from Corecen broker API keys
@@ -198,7 +198,7 @@ class Settings(BaseSettings):
     NOWPAYMENTS_API_KEY: str = ""
     NOWPAYMENTS_IPN_SECRET: str = ""    # IPN HMAC secret from dashboard
     NOWPAYMENTS_SANDBOX: bool = False
-    NOWPAYMENTS_CALLBACK_BASE_URL: str = ""  # e.g. "https://api.fxartha.com"
+    NOWPAYMENTS_CALLBACK_BASE_URL: str = ""  # e.g. "https://api.ezymex.com"
 
     # Didit identity verification (KYC + AML).
     # Contract confirmed against the live API before this was written:
@@ -222,7 +222,7 @@ class Settings(BaseSettings):
     TRONGRID_API_KEY: str = ""         # https://www.trongrid.io
     ALCHEMY_API_URL: str = ""          # full URL incl key, e.g. https://eth-mainnet.g.alchemy.com/v2/<KEY>
     BSC_RPC_URL: str = ""              # public default fallback used if blank
-    # BSC testnet RPC for the FXArthaVaultV1 testnet deploy. Falls back
+    # BSC testnet RPC for the EzymaxVaultV1 testnet deploy. Falls back
     # to the public binance.org seed if blank. Used by the bscscan vault
     # event verifier to fetch eth_blockNumber for confirmations.
     BSC_TESTNET_RPC_URL: str = ""
@@ -249,7 +249,7 @@ _LEGACY_DEFAULT_JWT_SECRETS = {
 _KNOWN_WEAK_ADMIN_PASSWORDS = {
     # Historical default that shipped with .env.example for a while.
     # Any deployment still using this in 2026+ is effectively unpassworded.
-    "FXArthaAdmin2025!",
+    "EzymaxAdmin2025!",
     "admin",
     "password",
     "changeme",
@@ -281,7 +281,7 @@ def _assert_production_secrets(s: Settings) -> None:
         # Dev hygiene: warn but don't refuse to boot — local devs need
         # the convenience of running with no env file at all.
         import logging
-        log = logging.getLogger("fxartha.config")
+        log = logging.getLogger("ezymax.config")
         if weak_jwt:
             log.warning(
                 "Using empty/weak/default JWT secrets for: %s. Acceptable for "
@@ -307,7 +307,7 @@ def _assert_production_secrets(s: Settings) -> None:
             + ", ".join(bad)
             + ". Generate strong JWT secrets with `openssl rand -hex 32` and "
             "a strong ADMIN_PASSWORD with `openssl rand -base64 24`, then "
-            "set them in /opt/fxartha/.env before deploying. If this is a "
+            "set them in /opt/ezymax/.env before deploying. If this is a "
             "local dev box, set ENVIRONMENT=development."
         )
 

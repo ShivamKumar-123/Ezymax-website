@@ -50,7 +50,7 @@ const config: Config = {
           bg: 'rgba(239,68,68,0.1)',
           glow: 'rgba(239,68,68,0.2)',
         },
-        accent: { DEFAULT: '#ccff00', light: '#eaff8a', dark: '#a6d600' },
+        accent: { DEFAULT: '#1E88FF', light: '#7CC9FF', dark: '#0B5BD3' },
         success: '#9b7d3a',
         warning: '#FFB300',
         info: '#29B6F6',
@@ -64,16 +64,16 @@ const config: Config = {
           purple: '#9775FA',
           pink: '#F06595',
         },
-        /* Landing-page palette — FXArtha gold-on-black brand */
+        /* Landing-page palette — Ezymax gold-on-black brand */
         'primary': {
           bg: '#08090b',
           secondary: '#101114',
-          accent: '#ccff00',
+          accent: '#1E88FF',
           purple: '#9b7d3a',
         },
       },
       backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, #eaff8a 0%, #ccff00 50%, #a6d600 100%)',
+        'gradient-primary': 'linear-gradient(135deg, #7CC9FF 0%, #1E88FF 50%, #0B5BD3 100%)',
         'gradient-hero': 'linear-gradient(135deg, #08090b 0%, #0e0d09 50%, #08090b 100%)',
         'gradient-section': 'linear-gradient(180deg, #08090b 0%, #101114 100%)',
         'gradient-section-alt': 'linear-gradient(180deg, #101114 0%, #08090b 100%)',

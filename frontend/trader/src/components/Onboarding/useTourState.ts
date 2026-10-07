@@ -112,7 +112,7 @@ export function useTourState(): void {
       allowClose: true,
       stagePadding: 6,
       stageRadius: 8,
-      popoverClass: 'fxartha-tour',
+      popoverClass: 'ezymax-tour',
       nextBtnText: 'Next',
       prevBtnText: 'Back',
       doneBtnText: 'Done',
@@ -124,7 +124,7 @@ export function useTourState(): void {
         const skip = document.createElement('button');
         skip.type = 'button';
         skip.innerText = 'Skip tour';
-        skip.className = 'fxartha-tour__skip';
+        skip.className = 'ezymax-tour__skip';
         skip.onclick = () => drv.destroy();
         popover.footerButtons.prepend(skip);
       },

@@ -325,7 +325,7 @@ class MarketDataService:
                         "the aggregator / TimescaleDB.", age,
                     )
                     await self._email_ops(
-                        "🔴 FXArtha: durable chart-history write STALLED",
+                        "🔴 Ezymax: durable chart-history write STALLED",
                         f"No OHLC bar has been persisted for {age:.0f}s while live "
                         f"ticks are flowing (threshold {int(DURABLE_STALE_SEC)}s).<br>"
                         f"Chart history is freezing — inspect the market-data "
@@ -335,7 +335,7 @@ class MarketDataService:
                     self._durable_alert_active = False
                     logger.info("✅ Durable OHLC write recovered (age %.0fs).", age)
                     await self._email_ops(
-                        "✅ FXArtha: durable chart-history write recovered",
+                        "✅ Ezymax: durable chart-history write recovered",
                         f"Durable OHLC persistence is writing again "
                         f"(last write {age:.0f}s ago).",
                     )

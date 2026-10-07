@@ -1,6 +1,6 @@
-# Deploying FXArtha
+# Deploying Ezymax
 
-Production runs on a single host at `/opt/fxartha`, as Docker Compose services
+Production runs on a single host at `/opt/ezymax`, as Docker Compose services
 behind nginx. `deploy.sh` does the work; the GitHub Actions workflow is a
 trigger and an audit trail around it.
 
@@ -40,7 +40,7 @@ picks the moment.
 By hand on the host, identically:
 
 ```bash
-cd /opt/fxartha
+cd /opt/ezymax
 ./deploy/deploy.sh                  # origin/main
 ./deploy/deploy.sh v1.4.2           # a tag
 FORCE_ALL=1 ./deploy/deploy.sh      # rebuild everything
@@ -50,35 +50,35 @@ FORCE_ALL=1 ./deploy/deploy.sh      # rebuild everything
 
 **1. Deploy key — lets the server pull without a personal token.**
 
-The keypair is already generated at `/root/.ssh/fxartha_deploy`. Add the public
+The keypair is already generated at `/root/.ssh/ezymax_deploy`. Add the public
 half to GitHub → repo **Settings → Deploy keys → Add deploy key**, read-only:
 
 ```bash
-ssh root@<host> cat /root/.ssh/fxartha_deploy.pub
+ssh root@<host> cat /root/.ssh/ezymax_deploy.pub
 ```
 
 Confirm it works:
 
 ```bash
-ssh root@<host> 'cd /opt/fxartha && git fetch origin && echo OK'
+ssh root@<host> 'cd /opt/ezymax && git fetch origin && echo OK'
 ```
 
 **2. Actions → server key.**
 
-Generated at `/root/.ssh/fxartha_ci`, and its public half is already in the
+Generated at `/root/.ssh/ezymax_ci`, and its public half is already in the
 server's `authorized_keys`. Put the **private** half in GitHub → **Settings →
 Secrets and variables → Actions**, as `DEPLOY_SSH_KEY`. Read it in your own
 terminal and paste it — never through a chat window or an issue:
 
 ```bash
-ssh root@<host> cat /root/.ssh/fxartha_ci
+ssh root@<host> cat /root/.ssh/ezymax_ci
 ```
 
 Add alongside it:
 
 | Secret | Value |
 | --- | --- |
-| `DEPLOY_SSH_KEY` | contents of `/root/.ssh/fxartha_ci` (the private key) |
+| `DEPLOY_SSH_KEY` | contents of `/root/.ssh/ezymax_ci` (the private key) |
 | `DEPLOY_HOST` | the server's IP or hostname |
 | `DEPLOY_USER` | `root` |
 

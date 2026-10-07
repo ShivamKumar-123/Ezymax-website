@@ -84,7 +84,7 @@ async def send_due_reminders(db: AsyncSession) -> int:
     now = datetime.now(timezone.utc)
     threshold_3d = now - timedelta(days=3)
     threshold_7d = now - timedelta(days=7)
-    app_url = (get_settings().TRADER_APP_URL or "https://trade.fxartha.com")
+    app_url = (get_settings().TRADER_APP_URL or "https://trade.ezymex.com")
 
     candidates = (await db.execute(
         select(User).where(

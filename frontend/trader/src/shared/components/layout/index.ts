@@ -1,7 +1,7 @@
 /**
  * App shell / chrome components.
- * Import as: import { DashboardShell, FXArthaWordmark } from '@/shared/components/layout';
+ * Import as: import { DashboardShell, EzymaxWordmark } from '@/shared/components/layout';
  */
 
-export { FXArthaWordmark } from '@/components/layout/FXArthaWordmark';
+export { EzymaxWordmark } from '@/components/layout/EzymaxWordmark';
 export { default as DashboardShell } from '@/components/layout/DashboardShell';

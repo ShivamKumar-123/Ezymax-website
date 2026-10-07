@@ -1094,7 +1094,7 @@ class CrmRevenuePeriod(BaseModel):
     """
     commission: float = 0
     swap: float = 0
-    spread: float = 0                # always 0 — FXArtha bakes spread into the fill price
+    spread: float = 0                # always 0 — Ezymax bakes spread into the fill price
     brokerage_total: float = 0       # commission + swap
     trading_pnl: float = 0           # −(customers' realized P&L); can be negative
     ib_commission: float = 0         # paid out to IBs in this window
@@ -1175,7 +1175,7 @@ class CrmCustomerRow(BaseModel):
     source: Optional[str] = None
     assigned_rm: Optional[str] = None
     # Customer
-    broker: str = "FXArtha"
+    broker: str = "Ezymax"
     account_number: Optional[str] = None
     account_type: Optional[str] = None
     currency: Optional[str] = None
@@ -1396,7 +1396,7 @@ class CrmRewardItem(BaseModel):
 
 
 class CrmProducts(BaseModel):
-    """Full FXArtha product catalogue with pricing — one call for the CRM."""
+    """Full Ezymax product catalogue with pricing — one call for the CRM."""
     account_types: list[CrmAccountType] = []
     instruments: list[CrmInstrument] = []
     staking_plans: list[CrmStakingPlan] = []

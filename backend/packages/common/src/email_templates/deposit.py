@@ -18,7 +18,7 @@ def render_deposit_confirmed(
     method: str | None = None,
     reference: str | None = None,
     new_balance: Decimal | float | None = None,
-    trader_app_url: str = "https://trade.fxartha.com",
+    trader_app_url: str = "https://trade.ezymex.com",
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     rows: list[tuple[str, str]] = [
@@ -40,7 +40,7 @@ def render_deposit_confirmed(
         cta_label="View Wallet",
         cta_url=f"{trader_app_url.rstrip('/')}/wallet",
         footer_note=(
-            "If you didn't make this deposit, contact support@fxartha.com immediately."
+            "If you didn't make this deposit, contact support@ezymex.com immediately."
         ),
     )
     text_lines = [
@@ -60,6 +60,6 @@ def render_deposit_confirmed(
         "",
         f"View your wallet: {trader_app_url.rstrip('/')}/wallet",
         "",
-        "Didn't make this deposit? Email support@fxartha.com immediately.",
+        "Didn't make this deposit? Email support@ezymex.com immediately.",
     ]
     return subject, html, "\n".join(text_lines)

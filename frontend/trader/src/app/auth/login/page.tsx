@@ -217,7 +217,7 @@ export default function LoginPage() {
             <div className="auth-left__mandala" aria-hidden="true" />
             <div className="auth-left__content">
               <motion.a className="auth-brand" href="/" {...fadeUp(0.15)}>
-                <img src="/images/fxartha-logo.png" alt="FXArtha" />
+                <img src="/images/ezymax-logo.png" alt="Ezymax" />
               </motion.a>
 
               <div>

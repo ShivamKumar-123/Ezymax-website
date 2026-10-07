@@ -163,7 +163,7 @@ export const ParticleCanvas = () => {
 
       // Progress is scoped to the experience height (EXPERIENCE_SCREENS), not
       // the whole page, so the full morph resolves within the intro block and
-      // the FX Artha content sections below scroll normally afterwards.
+      // the Ezymax content sections below scroll normally afterwards.
       const scrollTop =
         document.documentElement.scrollTop || document.body.scrollTop;
       const expHeight = window.innerHeight * EXPERIENCE_SCREENS;

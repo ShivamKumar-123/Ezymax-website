@@ -1,11 +1,11 @@
-/* FXArtha PWA service worker — deliberately conservative.
+/* Ezymax PWA service worker — deliberately conservative.
  *
  * NETWORK-FIRST for everything: while online every request hits the network,
  * so users always get fresh JS chunks (no stale-bundle errors after a deploy)
  * and live prices. The cache is only a fallback when the network fails, giving
  * a basic offline shell + Android installability. API / auth / websocket
  * traffic is never touched. */
-const CACHE = 'fxartha-shell-v1';
+const CACHE = 'ezymax-shell-v1';
 
 self.addEventListener('install', () => {
   self.skipWaiting();

@@ -51,7 +51,7 @@ def upgrade() -> None:
     #    that someone has to ship physical goods or coordinate the trip.
     seeds = [
         ("lifestyle_merch_50k",         "Branded Merchandise",
-         "Premium FXArtha branded merchandise pack (cap, t-shirt, accessories).",
+         "Premium Ezymax branded merchandise pack (cap, t-shirt, accessories).",
          5_000,    50_000),
         ("lifestyle_earbuds_150k",       "Wireless Earbuds",
          "Premium wireless earbuds, shipped to your KYC address.",

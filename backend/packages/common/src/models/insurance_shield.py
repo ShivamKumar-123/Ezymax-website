@@ -1,6 +1,6 @@
-"""FXArtha Shield — aggregate, period-based trade insurance.
+"""Ezymax Shield — aggregate, period-based trade insurance.
 
-This is the model from the *FXArtha Trade Insurance* handbook: the user buys a
+This is the model from the *Ezymax Trade Insurance* handbook: the user buys a
 single **period plan** (Daily / Weekly / Monthly) at one of four tiers, and the
 plan pays a share of the user's **cumulative eligible realized loss** over that
 period, up to a fixed cap:

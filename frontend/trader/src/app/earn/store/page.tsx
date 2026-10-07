@@ -109,9 +109,9 @@ function Inner() {
       <header className="flex items-center gap-3">
         <div
           className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+          style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
         >
-          <ShoppingBag className="w-5 h-5 text-[#ccff00]" />
+          <ShoppingBag className="w-5 h-5 text-[#1E88FF]" />
         </div>
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-text-primary">Rewards Store</h1>
@@ -123,23 +123,23 @@ function Inner() {
       <div
         className="rounded-2xl border relative overflow-hidden transition-all duration-300 pl-5"
         style={{
-          background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.12), transparent 55%), var(--bg-card)',
-          borderColor: 'rgba(204,255,0,0.16)',
+          background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.12), transparent 55%), var(--bg-card)',
+          borderColor: 'rgba(30,136,255,0.16)',
           boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
         }}
       >
         <div
           className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
-          style={{ background: 'linear-gradient(180deg, #eaff8a, #ccff00 55%, #a6d600)', boxShadow: '0 0 14px rgba(204,255,0,0.5)' }}
+          style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
         />
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* AC balance */}
           <div className="flex items-center gap-3">
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+              style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
             >
-              <Coins className="w-5 h-5 text-[#ccff00]" />
+              <Coins className="w-5 h-5 text-[#1E88FF]" />
             </div>
             <div>
               <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Coin Balance</p>
@@ -152,9 +152,9 @@ function Inner() {
           <div className="flex items-center gap-3 sm:justify-end">
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+              style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
             >
-              <Sparkles className="w-5 h-5 text-[#ccff00]" />
+              <Sparkles className="w-5 h-5 text-[#1E88FF]" />
             </div>
             <div>
               <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Power Score</p>
@@ -176,7 +176,7 @@ function Inner() {
             className={
               'px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ' +
               (tab === t.key
-                ? 'bg-[#ccff00] text-[#0a0a0a]'
+                ? 'bg-[#1E88FF] text-[#0a0a0a]'
                 : 'text-text-secondary hover:text-text-primary')
             }
           >
@@ -212,21 +212,21 @@ function Inner() {
                 key={it.id}
                 className="rounded-2xl border relative overflow-hidden transition-all duration-300 hover:-translate-y-1 flex flex-col"
                 style={{
-                  background: 'radial-gradient(130% 120% at 95% -25%, rgba(204,255,0,0.10), transparent 55%), var(--bg-card)',
-                  borderColor: 'rgba(204,255,0,0.16)',
+                  background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)',
+                  borderColor: 'rgba(30,136,255,0.16)',
                   boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
                 }}
               >
                 {/* Icon / image area */}
                 <div
                   className="relative h-24 flex items-center justify-center"
-                  style={{ background: 'radial-gradient(120% 140% at 50% -20%, rgba(204,255,0,0.14), transparent 60%)' }}
+                  style={{ background: 'radial-gradient(120% 140% at 50% -20%, rgba(30,136,255,0.14), transparent 60%)' }}
                 >
                   <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                    style={{ background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.25)' }}
+                    style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
                   >
-                    <CatIcon className="w-7 h-7 text-[#ccff00]" />
+                    <CatIcon className="w-7 h-7 text-[#1E88FF]" />
                   </div>
                   <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wider text-text-tertiary bg-bg-secondary/70 border border-border-primary rounded-full px-2 py-0.5">
                     {it.category}
@@ -239,7 +239,7 @@ function Inner() {
                     <h3 className="text-sm font-semibold text-text-primary leading-snug">{it.label}</h3>
                     <span
                       className="shrink-0 inline-flex items-center gap-1 text-xs font-bold tabular-nums px-2 py-1 rounded-lg"
-                      style={{ background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.22)', color: 'var(--accent-ink)' }}
+                      style={{ background: 'rgba(30,136,255,0.10)', border: '1px solid rgba(30,136,255,0.22)', color: 'var(--accent-ink)' }}
                     >
                       <Coins className="w-3 h-3" />
                       {formatInteger(it.ac_price)}
@@ -267,7 +267,7 @@ function Inner() {
                     className={
                       'mt-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ' +
                       (canRedeem
-                        ? 'bg-[#ccff00] hover:bg-[#a6d600] text-[#0a0a0a] active:scale-[0.98] disabled:opacity-60'
+                        ? 'bg-[#1E88FF] hover:bg-[#0B5BD3] text-[#0a0a0a] active:scale-[0.98] disabled:opacity-60'
                         : 'border border-border-primary text-text-tertiary cursor-not-allowed')
                     }
                   >

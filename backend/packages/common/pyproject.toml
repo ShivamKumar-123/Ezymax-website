@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "fxartha-common"
+name = "ezymax-common"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
@@ -26,7 +26,7 @@ dependencies = [
     "slowapi>=0.1.9",
     # eth-utils provides keccak256 (Ethereum-flavoured, NOT NIST SHA-3)
     # used by chain_clients/bscscan.py to compute event topic hashes
-    # for the FXArthaVaultV1 event-decoded verification path. Tiny pure-
+    # for the EzymaxVaultV1 event-decoded verification path. Tiny pure-
     # Python lib (~1MB), well-maintained, transitive dep of most Ethereum
     # tooling.
     "eth-utils>=4.0.0",

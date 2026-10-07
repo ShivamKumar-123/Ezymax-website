@@ -1,4 +1,4 @@
-"""Admin endpoints for FXArtha Shield — aggregate period-plan insurance.
+"""Admin endpoints for Ezymax Shield — aggregate period-plan insurance.
 
 Separate from the per-trade insurance admin in `insurance.py`. Lets admins
 edit the plan catalog (coverage / cap / premium / active) and view the reserve

@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
-  title: 'FXArtha — IB Partner Portal',
+  title: 'Ezymax — IB Partner Portal',
   description: 'Introducing Broker partner portal',
 };
 

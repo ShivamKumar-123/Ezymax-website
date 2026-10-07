@@ -28,7 +28,7 @@ let _config: ReturnType<typeof getDefaultConfig> | null = null;
 export function getWagmiConfig() {
   if (_config) return _config;
   _config = getDefaultConfig({
-    appName: 'FXArtha',
+    appName: 'Ezymax',
     // RainbowKit requires a non-empty project id at build time. We pass a
     // dummy when the env var is unset so the bundle still compiles; the
     // WalletDepositModal checks isWalletConnectConfigured() before mounting

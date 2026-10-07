@@ -1,4 +1,4 @@
-"""Rewards engine — XP / Artha Coins / Power Score, missions, store, leaderboard.
+"""Rewards engine — XP / Ezymax Coins / Power Score, missions, store, leaderboard.
 
 Mission progress is incremented by call sites (e.g. trading_service.close_position
 calls `mark_progress(user_id, "place_trades", 1, db)`). Users claim rewards
@@ -835,7 +835,7 @@ async def _maybe_send_tier_upgrade_email(
         return
     from packages.common.src.email_templates import render_tier_upgraded
     from packages.common.src.config import get_settings as _gs
-    app_url = (_gs().TRADER_APP_URL or "https://trade.fxartha.com")
+    app_url = (_gs().TRADER_APP_URL or "https://trade.ezymex.com")
     prev_label = LEVEL_LABELS[old_level - 1] if 0 < old_level <= len(LEVEL_LABELS) else None
     perks = [
         "Higher daily mission caps",
@@ -865,7 +865,7 @@ async def _send_mission_email(db: AsyncSession, user_id, mission: "RewardsMissio
         return
     from packages.common.src.email_templates import render_mission_completed
     from packages.common.src.config import get_settings as _gs
-    app_url = (_gs().TRADER_APP_URL or "https://trade.fxartha.com")
+    app_url = (_gs().TRADER_APP_URL or "https://trade.ezymex.com")
     title = (mission.title or mission.slug or "Mission").strip()
     subject, html, text = render_mission_completed(
         first_name=user.first_name,
