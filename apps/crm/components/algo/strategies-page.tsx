@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, Archive, Code2, FlaskConical, LayoutGrid, Loader2, Play, Plus, Rocket, Save, Workflow } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Menu, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Menu, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, cn } from "@/components/kit";
 import { MoreHorizontal } from "lucide-react";
 import { tr, useT } from "@kalks/i18n/react";
 import { AiAssistant } from "./ai-chat";

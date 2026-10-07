@@ -25,7 +25,7 @@ import {
   Reveal,
   cn,
   formatMoney,
-} from "@kalks/ui";
+} from "@/components/kit";
 import {
   fmtLots,
   fmtPct,
@@ -37,7 +37,7 @@ import {
 import { useT } from "@kalks/i18n/react";
 import { CardEmpty, PageFallback, SkeletonGrid, TierChip } from "./ui";
 
-const TIER_COLORS = ["#ff5a1f", "#e9b949", "#22c55e", "#38bdf8", "#a1a1aa"];
+const TIER_COLORS = ["var(--k-ember)", "#e9b949", "#22c55e", "#38bdf8", "#a1a1aa"];
 
 type Tree = {
   kids: Map<number, NetworkNode[]>;
@@ -128,7 +128,7 @@ function NodeStats({ items }: { items: [string, React.ReactNode][] }) {
     <div className="hidden items-center gap-5 md:flex">
       {items.map(([k, v]) => (
         <div key={k} className="text-end">
-          <div className="text-[10.5px] uppercase tracking-wider text-fg-3">
+          <div className="text-[11.5px] text-fg-3">
             {k}
           </div>
           <div className="k-num text-[13px] font-medium">{v}</div>
@@ -397,7 +397,7 @@ function TierCard({
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">
+            <div className="text-[12px] text-fg-3">
               {t("partner.network.people")}
             </div>
             <div className="k-num mt-0.5 text-[20px] font-semibold">
@@ -405,7 +405,7 @@ function TierCard({
             </div>
           </div>
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">
+            <div className="text-[12px] text-fg-3">
               {t("partner.lots")}
             </div>
             <div className="k-num mt-0.5 text-[20px] font-semibold">
@@ -418,7 +418,7 @@ function TierCard({
             </div>
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">
+            <div className="text-[12px] text-fg-3">
               {t("partner.network.toYou")}
             </div>
             <Money

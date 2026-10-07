@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, ChevronsDownUp, ChevronsUpDown, Infinity as InfinityIcon, Network, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, Donut, Flag, Icon3D, Money, PageHeader, Progress, Reveal, cn, formatMoney } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, Donut, Flag, Icon3D, Money, PageHeader, Progress, Reveal, cn, formatMoney } from "@/components/kit";
 import { ME } from "@kalks/mock";
 import { PARTNER, REFERRED_CLIENTS, TIERS, type ReferredClient } from "@kalks/mock/partner";
 import { TierChip } from "@/components/partner/partner-bits";
@@ -58,7 +58,7 @@ function NodeStats({ items }: { items: [string, React.ReactNode][] }) {
     <div className="hidden items-center gap-5 md:flex">
       {items.map(([k, v]) => (
         <div key={k} className="text-right">
-          <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
+          <div className="text-[11.5px] text-fg-3">{k}</div>
           <div className="k-num text-[13px] font-medium">{v}</div>
         </div>
       ))}
@@ -210,17 +210,17 @@ function TierCard({ tier, delay }: { tier: (typeof TIERS)[number]; delay: number
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">Clients</div>
+            <div className="text-[12px] text-fg-3">Clients</div>
             <div className="k-num mt-0.5 text-[20px] font-semibold">{list.length}</div>
             <div className="text-[11px] text-fg-3">{ibs ? `${ibs} sub-IBs` : " "}</div>
           </div>
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">Lots · Sep</div>
+            <div className="text-[12px] text-fg-3">Lots · Sep</div>
             <div className="k-num mt-0.5 text-[20px] font-semibold">{lots.toFixed(1)}</div>
             <div className="k-num text-[11px] text-fg-3">{share.toFixed(1)}% of network</div>
           </div>
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">To you</div>
+            <div className="text-[12px] text-fg-3">To you</div>
             <Money value={comm} decimals={0} className="mt-0.5 block text-[20px] font-semibold text-up" />
             <div className="text-[11px] text-fg-3">lifetime</div>
           </div>
@@ -312,7 +312,7 @@ function DemoPartnerNetworkPage() {
                 <Donut
                   size={160}
                   thickness={18}
-                  data={TIERS.map((t, i) => ({ label: `L${t.tier}`, value: tierLots[i]!, color: ["#ff5a1f", "#e9b949", "#22c55e"][i] }))}
+                  data={TIERS.map((t, i) => ({ label: `L${t.tier}`, value: tierLots[i]!, color: ["var(--k-ember)", "#e9b949", "#22c55e"][i] }))}
                   center={
                     <div>
                       <div className="k-num text-[20px] font-semibold">{PARTNER.monthlyLots.toFixed(0)}</div>
@@ -323,7 +323,7 @@ function DemoPartnerNetworkPage() {
                 <div className="w-full flex-1 space-y-2">
                   {TIERS.map((t, i) => (
                     <div key={t.tier} className="k-row flex items-center gap-3 px-3.5 py-2">
-                      <span className="size-2.5 rounded-full" style={{ background: ["#ff5a1f", "#e9b949", "#22c55e"][i] }} />
+                      <span className="size-2.5 rounded-full" style={{ background: ["var(--k-ember)", "#e9b949", "#22c55e"][i] }} />
                       <span className="flex-1 text-[12.5px]">Tier {t.tier}</span>
                       <span className="k-num text-[12.5px] font-medium">{tierLots[i]!.toFixed(1)}</span>
                       <span className="k-num w-12 text-right text-[11.5px] text-fg-3">{((tierLots[i]! / PARTNER.monthlyLots) * 100).toFixed(1)}%</span>

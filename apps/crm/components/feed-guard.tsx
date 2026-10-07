@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardHeader, useFeedMode } from "@kalks/ui";
+import { Card, CardHeader, useFeedMode } from "@/components/kit";
 import { IS_DEMO } from "@kalks/mock";
 
 /**

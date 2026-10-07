@@ -4,7 +4,7 @@ import * as React from "react";
 import { AlertTriangle, ArrowLeft, ArrowRight, Building2, Check, FileText, IdCard, Lock, Plus, ScanFace, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Field, Input, PageHeader, Reveal, Skeleton, Stepper, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Field, Input, PageHeader, Reveal, Skeleton, Stepper, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { COUNTRIES, maxDob } from "@/lib/countries";
 import { useSession } from "@/components/session";

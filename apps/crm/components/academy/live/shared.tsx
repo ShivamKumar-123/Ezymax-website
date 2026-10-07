@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, BarChart3, BookOpen, ChartSpline, Check, ChevronLeft, Landmark, Lock, RotateCw, type LucideIcon } from "lucide-react";
-import { Button, Card, EmptyState, Skeleton, cn } from "@kalks/ui";
+import { Button, Card, EmptyState, Skeleton, cn } from "@/components/kit";
 import { useAccounts, openTerminal } from "@/components/trading/api";
 import { TERMINAL_URL } from "@/lib/live";
 import { useT } from "@kalks/i18n/react";

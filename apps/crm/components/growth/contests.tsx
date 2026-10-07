@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowUpRight, CalendarDays, Check, ChevronRight, Gift, Loader2, Medal, ShieldAlert, Timer, Trophy, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, DialogClose, Flag, Icon3D, Illustration, KeyValue, KpiCard, Money, PageHeader, Reveal, cn, type Column } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, DialogClose, Flag, Icon3D, Illustration, KeyValue, KpiCard, Money, PageHeader, Reveal, cn, type Column } from "@/components/kit";
 import { TERMINAL_URL } from "@/lib/live";
 import { Countdown } from "@/components/rewards/countdown";
 import { tr, useT } from "@kalks/i18n/react";
@@ -444,11 +444,11 @@ export function PrizeCard({ c }: { c: Contest }) {
       </div>
       <div className="grid grid-cols-2 gap-2 border-t border-line px-4 py-4 sm:px-6">
         <div className="k-row px-3 py-2.5">
-          <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.prize.pool")}</div>
+          <div className="text-[11.5px] text-fg-3">{t("rewards.prize.pool")}</div>
           <div className="k-num mt-0.5 text-[13px] font-medium text-gold">{fmtUsd(c.prizePool, 0)}</div>
         </div>
         <div className="k-row px-3 py-2.5">
-          <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.prize.minTrades")}</div>
+          <div className="text-[11.5px] text-fg-3">{t("rewards.prize.minTrades")}</div>
           <div className="k-num mt-0.5 text-[13px] font-medium">{c.minTrades || t("rewards.prize.none")}</div>
         </div>
       </div>
@@ -545,15 +545,15 @@ function ContestHero({ c, d, onJoined }: { c: ContestCard; d: ContestDetail | nu
                 </div>
                 <div className="mt-5 grid grid-cols-3 gap-2">
                   <div className="k-row px-3 py-3">
-                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.hero.rank")}</div>
+                    <div className="text-[11.5px] text-fg-3">{t("rewards.hero.rank")}</div>
                     <div className="k-num mt-1 text-[20px] font-semibold leading-none">{me.rank ? `#${me.rank}` : "—"}</div>
                   </div>
                   <div className="k-row px-3 py-3">
-                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{scoringLabel(c.scoring)}</div>
+                    <div className="text-[11.5px] text-fg-3">{scoringLabel(c.scoring)}</div>
                     <div className={cn("k-num mt-1 text-[17px] font-semibold leading-none", scoreTone(c, me))}>{scoreText(c, me)}</div>
                   </div>
                   <div className="k-row px-3 py-3">
-                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.hero.trades")}</div>
+                    <div className="text-[11.5px] text-fg-3">{t("rewards.hero.trades")}</div>
                     <div className="k-num mt-1 text-[20px] font-semibold leading-none">{me.trades}</div>
                   </div>
                 </div>
@@ -624,7 +624,7 @@ function ContestTile({ c, onJoined }: { c: ContestCard; onJoined: () => void }) 
         </div>
         <div className="mt-3 flex items-end justify-between gap-3">
           <div>
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.tile.prizePool")}</div>
+            <div className="text-[11.5px] text-fg-3">{t("rewards.tile.prizePool")}</div>
             <div className="k-num text-[24px] font-semibold leading-tight text-gold">{fmtUsd(c.prizePool, 0)}</div>
           </div>
           {!past && (

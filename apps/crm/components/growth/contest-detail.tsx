@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, Check, ListChecks, ShieldAlert, Timer, Trophy, Users } from "lucide-react";
-import { Button, Card, CardHeader, Chip, KeyValue, Money, PageHeader, Reveal, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, KeyValue, Money, PageHeader, Reveal, cn } from "@/components/kit";
 import { TERMINAL_URL } from "@/lib/live";
 import { Countdown } from "@/components/rewards/countdown";
 import { useT } from "@kalks/i18n/react";
@@ -14,7 +14,7 @@ import { CardEmpty, GrowthStatus, PageFallback, RankBadge } from "./ui";
 function Stat({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
   return (
     <div className="k-row px-3.5 py-3">
-      <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{label}</div>
+      <div className="text-[11.5px] text-fg-3">{label}</div>
       <div className={cn("k-num mt-1 text-[18px] font-semibold leading-none", className)}>{value}</div>
     </div>
   );

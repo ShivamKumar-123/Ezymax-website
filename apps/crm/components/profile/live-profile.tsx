@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Bell, CalendarDays, ChevronRight, IdCard, KeyRound, Lock, Mail, Phone, ShieldCheck, UserRound } from "lucide-react";
-import { Avatar, Button, Card, CardHeader, Chip, Flag, PageHeader, Reveal } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, Flag, PageHeader, Reveal } from "@/components/kit";
 import { ChangePasswordCard } from "@/components/profile/change-password";
 import { KYC_CHIP, useSession } from "@/components/session";
 import { SUPPORT_EMAIL } from "@/lib/live";
@@ -91,7 +91,7 @@ export function LiveProfile() {
                 [t("common.email"), me.email_verified ? t("common.verified") : t("common.unverified")],
               ].map(([k, v]) => (
                 <div key={k} className="rounded-2xl border border-line bg-surface/40 px-4 py-3">
-                  <div className="text-[11px] uppercase tracking-wider text-fg-3">{k}</div>
+                  <div className="text-[12px] text-fg-3">{k}</div>
                   <div className="k-num mt-1 font-mono text-sm font-semibold">{v}</div>
                 </div>
               ))}

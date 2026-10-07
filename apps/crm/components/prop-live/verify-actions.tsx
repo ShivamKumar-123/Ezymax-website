@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { Download, Link2 } from "lucide-react";
-import { Button } from "@kalks/ui";
+import { Button } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 
 /** Copy-link and download buttons on the public verify page. */

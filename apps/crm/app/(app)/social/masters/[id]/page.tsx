@@ -29,8 +29,8 @@ import {
   cn,
   formatCompact,
   type Column,
-} from "@kalks/ui";
-import type { SeriesPoint } from "@kalks/ui";
+} from "@/components/kit";
+import type { SeriesPoint } from "@/components/kit";
 import {
   PAMM_FUNDS,
   SOCIAL_POLICY,
@@ -50,7 +50,7 @@ import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
 import { LiveMasterProfilePage } from "@/components/social-live/master-profile";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const DONUT_COLORS = ["#ff5a1f", "#e9b949", "#22c55e", "#38bdf8", "#a1a1aa"];
+const DONUT_COLORS = ["var(--k-ember)", "#e9b949", "#22c55e", "#38bdf8", "#a1a1aa"];
 const RANGES = { "1M": 30, "3M": 90, "6M": 180, "1Y": 365, ALL: 99999 } as const;
 
 function fmtD(iso: string) {
@@ -112,7 +112,7 @@ function StatsCard({ m }: { m: Master }) {
       <div className="grid grid-cols-2 gap-2 px-4 pb-5 sm:px-6">
         {stats.map(([k, v]) => (
           <div key={k} className="k-row px-3.5 py-2.5">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">{k}</div>
+            <div className="text-[12px] text-fg-3">{k}</div>
             <div className="k-num mt-0.5 text-[14.5px] font-medium">{v}</div>
           </div>
         ))}
@@ -182,7 +182,7 @@ function MonthlyCard({ m }: { m: Master }) {
               ["Avg. month", `${(rets.reduce((a, b) => a + b, 0) / rets.length).toFixed(2)}%`, "arithmetic mean", "text-fg"],
             ].map(([k, v, sub, cls]) => (
               <div key={k} className="k-row px-3.5 py-2.5">
-                <div className="text-[11px] uppercase tracking-wider text-fg-3">{k}</div>
+                <div className="text-[12px] text-fg-3">{k}</div>
                 <div className={cn("k-num mt-0.5 text-[16px] font-semibold", cls)}>{v}</div>
                 <div className="text-[11px] text-fg-3">{sub}</div>
               </div>

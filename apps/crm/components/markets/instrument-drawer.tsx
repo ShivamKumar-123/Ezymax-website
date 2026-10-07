@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Bell, CandlestickChart, Star } from "lucide-react";
-import { Button, Chip, Delta, Dialog, EquityChart, IconButton, PriceText, Segmented, SymbolAvatar, cn, formatNumber, useFeedMode, useQuote } from "@kalks/ui";
+import { Button, Chip, Delta, Dialog, EquityChart, IconButton, PriceText, Segmented, SymbolAvatar, cn, formatNumber, useFeedMode, useQuote } from "@/components/kit";
 import { ASSET_CLASS_LABEL, IS_DEMO, candles, fetchCandles, getInstrument, isMarketOpen, priceFeed, serverOffset, type Candle, type Instrument } from "@kalks/mock";
 import { CONTRACT_SPECS } from "@kalks/mock/markets-extra";
 import { tr, useT } from "@kalks/i18n/react";
@@ -122,7 +122,7 @@ function Body({ symbol, fav, onFav }: { symbol: string; fav: boolean; onFav: () 
             [t("news.instrument.spec.tripleSwap"), dayName(spec.tripleSwap)]] as [string, React.ReactNode][]),
           ].map(([k, v], i) => (
             <div key={i} className="rounded-xl border border-line bg-surface-2 px-3 py-2">
-              <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
+              <div className="text-[11.5px] text-fg-3">{k}</div>
               <div className="k-num mt-0.5 truncate text-[13px] font-medium">{v}</div>
             </div>
           ))}

@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpFromLine, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, CoinIcon, EmptyState, Field, Illustration, Input, PageHeader, Progress, Skeleton, cn, formatDateTime, shortHash } from "@kalks/ui";
+import { Button, Card, CardHeader, CoinIcon, EmptyState, Field, Illustration, Input, PageHeader, Progress, Skeleton, cn, formatDateTime, shortHash } from "@/components/kit";
 import { Trans, tr, useT } from "@kalks/i18n/react";
 import { useSession } from "@/components/session";
 import { STEPUP_CODES, StepUpDialog } from "@/components/stepup";

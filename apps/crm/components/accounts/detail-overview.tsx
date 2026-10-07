@@ -22,7 +22,7 @@ import {
   formatDateTime,
   formatNumber,
   type SeriesPoint,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { ASSET_CLASS_LABEL, equitySeries, freeMargin, getInstrument, hashString, marginLevel, type ClosedTrade, type TradingAccount } from "@kalks/mock";
 import { PnlCalendar } from "./pnl-calendar";
 import { useFormat, useT } from "@kalks/i18n/react";
@@ -36,7 +36,7 @@ const RANGE_DAYS: Record<(typeof RANGES)[number], number> = { "1W": 7, "1M": 30,
 function StatTile({ label, children, tone, sub }: { label: string; children: React.ReactNode; tone?: "up" | "down" | "warn"; sub?: React.ReactNode }) {
   return (
     <div className="k-row min-w-0 px-4 py-3">
-      <div className="text-[11px] uppercase tracking-wider text-fg-3">{label}</div>
+      <div className="text-[12px] text-fg-3">{label}</div>
       <div className={cn("k-num mt-1 break-words text-[14px] font-semibold leading-snug sm:truncate sm:text-[16px]", tone === "up" && "text-up", tone === "down" && "text-down", tone === "warn" && "text-warn")}>{children}</div>
       {sub && <div className="mt-0.5 truncate text-[11px] text-fg-3">{sub}</div>}
     </div>
@@ -296,7 +296,7 @@ export function PortfolioTab({ a, trades }: { a: TradingAccount; trades: ClosedT
           <Card className="h-full">
             <CardHeader title={t("accountDetail.split.bySymbol")} subtitle={t("accountDetail.split.subtitle")} />
             <div className="flex flex-col items-center gap-5 px-6 pb-6 pt-4 sm:flex-row">
-              <Donut data={bySymbol} size={150} thickness={16} center={<div className="text-center"><div className="k-num text-[18px] font-semibold">{bySymbol.length}</div><div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("accountDetail.split.symbols")}</div></div>} />
+              <Donut data={bySymbol} size={150} thickness={16} center={<div className="text-center"><div className="k-num text-[18px] font-semibold">{bySymbol.length}</div><div className="text-[11.5px] text-fg-3">{t("accountDetail.split.symbols")}</div></div>} />
               <Legend items={bySymbol} total={volTotal} />
             </div>
           </Card>
@@ -305,7 +305,7 @@ export function PortfolioTab({ a, trades }: { a: TradingAccount; trades: ClosedT
           <Card className="h-full">
             <CardHeader title={t("accountDetail.split.byClass")} subtitle={t("accountDetail.split.subtitle")} />
             <div className="flex flex-col items-center gap-5 px-6 pb-6 pt-4 sm:flex-row">
-              <Donut data={byClass} size={150} thickness={16} center={<div className="text-center"><div className="k-num text-[18px] font-semibold">{formatNumber(volTotal, 1)}</div><div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("accountDetail.split.lots")}</div></div>} />
+              <Donut data={byClass} size={150} thickness={16} center={<div className="text-center"><div className="k-num text-[18px] font-semibold">{formatNumber(volTotal, 1)}</div><div className="text-[11.5px] text-fg-3">{t("accountDetail.split.lots")}</div></div>} />
               <Legend items={byClass} total={volTotal} />
             </div>
           </Card>

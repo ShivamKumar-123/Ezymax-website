@@ -5,7 +5,7 @@ import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
 import { LiveSecurity } from "@/components/security/live-security";
 import { KeyRound, Laptop, LogOut, Mail, MonitorSmartphone, ShieldCheck, Smartphone, Globe2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, Field, Flag, Icon3D, Input, PageHeader, Reveal, Toggle, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, Field, Flag, Icon3D, Input, PageHeader, Reveal, Toggle, type Column } from "@/components/kit";
 import { OtpInput, PasswordStrength } from "@/components/auth";
 import { useT } from "@kalks/i18n/react";
 

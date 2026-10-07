@@ -23,7 +23,7 @@ import {
   cn,
   formatMoney,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { ME } from "@kalks/mock";
 import { CPA_RULES, REFERRED_CLIENTS, clientActivity, clientTrades, type KycStatus, type ReferredClient } from "@kalks/mock/partner";
 import { ClientCell, TierChip, fmtDate, relTime, subIbName } from "@/components/partner/partner-bits";
@@ -130,7 +130,7 @@ function ClientDrawer({ c, onClose }: { c: ReferredClient | null; onClose: () =>
               ["Your commission", <Money key="c" value={c.commission} countUp={false} className="text-up" />],
             ].map(([k, v], i) => (
               <div key={i} className="k-row min-w-0 px-3.5 py-2.5">
-                <div className="text-[11px] uppercase tracking-wider text-fg-3">{k}</div>
+                <div className="text-[12px] text-fg-3">{k}</div>
                 <div className="mt-1 truncate text-[13.5px] font-medium">{v}</div>
               </div>
             ))}

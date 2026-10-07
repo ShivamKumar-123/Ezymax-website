@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, Blocks, Check, ChevronDown, Clock, Copy, ExternalLink, Radar, Share2, ShieldAlert, Wallet, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, CoinIcon, PageHeader, Reveal, Starfield, cn, formatNumber, shortHash } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CoinIcon, PageHeader, Reveal, Starfield, cn, formatNumber, shortHash } from "@/components/kit";
 import { Trans, useT } from "@kalks/i18n/react";
 import { WALLET } from "@kalks/mock";
 import { DEPOSIT_FAQ, DEPOSIT_NETWORKS, INCOMING_DEPOSIT } from "@kalks/mock/wallet-extra";
@@ -28,7 +28,7 @@ function NetworkSelector() {
             onClick={() => (n.active ? toast(t("wallet.demo.selected")) : toast(t("wallet.demo.comingSoonAsset", { asset: n.asset, network: n.network }), { description: t("wallet.demo.notifyLive") }))}
             className={cn(
               "k-row flex w-full items-center gap-3 px-4 py-3 text-start transition-all",
-              n.active ? "border-ember/50 bg-ember-soft shadow-[0_0_24px_-12px_rgba(255,90,31,0.8)]" : "opacity-60 hover:opacity-90",
+              n.active ? "border-ember/50 bg-ember-soft shadow-[0_0_24px_-12px_color-mix(in_oklab,var(--k-ember)_80%,transparent)]" : "opacity-60 hover:opacity-90",
             )}
           >
             <span className="relative">
@@ -138,7 +138,7 @@ function Tracker() {
             <span className="text-fg-3">{done ? tt("wallet.confirmations.complete") : tt("wallet.demo.secondsLeft", { seconds: (d.required - conf) * 3 })}</span>
           </div>
           <div className="relative h-3 overflow-hidden rounded-full bg-black/35 light:bg-black/10">
-            <motion.div className={cn("relative h-full overflow-hidden rounded-full", done ? "bg-up" : "bg-gradient-to-r from-[#ff7a2f] to-[#e8431a]")} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}>
+            <motion.div className={cn("relative h-full overflow-hidden rounded-full", done ? "bg-up" : "bg-gradient-to-r from-[var(--k-ember-2)] to-[color-mix(in_oklab,var(--k-ember)_78%,#000)]")} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}>
               {!done && <span className="absolute inset-y-0 start-0 w-1/3 animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent" />}
             </motion.div>
           </div>
@@ -150,7 +150,7 @@ function Tracker() {
         </div>
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-white/10 bg-black/25 light:border-black/5 light:bg-white/70 px-4 py-3">
           <div className="min-w-0">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">{tt("wallet.transactionHash")}</div>
+            <div className="text-[12px] text-fg-3">{tt("wallet.transactionHash")}</div>
             <a href={tronscan(d.hash)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-mono text-[13px] text-fg hover:text-ember">
               {shortHash(d.hash, 10, 8)} <ExternalLink className="size-3.5" />
             </a>
@@ -278,7 +278,7 @@ function DemoDepositPage() {
                       [t("wallet.demo.kalksFee"), t("wallet.free")],
                     ].map(([k, v]) => (
                       <div key={k} className="k-row px-3 py-2.5">
-                        <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
+                        <div className="text-[11.5px] text-fg-3">{k}</div>
                         <div className="k-num mt-0.5 text-[13.5px] font-semibold">{v}</div>
                       </div>
                     ))}

@@ -22,7 +22,7 @@ import {
   formatMoney,
   type Column,
   AnimIcon,
-} from "@kalks/ui";
+} from "@/components/kit";
 import {
   ANTI_ABUSE,
   COMMISSION_LEDGER,

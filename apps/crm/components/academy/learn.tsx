@@ -4,7 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { BookOpen, Check, CheckCircle2, Clock, PlayCircle, RotateCcw, Search, Star, Users, X, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, Icon3D, Progress, Segmented, cn } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, Icon3D, Progress, Segmented, cn } from "@/components/kit";
 import { PEOPLE } from "@kalks/mock";
 import { COURSES, GLOSSARY, LEARNING_PATHS, QUIZ, type Course, type Level } from "@kalks/mock/academy";
 
@@ -233,7 +233,7 @@ export function Glossary() {
             <button key={g.term} onClick={() => setOpen(on ? null : g.term)} className={cn("k-row block w-full px-4 py-2.5 text-left transition-colors hover:bg-surface-3/60", on && "border-[var(--k-border-top)] bg-surface-3/60")}>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[13.5px] font-medium">{highlight(g.term, q)}</span>
-                <span className="text-[10.5px] uppercase tracking-wider text-fg-3">{g.cat}</span>
+                <span className="text-[11.5px] text-fg-3">{g.cat}</span>
               </div>
               <AnimatePresence initial={false}>
                 {(on || !!q) && (

@@ -5,7 +5,7 @@
 // blocks and ```svg diagrams (shown as <img> data URIs, so a diagram can never run script).
 
 import * as React from "react";
-import { cn } from "@kalks/ui";
+import { cn } from "@/components/kit";
 import type { MessageKey } from "@kalks/i18n";
 import { useT } from "@kalks/i18n/react";
 

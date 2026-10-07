@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Download, RotateCw } from "lucide-react";
-import { Button, Card, CardHeader, Chip, EmptyState, IconButton, Input, Reveal, Segmented, Skeleton, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, EmptyState, IconButton, Input, Reveal, Segmented, Skeleton, cn } from "@/components/kit";
 import {
   curOf,
   downloadExport,

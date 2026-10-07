@@ -4,7 +4,7 @@ import * as React from "react";
 import { motion } from "motion/react";
 import { Check, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, DialogClose, Icon3D, KeyValue, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, DialogClose, Icon3D, KeyValue, cn } from "@/components/kit";
 import { LOYALTY, LOYALTY_TIERS, REDEEM_CATALOGUE } from "@kalks/mock/rewards";
 
 const TIER_STYLE: Record<string, string> = {
@@ -52,7 +52,7 @@ export function TierTrack() {
           <div className="absolute left-5 right-5 top-5 h-1.5 -translate-y-1/2 rounded-full bg-surface-3" />
           <div className="absolute left-5 right-5 top-5 h-1.5 -translate-y-1/2">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-[#d98b4a] via-[#e9b949] to-[#ff8a3d] shadow-[0_0_18px_-2px_rgba(233,185,73,0.7)]"
+              className="h-full rounded-full bg-gradient-to-r from-[#d98b4a] via-[#e9b949] to-[var(--k-ember-2)] shadow-[0_0_18px_-2px_rgba(233,185,73,0.7)]"
               initial={{ width: 0 }}
               animate={{ width: `${overall}%` }}
               transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
@@ -140,7 +140,7 @@ export function RedeemCatalogue({ balance, onRedeem }: { balance: number; onRede
               transition={{ delay: 0.04 * i, duration: 0.4 }}
               className="group relative flex flex-col overflow-hidden rounded-[18px] border border-line bg-surface-2 p-3.5 sm:p-4 transition-colors hover:border-[var(--k-border-top)] hover:bg-surface-3/60"
             >
-              <div className="pointer-events-none absolute -right-8 -top-8 size-32 rounded-full bg-[radial-gradient(circle,rgba(255,90,31,0.18),transparent_70%)] opacity-0 transition-opacity group-hover:opacity-100" />
+              <div className="pointer-events-none absolute -right-8 -top-8 size-32 rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--k-ember)_18%,transparent),transparent_70%)] opacity-0 transition-opacity group-hover:opacity-100" />
               <div className="flex items-start justify-between">
                 <Icon3D name={it.icon} size={44} />
                 {"tag" in it && it.tag && (

@@ -23,7 +23,7 @@ import {
   cn,
   formatDateTime,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { ACCOUNTS, getInstrument } from "@kalks/mock";
 import { type FanoutTarget, type SignalWebhook, type SizingMode, type WebhookDelivery } from "@kalks/mock/developer";
 import { CodeBlock, toJson } from "./code-block";
@@ -64,7 +64,7 @@ export function WebhookListItem({ w, active, onSelect, onToggle }: { w: SignalWe
       onClick={onSelect}
       className={cn(
         "k-row relative cursor-pointer overflow-hidden px-4 py-3.5 transition-colors",
-        active ? "border-ember/45 bg-ember-soft/60 shadow-[0_0_0_1px_rgba(255,90,31,0.15),0_12px_30px_-18px_rgba(255,90,31,0.6)]" : "hover:bg-surface-3/60",
+        active ? "border-ember/45 bg-ember-soft/60 shadow-[0_0_0_1px_color-mix(in_oklab,var(--k-ember)_15%,transparent),0_12px_30px_-18px_color-mix(in_oklab,var(--k-ember)_60%,transparent)]" : "hover:bg-surface-3/60",
       )}
     >
       {active && <motion.span layoutId="wh-active" className="absolute inset-y-3 left-0 w-[3px] rounded-r-full bg-ember" />}
@@ -256,7 +256,7 @@ export function FanoutEditor({ w, onChange }: { w: SignalWebhook; onChange: (tar
                   </div>
                   <Tooltip content={s.hint}>
                     <div className="w-[76px] text-right">
-                      <div className="text-[10px] uppercase tracking-wider text-fg-3">Resolved</div>
+                      <div className="text-[11px] text-fg-3">Resolved</div>
                       <div className="k-num text-[13px] font-medium text-gold">{t.enabled ? `${lots.toFixed(2)} lot` : "—"}</div>
                     </div>
                   </Tooltip>
@@ -447,7 +447,7 @@ function DeliveryDetail({ d, w }: { d: Delivery; w?: SignalWebhook }) {
           ["Filled", `${d.filled}/${d.total}`],
         ].map(([k, v], i) => (
           <div key={i} className="k-row px-3 py-2.5">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
+            <div className="text-[11.5px] text-fg-3">{k}</div>
             <div className="k-num mt-0.5 text-[15px] font-medium">{v}</div>
           </div>
         ))}

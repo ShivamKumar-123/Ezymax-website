@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Bot, Code2, Copy as CopyIcon, Download, Hand, Search, Workflow, X } from "lucide-react";
-import { Button, Card, Chip, DataTable, Menu, Money, PageHeader, Reveal, Segmented, SymbolCell, cn, formatMoney, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, Chip, DataTable, Menu, Money, PageHeader, Reveal, Segmented, SymbolCell, cn, formatMoney, formatNumber, type Column } from "@/components/kit";
 import { HISTORY, getInstrument, type ClosedTrade } from "@kalks/mock";
 import { LIVE_ACCOUNTS, PORTFOLIO_NOW } from "@kalks/mock/portfolio-extra";
 import { downloadCsv, serverTime } from "@/components/portfolio/export";
@@ -186,23 +186,23 @@ function DemoTradeHistoryPage() {
           <DataTable columns={cols} rows={rows} pageSize={12} dense rowKey={(t) => t.ticket} />
           <div className="k-hot-card mt-4 grid grid-cols-2 gap-3 rounded-[16px] px-5 py-4 text-[13px] sm:grid-cols-5">
             <div>
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">Trades</div>
+              <div className="text-[12px] text-fg-3">Trades</div>
               <div className="k-num mt-1 font-semibold">{totals.trades}</div>
             </div>
             <div>
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">Lots</div>
+              <div className="text-[12px] text-fg-3">Lots</div>
               <div className="k-num mt-1 font-semibold">{totals.lots.toFixed(2)}</div>
             </div>
             <div>
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">Gross P&L</div>
+              <div className="text-[12px] text-fg-3">Gross P&L</div>
               <div className={cn("k-num mt-1 font-semibold", totals.gross >= 0 ? "text-up" : "text-down")}>{formatMoney(totals.gross)}</div>
             </div>
             <div>
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">Charges</div>
+              <div className="text-[12px] text-fg-3">Charges</div>
               <div className="k-num mt-1 font-semibold text-down">{formatMoney(-totals.charges)}</div>
             </div>
             <div className="col-span-2 sm:col-span-1 sm:text-right">
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">Net total</div>
+              <div className="text-[12px] text-fg-3">Net total</div>
               <div className={cn("k-num mt-1 text-[16px] font-semibold", totals.net >= 0 ? "text-up" : "text-down")}>{formatMoney(totals.net)}</div>
             </div>
           </div>

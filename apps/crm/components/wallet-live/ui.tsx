@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Award, CircleAlert, ExternalLink, IdCard, RotateCw, ShieldCheck } from "lucide-react";
-import { Button, Card, Chip, CoinIcon, EmptyState, Progress, cn, formatDateTime, shortHash, type ChipTone } from "@kalks/ui";
+import { Button, Card, Chip, CoinIcon, EmptyState, Progress, cn, formatDateTime, shortHash, type ChipTone } from "@/components/kit";
 import { Trans, useT } from "@kalks/i18n/react";
 import type { MessageKey, T } from "@kalks/i18n";
 import { CHAIN_LABEL, fmt, type ActivityItem, type Chain, type Deposit, type DepositStatus, type WithdrawalStatus } from "./api";
@@ -235,7 +235,7 @@ export function InlineError({ children }: { children: React.ReactNode }) {
 export function Tile({ label, value, hint }: { label: string; value: React.ReactNode; hint?: React.ReactNode }) {
   return (
     <div className="k-row px-3 py-2.5">
-      <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{label}</div>
+      <div className="text-[11.5px] text-fg-3">{label}</div>
       <div className="k-num mt-0.5 text-[13px] font-semibold">{value}</div>
       {hint && <div className="mt-0.5 text-[11px] text-fg-3">{hint}</div>}
     </div>

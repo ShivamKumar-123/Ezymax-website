@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { Card, CardHeader, Chip, DataTable, KeyValue, Money, Starfield, cn, formatMoney, type Column } from "@kalks/ui";
+import { Card, CardHeader, Chip, DataTable, KeyValue, Money, Starfield, cn, formatMoney, type Column } from "@/components/kit";
 import { getInstrument } from "@kalks/mock";
 import { MONTH_LABELS, monteCarlo, serverTime, type BacktestResult, type BtPoint, type BtTrade } from "@kalks/mock/algo";
 
@@ -157,7 +157,7 @@ export function MonthlyReturns({ r }: { r: BacktestResult }) {
       <div className="overflow-x-auto px-4 pb-5 pt-4 sm:px-6">
         <table className="w-full min-w-[720px] border-separate border-spacing-1 text-center text-[11.5px]">
           <thead>
-            <tr className="text-[10.5px] uppercase tracking-[0.05em] text-fg-3">
+            <tr className="text-[11.5px] text-fg-3">
               <th className="w-14 text-left font-medium">Year</th>
               {MONTH_LABELS.map((m) => (
                 <th key={m} className="font-medium">
@@ -251,11 +251,11 @@ export function ReturnDistribution({ r }: { r: BacktestResult }) {
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div className="k-row px-3.5 py-2.5">
-            <div className="text-[10.5px] uppercase tracking-[0.05em] text-fg-3">Avg win</div>
+            <div className="text-[11.5px] text-fg-3">Avg win</div>
             <Money value={k.avgWin} countUp={false} tone="up" className="mt-0.5 block text-[15px] font-semibold" />
           </div>
           <div className="k-row px-3.5 py-2.5">
-            <div className="text-[10.5px] uppercase tracking-[0.05em] text-fg-3">Avg loss</div>
+            <div className="text-[11.5px] text-fg-3">Avg loss</div>
             <Money value={k.avgLoss} countUp={false} tone="down" className="mt-0.5 block text-[15px] font-semibold" />
           </div>
         </div>
@@ -377,7 +377,7 @@ export function MonteCarloCard({ r }: { r: BacktestResult }) {
       <div className="grid grid-cols-2 gap-2 px-4 pb-5 pt-4 sm:grid-cols-3 sm:px-5 xl:grid-cols-2">
         {stats.map((s) => (
           <div key={s.label} className="k-row px-3 py-2">
-            <div className="truncate text-[10px] uppercase tracking-[0.05em] text-fg-3">{s.label}</div>
+            <div className="truncate text-[11px] text-fg-3">{s.label}</div>
             <div className={cn("k-num mt-0.5 text-[14.5px] font-semibold", s.tone)}>{s.value}</div>
           </div>
         ))}

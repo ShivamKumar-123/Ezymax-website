@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Avatar, Chip, Flag, cn } from "@kalks/ui";
+import { Avatar, Chip, Flag, cn } from "@/components/kit";
 import { REFERRED_CLIENTS, type CommissionStatus, type ReferredClient } from "@kalks/mock/partner";
 
 export function TierChip({ tier, className }: { tier: 1 | 2 | 3; className?: string }) {

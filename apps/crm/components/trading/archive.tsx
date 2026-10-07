@@ -13,7 +13,7 @@ import * as React from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowDownToLine, Check, CircleSlash, Loader2, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, CopyButton, Dialog, Field, Input, Money, cn } from "@kalks/ui";
+import { Button, Chip, CopyButton, Dialog, Field, Input, Money, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { useReadOnly } from "@/components/session";
 import { StepUpDialog } from "@/components/stepup";
@@ -370,7 +370,7 @@ export function ArchivedAccountRow({ a, onChanged }: { a: EngineAccount; onChang
       <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("accounts.archived.finalBalance")}</div>
+            <div className="text-[12px] text-fg-3">{t("accounts.archived.finalBalance")}</div>
             <Money value={a.balance} currency={cur} countUp={false} className="mt-1 block text-[17px] font-semibold text-fg-2" />
           </div>
           {when && <div className="text-[12.5px] text-fg-3">{t(a.status === "closed" ? "accounts.archived.closedOn" : "accounts.archived.on", { date: fmtDate(when) })}</div>}

@@ -40,7 +40,7 @@ import {
   formatCompact,
   formatMoney,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import {
   PartnerApiError,
   campaignLink,
@@ -303,7 +303,7 @@ function CreateLinkDialog({
           <p className="text-xs text-down">{err.message}</p>
         )}
         <div className="rounded-[14px] border border-line bg-surface-2 px-4 py-3">
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">
+          <div className="text-[12px] text-fg-3">
             {t("partner.links.yourLink")}
           </div>
           <div
@@ -508,7 +508,7 @@ function SnippetCard({
         <div className="grid min-h-[84px] place-items-center rounded-[16px] border border-line bg-white px-4 py-5">
           {/* static preview of the snippet (not a live link, so previews don't count as clicks) */}
           {style === "button" ? (
-            <span className="inline-block max-w-full truncate rounded-full bg-[#ff5a1f] px-[22px] py-3 text-[15px] font-semibold leading-tight text-white">
+            <span className="inline-block max-w-full truncate rounded-full bg-[var(--k-ember)] px-[22px] py-3 text-[15px] font-semibold leading-tight text-white">
               {label}
             </span>
           ) : (

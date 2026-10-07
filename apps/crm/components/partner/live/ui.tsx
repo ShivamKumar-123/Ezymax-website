@@ -14,7 +14,7 @@ import {
   Skeleton,
   cn,
   type IllustrationName,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import type { ClientStatus, PartnerApiError } from "./api";
 

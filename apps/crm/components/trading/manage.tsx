@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Eye, Globe, Lock, Pencil, RefreshCcw, TriangleAlert, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, Field, KeyValue, Money, Reveal, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, Field, KeyValue, Money, Reveal, cn } from "@/components/kit";
 import { PasswordInput } from "@/components/accounts/security";
 import { FormError } from "@/components/auth";
 import { STEPUP_CODES, StepUpCode, StepUpDialog, useStepUp } from "@/components/stepup";

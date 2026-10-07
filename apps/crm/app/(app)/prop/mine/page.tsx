@@ -51,7 +51,7 @@ import {
   formatMoney,
   formatNumber,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { ME, getInstrument } from "@kalks/mock";
 import { MY_CHALLENGES, OPEN_PROP_POSITION, PROP_MODELS, propEquityPath, propTrades, type MyChallenge, type PropTrade, type RuleState } from "@kalks/mock/prop";
 import { CountUp, CredentialField, ResetCountdown, RuleCard, RuleRow } from "@/components/prop/prop-ui";
@@ -85,7 +85,7 @@ function Selector({ value, onChange }: { value: string; onChange: (id: string) =
             onClick={() => onChange(c.id)}
             className={cn(
               "relative min-w-[260px] flex-1 snap-start overflow-hidden rounded-[18px] border p-4 text-left transition-all",
-              on ? "k-hot-card border-ember/40 shadow-[0_12px_40px_-20px_rgba(255,90,31,0.7)]" : "border-line bg-surface hover:border-[var(--k-border-top)] hover:bg-surface-2",
+              on ? "k-hot-card border-ember/40 shadow-[0_12px_40px_-20px_color-mix(in_oklab,var(--k-ember)_70%,transparent)]" : "border-line bg-surface hover:border-[var(--k-border-top)] hover:bg-surface-2",
             )}
           >
             <div className="flex items-start justify-between gap-2">
@@ -240,7 +240,7 @@ function CountdownCard({ c }: { c: MyChallenge }) {
             ["KYC check", "done"],
             ["Funded contract", "pending"],
           ].map(([t, s]) => (
-            <div key={t} className="flex items-center justify-between rounded-[12px] border border-white/10 bg-black/20 px-3.5 py-2 text-[12.5px]">
+            <div key={t} className="flex items-center justify-between rounded-[12px] border border-white/10 light:border-line bg-black/20 light:bg-white/70 px-3.5 py-2 text-[12.5px]">
               {t}
               <Chip size="sm" tone={s === "done" ? "up" : "warn"} dot>
                 {s === "done" ? "Done" : "Sign now"}
@@ -255,7 +255,7 @@ function CountdownCard({ c }: { c: MyChallenge }) {
     );
   return (
     <Card className="relative flex h-full flex-col overflow-hidden">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(70%_100%_at_50%_0%,rgba(255,90,31,0.22),transparent)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(70%_100%_at_50%_0%,color-mix(in_oklab,var(--k-ember)_22%,transparent),transparent)]" />
       <div className="relative flex items-center justify-between px-6 pt-5">
         <div className="flex items-center gap-2 text-[14px] font-medium">
           <Timer className="size-4 text-fg-3" /> Daily reset
@@ -558,11 +558,11 @@ function DrawdownCard({ c }: { c: MyChallenge }) {
       </div>
       <div className="grid grid-cols-2 gap-2 px-4 pb-5 sm:px-6">
         <div className="k-row px-3.5 py-2.5">
-          <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Current DD</div>
+          <div className="text-[11.5px] text-fg-3">Current DD</div>
           <div className="k-num mt-0.5 text-[15px] font-medium">{c.equity >= c.size ? "0.00%" : `${(((c.size - c.equity) / c.size) * 100).toFixed(2)}%`}</div>
         </div>
         <div className="k-row px-3.5 py-2.5">
-          <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Room left</div>
+          <div className="text-[11.5px] text-fg-3">Room left</div>
           <Money value={c.equity - (c.size - c.maxLoss)} decimals={0} className="mt-0.5 block text-[15px] font-medium text-up" />
         </div>
       </div>
@@ -592,7 +592,7 @@ function Objectives({ c }: { c: MyChallenge }) {
       <div className="grid grid-cols-2 gap-2 px-4 pb-5 pt-4 sm:grid-cols-4 sm:px-6 xl:grid-cols-7">
         {stats.map((s) => (
           <div key={s.l} className="k-row px-3.5 py-3">
-            <div className="truncate text-[10.5px] uppercase tracking-wider text-fg-3">{s.l}</div>
+            <div className="truncate text-[11.5px] text-fg-3">{s.l}</div>
             <div className={cn("mt-1 text-[18px] font-semibold tracking-tight", s.t === "up" && "text-up", s.t === "down" && "text-down")}>{s.v}</div>
             {s.sub && <div className="text-[10.5px] text-fg-3">{s.sub}</div>}
           </div>

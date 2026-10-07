@@ -4,7 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion, animate, useInView } from "motion/react";
 import { ArrowUpRight, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import { Chip, CopyButton, cn } from "@kalks/ui";
+import { Chip, CopyButton, cn } from "@/components/kit";
 import type { RuleState } from "@kalks/mock/prop";
 
 /* ------------------------------------------------------------------ */
@@ -55,7 +55,7 @@ export function RuleCard({
   children: React.ReactNode;
   className?: string;
 }) {
-  const bar = { ember: "from-[#ff8a3d] to-[#e8431a]", up: "from-up/70 to-up", down: "from-down/70 to-down", gold: "from-[#f3cf6b] to-[#c9971f]", warn: "from-warn/70 to-warn" }[progressTone];
+  const bar = { ember: "from-[var(--k-ember-2)] to-[color-mix(in_oklab,var(--k-ember)_78%,#000)]", up: "from-up/70 to-up", down: "from-down/70 to-down", gold: "from-[#f3cf6b] to-[#c9971f]", warn: "from-warn/70 to-warn" }[progressTone];
   return (
     <div className={cn("k-card flex h-full flex-col p-4 sm:p-5", className)}>
       <div className="flex items-center justify-between gap-3">

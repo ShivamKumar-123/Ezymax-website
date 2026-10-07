@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Eye, EyeOff, Lock, Mail, ArrowRight, ShieldCheck } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
-import { Button, Field, Input } from "@kalks/ui";
+import { Button, Field, Input } from "@/components/kit";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { useT, Trans } from "@kalks/i18n/react";
 import { DemoEntry, DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, useGoogleError, OrDivider, OtpInput, ResendLink } from "@/components/auth";

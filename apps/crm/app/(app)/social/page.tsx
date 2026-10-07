@@ -19,7 +19,7 @@ import {
   cn,
   formatCompact,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { MASTERS, PAMM_FUNDS, masterSpark, type Master } from "@kalks/mock/social";
 import { MasterCard, MasterIdentity, RiskBadge, formatAge } from "@/components/social/master-bits";
 import { CopyDialog } from "@/components/social/copy-dialog";
@@ -112,7 +112,7 @@ function Hero() {
             { icon: <Users />, k: "Followers & investors", v: followers.toLocaleString() },
             { icon: <LineChart />, k: "Median 1Y return", v: `+${[...MASTERS].sort((a, b) => a.return1y - b.return1y)[7]!.return1y.toFixed(1)}%` },
           ].map((x) => (
-            <div key={x.k} className="rounded-[16px] border border-white/10 bg-black/35 px-4 py-3 backdrop-blur">
+            <div key={x.k} className="rounded-[16px] border border-white/10 light:border-line bg-black/35 light:bg-white/70 px-4 py-3 backdrop-blur">
               <div className="flex items-center gap-1.5 text-[11.5px] text-fg-3 [&_svg]:size-3.5">
                 {x.icon}
                 {x.k}

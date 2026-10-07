@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Gift, History, Medal, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Icon3D, KpiCard, PageHeader, Reveal } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Icon3D, KpiCard, PageHeader, Reveal } from "@/components/kit";
 import { ContestHero, Leaderboard, PastContests, PrizeCard, UpcomingContests } from "@/components/rewards/contests";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { LiveContestsPage } from "@/components/growth/contests";

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { BookOpen, CheckCircle2, Loader2, Plus, Radio, Send, Timer, Webhook } from "lucide-react";
-import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, SymbolAvatar, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, SymbolAvatar, cn } from "@/components/kit";
 import { WEBHOOKS, WEBHOOK_DELIVERIES, type SignalWebhook } from "@kalks/mock/developer";
 import {
   CreateWebhookDialog,

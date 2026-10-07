@@ -25,7 +25,7 @@ import {
   Toggle,
   cn,
   formatMoney,
-} from "@kalks/ui";
+} from "@/components/kit";
 import {
   MY_COPY_SUBS,
   MY_PAMM_HOLDINGS,
@@ -47,7 +47,7 @@ const fmtDay = (iso: string) => {
   const d = new Date(Date.parse(iso) + 3 * 3600000);
   return `${String(d.getUTCDate()).padStart(2, "0")} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 };
-const COLORS = ["#ff5a1f", "#ff8a3d", "#e9b949", "#22c55e", "#38bdf8", "#a1a1aa"];
+const COLORS = ["var(--k-ember)", "var(--k-ember-2)", "#e9b949", "#22c55e", "#38bdf8", "#a1a1aa"];
 
 /* ------------------------------------------------------------------ */
 /* Copy subscriptions                                                  */
@@ -163,11 +163,11 @@ function StopDialog({ sub, onClose, onStopped }: { sub: CopySubscription | null;
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="k-row px-4 py-3">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">Returns to wallet</div>
+            <div className="text-[12px] text-fg-3">Returns to wallet</div>
             <Money value={sub.equity - sub.feesAccrued} countUp={false} className="text-[17px] font-semibold" />
           </div>
           <div className="k-row px-4 py-3">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">Fee settled</div>
+            <div className="text-[12px] text-fg-3">Fee settled</div>
             <Money value={sub.feesAccrued} countUp={false} className="text-[17px] font-semibold" />
           </div>
         </div>
@@ -205,7 +205,7 @@ function SubCard({ s, onPause, onEdit, onStop }: { s: CopySubscription; onPause:
       </div>
       <div className="mt-4 flex items-end justify-between gap-3 px-5">
         <div>
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">Equity</div>
+          <div className="text-[12px] text-fg-3">Equity</div>
           <Money value={s.equity} className="text-[26px] font-semibold" />
           <div className={cn("k-num text-[12.5px] font-medium", s.pnl >= 0 ? "text-up" : "text-down")}>
             {s.pnl >= 0 ? "+" : "-"}

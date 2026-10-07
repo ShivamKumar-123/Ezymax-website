@@ -28,7 +28,7 @@ import {
   formatDateTime,
   formatMoney,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { CASHBACK, CASHBACK_BY_ACCOUNT, CASHBACK_HISTORY, CASHBACK_RATES, CASHBACK_WEEKLY, type CashbackTx } from "@kalks/mock/rewards";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { LiveCashbackPage } from "@/components/growth/cashback";
@@ -152,7 +152,7 @@ function DemoCashbackPage() {
                 ["Lots this month", totalLots.toFixed(1)],
               ].map(([k, v], i) => (
                 <div key={k} className={cn("px-4 py-4 sm:px-6", i > 0 && "border-l border-line")}>
-                  <div className="text-[11px] uppercase tracking-wider text-fg-3">{k}</div>
+                  <div className="text-[12px] text-fg-3">{k}</div>
                   <div className="k-num mt-1 text-[15px] font-medium">{v}</div>
                 </div>
               ))}
@@ -202,7 +202,7 @@ function DemoCashbackPage() {
           <div className="grid grid-cols-1 items-center gap-6 px-4 pb-6 pt-4 sm:px-6 lg:grid-cols-[220px_1fr]">
             <div className="flex justify-center">
               <Donut
-                data={CASHBACK_BY_ACCOUNT.map((a, i) => ({ label: a.login, value: a.earned, color: ["#ff5a1f", "#e9b949", "#a1a1aa"][i] }))}
+                data={CASHBACK_BY_ACCOUNT.map((a, i) => ({ label: a.login, value: a.earned, color: ["var(--k-ember)", "#e9b949", "#a1a1aa"][i] }))}
                 size={190}
                 thickness={20}
                 center={
@@ -217,22 +217,22 @@ function DemoCashbackPage() {
               {CASHBACK_BY_ACCOUNT.map((a, i) => (
                 <div key={a.login} className="k-row grid grid-cols-2 items-center gap-3 px-4 py-3 sm:grid-cols-[1.4fr_1fr_1fr_1fr_1.2fr]">
                   <div className="flex items-center gap-3">
-                    <span className="size-2.5 shrink-0 rounded-full" style={{ background: ["#ff5a1f", "#e9b949", "#a1a1aa"][i] }} />
+                    <span className="size-2.5 shrink-0 rounded-full" style={{ background: ["var(--k-ember)", "#e9b949", "#a1a1aa"][i] }} />
                     <div>
                       <div className="font-mono text-[13px] font-medium">#{a.login}</div>
                       <div className="text-[11.5px] text-fg-3">{a.group}</div>
                     </div>
                   </div>
                   <div className="text-right sm:text-left">
-                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Lots</div>
+                    <div className="text-[11.5px] text-fg-3">Lots</div>
                     <div className="k-num text-[13.5px]">{a.lots.toFixed(1)}</div>
                   </div>
                   <div className="hidden sm:block">
-                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Rate</div>
+                    <div className="text-[11.5px] text-fg-3">Rate</div>
                     <div className="k-num text-[13.5px]">${a.rate.toFixed(2)}</div>
                   </div>
                   <div className="hidden sm:block">
-                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Share</div>
+                    <div className="text-[11.5px] text-fg-3">Share</div>
                     <div className="k-num text-[13.5px]">{((a.earned / CASHBACK.thisMonth) * 100).toFixed(1)}%</div>
                   </div>
                   <div className="col-span-2 flex items-center justify-between gap-3 sm:col-span-1 sm:justify-end">

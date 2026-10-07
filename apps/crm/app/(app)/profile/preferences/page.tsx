@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Bell, ChevronRight, Clock, Languages, MonitorSmartphone, Moon, Sun, Mail } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { Card, CardHeader, Flag, LANGUAGES, PageHeader, Reveal, Segmented, Toggle, cn } from "@kalks/ui";
+import { Card, CardHeader, Flag, LANGUAGES, PageHeader, Reveal, Segmented, Toggle, cn } from "@/components/kit";
 import { useLocale, useT } from "@kalks/i18n/react";
 import { IS_DEMO } from "@kalks/mock/mode";
 
@@ -42,7 +42,7 @@ export default function PreferencesPage() {
                     <div className={cn("h-3 w-16 rounded-full", th === "dark" ? "bg-white/15" : "bg-black/10")} />
                     <div className="mt-2 flex gap-1.5">
                       <div className={cn("h-10 flex-1 rounded-lg", th === "dark" ? "bg-[#111114]" : "bg-white")} />
-                      <div className="h-10 w-8 rounded-lg bg-[#ff5a1f]" />
+                      <div className="h-10 w-8 rounded-lg bg-[var(--k-ember)]" />
                     </div>
                   </div>
                   <div className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium">

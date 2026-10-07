@@ -6,7 +6,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, Clock3, Download, FileText, Gauge as GaugeIcon, Percent, RefreshCw, Scale, ShieldCheck, Target, TrendingDown, Trophy, Zap } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Donut, EmptyState, KpiCard, Menu, Money, PageHeader, Reveal, Segmented, Skeleton, cn, formatMoney } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Donut, EmptyState, KpiCard, Menu, Money, PageHeader, Reveal, Segmented, Skeleton, cn, formatMoney } from "@/components/kit";
 import { ColumnBars, DrawdownChart, HourHeatmap, MultiLineChart, PnlBars, Waterfall } from "@/components/portfolio/charts";
 import { tr, useT } from "@kalks/i18n/react";
 // engine symbols include Kalks FX Options series codes, which the static instrument list (SymbolAvatar) doesn't know
@@ -214,11 +214,11 @@ function StatsCard({ s, curve }: { s: Stats; curve: Analytics["curve"] }) {
       <CardHeader title={t("portfolio.an.stats.title")} subtitle={t("portfolio.closedTrades", { count: s.trades })} />
       <div className="grid grid-cols-2 gap-3 px-6 pt-4">
         <div className="k-row px-4 py-3">
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("portfolio.an.stats.grossProfit")}</div>
+          <div className="text-[12px] text-fg-3">{t("portfolio.an.stats.grossProfit")}</div>
           <Money value={s.grossProfit} countUp={false} className="mt-1 block text-[16px] font-semibold text-up" />
         </div>
         <div className="k-row px-4 py-3">
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("portfolio.an.stats.grossLoss")}</div>
+          <div className="text-[12px] text-fg-3">{t("portfolio.an.stats.grossLoss")}</div>
           <Money value={-s.grossLoss} countUp={false} className="mt-1 block text-[16px] font-semibold text-down" />
         </div>
       </div>
@@ -236,7 +236,7 @@ function StatsCard({ s, curve }: { s: Stats; curve: Analytics["curve"] }) {
           { t: s.worst, label: t("portfolio.an.stats.worst"), icon: <ArrowDownRight className="size-3.5 text-down" /> },
         ].map(({ t: tr, label, icon }) => (
           <div key={label} className="k-row px-3.5 py-3">
-            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-fg-3">
+            <div className="flex items-center gap-1.5 text-[12px] text-fg-3">
               {icon}
               {label}
             </div>
@@ -514,7 +514,7 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
                   data={chargeRows.map((c) => ({ label: c.label, value: c.value, color: c.color }))}
                   center={
                     <div>
-                      <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("common.total")}</div>
+                      <div className="text-[11.5px] text-fg-3">{t("common.total")}</div>
                       <div className="k-num text-[16px] font-semibold">{formatMoney(chargesTotal)}</div>
                     </div>
                   }

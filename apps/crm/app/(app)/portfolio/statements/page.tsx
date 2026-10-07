@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { Check, Download, Eye, FileSpreadsheet, FileText, Mail, Printer, Sheet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Dialog, Field, Icon3D, Input, Money, PageHeader, Reveal, Segmented, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, Field, Icon3D, Input, Money, PageHeader, Reveal, Segmented, Toggle, cn } from "@/components/kit";
 import { LIVE_ACCOUNTS, MONTHLY_STATEMENTS, type MonthlyStatement } from "@kalks/mock/portfolio-extra";
 import { StatementPreview } from "@/components/portfolio/statement-preview";
 import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
@@ -270,15 +270,15 @@ function DemoStatementsPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-right md:w-[340px]">
                   <div>
-                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Net P&L</div>
+                    <div className="text-[11.5px] text-fg-3">Net P&L</div>
                     <Money value={s.net} countUp={false} signed tone="auto" className="text-[13px] font-medium" />
                   </div>
                   <div>
-                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Deposits</div>
+                    <div className="text-[11.5px] text-fg-3">Deposits</div>
                     <Money value={s.deposits} countUp={false} className={cn("text-[13px]", s.deposits ? "text-fg" : "text-fg-3")} />
                   </div>
                   <div>
-                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Withdrawn</div>
+                    <div className="text-[11.5px] text-fg-3">Withdrawn</div>
                     <Money value={s.withdrawals} countUp={false} className={cn("text-[13px]", s.withdrawals ? "text-fg" : "text-fg-3")} />
                   </div>
                 </div>

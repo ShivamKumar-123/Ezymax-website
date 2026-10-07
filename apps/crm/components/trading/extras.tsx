@@ -14,7 +14,7 @@
 import * as React from "react";
 import { ArrowRight, Check, HeartPulse, Loader2, Star } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, Field, Input, Skeleton, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, Field, Input, Skeleton, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { StepUpDialog } from "@/components/stepup";
 import { curOf, errorToast, isArchived, toUsd, tradingApi, usePoll, useAccounts, type EngineAccount } from "./api";

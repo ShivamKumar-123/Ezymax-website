@@ -22,7 +22,7 @@ import {
   formatDateTime,
   formatMoney,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { WALLET } from "@kalks/mock";
 import { PARTNER, PAYOUT_BATCHES, PAYOUT_SCHEDULE, type PayoutBatch } from "@kalks/mock/partner";
 import { fmtDT } from "@/components/partner/partner-bits";
@@ -49,8 +49,8 @@ function Countdown({ target }: { target: string }) {
       {parts.map((p, i) => (
         <React.Fragment key={i}>
           <div className="flex flex-col items-center">
-            <span className="k-num min-w-[46px] rounded-[12px] border border-white/10 bg-black/35 px-2 py-2 text-center font-mono text-[22px] font-semibold leading-none">{p}</span>
-            <span className="mt-1 text-[10px] uppercase tracking-wider text-fg-3">{["days", "hrs", "min", "sec"][i]}</span>
+            <span className="k-num min-w-[46px] rounded-[12px] border border-white/10 light:border-line bg-black/35 light:bg-white/70 px-2 py-2 text-center font-mono text-[22px] font-semibold leading-none">{p}</span>
+            <span className="mt-1 text-[11px] text-fg-3">{["days", "hrs", "min", "sec"][i]}</span>
           </div>
           {i < 3 && <span className="-mt-4 font-mono text-fg-3">:</span>}
         </React.Fragment>
@@ -183,7 +183,7 @@ function ScheduleCard() {
               className={cn(
                 "grid size-9 shrink-0 place-items-center rounded-full border [&_svg]:size-4",
                 st.state === "done" && "border-up/40 bg-up-soft text-up",
-                st.state === "current" && "border-ember/50 bg-ember-soft text-ember shadow-[0_0_20px_-4px_rgba(255,90,31,0.7)]",
+                st.state === "current" && "border-ember/50 bg-ember-soft text-ember shadow-[0_0_20px_-4px_color-mix(in_oklab,var(--k-ember)_70%,transparent)]",
                 st.state === "next" && "border-line bg-surface-2 text-fg-3",
               )}
             >

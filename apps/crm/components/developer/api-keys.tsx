@@ -46,7 +46,7 @@ import {
   formatCompact,
   formatNumber,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { ACCOUNTS } from "@kalks/mock";
 import { API_STATS, ENDPOINT_USAGE, ORDER_SOURCES, apiUsage, type ApiKey, type ApiScope } from "@kalks/mock/developer";
 import { CodeBlock, type CodeLang } from "./code-block";
@@ -556,7 +556,7 @@ export function CreateKeyDialog({ open, onOpenChange, onCreated }: { open: boole
                 ["Limit", `${rate} req/s`],
               ].map(([k, v]) => (
                 <div key={k} className="k-row px-3 py-2">
-                  <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
+                  <div className="text-[11.5px] text-fg-3">{k}</div>
                   <div className="mt-0.5 truncate font-mono text-[12.5px]">{v}</div>
                 </div>
               ))}
@@ -621,7 +621,7 @@ export function UsageCard() {
           ["Errors (bars)", formatCompact(errs), "text-fg-2"],
         ].map(([k, v, c]) => (
           <div key={k} className="k-row px-3 py-2.5 sm:px-4">
-            <div className="truncate text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
+            <div className="truncate text-[11.5px] text-fg-3">{k}</div>
             <div className={cn("k-num mt-0.5 text-[15px] font-medium", c)}>{v}</div>
           </div>
         ))}
@@ -699,7 +699,7 @@ export function KillSwitchCard({ halted, setHalted }: { halted: boolean; setHalt
           ["Floating P/L", halted ? "$0.00" : "+$412.60", halted ? "text-fg-3" : "text-up"],
         ].map(([k, v, c]) => (
           <div key={k} className="k-row px-3 py-2.5">
-            <div className="truncate text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
+            <div className="truncate text-[11.5px] text-fg-3">{k}</div>
             <div className={cn("k-num mt-0.5 text-[15px] font-medium", c)}>{v}</div>
           </div>
         ))}

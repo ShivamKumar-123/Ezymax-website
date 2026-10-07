@@ -5,7 +5,7 @@
 import * as React from "react";
 import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, Loader2, Repeat, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Field, Input, Segmented, cn } from "@kalks/ui";
+import { Button, Dialog, Field, Input, Segmented, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { ToggleChip } from "@/components/social/controls";
 import { fmt as fmtUsdt, usdtAvailable, useWallet, type Overview } from "@/components/wallet-live/api";

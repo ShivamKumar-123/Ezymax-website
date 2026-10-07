@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Download, LineChart, Percent, Scale, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Button, KpiCard, Money, PageHeader, Reveal } from "@kalks/ui";
+import { Button, KpiCard, Money, PageHeader, Reveal } from "@/components/kit";
 import { COACH } from "@kalks/mock/academy";
 import { CoachChat, type CoachChatHandle } from "@/components/academy/coach-chat";
 import { OvertradingCard, RiskDistribution, SessionHeat, SymbolInsight } from "@/components/academy/coach-insights";

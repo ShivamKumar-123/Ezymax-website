@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { AlertOctagon, ArrowUpRight, Cable, Download, Gauge, KeyRound, Landmark, ListOrdered, Radio, ShieldCheck, Webhook, Layers } from "lucide-react";
-import { Button, Card, Chip, CopyButton, PageHeader, Reveal, cn } from "@kalks/ui";
+import { Button, Card, Chip, CopyButton, PageHeader, Reveal, cn } from "@/components/kit";
 import { API_BASE, API_ENDPOINTS, API_ERRORS, FIX_SESSION, RATE_LIMITS } from "@kalks/mock/developer";
 import { CodeBlock, toJson } from "@/components/developer/code-block";
 import { DocSection, DocTable, DocsLangContext, DocsNav, EndpointCard, MethodBadge, SampleBlock, useScrollSpy, type SampleLang } from "@/components/developer/docs";
@@ -330,7 +330,7 @@ function DemoDocsPage() {
                   ].map(([k, v]) => (
                     <div key={k} className="k-row flex min-w-0 items-center gap-2 px-3.5 py-2.5">
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
+                        <div className="truncate text-[11.5px] text-fg-3">{k}</div>
                         <div className="mt-0.5 truncate font-mono text-[12.5px]">{v}</div>
                       </div>
                       <CopyButton value={v!} label={k} />

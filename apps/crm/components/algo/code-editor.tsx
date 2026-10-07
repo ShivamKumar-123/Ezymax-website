@@ -5,7 +5,7 @@
 
 import * as React from "react";
 import { AlertTriangle, BookOpen, CircleCheck, Loader2 } from "lucide-react";
-import { cn } from "@kalks/ui";
+import { cn } from "@/components/kit";
 import { Trans, useT, useFormat } from "@kalks/i18n/react";
 import type { BuildError } from "./api";
 
@@ -95,7 +95,7 @@ export function CodeEditor({ value, onChange, errors, warnings, validating, read
         </span>
       </div>
       <div dir="ltr" className="relative flex font-mono text-[12.5px] leading-[20px]" style={{ height }}>
-        <div ref={gutter} aria-hidden className="w-11 shrink-0 overflow-hidden border-r border-line/60 bg-black/20 py-3 text-right text-fg-3">
+        <div ref={gutter} aria-hidden className="w-11 shrink-0 overflow-hidden border-r border-line/60 bg-black/20 light:bg-surface-2 py-3 text-right text-fg-3">
           {lines.map((_, i) => (
             <div key={i} title={errLines.get(i + 1)} className={cn("pr-2", errLines.has(i + 1) && "bg-down-soft text-down")}>
               {i + 1}

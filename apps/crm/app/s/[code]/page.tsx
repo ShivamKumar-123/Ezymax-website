@@ -156,7 +156,7 @@ export default async function SharePage({ params }: Props) {
                   ] as const
                 ).map(([k, v]) => (
                   <div key={k} className="k-row min-w-0 px-3.5 py-2.5">
-                    <dt className="truncate text-[10.5px] uppercase tracking-wider text-fg-3">{k}</dt>
+                    <dt className="truncate text-[11.5px] text-fg-3">{k}</dt>
                     <dd dir="ltr" className="k-num mt-1 truncate text-start text-[14px] font-medium">
                       {v}
                     </dd>

@@ -4,7 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, Clock3, Plus, Repeat2, Trash2, Check } from "lucide-react";
 import { toast } from "sonner";
-import { Menu, SymbolAvatar, cn } from "@kalks/ui";
+import { Menu, SymbolAvatar, cn } from "@/components/kit";
 import { INSTRUMENTS } from "@kalks/mock";
 import {
   COMPARATORS,
@@ -58,7 +58,7 @@ function NumInput({ value, onChange, step = 1, className, suffix }: { value: num
         }}
         onBlur={() => setTxt(String(value))}
         style={{ width: `${Math.max(2, txt.length) + 1}ch` }}
-        className="k-num h-6 rounded-md bg-black/25 px-1 text-center text-[12.5px] text-fg outline-none focus:ring-1 focus:ring-current"
+        className="k-num h-6 rounded-md bg-black/25 light:bg-surface-2 px-1 text-center text-[12.5px] text-fg outline-none focus:ring-1 focus:ring-current"
       />
       {suffix && <span className="ml-1 opacity-80">{suffix}</span>}
     </span>

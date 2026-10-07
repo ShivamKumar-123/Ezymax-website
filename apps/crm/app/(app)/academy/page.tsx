@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, Award, Bot, Flame, PlayCircle, Target } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, Chip, Icon3D, PageHeader, Reveal, Starfield, cn } from "@kalks/ui";
+import { Avatar, Button, Card, Chip, Icon3D, PageHeader, Reveal, Starfield, cn } from "@/components/kit";
 import { PEOPLE } from "@kalks/mock";
 import { CONTINUE_LEARNING, COURSES } from "@kalks/mock/academy";
 import { CourseGrid, Glossary, LEVEL_TONE, LearningPaths, QuizCard } from "@/components/academy/learn";
@@ -20,7 +20,7 @@ function ContinueHero() {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={c.image} alt="" className="absolute inset-0 size-full object-cover opacity-50" />
       <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/85 to-bg/20" />
-      <div className="absolute inset-0 bg-[radial-gradient(70%_100%_at_100%_100%,rgba(255,90,31,0.25),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(70%_100%_at_100%_100%,color-mix(in_oklab,var(--k-ember)_25%,transparent),transparent_60%)]" />
       <div className="relative flex h-full flex-col p-6 sm:p-7">
         <div className="flex flex-wrap items-center gap-2">
           <Chip tone="ember" dot>
@@ -49,7 +49,7 @@ function ContinueHero() {
           <Button variant="ember" size="lg" shimmer onClick={() => toast(`Resuming lesson ${CONTINUE_LEARNING.lesson}`, { description: CONTINUE_LEARNING.lessonTitle })}>
             <PlayCircle /> Resume lesson
           </Button>
-          <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/35 py-1 pl-1 pr-3.5 backdrop-blur-md">
+          <div className="flex items-center gap-2.5 rounded-full border border-white/10 light:border-line bg-black/35 light:bg-white/70 py-1 pl-1 pr-3.5 backdrop-blur-md">
             <Avatar src={inst.photo} name={inst.name} size={30} verified />
             <div className="leading-tight">
               <div className="text-[12.5px] font-medium">{inst.name}</div>
@@ -81,7 +81,7 @@ function StatsCard() {
         <div className="mt-4 flex gap-1.5">
           {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
             <div key={i} className="flex flex-1 flex-col items-center gap-1">
-              <span className={cn("grid size-7 place-items-center rounded-full border text-[10px]", week[i] ? "border-ember/40 bg-ember text-white shadow-[0_0_14px_-4px_rgba(255,90,31,0.8)]" : "border-line bg-black/30 text-fg-3")}>
+              <span className={cn("grid size-7 place-items-center rounded-full border text-[10px]", week[i] ? "border-ember/40 bg-ember text-white shadow-[0_0_14px_-4px_color-mix(in_oklab,var(--k-ember)_80%,transparent)]" : "border-line bg-black/30 light:bg-surface-2 text-fg-3")}>
                 {week[i] ? <Flame className="size-3.5" /> : null}
               </span>
               <span className="text-[10px] text-fg-3">{d}</span>
@@ -94,7 +94,7 @@ function StatsCard() {
             [<Target key="t" className="size-3.5" />, "34", "Lessons"],
             [<PlayCircle key="p" className="size-3.5" />, "9h 40m", "Watched"],
           ].map(([ic, v, l], i) => (
-            <div key={i} className="rounded-[14px] border border-white/10 bg-black/30 px-3 py-2.5 backdrop-blur-sm">
+            <div key={i} className="rounded-[14px] border border-white/10 light:border-line bg-black/30 light:bg-white/70 px-3 py-2.5 backdrop-blur-sm">
               <div className="text-fg-3">{ic}</div>
               <div className="k-num mt-1 text-[15px] font-semibold">{v}</div>
               <div className="text-[10.5px] text-fg-3">{l}</div>

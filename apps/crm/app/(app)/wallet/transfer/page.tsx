@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { ArrowDownUp, ArrowLeft, ArrowRight, Check, ChevronDown, CircleAlert, Info, ShieldCheck, Wallet, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, CoinIcon, Dialog, Input, KeyValue, Menu, PageHeader, Reveal, Segmented, cn, formatNumber, useQuote } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CoinIcon, Dialog, Input, KeyValue, Menu, PageHeader, Reveal, Segmented, cn, formatNumber, useQuote } from "@/components/kit";
 import { Trans, useT } from "@kalks/i18n/react";
 import { WALLET, WALLET_TXS, freeMargin, type TradingAccount, type WalletTx } from "@kalks/mock";
 import { CONVERSION, WALLET_LIMITS, liveAccounts, walletAvailableUsdt } from "@kalks/mock/wallet-extra";
@@ -348,14 +348,14 @@ function Transfer() {
                 {fromAcc && (
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     <div className="rounded-[14px] border border-white/10 bg-black/20 light:border-black/5 light:bg-white/70 px-3 py-2.5">
-                      <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("wallet.demo.freeMarginAfter")}</div>
+                      <div className="text-[11.5px] text-fg-3">{t("wallet.demo.freeMarginAfter")}</div>
                       <div className={cn("k-num mt-0.5 text-[14px] font-semibold", err ? "text-down" : "text-fg")}>
                         {fromAcc.cent ? "USC " : "$"}
                         {formatNumber(Math.max(0, freeMargin(fromAcc) - amt))}
                       </div>
                     </div>
                     <div className="rounded-[14px] border border-white/10 bg-black/20 light:border-black/5 light:bg-white/70 px-3 py-2.5">
-                      <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("wallet.demo.marginLevelAfter")}</div>
+                      <div className="text-[11.5px] text-fg-3">{t("wallet.demo.marginLevelAfter")}</div>
                       <div className={cn("k-num mt-0.5 text-[14px] font-semibold", newLevel < 300 ? "text-warn" : "text-up")}>{Number.isFinite(newLevel) ? `${Math.round(Math.max(0, newLevel)).toLocaleString()}%` : "—"}</div>
                     </div>
                   </div>
@@ -401,7 +401,7 @@ function Transfer() {
         <div className="space-y-3">
           <div className="k-row flex items-center gap-3 px-4 py-3">
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("wallet.from")}</div>
+              <div className="text-[12px] text-fg-3">{t("wallet.from")}</div>
               <div className="truncate text-[13.5px] font-medium">{fromAcc ? `#${fromAcc.login}` : t("wallet.demo.kalksWallet")}</div>
               <div dir="ltr" className="k-num text-[15px] font-semibold">
                 {formatNumber(amt, dec)} {srcCur}
@@ -409,7 +409,7 @@ function Transfer() {
             </div>
             <ArrowRight className="size-4 text-ember rtl:-scale-x-100" />
             <div className="min-w-0 flex-1 text-end">
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("wallet.to")}</div>
+              <div className="text-[12px] text-fg-3">{t("wallet.to")}</div>
               <div className="truncate text-[13.5px] font-medium">{toAcc ? `#${toAcc.login}` : t("wallet.demo.kalksWallet")}</div>
               <div dir="ltr" className="k-num text-[15px] font-semibold text-up">
                 {formatNumber(receive)} {receiveCur}

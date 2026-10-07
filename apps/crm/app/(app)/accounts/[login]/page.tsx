@@ -6,7 +6,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowDownToLine, ArrowLeft, ArrowUpFromLine, CandlestickChart, RefreshCcw, Server } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, Chip, CopyButton, EmptyState, Money, Starfield, Tabs, cn, formatNumber, useQuotes } from "@kalks/ui";
+import { Button, Card, Chip, CopyButton, EmptyState, Money, Starfield, Tabs, cn, formatNumber, useQuotes } from "@/components/kit";
 import { freeMargin, marginLevel, positionProfit } from "@kalks/mock";
 import { accountPositions, accountTrades, findAccount, isArchived } from "@kalks/mock/accounts-extra";
 import { AccountBadge, AccountMenu, accountTitle } from "@/components/account-row";

@@ -5,7 +5,7 @@ import { ArrowUpRight, Calculator, Check, Clock, Info, Loader2, Lock, Sparkles, 
 import { toast } from "sonner";
 import type { MessageKey } from "@kalks/i18n";
 import { Trans, useT } from "@kalks/i18n/react";
-import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, DialogClose, Icon3D, Input, KeyValue, MiniBars, PageHeader, Reveal, Segmented, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, DialogClose, Icon3D, Input, KeyValue, MiniBars, PageHeader, Reveal, Segmented, cn, type Column } from "@/components/kit";
 import { BannerSlot } from "./banner-slot";
 import {
   errorToast,
@@ -58,12 +58,12 @@ function BalanceHero({ r }: { r: Rewards }) {
         </div>
         <div className="mt-6 grid max-w-[340px] grid-cols-2 gap-2">
           <div className="rounded-[14px] border border-line bg-surface-2/70 px-3.5 py-3">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.loyalty.thisMonth")}</div>
+            <div className="text-[11.5px] text-fg-3">{t("rewards.loyalty.thisMonth")}</div>
             <div className={cn("k-num mt-1 text-[16px] font-semibold", r.points.earnedThisMonth > 0 ? "text-up" : "text-fg")}>{r.points.earnedThisMonth > 0 ? "+" : ""}{fmtPoints(r.points.earnedThisMonth)}</div>
             {last7.some((v) => v > 0) ? <MiniBars data={last7} className="mt-2 h-6" /> : <div className="mt-2 h-6 text-[11px] leading-6 text-fg-3">{t("rewards.loyalty.noTradesWeek")}</div>}
           </div>
           <div className="rounded-[14px] border border-line bg-surface-2/70 px-3.5 py-3">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.loyalty.lifetime")}</div>
+            <div className="text-[11.5px] text-fg-3">{t("rewards.loyalty.lifetime")}</div>
             <div className="k-num mt-1 text-[16px] font-semibold">{fmtPoints(r.points.lifetime)}</div>
             <div className="k-num mt-2 text-[11px] text-fg-3">{t("rewards.loyalty.lotsThisMonth", { lots: r.points.lotsThisMonth.toFixed(2) })}</div>
           </div>
@@ -117,7 +117,7 @@ function TierTrack({ r }: { r: Rewards }) {
         <div className="relative">
           <div className="absolute start-5 end-5 top-5 h-1.5 -translate-y-1/2 rounded-full bg-surface-3" />
           <div className="absolute start-5 end-5 top-5 h-1.5 -translate-y-1/2">
-            <div className="h-full rounded-full bg-gradient-to-r from-[#d98b4a] via-[#e9b949] to-[#ff8a3d] transition-[width] duration-500" style={{ width: `${overall}%` }} />
+            <div className="h-full rounded-full bg-gradient-to-r from-[#d98b4a] via-[#e9b949] to-[var(--k-ember-2)] transition-[width] duration-500" style={{ width: `${overall}%` }} />
           </div>
           <div className="relative flex justify-between">
             {tiers.map((tier, i) => {

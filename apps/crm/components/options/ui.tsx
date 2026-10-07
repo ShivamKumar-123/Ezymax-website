@@ -36,7 +36,7 @@ import {
   TriangleAlert,
   Wallet,
 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Dialog, Menu, PageHeader, Reveal, Skeleton, SymbolAvatar, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, Menu, PageHeader, Reveal, Skeleton, SymbolAvatar, cn } from "@/components/kit";
 import { INSTRUMENT_MAP } from "@kalks/mock";
 import { IS_DEMO } from "@kalks/mock/mode";
 import type { MessageKey } from "@kalks/i18n";

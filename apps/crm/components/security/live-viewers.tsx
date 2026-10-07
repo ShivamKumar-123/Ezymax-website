@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { AlertTriangle, CalendarDays, Eye, KeyRound, Pencil, Plus, ShieldOff, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, EmptyState, Field, Input, PageHeader, Skeleton, type ChipTone, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, EmptyState, Field, Input, PageHeader, Skeleton, type ChipTone, type Column } from "@/components/kit";
 import type { T } from "@kalks/i18n";
 import { useT } from "@kalks/i18n/react";
 import { FormError } from "@/components/auth";

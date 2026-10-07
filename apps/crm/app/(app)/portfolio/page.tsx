@@ -28,7 +28,7 @@ import {
   formatMoney,
   type Column,
   type SeriesPoint,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { accountUsd, equitySeries } from "@kalks/mock";
 import {
   ASSET_ALLOCATION,
@@ -119,7 +119,7 @@ function AllocationCard() {
           thickness={20}
           center={
             <div>
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">{by === "source" ? "Sources" : "Classes"}</div>
+              <div className="text-[12px] text-fg-3">{by === "source" ? "Sources" : "Classes"}</div>
               <div className="k-num mt-1 text-[22px] font-semibold">{data.length}</div>
               <div className="k-num text-[11px] text-fg-3">${formatCompact(T.total)}</div>
             </div>
@@ -417,11 +417,11 @@ function SourcesStrip() {
         <div className="text-[12px] text-fg-3">Lifetime IB commissions</div>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="k-row px-3 py-2">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Available</div>
+            <div className="text-[11.5px] text-fg-3">Available</div>
             <Money value={IB_EARNINGS.available} countUp={false} className="text-[13.5px] font-medium text-up" />
           </div>
           <div className="k-row px-3 py-2">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Pending</div>
+            <div className="text-[11.5px] text-fg-3">Pending</div>
             <Money value={IB_EARNINGS.pending} countUp={false} className="text-[13.5px] font-medium text-warn" />
           </div>
         </div>

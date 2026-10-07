@@ -3,7 +3,7 @@
 import * as React from "react";
 import { CalendarClock, Info, Lock, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Field, Input, KeyValue, Money, Toggle, cn, formatMoney } from "@kalks/ui";
+import { Button, Dialog, Field, Input, KeyValue, Money, Toggle, cn, formatMoney } from "@/components/kit";
 import { WALLET } from "@kalks/mock";
 import { masterById, type PammFund } from "@kalks/mock/social";
 import { Checkbox, RangeSlider, ToggleChip } from "./controls";
@@ -84,12 +84,12 @@ export function InvestDialog({ fund, open, onOpenChange }: { fund: PammFund | nu
 
         <div className="grid grid-cols-2 gap-3">
           <div className="k-row px-4 py-3">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">Units (preview)</div>
+            <div className="text-[12px] text-fg-3">Units (preview)</div>
             <div className="k-num mt-1 text-[18px] font-semibold">{units.toFixed(4)}</div>
             <div className="text-[11.5px] text-fg-3">at NAV {fund.navPerUnit.toFixed(4)}</div>
           </div>
           <div className="k-row px-4 py-3">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">Executes at</div>
+            <div className="text-[12px] text-fg-3">Executes at</div>
             <div className="mt-1 flex items-center gap-1.5 text-[14px] font-medium">
               <CalendarClock className="size-4 text-ember" /> {fund.nextRolloverLabel}
             </div>

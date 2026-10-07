@@ -4,7 +4,7 @@ import * as React from "react";
 import { QRCodeCanvas, QRCodeSVG } from "qrcode.react";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, cn } from "@kalks/ui";
+import { Button, Dialog, cn } from "@/components/kit";
 import { tr, useT } from "@kalks/i18n/react";
 import { shortUrl } from "./api";
 

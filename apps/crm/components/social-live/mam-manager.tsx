@@ -8,7 +8,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Briefcase, Calculator, Clock, FileText, Layers, Loader2, Pencil, Percent, Plus, ShieldAlert, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, Field, Input, KpiCard, Money, PageHeader, Segmented, StatusChip, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, Field, Input, KpiCard, Money, PageHeader, Segmented, StatusChip, cn, type Column } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { RadioCard } from "@/components/social/controls";
 import { SecretField, TradeButton } from "@/components/trading/ui";

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, CandlestickChart, Eye, EyeOff, Loader2, RotateCw } from "lucide-react";
-import { Button, Card, Chip, CopyButton, EmptyState, Progress, cn, type ButtonProps } from "@kalks/ui";
+import { Button, Card, Chip, CopyButton, EmptyState, Progress, cn, type ButtonProps } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { openTerminal } from "@/components/trading/api";
 import { ERROR_LINK, PropError, usd } from "./api";
@@ -233,7 +233,7 @@ export function PropTradeButton({ login, disabled, reason, size = "sm", label, .
 export function Tile({ label, value, sub, tone }: { label: React.ReactNode; value: React.ReactNode; sub?: React.ReactNode; tone?: "up" | "down" }) {
   return (
     <div className="k-row min-w-0 px-3.5 py-3">
-      <div className="truncate text-[10.5px] uppercase tracking-wider text-fg-3">{label}</div>
+      <div className="truncate text-[11.5px] text-fg-3">{label}</div>
       <div className={cn("k-num mt-1 truncate text-[16px] font-semibold tracking-tight", tone === "up" && "text-up", tone === "down" && "text-down")}>{value}</div>
       {sub && <div className="mt-0.5 truncate text-[11px] text-fg-3">{sub}</div>}
     </div>

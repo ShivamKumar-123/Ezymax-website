@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { Card, Chip, CopyButton, Segmented, cn } from "@kalks/ui";
+import { Card, Chip, CopyButton, Segmented, cn } from "@/components/kit";
 import { API_BASE, type ApiEndpoint, type HttpMethod } from "@kalks/mock/developer";
 import { CodeBlock, toJson, type CodeLang } from "./code-block";
 

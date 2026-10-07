@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Clock, Download, Receipt } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, DataTable, KpiCard, Money, PageHeader, Reveal, Segmented, StatusChip, formatDateTime, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, DataTable, KpiCard, Money, PageHeader, Reveal, Segmented, StatusChip, formatDateTime, formatNumber, type Column } from "@/components/kit";
 import { tr, useT } from "@kalks/i18n/react";
 import { WALLET_TXS, type WalletTx } from "@kalks/mock";
 import { TX_TYPE_LABEL, fullHash, txDirection } from "@kalks/mock/wallet-extra";

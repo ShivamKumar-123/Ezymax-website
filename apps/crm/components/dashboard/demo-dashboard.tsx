@@ -3,17 +3,25 @@
 import * as React from "react";
 import Link from "next/link";
 import {
+  ArrowDownToLine,
+  ArrowLeftRight,
+  ArrowUpFromLine,
   ArrowUpRight,
+  Award,
   BadgeCheck,
   CandlestickChart,
-  Check,
-  ChevronRight,
+  Coins,
+  Copy,
+  Gift,
+  IdCard,
+  LifeBuoy,
   LineChart,
-  Plus,
+  Mail,
+  Phone,
+  Repeat,
   TrendingUp,
+  Users,
   Wallet,
-  Award,
-  X,
 } from "lucide-react";
 import {
   AiPromptBar,
@@ -22,7 +30,7 @@ import {
   Card,
   CardHeader,
   Chip,
-  EquityChart,
+  CoinIcon,
   Gauge,
   Icon3D,
   KpiCard,
@@ -31,32 +39,28 @@ import {
   Money,
   PageHeader,
   PriceText,
-  Progress,
   Reveal,
-  Segmented,
   SymbolAvatar,
-  Starfield,
   WorldMap,
   cn,
   formatMoney,
   useQuotes,
-} from "@kalks/ui";
-import {
-  ACCOUNTS,
-  CALENDAR,
-  DASHBOARD,
-  NEWS,
-  ONBOARDING,
-  POSITIONS,
-  equitySeries,
-  positionProfit,
-} from "@kalks/mock";
-import type { SeriesPoint } from "@kalks/ui";
-import { AccountRow } from "@/components/account-row";
+} from "@/components/kit";
+import { ACCOUNTS, CALENDAR, DASHBOARD, ME, NEWS, ONBOARDING, POSITIONS, WALLET, WALLET_TXS, equitySeries, freeMargin, marginLevel, positionProfit, type TradingAccount, type WalletTx } from "@kalks/mock";
+import { COPY_SUBSCRIPTIONS } from "@kalks/mock/portfolio-extra";
+import { LOYALTY } from "@kalks/mock/rewards";
+import { AccountMenu, accountTitle } from "@/components/account-row";
 import { MoversCard } from "@/components/dashboard/movers";
 import { useSession } from "@/components/session";
 import { TERMINAL_URL } from "@/lib/live";
 import { Trans, useFormat, useT } from "@kalks/i18n/react";
+import { AccountsPanel, type CardAccount } from "@/components/dashboard/home/accounts-panel";
+import { BalancePanel, QuickActions } from "@/components/dashboard/home/balance-panel";
+import { ActivityTabs, ChecklistCard, type ListRowItem } from "@/components/dashboard/home/list-cards";
+import { NotificationsPanel, type Prompt } from "@/components/dashboard/home/notifications-panel";
+import { OverviewLayout, SectionTitle } from "@/components/dashboard/home/overview";
+import { RANGE_DAYS, StatisticCard, type StatMode, type StatRange } from "@/components/dashboard/home/statistic-card";
+import type { TrendPoint } from "@/components/dashboard/home/trend-chart";
 
 function greeting() {
   const h = new Date().getHours();
@@ -64,98 +68,223 @@ function greeting() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Overview blocks on sample data                                      */
+/* ------------------------------------------------------------------ */
 
-function OnboardingStrip() {
+function toCard(a: TradingAccount, t: ReturnType<typeof useT>): CardAccount {
+  return {
+    login: a.login,
+    type: a.type,
+    title: accountTitle(a, t),
+    name: a.nickname ?? null,
+    currency: a.cent ? "USC " : "$",
+    cent: a.cent,
+    balance: a.balance,
+    equity: a.equity,
+    freeMargin: freeMargin(a),
+    marginLevel: Number.isFinite(marginLevel(a)) ? marginLevel(a) : null,
+    leverage: a.leverage,
+    server: a.server,
+  };
+}
+
+/** Sample equity / P&L for the Statistics card: this period and the one before it (P&L is cumulative from the start of each period). */
+function useDemoSeries(mode: StatMode, range: StatRange) {
+  const all = React.useMemo(() => equitySeries(740, DASHBOARD.totalEquity), []);
+  return React.useMemo(() => {
+    const n = RANGE_DAYS[range];
+    const cur = all.slice(-n);
+    const prev = all.slice(-2 * n, -n);
+    const step = range === "year" ? 7 : 1;
+    const thin = <T,>(xs: T[]) => xs.filter((_, i) => i % step === 0 || i === xs.length - 1);
+    const base = (xs: typeof all) => (mode === "pnl" ? xs[0]!.value : 0);
+    const points: TrendPoint[] = thin(cur).map((p) => ({ t: p.time * 1000, v: p.value - base(cur) }));
+    const compare = thin(prev).map((p) => p.value - base(prev));
+    return { points, compare };
+  }, [all, mode, range]);
+}
+
+const TX_ICON: Record<WalletTx["type"], { icon: React.ReactNode; tone: ListRowItem["tone"] }> = {
+  deposit: { icon: <ArrowDownToLine />, tone: "mint" },
+  withdrawal: { icon: <ArrowUpFromLine />, tone: "coral" },
+  transfer: { icon: <ArrowLeftRight />, tone: "lavender" },
+  "ib-payout": { icon: <Coins />, tone: "amber" },
+  "copy-fee": { icon: <Users />, tone: "pink" },
+  bonus: { icon: <Gift />, tone: "pink" },
+  conversion: { icon: <Repeat />, tone: "sky" },
+};
+
+function DemoOverview() {
+  const me = useSession();
   const t = useT();
-  const [hidden, setHidden] = React.useState(false);
+  const f = useFormat();
+  const [hour, setHour] = React.useState<string>("evening");
+  React.useEffect(() => setHour(greeting()), []);
+  const [mode, setMode] = React.useState<StatMode>("equity");
+  const [range, setRange] = React.useState<StatRange>("month");
+  const series = useDemoSeries(mode, range);
+  const ib = DASHBOARD.earnings;
+  const cards = React.useMemo(() => ACCOUNTS.map((a) => toCard(a, t)), [t]);
   const done = ONBOARDING.filter((s) => s.done).length;
-  if (hidden) return null;
+
+  const STEP_ICON: Record<string, React.ReactNode> = { email: <Mail />, phone: <Phone />, deposit: <Wallet />, kyc: <IdCard /> };
+  const checklist: ListRowItem[] = ONBOARDING.map((s) => ({
+    key: s.key,
+    icon: STEP_ICON[s.key] ?? <BadgeCheck />,
+    tone: s.key === "kyc" ? "amber" : "accent",
+    title: s.label,
+    sub: s.done ? undefined : t("dashboard.onboarding.text"),
+    done: s.done,
+    status: s.done ? { label: t("dashboard.steps.state.done"), tone: "up" as const } : undefined,
+    action: s.done ? undefined : { label: t("common.continue"), href: "/profile/verification" },
+  }));
+
+  const txRows: ListRowItem[] = WALLET_TXS.slice(0, 5).map((x) => {
+    const out = x.type === "withdrawal" || x.type === "copy-fee";
+    return {
+      key: x.id,
+      icon: TX_ICON[x.type].icon,
+      tone: TX_ICON[x.type].tone,
+      title: t.dyn(`wallet.txType.${x.type}`, x.type),
+      sub: `${f.date(x.createdAt, { day: "numeric", month: "short" })} · ${x.asset}`,
+      value: (
+        <span dir="ltr" className={out ? "text-fg" : "text-up"}>
+          {out ? "-" : "+"}
+          {formatMoney(x.amount)}
+        </span>
+      ),
+      href: "/wallet/history",
+    };
+  });
+  const fundingRows: ListRowItem[] = [
+    ...WALLET.assets.map((a) => ({
+      key: a.asset,
+      icon: <CoinIcon coin={a.icon} size={28} />,
+      tone: "neutral" as const,
+      title: `${a.asset} · ${a.network}`,
+      sub: `${a.balance.toLocaleString("en-US")} ${a.asset} · ${formatMoney(a.usd)}`,
+      status: a.asset === "USDT" ? { label: t("dashboard.home.connected"), tone: "ember" as const } : undefined,
+      action: a.asset === "USDT" ? undefined : { label: t("common.deposit"), href: "/wallet/deposit" },
+    })),
+  ];
+  const linkedRows: ListRowItem[] = [
+    { key: "trader", icon: <CandlestickChart />, tone: "accent", title: "Kalks Trader", sub: t("dashboard.trader.chip"), action: { label: t("common.open"), href: TERMINAL_URL, external: true } },
+    { key: "ib", icon: <Award />, tone: "amber", title: t("shell.nav.partner"), sub: ME.ibLevelName, status: { label: t("common.active"), tone: "ember" } },
+    { key: "copy", icon: <Copy />, tone: "pink", title: t("shell.nav.copyTrading"), sub: t("dashboard.home.subscriptions", { count: COPY_SUBSCRIPTIONS.length }), status: { label: t("common.active"), tone: "ember" } },
+    { key: "loyalty", icon: <Gift />, tone: "lavender", title: t("shell.nav.loyalty"), sub: t("dashboard.home.points", { points: LOYALTY.balance.toLocaleString("en-US") }), action: { label: t("dashboard.home.redeem"), href: "/rewards/loyalty" } },
+  ];
+
+  const prompts: Prompt[] =
+    me.kyc_status === "verified"
+      ? []
+      : [
+          {
+            id: "kyc",
+            title: t("dashboard.steps.kyc.title"),
+            text: me.kyc_status === "pending" ? t("dashboard.steps.kyc.review") : t("dashboard.steps.kyc.todo"),
+            icon: <IdCard />,
+            tone: "amber",
+            action: { label: t("dashboard.home.verifyNow"), href: "/profile/verification" },
+          },
+        ];
+
   return (
-    <Reveal>
-      <Card hot className="mb-5 overflow-hidden">
-        <Starfield density={40} />
-        <div className="relative flex flex-col gap-4 px-5 py-4 md:flex-row md:items-center">
-          <div className="flex items-center gap-4">
-            <Icon3D name="rocket" size={48} />
-            <div>
-              <div className="text-[15px] font-medium">{t("dashboard.onboarding.title")}</div>
-              <div className="text-[13px] text-fg-2">{t("dashboard.onboarding.text")}</div>
-            </div>
-          </div>
-          <ol className="flex flex-1 flex-wrap items-center gap-2 md:justify-center">
-            {ONBOARDING.map((s) => (
-              <li key={s.key} className={cn("flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12.5px]", s.done ? "border-up/25 bg-up-soft text-up" : "border-ember/40 bg-ember-soft text-ember")}>
-                {s.done ? <Check className="size-3.5" /> : <span className="size-1.5 animate-pulse-dot rounded-full bg-ember" />}
-                {s.label}
-              </li>
-            ))}
-          </ol>
-          <div className="flex items-center gap-3">
-            <div className="w-28">
-              <div className="mb-1 flex justify-between text-[11px] text-fg-3">
-                <span>{t("dashboard.onboarding.progress")}</span>
-                <span className="k-num">{Math.round((done / ONBOARDING.length) * 100)}%</span>
+    <OverviewLayout
+      header={<PageHeader className="mb-0" title={t("shell.nav.overview")} subtitle={t.dyn(`dashboard.greeting.${hour}`, undefined, { name: me.first_name })} />}
+      kpis={
+        <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 [&>*]:w-[78%] [&>*]:shrink-0 [&>*]:snap-start sm:[&>*]:w-auto">
+          <KpiCard label={t("dashboard.equity.title")} icon={<TrendingUp />} value={<Money value={DASHBOARD.totalEquity} />} chip={t("dashboard.kpi.today", { pct: DASHBOARD.equityChangeTodayPct })} chipTone="up" href="/portfolio" />
+          <KpiCard label={t("dashboard.home.todayPnl")} icon={<LineChart />} value={<Money value={DASHBOARD.equityChangeToday} signed tone="up" />} chip={t("dashboard.kpi.vsLastMonth", { pct: DASHBOARD.monthPnlPct })} chipTone="up" href="/portfolio/analytics" accent="var(--k-up)" delay={0.05} />
+          <KpiCard
+            label={t("dashboard.home.walletBalance")}
+            icon={<Wallet />}
+            value={<Money value={DASHBOARD.wallet} />}
+            accent="var(--k-info)"
+            footer={
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-1.5 rtl:space-x-reverse">
+                  {["usdt", "trx", "btc"].map((c) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={c} src={`/assets/coins/${c}.svg`} alt={c} className="size-5 rounded-full ring-2 ring-surface" />
+                  ))}
+                </div>
+                <span className="text-[12px] font-semibold text-fg-3">USDT · TRC20</span>
               </div>
-              <Progress value={(done / ONBOARDING.length) * 100} />
-            </div>
-            <Link href="/profile/verification">
-              <Button size="sm" variant="ember">
-                {t("common.continue")} <ChevronRight className="rtl:-scale-x-100" />
-              </Button>
-            </Link>
-            <button onClick={() => setHidden(true)} className="text-fg-3 hover:text-fg" aria-label={t("dashboard.onboarding.dismiss")}>
-              <X className="size-4" />
-            </button>
-          </div>
+            }
+            href="/wallet"
+            delay={0.1}
+          />
+          <KpiCard
+            label={t("dashboard.home.rewardsEarnings")}
+            icon={<Award />}
+            value={<Money value={ib.total} />}
+            chipTone="gold"
+            accent="var(--k-gold)"
+            footer={
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Chip size="sm" tone="gold">IB ${ib.ib.toFixed(0)}</Chip>
+                <Chip size="sm">{t("dashboard.kpi.copy", { amount: `$${ib.copy.toFixed(0)}` })}</Chip>
+                <Chip size="sm">PAMM ${ib.pamm.toFixed(0)}</Chip>
+              </div>
+            }
+            href="/partner"
+            delay={0.15}
+          />
         </div>
-      </Card>
-    </Reveal>
+      }
+      statistic={<StatisticCard mode={mode} onMode={setMode} range={range} onRange={setRange} points={series.points} compare={series.compare} />}
+      checklist={<ChecklistCard title={t("dashboard.onboarding.title")} subtitle={t("dashboard.onboarding.text")} rows={checklist} done={done} total={ONBOARDING.length} />}
+      accounts={
+        <AccountsPanel
+          accounts={cards}
+          actions={(c) => {
+            const a = ACCOUNTS.find((x) => x.login === c.login)!;
+            return (
+              <>
+                <a href={`${TERMINAL_URL}/?account=${a.login}`} target="_blank" rel="noopener" className="flex-1">
+                  <Button variant="ember" className="w-full">
+                    <CandlestickChart /> {t("dashboard.home.trade")}
+                  </Button>
+                </a>
+                <Link href={`/wallet/transfer?to=${a.login}`} className="flex-1">
+                  <Button variant="surface" className="w-full">
+                    <ArrowDownToLine /> {t("common.deposit")}
+                  </Button>
+                </Link>
+                <AccountMenu a={a} />
+              </>
+            );
+          }}
+        />
+      }
+      activity={
+        <ActivityTabs
+          tabs={[
+            { key: "history", label: t("dashboard.home.history"), rows: txRows, empty: t("wallet.recent.emptyText"), more: { label: t("common.viewAll"), href: "/wallet/history" } },
+            { key: "funding", label: t("dashboard.home.funding"), rows: fundingRows, empty: t("wallet.recent.emptyText") },
+            { key: "linked", label: t("dashboard.home.linked"), rows: linkedRows, empty: "" },
+          ]}
+        />
+      }
+      balance={<BalancePanel total={DASHBOARD.totalEquity + DASHBOARD.wallet} chip={<span dir="ltr">+{DASHBOARD.equityChangeTodayPct}%</span>} chipTone="up" sub={t("dashboard.home.totalBalanceSub")} />}
+      quick={
+        <QuickActions
+          title={t("dashboard.home.quickActions")}
+          items={[
+            { key: "transfer", label: t("common.transfer"), href: "/wallet/transfer", icon: <ArrowLeftRight className="rtl:-scale-x-100" />, tone: "lavender" },
+            { key: "trader", label: "Kalks Trader", href: TERMINAL_URL, icon: <CandlestickChart />, tone: "accent", external: true },
+            { key: "copy", label: t("shell.nav.copyTrading"), href: "/social", icon: <Copy />, tone: "pink" },
+            { key: "support", label: t("shell.nav.support"), href: "/support", icon: <LifeBuoy />, tone: "amber" },
+          ]}
+        />
+      }
+      notifications={<NotificationsPanel prompts={prompts} />}
+    />
   );
 }
 
 /* ------------------------------------------------------------------ */
-
-function AccountsCard() {
-  const t = useT();
-  const [tab, setTab] = React.useState<"live" | "demo">("live");
-  const list = ACCOUNTS.filter((a) => a.type === tab);
-  return (
-    <Card className="flex h-full flex-col">
-      <CardHeader
-        title={t("dashboard.accounts.myTitle")}
-        action={
-          <>
-            <Segmented
-              size="xs"
-              value={tab}
-              onChange={setTab}
-              options={[
-                { value: "live", label: <>{t("common.live")} <span className="text-fg-3">{ACCOUNTS.filter((a) => a.type === "live").length}</span></> },
-                { value: "demo", label: <>{t("common.demo")} <span className="text-fg-3">{ACCOUNTS.filter((a) => a.type === "demo").length}</span></> },
-              ]}
-            />
-            <Link href="/accounts/new">
-              <Button size="sm" variant="surface">
-                <Plus /> {t("dashboard.accounts.open")}
-              </Button>
-            </Link>
-          </>
-        }
-      />
-      <div className="relative mt-4 flex-1 space-y-3 px-4 pb-5 sm:px-6">
-        {list.map((a) => (
-          <AccountRowCompact key={a.login} login={a.login} />
-        ))}
-      </div>
-    </Card>
-  );
-}
-
-function AccountRowCompact({ login }: { login: string }) {
-  const a = ACCOUNTS.find((x) => x.login === login)!;
-  return <AccountRow a={a} compact />;
-}
-
+/* More cards below the overview                                       */
 /* ------------------------------------------------------------------ */
 
 function MarginHealth() {
@@ -168,56 +297,17 @@ function MarginHealth() {
     <Card className="flex h-full flex-col">
       <CardHeader title={t("dashboard.margin.title")} subtitle={t("dashboard.margin.subtitle")} action={<Chip tone="up" dot>{t("dashboard.margin.healthy")}</Chip>} />
       <div className="flex flex-1 items-center justify-center py-4">
-        <Gauge value={Math.min(level, 2000)} max={2000} display={`${Math.round(level).toLocaleString()}%`} label={t("dashboard.margin.level")} size={230} />
+        <Gauge value={Math.min(level, 2000)} max={2000} display={`${Math.round(level).toLocaleString()}%`} label={t("dashboard.margin.level")} size={220} />
       </div>
-      <div className="grid grid-cols-2 gap-3 px-6 pb-6">
+      <div className="grid grid-cols-2 gap-3 px-5 pb-5 sm:px-6 sm:pb-6">
         <div className="k-row px-4 py-3">
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("dashboard.margin.used")}</div>
-          <Money value={margin} className="mt-1 block text-[15px] font-medium" />
+          <div className="text-[12px] text-fg-3">{t("dashboard.margin.used")}</div>
+          <Money value={margin} className="mt-1 block text-[15px] font-bold" />
         </div>
         <div className="k-row px-4 py-3">
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("dashboard.margin.free")}</div>
-          <Money value={equity - margin} className="mt-1 block text-[15px] font-medium" />
+          <div className="text-[12px] text-fg-3">{t("dashboard.margin.free")}</div>
+          <Money value={equity - margin} className="mt-1 block text-[15px] font-bold" />
         </div>
-      </div>
-    </Card>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-
-const RANGES = ["1W", "1M", "3M", "YTD", "1Y", "ALL"] as const;
-const RANGE_DAYS: Record<(typeof RANGES)[number], number> = { "1W": 7, "1M": 30, "3M": 90, YTD: 267, "1Y": 365, ALL: 540 };
-
-function EquityCard() {
-  const t = useT();
-  const f = useFormat();
-  const [range, setRange] = React.useState<(typeof RANGES)[number]>("3M");
-  const all = React.useMemo(() => equitySeries(540, DASHBOARD.totalEquity), []);
-  const data = React.useMemo(() => all.slice(-RANGE_DAYS[range]), [all, range]);
-  const [hover, setHover] = React.useState<SeriesPoint | null>(null);
-  const onHover = React.useCallback((p: SeriesPoint | null) => setHover(p), []);
-  const first = data[0]!.value;
-  const shown = hover?.value ?? DASHBOARD.totalEquity;
-  const diff = shown - first;
-  return (
-    <Card className="h-full">
-      <div className="flex flex-col gap-4 px-6 pt-6 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="k-label flex items-center gap-2">{t("dashboard.equity.title")}</div>
-          <div className="mt-2 flex flex-wrap items-baseline gap-3">
-            <Money value={shown} countUp={!hover} className="text-[34px] font-semibold tracking-tight" />
-            <Chip tone={diff >= 0 ? "up" : "down"}>
-              {diff >= 0 ? "+" : "-"}
-              {formatMoney(Math.abs(diff))} ({((diff / first) * 100).toFixed(2)}%)
-            </Chip>
-          </div>
-          <div className="mt-1 text-xs text-fg-3">{hover ? f.date(hover.time * 1000, { day: "2-digit", month: "short", year: "numeric" }) : t("dashboard.equity.changeOver", { range })}</div>
-        </div>
-        <Segmented size="xs" value={range} onChange={setRange} options={RANGES} />
-      </div>
-      <div className="px-3 pb-4 pt-2">
-        <EquityChart data={data} height={300} onHover={onHover} />
       </div>
     </Card>
   );
@@ -227,11 +317,11 @@ function ProfitLossCard() {
   const t = useT();
   return (
     <Card className="flex h-full flex-col">
-      <div className="px-6 pt-6">
+      <div className="px-5 pt-5 sm:px-6 sm:pt-6">
         <div className="flex items-start justify-between">
           <div>
             <div className="k-label">{t("dashboard.pnl.title")}</div>
-            <Money value={DASHBOARD.monthPnl} signed className="mt-2 block text-[28px] font-semibold text-up" />
+            <Money value={DASHBOARD.monthPnl} signed className="k-display mt-2 block text-[28px] font-bold text-up" />
           </div>
           <Chip tone="up" dot>
             {t("dashboard.pnl.lowRisk")}
@@ -240,16 +330,16 @@ function ProfitLossCard() {
         <div className="mt-6 flex items-end justify-between text-xs">
           <div>
             <div className="text-fg-3">{t("common.loss")}</div>
-            <div className="k-num text-base font-semibold text-down">{DASHBOARD.profitShare.lossPct}%</div>
+            <div className="k-num text-base font-bold text-down">{DASHBOARD.profitShare.lossPct}%</div>
           </div>
           <div className="text-end">
             <div className="text-fg-3">{t("common.profit")}</div>
-            <div className="k-num text-base font-semibold text-up">{DASHBOARD.profitShare.profitPct}%</div>
+            <div className="k-num text-base font-bold text-up">{DASHBOARD.profitShare.profitPct}%</div>
           </div>
         </div>
-        <BarcodeBars lossPct={DASHBOARD.profitShare.lossPct} className="mt-2" height={88} />
+        <BarcodeBars lossPct={DASHBOARD.profitShare.lossPct} className="mt-2" height={80} />
       </div>
-      <div className="mt-4 flex-1 divide-y divide-line px-6 pb-4">
+      <div className="mt-4 flex-1 divide-y divide-line px-5 pb-4 sm:px-6">
         {[
           [t("dashboard.pnl.winRate"), "64.2%"],
           [t("dashboard.pnl.trades"), "148"],
@@ -259,16 +349,15 @@ function ProfitLossCard() {
         ].map(([k, v]) => (
           <div key={k} className="flex items-center justify-between py-2.5 text-[13px]">
             <span className="text-fg-3">{k}</span>
-            <span dir="ltr" className={cn("k-num font-medium", v.startsWith("-") ? "text-down" : "text-fg")}>{v}</span>
+            <span dir="ltr" className={cn("k-num font-semibold", v.startsWith("-") ? "text-down" : "text-fg")}>
+              {v}
+            </span>
           </div>
         ))}
       </div>
     </Card>
   );
 }
-
-/* ------------------------------------------------------------------ */
-
 
 function CalendarCard() {
   const t = useT();
@@ -287,11 +376,11 @@ function CalendarCard() {
       />
       <div className="k-fade-bottom mt-4 flex-1 space-y-2 px-4 pb-5 sm:px-6">
         {CALENDAR.slice(0, 5).map((e) => (
-          <div key={e.id} className="k-row relative flex items-center gap-3 overflow-hidden py-3 ps-5 pe-4">
+          <div key={e.id} className="k-row relative flex items-center gap-3 overflow-hidden py-3 pe-4 ps-5">
             <span className={cn("absolute inset-y-2 start-0 w-[3px] rounded-e-full", e.impact === 3 ? "bg-down" : e.impact === 2 ? "bg-warn" : "bg-fg-3")} />
             <div className="w-11 shrink-0 font-mono text-[12px] text-fg-3">{e.time}</div>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[13.5px] font-medium">{e.title}</div>
+              <div className="truncate text-[13.5px] font-semibold">{e.title}</div>
               <div className="k-num mt-0.5 text-[11.5px] text-fg-3">
                 {e.actual ? <span className="text-fg-2">{t("dashboard.calendar.actual", { value: e.actual })}</span> : null}
                 {t("dashboard.calendar.forecastPrevious", { forecast: e.forecast, previous: e.previous })}
@@ -329,10 +418,14 @@ function NewsCard() {
             <img src={n.image} alt="" className="size-14 shrink-0 rounded-xl object-cover" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-[11.5px] text-fg-3">
-                {n.pinned && <Chip size="sm" tone="ember">{t("dashboard.news.pinned")}</Chip>}
+                {n.pinned && (
+                  <Chip size="sm" tone="ember">
+                    {t("dashboard.news.pinned")}
+                  </Chip>
+                )}
                 <span>{n.source}</span>·<span>{t("dashboard.time.minutesAgo", { count: n.minutesAgo })}</span>
               </div>
-              <div className="mt-1 line-clamp-2 text-[13.5px] font-medium leading-snug">{n.title}</div>
+              <div className="mt-1 line-clamp-2 text-[13.5px] font-semibold leading-snug">{n.title}</div>
               <div className="mt-1.5 flex gap-1.5">
                 {n.symbols.map((s) => (
                   <span key={s} className="rounded-md bg-surface-3 px-1.5 py-0.5 font-mono text-[10.5px] text-fg-2">
@@ -347,8 +440,6 @@ function NewsCard() {
     </Card>
   );
 }
-
-/* ------------------------------------------------------------------ */
 
 function WorldCard() {
   const pins = [
@@ -371,7 +462,7 @@ function WorldCard() {
       <div className="px-4 pt-2 sm:px-6">
         <WorldMap pins={pins} heat={heat} />
       </div>
-      <div className="px-6 pb-6 pt-2">
+      <div className="px-5 pb-6 pt-2 sm:px-6">
         <MarketSessions />
       </div>
     </Card>
@@ -389,7 +480,7 @@ function PositionsCard() {
         subtitle={
           <span>
             {t("dashboard.positions.summary", { count: POSITIONS.length })}{" "}
-            <span className={cn("k-num font-medium", total >= 0 ? "text-up" : "text-down")}>
+            <span className={cn("k-num font-semibold", total >= 0 ? "text-up" : "text-down")}>
               {total >= 0 ? "+" : "-"}
               {formatMoney(Math.abs(total))}
             </span>
@@ -409,9 +500,9 @@ function PositionsCard() {
           const pnl = positionProfit(p, q.bid, q.ask);
           return (
             <div key={p.ticket} className="k-row flex items-center gap-3 px-4 py-2.5">
-              <SymbolAvatar symbol={p.symbol} size={24} />
+              <SymbolAvatar symbol={p.symbol} size={26} />
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 text-[13.5px] font-medium">
+                <div className="flex items-center gap-2 text-[13.5px] font-semibold">
                   {p.symbol}
                   <Chip size="sm" tone={p.side === "buy" ? "up" : "down"}>
                     {t(p.side === "buy" ? "common.buy" : "common.sell").toUpperCase()} {p.volume}
@@ -421,7 +512,7 @@ function PositionsCard() {
                   {p.openPrice} → <PriceText symbol={p.symbol} value={p.side === "buy" ? q.bid : q.ask} dir={q.dir} className="text-[11px]" />
                 </div>
               </div>
-              <div dir="ltr" className={cn("k-num text-end text-[14px] font-semibold", pnl >= 0 ? "text-up" : "text-down")}>
+              <div dir="ltr" className={cn("k-num text-end text-[14px] font-bold", pnl >= 0 ? "text-up" : "text-down")}>
                 {pnl >= 0 ? "+" : "-"}
                 {formatMoney(Math.abs(pnl))}
               </div>
@@ -433,148 +524,85 @@ function PositionsCard() {
   );
 }
 
+function PartnerBanner() {
+  const me = useSession();
+  const t = useT();
+  return (
+    <Card className="k-card-hot relative overflow-hidden">
+      <div className="relative flex flex-col gap-5 p-6 sm:p-7 md:flex-row md:items-center md:justify-between">
+        <div className="max-w-xl">
+          <Chip tone="gold" className="mb-3">
+            <BadgeCheck className="size-3.5" /> {t("dashboard.partner.chip")}
+          </Chip>
+          <h3 className="k-display text-[22px] font-bold tracking-[-0.02em] sm:text-2xl">{t("dashboard.partner.title")}</h3>
+          <p className="mt-2 text-sm text-fg-2">
+            <Trans k="dashboard.partner.text" vars={{ url: `kalks.com/r/${me.referral_code}` }} tags={{ link: (c) => <span className="font-mono text-fg" dir="ltr">{c}</span> }} />
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <Icon3D name="handshake" size={72} className="hidden md:inline-grid" />
+          <Link href="/partner">
+            <Button variant="ink" size="lg">
+              {t("dashboard.partner.open")} <ArrowUpRight className="rtl:-scale-x-100" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 
 export default function DemoDashboard() {
-  const me = useSession();
   const t = useT();
-  const [hour, setHour] = React.useState<string>("evening");
-  React.useEffect(() => setHour(greeting()), []);
-  const ib = DASHBOARD.earnings;
   return (
     <div className="pb-40">
-      <PageHeader
-        title={t.dyn(`dashboard.greeting.${hour}`, undefined, { name: me.first_name })}
-        subtitle={t("dashboard.subtitle.demo")}
-        actions={
+      <DemoOverview />
+
+      <SectionTitle
+        action={
           <Link target="_blank" rel="noopener" href={TERMINAL_URL}>
-            <Button variant="ember" size="lg" shimmer>
-              {t("dashboard.openTerminal")} <ArrowUpRight />
+            <Button variant="ink">
+              {t("dashboard.openTerminal")} <ArrowUpRight className="rtl:-scale-x-100" />
             </Button>
           </Link>
         }
-      />
-
-      <OnboardingStrip />
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
-          label={t("dashboard.equity.title")}
-          icon={<TrendingUp />}
-          value={<Money value={DASHBOARD.totalEquity} />}
-          chip={t("dashboard.kpi.today", { pct: DASHBOARD.equityChangeTodayPct })}
-          chipTone="up"
-          href="/portfolio"
-        />
-        <KpiCard
-          label={t("dashboard.kpi.wallet")}
-          icon={<Wallet />}
-          value={<Money value={DASHBOARD.wallet} />}
-          footer={
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-1.5">
-                {["usdt", "trx", "btc"].map((c) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={c} src={`/assets/coins/${c}.svg`} alt={c} className="size-5 rounded-full ring-2 ring-surface" />
-                ))}
-              </div>
-              <span className="text-[11.5px] text-fg-3">USDT · TRC20</span>
-            </div>
-          }
-          href="/wallet"
-          delay={0.05}
-        />
-        <KpiCard
-          label={t("dashboard.kpi.monthPnl")}
-          icon={<LineChart />}
-          value={<Money value={DASHBOARD.monthPnl} signed tone="up" />}
-          chip={t("dashboard.kpi.vsLastMonth", { pct: DASHBOARD.monthPnlPct })}
-          chipTone="up"
-          href="/portfolio/analytics"
-          delay={0.1}
-        />
-        <KpiCard
-          label={t("dashboard.kpi.partnerEarnings")}
-          icon={<Award />}
-          value={<Money value={ib.total} />}
-          hot
-          illustration="money_bag"
-          footer={
-            <div className="flex items-center gap-1.5 text-[11.5px]">
-              <Chip size="sm" tone="gold">IB ${ib.ib.toFixed(0)}</Chip>
-              <Chip size="sm">{t("dashboard.kpi.copy", { amount: `$${ib.copy.toFixed(0)}` })}</Chip>
-              <Chip size="sm">PAMM ${ib.pamm.toFixed(0)}</Chip>
-            </div>
-          }
-          href="/partner"
-          delay={0.15}
-        />
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <Reveal delay={0.1} className="xl:col-span-8">
-          <AccountsCard />
+      >
+        {t("dashboard.home.tradingTitle")}
+      </SectionTitle>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <Reveal>
+          <PositionsCard />
         </Reveal>
-        <Reveal delay={0.15} className="xl:col-span-4">
+        <Reveal delay={0.05}>
           <MarginHealth />
         </Reveal>
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <Reveal delay={0.1} className="xl:col-span-8">
-          <EquityCard />
-        </Reveal>
-        <Reveal delay={0.15} className="xl:col-span-4">
+        <Reveal delay={0.1} className="md:col-span-2 xl:col-span-1">
           <ProfitLossCard />
         </Reveal>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      <SectionTitle>{t("dashboard.home.marketsTitle")}</SectionTitle>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
         <Reveal delay={0.05}>
           <CalendarCard />
         </Reveal>
         <Reveal delay={0.1}>
           <MoversCard />
         </Reveal>
-        <Reveal delay={0.15} className="lg:col-span-2 xl:col-span-1">
+        <Reveal delay={0.15} className="md:col-span-2 xl:col-span-1">
           <NewsCard />
         </Reveal>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
+      <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
         <Reveal className="xl:col-span-7">
           <WorldCard />
         </Reveal>
         <Reveal delay={0.05} className="xl:col-span-5">
-          <PositionsCard />
+          <PartnerBanner />
         </Reveal>
-      </div>
-
-      <div className="mt-4">
-        <Card className="relative overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/photos/dubai.jpg" alt="" className="absolute inset-0 size-full object-cover opacity-40" />
-          <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/85 to-transparent" />
-          <div className="relative flex flex-col gap-5 p-7 md:flex-row md:items-center md:justify-between">
-            <div className="max-w-xl">
-              <Chip tone="gold" className="mb-3">
-                <BadgeCheck className="size-3.5" /> {t("dashboard.partner.chip")}
-              </Chip>
-              <h3 className="text-2xl font-medium tracking-tight">{t("dashboard.partner.title")}</h3>
-              <p className="mt-2 text-sm text-fg-2">
-                <Trans k="dashboard.partner.text" vars={{ url: `kalks.com/r/${me.referral_code}` }} tags={{ link: (c) => <span className="font-mono text-fg" dir="ltr">{c}</span> }} />
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Icon3D name="handshake" size={84} className="hidden md:block" />
-              <Link href="/partner">
-                <Button variant="ember" size="lg">
-                  {t("dashboard.partner.open")} <ArrowUpRight />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </Card>
       </div>
 
       <AiPromptBar
@@ -592,4 +620,3 @@ export default function DemoDashboard() {
     </div>
   );
 }
-

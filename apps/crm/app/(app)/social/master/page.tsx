@@ -22,7 +22,7 @@ import {
   Toggle,
   cn,
   formatMoney,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { ACCOUNTS, ME, equitySeries } from "@kalks/mock";
 import { MASTER_APPLICATION, SOCIAL_POLICY, type MasterProgram, type Rollover } from "@kalks/mock/social";
 import { RadioCard, RangeSlider, ToggleChip } from "@/components/social/controls";
@@ -187,7 +187,7 @@ function DemoBecomeMasterPage() {
                 { icon: <Users />, t: "Grow AUM", s: "Featured on Discover once approved" },
                 { icon: <Bot />, t: "API & algo welcome", s: "Run EAs or the Kalks API on your account" },
               ].map((b) => (
-                <div key={b.t} className="flex items-center gap-3 rounded-[16px] border border-white/10 bg-black/35 px-4 py-3 backdrop-blur">
+                <div key={b.t} className="flex items-center gap-3 rounded-[16px] border border-white/10 light:border-line bg-black/35 light:bg-white/70 px-4 py-3 backdrop-blur">
                   <span className="grid size-8 shrink-0 place-items-center rounded-full bg-ember/20 text-ember [&_svg]:size-4">{b.icon}</span>
                   <div>
                     <div className="text-[13.5px] font-medium">{b.t}</div>
@@ -346,7 +346,7 @@ function DemoBecomeMasterPage() {
                   </div>
                   <div className="mt-4 flex items-end justify-between">
                     <div>
-                      <div className="text-[11px] uppercase tracking-wider text-fg-3">Return · 3M</div>
+                      <div className="text-[12px] text-fg-3">Return · 3M</div>
                       <div className={cn("k-num text-[24px] font-semibold", ret >= 0 ? "text-up" : "text-down")}>
                         {ret >= 0 ? "+" : ""}
                         {ret.toFixed(1)}%
@@ -399,7 +399,7 @@ function DemoBecomeMasterPage() {
                         className={cn(
                           "grid size-7 shrink-0 place-items-center rounded-full border text-[11px] font-semibold",
                           t.done && "border-up/40 bg-up-soft text-up",
-                          current && "border-ember/50 bg-ember-soft text-ember shadow-[0_0_18px_-4px_rgba(255,90,31,0.7)]",
+                          current && "border-ember/50 bg-ember-soft text-ember shadow-[0_0_18px_-4px_color-mix(in_oklab,var(--k-ember)_70%,transparent)]",
                           !t.done && !current && "border-line text-fg-3",
                         )}
                       >

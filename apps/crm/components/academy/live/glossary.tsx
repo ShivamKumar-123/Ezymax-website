@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
-import { Card, Chip, PageHeader, cn } from "@kalks/ui";
+import { Card, Chip, PageHeader, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { useAcademy, type Glossary } from "./api";
 import { AcademyUnavailable, BackLink, PageSkeleton } from "./shared";

@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, OctagonX, Pause, Play, Power, ShieldAlert, Square, Workflow, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, EmptyState, EquityChart, PageHeader, Reveal, Skeleton, SymbolAvatar, Tabs, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, EmptyState, EquityChart, PageHeader, Reveal, Skeleton, SymbolAvatar, Tabs, Toggle, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { DEP_TONE, SIGNAL_LABEL, ago, algoApi, algoError, fmtDateTime, fmtMoney, fmtSigned, useAlgo, type Controls, type Deployment, type DeploymentDetail } from "./api";
 
@@ -171,7 +171,7 @@ function Detail({ id, onChanged }: { id: number; onChanged: () => void }) {
           ] as const
         ).map(([l, v, tone]) => (
           <div key={l} className="rounded-[12px] bg-surface-2/60 px-3 py-2.5">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{l}</div>
+            <div className="text-[11.5px] text-fg-3">{l}</div>
             <div className={cn("k-num mt-1 text-[17px] font-semibold", tone)}>{v}</div>
           </div>
         ))}
@@ -186,7 +186,7 @@ function Detail({ id, onChanged }: { id: number; onChanged: () => void }) {
       </div>
       <div className="px-6 pb-6 pt-3">
         {tab === "log" && (
-          <div className="max-h-[420px] overflow-y-auto rounded-[12px] border border-line bg-black/20 p-3 font-mono text-[11.5px] leading-[18px]" data-testid="deployment-log">
+          <div className="max-h-[420px] overflow-y-auto rounded-[12px] border border-line bg-black/20 light:bg-surface-2 p-3 font-mono text-[11.5px] leading-[18px]" data-testid="deployment-log">
             {x.logs.length === 0 && <div className="text-fg-3">{t("developer.dep.waitingBar")}</div>}
             {x.logs.map((l) => (
               <div key={l.id} className={cn("flex gap-3", LOG_TONE[l.level])}>

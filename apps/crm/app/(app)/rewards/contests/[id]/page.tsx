@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Button, Card, EmptyState } from "@kalks/ui";
+import { Button, Card, EmptyState } from "@/components/kit";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { LiveContestDetail } from "@/components/growth/contest-detail";
 

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, X } from "lucide-react";
-import { Button, cn } from "@kalks/ui";
+import { Button, cn } from "@/components/kit";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { useT } from "@kalks/i18n/react";
 import { growthApi, useGrowth, type BannerView } from "./api";

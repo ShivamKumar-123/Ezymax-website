@@ -5,7 +5,7 @@
 
 import * as React from "react";
 import { ArrowUp, Bot, Check, CircleHelp, Loader2, Sparkles, Undo2 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Segmented, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Segmented, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { SIGNAL_LABEL, algoApi, algoError, type Built, type StrategySpec } from "./api";
 

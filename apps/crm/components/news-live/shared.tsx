@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
-import { Chip, SymbolAvatar, cn } from "@kalks/ui";
+import { Chip, SymbolAvatar, cn } from "@/components/kit";
 import { INSTRUMENT_MAP } from "@kalks/mock";
 import type { CalEvent, NewsItem, Sentiment } from "./api";
 import type { T } from "@kalks/i18n";

@@ -6,7 +6,7 @@
 // engine data goes through `TradeSymbolAvatar` / `TradeSymbolCell` here instead.
 
 import * as React from "react";
-import { SymbolAvatar, cn } from "@kalks/ui";
+import { SymbolAvatar, cn } from "@/components/kit";
 import { INSTRUMENT_MAP } from "@kalks/mock";
 import { intlTag } from "@kalks/i18n/locales";
 import type { T } from "@kalks/i18n";

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { BellOff, BellPlus, BellRing, ChevronDown, ChevronLeft, ChevronRight, Clock3, Flame, Info } from "lucide-react";
-import { Button, Card, Chip, Delta, PageHeader, PriceText, Reveal, Segmented, Skeleton, SymbolAvatar, Toggle, cn, useQuotes } from "@kalks/ui";
+import { Button, Card, Chip, Delta, PageHeader, PriceText, Reveal, Segmented, Skeleton, SymbolAvatar, Toggle, cn, useQuotes } from "@/components/kit";
 import { INSTRUMENT_MAP } from "@kalks/mock";
 import { ColumnBars } from "@/components/portfolio/charts";
 import { NewsError, newsApi, useNewsApi, type CalDetail, type CalEvent, type CalendarWeek, type MyCalendar } from "./api";
@@ -92,7 +92,7 @@ function Detail({ e, zone, offset, reminded, onRemind }: { e: CalEvent; zone: Zo
               ["previous", t("news.cal.col.previous"), e.previous || "—"],
             ].map(([id, k, v]) => (
               <div key={id} className="rounded-xl border border-line bg-surface px-3 py-2">
-                <div className="text-[10px] uppercase tracking-wider text-fg-3">{k}</div>
+                <div className="text-[11px] text-fg-3">{k}</div>
                 <div className={cn("k-num mt-0.5 text-[13.5px] font-medium", id === "actual" && e.surprise === 1 && "text-up", id === "actual" && e.surprise === -1 && "text-down")}>{v}</div>
               </div>
             ))}

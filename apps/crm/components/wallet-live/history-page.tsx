@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button, Card, EmptyState, IconButton, PageHeader, Skeleton, Tabs } from "@kalks/ui";
+import { Button, Card, EmptyState, IconButton, PageHeader, Skeleton, Tabs } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { useWallet, type ActivityItem, type Page } from "./api";
 import { ActivityRow, WalletUnavailable } from "./ui";

@@ -11,9 +11,9 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import { Eye, LogOut } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@kalks/ui";
+import { Button } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
-import type { NavModule } from "@kalks/ui";
+import type { NavModule } from "@/components/kit";
 import { logout, useSession } from "@/components/session";
 import { viewerPageAllowed, type ViewerScope } from "@/lib/viewer";
 

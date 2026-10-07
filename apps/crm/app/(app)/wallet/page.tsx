@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, ArrowUpRight, ChevronRight, History, ShieldCheck } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CoinIcon, Delta, Icon3D, Money, PageHeader, Reveal, Starfield, cn, formatNumber } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CoinIcon, Delta, Icon3D, Money, PageHeader, Reveal, Starfield, cn, formatNumber } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { ME, WALLET, WALLET_TXS, accountUsd, type WalletTx } from "@kalks/mock";
 import { PENDING_WITHDRAWALS, liveAccounts, walletAvailableUsdt, walletTotalUsd } from "@kalks/mock/wallet-extra";
@@ -40,7 +40,7 @@ function Hero() {
           <Icon3D name="coin" size={72} className="hidden sm:block" />
         </div>
 
-        <div className="mt-6 flex h-2.5 overflow-hidden rounded-full bg-black/30">
+        <div className="mt-6 flex h-2.5 overflow-hidden rounded-full bg-black/30 light:bg-surface-2">
           {WALLET.assets.map((a, i) => (
             <motion.div key={a.asset} className="h-full first:rounded-s-full last:rounded-e-full" style={{ background: COIN_COLOR[a.icon] }} initial={{ width: 0 }} animate={{ width: `${(a.usd / total) * 100}%` }} transition={{ duration: 0.9, delay: 0.2 + i * 0.1, ease: [0.16, 1, 0.3, 1] }} />
           ))}
@@ -51,15 +51,15 @@ function Hero() {
             <div key={a.asset} className="flex items-center gap-3 rounded-[14px] border border-white/10 bg-black/25 light:border-black/5 light:bg-white/70 px-4 py-3 backdrop-blur-sm">
               <CoinIcon coin={a.icon} size={34} />
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 text-[13.5px] font-medium">
+                <div className="flex min-w-0 items-center gap-1.5 text-[13.5px] font-medium">
                   {a.asset}
-                  <span className="rounded-md bg-white/10 px-1.5 py-px text-[10px] font-medium text-fg-2">{a.network}</span>
+                  <span className="truncate rounded-md bg-surface-3 px-1.5 py-px text-[10px] font-medium text-fg-2">{a.network}</span>
                 </div>
                 <div className="k-num truncate text-[12px] text-fg-3">
                   {formatNumber(a.balance, a.asset === "BTC" ? 4 : 2)} {a.asset}
                 </div>
               </div>
-              <div className="text-end">
+              <div className="shrink-0 text-end">
                 <Money value={a.usd} className="block text-[14px] font-semibold" />
                 {a.change ? <Delta value={a.change} className="text-[11px]" /> : <span className="text-[11px] text-fg-3">{NAMES[a.asset] === "Tether USD" ? t("wallet.demo.stable") : ""}</span>}
               </div>

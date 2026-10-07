@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { cn, formatMoney } from "@kalks/ui";
+import { cn, formatMoney } from "@/components/kit";
 
 export interface PropLine {
   value: number;

@@ -19,7 +19,7 @@ import {
   cn,
   formatCompact,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { PAMM_FUNDS, masterById, masterSpark, type PammFund, type Rollover } from "@kalks/mock/social";
 import { RiskBadge } from "@/components/social/master-bits";
 import { InvestDialog } from "@/components/social/invest-dialog";
@@ -55,7 +55,7 @@ function FundCard({ f, onInvest }: { f: PammFund; onInvest: () => void }) {
         </div>
         <div className="mt-4 flex items-end justify-between gap-3">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">NAV per unit</div>
+            <div className="text-[12px] text-fg-3">NAV per unit</div>
             <div className="mt-1 flex items-baseline gap-2">
               <span className="k-num text-[26px] font-semibold leading-none tracking-tight">{f.navPerUnit.toFixed(4)}</span>
               <Delta value={f.navChange24h} className="text-[12px]" />
@@ -248,7 +248,7 @@ function DemoPammPage() {
             {funds.length > 0 && funds.length % 3 !== 0 && (
               <Link href="/social/master" className="k-hot-card group relative flex min-h-[260px] flex-col justify-between overflow-hidden rounded-[20px] p-6">
                 <img src="/assets/photos/skyscrapers.jpg" alt="" className="absolute inset-0 size-full object-cover opacity-25 transition-opacity group-hover:opacity-35" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent light:from-white/90 light:via-white/55" />
                 <div className="relative">
                   <Chip tone="gold">For masters</Chip>
                   <div className="mt-3 text-[20px] font-medium leading-tight">Launch your own PAMM fund</div>

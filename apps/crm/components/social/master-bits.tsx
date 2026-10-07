@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { BadgeCheck, Copy as CopyIcon, Landmark, Users } from "lucide-react";
-import { Avatar, Button, Chip, Delta, Flag, Sparkline, Tooltip, cn, formatCompact } from "@kalks/ui";
+import { Avatar, Button, Chip, Delta, Flag, Sparkline, Tooltip, cn, formatCompact } from "@/components/kit";
 import { masterSpark, riskLabel, riskTone, type Master, type MasterProgram } from "@kalks/mock/social";
 
 /** System risk score 1–10 as a compact badge with a 10-tick meter. */
@@ -97,7 +97,7 @@ export function MasterCard({ m, onCopy, onInvest, className }: { m: Master; onCo
         </div>
         <div className="mt-4 flex items-end justify-between gap-3">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">Return · 1Y</div>
+            <div className="text-[12px] text-fg-3">Return · 1Y</div>
             <div className={cn("k-num mt-1 text-[26px] font-semibold leading-none tracking-tight", m.return1y >= 0 ? "text-up" : "text-down")}>
               {m.return1y >= 0 ? "+" : ""}
               {m.return1y.toFixed(1)}%

@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, EmptyState, PageHeader } from "@kalks/ui";
+import { Card, EmptyState, PageHeader } from "@/components/kit";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { LivePromotionsPage } from "@/components/growth/promotions";
 

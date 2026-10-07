@@ -4,7 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowUp, Bot, Copy, RefreshCw, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Chip, IconButton, SymbolAvatar, cn, formatMoney } from "@kalks/ui";
+import { Avatar, Chip, IconButton, SymbolAvatar, cn, formatMoney } from "@/components/kit";
 import { ME } from "@kalks/mock";
 import { COACH } from "@kalks/mock/academy";
 
@@ -123,7 +123,7 @@ function Rich({ text }: { text: string }) {
 
 function CoachAvatar({ size = 32 }: { size?: number }) {
   return (
-    <span className="relative grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#ff8a3d] to-[#c4341a] text-white shadow-[0_0_20px_-4px_rgba(255,90,31,0.7)]" style={{ width: size, height: size }}>
+    <span className="relative grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-[var(--k-ember-2)] to-[color-mix(in_oklab,var(--k-ember)_78%,#000)] text-white shadow-[0_0_20px_-4px_color-mix(in_oklab,var(--k-ember)_70%,transparent)]" style={{ width: size, height: size }}>
       <Sparkles className="size-[45%]" />
     </span>
   );
@@ -156,7 +156,7 @@ function Bubble({ m, streamed, done }: { m: Msg; streamed: string; done: boolean
                   <div className={cn("mt-3 grid gap-2", m.stats.length === 3 ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4")}>
                     {m.stats.map((s, i) => (
                       <motion.div key={s.label} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }} className="rounded-xl border border-line bg-surface px-3 py-2">
-                        <div className="text-[10px] uppercase tracking-wider text-fg-3">{s.label}</div>
+                        <div className="text-[11px] text-fg-3">{s.label}</div>
                         <div className={cn("k-num mt-0.5 text-[14px] font-semibold", s.tone === "up" ? "text-up" : s.tone === "down" ? "text-down" : s.tone === "gold" ? "text-gold" : "text-fg")}>{s.value}</div>
                       </motion.div>
                     ))}
@@ -343,7 +343,7 @@ export const CoachChat = React.forwardRef<CoachChatHandle, { className?: string 
             e.preventDefault();
             ask(q);
           }}
-          className="flex items-center gap-2 rounded-[20px] border border-ember/30 bg-surface-2 p-1.5 pl-4 shadow-[0_0_0_4px_rgba(255,90,31,0.06),0_10px_30px_-12px_rgba(255,90,31,0.45)] focus-within:border-ember/60"
+          className="flex items-center gap-2 rounded-[20px] border border-ember/30 bg-surface-2 p-1.5 pl-4 shadow-[0_0_0_4px_color-mix(in_oklab,var(--k-ember)_6%,transparent),0_10px_30px_-12px_color-mix(in_oklab,var(--k-ember)_45%,transparent)] focus-within:border-ember/60"
         >
           <Bot className="size-4 shrink-0 text-fg-3" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask about your trading, e.g. “Why did I lose on Friday?”" className="min-w-0 flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-fg-3" />

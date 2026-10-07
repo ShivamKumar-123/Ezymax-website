@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BookText, Check, Download, FileSpreadsheet, FileText, History, Layers, Plus, Sheet, ShieldCheck, TrendingUp, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, CHART_COLORS, Card, CardHeader, Chip, Donut, EmptyState, Field, Input, KpiCard, Money, PageHeader, Reveal, Segmented, Skeleton, Toggle, cn } from "@kalks/ui";
+import { Button, CHART_COLORS, Card, CardHeader, Chip, Donut, EmptyState, Field, Input, KpiCard, Money, PageHeader, Reveal, Segmented, Skeleton, Toggle, cn } from "@/components/kit";
 import { accountTitle, curOf, fmtAmount, fmtPrice, isArchived, isoDay, toUsd, tradingApi, useAccounts, type AccountDetail, type EngineAccount, type EnginePosition } from "./api";
 import { AccountsError, liveTotals } from "./accounts-page";
 import { HistoryPanel, LedgerPanel } from "./activity";
@@ -383,7 +383,7 @@ function Statements({ a }: { a: EngineAccount }) {
                       ] as const
                     ).map(([k, v, signed]) => (
                       <div key={k}>
-                        <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
+                        <div className="text-[11.5px] text-fg-3">{k}</div>
                         <div className={cn("k-num text-[13px] font-medium", signed ? (v > 0 ? "text-up" : v < 0 ? "text-down" : "text-fg-3") : v ? "text-fg" : "text-fg-3")}>{fmtAmount(v, cur, signed)}</div>
                       </div>
                     ))}
@@ -532,7 +532,7 @@ export function LivePortfolio() {
                           thickness={18}
                           center={
                             <div className="text-center">
-                              <div className="text-[11px] uppercase tracking-wider text-fg-3">{tx("common.total")}</div>
+                              <div className="text-[12px] text-fg-3">{tx("common.total")}</div>
                               <Money value={allocTotal} decimals={0} countUp={false} className="text-[17px] font-semibold" />
                             </div>
                           }
@@ -570,7 +570,7 @@ export function LivePortfolio() {
                     <div className="mt-3 overflow-x-auto px-4 pb-5 sm:px-6">
                       <table className="w-full min-w-[560px] border-separate border-spacing-y-1.5 text-[13px]">
                         <thead>
-                          <tr className="text-[11px] uppercase tracking-wider text-fg-3">
+                          <tr className="text-[12px] text-fg-3">
                             <th className="px-3 text-start font-medium">{tx("common.account")}</th>
                             <th className="px-3 text-end font-medium">{tx("common.balance")}</th>
                             <th className="px-3 text-end font-medium">{tx("common.equity")}</th>

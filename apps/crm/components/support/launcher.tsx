@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { MessageCircle, X } from "lucide-react";
 import { IS_DEMO } from "@kalks/mock";
-import { cn } from "@kalks/ui";
+import { cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { ChatPanel } from "@/components/support/chat-panel";
 import { LiveChat } from "@/components/support/live-chat";

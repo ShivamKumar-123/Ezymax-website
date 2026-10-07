@@ -19,7 +19,7 @@ import {
   cn,
   formatMoney,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 // engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolAvatar as SymbolAvatar, symbolLabel } from "@/components/trading/instrument";
 import {
@@ -337,7 +337,7 @@ function ClientDialog({
               ] as [string, React.ReactNode][]
             ).map(([k, v]) => (
               <div key={k} className="k-row min-w-0 px-3.5 py-2.5">
-                <div className="truncate text-[11px] uppercase tracking-wider text-fg-3">
+                <div className="truncate text-[12px] text-fg-3">
                   {k}
                 </div>
                 <div className="mt-1 truncate text-[13.5px] font-medium">

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, ArrowUpRight, Bell, ChevronRight, History, Lock } from "lucide-react";
-import { Button, Card, CardHeader, Chip, EmptyState, PageHeader, Skeleton, formatDateTime } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, EmptyState, PageHeader, Skeleton, formatDateTime } from "@/components/kit";
 import { Trans, useT } from "@kalks/i18n/react";
 import { useReadOnly, useSession } from "@/components/session";
 import { toUsd, useAccounts } from "@/components/trading/api";
@@ -31,7 +31,7 @@ function BalanceCard({ o, loading }: { o: Overview | null; loading: boolean }) {
         <div className="mt-2 text-[13px] text-fg-2">{t("wallet.balance.sub")}</div>
         <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
           <div className="k-row px-4 py-3">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("wallet.available")}</div>
+            <div className="text-[12px] text-fg-3">{t("wallet.available")}</div>
             <div className="k-num mt-1 text-[16px] font-semibold">{fmt(b.available)}</div>
           </div>
           <div className="k-row px-4 py-3">
@@ -41,7 +41,7 @@ function BalanceCard({ o, loading }: { o: Overview | null; loading: boolean }) {
             <div className="k-num mt-1 text-[16px] font-semibold">{fmt(b.locked)}</div>
           </div>
           <div className="k-row col-span-2 px-4 py-3 sm:col-span-1">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("common.total")}</div>
+            <div className="text-[12px] text-fg-3">{t("common.total")}</div>
             <div className="k-num mt-1 text-[16px] font-semibold">{fmt(total)}</div>
           </div>
         </div>

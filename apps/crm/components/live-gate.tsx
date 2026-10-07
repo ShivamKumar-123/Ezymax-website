@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, LayoutGrid } from "lucide-react";
-import { Button, ComingSoon, ModeGate } from "@kalks/ui";
+import { Button, ComingSoon, ModeGate } from "@/components/kit";
 import { IS_LIVE, pathAllowed } from "@kalks/mock";
 import { LIVE_GATED, LIVE_PAGES, SUPPORT_EMAIL, TERMINAL_URL, soonFor } from "@/lib/live";
 import { useT } from "@kalks/i18n/react";

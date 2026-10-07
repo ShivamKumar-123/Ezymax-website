@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { Chip, cn } from "@kalks/ui";
+import { Chip, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import type { T } from "@kalks/i18n";
 import { modeLabel, type EngineGroup } from "./api";
@@ -61,7 +61,7 @@ export function EngineGroupCard({
       aria-pressed={onSelect ? !!selected : undefined}
       className={cn(
         "group relative flex h-full w-full flex-col overflow-hidden rounded-[20px] border text-start transition-colors duration-200",
-        selected ? "border-ember/60 bg-surface shadow-[0_0_0_4px_rgba(255,90,31,0.12)]" : "k-card hover:border-[var(--k-border-top)]",
+        selected ? "border-ember/60 bg-surface shadow-[0_0_0_4px_color-mix(in_oklab,var(--k-ember)_12%,transparent)]" : "k-card hover:border-[var(--k-border-top)]",
         full && "cursor-not-allowed opacity-55",
       )}
     >
@@ -116,7 +116,7 @@ export function EngineGroupCard({
 function Spec({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-line bg-surface-2 px-2.5 py-2">
-      <div className="text-[10px] uppercase tracking-wider text-fg-3">{label}</div>
+      <div className="text-[11px] text-fg-3">{label}</div>
       <div className="k-num mt-0.5 truncate text-[13px] font-semibold text-fg">{value}</div>
     </div>
   );

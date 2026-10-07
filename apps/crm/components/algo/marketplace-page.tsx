@@ -6,7 +6,7 @@
 import * as React from "react";
 import { BadgeCheck, Building2, Loader2, Plus, Search, Star, Store, Upload, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, EmptyState, EquityChart, PageHeader, Reveal, Segmented, Skeleton, Sparkline, SymbolAvatar, Tabs, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, EmptyState, EquityChart, PageHeader, Reveal, Segmented, Skeleton, Sparkline, SymbolAvatar, Tabs, Toggle, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { NumInput } from "./builder";
 import { AlgoError, algoApi, algoError, fmtDateTime, fmtMoney, fmtPct, useAlgo, type Deployment, type StrategyItem, type TradingAccount } from "./api";
@@ -106,7 +106,7 @@ function BacktestBlock({ b }: { b: HouseBacktest }) {
           ] as const
         ).map(([k, v]) => (
           <div key={k} className="rounded-[10px] bg-surface/60 px-2.5 py-1.5">
-            <div className="text-[10.5px] uppercase text-fg-3">{k}</div>
+            <div className="text-[11.5px] text-fg-3">{k}</div>
             <div className="k-num text-[13.5px] text-fg">{v}</div>
           </div>
         ))}
@@ -279,7 +279,7 @@ function ListingDialog({ id, onClose, accounts, onChanged }: { id: number | null
               ] as const
             ).map(([k, v, tone]) => (
               <div key={k} className="rounded-[12px] bg-surface-2/60 px-3 py-2">
-                <div className="text-[10.5px] uppercase text-fg-3">{k}</div>
+                <div className="text-[11.5px] text-fg-3">{k}</div>
                 <div className={cn("k-num text-[16px] font-semibold", tone)}>{v}</div>
               </div>
             ))}

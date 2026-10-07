@@ -38,8 +38,8 @@ import {
   Tooltip,
   cn,
   formatMoney,
-} from "@kalks/ui";
-import type { SeriesPoint } from "@kalks/ui";
+} from "@/components/kit";
+import type { SeriesPoint } from "@/components/kit";
 import { tr, useFormat, useT } from "@kalks/i18n/react";
 import { intlTag } from "@kalks/i18n/locales";
 import { ShareButtons } from "@/components/partner/share-buttons";
@@ -401,7 +401,7 @@ function ReferralCard({ d }: { d: Dashboard }) {
         </div>
         <div className="flex items-center justify-between rounded-[14px] border border-line bg-surface-2 px-4 py-2.5">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">
+            <div className="text-[12px] text-fg-3">
               {t("partner.referralCode")}
             </div>
             <div className="font-mono text-[15px] font-semibold tracking-wider">
@@ -851,7 +851,7 @@ function CpaCard({ d }: { d: Dashboard }) {
       <div className="mt-auto px-4 pb-5 pt-5 sm:px-6">
         <div className="k-row flex items-center justify-between px-4 py-3">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">
+            <div className="text-[12px] text-fg-3">
               {t("partner.dash.rebateSplit")}
             </div>
             <div className="k-num mt-0.5 text-[14px] font-medium">

@@ -26,7 +26,7 @@ import {
   cn,
   formatMoney,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import {
   fmtDateTime,
   fmtDay,
@@ -88,7 +88,7 @@ function Countdown({ target }: { target: string }) {
             <span className="k-num min-w-[46px] rounded-[12px] border border-line bg-surface-2/70 px-2 py-2 text-center font-mono text-[22px] font-semibold leading-none">
               {p}
             </span>
-            <span className="mt-1 text-[10px] uppercase tracking-wider text-fg-3">
+            <span className="mt-1 text-[11px] text-fg-3">
               {t(
                 (["partner.pay.days", "partner.pay.hrs", "partner.pay.min"] as const)[i]!,
               )}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowDownToLine, ArrowUpFromLine, CandlestickChart, KeyRound, MoreHorizontal, Pencil, RefreshCcw, Archive, Gauge as GaugeIcon } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, CopyButton, IconButton, Menu, Money, cn } from "@kalks/ui";
+import { Button, Chip, CopyButton, IconButton, Menu, Money, cn } from "@/components/kit";
 import { freeMargin, marginLevel, type TradingAccount } from "@kalks/mock";
 import { useT } from "@kalks/i18n/react";
 import type { T } from "@kalks/i18n";
@@ -79,21 +79,21 @@ export function AccountRow({ a, compact }: { a: TradingAccount; compact?: boolea
       </div>
       <div className={cn("mt-4 grid items-end gap-4", compact ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_auto]" : "grid-cols-2 sm:grid-cols-4 xl:grid-cols-[1fr_1fr_1fr_1fr_auto]")}>
         <div>
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("common.balance")}</div>
+          <div className="text-[12px] text-fg-3">{t("common.balance")}</div>
           <Money value={a.balance} currency={cur} className="mt-1 block truncate text-[16px] font-semibold sm:text-[19px]" />
         </div>
         <div>
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("common.equity")}</div>
+          <div className="text-[12px] text-fg-3">{t("common.equity")}</div>
           <Money value={a.equity} currency={cur} className="mt-1 block truncate text-[16px] font-semibold sm:text-[19px]" />
         </div>
         {!compact && (
           <div className="hidden sm:block">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("accounts.label.freeMargin")}</div>
+            <div className="text-[12px] text-fg-3">{t("accounts.label.freeMargin")}</div>
             <Money value={freeMargin(a)} currency={cur} className="mt-1 block text-[15px] font-medium text-fg-2" />
           </div>
         )}
         <div>
-          <div className="whitespace-nowrap text-[11px] uppercase tracking-wider text-fg-3">{t("accounts.label.marginLevel")}</div>
+          <div className="whitespace-nowrap text-[12px] text-fg-3">{t("accounts.label.marginLevel")}</div>
           <div className={cn("k-num mt-1 text-[17px] font-semibold", ml > 500 ? "text-up" : ml > 200 ? "text-warn" : "text-down")}>{Number.isFinite(ml) ? `${Math.round(ml).toLocaleString()}%` : "—"}</div>
         </div>
         <div className={cn("col-span-full flex flex-wrap items-center justify-end gap-2", "xl:col-span-1")}>

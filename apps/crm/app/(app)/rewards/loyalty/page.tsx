@@ -20,7 +20,7 @@ import {
   cn,
   formatDateTime,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { EARN_RULES, LOYALTY, LOYALTY_TIERS, POINTS_HISTORY, type PointsTx } from "@kalks/mock/rewards";
 import { RedeemCatalogue, TierOrb, TierTrack } from "@/components/rewards/loyalty";
 import { IS_DEMO } from "@kalks/mock/mode";
@@ -67,13 +67,13 @@ function BalanceHero({ balance }: { balance: number }) {
           ≈ <span className="k-num font-medium text-fg">${(balance * LOYALTY.pointValue).toFixed(2)}</span> redeemable value
         </div>
         <div className="mt-6 grid max-w-[340px] grid-cols-2 gap-2">
-          <div className="rounded-[14px] border border-white/10 bg-black/30 px-3.5 py-3 backdrop-blur-sm">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">This month</div>
+          <div className="rounded-[14px] border border-white/10 light:border-line bg-black/30 light:bg-white/70 px-3.5 py-3 backdrop-blur-sm">
+            <div className="text-[11.5px] text-fg-3">This month</div>
             <div className="k-num mt-1 text-[16px] font-semibold text-up">+{LOYALTY.earnedThisMonth.toLocaleString()}</div>
             <MiniBars data={[210, 340, 180, 420, 390, 260, 346]} className="mt-2 h-6" />
           </div>
-          <div className="rounded-[14px] border border-white/10 bg-black/30 px-3.5 py-3 backdrop-blur-sm">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Lifetime</div>
+          <div className="rounded-[14px] border border-white/10 light:border-line bg-black/30 light:bg-white/70 px-3.5 py-3 backdrop-blur-sm">
+            <div className="text-[11.5px] text-fg-3">Lifetime</div>
             <div className="k-num mt-1 text-[16px] font-semibold">{LOYALTY.lifetime.toLocaleString()}</div>
             <div className="k-num mt-2 text-[11px] text-fg-3">{LOYALTY.lotsThisMonth} lots this month</div>
           </div>

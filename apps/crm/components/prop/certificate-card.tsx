@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Download, Link2 } from "lucide-react";
 import { toast } from "sonner";
-import { Logo, Starfield, Tooltip, cn, formatMoney } from "@kalks/ui";
+import { Logo, Starfield, Tooltip, cn, formatMoney } from "@/components/kit";
 import type { PropCertificate } from "@kalks/mock/prop";
 
 function XIcon({ className }: { className?: string }) {
@@ -42,8 +42,8 @@ export function CertificateCard({ cert, name, className }: { cert: PropCertifica
         style={{
           background:
             cert.kind === "funded"
-              ? "radial-gradient(120% 90% at 100% 0%, rgba(255,90,31,0.45), transparent 55%), radial-gradient(90% 70% at 0% 100%, rgba(233,185,73,0.18), transparent 60%), linear-gradient(160deg, #2a130b, #0d0a09 60%, #07070a)"
-              : "radial-gradient(110% 80% at 100% 0%, rgba(233,185,73,0.28), transparent 55%), radial-gradient(90% 70% at 0% 100%, rgba(255,90,31,0.18), transparent 60%), linear-gradient(160deg, #1a1508, #0c0b09 60%, #07070a)",
+              ? "radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--k-ember) 45%, transparent), transparent 55%), radial-gradient(90% 70% at 0% 100%, rgba(233,185,73,0.18), transparent 60%), linear-gradient(160deg, #2a130b, #0d0a09 60%, #07070a)"
+              : "radial-gradient(110% 80% at 100% 0%, rgba(233,185,73,0.28), transparent 55%), radial-gradient(90% 70% at 0% 100%, color-mix(in oklab, var(--k-ember) 18%, transparent), transparent 60%), linear-gradient(160deg, #1a1508, #0c0b09 60%, #07070a)",
         }}
       >
         <Starfield density={36} />

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowRight, Loader2, ShieldCheck, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, CoinIcon, Dialog, Icon3D, Money, cn, formatMoney } from "@kalks/ui";
+import { Button, Chip, CoinIcon, Dialog, Icon3D, Money, cn, formatMoney } from "@/components/kit";
 import { WALLET } from "@kalks/mock";
 import type { PropModel, PropSize } from "@kalks/mock/prop";
 import { CheckBox, CredentialField } from "./prop-ui";

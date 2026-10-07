@@ -7,7 +7,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Activity, AlertCircle, BookOpen, Gauge as GaugeIcon, KeyRound, Loader2, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, KpiCard, MiniBars, PageHeader, Reveal, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, KpiCard, MiniBars, PageHeader, Reveal, type Column } from "@/components/kit";
 import { Trans, useFormat, useT } from "@kalks/i18n/react";
 import { algoApi, algoError, ago, fmtDateTime, useAlgo, type TradingAccount } from "./api";
 
@@ -230,18 +230,18 @@ export function LiveKeysPage() {
             <CardHeader icon={<ShieldCheck />} title={t("developer.keys.created", { name: secret.name })} subtitle={t("developer.keys.createdText")} />
             <div className="space-y-3 px-6 pb-5 pt-4">
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                <div className="flex items-center gap-2 rounded-[12px] bg-black/30 px-3 py-2">
-                  <span className="text-[11px] uppercase text-fg-3">{t("developer.keys.keyId")}</span>
+                <div className="flex items-center gap-2 rounded-[12px] bg-black/30 light:bg-surface-2 px-3 py-2">
+                  <span className="text-[12px] text-fg-3">{t("developer.keys.keyId")}</span>
                   <code className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-fg" dir="ltr" data-testid="key-id">{secret.keyId}</code>
                   <CopyButton value={secret.keyId} label={t("developer.keys.keyId")} />
                 </div>
-                <div className="flex items-center gap-2 rounded-[12px] bg-black/30 px-3 py-2">
-                  <span className="text-[11px] uppercase text-fg-3">{t("developer.keys.secret")}</span>
+                <div className="flex items-center gap-2 rounded-[12px] bg-black/30 light:bg-surface-2 px-3 py-2">
+                  <span className="text-[12px] text-fg-3">{t("developer.keys.secret")}</span>
                   <code className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ember" dir="ltr" data-testid="key-secret">{secret.secret}</code>
                   <CopyButton value={secret.secret} label={t("developer.keys.secret")} />
                 </div>
               </div>
-              <pre dir="ltr" className="overflow-x-auto rounded-[12px] bg-black/30 p-3 font-mono text-[11.5px] leading-[17px] text-fg-2">{curl}</pre>
+              <pre dir="ltr" className="overflow-x-auto rounded-[12px] bg-black/30 light:bg-surface-2 p-3 font-mono text-[11.5px] leading-[17px] text-fg-2">{curl}</pre>
               <Button size="sm" variant="surface" onClick={() => setSecret(null)}>
                 {t("developer.keys.stored")}
               </Button>
@@ -260,7 +260,7 @@ export function LiveKeysPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader title={t("developer.keys.quickstart")} subtitle={base} />
-          <pre dir="ltr" className="mx-6 mb-6 mt-4 overflow-x-auto rounded-[12px] bg-black/30 p-3 font-mono text-[11.5px] leading-[17px] text-fg-2">{`# read the account
+          <pre dir="ltr" className="mx-6 mb-6 mt-4 overflow-x-auto rounded-[12px] bg-black/30 light:bg-surface-2 p-3 font-mono text-[11.5px] leading-[17px] text-fg-2">{`# read the account
 curl ${base}/account -H "Authorization: Bearer $KEY_ID:$SECRET"
 
 # market order with stop and target (scope: trade)

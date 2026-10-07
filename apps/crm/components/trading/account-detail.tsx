@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, RotateCw, Server } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CopyButton, EmptyState, Gauge, KeyValue, Money, Reveal, Skeleton, Tabs, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, EmptyState, Gauge, KeyValue, Money, Reveal, Skeleton, Tabs, cn } from "@/components/kit";
 import { STATUS_LABEL, curOf, fmtAmount, isArchived, fmtDate, fmtLevel, fmtPrice, levelTone, modeLabel, serverOf, serverTime, usePoll, type AccountDetail, type EngineAccount, type EnginePosition, type EngineOrder, type HistoryPage } from "./api";
 import { DealsTable, HistoryPanel, LedgerPanel } from "./activity";
 import { CredentialsPanel, SettingsPanel } from "./manage";
@@ -25,7 +25,7 @@ type TabKey = (typeof TAB_KEYS)[number];
 function StatTile({ label, children, tone }: { label: string; children: React.ReactNode; tone?: "up" | "down" | "warn" }) {
   return (
     <div className="k-row min-w-0 px-4 py-3">
-      <div className="text-[11px] uppercase tracking-wider text-fg-3">{label}</div>
+      <div className="text-[12px] text-fg-3">{label}</div>
       <div className={cn("k-num mt-1 truncate text-[15px] font-semibold sm:text-[16px]", tone === "up" && "text-up", tone === "down" && "text-down", tone === "warn" && "text-warn")}>{children}</div>
     </div>
   );
@@ -43,7 +43,7 @@ function PositionsTable({ positions, cur, usdFactor }: { positions: EnginePositi
     <div className="overflow-x-auto">
       <table className="w-full min-w-[820px] border-separate border-spacing-y-2 text-[13.5px]">
         <thead>
-          <tr className="text-[11px] uppercase tracking-wider text-fg-3">
+          <tr className="text-[12px] text-fg-3">
             <th className="px-4 text-start font-medium">{t("accountDetail.col.symbol")}</th>
             <th className="px-3 text-start font-medium">{t("accountDetail.col.ticket")}</th>
             <th className="px-3 text-end font-medium">{t("accountDetail.col.volume")}</th>
@@ -109,7 +109,7 @@ function OrdersTable({ orders }: { orders: EngineOrder[] }) {
     <div className="overflow-x-auto">
       <table className="w-full min-w-[640px] border-separate border-spacing-y-2 text-[13.5px]">
         <thead>
-          <tr className="text-[11px] uppercase tracking-wider text-fg-3">
+          <tr className="text-[12px] text-fg-3">
             <th className="px-4 text-start font-medium">{t("accountDetail.col.symbol")}</th>
             <th className="px-3 text-start font-medium">{t("accountDetail.col.ticket")}</th>
             <th className="px-3 text-start font-medium">{t("common.type")}</th>

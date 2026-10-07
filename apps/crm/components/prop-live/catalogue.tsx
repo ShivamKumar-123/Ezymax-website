@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, Ban, CalendarDays, Check, Clock, Gauge as GaugeIcon, Layers, Loader2, Minus, Percent, ShieldCheck, Target, TrendingDown, Trophy, Wallet, Zap } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Dialog, EmptyState, PageHeader, Reveal, Segmented, Skeleton, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, EmptyState, PageHeader, Reveal, Segmented, Skeleton, cn } from "@/components/kit";
 import type { T } from "@kalks/i18n";
 import { useT } from "@kalks/i18n/react";
 import {

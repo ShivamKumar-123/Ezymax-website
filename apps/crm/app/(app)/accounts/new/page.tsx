@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, CandlestickChart, Check, Info, Lock, Moon, Server, ShieldCheck, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Trans, useT } from "@kalks/i18n/react";
-import { Button, Card, CardHeader, Chip, Field, Icon3D, Input, KeyValue, PageHeader, Reveal, Starfield, Stepper, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Field, Icon3D, Input, KeyValue, PageHeader, Reveal, Starfield, Stepper, Toggle, cn } from "@/components/kit";
 import { ACCOUNT_GROUPS } from "@kalks/mock";
 import { DEMO_RULES } from "@kalks/mock/accounts-extra";
 import { GroupCard } from "@/components/accounts/group-card";
@@ -41,7 +41,7 @@ function KindCard({ kind, selected, onSelect }: { kind: Kind; selected: boolean;
       onClick={onSelect}
       className={cn(
         "group relative flex h-full flex-col overflow-hidden rounded-[20px] border p-6 text-start transition-all duration-300",
-        selected ? (live ? "k-hot-card border-ember/60 shadow-[0_0_0_4px_rgba(255,90,31,0.12)]" : "border-gold/60 bg-surface shadow-[0_0_0_4px_rgba(233,185,73,0.12)]") : "k-card hover:-translate-y-0.5 hover:border-[var(--k-border-top)]",
+        selected ? (live ? "k-hot-card border-ember/60 shadow-[0_0_0_4px_color-mix(in_oklab,var(--k-ember)_12%,transparent)]" : "border-gold/60 bg-surface shadow-[0_0_0_4px_rgba(233,185,73,0.12)]") : "k-card hover:-translate-y-0.5 hover:border-[var(--k-border-top)]",
       )}
     >
       {selected && live && <Starfield density={36} />}
@@ -253,7 +253,7 @@ function Wizard() {
                             onClick={() => set("leverage", l)}
                             className={cn(
                               "k-num h-10 min-w-20 rounded-full border px-4 text-[13.5px] font-semibold transition-all",
-                              cfg.leverage === l ? "border-ember/60 bg-ember-soft text-ember shadow-[0_0_20px_-6px_rgba(255,90,31,0.7)]" : "border-line bg-surface-2 text-fg-2 hover:text-fg",
+                              cfg.leverage === l ? "border-ember/60 bg-ember-soft text-ember shadow-[0_0_20px_-6px_color-mix(in_oklab,var(--k-ember)_70%,transparent)]" : "border-line bg-surface-2 text-fg-2 hover:text-fg",
                             )}
                           >
                             1:{l.toLocaleString()}

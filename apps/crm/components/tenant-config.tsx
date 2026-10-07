@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { NavModule } from "@kalks/ui";
+import type { NavModule } from "@/components/kit";
 
 /** Modules and flags switched per broker (gateway tenant config); everything is on when unknown. */
 export type ClientFeatures = { modules: Record<string, boolean>; flags: Record<string, boolean> };

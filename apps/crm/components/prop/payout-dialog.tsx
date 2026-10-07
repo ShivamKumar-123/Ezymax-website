@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowRight, CalendarClock, Check, Loader2, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, CoinIcon, Dialog, Field, Icon3D, Input, Money, cn, formatMoney } from "@kalks/ui";
+import { Button, Chip, CoinIcon, Dialog, Field, Icon3D, Input, Money, cn, formatMoney } from "@/components/kit";
 import { WALLET } from "@kalks/mock";
 import { FUNDED, PROP_PAYOUTS } from "@kalks/mock/prop";
 import { CheckBox } from "./prop-ui";
@@ -97,7 +97,7 @@ export function RequestPayoutDialog({ available, onRequested, trigger }: { avail
                   className={cn(
                     "grid size-7 shrink-0 place-items-center rounded-full border text-[11px] font-semibold",
                     x.s === "done" && "border-up/40 bg-up-soft text-up",
-                    x.s === "now" && "border-ember/50 bg-ember-soft text-ember shadow-[0_0_18px_-4px_rgba(255,90,31,0.7)]",
+                    x.s === "now" && "border-ember/50 bg-ember-soft text-ember shadow-[0_0_18px_-4px_color-mix(in_oklab,var(--k-ember)_70%,transparent)]",
                     x.s === "todo" && "border-line text-fg-3",
                   )}
                 >

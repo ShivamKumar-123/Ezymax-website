@@ -27,7 +27,7 @@ import {
   formatCompact,
   formatMoney,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { ME } from "@kalks/mock";
 import { BANNERS, BANNER_SIZES, CAMPAIGNS, LANDING_PAGES, type Campaign } from "@kalks/mock/partner";
 import { IS_DEMO } from "@kalks/mock/mode";
@@ -160,7 +160,7 @@ function BannerArt({ b, size }: { b: (typeof BANNERS)[number]; size: (typeof BAN
   return (
     <div className={cn("relative w-full overflow-hidden rounded-[12px] ring-1 ring-white/10", wide ? "aspect-[728/90]" : square ? "aspect-square" : "aspect-[300/250]")}>
       <img src={b.photo} alt="" className="absolute inset-0 size-full object-cover" />
-      <div className={cn("absolute inset-0", wide ? "bg-gradient-to-r from-black via-black/75 to-[#e8431a]/30" : "bg-gradient-to-t from-black via-black/60 to-[#e8431a]/20")} />
+      <div className={cn("absolute inset-0", wide ? "bg-gradient-to-r from-black via-black/75 to-[color-mix(in_oklab,var(--k-ember)_78%,#000)]/30" : "bg-gradient-to-t from-black via-black/60 to-[color-mix(in_oklab,var(--k-ember)_78%,#000)]/20")} />
       <div className={cn("absolute inset-0 flex", wide ? "items-center justify-between gap-3 px-4" : "flex-col justify-between p-4")}>
         <Logo height={wide ? 13 : square ? 20 : 16} className={cn("shrink-0 text-white", !wide && "self-start")} />
         <div className={cn(wide ? "flex flex-1 items-center justify-between gap-3" : "")}>
@@ -243,8 +243,8 @@ function QrCard({ campaigns }: { campaigns: Campaign[] }) {
           }
           items={campaigns.map((x) => ({ label: x.name, onSelect: () => setCid(x.id), hint: x.id === cid ? "Selected" : undefined }))}
         />
-        <div className="grid place-items-center rounded-[18px] border border-line py-6" style={{ background: theme === "light" ? "radial-gradient(circle at 50% 30%, rgba(255,90,31,0.18), transparent 70%)" : undefined }}>
-          <div className="rounded-[16px] p-3.5 shadow-[0_20px_50px_-20px_rgba(255,90,31,0.6)] transition-all" style={{ background: bg }}>
+        <div className="grid place-items-center rounded-[18px] border border-line py-6" style={{ background: theme === "light" ? "radial-gradient(circle at 50% 30%, color-mix(in oklab, var(--k-ember) 18%, transparent), transparent 70%)" : undefined }}>
+          <div className="rounded-[16px] p-3.5 shadow-[0_20px_50px_-20px_color-mix(in_oklab,var(--k-ember)_60%,transparent)] transition-all" style={{ background: bg }}>
             <QRCodeSVG value={linkFor(c)} size={px} level="H" fgColor={fg} bgColor={bg} imageSettings={logo ? { src: "/assets/brand/kalks-mark.svg", width: px * 0.2, height: px * 0.2, excavate: true } : undefined} />
           </div>
           <div className="mt-3 max-w-full truncate px-4 font-mono text-[11.5px] text-fg-2">{short(linkFor(c))}</div>

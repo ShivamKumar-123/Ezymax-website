@@ -3,7 +3,7 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { AlertTriangle, Clock, Gauge as GaugeIcon, Trophy } from "lucide-react";
-import { Card, CardHeader, Chip, SymbolAvatar, Tooltip, cn, formatMoney } from "@kalks/ui";
+import { Card, CardHeader, Chip, SymbolAvatar, Tooltip, cn, formatMoney } from "@/components/kit";
 import { COACH, SESSIONS, WEEKDAYS } from "@kalks/mock/academy";
 
 const money = (v: number) => `${v >= 0 ? "+" : "-"}${formatMoney(Math.abs(v), "USD", 0)}`;
@@ -131,7 +131,7 @@ export function RiskDistribution() {
             <div key={x.label} className="flex h-full flex-1 flex-col items-center justify-end">
               <span className={cn("k-num mb-1.5 text-[11.5px] font-medium", danger ? "text-down" : "text-fg-2")}>{((x.count / total) * 100).toFixed(0)}%</span>
               <motion.div
-                className={cn("w-full max-w-12 rounded-t-[10px] rounded-b-[4px] border", danger ? "border-down/40 bg-gradient-to-b from-down to-down/30" : i === 0 ? "border-ember/40 bg-gradient-to-b from-[#ff8a3d] to-[#b8330f] shadow-[0_0_30px_-8px_rgba(255,90,31,0.7)]" : "border-line bg-gradient-to-b from-surface-3 to-surface-2")}
+                className={cn("w-full max-w-12 rounded-t-[10px] rounded-b-[4px] border", danger ? "border-down/40 bg-gradient-to-b from-down to-down/30" : i === 0 ? "border-ember/40 bg-gradient-to-b from-[var(--k-ember-2)] to-[color-mix(in_oklab,var(--k-ember)_78%,#000)] shadow-[0_0_30px_-8px_color-mix(in_oklab,var(--k-ember)_70%,transparent)]" : "border-line bg-gradient-to-b from-surface-3 to-surface-2")}
                 initial={{ height: 0 }}
                 animate={{ height: `${Math.max(4, (x.count / max) * 120)}px` }}
                 transition={{ duration: 0.8, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}

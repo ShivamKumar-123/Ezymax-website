@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Archive, Download, Eye, Globe, KeyRound, Lock, Monitor, Moon, Pencil, RefreshCcw, Smartphone, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, Field, Icon3D, Input, KeyValue, Money, Reveal, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, Field, Icon3D, Input, KeyValue, Money, Reveal, Toggle, cn } from "@/components/kit";
 import { ACCOUNT_GROUPS, type TradingAccount } from "@kalks/mock";
 import { DEMO_RULES } from "@kalks/mock/accounts-extra";
 import { CredentialField, EmailOtp, PasswordInput, PasswordStrength, isPasswordValid } from "./security";
@@ -312,7 +312,7 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
                         ].map(([v, l]) => (
                           <div key={l as string} className="flex-1 rounded-[14px] border border-line bg-black/25 light:bg-white/70 py-2 text-center">
                             <div className="k-num font-mono text-[22px] font-semibold">{pad(v as number)}</div>
-                            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{l}</div>
+                            <div className="text-[11.5px] text-fg-3">{l}</div>
                           </div>
                         ))
                       : null}

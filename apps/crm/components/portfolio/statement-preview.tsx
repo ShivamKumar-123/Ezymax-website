@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Logo, formatNumber } from "@kalks/ui";
+import { Logo, formatNumber } from "@/components/kit";
 import { ACCOUNTS, HISTORY, ME, POSITIONS, accountUsd, getInstrument } from "@kalks/mock";
 import { BROKER_INFO, LEDGER } from "@kalks/mock/portfolio-extra";
 import { serverTime } from "./export";
@@ -32,7 +32,7 @@ export function StatementPreview({ login, period, from, to }: { login: string; p
   return (
     <div className="rounded-xl bg-[#fdfcfa] p-5 text-[11px] leading-snug text-[#1a1a1f] shadow-[0_30px_60px_-30px_rgba(0,0,0,0.8)] ring-1 ring-black/10 sm:p-8">
       {/* Letterhead */}
-      <div className="flex flex-col gap-4 border-b-2 border-[#ff5a1f] pb-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4 border-b-2 border-[var(--k-ember)] pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <Logo height={26} className="text-[#0e0e12]" />
           <div className="mt-2 max-w-xs text-[10px] text-[#6b6b74]">

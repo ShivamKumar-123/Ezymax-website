@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, Ban, Layers, Repeat, Search, ShieldCheck, Sliders } from "lucide-react";
-import { Avatar, Button, Card, CardHeader, Chip, Icon3D, Money, PageHeader, Reveal, Segmented, Sparkline, StatusChip, cn, formatCompact } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, Icon3D, Money, PageHeader, Reveal, Segmented, Sparkline, StatusChip, cn, formatCompact } from "@/components/kit";
 import { MASTERS, MY_COPY_SUBS, masterById, masterSpark, type Master } from "@kalks/mock/social";
 import { MasterIdentity, RiskBadge, formatAge } from "@/components/social/master-bits";
 import { CopyDialog } from "@/components/social/copy-dialog";
@@ -182,7 +182,7 @@ function DemoCopyTradingPage() {
                   {MY_COPY_SUBS.map((s) => {
                     const m = masterById(s.masterId)!;
                     return (
-                      <Link key={s.id} href="/social/investments" className="flex items-center gap-3 rounded-[14px] border border-white/10 bg-black/25 px-3.5 py-2.5 transition-colors hover:bg-black/40">
+                      <Link key={s.id} href="/social/investments" className="flex items-center gap-3 rounded-[14px] border border-white/10 light:border-line bg-black/25 light:bg-white/70 px-3.5 py-2.5 transition-colors hover:bg-black/40 light:hover:bg-white">
                         <Avatar src={m.person.photo} name={m.person.name} size={30} />
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-[13px] font-medium">{m.person.name}</div>

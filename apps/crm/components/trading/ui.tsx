@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowDownToLine, ArrowLeftRight, CandlestickChart, Check, Coins, KeyRound, Layers, Loader2, Lock, MoreHorizontal, PencilLine, RefreshCcw, Gauge as GaugeIcon, Star, StarOff, Trash2, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, CopyButton, Dialog, IconButton, Menu, Money, cn, type ButtonProps } from "@kalks/ui";
+import { Button, Chip, CopyButton, Dialog, IconButton, Menu, Money, cn, type ButtonProps } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { useReadOnly } from "@/components/session";
 import { STATUS_LABEL, curOf, errorToast, fmtLevel, levelTone, openTerminal, serverOf, tradingApi, type EngineAccount } from "./api";
@@ -291,21 +291,21 @@ export function LiveAccountRow({ a, onChanged, compact }: { a: EngineAccount; on
       </div>
       <div className={cn("mt-4 grid items-end gap-4", compact ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_auto]" : "grid-cols-2 sm:grid-cols-4 xl:grid-cols-[1fr_1fr_1fr_1fr_auto]")}>
         <div className="min-w-0">
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("common.balance")}</div>
+          <div className="text-[12px] text-fg-3">{t("common.balance")}</div>
           <Money value={a.balance} currency={cur} countUp={false} className="mt-1 block truncate text-[16px] font-semibold sm:text-[19px]" />
         </div>
         <div className="min-w-0">
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("common.equity")}</div>
+          <div className="text-[12px] text-fg-3">{t("common.equity")}</div>
           <Money value={a.equity} currency={cur} countUp={false} className="mt-1 block truncate text-[16px] font-semibold sm:text-[19px]" />
         </div>
         {!compact && (
           <div className="hidden min-w-0 sm:block">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("accounts.label.freeMargin")}</div>
+            <div className="text-[12px] text-fg-3">{t("accounts.label.freeMargin")}</div>
             <Money value={a.freeMargin} currency={cur} countUp={false} className="mt-1 block text-[15px] font-medium text-fg-2" />
           </div>
         )}
         <div>
-          <div className="whitespace-nowrap text-[11px] uppercase tracking-wider text-fg-3">{t("accounts.label.marginLevel")}</div>
+          <div className="whitespace-nowrap text-[12px] text-fg-3">{t("accounts.label.marginLevel")}</div>
           <div className={cn("k-num mt-1 text-[17px] font-semibold", tone === "up" && "text-up", tone === "warn" && "text-warn", tone === "down" && "text-down")}>{fmtLevel(a.marginLevel)}</div>
         </div>
         {!readOnly && (

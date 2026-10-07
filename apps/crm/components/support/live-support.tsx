@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { ChevronRight, Copy, History, Mail, MessageSquareText, Star } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Dialog, EmptyState, PageHeader, Reveal } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, EmptyState, PageHeader, Reveal } from "@/components/kit";
 import { useSession } from "@/components/session";
 import { realtime } from "@/lib/realtime";
 import { SUPPORT_EMAIL } from "@/lib/live";

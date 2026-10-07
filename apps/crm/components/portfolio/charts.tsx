@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { cn, formatCompact, formatMoney } from "@kalks/ui";
+import { cn, formatCompact, formatMoney } from "@/components/kit";
 import { tr } from "@kalks/i18n/react";
 import { intlTag } from "@kalks/i18n/locales";
 
@@ -269,7 +269,7 @@ export function ColumnBars({
             const h = (Math.abs(d.value) / span) * 100;
             const up = d.value >= 0;
             const on = hover === i;
-            const color = tone === "gold" ? (i === data.length - 1 ? "bg-gradient-to-b from-[#ff8a3d] to-[#c2360f]" : "bg-gradient-to-b from-gold/80 to-gold/30") : up ? "bg-gradient-to-b from-up to-up/35" : "bg-gradient-to-t from-down to-down/35";
+            const color = tone === "gold" ? (i === data.length - 1 ? "bg-gradient-to-b from-[var(--k-ember-2)] to-[color-mix(in_oklab,var(--k-ember)_78%,#000)]" : "bg-gradient-to-b from-gold/80 to-gold/30") : up ? "bg-gradient-to-b from-up to-up/35" : "bg-gradient-to-t from-down to-down/35";
             return (
               <div key={d.label + i} className="relative flex-1" onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
                 <motion.span

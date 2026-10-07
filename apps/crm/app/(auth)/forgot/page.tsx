@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Mail, Lock, KeyRound } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Field, Input } from "@kalks/ui";
+import { Button, Field, Input } from "@/components/kit";
 import { useT, Trans } from "@kalks/i18n/react";
 import { DevCodeHint, FormError, OtpInput, PasswordStrength, ResendLink } from "@/components/auth";
 import { authPost, type ApiError, type OtpChallenge } from "@/lib/auth-client";

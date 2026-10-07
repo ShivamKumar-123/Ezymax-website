@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CardHeader, Card, Delta, ListRow, PriceText, Segmented, SymbolAvatar, Sparkline, useCloses, useFeedMode, useQuotes } from "@kalks/ui";
+import { CardHeader, Card, Delta, ListRow, PriceText, Segmented, SymbolAvatar, Sparkline, useCloses, useFeedMode, useQuotes } from "@/components/kit";
 import { INSTRUMENTS, fetchCandles, sparkline, topMovers, type Quote } from "@kalks/mock";
 import { TERMINAL_URL } from "@/lib/live";
 import { useT } from "@kalks/i18n/react";

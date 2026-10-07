@@ -22,7 +22,7 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, Flag, Icon3D, Money, PageHeader, Reveal, Segmented, Starfield, cn, formatMoney } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, Flag, Icon3D, Money, PageHeader, Reveal, Segmented, Starfield, cn, formatMoney } from "@/components/kit";
 import { WALLET } from "@kalks/mock";
 import { BANNED_STRATEGIES, PROP_FAQ, PROP_MODELS, PROP_SIZES, PROP_STATS, RECENT_PAYOUTS, type PropModelId, type PropSize } from "@kalks/mock/prop";
 import { BuyChallengeDialog } from "@/components/prop/buy-dialog";
@@ -46,7 +46,7 @@ function Hero() {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/assets/photos/trading-screen.jpg" alt="" className="absolute inset-y-0 right-0 h-full w-full object-cover opacity-45 md:w-3/5" />
       <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/90 to-bg/20 md:via-bg/80" />
-      <div className="absolute inset-0 bg-[radial-gradient(60%_80%_at_85%_0%,rgba(255,90,31,0.28),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(60%_80%_at_85%_0%,color-mix(in_oklab,var(--k-ember)_28%,transparent),transparent_60%)]" />
       <Starfield density={50} />
       <div className="relative grid grid-cols-1 gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="max-w-2xl">
@@ -54,7 +54,7 @@ function Hero() {
             <Sparkles className="size-3.5" /> Kalks Prop · simulated capital, real payouts
           </Chip>
           <h2 className="text-[28px] font-medium leading-[1.1] tracking-[-0.02em] sm:text-[40px]">
-            Trade up to <span className="bg-gradient-to-r from-[#ffb36b] to-[#ff5a1f] bg-clip-text text-transparent">$200,000</span>.
+            Trade up to <span className="bg-gradient-to-r from-[color-mix(in_oklab,var(--k-ember)_55%,#fff)] to-[var(--k-ember)] bg-clip-text text-transparent">$200,000</span>.
             <br className="hidden sm:block" /> Keep up to 90% of the profit.
           </h2>
           <p className="mt-3 max-w-lg text-[14.5px] text-fg-2">Pass a 1-Step or 2-Step evaluation, or start funded instantly. Rules run live on the server, so you always know exactly where you stand.</p>
@@ -66,7 +66,7 @@ function Hero() {
               { l: "Largest payout", v: <Money value={PROP_STATS.largestPayout} decimals={0} /> },
             ].map((s) => (
               <div key={s.l} className="rounded-[14px] border border-line bg-surface/60 px-3.5 py-3 backdrop-blur">
-                <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{s.l}</div>
+                <div className="text-[11.5px] text-fg-3">{s.l}</div>
                 <div className="mt-1 text-[19px] font-semibold tracking-tight">{s.v}</div>
               </div>
             ))}
@@ -175,7 +175,7 @@ function Configurator({ modelId, setModelId, size, setSize }: { modelId: PropMod
                   onClick={() => setSize(s)}
                   className={cn(
                     "relative overflow-hidden rounded-[14px] border px-3 py-3 text-left transition-all",
-                    on ? "border-ember/50 bg-ember-soft shadow-[0_0_0_3px_rgba(255,90,31,0.10),0_10px_30px_-12px_rgba(255,90,31,0.5)]" : "border-line bg-surface-2 hover:border-fg-3/40 hover:bg-surface-3",
+                    on ? "border-ember/50 bg-ember-soft shadow-[0_0_0_3px_color-mix(in_oklab,var(--k-ember)_10%,transparent),0_10px_30px_-12px_color-mix(in_oklab,var(--k-ember)_50%,transparent)]" : "border-line bg-surface-2 hover:border-fg-3/40 hover:bg-surface-3",
                   )}
                 >
                   {s === 100000 && <span className="absolute right-2 top-2 size-1.5 rounded-full bg-gold" />}
@@ -279,7 +279,7 @@ function PlanCard({ modelId, size }: { modelId: PropModelId; size: PropSize }) {
             </div>
           ))}
         </dl>
-        <div className="mt-3 rounded-[14px] border border-white/10 bg-black/20 px-4 py-3 text-[12px] text-fg-2">
+        <div className="mt-3 rounded-[14px] border border-white/10 light:border-line bg-black/20 light:bg-white/70 px-4 py-3 text-[12px] text-fg-2">
           At 6% a month on {k(size)} you&apos;d take home <span className="k-num font-semibold text-up">{formatMoney(est, "USD", 0)}</span> per month at {m.split}.
         </div>
         <div className="mt-auto pt-5">

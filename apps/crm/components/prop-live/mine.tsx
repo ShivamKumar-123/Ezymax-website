@@ -25,7 +25,7 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CopyButton, DataTable, EmptyState, Gauge, KpiCard, Money, PageHeader, Progress, Reveal, Segmented, Skeleton, Stepper,  cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, DataTable, EmptyState, Gauge, KpiCard, Money, PageHeader, Progress, Reveal, Segmented, Skeleton, Stepper,  cn, type Column } from "@/components/kit";
 // engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolAvatar as SymbolAvatar, symbolLabel } from "@/components/trading/instrument";
 import type { T } from "@kalks/i18n";

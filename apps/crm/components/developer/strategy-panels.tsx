@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ChevronDown, FlaskConical, Plus, Save, Server, ShieldAlert, Check } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Field, Icon3D, Input, Menu, Money, Sparkline, StatusChip, SymbolAvatar, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Field, Icon3D, Input, Menu, Money, Sparkline, StatusChip, SymbolAvatar, Toggle, cn } from "@/components/kit";
 import { ACCOUNTS } from "@kalks/mock";
 import { LIVE_SIGNALS, MY_STRATEGIES, TEMPLATES, type StrategyRules } from "@kalks/mock/algo";
 
@@ -26,7 +26,7 @@ export function TemplatesCard({ active, onPick }: { active: string; onPick: (id:
               onClick={() => onPick(t.id)}
               className={cn(
                 "k-row relative flex w-full items-start gap-3 overflow-hidden px-3 py-3 text-left transition-all hover:border-[var(--k-border-top)] hover:bg-surface-3/60",
-                on && "border-ember/40 bg-ember-soft/40 shadow-[0_0_0_1px_rgba(255,90,31,0.15),0_12px_30px_-18px_rgba(255,90,31,0.6)]",
+                on && "border-ember/40 bg-ember-soft/40 shadow-[0_0_0_1px_color-mix(in_oklab,var(--k-ember)_15%,transparent),0_12px_30px_-18px_color-mix(in_oklab,var(--k-ember)_60%,transparent)]",
               )}
             >
               {on && <span className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-ember" />}

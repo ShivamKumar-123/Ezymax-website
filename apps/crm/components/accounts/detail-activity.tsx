@@ -24,7 +24,7 @@ import {
   formatNumber,
   type Column,
   useQuotes,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { getInstrument, positionProfit, type ClosedTrade, type Position, type TradingAccount } from "@kalks/mock";
 import { accountLedger, spreadCost, type LedgerEntry } from "@kalks/mock/accounts-extra";
 import { curOf, multOf } from "./detail-overview";
@@ -98,7 +98,7 @@ export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; pos
         <div className="mt-4 overflow-x-auto px-4 pb-5 sm:px-6">
           <table className="w-full min-w-[860px] border-separate border-spacing-y-2 text-[13.5px]">
             <thead>
-              <tr className="text-[11px] uppercase tracking-wider text-fg-3">
+              <tr className="text-[12px] text-fg-3">
                 <th className="px-4 text-start font-medium">{t("accountDetail.col.symbol")}</th>
                 <th className="px-3 text-start font-medium">{t("accountDetail.col.ticket")}</th>
                 <th className="px-3 text-end font-medium">{t("accountDetail.col.volume")}</th>

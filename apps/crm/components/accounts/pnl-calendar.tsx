@@ -3,7 +3,7 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Chip, Dialog, IconButton, Money, SymbolAvatar, cn, formatDateTime, formatNumber } from "@kalks/ui";
+import { Chip, Dialog, IconButton, Money, SymbolAvatar, cn, formatDateTime, formatNumber } from "@/components/kit";
 import type { ClosedTrade } from "@kalks/mock";
 import { useFormat, useT } from "@kalks/i18n/react";
 
@@ -203,15 +203,15 @@ export function PnlCalendar({ trades, currency = "$", mult = 1 }: { trades: Clos
           <div>
             <div className="grid grid-cols-3 gap-2">
               <div className="k-row px-3 py-3">
-                <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("accountDetail.cal.netPnl")}</div>
+                <div className="text-[12px] text-fg-3">{t("accountDetail.cal.netPnl")}</div>
                 <Money value={open.pnl} currency={currency} signed tone="auto" className="mt-1 block text-[17px] font-semibold" />
               </div>
               <div className="k-row px-3 py-3">
-                <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("accountDetail.perf.winRate")}</div>
+                <div className="text-[12px] text-fg-3">{t("accountDetail.perf.winRate")}</div>
                 <div className="k-num mt-1 text-[17px] font-semibold">{Math.round((open.trades.filter((t) => t.profit > 0).length / open.trades.length) * 100)}%</div>
               </div>
               <div className="k-row px-3 py-3">
-                <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("accountDetail.col.volume")}</div>
+                <div className="text-[12px] text-fg-3">{t("accountDetail.col.volume")}</div>
                 <div className="k-num mt-1 text-[17px] font-semibold">{t("accountDetail.perf.lots", { value: formatNumber(open.trades.reduce((s, x) => s + x.volume, 0)) })}</div>
               </div>
             </div>

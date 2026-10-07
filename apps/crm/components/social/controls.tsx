@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Check } from "lucide-react";
-import { cn } from "@kalks/ui";
+import { cn } from "@/components/kit";
 
 /** Ember range slider with filled track and optional tick labels. Shared by partner + social modules. */
 export function RangeSlider({
@@ -47,7 +47,7 @@ export function RangeSlider({
           className={cn(
             "relative z-10 block h-6 w-full cursor-pointer appearance-none bg-transparent outline-none",
             "[&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-transparent",
-            "[&::-webkit-slider-thumb]:-mt-[7px] [&::-webkit-slider-thumb]:size-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-[var(--thumb)] [&::-webkit-slider-thumb]:shadow-[0_0_0_4px_rgba(255,90,31,0.18),0_4px_12px_rgba(0,0,0,0.5)]",
+            "[&::-webkit-slider-thumb]:-mt-[7px] [&::-webkit-slider-thumb]:size-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-[var(--thumb)] [&::-webkit-slider-thumb]:shadow-[0_0_0_4px_color-mix(in_oklab,var(--k-ember)_18%,transparent),0_4px_12px_rgba(0,0,0,0.5)]",
             "[&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-[var(--thumb)]",
             "focus-visible:[&::-webkit-slider-thumb]:ring-4 focus-visible:[&::-webkit-slider-thumb]:ring-ember/30",
           )}
@@ -124,7 +124,7 @@ export function RadioCard({
       onClick={onSelect}
       className={cn(
         "relative flex w-full flex-col gap-1.5 rounded-[16px] border p-4 text-left transition-all",
-        selected ? "border-ember/50 bg-ember-soft shadow-[0_0_0_4px_rgba(255,90,31,0.08)]" : "border-line bg-surface-2 hover:border-[var(--k-border-top)] hover:bg-surface-3/60",
+        selected ? "border-ember/50 bg-ember-soft shadow-[0_0_0_4px_color-mix(in_oklab,var(--k-ember)_8%,transparent)]" : "border-line bg-surface-2 hover:border-[var(--k-border-top)] hover:bg-surface-3/60",
         className,
       )}
     >

@@ -4,7 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowUp, Check, Sparkles, Undo2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Card, CardHeader, Chip, cn } from "@kalks/ui";
+import { Avatar, Card, CardHeader, Chip, cn } from "@/components/kit";
 import { ME } from "@kalks/mock";
 import { AI_SUGGESTIONS, aiDraft, type StrategyRules } from "@kalks/mock/algo";
 
@@ -83,7 +83,7 @@ export function AiAssistant({ onApply, onUndo }: { onApply: (rules: StrategyRule
           return (
             <motion.div key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={cn("flex gap-2.5", m.role === "user" && "flex-row-reverse")}>
               {m.role === "ai" ? (
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[radial-gradient(circle_at_30%_30%,#ff9a57,#e8431a)] text-white shadow-[0_0_18px_-4px_rgba(255,90,31,0.8)]">
+                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[radial-gradient(circle_at_30%_30%,var(--k-ember-2),color-mix(in_oklab,var(--k-ember)_78%,#000))] text-white shadow-[0_0_18px_-4px_color-mix(in_oklab,var(--k-ember)_80%,transparent)]">
                   <Sparkles className="size-3.5" />
                 </span>
               ) : (
@@ -117,7 +117,7 @@ export function AiAssistant({ onApply, onUndo }: { onApply: (rules: StrategyRule
         <AnimatePresence>
           {busy === "thinking" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2.5">
-              <span className="grid size-7 place-items-center rounded-full bg-[radial-gradient(circle_at_30%_30%,#ff9a57,#e8431a)] text-white">
+              <span className="grid size-7 place-items-center rounded-full bg-[radial-gradient(circle_at_30%_30%,var(--k-ember-2),color-mix(in_oklab,var(--k-ember)_78%,#000))] text-white">
                 <Sparkles className="size-3.5 animate-pulse" />
               </span>
               <span className="flex items-center gap-1 rounded-full border border-line bg-surface-2 px-3 py-2">
@@ -139,7 +139,7 @@ export function AiAssistant({ onApply, onUndo }: { onApply: (rules: StrategyRule
             </button>
           ))}
         </div>
-        <div className="rounded-[18px] p-px [background:linear-gradient(135deg,rgba(255,138,61,0.9),rgba(255,90,31,0.25)_40%,rgba(255,255,255,0.06)_70%,rgba(255,90,31,0.6))] shadow-[0_14px_40px_-18px_rgba(255,90,31,0.7)]">
+        <div className="rounded-[18px] p-px [background:linear-gradient(135deg,color-mix(in_oklab,var(--k-ember-2)_90%,transparent),color-mix(in_oklab,var(--k-ember)_25%,transparent)_40%,rgba(255,255,255,0.06)_70%,color-mix(in_oklab,var(--k-ember)_60%,transparent))] shadow-[0_14px_40px_-18px_color-mix(in_oklab,var(--k-ember)_70%,transparent)]">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -147,7 +147,7 @@ export function AiAssistant({ onApply, onUndo }: { onApply: (rules: StrategyRule
             }}
             className="flex items-end gap-2 rounded-[17px] bg-surface p-1.5"
           >
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[radial-gradient(circle_at_30%_30%,#ff9a57,#e8431a)] text-white shadow-[0_0_20px_-4px_rgba(255,90,31,0.8)]">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[radial-gradient(circle_at_30%_30%,var(--k-ember-2),color-mix(in_oklab,var(--k-ember)_78%,#000))] text-white shadow-[0_0_20px_-4px_color-mix(in_oklab,var(--k-ember)_80%,transparent)]">
               <Wand2 className="size-4" />
             </span>
             <textarea

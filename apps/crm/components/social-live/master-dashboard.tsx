@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, BadgeCheck, Check, Clock, Copy as CopyIcon, Crown, FileText, KeyRound, Landmark, Layers, Link2, Loader2, Pencil, Percent, Plus, Send, ShieldCheck, TrendingDown, TriangleAlert, UserMinus, UserPlus, Users, UserX, Wallet, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, Money, PageHeader, Segmented, StatusChip, cn, type Column } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, Money, PageHeader, Segmented, StatusChip, cn, type Column } from "@/components/kit";
 import { Trans, useT } from "@kalks/i18n/react";
 import { RadioCard, RangeSlider } from "@/components/social/controls";
 import { SecretField, TradeButton } from "@/components/trading/ui";
@@ -314,7 +314,7 @@ function StatusCard({ m }: { m: MasterView }) {
           </p>
           {m.reviewNote && (
             <div className="mt-3 rounded-[14px] border border-line bg-surface-2 px-4 py-3 text-[13px]">
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("social.md.status.note")}</div>
+              <div className="text-[12px] text-fg-3">{t("social.md.status.note")}</div>
               <div className="mt-1 whitespace-pre-line text-fg">{m.reviewNote}</div>
             </div>
           )}

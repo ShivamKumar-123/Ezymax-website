@@ -5,7 +5,7 @@ import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Award, Copy, ExternalLink, Gift, IdCard, Repeat, Share2, ShieldAlert, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, CopyButton, Dialog, KeyValue, Progress, StatusChip, cn, formatDateTime, formatNumber, shortHash } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, Dialog, KeyValue, Progress, StatusChip, cn, formatDateTime, formatNumber, shortHash } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import type { T } from "@kalks/i18n";
 import { WALLET, type WalletTx } from "@kalks/mock";
@@ -187,7 +187,7 @@ export function TxDetailDrawer({ tx, onOpenChange }: { tx: WalletTx | null; onOp
 
 export function AddressQr({ size = 168 }: { size?: number }) {
   return (
-    <div className="relative rounded-[20px] bg-white p-3 shadow-[0_20px_60px_-20px_rgba(255,90,31,0.45)]">
+    <div className="relative rounded-[20px] bg-white p-3 shadow-[0_20px_60px_-20px_color-mix(in_oklab,var(--k-ember)_45%,transparent)]">
       <QRCodeSVG
         value={WALLET.address}
         size={size}
@@ -261,7 +261,7 @@ export function DepositAddressCard() {
           [t("wallet.demo.creditAfter"), t("wallet.demo.confirmationsCount", { count: 20 })],
         ].map(([k, v], i) => (
           <div key={i} className="k-row px-3 py-2.5">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
+            <div className="text-[11.5px] text-fg-3">{k}</div>
             <div className="k-num mt-0.5 text-[12.5px] font-medium">{v}</div>
           </div>
         ))}
@@ -302,7 +302,7 @@ export function LimitsCard() {
           [t("wallet.demo.withdrawalFee"), t("wallet.demo.usdtFlat", { amount: L.withdraw.fee })],
         ].map(([k, v]) => (
           <div key={k} className="k-row px-3 py-2.5">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
+            <div className="text-[11.5px] text-fg-3">{k}</div>
             <div className="k-num mt-0.5 text-[13px] font-semibold">{v}</div>
           </div>
         ))}

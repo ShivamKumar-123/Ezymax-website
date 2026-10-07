@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowLeftRight, ArrowRight, BookUser, Check, CircleAlert, CircleCheck, Eye, Info, Lock, X } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, CoinIcon, Dialog, Field, Input, KeyValue, Money, PageHeader, Reveal, StatusChip, Stepper, cn, formatDateTime, formatNumber, shortHash } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CoinIcon, Dialog, Field, Input, KeyValue, Money, PageHeader, Reveal, StatusChip, Stepper, cn, formatDateTime, formatNumber, shortHash } from "@/components/kit";
 import { Trans, tr, useT } from "@kalks/i18n/react";
 import type { MessageKey } from "@kalks/i18n";
 import { ACCOUNTS, ME, WALLET } from "@kalks/mock";
@@ -358,7 +358,7 @@ function Withdraw() {
                 {step === 2 && (
                   <div className="px-4 py-6 sm:px-6">
                     <div className="flex flex-col items-center text-center">
-                      <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", bounce: 0.4 }} className="grid size-16 place-items-center rounded-full border border-ember/40 bg-ember-soft text-ember shadow-[0_0_40px_-8px_rgba(255,90,31,0.7)]">
+                      <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", bounce: 0.4 }} className="grid size-16 place-items-center rounded-full border border-ember/40 bg-ember-soft text-ember shadow-[0_0_40px_-8px_color-mix(in_oklab,var(--k-ember)_70%,transparent)]">
                         <Lock className="size-7" />
                       </motion.div>
                       <h3 className="mt-4 text-[22px] font-semibold tracking-tight">{t("wallet.demo.pendingApproval")}</h3>

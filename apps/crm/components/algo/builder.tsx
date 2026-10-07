@@ -5,7 +5,7 @@
 
 import * as React from "react";
 import { Check, ChevronDown, Plus, Repeat2, Trash2, X } from "lucide-react";
-import { Menu, Segmented, SymbolAvatar, Toggle, cn } from "@kalks/ui";
+import { Menu, Segmented, SymbolAvatar, Toggle, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { operand, type Condition, type Meta, type Operand, type RuleSet, type StrategySpec } from "./api";
 
@@ -45,7 +45,7 @@ export function NumInput({ value, onChange, step = 1, min, label, className, suf
         }}
         onBlur={() => setTxt(String(value))}
         style={{ width: width ? `${width}px` : `${Math.max(2, txt.length) + 1.5}ch` }}
-        className="k-num h-6 rounded-md bg-black/25 px-1 text-center text-[12.5px] text-fg outline-none focus:ring-1 focus:ring-current"
+        className="k-num h-6 rounded-md bg-black/25 light:bg-surface-2 px-1 text-center text-[12.5px] text-fg outline-none focus:ring-1 focus:ring-current"
       />
       {suffix && <span className="ms-1 opacity-80">{suffix}</span>}
     </span>

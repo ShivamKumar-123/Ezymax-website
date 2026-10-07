@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Mail } from "lucide-react";
 import { toast } from "sonner";
-import { Tooltip, cn } from "@kalks/ui";
+import { Tooltip, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 
 const WA = (

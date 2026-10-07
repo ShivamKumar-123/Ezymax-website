@@ -4,7 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { FileText, Loader2, MoreHorizontal, Paperclip, RotateCcw, SendHorizontal, Sparkles, Star, UserRound, X, XCircle } from "lucide-react";
-import { Avatar, Button, Chip, IconButton, Menu, cn } from "@kalks/ui";
+import { Avatar, Button, Chip, IconButton, Menu, cn } from "@/components/kit";
 import { useSession } from "@/components/session";
 import { realtime, type Frame } from "@/lib/realtime";
 import { intlTag } from "@kalks/i18n/locales";

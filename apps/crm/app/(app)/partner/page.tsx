@@ -28,8 +28,8 @@ import {
   cn,
   formatMoney,
   IconGlyph,
-} from "@kalks/ui";
-import type { SeriesPoint } from "@kalks/ui";
+} from "@/components/kit";
+import type { SeriesPoint } from "@/components/kit";
 import { ME } from "@kalks/mock";
 import {
   CAMPAIGNS,
@@ -121,7 +121,7 @@ function LevelHero() {
                     <span
                       className={cn(
                         "grid size-10 place-items-center rounded-full border",
-                        on ? "border-ember/60 bg-ember/15 text-ember" : done ? "border-gold/40 bg-gold-soft text-gold" : "border-white/10 bg-black/30 text-fg-3",
+                        on ? "border-ember/60 bg-ember/15 text-ember" : done ? "border-gold/40 bg-gold-soft text-gold" : "border-white/10 light:border-line bg-black/30 light:bg-white/70 text-fg-3",
                       )}
                     >
                       <IconGlyph name={l.icon} className="size-[18px]" />
@@ -132,7 +132,7 @@ function LevelHero() {
               );
             })}
           </div>
-          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-[14px] border border-white/10 bg-black/25 px-4 py-2.5 text-[12.5px]">
+          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-[14px] border border-white/10 light:border-line bg-black/25 light:bg-white/70 px-4 py-2.5 text-[12.5px]">
             <span className="text-fg-2">Unlock at {next.name}:</span>
             {next.perks.map((p) => (
               <Chip key={p} size="sm" tone="gold">
@@ -148,7 +148,7 @@ function LevelHero() {
 
 function ProgressBlock({ icon, label, value, target, pct, hint, fmt }: { icon: React.ReactNode; label: string; value: number; target: number; pct: number; hint: string; fmt: (v: number) => string }) {
   return (
-    <div className="rounded-[16px] border border-white/10 bg-black/25 px-4 py-3.5 backdrop-blur-sm">
+    <div className="rounded-[16px] border border-white/10 light:border-line bg-black/25 light:bg-white/70 px-4 py-3.5 backdrop-blur-sm">
       <div className="flex items-center justify-between text-[12.5px]">
         <span className="flex items-center gap-2 text-fg-2">
           {icon}
@@ -186,7 +186,7 @@ function ReferralCard() {
         </div>
         <div className="flex items-center justify-between rounded-[14px] border border-line bg-surface-2 px-4 py-2.5">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">Referral code</div>
+            <div className="text-[12px] text-fg-3">Referral code</div>
             <div className="font-mono text-[15px] font-semibold tracking-wider">{ME.referralCode}</div>
           </div>
           <CopyButton value={ME.referralCode} label="Referral code" />
@@ -229,7 +229,7 @@ function ReferralCard() {
         }
       >
         <div className="flex flex-col items-center gap-4">
-          <div className="rounded-[20px] bg-white p-5 shadow-[0_20px_60px_-20px_rgba(255,90,31,0.5)]">
+          <div className="rounded-[20px] bg-white p-5 shadow-[0_20px_60px_-20px_color-mix(in_oklab,var(--k-ember)_50%,transparent)]">
             <QRCodeSVG value={ME.referralLink} size={220} level="H" fgColor="#0b0b0e" bgColor="#ffffff" imageSettings={{ src: "/assets/brand/kalks-mark.svg", height: 44, width: 44, excavate: true }} />
           </div>
           <div className="font-mono text-[13px] text-fg-2">{ME.referralLink.replace("https://", "")}</div>
@@ -402,7 +402,7 @@ function CpaCard() {
         ))}
       </div>
       <div className="mt-5 px-4 sm:px-6">
-        <div className="mb-2 text-[11px] uppercase tracking-wider text-fg-3">Latest qualified</div>
+        <div className="mb-2 text-[12px] text-fg-3">Latest qualified</div>
         <div className="space-y-2">
           {COMMISSION_LEDGER.filter((e) => e.kind === "cpa").slice(0, 3).map((e) => (
             <div key={e.id} className="k-row flex items-center gap-3 px-3.5 py-2">
@@ -420,7 +420,7 @@ function CpaCard() {
       <div className="mt-auto px-4 pb-5 pt-4 sm:px-6">
         <div className="k-row flex items-center justify-between px-4 py-3">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">Rebate · sub-IB split</div>
+            <div className="text-[12px] text-fg-3">Rebate · sub-IB split</div>
             <div className="k-num mt-0.5 text-[14px] font-medium">
               {PARTNER.rebatePct}% <span className="text-fg-3">·</span> {PARTNER.subIbSplitPct}%
             </div>

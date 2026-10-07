@@ -4,7 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, Copy, FileCode2, RotateCcw, ShieldCheck, TriangleAlert, Check } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, Tooltip, cn } from "@kalks/ui";
+import { Button, Chip, Tooltip, cn } from "@/components/kit";
 import { validateCode } from "@kalks/mock/algo";
 
 const TOKEN =

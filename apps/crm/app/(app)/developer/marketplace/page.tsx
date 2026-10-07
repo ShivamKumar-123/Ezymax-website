@@ -20,7 +20,7 @@ import {
   Starfield,
   cn,
   formatNumber,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { MARKETPLACE_TERMS, MARKET_STRATEGIES, MY_PUBLISHING, type MarketStrategy } from "@kalks/mock/developer";
 import type { AssetClass } from "@kalks/mock";
 import { Stars, StrategyCard, SubscribeDialog, SymbolStack } from "@/components/developer/marketplace";
@@ -51,7 +51,7 @@ function FeaturedHero({ s, onSubscribe, subscribed }: { s: MarketStrategy; onSub
     <Card hot className="relative overflow-hidden">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/assets/photos/gold.jpg" alt="" className="absolute inset-y-0 right-0 hidden h-full w-[55%] object-cover opacity-35 lg:block" />
-      <div className="absolute inset-0 hidden bg-gradient-to-r from-black/60 via-black/30 to-transparent lg:block" />
+      <div className="absolute inset-0 hidden bg-gradient-to-r from-black/60 via-black/30 to-transparent light:from-white/85 light:via-white/40 lg:block" />
       <Starfield density={50} />
       <div className="relative grid grid-cols-1 gap-6 p-6 sm:p-7 lg:grid-cols-[1.1fr_1fr] lg:items-center">
         <div>
@@ -83,8 +83,8 @@ function FeaturedHero({ s, onSubscribe, subscribed }: { s: MarketStrategy; onSub
               ["Win rate", `${s.winRate}%`, "text-fg"],
               ["Subscribers", formatNumber(s.subscribers, 0), "text-fg"],
             ].map(([k, v, c]) => (
-              <div key={k} className="rounded-[14px] border border-white/10 bg-black/25 px-3 py-2.5 backdrop-blur">
-                <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{k}</div>
+              <div key={k} className="rounded-[14px] border border-white/10 light:border-line bg-black/25 light:bg-white/70 px-3 py-2.5 backdrop-blur">
+                <div className="text-[11.5px] text-fg-3">{k}</div>
                 <div className={cn("k-num mt-0.5 text-[17px] font-semibold", c)}>{v}</div>
               </div>
             ))}
@@ -104,7 +104,7 @@ function FeaturedHero({ s, onSubscribe, subscribed }: { s: MarketStrategy; onSub
             </Button>
           </div>
         </div>
-        <div className="rounded-[18px] border border-white/10 bg-black/35 p-4 backdrop-blur-md">
+        <div className="rounded-[18px] border border-white/10 light:border-line bg-black/35 light:bg-white/70 p-4 backdrop-blur-md">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <SymbolStack symbols={s.symbols} size={24} />
@@ -194,7 +194,7 @@ function PublishCta() {
           </div>
           <div className="mt-4 flex items-end justify-between border-t border-line pt-3">
             <div>
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">You earn / month</div>
+              <div className="text-[12px] text-fg-3">You earn / month</div>
               <div className="k-num text-[26px] font-semibold text-gold">${formatNumber(net, 0)}</div>
             </div>
             <div className="text-right text-[11.5px] text-fg-3">

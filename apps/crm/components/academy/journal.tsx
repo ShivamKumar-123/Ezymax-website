@@ -4,7 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Angry, Frown, Meh, NotebookPen, Plus, Smile, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, DialogClose, Field, Input, Segmented, SymbolAvatar, cn, formatDateTime, formatMoney } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, DialogClose, Field, Input, Segmented, SymbolAvatar, cn, formatDateTime, formatMoney } from "@/components/kit";
 import { JOURNAL, type JournalNote, type Mood } from "@kalks/mock/academy";
 
 const MOODS: Record<Mood, { label: string; icon: typeof Smile; tone: "up" | "info" | "warn" | "down" | "ember" }> = {

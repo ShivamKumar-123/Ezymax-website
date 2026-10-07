@@ -1,4 +1,4 @@
-import { preconnect } from "react-dom";
+import { preconnect, preload } from "react-dom";
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
@@ -21,7 +21,15 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export const viewport: Viewport = { themeColor: "#07070a", width: "device-width", initialScale: 1 };
+// light pastel is the Client Area's default theme (dark stays one tap away in the theme switch)
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0b0a0f" },
+    { media: "(prefers-color-scheme: light)", color: "#f9f6f5" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+};
 
 /** Browser-side market-data origin (another host in production), when it is one. */
 const MARKET_DATA_ORIGIN = (() => {
@@ -36,6 +44,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // quotes, candles and the stream come from the market-data origin: start its DNS + TCP + TLS handshake while the
   // page loads instead of after hydration (the browser fetches it without credentials, hence "anonymous")
   if (MARKET_DATA_ORIGIN) preconnect(MARKET_DATA_ORIGIN, { crossOrigin: "anonymous" });
+  // the display face (latin subset) is on every page: fetch it with the HTML instead of after the stylesheet
+  preload("/fonts/plus-jakarta-sans-latin.woff2", { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
   // language from the kalks_locale cookie (set by the switcher) or the browser's Accept-Language
   const [{ locale, dir, messages }, brand] = await Promise.all([getI18n(), tenantBrand()]);
   const css = brandCss(brand);
@@ -44,7 +54,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
         <BrandProvider brand={brand}>
-          <Providers i18n={{ locale, messages }}>{children}</Providers>
+          <Providers defaultTheme="light" i18n={{ locale, messages }}>{children}</Providers>
         </BrandProvider>
       </body>
     </html>

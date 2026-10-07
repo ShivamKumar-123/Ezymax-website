@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Download, ExternalLink, Link2, Trophy } from "lucide-react";
-import { Button, Card, Chip, EmptyState, PageHeader, Skeleton, Tooltip } from "@kalks/ui";
+import { Button, Card, Chip, EmptyState, PageHeader, Skeleton, Tooltip } from "@/components/kit";
 import { tr, useT } from "@kalks/i18n/react";
 import { fmtDate, sizeLabel, usd, usePropPoll, type Certificate } from "./api";
 import { LoadError } from "./ui";

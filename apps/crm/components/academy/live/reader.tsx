@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, GraduationCap, Lightbulb, MonitorPlay } from "lucide-react";
-import { Button, Card, Chip, cn } from "@kalks/ui";
+import { Button, Card, Chip, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { LEVEL_TONE, academyApi, isElective, levelLabel, trackLabel, trackTone, useAcademy, type ChapterView, type QuizReply } from "./api";
 import { Markdown, headingsOf } from "./markdown";
@@ -225,7 +225,7 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
               <Link href={`/academy/chapter/${view.prev.slug}`} className="k-row flex items-center gap-3 px-4 py-3.5" data-testid="prev-chapter">
                 <ArrowLeft className="size-4 shrink-0 text-fg-3 rtl:-scale-x-100" />
                 <div className="min-w-0">
-                  <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("academy.reader.previous")}</div>
+                  <div className="text-[12px] text-fg-3">{t("academy.reader.previous")}</div>
                   <div className="truncate text-[13.5px] font-medium">{view.prev.title}</div>
                 </div>
               </Link>
@@ -235,7 +235,7 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
             {view.next ? (
               <Link href={`/academy/chapter/${view.next.slug}`} className="k-row flex items-center justify-end gap-3 px-4 py-3.5 text-end" data-testid="next-chapter">
                 <div className="min-w-0">
-                  <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("common.next")}</div>
+                  <div className="text-[12px] text-fg-3">{t("common.next")}</div>
                   <div className="truncate text-[13.5px] font-medium">{view.next.title}</div>
                 </div>
                 <ArrowRight className="size-4 shrink-0 text-fg-3 rtl:-scale-x-100" />

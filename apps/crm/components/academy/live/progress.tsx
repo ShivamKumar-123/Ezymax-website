@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Award, BookOpen, Clock, Copy, Download, Flame, GraduationCap, ShieldCheck, Target } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Progress, Reveal, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Progress, Reveal, cn } from "@/components/kit";
 import { tr, useT } from "@kalks/i18n/react";
 import { LEVEL_TONE, fmtDay, fmtMin, isElective, levelLabel, pct, trackShort, trackTallies, tracksOf, useAcademy, type Catalog, type Certificate } from "./api";
 import { AcademyUnavailable, BackLink, PageSkeleton } from "./shared";

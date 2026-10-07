@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { ArrowUpRight, ChevronRight, Clock3, Eye, Mail, MessageCircle, Phone, Search } from "lucide-react";
-import { Card, CardHeader, Chip, Dialog, Icon3D, Input, PageHeader, Reveal, Button, cn } from "@kalks/ui";
+import { Card, CardHeader, Chip, Dialog, Icon3D, Input, PageHeader, Reveal, Button, cn } from "@/components/kit";
 import { HELP_CATEGORIES, POPULAR_ARTICLES, SUPPORT_AGENT } from "@kalks/mock/support-extra";
 import { ChatPanel } from "@/components/support/chat-panel";
 import { LiveSupport } from "@/components/support/live-support";

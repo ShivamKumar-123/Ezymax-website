@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@kalks/ui";
+import { cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 
 function parts(ms: number) {
@@ -35,7 +35,7 @@ export function Countdown({ to, className, compact }: { to: string; className?: 
     <div dir="ltr" className={cn("flex items-center gap-1.5", className)}>
       {cells.map(([l, v], i) => (
         <React.Fragment key={l}>
-          <div className="flex min-w-[52px] flex-col items-center rounded-[14px] border border-white/10 bg-black/35 px-2.5 py-2 backdrop-blur-sm">
+          <div className="flex min-w-[52px] flex-col items-center rounded-[14px] border border-white/10 light:border-line bg-black/35 light:bg-white/70 px-2.5 py-2 backdrop-blur-sm">
             <span className="k-num font-mono text-[22px] font-semibold leading-none text-fg">{v === undefined ? "--" : String(v).padStart(2, "0")}</span>
             <span className="mt-1 text-[9.5px] uppercase tracking-[0.08em] text-fg-3">{l}</span>
           </div>

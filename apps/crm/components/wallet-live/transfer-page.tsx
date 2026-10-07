@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowDown, ArrowLeft, ArrowLeftRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, EmptyState, Field, Input, PageHeader, Segmented, Skeleton, cn, formatDateTime } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, EmptyState, Field, Input, PageHeader, Segmented, Skeleton, cn, formatDateTime } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { toUsd, useAccounts, type EngineAccount } from "@/components/trading/api";
 import { TransferBetweenDialog } from "@/components/trading/extras";
@@ -143,7 +143,7 @@ function Inner() {
             <form onSubmit={submit} className="space-y-5 px-4 pb-6 pt-4 sm:px-6">
               <div className="k-row flex items-center justify-between px-4 py-3">
                 <div>
-                  <div className="text-[11px] uppercase tracking-wider text-fg-3">{dir === "to" ? t("wallet.from") : t("wallet.to")}</div>
+                  <div className="text-[12px] text-fg-3">{dir === "to" ? t("wallet.from") : t("wallet.to")}</div>
                   <div className="text-[14px] font-medium">{t("wallet.transfer.walletUsdt")}</div>
                 </div>
                 <div dir="ltr" className="k-num text-end text-[14px] font-semibold">{o.data ? `${fmt(walletAvail)} USDT` : "—"}</div>
@@ -152,7 +152,7 @@ function Inner() {
                 <ArrowDown className={cn("size-4 transition-transform", dir === "from" && "rotate-180")} />
               </div>
               <div>
-                <div className="mb-2 text-[11px] uppercase tracking-wider text-fg-3">{dir === "to" ? t("wallet.transfer.toTradingAccount") : t("wallet.transfer.fromTradingAccount")}</div>
+                <div className="mb-2 text-[12px] text-fg-3">{dir === "to" ? t("wallet.transfer.toTradingAccount") : t("wallet.transfer.fromTradingAccount")}</div>
                 {acc.loading && <Skeleton className="h-16 w-full rounded-[14px]" />}
                 {acc.data && live.length === 0 && (
                   <EmptyState illustration="rocket" title={t("wallet.transfer.noLiveTitle")} text={t("wallet.transfer.noLiveText")} action={<Link href="/accounts/new?type=live"><Button variant="ember">{t("wallet.transfer.openLive")}</Button></Link>} />

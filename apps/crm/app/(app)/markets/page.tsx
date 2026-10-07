@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowUpRight, CandlestickChart, Search, Star, X } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, Delta, EmptyState, PageHeader, PriceText, Reveal, Segmented, Sparkline, SymbolCell, Tooltip, cn, formatNumber, useFeedMode, useQuotes, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Delta, EmptyState, PageHeader, PriceText, Reveal, Segmented, Sparkline, SymbolCell, Tooltip, cn, formatNumber, useFeedMode, useQuotes, type Column } from "@/components/kit";
 import { ASSET_CLASS_LABEL, INSTRUMENTS, IS_DEMO, fetchCandles, isMarketOpen, sparkline, type AssetClass, type Instrument } from "@kalks/mock";
 import { CONTRACT_SPECS, DEFAULT_FAVOURITES } from "@kalks/mock/markets-extra";
 import { InstrumentDrawer } from "@/components/markets/instrument-drawer";

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowUpRight, Code2, Copy, Download, FlaskConical, LayoutGrid, MoreHorizontal, Pencil, Play, RotateCcw, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, Chip, IconButton, Menu, PageHeader, Reveal, Segmented, Sparkline, SymbolAvatar, cn } from "@kalks/ui";
+import { Button, Card, Chip, IconButton, Menu, PageHeader, Reveal, Segmented, Sparkline, SymbolAvatar, cn } from "@/components/kit";
 import { hashString } from "@kalks/mock";
 import { MY_STRATEGIES, SESSIONS, TEMPLATES, cloneRules, generateCode, runBacktest, slugify, type StrategyRules } from "@kalks/mock/algo";
 import { RulesSentence, VisualBuilder } from "@/components/developer/strategy-builder";
@@ -53,7 +53,7 @@ function QuickEstimate({ rules, templateId }: { rules: StrategyRules; templateId
       <div className="mt-3.5 grid grid-cols-3 gap-2 sm:grid-cols-5">
         {stats.map((s) => (
           <motion.div key={s.label + s.value} initial={{ opacity: 0.4, y: 3 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="rounded-[10px] bg-surface/70 px-3 py-2">
-            <div className="truncate text-[10px] uppercase tracking-[0.05em] text-fg-3">{s.label}</div>
+            <div className="truncate text-[11px] text-fg-3">{s.label}</div>
             <div className={cn("k-num mt-0.5 text-[15px] font-semibold", s.tone)}>{s.value}</div>
           </motion.div>
         ))}

@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Bookmark, Clock3, ExternalLink, Share2, Sparkles, TrendingDown, TrendingUp, Minus, X } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Delta, Dialog, MarketSessions, PageHeader, Reveal, Segmented, Starfield, SymbolAvatar, WorldMap, cn, useQuotes, type MapPin } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Delta, Dialog, MarketSessions, PageHeader, Reveal, Segmented, Starfield, SymbolAvatar, WorldMap, cn, useQuotes, type MapPin } from "@/components/kit";
 import { ASSET_CLASS_LABEL, INSTRUMENT_MAP, type AssetClass } from "@kalks/mock";
 import { AI_BRIEF, NEWS_STORIES, type NewsStory } from "@kalks/mock/news-extra";
 import { IS_DEMO } from "@kalks/mock/mode";

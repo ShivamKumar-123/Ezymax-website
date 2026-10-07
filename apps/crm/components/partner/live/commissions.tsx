@@ -35,7 +35,7 @@ import {
   cn,
   formatMoney,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 // engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolAvatar as SymbolAvatar, symbolLabel } from "@/components/trading/instrument";
 import { Trans, tr, useT } from "@kalks/i18n/react";

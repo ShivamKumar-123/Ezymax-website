@@ -3,7 +3,7 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, ChevronDown, Cpu, Play, Check } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Field, Input, Menu, Segmented, SymbolAvatar, cn, formatMoney } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Field, Input, Menu, Segmented, SymbolAvatar, cn, formatMoney } from "@/components/kit";
 import { INSTRUMENTS } from "@kalks/mock";
 import { BACKTEST_STRATEGIES, COST_MODELS, TIMEFRAMES, formatDateLabel, type BacktestParams, type BacktestResult, type PastRun } from "@kalks/mock/algo";
 

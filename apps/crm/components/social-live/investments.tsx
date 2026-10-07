@@ -23,7 +23,7 @@ import {
   Toggle,
   cn,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { Trans, useT } from "@kalks/i18n/react";
 import { RangeSlider } from "@/components/social/controls";
 import { fmtDate, serverTime } from "@/components/trading/api";

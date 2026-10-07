@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { BadgeCheck, CalendarDays, Camera, Globe2, Lock, Mail, MapPin, Phone, UserRound, Building2, Download, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, Dialog, Field, Flag, Icon3D, Input, KeyValue, PageHeader, Reveal, Starfield } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, Dialog, Field, Flag, Icon3D, Input, KeyValue, PageHeader, Reveal, Starfield } from "@/components/kit";
 import { ACCOUNTS, IS_DEMO, ME } from "@kalks/mock";
 import { useFormat, useLocale, useT } from "@kalks/i18n/react";
 import { LiveProfile } from "@/components/profile/live-profile";
@@ -67,8 +67,8 @@ function DemoProfile() {
                 [t("profile.stat.liveAccounts"), String(live)],
                 [t("profile.stat.verification"), t("profile.stat.level1")],
               ].map(([k, v]) => (
-                <div key={k} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                  <div className="text-[11px] uppercase tracking-wider text-fg-3">{k}</div>
+                <div key={k} className="rounded-2xl border border-white/10 light:border-line bg-black/20 light:bg-white/70 px-4 py-3">
+                  <div className="text-[12px] text-fg-3">{k}</div>
                   <div className="k-num mt-1 font-mono text-sm font-semibold">{v}</div>
                 </div>
               ))}

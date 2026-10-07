@@ -6,7 +6,7 @@
 import * as React from "react";
 import { Loader2, Plus, RefreshCcw, Send, Trash2, Webhook } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, CopyButton, Dialog, EmptyState, Menu, PageHeader, Reveal, Skeleton, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, Dialog, EmptyState, Menu, PageHeader, Reveal, Skeleton, Toggle, cn } from "@/components/kit";
 import { MoreHorizontal } from "lucide-react";
 import { Trans, useT } from "@kalks/i18n/react";
 import { NumInput } from "./builder";
@@ -271,7 +271,7 @@ export function LiveWebhooksPage() {
               <div className="text-[13px] font-medium text-fg">{t("developer.hooks.urlOnce")}</div>
               <div className="text-[12px] text-fg-3">{t("developer.hooks.urlOnceText")}</div>
             </div>
-            <code className="min-w-0 flex-1 truncate rounded-[10px] bg-black/30 px-3 py-2 font-mono text-[12px] text-ember" dir="ltr" data-testid="webhook-url">
+            <code className="min-w-0 flex-1 truncate rounded-[10px] bg-black/30 light:bg-surface-2 px-3 py-2 font-mono text-[12px] text-ember" dir="ltr" data-testid="webhook-url">
               {shown}
             </code>
             <CopyButton value={shown} label={t("developer.hooks.webhookUrl")} />
@@ -306,7 +306,7 @@ export function LiveWebhooksPage() {
           <Card>
             <CardHeader title={t("developer.hooks.alertFormat")} subtitle={t("developer.hooks.alertFormatSub")} />
             <div className="space-y-2 px-5 pb-5 pt-3 text-[12px] text-fg-3">
-              <pre dir="ltr" className="overflow-x-auto rounded-[12px] bg-black/30 p-3 font-mono text-[11.5px] leading-[17px] text-fg-2">{SAMPLE}</pre>
+              <pre dir="ltr" className="overflow-x-auto rounded-[12px] bg-black/30 light:bg-surface-2 p-3 font-mono text-[11.5px] leading-[17px] text-fg-2">{SAMPLE}</pre>
               <p>
                 <Trans k="developer.hooks.formatNote" tags={{ b: (c) => <b className="text-fg-2">{c}</b>, code: (c) => <code>{c}</code> }} />
               </p>
@@ -366,7 +366,7 @@ export function LiveWebhooksPage() {
                       {t("developer.hooks.sendTest")} <span className="text-warn">{t("developer.hooks.realOrders")}</span>
                     </div>
                     <div className="flex flex-wrap items-start gap-2">
-                      <textarea value={testBody} onChange={(e) => setTestBody(e.target.value)} rows={2} aria-label={t("developer.hooks.testJson")} dir="ltr" className="min-w-0 flex-1 resize-y rounded-[10px] border border-line bg-black/30 px-3 py-2 font-mono text-[12px] text-fg outline-none" />
+                      <textarea value={testBody} onChange={(e) => setTestBody(e.target.value)} rows={2} aria-label={t("developer.hooks.testJson")} dir="ltr" className="min-w-0 flex-1 resize-y rounded-[10px] border border-line bg-black/30 light:bg-surface-2 px-3 py-2 font-mono text-[12px] text-fg outline-none" />
                       <Button size="sm" variant="surface" disabled={busy} onClick={test}>
                         {busy ? <Loader2 className="animate-spin" /> : <Send />} {t("developer.hooks.sendTestShort")}
                       </Button>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { BellPlus, CalendarDays, ChevronDown, Clock3, Flame, Info } from "lucide-react";
-import { Button, Card, Chip, Delta, Icon3D, PageHeader, PriceText, Reveal, SymbolAvatar, cn, useQuotes } from "@kalks/ui";
+import { Button, Card, Chip, Delta, Icon3D, PageHeader, PriceText, Reveal, SymbolAvatar, cn, useQuotes } from "@/components/kit";
 import { POSITIONS } from "@kalks/mock";
 import { CAL_COUNTRIES, TODAY_INDEX, WEEK_DAYS, WEEK_EVENTS, surprise, type WeekEvent } from "@kalks/mock/calendar-extra";
 import { ColumnBars } from "@/components/portfolio/charts";
@@ -77,7 +77,7 @@ function Detail({ e }: { e: WeekEvent }) {
               ["Previous", e.previous],
             ].map(([k, v]) => (
               <div key={k} className="rounded-xl border border-line bg-surface px-3 py-2">
-                <div className="text-[10px] uppercase tracking-wider text-fg-3">{k}</div>
+                <div className="text-[11px] text-fg-3">{k}</div>
                 <div className="k-num mt-0.5 text-[13.5px] font-medium">{v}</div>
               </div>
             ))}

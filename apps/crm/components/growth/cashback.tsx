@@ -6,7 +6,7 @@ import { CalendarClock, Coins, Loader2, Percent, TrendingUp, Wallet } from "luci
 import { toast } from "sonner";
 import type { T } from "@kalks/i18n";
 import { useT } from "@kalks/i18n/react";
-import { Button, Card, CardHeader, Chip, DataTable, KpiCard, Money, PageHeader, Reveal,  cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, KpiCard, Money, PageHeader, Reveal,  cn, type Column } from "@/components/kit";
 // engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolCell as SymbolCell } from "@/components/trading/instrument";
 import { BannerSlot } from "./banner-slot";
@@ -162,7 +162,7 @@ export function LiveCashbackPage() {
                 [t("rewards.cashback.lotsMonth"), fmtLots(lotsMonth)],
               ].map(([k, v], i) => (
                 <div key={k} className={cn("px-4 py-4 sm:px-6", i > 0 && "border-s border-line")}>
-                  <div className="truncate text-[11px] uppercase tracking-wider text-fg-3">{k}</div>
+                  <div className="truncate text-[12px] text-fg-3">{k}</div>
                   <div className="k-num mt-1 text-[15px] font-medium">{v}</div>
                 </div>
               ))}

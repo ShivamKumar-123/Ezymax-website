@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, BadgePercent, CandlestickChart, Coins, Download, Gift, Handshake, Moon, Receipt, Search, X } from "lucide-react";
-import { Button, Card, Chip, DataTable, Menu, Money, PageHeader, Reveal, Segmented, cn, type ChipTone, type Column } from "@kalks/ui";
+import { Button, Card, Chip, DataTable, Menu, Money, PageHeader, Reveal, Segmented, cn, type ChipTone, type Column } from "@/components/kit";
 import { LEDGER, LEDGER_TYPE_LABEL, LIVE_ACCOUNTS, PORTFOLIO_NOW, type LedgerEntry, type LedgerType } from "@kalks/mock/portfolio-extra";
 import { downloadCsv, serverTime } from "@/components/portfolio/export";
 import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
@@ -131,7 +131,7 @@ function DemoLedgerPage() {
           {summary.map((s) => (
             <Card key={s.label} className="px-5 py-4">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-wider text-fg-3">{s.label}</span>
+                <span className="text-[12px] text-fg-3">{s.label}</span>
                 <span className="text-fg-3 [&_svg]:size-3.5">{s.icon}</span>
               </div>
               <Money value={s.value} countUp={false} signed tone="auto" className={cn("mt-2 block text-[19px] font-semibold", s.value === 0 && "text-fg-3")} />

@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, CalendarDays, Gift, UserRound } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { Button, Field, Flag, Illustration, Input, Stepper } from "@kalks/ui";
+import { Button, Field, Flag, Illustration, Input, Stepper } from "@/components/kit";
 import { useT, Trans } from "@kalks/i18n/react";
 import { FormError, GoogleButton, GoogleMark } from "@/components/auth";
 import { authGet, authPost, nextPath, type ApiError } from "@/lib/auth-client";

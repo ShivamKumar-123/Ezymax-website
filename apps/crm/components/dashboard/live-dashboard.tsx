@@ -3,19 +3,48 @@
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowUpRight, BadgeCheck, CandlestickChart, Check, ChevronRight, Copy, IdCard, Layers, LifeBuoy, Mail, Plus, UserRound, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, MarketSessions, PageHeader, Progress, Reveal, Skeleton, cn, useQuotes } from "@kalks/ui";
+import {
+  ArrowDownToLine,
+  ArrowLeftRight,
+  ArrowUpFromLine,
+  ArrowUpRight,
+  Award,
+  BadgeCheck,
+  CandlestickChart,
+  Coins,
+  Copy,
+  Gift,
+  IdCard,
+  Layers,
+  LifeBuoy,
+  LineChart,
+  Mail,
+  TrendingUp,
+  UserRound,
+  Wallet,
+} from "lucide-react";
+import { Button, Card, CardHeader, Chip, CoinIcon, KpiCard, MarketSessions, Money, PageHeader, Reveal, cn, formatMoney, useQuotes } from "@/components/kit";
 import { INSTRUMENTS, isMarketOpen } from "@kalks/mock";
-import { KYC_CHIP, useSession, type SessionUser } from "@/components/session";
+import { KYC_CHIP, useReadOnly, useSession, type SessionUser } from "@/components/session";
 import { FeedGuard } from "@/components/feed-guard";
 import { SUPPORT_EMAIL, TERMINAL_URL } from "@/lib/live";
-import { isArchived, useAccounts, type EngineAccount } from "@/components/trading/api";
+import { curOf, isArchived, serverOf, useAccounts, type EngineAccount } from "@/components/trading/api";
 import { liveTotals } from "@/components/trading/accounts-page";
-import { LiveAccountRow } from "@/components/trading/ui";
+import { AccountActions, FundButton, RefillButton, TradeButton, isPropAccount } from "@/components/trading/ui";
 import { useWalletFunded, walletStep } from "@/components/wallet-live/onboarding";
+import { fmt, useWallet, type ActivityItem, type Page, type WalletConfig } from "@/components/wallet-live/api";
+import { KIND_LABEL } from "@/components/wallet-live/ui";
+import { useGrowth, type Rewards } from "@/components/growth/api";
 import { BannerSlot } from "@/components/growth/banner-slot";
 import { LiveCalendarCard, LiveNewsCard, LiveWorldCard } from "@/components/news-live/dashboard";
 import { Trans, useFormat, useT } from "@kalks/i18n/react";
+import { AccountsPanel, type CardAccount } from "@/components/dashboard/home/accounts-panel";
+import { BalancePanel, QuickActions } from "@/components/dashboard/home/balance-panel";
+import { ActivityTabs, ChecklistCard, type ListRowItem } from "@/components/dashboard/home/list-cards";
+import { NotificationsPanel, type Prompt } from "@/components/dashboard/home/notifications-panel";
+import { OverviewLayout, SectionTitle } from "@/components/dashboard/home/overview";
+import { RANGE_DAYS, StatisticCard, type StatMode, type StatRange } from "@/components/dashboard/home/statistic-card";
+import type { TrendPoint } from "@/components/dashboard/home/trend-chart";
 
 function greeting() {
   const h = new Date().getHours();
@@ -41,13 +70,6 @@ function fmtDate(iso: string, f: F) {
 type StepState = "done" | "todo" | "review" | "rejected" | "soon";
 type Step = { key: string; icon: React.ReactNode; title: string; text: string; state: StepState; href?: string };
 
-function steps(me: SessionUser, accounts: EngineAccount[] | null, t: T, f: F): Step[] {
-  const live = accounts?.filter((a) => a.type === "live").length ?? 0;
-  const demo = accounts?.filter((a) => a.type === "demo").length ?? 0;
-  const opened = live + demo > 0;
-  return baseSteps(me, live, demo, opened, kycStep(me, t), t, f);
-}
-
 /** The "Verify your identity" step from the real KYC status (users.kyc_status + the latest case). */
 function kycStep(me: SessionUser, t: T): { state: StepState; text: string } {
   if (me.kyc_status === "verified") return { state: "done", text: t("dashboard.steps.kyc.verified") };
@@ -67,7 +89,10 @@ function kycStep(me: SessionUser, t: T): { state: StepState; text: string } {
   return { state: "todo", text: t("dashboard.steps.kyc.todo") };
 }
 
-function baseSteps(me: SessionUser, live: number, demo: number, opened: boolean, kyc: { state: StepState; text: string }, t: T, f: F): Step[] {
+function steps(me: SessionUser, accounts: EngineAccount[] | null, t: T, f: F): Step[] {
+  const live = accounts?.filter((a) => a.type === "live").length ?? 0;
+  const demo = accounts?.filter((a) => a.type === "demo").length ?? 0;
+  const opened = live + demo > 0;
   return [
     { key: "account", icon: <UserRound />, title: t("dashboard.steps.account.title"), text: t("dashboard.steps.account.text", { date: fmtDate(me.created_at, f) }), state: "done" },
     {
@@ -77,7 +102,7 @@ function baseSteps(me: SessionUser, live: number, demo: number, opened: boolean,
       text: me.email_verified ? t("dashboard.steps.email.verified", { email: me.email }) : t("dashboard.steps.email.confirm", { email: me.email }),
       state: me.email_verified ? "done" : "todo",
     },
-    { key: "kyc", icon: <IdCard />, title: t("dashboard.steps.kyc.title"), ...kyc, href: "/profile/verification" },
+    { key: "kyc", icon: <IdCard />, title: t("dashboard.steps.kyc.title"), ...kycStep(me, t), href: "/profile/verification" },
     {
       key: "account-open",
       icon: <Layers />,
@@ -98,153 +123,72 @@ const STATE_CHIP: Record<StepState, { tone: "up" | "warn" | "down" | "neutral" |
   soon: { tone: "neutral", label: "Not started" },
 };
 
-function StepRow({ s, n }: { s: Step; n: number }) {
-  const t = useT();
-  const chip = STATE_CHIP[s.state];
-  const done = s.state === "done";
-  const body = (
-    <>
-      <span className={cn("grid size-9 shrink-0 place-items-center rounded-full border [&_svg]:size-4", done ? "border-up/30 bg-up-soft text-up" : "border-line bg-surface-3 text-fg-2")}>
-        {done ? <Check /> : s.icon}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 text-[13.5px] font-medium">
-          <span className="k-num text-fg-3">{n}.</span>
-          <span className={cn(done && "text-fg-2")}>{s.title}</span>
-        </div>
-        <div className="mt-0.5 truncate text-[12px] text-fg-3">{s.text}</div>
-      </div>
-      <Chip size="sm" tone={chip.tone} dot={!done}>
-        {t.dyn(`dashboard.steps.state.${s.state}`, chip.label)}
-      </Chip>
-      {s.href && <ChevronRight className="size-4 shrink-0 text-fg-3 rtl:-scale-x-100" />}
-    </>
-  );
-  return s.href ? (
-    <Link href={s.href} className="k-row flex items-center gap-3 px-4 py-3 transition-colors hover:border-[var(--k-border-top)]">
-      {body}
-    </Link>
-  ) : (
-    <div className="k-row flex items-center gap-3 px-4 py-3">{body}</div>
-  );
+const STEP_TONE: Record<string, ListRowItem["tone"]> = { account: "accent", email: "sky", kyc: "amber", "account-open": "lavender", wallet: "mint" };
+
+/* ------------------------------------------------------------------ */
+/* Statistics: equity curve from the reports service                   */
+/* ------------------------------------------------------------------ */
+
+type Curve = { day: string; balance: number; equity: number; flow: number }[];
+
+function isoDay(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function GettingStarted({ accounts }: { accounts: EngineAccount[] | null }) {
-  const me = useSession();
-  const t = useT();
-  const f = useFormat();
-  const wallet = useWalletFunded();
-  const list = steps(me, accounts, t, f).map((s) => (s.key === "wallet" ? walletStep(wallet, t) : s));
-  const done = list.filter((s) => s.state === "done").length;
-  return (
-    <Card className="flex h-full flex-col">
-      <CardHeader
-        title={t("dashboard.steps.title")}
-        subtitle={t("dashboard.steps.subtitle")}
-        action={
-          <div className="w-32">
-            <div className="mb-1 flex justify-between text-[11px] text-fg-3">
-              <span>{t("dashboard.steps.progress", { done, total: list.length })}</span>
-              <span className="k-num">{Math.round((done / list.length) * 100)}%</span>
-            </div>
-            <Progress value={(done / list.length) * 100} />
-          </div>
-        }
-      />
-      <div className="mt-4 flex-1 space-y-2 px-4 pb-5 sm:px-6">
-        {list.map((s, i) => (
-          <StepRow key={s.key} s={s} n={i + 1} />
-        ))}
-      </div>
-    </Card>
-  );
+const curveCache = new Map<number, Promise<Curve | null>>();
+
+/** Daily equity / balance / net deposits of the live accounts over the last `days` days (cached per tab). */
+function loadCurve(days: number): Promise<Curve | null> {
+  let p = curveCache.get(days);
+  if (!p) {
+    const to = new Date();
+    to.setDate(to.getDate() + 1);
+    const from = new Date();
+    from.setDate(from.getDate() - days + 1);
+    p = fetch(`/api/reports/analytics?login=all&from=${isoDay(from)}&to=${isoDay(to)}`, { cache: "no-store" })
+      .then(async (r) => (r.ok ? (((await r.json()) as { curve?: { points?: Curve } }).curve?.points ?? []) : null))
+      .catch(() => null);
+    curveCache.set(days, p);
+    // a failed or stale answer is fetched again next time
+    void p.then((v) => setTimeout(() => curveCache.delete(days), v ? 60_000 : 0));
+  }
+  return p;
+}
+
+function useCurve(days: number) {
+  const [v, setV] = React.useState<{ days: number; curve: Curve | null } | null>(null);
+  React.useEffect(() => {
+    let alive = true;
+    void loadCurve(days).then((curve) => alive && setV({ days, curve }));
+    return () => {
+      alive = false;
+    };
+  }, [days]);
+  return v && v.days === days ? { curve: v.curve, loading: false } : { curve: null, loading: true };
+}
+
+/** This period and the one before it; P&L is cumulative from the start of each period, net of deposits / withdrawals. */
+function toSeries(curve: Curve, n: number, mode: StatMode, range: StatRange) {
+  const cut = new Date();
+  cut.setDate(cut.getDate() - n + 1);
+  const from = isoDay(cut);
+  const cur = curve.filter((p) => p.day >= from);
+  const prev = curve.filter((p) => p.day < from).slice(-n);
+  const val = (xs: Curve) => {
+    if (mode === "equity") return xs.map((p) => p.equity);
+    let acc = 0;
+    return xs.map((p, i) => (i === 0 ? 0 : ((acc += p.equity - xs[i - 1]!.equity - p.flow), acc)));
+  };
+  const step = range === "year" ? 7 : 1;
+  const keep = (_: unknown, i: number, xs: unknown[]) => i % step === 0 || i === xs.length - 1;
+  const cv = val(cur);
+  const points: TrendPoint[] = cur.map((p, i) => ({ t: new Date(`${p.day}T12:00:00`).getTime(), v: cv[i]! })).filter(keep);
+  const compare = prev.length > 1 ? val(prev).filter(keep) : null;
+  return { points, compare };
 }
 
 /* ------------------------------------------------------------------ */
-/* Trading accounts: real accounts from the trading engine             */
-/* ------------------------------------------------------------------ */
-
-function TradingAccountsCard({ accounts, failed, reload }: { accounts: EngineAccount[] | null; failed: boolean; reload: () => void }) {
-  const tr = useT();
-  const t = liveTotals(accounts ?? []);
-  const shown = [...t.live, ...t.demo].slice(0, 3);
-  const more = (accounts?.length ?? 0) - shown.length;
-  return (
-    <Card>
-      <CardHeader
-        title={tr("dashboard.accounts.title")}
-        subtitle={
-          accounts && accounts.length > 0 ? (
-            <span>
-              <Trans
-                k="dashboard.accounts.summary"
-                vars={{ equity: `$${t.equity.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, live: t.live.length, demo: t.demo.length, positions: t.positions }}
-                tags={{ b: (c) => <span className="k-num font-medium text-fg" dir="ltr">{c}</span> }}
-              />
-            </span>
-          ) : (
-            tr("dashboard.accounts.subtitle")
-          )
-        }
-        action={
-          <>
-            {accounts && accounts.length > 0 && (
-              <Link href="/accounts" className="hidden sm:block">
-                <Button size="sm" variant="surface">
-                  {tr("dashboard.accounts.all")}
-                </Button>
-              </Link>
-            )}
-            <Link href="/accounts/new">
-              <Button size="sm" variant="ember">
-                <Plus /> {tr("dashboard.accounts.open")}
-              </Button>
-            </Link>
-          </>
-        }
-      />
-      <div className="mt-4 space-y-3 px-4 pb-5 sm:px-6">
-        {accounts === null && !failed && <Skeleton className="h-[138px] w-full rounded-[18px]" />}
-        {accounts === null && failed && (
-          <div className="k-row flex flex-wrap items-center gap-3 px-4 py-4 text-[13px] text-fg-2">
-            <span className="flex-1">{tr("dashboard.accounts.unavailable")}</span>
-            <Button size="sm" variant="surface" onClick={reload}>
-              {tr("common.retry")}
-            </Button>
-          </div>
-        )}
-        {accounts && accounts.length === 0 && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {[
-              { type: "live", title: tr("dashboard.accounts.openLive.title"), text: tr("dashboard.accounts.openLive.text") },
-              { type: "demo", title: tr("dashboard.accounts.openDemo.title"), text: tr("dashboard.accounts.openDemo.text") },
-            ].map((o) => (
-              <Link key={o.type} href={`/accounts/new?type=${o.type}`} className="k-row flex items-start gap-3 p-4 transition-colors hover:border-[var(--k-border-top)]">
-                <Chip size="sm" tone={o.type === "live" ? "ember" : "gold"} className="font-semibold tracking-wider">
-                  {tr(o.type === "live" ? "common.live" : "common.demo").toUpperCase()}
-                </Chip>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[14px] font-medium">{o.title}</span>
-                  <span className="mt-0.5 block text-[12.5px] text-fg-3">{o.text}</span>
-                </span>
-                <ChevronRight className="mt-0.5 size-4 shrink-0 text-fg-3 rtl:-scale-x-100" />
-              </Link>
-            ))}
-          </div>
-        )}
-        {shown.map((a) => (
-          <LiveAccountRow key={a.login} a={a} compact onChanged={reload} />
-        ))}
-        {more > 0 && (
-          <Link href="/accounts" className="block text-center text-[12.5px] text-fg-3 hover:text-ember">
-            {tr("dashboard.accounts.more", { count: more })}
-          </Link>
-        )}
-      </div>
-    </Card>
-  );
-}
-
+/* Cards below the overview                                            */
 /* ------------------------------------------------------------------ */
 
 function AccountCard() {
@@ -260,9 +204,10 @@ function AccountCard() {
     [t("dashboard.account.memberSince"), <span key="m" className="k-num">{fmtDate(me.created_at, f)}</span>],
   ];
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader
         title={t("dashboard.account.title")}
+        icon={<UserRound />}
         action={
           <Link href="/profile">
             <Button size="sm" variant="surface">
@@ -271,11 +216,11 @@ function AccountCard() {
           </Link>
         }
       />
-      <div className="mt-1 divide-y divide-line px-6 pb-3">
+      <div className="mt-2 divide-y divide-line px-5 pb-3 sm:px-6">
         {rows.map(([k, v]) => (
-          <div key={k} className="flex items-center justify-between gap-4 py-2.5 text-[13px]">
+          <div key={k} className="flex items-center justify-between gap-4 py-3 text-[13px]">
             <span className="shrink-0 text-fg-3">{k}</span>
-            <span className="min-w-0 truncate text-end text-fg">{v}</span>
+            <span className="min-w-0 truncate text-end font-semibold text-fg">{v}</span>
           </div>
         ))}
       </div>
@@ -283,26 +228,21 @@ function AccountCard() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-
 function TraderBanner() {
   const t = useT();
   return (
-    <Card className="relative overflow-hidden">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/assets/photos/trading-screen.jpg" alt="" className="absolute inset-0 size-full object-cover opacity-35" />
-      <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/85 to-bg/20" />
-      <div className="relative flex flex-col gap-5 p-7 md:flex-row md:items-center md:justify-between">
+    <Card className="k-card-hot relative h-full overflow-hidden">
+      <div className="relative flex h-full flex-col justify-between gap-5 p-6 sm:p-7">
         <div className="max-w-xl">
           <Chip tone="ember" className="mb-3">
             <CandlestickChart className="size-3.5" /> {t("dashboard.trader.chip")}
           </Chip>
-          <h3 className="text-2xl font-medium tracking-tight">Kalks Trader</h3>
+          <h3 className="k-display text-[22px] font-bold tracking-[-0.02em] sm:text-2xl">Kalks Trader</h3>
           <p className="mt-2 text-sm text-fg-2">{t("dashboard.trader.text", { count: INSTRUMENTS.length })}</p>
         </div>
-        <a href={TERMINAL_URL} target="_blank" rel="noopener" className="shrink-0">
-          <Button variant="ember" size="lg">
-            {t("dashboard.launchTrader")} <ArrowUpRight />
+        <a href={TERMINAL_URL} target="_blank" rel="noopener" className="shrink-0 self-start">
+          <Button variant="ink" size="lg">
+            {t("dashboard.launchTrader")} <ArrowUpRight className="rtl:-scale-x-100" />
           </Button>
         </a>
       </div>
@@ -314,9 +254,9 @@ function SessionsCard() {
   const t = useT();
   const open = INSTRUMENTS.filter((i) => isMarketOpen(i.symbol)).length;
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader title={t("dashboard.sessions.title")} action={<Chip size="sm">{t("dashboard.sessions.open", { open, total: INSTRUMENTS.length })}</Chip>} />
-      <div className="px-6 pb-6 pt-4">
+      <div className="px-5 pb-6 pt-4 sm:px-6">
         <MarketSessions />
       </div>
     </Card>
@@ -359,14 +299,14 @@ function HeatmapCard() {
               key={i.symbol}
               href="/markets"
               title={open ? t("dashboard.heatmap.tipOpen", { symbol: i.symbol }) : t("dashboard.heatmap.tipClosed", { symbol: i.symbol })}
-              className="rounded-[14px] border border-line px-3 py-2.5 transition-colors hover:border-[var(--k-border-top)]"
-              style={{ background: `color-mix(in oklab, ${ch >= 0 ? "var(--k-up)" : "var(--k-down)"} ${Math.round(8 + a * 52)}%, var(--k-surface-2))` }}
+              className="rounded-[14px] px-3 py-2.5 transition-transform hover:-translate-y-0.5"
+              style={{ background: `color-mix(in oklab, ${ch >= 0 ? "var(--k-up)" : "var(--k-down)"} ${Math.round(8 + a * 48)}%, var(--k-surface-2))` }}
             >
               <div className="flex items-center gap-1.5">
-                <span className="truncate text-[12.5px] font-semibold text-fg">{i.symbol}</span>
+                <span className="truncate text-[12.5px] font-bold text-fg">{i.symbol}</span>
                 <span className={cn("size-1.5 shrink-0 rounded-full", open ? "bg-up" : "border border-fg-3")} />
               </div>
-              <div className={cn("k-num mt-0.5 text-[12px] font-medium", a > 0.55 ? "text-fg" : ch >= 0 ? "text-up" : "text-down")}>
+              <div className={cn("k-num mt-0.5 text-[12px] font-semibold", a > 0.55 ? "text-fg" : ch >= 0 ? "text-up" : "text-down")}>
                 <span dir="ltr">
                   {ch >= 0 ? "+" : ""}
                   {ch.toFixed(2)}%
@@ -389,12 +329,12 @@ function SupportCard() {
     );
   };
   return (
-    <Card className="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-center">
-      <span className="grid size-11 shrink-0 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember">
-        <LifeBuoy className="size-[18px]" />
+    <Card className="flex h-full flex-col gap-4 px-5 py-5 sm:px-6 md:flex-row md:items-center">
+      <span className="k-tile k-tile-lavender size-12 shrink-0 rounded-[15px] [&_svg]:size-5">
+        <LifeBuoy />
       </span>
       <div className="min-w-0 flex-1">
-        <div className="text-[15px] font-medium">{t("dashboard.support.title")}</div>
+        <div className="k-display text-[16px] font-bold">{t("dashboard.support.title")}</div>
         <div className="mt-0.5 text-[13px] text-fg-2">
           <Trans k="dashboard.support.text" vars={{ email: SUPPORT_EMAIL }} tags={{ mail: (c) => <span className="font-mono text-fg" dir="ltr">{c}</span> }} />
         </div>
@@ -415,59 +355,276 @@ function SupportCard() {
 
 /* ------------------------------------------------------------------ */
 
-/** Live builds: only data that is real for this client — their record, live prices, real links. */
+function toCard(a: EngineAccount, t: T): CardAccount {
+  return {
+    login: String(a.login),
+    type: a.type,
+    prop: isPropAccount(a),
+    title: `${a.groupName} · ${t.dyn(`accounts.mode.${a.mode}`, a.mode)}`,
+    name: a.name || null,
+    currency: curOf(a),
+    cent: a.cent,
+    balance: a.balance,
+    equity: a.equity,
+    freeMargin: a.freeMargin,
+    marginLevel: a.marginLevel,
+    leverage: a.leverage,
+    server: serverOf(a),
+    positions: a.positions,
+  };
+}
+
+const ACTIVITY_ICON: Record<string, { icon: React.ReactNode; tone: ListRowItem["tone"] }> = {
+  deposit: { icon: <ArrowDownToLine />, tone: "mint" },
+  withdrawal: { icon: <ArrowUpFromLine />, tone: "coral" },
+  transfer: { icon: <ArrowLeftRight className="rtl:-scale-x-100" />, tone: "lavender" },
+  other: { icon: <Coins />, tone: "amber" },
+};
+
+/** Live builds: only data that is real for this client — their record, accounts, wallet, live prices, real links. */
 export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
   const me = useSession();
   const t = useT();
+  const f = useFormat();
+  const readOnly = useReadOnly();
   const acc = useAccounts(10000);
   // Archived / closed accounts live on the Accounts page's Archived tab only.
   const accounts = React.useMemo(() => acc.data?.accounts.filter((a) => !isArchived(a)) ?? null, [acc.data]);
+  const totals = liveTotals(accounts ?? []);
+  const wallet = useWalletFunded();
+  const usdt = wallet?.balances.find((b) => b.currency === "USDT");
+  const walletTotal = usdt ? Number(usdt.available) + Number(usdt.locked) : wallet ? 0 : null;
+  const rewards = useGrowth<Rewards>("rewards");
+  const activity = useWallet<Page<ActivityItem>>("activity?limit=5", 30000);
+  const cfg = useWallet<WalletConfig>("config");
   const [hour, setHour] = React.useState<string>("welcome");
   React.useEffect(() => setHour(greeting()), []);
-  const verified = me.kyc_status === "verified";
+
+  // Statistics card
+  const [mode, setMode] = React.useState<StatMode>("equity");
+  const [range, setRange] = React.useState<StatRange>("month");
+  const n = RANGE_DAYS[range];
+  const chart = useCurve(2 * n);
+  const week = useCurve(14);
+  const series = React.useMemo(() => (chart.curve && chart.curve.length > 1 ? toSeries(chart.curve, n, mode, range) : null), [chart.curve, n, mode, range]);
+
+  // today's P&L: today's equity move net of deposits / withdrawals (reports), else the floating P&L of the live accounts
+  const wk = week.curve;
+  const today = wk && wk.length > 1 ? wk[wk.length - 1]!.equity - wk[wk.length - 2]!.equity - wk[wk.length - 1]!.flow : null;
+  const todayBase = wk && wk.length > 1 ? wk[wk.length - 2]!.equity : 0;
+  const todayPct = today !== null && todayBase > 0 ? (today / todayBase) * 100 : null;
+  const hasLive = totals.live.length > 0;
+
+  // carousel: live first, then demo, then prop
+  const ordered = React.useMemo(() => [...totals.live, ...totals.demo, ...(accounts ?? []).filter((a) => isPropAccount(a))], [accounts, totals.live, totals.demo]);
+  const cards = React.useMemo(() => (accounts ? ordered.slice(0, 8).map((a) => toCard(a, t)) : null), [accounts, ordered, t]);
+
+  const list = steps(me, accounts, t, f).map((s) => (s.key === "wallet" ? walletStep(wallet, t) : s));
+  const done = list.filter((s) => s.state === "done").length;
+  const checklist: ListRowItem[] = list.map((s) => {
+    const chip = STATE_CHIP[s.state];
+    return {
+      key: s.key,
+      icon: s.icon,
+      tone: STEP_TONE[s.key] ?? "accent",
+      title: s.title,
+      sub: s.text,
+      done: s.state === "done",
+      href: s.href,
+      status: s.state === "todo" && s.href ? undefined : { label: t.dyn(`dashboard.steps.state.${s.state}`, chip.label), tone: chip.tone },
+      action: s.state === "todo" && s.href && !readOnly ? { label: t("common.continue"), href: s.href } : undefined,
+    };
+  });
+
+  const kyc = kycStep(me, t);
+  const prompts: Prompt[] = [];
+  if (!readOnly && kyc.state !== "done")
+    prompts.push({ id: `kyc-${kyc.state}`, title: t("dashboard.steps.kyc.title"), text: kyc.text, icon: <IdCard />, tone: kyc.state === "rejected" ? "coral" : "amber", action: { label: kyc.state === "review" ? t("common.details") : t("dashboard.home.verifyNow"), href: "/profile/verification" } });
+  if (!readOnly && wallet && walletTotal === 0 && !wallet.pending_deposits.length)
+    prompts.push({ id: "fund", title: t("dashboard.home.fundTitle"), text: t("dashboard.home.fundText"), icon: <Wallet />, tone: "mint", action: { label: t("dashboard.home.depositNow"), href: "/wallet/deposit" } });
+
+  const r = rewards.data;
+  const historyRows: ListRowItem[] | null = activity.data
+    ? activity.data.items.map((x) => {
+        const ic = ACTIVITY_ICON[x.type] ?? ACTIVITY_ICON.other!;
+        const title =
+          x.type === "deposit" ? t("wallet.txType.deposit") : x.type === "withdrawal" ? t("wallet.txType.withdrawal") : x.type === "transfer" ? t("wallet.txType.transfer") : x.kind && KIND_LABEL[x.kind] ? t(KIND_LABEL[x.kind]!) : t("wallet.activity.walletTx");
+        return {
+          key: `${x.type}-${x.id}`,
+          icon: ic.icon,
+          tone: ic.tone,
+          title,
+          sub: `${f.date(x.created_at, { day: "numeric", month: "short" })}${x.network ? ` · ${x.network}` : x.login ? ` · #${x.login}` : ""}`,
+          value: x.amount !== null ? (
+            <span dir="ltr" className={x.direction === "in" ? "text-up" : "text-fg"}>
+              {x.direction === "in" ? "+" : "-"}
+              {fmt(x.amount)}
+            </span>
+          ) : undefined,
+          href: "/wallet/history",
+        };
+      })
+    : activity.error
+      ? []
+      : null;
+  const fundingRows: ListRowItem[] | null = cfg.data
+    ? cfg.data.chains.map((c) => ({
+        key: c.chain,
+        icon: (
+          <span className="relative">
+            <CoinIcon coin="usdt" size={28} />
+            <CoinIcon coin={c.chain === "bsc" ? "bnb" : "trx"} size={13} className="absolute -bottom-0.5 -end-1 ring-2 ring-surface" />
+          </span>
+        ),
+        tone: "neutral" as const,
+        title: `${c.token} · ${c.network}`,
+        sub: t("wallet.deposit.amountHint", { min: fmt(c.min_deposit) }),
+        status: c.deposits_enabled ? { label: t("dashboard.home.connected"), tone: "ember" as const } : { label: t("dashboard.home.networkUnavailable"), tone: "neutral" as const },
+      }))
+    : cfg.error
+      ? []
+      : null;
+  const linkedRows: ListRowItem[] = [
+    { key: "trader", icon: <CandlestickChart />, tone: "accent", title: "Kalks Trader", sub: t("dashboard.trader.chip"), action: { label: t("common.open"), href: TERMINAL_URL, external: true } },
+    { key: "copy", icon: <Copy />, tone: "pink", title: t("shell.nav.copyTrading"), sub: t("shell.nav.social"), action: { label: t("common.open"), href: "/social" } },
+    { key: "ib", icon: <Award />, tone: "amber", title: t("shell.nav.partner"), sub: t("dashboard.partner.chip"), action: { label: t("common.open"), href: "/partner" } },
+    {
+      key: "loyalty",
+      icon: <Gift />,
+      tone: "lavender",
+      title: t("shell.nav.loyalty"),
+      sub: r ? t("dashboard.home.points", { points: r.points.balance.toLocaleString("en-US") }) : t("shell.nav.rewards"),
+      ...(r ? { status: { label: r.tier.name, tone: "ember" as const } } : { action: { label: t("common.open"), href: "/rewards/loyalty" } }),
+    },
+  ];
+
   return (
     <div className="pb-16">
-      <PageHeader
-        title={t.dyn(`dashboard.greeting.${hour}`, undefined, { name: me.first_name })}
-        subtitle={
-          <span className="inline-flex flex-wrap items-center gap-2">
-            {t("dashboard.subtitle.live")}
-            {verified && (
-              <Chip size="sm" tone="up">
-                <BadgeCheck className="size-3.5" /> {t("common.verified")}
-              </Chip>
-            )}
-          </span>
+      <BannerSlot placement="dashboard" />
+      <OverviewLayout
+        header={
+          <PageHeader
+            className="mb-0"
+            title={t("shell.nav.overview")}
+            subtitle={
+              <span className="inline-flex flex-wrap items-center gap-2">
+                {t.dyn(`dashboard.greeting.${hour}`, undefined, { name: me.first_name })}
+                {me.kyc_status === "verified" && (
+                  <Chip size="sm" tone="up">
+                    <BadgeCheck className="size-3.5" /> {t("common.verified")}
+                  </Chip>
+                )}
+              </span>
+            }
+          />
         }
-        actions={
-          <a href={TERMINAL_URL} target="_blank" rel="noopener">
-            <Button variant="ember" size="lg">
-              {t("dashboard.launchTrader")} <ArrowUpRight />
-            </Button>
-          </a>
+        kpis={
+          <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 [&>*]:w-[78%] [&>*]:shrink-0 [&>*]:snap-start sm:[&>*]:w-auto">
+            <KpiCard
+              label={t("dashboard.equity.title")}
+              icon={<TrendingUp />}
+              value={accounts ? <Money value={totals.equity} countUp={false} /> : "—"}
+              chip={hasLive ? t("dashboard.home.accountsChip", { live: totals.live.length, positions: totals.positions }) : t("dashboard.accounts.openLive.title")}
+              chipTone="neutral"
+              href="/accounts"
+            />
+            <KpiCard
+              label={today !== null ? t("dashboard.home.todayPnl") : t("dashboard.home.floating")}
+              icon={<LineChart />}
+              value={accounts ? <Money value={today ?? totals.profit} signed tone="auto" countUp={false} /> : "—"}
+              chip={todayPct !== null ? t("dashboard.home.todayPct", { pct: `${todayPct >= 0 ? "+" : ""}${todayPct.toFixed(2)}` }) : undefined}
+              chipTone={(today ?? totals.profit) >= 0 ? "up" : "down"}
+              accent={(today ?? totals.profit) >= 0 ? "var(--k-up)" : "var(--k-down)"}
+              href="/portfolio/analytics"
+              delay={0.05}
+            />
+            <KpiCard
+              label={t("dashboard.home.walletBalance")}
+              icon={<Wallet />}
+              value={walletTotal !== null ? <Money value={walletTotal} countUp={false} /> : "—"}
+              accent="var(--k-info)"
+              footer={
+                <div className="flex items-center gap-2">
+                  <CoinIcon coin="usdt" size={20} />
+                  <span className="text-[12px] font-semibold text-fg-3">USDT · TRC20 · BEP20</span>
+                </div>
+              }
+              href="/wallet"
+              delay={0.1}
+            />
+            <KpiCard
+              label={t("dashboard.home.rewards")}
+              icon={<Award />}
+              value={r ? <Money value={r.points.balance * r.pointValue} countUp={false} /> : "—"}
+              accent="var(--k-gold)"
+              chipTone="gold"
+              chip={r ? t("dashboard.home.points", { points: r.points.balance.toLocaleString("en-US") }) : t("shell.nav.loyalty")}
+              href="/rewards/loyalty"
+              delay={0.15}
+            />
+          </div>
         }
+        statistic={<StatisticCard mode={mode} onMode={setMode} range={range} onRange={setRange} points={series?.points ?? (chart.loading ? null : [])} compare={series?.compare} loading={chart.loading} />}
+        checklist={<ChecklistCard title={t("dashboard.steps.title")} subtitle={t("dashboard.steps.subtitle")} rows={checklist} done={done} total={list.length} />}
+        accounts={
+          <AccountsPanel
+            accounts={cards}
+            loading={!acc.data && !acc.error}
+            failed={!!acc.error}
+            onRetry={acc.reload}
+            extraCount={Math.max(0, ordered.length - 8)}
+            actions={
+              readOnly
+                ? undefined
+                : (c) => {
+                    const a = accounts?.find((x) => String(x.login) === c.login);
+                    if (!a) return null;
+                    return (
+                      <>
+                        <TradeButton a={a} size="md" className="flex-1" />
+                        {a.type === "live" ? !isPropAccount(a) && <FundButton a={a} size="md" /> : <RefillButton a={a} onDone={acc.reload} size="md" />}
+                        <AccountActions a={a} onChanged={acc.reload} />
+                      </>
+                    );
+                  }
+            }
+          />
+        }
+        activity={
+          <ActivityTabs
+            tabs={[
+              { key: "history", label: t("dashboard.home.history"), rows: historyRows, empty: t("wallet.recent.emptyText"), more: { label: t("common.viewAll"), href: "/wallet/history" } },
+              { key: "funding", label: t("dashboard.home.funding"), rows: fundingRows, empty: t("wallet.recent.emptyText") },
+              { key: "linked", label: t("dashboard.home.linked"), rows: linkedRows, empty: "" },
+            ]}
+          />
+        }
+        balance={
+          <BalancePanel
+            total={accounts || walletTotal !== null ? totals.equity + (walletTotal ?? 0) : null}
+            loading={!accounts && !acc.error}
+            chip={todayPct !== null ? <span dir="ltr">{`${todayPct >= 0 ? "+" : ""}${todayPct.toFixed(2)}%`}</span> : undefined}
+            chipTone={todayPct !== null && todayPct < 0 ? "down" : "up"}
+            sub={t("dashboard.home.totalBalanceSub")}
+            readOnly={readOnly}
+          />
+        }
+        quick={
+          <QuickActions
+            title={t("dashboard.home.quickActions")}
+            items={[
+              { key: "transfer", label: t("common.transfer"), href: "/wallet/transfer", icon: <ArrowLeftRight className="rtl:-scale-x-100" />, tone: "lavender" },
+              { key: "trader", label: "Kalks Trader", href: TERMINAL_URL, icon: <CandlestickChart />, tone: "accent", external: true },
+              { key: "copy", label: t("shell.nav.copyTrading"), href: "/social", icon: <Copy />, tone: "pink" },
+              { key: "support", label: t("shell.nav.support"), href: "/support", icon: <LifeBuoy />, tone: "amber" },
+            ]}
+          />
+        }
+        notifications={<NotificationsPanel prompts={prompts} />}
       />
 
-      <BannerSlot placement="dashboard" />
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <Reveal className="xl:col-span-8">
-          <GettingStarted accounts={accounts} />
-        </Reveal>
-        <div className="flex flex-col gap-4 xl:col-span-4">
-          <Reveal delay={0.05}>
-            <AccountCard />
-          </Reveal>
-          <Reveal delay={0.1}>
-            <SessionsCard />
-          </Reveal>
-        </div>
-      </div>
-
-      <Reveal delay={0.05} className="mt-4 block">
-        <TradingAccountsCard accounts={accounts} failed={!!acc.error} reload={acc.reload} />
-      </Reveal>
-
-      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
+      <SectionTitle>{t("dashboard.home.marketsTitle")}</SectionTitle>
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
         <Reveal delay={0.05} className="xl:col-span-4">
           <FeedGuard title={t("dashboard.movers.title")} minHeight={320}>
             {movers}
@@ -479,24 +636,31 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
           </FeedGuard>
         </Reveal>
       </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
         <Reveal delay={0.05}>
           <LiveCalendarCard />
         </Reveal>
         <Reveal delay={0.1}>
           <LiveNewsCard />
         </Reveal>
-        <Reveal delay={0.15} className="lg:col-span-2 xl:col-span-1">
+        <Reveal delay={0.15} className="md:col-span-2 xl:col-span-1">
           <LiveWorldCard />
         </Reveal>
       </div>
 
-      <Reveal delay={0.05} className="mt-4 block">
-        <TraderBanner />
-      </Reveal>
-
-      <Reveal delay={0.05} className="mt-4 block">
+      <SectionTitle>{t("dashboard.home.moreTitle")}</SectionTitle>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <Reveal>
+          <TraderBanner />
+        </Reveal>
+        <Reveal delay={0.05}>
+          <AccountCard />
+        </Reveal>
+        <Reveal delay={0.1} className="md:col-span-2 xl:col-span-1">
+          <SessionsCard />
+        </Reveal>
+      </div>
+      <Reveal delay={0.05} className="mt-5 block">
         <SupportCard />
       </Reveal>
     </div>

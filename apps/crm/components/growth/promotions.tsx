@@ -6,7 +6,7 @@ import { AlertCircle, CheckCircle2, Clock, FileText, Gift, Loader2, Ticket, Wall
 import { toast } from "sonner";
 import type { T } from "@kalks/i18n";
 import { useT } from "@kalks/i18n/react";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, DialogClose, Illustration, Input, KeyValue, KpiCard, Money, PageHeader, Progress, Reveal, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, DialogClose, Illustration, Input, KeyValue, KpiCard, Money, PageHeader, Progress, Reveal, cn, type Column } from "@/components/kit";
 import { useAccounts } from "@/components/trading/api";
 import { BannerSlot } from "./banner-slot";
 import { GrowthApiError, errorToast, fmtCount, fmtDate, fmtDateTime, fmtLots, fmtUsd, growthApi, titleCase, useGrowth, type CampaignPublic, type Grant, type PromoResult, type PromoUse, type Promotions } from "./api";
@@ -156,19 +156,19 @@ function CampaignCard({ c, onClaimed }: { c: CampaignPublic; onClaimed: () => vo
         {c.description && <div className="mt-0.5 text-[12.5px] text-fg-3">{c.description}</div>}
         <div className="mt-4 grid grid-cols-2 gap-2 text-[12px]">
           <div className="k-row px-3 py-2">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.card.release")}</div>
+            <div className="text-[11.5px] text-fg-3">{t("rewards.card.release")}</div>
             <div className="k-num mt-0.5 font-medium">{c.releasePerLot > 0 ? t("rewards.card.perLot", { amount: fmtUsd(c.releasePerLot) }) : "—"}</div>
           </div>
           <div className="k-row px-3 py-2">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.card.fullRelease")}</div>
+            <div className="text-[11.5px] text-fg-3">{t("rewards.card.fullRelease")}</div>
             <div className="k-num mt-0.5 font-medium">{lots ? t("rewards.value.lots", { lots: fmtCount(lots) }) : "—"}</div>
           </div>
           <div className="k-row px-3 py-2">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.card.expires")}</div>
+            <div className="text-[11.5px] text-fg-3">{t("rewards.card.expires")}</div>
             <div className="k-num mt-0.5 font-medium">{t("rewards.value.days", { count: c.expiryDays })}</div>
           </div>
           <div className="k-row px-3 py-2">
-            <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{t("rewards.card.onWithdrawal")}</div>
+            <div className="text-[11.5px] text-fg-3">{t("rewards.card.onWithdrawal")}</div>
             <div className="mt-0.5 font-medium">{c.forfeitOnWithdrawal ? t("rewards.card.forfeited") : t("rewards.card.kept")}</div>
           </div>
         </div>

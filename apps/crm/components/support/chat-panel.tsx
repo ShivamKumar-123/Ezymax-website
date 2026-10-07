@@ -4,7 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { FileText, Mail, MoreHorizontal, Paperclip, RotateCcw, SendHorizontal, Sparkles, Star, UserRound } from "lucide-react";
-import { Avatar, Chip, IconButton, Menu, cn } from "@kalks/ui";
+import { Avatar, Chip, IconButton, Menu, cn } from "@/components/kit";
 import { ME } from "@kalks/mock";
 import { QUICK_REPLIES, SUPPORT_AGENT, agentAnswer, botAnswer } from "@kalks/mock/support-extra";
 
@@ -265,7 +265,7 @@ export function ChatPanel({ variant = "page", onClose }: { variant?: "page" | "w
                     <div
                       className={cn(
                         "inline-block rounded-2xl px-4 py-2.5 text-left text-[13.5px] leading-relaxed",
-                        mine ? "rounded-br-md bg-gradient-to-br from-[#ff7a2f] to-[#e8431a] text-white" : m.from === "bot" ? "rounded-bl-md border border-ember/20 bg-surface-2 text-fg-2" : "rounded-bl-md border border-line bg-surface-3 text-fg",
+                        mine ? "rounded-br-md bg-gradient-to-br from-[var(--k-ember-2)] to-[color-mix(in_oklab,var(--k-ember)_78%,#000)] text-white" : m.from === "bot" ? "rounded-bl-md border border-ember/20 bg-surface-2 text-fg-2" : "rounded-bl-md border border-line bg-surface-3 text-fg",
                       )}
                     >
                       <Rich text={m.text} />

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Button, Card, CardHeader, Chip, Skeleton, WorldMap, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Skeleton, WorldMap, cn } from "@/components/kit";
 import { useNewsApi, type CalendarWeek, type Feed, type NewsItem, type NewsMap } from "./api";
 import { StoryDialog, useMapPins } from "./news-page";
 import { Flag, ago, coverFor, gmt, useNow } from "./shared";

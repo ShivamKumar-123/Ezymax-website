@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ArrowRight } from "lucide-react";
-import { Button, cn } from "@kalks/ui";
+import { Button, cn } from "@/components/kit";
 import { useT, Trans } from "@kalks/i18n/react";
 
 /** "Sign in with Google" is shown only once Google OAuth is configured (NEXT_PUBLIC_GOOGLE_LOGIN=1). */

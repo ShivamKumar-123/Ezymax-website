@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Trophy } from "lucide-react";
-import { Button, PageHeader } from "@kalks/ui";
+import { Button, PageHeader } from "@/components/kit";
 import { ME } from "@kalks/mock";
 import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
 import { PROP_CERTIFICATES } from "@kalks/mock/prop";

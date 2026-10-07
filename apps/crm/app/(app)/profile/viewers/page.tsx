@@ -5,7 +5,7 @@ import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
 import { LiveViewers } from "@/components/security/live-viewers";
 import { Eye, EyeOff, Plus, ShieldOff, UserRound, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, CopyButton, Dialog, Field, Icon3D, Input, PageHeader, Reveal, StatusChip, Toggle } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, CopyButton, Dialog, Field, Icon3D, Input, PageHeader, Reveal, StatusChip, Toggle } from "@/components/kit";
 import { ACCOUNTS, PEOPLE } from "@kalks/mock";
 import { useT } from "@kalks/i18n/react";
 
@@ -162,7 +162,7 @@ function DemoViewersPage() {
             <p className="mt-1 text-sm text-fg-2">{t("profile.viewers.investorHint")}</p>
             <div className="mt-4 space-y-2">
               {live.map((a) => (
-                <div key={a.login} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[13px]">
+                <div key={a.login} className="flex items-center justify-between rounded-xl border border-white/10 light:border-line bg-black/20 light:bg-white/70 px-3 py-2 text-[13px]">
                   <span className="font-mono">#{a.login}</span>
                   <Toggle checked={a.login !== "80413001"} onChange={() => toast.success(t("profile.viewers.investorUpdated"))} label={t("profile.viewers.investorToggle", { login: a.login })} />
                 </div>

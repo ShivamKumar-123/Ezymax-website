@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { Info } from "lucide-react";
-import { Card, CardHeader, Chip, DataTable, EquityChart, Tabs, cn, type Column } from "@kalks/ui";
+import { Card, CardHeader, Chip, DataTable, EquityChart, Tabs, cn, type Column } from "@/components/kit";
 import { useFormat, useT } from "@kalks/i18n/react";
 import { INSTRUMENT_MAP } from "@kalks/mock";
 import { fmtDate, fmtDateTime, fmtMoney, fmtNum, fmtPct, fmtSigned, type BacktestDetail, type Trade } from "./api";

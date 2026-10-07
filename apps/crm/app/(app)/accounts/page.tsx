@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Archive, ArrowRight, ArrowUpRight, Download, FlaskConical, Layers, Plus, RotateCcw, ShieldCheck, TrendingUp, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@kalks/i18n/react";
-import { Button, Card, CardHeader, Chip, Donut, EmptyState, Icon3D, KpiCard, Money, PageHeader, Reveal, Segmented, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Donut, EmptyState, Icon3D, KpiCard, Money, PageHeader, Reveal, Segmented, cn } from "@/components/kit";
 import { ACCOUNTS, ACCOUNT_GROUPS, POSITIONS, accountUsd, freeMargin, type TradingAccount } from "@kalks/mock";
 import { ARCHIVED_ACCOUNTS } from "@kalks/mock/accounts-extra";
 import { AccountBadge, AccountRow, accountTitle } from "@/components/account-row";
@@ -34,7 +34,7 @@ function ArchivedRow({ a }: { a: TradingAccount }) {
       </div>
       <div className="ms-auto flex items-center gap-4">
         <div className="text-end">
-          <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("accounts.archived.finalBalance")}</div>
+          <div className="text-[12px] text-fg-3">{t("accounts.archived.finalBalance")}</div>
           <Money value={a.balance} className="text-[15px] font-medium text-fg-2" countUp={false} />
         </div>
         {a.type === "live" ? (
@@ -59,7 +59,7 @@ function ArchivedRow({ a }: { a: TradingAccount }) {
 
 function AllocationCard() {
   const t = useT();
-  const data = live.map((a, i) => ({ label: `#${a.login}`, value: accountUsd(a, "equity"), color: ["#ff5a1f", "#e9b949", "#22c55e"][i] }));
+  const data = live.map((a, i) => ({ label: `#${a.login}`, value: accountUsd(a, "equity"), color: ["var(--k-ember)", "#e9b949", "#22c55e"][i] }));
   const total = data.reduce((s, d) => s + d.value, 0);
   return (
     <Card className="h-full">
@@ -71,7 +71,7 @@ function AllocationCard() {
           thickness={18}
           center={
             <div className="text-center">
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("common.total")}</div>
+              <div className="text-[12px] text-fg-3">{t("common.total")}</div>
               <Money value={total} decimals={0} className="text-[18px] font-semibold" />
             </div>
           }

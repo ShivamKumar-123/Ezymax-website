@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, CalendarClock, Coins, Crown, LayoutGrid, Lock, Rows3, ShieldAlert, Snowflake, TrendingUp, Users, Wallet } from "lucide-react";
-import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, EquityChart, KeyValue, KpiCard, PageHeader, Segmented, cn, type Column, type SeriesPoint } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, EquityChart, KeyValue, KpiCard, PageHeader, Segmented, cn, type Column, type SeriesPoint } from "@/components/kit";
 import { useFormat, useT } from "@kalks/i18n/react";
 import { fmtDate, serverTime } from "@/components/trading/api";
 import { PERIOD_LABEL, compactUsd, nav4, pct, usd, useSocial, type FeePeriod, type FundDetail, type FundView } from "./api";
@@ -144,7 +144,7 @@ function FundCard({ f, onInvest, onOpen }: { f: FundView; onInvest: () => void; 
         </div>
         <div className="mt-4 flex items-end justify-between gap-3">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("social.navPerUnit")}</div>
+            <div className="text-[12px] text-fg-3">{t("social.navPerUnit")}</div>
             <div className="mt-1 flex items-baseline gap-2">
               <span className="k-num text-[26px] font-semibold leading-none tracking-tight">{nav4(f.nav)}</span>
               <span className={cn("k-num text-[12px]", f.return1m >= 0 ? "text-up" : "text-down")}>{pct(f.return1m)} 1M</span>

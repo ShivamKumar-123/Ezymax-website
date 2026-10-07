@@ -4,7 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Coins, Info, Layers, Percent, ShieldCheck, Wallet, X as XIcon, Scale } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Field, Input, KeyValue, Money, Stepper, SymbolAvatar, cn, formatMoney } from "@kalks/ui";
+import { Button, Dialog, Field, Input, KeyValue, Money, Stepper, SymbolAvatar, cn, formatMoney } from "@/components/kit";
 import { WALLET } from "@kalks/mock";
 import { SIZING_MODES, SOCIAL_POLICY, type Master, type SizingMode } from "@kalks/mock/social";
 import { Checkbox, RadioCard, RangeSlider, ToggleChip } from "./controls";

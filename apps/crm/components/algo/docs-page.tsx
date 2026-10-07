@@ -6,7 +6,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { BookOpen, KeyRound, Webhook, Workflow } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CopyButton, PageHeader, Reveal, Segmented, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, PageHeader, Reveal, Segmented, cn } from "@/components/kit";
 import { Trans, useFormat, useT } from "@kalks/i18n/react";
 import { useMeta } from "./api";
 
@@ -35,9 +35,9 @@ function Code({ children, lang }: { children: string; lang?: string }) {
   const t = useT();
   return (
     <div className="relative" dir="ltr">
-      <pre className="overflow-x-auto rounded-[12px] border border-line bg-black/30 p-4 font-mono text-[12px] leading-[18px] text-fg-2">{children}</pre>
+      <pre className="overflow-x-auto rounded-[12px] border border-line bg-black/30 light:bg-surface-2 p-4 font-mono text-[12px] leading-[18px] text-fg-2">{children}</pre>
       <div className="absolute right-2 top-2 flex items-center gap-2">
-        {lang && <span className="text-[10.5px] uppercase text-fg-3">{lang}</span>}
+        {lang && <span className="text-[11.5px] text-fg-3">{lang}</span>}
         <CopyButton value={children} label={t("developer.docs.code")} />
       </div>
     </div>
@@ -169,7 +169,7 @@ console.log(await call("GET", "/positions"));`,
                     </Chip>
                   </div>
                   <div className="mt-1 text-[12.5px] text-fg-3">{t.dyn(e.text)}</div>
-                  {e.body && <pre dir="ltr" className="mt-2 overflow-x-auto rounded-[10px] bg-black/30 px-3 py-2 font-mono text-[11.5px] text-fg-2">{e.body}</pre>}
+                  {e.body && <pre dir="ltr" className="mt-2 overflow-x-auto rounded-[10px] bg-black/30 light:bg-surface-2 px-3 py-2 font-mono text-[11.5px] text-fg-2">{e.body}</pre>}
                 </div>
               ))}
             </div>

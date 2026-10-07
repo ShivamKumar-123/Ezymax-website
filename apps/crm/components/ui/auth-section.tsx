@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { FlutedGlass } from "@paper-design/shaders-react";
 import { motion } from "motion/react";
 import { useT } from "@kalks/i18n/react";
-import { Delta, LanguageMenu, Logo, PriceText, SymbolAvatar, ThemeToggle, useBrand, useQuote } from "@kalks/ui";
+import { Delta, LanguageMenu, Logo, PriceText, SymbolAvatar, ThemeToggle, useBrand, useQuote } from "@/components/kit";
 
 /**
  * Split auth layout (adapted from "auth-section-3"): the form card on the left,

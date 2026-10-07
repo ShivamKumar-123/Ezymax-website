@@ -164,5 +164,65 @@ const dashboard = {
   "notifications.emptyTitle": "No notifications yet",
   "notifications.emptyText": "Deposits, withdrawals, verification, trading alerts and replies from support appear here.",
   "notifications.settings": "Notification settings",
+
+  // Client Area chrome: the slim side menu (rail) and the phone menu drawer
+  "chrome.expand": "Expand menu",
+  "chrome.collapse": "Collapse menu",
+  "chrome.menu": "Menu",
+
+  // Dashboard overview (title is shell.nav.overview; the greeting is greeting.*)
+  "home.todayPnl": "Today's P&L",
+  "home.walletBalance": "Wallet balance",
+  "home.rewardsEarnings": "Rewards & IB earnings",
+  // KPI chip. {pct} is a number like +2.52 (sign included)
+  "home.todayPct": "{pct}% today",
+  "home.floating": "Floating P&L",
+  "home.rewards": "Rewards",
+  // {live} = live accounts, {positions} = open positions
+  "home.accountsChip": "{live} live · {positions} open positions",
+  // Statistics card: segmented Equity | P&L, tabs Weekly · Monthly · Last year
+  "home.statistics": "Statistics",
+  "home.pnl": "P&L",
+  "home.weekly": "Weekly",
+  "home.monthly": "Monthly",
+  "home.lastYear": "Last year",
+  "home.noHistory": "Your equity history appears here once your live accounts have some activity.",
+  "home.thisPeriod": "This period",
+  "home.previousPeriod": "Previous period",
+  // Account cards carousel and details
+  "home.yourAccounts": "Your accounts",
+  "home.tradingAccount": "Trading account",
+  "home.accountInfo": "Account information",
+  "home.accountName": "Account name",
+  "home.leverage": "Leverage",
+  "home.previous": "Previous account",
+  "home.next": "Next account",
+  "home.showBalances": "Show balances",
+  "home.hideBalances": "Hide balances",
+  "home.trade": "Trade",
+  // Activity tabs
+  "home.history": "History",
+  "home.funding": "Funding",
+  "home.linked": "Linked",
+  "home.connected": "Connected",
+  "home.subscriptions": { one: "{count} active subscription", other: "{count} active subscriptions" },
+  "home.points": "{points} points",
+  "home.redeem": "Redeem",
+  "home.networkUnavailable": "Paused",
+  // Right column: total balance, money actions, quick actions, notifications
+  "home.totalBalance": "Total balance",
+  "home.totalBalanceSub": "Live accounts and wallet",
+  "home.transferFunds": "Transfer funds",
+  "home.quickActions": "Quick actions",
+  "home.later": "Later",
+  "home.viewDetails": "View details",
+  "home.verifyNow": "Verify now",
+  "home.fundTitle": "Fund your wallet",
+  "home.fundText": "Deposit USDT to start trading on a live account.",
+  "home.depositNow": "Deposit now",
+  // Sections below the overview
+  "home.tradingTitle": "Trading",
+  "home.marketsTitle": "Markets",
+  "home.moreTitle": "More for you",
 };
 export default dashboard;

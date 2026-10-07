@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@kalks/ui";
+import { cn } from "@/components/kit";
 import { intlTag } from "@kalks/i18n";
 import { useT } from "@kalks/i18n/react";
 import { usd } from "./api";

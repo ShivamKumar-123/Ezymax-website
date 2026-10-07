@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, Copy, Info, KeyRound, Lock, RotateCw, TriangleAlert, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, EmptyState, Field, Icon3D, Input, KeyValue, PageHeader, Reveal, Skeleton, Stepper, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, EmptyState, Field, Icon3D, Input, KeyValue, PageHeader, Reveal, Skeleton, Stepper, Toggle, cn } from "@/components/kit";
 import { Trans, useT } from "@kalks/i18n/react";
 import { PasswordInput } from "@/components/accounts/security";
 import { ApiError, modeLabel, serverOf, tradingApi, useAccounts, useGroups, type AccountKind, type EngineAccount, type EngineGroup, type OpenResult } from "./api";
@@ -51,7 +51,7 @@ function KindCard({ kind, selected, onSelect, demoGroup }: { kind: AccountKind; 
       aria-pressed={selected}
       className={cn(
         "relative flex h-full flex-col overflow-hidden rounded-[20px] border p-6 text-start transition-colors duration-200",
-        selected ? (live ? "border-ember/60 bg-surface shadow-[0_0_0_4px_rgba(255,90,31,0.12)]" : "border-gold/60 bg-surface shadow-[0_0_0_4px_rgba(233,185,73,0.12)]") : "k-card hover:border-[var(--k-border-top)]",
+        selected ? (live ? "border-ember/60 bg-surface shadow-[0_0_0_4px_color-mix(in_oklab,var(--k-ember)_12%,transparent)]" : "border-gold/60 bg-surface shadow-[0_0_0_4px_rgba(233,185,73,0.12)]") : "k-card hover:border-[var(--k-border-top)]",
       )}
     >
       <div className="flex items-start justify-between">
@@ -458,7 +458,7 @@ function Wizard() {
                           [t("accounts.label.startBalance"), cfg.kind === "demo" ? money(cfg.demoBalance, g.cent) : g.cent ? "USC 0.00" : "$0.00"],
                         ].map(([k, v]) => (
                           <div key={k} className="k-row px-4 py-3">
-                            <div className="text-[11px] uppercase tracking-wider text-fg-3">{k}</div>
+                            <div className="text-[12px] text-fg-3">{k}</div>
                             <div className="k-num mt-1 truncate text-[15px] font-semibold">{v}</div>
                           </div>
                         ))}

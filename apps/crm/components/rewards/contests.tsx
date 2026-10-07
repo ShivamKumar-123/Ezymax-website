@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, CalendarDays, Check, ChevronDown, ChevronUp, Crown, Minus, Timer, Trophy, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, Delta, Dialog, DialogClose, Flag, Icon3D, KeyValue, Money, Segmented, Sparkline, Starfield, cn, formatMoney } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, Delta, Dialog, DialogClose, Flag, Icon3D, KeyValue, Money, Segmented, Sparkline, Starfield, cn, formatMoney } from "@/components/kit";
 import { ACTIVE_CONTEST, LEADERBOARD, PAST_CONTESTS, UPCOMING_CONTESTS, type Contest, type LeaderRow } from "@kalks/mock/rewards";
 import { Countdown } from "./countdown";
 import { TERMINAL_URL } from "@/lib/live";
@@ -62,7 +62,7 @@ export function ContestHero() {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={c.image} alt="" className="absolute inset-0 size-full object-cover opacity-45" />
       <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/85 to-bg/30" />
-      <div className="absolute inset-0 bg-[radial-gradient(80%_120%_at_100%_0%,rgba(255,90,31,0.28),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(80%_120%_at_100%_0%,color-mix(in_oklab,var(--k-ember)_28%,transparent),transparent_60%)]" />
       <Starfield density={50} />
       <div className="relative grid grid-cols-1 gap-6 p-5 sm:p-7 xl:grid-cols-12">
         <div className="xl:col-span-7">
@@ -128,7 +128,7 @@ export function ContestHero() {
         </div>
 
         <div className="xl:col-span-5">
-          <div className="rounded-[18px] border border-white/10 bg-black/40 p-5 backdrop-blur-md">
+          <div className="rounded-[18px] border border-white/10 light:border-line bg-black/40 light:bg-white/70 p-5 backdrop-blur-md">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Avatar src={LEADERBOARD.at(-1)!.person.photo} name="Arjun Mehta" size={44} verified />
@@ -143,18 +143,18 @@ export function ContestHero() {
             </div>
             <div className="mt-5 grid grid-cols-3 gap-2">
               <div className="k-row px-3 py-3">
-                <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Rank</div>
+                <div className="text-[11.5px] text-fg-3">Rank</div>
                 <div className="k-num mt-1 text-[19px] font-semibold leading-none sm:text-[22px]">
                   #{c.myRank}
                   <span className="mt-1 block text-[10.5px] font-normal text-fg-3 sm:ml-1 sm:mt-0 sm:inline">of {c.participants.toLocaleString()}</span>
                 </div>
               </div>
               <div className="k-row px-3 py-3">
-                <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Gain</div>
+                <div className="text-[11.5px] text-fg-3">Gain</div>
                 <div className="k-num mt-1 text-[17px] font-semibold leading-none text-up sm:text-[22px]">+{c.myGainPct}%</div>
               </div>
               <div className="k-row px-3 py-3">
-                <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Equity</div>
+                <div className="text-[11.5px] text-fg-3">Equity</div>
                 <Money value={c.myEquity} className="mt-1 block text-[15px] font-semibold leading-none sm:text-[18px]" />
               </div>
             </div>
@@ -168,7 +168,7 @@ export function ContestHero() {
                   <span className="k-num text-fg-2">Day 18 of 28</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-surface-3">
-                  <div className="h-full rounded-full bg-gradient-to-r from-[#ff8a3d] to-[#e8431a]" style={{ width: `${pctTime}%` }} />
+                  <div className="h-full rounded-full bg-gradient-to-r from-[var(--k-ember-2)] to-[color-mix(in_oklab,var(--k-ember)_78%,#000)]" style={{ width: `${pctTime}%` }} />
                 </div>
               </div>
               <div className="flex items-center justify-between rounded-[12px] border border-gold/25 bg-gold-soft px-3 py-2 text-gold">
@@ -235,7 +235,7 @@ function LeaderRowView({ r, i }: { r: LeaderRow; i: number }) {
       className={cn(
         "k-row grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface-3/60 sm:grid-cols-[40px_minmax(0,1.6fr)_90px_110px_90px_90px] sm:px-4",
         top && "border-gold/20 bg-[linear-gradient(90deg,rgba(233,185,73,0.10),transparent_60%)]",
-        r.isMe && "border-ember/40 bg-[linear-gradient(90deg,rgba(255,90,31,0.16),transparent_70%)] shadow-[0_0_30px_-12px_rgba(255,90,31,0.6)]",
+        r.isMe && "border-ember/40 bg-[linear-gradient(90deg,color-mix(in_oklab,var(--k-ember)_16%,transparent),transparent_70%)] shadow-[0_0_30px_-12px_color-mix(in_oklab,var(--k-ember)_60%,transparent)]",
       )}
       style={{ animationDelay: `${i * 30}ms` }}
     >
@@ -388,11 +388,11 @@ export function PrizeCard() {
       </div>
       <div className="grid grid-cols-2 gap-2 border-t border-line px-4 py-4 sm:px-6">
         <div className="k-row px-3 py-2.5">
-          <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Ranks 11–100</div>
+          <div className="text-[11.5px] text-fg-3">Ranks 11–100</div>
           <div className="k-num mt-0.5 text-[13px] font-medium">$95 each</div>
         </div>
         <div className="k-row px-3 py-2.5">
-          <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Everyone</div>
+          <div className="text-[11.5px] text-fg-3">Everyone</div>
           <div className="k-num mt-0.5 text-[13px] font-medium">+500 pts</div>
         </div>
       </div>

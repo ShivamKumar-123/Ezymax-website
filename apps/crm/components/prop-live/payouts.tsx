@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowRight, ArrowUpRight, BadgeCheck, Banknote, Check, Clock, Loader2, Receipt, Rocket, ShieldAlert, Trophy, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, EmptyState, KpiCard, Money, PageHeader, Reveal, Skeleton, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, EmptyState, KpiCard, Money, PageHeader, Reveal, Skeleton, cn, type Column } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import {
   blockerText,

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Download, Loader2, Share2 } from "lucide-react";
-import { Button, CopyButton, Dialog, IconButton, Skeleton, Toggle, cn, type ButtonProps } from "@kalks/ui";
+import { Button, CopyButton, Dialog, IconButton, Skeleton, Toggle, cn, type ButtonProps } from "@/components/kit";
 import { IS_DEMO } from "@kalks/mock/mode";
 import { useT } from "@kalks/i18n/react";
 import { errorToast, growthApi, linkBase, optionStrikeLabel, type Share } from "./api";

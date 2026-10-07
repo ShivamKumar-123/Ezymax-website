@@ -4,7 +4,7 @@ import * as React from "react";
 import { Camera, CheckCircle2, Clock, FileText, IdCard, Lock, ScanFace, Upload, Home, ArrowRight, ShieldCheck, Check } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Icon3D, PageHeader, Progress, Reveal, Segmented, Stepper, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Icon3D, PageHeader, Progress, Reveal, Segmented, Stepper, cn } from "@/components/kit";
 import { IS_DEMO } from "@kalks/mock";
 import { useT } from "@kalks/i18n/react";
 import { LiveVerification } from "@/components/verification/live-verification";

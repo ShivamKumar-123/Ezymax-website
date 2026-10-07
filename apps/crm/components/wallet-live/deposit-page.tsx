@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, ArrowLeftRight, Check, CircleAlert, Clock, Loader2, Smartphone, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, CoinIcon, CopyButton, Field, Illustration, Input, PageHeader, Skeleton, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, CoinIcon, CopyButton, Field, Illustration, Input, PageHeader, Skeleton, cn } from "@/components/kit";
 import { Trans, useT } from "@kalks/i18n/react";
 import { CHAIN_LABEL, WalletError, fmt, useWallet, walletApi, type Chain, type Deposit, type Intent, type WalletConfig } from "./api";
 import { PayError, hasMetaMask, hasTronLink, isMobile, metamaskDeepLink, payWithMetaMask, payWithTronLink } from "./pay";

@@ -26,7 +26,7 @@ import {
   cn,
   type Column,
   type SeriesPoint,
-} from "@kalks/ui";
+} from "@/components/kit";
 // engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolAvatar as SymbolAvatar, TradeSymbolCell as SymbolCell, symbolLabel } from "@/components/trading/instrument";
 import { useFormat, useT } from "@kalks/i18n/react";
@@ -122,7 +122,7 @@ function StatsCard({ p }: { p: MasterProfile }) {
       <div className="grid grid-cols-2 gap-2 px-4 pb-5 sm:px-6">
         {stats.map(([k, v]) => (
           <div key={k} className="k-row px-3.5 py-2.5">
-            <div className="text-[11px] uppercase tracking-wider text-fg-3">{k}</div>
+            <div className="text-[12px] text-fg-3">{k}</div>
             <div className="k-num mt-0.5 text-[14.5px] font-medium">{v}</div>
           </div>
         ))}
@@ -197,7 +197,7 @@ function MonthlyCard({ monthly }: { monthly: MasterProfile["monthly"] }) {
                   [t("social.profile.avgMonth"), pct(rets.reduce((a, b) => a + b, 0) / rets.length), t("social.profile.arithmeticMean"), "text-fg"],
                 ].map(([k, v, sub, cls]) => (
                   <div key={k} className="k-row px-3.5 py-2.5">
-                    <div className="text-[11px] uppercase tracking-wider text-fg-3">{k}</div>
+                    <div className="text-[12px] text-fg-3">{k}</div>
                     <div className={cn("k-num mt-0.5 text-[16px] font-semibold", cls)}>{v}</div>
                     <div className="text-[11px] text-fg-3">{sub}</div>
                   </div>

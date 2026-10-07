@@ -21,7 +21,7 @@ import {
   SymbolAvatar,
   cn,
   formatMoney,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { HISTORY, equitySeries, seeded } from "@kalks/mock";
 import {
   CHARGES_BREAKDOWN,
@@ -182,11 +182,11 @@ function DemoAnalyticsPage() {
             <CardHeader title="Trade statistics" subtitle={`${s.trades} closed trades`} />
             <div className="grid grid-cols-2 gap-3 px-6 pt-4">
               <div className="k-row px-4 py-3">
-                <div className="text-[11px] uppercase tracking-wider text-fg-3">Gross profit</div>
+                <div className="text-[12px] text-fg-3">Gross profit</div>
                 <Money value={s.grossProfit} countUp={false} className="mt-1 block text-[16px] font-semibold text-up" />
               </div>
               <div className="k-row px-4 py-3">
-                <div className="text-[11px] uppercase tracking-wider text-fg-3">Gross loss</div>
+                <div className="text-[12px] text-fg-3">Gross loss</div>
                 <Money value={-s.grossLoss} countUp={false} className="mt-1 block text-[16px] font-semibold text-down" />
               </div>
             </div>
@@ -212,7 +212,7 @@ function DemoAnalyticsPage() {
               ].map(({ t, label, icon }) =>
                 t ? (
                   <div key={label} className="k-row px-3.5 py-3">
-                    <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-fg-3">
+                    <div className="flex items-center gap-1.5 text-[12px] text-fg-3">
                       {icon}
                       {label}
                     </div>
@@ -368,7 +368,7 @@ function DemoAnalyticsPage() {
                 data={CHARGES_BREAKDOWN.map((c, i) => ({ label: c.label, value: c.value, color: ["var(--k-ember)", "var(--k-gold)", "var(--k-fg-3)"][i] }))}
                 center={
                   <div>
-                    <div className="text-[10.5px] uppercase tracking-wider text-fg-3">Total</div>
+                    <div className="text-[11.5px] text-fg-3">Total</div>
                     <div className="k-num text-[17px] font-semibold">${(CHARGES_BREAKDOWN.reduce((a, c) => a + c.value, 0) / 1000).toFixed(2)}K</div>
                   </div>
                 }

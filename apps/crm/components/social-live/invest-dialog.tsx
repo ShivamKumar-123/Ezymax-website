@@ -3,7 +3,7 @@
 import * as React from "react";
 import { CalendarClock, Loader2, Lock, Snowflake } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Field, Input, KeyValue, Skeleton, Toggle, cn } from "@kalks/ui";
+import { Button, Dialog, Field, Input, KeyValue, Skeleton, Toggle, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { Checkbox, RangeSlider, ToggleChip } from "@/components/social/controls";
 import { serverTime } from "@/components/trading/api";
@@ -121,12 +121,12 @@ export function InvestDialog({ fundId, open, onOpenChange, onDone }: { fundId: n
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="k-row px-4 py-3">
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("social.invest.unitsEstimate")}</div>
+              <div className="text-[12px] text-fg-3">{t("social.invest.unitsEstimate")}</div>
               <div className="k-num mt-1 text-[18px] font-semibold">{f.nav > 0 ? units4(amt / f.nav) : "—"}</div>
               <div className="text-[11.5px] text-fg-3">{t("social.invest.atNav", { nav: nav4(f.nav) })}</div>
             </div>
             <div className="k-row px-4 py-3">
-              <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("social.invest.executesAt")}</div>
+              <div className="text-[12px] text-fg-3">{t("social.invest.executesAt")}</div>
               <div className="mt-1 flex items-center gap-1.5 text-[14px] font-medium">
                 <CalendarClock className="size-4 text-ember" /> {next}
               </div>

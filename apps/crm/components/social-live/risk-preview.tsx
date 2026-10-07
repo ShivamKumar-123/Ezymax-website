@@ -5,7 +5,7 @@
 
 import * as React from "react";
 import { ShieldAlert } from "lucide-react";
-import { Chip, Skeleton,  cn } from "@kalks/ui";
+import { Chip, Skeleton,  cn } from "@/components/kit";
 // engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolAvatar as SymbolAvatar, symbolLabel } from "@/components/trading/instrument";
 import { Trans, useT } from "@kalks/i18n/react";

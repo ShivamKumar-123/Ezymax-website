@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { Chip, Toggle, cn } from "@kalks/ui";
+import { Chip, Toggle, cn } from "@/components/kit";
 import { candles, getInstrument } from "@kalks/mock";
 import { operandLabel, type Operand, type StrategyRules } from "@kalks/mock/algo";
 import { toast } from "sonner";

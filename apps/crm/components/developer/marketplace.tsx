@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { BadgeCheck, Check, Info, Star, Users, Wallet } from "lucide-react";
-import { Avatar, Button, Chip, Dialog, Flag, Money, Segmented, Sparkline, SpotlightCard, SymbolAvatar, cn, formatNumber } from "@kalks/ui";
+import { Avatar, Button, Chip, Dialog, Flag, Money, Segmented, Sparkline, SpotlightCard, SymbolAvatar, cn, formatNumber } from "@/components/kit";
 import { ACCOUNTS, WALLET } from "@kalks/mock";
 import { MARKETPLACE_TERMS, type MarketStrategy } from "@kalks/mock/developer";
 

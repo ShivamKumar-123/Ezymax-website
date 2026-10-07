@@ -25,7 +25,7 @@ import {
   formatDateTime,
   formatMoney,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 import { ME } from "@kalks/mock";
 import { FUNDED, FUNDED_SHARE, PROP_CERTIFICATES, PROP_PAYOUTS, SCALING, type PropPayout } from "@kalks/mock/prop";
 import { RequestPayoutDialog } from "@/components/prop/payout-dialog";
@@ -65,8 +65,8 @@ function FundedCard() {
             ["Funded since", "02 Jun 2026"],
             ["Current cycle", "10 – 24 Sep"],
           ].map(([l, v], i) => (
-            <div key={i} className="rounded-[14px] border border-white/10 bg-black/20 px-3.5 py-2.5">
-              <div className="text-[10.5px] uppercase tracking-wider text-fg-3">{l}</div>
+            <div key={i} className="rounded-[14px] border border-white/10 light:border-line bg-black/20 light:bg-white/70 px-3.5 py-2.5">
+              <div className="text-[11.5px] text-fg-3">{l}</div>
               <div className="k-num mt-0.5 text-[15px] font-medium">{v}</div>
             </div>
           ))}
@@ -190,7 +190,7 @@ function ScalingCard() {
           <div className="relative min-w-[520px] px-2">
             <div className="absolute left-6 right-6 top-[18px] h-1 rounded-full bg-surface-3" />
             <motion.div
-              className="absolute left-6 top-[18px] h-1 rounded-full bg-gradient-to-r from-[#f3cf6b] to-[#ff5a1f]"
+              className="absolute left-6 top-[18px] h-1 rounded-full bg-gradient-to-r from-[#f3cf6b] to-[var(--k-ember)]"
               initial={{ width: 0 }}
               animate={{ width: "calc((100% - 48px) * 0.21)" }}
               transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
@@ -202,7 +202,7 @@ function ScalingCard() {
                     className={cn(
                       "grid size-9 place-items-center rounded-full border-2",
                       m.done && "border-gold bg-gold text-[#1a1204]",
-                      m.next && "border-ember bg-surface shadow-[0_0_24px_-2px_rgba(255,90,31,0.8)]",
+                      m.next && "border-ember bg-surface shadow-[0_0_24px_-2px_color-mix(in_oklab,var(--k-ember)_80%,transparent)]",
                       !m.done && !m.next && "border-line bg-surface-2",
                     )}
                   >

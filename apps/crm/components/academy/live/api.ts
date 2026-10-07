@@ -5,7 +5,7 @@
 import * as React from "react";
 import { createFormatter, type T } from "@kalks/i18n";
 import { tr } from "@kalks/i18n/react";
-import type { ChipTone } from "@kalks/ui";
+import type { ChipTone } from "@/components/kit";
 import { readCached, writeCached } from "@kalks/ui/swr-cache";
 
 export type Level = "Beginner" | "Intermediate" | "Advanced" | "Professional";

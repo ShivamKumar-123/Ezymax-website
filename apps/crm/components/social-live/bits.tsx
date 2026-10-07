@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Building2, Copy as CopyIcon, Info, Landmark, RotateCw } from "lucide-react";
-import { Avatar, Button, Card, Chip, EmptyState, Skeleton, Tooltip, cn } from "@kalks/ui";
+import { Avatar, Button, Card, Chip, EmptyState, Skeleton, Tooltip, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { pct, riskLabel, riskTone, toneOf, type Program } from "./api";
 
@@ -136,7 +136,7 @@ export function BlockSkeleton({ n = 3, h = 120 }: { n?: number; h?: number }) {
 export function Tile({ label, children, className }: { label: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <div className={cn("k-row min-w-0 px-3 py-2.5", className)}>
-      <div className="truncate text-[11px] uppercase tracking-wider text-fg-3">{label}</div>
+      <div className="truncate text-[12px] text-fg-3">{label}</div>
       <div className="k-num mt-0.5 truncate text-[14px] font-medium">{children}</div>
     </div>
   );

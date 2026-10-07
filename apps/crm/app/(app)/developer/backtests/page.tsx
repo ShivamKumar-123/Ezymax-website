@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { FileDown, Rocket, Share2, Workflow } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, Chip, EquityChart, Menu, Money, PageHeader, Reveal, Segmented, SymbolAvatar, cn, type SeriesPoint } from "@kalks/ui";
+import { Button, Card, Chip, EquityChart, Menu, Money, PageHeader, Reveal, Segmented, SymbolAvatar, cn, type SeriesPoint } from "@/components/kit";
 import { hashString } from "@kalks/mock";
 import { BACKTEST_STRATEGIES, COST_MODELS, DEFAULT_BACKTEST, PAST_RUNS, formatDateLabel, runBacktest, serverTime, type BacktestParams, type BacktestResult, type PastRun } from "@kalks/mock/algo";
 import { BacktestForm, PastRuns } from "@/components/developer/backtest-form";
@@ -166,7 +166,7 @@ function DemoBacktestsPage() {
           <AnimatePresence>
             {running && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pointer-events-none absolute inset-0 z-20 rounded-[20px] bg-bg/40 backdrop-blur-[2px]">
-                <div className="sticky top-28 mx-auto mt-24 w-[min(360px,90%)] rounded-[20px] border border-ember/30 bg-surface/95 p-5 shadow-[0_24px_60px_-20px_rgba(255,90,31,0.5)]">
+                <div className="sticky top-28 mx-auto mt-24 w-[min(360px,90%)] rounded-[20px] border border-ember/30 bg-surface/95 p-5 shadow-[0_24px_60px_-20px_color-mix(in_oklab,var(--k-ember)_50%,transparent)]">
                   <div className="flex items-center justify-between text-[13px]">
                     <span className="font-medium">Running backtest</span>
                     <span className="k-num text-ember">{Math.round(progress)}%</span>

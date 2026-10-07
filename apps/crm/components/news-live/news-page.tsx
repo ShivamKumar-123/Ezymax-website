@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Bookmark, ExternalLink, Link2, Pin, RefreshCw, Sparkles, X } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Delta, Dialog, MarketSessions, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, WorldMap, cn, useQuotes, type MapPin } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Delta, Dialog, MarketSessions, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, WorldMap, cn, useQuotes, type MapPin } from "@/components/kit";
 import { INSTRUMENT_MAP } from "@kalks/mock";
 import { useNewsApi, type Brief, type Feed, type NewsItem, type NewsMap, type Sentiment } from "./api";
 import { COUNTRY_NAME, Flag, SENT, SentimentChip, SymbolPill, ago, categoryLabel, countryName, coverFor, heatOf, useNow } from "./shared";

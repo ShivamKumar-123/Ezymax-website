@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CopyButton, cn } from "@kalks/ui";
+import { CopyButton, cn } from "@/components/kit";
 
 export type CodeLang = "json" | "bash" | "python" | "js" | "fix" | "text";
 

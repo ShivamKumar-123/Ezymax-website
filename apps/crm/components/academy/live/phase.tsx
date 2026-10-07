@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, Award, Clock, Download, GraduationCap, Lock, PlayCircle, ShieldCheck } from "lucide-react";
-import { Button, Card, Chip, Progress, Reveal, Segmented, cn } from "@kalks/ui";
+import { Button, Card, Chip, Progress, Reveal, Segmented, cn } from "@/components/kit";
 import { useT } from "@kalks/i18n/react";
 import { LEVEL_TONE, coverOf, fmtDay, fmtMin, isElective, levelLabel, pct, trackLabel, trackShort, tracksOf, useAcademy, type Catalog, type PhaseT, type SectionT, type TrackKey } from "./api";
 import { AcademyUnavailable, BackLink, PageSkeleton, RISK_NOTE, StatusDot, TrackIcon, trackBadge } from "./shared";

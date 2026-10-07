@@ -25,7 +25,7 @@ import {
   Toggle,
   cn,
   type Column,
-} from "@kalks/ui";
+} from "@/components/kit";
 // engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolAvatar as SymbolAvatar, TradeSymbolCell as SymbolCell } from "@/components/trading/instrument";
 import { Trans, useT } from "@kalks/i18n/react";
@@ -647,7 +647,7 @@ function SubCard({ s, onChanged, onEdit, onStop, onDetail, onFunds }: { s: Subsc
       )}
       {!stopped && s.pendingTerms && <TermsBanner s={s} onAccepted={onChanged} onStop={onStop} />}
       <div className="mt-4 px-5">
-        <div className="text-[11px] uppercase tracking-wider text-fg-3">{t("common.equity")}</div>
+        <div className="text-[12px] text-fg-3">{t("common.equity")}</div>
         <Money value={s.equity} countUp={false} className="text-[26px] font-semibold" />
         <div className={cn("k-num text-[12.5px] font-medium", s.profit > 0 ? "text-up" : s.profit < 0 ? "text-down" : "text-fg-2")}>
           {usd(s.profit, 2, true)} ({pct(s.returnPct)})

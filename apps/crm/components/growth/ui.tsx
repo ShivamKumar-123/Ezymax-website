@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Plus, RotateCw } from "lucide-react";
-import { Avatar, Button, Card, Chip, EmptyState, Flag, PageHeader, Skeleton, cn, type ChipTone } from "@kalks/ui";
+import { Avatar, Button, Card, Chip, EmptyState, Flag, PageHeader, Skeleton, cn, type ChipTone } from "@/components/kit";
 import { accountTitle, fmtAmount, curOf, useAccounts, type EngineAccount } from "@/components/trading/api";
 import { KindBadge } from "@/components/trading/ui";
 import type { MessageKey } from "@kalks/i18n";
@@ -196,7 +196,7 @@ const TIER_STYLE: Record<string, string> = {
 export function TierOrb({ tier, name, size = 40, className }: { tier: string; name?: string; size?: number; className?: string }) {
   return (
     <span
-      className={cn("grid shrink-0 place-items-center rounded-full font-bold uppercase text-black/70", TIER_STYLE[tier.toLowerCase()] ?? "bg-[radial-gradient(circle_at_30%_25%,#ffd9b8,#ff8a3d_45%,#b8330f)]", className)}
+      className={cn("grid shrink-0 place-items-center rounded-full font-bold uppercase text-black/70", TIER_STYLE[tier.toLowerCase()] ?? "bg-[radial-gradient(circle_at_30%_25%,color-mix(in_oklab,var(--k-ember)_25%,#fff),var(--k-ember-2)_45%,color-mix(in_oklab,var(--k-ember)_78%,#000))]", className)}
       style={{ width: size, height: size, fontSize: size * 0.3 }}
     >
       {(name ?? tier)[0]}

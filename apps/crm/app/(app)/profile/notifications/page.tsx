@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowLeft, Lock, Mail, Smartphone } from "lucide-react";
-import { Card, CardHeader, PageHeader, Reveal, Toggle } from "@kalks/ui";
+import { Card, CardHeader, PageHeader, Reveal, Toggle } from "@/components/kit";
 import { IS_DEMO } from "@kalks/mock";
 import { tr, useT } from "@kalks/i18n/react";
 
