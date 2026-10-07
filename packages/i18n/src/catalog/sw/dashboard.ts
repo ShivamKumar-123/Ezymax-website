@@ -213,5 +213,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "Biashara",
   "home.marketsTitle": "Masoko",
   "home.moreTitle": "Zaidi kwa ajili yako",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "Muulize {name}",
+  "ai.subtitle": "Majibu ya papo hapo kuhusu akaunti yako, amana na biashara.",
+  "ai.placeholder": "Uliza chochote kuhusu akaunti yako au biashara…",
+  "ai.followUp": "Uliza swali la ziada…",
+  "ai.openChat": "Fungua gumzo",
+  "ai.continueChat": "Endelea kwenye gumzo",
+  "ai.newQuestion": "Swali jipya",
+  "ai.thinking": "{name} anaandika jibu",
+  "ai.slow": "Hii inachukua muda zaidi kuliko kawaida. Swali lako limehifadhiwa kwenye gumzo la usaidizi na jibu litaonekana hapo.",
+  "ai.withTeam": "Timu yetu ya usaidizi itakujibu kwenye gumzo.",
+  "ai.withAgent": "Unazungumza na {name}. Majibu yanaonekana kwenye gumzo lako la usaidizi.",
+  "ai.connecting": "Tunakuunganisha na mtaalamu wa usaidizi…",
+  "ai.yourAccounts": "Akaunti zako halisi",
+  "ai.chip.deposit": "Ninawekaje pesa?",
+  "ai.chip.freeMargin": "Margin yangu huru ni kiasi gani?",
+  "ai.chip.marginLevel": "Eleza kiwango cha margin",
+  "ai.chip.openAccount": "Fungua akaunti mpya",
+  "ai.q.openAccount": "Ninafunguaje akaunti mpya ya biashara?",
 };
 export default dashboard;

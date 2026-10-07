@@ -213,5 +213,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "取引",
   "home.marketsTitle": "マーケット",
   "home.moreTitle": "おすすめ",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "{name}に質問",
+  "ai.subtitle": "口座、入金、取引についてすぐに回答します。",
+  "ai.placeholder": "口座や取引について何でも質問してください…",
+  "ai.followUp": "続けて質問する…",
+  "ai.openChat": "チャットを開く",
+  "ai.continueChat": "チャットで続ける",
+  "ai.newQuestion": "新しい質問",
+  "ai.thinking": "{name}が回答を作成しています",
+  "ai.slow": "通常より時間がかかっています。質問はサポートチャットに保存され、回答はそちらに表示されます。",
+  "ai.withTeam": "サポートチームがチャットで返信します。",
+  "ai.withAgent": "{name}とチャット中です。返信はサポートチャットに表示されます。",
+  "ai.connecting": "サポート担当者におつなぎしています…",
+  "ai.yourAccounts": "あなたのリアル口座",
+  "ai.chip.deposit": "入金方法を教えて",
+  "ai.chip.freeMargin": "余剰証拠金はいくら？",
+  "ai.chip.marginLevel": "証拠金維持率を説明して",
+  "ai.chip.openAccount": "新しい口座を開設",
+  "ai.q.openAccount": "新しい取引口座を開設するには？",
 };
 export default dashboard;

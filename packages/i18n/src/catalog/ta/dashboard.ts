@@ -213,5 +213,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "வர்த்தகம்",
   "home.marketsTitle": "சந்தைகள்",
   "home.moreTitle": "உங்களுக்காக மேலும்",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "{name}-இடம் கேளுங்கள்",
+  "ai.subtitle": "உங்கள் கணக்கு, டெபாசிட் மற்றும் வர்த்தகம் பற்றி உடனடி பதில்கள்.",
+  "ai.placeholder": "உங்கள் கணக்கு அல்லது வர்த்தகம் பற்றி எதையும் கேளுங்கள்…",
+  "ai.followUp": "தொடர் கேள்வி கேளுங்கள்…",
+  "ai.openChat": "அரட்டையைத் திற",
+  "ai.continueChat": "அரட்டையில் தொடரவும்",
+  "ai.newQuestion": "புதிய கேள்வி",
+  "ai.thinking": "{name} பதில் எழுதுகிறது",
+  "ai.slow": "வழக்கத்தை விட அதிக நேரம் ஆகிறது. உங்கள் கேள்வி ஆதரவு அரட்டையில் சேமிக்கப்பட்டுள்ளது, பதில் அங்கே தோன்றும்.",
+  "ai.withTeam": "எங்கள் ஆதரவுக் குழு அரட்டையில் பதிலளிக்கும்.",
+  "ai.withAgent": "நீங்கள் {name} உடன் அரட்டையில் இருக்கிறீர்கள். பதில்கள் ஆதரவு அரட்டையில் தோன்றும்.",
+  "ai.connecting": "ஆதரவு நிபுணருடன் இணைக்கிறோம்…",
+  "ai.yourAccounts": "உங்கள் நேரடிக் கணக்குகள்",
+  "ai.chip.deposit": "டெபாசிட் செய்வது எப்படி?",
+  "ai.chip.freeMargin": "எனது இலவச மார்ஜின் எவ்வளவு?",
+  "ai.chip.marginLevel": "மார்ஜின் நிலையை விளக்கவும்",
+  "ai.chip.openAccount": "புதிய கணக்கைத் திற",
+  "ai.q.openAccount": "புதிய வர்த்தகக் கணக்கை எப்படித் திறப்பது?",
 };
 export default dashboard;

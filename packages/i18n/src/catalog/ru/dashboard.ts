@@ -233,5 +233,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "Торговля",
   "home.marketsTitle": "Рынки",
   "home.moreTitle": "Ещё для вас",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "Спросить {name}",
+  "ai.subtitle": "Мгновенные ответы о вашем счёте, пополнениях и торговле.",
+  "ai.placeholder": "Спросите что угодно о счёте или торговле…",
+  "ai.followUp": "Задайте уточняющий вопрос…",
+  "ai.openChat": "Открыть чат",
+  "ai.continueChat": "Продолжить в чате",
+  "ai.newQuestion": "Новый вопрос",
+  "ai.thinking": "{name} пишет ответ",
+  "ai.slow": "Это занимает больше времени, чем обычно. Ваш вопрос сохранён в чате поддержки, ответ появится там.",
+  "ai.withTeam": "Наша служба поддержки ответит вам в чате.",
+  "ai.withAgent": "Вы общаетесь с {name}. Ответы появляются в чате поддержки.",
+  "ai.connecting": "Соединяем вас со специалистом поддержки…",
+  "ai.yourAccounts": "Ваши реальные счета",
+  "ai.chip.deposit": "Как пополнить счёт?",
+  "ai.chip.freeMargin": "Какая у меня свободная маржа?",
+  "ai.chip.marginLevel": "Объясните уровень маржи",
+  "ai.chip.openAccount": "Открыть новый счёт",
+  "ai.q.openAccount": "Как открыть новый торговый счёт?",
 };
 export default dashboard;

@@ -24,7 +24,6 @@ import {
   Wallet,
 } from "lucide-react";
 import {
-  AiPromptBar,
   BarcodeBars,
   Button,
   Card,
@@ -61,6 +60,30 @@ import { NotificationsPanel, type Prompt } from "@/components/dashboard/home/not
 import { OverviewLayout, SectionTitle } from "@/components/dashboard/home/overview";
 import { RANGE_DAYS, StatisticCard, type StatMode, type StatRange } from "@/components/dashboard/home/statistic-card";
 import type { TrendPoint } from "@/components/dashboard/home/trend-chart";
+import { AiFacts, AiLink, AskAi, type AiChip } from "@/components/ai/ask-ai";
+import { botAnswer } from "@kalks/mock/support-extra";
+
+/** Demo answers for Ask Kalks AI (sample data; live builds ask the real support bot). */
+function demoAnswer(q: string, chip?: string): string {
+  const live = ACCOUNTS.filter((a) => a.type === "live" && !a.cent);
+  const free = live.reduce((s, a) => s + freeMargin(a), 0);
+  const s = q.toLowerCase();
+  // typed questions on the same topics get the same answers as the suggestions
+  const topic = chip ?? (/free margin/.test(s) ? "freeMargin" : /margin level|stop.?out|margin call/.test(s) ? "marginLevel" : /open.*account|new account/.test(s) ? "openAccount" : /deposit|fund/.test(s) ? "deposit" : undefined);
+  switch (topic) {
+    case "deposit":
+      return "Open **Wallet → Deposit**, choose USDT on TRON (TRC20) or BNB Chain, and send from any wallet or exchange. Deposits are credited automatically after the network confirmations, usually within a minute; then move the funds to any live account with **Transfer**, instantly and free.";
+    case "freeMargin":
+      return `Free margin is the part of your equity you can still use for new positions: **equity − used margin**. Across your USD live accounts you have about **${formatMoney(free)}** free right now. Your figures per account are below.`;
+    case "marginLevel":
+      return "Margin level is **equity ÷ used margin × 100%**. Above 100% you can open new trades. At the **margin call** level (100%) we warn you, and at the **stop-out** level (50%) positions start closing automatically, the biggest loss first. All your accounts are healthy.";
+    case "openAccount":
+      return "Go to **Accounts → Open account**, pick Live or Demo and an account type (Standard, Pro, ECN or Cent), then choose your leverage. Your login is issued instantly; fund a live account from your wallet.";
+  }
+  if (s.includes("gold")) return "Gold (XAUUSD) is up 0.84% today at 2,654.30. Traders are pricing deeper Fed rate cuts after softer US data, and a weaker dollar is adding support. Key resistance sits near 2,670; support around 2,628, close to the stop on your 0.50 lot buy in account #80412337.";
+  if (s.includes("week")) return `This week you closed 38 trades with a 66% win rate and +${formatMoney(2184.4)} net profit. Your best trade was XAUUSD (+$612.40). Most losses came from EURUSD shorts opened during the London open.`;
+  return botAnswer(q).text;
+}
 
 function greeting() {
   const h = new Date().getHours();
@@ -188,8 +211,26 @@ function DemoOverview() {
           },
         ];
 
+  const lvl = (a: TradingAccount) => marginLevel(a);
+  const liveAccts = ACCOUNTS.filter((a) => a.type === "live");
+  const aiChips: AiChip[] = [
+    { key: "deposit", label: t("dashboard.ai.chip.deposit"), extra: <AiLink href="/wallet/deposit">{t("common.deposit")}</AiLink> },
+    {
+      key: "freeMargin",
+      label: t("dashboard.ai.chip.freeMargin"),
+      extra: <AiFacts title={t("dashboard.ai.yourAccounts")} rows={liveAccts.map((a) => ({ label: `#${a.login} · ${a.group}`, value: `${a.cent ? "USC " : "$"}${freeMargin(a).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }))} />,
+    },
+    {
+      key: "marginLevel",
+      label: t("dashboard.ai.chip.marginLevel"),
+      extra: <AiFacts title={t("dashboard.ai.yourAccounts")} rows={liveAccts.map((a) => ({ label: `#${a.login} · ${a.group}`, value: Number.isFinite(lvl(a)) ? `${Math.round(lvl(a)).toLocaleString("en-US")}%` : "—", tone: lvl(a) > 500 ? ("up" as const) : lvl(a) > 200 ? ("warn" as const) : ("down" as const) }))} />,
+    },
+    { key: "openAccount", label: t("dashboard.ai.chip.openAccount"), question: t("dashboard.ai.q.openAccount"), extra: <AiLink href="/accounts/new">{t("dashboard.accounts.open")}</AiLink> },
+  ];
+
   return (
     <OverviewLayout
+      ai={<AskAi chips={aiChips} demoAnswer={demoAnswer} />}
       header={<PageHeader className="mb-0" title={t("shell.nav.overview")} subtitle={t.dyn(`dashboard.greeting.${hour}`, undefined, { name: me.first_name })} />}
       kpis={
         <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 [&>*]:w-[78%] [&>*]:shrink-0 [&>*]:snap-start sm:[&>*]:w-auto">
@@ -604,19 +645,6 @@ export default function DemoDashboard() {
           <PartnerBanner />
         </Reveal>
       </div>
-
-      <AiPromptBar
-        suggestions={["Why is gold up today?", "Summarise my week", "Best time to trade EURUSD?", "What moves NAS100 today?"]}
-        answer={(q) =>
-          q.toLowerCase().includes("gold")
-            ? "Gold (XAUUSD) is up 0.84% today at 2,654.30. Traders are pricing deeper Fed rate cuts after softer US data, and a weaker dollar is adding support. Key resistance sits near 2,670; support around 2,628 — close to the stop on your 0.50 lot buy in account #80412337."
-            : q.toLowerCase().includes("week")
-              ? `This week you closed 38 trades with a 66% win rate and +${formatMoney(2184.4)} net profit. Your best trade was XAUUSD (+$612.40). Most losses came from EURUSD shorts opened during the London open — consider waiting for the first 30 minutes to settle.`
-              : q.toLowerCase().includes("eurusd")
-                ? "EURUSD is most liquid during the London–New York overlap (15:00–19:00 server time), when spreads are tightest (from 0.3 pips on Pro). Today's NFP release at 15:30 may cause sharp moves — consider reducing size around it."
-                : "NAS100 is up 1.24% led by chipmakers (NVDA +2.26%). Watch the ISM Services PMI at 17:00 server time — a strong print could lift yields and cap the rally."
-        }
-      />
     </div>
   );
 }

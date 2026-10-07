@@ -216,5 +216,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "ট্রেডিং",
   "home.marketsTitle": "মার্কেট",
   "home.moreTitle": "আপনার জন্য আরও",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "{name}-কে জিজ্ঞাসা করুন",
+  "ai.subtitle": "আপনার অ্যাকাউন্ট, ডিপোজিট ও ট্রেডিং নিয়ে তাৎক্ষণিক উত্তর।",
+  "ai.placeholder": "আপনার অ্যাকাউন্ট বা ট্রেডিং নিয়ে যেকোনো প্রশ্ন করুন…",
+  "ai.followUp": "আরেকটি প্রশ্ন করুন…",
+  "ai.openChat": "চ্যাট খুলুন",
+  "ai.continueChat": "চ্যাটে চালিয়ে যান",
+  "ai.newQuestion": "নতুন প্রশ্ন",
+  "ai.thinking": "{name} উত্তর লিখছে",
+  "ai.slow": "স্বাভাবিকের চেয়ে বেশি সময় লাগছে। আপনার প্রশ্ন সাপোর্ট চ্যাটে সংরক্ষিত আছে, উত্তর সেখানে দেখা যাবে।",
+  "ai.withTeam": "আমাদের সাপোর্ট টিম চ্যাটে উত্তর দেবে।",
+  "ai.withAgent": "আপনি {name}-এর সাথে চ্যাট করছেন। উত্তর আপনার সাপোর্ট চ্যাটে দেখা যাবে।",
+  "ai.connecting": "আপনাকে একজন সাপোর্ট বিশেষজ্ঞের সাথে যুক্ত করা হচ্ছে…",
+  "ai.yourAccounts": "আপনার লাইভ অ্যাকাউন্ট",
+  "ai.chip.deposit": "কীভাবে ডিপোজিট করব?",
+  "ai.chip.freeMargin": "আমার ফ্রি মার্জিন কত?",
+  "ai.chip.marginLevel": "মার্জিন লেভেল ব্যাখ্যা করুন",
+  "ai.chip.openAccount": "নতুন অ্যাকাউন্ট খুলুন",
+  "ai.q.openAccount": "নতুন ট্রেডিং অ্যাকাউন্ট কীভাবে খুলব?",
 };
 export default dashboard;

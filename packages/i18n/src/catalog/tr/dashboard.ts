@@ -213,5 +213,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "İşlem",
   "home.marketsTitle": "Piyasalar",
   "home.moreTitle": "Size özel",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "{name} ile sor",
+  "ai.subtitle": "Hesabınız, para yatırma ve işlemler hakkında anında yanıtlar.",
+  "ai.placeholder": "Hesabınız veya işlemler hakkında her şeyi sorun…",
+  "ai.followUp": "Devam sorusu sorun…",
+  "ai.openChat": "Sohbeti aç",
+  "ai.continueChat": "Sohbette devam et",
+  "ai.newQuestion": "Yeni soru",
+  "ai.thinking": "{name} yanıt yazıyor",
+  "ai.slow": "Bu her zamankinden uzun sürüyor. Sorunuz destek sohbetinize kaydedildi, yanıt orada görünecek.",
+  "ai.withTeam": "Destek ekibimiz size sohbetten yanıt verecek.",
+  "ai.withAgent": "{name} ile sohbet ediyorsunuz. Yanıtlar destek sohbetinizde görünür.",
+  "ai.connecting": "Bir destek uzmanına bağlanıyorsunuz…",
+  "ai.yourAccounts": "Gerçek hesaplarınız",
+  "ai.chip.deposit": "Nasıl para yatırırım?",
+  "ai.chip.freeMargin": "Serbest marjım ne kadar?",
+  "ai.chip.marginLevel": "Marj seviyesini açıkla",
+  "ai.chip.openAccount": "Yeni hesap aç",
+  "ai.q.openAccount": "Yeni bir işlem hesabını nasıl açarım?",
 };
 export default dashboard;

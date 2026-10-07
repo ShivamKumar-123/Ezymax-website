@@ -213,5 +213,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "Giao dịch",
   "home.marketsTitle": "Thị trường",
   "home.moreTitle": "Dành cho bạn",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "Hỏi {name}",
+  "ai.subtitle": "Giải đáp tức thì về tài khoản, nạp tiền và giao dịch của bạn.",
+  "ai.placeholder": "Hỏi bất cứ điều gì về tài khoản hoặc giao dịch…",
+  "ai.followUp": "Đặt câu hỏi tiếp theo…",
+  "ai.openChat": "Mở chat",
+  "ai.continueChat": "Tiếp tục trong chat",
+  "ai.newQuestion": "Câu hỏi mới",
+  "ai.thinking": "{name} đang soạn câu trả lời",
+  "ai.slow": "Việc này lâu hơn bình thường. Câu hỏi của bạn đã được lưu trong chat hỗ trợ và câu trả lời sẽ hiển thị ở đó.",
+  "ai.withTeam": "Đội ngũ hỗ trợ sẽ trả lời bạn trong chat.",
+  "ai.withAgent": "Bạn đang trò chuyện với {name}. Câu trả lời hiển thị trong chat hỗ trợ.",
+  "ai.connecting": "Đang kết nối bạn với chuyên viên hỗ trợ…",
+  "ai.yourAccounts": "Tài khoản thật của bạn",
+  "ai.chip.deposit": "Làm thế nào để nạp tiền?",
+  "ai.chip.freeMargin": "Ký quỹ khả dụng của tôi là bao nhiêu?",
+  "ai.chip.marginLevel": "Giải thích mức ký quỹ",
+  "ai.chip.openAccount": "Mở tài khoản mới",
+  "ai.q.openAccount": "Làm thế nào để mở tài khoản giao dịch mới?",
 };
 export default dashboard;

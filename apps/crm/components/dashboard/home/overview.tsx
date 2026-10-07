@@ -10,6 +10,7 @@ import { cn } from "@kalks/ui";
 
 export function OverviewLayout({
   header,
+  ai,
   kpis,
   statistic,
   checklist,
@@ -20,6 +21,8 @@ export function OverviewLayout({
   notifications,
 }: {
   header: React.ReactNode;
+  /** Ask Kalks AI: a card under the title (a compact pill on phones). */
+  ai?: React.ReactNode;
   kpis: React.ReactNode;
   statistic: React.ReactNode;
   checklist?: React.ReactNode;
@@ -35,6 +38,7 @@ export function OverviewLayout({
     <div className="flex flex-col gap-6 md:grid md:grid-cols-2 md:items-start md:gap-x-8 xl:items-stretch xl:grid-cols-[minmax(0,1.62fr)_minmax(0,1fr)_minmax(0,0.94fr)] xl:gap-x-0">
       <div className="flex min-w-0 flex-col gap-6 max-md:contents md:col-span-2 xl:col-span-1 xl:pe-8">
         {slot("max-md:order-1", header)}
+        {slot("max-md:order-1", ai)}
         {slot("max-md:order-3", kpis)}
         {slot("max-md:order-6", statistic)}
         {slot("max-md:order-9", checklist)}

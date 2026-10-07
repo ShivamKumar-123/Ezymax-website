@@ -28,7 +28,7 @@ import { INSTRUMENTS, isMarketOpen } from "@kalks/mock";
 import { KYC_CHIP, useReadOnly, useSession, type SessionUser } from "@/components/session";
 import { FeedGuard } from "@/components/feed-guard";
 import { SUPPORT_EMAIL, TERMINAL_URL } from "@/lib/live";
-import { curOf, isArchived, serverOf, useAccounts, type EngineAccount } from "@/components/trading/api";
+import { curOf, fmtLevel, isArchived, levelTone, serverOf, useAccounts, type EngineAccount } from "@/components/trading/api";
 import { liveTotals } from "@/components/trading/accounts-page";
 import { AccountActions, FundButton, RefillButton, TradeButton, isPropAccount } from "@/components/trading/ui";
 import { useWalletFunded, walletStep } from "@/components/wallet-live/onboarding";
@@ -45,6 +45,7 @@ import { NotificationsPanel, type Prompt } from "@/components/dashboard/home/not
 import { OverviewLayout, SectionTitle } from "@/components/dashboard/home/overview";
 import { RANGE_DAYS, StatisticCard, type StatMode, type StatRange } from "@/components/dashboard/home/statistic-card";
 import type { TrendPoint } from "@/components/dashboard/home/trend-chart";
+import { AiFacts, AiLink, AskAi, type AiChip } from "@/components/ai/ask-ai";
 
 function greeting() {
   const h = new Date().getHours();
@@ -498,10 +499,29 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
     },
   ];
 
+  // Ask Kalks AI: suggestions answered by the real support bot; account questions also show the client's own figures
+  const liveAccts = totals.live;
+  const money2 = (a: EngineAccount, v: number) => `${curOf(a)}${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const aiChips: AiChip[] = [
+    { key: "deposit", label: t("dashboard.ai.chip.deposit"), extra: <AiLink href="/wallet/deposit">{t("common.deposit")}</AiLink> },
+    {
+      key: "freeMargin",
+      label: t("dashboard.ai.chip.freeMargin"),
+      extra: <AiFacts title={t("dashboard.ai.yourAccounts")} rows={liveAccts.map((a) => ({ label: `#${a.login} · ${a.groupName}`, value: money2(a, a.freeMargin) }))} />,
+    },
+    {
+      key: "marginLevel",
+      label: t("dashboard.ai.chip.marginLevel"),
+      extra: <AiFacts title={t("dashboard.ai.yourAccounts")} rows={liveAccts.map((a) => ({ label: `#${a.login} · ${a.groupName}`, value: fmtLevel(a.marginLevel), tone: levelTone(a.marginLevel) }))} />,
+    },
+    { key: "openAccount", label: t("dashboard.ai.chip.openAccount"), question: t("dashboard.ai.q.openAccount"), extra: <AiLink href="/accounts/new">{t("dashboard.accounts.open")}</AiLink> },
+  ];
+
   return (
     <div className="pb-16">
       <BannerSlot placement="dashboard" />
       <OverviewLayout
+        ai={readOnly ? undefined : <AskAi chips={aiChips} />}
         header={
           <PageHeader
             className="mb-0"

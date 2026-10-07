@@ -310,6 +310,14 @@
     background: color-mix(in oklab, var(--k-surface) 60%, transparent);
   }
 
+  /* the dashboard's Ask Kalks AI card / pill: a soft brand-tinted wash over the frosted card */
+  .k-ai-card {
+    background:
+      radial-gradient(120% 150% at 0% 0%, color-mix(in oklab, var(--k-ember) 11%, transparent), transparent 58%),
+      radial-gradient(110% 130% at 100% 100%, color-mix(in oklab, var(--k-wash-3) 70%, transparent), transparent 62%),
+      var(--k-card-bg);
+  }
+
   /* column dividers of the dashboard's middle / right panels */
   .k-panel-divider { border-inline-start: 1px solid var(--k-border); }
 }

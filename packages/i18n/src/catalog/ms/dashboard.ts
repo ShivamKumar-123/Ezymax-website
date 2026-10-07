@@ -213,5 +213,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "Dagangan",
   "home.marketsTitle": "Pasaran",
   "home.moreTitle": "Lagi untuk anda",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "Tanya {name}",
+  "ai.subtitle": "Jawapan segera tentang akaun, deposit dan dagangan anda.",
+  "ai.placeholder": "Tanya apa sahaja tentang akaun atau dagangan anda…",
+  "ai.followUp": "Tanya soalan susulan…",
+  "ai.openChat": "Buka sembang",
+  "ai.continueChat": "Teruskan dalam sembang",
+  "ai.newQuestion": "Soalan baharu",
+  "ai.thinking": "{name} sedang menulis jawapan",
+  "ai.slow": "Ini mengambil masa lebih lama daripada biasa. Soalan anda disimpan dalam sembang sokongan dan jawapannya akan dipaparkan di sana.",
+  "ai.withTeam": "Pasukan sokongan kami akan membalas dalam sembang.",
+  "ai.withAgent": "Anda sedang bersembang dengan {name}. Balasan dipaparkan dalam sembang sokongan anda.",
+  "ai.connecting": "Menghubungkan anda dengan pakar sokongan…",
+  "ai.yourAccounts": "Akaun langsung anda",
+  "ai.chip.deposit": "Bagaimana cara membuat deposit?",
+  "ai.chip.freeMargin": "Berapakah margin bebas saya?",
+  "ai.chip.marginLevel": "Terangkan tahap margin",
+  "ai.chip.openAccount": "Buka akaun baharu",
+  "ai.q.openAccount": "Bagaimana cara membuka akaun dagangan baharu?",
 };
 export default dashboard;

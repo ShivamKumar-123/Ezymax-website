@@ -11,6 +11,13 @@ import { ChatPanel } from "@/components/support/chat-panel";
 import { LiveChat } from "@/components/support/live-chat";
 import { realtime } from "@/lib/realtime";
 
+const OPEN_EVENT = "kalks:support-open";
+
+/** Opens the floating support chat (e.g. "Continue in chat" from the dashboard's Ask Kalks AI). */
+export function openSupportChat() {
+  window.dispatchEvent(new Event(OPEN_EVENT));
+}
+
 /**
  * Floating support button on every Client Area page (not on /support itself, and never in Kalks Trader).
  * Opens the same live chat as the Support page in a compact panel; shows a dot when an agent replied.
@@ -29,6 +36,14 @@ export function SupportLauncher() {
     return realtime().subscribe((f) => {
       if (f.type === "conversation" && !openRef.current) setUnread(Number((f.conversation as { clientUnread?: number }).clientUnread ?? 0));
     });
+  }, []);
+  React.useEffect(() => {
+    const open = () => {
+      setOpen(true);
+      setUnread(0);
+    };
+    window.addEventListener(OPEN_EVENT, open);
+    return () => window.removeEventListener(OPEN_EVENT, open);
   }, []);
   if (pathname === "/support" || pathname.startsWith("/support/")) return null;
   return (

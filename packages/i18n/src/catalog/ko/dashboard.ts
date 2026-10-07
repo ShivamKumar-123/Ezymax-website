@@ -213,5 +213,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "거래",
   "home.marketsTitle": "시장",
   "home.moreTitle": "추천",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "{name}에게 질문",
+  "ai.subtitle": "계좌, 입금, 거래에 대해 즉시 답변해 드립니다.",
+  "ai.placeholder": "계좌나 거래에 대해 무엇이든 물어보세요…",
+  "ai.followUp": "추가 질문하기…",
+  "ai.openChat": "채팅 열기",
+  "ai.continueChat": "채팅에서 계속하기",
+  "ai.newQuestion": "새 질문",
+  "ai.thinking": "{name}이(가) 답변을 작성 중입니다",
+  "ai.slow": "평소보다 시간이 걸리고 있습니다. 질문은 고객지원 채팅에 저장되었으며 답변도 그곳에 표시됩니다.",
+  "ai.withTeam": "고객지원팀이 채팅으로 답변해 드립니다.",
+  "ai.withAgent": "{name}님과 채팅 중입니다. 답변은 고객지원 채팅에 표시됩니다.",
+  "ai.connecting": "고객지원 담당자와 연결하는 중…",
+  "ai.yourAccounts": "내 실계좌",
+  "ai.chip.deposit": "입금은 어떻게 하나요?",
+  "ai.chip.freeMargin": "내 가용 증거금은 얼마인가요?",
+  "ai.chip.marginLevel": "증거금 비율 설명",
+  "ai.chip.openAccount": "새 계좌 개설",
+  "ai.q.openAccount": "새 거래 계좌는 어떻게 개설하나요?",
 };
 export default dashboard;

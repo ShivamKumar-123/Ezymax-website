@@ -216,5 +216,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "Handel",
   "home.marketsTitle": "Märkte",
   "home.moreTitle": "Mehr für Sie",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "{name} fragen",
+  "ai.subtitle": "Sofortige Antworten zu Ihrem Konto, Einzahlungen und dem Handel.",
+  "ai.placeholder": "Fragen Sie alles zu Ihrem Konto oder zum Handel…",
+  "ai.followUp": "Stellen Sie eine Folgefrage…",
+  "ai.openChat": "Chat öffnen",
+  "ai.continueChat": "Im Chat fortfahren",
+  "ai.newQuestion": "Neue Frage",
+  "ai.thinking": "{name} schreibt eine Antwort",
+  "ai.slow": "Das dauert länger als üblich. Ihre Frage ist in Ihrem Support-Chat gespeichert, die Antwort erscheint dort.",
+  "ai.withTeam": "Unser Support-Team antwortet Ihnen im Chat.",
+  "ai.withAgent": "Sie chatten mit {name}. Antworten erscheinen in Ihrem Support-Chat.",
+  "ai.connecting": "Sie werden mit einem Support-Mitarbeiter verbunden…",
+  "ai.yourAccounts": "Ihre Live-Konten",
+  "ai.chip.deposit": "Wie zahle ich ein?",
+  "ai.chip.freeMargin": "Wie hoch ist meine freie Marge?",
+  "ai.chip.marginLevel": "Margin-Level erklären",
+  "ai.chip.openAccount": "Neues Konto eröffnen",
+  "ai.q.openAccount": "Wie eröffne ich ein neues Handelskonto?",
 };
 export default dashboard;

@@ -224,5 +224,29 @@ const dashboard = {
   "home.tradingTitle": "Trading",
   "home.marketsTitle": "Markets",
   "home.moreTitle": "More for you",
+
+  // Ask Kalks AI on the Overview (the support bot). {name} = the assistant's name, e.g. "Kalks AI"
+  "ai.title": "Ask {name}",
+  "ai.subtitle": "Instant answers about your account, deposits and trading.",
+  "ai.placeholder": "Ask anything about your account or trading…",
+  "ai.followUp": "Ask a follow-up question…",
+  "ai.openChat": "Open chat",
+  "ai.continueChat": "Continue in chat",
+  "ai.newQuestion": "New question",
+  // screen-reader label of the typing dots
+  "ai.thinking": "{name} is writing an answer",
+  "ai.slow": "This is taking longer than usual. Your question is saved in your support chat, and the answer will appear there.",
+  "ai.withTeam": "Our support team will reply in your chat.",
+  // {name} = the support agent's name
+  "ai.withAgent": "You're chatting with {name}. Replies appear in your support chat.",
+  "ai.connecting": "Connecting you to a support specialist…",
+  "ai.yourAccounts": "Your live accounts",
+  // Suggestion chips (sent as the question)
+  "ai.chip.deposit": "How do I deposit?",
+  "ai.chip.freeMargin": "What's my free margin?",
+  "ai.chip.marginLevel": "Explain margin level",
+  "ai.chip.openAccount": "Open a new account",
+  // the question sent for the "Open a new account" chip
+  "ai.q.openAccount": "How do I open a new trading account?",
 };
 export default dashboard;

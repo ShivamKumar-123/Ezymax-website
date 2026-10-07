@@ -240,5 +240,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "التداول",
   "home.marketsTitle": "الأسواق",
   "home.moreTitle": "المزيد لك",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "اسأل {name}",
+  "ai.subtitle": "إجابات فورية عن حسابك والإيداعات والتداول.",
+  "ai.placeholder": "اسأل أي شيء عن حسابك أو التداول…",
+  "ai.followUp": "اطرح سؤالًا آخر…",
+  "ai.openChat": "فتح المحادثة",
+  "ai.continueChat": "المتابعة في المحادثة",
+  "ai.newQuestion": "سؤال جديد",
+  "ai.thinking": "{name} يكتب إجابة",
+  "ai.slow": "يستغرق هذا وقتًا أطول من المعتاد. سؤالك محفوظ في محادثة الدعم وستظهر الإجابة هناك.",
+  "ai.withTeam": "سيرد عليك فريق الدعم في المحادثة.",
+  "ai.withAgent": "أنت تتحدث مع {name}. تظهر الردود في محادثة الدعم.",
+  "ai.connecting": "جارٍ توصيلك بأحد مختصي الدعم…",
+  "ai.yourAccounts": "حساباتك الحقيقية",
+  "ai.chip.deposit": "كيف أودِع؟",
+  "ai.chip.freeMargin": "ما هو الهامش الحر لديّ؟",
+  "ai.chip.marginLevel": "اشرح مستوى الهامش",
+  "ai.chip.openAccount": "فتح حساب جديد",
+  "ai.q.openAccount": "كيف أفتح حساب تداول جديدًا؟",
 };
 export default dashboard;

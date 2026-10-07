@@ -213,5 +213,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "การเทรด",
   "home.marketsTitle": "ตลาด",
   "home.moreTitle": "เพิ่มเติมสำหรับคุณ",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "ถาม {name}",
+  "ai.subtitle": "คำตอบทันทีเกี่ยวกับบัญชี การฝากเงิน และการเทรดของคุณ",
+  "ai.placeholder": "ถามอะไรก็ได้เกี่ยวกับบัญชีหรือการเทรด…",
+  "ai.followUp": "ถามคำถามต่อ…",
+  "ai.openChat": "เปิดแชท",
+  "ai.continueChat": "คุยต่อในแชท",
+  "ai.newQuestion": "คำถามใหม่",
+  "ai.thinking": "{name} กำลังเขียนคำตอบ",
+  "ai.slow": "ใช้เวลานานกว่าปกติ คำถามของคุณถูกบันทึกไว้ในแชทฝ่ายช่วยเหลือแล้ว และคำตอบจะแสดงที่นั่น",
+  "ai.withTeam": "ทีมช่วยเหลือของเราจะตอบคุณในแชท",
+  "ai.withAgent": "คุณกำลังแชทกับ {name} คำตอบจะแสดงในแชทฝ่ายช่วยเหลือ",
+  "ai.connecting": "กำลังเชื่อมต่อคุณกับเจ้าหน้าที่ช่วยเหลือ…",
+  "ai.yourAccounts": "บัญชีจริงของคุณ",
+  "ai.chip.deposit": "ฝากเงินอย่างไร?",
+  "ai.chip.freeMargin": "มาร์จิ้นว่างของฉันเท่าไร?",
+  "ai.chip.marginLevel": "อธิบายระดับมาร์จิ้น",
+  "ai.chip.openAccount": "เปิดบัญชีใหม่",
+  "ai.q.openAccount": "จะเปิดบัญชีเทรดใหม่ได้อย่างไร?",
 };
 export default dashboard;

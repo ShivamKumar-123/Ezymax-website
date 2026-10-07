@@ -216,5 +216,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "Trading",
   "home.marketsTitle": "Pasar",
   "home.moreTitle": "Lainnya untuk Anda",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "Tanya {name}",
+  "ai.subtitle": "Jawaban instan tentang akun, setoran, dan trading Anda.",
+  "ai.placeholder": "Tanyakan apa saja tentang akun atau trading Anda…",
+  "ai.followUp": "Ajukan pertanyaan lanjutan…",
+  "ai.openChat": "Buka chat",
+  "ai.continueChat": "Lanjutkan di chat",
+  "ai.newQuestion": "Pertanyaan baru",
+  "ai.thinking": "{name} sedang menulis jawaban",
+  "ai.slow": "Ini memakan waktu lebih lama dari biasanya. Pertanyaan Anda tersimpan di chat dukungan dan jawabannya akan muncul di sana.",
+  "ai.withTeam": "Tim dukungan kami akan membalas di chat.",
+  "ai.withAgent": "Anda sedang mengobrol dengan {name}. Balasan muncul di chat dukungan Anda.",
+  "ai.connecting": "Menghubungkan Anda dengan spesialis dukungan…",
+  "ai.yourAccounts": "Akun live Anda",
+  "ai.chip.deposit": "Bagaimana cara setor dana?",
+  "ai.chip.freeMargin": "Berapa margin bebas saya?",
+  "ai.chip.marginLevel": "Jelaskan level margin",
+  "ai.chip.openAccount": "Buka akun baru",
+  "ai.q.openAccount": "Bagaimana cara membuka akun trading baru?",
 };
 export default dashboard;

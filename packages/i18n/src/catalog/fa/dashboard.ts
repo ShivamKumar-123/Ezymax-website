@@ -216,5 +216,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "معاملات",
   "home.marketsTitle": "بازارها",
   "home.moreTitle": "بیشتر برای شما",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "از {name} بپرسید",
+  "ai.subtitle": "پاسخ فوری درباره حساب، واریز و معاملات شما.",
+  "ai.placeholder": "هر سؤالی درباره حساب یا معاملات دارید بپرسید…",
+  "ai.followUp": "سؤال بعدی را بپرسید…",
+  "ai.openChat": "باز کردن گفتگو",
+  "ai.continueChat": "ادامه در گفتگو",
+  "ai.newQuestion": "سؤال جدید",
+  "ai.thinking": "{name} در حال نوشتن پاسخ است",
+  "ai.slow": "این کار بیشتر از معمول طول می‌کشد. سؤال شما در گفتگوی پشتیبانی ذخیره شده و پاسخ همان‌جا نمایش داده می‌شود.",
+  "ai.withTeam": "تیم پشتیبانی در گفتگو به شما پاسخ می‌دهد.",
+  "ai.withAgent": "شما با {name} در حال گفتگو هستید. پاسخ‌ها در گفتگوی پشتیبانی نمایش داده می‌شوند.",
+  "ai.connecting": "در حال اتصال شما به کارشناس پشتیبانی…",
+  "ai.yourAccounts": "حساب‌های واقعی شما",
+  "ai.chip.deposit": "چطور واریز کنم؟",
+  "ai.chip.freeMargin": "مارجین آزاد من چقدر است؟",
+  "ai.chip.marginLevel": "سطح مارجین را توضیح بده",
+  "ai.chip.openAccount": "باز کردن حساب جدید",
+  "ai.q.openAccount": "چطور یک حساب معاملاتی جدید باز کنم؟",
 };
 export default dashboard;

@@ -213,5 +213,25 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.tradingTitle": "交易",
   "home.marketsTitle": "市场",
   "home.moreTitle": "为您推荐",
+
+  // Ask Kalks AI on the Overview
+  "ai.title": "问问 {name}",
+  "ai.subtitle": "即时解答您的账户、入金和交易问题。",
+  "ai.placeholder": "关于账户或交易，尽管问…",
+  "ai.followUp": "继续提问…",
+  "ai.openChat": "打开聊天",
+  "ai.continueChat": "在聊天中继续",
+  "ai.newQuestion": "新问题",
+  "ai.thinking": "{name} 正在撰写回答",
+  "ai.slow": "这比平时花的时间更长。您的问题已保存在支持聊天中，回答会显示在那里。",
+  "ai.withTeam": "我们的支持团队会在聊天中回复您。",
+  "ai.withAgent": "您正在与 {name} 聊天。回复会显示在您的支持聊天中。",
+  "ai.connecting": "正在为您转接支持专员…",
+  "ai.yourAccounts": "您的真实账户",
+  "ai.chip.deposit": "如何入金？",
+  "ai.chip.freeMargin": "我的可用保证金是多少？",
+  "ai.chip.marginLevel": "解释保证金水平",
+  "ai.chip.openAccount": "开立新账户",
+  "ai.q.openAccount": "如何开立新的交易账户？",
 };
 export default dashboard;
