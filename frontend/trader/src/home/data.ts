@@ -120,11 +120,65 @@ export const HERO = {
   pillBadge: 'Execution on your side of the browser',
   headline: 'Trade forex, metals, indices and crypto on one account',
   sub: 'One balance, one login, and a risk engine that runs on our servers — so your stops, targets and margin are enforced whether or not your browser is open.',
-  ctaPrimary: 'Open an account',
-  ctaSecondary: 'Try a demo first',
+  ctaPrimary: 'Open an Account',
+  ctaSecondary: 'Try a Demo',
   ctaHref: SIGNUP_HREF,
   ctaSecondaryHref: '/accounts/demo',
 };
+
+/**
+ * Headlines the hero cycles through, one every HERO_ROTATE_MS.
+ *
+ * `lead` renders in ink, `accent` in brand red on its own line — the
+ * two-tone split the design calls for. Keep each `lead` to roughly five
+ * words: longer ones reflow to a fourth line on desktop and the block
+ * visibly jumps as it rotates.
+ *
+ * HERO.headline stays the server-rendered first frame, so the fold has
+ * real text for crawlers and the markup matches before hydration.
+ * Entry 0 therefore mirrors it.
+ */
+export const HERO_ROTATING = [
+  { lead: 'Trade Forex, Metals, Indices and Crypto', accent: 'on One Account' },
+  { lead: 'Stops and Targets That Fire',             accent: 'Even When You Are Offline' },
+  { lead: 'Web, Desktop and Mobile',                 accent: 'One Login, One Balance' },
+  { lead: 'Start on a Demo',                         accent: 'Fund It When It Earns That' },
+] as const;
+
+/** Dwell time per headline, in milliseconds. */
+export const HERO_ROTATE_MS = 4000;
+
+/**
+ * The four-up feature strip under the headline.
+ *
+ * The design this follows had "Secure & Regulated - Your Funds, Our
+ * Priority" in slot two. That is the most load-bearing slot on the page
+ * and we cannot fill it: there is no licence, and client money is not held
+ * under a segregation regime. It carries the ledger guarantee instead,
+ * which is real and checkable. Do not restore the original wording
+ * without a licence number behind it.
+ *
+ * `icon` keys map to lucide components in Hero.tsx.
+ */
+export const HERO_FEATURES = [
+  { icon: 'Gauge',             label: 'Instant Fills',     sub: 'Market orders at live bid/ask' },
+  { icon: 'Lock',              label: 'Ledgered Balances', sub: 'Every movement auditable' },
+  { icon: 'ShieldCheck',       label: 'Server-Side Risk',  sub: 'Stops fire without your browser' },
+  { icon: 'MonitorSmartphone', label: 'Multi-Platform',    sub: 'Web, desktop & mobile' },
+] as const;
+
+/**
+ * Decorative asset chips floating around the hero artwork. Labels only --
+ * deliberately no prices, because a hardcoded number beside a trading
+ * screenshot reads as a live quote. Positions are percentages of the
+ * artwork box so they track it as it scales.
+ */
+export const HERO_ASSET_CHIPS = [
+  { label: 'GOLD',   glyph: 'Au', tone: 'gold',   top: '16%', left: '-5%' },
+  { label: 'EURUSD', glyph: 'EU', tone: 'blue',   top: '39%', left: '-10%' },
+  { label: 'BTC',    glyph: 'B',  tone: 'orange', top: '20%', left: '33%' },
+  { label: 'US30',   glyph: 'US', tone: 'navy',   top: '44%', left: '35%' },
+] as const;
 
 /**
  * Trust line inside the stats panel. Qualitative by design — the honest
