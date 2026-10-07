@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useTradingStore, type Position, type InstrumentInfo } from '@/stores/tradingStore';
+import {
+  useTradingStore,
+  resolvePositionServerId,
+  type Position,
+  type InstrumentInfo,
+} from '@/stores/tradingStore';
 import { clsx } from 'clsx';
 import api from '@/lib/api/client';
 import { formatTradeTime, formatTradeTimeShort } from '@/lib/tradeTime';
@@ -543,13 +548,20 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     const body: Record<string, unknown> = {};
     if (lots) body.lots = lots;
 
-    // Optimistic: remove from UI immediately for full close
-    if (!lots) removePosition(id);
-
     void (async () => {
+      // A trade placed seconds ago still carries its `optim-…` key; sending
+      // that as the URL id is what produced "Input should be a valid UUID".
+      const sid = await resolvePositionServerId(id, serverId);
+      if (!sid) {
+        toast.error('This trade is still being registered — try again in a moment.');
+        refreshPositions().catch(() => {});
+        return;
+      }
+      // Optimistic: remove from UI immediately for full close
+      if (!lots) removePosition(id);
       try {
         const res = await api.post<{ profit?: number; close_price?: number; remaining_lots?: number }>(
-          `/positions/${serverId}/close`,
+          `/positions/${sid}/close`,
           body,
           { timeoutMs: 8_000 },
         );
@@ -592,8 +604,13 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     let failed = 0;
     for (const pos of targets) {
       try {
+        const sid = await resolvePositionServerId(pos.id, pos.server_id);
+        if (!sid) {
+          failed++;
+          continue;
+        }
         const res = await api.post<{ profit?: number; close_price?: number }>(
-          `/positions/${pos.server_id ?? pos.id}/close`,
+          `/positions/${sid}/close`,
           {},
         );
         const pnl = res.profit ?? 0;
@@ -623,9 +640,12 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       const tpVal = sltpEdit.tp.trim();
       if (slVal !== '' && slVal !== '—') body.stop_loss = parseFloat(slVal);
       if (tpVal !== '' && tpVal !== '—') body.take_profit = parseFloat(tpVal);
-      const res = await api.put<{ closed?: boolean }>(
-        `/positions/${sltpEdit.serverId ?? sltpEdit.positionId}`, body,
-      );
+      const sid = await resolvePositionServerId(sltpEdit.positionId, sltpEdit.serverId);
+      if (!sid) {
+        toast.error('This trade is still being registered — try again in a moment.');
+        return;
+      }
+      const res = await api.put<{ closed?: boolean }>(`/positions/${sid}`, body);
       if (res?.closed) {
         toast.success('Order closed at current market price');
         // The server already closed the position in this same request. Drop the

@@ -549,3 +549,45 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
     }
   },
 }));
+
+/* ───────────────────────────────────────────────────────────────────────
+ * Position ids
+ *
+ * A position row's `id` is a React key, not always a server id: a trade the
+ * user just placed carries an `optim-…` placeholder until the poll returns
+ * the real row. Sending that placeholder to the API earns a 422 —
+ * "Input should be a valid UUID, invalid character: found `o` at 1" — which
+ * is exactly what a trader saw when closing a fresh trade. Everything that
+ * builds a /positions/{id} URL resolves the id through here first.
+ * ──────────────────────────────────────────────────────────────────── */
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isServerPositionId(id: string | null | undefined): id is string {
+  return typeof id === 'string' && UUID_RE.test(id);
+}
+
+/** Look up a row's real server id in the current store state. */
+export function findServerPositionId(storeKey: string): string | null {
+  const row = useTradingStore
+    .getState()
+    .positions.find((p) => p.id === storeKey || p.server_id === storeKey);
+  return isServerPositionId(row?.server_id) ? row.server_id : null;
+}
+
+/**
+ * The real UUID for a position, or null if the server has not registered it
+ * yet. Falls back to one refresh — the poll runs every 1.5s, so a trade
+ * placed a moment ago usually resolves on that single retry rather than
+ * making the user try again.
+ */
+export async function resolvePositionServerId(
+  storeKey: string,
+  hint?: string | null,
+): Promise<string | null> {
+  if (isServerPositionId(hint)) return hint;
+  const immediate = findServerPositionId(storeKey);
+  if (immediate) return immediate;
+  await useTradingStore.getState().refreshPositions().catch(() => {});
+  return findServerPositionId(storeKey);
+}
