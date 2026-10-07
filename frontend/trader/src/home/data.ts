@@ -40,8 +40,14 @@ import {
 /** Account opening — the primary conversion across the site. */
 export const SIGNUP_HREF = '/auth/register';
 
-/** Direct Android APK download (served from public/downloads). */
-export const APK_HREF = '/downloads/ezymex.apk';
+/**
+ * "Download App" target in the header.
+ *
+ * Was '/downloads/ezymex.apk' — a file that is not in public/, so the
+ * button 404'd on the live site. Points at the download page until a
+ * real build is published there; swap it back the moment one is.
+ */
+export const APK_HREF = '/download';
 
 export const BRAND = {
   name: BRAND_NAME,
@@ -387,6 +393,45 @@ export const FOOTER_COMPANY = [
   { label: 'Risk Warning',  href: '/risk-warning' },
   { label: 'Contact',       href: '/company/contact' },
 ];
+
+/**
+ * Footer blurb. One line: a footer signature, not an About page.
+ */
+export const FOOTER_BLURB =
+  'A multi-asset trading platform — forex, metals, indices and crypto on one account, with execution and risk enforced server-side.';
+
+/**
+ * Social profiles.
+ *
+ * Deliberately EMPTY hrefs until the real profiles exist. The footer
+ * renders only entries with an href, so an unfilled row shows nothing
+ * rather than four buttons that bounce the visitor back to the homepage
+ * (which is what they did before — every one pointed at the apex).
+ * Fill a url in and the icon appears; no other change needed.
+ */
+export const SOCIAL_LINKS = [
+  { key: 'Facebook',  href: '' },
+  { key: 'Instagram', href: '' },
+  { key: 'Linkedin',  href: '' },
+  { key: 'Youtube',   href: '' },
+] as const;
+
+/**
+ * Newsletter card copy.
+ *
+ * `endpoint` is the single integration point. While it is empty the form
+ * falls back to opening a prefilled mail to support — which actually
+ * reaches a human — instead of posting into the void. Point it at a real
+ * route and the fallback stops being used.
+ */
+export const NEWSLETTER = {
+  title: 'Stay',
+  titleAccent: 'Updated',
+  body: 'Get the latest news, product updates and market insights.',
+  placeholder: 'Enter your email address',
+  cta: 'Subscribe',
+  endpoint: '',
+} as const;
 
 /* Legal links are surfaced via the footer bottom bar. */
 export const FOOTER_LINKS: { label: string; href: string }[] = [

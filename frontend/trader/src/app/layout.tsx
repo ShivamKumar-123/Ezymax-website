@@ -18,7 +18,7 @@ import { fontVariableClass } from '@/styles/fonts';
  */
 export const metadata: Metadata = {
   title: 'Ezymex',
-  description: 'Ezymex — a software development company building white-label trading platforms, back offices and risk engines for brokers and prop firms.',
+  description: 'Trade forex, metals, indices and crypto from one account. Stop-loss, take-profit and stop-out are enforced on our servers, and every balance movement is written to a locked, auditable ledger. Leveraged trading carries a high risk to your capital.',
 };
 
 export const viewport: Viewport = {
