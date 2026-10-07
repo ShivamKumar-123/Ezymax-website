@@ -53,14 +53,17 @@ def upgrade() -> None:
     op.execute("CREATE INDEX IF NOT EXISTS ix_ib_rebate_settle_created ON ib_rebate_settlements (created_at)")
     op.execute("""
         -- NOTE: the spaces after the colons in the JSON below are load-bearing.
-        -- op.execute() routes this through sqlalchemy.text(), which treats
-        -- ":name" as a bind parameter -- and `"min_lots":0` matches, so the
-        -- literal was compiled with $1/$2 placeholders in place of the values
-        -- and the statement died with "A value is required for bind parameter
-        -- '0'". It only ever bites a FRESH database: an existing one already
-        -- had these rows from the idempotent startup DDL, so the migration was
-        -- never exercised. A space after the colon stops the match and leaves
-        -- the JSON identical.
+        -- op.execute() routes this through sqlalchemy.text(), which reads a
+        -- colon immediately followed by a word character as a bind parameter.
+        -- In compact JSON the key/value separator matches, so the literal was
+        -- compiled with $1/$2 placeholders where the numbers should be and the
+        -- statement failed for want of a bind value. A space after each colon
+        -- stops the match and leaves the JSON identical.
+        --
+        -- The same rule applies to THIS comment: text() does not skip SQL
+        -- comments, so do not write a colon followed by a word in here either.
+        -- It only bites a FRESH database; an existing one already had these
+        -- rows from the idempotent startup DDL.
         INSERT INTO system_settings (key, value, description) VALUES
             ('ib_commission_model', '"instant"'::jsonb, 'IB payout model: instant or accrual'),
             ('ib_rebate_tiers',
