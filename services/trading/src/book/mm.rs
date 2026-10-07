@@ -591,7 +591,7 @@ pub async fn pass(st: &AppState, tenant_id: i64, kind: AccountKind) -> anyhow::R
             set_status("paused");
             continue;
         }
-        let open = hub.shared.specs.get(&sym).is_some_and(|s| s.is_open(now));
+        let open = hub.shared.specs.load().get(&sym).is_some_and(|s| s.is_open(now));
         let spot = opts.spot(&sym);
         let usdq = opts.usd_per(&u.quote_ccy);
         let (Some((spot, spot_ms)), Some(usdq), true) = (spot, usdq, open) else {
@@ -852,7 +852,7 @@ pub fn rfq_price(hub: &Hub, tenant_slug: &str, kind: AccountKind, legs: &[(Optio
     let underlying = legs.first()?.0.underlying.clone();
     let u = snap.underlying(&underlying)?;
     let (spot, spot_ms) = opts.spot(&underlying)?;
-    if now.timestamp_millis() - spot_ms > SPOT_STALE_MS || !hub.shared.specs.get(&underlying).is_some_and(|s| s.is_open(now)) {
+    if now.timestamp_millis() - spot_ms > SPOT_STALE_MS || !hub.shared.specs.load().get(&underlying).is_some_and(|s| s.is_open(now)) {
         return None;
     }
     let usdq = opts.usd_per(&u.quote_ccy)?;

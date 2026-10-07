@@ -1,14 +1,20 @@
 //! HTTP + WebSocket API.
 //!
-//! GET  /health                          service status (provider connections, tick rate)
-//! GET  /v1/instruments                  instrument list
-//! GET  /v1/quotes?symbols=&group=       latest quotes with the group's spread applied
-//! GET  /v1/candles?symbol=&tf=&limit=&to=   OHLC history (+ the forming bar), ascending
+//! GET  /health                          service status (provider connections, tick rate, streaming vs plan limit)
+//! GET  /v1/instruments?class=&tier=&symbols=&q=   instrument catalogue (core + provider catalogue), optional filters
+//! GET  /v1/quotes?symbols=&group=       latest quotes with the group's spread applied (`"d":true` = delayed: the
+//!                                       symbol is not streamed right now; a symbol without any price gets one fetched)
+//! GET  /v1/candles?symbol=&tf=&limit=&to=   OHLC history (+ the forming bar), ascending; the first request of a
+//!                                       catalogue symbol fetches its history from the provider (waits up to 8 s)
+//! GET  /v1/streaming                    provider subscriptions: plan limits, streamed symbols, demand by tier
 //! GET  /v1/history/status               stored bars per symbol/timeframe
 //! GET  /v1/admin/spreads                spread markups           (Bearer MARKET_DATA_ADMIN_TOKEN)
 //! PUT  /v1/admin/spreads                upsert a markup          (Bearer MARKET_DATA_ADMIN_TOKEN)
 //! GET  /v1/depth?symbol=&group=&levels= depth of market (feed levels, else indicative) with the group's spread
-//! WS   /v1/stream?group=                {"op":"subscribe","symbols":[..]} → {"type":"quote",...} (+ {"type":"hb"} every 5s)
+//! WS   /v1/stream?group=                {"op":"subscribe","symbols":[..],"passive"?:true} → {"type":"quote",...,"d"?:1}
+//!                                       (+ {"type":"hb"} every 5s). A subscription asks the provider stream for the
+//!                                       symbol (demand.rs) unless passive; `{"op":"hold","symbols":[..]}` (trading
+//!                                       engine: positions / orders) replaces the connection's held set
 //!                                       {"op":"bars","symbol":"XAUUSD","tf":"M15"} → {"type":"bar",...}
 //!                                       {"op":"depth","symbols":[..],"levels"?:10,"src"?:"feed"} → {"type":"depth",...} on every
 //!                                       quote change of those symbols ("undepth" to stop; src "feed" = provider depth only)
@@ -29,9 +35,10 @@ use tokio::sync::broadcast::error::{RecvError, TryRecvError};
 use tower_http::cors::CorsLayer;
 
 use crate::db::{self, Bar};
+use crate::demand::{ClientDemand, Tier};
 use crate::depth;
 use crate::spreads::Markup;
-use crate::state::{Event, Market, Quote};
+use crate::state::{Event, HistoryJob, Market, Quote};
 use crate::timeframes::Tf;
 
 #[derive(Clone)]
@@ -48,6 +55,7 @@ pub fn router(state: AppState) -> Router {
         .route("/v1/candles", get(candles))
         .route("/v1/history/status", get(history_status))
         .route("/v1/depth", get(depth_rest))
+        .route("/v1/streaming", get(streaming))
         .route("/v1/admin/spreads", get(get_spreads).put(put_spread))
         .route("/v1/stream", get(stream))
         .layer(CorsLayer::permissive())
@@ -72,18 +80,78 @@ fn bad(msg: &str) -> Response {
 async fn health(State(s): State<AppState>) -> Json<Value> {
     let st = s.market.stats();
     let now = Utc::now().timestamp_millis();
-    let stale: Vec<&String> = st.last_tick_ms.iter().filter(|(_, t)| now - **t > 60_000).map(|(k, _)| k).collect();
+    let streaming = s.market.streaming();
+    // only streamed symbols can be stale: the rest are not supposed to tick
+    let stale: Vec<&String> = st.last_tick_ms.iter().filter(|(k, t)| now - **t > 60_000 && streaming.contains(*k)).map(|(k, _)| k).collect();
+    let limits = s.market.demand.lock().unwrap().limits.clone();
     Json(json!({
         "ok": !st.connected_markets.is_empty(),
         "provider_streams": st.connected_markets,
         "ticks_total": st.ticks_total,
         "symbols_ticking": st.last_tick_ms.len(),
         "stale_over_60s": stale,
+        "instruments": s.market.cat.list.len(),
+        "streaming": streaming.len(),
+        "plan_limit_total": limits.total,
     }))
 }
 
-async fn instruments(State(s): State<AppState>) -> Json<Value> {
-    Json(json!(s.market.cat.list))
+#[derive(Deserialize)]
+struct InstrumentsQ {
+    class: Option<String>,
+    /// `core` or `catalogue`
+    tier: Option<String>,
+    symbols: Option<String>,
+    /// substring of the symbol or name, case-insensitive
+    q: Option<String>,
+}
+
+async fn instruments(State(s): State<AppState>, Query(q): Query<InstrumentsQ>) -> Json<Value> {
+    let wanted: Option<HashSet<String>> = q.symbols.map(|x| x.split(',').map(|s| s.trim().to_string()).collect());
+    let needle = q.q.map(|x| x.to_lowercase());
+    let list: Vec<&crate::instruments::Instrument> = s
+        .market
+        .cat
+        .list
+        .iter()
+        .filter(|i| q.class.as_deref().is_none_or(|c| c == i.asset_class))
+        .filter(|i| match q.tier.as_deref() {
+            Some("core") => i.is_core(),
+            Some("catalogue") => !i.is_core(),
+            _ => true,
+        })
+        .filter(|i| wanted.as_ref().is_none_or(|w| w.contains(&i.symbol)))
+        .filter(|i| needle.as_ref().is_none_or(|n| i.symbol.to_lowercase().contains(n) || i.name.as_deref().is_some_and(|m| m.to_lowercase().contains(n))))
+        .collect();
+    Json(json!(list))
+}
+
+/// Provider subscriptions: plan limits, what streams per market, and the demand that did not fit.
+async fn streaming(State(s): State<AppState>) -> Json<Value> {
+    let now = std::time::Instant::now();
+    let streaming = s.market.streaming();
+    let (limits, wanted) = {
+        let d = s.market.demand.lock().unwrap();
+        (d.limits.clone(), d.wanted(now))
+    };
+    let mut by_market: std::collections::BTreeMap<String, Vec<&String>> = Default::default();
+    for x in &streaming {
+        if let Some(i) = s.market.cat.get(x) {
+            by_market.entry(i.provider.market.clone()).or_default().push(x);
+        }
+    }
+    let mut tiers: std::collections::BTreeMap<String, usize> = Default::default();
+    for t in wanted.values() {
+        *tiers.entry(format!("{t:?}").to_lowercase()).or_default() += 1;
+    }
+    let waiting: Vec<(&String, &Tier)> = wanted.iter().filter(|(k, t)| **t > Tier::Grace && !streaming.contains(*k)).collect();
+    Json(json!({
+        "limits": limits,
+        "streaming": streaming.len(),
+        "markets": by_market,
+        "wanted_by_tier": tiers,
+        "over_limit": waiting,
+    }))
 }
 
 #[derive(Deserialize)]
@@ -95,6 +163,16 @@ struct QuotesQ {
 async fn quotes(State(s): State<AppState>, Query(q): Query<QuotesQ>) -> Json<Value> {
     let group = q.group.unwrap_or_else(|| "raw".into());
     let wanted: Option<HashSet<String>> = q.symbols.map(|x| x.split(',').map(|s| s.trim().to_string()).collect());
+    // asked-for symbols without any price yet (catalogue symbols nobody streamed): fetch one, wait briefly
+    if let Some(w) = &wanted {
+        let missing: Vec<String> = w.iter().filter(|x| s.market.cat.get(x).is_some() && s.market.quote(x).is_none()).take(500).cloned().collect();
+        if !missing.is_empty() && s.market.request_history(HistoryJob::Snapshot { symbols: missing.clone() }) {
+            let until = std::time::Instant::now() + std::time::Duration::from_secs(3);
+            while std::time::Instant::now() < until && missing.iter().any(|x| s.market.quote(x).is_none()) {
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            }
+        }
+    }
     let mut out = serde_json::Map::new();
     for inst in &s.market.cat.list {
         if wanted.as_ref().is_some_and(|w| !w.contains(&inst.symbol)) {
@@ -103,12 +181,13 @@ async fn quotes(State(s): State<AppState>, Query(q): Query<QuotesQ>) -> Json<Val
         if let Some(qt) = s.market.quote(&inst.symbol) {
             let q = s.market.spreads.apply(&group, inst, qt);
             // today's (server-day) open/high/low from the raw D1 bar, for % change and day range
-            let day = s.market.forming(&inst.symbol, Tf::D1).map(|d| inst.round_bar(d));
-            out.insert(
-                inst.symbol.clone(),
-                json!({"bid": q.bid, "ask": q.ask, "last": q.last, "t": q.t,
-                       "o": day.map(|d| d.o), "h": day.map(|d| d.h), "l": day.map(|d| d.l)}),
-            );
+            let day = s.market.day_stats(inst);
+            let mut v = json!({"bid": q.bid, "ask": q.ask, "last": q.last, "t": q.t,
+                       "o": day.map(|d| d.0), "h": day.map(|d| d.1), "l": day.map(|d| d.2)});
+            if qt.delayed {
+                v["d"] = json!(true);
+            }
+            out.insert(inst.symbol.clone(), v);
         }
     }
     Json(Value::Object(out))
@@ -129,6 +208,19 @@ async fn candles(State(s): State<AppState>, Query(q): Query<CandlesQ>) -> Result
     let limit = q.limit.unwrap_or(500).clamp(1, 5000);
     let to: Option<DateTime<Utc>> = q.to.and_then(|t| DateTime::from_timestamp(t, 0));
     let mut bars = db::load_bars(&s.market.pool, &q.symbol, tf.minutes(), to, None, limit).await?;
+    // first chart of a catalogue symbol (or one whose history stopped): fetch from the provider, wait up to 8 s
+    if to.is_none() && !inst.is_core() && bars.last().is_none_or(|b| b.t < tf.bucket(Utc::now()) - chrono::Duration::days(7).max(chrono::Duration::minutes(tf.minutes() as i64 * 50))) {
+        if s.market.request_history(HistoryJob::Recent { symbol: q.symbol.clone(), first: Some(tf) }) && bars.is_empty() {
+            let until = std::time::Instant::now() + std::time::Duration::from_secs(8);
+            while std::time::Instant::now() < until {
+                tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+                bars = db::load_bars(&s.market.pool, &q.symbol, tf.minutes(), None, None, limit).await?;
+                if !bars.is_empty() {
+                    break;
+                }
+            }
+        }
+    }
     // merge the live forming bar (newest data) when serving the latest page
     if to.is_none() {
         if let Some(f) = s.market.forming(&q.symbol, tf) {
@@ -214,9 +306,14 @@ async fn stream(State(s): State<AppState>, Query(q): Query<StreamQ>, ws: WebSock
     ws.on_upgrade(move |socket| client(socket, s, group))
 }
 
-/// One quote frame. `t` = provider event time, `r` = when this service received it (both ms).
+/// One quote frame. `t` = provider event time, `r` = when this service received it (both ms); `"d":1` = delayed
+/// (the symbol is not streamed: a last price to show, never to trade on).
 fn quote_frame(symbol: &str, q: &Quote) -> String {
-    format!(r#"{{"type":"quote","s":"{symbol}","b":{},"a":{},"l":{},"t":{},"r":{}}}"#, q.bid, q.ask, q.last, q.t, q.recv)
+    if q.delayed {
+        format!(r#"{{"type":"quote","s":"{symbol}","b":{},"a":{},"l":{},"t":{},"r":{},"d":1}}"#, q.bid, q.ask, q.last, q.t, q.recv)
+    } else {
+        format!(r#"{{"type":"quote","s":"{symbol}","b":{},"a":{},"l":{},"t":{},"r":{}}}"#, q.bid, q.ask, q.last, q.t, q.recv)
+    }
 }
 
 fn bar_frame(symbol: &str, tf: Tf, b: &Bar) -> String {
@@ -235,8 +332,20 @@ fn snapshot(s: &AppState, group: &str, symbols: impl IntoIterator<Item = String>
         .collect()
 }
 
+/// Symbols wanted together with `symbol`: the pair converting its profit currency to USD (an order ticket on
+/// XAUTHB needs USDTHB to price margin and P&L).
+fn with_conversion(s: &AppState, symbol: &str) -> Vec<String> {
+    let mut v = vec![symbol.to_string()];
+    if let Some(p) = s.market.cat.get(symbol).and_then(|i| i.quote_ccy.as_deref()).filter(|c| *c != "USD").and_then(|c| s.market.cat.usd_pair(c)) {
+        v.push(p);
+    }
+    v
+}
+
 async fn client(mut socket: WebSocket, s: AppState, group: String) {
     let mut rx = s.market.tx.subscribe();
+    // this connection's references on the provider stream, released however the connection ends
+    let mut demand = ClientDemand::new(s.market.demand.clone(), s.market.demand_changed.clone());
     let mut syms: HashSet<String> = HashSet::new();
     let mut bars: HashSet<(String, Tf)> = HashSet::new();
     // depth-of-market subscriptions: levels per client; `feed_only` = provider depth only (relays)
@@ -260,10 +369,32 @@ async fn client(mut socket: WebSocket, s: AppState, group: String) {
                 let Ok(v) = serde_json::from_str::<Value>(&text) else { continue };
                 match v["op"].as_str() {
                     Some("subscribe") => {
+                        let passive = v["passive"].as_bool().unwrap_or(false);
                         let mut added = Vec::new();
                         for x in v["symbols"].as_array().into_iter().flatten().filter_map(Value::as_str) {
-                            if s.market.cat.get(x).is_some() && syms.insert(x.to_string()) {
+                            if s.market.cat.get(x).is_none() {
+                                continue;
+                            }
+                            if syms.insert(x.to_string()) {
                                 added.push(x.to_string());
+                            }
+                            // passive: deliver what streams, ask for nothing; re-subscribing switches the mode
+                            let watched = demand.holds(x, Tier::Watch);
+                            if !passive && !watched {
+                                for y in with_conversion(&s, x) {
+                                    demand.add(&y, Tier::Watch);
+                                }
+                            } else if passive && watched {
+                                for y in with_conversion(&s, x) {
+                                    demand.remove(&y, Tier::Watch);
+                                }
+                            }
+                        }
+                        // a symbol without any price yet gets a delayed one fetched (it streams if the plan has room)
+                        if !passive {
+                            let missing: Vec<String> = added.iter().filter(|x| s.market.quote(x).is_none()).cloned().collect();
+                            if !missing.is_empty() {
+                                s.market.request_history(HistoryJob::Snapshot { symbols: missing });
                             }
                         }
                         // snapshot so the client renders immediately (one flush for all of it)
@@ -274,11 +405,25 @@ async fn client(mut socket: WebSocket, s: AppState, group: String) {
                     Some("unsubscribe") => {
                         for x in v["symbols"].as_array().into_iter().flatten().filter_map(Value::as_str) {
                             syms.remove(x);
+                            if demand.holds(x, Tier::Watch) {
+                                for y in with_conversion(&s, x) {
+                                    demand.remove(&y, Tier::Watch);
+                                }
+                            }
                         }
                     }
+                    Some("hold") => {
+                        // the trading engine's positions and pending orders (+ conversion pairs): the whole set
+                        let set: std::collections::BTreeSet<String> = v["symbols"].as_array().into_iter().flatten().filter_map(Value::as_str).filter(|x| s.market.cat.get(x).is_some()).map(str::to_string).collect();
+                        demand.replace(Tier::Hold, &set);
+                    }
                     Some("bars") => {
-                        if let (Some(sym), Some(tf)) = (v["symbol"].as_str(), v["tf"].as_str().and_then(Tf::parse)) {
-                            bars.insert((sym.to_string(), tf));
+                        if let (Some(sym), Some(tf)) = (v["symbol"].as_str(), v["tf"].as_str().and_then(Tf::parse))
+                            && s.market.cat.get(sym).is_some()
+                            && bars.insert((sym.to_string(), tf))
+                        {
+                            // an open chart: the symbol streams with priority over watchlists
+                            demand.add(sym, Tier::Focus);
                         }
                     }
                     Some("depth") => {
@@ -288,6 +433,10 @@ async fn client(mut socket: WebSocket, s: AppState, group: String) {
                         for x in v["symbols"].as_array().into_iter().flatten().filter_map(Value::as_str) {
                             if s.market.cat.get(x).is_some() && depths.insert(x.to_string()) {
                                 added.push(x.to_string());
+                                // a depth ladder is a focus, except a relay's provider-depth mirror
+                                if !feed_only {
+                                    demand.add(x, Tier::Focus);
+                                }
                             }
                         }
                         for x in added {
@@ -300,12 +449,16 @@ async fn client(mut socket: WebSocket, s: AppState, group: String) {
                     }
                     Some("undepth") => {
                         for x in v["symbols"].as_array().into_iter().flatten().filter_map(Value::as_str) {
-                            depths.remove(x);
+                            if depths.remove(x) {
+                                demand.remove(x, Tier::Focus);
+                            }
                         }
                     }
                     Some("unbars") => {
-                        if let (Some(sym), Some(tf)) = (v["symbol"].as_str(), v["tf"].as_str().and_then(Tf::parse)) {
-                            bars.remove(&(sym.to_string(), tf));
+                        if let (Some(sym), Some(tf)) = (v["symbol"].as_str(), v["tf"].as_str().and_then(Tf::parse))
+                            && bars.remove(&(sym.to_string(), tf))
+                        {
+                            demand.remove(sym, Tier::Focus);
                         }
                     }
                     _ => {}

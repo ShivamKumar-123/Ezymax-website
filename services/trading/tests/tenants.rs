@@ -70,7 +70,8 @@ async fn a_new_broker_is_provisioned_on_its_first_request() {
     let shared = Arc::new(Shared {
         pool: pool.clone(),
         registry: registry.clone(),
-        specs,
+        specs: specs.into(),
+        held: Default::default(),
         quotes: raw_quotes.clone(),
         ids: Arc::new(Ids::new(ticket, deal, txn)),
         index: Arc::new(RwLock::new(Index::default())),

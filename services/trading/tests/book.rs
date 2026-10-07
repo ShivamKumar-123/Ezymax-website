@@ -89,7 +89,8 @@ async fn boot(pool: &sqlx::PgPool, states: std::collections::HashMap<i64, tradin
     let shared = Arc::new(Shared {
         pool: pool.clone(),
         registry,
-        specs,
+        specs: specs.into(),
+        held: Default::default(),
         quotes: quotes.clone(),
         ids: Arc::new(Ids::new(ticket, deal, txn)),
         index: Arc::new(RwLock::new(Index::default())),

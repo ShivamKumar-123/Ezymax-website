@@ -9,7 +9,7 @@
 use chrono::Utc;
 use futures_util::{SinkExt, StreamExt};
 use serde_json::Value;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use tokio_tungstenite::tungstenite::Message;
@@ -57,10 +57,11 @@ impl QuoteBook {
     }
 }
 
-/// Parses `{"type":"quote","s","b","a","l","t"}`.
+/// Parses `{"type":"quote","s","b","a","l","t"}`. Delayed snapshots (`"d":1`: the last price of a symbol
+/// market-data is not streaming, taken from the provider's bars) are not tradable prices and are skipped.
 pub fn parse_quote(text: &str) -> Option<(String, Quote)> {
     let v: Value = serde_json::from_str(text).ok()?;
-    if v["type"] != "quote" {
+    if v["type"] != "quote" || v["d"].as_i64().unwrap_or(0) != 0 {
         return None;
     }
     let s = v["s"].as_str()?.to_string();
@@ -107,25 +108,46 @@ async fn connection(hub: Hub, base_url: String, group: String, symbols: Vec<Stri
                 backoff = 1;
                 quotes.mark(&group, true);
                 tracing::info!(%group, "feed connected");
-                let sub = serde_json::json!({"op": "subscribe", "symbols": symbols}).to_string();
+                // passive: the engine takes every price market-data streams, but only what it holds (below) asks
+                // market-data to stream a symbol (the catalogue is far larger than the provider plan streams at once)
+                let sub = serde_json::json!({"op": "subscribe", "symbols": symbols, "passive": true}).to_string();
                 if ws.send(Message::text(sub)).await.is_err() {
                     quotes.mark(&group, false);
                     continue;
                 }
+                let mut held_sent: Option<BTreeSet<String>> = None;
+                let mut hold_tick = tokio::time::interval(Duration::from_secs(5));
+                let mut last_frame = tokio::time::Instant::now();
                 loop {
-                    // market-data sends a heartbeat every 5 s; 20 s of silence = dead connection
-                    let msg = match tokio::time::timeout(Duration::from_secs(20), ws.next()).await {
-                        Ok(Some(Ok(m))) => m,
-                        Ok(Some(Err(e))) => {
+                    let next = tokio::select! {
+                        m = ws.next() => m,
+                        _ = hold_tick.tick() => {
+                            // market-data sends a heartbeat every 5 s; 20 s of silence = dead connection
+                            if last_frame.elapsed() > Duration::from_secs(20) {
+                                tracing::warn!(%group, "feed silent for 20s; reconnecting");
+                                break;
+                            }
+                            // positions and pending orders (+ their USD conversion pairs) must keep streaming
+                            let hold = crate::catalogue::hold_set(&hub.shared.specs.load(), &hub.shared.held.all());
+                            if held_sent.as_ref() != Some(&hold) {
+                                let m = serde_json::json!({"op": "hold", "symbols": hold}).to_string();
+                                if ws.send(Message::text(m)).await.is_err() {
+                                    break;
+                                }
+                                held_sent = Some(hold);
+                            }
+                            continue;
+                        }
+                    };
+                    let msg = match next {
+                        Some(Ok(m)) => m,
+                        Some(Err(e)) => {
                             tracing::warn!(%group, error = %e, "feed error");
                             break;
                         }
-                        Ok(None) => break,
-                        Err(_) => {
-                            tracing::warn!(%group, "feed silent for 20s; reconnecting");
-                            break;
-                        }
+                        None => break,
                     };
+                    last_frame = tokio::time::Instant::now();
                     let Message::Text(text) = msg else { continue };
                     quotes.seen(&group);
                     if let Some((sym, q)) = parse_quote(text.as_str()) {
@@ -158,5 +180,7 @@ mod tests {
         assert_eq!(q.ask.to_string(), "1.13603");
         assert!(parse_quote(r#"{"type":"hb","t":1}"#).is_none());
         assert!(parse_quote(r#"{"type":"quote","s":"X","b":0,"a":1}"#).is_none());
+        // a delayed snapshot of a symbol that is not streaming is never a tradable price
+        assert!(parse_quote(r#"{"type":"quote","s":"AUDDKK","b":4.21,"a":4.22,"l":4.215,"t":1790602618652,"r":1,"d":1}"#).is_none());
     }
 }

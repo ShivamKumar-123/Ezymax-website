@@ -451,3 +451,6 @@ mod tests_options;
 
 #[cfg(test)]
 mod tests_book;
+
+#[cfg(test)]
+mod tests_catalogue;

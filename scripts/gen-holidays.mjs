@@ -44,6 +44,11 @@
 //   XAU, XAG  London LBMA + New York: union of USD and GBP, names prefixed "US: " / "UK: " (joined with " / "
 //        when both close on the same day).
 //   OIL  NYMEX / ICE settlement: the USD calendar.
+//   NYSE (config/holidays/exchanges/NYSE.json) US stock exchange holidays (trading sessions of catalogue US stocks):
+//        Jan 1, MLK Day, Washington's Birthday, Good Friday, Memorial Day, Juneteenth, Jul 4, Labor Day, Thanksgiving,
+//        Christmas; Saturday -> Friday before, Sunday -> Monday after, but a Saturday Jan 1 is not observed. Early
+//        closes (13:00 New York, "earlyCloses"): Jul 3 (Mon-Thu), day after Thanksgiving, Dec 24 (Mon-Thu).
+//        Exchange calendars live in the exchanges/ folder so the FX Options seed (config/holidays/*.json) skips them.
 //   Easter Sunday: Anonymous Gregorian algorithm (Meeus / Jones / Butcher).
 //
 // SOURCES (checked Oct 2026; output cross-checked against the first five where they publish these years):
@@ -264,6 +269,41 @@ function usd(y) {
   ]);
 }
 
+/** NYSE / Nasdaq exchange holidays. Saturday holidays close the Friday before, Sunday ones the Monday after, except
+ *  New Year's Day on a Saturday (the exchange stays open on Dec 31). */
+function nyse(y) {
+  const easter = easterSunday(y);
+  const exch = (date, name) => {
+    const w = weekday(date);
+    if (w === SAT) return name === "New Year's Day" ? null : { date: date - 1, name: substitute(name) };
+    if (w === SUN) return { date: date + 1, name: substitute(name) };
+    return { date, name };
+  };
+  return [
+    exch(day(y, 1, 1), "New Year's Day"),
+    exch(nthWeekday(y, 1, MON, 3), "Martin Luther King Jr. Day"),
+    exch(nthWeekday(y, 2, MON, 3), "Washington's Birthday"),
+    exch(easter - 2, "Good Friday"),
+    exch(lastWeekday(y, 5, MON), "Memorial Day"),
+    exch(day(y, 6, 19), "Juneteenth"),
+    exch(day(y, 7, 4), "Independence Day"),
+    exch(nthWeekday(y, 9, MON, 1), "Labor Day"),
+    exch(nthWeekday(y, 11, THU, 4), "Thanksgiving Day"),
+    exch(day(y, 12, 25), "Christmas Day"),
+  ].filter(Boolean);
+}
+
+/** NYSE 13:00 New York early closes: July 3 (Mon-Thu), the day after Thanksgiving, Christmas Eve (Mon-Thu). */
+function nyseEarly(y) {
+  const out = [];
+  const jul3 = day(y, 7, 3);
+  if (weekday(jul3) >= MON && weekday(jul3) <= THU) out.push({ date: jul3, name: "Independence Day eve", close: "13:00" });
+  out.push({ date: nthWeekday(y, 11, THU, 4) + 1, name: "Day after Thanksgiving", close: "13:00" });
+  const dec24 = day(y, 12, 24);
+  if (weekday(dec24) >= MON && weekday(dec24) <= THU) out.push({ date: dec24, name: "Christmas Eve", close: "13:00" });
+  return out;
+}
+
 function eur(y) {
   const easter = easterSunday(y);
   return observe([
@@ -419,6 +459,21 @@ const USD_RULES =
 
 const CALENDARS = [
   {
+    code: "NYSE",
+    dir: "exchanges",
+    description: "NYSE / Nasdaq (US stocks): exchange holidays and early closes",
+    rules:
+      "NYSE holidays: New Year's Day, Martin Luther King Jr. Day (3rd Mon Jan), Washington's Birthday (3rd Mon Feb), " +
+      "Good Friday, Memorial Day (last Mon May), Juneteenth (Jun 19), Independence Day (Jul 4), Labor Day (1st Mon " +
+      "Sep), Thanksgiving Day (4th Thu Nov), Christmas Day. A Saturday holiday closes the Friday before and a Sunday " +
+      "holiday the Monday after, except New Year's Day on a Saturday (no closure). Early closes at 13:00 New York: " +
+      "July 3 (Mon-Thu), the day after Thanksgiving, Christmas Eve (Mon-Thu). Columbus Day and Veterans Day are " +
+      "bank holidays only (the exchange is open). Checked against nyse.com/markets/hours-calendars and the provider's " +
+      "2026 trading days.",
+    days: nyse,
+    early: nyseEarly,
+  },
+  {
     code: "USD",
     description: "US Federal Reserve / New York bank holidays",
     rules: USD_RULES,
@@ -549,7 +604,23 @@ function build(cal) {
     .map((d) => ({ date: iso(d), name: byDate.get(d).join(" / ") }));
 }
 
-function render(cal, holidays) {
+/** Early closes of an exchange calendar (none for bank calendars). */
+function buildEarly(cal, holidays) {
+  if (!cal.early) return null;
+  const closed = new Set(holidays.map((h) => h.date));
+  const out = [];
+  for (const y of YEARS) {
+    for (const e of cal.early(y)) {
+      if (isWeekend(e.date)) throw new Error(`${cal.code}: early close ${iso(e.date)} is a weekend`);
+      if (closed.has(iso(e.date))) throw new Error(`${cal.code}: early close ${iso(e.date)} is also a holiday`);
+      if (!/^\d{2}:\d{2}$/.test(e.close)) throw new Error(`${cal.code}: bad close time ${e.close}`);
+      out.push({ date: iso(e.date), name: e.name, close: e.close });
+    }
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function render(cal, holidays, early = null) {
   const lines = [
     "{",
     `  "calendar": ${JSON.stringify(cal.code)},`,
@@ -558,13 +629,22 @@ function render(cal, holidays) {
     `  "generatedBy": ${JSON.stringify(GENERATED_BY)},`,
     `  "years": [${YEARS.join(", ")}],`,
   ];
+  const tail = early ? "," : "";
   if (holidays.length === 0) {
-    lines.push(`  "holidays": []`);
+    lines.push(`  "holidays": []${tail}`);
   } else {
     lines.push(`  "holidays": [`);
     holidays.forEach((h, i) => {
       const comma = i < holidays.length - 1 ? "," : "";
       lines.push(`    { "date": ${JSON.stringify(h.date)}, "name": ${JSON.stringify(h.name)} }${comma}`);
+    });
+    lines.push(`  ]${tail}`);
+  }
+  if (early) {
+    lines.push(`  "earlyCloses": [`);
+    early.forEach((e, i) => {
+      const comma = i < early.length - 1 ? "," : "";
+      lines.push(`    { "date": ${JSON.stringify(e.date)}, "name": ${JSON.stringify(e.name)}, "close": ${JSON.stringify(e.close)} }${comma}`);
     });
     lines.push("  ]");
   }
@@ -579,6 +659,7 @@ function render(cal, holidays) {
     generatedBy: GENERATED_BY,
     years: YEARS,
     holidays,
+    ...(early ? { earlyCloses: early } : {}),
   };
   if (JSON.stringify(JSON.parse(text)) !== JSON.stringify(expected)) throw new Error(`${cal.code}: render mismatch`);
   return text;
@@ -638,12 +719,13 @@ function main(argv) {
   selfTest();
   const results = CALENDARS.map((cal) => {
     const holidays = build(cal);
-    return { cal, holidays, text: render(cal, holidays), file: join(OUT_DIR, `${cal.code}.json`) };
+    const rel = cal.dir ? `${cal.dir}/${cal.code}.json` : `${cal.code}.json`;
+    return { cal, holidays, rel, text: render(cal, holidays, buildEarly(cal, holidays)), file: join(OUT_DIR, rel) };
   });
 
   if (check) {
     const stale = results.filter((r) => !existsSync(r.file) || readFileSync(r.file, "utf8") !== r.text);
-    for (const r of stale) console.error(`out of date: config/holidays/${r.cal.code}.json`);
+    for (const r of stale) console.error(`out of date: config/holidays/${r.rel}`);
     if (stale.length > 0) {
       console.error(`run: node ${GENERATED_BY}`);
       process.exit(1);
@@ -652,8 +734,10 @@ function main(argv) {
     return;
   }
 
-  mkdirSync(OUT_DIR, { recursive: true });
-  for (const r of results) writeFileSync(r.file, r.text);
+  for (const r of results) {
+    mkdirSync(dirname(r.file), { recursive: true });
+    writeFileSync(r.file, r.text);
+  }
   printTable(results);
   console.log(`\nwrote ${results.length} files to config/holidays/`);
 }

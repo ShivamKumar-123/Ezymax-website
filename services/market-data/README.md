@@ -29,22 +29,99 @@ cargo test -p market-data
 
 Config env vars (with defaults) are listed in `src/config.rs`. The instrument list is in `config/instruments.json`. USDINR is not carried by Infoway.
 
+## Instrument catalogue (1,409 instruments)
+
+`config/instruments.json` holds the 28 hand-maintained **core** instruments (unchanged, first in the file) and
+1,381 **catalogue** rows (`"tier": "catalogue"`) generated from the provider:
+
+```bash
+ssh kalks-vps 'cd ~/kalks && python3 scripts/infoway-snapshot.py fetch' > config/provider/infoway-snapshot.json
+node scripts/gen-catalogue.mjs          # rewrites the catalogue rows (core rows byte-identical) + HKEX calendar
+node scripts/gen-catalogue.mjs --check  # CI: files match the snapshot
+```
+
+| Class | Catalogue | Rule |
+|---|---|---|
+| forex | 54 | every provider pair whose profit currency converts to USD with a provider price; one direction per pair |
+| metals / energies | 14 / 2 | every provider metal / energy |
+| indices | 29 | every index with a price and a USD-convertible currency |
+| crypto | 182 | spot USDT pairs as `XXXUSD` (no stablecoins, no tokenized stocks) |
+| stocks | 1,100 | US top 800 (NYSE / Nasdaq / NYSE American, ETFs included), Hong Kong top 150, Tokyo top 150, by turnover |
+
+Each row carries name, provider code, digits, a typical spread, session (`fx`, `24x7`, `us_equity`, `hk_equity`,
+`jp_equity`), holiday calendar (`config/holidays`, exchange calendars in `config/holidays/exchanges`), base / quote
+currency and the trading engine's spec template. Sessions and calendars are shared with the trading engine and ALGO
+(crate `markethours`). Raise the stock counts with `--us N --hk N --jp N`.
+
+Why a generated JSON file and not a database table: every service (market-data, trading, ALGO, reports, IB, growth)
+reads the same file at startup with no runtime dependency on market-data or the provider; the engine's startup and
+replay stay deterministic; a new tradable instrument is a reviewed git diff; 1,409 rows are 360 KB (one line per
+catalogue row). The "refresh job" is the snapshot script plus `gen-catalogue.mjs`.
+
+## Streaming within the plan (demand.rs)
+
+The provider streams a limited number of symbols, so subscriptions follow demand:
+
+- **hold**: the trading engine's open positions and pending orders plus the pairs converting their profit currency
+  (`{"op":"hold"}` from its feed). Never dropped for anything else.
+- **always**: `MARKET_DATA_ALWAYS_ON` (default: the 28 core instruments).
+- **focus**: an open chart (`bars`) or depth ladder (`depth`).
+- **watch**: a quote subscription (and the USD conversion pair of its symbol). `"passive": true` subscriptions (the
+  trading engine's own feed, relays) take whatever streams without asking for anything.
+
+References are counted per connection and released when it closes; an unwanted symbol stays subscribed for
+`MARKET_DATA_IDLE_GRACE_SECS` (300) before it is released. Over the limit, slots go hold > always > focus > watch,
+then by number of clients. Plan changes reach the provider at most every 10 s per connection (unsubscribe 11000 /
+11001 first, then the full list on 10000 / 10003; the provider allows 60 frames a minute). `GET /v1/streaming` shows
+the limits, what streams and the demand that waits.
+
+Symbols that are not streamed still have a price: a delayed snapshot from the provider's daily bar (`"d":1` in
+stream frames, `"d":true` in `/v1/quotes`; refreshed every `MARKET_DATA_SNAPSHOT_SECS`, 900, and fetched on demand).
+Delayed prices are shown, never traded on: the trading engine ignores them.
+
+History of catalogue instruments is fetched on first view (`/v1/candles` waits up to 8 s for the timeframe asked
+for), again when a symbol starts streaming after a pause, and deep history follows in the background. Provider REST
+calls share one rate gate (`INFOWAY_RPS`, default 3/s) with priorities: reconciliation, someone waiting, snapshots,
+deep history.
+
+| Setting | Default | |
+|---|---|---|
+| `INFOWAY_MAX_SYMBOLS` | 600 | symbols per provider market connection (`INFOWAY_MAX_SYMBOLS_<MARKET>` per market) |
+| `INFOWAY_MAX_SYMBOLS_TOTAL` | 780 | over all connections (plan: 800) |
+| `INFOWAY_MARKETS` | `common,crypto,stock` | markets that may stream; Tokyo stocks (`japan`) get REST history and delayed prices until added |
+| `INFOWAY_BATCH_CODES` | 100 | codes per batch kline request (provider maximum) |
+| `INFOWAY_RPS` | 3 | provider REST requests per second (plan: 10) |
+| `MARKET_DATA_ALWAYS_ON` | core | comma-separated symbols, or `none` |
+| `MARKET_DATA_IDLE_GRACE_SECS` | 300 | |
+| `MARKET_DATA_SNAPSHOT_SECS` | 900 | 0 = no periodic snapshots |
+
+Relay mode (development) subscribes to the upstream passively for every symbol and actively for the symbols wanted
+locally; it has no provider REST, so catalogue charts need the upstream to have their history.
+
 ## API
 
 | Endpoint | |
 |---|---|
 | `GET /health` | provider streams, ticking symbols, stale symbols |
-| `GET /v1/instruments` | instrument catalogue |
-| `GET /v1/quotes?symbols=EURUSD,XAUUSD&group=standard` | latest bid/ask with the group's spread markup |
+| `GET /v1/instruments?class=&tier=&symbols=&q=` | instrument catalogue (core + provider catalogue), optional filters |
+| `GET /v1/quotes?symbols=EURUSD,XAUUSD&group=standard` | latest bid/ask with the group's spread markup (`"d":true` = delayed snapshot) |
+| `GET /v1/streaming` | plan limits, streamed symbols per market, demand by tier and over the limit |
 | `GET /v1/candles?symbol=EURUSD&tf=H1&limit=500&to=<unix>` | ascending bars `{t,o,h,l,c,v}` (t = unix secs); the latest page includes the forming bar |
 | `GET /v1/history/status` | stored bars per symbol/timeframe |
 | `GET/PUT /v1/admin/spreads` | spread markups per group/symbol (`Authorization: Bearer $MARKET_DATA_ADMIN_TOKEN`); body `{group_code, symbol ("*" = all), markup_points, min_spread_points}` |
 | `GET /v1/depth?symbol=XAUUSD&group=standard&levels=10` | depth of market `{src, t, bids, asks}` (levels best first, `[price, lots]`) |
-| `WS /v1/stream?group=pro` | send `{"op":"subscribe","symbols":[..]}` → `{"type":"quote","s","b","a","l","t"}`; `{"op":"bars","symbol","tf"}` → `{"type":"bar","s","tf","t","o","h","l","c","v"}`; `{"op":"depth","symbols":[..],"levels"?:10}` → `{"type":"depth","s","src","t","b":[[p,lots]..],"a":[..]}` on every quote change (`unsubscribe` / `unbars` / `undepth` to stop) |
+| `WS /v1/stream?group=pro` | send `{"op":"subscribe","symbols":[..],"passive"?:true}` → `{"type":"quote","s","b","a","l","t","d"?:1}`; `{"op":"hold","symbols":[..]}` (trading engine) pins symbols; `{"op":"bars","symbol","tf"}` → `{"type":"bar","s","tf","t","o","h","l","c","v"}`; `{"op":"depth","symbols":[..],"levels"?:10}` → `{"type":"depth","s","src","t","b":[[p,lots]..],"a":[..]}` on every quote change (`unsubscribe` / `unbars` / `undepth` to stop) |
 
 Timeframes: `M1 M5 M15 M30 H1 H4 D1 W1 MN`.
 
-## History depth (free plan, 1 req/s)
+## Provider plan (checked 2026-10-07 with `/package/info`)
+
+**Premium**: 10 REST requests/s, 2 WebSocket connections, 600 symbols per connection, 800 in total, 2 years of
+kline history; renews 2026-10-25. The provider lists ~40,000 symbols (FX 85, metals 17, energy 4, indices 51,
+futures 259, crypto 422, US stocks 14,805, HK 4,143, A-shares 5,646, Japan 3,926, Korea 2,798, India 5,644,
+Taiwan 2,343).
+
+## History depth (core instruments; catalogue instruments on first view)
 
 | Timeframe | Default depth | Setting |
 |---|---|---|

@@ -22,8 +22,7 @@ export const LIVE_EXCLUDED = [
   // trading: everything runs on the trading engine except these two
   "/trading/rollovers",
   "/trading/corporate-actions",
-  // config: account groups (/config, /config/groups) and spreads are live
-  "/config/symbols",
+  // config: account groups (/config, /config/groups), spreads and symbols (catalogue, live switch, templates) are live
   "/config/charges",
   "/config/swaps",
   "/config/margin",

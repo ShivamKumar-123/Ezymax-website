@@ -36,8 +36,16 @@ async fn main() -> anyhow::Result<()> {
         tracing::warn!("TRADING_INTERNAL_TOKEN is empty: any local process can call the engine (dev only)");
     }
 
-    let specs = Arc::new(Specs::load(&cfg.instruments_file, &cfg.specs_file)?);
     let pool = persist::connect(&cfg.database_url).await?;
+    // instrument catalogue + the Back Office template overrides and live-trading switch (specs.rs, catalogue.rs)
+    let specs = Specs::load(&cfg.instruments_file, &cfg.specs_file)?;
+    let overrides = trading::catalogue::load_overrides(&pool).await?;
+    let specs = Arc::new(specs.with_overrides(overrides)?);
+    {
+        let core = specs.all().filter(|s| s.core).count();
+        let live = specs.all().filter(|s| !s.core && s.live).count();
+        tracing::info!(instruments = specs.len(), core, catalogue = specs.len() - core, catalogue_live = live, "contract specs loaded");
+    }
     let registry = Registry::default();
     for t in persist::load_registry(&pool).await? {
         tracing::info!(tenant = t.tenant_id, slug = %t.slug, groups = t.groups.len(), "tenant loaded");
@@ -67,7 +75,8 @@ async fn main() -> anyhow::Result<()> {
     let shared = Arc::new(Shared {
         pool: pool.clone(),
         registry: registry.clone(),
-        specs: specs.clone(),
+        specs: specs.clone().into(),
+        held: Default::default(),
         quotes: quotes.clone(),
         ids: Arc::new(Ids::new(ticket, deal, txn)),
         index: Arc::new(RwLock::new(Index::default())),

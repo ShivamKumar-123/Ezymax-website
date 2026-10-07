@@ -82,6 +82,12 @@ pub async fn sync_specs(app: &App, tenant: &str) -> anyhow::Result<()> {
             Err(e) => tracing::debug!(error = %e, "spread markups not available"),
         }
     }
+    // USD rates for catalogue currencies (spread cost estimates of instruments quoted in them)
+    if let Ok(v) = app.up.get(Target::MarketData, tenant, As::None, "/v1/quotes?group=raw").await
+        && let Some(m) = v.as_object()
+    {
+        app.specs.set_rates(m);
+    }
     Ok(())
 }
 

@@ -3,17 +3,24 @@
 //! (GMT+3 during US DST, GMT+2 otherwise). Floats are fine here: the backtester is a simulation and the
 //! runtime only uses specs to size and round orders that the engine then validates with its own decimals.
 
-use chrono::{DateTime, Datelike, Duration, NaiveDate, TimeZone, Timelike, Utc, Weekday};
+use chrono::{DateTime, Datelike, Duration, NaiveDate, TimeZone, Utc, Weekday};
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashMap};
 use std::str::FromStr;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Session {
-    Fx,
-    Always,
-    UsEquity,
+pub use markethours::{Holidays, Session};
+use std::sync::Arc;
+
+/// Session as the API shows it: `fx`, `always`, or the exchange key (`us_equity`, `hk_equity`, ...).
+pub fn session_key(s: &Session) -> &'static str {
+    match s {
+        Session::Always => "always",
+        other => other.key(),
+    }
+}
+
+fn ser_session<S: serde::Serializer>(s: &Session, ser: S) -> Result<S::Ok, S::Error> {
+    ser.serialize_str(session_key(s))
 }
 
 #[derive(Clone, Debug, serde::Serialize)]
@@ -35,10 +42,16 @@ pub struct Spec {
     #[serde(skip)]
     pub triple_swap_day: Option<Weekday>,
     pub swap_all_days: bool,
+    #[serde(serialize_with = "ser_session")]
     pub session: Session,
+    /// Holiday calendar of a catalogue instrument (None for the core instruments).
+    #[serde(skip)]
+    pub holidays: Option<Arc<Holidays>>,
     pub commission_per_lot: Option<f64>,
     /// Raw spread from the instrument catalogue (price units), used when no live quote is available.
     pub base_spread: f64,
+    /// One of the hand-maintained core instruments (not from the provider catalogue).
+    pub core: bool,
 }
 
 impl Spec {
@@ -55,18 +68,7 @@ impl Spec {
     }
 
     pub fn is_open(&self, ts: DateTime<Utc>) -> bool {
-        match self.session {
-            Session::Always => true,
-            Session::Fx => {
-                let server = ts + Duration::seconds(server_offset_secs(ts));
-                !matches!(server.weekday(), Weekday::Sat | Weekday::Sun)
-            }
-            Session::UsEquity => {
-                let ny = ts + Duration::seconds(server_offset_secs(ts)) - Duration::hours(7);
-                let mins = ny.hour() * 60 + ny.minute();
-                !matches!(ny.weekday(), Weekday::Sat | Weekday::Sun) && (570..960).contains(&mins)
-            }
-        }
+        self.session.is_open(ts, self.holidays.as_deref())
     }
 
     /// Swap multiplier for the server day that just ended (0 = none, 3 = triple).
@@ -104,6 +106,10 @@ fn de_opt_opt<'de, De: serde::Deserializer<'de>>(d: De) -> Result<Option<Option<
 #[derive(Deserialize)]
 struct RawFile {
     classes: HashMap<String, RawSpec>,
+    /// Templates of the provider catalogue instruments (the trading engine applies Back Office overrides on top;
+    /// the engine validates every order, so the file values are what ALGO sizes with).
+    #[serde(default)]
+    templates: HashMap<String, RawSpec>,
     symbols: HashMap<String, RawSpec>,
 }
 
@@ -116,6 +122,18 @@ struct RawInstrument {
     base_spread: f64,
     #[serde(default)]
     session: Option<String>,
+    #[serde(default)]
+    tier: Option<String>,
+    #[serde(default)]
+    template: Option<String>,
+    #[serde(default)]
+    calendar: Option<String>,
+    #[serde(default)]
+    base_ccy: Option<String>,
+    #[serde(default)]
+    quote_ccy: Option<String>,
+    #[serde(default)]
+    pip_size: Option<f64>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -123,11 +141,16 @@ pub struct Specs {
     map: BTreeMap<String, Spec>,
 }
 
+/// The repo's holiday calendars (config/holidays).
+const REPO_HOLIDAYS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../config/holidays");
+
 impl Specs {
+    /// Holiday calendars come from the `holidays` directory next to the specs file.
     pub fn load(instruments_file: &str, specs_file: &str) -> anyhow::Result<Self> {
         let inst = std::fs::read_to_string(instruments_file).map_err(|e| anyhow::anyhow!("reading {instruments_file}: {e}"))?;
         let specs = std::fs::read_to_string(specs_file).map_err(|e| anyhow::anyhow!("reading {specs_file}: {e}"))?;
-        Self::parse(&inst, &specs)
+        let dir = std::path::Path::new(specs_file).parent().map(|p| p.join("holidays")).unwrap_or_else(|| "holidays".into());
+        Self::parse_with(&inst, &specs, &dir.to_string_lossy())
     }
 
     /// The repo's own config files (tests, and the default paths).
@@ -136,12 +159,29 @@ impl Specs {
     }
 
     pub fn parse(instruments_json: &str, specs_json: &str) -> anyhow::Result<Self> {
+        Self::parse_with(instruments_json, specs_json, REPO_HOLIDAYS)
+    }
+
+    pub fn parse_with(instruments_json: &str, specs_json: &str, holidays_dir: &str) -> anyhow::Result<Self> {
         let list: Vec<RawInstrument> = serde_json::from_str(instruments_json)?;
         let file: RawFile = serde_json::from_str(specs_json)?;
+        let calendars: HashMap<String, Arc<Holidays>> = Holidays::load_dir(holidays_dir).map_err(|e| anyhow::anyhow!("holiday calendars: {e}"))?.into_iter().map(|(k, v)| (k, Arc::new(v))).collect();
         let mut map = BTreeMap::new();
         for i in list {
-            let class = file.classes.get(&i.asset_class).cloned().unwrap_or_default();
-            let sym = file.symbols.get(&i.symbol).cloned().unwrap_or_default();
+            let core = i.tier.as_deref() != Some("catalogue");
+            // core: symbol over class (unchanged); catalogue: symbol over the row's own fields over its template
+            let class = if core {
+                file.classes.get(&i.asset_class).cloned().unwrap_or_default()
+            } else {
+                let key = i.template.clone().unwrap_or_else(|| i.asset_class.clone());
+                file.templates.get(&key).cloned().ok_or_else(|| anyhow::anyhow!("{}: no template {key} in trading-specs.json", i.symbol))?
+            };
+            let mut sym = file.symbols.get(&i.symbol).cloned().unwrap_or_default();
+            if !core {
+                sym.quote_ccy = sym.quote_ccy.or(i.quote_ccy.clone());
+                sym.base_ccy = sym.base_ccy.or(i.base_ccy.clone());
+                sym.pip_size = sym.pip_size.or(i.pip_size);
+            }
             macro_rules! pick {
                 ($f:ident, $d:expr) => {
                     sym.$f.clone().or(class.$f.clone()).unwrap_or($d)
@@ -152,12 +192,23 @@ impl Specs {
                 Some(Some(d)) => Some(Weekday::from_str(&d).map_err(|_| anyhow::anyhow!("{}: bad triple_swap_day {d}", i.symbol))?),
                 _ => None,
             };
-            let session = match (i.session.as_deref(), pick!(session, String::new()).as_str()) {
-                (Some("us_equity"), _) | (_, "us_equity") => Session::UsEquity,
-                (_, "24x7") => Session::Always,
-                (_, "fx") => Session::Fx,
-                _ if i.asset_class == "crypto" => Session::Always,
-                _ => Session::Fx,
+            let (session, holidays) = if core {
+                let s = match (i.session.as_deref(), pick!(session, String::new()).as_str()) {
+                    (Some("us_equity"), _) | (_, "us_equity") => Session::parse("us_equity").unwrap(),
+                    (_, "24x7") => Session::Always,
+                    (_, "fx") => Session::Fx,
+                    _ if i.asset_class == "crypto" => Session::Always,
+                    _ => Session::Fx,
+                };
+                (s, None)
+            } else {
+                let name = i.session.clone().or(class.session.clone()).unwrap_or_else(|| "fx".into());
+                let s = Session::parse(&name).ok_or_else(|| anyhow::anyhow!("{}: unknown session {name}", i.symbol))?;
+                let h = match &i.calendar {
+                    Some(c) => Some(calendars.get(c).cloned().ok_or_else(|| anyhow::anyhow!("{}: holiday calendar {c} not found", i.symbol))?),
+                    None => None,
+                };
+                (s, h)
             };
             let pip = pick!(pip_size, 0.0);
             let spec = Spec {
@@ -177,10 +228,14 @@ impl Specs {
                 triple_swap_day: triple,
                 swap_all_days: pick!(swap_days, "mon-fri".to_string()) == "all",
                 session,
+                holidays,
                 commission_per_lot: sym.commission_per_lot.or(class.commission_per_lot),
                 base_spread: i.base_spread,
+                core,
             };
-            map.insert(i.symbol, spec);
+            if map.insert(i.symbol.clone(), spec).is_some() {
+                anyhow::bail!("{}: listed twice in the instrument catalogue", i.symbol);
+            }
         }
         Ok(Self { map })
     }
@@ -197,15 +252,26 @@ impl Specs {
         self.map.keys().cloned().collect()
     }
 
+    pub fn len(&self) -> usize {
+        self.map.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
+
     /// The symbol converting `ccy` to USD and whether its price multiplies (`EURUSD`) or divides (`USDJPY`).
+    /// Core instruments first, like the engine (services/trading/src/specs.rs).
     pub fn usd_pair(&self, ccy: &str) -> Option<(String, bool)> {
-        let direct = format!("{ccy}USD");
-        if self.map.contains_key(&direct) {
-            return Some((direct, true));
-        }
-        let inverse = format!("USD{ccy}");
-        if self.map.contains_key(&inverse) {
-            return Some((inverse, false));
+        for core in [true, false] {
+            let direct = format!("{ccy}USD");
+            if self.map.get(&direct).is_some_and(|s| s.core == core) {
+                return Some((direct, true));
+            }
+            let inverse = format!("USD{ccy}");
+            if self.map.get(&inverse).is_some_and(|s| s.core == core) {
+                return Some((inverse, false));
+            }
         }
         None
     }
@@ -281,6 +347,40 @@ mod tests {
         assert_eq!(e.floor_volume(0.129), Some(0.12));
         assert_eq!(e.floor_volume(0.004), None);
         assert_eq!(s.usd_pair("JPY"), Some(("USDJPY".into(), false)));
+    }
+
+    #[test]
+    fn catalogue_specs_load_with_templates_and_sessions() {
+        let s = Specs::repo();
+        assert!(s.len() > 1000, "{} instruments", s.len());
+        assert_eq!(s.all().filter(|x| x.core).count(), 28);
+        // core unchanged: identical to the specs built from the original core-only files
+        let old = Specs::parse(
+            include_str!("../../trading/tests/fixtures/instruments-core-2026-10-07.json"),
+            include_str!("../../trading/tests/fixtures/trading-specs-core-2026-10-07.json"),
+        )
+        .unwrap();
+        assert_eq!(old.len(), 28);
+        for o in old.all() {
+            assert_eq!(format!("{o:?}"), format!("{:?}", s.get(&o.symbol).unwrap()), "{} changed", o.symbol);
+        }
+        let msft = s.get("MSFT").unwrap();
+        assert_eq!((msft.lot_min, msft.lot_step, msft.contract_size), (1.0, 1.0, 1.0));
+        assert_eq!(session_key(&msft.session), "us_equity");
+        let ts = |x: &str| DateTime::parse_from_rfc3339(x).unwrap().with_timezone(&Utc);
+        assert!(!msft.is_open(ts("2026-11-26T15:00:00Z")), "NYSE Thanksgiving");
+        assert!(s.get("AAPL").unwrap().is_open(ts("2026-11-26T15:00:00Z")), "core keeps its rules");
+        let bnb = s.get("BNBUSD").unwrap();
+        assert_eq!(session_key(&bnb.session), "always");
+        assert!(bnb.swap_all_days);
+        assert_eq!(s.get("AUDCAD").unwrap().floor_volume(0.129), Some(0.12));
+        assert_eq!(s.get("AUDCAD").unwrap().quote_ccy, "CAD");
+        assert_eq!(s.usd_pair("JPY"), Some(("USDJPY".into(), false)));
+        assert_eq!(s.usd_pair("SGD"), Some(("USDSGD".into(), false)));
+        // API shape of the session is unchanged for the core instruments
+        assert_eq!(serde_json::to_value(s.get("BTCUSD").unwrap()).unwrap()["session"], "always");
+        assert_eq!(serde_json::to_value(s.get("AAPL").unwrap()).unwrap()["session"], "us_equity");
+        assert_eq!(serde_json::to_value(s.get("EURUSD").unwrap()).unwrap()["session"], "fx");
     }
 
     #[test]

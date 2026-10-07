@@ -19,7 +19,7 @@ pub async fn meta(State(st): State<AppState>) -> Res {
     let symbols: Vec<Value> = st
         .specs
         .all()
-        .map(|s| json!({"symbol": s.symbol, "assetClass": s.asset_class, "digits": s.digits, "point": s.point, "pipSize": s.pip_size, "lotMin": s.lot_min, "lotMax": s.lot_max, "lotStep": s.lot_step, "session": s.session}))
+        .map(|s| json!({"symbol": s.symbol, "assetClass": s.asset_class, "digits": s.digits, "point": s.point, "pipSize": s.pip_size, "lotMin": s.lot_min, "lotMax": s.lot_max, "lotStep": s.lot_step, "session": crate::specs::session_key(&s.session), "core": s.core}))
         .collect();
     let labels = [
         ("sma", "SMA", "Simple moving average"),

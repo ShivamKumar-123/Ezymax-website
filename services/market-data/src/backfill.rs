@@ -1,44 +1,40 @@
-//! History backfill from the provider, rate-limited and resumable.
+//! History from the provider, rate-limited (gate.rs) and resumable.
 //!
-//! Phase 1 (quick): latest 500 bars of M1, M5, M15, M30, H1 and D1 for every symbol, so charts work immediately.
-//! Phase 2 (deep): page back to the configured depth per timeframe, remembering progress in `backfill_state`.
-//! H4 and D1 are then aggregated from our H1 bars at New York close (W1/MN from D1). Before our H1 coverage,
-//! provider daily bars (UTC days) are used for D1, labelled with the matching server day.
+//! **Core instruments** (eager, as before): phase 1 stores the latest 500 bars of M1, M5, M15, M30, H1 and D1 so
+//! charts work immediately; phase 2 pages back to the configured depth per timeframe, remembering progress in
+//! `backfill_state`.
+//! **Catalogue instruments** (lazy): history is fetched the first time someone opens a chart (the timeframe they
+//! wait for first), and again when a symbol starts streaming after a pause (the gap heals itself); deep history then
+//! follows in the background. Symbols nobody streams get a delayed price snapshot (`Snapshot`) on request and from a
+//! periodic sweep, so every catalogue symbol has a quote.
+//! H4 and D1 are aggregated from our H1 bars at New York close (W1/MN from D1). Before our H1 coverage, provider
+//! daily bars (UTC days) are used for D1, labelled with the matching server day.
 
 use chrono::{DateTime, Duration, NaiveDate, TimeZone, Utc};
 use serde_json::{json, Value};
-use std::collections::BTreeMap;
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::collections::{BTreeMap, HashMap, HashSet};
+use std::sync::{Arc, Mutex as StdMutex};
 
 use crate::config::Config;
 use crate::db::{self, Bar, Source};
+use crate::gate::{Gate, Prio};
 use crate::instruments::Instrument;
-use crate::state::Market;
+use crate::state::{HistoryJob, Market};
 use crate::timeframes::Tf;
 
-struct Provider {
+pub struct Provider {
     http: reqwest::Client,
     base: String,
     key: String,
-    gap: std::time::Duration,
-    last: Mutex<tokio::time::Instant>,
+    pub gate: Gate,
+    /// Codes per batch request.
+    batch: usize,
 }
 
 impl Provider {
-    async fn throttle(&self) {
-        let mut last = self.last.lock().await;
-        let next = *last + self.gap;
-        let now = tokio::time::Instant::now();
-        if next > now {
-            tokio::time::sleep_until(next).await;
-        }
-        *last = tokio::time::Instant::now();
-    }
-
     /// Up to 500 bars ending at `before` (or the latest when None), ascending.
-    async fn klines(&self, inst: &Instrument, kline: i32, before: Option<DateTime<Utc>>) -> anyhow::Result<Vec<Bar>> {
-        self.throttle().await;
+    async fn klines(&self, prio: Prio, inst: &Instrument, kline: i32, before: Option<DateTime<Utc>>) -> anyhow::Result<Vec<Bar>> {
+        self.gate.acquire(prio).await;
         let mut body = json!({"klineType": kline, "klineNum": 500, "codes": inst.provider.code});
         if let Some(b) = before {
             body["timestamp"] = json!(b.timestamp());
@@ -55,9 +51,17 @@ impl Provider {
         Ok(out)
     }
 
-    /// Latest `n` bars for every code of one provider market in a single request.
-    async fn latest_batch(&self, market: &str, codes: &[String], kline: i32, n: i32) -> anyhow::Result<Vec<(String, Vec<Bar>)>> {
-        self.throttle().await;
+    /// Latest `n` bars for the codes of one provider market, `batch` codes per request.
+    async fn latest_batch(&self, prio: Prio, market: &str, codes: &[String], kline: i32, n: i32) -> anyhow::Result<Vec<(String, Vec<Bar>)>> {
+        let mut out = Vec::new();
+        for chunk in codes.chunks(self.batch.max(1)) {
+            out.extend(self.latest_one(prio, market, chunk, kline, n).await?);
+        }
+        Ok(out)
+    }
+
+    async fn latest_one(&self, prio: Prio, market: &str, codes: &[String], kline: i32, n: i32) -> anyhow::Result<Vec<(String, Vec<Bar>)>> {
+        self.gate.acquire(prio).await;
         let body = json!({"klineType": kline, "klineNum": n, "codes": codes.join(",")});
         let url = format!("{}/{}/v2/batch_kline", self.base, market);
         let v: Value = self.http.post(&url).header("apiKey", &self.key).json(&body).send().await?.json().await?;
@@ -94,12 +98,23 @@ pub fn spawn(cfg: &Config, market: Arc<Market>) {
         http: reqwest::Client::builder().timeout(std::time::Duration::from_secs(30)).build().expect("http client"),
         base: cfg.infoway_rest.clone(),
         key: cfg.infoway_key.clone(),
-        gap: std::time::Duration::from_secs_f64(1.0 / cfg.provider_rps.max(0.1)),
-        last: Mutex::new(tokio::time::Instant::now() - std::time::Duration::from_secs(5)),
+        gate: Gate::start(std::time::Duration::from_secs_f64(1.0 / cfg.provider_rps.max(0.1))),
+        batch: cfg.batch_codes,
     });
     {
         let (pv, mk) = (provider.clone(), market.clone());
         tokio::spawn(async move { reconcile_loop(&pv, &mk).await });
+    }
+    // lazy history of catalogue instruments and price snapshots
+    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    let _ = market.history.set(tx);
+    {
+        let (pv, mk, cfg) = (provider.clone(), market.clone(), cfg.clone());
+        tokio::spawn(async move { worker(cfg, pv, mk, rx).await });
+    }
+    if cfg.snapshot_every_secs > 0 {
+        let (mk, every) = (market.clone(), cfg.snapshot_every_secs);
+        tokio::spawn(async move { snapshot_sweep(mk, every).await });
     }
     let cfg = cfg.clone();
     tokio::spawn(async move {
@@ -109,14 +124,147 @@ pub fn spawn(cfg: &Config, market: Arc<Market>) {
     });
 }
 
+/// How many history jobs run at once (they share the gate, so this only lets one symbol's job overtake another's).
+const WORKERS: usize = 4;
+/// A symbol's recent history is not fetched again within this long.
+const RECENT_TTL: std::time::Duration = std::time::Duration::from_secs(120);
+
+async fn worker(cfg: Config, pv: Arc<Provider>, mk: Arc<Market>, mut rx: tokio::sync::mpsc::UnboundedReceiver<HistoryJob>) {
+    let busy: Arc<StdMutex<HashSet<String>>> = Default::default();
+    let fresh: Arc<StdMutex<HashMap<String, std::time::Instant>>> = Default::default();
+    let deep_started: Arc<StdMutex<HashSet<String>>> = Default::default();
+    let slots = Arc::new(tokio::sync::Semaphore::new(WORKERS));
+    while let Some(job) = rx.recv().await {
+        match job {
+            HistoryJob::Recent { symbol, first } => {
+                let Some(inst) = mk.cat.get(&symbol).cloned() else { continue };
+                if fresh.lock().unwrap().get(&symbol).is_some_and(|t| t.elapsed() < RECENT_TTL) || !busy.lock().unwrap().insert(symbol.clone()) {
+                    continue;
+                }
+                let permit = slots.clone().acquire_owned().await.expect("semaphore");
+                let (pv, mk, cfg, busy, fresh, deep_started) = (pv.clone(), mk.clone(), cfg.clone(), busy.clone(), fresh.clone(), deep_started.clone());
+                tokio::spawn(async move {
+                    if let Err(e) = recent(&pv, &mk, &inst, first).await {
+                        tracing::warn!(symbol = %inst.symbol, error = %e, "on-demand history failed");
+                    }
+                    fresh.lock().unwrap().insert(inst.symbol.clone(), std::time::Instant::now());
+                    busy.lock().unwrap().remove(&inst.symbol);
+                    drop(permit);
+                    // deep history of a catalogue symbol, once per process, in the background
+                    if !inst.is_core() && deep_started.lock().unwrap().insert(inst.symbol.clone()) {
+                        if let Err(e) = deep_all(&cfg, &pv, &mk, &inst).await {
+                            tracing::warn!(symbol = %inst.symbol, error = %e, "background history stopped");
+                        }
+                    }
+                });
+            }
+            HistoryJob::Snapshot { symbols } => {
+                let (pv, mk) = (pv.clone(), mk.clone());
+                tokio::spawn(async move {
+                    if let Err(e) = snapshot(&pv, &mk, &symbols, Prio::Interactive).await {
+                        tracing::debug!(error = %e, "price snapshot failed");
+                    }
+                });
+            }
+        }
+    }
+}
+
+/// Order in which the timeframes of a symbol are fetched: the one someone waits for first (its source, H1, for
+/// the aggregated ones).
+fn tf_order(first: Option<Tf>) -> Vec<Tf> {
+    let lead = match first {
+        Some(t) if DIRECT.contains(&t) => Some(t),
+        Some(_) => Some(Tf::H1),
+        None => None,
+    };
+    let mut v: Vec<Tf> = lead.into_iter().collect();
+    v.extend(DIRECT.into_iter().filter(|t| Some(*t) != lead));
+    v
+}
+
+/// The latest 500 bars of every timeframe of one symbol (first view of a catalogue instrument, or a gap after a
+/// streaming pause), then the aggregated timeframes and provider daily history before our H1 coverage.
+async fn recent(pv: &Provider, mk: &Arc<Market>, inst: &Instrument, first: Option<Tf>) -> anyhow::Result<()> {
+    for tf in tf_order(first) {
+        match pv.klines(Prio::Interactive, inst, tf.provider_kline().unwrap(), None).await {
+            Ok(bars) if !bars.is_empty() => {
+                store_final(mk, inst, tf, &bars).await?;
+                seed_current(mk, inst, tf, &bars);
+                if !mk.is_streaming(&inst.symbol)
+                    && tf == Tf::M1
+                    && let Some(b) = bars.last()
+                {
+                    mk.set_snapshot(&inst.symbol, b.c, None, b.t.timestamp_millis() + 59_999);
+                }
+            }
+            Ok(_) => tracing::debug!(symbol = %inst.symbol, tf = tf.name(), "provider returned no history"),
+            Err(e) => tracing::warn!(symbol = %inst.symbol, tf = tf.name(), error = %e, "history request failed"),
+        }
+        if tf == Tf::H1 {
+            aggregate_higher(mk, inst, None).await?;
+        }
+    }
+    daily_before_h1(pv, mk, inst, None, Prio::Interactive).await?;
+    tracing::info!(symbol = %inst.symbol, "recent history stored");
+    Ok(())
+}
+
+/// Background deep history of one symbol (configured depth per timeframe, then provider daily bars).
+async fn deep_all(cfg: &Config, pv: &Provider, mk: &Arc<Market>, inst: &Instrument) -> anyhow::Result<()> {
+    let now = Utc::now();
+    for (minutes, days) in cfg.backfill_days {
+        let tf = Tf::from_minutes(minutes).unwrap();
+        deep(pv, mk, inst, tf, now - Duration::days(days)).await?;
+    }
+    let from = NaiveDate::parse_from_str(&cfg.backfill_daily_from, "%Y-%m-%d").unwrap_or(NaiveDate::from_ymd_opt(2012, 1, 1).unwrap());
+    daily_before_h1(pv, mk, inst, Some(Utc.from_utc_datetime(&from.and_hms_opt(0, 0, 0).unwrap())), Prio::Background).await
+}
+
+/// Delayed prices of symbols that are not streamed: the provider's current daily bar (close = last price, open /
+/// high / low = the provider's day), one request per market and batch.
+async fn snapshot(pv: &Provider, mk: &Arc<Market>, symbols: &[String], prio: Prio) -> anyhow::Result<usize> {
+    let mut by_market: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for s in symbols {
+        if let Some(i) = mk.cat.get(s)
+            && !mk.is_streaming(s)
+        {
+            by_market.entry(i.provider.market.clone()).or_default().push(i.provider.code.clone());
+        }
+    }
+    let mut n = 0;
+    for (market, codes) in by_market {
+        for (code, bars) in pv.latest_batch(prio, &market, &codes, 8, 1).await? {
+            let (Some(inst), Some(b)) = (mk.cat.from_provider(&market, &code), bars.last()) else { continue };
+            mk.set_snapshot(&inst.symbol, b.c, Some((b.o, b.h, b.l)), Utc::now().timestamp_millis().min(b.t.timestamp_millis() + 86_399_999));
+            n += 1;
+        }
+    }
+    Ok(n)
+}
+
+/// Every `every` seconds: a delayed price for every catalogue symbol that is not streamed (background priority).
+async fn snapshot_sweep(mk: Arc<Market>, every: u64) {
+    // let the startup backfill of the core instruments go first
+    tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+    loop {
+        let todo: Vec<String> = mk.cat.list.iter().filter(|i| !i.is_core() && !mk.is_streaming(&i.symbol)).map(|i| i.symbol.clone()).collect();
+        if !todo.is_empty() {
+            mk.request_history(HistoryJob::Snapshot { symbols: todo });
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(every)).await;
+    }
+}
+
 const DIRECT: [Tf; 5] = [Tf::M1, Tf::M5, Tf::M15, Tf::M30, Tf::H1];
 
 async fn run(cfg: &Config, pv: &Provider, mk: &Arc<Market>) -> anyhow::Result<()> {
-    let list = mk.cat.list.clone();
+    // eager: the core instruments (the catalogue fills lazily, see `worker`)
+    let list: Vec<Instrument> = mk.cat.list.iter().filter(|i| i.is_core()).cloned().collect();
     // ---- phase 1: latest bars everywhere ----
     for inst in &list {
         for tf in DIRECT {
-            match pv.klines(inst, tf.provider_kline().unwrap(), None).await {
+            match pv.klines(Prio::Snapshot, inst, tf.provider_kline().unwrap(), None).await {
                 Ok(bars) if !bars.is_empty() => {
                     store_final(mk, inst, tf, &bars).await?;
                     seed_current(mk, inst, tf, &bars);
@@ -126,7 +274,7 @@ async fn run(cfg: &Config, pv: &Provider, mk: &Arc<Market>) -> anyhow::Result<()
             }
         }
         aggregate_higher(mk, inst, None).await?;
-        daily_before_h1(pv, mk, inst, None).await?;
+        daily_before_h1(pv, mk, inst, None, Prio::Snapshot).await?;
         tracing::info!(symbol = %inst.symbol, "quick backfill done");
     }
     tracing::info!("phase 1 complete — charts available for all symbols");
@@ -142,7 +290,7 @@ async fn run(cfg: &Config, pv: &Provider, mk: &Arc<Market>) -> anyhow::Result<()
     let from = NaiveDate::parse_from_str(&cfg.backfill_daily_from, "%Y-%m-%d").unwrap_or(NaiveDate::from_ymd_opt(2012, 1, 1).unwrap());
     let from = Utc.from_utc_datetime(&from.and_hms_opt(0, 0, 0).unwrap());
     for inst in &list {
-        daily_before_h1(pv, mk, inst, Some(from)).await?;
+        daily_before_h1(pv, mk, inst, Some(from), Prio::Background).await?;
     }
     tracing::info!("phase 2 complete — full history stored");
     Ok(())
@@ -186,7 +334,7 @@ async fn deep(pv: &Provider, mk: &Arc<Market>, inst: &Instrument, tf: Tf, target
         if oldest <= target {
             break;
         }
-        let bars = match pv.klines(inst, tf.provider_kline().unwrap(), Some(oldest - Duration::seconds(1))).await {
+        let bars = match pv.klines(Prio::Background, inst, tf.provider_kline().unwrap(), Some(oldest - Duration::seconds(1))).await {
             Ok(b) => b,
             Err(e) => {
                 tracing::warn!(symbol = %inst.symbol, tf = tf.name(), error = %e, "deep history stopped (plan limit or no more data)");
@@ -256,12 +404,12 @@ async fn aggregate_higher(mk: &Market, inst: &Instrument, from: Option<DateTime<
 }
 
 /// Provider daily history for days older than our H1 coverage (labelled with the matching server day).
-async fn daily_before_h1(pv: &Provider, mk: &Market, inst: &Instrument, until: Option<DateTime<Utc>>) -> anyhow::Result<()> {
+async fn daily_before_h1(pv: &Provider, mk: &Market, inst: &Instrument, until: Option<DateTime<Utc>>, prio: Prio) -> anyhow::Result<()> {
     let Some(h1_oldest) = db::oldest_bar(&mk.pool, &inst.symbol, Tf::H1.minutes()).await? else { return Ok(()) };
     let first_full_day = Tf::D1.bucket(h1_oldest) + Duration::days(1);
     let mut before: Option<DateTime<Utc>> = None;
     loop {
-        let bars = match pv.klines(inst, 8, before).await {
+        let bars = match pv.klines(prio, inst, 8, before).await {
             Ok(b) => b,
             Err(e) => {
                 tracing::warn!(symbol = %inst.symbol, error = %e, "daily history stopped");
@@ -295,19 +443,26 @@ async fn daily_before_h1(pv: &Provider, mk: &Market, inst: &Instrument, until: O
 /// (in case the provider finalises late): M1 each minute, M5/M15/M30/H1 when they close, then
 /// H4/D1/W1/MN rebuilt from the corrected bars.
 async fn reconcile_loop(pv: &Provider, mk: &Arc<Market>) {
-    let markets: Vec<(String, Vec<String>)> = mk.cat.markets().into_iter().map(|m| { let c = mk.cat.codes_for(&m); (m, c) }).collect();
     loop {
         let now = Utc::now();
         let minute = Tf::M1.bucket(now);
         let (boundary, at) = if now < minute + Duration::seconds(40) { (minute, minute + Duration::seconds(40)) } else { (minute + Duration::minutes(1), minute + Duration::seconds(64)) };
         let (boundary, at) = if now < minute + Duration::seconds(4) { (minute, minute + Duration::seconds(4)) } else { (boundary, at) };
         tokio::time::sleep((at - now).to_std().unwrap_or_default()).await;
+        // only streamed symbols build live bars; the others get history when they are next viewed or streamed
+        let mut by_market: BTreeMap<String, Vec<String>> = BTreeMap::new();
+        for s in mk.streaming() {
+            if let Some(i) = mk.cat.get(&s) {
+                by_market.entry(i.provider.market.clone()).or_default().push(i.provider.code.clone());
+            }
+        }
+        let markets: Vec<(String, Vec<String>)> = by_market.into_iter().collect();
         for tf in DIRECT.into_iter().filter(|tf| tf.bucket(boundary) == boundary) {
             for (market, codes) in &markets {
                 if codes.is_empty() {
                     continue;
                 }
-                match pv.latest_batch(market, codes, tf.provider_kline().unwrap(), 3).await {
+                match pv.latest_batch(Prio::Reconcile, market, codes, tf.provider_kline().unwrap(), 3).await {
                     Ok(list) => {
                         for (code, bars) in list {
                             let Some(inst) = mk.cat.from_provider(market, &code) else { continue };
@@ -346,4 +501,19 @@ async fn reconcile_higher(mk: &Market, inst: &Instrument, end: DateTime<Utc>) ->
         store(mk, inst, dst, &agg, Source::Reconciled).await?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_waited_for_timeframe_comes_first() {
+        assert_eq!(tf_order(Some(Tf::M15)), vec![Tf::M15, Tf::M1, Tf::M5, Tf::M30, Tf::H1]);
+        // aggregated timeframes need H1 first
+        assert_eq!(tf_order(Some(Tf::D1))[0], Tf::H1);
+        assert_eq!(tf_order(Some(Tf::W1))[0], Tf::H1);
+        assert_eq!(tf_order(None), DIRECT.to_vec());
+        assert_eq!(tf_order(Some(Tf::H4)).len(), 5);
+    }
 }

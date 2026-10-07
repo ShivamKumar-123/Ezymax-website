@@ -138,7 +138,8 @@ async fn order_book_end_to_end_against_the_real_services() {
     let shared = Arc::new(Shared {
         pool: pool.clone(),
         registry: registry.clone(),
-        specs: specs.clone(),
+        specs: specs.clone().into(),
+        held: Default::default(),
         quotes: quotes.clone(),
         ids: Arc::new(Ids::new(ticket, deal, txn)),
         index: Arc::new(RwLock::new(Index::default())),

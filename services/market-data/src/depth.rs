@@ -100,10 +100,10 @@ mod tests {
     use crate::instruments::Provider;
 
     fn inst(symbol: &str, class: &str, digits: u32, spread: f64) -> Instrument {
-        Instrument { symbol: symbol.into(), asset_class: class.into(), digits, base_spread: spread, provider: Provider { market: "common".into(), code: symbol.into() }, session: None }
+        Instrument { symbol: symbol.into(), asset_class: class.into(), digits, base_spread: spread, provider: Provider { market: "common".into(), code: symbol.into() }, ..Default::default() }
     }
     fn q(bid: f64, ask: f64, t: i64) -> Quote {
-        Quote { bid, ask, last: (bid + ask) / 2.0, t, book_t: 0, recv: 0 }
+        Quote { bid, ask, last: (bid + ask) / 2.0, t, book_t: 0, recv: 0, delayed: false }
     }
 
     #[test]

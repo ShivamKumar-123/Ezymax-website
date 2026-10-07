@@ -94,7 +94,7 @@ async fn market_maker_rfq_liquidation_enable_and_bust_end_to_end() {
         trading::book::mm::pass(&st, 1, AccountKind::Demo).await.unwrap();
         let cov = hub.shared.books.mm.run(1, AccountKind::Demo).under.get("EURUSD").map(|u| (u.series_quoted, u.series_total, u.status.clone()));
         let age = rig.options.spot("EURUSD").map(|s| Utc::now().timestamp_millis() - s.1);
-        eprintln!("mm pass {i}: {:?} in {:?}; EURUSD spot age {age:?} ms, open {:?}", cov, t0.elapsed(), hub.shared.specs.get("EURUSD").map(|s| s.is_open(Utc::now())));
+        eprintln!("mm pass {i}: {:?} in {:?}; EURUSD spot age {age:?} ms, open {:?}", cov, t0.elapsed(), hub.shared.specs.load().get("EURUSD").map(|s| s.is_open(Utc::now())));
         if i >= 3 && cov.as_ref().is_some_and(|c| c.1 > 0 && c.0 * 10 >= c.1 * 8) && rig.options.top.get("kalks", AccountKind::Demo, &series).is_some_and(|t| t.bid.is_some() && t.ask.is_some()) {
             break;
         }

@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveSymbols } from "@/components/live/symbols";
 import { Pencil, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, Chip, DataTable, IconButton, PageHeader, PriceText, Reveal, Segmented, SymbolCell, Toggle, cn, formatNumber, useQuotes, type Column, type ChipTone } from "@kalks/ui";
@@ -25,6 +27,10 @@ function LiveQuote({ symbol, q }: { symbol: string; q: { bid: number; ask: numbe
 }
 
 export default function SymbolsPage() {
+  return IS_DEMO ? <DemoSymbolsPage /> : <LiveSymbols />;
+}
+
+function DemoSymbolsPage() {
   const [specs, setSpecs] = React.useState<SymbolSpec[]>(SYMBOL_SPECS);
   const [cls, setCls] = React.useState<"all" | AssetClass>("all");
   const [editing, setEditing] = React.useState<SymbolSpec | null>(null);

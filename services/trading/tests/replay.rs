@@ -94,7 +94,8 @@ async fn replay_rebuilds_identical_state_and_ledger_holds() {
     let shared = Arc::new(Shared {
         pool: pool.clone(),
         registry: registry.clone(),
-        specs,
+        specs: specs.into(),
+        held: Default::default(),
         quotes: quotes.clone(),
         ids: Arc::new(Ids::new(ticket, deal, txn)),
         index: Arc::new(RwLock::new(Index::default())),

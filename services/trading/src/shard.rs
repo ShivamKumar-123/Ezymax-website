@@ -19,7 +19,7 @@ use crate::feed::QuoteBook;
 use crate::model::{Account, AccountKind, Book, Status};
 use crate::persist::{self, AuditRow, Batch, CommitError};
 use crate::rules::Registry;
-use crate::specs::Specs;
+use crate::specs::{Specs, SpecsCell};
 use crate::state::{AccountState, Event};
 use crate::views;
 
@@ -243,10 +243,31 @@ impl LpAdapter for NullLp {
     }
 }
 
+/// Symbols with positions or pending orders, per shard (see `Shard::publish_held`).
+#[derive(Default)]
+pub struct Held(RwLock<HashMap<usize, BTreeSet<String>>>);
+
+impl Held {
+    pub fn set(&self, shard: usize, symbols: BTreeSet<String>) {
+        let mut w = self.0.write().unwrap();
+        if w.get(&shard) != Some(&symbols) {
+            w.insert(shard, symbols);
+        }
+    }
+    /// Every shard's symbols together.
+    pub fn all(&self) -> BTreeSet<String> {
+        self.0.read().unwrap().values().flatten().cloned().collect()
+    }
+}
+
 pub struct Shared {
     pub pool: PgPool,
     pub registry: Registry,
-    pub specs: Arc<Specs>,
+    /// Current contract specs (hot-swapped when the Back Office changes a template or the live switch).
+    pub specs: SpecsCell,
+    /// Symbols each shard holds positions or pending orders on (published every few seconds; the feed asks
+    /// market-data to keep them streaming).
+    pub held: Held,
     pub quotes: Arc<QuoteBook>,
     pub ids: Arc<Ids>,
     pub index: Arc<RwLock<Index>>,
@@ -298,7 +319,7 @@ impl Hub {
             let (ttx, trx) = mpsc::channel(8192);
             cmds.push(ctx);
             ticks.push(ttx);
-            let mut shard = Shard { id: i, sh: shared.clone(), states, interest: HashMap::new(), keys: HashMap::new(), dirty: HashSet::new(), last_eval: HashMap::new(), pending: HashSet::new() };
+            let mut shard = Shard { id: i, specs: shared.specs.load(), sh: shared.clone(), states, interest: HashMap::new(), keys: HashMap::new(), dirty: HashSet::new(), last_eval: HashMap::new(), pending: HashSet::new() };
             for login in shard.states.keys().copied().collect::<Vec<_>>() {
                 shard.reindex(login);
             }
@@ -426,6 +447,8 @@ fn meta(st: &AccountState) -> AccountMeta {
 struct Shard {
     id: usize,
     sh: Arc<Shared>,
+    /// Specs snapshot for the event being handled (refreshed from `sh.specs` before each one).
+    specs: Arc<Specs>,
     states: HashMap<i64, AccountState>,
     /// (spread group, symbol) → logins with a position or pending order on it
     interest: HashMap<(String, String), BTreeSet<i64>>,
@@ -448,15 +471,25 @@ impl Shard {
             tokio::select! {
                 biased;
                 cmd = cmds.recv() => match cmd {
-                    Some(c) => self.handle(c).await,
+                    Some(c) => {
+                        self.specs = self.sh.specs.load();
+                        self.handle(c).await
+                    }
                     None => break,
                 },
                 t = ticks.recv() => match t {
-                    Some(t) => self.on_tick(t).await,
+                    Some(t) => {
+                        self.specs = self.sh.specs.load();
+                        self.on_tick(t).await
+                    }
                     None => break,
                 },
                 _ = timer.tick() => {
                     n += 1;
+                    self.specs = self.sh.specs.load();
+                    if n % 20 == 0 {
+                        self.publish_held();
+                    }
                     self.throttled().await;
                     self.push_equity();
                     if n % 4 == 0 {
@@ -555,7 +588,7 @@ impl Shard {
 
     fn env<'a>(&'a self, t: &'a crate::rules::TenantConfig, g: &'a crate::rules::Group) -> Env<'a> {
         Env {
-            specs: &self.sh.specs,
+            specs: &self.specs,
             tenant: t,
             group: g,
             quotes: self.sh.quotes.as_ref(),
@@ -688,6 +721,12 @@ impl Shard {
         }
         let _ = s.send(Arc::from(st.book.frame().to_string()));
         let _ = s.send(Arc::from(json!({"type": "account", "account": views::account_json(env, st)}).to_string()));
+    }
+
+    /// Publishes the symbols this shard's accounts hold positions or pending orders on (option underlyings
+    /// included), so the feed keeps them streaming at market-data whatever else is watched.
+    fn publish_held(&self) {
+        self.sh.held.set(self.id, self.interest.keys().map(|(_, s)| s.clone()).collect());
     }
 
     fn reindex(&mut self, login: i64) {

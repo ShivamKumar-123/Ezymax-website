@@ -4,13 +4,14 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use sqlx::PgPool;
-use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, Mutex, RwLock};
-use tokio::sync::broadcast;
+use std::collections::{BTreeSet, HashMap, HashSet};
+use std::sync::{Arc, Mutex, OnceLock, RwLock};
+use tokio::sync::{Notify, broadcast, mpsc};
 
 use crate::db::{self, Bar, Source};
+use crate::demand::Demand;
 use crate::depth::FeedDepth;
-use crate::instruments::Catalogue;
+use crate::instruments::{Catalogue, Instrument};
 use crate::spreads::Spreads;
 use crate::timeframes::Tf;
 
@@ -27,6 +28,10 @@ pub struct Quote {
     /// when this service received the update (ms, local clock) — lets clients measure our added latency
     #[serde(skip)]
     pub recv: i64,
+    /// Not a live price: the last price of a symbol that is not streamed (a provider bar, or the last stored bar
+    /// of a catalogue instrument after a restart). Shown to people (`"d":1`), never traded on.
+    #[serde(skip)]
+    pub delayed: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -43,6 +48,16 @@ struct Pending {
     ticks: Vec<(String, DateTime<Utc>, Option<f64>, Option<f64>, Option<f64>)>,
 }
 
+/// A request for provider history of one symbol (backfill.rs): the first chart of a catalogue instrument, a
+/// symbol that started streaming again (gap), or a price for a symbol nobody streams.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HistoryJob {
+    /// Latest bars of every timeframe (`first`: the timeframe someone is waiting for goes first).
+    Recent { symbol: String, first: Option<Tf> },
+    /// Latest price of symbols that are not streamed.
+    Snapshot { symbols: Vec<String> },
+}
+
 pub struct Market {
     pub cat: Catalogue,
     pub pool: PgPool,
@@ -55,6 +70,15 @@ pub struct Market {
     pub tx: broadcast::Sender<Event>,
     pub store_ticks: bool,
     stats: Mutex<Stats>,
+    /// Who wants which symbol streamed (demand.rs), and a wake-up for the planner.
+    pub demand: Arc<Mutex<Demand>>,
+    pub demand_changed: Arc<Notify>,
+    /// Symbols subscribed at the provider right now (the planner's last plan).
+    streaming: RwLock<BTreeSet<String>>,
+    /// Day open / high / low of delayed snapshots (symbols without live bars).
+    snap_day: RwLock<HashMap<String, (f64, f64, f64)>>,
+    /// History requests to the backfill worker (none in relay mode without an upstream history source).
+    pub history: OnceLock<mpsc::UnboundedSender<HistoryJob>>,
 }
 
 #[derive(Default, Clone, Serialize)]
@@ -66,9 +90,14 @@ pub struct Stats {
 }
 
 impl Market {
-    pub fn new(cat: Catalogue, pool: PgPool, spreads: Spreads, store_ticks: bool) -> Arc<Self> {
+    pub fn new(cat: Catalogue, pool: PgPool, spreads: Spreads, store_ticks: bool, demand: Demand) -> Arc<Self> {
         let (tx, _) = broadcast::channel(8192);
         Arc::new(Self {
+            demand: Arc::new(Mutex::new(demand)),
+            demand_changed: Arc::new(Notify::new()),
+            streaming: RwLock::new(BTreeSet::new()),
+            snap_day: RwLock::new(HashMap::new()),
+            history: OnceLock::new(),
             cat,
             pool,
             spreads,
@@ -84,6 +113,60 @@ impl Market {
 
     pub fn quote(&self, symbol: &str) -> Option<Quote> {
         self.quotes.read().unwrap().get(symbol).copied()
+    }
+
+    /// Is `symbol` subscribed at the provider right now?
+    pub fn is_streaming(&self, symbol: &str) -> bool {
+        self.streaming.read().unwrap().contains(symbol)
+    }
+
+    pub fn streaming(&self) -> BTreeSet<String> {
+        self.streaming.read().unwrap().clone()
+    }
+
+    pub fn set_streaming(&self, s: BTreeSet<String>) {
+        *self.streaming.write().unwrap() = s;
+    }
+
+    /// Asks the backfill worker for history (ignored when there is none, e.g. relay mode).
+    pub fn request_history(&self, job: HistoryJob) -> bool {
+        self.history.get().is_some_and(|tx| tx.send(job).is_ok())
+    }
+
+    /// Day open / high / low for `/v1/quotes`: our own D1 bar, else the delayed snapshot's.
+    pub fn day_stats(&self, inst: &Instrument) -> Option<(f64, f64, f64)> {
+        match self.forming(&inst.symbol, Tf::D1) {
+            Some(d) => {
+                let d = inst.round_bar(d);
+                Some((d.o, d.h, d.l))
+            }
+            None => self.snap_day.read().unwrap().get(&inst.symbol).copied(),
+        }
+    }
+
+    /// A delayed price for a symbol that is not streamed (from provider bars). Never replaces a live price that is
+    /// still current; announced to subscribers with `"d":1`.
+    pub fn set_snapshot(&self, symbol: &str, last: f64, day: Option<(f64, f64, f64)>, t: i64) {
+        let Some(inst) = self.cat.get(symbol) else { return };
+        if last <= 0.0 || !last.is_finite() {
+            return;
+        }
+        let q = {
+            let mut qs = self.quotes.write().unwrap();
+            if let Some(cur) = qs.get(symbol)
+                && (!cur.delayed && self.is_streaming(symbol) || cur.t >= t)
+            {
+                return;
+            }
+            let half = inst.base_spread / 2.0;
+            let q = Quote { bid: inst.round(last - half), ask: inst.round(last + half), last: inst.round(last), t, book_t: 0, recv: Utc::now().timestamp_millis(), delayed: true };
+            qs.insert(symbol.to_string(), q);
+            q
+        };
+        if let Some((o, h, l)) = day {
+            self.snap_day.write().unwrap().insert(symbol.to_string(), (inst.round(o), inst.round(h), inst.round(l)));
+        }
+        let _ = self.tx.send(Event::Quote { symbol: symbol.into(), quote: q });
     }
 
     pub fn feed_depth(&self, symbol: &str) -> Option<FeedDepth> {
@@ -139,23 +222,24 @@ impl Market {
     /// After a restart: restore every timeframe's latest bar and the last price from the database, so quotes,
     /// day stats and charts are right immediately — including while the market is closed (weekend close).
     pub async fn restore(&self) -> anyhow::Result<()> {
-        for inst in &self.cat.list {
-            for tf in Tf::ALL {
-                if let Some(bar) = db::load_bars(&self.pool, &inst.symbol, tf.minutes(), None, None, 1).await?.pop() {
-                    self.seed_forming(&inst.symbol, tf, bar);
-                    if tf == Tf::M1 {
-                        let half = inst.base_spread / 2.0;
-                        let t = bar.t.timestamp_millis() + 59_999;
-                        self.quotes.write().unwrap().entry(inst.symbol.clone()).or_insert(Quote {
-                            bid: inst.round(bar.c - half),
-                            ask: inst.round(bar.c + half),
-                            last: inst.round(bar.c),
-                            t,
-                            book_t: 0,
-                            recv: 0,
-                        });
-                    }
-                }
+        // one statement for every symbol and timeframe (an index probe each), not 9 queries per symbol
+        let symbols: Vec<String> = self.cat.list.iter().map(|i| i.symbol.clone()).collect();
+        for (symbol, tf, bar) in db::latest_bars(&self.pool, &symbols).await? {
+            let (Some(inst), Some(tf)) = (self.cat.get(&symbol), Tf::from_minutes(tf)) else { continue };
+            self.seed_forming(&inst.symbol, tf, bar);
+            if tf == Tf::M1 {
+                let half = inst.base_spread / 2.0;
+                let t = bar.t.timestamp_millis() + 59_999;
+                self.quotes.write().unwrap().entry(inst.symbol.clone()).or_insert(Quote {
+                    bid: inst.round(bar.c - half),
+                    ask: inst.round(bar.c + half),
+                    last: inst.round(bar.c),
+                    t,
+                    book_t: 0,
+                    recv: 0,
+                    // a catalogue instrument may not stream again soon: its stored price is not a live one
+                    delayed: !inst.is_core(),
+                });
             }
         }
         Ok(())
@@ -171,11 +255,12 @@ impl Market {
         let recv = Utc::now().timestamp_millis();
         let q = {
             let mut qs = self.quotes.write().unwrap();
-            let e = qs.entry(symbol.to_string()).or_insert(Quote { bid: 0.0, ask: 0.0, last: inst.round((bid + ask) / 2.0), t, book_t: t, recv });
+            let e = qs.entry(symbol.to_string()).or_insert(Quote { bid: 0.0, ask: 0.0, last: inst.round((bid + ask) / 2.0), t, book_t: t, recv, delayed: false });
             e.book_t = t;
-            if e.bid == bid && e.ask == ask {
+            if e.bid == bid && e.ask == ask && !e.delayed {
                 return; // same top of book (depth snapshots repeat it): nothing to push
             }
+            e.delayed = false;
             e.bid = bid;
             e.ask = ask;
             e.t = e.t.max(t);
@@ -197,8 +282,9 @@ impl Market {
         let (q, quote_changed) = {
             let mut qs = self.quotes.write().unwrap();
             let half = inst.base_spread / 2.0;
-            let e = qs.entry(symbol.to_string()).or_insert(Quote { bid: 0.0, ask: 0.0, last: 0.0, t: t_ms, book_t: 0, recv });
-            let before = (e.bid, e.ask, e.last);
+            let e = qs.entry(symbol.to_string()).or_insert(Quote { bid: 0.0, ask: 0.0, last: 0.0, t: t_ms, book_t: 0, recv, delayed: false });
+            let before = (e.bid, e.ask, e.last, e.delayed);
+            e.delayed = false;
             e.last = price;
             // depth snapshots arrive far less often than trades: when the book is older than 1s, or a trade prints
             // outside it, re-centre bid/ask on the trade price keeping the book's spread width
@@ -208,7 +294,7 @@ impl Market {
                 e.ask = inst.round(price + half);
             }
             e.t = e.t.max(t_ms);
-            let changed = before != (e.bid, e.ask, e.last);
+            let changed = before != (e.bid, e.ask, e.last, e.delayed);
             if changed {
                 e.recv = recv;
             }

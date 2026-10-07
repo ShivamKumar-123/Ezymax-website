@@ -123,7 +123,8 @@ async fn mam_link_allocate_close_fee_revoke_with_replay() {
     let shared = Arc::new(Shared {
         pool: pool.clone(),
         registry,
-        specs,
+        specs: specs.into(),
+        held: Default::default(),
         quotes: quotes.clone(),
         ids: Arc::new(Ids::new(ticket, deal, txn)),
         index: Arc::new(RwLock::new(Index::default())),

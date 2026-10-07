@@ -381,23 +381,42 @@ pub async fn groups(ctx: Ctx) -> ApiResult<Json<Value>> {
     Ok(Json(json!({"groups": v})))
 }
 
-/// Contract specifications (terminal symbol info panel, risk calculator).
-pub async fn symbols(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value>> {
+#[derive(Deserialize)]
+pub struct SymbolsQ {
+    /// comma-separated symbols (default: every instrument)
+    symbols: Option<String>,
+    /// `core` or `catalogue`
+    tier: Option<String>,
+    #[serde(rename = "assetClass")]
+    asset_class: Option<String>,
+}
+
+/// Contract specifications (terminal symbol info panel, risk calculator). `liveTrading` = tradable on live
+/// accounts (demo accounts trade every instrument); `core` = one of the original instruments.
+pub async fn symbols(State(st): State<AppState>, ctx: Ctx, Query(q): Query<SymbolsQ>) -> ApiResult<Json<Value>> {
     let now = Utc::now();
     let _ = ctx;
-    let v: Vec<Value> = st
-        .hub
-        .shared
-        .specs
+    let wanted: Option<std::collections::HashSet<String>> = q.symbols.as_deref().map(|x| x.split(',').map(|s| s.trim().to_uppercase()).filter(|s| !s.is_empty()).collect());
+    let specs = st.hub.shared.specs.load();
+    let v: Vec<Value> = specs
         .all()
+        .filter(|s| wanted.as_ref().is_none_or(|w| w.contains(&s.symbol)))
+        .filter(|s| match q.tier.as_deref() {
+            Some("core") => s.core,
+            Some("catalogue") => !s.core,
+            _ => true,
+        })
+        .filter(|s| q.asset_class.as_deref().is_none_or(|c| c == s.asset_class))
         .map(|s| {
             json!({
                 "symbol": s.symbol, "assetClass": s.asset_class, "digits": s.digits, "point": num(s.point), "pipSize": num(s.pip_size),
                 "contractSize": num(s.contract_size), "profitCurrency": s.quote_ccy, "lotMin": num(s.lot_min), "lotMax": num(s.lot_max),
                 "lotStep": num(s.lot_step), "marginPct": num(s.margin_pct), "maxLeverage": s.max_leverage, "swapLong": num(s.swap_long),
                 "swapShort": num(s.swap_short), "swapUnit": "points", "tripleSwapDay": s.triple_swap_day.map(|d| d.to_string()),
-                "session": match s.session { crate::specs::Session::Fx => "fx", crate::specs::Session::Always => "24x7", crate::specs::Session::UsEquity => "us_equity" },
+                "session": s.session.key(),
                 "open": s.is_open(now), "stopsLevelPoints": s.stops_level_points,
+                "core": s.core, "liveTrading": s.live, "name": s.name, "baseCurrency": s.base_ccy,
+                "holidayCalendar": s.holidays.as_ref().map(|h| h.calendar.clone()),
             })
         })
         .collect();

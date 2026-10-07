@@ -757,7 +757,7 @@ impl Social {
                 slots.push(Slot { link: l.id, equity: eq, balance: bal, value: l.alloc_value, max_lot: l.max_lot });
             }
             for (v, action, ticket, symbol, side, vol) in &blocks {
-                let Some(spec) = self.hub.shared.specs.get(symbol).cloned() else { continue };
+                let Some(spec) = self.hub.shared.specs.load().get(symbol).cloned() else { continue };
                 // a link created after this event gets nothing from it
                 let eligible: Vec<Slot> = slots.iter().filter(|s| links.iter().any(|l| l.id == s.link && *v > l.start_version)).cloned().collect();
                 let plan = allocation::allocate(m.method, *vol, &eligible, &spec);
@@ -875,7 +875,7 @@ impl Social {
 
     /// What a block of `volume` lots of `symbol` would allocate right now (manager dashboard and terminal).
     pub async fn mam_preview(&self, m: &Manager, symbol: &str, volume: D) -> Result<Value, SocErr> {
-        let spec = self.hub.shared.specs.get(symbol).cloned().ok_or_else(|| SocErr::new("validation", format!("Unknown symbol {symbol}")))?;
+        let spec = self.hub.shared.specs.load().get(symbol).cloned().ok_or_else(|| SocErr::new("validation", format!("Unknown symbol {symbol}")))?;
         let links: Vec<Link> = self.reg.read().unwrap().links_of(m.id).cloned().collect();
         let mut slots = Vec::new();
         for l in &links {

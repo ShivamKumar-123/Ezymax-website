@@ -23,7 +23,8 @@ impl Spec {
     }
 
     /// USD value of one unit of the quote currency, at `price` for USD-based pairs (approximate for crosses).
-    pub fn quote_to_usd(&self, price: f64) -> f64 {
+    /// `rates`: USD per unit of other currencies from market-data (catalogue currencies the fixed table lacks).
+    pub fn quote_to_usd(&self, price: f64, rates: &HashMap<String, f64>) -> f64 {
         if self.quote_ccy == "USD" {
             1.0
         } else if self.base_ccy == "USD" && price > 0.0 {
@@ -37,7 +38,8 @@ impl Spec {
                 "CAD" => 0.73,
                 "AUD" => 0.66,
                 "INR" => 1.0 / 84.0,
-                _ => 1.0,
+                // unknown currency without a rate: no estimate rather than a wrong one
+                other => rates.get(other).copied().unwrap_or(0.0),
             }
         }
     }
@@ -50,6 +52,8 @@ pub struct Specs {
     pub markups: RwLock<HashMap<(String, String), f64>>,
     /// Engine group code → market-data spread group.
     pub spread_groups: RwLock<HashMap<String, String>>,
+    /// USD per unit of currency, from market-data raw quotes (`set_rates`).
+    pub rates: RwLock<HashMap<String, f64>>,
 }
 
 impl Specs {
@@ -60,9 +64,14 @@ impl Specs {
         for i in inst {
             let symbol = i["symbol"].as_str().unwrap_or_default().to_string();
             let class = i["asset_class"].as_str().unwrap_or("forex").to_string();
-            let c = &sp["classes"][&class];
+            // core instruments: symbol over class; provider catalogue rows (`"tier": "catalogue"`): symbol over the
+            // row's own currencies over its template (same layering as the trading engine)
+            let catalogue = i["tier"] == "catalogue";
+            let template = i["template"].as_str().unwrap_or(&class).to_string();
+            let c = if catalogue { &sp["templates"][&template] } else { &sp["classes"][&class] };
             let o = &sp["symbols"][&symbol];
-            let pick = |k: &str| o.get(k).filter(|v| !v.is_null()).or_else(|| c.get(k)).cloned().unwrap_or(Value::Null);
+            let row = |k: &str| if catalogue { i.get(k).filter(|v| !v.is_null()).cloned() } else { None };
+            let pick = |k: &str| o.get(k).filter(|v| !v.is_null()).cloned().or_else(|| row(k)).or_else(|| c.get(k).cloned()).unwrap_or(Value::Null);
             by_symbol.insert(
                 symbol.clone(),
                 Spec {
@@ -76,7 +85,7 @@ impl Specs {
                 },
             );
         }
-        Ok(Self { by_symbol, markups: Default::default(), spread_groups: Default::default() })
+        Ok(Self { by_symbol, markups: Default::default(), spread_groups: Default::default(), rates: Default::default() })
     }
 
     pub fn get(&self, symbol: &str) -> Option<&Spec> {
@@ -103,6 +112,24 @@ impl Specs {
         *self.spread_groups.write().unwrap() = m;
     }
 
+    /// USD rates of every currency with a `XXXUSD` / `USDXXX` quote in market-data's `/v1/quotes` (mid prices).
+    pub fn set_rates(&self, quotes: &serde_json::Map<String, Value>) {
+        let mut m = HashMap::new();
+        for (sym, q) in quotes {
+            let (Some(b), Some(a)) = (q["bid"].as_f64(), q["ask"].as_f64()) else { continue };
+            let mid = (a + b) / 2.0;
+            if mid <= 0.0 || sym.len() != 6 {
+                continue;
+            }
+            if let Some(c) = sym.strip_suffix("USD") {
+                m.entry(c.to_string()).or_insert(mid);
+            } else if let Some(c) = sym.strip_prefix("USD") {
+                m.entry(c.to_string()).or_insert(1.0 / mid);
+            }
+        }
+        *self.rates.write().unwrap() = m;
+    }
+
     pub fn spread_group(&self, group: &str) -> String {
         self.spread_groups.read().unwrap().get(group).cloned().unwrap_or_else(|| group.to_string())
     }
@@ -116,7 +143,7 @@ impl Specs {
     /// `spread_price` is in price units. Unknown symbols cost 0.
     pub fn half_spread_usd(&self, symbol: &str, volume: f64, price: f64, spread_price: f64) -> f64 {
         match self.get(symbol) {
-            Some(s) => volume * s.contract_size * spread_price * s.quote_to_usd(price) / 2.0,
+            Some(s) => volume * s.contract_size * spread_price * s.quote_to_usd(price, &self.rates.read().unwrap()) / 2.0,
             None => 0.0,
         }
     }
@@ -135,5 +162,50 @@ impl Specs {
             Some(s) => self.half_spread_usd(symbol, volume, price, self.markup_points(spread_group, symbol) * s.point()),
             None => 0.0,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn repo() -> Specs {
+        let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../config");
+        Specs::load(&format!("{root}/instruments.json"), &format!("{root}/trading-specs.json")).unwrap()
+    }
+
+    #[test]
+    fn catalogue_specs_load_and_core_costs_are_unchanged() {
+        let s = repo();
+        assert!(s.by_symbol.len() > 1000);
+        let old_root = concat!(env!("CARGO_MANIFEST_DIR"), "/../trading/tests/fixtures");
+        let old = Specs::load(&format!("{old_root}/instruments-core-2026-10-07.json"), &format!("{old_root}/trading-specs-core-2026-10-07.json")).unwrap();
+        assert_eq!(old.by_symbol.len(), 28);
+        for (sym, o) in &old.by_symbol {
+            let n = s.get(sym).unwrap();
+            assert_eq!(format!("{o:?}"), format!("{n:?}"), "{sym} changed");
+            // same informational spread cost as before
+            assert_eq!(old.deal_spread_cost_usd("standard", sym, 1.0, 1.1), s.deal_spread_cost_usd("standard", sym, 1.0, 1.1));
+        }
+        // catalogue rows: template contract size, the row's currencies
+        let msft = s.get("MSFT").unwrap();
+        assert_eq!((msft.contract_size, msft.quote_ccy.as_str()), (1.0, "USD"));
+        let hk = s.get("00700.HK").unwrap();
+        assert_eq!((hk.contract_size, hk.quote_ccy.as_str()), (100.0, "HKD"));
+        let fx = s.get("AUDCAD").unwrap();
+        assert_eq!((fx.contract_size, fx.quote_ccy.as_str(), fx.base_ccy.as_str()), (100000.0, "CAD", "AUD"));
+    }
+
+    #[test]
+    fn catalogue_currencies_convert_with_market_rates_or_not_at_all() {
+        let s = repo();
+        // HKD has no fixed estimate: without a market-data rate the cost is not estimated (never taken as USD)
+        assert_eq!(s.half_spread_usd("00700.HK", 1.0, 420.0, 0.2), 0.0);
+        let quotes = serde_json::json!({"USDHKD": {"bid": 7.80, "ask": 7.80}, "NZDUSD": {"bid": 0.58, "ask": 0.58}, "EURUSD": {"bid": 1.2, "ask": 1.2}});
+        s.set_rates(quotes.as_object().unwrap());
+        let hkd = s.half_spread_usd("00700.HK", 1.0, 420.0, 0.2);
+        assert!((hkd - 100.0 * 0.2 / 7.8 / 2.0).abs() < 1e-9, "{hkd}");
+        // the fixed table still wins for the core currencies (EUR stays 1.1)
+        assert_eq!(s.get("GER40").unwrap().quote_to_usd(20000.0, &s.rates.read().unwrap()), 1.1);
     }
 }

@@ -842,7 +842,7 @@ pub async fn symbol_control(State(st): State<AppState>, s: StaffCtx, Path(symbol
     s.require(ROLES_DEALING)?;
     check_reason(&b.reason)?;
     let symbol = symbol.to_uppercase();
-    if st.hub.shared.specs.get(&symbol).is_none() {
+    if st.hub.shared.specs.load().get(&symbol).is_none() {
         return Err(ApiError::NotFound(format!("Unknown symbol {symbol}")));
     }
     let t = s.ctx.tenant.clone();

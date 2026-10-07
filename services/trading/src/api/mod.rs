@@ -4,6 +4,7 @@
 
 pub mod accounts;
 pub mod admin;
+pub mod catalogue;
 pub mod book_feed;
 pub mod closures;
 pub mod controls;
@@ -142,6 +143,11 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/accounts/{login}/sso", post(accounts::sso))
         .route("/v1/groups", get(accounts::groups))
         .route("/v1/symbols", get(accounts::symbols))
+        // instrument catalogue: live-trading switch and spec templates (api/catalogue.rs)
+        .route("/v1/admin/symbols/catalogue", get(catalogue::catalogue))
+        .route("/v1/admin/symbols/catalogue/audit", get(catalogue::audit_log))
+        .route("/v1/admin/symbols/live", put(catalogue::set_live))
+        .route("/v1/admin/symbols/templates/{key}", put(catalogue::set_template))
         // wallet service
         .route("/v1/ledger/transfers", post(ledger::transfer))
         .route("/v1/ledger/transfers/{key}", get(ledger::transfer_status))

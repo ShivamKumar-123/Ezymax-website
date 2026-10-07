@@ -214,7 +214,7 @@ pub async fn master_preview(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, 
             let vol: D = t["volume"].as_f64().and_then(crate::money::from_f64).unwrap_or(ZERO);
             let profit: D = t["profit"].as_f64().and_then(crate::money::from_f64).unwrap_or(ZERO);
             let sym = t["symbol"].as_str().unwrap_or_default();
-            let yours = st.hub.shared.specs.get(sym).and_then(|spec| crate::social::math::open_volume(&sizing, vol, master_eq, allocation, spec, None));
+            let yours = st.hub.shared.specs.load().get(sym).and_then(|spec| crate::social::math::open_volume(&sizing, vol, master_eq, allocation, spec, None));
             let your_profit = match yours {
                 Some(y) if vol > ZERO => Some(r2(profit * y / vol)),
                 _ => None,
@@ -640,7 +640,7 @@ pub async fn subscribe(State(st): State<AppState>, ctx: Ctx, h: HeaderMap, Body(
     }
     let excluded = excluded.unwrap_or_default();
     for s in &excluded {
-        if st.hub.shared.specs.get(s).is_none() {
+        if st.hub.shared.specs.load().get(s).is_none() {
             return Err(ApiError::Validation { field: "excludedSymbols", message: format!("Unknown symbol {s}") });
         }
     }
@@ -806,7 +806,7 @@ pub async fn update_subscription(State(st): State<AppState>, ctx: Ctx, h: Header
     }
     if let Some(v) = excluded {
         for sym in &v {
-            if st.hub.shared.specs.get(sym).is_none() {
+            if st.hub.shared.specs.load().get(sym).is_none() {
                 return Err(ApiError::Validation { field: "excludedSymbols", message: format!("Unknown symbol {sym}") });
             }
         }

@@ -1,5 +1,5 @@
 {
-  "_comment": "Trading contract specs used by services/trading. Keys per asset class are defaults; `symbols` overrides per symbol. swap_long/swap_short are points per lot per night (negative = client pays). triple_swap_day is the weekday whose rollover is charged x3 (null = none). swap_days: weekdays (mon-fri) or all (7 days). session: fx (closed Sat/Sun server time), 24x7, us_equity (09:30-16:00 New York). margin_pct scales the leverage margin (100 = notional / leverage). max_leverage caps the account leverage for the class. commission_per_lot overrides the group's round-turn commission for this symbol when set.",
+  "_comment": "Trading contract specs used by services/trading. Keys per asset class are defaults; `symbols` overrides per symbol. swap_long/swap_short are points per lot per night (negative = client pays). triple_swap_day is the weekday whose rollover is charged x3 (null = none). swap_days: weekdays (mon-fri) or all (7 days). session: fx (closed Sat/Sun server time), 24x7, us_equity (09:30-16:00 New York). margin_pct scales the leverage margin (100 = notional / leverage). max_leverage caps the account leverage for the class. commission_per_lot overrides the group's round-turn commission for this symbol when set. `classes` and the first `symbols` entries are the 28 core instruments (unchanged). `templates` are the conservative specs of the provider-catalogue instruments (config/instruments.json rows with \"tier\": \"catalogue\", picked by their \"template\"); the Back Office can override template fields, and catalogue instruments trade on live accounts only once the platform enables live trading for their asset class or symbol (demo accounts always). Sessions: fx, 24x7, us_equity, hk_equity, jp_equity, ... (crate markethours).",
   "classes": {
     "forex":    { "contract_size": 100000, "lot_min": 0.01, "lot_max": 100,   "lot_step": 0.01, "margin_pct": 100, "max_leverage": 1000, "swap_long": -6.0,  "swap_short": 1.5,  "triple_swap_day": "wed", "swap_days": "mon-fri", "session": "fx",        "stops_level_points": 0 },
     "metals":   { "contract_size": 100,    "lot_min": 0.01, "lot_max": 50,    "lot_step": 0.01, "margin_pct": 100, "max_leverage": 500,  "swap_long": -35.0, "swap_short": 12.0, "triple_swap_day": "wed", "swap_days": "mon-fri", "session": "fx",        "stops_level_points": 0 },
@@ -7,6 +7,21 @@
     "energies": { "contract_size": 1000,   "lot_min": 0.01, "lot_max": 100,   "lot_step": 0.01, "margin_pct": 100, "max_leverage": 200,  "swap_long": -8.0,  "swap_short": -3.0, "triple_swap_day": "fri", "swap_days": "mon-fri", "session": "fx",        "stops_level_points": 0 },
     "crypto":   { "contract_size": 1,      "lot_min": 0.01, "lot_max": 50,    "lot_step": 0.01, "margin_pct": 100, "max_leverage": 20,   "swap_long": -20.0, "swap_short": -10.0,"triple_swap_day": null,  "swap_days": "all",     "session": "24x7",      "stops_level_points": 0 },
     "stocks":   { "contract_size": 1,      "lot_min": 1,    "lot_max": 10000, "lot_step": 1,    "margin_pct": 100, "max_leverage": 10,   "swap_long": -3.0,  "swap_short": -1.5, "triple_swap_day": "fri", "swap_days": "mon-fri", "session": "us_equity", "stops_level_points": 0 }
+  },
+  "templates": {
+    "forex":           { "_comment": "Crosses of the major currencies.", "contract_size": 100000, "lot_min": 0.01, "lot_max": 50, "lot_step": 0.01, "margin_pct": 100, "max_leverage": 100, "swap_long": -5.0, "swap_short": -5.0, "triple_swap_day": "wed", "swap_days": "mon-fri", "session": "fx", "stops_level_points": 10 },
+    "forex-exotic":    { "_comment": "Pairs with HKD, SGD, CNH, CNY, MYR, TWD, THB, TRY or RUB.", "contract_size": 100000, "lot_min": 0.01, "lot_max": 20, "lot_step": 0.01, "margin_pct": 100, "max_leverage": 20, "swap_long": -20.0, "swap_short": -20.0, "triple_swap_day": "wed", "swap_days": "mon-fri", "session": "fx", "stops_level_points": 30 },
+    "metals":          { "_comment": "Gold, platinum, palladium (100 oz).", "contract_size": 100, "lot_min": 0.01, "lot_max": 20, "lot_step": 0.01, "margin_pct": 100, "max_leverage": 50, "swap_long": -40.0, "swap_short": -40.0, "triple_swap_day": "wed", "swap_days": "mon-fri", "session": "fx", "stops_level_points": 20 },
+    "metals-silver":   { "_comment": "Silver (5,000 oz).", "contract_size": 5000, "lot_min": 0.01, "lot_max": 20, "lot_step": 0.01, "margin_pct": 100, "max_leverage": 50, "swap_long": -20.0, "swap_short": -20.0, "triple_swap_day": "wed", "swap_days": "mon-fri", "session": "fx", "stops_level_points": 20 },
+    "metals-base":     { "_comment": "Copper, aluminium, nickel, lead, zinc (contract sizes per symbol below).", "contract_size": 1, "lot_min": 0.01, "lot_max": 50, "lot_step": 0.01, "margin_pct": 100, "max_leverage": 20, "swap_long": -20.0, "swap_short": -20.0, "triple_swap_day": "wed", "swap_days": "mon-fri", "session": "fx", "stops_level_points": 20 },
+    "energies":        { "contract_size": 1000, "lot_min": 0.01, "lot_max": 20, "lot_step": 0.01, "margin_pct": 100, "max_leverage": 20, "swap_long": -10.0, "swap_short": -10.0, "triple_swap_day": "fri", "swap_days": "mon-fri", "session": "fx", "stops_level_points": 20 },
+    "indices":         { "contract_size": 1, "lot_min": 0.1, "lot_max": 100, "lot_step": 0.1, "margin_pct": 100, "max_leverage": 50, "swap_long": -30.0, "swap_short": -30.0, "triple_swap_day": "fri", "swap_days": "mon-fri", "session": "fx", "stops_level_points": 20 },
+    "crypto":          { "_comment": "Coins priced 50 USD and above (1 coin per lot).", "contract_size": 1, "lot_min": 0.01, "lot_max": 10, "lot_step": 0.01, "margin_pct": 100, "max_leverage": 5, "swap_long": -100.0, "swap_short": -100.0, "triple_swap_day": null, "swap_days": "all", "session": "24x7", "stops_level_points": 0 },
+    "crypto-1k":       { "_comment": "Coins priced 0.05 to 50 USD (1,000 coins per lot).", "contract_size": 1000, "lot_min": 0.01, "lot_max": 10, "lot_step": 0.01, "margin_pct": 100, "max_leverage": 5, "swap_long": -100.0, "swap_short": -100.0, "triple_swap_day": null, "swap_days": "all", "session": "24x7", "stops_level_points": 0 },
+    "crypto-1m":       { "_comment": "Coins priced under 0.05 USD (1,000,000 coins per lot).", "contract_size": 1000000, "lot_min": 0.01, "lot_max": 10, "lot_step": 0.01, "margin_pct": 100, "max_leverage": 5, "swap_long": -100.0, "swap_short": -100.0, "triple_swap_day": null, "swap_days": "all", "session": "24x7", "stops_level_points": 0 },
+    "stocks-us":       { "_comment": "US stocks and ETFs (1 share per lot).", "contract_size": 1, "lot_min": 1, "lot_max": 1000, "lot_step": 1, "margin_pct": 100, "max_leverage": 5, "swap_long": -3.0, "swap_short": -3.0, "triple_swap_day": "fri", "swap_days": "mon-fri", "session": "us_equity", "stops_level_points": 10 },
+    "stocks-hk":       { "_comment": "Hong Kong stocks (100 shares per lot).", "contract_size": 100, "lot_min": 1, "lot_max": 100, "lot_step": 1, "margin_pct": 100, "max_leverage": 5, "swap_long": -3.0, "swap_short": -3.0, "triple_swap_day": "fri", "swap_days": "mon-fri", "session": "hk_equity", "stops_level_points": 10 },
+    "stocks-jp":       { "_comment": "Tokyo stocks (100 shares per lot, the exchange's trading unit).", "contract_size": 100, "lot_min": 1, "lot_max": 100, "lot_step": 1, "margin_pct": 100, "max_leverage": 5, "swap_long": -3.0, "swap_short": -3.0, "triple_swap_day": "fri", "swap_days": "mon-fri", "session": "jp_equity", "stops_level_points": 10 }
   },
   "symbols": {
     "EURUSD": { "quote_ccy": "USD", "base_ccy": "EUR", "pip_size": 0.0001, "swap_long": -7.2,  "swap_short": 2.1 },
@@ -36,6 +51,12 @@
     "TSLA":   { "quote_ccy": "USD", "pip_size": 0.01 },
     "NVDA":   { "quote_ccy": "USD", "pip_size": 0.01 },
     "META":   { "quote_ccy": "USD", "pip_size": 0.01 },
-    "NFLX":   { "quote_ccy": "USD", "pip_size": 0.01 }
+    "NFLX":   { "quote_ccy": "USD", "pip_size": 0.01 },
+    "XCUUSD":   { "contract_size": 10000 },
+    "XALUSD":   { "contract_size": 10 },
+    "XNIUSD":   { "contract_size": 1 },
+    "XPBUSD":   { "contract_size": 10 },
+    "ZINCSPOT": { "contract_size": 10 },
+    "NGAS":     { "contract_size": 10000 }
   }
 }

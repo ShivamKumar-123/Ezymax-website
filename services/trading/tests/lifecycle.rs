@@ -97,7 +97,8 @@ async fn archive_restore_rename_and_replay() {
     let shared = Arc::new(Shared {
         pool: pool.clone(),
         registry: registry.clone(),
-        specs,
+        specs: specs.into(),
+        held: Default::default(),
         quotes: quotes.clone(),
         ids: Arc::new(Ids::new(ticket, deal, txn)),
         index: Arc::new(RwLock::new(Index::default())),
@@ -216,7 +217,8 @@ async fn setup(tag: &str) -> Option<(AppState, Arc<QuoteBook>, sqlx::PgPool)> {
     let shared = Arc::new(Shared {
         pool: pool.clone(),
         registry: registry.clone(),
-        specs,
+        specs: specs.into(),
+        held: Default::default(),
         quotes: quotes.clone(),
         ids: Arc::new(Ids::new(ticket, deal, txn)),
         index: Arc::new(RwLock::new(Index::default())),

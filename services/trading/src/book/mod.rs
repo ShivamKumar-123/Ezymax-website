@@ -654,7 +654,7 @@ pub async fn scheduler_pass(hub: &Hub, now: DateTime<Utc>, slow: bool, was_open:
                 }
             }
             // session open (weekend gap): cancel resting orders outside the band against the new mark
-            if let Some(spec) = hub.shared.specs.get(&h.key.underlying) {
+            if let Some(spec) = hub.shared.specs.load().get(&h.key.underlying) {
                 let open = spec.is_open(now);
                 let prev = was_open.insert(h.key.clone(), open);
                 if prev == Some(false) && open {

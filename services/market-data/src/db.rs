@@ -49,25 +49,59 @@ pub async fn connect(url: &str) -> anyhow::Result<PgPool> {
     Ok(pool)
 }
 
+/// Mirrors the instrument file into the `instruments` table (one statement for the whole catalogue).
 pub async fn sync_instruments(pool: &PgPool, cat: &Catalogue) -> anyhow::Result<()> {
-    for x in &cat.list {
-        sqlx::query(
-            "INSERT INTO instruments (symbol, asset_class, digits, base_spread, provider_market, provider_code, updated_at)
-             VALUES ($1,$2,$3,$4,$5,$6, now())
-             ON CONFLICT (symbol) DO UPDATE SET asset_class = EXCLUDED.asset_class, digits = EXCLUDED.digits,
-               base_spread = EXCLUDED.base_spread, provider_market = EXCLUDED.provider_market,
-               provider_code = EXCLUDED.provider_code, updated_at = now()",
-        )
-        .bind(&x.symbol)
-        .bind(&x.asset_class)
-        .bind(x.digits as i16)
-        .bind(x.base_spread)
-        .bind(&x.provider.market)
-        .bind(&x.provider.code)
-        .execute(pool)
-        .await?;
-    }
+    let col = |f: &dyn Fn(&crate::instruments::Instrument) -> Option<String>| cat.list.iter().map(f).collect::<Vec<Option<String>>>();
+    let symbol: Vec<String> = cat.list.iter().map(|x| x.symbol.clone()).collect();
+    let class: Vec<String> = cat.list.iter().map(|x| x.asset_class.clone()).collect();
+    let digits: Vec<i16> = cat.list.iter().map(|x| x.digits as i16).collect();
+    let spread: Vec<f64> = cat.list.iter().map(|x| x.base_spread).collect();
+    let market: Vec<String> = cat.list.iter().map(|x| x.provider.market.clone()).collect();
+    let code: Vec<String> = cat.list.iter().map(|x| x.provider.code.clone()).collect();
+    let tier: Vec<String> = cat.list.iter().map(|x| if x.is_core() { "core".to_string() } else { "catalogue".to_string() }).collect();
+    let name = col(&|x| x.name.clone());
+    let base = col(&|x| x.base_ccy.clone());
+    let quote = col(&|x| x.quote_ccy.clone());
+    let exchange = col(&|x| x.exchange.clone());
+    let session = col(&|x| x.session.clone());
+    sqlx::query(
+        "INSERT INTO instruments (symbol, asset_class, digits, base_spread, provider_market, provider_code, tier, name, base_ccy, quote_ccy, exchange, session, updated_at)
+         SELECT *, now() FROM UNNEST($1::text[], $2::text[], $3::int2[], $4::float8[], $5::text[], $6::text[], $7::text[], $8::text[], $9::text[], $10::text[], $11::text[], $12::text[])
+         ON CONFLICT (symbol) DO UPDATE SET asset_class = EXCLUDED.asset_class, digits = EXCLUDED.digits,
+           base_spread = EXCLUDED.base_spread, provider_market = EXCLUDED.provider_market,
+           provider_code = EXCLUDED.provider_code, tier = EXCLUDED.tier, name = EXCLUDED.name, base_ccy = EXCLUDED.base_ccy,
+           quote_ccy = EXCLUDED.quote_ccy, exchange = EXCLUDED.exchange, session = EXCLUDED.session, updated_at = now()",
+    )
+    .bind(&symbol)
+    .bind(&class)
+    .bind(&digits)
+    .bind(&spread)
+    .bind(&market)
+    .bind(&code)
+    .bind(&tier)
+    .bind(&name)
+    .bind(&base)
+    .bind(&quote)
+    .bind(&exchange)
+    .bind(&session)
+    .execute(pool)
+    .await?;
     Ok(())
+}
+
+/// The newest stored bar of every timeframe of `symbols` (restart): one statement, an index probe per pair.
+pub async fn latest_bars(pool: &PgPool, symbols: &[String]) -> anyhow::Result<Vec<(String, i32, Bar)>> {
+    let tfs: Vec<i32> = crate::timeframes::Tf::ALL.iter().map(|t| t.minutes()).collect();
+    let rows = sqlx::query(
+        "SELECT s.symbol, f.tf, c.t, c.o, c.h, c.l, c.c, c.v
+         FROM UNNEST($1::text[]) AS s(symbol) CROSS JOIN UNNEST($2::int4[]) AS f(tf)
+         CROSS JOIN LATERAL (SELECT t, o, h, l, c, v FROM candles WHERE candles.symbol = s.symbol AND candles.tf = f.tf ORDER BY t DESC LIMIT 1) c",
+    )
+    .bind(symbols)
+    .bind(&tfs)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows.into_iter().map(|r| (r.get("symbol"), r.get("tf"), Bar { t: r.get("t"), o: r.get("o"), h: r.get("h"), l: r.get("l"), c: r.get("c"), v: r.get("v") })).collect())
 }
 
 /// Batch upsert. Merge rules:

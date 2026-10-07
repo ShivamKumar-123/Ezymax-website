@@ -125,7 +125,7 @@ pub async fn plan(st: &AppState, tenant_id: i64, kind: AccountKind) -> Value {
             if opts.stale(now) {
                 blockers.push("The options snapshot is stale.".into());
             }
-            let open = s.underlyings.values().filter(|u| u.enabled).any(|u| st.hub.shared.specs.get(&u.symbol).is_some_and(|sp| sp.is_open(now)));
+            let open = s.underlyings.values().filter(|u| u.enabled).any(|u| st.hub.shared.specs.load().get(&u.symbol).is_some_and(|sp| sp.is_open(now)));
             if !open {
                 warnings.push("Every options market is closed now: the market maker starts quoting at the next session open.".into());
             }

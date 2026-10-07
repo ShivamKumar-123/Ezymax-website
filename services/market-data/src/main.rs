@@ -8,12 +8,17 @@ mod api;
 mod backfill;
 mod config;
 mod db;
+mod demand;
 mod depth;
+mod gate;
 mod ingest;
 mod instruments;
 mod spreads;
 mod state;
 mod timeframes;
+
+#[cfg(test)]
+mod tests_catalogue;
 
 use std::time::Duration;
 
@@ -29,13 +34,24 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let cfg = config::Config::from_env()?;
-    let cat = instruments::Catalogue::load(&cfg.instruments_file)?;
+    let cat = instruments::Catalogue::load(&cfg.instruments_file, &cfg.holidays_dir)?;
     let pool = db::connect(&cfg.database_url).await?;
     db::sync_instruments(&pool, &cat).await?;
     let spreads = spreads::Spreads::load(&pool).await?;
-    let market = state::Market::new(cat, pool, spreads, cfg.store_ticks);
+    // on-demand provider subscriptions within the plan (demand.rs); the core instruments always stream by default
+    let always = cfg.always_on.clone().unwrap_or_else(|| cat.core());
+    let limits = demand::Limits {
+        per_market: cfg.max_symbols_by_market.iter().cloned().collect(),
+        default_per_market: cfg.max_symbols_per_market,
+        total: cfg.max_symbols_total,
+        grace: Duration::from_secs(cfg.idle_grace_secs),
+        // relay mode: the upstream service applies the plan; locally every wanted symbol is forwarded
+        streamable: cfg.upstream.is_empty().then(|| cfg.markets.iter().cloned().collect()),
+    };
+    let core = cat.core().len();
+    let market = state::Market::new(cat, pool, spreads, cfg.store_ticks, demand::Demand::new(always, limits.clone()));
     market.restore().await?;
-    tracing::info!(instruments = market.cat.list.len(), "market-data starting (last prices restored)");
+    tracing::info!(instruments = market.cat.list.len(), core, ?limits, "market-data starting (last prices restored)");
 
     ingest::spawn_all(&cfg, market.clone());
     if cfg.upstream.is_empty() {
@@ -52,7 +68,8 @@ async fn main() -> anyhow::Result<()> {
             let mut every = tokio::time::interval(Duration::from_secs(3600));
             loop {
                 every.tick().await;
-                let symbols: Vec<String> = mk.cat.list.iter().map(|i| i.symbol.clone()).collect();
+                // ticks are archived only for streamed symbols; the core always, the rest while streamed
+                let symbols: Vec<String> = mk.cat.list.iter().filter(|i| i.is_core() || mk.is_streaming(&i.symbol)).map(|i| i.symbol.clone()).collect();
                 let before = chrono::Utc::now() - chrono::Duration::hours(hours);
                 match db::prune_ticks(&mk.pool, &symbols, before).await {
                     Ok(0) => {}

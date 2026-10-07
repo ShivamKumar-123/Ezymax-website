@@ -114,7 +114,7 @@ pub async fn mm_delta(st: &AppState, tenant_id: i64) -> BTreeMap<String, f64> {
 
 /// The hedge account's net CFD units per symbol.
 pub async fn hedge_units(st: &AppState, login: i64) -> BTreeMap<String, f64> {
-    let specs = st.hub.shared.specs.clone();
+    let specs = st.hub.shared.specs.load();
     let v = st
         .hub
         .read(
@@ -157,7 +157,7 @@ pub async fn hedge_tenant(st: &AppState, t: &TenantConfig) -> anyhow::Result<usi
     let limit = st.cfg.options_hedge_limit_usd.max(0) as f64;
     let mut placed = 0;
     for (u, client) in clients {
-        let Some(spec) = st.hub.shared.specs.get(&u).cloned() else { continue };
+        let Some(spec) = st.hub.shared.specs.load().get(&u).cloned() else { continue };
         if !spec.is_open(now) {
             continue;
         }

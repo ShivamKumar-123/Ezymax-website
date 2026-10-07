@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use serde_json::json;
 
 use super::{Env, Reject, Tx, pnl, total_margin};
-use crate::model::{Book, Deal, DealEntry, DealReason, Expiry, Mode, Order, OrderStatus, OrderType, Position, RouteEvent, Side, Source, Status, Trailing, TxnKind, acct_code, house_code};
+use crate::model::{AccountKind, Book, Deal, DealEntry, DealReason, Expiry, Mode, Order, OrderStatus, OrderType, Position, RouteEvent, Side, Source, Status, Trailing, TxnKind, acct_code, house_code};
 use crate::money::{D, ZERO, r2, rdp};
 use crate::rules::{ControlMode, RouteCtx, resolve_route};
 use crate::specs::{Spec, end_of_server_day};
@@ -144,6 +144,21 @@ pub fn gate(env: &Env, st: &AccountState, symbol: &str, opening: bool, volume: D
                 return Err(Reject::new("symbol_close_only", format!("{symbol} is close-only{scope} — new positions are rejected")));
             }
             _ => {}
+        }
+    }
+    if opening && let Some(spec) = env.specs.get(symbol) {
+        // catalogue instruments open on live accounts only once the platform switched live trading on for them
+        // (specs.rs `Spec::live`; the Back Office symbol settings). Closing is always allowed; no dealer override.
+        if acc.kind != AccountKind::Demo && !spec.live {
+            return Err(Reject::new("symbol_demo_only", format!("{symbol} is available on demo accounts only for now: live trading on it is not enabled yet")));
+        }
+        // a catalogue instrument's profit currency must convert to USD with a live price (margin and P&L), never
+        // be taken as USD for want of one
+        if !spec.core && spec.quote_ccy != "USD" {
+            let own = env.quote(acc, symbol).map(|q| q.mid()).unwrap_or(ZERO);
+            if env.to_usd(acc, &spec.quote_ccy, D::ONE, (symbol, own)).is_none() {
+                return Err(Reject::new("no_conversion", format!("No {}/USD price yet to value {symbol}; try again in a moment", spec.quote_ccy)));
+            }
         }
     }
     Ok(())

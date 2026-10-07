@@ -4,6 +4,7 @@
 pub mod api;
 pub mod auth;
 pub mod book;
+pub mod catalogue;
 pub mod config;
 pub mod controls;
 pub mod engine;
