@@ -1,0 +1,132 @@
+name: kalks
+description: "Kalks: the Client Area and Kalks Trader as one native app (Android first)."
+publish_to: 'none'
+
+# versionName+versionCode (sent as X-Kalks-App-Version, compared with config.minAppVersion)
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # state, navigation, network
+  flutter_riverpod: ^3.4.3
+  go_router: ^18.0.2
+  dio: ^5.11.1
+  web_socket_channel: ^3.0.3
+  connectivity_plus: ^7.3.2
+
+  # session in the Android Keystore, biometric unlock, preferences
+  flutter_secure_storage: ^11.2.0
+  local_auth: ^3.0.2
+  shared_preferences: ^2.5.6
+  package_info_plus: ^10.2.2
+  uuid: ^4.6.0
+
+  # i18n (plural rules, number / date formats)
+  intl: ^0.20.3
+
+  # look: Lucide (the web's icon set, lucide 1.5x), SVG logos and coins, Cupertino glyphs
+  lucide_icons_flutter: ^3.1.22
+  flutter_svg: ^2.3.0
+  cupertino_icons: ^1.0.8
+
+  # later screens: the chart (lightweight-charts in a WebView), KYC camera, support attachments, deep links, sharing
+  webview_flutter: ^4.14.1
+  image_picker: ^1.2.4
+  camera: ^0.12.1
+  file_picker: ^13.1.0
+  url_launcher: ^6.3.3
+  share_plus: ^13.3.1
+
+  # the User-Agent the Security page lists ("KalksApp/1.0.0 (Android 15; Pixel 8)")
+  device_info_plus: ^13.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
+  fake_async: ^1.3.3
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/i18n/
+    - assets/illustrations/
+    - assets/brand/
+    - assets/coins/
+    - assets/stocks/
+    - assets/people/
+    - assets/flags/
+
+  fonts:
+    # Client Area text (the web's --font-display), OFL: assets/fonts/PlusJakartaSans-OFL.txt
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+          weight: 800
+    # Kalks Trader text and the fallback for scripts Plus Jakarta Sans lacks, OFL: assets/fonts/Geist-OFL.txt
+    - family: Geist
+      fonts:
+        - asset: assets/fonts/Geist-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Geist-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Geist-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Geist-Bold.ttf
+          weight: 700
+    # prices, logins, codes
+    - family: GeistMono
+      fonts:
+        - asset: assets/fonts/GeistMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/GeistMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/GeistMono-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/GeistMono-Bold.ttf
+          weight: 700
+
+# dart run flutter_launcher_icons  (images from tool/sync_assets.mjs)
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/brand/icon.png
+  min_sdk_android: 24
+  adaptive_icon_background: "#07070A"
+  adaptive_icon_foreground: assets/brand/adaptive-icon.png
+  adaptive_icon_monochrome: assets/brand/adaptive-icon-monochrome.png
+  web:
+    generate: true
+    image_path: assets/brand/icon.png
+    background_color: "#07070A"
+    theme_color: "#FF5A1F"
+
+# dart run flutter_native_splash:create  (the ember mark on the canvas colour, like the icon)
+flutter_native_splash:
+  color: "#07070A"
+  image: assets/brand/splash.png
+  android: true
+  ios: false
+  web: false
+  android_12:
+    image: assets/brand/splash-android12.png
+    color: "#07070A"
+  fullscreen: false

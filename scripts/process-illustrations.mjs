@@ -2,6 +2,9 @@
 //   apps/crm/public/illustrations/<key>.webp (640 px), <key>@2x.webp (1280 px), <key>-sm.webp (320 px)
 //   + packages/ui/src/components/illustrations.generated.ts (sizes + a content hash that versions the URLs, which are
 //   cached as immutable)
+// and the Flutter app's copies (the same cut-out art as palette PNGs, resolution-aware, for a logical width up to 240):
+//   apps/mobile/assets/illustrations/<key>.png (1x, 240 px), 2.0x/<key>.png (480 px), 3.0x/<key>.png (720 px)
+//   + apps/mobile/lib/ui/illustrations.g.dart (names and aspect ratios)
 //
 // - The PNGs have a light grey / white checkerboard baked into the pixels (no real alpha). It is removed by a
 //   flood fill from the image borders over near-white / light-grey pixels (every channel >= 235, low
@@ -13,7 +16,8 @@
 //   placeholder. WEB_OUT is rewritten on every run (no stale files).
 //   Used by <Illustration> / <EmptyState art> in @kalks/ui; the art is kept to empty and success states.
 //
-//   pnpm illustrations      (from the repo root)
+//   pnpm illustrations                                          (from the repo root: web + Flutter)
+//   node scripts/process-illustrations.mjs --only web|flutter   (one target only)
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -27,6 +31,14 @@ const WEB_OUT = [join(root, "apps", "crm", "public", "illustrations")];
 const WEB_TS = join(root, "packages", "ui", "src", "components", "illustrations.generated.ts");
 /** [file suffix, width in px]: the 640 px file is the one to use by default; srcset picks the others by width. */
 const WEB_SIZES = [["-sm", 320], ["", 640], ["@2x", 1280]];
+// the Flutter app (apps/mobile): PNG, resolution-aware asset variants (1x is 240 px wide, the art's largest logical size)
+const FLUTTER_OUT = join(root, "apps", "mobile", "assets", "illustrations");
+const FLUTTER_DART = join(root, "apps", "mobile", "lib", "ui", "illustrations.g.dart");
+/** [variant folder, width in px] */
+const FLUTTER_SIZES = [["", 240], ["2.0x", 480], ["3.0x", 720]];
+const only = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1] : null;
+const doWeb = !only || only === "web";
+const doFlutter = !only || only === "flutter";
 
 /** key -> source file name (as the founder named them) */
 // Source file per key: the fresh set's clean name first, then the founder's first-round name (kept as a fallback).
@@ -214,15 +226,20 @@ async function roundCorners(png, fraction) {
   return sharp(png).ensureAlpha().composite([{ input: mask, blend: "dest-in" }]).png().toBuffer();
 }
 
-/** Web copies of the processed art (see the header), trimmed to the drawing. A full-bleed scene (almost nothing cut
+/** The final art (shared by the web and Flutter copies), trimmed to the drawing. A full-bleed scene (almost nothing cut
  *  away) is taken from the untouched source instead, as the flood fill can nibble pale areas inside a scene (a light
- *  cloud), and gets rounded corners. Returns the files, the default size and a content hash. */
-async function exportWeb(key, png, keepCanvas = false, source = null) {
+ *  cloud), and gets rounded corners. */
+async function finalArt(png, keepCanvas = false, source = null) {
   let art = await (keepCanvas ? sharp(png) : sharp(png).trim({ threshold: 1 })).png().toBuffer();
   const { data, info } = await sharp(art).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   let clear = 0;
   for (let i = 3; i < data.length; i += 4) if (data[i] < 250) clear++;
   if (source && clear / (info.width * info.height) < 0.1) art = await roundCorners(await sharp(source).png().toBuffer(), 0.07);
+  return art;
+}
+
+/** Web copies of the final art (see the header). Returns the files, the default size and a content hash. */
+async function exportWeb(key, art) {
   const { width, height } = await sharp(art).metadata();
   const hash = createHash("sha1");
   const files = [];
@@ -238,6 +255,30 @@ async function exportWeb(key, png, keepCanvas = false, source = null) {
   return { files, w, h: Math.round((w * height) / width), v: hash.digest("hex").slice(0, 10) };
 }
 
+/** Flutter copies of the final art: PNG at 1x / 2x / 3x (never upscaled past the source), quantised to a 256-colour
+ *  palette with dithering (the drawn art keeps its look at about a quarter of the size). Returns the aspect ratio. */
+async function exportFlutter(key, art) {
+  const { width, height } = await sharp(art).metadata();
+  for (const [dir, size] of FLUTTER_SIZES) {
+    const out = dir ? join(FLUTTER_OUT, dir) : FLUTTER_OUT;
+    const buf = await sharp(art).resize({ width: Math.min(width, size) }).png({ palette: true, quality: 95, effort: 10, dither: 1, compressionLevel: 9 }).toBuffer();
+    writeFileSync(join(out, `${key}.png`), buf);
+  }
+  return { aspect: width / height };
+}
+
+function writeFlutterRegistry(flutter) {
+  let d = "// Generated by scripts/process-illustrations.mjs. Do not edit by hand.\n";
+  d += "// The founder's illustrations (repo illustrator/), cut out like the web copies, as resolution-aware PNGs in\n";
+  d += "// assets/illustrations/ (1x 240 px, 2.0x 480 px, 3.0x 720 px).\n\n";
+  d += "/// Illustration names: the same keys as the web (`<Illustration name>` / `<EmptyState art>` in @kalks/ui).\n";
+  d += "enum KIllustrationName {\n";
+  for (const [k, v] of Object.entries(flutter)) d += `  ${k}('assets/illustrations/${k}.png', ${v.aspect.toFixed(4)}),\n`;
+  d = d.replace(/,\n$/, ";\n");
+  d += "\n  const KIllustrationName(this.asset, this.aspect);\n\n  /// Asset path of the 1x file (Flutter picks 2.0x / 3.0x by the screen density).\n  final String asset;\n\n  /// Width / height.\n  final double aspect;\n}\n";
+  writeFileSync(FLUTTER_DART, d);
+}
+
 function writeWebRegistry(web) {
   let ts = "// Generated by scripts/process-illustrations.mjs. Do not edit by hand.\n/* eslint-disable */\n\n";
   ts += "export type IllustrationName = " + Object.keys(web).map((k) => JSON.stringify(k)).join(" | ") + ";\n\n";
@@ -250,8 +291,13 @@ function writeWebRegistry(web) {
 }
 
 async function main() {
-  for (const dir of WEB_OUT) rmSync(dir, { recursive: true, force: true }), mkdirSync(dir, { recursive: true });
+  if (doWeb) for (const dir of WEB_OUT) rmSync(dir, { recursive: true, force: true }), mkdirSync(dir, { recursive: true });
+  if (doFlutter) {
+    rmSync(FLUTTER_OUT, { recursive: true, force: true });
+    for (const [dir] of FLUTTER_SIZES) mkdirSync(dir ? join(FLUTTER_OUT, dir) : FLUTTER_OUT, { recursive: true });
+  }
   const web = {};
+  const flutter = {};
   for (const [key, names] of Object.entries(FILES)) {
     const file = join(SRC, names.find((n) => existsSync(join(SRC, n))) ?? names[0]);
     const missing = !existsSync(file);
@@ -262,10 +308,14 @@ async function main() {
     else if (await hasRealAlpha(file)) png = await sharp(file).png().toBuffer();
     else png = await cutOut(file, opt);
     if (!missing && opt.round) png = await roundCorners(png, opt.round);
-    web[key] = await exportWeb(key, png, !missing && !!opt.keepCanvas, missing ? null : file);
-    console.log(`${key.padEnd(22)} ${missing ? "placeholder" : "processed  "} ${web[key].w}x${web[key].h}`);
+    const art = await finalArt(png, !missing && !!opt.keepCanvas, missing ? null : file);
+    if (doWeb) web[key] = await exportWeb(key, art);
+    if (doFlutter) flutter[key] = await exportFlutter(key, art);
+    const size = doWeb ? `${web[key].w}x${web[key].h}` : `aspect ${flutter[key].aspect.toFixed(3)}`;
+    console.log(`${key.padEnd(22)} ${missing ? "placeholder" : "processed  "} ${size}`);
   }
-  writeWebRegistry(web);
+  if (doWeb) writeWebRegistry(web);
+  if (doFlutter) writeFlutterRegistry(flutter);
 }
 
 await main();
