@@ -443,9 +443,6 @@ const desk: NsMessages<"desk"> = {
   "og.selling": "매도자는 프리미엄을 바로 받지만 증거금이 필요하며, 가격이 불리하게 움직이면 프리미엄보다 훨씬 큰 손실을 볼 수 있습니다.",
   "opt.learn30": "옵션이 처음이신가요? 30초 만에 알아보기",
   "trade.demoOnly": "이 종목은 아직 실거래가 활성화되지 않았습니다",
-  "trade.demoOnlyText": "{symbol}은(는) 현재 데모 계좌에서만 거래할 수 있습니다. 보유 중인 포지션은 계속 청산할 수 있습니다.",
-  "side.demoOnly": "데모 전용",
-  "side.demoOnlyTip": "데모 계좌에서 이용할 수 있습니다. 이 종목은 아직 실거래가 활성화되지 않았습니다.",
   "side.delayed": "지연",
   "side.delayedTip": "지연된 시세입니다. 실시간 시세를 보려면 차트를 여세요",
   "ot.views": "옵션 보기",
@@ -465,6 +462,14 @@ const desk: NsMessages<"desk"> = {
   "pl.pageShort": "전체 페이지",
   "pl.splitShort": "분할",
   "pl.toggleTip": "포지션 패널 표시 / 숨기기",
+  "trade.unavailable": "이 종목은 회원님의 계좌에서 이용할 수 없습니다",
+  "trade.unavailableText": "대신 EURUSD를 표시합니다.",
+  "sw.pctYear": "연 {n}%",
+  "sw.nightly": "매일 밤 부과",
+  "sw.triple": "매일 밤 부과, {day}에는 3일분",
+  "sw.summary": "매수 {long} · 매도 {short} ({when})",
+  "sw.title": "오버나이트 스왑",
+  "sw.everyNight": "매일 밤 (3일 스왑 없음)",
 };
 
 export default desk;

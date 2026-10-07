@@ -442,9 +442,6 @@ const desk: NsMessages<"desk"> = {
   "og.selling": "Người bán nhận phí quyền chọn ngay nhưng cần ký quỹ và có thể lỗ nhiều hơn phí quyền chọn rất nhiều nếu giá đi ngược hướng.",
   "opt.learn30": "Mới làm quen với quyền chọn? Tìm hiểu trong 30 giây",
   "trade.demoOnly": "Giao dịch thực cho thị trường này chưa được bật",
-  "trade.demoOnlyText": "Hiện tại {symbol} chỉ giao dịch được trên tài khoản demo. Bạn vẫn có thể đóng các vị thế đang mở.",
-  "side.demoOnly": "Chỉ demo",
-  "side.demoOnlyTip": "Có trên tài khoản demo. Giao dịch thực cho thị trường này chưa được bật.",
   "side.delayed": "Trễ",
   "side.delayedTip": "Giá bị trễ; mở biểu đồ để nhận giá trực tiếp",
   "ot.views": "Chế độ xem quyền chọn",
@@ -464,6 +461,14 @@ const desk: NsMessages<"desk"> = {
   "pl.pageShort": "Toàn trang",
   "pl.splitShort": "Chia đôi",
   "pl.toggleTip": "Hiện hoặc ẩn bảng vị thế",
+  "trade.unavailable": "Thị trường này không khả dụng cho tài khoản của bạn",
+  "trade.unavailableText": "Đang hiển thị EURUSD thay thế.",
+  "sw.pctYear": "{n}% / năm",
+  "sw.nightly": "tính mỗi đêm",
+  "sw.triple": "tính mỗi đêm, gấp ba vào {day}",
+  "sw.summary": "Mua {long} · Bán {short} ({when})",
+  "sw.title": "Phí qua đêm (swap)",
+  "sw.everyNight": "Mỗi đêm (không có swap 3 ngày)",
 };
 
 export default desk;

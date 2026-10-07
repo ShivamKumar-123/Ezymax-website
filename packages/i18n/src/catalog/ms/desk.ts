@@ -442,9 +442,6 @@ const desk: NsMessages<"desk"> = {
   "og.selling": "Penjual menerima premium sekarang tetapi memerlukan margin dan boleh rugi jauh lebih banyak daripada premium jika harga bergerak menentangnya.",
   "opt.learn30": "Baru dengan opsyen? Belajar dalam 30 saat",
   "trade.demoOnly": "Dagangan langsung untuk pasaran ini belum didayakan lagi",
-  "trade.demoOnlyText": "{symbol} boleh didagangkan pada akaun demo buat masa ini. Anda masih boleh menutup posisi terbuka.",
-  "side.demoOnly": "Demo sahaja",
-  "side.demoOnlyTip": "Tersedia pada akaun demo. Dagangan langsung untuk pasaran ini belum didayakan lagi.",
   "side.delayed": "Tertunda",
   "side.delayedTip": "Harga tertunda; buka carta untuk menstrim harga langsung",
   "ot.views": "Paparan opsyen",
@@ -464,6 +461,14 @@ const desk: NsMessages<"desk"> = {
   "pl.pageShort": "Halaman penuh",
   "pl.splitShort": "Paparan pisah",
   "pl.toggleTip": "Tunjuk atau sembunyikan panel posisi",
+  "trade.unavailable": "Pasaran ini tidak tersedia dalam akaun anda",
+  "trade.unavailableText": "Memaparkan EURUSD sebagai gantinya.",
+  "sw.pctYear": "{n}% / tahun",
+  "sw.nightly": "dikenakan setiap malam",
+  "sw.triple": "dikenakan setiap malam, tiga kali pada {day}",
+  "sw.summary": "Beli {long} · Jual {short} ({when})",
+  "sw.title": "Swap semalaman",
+  "sw.everyNight": "Setiap malam (tiada swap 3 hari)",
 };
 
 export default desk;

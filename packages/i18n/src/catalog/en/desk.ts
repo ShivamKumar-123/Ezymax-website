@@ -444,9 +444,6 @@ const desk = {
   "og.selling": "The seller receives the premium now but needs margin and can lose much more than the premium if the price moves against them.",
   "opt.learn30": "New to options? Learn in 30 seconds",
   "trade.demoOnly": "Live trading for this market isn't enabled yet",
-  "trade.demoOnlyText": "{symbol} can be traded on demo accounts for now. You can still close open positions.",
-  "side.demoOnly": "Demo only",
-  "side.demoOnlyTip": "Available on demo accounts. Live trading for this market isn't enabled yet.",
   "side.delayed": "Delayed",
   "side.delayedTip": "Price is delayed; open the chart to stream live prices",
   "ot.views": "Options views",
@@ -466,6 +463,14 @@ const desk = {
   "pl.pageShort": "Full page",
   "pl.splitShort": "Split",
   "pl.toggleTip": "Show or hide the positions panel",
+  "trade.unavailable": "This market isn't available on your account",
+  "trade.unavailableText": "Showing EURUSD instead.",
+  "sw.pctYear": "{n}% / year",
+  "sw.nightly": "charged nightly",
+  "sw.triple": "charged nightly, three times on {day}",
+  "sw.summary": "Long {long} · Short {short} ({when})",
+  "sw.title": "Overnight swap",
+  "sw.everyNight": "Every night (no 3-day swap)",
 } as const;
 
 export default desk;

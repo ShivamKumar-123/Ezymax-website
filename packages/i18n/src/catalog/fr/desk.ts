@@ -442,9 +442,6 @@ const desk: NsMessages<"desk"> = {
   "og.selling": "Le vendeur reçoit la prime tout de suite, mais il doit bloquer de la marge et peut perdre bien plus que la prime si le prix évolue contre lui.",
   "opt.learn30": "Nouveau dans les options ? Apprenez en 30 secondes",
   "trade.demoOnly": "Le trading réel n'est pas encore activé pour ce marché",
-  "trade.demoOnlyText": "Pour l'instant, {symbol} se négocie uniquement sur les comptes démo. Vous pouvez toujours clôturer les positions ouvertes.",
-  "side.demoOnly": "Démo uniquement",
-  "side.demoOnlyTip": "Disponible sur les comptes démo. Le trading réel n'est pas encore activé pour ce marché.",
   "side.delayed": "Différé",
   "side.delayedTip": "Prix différé ; ouvrez le graphique pour recevoir les prix en direct",
   "ot.views": "Vues des options",
@@ -464,6 +461,14 @@ const desk: NsMessages<"desk"> = {
   "pl.pageShort": "Pleine page",
   "pl.splitShort": "Partagé",
   "pl.toggleTip": "Afficher ou masquer le panneau des positions",
+  "trade.unavailable": "Ce marché n'est pas disponible sur votre compte",
+  "trade.unavailableText": "EURUSD est affiché à la place.",
+  "sw.pctYear": "{n} % / an",
+  "sw.nightly": "prélevé chaque nuit",
+  "sw.triple": "prélevé chaque nuit, triple le {day}",
+  "sw.summary": "Achat {long} · Vente {short} ({when})",
+  "sw.title": "Swap de nuit",
+  "sw.everyNight": "Chaque nuit (pas de swap triple)",
 };
 
 export default desk;

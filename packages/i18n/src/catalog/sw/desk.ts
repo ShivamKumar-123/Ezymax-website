@@ -442,9 +442,6 @@ const desk: NsMessages<"desk"> = {
   "og.selling": "Muuzaji hupokea premium sasa lakini anahitaji margin, na anaweza kupoteza zaidi sana ya premium ikiwa bei itaenda kinyume naye.",
   "opt.learn30": "Mgeni kwenye options? Jifunze kwa sekunde 30",
   "trade.demoOnly": "Biashara halisi kwa soko hili bado haijawezeshwa",
-  "trade.demoOnlyText": "Kwa sasa {symbol} inaweza kufanyiwa biashara kwenye akaunti za demo. Bado unaweza kufunga nafasi zilizo wazi.",
-  "side.demoOnly": "Demo pekee",
-  "side.demoOnlyTip": "Inapatikana kwenye akaunti za demo. Biashara halisi kwa soko hili bado haijawezeshwa.",
   "side.delayed": "Imechelewa",
   "side.delayedTip": "Bei imechelewa; fungua chati upate bei za moja kwa moja",
   "ot.views": "Mionekano ya options",
@@ -464,6 +461,14 @@ const desk: NsMessages<"desk"> = {
   "pl.pageShort": "Ukurasa mzima",
   "pl.splitShort": "Iliyogawanywa",
   "pl.toggleTip": "Onyesha au ficha paneli ya nafasi",
+  "trade.unavailable": "Soko hili halipatikani kwenye akaunti yako",
+  "trade.unavailableText": "Tunaonyesha EURUSD badala yake.",
+  "sw.pctYear": "{n}% / mwaka",
+  "sw.nightly": "hutozwa kila usiku",
+  "sw.triple": "hutozwa kila usiku, mara tatu siku ya {day}",
+  "sw.summary": "Nunua {long} · Uza {short} ({when})",
+  "sw.title": "Swap ya usiku",
+  "sw.everyNight": "Kila usiku (hakuna swap ya siku 3)",
 };
 
 export default desk;

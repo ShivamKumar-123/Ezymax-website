@@ -1,4 +1,5 @@
-import { INSTRUMENTS, getInstrument, priceFeed, type Instrument, type Position, type TradingAccount } from "@kalks/mock";
+import { INSTRUMENTS, getInstrument, instrumentSpec, priceFeed, type Instrument, type Position, type TradingAccount } from "@kalks/mock";
+import type { T as Translate } from "@kalks/i18n";
 
 /* ------------------------------------------------------------------ */
 /* Timeframes                                                          */
@@ -211,9 +212,13 @@ export const SERVERS = ["Kalks-Live01", "Kalks-Live02", "Kalks-Demo", "Kalks-Pro
 export const DEFAULT_SYMBOLS = ["XAUUSD", "EURUSD", "NAS100", "BTCUSD"];
 export const ALL_SYMBOLS = INSTRUMENTS.map((i) => i.symbol);
 
-/** Contract specification (swaps, sessions) derived from the instrument. */
+/**
+ * Contract specification (sessions, volumes, swaps): the effective trading spec of config/trading-specs.json (packages/mock
+ * instrumentSpec, layered like the engine), with the instrument's own data for anything else.
+ */
 export function contractSpec(symbol: string) {
   const inst = getInstrument(symbol);
+  const spec = instrumentSpec(symbol);
   const pip = pipSize(inst);
   const sessions: Record<Instrument["assetClass"], string> = {
     forex: "Mon 00:05 – Fri 23:55",
@@ -223,25 +228,42 @@ export function contractSpec(symbol: string) {
     crypto: "24/7",
     stocks: "Mon–Fri 16:35 – 22:55",
   };
-  const h = [...symbol].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const session = inst.session === "hk_equity" ? "Mon–Fri 09:30 – 12:00, 13:00 – 16:00 HKT" : inst.session === "jp_equity" ? "Mon–Fri 09:00 – 11:30, 12:30 – 15:30 JST" : inst.session === "24x7" ? "24/7" : sessions[inst.assetClass];
   return {
-    contractSize: inst.contractSize,
+    contractSize: spec?.contractSize ?? inst.contractSize,
     digits: inst.digits,
     pip,
     tickSize: 1 / 10 ** inst.digits,
-    minVolume: 0.01,
-    maxVolume: inst.assetClass === "crypto" ? 20 : 100,
-    step: 0.01,
-    marginCcy: splitSymbol(symbol).base,
-    profitCcy: splitSymbol(symbol).quote,
-    swapLong: -(((h % 70) + 8) / 10),
-    swapShort: ((h % 50) - 30) / 10,
-    tripleSwap: inst.assetClass === "crypto" ? "Friday" : "Wednesday",
-    stopsLevel: inst.assetClass === "forex" ? 10 : 20,
-    sessions: sessions[inst.assetClass],
+    minVolume: spec?.lotMin ?? 0.01,
+    maxVolume: spec?.lotMax ?? (inst.assetClass === "crypto" ? 20 : 100),
+    step: spec?.lotStep ?? 0.01,
+    marginCcy: inst.baseCcy ?? splitSymbol(symbol).base,
+    profitCcy: inst.quoteCcy ?? splitSymbol(symbol).quote,
+    swapLong: spec?.swapLong ?? 0,
+    swapShort: spec?.swapShort ?? 0,
+    /** "points" per lot per night (core instruments) or "percent_per_year" of the position value */
+    swapUnit: spec?.swapUnit ?? "points",
+    /** weekday charged three nights; "" = every night alike (crypto) */
+    tripleSwap: spec ? spec.tripleSwapDay : inst.assetClass === "crypto" ? "" : "Wednesday",
+    swapEveryNight: spec?.swapDays === "all",
+    stopsLevel: spec?.stopsLevelPoints ?? (inst.assetClass === "forex" ? 10 : 20),
+    sessions: session,
     execution: "Market",
     gtc: "Good till cancelled",
   };
+}
+
+/** A swap rate as shown to traders: "−20.00% / year" or "−7.20 pts" (a real minus sign). */
+export function swapRateText(t: Translate, v: number, unit: "points" | "percent_per_year"): string {
+  const n = `${v < 0 ? "−" : v > 0 ? "+" : ""}${Math.abs(v).toFixed(2)}`;
+  return unit === "percent_per_year" ? t("desk.sw.pctYear", { n }) : t("order.unit.pts", { n });
+}
+
+/** "Long −20.00% / year · Short −20.00% / year (charged nightly)" (order popup, positions tooltips). */
+export function swapSummary(t: Translate, symbol: string): string {
+  const s = contractSpec(symbol);
+  const when = s.swapEveryNight || !s.tripleSwap ? t("desk.sw.nightly") : t("desk.sw.triple", { day: t.dyn(`order.info.tripleSwapDay.${s.tripleSwap}`, s.tripleSwap) });
+  return t("desk.sw.summary", { long: swapRateText(t, s.swapLong, s.swapUnit), short: swapRateText(t, s.swapShort, s.swapUnit), when });
 }
 
 /** Server time is GMT+3. */

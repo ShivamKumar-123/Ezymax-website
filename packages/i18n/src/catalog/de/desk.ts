@@ -442,9 +442,6 @@ const desk: NsMessages<"desk"> = {
   "og.selling": "Der Verkäufer erhält die Prämie sofort, braucht aber Margin und kann viel mehr als die Prämie verlieren, wenn sich der Preis gegen ihn bewegt.",
   "opt.learn30": "Neu bei Optionen? In 30 Sekunden erklärt",
   "trade.demoOnly": "Live-Handel ist für diesen Markt noch nicht freigeschaltet",
-  "trade.demoOnlyText": "{symbol} kann vorerst nur auf Demokonten gehandelt werden. Offene Positionen können Sie weiterhin schließen.",
-  "side.demoOnly": "Nur Demo",
-  "side.demoOnlyTip": "Auf Demokonten verfügbar. Live-Handel ist für diesen Markt noch nicht freigeschaltet.",
   "side.delayed": "Verzögert",
   "side.delayedTip": "Kurs ist verzögert; öffnen Sie den Chart für Live-Kurse",
   "ot.views": "Optionsansichten",
@@ -464,6 +461,14 @@ const desk: NsMessages<"desk"> = {
   "pl.pageShort": "Ganze Seite",
   "pl.splitShort": "Geteilt",
   "pl.toggleTip": "Positionsbereich ein- oder ausblenden",
+  "trade.unavailable": "Dieser Markt ist für Ihr Konto nicht verfügbar",
+  "trade.unavailableText": "Stattdessen wird EURUSD angezeigt.",
+  "sw.pctYear": "{n} % / Jahr",
+  "sw.nightly": "jede Nacht berechnet",
+  "sw.triple": "jede Nacht berechnet, am {day} dreifach",
+  "sw.summary": "Long {long} · Short {short} ({when})",
+  "sw.title": "Übernacht-Swap",
+  "sw.everyNight": "Jede Nacht (kein dreifacher Swap)",
 };
 
 export default desk;

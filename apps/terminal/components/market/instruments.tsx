@@ -13,7 +13,8 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { toast } from "@/lib/notify";
 import { BarChart2, Clock3, Eye, EyeOff, FileText, Info, LayoutGrid, List, MoreHorizontal, Search, ShoppingCart, Star, TrendingUp, X } from "lucide-react";
-import { ALL_INSTRUMENTS, ASSET_CLASS_LABEL, getInstrument, liveTradable, type Instrument, type Quote } from "@kalks/mock";
+import { ASSET_CLASS_LABEL, getInstrument, type Instrument, type Quote } from "@kalks/mock";
+import { useMarketScope } from "@/lib/scope";
 import { PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
 import type { T as Translate } from "@kalks/i18n";
@@ -33,10 +34,13 @@ const ORDER = ["forex", "metals", "indices", "energies", "crypto", "stocks"];
 
 const classLabel = (c: string, t: Translate) => t.dyn(`market.segment.${c}`, (ASSET_CLASS_LABEL as Record<string, string>)[c] ?? c.charAt(0).toUpperCase() + c.slice(1));
 
-/** The whole list the panel can show: the catalogue (and generated test markets with `?stress=`). */
+/**
+ * The list the panel can show: the 28 core instruments and the provider catalogue (1,400+), only the markets that
+ * trade live for live accounts and guests (lib/scope.ts), plus generated test markets with `?stress=`.
+ */
 function useCatalogue(): Instrument[] {
-  // the 28 core instruments and the provider catalogue (1,400+); in live builds the feed drops markets it has no price for
-  return React.useMemo(() => (STRESS_COUNT ? [...ALL_INSTRUMENTS, ...STRESS_INSTRUMENTS] : ALL_INSTRUMENTS), []);
+  const { list } = useMarketScope();
+  return React.useMemo(() => (STRESS_COUNT ? [...list, ...STRESS_INSTRUMENTS] : list), [list]);
 }
 
 /** One row's quote: the live feed, or the simulated price of a generated test market. Rows mount only while visible. */
@@ -74,7 +78,7 @@ export function InstrumentsPanel() {
   const [q, setQ] = React.useState("");
   const [cursor, setCursor] = React.useState(-1);
   const view = T.ws.mwTab === "details" ? "cards" : "list";
-  const seg = T.ws.mwSegment as string;
+  const segPref = T.ws.mwSegment as string;
   const favs = T.ws.favourites;
   const hidden = T.ws.hidden;
   const cm = useContextMenu(256);
@@ -89,6 +93,8 @@ export function InstrumentsPanel() {
     for (const i of base) m.set(i.assetClass, (m.get(i.assetClass) ?? 0) + 1);
     return [...m.entries()].sort(([a], [b]) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b));
   }, [base]);
+  // a class with nothing to show here (e.g. stocks on a live account) falls back to All
+  const seg = segPref === "all" || segPref === "favourites" || classes.some(([c]) => c === segPref) ? segPref : "all";
   const list = React.useMemo(() => {
     const needle = q.trim().toLowerCase();
     const inSeg = (i: Instrument) => seg === "all" || (seg === "favourites" ? favs.includes(i.symbol) : i.assetClass === seg);
@@ -107,7 +113,6 @@ export function InstrumentsPanel() {
     setCursor(-1);
   }, [q, seg]);
 
-  const liveAccount = !T.guest && T.account.type === "live";
   // stable handlers (the terminal context changes on every tick): rows re-render only when their own props change
   const Tref = React.useRef(T);
   Tref.current = T;
@@ -254,7 +259,7 @@ export function InstrumentsPanel() {
             <div style={{ height: list.length * item }} className="relative">
               {list.slice(first, last).map((i, k) => {
                 const n = first + k;
-                const p = { symbol: i.symbol, top: n * item, active: T.activeSymbol === i.symbol, cursor: n === cursor, fav: favs.includes(i.symbol), demoOnly: liveAccount && !liveTradable(i.symbol), onFav: toggleFav, onOpen: open, onOrder: order, onContext, onHover, index: n };
+                const p = { symbol: i.symbol, top: n * item, active: T.activeSymbol === i.symbol, cursor: n === cursor, fav: favs.includes(i.symbol), onFav: toggleFav, onOpen: open, onOrder: order, onContext, onHover, index: n };
                 return view === "cards" ? <InstrumentCard key={i.symbol} {...p} /> : <InstrumentRow key={i.symbol} {...p} />;
               })}
             </div>
@@ -321,8 +326,6 @@ type RowProps = {
   active: boolean;
   cursor: boolean;
   fav: boolean;
-  /** live account, catalogue market not enabled for live trading */
-  demoOnly: boolean;
   onFav: (s: string) => void;
   onOpen: (s: string) => void;
   onOrder: (s: string, side?: "buy" | "sell") => void;
@@ -330,12 +333,12 @@ type RowProps = {
   onHover: (s: string, r: DOMRect | null) => void;
 };
 
-const InstrumentRow = React.memo(function InstrumentRow({ symbol, index, top, active, cursor, fav, demoOnly, onFav, onOpen, onOrder, onContext, onHover }: RowProps) {
+const InstrumentRow = React.memo(function InstrumentRow({ symbol, index, top, active, cursor, fav, onFav, onOpen, onOrder, onContext, onHover }: RowProps) {
   const t = useT();
   const q = useRowQuote(symbol);
   // a delayed snapshot (not streaming): shown, never traded on; opening the chart starts the live stream
   const delayed = !!q.delayed;
-  const blockedTip = delayed ? t("desk.side.delayedTip") : demoOnly ? t("desk.side.demoOnlyTip") : null;
+  const blockedTip = delayed ? t("desk.side.delayedTip") : null;
   const price = (side: "sell" | "buy") => (e: React.MouseEvent) => {
     e.stopPropagation();
     onOpen(symbol);
@@ -358,11 +361,6 @@ const InstrumentRow = React.memo(function InstrumentRow({ symbol, index, top, ac
         <SymbolAvatar symbol={symbol} size={16} />
         <span className="truncate text-[13px] font-medium text-fg">{symbol}</span>
         {fav && <Star className="size-3 shrink-0 fill-gold text-gold" aria-hidden />}
-        {demoOnly && (
-          <span title={t("desk.side.demoOnlyTip")} className="shrink-0 rounded-[4px] border border-line px-1 text-[9.5px] font-semibold uppercase leading-[14px] tracking-[0.04em] text-fg-3">
-            {t("desk.side.demoOnly")}
-          </span>
-        )}
         {delayed && <Clock3 className="size-3 shrink-0 text-warn" aria-label={t("desk.side.delayed")} />}
         {/* hover: ☆ and ⋯ over the end of the cell */}
         <span className="absolute end-0 top-1/2 flex -translate-y-1/2 items-center gap-0.5 rounded-[7px] bg-panel opacity-0 shadow-[0_0_0_3px_var(--t-panel)] focus-within:opacity-100 group-hover:opacity-100">
@@ -408,11 +406,11 @@ const InstrumentRow = React.memo(function InstrumentRow({ symbol, index, top, ac
   );
 });
 
-const InstrumentCard = React.memo(function InstrumentCard({ symbol, top, active, fav, demoOnly, onFav, onOpen, onOrder, onContext }: RowProps) {
+const InstrumentCard = React.memo(function InstrumentCard({ symbol, top, active, fav, onFav, onOpen, onOrder, onContext }: RowProps) {
   useMarketClock();
   const t = useT();
   const q = useRowQuote(symbol);
-  const blockedTip = q.delayed ? t("desk.side.delayedTip") : demoOnly ? t("desk.side.demoOnlyTip") : undefined;
+  const blockedTip = q.delayed ? t("desk.side.delayedTip") : undefined;
   const stress = isStressSymbol(symbol);
   const r = stress ? { low: q.bid * 0.99, high: q.ask * 1.01 } : getRange(symbol);
   const inst = getInstrument(symbol);

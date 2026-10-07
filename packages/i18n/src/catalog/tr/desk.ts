@@ -442,9 +442,6 @@ const desk: NsMessages<"desk"> = {
   "og.selling": "Satıcı primi hemen alır ancak teminat yatırması gerekir ve fiyat aleyhine hareket ederse primden çok daha fazlasını kaybedebilir.",
   "opt.learn30": "Opsiyonlarda yeni misiniz? 30 saniyede öğrenin",
   "trade.demoOnly": "Bu piyasada gerçek işlem henüz etkinleştirilmedi",
-  "trade.demoOnlyText": "{symbol} şimdilik demo hesaplarda işlem görebilir. Açık pozisyonlarınızı yine de kapatabilirsiniz.",
-  "side.demoOnly": "Yalnızca demo",
-  "side.demoOnlyTip": "Demo hesaplarda kullanılabilir. Bu piyasada gerçek işlem henüz etkinleştirilmedi.",
   "side.delayed": "Gecikmeli",
   "side.delayedTip": "Fiyat gecikmeli; canlı fiyatlar için grafiği açın",
   "ot.views": "Opsiyon görünümleri",
@@ -464,6 +461,14 @@ const desk: NsMessages<"desk"> = {
   "pl.pageShort": "Tam sayfa",
   "pl.splitShort": "Bölünmüş",
   "pl.toggleTip": "Pozisyonlar panelini göster veya gizle",
+  "trade.unavailable": "Bu piyasa hesabınızda kullanılamıyor",
+  "trade.unavailableText": "Bunun yerine EURUSD gösteriliyor.",
+  "sw.pctYear": "yılda %{n}",
+  "sw.nightly": "her gece alınır",
+  "sw.triple": "her gece alınır, {day} günü üç kat",
+  "sw.summary": "Alış {long} · Satış {short} ({when})",
+  "sw.title": "Gecelik swap",
+  "sw.everyNight": "Her gece (üç günlük swap yok)",
 };
 
 export default desk;

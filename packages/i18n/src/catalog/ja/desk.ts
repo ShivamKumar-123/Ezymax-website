@@ -443,9 +443,6 @@ const desk: NsMessages<"desk"> = {
   "og.selling": "売り手はすぐにプレミアムを受け取りますが、証拠金が必要です。価格が不利に動くと、プレミアムをはるかに超える損失が出ることがあります。",
   "opt.learn30": "オプションは初めてですか？30秒で学ぶ",
   "trade.demoOnly": "この銘柄のリアル取引はまだ有効になっていません",
-  "trade.demoOnlyText": "{symbol}は現在、デモ口座でのみ取引できます。保有中のポジションは引き続き決済できます。",
-  "side.demoOnly": "デモのみ",
-  "side.demoOnlyTip": "デモ口座で利用できます。この銘柄のリアル取引はまだ有効になっていません。",
   "side.delayed": "遅延",
   "side.delayedTip": "価格は遅延しています。リアルタイム価格を表示するにはチャートを開いてください",
   "ot.views": "オプションの表示",
@@ -465,6 +462,14 @@ const desk: NsMessages<"desk"> = {
   "pl.pageShort": "フルページ",
   "pl.splitShort": "分割",
   "pl.toggleTip": "ポジションパネルの表示 / 非表示",
+  "trade.unavailable": "この銘柄はお客様の口座ではご利用いただけません",
+  "trade.unavailableText": "代わりにEURUSDを表示しています。",
+  "sw.pctYear": "年 {n}%",
+  "sw.nightly": "毎晩適用",
+  "sw.triple": "毎晩適用（{day}は3日分）",
+  "sw.summary": "買い {long} · 売り {short}（{when}）",
+  "sw.title": "オーバーナイト・スワップ",
+  "sw.everyNight": "毎晩（3日分スワップなし）",
 };
 
 export default desk;

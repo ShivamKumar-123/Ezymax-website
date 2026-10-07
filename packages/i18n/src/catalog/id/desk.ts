@@ -442,9 +442,6 @@ const desk: NsMessages<"desk"> = {
   "og.selling": "Penjual menerima premi sekarang, tetapi membutuhkan margin dan bisa rugi jauh lebih besar dari premi jika harga bergerak berlawanan dengannya.",
   "opt.learn30": "Baru mengenal opsi? Pelajari dalam 30 detik",
   "trade.demoOnly": "Trading live untuk pasar ini belum diaktifkan",
-  "trade.demoOnlyText": "Untuk saat ini, {symbol} hanya dapat diperdagangkan di akun demo. Anda tetap dapat menutup posisi terbuka.",
-  "side.demoOnly": "Hanya demo",
-  "side.demoOnlyTip": "Tersedia di akun demo. Trading live untuk pasar ini belum diaktifkan.",
   "side.delayed": "Tertunda",
   "side.delayedTip": "Harga tertunda; buka grafik untuk mendapatkan harga live",
   "ot.views": "Tampilan opsi",
@@ -464,6 +461,14 @@ const desk: NsMessages<"desk"> = {
   "pl.pageShort": "Halaman penuh",
   "pl.splitShort": "Terbagi",
   "pl.toggleTip": "Tampilkan atau sembunyikan panel posisi",
+  "trade.unavailable": "Pasar ini tidak tersedia di akun Anda",
+  "trade.unavailableText": "Menampilkan EURUSD sebagai gantinya.",
+  "sw.pctYear": "{n}% / tahun",
+  "sw.nightly": "dikenakan setiap malam",
+  "sw.triple": "dikenakan setiap malam, tiga kali pada {day}",
+  "sw.summary": "Beli {long} · Jual {short} ({when})",
+  "sw.title": "Swap menginap",
+  "sw.everyNight": "Setiap malam (tanpa swap 3 hari)",
 };
 
 export default desk;

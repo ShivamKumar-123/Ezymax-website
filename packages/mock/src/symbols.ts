@@ -1,4 +1,4 @@
-import { CATALOGUE_ROWS, type CatalogueRow } from "./catalogue.generated";
+import { CATALOGUE_ROWS, SPEC_ROWS, type CatalogueRow } from "./catalogue.generated";
 
 export type AssetClass = "forex" | "metals" | "indices" | "energies" | "crypto" | "stocks";
 
@@ -23,8 +23,10 @@ export interface Instrument {
   icon: SymbolIcon;
   /** "core": the 28 hand-maintained instruments (always streamed); "catalogue": generated from the provider catalogue */
   tier?: "core" | "catalogue";
-  /** tradable on live accounts (catalogue instruments are demo-only until enabled: the engine answers symbol_demo_only) */
+  /** tradable on live accounts (core: always; catalogue: the row's default, then the engine's switch via liveFlags) */
   liveTrading?: boolean;
+  /** why a catalogue market is kept off live trading (config "live_off"), if it is */
+  liveOff?: string;
   /** trading session key shared with the engine: fx, 24x7, us_equity, hk_equity, jp_equity */
   session?: string;
   quoteCcy?: string;
@@ -79,7 +81,7 @@ function catalogueIcon(code: string): SymbolIcon {
   return { kind: "energy", code: a };
 }
 
-const fromRow = ([symbol, name, assetClass, digits, spread, price, change, contractSize, session, quoteCcy, baseCcy, exchange, icon]: CatalogueRow): Instrument => ({
+const fromRow = ([symbol, name, assetClass, digits, spread, price, change, contractSize, session, quoteCcy, baseCcy, exchange, icon, live, liveOff]: CatalogueRow): Instrument => ({
   symbol,
   name,
   assetClass: assetClass as AssetClass,
@@ -90,7 +92,9 @@ const fromRow = ([symbol, name, assetClass, digits, spread, price, change, contr
   contractSize,
   icon: catalogueIcon(icon),
   tier: "catalogue",
-  liveTrading: false,
+  // the row's default (config "live": true, not kept off); live builds take the engine's switch on top (liveFlags)
+  liveTrading: live === 1,
+  liveOff: liveOff || undefined,
   session: session || undefined,
   quoteCcy: quoteCcy || undefined,
   baseCcy: baseCcy || undefined,
@@ -111,6 +115,63 @@ export const INSTRUMENT_MAP: Record<string, Instrument> = Object.fromEntries(ALL
 
 /** Open on live accounts? Core instruments yes; catalogue ones once enabled (demo accounts trade everything). */
 export const liveTradable = (symbol: string) => INSTRUMENT_MAP[symbol]?.liveTrading !== false;
+
+/** Effective trading spec of an instrument (config/trading-specs.json layered like the engine). */
+export interface InstrumentSpec {
+  contractSize: number;
+  lotMin: number;
+  lotMax: number;
+  lotStep: number;
+  maxLeverage: number;
+  swapLong: number;
+  swapShort: number;
+  /** "points": points per lot per night (core instruments); "percent_per_year": yearly % of the position value */
+  swapUnit: "points" | "percent_per_year";
+  /** weekday charged three nights ("" = none: charged every night) */
+  tripleSwapDay: string;
+  /** "mon-fri" or "all" (every night, crypto) */
+  swapDays: string;
+  stopsLevelPoints: number;
+}
+
+const SPECS = new Map<string, InstrumentSpec>(
+  SPEC_ROWS.map(([symbol, contractSize, lotMin, lotMax, lotStep, maxLeverage, swapLong, swapShort, pct, tripleSwapDay, swapDays, stopsLevelPoints]) => [
+    symbol,
+    { contractSize, lotMin, lotMax, lotStep, maxLeverage, swapLong, swapShort, swapUnit: pct ? "percent_per_year" : "points", tripleSwapDay, swapDays, stopsLevelPoints },
+  ]),
+);
+
+/** The trading spec of `symbol` (undefined for symbols outside the catalogue). */
+export const instrumentSpec = (symbol: string): InstrumentSpec | undefined => SPECS.get(symbol);
+
+let liveRev = 0;
+const liveSubs = new Set<() => void>();
+
+/**
+ * The live-trading switch per instrument, as the trading engine reports it (`liveTrading` of /v1/symbols). Live
+ * accounts and guests only see markets that are on; enabling a class or a symbol in the Back Office shows it without
+ * a deploy. Core instruments always trade live.
+ */
+export const liveFlags = {
+  set(flags: Record<string, boolean>) {
+    let changed = false;
+    for (const [symbol, on] of Object.entries(flags)) {
+      const i = INSTRUMENT_MAP[symbol];
+      if (!i || i.tier !== "catalogue" || i.liveTrading === on) continue;
+      i.liveTrading = on;
+      changed = true;
+    }
+    if (!changed) return;
+    liveRev++;
+    liveSubs.forEach((f) => f());
+  },
+  subscribe(f: () => void): () => void {
+    liveSubs.add(f);
+    return () => void liveSubs.delete(f);
+  },
+  /** changes each time a flag changes (for useSyncExternalStore) */
+  rev: () => liveRev,
+};
 
 /** Option series code from the options service / engine, e.g. EURUSD-20261002-1.1000-C. */
 const SERIES_RE = /^([A-Z0-9.]+)-(\d{4})(\d{2})(\d{2})-([\d.]+)-([CP])$/;

@@ -3,7 +3,8 @@
 import * as React from "react";
 import { toast } from "@/lib/notify";
 import { Bell, BellOff, Copy, Newspaper, Pencil, Plus, Trash2 } from "lucide-react";
-import { ALL_INSTRUMENTS, CALENDAR, INSTRUMENT_MAP, NEWS, getInstrument, priceFeed } from "@kalks/mock";
+import { CALENDAR, INSTRUMENT_MAP, NEWS, getInstrument, priceFeed } from "@kalks/mock";
+import { visibleInstruments, visibleSymbol } from "@/lib/scope";
 import { Flag, SymbolAvatar, cn, useQuote, useQuotes } from "@kalks/ui";
 import { journalTime, useTerminal, type JournalLine } from "@/lib/store";
 import { accCcy, accMoney, fmtPrice, fmtServer, fmtVol, splitSymbol } from "@/lib/trading";
@@ -420,7 +421,7 @@ export function NewsTab() {
           <button
             key={n.id}
             onClick={() => {
-              const s = n.symbols.find((x) => !!INSTRUMENT_MAP[x]);
+              const s = n.symbols.find((x) => !!INSTRUMENT_MAP[x] && visibleSymbol(x));
               if (s) T.openSymbol(s);
               toast(n.title, { description: t("toolbox.news.minAgo", { source: n.source, count: n.minutesAgo }) });
             }}
@@ -539,7 +540,7 @@ export function AlertsTab() {
     <div className="flex h-full min-h-0">
       <div className="w-[280px] shrink-0 space-y-2.5 overflow-y-auto border-e border-line p-3">
         <div className="text-[13.5px] font-semibold text-fg">{edit ? t("toolbox.alerts.edit") : t("toolbox.alerts.new")}</div>
-        <TSelect ariaLabel={t("toolbox.alerts.symbolAria")} value={symbol} onChange={setSymbol} options={ALL_INSTRUMENTS.map((i) => i.symbol)} />
+        <TSelect ariaLabel={t("toolbox.alerts.symbolAria")} value={symbol} onChange={setSymbol} options={visibleInstruments().map((i) => i.symbol)} />
         <div className="grid grid-cols-2 gap-1.5">
           <TSelect ariaLabel={t("toolbox.alerts.condition")} value={cond} onChange={setCond} options={[{ value: "above", label: t("toolbox.alerts.bidAbove") }, { value: "below", label: t("toolbox.alerts.bidBelow") }]} />
           <Stepper size="md" ariaLabel={t("toolbox.alerts.priceAria")} value={price} onChange={setPrice} step={1 / 10 ** d} placeholder={fmtPrice(symbol, q.bid)} decimals={d} />

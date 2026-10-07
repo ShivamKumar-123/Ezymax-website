@@ -13,6 +13,7 @@ import { atmIndex } from "@/lib/options/math";
 import { opt, useOpt } from "@/lib/options-store";
 import type { OptionUnderlying } from "@/lib/options/types";
 import { OptAvatar } from "./bits";
+import { useMarketScope, visibleSymbol } from "@/lib/scope";
 import { FeedChange, FeedPrice } from "./header";
 import { pct } from "./format";
 
@@ -86,7 +87,9 @@ export function InstrumentList({ mobile, onPick }: { mobile?: boolean; onPick?: 
     // every underlying of Kalks FX Options; the ones not open here yet show as "soon"
     ...OPTION_UNDERLYINGS.filter((x) => !listed.has(x.symbol)).map((x) => ({ symbol: x.symbol, name: x.name, assetClass: x.assetClass, atmVol: null, listed: false })),
   ];
-  const match = (x: Item) => !q || x.symbol.toLowerCase().includes(q.toLowerCase()) || x.name.toLowerCase().includes(q.toLowerCase());
+  // live accounts and guests: only underlyings that trade live (lib/scope.ts; today every underlying is a core market)
+  useMarketScope();
+  const match = (x: Item) => visibleSymbol(x.symbol) && (!q || x.symbol.toLowerCase().includes(q.toLowerCase()) || x.name.toLowerCase().includes(q.toLowerCase()));
   const shown = items.filter(match);
   const pick = (sym: string) => {
     opt.selectUnderlying(sym);

@@ -7,7 +7,7 @@ import { Clock, Info, Layers3 } from "lucide-react";
 import { getInstrument } from "@kalks/mock";
 import { PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { getRange, getTicks, useMarketClock } from "@/lib/market";
-import { contractSpec, fmtPrice, pipSize } from "@/lib/trading";
+import { contractSpec, fmtPrice, pipSize, swapRateText } from "@/lib/trading";
 import { KV } from "@/components/ui/primitives";
 import { useT } from "@kalks/i18n/react";
 
@@ -69,9 +69,10 @@ export function SymbolInfo({ symbol }: { symbol: string }) {
       </Section>
 
       <Section icon={<Info />} title={t("order.info.swapsSessions")}>
-        <KV k={t("order.info.swapLong")} v={<span className="text-down">{t("order.unit.pts", { n: spec.swapLong.toFixed(2) })}</span>} />
-        <KV k={t("order.info.swapShort")} v={<span className={spec.swapShort >= 0 ? "text-up" : "text-down"}>{t("order.unit.pts", { n: spec.swapShort.toFixed(2) })}</span>} />
-        <KV k={t("order.info.tripleSwap")} v={t.dyn(`order.info.tripleSwapDay.${spec.tripleSwap}`, spec.tripleSwap)} />
+        {/* points per lot per night (core instruments) or a yearly % of the position value (catalogue) */}
+        <KV k={t("order.info.swapLong")} v={<span className={spec.swapLong >= 0 ? "text-up" : "text-down"}>{swapRateText(t, spec.swapLong, spec.swapUnit)}</span>} />
+        <KV k={t("order.info.swapShort")} v={<span className={spec.swapShort >= 0 ? "text-up" : "text-down"}>{swapRateText(t, spec.swapShort, spec.swapUnit)}</span>} />
+        <KV k={t("order.info.tripleSwap")} v={spec.swapEveryNight || !spec.tripleSwap ? t("desk.sw.everyNight") : t.dyn(`order.info.tripleSwapDay.${spec.tripleSwap}`, spec.tripleSwap)} />
         <KV k={t("order.info.tradingSession")} v={<span className="whitespace-normal text-[11px]" dir="ltr">{spec.sessions}</span>} />
         <KV k={t("order.info.serverTime")} v={<span dir="ltr">GMT+3</span>} />
       </Section>

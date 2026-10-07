@@ -442,9 +442,6 @@ const desk: NsMessages<"desk"> = {
   "og.selling": "يحصل البائع على العلاوة الآن، لكنه يحتاج إلى هامش وقد يخسر أكثر بكثير من العلاوة إذا تحرك السعر عكس اتجاهه.",
   "opt.learn30": "جديد على الخيارات؟ تعلّمها في 30 ثانية",
   "trade.demoOnly": "التداول الحقيقي في هذا السوق غير مُفعّل بعد",
-  "trade.demoOnlyText": "يمكن تداول {symbol} على الحسابات التجريبية فقط حاليًا. ولا يزال بإمكانك إغلاق الصفقات المفتوحة.",
-  "side.demoOnly": "تجريبي فقط",
-  "side.demoOnlyTip": "متاح على الحسابات التجريبية. التداول الحقيقي في هذا السوق غير مُفعّل بعد.",
   "side.delayed": "متأخر",
   "side.delayedTip": "السعر متأخر؛ افتح الرسم البياني لعرض الأسعار المباشرة",
   "ot.views": "طرق عرض الخيارات",
@@ -464,6 +461,14 @@ const desk: NsMessages<"desk"> = {
   "pl.pageShort": "صفحة كاملة",
   "pl.splitShort": "مقسّم",
   "pl.toggleTip": "إظهار لوحة الصفقات أو إخفاؤها",
+  "trade.unavailable": "هذا السوق غير متاح في حسابك",
+  "trade.unavailableText": "سيتم عرض EURUSD بدلاً منه.",
+  "sw.pctYear": "{n}% / سنوياً",
+  "sw.nightly": "تُحتسب كل ليلة",
+  "sw.triple": "تُحتسب كل ليلة، وثلاث مرات يوم {day}",
+  "sw.summary": "شراء {long} · بيع {short} ({when})",
+  "sw.title": "السواب الليلي",
+  "sw.everyNight": "كل ليلة (بدون سواب ثلاثي)",
 };
 
 export default desk;

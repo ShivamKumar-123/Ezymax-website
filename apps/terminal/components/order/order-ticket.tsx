@@ -9,12 +9,13 @@
 import * as React from "react";
 import { Calculator, ChevronDown, Lock, Zap } from "lucide-react";
 import { toast } from "@/lib/notify";
-import { ALL_INSTRUMENTS, getInstrument, liveTradable, priceFeed, type Quote } from "@kalks/mock";
+import { getInstrument, priceFeed, type Quote } from "@kalks/mock";
+import { visibleInstruments } from "@/lib/scope";
 import { PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { useMarketOpen } from "@/lib/market-hours";
 import { useSlowQuote } from "@/lib/market";
-import { accCcy, accMoney, fmtPrice, fmtVol, marginRequired, pendingLabelKey, pipSize, pipValuePerLot, splitSymbol, type Expiry, type OrderType, type PendingOrder } from "@/lib/trading";
+import { accCcy, accMoney, fmtPrice, fmtVol, marginRequired, pendingLabelKey, pipSize, pipValuePerLot, splitSymbol, type Expiry, type OrderType, type PendingOrder, swapSummary } from "@/lib/trading";
 import { TInput, TSelect } from "@/components/ui/primitives";
 import { Button, FieldRow, HelpTip, InlineNumber, QuickStrip, Segmented, SummaryRow, Switch, Tip } from "@/components/ui/kit";
 import { DropMenu } from "@/components/ui/menu";
@@ -240,19 +241,17 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
   const tpMoney = stopMoney(tp, "tp");
 
   // the confirm button: its words are the order
-  // catalogue market on a live account, or a delayed price: shown, not traded
-  const demoOnly = !T.guest && acc.type === "live" && !liveTradable(symbol);
+  // a delayed price (the market isn't streaming yet): shown, not traded
   const delayed = !!q.delayed && !pending;
   let confirm: string;
-  if (demoOnly) confirm = t("desk.trade.demoOnly");
-  else if (delayed) confirm = t("desk.side.delayedTip");
+  if (delayed) confirm = t("desk.side.delayedTip");
   else if (!marketOpen) confirm = t("desk.op.confirm.closed");
   else if (busy) confirm = t("desk.op.confirm.sending");
   else if (!side) confirm = t("desk.op.confirm.pickSide");
   else if (pending && !price) confirm = t("desk.op.confirm.enterPrice");
   else if (pending) confirm = t("desk.op.confirm.pending", { label: pendLabel(side), lots: fmtVol(vol), symbol, price: fmtPrice(symbol, parseFloat(price)) });
   else confirm = t("desk.op.confirm.market", { side: sideWord(side), lots: fmtVol(vol), symbol });
-  const canConfirm = !demoOnly && !delayed && marketOpen && !busy && !!side && (!pending || !!price);
+  const canConfirm = !delayed && marketOpen && !busy && !!side && (!pending || !!price);
   const explain = pending ? (side ? t.dyn(`desk.op.explain.${side}.${type === "stop-limit" ? "stopLimit" : type}`) : t("desk.op.explain.pickSide")) : t("desk.op.marketTip");
 
   const stopRow = (which: "sl" | "tp") => {
@@ -323,7 +322,7 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
             <span className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2">
               <SymbolAvatar symbol={symbol} size={16} />
             </span>
-            <TSelect ariaLabel={t("order.ticket.symbol")} value={symbol} onChange={(v) => (onSymbol ? onSymbol(v) : T.openSymbol(v))} options={ALL_INSTRUMENTS.map((i) => ({ value: i.symbol, label: `${i.symbol} · ${i.name}` }))} className="h-8 ps-9 font-medium" />
+            <TSelect ariaLabel={t("order.ticket.symbol")} value={symbol} onChange={(v) => (onSymbol ? onSymbol(v) : T.openSymbol(v))} options={visibleInstruments().map((i) => ({ value: i.symbol, label: `${i.symbol} · ${i.name}` }))} className="h-8 ps-9 font-medium" />
           </div>
         )}
 
@@ -570,6 +569,9 @@ function LiveSummary({ symbol, volume, unitLabel }: { symbol: string; volume: nu
         <span className={short ? "text-down" : undefined}>
           {accMoney(acc, m.free - margin)} {ccy}
         </span>
+      </SummaryRow>
+      <SummaryRow label={t("desk.sw.title")} help={<HelpTip title={t("desk.g.swap.t")} text={t("desk.g.swap")} />}>
+        <span className="whitespace-normal text-end font-sans text-[11.5px] text-fg-2">{swapSummary(t, symbol)}</span>
       </SummaryRow>
       {short && <div className="text-[12px] font-medium text-down">{t("desk.op.notEnough")}</div>}
     </>

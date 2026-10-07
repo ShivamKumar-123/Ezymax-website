@@ -5,6 +5,7 @@ import { toast } from "@/lib/notify";
 import { tr } from "@kalks/i18n/react";
 import { ACCOUNTS, HISTORY, INSTRUMENTS, INSTRUMENT_MAP, IS_LIVE, POSITIONS, getInstrument, isMarketOpen, liveTradable, priceFeed, rebaseTrades, type Quote, type TradingAccount } from "@kalks/mock";
 import { useQuotes } from "@kalks/ui";
+import { startLiveFlags, syncRestricted, useMarketScope, visibleSymbol } from "@/lib/scope";
 import {
   DEFAULT_SYMBOLS,
   PENDING_LABEL,
@@ -586,6 +587,8 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const accountTypeRef = React.useRef<string>("demo");
   const account: TradingAccount = engine ? (engAccounts[session.login] ?? { ...GUEST_ACCOUNT, login: session.login, server: session.server, type: session.server === "Kalks-Demo" ? "demo" : "live" }) : accountOf(session.login);
   accountTypeRef.current = account.type;
+  // live accounts and guests only see markets that trade live (lib/scope.ts); demo accounts see everything
+  syncRestricted(guest || account.type === "live");
   const readOnly = session.investor;
 
   const notify = React.useCallback((kind: "fill" | "close" | "alert" | "error") => {
@@ -1215,10 +1218,10 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
 
   const placeOrder = React.useCallback(
     async (o: OrderRequest): Promise<boolean> => {
-      // catalogue markets are demo-only on live accounts until enabled (the engine answers symbol_demo_only);
-      // closing and modifying stay allowed
+      // a market hidden from this account (live trading off) can't be opened here; the engine refuses it too
+      // (symbol_demo_only). Closing and modifying stay allowed.
       if (accountTypeRef.current === "live" && !liveTradable(o.symbol)) {
-        toast.error(tr("desk.trade.demoOnly"), { description: tr("desk.trade.demoOnlyText", { symbol: o.symbol }) });
+        toast(tr("desk.trade.unavailable"));
         return false;
       }
       if (!engine) return placeOrderMock(o);
@@ -1449,7 +1452,25 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
 
   const setLayout = React.useCallback((l: Layout) => setWsState((w) => fitSlots({ ...w, layout: l })), []);
 
+  // the engine's live switch (live builds), and charts on markets this account may not see go to EURUSD
+  React.useEffect(() => startLiveFlags(), []);
+  const scope = useMarketScope();
+  React.useEffect(() => {
+    const hidden = wsRef.current.tabs.filter((t) => !scope.visible(t.symbol));
+    if (!hidden.length) return;
+    setWsState((w) => ({ ...w, tabs: w.tabs.map((t) => (scope.visible(t.symbol) ? t : { ...t, symbol: "EURUSD", drawings: [] })) }));
+    toast(tr("desk.trade.unavailable"), { description: tr("desk.trade.unavailableText"), id: "market-unavailable" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope.restricted, scope.list]);
+
+  /** A market this account may not see (live trading off): a neutral note, and EURUSD instead. */
+  const allowedSymbol = (symbol: string) => {
+    if (visibleSymbol(symbol)) return symbol;
+    toast(tr("desk.trade.unavailable"), { description: tr("desk.trade.unavailableText"), id: "market-unavailable" });
+    return "EURUSD";
+  };
   const addTab = React.useCallback((symbol?: string, tf: Timeframe = "H1") => {
+    if (symbol) symbol = allowedSymbol(symbol);
     setWsState((w) => {
       const t = makeTab(symbol ?? w.tabs.find((x) => x.id === w.activeId)?.symbol ?? "EURUSD", tf);
       const slots = w.slots.map((s) => (s === w.activeId ? t.id : s));
@@ -1490,6 +1511,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
 
   const openSymbol = React.useCallback((symbol: string, newTab = false) => {
     if (newTab) return addTab(symbol);
+    symbol = allowedSymbol(symbol);
     setWsState((w) => ({ ...w, tabs: w.tabs.map((t) => (t.id === w.activeId ? { ...t, symbol, drawings: t.symbol === symbol ? t.drawings : [] } : t)) }));
   }, [addTab]);
 

@@ -8,7 +8,8 @@ import { useTheme } from "next-themes";
 import { LOCALES } from "@kalks/i18n/locales";
 import { useLocale } from "@kalks/i18n/react";
 import type { MessageKey } from "@kalks/i18n";
-import { ALL_INSTRUMENTS, ASSET_CLASS_LABEL, INSTRUMENT_MAP } from "@kalks/mock";
+import { ASSET_CLASS_LABEL, INSTRUMENT_MAP } from "@kalks/mock";
+import { useMarketScope } from "@/lib/scope";
 import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { useTradeMode } from "@/lib/options/mode";
 import { useTerminal } from "@/lib/store";
@@ -51,7 +52,9 @@ function Palette() {
   const words = q.toLowerCase().split(/\s+/).filter(Boolean);
   // the whole catalogue (1,400+), best matches first; rows render (and stream) only for the few shown
   const needle = q.toLowerCase();
-  const markets = ALL_INSTRUMENTS.filter((i) => inSegment(i, cls, T.ws.favourites) && (!needle || i.symbol.toLowerCase().includes(needle) || i.name.toLowerCase().includes(needle))).sort((a, b) => (needle ? Number(!a.symbol.toLowerCase().startsWith(needle)) - Number(!b.symbol.toLowerCase().startsWith(needle)) : 0));
+  // live accounts and guests: only markets that trade live (lib/scope.ts)
+  const scope = useMarketScope();
+  const markets = scope.list.filter((i) => inSegment(i, cls, T.ws.favourites) && (!needle || i.symbol.toLowerCase().includes(needle) || i.name.toLowerCase().includes(needle))).sort((a, b) => (needle ? Number(!a.symbol.toLowerCase().startsWith(needle)) - Number(!b.symbol.toLowerCase().startsWith(needle)) : 0));
   const actions = words.length
     ? commands.filter((c) => {
         const hay = `${c.label} ${c.keywords ?? ""}`.toLowerCase();
@@ -119,7 +122,7 @@ function Palette() {
           <Kbd>Esc</Kbd>
         </div>
         <div className="shrink-0 border-b border-line px-3 py-2">
-          <SegmentChips instruments={ALL_INSTRUMENTS} value={cls} onChange={(s) => (setCls(s), setIdx(0))} favourites={T.ws.favourites} size="md" label={t("order.search.segment")} />
+          <SegmentChips instruments={scope.list} value={cls} onChange={(s) => (setCls(s), setIdx(0))} favourites={T.ws.favourites} size="md" label={t("order.search.segment")} />
         </div>
         <div className="t-scroll min-h-0 flex-1 overflow-y-auto p-1.5">
           {section(first[0] as string, first[1] as Row[])}

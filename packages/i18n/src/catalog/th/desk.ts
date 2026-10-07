@@ -442,9 +442,6 @@ const desk: NsMessages<"desk"> = {
   "og.selling": "ผู้ขายได้รับค่าพรีเมียมทันที แต่ต้องใช้มาร์จิ้น และอาจขาดทุนมากกว่าค่าพรีเมียมหลายเท่าถ้าราคาวิ่งสวนทาง",
   "opt.learn30": "เพิ่งเริ่มเทรดออปชัน? เรียนรู้ได้ใน 30 วินาที",
   "trade.demoOnly": "ยังไม่เปิดให้เทรดจริงในตลาดนี้",
-  "trade.demoOnlyText": "ขณะนี้ {symbol} เทรดได้ในบัญชีทดลอง คุณยังคงปิดสถานะที่เปิดอยู่ได้",
-  "side.demoOnly": "เฉพาะบัญชีทดลอง",
-  "side.demoOnlyTip": "ใช้ได้ในบัญชีทดลอง ยังไม่เปิดให้เทรดจริงในตลาดนี้",
   "side.delayed": "ล่าช้า",
   "side.delayedTip": "ราคาล่าช้า เปิดกราฟเพื่อรับราคาแบบเรียลไทม์",
   "ot.views": "มุมมองออปชัน",
@@ -464,6 +461,14 @@ const desk: NsMessages<"desk"> = {
   "pl.pageShort": "เต็มหน้า",
   "pl.splitShort": "แบ่งหน้าจอ",
   "pl.toggleTip": "แสดงหรือซ่อนแผงสถานะ",
+  "trade.unavailable": "ตลาดนี้ไม่พร้อมใช้งานในบัญชีของคุณ",
+  "trade.unavailableText": "กำลังแสดง EURUSD แทน",
+  "sw.pctYear": "{n}% / ปี",
+  "sw.nightly": "คิดทุกคืน",
+  "sw.triple": "คิดทุกคืน และสามเท่าในวัน{day}",
+  "sw.summary": "ซื้อ {long} · ขาย {short} ({when})",
+  "sw.title": "สวอปข้ามคืน",
+  "sw.everyNight": "ทุกคืน (ไม่มีสวอป 3 วัน)",
 };
 
 export default desk;

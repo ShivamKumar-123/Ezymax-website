@@ -442,9 +442,6 @@ const desk: NsMessages<"desk"> = {
   "og.selling": "Chi vende incassa subito il premio, ma deve avere margine e può perdere molto più del premio se il prezzo va contro di lui.",
   "opt.learn30": "Nuovo alle opzioni? Impara in 30 secondi",
   "trade.demoOnly": "Il trading reale su questo mercato non è ancora attivo",
-  "trade.demoOnlyText": "Per ora {symbol} si può negoziare solo sui conti demo. Puoi comunque chiudere le posizioni aperte.",
-  "side.demoOnly": "Solo demo",
-  "side.demoOnlyTip": "Disponibile sui conti demo. Il trading reale su questo mercato non è ancora attivo.",
   "side.delayed": "Ritardato",
   "side.delayedTip": "Prezzo ritardato; apri il grafico per ricevere i prezzi in tempo reale",
   "ot.views": "Viste opzioni",
@@ -464,6 +461,14 @@ const desk: NsMessages<"desk"> = {
   "pl.pageShort": "Pagina intera",
   "pl.splitShort": "Diviso",
   "pl.toggleTip": "Mostra o nascondi il pannello delle posizioni",
+  "trade.unavailable": "Questo mercato non è disponibile sul tuo conto",
+  "trade.unavailableText": "Al suo posto viene mostrato EURUSD.",
+  "sw.pctYear": "{n}% / anno",
+  "sw.nightly": "addebitato ogni notte",
+  "sw.triple": "addebitato ogni notte, triplo il {day}",
+  "sw.summary": "Acquisto {long} · Vendita {short} ({when})",
+  "sw.title": "Swap overnight",
+  "sw.everyNight": "Ogni notte (nessuno swap triplo)",
 };
 
 export default desk;

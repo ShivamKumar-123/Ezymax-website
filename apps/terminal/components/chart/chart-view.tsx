@@ -5,7 +5,7 @@ import { useTheme } from "next-themes";
 import { LineStyle, type IPriceLine } from "lightweight-charts";
 import { toast } from "@/lib/notify";
 import { ArrowDownRight, ArrowUpRight, Bell, Camera, CandlestickChart, ChevronUp, Crosshair, GripVertical, Layers, Minus, Plus, ShoppingCart, SlidersHorizontal, X, Zap } from "lucide-react";
-import { getInstrument, liveTradable, isMarketOpen, priceFeed } from "@kalks/mock";
+import { getInstrument, isMarketOpen, priceFeed } from "@kalks/mock";
 import { PriceText, cn, useQuote } from "@kalks/ui";
 import { usePositionProfit, useTerminal, type Anchor, type ChartTab, type Drawing } from "@/lib/store";
 import { CHART_TYPES, TIMEFRAMES, accMoney, fmtPrice, fmtVol, profitAt, roundPrice, type TPosition } from "@/lib/trading";
@@ -864,9 +864,8 @@ export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; 
   const t = useT();
   const { bid, ask, dir, delayed } = useQuote(symbol);
   const spread = Math.round((ask - bid) * 10 ** getInstrument(symbol).digits);
-  // a delayed snapshot or a demo-only market on a live account: prices shown, Sell / Buy off (with the reason)
-  const demoOnly = !T.guest && T.account.type === "live" && !liveTradable(symbol);
-  const blocked = delayed ? t("desk.side.delayedTip") : demoOnly ? t("desk.side.demoOnlyTip") : null;
+  // a delayed snapshot (not streaming yet): prices shown, Sell / Buy off with the reason
+  const blocked = delayed ? t("desk.side.delayedTip") : null;
   const [lot, setLot] = React.useState(String(T.ws.lot.toFixed(2)));
   React.useEffect(() => {
     setLot(T.ws.lot.toFixed(2));
@@ -929,7 +928,7 @@ export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; 
         />
         <button onClick={() => step(1)} className="grid size-5 shrink-0 place-items-center rounded text-[13px] leading-none text-fg-3 hover:bg-surface-3 hover:text-fg" aria-label={t("chart.oneClick.increase")}>+</button>
         </div>
-        {!open ? <span className="whitespace-nowrap text-[10px] font-semibold text-warn">{t("chart.oneClick.marketClosed")}</span> : delayed ? <span className="whitespace-nowrap text-[10px] font-semibold text-warn">{t("desk.side.delayed")}</span> : demoOnly ? <span className="whitespace-nowrap text-[10px] font-semibold text-fg-3">{t("desk.side.demoOnly")}</span> : <span className="font-mono text-[10.5px] text-fg-3">{spread}</span>}
+        {!open ? <span className="whitespace-nowrap text-[10px] font-semibold text-warn">{t("chart.oneClick.marketClosed")}</span> : delayed ? <span className="whitespace-nowrap text-[10px] font-semibold text-warn">{t("desk.side.delayed")}</span> : <span className="font-mono text-[10.5px] text-fg-3">{spread}</span>}
       </div>
       <button onClick={() => go("buy")} disabled={!open || !!blocked} title={blocked ?? (open ? (T.guest ? t("trader.guest.title") : undefined) : t("chart.oneClick.marketClosed"))} className={cn("flex flex-col items-end bg-up/12 px-2 py-1 text-right transition-colors hover:bg-up/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={t(open ? "chart.oneClick.buyAria" : "chart.oneClick.buyClosedAria", { symbol })}>
         <span className="flex items-center gap-1 text-[11px] font-semibold text-up">{t("common.buy")}{T.ws.oneClick && !T.guest && <Zap className="size-3 fill-current" aria-hidden />}</span>

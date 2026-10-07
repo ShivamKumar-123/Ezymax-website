@@ -10,7 +10,7 @@ import { ArrowLeftRight, Check, Crosshair, Edit3, Layers, MoreHorizontal, Plus, 
 import { getInstrument, priceFeed } from "@kalks/mock";
 import { SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { usePositionProfit, useTerminal } from "@/lib/store";
-import { PENDING_LABEL, SOURCE_LABEL, accMoney, fmtPrice, fmtServer, fmtVol, pipSize, profitAt, type PendingOrder, type TPosition } from "@/lib/trading";
+import { PENDING_LABEL, SOURCE_LABEL, accMoney, fmtPrice, fmtServer, fmtVol, pipSize, profitAt, type PendingOrder, type TPosition, swapSummary } from "@/lib/trading";
 import { Td, Th } from "@/components/ui/panel";
 import { Pnl, Stepper } from "@/components/ui/primitives";
 import { Button, EmptyState, HelpTip, IconButton, Tip } from "@/components/ui/kit";
@@ -203,7 +203,7 @@ const PositionRow = React.memo(function PositionRow({ p, picking, selected, onSe
         <InlineStop p={p} kind="tp" />
       </Td>
       <Td right mono className="text-fg-2">
-        <span dir="ltr">{accMoney(a, p.swap)}</span>
+        <span dir="ltr" title={swapSummary(t, p.symbol)}>{accMoney(a, p.swap)}</span>
       </Td>
       <Td right mono className="text-fg-2">
         <span dir="ltr">{accMoney(a, -p.commission)}</span>

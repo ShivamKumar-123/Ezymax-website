@@ -443,9 +443,6 @@ const desk: NsMessages<"desk"> = {
   "og.selling": "卖方立即收到权利金，但需要占用预付款；如果价格朝不利方向变动，亏损可能远超权利金。",
   "opt.learn30": "刚接触期权？30 秒快速了解",
   "trade.demoOnly": "该市场尚未开通真实交易",
-  "trade.demoOnlyText": "{symbol} 目前可在模拟账户中交易。您仍可平掉现有持仓。",
-  "side.demoOnly": "仅限模拟",
-  "side.demoOnlyTip": "可在模拟账户中交易。该市场尚未开通真实交易。",
   "side.delayed": "延迟",
   "side.delayedTip": "价格有延迟；打开图表以获取实时价格",
   "ot.views": "期权视图",
@@ -465,6 +462,14 @@ const desk: NsMessages<"desk"> = {
   "pl.pageShort": "整页",
   "pl.splitShort": "分屏",
   "pl.toggleTip": "显示或隐藏持仓面板",
+  "trade.unavailable": "您的账户无法使用此市场",
+  "trade.unavailableText": "已改为显示 EURUSD。",
+  "sw.pctYear": "每年 {n}%",
+  "sw.nightly": "每晚收取",
+  "sw.triple": "每晚收取，{day}收取三倍",
+  "sw.summary": "买入 {long} · 卖出 {short}（{when}）",
+  "sw.title": "隔夜利息",
+  "sw.everyNight": "每晚（无三倍隔夜利息）",
 };
 
 export default desk;
