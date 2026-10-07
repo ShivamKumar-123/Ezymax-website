@@ -1,3 +1,4 @@
+/* NOTE: this file is currently unreferenced (legacy Vite landing). Regulatory, custody, insurance and client-count claims were removed from it: Ezymex holds no licence, and the figures/addresses here came from the template this site was built from. Do not re-add any of them without the licence number, the audited figure or the real address behind it. */
 import { Link } from 'react-router-dom'
 import { Shield, Lock, Zap, Award, Users, TrendingUp } from 'lucide-react'
 import Button from '../components/Button'
@@ -10,12 +11,12 @@ const WhyUs = () => {
     {
       icon: Shield,
       title: 'Regulated & Licensed',
-      description: 'Fully licensed and regulated by FCA (UK) and CySEC (Cyprus), ensuring the highest standards of financial conduct and client protection.'
+      description: 'Built and operated in-house, with execution, margin and settlement logic we control end to end rather than rent.'
     },
     {
       icon: Lock,
       title: 'Segregated Client Funds',
-      description: 'Your funds are held in segregated accounts with tier-1 banks, completely separate from company operational funds.'
+      description: 'Every balance movement is written to a locked, idempotent ledger, so a retry or a race cannot credit or debit you twice.'
     },
     {
       icon: TrendingUp,
@@ -135,15 +136,15 @@ const WhyUs = () => {
                 Regulatory Compliance
               </h2>
               <p className="text-text-secondary text-lg mb-8">
-                {BRAND_NAME} is authorized and regulated by the Financial Conduct Authority (FCA) in the UK (License No. 123456) and the Cyprus Securities and Exchange Commission (CySEC) (License No. 789/12).
+                {BRAND_NAME} does not currently hold a financial services licence. Please take that into account when deciding how much to deposit.
               </p>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="glass-card p-6">
-                  <h3 className="text-xl font-semibold text-white mb-2">FCA Regulated</h3>
+                  <h3 className="text-xl font-semibold text-white mb-2">Server-Side Execution</h3>
                   <p className="text-text-secondary">United Kingdom</p>
                 </div>
                 <div className="glass-card p-6">
-                  <h3 className="text-xl font-semibold text-white mb-2">CySEC Licensed</h3>
+                  <h3 className="text-xl font-semibold text-white mb-2">Ledgered Balances</h3>
                   <p className="text-text-secondary">European Union</p>
                 </div>
               </div>

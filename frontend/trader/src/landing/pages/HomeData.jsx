@@ -1,3 +1,4 @@
+/* NOTE: this file is currently unreferenced (legacy Vite landing). Regulatory, custody, insurance and client-count claims were removed from it: Ezymex holds no licence, and the figures/addresses here came from the template this site was built from. Do not re-add any of them without the licence number, the audited figure or the real address behind it. */
 import {
   Zap, Shield, Globe, Cpu, Target, Droplet, Activity,
   DollarSign, Layers, Monitor, Smartphone, Server,
@@ -94,7 +95,7 @@ export const testimonials = [
 export const faqs = [
   { q: 'How do I open a trading account?', a: 'Opening an account is simple. Click "Open Account", complete the registration form, verify your identity, and fund your account. The entire process takes less than 10 minutes.' },
   { q: 'What is the minimum deposit?', a: 'The minimum deposit for a Standard account is $100. ECN Raw accounts require $500, and Pro accounts require $5,000. VIP accounts have custom requirements.' },
-  { q: 'Are client funds segregated?', a: 'Yes. All client funds are held in segregated accounts with top-tier banks, completely separate from company operational funds.' },
+  { q: 'Are client funds segregated?', a: 'Balances are tracked on a locked, double-entry ledger and every movement is auditable. Ezymex does not currently hold a financial services licence, so client money is not held under a regulatory segregation regime — please factor that in.' },
   { q: 'What trading platforms are available?', a: 'We offer WebTrader (browser-based), a Mobile App (iOS & Android), and a Desktop Terminal for professional traders.' },
   { q: 'Do you offer a demo account?', a: 'Yes, we offer a free demo account with virtual funds so you can practice trading without any risk.' },
 ]

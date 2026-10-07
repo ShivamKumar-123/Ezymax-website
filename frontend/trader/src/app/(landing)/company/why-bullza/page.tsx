@@ -47,7 +47,7 @@ export default function WhyUsPage() {
           className="mt-12"
           columns={3}
           items={[
-            { icon: Shield,     title: 'Built In-House',        body: 'Every platform is engineered by our own team since 2010 — not a resold template you have to grow out of.' },
+            { icon: Shield,     title: 'Built In-House',        body: 'The engine, the back office and the risk layer are written and maintained in-house — not a resold template nobody here can change.' },
             { icon: Lock,       title: 'Your Brand, Your Domain', body: 'Everything ships white-label: your name, your branding, your domain, top to bottom.' },
             { icon: TrendingUp, title: 'Admin & Risk Controls', body: 'A full back office with CRM, risk controls, liquidity routing and reporting for your team.' },
             { icon: Zap,        title: 'Fast, Reliable Engine', body: 'A high-performance matching and pricing engine that stays responsive through volatile sessions.' },
@@ -85,7 +85,7 @@ export default function WhyUsPage() {
       {/* Regulatory compliance */}
       <Section raised>
         <div className="mk-card max-w-4xl mx-auto text-center flex flex-col gap-5">
-          <h2 className="mk-h2">Built for Regulated Operators</h2>
+          <h2 className="mk-h2">Built to Operate Properly</h2>
           <p className="mk-lead">
             {BRAND_NAME} is a technology provider, not a broker. We build platforms that fit the
             compliance workflows your licence requires — KYC/AML, reporting and audit trails wired

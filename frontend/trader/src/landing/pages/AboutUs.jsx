@@ -1,3 +1,4 @@
+/* NOTE: this file is currently unreferenced (legacy Vite landing). Regulatory, custody, insurance and client-count claims were removed from it: Ezymex holds no licence, and the figures/addresses here came from the template this site was built from. Do not re-add any of them without the licence number, the audited figure or the real address behind it. */
 import { Link } from 'react-router-dom'
 import { Users, Globe, Award, TrendingUp, Wallet, Zap, Handshake, Moon } from 'lucide-react'
 import Button from '../components/Button'
@@ -101,7 +102,7 @@ const AboutUs = () => {
               Who We Are — {BRAND_NAME}
             </h1>
             <p className="text-xl max-w-3xl mx-auto" style={{ color: 'rgba(255,255,255,0.78)' }}>
-              A globally regulated forex and CFD broker — and a decentralized exchange with on-chain insured trades — committed to transparency, innovation, and excellence.
+              A multi-asset trading platform — forex, metals, indices and crypto on one account — built around execution and custody we can explain in full.
             </p>
           </ScrollReveal>
         </div>
@@ -112,7 +113,7 @@ const AboutUs = () => {
           <ScrollReveal variant="fadeUp">
             <div className="max-w-4xl mx-auto mb-16">
               <p className="text-lg text-text-secondary leading-relaxed mb-6">
-                Founded in 2010, {BRAND_NAME} is a globally regulated forex and CFD broker headquartered at Office 23US, 18 Young St, UNIT LGE 1/1, Edinburgh EH2 4JB, Scotland, and a decentralized exchange offering on-chain insured trades and non-custodial wallet trading. With over 500,000 clients across 150+ countries, we've built our reputation on transparency, speed, and trust.
+                {BRAND_NAME} is a multi-asset trading platform covering forex, metals, indices and crypto from a single account. We are early, and we would rather say so than borrow someone else's history: the case for trading here is the engineering — execution enforced on our servers, balances on a locked and auditable ledger, deposits verified against the blockchain, and withdrawals gated behind two-factor and step-up checks.
               </p>
               <p className="text-lg text-text-secondary leading-relaxed">
                 Our mission is to democratize access to global financial markets by providing cutting-edge technology, competitive pricing, and world-class support. Whether you're a beginner taking your first steps in trading or a seasoned professional, {BRAND_NAME} provides the tools, platforms, and expertise you need to succeed.
@@ -180,7 +181,7 @@ const AboutUs = () => {
                 <Globe className="w-16 h-16 text-primary-accent mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-3">Global Reach</h3>
                 <p className="text-text-secondary">
-                  Serving traders in 150+ countries with localized support and multilingual platforms.
+                  Multilingual platform with localized support, available to traders wherever we can lawfully offer it.
                 </p>
               </Card>
             </ScrollRevealItem>

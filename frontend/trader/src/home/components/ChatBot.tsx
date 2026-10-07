@@ -62,7 +62,7 @@ const RULES: { keys: string[]; reply: string; cta?: { label: string; href: strin
   {
     keys: ['insurance', 'insured', 'insure', 'trade protection', 'protect my trade'],
     reply:
-      `Every position on ${BRAND_NAME} is automatically policy-backed by on-chain trade insurance — no opt-in. If the market moves against you beyond the policy threshold, the insured amount pays out automatically via smart contract.`,
+      `Trade protection is an optional product with its own eligibility rules, limits and cooldowns, and claims are reviewed before any payout — it is not automatic cover on every position. Check the product page for what is actually covered before you rely on it.`,
     cta: [{ label: 'Read more', href: '/products/insurance' }],
   },
   {
@@ -74,7 +74,7 @@ const RULES: { keys: string[]; reply: string; cta?: { label: string; href: strin
   {
     keys: ['portfolio', 'mam', 'pamm', 'managed account', 'manager'],
     reply:
-      'Portfolio Management offers MAM (Multi-Account Manager) and PAMM (Percentage Allocation Management Module) models. Verified managers, segregated funds, transparent high-water-mark fees. $1,000 minimum for PAMM, $5,000 for MAM.',
+      'Portfolio Management offers MAM (Multi-Account Manager) and PAMM (Percentage Allocation Management Module) models. Unit-based accounting per investor and high-water-mark fees, so you are not charged twice for the same gain. $1,000 minimum for PAMM, $5,000 for MAM.',
     cta: [{ label: 'View managers', href: '/services/portfolio-management' }],
   },
   {
@@ -134,7 +134,8 @@ const RULES: { keys: string[]; reply: string; cta?: { label: string; href: strin
   {
     keys: ['regulated', 'license', 'regulation', 'safe', 'secure'],
     reply:
-      `${BRAND_NAME} is a globally regulated forex & CFD broker founded in 2010, with a decentralized exchange layer added. Client funds are held in segregated tier-one bank accounts; trades carry on-chain insurance.`,
+      `${BRAND_NAME} does not currently hold a financial services licence, and we will not tell you otherwise — please weigh that before you deposit. What we can show you is how the platform is built: stops and stop-outs are enforced server-side, every balance movement is written to a locked ledger, crypto deposits are verified against the blockchain before crediting, and withdrawals need two-factor plus step-up verification. Leveraged trading can lose you money quickly — see our risk warning.`,
+    cta: [{ label: 'Risk warning', href: '/risk-warning' }],
   },
   {
     keys: ['thanks', 'thank you', 'shukriya', 'dhanyavaad', 'ty'],

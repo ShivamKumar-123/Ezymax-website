@@ -1,3 +1,4 @@
+/* NOTE: this file is currently unreferenced (legacy Vite landing). Regulatory, custody, insurance and client-count claims were removed from it: Ezymex holds no licence, and the figures/addresses here came from the template this site was built from. Do not re-add any of them without the licence number, the audited figure or the real address behind it. */
 import TradingPageTemplate from '../components/TradingPageTemplate'
 import { BRAND_NAME } from '@/lib/brand'
 
@@ -37,7 +38,7 @@ const Forex = () => {
       {
         icon: '🔒',
         title: 'Secure Trading',
-        description: 'Your funds are protected in segregated accounts with tier-1 banks and negative balance protection.'
+        description: 'Margin call at 80% and stop-out at 50% are enforced server-side, so an account is closed out before it runs past its balance.'
       }
     ]
   }

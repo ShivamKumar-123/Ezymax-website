@@ -1,3 +1,4 @@
+/* NOTE: this file is currently unreferenced (legacy Vite landing). Regulatory, custody, insurance and client-count claims were removed from it: Ezymex holds no licence, and the figures/addresses here came from the template this site was built from. Do not re-add any of them without the licence number, the audited figure or the real address behind it. */
 import { Link } from 'react-router-dom'
 import { ArrowRight, Zap, TrendingDown, Lock, BarChart3, CreditCard, Globe, Monitor, Smartphone } from 'lucide-react'
 import Button from '../components/Button'
@@ -23,7 +24,7 @@ const Home = () => {
     {
       icon: Lock,
       title: 'Secure & Regulated',
-      description: 'Client funds held in segregated accounts. Fully licensed.'
+      description: 'Balances held on a locked, idempotent ledger with server-side risk enforcement.'
     },
     {
       icon: BarChart3,
@@ -110,7 +111,7 @@ const Home = () => {
             </div>
             <div className="flex items-center gap-2">
               <Lock className="w-6 h-6 text-primary-accent" />
-              <span className="font-semibold">Regulated by FCA & CySEC</span>
+              <span className="font-semibold">Server-side risk engine</span>
             </div>
             <div className="flex items-center gap-2">
               <Globe className="w-6 h-6 text-primary-accent" />

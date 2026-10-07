@@ -214,7 +214,7 @@ export default function Footer() {
           style={{ borderTop: '1px solid var(--fx-line)' }}
         >
           <p className="text-xs" style={{ color: 'var(--fx-text-3)' }}>
-            {BRAND_COPYRIGHT} · Software for trading businesses since 2010
+            {BRAND_COPYRIGHT} · Trading involves risk to your capital
           </p>
           {/* Cookie Settings — surfaces the consent modal even after
               the user has already accepted/saved a preference, so the

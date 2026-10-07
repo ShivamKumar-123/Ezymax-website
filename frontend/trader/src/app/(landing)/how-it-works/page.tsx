@@ -72,7 +72,7 @@ export default function HowItWorksPage() {
             tone="ok"
             items={[
               'Your brand, your domain, end to end',
-              'Built in-house since 2010',
+              'Engine and back office built in-house',
               'Web, mobile, desktop and back office',
               'Typically live in weeks',
             ]}

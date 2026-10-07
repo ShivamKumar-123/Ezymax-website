@@ -1,9 +1,10 @@
+/* NOTE: this file is currently unreferenced (legacy Vite landing). Regulatory, custody, insurance and client-count claims were removed from it: Ezymex holds no licence, and the figures/addresses here came from the template this site was built from. Do not re-add any of them without the licence number, the audited figure or the real address behind it. */
 import { Shield, Lock, CheckCircle, FileText } from 'lucide-react'
 import ScrollReveal, { ScrollRevealGroup, ScrollRevealItem } from '../../components/animations/ScrollReveal'
 import SectionHeader from '../../components/SectionHeader'
 
 const securityFeatures = [
-  { icon: <Shield size={22} />, title: 'Client funds held in segregated accounts', color: 'text-primary-purple', bg: 'bg-primary-purple/10' },
+  { icon: <Shield size={22} />, title: 'Balances on a locked, auditable ledger', color: 'text-primary-purple', bg: 'bg-primary-purple/10' },
   { icon: <Lock size={22} />, title: 'Advanced SSL encryption security', color: 'text-blue-400', bg: 'bg-blue-400/10' },
   { icon: <CheckCircle size={22} />, title: 'Full AML & KYC compliance', color: 'text-primary-purple', bg: 'bg-primary-purple/10' },
   { icon: <FileText size={22} />, title: 'Independent dispute resolution system', color: 'text-primary-accent', bg: 'bg-primary-accent/10' },

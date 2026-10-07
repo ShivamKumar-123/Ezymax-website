@@ -1,14 +1,32 @@
 /**
  * Static content for the marketing home page.
  *
- * SetupFX positioning: a software development company that builds and
- * licenses trading platforms, back offices and risk engines to brokers
- * and prop firms — delivered white-label, under the client's own brand.
- * We are a technology vendor, not a broker. Copy never claims to operate
- * a brokerage, provide financial services, or hold/route client funds.
+ * Ezymex positioning: a multi-asset trading platform that retail traders
+ * open an account on directly. The previous copy in this file described a
+ * B2B software vendor selling white-label platforms to other brokers —
+ * that no longer matches the product, which takes deposits, runs KYC,
+ * holds balances and executes orders itself.
  *
- * Demo CTAs point at /company/contact ("Book a demo"); "Client Login"
- * keeps existing operators' users reaching /auth/login.
+ * Claims policy for this file
+ * ---------------------------
+ * Everything here is either a verifiable property of the platform or a
+ * qualitative statement. Specifically NOT present, and not to be added
+ * without the fact behind it:
+ *
+ *   • an operating history or founding date — the brand has no track
+ *     record to cite yet, and for a venue that holds client funds a
+ *     fabricated one is the single most misleading thing on a page;
+ *   • client/volume counts, payout totals, or any "trusted by N traders"
+ *     figure, unless audited;
+ *   • the words "regulated", "licensed", "segregated" or any named
+ *     authority — there is no licence yet. Add these only alongside a real
+ *     licence number and jurisdiction;
+ *   • performance, profit or return figures of any kind.
+ *
+ * Trust here is carried by what the platform demonstrably does: the
+ * execution and custody architecture, the security controls, and a plain
+ * risk disclosure. That is also what a regulator, a payment provider and
+ * an informed trader actually look for.
  */
 
 import {
@@ -19,15 +37,15 @@ import {
   BRAND_COPYRIGHT,
 } from '@/lib/brand';
 
-/** "Book a demo" target — the primary conversion across the site. */
-export const SIGNUP_HREF = '/company/contact';
+/** Account opening — the primary conversion across the site. */
+export const SIGNUP_HREF = '/auth/register';
 
 /** Direct Android APK download (served from public/downloads). */
 export const APK_HREF = '/downloads/ezymex.apk';
 
 export const BRAND = {
   name: BRAND_NAME,
-  tagline: 'Trading platforms, built for brokers and prop firms.',
+  tagline: 'Multi-asset trading, engineered properly.',
   logo: BRAND_LOGO,
   /** Ink mark — for the white header band. */
   logoDark: BRAND_LOGO_DARK,
@@ -41,37 +59,46 @@ export type NavItem = {
   label: string;
   href: string;
   children?: { label: string; href: string }[];
-  // When true the link points off-site (e.g. the liquidity subdomain) and is
-  // rendered as a plain <a target="_blank"> instead of a Next <Link>.
+  // When true the link points off-site and is rendered as a plain
+  // <a target="_blank"> instead of a Next <Link>.
   external?: boolean;
 };
 
 /**
- * Primary navigation — four menus, each a dropdown of live pages. The
- * product surfaces sit under Platforms; the delivery/service lines under
- * Solutions; company pages under Company.
+ * Primary navigation, reorganised for a trader rather than a buyer:
+ * what you can trade, what you trade it on, what else the account does,
+ * then the company.
  */
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Home', href: '/' },
   {
+    label: 'Markets',
+    href: '/trading/forex',
+    children: [
+      { label: 'Forex', href: '/trading/forex' },
+      { label: 'Crypto', href: '/trading/crypto' },
+      { label: 'Commodities', href: '/trading/commodities' },
+      { label: 'Indices', href: '/trading/indices' },
+    ],
+  },
+  {
     label: 'Platforms',
     href: '/platforms/web',
     children: [
-      { label: 'Global Trading Platform', href: '/platforms/web' },
+      { label: 'Web Terminal', href: '/platforms/web' },
+      { label: 'Desktop Terminal', href: '/download' },
       { label: 'Copy Trading', href: '/platforms/copy-trading' },
-      { label: 'IB Management', href: '/platforms/ib-management' },
-      { label: 'Prop Trading', href: '/platforms/prop-trading' },
-      { label: 'Admin & Back Office', href: '/platforms/super-admin' },
+      { label: 'Algo & API', href: '/platforms/prop-trading' },
     ],
   },
-  { label: 'Liquidity', href: 'https://liquidity.ezymex.com', external: true },
   {
-    label: 'Solutions',
-    href: '/services/market-research',
+    label: 'Accounts',
+    href: '/account-types',
     children: [
-      { label: 'Market Research', href: '/services/market-research' },
-      { label: 'Portfolio Management', href: '/services/portfolio-management' },
-      { label: 'Education', href: '/services/education' },
+      { label: 'Account Types', href: '/account-types' },
+      { label: 'Demo Account', href: '/accounts/demo' },
+      { label: 'Deposits & Withdrawals', href: '/deposit-withdrawal' },
+      { label: 'Partners & IB', href: '/products/ib-referral' },
     ],
   },
   {
@@ -79,45 +106,53 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/company/about',
     children: [
       { label: 'About Us', href: '/company/about' },
-      { label: 'Careers', href: '/careers' },
+      { label: 'Education', href: '/services/education' },
       { label: 'Contact', href: '/company/contact' },
+      { label: 'Risk Warning', href: '/risk-warning' },
     ],
   },
 ];
 
 export const HERO = {
-  pill: 'Software Development Company',
-  pillBadge: 'Since 2010',
-  headline: 'Trading platforms built for brokers and prop firms',
-  sub: 'We build the technology behind trading businesses — platforms, back offices and risk engines, branded as yours and supported long after launch.',
-  ctaPrimary: 'Book a free demo',
-  ctaSecondary: 'View platforms',
+  pill: 'Multi-Asset Trading Platform',
+  // Sits where a "Since ____" badge usually goes. Says something true and
+  // checkable instead of borrowing credibility from a date.
+  pillBadge: 'Execution on your side of the browser',
+  headline: 'Trade forex, metals, indices and crypto on one account',
+  sub: 'One balance, one login, and a risk engine that runs on our servers — so your stops, targets and margin are enforced whether or not your browser is open.',
+  ctaPrimary: 'Open an account',
+  ctaSecondary: 'Try a demo first',
   ctaHref: SIGNUP_HREF,
-  ctaSecondaryHref: '/platforms/web',
+  ctaSecondaryHref: '/accounts/demo',
 };
 
 /**
- * Social-proof line inside the stats panel. Qualitative by design — no
- * unaudited numbers.
+ * Trust line inside the stats panel. Qualitative by design — the honest
+ * substitute for the client-count headline a template would put here.
  */
 export const SOCIAL_PROOF = {
-  ratingLabel: 'Trusted by operators',
-  ratingSub: 'brokers and prop firms run on our stack',
+  ratingLabel: 'Built around your money, not around a demo',
+  ratingSub: 'every balance change is ledgered, locked and auditable',
 };
 
 /**
- * Three trust pills rendered above the hero CTAs — what SetupFX is, before
- * any scroll: in-house engineering, fast delivery, long-term support.
+ * Three pills above the hero CTAs — the first things a trader evaluating
+ * a venue wants to know: where my orders are enforced, what happens to my
+ * money, and how I get it back.
  */
 export const HERO_TRUST_PILLS = [
-  { icon: '/images/hero icon1.png', label: 'Built in-house',       sub: 'Our own engine, not a resold template.' },
-  { icon: '/images/hero icon2.png', label: 'Live in weeks',        sub: 'From first call to launch, fast.' },
-  { icon: '/images/hero icon3.png', label: 'Supported after launch', sub: 'The team that builds it maintains it.' },
+  { icon: '/images/hero icon1.png', label: 'Server-side execution', sub: 'Stops and targets fire without your browser.' },
+  { icon: '/images/hero icon2.png', label: 'Ledgered balances',     sub: 'Every movement double-entry and traceable.' },
+  { icon: '/images/hero icon3.png', label: 'Withdraw on your terms', sub: 'Crypto or bank, with step-up verification.' },
 ] as const;
 
 /**
- * Live market strip — a preview of the kind of real-time data the
- * platforms handle. Illustrative only; not a price quote we make.
+ * Live market strip.
+ *
+ * NOTE: these are STATIC illustrative values, not quotes. They are
+ * labelled as indicative wherever rendered — a venue must never show a
+ * stale hardcoded number in a way a visitor could mistake for a dealable
+ * price. The live quotes come from the price socket on the terminal.
  */
 export const LIVE_TICKER = [
   { pair: 'BTC/USD',   price: '67,420',  change: '+1.82%', up: true },
@@ -135,138 +170,146 @@ export const LIVE_TICKER = [
 ];
 
 /**
- * What ships with a platform — capabilities we build in and hand over,
- * operated by the client under their own brand and licence.
+ * What you can actually do with the account. Replaces the old
+ * "capabilities we hand over to a broker" framing.
  */
 export const INSTRUMENTS = [
-  { image: '/images/card1.png', title: 'Liquidity Routing',   badge: 'A-book / B-book', body: 'Bridge order flow to your own liquidity providers, or run it internally — configurable per client.', href: '/platforms/web' },
-  { image: '/images/card2.png', title: 'Managed Accounts',    badge: 'MAM / PAMM',      body: 'Unit-based managed-account structures with high-water-mark performance fees, handled by the engine.', href: '/platforms/ib-management' },
-  { image: '/images/card3.png', title: 'Copy Trading',        badge: 'Master / follower', body: 'Followers mirror a master account automatically, with performance-fee accounting built in.',      href: '/platforms/copy-trading' },
+  { image: '/images/card1.png', title: 'Markets',        badge: 'FX · Metals · Indices · Crypto', body: 'Majors, minors, gold and silver, the major indices, and crypto that keeps trading through the weekend — all from one balance.', href: '/trading/forex' },
+  { image: '/images/card2.png', title: 'Copy Trading',   badge: 'Follow a strategy',              body: 'Mirror a trader you rate. Position sizing scales to your balance, and you can stop and unwind at any time.',                        href: '/platforms/copy-trading' },
+  { image: '/images/card3.png', title: 'Managed & PAMM', badge: 'Pooled allocation',              body: 'Allocate to a managed pool with unit-based accounting and high-water-mark fees, so you are never charged twice for the same gain.',   href: '/pamm' },
 ] as const;
 
 /**
- * Rewards band — the standing headline offer: a fully branded platform,
- * delivered fast.
+ * Standing headline offer. Demo-first rather than bonus-first: a deposit
+ * incentive as the lead offer is what a regulator reads as pressure
+ * selling, and it attracts exactly the wrong first trade.
  */
 export const REWARDS = [
   {
     image: '/images/hero banner 3.png',
-    title: 'White-label, live in weeks',
-    body: 'Launch a fully branded trading platform on your own domain — your identity, your colours, your back office — typically live within weeks of kickoff.',
-    href: '/company/contact',
+    title: 'Practise before you fund',
+    body: 'Open a demo with simulated balance and trade the live price feed with the real engine — same execution, same margin rules, none of your money. Move to a funded account whenever you are ready.',
+    href: '/accounts/demo',
   },
 ] as const;
 
 /**
- * Checklist beside the platform screenshot — what a delivered platform
- * actually ships with.
+ * Checklist beside the platform screenshot — what the terminal gives you.
  */
 export const PLATFORM_FEATURES = [
-  'Web, mobile and desktop terminals under your brand',
-  'Admin back office with CRM, risk and reporting',
-  'Server-side risk engine: margin, stop-out, SL/TP',
-  'Payments, KYC and liquidity integrations wired in',
+  'Web, desktop and Android terminals on one login',
+  'Charting with seven timeframes and saved layouts',
+  'Server-side stop-loss, take-profit and trailing logic',
+  'Strategy builder, backtesting and a REST/WebSocket API',
 ] as const;
 
 /**
- * Two audience columns — brokers and prop firms. Every link target is a
- * live route.
+ * Two audience columns — where a new trader and an experienced one each
+ * want to go next.
  */
 export const TRADER_PATHS = [
   {
-    heading: 'For brokers',
+    heading: 'New to trading',
     image: '/images/card-banner1.png',
     links: [
-      { label: 'Global trading platform', href: '/platforms/web' },
-      { label: 'Liquidity & back office', href: '/platforms/super-admin' },
-      { label: 'Copy trading & MAM/PAMM', href: '/platforms/copy-trading' },
-      { label: 'Book a demo', href: '/company/contact' },
+      { label: 'Open a demo account', href: '/accounts/demo' },
+      { label: 'How trading works', href: '/how-it-works' },
+      { label: 'Learn the basics', href: '/services/education' },
+      { label: 'Understand the risks', href: '/risk-warning' },
     ],
   },
   {
-    heading: 'For prop firms',
+    heading: 'Already trading',
     image: '/images/card-banner2.png',
     links: [
-      { label: 'Prop trading platform', href: '/platforms/prop-trading' },
-      { label: 'How delivery works', href: '/how-it-works' },
-      { label: 'Integration services', href: '/services/market-research' },
-      { label: 'Talk to the team', href: '/company/contact' },
+      { label: 'Account types & conditions', href: '/account-types' },
+      { label: 'Algo & API access', href: '/platforms/prop-trading' },
+      { label: 'Copy trading', href: '/platforms/copy-trading' },
+      { label: 'Partner programme', href: '/products/ib-referral' },
     ],
   },
 ] as const;
 
 /**
- * "Why choose us" — benefit-led, technology-vendor framing. No performance
- * figures, no brokerage claims.
+ * "Why choose us" — the engineering case, which is the honest one.
+ * Each item describes something the platform actually implements.
  */
 export const WHY_US = [
-  { icon: 'Zap',          title: 'Delivered fast',             body: 'A working, branded platform is typically live within weeks of kickoff — not quarters.' },
-  { icon: 'BadgeCheck',   title: 'Your brand, our engine',     body: 'Everything ships under your identity, on your domain, in your colours. Nobody sees SetupFX.' },
-  { icon: 'Cpu',          title: 'Built in-house',             body: 'We write the engine we sell, so a change you ask for is a change we can actually make.' },
-  { icon: 'MonitorSmartphone', title: 'Every surface, one login', body: 'Web, mobile and desktop terminals plus a full admin back office, all on one account model.' },
-  { icon: 'ShieldCheck',  title: 'Risk engine included',       body: 'Server-side margin, stop-out and SL/TP handling that keeps working when the browser is closed.' },
-  { icon: 'Briefcase',    title: 'Integrations that fit',      body: 'Payments, KYC, liquidity, CRM and third-party APIs connected to what your business already uses.' },
+  { icon: 'ShieldCheck', title: 'Your orders do not depend on your browser', body: 'Stop-loss, take-profit and stop-out are evaluated server-side against the live feed. Close the tab, lose your connection, flatten your phone battery — the levels you set still fire.' },
+  { icon: 'Lock',        title: 'Money moves on a ledger, not a flag',      body: 'Every credit and debit claims a unique ledger key before a balance changes, and the rows are locked while it does. A retried payment or a double-clicked withdrawal cannot move your balance twice.' },
+  { icon: 'Gauge',       title: 'Margin you can see coming',                body: 'Equity, used margin and margin level update on every tick, with a margin call at 80% and stop-out at 50% — published, not discretionary, so you always know where the line is.' },
+  { icon: 'Network',     title: 'Deposits verified on-chain',               body: 'USDT deposits on Ethereum, BSC and Tron are confirmed against the chain itself — contract, recipient, amount and confirmations — before anything is credited.' },
+  { icon: 'ShieldPlus',  title: 'Withdrawals need more than a password',    body: 'Two-factor authentication, step-up verification on withdrawal, and a cooling-off window on a newly linked wallet. Sessions can be revoked server-side the moment you log out.' },
+  { icon: 'Cpu',         title: 'Infrastructure that expects to be attacked', body: 'Encrypted daily backups, an origin reachable only through the CDN edge, rate-limited authentication, and a codebase that has been through a documented security remediation.' },
 ] as const;
 
 /**
- * The three platforms we build and ship white-label.
+ * The three surfaces you can trade from.
  */
 export const PLATFORMS = [
-  { icon: 'Globe2',    title: 'Global Trading Platform', body: 'Multi-asset terminal for web, mobile and desktop — charting, orders and account management.' },
-  { icon: 'Smartphone', title: 'AI & Algo Trading',     body: 'An in-platform strategy builder, backtesting and live algorithmic execution, under your brand.' },
-  { icon: 'Monitor',   title: 'Admin & Back Office',    body: 'CRM, risk controls, liquidity routing and reporting — the console your team runs the business from.' },
+  { icon: 'MonitorSmartphone', title: 'Web & Mobile Terminal', body: 'Full charting, order ticket and position management in the browser, and an Android build for the same account.' },
+  { icon: 'Monitor',           title: 'Desktop Terminal',      body: 'A native Windows and macOS terminal with live watchlist, charts and one-click order entry for traders who want it off the browser.' },
+  { icon: 'Brain',             title: 'Algo & AI Strategies',  body: 'Describe a strategy in plain language, backtest it against stored bars, then deploy it — or drive the account yourself over the REST and WebSocket API.' },
 ] as const;
 
 export const HOW_IT_WORKS = [
-  { n: '1', title: 'Tell us what you are building', body: 'A short call to map your markets, your instruments and how you want order flow handled. No obligation.' },
-  { n: '2', title: 'We build and brand it',         body: 'Your platform, your identity, your domain — with the integrations your business depends on wired in.' },
-  { n: '3', title: 'Go live, and keep going',       body: 'Deployment, handover, then the monitoring and enhancement cycles that follow launch.' },
+  { n: '1', title: 'Open an account',   body: 'Register with an email or a wallet, complete verification, and start on a demo balance while you look around.' },
+  { n: '2', title: 'Fund it when ready', body: 'Deposit by crypto or local bank transfer. Crypto deposits are confirmed against the chain; nothing is credited on trust.' },
+  { n: '3', title: 'Trade, or let the engine', body: 'Trade manually, copy a strategy, allocate to a managed pool, or run your own algorithm over the API.' },
 ] as const;
 
 /**
- * Company facts only — nothing about trading outcomes.
+ * Platform facts only.
+ *
+ * The outgoing version led with "Since 2010", a date this brand cannot
+ * support. These four are properties of the running system instead —
+ * every one of them is checkable by a visitor who opens an account.
  */
 export const STATS = [
-  { value: 'Since 2010', label: 'Building trading technology' },
-  { value: '3',          label: 'Platforms we ship' },
-  { value: 'Weeks',      label: 'Typical time to launch' },
-  { value: '24/7',       label: 'Support after go-live' },
+  { value: '24/7',   label: 'Crypto markets, weekends included' },
+  { value: '1:100',  label: 'Default account leverage' },
+  { value: '3',      label: 'Terminals on one login' },
+  { value: 'Server', label: 'Where your stops are enforced' },
 ] as const;
 
 export const FAQ = [
   {
-    q: 'Is SetupFX a broker?',
-    a: `No. ${BRAND_NAME} is a software development company. We build and license trading technology — platforms, back offices, risk engines and integrations — to licensed brokers, proprietary trading firms and other operators. Any platform in production is operated by that client, under their own brand and their own regulatory obligations.`,
+    q: `Is ${BRAND_NAME} regulated?`,
+    a: `${BRAND_NAME} does not currently hold a financial services licence, and we will not imply otherwise. You should factor that into how much you deposit and treat it as you would any unlicensed venue. What we can show you is how the platform handles your money and your orders — the execution model, the ledger, the verification steps — and we document those openly rather than asking you to take them on faith.`,
   },
   {
-    q: 'What exactly do you build?',
-    a: 'Complete trading terminals for web, mobile and desktop; an admin back office with CRM, risk and reporting; a server-side risk engine; and the integrations around them — payments, KYC, liquidity routing, copy trading and MAM/PAMM. The whole stack is ours, delivered white-label under your brand.',
+    q: 'What happens to my open trades if I close the browser?',
+    a: 'Nothing changes. Stop-loss, take-profit and stop-out are evaluated on our servers against the live price feed, not in your browser. Positions are managed continuously whether or not you are connected.',
   },
   {
-    q: 'How long does a platform take to launch?',
-    a: 'Because the stack is built in-house and deployed white-label, a branded platform is typically live within weeks of kickoff — the exact timeline depends on the integrations and instruments you need.',
+    q: 'How are deposits and withdrawals handled?',
+    a: 'Crypto deposits (USDT on Ethereum, BSC and Tron) are verified against the blockchain — correct contract, correct recipient, correct amount, enough confirmations — before your balance moves. Local bank transfer is also supported. Withdrawals require two-factor authentication and step-up verification, and a newly linked wallet has a cooling-off period before it can be withdrawn to.',
   },
   {
-    q: 'Can the platform be fully branded as ours?',
-    a: `Yes. Everything ships under your identity — your name, logo, colours and domain. ${BRAND_NAME} stays behind the scenes as the technology vendor; your clients see only your brand.`,
+    q: 'What is the margin call and stop-out level?',
+    a: 'Margin call at 80% and stop-out at 50%. Those thresholds are published rather than discretionary: when margin level falls to the stop-out point, positions are closed automatically to stop the account going negative.',
   },
   {
-    q: 'Which integrations do you support?',
-    a: 'Payment gateways, KYC/AML providers, liquidity providers and bridges, CRM systems and third-party APIs. If your business already relies on a particular provider, we connect the platform to it rather than forcing a replacement.',
+    q: 'Can I try it without depositing?',
+    a: 'Yes. A demo account runs on the same engine and the same live price feed as a funded one — same execution path, same margin rules, simulated balance. It is the honest way to judge a platform before funding it.',
   },
   {
-    q: 'What happens after launch?',
-    a: 'We do not disappear at go-live. You get monitoring, updates and enhancement cycles once you are running — and the team that wrote the code is the team that answers when something needs attention.',
+    q: 'Can I trade with my own software?',
+    a: 'Yes. Each trading account can issue an API key and secret for the REST and WebSocket API, so an EA, bot or dashboard can place orders, read positions and stream prices. There is also an in-platform strategy builder with backtesting if you would rather not write the code.',
+  },
+  {
+    q: 'What are the risks?',
+    a: 'Leveraged trading can lose you money quickly, including more than you intended to risk on a position. Leverage magnifies losses exactly as it magnifies gains, and markets can gap through your stop. Only trade with money you can afford to lose, and read the risk warning before you fund an account.',
   },
 ] as const;
 
 export const CTA = {
-  headline: 'From first call to live platform',
-  sub: 'Tell us what you are building. We will map it, build it under your brand, and keep it running after launch.',
-  primary: 'Book a free demo',
-  secondary: 'View platforms',
+  headline: 'Start on a demo. Fund it when it earns that.',
+  sub: 'Same engine, same live prices, simulated balance. Judge the platform on how it behaves before you put money on it.',
+  primary: 'Open an account',
+  secondary: 'Try the demo',
   href: SIGNUP_HREF,
-  secondaryHref: '/platforms/web',
+  secondaryHref: '/accounts/demo',
 };
 
 /**
@@ -278,17 +321,17 @@ export const CTA = {
 export const FOOTER_EXPLORE = NAV_ITEMS.map(({ label, href }) => ({ label, href }));
 
 export const FOOTER_PLATFORM = [
-  { label: 'Global Trading Platform', href: '/platforms/web' },
-  { label: 'AI & Algo Trading',       href: '/platforms/prop-trading' },
-  { label: 'Copy Trading',            href: '/platforms/copy-trading' },
-  { label: 'Admin & Back Office',     href: '/platforms/super-admin' },
+  { label: 'Web Terminal',    href: '/platforms/web' },
+  { label: 'Desktop Terminal', href: '/download' },
+  { label: 'Copy Trading',    href: '/platforms/copy-trading' },
+  { label: 'Algo & API',      href: '/platforms/prop-trading' },
 ];
 
 export const FOOTER_COMPANY = [
-  { label: 'How it Works', href: '/how-it-works' },
-  { label: 'About Us',     href: '/company/about' },
-  { label: 'Careers',      href: '/careers' },
-  { label: 'Contact',      href: '/company/contact' },
+  { label: 'About Us',      href: '/company/about' },
+  { label: 'How it Works',  href: '/how-it-works' },
+  { label: 'Risk Warning',  href: '/risk-warning' },
+  { label: 'Contact',       href: '/company/contact' },
 ];
 
 /* Legal links are surfaced via the footer bottom bar. */
@@ -296,11 +339,16 @@ export const FOOTER_LINKS: { label: string; href: string }[] = [
   // intentionally empty — legal nav lives elsewhere in the footer
 ];
 
-export const COPYRIGHT = `${BRAND_COPYRIGHT} · Software for trading businesses since 2010`;
+export const COPYRIGHT = `${BRAND_COPYRIGHT} · Trading involves risk to your capital`;
 
 /**
- * Vendor disclosure — SetupFX is a technology provider, not a broker.
- * Deliberately does not make any claim about custody of client funds.
+ * Risk disclosure.
+ *
+ * Present and prominent on purpose. Every venue a trader should take
+ * seriously carries one; its absence is a louder signal than anything
+ * marketing copy can say. The previous text here was a software-vendor
+ * disclaimer ("we are not a broker"), which is no longer true of this
+ * product and would have been actively misleading to leave in place.
  */
 export const RISK_DISCLAIMER =
-  `${BRAND_NAME} is a software development company. We build and license trading technology to licensed operators; we are not a broker, exchange or financial institution and we do not provide financial, investment or advisory services. Any platform in production is operated by our client under their own licence and regulatory obligations. Trading leveraged products carries a high level of risk.`;
+  `Trading leveraged products carries a high level of risk and can result in the loss of your capital. Leverage magnifies losses as well as gains, prices can gap through a stop level, and past performance never indicates future results. ${BRAND_NAME} does not provide investment, financial, tax or legal advice, and nothing on this site is a recommendation to trade. ${BRAND_NAME} does not currently hold a financial services licence. Trade only with money you can afford to lose, and seek independent advice if you are unsure.`;
