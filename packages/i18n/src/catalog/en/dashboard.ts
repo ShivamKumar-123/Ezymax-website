@@ -236,7 +236,13 @@ const dashboard = {
   // screen-reader label of the typing dots
   "ai.thinking": "{name} is writing an answer",
   "ai.slow": "This is taking longer than usual. Your question is saved in your support chat, and the answer will appear there.",
-  "ai.withTeam": "Our support team will reply in your chat.",
+  // a request for a person is open: the bot doesn't answer there (one open conversation per client)
+  "ai.openRequest": "Your request for a person is still open.",
+  "ai.view": "View",
+  "ai.blocked": "{name} can't answer here while your request for a person is open. Close that request to ask {name}, or send this to our team.",
+  "ai.closeAndAsk": "Close it and ask {name}",
+  "ai.sendToTeam": "Send to our team",
+  "ai.passed": "Passed to our support team. They'll reply in your chat.",
   // {name} = the support agent's name
   "ai.withAgent": "You're chatting with {name}. Replies appear in your support chat.",
   "ai.connecting": "Connecting you to a support specialist…",

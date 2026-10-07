@@ -7,12 +7,16 @@
 // limits apply). The bot's answer streams over the realtime connection (bot.typing / bot.delta / message), with a
 // poll of the conversation as a fallback while an answer is due. Everything stays in the client's support history,
 // so "Continue in chat" opens the same conversation and "Talk to a person" is the chat's own hand-over.
+// The service keeps one open conversation per client and the bot only answers "bot" conversations (lib/ask-ai.ts):
+// while a request for a person is open, a question is held until the client closes that request (then it goes to
+// the bot in a new conversation) or sends it to the team.
 //
 // Demo: canned answers typed out locally (no network).
 
 import * as React from "react";
 import { realtime, type Frame } from "@/lib/realtime";
 import { errMsg, type Conversation, type ConvStatus, type Message } from "@/components/support/live-chat";
+import { askRoute, passedToTeam, withPerson } from "@/lib/ask-ai";
 
 export type Turn = {
   id: string;
@@ -36,7 +40,17 @@ export interface AiEngine {
   /** The support conversation's status (null before the first message). */
   status: ConvStatus | null;
   agentName: string | null;
+  /** A request for a person was already open before this card's questions (shown as a note with "View"). */
+  openRequest: boolean;
+  /** A question is held: a request for a person is open and the bot can't answer there. */
+  blocked: boolean;
+  /** The conversation is with our support team now (handed over, or sent to the team). */
+  withTeam: boolean;
   ask: (text: string, chip?: string) => void;
+  /** Held question: close the open request, then ask the bot (a new conversation). */
+  closeAndAsk: () => void;
+  /** Held question: send it to the team in the open request instead. */
+  sendToTeam: () => void;
   handover: () => void;
   reset: () => void;
 }
@@ -75,6 +89,8 @@ export function useLiveAi(fallbackName: string, unavailable: string): AiEngine {
   const [slow, setSlow] = React.useState(false);
   const [sending, setSending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [held, setHeld] = React.useState<{ id: string; text: string } | null>(null);
+  const [sentToTeam, setSentToTeam] = React.useState(false);
   const convRef = React.useRef<Conversation | null>(null);
   const lastAsked = React.useRef(0); // id of the client message we're waiting on
   const waitingRef = React.useRef(false);
@@ -82,7 +98,7 @@ export function useLiveAi(fallbackName: string, unavailable: string): AiEngine {
   convRef.current = conv;
   waitingRef.current = waiting;
 
-  // the broker's bot name and any open conversation (a chat with an agent in progress shows a notice)
+  // the broker's bot name and any open conversation (a request for a person shows a note)
   React.useEffect(() => {
     let alive = true;
     void api<Home>("me").then((r) => {
@@ -95,16 +111,30 @@ export function useLiveAi(fallbackName: string, unavailable: string): AiEngine {
     };
   }, []);
 
-  const take = React.useCallback((m: Message) => {
-    const cur = convRef.current;
-    if (!cur || m.conversationId !== cur.id || m.id <= lastAsked.current || m.author === "client") return;
-    setTurns((ts) => (ts.some((x) => x.id === String(m.id)) ? ts : [...ts, toTurn(m)]));
-    if (m.author === "bot" || m.author === "agent") {
-      setStreaming(null);
-      setWaiting(false);
-      setSlow(false);
-    }
+  const stopWaiting = React.useCallback(() => {
+    setStreaming(null);
+    setWaiting(false);
+    setSlow(false);
   }, []);
+
+  const onConv = React.useCallback(
+    (c: Conversation) => {
+      setConv(c);
+      // the bot handed the question over: no bot answer is coming
+      if (passedToTeam(waitingRef.current, c.status) && c.id === convRef.current?.id && lastAsked.current) stopWaiting();
+    },
+    [stopWaiting],
+  );
+
+  const take = React.useCallback(
+    (m: Message) => {
+      const cur = convRef.current;
+      if (!cur || m.conversationId !== cur.id || m.id <= lastAsked.current || m.author === "client") return;
+      setTurns((ts) => (ts.some((x) => x.id === String(m.id)) ? ts : [...ts, toTurn(m)]));
+      if (m.author === "bot" || m.author === "agent") stopWaiting();
+    },
+    [stopWaiting],
+  );
 
   React.useEffect(
     () =>
@@ -122,12 +152,12 @@ export function useLiveAi(fallbackName: string, unavailable: string): AiEngine {
             break;
           case "conversation": {
             const c = f.conversation as Conversation;
-            if (!cur || c.id === cur.id) setConv(c);
+            if (!cur || c.id === cur.id) onConv(c);
             break;
           }
         }
       }),
-    [take],
+    [take, onConv],
   );
 
   // fallback while an answer is due: read the conversation (a missed frame or a stream that's down)
@@ -139,70 +169,125 @@ export function useLiveAi(fallbackName: string, unavailable: string): AiEngine {
       if (!cur) return;
       const r = await api<{ conversation: Conversation; messages: Message[] }>(`conversations/${cur.id}`);
       if (!r.ok) return;
-      setConv(r.data.conversation);
       r.data.messages.forEach(take);
+      onConv(r.data.conversation);
       const elapsed = Date.now() - since.current;
       if (elapsed > SLOW_MS) setSlow(true);
-      if (elapsed > GIVE_UP_MS) {
-        setWaiting(false);
-        setStreaming(null);
-      }
+      if (elapsed > GIVE_UP_MS) stopWaiting();
     };
     const id = setInterval(() => void tick(), POLL_MS);
     return () => clearInterval(id);
-  }, [waiting, take]);
+  }, [waiting, take, onConv, stopWaiting]);
 
-  const ask = React.useCallback(
-    (raw: string, chip?: string) => {
-      const text = raw.trim();
-      if (!text || sending) return;
-      const tmp = `tmp-${Date.now()}`;
-      setError(null);
+  /** Sends a question that's already shown as turn `tmp`; `toBot` false = it goes to the team's open request. */
+  const send = React.useCallback(
+    (text: string, tmp: string, toBot: boolean) => {
       setSending(true);
       setSlow(false);
-      setTurns((ts) => [...ts, { id: tmp, role: "you", text, chip }]);
-      // typing dots straight away; the answer streams in as soon as the bot starts
-      setWaiting(true);
-      setStreaming(convRef.current && convRef.current.status !== "bot" && convRef.current.status !== "resolved" ? null : "");
+      setWaiting(toBot);
+      setStreaming(toBot ? "" : null);
       void api<{ conversation: Conversation; message: Message }>("messages", { body: text }).then((r) => {
         setSending(false);
         if (!r.ok || !r.data.message) {
           setTurns((ts) => ts.filter((x) => x.id !== tmp));
-          setWaiting(false);
-          setStreaming(null);
+          stopWaiting();
           setError(r.status === 0 ? unavailable : errMsg(r.data, unavailable));
           return;
         }
         lastAsked.current = r.data.message.id;
         setConv(r.data.conversation);
         setTurns((ts) => ts.map((x) => (x.id === tmp ? { ...x, id: String(r.data.message.id) } : x)));
-        // the bot answers conversations it owns; with a person on the chat the reply comes from them
-        if (r.data.conversation.status !== "bot") setStreaming(null);
+        // the bot answers only conversations it owns; anything else is with the team
+        if (r.data.conversation.status !== "bot") {
+          stopWaiting();
+          if (!toBot) setSentToTeam(true);
+        }
       });
     },
-    [sending, unavailable],
+    [stopWaiting, unavailable],
   );
+
+  const ask = React.useCallback(
+    (raw: string, chip?: string) => {
+      const text = raw.trim();
+      if (!text || sending || held) return;
+      const tmp = `tmp-${Date.now()}`;
+      setError(null);
+      setTurns((ts) => [...ts, { id: tmp, role: "you", text, chip }]);
+      // a request for a person is open: the bot would never answer there, so the client chooses first
+      if (askRoute(convRef.current?.status) === "person") return setHeld({ id: tmp, text });
+      send(text, tmp, true);
+    },
+    [sending, held, send],
+  );
+
+  const closeAndAsk = React.useCallback(() => {
+    const h = held;
+    const cur = convRef.current;
+    if (!h) return;
+    setHeld(null);
+    setError(null);
+    if (!cur || !withPerson(cur.status)) return send(h.text, h.id, true);
+    setSending(true);
+    void api<{ conversation: Conversation }>(`conversations/${cur.id}/resolve`, {}).then((r) => {
+      setSending(false);
+      if (!r.ok) {
+        setHeld(h);
+        return setError(errMsg(r.data, unavailable));
+      }
+      // the request is closed; the question opens a new conversation that the bot owns
+      setConv(r.data.conversation);
+      convRef.current = r.data.conversation;
+      send(h.text, h.id, true);
+    });
+  }, [held, send, unavailable]);
+
+  const sendToTeam = React.useCallback(() => {
+    const h = held;
+    if (!h) return;
+    setHeld(null);
+    setError(null);
+    send(h.text, h.id, false);
+  }, [held, send]);
 
   const handover = React.useCallback(() => {
     setError(null);
     void api<{ conversation: Conversation }>("handover", {}).then((r) => {
       if (!r.ok) return setError(errMsg(r.data, unavailable));
       setConv(r.data.conversation);
-      setStreaming(null);
-      // the hand-over notice and the agent's first reply arrive as messages
-      setWaiting(true);
+      stopWaiting();
     });
-  }, [unavailable]);
+  }, [unavailable, stopWaiting]);
 
   const reset = React.useCallback(() => {
     setTurns([]);
-    setStreaming(null);
-    setWaiting(false);
-    setSlow(false);
+    setHeld(null);
+    setSentToTeam(false);
+    stopWaiting();
     setError(null);
-  }, []);
+  }, [stopWaiting]);
 
-  return { botName, turns, streaming, waiting, slow, sending, error, status: conv?.status ?? null, agentName: conv?.assigneeName ?? null, ask, handover, reset };
+  const status = conv?.status ?? null;
+  const has = turns.length > 0;
+  return {
+    botName,
+    turns,
+    streaming,
+    waiting,
+    slow,
+    sending,
+    error,
+    status,
+    agentName: conv?.assigneeName ?? null,
+    openRequest: withPerson(status) && (!has || !!held),
+    blocked: !!held,
+    withTeam: has && !held && (sentToTeam || withPerson(status)),
+    ask,
+    closeAndAsk,
+    sendToTeam,
+    handover,
+    reset,
+  };
 }
 
 /** Demo builds: answers from `answer`, typed out locally. */
@@ -240,6 +325,11 @@ export function useDemoAi(botName: string, answer: (q: string, chip?: string) =>
     error: null,
     status,
     agentName: status === "assigned" ? agent.name : null,
+    openRequest: false,
+    blocked: false,
+    withTeam: turns.length > 0 && (status === "waiting" || status === "assigned"),
+    closeAndAsk: () => {},
+    sendToTeam: () => {},
     ask: (raw, chip) => {
       const text = raw.trim();
       if (!text || streaming !== null) return;

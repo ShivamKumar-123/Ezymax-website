@@ -99,6 +99,20 @@ export function AiFacts({ title, rows }: { title: string; rows: { label: React.R
   );
 }
 
+/** "Your request for a person is still open · View" and similar team notes. */
+function TeamNote({ text, onView }: { text: string; onView: () => void }) {
+  const t = useT();
+  return (
+    <div className="mt-3 flex items-center gap-2.5 rounded-[14px] bg-info-soft px-3.5 py-2 text-[12.5px] text-fg-2" data-testid="ai-team-note">
+      <UserRound className="size-4 shrink-0 text-info" />
+      <span className="min-w-0 flex-1">{text}</span>
+      <button type="button" onClick={onView} className="flex h-8 shrink-0 items-center gap-1 rounded-full px-2.5 font-semibold text-info hover:bg-info-soft">
+        {t("dashboard.ai.view")} <ChevronRight className="size-3.5 rtl:-scale-x-100" />
+      </button>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Panel (card body and sheet body)                                    */
 /* ------------------------------------------------------------------ */
@@ -112,7 +126,7 @@ function Panel({ e, chips, variant, onOpenChat, onClose, inputRef }: { e: AiEngi
   const human = e.status === "waiting" || e.status === "assigned";
   const byKey = new Map(chips.map((c) => [c.key, c]));
   const lastYou = [...e.turns].reverse().find((x) => x.role === "you");
-  const answered = has && !e.waiting && e.turns[e.turns.length - 1]?.role !== "you";
+  const answered = has && !e.waiting && !e.blocked && e.turns[e.turns.length - 1]?.role !== "you";
 
   // keep the latest question at the top of the thread, so a long answer is read from its first line
   const started = e.streaming !== null;
@@ -150,13 +164,8 @@ function Panel({ e, chips, variant, onOpenChat, onClose, inputRef }: { e: AiEngi
         )}
       </div>
 
-      {human && !has && (
-        <button type="button" onClick={onOpenChat} className="mt-3 flex items-center gap-2.5 rounded-[14px] bg-info-soft px-3.5 py-2.5 text-start text-[12.5px] text-fg-2">
-          <UserRound className="size-4 shrink-0 text-info" />
-          <span className="flex-1">{e.agentName ? t("dashboard.ai.withAgent", { name: e.agentName }) : t("dashboard.ai.withTeam")}</span>
-          <ChevronRight className="size-4 shrink-0 text-fg-3 rtl:-scale-x-100" />
-        </button>
-      )}
+      {/* an open request for a person (the bot doesn't answer there): say so, and open it in the chat */}
+      {e.openRequest && !e.blocked && <TeamNote text={e.agentName ? t("dashboard.ai.withAgent", { name: e.agentName }) : t("dashboard.ai.openRequest")} onView={onOpenChat} />}
 
       {/* thread */}
       <AnimatePresence initial={false}>
@@ -177,12 +186,25 @@ function Panel({ e, chips, variant, onOpenChat, onClose, inputRef }: { e: AiEngi
                   </div>
                 </div>
               )}
-              {e.waiting && e.streaming === null && human && (
-                <div className="flex items-center gap-2 text-[12px] text-fg-3">
-                  <Dots label={t("dashboard.ai.withTeam")} />
-                  {e.agentName ? t("dashboard.ai.withAgent", { name: e.agentName }) : t("dashboard.ai.withTeam")}
+              {/* a question held while a request for a person is open */}
+              {e.blocked && (
+                <div className="rounded-[16px] border border-line bg-surface px-3.5 py-3" data-testid="ai-blocked">
+                  <p className="text-[12.5px] leading-snug text-fg-2">{t("dashboard.ai.blocked", { name: e.botName })}</p>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    <Button size="sm" variant="ember" onClick={e.closeAndAsk} disabled={e.sending}>
+                      {t("dashboard.ai.closeAndAsk", { name: e.botName })}
+                    </Button>
+                    <Button size="sm" variant="surface" onClick={e.sendToTeam} disabled={e.sending}>
+                      {t("dashboard.ai.sendToTeam")}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={onOpenChat}>
+                      {t("dashboard.ai.view")}
+                    </Button>
+                  </div>
                 </div>
               )}
+              {/* handed over to people (by the bot or the client): no bot answer is coming */}
+              {e.withTeam && !e.waiting && <TeamNote text={e.agentName ? t("dashboard.ai.withAgent", { name: e.agentName }) : t("dashboard.ai.passed")} onView={onOpenChat} />}
               {e.slow && <div className="rounded-[14px] bg-warn-soft px-3.5 py-2 text-[12px] text-fg-2">{t("dashboard.ai.slow")}</div>}
             </div>
           </motion.div>
@@ -226,7 +248,7 @@ function Panel({ e, chips, variant, onOpenChat, onClose, inputRef }: { e: AiEngi
           aria-label={t("dashboard.ai.title", { name: e.botName })}
           className="h-9 min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-fg-3"
         />
-        <button type="submit" disabled={!q.trim() || e.sending} aria-label={t("common.send")} className="k-accent-btn grid size-9 shrink-0 place-items-center rounded-[12px] transition-opacity disabled:opacity-40">
+        <button type="submit" disabled={!q.trim() || e.sending || e.blocked} aria-label={t("common.send")} className="k-accent-btn grid size-9 shrink-0 place-items-center rounded-[12px] transition-opacity disabled:opacity-40">
           <ArrowUp className="size-4" strokeWidth={2.4} />
         </button>
       </form>
