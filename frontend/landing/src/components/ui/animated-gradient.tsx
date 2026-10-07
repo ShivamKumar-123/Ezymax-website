@@ -30,15 +30,20 @@ interface PresetParams {
 type PresetName = "Ezymex" | "Aurora" | "Ghost";
 
 /**
- * `Ezymex` is the brand preset — black through deep olive to neon lime. The
- * upstream demo presets (neon pink, toxic green) are off-palette and were
+ * `Ezymex` is the brand preset — pale sky through the brand blue to the deep
+ * navy of the mark. It was black → olive → chartreuse, tuned for a near-black
+ * page; on the white page that bloom read as a lime smear, which is the thing
+ * the brand no longer uses. color1 is the lightest because it is what shows
+ * where the gradient fades into the page.
+ *
+ * The upstream demo presets (neon pink, toxic green) are off-palette and were
  * dropped rather than shipped as dead configuration.
  */
 const presets: Record<PresetName, PresetParams> = {
   Ezymex: {
-    color1: "#000000",
-    color2: "#1d2a00",
-    color3: "#1E88FF",
+    color1: "#eaf4ff",
+    color2: "#7cc9ff",
+    color3: "#0b5bd3",
     rotation: -30,
     proportion: 62,
     scale: 0.55,

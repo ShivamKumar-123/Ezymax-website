@@ -16,25 +16,35 @@
   --raw-duration-fast: 150ms;
   --raw-duration-normal: 250ms;
 
-  /* Obsidian & Lime palette — glassmorphism reference adoption (ADR-0020).
-     Obsidian base #0a0a0a with #0c0c0c surfaces, neon-lime primary accent
-     #1E88FF, emerald secondary #10b981, and rgba-white glass fills/borders
-     straight from the reference spec. */
+  /* Light palette on the Ezymex blue.
+     Was "Obsidian & Lime": a near-black page with a chartreuse accent.
+     Both are gone — the page is white and the accent family is the blue
+     and cyan of the logo.
+
+     The ink-* / lime-* names went with it. A token called `ink-950`
+     holding #FFFFFF is a trap for the next person, so the surfaces are
+     now numbered by elevation and the accent is named for what it is. */
   --raw-color-black: #000000;
-  --raw-color-ink-950: #0a0a0a;
-  --raw-color-ink-900: #0c0c0c;
-  --raw-color-ink-800: #161616;
-  --raw-color-grey-500: #8d8d8d;
-  --raw-color-grey-400: #b6b6b6;
-  --raw-color-lime-300: #deff4d;
-  --raw-color-lime-400: #1E88FF;
-  --raw-color-lime-600: #9ec700;
+  --raw-color-white: #ffffff;
+  --raw-color-surface-0: #ffffff;   /* page */
+  --raw-color-surface-1: #f5f8fc;   /* cards, panels */
+  --raw-color-surface-2: #e9f0f8;   /* raised / hover */
+  --raw-color-text-900: #0b1b2b;    /* body copy on light */
+  --raw-color-text-600: #5a6b80;    /* muted */
+  --raw-color-text-400: #8495a8;    /* subtle */
+  --raw-color-blue-300: #7cc9ff;    /* cyan highlight — gradient start */
+  --raw-color-blue-500: #1e88ff;    /* primary accent */
+  --raw-color-blue-700: #0b5bd3;    /* deep — gradient end */
+  /* Kept green: this is the up/ok status colour (ticks, positive dots),
+     not brand. It is a teal-green, deliberately not the old chartreuse. */
   --raw-color-emerald-500: #10b981;
-  --raw-color-glass-fill: rgba(255, 255, 255, 0.03);
-  --raw-color-glass-border: rgba(255, 255, 255, 0.1);
+  /* Glass on a light page tints with ink, not white — white-on-white is
+     invisible, which is what made the first light pass look unstyled. */
+  --raw-color-glass-fill: rgba(11, 47, 82, 0.04);
+  --raw-color-glass-border: rgba(11, 47, 82, 0.10);
 
   --raw-blur-glass: 16px;
-  --raw-shadow-glow: 0 0 30px rgba(30, 136, 255, 0.3);
+  --raw-shadow-glow: 0 0 30px rgba(30, 136, 255, 0.28);
 
   --raw-radius-pill: 9999px;
   --raw-radius-card: 2.5rem;
@@ -53,33 +63,33 @@
    Grammar: --<role>[-<variant>][-<state>]
    --------------------------------------------------------------------------- */
 :root {
-  --background: var(--raw-color-ink-950);
-  --foreground: var(--raw-color-white);
+  --background: var(--raw-color-surface-0);
+  --foreground: var(--raw-color-text-900);
 
   --duration-fast: var(--raw-duration-fast);
   --duration-normal: var(--raw-duration-normal);
 
-  /* Obsidian & Lime roles. The design is a fixed DARK palette — near-white
-     type and neon-lime accents on obsidian — so there is no
-     prefers-color-scheme override; a light mode would be a different brand,
-     not a variant of this one. `--ink` is the deepest surface (below the
+  /* Light roles on the Ezymex blue. This WAS a fixed dark palette with a
+     chartreuse accent; it is now a white page with blue/cyan accents, so
+     every surface, text and glass token below flipped together — changing
+     the background alone would have left white type on a white page. `--ink` is the deepest surface (below the
      page), `--surface` / `--surface-raised` step upward from it. `--glass` +
      `--glass-blur` are the glassmorphism pair — always used together. */
-  --ink: var(--raw-color-black);
-  --muted: var(--raw-color-grey-500);
-  --subtle: var(--raw-color-grey-400);
+  --ink: var(--raw-color-text-900);
+  --muted: var(--raw-color-text-600);
+  --subtle: var(--raw-color-text-400);
   --line: var(--raw-color-glass-border);
-  --surface: var(--raw-color-ink-900);
-  --surface-raised: var(--raw-color-ink-800);
-  --accent: var(--raw-color-lime-400);
-  --accent-from: var(--raw-color-lime-300);
-  --accent-to: var(--raw-color-lime-600);
+  --surface: var(--raw-color-surface-1);
+  --surface-raised: var(--raw-color-surface-2);
+  --accent: var(--raw-color-blue-500);
+  --accent-from: var(--raw-color-blue-300);
+  --accent-to: var(--raw-color-blue-700);
   --accent-positive: var(--raw-color-emerald-500);
   --glass: var(--raw-color-glass-fill);
   --glass-blur: var(--raw-blur-glass);
   --glow: var(--raw-shadow-glow);
-  --hero-from: var(--raw-color-black);
-  --hero-to: var(--raw-color-ink-950);
+  --hero-from: var(--raw-color-surface-1);
+  --hero-to: var(--raw-color-surface-0);
 }
 
 /* ---------------------------------------------------------------------------
@@ -235,10 +245,10 @@ body {
    Ezymex's display face) instead of the source's Assistant.
    ───────────────────────────────────────────────────────────────────────── */
 :root {
-  /* Ported from the source project as salmon/periwinkle; retuned to the FX
+  /* Ported from the source project as salmon/periwinkle; retuned to the
      Ezymex palette so the intro experience matches the rest of the site.
-     Warm = the lime accent family, cool = emerald. */
-  --accent-warm: var(--raw-color-lime-300);
+     Warm = the cyan end of the brand ramp, cool = the status green. */
+  --accent-warm: var(--raw-color-blue-300);
   --accent-cool: var(--raw-color-emerald-500);
 }
 
