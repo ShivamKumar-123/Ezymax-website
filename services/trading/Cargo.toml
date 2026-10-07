@@ -23,6 +23,8 @@ getrandom = "0.4.3"
 hmac = "0.13.0"
 optmath = { path = "../../crates/optmath" }
 rust_decimal = { version = "1", features = ["serde", "serde-with-float"] }
+reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sha2 = "0.11.0"

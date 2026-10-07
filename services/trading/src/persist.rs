@@ -310,7 +310,7 @@ async fn upsert_account(tx: &mut Transaction<'_, Postgres>, st: &AccountState) -
 
 async fn project(tx: &mut Transaction<'_, Postgres>, tenant: i64, ev: &Event, request: Option<&Value>) -> Result<(), CommitError> {
     match ev {
-        Event::AccountOpened { .. } | Event::AccountUpdated { .. } | Event::MarginCall { .. } | Event::StopOut { .. } | Event::RefillCounted { .. } => {}
+        Event::AccountOpened { .. } | Event::AccountUpdated { .. } | Event::MarginCall { .. } | Event::StopOut { .. } | Event::RefillCounted { .. } | Event::CorporateAction { .. } => {}
         Event::Ledger { txn } => insert_txn(tx, txn, request).await?,
         Event::OrderPlaced { order } | Event::OrderUpdated { order, .. } => upsert_order(tx, tenant, order).await?,
         Event::OrderRemoved { ticket, status, reason, at, fill_price, position_ticket } => {

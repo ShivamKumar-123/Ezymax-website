@@ -51,6 +51,19 @@ impl Provider {
         Ok(out)
     }
 
+    /// Provider forward adjustment factors of one stock per trading day (`/common/basic/symbols/adjustment_factors`):
+    /// the corporate-action cross-check of the trading engine. `market` = US / HK / JP; days as YYYYMMDD.
+    pub async fn adjustment_factors(&self, code: &str, market: &str, from: &str, to: &str) -> anyhow::Result<Vec<(String, f64)>> {
+        self.gate.acquire(Prio::Interactive).await;
+        let url = reqwest::Url::parse_with_params(&format!("{}/common/basic/symbols/adjustment_factors", self.base), &[("symbol", code), ("market", market), ("beginDay", from), ("endDay", to)])?;
+        let v: Value = self.http.get(url).header("apiKey", &self.key).send().await.map_err(|e| anyhow::anyhow!(e.without_url().to_string()))?.json().await.map_err(|e| anyhow::anyhow!(e.without_url().to_string()))?;
+        let ret = v["ret"].as_i64().unwrap_or(0);
+        if ret != 200 {
+            anyhow::bail!("provider ret {ret}: {}", v["msg"].as_str().unwrap_or(""));
+        }
+        Ok(v["data"].as_array().into_iter().flatten().filter_map(|r| Some((r["trade_date"].as_str()?.to_string(), r["forward_factor"].as_f64()?))).collect())
+    }
+
     /// Latest `n` bars for the codes of one provider market, `batch` codes per request.
     async fn latest_batch(&self, prio: Prio, market: &str, codes: &[String], kline: i32, n: i32) -> anyhow::Result<Vec<(String, Vec<Bar>)>> {
         let mut out = Vec::new();
@@ -101,6 +114,7 @@ pub fn spawn(cfg: &Config, market: Arc<Market>) {
         gate: Gate::start(std::time::Duration::from_secs_f64(1.0 / cfg.provider_rps.max(0.1))),
         batch: cfg.batch_codes,
     });
+    let _ = market.provider.set(provider.clone());
     {
         let (pv, mk) = (provider.clone(), market.clone());
         tokio::spawn(async move { reconcile_loop(&pv, &mk).await });

@@ -36,6 +36,9 @@ pub enum Event {
     MarginCall { entered: bool, level: Option<D> },
     StopOut { level: Option<D> },
     RefillCounted { day: NaiveDate },
+    /// A corporate action (split or dividend) was applied to this account; the position / order updates and the
+    /// dividend ledger entries follow as their own events. Marks the action done for the account (idempotency).
+    CorporateAction { id: i64, symbol: String, kind: String, ex_date: NaiveDate, detail: serde_json::Value },
 }
 
 impl Event {
@@ -55,6 +58,7 @@ impl Event {
             Event::MarginCall { .. } => "margin_call",
             Event::StopOut { .. } => "stop_out",
             Event::RefillCounted { .. } => "refill_counted",
+            Event::CorporateAction { .. } => "corporate_action",
         }
     }
 }
@@ -95,6 +99,9 @@ pub struct AccountState {
     /// and the fills already booked (derived from the deals' `option.fill`, so replay rebuilds it).
     #[serde(skip)]
     pub book: crate::book::reserve::BookState,
+    /// Corporate actions already applied to this account (from `CorporateAction` events, so replay rebuilds it).
+    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+    pub corp_actions: BTreeSet<i64>,
 }
 
 /// How long option settlement proceeds stay out of the withdrawable amount (the settlement re-run window).
@@ -117,6 +124,7 @@ impl AccountState {
             client_ids: BTreeMap::new(),
             holds: Vec::new(),
             book: Default::default(),
+            corp_actions: BTreeSet::new(),
         }
     }
 
@@ -196,6 +204,9 @@ impl AccountState {
             }
             Event::MarginCall { entered, .. } => self.margin_call = *entered,
             Event::StopOut { .. } => {}
+            Event::CorporateAction { id, .. } => {
+                self.corp_actions.insert(*id);
+            }
             Event::RefillCounted { day } => {
                 if self.refill_day != Some(*day) {
                     self.refill_day = Some(*day);

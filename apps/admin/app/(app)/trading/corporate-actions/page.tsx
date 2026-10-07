@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { IS_DEMO } from "@kalks/mock/mode";
+import { LiveCorporateActions } from "@/components/live/corporate-actions";
 import { motion } from "motion/react";
 import { CalendarDays, CheckCircle2, Coins, Scissors, TrendingDown, TrendingUp } from "lucide-react";
 import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, SymbolAvatar, SymbolCell, cn, formatMoney, formatNumber } from "@kalks/ui";
@@ -61,6 +63,10 @@ function Timeline({ items, onPick }: { items: CorporateAction[]; onPick: (a: Cor
 }
 
 export default function CorporateActionsPage() {
+  return IS_DEMO ? <DemoCorporateActions /> : <LiveCorporateActions />;
+}
+
+function DemoCorporateActions() {
   const [items, setItems] = React.useState(CORPORATE_ACTIONS);
   const [sel, setSel] = React.useState<CorporateAction>(CORPORATE_ACTIONS[0]!);
   const [apply, setApply] = React.useState(false);

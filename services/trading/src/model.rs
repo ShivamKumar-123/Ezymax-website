@@ -864,6 +864,9 @@ pub enum TxnKind {
     OptionSettlement,
     /// Options order book maker rebate: `house:options_rebates` → balance.
     OptionRebate,
+    /// Stock dividend adjustment on an ex-date (corporate action): `house:dividends` ↔ balance (long credited the
+    /// net dividend, short debited the gross).
+    Dividend,
 }
 
 impl TxnKind {
@@ -888,6 +891,7 @@ impl TxnKind {
             TxnKind::OptionPremium => "option_premium",
             TxnKind::OptionSettlement => "option_settlement",
             TxnKind::OptionRebate => "option_rebate",
+            TxnKind::Dividend => "dividend",
         }
     }
 }

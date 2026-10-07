@@ -110,6 +110,7 @@ async fn archive_restore_rename_and_replay() {
         options: Arc::new(trading::options::OptionsCtx::disabled(quotes.clone())),
         clock: Default::default(),
         books: Default::default(),
+        corp: Default::default(),
     });
     let hub = Hub::start(shared, 2, Default::default());
     let logins = Arc::new(LoginAlloc { live: AtomicI64::new(live), demo: AtomicI64::new(demo) });
@@ -121,6 +122,7 @@ async fn archive_restore_rename_and_replay() {
         gateway_url: String::new(), gateway_token: String::new(),
         options_url: String::new(), options_token: String::new(), options_hedger: false, options_hedge_user: 0,
         options_hedge_group: "standard".into(), options_hedge_capital: 1_000_000, options_hedge_limit_usd: 250_000, options_mm_user: 0, options_mm_capital: 25_000_000,
+        eodhd_key: String::new(), eodhd_url: String::new(), market_data_url: String::new(), market_data_admin_token: String::new(),
     };
     let st = AppState {
         hub: hub.clone(), pool: pool.clone(), keys: Keys::new(&cfg.session_secret), cfg: Arc::new(cfg.clone()), limiter: Limiter::default(),
@@ -230,6 +232,7 @@ async fn setup(tag: &str) -> Option<(AppState, Arc<QuoteBook>, sqlx::PgPool)> {
         options: Arc::new(trading::options::OptionsCtx::disabled(quotes.clone())),
         clock: Default::default(),
         books: Default::default(),
+        corp: Default::default(),
     });
     let hub = Hub::start(shared, 2, Default::default());
     let logins = Arc::new(LoginAlloc { live: AtomicI64::new(live), demo: AtomicI64::new(demo) });
@@ -241,6 +244,7 @@ async fn setup(tag: &str) -> Option<(AppState, Arc<QuoteBook>, sqlx::PgPool)> {
         gateway_url: String::new(), gateway_token: String::new(),
         options_url: String::new(), options_token: String::new(), options_hedger: false, options_hedge_user: 0,
         options_hedge_group: "standard".into(), options_hedge_capital: 1_000_000, options_hedge_limit_usd: 250_000, options_mm_user: 0, options_mm_capital: 25_000_000,
+        eodhd_key: String::new(), eodhd_url: String::new(), market_data_url: String::new(), market_data_admin_token: String::new(),
     };
     let st = AppState {
         hub: hub.clone(), pool: pool.clone(), keys: Keys::new(&cfg.session_secret), cfg: Arc::new(cfg.clone()), limiter: Limiter::default(),

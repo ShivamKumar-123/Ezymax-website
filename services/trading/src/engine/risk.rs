@@ -23,6 +23,10 @@ fn reached(kind: OrderType, side: Side, price: D, q: &Quote) -> bool {
 
 /// Everything a new quote on `symbol` can trigger for this account.
 pub fn on_tick(tx: &mut Tx, env: &Env, symbol: &str) {
+    // a corporate action waits for this account: no triggers, SL / TP or margin on old sizes with new prices
+    if env.corp_pending(&tx.st, symbol).is_some() {
+        return;
+    }
     let acc = tx.st.account.clone();
     let Some(spec) = env.specs.get(symbol) else { return };
     let Some(q) = env.quote(&acc, symbol) else { return };
@@ -167,6 +171,9 @@ pub fn expire_orders(tx: &mut Tx, env: &Env) {
 
 /// Margin call notification (with 5-point hysteresis) and stop-out (D16).
 pub fn check_margin(tx: &mut Tx, env: &Env) {
+    if env.corp.is_some_and(|c| c.any_pending(&tx.st, env.now)) {
+        return;
+    }
     let m = metrics(env, &tx.st);
     let g = env.group;
     match m.level {

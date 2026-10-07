@@ -788,6 +788,50 @@ Building blocks: `book::entry::submit` / `entry::mass_quote` / `entry::call(hub,
 
 Data (`migrations/20261012000000_options_book.sql` and `20261014120000_options_book_mm.sql` — `option_mm_accounts`, `option_mm_pauses`, `option_approvals`, the `options-mm` group — all with RLS): `option_book_venues`, `book_journal` (append-only), `book_quote_journal` (monthly partitions), `book_orders` (open + history), `book_positions`, `book_series` (state, contract units, last trade, day volume), `book_fills` (the tape; every fill holds the full resting-order state), `book_outbox`, `book_rfqs`, `book_halts`, `option_liquidations`, `book_snapshots`.
 
+## Stock corporate actions
+
+Splits and cash dividends of every stock (the 5 core US stocks and the catalogue's US / Hong Kong / Tokyo stocks),
+in `src/corporate` (scheduler, EODHD import, provider cross-check), `src/engine/corporate.rs` (per account) and
+`src/api/corporate.rs` (Back Office › Trading › Corporate actions).
+
+- **Life cycle.** proposed (Back Office entry, or the EODHD import) → approved → applying → applied (or rejected).
+  Four-eyes: a split, or a dividend of 2 % of the price or more (or of unknown size), must be approved by someone
+  other than its proposer. An edit after approval needs approval again; so does an upstream EODHD change.
+- **When.** At `apply_at` = 00:00 of the ex-date in the exchange's time zone (New York, Hong Kong, Tokyo), while the
+  market is closed. The scheduler (with `TRADING_ROLLOVER`) checks every 20 s. Positions and pending orders that
+  existed then are adjusted, in every account of every broker, live and demo (copy / PAMM / MAM followers hold their
+  own positions, so each is adjusted on its own account; proportional mirroring stays exact).
+- **Split** `from`-for-`to`: volume × k, open price ÷ k (exact), SL / TP and order prices ÷ k (rounded to the
+  symbol's digits), trailing distances ÷ k. Value and P&L at any price are unchanged; no cash moves.
+- **Dividend**: a ledger entry `dividend` (`house:dividends`) per position: longs are credited the gross amount per
+  share × lots × contract size less the withholding (default by listing: US 30 %, Tokyo 15.315 %, Hong Kong 0 %;
+  editable per action), shorts are debited the gross amount, converted to the account currency. Statements show it
+  as "Dividend adjustment"; `GET /v1/accounts/{login}/corporate-actions` lists a client's applied actions.
+- **Safety.** Idempotent per account: a `corporate_action` event marks it done in the account's stream (replayed like
+  everything else) and dividend entries carry the key `corp:{action}:{ticket}`. A crash part-way resumes on the next
+  pass and skips the accounts already done. Between `apply_at` and an account's adjustment the symbol does not trade
+  for that account (`corporate_action` rejection) and its margin is not stop-out checked.
+- **Provider cross-check.** Hourly, for actions applied in the last 10 days: the Infoway adjustment factors around
+  the ex-date (through market-data `GET /v1/admin/adjustment-factors`) must jump by the split factor / the dividend's
+  share of the price. A mismatch is logged as an error, audited and flagged in the Back Office; it changes nothing.
+
+### EODHD import
+
+The daily import (06:00 UTC, and "Refresh from EODHD" in the Back Office) reads the upcoming-splits calendar
+(`/calendar/splits`, next 120 days, one request) and each stock's dividends from today (`/div/{TICKER}`), 250 ms
+apart, and stores **proposed** actions (nothing applies without an approval). Tickers: `AAPL` → `AAPL.US`, `A.US` →
+`A.US`, `BRK.B` → `BRK-B.US`, `00700.HK` → `0700.HK`, `7203.JP` → `7203.TSE`.
+
+**The key:** add `EODHD_API_KEY=<key>` to the repo-root `.env.local` on the server (the file every service reads;
+`chmod 600`), then restart the engine: `sudo systemctl restart kalks-trading`. It is never logged: request errors are
+reported without their URL. Without it the import stays idle and the Back Office shows "EODHD not configured: add
+EODHD_API_KEY"; manual entry keeps working.
+
+**Test it:** in the Back Office › Trading › Corporate actions, press "Refresh from EODHD": the toast shows how many
+upcoming actions were found and created; the page lists them as Proposed with source EODHD. Or with a staff session:
+`POST /api/trading/admin/corporate-actions/import`. The unit tests (`cargo test -p trading corporate`) parse recorded
+EODHD responses in `tests/fixtures/eodhd/` and never call EODHD.
+
 ## Streams
 
 Browsers connect directly with a one-time ticket, so the internal token never reaches the browser. The flow is:
@@ -849,6 +893,9 @@ The dealing stream sends `snapshot` (`positions` as DeskPosition[], `orders` as 
 | `OPTIONS_HEDGE_LIMIT_USD` | `250000` | house delta (USD notional) per underlying carried before hedging |
 | `OPTIONS_MM_USER_ID` | `0` | the Kalks market-maker user: its accounts are options order book liquidity providers (mass quotes, no-open exemption until cut − 1 min); the `options-mm` group always is |
 | `OPTIONS_MM_CAPITAL` | `25000000` | house capital (USD) booked on a new market-maker account (demo: its demo funding); it must cover the order reserve of a full-chain quote (max(bid premium, ask margin) per series) |
+| `EODHD_API_KEY` | – | corporate-actions import (EODHD All-in-One); empty = import idle, manual entry only |
+| `EODHD_URL` | `https://eodhd.com/api` | |
+| `MARKET_DATA_URL` / `MARKET_DATA_ADMIN_TOKEN` | `http://127.0.0.1:8081` / – | the Infoway adjustment-factor cross-check of corporate actions |
 | `RUST_LOG` | `info,sqlx=warn` | |
 
 The config is logged at start with every secret and the DB password redacted.

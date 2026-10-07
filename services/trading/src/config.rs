@@ -51,6 +51,12 @@ pub struct Config {
     pub options_mm_user: i64,
     /// House capital (USD) booked on a new market-maker account (`OPTIONS_MM_CAPITAL`; demo: its demo funding).
     pub options_mm_capital: i64,
+    /// EODHD API key (`EODHD_API_KEY`): the corporate-actions import (src/corporate/eodhd.rs). Empty = import idle.
+    pub eodhd_key: String,
+    pub eodhd_url: String,
+    /// market-data HTTP API and its admin token: the Infoway adjustment-factor cross-check of corporate actions.
+    pub market_data_url: String,
+    pub market_data_admin_token: String,
 }
 
 /// Masks the password in a connection URL (`postgres://user:secret@host` → `postgres://user:***@host`).
@@ -102,6 +108,10 @@ impl fmt::Debug for Config {
             .field("options_hedge_limit_usd", &self.options_hedge_limit_usd)
             .field("options_mm_user", &self.options_mm_user)
             .field("options_mm_capital", &self.options_mm_capital)
+            .field("eodhd_key", &redact(&self.eodhd_key))
+            .field("eodhd_url", &self.eodhd_url)
+            .field("market_data_url", &redact_url(&self.market_data_url))
+            .field("market_data_admin_token", &redact(&self.market_data_admin_token))
             .finish()
     }
 }
@@ -142,6 +152,10 @@ impl Config {
             options_hedge_limit_usd: 250_000,
             options_mm_user: 0,
             options_mm_capital: 25_000_000,
+            eodhd_key: String::new(),
+            eodhd_url: String::new(),
+            market_data_url: String::new(),
+            market_data_admin_token: String::new(),
         }
     }
 
@@ -184,6 +198,10 @@ impl Config {
             options_hedge_limit_usd: var("OPTIONS_HEDGE_LIMIT_USD", "250000").parse().unwrap_or(250_000),
             options_mm_user: var("OPTIONS_MM_USER_ID", "0").parse().unwrap_or(0),
             options_mm_capital: var("OPTIONS_MM_CAPITAL", "25000000").parse().unwrap_or(25_000_000),
+            eodhd_key: var("EODHD_API_KEY", ""),
+            eodhd_url: var("EODHD_URL", "https://eodhd.com/api").trim_end_matches('/').to_string(),
+            market_data_url: var("MARKET_DATA_URL", "http://127.0.0.1:8081").trim_end_matches('/').to_string(),
+            market_data_admin_token: var("MARKET_DATA_ADMIN_TOKEN", ""),
         })
     }
 }

@@ -107,6 +107,7 @@ async fn back_office_live_switch_and_templates_drive_the_engine() {
         options: Arc::new(trading::options::OptionsCtx::disabled(quotes.clone())),
         clock: Default::default(),
         books: Default::default(),
+        corp: Default::default(),
     });
     let hub = Hub::start(shared, 2, Default::default());
     let logins = Arc::new(LoginAlloc { live: AtomicI64::new(live), demo: AtomicI64::new(demo) });

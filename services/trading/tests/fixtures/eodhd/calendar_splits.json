@@ -1,0 +1,12 @@
+{
+  "type": "Splits",
+  "description": "Historical and upcoming splits",
+  "from": "2026-10-07",
+  "to": "2027-02-04",
+  "splits": [
+    {"code": "NVDA.US", "split_date": "2026-11-20", "optionable": "Y", "old_shares": 1, "new_shares": 10},
+    {"code": "7203.TSE", "split_date": "2026-12-28", "optionable": "N", "old_shares": 5, "new_shares": 1},
+    {"code": "SOMEOTHER.US", "split_date": "2026-11-02", "optionable": "N", "old_shares": 1, "new_shares": 2},
+    {"code": "NVDA.US", "split_date": "2026-09-01", "optionable": "Y", "old_shares": 1, "new_shares": 4}
+  ]
+}

@@ -93,6 +93,7 @@ impl Rig {
             options: options.clone(),
             clock: Default::default(),
             books: Default::default(),
+            corp: Default::default(),
         });
         let hub = Hub::start(shared, shards, Default::default());
         feed::spawn(hub.clone(), md_ws.clone(), specs.symbols());
@@ -155,6 +156,7 @@ impl Rig {
             options: self.options.clone(),
             clock: Default::default(),
             books: Default::default(),
+            corp: Default::default(),
         });
         let hub = Hub::start(shared, 4, states);
         hub.shared.books.lp_users.write().unwrap().insert(MM_USER);

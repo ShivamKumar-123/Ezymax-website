@@ -17,6 +17,8 @@ use trading::persist;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // several TLS backends are compiled in: pick one so HTTPS clients (corporate-actions import) find a provider
+    let _ = rustls::crypto::ring::default_provider().install_default();
     // repo-root .env.local in development; real env vars win in production
     let env_file = dotenvy::from_path(concat!(env!("CARGO_MANIFEST_DIR"), "/../../.env.local"));
     let cfg = Config::from_env()?;
@@ -88,6 +90,7 @@ async fn main() -> anyhow::Result<()> {
         options: options.clone(),
         clock: Default::default(),
         books: Default::default(),
+        corp: Default::default(),
     });
     let hub = Hub::start(shared, cfg.shards, states);
     feed::spawn(hub.clone(), cfg.market_data_ws.clone(), specs.symbols());
@@ -137,6 +140,9 @@ async fn main() -> anyhow::Result<()> {
 
     if cfg.rollover_enabled {
         tokio::spawn(rollovers(hub.clone(), pool.clone(), registry.clone()));
+        // stock splits and dividends: apply approved actions at their ex-date, the daily EODHD import, the Infoway
+        // cross-check (src/corporate)
+        trading::corporate::spawn(hub.clone(), pool.clone(), st.cfg.clone());
         // options order book housekeeping: GTD expiry, deadman switches, expiry cut-off, session-open band check,
         // the throttled market-data feed
         trading::book::spawn_scheduler(hub.clone());

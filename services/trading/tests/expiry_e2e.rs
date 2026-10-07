@@ -164,6 +164,7 @@ async fn boot(url: &str, fresh: bool) -> Eng {
         options: options.clone(),
         clock: Default::default(),
         books: Default::default(),
+        corp: Default::default(),
     });
     let hub = Hub::start(shared, 2, states);
     let md = env("MARKET_DATA_WS_URL", "ws://127.0.0.1:8081/v1/stream");

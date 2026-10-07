@@ -8,6 +8,7 @@ pub mod catalogue;
 pub mod book_feed;
 pub mod closures;
 pub mod controls;
+pub mod corporate;
 pub mod dealing;
 pub mod ledger;
 pub mod lifecycle;
@@ -148,6 +149,14 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/symbols/catalogue/audit", get(catalogue::audit_log))
         .route("/v1/admin/symbols/live", put(catalogue::set_live))
         .route("/v1/admin/symbols/templates/{key}", put(catalogue::set_template))
+        // stock corporate actions: splits and dividends (api/corporate.rs)
+        .route("/v1/admin/corporate-actions", get(corporate::list).post(corporate::create))
+        .route("/v1/admin/corporate-actions/import", post(corporate::import))
+        .route("/v1/admin/corporate-actions/{id}", get(corporate::detail).patch(corporate::edit))
+        .route("/v1/admin/corporate-actions/{id}/approve", post(corporate::approve))
+        .route("/v1/admin/corporate-actions/{id}/reject", post(corporate::reject))
+        .route("/v1/admin/corporate-actions/{id}/check", post(corporate::check))
+        .route("/v1/accounts/{login}/corporate-actions", get(corporate::account))
         // wallet service
         .route("/v1/ledger/transfers", post(ledger::transfer))
         .route("/v1/ledger/transfers/{key}", get(ledger::transfer_status))

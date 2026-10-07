@@ -282,6 +282,8 @@ pub struct Shared {
     pub clock: Arc<Clock>,
     /// Kalks FX Options order book: actors, venues, outbox state (src/book).
     pub books: Arc<crate::book::Books>,
+    /// Corporate actions due and not yet applied everywhere (src/corporate.rs).
+    pub corp: crate::engine::corporate::CorpDue,
 }
 
 /* ------------------------------------------------------------------ */
@@ -597,6 +599,7 @@ impl Shard {
             max_quote_age_ms: self.sh.max_quote_age_ms,
             restrictions: Some(&self.sh.restrictions),
             options: self.sh.options.as_ref(),
+            corp: Some(&self.sh.corp),
         }
     }
 

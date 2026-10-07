@@ -107,6 +107,7 @@ async fn replay_rebuilds_identical_state_and_ledger_holds() {
         options: Arc::new(trading::options::OptionsCtx::disabled(quotes.clone())),
         clock: Default::default(),
         books: Default::default(),
+        corp: Default::default(),
     });
     let _ = AtomicI64::new(0);
     let hub = Hub::start(shared, 4, Default::default());

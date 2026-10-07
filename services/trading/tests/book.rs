@@ -103,6 +103,7 @@ async fn boot(pool: &sqlx::PgPool, states: std::collections::HashMap<i64, tradin
         options: Arc::new(OptionsCtx::disabled(quotes)),
         clock: Default::default(),
         books: Default::default(),
+        corp: Default::default(),
     });
     Hub::start(shared, 2, states)
 }

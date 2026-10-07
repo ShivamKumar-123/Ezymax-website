@@ -281,6 +281,7 @@ pub fn kind_label(kind: &str) -> &'static str {
         "house_capital" => "House capital",
         "option_premium" => "Option premium",
         "option_settlement" => "Option settlement",
+        "dividend" => "Dividend adjustment",
         _ => "Other",
     }
 }

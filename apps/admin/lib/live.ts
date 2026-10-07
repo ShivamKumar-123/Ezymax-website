@@ -19,9 +19,8 @@ export const LIVE_EXCLUDED = [
   "/security/users",
   "/org/desks",
   "/org/kpis",
-  // trading: everything runs on the trading engine except these two
+  // trading: everything runs on the trading engine except rollovers (corporate actions are live)
   "/trading/rollovers",
-  "/trading/corporate-actions",
   // config: account groups (/config, /config/groups), spreads and symbols (catalogue, live switch, templates) are live
   "/config/charges",
   "/config/swaps",

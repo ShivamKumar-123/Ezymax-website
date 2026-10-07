@@ -79,6 +79,8 @@ pub struct Market {
     snap_day: RwLock<HashMap<String, (f64, f64, f64)>>,
     /// History requests to the backfill worker (none in relay mode without an upstream history source).
     pub history: OnceLock<mpsc::UnboundedSender<HistoryJob>>,
+    /// The provider's REST client (none in relay mode).
+    pub provider: OnceLock<Arc<crate::backfill::Provider>>,
 }
 
 #[derive(Default, Clone, Serialize)]
@@ -98,6 +100,7 @@ impl Market {
             streaming: RwLock::new(BTreeSet::new()),
             snap_day: RwLock::new(HashMap::new()),
             history: OnceLock::new(),
+            provider: OnceLock::new(),
             cat,
             pool,
             spreads,

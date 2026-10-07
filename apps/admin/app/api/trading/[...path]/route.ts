@@ -25,6 +25,15 @@ const ROUTES: Route[] = [
   { method: "GET", re: /^admin\/symbols\/catalogue(\/audit)?$/, perm: "dealing.read" },
   { method: "PUT", re: /^admin\/symbols\/live$/, perm: "dealing.policy" },
   { method: "PUT", re: /^admin\/symbols\/templates\/[a-z0-9-]{1,40}$/, perm: "dealing.policy" },
+  // stock corporate actions (Trading › Corporate actions): propose / edit with dealing.write, approve / reject with
+  // dealing.policy; the engine allows changes to platform staff only and enforces four-eyes on splits and large dividends
+  { method: "GET", re: /^admin\/corporate-actions$/, perm: "dealing.read" },
+  { method: "GET", re: new RegExp(`^admin/corporate-actions/${T}$`), perm: "dealing.read" },
+  { method: "POST", re: /^admin\/corporate-actions$/, perm: "dealing.write" },
+  { method: "POST", re: /^admin\/corporate-actions\/import$/, perm: "dealing.write" },
+  { method: "PATCH", re: new RegExp(`^admin/corporate-actions/${T}$`), perm: "dealing.write" },
+  { method: "POST", re: new RegExp(`^admin/corporate-actions/${T}/(approve|reject)$`), perm: "dealing.policy" },
+  { method: "POST", re: new RegExp(`^admin/corporate-actions/${T}/check$`), perm: "dealing.read" },
   // dealing desk writes
   { method: "POST", re: /^dealing\/trades$/, perm: "dealing.write" },
   { method: "POST", re: /^dealing\/positions\/bulk$/, perm: "dealing.write" },

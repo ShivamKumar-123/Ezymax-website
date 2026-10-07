@@ -65,6 +65,7 @@ pub struct Kit {
     pub now: DateTime<Utc>,
     pub restrictions: crate::controls::Restrictions,
     pub options: FixedPricer,
+    pub corp: super::corporate::CorpDue,
 }
 
 /* ------------------------------------------------------------------ */
@@ -197,7 +198,7 @@ impl Kit {
         options.set_snapshot(opt_snapshot());
         options.spot("EURUSD", "1.16", now);
         options.spot("USDJPY", "150", now);
-        Self { specs: crate::specs::test_specs(), tenant, quotes: MapQuotes::default(), ids: Ids::new(1000, 5000, 9000), now, restrictions: Default::default(), options }
+        Self { specs: crate::specs::test_specs(), tenant, quotes: MapQuotes::default(), ids: Ids::new(1000, 5000, 9000), now, restrictions: Default::default(), options, corp: Default::default() }
     }
 
     pub fn quote(&self, symbol: &str, bid: &str, ask: &str) {
@@ -215,6 +216,7 @@ impl Kit {
             max_quote_age_ms: 0,
             restrictions: Some(&self.restrictions),
             options: &self.options,
+            corp: Some(&self.corp),
         }
     }
 

@@ -6,6 +6,7 @@
 //! always see the state their own earlier events produced. Nothing here does IO: the shard persists the
 //! events in one database transaction and only then swaps the working copy in.
 
+pub mod corporate;
 pub mod dealing;
 pub mod funds;
 pub mod options;
@@ -95,6 +96,15 @@ pub struct Env<'a> {
     pub restrictions: Option<&'a crate::controls::Restrictions>,
     /// Kalks FX Options: snapshot, raw spots, prices, scenario margin (src/options).
     pub options: &'a dyn crate::options::OptionPricing,
+    /// Corporate actions due but not yet applied everywhere (engine/corporate.rs); None = none.
+    pub corp: Option<&'a corporate::CorpDue>,
+}
+
+impl Env<'_> {
+    /// The corporate action on `symbol` this account still waits for (trading the symbol pauses meanwhile).
+    pub fn corp_pending(&self, st: &AccountState, symbol: &str) -> Option<i64> {
+        self.corp.and_then(|c| c.pending_for(st, symbol, self.now))
+    }
 }
 
 impl Env<'_> {
@@ -454,3 +464,6 @@ mod tests_book;
 
 #[cfg(test)]
 mod tests_catalogue;
+
+#[cfg(test)]
+mod tests_corporate;

@@ -10,6 +10,7 @@
 //! GET  /v1/history/status               stored bars per symbol/timeframe
 //! GET  /v1/admin/spreads                spread markups           (Bearer MARKET_DATA_ADMIN_TOKEN)
 //! PUT  /v1/admin/spreads                upsert a markup          (Bearer MARKET_DATA_ADMIN_TOKEN)
+//! GET  /v1/admin/adjustment-factors?symbol=&from=&to=   provider adjustment factors of a stock (Bearer token)
 //! GET  /v1/depth?symbol=&group=&levels= depth of market (feed levels, else indicative) with the group's spread
 //! WS   /v1/stream?group=                {"op":"subscribe","symbols":[..],"passive"?:true} → {"type":"quote",...,"d"?:1}
 //!                                       (+ {"type":"hb"} every 5s). A subscription asks the provider stream for the
@@ -57,6 +58,7 @@ pub fn router(state: AppState) -> Router {
         .route("/v1/depth", get(depth_rest))
         .route("/v1/streaming", get(streaming))
         .route("/v1/admin/spreads", get(get_spreads).put(put_spread))
+        .route("/v1/admin/adjustment-factors", get(adjustment_factors))
         .route("/v1/stream", get(stream))
         .layer(CorsLayer::permissive())
         .with_state(state)
@@ -271,6 +273,41 @@ async fn put_spread(State(s): State<AppState>, h: HeaderMap, Json(m): Json<Marku
     s.market.spreads.upsert(&s.market.pool, &m).await?;
     tracing::info!(group = %m.group_code, symbol = %m.symbol, markup = m.markup_points, "spread markup updated");
     Ok(Json(json!({"ok": true})).into_response())
+}
+
+#[derive(Deserialize)]
+struct FactorsQ {
+    symbol: String,
+    /// YYYYMMDD
+    from: String,
+    to: String,
+}
+
+/// Provider adjustment factors of a stock (trading engine: corporate-action cross-check). Admin token; the provider
+/// key stays here.
+async fn adjustment_factors(State(s): State<AppState>, h: HeaderMap, Query(q): Query<FactorsQ>) -> Response {
+    if !authorized(&s, &h) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    let Some(inst) = s.market.cat.get(&q.symbol) else { return bad("unknown symbol") };
+    let code = inst.provider.code.clone();
+    let market = match code.rsplit('.').next() {
+        Some("US") => "US",
+        Some("HK") => "HK",
+        Some("JP") => "JP",
+        _ => return bad("not a stock"),
+    };
+    let ok = |d: &str| d.len() == 8 && d.chars().all(|c| c.is_ascii_digit());
+    if !ok(&q.from) || !ok(&q.to) {
+        return bad("from / to: YYYYMMDD");
+    }
+    let Some(pv) = s.market.provider.get() else {
+        return (StatusCode::SERVICE_UNAVAILABLE, Json(json!({"error": "no provider connection (relay mode)"}))).into_response();
+    };
+    match pv.adjustment_factors(&code, market, &q.from, &q.to).await {
+        Ok(f) => Json(json!({"symbol": q.symbol, "code": code, "factors": f.into_iter().map(|(d, x)| json!({"date": d, "factor": x})).collect::<Vec<_>>()})).into_response(),
+        Err(e) => (StatusCode::BAD_GATEWAY, Json(json!({"error": e.to_string()}))).into_response(),
+    }
 }
 
 #[derive(Deserialize)]

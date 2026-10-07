@@ -146,6 +146,11 @@ pub fn gate(env: &Env, st: &AccountState, symbol: &str, opening: bool, volume: D
             _ => {}
         }
     }
+    // a split / dividend due on this symbol and not yet applied to the account: nothing trades meanwhile (prices are
+    // already post-action), dealers included
+    if let Some(id) = env.corp_pending(st, symbol) {
+        return Err(Reject::new("corporate_action", format!("{symbol}: a corporate action (#{id}) is being applied; trading resumes in a moment")));
+    }
     if opening && let Some(spec) = env.specs.get(symbol) {
         // catalogue instruments open on live accounts only once the platform switched live trading on for them
         // (specs.rs `Spec::live`; the Back Office symbol settings). Closing is always allowed; no dealer override.

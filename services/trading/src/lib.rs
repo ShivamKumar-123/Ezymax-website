@@ -7,6 +7,7 @@ pub mod book;
 pub mod catalogue;
 pub mod config;
 pub mod controls;
+pub mod corporate;
 pub mod engine;
 pub mod feed;
 pub mod model;
