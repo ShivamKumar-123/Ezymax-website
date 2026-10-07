@@ -413,7 +413,7 @@ export default function OrderPanel() {
      ══════════════════════════════════════════════════════════════════ */
   if (isTradingTerminal) {
     const submitDisabled =
-      !hasEnoughMargin || !meetsMinBalance || !activeAccount ||
+      !hasEnoughMargin || !activeAccount ||
       (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid || triggerOutOfBounds;
 
     return (
