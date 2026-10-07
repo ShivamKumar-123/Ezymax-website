@@ -1,6 +1,7 @@
-//! Instrument catalogue: the 28 core instruments keep exactly their specs, catalogue instruments take the
-//! conservative templates (with Back Office overrides), sessions follow their exchange and holiday calendar, and
-//! live trading on a catalogue instrument is refused until the platform enables it (demo always trades).
+//! Instrument catalogue: the 28 core instruments keep exactly their specs, catalogue instruments take their
+//! templates (with Back Office overrides), sessions follow their exchange and holiday calendar, forex / metals /
+//! energies / indices / crypto trade live by default (stocks and kept-off symbols do not, unless switched on), and
+//! every live-enabled catalogue symbol opens, values, stops out and closes with a balanced ledger.
 
 use std::collections::BTreeMap;
 
@@ -53,7 +54,9 @@ fn catalogue_loads_with_templates_sessions_and_calendars() {
     let cat: Vec<_> = s.all().filter(|x| !x.core).collect();
     assert_eq!(cat.len() + 28, s.len());
     for x in &cat {
-        assert!(x.template.is_some() && !x.live, "{}: template and live off by default", x.symbol);
+        let default_on = ["forex", "metals", "energies", "indices", "crypto"].contains(&x.asset_class.as_str()) && x.live_off.is_none();
+        assert!(x.template.is_some(), "{}", x.symbol);
+        assert_eq!(x.live, default_on, "{}: live by default for the five classes unless kept off", x.symbol);
         if x.quote_ccy != "USD" {
             assert!(s.usd_pair(&x.quote_ccy).is_some(), "{}: {} does not convert to USD", x.symbol, x.quote_ccy);
         }
@@ -75,8 +78,12 @@ fn catalogue_loads_with_templates_sessions_and_calendars() {
     assert_eq!(s.get("00700.HK").unwrap().contract_size, D::from(100));
     assert_eq!(s.get("XCUUSD").unwrap().contract_size, D::from(10000), "per-symbol override over the template");
     let bnb = s.get("BNBUSD").unwrap();
-    assert!(bnb.swap_all_days && bnb.session == Session::Always && bnb.max_leverage == 5);
-    assert_eq!(s.get("DOGEUSD").unwrap().contract_size, D::from(1000), "cheap coins: 1,000 per lot");
+    assert!(bnb.swap_all_days && bnb.session == Session::Always && bnb.max_leverage == 10);
+    assert_eq!(bnb.swap_mode, crate::specs::SwapMode::PercentYear);
+    assert_eq!(s.get("EURUSD").unwrap().swap_mode, crate::specs::SwapMode::Points, "core swaps stay in points");
+    // kept off live trading by default, with the reason
+    assert!(s.get("USDTRY").unwrap().live_off.is_some() && !s.get("USDTRY").unwrap().live);
+    assert!(!s.get("MSFT").unwrap().live && s.get("MSFT").unwrap().live_off.is_none(), "stocks wait for corporate actions");
     // new currencies convert through catalogue pairs
     assert_eq!(s.usd_pair("SGD"), Some(("USDSGD".into(), false)));
     assert_eq!(s.usd_pair("NZD"), Some(("NZDUSD".into(), true)));
@@ -145,44 +152,173 @@ fn catalogue_kit(ov: Overrides) -> Kit {
 }
 
 #[test]
-fn live_accounts_are_refused_on_catalogue_symbols_until_enabled_demo_trades() {
-    let kit = catalogue_kit(Overrides::default());
+fn live_defaults_class_and_symbol_switches() {
+    // defaults: forex live, stocks demo only, a kept-off pair demo only
+    let mut kit = catalogue_kit(Overrides::default());
+    kit.now = t("2026-09-28T15:00:00Z"); // Monday, US session open
     kit.quote("AUDCAD", "0.91000", "0.91015");
     kit.quote("USDCAD", "1.38000", "1.38010");
-    // live: refused, market and pending alike
-    let mut live = Harness::live(&kit, "hedge", "10000");
-    let e = live.run(&kit, |tx, env| trade::place_order(tx, env, buy("AUDCAD", "0.1"))).unwrap_err();
-    assert_eq!(e.code, "symbol_demo_only");
-    let mut lim = buy("AUDCAD", "0.1");
-    lim.kind = OrderType::Limit;
-    lim.price = Some(d("0.90000"));
-    assert_eq!(live.run(&kit, |tx, env| trade::place_order(tx, env, lim.clone())).unwrap_err().code, "symbol_demo_only");
-    // core symbols are not affected
+    kit.quote("MSFT", "520.00", "520.10");
+    kit.quote("USDTRY", "49.1900", "49.2100");
     kit.quote("EURUSD", "1.10000", "1.10010");
-    assert!(matches!(live.run(&kit, |tx, env| trade::place_order(tx, env, buy("EURUSD", "0.1"))).unwrap(), PlaceResult::Filled { .. }));
-    // demo: trades
+    let mut live = Harness::live(&kit, "hedge", "10000");
+    let r = live.run(&kit, |tx, env| trade::place_order(tx, env, buy("AUDCAD", "0.1"))).unwrap();
+    let PlaceResult::Filled { position_ticket: Some(ticket), .. } = r else { panic!("{r:?}") };
+    for sym in ["MSFT", "USDTRY"] {
+        let v = if sym == "MSFT" { "1" } else { "0.01" };
+        assert_eq!(live.run(&kit, |tx, env| trade::place_order(tx, env, buy(sym, v))).unwrap_err().code, "symbol_demo_only", "{sym}");
+    }
+    let mut lim = buy("MSFT", "1");
+    lim.kind = OrderType::Limit;
+    lim.price = Some(d("500.00"));
+    assert_eq!(live.run(&kit, |tx, env| trade::place_order(tx, env, lim.clone())).unwrap_err().code, "symbol_demo_only", "pending orders too");
+    // demo trades everything, stocks included
     let mut demo = Harness::demo(&kit, "hedge");
-    let r = demo.run(&kit, |tx, env| trade::place_order(tx, env, buy("AUDCAD", "0.1"))).unwrap();
-    assert!(matches!(r, PlaceResult::Filled { .. }), "{r:?}");
+    for (sym, v) in [("MSFT", "1"), ("USDTRY", "0.01"), ("AUDCAD", "0.1")] {
+        assert!(matches!(demo.run(&kit, |tx, env| trade::place_order(tx, env, buy(sym, v))).unwrap(), PlaceResult::Filled { .. }), "{sym}");
+    }
     demo.assert_ledger();
     demo.assert_replay();
 
-    // the platform enables forex: live trades; then disables AUDCAD alone: new positions refused, closing allowed
-    let kit = catalogue_kit(Overrides { live_classes: ["forex".to_string()].into(), ..Default::default() });
-    kit.quote("AUDCAD", "0.91000", "0.91015");
-    kit.quote("USDCAD", "1.38000", "1.38010");
-    let r = live.run(&kit, |tx, env| trade::place_order(tx, env, buy("AUDCAD", "0.1"))).unwrap();
-    let PlaceResult::Filled { position_ticket: Some(ticket), .. } = r else { panic!("{r:?}") };
-    // P&L in CAD is converted with USDCAD (never taken as USD)
-    let kit = catalogue_kit(Overrides { live_classes: ["forex".to_string()].into(), live_symbols: BTreeMap::from([("AUDCAD".to_string(), false)]), ..Default::default() });
-    kit.quote("AUDCAD", "0.91100", "0.91115");
-    kit.quote("USDCAD", "1.38000", "1.38010");
-    assert_eq!(live.run(&kit, |tx, env| trade::place_order(tx, env, buy("AUDCAD", "0.1"))).unwrap_err().code, "symbol_demo_only");
-    let (_, profit) = live.run(&kit, |tx, env| trade::close_position(tx, env, ticket, CloseReq::default())).unwrap();
-    // (0.91100 − 0.91015) × 10 000 CAD = 8.5 CAD → / 1.38005 USD
+    // the platform switches forex off: new live forex positions refused, the open one still closes
+    let off = Overrides { live_classes: BTreeMap::from([("forex".to_string(), false)]), ..Default::default() };
+    let mut kit2 = catalogue_kit(off.clone());
+    kit2.now = kit.now;
+    for (s, b, a) in [("AUDCAD", "0.91100", "0.91115"), ("USDCAD", "1.38000", "1.38010")] {
+        kit2.quote(s, b, a);
+    }
+    assert_eq!(live.run(&kit2, |tx, env| trade::place_order(tx, env, buy("AUDCAD", "0.1"))).unwrap_err().code, "symbol_demo_only");
+    let (_, profit) = live.run(&kit2, |tx, env| trade::close_position(tx, env, ticket, CloseReq::default())).unwrap();
+    // (0.91100 − 0.91015) × 10 000 CAD = 8.5 CAD → / 1.38005 USD (converted, never taken as USD)
     assert_eq!(crate::money::r2(profit), d("6.16"));
+    // ... a symbol switched on wins over its class; a class switched on does not turn on a kept-off symbol
+    let mut ov = off;
+    ov.live_symbols.insert("AUDCAD".into(), true);
+    ov.live_classes.insert("stocks".into(), true);
+    ov.live_classes.insert("forex".into(), true);
+    let s = kit.specs.with_overrides(ov.clone()).unwrap();
+    assert!(s.get("AUDCAD").unwrap().live && s.get("MSFT").unwrap().live && !s.get("USDTRY").unwrap().live);
+    ov.live_symbols.insert("USDTRY".into(), true);
+    assert!(kit.specs.with_overrides(ov).unwrap().get("USDTRY").unwrap().live, "only its own switch turns it on");
     live.assert_ledger();
     live.assert_replay();
+}
+
+#[test]
+fn percent_swaps_follow_the_position_value() {
+    let kit = catalogue_kit(Overrides::default());
+    let spec = kit.specs.get("BNBUSD").unwrap().clone();
+    kit.quote("BNBUSD", "770.00", "770.20");
+    let mut h = Harness::live(&kit, "hedge", "100000");
+    h.run(&kit, |tx, env| trade::place_order(tx, env, buy("BNBUSD", "1"))).unwrap();
+    // the rollover after opening: crypto swaps every night, −20 % a year / 365 of 1 lot × 10 coins × 770.10 (mid)
+    let day = chrono::NaiveDate::from_ymd_opt(2026, 9, 28).unwrap();
+    h.run(&kit, |tx, env| {
+        super::risk::rollover(tx, env, day, t("2026-09-28T21:00:00Z"));
+        Ok(())
+    })
+    .unwrap();
+    let swap = h.st.positions.values().next().unwrap().swap;
+    let want = crate::money::r2(d("-20") / d("100") / d("365") * spec.contract_size * d("770.10"));
+    assert_eq!(swap, want);
+    assert_eq!(want, d("-4.22"));
+    // core swaps are unchanged (points)
+    let eu = kit.specs.get("EURUSD").unwrap();
+    assert_eq!(eu.swap_per_night(true, D::ONE, d("1.1")), d("-7.2") * eu.point * eu.contract_size);
+    h.assert_ledger();
+    h.assert_replay();
+}
+
+/// Snapshot price of every provider code (config/provider/infoway-snapshot.json).
+fn snapshot_prices() -> std::collections::HashMap<String, f64> {
+    let v: serde_json::Value = serde_json::from_str(include_str!("../../../../config/provider/infoway-snapshot.json")).unwrap();
+    v["rows"].as_array().unwrap().iter().map(|r| (r["code"].as_str().unwrap().to_string(), r["close"].as_f64().unwrap())).collect()
+}
+
+fn instruments() -> Vec<serde_json::Value> {
+    serde_json::from_str(include_str!("../../../../config/instruments.json")).unwrap()
+}
+
+fn px(x: f64, digits: u32) -> D {
+    crate::money::rdp(crate::money::from_f64(x).unwrap(), digits)
+}
+
+/// Every catalogue symbol that trades live: a minimum lot opens on a live account at the snapshot price with the
+/// expected USD margin, its P&L converts to USD, a move against it stops the account out (negative balance
+/// protection included), it closes, and the ledger and the event replay stay exact.
+#[test]
+fn every_live_catalogue_symbol_opens_values_stops_out_and_closes() {
+    let prices = snapshot_prices();
+    let rows = instruments();
+    let mut kit = catalogue_kit(Overrides::default());
+    // conversion pairs: every core FX pair and catalogue FX pair at its snapshot price
+    let quote_all = |kit: &Kit| {
+        for r in rows.iter().filter(|r| r["asset_class"] == "forex") {
+            let (sym, code, digits) = (r["symbol"].as_str().unwrap(), r["provider"]["code"].as_str().unwrap(), r["digits"].as_u64().unwrap() as u32);
+            if let Some(p) = prices.get(code) {
+                let spec = kit.specs.get(sym).unwrap();
+                let half = spec.round_price(crate::money::from_f64(r["base_spread"].as_f64().unwrap()).unwrap() / D::TWO);
+                let mid = px(*p, digits);
+                kit.quote(sym, &(mid - half).to_string(), &(mid + half).to_string());
+            }
+        }
+    };
+    let live: Vec<_> = kit.specs.all().filter(|s| !s.core && s.live).map(|s| s.symbol.clone()).collect();
+    assert!(live.len() > 200, "{} live catalogue symbols", live.len());
+    let mut checked = 0;
+    for sym in live {
+        let spec = kit.specs.get(&sym).unwrap().clone();
+        let row = rows.iter().find(|r| r["symbol"] == sym.as_str()).unwrap();
+        let p = *prices.get(row["provider"]["code"].as_str().unwrap()).unwrap_or_else(|| panic!("{sym}: no snapshot price"));
+        // a moment its market is open (Monday 2026-09-28 onwards)
+        let mut at = t("2026-09-28T00:00:00Z");
+        while !spec.is_open(at) {
+            at += chrono::Duration::minutes(30);
+        }
+        kit.now = at;
+        quote_all(&kit);
+        let mid = px(p, spec.digits);
+        let half = spec.round_price(crate::money::from_f64(row["base_spread"].as_f64().unwrap()).unwrap() / D::TWO).max(spec.point);
+        kit.quote(&sym, &(mid - half).to_string(), &(mid + half).to_string());
+
+        // open the minimum lot on a well-funded live account
+        let mut h = Harness::live(&kit, "hedge", "1000000");
+        let r = h.run(&kit, |tx, env| trade::place_order(tx, env, buy(&sym, &spec.lot_min.to_string()))).unwrap_or_else(|e| panic!("{sym}: {e}"));
+        let PlaceResult::Filled { position_ticket: Some(ticket), .. } = r else { panic!("{sym}: {r:?}") };
+        let env = kit.env(&h.st);
+        let usd_per_quote = env.to_usd(&h.st.account, &spec.quote_ccy, D::ONE, (&sym, mid)).unwrap_or_else(|| panic!("{sym}: {} does not convert", spec.quote_ccy));
+        let lev = D::from(h.st.account.leverage.min(spec.max_leverage));
+        let want_margin = spec.contract_size * mid * spec.lot_min * usd_per_quote * spec.margin_pct / crate::money::HUNDRED / lev;
+        let m = super::metrics(&env, &h.st);
+        assert!((m.margin - want_margin).abs() <= want_margin * d("0.001") + d("0.01"), "{sym}: margin {} vs {}", m.margin, want_margin);
+        // one lot is a sensible amount of money for the classes sized by notional
+        if spec.asset_class == "crypto" || spec.asset_class == "indices" {
+            let lot_usd = spec.contract_size * mid * usd_per_quote;
+            // 1,000-10,000 USD, or a single unit when one unit is already worth more
+            assert!(lot_usd >= d("900") && (lot_usd < d("11000") || spec.contract_size == D::ONE), "{sym}: one lot = {lot_usd} USD");
+        }
+        // close at the bid: the round trip costs the spread, converted to USD
+        let (_, profit) = h.run(&kit, |tx, env| trade::close_position(tx, env, ticket, CloseReq::default())).unwrap();
+        let want = -(D::TWO * half) * spec.contract_size * spec.lot_min * usd_per_quote;
+        assert!((profit - want).abs() <= want.abs() * d("0.01") + d("0.02"), "{sym}: round trip {profit} vs {want}");
+        h.assert_ledger();
+        h.assert_replay();
+
+        // stop-out: an account holding just over the margin, then the price falls far enough to wipe it out
+        let deposit = crate::money::r2(want_margin * d("1.5") + d("1"));
+        let mut h = Harness::live(&kit, "hedge", &deposit.to_string());
+        h.run(&kit, |tx, env| trade::place_order(tx, env, buy(&sym, &spec.lot_min.to_string()))).unwrap_or_else(|e| panic!("{sym} (small account): {e}"));
+        let drop = spec.round_price(deposit * d("1.5") / (spec.contract_size * spec.lot_min * usd_per_quote)) + spec.point;
+        assert!(mid - drop > D::ZERO, "{sym}: test move below zero");
+        kit.quote(&sym, &(mid - drop - half).to_string(), &(mid - drop + half).to_string());
+        h.tick(&kit, &sym);
+        assert!(h.st.positions.is_empty(), "{sym}: stopped out");
+        assert!(h.st.balance >= D::ZERO, "{sym}: negative balance protection");
+        h.assert_ledger();
+        h.assert_replay();
+        checked += 1;
+    }
+    assert!(checked > 200);
 }
 
 #[test]

@@ -16,13 +16,21 @@
 //   energies  every provider energy, NYMEX calendar (OIL).
 //   indices   every index with a price and a convertible currency; the calendar of its home exchange where Kalks
 //             has one (NYSE, HKEX, JPY, EUR, CHF, AUD, CAD).
-//   crypto    spot USDT pairs as XXXUSD; stablecoins and tokenized stocks are left out. Templates by price (contract
-//             sizes 1 / 1,000 / 1,000,000 coins), so a lot means a sensible amount of money.
+//   crypto    spot USDT pairs as XXXUSD; stablecoins, tokenized stocks and coins with no live price are left out.
 //   stocks    main-board listings with a price, ranked by recent daily turnover: US top 800 (NYSE / Nasdaq / NYSE
 //             American, ETFs included; warrants, units and rights left out), Hong Kong top 150, Tokyo top 150.
 //             Sessions: us_equity / hk_equity / jp_equity with the NYSE / HKEX / JPY holiday calendars.
-//   digits    from the price (forex 2-5, crypto 2-8, stocks US 2 / HK 3 / JP 1); typical spread = a fixed share of
-//             the price per class (at least one point). Both are indicative: live quotes carry the real spread.
+//   digits    from the price (forex 2-5, crypto 2-8, stocks US 2 / HK 3 / JP 1).
+//   spread    base_spread = the median raw spread measured on the live stream (config/provider/stream-check.json,
+//             scripts/stream-check.mjs), at least one point; a fixed share of the price per template where there is
+//             no measurement (stocks, closed markets).
+//   contract  crypto and indices: a power of ten so one lot is worth 1,000-10,000 USD at the snapshot price (a coin
+//             at 0.8 USD: 10,000 coins per lot); other classes from their template.
+//   live      forex, metals, energies, indices and crypto trade on live accounts by default ("live": true); stocks
+//             wait for corporate actions. A row with "live_off" stays off live trading whatever its asset class switch
+//             says (only a per-symbol switch in the Back Office overrides it): restricted / non-deliverable currencies
+//             (MYR, TWD, CNY, RUB, TRY), symbols that did not tick on the stream check, zero or very wide spreads.
+//             Crypto with no live price at all (delisted / migrated coins) and dead index series are left out.
 //
 // USAGE
 //   node scripts/gen-catalogue.mjs           rewrite config/instruments.json + config/holidays/exchanges/HKEX.json
@@ -35,6 +43,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SNAPSHOT = join(ROOT, "config", "provider", "infoway-snapshot.json");
+const STREAM_CHECK = join(ROOT, "config", "provider", "stream-check.json");
 const INSTRUMENTS = join(ROOT, "config", "instruments.json");
 const HKEX_FILE = join(ROOT, "config", "holidays", "exchanges", "HKEX.json");
 const GENERATED_BY = "scripts/gen-catalogue.mjs";
@@ -66,7 +75,24 @@ const INDEX_CALENDAR = {
 };
 // the same series as a core index under its older name
 const INDEX_SKIP = new Set(["GER30"]);
+// cash indices: ticks only during their exchange's session (provider H1 history, 2026-10-07)
+const INDEX_SESSION = {
+  DJT: "us_equity", DJU: "us_equity", NBI: "us_equity", REIT: "us_equity", SIXE: "us_equity", SOX: "us_equity", VXN: "us_equity", TSX: "us_equity",
+  HSHCI: "hk_equity", HSII: "hk_equity", NI225: "jp_equity", STI: "sg_equity",
+};
+// series with no price movement in the provider's history
+const INDEX_DEAD = new Set(["SISE"]);
 const BASE_METALS = new Set(["XCUUSD", "XALUSD", "XNIUSD", "XPBUSD", "ZINCSPOT"]);
+// asset classes whose catalogue instruments trade on live accounts by default
+const LIVE_CLASSES = new Set(["forex", "metals", "energies", "indices", "crypto"]);
+// restricted or non-deliverable currencies (onshore CNY, MYR, TWD), sanctioned (RUB), limited hours and extreme carry (TRY)
+const LIVE_OFF_CCY = { MYR: "Malaysian ringgit is non-deliverable offshore", TWD: "Taiwan dollar is non-deliverable offshore", CNY: "onshore yuan (trade CNH instead)", RUB: "rouble: sanctions", TRY: "lira: quoted only 05:00-15:00 UTC, extreme carry" };
+// a live symbol needs at least this many live ticks in the stream check (when its session was open) ...
+const MIN_TICKS = 5;
+// ... and a median raw spread no wider than this (basis points of the price)
+const MAX_SPREAD_BPS = { crypto: 30, default: 50 };
+// sessions that were closed at the stream check (Asian / European cash hours)
+const CLOSED_AT_CHECK = new Set(["hk_equity", "jp_equity", "sg_equity", "cn_equity", "au_equity", "in_equity", "eu_equity", "uk_equity"]);
 // duplicate copper series ("Copper Spot" next to the copper CFD)
 const METAL_SKIP = new Set(["XCUUSD_S"]);
 
@@ -90,7 +116,7 @@ function digitsFor(cls, row) {
     case "indices":
       return p >= 1000 ? 1 : p >= 100 ? 2 : 3;
     case "crypto":
-      return clamp(4 - Math.floor(log10(p)), 2, 8);
+      return clamp(4 - Math.floor(log10(p)), 2, 10);
     case "stocks":
       return row.type === "STOCK_HK" ? 3 : row.type === "STOCK_JP" ? 1 : 2;
   }
@@ -98,7 +124,7 @@ function digitsFor(cls, row) {
 }
 
 /** Typical raw spread as a share of the price, per template. */
-const SPREAD = { forex: 0.00015, "forex-exotic": 0.0002, metals: 0.0004, "metals-silver": 0.0006, "metals-base": 0.0008, energies: 0.0008, indices: 0.0003, crypto: 0.0015, "crypto-1k": 0.002, "crypto-1m": 0.003, "stocks-us": 0.0005, "stocks-hk": 0.002, "stocks-jp": 0.001 };
+const SPREAD = { forex: 0.00015, "forex-exotic": 0.0002, metals: 0.0004, "metals-silver": 0.0006, "metals-base": 0.0008, energies: 0.0008, indices: 0.0003, crypto: 0.002, "stocks-us": 0.0005, "stocks-hk": 0.002, "stocks-jp": 0.001 };
 
 function spreadFor(template, price, digits) {
   const pt = 10 ** -digits;
@@ -108,6 +134,7 @@ function spreadFor(template, price, digits) {
 /* ----------------------------------------------------------------- inputs */
 
 const snap = JSON.parse(readFileSync(SNAPSHOT, "utf8"));
+const check = JSON.parse(readFileSync(STREAM_CHECK, "utf8"));
 const original = readFileSync(INSTRUMENTS, "utf8");
 const all = JSON.parse(original);
 const core = all.filter((r) => r.tier !== "catalogue");
@@ -134,15 +161,46 @@ for (const r of fxRows) {
   if (r.code.endsWith("USD")) usdPair.add(r.code.slice(0, 3));
 }
 
+// USD per unit of each currency, from the snapshot's FX closes
+const usdRate = { USD: 1 };
+for (const r of fxRows) {
+  if (r.code.endsWith("USD") && r.code.length === 6) usdRate[r.code.slice(0, 3)] ??= r.close;
+  if (r.code.startsWith("USD") && r.code.length === 6) usdRate[r.code.slice(3)] ??= 1 / r.close;
+}
+
+/** Contract size so one lot is worth 1,000-10,000 USD (a power of ten, at least 1). */
+function notionalContract(priceUsd) {
+  return 10 ** Math.max(0, 3 - Math.floor(log10(priceUsd)));
+}
+
 const row = (r, cls, template, extra) => {
   const digits = digitsFor(cls, r);
+  const symbol = extra.symbol ?? r.code;
+  const session = extra.session ?? (cls === "crypto" ? "24x7" : "fx");
+  const pt = 10 ** -digits;
+  // typical spread: the measured median on the live stream where there is one
+  const m = check.symbols[symbol];
+  const measured = m && m.ticks >= 2 && m.spread > 0 ? round(Math.max(pt, Math.round(m.spread / pt) * pt), digits) : null;
+  const priceUsd = r.close * (usdRate[extra.quote] ?? 0);
+  const contract = (cls === "crypto" || cls === "indices") && priceUsd > 0 ? notionalContract(priceUsd) : null;
+  // live trading by default, unless something about the market says otherwise
+  let off = null;
+  if (LIVE_CLASSES.has(cls)) {
+    const ccys = [extra.base, extra.quote].filter(Boolean);
+    const restricted = cls === "forex" || cls === "metals" ? ccys.find((c) => LIVE_OFF_CCY[c]) : null;
+    const bps = m && m.spread !== null && m.mid ? (m.spread / m.mid) * 1e4 : null;
+    if (restricted) off = LIVE_OFF_CCY[restricted];
+    else if (!CLOSED_AT_CHECK.has(session) && (!m || m.ticks < MIN_TICKS)) off = `no live prices at the stream check (${m?.ticks ?? 0} ticks in 100 s, ${check.checkedAt})`;
+    else if (m && m.ticks >= 2 && m.spread === 0) off = "the provider quotes a zero spread";
+    else if (bps !== null && bps > (MAX_SPREAD_BPS[cls] ?? MAX_SPREAD_BPS.default)) off = `spread too wide (${bps.toFixed(0)} bp at the stream check)`;
+  }
   return {
-    symbol: extra.symbol ?? r.code,
+    symbol,
     asset_class: cls,
     digits,
-    base_spread: spreadFor(template, r.close, digits),
+    base_spread: measured ?? spreadFor(template, r.close, digits),
     provider: { market: r.market, code: r.code },
-    session: extra.session ?? (cls === "crypto" ? "24x7" : "fx"),
+    session,
     tier: "catalogue",
     name: r.name || r.code,
     ...(extra.base ? { base_ccy: extra.base } : {}),
@@ -151,6 +209,8 @@ const row = (r, cls, template, extra) => {
     ...(extra.calendar ? { calendar: extra.calendar } : {}),
     template,
     ...(extra.pip ? { pip_size: extra.pip } : {}),
+    ...(contract ? { contract_size: contract } : {}),
+    ...(LIVE_CLASSES.has(cls) ? (off ? { live_off: off } : { live: true }) : {}),
   };
 };
 
@@ -199,9 +259,10 @@ for (const r of snap.rows.filter((r) => r.type === "INDICES")) {
   const quote = INDEX_CCY[r.code] ?? r.ccy;
   if (coreCodes.has(`common/${r.code}`)) add(r, "core instrument");
   else if (INDEX_SKIP.has(r.code)) add(r, "same series as a core index");
+  else if (INDEX_DEAD.has(r.code)) add(r, "no price movement in the provider's history");
   else if (!(r.close > 0)) add(r, "no price from the provider");
   else if (!quote || !usdPair.has(quote)) add(r, `no ${quote ?? "?"}/USD price to convert profits`);
-  else out.push(row(r, "indices", "indices", { symbol: r.code.replace(/[^A-Z0-9.]/g, "."), quote, calendar: INDEX_CALENDAR[r.code] }));
+  else out.push(row(r, "indices", "indices", { symbol: r.code.replace(/[^A-Z0-9.]/g, "."), quote, calendar: INDEX_CALENDAR[r.code], session: INDEX_SESSION[r.code] }));
 }
 
 /* ----------------------------------------------------------------- crypto */
@@ -217,10 +278,8 @@ for (const r of snap.rows.filter((r) => r.type === "CRYPTO")) {
   else if (STABLE.has(base)) add(r, "stablecoin");
   else if (tokenized || /\bETF\b/.test(r.name)) add(r, "tokenized stock / ETF");
   else if (!(r.close > 0)) add(r, "no price");
-  else {
-    const template = r.close >= 50 ? "crypto" : r.close >= 0.05 ? "crypto-1k" : "crypto-1m";
-    out.push(row(r, "crypto", template, { symbol: `${base}USD`, base, quote: "USD" }));
-  }
+  else if ((check.symbols[`${base}USD`]?.ticks ?? 1) === 0) add(r, "no live price at all (delisted or migrated coin)");
+  else out.push(row(r, "crypto", "crypto", { symbol: `${base}USD`, base, quote: "USD" }));
 }
 
 /* ----------------------------------------------------------------- stocks */
@@ -271,8 +330,8 @@ const firstCat = lines.findIndex((l) => l.startsWith('  {"symbol"'));
 let coreText = (firstCat >= 0 ? lines.slice(0, firstCat) : lines.slice(0, lines.lastIndexOf("]"))).join("\n").replace(/,\s*$/, "").replace(/\s+$/, "");
 if (JSON.stringify(JSON.parse(`${coreText}\n]`)) !== JSON.stringify(core)) throw new Error("core rows could not be isolated unchanged");
 const text = `${coreText},\n${out.map((r) => `  ${JSON.stringify(r)}`).join(",\n")}\n]\n`;
-const check = JSON.parse(text);
-if (JSON.stringify(check.slice(0, core.length)) !== JSON.stringify(core)) throw new Error("core rows changed");
+const reparsed = JSON.parse(text);
+if (JSON.stringify(reparsed.slice(0, core.length)) !== JSON.stringify(core)) throw new Error("core rows changed");
 
 // HKEX calendar from the provider's trading days (weekdays that are not trading days; half days close at 12:00)
 const hk = snap.tradingDays?.HK ?? {};
@@ -331,6 +390,8 @@ if (CHECK) {
   console.log(`snapshot ${snap.fetchedAt} (${snap.plan?.packageName ?? "?"} plan)`);
   console.log(`provider universe: ${Object.entries(snap.providerCounts).map(([k, v]) => `${k} ${v}`).join(", ")}`);
   console.log(`catalogue: ${out.length} instruments + ${core.length} core = ${out.length + core.length}`);
+  console.log(`live by default: ${out.filter((r) => r.live).length}; kept off live: ${out.filter((r) => r.live_off).length}`);
+  for (const r of out.filter((r) => r.live_off)) console.log(`  off  ${r.symbol.padEnd(10)} ${r.live_off}`);
   for (const [k, v] of Object.entries(byClass).sort()) console.log(`  ${k.padEnd(26)} ${v}`);
   console.log(`left out (not stocks below the turnover cut): ${skipped.length}`);
   for (const s of skipped.filter((s) => !s.includes("warrant"))) console.log(`  ${s}`);

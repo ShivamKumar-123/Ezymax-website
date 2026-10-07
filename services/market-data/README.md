@@ -29,10 +29,10 @@ cargo test -p market-data
 
 Config env vars (with defaults) are listed in `src/config.rs`. The instrument list is in `config/instruments.json`. USDINR is not carried by Infoway.
 
-## Instrument catalogue (1,409 instruments)
+## Instrument catalogue (1,389 instruments)
 
 `config/instruments.json` holds the 28 hand-maintained **core** instruments (unchanged, first in the file) and
-1,381 **catalogue** rows (`"tier": "catalogue"`) generated from the provider:
+1,361 **catalogue** rows (`"tier": "catalogue"`) generated from the provider:
 
 ```bash
 ssh kalks-vps 'cd ~/kalks && python3 scripts/infoway-snapshot.py fetch' > config/provider/infoway-snapshot.json
@@ -44,8 +44,8 @@ node scripts/gen-catalogue.mjs --check  # CI: files match the snapshot
 |---|---|---|
 | forex | 54 | every provider pair whose profit currency converts to USD with a provider price; one direction per pair |
 | metals / energies | 14 / 2 | every provider metal / energy |
-| indices | 29 | every index with a price and a USD-convertible currency |
-| crypto | 182 | spot USDT pairs as `XXXUSD` (no stablecoins, no tokenized stocks) |
+| indices | 28 | every index with a price and a USD-convertible currency; cash indices on their exchange hours |
+| crypto | 163 | spot USDT pairs as `XXXUSD` (no stablecoins, tokenized stocks or coins without a live price) |
 | stocks | 1,100 | US top 800 (NYSE / Nasdaq / NYSE American, ETFs included), Hong Kong top 150, Tokyo top 150, by turnover |
 
 Each row carries name, provider code, digits, a typical spread, session (`fx`, `24x7`, `us_equity`, `hk_equity`,
@@ -55,8 +55,14 @@ currency and the trading engine's spec template. Sessions and calendars are shar
 
 Why a generated JSON file and not a database table: every service (market-data, trading, ALGO, reports, IB, growth)
 reads the same file at startup with no runtime dependency on market-data or the provider; the engine's startup and
-replay stay deterministic; a new tradable instrument is a reviewed git diff; 1,409 rows are 360 KB (one line per
-catalogue row). The "refresh job" is the snapshot script plus `gen-catalogue.mjs`.
+replay stay deterministic; a new tradable instrument is a reviewed git diff; 1,389 rows are ~380 KB (one line per
+catalogue row). The "refresh job" is the snapshot script, `scripts/stream-check.mjs` (live ticks and spreads,
+`config/provider/stream-check.json`) and `gen-catalogue.mjs`.
+
+Live trading: forex, metals, energies, indices and crypto rows carry `"live": true` (stocks follow once corporate
+actions are handled); `"live_off": "<reason>"` keeps a row off live trading (restricted currencies MYR / TWD / CNY /
+RUB / TRY, no live ticks or zero / very wide spreads at the stream check). Typical spreads (`base_spread`) are the
+median raw spreads measured on the stream; crypto and index contract sizes make one lot worth 1,000-10,000 USD.
 
 ## Streaming within the plan (demand.rs)
 

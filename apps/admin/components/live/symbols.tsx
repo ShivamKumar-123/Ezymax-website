@@ -2,8 +2,9 @@
 
 /**
  * Config › Symbols (live): the instrument catalogue from the trading engine (services/trading api/catalogue.rs).
- * 28 core instruments plus the provider catalogue. Catalogue instruments trade on demo accounts; live trading on
- * them is switched on per asset class or per symbol here, and their spec templates are edited here. Only the
+ * 28 core instruments plus the provider catalogue. Every instrument trades on demo accounts. Forex, metals, energies,
+ * indices and crypto trade live by default (stocks and symbols kept off for a reason do not); the asset-class and
+ * per-symbol switches here override that, and the spec templates are edited here. Only the
  * platform owner / super admin of the Kalks platform may change either (the engine enforces it); everyone else with
  * dealing access sees the same page read-only. Every change needs a reason and is audited.
  */
@@ -22,6 +23,9 @@ type Sym = {
   core: boolean;
   template: string | null;
   liveTrading: boolean;
+  liveDefault: boolean;
+  liveOff: string | null;
+  swapMode: "points" | "percent";
   session: string;
   holidayCalendar: string | null;
   digits: number;
@@ -48,13 +52,14 @@ type RawSpec = Partial<{
   swap_short: number;
   triple_swap_day: string | null;
   swap_days: string;
+  swap_mode: "points" | "percent";
   session: string;
   stops_level_points: number;
   commission_per_lot: number;
 }>;
 type Template = { key: string; comment: string | null; symbols: number; file: RawSpec; override: RawSpec | null; effective: RawSpec; updatedBy: string | null; updatedReason: string | null; updatedAt: string | null };
 type Counts = Record<string, { total: number; core: number; catalogue: number; catalogueLive: number }>;
-type CatalogueResp = { canChange: boolean; counts: Counts; liveClasses: string[]; liveSymbols: Record<string, boolean>; templates: Template[]; symbols: Sym[] };
+type CatalogueResp = { canChange: boolean; counts: Counts; liveClasses: Record<string, boolean>; liveDefaultClasses: string[]; liveSymbols: Record<string, boolean>; templates: Template[]; symbols: Sym[] };
 type Change = { id: number; at: string; staff: string; role: string; action: string; target: string; before: unknown; after: unknown; reason: string };
 
 const CLASS_TONE: Record<string, ChipTone> = { forex: "info", metals: "gold", indices: "ember", energies: "warn", crypto: "up", stocks: "neutral" };
@@ -62,13 +67,19 @@ const classLabel = (c: string) => (ASSET_CLASS_LABEL as Record<string, string>)[
 const SESSION_LABEL: Record<string, string> = { fx: "Mon–Fri (server time)", "24x7": "24/7", us_equity: "US stocks 09:30–16:00 NY", hk_equity: "HKEX 09:30–16:00 HKT", jp_equity: "TSE 09:00–15:30 JST", uk_equity: "LSE 08:00–16:30", eu_equity: "Xetra 09:00–17:30 CET", cn_equity: "SSE / SZSE", sg_equity: "SGX", in_equity: "NSE / BSE", au_equity: "ASX" };
 const fmt = (n: number | undefined | null) => (n === undefined || n === null ? "—" : n.toLocaleString(undefined, { maximumFractionDigits: 8 }));
 
-/** Live state of a catalogue symbol: its own switch, else its class. */
-function liveSource(s: Sym, d: CatalogueResp): "core" | "symbol-on" | "symbol-off" | "class-on" | "off" {
+/** Live state of a catalogue symbol: its own switch, else kept off for a reason, else its class (switch or default). */
+function liveSource(s: Sym, d: CatalogueResp): "core" | "symbol-on" | "symbol-off" | "kept-off" | "class-on" | "off" {
   if (s.core) return "core";
   const own = d.liveSymbols[s.symbol];
   if (own === true) return "symbol-on";
   if (own === false) return "symbol-off";
-  return d.liveClasses.includes(s.assetClass) ? "class-on" : "off";
+  if (s.liveOff) return "kept-off";
+  return classOn(d, s.assetClass) ? "class-on" : "off";
+}
+
+/** A class's live state: its Back Office switch, else the catalogue default. */
+function classOn(d: CatalogueResp, c: string) {
+  return d.liveClasses[c] ?? d.liveDefaultClasses.includes(c);
 }
 
 /* ------------------------------------------------------------------ */
@@ -131,8 +142,8 @@ const NUM_FIELDS: { k: keyof RawSpec; label: string; hint?: string; step: number
   { k: "lot_step", label: "Lot step", step: 0.01, min: 0 },
   { k: "margin_pct", label: "Margin", hint: "% (100 = notional / leverage)", step: 10, min: 1, max: 10000 },
   { k: "max_leverage", label: "Leverage cap", hint: "1:N", step: 1, min: 1, max: 1000 },
-  { k: "swap_long", label: "Swap long", hint: "points / lot / night", step: 1 },
-  { k: "swap_short", label: "Swap short", hint: "points / lot / night", step: 1 },
+  { k: "swap_long", label: "Swap long", hint: "see swap mode", step: 0.5 },
+  { k: "swap_short", label: "Swap short", hint: "see swap mode", step: 0.5 },
   { k: "stops_level_points", label: "Stops level", hint: "points", step: 1, min: 0 },
 ];
 const DAYS = [
@@ -216,6 +227,9 @@ function TemplateEditor({ t, canChange, onClose, onSaved }: { t: Template | null
           <MiniField label="Triple swap">
             <Select size="sm" value={v.triple_swap_day ?? "none"} onChange={(d) => canChange && setV((p) => ({ ...p, triple_swap_day: d === "none" ? null : d }))} options={DAYS} />
           </MiniField>
+          <MiniField label="Swap mode">
+            <Select size="sm" value={v.swap_mode ?? "points"} onChange={(d) => canChange && setV((p) => ({ ...p, swap_mode: d }))} options={[{ value: "points", label: "Points / lot / night" }, { value: "percent", label: "% of value / year" }]} />
+          </MiniField>
           <MiniField label="Swap nights">
             <Select size="sm" value={v.swap_days ?? "mon-fri"} onChange={(d) => canChange && setV((p) => ({ ...p, swap_days: d }))} options={[{ value: "mon-fri", label: "Mon–Fri" }, { value: "all", label: "Every night" }]} />
           </MiniField>
@@ -225,7 +239,7 @@ function TemplateEditor({ t, canChange, onClose, onSaved }: { t: Template | null
         </div>
         <p className="flex gap-2 text-[12px] text-fg-3">
           <Info className="mt-0.5 size-3.5 shrink-0" />
-          Changes apply to new orders and margin at once, on demo and live. A contract size change waits until no position or order is open on these instruments. Core instruments never use templates.
+          Changes apply to new orders and margin at once, on demo and live. Swaps in % per year are charged per night as rate / 360 (/ 365 when every night), negative = the client pays. Crypto and index contract sizes are set per symbol (one lot ≈ 1,000–10,000 USD). A contract size change waits until no position or order is open on these instruments. Core instruments never use templates.
         </p>
         {canChange ? (
           <MiniField label="Reason" hint="saved in the audit log">
@@ -265,7 +279,7 @@ function RecentChanges({ version }: { version: number }) {
                   {ago(c.at, now)}
                 </span>
               </div>
-              {c.action === "symbols.live" && <div className="mt-0.5 font-mono text-[12px] text-fg-2">{JSON.stringify((c.after as { enabled?: unknown })?.enabled ?? null) === "true" ? "on" : JSON.stringify((c.after as { enabled?: unknown })?.enabled ?? null) === "false" ? "off" : "follows class"}</div>}
+              {c.action === "symbols.live" && <div className="mt-0.5 font-mono text-[12px] text-fg-2">{(c.after as { enabled?: unknown })?.enabled === true ? "on" : (c.after as { enabled?: unknown })?.enabled === false ? "off" : "back to default"}</div>}
               <div className="mt-0.5 truncate text-[12px] text-fg-3">
                 {c.staff} · {c.reason}
               </div>
@@ -305,6 +319,7 @@ export function LiveSymbols() {
   const total = d?.symbols.length ?? 0;
   const core = d?.symbols.filter((s) => s.core).length ?? 0;
   const liveCat = d?.symbols.filter((s) => !s.core && s.liveTrading).length ?? 0;
+  const keptOff = d?.symbols.filter((s) => !s.core && s.liveOff).length ?? 0;
   const rows = (d?.symbols ?? []).filter((s) => (cls === "all" || s.assetClass === cls) && (tier === "all" || (tier === "core" ? s.core : tier === "catalogue" ? !s.core : !s.core && s.liveTrading)));
 
   const putLive = async (body: object, okText: string) => {
@@ -314,25 +329,32 @@ export function LiveSymbols() {
     refresh();
     return null;
   };
-  const toggleClass = (c: string, on: boolean) => {
+  const toggleClass = (c: string, on: boolean | null) => {
     if (!d) return;
     if (!canChange) return toast("Only the platform owner can switch live trading");
     const n = d.counts[c]?.catalogue ?? 0;
+    const def = d.liveDefaultClasses.includes(c);
     setAsk({
-      title: `${on ? "Enable" : "Disable"} live trading · ${classLabel(c)}`,
-      description: on
-        ? `${n} catalogue ${classLabel(c).toLowerCase()} instruments will accept orders on live accounts (symbols switched off individually stay off). Core instruments are not affected.`
-        : `New live positions on ${n} catalogue ${classLabel(c).toLowerCase()} instruments will be refused; open positions can still be closed. Demo is not affected.`,
-      confirm: on ? "Enable live trading" : "Disable live trading",
-      danger: !on,
-      run: (reason) => putLive({ scope: "class", key: c, enabled: on, reason }, `Live trading ${on ? "on" : "off"} · ${classLabel(c)}`),
+      title: on === null ? `Live trading · ${classLabel(c)} back to the default (${def ? "on" : "off"})` : `${on ? "Enable" : "Disable"} live trading · ${classLabel(c)}`,
+      description:
+        on === false
+          ? `New live positions on ${n} catalogue ${classLabel(c).toLowerCase()} instruments will be refused; open positions can still be closed. Demo is not affected.`
+          : `Catalogue ${classLabel(c).toLowerCase()} instruments will ${on === null && !def ? "not " : ""}accept orders on live accounts (symbols kept off for a reason, or switched off individually, stay off). Core instruments are not affected.`,
+      confirm: on === null ? "Use the default" : on ? "Enable live trading" : "Disable live trading",
+      danger: on === false,
+      run: (reason) => putLive({ scope: "class", key: c, enabled: on, reason }, `Live trading ${on === null ? "default" : on ? "on" : "off"} · ${classLabel(c)}`),
     });
   };
   const setSymbol = (s: Sym, enabled: boolean | null) => {
     if (!canChange) return toast("Only the platform owner can switch live trading");
     setAsk({
       title: `${s.symbol} · live trading ${enabled === null ? "follows its class" : enabled ? "on" : "off"}`,
-      description: enabled === null ? `${s.symbol} goes back to the ${classLabel(s.assetClass)} switch.` : enabled ? `${s.symbol} will accept orders on live accounts.` : `New live positions on ${s.symbol} will be refused; open ones can be closed.`,
+      description:
+        enabled === null
+          ? `${s.symbol} goes back to its default${s.liveOff ? ` (kept off: ${s.liveOff})` : ` (the ${classLabel(s.assetClass)} switch)`}.`
+          : enabled
+            ? `${s.symbol} will accept orders on live accounts.${s.liveOff ? ` It is kept off by default because: ${s.liveOff}.` : ""}`
+            : `New live positions on ${s.symbol} will be refused; open ones can be closed.`,
       confirm: "Save",
       danger: enabled === false,
       run: (reason) => putLive({ scope: "symbol", key: s.symbol, enabled, reason }, `${s.symbol}: live trading ${enabled === null ? "follows its class" : enabled ? "on" : "off"}`),
@@ -381,9 +403,9 @@ export function LiveSymbols() {
         if (src === "core") return <Chip size="sm" tone="up">Always</Chip>;
         const value = src === "symbol-on" ? "on" : src === "symbol-off" ? "off" : "class";
         return (
-          <span className="inline-flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <Chip size="sm" tone={s.liveTrading ? "up" : "neutral"} dot>
-              {s.liveTrading ? "Live + demo" : "Demo only"}
+          <span className="inline-flex items-center gap-2" onClick={(e) => e.stopPropagation()} title={s.liveOff ? `Kept off live trading: ${s.liveOff}` : undefined}>
+            <Chip size="sm" tone={s.liveTrading ? "up" : src === "kept-off" ? "warn" : "neutral"} dot>
+              {s.liveTrading ? "Live + demo" : src === "kept-off" ? "Kept off" : "Demo only"}
             </Chip>
             {canChange && (
               <Segmented
@@ -391,7 +413,7 @@ export function LiveSymbols() {
                 value={value}
                 onChange={(v) => setSymbol(s, v === "class" ? null : v === "on")}
                 options={[
-                  { value: "class", label: "Class" },
+                  { value: "class", label: "Default" },
                   { value: "on", label: "On" },
                   { value: "off", label: "Off" },
                 ]}
@@ -407,7 +429,7 @@ export function LiveSymbols() {
     <div className="pb-16">
       <PageHeader
         title="Symbols"
-        subtitle="The instrument catalogue: 28 core instruments and the provider catalogue. Catalogue instruments always trade on demo; live trading is switched on here."
+        subtitle="The instrument catalogue: 28 core instruments and the provider catalogue. Everything trades on demo; forex, metals, energies, indices and crypto also trade live by default (stocks follow once corporate actions are handled)."
         actions={
           <Button variant="surface" onClick={refresh}>
             <RefreshCw /> Refresh
@@ -418,7 +440,7 @@ export function LiveSymbols() {
       <Reveal>
         <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <MiniStat label="Instruments" value={d ? total.toLocaleString() : "—"} sub={d ? `${core} core · ${(total - core).toLocaleString()} catalogue` : undefined} />
-          <MiniStat label="Live trading on" value={d ? `${liveCat.toLocaleString()} / ${(total - core).toLocaleString()}` : "—"} sub="Catalogue instruments open to live accounts" tone={liveCat > 0 ? "up" : undefined} />
+          <MiniStat label="Live trading on" value={d ? `${liveCat.toLocaleString()} / ${(total - core).toLocaleString()}` : "—"} sub={d ? `Catalogue instruments open to live accounts · ${keptOff} kept off` : undefined} tone={liveCat > 0 ? "up" : undefined} />
           <MiniStat label="Templates" value={d ? d.templates.length : "—"} sub={d ? `${d.templates.filter((t) => t.override).length} with Back Office changes` : undefined} />
           <MiniStat label="Your access" value={canChange ? "Can change" : "View only"} sub={canChange ? "Every change needs a reason" : "Platform owner only"} tone={canChange ? "up" : undefined} />
         </div>
@@ -428,13 +450,14 @@ export function LiveSymbols() {
         <div className="space-y-4 2xl:col-span-9">
           <Reveal delay={0.03}>
             <Card>
-              <CardHeader title="Live trading by asset class" subtitle="Off: catalogue instruments of the class trade on demo accounts only. Core instruments always trade." icon={<ShieldCheck />} />
+              <CardHeader title="Live trading by asset class" subtitle="Off: catalogue instruments of the class trade on demo accounts only. Core instruments always trade. A class without a switch follows the catalogue default." icon={<ShieldCheck />} />
               <div className="grid grid-cols-1 gap-2 px-4 pb-5 pt-3 sm:grid-cols-2 sm:px-6 xl:grid-cols-3">
                 {!d && <Skeleton className="h-24 w-full sm:col-span-2 xl:col-span-3" />}
                 {d &&
                   classes.map((c) => {
                     const k = d.counts[c]!;
-                    const on = d.liveClasses.includes(c);
+                    const on = classOn(d, c);
+                    const explicit = d.liveClasses[c] !== undefined;
                     const overrides = d.symbols.filter((s) => s.assetClass === c && !s.core && d.liveSymbols[s.symbol] !== undefined).length;
                     return (
                       <div key={c} className="k-row flex items-center justify-between gap-3 px-4 py-3">
@@ -446,7 +469,12 @@ export function LiveSymbols() {
                             </Chip>
                           </div>
                           <div className="mt-0.5 text-[11.5px] text-fg-3">
-                            {k.catalogue} catalogue · {k.core} core{overrides ? ` · ${overrides} symbol switch${overrides > 1 ? "es" : ""}` : ""}
+                            {k.catalogue} catalogue · {k.core} core{overrides ? ` · ${overrides} symbol switch${overrides > 1 ? "es" : ""}` : ""} · {explicit ? "Back Office switch" : `default ${d.liveDefaultClasses.includes(c) ? "on" : "off"}`}
+                            {explicit && canChange && (
+                              <button className="ml-1.5 text-ember hover:underline" onClick={() => toggleClass(c, null)}>
+                                use default
+                              </button>
+                            )}
                           </div>
                         </div>
                         {k.catalogue > 0 && canChange ? (
@@ -539,7 +567,7 @@ export function LiveSymbols() {
                           </td>
                           <td className="py-2 text-right k-num">1:{t.effective.max_leverage}</td>
                           <td className="py-2 text-right font-mono text-[12px] text-fg-2">
-                            {fmt(t.effective.swap_long)} / {fmt(t.effective.swap_short)}
+                            {fmt(t.effective.swap_long)} / {fmt(t.effective.swap_short)} {t.effective.swap_mode === "percent" ? "%/yr" : "pts"}
                           </td>
                           <td className="py-2 text-[12px] text-fg-2">{SESSION_LABEL[t.effective.session ?? ""] ?? t.effective.session}</td>
                           <td className="py-2 text-right">

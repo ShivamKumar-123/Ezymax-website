@@ -418,8 +418,7 @@ pub fn run(p: &Program, sp: &Spec, cfg: &Config, data: &Data, progress: &dyn Fn(
                 let mult = sp.swap_multiplier(d);
                 if mult > 0.0 {
                     for pos in open.iter_mut() {
-                        let pts = if pos.dir > 0.0 { sp.swap_long } else { sp.swap_short };
-                        pos.swap += pts * pt * sp.contract_size * pos.volume * conv(b.c) * mult;
+                        pos.swap += sp.swap_per_night(pos.dir > 0.0, pos.volume, b.c) * conv(b.c) * mult;
                     }
                 }
                 d = d.succ_opt().unwrap();

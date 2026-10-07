@@ -12,14 +12,19 @@
 //! field (`Overrides::templates`, table `symbol_templates`). A catalogue row also brings its own session,
 //! holiday calendar (`config/holidays`, `config/holidays/exchanges`) and base / quote currency.
 //!
-//! **Live switch.** Catalogue instruments trade on demo accounts; on live accounts only once the platform enables
-//! live trading for their asset class or for the symbol (`Spec::live`; table `symbol_live`). Core instruments are
-//! always live.
+//! **Live switch.** Every instrument trades on demo accounts. On live accounts: core instruments always; a
+//! catalogue instrument when, in this order, its Back Office symbol switch says so (table `symbol_live`), else not
+//! when its row is kept off live trading (`"live_off": "<reason>"`), else its Back Office asset-class switch, else
+//! its row's default (`"live": true` for forex, metals, energies, indices and crypto; absent = off, e.g. stocks).
+//!
+//! **Swaps** are points per lot per night (`swap_mode` "points", the core instruments) or an annual percentage of
+//! the position's value (`swap_mode` "percent": rate / 100 / 360 per night, / 365 for instruments charged every
+//! night), negative = the client pays.
 
 use chrono::{DateTime, Datelike, Duration, NaiveDate, TimeZone, Utc, Weekday};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, HashMap};
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 
@@ -50,6 +55,8 @@ pub struct Spec {
     pub triple_swap_day: Option<Weekday>,
     /// Swaps are charged every night (crypto) instead of Monday–Friday nights only.
     pub swap_all_days: bool,
+    /// How `swap_long` / `swap_short` are expressed.
+    pub swap_mode: SwapMode,
     pub session: Session,
     /// Holiday calendar closing the session (catalogue instruments; None for the core instruments).
     pub holidays: Option<Arc<Holidays>>,
@@ -64,9 +71,36 @@ pub struct Spec {
     pub base_ccy: Option<String>,
     /// Template the specs came from (catalogue instruments).
     pub template: Option<String>,
-    /// Tradable on live accounts: always for core instruments; catalogue instruments once the platform switched
-    /// live trading on for their asset class or for the symbol. Demo accounts trade every instrument.
+    /// Tradable on live accounts (see the module docs). Demo accounts trade every instrument.
     pub live: bool,
+    /// Why a catalogue instrument is kept off live trading by default (config row `live_off`).
+    pub live_off: Option<String>,
+    /// Its row's default before any Back Office switch (`"live": true`); always true for core instruments.
+    pub live_default: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SwapMode {
+    /// Points per lot per night.
+    Points,
+    /// Annual percentage of the position's value.
+    PercentYear,
+}
+
+impl SwapMode {
+    pub fn parse(s: &str) -> Option<SwapMode> {
+        match s {
+            "points" => Some(SwapMode::Points),
+            "percent" => Some(SwapMode::PercentYear),
+            _ => None,
+        }
+    }
+    pub fn as_str(self) -> &'static str {
+        match self {
+            SwapMode::Points => "points",
+            SwapMode::PercentYear => "percent",
+        }
+    }
 }
 
 impl Spec {
@@ -94,6 +128,18 @@ impl Spec {
     /// Is the market open for trading at `ts` (same rules as market-data's session filter).
     pub fn is_open(&self, ts: DateTime<Utc>) -> bool {
         self.session.is_open(ts, self.holidays.as_deref())
+    }
+
+    /// Swap of `volume` lots on `side` for one night at `price`, in the profit currency (before the night multiplier).
+    pub fn swap_per_night(&self, buy: bool, volume: D, price: D) -> D {
+        let rate = if buy { self.swap_long } else { self.swap_short };
+        match self.swap_mode {
+            SwapMode::Points => rate * self.point * self.contract_size * volume,
+            SwapMode::PercentYear => {
+                let days = D::from(if self.swap_all_days { 365 } else { 360 });
+                rate / HUNDRED / days * self.contract_size * volume * price
+            }
+        }
     }
 
     /// Nights on which a swap is charged: the server day that just ended (`day`).
@@ -131,6 +177,9 @@ pub struct RawSpec {
     pub triple_swap_day: Option<Option<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub swap_days: Option<String>,
+    /// "points" (default) or "percent" (annual % of the position value)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub swap_mode: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -158,7 +207,7 @@ impl RawSpec {
         macro_rules! m {
             ($($f:ident),*) => { RawSpec { $($f: over.$f.clone().or(self.$f.clone()),)* } };
         }
-        m!(contract_size, lot_min, lot_max, lot_step, margin_pct, max_leverage, swap_long, swap_short, triple_swap_day, swap_days, session, stops_level_points, commission_per_lot, quote_ccy, pip_size, base_ccy, comment)
+        m!(contract_size, lot_min, lot_max, lot_step, margin_pct, max_leverage, swap_long, swap_short, triple_swap_day, swap_days, swap_mode, session, stops_level_points, commission_per_lot, quote_ccy, pip_size, base_ccy, comment)
     }
 
     /// Checks a template (after the Back Office override is applied): conservative bounds, so a typo can never make
@@ -211,6 +260,17 @@ impl RawSpec {
         if self.swap_days.as_deref().is_some_and(|d| d != "mon-fri" && d != "all") {
             return Err(("swap_days", "swap_days must be mon-fri or all".into()));
         }
+        match self.swap_mode.as_deref().map(SwapMode::parse) {
+            Some(None) => return Err(("swap_mode", "swap_mode must be points or percent".into())),
+            Some(Some(SwapMode::PercentYear)) => {
+                for (f, v) in [("swap_long", self.swap_long), ("swap_short", self.swap_short)] {
+                    if v.is_some_and(|x| x.abs() > 100.0) {
+                        return Err((f, format!("{f} is a yearly percentage: -100 to 100")));
+                    }
+                }
+            }
+            _ => {}
+        }
         match self.session.as_deref() {
             Some(s) if Session::parse(s).is_some() => {}
             Some(s) => return Err(("session", format!("unknown session {s}"))),
@@ -252,6 +312,14 @@ struct RawInstrument {
     quote_ccy: Option<String>,
     #[serde(default)]
     pip_size: Option<f64>,
+    #[serde(default)]
+    contract_size: Option<f64>,
+    /// Live trading by default (catalogue rows of forex, metals, energies, indices, crypto).
+    #[serde(default)]
+    live: Option<bool>,
+    /// Kept off live trading by default, with the reason.
+    #[serde(default)]
+    live_off: Option<String>,
 }
 
 impl RawInstrument {
@@ -272,16 +340,23 @@ fn weekday(s: &str) -> Option<Weekday> {
 pub struct Overrides {
     /// template key → fields replacing the file template's
     pub templates: BTreeMap<String, RawSpec>,
-    /// asset classes whose catalogue instruments trade on live accounts
-    pub live_classes: BTreeSet<String>,
-    /// per-symbol switch, wins over the class (true = live on, false = live off)
+    /// asset-class switch (true = live on, false = live off); absent = the rows' own default
+    pub live_classes: BTreeMap<String, bool>,
+    /// per-symbol switch, wins over everything (true = live on, false = live off)
     pub live_symbols: BTreeMap<String, bool>,
 }
 
 impl Overrides {
-    /// Is live trading on for a catalogue instrument?
-    pub fn live(&self, symbol: &str, asset_class: &str) -> bool {
-        self.live_symbols.get(symbol).copied().unwrap_or_else(|| self.live_classes.contains(asset_class))
+    /// Is live trading on for a catalogue instrument? `default` = its row's `live`, `kept_off` = its row's
+    /// `live_off` (an asset-class switch does not turn such a symbol on; only its own switch does).
+    pub fn live(&self, symbol: &str, asset_class: &str, default: bool, kept_off: bool) -> bool {
+        if let Some(on) = self.live_symbols.get(symbol) {
+            return *on;
+        }
+        if kept_off {
+            return false;
+        }
+        self.live_classes.get(asset_class).copied().unwrap_or(default)
     }
 }
 
@@ -335,7 +410,7 @@ impl SpecSource {
             let mut sym = self.file.symbols.get(&i.symbol).cloned().unwrap_or_default();
             if !core {
                 // the catalogue row's own currencies and pip size sit between the symbol overrides and the template
-                sym = RawSpec { quote_ccy: i.quote_ccy.clone(), base_ccy: i.base_ccy.clone(), pip_size: i.pip_size, ..Default::default() }.merged(&sym);
+                sym = RawSpec { quote_ccy: i.quote_ccy.clone(), base_ccy: i.base_ccy.clone(), pip_size: i.pip_size, contract_size: i.contract_size, ..Default::default() }.merged(&sym);
             }
             let class = base;
             macro_rules! pick {
@@ -385,6 +460,7 @@ impl SpecSource {
                 swap_short: dec(pick!(swap_short, 0.0), "swap_short")?,
                 triple_swap_day: triple,
                 swap_all_days: pick!(swap_days, "mon-fri".to_string()) == "all",
+                swap_mode: SwapMode::parse(&pick!(swap_mode, "points".to_string())).ok_or_else(|| anyhow::anyhow!("{}: swap_mode must be points or percent", i.symbol))?,
                 session,
                 holidays,
                 stops_level_points: pick!(stops_level_points, 0),
@@ -393,7 +469,9 @@ impl SpecSource {
                 name: i.name.clone().unwrap_or_default(),
                 base_ccy: if core { sym.base_ccy.clone() } else { pick!(base_ccy, String::new()).into() }.filter(|s: &String| !s.is_empty()),
                 template: (!core).then(|| i.template_key()),
-                live: core || ov.live(&i.symbol, &i.asset_class),
+                live: core || ov.live(&i.symbol, &i.asset_class, i.live == Some(true), i.live_off.is_some()),
+                live_off: if core { None } else { i.live_off.clone() },
+                live_default: core || (i.live == Some(true) && i.live_off.is_none()),
             };
             if spec.lot_step <= ZERO || spec.lot_min <= ZERO || spec.contract_size <= ZERO || spec.margin_pct <= ZERO {
                 anyhow::bail!("{}: lot_step, lot_min, contract_size and margin_pct must be > 0", spec.symbol);

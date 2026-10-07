@@ -28,8 +28,8 @@ pub async fn load_overrides(pool: &PgPool) -> anyhow::Result<Overrides> {
     for r in sqlx::query("SELECT scope, key, enabled FROM symbol_live").fetch_all(pool).await? {
         let (scope, key, on): (String, String, bool) = (r.get("scope"), r.get("key"), r.get("enabled"));
         match scope.as_str() {
-            "class" if on => {
-                ov.live_classes.insert(key);
+            "class" => {
+                ov.live_classes.insert(key, on);
             }
             "symbol" => {
                 ov.live_symbols.insert(key, on);

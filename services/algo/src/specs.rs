@@ -42,6 +42,9 @@ pub struct Spec {
     #[serde(skip)]
     pub triple_swap_day: Option<Weekday>,
     pub swap_all_days: bool,
+    /// Swaps in points per lot (false) or as a yearly percentage of the position value (true).
+    #[serde(skip)]
+    pub swap_percent: bool,
     #[serde(serialize_with = "ser_session")]
     pub session: Session,
     /// Holiday calendar of a catalogue instrument (None for the core instruments).
@@ -71,6 +74,17 @@ impl Spec {
         self.session.is_open(ts, self.holidays.as_deref())
     }
 
+    /// Swap of `volume` lots for one night at `price`, in the profit currency (same rule as the engine: points, or
+    /// a yearly % of the value / 360, / 365 when charged every night).
+    pub fn swap_per_night(&self, buy: bool, volume: f64, price: f64) -> f64 {
+        let rate = if buy { self.swap_long } else { self.swap_short };
+        if self.swap_percent {
+            rate / 100.0 / if self.swap_all_days { 365.0 } else { 360.0 } * self.contract_size * volume * price
+        } else {
+            rate * self.point * self.contract_size * volume
+        }
+    }
+
     /// Swap multiplier for the server day that just ended (0 = none, 3 = triple).
     pub fn swap_multiplier(&self, day: NaiveDate) -> f64 {
         let wd = day.weekday();
@@ -92,6 +106,7 @@ struct RawSpec {
     #[serde(default, deserialize_with = "de_opt_opt")]
     triple_swap_day: Option<Option<String>>,
     swap_days: Option<String>,
+    swap_mode: Option<String>,
     session: Option<String>,
     commission_per_lot: Option<f64>,
     quote_ccy: Option<String>,
@@ -134,6 +149,8 @@ struct RawInstrument {
     quote_ccy: Option<String>,
     #[serde(default)]
     pip_size: Option<f64>,
+    #[serde(default)]
+    contract_size: Option<f64>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -181,6 +198,7 @@ impl Specs {
                 sym.quote_ccy = sym.quote_ccy.or(i.quote_ccy.clone());
                 sym.base_ccy = sym.base_ccy.or(i.base_ccy.clone());
                 sym.pip_size = sym.pip_size.or(i.pip_size);
+                sym.contract_size = sym.contract_size.or(i.contract_size);
             }
             macro_rules! pick {
                 ($f:ident, $d:expr) => {
@@ -227,6 +245,7 @@ impl Specs {
                 swap_short: pick!(swap_short, 0.0),
                 triple_swap_day: triple,
                 swap_all_days: pick!(swap_days, "mon-fri".to_string()) == "all",
+                swap_percent: pick!(swap_mode, "points".to_string()) == "percent",
                 session,
                 holidays,
                 commission_per_lot: sym.commission_per_lot.or(class.commission_per_lot),

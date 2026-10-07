@@ -244,9 +244,9 @@ pub fn rollover(tx: &mut Tx, env: &Env, day: NaiveDate, at: DateTime<Utc>) {
         if mult == 0 {
             continue;
         }
-        let points = if p.side == Side::Buy { spec.swap_long } else { spec.swap_short };
-        let amount_quote = points * spec.point * spec.contract_size * p.volume * D::from(mult);
         let own = env.quote(&acc, &p.symbol).map(|q| q.mid()).unwrap_or(p.open_price);
+        // points per lot (core instruments) or a yearly percentage of the position's value at tonight's price
+        let amount_quote = spec.swap_per_night(p.side == Side::Buy, p.volume, own) * D::from(mult);
         let Some(usd) = env.to_usd(&acc, &spec.quote_ccy, amount_quote, (&p.symbol, own)) else { continue };
         let amt = r2(usd * acc.usd_factor());
         if amt.is_zero() {

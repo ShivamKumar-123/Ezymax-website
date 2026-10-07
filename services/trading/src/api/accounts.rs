@@ -412,10 +412,10 @@ pub async fn symbols(State(st): State<AppState>, ctx: Ctx, Query(q): Query<Symbo
                 "symbol": s.symbol, "assetClass": s.asset_class, "digits": s.digits, "point": num(s.point), "pipSize": num(s.pip_size),
                 "contractSize": num(s.contract_size), "profitCurrency": s.quote_ccy, "lotMin": num(s.lot_min), "lotMax": num(s.lot_max),
                 "lotStep": num(s.lot_step), "marginPct": num(s.margin_pct), "maxLeverage": s.max_leverage, "swapLong": num(s.swap_long),
-                "swapShort": num(s.swap_short), "swapUnit": "points", "tripleSwapDay": s.triple_swap_day.map(|d| d.to_string()),
+                "swapShort": num(s.swap_short), "swapUnit": if s.swap_mode == crate::specs::SwapMode::Points { "points" } else { "percent_per_year" }, "tripleSwapDay": s.triple_swap_day.map(|d| d.to_string()),
                 "session": s.session.key(),
                 "open": s.is_open(now), "stopsLevelPoints": s.stops_level_points,
-                "core": s.core, "liveTrading": s.live, "name": s.name, "baseCurrency": s.base_ccy,
+                "core": s.core, "liveTrading": s.live, "liveOff": s.live_off, "name": s.name, "baseCurrency": s.base_ccy,
                 "holidayCalendar": s.holidays.as_ref().map(|h| h.calendar.clone()),
             })
         })

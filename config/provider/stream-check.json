@@ -1,0 +1,1412 @@
+{
+"checkedAt": "2026-10-07T17:46Z",
+"source": "production market-data public stream (wss://api.kalkstrade.com/v1/stream?group=raw), every forex / metals / energies / indices / crypto catalogue symbol subscribed for 100 s on a Wednesday 17:46-17:48 UTC (US session; Asian cash indices closed)",
+"generatedBy": "scripts/gen-catalogue.mjs reads it; refresh with scripts/stream-check.mjs",
+"symbols": {
+"1000CHEEMSUSD": {
+"ticks": 33,
+"spread": 1.0000000000000243e-06,
+"mid": 0.0005185000000000001
+},
+"1000SATSUSD": {
+"ticks": 13,
+"spread": 1.999999999999981e-08,
+"mid": 1.16e-05
+},
+"1INCHUSD": {
+"ticks": 10,
+"spread": 0.00010000000000000286,
+"mid": 0.098
+},
+"2ZUSD": {
+"ticks": 28,
+"spread": 1.0000000000003062e-05,
+"mid": 0.038265
+},
+"AAVEUSD": {
+"ticks": 95,
+"spread": 0.009999999999990905,
+"mid": 171.345
+},
+"ACEUSD": {
+"ticks": 18,
+"spread": 9.999999999998899e-05,
+"mid": 0.16735
+},
+"ADAUSD": {
+"ticks": 50,
+"spread": 9.999999999998899e-05,
+"mid": 0.25455
+},
+"AEROUSD": {
+"ticks": 66,
+"spread": 0.00019999999999997797,
+"mid": 0.79235
+},
+"AEX": {
+"ticks": 30,
+"spread": 0.2999999999999545,
+"mid": 1119.4499999999998
+},
+"AIUSD": {
+"ticks": 12,
+"spread": 9.99999999999994e-05,
+"mid": 0.01965
+},
+"ALGOUSD": {
+"ticks": 14,
+"spread": 0.00010000000000000286,
+"mid": 0.11655
+},
+"APEUSD": {
+"ticks": 24,
+"spread": 9.999999999998899e-05,
+"mid": 0.14725
+},
+"API3USD": {
+"ticks": 62,
+"spread": 0.00019999999999997797,
+"mid": 0.31345
+},
+"APTUSD": {
+"ticks": 80,
+"spread": 9.999999999998899e-05,
+"mid": 0.74125
+},
+"ARBUSD": {
+"ticks": 33,
+"spread": 9.999999999998899e-05,
+"mid": 0.18295
+},
+"ARKUSD": {
+"ticks": 37,
+"spread": 0.00019999999999997797,
+"mid": 0.20835
+},
+"ARUSD": {
+"ticks": 68,
+"spread": 0.002000000000000668,
+"mid": 4.1585
+},
+"ASTERUSD": {
+"ticks": 52,
+"spread": 9.999999999998899e-05,
+"mid": 0.70575
+},
+"ASTRUSD": {
+"ticks": 51,
+"spread": 5.000000000000664e-06,
+"mid": 0.006874
+},
+"ATOMUSD": {
+"ticks": 12,
+"spread": 0.001000000000000112,
+"mid": 1.6865
+},
+"AUCTIONUSD": {
+"ticks": 28,
+"spread": 0.0019999999999997797,
+"mid": 3.6765
+},
+"AUDCAD": {
+"ticks": 107,
+"spread": 7.00000000000145e-05,
+"mid": 0.993285
+},
+"AUDCHF": {
+"ticks": 124,
+"spread": 4.0000000000040004e-05,
+"mid": 0.580355
+},
+"AUDHKD": {
+"ticks": 201,
+"spread": 0.0011399999999994748,
+"mid": 5.46735
+},
+"AUDJPY": {
+"ticks": 244,
+"spread": 0.0030000000000001137,
+"mid": 110.03800000000001
+},
+"AUDMYR": {
+"ticks": 1,
+"spread": 0.0007999999999999119,
+"mid": 2.8466
+},
+"AUDNZD": {
+"ticks": 153,
+"spread": 7.00000000000145e-05,
+"mid": 1.243465
+},
+"AUDSGD": {
+"ticks": 80,
+"spread": 0.00021999999999999797,
+"mid": 0.8912249999999999
+},
+"AUDTWD": {
+"ticks": 1,
+"spread": 0.08000000000000185,
+"mid": 22.205
+},
+"AUS200": {
+"ticks": 54,
+"spread": 3.7999999999992724,
+"mid": 8663.5
+},
+"AUSD": {
+"ticks": 24,
+"spread": 0.00010000000000000286,
+"mid": 0.09575
+},
+"AVAXUSD": {
+"ticks": 132,
+"spread": 0.0009999999999994458,
+"mid": 11.2315
+},
+"AWEUSD": {
+"ticks": 23,
+"spread": 5.000000000000837e-05,
+"mid": 0.063155
+},
+"AXSUSD": {
+"ticks": 45,
+"spread": 0.001000000000000112,
+"mid": 1.2135
+},
+"BAKEUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"BARUSD": {
+"ticks": 15,
+"spread": 0.0010000000000000009,
+"mid": 0.2835
+},
+"BATUSD": {
+"ticks": 6,
+"spread": 0.00010000000000000286,
+"mid": 0.1004
+},
+"BCHUSD": {
+"ticks": 21,
+"spread": 0.10000000000002274,
+"mid": 301.05
+},
+"BLURUSD": {
+"ticks": 21,
+"spread": 1.9999999999999185e-05,
+"mid": 0.01895
+},
+"BLZUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"BNBUSD": {
+"ticks": 194,
+"spread": 0.009999999999990905,
+"mid": 768.925
+},
+"BONDUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"CADCHF": {
+"ticks": 123,
+"spread": 3.0000000000085514e-05,
+"mid": 0.584275
+},
+"CADHKD": {
+"ticks": 27,
+"spread": 0.000880000000000436,
+"mid": 5.504455
+},
+"CADJPY": {
+"ticks": 198,
+"spread": 0.007000000000005002,
+"mid": 110.7825
+},
+"CADTWD": {
+"ticks": 1,
+"spread": 0.008000000000002672,
+"mid": 22.355
+},
+"CAKEUSD": {
+"ticks": 10,
+"spread": 0.001000000000000334,
+"mid": 2.2125000000000004
+},
+"CFXUSD": {
+"ticks": 39,
+"spread": 1.9999999999999185e-05,
+"mid": 0.050640000000000004
+},
+"CHFHKD": {
+"ticks": 175,
+"spread": 0.0018500000000010175,
+"mid": 9.420985
+},
+"CHFJPY": {
+"ticks": 247,
+"spread": 0.014000000000010004,
+"mid": 189.5985
+},
+"CHFTWD": {
+"ticks": 1,
+"spread": 0.020000000000003126,
+"mid": 38.260999999999996
+},
+"CHZUSD": {
+"ticks": 31,
+"spread": 1.0000000000001327e-05,
+"mid": 0.01563
+},
+"CN50": {
+"ticks": 188,
+"spread": 10,
+"mid": 14068.2
+},
+"CNYHKD": {
+"ticks": 1,
+"spread": 0.0008000000000001339,
+"mid": 1.1701000000000001
+},
+"COMPUSD": {
+"ticks": 32,
+"spread": 0.010000000000001563,
+"mid": 23.125
+},
+"COTIUSD": {
+"ticks": 17,
+"spread": 1.0000000000001327e-05,
+"mid": 0.013135
+},
+"CRVUSD": {
+"ticks": 52,
+"spread": 0.0001000000000000445,
+"mid": 0.35015
+},
+"CTSIUSD": {
+"ticks": 31,
+"spread": 1.9999999999999185e-05,
+"mid": 0.02929
+},
+"CVXUSD": {
+"ticks": 26,
+"spread": 0.002000000000000224,
+"mid": 2.0995
+},
+"DASHUSD": {
+"ticks": 60,
+"spread": 0.00999999999999801,
+"mid": 53.155
+},
+"DCRUSD": {
+"ticks": 12,
+"spread": 0.0400000000000027,
+"mid": 17.865000000000002
+},
+"DGBUSD": {
+"ticks": 3,
+"spread": 1.999999999999962e-05,
+"mid": 0.0038900000000000002
+},
+"DJT": {
+"ticks": 132,
+"spread": 27.700000000000728,
+"mid": 19616.3
+},
+"DJU": {
+"ticks": 63,
+"spread": 0.40000000000009095,
+"mid": 1052.2
+},
+"DOGEUSD": {
+"ticks": 80,
+"spread": 9.999999999996123e-06,
+"mid": 0.088185
+},
+"DOTUSD": {
+"ticks": 13,
+"spread": 0.001000000000000112,
+"mid": 1.0965
+},
+"DUSKUSD": {
+"ticks": 11,
+"spread": 0.00010000000000000286,
+"mid": 0.07785
+},
+"DXY": {
+"ticks": 57,
+"spread": 0.04999999999999716,
+"mid": 101.96000000000001
+},
+"DYDXUSD": {
+"ticks": 78,
+"spread": 9.999999999998899e-05,
+"mid": 0.133445
+},
+"EGLDUSD": {
+"ticks": 44,
+"spread": 0.0029999999999996696,
+"mid": 3.9450000000000003
+},
+"EIGENUSD": {
+"ticks": 34,
+"spread": 0.00020000000000000573,
+"mid": 0.23295
+},
+"ENAUSD": {
+"ticks": 37,
+"spread": 9.999999999998899e-05,
+"mid": 0.22525
+},
+"ENSUSD": {
+"ticks": 2,
+"spread": 0.010000000000000675,
+"mid": 6.365
+},
+"ESP35": {
+"ticks": 19,
+"spread": 6.5,
+"mid": 21562.45
+},
+"ETCUSD": {
+"ticks": 7,
+"spread": 0.009999999999999787,
+"mid": 8.315000000000001
+},
+"ETHFIUSD": {
+"ticks": 171,
+"spread": 0.00019999999999997797,
+"mid": 0.70755
+},
+"EURAUD": {
+"ticks": 263,
+"spread": 7.00000000000145e-05,
+"mid": 1.607175
+},
+"EURCAD": {
+"ticks": 202,
+"spread": 5.999999999994898e-05,
+"mid": 1.59634
+},
+"EURCHF": {
+"ticks": 141,
+"spread": 4.999999999999449e-05,
+"mid": 0.9327
+},
+"EURGBP": {
+"ticks": 150,
+"spread": 2.0000000000020002e-05,
+"mid": 0.84737
+},
+"EURHKD": {
+"ticks": 198,
+"spread": 0.00140000000000029,
+"mid": 8.78699
+},
+"EURNZD": {
+"ticks": 236,
+"spread": 0.00015999999999993797,
+"mid": 1.9984799999999998
+},
+"EUSTX50": {
+"ticks": 108,
+"spread": 1.699999999999818,
+"mid": 6189.950000000001
+},
+"FETUSD": {
+"ticks": 31,
+"spread": 0.00010000000000001674,
+"mid": 0.22425
+},
+"FFUSD": {
+"ticks": 70,
+"spread": 7.999999999999674e-05,
+"mid": 0.11047499999999999
+},
+"FILUSD": {
+"ticks": 210,
+"spread": 9.999999999998899e-05,
+"mid": 1.0214500000000002
+},
+"FLOKIUSD": {
+"ticks": 42,
+"spread": 1.0000000000001598e-08,
+"mid": 2.6795e-05
+},
+"FORMUSD": {
+"ticks": 17,
+"spread": 0.00019999999999997797,
+"mid": 0.2609
+},
+"FORTHUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"FRA40": {
+"ticks": 83,
+"spread": 2,
+"mid": 7776.6
+},
+"FTMUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"FTTUSD": {
+"ticks": 9,
+"spread": 0.0005999999999999894,
+"mid": 0.2409
+},
+"FXSUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"GALAUSD": {
+"ticks": 64,
+"spread": 1.0000000000001327e-06,
+"mid": 0.0022735
+},
+"GBPAUD": {
+"ticks": 222,
+"spread": 0.00018999999999991246,
+"mid": 1.896645
+},
+"GBPCAD": {
+"ticks": 197,
+"spread": 8.000000000008001e-05,
+"mid": 1.883875
+},
+"GBPCHF": {
+"ticks": 218,
+"spread": 6.000000000017103e-05,
+"mid": 1.1007449999999999
+},
+"GBPHKD": {
+"ticks": 123,
+"spread": 0.0016999999999995907,
+"mid": 10.3697
+},
+"GBPMYR": {
+"ticks": 1,
+"spread": 0.0019999999999997797,
+"mid": 5.3993
+},
+"GBPNZD": {
+"ticks": 249,
+"spread": 0.00019999999999997797,
+"mid": 2.3583600000000002
+},
+"GBPSGD": {
+"ticks": 30,
+"spread": 0.00032999999999994145,
+"mid": 1.690315
+},
+"GBPTWD": {
+"ticks": 1,
+"spread": 0.01999999999999602,
+"mid": 42.116
+},
+"GENIUSUSD": {
+"ticks": 11,
+"spread": 0.00040000000000001146,
+"mid": 0.3207
+},
+"GLMUSD": {
+"ticks": 5,
+"spread": 9.999999999998899e-05,
+"mid": 0.12475
+},
+"GMTUSD": {
+"ticks": 5,
+"spread": 9.999999999999593e-06,
+"mid": 0.008055
+},
+"GNOUSD": {
+"ticks": 5,
+"spread": 0.25,
+"mid": 120.075
+},
+"GRAMUSD": {
+"ticks": 15,
+"spread": 0.001000000000000112,
+"mid": 1.4245
+},
+"GRTUSD": {
+"ticks": 35,
+"spread": 1.9999999999999185e-05,
+"mid": 0.027345
+},
+"HBARUSD": {
+"ticks": 131,
+"spread": 9.999999999996123e-06,
+"mid": 0.092125
+},
+"HK50": {
+"ticks": 206,
+"spread": 5,
+"mid": 23968.5
+},
+"HKDJPY": {
+"ticks": 234,
+"spread": 0.002500000000001279,
+"mid": 20.12655
+},
+"HKDTWD": {
+"ticks": 1,
+"spread": 0.0007999999999999119,
+"mid": 4.0618
+},
+"HSHCI": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"HSII": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"HSTECH": {
+"ticks": 19,
+"spread": 4.399999999999636,
+"mid": 4163.2
+},
+"ICPUSD": {
+"ticks": 65,
+"spread": 0.0009999999999998899,
+"mid": 3.125
+},
+"IMXUSD": {
+"ticks": 27,
+"spread": 0.00020000000000000573,
+"mid": 0.17375000000000002
+},
+"INJUSD": {
+"ticks": 121,
+"spread": 0.001000000000000334,
+"mid": 7.3545
+},
+"IOTAUSD": {
+"ticks": 7,
+"spread": 0.00010000000000000286,
+"mid": 0.05275
+},
+"JASMYUSD": {
+"ticks": 6,
+"spread": 1.000000000000046e-05,
+"mid": 0.004945
+},
+"JSTUSD": {
+"ticks": 31,
+"spread": 3.0000000000002247e-05,
+"mid": 0.140935
+},
+"JTOUSD": {
+"ticks": 70,
+"spread": 0.0001000000000000445,
+"mid": 0.49325
+},
+"JUPUSD": {
+"ticks": 72,
+"spread": 9.999999999998899e-05,
+"mid": 0.31755
+},
+"KAIAUSD": {
+"ticks": 5,
+"spread": 0.00010000000000000286,
+"mid": 0.03815
+},
+"KAVAUSD": {
+"ticks": 9,
+"spread": 1.9999999999992246e-05,
+"mid": 0.066435
+},
+"KITEUSD": {
+"ticks": 14,
+"spread": 0.00010000000000001674,
+"mid": 0.13245
+},
+"KLAYUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"KMNOUSD": {
+"ticks": 25,
+"spread": 1.9999999999999185e-05,
+"mid": 0.037180000000000005
+},
+"LDOUSD": {
+"ticks": 57,
+"spread": 9.999999999998899e-05,
+"mid": 0.43155
+},
+"LINKUSD": {
+"ticks": 114,
+"spread": 0.0009999999999994458,
+"mid": 13.3385
+},
+"LPTUSD": {
+"ticks": 33,
+"spread": 0.001000000000000112,
+"mid": 1.6745
+},
+"LTCUSD": {
+"ticks": 72,
+"spread": 0.010000000000005116,
+"mid": 65.91499999999999
+},
+"LUNCUSD": {
+"ticks": 35,
+"spread": 1.999999999999642e-08,
+"mid": 5.024e-05
+},
+"MAGICUSD": {
+"ticks": 8,
+"spread": 0.00010000000000000286,
+"mid": 0.06455
+},
+"MANAUSD": {
+"ticks": 45,
+"spread": 0.00010000000000000286,
+"mid": 0.10594999999999999
+},
+"MANTAUSD": {
+"ticks": 60,
+"spread": 4.999999999999449e-05,
+"mid": 0.06393
+},
+"MASKUSD": {
+"ticks": 3,
+"spread": 0.0010000000000000009,
+"mid": 0.4615
+},
+"MATICUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"MAVUSD": {
+"ticks": 14,
+"spread": 1.0000000000001327e-05,
+"mid": 0.011105
+},
+"METUSD": {
+"ticks": 714,
+"spread": 0.00030000000000002247,
+"mid": 0.3909
+},
+"MINAUSD": {
+"ticks": 107,
+"spread": 0.00010000000000000286,
+"mid": 0.0928
+},
+"MKRUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"MORPHOUSD": {
+"ticks": 29,
+"spread": 0.0009999999999998899,
+"mid": 2.4805
+},
+"MOVRUSD": {
+"ticks": 98,
+"spread": 0.001000000000000112,
+"mid": 1.904
+},
+"MSTRBUSD": {
+"ticks": 125,
+"spread": 0.010000000000019327,
+"mid": 153.82
+},
+"MULTIUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"MYRCAD": {
+"ticks": 1,
+"spread": 0.0008000000000000229,
+"mid": 0.3489
+},
+"MYRCHF": {
+"ticks": 1,
+"spread": 0.0008000000000000229,
+"mid": 0.2039
+},
+"MYRHKD": {
+"ticks": 1,
+"spread": 0.0008000000000001339,
+"mid": 1.92
+},
+"MYRJPY": {
+"ticks": 1,
+"spread": 0.02400000000000091,
+"mid": 38.659
+},
+"MYRUSD": {
+"ticks": 1,
+"spread": 0.0008000000000000229,
+"mid": 0.2447
+},
+"NBI": {
+"ticks": 27,
+"spread": 2.100000000000364,
+"mid": 6908.95
+},
+"NEARUSD": {
+"ticks": 152,
+"spread": 0.001000000000000334,
+"mid": 5.1285
+},
+"NEOUSD": {
+"ticks": 18,
+"spread": 0.001000000000000334,
+"mid": 2.3865
+},
+"NEXOUSD": {
+"ticks": 29,
+"spread": 0.0020000000000000018,
+"mid": 0.83
+},
+"NFPUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"NGAS": {
+"ticks": 32,
+"spread": 0.01200000000000001,
+"mid": 3.191
+},
+"NI225": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"NIGHTUSD": {
+"ticks": 57,
+"spread": 1.0000000000003062e-05,
+"mid": 0.046405
+},
+"NTRNUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"NZDCAD": {
+"ticks": 115,
+"spread": 3.0000000000085514e-05,
+"mid": 0.798775
+},
+"NZDCHF": {
+"ticks": 62,
+"spread": 0.00015999999999999348,
+"mid": 0.4667
+},
+"NZDHKD": {
+"ticks": 104,
+"spread": 0.0013099999999992562,
+"mid": 4.3967849999999995
+},
+"NZDJPY": {
+"ticks": 193,
+"spread": 0.006000000000000227,
+"mid": 88.491
+},
+"NZDUSD": {
+"ticks": 98,
+"spread": 2.0000000000020002e-05,
+"mid": 0.5602
+},
+"OAXUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"OMUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"ONDOUSD": {
+"ticks": 78,
+"spread": 9.999999999998899e-05,
+"mid": 0.46355
+},
+"OPUSD": {
+"ticks": 20,
+"spread": 0.00010000000000000286,
+"mid": 0.12015
+},
+"ORDIUSD": {
+"ticks": 55,
+"spread": 0.0019999999999997797,
+"mid": 4.2635000000000005
+},
+"PAXGUSD": {
+"ticks": 37,
+"spread": 0.010000000000218279,
+"mid": 4123.795
+},
+"PENDLEUSD": {
+"ticks": 41,
+"spread": 0.001000000000000334,
+"mid": 2.2275
+},
+"PENGUUSD": {
+"ticks": 197,
+"spread": 1.000000000001e-06,
+"mid": 0.008441500000000001
+},
+"PEOPLEUSD": {
+"ticks": 11,
+"spread": 9.999999999999593e-06,
+"mid": 0.007975
+},
+"PHBUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"POLUSD": {
+"ticks": 148,
+"spread": 9.999999999996123e-06,
+"mid": 0.100655
+},
+"PROMUSD": {
+"ticks": 33,
+"spread": 0.0019999999999997797,
+"mid": 5.256
+},
+"PUMPUSD": {
+"ticks": 225,
+"spread": 1.0000000000001327e-06,
+"mid": 0.006149
+},
+"PYTHUSD": {
+"ticks": 97,
+"spread": 1.9999999999992246e-05,
+"mid": 0.07112
+},
+"QNTUSD": {
+"ticks": 504,
+"spread": 0.010000000000019327,
+"mid": 250.60500000000002
+},
+"QTUMUSD": {
+"ticks": 10,
+"spread": 0.0010000000000000009,
+"mid": 0.92
+},
+"RAYUSD": {
+"ticks": 401,
+"spread": 0.0011999999999998678,
+"mid": 2.4435000000000002
+},
+"RDNTUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"REIT": {
+"ticks": 11,
+"spread": 0.900000000000091,
+"mid": 2849.45
+},
+"RENDERUSD": {
+"ticks": 30,
+"spread": 0.0009999999999998899,
+"mid": 2.0235000000000003
+},
+"RLCUSD": {
+"ticks": 132,
+"spread": 0.000500000000000056,
+"mid": 0.6831
+},
+"RNDRUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"RONINUSD": {
+"ticks": 11,
+"spread": 0.00010000000000000286,
+"mid": 0.06284999999999999
+},
+"ROSEUSD": {
+"ticks": 9,
+"spread": 1.000000000000046e-05,
+"mid": 0.0076749999999999995
+},
+"RUNEUSD": {
+"ticks": 6,
+"spread": 0.0010000000000000009,
+"mid": 0.7104999999999999
+},
+"RVNUSD": {
+"ticks": 29,
+"spread": 1.0000000000001327e-06,
+"mid": 0.0022425
+},
+"SANDUSD": {
+"ticks": 1750,
+"spread": 1.9999999999992246e-05,
+"mid": 0.083035
+},
+"SANTOSUSD": {
+"ticks": 5,
+"spread": 0.0010000000000000009,
+"mid": 0.516
+},
+"SEIUSD": {
+"ticks": 45,
+"spread": 9.999999999996123e-06,
+"mid": 0.068285
+},
+"SENTUSD": {
+"ticks": 37,
+"spread": 9.999999999999593e-06,
+"mid": 0.025204999999999998
+},
+"SFPUSD": {
+"ticks": 14,
+"spread": 0.00040000000000001146,
+"mid": 0.27645
+},
+"SG20": {
+"ticks": 33,
+"spread": 0.25,
+"mid": 518.515
+},
+"SG30SGD": {
+"ticks": 55,
+"spread": 0.35000000000002274,
+"mid": 519.2650000000001
+},
+"SGDCAD": {
+"ticks": 86,
+"spread": 0,
+"mid": 1.11451
+},
+"SGDCHF": {
+"ticks": 77,
+"spread": 0.00014999999999998348,
+"mid": 0.6511750000000001
+},
+"SGDJPY": {
+"ticks": 111,
+"spread": 0.021000000000000796,
+"mid": 123.47049999999999
+},
+"SHIBUSD": {
+"ticks": 12,
+"spread": 9.999999999999904e-09,
+"mid": 5.365e-06
+},
+"SISE": {
+"ticks": 1,
+"spread": 5.900000000000091,
+"mid": 1437.25
+},
+"SIXE": {
+"ticks": 14,
+"spread": 0.40000000000009095,
+"mid": 1328.4
+},
+"SKYUSD": {
+"ticks": 40,
+"spread": 1.9999999999992246e-05,
+"mid": 0.07968
+},
+"SMI": {
+"ticks": 96,
+"spread": 3,
+"mid": 13836.8
+},
+"SNXUSD": {
+"ticks": 33,
+"spread": 0.00019999999999997797,
+"mid": 0.2384
+},
+"SOX": {
+"ticks": 88,
+"spread": 6,
+"mid": 13029.1
+},
+"SSVUSD": {
+"ticks": 9,
+"spread": 0.0030000000000001137,
+"mid": 2.8685
+},
+"STI": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"STRKUSD": {
+"ticks": 91,
+"spread": 1.0000000000003062e-05,
+"mid": 0.048755
+},
+"STXUSD": {
+"ticks": 69,
+"spread": 9.999999999998899e-05,
+"mid": 0.3638
+},
+"SUIUSD": {
+"ticks": 169,
+"spread": 9.999999999998899e-05,
+"mid": 1.1193499999999998
+},
+"SUNUSD": {
+"ticks": 1,
+"spread": 9.999999999999593e-06,
+"mid": 0.016974999999999997
+},
+"SUSD": {
+"ticks": 46,
+"spread": 2.0000000000006124e-05,
+"mid": 0.0392
+},
+"SUSHIUSD": {
+"ticks": 36,
+"spread": 0.00010000000000001674,
+"mid": 0.23095
+},
+"SWISS20": {
+"ticks": 122,
+"spread": 4.199999999998909,
+"mid": 13846.8
+},
+"SYNUSD": {
+"ticks": 157,
+"spread": 0.00014000000000000123,
+"mid": 0.188565
+},
+"SYRUPUSD": {
+"ticks": 30,
+"spread": 0.00010000000000001674,
+"mid": 0.2274
+},
+"TAIEX": {
+"ticks": 121,
+"spread": 1.3999999999996362,
+"mid": 4353.15
+},
+"TAOUSD": {
+"ticks": 42,
+"spread": 0.10000000000002274,
+"mid": 287.85
+},
+"THETAUSD": {
+"ticks": 42,
+"spread": 0.00019999999999997797,
+"mid": 0.21550000000000002
+},
+"TIAUSD": {
+"ticks": 79,
+"spread": 9.999999999998899e-05,
+"mid": 0.43745
+},
+"TRBUSD": {
+"ticks": 53,
+"spread": 0.010000000000001563,
+"mid": 19.744999999999997
+},
+"TRUMPUSD": {
+"ticks": 12,
+"spread": 0.001000000000000112,
+"mid": 1.8395000000000001
+},
+"TRXUSD": {
+"ticks": 32,
+"spread": 9.999999999998899e-05,
+"mid": 0.33555
+},
+"TSX": {
+"ticks": 6,
+"spread": 10.69999999999709,
+"mid": 35175.05
+},
+"TWDJPY": {
+"ticks": 1,
+"spread": 0.0039999999999995595,
+"mid": 4.9561
+},
+"TWTUSD": {
+"ticks": 10,
+"spread": 0.000500000000000056,
+"mid": 0.5388999999999999
+},
+"UMAUSD": {
+"ticks": 5,
+"spread": 0.0010000000000000009,
+"mid": 0.4075
+},
+"UNIUSD": {
+"ticks": 121,
+"spread": 0.001000000000000334,
+"mid": 7.814500000000001
+},
+"US2000": {
+"ticks": 172,
+"spread": 0.20000000000027285,
+"mid": 2799.9
+},
+"USDCNH": {
+"ticks": 153,
+"spread": 0.00011000000000027654,
+"mid": 6.702
+},
+"USDCNY": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"USDHKD": {
+"ticks": 10,
+"spread": 5.9999999999504894e-05,
+"mid": 7.848325
+},
+"USDRUB": {
+"ticks": 1,
+"spread": 0.04899999999999238,
+"mid": 85.463
+},
+"USDSGD": {
+"ticks": 109,
+"spread": 0.00017000000000000348,
+"mid": 1.279345
+},
+"USDTHB": {
+"ticks": 9,
+"spread": 0.021000000000000796,
+"mid": 33.638999999999996
+},
+"USDTRY": {
+"ticks": 1,
+"spread": 0.010600000000003718,
+"mid": 49.197199999999995
+},
+"USDTWD": {
+"ticks": 17,
+"spread": 0.016100000000001558,
+"mid": 31.91535
+},
+"VETUSD": {
+"ticks": 60,
+"spread": 3.0000000000012655e-06,
+"mid": 0.008013
+},
+"VGXUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"VIRTUALUSD": {
+"ticks": 100,
+"spread": 0.00019999999999997797,
+"mid": 0.75895
+},
+"VIX": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"VXN": {
+"ticks": 4,
+"spread": 0.006000000000000227,
+"mid": 21.16
+},
+"WBETHUSD": {
+"ticks": 351,
+"spread": 1.0799999999999272,
+"mid": 2822.62
+},
+"WBTCUSD": {
+"ticks": 155,
+"spread": 6.5899999999965075,
+"mid": 83146.65
+},
+"WIFUSD": {
+"ticks": 20,
+"spread": 9.999999999998899e-05,
+"mid": 0.22805
+},
+"WLDUSD": {
+"ticks": 70,
+"spread": 9.999999999998899e-05,
+"mid": 0.51145
+},
+"WLFIUSD": {
+"ticks": 1,
+"spread": 0.00010000000000000286,
+"mid": 0.05455
+},
+"WOOUSD": {
+"ticks": 32,
+"spread": 1.0000000000001327e-05,
+"mid": 0.012425
+},
+"WTI": {
+"ticks": 195,
+"spread": 0.030000000000001137,
+"mid": 89.835
+},
+"WUSD": {
+"ticks": 53,
+"spread": 1.0000000000001327e-05,
+"mid": 0.014135
+},
+"XAGEUR": {
+"ticks": 406,
+"spread": 0.022999999999996135,
+"mid": 53.5265
+},
+"XAGSGD": {
+"ticks": 466,
+"spread": 0.03499999999999659,
+"mid": 76.668
+},
+"XAIUSD": {
+"ticks": 14,
+"spread": 1.0000000000001327e-05,
+"mid": 0.008965
+},
+"XALUSD": {
+"ticks": 26,
+"spread": 3.199999999999818,
+"mid": 3119.8
+},
+"XAUAUD": {
+"ticks": 853,
+"spread": 1.050000000000182,
+"mid": 5905.59
+},
+"XAUCNH": {
+"ticks": 527,
+"spread": 3.459999999999127,
+"mid": 27573.925
+},
+"XAUEUR": {
+"ticks": 815,
+"spread": 0.5099999999997635,
+"mid": 3674.585
+},
+"XAUSGD": {
+"ticks": 1169,
+"spread": 0.3999999999996362,
+"mid": 5263.2
+},
+"XAUTHB": {
+"ticks": 393,
+"spread": 55.51000000000931,
+"mid": 138372.71000000002
+},
+"XAUTUSD": {
+"ticks": 84,
+"spread": 0.010000000000218279,
+"mid": 4115.695
+},
+"XCUUSD": {
+"ticks": 135,
+"spread": 0.0019999999999997797,
+"mid": 6.56145
+},
+"XECUSD": {
+"ticks": 10,
+"spread": 9.999999999999904e-09,
+"mid": 7.545e-06
+},
+"XLMUSD": {
+"ticks": 14,
+"spread": 9.999999999998899e-05,
+"mid": 0.19895000000000002
+},
+"XMRUSD": {
+"ticks": 0,
+"spread": null,
+"mid": null
+},
+"XNIUSD": {
+"ticks": 80,
+"spread": 26.18999999999869,
+"mid": 15716.125
+},
+"XPBUSD": {
+"ticks": 9,
+"spread": 3.599999999999909,
+"mid": 1890.975
+},
+"XPDUSD": {
+"ticks": 75,
+"spread": 2.480000000000018,
+"mid": 1115.495
+},
+"XPLUSD": {
+"ticks": 67,
+"spread": 9.999999999996123e-06,
+"mid": 0.08616499999999999
+},
+"XPTUSD": {
+"ticks": 386,
+"spread": 1.990000000000009,
+"mid": 1623.165
+},
+"XTZUSD": {
+"ticks": 49,
+"spread": 9.999999999998899e-05,
+"mid": 0.30745
+},
+"ZAMAUSD": {
+"ticks": 53,
+"spread": 1.9999999999992246e-05,
+"mid": 0.076655
+},
+"ZECUSD": {
+"ticks": 516,
+"spread": 0.009999999999990905,
+"mid": 1307.505
+},
+"ZENUSD": {
+"ticks": 82,
+"spread": 0.0019999999999997797,
+"mid": 6.4719999999999995
+},
+"ZILUSD": {
+"ticks": 30,
+"spread": 1.9999999999998318e-06,
+"mid": 0.003332
+},
+"ZINCSPOT": {
+"ticks": 52,
+"spread": 10.240000000000236,
+"mid": 3760.69
+},
+"ZKUSD": {
+"ticks": 10,
+"spread": 9.999999999999593e-06,
+"mid": 0.011805
+},
+"ZROUSD": {
+"ticks": 91,
+"spread": 0.0009999999999998899,
+"mid": 2.1485000000000003
+},
+"ZRXUSD": {
+"ticks": 6,
+"spread": 0.00019999999999999185,
+"mid": 0.1179
+}
+}
+}

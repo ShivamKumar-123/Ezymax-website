@@ -1,8 +1,8 @@
 //! Integration test against PostgreSQL (:5433, a throw-away database): the Back Office symbol settings of the
-//! instrument catalogue through the real API handlers and the shards. Live trading on a catalogue instrument is
-//! refused until the platform owner enables it (demo trades meanwhile), the switch and template overrides persist
-//! and hot-swap the engine's specs, only the platform owner may change them, a contract-size change waits while
-//! positions are open, and every change is audited. Fails (does not skip) when PostgreSQL is not reachable.
+//! instrument catalogue through the real API handlers and the shards. Crypto trades live by default, the platform
+//! owner can switch a class off (and a symbol back on), the switches and template overrides persist and hot-swap the
+//! engine's specs, only the platform owner may change them, a contract-size change waits while positions are open,
+//! and every change is audited. Fails (does not skip) when PostgreSQL is not reachable.
 
 use axum::extract::{Path, State};
 use chrono::Utc;
@@ -137,34 +137,39 @@ async fn back_office_live_switch_and_templates_drive_the_engine() {
     exec(&hub, live_login, Box::new(|tx, env| funds::transfer(tx, env, funds::Direction::In, d("10000"), "it-cat-fund", None).map(|_| Value::Null))).await.unwrap();
     let buy = || -> Op { Box::new(|tx, env| trade::place_order(tx, env, OrderReq::market("BNBUSD", Side::Buy, d("0.5"))).map(|r| json!(format!("{r:?}")))) };
 
-    // live trading is OFF by default; demo trades
-    match exec(&hub, live_login, buy()).await {
-        Err(ExecError::Reject(r)) => assert_eq!(r.code, "symbol_demo_only"),
-        other => panic!("live order on a catalogue symbol must be refused: {other:?}"),
-    }
+    // crypto trades live by default; demo too; stocks wait (demo only)
+    exec(&hub, live_login, buy()).await.expect("crypto is live by default");
     exec(&hub, demo_login, buy()).await.expect("demo trades catalogue symbols");
+    assert!(!hub.shared.specs.load().get("MSFT").unwrap().live, "stocks are not live by default");
 
-    // only the platform owner may switch it on
-    let r = api::catalogue::set_live(State(st.clone()), staff(&st, "admin"), body(json!({"scope": "class", "key": "crypto", "enabled": true, "reason": "launch crypto"}))).await;
+    // only the platform owner may switch a class off (or on)
+    let r = api::catalogue::set_live(State(st.clone()), staff(&st, "admin"), body(json!({"scope": "class", "key": "crypto", "enabled": false, "reason": "pause crypto"}))).await;
     assert_eq!(code(r.unwrap_err()), "forbidden");
     let r = api::catalogue::set_live(State(st.clone()), staff(&st, "platform_owner"), body(json!({"scope": "symbol", "key": "EURUSD", "enabled": false, "reason": "core"}))).await;
     assert_eq!(code(r.unwrap_err()), "validation:key", "core instruments are always live");
-    let r = api::catalogue::set_live(State(st.clone()), staff(&st, "platform_owner"), body(json!({"scope": "class", "key": "crypto", "enabled": true, "reason": ""}))).await;
+    let r = api::catalogue::set_live(State(st.clone()), staff(&st, "platform_owner"), body(json!({"scope": "class", "key": "crypto", "enabled": false, "reason": ""}))).await;
     assert_eq!(code(r.unwrap_err()), "validation:reason");
-    let ok = api::catalogue::set_live(State(st.clone()), staff(&st, "platform_owner"), body(json!({"scope": "class", "key": "crypto", "enabled": true, "reason": "launch crypto"}))).await.unwrap();
-    assert!(ok.0["catalogueLive"].as_u64().unwrap() > 100);
-    // the shards use the new specs at once
-    exec(&hub, live_login, buy()).await.expect("live trades once crypto is enabled");
-
-    // a symbol switched off overrides its class: new positions refused, the open one still closes
-    let _ = api::catalogue::set_live(State(st.clone()), staff(&st, "super_admin"), body(json!({"scope": "symbol", "key": "BNBUSD", "enabled": false, "reason": "pause BNB"}))).await.unwrap();
+    let _ = api::catalogue::set_live(State(st.clone()), staff(&st, "platform_owner"), body(json!({"scope": "class", "key": "crypto", "enabled": false, "reason": "pause crypto"}))).await.unwrap();
+    // the shards use the new specs at once: new live positions refused, demo unaffected
     match exec(&hub, live_login, buy()).await {
         Err(ExecError::Reject(r)) => assert_eq!(r.code, "symbol_demo_only"),
-        other => panic!("{other:?}"),
+        other => panic!("live order must be refused once crypto is off: {other:?}"),
     }
-    // stored: a restart loads the same switch
+    exec(&hub, demo_login, buy()).await.expect("demo is never switched off");
+
+    // a symbol switched on wins over its class
+    let _ = api::catalogue::set_live(State(st.clone()), staff(&st, "super_admin"), body(json!({"scope": "symbol", "key": "BNBUSD", "enabled": true, "reason": "BNB only"}))).await.unwrap();
+    exec(&hub, live_login, buy()).await.expect("symbol switch on");
+    // stored: a restart loads the same switches
     let ov = trading::catalogue::load_overrides(&pool).await.unwrap();
-    assert!(ov.live_classes.contains("crypto") && ov.live_symbols.get("BNBUSD") == Some(&false));
+    assert_eq!((ov.live_classes.get("crypto"), ov.live_symbols.get("BNBUSD")), (Some(&false), Some(&true)));
+    // back to the defaults (null removes a switch)
+    let _ = api::catalogue::set_live(State(st.clone()), staff(&st, "platform_owner"), body(json!({"scope": "symbol", "key": "BNBUSD", "enabled": null, "reason": "back to class"}))).await.unwrap();
+    let ok = api::catalogue::set_live(State(st.clone()), staff(&st, "platform_owner"), body(json!({"scope": "class", "key": "crypto", "enabled": null, "reason": "back to default"}))).await.unwrap();
+    assert!(ok.0["catalogueLive"].as_u64().unwrap() > 200);
+    exec(&hub, live_login, buy()).await.expect("default again");
+    let ov = trading::catalogue::load_overrides(&pool).await.unwrap();
+    assert!(ov.live_classes.is_empty() && ov.live_symbols.is_empty());
 
     // templates: validation, contract size blocked while positions are open, other fields apply at once
     let r = api::catalogue::set_template(State(st.clone()), staff(&st, "platform_owner"), Path("crypto".into()), body(json!({"fields": {"max_leverage": 5000}, "reason": "typo"}))).await;
@@ -181,25 +186,27 @@ async fn back_office_live_switch_and_templates_drive_the_engine() {
     assert_eq!(now_specs.get("ETHUSD").unwrap().max_leverage, specs.get("ETHUSD").unwrap().max_leverage, "core crypto untouched");
     // back to the file template
     let _ = api::catalogue::set_template(State(st.clone()), staff(&st, "platform_owner"), Path("crypto".into()), body(json!({"fields": null, "reason": "revert"}))).await.unwrap();
-    assert_eq!(hub.shared.specs.load().get("BNBUSD").unwrap().max_leverage, 5);
+    assert_eq!(hub.shared.specs.load().get("BNBUSD").unwrap().max_leverage, 10);
 
     // the Back Office listing and the audit trail
     let cat = api::catalogue::catalogue(State(st.clone()), staff(&st, "dealer")).await.unwrap().0;
     assert_eq!(cat["canChange"], false);
     assert!(cat["symbols"].as_array().unwrap().len() > 1000);
     assert_eq!(cat["counts"]["forex"]["core"], 9);
+    assert!(cat["liveDefaultClasses"].as_array().unwrap().iter().any(|c| c == "crypto"));
+    assert!(!cat["liveDefaultClasses"].as_array().unwrap().iter().any(|c| c == "stocks"));
     assert!(cat["templates"].as_array().unwrap().iter().any(|t| t["key"] == "stocks-us" && t["symbols"].as_u64().unwrap() > 100));
     let audit = api::catalogue::audit_log(State(st.clone()), staff(&st, "dealer")).await.unwrap().0;
     let actions: Vec<&str> = audit["changes"].as_array().unwrap().iter().filter_map(|c| c["action"].as_str()).collect();
-    assert_eq!(actions.iter().filter(|a| **a == "symbols.live").count(), 2);
+    assert_eq!(actions.iter().filter(|a| **a == "symbols.live").count(), 4);
     assert_eq!(actions.iter().filter(|a| **a == "symbols.template").count(), 2);
     assert!(sqlx::query("DELETE FROM symbol_catalogue_audit").execute(&pool).await.is_err(), "audit is append-only");
 
     // replay of every account is unchanged by the hot-swapped specs
     let replayed = trading::persist::replay_all(&pool).await.unwrap();
     assert!(trading::persist::verify_balances(&pool, &replayed).await.unwrap().is_empty());
-    assert_eq!(replayed[&live_login].positions.len(), 1);
-    assert_eq!(replayed[&demo_login].positions.len(), 1);
+    assert_eq!(replayed[&live_login].positions.len(), 3);
+    assert_eq!(replayed[&demo_login].positions.len(), 2);
 
     pool.close().await;
     let mut admin = server.database("postgres").connect().await.unwrap();

@@ -18,6 +18,7 @@ use serde_json::{Map, Value, json};
 use sqlx::Row;
 use std::collections::{BTreeMap, BTreeSet};
 
+
 use super::{ApiError, ApiResult, AppState, Body, ROLES_CONFIG, ROLES_DEALING, StaffCtx};
 use crate::money::num;
 use crate::specs::{RawSpec, Spec, raw_json};
@@ -41,7 +42,7 @@ fn require_read(s: &StaffCtx) -> ApiResult<()> {
 fn spec_json(s: &Spec) -> Value {
     json!({
         "symbol": s.symbol, "name": s.name, "assetClass": s.asset_class, "core": s.core, "template": s.template,
-        "liveTrading": s.live, "session": s.session.key(), "holidayCalendar": s.holidays.as_ref().map(|h| h.calendar.clone()),
+        "liveTrading": s.live, "liveDefault": s.live_default, "liveOff": s.live_off, "swapMode": s.swap_mode.as_str(), "session": s.session.key(), "holidayCalendar": s.holidays.as_ref().map(|h| h.calendar.clone()),
         "digits": s.digits, "contractSize": num(s.contract_size), "lotMin": num(s.lot_min), "lotMax": num(s.lot_max),
         "lotStep": num(s.lot_step), "marginPct": num(s.margin_pct), "maxLeverage": s.max_leverage, "swapLong": num(s.swap_long),
         "swapShort": num(s.swap_short), "stopsLevelPoints": s.stops_level_points, "quoteCcy": s.quote_ccy, "baseCcy": s.base_ccy,
@@ -55,12 +56,17 @@ pub async fn catalogue(State(st): State<AppState>, s: StaffCtx) -> ApiResult<Jso
     let src = specs.source().ok_or_else(|| ApiError::Internal(anyhow::anyhow!("specs have no source")))?;
     // per class: instruments, core, catalogue, live catalogue
     let mut counts: BTreeMap<String, [u64; 4]> = BTreeMap::new();
+    // classes whose catalogue rows trade live by default (config/instruments.json "live": true)
+    let mut defaults: BTreeSet<String> = BTreeSet::new();
     for x in specs.all() {
         let c = counts.entry(x.asset_class.clone()).or_default();
         c[0] += 1;
         if x.core {
             c[1] += 1;
         } else {
+            if x.live_default {
+                defaults.insert(x.asset_class.clone());
+            }
             c[2] += 1;
             if x.live {
                 c[3] += 1;
@@ -98,6 +104,7 @@ pub async fn catalogue(State(st): State<AppState>, s: StaffCtx) -> ApiResult<Jso
         "canChange": can_change(&s),
         "counts": counts.into_iter().map(|(k, c)| (k, json!({"total": c[0], "core": c[1], "catalogue": c[2], "catalogueLive": c[3]}))).collect::<Map<String, Value>>(),
         "liveClasses": ov.live_classes,
+        "liveDefaultClasses": defaults,
         "liveSymbols": ov.live_symbols,
         "liveChanges": live_rows,
         "templates": templates,
@@ -109,7 +116,7 @@ pub async fn catalogue(State(st): State<AppState>, s: StaffCtx) -> ApiResult<Jso
 pub struct LiveBody {
     scope: String,
     key: String,
-    /// symbol scope: null = follow the asset class again
+    /// null = back to the default (symbol: its class and row; class: the rows' defaults)
     enabled: Option<bool>,
     #[serde(default)]
     reason: String,
@@ -151,18 +158,24 @@ pub async fn set_live(State(st): State<AppState>, s: StaffCtx, Body(b): Body<Liv
             if !specs.all().any(|x| !x.core && x.asset_class == key) {
                 return Err(ApiError::Validation { field: "key", message: format!("No catalogue instruments in asset class {key}") });
             }
-            let on = b.enabled.ok_or(ApiError::Validation { field: "enabled", message: "enabled must be true or false for an asset class".into() })?;
-            before = json!({"enabled": specs.overrides().live_classes.contains(&key)});
-            sqlx::query(
-                "INSERT INTO symbol_live (scope, key, enabled, updated_by, reason, updated_at) VALUES ('class', $1, $2, $3, $4, now())
-                 ON CONFLICT (scope, key) DO UPDATE SET enabled = EXCLUDED.enabled, updated_by = EXCLUDED.updated_by, reason = EXCLUDED.reason, updated_at = now()",
-            )
-            .bind(&key)
-            .bind(on)
-            .bind(&s.staff.name)
-            .bind(&reason)
-            .execute(&mut *tx)
-            .await?;
+            before = json!({"enabled": specs.overrides().live_classes.get(&key)});
+            match b.enabled {
+                Some(on) => {
+                    sqlx::query(
+                        "INSERT INTO symbol_live (scope, key, enabled, updated_by, reason, updated_at) VALUES ('class', $1, $2, $3, $4, now())
+                         ON CONFLICT (scope, key) DO UPDATE SET enabled = EXCLUDED.enabled, updated_by = EXCLUDED.updated_by, reason = EXCLUDED.reason, updated_at = now()",
+                    )
+                    .bind(&key)
+                    .bind(on)
+                    .bind(&s.staff.name)
+                    .bind(&reason)
+                    .execute(&mut *tx)
+                    .await?;
+                }
+                None => {
+                    sqlx::query("DELETE FROM symbol_live WHERE scope = 'class' AND key = $1").bind(&key).execute(&mut *tx).await?;
+                }
+            }
         }
         "symbol" => {
             let key = key.to_uppercase();
@@ -210,7 +223,7 @@ pub struct TemplateBody {
 
 /// Template fields the Back Office may set.
 const TEMPLATE_FIELDS: &[&str] = &[
-    "contract_size", "lot_min", "lot_max", "lot_step", "margin_pct", "max_leverage", "swap_long", "swap_short", "triple_swap_day", "swap_days", "session", "stops_level_points", "commission_per_lot",
+    "contract_size", "lot_min", "lot_max", "lot_step", "margin_pct", "max_leverage", "swap_long", "swap_short", "swap_mode", "triple_swap_day", "swap_days", "session", "stops_level_points", "commission_per_lot",
 ];
 
 pub async fn set_template(State(st): State<AppState>, s: StaffCtx, Path(key): Path<String>, Body(b): Body<TemplateBody>) -> ApiResult<Json<Value>> {

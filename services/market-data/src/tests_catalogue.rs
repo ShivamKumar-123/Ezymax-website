@@ -39,7 +39,7 @@ fn repo_catalogue_loads() {
         assert!(i.name.is_some() && i.template.is_some() && i.quote_ccy.is_some(), "{}", i.symbol);
         let q = i.quote_ccy.as_deref().unwrap();
         assert!(q == "USD" || c.usd_pair(q).is_some(), "{}: no USD pair for {q}", i.symbol);
-        assert!(i.base_spread > 0.0 && i.digits <= 8, "{}", i.symbol);
+        assert!(i.base_spread > 0.0 && i.digits <= 10, "{}", i.symbol);
     }
     assert_eq!(classes.into_iter().collect::<Vec<_>>(), vec!["crypto", "energies", "forex", "indices", "metals", "stocks"]);
     // provider codes map back (FX by code, crypto USDT → USD symbol, stocks with exchange suffix)
