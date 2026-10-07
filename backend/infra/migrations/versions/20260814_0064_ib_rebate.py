@@ -52,10 +52,19 @@ def upgrade() -> None:
     op.execute("CREATE INDEX IF NOT EXISTS ix_ib_rebate_settle_ib_period ON ib_rebate_settlements (ib_id, period)")
     op.execute("CREATE INDEX IF NOT EXISTS ix_ib_rebate_settle_created ON ib_rebate_settlements (created_at)")
     op.execute("""
+        -- NOTE: the spaces after the colons in the JSON below are load-bearing.
+        -- op.execute() routes this through sqlalchemy.text(), which treats
+        -- ":name" as a bind parameter -- and `"min_lots":0` matches, so the
+        -- literal was compiled with $1/$2 placeholders in place of the values
+        -- and the statement died with "A value is required for bind parameter
+        -- '0'". It only ever bites a FRESH database: an existing one already
+        -- had these rows from the idempotent startup DDL, so the migration was
+        -- never exercised. A space after the colon stops the match and leaves
+        -- the JSON identical.
         INSERT INTO system_settings (key, value, description) VALUES
             ('ib_commission_model', '"instant"'::jsonb, 'IB payout model: instant or accrual'),
             ('ib_rebate_tiers',
-              '[{"tier":"starter","min_lots":0,"min_clients":0,"rate":3},{"tier":"builder","min_lots":200,"min_clients":3,"rate":5},{"tier":"pro","min_lots":500,"min_clients":10,"rate":7}]'::jsonb,
+              '[{"tier": "starter", "min_lots": 0, "min_clients": 0, "rate": 3}, {"tier": "builder", "min_lots": 200, "min_clients": 3, "rate": 5}, {"tier": "pro", "min_lots": 500, "min_clients": 10, "rate": 7}]'::jsonb,
               'IB rebate tier ladder (per closed lot)'),
             ('ib_override_pcts', '[10,5,2.5]'::jsonb, 'Upline override % by depth'),
             ('ib_override_cap_pct', '20'::jsonb, 'Max total override (%)'),
