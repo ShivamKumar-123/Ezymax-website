@@ -36,6 +36,18 @@ The Client Area password is changed with `POST /api/auth/password {current, new,
 
 The Trade button opens `NEXT_PUBLIC_TERMINAL_URL + "/?sso=<token>"`. The token is one-time and valid for 60 s. Kalks Trader redeems it through its own BFF with `POST /v1/terminal/sso {token}`, stores the resulting session and removes `sso` from the URL.
 
+## Mobile app API (`/api/mobile/*`)
+
+The Flutter app talks only to this Client Area, with the gateway session as `Authorization: Bearer <token>` and no cookies. The full contract (paths, headers, auth, errors, streams) is in `docs/MOBILE-API.md`.
+
+- **Rewrites.** `proxy.ts` rewrites `/api/mobile/<family>/*` (trading, wallet, news, notifications, kyc, security, support, status, growth, partner, social, prop, academy, reports, algo, suitability; `auth/heartbeat|impersonation|marketing`) onto the cookie routes above (`lib/mobile.ts`). The bearer becomes the rewritten request's session cookie, so every policy is reused unchanged: viewer scope, staff read-only, module switches, step-up, maintenance.
+- **Cookies.** Browser cookies on `/api/mobile/*` are dropped. A bearer token together with cookies is refused (`400 bearer_with_cookies`). The same-origin check is satisfied only for bearer requests without cookies.
+- **Native routes:**
+  - `app/api/mobile/auth/[action]`: the session comes back in JSON, and a device id is minted when the app has none.
+  - `app/api/mobile/config`: public service URLs, stream URLs, branding, modules, maintenance.
+  - `app/api/mobile/trade/*`: the engine session, minted server-side through the account SSO or an MT5-style login, and handed out as a trade token bound to the client (`lib/mobile-trade.ts`). Also everything Kalks Trader's BFF exposes (`lib/trade-bodies.ts`), plus the AI routes with Kalks Trader's budget rules (`lib/mobile-ai.ts`).
+- **Tests:** `node --test tests/` (`mobile.test.mjs`, `mobile-trade.test.mjs`).
+
 ## Prop challenges (live builds)
 
 `/prop` (catalogue and checkout), `/prop/mine` (live rule dashboard, polled every 2 s while the tab is visible), `/prop/payouts` and `/prop/certificates` read from the prop service (`services/prop`, see its README). Components: `components/prop-live/*`; demo builds keep the mock pages. BFF: `app/api/prop/[...path]/route.ts` (server helper `lib/prop.ts`), same session, CSRF and 401 handling as the trading BFF. It forwards `X-Kalks-User-Id`, `X-Kalks-User-Name` (percent-encoded, used on certificates), `X-Kalks-User-Kyc` and `X-Kalks-Tenant`.
@@ -65,6 +77,9 @@ These go in `apps/crm/.env.local` for local runs, or `apps/crm/.env.production.l
 | `TRADING_INTERNAL_TOKEN` | same value as the engine's `TRADING_INTERNAL_TOKEN` (repo-root `.env.local` / server env) |
 | `NEXT_PUBLIC_TERMINAL_URL` | Kalks Trader origin, for example `https://trade.kalkstrade.com` (build time) |
 | `PROP_URL`, `PROP_INTERNAL_TOKEN` | prop service, default `http://127.0.0.1:8097`; token = the service's `PROP_INTERNAL_TOKEN` |
+| `OPTIONS_URL`, `OPTIONS_INTERNAL_TOKEN` | options service (the mobile app's options reads), default `http://127.0.0.1:8104` |
+| `ANTHROPIC_API_KEY` | the mobile app's AI routes (`trade/ai-trader`, `trade/options/explain`); unset = `{configured: false}` |
+| `MOBILE_MIN_APP_VERSION`, `MOBILE_TRADE_SECRET`, `MOBILE_*_URL` | optional mobile settings, see `docs/MOBILE-API.md` §9 |
 
 ## Security, sessions and view-only access (live builds)
 

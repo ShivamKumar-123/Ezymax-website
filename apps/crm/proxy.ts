@@ -6,6 +6,7 @@ import { captureAttribution } from "@/lib/attribution";
 import { moduleOff, tenantConfig } from "@/lib/tenant-config";
 import { hostOf } from "@/lib/tenant-host";
 import { VIEWER_OUT_OF_SCOPE, VIEWER_READ_ONLY, isViewerToken, viewerApiAllowed, viewerHome, viewerPageAllowed, type ViewerScope } from "@/lib/viewer";
+import { MOBILE_PREFIX, bearerOf, hasCookies, mobileRequestHeaders, mobileRoute } from "@/lib/mobile";
 
 // Route protection for the Client Area.
 // - Signed-out visitors on any app page -> /login?next=<page>
@@ -32,21 +33,17 @@ const ALWAYS_OPEN = ["/status", "/maintenance", "/unavailable", "/api/status", "
 export async function proxy(req: NextRequest) {
   if (IS_DEMO) return routes(req);
   const { pathname } = req.nextUrl;
+  // the mobile app: bearer session instead of cookies (lib/mobile.ts, docs/MOBILE-API.md)
+  if (pathname.startsWith(MOBILE_PREFIX)) return mobileApi(req);
   const open = ALWAYS_OPEN.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const api = pathname.startsWith("/api/");
   if (!open) {
-    const cfg = await tenantConfig(hostOf(req.headers) ?? "");
-    if (cfg?.maintenance.active && pathname !== "/api/auth/logout") {
-      if (api) return NextResponse.json({ error: { code: "maintenance", message: "The Client Area is under maintenance. Please try again shortly." } }, { status: 503, headers: { "retry-after": "60" } });
-      return NextResponse.rewrite(new URL("/maintenance", req.url));
-    }
-    if (cfg && moduleOff(cfg.modules, pathname)) {
-      if (api) return NextResponse.json({ error: { code: "module_disabled", message: "This feature isn't available on your account." } }, { status: 403 });
-      return NextResponse.rewrite(new URL("/unavailable", req.url));
-    }
+    const held = await brokerGate(req, pathname, api);
+    if (held) return held;
   }
   if (api && !open) {
-    const held = (await viewerApi(req)) ?? (await staffApi(req));
+    const token = req.cookies.get(SESSION_COOKIE)?.value;
+    const held = (await viewerApi(req, token, pathname)) ?? (await staffApi(req, token, pathname));
     if (held) return held;
   }
   if (api || open) return NextResponse.next();
@@ -54,9 +51,51 @@ export async function proxy(req: NextRequest) {
   return captureAttribution(req, await routes(req));
 }
 
+/** Maintenance mode and modules switched off for the broker; null = go ahead. */
+async function brokerGate(req: NextRequest, pathname: string, api: boolean): Promise<NextResponse | null> {
+  const cfg = await tenantConfig(hostOf(req.headers) ?? "");
+  if (cfg?.maintenance.active && pathname !== "/api/auth/logout") {
+    if (api) return NextResponse.json({ error: { code: "maintenance", message: "The Client Area is under maintenance. Please try again shortly." } }, { status: 503, headers: { "retry-after": "60" } });
+    return NextResponse.rewrite(new URL("/maintenance", req.url));
+  }
+  if (cfg && moduleOff(cfg.modules, pathname)) {
+    if (api) return NextResponse.json({ error: { code: "module_disabled", message: "This feature isn't available on your account." } }, { status: 403 });
+    return NextResponse.rewrite(new URL("/unavailable", req.url));
+  }
+  return null;
+}
+
+const mobileError = (status: number, code: string, message: string) => NextResponse.json({ error: { code, message } }, { status, headers: { "cache-control": "no-store" } });
+
+/**
+ * The mobile app's API (/api/mobile/*, lib/mobile.ts). The same broker, viewer and staff policies as the cookie
+ * routes apply, judged on the equivalent cookie-route path; then the request is either rewritten to that cookie
+ * route (bearer token as its session cookie) or served by the native mobile route. Browser cookies never count
+ * here, and a bearer token is never accepted together with cookies.
+ */
+async function mobileApi(req: NextRequest): Promise<NextResponse> {
+  const route = mobileRoute(req.nextUrl.pathname);
+  if (!route) return mobileError(404, "not_found", "Not found.");
+  const token = bearerOf(req.headers);
+  if (req.headers.has("authorization") && !token) return mobileError(401, "unauthorized", "Please sign in.");
+  if (token && hasCookies(req.headers)) return mobileError(400, "bearer_with_cookies", "Send the session token without cookies.");
+  const path = route.policyPath;
+  const open = ALWAYS_OPEN.some((p) => path === p || path.startsWith(`${p}/`));
+  if (!open) {
+    const held = await brokerGate(req, path, true);
+    if (held) return held;
+  }
+  if (token && !open) {
+    const held = (await viewerApi(req, token, path)) ?? (await staffApi(req, token, path));
+    if (held) return held;
+  }
+  const headers = mobileRequestHeaders(req.headers, token, route);
+  if (route.kind === "rewrite") return NextResponse.rewrite(new URL(route.target + req.nextUrl.search, req.url), { request: { headers } });
+  return NextResponse.next({ request: { headers } });
+}
+
 /** The scope of a view-only session (D90), or null for a normal session / no session. */
-async function viewerScope(req: NextRequest): Promise<ViewerScope | null> {
-  const token = req.cookies.get(SESSION_COOKIE)?.value;
+async function viewerScope(req: NextRequest, token = req.cookies.get(SESSION_COOKIE)?.value): Promise<ViewerScope | null> {
   if (!isViewerToken(token)) return null;
   const r = await gateway<{ viewer?: ViewerScope | null }>("/v1/auth/me", { token, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });
   return r.status === 200 ? (r.data.viewer ?? null) : null;
@@ -66,11 +105,10 @@ async function viewerScope(req: NextRequest): Promise<ViewerScope | null> {
  * View-only sessions are held to read requests of their sections before any BFF runs: every change is refused
  * here (and again by the BFFs and the gateway). A dead viewer session falls through to the normal 401 handling.
  */
-async function viewerApi(req: NextRequest): Promise<NextResponse | null> {
-  if (!isViewerToken(req.cookies.get(SESSION_COOKIE)?.value)) return null;
-  const scope = await viewerScope(req);
+async function viewerApi(req: NextRequest, token: string | undefined | null, pathname: string): Promise<NextResponse | null> {
+  if (!isViewerToken(token)) return null;
+  const scope = await viewerScope(req, token ?? undefined);
   if (!scope) return null;
-  const { pathname } = req.nextUrl;
   if (viewerApiAllowed(scope, req.method, pathname)) return null;
   const readOnly = req.method !== "GET" && req.method !== "HEAD";
   return NextResponse.json({ error: readOnly ? VIEWER_READ_ONLY : VIEWER_OUT_OF_SCOPE }, { status: 403, headers: { "cache-control": "no-store" } });
@@ -85,33 +123,32 @@ const STAFF_FULL_PREFIX = "s.";
  *  ticket for the receive-only realtime stream (bell + chat updates; the socket accepts no commands). */
 const STAFF_ALWAYS_POST = ["/api/auth/logout", "/api/auth/heartbeat", "/api/auth/impersonation", "/api/support/stream-ticket"];
 
-function staffToken(req: NextRequest): { token: string; readOnly: boolean } | null {
-  const token = req.cookies.get(SESSION_COOKIE)?.value;
+function staffToken(req: NextRequest, token = req.cookies.get(SESSION_COOKIE)?.value): { token: string; readOnly: boolean } | null {
   if (!token) return null;
   if (token.startsWith(STAFF_READ_ONLY_PREFIX)) return { token, readOnly: true };
   if (token.startsWith(STAFF_FULL_PREFIX)) return { token, readOnly: false };
   return null;
 }
 
-async function staffEvent(req: NextRequest, token: string, kind: "action" | "write_refused" | "page_view", status?: number) {
+async function staffEvent(req: NextRequest, token: string, kind: "action" | "write_refused" | "page_view", status?: number, path = req.nextUrl.pathname) {
   await gateway("/v1/auth/impersonation/event", {
-    body: { kind, method: req.method, path: req.nextUrl.pathname, status },
+    body: { kind, method: req.method, path, status },
     token,
     ip: clientIp(req.headers),
     userAgent: req.headers.get("user-agent"),
   }).catch(() => null);
 }
 
-async function staffApi(req: NextRequest): Promise<NextResponse | null> {
-  const s = staffToken(req);
+/** `pathname`: the cookie-route path the request is judged (and audited) as; for the mobile app, its policy path. */
+async function staffApi(req: NextRequest, token: string | undefined | null, pathname: string): Promise<NextResponse | null> {
+  const s = staffToken(req, token ?? undefined);
   if (!s || req.method === "GET" || req.method === "HEAD") return null;
-  const { pathname } = req.nextUrl;
   if (STAFF_ALWAYS_POST.includes(pathname) || pathname === "/api/security/viewer-activity") return null;
   if (s.readOnly) {
-    await staffEvent(req, s.token, "write_refused", 403);
+    await staffEvent(req, s.token, "write_refused", 403, pathname);
     return NextResponse.json({ error: { code: "staff_read_only", message: "This is a read-only staff session. Changes are not allowed." } }, { status: 403, headers: { "cache-control": "no-store" } });
   }
-  await staffEvent(req, s.token, "action");
+  await staffEvent(req, s.token, "action", undefined, pathname);
   return null;
 }
 

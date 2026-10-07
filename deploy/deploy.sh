@@ -136,6 +136,10 @@ for app in apps/crm apps/admin apps/terminal; do
   grep -q '^SUPPORT_URL=' "$f" || printf 'SUPPORT_URL=http://127.0.0.1:8100\n' >> "$f"
   grep -q '^SUPPORT_INTERNAL_TOKEN=' "$f" || printf 'SUPPORT_INTERNAL_TOKEN=%s\n' "$(grep '^SUPPORT_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
 done
+# the Client Area's mobile AI routes (/api/mobile/trade/ai-trader, /options/explain) use the same Claude key
+if ! grep -q '^ANTHROPIC_API_KEY=' apps/crm/.env.production.local 2>/dev/null && grep -q '^ANTHROPIC_API_KEY=' .env.claude 2>/dev/null; then
+  (umask 077; touch apps/crm/.env.production.local; grep '^ANTHROPIC_API_KEY=' .env.claude >> apps/crm/.env.production.local)
+fi
 # growth (rewards + marketing) secrets: internal token generated once, database kalks_growth next to the gateway's;
 # the Client Area, Back Office and Kalks Trader BFFs reach the service with the same token (Kalks Trader: option share cards)
 grep -q '^GROWTH_INTERNAL_TOKEN=' .env.local || printf 'GROWTH_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
