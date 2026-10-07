@@ -64,6 +64,10 @@ export const BRAND = {
 export type NavItem = {
   label: string;
   href: string;
+  /** lucide icon name, mapped to a component in Navbar.tsx. Top-level
+   *  items carry one so the bar reads at a glance rather than as five
+   *  words of the same weight. */
+  icon?: string;
   children?: { label: string; href: string }[];
   // When true the link points off-site and is rendered as a plain
   // <a target="_blank"> instead of a Next <Link>.
@@ -76,9 +80,10 @@ export type NavItem = {
  * then the company.
  */
 export const NAV_ITEMS: NavItem[] = [
-  { label: 'Home', href: '/' },
+  { label: 'Home', icon: 'Home', href: '/' },
   {
     label: 'Markets',
+    icon: 'CandlestickChart',
     href: '/trading/forex',
     children: [
       { label: 'Forex', href: '/trading/forex' },
@@ -89,6 +94,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     label: 'Platforms',
+    icon: 'MonitorSmartphone',
     href: '/platforms/web',
     children: [
       { label: 'Web Terminal', href: '/platforms/web' },
@@ -99,6 +105,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     label: 'Accounts',
+    icon: 'Wallet',
     href: '/account-types',
     children: [
       { label: 'Account Types', href: '/account-types' },
@@ -109,6 +116,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     label: 'Company',
+    icon: 'Building2',
     href: '/company/about',
     children: [
       { label: 'About Us', href: '/company/about' },

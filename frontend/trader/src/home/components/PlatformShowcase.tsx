@@ -18,7 +18,7 @@ import { PLATFORM_FEATURES } from '../data';
  */
 export function PlatformShowcase() {
   return (
-    <Section id="platforms">
+    <Section id="platforms" decor="ticker" corners={{ at: ['tr', 'bl'], tone: 'ink' }} ruled>
       <div
         className="grid grid-cols-1 items-center lg:grid-cols-2"
         style={{ gap: 'var(--mk-space-8)' }}

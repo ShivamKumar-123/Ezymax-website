@@ -16,7 +16,7 @@ import { BRAND_NAME } from '@/lib/brand';
  */
 export function JoinPanel() {
   return (
-    <Section>
+    <Section decor="candles" corners={{ at: ['br'], tone: 'accent' }} raised>
       <div
         className="overflow-hidden"
         style={{

@@ -4,7 +4,7 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Eye, EyeOff, Loader2, X } from 'lucide-react';
+import { Eye, EyeOff, Loader2, X, ShieldCheck, Lock, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useAuthStore } from '@/stores/authStore';
@@ -32,17 +32,17 @@ const COPY: Record<Mode, {
   switchHref: string;
 }> = {
   signup: {
-    hero: 'A Swiss-precision trading platform for serious investors.',
+    hero: 'Your stops run on our servers, not in your browser.',
     eyebrow: 'Welcome to Ezymex',
     title: 'Create your account',
-    subtitle: 'Trade FX, indices, metals and crypto with bank-grade execution.',
+    subtitle: 'Trade FX, metals, indices and crypto from one balance.',
     cta: 'Create account',
     switchPrompt: 'Already have an account?',
     switchLink: 'Sign in',
     switchHref: '/auth/login',
   },
   login: {
-    hero: 'A Swiss-precision trading platform for serious investors.',
+    hero: 'Your stops run on our servers, not in your browser.',
     eyebrow: 'Welcome back',
     title: 'Sign in to Ezymex',
     subtitle: 'Access your portfolio, positions and watchlists.',
@@ -77,8 +77,8 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const brand = useBrandDisplay();
   // White-label tenants get their own name in every piece of copy and
-  // a neutral hero line (the platform's Swiss-precision pitch is
-  // Ezymex marketing, not theirs).
+  // a neutral hero line (the platform pitch is Ezymex marketing,
+  // not theirs).
   const copy = brand.isWhiteLabel
     ? {
         ...COPY[mode],
@@ -243,10 +243,32 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
 
         {/* Left dark hero panel */}
         <div className="bg-black text-white p-8 md:p-12 md:w-1/2 relative overflow-hidden z-10 flex flex-col justify-between min-h-[20rem] md:min-h-[36rem]">
+          {/* Candlestick skyline along the foot of the panel. Inline SVG
+              rather than artwork: it recolours with the brand and adds
+              nothing to the page weight on a screen people are waiting on. */}
+          <svg
+            aria-hidden
+            viewBox="0 0 400 120"
+            preserveAspectRatio="none"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-40 w-full opacity-[0.16]"
+          >
+            {Array.from({ length: 26 }).map((_, i) => {
+              const seed = (i * 73) % 97;
+              const h = 16 + (seed % 70);
+              const up = seed % 3 !== 0;
+              const x = i * 15.4 + 3;
+              return (
+                <g key={i} fill={up ? '#22C55E' : '#CC0000'}>
+                  <rect x={x + 3.4} y={120 - h - 8} width="1.2" height={h + 8} />
+                  <rect x={x} y={120 - h} width="8" height={h} rx="1" />
+                </g>
+              );
+            })}
+          </svg>
           <Link
             href="/"
             aria-label={`${brand.name} home`}
-            className="inline-flex items-center self-start relative z-10 bg-white/95 rounded-lg px-3 py-1.5"
+            className="inline-flex items-center self-start relative z-10"
           >
             {brand.isWhiteLabel ? (
               brand.logoUrl ? (
@@ -254,27 +276,48 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
                 <img
                   src={brand.logoUrl}
                   alt={brand.name}
-                  className="h-8 w-auto max-w-[180px] object-contain"
+                  className="h-11 w-auto max-w-[210px] object-contain md:h-12"
                 />
               ) : (
-                <span className="font-bold tracking-tight text-lg text-[#0A0A0A] select-none">
+                <span className="font-bold tracking-tight text-xl text-white select-none">
                   {brand.name}
                 </span>
               )
             ) : (
               <Image
-                src="/marketing/ezymex-logo.png"
+                src="/marketing/ezymex-logo-dark.png"
                 alt="Ezymex"
-                width={220}
-                height={48}
+                width={260}
+                height={56}
                 priority
-                className="h-8 w-auto"
+                className="h-11 w-auto md:h-12"
               />
             )}
           </Link>
-          <h1 className="text-2xl md:text-3xl font-medium leading-tight tracking-tight relative z-10">
-            {copy.hero}
-          </h1>
+          <div className="relative z-10">
+            <h1 className="text-2xl md:text-3xl font-medium leading-tight tracking-tight">
+              {copy.hero}
+            </h1>
+            {/* Three things a visitor weighing up a venue actually wants
+                to know, stated plainly. No licence or custody claims. */}
+            <ul className="mt-7 flex flex-col gap-3 text-sm text-white/65">
+              {[
+                { Icon: ShieldCheck, text: 'Stop-loss and stop-out enforced server-side' },
+                { Icon: Lock,        text: 'Every balance movement on a locked ledger' },
+                { Icon: Smartphone,  text: 'One login across web, desktop and mobile' },
+              ].map(({ Icon, text }) => (
+                <li key={text} className="flex items-start gap-3">
+                  <span
+                    aria-hidden
+                    className="mt-px inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-[#CC0000]/18 text-[#FF6B6B]"
+                  >
+                    <Icon className="size-3.5" />
+                  </span>
+                  {text}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* Right form panel */}

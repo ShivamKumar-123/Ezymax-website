@@ -21,7 +21,13 @@ export function MarketsGrid() {
     // tight-top: this section follows the full-bleed ticker strip, which
     // already separates it from the hero, so a full section-y on top reads
     // as dead space.
-    <Section id="markets" className="mk-section--tight-top">
+    <Section
+      id="markets"
+      className="mk-section--tight-top"
+      decor="grid"
+      corners={{ at: ['tl', 'br'], tone: 'accent' }}
+      ruled
+    >
       <SectionHeading
         kicker="What you can trade"
         title="Markets, and ways to trade them"

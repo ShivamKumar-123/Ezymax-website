@@ -42,7 +42,7 @@ export default function LoginPortalPage() {
             />
           </Link>
           <h1 className="text-2xl md:text-3xl font-medium leading-tight tracking-tight relative z-10">
-            A Swiss-precision trading platform for serious investors.
+            Your stops run on our servers, not in your browser.
           </h1>
         </div>
 

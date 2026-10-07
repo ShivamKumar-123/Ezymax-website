@@ -17,7 +17,7 @@ const STEPS = [
 
 export function Process() {
   return (
-    <Section id="process">
+    <Section decor="wave" corners={{ at: ['tl'], tone: 'ink' }} ruled id="process">
       <SectionHeading
         kicker="How It Works"
         title="From sign-up to first trade"

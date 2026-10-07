@@ -22,7 +22,7 @@ import { REWARDS, SIGNUP_HREF } from '../data';
  */
 export function Rewards() {
   return (
-    <Section raised>
+    <Section raised decor="orbs" corners={{ at: ['tr'], tone: 'navy' }}>
       <SectionHeading
         kicker="Start free"
         title="Practise before you fund"

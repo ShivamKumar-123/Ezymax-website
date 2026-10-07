@@ -34,7 +34,7 @@ const items: FeatureItem[] = WHY_US.map(({ icon, title, body }) => ({
 
 export function Pourquoi() {
   return (
-    <Section id="why-choose" raised>
+    <Section id="why-choose" raised decor="rays" corners={{ at: ['bl', 'br'], tone: 'accent' }}>
       <SectionHeading
         kicker={`Why Choose ${BRAND_NAME}`}
         title="Why traders choose this platform"

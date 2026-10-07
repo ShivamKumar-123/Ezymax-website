@@ -5,7 +5,11 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-motion';
-import { ArrowUpRight, Menu, X, ChevronDown, Download } from 'lucide-react';
+import {
+  ArrowUpRight, Menu, X, ChevronDown, Download,
+  Home, CandlestickChart, MonitorSmartphone, Wallet, Building2, LogIn,
+  type LucideIcon,
+} from 'lucide-react';
 import { Button } from '../ui/Button';
 import { NAV_ITEMS, BRAND, SIGNUP_HREF, APK_HREF, type NavItem } from '../data';
 
@@ -19,6 +23,18 @@ const useIsomorphicLayoutEffect =
  * uses liquid-glass which clips its children to keep the gradient border
  * inside the rounded shape).
  */
+/** NAV_ITEMS carry an icon name; this resolves it to a component. */
+const NAV_ICONS: Record<string, LucideIcon> = {
+  Home, CandlestickChart, MonitorSmartphone, Wallet, Building2,
+};
+
+function NavIcon({ name }: { name?: string }) {
+  const Icon = name ? NAV_ICONS[name] : undefined;
+  if (!Icon) return null;
+  // Decorative: the label beside it carries the meaning.
+  return <Icon aria-hidden className="size-4 shrink-0 opacity-70" strokeWidth={2} />;
+}
+
 function DesktopNavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -95,6 +111,7 @@ function DesktopNavLink({ item, pathname }: { item: NavItem; pathname: string })
     }
     return (
       <Link href={item.href} className={linkClass}>
+        <NavIcon name={item.icon} />
         {item.label}
         {/* Full-width underline rather than a floating dot — it reads as a
             tab indicator and sits flush with the nav's bottom hairline. */}
@@ -117,10 +134,11 @@ function DesktopNavLink({ item, pathname }: { item: NavItem; pathname: string })
         onFocus={() => { cancelClose(); setOpen(true); }}
         onClick={() => setOpen((v) => !v)}
         suppressHydrationWarning
-        className={`relative inline-flex items-center gap-1 whitespace-nowrap rounded px-3 py-5 font-body text-[15px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        className={`relative inline-flex items-center gap-1.5 whitespace-nowrap rounded px-2.5 py-5 font-body text-[15px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
           active ? 'text-foreground' : 'text-foreground/70 hover:text-foreground'
         }`}
       >
+        <NavIcon name={item.icon} />
         {item.label}
         <ChevronDown className={`size-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
         {active && (
@@ -254,7 +272,8 @@ export function Navbar() {
       {/* Single-tier white chrome. The black utility strip that used to sit
           above the nav is gone; the affordances it carried (locale, sign-in)
           moved into the primary bar next to the CTA, so the header is one
-          64px band instead of 36px + 64px. Both hero paddings were trimmed
+          single band. Now 80px to carry the larger wordmark; the hero's
+          top padding was raised to match. Both hero paddings were trimmed
           by the same 36px to keep the gap under the header unchanged. */}
       <motion.header
         data-scrolled={scrolled}
@@ -272,10 +291,10 @@ export function Navbar() {
           aria-label="Primary"
           suppressHydrationWarning
         >
-          <div className="mx-auto flex h-16 w-full max-w-[1320px] items-center gap-8 px-4 sm:px-6">
+          <div className="mx-auto flex h-20 w-full max-w-[1320px] items-center gap-4 px-4 sm:px-6 xl:gap-6">
             <Link href="/" className="group flex shrink-0 items-center gap-2" aria-label={`${BRAND.name} home`}>
               {BRAND.logoDark ? (
-                <img src={BRAND.logoDark} alt={BRAND.name} className="h-8 w-auto object-contain" />
+                <img src={BRAND.logoDark} alt={BRAND.name} className="h-10 w-auto max-w-[210px] object-contain sm:h-11" />
               ) : (
                 <span className="whitespace-nowrap font-display text-xl font-extrabold tracking-tight text-foreground">
                   {BRAND.name}
@@ -297,20 +316,21 @@ export function Navbar() {
               <a
                 href={APK_HREF}
                 download
-                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[hsl(var(--border)/0.2)] px-4 py-2.5 font-body text-[15px] font-medium text-foreground/80 transition-colors hover:text-foreground hover:bg-[hsl(var(--muted))]"
+                className="hidden items-center gap-1.5 whitespace-nowrap rounded-full border border-[hsl(var(--border)/0.2)] px-3.5 py-2.5 font-body text-[14px] font-medium text-foreground/80 transition-colors hover:text-foreground hover:bg-[hsl(var(--muted))] xl:inline-flex"
               >
                 <Download className="size-4" />
                 Download App
               </a>
               <Link
                 href="/auth/login"
-                className="whitespace-nowrap rounded-full px-4 py-2.5 font-body text-[15px] font-medium text-foreground/70 transition-colors hover:text-foreground"
+                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2.5 font-body text-[14px] font-medium text-foreground/70 transition-colors hover:text-foreground"
               >
+                <LogIn className="size-4" />
                 Client Login
               </Link>
-              <Button variant="hero" className="h-auto rounded-full px-5 py-2.5 text-sm" asChild>
+              <Button variant="hero" className="h-auto shrink-0 rounded-full px-4 py-2.5 text-sm" asChild>
                 <Link href={SIGNUP_HREF}>
-                  Book a Demo
+                  Open Account
                   <ArrowUpRight className="ml-1 size-4" />
                 </Link>
               </Button>
@@ -379,7 +399,7 @@ export function Navbar() {
               </Link>
               <Button variant="hero" asChild className="mt-2">
                 <Link href={SIGNUP_HREF} onClick={() => setOpen(false)}>
-                  Book a Demo
+                  Open Account
                   <ArrowUpRight className="ml-1 size-4" />
                 </Link>
               </Button>

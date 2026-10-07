@@ -196,3 +196,111 @@
 /* Radix accordion height transitions */
 .brand-home [data-state='open'].brand-accordion-content { animation: brand-accordion-down 0.2s ease-out; }
 .brand-home [data-state='closed'].brand-accordion-content { animation: brand-accordion-up 0.2s ease-out; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Section decoration (see components/SectionDecor.tsx)
+
+   Every band on the landing page carries a different motif so the page
+   reads as a sequence rather than one long list of cards. Inline SVG and
+   gradients rather than photographs: these inherit the brand tokens, so
+   a rebrand recolours them, and they add no network weight to a page
+   that is already carrying a hero cutout.
+
+   Everything here is decorative — the markup sets aria-hidden, and these
+   rules keep it out of the hit-testing and text layers.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.ez-section {
+  position: relative;
+  isolation: isolate;        /* keeps decor beneath content without z-index wars */
+  overflow: hidden;          /* motifs are drawn oversized and cropped by the band */
+}
+.ez-section > *:not(.ez-decor):not(.ez-corners) { position: relative; z-index: 1; }
+
+.ez-decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  color: var(--mk-ink);      /* currentColor for the stroke-based motifs */
+}
+.ez-decor__svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ez-decor__svg--bottom { top: auto; bottom: 0; height: auto; }
+
+/* Per-variant intensity. Kept low: body copy sits on top of all of them
+   and has to stay at AA contrast. */
+.ez-decor[data-variant='grid']   { opacity: 0.055; }
+.ez-decor[data-variant='dots']   { opacity: 0.075; }
+.ez-decor[data-variant='rays']   { opacity: 0.05;  color: var(--mk-accent); }
+.ez-decor[data-variant='ticker'] { opacity: 0.07;  color: var(--brand-navy, #0B2F52); }
+
+.ez-decor[data-variant='candles'] {
+  --ez-up: var(--mk-positive, #10B981);
+  --ez-down: var(--mk-accent, #CC0000);
+  opacity: 0.1;
+}
+.ez-decor[data-variant='wave'] {
+  --ez-wave-1: color-mix(in srgb, var(--mk-accent) 9%, transparent);
+  --ez-wave-2: color-mix(in srgb, var(--brand-navy, #0B2F52) 10%, transparent);
+}
+
+/* Soft brand blooms. Blur is expensive to animate, so these are static. */
+.ez-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(72px);
+}
+.ez-orb--a {
+  width: 38vw; height: 38vw; max-width: 520px; max-height: 520px;
+  top: -14%; right: -8%;
+  background: color-mix(in srgb, var(--mk-accent) 22%, transparent);
+}
+.ez-orb--b {
+  width: 32vw; height: 32vw; max-width: 440px; max-height: 440px;
+  bottom: -18%; left: -10%;
+  background: color-mix(in srgb, var(--brand-navy, #0B2F52) 20%, transparent);
+}
+
+/* ── Corner crop marks ────────────────────────────────────────────── */
+.ez-corners { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.ez-corners[data-tone='accent'] { --ez-corner: var(--mk-accent); }
+.ez-corners[data-tone='navy']   { --ez-corner: var(--brand-navy, #0B2F52); }
+.ez-corners[data-tone='ink']    { --ez-corner: var(--mk-ink); }
+
+.ez-corner {
+  position: absolute;
+  width: clamp(28px, 4vw, 58px);
+  height: clamp(28px, 4vw, 58px);
+  border: 2px solid var(--ez-corner);
+  opacity: 0.32;
+  border-radius: 3px;
+}
+.ez-corner[data-pos='tl'] { top: 22px;  left: 22px;  border-right: 0; border-bottom: 0; }
+.ez-corner[data-pos='tr'] { top: 22px;  right: 22px; border-left: 0;  border-bottom: 0; }
+.ez-corner[data-pos='bl'] { bottom: 22px; left: 22px;  border-right: 0; border-top: 0; }
+.ez-corner[data-pos='br'] { bottom: 22px; right: 22px; border-left: 0;  border-top: 0; }
+
+@media (max-width: 640px) {
+  /* At phone width the marks crowd the gutter text. */
+  .ez-corners { display: none; }
+}
+
+/* A hairline top rule tinted with the brand, as a band separator that is
+   more deliberate than a plain border. */
+.ez-section--ruled::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--mk-accent) 55%, transparent) 22%,
+    color-mix(in srgb, var(--brand-navy, #0B2F52) 55%, transparent) 78%,
+    transparent 100%);
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ez-decor * { animation: none !important; }
+}

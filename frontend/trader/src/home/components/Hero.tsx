@@ -142,7 +142,7 @@ export function Hero() {
       <div
         className="mk-container mk-container--wide relative"
         style={{
-          paddingTop: 'clamp(4rem, 3rem + 4vw, 6rem)',
+          paddingTop: 'clamp(5rem, 3.75rem + 4vw, 7rem)',  /* clears the 80px fixed header */
           paddingBottom: 0,
         }}
       >

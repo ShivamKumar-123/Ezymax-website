@@ -19,7 +19,7 @@ import { TRADER_PATHS } from '../data';
  */
 export function TraderPaths() {
   return (
-    <Section raised>
+    <Section decor="dots" corners={{ at: ['tl', 'tr'], tone: 'navy' }} ruled raised>
       <SectionHeading title="Wherever you are starting from" />
 
       <div

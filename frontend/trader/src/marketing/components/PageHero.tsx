@@ -51,10 +51,11 @@ export function PageHero({
       />
       <div
         className="mk-container relative"
-        /* paddingTop clears the fixed 64px header; trimmed by 2.25rem when
+        /* paddingTop clears the fixed header (80px since the wordmark
+           was enlarged); trimmed by 2.25rem when
            the 36px black utility strip above the nav was removed. */
         style={{
-          paddingTop: 'clamp(5.75rem, 3.75rem + 7vw, 8.75rem)',
+          paddingTop: 'clamp(6.75rem, 4.75rem + 7vw, 9.75rem)',
           /* With a shot below, this padding is only the gap above it — the
              shot itself carries the band's bottom spacing. */
           paddingBottom: hasMedia ? 'var(--mk-space-8)' : 'var(--mk-section-y)',
